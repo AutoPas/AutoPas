@@ -24,8 +24,10 @@ class RegularGrid final : public DomainDecomposition {
 
 	 	void update() override;
 		const int getDimensionCount() override { return _dimensionCount; }
-		std::vector<double> getLocalBoxMin() { return _localBoxMin; }	
-		std::vector<double> getLocalBoxMax() { return _localBoxMax; }	
+		std::vector<double> getGlobalBoxMin() override { return _globalBoxMin; }
+		std::vector<double> getGlobalBoxMax() override { return _globalBoxMax; }
+		std::vector<double> getLocalBoxMin() override { return _localBoxMin; }	
+		std::vector<double> getLocalBoxMax() override { return _localBoxMax; }	
 		bool isInsideLocalDomain(std::vector<double> coordinates) override;
 
 		int convertIdToIndex(const std::vector<int> &domainIndex);

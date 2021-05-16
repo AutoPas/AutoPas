@@ -271,7 +271,6 @@ void MDFlexConfig::initializeObjects(){
   if (not checkpointfile.value.empty()) {
 		loadParticlesFromCheckpoint();
   }
-
 	for (const auto &object : cubeGridObjects) {
 		object.generate(_particles);
 	}

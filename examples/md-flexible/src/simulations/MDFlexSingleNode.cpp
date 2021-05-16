@@ -47,7 +47,9 @@ void MDFlexSingleNode::run() {
       // apply boundary conditions AFTER the position update!
       if (_configuration->periodic.value) {
         _timers.boundaries.start();
+
         BoundaryConditions::applyPeriodic(*_autoPasContainer, false);
+
         _timers.boundaries.stop();
       } else {
         throw std::runtime_error(
@@ -71,6 +73,7 @@ void MDFlexSingleNode::run() {
         break;
       }
     }
+
     // only show memory usage in when the logger is set to debug
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
@@ -170,7 +173,6 @@ void MDFlexSingleNode::calculateForces() {
   _previousIterationWasTuningIteration = tuningIteration;
 
   // global forces
-
   _timers.forceUpdateTotal.start();
   _timers.forceUpdateGlobal.start();
   globalForces();

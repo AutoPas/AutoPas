@@ -74,7 +74,7 @@ class CubeGauss : public Object {
     return output.str();
   }
 
-  void generate(std::vector<ParticleAttributes> particles) const override {
+  void generate(std::vector<ParticleAttributes> &particles) const override {
     ParticleAttributes particle = getDummyParticle(particles.size());
   	std::default_random_engine generator(42);
   	std::array<std::normal_distribution<double>, 3> distributions = {
@@ -84,9 +84,9 @@ class CubeGauss : public Object {
 		};
   	for (int i = 0; i < _numParticles; ++i) {
 			particle.id++;
-			particle.positionX = distributions[0](generator) / distributions[0].max();
-			particle.positionY = distributions[1](generator) / distributions[1].max();
-			particle.positionZ = distributions[2](generator) / distributions[2].max();
+			particle.positionX = distributions[0](generator);
+			particle.positionY = distributions[1](generator);
+			particle.positionZ = distributions[2](generator);
 			particles.push_back(particle);
   	}
   }

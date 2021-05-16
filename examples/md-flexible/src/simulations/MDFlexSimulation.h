@@ -130,7 +130,6 @@ class MDFlexSimulation {
 		autopas::utils::Timer thermostat;
 		autopas::utils::Timer boundaries;
   } _timers;
-
 	
 	void initialize(int dimensionCount, int argc, char **argv);
 	bool needsMoreIterations();

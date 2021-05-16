@@ -73,21 +73,17 @@ class CubeGrid : public Object {
     return output.str();
   }
 
-  void generate(std::vector<ParticleAttributes> particles) const override {
+  void generate(std::vector<ParticleAttributes> &particles) const override {
     ParticleAttributes particle = getDummyParticle(particles.size());
 		std::array<double, 3> offset = {.5, .5, .5};
-
-		double xMax = _particlesPerDim[0] * _particleSpacing + offset[0];
-		double yMax = _particlesPerDim[1] * _particleSpacing + offset[1];
-		double zMax = _particlesPerDim[2] * _particleSpacing + offset[2];
 
 		for (unsigned long z = 0; z < _particlesPerDim[2]; ++z) {
 			for (unsigned long y = 0; y < _particlesPerDim[1]; ++y) {
 				for (unsigned long x = 0; x < _particlesPerDim[0]; ++x) {
           particle.id++;
-    			particle.positionX = (static_cast<double>(x) * _particleSpacing + offset[0]) / xMax;
-    			particle.positionY = (static_cast<double>(y) * _particleSpacing + offset[1]) / yMax;
-    			particle.positionZ = (static_cast<double>(z) * _particleSpacing + offset[2]) / zMax;
+    			particle.positionX = (static_cast<double>(x) * _particleSpacing + offset[0]);
+    			particle.positionY = (static_cast<double>(y) * _particleSpacing + offset[1]);
+    			particle.positionZ = (static_cast<double>(z) * _particleSpacing + offset[2]);
 
           particles.push_back(particle);
 				}

@@ -51,6 +51,7 @@ class Sphere : public Object {
    * @param f Function called for every point.
    */
   void iteratePositions(const std::function<void(std::array<double, 3>)> &f) const {
+		std::cout << "Radius: " << _radius << std::endl;
     // generate regular grid for 1/8th of the sphere
     for (int z = 0; z <= _radius; ++z) {
       for (int y = 0; y <= _radius; ++y) {
@@ -118,12 +119,12 @@ class Sphere : public Object {
     return output.str();
   }
 
-  void generate(std::vector<ParticleAttributes> particles) const override {
+  void generate(std::vector<ParticleAttributes> &particles) const override {
     ParticleAttributes particle = getDummyParticle(particles.size());
     iteratePositions([&](auto pos) {
-    	particle.positionX = pos[0] / (_center[0] + _radius);
-    	particle.positionY = pos[1] / (_center[1] + _radius);
-    	particle.positionZ = pos[2] / (_center[2] + _radius);
+    	particle.positionX = pos[0];
+    	particle.positionY = pos[1];
+    	particle.positionZ = pos[2];
       particles.push_back(particle);
 
       particle.id++;

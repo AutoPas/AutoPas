@@ -15,6 +15,8 @@ class SingleDomain final : public DomainDecomposition {
 
 		void update() override;
 		const int getDimensionCount() override { return _dimensionCount; }
+		std::vector<double> getGlobalBoxMin() override { return _globalBoxMin; }
+		std::vector<double> getGlobalBoxMax() override { return _globalBoxMax; }
 		std::vector<double> getLocalBoxMin() override { return _globalBoxMin; }
 		std::vector<double> getLocalBoxMax() override { return _globalBoxMax; }
 		bool isInsideLocalDomain(std::vector<double> coordinates) override;

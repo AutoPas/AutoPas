@@ -322,16 +322,17 @@ void MDFlexSimulation::calculatePositions() {
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
-  for (auto iter = _autoPasContainer->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    auto v = iter->getV();
-    auto m = _configuration->getParticlePropertiesLibrary()->getMass(iter->getTypeId());
-    auto f = iter->getF();
-    iter->setOldF(f);
-    iter->setF({0., 0., 0.});
+  for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    auto v = particle->getV();
+    auto m = _configuration->getParticlePropertiesLibrary()->getMass(particle->getTypeId());
+    auto f = particle->getF();
+
+    particle->setOldF(f);
+    particle->setF({0., 0., 0.});
     v = mulScalar(v, deltaT);
     f = mulScalar(f, (deltaT * deltaT / (2 * m)));
     auto newR = add(v, f);
-    iter->addR(newR);
+    particle->addR(newR);
   }
 }
 
@@ -376,14 +377,16 @@ void MDFlexSimulation::initializeAutoPasContainer() {
       Thermostat::addBrownianMotion(*_autoPasContainer, *(_configuration->getParticlePropertiesLibrary()),
 				_configuration->initTemperature.value);
     }
-    Thermostat::apply(*_autoPasContainer, *(_configuration->getParticlePropertiesLibrary()), _configuration->initTemperature.value,
-                      std::numeric_limits<double>::max());
+    Thermostat::apply(*_autoPasContainer, *(_configuration->getParticlePropertiesLibrary()),
+			_configuration->initTemperature.value, std::numeric_limits<double>::max());
   }
 
 	for (auto &particle : _configuration->getParticles()){
-		// @todo: convert particle coordinates to global domain
+
+		ParticleType autoPasParticle;
 		if (getDomainDecomposition()->isInsideLocalDomain({particle.positionX, particle.positionY, particle.positionZ})){
-			_autoPasContainer->addParticle(ParticleSerializationTools::convertParticleAttributesToParticle(particle));
+			autoPasParticle = ParticleSerializationTools::convertParticleAttributesToParticle(particle);
+			_autoPasContainer->addParticle(autoPasParticle);
 		}
 	}
 }

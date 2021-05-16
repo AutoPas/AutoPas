@@ -43,7 +43,7 @@ class Object {
    * @note Particle IDs for the new particles will start at particles.size().
    * @param particles The container to which the new particles will be appendet to.
    */
-  virtual void generate(std::vector<ParticleAttributes> particles) const = 0;
+  virtual void generate(std::vector<ParticleAttributes> &particles) const = 0;
 
   /**
    * Create a particle that acts as blueprint for all particles to be created for the object.
@@ -57,6 +57,12 @@ class Object {
     particle.velocityX = _velocity[0];
     particle.velocityY = _velocity[1];
     particle.velocityZ = _velocity[2];
+    particle.forceX = 0.0;
+    particle.forceY = 0.0;
+    particle.forceZ = 0.0;
+    particle.oldForceX = 0.0;
+    particle.oldForceY = 0.0;
+    particle.oldForceZ = 0.0;
 
     return particle;
   }

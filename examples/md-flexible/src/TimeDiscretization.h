@@ -28,29 +28,17 @@ void calculatePositions(AutoPasTemplate &autopas, const ParticlePropertiesLibrar
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
-  std::cout << "Taddel 0" << std::endl;
   for (auto iter = autopas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-  	std::cout << "Krabs 0" << std::endl;
     auto v = iter->getV();
-  	std::cout << "Krabs 1" << std::endl;
     auto m = particlePropertiesLibrary.getMass(iter->getTypeId());
-  	std::cout << "Krabs 2" << std::endl;
     auto f = iter->getF();
-  	std::cout << "Krabs 3" << std::endl;
     iter->setOldF(f);
-  	std::cout << "Krabs 4" << std::endl;
     iter->setF({0., 0., 0.});
-  	std::cout << "Krabs 5" << std::endl;
     v = mulScalar(v, deltaT);
-  	std::cout << "Krabs 6" << std::endl;
     f = mulScalar(f, (deltaT * deltaT / (2 * m)));
-  	std::cout << "Krabs 7" << std::endl;
     auto newR = add(v, f);
-  	std::cout << "Krabs 8" << std::endl;
     iter->addR(newR);
-  	std::cout << "Krabs 9" << std::endl;
   }
-  std::cout << "Taddel 1" << std::endl;
 }
 
 /**

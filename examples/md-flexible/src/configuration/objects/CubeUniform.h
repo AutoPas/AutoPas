@@ -56,14 +56,14 @@ class CubeUniform : public Object {
     return output.str();
   }
 
-  void generate(std::vector<ParticleAttributes> particles) const override {
+  void generate(std::vector<ParticleAttributes> &particles) const override {
     ParticleAttributes particle = getDummyParticle(particles.size());
 		std::srand(std::time(0));
   	for (unsigned long i = 0; i < numParticles; ++i) {
       particle.id++;
-    	particle.positionX = static_cast<double>(std::rand()) / RAND_MAX;
-    	particle.positionY = static_cast<double>(std::rand()) / RAND_MAX;
-    	particle.positionZ = static_cast<double>(std::rand()) / RAND_MAX;
+    	particle.positionX = static_cast<double>(std::rand());
+    	particle.positionY = static_cast<double>(std::rand());
+    	particle.positionZ = static_cast<double>(std::rand());
       particles.push_back(particle);
   	}
   }

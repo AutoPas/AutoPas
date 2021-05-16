@@ -58,7 +58,7 @@ class CubeClosestPacked : public Object {
     return output.str();
   }
 
-  void generate(std::vector<ParticleAttributes> particles) const override {
+  void generate(std::vector<ParticleAttributes> &particles) const override {
     ParticleAttributes particle = getDummyParticle(particles.size());
 
     const double spacingRow = _particleSpacing * sqrt(3. / 4.);
@@ -76,9 +76,9 @@ class CubeClosestPacked : public Object {
 
         double startx = evenRow ? 0 : xOffset;
         for (double x = startx; x < _boxLength[0]; x += _particleSpacing) {
-    			particle.positionX = x / _boxLength[0];
-    			particle.positionY = y / _boxLength[1];
-    			particle.positionZ = z / _boxLength[2];
+    			particle.positionX = x;
+    			particle.positionY = y;
+    			particle.positionZ = z;
           particles.push_back(particle);
 
           particle.id++;
@@ -87,7 +87,7 @@ class CubeClosestPacked : public Object {
       }
       evenLayer = not evenLayer;
     }
-  }
+	}
 
  private:
 	/**
