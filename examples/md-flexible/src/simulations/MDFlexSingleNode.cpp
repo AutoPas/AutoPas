@@ -152,8 +152,34 @@ void MDFlexSingleNode::calculateForces() {
   // pairwise forces
   _timers.forceUpdatePairwise.start();
 
+  for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+		if (particle->getID() == 5370){
+			std::cout
+				<< std::endl
+				<< "Before iteratePairwise" << std::endl
+				<< "Position: " << autopas::utils::ArrayUtils::to_string(particle->getR()) << std::endl
+    		<< "Mass: " << _configuration->getParticlePropertiesLibrary()->getMass(particle->getTypeId()) << std::endl
+				<< "Velocity: " << autopas::utils::ArrayUtils::to_string(particle->getV()) << std::endl
+				<< "Force: " << autopas::utils::ArrayUtils::to_string(particle->getF()) << std::endl
+				<< "OldForce: " << autopas::utils::ArrayUtils::to_string(particle->getOldF()) << std::endl;
+		}
+	}
+
   FunctorType functor{_autoPasContainer->getCutoff(), *(_configuration->getParticlePropertiesLibrary())};
   bool tuningIteration = _autoPasContainer->iteratePairwise(&functor);
+
+  for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+		if (particle->getID() == 5370){
+			std::cout
+				<< std::endl
+				<< "After iteratePairwise" << std::endl
+				<< "Position: " << autopas::utils::ArrayUtils::to_string(particle->getR()) << std::endl
+    		<< "Mass: " << _configuration->getParticlePropertiesLibrary()->getMass(particle->getTypeId()) << std::endl
+				<< "Velocity: " << autopas::utils::ArrayUtils::to_string(particle->getV()) << std::endl
+				<< "Force: " << autopas::utils::ArrayUtils::to_string(particle->getF()) << std::endl
+				<< "OldForce: " << autopas::utils::ArrayUtils::to_string(particle->getOldF()) << std::endl;
+		}
+	}
 
   _timers.forceUpdateTotal.stop();
   auto timeIteration = _timers.forceUpdatePairwise.stop();
