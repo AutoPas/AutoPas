@@ -106,9 +106,9 @@ class ExceptionHandler {
   }
 
  private:
-  static inline std::mutex exceptionMutex{};
-  static inline ExceptionBehavior _behavior{ExceptionBehavior::throwException};
-  static inline std::function<void()> _customAbortFunction{abort};
+  static std::mutex exceptionMutex;
+  static ExceptionBehavior _behavior;
+  static std::function<void()> _customAbortFunction;
 
   static void nonThrowException(const std::exception &e) {
     switch (_behavior) {
