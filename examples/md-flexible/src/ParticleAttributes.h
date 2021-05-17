@@ -5,6 +5,7 @@
  */
 #pragma once
 
+#include "autopas/particles/OwnershipState.h"
 /*
 * A struct containing all properties of autopas::MoleculeLJ<double>.
 * This can be used to align the attributes of a particle in memory to make serialization and deserialization easier.
@@ -21,6 +22,7 @@ struct ParticleAttributes {
 	double forceY;
 	double forceZ;
 	unsigned long id; 		
+	autopas::OwnershipState ownershipState;
 
 	// MoleculeLJ attributes
 	size_t typeId;

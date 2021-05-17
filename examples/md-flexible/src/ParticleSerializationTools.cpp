@@ -24,6 +24,16 @@ namespace ParticleSerializationTools {
 		attributes->forceY = particle.getF()[1];
 		attributes->forceZ = particle.getF()[2];
 
+		if (particle.isDummy()){
+			attributes->ownershipState = autopas::OwnershipState::dummy;
+		}
+		else if (particle.isOwned()){
+			attributes->ownershipState = autopas::OwnershipState::owned;
+		}
+		else if (particle.isHalo()){
+			attributes->ownershipState = autopas::OwnershipState::halo;
+		}
+
 		attributes->id = particle.getID();
 
 		attributes->typeId = particle.getTypeId();
@@ -42,6 +52,7 @@ namespace ParticleSerializationTools {
 		particle.setF({attributes->forceX, attributes->forceY, attributes->forceZ});
 		particle.setOldF({attributes->oldForceX, attributes->oldForceY, attributes->oldForceZ});
 		particle.setID(attributes->id);
+		particle.setOwnershipState(attributes->ownershipState);
 		particle.setTypeId(attributes->typeId);
 	}
 
