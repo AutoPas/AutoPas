@@ -23,35 +23,35 @@ class CubeUniform : public Object {
    * @param epsilon
    * @param sigma
    * @param mass
-   * @param numParticles
-   * @param boxLength
-   * @param bottomLeftCorner
+   * @param _numParticles
+   * @param _boxLength
+   * @param _boxMin
    */
   CubeUniform(const std::array<double, 3> &velocity, unsigned long typeId, double epsilon, double sigma, double mass,
-              size_t numParticles, const std::array<double, 3> &boxLength,
-              const std::array<double, 3> &bottomLeftCorner)
+              size_t _numParticles, const std::array<double, 3> &_boxLength,
+              const std::array<double, 3> &boxMin)
       : Object(velocity, typeId, epsilon, sigma, mass),
-        numParticles(numParticles),
-        boxLength(boxLength),
-        bottomLeftCorner(bottomLeftCorner) {}
+        _numParticles(_numParticles),
+        _boxLength(_boxLength),
+        _boxMin(boxMin) {}
 
-  [[nodiscard]] size_t getParticlesTotal() const override { return numParticles; }
+  [[nodiscard]] size_t getParticlesTotal() const override { return _numParticles; }
 
-  [[nodiscard]] std::array<double, 3> getBoxMin() const override { return bottomLeftCorner; }
+  [[nodiscard]] std::array<double, 3> getBoxMin() const override { return _boxMin; }
 
   [[nodiscard]] std::array<double, 3> getBoxMax() const override {
-    return autopas::utils::ArrayMath::add(bottomLeftCorner, boxLength);
+    return autopas::utils::ArrayMath::add(_boxMin, _boxLength);
   }
 
   [[nodiscard]] std::string to_string() const override {
     std::ostringstream output;
 
     output << std::setw(_valueOffset) << std::left << "numberOfParticles"
-           << ":  " << numParticles << std::endl;
+           << ":  " << _numParticles << std::endl;
     output << std::setw(_valueOffset) << std::left << "box-length"
-           << ":  " << autopas::utils::ArrayUtils::to_string(boxLength) << std::endl;
-    output << std::setw(_valueOffset) << std::left << "bottomLeftCorner"
-           << ":  " << autopas::utils::ArrayUtils::to_string(bottomLeftCorner) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(_boxLength) << std::endl;
+    output << std::setw(_valueOffset) << std::left << "_boxMin"
+           << ":  " << autopas::utils::ArrayUtils::to_string(_boxMin) << std::endl;
     output << Object::to_string();
     return output.str();
   }
@@ -59,17 +59,17 @@ class CubeUniform : public Object {
   void generate(std::vector<ParticleAttributes> &particles) const override {
     ParticleAttributes particle = getDummyParticle(particles.size());
 		std::srand(std::time(0));
-  	for (unsigned long i = 0; i < numParticles; ++i) {
+  	for (unsigned long i = 0; i < _numParticles; ++i) {
       particle.id++;
-    	particle.positionX = static_cast<double>(std::rand());
-    	particle.positionY = static_cast<double>(std::rand());
-    	particle.positionZ = static_cast<double>(std::rand());
+    	particle.positionX = _boxMin[0] + (static_cast<double>(std::rand()) / RAND_MAX) * _boxLength[0];
+    	particle.positionY = _boxMin[1] + (static_cast<double>(std::rand()) / RAND_MAX) * _boxLength[1];
+    	particle.positionZ = _boxMin[2] + (static_cast<double>(std::rand()) / RAND_MAX) * _boxLength[2];
       particles.push_back(particle);
   	}
   }
 
  private:
-  size_t numParticles;
-  std::array<double, 3> boxLength;
-  std::array<double, 3> bottomLeftCorner;
+  size_t _numParticles;
+  std::array<double, 3> _boxLength;
+  std::array<double, 3> _boxMin;
 };

@@ -54,6 +54,7 @@ class Object {
     ParticleAttributes particle;
 		particle.id = particleId;
     particle.typeId = _typeId;
+		particle.ownershipState = autopas::OwnershipState::owned;
     particle.velocityX = _velocity[0];
     particle.velocityY = _velocity[1];
     particle.velocityZ = _velocity[2];
