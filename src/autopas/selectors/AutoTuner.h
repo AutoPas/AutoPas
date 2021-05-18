@@ -184,8 +184,8 @@ class AutoTuner {
       if (_samples.size() == _maxSamples) {
         auto reducedValue = OptimumSelector::optimumValue(_samples, _selectorStrategy);
 
-        _evidences[currentConfig].emplace_back(_iteration, reducedValue);
-        auto smoothedValue = smoothing::smoothLastPoint(_evidences[currentConfig], 5);
+        _evidence[currentConfig].emplace_back(_iteration, reducedValue);
+        auto smoothedValue = smoothing::smoothLastPoint(_evidence[currentConfig], 5);
 
         _tuningStrategy->addEvidence(smoothedValue, _iteration);
 
@@ -275,7 +275,7 @@ class AutoTuner {
    * For each configuration the collection of all evidence (smoothed values) collected so far and in which iteration.
    * Configuration -> vector< iteration, time >
    */
-  std::map<Configuration, std::vector<std::pair<size_t, long>>> _evidences;
+  std::map<Configuration, std::vector<std::pair<size_t, long>>> _evidence;
 
   IterationLogger _iterationLogger;
   TuningResultLogger _tuningResultLogger;
