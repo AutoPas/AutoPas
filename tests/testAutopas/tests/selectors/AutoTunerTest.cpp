@@ -282,22 +282,11 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
 TEST_F(AutoTunerTest, testForceRetuneBetweenPhases) {
   std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {2, 4, 2};
   const double cutoff = 1;
-  const double cellSizeFactor = 1;
   const double verletSkin = 0;
   const unsigned int verletClusterSize = 4;
   const unsigned int maxSamples = 3;
 
-  autopas::Configuration confLc_c01(autopas::ContainerOption::linkedCells, cellSizeFactor,
-                                    autopas::TraversalOption::lc_c01, autopas::LoadEstimatorOption::none,
-                                    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
-  autopas::Configuration confLc_c04(autopas::ContainerOption::linkedCells, cellSizeFactor,
-                                    autopas::TraversalOption::lc_c04, autopas::LoadEstimatorOption::none,
-                                    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
-  autopas::Configuration confLc_c08(autopas::ContainerOption::linkedCells, cellSizeFactor,
-                                    autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
-                                    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
-
-  auto configsList = {confLc_c01, confLc_c04, confLc_c08};
+  auto configsList = {_confLc_c01, _confLc_c04, _confLc_c08};
 
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
   autopas::AutoTuner<Particle> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, verletClusterSize,
@@ -420,17 +409,13 @@ TEST_F(AutoTunerTest, testNoConfig) {
  * Generates exactly one valid configuration.
  */
 TEST_F(AutoTunerTest, testOneConfig) {
-  autopas::Configuration conf(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08,
-                              autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                              autopas::Newton3Option::enabled);
-
-  auto configsList = {conf};
+  auto configsList = {_confLc_c08};
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
   size_t maxSamples = 3;
   autopas::AutoTuner<Particle> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
                                      autopas::SelectorStrategyOption::fastestAbs, 1000, maxSamples);
 
-  EXPECT_EQ(conf, tuner.getCurrentConfig());
+  EXPECT_EQ(_confLc_c08, tuner.getCurrentConfig());
 
   MFunctor functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
@@ -446,7 +431,7 @@ TEST_F(AutoTunerTest, testOneConfig) {
     tuner.iteratePairwise(&functor, doRebuild);
     doRebuild = false;
     ++numSamples;
-    EXPECT_EQ(conf, tuner.getCurrentConfig());
+    EXPECT_EQ(_confLc_c08, tuner.getCurrentConfig());
   }
 }
 
