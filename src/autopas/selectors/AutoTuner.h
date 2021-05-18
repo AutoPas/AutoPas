@@ -158,7 +158,7 @@ class AutoTuner {
   }
 
   /**
-   * Save the runtime of a given traversal if the functor is relevant for tuning.
+   * Save the runtime of a given traversal.
    *
    * Samples are collected and reduced to one single value according to _selectorStrategy. Only then the value is passed
    * on to the tuning strategy. This function expects that samples of the same configuration are taken consecutively.
@@ -168,37 +168,33 @@ class AutoTuner {
    * @param time
    */
   template <class PairwiseFunctor>
-  void addTimeMeasurement(PairwiseFunctor &pairwiseFunctor, long time) {
+  void addTimeMeasurement(long time) {
     const auto &currentConfig = _tuningStrategy->getCurrentConfiguration();
 
-    if (pairwiseFunctor.isRelevantForTuning()) {
-      if (_samples.size() < _maxSamples) {
-        AutoPasLog(trace, "Adding sample.");
-        _samples.push_back(time);
-        // if this was the last sample:
-        if (_samples.size() == _maxSamples) {
-          auto reducedValue = OptimumSelector::optimumValue(_samples, _selectorStrategy);
+    if (_samples.size() < _maxSamples) {
+      AutoPasLog(trace, "Adding sample.");
+      _samples.push_back(time);
+      // if this was the last sample:
+      if (_samples.size() == _maxSamples) {
+        auto reducedValue = OptimumSelector::optimumValue(_samples, _selectorStrategy);
 
-          _evidences[currentConfig].emplace_back(_iteration, reducedValue);
-          auto smoothedValue = smoothing::smoothLastPoint(_evidences[currentConfig], 5);
+        _evidences[currentConfig].emplace_back(_iteration, reducedValue);
+        auto smoothedValue = smoothing::smoothLastPoint(_evidences[currentConfig], 5);
 
-          _tuningStrategy->addEvidence(smoothedValue, _iteration);
+        _tuningStrategy->addEvidence(smoothedValue, _iteration);
 
-          // print config, times and reduced value
-          if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
-            std::ostringstream ss;
-            // print config
-            ss << currentConfig.toString() << " : ";
-            // print all timings
-            ss << utils::ArrayUtils::to_string(_samples, " ", {"[ ", " ]"});
-            ss << " Smoothed value: " << smoothedValue;
-            AutoPasLog(debug, "Collected times for  {}", ss.str());
-          }
-          _tuningDataLogger.logTuningData(currentConfig, _samples, _iteration, reducedValue, smoothedValue);
+        // print config, times and reduced value
+        if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
+          std::ostringstream ss;
+          // print config
+          ss << currentConfig.toString() << " : ";
+          // print all timings
+          ss << utils::ArrayUtils::to_string(_samples, " ", {"[ ", " ]"});
+          ss << " Smoothed value: " << smoothedValue;
+          AutoPasLog(debug, "Collected times for  {}", ss.str());
         }
+        _tuningDataLogger.logTuningData(currentConfig, _samples, _iteration, reducedValue, smoothedValue);
       }
-    } else {
-      AutoPasLog(trace, "Skipping adding of time measurement because functor is not marked relevant.");
     }
   }
 
@@ -441,7 +437,11 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
 
   // if tuning execute with time measurements
   if (inTuningPhase) {
-    addTimeMeasurement(*f, timerTotal.getTotalTime());
+    if (f->isRelevantForTuning()) {
+      addTimeMeasurement(timerTotal.getTotalTime());
+    } else {
+      AutoPasLog(trace, "Skipping adding of time measurement because functor is not marked relevant.");
+    }
   }
 }
 
