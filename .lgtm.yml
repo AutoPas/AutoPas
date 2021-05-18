@@ -10,7 +10,7 @@ extraction:
     after_prepare:    # Customizable step used by all languages.
       # installs cmake!
       - cmake --version
-      - wget -O cmake.tar.gz https://github.com/Kitware/CMake/releases/download/v3.16.4/cmake-3.16.4.tar.gz
+      - wget -O cmake.tar.gz https://github.com/Kitware/CMake/releases/download/v3.20.2/cmake-3.20.2.tar.gz
       - tar zxf cmake.tar.gz
       - cd cmake-*/
       - mkdir build
