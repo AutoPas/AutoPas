@@ -40,16 +40,48 @@ class VLCTraversalInterface {
    * @param neighborLists A suitable neighbor list.
    * @param cellIndex
    * @param pairwiseFunctor
+   * @param dataLayout
    */
   template <class PairwiseFunctor, bool useNewton3>
-  void processCellLists(NeighborList &neighborLists, unsigned long cellIndex, PairwiseFunctor *pairwiseFunctor) {
-    processCellListsImpl<PairwiseFunctor, useNewton3>(neighborLists, cellIndex, pairwiseFunctor);
+  void processCellLists(NeighborList &neighborLists, unsigned long cellIndex, PairwiseFunctor *pairwiseFunctor,
+                        DataLayoutOption::Value dataLayout) {
+    processCellListsImpl<PairwiseFunctor, useNewton3>(neighborLists, cellIndex, pairwiseFunctor, dataLayout);
+  }
+
+  /**
+   * Load the SoA from the respective neighbor list.
+   * @tparam pairwiseFunctor
+   * @param pairwiseFunctor
+   * @param neighborLists
+   */
+  template <class PairwiseFunctor>
+  void loadSoA(PairwiseFunctor *pairwiseFunctor, NeighborList &neighborLists) {
+    // send to loadSoA in the neighbor list
+    _soa = neighborLists.loadSoA(pairwiseFunctor);
+  }
+
+  /**
+   * Extract the SoA from the respective neighbor list.
+   * @tparam pairwiseFunctor
+   * @param pairwiseFunctor
+   * @param neighborLists
+   */
+  template <class PairwiseFunctor>
+  void extractSoA(PairwiseFunctor *pairwiseFunctor, NeighborList &neighborLists) {
+    // send to extractSoA in the neighbor list
+    neighborLists.extractSoA(pairwiseFunctor);
+    _soa = nullptr;
   }
 
   /**
    * The verlet list to iterate over.
    */
   NeighborList *_verletList;
+
+  /**
+   * Structure of arrays to be used if the data layout is SoA.
+   */
+  SoA<typename Particle::SoAArraysType> *_soa;
 
  private:
   /** Processing of the VLCAllCellsNeighborList type of neighbor list (neighbor list for every cell).
@@ -58,16 +90,26 @@ class VLCTraversalInterface {
    * @param neighborList
    * @param cellIndex
    * @param pairwiseFunctor
+   * @param dataLayout
    */
   template <class PairwiseFunctor, bool useNewton3>
   void processCellListsImpl(VLCAllCellsNeighborList<Particle> &neighborList, unsigned long cellIndex,
-                            PairwiseFunctor *pairwiseFunctor) {
-    auto &internalList = neighborList.getAoSNeighborList();
-    for (auto &[particlePtr, neighbors] : internalList[cellIndex]) {
-      Particle &particle = *particlePtr;
-      for (auto neighborPtr : neighbors) {
-        Particle &neighbor = *neighborPtr;
-        pairwiseFunctor->AoSFunctor(particle, neighbor, useNewton3);
+                            PairwiseFunctor *pairwiseFunctor, DataLayoutOption::Value dataLayout) {
+    if (dataLayout == DataLayoutOption::Value::aos) {
+      auto &internalList = neighborList.getAoSNeighborList();
+      for (auto &[particlePtr, neighbors] : internalList[cellIndex]) {
+        Particle &particle = *particlePtr;
+        for (auto neighborPtr : neighbors) {
+          Particle &neighbor = *neighborPtr;
+          pairwiseFunctor->AoSFunctor(particle, neighbor, useNewton3);
+        }
+      }
+    }
+
+    else if (dataLayout == DataLayoutOption::soa) {
+      auto &_soaList = neighborList.getSoANeighborList();
+      for (auto &[particleIndex, neighbors] : _soaList[cellIndex]) {
+        pairwiseFunctor->SoAFunctorVerlet(*_soa, particleIndex, neighbors, useNewton3);
       }
     }
   }
@@ -78,17 +120,30 @@ class VLCTraversalInterface {
    * @param neighborList
    * @param cellIndex
    * @param pairwiseFunctor
+   * @param dataLayout
    */
   template <class PairwiseFunctor, bool useNewton3>
   void processCellListsImpl(VLCCellPairNeighborList<Particle> &neighborList, unsigned long cellIndex,
-                            PairwiseFunctor *pairwiseFunctor) {
-    auto &internalList = neighborList.getAoSNeighborList();
-    for (auto &cellPair : internalList[cellIndex]) {
-      for (auto &[particlePtr, neighbors] : cellPair) {
-        Particle &particle = *particlePtr;
-        for (auto neighborPtr : neighbors) {
-          Particle &neighbor = *neighborPtr;
-          pairwiseFunctor->AoSFunctor(particle, neighbor, useNewton3);
+                            PairwiseFunctor *pairwiseFunctor, DataLayoutOption::Value dataLayout) {
+    if (dataLayout == DataLayoutOption::Value::aos) {
+      auto &internalList = neighborList.getAoSNeighborList();
+      for (auto &cellPair : internalList[cellIndex]) {
+        for (auto &[particlePtr, neighbors] : cellPair) {
+          Particle &particle = *particlePtr;
+          for (auto neighborPtr : neighbors) {
+            Particle &neighbor = *neighborPtr;
+            pairwiseFunctor->AoSFunctor(particle, neighbor, useNewton3);
+          }
+        }
+      }
+    }
+
+    else if (dataLayout == DataLayoutOption::Value::soa) {
+      auto &_soaList = neighborList.getSoANeighborList();
+      // iterate over soa and call soaFunctorVerlet for each of the neighbor lists
+      for (auto &cellPair : _soaList[cellIndex]) {
+        for (auto &[particleIndex, neighbors] : cellPair) {
+          pairwiseFunctor->SoAFunctorVerlet(*_soa, particleIndex, neighbors, useNewton3);
         }
       }
     }

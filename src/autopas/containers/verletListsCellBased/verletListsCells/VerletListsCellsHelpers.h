@@ -33,5 +33,21 @@ class VerletListsCellsHelpers {
   using PairwiseNeighborListsType =
       std::vector<std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>>;
 
+  /**
+   * Indicates which build functor should be used for the generation of the neighbor list.
+   * To be passed to the generator functors in the neighbor lists.
+   */
+  class VLCBuildType {
+   public:
+    /**
+     * Enum value indicating whether the AoS functor or the SoA functors will be used to generate
+     * the neighbor list.
+     */
+    enum Value {
+      aosBuild,
+      soaBuild,
+    };
+  };
+
 };  // class VerletListsCellsHelpers
 }  // namespace autopas
