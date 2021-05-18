@@ -522,6 +522,9 @@ void AutoTuner<Particle>::addTimeMeasurement(long time) {
       // smooth evidence to remove high outliers. If smoothing results in a higher value use the original value.
       const auto smoothedValue = std::min(reducedValue, smoothing::smoothLastPoint(evidenceCurrentConfig, 5));
 
+      // replace collected evidence with smoothed value to improve next smoothing
+      evidenceCurrentConfig.back().second = smoothedValue;
+
       _tuningStrategy->addEvidence(smoothedValue, _iteration);
 
       // print config, times and reduced value
