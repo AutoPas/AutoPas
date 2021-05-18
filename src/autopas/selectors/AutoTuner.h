@@ -170,10 +170,8 @@ class AutoTuner {
    * on to the tuning strategy. This function expects that samples of the same configuration are taken consecutively.
    * The time argument is a long because std::chrono::duration::count returns a long.
    *
-   * @param pairwiseFunctor
    * @param time
    */
-  template <class PairwiseFunctor>
   void addTimeMeasurement(long time) {
     const auto &currentConfig = _tuningStrategy->getCurrentConfiguration();
 
