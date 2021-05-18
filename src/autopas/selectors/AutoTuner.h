@@ -514,10 +514,13 @@ void AutoTuner<Particle>::addTimeMeasurement(long time) {
     _samples.push_back(time);
     // if this was the last sample:
     if (_samples.size() == _maxSamples) {
-      auto reducedValue = OptimumSelector::optimumValue(_samples, _selectorStrategy);
+      auto &evidenceCurrentConfig = _evidence[currentConfig];
 
-      _evidence[currentConfig].emplace_back(_iteration, reducedValue);
-      auto smoothedValue = smoothing::smoothLastPoint(_evidence[currentConfig], 5);
+      const auto reducedValue = OptimumSelector::optimumValue(_samples, _selectorStrategy);
+      evidenceCurrentConfig.emplace_back(_iteration, reducedValue);
+
+      // smooth evidence to remove high outliers. If smoothing results in a higher value use the original value.
+      const auto smoothedValue = std::min(reducedValue, smoothing::smoothLastPoint(evidenceCurrentConfig, 5));
 
       _tuningStrategy->addEvidence(smoothedValue, _iteration);
 
