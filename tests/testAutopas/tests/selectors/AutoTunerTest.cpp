@@ -59,12 +59,12 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
       configsPerContainer[autopas::ContainerOption::linkedCells] - 4;
   // VerletLists:           vl_list_iteration           (AoS <=> SoA, noNewton3)                             = 2
   configsPerContainer[autopas::ContainerOption::verletLists] = 2;
-  // VerletListsCells:      vlc_sliced                  (AoS, newton3 <=> noNewton3)                         = 2
-  //                        vlc_sliced_balanced         (AoS, newton3 <=> noNewton3, 3 heuristics)           = 6
-  //                        vlc_sliced_colored          (AoS, newton3 <=> noNewton3)                         = 2
-  //                        vlc_c18                     (AoS, newton3 <=> noNewton3)                         = 2
-  //                        vlc_c01                     (AoS, noNewton3)                                     = 1
-  configsPerContainer[autopas::ContainerOption::verletListsCells] = 13;
+  // VerletListsCells:      vlc_sliced                  (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        vlc_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3, 3 heuristics)   = 12
+  //                        vlc_sliced_colored          (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        vlc_c18                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        vlc_c01                     (AoS <=> SoA, noNewton3)                             = 2
+  configsPerContainer[autopas::ContainerOption::verletListsCells] = 26;
   // VerletClusterLists:    vcl_cluster_iteration       (AoS <=> SoA, noNewton3)                             = 2
   //                        vcl_c06                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   //                        vcl_c01_balanced            (AoS <=> SoA, noNewton3)                             = 2
@@ -75,12 +75,12 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   // VarVerletListsAsBuild: vvl_as_built                (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   configsPerContainer[autopas::ContainerOption::varVerletListsAsBuild] = 4;
 
-  // PairwiseVerletLists:   vlp_sliced                  (AoS, newton3 <=> noNewton3)                         = 2
-  //                        vlp_sliced_balanced         (AoS, newton3 <=> noNewton3)                         = 2
-  //                        vlp_sliced_colored          (AoS, newton3 <=> noNewton3)                         = 2
-  //                        vlp_c18                     (AoS, newton3 <=> noNewton3)                         = 2
-  //                        vlp_c01                     (AoS, noNewton3)                                     = 1
-  configsPerContainer[autopas::ContainerOption::pairwiseVerletLists] = 9;
+  // PairwiseVerletLists:   vlp_sliced                  (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        vlp_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        vlp_sliced_colored          (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        vlp_c18                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        vlp_c01                     (AoS <=> SoA, noNewton3)                             = 2
+  configsPerContainer[autopas::ContainerOption::pairwiseVerletLists] = 18;
 
   // check that there is an entry for every container. Except VCC because they are only relevant for CUDA...
   ASSERT_EQ(configsPerContainer.size(), autopas::ContainerOption::getAllOptions().size() - 1);
