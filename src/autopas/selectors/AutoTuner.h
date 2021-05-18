@@ -164,6 +164,13 @@ class AutoTuner {
   }
 
   /**
+   * Get the currently selected configuration.
+   * @return
+   */
+  [[nodiscard]] const Configuration &getCurrentConfig() const;
+
+ private:
+  /**
    * Save the runtime of a given traversal.
    *
    * Samples are collected and reduced to one single value according to _selectorStrategy. Only then the value is passed
@@ -172,43 +179,8 @@ class AutoTuner {
    *
    * @param time
    */
-  void addTimeMeasurement(long time) {
-    const auto &currentConfig = _tuningStrategy->getCurrentConfiguration();
+  void addTimeMeasurement(long time);
 
-    if (_samples.size() < _maxSamples) {
-      AutoPasLog(trace, "Adding sample.");
-      _samples.push_back(time);
-      // if this was the last sample:
-      if (_samples.size() == _maxSamples) {
-        auto reducedValue = OptimumSelector::optimumValue(_samples, _selectorStrategy);
-
-        _evidence[currentConfig].emplace_back(_iteration, reducedValue);
-        auto smoothedValue = smoothing::smoothLastPoint(_evidence[currentConfig], 5);
-
-        _tuningStrategy->addEvidence(smoothedValue, _iteration);
-
-        // print config, times and reduced value
-        if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
-          std::ostringstream ss;
-          // print config
-          ss << currentConfig.toString() << " : ";
-          // print all timings
-          ss << utils::ArrayUtils::to_string(_samples, " ", {"[ ", " ]"});
-          ss << " Smoothed value: " << smoothedValue;
-          AutoPasLog(debug, "Collected times for  {}", ss.str());
-        }
-        _tuningDataLogger.logTuningData(currentConfig, _samples, _iteration, reducedValue, smoothedValue);
-      }
-    }
-  }
-
-  /**
-   * Get the currently selected configuration.
-   * @return
-   */
-  [[nodiscard]] const Configuration &getCurrentConfig() const;
-
- private:
   /**
    * Initialize the container specified by the TuningStrategy.
    */
@@ -531,5 +503,36 @@ bool AutoTuner<Particle>::configApplicable(const Configuration &conf, PairwiseFu
 template <class Particle>
 const Configuration &AutoTuner<Particle>::getCurrentConfig() const {
   return _tuningStrategy->getCurrentConfiguration();
+}
+
+template <class Particle>
+void AutoTuner<Particle>::addTimeMeasurement(long time) {
+  const auto &currentConfig = _tuningStrategy->getCurrentConfiguration();
+
+  if (_samples.size() < _maxSamples) {
+    AutoPasLog(trace, "Adding sample.");
+    _samples.push_back(time);
+    // if this was the last sample:
+    if (_samples.size() == _maxSamples) {
+      auto reducedValue = OptimumSelector::optimumValue(_samples, _selectorStrategy);
+
+      _evidence[currentConfig].emplace_back(_iteration, reducedValue);
+      auto smoothedValue = smoothing::smoothLastPoint(_evidence[currentConfig], 5);
+
+      _tuningStrategy->addEvidence(smoothedValue, _iteration);
+
+      // print config, times and reduced value
+      if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
+        std::ostringstream ss;
+        // print config
+        ss << currentConfig.toString() << " : ";
+        // print all timings
+        ss << utils::ArrayUtils::to_string(_samples, " ", {"[ ", " ]"});
+        ss << " Smoothed value: " << smoothedValue;
+        AutoPasLog(debug, "Collected times for  {}", ss.str());
+      }
+      _tuningDataLogger.logTuningData(currentConfig, _samples, _iteration, reducedValue, smoothedValue);
+    }
+  }
 }
 }  // namespace autopas
