@@ -134,8 +134,14 @@ class AutoTuner {
   bool configApplicable(const Configuration &conf, PairwiseFunctor &pairwiseFunctor);
 
   /**
-   * Function to iterate over all pairs of particles in the container.
-   * This function only handles short-range interactions.
+   * Whole tuning logic for one iteration.
+   * This function covers:
+   *  - Instantiation of the traversal to be used.
+   *  - Actual pairwise iteration for application of the functor.
+   *  - Management of tuning phases and calls to tune() if necessary.
+   *  - Measurement of timings and calls to addTimeMeasurement() if necessary.
+   *  - Calls to _iterationLogger if necessary.
+   *
    * @tparam PairwiseFunctor
    * @param f Functor that describes the pair-potential.
    * @param doListRebuild Indicates whether or not the verlet lists should be rebuild.
