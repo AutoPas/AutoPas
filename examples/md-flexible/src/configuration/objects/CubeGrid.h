@@ -75,7 +75,7 @@ class CubeGrid : public Object {
 
   void generate(std::vector<ParticleAttributes> &particles) const override {
     ParticleAttributes particle = getDummyParticle(particles.size());
-		std::array<double, 3> offset = {.5, .5, .5};
+		std::array<double, 3> offset = {0.0, 0.0, 0.0};
 
 		for (unsigned long z = 0; z < _particlesPerDim[2]; ++z) {
 			for (unsigned long y = 0; y < _particlesPerDim[1]; ++y) {
