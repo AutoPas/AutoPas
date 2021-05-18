@@ -141,6 +141,7 @@ class MDFlexSimulation {
 	std::string getMPISuffix();
 	std::string timerToString(const std::string &name, long timeNS, size_t numberWidth, long maxTime);
 	void calculatePositions();
+	void calculateVelocities();
 
 	private:
 		void initializeAutoPasContainer();

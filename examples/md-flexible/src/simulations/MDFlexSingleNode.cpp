@@ -21,7 +21,6 @@ void MDFlexSingleNode::run() {
   std::cout << std::endl << "Using " << autopas::autopas_get_max_threads() << " Threads" << std::endl;
   std::cout << "Starting simulation... " << std::endl;
 	
-  //this->_homogeneity = Simulation::calculateHomogeneity(autopas);
   _timers.simulate.start();
 
   auto [maxIterationsEstimate, maxIterationsIsPrecise] = estimateNumberOfIterations();
@@ -47,9 +46,7 @@ void MDFlexSingleNode::run() {
       // apply boundary conditions AFTER the position update!
       if (_configuration->periodic.value) {
         _timers.boundaries.start();
-
         BoundaryConditions::applyPeriodic(*_autoPasContainer, false);
-
         _timers.boundaries.stop();
       } else {
         throw std::runtime_error(
@@ -82,8 +79,7 @@ void MDFlexSingleNode::run() {
     // only do time step related stuff when there actually is time-stepping
     if (_configuration->deltaT.value != 0) {
       _timers.velocityUpdate.start();
-      TimeDiscretization::calculateVelocities(*_autoPasContainer,
-				*(_configuration->getParticlePropertiesLibrary()), _configuration->deltaT.value);
+      calculateVelocities();
       _timers.velocityUpdate.stop();
 
       // applying Velocity scaling with Thermostat:
@@ -152,34 +148,8 @@ void MDFlexSingleNode::calculateForces() {
   // pairwise forces
   _timers.forceUpdatePairwise.start();
 
-  for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-		if (particle->getID() == 5370){
-			std::cout
-				<< std::endl
-				<< "Before iteratePairwise" << std::endl
-				<< "Position: " << autopas::utils::ArrayUtils::to_string(particle->getR()) << std::endl
-    		<< "Mass: " << _configuration->getParticlePropertiesLibrary()->getMass(particle->getTypeId()) << std::endl
-				<< "Velocity: " << autopas::utils::ArrayUtils::to_string(particle->getV()) << std::endl
-				<< "Force: " << autopas::utils::ArrayUtils::to_string(particle->getF()) << std::endl
-				<< "OldForce: " << autopas::utils::ArrayUtils::to_string(particle->getOldF()) << std::endl;
-		}
-	}
-
   FunctorType functor{_autoPasContainer->getCutoff(), *(_configuration->getParticlePropertiesLibrary())};
   bool tuningIteration = _autoPasContainer->iteratePairwise(&functor);
-
-  for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-		if (particle->getID() == 5370){
-			std::cout
-				<< std::endl
-				<< "After iteratePairwise" << std::endl
-				<< "Position: " << autopas::utils::ArrayUtils::to_string(particle->getR()) << std::endl
-    		<< "Mass: " << _configuration->getParticlePropertiesLibrary()->getMass(particle->getTypeId()) << std::endl
-				<< "Velocity: " << autopas::utils::ArrayUtils::to_string(particle->getV()) << std::endl
-				<< "Force: " << autopas::utils::ArrayUtils::to_string(particle->getF()) << std::endl
-				<< "OldForce: " << autopas::utils::ArrayUtils::to_string(particle->getOldF()) << std::endl;
-		}
-	}
 
   _timers.forceUpdateTotal.stop();
   auto timeIteration = _timers.forceUpdatePairwise.stop();
@@ -204,4 +174,5 @@ void MDFlexSingleNode::calculateForces() {
   globalForces();
   _timers.forceUpdateGlobal.stop();
   _timers.forceUpdateTotal.stop();
+
 }

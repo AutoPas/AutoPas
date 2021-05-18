@@ -29,6 +29,7 @@ void calculatePositions(AutoPasTemplate &autopas, const ParticlePropertiesLibrar
 #pragma omp parallel
 #endif
   for (auto iter = autopas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+
     auto v = iter->getV();
     auto m = particlePropertiesLibrary.getMass(iter->getTypeId());
     auto f = iter->getF();
@@ -38,6 +39,7 @@ void calculatePositions(AutoPasTemplate &autopas, const ParticlePropertiesLibrar
     f = mulScalar(f, (deltaT * deltaT / (2 * m)));
     auto newR = add(v, f);
     iter->addR(newR);
+
   }
 }
 

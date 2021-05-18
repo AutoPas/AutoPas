@@ -32,10 +32,10 @@ class CubeGauss : public Object {
             const std::array<double, 3> &distributionStdDev, const std::array<double, 3> &bottomLeftCorner)
       : Object(velocity, typeId, epsilon, sigma, mass),
         _numParticles(numParticles),
-        boxLength(boxLength),
+        _boxLength(boxLength),
         _distributionMean(distributionMean),
         _distributionStdDev(distributionStdDev),
-        bottomLeftCorner(bottomLeftCorner) {}
+        _bottomLeftCorner(bottomLeftCorner) {}
 
   /**
    * Getter for distribution mean
@@ -51,10 +51,10 @@ class CubeGauss : public Object {
 
   [[nodiscard]] size_t getParticlesTotal() const override { return _numParticles; }
 
-  [[nodiscard]] std::array<double, 3> getBoxMin() const override { return bottomLeftCorner; }
+  [[nodiscard]] std::array<double, 3> getBoxMin() const override { return _bottomLeftCorner; }
 
   [[nodiscard]] std::array<double, 3> getBoxMax() const override {
-    return autopas::utils::ArrayMath::add(bottomLeftCorner, boxLength);
+    return autopas::utils::ArrayMath::add(_bottomLeftCorner, _boxLength);
   }
 
   [[nodiscard]] std::string to_string() const override {
@@ -67,9 +67,9 @@ class CubeGauss : public Object {
     output << std::setw(_valueOffset) << std::left << "numberOfParticles"
            << ":  " << _numParticles << std::endl;
     output << std::setw(_valueOffset) << std::left << "box-length"
-           << ":  " << autopas::utils::ArrayUtils::to_string(boxLength) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(_boxLength) << std::endl;
     output << std::setw(_valueOffset) << std::left << "bottomLeftCorner"
-           << ":  " << autopas::utils::ArrayUtils::to_string(bottomLeftCorner) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(_bottomLeftCorner) << std::endl;
     output << Object::to_string();
     return output.str();
   }
@@ -93,8 +93,8 @@ class CubeGauss : public Object {
 
  private:
   size_t _numParticles;
-  std::array<double, 3> boxLength;
+  std::array<double, 3> _boxLength;
   std::array<double, 3> _distributionMean;
   std::array<double, 3> _distributionStdDev;
-  std::array<double, 3> bottomLeftCorner;
+  std::array<double, 3> _bottomLeftCorner;
 };

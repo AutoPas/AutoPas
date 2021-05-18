@@ -35,15 +35,15 @@ class CubeClosestPacked : public Object {
       : Object(velocity, typeId, epsilon, sigma, mass),
         _boxLength(boxLength),
         _particleSpacing(particleSpacing),
-        _boxMin(bottomLeftCorner),
-				_boxMax(autopas::utils::ArrayMath::add(bottomLeftCorner, boxLength)) {}
+        _bottomLeftCorner(bottomLeftCorner),
+				_topRightCorner(autopas::utils::ArrayMath::add(bottomLeftCorner, boxLength)) {}
 
   [[nodiscard]] double getParticleSpacing() const override { return _particleSpacing; }
 
-  [[nodiscard]] std::array<double, 3> getBoxMin() const override { return _boxMin; }
+  [[nodiscard]] std::array<double, 3> getBoxMin() const override { return _bottomLeftCorner; }
 
   [[nodiscard]] std::array<double, 3> getBoxMax() const override {
-    return autopas::utils::ArrayMath::add(_boxMin, _boxLength);
+    return autopas::utils::ArrayMath::add(_bottomLeftCorner, _boxLength);
   }
 
   [[nodiscard]] std::string to_string() const override {
@@ -54,7 +54,7 @@ class CubeClosestPacked : public Object {
     output << std::setw(_valueOffset) << std::left << "box-length"
            << ":  " << autopas::utils::ArrayUtils::to_string(_boxLength) << std::endl;
     output << std::setw(_valueOffset) << std::left << "bottomLeftCorner"
-           << ":  " << autopas::utils::ArrayUtils::to_string(_boxMin) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(_bottomLeftCorner) << std::endl;
     output << Object::to_string();
     return output.str();
   }
@@ -70,13 +70,11 @@ class CubeClosestPacked : public Object {
     bool evenLayer = true;
     bool evenRow = true;
 
-    for (double z = _boxMin[2]; z < _boxMax[2]; z += spacingLayer) {
-
-      double starty = evenLayer ? _boxMin[1] : _boxMin[1] + yOffset;
-      for (double y = starty; y < _boxMax[1]; y += spacingRow) {
-
-        double startx = evenRow ? _boxMin[0] : _boxMin[0] + xOffset;
-        for (double x = startx; x < _boxMax[0]; x += _particleSpacing) {
+    for (double z = _bottomLeftCorner[2]; z < _topRightCorner[2]; z += spacingLayer) {
+      double starty = evenLayer ? _bottomLeftCorner[1] : _bottomLeftCorner[1] + yOffset;
+      for (double y = starty; y < _topRightCorner[1]; y += spacingRow) {
+        double startx = evenRow ? _bottomLeftCorner[0] : _bottomLeftCorner[0] + xOffset;
+        for (double x = startx; x < _topRightCorner[0]; x += _particleSpacing) {
     			particle.positionX = x;
     			particle.positionY = y;
     			particle.positionZ = z;
@@ -104,10 +102,10 @@ class CubeClosestPacked : public Object {
 	/**
 	* Minimum box coordinates.
 	*/
-  std::array<double, 3> _boxMin;
+  std::array<double, 3> _bottomLeftCorner;
 
 	/**
 	* Maximum box coordinates
 	*/
-  std::array<double, 3> _boxMax;
+  std::array<double, 3> _topRightCorner;
 };

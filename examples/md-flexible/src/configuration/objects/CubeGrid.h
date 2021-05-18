@@ -34,7 +34,7 @@ class CubeGrid : public Object {
       : Object(velocity, typeId, epsilon, sigma, mass),
         _particlesPerDim(particlesPerDim),
         _particleSpacing(particleSpacing),
-        _boxMin(bottomLeftCorner) {}
+        _bottomLeftCorner(bottomLeftCorner) {}
 
   [[nodiscard]] double getParticleSpacing() const override { return _particleSpacing; }
 
@@ -48,14 +48,14 @@ class CubeGrid : public Object {
     return std::accumulate(std::begin(_particlesPerDim), std::end(_particlesPerDim), 1, std::multiplies<double>());
   }
 
-  [[nodiscard]] std::array<double, 3> getBoxMin() const override { return _boxMin; }
+  [[nodiscard]] std::array<double, 3> getBoxMin() const override { return _bottomLeftCorner; }
 
   [[nodiscard]] std::array<double, 3> getBoxMax() const override {
     auto particlesPerDimDouble = autopas::utils::ArrayUtils::static_cast_array<double>(_particlesPerDim);
     // subtract one because the first particle is at bottomLeftCorner
     auto particlesPerDimSubOne = autopas::utils::ArrayMath::subScalar(particlesPerDimDouble, 1.);
     auto lastParticleRelative = autopas::utils::ArrayMath::mulScalar(particlesPerDimSubOne, _particleSpacing);
-    auto lastParticleAbsolute = autopas::utils::ArrayMath::add(_boxMin, lastParticleRelative);
+    auto lastParticleAbsolute = autopas::utils::ArrayMath::add(_bottomLeftCorner, lastParticleRelative);
 
     return lastParticleAbsolute;
   }
@@ -68,7 +68,7 @@ class CubeGrid : public Object {
     output << std::setw(_valueOffset) << std::left << "particle-spacing"
            << ":  " << _particleSpacing << std::endl;
     output << std::setw(_valueOffset) << std::left << "bottomLeftCorner"
-           << ":  " << autopas::utils::ArrayUtils::to_string(_boxMin) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(_bottomLeftCorner) << std::endl;
     output << Object::to_string();
     return output.str();
   }
@@ -94,5 +94,5 @@ class CubeGrid : public Object {
  private:
   std::array<size_t, 3> _particlesPerDim;
   double _particleSpacing;
-  std::array<double, 3> _boxMin;
+  std::array<double, 3> _bottomLeftCorner;
 };

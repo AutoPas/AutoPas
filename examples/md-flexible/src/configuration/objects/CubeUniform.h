@@ -25,22 +25,22 @@ class CubeUniform : public Object {
    * @param mass
    * @param _numParticles
    * @param _boxLength
-   * @param _boxMin
+   * @param _bottomLeftCorner
    */
   CubeUniform(const std::array<double, 3> &velocity, unsigned long typeId, double epsilon, double sigma, double mass,
               size_t _numParticles, const std::array<double, 3> &_boxLength,
-              const std::array<double, 3> &boxMin)
+              const std::array<double, 3> &bottomLeftCorner)
       : Object(velocity, typeId, epsilon, sigma, mass),
         _numParticles(_numParticles),
         _boxLength(_boxLength),
-        _boxMin(boxMin) {}
+        _bottomLeftCorner(bottomLeftCorner) {}
 
   [[nodiscard]] size_t getParticlesTotal() const override { return _numParticles; }
 
-  [[nodiscard]] std::array<double, 3> getBoxMin() const override { return _boxMin; }
+  [[nodiscard]] std::array<double, 3> getBoxMin() const override { return _bottomLeftCorner; }
 
   [[nodiscard]] std::array<double, 3> getBoxMax() const override {
-    return autopas::utils::ArrayMath::add(_boxMin, _boxLength);
+    return autopas::utils::ArrayMath::add(_bottomLeftCorner, _boxLength);
   }
 
   [[nodiscard]] std::string to_string() const override {
@@ -50,8 +50,8 @@ class CubeUniform : public Object {
            << ":  " << _numParticles << std::endl;
     output << std::setw(_valueOffset) << std::left << "box-length"
            << ":  " << autopas::utils::ArrayUtils::to_string(_boxLength) << std::endl;
-    output << std::setw(_valueOffset) << std::left << "_boxMin"
-           << ":  " << autopas::utils::ArrayUtils::to_string(_boxMin) << std::endl;
+    output << std::setw(_valueOffset) << std::left << "_bottomLeftCorner"
+           << ":  " << autopas::utils::ArrayUtils::to_string(_bottomLeftCorner) << std::endl;
     output << Object::to_string();
     return output.str();
   }
@@ -61,9 +61,9 @@ class CubeUniform : public Object {
 		std::srand(std::time(0));
   	for (unsigned long i = 0; i < _numParticles; ++i) {
       particle.id++;
-    	particle.positionX = _boxMin[0] + (static_cast<double>(std::rand()) / RAND_MAX) * _boxLength[0];
-    	particle.positionY = _boxMin[1] + (static_cast<double>(std::rand()) / RAND_MAX) * _boxLength[1];
-    	particle.positionZ = _boxMin[2] + (static_cast<double>(std::rand()) / RAND_MAX) * _boxLength[2];
+    	particle.positionX = _bottomLeftCorner[0] + (static_cast<double>(std::rand()) / RAND_MAX) * _boxLength[0];
+    	particle.positionY = _bottomLeftCorner[1] + (static_cast<double>(std::rand()) / RAND_MAX) * _boxLength[1];
+    	particle.positionZ = _bottomLeftCorner[2] + (static_cast<double>(std::rand()) / RAND_MAX) * _boxLength[2];
       particles.push_back(particle);
   	}
   }
@@ -71,5 +71,5 @@ class CubeUniform : public Object {
  private:
   size_t _numParticles;
   std::array<double, 3> _boxLength;
-  std::array<double, 3> _boxMin;
+  std::array<double, 3> _bottomLeftCorner;
 };

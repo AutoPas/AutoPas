@@ -319,10 +319,19 @@ void MDFlexSimulation::calculatePositions() {
 
 	const double deltaT = _configuration->deltaT.value;
 
+
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
   for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+
+		if (particle->getID() == 16206){
+			std::cout << std::endl
+				<< "Velocity: " << autopas::utils::ArrayUtils::to_string(particle->getV()) << std::endl
+				<< "Force: " << autopas::utils::ArrayUtils::to_string(particle->getF()) << std::endl
+				<< "Position: " << autopas::utils::ArrayUtils::to_string(particle->getR()) << std::endl;
+		}
+
     auto v = particle->getV();
     auto m = _configuration->getParticlePropertiesLibrary()->getMass(particle->getTypeId());
     auto f = particle->getF();
@@ -333,6 +342,32 @@ void MDFlexSimulation::calculatePositions() {
     f = mulScalar(f, (deltaT * deltaT / (2 * m)));
     auto newR = add(v, f);
     particle->addR(newR);
+
+		if (particle->getID() == 16206){
+				std::cout
+					<< "Position: " << autopas::utils::ArrayUtils::to_string(particle->getR()) << std::endl
+					<< "newR: " << autopas::utils::ArrayUtils::to_string(newR) << std::endl;
+		}
+
+  }
+}
+
+void MDFlexSimulation::calculateVelocities() {
+  // helper declarations for operations with vector
+  using autopas::utils::ArrayMath::add;
+  using autopas::utils::ArrayMath::mulScalar;
+
+	const double deltaT = _configuration->deltaT.value;
+
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel
+#endif
+  for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    auto m = _configuration->getParticlePropertiesLibrary()->getMass(particle->getTypeId());
+    auto force = particle->getF();
+    auto oldForce = particle->getOldF();
+    auto newV = mulScalar((add(force, oldForce)), deltaT / (2 * m));
+    particle->addV(newV);
   }
 }
 
@@ -381,7 +416,20 @@ void MDFlexSimulation::initializeAutoPasContainer() {
 			_configuration->initTemperature.value, std::numeric_limits<double>::max());
   }
 
+	std::cout << "ParticleCount: " << _configuration->getParticles().size() << std::endl;
 	for (auto &particle : _configuration->getParticles()){
+
+		if (particle.id == 16206){
+			std::cout
+				<< std::endl
+				<< "Particle" << std::endl
+				<< "TypeID: " << particle.typeId << std::endl
+				<< "Position: [" << particle.positionX << ", " << particle.positionY << ", " << particle.positionZ << "]" << std::endl
+    		<< "Mass: " << _configuration->getParticlePropertiesLibrary()->getMass(particle.typeId) << std::endl
+				<< "Velocity: [" << particle.velocityX << ", " << particle.velocityY << ", " << particle.velocityZ << "]" << std::endl
+				<< "Force: [" << particle.forceX << ", " << particle.forceY << ", " << particle.velocityZ << "]" << std::endl
+				<< "oldForce: [" << particle.oldForceX << ", " << particle.oldForceY << ", " << particle.velocityZ << "]" << std::endl;
+		}
 
 		ParticleType autoPasParticle;
 		if (getDomainDecomposition()->isInsideLocalDomain({particle.positionX, particle.positionY, particle.positionZ})){
