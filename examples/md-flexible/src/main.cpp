@@ -4,7 +4,7 @@
  * @author F. Gratl
  */
 
-#include "simulations/MDFlexSingleNode.h"
+#include "simulations/MDFlexSingleRank.h"
 #include "simulations/MDFlexMPI.h"
 
 /**
@@ -14,7 +14,7 @@
  * @return
  */
 int main(int argc, char **argv) {
-  MDFlexSingleNode simulation(3, argc, argv);
+  MDFlexMPI simulation(3, argc, argv);
   simulation.run();
 
   return EXIT_SUCCESS;

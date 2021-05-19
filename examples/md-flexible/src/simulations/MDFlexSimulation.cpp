@@ -7,9 +7,7 @@
 
 #include "../configuration/MDFlexConfig.h"
 #include "../Thermostat.h"
-#include "autopas/molecularDynamics/LJFunctor.h"
-#include "autopas/molecularDynamics/LJFunctorAVX.h"
-#include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
+#include "../TimeDiscretization.h"
 #include "src/ParticleSerializationTools.h"
 
 #include <iostream>
@@ -72,20 +70,6 @@ bool MDFlexSimulation::needsMoreIterations() {
 		or _numTuningPhasesCompleted < _configuration->tuningPhases.value;
 }
 
-void MDFlexSimulation::globalForces() {
-  // skip application of zero force
-  if (_configuration->globalForceIsZero()) {
-    return;
-  }
-
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel default(none) shared(_autoPasContainer)
-#endif
-  for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    particle->addF(_configuration->globalForce.value);
-  }
-}
-
 void MDFlexSimulation::printProgress(size_t iterationProgress, size_t maxIterations, bool maxIsPrecise) {
   // percentage of iterations complete
   double fractionDone = static_cast<double>(iterationProgress) / maxIterations;
@@ -131,85 +115,6 @@ void MDFlexSimulation::printProgress(size_t iterationProgress, size_t maxIterati
   std::cout << std::string(terminalWidth, '\r');
   // print everything
   std::cout << progressbar.str() << info.str() << std::flush;
-}
-
-void MDFlexSimulation::printStatistics() {
-  using namespace std;
-  size_t flopsPerKernelCall;
-
-  switch (_configuration->functorOption.value) {
-    case MDFlexConfig::FunctorOption ::lj12_6: {
-      flopsPerKernelCall = autopas::LJFunctor<ParticleType, _shifting, _mixing>::getNumFlopsPerKernelCall();
-      break;
-    }
-    case MDFlexConfig::FunctorOption ::lj12_6_Globals: {
-      flopsPerKernelCall = autopas::LJFunctor<ParticleType, _shifting, _mixing, autopas::FunctorN3Modes::Both,
-                                              /* globals */ true>::getNumFlopsPerKernelCall();
-      break;
-    }
-    case MDFlexConfig::FunctorOption ::lj12_6_AVX: {
-      flopsPerKernelCall = autopas::LJFunctorAVX<ParticleType, _shifting, _mixing>::getNumFlopsPerKernelCall();
-      break;
-    }
-    default:
-      throw std::runtime_error("Invalid Functor choice");
-  }
-
-  auto durationTotal = _timers.total.stop();
-  auto durationSimulate = _timers.simulate.getTotalTime();
-  auto durationSimulateSec = durationSimulate * 1e-9;
-
-  // take total time as base for formatting since this should be the longest
-  auto digitsTimeTotalNS = std::to_string(durationTotal).length();
-
-  // Statistics
-  cout << endl;
-  cout << "Total number of particles at end of Simulation: "
-       << _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::ownedOrHalo) << endl;
-  cout << "  Owned: " << _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned) << endl;
-  cout << "  Halo : " << _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::halo) << endl;
-  cout << "Standard Deviation of Homogeneity    : " << _homogeneity << endl;
-
-  cout << fixed << setprecision(_floatStringPrecision);
-  cout << "Measurements:" << endl;
-  cout << timerToString("Time total      ", durationTotal, digitsTimeTotalNS, durationTotal);
-  cout << timerToString("  Initialization", _timers.initialization.getTotalTime(), digitsTimeTotalNS, durationTotal);
-  cout << timerToString("  Simulation    ", durationSimulate, digitsTimeTotalNS, durationTotal);
-  cout << timerToString("    Boundaries  ", _timers.boundaries.getTotalTime(), digitsTimeTotalNS, durationSimulate);
-  cout << timerToString("    Position    ", _timers.positionUpdate.getTotalTime(), digitsTimeTotalNS, durationSimulate);
-  cout << timerToString("    Force       ", _timers.forceUpdateTotal.getTotalTime(), digitsTimeTotalNS,
-                        durationSimulate);
-  cout << timerToString("      Tuning    ", _timers.forceUpdateTuning.getTotalTime(), digitsTimeTotalNS,
-                        _timers.forceUpdateTotal.getTotalTime());
-  cout << timerToString("      NonTuning ", _timers.forceUpdateNonTuning.getTotalTime(), digitsTimeTotalNS,
-                        _timers.forceUpdateTotal.getTotalTime());
-  cout << timerToString("    Velocity    ", _timers.velocityUpdate.getTotalTime(), digitsTimeTotalNS, durationSimulate);
-  cout << timerToString("    VTK         ", _timers.vtk.getTotalTime(), digitsTimeTotalNS, durationSimulate);
-  cout << timerToString("    Thermostat  ", _timers.thermostat.getTotalTime(), digitsTimeTotalNS, durationSimulate);
-
-  cout << timerToString("One iteration   ", _timers.simulate.getTotalTime() / _iteration, digitsTimeTotalNS,
-                        durationTotal);
-  auto mfups = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned) * _iteration * 1e-6 /
-               (_timers.forceUpdateTotal.getTotalTime() * 1e-9);  // 1e-9 for ns to s, 1e-6 for M in MFUP
-  cout << "Tuning iterations: " << _numTuningIterations << " / " << _iteration << " = "
-       << ((double)_numTuningIterations / _iteration * 100) << "%" << endl;
-  cout << "MFUPs/sec    : " << mfups << endl;
-
-  if (_configuration->dontMeasureFlops.value) {
-    autopas::FlopCounterFunctor<ParticleType> flopCounterFunctor(_autoPasContainer->getCutoff());
-    _autoPasContainer->iteratePairwise(&flopCounterFunctor);
-
-    auto flops = flopCounterFunctor.getFlops(flopsPerKernelCall) * _iteration;
-    // approximation for flops of verlet list generation
-    if (_autoPasContainer->getContainerType() == autopas::ContainerOption::verletLists)
-      flops += flopCounterFunctor.getDistanceCalculations() *
-               decltype(flopCounterFunctor)::numFlopsPerDistanceCalculation *
-               floor(_iteration / _configuration->verletRebuildFrequency.value);
-
-    cout << "GFLOPs       : " << flops * 1e-9 << endl;
-    cout << "GFLOPs/sec   : " << flops * 1e-9 / durationSimulateSec << endl;
-    cout << "Hit rate     : " << flopCounterFunctor.getHitRate() << endl;
-  }
 }
 
 void MDFlexSimulation::writeVTKFile() {
@@ -313,62 +218,64 @@ std::string MDFlexSimulation::timerToString(const std::string &name, long timeNS
   return ss.str();
 }
 
-void MDFlexSimulation::calculatePositions() {
-  using autopas::utils::ArrayMath::add;
-  using autopas::utils::ArrayMath::mulScalar;
-
-	const double deltaT = _configuration->deltaT.value;
-
-
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
-  for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-
-		if (particle->getID() == 16206){
-			std::cout << std::endl
-				<< "Velocity: " << autopas::utils::ArrayUtils::to_string(particle->getV()) << std::endl
-				<< "Force: " << autopas::utils::ArrayUtils::to_string(particle->getF()) << std::endl
-				<< "Position: " << autopas::utils::ArrayUtils::to_string(particle->getR()) << std::endl;
-		}
-
-    auto v = particle->getV();
-    auto m = _configuration->getParticlePropertiesLibrary()->getMass(particle->getTypeId());
-    auto f = particle->getF();
-
-    particle->setOldF(f);
-    particle->setF({0., 0., 0.});
-    v = mulScalar(v, deltaT);
-    f = mulScalar(f, (deltaT * deltaT / (2 * m)));
-    auto newR = add(v, f);
-    particle->addR(newR);
-
-		if (particle->getID() == 16206){
-				std::cout
-					<< "Position: " << autopas::utils::ArrayUtils::to_string(particle->getR()) << std::endl
-					<< "newR: " << autopas::utils::ArrayUtils::to_string(newR) << std::endl;
-		}
-
-  }
+void MDFlexSimulation::updatePositions() {
+  TimeDiscretization::calculatePositions(*_autoPasContainer, *(_configuration->getParticlePropertiesLibrary()),
+		_configuration->deltaT.value);
 }
 
-void MDFlexSimulation::calculateVelocities() {
-  // helper declarations for operations with vector
-  using autopas::utils::ArrayMath::add;
-  using autopas::utils::ArrayMath::mulScalar;
+void MDFlexSimulation::updateForces(){
+  _timers.forceUpdateTotal.start();
 
-	const double deltaT = _configuration->deltaT.value;
+	bool isTuningIteration = false;
+  _timers.forceUpdatePairwise.start();
 
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
-  for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    auto m = _configuration->getParticlePropertiesLibrary()->getMass(particle->getTypeId());
-    auto force = particle->getF();
-    auto oldForce = particle->getOldF();
-    auto newV = mulScalar((add(force, oldForce)), deltaT / (2 * m));
-    particle->addV(newV);
+	TimeDiscretization::calculatePairwiseForces(*_autoPasContainer, *(_configuration->getParticlePropertiesLibrary()),
+		_configuration->deltaT.value, _configuration->functorOption.value, isTuningIteration);
+
+  _timers.forceUpdateTotal.stop();
+
+  auto timeIteration = _timers.forceUpdatePairwise.stop();
+
+  // count time spent for tuning
+  if (isTuningIteration) {
+    _timers.forceUpdateTuning.addTime(timeIteration);
+    ++_numTuningIterations;
+  } else {
+    _timers.forceUpdateNonTuning.addTime(timeIteration);
+    // if the previous iteration was a tuning iteration an the current one is not
+    // we have reached the end of a tuning phase
+    if (_previousIterationWasTuningIteration) {
+      ++_numTuningPhasesCompleted;
+    }
   }
+  _previousIterationWasTuningIteration = isTuningIteration;
+
+  _timers.forceUpdateTotal.start();
+  _timers.forceUpdateGlobal.start();
+
+	if (!_configuration->globalForceIsZero()) {
+		TimeDiscretization::calculateGlobalForces(*_autoPasContainer, _configuration->globalForce.value);
+	}
+
+  _timers.forceUpdateGlobal.stop();
+  _timers.forceUpdateTotal.stop();
+}
+
+void MDFlexSimulation::updateVelocities() {
+	// only do time step related stuff when there actually is time-stepping
+	const double deltaT = _configuration->deltaTemp.value;
+	ParticlePropertiesLibraryType particlePropertiesLibrary = *(_configuration->getParticlePropertiesLibrary());
+
+	const bool useThermostat = _configuration->useThermostat.value
+		and (_iteration % _configuration->thermostatInterval.value) == 0;
+
+	if (deltaT != 0) {
+		_timers.velocityUpdate.start();
+		TimeDiscretization::calculateVelocities(*_autoPasContainer, particlePropertiesLibrary, deltaT, useThermostat,
+			_configuration->targetTemperature.value);
+		_timers.velocityUpdate.stop();
+	}
+
 }
 
 void MDFlexSimulation::initializeAutoPasContainer() {
@@ -416,21 +323,7 @@ void MDFlexSimulation::initializeAutoPasContainer() {
 			_configuration->initTemperature.value, std::numeric_limits<double>::max());
   }
 
-	std::cout << "ParticleCount: " << _configuration->getParticles().size() << std::endl;
 	for (auto &particle : _configuration->getParticles()){
-
-		if (particle.id == 16206){
-			std::cout
-				<< std::endl
-				<< "Particle" << std::endl
-				<< "TypeID: " << particle.typeId << std::endl
-				<< "Position: [" << particle.positionX << ", " << particle.positionY << ", " << particle.positionZ << "]" << std::endl
-    		<< "Mass: " << _configuration->getParticlePropertiesLibrary()->getMass(particle.typeId) << std::endl
-				<< "Velocity: [" << particle.velocityX << ", " << particle.velocityY << ", " << particle.velocityZ << "]" << std::endl
-				<< "Force: [" << particle.forceX << ", " << particle.forceY << ", " << particle.velocityZ << "]" << std::endl
-				<< "oldForce: [" << particle.oldForceX << ", " << particle.oldForceY << ", " << particle.velocityZ << "]" << std::endl;
-		}
-
 		ParticleType autoPasParticle;
 		if (getDomainDecomposition()->isInsideLocalDomain({particle.positionX, particle.positionY, particle.positionZ})){
 			autoPasParticle = ParticleSerializationTools::convertParticleAttributesToParticle(particle);

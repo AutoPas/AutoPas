@@ -37,21 +37,12 @@ void MDFlexMPI::executeSuperstep(const int iterationsPerSuperstep){
 }
 
 void MDFlexMPI::updateParticles(const int iterationsPerSuperstep){
-	// @todo: Change this funciton to use _autoPasContainer->iteratePairwise(Functor)
-	double deltaT = _configuration->deltaT.value;
-	for (int i = 0; i < iterationsPerSuperstep; ++i){
- 		for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-   		auto v = particle->getV();
-   		auto m = _configuration->getParticlePropertiesLibrary()->getMass(particle->getTypeId());
-   		auto f = particle->getF();
-   		particle->setOldF(f);
-   		particle->setF({0., 0., 0.});
-   		v = autopas::utils::ArrayMath::mulScalar(v, deltaT);
-   		f = autopas::utils::ArrayMath::mulScalar(f, (deltaT * deltaT / (2 * m)));
-   		auto newR = autopas::utils::ArrayMath::add(v, f);
-   		particle->addR(newR);
- 		}
-	}
+ 	// @todo: update positions
+	// I don't think we need to update boundary conditions as with a single rank
+
+	// @todo: update forces
+
+	// @todo: update velocities
 }
 
 void MDFlexMPI::initializeDomainDecomposition(int &dimensionCount){

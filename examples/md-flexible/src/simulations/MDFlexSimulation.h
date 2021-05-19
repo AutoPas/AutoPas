@@ -78,16 +78,6 @@ class MDFlexSimulation {
   size_t _iteration = 0;
 
   /**
-   * Use the variant of the LJFunctor that uses the shifted Lennard-Jones potential.
-   */
-  constexpr static bool _shifting = true;
-
-  /**
-   * Use the variant of the LJFunctor that supports mixing of particle types.
-   */
-  constexpr static bool _mixing = true;
-
-  /**
    * Counts completed iterations that were used for tuning
    */
   size_t _numTuningIterations = 0;
@@ -134,14 +124,14 @@ class MDFlexSimulation {
 	void initialize(int dimensionCount, int argc, char **argv);
 	bool needsMoreIterations();
 	std::tuple<size_t, bool> estimateNumberOfIterations() const;
-	void globalForces();
 	void printProgress(size_t iterationProgress, size_t maxIterations, bool maxIsPrecise);
 	void printStatistics();
 	void writeVTKFile();
 	std::string getMPISuffix();
 	std::string timerToString(const std::string &name, long timeNS, size_t numberWidth, long maxTime);
-	void calculatePositions();
-	void calculateVelocities();
+	void updatePositions();
+	void updateForces();
+	void updateVelocities();
 
 	private:
 		void initializeAutoPasContainer();

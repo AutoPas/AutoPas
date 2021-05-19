@@ -1,5 +1,5 @@
 /**
- * @file MDFlexSingleNode.h
+ * @file MDFlexSingleRank.h
  * @author J. Körner
  * @date 07.04.2021
  */
@@ -13,10 +13,10 @@
  * Runs the MD-Flex simulation on a single node.
  * This is the default demonstration of AutoPas.
  */
-class MDFlexSingleNode : public MDFlexSimulation {
+class MDFlexSingleRank : public MDFlexSimulation {
  public:
-	MDFlexSingleNode(int dimensionCount, int argc, char **argv);
-  ~MDFlexSingleNode() = default;
+	MDFlexSingleRank(int dimensionCount, int argc, char **argv);
+  ~MDFlexSingleRank() = default;
 
   /**
    * Runs the simulation
@@ -31,6 +31,5 @@ class MDFlexSingleNode : public MDFlexSimulation {
 	private:
 		std::shared_ptr<SingleDomain> _domainDecomposition;
 
-		template <class FunctorType>
-		void calculateForces();
+		void printStatistics();
 };
