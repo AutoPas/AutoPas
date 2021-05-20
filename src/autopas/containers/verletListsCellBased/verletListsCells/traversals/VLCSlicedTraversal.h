@@ -70,6 +70,8 @@ class VLCSlicedTraversal
       case (ContainerOption::pairwiseVerletLists):
         return TraversalOption::vlp_sliced;
     }
+    // should never be reached.
+    return TraversalOption();
   }
 
   [[nodiscard]] bool isApplicable() const override {

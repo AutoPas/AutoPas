@@ -134,8 +134,14 @@ class AutoTuner {
   bool configApplicable(const Configuration &conf, PairwiseFunctor &pairwiseFunctor);
 
   /**
-   * Function to iterate over all pairs of particles in the container.
-   * This function only handles short-range interactions.
+   * Whole tuning logic for one iteration.
+   * This function covers:
+   *  - Instantiation of the traversal to be used.
+   *  - Actual pairwise iteration for application of the functor.
+   *  - Management of tuning phases and calls to tune() if necessary.
+   *  - Measurement of timings and calls to addTimeMeasurement() if necessary.
+   *  - Calls to _iterationLogger if necessary.
+   *
    * @tparam PairwiseFunctor
    * @param f Functor that describes the pair-potential.
    * @param doListRebuild Indicates whether or not the verlet lists should be rebuild.
@@ -158,57 +164,23 @@ class AutoTuner {
   }
 
   /**
-   * Save the runtime of a given traversal if the functor is relevant for tuning.
-   *
-   * Samples are collected and reduced to one single value according to _selectorStrategy. Only then the value is passed
-   * on to the tuning strategy. This function expects that samples of the same configuration are taken consecutively.
-   * The time argument is a long because std::chrono::duration::count returns a long.
-   *
-   * @param pairwiseFunctor
-   * @param time
-   */
-  template <class PairwiseFunctor>
-  void addTimeMeasurement(PairwiseFunctor &pairwiseFunctor, long time) {
-    const auto &currentConfig = _tuningStrategy->getCurrentConfiguration();
-
-    if (pairwiseFunctor.isRelevantForTuning()) {
-      if (_samples.size() < _maxSamples) {
-        AutoPasLog(trace, "Adding sample.");
-        _samples.push_back(time);
-        // if this was the last sample:
-        if (_samples.size() == _maxSamples) {
-          auto reducedValue = OptimumSelector::optimumValue(_samples, _selectorStrategy);
-
-          _evidences[currentConfig].emplace_back(_iteration, reducedValue);
-          auto smoothedValue = smoothing::smoothLastPoint(_evidences[currentConfig], 5);
-
-          _tuningStrategy->addEvidence(smoothedValue, _iteration);
-
-          // print config, times and reduced value
-          if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
-            std::ostringstream ss;
-            // print config
-            ss << currentConfig.toString() << " : ";
-            // print all timings
-            ss << utils::ArrayUtils::to_string(_samples, " ", {"[ ", " ]"});
-            ss << " Smoothed value: " << smoothedValue;
-            AutoPasLog(debug, "Collected times for  {}", ss.str());
-          }
-          _tuningDataLogger.logTuningData(currentConfig, _samples, _iteration, reducedValue, smoothedValue);
-        }
-      }
-    } else {
-      AutoPasLog(trace, "Skipping adding of time measurement because functor is not marked relevant.");
-    }
-  }
-
-  /**
    * Get the currently selected configuration.
    * @return
    */
   [[nodiscard]] const Configuration &getCurrentConfig() const;
 
  private:
+  /**
+   * Save the runtime of a given traversal.
+   *
+   * Samples are collected and reduced to one single value according to _selectorStrategy. Only then the value is passed
+   * on to the tuning strategy. This function expects that samples of the same configuration are taken consecutively.
+   * The time argument is a long because std::chrono::duration::count returns a long.
+   *
+   * @param time
+   */
+  void addTimeMeasurement(long time);
+
   /**
    * Initialize the container specified by the TuningStrategy.
    */
@@ -273,7 +245,7 @@ class AutoTuner {
    * For each configuration the collection of all evidence (smoothed values) collected so far and in which iteration.
    * Configuration -> vector< iteration, time >
    */
-  std::map<Configuration, std::vector<std::pair<size_t, long>>> _evidences;
+  std::map<Configuration, std::vector<std::pair<size_t, long>>> _evidence;
 
   IterationLogger _iterationLogger;
   TuningResultLogger _tuningResultLogger;
@@ -441,7 +413,11 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
 
   // if tuning execute with time measurements
   if (inTuningPhase) {
-    addTimeMeasurement(*f, timerTotal.getTotalTime());
+    if (f->isRelevantForTuning()) {
+      addTimeMeasurement(timerTotal.getTotalTime());
+    } else {
+      AutoPasLog(trace, "Skipping adding of time measurement because functor is not marked relevant.");
+    }
   }
 }
 
@@ -527,5 +503,42 @@ bool AutoTuner<Particle>::configApplicable(const Configuration &conf, PairwiseFu
 template <class Particle>
 const Configuration &AutoTuner<Particle>::getCurrentConfig() const {
   return _tuningStrategy->getCurrentConfiguration();
+}
+
+template <class Particle>
+void AutoTuner<Particle>::addTimeMeasurement(long time) {
+  const auto &currentConfig = _tuningStrategy->getCurrentConfiguration();
+
+  if (_samples.size() < _maxSamples) {
+    AutoPasLog(trace, "Adding sample.");
+    _samples.push_back(time);
+    // if this was the last sample:
+    if (_samples.size() == _maxSamples) {
+      auto &evidenceCurrentConfig = _evidence[currentConfig];
+
+      const auto reducedValue = OptimumSelector::optimumValue(_samples, _selectorStrategy);
+      evidenceCurrentConfig.emplace_back(_iteration, reducedValue);
+
+      // smooth evidence to remove high outliers. If smoothing results in a higher value use the original value.
+      const auto smoothedValue = std::min(reducedValue, smoothing::smoothLastPoint(evidenceCurrentConfig, 5));
+
+      // replace collected evidence with smoothed value to improve next smoothing
+      evidenceCurrentConfig.back().second = smoothedValue;
+
+      _tuningStrategy->addEvidence(smoothedValue, _iteration);
+
+      // print config, times and reduced value
+      if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
+        std::ostringstream ss;
+        // print config
+        ss << currentConfig.toString() << " : ";
+        // print all timings
+        ss << utils::ArrayUtils::to_string(_samples, " ", {"[ ", " ]"});
+        ss << " Smoothed value: " << smoothedValue;
+        AutoPasLog(debug, "Collected times for  {}", ss.str());
+      }
+      _tuningDataLogger.logTuningData(currentConfig, _samples, _iteration, reducedValue, smoothedValue);
+    }
+  }
 }
 }  // namespace autopas
