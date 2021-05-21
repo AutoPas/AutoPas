@@ -167,15 +167,11 @@ void RegularGrid::initializeGlobalBox(const std::vector<double> &globalBoxMin,
 }
 
 void RegularGrid::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer) {
-	std::cout << "Start exchanging Halo Particles" << std::endl;
 	// @todo: create configuration parameter for halo width
 	double haloWidth;
 	
-	std::cout << "Patrick 0" << std::endl;
 	int dimensionCount = _localBoxMin.size();
-	std::cout << "Patrick 1" << std::endl;
 	int neighbourCount = dimensionCount * 2;
-	std::cout << "Patrick 2" << std::endl;
 
 	std::vector<ParticleType> particlesForLeftNeighbour;
 	std::vector<ParticleType> particlesForRightNeighbour;
@@ -191,10 +187,9 @@ void RegularGrid::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer
 	int leftNeighbour, rightNeighbour;
 
 	int nextDimensionIndex;
-	std::cout << "Patrick 3" << std::endl;
 	for(int i = 0; i < dimensionCount; ++i){
-		leftNeighbour = (i * 2) % neighbourCount;
-		rightNeighbour = (i * 2 + 1) % neighbourCount;
+		leftNeighbour = _neighbourDomainIndices[(i * 2) % neighbourCount];
+		rightNeighbour = _neighbourDomainIndices[(i * 2 + 1) % neighbourCount];
 
 		haloWidth = (_localBoxMax[i] - _localBoxMin[i]) / 20.0;
 		leftNeighbourHaloEnd = _localBoxMin[i] + haloWidth;
@@ -204,22 +199,25 @@ void RegularGrid::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer
 		// @todo: remove as soon es the configuration parameter for the halo width has been defined
 		haloWidth = (_localBoxMax[nextDimensionIndex] - _localBoxMin[nextDimensionIndex]) / 20.0;
 
-		for (auto particle = autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-			particlePosition = particle->getR()[i];
-			if (particlePosition < leftNeighbourHaloEnd){
-				particlesForLeftNeighbour.push_back(*particle);
+		if (leftNeighbour != _domainIndex && rightNeighbour != _domainIndex){
+			for (auto particle = autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+				particlePosition = particle->getR()[i];
+				if (particlePosition < leftNeighbourHaloEnd){
+					particlesForLeftNeighbour.push_back(*particle);
+				}
+				else if (particlePosition > rightNeighbourHaloStart) {
+					particlesForRightNeighbour.push_back(*particle);
+				}
 			}
-			else if (particlePosition > rightNeighbourHaloStart) {
-				particlesForRightNeighbour.push_back(*particle);
-			}
+	
+			sendParticles(particlesForLeftNeighbour, leftNeighbour);
+			sendParticles(particlesForLeftNeighbour, rightNeighbour);
+	
+			receiveParticles(haloParticles, leftNeighbour);
+			receiveParticles(haloParticles, rightNeighbour);
+
+			waitForSendRequests();
 		}
-		sendParticles(particlesForLeftNeighbour, leftNeighbour);
-		sendParticles(particlesForLeftNeighbour, rightNeighbour);
-
-		receiveParticles(haloParticles, leftNeighbour);
-		receiveParticles(haloParticles, rightNeighbour);
-
-		waitForSendRequests();
 
 		particlesForLeftNeighbour.clear();
 		particlesForRightNeighbour.clear();
@@ -229,31 +227,32 @@ void RegularGrid::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer
 		leftNeighbourHaloEnd = _localBoxMin[nextDimensionIndex] + haloWidth;
 		rightNeighbourHaloStart = _localBoxMax[nextDimensionIndex] - haloWidth;
 
-		leftNeighbour = (leftNeighbour + 2) % neighbourCount;
-		rightNeighbour = (rightNeighbour + 3) % neighbourCount;
+		leftNeighbour = _neighbourDomainIndices[(leftNeighbour + 2) % neighbourCount];
+		rightNeighbour = _neighbourDomainIndices[(rightNeighbour + 3) % neighbourCount];
 
-		for (auto &particle : haloParticles){
-			particlePosition = particle.getR()[nextDimensionIndex];
-			if (particlePosition < leftNeighbourHaloEnd){
-				particlesForLeftNeighbour.push_back(particle);
+		if (leftNeighbour != _domainIndex && rightNeighbour != _domainIndex){
+			for (auto &particle : haloParticles){
+				particlePosition = particle.getR()[nextDimensionIndex];
+				if (particlePosition < leftNeighbourHaloEnd){
+					particlesForLeftNeighbour.push_back(particle);
+				}
+				else if (particlePosition > rightNeighbourHaloStart){
+					particlesForRightNeighbour.push_back(particle);
+				}
 			}
-			else if (particlePosition > rightNeighbourHaloStart){
-				particlesForRightNeighbour.push_back(particle);
-			}
+	
+			sendParticles(particlesForLeftNeighbour, leftNeighbour);
+			sendParticles(particlesForLeftNeighbour, rightNeighbour);
+	
+			receiveParticles(haloParticles, leftNeighbour);
+			receiveParticles(haloParticles, rightNeighbour);
+	
+			waitForSendRequests();
 		}
-
-		sendParticles(particlesForLeftNeighbour, leftNeighbour);
-		sendParticles(particlesForLeftNeighbour, rightNeighbour);
-
-		receiveParticles(haloParticles, leftNeighbour);
-		receiveParticles(haloParticles, rightNeighbour);
-
-		waitForSendRequests();
 
 		particlesForLeftNeighbour.clear();
 		particlesForRightNeighbour.clear();
 	}
-	std::cout << "Start exchanging Halo Particles" << std::endl;
 
 	for (auto &particle : haloParticles) {
 		autoPasContainer->addOrUpdateHaloParticle(particle);
@@ -279,23 +278,25 @@ void RegularGrid::exchangeMigratingParticles(SharedAutoPasContainer &autoPasCont
 		leftNeighbour = (i * 2) % neighbourCount;
 		rightNeighbour = (i * 2 + 1) % neighbourCount;
 
-		for (auto &particle : emigrants){
-			particlePosition = particle.getR()[i];
-			if (particlePosition - _localBoxMin[i] < 0){
-				particlesForLeftNeighbour.push_back(particle);
+		if (leftNeighbour != _domainIndex && rightNeighbour != _domainIndex){
+			for (auto &particle : emigrants){
+				particlePosition = particle.getR()[i];
+				if (particlePosition - _localBoxMin[i] < 0){
+					particlesForLeftNeighbour.push_back(particle);
+				}
+				else if (particlePosition - _localBoxMax[i] > 0) {
+					particlesForRightNeighbour.push_back(particle);
+				}
 			}
-			else if (particlePosition - _localBoxMax[i] > 0) {
-				particlesForRightNeighbour.push_back(particle);
-			}
+	
+			sendParticles(particlesForLeftNeighbour, leftNeighbour);
+			sendParticles(particlesForLeftNeighbour, rightNeighbour);
+	
+			receiveParticles(migrants, leftNeighbour);
+			receiveParticles(migrants, rightNeighbour);
+	
+			waitForSendRequests();
 		}
-
-		sendParticles(particlesForLeftNeighbour, leftNeighbour);
-		sendParticles(particlesForLeftNeighbour, rightNeighbour);
-
-		receiveParticles(migrants, leftNeighbour);
-		receiveParticles(migrants, rightNeighbour);
-
-		waitForSendRequests();
 
 		particlesForLeftNeighbour.clear();
 		particlesForRightNeighbour.clear();
@@ -303,30 +304,33 @@ void RegularGrid::exchangeMigratingParticles(SharedAutoPasContainer &autoPasCont
 		leftNeighbour = (leftNeighbour + 2) % neighbourCount;
 		rightNeighbour = (rightNeighbour + 3) % neighbourCount;
 
-		nextDimensionIndex = (i + 1) % dimensionCount;
 
-		for (auto &particle : migrants){
-			particlePosition = particle.getR()[nextDimensionIndex];
-			if (particlePosition - _localBoxMin[nextDimensionIndex] < 0){
-				particlesForLeftNeighbour.push_back(particle);
+		if (leftNeighbour != _domainIndex && rightNeighbour != _domainIndex){
+			nextDimensionIndex = (i + 1) % dimensionCount;
+	
+			for (auto &particle : migrants){
+				particlePosition = particle.getR()[nextDimensionIndex];
+				if (particlePosition - _localBoxMin[nextDimensionIndex] < 0){
+					particlesForLeftNeighbour.push_back(particle);
+				}
+				else if (particlePosition - _localBoxMax[nextDimensionIndex] > 0 ){
+					particlesForRightNeighbour.push_back(particle);
+				}
+				else {
+					immigrants.push_back(particle);
+				}
 			}
-			else if (particlePosition - _localBoxMax[nextDimensionIndex] > 0 ){
-				particlesForRightNeighbour.push_back(particle);
-			}
-			else {
-				immigrants.push_back(particle);
-			}
+	
+			migrants.clear();
+	
+			sendParticles(particlesForLeftNeighbour, leftNeighbour);
+			sendParticles(particlesForLeftNeighbour, rightNeighbour);
+	
+			receiveParticles(immigrants, leftNeighbour);
+			receiveParticles(immigrants, rightNeighbour);
+	
+			waitForSendRequests();
 		}
-
-		migrants.clear();
-
-		sendParticles(particlesForLeftNeighbour, leftNeighbour);
-		sendParticles(particlesForLeftNeighbour, rightNeighbour);
-
-		receiveParticles(immigrants, leftNeighbour);
-		receiveParticles(immigrants, rightNeighbour);
-
-		waitForSendRequests();
 
 		particlesForLeftNeighbour.clear();
 		particlesForRightNeighbour.clear();
@@ -365,7 +369,7 @@ void RegularGrid::receiveDataFromNeighbour(const int &neighbour, std::vector<cha
   	MPI_Probe(neighbour, 0, _communicator, &status);
 
   	int receiveBufferSize;
-  	MPI_Get_count(&status, MPI_DOUBLE, &receiveBufferSize);
+  	MPI_Get_count(&status, MPI_CHAR, &receiveBufferSize);
 		receiveBuffer.resize(receiveBufferSize);
 
   	MPI_Recv(receiveBuffer.data(), receiveBufferSize, MPI_CHAR, neighbour, 0, _communicator, MPI_STATUS_IGNORE);
@@ -373,9 +377,9 @@ void RegularGrid::receiveDataFromNeighbour(const int &neighbour, std::vector<cha
 
 void RegularGrid::waitForSendRequests(){
 		MPI_Status sendStatus;
-		for (auto request : _sendRequests){
-			MPI_Wait(&request, &sendStatus);
-		}
+		//for (auto request : _sendRequests){
+			//MPI_Wait(&request, &sendStatus);
+		//}
 		_sendRequests.clear();
 		_sendBuffers.clear();
 }

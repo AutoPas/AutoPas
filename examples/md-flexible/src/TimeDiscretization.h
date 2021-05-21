@@ -1,14 +1,12 @@
 /**
  * @file TimeDiscretization.h
- * @author N. Fottner
- * @date 13/05/19
+ * @author J. Körner
+ * @date 20/05/21
  */
 #pragma once
 
 #include "autopas/AutoPas.h"
-#include "autopas/molecularDynamics/LJFunctor.h"
-#include "autopas/molecularDynamics/LJFunctorAVX.h"
-#include "autopas/utils/ArrayMath.h"
+#include "src/configuration/MDFlexConfig.h"
 #include "TypeDefinitions.h"
 
 /**
@@ -17,91 +15,42 @@
 namespace TimeDiscretization {
 	/**
  	* Calculate and update the position for every particle using the Störmer-Verlet Algorithm.
- 	* @param autopas
- 	* @param particlePropertiesLibrary
- 	* @param deltaT time step width
+ 	* @param autoPasContainer The container for which to update the positions.
+ 	* @param particlePropertiesLibrary The particle properties library for the particles in the container.
+ 	* @param deltaT The time step width.
  	*/
 	void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
-		const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
-  	using autopas::utils::ArrayMath::add;
-  	using autopas::utils::ArrayMath::mulScalar;
-	
-	#ifdef AUTOPAS_OPENMP
-	#pragma omp parallel
-	#endif
-  	for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    	auto v = iter->getV();
-    	auto m = particlePropertiesLibrary.getMass(iter->getTypeId());
-    	auto f = iter->getF();
-    	iter->setOldF(f);
-    	iter->setF({0., 0., 0.});
-    	v = mulScalar(v, deltaT);
-    	f = mulScalar(f, (deltaT * deltaT / (2 * m)));
-    	auto newR = add(v, f);
-    	iter->addR(newR);
-  	}
-	}
+		const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
 	
 	/**
  	* Calculate and update the velocity for every particle using the the Störmer-Verlet Algorithm.
- 	* @param autopas
- 	* @param particlePropertiesLibrary
- 	* @param deltaT time step width
+ 	* @param autoPasContainer The container for which to update the velocities.
+ 	* @param particlePropertiesLibrary The particle properties library for the particles in the container.
+ 	* @param deltaT The time step width.
+	* @param useThermmostat Decides if a thermostat should be used.
+	* @param targetTemperature The target temperature used for the thermostat. If useThermostat is false,
+	* 	this value does not matter.
  	*/
 	void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
 		const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT, const bool &useThermostat,
-		const double &targetTemperature) {
-  	// helper declarations for operations with vector
-  	using autopas::utils::ArrayMath::add;
-  	using autopas::utils::ArrayMath::mulScalar;
-	
-	#ifdef AUTOPAS_OPENMP
-	#pragma omp parallel
-	#endif
-  	for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    	auto m = particlePropertiesLibrary.getMass(iter->getTypeId());
-    	auto force = iter->getF();
-    	auto oldForce = iter->getOldF();
-    	auto newV = mulScalar((add(force, oldForce)), deltaT / (2 * m));
-    	iter->addV(newV);
-  	}
+		const double &targetTemperature);
 
-		if (useThermostat) {
-			Thermostat::apply(autoPasContainer, particlePropertiesLibrary, targetTemperature, deltaT);
-		}
-	}
-
-	void calculatePairwiseForces( autopas::AutoPas<ParticleType> &autoPasContainer,
+	/**
+	* Calculates the pairwise forces between particles in an autopas container.
+ 	* @param autoPasContainer The container for which to update the pairwise forces.
+ 	* @param particlePropertiesLibrary The particle properties library for the particles in the container.
+ 	* @param deltaT The time step width.
+	*	@param funtorOption The functor on which to base the force calculations.
+	* @param wasTuninIteration Tells the user if the current iteration of force calculations was a tuning iteration.
+	*/
+	void calculatePairwiseForces(autopas::AutoPas<ParticleType> &autoPasContainer,
 		ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
-		MDFlexConfig::FunctorOption functorOption, bool &wasTuningIteration) {
-		switch (functorOption) {
-			case MDFlexConfig::FunctorOption::lj12_6: {
-				autopas::LJFunctor<ParticleType, true, true> functor{autoPasContainer.getCutoff(),
-					particlePropertiesLibrary};
-				wasTuningIteration = autoPasContainer.iteratePairwise(&functor);
-				break;
-			}
-			case MDFlexConfig::FunctorOption::lj12_6_Globals: {
-				autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true> functor{
-					autoPasContainer.getCutoff(), particlePropertiesLibrary};
-				wasTuningIteration = autoPasContainer.iteratePairwise(&functor);
-				break;
-			}
-			case MDFlexConfig::FunctorOption::lj12_6_AVX: {
-				autopas::LJFunctorAVX<ParticleType, true, true> functor{autoPasContainer.getCutoff(),
-					particlePropertiesLibrary};
-				wasTuningIteration = autoPasContainer.iteratePairwise(&functor);
-				break;
-			}
-		}	
-	}
+		MDFlexConfig::FunctorOption functorOption, bool &wasTuningIteration);
 
-	void calculateGlobalForces(autopas::AutoPas<ParticleType> &autoPasContainer, std::array<double, 3> &globalForce){
-	#ifdef AUTOPAS_OPENMP
-	#pragma omp parallel default(none) shared(_autoPasContainer)
-	#endif
-		for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-			particle->addF(globalForce);
-		}
-	}
+	/**
+	* Adds global forces to the particles in the container.
+	* @param autoPasContainer The container for which to update the particle forces.
+ 	* @param globalForce The global force which will be applied to each particle in the container.
+	*/
+	void calculateGlobalForces(autopas::AutoPas<ParticleType> &autoPasContainer, std::array<double, 3> &globalForce);
 }

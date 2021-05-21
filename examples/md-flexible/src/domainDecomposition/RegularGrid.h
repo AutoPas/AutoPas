@@ -7,7 +7,7 @@
 
 #include "DomainDecomposition.h"
 
-#include "../TypeDefinitions.h"
+#include "src/TypeDefinitions.h"
 #include "autopas/AutoPas.h"
 
 #include "mpi.h"

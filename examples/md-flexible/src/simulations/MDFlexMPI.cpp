@@ -28,7 +28,9 @@ void MDFlexMPI::run(){
 void MDFlexMPI::executeSuperstep(const int iterationsPerSuperstep){
 	_domainDecomposition->exchangeHaloParticles(_autoPasContainer);
 
-	//updateParticles(iterationsPerSuperstep);
+	for (int i = 0; i < iterationsPerSuperstep; ++i){
+		updateParticles();
+	}
 
 	// todo: Not sure if this synchronization is required. Check performance with and without it.
 	_domainDecomposition->synchronizeDomains();
@@ -36,17 +38,13 @@ void MDFlexMPI::executeSuperstep(const int iterationsPerSuperstep){
 	_domainDecomposition->exchangeMigratingParticles(_autoPasContainer);
 }
 
-void MDFlexMPI::updateParticles(const int iterationsPerSuperstep){
- 	// @todo: update positions
-	// I don't think we need to update boundary conditions as with a single rank
-
-	// @todo: update forces
-
-	// @todo: update velocities
+void MDFlexMPI::updateParticles(){
+	updatePositions();
+	updateForces();
+	updateVelocities();
 }
 
 void MDFlexMPI::initializeDomainDecomposition(int &dimensionCount){
-	std::cout << "InitializeDomainDecomposition" << std::endl;
 	std::vector<double> boxMin(_configuration->boxMin.value.begin(), _configuration->boxMin.value.end());
 	std::vector<double> boxMax(_configuration->boxMax.value.begin(), _configuration->boxMax.value.end());
 	
@@ -58,8 +56,5 @@ void MDFlexMPI::initializeDomainDecomposition(int &dimensionCount){
 		_configuration->boxMin.value[i] = localBoxMin[i];
 		_configuration->boxMax.value[i] = localBoxMax[i];
 	}
-	std::cout << "Initialized Local Box" << std::endl;
-	std::cout << autopas::utils::ArrayUtils::to_string(localBoxMin) << std::endl;
-	std::cout << autopas::utils::ArrayUtils::to_string(localBoxMax) << std::endl;
 }
 

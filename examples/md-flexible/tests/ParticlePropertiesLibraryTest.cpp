@@ -5,10 +5,8 @@
  */
 #include "ParticlePropertiesLibraryTest.h"
 
-#include "autopas/AutoPas.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
-#include "src/Simulation.h"
-#include "src/parsing/YamlParser.h"
+#include "src/configuration/MDFlexConfig.h"
 #include "testingHelpers/commonTypedefs.h"
 
 double ParticlePropertiesLibraryTest::mixingE(double e1, double e2) { return std::sqrt(e1 * e2); }
@@ -75,39 +73,28 @@ TEST_F(ParticlePropertiesLibraryTest, mixedShiftTestUpot) {
 }
 
 TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitialization) {
-  Simulation simulation;
-  // this test need to be adapted if the input file changes
-  MDFlexConfig config;
-  autopas::AutoPas<Simulation::ParticleType> autopas;
-  config.yamlFilename.value = std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml";
-  MDFlexParser::YamlParser::parseYamlFile(config);
-  config.calcSimulationBox();
-  simulation.initialize(config, autopas);
-  simulation.initializeParticlePropertiesLibrary();
-  EXPECT_EQ(simulation.getPpl()->getMass(0), 1.0);
-  EXPECT_EQ(simulation.getPpl()->get24Epsilon(0), 24.0);
-  EXPECT_EQ(simulation.getPpl()->getSigmaSquare(0), 1.0);
-  EXPECT_EQ(simulation.getPpl()->getMass(1), 2.);
-  EXPECT_EQ(simulation.getPpl()->get24Epsilon(1), 48.0);
-  EXPECT_EQ(simulation.getPpl()->getSigmaSquare(1), 4.0);
-  EXPECT_EQ(simulation.getPpl()->getMass(2), 3.0);
-  EXPECT_EQ(simulation.getPpl()->get24Epsilon(2), 72.0);
-  EXPECT_EQ(simulation.getPpl()->getSigmaSquare(2), 9.0);
-  EXPECT_EQ(simulation.getPpl()->getMass(3), 4.0);
-  EXPECT_EQ(simulation.getPpl()->get24Epsilon(3), 96.0);
-  EXPECT_EQ(simulation.getPpl()->getSigmaSquare(3), 16.0);
+	std::string arguments = "md-flexible --yaml-filename "
+		+ std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml";
+
+  MDFlexConfig configuration(3, reinterpret_cast<char**>(arguments.data()));
+
+  EXPECT_EQ(configuration.getParticlePropertiesLibrary()->getMass(0), 1.0);
+  EXPECT_EQ(configuration.getParticlePropertiesLibrary()->get24Epsilon(0), 24.0);
+  EXPECT_EQ(configuration.getParticlePropertiesLibrary()->getSigmaSquare(0), 1.0);
+  EXPECT_EQ(configuration.getParticlePropertiesLibrary()->getMass(1), 2.);
+  EXPECT_EQ(configuration.getParticlePropertiesLibrary()->get24Epsilon(1), 48.0);
+  EXPECT_EQ(configuration.getParticlePropertiesLibrary()->getSigmaSquare(1), 4.0);
+  EXPECT_EQ(configuration.getParticlePropertiesLibrary()->getMass(2), 3.0);
+  EXPECT_EQ(configuration.getParticlePropertiesLibrary()->get24Epsilon(2), 72.0);
+  EXPECT_EQ(configuration.getParticlePropertiesLibrary()->getSigmaSquare(2), 9.0);
+  EXPECT_EQ(configuration.getParticlePropertiesLibrary()->getMass(3), 4.0);
+  EXPECT_EQ(configuration.getParticlePropertiesLibrary()->get24Epsilon(3), 96.0);
+  EXPECT_EQ(configuration.getParticlePropertiesLibrary()->getSigmaSquare(3), 16.0);
 }
 
 TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitializationDefault) {
-  // tests ParticleProperties initialization with only one Type
-  Simulation simulation;
-  MDFlexConfig config;
-  config.calcSimulationBox();
-  autopas::AutoPas<Simulation::ParticleType> autopas;
-  simulation.initialize(config, autopas);
-  simulation.initializeParticlePropertiesLibrary();
-  // default values: epsilon=sigma=mass=1.0
-  EXPECT_EQ(simulation.getPpl()->getMass(0), 1.0);
-  EXPECT_EQ(simulation.getPpl()->get24Epsilon(0), 24.0);
-  EXPECT_EQ(simulation.getPpl()->getSigmaSquare(0), 1.0);
+  ParticlePropertiesLibrary particlePropertiesLibrary(3);
+  EXPECT_EQ(particlePropertiesLibrary.getMass(0), 1.0);
+  EXPECT_EQ(particlePropertiesLibrary.get24Epsilon(0), 24.0);
+  EXPECT_EQ(particlePropertiesLibrary.getSigmaSquare(0), 1.0);
 }

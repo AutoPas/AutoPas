@@ -49,6 +49,7 @@ namespace {
 	}
 }
 
+
 MDFlexConfig::MDFlexConfig(int argc, char **argv){
 	auto parserExitCode = MDFlexParser::parseInput(argc, argv, *this);
   if (parserExitCode != MDFlexParser::exitCodes::success) {

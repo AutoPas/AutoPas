@@ -7,7 +7,7 @@
 
 #include "MDFlexSimulation.h"
 
-#include "../domainDecomposition/SingleDomain.h"
+#include "src/domainDecomposition/SingleDomain.h"
 
 /**
  * Runs the MD-Flex simulation on a single node.
@@ -22,6 +22,7 @@ class MDFlexSingleRank : public MDFlexSimulation {
    * Runs the simulation
    */
   void run() override;
+
 	void initializeDomainDecomposition(int &dimensionCount) override;
 
 	DomainDecomposition* getDomainDecomposition() override {

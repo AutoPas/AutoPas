@@ -11,7 +11,7 @@ class SingleDomain final : public DomainDecomposition {
 	public:
 		SingleDomain(int argc, char** argv, const int &dimensionCount, const std::vector<double> &globalBoxMin,
 			const std::vector<double> &globalBoxMax);
-		~SingleDomain();
+		~SingleDomain() = default;
 
 		void update() override;
 		const int getDimensionCount() override { return _dimensionCount; }

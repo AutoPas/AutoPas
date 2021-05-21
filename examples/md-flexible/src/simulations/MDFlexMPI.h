@@ -7,7 +7,7 @@
 
 #include "MDFlexSimulation.h"
 
-#include "../domainDecomposition/RegularGrid.h"
+#include "src/domainDecomposition/RegularGrid.h"
 
 #include <mpi.h>
 
@@ -23,11 +23,10 @@ class MDFlexMPI : public MDFlexSimulation {
 			return static_cast<DomainDecomposition*>(&(*_domainDecomposition));
 		}
 
-
 	private:
 		std::shared_ptr<RegularGrid> _domainDecomposition;
 
-		void updateParticles(const int iterationsPerSupErstep);
+		void updateParticles();
 		void executeSuperstep(const int iterationsPerSuperstep);
 
 		void sendParticles(std::vector<ParticleType> &particles, int &receiver);

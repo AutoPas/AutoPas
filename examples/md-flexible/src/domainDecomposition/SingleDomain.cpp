@@ -13,8 +13,6 @@ SingleDomain::SingleDomain(int argc, char** argv, const int &dimensionCount,
 	initializeGlobalBox(globalBoxMin, globalBoxMax);
 }
 
-SingleDomain::~SingleDomain(){ }
-
 void SingleDomain::update(){
 	// Do nothing
 }

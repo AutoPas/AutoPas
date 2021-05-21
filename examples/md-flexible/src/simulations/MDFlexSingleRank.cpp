@@ -3,15 +3,14 @@
  * @author J. Körner
  * @date 07.04.2021
  */
-
 #include "MDFlexSingleRank.h"
 
-#include "../BoundaryConditions.h"
-#include "../Thermostat.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 #include "autopas/utils/MemoryProfiler.h"
+#include "src/BoundaryConditions.h"
+#include "src/Thermostat.h"
 
 MDFlexSingleRank::MDFlexSingleRank(int dimensionCount, int argc, char **argv){
 	MDFlexSimulation::initialize(dimensionCount, argc, argv);

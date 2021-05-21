@@ -5,7 +5,6 @@
  */
 #pragma once
 
-#include "autopas/molecularDynamics/MoleculeLJ.h"
 #include "ParticleAttributes.h"
 #include "TypeDefinitions.h"
 
