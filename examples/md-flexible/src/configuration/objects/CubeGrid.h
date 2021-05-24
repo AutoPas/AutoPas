@@ -81,9 +81,9 @@ class CubeGrid : public Object {
 			for (unsigned long y = 0; y < _particlesPerDim[1]; ++y) {
 				for (unsigned long x = 0; x < _particlesPerDim[0]; ++x) {
           particle.id++;
-    			particle.positionX = (static_cast<double>(x) * _particleSpacing + offset[0]);
-    			particle.positionY = (static_cast<double>(y) * _particleSpacing + offset[1]);
-    			particle.positionZ = (static_cast<double>(z) * _particleSpacing + offset[2]);
+    			particle.position[0] = (static_cast<double>(x) * _particleSpacing + offset[0]);
+    			particle.position[1] = (static_cast<double>(y) * _particleSpacing + offset[1]);
+    			particle.position[2] = (static_cast<double>(z) * _particleSpacing + offset[2]);
 
           particles.push_back(particle);
 				}

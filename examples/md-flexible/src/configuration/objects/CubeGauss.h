@@ -84,9 +84,7 @@ class CubeGauss : public Object {
 		};
   	for (int i = 0; i < _numParticles; ++i) {
 			particle.id++;
-			particle.positionX = distributions[0](generator);
-			particle.positionY = distributions[1](generator);
-			particle.positionZ = distributions[2](generator);
+			particle.position = {distributions[0](generator), distributions[1](generator), distributions[2](generator)};
 			particles.push_back(particle);
   	}
   }

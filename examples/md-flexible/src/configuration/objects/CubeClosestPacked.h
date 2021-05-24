@@ -75,9 +75,7 @@ class CubeClosestPacked : public Object {
       for (double y = starty; y < _topRightCorner[1]; y += spacingRow) {
         double startx = evenRow ? _bottomLeftCorner[0] : _bottomLeftCorner[0] + xOffset;
         for (double x = startx; x < _topRightCorner[0]; x += _particleSpacing) {
-    			particle.positionX = x;
-    			particle.positionY = y;
-    			particle.positionZ = z;
+    			particle.position = { x, y, z};
           particles.push_back(particle);
 
           particle.id++;

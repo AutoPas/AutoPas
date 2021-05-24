@@ -310,17 +310,9 @@ void MDFlexConfig::loadParticlesFromCheckpoint(){
   for (auto i = 0ul; i < numParticles; ++i) {
     ParticleAttributes particle;
 
-		particle.positionX = positions[i][0];
-		particle.positionY = positions[i][1];
-		particle.positionZ = positions[i][2];
-
-		particle.velocityX = velocities[i][0];
-		particle.velocityY = velocities[i][1];
-		particle.velocityZ = velocities[i][2];
-
-		particle.forceX = forces[i][0];
-		particle.forceY = forces[i][1];
-		particle.forceZ = forces[i][2];
+		particle.position = positions[i];
+		particle.velocity = velocities[i];
+		particle.force = forces[i];
 
 		particle.id = i;
 		particle.typeId = typeID[i];

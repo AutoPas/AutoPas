@@ -5,7 +5,10 @@
  */
 #pragma once
 
+#include <array>
+
 #include "autopas/particles/OwnershipState.h"
+
 
 /*
 * A struct containing all properties of autopas::MoleculeLJ<double>.
@@ -13,21 +16,13 @@
 */
 struct ParticleAttributes {
 	// ParticleBase attributes
-	double positionX; 		
-	double positionY;
-	double positionZ;
-	double velocityX; 		
-	double velocityY;
-	double velocityZ;
-	double forceX;
-	double forceY;
-	double forceZ;
+  std::array<double, 3> position;
+  std::array<double, 3> velocity;
+  std::array<double, 3> force;
 	unsigned long id; 		
 	autopas::OwnershipState ownershipState;
 
 	// MoleculeLJ attributes
 	size_t typeId;
-	double oldForceX;
-	double oldForceY;
-	double oldForceZ;
+  std::array<double, 3> oldForce;
 };

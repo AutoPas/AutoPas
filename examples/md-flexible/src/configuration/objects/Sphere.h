@@ -122,11 +122,8 @@ class Sphere : public Object {
   void generate(std::vector<ParticleAttributes> &particles) const override {
     ParticleAttributes particle = getDummyParticle(particles.size());
     iteratePositions([&](auto pos) {
-    	particle.positionX = pos[0];
-    	particle.positionY = pos[1];
-    	particle.positionZ = pos[2];
+    	particle.position = { pos[0], pos[1], pos[2] };
       particles.push_back(particle);
-
       particle.id++;
     });
   }
