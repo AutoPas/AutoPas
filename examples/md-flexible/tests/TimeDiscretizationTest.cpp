@@ -38,6 +38,7 @@ TEST_F(TimeDiscretizationTest, calcVelocities) {
   }
 
   TimeDiscretization::calculateVelocities(autoPas, _particlePropertiesLibrary, 0.1);
+
   for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
     // only velocity in one direction is expected
     EXPECT_EQ(iter->getV()[0], 0);

@@ -234,7 +234,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
 
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior) {
-    for (auto cell : this->_cells) {
+    for (auto &cell : this->_cells) {
       cell.forEach(forEachLambda, behavior);
     }
   }
@@ -296,8 +296,30 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
   }
 
   void forEachInRegion(const std::function<void(Particle)> forEachLambda, const std::array<double, 3> &lowerCorner,
-                       const std::array<double, 3> &higherCorner, IteratorBehavior behaviour) {
-    utils::ExceptionHandler::exception("not yet implemented");
+                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+
+    auto startIndex3D =
+        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::subScalar(lowerCorner, this->getSkin()));
+    auto stopIndex3D =
+        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::addScalar(higherCorner, this->getSkin()));
+
+    size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
+                                (stopIndex3D[2] - startIndex3D[2] + 1);
+    std::vector<size_t> cellsOfInterest(numCellsOfInterest);
+
+    int i = 0;
+    for (size_t z = startIndex3D[2]; z <= stopIndex3D[2]; ++z) {
+      for (size_t y = startIndex3D[1]; y <= stopIndex3D[1]; ++y) {
+        for (size_t x = startIndex3D[0]; x <= stopIndex3D[0]; ++x) {
+          cellsOfInterest[i++] =
+              utils::ThreeDimensionalMapping::threeToOneD({x, y, z}, this->_cellBlock.getCellsPerDimensionWithHalo());
+        }
+      }
+    }
+
+    for (auto &cell : cellsOfInterest) {
+      getCells()[cell].forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+    }
   }
 
   /**

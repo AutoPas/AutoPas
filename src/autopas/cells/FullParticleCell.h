@@ -15,6 +15,7 @@
 #include "autopas/utils/CudaSoA.h"
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/WrapOpenMP.h"
+#include "autopas/utils/inBox.h"
 
 namespace autopas {
 
@@ -79,9 +80,43 @@ class FullParticleCell : public ParticleCell<Particle> {
       }
     };
 
-    for (Particle p : _particles) {
+    for (Particle &p : _particles) {
       if (isParticleValid(p)) {
         forEachLambda(p);
+      }
+    }
+  }
+
+  template <typename Lambda>
+  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+                       const std::array<double, 3> &higherCorner,
+               autopas::IteratorBehavior behavior = autopas::IteratorBehavior::haloOwnedAndDummy) {
+
+    auto isParticleInRegion = [&] (Particle &p) -> bool {
+      return utils::inBox(p.getR(), lowerCorner, higherCorner);
+    };
+
+    auto isParticleValid = [&](Particle &p) -> bool {
+      switch (behavior) {
+        case haloOwnedAndDummy:
+          return true;
+        case haloAndOwned:
+          return not p.isDummy();
+        case haloOnly:
+          return p.isHalo();
+        case ownedOnly:
+          return p.isOwned();
+        default:
+          utils::ExceptionHandler::exception("unknown iterator behavior");
+          return false;
+      }
+    };
+
+    for (Particle &p : _particles) {
+      if (isParticleValid(p)) {
+        if (isParticleInRegion(p)) {
+          forEachLambda(p);
+        }
       }
     }
   }

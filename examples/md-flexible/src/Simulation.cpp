@@ -161,15 +161,14 @@ void Simulation::globalForces(autopas::AutoPas<ParticleType> &autopas) {
     return;
   }
 
-// #ifdef AUTOPAS_OPENMP
-// #pragma omp parallel default(none) shared(autopas)
-// #endif
-//   for (auto particleItr = autopas.begin(autopas::IteratorBehavior::ownedOnly); particleItr.isValid(); ++particleItr) {
-//     particleItr->addF(_config->globalForce.value);
-//   }
-  autopas.forEach([=] (ParticleType p) {
-    p.addF(_config->globalForce.value);
-    }, autopas::IteratorBehavior::ownedOnly);
+  // #ifdef AUTOPAS_OPENMP
+  // #pragma omp parallel default(none) shared(autopas)
+  // #endif
+  //   for (auto particleItr = autopas.begin(autopas::IteratorBehavior::ownedOnly); particleItr.isValid();
+  //   ++particleItr) {
+  //     particleItr->addF(_config->globalForce.value);
+  //   }
+  autopas.forEach([=](ParticleType &p) { p.addF(_config->globalForce.value); }, autopas::IteratorBehavior::ownedOnly);
 }
 
 void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
@@ -418,7 +417,7 @@ void Simulation::writeVTKFile(autopas::AutoPas<ParticleType> &autopas) {
   //   auto pos = iter->getR();
   //   vtkFile << pos[0] << " " << pos[1] << " " << pos[2] << "\n";
   // }
-  auto writeToVtkLambdaP = [&] (ParticleType particle) {
+  auto writeToVtkLambdaP = [&](ParticleType &particle) {
     auto pos = particle.getR();
     vtkFile << pos[0] << " " << pos[1] << " " << pos[2] << "\n";
   };
@@ -432,7 +431,7 @@ void Simulation::writeVTKFile(autopas::AutoPas<ParticleType> &autopas) {
   //   auto v = iter->getV();
   //   vtkFile << v[0] << " " << v[1] << " " << v[2] << "\n";
   // }
-  auto writeToVtkLambdaV = [&] (ParticleType particle) {
+  auto writeToVtkLambdaV = [&](ParticleType &particle) {
     auto v = particle.getV();
     vtkFile << v[0] << " " << v[1] << " " << v[2] << "\n";
   };
@@ -445,7 +444,7 @@ void Simulation::writeVTKFile(autopas::AutoPas<ParticleType> &autopas) {
   //   auto f = iter->getF();
   //   vtkFile << f[0] << " " << f[1] << " " << f[2] << "\n";
   // }
-  auto writeToVtkLambdaF = [&] (ParticleType particle) {
+  auto writeToVtkLambdaF = [&](ParticleType &particle) {
     auto f = particle.getF();
     vtkFile << f[0] << " " << f[1] << " " << f[2] << "\n";
   };
@@ -458,9 +457,7 @@ void Simulation::writeVTKFile(autopas::AutoPas<ParticleType> &autopas) {
   // for (auto iter = autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
   //   vtkFile << iter->getTypeId() << "\n";
   // }
-  auto writeToVtkLambdaType = [&] (ParticleType particle) {
-    vtkFile << particle.getTypeId() << "\n";
-  };
+  auto writeToVtkLambdaType = [&](ParticleType &particle) { vtkFile << particle.getTypeId() << "\n"; };
   autopas.forEach(writeToVtkLambdaType, autopas::IteratorBehavior::ownedOnly);
   vtkFile << "\n";
 
@@ -470,9 +467,7 @@ void Simulation::writeVTKFile(autopas::AutoPas<ParticleType> &autopas) {
   // for (auto iter = autopas.begin(autopas::IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
   //   vtkFile << iter->getID() << "\n";
   // }
-  auto writeToVtkLambdaId = [&] (ParticleType particle) {
-    vtkFile << particle.getID() << "\n";
-  };
+  auto writeToVtkLambdaId = [&](ParticleType &particle) { vtkFile << particle.getID() << "\n"; };
   autopas.forEach(writeToVtkLambdaId, autopas::IteratorBehavior::ownedOnly);
   vtkFile << "\n";
 
@@ -514,7 +509,8 @@ double Simulation::calculateHomogeneity(autopas::AutoPas<ParticleType> &autopas)
   std::vector<double> allVolumes(numberOfCells, 0);
 
   // add particles accordingly to their cell to get the amount of particles in each cell
-  // for (auto particleItr = autopas.begin(autopas::IteratorBehavior::ownedOnly); particleItr.isValid(); ++particleItr) {
+  // for (auto particleItr = autopas.begin(autopas::IteratorBehavior::ownedOnly); particleItr.isValid(); ++particleItr)
+  // {
   //   std::array<double, 3> particleLocation = particleItr->getR();
   //   std::array<size_t, 3> index = {};
   //   for (int i = 0; i < particleLocation.size(); i++) {
@@ -533,8 +529,8 @@ double Simulation::calculateHomogeneity(autopas::AutoPas<ParticleType> &autopas)
   //     }
   //   }
   // }
-  auto forEachLambda = [&] (ParticleType partic) {
-    std::array<double, 3> particleLocation = partic.getR();
+  auto forEachLambda = [&](ParticleType &particle) {
+    std::array<double, 3> particleLocation = particle.getR();
     std::array<size_t, 3> index = {};
     for (int i = 0; i < particleLocation.size(); i++) {
       index[i] = particleLocation[i] / cellLength;
