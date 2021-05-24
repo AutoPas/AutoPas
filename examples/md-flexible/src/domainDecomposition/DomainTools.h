@@ -14,5 +14,5 @@ namespace DomainTools {
 	 * @param boxMin The minimum boundaries of the box domain
 	 * @param boxMax the maximum boundaries of the box domain
 	 */
-	bool isInsideDomain(std::vector<double> &coordinates, std::vector<double> &boxMin, std::vector<double> &boxMax);
+	bool isInsideDomain(const std::vector<double> &coordinates, std::vector<double> &boxMin, std::vector<double> &boxMax);
 }

@@ -42,13 +42,6 @@ namespace ParticleSerializationTools {
 	 * @return a particle of type MoleculeLJ<double>
 	 */
 	ParticleType convertParticleAttributesToParticle(ParticleAttributes &attributes);
-
-  /**
-   * Converts Particle Attributes to a printabel and human readable string.
-	 * @param particleAttributes The attributes which will be applied to the returne particle.
-   * @retun the stringified particle attributes as std::string.
-   */
-  std::string ParticleAttributesToString(const ParticleAttributes &attributes);
 }
 
 

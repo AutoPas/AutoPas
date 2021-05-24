@@ -42,7 +42,7 @@ class MDFlexSimulation {
   /**
    * Destructor.
    */
-  ~MDFlexSimulation();
+  virtual ~MDFlexSimulation();
 
   /**
    * Stores the argument count passed to the constructor for later reuse.

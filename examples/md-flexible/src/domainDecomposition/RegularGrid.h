@@ -11,7 +11,6 @@
 #include "autopas/AutoPas.h"
 
 #include "mpi.h"
-#include <list>
 #include <memory>
 
 class RegularGrid final : public DomainDecomposition {
@@ -28,15 +27,16 @@ class RegularGrid final : public DomainDecomposition {
 		std::vector<double> getGlobalBoxMax() override { return _globalBoxMax; }
 		std::vector<double> getLocalBoxMin() override { return _localBoxMin; }	
 		std::vector<double> getLocalBoxMax() override { return _localBoxMax; }	
-		bool isInsideLocalDomain(std::vector<double> coordinates) override;
+		bool isInsideLocalDomain(const std::vector<double> &coordinates) override;
 
 		int convertIdToIndex(const std::vector<int> &domainIndex);
-		void sendDataToNeighbour(std::vector<char> sendBuffer, const int &neighbour);
-		void receiveDataFromNeighbour(const int &neighbour, std::vector<char> &dataBuffer);
-		void waitForSendRequests();
-		void synchronizeDomains();
 		void exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer);
 		void exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer);
+		void receiveDataFromNeighbour(const int &neighbour, std::vector<char> &dataBuffer);
+		void sendDataToNeighbour(std::vector<char> sendBuffer, const int &neighbour);
+		void synchronizeDomains();
+		void waitForSendRequests();
+    int getDomainIndex() { return _domainIndex; }
 
 	private:
 		// Global data
@@ -53,8 +53,8 @@ class RegularGrid final : public DomainDecomposition {
 		std::vector<int> _neighbourDomainIndices;
   	std::vector<double> _localBoxMin;
   	std::vector<double> _localBoxMax;
-		std::list<MPI_Request> _sendRequests;
-		std::list<std::vector<char>> _sendBuffers;
+		std::vector<MPI_Request> _sendRequests;
+		std::vector<std::vector<char>> _sendBuffers;
 
 		void initializeDecomposition();
 		void initializeMPICommunicator();

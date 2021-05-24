@@ -51,7 +51,6 @@ class Sphere : public Object {
    * @param f Function called for every point.
    */
   void iteratePositions(const std::function<void(std::array<double, 3>)> &f) const {
-		std::cout << "Radius: " << _radius << std::endl;
     // generate regular grid for 1/8th of the sphere
     for (int z = 0; z <= _radius; ++z) {
       for (int y = 0; y <= _radius; ++y) {

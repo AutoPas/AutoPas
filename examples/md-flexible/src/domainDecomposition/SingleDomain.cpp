@@ -27,6 +27,6 @@ void SingleDomain::initializeGlobalBox(const std::vector<double> &globalBoxMin,
 	}
 }
 
-bool SingleDomain::isInsideLocalDomain(std::vector<double> coordinates){
+bool SingleDomain::isInsideLocalDomain(const std::vector<double> &coordinates){
 	return DomainTools::isInsideDomain(coordinates, _globalBoxMin, _globalBoxMax);
 }

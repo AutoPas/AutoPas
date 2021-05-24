@@ -12,49 +12,49 @@
 #include <iostream>
 
 MDFlexMPI::MDFlexMPI(int dimensionCount, int argc, char **argv) {
-	MDFlexSimulation::initialize(dimensionCount, argc, argv);
+  MDFlexSimulation::initialize(dimensionCount, argc, argv);
 }
 
 void MDFlexMPI::run(){
-	// @todo: make variable part of MDFlexConfig
-	int iterationsPerSuperstep = 10;
-	int remainingIterations = _configuration->iterations.value;
+  // @todo: make variable part of MDFlexConfig
+  int iterationsPerSuperstep = 10;
+  int remainingIterations = _configuration->iterations.value;
 
-	for (int i = 0; i < _configuration->iterations.value; i+=iterationsPerSuperstep){
-		executeSuperstep(iterationsPerSuperstep);
-	}
+  for (int i = 0; i < _configuration->iterations.value; i+=iterationsPerSuperstep){
+    executeSuperstep(iterationsPerSuperstep);
+  }
 }
 
 void MDFlexMPI::executeSuperstep(const int iterationsPerSuperstep){
-	_domainDecomposition->exchangeHaloParticles(_autoPasContainer);
+  _domainDecomposition->exchangeHaloParticles(_autoPasContainer);
 
-	for (int i = 0; i < iterationsPerSuperstep; ++i){
-		updateParticles();
-	}
+  for (int i = 1; i < iterationsPerSuperstep; ++i){
+    updateParticles();
+  }
 
-	// todo: Not sure if this synchronization is required. Check performance with and without it.
-	_domainDecomposition->synchronizeDomains();
+  // todo: Not sure if this synchronization is required. Check performance with and without it.
+  _domainDecomposition->synchronizeDomains();
 
-	_domainDecomposition->exchangeMigratingParticles(_autoPasContainer);
+  _domainDecomposition->exchangeMigratingParticles(_autoPasContainer);
 }
 
 void MDFlexMPI::updateParticles(){
-	updatePositions();
-	updateForces();
-	updateVelocities();
+  updatePositions();
+  updateForces();
+  updateVelocities();
 }
 
 void MDFlexMPI::initializeDomainDecomposition(int &dimensionCount){
-	std::vector<double> boxMin(_configuration->boxMin.value.begin(), _configuration->boxMin.value.end());
-	std::vector<double> boxMax(_configuration->boxMax.value.begin(), _configuration->boxMax.value.end());
-	
-	_domainDecomposition = std::make_shared<RegularGrid>(_argc, _argv, dimensionCount, boxMin, boxMax);
+  std::vector<double> boxMin(_configuration->boxMin.value.begin(), _configuration->boxMin.value.end());
+  std::vector<double> boxMax(_configuration->boxMax.value.begin(), _configuration->boxMax.value.end());
+  
+  _domainDecomposition = std::make_shared<RegularGrid>(_argc, _argv, dimensionCount, boxMin, boxMax);
 
-	std::vector<double> localBoxMin = _domainDecomposition->getLocalBoxMin();
-	std::vector<double> localBoxMax = _domainDecomposition->getLocalBoxMax();
-	for (int i = 0; i < localBoxMin.size(); ++i){
-		_configuration->boxMin.value[i] = localBoxMin[i];
-		_configuration->boxMax.value[i] = localBoxMax[i];
-	}
+  std::vector<double> localBoxMin = _domainDecomposition->getLocalBoxMin();
+  std::vector<double> localBoxMax = _domainDecomposition->getLocalBoxMax();
+  for (int i = 0; i < localBoxMin.size(); ++i){
+    _configuration->boxMin.value[i] = localBoxMin[i];
+    _configuration->boxMax.value[i] = localBoxMax[i];
+  }
 }
 
