@@ -12,10 +12,10 @@
 // See if the tests are required and rename the testfile or move them to the yaml parser
 
 TEST_F(YamlParserTest, calcAutoPasBox) {
-	std::string arguments = "md-flexible --yaml-filename "
-		+ std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml";
+  std::string arguments =
+      "md-flexible --yaml-filename " + std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml";
 
-  MDFlexConfig configuration(3, reinterpret_cast<char**>(arguments.data()));
+  MDFlexConfig configuration(3, reinterpret_cast<char **>(arguments.data()));
   std::array<double, 3> expectedBoxMin = {-10.75, -25.75, -15.75};
   EXPECT_EQ(configuration.boxMin.value, expectedBoxMin);
   std::array<double, 3> expectedBoxMax = {23, 10, 15.75};
@@ -23,9 +23,9 @@ TEST_F(YamlParserTest, calcAutoPasBox) {
 }
 
 TEST_F(YamlParserTest, addType) {
-	std::string arguments = "md-flexible --yaml-filename "
-		+ std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml";
-  MDFlexConfig configuration(3, reinterpret_cast<char**>(arguments.data()));
+  std::string arguments =
+      "md-flexible --yaml-filename " + std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml";
+  MDFlexConfig configuration(3, reinterpret_cast<char **>(arguments.data()));
 
   configuration.addParticleType(0, 1.0, 1.0, 1.0);
   EXPECT_NO_THROW(configuration.addParticleType(0, 1.0, 1.0, 1.0));
@@ -39,16 +39,14 @@ TEST_F(YamlParserTest, addType) {
 }
 
 TEST_F(YamlParserTest, wrongTypeParsingInput) {
-	std::string arguments = "md-flexible --yaml-filename "
-		+ std::string(YAMLDIRECTORY) + "incorrectParsingFile.yaml";
+  std::string arguments = "md-flexible --yaml-filename " + std::string(YAMLDIRECTORY) + "incorrectParsingFile.yaml";
 
-  ASSERT_ANY_THROW(MDFlexConfig(3, reinterpret_cast<char**>(arguments.data())));
+  ASSERT_ANY_THROW(MDFlexConfig(3, reinterpret_cast<char **>(arguments.data())));
 }
 
 TEST_F(YamlParserTest, multipleSameObjectParsing) {
-	std::string arguments = "md-flexible --yaml-filename "
-		+ std::string(YAMLDIRECTORY) + "multipleSimilarObjects.yaml";
-  MDFlexConfig configuration(3, reinterpret_cast<char**>(arguments.data()));
+  std::string arguments = "md-flexible --yaml-filename " + std::string(YAMLDIRECTORY) + "multipleSimilarObjects.yaml";
+  MDFlexConfig configuration(3, reinterpret_cast<char **>(arguments.data()));
 
   ASSERT_EQ(configuration.cubeGridObjects.size(), 2);
   ASSERT_EQ(configuration.cubeGridObjects.at(0).getTypeId(), 0);

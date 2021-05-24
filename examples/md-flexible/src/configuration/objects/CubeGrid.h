@@ -8,9 +8,9 @@
 #include <functional>
 #include <numeric>
 
-#include "src/ParticleAttributes.h"
-#include "autopas/utils/ArrayMath.h"
 #include "Object.h"
+#include "autopas/utils/ArrayMath.h"
+#include "src/ParticleAttributes.h"
 
 /**
  * Class describing a regular 3D particle grid object.
@@ -75,20 +75,20 @@ class CubeGrid : public Object {
 
   void generate(std::vector<ParticleAttributes> &particles) const override {
     ParticleAttributes particle = getDummyParticle(particles.size());
-		std::array<double, 3> offset = {0.0, 0.0, 0.0};
+    std::array<double, 3> offset = {0.0, 0.0, 0.0};
 
-		for (unsigned long z = 0; z < _particlesPerDim[2]; ++z) {
-			for (unsigned long y = 0; y < _particlesPerDim[1]; ++y) {
-				for (unsigned long x = 0; x < _particlesPerDim[0]; ++x) {
+    for (unsigned long z = 0; z < _particlesPerDim[2]; ++z) {
+      for (unsigned long y = 0; y < _particlesPerDim[1]; ++y) {
+        for (unsigned long x = 0; x < _particlesPerDim[0]; ++x) {
           particle.id++;
-    			particle.position[0] = (static_cast<double>(x) * _particleSpacing + offset[0]);
-    			particle.position[1] = (static_cast<double>(y) * _particleSpacing + offset[1]);
-    			particle.position[2] = (static_cast<double>(z) * _particleSpacing + offset[2]);
+          particle.position[0] = (static_cast<double>(x) * _particleSpacing + offset[0]);
+          particle.position[1] = (static_cast<double>(y) * _particleSpacing + offset[1]);
+          particle.position[2] = (static_cast<double>(z) * _particleSpacing + offset[2]);
 
           particles.push_back(particle);
-				}
-			}
-		}
+        }
+      }
+    }
   }
 
  private:

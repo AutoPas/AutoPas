@@ -33,14 +33,14 @@ TEST_F(GeneratorsTest, GridFillwithBoxMin) {
  * This test expects multipleObjectsWithMultipleTypesTest.yaml to be placed in md-flexible/tests/yamlTestFiles
  */
 TEST_F(GeneratorsTest, MultipleObjectGeneration) {
-	std::string arguments = "md-flexible --yaml-filename "
-		+ std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml";
+  std::string arguments =
+      "md-flexible --yaml-filename " + std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml";
 
-  MDFlexConfig configuration(3, reinterpret_cast<char**>(arguments.data()));
+  MDFlexConfig configuration(3, reinterpret_cast<char **>(arguments.data()));
 
   std::array<double, 3> velocity = {0., 0., 0.};
   // parses the multiple Objects input of "multipleObjectsWithMultipleTypesTest" and generates a
-	// VTK File from the Input
+  // VTK File from the Input
   // yaml input file with all 4 different Object types
   auto cubeGrid(configuration.cubeGridObjects);
   auto cubeGauss(configuration.cubeGaussObjects);
@@ -54,7 +54,7 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
 
   size_t idcounter = 0;  // to avoid multiple particles with the same ids
 
-	std::vector<ParticleAttributes> particles;
+  std::vector<ParticleAttributes> particles;
   cubeGrid[0].generate(particles);
   idcounter += cubeGrid.at(0).getParticlesTotal();
   EXPECT_EQ(particles.size(), idcounter) << "CubeGrid generator added a wrong number of particles!";
@@ -78,7 +78,7 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   int sphereCounter = 0;
 
   for (auto &particle : particles) {
-		std::array<double, 3> particleVelocity = { particle.velocityX, particle.velocityY, particle.velocityX };
+    std::array<double, 3> particleVelocity = {particle.velocityX, particle.velocityY, particle.velocityX};
     EXPECT_EQ(velocity, particleVelocity);  // velocity set to {0.,0.,0.} in parsingFile
     switch (particle.typeId) {
       case 0: {

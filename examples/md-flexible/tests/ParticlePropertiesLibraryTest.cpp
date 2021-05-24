@@ -73,10 +73,10 @@ TEST_F(ParticlePropertiesLibraryTest, mixedShiftTestUpot) {
 }
 
 TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitialization) {
-	std::string arguments = "md-flexible --yaml-filename "
-		+ std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml";
+  std::string arguments =
+      "md-flexible --yaml-filename " + std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml";
 
-  MDFlexConfig configuration(3, reinterpret_cast<char**>(arguments.data()));
+  MDFlexConfig configuration(3, reinterpret_cast<char **>(arguments.data()));
 
   EXPECT_EQ(configuration.getParticlePropertiesLibrary()->getMass(0), 1.0);
   EXPECT_EQ(configuration.getParticlePropertiesLibrary()->get24Epsilon(0), 24.0);

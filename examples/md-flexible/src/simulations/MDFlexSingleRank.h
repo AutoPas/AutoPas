@@ -6,7 +6,6 @@
 #pragma once
 
 #include "MDFlexSimulation.h"
-
 #include "src/domainDecomposition/SingleDomain.h"
 
 /**
@@ -15,7 +14,7 @@
  */
 class MDFlexSingleRank : public MDFlexSimulation {
  public:
-	MDFlexSingleRank(int dimensionCount, int argc, char **argv);
+  MDFlexSingleRank(int dimensionCount, int argc, char **argv);
   ~MDFlexSingleRank() = default;
 
   /**
@@ -23,14 +22,14 @@ class MDFlexSingleRank : public MDFlexSimulation {
    */
   void run() override;
 
-	void initializeDomainDecomposition(int &dimensionCount) override;
+  void initializeDomainDecomposition(int &dimensionCount) override;
 
-	DomainDecomposition* getDomainDecomposition() override {
-			return static_cast<DomainDecomposition*>(&(*_domainDecomposition));
-	}
+  DomainDecomposition *getDomainDecomposition() override {
+    return static_cast<DomainDecomposition *>(&(*_domainDecomposition));
+  }
 
-	private:
-		std::shared_ptr<SingleDomain> _domainDecomposition;
+ private:
+  std::shared_ptr<SingleDomain> _domainDecomposition;
 
-		void printStatistics();
+  void printStatistics();
 };

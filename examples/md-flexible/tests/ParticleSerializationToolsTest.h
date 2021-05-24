@@ -7,18 +7,17 @@
 
 #include <gtest/gtest.h>
 
-#include "autopas/molecularDynamics/MoleculeLJ.h"
 #include "AutoPasTestBase.h"
-#include "src/ParticleSerializationTools.h"
-
+#include "autopas/molecularDynamics/MoleculeLJ.h"
 #include "src/ParticleAttributes.h"
+#include "src/ParticleSerializationTools.h"
 
 class ParticleSerializationToolsTest : public AutoPasTestBase {
  public:
   ParticleSerializationToolsTest();
 
  protected:
-	ParticleAttributes _particle;
+  ParticleAttributes _particle;
 
-	autopas::MoleculeLJ<double> _molecule;
+  autopas::MoleculeLJ<double> _molecule;
 };

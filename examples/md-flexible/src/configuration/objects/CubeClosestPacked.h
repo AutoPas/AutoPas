@@ -7,11 +7,12 @@
 #pragma once
 
 #include <math.h>
+
 #include <functional>
 
-#include "src/ParticleAttributes.h"
-#include "autopas/utils/ArrayMath.h"
 #include "Object.h"
+#include "autopas/utils/ArrayMath.h"
+#include "src/ParticleAttributes.h"
 
 /**
  * Class describing a cube of hexagonally closest packed particles.
@@ -36,7 +37,7 @@ class CubeClosestPacked : public Object {
         _boxLength(boxLength),
         _particleSpacing(particleSpacing),
         _bottomLeftCorner(bottomLeftCorner),
-				_topRightCorner(autopas::utils::ArrayMath::add(bottomLeftCorner, boxLength)) {}
+        _topRightCorner(autopas::utils::ArrayMath::add(bottomLeftCorner, boxLength)) {}
 
   [[nodiscard]] double getParticleSpacing() const override { return _particleSpacing; }
 
@@ -75,7 +76,7 @@ class CubeClosestPacked : public Object {
       for (double y = starty; y < _topRightCorner[1]; y += spacingRow) {
         double startx = evenRow ? _bottomLeftCorner[0] : _bottomLeftCorner[0] + xOffset;
         for (double x = startx; x < _topRightCorner[0]; x += _particleSpacing) {
-    			particle.position = { x, y, z};
+          particle.position = {x, y, z};
           particles.push_back(particle);
 
           particle.id++;
@@ -84,26 +85,26 @@ class CubeClosestPacked : public Object {
       }
       evenLayer = not evenLayer;
     }
-	}
+  }
 
  private:
-	/**
-	* The distance between the particles.
-	*/
+  /**
+   * The distance between the particles.
+   */
   double _particleSpacing;
 
-	/**
-	* Extend of the box in each dimension.
-	*/
+  /**
+   * Extend of the box in each dimension.
+   */
   std::array<double, 3> _boxLength;
 
-	/**
-	* Minimum box coordinates.
-	*/
+  /**
+   * Minimum box coordinates.
+   */
   std::array<double, 3> _bottomLeftCorner;
 
-	/**
-	* Maximum box coordinates
-	*/
+  /**
+   * Maximum box coordinates
+   */
   std::array<double, 3> _topRightCorner;
 };

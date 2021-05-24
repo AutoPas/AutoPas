@@ -12,14 +12,14 @@
 #include "src/BoundaryConditions.h"
 #include "src/Thermostat.h"
 
-MDFlexSingleRank::MDFlexSingleRank(int dimensionCount, int argc, char **argv){
-	MDFlexSimulation::initialize(dimensionCount, argc, argv);
+MDFlexSingleRank::MDFlexSingleRank(int dimensionCount, int argc, char **argv) {
+  MDFlexSimulation::initialize(dimensionCount, argc, argv);
 }
 
 void MDFlexSingleRank::run() {
   std::cout << std::endl << "Using " << autopas::autopas_get_max_threads() << " Threads" << std::endl;
   std::cout << "Starting simulation... " << std::endl;
-	
+
   _timers.simulate.start();
 
   auto [maxIterationsEstimate, maxIterationsIsPrecise] = estimateNumberOfIterations();
@@ -54,14 +54,14 @@ void MDFlexSingleRank::run() {
       }
     }
 
-		updateForces();
+    updateForces();
 
     // only show memory usage in when the logger is set to debug
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Current Memory usage: " << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
     }
 
-		updateVelocities();
+    updateVelocities();
   }
 
   // final update for a full progress bar
@@ -75,8 +75,8 @@ void MDFlexSingleRank::run() {
   // update temperature for generated config output
   if (_configuration->useThermostat.value) {
     _timers.thermostat.start();
-    _configuration->initTemperature.value = Thermostat::calcTemperature(*_autoPasContainer,
-			*(_configuration->getParticlePropertiesLibrary()));
+    _configuration->initTemperature.value =
+        Thermostat::calcTemperature(*_autoPasContainer, *(_configuration->getParticlePropertiesLibrary()));
     _timers.thermostat.stop();
   }
 
@@ -95,19 +95,19 @@ void MDFlexSingleRank::run() {
   printStatistics();
 }
 
-void MDFlexSingleRank::initializeDomainDecomposition(int &dimensionCount){
-	std::vector<double> boxMin(_configuration->boxMin.value.begin(), _configuration->boxMin.value.end());
-	std::vector<double> boxMax(_configuration->boxMax.value.begin(), _configuration->boxMax.value.end());
-	
-	_domainDecomposition = std::make_shared<SingleDomain>(_argc, _argv, dimensionCount, boxMin, boxMax);
+void MDFlexSingleRank::initializeDomainDecomposition(int &dimensionCount) {
+  std::vector<double> boxMin(_configuration->boxMin.value.begin(), _configuration->boxMin.value.end());
+  std::vector<double> boxMax(_configuration->boxMax.value.begin(), _configuration->boxMax.value.end());
 
-	std::vector<double> localBoxMin = _domainDecomposition->getLocalBoxMin();
-	std::vector<double> localBoxMax = _domainDecomposition->getLocalBoxMax();
-	
-	for (int i = 0; i < localBoxMin.size(); ++i){
-		_configuration->boxMin.value[i] = localBoxMin[i];
-		_configuration->boxMax.value[i] = localBoxMax[i];
-	}
+  _domainDecomposition = std::make_shared<SingleDomain>(_argc, _argv, dimensionCount, boxMin, boxMax);
+
+  std::vector<double> localBoxMin = _domainDecomposition->getLocalBoxMin();
+  std::vector<double> localBoxMax = _domainDecomposition->getLocalBoxMax();
+
+  for (int i = 0; i < localBoxMin.size(); ++i) {
+    _configuration->boxMin.value[i] = localBoxMin[i];
+    _configuration->boxMax.value[i] = localBoxMax[i];
+  }
 }
 
 void MDFlexSingleRank::printStatistics() {
@@ -188,4 +188,3 @@ void MDFlexSingleRank::printStatistics() {
     cout << "Hit rate     : " << flopCounterFunctor.getHitRate() << endl;
   }
 }
-

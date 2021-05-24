@@ -10,6 +10,6 @@
 #include "AutoPasTestBase.h"
 
 class TestSingleDomain : public AutoPasTestBase {
-	public: 
-		TesteSingleDomain();
+ public:
+  TesteSingleDomain();
 };

@@ -111,15 +111,14 @@ class MDFlexConfig {
    */
   void calcSimulationBox();
 
-	/**
-	 * Returns the particles generated based on the povided configuration file
-	 */
-	std::vector<ParticleAttributes> getParticles() { return _particles; }
+  /**
+   * Returns the particles generated based on the povided configuration file
+   */
+  std::vector<ParticleAttributes> getParticles() { return _particles; }
 
-
-	/**
-	 * Returns the ParticlePropertiesLibrary
-	 */
+  /**
+   * Returns the ParticlePropertiesLibrary
+   */
   std::shared_ptr<ParticlePropertiesLibraryType> getParticlePropertiesLibrary() { return _particlePropertiesLibrary; }
   /**
    * Adds parameters to all relevant particle property attributes and checks if the type already exists.
@@ -454,7 +453,7 @@ class MDFlexConfig {
    * cubeGridObjects
    */
   std::vector<CubeGrid> cubeGridObjects{}; /** * cubeGaussObjectsStr
-   */
+                                            */
   static inline const char *const cubeGaussObjectsStr{"CubeGauss"};
   /**
    * cubeGaussObjects
@@ -563,34 +562,34 @@ class MDFlexConfig {
    */
   static constexpr size_t valueOffset{33};
 
-	private:
-		/**
-		 * Stores the particles generated based on the provided configuration file
-		 * These particles can be added to the respective autopas container,
-		 * but have to be converted to the respective particle type, first.
-		 */
-		std::vector<ParticleAttributes> _particles;
+ private:
+  /**
+   * Stores the particles generated based on the provided configuration file
+   * These particles can be added to the respective autopas container,
+   * but have to be converted to the respective particle type, first.
+   */
+  std::vector<ParticleAttributes> _particles;
 
-		/**
-		 * Stores the physical properties of the particles used in the an MDFlexSimulation
-		 */
-  	std::shared_ptr<ParticlePropertiesLibraryType> _particlePropertiesLibrary;
+  /**
+   * Stores the physical properties of the particles used in the an MDFlexSimulation
+   */
+  std::shared_ptr<ParticlePropertiesLibraryType> _particlePropertiesLibrary;
 
-		/**
-		 * Initializes the ParticlePropertiesLibrary
-		 */
-		void initializeParticlePropertiesLibrary();
+  /**
+   * Initializes the ParticlePropertiesLibrary
+   */
+  void initializeParticlePropertiesLibrary();
 
-		/**
-		 * Iniitalizes all particles present at the start of the simulation.
-		 * The particles are contained in a normalized domain where every coordinate is between 0 and 1.
-		 */
-		void initializeObjects();
+  /**
+   * Iniitalizes all particles present at the start of the simulation.
+   * The particles are contained in a normalized domain where every coordinate is between 0 and 1.
+   */
+  void initializeObjects();
 
-		/**
-		 * Loads the particles from the checkpoint file defined in the configuration file.
-		 */
-		void loadParticlesFromCheckpoint();
+  /**
+   * Loads the particles from the checkpoint file defined in the configuration file.
+   */
+  void loadParticlesFromCheckpoint();
 };
 
 /**

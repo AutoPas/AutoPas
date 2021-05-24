@@ -10,9 +10,9 @@
 #include <iosfwd>
 #include <vector>
 
-#include "src/ParticleAttributes.h"
 #include "autopas/AutoPas.h"
 #include "autopas/utils/ArrayUtils.h"
+#include "src/ParticleAttributes.h"
 #include "src/TypeDefinitions.h"
 
 /**
@@ -52,10 +52,10 @@ class Object {
    */
   [[nodiscard]] ParticleAttributes getDummyParticle(const int &particleId) const {
     ParticleAttributes particle;
-		particle.id = particleId;
+    particle.id = particleId;
     particle.typeId = _typeId;
-		particle.ownershipState = autopas::OwnershipState::owned;
-    particle.velocity = { _velocity[0], _velocity[1], _velocity[2] };
+    particle.ownershipState = autopas::OwnershipState::owned;
+    particle.velocity = {_velocity[0], _velocity[1], _velocity[2]};
     particle.force = {0.0, 0.0, 0.0};
     particle.oldForce = {0.0, 0.0, 0.0};
 

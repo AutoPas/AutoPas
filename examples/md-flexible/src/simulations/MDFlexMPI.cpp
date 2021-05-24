@@ -6,29 +6,29 @@
 
 #include "MDFlexMPI.h"
 
-#include "autopas/utils/ArrayMath.h"
-
 #include <algorithm>
 #include <iostream>
+
+#include "autopas/utils/ArrayMath.h"
 
 MDFlexMPI::MDFlexMPI(int dimensionCount, int argc, char **argv) {
   MDFlexSimulation::initialize(dimensionCount, argc, argv);
 }
 
-void MDFlexMPI::run(){
+void MDFlexMPI::run() {
   // @todo: make variable part of MDFlexConfig
   int iterationsPerSuperstep = 10;
   int remainingIterations = _configuration->iterations.value;
 
-  for (int i = 0; i < _configuration->iterations.value; i+=iterationsPerSuperstep){
+  for (int i = 0; i < _configuration->iterations.value; i += iterationsPerSuperstep) {
     executeSuperstep(iterationsPerSuperstep);
   }
 }
 
-void MDFlexMPI::executeSuperstep(const int iterationsPerSuperstep){
+void MDFlexMPI::executeSuperstep(const int iterationsPerSuperstep) {
   _domainDecomposition->exchangeHaloParticles(_autoPasContainer);
 
-  for (int i = 1; i < iterationsPerSuperstep; ++i){
+  for (int i = 1; i < iterationsPerSuperstep; ++i) {
     updateParticles();
   }
 
@@ -38,23 +38,22 @@ void MDFlexMPI::executeSuperstep(const int iterationsPerSuperstep){
   _domainDecomposition->exchangeMigratingParticles(_autoPasContainer);
 }
 
-void MDFlexMPI::updateParticles(){
+void MDFlexMPI::updateParticles() {
   updatePositions();
   updateForces();
   updateVelocities();
 }
 
-void MDFlexMPI::initializeDomainDecomposition(int &dimensionCount){
+void MDFlexMPI::initializeDomainDecomposition(int &dimensionCount) {
   std::vector<double> boxMin(_configuration->boxMin.value.begin(), _configuration->boxMin.value.end());
   std::vector<double> boxMax(_configuration->boxMax.value.begin(), _configuration->boxMax.value.end());
-  
+
   _domainDecomposition = std::make_shared<RegularGrid>(_argc, _argv, dimensionCount, boxMin, boxMax);
 
   std::vector<double> localBoxMin = _domainDecomposition->getLocalBoxMin();
   std::vector<double> localBoxMax = _domainDecomposition->getLocalBoxMax();
-  for (int i = 0; i < localBoxMin.size(); ++i){
+  for (int i = 0; i < localBoxMin.size(); ++i) {
     _configuration->boxMin.value[i] = localBoxMin[i];
     _configuration->boxMax.value[i] = localBoxMax[i];
   }
 }
-

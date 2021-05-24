@@ -5,8 +5,8 @@
  */
 #pragma once
 
-#include "autopas/utils/ArrayMath.h"
 #include "Object.h"
+#include "autopas/utils/ArrayMath.h"
 #include "src/ParticleAttributes.h"
 
 /**
@@ -65,7 +65,7 @@ class Sphere : public Object {
                 // position mirrored, scaled and absolute
                 std::array<double, 3> posVector = autopas::utils::ArrayMath::add(
                     _center, autopas::utils::ArrayMath::mulScalar(
-                                autopas::utils::ArrayMath::mul(relativePos, mirrorMultipliers), _particleSpacing));
+                                 autopas::utils::ArrayMath::mul(relativePos, mirrorMultipliers), _particleSpacing));
 
                 double distFromCentersSquare =
                     autopas::utils::ArrayMath::dot(autopas::utils::ArrayMath::sub(posVector, _center),
@@ -121,7 +121,7 @@ class Sphere : public Object {
   void generate(std::vector<ParticleAttributes> &particles) const override {
     ParticleAttributes particle = getDummyParticle(particles.size());
     iteratePositions([&](auto pos) {
-    	particle.position = { pos[0], pos[1], pos[2] };
+      particle.position = {pos[0], pos[1], pos[2]};
       particles.push_back(particle);
       particle.id++;
     });

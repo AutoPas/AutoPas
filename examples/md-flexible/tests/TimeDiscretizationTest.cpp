@@ -37,7 +37,7 @@ TEST_F(TimeDiscretizationTest, testCalculateVelocities) {
     iter->setF({0, 0, 2});
   }
 
-  TimeDiscretization::calculateVelocities(autoPas, _particlePropertiesLibrary, 0.1, false , 0);
+  TimeDiscretization::calculateVelocities(autoPas, _particlePropertiesLibrary, 0.1, false, 0);
   for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
     // only velocity in one direction is expected
     EXPECT_EQ(iter->getV()[0], 0);
@@ -84,20 +84,20 @@ TEST_F(TimeDiscretizationTest, testCalculatePositions) {
 
 // @todo: Implement forces tests
 
-//TEST_F(TimeDiscretizationTest, calculatePairwiseForces){
-  //auto autoPas = autopas::AutoPas<Molecule>();
-  //fillWithParticlesAndInit(autoPas);
+// TEST_F(TimeDiscretizationTest, calculatePairwiseForces){
+// auto autoPas = autopas::AutoPas<Molecule>();
+// fillWithParticlesAndInit(autoPas);
 //
-  //TimeDiscretization::calculatePairwiseForces(autoPas, _particlePropertiesLibrary, 0.1);
-  //for (auto iter = autoPas.begin(), iterRef = autoPasRef.begin(); iter.isValid(); ++iter, ++iterRef) {
-  //}
+// TimeDiscretization::calculatePairwiseForces(autoPas, _particlePropertiesLibrary, 0.1);
+// for (auto iter = autoPas.begin(), iterRef = autoPasRef.begin(); iter.isValid(); ++iter, ++iterRef) {
+//}
 //}
 
-//TEST_F(TimeDiscretizationTest, calculateGlobalForces){
-  //auto autoPas = autopas::AutoPas<Molecule>();
-  //fillWithParticlesAndInit(autoPas);
+// TEST_F(TimeDiscretizationTest, calculateGlobalForces){
+// auto autoPas = autopas::AutoPas<Molecule>();
+// fillWithParticlesAndInit(autoPas);
 //
-  //TimeDiscretization::calculateGlobalForces(autoPas, _particlePropertiesLibrary, 0.1);
-  //for (auto iter = autoPas.begin(), iterRef = autoPasRef.begin(); iter.isValid(); ++iter, ++iterRef) {
-  //}
+// TimeDiscretization::calculateGlobalForces(autoPas, _particlePropertiesLibrary, 0.1);
+// for (auto iter = autoPas.begin(), iterRef = autoPasRef.begin(); iter.isValid(); ++iter, ++iterRef) {
+//}
 //}

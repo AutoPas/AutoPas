@@ -5,9 +5,9 @@
  */
 #pragma once
 
-#include "src/ParticleAttributes.h"
-#include "autopas/utils/ArrayMath.h"
 #include "Object.h"
+#include "autopas/utils/ArrayMath.h"
+#include "src/ParticleAttributes.h"
 
 /**
  * Class describing an cuboid object filled with gaussian randomly distributed particles.
@@ -76,17 +76,16 @@ class CubeGauss : public Object {
 
   void generate(std::vector<ParticleAttributes> &particles) const override {
     ParticleAttributes particle = getDummyParticle(particles.size());
-  	std::default_random_engine generator(42);
-  	std::array<std::normal_distribution<double>, 3> distributions = {
-      std::normal_distribution<double>{_distributionMean[0], _distributionStdDev[0]},
-      std::normal_distribution<double>{_distributionMean[1], _distributionStdDev[1]},
-      std::normal_distribution<double>{_distributionMean[2], _distributionStdDev[2]}
-		};
-  	for (int i = 0; i < _numParticles; ++i) {
-			particle.id++;
-			particle.position = {distributions[0](generator), distributions[1](generator), distributions[2](generator)};
-			particles.push_back(particle);
-  	}
+    std::default_random_engine generator(42);
+    std::array<std::normal_distribution<double>, 3> distributions = {
+        std::normal_distribution<double>{_distributionMean[0], _distributionStdDev[0]},
+        std::normal_distribution<double>{_distributionMean[1], _distributionStdDev[1]},
+        std::normal_distribution<double>{_distributionMean[2], _distributionStdDev[2]}};
+    for (int i = 0; i < _numParticles; ++i) {
+      particle.id++;
+      particle.position = {distributions[0](generator), distributions[1](generator), distributions[2](generator)};
+      particles.push_back(particle);
+    }
   }
 
  private:

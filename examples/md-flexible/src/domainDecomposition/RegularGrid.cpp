@@ -5,37 +5,35 @@
  */
 #include "RegularGrid.h"
 
-#include "src/ParticleSerializationTools.h"
-#include "autopas/utils/ArrayUtils.h"
-#include "DomainTools.h"
+#include <math.h>
 
 #include <algorithm>
 #include <functional>
 #include <list>
-#include <math.h>
 #include <numeric>
 
-namespace {
-  void calculatePrimeFactors(unsigned int number, std::list<unsigned int>& oPrimeFactors){
-    while (number%2 == 0)
-    {
-      oPrimeFactors.push_back(2);
-      number = number / 2;
-    }
+#include "DomainTools.h"
+#include "autopas/utils/ArrayUtils.h"
+#include "src/ParticleSerializationTools.h"
 
-    for (unsigned int i = 3; i <= number; i = i+2)
-    {
-      while (number%i == 0)
-      {
-        oPrimeFactors.push_back(i);
-        number = number / i;
-      }
+namespace {
+void calculatePrimeFactors(unsigned int number, std::list<unsigned int> &oPrimeFactors) {
+  while (number % 2 == 0) {
+    oPrimeFactors.push_back(2);
+    number = number / 2;
+  }
+
+  for (unsigned int i = 3; i <= number; i = i + 2) {
+    while (number % i == 0) {
+      oPrimeFactors.push_back(i);
+      number = number / i;
     }
   }
 }
+}  // namespace
 
-RegularGrid::RegularGrid(int argc, char** argv, const int &dimensionCount,
-  const std::vector<double> &globalBoxMin, const std::vector<double> &globalBoxMax){
+RegularGrid::RegularGrid(int argc, char **argv, const int &dimensionCount, const std::vector<double> &globalBoxMin,
+                         const std::vector<double> &globalBoxMax) {
   _dimensionCount = dimensionCount;
 
   MPI_Init(&argc, &argv);
@@ -53,50 +51,44 @@ RegularGrid::RegularGrid(int argc, char** argv, const int &dimensionCount,
 
   initializeNeighbourIds();
 
-  std::cout << "Rank: " << _domainIndex << ", " << autopas::utils::ArrayUtils::to_string(_neighbourDomainIndices) << std::endl;
+  std::cout << "Rank: " << _domainIndex << ", " << autopas::utils::ArrayUtils::to_string(_neighbourDomainIndices)
+            << std::endl;
 }
 
-RegularGrid::~RegularGrid(){
-  MPI_Finalize();
-}
+RegularGrid::~RegularGrid() { MPI_Finalize(); }
 
-void RegularGrid::update(){
-  updateLocalBox();
-}
+void RegularGrid::update() { updateLocalBox(); }
 
-void RegularGrid::initializeDecomposition(){
+void RegularGrid::initializeDecomposition() {
   std::list<unsigned int> primeFactors;
   calculatePrimeFactors(_subdomainCount, primeFactors);
 
-  while (primeFactors.size() > _dimensionCount)
-  {
+  while (primeFactors.size() > _dimensionCount) {
     primeFactors.sort();
     auto firstElement = primeFactors.front();
     primeFactors.pop_front();
-    primeFactors.front() *= firstElement; 
+    primeFactors.front() *= firstElement;
   }
 
   _decomposition.resize(_dimensionCount);
 
-  for (auto& dimensionSize : _decomposition)
-  {
+  for (auto &dimensionSize : _decomposition) {
     if (primeFactors.size() > 0) {
       dimensionSize = primeFactors.front();
       primeFactors.pop_front();
-    }
-    else {
+    } else {
       dimensionSize = 1;
     }
   }
 }
 
-void RegularGrid::initializeMPICommunicator(){
+void RegularGrid::initializeMPICommunicator() {
   std::vector<int> periods(_dimensionCount, 1);
   MPI_Cart_create(MPI_COMM_WORLD, _dimensionCount, _decomposition.data(), periods.data(), true, &_communicator);
   MPI_Comm_rank(_communicator, &_domainIndex);
 }
 
-void RegularGrid::initializeLocalDomain(){
+void RegularGrid::initializeLocalDomain() {
   _domainId.resize(_dimensionCount);
   MPI_Comm_rank(_communicator, &_domainIndex);
 
@@ -104,37 +96,37 @@ void RegularGrid::initializeLocalDomain(){
   MPI_Cart_get(_communicator, _dimensionCount, _decomposition.data(), periods.data(), _domainId.data());
 }
 
-void RegularGrid::initializeLocalBox(){
+void RegularGrid::initializeLocalBox() {
   _localBoxMin.resize(_dimensionCount);
   _localBoxMax.resize(_dimensionCount);
   updateLocalBox();
 }
 
-void RegularGrid::initializeNeighbourIds(){
+void RegularGrid::initializeNeighbourIds() {
   _neighbourDomainIndices.resize(_dimensionCount * 2);
 
-  for (int i = 0; i < _dimensionCount; ++i){
+  for (int i = 0; i < _dimensionCount; ++i) {
     auto neighbourIndex = i * 2;
     auto preceedingNeighbourId = _domainId;
-    preceedingNeighbourId[i] = (--preceedingNeighbourId[i] + _decomposition[i])%_decomposition[i];
+    preceedingNeighbourId[i] = (--preceedingNeighbourId[i] + _decomposition[i]) % _decomposition[i];
     _neighbourDomainIndices[neighbourIndex] = convertIdToIndex(preceedingNeighbourId);
 
     ++neighbourIndex;
     auto succeedingNeighbourId = _domainId;
-    succeedingNeighbourId[i] = (++succeedingNeighbourId[i] + _decomposition[i])%_decomposition[i];
+    succeedingNeighbourId[i] = (++succeedingNeighbourId[i] + _decomposition[i]) % _decomposition[i];
     _neighbourDomainIndices[neighbourIndex] = convertIdToIndex(succeedingNeighbourId);
   }
 }
 
-int RegularGrid::convertIdToIndex(const std::vector<int> &domainId){
+int RegularGrid::convertIdToIndex(const std::vector<int> &domainId) {
   int neighbourDomainIndex = 0;
 
-  for (int i = 0; i < _dimensionCount; ++i){
+  for (int i = 0; i < _dimensionCount; ++i) {
     int accumulatedTail = 1;
 
-    if (i < _decomposition.size()-1) {
-      accumulatedTail = std::accumulate(_decomposition.begin()+i+1, _decomposition.end(),
-        1, std::multiplies<int>());
+    if (i < _decomposition.size() - 1) {
+      accumulatedTail =
+          std::accumulate(_decomposition.begin() + i + 1, _decomposition.end(), 1, std::multiplies<int>());
     }
 
     neighbourDomainIndex += accumulatedTail * domainId[i];
@@ -143,7 +135,7 @@ int RegularGrid::convertIdToIndex(const std::vector<int> &domainId){
   return neighbourDomainIndex;
 }
 
-void RegularGrid::updateLocalBox(){
+void RegularGrid::updateLocalBox() {
   for (int i = 0; i < _dimensionCount; ++i) {
     double localBoxWidth = (_globalBoxMax[i] - _globalBoxMin[i]) / static_cast<double>(_decomposition[i]);
 
@@ -159,10 +151,10 @@ void RegularGrid::updateLocalBox(){
 }
 
 void RegularGrid::initializeGlobalBox(const std::vector<double> &globalBoxMin,
-  const std::vector<double> &globalBoxMax){
+                                      const std::vector<double> &globalBoxMax) {
   _globalBoxMin.resize(_dimensionCount);
   _globalBoxMax.resize(_dimensionCount);
-  for (int i = 0; i < _dimensionCount; ++i){
+  for (int i = 0; i < _dimensionCount; ++i) {
     _globalBoxMin[i] = globalBoxMin[i];
     _globalBoxMax[i] = globalBoxMax[i];
   }
@@ -171,7 +163,7 @@ void RegularGrid::initializeGlobalBox(const std::vector<double> &globalBoxMin,
 void RegularGrid::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer) {
   // @todo: create configuration parameter for halo width
   double haloWidth;
-  
+
   int dimensionCount = _localBoxMin.size();
   int neighbourCount = dimensionCount * 2;
 
@@ -180,7 +172,7 @@ void RegularGrid::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer
   std::vector<ParticleType> haloParticles;
 
   double particlePosition;
-  
+
   // @todo: these are named in a misinforming manner. They do not refer to the current domain's halos,
   // but to the halo boundaries of the respective neighbour
   double leftNeighbourHaloEnd, rightNeighbourHaloStart;
@@ -190,10 +182,10 @@ void RegularGrid::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer
 
   int nextDimensionIndex;
 
-  for(int i = 0; i < dimensionCount; ++i){
+  for (int i = 0; i < dimensionCount; ++i) {
     leftNeighbour = _neighbourDomainIndices[(i * 2) % neighbourCount];
     rightNeighbour = _neighbourDomainIndices[(i * 2 + 1) % neighbourCount];
-    
+
     haloWidth = (_localBoxMax[i] - _localBoxMin[i]) / 20.0;
     leftNeighbourHaloEnd = _localBoxMin[i] + haloWidth;
     rightNeighbourHaloStart = _localBoxMax[i] - haloWidth;
@@ -202,13 +194,12 @@ void RegularGrid::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer
     // @todo: remove as soon es the configuration parameter for the halo width has been defined
     haloWidth = (_localBoxMax[nextDimensionIndex] - _localBoxMin[nextDimensionIndex]) / 20.0;
 
-    if (leftNeighbour != _domainIndex && rightNeighbour != _domainIndex){
+    if (leftNeighbour != _domainIndex && rightNeighbour != _domainIndex) {
       for (auto particle = autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
         particlePosition = particle->getR()[i];
-        if (particlePosition < leftNeighbourHaloEnd){
+        if (particlePosition < leftNeighbourHaloEnd) {
           particlesForLeftNeighbour.push_back(*particle);
-        }
-        else if (particlePosition > rightNeighbourHaloStart) {
+        } else if (particlePosition > rightNeighbourHaloStart) {
           particlesForRightNeighbour.push_back(*particle);
         }
       }
@@ -231,20 +222,19 @@ void RegularGrid::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer
     leftNeighbour = _neighbourDomainIndices[(leftNeighbour + 2) % neighbourCount];
     rightNeighbour = _neighbourDomainIndices[(rightNeighbour + 2) % neighbourCount];
 
-    if (leftNeighbour != _domainIndex && rightNeighbour != _domainIndex){
-      for (auto &particle : haloParticles){
+    if (leftNeighbour != _domainIndex && rightNeighbour != _domainIndex) {
+      for (auto &particle : haloParticles) {
         particlePosition = particle.getR()[nextDimensionIndex];
-        if (particlePosition < leftNeighbourHaloEnd){
+        if (particlePosition < leftNeighbourHaloEnd) {
           particlesForLeftNeighbour.push_back(particle);
-        }
-        else if (particlePosition > rightNeighbourHaloStart){
+        } else if (particlePosition > rightNeighbourHaloStart) {
           particlesForRightNeighbour.push_back(particle);
         }
       }
-  
+
       sendParticles(particlesForLeftNeighbour, leftNeighbour);
       sendParticles(particlesForRightNeighbour, rightNeighbour);
-  
+
       receiveParticles(haloParticles, leftNeighbour);
       receiveParticles(haloParticles, rightNeighbour);
 
@@ -255,13 +245,13 @@ void RegularGrid::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer
     particlesForRightNeighbour.clear();
   }
 
-  std::vector<double> haloParticlePosition = { 0.0, 0.0, 0.0 };
+  std::vector<double> haloParticlePosition = {0.0, 0.0, 0.0};
   for (auto &particle : haloParticles) {
     haloParticlePosition[0] = particle.getR()[0];
     haloParticlePosition[1] = particle.getR()[1];
     haloParticlePosition[2] = particle.getR()[2];
 
-    if (!isInsideLocalDomain(haloParticlePosition)){
+    if (!isInsideLocalDomain(haloParticlePosition)) {
       autoPasContainer->addOrUpdateHaloParticle(particle);
     }
   }
@@ -282,24 +272,23 @@ void RegularGrid::exchangeMigratingParticles(SharedAutoPasContainer &autoPasCont
   int neighbourCount = dimensionCount * 2;
   double particlePosition;
 
-  for(int i = 0; i < dimensionCount; ++i){
+  for (int i = 0; i < dimensionCount; ++i) {
     leftNeighbour = _neighbourDomainIndices[(i * 2) % neighbourCount];
     rightNeighbour = _neighbourDomainIndices[(i * 2 + 1) % neighbourCount];
 
-    if (leftNeighbour != _domainIndex && rightNeighbour != _domainIndex){
-      for (auto &particle : emigrants){
+    if (leftNeighbour != _domainIndex && rightNeighbour != _domainIndex) {
+      for (auto &particle : emigrants) {
         particlePosition = particle.getR()[i];
-        if (particlePosition - _localBoxMin[i] < 0){
+        if (particlePosition - _localBoxMin[i] < 0) {
           particlesForLeftNeighbour.push_back(particle);
-        }
-        else if (particlePosition - _localBoxMax[i] > 0) {
+        } else if (particlePosition - _localBoxMax[i] > 0) {
           particlesForRightNeighbour.push_back(particle);
         }
       }
-  
+
       sendParticles(particlesForLeftNeighbour, leftNeighbour);
       sendParticles(particlesForRightNeighbour, rightNeighbour);
-  
+
       receiveParticles(migrants, leftNeighbour);
       receiveParticles(migrants, rightNeighbour);
 
@@ -312,30 +301,28 @@ void RegularGrid::exchangeMigratingParticles(SharedAutoPasContainer &autoPasCont
     leftNeighbour = _neighbourDomainIndices[(leftNeighbour + 2) % neighbourCount];
     rightNeighbour = _neighbourDomainIndices[(rightNeighbour + 2) % neighbourCount];
 
-    if (leftNeighbour != _domainIndex && rightNeighbour != _domainIndex){
+    if (leftNeighbour != _domainIndex && rightNeighbour != _domainIndex) {
       nextDimensionIndex = (i + 1) % dimensionCount;
-  
-      for (auto &particle : migrants){
+
+      for (auto &particle : migrants) {
         particlePosition = particle.getR()[nextDimensionIndex];
-        if (particlePosition - _localBoxMin[nextDimensionIndex] < 0){
+        if (particlePosition - _localBoxMin[nextDimensionIndex] < 0) {
           particlesForLeftNeighbour.push_back(particle);
-        }
-        else if (particlePosition - _localBoxMax[nextDimensionIndex] > 0 ){
+        } else if (particlePosition - _localBoxMax[nextDimensionIndex] > 0) {
           particlesForRightNeighbour.push_back(particle);
-        }
-        else {
+        } else {
           immigrants.push_back(particle);
         }
       }
-  
+
       migrants.clear();
-  
+
       sendParticles(particlesForLeftNeighbour, leftNeighbour);
       sendParticles(particlesForRightNeighbour, rightNeighbour);
-  
+
       receiveParticles(immigrants, leftNeighbour);
       receiveParticles(immigrants, rightNeighbour);
-  
+
       waitForSendRequests();
     }
 
@@ -365,21 +352,22 @@ void RegularGrid::receiveParticles(std::vector<ParticleType> &receivedParticles,
 
   receiveDataFromNeighbour(source, receiveBuffer);
 
-  if (!receiveBuffer.empty()){
+  if (!receiveBuffer.empty()) {
     ParticleSerializationTools::deserializeParticleData(receiveBuffer, receivedParticles);
   }
 }
 
-void RegularGrid::sendDataToNeighbour(std::vector<char> sendBuffer, const int &neighbour){
+void RegularGrid::sendDataToNeighbour(std::vector<char> sendBuffer, const int &neighbour) {
   _sendBuffers.push_back(sendBuffer);
 
   MPI_Request sendRequest;
   _sendRequests.push_back(sendRequest);
 
-  MPI_Isend(_sendBuffers.back().data(), _sendBuffers.back().size(), MPI_CHAR, neighbour, 0, _communicator, &_sendRequests.back());
+  MPI_Isend(_sendBuffers.back().data(), _sendBuffers.back().size(), MPI_CHAR, neighbour, 0, _communicator,
+            &_sendRequests.back());
 }
 
-void RegularGrid::receiveDataFromNeighbour(const int &neighbour, std::vector<char> &receiveBuffer){
+void RegularGrid::receiveDataFromNeighbour(const int &neighbour, std::vector<char> &receiveBuffer) {
   MPI_Status status;
   MPI_Probe(neighbour, 0, _communicator, &status);
 
@@ -390,7 +378,7 @@ void RegularGrid::receiveDataFromNeighbour(const int &neighbour, std::vector<cha
   MPI_Recv(receiveBuffer.data(), receiveBufferSize, MPI_CHAR, neighbour, 0, _communicator, MPI_STATUS_IGNORE);
 }
 
-void RegularGrid::waitForSendRequests(){
+void RegularGrid::waitForSendRequests() {
   std::vector<MPI_Status> sendStates;
   sendStates.resize(_sendRequests.size());
   MPI_Waitall(_sendRequests.size(), _sendRequests.data(), sendStates.data());
@@ -398,10 +386,8 @@ void RegularGrid::waitForSendRequests(){
   _sendBuffers.clear();
 }
 
-void RegularGrid::synchronizeDomains(){
-  MPI_Barrier(_communicator);
-}
+void RegularGrid::synchronizeDomains() { MPI_Barrier(_communicator); }
 
-bool RegularGrid::isInsideLocalDomain(const std::vector<double> &coordinates){
+bool RegularGrid::isInsideLocalDomain(const std::vector<double> &coordinates) {
   return DomainTools::isInsideDomain(coordinates, _localBoxMin, _localBoxMax);
 }

@@ -4,8 +4,8 @@
  * @author F. Gratl
  */
 
-#include "simulations/MDFlexSingleRank.h"
 #include "simulations/MDFlexMPI.h"
+#include "simulations/MDFlexSingleRank.h"
 
 /**
  * The main function for md-flexible.

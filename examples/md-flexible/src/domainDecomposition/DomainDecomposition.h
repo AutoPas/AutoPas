@@ -8,13 +8,13 @@
 #include <vector>
 
 class DomainDecomposition {
-	public:
-		virtual ~DomainDecomposition() = default;
-		virtual void update() = 0;
-		virtual const int getDimensionCount() = 0;
-		virtual std::vector<double> getGlobalBoxMin() = 0;
-		virtual std::vector<double> getGlobalBoxMax() = 0;
-		virtual std::vector<double> getLocalBoxMin() = 0;
-		virtual std::vector<double> getLocalBoxMax() = 0;
-		virtual bool isInsideLocalDomain(const std::vector<double> &coordinates) = 0;
+ public:
+  virtual ~DomainDecomposition() = default;
+  virtual void update() = 0;
+  virtual const int getDimensionCount() = 0;
+  virtual std::vector<double> getGlobalBoxMin() = 0;
+  virtual std::vector<double> getGlobalBoxMax() = 0;
+  virtual std::vector<double> getLocalBoxMin() = 0;
+  virtual std::vector<double> getLocalBoxMax() = 0;
+  virtual bool isInsideLocalDomain(const std::vector<double> &coordinates) = 0;
 };
