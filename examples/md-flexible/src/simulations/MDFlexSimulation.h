@@ -59,7 +59,7 @@ class MDFlexSimulation {
    * Stores the arguments passed to the constructor for later reuse.
    */
   char **_argv;
-
+  
   /**
    * Stores the configuration used for the simulation.
    * The configuration is defined by the .yaml file passed to the application  with the '--yaml-file' argument.
