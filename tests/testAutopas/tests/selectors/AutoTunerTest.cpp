@@ -81,6 +81,9 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   //                        vlp_c01                     (AoS, noNewton3)                                     = 1
   configsPerContainer[autopas::ContainerOption::pairwiseVerletLists] = 9;
 
+  // Octree: Currently only one additional traversal w/ AoS, newton3 <=> noNewton3
+  configsPerContainer[autopas::ContainerOption::octree] = 1;
+
   // check that there is an entry for every container. Except VCC because they are only relevant for CUDA...
   ASSERT_EQ(configsPerContainer.size(), autopas::ContainerOption::getAllOptions().size() - 1);
 
