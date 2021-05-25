@@ -14,13 +14,13 @@ ParticleSerializationToolsTest::ParticleSerializationToolsTest() : AutoPasTestBa
   _particle = {5.0, 6.0,  7.0,  10.0, 20.0, 30.0, 0.05, 0.06, 0.07, 12, autopas::OwnershipState::halo,
                5,   0.01, 0.02, 0.03};
 
-  _molecule.setR({_particle.positionX, _particle.positionY, _particle.positionZ});
-  _molecule.setV({_particle.velocityX, _particle.velocityY, _particle.velocityZ});
-  _molecule.setF({_particle.forceX, _particle.forceY, _particle.forceZ});
+  _molecule.setR(_particle.position);
+  _molecule.setV(_particle.velocity);
+  _molecule.setF(_particle.force);
   _molecule.setID(_particle.id);
   _molecule.setOwnershipState(_particle.ownershipState);
   _molecule.setTypeId(_particle.typeId);
-  _molecule.setOldF({_particle.oldForceX, _particle.oldForceY, _particle.oldForceZ});
+  _molecule.setOldF(_particle.oldForce);
 }
 
 TEST_F(ParticleSerializationToolsTest, testSeralizeParticle) {
@@ -29,20 +29,12 @@ TEST_F(ParticleSerializationToolsTest, testSeralizeParticle) {
 
   ParticleAttributes *attributes = reinterpret_cast<ParticleAttributes *>(&serializedParticle[0]);
 
-  EXPECT_EQ(attributes->positionX, _particle.positionX);
-  EXPECT_EQ(attributes->positionY, _particle.positionY);
-  EXPECT_EQ(attributes->positionZ, _particle.positionZ);
-  EXPECT_EQ(attributes->velocityX, _particle.positionX);
-  EXPECT_EQ(attributes->velocityY, _particle.positionY);
-  EXPECT_EQ(attributes->velocityZ, _particle.positionZ);
-  EXPECT_EQ(attributes->forceX, _particle.forceX);
-  EXPECT_EQ(attributes->forceY, _particle.forceY);
-  EXPECT_EQ(attributes->forceZ, _particle.forceZ);
+  EXPECT_EQ(attributes->position, _particle.position);
+  EXPECT_EQ(attributes->velocity, _particle.position);
+  EXPECT_EQ(attributes->force, _particle.force);
   EXPECT_EQ(attributes->id, _particle.id);
   EXPECT_EQ(attributes->ownershipState, _particle.ownershipState);
-  EXPECT_EQ(attributes->oldForceX, _particle.oldForceX);
-  EXPECT_EQ(attributes->oldForceY, _particle.oldForceY);
-  EXPECT_EQ(attributes->oldForceZ, _particle.oldForceZ);
+  EXPECT_EQ(attributes->oldForce, _particle.oldForce);
 }
 
 TEST_F(ParticleSerializationToolsTest, testDeserializeParticleData) {

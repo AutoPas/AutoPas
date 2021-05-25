@@ -78,8 +78,7 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   int sphereCounter = 0;
 
   for (auto &particle : particles) {
-    std::array<double, 3> particleVelocity = {particle.velocityX, particle.velocityY, particle.velocityX};
-    EXPECT_EQ(velocity, particleVelocity);  // velocity set to {0.,0.,0.} in parsingFile
+    EXPECT_EQ(velocity, particle.velocity);  // velocity set to {0.,0.,0.} in parsingFile
     switch (particle.typeId) {
       case 0: {
         gridCounter++;
