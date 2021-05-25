@@ -47,6 +47,10 @@ class CubeClosestPacked : public Object {
     return autopas::utils::ArrayMath::add(_bottomLeftCorner, _boxLength);
   }
 
+  /**
+   * Converts the object to a human readable string
+   * @return the generated string
+   */
   [[nodiscard]] std::string to_string() const override {
     std::ostringstream output;
 
@@ -60,6 +64,10 @@ class CubeClosestPacked : public Object {
     return output.str();
   }
 
+  /**
+   * Generates particles based on the parameters provided to the CubeClosestPacked Object in the configuration file
+   * @param the container, where the new particles get stored
+   */
   void generate(std::vector<ParticleAttributes> &particles) const override {
     ParticleAttributes particle = getDummyParticle(particles.size());
 

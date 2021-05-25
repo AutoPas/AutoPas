@@ -3,16 +3,9 @@
  * @author N. Fottner
  * @date 15.07.2019
  */
-
 #include "YamlParser.h"
 
-//#include <algorithm>
-//#include <array>
-//#include <iomanip>
-//#include <iostream>
-//#include <limits>
 #include <string>
-//#include <ostream>
 
 bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
   YAML::Node node = YAML::LoadFile(config.yamlFilename.value);

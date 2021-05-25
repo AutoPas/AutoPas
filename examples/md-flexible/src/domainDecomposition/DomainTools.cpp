@@ -16,4 +16,4 @@ bool isInsideDomain(const std::vector<double> &coordinates, std::vector<double> 
   }
   return isInsideLocalDomain;
 }
-}  // namespace DomainTools
+}

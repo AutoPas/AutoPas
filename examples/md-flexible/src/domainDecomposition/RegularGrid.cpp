@@ -17,6 +17,11 @@
 #include "src/ParticleSerializationTools.h"
 
 namespace {
+/**
+ * Calculates the prime factorization of a number.
+ * @param number The number for which the factirization will be calculated.
+ * @oPrimeFactors The container, where the prime factos will be appended.
+ */
 void calculatePrimeFactors(unsigned int number, std::list<unsigned int> &oPrimeFactors) {
   while (number % 2 == 0) {
     oPrimeFactors.push_back(2);
@@ -30,7 +35,7 @@ void calculatePrimeFactors(unsigned int number, std::list<unsigned int> &oPrimeF
     }
   }
 }
-}  // namespace
+}
 
 RegularGrid::RegularGrid(int argc, char **argv, const int &dimensionCount, const std::vector<double> &globalBoxMin,
                          const std::vector<double> &globalBoxMax) {

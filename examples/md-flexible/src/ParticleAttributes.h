@@ -14,14 +14,38 @@
  * This can be used to align the attributes of a particle in memory to make serialization and deserialization easier.
  */
 struct ParticleAttributes {
-  // ParticleBase attributes
+  /**
+   * The position attribute
+   */
   std::array<double, 3> position;
+
+  /**
+   * The velocity attribute
+   */
   std::array<double, 3> velocity;
+
+  /**
+   * The force attribute
+   */
   std::array<double, 3> force;
+
+  /**
+   * The id attribute
+   */
   unsigned long id;
+
+  /**
+   * The ownershipState attribute
+   */
   autopas::OwnershipState ownershipState;
 
-  // MoleculeLJ attributes
+  /**
+   * The type attribute
+   */
   size_t typeId;
+
+  /**
+   * The oldForce attribute
+   */
   std::array<double, 3> oldForce;
 };

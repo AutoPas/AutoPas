@@ -44,6 +44,9 @@ class Sphere : public Object {
    */
   [[nodiscard]] int getRadius() const { return _radius; }
 
+  /**
+   * Returns the amount of space between each particle.
+   */
   [[nodiscard]] double getParticleSpacing() const override { return _particleSpacing; }
 
   /**
@@ -88,6 +91,9 @@ class Sphere : public Object {
     }
   }
 
+  /** 
+   * Returns the total amount of particles which will be / have been generated.
+   */
   [[nodiscard]] size_t getParticlesTotal() const override {
     // this should look different if the generator for spheres changes
     int counter = 0;
@@ -95,16 +101,25 @@ class Sphere : public Object {
     return counter;
   }
 
+  /**
+   * Returns the coordinates of box's the bottom left corner.
+   */
   [[nodiscard]] std::array<double, 3> getBoxMin() const override {
     return {_center[0] - ((double)_radius) * _particleSpacing, _center[1] - ((double)_radius) * _particleSpacing,
             _center[2] - ((double)_radius) * _particleSpacing};
   }
 
+  /**
+   * Returns the coordinates of box's the top right corner.
+   */
   [[nodiscard]] std::array<double, 3> getBoxMax() const override {
     return {_center[0] + ((double)_radius) * _particleSpacing, _center[1] + ((double)_radius) * _particleSpacing,
             _center[2] + ((double)_radius) * _particleSpacing};
   }
 
+  /**
+   * Converts the object to a human readable string.
+   */
   [[nodiscard]] std::string to_string() const override {
     std::ostringstream output;
 
@@ -118,6 +133,10 @@ class Sphere : public Object {
     return output.str();
   }
 
+  /**
+   * Generates the particles based on the configuration of the sphere object provided in the yaml file.
+   * @param particles The container where the generated particles will be stored.
+   */
   void generate(std::vector<ParticleAttributes> &particles) const override {
     ParticleAttributes particle = getDummyParticle(particles.size());
     iteratePositions([&](auto pos) {
@@ -129,13 +148,17 @@ class Sphere : public Object {
 
  private:
   /**
-   * coordinates of the sphere's center
+   * coordinates of the sphere's center.
    */
   std::array<double, 3> _center;
 
   /**
-   * radius of the sphere in number of particles
+   * radius of the sphere in number of particles.
    */
   int _radius;
+
+  /**
+   * The amount of space between each particle.
+   */
   double _particleSpacing;
 };

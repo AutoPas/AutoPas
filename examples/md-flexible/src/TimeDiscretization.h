@@ -53,4 +53,4 @@ void calculatePairwiseForces(autopas::AutoPas<ParticleType> &autoPasContainer,
  * @param globalForce The global force which will be applied to each particle in the container.
  */
 void calculateGlobalForces(autopas::AutoPas<ParticleType> &autoPasContainer, std::array<double, 3> &globalForce);
-}  // namespace TimeDiscretization
+}

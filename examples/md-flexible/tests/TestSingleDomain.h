@@ -9,7 +9,13 @@
 
 #include "AutoPasTestBase.h"
 
+/**
+ * Test class for the SingleDomain domain decomposition class.
+ */
 class TestSingleDomain : public AutoPasTestBase {
  public:
+  /**
+   * Constructor.
+   */
   TesteSingleDomain();
 };

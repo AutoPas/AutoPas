@@ -12,12 +12,24 @@
 #include "src/ParticleAttributes.h"
 #include "src/ParticleSerializationTools.h"
 
+/**
+ * Test class for the ParticleSerializationTools.
+ */
 class ParticleSerializationToolsTest : public AutoPasTestBase {
  public:
+  /**
+   * Constructor.
+   */
   ParticleSerializationToolsTest();
 
  protected:
+  /**
+   * Particle attributes used for testing.
+   */
   ParticleAttributes _particle;
 
+  /**
+   * Molecule used for testing.
+   */
   autopas::MoleculeLJ<double> _molecule;
 };

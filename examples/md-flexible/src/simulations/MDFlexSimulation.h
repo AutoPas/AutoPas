@@ -25,9 +25,15 @@ class MDFlexSimulation {
    * Runs the simulation
    */
   virtual void run() = 0;
-
+  
+  /**
+   * Initializes the domain decomposition for this simulation.
+   */
   virtual void initializeDomainDecomposition(int &dimensionCount) = 0;
 
+  /**
+   * Returns the domain decomposition for this simulation.
+   */
   virtual DomainDecomposition *getDomainDecomposition() = 0;
 
  protected:
@@ -60,16 +66,20 @@ class MDFlexSimulation {
    */
   std::shared_ptr<MDFlexConfig> _configuration;
 
-  // std::shared_ptr<DomainDecomposition> _domainDecomposition;
-
   /**
    * The the nodes' autopas container used for simulation.
    * This member will not be initialized by the constructor and therefore has to be initialized by the deriving class.
    */
   std::shared_ptr<autopas::AutoPas<ParticleType>> _autoPasContainer;
 
+  /**
+   * Shared pointer to the logfile.
+   */
   std::shared_ptr<std::ofstream> _logFile;
 
+  /**
+   * Pointer to the output stream.
+   */
   std::ostream *_outputStream;
 
   /**
@@ -121,19 +131,60 @@ class MDFlexSimulation {
     autopas::utils::Timer boundaries;
   } _timers;
 
+  /**
+   * Initializes the simulation.
+   * Call this function in the constructor of derived classes.
+   */
   void initialize(int dimensionCount, int argc, char **argv);
+
+  /**
+   * Checks if there are any iterations left to compute.
+   */
   bool needsMoreIterations();
+
+  /**
+   * Estimates the number of tuning iterations which ocurred during the simulation so far.
+   */
   std::tuple<size_t, bool> estimateNumberOfIterations() const;
+
+  /**
+   * Prints a progress bar to the terminal.
+   */
   void printProgress(size_t iterationProgress, size_t maxIterations, bool maxIsPrecise);
-  void printStatistics();
+
+  /**
+   * Writes the current simulation state to a vtk-file.
+   */
   void writeVTKFile();
+
+  /**
+   * Returns an 'mpi_rank_<rank>_', where <rank> is the rank of the current MPI process.
+   */
   std::string getMPISuffix();
+
+  /**
+   * Turns the timers into a human readable string.
+   */
   std::string timerToString(const std::string &name, long timeNS, size_t numberWidth, long maxTime);
+
+  /**
+   * Updates the position of particles in the local AutoPas container.
+   */
   void updatePositions();
+
+  /**
+   * Updates the forces of particles in the local AutoPas container.
+   */
   void updateForces();
+
+  /**
+   * Updates the velocities of particles in the local AutoPas container.
+   */
   void updateVelocities();
 
  private:
+  /**
+   * Initializes the local AutoPas container.
+   */
   void initializeAutoPasContainer();
-  void initializeObjects();
 };

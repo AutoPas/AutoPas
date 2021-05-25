@@ -38,25 +38,37 @@ class CubeGauss : public Object {
         _bottomLeftCorner(bottomLeftCorner) {}
 
   /**
-   * Getter for distribution mean
+   * Getter for distribution mean.
    * @return distributionMean
    */
   [[nodiscard]] const std::array<double, 3> &getDistributionMean() const { return _distributionMean; }
 
   /**
-   * Getter for distributionStdDev
+   * Getter for distributionStdDev.
    * @return distributionStdDev
    */
   [[nodiscard]] const std::array<double, 3> &getDistributionStdDev() const { return _distributionStdDev; }
 
+  /**
+   * Returns the number of particles generated in this CubeGauss object.
+   */
   [[nodiscard]] size_t getParticlesTotal() const override { return _numParticles; }
 
+  /**
+   * returns the bottom left corner of the cube.
+   */
   [[nodiscard]] std::array<double, 3> getBoxMin() const override { return _bottomLeftCorner; }
 
+  /**
+   * Returns the top right corner of the cube.
+   */
   [[nodiscard]] std::array<double, 3> getBoxMax() const override {
     return autopas::utils::ArrayMath::add(_bottomLeftCorner, _boxLength);
   }
 
+  /**
+   * Converts the cube gauss object to a human readable string.
+   */
   [[nodiscard]] std::string to_string() const override {
     std::ostringstream output;
 
@@ -74,6 +86,10 @@ class CubeGauss : public Object {
     return output.str();
   }
 
+  /** 
+   * Generates the particles based on the configuration of the cube gauss object provided in the yaml file.
+   * @param particles The container where the new particles will be stored.
+   */
   void generate(std::vector<ParticleAttributes> &particles) const override {
     ParticleAttributes particle = getDummyParticle(particles.size());
     std::default_random_engine generator(42);
@@ -89,9 +105,28 @@ class CubeGauss : public Object {
   }
 
  private:
+  /**
+   * The number of particles which will be generated.
+   */
   size_t _numParticles;
+
+  /**
+   * The length of the box in each dimension.
+   */
   std::array<double, 3> _boxLength;
+  
+  /**
+   * The mean value for the gaussian distribution of the particles.
+   */
   std::array<double, 3> _distributionMean;
+
+  /**
+   * The standard deviation value for the gaussian distribution of the particles.
+   */
   std::array<double, 3> _distributionStdDev;
+
+  /**
+   * The coordinates of the bottom left corner of the cube object.
+   */
   std::array<double, 3> _bottomLeftCorner;
 };

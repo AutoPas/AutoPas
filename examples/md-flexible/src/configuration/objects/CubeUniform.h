@@ -35,14 +35,26 @@ class CubeUniform : public Object {
         _boxLength(_boxLength),
         _bottomLeftCorner(bottomLeftCorner) {}
 
+  /**
+   * Returns the total amount of particles which will be / have been generated.
+   */
   [[nodiscard]] size_t getParticlesTotal() const override { return _numParticles; }
 
+  /**
+   * Returns the coordinates of the bottom left corner.
+   */
   [[nodiscard]] std::array<double, 3> getBoxMin() const override { return _bottomLeftCorner; }
 
+  /**
+   * Returns the coordinates of the top right corner.
+   */
   [[nodiscard]] std::array<double, 3> getBoxMax() const override {
     return autopas::utils::ArrayMath::add(_bottomLeftCorner, _boxLength);
   }
 
+  /**
+   * Converts the object to a human readable string.
+   */
   [[nodiscard]] std::string to_string() const override {
     std::ostringstream output;
 
@@ -56,6 +68,10 @@ class CubeUniform : public Object {
     return output.str();
   }
 
+  /**
+   * Generates the particles based on the configuration of the cube object defined in the yaml file.
+   * @param particles The container where the generated particles will be stored.
+   */
   void generate(std::vector<ParticleAttributes> &particles) const override {
     ParticleAttributes particle = getDummyParticle(particles.size());
     std::srand(std::time(0));
@@ -69,7 +85,19 @@ class CubeUniform : public Object {
   }
 
  private:
+ 
+  /**
+   * The number of particles in the object.
+   */
   size_t _numParticles;
+ 
+  /**
+   * The lenght of the box in each direction. 
+   */
   std::array<double, 3> _boxLength;
+ 
+  /**
+   * The Coordinates of the bottom left corner.
+   */
   std::array<double, 3> _bottomLeftCorner;
 };

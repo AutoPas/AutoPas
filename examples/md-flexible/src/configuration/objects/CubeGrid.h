@@ -36,6 +36,9 @@ class CubeGrid : public Object {
         _particleSpacing(particleSpacing),
         _bottomLeftCorner(bottomLeftCorner) {}
 
+  /**
+   * Returns the particle spacing
+   */
   [[nodiscard]] double getParticleSpacing() const override { return _particleSpacing; }
 
   /**
@@ -44,12 +47,21 @@ class CubeGrid : public Object {
    */
   [[nodiscard]] const std::array<size_t, 3> &getParticlesPerDim() const { return _particlesPerDim; }
 
+  /**
+   * Returns the total ammaount of particles which will be / have been generated.
+   */
   [[nodiscard]] size_t getParticlesTotal() const override {
     return std::accumulate(std::begin(_particlesPerDim), std::end(_particlesPerDim), 1, std::multiplies<double>());
   }
 
+  /**
+   * Returns the coordinates of the bottom left corner.
+   */
   [[nodiscard]] std::array<double, 3> getBoxMin() const override { return _bottomLeftCorner; }
 
+  /**
+   * Returns the coordinates of the top right corner.
+   */
   [[nodiscard]] std::array<double, 3> getBoxMax() const override {
     auto particlesPerDimDouble = autopas::utils::ArrayUtils::static_cast_array<double>(_particlesPerDim);
     // subtract one because the first particle is at bottomLeftCorner
@@ -60,6 +72,9 @@ class CubeGrid : public Object {
     return lastParticleAbsolute;
   }
 
+  /**
+   * Returns the coordinates of the top right corner.
+   */
   [[nodiscard]] std::string to_string() const override {
     std::ostringstream output;
 
@@ -73,6 +88,10 @@ class CubeGrid : public Object {
     return output.str();
   }
 
+  /**
+   * Generates the particles based on the configuration of the CubeGrid object provided in the yaml file.
+   * @param particles The container in which the generated particles get stored.
+   */
   void generate(std::vector<ParticleAttributes> &particles) const override {
     ParticleAttributes particle = getDummyParticle(particles.size());
     std::array<double, 3> offset = {0.0, 0.0, 0.0};
@@ -92,7 +111,19 @@ class CubeGrid : public Object {
   }
 
  private:
+
+  /**
+   * Defines how many particles will be created in each dimension.
+   */
   std::array<size_t, 3> _particlesPerDim;
+
+  /**
+   * Defines the amount of space between particles.
+   */
   double _particleSpacing;
+
+  /**
+   * Stores the coordinates of the bottom left corner.
+   */
   std::array<double, 3> _bottomLeftCorner;
 };
