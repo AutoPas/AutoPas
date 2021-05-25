@@ -7,29 +7,51 @@
 
 #pragma once
 
-#include "autopas/cells/FullParticleCell.h"
-#include "autopas/containers/CellBasedParticleContainer.h"
-#include "autopas/iterators/ParticleIterator.h"
-#include "autopas/containers/octree/OctreeNodeInterface.h"
-#include "autopas/containers/octree/OctreeLeafNode.h"
-#include "autopas/utils/logging/OctreeLogger.h"
 #include <cstdio>
 #include <list>
 #include <stack>
 
+#include "autopas/cells/FullParticleCell.h"
+#include "autopas/containers/CellBasedParticleContainer.h"
+#include "autopas/containers/CellBorderAndFlagManager.h"
+#include "autopas/containers/octree/OctreeLeafNode.h"
+#include "autopas/containers/octree/OctreeNodeInterface.h"
+#include "autopas/containers/octree/OctreeNodeWrapper.h"
+#include "autopas/containers/octree/traversals/OTTraversalInterface.h"
+#include "autopas/iterators/ParticleIterator.h"
+#include "autopas/iterators/RegionParticleIterator.h"
+#include "autopas/utils/logging/OctreeLogger.h"
+
 namespace autopas {
 
-// TODO(johannes): Documentation
+/**
+ * The octree is a CellBasedParticleContainer that is comprised of two cells:
+ *
+ * @tparam Particle
+ */
 template <class Particle>
-class Octree : public CellBasedParticleContainer<OctreeLeafNode<Particle>> {
+class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
+               public internal::CellBorderAndFlagManager {
  public:
-  using ParticleCell = OctreeLeafNode<Particle>;
+  using ParticleCell = OctreeNodeWrapper<Particle>;
   using ParticleType = typename ParticleCell::ParticleType;
 
-  Octree(std::array<double, 3> boxMin, std::array<double, 3> boxMax, const double cutoff,
-         const double skin) : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skin) {
-    //printf("Johannes' Octree()\n");
-    _root = std::make_unique<OctreeLeafNode<Particle>>(this->getBoxMin(), this->getBoxMax());
+  /**
+   * This particle container contains two cells. Both cells are octrees.
+   * - this->_cells[CellTypes::OWNED] yields the octree that contains all owned particles
+   * - this->_cells[CellTypes::HALO] yields the octree that contains all halo particles
+   */
+  enum CellTypes { OWNED = 0, HALO = 1 };
+
+  Octree(std::array<double, 3> boxMin, std::array<double, 3> boxMax, const double cutoff, const double skin)
+      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skin) {
+    this->_cells.push_back(OctreeNodeWrapper<Particle>(boxMin, boxMax));
+
+    // Extend the halo region with cutoff + skin in all dimensions
+    auto interactionLength = cutoff + skin;
+    auto haloBoxMin = utils::ArrayMath::subScalar(boxMin, interactionLength);
+    auto haloBoxMax = utils::ArrayMath::addScalar(boxMax, interactionLength);
+    this->_cells.push_back(OctreeNodeWrapper<Particle>(haloBoxMin, haloBoxMax));
   }
 
   [[nodiscard]] std::vector<ParticleType> updateContainer() override {
@@ -41,15 +63,15 @@ class Octree : public CellBasedParticleContainer<OctreeLeafNode<Particle>> {
     // leaving: all outside boxMin/Max
 
     std::vector<Particle> particles;
-    _root->appendAllParticles(particles);
+    this->_cells[CellTypes::OWNED].appendAllParticles(particles);
 
     deleteAllParticles();
 
-    for(auto &particle : particles) {
+    for (auto &particle : particles) {
       addParticleImpl(particle);
     }
 
-    //logger.logTree(_root);
+    // logger.logTree(_root);
 
     auto result = std::vector<ParticleType>();
     return result;
@@ -57,6 +79,11 @@ class Octree : public CellBasedParticleContainer<OctreeLeafNode<Particle>> {
 
   void iteratePairwise(TraversalInterface *traversal) override {
     printf("Johannes' Octree::iteratePairwise\n");
+
+    auto *traversalInterface = dynamic_cast<OTTraversalInterface<ParticleCell> *>(traversal);
+    if (traversalInterface) {
+      traversalInterface->setCells(&this->_cells);
+    }
 
     traversal->initTraversal();
     traversal->traverseParticlePairs();
@@ -76,15 +103,13 @@ class Octree : public CellBasedParticleContainer<OctreeLeafNode<Particle>> {
   /**
    * @copydoc ParticleContainerInterface::addParticleImpl()
    */
-  void addParticleImpl(const ParticleType &p) override {
-    _root->insert(_root, p);
-  }
+  void addParticleImpl(const ParticleType &p) override { this->_cells[CellTypes::OWNED].addParticle(p); }
 
   /**
    * @copydoc ParticleContainerInterface::addHaloParticleImpl()
    */
   void addHaloParticleImpl(const ParticleType &haloParticle) override {
-    printf("Johannes' Octree::addHaloParticleImpl\n");
+    this->_cells[CellTypes::HALO].addParticle(haloParticle);
   }
 
   /**
@@ -93,10 +118,6 @@ class Octree : public CellBasedParticleContainer<OctreeLeafNode<Particle>> {
   bool updateHaloParticle(const ParticleType &haloParticle) override {
     printf("Johannes' Octree::updateHaloParticle\n");
     return true;
-  }
-
-  void deleteHaloParticles() override {
-    printf("Johannes' Octree::deleteHaloParticles\n");
   }
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
@@ -113,35 +134,44 @@ class Octree : public CellBasedParticleContainer<OctreeLeafNode<Particle>> {
     for(auto *leaf : leaves) {
         flatLeaves.push_back(*leaf);
     }*/
-    //std::vector<FullParticleCell<Particle>> cells;
+    // std::vector<FullParticleCell<Particle>> cells;
     //_root->appendAllParticleCellsInside(cells);
     /*for(auto *leaf : leaves) {
         auto *cell = dynamic_cast<FullParticleCell<Particle> *>(leaf);
         cells.push_back(*cell);
     }*/
-    //std::vector<FullParticleCell<Particle>> cells = flatLeaves;
+    // std::vector<FullParticleCell<Particle>> cells = flatLeaves;
 
-    return ParticleIteratorWrapper<ParticleType, true>();
-            //new internal::ParticleIterator<ParticleType, ParticleCell, true>(flatLeaves, 0, behavior, 0));
+    return ParticleIteratorWrapper<ParticleType, true>(
+        new internal::ParticleIterator<ParticleType, ParticleCell, true>(&this->_cells, 0, this, behavior));
   }
 
   [[nodiscard]] ParticleIteratorWrapper<ParticleType, false> begin(IteratorBehavior behavior) const override {
-    printf("Johannes' Octree::begin<..., false>\n");
-    return ParticleIteratorWrapper<ParticleType, false>();
+    // printf("Johannes' Octree::begin<..., false>\n");
+    return ParticleIteratorWrapper<ParticleType, false>(
+        new internal::ParticleIterator<ParticleType, ParticleCell, false>(&this->_cells, 0, this, behavior));
   }
 
-  [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> getRegionIterator(
-      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
-      IteratorBehavior behavior) override {
+  [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
+                                                                              const std::array<double, 3> &higherCorner,
+                                                                              IteratorBehavior behavior) override {
     printf("Johannes' Octree::getRegionIterator<..., true>\n");
-    return ParticleIteratorWrapper<ParticleType, true>();
+    // TODO(johannes): This is a bad implementation, it does not utilize the spacial structure of the octree :(
+    std::vector<size_t> cellsOfInterest = {CellTypes::OWNED};  // TODO(johannes): Add the second cell here
+    return ParticleIteratorWrapper<ParticleType, true>(
+        new internal::RegionParticleIterator<ParticleType, ParticleCell, true>(&this->_cells, lowerCorner, higherCorner,
+                                                                               cellsOfInterest, this, behavior));
   }
 
   [[nodiscard]] ParticleIteratorWrapper<ParticleType, false> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior) const override {
     printf("Johannes' Octree::getRegionIterator<..., false>\n");
-    return ParticleIteratorWrapper<ParticleType, false>();
+    // TODO(johannes): This is a bad implementation, it does not utilize the spacial structure of the octree :(
+    std::vector<size_t> cellsOfInterest = {CellTypes::OWNED};  // TODO(johannes): Add the second cell here
+    return ParticleIteratorWrapper<ParticleType, false>(
+        new internal::RegionParticleIterator<ParticleType, ParticleCell, false>(
+            &this->_cells, lowerCorner, higherCorner, cellsOfInterest, this, behavior));
   }
 
   /**
@@ -154,23 +184,34 @@ class Octree : public CellBasedParticleContainer<OctreeLeafNode<Particle>> {
     return TraversalSelectorInfo(dims, 0.0, cellLength, 1);
   }
 
-  [[nodiscard]] unsigned long getNumParticles() const override {
-      return _root->getNumParticles();
+  [[nodiscard]] unsigned long getNumParticles() const override { return this->_cells[CellTypes::OWNED].numParticles(); }
+
+  /**
+   * Deletes all particles from the container.
+   */
+  void deleteAllParticles() override { this->_cells[CellTypes::OWNED].clear(); }
+
+  void deleteHaloParticles() override { this->_cells[CellTypes::HALO].clear(); }
+
+  [[nodiscard]] bool cellCanContainHaloParticles(std::size_t i) const override {
+    if (i > 1) {
+      throw std::runtime_error("This cell container (octree) contains only two cells");
+    }
+    return i == CellTypes::HALO;
   }
 
-    /**
-     * Deletes all particles from the container.
-     */
-    void deleteAllParticles() override {
-        //_root = std::move(_root->clearChildren());
-        throw std::runtime_error("Implement this function");
+  [[nodiscard]] bool cellCanContainOwnedParticles(std::size_t i) const override {
+    if (i > 1) {
+      throw std::runtime_error("[Octree.h]: This cell container (octree) contains only two cells");
     }
+    return i == CellTypes::OWNED;
+  }
 
  private:
   // TODO: vector<OctreeLeafNode *> _leafs;
-  //std::list<OctreeLeafNode<Particle> *> _leafs;
-  std::unique_ptr<OctreeNodeInterface<Particle>> _root;
+  // std::list<OctreeLeafNode<Particle> *> _leafs;
+  // std::unique_ptr<OctreeNodeInterface<Particle>> _root;
   OctreeLogger logger;
 };
 
-} // namespace autopas
+}  // namespace autopas
