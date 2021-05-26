@@ -1,5 +1,5 @@
 /**
- * @file KdTree.h
+ * @file NoDecomposition.h
  * @author J. Körner
  * @date 25.05.2021
  */
