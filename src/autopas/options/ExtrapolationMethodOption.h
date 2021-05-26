@@ -30,10 +30,6 @@ class ExtrapolationMethodOption : public Option<ExtrapolationMethodOption> {
      */
     linearRegression,
     /**
-     * Places a polynomial function through a certain number of data points using Lagrange interpolation.
-     */
-    lagrange,
-    /**
      * Places a polynomial function through a certain number of data points using Newtons method.
      */
     newton,
@@ -64,7 +60,6 @@ class ExtrapolationMethodOption : public Option<ExtrapolationMethodOption> {
     return {
         {ExtrapolationMethodOption::linePrediction, "line-prediction"},
         {ExtrapolationMethodOption::linearRegression, "linear-regression"},
-        {ExtrapolationMethodOption::lagrange, "lagrange"},
         {ExtrapolationMethodOption::newton, "newton"},
     };
   };

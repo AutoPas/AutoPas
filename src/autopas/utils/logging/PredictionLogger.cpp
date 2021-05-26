@@ -38,7 +38,7 @@ autopas::PredictionLogger::~PredictionLogger() {
 
 void autopas::PredictionLogger::logAllPredictions(
     const std::set<Configuration> &configurations,
-    const std::unordered_map<Configuration, size_t, ConfigHash> &configurationPredictions, size_t predictionErrorValue,
+    const std::unordered_map<Configuration, long, ConfigHash> &configurationPredictions, long predictionErrorValue,
     size_t tuningPhaseCounter) {
 #ifdef AUTOPAS_LOG_PREDICTIONS
   for (const auto &configuration : configurations) {

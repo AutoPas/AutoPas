@@ -16,6 +16,7 @@
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
+#include "autopas/options/IteratorBehavior.h"
 
 namespace autopas {
 
@@ -63,16 +64,16 @@ class FullParticleCell : public ParticleCell<Particle> {
 
   template <typename Lambda>
   void forEach(Lambda forEachLambda,
-               autopas::IteratorBehavior behavior = autopas::IteratorBehavior::haloOwnedAndDummy) {
+               IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) {
     auto isParticleValid = [&](Particle &p) -> bool {
       switch (behavior) {
-        case haloOwnedAndDummy:
+        case autopas::IteratorBehavior::ownedOrHaloOrDummy:
           return true;
-        case haloAndOwned:
+        case autopas::IteratorBehavior::ownedOrHalo:
           return not p.isDummy();
-        case haloOnly:
+        case autopas::IteratorBehavior::halo:
           return p.isHalo();
-        case ownedOnly:
+        case autopas::IteratorBehavior::owned:
           return p.isOwned();
         default:
           utils::ExceptionHandler::exception("unknown iterator behavior");
@@ -90,7 +91,7 @@ class FullParticleCell : public ParticleCell<Particle> {
   template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                        const std::array<double, 3> &higherCorner,
-               autopas::IteratorBehavior behavior = autopas::IteratorBehavior::haloOwnedAndDummy) {
+               IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) {
 
     auto isParticleInRegion = [&] (Particle &p) -> bool {
       return utils::inBox(p.getR(), lowerCorner, higherCorner);
@@ -98,13 +99,13 @@ class FullParticleCell : public ParticleCell<Particle> {
 
     auto isParticleValid = [&](Particle &p) -> bool {
       switch (behavior) {
-        case haloOwnedAndDummy:
+        case options::IteratorBehavior::ownedOrHaloOrDummy:
           return true;
-        case haloAndOwned:
+        case options::IteratorBehavior::ownedOrHalo:
           return not p.isDummy();
-        case haloOnly:
+        case options::IteratorBehavior::halo:
           return p.isHalo();
-        case ownedOnly:
+        case options::IteratorBehavior::owned:
           return p.isOwned();
         default:
           utils::ExceptionHandler::exception("unknown iterator behavior");

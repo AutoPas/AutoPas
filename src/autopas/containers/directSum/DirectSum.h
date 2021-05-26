@@ -137,131 +137,105 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
   }
 
   [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> begin(
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) override {
     return ParticleIteratorWrapper<ParticleType, true>(new internal::ParticleIterator<ParticleType, ParticleCell, true>(
-        &this->_cells, 0, &_cellBorderFlagManager, behavior));
+        &this->_cells, 0, &_cellBorderFlagManager, behavior, nullptr));
   }
 
   [[nodiscard]] ParticleIteratorWrapper<ParticleType, false> begin(
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
+      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) const override {
     return ParticleIteratorWrapper<ParticleType, false>(
         new internal::ParticleIterator<ParticleType, ParticleCell, false>(&this->_cells, 0, &_cellBorderFlagManager,
-                                                                          behavior));
+                                                                          behavior, nullptr));
   }
 
   template <typename Lambda>
-  void forEach(Lambda forEachLambda, IteratorBehavior behaviour) {
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior) {
     auto forEach = [&](ParticleCell cell) {
       for (Particle p : cell._particles) {
         forEachLambda(p);
       }
     };
 
-    switch (behaviour) {
-      case IteratorBehavior::haloAndOwned:
-        forEach(this->_cells.at(0));
-        forEach(this->_cells.at(1));
-        break;
+    std::vector<size_t> cellsOfInterest;
 
-      case IteratorBehavior::haloOnly:
-        forEach(this->_cells.at(1));
-        break;
-
-      case IteratorBehavior::haloOwnedAndDummy:
-        forEach(this->_cells.at(0));
-        forEach(this->_cells.at(1));
-        break;
-
-      case IteratorBehavior::ownedOnly:
-        forEach(this->_cells.at(0));
-        break;
-
-      default:
-        break;
+    if (behavior & IteratorBehavior::owned) {
+      forEach(getCell());
+      cellsOfInterest.push_back(0);
+    }
+    if (behavior & IteratorBehavior::halo) {
+      forEach(getHaloCell());
+      cellsOfInterest.push_back(1);
+    }
+    // sanity check
+    if (cellsOfInterest.empty()) {
+      utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
     }
   }
 
-  [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> getRegionIterator(
-      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+  [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
+                                                                              const std::array<double, 3> &higherCorner,
+                                                                              IteratorBehavior behavior) override {
     std::vector<size_t> cellsOfInterest;
 
-    switch (behavior) {
-      case IteratorBehavior::ownedOnly:
-        cellsOfInterest.push_back(0);
-        break;
-      case IteratorBehavior::haloOnly:
-        cellsOfInterest.push_back(1);
-        break;
-      case IteratorBehavior::haloOwnedAndDummy:
-        // dummy particles can be in all cells.
-        [[fallthrough]];
-      case IteratorBehavior::haloAndOwned:
-        cellsOfInterest.push_back(0);
-        cellsOfInterest.push_back(1);
-        break;
+    if (behavior & IteratorBehavior::owned) {
+      cellsOfInterest.push_back(0);
+    }
+    if (behavior & IteratorBehavior::halo) {
+      cellsOfInterest.push_back(1);
+    }
+    // sanity check
+    if (cellsOfInterest.empty()) {
+      utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
     }
 
     return ParticleIteratorWrapper<ParticleType, true>(
         new internal::RegionParticleIterator<ParticleType, ParticleCell, true>(
-            &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBorderFlagManager, behavior));
+            &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBorderFlagManager, behavior, nullptr));
   }
 
   [[nodiscard]] ParticleIteratorWrapper<ParticleType, false> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
+      IteratorBehavior behavior) const override {
     std::vector<size_t> cellsOfInterest;
 
-    switch (behavior) {
-      case IteratorBehavior::ownedOnly:
-        cellsOfInterest.push_back(0);
-        break;
-      case IteratorBehavior::haloOnly:
-        // for haloOnly all cells can contain halo particles!
-        [[fallthrough]];
-      case IteratorBehavior::haloOwnedAndDummy:
-        // dummy particles can be in all cells.
-        [[fallthrough]];
-      case IteratorBehavior::haloAndOwned:
-        cellsOfInterest.push_back(0);
-        cellsOfInterest.push_back(1);
-        break;
+    if (behavior & IteratorBehavior::owned) {
+      cellsOfInterest.push_back(0);
+    }
+    if (behavior & IteratorBehavior::halo) {
+      cellsOfInterest.push_back(1);
+    }
+    // sanity check
+    if (cellsOfInterest.empty()) {
+      utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
     }
 
     return ParticleIteratorWrapper<ParticleType, false>(
         new internal::RegionParticleIterator<ParticleType, ParticleCell, false>(
-            &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBorderFlagManager, behavior));
+            &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBorderFlagManager, behavior, nullptr));
   }
 
   void forEachInRegion(const std::function<void(Particle)> forEachLambda, const std::array<double, 3> &lowerCorner,
-                       const std::array<double, 3> &higherCorner, IteratorBehavior behaviour) {
+                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
     auto forEach = [&](ParticleCell cell) {
       for (Particle p : cell._particles) {
         forEachLambda(p);
       }
     };
 
-    switch (behaviour) {
-      case IteratorBehavior::haloAndOwned:
-        forEach(this->_cells.at(0));
-        forEach(this->_cells.at(1));
-        break;
+    std::vector<size_t> cellsOfInterest;
 
-      case IteratorBehavior::haloOnly:
-        forEach(this->_cells.at(1));
-        break;
-
-      case IteratorBehavior::haloOwnedAndDummy:
-        forEach(this->_cells.at(0));
-        forEach(this->_cells.at(1));
-        break;
-
-      case IteratorBehavior::ownedOnly:
-        forEach(this->_cells.at(0));
-        break;
-
-      default:
-        break;
+    if (behavior & IteratorBehavior::owned) {
+      forEach(getCell());
+      cellsOfInterest.push_back(0);
+    }
+    if (behavior & IteratorBehavior::halo) {
+      forEach(getHaloCell());
+      cellsOfInterest.push_back(1);
+    }
+    // sanity check
+    if (cellsOfInterest.empty()) {
+      utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
     }
   }
 

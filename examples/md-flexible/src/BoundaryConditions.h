@@ -110,7 +110,7 @@ std::vector<Particle> identifyNewHaloParticles(autopas::AutoPas<Particle> &autoP
           particleCopy.addR(shiftVec);
           haloParticles.push_back(particleCopy);
         };
-        autoPas.forEachInRegion(forEachInRegionLambda, min, max, autopas::IteratorBehavior::ownedOnly);
+        autoPas.forEachInRegion(forEachInRegionLambda, min, max, autopas::IteratorBehavior::owned);
       }
     }
   }

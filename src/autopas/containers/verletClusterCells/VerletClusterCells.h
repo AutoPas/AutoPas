@@ -128,9 +128,9 @@ class VerletClusterCells : public CellBasedParticleContainer<FullParticleCell<Pa
     Particle pCopy = haloParticle;
     pCopy.setOwnershipState(OwnershipState::halo);
 
-    for (auto it = getRegionIterator(utils::ArrayMath::subScalar(pCopy.getR(), this->getSkin() / 2),
-                                     utils::ArrayMath::addScalar(pCopy.getR(), this->getSkin() / 2),
-                                     IteratorBehavior::haloOnly);
+    for (auto it =
+             getRegionIterator(utils::ArrayMath::subScalar(pCopy.getR(), this->getSkin() / 2),
+                               utils::ArrayMath::addScalar(pCopy.getR(), this->getSkin() / 2), IteratorBehavior::halo);
          it.isValid(); ++it) {
       if (pCopy.getID() == it->getID()) {
         *it = pCopy;
@@ -211,7 +211,7 @@ class VerletClusterCells : public CellBasedParticleContainer<FullParticleCell<Pa
 #endif
     {
       std::vector<Particle> myInvalidParticles;
-      for (auto iter = this->begin(IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+      for (auto iter = this->begin(IteratorBehavior::owned); iter.isValid(); ++iter) {
         if (not utils::inBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
           myInvalidParticles.push_back(*iter);
           internal::deleteParticle(iter);
@@ -235,7 +235,8 @@ class VerletClusterCells : public CellBasedParticleContainer<FullParticleCell<Pa
                                  _clusterSize);
   }
 
-  ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+  ParticleIteratorWrapper<Particle, true> begin(
+      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) override {
     return ParticleIteratorWrapper<Particle, true>(
         new internal::VerletClusterCellsParticleIterator<Particle, FullParticleCell<Particle>, true>(
             &this->_cells, _dummyStarts, _boxMaxWithHalo[0] + 8 * this->getInteractionLength(), behavior,
@@ -245,7 +246,7 @@ class VerletClusterCells : public CellBasedParticleContainer<FullParticleCell<Pa
   }
 
   ParticleIteratorWrapper<Particle, false> begin(
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
+      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) const override {
     return ParticleIteratorWrapper<Particle, false>(
         new internal::VerletClusterCellsParticleIterator<Particle, FullParticleCell<Particle>, false>(
             &this->_cells, _dummyStarts, _boxMaxWithHalo[0] + 8 * this->getInteractionLength(), behavior));
@@ -256,9 +257,9 @@ class VerletClusterCells : public CellBasedParticleContainer<FullParticleCell<Pa
     utils::ExceptionHandler::exception("not yet implemented");
   }
 
-  ParticleIteratorWrapper<Particle, true> getRegionIterator(
-      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
+  ParticleIteratorWrapper<Particle, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
+                                                            const std::array<double, 3> &higherCorner,
+                                                            IteratorBehavior behavior) override {
     // Special iterator requires sorted cells
 #ifdef AUTOPAS_OPENMP
 #pragma omp single
@@ -302,9 +303,9 @@ class VerletClusterCells : public CellBasedParticleContainer<FullParticleCell<Pa
             this));
   }
 
-  ParticleIteratorWrapper<Particle, false> getRegionIterator(
-      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
+  ParticleIteratorWrapper<Particle, false> getRegionIterator(const std::array<double, 3> &lowerCorner,
+                                                             const std::array<double, 3> &higherCorner,
+                                                             IteratorBehavior behavior) const override {
     // restrict search area to the region where particles are
     const auto lowerCornerInBounds = utils::ArrayMath::max(lowerCorner, _boxMinWithHalo);
     const auto upperCornerInBounds = utils::ArrayMath::min(higherCorner, _boxMaxWithHalo);

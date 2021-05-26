@@ -73,6 +73,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
         _clusterSize{clusterSize},
         _numClusters{0},
         _numTowersPerInteractionLength{0},
+        _particlesToAdd(autopas_get_max_threads()),
         _boxMin{boxMin},
         _boxMax{boxMax},
         _haloBoxMin{utils::ArrayMath::subScalar(boxMin, cutoff + skin)},
@@ -161,7 +162,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    */
   void addParticleImpl(const Particle &p) override {
     _isValid = ValidityState::invalid;
-    _particlesToAdd.push_back(p);
+    _particlesToAdd[autopas_get_thread_num()].push_back(p);
   }
 
   /**
@@ -171,7 +172,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     _isValid = ValidityState::invalid;
     Particle copy = haloParticle;
     copy.setOwnershipState(OwnershipState::halo);
-    _particlesToAdd.push_back(copy);
+    _particlesToAdd[autopas_get_thread_num()].push_back(copy);
   }
 
   /**
@@ -181,9 +182,10 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     Particle pCopy = haloParticle;
     pCopy.setOwnershipState(OwnershipState::halo);
 
+    // this might be called from a parallel region so force this iterator to be sequential
     for (auto it = getRegionIterator(utils::ArrayMath::subScalar(pCopy.getR(), this->getSkin() / 2),
                                      utils::ArrayMath::addScalar(pCopy.getR(), this->getSkin() / 2),
-                                     IteratorBehavior::haloOnly);
+                                     IteratorBehavior::halo | IteratorBehavior::forceSequential);
          it.isValid(); ++it) {
       if (pCopy.getID() == it->getID()) {
         *it = pCopy;
@@ -202,7 +204,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 #pragma omp parallel reduction(|| : deletedSth)
 #endif
     {
-      for (auto iter = this->begin(IteratorBehavior::haloOnly); iter.isValid(); ++iter) {
+      for (auto iter = this->begin(IteratorBehavior::halo); iter.isValid(); ++iter) {
         internal::deleteParticle(iter);
         deletedSth = true;
       }
@@ -234,7 +236,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 #endif
     {
       std::vector<Particle> myInvalidParticles;
-      for (auto iter = this->begin(IteratorBehavior::ownedOnly); iter.isValid(); ++iter) {
+      for (auto iter = this->begin(IteratorBehavior::owned); iter.isValid(); ++iter) {
         if (not utils::inBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
           myInvalidParticles.push_back(*iter);
           internal::deleteParticle(iter);
@@ -272,18 +274,12 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @note This function additionally rebuilds the towers if the tower-structure isn't valid.
    */
   [[nodiscard]] ParticleIteratorWrapper<Particle, true> begin(
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
-    // For good openmp scalability we want the particles to be sorted into the clusters, so we do this!
-#ifdef AUTOPAS_OPENMP
-#pragma omp single
-#endif
-    if (_isValid == ValidityState::invalid) {
-      rebuildTowersAndClusters();
-    }
-    // there is an implicit barrier at end of single!
+      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) override {
+    prepareContainerForIterator(behavior);
+
     return ParticleIteratorWrapper<Particle, true>(
         new internal::ParticleIterator<Particle, internal::ClusterTower<Particle>, true>(
-            &(this->_towers), 0, &unknowingCellBorderAndFlagManager, behavior));
+            &(this->_towers), 0, &unknowingCellBorderAndFlagManager, behavior, nullptr));
   }
 
   /**
@@ -292,17 +288,17 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @note This function additionally iterates over the _particlesToAdd vector if the tower-structure isn't valid.
    */
   [[nodiscard]] ParticleIteratorWrapper<Particle, false> begin(
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
+      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) const override {
     /// @todo use proper cellBorderAndFlagManager instead of the unknowing.
     if (_isValid != ValidityState::invalid) {
-      if (not _particlesToAdd.empty()) {
+      if (not particlesToAddEmpty()) {
         autopas::utils::ExceptionHandler::exception(
             "VerletClusterLists::begin() const: Error: particle container is valid, but _particlesToAdd isn't empty!");
       }
       // If the particles are sorted into the towers, we can simply use the iteration over towers.
       return ParticleIteratorWrapper<Particle, false>{
           new internal::ParticleIterator<Particle, internal::ClusterTower<Particle>, false>(
-              &(this->_towers), 0, &unknowingCellBorderAndFlagManager, behavior)};
+              &(this->_towers), 0, &unknowingCellBorderAndFlagManager, behavior, nullptr)};
     } else {
       // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
       return ParticleIteratorWrapper<Particle, false>{
@@ -320,18 +316,10 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @copydoc ParticleContainerInterface::getRegionIterator()
    * @note This function additionally rebuilds the towers if the tower-structure isn't valid.
    */
-  [[nodiscard]] ParticleIteratorWrapper<Particle, true> getRegionIterator(
-      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) override {
-    // Special iterator requires sorted cells.
-    // Only one thread is allowed to rebuild the towers, so we do an omp single here.
-#ifdef AUTOPAS_OPENMP
-#pragma omp single
-#endif
-    if (_isValid == ValidityState::invalid) {
-      rebuildTowersAndClusters();
-    }
-    // there is an implicit barrier at end of single!
+  [[nodiscard]] ParticleIteratorWrapper<Particle, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
+                                                                          const std::array<double, 3> &higherCorner,
+                                                                          IteratorBehavior behavior) override {
+    prepareContainerForIterator(behavior);
 
     auto [lowerCornerInBounds, upperCornerInBounds, cellsOfInterest] =
         getRegionIteratorHelper(lowerCorner, higherCorner, behavior);
@@ -339,7 +327,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     return ParticleIteratorWrapper<Particle, true>(
         new internal::RegionParticleIterator<Particle, internal::ClusterTower<Particle>, true>(
             &this->_towers, lowerCornerInBounds, upperCornerInBounds, cellsOfInterest,
-            &internal::UnknowingCellBorderAndFlagManager::get(), behavior));
+            &internal::UnknowingCellBorderAndFlagManager::get(), behavior, nullptr));
   }
 
   /**
@@ -347,10 +335,10 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @note const version.
    * @note This function additionally iterates over _particlesToAdd if the container structure isn't valid.
    */
-  [[nodiscard]] ParticleIteratorWrapper<Particle, false> getRegionIterator(
-      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const override {
-    if (_isValid != ValidityState::invalid && not _particlesToAdd.empty()) {
+  [[nodiscard]] ParticleIteratorWrapper<Particle, false> getRegionIterator(const std::array<double, 3> &lowerCorner,
+                                                                           const std::array<double, 3> &higherCorner,
+                                                                           IteratorBehavior behavior) const override {
+    if (_isValid != ValidityState::invalid && not particlesToAddEmpty()) {
       autopas::utils::ExceptionHandler::exception(
           "VerletClusterLists::begin() const: Error: particle container is valid, but _particlesToAdd isn't empty!");
     }
@@ -411,11 +399,10 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @copydoc ParticleContainerInterface::getNumParticles()
    */
   [[nodiscard]] unsigned long getNumParticles() const override {
-    unsigned long sum = 0;
-    for (size_t index = 0; index < _towers.size(); index++) {
-      sum += _towers[index].getNumActualParticles();
-    }
-    sum += _particlesToAdd.size();
+    size_t sum = std::accumulate(_towers.begin(), _towers.end(), 0,
+                                 [](size_t acc, const auto &tower) { return acc + tower.getNumActualParticles(); });
+    sum = std::accumulate(_particlesToAdd.begin(), _particlesToAdd.end(), sum,
+                          [](size_t acc, const auto &buffer) { return acc + buffer.size(); });
     return sum;
   }
 
@@ -588,7 +575,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    */
   void deleteAllParticles() override {
     _isValid = ValidityState::invalid;
-    _particlesToAdd.clear();
+    std::for_each(_particlesToAdd.begin(), _particlesToAdd.end(), [](auto &buffer) { buffer.clear(); });
     std::for_each(_towers.begin(), _towers.end(), [](auto &tower) { tower.clear(); });
   }
 
@@ -598,10 +585,22 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * This function sets the container structure to valid.
    */
   void rebuildTowersAndClusters() {
-    _builder = std::make_unique<internal::VerletClusterListsRebuilder<Particle>>(*this, _towers, _particlesToAdd,
-                                                                                 _clusterSize);
+    // collect all particles to add from accross the thread buffers
+    typename decltype(_particlesToAdd)::value_type particlesToAdd;
+    size_t numParticlesToAdd = std::accumulate(_particlesToAdd.begin(), _particlesToAdd.end(), 0,
+                                               [](size_t acc, const auto &buffer) { return acc + buffer.size(); });
+    particlesToAdd.reserve(numParticlesToAdd);
+    std::for_each(_particlesToAdd.begin(), _particlesToAdd.end(), [&](auto &particlesBuffer) {
+      particlesToAdd.insert(particlesToAdd.end(), particlesBuffer.begin(), particlesBuffer.end());
+      particlesBuffer.clear();
+    });
+
+    _builder =
+        std::make_unique<internal::VerletClusterListsRebuilder<Particle>>(*this, _towers, particlesToAdd, _clusterSize);
+
     std::tie(_towerSideLength, _numTowersPerInteractionLength, _towersPerDim, _numClusters) =
         _builder->rebuildTowersAndClusters();
+
     _towerSideLengthReciprocal = 1 / _towerSideLength;
     _isValid = ValidityState::cellsValidListsInvalid;
     for (auto &tower : _towers) {
@@ -763,6 +762,39 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   autopas::LoadEstimatorOption _loadEstimator;
 
   /**
+   * Checks the state of the container and whether it is ready to launch an iterator.
+   * Depending on the behavior and current state, this might rebuild towers and clusters.
+   *
+   * @note This function needs to be called by all functions that create an iterator with modifiable flag == true.
+   *
+   * @param behavior
+   */
+  void prepareContainerForIterator(const IteratorBehavior &behavior) {
+    // For good openmp scalability we want the particles to be sorted into the clusters, so we do this!
+
+    // If multiple asynchronous iterators are used the container must already be valid.
+    // Otherwise it is impossible to decide which thread needs to rebuild the tower structure and which need to wait.
+    if (behavior & IteratorBehavior::forceSequential) {
+      if (_isValid == ValidityState::invalid) {
+        autopas::utils::ExceptionHandler::exception(
+            "VerletClusterLists::prepareContainerForIterator(): Parallel iterators with behavior containing "
+            "forceSequential encountered, but the container is invalid.");
+      }
+    } else {
+      // Only one thread is allowed to rebuild the towers, so we do an omp single here.
+      // This single is only possible when we do not force sequential mode as otherwise not all threads might pass
+      // through here and we end up waiting for them forever.
+#ifdef AUTOPAS_OPENMP
+#pragma omp single
+#endif
+      if (_isValid == ValidityState::invalid) {
+        rebuildTowersAndClusters();
+      }
+      // there is an implicit barrier at end of single!
+    }
+  }
+
+  /**
    * Helper function for the region iterators to determine bounds and towers to iterate over.
    * @param lowerCorner
    * @param higherCorner
@@ -846,8 +878,22 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
   /**
    * Contains all particles that should be added to the container during the next rebuild.
+   * Outer vector is for Thread buffer to allow parallel particle insertion.
    */
-  std::vector<Particle> _particlesToAdd;
+  std::vector<std::vector<Particle>> _particlesToAdd;
+
+  /**
+   * Checks if there are particles in at least one thread buffer of _particlesToAdd.
+   * @return true iff all thread buffer are empty.
+   */
+  [[nodiscard]] bool particlesToAddEmpty() const {
+    for (auto &threadBuffer : _particlesToAdd) {
+      if (not threadBuffer.empty()) {
+        return false;
+      }
+    }
+    return true;
+  }
 
   /**
    * Defines a partition of the clusters to a number of threads.

@@ -12,6 +12,7 @@
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/logging/Logger.h"
 #include "autopas/utils/markParticleAsDeleted.h"
+#include "autopas/options/IteratorBehavior.h"
 
 namespace autopas {
 
@@ -138,6 +139,9 @@ class LogicHandler {
    * @copydoc AutoPas::addOrUpdateHaloParticle()
    */
   void addOrUpdateHaloParticle(const Particle &haloParticle) {
+    using ::autopas::utils::ArrayMath::addScalar;
+    using ::autopas::utils::ArrayMath::subScalar;
+
     auto container = _autoTuner.getContainer();
     if (not isContainerValid()) {
       if (not utils::inBox(haloParticle.getR(), _autoTuner.getContainer()->getBoxMin(),
@@ -151,23 +155,30 @@ class LogicHandler {
     } else {
       // check if the halo particle is actually a halo particle, i.e., not too far (more than skin/2) inside of the
       // domain.
-      if (not utils::inBox(haloParticle.getR(),
-                           utils::ArrayMath::addScalar(container->getBoxMin(), container->getSkin() / 2),
-                           utils::ArrayMath::subScalar(container->getBoxMax(), container->getSkin() / 2))) {
+      if (not utils::inBox(haloParticle.getR(), addScalar(container->getBoxMin(), container->getSkin() / 2),
+                           subScalar(container->getBoxMax(), container->getSkin() / 2))) {
         bool updated = _autoTuner.getContainer()->updateHaloParticle(haloParticle);
         if (not updated) {
           // a particle has to be updated if it is within cutoff + skin/2 of the bounding box
           double dangerousDistance = container->getCutoff() + container->getSkin() / 2;
 
-          bool dangerous =
-              utils::inBox(haloParticle.getR(), utils::ArrayMath::subScalar(container->getBoxMin(), dangerousDistance),
-                           utils::ArrayMath::addScalar(container->getBoxMax(), dangerousDistance));
+          auto dangerousBoxMin = subScalar(container->getBoxMin(), dangerousDistance);
+          auto dangerousBoxMax = addScalar(container->getBoxMax(), dangerousDistance);
+          bool dangerous = utils::inBox(haloParticle.getR(), dangerousBoxMin, dangerousBoxMax);
           if (dangerous) {
             // throw exception, rebuild frequency not high enough / skin too small!
             utils::ExceptionHandler::exception(
                 "LogicHandler::addHaloParticle: wasn't able to update halo particle that is too close to "
-                "domain (more than cutoff + skin/2). Rebuild frequency not high enough / skin too small!\nParticle: " +
-                haloParticle.toString());
+                "domain (more than cutoff + skin/2). Rebuild frequency not high enough / skin too small!\n"
+                "Cutoff       : {}\n"
+                "Skin         : {}\n"
+                "BoxMin       : {}\n"
+                "BoxMax       : {}\n"
+                "Dangerous Min: {}\n"
+                "Dangerous Max: {}\n"
+                "Particle     : {}\n",
+                container->getCutoff(), container->getSkin(), container->getBoxMin(), container->getBoxMax(),
+                dangerousBoxMin, dangerousBoxMax, haloParticle.toString());
           }
         }
       } else {
@@ -224,7 +235,7 @@ class LogicHandler {
   /**
    * @copydoc AutoPas::begin()
    */
-  autopas::ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+  autopas::ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior) {
     /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
     return _autoTuner.getContainer()->begin(behavior);
   }
@@ -232,21 +243,20 @@ class LogicHandler {
   /**
    * @copydoc AutoPas::begin()
    */
-  autopas::ParticleIteratorWrapper<Particle, false> begin(
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
+  autopas::ParticleIteratorWrapper<Particle, false> begin(IteratorBehavior behavior) const {
     /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
     return std::as_const(_autoTuner).getContainer()->begin(behavior);
   }
 
   template <typename Lambda>
-  void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     auto execOnContainer = [&](auto container) { container->forEach(forEachLambda, behavior); };
 
     withStaticContainerType(_autoTuner.getContainer(), execOnContainer);
   }
 
   template <typename Lambda>
-  void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     auto execOnContainer = [&](auto container) { container->forEach(forEachLambda, behavior); };
 
     withStaticContainerType(_autoTuner.getContainer(), execOnContainer);
@@ -255,9 +265,20 @@ class LogicHandler {
   /**
    * @copydoc AutoPas::getRegionIterator()
    */
-  autopas::ParticleIteratorWrapper<Particle, true> getRegionIterator(
-      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+  autopas::ParticleIteratorWrapper<Particle, true> getRegionIterator(std::array<double, 3> lowerCorner,
+                                                                     std::array<double, 3> higherCorner,
+                                                                     IteratorBehavior behavior) {
+    // sanity check: Most of our stuff depends on `inBox` which does not handle lowerCorner > higherCorner well.
+    for (size_t d = 0; d < 3; ++d) {
+      if (lowerCorner > higherCorner) {
+        autopas::utils::ExceptionHandler::exception(
+            "Requesting region Iterator where the upper corner is lower than the lower corner!\n"
+            "Lower corner: {}\n"
+            "Upper corner: {}",
+            lowerCorner, higherCorner);
+      }
+    }
+
     /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
     return _autoTuner.getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior);
   }
@@ -265,16 +286,27 @@ class LogicHandler {
   /**
    * @copydoc AutoPas::getRegionIterator()
    */
-  autopas::ParticleIteratorWrapper<Particle, false> getRegionIterator(
-      std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
+  autopas::ParticleIteratorWrapper<Particle, false> getRegionIterator(std::array<double, 3> lowerCorner,
+                                                                      std::array<double, 3> higherCorner,
+                                                                      IteratorBehavior behavior) const {
+    // sanity check: Most of our stuff depends on `inBox` which does not handle lowerCorner > higherCorner well.
+    for (size_t d = 0; d < 3; ++d) {
+      if (lowerCorner > higherCorner) {
+        autopas::utils::ExceptionHandler::exception(
+            "Requesting region Iterator where the upper corner is lower than the lower corner!\n"
+            "Lower corner: {}\n"
+            "Upper corner: {}",
+            lowerCorner, higherCorner);
+      }
+    }
+
     /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
     return std::as_const(_autoTuner).getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior);
   }
 
   template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-                       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) {
+                       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     auto execOnContainer = [&](auto container) {
       container->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
     };
@@ -284,7 +316,7 @@ class LogicHandler {
 
   template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-                       IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const {
+                       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     auto execOnContainer = [&](auto container) {
       container->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
     };

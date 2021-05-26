@@ -6,6 +6,7 @@
 #pragma once
 #include "autopas/AutoPas.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/options/IteratorBehavior.h"
 
 /**
  * Functions for updating velocities and positions as simulation time progresses.
@@ -36,7 +37,7 @@ void calculatePositions(AutoPasTemplate &autopas, const ParticlePropertiesLibrar
     auto newR = add(v, f);
     particle.addR(newR);
   };
-  autopas.forEach(forEachLambda, autopas::IteratorBehavior::ownedOnly);
+  autopas.forEach(forEachLambda, autopas::IteratorBehavior::owned);
 }
 
 /**
@@ -59,7 +60,7 @@ void calculateVelocities(AutoPasTemplate &autopas, const ParticlePropertiesLibra
     auto newV = mulScalar((add(force, oldForce)), deltaT / (2 * m));
     particle.addV(newV);
   };
-  autopas.forEach(forEachLambda, autopas::IteratorBehavior::ownedOnly);
+  autopas.forEach(forEachLambda, autopas::IteratorBehavior::owned);
 }
 
 }  // namespace TimeDiscretization
