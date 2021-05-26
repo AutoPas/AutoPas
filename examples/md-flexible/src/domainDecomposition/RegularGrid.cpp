@@ -5,11 +5,10 @@
  */
 #include "RegularGrid.h"
 
-#include <math.h>
-
 #include <algorithm>
 #include <functional>
 #include <list>
+#include <math.h>
 #include <numeric>
 
 #include "DomainTools.h"

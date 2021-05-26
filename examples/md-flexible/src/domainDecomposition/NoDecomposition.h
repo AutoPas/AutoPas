@@ -1,13 +1,13 @@
 /**
- * @file SingleDomain.h
+ * @file KdTree.h
  * @author J. Körner
- * @date 06.05.2021
+ * @date 25.05.2021
  */
 #pragma once
 
 #include "DomainDecomposition.h"
 
-class SingleDomain final : public DomainDecomposition {
+class NoDecomposition final : public DomainDecomposition {
  public:
   /**
   * Constructor.
@@ -17,14 +17,13 @@ class SingleDomain final : public DomainDecomposition {
   * @param globalBoxMin The minimum coordinates of the global domain.
   * @param globalBoxMax The maximum coordinates of the global domain.
   */
-  SingleDomain(int argc, char **argv, const int &dimensionCount, const std::vector<double> &globalBoxMin,
+  NoDecomposition(int argc, char **argv, const int &dimensionCount, const std::vector<double> &globalBoxMin,
                const std::vector<double> &globalBoxMax);
 
   /**
    * Destructor.
    */
-  ~SingleDomain() = default;
-
+  virtual ~NoDecomposition();
 
   /**
    * Updates the domain decomposition to the current topology.

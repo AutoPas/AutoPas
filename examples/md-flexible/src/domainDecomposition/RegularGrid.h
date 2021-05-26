@@ -28,7 +28,7 @@ class RegularGrid final : public DomainDecomposition {
   /**
    * Destructor.
    */
-  ~RegularGrid();
+  virtual ~RegularGrid();
 
   /** 
    * Type for the AutoPas container

@@ -6,7 +6,7 @@
 #pragma once
 
 #include "MDFlexSimulation.h"
-#include "src/domainDecomposition/SingleDomain.h"
+#include "src/domainDecomposition/NoDecomposition.h"
 
 /**
  * Runs the MD-Flex simulation on a single node.
@@ -48,7 +48,7 @@ class MDFlexSingleRank : public MDFlexSimulation {
   /**
    * Stores the simulations domain decomposition.
    */
-  std::shared_ptr<SingleDomain> _domainDecomposition;
+  std::shared_ptr<NoDecomposition> _domainDecomposition;
 
   /**
    * Prints the statistics of the simulation.

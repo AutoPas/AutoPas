@@ -99,7 +99,7 @@ void MDFlexSingleRank::initializeDomainDecomposition(int &dimensionCount) {
   std::vector<double> boxMin(_configuration->boxMin.value.begin(), _configuration->boxMin.value.end());
   std::vector<double> boxMax(_configuration->boxMax.value.begin(), _configuration->boxMax.value.end());
 
-  _domainDecomposition = std::make_shared<SingleDomain>(_argc, _argv, dimensionCount, boxMin, boxMax);
+  _domainDecomposition = std::make_shared<NoDecomposition>(_argc, _argv, dimensionCount, boxMin, boxMax);
 
   std::vector<double> localBoxMin = _domainDecomposition->getLocalBoxMin();
   std::vector<double> localBoxMax = _domainDecomposition->getLocalBoxMax();

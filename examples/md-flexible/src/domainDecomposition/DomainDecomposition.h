@@ -12,6 +12,7 @@
  */
 class DomainDecomposition {
  public:
+  
   /**
    * Destructor.
    */

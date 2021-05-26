@@ -1,19 +1,19 @@
 /**
- * @file TestSingleDomain.cpp
+ * @file NoDecompositionTest.cpp
  * @author J. Körner
  * @date 19/05/21
  */
-#include "TestSingleDomain.h"
+#include "NoDecompositionTest.h"
 
-#include "src/domainDecomposition/SingleDomain.h"
+#include "src/domainDecomposition/NoDecomposition.h"
 
-TestSingleDomain::TestSingleDomain() : AutoPasTestBase() {}
-
-TEST_F(TestSingleDomain, testGetLocalDomain) {
+TEST_F(NoDecompositionTest, testGetLocalDomain) {
   std::vector<double> globalBoxMin = {1.0, 1.0, 1.0};
   std::vector<double> globalBoxMax = {10.0, 10.0, 10.0};
 
-  SingleDomain domainDecomposition(0, "", 3, globalBoxMin, globalBoxMax);
+  char** argv;
+
+  NoDecomposition domainDecomposition(0, argv, 3, globalBoxMin, globalBoxMax);
 
   EXPECT_EQ(globalBoxMin, domainDecomposition.getLocalBoxMin());
   EXPECT_EQ(globalBoxMax, domainDecomposition.getLocalBoxMax());
