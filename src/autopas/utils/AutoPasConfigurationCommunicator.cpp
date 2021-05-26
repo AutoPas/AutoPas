@@ -157,6 +157,12 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
                                 dataLayoutOptions, newton3Options));
 }
 
+void distributeRanksInBuckets(AutoPas_MPI_Comm comm, int rank, int commSize, AutoPas_MPI_Comm bucket) {
+  std::vector<double> homogeneitys;
+  // calc homo
+  AutoPas_MPI_Allgather(&homo, 1, AUTOPAS_MPI_DOUBLE, &homogeneitys, commSize, AUTOPAS_MPI_DOUBLE, comm);
+}
+
 Configuration optimizeConfiguration(AutoPas_MPI_Comm comm, Configuration localOptimalConfig, size_t localOptimalTime) {
   SerializedConfiguration serializedConfiguration = serializeConfiguration(localOptimalConfig);
   size_t optimalTimeOut;

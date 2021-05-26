@@ -76,6 +76,16 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
                               int rank, int commSize);
 
 /**
+ * Distribute ranks in buckets, which contain only ranks with similar scenarios.
+ * Each bucket then has its own search space.
+ * @param comm
+ * @param rank
+ * @param commSize
+ * @param bucket
+ */
+void distributeRanksInBuckets(AutoPas_MPI_Comm comm, int rank, int commSize, AutoPas_MPI_Comm bucket);
+
+/**
  * Serializes a configuration object for communication via MPI.
  * @param configuration: the configuration to be sent.
  * @return The serialization
