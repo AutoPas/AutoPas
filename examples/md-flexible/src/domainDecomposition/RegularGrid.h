@@ -12,6 +12,10 @@
 #include "mpi.h"
 #include "src/TypeDefinitions.h"
 
+/**
+ * This class can be used as a domain decomposition which divides the domain in equal sized rectangular subdomains.
+ * The number of subdomains is equal to the number of MPI processes available.
+ */
 class RegularGrid final : public DomainDecomposition {
  public:
   /**
