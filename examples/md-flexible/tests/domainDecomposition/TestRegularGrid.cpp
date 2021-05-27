@@ -5,18 +5,33 @@
  */
 #include "TestRegularGrid.h"
 
+#include "mpi.h"
+#include "src/domainDecomposition/DomainTools.h"
 #include "src/domainDecomposition/RegularGrid.h"
 
-TEST_F(TestRegularGrid, testGetGlobalDomain) {
-  std::vector<double> globalBoxMin = {1.0, 1.0, 1.0};
-  std::vector<double> globalBoxMax = {10.0, 10.0, 10.0};
+extern int extArgc;
+extern char** extArgv;
 
-  char** argv;
-  
-  RegularGrid domainDecomposition(0, argv, 3, globalBoxMin, globalBoxMax);
+namespace {
+  std::vector<double> sub(std::vector<double> a, std::vector<double> b) {
+    std::vector<double> difference = a;
+    if (a.size() == b.size()){
+      for (int i = 0; i < a.size(); ++i){
+        difference[i] = a[i] - b[i];
+      }
+    }
+    return difference;
+  }
 
-  EXPECT_EQ(globalBoxMin, domainDecomposition.getGlobalBoxMin());
-  EXPECT_EQ(globalBoxMax, domainDecomposition.getGlobalBoxMax());
+  std::vector<double> div(std::vector<double> a, std::vector<int> b) {
+    std::vector<double> result = a;
+    if (a.size() == b.size()){
+      for (int i = 0; i < a.size(); ++i){
+        result[i] = a[i] / (double)b[i];
+      }
+    }
+    return result;
+  }
 }
 
 TEST_F(TestRegularGrid, testGetLocalDomain) {
@@ -25,18 +40,23 @@ TEST_F(TestRegularGrid, testGetLocalDomain) {
 
   char** argv;
 
-  RegularGrid domainDecomposition(0, argv, 3, globalBoxMin, globalBoxMax);
+  std::cout << "Arguments: " << extArgc << ", " << extArgv[1] << std::endl;
+  RegularGrid domainDecomposition(extArgc, extArgv, 3, globalBoxMin, globalBoxMax);
 
-  std::vector<double> globalBoxExtend = autopas::utils::ArrayMath::sub(globalBoxMax, globalBoxMin);
-  std::vector<int> decomposition = domainDecomposition.getDecomposition();
+  std::vector<double> globalBoxExtend = sub(globalBoxMax, globalBoxMin);
 
-  // @todo: finish this test
-  //std::vector expectedlocalBoxExtend = 
+  int numberOfProcesses;
+  MPI_Comm_size(MPI_COMM_WORLD, &numberOfProcesses);
 
-  double boxLengthX = globalBoxExtend[0] / decomposition[0];
-  double boxLengthY = globalBoxExtend[1] / decomposition[1];
-  double boxLengthZ = globalBoxExtend[2] / decomposition[2];
-  
-  EXPECT_EQ(globalBoxMin, domainDecomposition.getLocalBoxMin());
-  EXPECT_EQ(globalBoxMax, domainDecomposition.getLocalBoxMax());
+  std::vector<int> decomposition;
+  DomainTools::generateDecomposition(numberOfProcesses, 3, decomposition);
+
+  std::vector<double> expectedLocalBoxExtend = div(globalBoxExtend, decomposition);
+
+  std::vector<double> resultingLocalBoxExtend =
+    sub(domainDecomposition.getLocalBoxMax(), domainDecomposition.getLocalBoxMin());
+
+  EXPECT_NEAR(expectedLocalBoxExtend[0], resultingLocalBoxExtend[0], 1e-10);
+  EXPECT_NEAR(expectedLocalBoxExtend[1], resultingLocalBoxExtend[1], 1e-10);
+  EXPECT_NEAR(expectedLocalBoxExtend[2], resultingLocalBoxExtend[2], 1e-10);
 }
