@@ -98,9 +98,9 @@ class CubeGauss : public Object {
         std::normal_distribution<double>{_distributionMean[1], _distributionStdDev[1]},
         std::normal_distribution<double>{_distributionMean[2], _distributionStdDev[2]}};
     for (int i = 0; i < _numParticles; ++i) {
-      particle.id++;
       particle.position = {distributions[0](generator), distributions[1](generator), distributions[2](generator)};
       particles.push_back(particle);
+      particle.id++;
     }
   }
 

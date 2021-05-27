@@ -76,11 +76,11 @@ class CubeUniform : public Object {
     ParticleAttributes particle = getDummyParticle(particles.size());
     std::srand(std::time(0));
     for (unsigned long i = 0; i < _numParticles; ++i) {
-      particle.id++;
       particle.position[0] = _bottomLeftCorner[0] + (static_cast<double>(std::rand()) / RAND_MAX) * _boxLength[0];
       particle.position[1] = _bottomLeftCorner[1] + (static_cast<double>(std::rand()) / RAND_MAX) * _boxLength[1];
       particle.position[2] = _bottomLeftCorner[2] + (static_cast<double>(std::rand()) / RAND_MAX) * _boxLength[2];
       particles.push_back(particle);
+      particle.id++;
     }
   }
 

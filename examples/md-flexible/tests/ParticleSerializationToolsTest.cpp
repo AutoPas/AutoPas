@@ -30,7 +30,7 @@ TEST_F(ParticleSerializationToolsTest, testSeralizeParticle) {
   ParticleAttributes *attributes = reinterpret_cast<ParticleAttributes *>(&serializedParticle[0]);
 
   EXPECT_EQ(attributes->position, _particle.position);
-  EXPECT_EQ(attributes->velocity, _particle.position);
+  EXPECT_EQ(attributes->velocity, _particle.velocity);
   EXPECT_EQ(attributes->force, _particle.force);
   EXPECT_EQ(attributes->id, _particle.id);
   EXPECT_EQ(attributes->ownershipState, _particle.ownershipState);

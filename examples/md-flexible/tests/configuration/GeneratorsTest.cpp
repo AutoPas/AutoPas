@@ -33,43 +33,17 @@ TEST_F(GeneratorsTest, GridFillwithBoxMin) {
  * This test expects multipleObjectsWithMultipleTypesTest.yaml to be placed in md-flexible/tests/yamlTestFiles
  */
 TEST_F(GeneratorsTest, MultipleObjectGeneration) {
-  std::string arguments =
-      "md-flexible --yaml-filename " + std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml";
+  std::vector<std::string> arguments =
+    { "md-flexible", "--yaml-filename", std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml"};
 
-  MDFlexConfig configuration(3, reinterpret_cast<char **>(arguments.data()));
+  char* argv[3] = { arguments[0].data(), arguments[1].data(), arguments[2].data() };
 
-  std::array<double, 3> velocity = {0., 0., 0.};
-  // parses the multiple Objects input of "multipleObjectsWithMultipleTypesTest" and generates a
-  // VTK File from the Input
-  // yaml input file with all 4 different Object types
-  auto cubeGrid(configuration.cubeGridObjects);
-  auto cubeGauss(configuration.cubeGaussObjects);
-  auto cubeUniform(configuration.cubeUniformObjects);
-  auto sphere(configuration.sphereObjects);
+  MDFlexConfig configuration(3, argv);
 
-  EXPECT_THAT(cubeGrid, ::testing::SizeIs(1));
-  EXPECT_THAT(cubeGauss, ::testing::SizeIs(1));
-  EXPECT_THAT(cubeUniform, ::testing::SizeIs(1));
-  EXPECT_THAT(sphere, ::testing::SizeIs(1));
-
-  size_t idcounter = 0;  // to avoid multiple particles with the same ids
-
-  std::vector<ParticleAttributes> particles;
-  cubeGrid[0].generate(particles);
-  idcounter += cubeGrid.at(0).getParticlesTotal();
-  EXPECT_EQ(particles.size(), idcounter) << "CubeGrid generator added a wrong number of particles!";
-
-  cubeGauss[0].generate(particles);
-  idcounter += cubeGauss.at(0).getParticlesTotal();
-  EXPECT_EQ(particles.size(), idcounter) << "CubeGauss generator added a wrong number of particles!";
-
-  cubeUniform[0].generate(particles);
-  idcounter += cubeUniform.at(0).getParticlesTotal();
-  EXPECT_EQ(particles.size(), idcounter) << "CubeRandom generator added a wrong number of particles!";
-
-  sphere[0].generate(particles);
-  idcounter += sphere.at(0).getParticlesTotal();
-  EXPECT_EQ(particles.size(), idcounter) << "Sphere generator added a wrong number of particles!";
+  EXPECT_THAT(configuration.cubeGridObjects, ::testing::SizeIs(1));
+  EXPECT_THAT(configuration.cubeGaussObjects, ::testing::SizeIs(1));
+  EXPECT_THAT(configuration.cubeUniformObjects, ::testing::SizeIs(1));
+  EXPECT_THAT(configuration.sphereObjects, ::testing::SizeIs(1));
 
   // counters to checks if all particles types are well initialized for different Objects:
   int gridCounter = 0;
@@ -77,7 +51,8 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   int uniformCounter = 0;
   int sphereCounter = 0;
 
-  for (auto &particle : particles) {
+  std::array<double, 3> velocity = {0., 0., 0.};
+  for (auto &particle : configuration.getParticles()) {
     EXPECT_EQ(velocity, particle.velocity);  // velocity set to {0.,0.,0.} in parsingFile
     switch (particle.typeId) {
       case 0: {
@@ -101,15 +76,16 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
       }
     }
   }
-  EXPECT_EQ(gridCounter, cubeGrid.at(0).getParticlesTotal());
-  EXPECT_EQ(gaussCounter, cubeGauss.at(0).getParticlesTotal());
-  EXPECT_EQ(uniformCounter, cubeUniform.at(0).getParticlesTotal());
-  EXPECT_EQ(sphereCounter, sphere.at(0).getParticlesTotal());
+
+  EXPECT_EQ(gridCounter, configuration.cubeGridObjects.at(0).getParticlesTotal());
+  EXPECT_EQ(gaussCounter, configuration.cubeGaussObjects.at(0).getParticlesTotal());
+  EXPECT_EQ(uniformCounter, configuration.cubeUniformObjects.at(0).getParticlesTotal());
+  EXPECT_EQ(sphereCounter, configuration.sphereObjects.at(0).getParticlesTotal());
   // check if during initialization, not 2 Particles were initialized with same id
   std::set<size_t> ids;
-  for (auto &particle : particles) {
+  for (auto &particle : configuration.getParticles()) {
     ASSERT_EQ(ids.count(particle.id), 0) << "Two particles have the same ID " << particle.id;
     ids.insert(particle.id);
   }
-  EXPECT_EQ(ids.size(), particles.size());
+  EXPECT_EQ(ids.size(), configuration.getParticles().size());
 }

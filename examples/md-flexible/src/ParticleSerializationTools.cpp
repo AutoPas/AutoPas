@@ -66,6 +66,7 @@ ParticleType convertParticleAttributesToParticle(ParticleAttributes &attributes)
   particle.setF(attributes.force);
   particle.setOldF(attributes.oldForce);
   particle.setID(attributes.id);
+  particle.setOwnershipState(attributes.ownershipState);
   particle.setTypeId(attributes.typeId);
 
   return particle;

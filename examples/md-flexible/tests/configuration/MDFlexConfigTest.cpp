@@ -11,85 +11,61 @@
 using ::testing::ElementsAreArray;
 
 TEST_F(MDFlexConfigTest, GridBoxMinMax) {
-  double spacing = 1.2;
-  std::array<size_t, 3> particlesPerDim{4, 5, 6};
-  std::array<double, 3> bottomLeftCorner{0, 1, 2};
-  CubeGrid cubeGrid(zero, 0, 1, 1, 1, particlesPerDim, spacing, bottomLeftCorner);
+  std::vector<std::string> arguments =
+    { "md-flexible", "--yaml-file", std::string(YAMLDIRECTORY) + "cubeGrid.yaml"};
 
-  _configuration->cubeGridObjects.push_back(cubeGrid);
-  _configuration->calcSimulationBox();
+  char* argv[3] = { arguments[0].data(), arguments[1].data(), arguments[2].data() };
 
-  EXPECT_THAT(_configuration->boxMin.value, ElementsAreArray({-spacing / 2, 0., 0.}));
+  MDFlexConfig configuration(3, argv);
 
-  std::array<double, 3> expectedBoxMax;
-  for (unsigned int i = 0; i < expectedBoxMax.size(); ++i) {
-    // position of last particle
-    expectedBoxMax[i] = (particlesPerDim[i] - 1) * spacing + bottomLeftCorner[i];
-    // + offset so that object is not exactly at the edge of the domain (important for periodics)
-    expectedBoxMax[i] += spacing * 0.5;
-  }
-  EXPECT_THAT(_configuration->boxMax.value, ElementsAreArray(expectedBoxMax));
+  std::array<double, 3> expectedBoxMin = { 0, 0, 0 };
+  std::array<double, 3> expectedBoxMax = { 9.75, 9.75, 9.75 };
+
+  EXPECT_THAT(configuration.boxMin.value, expectedBoxMin);
+  EXPECT_THAT(configuration.boxMax.value, expectedBoxMax);
 }
 
 TEST_F(MDFlexConfigTest, SphereBoxMinMax) {
-  double spacing = 1.2;
-  size_t radius = 5;
-  std::array<double, 3> center{0, 1, 2};
-  Sphere sphere(zero, 0, 1, 1, 1, center, radius, spacing);
+  std::vector<std::string> arguments =
+    { "md-flexible", "--yaml-filename", std::string(YAMLDIRECTORY) + "sphere.yaml"};
 
-  _configuration->sphereObjects.push_back(sphere);
-  _configuration->calcSimulationBox();
+  char* argv[3] = { arguments[0].data(), arguments[1].data(), arguments[2].data() };
 
-  std::array<double, 3> expectedBoxMax;
-  std::array<double, 3> expectedBoxMin;
-  for (unsigned int i = 0; i < expectedBoxMax.size(); ++i) {
-    // position of last particle
-    expectedBoxMax[i] = center[i] + radius * spacing;
-    expectedBoxMin[i] = center[i] - radius * spacing;
-    // + offset so that object is not exactly at the edge of the domain (important for periodics)
-    expectedBoxMax[i] += spacing * 0.5;
-    expectedBoxMin[i] -= spacing * 0.5;
-  }
-  EXPECT_THAT(_configuration->boxMin.value, ElementsAreArray(expectedBoxMin));
-  EXPECT_THAT(_configuration->boxMax.value, ElementsAreArray(expectedBoxMax));
+  MDFlexConfig configuration(3, argv);
+
+  std::array<double, 3> expectedBoxMin = {-10.75, -25.75, -15.75};
+  std::array<double, 3> expectedBoxMax = {20.75, 5.75, 15.75};
+
+  EXPECT_THAT(configuration.boxMin.value, expectedBoxMin);
+  EXPECT_THAT(configuration.boxMax.value, expectedBoxMax);
 }
 
 TEST_F(MDFlexConfigTest, GaussBoxMinMax) {
-  size_t numParticles = 10;
-  std::array<double, 3> boxLength{4, 5, 6};
-  std::array<double, 3> bottomLeftCorner{-1, 0, 1};
-  CubeGauss cubeGauss(zero, 0, 1, 1, 1, numParticles, boxLength, {1, 2, 3}, {4, 5, 6}, bottomLeftCorner);
+  std::vector<std::string> arguments =
+    { "md-flexible", "--yaml-filename", std::string(YAMLDIRECTORY) + "cubeGauss.yaml"};
 
-  _configuration->cubeGaussObjects.push_back(cubeGauss);
-  _configuration->calcSimulationBox();
+  char* argv[3] = { arguments[0].data(), arguments[1].data(), arguments[2].data() };
 
-  std::array<double, 3> expectedBoxMin;
-  std::array<double, 3> expectedBoxMax;
-  for (unsigned int i = 0; i < expectedBoxMax.size(); ++i) {
-    expectedBoxMax[i] = bottomLeftCorner[i] + boxLength[i];
-    // box min is at least 0 (see initialization of _config)
-    expectedBoxMin[i] = std::min(bottomLeftCorner[i], 0.);
-  }
-  EXPECT_THAT(_configuration->boxMin.value, ElementsAreArray(expectedBoxMin));
-  EXPECT_THAT(_configuration->boxMax.value, ElementsAreArray(expectedBoxMax));
+  MDFlexConfig configuration(3, argv);
+
+  std::array<double, 3> expectedBoxMin = { 0.0, 0.0, 0.0 };
+  std::array<double, 3> expectedBoxMax = { 23.0, 8.0, 13.0 };
+
+  EXPECT_THAT(configuration.boxMin.value, expectedBoxMin);
+  EXPECT_THAT(configuration.boxMax.value, expectedBoxMax);
 }
 
 TEST_F(MDFlexConfigTest, UniformBoxMinMax) {
-  size_t numParticles = 10;
-  std::array<double, 3> boxLength{4, 5, 6};
-  std::array<double, 3> bottomLeftCorner{-1, 0, 1};
-  CubeUniform cubeUniform(zero, 0, 1, 1, 1, numParticles, boxLength, bottomLeftCorner);
+  std::vector<std::string> arguments =
+    { "md-flexible", "--yaml-filename", std::string(YAMLDIRECTORY) + "cubeUniform.yaml"};
 
-  _configuration->cubeUniformObjects.push_back(cubeUniform);
-  _configuration->calcSimulationBox();
+  char* argv[3] = { arguments[0].data(), arguments[1].data(), arguments[2].data() };
 
-  std::array<double, 3> expectedBoxMin;
-  std::array<double, 3> expectedBoxMax;
-  for (unsigned int i = 0; i < expectedBoxMax.size(); ++i) {
-    expectedBoxMax[i] = bottomLeftCorner[i] + boxLength[i];
-    // box min is at least 0 (see initialization of _config)
-    expectedBoxMin[i] = std::min(bottomLeftCorner[i], 0.);
-  }
-  EXPECT_THAT(_configuration->boxMin.value, ElementsAreArray(expectedBoxMin));
-  EXPECT_THAT(_configuration->boxMax.value, ElementsAreArray(expectedBoxMax));
+  MDFlexConfig configuration(3, argv);
+
+  std::array<double, 3> expectedBoxMin = { 0, 0, -15 };
+  std::array<double, 3> expectedBoxMax = { 10, 10, 1 };
+
+  EXPECT_THAT(configuration.boxMin.value, expectedBoxMin);
+  EXPECT_THAT(configuration.boxMax.value, expectedBoxMax);
 }

@@ -19,17 +19,17 @@
 class MDFlexConfigTest : public AutoPasTestBase {
  public:
   MDFlexConfigTest() : AutoPasTestBase() {
-    std::string arguments =
-        "md-flexible --yaml-filename " + std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml";
-
-    _configuration = std::make_shared<MDFlexConfig>(3, reinterpret_cast<char **>(arguments.data()));
-
-    _configuration->cutoff.value = 1;
-    _configuration->verletSkinRadius.value = .5;
-    _configuration->boxMin.value = {0., 0., 0.};
-    _configuration->boxMax.value = {1., 1., 1.};
-
-    _interactionLength = _configuration->cutoff.value + _configuration->verletSkinRadius.value;
+    //std::string arguments =
+        //"md-flexible --yaml-filename " + std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml";
+//
+    //_configuration = std::make_shared<MDFlexConfig>(3, reinterpret_cast<char **>(arguments.data()));
+//
+    //_configuration->cutoff.value = 1;
+    //_configuration->verletSkinRadius.value = .5;
+    //_configuration->boxMin.value = {0., 0., 0.};
+    //_configuration->boxMax.value = {1., 1., 1.};
+//
+    //_interactionLength = _configuration->cutoff.value + _configuration->verletSkinRadius.value;
   }
 
  protected:
