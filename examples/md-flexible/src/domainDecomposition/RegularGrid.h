@@ -191,12 +191,6 @@ class RegularGrid final : public DomainDecomposition {
   std::vector<std::vector<char>> _sendBuffers;
 
   /**
-   * Initializes the domain decomposition.
-   * This needs to be called before initialzieMPICommunicator.
-   */
-  void initializeDecomposition();
-
-  /**
    * Initializes the MPI communicator.
    * This needs to be called before initializeLocalDomain.
    */

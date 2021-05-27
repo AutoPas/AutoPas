@@ -15,27 +15,6 @@
 #include "autopas/utils/ArrayUtils.h"
 #include "src/ParticleSerializationTools.h"
 
-namespace {
-/**
- * Calculates the prime factorization of a number.
- * @param number The number for which the factirization will be calculated.
- * @oPrimeFactors The container, where the prime factos will be appended.
- */
-void calculatePrimeFactors(unsigned int number, std::list<unsigned int> &oPrimeFactors) {
-  while (number % 2 == 0) {
-    oPrimeFactors.push_back(2);
-    number = number / 2;
-  }
-
-  for (unsigned int i = 3; i <= number; i = i + 2) {
-    while (number % i == 0) {
-      oPrimeFactors.push_back(i);
-      number = number / i;
-    }
-  }
-}
-}
-
 RegularGrid::RegularGrid(int argc, char **argv, const int &dimensionCount, const std::vector<double> &globalBoxMin,
                          const std::vector<double> &globalBoxMax) {
   _dimensionCount = dimensionCount;
@@ -43,7 +22,7 @@ RegularGrid::RegularGrid(int argc, char **argv, const int &dimensionCount, const
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &_subdomainCount);
 
-  initializeDecomposition();
+  DomainTools::generateDecomposition(_subdomainCount, _dimensionCount, _decomposition);
 
   initializeMPICommunicator();
 
@@ -62,29 +41,6 @@ RegularGrid::RegularGrid(int argc, char **argv, const int &dimensionCount, const
 RegularGrid::~RegularGrid() { MPI_Finalize(); }
 
 void RegularGrid::update() { updateLocalBox(); }
-
-void RegularGrid::initializeDecomposition() {
-  std::list<unsigned int> primeFactors;
-  calculatePrimeFactors(_subdomainCount, primeFactors);
-
-  while (primeFactors.size() > _dimensionCount) {
-    primeFactors.sort();
-    auto firstElement = primeFactors.front();
-    primeFactors.pop_front();
-    primeFactors.front() *= firstElement;
-  }
-
-  _decomposition.resize(_dimensionCount);
-
-  for (auto &dimensionSize : _decomposition) {
-    if (primeFactors.size() > 0) {
-      dimensionSize = primeFactors.front();
-      primeFactors.pop_front();
-    } else {
-      dimensionSize = 1;
-    }
-  }
-}
 
 void RegularGrid::initializeMPICommunicator() {
   std::vector<int> periods(_dimensionCount, 1);

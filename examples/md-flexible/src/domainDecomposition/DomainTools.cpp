@@ -16,4 +16,37 @@ bool isInsideDomain(const std::vector<double> &coordinates, std::vector<double> 
   }
   return isInsideLocalDomain;
 }
+
+void generateDecomposition(unsigned int subdomainCount, int dimensionCount, std::vector<double> &oDecomposition) {
+  std::list<int> primeFactors;
+  while (subdomainCount % 2 == 0) {
+    primeFactors.push_back(2);
+    subdomainCount = subdomainCount / 2;
+  }
+
+  for (unsigned int i = 3; i <= subdomainCount; i = i + 2) {
+    while (subdomainCount % i == 0) {
+      primeFactors.push_back(i);
+      subdomainCount = subdomainCount / i;
+    }
+  }
+
+  while (primeFactors.size() > dimensionCount) {
+    primeFactors.sort();
+    auto firstElement = primeFactors.front();
+    primeFactors.pop_front();
+    primeFactors.front() *= firstElement;
+  }
+
+  oDecomposition.resize(dimensionCount);
+
+  for (auto &dimensionSize : oDecomposition) {
+    if (primeFactors.size() > 0) {
+      dimensionSize = primeFactors.front();
+      primeFactors.pop_front();
+    } else {
+      dimensionSize = 1;
+    }
+  }
+}
 }
