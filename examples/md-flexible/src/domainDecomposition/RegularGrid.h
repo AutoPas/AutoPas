@@ -117,6 +117,11 @@ class RegularGrid final : public DomainDecomposition {
    */
   int getDomainIndex() { return _domainIndex; }
 
+  /** 
+   * Returns the number of domains in each dimension
+   */
+   std::vector<double> getDecomposition { return _decomposition; }
+
  private:
   /**
    * The number of dimensions in this decomposition.

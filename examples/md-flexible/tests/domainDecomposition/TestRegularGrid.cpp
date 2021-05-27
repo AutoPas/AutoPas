@@ -27,6 +27,16 @@ TEST_F(TestRegularGrid, testGetLocalDomain) {
 
   RegularGrid domainDecomposition(0, argv, 3, globalBoxMin, globalBoxMax);
 
+  std::vector<double> globalBoxExtend = autopas::utils::ArrayMath::sub(globalBoxMax, globalBoxMin);
+  std::vector<int> decomposition = domainDecomposition.getDecomposition();
+
+  // @todo: finish this test
+  //std::vector expectedlocalBoxExtend = 
+
+  double boxLengthX = globalBoxExtend[0] / decomposition[0];
+  double boxLengthY = globalBoxExtend[1] / decomposition[1];
+  double boxLengthZ = globalBoxExtend[2] / decomposition[2];
+  
   EXPECT_EQ(globalBoxMin, domainDecomposition.getLocalBoxMin());
   EXPECT_EQ(globalBoxMax, domainDecomposition.getLocalBoxMax());
 }
