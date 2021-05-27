@@ -4,6 +4,8 @@
  * @author F. Gratl
  */
 
+#include "mpi.h"
+
 #include "simulations/MDFlexMPI.h"
 #include "simulations/MDFlexSingleRank.h"
 
@@ -14,8 +16,10 @@
  * @return
  */
 int main(int argc, char **argv) {
+  MPI_Init(&argc, &argv);
   MDFlexMPI simulation(3, argc, argv);
   simulation.run();
 
+  MPI_Finalize();
   return EXIT_SUCCESS;
 }

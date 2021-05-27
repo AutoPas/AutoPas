@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <cstdlib>
 #include <tuple>
 #include <vector>
 

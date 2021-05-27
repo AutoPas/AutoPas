@@ -18,6 +18,8 @@ bool isInsideDomain(const std::vector<double> &coordinates, std::vector<double> 
   }
   return isInsideLocalDomain;
 }
+<<<<<<< Updated upstream
+=======
 
 void generateDecomposition(unsigned int subdomainCount, int dimensionCount, std::vector<int> &oDecomposition) {
   std::list<int> primeFactors;
@@ -51,4 +53,5 @@ void generateDecomposition(unsigned int subdomainCount, int dimensionCount, std:
     }
   }
 }
+>>>>>>> Stashed changes
 }

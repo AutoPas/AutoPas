@@ -5,12 +5,10 @@
  */
 #pragma once
 
-#include <list>
 #include <memory>
 
-#include "autopas/AutoPas.h"
 #include "DomainDecomposition.h"
-#include "mpi.h"
+#include "autopas/AutoPas.h"
 #include "src/TypeDefinitions.h"
 
 /**
@@ -27,7 +25,7 @@ class RegularGrid final : public DomainDecomposition {
   * @param globalBoxMin The minimum coordinates of the global domain.
   * @param globalBoxMax The maximum coordinates of the global domain.
   */
-  RegularGrid(const int &dimensionCount, const std::vector<double> &globalBoxMin,
+  RegularGrid(int argc, char **argv, const int &dimensionCount, const std::vector<double> &globalBoxMin,
               const std::vector<double> &globalBoxMax);
 
   /**
@@ -122,11 +120,14 @@ class RegularGrid final : public DomainDecomposition {
    */
   int getDomainIndex() { return _domainIndex; }
 
+<<<<<<< Updated upstream
+=======
   /** 
    * Returns the number of domains in each dimension
    */
    std::vector<int> getDecomposition() { return _decomposition; }
 
+>>>>>>> Stashed changes
  private:
   /**
    * The number of dimensions in this decomposition.

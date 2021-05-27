@@ -5,14 +5,19 @@
  */
 #include "RegularGrid.h"
 
+#include <math.h>
+
 #include <algorithm>
 #include <functional>
+<<<<<<< Updated upstream
+#include <list>
+=======
 #include <math.h>
+>>>>>>> Stashed changes
 #include <numeric>
 
-
-#include "autopas/utils/ArrayUtils.h"
 #include "DomainTools.h"
+#include "autopas/utils/ArrayUtils.h"
 #include "src/ParticleSerializationTools.h"
 
 namespace {
@@ -36,7 +41,7 @@ void calculatePrimeFactors(unsigned int number, std::list<unsigned int> &oPrimeF
 }
 }
 
-RegularGrid::RegularGrid(const int &dimensionCount, const std::vector<double> &globalBoxMin,
+RegularGrid::RegularGrid(int argc, char **argv, const int &dimensionCount, const std::vector<double> &globalBoxMin,
                          const std::vector<double> &globalBoxMax) {
   _dimensionCount = dimensionCount;
 
