@@ -48,8 +48,7 @@ void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
  * @param deltaT time step width
  */
 void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
-                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
-                         const bool &useThermostat, const double &targetTemperature) {
+                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
   // helper declarations for operations with vector
   using autopas::utils::ArrayMath::add;
   using autopas::utils::ArrayMath::mulScalar;
@@ -63,10 +62,6 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
     auto oldForce = iter->getOldF();
     auto newV = mulScalar((add(force, oldForce)), deltaT / (2 * m));
     iter->addV(newV);
-  }
-
-  if (useThermostat) {
-    Thermostat::apply(autoPasContainer, particlePropertiesLibrary, targetTemperature, deltaT);
   }
 }
 

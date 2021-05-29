@@ -72,6 +72,12 @@ class RegularGrid final : public DomainDecomposition {
   std::vector<double> getLocalBoxMax() override { return _localBoxMax; }
 
   /**
+   * Sets the halo width.
+   * If it is not set manually the halo width depends on the size of the local box.
+   */
+  void setHaloWidth(double width);
+
+  /**
    * Checks if the provided coordinates are located in the local domain.
    */
   bool isInsideLocalDomain(const std::vector<double> &coordinates) override;
@@ -106,11 +112,6 @@ class RegularGrid final : public DomainDecomposition {
    * @param neighbour The neighbour to which the data will be sent.
    */
   void sendDataToNeighbour(std::vector<char> sendBuffer, const int &neighbour);
-
-  /**
-   * Synchronizes all processes which own a domain in this decomposition.
-   */
-  void synchronizeDomains();
 
   /** 
    * Waits for all send requests to be finished.
@@ -157,6 +158,11 @@ class RegularGrid final : public DomainDecomposition {
    * The MPI communicator containing all processes which own a subdomain in this decomposition.
    */
   MPI_Comm _communicator;
+
+  /**
+   * Stores the halo width.
+   */
+  double _haloWidth;
 
   /**
    * The index of the current processor's domain.
