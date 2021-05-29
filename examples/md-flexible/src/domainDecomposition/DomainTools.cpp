@@ -5,6 +5,8 @@
  */
 #include "DomainTools.h"
 
+#include <list>
+
 namespace DomainTools {
 bool isInsideDomain(const std::vector<double> &coordinates, std::vector<double> &boxMin, std::vector<double> &boxMax) {
   bool isInsideLocalDomain = true;
@@ -17,7 +19,7 @@ bool isInsideDomain(const std::vector<double> &coordinates, std::vector<double> 
   return isInsideLocalDomain;
 }
 
-void generateDecomposition(unsigned int subdomainCount, int dimensionCount, std::vector<double> &oDecomposition) {
+void generateDecomposition(unsigned int subdomainCount, int dimensionCount, std::vector<int> &oDecomposition) {
   std::list<int> primeFactors;
   while (subdomainCount % 2 == 0) {
     primeFactors.push_back(2);
@@ -49,4 +51,4 @@ void generateDecomposition(unsigned int subdomainCount, int dimensionCount, std:
     }
   }
 }
-}
+}  // namespace DomainTools

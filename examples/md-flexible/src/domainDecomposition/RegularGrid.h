@@ -5,6 +5,7 @@
  */
 #pragma once
 
+#include <list>
 #include <memory>
 
 #include "DomainDecomposition.h"
@@ -12,17 +13,21 @@
 #include "mpi.h"
 #include "src/TypeDefinitions.h"
 
+/**
+ * This class can be used as a domain decomposition which divides the domain in equal sized rectangular subdomains.
+ * The number of subdomains is equal to the number of MPI processes available.
+ */
 class RegularGrid final : public DomainDecomposition {
  public:
   /**
-  * Constructor.
-  * @param argc The argument count passed to the main function.
-  * @param argv The argument vector passed to the main function.
-  * @param dimensionCount The number of dimensions for this domain decomposition.
-  * @param globalBoxMin The minimum coordinates of the global domain.
-  * @param globalBoxMax The maximum coordinates of the global domain.
-  */
-  RegularGrid(int argc, char **argv, const int &dimensionCount, const std::vector<double> &globalBoxMin,
+   * Constructor.
+   * @param argc The argument count passed to the main function.
+   * @param argv The argument vector passed to the main function.
+   * @param dimensionCount The number of dimensions for this domain decomposition.
+   * @param globalBoxMin The minimum coordinates of the global domain.
+   * @param globalBoxMax The maximum coordinates of the global domain.
+   */
+  RegularGrid(const int &dimensionCount, const std::vector<double> &globalBoxMin,
               const std::vector<double> &globalBoxMax);
 
   /**
@@ -30,13 +35,13 @@ class RegularGrid final : public DomainDecomposition {
    */
   virtual ~RegularGrid();
 
-  /** 
+  /**
    * Type for the AutoPas container
    */
   using SharedAutoPasContainer = std::shared_ptr<autopas::AutoPas<ParticleType>>;
 
   /**
-   * Used to update the domain to the current topology. 
+   * Used to update the domain to the current topology.
    * Currently does nothing
    */
   void update() override;
@@ -107,7 +112,7 @@ class RegularGrid final : public DomainDecomposition {
    */
   void synchronizeDomains();
 
-  /** 
+  /**
    * Waits for all send requests to be finished.
    */
   void waitForSendRequests();
@@ -117,10 +122,10 @@ class RegularGrid final : public DomainDecomposition {
    */
   int getDomainIndex() { return _domainIndex; }
 
-  /** 
+  /**
    * Returns the number of domains in each dimension
    */
-   std::vector<double> getDecomposition { return _decomposition; }
+  std::vector<int> getDecomposition() { return _decomposition; }
 
  private:
   /**

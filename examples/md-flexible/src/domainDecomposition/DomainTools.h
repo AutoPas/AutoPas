@@ -23,5 +23,5 @@ bool isInsideDomain(const std::vector<double> &coordinates, std::vector<double> 
  * @param dimensionCount The number of dimensions in the simulation.
  * @param oDecomposition The resulting decomposition.
  */
-void generateDecomposition(unsigned int subdomainCount, int dimensionCount, std::vector<double> &oDecomposition);
-}
+void generateDecomposition(unsigned int subdomainCount, int dimensionCount, std::vector<int> &oDecomposition);
+}  // namespace DomainTools

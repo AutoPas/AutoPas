@@ -9,9 +9,6 @@
 #include "src/domainDecomposition/DomainTools.h"
 #include "src/domainDecomposition/RegularGrid.h"
 
-extern int extArgc;
-extern char** extArgv;
-
 namespace {
   std::vector<double> sub(std::vector<double> a, std::vector<double> b) {
     std::vector<double> difference = a;
@@ -40,8 +37,7 @@ TEST_F(TestRegularGrid, testGetLocalDomain) {
 
   char** argv;
 
-  std::cout << "Arguments: " << extArgc << ", " << extArgv[1] << std::endl;
-  RegularGrid domainDecomposition(extArgc, extArgv, 3, globalBoxMin, globalBoxMax);
+  RegularGrid domainDecomposition(3, globalBoxMin, globalBoxMax);
 
   std::vector<double> globalBoxExtend = sub(globalBoxMax, globalBoxMin);
 

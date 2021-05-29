@@ -7,7 +7,6 @@
 
 #include <algorithm>
 #include <functional>
-#include <list>
 #include <math.h>
 #include <numeric>
 
@@ -15,11 +14,10 @@
 #include "autopas/utils/ArrayUtils.h"
 #include "src/ParticleSerializationTools.h"
 
-RegularGrid::RegularGrid(int argc, char **argv, const int &dimensionCount, const std::vector<double> &globalBoxMin,
+RegularGrid::RegularGrid(const int &dimensionCount, const std::vector<double> &globalBoxMin,
                          const std::vector<double> &globalBoxMax) {
   _dimensionCount = dimensionCount;
 
-  MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &_subdomainCount);
 
   DomainTools::generateDecomposition(_subdomainCount, _dimensionCount, _decomposition);
@@ -38,7 +36,7 @@ RegularGrid::RegularGrid(int argc, char **argv, const int &dimensionCount, const
             << std::endl;
 }
 
-RegularGrid::~RegularGrid() { MPI_Finalize(); }
+RegularGrid::~RegularGrid() {}
 
 void RegularGrid::update() { updateLocalBox(); }
 
