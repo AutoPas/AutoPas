@@ -40,6 +40,10 @@ RegularGrid::~RegularGrid() {}
 
 void RegularGrid::update() { updateLocalBox(); }
 
+void RegularGrid::setHaloWidth(double width){
+  _haloWidth = width; 
+}
+
 void RegularGrid::initializeMPICommunicator() {
   std::vector<int> periods(_dimensionCount, 1);
   MPI_Cart_create(MPI_COMM_WORLD, _dimensionCount, _decomposition.data(), periods.data(), true, &_communicator);
@@ -58,6 +62,12 @@ void RegularGrid::initializeLocalBox() {
   _localBoxMin.resize(_dimensionCount);
   _localBoxMax.resize(_dimensionCount);
   updateLocalBox();
+
+  for (int i = 0; i < _localBoxMin.size(); ++i){
+    _haloWidth += (_localBoxMax[i] - _localBoxMin[i]) / 20.0;
+  }
+
+  _haloWidth = _haloWidth / _localBoxMin.size();
 }
 
 void RegularGrid::initializeNeighbourIds() {
@@ -119,9 +129,6 @@ void RegularGrid::initializeGlobalBox(const std::vector<double> &globalBoxMin,
 }
 
 void RegularGrid::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer) {
-  // @todo: create configuration parameter for halo width
-  double haloWidth;
-
   int dimensionCount = _localBoxMin.size();
   int neighbourCount = dimensionCount * 2;
 
@@ -144,13 +151,10 @@ void RegularGrid::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer
     leftNeighbour = _neighbourDomainIndices[(i * 2) % neighbourCount];
     rightNeighbour = _neighbourDomainIndices[(i * 2 + 1) % neighbourCount];
 
-    haloWidth = (_localBoxMax[i] - _localBoxMin[i]) / 20.0;
-    leftNeighbourHaloEnd = _localBoxMin[i] + haloWidth;
-    rightNeighbourHaloStart = _localBoxMax[i] - haloWidth;
+    leftNeighbourHaloEnd = _localBoxMin[i] + _haloWidth;
+    rightNeighbourHaloStart = _localBoxMax[i] - _haloWidth;
 
     nextDimensionIndex = (i + 1) % dimensionCount;
-    // @todo: remove as soon es the configuration parameter for the halo width has been defined
-    haloWidth = (_localBoxMax[nextDimensionIndex] - _localBoxMin[nextDimensionIndex]) / 20.0;
 
     if (leftNeighbour != _domainIndex && rightNeighbour != _domainIndex) {
       for (auto particle = autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
@@ -174,8 +178,8 @@ void RegularGrid::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer
     particlesForLeftNeighbour.clear();
     particlesForRightNeighbour.clear();
 
-    leftNeighbourHaloEnd = _localBoxMin[nextDimensionIndex] + haloWidth;
-    rightNeighbourHaloStart = _localBoxMax[nextDimensionIndex] - haloWidth;
+    leftNeighbourHaloEnd = _localBoxMin[nextDimensionIndex] + _haloWidth;
+    rightNeighbourHaloStart = _localBoxMax[nextDimensionIndex] - _haloWidth;
 
     leftNeighbour = _neighbourDomainIndices[(leftNeighbour + 2) % neighbourCount];
     rightNeighbour = _neighbourDomainIndices[(rightNeighbour + 2) % neighbourCount];
@@ -343,8 +347,6 @@ void RegularGrid::waitForSendRequests() {
   _sendRequests.clear();
   _sendBuffers.clear();
 }
-
-void RegularGrid::synchronizeDomains() { MPI_Barrier(_communicator); }
 
 bool RegularGrid::isInsideLocalDomain(const std::vector<double> &coordinates) {
   return DomainTools::isInsideDomain(coordinates, _localBoxMin, _localBoxMax);

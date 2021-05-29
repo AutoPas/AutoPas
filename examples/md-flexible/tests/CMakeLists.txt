@@ -22,7 +22,7 @@ endforeach ()
 
 add_executable(mdFlexTests ${MDFlexTest_SRC})
 
-set(AUTOPAS_INCLUDE_MPI "$ENV{AUTOPAS_INCLUDE_MPI}")
+option(AUTOPAS_INCLUDE_MPI "Links MPI libraries to the target. This is required if you want to use MPI." ON)
 
 if (AUTOPAS_INTERNODE_TUNING OR AUTOPAS_INCLUDE_MPI)
     message(STATUS "AUTOPAS_INTERNODE_TUNING set, searching for mpi to link against md-flexible ...")
