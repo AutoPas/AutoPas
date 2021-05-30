@@ -24,7 +24,7 @@ TEST_F(TimeDiscretizationTest, testCalculateVelocities) {
   auto autoPas = autopas::AutoPas<Molecule>();
   fillWithParticlesAndInit(autoPas);
 
-  TimeDiscretization::calculateVelocities(autoPas, _particlePropertiesLibrary, 0.1, false, 0);
+  TimeDiscretization::calculateVelocities(autoPas, _particlePropertiesLibrary, 0.1);
   for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
     // only velocity in one direction is expected, as the force is initialized to point only in z-direction.
     EXPECT_EQ(iter->getV()[0], 0);
@@ -37,7 +37,7 @@ TEST_F(TimeDiscretizationTest, testCalculateVelocities) {
     iter->setF({0, 0, 2});
   }
 
-  TimeDiscretization::calculateVelocities(autoPas, _particlePropertiesLibrary, 0.1, false, 0);
+  TimeDiscretization::calculateVelocities(autoPas, _particlePropertiesLibrary, 0.1);
   for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
     // only velocity in one direction is expected
     EXPECT_EQ(iter->getV()[0], 0);

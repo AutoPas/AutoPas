@@ -72,6 +72,16 @@ class RegularGrid final : public DomainDecomposition {
   std::vector<double> getLocalBoxMax() override { return _localBoxMax; }
 
   /**
+   * Returns this domain's index / the processor's rank.
+   */
+  int getDomainIndex() { return _domainIndex; }
+
+  /**
+   * Returns the number of domains in each dimension
+   */
+  std::vector<int> getDecomposition() { return _decomposition; }
+
+  /**
    * Sets the halo width.
    * If it is not set manually the halo width depends on the size of the local box.
    */
@@ -81,11 +91,6 @@ class RegularGrid final : public DomainDecomposition {
    * Checks if the provided coordinates are located in the local domain.
    */
   bool isInsideLocalDomain(const std::vector<double> &coordinates) override;
-
-  /**
-   * Converts a domain id to the domain index, i.e. rank of the local processor.
-   */
-  int convertIdToIndex(const std::vector<int> &domainIndex);
 
   /**
    * Exchanges halo particles with all neighbours of the provided AutoPasContainer.
@@ -99,35 +104,10 @@ class RegularGrid final : public DomainDecomposition {
    */
   void exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer);
 
-  /**
-   * Received data which has been sent by a specifig neighbour of this domain.
-   * @param neighbour The neighbour where the data originates from.
-   * @param dataBuffer The buffer where the received data will be stored.
-   */
-  void receiveDataFromNeighbour(const int &neighbour, std::vector<char> &dataBuffer);
-
-  /**
-   * Sends data to a specific neighbour of this domain.
-   * @param sendBuffer The buffer which will be sent to the neighbour.
-   * @param neighbour The neighbour to which the data will be sent.
-   */
-  void sendDataToNeighbour(std::vector<char> sendBuffer, const int &neighbour);
-
-
   /** 
    * Waits for all send requests to be finished.
    */
   void waitForSendRequests();
-
-  /**
-   * Returns this domain's index / the processor's rank.
-   */
-  int getDomainIndex() { return _domainIndex; }
-
-  /**
-   * Returns the number of domains in each dimension
-   */
-  std::vector<int> getDecomposition() { return _decomposition; }
 
  private:
   /**
@@ -249,4 +229,24 @@ class RegularGrid final : public DomainDecomposition {
    * @param source The sender id/rank.
    */
   void receiveParticles(std::vector<ParticleType> &receivedParticles, int &source);
+
+  /**
+   * Received data which has been sent by a specifig neighbour of this domain.
+   * @param neighbour The neighbour where the data originates from.
+   * @param dataBuffer The buffer where the received data will be stored.
+   */
+  void receiveDataFromNeighbour(const int &neighbour, std::vector<char> &dataBuffer);
+
+  /**
+   * Sends data to a specific neighbour of this domain.
+   * @param sendBuffer The buffer which will be sent to the neighbour.
+   * @param neighbour The neighbour to which the data will be sent.
+   */
+  void sendDataToNeighbour(std::vector<char> sendBuffer, const int &neighbour);
+
+  /**
+   * Converts a domain id to the domain index, i.e. rank of the local processor.
+   */
+  int convertIdToIndex(const std::vector<int> &domainIndex);
+
 };

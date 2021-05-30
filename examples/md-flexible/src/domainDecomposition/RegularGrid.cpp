@@ -10,8 +10,9 @@
 #include <math.h>
 #include <numeric>
 
-#include "DomainTools.h"
+#include "autopas/AutoPas.h"
 #include "autopas/utils/ArrayUtils.h"
+#include "DomainTools.h"
 #include "src/ParticleSerializationTools.h"
 
 RegularGrid::RegularGrid(const int &dimensionCount, const std::vector<double> &globalBoxMin,
@@ -84,23 +85,6 @@ void RegularGrid::initializeNeighbourIds() {
     succeedingNeighbourId[i] = (++succeedingNeighbourId[i] + _decomposition[i]) % _decomposition[i];
     _neighbourDomainIndices[neighbourIndex] = convertIdToIndex(succeedingNeighbourId);
   }
-}
-
-int RegularGrid::convertIdToIndex(const std::vector<int> &domainId) {
-  int neighbourDomainIndex = 0;
-
-  for (int i = 0; i < _dimensionCount; ++i) {
-    int accumulatedTail = 1;
-
-    if (i < _decomposition.size() - 1) {
-      accumulatedTail =
-          std::accumulate(_decomposition.begin() + i + 1, _decomposition.end(), 1, std::multiplies<int>());
-    }
-
-    neighbourDomainIndex += accumulatedTail * domainId[i];
-  }
-
-  return neighbourDomainIndex;
 }
 
 void RegularGrid::updateLocalBox() {
@@ -351,3 +335,21 @@ void RegularGrid::waitForSendRequests() {
 bool RegularGrid::isInsideLocalDomain(const std::vector<double> &coordinates) {
   return DomainTools::isInsideDomain(coordinates, _localBoxMin, _localBoxMax);
 }
+
+int RegularGrid::convertIdToIndex(const std::vector<int> &domainId) {
+  int neighbourDomainIndex = 0;
+
+  for (int i = 0; i < _dimensionCount; ++i) {
+    int accumulatedTail = 1;
+
+    if (i < _decomposition.size() - 1) {
+      accumulatedTail =
+          std::accumulate(_decomposition.begin() + i + 1, _decomposition.end(), 1, std::multiplies<int>());
+    }
+
+    neighbourDomainIndex += accumulatedTail * domainId[i];
+  }
+
+  return neighbourDomainIndex;
+}
+
