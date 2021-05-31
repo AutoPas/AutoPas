@@ -216,6 +216,19 @@ class LogicHandler {
   }
 
   /**
+   * Deletes a single particle and updates internal particle counters.
+   * @param iter
+   */
+  void deleteParticle(Particle &particle) {
+    if ((*particle).isOwned()) {
+      _numParticlesOwned.fetch_sub(1, std::memory_order_relaxed);
+    } else {
+      _numParticlesHalo.fetch_sub(1, std::memory_order_relaxed);
+    }
+    internal::markParticleAsDeleted(*particle);
+  }
+
+  /**
    * @copydoc AutoPas::iteratePairwise()
    */
   template <class Functor>

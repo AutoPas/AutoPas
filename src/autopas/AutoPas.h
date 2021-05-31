@@ -204,6 +204,12 @@ class AutoPas {
   void deleteParticle(ParticleIteratorWrapper<Particle, true> &iter) { _logicHandler->deleteParticle(iter); }
 
   /**
+   * Deletes the particle behind the current iterator position.
+   * @param particle Needs to be a modifiable Particle
+   */
+  void deleteParticle(Particle &particle) { _logicHandler->deleteParticle(particle); }
+
+  /**
    * Function to iterate over all pairs of particles in the container.
    * This function only handles short-range interactions.
    * @param f Functor that describes the pair-potential.
