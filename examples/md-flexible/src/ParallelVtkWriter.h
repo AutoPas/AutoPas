@@ -7,6 +7,9 @@
 
 #include <string>
 
+#include "autopas/AutoPas.h"
+#include "src/TypeDefinitions.h"
+
 /**
  * The ParallelVtkWriter can be used to create vtk-files for MPI parallel processes.
  */
@@ -23,6 +26,15 @@ class ParallelVtkWriter {
      * Destructor.
      */
     ~ParallelVtkWriter() = default;
+
+    /**
+     * Writes the current state of particles into a vtk file.
+     * @param currentIteration The simulation's current iteration.
+     * @param maximumNumberOfDigitsInIteration The maximum number of digits an iteration index may have.
+     * @param autoPasContainer The AutoPas container whose owned particles will be logged.
+     */
+    void recordTimestep(const int &currentIteration, const int &maximumNumberOfDigitsInIteration,
+      const autopas::AutoPas<ParticleType> &autoPasContainer);
 
   private:
     /**
@@ -45,7 +57,7 @@ class ParallelVtkWriter {
     /**
      * Stores the path to the current processes's output folder.
      */
-    std::string _processFolderPath;
+    //std::string _processFolderPath;
 
     /**
      * Stores the name of output .vtu file for the current process.
@@ -64,4 +76,4 @@ class ParallelVtkWriter {
      * @param location The location where the new folder will be created.
      */
     void tryCreateFolder(const std::string &name, const std::string location);
-}
+};

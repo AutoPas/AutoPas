@@ -17,7 +17,7 @@
  */
 int main(int argc, char **argv) {
   MPI_Init(&argc, &argv);
-  MDFlexMPI simulation(3, argc, argv);
+  MDFlexSingleRank simulation(3, argc, argv);
   simulation.run();
 
   MPI_Finalize();

@@ -24,6 +24,8 @@ void MDFlexSingleRank::run() {
 
   auto [maxIterationsEstimate, maxIterationsIsPrecise] = estimateNumberOfIterations();
 
+  int configuredMaximumIterationsString = std::to_string(_configuration->iterations.value).size();
+
   // main simulation loop
   for (; needsMoreIterations(); ++_iteration) {
     if (not _configuration->dontShowProgressBar.value) {
@@ -34,7 +36,7 @@ void MDFlexSingleRank::run() {
     if (_configuration->deltaT.value != 0) {
       // only write vtk files periodically and if a filename is given.
       if (not _configuration->vtkFileName.value.empty() and _iteration % _configuration->vtkWriteFrequency.value == 0) {
-        this->writeVTKFile();
+        _vtkWriter->recordTimestep(_iteration, configuredMaximumIterationsString, *_autoPasContainer);
       }
 
       // calculate new positions

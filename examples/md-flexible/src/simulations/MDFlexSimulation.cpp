@@ -30,6 +30,8 @@ MDFlexSimulation::~MDFlexSimulation() {
       configFileEnd.close();
     }
   }
+  
+  std::cout << "Total simulation time: " << _timers.total.stop() << std::endl;
 }
 
 void MDFlexSimulation::initialize(int dimensionCount, int argc, char **argv) {
@@ -40,6 +42,7 @@ void MDFlexSimulation::initialize(int dimensionCount, int argc, char **argv) {
   _argv = argv;
 
   _configuration = std::make_shared<MDFlexConfig>(argc, argv);
+  _vtkWriter = std::make_shared<ParallelVtkWriter>(_configuration->vtkFileName.value, "");
 
   initializeDomainDecomposition(dimensionCount);
 
