@@ -86,7 +86,7 @@ class CubeGauss : public Object {
     return output.str();
   }
 
-  /** 
+  /**
    * Generates the particles based on the configuration of the cube gauss object provided in the yaml file.
    * @param particles The container where the new particles will be stored.
    */
@@ -118,7 +118,7 @@ class CubeGauss : public Object {
    * The length of the box in each dimension.
    */
   std::array<double, 3> _boxLength;
-  
+
   /**
    * The mean value for the gaussian distribution of the particles.
    */

@@ -11,9 +11,7 @@
 
 #include "autopas/utils/ArrayMath.h"
 
-MDFlexMPI::MDFlexMPI(int dimensionCount, int argc, char **argv) {
-  this->initialize(dimensionCount, argc, argv);
-}
+MDFlexMPI::MDFlexMPI(int dimensionCount, int argc, char **argv) { this->initialize(dimensionCount, argc, argv); }
 
 void MDFlexMPI::run() {
   // @todo: make variable part of MDFlexConfig
@@ -56,5 +54,4 @@ void MDFlexMPI::initializeDomainDecomposition(int &dimensionCount) {
     _configuration->boxMin.value[i] = localBoxMin[i];
     _configuration->boxMax.value[i] = localBoxMax[i];
   }
-
 }

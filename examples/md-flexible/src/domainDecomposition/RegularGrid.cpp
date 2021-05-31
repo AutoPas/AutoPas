@@ -5,14 +5,14 @@
  */
 #include "RegularGrid.h"
 
+#include <math.h>
+
 #include <algorithm>
 #include <functional>
-#include <math.h>
 #include <numeric>
 
-
-#include "autopas/utils/ArrayUtils.h"
 #include "DomainTools.h"
+#include "autopas/utils/ArrayUtils.h"
 #include "src/ParticleSerializationTools.h"
 
 namespace {
@@ -34,7 +34,7 @@ void calculatePrimeFactors(unsigned int number, std::list<unsigned int> &oPrimeF
     }
   }
 }
-}
+}  // namespace
 
 RegularGrid::RegularGrid(const int &dimensionCount, const std::vector<double> &globalBoxMin,
                          const std::vector<double> &globalBoxMax) {
@@ -58,13 +58,11 @@ RegularGrid::RegularGrid(const int &dimensionCount, const std::vector<double> &g
             << std::endl;
 }
 
-RegularGrid::~RegularGrid() { }
+RegularGrid::~RegularGrid() {}
 
 void RegularGrid::update() { updateLocalBox(); }
 
-void RegularGrid::setHaloWidth(double width){
-  _haloWidth = width; 
-}
+void RegularGrid::setHaloWidth(double width) { _haloWidth = width; }
 
 void RegularGrid::initializeDecomposition() {
   std::list<unsigned int> primeFactors;
@@ -108,7 +106,7 @@ void RegularGrid::initializeLocalBox() {
   _localBoxMax.resize(_dimensionCount);
   updateLocalBox();
 
-  for (int i = 0; i < _localBoxMin.size(); ++i){
+  for (int i = 0; i < _localBoxMin.size(); ++i) {
     _haloWidth += (_localBoxMax[i] - _localBoxMin[i]) / 20.0;
   }
 

@@ -110,7 +110,6 @@ class CubeGrid : public Object {
   }
 
  private:
-
   /**
    * Defines how many particles will be created in each dimension.
    */

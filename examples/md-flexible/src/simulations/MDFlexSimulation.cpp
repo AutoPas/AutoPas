@@ -279,9 +279,9 @@ void MDFlexSimulation::updateVelocities() {
 }
 
 void MDFlexSimulation::updateThermostat() {
-  if(_configuration->useThermostat.value and (_iteration % _configuration->thermostatInterval.value) == 0){
+  if (_configuration->useThermostat.value and (_iteration % _configuration->thermostatInterval.value) == 0) {
     Thermostat::apply(*_autoPasContainer, *(_configuration->getParticlePropertiesLibrary()),
-      _configuration->targetTemperature.value, _configuration->deltaTemp.value);
+                      _configuration->targetTemperature.value, _configuration->deltaTemp.value);
   }
 }
 
