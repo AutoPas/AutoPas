@@ -11,9 +11,7 @@
 
 #include "autopas/utils/ArrayMath.h"
 
-MDFlexMPI::MDFlexMPI(int dimensionCount, int argc, char **argv) {
-  MDFlexSimulation::initialize(dimensionCount, argc, argv);
-}
+MDFlexMPI::MDFlexMPI(int dimensionCount, int argc, char **argv) { this->initialize(dimensionCount, argc, argv); }
 
 void MDFlexMPI::run() {
   // @todo: make variable part of MDFlexConfig
@@ -32,9 +30,6 @@ void MDFlexMPI::executeSuperstep(const int iterationsPerSuperstep) {
     updateParticles();
   }
 
-  // todo: Not sure if this synchronization is required. Check performance with and without it.
-  _domainDecomposition->synchronizeDomains();
-
   _domainDecomposition->exchangeMigratingParticles(_autoPasContainer);
 }
 
@@ -42,6 +37,7 @@ void MDFlexMPI::updateParticles() {
   updatePositions();
   updateForces();
   updateVelocities();
+  updateThermostat();
 }
 
 void MDFlexMPI::initializeDomainDecomposition(int &dimensionCount) {
@@ -49,6 +45,8 @@ void MDFlexMPI::initializeDomainDecomposition(int &dimensionCount) {
   std::vector<double> boxMax(_configuration->boxMax.value.begin(), _configuration->boxMax.value.end());
 
   _domainDecomposition = std::make_shared<RegularGrid>(dimensionCount, boxMin, boxMax);
+
+  _domainDecomposition->setHaloWidth(_configuration->cutoff.value + _configuration->verletSkinRadius.value);
 
   std::vector<double> localBoxMin = _domainDecomposition->getLocalBoxMin();
   std::vector<double> localBoxMax = _domainDecomposition->getLocalBoxMax();

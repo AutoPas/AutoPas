@@ -26,7 +26,7 @@ class MDFlexSimulation {
    * Runs the simulation
    */
   virtual void run() = 0;
-  
+
   /**
    * Initializes the domain decomposition for this simulation.
    */
@@ -60,7 +60,7 @@ class MDFlexSimulation {
    * Stores the arguments passed to the constructor for later reuse.
    */
   char **_argv;
-  
+
   /**
    * Stores the configuration used for the simulation.
    * The configuration is defined by the .yaml file passed to the application  with the '--yaml-file' argument.
@@ -139,7 +139,8 @@ class MDFlexSimulation {
 
   /**
    * Initializes the simulation.
-   * Call this function in the constructor of derived classes.
+   * This function needs to be called in the constructor of the deriving class, because initializeDomainDecomposition
+   * can not be called by the constructor of MDFlexSimulation, because it is a pure virtual function.
    */
   void initialize(int dimensionCount, int argc, char **argv);
 
@@ -187,6 +188,12 @@ class MDFlexSimulation {
    * Updates the velocities of particles in the local AutoPas container.
    */
   void updateVelocities();
+
+  /**
+   * Updates the thermostat of for the local domain.
+   * @todo The thermostat shoud act globally and therefore needs to be communicated to all processes.
+   */
+  void updateThermostat();
 
  private:
   /**

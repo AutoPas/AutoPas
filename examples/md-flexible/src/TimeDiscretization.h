@@ -27,13 +27,9 @@ void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
  * @param autoPasContainer The container for which to update the velocities.
  * @param particlePropertiesLibrary The particle properties library for the particles in the container.
  * @param deltaT The time step width.
- * @param useThermmostat Decides if a thermostat should be used.
- * @param targetTemperature The target temperature used for the thermostat. If useThermostat is false,
- * 	this value does not matter.
  */
 void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
-                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
-                         const bool &useThermostat, const double &targetTemperature);
+                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
 
 /**
  * Calculates the pairwise forces between particles in an autopas container.
@@ -53,4 +49,4 @@ void calculatePairwiseForces(autopas::AutoPas<ParticleType> &autoPasContainer,
  * @param globalForce The global force which will be applied to each particle in the container.
  */
 void calculateGlobalForces(autopas::AutoPas<ParticleType> &autoPasContainer, std::array<double, 3> &globalForce);
-}
+}  // namespace TimeDiscretization

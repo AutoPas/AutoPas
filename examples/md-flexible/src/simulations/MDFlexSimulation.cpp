@@ -276,9 +276,15 @@ void MDFlexSimulation::updateVelocities() {
 
   if (deltaT != 0) {
     _timers.velocityUpdate.start();
-    TimeDiscretization::calculateVelocities(*_autoPasContainer, particlePropertiesLibrary, deltaT, useThermostat,
-                                            _configuration->targetTemperature.value);
+    TimeDiscretization::calculateVelocities(*_autoPasContainer, particlePropertiesLibrary, deltaT);
     _timers.velocityUpdate.stop();
+  }
+}
+
+void MDFlexSimulation::updateThermostat() {
+  if (_configuration->useThermostat.value and (_iteration % _configuration->thermostatInterval.value) == 0) {
+    Thermostat::apply(*_autoPasContainer, *(_configuration->getParticlePropertiesLibrary()),
+                      _configuration->targetTemperature.value, _configuration->deltaTemp.value);
   }
 }
 

@@ -13,7 +13,7 @@
 #include "src/Thermostat.h"
 
 MDFlexSingleRank::MDFlexSingleRank(int dimensionCount, int argc, char **argv) {
-  MDFlexSimulation::initialize(dimensionCount, argc, argv);
+  this->initialize(dimensionCount, argc, argv);
 }
 
 void MDFlexSingleRank::run() {
@@ -64,6 +64,7 @@ void MDFlexSingleRank::run() {
     }
 
     updateVelocities();
+    updateThermostat();
   }
 
   // final update for a full progress bar
