@@ -15,26 +15,26 @@
 
 ParallelVtkWriter::ParallelVtkWriter(const std::string &sessionName, const std::string &outputFolder)
   : _sessionName(sessionName) {
+  _mpiRank = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &_mpiRank);
 
   if (_mpiRank == 0) {
-    tryCreateSessionFolder(_sessionName, outputFolder);
-
-    //int numberOfProcesses;
-    //MPI_Comm_size(MPI_COMM_WORLD, &numberOfProcesses);
-
-    // @todo: create paralle vtk file
+     tryCreateSessionFolder(_sessionName, outputFolder);
   }
 
-  MPI_Bcast(_sessionFolderPath.data(), _sessionFolderPath.size(), MPI_CHAR, 0, MPI_COMM_WORLD);
-  
-  //_processFolderPath = "Process" + _mpiRank;
-  //tryCreateFolder(_processFolderPath, _sessionFolderPath);
+  int sessionFolderPathLength = _sessionFolderPath.size();
+  MPI_Bcast(&sessionFolderPathLength, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+  if (_mpiRank != 0){
+    _sessionFolderPath.resize(sessionFolderPathLength);
+  }
+
+  MPI_Bcast(_sessionFolderPath.data(), sessionFolderPathLength, MPI_CHAR, 0, MPI_COMM_WORLD);
 }
 
 void ParallelVtkWriter::recordTimestep(const int &currentIteration, const int &maximumNumberOfDigitsInIteration, const autopas::AutoPas<ParticleType> &autoPasContainer){
   std::ostringstream timestepFileName;
-  timestepFileName << _sessionFolderPath << "/" << _sessionName << _mpiRank << std::setfill('0')
+  timestepFileName << _sessionFolderPath << _sessionName <<  "_" << _mpiRank << "_" << std::setfill('0')
     << std::setw(maximumNumberOfDigitsInIteration) << currentIteration << ".vtk";
 
   std::ofstream timestepFile;
@@ -97,7 +97,7 @@ void ParallelVtkWriter::recordTimestep(const int &currentIteration, const int &m
   timestepFile.close();
 }
 
-void ParallelVtkWriter::tryCreateSessionFolder(const std::string &name, const std::string location){
+void ParallelVtkWriter::tryCreateSessionFolder(const std::string &name, std::string location){
   time_t rawTime;
   time(&rawTime);
 
@@ -105,14 +105,14 @@ void ParallelVtkWriter::tryCreateSessionFolder(const std::string &name, const st
   timeInformation = localtime(&rawTime);
 
   char buffer[80];
-  strftime(buffer,sizeof(buffer),"%d-%m-%Y %H:%M:%S",timeInformation);
+  strftime(buffer,sizeof(buffer),"%d%m%Y_%H%M%S",timeInformation);
   std::string timeString(buffer);
 
-  std::string _sessionFolderPath = name + "_" + timeString + location;
+  _sessionFolderPath = location + "/" + name + "_" + timeString + "/";
   tryCreateFolder(name + "_" + timeString, location);
 }
 
-void ParallelVtkWriter::tryCreateFolder(const std::string &name, const std::string location){
+void ParallelVtkWriter::tryCreateFolder(const std::string &name, const std::string &location){
   try {
     std::filesystem::path newDirectoryPath(location + "/" + name);
     std::filesystem::create_directory(newDirectoryPath);

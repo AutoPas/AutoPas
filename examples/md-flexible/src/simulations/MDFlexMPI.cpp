@@ -17,7 +17,6 @@ void MDFlexMPI::run() {
   // @todo: make variable part of MDFlexConfig
   int iterationsPerSuperstep = 10;
   int remainingIterations = _configuration->iterations.value;
-
   for (int i = 0; i < _configuration->iterations.value; i += iterationsPerSuperstep) {
     executeSuperstep(iterationsPerSuperstep);
   }
@@ -26,8 +25,13 @@ void MDFlexMPI::run() {
 void MDFlexMPI::executeSuperstep(const int iterationsPerSuperstep) {
   _domainDecomposition->exchangeHaloParticles(_autoPasContainer);
 
-  for (int i = 1; i < iterationsPerSuperstep; ++i) {
+  for (int i = 0; i < iterationsPerSuperstep; ++i) {
+    ++_iteration;
     updateParticles();
+
+    if (_createVtkFiles and _iteration % _configuration->vtkWriteFrequency.value == 0) {
+      _vtkWriter->recordTimestep(_iteration, _maximumIterationDigits, *_autoPasContainer);
+    }
   }
 
   _domainDecomposition->exchangeMigratingParticles(_autoPasContainer);

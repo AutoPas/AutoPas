@@ -20,11 +20,13 @@ void MDFlexSingleRank::run() {
   std::cout << std::endl << "Using " << autopas::autopas_get_max_threads() << " Threads" << std::endl;
   std::cout << "Starting simulation... " << std::endl;
 
+  if (not _createVtkFiles) {
+    _vtkWriter->recordTimestep(_iteration, _maximumIterationDigits, *_autoPasContainer);
+  }
+
   _timers.simulate.start();
 
   auto [maxIterationsEstimate, maxIterationsIsPrecise] = estimateNumberOfIterations();
-
-  int configuredMaximumIterationsString = std::to_string(_configuration->iterations.value).size();
 
   // main simulation loop
   for (; needsMoreIterations(); ++_iteration) {
@@ -35,8 +37,8 @@ void MDFlexSingleRank::run() {
     // only do time step related stuff when there actually is time-stepping
     if (_configuration->deltaT.value != 0) {
       // only write vtk files periodically and if a filename is given.
-      if (not _configuration->vtkFileName.value.empty() and _iteration % _configuration->vtkWriteFrequency.value == 0) {
-        _vtkWriter->recordTimestep(_iteration, configuredMaximumIterationsString, *_autoPasContainer);
+      if (_createVtkFiles and _iteration % _configuration->vtkWriteFrequency.value == 0) {
+        _vtkWriter->recordTimestep(_iteration, _maximumIterationDigits, *_autoPasContainer);
       }
 
       // calculate new positions
@@ -88,7 +90,7 @@ void MDFlexSingleRank::run() {
     _timers.boundaries.start();
     BoundaryConditions::applyPeriodic(*_autoPasContainer, true);
     _timers.boundaries.stop();
-    this->writeVTKFile();
+    _vtkWriter->recordTimestep(_iteration, _maximumIterationDigits, *_autoPasContainer);
   }
 
   _timers.simulate.stop();

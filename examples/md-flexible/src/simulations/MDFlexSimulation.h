@@ -138,6 +138,16 @@ class MDFlexSimulation {
   std::shared_ptr<ParallelVtkWriter> _vtkWriter;
 
   /**
+   * Defines, if vtk files should be created or not.
+   */
+  bool _createVtkFiles;
+
+  /**
+   * Stores the maximum digits an iteration index can have.
+   */
+  int _maximumIterationDigits;
+
+  /**
    * Initializes the simulation.
    * This function needs to be called in the constructor of the deriving class, because initializeDomainDecomposition
    * can not be called by the constructor of MDFlexSimulation, because it is a pure virtual function.

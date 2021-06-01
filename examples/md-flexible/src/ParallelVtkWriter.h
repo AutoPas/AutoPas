@@ -64,6 +64,16 @@ class ParallelVtkWriter {
      */
     std::string _outputFileName;    
 
+    /** 
+     * Sets the parallel vtk writer up for MPI.
+     */
+    //initializeWithMPI();
+
+    /**
+     * Sets the parallel vtk write up without MPI.
+     */
+    //initializeWithoutMPI();
+
     /**
      * Tries to create a folder for the current writer session and stores it in _sessionFolderPath.
      */
@@ -75,5 +85,5 @@ class ParallelVtkWriter {
      * @param name The name of the new folder.
      * @param location The location where the new folder will be created.
      */
-    void tryCreateFolder(const std::string &name, const std::string location);
+    void tryCreateFolder(const std::string &name, const std::string &location);
 };

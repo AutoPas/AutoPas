@@ -30,8 +30,6 @@ MDFlexSimulation::~MDFlexSimulation() {
       configFileEnd.close();
     }
   }
-  
-  std::cout << "Total simulation time: " << _timers.total.stop() << std::endl;
 }
 
 void MDFlexSimulation::initialize(int dimensionCount, int argc, char **argv) {
@@ -42,7 +40,9 @@ void MDFlexSimulation::initialize(int dimensionCount, int argc, char **argv) {
   _argv = argv;
 
   _configuration = std::make_shared<MDFlexConfig>(argc, argv);
-  _vtkWriter = std::make_shared<ParallelVtkWriter>(_configuration->vtkFileName.value, "");
+  _createVtkFiles = not _configuration->vtkFileName.value.empty();
+  _maximumIterationDigits = std::to_string(_configuration->iterations.value).size();
+  _vtkWriter = std::make_shared<ParallelVtkWriter>(_configuration->vtkFileName.value, "output");
 
   initializeDomainDecomposition(dimensionCount);
 
@@ -267,7 +267,6 @@ void MDFlexSimulation::updateForces() {
 }
 
 void MDFlexSimulation::updateVelocities() {
-  // only do time step related stuff when there actually is time-stepping
   const double deltaT = _configuration->deltaTemp.value;
   ParticlePropertiesLibraryType particlePropertiesLibrary = *(_configuration->getParticlePropertiesLibrary());
 
