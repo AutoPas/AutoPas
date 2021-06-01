@@ -265,7 +265,7 @@ void MDFlexSimulation::updateForces() {
 
 void MDFlexSimulation::updateVelocities() {
   // only do time step related stuff when there actually is time-stepping
-  const double deltaT = _configuration->deltaTemp.value;
+  const double deltaT = _configuration->deltaT.value;
   ParticlePropertiesLibraryType particlePropertiesLibrary = *(_configuration->getParticlePropertiesLibrary());
 
   const bool useThermostat =
