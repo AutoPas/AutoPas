@@ -160,6 +160,12 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
     return result;
   }
 
+  OctreeNodeInterface<Particle> *SON(Octant O) override {
+    // convert the Octant to a flat child index
+    auto flat = (((O >> 6) & 1) | ((O >> 3) & 2) | ((O & 1) << 2)) ^ 7;
+    return _children[flat].get();
+  }
+
  private:
   /**
    * Each inner node of an octree can contain exactly 8 children.

@@ -59,6 +59,8 @@ class OctreeNodeInterface {
    */
   virtual unsigned int getNumParticles() = 0;
 
+  virtual OctreeNodeInterface<Particle> *SON(Octant O) = 0;
+
   /**
    * Check if the node is a leaf or an inner node. The function exists for debugging.
    * @return true iff the node is a leaf, false otherwise.
@@ -167,6 +169,46 @@ class OctreeNodeInterface {
     return result;
   }
 
+  OctreeNodeInterface<Particle> *EQ_FACE_NEIGHBOR(Face I) {
+    OctreeNodeInterface<Particle> *param, *P = this;
+    if(ADJ(I, SONTYPE(P))) {
+      param = FATHER(P)->EQ_FACE_NEIGHBOR(I);
+    } else {
+      param = FATHER(P);
+    }
+    return param->SON(REFLECT(I, SONTYPE(P)));
+  }
+
+  OctreeNodeInterface<Particle> *EQ_EDGE_NEIGHBOR(Edge I) {
+    OctreeNodeInterface<Particle> *param, *P = this;
+    if(ADJ(I, SONTYPE(P))) {
+      param = FATHER(P)->EQ_EDGE_NEIGHBOR(I);
+    } else if(COMMON_FACE(I, SONTYPE(P)) != O) {
+      param = FATHER(P)->EQ_FACE_NEIGHBOR(COMMON_FACE(I, SONTYPE(P)));
+    } else {
+      param = FATHER(P);
+    }
+    return param->SON(REFLECT(I, SONTYPE(P)));
+  }
+
+  OctreeNodeInterface<Particle> *EQ_VERTEX_NEIGHBOR(Vertex I) {
+    OctreeNodeInterface<Particle> *param, *P = this;
+    if(ADJ(I, SONTYPE(P))) {
+      param = FATHER(P)->EQ_VERTEX_NEIGHBOR(I);
+    } else if(COMMON_EDGE(I, SONTYPE(P)) != OO) {
+      param = FATHER(P)->EQ_EDGE_NEIGHBOR(COMMON_EDGE(I, SONTYPE(P)));
+    } else if(COMMON_FACE(I, SONTYPE(P)) != O) {
+      param = FATHER(P)->EQ_FACE_NEIGHBOR(COMMON_FACE(I, SONTYPE(P)));
+    } else {
+      param = FATHER(P);
+    }
+    return param->SON(REFLECT(I, SONTYPE(P)));
+  }
+
+  OctreeNodeInterface<Particle> *GTEQ_FACE_NEIGHBOR(Face I);
+  OctreeNodeInterface<Particle> *GTEQ_EDGE_NEIGHBOR(Edge I);
+  OctreeNodeInterface<Particle> *GTEQ_VERTEX_NEIGHBOR(Vertex I);
+
   void setBoxMin(std::array<double, 3> boxMin) { _boxMin = boxMin; }
   void setBoxMax(std::array<double, 3> boxMax) { _boxMax = boxMax; }
   std::array<double, 3> getBoxMin() { return _boxMin; }
@@ -178,4 +220,103 @@ class OctreeNodeInterface {
   OctreeNodeInterface<Particle> *_parent;
   std::array<double, 3> _boxMin, _boxMax;
 };
+
+template<class Particle>
+inline bool GRAY(OctreeNodeInterface<Particle> *node) {
+  // TODO: Is this the right condition?
+  return !node->hasChildren();
+}
+
+template<class Particle>
+inline OctreeNodeInterface<Particle> *FATHER(OctreeNodeInterface<Particle> *node) {
+  return node->parent;
+}
+
+template<class Particle>
+static Octant SONTYPE(OctreeNodeInterface<Particle> *node) {
+  Octant result = OOO;
+  if(FATHER(node)) {
+    for(Vertex *test = VERTICES(); *test != OOO; ++test) {
+      if(FATHER(node)->SON(*test) == node) {
+        result = *test;
+        break;
+      }
+    }
+    assert(result != OOO);
+  }
+  return result;
+}
+
+template <class Particle>
+OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_FACE_NEIGHBOR(Face I) {
+  auto null = [] (OctreeNodeInterface<Particle> *T) {return T == nullptr;};
+
+  // Find a common ancestor
+  OctreeNodeInterface<Particle> *Q, *P = this;
+  if((not null(FATHER(P))) and ADJ(I, SONTYPE(P))) {
+    Q = FATHER(P)->GTEQ_FACE_NEIGHBOR(I);
+  } else {
+    Q = FATHER(P);
+  }
+
+  if((not null(Q)) and GRAY(Q)) {
+    // Follow the reflected path to locate the neighbor
+    return Q->SON(REFLECT(I, SONTYPE(P)));
+  } else {
+    return Q;
+  }
+}
+
+template <class Particle>
+OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_EDGE_NEIGHBOR(Edge I) {
+  auto null = [] (OctreeNodeInterface<Particle> *T) {return T == nullptr;};
+
+  // Find a common ancestor
+  OctreeNodeInterface<Particle> *Q, *P = this;
+  if(null(FATHER(P))) {
+    Q = nullptr;
+  } else if(ADJ(I, SONTYPE(P))) {
+    Q = FATHER(P)->GTEQ_EDGE_NEIGHBOR(I);
+  } else if(Face common = COMMON_FACE(I, SONTYPE(P));
+             common != O) {
+    Q = FATHER(P)->GTEQ_FACE_NEIGHBOR(common);
+  } else {
+    Q = FATHER(P);
+  }
+
+  if((not null(Q)) and GRAY(Q)) {
+    // Follow opposite path to locate the neighbor
+    return Q->SON(REFLECT(I, SONTYPE(P)));
+  } else {
+    return Q;
+  }
+}
+
+template <class Particle>
+OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_VERTEX_NEIGHBOR(Vertex I) {
+  auto null = [] (OctreeNodeInterface<Particle> *T) {return T == nullptr;};
+
+  // Find a common ancestor
+  OctreeNodeInterface<Particle> *Q, *P = this;
+  if(null(FATHER(P))) {
+    Q = nullptr;
+  } else if(ADJ(I, SONTYPE(P))) {
+    Q = FATHER(P)->GTEQ_VERTEX_NEIGHBOR(I);
+  } else if(Edge commonEdge = COMMON_EDGE(I, SONTYPE(P));
+      commonEdge != OO) {
+    Q = FATHER(P)->GTEQ_EDGE_NEIGHBOR(commonEdge);
+  } else if(Face commonFace = COMMON_FACE(I, SONTYPE(P));
+      commonFace != O) {
+    Q = FATHER(P)->GTEQ_FACE_NEIGHBOR(commonFace);
+  } else {
+    Q = FATHER(P);
+  }
+
+  if((not null(Q)) and GRAY(Q)) {
+    // Follow opposite path to locate the neighbor
+    return Q->SON(REFLECT(I, SONTYPE(P)));
+  } else {
+    return Q;
+  }
+}
 }  // namespace autopas

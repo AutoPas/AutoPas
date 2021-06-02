@@ -113,5 +113,9 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
     result.push_back(this);
     return result;
   }
+
+  OctreeNodeInterface<Particle> *SON(Octant O) override {
+    throw std::runtime_error("Unable to get SON of leaf node");
+  }
 };
 }  // namespace autopas
