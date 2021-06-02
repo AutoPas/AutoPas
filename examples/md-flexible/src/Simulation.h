@@ -6,8 +6,9 @@
 #pragma once
 
 #include "TypeDefinitions.h"
-#include "autopas/AutoPas.h"
+#include "autopas/AutoPasDecl.h"
 #include "parsing/MDFlexConfig.h"
+#include "autopas/utils/Timer.h"
 
 /**
  * The main simulation class.

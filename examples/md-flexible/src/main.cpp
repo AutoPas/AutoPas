@@ -12,6 +12,9 @@
 
 #include "Simulation.h"
 #include "parsing/MDFlexParser.h"
+#include "autopas/utils/WrapOpenMP.h"
+
+extern template class autopas::AutoPas<Simulation::ParticleType>;
 
 /**
  * The main function for md-flexible.

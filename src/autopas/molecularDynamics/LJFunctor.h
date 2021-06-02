@@ -18,6 +18,7 @@
 #include "autopas/utils/StaticBoolSelector.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
+#include "autopas/utils/SoA.h"
 #if defined(AUTOPAS_CUDA)
 #include "LJFunctorCudaConstants.cuh"
 #include "autopas/molecularDynamics/LJFunctorCuda.cuh"

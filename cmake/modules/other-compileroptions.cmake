@@ -22,6 +22,8 @@ target_compile_options(
         $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-fno-math-errno
         # fast math for better vectorization
         $<$<AND:$<BOOL:${AUTOPAS_ENABLE_FAST_MATH}>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-ffast-math>
+        $<$<CXX_COMPILER_ID:GNU>:-ftime-report>
+        $<$<CXX_COMPILER_ID:Clang>:-ftime-trace>
         # Clang: set OpenMP version to 4.5
         $<$<CXX_COMPILER_ID:Clang>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-fopenmp-version=45>
         # INTEL: per default fast math is on. Disable via fp-model precise
