@@ -30,6 +30,8 @@
 
 namespace autopas {
 
+// Forward declare AutoTuner and LogicHandler so that including this header does not include the whole library with all
+// containers and traversals.
 template<class Particle>
 class AutoTuner;
 

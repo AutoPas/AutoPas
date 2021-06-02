@@ -1,6 +1,7 @@
 /**
  * @file AutoPasImpl.h
- *
+ * Contains all the missing implementations from AutoPasDecl.h that cannot be implemented there because AutoTuner and
+ * LogicHandler are only forward declared.
  */
 
 #pragma once
