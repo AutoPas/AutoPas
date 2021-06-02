@@ -458,7 +458,7 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
   tuningTimer.start();
   // first tuning iteration -> reset to first config
   if (_iterationsSinceTuning == _tuningInterval) {
-    _tuningStrategy->reset(_iteration);
+    _tuningStrategy->reset(_iteration); // FIXME
   } else {  // enough samples -> next config
     stillTuning = _tuningStrategy->tune();
   }

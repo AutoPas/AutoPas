@@ -88,6 +88,7 @@ enum AutoPas_MPI_Datatype {
   AUTOPAS_MPI_CHAR = sizeof(char),
   AUTOPAS_MPI_INT = sizeof(int),
   AUTOPAS_MPI_UNSIGNED_LONG = sizeof(unsigned long),
+  AUTOPAS_MPI_DOUBLE = sizeof(double),
 };
 
 /**
@@ -510,6 +511,16 @@ inline int AutoPas_MPI_Request_free(AutoPas_MPI_Request *request) {
     *request = AUTOPAS_MPI_REQUEST_NULL;
     return AUTOPAS_MPI_SUCCESS;
   }
+}
+
+inline int AutoPas_MPI_Allgather(void *buffer_send, int count_send, AutoPas_MPI_Datatype datatype_send, void *buffer_recv, int count_recv, AutoPas_MPI_Datatype datatype_recv, AutoPas_MPI_Comm comm) {
+  // TODO: wrapper
+  return AUTOPAS_MPI_SUCCESS;
+}
+
+inline int MPI_Comm_split(AutoPas_MPI_Comm old_communicator, int colour, int key, AutoPas_MPI_Comm* new_communicator) {
+  // TODO: wrapper
+  return AUTOPAS_MPI_SUCCESS;
 }
 #endif
 }  // namespace autopas

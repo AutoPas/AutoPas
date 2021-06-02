@@ -46,8 +46,7 @@ bool MPIParallelizedStrategy::tune(bool currentInvalid) {
       config = _tuningStrategy->getCurrentConfiguration();
       localOptimalTime = _tuningStrategy->getEvidence(config);
     }
-    _optimalConfiguration =
-        utils::AutoPasConfigurationCommunicator::optimizeConfiguration(_comm, config, localOptimalTime);
+    _optimalConfiguration = utils::AutoPasConfigurationCommunicator::optimizeConfiguration(_comm, config, localOptimalTime);
 
     return false;
   }

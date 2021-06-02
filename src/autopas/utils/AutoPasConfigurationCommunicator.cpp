@@ -10,6 +10,7 @@
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/utils/ConfigurationAndRankIteratorHandler.h"
 #include "autopas/utils/logging/Logger.h"
+#include "autopas/utils/Homogeneity.h"
 
 namespace autopas::utils::AutoPasConfigurationCommunicator {
 
@@ -157,10 +158,38 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
                                 dataLayoutOptions, newton3Options));
 }
 
-void distributeRanksInBuckets(AutoPas_MPI_Comm comm, int rank, int commSize, AutoPas_MPI_Comm bucket) {
-  std::vector<double> homogeneitys;
-  // calc homo
-  AutoPas_MPI_Allgather(&homo, 1, AUTOPAS_MPI_DOUBLE, &homogeneitys, commSize, AUTOPAS_MPI_DOUBLE, comm);
+template <class Particle>
+void distributeRanksInBuckets(AutoPas_MPI_Comm comm, int rank, int commSize, AutoPas_MPI_Comm bucket, AutoPas<Particle> &autopas) {
+  std::vector<double> homogeneities;
+  double homogeneity = calculateHomogeneity(autopas);
+  std::cout << "homogeneity: " << homogeneity;
+  AutoPas_MPI_Allgather(&homogeneity, 1, AUTOPAS_MPI_DOUBLE, &homogeneities, commSize, AUTOPAS_MPI_DOUBLE, comm);
+
+  std::vector<std::vector<double>> buckets;
+
+  std::sort(homogeneities.begin(), homogeneities.end());
+
+  std::vector<double> diffs;
+  std::adjacent_difference(homogeneities.begin(), homogeneities.end(), std::back_inserter(diffs));
+
+  // convert differences to percentage changes
+  std::transform(diffs.begin(), diffs.end(), homogeneities.begin(), diffs.begin(),
+                 std::divides<double>());
+
+  int current_bucket = 0;
+  // print out the results
+  for (int i = 0; i < homogeneities.size(); i++) {
+
+    // if a difference exceeds 40%, start a new group:
+    if (diffs[i] > 0.2)
+      current_bucket++;
+
+    // print out an item:
+    buckets[current_bucket].push_back(homogeneities[i]);
+  }
+
+  // TODO: MPI_Comm_split
+
 }
 
 Configuration optimizeConfiguration(AutoPas_MPI_Comm comm, Configuration localOptimalConfig, size_t localOptimalTime) {

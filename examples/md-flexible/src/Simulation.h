@@ -111,13 +111,6 @@ class Simulation {
   [[nodiscard]] const std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> &getPpl() const;
 
   /**
-   * Calculate the mean density of the scenario
-   * @param autopas
-   * @return
-   */
-  [[nodiscard]] double calcMeanDensity(autopas::AutoPas<ParticleType> &autopas) const;
-
-  /**
    * Calculate the homogeneity of the scenario by using the standard deviation.
    * @param autopas
    * @return double
