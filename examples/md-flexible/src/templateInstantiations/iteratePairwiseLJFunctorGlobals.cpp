@@ -4,4 +4,4 @@
 #include "src/TypeDefinitions.h"
 
 template bool autopas::AutoPas<ParticleType>::iteratePairwise(
-    autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>*);
+    autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true> *);

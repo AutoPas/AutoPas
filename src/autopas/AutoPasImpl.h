@@ -7,10 +7,9 @@
 #pragma once
 
 #include "autopas/AutoPas.h"
-
+#include "autopas/LogicHandler.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/tuningStrategy/TuningStrategyFactory.h"
-#include "autopas/LogicHandler.h"
 
 namespace autopas {
 
@@ -121,7 +120,9 @@ std::vector<Particle> AutoPas<Particle>::resizeBox(const std::array<double, 3> &
 }
 
 template <class Particle>
-void AutoPas<Particle>::forceRetune() { _autoTuner->forceRetune(); }
+void AutoPas<Particle>::forceRetune() {
+  _autoTuner->forceRetune();
+}
 
 template <class Particle>
 void AutoPas<Particle>::addOrUpdateHaloParticle(const Particle &haloParticle) {
@@ -129,7 +130,9 @@ void AutoPas<Particle>::addOrUpdateHaloParticle(const Particle &haloParticle) {
 }
 
 template <class Particle>
-void AutoPas<Particle>::deleteAllParticles() { _logicHandler->deleteAllParticles(); }
+void AutoPas<Particle>::deleteAllParticles() {
+  _logicHandler->deleteAllParticles();
+}
 
 template <class Particle>
 void AutoPas<Particle>::deleteParticle(ParticleIteratorWrapper<Particle, true> &iter) {
@@ -161,13 +164,18 @@ typename AutoPas<Particle>::const_iterator_t AutoPas<Particle>::getRegionIterato
 }
 
 template <class Particle>
-unsigned long AutoPas<Particle>::getContainerType() const { return _autoTuner->getContainer()->getContainerType(); }
+unsigned long AutoPas<Particle>::getContainerType() const {
+  return _autoTuner->getContainer()->getContainerType();
+}
 
 template <class Particle>
-std::array<double, 3> AutoPas<Particle>::getBoxMin() const { return _autoTuner->getContainer()->getBoxMin(); }
+std::array<double, 3> AutoPas<Particle>::getBoxMin() const {
+  return _autoTuner->getContainer()->getBoxMin();
+}
 
 template <class Particle>
-std::array<double, 3> AutoPas<Particle>::getBoxMax() const { return _autoTuner->getContainer()->getBoxMax(); }
+std::array<double, 3> AutoPas<Particle>::getBoxMax() const {
+  return _autoTuner->getContainer()->getBoxMax();
+}
 
-
-} // namespace autopas
+}  // namespace autopas

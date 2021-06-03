@@ -13,18 +13,18 @@
 #include "autopas/InstanceCounter.h"
 #include "autopas/Version.h"
 #include "autopas/iterators/ParticleIteratorWrapper.h"
-#include "autopas/options/IteratorBehavior.h"
-#include "autopas/options/SelectorStrategyOption.h"
-#include "autopas/options/ContainerOption.h"
-#include "autopas/options/DataLayoutOption.h"
-#include "autopas/options/TraversalOption.h"
-#include "autopas/options/Newton3Option.h"
-#include "autopas/selectors/Configuration.h"
 #include "autopas/options//ExtrapolationMethodOption.h"
 #include "autopas/options/AcquisitionFunctionOption.h"
+#include "autopas/options/ContainerOption.h"
+#include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/IteratorBehavior.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/MPIStrategyOption.h"
+#include "autopas/options/Newton3Option.h"
+#include "autopas/options/SelectorStrategyOption.h"
+#include "autopas/options/TraversalOption.h"
 #include "autopas/options/TuningStrategyOption.h"
+#include "autopas/selectors/Configuration.h"
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/WrapMPI.h"
 
@@ -32,10 +32,10 @@ namespace autopas {
 
 // Forward declare AutoTuner and LogicHandler so that including this header does not include the whole library with all
 // containers and traversals.
-template<class Particle>
+template <class Particle>
 class AutoTuner;
 
-template<class Particle>
+template <class Particle>
 class LogicHandler;
 
 /**
