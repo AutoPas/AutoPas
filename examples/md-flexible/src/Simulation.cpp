@@ -5,7 +5,7 @@
  */
 
 #include "TypeDefinitions.h"
-#include "autopas/AutoPas.h"
+#include "autopas/AutoPasDecl.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
