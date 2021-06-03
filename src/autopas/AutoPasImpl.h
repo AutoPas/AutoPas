@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "autopas/AutoPas.h"
+#include "autopas/AutoPasDecl.h"
 #include "autopas/LogicHandler.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/tuningStrategy/TuningStrategyFactory.h"
