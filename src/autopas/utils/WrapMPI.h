@@ -42,6 +42,8 @@ namespace autopas {
 #define AUTOPAS_MPI_INT MPI_INT
 /** Wrapper for MPI_UNSIGNED LONG */
 #define AUTOPAS_MPI_UNSIGNED_LONG MPI_UNSIGNED_LONG
+/** Wrapper for MPI_DOUBLE */
+#define AUTOPAS_MPI_DOUBLE MPI_DOUBLE
 
 // MPI_Op
 /** Wrapper for MPI_LAND */
@@ -392,6 +394,14 @@ inline int AutoPas_MPI_Wait(AutoPas_MPI_Request *request, AutoPas_MPI_Status *st
 
 inline int AutoPas_MPI_Request_free(AutoPas_MPI_Request *request) { return MPI_Request_free(request); }
 
+inline int AutoPas_MPI_Allgather(void *buffer_send, int count_send, AutoPas_MPI_Datatype datatype_send, void *buffer_recv, int count_recv, AutoPas_MPI_Datatype datatype_recv, AutoPas_MPI_Comm comm) {
+  return MPI_Allgather(buffer_send, count_send, datatype_send, buffer_recv, count_recv, datatype_recv, comm);
+}
+
+inline int AutoPas_MPI_Comm_split(AutoPas_MPI_Comm old_communicator, int colour, int key, AutoPas_MPI_Comm* new_communicator) {
+  return MPI_Comm_split(old_communicator, colour, key, new_communicator);
+}
+
 #else
 
 inline int AutoPas_MPI_Init(int *argc, char ***argv) { return AUTOPAS_MPI_SUCCESS; }
@@ -518,7 +528,7 @@ inline int AutoPas_MPI_Allgather(void *buffer_send, int count_send, AutoPas_MPI_
   return AUTOPAS_MPI_SUCCESS;
 }
 
-inline int MPI_Comm_split(AutoPas_MPI_Comm old_communicator, int colour, int key, AutoPas_MPI_Comm* new_communicator) {
+inline int AutoPas_MPI_Comm_split(AutoPas_MPI_Comm old_communicator, int colour, int key, AutoPas_MPI_Comm* new_communicator) {
   // TODO: wrapper
   return AUTOPAS_MPI_SUCCESS;
 }
