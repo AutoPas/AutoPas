@@ -10,20 +10,24 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/cells/FullParticleCell.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
+#include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/particles/Particle.h"
 #include "autopasTools/generators/RandomGenerator.h"
 #include "mocks/MockFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
-#include "tests/containers/verletListsCellBased/verletLists/VerletListsTest.h"
 
-class PairwiseVerletListsTest : public AutoPasTestBase, public ::testing::WithParamInterface<std::pair<double, bool>> {
+class PairwiseVerletListsTest
+    : public AutoPasTestBase,
+      public ::testing::WithParamInterface<
+          std::tuple<double, bool, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::Value>> {
  public:
   struct PrintToStringParamName {
     template <class ParamType>
     std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
-      auto pairParams = static_cast<ParamType>(info.param);
-      return "CellSizeFactor_" + std::to_string((int)pairParams.first) + "_useNewton3_" +
-             boolToString(pairParams.second);
+      auto params = static_cast<ParamType>(info.param);
+      return "CellSizeFactor_" + std::to_string((int)std::get<0>(params)) + "_useNewton3_" +
+             boolToString(std::get<1>(params)) + "_buildType_" + buildTypeToString(std::get<2>(params));
     }
 
     std::string boolToString(bool n3) const {
@@ -31,6 +35,14 @@ class PairwiseVerletListsTest : public AutoPasTestBase, public ::testing::WithPa
         return "true";
       } else {
         return "false";
+      }
+    }
+
+    std::string buildTypeToString(autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType) const {
+      if (buildType == autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::soaBuild) {
+        return "buildSoA";
+      } else {
+        return "buildAoS";
       }
     }
   };

@@ -59,12 +59,12 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
       configsPerContainer[autopas::ContainerOption::linkedCells] - 4;
   // VerletLists:           vl_list_iteration           (AoS <=> SoA, noNewton3)                             = 2
   configsPerContainer[autopas::ContainerOption::verletLists] = 2;
-  // VerletListsCells:      vlc_sliced                  (AoS, newton3 <=> noNewton3)                         = 2
-  //                        vlc_sliced_balanced         (AoS, newton3 <=> noNewton3, 3 heuristics)           = 6
-  //                        vlc_sliced_colored          (AoS, newton3 <=> noNewton3)                         = 2
-  //                        vlc_c18                     (AoS, newton3 <=> noNewton3)                         = 2
-  //                        vlc_c01                     (AoS, noNewton3)                                     = 1
-  configsPerContainer[autopas::ContainerOption::verletListsCells] = 13;
+  // VerletListsCells:      vlc_sliced                  (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        vlc_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3, 3 heuristics)   = 12
+  //                        vlc_sliced_colored          (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        vlc_c18                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        vlc_c01                     (AoS <=> SoA, noNewton3)                             = 2
+  configsPerContainer[autopas::ContainerOption::verletListsCells] = 26;
   // VerletClusterLists:    vcl_cluster_iteration       (AoS <=> SoA, noNewton3)                             = 2
   //                        vcl_c06                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   //                        vcl_c01_balanced            (AoS <=> SoA, noNewton3)                             = 2
@@ -75,12 +75,12 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   // VarVerletListsAsBuild: vvl_as_built                (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   configsPerContainer[autopas::ContainerOption::varVerletListsAsBuild] = 4;
 
-  // PairwiseVerletLists:   vlp_sliced                  (AoS, newton3 <=> noNewton3)                         = 2
-  //                        vlp_sliced_balanced         (AoS, newton3 <=> noNewton3)                         = 2
-  //                        vlp_sliced_colored          (AoS, newton3 <=> noNewton3)                         = 2
-  //                        vlp_c18                     (AoS, newton3 <=> noNewton3)                         = 2
-  //                        vlp_c01                     (AoS, noNewton3)                                     = 1
-  configsPerContainer[autopas::ContainerOption::pairwiseVerletLists] = 9;
+  // PairwiseVerletLists:   vlp_sliced                  (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        vlp_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        vlp_sliced_colored          (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        vlp_c18                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        vlp_c01                     (AoS <=> SoA, noNewton3)                             = 2
+  configsPerContainer[autopas::ContainerOption::pairwiseVerletLists] = 18;
 
   // check that there is an entry for every container. Except VCC because they are only relevant for CUDA...
   ASSERT_EQ(configsPerContainer.size(), autopas::ContainerOption::getAllOptions().size() - 1);
@@ -282,22 +282,11 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
 TEST_F(AutoTunerTest, testForceRetuneBetweenPhases) {
   std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {2, 4, 2};
   const double cutoff = 1;
-  const double cellSizeFactor = 1;
   const double verletSkin = 0;
   const unsigned int verletClusterSize = 4;
   const unsigned int maxSamples = 3;
 
-  autopas::Configuration confLc_c01(autopas::ContainerOption::linkedCells, cellSizeFactor,
-                                    autopas::TraversalOption::lc_c01, autopas::LoadEstimatorOption::none,
-                                    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
-  autopas::Configuration confLc_c04(autopas::ContainerOption::linkedCells, cellSizeFactor,
-                                    autopas::TraversalOption::lc_c04, autopas::LoadEstimatorOption::none,
-                                    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
-  autopas::Configuration confLc_c08(autopas::ContainerOption::linkedCells, cellSizeFactor,
-                                    autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
-                                    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
-
-  auto configsList = {confLc_c01, confLc_c04, confLc_c08};
+  auto configsList = {_confLc_c01, _confLc_c04, _confLc_c08};
 
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
   autopas::AutoTuner<Particle> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, verletClusterSize,
@@ -420,17 +409,13 @@ TEST_F(AutoTunerTest, testNoConfig) {
  * Generates exactly one valid configuration.
  */
 TEST_F(AutoTunerTest, testOneConfig) {
-  autopas::Configuration conf(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08,
-                              autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                              autopas::Newton3Option::enabled);
-
-  auto configsList = {conf};
+  auto configsList = {_confLc_c08};
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
   size_t maxSamples = 3;
   autopas::AutoTuner<Particle> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
                                      autopas::SelectorStrategyOption::fastestAbs, 1000, maxSamples);
 
-  EXPECT_EQ(conf, tuner.getCurrentConfig());
+  EXPECT_EQ(_confLc_c08, tuner.getCurrentConfig());
 
   MFunctor functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
@@ -446,7 +431,7 @@ TEST_F(AutoTunerTest, testOneConfig) {
     tuner.iteratePairwise(&functor, doRebuild);
     doRebuild = false;
     ++numSamples;
-    EXPECT_EQ(conf, tuner.getCurrentConfig());
+    EXPECT_EQ(_confLc_c08, tuner.getCurrentConfig());
   }
 }
 

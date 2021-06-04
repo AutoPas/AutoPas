@@ -16,6 +16,7 @@ namespace autopas {
 template <class Particle>
 class VLCAllCellsGeneratorFunctor : public Functor<Particle, VLCAllCellsGeneratorFunctor<Particle>> {
   using NeighborListsType = typename VerletListsCellsHelpers<Particle>::NeighborListsType;
+  using SoAArraysType = typename Particle::SoAArraysType;
 
  public:
   /**
@@ -70,6 +71,124 @@ class VLCAllCellsGeneratorFunctor : public Functor<Particle, VLCAllCellsGenerato
       _neighborLists[cellIndex][particleIndex].second.push_back(&j);
     }
   }
+
+  /**
+   * @copydoc Functor::SoAFunctorSingle()
+   */
+  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
+    if (soa.getNumParticles() == 0) return;
+
+    auto **const __restrict__ ptrptr = soa.template begin<Particle::AttributeNames::ptr>();
+    double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+
+    // index of cell1 is particleToCellMap of ptr1ptr, same for 2
+    auto cell1 = _particleToCellMap.at(ptrptr[0]).first;
+
+    auto &currentList = _neighborLists[cell1];
+
+    // iterating over particle indices and accessing currentList at index i works
+    // because the particles are iterated in the same order they are loaded in
+    // which is the same order they were initialized when building the aosNeighborList
+    size_t numPart = soa.getNumParticles();
+    for (unsigned int i = 0; i < numPart; ++i) {
+      for (unsigned int j = i + 1; j < numPart; ++j) {
+        const double drx = xptr[i] - xptr[j];
+        const double dry = yptr[i] - yptr[j];
+        const double drz = zptr[i] - zptr[j];
+
+        const double drx2 = drx * drx;
+        const double dry2 = dry * dry;
+        const double drz2 = drz * drz;
+
+        const double dr2 = drx2 + dry2 + drz2;
+
+        if (dr2 < _cutoffskinsquared) {
+          currentList[i].second.push_back(ptrptr[j]);
+          if (not newton3) {
+            // we need this here, as SoAFunctorSingle will only be called once for both newton3=true and false.
+            currentList[j].second.push_back(ptrptr[i]);
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Functor for structure of arrays (SoA)
+   *
+   * This functor should calculate the forces or any other pair-wise interaction
+   * between all particles of soa1 and soa2.
+   * This should include a cutoff check if needed!
+   *
+   * @param soa1 First structure of arrays.
+   * @param soa2 Second structure of arrays.
+   */
+  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/) override {
+    if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
+
+    auto **const __restrict__ ptr1ptr = soa1.template begin<Particle::AttributeNames::ptr>();
+    double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
+
+    auto **const __restrict__ ptr2ptr = soa2.template begin<Particle::AttributeNames::ptr>();
+    double *const __restrict__ x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
+
+    // index of cell1 is particleToCellMap of ptr1ptr, same for 2
+    size_t cell1 = _particleToCellMap.at(ptr1ptr[0]).first;
+
+    auto &currentList = _neighborLists[cell1];
+
+    // iterating over particle indices and accessing currentList at index i works
+    // because the particles are iterated in the same order they are loaded in
+    // which is the same order they were initialized when building the aosNeighborList
+    size_t numPart1 = soa1.getNumParticles();
+    for (unsigned int i = 0; i < numPart1; ++i) {
+      size_t numPart2 = soa2.getNumParticles();
+      for (unsigned int j = 0; j < numPart2; ++j) {
+        const double drx = x1ptr[i] - x2ptr[j];
+        const double dry = y1ptr[i] - y2ptr[j];
+        const double drz = z1ptr[i] - z2ptr[j];
+
+        const double drx2 = drx * drx;
+        const double dry2 = dry * dry;
+        const double drz2 = drz * drz;
+
+        const double dr2 = drx2 + dry2 + drz2;
+
+        if (dr2 < _cutoffskinsquared) {
+          currentList[i].second.push_back(ptr2ptr[j]);
+        }
+      }
+    }
+  }
+
+  /**
+   * @copydoc Functor::getNeededAttr()
+   */
+  constexpr static auto getNeededAttr() {
+    return std::array<typename Particle::AttributeNames, 4>{
+        Particle::AttributeNames::ptr, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
+        Particle::AttributeNames::posZ};
+  }
+
+  /**
+   * @copydoc Functor::getNeededAttr(std::false_type)
+   */
+  constexpr static auto getNeededAttr(std::false_type) {
+    return std::array<typename Particle::AttributeNames, 4>{
+        Particle::AttributeNames::ptr, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
+        Particle::AttributeNames::posZ};
+  }
+
+  /**
+   * @copydoc Functor::getComputedAttr()
+   */
+  constexpr static auto getComputedAttr() { return std::array<typename Particle::AttributeNames, 0>{}; }
 
  private:
   /**
