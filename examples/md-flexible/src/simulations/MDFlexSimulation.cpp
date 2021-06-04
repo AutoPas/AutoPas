@@ -267,7 +267,7 @@ void MDFlexSimulation::updateForces() {
 }
 
 void MDFlexSimulation::updateVelocities() {
-  const double deltaT = _configuration->deltaTemp.value;
+  const double deltaT = _configuration->deltaT.value;
   ParticlePropertiesLibraryType particlePropertiesLibrary = *(_configuration->getParticlePropertiesLibrary());
 
   const bool useThermostat =
