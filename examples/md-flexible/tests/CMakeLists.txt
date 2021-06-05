@@ -22,7 +22,7 @@ endforeach ()
 
 add_executable(mdFlexTests ${MDFlexTest_SRC})
 
-option(AUTOPAS_INCLUDE_MPI "Links MPI libraries to the target. This is required if you want to use MPI." OFF)
+option(AUTOPAS_INCLUDE_MPI "Links MPI libraries to the target. This is required if you want to use MPI." ON)
 
 if (AUTOPAS_INTERNODE_TUNING OR AUTOPAS_INCLUDE_MPI)
     message(STATUS "AUTOPAS_INTERNODE_TUNING set, searching for mpi to link against md-flexible ...")
@@ -30,15 +30,13 @@ if (AUTOPAS_INTERNODE_TUNING OR AUTOPAS_INCLUDE_MPI)
 
     if (NOT ${MPI_CXX_FOUND})
         message(FATAL_ERROR "cxx mpi could not be found, even though AUTOPAS_INTERNODE_TUNING was set.")
-        target_link_libraries( mdFlexTests PUBLIC autopas autopasTools gmock yaml-cpp)
     else ()
         message(STATUS "cxx mpi found: ${MPI_CXX_COMPILER}")
-        target_link_libraries(mdFlexTests PUBLIC autopas autopasTools gmock yaml-cpp ${MPI_CXX_LIBRARIES})
+        set(MD_FLEXIBLE_USE_MPI ON)
     endif ()
 else ()
     message(STATUS "AUTOPAS_INTERNODE_TUNING not set, not linking MPI to md-flexible.")
-    target_link_libraries( mdFlexTests PUBLIC autopas autopasTools gmock yaml-cpp)
-endif (AUTOPAS_INTERNODE_TUNING OR AUTOPAS_INCLUDE_MPI)
+endif ()
 
 target_compile_definitions(
     mdFlexTests PRIVATE
@@ -49,6 +47,15 @@ target_include_directories(
     PUBLIC ${PROJECT_SOURCE_DIR}/tests/testAutopas ${PROJECT_SOURCE_DIR}/examples/md-flexible
 )
 
+target_link_libraries(
+  mdFlexTests
+  PUBLIC
+    autopas
+    autopasTools
+    gmock
+    yaml-cpp
+    <$<BOOL:${MD-FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>
+)
 
 # this cmake module was only introduced in 3.10
 include(GoogleTest)
