@@ -29,7 +29,7 @@ else ()
     message(STATUS "AUTOPAS_INTERNODE_TUNING not set, not linking MPI to md-flexible.")
 endif ()
 
-target_link_libraries(md-flexible PUBLIC autopas autopasTools yaml-cpp <$<BOOL:${MD-FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
+target_link_libraries(md-flexible PUBLIC autopas autopasTools yaml-cpp $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
 
 # --- copy script files to build dir ---
 file(

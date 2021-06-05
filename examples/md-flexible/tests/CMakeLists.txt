@@ -54,7 +54,7 @@ target_link_libraries(
     autopasTools
     gmock
     yaml-cpp
-    <$<BOOL:${MD-FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>
+    $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>
 )
 
 # this cmake module was only introduced in 3.10
