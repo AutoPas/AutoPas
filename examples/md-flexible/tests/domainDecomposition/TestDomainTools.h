@@ -19,4 +19,3 @@ class TestDomainTools : public AutoPasTestBase {
    */
   TestDomainTools() = default;
 };
-

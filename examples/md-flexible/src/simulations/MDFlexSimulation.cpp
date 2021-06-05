@@ -265,7 +265,7 @@ void MDFlexSimulation::updateForces() {
 
 void MDFlexSimulation::updateVelocities() {
   // only do time step related stuff when there actually is time-stepping
-  const double deltaT = _configuration->deltaTemp.value;
+  const double deltaT = _configuration->deltaT.value;
   ParticlePropertiesLibraryType particlePropertiesLibrary = *(_configuration->getParticlePropertiesLibrary());
 
   const bool useThermostat =
@@ -279,9 +279,9 @@ void MDFlexSimulation::updateVelocities() {
 }
 
 void MDFlexSimulation::updateThermostat() {
-  if(_configuration->useThermostat.value and (_iteration % _configuration->thermostatInterval.value) == 0){
+  if (_configuration->useThermostat.value and (_iteration % _configuration->thermostatInterval.value) == 0) {
     Thermostat::apply(*_autoPasContainer, *(_configuration->getParticlePropertiesLibrary()),
-      _configuration->targetTemperature.value, _configuration->deltaTemp.value);
+                      _configuration->targetTemperature.value, _configuration->deltaTemp.value);
   }
 }
 
@@ -331,7 +331,8 @@ void MDFlexSimulation::initializeAutoPasContainer() {
   }
 
   for (auto &particle : _configuration->getParticles()) {
-    if (getDomainDecomposition()->isInsideLocalDomain({particle.position[0],particle.position[1],particle.position[2]})){
+    if (getDomainDecomposition()->isInsideLocalDomain(
+            {particle.position[0], particle.position[1], particle.position[2]})) {
       _autoPasContainer->addParticle(ParticleSerializationTools::convertParticleAttributesToParticle(particle));
     }
   }

@@ -104,7 +104,7 @@ class RegularGrid final : public DomainDecomposition {
    */
   void exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer);
 
-  /** 
+  /**
    * Waits for all send requests to be finished.
    */
   void waitForSendRequests();
@@ -248,5 +248,4 @@ class RegularGrid final : public DomainDecomposition {
    * Converts a domain id to the domain index, i.e. rank of the local processor.
    */
   int convertIdToIndex(const std::vector<int> &domainIndex);
-
 };

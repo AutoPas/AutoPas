@@ -19,4 +19,3 @@ TEST_F(TestDomainTools, testIsInsideDomain) {
   EXPECT_EQ(true, DomainTools::isInsideDomain(onBoundary, globalBoxMin, globalBoxMax));
   EXPECT_EQ(false, DomainTools::isInsideDomain(outside, globalBoxMin, globalBoxMax));
 }
-

@@ -6,63 +6,62 @@
 #include "TestRegularGrid.h"
 
 #include "mpi.h"
-#include "src/configuration/MDFlexConfig.h"
-#include "src/domainDecomposition/DomainTools.h"
-#include "src/domainDecomposition/RegularGrid.h"
 #include "src/ParticleAttributes.h"
 #include "src/ParticleSerializationTools.h"
 #include "src/TypeDefinitions.h"
+#include "src/configuration/MDFlexConfig.h"
+#include "src/domainDecomposition/DomainTools.h"
+#include "src/domainDecomposition/RegularGrid.h"
 
 namespace {
-  std::vector<double> sub(std::vector<double> a, std::vector<double> b) {
-    std::vector<double> difference = a;
-    if (a.size() == b.size()){
-      for (int i = 0; i < a.size(); ++i){
-        difference[i] = a[i] - b[i];
-      }
+std::vector<double> sub(std::vector<double> a, std::vector<double> b) {
+  std::vector<double> difference = a;
+  if (a.size() == b.size()) {
+    for (int i = 0; i < a.size(); ++i) {
+      difference[i] = a[i] - b[i];
     }
-    return difference;
   }
-
-  std::vector<double> div(std::vector<double> a, std::vector<int> b) {
-    std::vector<double> result = a;
-    if (a.size() == b.size()){
-      for (int i = 0; i < a.size(); ++i){
-        result[i] = a[i] / (double)b[i];
-      }
-    }
-    return result;
-  }
-
-  void initializeAutoPasContainer(RegularGrid::SharedAutoPasContainer &autoPasContainer, MDFlexConfig &configuration) {
-    autoPasContainer->setAllowedCellSizeFactors(*configuration.cellSizeFactors.value);
-    autoPasContainer->setAllowedContainers(configuration.containerOptions.value);
-    autoPasContainer->setAllowedDataLayouts(configuration.dataLayoutOptions.value);
-    autoPasContainer->setAllowedNewton3Options(configuration.newton3Options.value);
-    autoPasContainer->setAllowedTraversals(configuration.traversalOptions.value);
-    autoPasContainer->setAllowedLoadEstimators(configuration.loadEstimatorOptions.value);
-    autoPasContainer->setBoxMin(configuration.boxMin.value);
-    autoPasContainer->setBoxMax(configuration.boxMax.value);
-    autoPasContainer->setCutoff(configuration.cutoff.value);
-    autoPasContainer->setRelativeOptimumRange(configuration.relativeOptimumRange.value);
-    autoPasContainer->setMaxTuningPhasesWithoutTest(configuration.maxTuningPhasesWithoutTest.value);
-    autoPasContainer->setRelativeBlacklistRange(configuration.relativeBlacklistRange.value);
-    autoPasContainer->setEvidenceFirstPrediction(configuration.evidenceFirstPrediction.value);
-    autoPasContainer->setExtrapolationMethodOption(configuration.extrapolationMethodOption.value);
-    autoPasContainer->setNumSamples(configuration.tuningSamples.value);
-    autoPasContainer->setMaxEvidence(configuration.tuningMaxEvidence.value);
-    autoPasContainer->setSelectorStrategy(configuration.selectorStrategy.value);
-    autoPasContainer->setTuningInterval(configuration.tuningInterval.value);
-    autoPasContainer->setTuningStrategyOption(configuration.tuningStrategyOption.value);
-    autoPasContainer->setMPIStrategy(configuration.mpiStrategyOption.value);
-    autoPasContainer->setVerletClusterSize(configuration.verletClusterSize.value);
-    autoPasContainer->setVerletRebuildFrequency(configuration.verletRebuildFrequency.value);
-    autoPasContainer->setVerletSkin(configuration.verletSkinRadius.value);
-    autoPasContainer->setAcquisitionFunction(configuration.acquisitionFunctionOption.value);
-    autoPasContainer->init();
-  }
+  return difference;
 }
 
+std::vector<double> div(std::vector<double> a, std::vector<int> b) {
+  std::vector<double> result = a;
+  if (a.size() == b.size()) {
+    for (int i = 0; i < a.size(); ++i) {
+      result[i] = a[i] / (double)b[i];
+    }
+  }
+  return result;
+}
+
+void initializeAutoPasContainer(RegularGrid::SharedAutoPasContainer &autoPasContainer, MDFlexConfig &configuration) {
+  autoPasContainer->setAllowedCellSizeFactors(*configuration.cellSizeFactors.value);
+  autoPasContainer->setAllowedContainers(configuration.containerOptions.value);
+  autoPasContainer->setAllowedDataLayouts(configuration.dataLayoutOptions.value);
+  autoPasContainer->setAllowedNewton3Options(configuration.newton3Options.value);
+  autoPasContainer->setAllowedTraversals(configuration.traversalOptions.value);
+  autoPasContainer->setAllowedLoadEstimators(configuration.loadEstimatorOptions.value);
+  autoPasContainer->setBoxMin(configuration.boxMin.value);
+  autoPasContainer->setBoxMax(configuration.boxMax.value);
+  autoPasContainer->setCutoff(configuration.cutoff.value);
+  autoPasContainer->setRelativeOptimumRange(configuration.relativeOptimumRange.value);
+  autoPasContainer->setMaxTuningPhasesWithoutTest(configuration.maxTuningPhasesWithoutTest.value);
+  autoPasContainer->setRelativeBlacklistRange(configuration.relativeBlacklistRange.value);
+  autoPasContainer->setEvidenceFirstPrediction(configuration.evidenceFirstPrediction.value);
+  autoPasContainer->setExtrapolationMethodOption(configuration.extrapolationMethodOption.value);
+  autoPasContainer->setNumSamples(configuration.tuningSamples.value);
+  autoPasContainer->setMaxEvidence(configuration.tuningMaxEvidence.value);
+  autoPasContainer->setSelectorStrategy(configuration.selectorStrategy.value);
+  autoPasContainer->setTuningInterval(configuration.tuningInterval.value);
+  autoPasContainer->setTuningStrategyOption(configuration.tuningStrategyOption.value);
+  autoPasContainer->setMPIStrategy(configuration.mpiStrategyOption.value);
+  autoPasContainer->setVerletClusterSize(configuration.verletClusterSize.value);
+  autoPasContainer->setVerletRebuildFrequency(configuration.verletRebuildFrequency.value);
+  autoPasContainer->setVerletSkin(configuration.verletSkinRadius.value);
+  autoPasContainer->setAcquisitionFunction(configuration.acquisitionFunctionOption.value);
+  autoPasContainer->init();
+}
+}  // namespace
 
 TEST_F(TestRegularGrid, testGetLocalDomain) {
   std::vector<double> globalBoxMin = {1.0, 1.0, 1.0};
@@ -81,7 +80,7 @@ TEST_F(TestRegularGrid, testGetLocalDomain) {
   std::vector<double> expectedLocalBoxExtend = div(globalBoxExtend, decomposition);
 
   std::vector<double> resultingLocalBoxExtend =
-    sub(domainDecomposition.getLocalBoxMax(), domainDecomposition.getLocalBoxMin());
+      sub(domainDecomposition.getLocalBoxMax(), domainDecomposition.getLocalBoxMin());
 
   EXPECT_NEAR(expectedLocalBoxExtend[0], resultingLocalBoxExtend[0], 1e-10);
   EXPECT_NEAR(expectedLocalBoxExtend[1], resultingLocalBoxExtend[1], 1e-10);
@@ -89,10 +88,9 @@ TEST_F(TestRegularGrid, testGetLocalDomain) {
 }
 
 TEST_F(TestRegularGrid, testExchangeHaloParticles) {
-  std::vector<std::string> arguments =
-    { "md-flexible", "--yaml-filename", std::string(YAMLDIRECTORY) + "cubeGrid.yaml"};
+  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename", std::string(YAMLDIRECTORY) + "cubeGrid.yaml"};
 
-  char* argv[3] = { arguments[0].data(), arguments[1].data(), arguments[2].data() };
+  char *argv[3] = {arguments[0].data(), arguments[1].data(), arguments[2].data()};
 
   MDFlexConfig configuration(3, argv);
 
@@ -100,7 +98,7 @@ TEST_F(TestRegularGrid, testExchangeHaloParticles) {
   std::vector<double> globalBoxMax = {10.0, 10.0, 10.0};
 
   RegularGrid domainDecomposition(3, globalBoxMin, globalBoxMax);
-  
+
   std::vector<double> localBoxMin = domainDecomposition.getLocalBoxMin();
   std::vector<double> localBoxMax = domainDecomposition.getLocalBoxMax();
   for (int i = 0; i < localBoxMin.size(); ++i) {
@@ -109,11 +107,11 @@ TEST_F(TestRegularGrid, testExchangeHaloParticles) {
   }
 
   auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
-  
-  initializeAutoPasContainer(autoPasContainer, configuration); 
+
+  initializeAutoPasContainer(autoPasContainer, configuration);
 
   for (auto &particle : configuration.getParticles()) {
-    if (domainDecomposition.isInsideLocalDomain({ particle.position[0], particle.position[1], particle.position[2] })){
+    if (domainDecomposition.isInsideLocalDomain({particle.position[0], particle.position[1], particle.position[2]})) {
       autoPasContainer->addParticle(ParticleSerializationTools::convertParticleAttributesToParticle(particle));
     }
   }
@@ -122,10 +120,9 @@ TEST_F(TestRegularGrid, testExchangeHaloParticles) {
 }
 
 TEST_F(TestRegularGrid, testExchangeMigratingParticles) {
-  std::vector<std::string> arguments =
-    { "md-flexible", "--yaml-filename", std::string(YAMLDIRECTORY) + "cubeGrid.yaml"};
+  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename", std::string(YAMLDIRECTORY) + "cubeGrid.yaml"};
 
-  char* argv[3] = { arguments[0].data(), arguments[1].data(), arguments[2].data() };
+  char *argv[3] = {arguments[0].data(), arguments[1].data(), arguments[2].data()};
 
   MDFlexConfig configuration(3, argv);
 
@@ -133,7 +130,7 @@ TEST_F(TestRegularGrid, testExchangeMigratingParticles) {
   std::vector<double> globalBoxMax = {10.0, 10.0, 10.0};
 
   RegularGrid domainDecomposition(3, globalBoxMin, globalBoxMax);
-  
+
   std::vector<double> localBoxMin = domainDecomposition.getLocalBoxMin();
   std::vector<double> localBoxMax = domainDecomposition.getLocalBoxMax();
   for (int i = 0; i < localBoxMin.size(); ++i) {
@@ -142,11 +139,11 @@ TEST_F(TestRegularGrid, testExchangeMigratingParticles) {
   }
 
   auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
-  
-  initializeAutoPasContainer(autoPasContainer, configuration); 
+
+  initializeAutoPasContainer(autoPasContainer, configuration);
 
   for (auto &particle : configuration.getParticles()) {
-    if (domainDecomposition.isInsideLocalDomain({ particle.position[0], particle.position[1], particle.position[2] })){
+    if (domainDecomposition.isInsideLocalDomain({particle.position[0], particle.position[1], particle.position[2]})) {
       autoPasContainer->addParticle(ParticleSerializationTools::convertParticleAttributesToParticle(particle));
     }
   }

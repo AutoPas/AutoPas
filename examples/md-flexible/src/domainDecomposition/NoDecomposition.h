@@ -10,15 +10,15 @@
 class NoDecomposition final : public DomainDecomposition {
  public:
   /**
-  * Constructor.
-  * @param argc The argument count passed to the main function.
-  * @param argv The argument vector passed to the main function.
-  * @param dimensionCount The number of dimensions for this domain decomposition.
-  * @param globalBoxMin The minimum coordinates of the global domain.
-  * @param globalBoxMax The maximum coordinates of the global domain.
-  */
+   * Constructor.
+   * @param argc The argument count passed to the main function.
+   * @param argv The argument vector passed to the main function.
+   * @param dimensionCount The number of dimensions for this domain decomposition.
+   * @param globalBoxMin The minimum coordinates of the global domain.
+   * @param globalBoxMax The maximum coordinates of the global domain.
+   */
   NoDecomposition(int argc, char **argv, const int &dimensionCount, const std::vector<double> &globalBoxMin,
-               const std::vector<double> &globalBoxMax);
+                  const std::vector<double> &globalBoxMax);
 
   /**
    * Destructor.

@@ -73,10 +73,10 @@ TEST_F(ParticlePropertiesLibraryTest, mixedShiftTestUpot) {
 }
 
 TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitialization) {
-  std::vector<std::string> arguments =
-    { "md-flexible", "--yaml-filename", std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml"};
+  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
+                                        std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml"};
 
-  char* argv[3] = { arguments[0].data(), arguments[1].data(), arguments[2].data() };
+  char *argv[3] = {arguments[0].data(), arguments[1].data(), arguments[2].data()};
 
   MDFlexConfig configuration(3, argv);
 

@@ -33,10 +33,10 @@ TEST_F(GeneratorsTest, GridFillwithBoxMin) {
  * This test expects multipleObjectsWithMultipleTypesTest.yaml to be placed in md-flexible/tests/yamlTestFiles
  */
 TEST_F(GeneratorsTest, MultipleObjectGeneration) {
-  std::vector<std::string> arguments =
-    { "md-flexible", "--yaml-filename", std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml"};
+  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
+                                        std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml"};
 
-  char* argv[3] = { arguments[0].data(), arguments[1].data(), arguments[2].data() };
+  char *argv[3] = {arguments[0].data(), arguments[1].data(), arguments[2].data()};
 
   MDFlexConfig configuration(3, argv);
 

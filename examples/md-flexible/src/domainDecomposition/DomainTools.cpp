@@ -14,7 +14,7 @@ bool isInsideDomain(const std::vector<double> &coordinates, std::vector<double> 
     if (!isInsideLocalDomain) {
       break;
     }
-    isInsideLocalDomain = coordinates[i] >= boxMin[i] && coordinates[i] <= boxMax[i];
+    isInsideLocalDomain = coordinates[i] >= boxMin[i] && coordinates[i] < boxMax[i];
   }
   return isInsideLocalDomain;
 }

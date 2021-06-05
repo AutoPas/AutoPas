@@ -11,7 +11,7 @@ TEST_F(TestNoDecomposition, testGetLocalDomain) {
   std::vector<double> globalBoxMin = {1.0, 1.0, 1.0};
   std::vector<double> globalBoxMax = {10.0, 10.0, 10.0};
 
-  char** argv;
+  char **argv;
 
   NoDecomposition domainDecomposition(0, argv, 3, globalBoxMin, globalBoxMax);
 

@@ -5,14 +5,15 @@
  */
 #include "RegularGrid.h"
 
+#include <math.h>
+
 #include <algorithm>
 #include <functional>
-#include <math.h>
 #include <numeric>
 
+#include "DomainTools.h"
 #include "autopas/AutoPas.h"
 #include "autopas/utils/ArrayUtils.h"
-#include "DomainTools.h"
 #include "src/ParticleSerializationTools.h"
 
 RegularGrid::RegularGrid(const int &dimensionCount, const std::vector<double> &globalBoxMin,
@@ -41,9 +42,7 @@ RegularGrid::~RegularGrid() {}
 
 void RegularGrid::update() { updateLocalBox(); }
 
-void RegularGrid::setHaloWidth(double width){
-  _haloWidth = width; 
-}
+void RegularGrid::setHaloWidth(double width) { _haloWidth = width; }
 
 void RegularGrid::initializeMPICommunicator() {
   std::vector<int> periods(_dimensionCount, 1);
@@ -64,7 +63,7 @@ void RegularGrid::initializeLocalBox() {
   _localBoxMax.resize(_dimensionCount);
   updateLocalBox();
 
-  for (int i = 0; i < _localBoxMin.size(); ++i){
+  for (int i = 0; i < _localBoxMin.size(); ++i) {
     _haloWidth += (_localBoxMax[i] - _localBoxMin[i]) / 20.0;
   }
 
@@ -352,4 +351,3 @@ int RegularGrid::convertIdToIndex(const std::vector<int> &domainId) {
 
   return neighbourDomainIndex;
 }
-

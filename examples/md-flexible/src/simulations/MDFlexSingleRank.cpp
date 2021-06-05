@@ -13,7 +13,7 @@
 #include "src/Thermostat.h"
 
 MDFlexSingleRank::MDFlexSingleRank(int dimensionCount, int argc, char **argv) {
-    this->initialize(dimensionCount, argc, argv);
+  this->initialize(dimensionCount, argc, argv);
 }
 
 void MDFlexSingleRank::run() {

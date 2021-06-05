@@ -11,25 +11,23 @@
 using ::testing::ElementsAreArray;
 
 TEST_F(MDFlexConfigTest, GridBoxMinMax) {
-  std::vector<std::string> arguments =
-    { "md-flexible", "--yaml-file", std::string(YAMLDIRECTORY) + "cubeGrid.yaml"};
+  std::vector<std::string> arguments = {"md-flexible", "--yaml-file", std::string(YAMLDIRECTORY) + "cubeGrid.yaml"};
 
-  char* argv[3] = { arguments[0].data(), arguments[1].data(), arguments[2].data() };
+  char *argv[3] = {arguments[0].data(), arguments[1].data(), arguments[2].data()};
 
   MDFlexConfig configuration(3, argv);
 
-  std::array<double, 3> expectedBoxMin = { 0, 0, 0 };
-  std::array<double, 3> expectedBoxMax = { 9.75, 9.75, 9.75 };
+  std::array<double, 3> expectedBoxMin = {0, 0, 0};
+  std::array<double, 3> expectedBoxMax = {9.75, 9.75, 9.75};
 
   EXPECT_THAT(configuration.boxMin.value, expectedBoxMin);
   EXPECT_THAT(configuration.boxMax.value, expectedBoxMax);
 }
 
 TEST_F(MDFlexConfigTest, SphereBoxMinMax) {
-  std::vector<std::string> arguments =
-    { "md-flexible", "--yaml-filename", std::string(YAMLDIRECTORY) + "sphere.yaml"};
+  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename", std::string(YAMLDIRECTORY) + "sphere.yaml"};
 
-  char* argv[3] = { arguments[0].data(), arguments[1].data(), arguments[2].data() };
+  char *argv[3] = {arguments[0].data(), arguments[1].data(), arguments[2].data()};
 
   MDFlexConfig configuration(3, argv);
 
@@ -41,30 +39,30 @@ TEST_F(MDFlexConfigTest, SphereBoxMinMax) {
 }
 
 TEST_F(MDFlexConfigTest, GaussBoxMinMax) {
-  std::vector<std::string> arguments =
-    { "md-flexible", "--yaml-filename", std::string(YAMLDIRECTORY) + "cubeGauss.yaml"};
+  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
+                                        std::string(YAMLDIRECTORY) + "cubeGauss.yaml"};
 
-  char* argv[3] = { arguments[0].data(), arguments[1].data(), arguments[2].data() };
+  char *argv[3] = {arguments[0].data(), arguments[1].data(), arguments[2].data()};
 
   MDFlexConfig configuration(3, argv);
 
-  std::array<double, 3> expectedBoxMin = { 0.0, 0.0, 0.0 };
-  std::array<double, 3> expectedBoxMax = { 23.0, 8.0, 13.0 };
+  std::array<double, 3> expectedBoxMin = {0.0, 0.0, 0.0};
+  std::array<double, 3> expectedBoxMax = {23.0, 8.0, 13.0};
 
   EXPECT_THAT(configuration.boxMin.value, expectedBoxMin);
   EXPECT_THAT(configuration.boxMax.value, expectedBoxMax);
 }
 
 TEST_F(MDFlexConfigTest, UniformBoxMinMax) {
-  std::vector<std::string> arguments =
-    { "md-flexible", "--yaml-filename", std::string(YAMLDIRECTORY) + "cubeUniform.yaml"};
+  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
+                                        std::string(YAMLDIRECTORY) + "cubeUniform.yaml"};
 
-  char* argv[3] = { arguments[0].data(), arguments[1].data(), arguments[2].data() };
+  char *argv[3] = {arguments[0].data(), arguments[1].data(), arguments[2].data()};
 
   MDFlexConfig configuration(3, argv);
 
-  std::array<double, 3> expectedBoxMin = { 0, 0, -15 };
-  std::array<double, 3> expectedBoxMax = { 10, 10, 1 };
+  std::array<double, 3> expectedBoxMin = {0, 0, -15};
+  std::array<double, 3> expectedBoxMax = {10, 10, 1};
 
   EXPECT_THAT(configuration.boxMin.value, expectedBoxMin);
   EXPECT_THAT(configuration.boxMax.value, expectedBoxMax);

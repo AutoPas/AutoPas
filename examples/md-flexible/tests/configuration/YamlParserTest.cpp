@@ -12,10 +12,10 @@
 // See if the tests are required and rename the testfile or move them to the yaml parser
 
 TEST_F(YamlParserTest, calcAutoPasBox) {
-  std::vector<std::string> arguments =
-    { "md-flexible", "--yaml-filename", std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml"};
+  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
+                                        std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml"};
 
-  char* argv[3] = { arguments[0].data(), arguments[1].data(), arguments[2].data() };
+  char *argv[3] = {arguments[0].data(), arguments[1].data(), arguments[2].data()};
 
   MDFlexConfig configuration(3, argv);
 
@@ -26,10 +26,10 @@ TEST_F(YamlParserTest, calcAutoPasBox) {
 }
 
 TEST_F(YamlParserTest, addType) {
-  std::vector<std::string> arguments =
-    { "md-flexible", "--yaml-filename", std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml"};
+  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
+                                        std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml"};
 
-  char* argv[3] = { arguments[0].data(), arguments[1].data(), arguments[2].data() };
+  char *argv[3] = {arguments[0].data(), arguments[1].data(), arguments[2].data()};
 
   MDFlexConfig configuration(3, argv);
 
@@ -45,19 +45,19 @@ TEST_F(YamlParserTest, addType) {
 }
 
 TEST_F(YamlParserTest, wrongTypeParsingInput) {
-  std::vector<std::string> arguments =
-    { "md-flexible", "--yaml-filename", std::string(YAMLDIRECTORY) + "incorrectParsingFile.yaml"};
+  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
+                                        std::string(YAMLDIRECTORY) + "incorrectParsingFile.yaml"};
 
-  char* argv[3] = { arguments[0].data(), arguments[1].data(), arguments[2].data() };
+  char *argv[3] = {arguments[0].data(), arguments[1].data(), arguments[2].data()};
 
   ASSERT_ANY_THROW(MDFlexConfig(3, argv));
 }
 
 TEST_F(YamlParserTest, multipleSameObjectParsing) {
-  std::vector<std::string> arguments =
-    { "md-flexible", "--yaml-filename", std::string(YAMLDIRECTORY) + "multipleSimilarObjects.yaml"};
+  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
+                                        std::string(YAMLDIRECTORY) + "multipleSimilarObjects.yaml"};
 
-  char* argv[3] = { arguments[0].data(), arguments[1].data(), arguments[2].data() };
+  char *argv[3] = {arguments[0].data(), arguments[1].data(), arguments[2].data()};
 
   MDFlexConfig configuration(3, argv);
 

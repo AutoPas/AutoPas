@@ -85,17 +85,16 @@ class CubeUniform : public Object {
   }
 
  private:
- 
   /**
    * The number of particles in the object.
    */
   size_t _numParticles;
- 
+
   /**
-   * The lenght of the box in each direction. 
+   * The lenght of the box in each direction.
    */
   std::array<double, 3> _boxLength;
- 
+
   /**
    * The Coordinates of the bottom left corner.
    */
