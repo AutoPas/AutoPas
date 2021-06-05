@@ -51,4 +51,4 @@ void generateDecomposition(unsigned int subdomainCount, int dimensionCount, std:
     }
   }
 }
-}
+}  // namespace DomainTools
