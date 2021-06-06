@@ -24,6 +24,10 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
 
   void appendAllParticles(std::vector<Particle> &ps) { _pointer->appendAllParticles(ps); }
 
+  void appendAllLeaves(std::vector<OctreeLeafNode<Particle> *> &leaves) {
+    _pointer->appendAllLeaves(leaves);
+  }
+
   /**
    * Adds a Particle to the cell.
    * @param p the particle to be added
@@ -52,13 +56,13 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * Get the number of particles stored in this cell.
    * @return number of particles stored in this cell
    */
-  [[nodiscard]] unsigned long numParticles() const { return _pointer->getNumParticles(); }
+  [[nodiscard]] unsigned long numParticles() const override { return _pointer->getNumParticles(); }
 
   /**
    * Check if the cell is not empty.
    * @return true if at least one particle is stored in this cell
    */
-  [[nodiscard]] bool isNotEmpty() const { return numParticles() > 0; }
+  [[nodiscard]] bool isNotEmpty() const override { return numParticles() > 0; }
 
   /**
    * Deletes all particles in this cell.
@@ -98,13 +102,17 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
   }
 
   Particle &at(size_t index) {
-    std::vector<Particle> ps;
+    // TODO: This is really bad
+    static std::vector<Particle> ps;
+    ps.clear();
     _pointer->appendAllParticles(ps);
     return ps[index];
   }
 
   const Particle &at(size_t index) const {
-    std::vector<Particle> ps;
+    // TODO: This is really bad
+    static std::vector<Particle> ps;
+    ps.clear();
     _pointer->appendAllParticles(ps);
     return ps[index];
   }

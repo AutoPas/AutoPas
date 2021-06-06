@@ -117,5 +117,9 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
   OctreeNodeInterface<Particle> *SON(Octant O) override {
     throw std::runtime_error("Unable to get SON of leaf node");
   }
+
+  void appendAllLeaves(std::vector<OctreeLeafNode<Particle> *> &leaves) override {
+    leaves.push_back(this);
+  }
 };
 }  // namespace autopas

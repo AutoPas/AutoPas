@@ -8,17 +8,23 @@
 #pragma once
 
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
-#include "autopas/containers/octree/traversals/OTTraversalInterface.h"
+#include "autopas/containers/octree/OctreeNodeInterface.h"
 #include "autopas/containers/octree/OctreeInnerNode.h"
+#include "autopas/containers/octree/OctreeLeafNode.h"
+#include "autopas/containers/octree/traversals/OTTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/DataLayoutConverter.h"
 
 namespace autopas {
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class OTNaiveTraversal : public CellPairTraversal<ParticleCell>, public OTTraversalInterface<ParticleCell> {
+template <class Particle, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+class OTNaiveTraversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
+                         public OTTraversalInterface<OctreeNodeWrapper<Particle>> {
  public:
+  //using ParticleCell = OctreeNodeWrapper<Particle>;
+  using ParticleCell = OctreeLeafNode<Particle>;
+
   // TODO(johannes): The TraversalSelector passes the interactionLength as the cutoff value: Keep in mind when
   // implementing...
   /**
@@ -57,31 +63,65 @@ class OTNaiveTraversal : public CellPairTraversal<ParticleCell>, public OTTraver
    * @note This function expects a vector of exactly two cells. First cell is the main region, second is halo.
    */
   void traverseParticlePairs() override {
-    //std::vector<OctreeInnerNode<Particle> *> parents;
+    // Gather all leaves
+    std::vector<OctreeLeafNode<Particle> *> leaves;
+    auto *wrapper = dynamic_cast<OctreeNodeWrapper<Particle> *>(&(*_cells)[0]);
+    wrapper->appendAllLeaves(leaves);
 
-    //auto root = _cells[0];
+    // Get neighboring cells for each leaf
+    for (OctreeLeafNode<Particle> *leaf : leaves) {
+      // Get all face neighbors
+      for (Face *face = getFaces(); *face != O; ++face) {
+        OctreeNodeInterface<Particle> *neighbor = leaf->GTEQ_FACE_NEIGHBOR(*face);
+        if (neighbor) {
+          auto neighborLeaf = dynamic_cast<OctreeLeafNode<Particle> *>(neighbor);
+          OctreeLeafNode<Particle> &leafRef = *leaf;
+          OctreeLeafNode<Particle> &neighborLeafRef = *neighborLeaf;
+          _cellFunctor.processCellPair(leafRef, neighborLeafRef);
+        }
+      }
 
-    printf("Johannes' OTNaiveTraversal::traverseParticlePairs\n");
+      // Get all edge neighbors
+      for (Edge *edge = getEdges(); *edge != OO; ++edge) {
+        OctreeNodeInterface<Particle> *neighbor = leaf->GTEQ_EDGE_NEIGHBOR(*edge);
+        if (neighbor) {
+          auto neighborLeaf = dynamic_cast<OctreeLeafNode<Particle> *>(neighbor);
+          OctreeLeafNode<Particle> &leafRef = *leaf;
+          OctreeLeafNode<Particle> &neighborLeafRef = *neighborLeaf;
+          _cellFunctor.processCellPair(leafRef, neighborLeafRef);
+        }
+      }
+
+      // Get all face neighbors
+      for (Vertex *vertex = VERTICES(); *vertex != OOO; ++vertex) {
+        OctreeNodeInterface<Particle> *neighbor = leaf->GTEQ_VERTEX_NEIGHBOR(*vertex);
+        if (neighbor) {
+          auto neighborLeaf = dynamic_cast<OctreeLeafNode<Particle> *>(neighbor);
+          OctreeLeafNode<Particle> &leafRef = *leaf;
+          OctreeLeafNode<Particle> &neighborLeafRef = *neighborLeaf;
+          _cellFunctor.processCellPair(leafRef, neighborLeafRef);
+        }
+      }
+    }
   }
 
-  void setCells(std::vector<ParticleCell> *cells) { _cells = cells; }
+  void setCells(std::vector<OctreeNodeWrapper<Particle>> *cells) override { _cells = cells; }
 
  private:
-  using Particle = typename ParticleCell::ParticleType;
-
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
+  internal::CellFunctor<Particle, ParticleCell, PairwiseFunctor, dataLayout, useNewton3, true> _cellFunctor;
+  /*internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
                         true>
-      _cellFunctor;
+      _cellFunctor;*/
 
   /**
    * Data Layout Converter to be used with this traversal
    */
   utils::DataLayoutConverter<PairwiseFunctor, dataLayout> _dataLayoutConverter;
 
-  std::vector<ParticleCell> *_cells;
+  std::vector<OctreeNodeWrapper<Particle>> *_cells;
 };
 
 }  // namespace autopas

@@ -78,26 +78,29 @@ static inline unsigned directionToIndex(Direction d) {
 }
 
 enum Face {
-  O = 0, // omega/unknown
-  L = 1, R = 2,
-  D = 3, U = 4,
-  B = 5, F = 6,
+  O = 0,  // omega/unknown
+  L = 1,
+  R = 2,
+  D = 3,
+  U = 4,
+  B = 5,
+  F = 6,
 };
 
 typedef int unsigned Any;
 
 static constexpr Any buildEdge(Face f1, Face f2) {
-  assert(f1 != f2); // TODO: How can I make this a static assert?
+  assert(f1 != f2);  // TODO: How can I make this a static assert?
   return (f1 << 3) | f2;
 }
 
 static constexpr Any buildVertex(Face f1, Face f2, Face f3) {
-  assert((f1 != f2) && (f2 != f3)); // TODO: How can I make this a static assert?
+  assert((f1 != f2) && (f2 != f3));  // TODO: How can I make this a static assert?
   return (f1 << 6) | (f2 << 3) | f3;
 }
 
 enum Edge {
-  OO = 0, // omega/unknown
+  OO = 0,  // omega/unknown
   LD = buildEdge(L, D),
   LU = buildEdge(L, U),
   LB = buildEdge(L, B),
@@ -113,7 +116,7 @@ enum Edge {
 };
 
 enum Vertex {
-  OOO = 0, // omega/unknown
+  OOO = 0,  // omega/unknown
   LDB = buildVertex(L, D, B),
   LDF = buildVertex(L, D, F),
   LUB = buildVertex(L, U, B),
@@ -124,12 +127,18 @@ enum Vertex {
   RUF = buildVertex(R, U, F),
 };
 
+inline Face *getFaces() {
+  static Face table[] = {L, R, D, U, B, F};
+  return table;
+}
+
+inline Edge *getEdges() {
+  static Edge table[] = {LD, LU, LB, LF, RD, RU, RB, RF, DB, DF, UB, UF};
+  return table;
+}
+
 inline Vertex *VERTICES() {
-  static Vertex table[] = {
-      LDB, LDF, LUB, LUF,
-      RDB, RDF, RUB, RUF,
-      OOO
-  };
+  static Vertex table[] = {LDB, LDF, LUB, LUF, RDB, RDF, RUB, RUF, OOO};
   return table;
 }
 

@@ -75,7 +75,7 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
   /**
    * @copydoc OctreeNodeInterface::clearChildren()
    */
-  void clearChildren(std::unique_ptr<OctreeNodeInterface<Particle>> &ref) {
+  void clearChildren(std::unique_ptr<OctreeNodeInterface<Particle>> &ref) override {
     for (auto &child : _children) {
       child->clearChildren(child);
     }
@@ -164,6 +164,12 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
     // convert the Octant to a flat child index
     auto flat = (((O >> 6) & 1) | ((O >> 3) & 2) | ((O & 1) << 2)) ^ 7;
     return _children[flat].get();
+  }
+
+  void appendAllLeaves(std::vector<OctreeLeafNode<Particle> *> &leaves) override {
+    for(auto &child : _children) {
+      child->appendAllLeaves(leaves);
+    }
   }
 
  private:

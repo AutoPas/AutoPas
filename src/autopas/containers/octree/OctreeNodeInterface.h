@@ -30,6 +30,9 @@ class OctreeNodeInterface {
   OctreeNodeInterface(std::array<double, 3> boxMin, std::array<double, 3> boxMax, OctreeNodeInterface<Particle> *parent)
       : _boxMin(boxMin), _boxMax(boxMax), _parent(parent) {}
 
+  // To make clang happy.
+  virtual ~OctreeNodeInterface() = default;
+
   /**
    * Insert a particle into the octree.
    * @param p The particle to insert
@@ -48,6 +51,8 @@ class OctreeNodeInterface {
    * @param boxes A reference to the vector that should contain pairs of the min/max corner coordinates
    */
   virtual void appendAllLeafBoxes(std::vector<std::pair<std::array<double, 3>, std::array<double, 3>>> &boxes) = 0;
+
+  virtual void appendAllLeaves(std::vector<OctreeLeafNode<Particle> *> &leaves) = 0;
 
   /**
    * Delete the entire tree below this node.
@@ -214,6 +219,10 @@ class OctreeNodeInterface {
   std::array<double, 3> getBoxMin() { return _boxMin; }
   std::array<double, 3> getBoxMax() { return _boxMax; }
 
+  OctreeNodeInterface<Particle> *getParent() {
+    return _parent;
+  }
+
  protected:
   bool hasParent() { return _parent != nullptr; }
 
@@ -229,7 +238,7 @@ inline bool GRAY(OctreeNodeInterface<Particle> *node) {
 
 template<class Particle>
 inline OctreeNodeInterface<Particle> *FATHER(OctreeNodeInterface<Particle> *node) {
-  return node->parent;
+  return node->getParent();
 }
 
 template<class Particle>
