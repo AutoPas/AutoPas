@@ -256,7 +256,8 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
 
     // Octree
     case TraversalOption::ot_naive: {
-      return std::make_unique<OTNaiveTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
+      using ParticleType = typename ParticleCell::ParticleType;
+      return std::make_unique<OTNaiveTraversal<ParticleType, PairwiseFunctor, dataLayout, useNewton3>>(
           &pairwiseFunctor, info.interactionLength);
     }
   }
