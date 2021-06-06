@@ -524,12 +524,13 @@ inline int AutoPas_MPI_Request_free(AutoPas_MPI_Request *request) {
 }
 
 inline int AutoPas_MPI_Allgather(void *buffer_send, int count_send, AutoPas_MPI_Datatype datatype_send, void *buffer_recv, int count_recv, AutoPas_MPI_Datatype datatype_recv, AutoPas_MPI_Comm comm) {
-  // TODO: wrapper
+  for (int i=0; i < (count_recv / count_send); i++)
+    memcpy(static_cast<char *>(buffer_recv) + (i * count_send * sizeof(datatype_send)) ,buffer_send,count_send * sizeof(datatype_send));
   return AUTOPAS_MPI_SUCCESS;
 }
 
 inline int AutoPas_MPI_Comm_split(AutoPas_MPI_Comm old_communicator, int colour, int key, AutoPas_MPI_Comm* new_communicator) {
-  // TODO: wrapper
+  new_communicator = &old_communicator;
   return AUTOPAS_MPI_SUCCESS;
 }
 #endif

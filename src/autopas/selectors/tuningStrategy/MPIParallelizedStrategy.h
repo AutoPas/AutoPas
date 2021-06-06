@@ -73,19 +73,38 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
     if (_configIterator != nullptr) {
       _configIterator.reset();
     }
-    //TODO:
-//    int commSize;
-//    AutoPas_MPI_Comm_size(_comm, &commSize);
-//    AutoPas_MPI_Comm bucket;
-//    autopas::utils::AutoPasConfigurationCommunicator::distributeRanksInBuckets(_comm, rank, commSize, bucket, _autoPas);
-//
-//    AutoPas_MPI_Comm_rank(bucket, &rank);
+
     try {
       _tuningStrategy->reset(iteration);
     } catch (utils::ExceptionHandler::AutoPasException &exception) {
       AutoPasLog(warn,
                  "MPIParallelizedStrategy: Underlying strategy failed (with error: {}). Reverting to fallback-mode.",
                  exception.what());
+      setupFallbackOptions();
+    }
+  }
+
+  template <class Container>
+  void resetMpi(size_t iteration, Container *container) {
+    _optimalConfiguration = Configuration();
+    _allGlobalConfigurationsTested = false;
+    _allLocalConfigurationsTested = false;
+    _strategyStillWorking = true;
+    if (_configIterator != nullptr) {
+      _configIterator.reset();
+    }
+    int rank;
+    AutoPas_MPI_Comm_rank(_comm, &rank);
+    int commSize;
+    AutoPas_MPI_Comm_size(_comm, &commSize);
+    AutoPas_MPI_Comm bucket;
+    autopas::utils::AutoPasConfigurationCommunicator::distributeRanksInBuckets(_comm, rank, commSize, bucket, container);
+
+    AutoPas_MPI_Comm_rank(bucket, &rank);
+    try {
+      _tuningStrategy->reset(iteration);
+    } catch (utils::ExceptionHandler::AutoPasException &exception) {
+      AutoPasLog(warn, "MPIParallelizedStrategy: Underlying strategy failed (with error: {}). Reverting to fallback-mode.", exception.what());
       setupFallbackOptions();
     }
   }

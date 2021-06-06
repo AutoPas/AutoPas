@@ -25,6 +25,7 @@
 #include "autopas/utils/logging/IterationLogger.h"
 #include "autopas/utils/logging/TuningDataLogger.h"
 #include "autopas/utils/logging/TuningResultLogger.h"
+#include "autopas/selectors/tuningStrategy/MPIParallelizedStrategy.h"
 
 namespace autopas {
 
@@ -434,7 +435,13 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
   tuningTimer.start();
   // first tuning iteration -> reset to first config
   if (_iterationsSinceTuning == _tuningInterval) {
-    _tuningStrategy->reset(_iteration); // FIXME
+#ifdef AUTOPAS_INTERNODE_TUNING
+    AutoPasLog(debug, "HELOOOOOOOOOOOO MPI tuning");
+    MPIParallelizedStrategy& x = dynamic_cast<MPIParallelizedStrategy&>(*_tuningStrategy);
+    x.resetMpi(_iteration, getContainer().get());
+#else
+    _tuningStrategy->reset(_iteration);
+#endif
   } else {  // enough samples -> next config
     stillTuning = _tuningStrategy->tune();
   }

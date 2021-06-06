@@ -158,10 +158,10 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
                                 dataLayoutOptions, newton3Options));
 }
 
-template <class Particle>
-void distributeRanksInBuckets(AutoPas_MPI_Comm comm, int rank, int commSize, AutoPas_MPI_Comm bucket, AutoPas<Particle> &autopas) {
+template <class Container>
+void distributeRanksInBuckets(AutoPas_MPI_Comm &comm, int rank, int commSize, AutoPas_MPI_Comm &bucket, Container *container) {
   std::vector<double> homogeneities;
-  double homogeneity = calculateHomogeneity(autopas);
+  double homogeneity = calculateHomogeneity(*container);
   std::cout << "homogeneity: " << homogeneity;
   AutoPas_MPI_Allgather(&homogeneity, 1, AUTOPAS_MPI_DOUBLE, &homogeneities, commSize, AUTOPAS_MPI_DOUBLE, comm);
 
@@ -178,6 +178,8 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, int rank, int commSize, Aut
 
   int current_bucket = 0;
   // print out the results
+  AutoPasLog(debug, "\n\n\n\n");
+
   for (int i = 0; i < homogeneities.size(); i++) {
 
     // if a difference exceeds 40%, start a new group:
@@ -185,8 +187,11 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, int rank, int commSize, Aut
       current_bucket++;
 
     // print out an item:
+    AutoPasLog(debug, "bucket: " + std::to_string(current_bucket) + "  new value: " + std::to_string(homogeneities[i]) + "\n");
+    std::cout << "bucket: " << current_bucket << "  new value: " << homogeneities[i];
     buckets[current_bucket].push_back(homogeneities[i]);
   }
+  AutoPasLog(debug, "\n\n\n\n");
 
   // TODO: MPI_Comm_split
 
