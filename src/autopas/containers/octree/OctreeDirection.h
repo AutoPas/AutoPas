@@ -128,24 +128,67 @@ enum Vertex {
 };
 
 inline Face *getFaces() {
-  static Face table[] = {L, R, D, U, B, F};
+  static Face table[] = {L, R, D, U, B, F, O};
   return table;
 }
 
 inline Edge *getEdges() {
-  static Edge table[] = {LD, LU, LB, LF, RD, RU, RB, RF, DB, DF, UB, UF};
+  static Edge table[] = {LD, LU, LB, LF, RD, RU, RB, RF, DB, DF, UB, UF, OO};
   return table;
 }
 
 inline Vertex *VERTICES() {
+#if 1
   static Vertex table[] = {LDB, LDF, LUB, LUF, RDB, RDF, RUB, RUF, OOO};
+#else
+  static Vertex table[] = {LDB, RDB, LUB, RUB, LDF, RDF, LUF, RUF, OOO};
+#endif
   return table;
+}
+
+inline int vertexToIndex(Vertex vertex) {
+#if 1
+  // TODO(johannes): This is very slow and could be sped up.
+  int result = -1;
+  for (int i = 0; i < 8; ++i) {
+    if (vertex == VERTICES()[i]) {
+      result = i;
+      break;
+    }
+  }
+#else
+  // This is very buggy, why do I always optimize premature...
+  int result = (((vertex >> 6) & 1) | ((vertex >> 3) & 2) | ((vertex & 1) << 2)) ^ 7;
+#endif
+  return result;
 }
 
 typedef Vertex Octant;
 
+template <typename T>
+inline bool contains(T *all, T stop, Any test) {
+  bool result = false;
+  for (T *t = all; *t != stop; ++t) {
+    if (test == *t) {
+      result = true;
+      break;
+    }
+  }
+  return result;
+}
+
 inline bool ADJ(Any direction, Vertex octant) {
   static std::array<std::array<bool, 8>, 1 << 9> table;
+
+  // Check the argument preconditions
+  if (!contains(getFaces(), O, direction) && !contains(getEdges(), OO, direction) &&
+      !contains(VERTICES(), OOO, direction)) {
+    throw std::runtime_error("[OctreeDirection.h] Received invalid direction");
+  }
+
+  if (!contains(VERTICES(), OOO, octant)) {
+    throw std::runtime_error("[OctreeDirection.h] Received invalid octant");
+  }
 
   // TODO: Is this actually initialized static??
   table[L] = {true, true, true, true, false, false, false, false};
@@ -175,11 +218,23 @@ inline bool ADJ(Any direction, Vertex octant) {
   table[RUB] = {false, false, false, false, false, false, true, false};
   table[RUF] = {false, false, false, false, false, false, false, true};
 
-  return table[direction][octant];
+  int flatOctant = vertexToIndex(octant);
+  bool result = table[direction][flatOctant];
+  return result;
 }
 
 inline Octant REFLECT(Any direction, Octant octant) {
   static std::array<std::array<Octant, 8>, 1 << 9> table;
+
+  // Check the argument preconditions
+  if (!contains(getFaces(), O, direction) && !contains(getEdges(), OO, direction) &&
+      !contains(VERTICES(), OOO, direction)) {
+    throw std::runtime_error("[OctreeDirection.h] Received invalid direction");
+  }
+
+  if (!contains(VERTICES(), OOO, octant)) {
+    throw std::runtime_error("[OctreeDirection.h] Received invalid octant");
+  }
 
   table[L] = {RDB, RDF, RUB, RUF, LDB, LDF, LUB, LUF};
   table[R] = {RDB, RDF, RUB, RUF, LDB, LDF, LUB, LUF};
@@ -208,11 +263,22 @@ inline Octant REFLECT(Any direction, Octant octant) {
   table[RUB] = {RUF, RUB, RDF, RDB, LUF, LUB, LDF, LDB};
   table[RUF] = {RUF, RUB, RDF, RDB, LUF, LUB, LDF, LDB};
 
-  return table[direction][octant];
+  int flatOctant = vertexToIndex(octant);
+  Octant result = table[direction][flatOctant];
+  return result;
 }
 
 inline Face COMMON_FACE(Any direction, Vertex octant) {
   static std::array<std::array<Face, 8>, 1 << 9> table;
+
+  // Check the argument preconditions
+  if (!contains(getEdges(), OO, direction) && !contains(VERTICES(), OOO, direction)) {
+    throw std::runtime_error("[OctreeDirection.h] Received invalid direction");
+  }
+
+  if (!contains(VERTICES(), OOO, octant)) {
+    throw std::runtime_error("[OctreeDirection.h] Received invalid octant");
+  }
 
   table[LD] = {O, O, L, L, D, D, O, O};
   table[LU] = {L, L, O, O, O, O, U, U};
@@ -235,11 +301,22 @@ inline Face COMMON_FACE(Any direction, Vertex octant) {
   table[RUB] = {B, O, O, U, O, R, O, O};
   table[RUF] = {O, F, U, O, R, O, O, O};
 
-  return table[direction][octant];
+  int flatOctant = vertexToIndex(octant);
+  Face result = table[direction][flatOctant];
+  return result;
 }
 
 inline Edge COMMON_EDGE(Any direction, Vertex octant) {
   static std::array<std::array<Edge, 8>, 1 << 9> table;
+
+  // Check the argument preconditions
+  if (!contains(VERTICES(), OOO, direction)) {
+    throw std::runtime_error("[OctreeDirection.h] Received invalid direction");
+  }
+
+  if (!contains(VERTICES(), OOO, octant)) {
+    throw std::runtime_error("[OctreeDirection.h] Received invalid octant");
+  }
 
   table[LDB] = {OO, LD, LB, OO, DB, OO, OO, OO};
   table[LDF] = {LD, OO, OO, LF, OO, DF, OO, OO};
@@ -250,7 +327,9 @@ inline Edge COMMON_EDGE(Any direction, Vertex octant) {
   table[RUB] = {OO, OO, UB, OO, RB, OO, OO, RU};
   table[RUF] = {OO, OO, OO, UF, OO, RF, RU, OO};
 
-  return table[direction][octant];
+  int flatOctant = vertexToIndex(octant);
+  Edge result = table[direction][flatOctant];
+  return result;
 }
 
 }  // namespace autopas
