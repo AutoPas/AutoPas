@@ -232,8 +232,8 @@ class OctreeNodeInterface {
 
 template<class Particle>
 inline bool GRAY(OctreeNodeInterface<Particle> *node) {
-  // TODO: Is this the right condition?
-  return !node->hasChildren();
+  // According to Samet: "All non-leaf nodes are said to be GRAY"
+  return node->hasChildren();
 }
 
 template<class Particle>
@@ -258,6 +258,11 @@ static Octant SONTYPE(OctreeNodeInterface<Particle> *node) {
 
 template <class Particle>
 OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_FACE_NEIGHBOR(Face I) {
+  // Check precondition
+  if(!contains(getFaces(), O, I)) {
+    throw std::runtime_error("[OctreeNodeInterface.h] Received invalid face.");
+  }
+
   auto null = [] (OctreeNodeInterface<Particle> *T) {return T == nullptr;};
 
   // Find a common ancestor
@@ -278,6 +283,11 @@ OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_FACE_NEIGHBOR
 
 template <class Particle>
 OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_EDGE_NEIGHBOR(Edge I) {
+  // Check precondition
+  if(!contains(getEdges(), OO, I)) {
+    throw std::runtime_error("[OctreeNodeInterface.h] Received invalid edge.");
+  }
+
   auto null = [] (OctreeNodeInterface<Particle> *T) {return T == nullptr;};
 
   // Find a common ancestor
@@ -303,6 +313,11 @@ OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_EDGE_NEIGHBOR
 
 template <class Particle>
 OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_VERTEX_NEIGHBOR(Vertex I) {
+  // Check precondition
+  if(!contains(VERTICES(), OOO, I)) {
+    throw std::runtime_error("[OctreeNodeInterface.h] Received invalid vertex.");
+  }
+
   auto null = [] (OctreeNodeInterface<Particle> *T) {return T == nullptr;};
 
   // Find a common ancestor
