@@ -26,7 +26,11 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
       std::array<double, 3> newBoxMin = {};
       std::array<double, 3> newBoxMax = {};
       for (auto d = 0; d < 3; ++d) {
+#if 1
+        auto mask = 4 >> d;
+#else
         auto mask = 1 << d;
+#endif
         newBoxMin[d] = !(i & mask) ? boxMin[d] : center[d];
         newBoxMax[d] = !(i & mask) ? center[d] : boxMax[d];
       }
@@ -160,9 +164,9 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
     return result;
   }
 
-  OctreeNodeInterface<Particle> *SON(Octant O) override {
+  OctreeNodeInterface<Particle> *SON(Octant octant) override {
     // convert the Octant to a flat child index
-    auto flat = (((O >> 6) & 1) | ((O >> 3) & 2) | ((O & 1) << 2)) ^ 7;
+    auto flat = vertexToIndex(octant);
     return _children[flat].get();
   }
 
