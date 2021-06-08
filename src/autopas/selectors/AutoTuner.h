@@ -438,7 +438,7 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
 #ifdef AUTOPAS_INTERNODE_TUNING
     AutoPasLog(debug, "HELOOOOOOOOOOOO MPI tuning");
     MPIParallelizedStrategy& x = dynamic_cast<MPIParallelizedStrategy&>(*_tuningStrategy);
-    x.resetMpi(_iteration, getContainer().get());
+    x.resetMpi(_iteration, *getContainer().get());
 #else
     _tuningStrategy->reset(_iteration);
 #endif

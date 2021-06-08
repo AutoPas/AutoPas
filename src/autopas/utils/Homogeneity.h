@@ -19,14 +19,14 @@ namespace autopas::utils {
  * @return  [homogeneity, max_density]
  */
 template <class Container>
-double static *calculateHomogeneity(Container *container) {
+double static *calculateHomogeneity(Container &container) {
   auto *data = new double[2];
-  size_t numberOfParticles = container->getNumberOfParticles();
+  size_t numberOfParticles = container.getNumberOfParticles();
   // approximately the resolution we want to get.
   size_t numberOfCells = ceil(numberOfParticles / 10.);
 
-  std::array<double, 3> startCorner = container->getBoxMin();
-  std::array<double, 3> endCorner = container->getBoxMax();
+  std::array<double, 3> startCorner = container.getBoxMin();
+  std::array<double, 3> endCorner = container.getBoxMax();
   std::array<double, 3> domainSizePerDimension = {};
   for (int i = 0; i < 3; ++i) {
     domainSizePerDimension[i] = endCorner[i] - startCorner[i];
@@ -53,7 +53,7 @@ double static *calculateHomogeneity(Container *container) {
   std::vector<double> allVolumes(numberOfCells, 0);
 
   // add particles accordingly to their cell to get the amount of particles in each cell
-  for (auto particleItr = container->begin(autopas::IteratorBehavior::owned); particleItr.isValid(); ++particleItr) {
+  for (auto particleItr = container.begin(autopas::IteratorBehavior::owned); particleItr.isValid(); ++particleItr) {
     std::array<double, 3> particleLocation = particleItr->getR();
     std::array<size_t, 3> index = {};
     for (int i = 0; (size_t) i < particleLocation.size(); i++) {

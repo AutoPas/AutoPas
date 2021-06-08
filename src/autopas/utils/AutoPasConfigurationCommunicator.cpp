@@ -159,9 +159,9 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
 }
 
 template <class Container>
-void distributeRanksInBuckets(AutoPas_MPI_Comm &comm, int rank, int commSize, AutoPas_MPI_Comm &bucket, Container *container) {
+void distributeRanksInBuckets(AutoPas_MPI_Comm comm, int rank, int commSize, AutoPas_MPI_Comm bucket, Container &container) {
   std::vector<double> homogeneities;
-  double homogeneity = calculateHomogeneity(*container);
+  double homogeneity = calculateHomogeneity(container);
   std::cout << "homogeneity: " << homogeneity;
   AutoPas_MPI_Allgather(&homogeneity, 1, AUTOPAS_MPI_DOUBLE, &homogeneities, commSize, AUTOPAS_MPI_DOUBLE, comm);
 
