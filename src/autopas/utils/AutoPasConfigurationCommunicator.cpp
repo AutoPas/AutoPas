@@ -190,10 +190,9 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, int rank, int commSize, Aut
     AutoPasLog(debug, "bucket: " + std::to_string(current_bucket) + "  new value: " + std::to_string(homogeneities[i]) + "\n");
     std::cout << "bucket: " << current_bucket << "  new value: " << homogeneities[i];
     buckets[current_bucket].push_back(homogeneities[i]);
+    AutoPas_MPI_Comm_split(comm, current_bucket, rank, &bucket);
   }
   AutoPasLog(debug, "\n\n\n\n");
-
-  // TODO: MPI_Comm_split
 
 }
 

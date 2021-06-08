@@ -9,8 +9,12 @@
 namespace autopas {
 
 bool MPIParallelizedStrategy::tune(bool currentInvalid) {
+
+  if (_bucket == AUTOPAS_MPI_COMM_NULL)
+    _bucket = _comm;
+
   int rank;
-  AutoPas_MPI_Comm_rank(_comm, &rank);
+  AutoPas_MPI_Comm_rank(_bucket, &rank);
 
   if (not _strategyStillWorking and currentInvalid) {
     nextFallbackConfig();
@@ -46,13 +50,13 @@ bool MPIParallelizedStrategy::tune(bool currentInvalid) {
       config = _tuningStrategy->getCurrentConfiguration();
       localOptimalTime = _tuningStrategy->getEvidence(config);
     }
-    _optimalConfiguration = utils::AutoPasConfigurationCommunicator::optimizeConfiguration(_comm, config, localOptimalTime);
+    _optimalConfiguration = utils::AutoPasConfigurationCommunicator::optimizeConfiguration(_bucket, config, localOptimalTime);
 
     return false;
   }
 
   AutoPas_MPI_Iallreduce(&_allLocalConfigurationsTested, &_allGlobalConfigurationsTested, 1, AUTOPAS_MPI_CXX_BOOL,
-                         AUTOPAS_MPI_LAND, _comm, &_request);
+                         AUTOPAS_MPI_LAND, _bucket, &_request);
 
   return true;
 }

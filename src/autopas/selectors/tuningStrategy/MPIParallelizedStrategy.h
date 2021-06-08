@@ -97,10 +97,8 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
     AutoPas_MPI_Comm_rank(_comm, &rank);
     int commSize;
     AutoPas_MPI_Comm_size(_comm, &commSize);
-    AutoPas_MPI_Comm bucket;
-    autopas::utils::AutoPasConfigurationCommunicator::distributeRanksInBuckets(_comm, rank, commSize, bucket, container);
+    autopas::utils::AutoPasConfigurationCommunicator::distributeRanksInBuckets(_comm, rank, commSize, _bucket, container);
 
-    AutoPas_MPI_Comm_rank(bucket, &rank);
     try {
       _tuningStrategy->reset(iteration);
     } catch (utils::ExceptionHandler::AutoPasException &exception) {
@@ -137,6 +135,7 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
   std::unique_ptr<TuningStrategyInterface> _tuningStrategy;
 
   AutoPas_MPI_Comm _comm;
+  AutoPas_MPI_Comm _bucket;
   AutoPas_MPI_Request _request{AUTOPAS_MPI_REQUEST_NULL};
 
   /**

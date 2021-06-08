@@ -84,7 +84,7 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
  * @param bucket
  */
 template <class Container>
-void distributeRanksInBuckets(AutoPas_MPI_Comm &comm, int rank, int commSize, AutoPas_MPI_Comm &bucket, Container *container);
+void distributeRanksInBuckets(AutoPas_MPI_Comm comm, int rank, int commSize, AutoPas_MPI_Comm bucket, Container &container);
 
 /**
  * Serializes a configuration object for communication via MPI.
