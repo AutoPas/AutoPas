@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "autopas/AutoPas.h"
-
+#include <options/IteratorBehavior.h>
+#include "ThreeDimensionalMapping.h"
 
 namespace autopas::utils {
 
@@ -19,7 +19,7 @@ namespace autopas::utils {
  * @return  [homogeneity, max_density]
  */
 template <class Container>
-double static *calculateHomogeneity(Container &container) {
+double static *calculateHomogeneity(const Container &container) {
   auto *data = new double[2];
   size_t numberOfParticles = container.getNumberOfParticles();
   // approximately the resolution we want to get.

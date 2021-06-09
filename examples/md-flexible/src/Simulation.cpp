@@ -273,7 +273,7 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
 
     // MPI Barrier, so simulate communication between ranks
 #ifdef AUTOPAS_INTERNODE_TUNING
-    autopas::AutoPas_MPI_Barrier(AUTOPAS_MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
 #endif
 
   }
@@ -413,7 +413,7 @@ std::string Simulation::getMPISuffix() const {
   std::string suffix;
 #ifdef AUTOPAS_INTERNODE_TUNING
   int rank;
-  autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   std::ostringstream output;
   output << "mpi_rank_" << rank << "_";
   suffix = output.str();

@@ -13,7 +13,6 @@
 #ifdef AUTOPAS_INTERNODE_TUNING
 #include <mpi.h>
 #endif
-#include "autopas/utils/WrapMPI.h"
 
 /**
  * The main simulation class.
@@ -198,6 +197,6 @@ class Simulation {
 
   std::string _homoName;
 
-  autopas::AutoPas_MPI_Comm _comm{AUTOPAS_MPI_COMM_NULL};
+  //autopas::AutoPas_MPI_Comm _comm{AUTOPAS_MPI_COMM_NULL};
 
 };
