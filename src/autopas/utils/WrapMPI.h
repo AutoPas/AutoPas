@@ -293,7 +293,7 @@ inline int AutoPas_MPI_Iallreduce(const void *sendbuf, void *recvbuf, int count,
  * @param comm communicator (handle)
  * @return MPI error value
  */
-inline int AutoPas_MPI_Barrier(AutoPas_MPI_Comm comm);
+inline int AutoPas_MPI_Barrier(const AutoPas_MPI_Comm &comm);
 
 /**
  * Wrapper for MPI_Ibarrier
@@ -378,7 +378,7 @@ inline int AutoPas_MPI_Iallreduce(const void *sendbuf, void *recvbuf, int count,
   return MPI_Iallreduce(sendbuf, recvbuf, count, datatype, op, comm, request);
 }
 
-inline int AutoPas_MPI_Barrier(AutoPas_MPI_Comm comm) { return MPI_Barrier(comm); }
+inline int AutoPas_MPI_Barrier(const AutoPas_MPI_Comm &comm) { return MPI_Barrier(comm); }
 
 inline int AutoPas_MPI_Ibarrier(AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request) {
   return MPI_Ibarrier(comm, request);

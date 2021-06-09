@@ -8,9 +8,6 @@
 
 #include <sys/ioctl.h>
 #include <unistd.h>
-#ifdef AUTOPAS_INTERNODE_TUNING
-#include <mpi.h>
-#endif
 
 #include <iomanip>
 #include <iostream>
@@ -45,6 +42,12 @@ void Simulation::initializeParticlePropertiesLibrary() {
 
 void Simulation::initialize(const MDFlexConfig &mdFlexConfig, autopas::AutoPas<ParticleType> &autopas) {
   _timers.init.start();
+
+//#ifdef AUTOPAS_INTERNODE_TUNING
+//  if (_comm == AUTOPAS_MPI_COMM_NULL) {
+//    autopas::AutoPas_MPI_Comm_dup(AUTOPAS_MPI_COMM_WORLD, &_comm);
+//  }
+//#endif
 
   _config = std::make_shared<MDFlexConfig>(mdFlexConfig);
   initializeParticlePropertiesLibrary();
@@ -267,6 +270,12 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
         _timers.thermostat.stop();
       }
     }
+
+    // MPI Barrier, so simulate communication between ranks
+#ifdef AUTOPAS_INTERNODE_TUNING
+    autopas::AutoPas_MPI_Barrier(AUTOPAS_MPI_COMM_WORLD);
+#endif
+
   }
   // final update for a full progress bar
   if (not _config->dontShowProgressBar.value) {
@@ -292,12 +301,6 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
   }
 
   _timers.simulate.stop();
-
-
-  // MPI Barrier, so simulate communication between ranks
-#ifdef AUTOPAS_INTERNODE_TUNING
-  autopas::AutoPas_MPI_Barrier(MPI_COMM_WORLD);
-#endif
 }
 
 void Simulation::printStatistics(autopas::AutoPas<ParticleType> &autopas) {
@@ -410,7 +413,7 @@ std::string Simulation::getMPISuffix() const {
   std::string suffix;
 #ifdef AUTOPAS_INTERNODE_TUNING
   int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
   std::ostringstream output;
   output << "mpi_rank_" << rank << "_";
   suffix = output.str();

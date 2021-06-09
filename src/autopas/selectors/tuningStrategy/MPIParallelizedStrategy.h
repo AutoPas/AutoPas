@@ -85,7 +85,7 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
   }
 
   template <class Container>
-  void resetMpi(size_t iteration, Container &container) {
+  void resetMpi(size_t iteration, const Container &container) {
     _optimalConfiguration = Configuration();
     _allGlobalConfigurationsTested = false;
     _allLocalConfigurationsTested = false;
