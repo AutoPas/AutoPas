@@ -21,16 +21,15 @@ if (AUTOPAS_INTERNODE_TUNING OR AUTOPAS_INCLUDE_MPI)
 
     if (NOT ${MPI_CXX_FOUND})
         message(FATAL_ERROR "cxx mpi could not be found, even though AUTOPAS_INTERNODE_TUNING was set.")
-        target_link_libraries(md-flexible PUBLIC autopas autopasTools yaml-cpp)
     else ()
         message(STATUS "cxx mpi found: ${MPI_CXX_COMPILER}")
-        target_link_libraries(md-flexible PUBLIC autopas autopasTools yaml-cpp ${MPI_CXX_LIBRARIES})
+        set(MD_FLEXIBLE_USE_MPI ON)
     endif ()
 else ()
-    target_link_libraries(md-flexible PUBLIC autopas autopasTools yaml-cpp)
     message(STATUS "AUTOPAS_INTERNODE_TUNING not set, not linking MPI to md-flexible.")
-endif (AUTOPAS_INTERNODE_TUNING OR AUTOPAS_INCLUDE_MPI)
+endif ()
 
+target_link_libraries(md-flexible PUBLIC autopas autopasTools yaml-cpp $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
 
 # --- copy script files to build dir ---
 file(
