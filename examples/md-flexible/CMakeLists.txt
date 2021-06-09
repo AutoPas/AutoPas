@@ -13,7 +13,7 @@ target_include_directories(md-flexible PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 include(autopas_yaml-cpp)
 
-option(AUTOPAS_INCLUDE_MPI "Links MPI libraries to the target. This is required if you want to use MPI." OFF)
+option(AUTOPAS_INCLUDE_MPI "Links MPI libraries to the target. This is required if you want to use MPI." ON)
 
 if (AUTOPAS_INTERNODE_TUNING OR AUTOPAS_INCLUDE_MPI)
     message(STATUS "AUTOPAS_INTERNODE_TUNING set, searching for mpi to link against md-flexible ...")
@@ -28,6 +28,11 @@ if (AUTOPAS_INTERNODE_TUNING OR AUTOPAS_INCLUDE_MPI)
 else ()
     message(STATUS "AUTOPAS_INTERNODE_TUNING not set, not linking MPI to md-flexible.")
 endif ()
+
+IF(CMAKE_COMPILER_IS_GNUCC)
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Og")
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Og")
+ENDIF()
 
 target_link_libraries(md-flexible PUBLIC autopas autopasTools yaml-cpp $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
 
