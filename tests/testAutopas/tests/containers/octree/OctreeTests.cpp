@@ -376,11 +376,7 @@ TEST_F(OctreeTest, testNeighborLocator) {
         normal[touchAxis] = 1;
 
         // Check if the face touches the other cube
-        double val = planeEquation(normal, leafPointInclInFacePlane, neighborPointInclInFacePlane);
-        if (val < -0.1) {
-          int x = 0;
-        }
-        ASSERT_DOUBLE_EQ(val, 0.0);
+        ASSERT_DOUBLE_EQ(planeEquation(normal, leafPointInclInFacePlane, neighborPointInclInFacePlane), 0.0);
         ASSERT_DOUBLE_EQ(planeEquation(normal, neighborPointInclInFacePlane, leafPointInclInFacePlane), 0.0);
 
         int overlapAxis1 = (touchAxis + 1) % 3;
