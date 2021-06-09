@@ -6,7 +6,6 @@
 #include "RegularGrid.h"
 
 #include <math.h>
-
 #include <algorithm>
 #include <functional>
 #include <numeric>
@@ -37,8 +36,8 @@ void calculatePrimeFactors(unsigned int number, std::list<unsigned int> &oPrimeF
 }  // namespace
 
 RegularGrid::RegularGrid(const int &dimensionCount, const std::vector<double> &globalBoxMin,
-                         const std::vector<double> &globalBoxMax) {
-  _dimensionCount = dimensionCount;
+              const std::vector<double> &globalBoxMax, const double &cutoffWidth, const double &skinWidth)
+              : _dimensionCount(dimensionCount), _cutoffWidth(cutoffWidth), _skinWidth(skinWidth) {
 
   MPI_Comm_size(MPI_COMM_WORLD, &_subdomainCount);
 
@@ -61,8 +60,6 @@ RegularGrid::RegularGrid(const int &dimensionCount, const std::vector<double> &g
 RegularGrid::~RegularGrid() {}
 
 void RegularGrid::update() { updateLocalBox(); }
-
-void RegularGrid::setHaloWidth(double width) { _haloWidth = width; }
 
 void RegularGrid::initializeDecomposition() {
   std::list<unsigned int> primeFactors;
@@ -106,11 +103,8 @@ void RegularGrid::initializeLocalBox() {
   _localBoxMax.resize(_dimensionCount);
   updateLocalBox();
 
-  for (int i = 0; i < _localBoxMin.size(); ++i) {
-    _haloWidth += (_localBoxMax[i] - _localBoxMin[i]) / 20.0;
-  }
-
-  _haloWidth = _haloWidth / _localBoxMin.size();
+  _haloBoxes.resize(4 * _dimensionCount);
+  updateHaloBoxes();
 }
 
 void RegularGrid::initializeNeighbourIds() {
@@ -186,6 +180,8 @@ void RegularGrid::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer
 
   int nextDimensionIndex;
 
+  int haloWidth = _cutoffWidth + _skinWidth;
+
   for (int i = 0; i < dimensionCount && _decomposition[i] > 1; ++i) {
     leftNeighbour = _neighbourDomainIndices[(i * 2) % neighbourCount];
     rightNeighbour = _neighbourDomainIndices[(i * 2 + 1) % neighbourCount];
@@ -196,10 +192,10 @@ void RegularGrid::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer
       std::vector<ParticleType> haloParticles;
 
       leftHaloBoxMax = localBoxMin;
-      leftHaloBoxMax[i] += _haloWidth;
+      leftHaloBoxMax[i] += haloWidth;
 
       rightHaloBoxMin = localBoxMax;
-      rightHaloBoxMin[i] -= _haloWidth;
+      rightHaloBoxMin[i] -= haloWidth;
 
       for (auto particle = autoPasContainer->getRegionIterator(localBoxMin, leftHaloBoxMax, autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
           particlesForLeftNeighbour.push_back(*particle);
@@ -232,10 +228,10 @@ void RegularGrid::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer
       nextDimensionIndex = (i + 1) % dimensionCount;
 
       leftHaloBoxMax = localBoxMin;
-      leftHaloBoxMax[nextDimensionIndex] += _haloWidth;
+      leftHaloBoxMax[nextDimensionIndex] += haloWidth;
 
       rightHaloBoxMin = localBoxMax;
-      rightHaloBoxMin[nextDimensionIndex] -= _haloWidth;
+      rightHaloBoxMin[nextDimensionIndex] -= haloWidth;
 
       for (auto particle = autoPasContainer->getRegionIterator(localBoxMin, leftHaloBoxMax, autopas::IteratorBehavior::halo); particle.isValid(); ++particle) {
           particlesForLeftNeighbour.push_back(*particle);
@@ -287,7 +283,7 @@ void RegularGrid::exchangeMigratingParticles(SharedAutoPasContainer &autoPasCont
         immigrantPosition[1] = particle.getR()[1];
         immigrantPosition[2] = particle.getR()[2];
 
-        if(autopas::utils::inBox(particle.getR(), _localBoxMin, _localBoxMax)) {
+        if(isInsideLocalDomain(immigrantPosition)) {
           autoPasContainer->addParticle(particle);
         }
         else {
@@ -321,7 +317,7 @@ void RegularGrid::exchangeMigratingParticles(SharedAutoPasContainer &autoPasCont
         immigrantPosition[1] = particle.getR()[1];
         immigrantPosition[2] = particle.getR()[2];
 
-        if(autopas::utils::inBox(particle.getR(), _localBoxMin, _localBoxMax)) {
+        if(isInsideLocalDomain(immigrantPosition)) {
           autoPasContainer->addParticle(particle);
         }
       }
@@ -383,4 +379,18 @@ void RegularGrid::waitForSendRequests() {
 
 bool RegularGrid::isInsideLocalDomain(const std::vector<double> &coordinates) {
   return DomainTools::isInsideDomain(coordinates, _localBoxMin, _localBoxMax);
+}
+
+void RegularGrid::updateHaloBoxes() {
+  for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
+    int haloBoxesStartIndex = 4 * dimensionIndex;
+
+    // Halo box values for left neighbour
+    _haloBoxes[haloBoxesStartIndex] = _localBoxMin[dimensionIndex] - _skinWidth; 
+    _haloBoxes[haloBoxesStartIndex + 1] = _localBoxMin[dimensionIndex] + _cutoffWidth + _skinWidth; 
+
+    // Halo box values for left neighbour
+    _haloBoxes[haloBoxesStartIndex + 2] = _localBoxMax[dimensionIndex] + _skinWidth; 
+    _haloBoxes[haloBoxesStartIndex + 3] = _localBoxMax[dimensionIndex] - _cutoffWidth - _skinWidth; 
+  }
 }

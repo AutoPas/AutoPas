@@ -11,12 +11,15 @@
 
 #include "autopas/utils/ArrayMath.h"
 
-MDFlexMPI::MDFlexMPI(int dimensionCount, int argc, char **argv) { this->initialize(dimensionCount, argc, argv); }
+MDFlexMPI::MDFlexMPI(int dimensionCount, int argc, char **argv) {
+  MDFlexSimulation::initialize(dimensionCount, argc, argv);
+}
 
 void MDFlexMPI::run() {
   // @todo: make variable part of MDFlexConfig
-  int iterationsPerSuperstep = 10;
+  int iterationsPerSuperstep = 1;
   int remainingIterations = _configuration->iterations.value;
+
   for (int i = 0; i < _configuration->iterations.value; i += iterationsPerSuperstep) {
     executeSuperstep(iterationsPerSuperstep);
   }
@@ -25,14 +28,21 @@ void MDFlexMPI::run() {
 void MDFlexMPI::executeSuperstep(const int iterationsPerSuperstep) {
   _domainDecomposition->exchangeHaloParticles(_autoPasContainer);
 
+<<<<<<< Updated upstream
+  for (int i = 1; i < iterationsPerSuperstep; ++i) {
+=======
   for (int i = 0; i < iterationsPerSuperstep; ++i) {
     if (_createVtkFiles and _iteration % _configuration->vtkWriteFrequency.value == 0) {
       _vtkWriter->recordTimestep(_iteration, _maximumIterationDigits, *_autoPasContainer);
     }
 
     ++_iteration;
+>>>>>>> Stashed changes
     updateParticles();
   }
+
+  // todo: Not sure if this synchronization is required. Check performance with and without it.
+  _domainDecomposition->synchronizeDomains();
 
   _domainDecomposition->exchangeMigratingParticles(_autoPasContainer);
 }
@@ -41,15 +51,13 @@ void MDFlexMPI::updateParticles() {
   updatePositions();
   updateForces();
   updateVelocities();
-  updateThermostat();
 }
 
 void MDFlexMPI::initializeDomainDecomposition(int &dimensionCount) {
   std::vector<double> boxMin(_configuration->boxMin.value.begin(), _configuration->boxMin.value.end());
   std::vector<double> boxMax(_configuration->boxMax.value.begin(), _configuration->boxMax.value.end());
 
-  _domainDecomposition = std::make_shared<RegularGrid>(dimensionCount, boxMin, boxMax, _configuration->cutoff.value,
-    _configuration->verletSkinRadius.value);
+  _domainDecomposition = std::make_shared<RegularGrid>(dimensionCount, boxMin, boxMax);
 
   std::vector<double> localBoxMin = _domainDecomposition->getLocalBoxMin();
   std::vector<double> localBoxMax = _domainDecomposition->getLocalBoxMax();

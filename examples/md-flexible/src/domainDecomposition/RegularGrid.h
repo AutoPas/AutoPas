@@ -28,7 +28,7 @@ class RegularGrid final : public DomainDecomposition {
    * @param globalBoxMax The maximum coordinates of the global domain.
    */
   RegularGrid(const int &dimensionCount, const std::vector<double> &globalBoxMin,
-              const std::vector<double> &globalBoxMax);
+              const std::vector<double> &globalBoxMax, const double &cutoffWidth, const double &skinWidth);
 
   /**
    * Destructor.
@@ -70,12 +70,6 @@ class RegularGrid final : public DomainDecomposition {
    * Returns the maximum coordinates of local domain.
    */
   std::vector<double> getLocalBoxMax() override { return _localBoxMax; }
-
-  /**
-   * Sets the halo width.
-   * If it is not set manually the halo width depends on the size of the local box.
-   */
-  void setHaloWidth(double width);
 
   /**
    * Checks if the provided coordinates are located in the local domain.
@@ -160,9 +154,14 @@ class RegularGrid final : public DomainDecomposition {
   MPI_Comm _communicator;
 
   /**
-   * Stores the halo width.
+   * Stores the domain cutoff width.
    */
-  double _haloWidth;
+  double _cutoffWidth;
+
+  /**
+   * Stores the domain skin width.
+   */
+  double _skinWidth;
 
   /**
    * The index of the current processor's domain.
@@ -190,6 +189,15 @@ class RegularGrid final : public DomainDecomposition {
    * The maximum cooridnates of the local domain.
    */
   std::vector<double> _localBoxMax;
+
+  /**
+   * Stores the maximum and minimum coordinates of all halo boxes. 
+   * The halo box coordinates differ only at a single index from the local box coordinates. Therfore it is
+   * enough to store 2 values for each neighbour.
+   * The values for the left neighbour in the nth dimension are starting at index 4 * n.
+   * The values for the right neighbour in the nth dimension are starting at index 4 * n + 2.
+   */
+  std::vector<double> _haloBoxes;
 
   /**
    * A temporary buffer used for MPI send requests.
@@ -240,6 +248,11 @@ class RegularGrid final : public DomainDecomposition {
    * Updates the local box.
    */
   void updateLocalBox();
+
+  /**
+   * Updates the boxes used to identify halo particles.
+   */
+  void updateHaloBoxes();
 
   /**
    * Sends particles of type ParticleType to a receiver.
