@@ -32,4 +32,16 @@ class AutoTunerTest : public AutoPasTestBase {
    */
   void testFastest(autopas::SelectorStrategyOption strategy, mapConfigTime configAndTimes,
                    autopas::Configuration expectedBest, mapConfigTime ignoredConfigAndTimes = {});
+
+  const double _cellSizeFactor{1.};
+
+  const autopas::Configuration _confLc_c01{autopas::ContainerOption::linkedCells, _cellSizeFactor,
+                                           autopas::TraversalOption::lc_c01,      autopas::LoadEstimatorOption::none,
+                                           autopas::DataLayoutOption::aos,        autopas::Newton3Option::disabled};
+  const autopas::Configuration _confLc_c04{autopas::ContainerOption::linkedCells, _cellSizeFactor,
+                                           autopas::TraversalOption::lc_c04,      autopas::LoadEstimatorOption::none,
+                                           autopas::DataLayoutOption::aos,        autopas::Newton3Option::disabled};
+  const autopas::Configuration _confLc_c08{autopas::ContainerOption::linkedCells, _cellSizeFactor,
+                                           autopas::TraversalOption::lc_c08,      autopas::LoadEstimatorOption::none,
+                                           autopas::DataLayoutOption::aos,        autopas::Newton3Option::disabled};
 };

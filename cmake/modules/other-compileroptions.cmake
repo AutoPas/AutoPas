@@ -39,7 +39,11 @@ target_compile_options(
         $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-Wno-unused-variable
         $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-Wno-unused-function
         >
-        $<$<CXX_COMPILER_ID:Clang>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-Wall>
+        $<$<CXX_COMPILER_ID:Clang>:
+        $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-Wall
+        $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-Wextra
+        $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-Wno-unused-parameter     # triggered by functions with disabled bodies
+        >
         # @TODO clean up code with -Weffc++
 )
 

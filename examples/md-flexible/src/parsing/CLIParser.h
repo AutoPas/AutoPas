@@ -149,4 +149,4 @@ void createZSHCompletionFile(const std::tuple<T...> &cliOptions) {
   std::cout << "Created file: " << filename << std::endl;
 }
 
-};  // namespace MDFlexParser::CLIParser
+}  // namespace MDFlexParser::CLIParser

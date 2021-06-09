@@ -4,32 +4,30 @@
  * @author F. Gratl
  */
 
-#if defined(AUTOPAS_MPI)
+#if defined(AUTOPAS_INTERNODE_TUNING)
 #include <mpi.h>
 #endif
 
 #include <iostream>
 
-#include "PrintableMolecule.h"
 #include "Simulation.h"
 #include "parsing/MDFlexParser.h"
 
 /**
- * The main function.
+ * The main function for md-flexible.
  * @param argc
  * @param argv
  * @return
  */
 int main(int argc, char **argv) {
-#if defined(AUTOPAS_MPI)
+#if defined(AUTOPAS_INTERNODE_TUNING)
   MPI_Init(&argc, &argv);
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   std::cout << "rank: " << rank << std::endl;
 #endif
-
   // start simulation timer
-  Simulation<PrintableMolecule> simulation;
+  Simulation simulation;
   // Parsing
   MDFlexConfig config;
 
@@ -60,8 +58,8 @@ int main(int argc, char **argv) {
   }
   std::ostream outputStream(streamBuf);
 
-  // Initialization
-  autopas::AutoPas<PrintableMolecule> autopas(outputStream);
+  // Initialization. Use particle type from the Simulation class.
+  autopas::AutoPas<Simulation::ParticleType> autopas(outputStream);
   simulation.initialize(config, autopas);
 
   std::cout << std::endl << "Using " << autopas::autopas_get_max_threads() << " Threads" << std::endl;
@@ -87,7 +85,7 @@ int main(int argc, char **argv) {
     configFileEnd.close();
   }
 
-#if defined(AUTOPAS_MPI)
+#if defined(AUTOPAS_INTERNODE_TUNING)
   MPI_Finalize();
 #endif
 

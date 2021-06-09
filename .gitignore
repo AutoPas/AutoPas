@@ -11,6 +11,8 @@ build*/
 venv/
 *.timestamp
 *.synctex.gz
+.clangd/
+.cache/
 
 # benchmark output folder
 *testTuning_*/

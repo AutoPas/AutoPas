@@ -19,7 +19,7 @@ autopas::TuningDataLogger::TuningDataLogger(size_t numSamples, const std::string
   // set the pattern to the message only
   headerLogger->set_pattern("%v");
   std::stringstream samplesHeader;
-  for (int i = 0; i < numSamples; ++i) {
+  for (size_t i = 0; i < numSamples; ++i) {
     samplesHeader << ",sample" << i;
   }
   // print csv header
@@ -41,8 +41,8 @@ autopas::TuningDataLogger::~TuningDataLogger() {
 }
 
 void autopas::TuningDataLogger::logTuningData(const autopas::Configuration &configuration,
-                                              const std::vector<size_t> &samples, size_t iteration, size_t reducedValue,
-                                              size_t smoothedVale) {
+                                              const std::vector<long> &samples, size_t iteration, long reducedValue,
+                                              long smoothedVale) {
 #ifdef AUTOPAS_LOG_TUNINGDATA
   spdlog::get(_loggerName)
       ->info("{},{},{},{},{}", iteration, configuration.getCSVLine(),

@@ -48,7 +48,7 @@ void TraversalComparison::executeShift(ContainerPtrType containerPtr, double mag
     elem = randomShift(magnitude, generator);
   }
   size_t numIteratedParticles = 0;
-  for (auto iter = containerPtr->begin(autopas::IteratorBehavior::haloOwnedAndDummy); iter != containerPtr->end();
+  for (auto iter = containerPtr->begin(autopas::IteratorBehavior::ownedOrHaloOrDummy); iter != containerPtr->end();
        ++iter) {
     if (not iter->isDummy()) {
       iter->addR(shiftVectorByID[iter->getID()]);
@@ -147,7 +147,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   functor.endTraversal(newton3Option);
 
   std::vector<std::array<double, 3>> forces(numMolecules);
-  for (auto it = container->begin(autopas::IteratorBehavior::ownedOnly); it.isValid(); ++it) {
+  for (auto it = container->begin(autopas::IteratorBehavior::owned); it.isValid(); ++it) {
     EXPECT_TRUE(it->isOwned());
     forces.at(it->getID()) = it->getF();
   }

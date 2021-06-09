@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <tuple>
 #include <vector>
 
@@ -20,6 +21,6 @@ namespace autopas::smoothing {
  * @param pointsPerEstimation Number of points to take into account for smoothing.
  * @return
  */
-size_t smoothLastPoint(const std::vector<std::pair<size_t, size_t>> &points, size_t pointsPerEstimation);
+long smoothLastPoint(const std::vector<std::pair<size_t, long>> &points, size_t pointsPerEstimation);
 
 }  // namespace autopas::smoothing
