@@ -89,42 +89,44 @@ enum Face {
 
 typedef int unsigned Any;
 
-static constexpr Any buildEdge(Face f1, Face f2) {
-  assert(f1 != f2);  // TODO: How can I make this a static assert?
+template <Face f1, Face f2>
+static constexpr Any buildEdge() {
+  static_assert(f1 != f2, "Faces must be different");
   return (f1 << 3) | f2;
 }
 
-static constexpr Any buildVertex(Face f1, Face f2, Face f3) {
-  assert((f1 != f2) && (f2 != f3));  // TODO: How can I make this a static assert?
+template <Face f1, Face f2, Face f3>
+static constexpr Any buildVertex() {
+  static_assert((f1 != f2) && (f2 != f3), "Faces must be different");
   return (f1 << 6) | (f2 << 3) | f3;
 }
 
 enum Edge {
   OO = 0,  // omega/unknown
-  LD = buildEdge(L, D),
-  LU = buildEdge(L, U),
-  LB = buildEdge(L, B),
-  LF = buildEdge(L, F),
-  RD = buildEdge(R, D),
-  RU = buildEdge(R, U),
-  RB = buildEdge(R, B),
-  RF = buildEdge(R, F),
-  DB = buildEdge(D, B),
-  DF = buildEdge(D, F),
-  UB = buildEdge(U, B),
-  UF = buildEdge(U, F),
+  LD = buildEdge<L, D>(),
+  LU = buildEdge<L, U>(),
+  LB = buildEdge<L, B>(),
+  LF = buildEdge<L, F>(),
+  RD = buildEdge<R, D>(),
+  RU = buildEdge<R, U>(),
+  RB = buildEdge<R, B>(),
+  RF = buildEdge<R, F>(),
+  DB = buildEdge<D, B>(),
+  DF = buildEdge<D, F>(),
+  UB = buildEdge<U, B>(),
+  UF = buildEdge<U, F>(),
 };
 
 enum Vertex {
   OOO = 0,  // omega/unknown
-  LDB = buildVertex(L, D, B),
-  LDF = buildVertex(L, D, F),
-  LUB = buildVertex(L, U, B),
-  LUF = buildVertex(L, U, F),
-  RDB = buildVertex(R, D, B),
-  RDF = buildVertex(R, D, F),
-  RUB = buildVertex(R, U, B),
-  RUF = buildVertex(R, U, F),
+  LDB = buildVertex<L, D, B>(),
+  LDF = buildVertex<L, D, F>(),
+  LUB = buildVertex<L, U, B>(),
+  LUF = buildVertex<L, U, F>(),
+  RDB = buildVertex<R, D, B>(),
+  RDF = buildVertex<R, D, F>(),
+  RUB = buildVertex<R, U, B>(),
+  RUF = buildVertex<R, U, F>(),
 };
 
 inline Face *getFaces() {
