@@ -8,9 +8,9 @@
 #pragma once
 
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
-#include "autopas/containers/octree/OctreeNodeInterface.h"
 #include "autopas/containers/octree/OctreeInnerNode.h"
 #include "autopas/containers/octree/OctreeLeafNode.h"
+#include "autopas/containers/octree/OctreeNodeInterface.h"
 #include "autopas/containers/octree/traversals/OTTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
@@ -18,11 +18,20 @@
 
 namespace autopas {
 
+/**
+ * This traversal is capable of iterating over particles stored in the Octree data structure. This traversal does not
+ * use any parallelization or speed-increasing strategies and is therefore called naive.
+ *
+ * @tparam Particle
+ * @tparam PairwiseFunctor
+ * @tparam dataLayout
+ * @tparam useNewton3
+ */
 template <class Particle, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class OTNaiveTraversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
                          public OTTraversalInterface<OctreeNodeWrapper<Particle>> {
  public:
-  //using ParticleCell = OctreeNodeWrapper<Particle>;
+  // using ParticleCell = OctreeNodeWrapper<Particle>;
   using ParticleCell = OctreeLeafNode<Particle>;
 
   // TODO(johannes): The TraversalSelector passes the interactionLength as the cutoff value: Keep in mind when

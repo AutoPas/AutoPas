@@ -16,6 +16,11 @@ namespace autopas {
 template <typename Particle>
 class Octree;
 
+/**
+ * An octree leaf node. This class utilizes the FullParticleCell to store the actual particles.
+ *
+ * @tparam Particle
+ */
 template <typename Particle>
 class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticleCell<Particle> {
  public:
@@ -32,7 +37,7 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
     }
 
     // TODO(johannes): Make this constant tunable or move it to a better suited location
-    const int unsigned maxParticlesInLeaf = 4;
+    const int unsigned maxParticlesInLeaf = 16;
 
     if (this->_particles.size() < maxParticlesInLeaf) {
       this->_particles.push_back(p);

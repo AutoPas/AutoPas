@@ -12,6 +12,12 @@
 #include "autopas/utils/inBox.h"
 
 namespace autopas {
+/**
+ * Inner nodes of the octree data structure. An inner node always points to eight children, which can either be leaves
+ * or inner nodes as well.
+ *
+ * @tparam Particle
+ */
 template <class Particle>
 class OctreeInnerNode : public OctreeNodeInterface<Particle> {
  public:
@@ -144,7 +150,7 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
       auto &child = _children[i];
 
       // Check if the child is in the right search direction
-      if(isNearestInDirection(i, axis, dir)) {
+      if (isNearestInDirection(i, axis, dir)) {
         // Check if the child overlaps with the embedded node on the axis that are not the search axis
         int otherAxis1 = (axis + 1) % 3;
         bool volumeOnAxis1 = OctreeNodeInterface<Particle>::volumeExistsOnAxis(
@@ -171,7 +177,7 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
   }
 
   void appendAllLeaves(std::vector<OctreeLeafNode<Particle> *> &leaves) override {
-    for(auto &child : _children) {
+    for (auto &child : _children) {
       child->appendAllLeaves(leaves);
     }
   }

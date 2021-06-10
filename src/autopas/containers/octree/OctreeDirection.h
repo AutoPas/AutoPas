@@ -77,6 +77,9 @@ static inline unsigned directionToIndex(Direction d) {
   }
 }
 
+/**
+ * This enum can be used to index the faces of a cube including an "invalid" face.
+ */
 enum Face {
   O = 0,  // omega/unknown
   L = 1,
@@ -87,20 +90,41 @@ enum Face {
   F = 6,
 };
 
+/**
+ * A datatype that is wide enough to hold faces, edges or vertices.
+ */
 typedef int unsigned Any;
 
+/**
+ * Create a bitfield for an edge given by the template parameters.
+ *
+ * @tparam f1
+ * @tparam f2
+ * @return
+ */
 template <Face f1, Face f2>
 static constexpr Any buildEdge() {
   static_assert(f1 != f2, "Faces must be different");
   return (f1 << 3) | f2;
 }
 
+/**
+ * Create a bitfield for a vertex given by the template parameters.
+ *
+ * @tparam f1
+ * @tparam f2
+ * @tparam f3
+ * @return
+ */
 template <Face f1, Face f2, Face f3>
 static constexpr Any buildVertex() {
   static_assert((f1 != f2) && (f2 != f3), "Faces must be different");
   return (f1 << 6) | (f2 << 3) | f3;
 }
 
+/**
+ * This enum can be used to index all edges of a cube including an "invalid" edge.
+ */
 enum Edge {
   OO = 0,  // omega/unknown
   LD = buildEdge<L, D>(),
@@ -117,6 +141,9 @@ enum Edge {
   UF = buildEdge<U, F>(),
 };
 
+/**
+ * This enum can be used to index all vertices of a cube including an "invalid" vertex.
+ */
 enum Vertex {
   OOO = 0,  // omega/unknown
   LDB = buildVertex<L, D, B>(),
@@ -129,16 +156,31 @@ enum Vertex {
   RUF = buildVertex<R, U, F>(),
 };
 
+/**
+ * Get all available faces for a cube.
+ *
+ * @return A pointer to a static table. The last element is the "invalid" face O.
+ */
 inline Face *getFaces() {
   static Face table[] = {L, R, D, U, B, F, O};
   return table;
 }
 
+/**
+ * Get all available edges for a cube.
+ *
+ * @return A pointer to a static table. The last element is the "invalid" edge OO.
+ */
 inline Edge *getEdges() {
   static Edge table[] = {LD, LU, LB, LF, RD, RU, RB, RF, DB, DF, UB, UF, OO};
   return table;
 }
 
+/**
+ * Get all available vertices for a cube.
+ *
+ * @return A pointer to a static table. The last element is the "invalid" vertex OOO.
+ */
 inline Vertex *VERTICES() {
 #if 1
   static Vertex table[] = {LDB, LDF, LUB, LUF, RDB, RDF, RUB, RUF, OOO};
@@ -148,6 +190,12 @@ inline Vertex *VERTICES() {
   return table;
 }
 
+/**
+ * Map an arbitrary vertex to a flat index.
+ *
+ * @param vertex An element from the Vertex enum
+ * @return A flat index in the range of 0 to 7 for any valid vertex. For invalid input -1 is returned.
+ */
 inline int vertexToIndex(Vertex vertex) {
 #if 1
   // TODO(johannes): This is very slow and could be sped up.
@@ -165,8 +213,20 @@ inline int vertexToIndex(Vertex vertex) {
   return result;
 }
 
+/**
+ * A vertex is also capable of specifying an arbitrary octant in 3D.
+ */
 typedef Vertex Octant;
 
+/**
+ * Check if a given list of elements contains the element to test.
+ *
+ * @tparam T The base type of the list elements
+ * @param all A pointer to the start element in the list
+ * @param stop A pointer to the element which is one past the last element in the list
+ * @param test The element to check
+ * @return true if the list contains the test element, false otherwise
+ */
 template <typename T>
 inline bool contains(T *all, T stop, Any test) {
   bool result = false;
@@ -179,21 +239,50 @@ inline bool contains(T *all, T stop, Any test) {
   return result;
 }
 
+/**
+ * Check if f is a face.
+ *
+ * @tparam T
+ * @param f The parameter to check
+ * @return true iff f is in the list returned from getFaces()
+ */
 template <typename T>
 inline bool isFace(T f) {
   return contains(getFaces(), O, f);
 }
 
+/**
+ * Check if e is an edge.
+ *
+ * @tparam T
+ * @param e The parameter to check
+ * @return true iff e is in the list returned from getEdges()
+ */
 template <typename T>
-inline bool isEdge(T f) {
-  return contains(getEdges(), OO, f);
+inline bool isEdge(T e) {
+  return contains(getEdges(), OO, e);
 }
 
+/**
+ * Check if v is a vertex.
+ *
+ * @tparam T
+ * @param v The parameter to check
+ * @return true iff v is in the list returned from VERTICES()
+ */
 template <typename T>
-inline bool isVertex(T f) {
-  return contains(VERTICES(), OOO, f);
+inline bool isVertex(T v) {
+  return contains(VERTICES(), OOO, v);
 }
 
+/**
+ * This function implements a LUT obtained from the Samet paper:
+ * "ADJ(I,O) is true if and only if octant O is adjacent to the Ith face, edge, or vertex of O's containing block"
+ *
+ * @param direction The direction I to search the adjacent neighbor
+ * @param octant The octant O from the paper
+ * @return true if the neighbor is adjacent, false otherwise
+ */
 inline bool ADJ(Any direction, Vertex octant) {
   static std::array<std::array<bool, 8>, 1 << 9> table;
 
@@ -240,6 +329,15 @@ inline bool ADJ(Any direction, Vertex octant) {
   return result;
 }
 
+/**
+ * This function implements a LUT obtained from the Samet paper:
+ * "REFLECT(I,O) yields the SONTYPE value of the block of equal size (not necessarily a brother) that shares the Ith
+ * face, edge, or vertex of a block having SONTYPE value O"
+ *
+ * @param direction The direction I to search the reflected neighbor
+ * @param octant The octant O
+ * @return The octant resulting from the reflection
+ */
 inline Octant REFLECT(Any direction, Octant octant) {
   static std::array<std::array<Octant, 8>, 1 << 9> table;
 
@@ -285,6 +383,15 @@ inline Octant REFLECT(Any direction, Octant octant) {
   return result;
 }
 
+/**
+ * This function implements a LUT obtained from the Samet paper:
+ * "COMMON_FACE(I,O) yields the type on the face (i.e., label), of O's containing block, that is common to octant O and
+ * its neighbor in the Ith direction."
+ *
+ * @param direction The direction I
+ * @param octant The octant O
+ * @return The face that is shared between the neighbors
+ */
 inline Face COMMON_FACE(Any direction, Vertex octant) {
   static std::array<std::array<Face, 8>, 1 << 9> table;
 
@@ -323,6 +430,15 @@ inline Face COMMON_FACE(Any direction, Vertex octant) {
   return result;
 }
 
+/**
+ * This function implements a LUT obtained from the Samet paper:
+ * "COMMON_EDGE(I,O) yields the type of the edge (i.e., label), of O's containing block, that is common to octant O and
+ * its neighbor in the Ith direction."
+ *
+ * @param direction The direction I
+ * @param octant The octant O
+ * @return The edge that is shared between the neighbors
+ */
 inline Edge COMMON_EDGE(Any direction, Vertex octant) {
   static std::array<std::array<Edge, 8>, 1 << 9> table;
 
@@ -349,6 +465,12 @@ inline Edge COMMON_EDGE(Any direction, Vertex octant) {
   return result;
 }
 
+/**
+ * Convert any direction to a direction that is directly opposing the given direction.
+ *
+ * @param direction Any direction (Face, Edge or Vertex)
+ * @return A direction that is opposing the given direction
+ */
 inline autopas::Any getOppositeDirection(autopas::Any direction) {
   using namespace autopas;
 
@@ -389,12 +511,18 @@ inline autopas::Any getOppositeDirection(autopas::Any direction) {
   return result;
 }
 
-inline std::vector<autopas::Vertex> getAllowedDirections(autopas::Any along) {
+/**
+ * Get a list of octants that are along the given direction.
+ *
+ * @param along A direction the returned vertices should be admissible to
+ * @return A list of octants that fits the given direction
+ */
+inline std::vector<autopas::Octant> getAllowedDirections(autopas::Any along) {
   using namespace autopas;
 
   // TODO: Check parameter preconditions
 
-  static std::array<std::vector<Vertex>, 1 << 9> table = {};
+  static std::array<std::vector<Octant>, 1 << 9> table = {};
   table[L] = {LDB, LDF, LUB, LUF};
   table[R] = {RDB, RDF, RUB, RUF};
   table[D] = {LDB, LDF, RDB, RDF};
@@ -425,8 +553,8 @@ inline std::vector<autopas::Vertex> getAllowedDirections(autopas::Any along) {
   auto result = table[along];
 
   // Check post-conditions
-  for(auto v : result) {
-    if(!contains(VERTICES(), OOO, v)) {
+  for (auto v : result) {
+    if (!contains(VERTICES(), OOO, v)) {
       throw std::runtime_error("[OctreeDirection.h] Result contains an illegal vertex.");
     }
   }

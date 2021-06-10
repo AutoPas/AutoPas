@@ -184,6 +184,11 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     return TraversalSelectorInfo(dims, 0.0, cellLength, 1);
   }
 
+  /**
+   * Get the number of particles that belong to this octree. (Only the owned particles.)
+   *
+   * @return The integer # of particles in the container
+   */
   [[nodiscard]] unsigned long getNumParticles() const override { return this->_cells[CellTypes::OWNED].numParticles(); }
 
   /**

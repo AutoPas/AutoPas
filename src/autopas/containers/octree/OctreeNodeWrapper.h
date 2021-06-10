@@ -11,7 +11,12 @@
 #include "autopas/containers/octree/OctreeNodeInterface.h"
 
 namespace autopas {
-// TODO: Why do you exist?
+/**
+ * This class wraps the functionality provided by the octree leaves and inner nodes in a structure that adheres to the
+ * ParticleCell concept. This is necessary to use the octree nodes as particle containers.
+ *
+ * @tparam Particle The particle class that should be used in the octree cell.
+ */
 template <typename Particle>
 class OctreeNodeWrapper : public ParticleCell<Particle> {
  public:

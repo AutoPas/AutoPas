@@ -260,11 +260,26 @@ inline bool GRAY(OctreeNodeInterface<Particle> *node) {
   return node->hasChildren();
 }
 
+/**
+ * Get the parent node of an arbitrary octree node.
+ *
+ * @tparam Particle
+ * @param node
+ * @return The parent of the given node if the node is not the root node, otherwise nullptr.
+ */
 template <class Particle>
 inline OctreeNodeInterface<Particle> *FATHER(OctreeNodeInterface<Particle> *node) {
   return node->getParent();
 }
 
+/**
+ * Get the octant in which a given node can be found in the parent.
+ *
+ * @tparam Particle
+ * @param node The node to check
+ * @return The octant in which the node is in the parent, OOO if the node either does not have a parent or could not be
+ * found in the parent.
+ */
 template <class Particle>
 static Octant SONTYPE(OctreeNodeInterface<Particle> *node) {
   Octant result = OOO;
