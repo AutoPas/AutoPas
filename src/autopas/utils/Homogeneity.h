@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <options/IteratorBehavior.h>
+#include "options/IteratorBehavior.h"
 #include "ThreeDimensionalMapping.h"
 
 namespace autopas::utils {
