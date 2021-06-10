@@ -100,24 +100,27 @@ class OctreeNodeInterface {
   }
 
   static int oppositeDirection(int dir) {
-    switch(dir) {
-      case 1: return -1;
-      case -1: return 1;
-      default: throw std::runtime_error("[OctreeNodeInterface.h] dir must be -1 or 1.");
+    switch (dir) {
+      case 1:
+        return -1;
+      case -1:
+        return 1;
+      default:
+        throw std::runtime_error("[OctreeNodeInterface.h] dir must be -1 or 1.");
     }
   }
 
   std::vector<OctreeNodeInterface<Particle> *> getNeighborsAlongAxis(int axis, int dir) {
     std::vector<OctreeNodeInterface<Particle> *> result = {};
-    if(auto greaterParentOptional = getGreaterParentAlongAxis(axis, dir, this)) {
+    if (auto greaterParentOptional = getGreaterParentAlongAxis(axis, dir, this)) {
       OctreeNodeInterface<Particle> *greaterParent = *greaterParentOptional;
-      if(!greaterParent->hasChildren()) {
+      if (!greaterParent->hasChildren()) {
         throw std::runtime_error("[OctreeNodeInterface.h] The greater parent must not be a leaf if it exists.");
       }
 
-      for(int i = 0; i < 8; ++i) {
+      for (int i = 0; i < 8; ++i) {
         auto *child = greaterParent->getChild(i);
-        if(enclosesVolumeWithOtherOnAxis(axis, child)) {
+        if (enclosesVolumeWithOtherOnAxis(axis, child)) {
           int downDir = oppositeDirection(dir);
           result = child->findTouchingLeaves(axis, downDir, this);
           break;
@@ -176,7 +179,7 @@ class OctreeNodeInterface {
 
   OctreeNodeInterface<Particle> *EQ_FACE_NEIGHBOR(Face I) {
     OctreeNodeInterface<Particle> *param, *P = this;
-    if(ADJ(I, SONTYPE(P))) {
+    if (ADJ(I, SONTYPE(P))) {
       param = FATHER(P)->EQ_FACE_NEIGHBOR(I);
     } else {
       param = FATHER(P);
@@ -186,9 +189,9 @@ class OctreeNodeInterface {
 
   OctreeNodeInterface<Particle> *EQ_EDGE_NEIGHBOR(Edge I) {
     OctreeNodeInterface<Particle> *param, *P = this;
-    if(ADJ(I, SONTYPE(P))) {
+    if (ADJ(I, SONTYPE(P))) {
       param = FATHER(P)->EQ_EDGE_NEIGHBOR(I);
-    } else if(COMMON_FACE(I, SONTYPE(P)) != O) {
+    } else if (COMMON_FACE(I, SONTYPE(P)) != O) {
       param = FATHER(P)->EQ_FACE_NEIGHBOR(COMMON_FACE(I, SONTYPE(P)));
     } else {
       param = FATHER(P);
@@ -198,11 +201,11 @@ class OctreeNodeInterface {
 
   OctreeNodeInterface<Particle> *EQ_VERTEX_NEIGHBOR(Vertex I) {
     OctreeNodeInterface<Particle> *param, *P = this;
-    if(ADJ(I, SONTYPE(P))) {
+    if (ADJ(I, SONTYPE(P))) {
       param = FATHER(P)->EQ_VERTEX_NEIGHBOR(I);
-    } else if(COMMON_EDGE(I, SONTYPE(P)) != OO) {
+    } else if (COMMON_EDGE(I, SONTYPE(P)) != OO) {
       param = FATHER(P)->EQ_EDGE_NEIGHBOR(COMMON_EDGE(I, SONTYPE(P)));
-    } else if(COMMON_FACE(I, SONTYPE(P)) != O) {
+    } else if (COMMON_FACE(I, SONTYPE(P)) != O) {
       param = FATHER(P)->EQ_FACE_NEIGHBOR(COMMON_FACE(I, SONTYPE(P)));
     } else {
       param = FATHER(P);
@@ -214,14 +217,35 @@ class OctreeNodeInterface {
   OctreeNodeInterface<Particle> *GTEQ_EDGE_NEIGHBOR(Edge I);
   OctreeNodeInterface<Particle> *GTEQ_VERTEX_NEIGHBOR(Vertex I);
 
+  std::vector<OctreeNodeInterface<Particle> *> getLeavesFromDirections(std::vector<Vertex> directions) {
+    std::vector<OctreeNodeInterface<Particle> *> result;
+    // TODO: Make this virtual and handled by the concrete subclasses
+    if (hasChildren()) {
+      for (auto d : directions) {
+        int childIndex = vertexToIndex(d);
+        auto child = getChild(childIndex);
+        auto childLeaves = child->getLeavesFromDirections(directions);
+        result.insert(result.end(), childLeaves.begin(), childLeaves.end());
+      }
+    } else {
+      result.push_back(this);
+    }
+    return result;
+  }
+
+  std::vector<OctreeNodeInterface<Particle> *> getNeighborLeaves(Any direction) {
+    auto opposite = getOppositeDirection(direction);
+    auto directions = getAllowedDirections(opposite);
+    auto neighborLeaves = getLeavesFromDirections(directions);
+    return neighborLeaves;
+  }
+
   void setBoxMin(std::array<double, 3> boxMin) { _boxMin = boxMin; }
   void setBoxMax(std::array<double, 3> boxMax) { _boxMax = boxMax; }
   std::array<double, 3> getBoxMin() { return _boxMin; }
   std::array<double, 3> getBoxMax() { return _boxMax; }
 
-  OctreeNodeInterface<Particle> *getParent() {
-    return _parent;
-  }
+  OctreeNodeInterface<Particle> *getParent() { return _parent; }
 
  protected:
   bool hasParent() { return _parent != nullptr; }
@@ -230,23 +254,23 @@ class OctreeNodeInterface {
   std::array<double, 3> _boxMin, _boxMax;
 };
 
-template<class Particle>
+template <class Particle>
 inline bool GRAY(OctreeNodeInterface<Particle> *node) {
   // According to Samet: "All non-leaf nodes are said to be GRAY"
   return node->hasChildren();
 }
 
-template<class Particle>
+template <class Particle>
 inline OctreeNodeInterface<Particle> *FATHER(OctreeNodeInterface<Particle> *node) {
   return node->getParent();
 }
 
-template<class Particle>
+template <class Particle>
 static Octant SONTYPE(OctreeNodeInterface<Particle> *node) {
   Octant result = OOO;
-  if(FATHER(node)) {
-    for(Vertex *test = VERTICES(); *test != OOO; ++test) {
-      if(FATHER(node)->SON(*test) == node) {
+  if (FATHER(node)) {
+    for (Vertex *test = VERTICES(); *test != OOO; ++test) {
+      if (FATHER(node)->SON(*test) == node) {
         result = *test;
         break;
       }
@@ -259,21 +283,21 @@ static Octant SONTYPE(OctreeNodeInterface<Particle> *node) {
 template <class Particle>
 OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_FACE_NEIGHBOR(Face I) {
   // Check precondition
-  if(!contains(getFaces(), O, I)) {
+  if (!contains(getFaces(), O, I)) {
     throw std::runtime_error("[OctreeNodeInterface.h] Received invalid face.");
   }
 
-  auto null = [] (OctreeNodeInterface<Particle> *T) {return T == nullptr;};
+  auto null = [](OctreeNodeInterface<Particle> *T) { return T == nullptr; };
 
   // Find a common ancestor
   OctreeNodeInterface<Particle> *Q, *P = this;
-  if((not null(FATHER(P))) and ADJ(I, SONTYPE(P))) {
+  if ((not null(FATHER(P))) and ADJ(I, SONTYPE(P))) {
     Q = FATHER(P)->GTEQ_FACE_NEIGHBOR(I);
   } else {
     Q = FATHER(P);
   }
 
-  if((not null(Q)) and GRAY(Q)) {
+  if ((not null(Q)) and GRAY(Q)) {
     // Follow the reflected path to locate the neighbor
     return Q->SON(REFLECT(I, SONTYPE(P)));
   } else {
@@ -284,26 +308,25 @@ OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_FACE_NEIGHBOR
 template <class Particle>
 OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_EDGE_NEIGHBOR(Edge I) {
   // Check precondition
-  if(!contains(getEdges(), OO, I)) {
+  if (!contains(getEdges(), OO, I)) {
     throw std::runtime_error("[OctreeNodeInterface.h] Received invalid edge.");
   }
 
-  auto null = [] (OctreeNodeInterface<Particle> *T) {return T == nullptr;};
+  auto null = [](OctreeNodeInterface<Particle> *T) { return T == nullptr; };
 
   // Find a common ancestor
   OctreeNodeInterface<Particle> *Q, *P = this;
-  if(null(FATHER(P))) {
+  if (null(FATHER(P))) {
     Q = nullptr;
-  } else if(ADJ(I, SONTYPE(P))) {
+  } else if (ADJ(I, SONTYPE(P))) {
     Q = FATHER(P)->GTEQ_EDGE_NEIGHBOR(I);
-  } else if(Face common = COMMON_FACE(I, SONTYPE(P));
-             common != O) {
+  } else if (Face common = COMMON_FACE(I, SONTYPE(P)); common != O) {
     Q = FATHER(P)->GTEQ_FACE_NEIGHBOR(common);
   } else {
     Q = FATHER(P);
   }
 
-  if((not null(Q)) and GRAY(Q)) {
+  if ((not null(Q)) and GRAY(Q)) {
     // Follow opposite path to locate the neighbor
     return Q->SON(REFLECT(I, SONTYPE(P)));
   } else {
@@ -314,29 +337,27 @@ OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_EDGE_NEIGHBOR
 template <class Particle>
 OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_VERTEX_NEIGHBOR(Vertex I) {
   // Check precondition
-  if(!contains(VERTICES(), OOO, I)) {
+  if (!contains(VERTICES(), OOO, I)) {
     throw std::runtime_error("[OctreeNodeInterface.h] Received invalid vertex.");
   }
 
-  auto null = [] (OctreeNodeInterface<Particle> *T) {return T == nullptr;};
+  auto null = [](OctreeNodeInterface<Particle> *T) { return T == nullptr; };
 
   // Find a common ancestor
   OctreeNodeInterface<Particle> *Q, *P = this;
-  if(null(FATHER(P))) {
+  if (null(FATHER(P))) {
     Q = nullptr;
-  } else if(ADJ(I, SONTYPE(P))) {
+  } else if (ADJ(I, SONTYPE(P))) {
     Q = FATHER(P)->GTEQ_VERTEX_NEIGHBOR(I);
-  } else if(Edge commonEdge = COMMON_EDGE(I, SONTYPE(P));
-      commonEdge != OO) {
+  } else if (Edge commonEdge = COMMON_EDGE(I, SONTYPE(P)); commonEdge != OO) {
     Q = FATHER(P)->GTEQ_EDGE_NEIGHBOR(commonEdge);
-  } else if(Face commonFace = COMMON_FACE(I, SONTYPE(P));
-      commonFace != O) {
+  } else if (Face commonFace = COMMON_FACE(I, SONTYPE(P)); commonFace != O) {
     Q = FATHER(P)->GTEQ_FACE_NEIGHBOR(commonFace);
   } else {
     Q = FATHER(P);
   }
 
-  if((not null(Q)) and GRAY(Q)) {
+  if ((not null(Q)) and GRAY(Q)) {
     // Follow opposite path to locate the neighbor
     return Q->SON(REFLECT(I, SONTYPE(P)));
   } else {
