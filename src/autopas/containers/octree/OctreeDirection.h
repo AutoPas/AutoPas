@@ -179,6 +179,21 @@ inline bool contains(T *all, T stop, Any test) {
   return result;
 }
 
+template <typename T>
+inline bool isFace(T f) {
+  return contains(getFaces(), O, f);
+}
+
+template <typename T>
+inline bool isEdge(T f) {
+  return contains(getEdges(), OO, f);
+}
+
+template <typename T>
+inline bool isVertex(T f) {
+  return contains(VERTICES(), OOO, f);
+}
+
 inline bool ADJ(Any direction, Vertex octant) {
   static std::array<std::array<bool, 8>, 1 << 9> table;
 
@@ -331,6 +346,91 @@ inline Edge COMMON_EDGE(Any direction, Vertex octant) {
 
   int flatOctant = vertexToIndex(octant);
   Edge result = table[direction][flatOctant];
+  return result;
+}
+
+inline autopas::Any getOppositeDirection(autopas::Any direction) {
+  using namespace autopas;
+
+  // TODO: Check parameter preconditions
+
+  static std::array<Any, 1 << 9> table = {};
+  table[L] = R;
+  table[R] = L;
+  table[D] = U;
+  table[U] = D;
+  table[B] = F;
+  table[F] = B;
+  table[LD] = RU;
+  table[LU] = RD;
+  table[LB] = RF;
+  table[LF] = RB;
+  table[RD] = LU;
+  table[RU] = LD;
+  table[RB] = LF;
+  table[RF] = LB;
+  table[DB] = UF;
+  table[DF] = UB;
+  table[UB] = DF;
+  table[UF] = DB;
+  table[LDB] = RUF;
+  table[LDF] = RUB;
+  table[LUB] = RDF;
+  table[LUF] = RDB;
+  table[RDB] = LUF;
+  table[RDF] = LUB;
+  table[RUB] = LDF;
+  table[RUF] = LDB;
+
+  Any result = table[direction];
+
+  // TODO: Check post-conditions
+
+  return result;
+}
+
+inline std::vector<autopas::Vertex> getAllowedDirections(autopas::Any along) {
+  using namespace autopas;
+
+  // TODO: Check parameter preconditions
+
+  static std::array<std::vector<Vertex>, 1 << 9> table = {};
+  table[L] = {LDB, LDF, LUB, LUF};
+  table[R] = {RDB, RDF, RUB, RUF};
+  table[D] = {LDB, LDF, RDB, RDF};
+  table[U] = {LUB, LUF, RUB, RUF};
+  table[B] = {LDB, LUB, RDB, RUB};
+  table[F] = {LDF, LUF, RDF, RUF};
+  table[LD] = {LDB, LDF};
+  table[LU] = {LUB, LUF};
+  table[LB] = {LDB, LUB};
+  table[LF] = {LDF, LUF};
+  table[RD] = {RDB, RDF};
+  table[RU] = {RUB, RUF};
+  table[RB] = {RDB, RUB};
+  table[RF] = {RDF, RUF};
+  table[DB] = {LDB, RDB};
+  table[DF] = {LDF, RDF};
+  table[UB] = {LUB, RUB};
+  table[UF] = {LUF, RUF};
+  table[LDB] = {LDB};
+  table[LDF] = {LDF};
+  table[LUB] = {LUB};
+  table[LUF] = {LUF};
+  table[RDB] = {RDB};
+  table[RDF] = {RDF};
+  table[RUB] = {RUB};
+  table[RUF] = {RUF};
+
+  auto result = table[along];
+
+  // Check post-conditions
+  for(auto v : result) {
+    if(!contains(VERTICES(), OOO, v)) {
+      throw std::runtime_error("[OctreeDirection.h] Result contains an illegal vertex.");
+    }
+  }
+
   return result;
 }
 
