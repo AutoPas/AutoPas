@@ -24,9 +24,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
 
   void appendAllParticles(std::vector<Particle> &ps) { _pointer->appendAllParticles(ps); }
 
-  void appendAllLeaves(std::vector<OctreeLeafNode<Particle> *> &leaves) {
-    _pointer->appendAllLeaves(leaves);
-  }
+  void appendAllLeaves(std::vector<OctreeLeafNode<Particle> *> &leaves) { _pointer->appendAllLeaves(leaves); }
 
   /**
    * Adds a Particle to the cell.
