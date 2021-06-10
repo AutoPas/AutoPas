@@ -177,17 +177,19 @@ static int getAxis(autopas::Face f) { return (f - 1) >> 1; }
 
 static void outLocationArrayJSON(FILE *out, autopas::OctreeNodeInterface<autopas::ParticleFP64> *node) {
   auto min = node->getBoxMin();
-  fprintf(out, "[%f, %f, %f, ", min[0], min[1], min[2]);
+  fprintf(out, "[%.3f,%.3f,%.3f,", min[0], min[1], min[2]);
   auto max = node->getBoxMax();
-  fprintf(out, "%f, %f, %f]", max[0], max[1], max[2]);
+  fprintf(out, "%.3f,%.3f,%.3f]", max[0], max[1], max[2]);
 }
 
 static void leavesToJSON(std::vector<autopas::OctreeLeafNode<autopas::ParticleFP64> *> &leaves) {
   using namespace autopas;
+
   FILE *out = fopen("leaves.json", "w");
   if (out) {
     fprintf(out, "[\n");
-    for (auto leaf : leaves) {
+    for (int leafIndex = 0; leafIndex < leaves.size(); ++leafIndex) {
+      auto leaf = leaves[leafIndex];
       fprintf(out, "{\"minmax\": ");
       outLocationArrayJSON(out, leaf);
 
@@ -205,6 +207,23 @@ static void leavesToJSON(std::vector<autopas::OctreeLeafNode<autopas::ParticleFP
         }
       }
 
+      // Print face neighbor leaves
+      fprintf(out, "], \"fnl\": [");
+      first = true;
+      for (Face *face = getFaces(); *face != O; ++face) {
+        auto neighbor = leaf->GTEQ_FACE_NEIGHBOR(*face);
+        if (neighbor) {
+          auto neighborLeaves = neighbor->getNeighborLeaves(*face);
+          for(auto neighborLeaf : neighborLeaves) {
+            if (!first) {
+              fprintf(out, ", ");
+            }
+            first = false;
+            outLocationArrayJSON(out, neighborLeaf);
+          }
+        }
+      }
+
       // Print edge neighbors
       fprintf(out, "], \"en\": [");
       first = true;
@@ -216,6 +235,23 @@ static void leavesToJSON(std::vector<autopas::OctreeLeafNode<autopas::ParticleFP
           }
           first = false;
           outLocationArrayJSON(out, neighbor);
+        }
+      }
+
+      // Print edge neighbor leaves
+      fprintf(out, "], \"enl\": [");
+      first = true;
+      for (Edge *edge = getEdges(); *edge != OO; ++edge) {
+        auto neighbor = leaf->GTEQ_EDGE_NEIGHBOR(*edge);
+        if (neighbor) {
+          auto neighborLeaves = neighbor->getNeighborLeaves(*edge);
+          for(auto neighborLeaf : neighborLeaves) {
+            if (!first) {
+              fprintf(out, ", ");
+            }
+            first = false;
+            outLocationArrayJSON(out, neighborLeaf);
+          }
         }
       }
 
@@ -233,7 +269,29 @@ static void leavesToJSON(std::vector<autopas::OctreeLeafNode<autopas::ParticleFP
         }
       }
 
-      fprintf(out, "]},\n");
+      // Print vertex neighbor leaves
+      fprintf(out, "], \"vnl\": [");
+      first = true;
+      for (Vertex *vertex = VERTICES(); *vertex != OOO; ++vertex) {
+        auto neighbor = leaf->GTEQ_VERTEX_NEIGHBOR(*vertex);
+        if (neighbor) {
+          auto neighborLeaves = neighbor->getNeighborLeaves(*vertex);
+
+          for(auto neighborLeaf : neighborLeaves) {
+            if (!first) {
+              fprintf(out, ", ");
+            }
+            first = false;
+            outLocationArrayJSON(out, neighborLeaf);
+          }
+        }
+      }
+
+      fprintf(out, "]}");
+      if(leafIndex < (leaves.size() - 1)) {
+        fprintf(out, ",");
+      }
+      fprintf(out, "\n");
     }
     fprintf(out, "]\n");
     fclose(out);
@@ -331,6 +389,33 @@ TEST_F(OctreeTest, testChildIndexing) {
   ASSERT_EQ(ruf->getBoxMax(), max);
 }
 
+template <typename Particle>
+static void verifyFaceNeighbor(autopas::Face face, autopas::OctreeNodeInterface<Particle> *node,
+                               autopas::OctreeNodeInterface<Particle> *neighbor) {
+  using namespace autopas;
+
+  int touchAxis = getAxis(face);
+  int touchAxisDir = isOdd(face) ? -1 : 1;
+  int oppositeDir = -1 * touchAxisDir;
+
+  auto nodePointInclInFacePlane = (touchAxisDir == -1) ? node->getBoxMin() : node->getBoxMax();
+  auto neighborPointInclInFacePlane = (oppositeDir == -1) ? neighbor->getBoxMin() : neighbor->getBoxMax();
+
+  std::array<double, 3> normal = {0, 0, 0};
+  normal[touchAxis] = 1;
+
+  // Check if the face touches the other cube
+  ASSERT_DOUBLE_EQ(planeEquation(normal, nodePointInclInFacePlane, neighborPointInclInFacePlane), 0.0);
+  ASSERT_DOUBLE_EQ(planeEquation(normal, neighborPointInclInFacePlane, nodePointInclInFacePlane), 0.0);
+
+  int overlapAxis1 = (touchAxis + 1) % 3;
+  int overlapAxis2 = (overlapAxis1 + 1) % 3;
+
+  // Check if the neighbor has volume with the leaf in the direction of the face
+  ASSERT_TRUE(node->enclosesVolumeWithOtherOnAxis(overlapAxis1, neighbor));
+  ASSERT_TRUE(node->enclosesVolumeWithOtherOnAxis(overlapAxis2, neighbor));
+}
+
 /**
  * This testcase
  * 1. instantiates an octree data structure (not the octree container itself),
@@ -365,26 +450,14 @@ TEST_F(OctreeTest, testNeighborLocator) {
     for (Face *face = getFaces(); *face != O; ++face) {
       auto neighbor = leaf->GTEQ_FACE_NEIGHBOR(*face);
       if (neighbor != nullptr) {
-        int touchAxis = getAxis(*face);
-        int touchAxisDir = isOdd(*face) ? -1 : 1;
-        int oppositeDir = -1 * touchAxisDir;
+        verifyFaceNeighbor(*face, leaf, neighbor);
 
-        auto leafPointInclInFacePlane = (touchAxisDir == -1) ? leaf->getBoxMin() : leaf->getBoxMax();
-        auto neighborPointInclInFacePlane = (oppositeDir == -1) ? neighbor->getBoxMin() : neighbor->getBoxMax();
+        auto neighborLeaves = neighbor->getNeighborLeaves(*face);
 
-        std::array<double, 3> normal = {0, 0, 0};
-        normal[touchAxis] = 1;
-
-        // Check if the face touches the other cube
-        ASSERT_DOUBLE_EQ(planeEquation(normal, leafPointInclInFacePlane, neighborPointInclInFacePlane), 0.0);
-        ASSERT_DOUBLE_EQ(planeEquation(normal, neighborPointInclInFacePlane, leafPointInclInFacePlane), 0.0);
-
-        int overlapAxis1 = (touchAxis + 1) % 3;
-        int overlapAxis2 = (overlapAxis1 + 1) % 3;
-
-        // Check if the neighbor has volume with the leaf in the direction of the face
-        ASSERT_TRUE(leaf->enclosesVolumeWithOtherOnAxis(overlapAxis1, neighbor));
-        ASSERT_TRUE(leaf->enclosesVolumeWithOtherOnAxis(overlapAxis2, neighbor));
+        for(auto neighborLeaf : neighborLeaves) {
+          ASSERT_NE(neighborLeaf, nullptr);
+          verifyFaceNeighbor(*face, leaf, neighborLeaf);
+        }
       } else {
         // TODO(johannes): The only case in which it is allowed for the GTEQ_FACE_NEIGHBOR method to return nullptr is
         //  when the requested face is also on a face of the enclosing min/max cube. This can be checked in this branch.
