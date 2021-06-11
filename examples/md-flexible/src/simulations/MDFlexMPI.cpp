@@ -14,7 +14,7 @@
 MDFlexMPI::MDFlexMPI(int dimensionCount, int argc, char **argv) { this->initialize(dimensionCount, argc, argv); }
 
 void MDFlexMPI::run() {
-  // @todo: make variable part of MDFlexConfig
+  // @todo: make variable part of MDFlexConfig, needs to be equal to verletRebuildFrequency.
   int iterationsPerSuperstep = 10;
   int remainingIterations = _configuration->iterations.value;
   for (int i = 0; i < _configuration->iterations.value; i += iterationsPerSuperstep) {

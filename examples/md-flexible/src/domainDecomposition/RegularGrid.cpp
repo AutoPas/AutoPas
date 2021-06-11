@@ -171,7 +171,7 @@ void RegularGrid::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer
 
   double particlePosition;
 
-  std::array<double, 3> localBoxMin, localBoxMax, leftHaloBoxMax, rightHaloBoxMin;
+  std::array<double, 3> localBoxMin, localBoxMax, leftHaloBoxMin, leftHaloBoxMax, rightHaloBoxMin, rightHaloBoxMax;
 
   localBoxMin = {_localBoxMin[0], _localBoxMin[1], _localBoxMin[2]};
   localBoxMax = {_localBoxMax[0], _localBoxMax[1], _localBoxMax[2]};
@@ -186,22 +186,37 @@ void RegularGrid::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer
     leftNeighbour = _neighbourDomainIndices[(i * 2) % neighbourCount];
     rightNeighbour = _neighbourDomainIndices[(i * 2 + 1) % neighbourCount];
 
+    std::vector<ParticleType> haloParticles;
+
     if (leftNeighbour != _domainIndex && rightNeighbour != _domainIndex) {
       std::vector<ParticleType> particlesForLeftNeighbour;
       std::vector<ParticleType> particlesForRightNeighbour;
-      std::vector<ParticleType> haloParticles;
 
-      leftHaloBoxMax = localBoxMin;
-      leftHaloBoxMax[i] += haloWidth;
-
-      rightHaloBoxMin = localBoxMax;
-      rightHaloBoxMin[i] -= haloWidth;
-
-      for (auto particle = autoPasContainer->getRegionIterator(localBoxMin, leftHaloBoxMax, autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+      std::array<double, 3> periodicShift;
+      for (auto particle = autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+        double particlePosition = particle->getR()[i];
+        if (particlePosition >= _haloBoxes[4 * i] && particlePosition < _haloBoxes[4 * i + 1] ) {
           particlesForLeftNeighbour.push_back(*particle);
+
+          if (_localBoxMin[i] == _globalBoxMin[i]) {
+            periodicShift = {0.0, 0.0, 0.0};
+            periodicShift[i] = _globalBoxMax[i] - _globalBoxMin[i];
+            particlesForLeftNeighbour.back().addR(periodicShift);
+          }
+        }
       }
-      for (auto particle = autoPasContainer->getRegionIterator(rightHaloBoxMin, localBoxMax, autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+
+      for (auto particle = autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+        double particlePosition = particle->getR()[i];
+        if (particlePosition > _haloBoxes[4 * i + 2] && particlePosition < _haloBoxes[4 * i + 3]) {
           particlesForRightNeighbour.push_back(*particle);
+
+          if (_localBoxMax[i] == _globalBoxMax[i]) {
+            periodicShift = {0.0, 0.0, 0.0};
+            periodicShift[i] = - (_globalBoxMax[i] - _globalBoxMin[i]);
+            particlesForRightNeighbour.back().addR(periodicShift);
+          }
+        }
       }
 
       sendParticles(particlesForLeftNeighbour, leftNeighbour);
@@ -209,10 +224,6 @@ void RegularGrid::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer
 
       receiveParticles(haloParticles, leftNeighbour);
       receiveParticles(haloParticles, rightNeighbour);
-
-      for (auto &particle : haloParticles) {
-        autoPasContainer->addOrUpdateHaloParticle(particle);
-      }
 
       waitForSendRequests();
     }
@@ -223,21 +234,31 @@ void RegularGrid::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer
     if (leftNeighbour != _domainIndex && rightNeighbour != _domainIndex) {
       std::vector<ParticleType> particlesForLeftNeighbour;
       std::vector<ParticleType> particlesForRightNeighbour;
-      std::vector<ParticleType> haloParticles;
 
       nextDimensionIndex = (i + 1) % dimensionCount;
 
-      leftHaloBoxMax = localBoxMin;
-      leftHaloBoxMax[nextDimensionIndex] += haloWidth;
+      std::array<double, 3> periodicShift;
+      for (const auto &particle : haloParticles) {
+        double particlePosition = particle.getR()[nextDimensionIndex];
+        if (particlePosition >= _haloBoxes[4 * nextDimensionIndex] && particlePosition < _haloBoxes[4 * i + 1]) {
+          particlesForLeftNeighbour.push_back(particle);
 
-      rightHaloBoxMin = localBoxMax;
-      rightHaloBoxMin[nextDimensionIndex] -= haloWidth;
+          if (_localBoxMin[nextDimensionIndex] == _globalBoxMin[nextDimensionIndex]) {
+            periodicShift = {0.0, 0.0, 0.0};
+            periodicShift[nextDimensionIndex] = _globalBoxMax[nextDimensionIndex] - _globalBoxMin[nextDimensionIndex];
+            particlesForLeftNeighbour.back().addR(periodicShift);
+          }
+        }
 
-      for (auto particle = autoPasContainer->getRegionIterator(localBoxMin, leftHaloBoxMax, autopas::IteratorBehavior::halo); particle.isValid(); ++particle) {
-          particlesForLeftNeighbour.push_back(*particle);
-      }
-      for (auto particle = autoPasContainer->getRegionIterator(rightHaloBoxMin, localBoxMax, autopas::IteratorBehavior::halo); particle.isValid(); ++particle) {
-          particlesForRightNeighbour.push_back(*particle);
+        if (particlePosition > _haloBoxes[4 * nextDimensionIndex + 2] && particlePosition < _haloBoxes[4 * nextDimensionIndex + 3]) {
+          particlesForRightNeighbour.push_back(particle);
+
+          if (_localBoxMax[nextDimensionIndex] == _globalBoxMax[nextDimensionIndex]) {
+            periodicShift = {0.0, 0.0, 0.0};
+            periodicShift[nextDimensionIndex] = - (_globalBoxMax[nextDimensionIndex] - _globalBoxMin[nextDimensionIndex]);
+            particlesForRightNeighbour.back().addR(periodicShift);
+          }
+        }
       }
 
       sendParticles(particlesForLeftNeighbour, leftNeighbour);
@@ -246,17 +267,18 @@ void RegularGrid::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer
       receiveParticles(haloParticles, leftNeighbour);
       receiveParticles(haloParticles, rightNeighbour);
 
-      for (auto &particle : haloParticles) {
-        autoPasContainer->addOrUpdateHaloParticle(particle);
-      }
-
       waitForSendRequests();
+    }
+
+    for (auto &particle : haloParticles) {
+      autoPasContainer->addOrUpdateHaloParticle(particle);
     }
   }
 }
 
 void RegularGrid::exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer) {
   auto [emigrants, updated] = autoPasContainer->updateContainer();
+
   int dimensionCount = _localBoxMin.size();
   int neighbourCount = _neighbourDomainIndices.size();
 
@@ -269,7 +291,29 @@ void RegularGrid::exchangeMigratingParticles(SharedAutoPasContainer &autoPasCont
     if (leftNeighbour != _domainIndex && rightNeighbour != _domainIndex) {
       std::vector<ParticleType> particlesForLeftNeighbour;
       std::vector<ParticleType> particlesForRightNeighbour;
-      double particlePosition;
+
+      std::array<double, 3> periodicShift;
+      for (const auto &particle : emigrants) {
+        double particlePosition = particle.getR()[i];
+        if (particlePosition < _localBoxMin[i]) {
+          particlesForLeftNeighbour.push_back(particle);
+
+          if (_localBoxMin[i] == _globalBoxMin[i]) {
+            periodicShift = {0.0, 0.0, 0.0};
+            periodicShift[i] = _globalBoxMax[i] - _globalBoxMin[i];
+            particlesForLeftNeighbour.back().addR(periodicShift);
+          }
+        }
+        else if (particlePosition > _localBoxMax[i]) {
+          particlesForRightNeighbour.push_back(particle);
+
+          if (_localBoxMax[i] == _globalBoxMax[i]) {
+            periodicShift = {0.0, 0.0, 0.0};
+            periodicShift[i] = - (_globalBoxMax[i] - _globalBoxMin[i]);
+            particlesForRightNeighbour.back().addR(periodicShift);
+          }
+        }
+      }
 
       sendParticles(emigrants, leftNeighbour);
       sendParticles(emigrants, rightNeighbour);
@@ -277,13 +321,11 @@ void RegularGrid::exchangeMigratingParticles(SharedAutoPasContainer &autoPasCont
       receiveParticles(immigrants, leftNeighbour);
       receiveParticles(immigrants, rightNeighbour);
 
-      std::vector<double> immigrantPosition = {0.0, 0.0, 0.0};
       for (auto &particle : immigrants) {
-        immigrantPosition[0] = particle.getR()[0];
-        immigrantPosition[1] = particle.getR()[1];
-        immigrantPosition[2] = particle.getR()[2];
-
-        if(isInsideLocalDomain(immigrantPosition)) {
+        if(isInsideLocalDomain(particle.getR())) {
+          if (particle.getID() == 4484) {
+            std::cout << "IsInsideLocalDomain" << std::endl;
+          }
           autoPasContainer->addParticle(particle);
         }
         else {
@@ -296,33 +338,28 @@ void RegularGrid::exchangeMigratingParticles(SharedAutoPasContainer &autoPasCont
       waitForSendRequests();
     }
 
-    leftNeighbour = _neighbourDomainIndices[(leftNeighbour + 2) % neighbourCount];
-    rightNeighbour = _neighbourDomainIndices[(rightNeighbour + 2) % neighbourCount];
+    //leftNeighbour = _neighbourDomainIndices[(leftNeighbour + 2) % neighbourCount];
+    //rightNeighbour = _neighbourDomainIndices[(rightNeighbour + 2) % neighbourCount];
 
-    if (leftNeighbour != _domainIndex && rightNeighbour != _domainIndex) {
-      std::vector<ParticleType> particlesForLeftNeighbour;
-      std::vector<ParticleType> particlesForRightNeighbour;
+    //if (leftNeighbour != _domainIndex && rightNeighbour != _domainIndex) {
+    //  std::vector<ParticleType> particlesForLeftNeighbour;
+    //  std::vector<ParticleType> particlesForRightNeighbour;
 
-      int nextDimensionIndex = (i + 1) % dimensionCount;
+    //  int nextDimensionIndex = (i + 1) % dimensionCount;
 
-      sendParticles(migrants, leftNeighbour);
-      sendParticles(migrants, rightNeighbour);
+    //  sendParticles(migrants, leftNeighbour);
+    //  sendParticles(migrants, rightNeighbour);
 
-      receiveParticles(immigrants, leftNeighbour);
-      receiveParticles(immigrants, rightNeighbour);
+    //  receiveParticles(immigrants, leftNeighbour);
+    //  receiveParticles(immigrants, rightNeighbour);
 
-      std::vector<double> immigrantPosition = {0.0, 0.0, 0.0};
-      for (auto &particle : immigrants) {
-        immigrantPosition[0] = particle.getR()[0];
-        immigrantPosition[1] = particle.getR()[1];
-        immigrantPosition[2] = particle.getR()[2];
-
-        if(isInsideLocalDomain(immigrantPosition)) {
-          autoPasContainer->addParticle(particle);
-        }
-      }
-      waitForSendRequests();
-    }
+    //  for (auto &particle : immigrants) {
+    //    if(isInsideLocalDomain(particle.getR())) {
+    //      autoPasContainer->addParticle(particle);
+    //    }
+    //  }
+    //  waitForSendRequests();
+    //}
   }
 }
 
@@ -381,6 +418,13 @@ bool RegularGrid::isInsideLocalDomain(const std::vector<double> &coordinates) {
   return DomainTools::isInsideDomain(coordinates, _localBoxMin, _localBoxMax);
 }
 
+bool RegularGrid::isInsideLocalDomain(const std::array<double, 3> &coordinates) {
+  std::vector<double> coordinatesVector;
+  coordinatesVector.insert(coordinatesVector.begin(), coordinates.begin(), coordinates.end());
+
+  return isInsideLocalDomain(coordinatesVector);
+}
+
 void RegularGrid::updateHaloBoxes() {
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
     int haloBoxesStartIndex = 4 * dimensionIndex;
@@ -390,7 +434,7 @@ void RegularGrid::updateHaloBoxes() {
     _haloBoxes[haloBoxesStartIndex + 1] = _localBoxMin[dimensionIndex] + _cutoffWidth + _skinWidth; 
 
     // Halo box values for left neighbour
-    _haloBoxes[haloBoxesStartIndex + 2] = _localBoxMax[dimensionIndex] + _skinWidth; 
-    _haloBoxes[haloBoxesStartIndex + 3] = _localBoxMax[dimensionIndex] - _cutoffWidth - _skinWidth; 
+    _haloBoxes[haloBoxesStartIndex + 2] = _localBoxMax[dimensionIndex] - _cutoffWidth - _skinWidth; 
+    _haloBoxes[haloBoxesStartIndex + 3] = _localBoxMax[dimensionIndex] + _skinWidth; 
   }
 }

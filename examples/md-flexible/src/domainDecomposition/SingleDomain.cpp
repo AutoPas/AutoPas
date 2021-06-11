@@ -30,3 +30,10 @@ void SingleDomain::initializeGlobalBox(const std::vector<double> &globalBoxMin,
 bool SingleDomain::isInsideLocalDomain(const std::vector<double> &coordinates) {
   return DomainTools::isInsideDomain(coordinates, _globalBoxMin, _globalBoxMax);
 }
+
+bool SingleDomain::isInsideLocalDomain(const std::array<double, 3> &coordinates) {
+  std::vector<double> coordinatesVector;
+  coordinatesVector.insert(coordinatesVector.begin(), coordinates.begin(), coordinates.end());
+
+  return isInsideLocalDomain(coordinatesVector);
+}

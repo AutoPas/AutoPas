@@ -61,6 +61,12 @@ class SingleDomain final : public DomainDecomposition {
    */
   bool isInsideLocalDomain(const std::vector<double> &coordinates) override;
 
+  /**
+   * Checks if the provided coordinates are located in the local domain.
+   * Instead of a vector, the coordinates are of type std::array<double, 3> to be compatible with AutoPas.
+   */
+  bool isInsideLocalDomain(const std::array<double, 3> &coordinates) override;
+
  private:
   /**
    * The number of dimensions in this decomposition.

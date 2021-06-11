@@ -334,8 +334,7 @@ void MDFlexSimulation::initializeAutoPasContainer() {
 
   for (auto &particle : _configuration->getParticles()) {
     ParticleType autoPasParticle;
-    if (getDomainDecomposition()->isInsideLocalDomain(
-            {particle.position[0], particle.position[1], particle.position[2]})) {
+    if (getDomainDecomposition()->isInsideLocalDomain(particle.position)) {
       autoPasParticle = ParticleSerializationTools::convertParticleAttributesToParticle(particle);
       _autoPasContainer->addParticle(autoPasParticle);
     }
