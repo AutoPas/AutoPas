@@ -4,9 +4,6 @@ file(
         "src/*.cpp"
         "src/*.h"
 )
-
-include_directories(SYSTEM ${MPI_INCLUDE_PATH})
-
 add_executable(md-flexible ${MDFlex_SRC})
 
 target_include_directories(md-flexible PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
