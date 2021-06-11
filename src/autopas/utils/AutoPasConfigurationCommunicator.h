@@ -110,7 +110,4 @@ Configuration deserializeConfiguration(SerializedConfiguration config);
  */
 Configuration optimizeConfiguration(AutoPas_MPI_Comm comm, Configuration localOptimalConfig, size_t localOptimalTime);
 
-
-double static *calculateHomogeneity(std::shared_ptr<autopas::ParticleContainerInterface<MoleculeLJ<double>>> container);
-
 }  // namespace autopas::utils::AutoPasConfigurationCommunicator

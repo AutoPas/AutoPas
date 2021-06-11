@@ -435,13 +435,13 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
   tuningTimer.start();
   // first tuning iteration -> reset to first config
   if (_iterationsSinceTuning == _tuningInterval) {
-//#ifdef AUTOPAS_INTERNODE_TUNING
+#ifdef AUTOPAS_INTERNODE_TUNING
     AutoPasLog(debug, "HELOOOOOOOOOOOO MPI tuning");
     MPIParallelizedStrategy& x = dynamic_cast<MPIParallelizedStrategy&>(*_tuningStrategy);
     x.resetMpi<Particle>(_iteration, getContainer());
-//#else
-//    _tuningStrategy->reset(_iteration);
-//#endif
+#else
+    _tuningStrategy->reset(_iteration);
+#endif
   } else {  // enough samples -> next config
     stillTuning = _tuningStrategy->tune();
   }

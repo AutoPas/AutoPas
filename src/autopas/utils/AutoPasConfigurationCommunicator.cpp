@@ -11,6 +11,7 @@
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/utils/ConfigurationAndRankIteratorHandler.h"
 #include "autopas/utils/logging/Logger.h"
+#include "autopas/utils/SimilarityFunctions.h"
 
 namespace autopas::utils::AutoPasConfigurationCommunicator {
 
@@ -158,10 +159,9 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
                                 dataLayoutOptions, newton3Options));
 }
 
-//autopas::utils::AutoPasConfigurationCommunicator::distributeRanksInBuckets(autopas::AutoPas_MPI_Comm, int, int, autopas::AutoPas_MPI_Comm, std::shared_ptr<autopas::ParticleContainerInterface<autopas::MoleculeLJ<double> > >)
 void distributeRanksInBuckets(AutoPas_MPI_Comm comm, int rank, int commSize, AutoPas_MPI_Comm bucket, std::shared_ptr<autopas::ParticleContainerInterface<MoleculeLJ<double>>> container) {
   std::vector<double> homogeneities;
-  double homogeneity = calculateHomogeneity(container)[0];
+  double homogeneity = autopas::utils::calculateHomogeneity(container)[0];
 
   AutoPas_MPI_Allgather(&homogeneity, 1, AUTOPAS_MPI_DOUBLE, &homogeneities, commSize, AUTOPAS_MPI_DOUBLE, comm);
 
@@ -180,9 +180,9 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, int rank, int commSize, Aut
   // print out the results
   AutoPasLog(debug, "\n\n\n\n");
 
-  for (int i = 0; i < homogeneities.size(); i++) {
+  for (int i = 0; (size_t) i < homogeneities.size(); i++) {
 
-    // if a difference exceeds 40%, start a new group:
+    // if a difference exceeds 20%, start a new group:
     if (diffs[i] > 0.2)
       current_bucket++;
 
@@ -240,87 +240,6 @@ Configuration deserializeConfiguration(SerializedConfiguration config) {
                        static_cast<TraversalOption::Value>(config[1]),
                        static_cast<LoadEstimatorOption::Value>(config[2]),
                        static_cast<DataLayoutOption::Value>(config[3]), static_cast<Newton3Option::Value>(config[4]));
-}
-
-double static *calculateHomogeneity(std::shared_ptr<autopas::ParticleContainerInterface<MoleculeLJ<double>>> container) {
-  auto *data = new double[2];
-  size_t numberOfParticles = container->getNumParticles();
-  // approximately the resolution we want to get.
-  size_t numberOfCells = ceil(numberOfParticles / 10.);
-
-  std::array<double, 3> startCorner = container->getBoxMin();
-  std::array<double, 3> endCorner = container->getBoxMax();
-  std::array<double, 3> domainSizePerDimension = {};
-  for (int i = 0; i < 3; ++i) {
-    domainSizePerDimension[i] = endCorner[i] - startCorner[i];
-  }
-
-  // get cellLength which is equal in each direction, derived from the domainsize and the requested number of cells
-  double volume = domainSizePerDimension[0] * domainSizePerDimension[1] * domainSizePerDimension[2];
-  double cellVolume = volume / numberOfCells;
-  double cellLength = cbrt(cellVolume);
-
-  // calculate the size of the boundary cells, which might be smaller then the other cells
-  std::array<size_t, 3> cellsPerDimension = {};
-  // size of the last cell layer per dimension. This cell might get truncated to fit in the domain.
-  std::array<double, 3> outerCellSizePerDimension = {};
-  for (int i = 0; i < 3; ++i) {
-    outerCellSizePerDimension[i] =
-        domainSizePerDimension[i] - (floor(domainSizePerDimension[i] / cellLength) * cellLength);
-    cellsPerDimension[i] = ceil(domainSizePerDimension[i] / cellLength);
-  }
-  // Actual number of cells we end up with
-  numberOfCells = cellsPerDimension[0] * cellsPerDimension[1] * cellsPerDimension[2];
-
-  std::vector<size_t> particlesPerCell(numberOfCells, 0);
-  std::vector<double> allVolumes(numberOfCells, 0);
-
-  // add particles accordingly to their cell to get the amount of particles in each cell
-  for (auto particleItr = container->begin(autopas::IteratorBehavior::owned); particleItr.isValid(); ++particleItr) {
-    std::array<double, 3> particleLocation = particleItr->getR();
-    std::array<size_t, 3> index = {};
-    for (int i = 0; (size_t) i < particleLocation.size(); i++) {
-      index[i] = particleLocation[i] / cellLength;
-    }
-    const size_t cellIndex = autopas::utils::ThreeDimensionalMapping::threeToOneD(index, cellsPerDimension);
-    particlesPerCell[cellIndex] += 1;
-    // calculate the size of the current cell
-    allVolumes[cellIndex] = 1;
-    for (int i = 0; (size_t) i < cellsPerDimension.size(); ++i) {
-      // the last cell layer has a special size
-      if (index[i] == cellsPerDimension[i] - 1) {
-        allVolumes[cellIndex] *= outerCellSizePerDimension[i];
-      } else {
-        allVolumes[cellIndex] *= cellLength;
-      }
-    }
-  }
-
-  // calculate density for each cell
-  data[1] = 0; // max density
-  std::vector<double> densityPerCell(numberOfCells, 0.0);
-  for (int i = 0; (size_t) i < particlesPerCell.size(); i++) {
-    densityPerCell[i] =
-        (allVolumes[i] == 0) ? 0 : (particlesPerCell[i] / allVolumes[i]);  // make sure there is no division of zero
-    if (densityPerCell[i] > data[1]) {
-      data[1] = densityPerCell[i];
-    }
-  }
-
-  // get mean and reserve variable for variance
-  double mean = numberOfParticles / volume;
-  double variance = 0.0;
-
-  // calculate variance
-  for (int r = 0; (size_t) r < densityPerCell.size(); ++r) {
-    double distance = densityPerCell[r] - mean;
-    variance += (distance * distance / densityPerCell.size());
-  }
-
-  // finally calculate standard deviation
-  // return sqrt(variance);
-  data[0] = sqrt(variance);
-  return data;
 }
 
 }  // namespace autopas::utils::AutoPasConfigurationCommunicator
