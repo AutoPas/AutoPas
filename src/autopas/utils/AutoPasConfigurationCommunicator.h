@@ -14,6 +14,8 @@
 #include "autopas/selectors/Configuration.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/NumberSet.h"
+#include "autopas/containers/ParticleContainerInterface.h"
+#include "autopas/molecularDynamics/MoleculeLJ.h"
 
 /**
  * Provides several functions for handling configurations among mpi ranks.
@@ -83,8 +85,7 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
  * @param commSize
  * @param bucket
  */
-template <class Container>
-void distributeRanksInBuckets(AutoPas_MPI_Comm comm, int rank, int commSize, AutoPas_MPI_Comm bucket, const Container &container);
+void distributeRanksInBuckets(AutoPas_MPI_Comm comm, int rank, int commSize, AutoPas_MPI_Comm bucket, std::shared_ptr<autopas::ParticleContainerInterface<MoleculeLJ<double>>> container);
 
 /**
  * Serializes a configuration object for communication via MPI.
@@ -108,5 +109,8 @@ Configuration deserializeConfiguration(SerializedConfiguration config);
  * @return The globally optimal configuration.
  */
 Configuration optimizeConfiguration(AutoPas_MPI_Comm comm, Configuration localOptimalConfig, size_t localOptimalTime);
+
+
+double static *calculateHomogeneity(std::shared_ptr<autopas::ParticleContainerInterface<MoleculeLJ<double>>> container);
 
 }  // namespace autopas::utils::AutoPasConfigurationCommunicator

@@ -13,6 +13,7 @@
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/WrapMPI.h"
+#include "autopas/containers/ParticleContainerInterface.h"
 
 namespace autopas {
 
@@ -84,8 +85,8 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
     }
   }
 
-  template <class Container>
-  void resetMpi(size_t iteration, const Container &container) {
+  template <class Particle>
+  void resetMpi(size_t iteration, std::shared_ptr<autopas::ParticleContainerInterface<Particle>> container) {
     _optimalConfiguration = Configuration();
     _allGlobalConfigurationsTested = false;
     _allLocalConfigurationsTested = false;

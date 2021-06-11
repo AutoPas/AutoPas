@@ -496,7 +496,7 @@ inline int AutoPas_MPI_Iallreduce(const void *sendbuf, void *recvbuf, int count,
   return AutoPas_MPI_Allreduce(sendbuf, recvbuf, count, datatype, op, comm);
 }
 
-inline int AutoPas_MPI_Barrier(AutoPas_MPI_Comm comm) { return AUTOPAS_MPI_SUCCESS; }
+inline int AutoPas_MPI_Barrier(const AutoPas_MPI_Comm &comm) { return AUTOPAS_MPI_SUCCESS; }
 
 inline int AutoPas_MPI_Ibarrier(AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request) {
   *request = _AUTOPAS_MPI_COMPLETED_REQUEST;

@@ -56,9 +56,6 @@ class TuningStrategyInterface {
    */
   virtual void reset(size_t iteration) = 0;
 
-  template <class Container>
-  void resetMpi(size_t iteration, const Container &container) {};
-
   /**
    * Returns all container options the strategy might choose.
    * @return
