@@ -10,8 +10,8 @@
 #include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/utils/ConfigurationAndRankIteratorHandler.h"
-#include "autopas/utils/logging/Logger.h"
 #include "autopas/utils/SimilarityFunctions.h"
+#include "autopas/utils/logging/Logger.h"
 
 namespace autopas::utils::AutoPasConfigurationCommunicator {
 
@@ -159,41 +159,47 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
                                 dataLayoutOptions, newton3Options));
 }
 
-void distributeRanksInBuckets(AutoPas_MPI_Comm comm, int rank, int commSize, AutoPas_MPI_Comm bucket, std::shared_ptr<autopas::ParticleContainerInterface<MoleculeLJ<double>>> container) {
-  std::vector<double> homogeneities;
+void distributeRanksInBuckets(AutoPas_MPI_Comm comm, int rank, int commSize, AutoPas_MPI_Comm bucket,
+                              std::shared_ptr<autopas::ParticleContainerInterface<MoleculeLJ<double>>> container) {
+  auto *homogeneities_pointer = static_cast<double *>(malloc(commSize * sizeof(double)));
   double homogeneity = autopas::utils::calculateHomogeneity(container)[0];
 
-  AutoPas_MPI_Allgather(&homogeneity, 1, AUTOPAS_MPI_DOUBLE, &homogeneities, commSize, AUTOPAS_MPI_DOUBLE, comm);
+  AutoPas_MPI_Allgather(&homogeneity, 1, AUTOPAS_MPI_DOUBLE, homogeneities_pointer, 1, AUTOPAS_MPI_DOUBLE, comm);
 
-  std::vector<std::vector<double>> buckets;
+  AutoPasLog(debug, "AutoPas_MPI_Allgather: commSize: " + std::to_string(commSize) + " rank: " + std::to_string(rank));
 
+  std::ostringstream ostringstream;
+
+  for (int i = 0; i < commSize; ++i) {
+    ostringstream << std::to_string(*(homogeneities_pointer + i)) << ", ";
+  }
+
+  AutoPasLog(debug, "homogeneities: " + ostringstream.str());
+
+  std::vector<double> homogeneities;
+  homogeneities.assign(homogeneities_pointer, homogeneities_pointer + commSize);
   std::sort(homogeneities.begin(), homogeneities.end());
 
   std::vector<double> diffs;
   std::adjacent_difference(homogeneities.begin(), homogeneities.end(), std::back_inserter(diffs));
 
   // convert differences to percentage changes
-  std::transform(diffs.begin(), diffs.end(), homogeneities.begin(), diffs.begin(),
-                 std::divides<double>());
+  std::transform(diffs.begin(), diffs.end(), homogeneities.begin(), diffs.begin(), std::divides<double>());
 
   int current_bucket = 0;
+  int my_bucket;
   // print out the results
-  AutoPasLog(debug, "\n\n\n\n");
 
-  for (int i = 0; (size_t) i < homogeneities.size(); i++) {
-
+  for (int i = 0; (size_t)i < homogeneities.size(); i++) {
     // if a difference exceeds 20%, start a new group:
-    if (diffs[i] > 0.2)
-      current_bucket++;
+    if (diffs[i] > 0.2) current_bucket++;
 
     // print out an item:
-    AutoPasLog(debug, "bucket: " + std::to_string(current_bucket) + "  new value: " + std::to_string(homogeneities[i]) + "\n");
-    std::cout << "bucket: " << current_bucket << "  new value: " << homogeneities[i];
-    buckets[current_bucket].push_back(homogeneities[i]);
-    AutoPas_MPI_Comm_split(comm, current_bucket, rank, &bucket);
+    AutoPasLog(debug,
+               "rank: " + std::to_string(rank) + "bucket: " + std::to_string(current_bucket) + "  new value: " + std::to_string(homogeneities[i]));
+    if (homogeneities[i] == homogeneity) my_bucket = current_bucket;
   }
-  AutoPasLog(debug, "\n\n\n\n");
-
+  AutoPas_MPI_Comm_split(comm, my_bucket, rank, &bucket);
 }
 
 Configuration optimizeConfiguration(AutoPas_MPI_Comm comm, Configuration localOptimalConfig, size_t localOptimalTime) {

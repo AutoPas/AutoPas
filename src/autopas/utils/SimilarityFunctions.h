@@ -1,5 +1,5 @@
 /**
- * @file WrapMPI.h
+ * @file SimilarityFunctions.h
  * @author J. Kroll
  * @date 01.06.2020
  */

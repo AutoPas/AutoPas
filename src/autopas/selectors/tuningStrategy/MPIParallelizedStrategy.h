@@ -99,7 +99,7 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
     int commSize;
     AutoPas_MPI_Comm_size(_comm, &commSize);
     autopas::utils::AutoPasConfigurationCommunicator::distributeRanksInBuckets(_comm, rank, commSize, _bucket, container);
-
+    AutoPasLog(debug, "finished distribution");
     try {
       _tuningStrategy->reset(iteration);
     } catch (utils::ExceptionHandler::AutoPasException &exception) {
