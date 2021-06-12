@@ -159,8 +159,13 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
                                 dataLayoutOptions, newton3Options));
 }
 
-void distributeRanksInBuckets(AutoPas_MPI_Comm comm, int rank, int commSize, AutoPas_MPI_Comm bucket,
+void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm bucket,
                               std::shared_ptr<autopas::ParticleContainerInterface<MoleculeLJ<double>>> container) {
+  int rank;
+  AutoPas_MPI_Comm_rank(comm, &rank);
+  int commSize;
+  AutoPas_MPI_Comm_size(comm, &commSize);
+
   auto *homogeneities_pointer = static_cast<double *>(malloc(commSize * sizeof(double)));
   double homogeneity = autopas::utils::calculateHomogeneity(container)[0];
 
@@ -195,8 +200,8 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, int rank, int commSize, Aut
     if (diffs[i] > 0.2) current_bucket++;
 
     // print out an item:
-    AutoPasLog(debug,
-               "rank: " + std::to_string(rank) + "bucket: " + std::to_string(current_bucket) + "  new value: " + std::to_string(homogeneities[i]));
+    AutoPasLog(debug, "rank: " + std::to_string(rank) + "bucket: " + std::to_string(current_bucket) +
+                          "  new value: " + std::to_string(homogeneities[i]));
     if (homogeneities[i] == homogeneity) my_bucket = current_bucket;
   }
   AutoPas_MPI_Comm_split(comm, my_bucket, rank, &bucket);

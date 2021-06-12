@@ -94,11 +94,7 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
     if (_configIterator != nullptr) {
       _configIterator.reset();
     }
-    int rank;
-    AutoPas_MPI_Comm_rank(_comm, &rank);
-    int commSize;
-    AutoPas_MPI_Comm_size(_comm, &commSize);
-    autopas::utils::AutoPasConfigurationCommunicator::distributeRanksInBuckets(_comm, rank, commSize, _bucket, container);
+    autopas::utils::AutoPasConfigurationCommunicator::distributeRanksInBuckets(_comm, _bucket, container);
     AutoPasLog(debug, "finished distribution");
     try {
       _tuningStrategy->reset(iteration);
