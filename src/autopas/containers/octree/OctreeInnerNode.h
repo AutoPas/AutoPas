@@ -21,6 +21,13 @@ namespace autopas {
 template <class Particle>
 class OctreeInnerNode : public OctreeNodeInterface<Particle> {
  public:
+  /**
+   * Create an octree inner node that points to eight leaves.
+   *
+   * @param boxMin The min coordinate of the octree box
+   * @param boxMax The max coordinate of the octree box
+   * @param parent A pointer to the parent node. Should be nullptr for root nodes.
+   */
   OctreeInnerNode(std::array<double, 3> boxMin, std::array<double, 3> boxMax, OctreeNodeInterface<Particle> *parent)
       : OctreeNodeInterface<Particle>(boxMin, boxMax, parent) {
     using namespace autopas::utils;
@@ -116,6 +123,7 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
    */
   OctreeNodeInterface<Particle> *getChild(int index) override { return _children[index].get(); }
 
+#if 0
   std::optional<OctreeNodeInterface<Particle> *> getGreaterParentAlongAxis(
       int axis, int dir, OctreeNodeInterface<Particle> *embedded) override {
     auto posDir = (dir > 0);
@@ -169,6 +177,7 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
 
     return result;
   }
+#endif
 
   OctreeNodeInterface<Particle> *SON(Octant octant) override {
     // convert the Octant to a flat child index

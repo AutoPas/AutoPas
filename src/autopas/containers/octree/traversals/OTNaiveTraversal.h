@@ -31,7 +31,9 @@ template <class Particle, class PairwiseFunctor, DataLayoutOption::Value dataLay
 class OTNaiveTraversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
                          public OTTraversalInterface<OctreeNodeWrapper<Particle>> {
  public:
-  // using ParticleCell = OctreeNodeWrapper<Particle>;
+  /**
+   * A shortcut to specify the type of the actual iterated cell
+   */
   using ParticleCell = OctreeLeafNode<Particle>;
 
   // TODO(johannes): The TraversalSelector passes the interactionLength as the cutoff value: Keep in mind when
@@ -114,6 +116,10 @@ class OTNaiveTraversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
     }
   }
 
+  /**
+   * Set the cells to iterate.
+   * @param cells A list of octree roots that should be used during iteration
+   */
   void setCells(std::vector<OctreeNodeWrapper<Particle>> *cells) override { _cells = cells; }
 
  private:

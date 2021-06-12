@@ -80,6 +80,7 @@ TEST_F(OctreeTest, testDebugIndexing) {
   }
 }
 
+#if 0
 /**
  * This is a giant test case that simulates an entire octree run in one route.
  */
@@ -134,6 +135,7 @@ TEST_F(OctreeTest, testParentFinding) {
     FAIL();
   }
 }
+#endif
 
 TEST_F(OctreeTest, testDirectionIndexing) {
   using namespace autopas;

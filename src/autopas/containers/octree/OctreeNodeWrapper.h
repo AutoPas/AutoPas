@@ -20,15 +20,35 @@ namespace autopas {
 template <typename Particle>
 class OctreeNodeWrapper : public ParticleCell<Particle> {
  public:
+  /**
+   * The contained particle cell.
+   */
   using ParticleCell = OctreeNodeWrapper<Particle>;
+  /**
+   * The contained particle type.
+   */
   using ParticleType = typename ParticleCell::ParticleType;
 
+  /**
+   * Constructs a new, empty octree and stores the root.
+   *
+   * @param boxMin The min coordinate of the box containing the octree
+   * @param boxMax The max coordinate of the box containing the octree
+   */
   OctreeNodeWrapper(std::array<double, 3> boxMin, std::array<double, 3> boxMax) {
     _pointer = std::make_unique<OctreeLeafNode<Particle>>(boxMin, boxMax, nullptr);
   }
 
+  /**
+   * Append all particles in the octree to a list using DFS.
+   * @param ps The list to which the particles should be appended to
+   */
   void appendAllParticles(std::vector<Particle> &ps) { _pointer->appendAllParticles(ps); }
 
+  /**
+   * Append all leaves in the octree to a list.
+   * @param leaves The list to which the leaves should be appended to
+   */
   void appendAllLeaves(std::vector<OctreeLeafNode<Particle> *> &leaves) { _pointer->appendAllLeaves(leaves); }
 
   /**
@@ -104,6 +124,12 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
     return result;
   }
 
+  /**
+   * Get a particle from the iterator
+   *
+   * @param index The index of the particle
+   * @return A ref to a particle
+   */
   Particle &at(size_t index) {
     // TODO: This is really bad
     static std::vector<Particle> ps;
@@ -112,6 +138,12 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
     return ps[index];
   }
 
+  /**
+   * Get a particle from the iterator
+   *
+   * @param index The index of the particle
+   * @return A const ref to a particle
+   */
   const Particle &at(size_t index) const {
     // TODO: This is really bad
     static std::vector<Particle> ps;

@@ -35,6 +35,7 @@ class OctreeNodeInterface {
 
   /**
    * Insert a particle into the octree.
+   * @param ref A pointer reference to the location at which a possible new child can point to
    * @param p The particle to insert
    * @return The subtree below the current node that now contains the particle
    */
@@ -79,6 +80,7 @@ class OctreeNodeInterface {
    */
   virtual OctreeNodeInterface<Particle> *getChild(int index) = 0;
 
+#if 0
   virtual std::optional<OctreeNodeInterface<Particle> *> getGreaterParentAlongAxis(
       int axis, int dir, OctreeNodeInterface<Particle> *embedded) = 0;
 
@@ -140,10 +142,10 @@ class OctreeNodeInterface {
     }
     return result;
   }
+#endif
 
   /**
    * Check if a 3d point is inside the node's axis aligned bounding box. (Set by the boxMin and boxMax fields.)
-   * @param node The possible enclosing node
    * @param point The node to test
    * @return true if the point is inside the node's bounding box and false otherwise
    */
@@ -152,6 +154,16 @@ class OctreeNodeInterface {
     return inBox(point, _boxMin, _boxMax);
   }
 
+  /**
+   * Check if the volume enclosed by two boxes a and b is nonzero on a specific axis.
+   *
+   * @param axis An axis index (0, 1 or 2)
+   * @param aMin The minimum coordinate of a's volume
+   * @param aMax The maximum coordinate of a's volume
+   * @param bMin The minimum coordinate of b's volume
+   * @param bMax The maximum coordinate of b's volume
+   * @return true iff the enclosed volume is greater than zero, false if the enclosed volume is equal to zero.
+   */
   static bool volumeExistsOnAxis(int axis, std::array<double, 3> aMin, std::array<double, 3> aMax,
                                  std::array<double, 3> bMin, std::array<double, 3> bMax) {
     bool o1 = aMin[axis] < bMax[axis];
@@ -159,6 +171,13 @@ class OctreeNodeInterface {
     return o1 && o2;
   }
 
+  /**
+   * Check if an octree node's box encloses volume with another octree node's box on a specific axis.
+   *
+   * @param axis An axis index (0, 1 or 2)
+   * @param other The octree node to check against.
+   * @return true iff the enclosed volume is greater than zero, false if the enclosed volume is equal to zero.
+   */
   bool enclosesVolumeWithOtherOnAxis(int axis, OctreeNodeInterface<Particle> *other) {
     return volumeExistsOnAxis(axis, this->getBoxMin(), this->getBoxMax(), other->getBoxMin(), other->getBoxMax());
   }
@@ -248,10 +267,27 @@ class OctreeNodeInterface {
   OctreeNodeInterface<Particle> *getParent() { return _parent; }
 
  protected:
+  /**
+   * Check if this is not the root node.
+   *
+   * @return true iff there does not exist a parent for this node.
+   */
   bool hasParent() { return _parent != nullptr; }
 
+  /**
+   * A pointer to the parent node. Can be nullptr (iff this is the root node).
+   */
   OctreeNodeInterface<Particle> *_parent;
-  std::array<double, 3> _boxMin, _boxMax;
+
+  /**
+   * The min coordinate of the enclosed volume.
+   */
+  std::array<double, 3> _boxMin;
+
+  /**
+   * The max coordinate of the enclosed volume.
+   */
+  std::array<double, 3>_boxMax;
 };
 
 template <class Particle>

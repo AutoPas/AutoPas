@@ -94,6 +94,7 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
     throw std::runtime_error("[OctreeLeafNode] Unable to return child by index in leaf");
   }
 
+#if 0
   std::optional<OctreeNodeInterface<Particle> *> getGreaterParentAlongAxis(
       int axis, int dir, OctreeNodeInterface<Particle> *embedded) override {
     std::optional<OctreeNodeInterface<Particle> *> result = std::nullopt;
@@ -118,6 +119,7 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
     result.push_back(this);
     return result;
   }
+#endif
 
   OctreeNodeInterface<Particle> *SON(Octant O) override {
     throw std::runtime_error("Unable to get SON of leaf node");
