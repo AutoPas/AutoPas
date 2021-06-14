@@ -138,5 +138,19 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
   void appendAllLeaves(std::vector<OctreeLeafNode<Particle> *> &leaves) override {
     leaves.push_back(this);
   }
+
+  void clearAlreadyProcessedList() {
+    _alreadyProcessed.clear();
+  }
+
+  bool alreadyProcessed(OctreeLeafNode<Particle> *other) {
+    return std::find(_alreadyProcessed.begin(), _alreadyProcessed.end(), other) != _alreadyProcessed.end();
+  }
+
+  void markAlreadyProcessed(OctreeLeafNode<Particle> *other) {
+    _alreadyProcessed.push_back(other);
+  }
+ private:
+  std::vector<OctreeLeafNode<Particle> *> _alreadyProcessed;
 };
 }  // namespace autopas

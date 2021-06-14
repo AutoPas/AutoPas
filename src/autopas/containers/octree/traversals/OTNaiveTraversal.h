@@ -79,13 +79,28 @@ class OTNaiveTraversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
     auto *wrapper = dynamic_cast<OctreeNodeWrapper<Particle> *>(&(*_cells)[0]);
     wrapper->appendAllLeaves(leaves);
 
+    for (OctreeLeafNode<Particle> *leaf : leaves) {
+      leaf->clearAlreadyProcessedList();
+    }
+
     // Get neighboring cells for each leaf
     for (OctreeLeafNode<Particle> *leaf : leaves) {
       auto uniqueNeighboringLeaves = leaf->getNeighborLeaves();
       for(OctreeLeafNode<Particle> *neighborLeaf : uniqueNeighboringLeaves) {
-        OctreeLeafNode<Particle> &leafRef = *leaf;
-        OctreeLeafNode<Particle> &neighborLeafRef = *neighborLeaf;
-        _cellFunctor.processCellPair(leafRef, neighborLeafRef);
+        if(!neighborLeaf->alreadyProcessed(leaf)) {
+          if(leaf->alreadyProcessed(neighborLeaf)) {
+            throw std::runtime_error("[OTNaiveTraversal.h] Other leaf should not have been processed already.");
+          }
+
+          // Execute the cell functor
+          OctreeLeafNode<Particle> &leafRef = *leaf;
+          OctreeLeafNode<Particle> &neighborLeafRef = *neighborLeaf;
+          _cellFunctor.processCellPair(leafRef, neighborLeafRef);
+
+          // Mark the pair as processed
+          leaf->markAlreadyProcessed(neighborLeaf);
+          neighborLeaf->markAlreadyProcessed(leaf);
+        }
       }
     }
   }
