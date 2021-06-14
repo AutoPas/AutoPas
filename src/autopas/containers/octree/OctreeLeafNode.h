@@ -121,6 +121,10 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
   }
 #endif
 
+  std::vector<OctreeNodeInterface<Particle> *> getLeavesFromDirections(std::vector<Vertex> directions) override {
+    return {this};
+  }
+
   OctreeNodeInterface<Particle> *SON(Octant O) override {
     throw std::runtime_error("Unable to get SON of leaf node");
   }
