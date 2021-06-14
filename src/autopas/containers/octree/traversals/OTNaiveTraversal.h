@@ -81,37 +81,11 @@ class OTNaiveTraversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
 
     // Get neighboring cells for each leaf
     for (OctreeLeafNode<Particle> *leaf : leaves) {
-      // Get all face neighbors
-      for (Face *face = getFaces(); *face != O; ++face) {
-        OctreeNodeInterface<Particle> *neighbor = leaf->GTEQ_FACE_NEIGHBOR(*face);
-        if (neighbor) {
-          auto neighborLeaf = dynamic_cast<OctreeLeafNode<Particle> *>(neighbor);
-          OctreeLeafNode<Particle> &leafRef = *leaf;
-          OctreeLeafNode<Particle> &neighborLeafRef = *neighborLeaf;
-          _cellFunctor.processCellPair(leafRef, neighborLeafRef);
-        }
-      }
-
-      // Get all edge neighbors
-      for (Edge *edge = getEdges(); *edge != OO; ++edge) {
-        OctreeNodeInterface<Particle> *neighbor = leaf->GTEQ_EDGE_NEIGHBOR(*edge);
-        if (neighbor) {
-          auto neighborLeaf = dynamic_cast<OctreeLeafNode<Particle> *>(neighbor);
-          OctreeLeafNode<Particle> &leafRef = *leaf;
-          OctreeLeafNode<Particle> &neighborLeafRef = *neighborLeaf;
-          _cellFunctor.processCellPair(leafRef, neighborLeafRef);
-        }
-      }
-
-      // Get all face neighbors
-      for (Vertex *vertex = VERTICES(); *vertex != OOO; ++vertex) {
-        OctreeNodeInterface<Particle> *neighbor = leaf->GTEQ_VERTEX_NEIGHBOR(*vertex);
-        if (neighbor) {
-          auto neighborLeaf = dynamic_cast<OctreeLeafNode<Particle> *>(neighbor);
-          OctreeLeafNode<Particle> &leafRef = *leaf;
-          OctreeLeafNode<Particle> &neighborLeafRef = *neighborLeaf;
-          _cellFunctor.processCellPair(leafRef, neighborLeafRef);
-        }
+      auto uniqueNeighboringLeaves = leaf->getNeighborLeaves();
+      for(OctreeLeafNode<Particle> *neighborLeaf : uniqueNeighboringLeaves) {
+        OctreeLeafNode<Particle> &leafRef = *leaf;
+        OctreeLeafNode<Particle> &neighborLeafRef = *neighborLeaf;
+        _cellFunctor.processCellPair(leafRef, neighborLeafRef);
       }
     }
   }

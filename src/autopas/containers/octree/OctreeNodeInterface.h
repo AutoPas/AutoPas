@@ -322,7 +322,7 @@ class OctreeNodeInterface {
       OctreeNodeInterface<Particle> *neighbor = GTEQ_FACE_NEIGHBOR(*face);
       if (neighbor) {
         auto leaves = neighbor->getNeighborLeaves(*face);
-        result.insert(result.end(), leaves.begin(), leaves.end());
+        result.insert(leaves.begin(), leaves.end());
       }
     }
 
@@ -331,7 +331,7 @@ class OctreeNodeInterface {
       OctreeNodeInterface<Particle> *neighbor = GTEQ_EDGE_NEIGHBOR(*edge);
       if (neighbor) {
         auto leaves = neighbor->getNeighborLeaves(*edge);
-        result.insert(result.end(), leaves.begin(), leaves.end());
+        result.insert(leaves.begin(), leaves.end());
       }
     }
 
@@ -340,7 +340,7 @@ class OctreeNodeInterface {
       OctreeNodeInterface<Particle> *neighbor = GTEQ_VERTEX_NEIGHBOR(*vertex);
       if (neighbor) {
         auto leaves = neighbor->getNeighborLeaves(*vertex);
-        result.insert(result.end(), leaves.begin(), leaves.end());
+        result.insert(leaves.begin(), leaves.end());
       }
     }
 
