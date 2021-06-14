@@ -159,7 +159,7 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
                                 dataLayoutOptions, newton3Options));
 }
 
-void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm bucket,
+void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket,
                               std::shared_ptr<autopas::ParticleContainerInterface<MoleculeLJ<double>>> container) {
   int rank;
   AutoPas_MPI_Comm_rank(comm, &rank);
@@ -170,8 +170,6 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm bucket,
   double homogeneity = autopas::utils::calculateHomogeneity(container)[0];
 
   AutoPas_MPI_Allgather(&homogeneity, 1, AUTOPAS_MPI_DOUBLE, homogeneities_pointer, 1, AUTOPAS_MPI_DOUBLE, comm);
-
-  AutoPasLog(debug, "AutoPas_MPI_Allgather: commSize: " + std::to_string(commSize) + " rank: " + std::to_string(rank));
 
   std::ostringstream ostringstream;
 
@@ -204,7 +202,7 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm bucket,
                           "  new value: " + std::to_string(homogeneities[i]));
     if (homogeneities[i] == homogeneity) my_bucket = current_bucket;
   }
-  AutoPas_MPI_Comm_split(comm, my_bucket, rank, &bucket);
+  AutoPas_MPI_Comm_split(comm, my_bucket, rank, bucket);
 }
 
 Configuration optimizeConfiguration(AutoPas_MPI_Comm comm, Configuration localOptimalConfig, size_t localOptimalTime) {

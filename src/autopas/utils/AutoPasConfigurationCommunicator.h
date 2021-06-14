@@ -85,7 +85,7 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
  * @param commSize
  * @param bucket
  */
-void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm bucket, std::shared_ptr<autopas::ParticleContainerInterface<MoleculeLJ<double>>> container);
+void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket, std::shared_ptr<autopas::ParticleContainerInterface<MoleculeLJ<double>>> container);
 
 /**
  * Serializes a configuration object for communication via MPI.

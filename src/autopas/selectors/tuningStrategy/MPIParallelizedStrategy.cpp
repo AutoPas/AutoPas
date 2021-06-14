@@ -15,9 +15,6 @@ bool MPIParallelizedStrategy::tune(bool currentInvalid) {
     _bucket = _comm;
   }
 
-  int rank;
-  AutoPas_MPI_Comm_rank(_bucket, &rank);
-
   if (not _strategyStillWorking and currentInvalid) {
     nextFallbackConfig();
     return true;
@@ -52,19 +49,13 @@ bool MPIParallelizedStrategy::tune(bool currentInvalid) {
       config = _tuningStrategy->getCurrentConfiguration();
       localOptimalTime = _tuningStrategy->getEvidence(config);
     }
-    AutoPasLog(debug, "about to get optimal config");
     _optimalConfiguration = utils::AutoPasConfigurationCommunicator::optimizeConfiguration(_bucket, config, localOptimalTime);
 
     return false;
   }
 
-  AutoPasLog(debug, "about to allreduce");
-
-  //FIXME
   AutoPas_MPI_Iallreduce(&_allLocalConfigurationsTested, &_allGlobalConfigurationsTested, 1, AUTOPAS_MPI_CXX_BOOL,
                          AUTOPAS_MPI_LAND, _bucket, &_request);
-
-  AutoPasLog(debug, "reduced");
 
   return true;
 }

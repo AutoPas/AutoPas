@@ -272,9 +272,9 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
     }
 
     // MPI Barrier, so simulate communication between ranks
-#ifdef AUTOPAS_INTERNODE_TUNING
-    MPI_Barrier(MPI_COMM_WORLD);
-#endif
+//#ifdef AUTOPAS_INTERNODE_TUNING
+//    MPI_Barrier(MPI_COMM_WORLD);
+//#endif
 
   }
   // final update for a full progress bar

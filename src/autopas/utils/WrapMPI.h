@@ -398,8 +398,8 @@ inline int AutoPas_MPI_Allgather(void *buffer_send, int count_send, AutoPas_MPI_
   return MPI_Allgather(buffer_send, count_send, datatype_send, buffer_recv, count_recv, datatype_recv, comm);
 }
 
-inline int AutoPas_MPI_Comm_split(AutoPas_MPI_Comm old_communicator, int colour, int key, AutoPas_MPI_Comm* new_communicator) {
-  return MPI_Comm_split(old_communicator, colour, key, new_communicator);
+inline int AutoPas_MPI_Comm_split(AutoPas_MPI_Comm old_communicator, int color, int key, AutoPas_MPI_Comm* new_communicator) {
+  return MPI_Comm_split(old_communicator, color, key, new_communicator);
 }
 
 #else
@@ -529,7 +529,7 @@ inline int AutoPas_MPI_Allgather(void *buffer_send, int count_send, AutoPas_MPI_
   return AUTOPAS_MPI_SUCCESS;
 }
 
-inline int AutoPas_MPI_Comm_split(AutoPas_MPI_Comm old_communicator, int colour, int key, AutoPas_MPI_Comm* new_communicator) {
+inline int AutoPas_MPI_Comm_split(AutoPas_MPI_Comm old_communicator, int color, int key, AutoPas_MPI_Comm* new_communicator) {
   new_communicator = &old_communicator;
   return AUTOPAS_MPI_SUCCESS;
 }
