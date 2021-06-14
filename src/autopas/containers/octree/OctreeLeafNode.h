@@ -127,7 +127,7 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
   }
 #endif
 
-  std::vector<OctreeNodeInterface<Particle> *> getLeavesFromDirections(std::vector<Vertex> directions) override {
+  std::vector<OctreeLeafNode<Particle> *> getLeavesFromDirections(std::vector<Vertex> directions) override {
     return {this};
   }
 

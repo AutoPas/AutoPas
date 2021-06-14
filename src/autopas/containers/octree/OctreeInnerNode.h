@@ -178,8 +178,8 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
   }
 #endif
 
-  std::vector<OctreeNodeInterface<Particle> *> getLeavesFromDirections(std::vector<Vertex> directions) override {
-    std::vector<OctreeNodeInterface<Particle> *> result;
+  std::vector<OctreeLeafNode<Particle> *> getLeavesFromDirections(std::vector<Vertex> directions) override {
+    std::vector<OctreeLeafNode<Particle> *> result;
     // Only take the children that are allowed (i.e. those which are in the given directions list)
     for (auto d : directions) {
       int childIndex = vertexToIndex(d);

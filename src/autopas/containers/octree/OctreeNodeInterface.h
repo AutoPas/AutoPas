@@ -295,14 +295,14 @@ class OctreeNodeInterface {
    * @param directions A list of allowed directions for traversal.
    * @return A list of leaf nodes
    */
-  virtual std::vector<OctreeNodeInterface<Particle> *> getLeavesFromDirections(std::vector<Vertex> directions) = 0;
+  virtual std::vector<OctreeLeafNode<Particle> *> getLeavesFromDirections(std::vector<Vertex> directions) = 0;
 
   /**
    * This function combines all required functions when traversing down a subtree of the octree and finding all leaves.
    * @param direction The "original" direction. The leaves will be found along the opposite direction.
    * @return A list of leaf nodes
    */
-  std::vector<OctreeNodeInterface<Particle> *> getNeighborLeaves(Any direction) {
+  std::vector<OctreeLeafNode<Particle> *> getNeighborLeaves(Any direction) {
     auto opposite = getOppositeDirection(direction);
     auto directions = getAllowedDirections(opposite);
     auto neighborLeaves = getLeavesFromDirections(directions);
