@@ -66,6 +66,7 @@ class OctreeNodeInterface {
 
   /**
    * Delete the entire tree below this node.
+   * @param ref A reference that contains this node
    */
   virtual void clearChildren(std::unique_ptr<OctreeNodeInterface<Particle>> &ref) = 0;
 
@@ -321,7 +322,7 @@ class OctreeNodeInterface {
 
   /**
    * Set the maximum coordinate of the enclosing box.
-   * @param boxMin A point in 3D space
+   * @param boxMax A point in 3D space
    */
   void setBoxMax(std::array<double, 3> boxMax) { _boxMax = boxMax; }
 

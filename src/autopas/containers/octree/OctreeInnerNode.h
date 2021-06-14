@@ -23,7 +23,6 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
  public:
   /**
    * Create an octree inner node that points to eight leaves.
-   *
    * @param boxMin The min coordinate of the octree box
    * @param boxMax The max coordinate of the octree box
    * @param parent A pointer to the parent node. Should be nullptr for root nodes.

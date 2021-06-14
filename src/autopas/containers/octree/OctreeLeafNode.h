@@ -24,6 +24,12 @@ class Octree;
 template <typename Particle>
 class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticleCell<Particle> {
  public:
+  /**
+   * Create an empty octree leaf node
+   * @param boxMin The min coordinate of the octree box
+   * @param boxMax The max coordinate of the octree box
+   * @param parent A pointer to the parent node. Should be nullptr for root nodes.
+   */
   OctreeLeafNode(std::array<double, 3> boxMin, std::array<double, 3> boxMax, OctreeNodeInterface<Particle> *parent)
       : OctreeNodeInterface<Particle>(boxMin, boxMax, parent),
         FullParticleCell<Particle>(utils::ArrayMath::sub(boxMax, boxMin)) {}
