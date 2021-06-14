@@ -8,6 +8,7 @@
 
 #include <array>
 #include <vector>
+#include <set>
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/octree/OctreeDirection.h"
@@ -309,8 +310,40 @@ class OctreeNodeInterface {
     return neighborLeaves;
   }
 
-  std::vector<OctreeNodeInterface<Particle> *> getNeighborLeaves() {
-    std::vector<OctreeNodeInterface<Particle> *> result;
+  /**
+   * Get the neighbor leaves in all directions
+   * @return A set of (unique) neighboring leaves
+   */
+  std::set<OctreeLeafNode<Particle> *> getNeighborLeaves() {
+    std::set<OctreeLeafNode<Particle> *> result;
+
+    // Get all face neighbors
+    for (Face *face = getFaces(); *face != O; ++face) {
+      OctreeNodeInterface<Particle> *neighbor = GTEQ_FACE_NEIGHBOR(*face);
+      if (neighbor) {
+        auto leaves = neighbor->getNeighborLeaves(*face);
+        result.insert(result.end(), leaves.begin(), leaves.end());
+      }
+    }
+
+    // Get all edge neighbors
+    for (Edge *edge = getEdges(); *edge != OO; ++edge) {
+      OctreeNodeInterface<Particle> *neighbor = GTEQ_EDGE_NEIGHBOR(*edge);
+      if (neighbor) {
+        auto leaves = neighbor->getNeighborLeaves(*edge);
+        result.insert(result.end(), leaves.begin(), leaves.end());
+      }
+    }
+
+    // Get all face neighbors
+    for (Vertex *vertex = VERTICES(); *vertex != OOO; ++vertex) {
+      OctreeNodeInterface<Particle> *neighbor = GTEQ_VERTEX_NEIGHBOR(*vertex);
+      if (neighbor) {
+        auto leaves = neighbor->getNeighborLeaves(*vertex);
+        result.insert(result.end(), leaves.begin(), leaves.end());
+      }
+    }
+
     return result;
   }
 
