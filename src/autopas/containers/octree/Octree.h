@@ -33,7 +33,14 @@ template <class Particle>
 class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
                public internal::CellBorderAndFlagManager {
  public:
+  /**
+   * The particle cell used in this CellBasedParticleContainer
+   */
   using ParticleCell = OctreeNodeWrapper<Particle>;
+
+  /**
+   * The particle type used in this container.
+   */
   using ParticleType = typename ParticleCell::ParticleType;
 
   /**
@@ -43,6 +50,13 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    */
   enum CellTypes { OWNED = 0, HALO = 1 };
 
+  /**
+   * Construct a new octree with two sub-octrees: One for the owned particles and one for the halo particles.
+   * @param boxMin The minimum coordinate of the enclosing box
+   * @param boxMax The maximum coordinate of the enclosing box
+   * @param cutoff The cutoff radius
+   * @param skin The skin radius
+   */
   Octree(std::array<double, 3> boxMin, std::array<double, 3> boxMax, const double cutoff, const double skin)
       : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skin) {
     this->_cells.push_back(OctreeNodeWrapper<Particle>(boxMin, boxMax));
@@ -213,9 +227,9 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
   }
 
  private:
-  // TODO: vector<OctreeLeafNode *> _leafs;
-  // std::list<OctreeLeafNode<Particle> *> _leafs;
-  // std::unique_ptr<OctreeNodeInterface<Particle>> _root;
+  /**
+   * A logger that can be called to log the octree data structure.
+   */
   OctreeLogger logger;
 };
 

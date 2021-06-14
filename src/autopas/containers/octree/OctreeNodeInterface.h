@@ -27,17 +27,22 @@ class OctreeInnerNode;
 template <class Particle>
 class OctreeNodeInterface {
  public:
+  /**
+   * Create an octree node interface by initializing the given fields.
+   * @param boxMin The minimum coordinate of the enclosing box
+   * @param boxMax The maximum coordinate of the enclosing box
+   * @param parent A pointer to the parent of this node, may be nullptr for the root.
+   */
   OctreeNodeInterface(std::array<double, 3> boxMin, std::array<double, 3> boxMax, OctreeNodeInterface<Particle> *parent)
       : _boxMin(boxMin), _boxMax(boxMax), _parent(parent) {}
 
-  // To make clang happy.
+  /** To make clang happy. */
   virtual ~OctreeNodeInterface() = default;
 
   /**
    * Insert a particle into the octree.
    * @param ref A pointer reference to the location at which a possible new child can point to
    * @param p The particle to insert
-   * @return The subtree below the current node that now contains the particle
    */
   virtual void insert(std::unique_ptr<OctreeNodeInterface<Particle>> &ref, Particle p) = 0;
 
@@ -53,6 +58,10 @@ class OctreeNodeInterface {
    */
   virtual void appendAllLeafBoxes(std::vector<std::pair<std::array<double, 3>, std::array<double, 3>>> &boxes) = 0;
 
+  /**
+   * Put all leaves below this subtree into a given list.
+   * @param leaves A reference to the vector that should contain pointers to the leaves
+   */
   virtual void appendAllLeaves(std::vector<OctreeLeafNode<Particle> *> &leaves) = 0;
 
   /**
@@ -65,6 +74,12 @@ class OctreeNodeInterface {
    */
   virtual unsigned int getNumParticles() = 0;
 
+  /**
+   * Get a child node of this node (if there are children) given a specific octant using the spacial structure of the
+   * stored children.
+   * @param O The octant
+   * @return A pointer to a child node
+   */
   virtual OctreeNodeInterface<Particle> *SON(Octant O) = 0;
 
   /**
@@ -196,6 +211,12 @@ class OctreeNodeInterface {
     return result;
   }
 
+  /**
+   * Find a node (via the pointer structure) that is of equal size of the current node's bounding box, according to the
+   * Samet paper. This function searches along a face.
+   * @param I The face in which direction the search should find a node
+   * @return An octree node
+   */
   OctreeNodeInterface<Particle> *EQ_FACE_NEIGHBOR(Face I) {
     OctreeNodeInterface<Particle> *param, *P = this;
     if (ADJ(I, SONTYPE(P))) {
@@ -206,6 +227,12 @@ class OctreeNodeInterface {
     return param->SON(REFLECT(I, SONTYPE(P)));
   }
 
+  /**
+   * Find a node (via the pointer structure) that is of equal size of the current node's bounding box, according to the
+   * Samet paper. This function searches along an edge.
+   * @param I The edge in which direction the search should find a node
+   * @return An octree node
+   */
   OctreeNodeInterface<Particle> *EQ_EDGE_NEIGHBOR(Edge I) {
     OctreeNodeInterface<Particle> *param, *P = this;
     if (ADJ(I, SONTYPE(P))) {
@@ -218,6 +245,12 @@ class OctreeNodeInterface {
     return param->SON(REFLECT(I, SONTYPE(P)));
   }
 
+  /**
+   * Find a node (via the pointer structure) that is of equal size of the current node's bounding box, according to the
+   * Samet paper. This function searches along a vertex.
+   * @param I The face in which direction the search should find a node
+   * @return An octree node
+   */
   OctreeNodeInterface<Particle> *EQ_VERTEX_NEIGHBOR(Vertex I) {
     OctreeNodeInterface<Particle> *param, *P = this;
     if (ADJ(I, SONTYPE(P))) {
@@ -232,14 +265,40 @@ class OctreeNodeInterface {
     return param->SON(REFLECT(I, SONTYPE(P)));
   }
 
+  /**
+   * Find a node (via the pointer structure) that is of greater than or equal to the size of the current node's bounding
+   * box, according to the Samet paper. This function searches along a face.
+   * @param I The face in which direction the search should find a node
+   * @return An octree node
+   */
   OctreeNodeInterface<Particle> *GTEQ_FACE_NEIGHBOR(Face I);
+
+  /**
+   * Find a node (via the pointer structure) that is of greater than or equal to the size of the current node's bounding
+   * box, according to the Samet paper. This function searches along an edge.
+   * @param I The edge in which direction the search should find a node
+   * @return An octree node
+   */
   OctreeNodeInterface<Particle> *GTEQ_EDGE_NEIGHBOR(Edge I);
+
+  /**
+   * Find a node (via the pointer structure) that is of greater than or equal to the size of the current node's bounding
+   * box, according to the Samet paper. This function searches along a vertex.
+   * @param I The vertex in which direction the search should find a node
+   * @return An octree node
+   */
   OctreeNodeInterface<Particle> *GTEQ_VERTEX_NEIGHBOR(Vertex I);
 
+  /**
+   * Find all leaf nodes along a list of given directions.
+   * @param directions A list of allowed directions for traversal.
+   * @return A list of leaf nodes
+   */
   std::vector<OctreeNodeInterface<Particle> *> getLeavesFromDirections(std::vector<Vertex> directions) {
     std::vector<OctreeNodeInterface<Particle> *> result;
     // TODO: Make this virtual and handled by the concrete subclasses
     if (hasChildren()) {
+      // Only take the children that are allowed (i.e. those which are in the given directions list)
       for (auto d : directions) {
         int childIndex = vertexToIndex(d);
         auto child = getChild(childIndex);
@@ -252,6 +311,11 @@ class OctreeNodeInterface {
     return result;
   }
 
+  /**
+   * This function combines all required functions when traversing down a subtree of the octree and finding all leaves.
+   * @param direction The "original" direction. The leaves will be found along the opposite direction.
+   * @return A list of leaf nodes
+   */
   std::vector<OctreeNodeInterface<Particle> *> getNeighborLeaves(Any direction) {
     auto opposite = getOppositeDirection(direction);
     auto directions = getAllowedDirections(opposite);
@@ -259,17 +323,39 @@ class OctreeNodeInterface {
     return neighborLeaves;
   }
 
+  /**
+   * Set the minimum coordinate of the enclosing box.
+   * @param boxMin A point in 3D space
+   */
   void setBoxMin(std::array<double, 3> boxMin) { _boxMin = boxMin; }
+
+  /**
+   * Set the maximum coordinate of the enclosing box.
+   * @param boxMin A point in 3D space
+   */
   void setBoxMax(std::array<double, 3> boxMax) { _boxMax = boxMax; }
+
+  /**
+   * Get the minimum coordinate of the enclosing box.
+   * @return A point in 3D space
+   */
   std::array<double, 3> getBoxMin() { return _boxMin; }
+
+  /**
+   * Get the maximum coordinate of the enclosing box.
+   * @return A point in 3D space
+   */
   std::array<double, 3> getBoxMax() { return _boxMax; }
 
+  /**
+   * Get the parent node of this node.
+   * @return A pointer to the parent, can be nullptr.
+   */
   OctreeNodeInterface<Particle> *getParent() { return _parent; }
 
  protected:
   /**
    * Check if this is not the root node.
-   *
    * @return true iff there does not exist a parent for this node.
    */
   bool hasParent() { return _parent != nullptr; }
@@ -287,9 +373,15 @@ class OctreeNodeInterface {
   /**
    * The max coordinate of the enclosed volume.
    */
-  std::array<double, 3>_boxMax;
+  std::array<double, 3> _boxMax;
 };
 
+/**
+ * Check if a node is an inner node.
+ * @tparam Particle The particle type used in this container
+ * @param node A pointer to a node
+ * @return true if the node has children, false otherwise.
+ */
 template <class Particle>
 inline bool GRAY(OctreeNodeInterface<Particle> *node) {
   // According to Samet: "All non-leaf nodes are said to be GRAY"
