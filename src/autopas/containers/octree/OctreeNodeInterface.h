@@ -442,7 +442,7 @@ static Octant SONTYPE(OctreeNodeInterface<Particle> *node) {
         break;
       }
     }
-    if(result != OOO) {
+    if(result == OOO) {
       throw std::runtime_error("[OctreeNodeInterface.h] Unable to determine SONTYPE");
     }
   }
