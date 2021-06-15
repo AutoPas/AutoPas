@@ -85,6 +85,10 @@ class OTNaiveTraversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
 
     // Get neighboring cells for each leaf
     for (OctreeLeafNode<Particle> *leaf : leaves) {
+      // Process cell itself
+      _cellFunctor.processCell(*leaf);
+
+      // Process connection to all neighbors
       auto uniqueNeighboringLeaves = leaf->getNeighborLeaves();
       for(OctreeLeafNode<Particle> *neighborLeaf : uniqueNeighboringLeaves) {
         if(!neighborLeaf->alreadyProcessed(leaf)) {
@@ -93,9 +97,7 @@ class OTNaiveTraversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
           }
 
           // Execute the cell functor
-          OctreeLeafNode<Particle> &leafRef = *leaf;
-          OctreeLeafNode<Particle> &neighborLeafRef = *neighborLeaf;
-          _cellFunctor.processCellPair(leafRef, neighborLeafRef);
+          _cellFunctor.processCellPair(*leaf, *neighborLeaf);
 
           // Mark the pair as processed
           leaf->markAlreadyProcessed(neighborLeaf);
@@ -115,10 +117,7 @@ class OTNaiveTraversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  internal::CellFunctor<Particle, ParticleCell, PairwiseFunctor, dataLayout, useNewton3, true> _cellFunctor;
-  /*internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
-                        true>
-      _cellFunctor;*/
+  internal::CellFunctor<Particle, ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false> _cellFunctor;
 
   /**
    * Data Layout Converter to be used with this traversal
