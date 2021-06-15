@@ -139,18 +139,33 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
     leaves.push_back(this);
   }
 
+  /**
+   * Clear the list that contains all neighbor nodes that have already been processed.
+   */
   void clearAlreadyProcessedList() {
     _alreadyProcessed.clear();
   }
 
+  /**
+   * Check if a node has already been processed.
+   * @param other A pointer to another node
+   * @return True if the other node is in the already processed list
+   */
   bool alreadyProcessed(OctreeLeafNode<Particle> *other) {
     return std::find(_alreadyProcessed.begin(), _alreadyProcessed.end(), other) != _alreadyProcessed.end();
   }
 
+  /**
+   * Put a neighbor in the already processed list.
+   * @param other The node to put in
+   */
   void markAlreadyProcessed(OctreeLeafNode<Particle> *other) {
     _alreadyProcessed.push_back(other);
   }
  private:
+  /**
+   * The list that contains the neighbors that have already been processed in one traversal run.
+   */
   std::vector<OctreeLeafNode<Particle> *> _alreadyProcessed;
 };
 }  // namespace autopas
