@@ -74,6 +74,10 @@ class OTNaiveTraversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
    * @note This function expects a vector of exactly two cells. First cell is the main region, second is halo.
    */
   void traverseParticlePairs() override {
+    // TODO(johannes): If the dataLayout is SoA, there needs to be a special buffer inside the iterated ParticleCells
+    //  that is not initialized by default. Find out why this is the case and initialize it.
+    //  LinkedCells uses an if constexpr check to see whether the code is using SoA or AoS.
+
     // Gather all leaves
     std::vector<OctreeLeafNode<Particle> *> leaves;
     auto *wrapper = dynamic_cast<OctreeNodeWrapper<Particle> *>(&(*_cells)[0]);
@@ -90,19 +94,15 @@ class OTNaiveTraversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
 
       // Process connection to all neighbors
       auto uniqueNeighboringLeaves = leaf->getNeighborLeaves();
-      for(OctreeLeafNode<Particle> *neighborLeaf : uniqueNeighboringLeaves) {
-        if(!neighborLeaf->alreadyProcessed(leaf)) {
-          if(leaf->alreadyProcessed(neighborLeaf)) {
-            throw std::runtime_error("[OTNaiveTraversal.h] Other leaf should not have been processed already.");
-          }
-
+      for (OctreeLeafNode<Particle> *neighborLeaf : uniqueNeighboringLeaves) {
+        // TODO(johannes): Is this check still required if we are using newton3.
+        //if (!leaf->alreadyProcessed(neighborLeaf)) {
           // Execute the cell functor
           _cellFunctor.processCellPair(*leaf, *neighborLeaf);
 
-          // Mark the pair as processed
-          leaf->markAlreadyProcessed(neighborLeaf);
-          neighborLeaf->markAlreadyProcessed(leaf);
-        }
+          // Mark the neighbor as processed in the leaf
+        //  leaf->markAlreadyProcessed(neighborLeaf);
+        //}
       }
     }
   }
@@ -114,6 +114,8 @@ class OTNaiveTraversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
   void setCells(std::vector<OctreeNodeWrapper<Particle>> *cells) override { _cells = cells; }
 
  private:
+  // TODO(johannes): Can we use the newton3 optimization at all if we process the cells without the "alreadyProcessed"
+  //  nodes?
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
