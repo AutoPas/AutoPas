@@ -10,6 +10,7 @@
 
 #include "autopas/containers/octree/Octree.h"
 #include "autopas/containers/octree/OctreeDirection.h"
+#include "autopas/containers/octree/OctreeNodeInterface.h"
 #include "autopas/particles/Particle.h"
 
 TEST_F(OctreeTest, testDummy) {
@@ -216,7 +217,7 @@ static void leavesToJSON(std::vector<autopas::OctreeLeafNode<autopas::ParticleFP
         auto neighbor = leaf->GTEQ_FACE_NEIGHBOR(*face);
         if (neighbor) {
           auto neighborLeaves = neighbor->getNeighborLeaves(*face);
-          for(auto neighborLeaf : neighborLeaves) {
+          for (auto neighborLeaf : neighborLeaves) {
             if (!first) {
               fprintf(out, ", ");
             }
@@ -247,7 +248,7 @@ static void leavesToJSON(std::vector<autopas::OctreeLeafNode<autopas::ParticleFP
         auto neighbor = leaf->GTEQ_EDGE_NEIGHBOR(*edge);
         if (neighbor) {
           auto neighborLeaves = neighbor->getNeighborLeaves(*edge);
-          for(auto neighborLeaf : neighborLeaves) {
+          for (auto neighborLeaf : neighborLeaves) {
             if (!first) {
               fprintf(out, ", ");
             }
@@ -279,7 +280,7 @@ static void leavesToJSON(std::vector<autopas::OctreeLeafNode<autopas::ParticleFP
         if (neighbor) {
           auto neighborLeaves = neighbor->getNeighborLeaves(*vertex);
 
-          for(auto neighborLeaf : neighborLeaves) {
+          for (auto neighborLeaf : neighborLeaves) {
             if (!first) {
               fprintf(out, ", ");
             }
@@ -290,7 +291,7 @@ static void leavesToJSON(std::vector<autopas::OctreeLeafNode<autopas::ParticleFP
       }
 
       fprintf(out, "]}");
-      if(leafIndex < (leaves.size() - 1)) {
+      if (leafIndex < (leaves.size() - 1)) {
         fprintf(out, ",");
       }
       fprintf(out, "\n");
@@ -456,7 +457,7 @@ TEST_F(OctreeTest, testNeighborLocator) {
 
         auto neighborLeaves = neighbor->getNeighborLeaves(*face);
 
-        for(auto neighborLeaf : neighborLeaves) {
+        for (auto neighborLeaf : neighborLeaves) {
           ASSERT_NE(neighborLeaf, nullptr);
           verifyFaceNeighbor(*face, leaf, neighborLeaf);
         }
@@ -489,4 +490,14 @@ TEST_F(OctreeTest, testNeighborLocator) {
 
     ++leafIndex;
   }
+}
+
+/**
+ * Check if the getEnclosedVolumeWith function works as expected
+ */
+TEST_F(OctreeTest, testOverlapVolume) {
+  using namespace autopas;
+  ASSERT_DOUBLE_EQ(OctreeNodeInterface<ParticleFP64>::getEnclosedVolumeWith({0, 0, 0}, {1, 1, 1}, {1, 0, 0}, {2, 1, 1}), 0);
+  ASSERT_DOUBLE_EQ(OctreeNodeInterface<ParticleFP64>::getEnclosedVolumeWith({0, 0, 0}, {1, 1, 1}, {0, 0, 0}, {1, 1, 1}), 1);
+  ASSERT_DOUBLE_EQ(OctreeNodeInterface<ParticleFP64>::getEnclosedVolumeWith({0, 0, 0}, {1, 1, 1}, {0.5, 0.5, 0.5}, {1, 1, 1}), 0.5*0.5*0.5);
 }

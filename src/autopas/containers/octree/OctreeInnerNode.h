@@ -202,6 +202,18 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
     }
   }
 
+  std::set<OctreeNodeInterface<Particle> *> getLeavesInRange(std::array<double, 3> min,
+                                                             std::array<double, 3> max) override {
+    std::set<OctreeNodeInterface<Particle> *> result;
+    for(auto &child : _children) {
+      if(child->getEnclosedVolumeWith(min, max)) {
+        auto leaves = child->getLeavesInRange(min, max);
+        result.insert(leaves.begin(), leaves.end());
+      }
+    }
+    return result;
+  }
+
  private:
   /**
    * Each inner node of an octree can contain exactly 8 children.

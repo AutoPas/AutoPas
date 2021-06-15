@@ -131,20 +131,23 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
     return {this};
   }
 
-  OctreeNodeInterface<Particle> *SON(Octant O) override {
-    throw std::runtime_error("Unable to get SON of leaf node");
-  }
+  OctreeNodeInterface<Particle> *SON(Octant O) override { throw std::runtime_error("Unable to get SON of leaf node"); }
 
-  void appendAllLeaves(std::vector<OctreeLeafNode<Particle> *> &leaves) override {
-    leaves.push_back(this);
+  void appendAllLeaves(std::vector<OctreeLeafNode<Particle> *> &leaves) override { leaves.push_back(this); }
+
+  std::set<OctreeNodeInterface<Particle> *> getLeavesInRange(std::array<double, 3> min,
+                                                             std::array<double, 3> max) override {
+    // TODO(johannes): Check what counts as zero
+    if(this->getEnclosedVolumeWith(min, max) < 0.0001f) {
+      throw std::runtime_error("[OctreeLeafNode.h] The given region does not overlap with this leaf");
+    }
+    return {this};
   }
 
   /**
    * Clear the list that contains all neighbor nodes that have already been processed.
    */
-  void clearAlreadyProcessedList() {
-    _alreadyProcessed.clear();
-  }
+  void clearAlreadyProcessedList() { _alreadyProcessed.clear(); }
 
   /**
    * Check if a node has already been processed.
@@ -159,9 +162,8 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
    * Put a neighbor in the already processed list.
    * @param other The node to put in
    */
-  void markAlreadyProcessed(OctreeLeafNode<Particle> *other) {
-    _alreadyProcessed.push_back(other);
-  }
+  void markAlreadyProcessed(OctreeLeafNode<Particle> *other) { _alreadyProcessed.push_back(other); }
+
  private:
   /**
    * The list that contains the neighbors that have already been processed in one traversal run.

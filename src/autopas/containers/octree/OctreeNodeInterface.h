@@ -7,8 +7,8 @@
 #pragma once
 
 #include <array>
-#include <vector>
 #include <set>
+#include <vector>
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/octree/OctreeDirection.h"
@@ -97,6 +97,15 @@ class OctreeNodeInterface {
    */
   virtual OctreeNodeInterface<Particle> *getChild(int index) = 0;
 
+  /**
+   * Find all leaves below this subtree that are in the given range.
+   * @param min The minimum coordinate in 3D space of the query area
+   * @param max The maximum coordinate in 3D space of the query area
+   * @return A set of all leaf nodes that are in the query region
+   */
+  virtual std::set<OctreeNodeInterface<Particle> *> getLeavesInRange(std::array<double, 3> min,
+                                                                     std::array<double, 3> max) = 0;
+
 #if 0
   virtual std::optional<OctreeNodeInterface<Particle> *> getGreaterParentAlongAxis(
       int axis, int dir, OctreeNodeInterface<Particle> *embedded) = 0;
@@ -173,7 +182,6 @@ class OctreeNodeInterface {
 
   /**
    * Check if the volume enclosed by two boxes a and b is nonzero on a specific axis.
-   *
    * @param axis An axis index (0, 1 or 2)
    * @param aMin The minimum coordinate of a's volume
    * @param aMax The maximum coordinate of a's volume
@@ -190,7 +198,6 @@ class OctreeNodeInterface {
 
   /**
    * Check if an octree node's box encloses volume with another octree node's box on a specific axis.
-   *
    * @param axis An axis index (0, 1 or 2)
    * @param other The octree node to check against.
    * @return true iff the enclosed volume is greater than zero, false if the enclosed volume is equal to zero.
@@ -211,6 +218,35 @@ class OctreeNodeInterface {
       result &= (this->_boxMin[d] <= otherMax[d]) && (this->_boxMax[d] >= otherMin[d]);
     }
     return result;
+  }
+
+  static double getEnclosedVolumeWith(std::array<double, 3> aMin, std::array<double, 3> aMax,
+                                      std::array<double, 3> bMin, std::array<double, 3> bMax) {
+      auto product = 1.0;
+      int count = 0;
+      for (auto d = 0; d < 3; ++d) {
+          auto minOnAxis = std::max(aMin[d], bMin[d]);
+          auto maxOnAxis = std::min(aMax[d], bMax[d]);
+          auto dim = (maxOnAxis - minOnAxis);
+          if(dim > 0) {
+            ++count;
+          } else {
+            break;
+          }
+          product *= dim;
+      }
+      auto result = count == 3 ? product : 0;
+      return result;
+  }
+
+  /**
+   * Calculate the overlap volume between the node's axis aligned bounding box and the given box.
+   * @param otherMin The minimum coordinate of the other box
+   * @param otherMax The maximum coordinate of the other box
+   * @return The volume enclosed by the two boxes
+   */
+  double getEnclosedVolumeWith(std::array<double, 3> otherMin, std::array<double, 3> otherMax) {
+    return getEnclosedVolumeWith(this->getBoxMin(), this->getBoxMax(), otherMin, otherMax);
   }
 
   /**
@@ -442,7 +478,7 @@ static Octant SONTYPE(OctreeNodeInterface<Particle> *node) {
         break;
       }
     }
-    if(result == OOO) {
+    if (result == OOO) {
       throw std::runtime_error("[OctreeNodeInterface.h] Unable to determine SONTYPE");
     }
   }
