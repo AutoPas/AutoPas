@@ -8,7 +8,7 @@
 #include <array>
 #include <vector>
 
-#include "autopas/AutoPas.h"
+#include "autopas/AutoPasDecl.h"
 
 /**
  * This namespace implements functions for periodic boundaries using AutoPas.

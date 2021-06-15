@@ -10,6 +10,7 @@
 
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ParticleTypeTrait.h"
+#include "autopas/utils/inBox.h"
 
 namespace autopasTools::generators {
 /**
