@@ -10,8 +10,6 @@ target_include_directories(md-flexible PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 include(autopas_yaml-cpp)
 
-option(AUTOPAS_INCLUDE_MPI "Links MPI libraries to the target. This is required if you want to use MPI." OFF)
-
 if (AUTOPAS_INTERNODE_TUNING OR AUTOPAS_INCLUDE_MPI)
     message(STATUS "AUTOPAS_INTERNODE_TUNING set, searching for mpi to link against md-flexible ...")
     find_package(MPI)

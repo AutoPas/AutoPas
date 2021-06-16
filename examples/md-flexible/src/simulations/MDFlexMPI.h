@@ -5,8 +5,6 @@
  */
 #pragma once
 
-#include <mpi.h>
-
 #include "MDFlexSimulation.h"
 #include "src/domainDecomposition/RegularGrid.h"
 
@@ -29,7 +27,7 @@ class MDFlexMPI : public MDFlexSimulation {
    * Runs the simulation.
    */
   void run() override;
-  
+
   /**
    * Initializes the domain decomposition for this simulation.
    */

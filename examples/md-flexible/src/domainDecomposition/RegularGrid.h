@@ -10,7 +10,7 @@
 
 #include "DomainDecomposition.h"
 #include "autopas/AutoPas.h"
-#include "mpi.h"
+#include "autopas/utils/WrapMPI.h"
 #include "src/TypeDefinitions.h"
 
 /**
@@ -157,7 +157,7 @@ class RegularGrid final : public DomainDecomposition {
   /**
    * The MPI communicator containing all processes which own a subdomain in this decomposition.
    */
-  MPI_Comm _communicator;
+  autopas::AutoPas_MPI_Comm _communicator;
 
   /**
    * Stores the halo width.
@@ -194,7 +194,7 @@ class RegularGrid final : public DomainDecomposition {
   /**
    * A temporary buffer used for MPI send requests.
    */
-  std::vector<MPI_Request> _sendRequests;
+  std::vector<autopas::AutoPas_MPI_Request> _sendRequests;
 
   /**
    * A temporary buffer for data which is sent by MPI_Send.
