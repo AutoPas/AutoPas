@@ -50,38 +50,41 @@ class OTNaiveTraversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::ot_naive; }
 
-  [[nodiscard]] bool isApplicable() const override {
-    return true;
-  }
+  [[nodiscard]] bool isApplicable() const override { return true; }
 
   [[nodiscard]] bool getUseNewton3() const override { return useNewton3; };
 
   [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; };
 
-  void initTraversal() override { printf("Johannes' OTNaiveTraversal::initTraversal\n"); }
+  void initTraversal() override {
+    // Gather all leaves
+    auto *wrapper = dynamic_cast<OctreeNodeWrapper<Particle> *>(&(*_cells)[0]);
+    wrapper->appendAllLeaves(_leaves);
 
-  void endTraversal() override { printf("Johannes' OTNaiveTraversal::endTraversal\n"); }
+    // Preprocess all leaves
+    for (OctreeLeafNode<Particle> *leaf : _leaves) {
+      leaf->clearAlreadyProcessedList();
+      _dataLayoutConverter.loadDataLayout(*leaf);
+    }
+  }
+
+  void endTraversal() override {
+    // Postprocess all leaves
+    for (OctreeLeafNode<Particle> *leaf : _leaves) {
+      _dataLayoutConverter.storeDataLayout(*leaf);
+    }
+
+    // Remove the cached leaves
+    _leaves.clear();
+  }
 
   /**
    * @copydoc TraversalInterface::traverseParticlePairs()
    * @note This function expects a vector of exactly two cells. First cell is the main region, second is halo.
    */
   void traverseParticlePairs() override {
-    // TODO(johannes): If the dataLayout is SoA, there needs to be a special buffer inside the iterated ParticleCells
-    //  that is not initialized by default. Find out why this is the case and initialize it.
-    //  LinkedCells uses an if constexpr check to see whether the code is using SoA or AoS.
-
-    // Gather all leaves
-    std::vector<OctreeLeafNode<Particle> *> leaves;
-    auto *wrapper = dynamic_cast<OctreeNodeWrapper<Particle> *>(&(*_cells)[0]);
-    wrapper->appendAllLeaves(leaves);
-
-    for (OctreeLeafNode<Particle> *leaf : leaves) {
-      leaf->clearAlreadyProcessedList();
-    }
-
     // Get neighboring cells for each leaf
-    for (OctreeLeafNode<Particle> *leaf : leaves) {
+    for (OctreeLeafNode<Particle> *leaf : _leaves) {
       // Process cell itself
       _cellFunctor.processCell(*leaf);
 
@@ -128,6 +131,12 @@ class OTNaiveTraversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
   utils::DataLayoutConverter<PairwiseFunctor, dataLayout> _dataLayoutConverter;
 
   std::vector<OctreeNodeWrapper<Particle>> *_cells;
+
+  /**
+   * A list of all leaves in the octree
+   * TODO: Include the halo octree
+   */
+  std::vector<OctreeLeafNode<Particle> *> _leaves;
 };
 
 }  // namespace autopas
