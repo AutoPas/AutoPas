@@ -95,14 +95,22 @@ class OTNaiveTraversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
       // Process connection to all neighbors
       auto uniqueNeighboringLeaves = leaf->getNeighborLeaves();
       for (OctreeLeafNode<Particle> *neighborLeaf : uniqueNeighboringLeaves) {
-        // TODO(johannes): Is this check still required if we are using newton3.
-        //if (!leaf->alreadyProcessed(neighborLeaf)) {
+        // TODO(johannes): Is this check still required if we are using newton3 (and compare to bidirectional).
+        bool shouldProcessLeafPair = true;
+        if constexpr (useNewton3) {
+          shouldProcessLeafPair = !leaf->alreadyProcessed(neighborLeaf) && !neighborLeaf->alreadyProcessed(leaf);
+        }
+
+        if (shouldProcessLeafPair) {
           // Execute the cell functor
           _cellFunctor.processCellPair(*leaf, *neighborLeaf);
 
-          // Mark the neighbor as processed in the leaf
-        //  leaf->markAlreadyProcessed(neighborLeaf);
-        //}
+          if constexpr (useNewton3) {
+            // Mark the neighbor as processed in the leaf
+            leaf->markAlreadyProcessed(neighborLeaf);
+            neighborLeaf->markAlreadyProcessed(leaf);
+          }
+        }
       }
     }
   }
