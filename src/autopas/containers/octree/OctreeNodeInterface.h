@@ -220,6 +220,14 @@ class OctreeNodeInterface {
     return result;
   }
 
+  /**
+   * Get the enclosed volume between two boxes a and b.
+   * @param aMin The minimum coordinate of box a
+   * @param aMax The maximum coordinate of box b
+   * @param bMin The minimum coordinate of box a
+   * @param bMax The maximum coordinate of box b
+   * @return The enclosed volume or zero if the boxes do not overlap
+   */
   static double getEnclosedVolumeWith(std::array<double, 3> aMin, std::array<double, 3> aMax,
                                       std::array<double, 3> bMin, std::array<double, 3> bMax) {
       auto product = 1.0;
