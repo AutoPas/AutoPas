@@ -1,9 +1,9 @@
 /**
- * @file MDFlexSimulation.cpp
+ * @file Simulation.cpp
  * @author J. Körner
  * @date 07.04.2021
  */
-#include "MDFlexSimulation.h"
+#include "Simulation.h"
 
 #include <sys/ioctl.h>
 #include <unistd.h>
@@ -11,12 +11,28 @@
 #include <fstream>
 #include <iostream>
 
-#include "../Thermostat.h"
-#include "../TimeDiscretization.h"
-#include "../configuration/MDFlexConfig.h"
+#include "Thermostat.h"
+#include "TimeDiscretization.h"
+#include "configuration/MDFlexConfig.h"
 #include "src/ParticleSerializationTools.h"
 
-MDFlexSimulation::~MDFlexSimulation() {
+Simulation::Simulation(int dimensionCount, int argc, char **argv): _argc(argc), _argv(argv) {
+  _timers.total.start();
+  _timers.initialization.start();
+
+  _configuration = std::make_shared<MDFlexConfig>(argc, argv);
+  _createVtkFiles = not _configuration->vtkFileName.value.empty();
+  _maximumIterationDigits = std::to_string(_configuration->iterations.value).size();
+  _vtkWriter = std::make_shared<ParallelVtkWriter>(_configuration->vtkFileName.value, "output");
+
+  initializeDomainDecomposition(dimensionCount);
+
+  initializeAutoPasContainer();
+
+  _timers.initialization.stop();
+}
+
+Simulation::~Simulation() {
   if (_configuration->dontCreateEndConfig.value) {
     std::ofstream configFileEnd("MDFlex_end_" + autopas::utils::Timer::getDateStamp() + ".yaml");
     if (configFileEnd.is_open()) {
@@ -32,23 +48,54 @@ MDFlexSimulation::~MDFlexSimulation() {
   }
 }
 
-void MDFlexSimulation::initialize(int dimensionCount, int argc, char **argv) {
-  _timers.total.start();
-  _timers.initialization.start();
+void Simulation::initializeDomainDecomposition(int &dimensionCount) {
+  std::vector<double> boxMin(_configuration->boxMin.value.begin(), _configuration->boxMin.value.end());
+  std::vector<double> boxMax(_configuration->boxMax.value.begin(), _configuration->boxMax.value.end());
 
-  _argc = argc;
-  _argv = argv;
+  _domainDecomposition = std::make_shared<RegularGrid>(dimensionCount, boxMin, boxMax, _configuration->cutoff.value,
+    _configuration->verletSkinRadius.value);
 
-  _configuration = std::make_shared<MDFlexConfig>(argc, argv);
-
-  initializeDomainDecomposition(dimensionCount);
-
-  initializeAutoPasContainer();
-
-  _timers.initialization.stop();
+  std::vector<double> localBoxMin = _domainDecomposition->getLocalBoxMin();
+  std::vector<double> localBoxMax = _domainDecomposition->getLocalBoxMax();
+  for (int i = 0; i < localBoxMin.size(); ++i) {
+    _configuration->boxMin.value[i] = localBoxMin[i];
+    _configuration->boxMax.value[i] = localBoxMax[i];
+  }
 }
 
-std::tuple<size_t, bool> MDFlexSimulation::estimateNumberOfIterations() const {
+void Simulation::run() {
+  // @todo: make variable part of MDFlexConfig, needs to be equal to verletRebuildFrequency.
+  int iterationsPerSuperstep = 10;
+  int remainingIterations = _configuration->iterations.value;
+  for (int i = 0; i < _configuration->iterations.value; i += iterationsPerSuperstep) {
+    executeSuperstep(iterationsPerSuperstep);
+  }
+}
+
+void Simulation::updateParticles() {
+  updatePositions();
+  updateForces();
+  updateVelocities();
+  updateThermostat();
+}
+
+void Simulation::executeSuperstep(const int iterationsPerSuperstep) {
+  _domainDecomposition->exchangeHaloParticles(_autoPasContainer);
+
+  for (int i = 0; i < iterationsPerSuperstep; ++i) {
+    if (_createVtkFiles and _iteration % _configuration->vtkWriteFrequency.value == 0) {
+      _vtkWriter->recordTimestep(_iteration, _maximumIterationDigits, *_autoPasContainer);
+    }
+
+    ++_iteration;
+    updateParticles();
+  }
+
+  _domainDecomposition->exchangeMigratingParticles(_autoPasContainer);
+}
+
+
+std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
   if (_configuration->tuningPhases.value > 0) {
     // @TODO: this can be improved by considering the tuning strategy
     // This is just a randomly guessed number but seems to fit roughly for default settings.
@@ -66,12 +113,12 @@ std::tuple<size_t, bool> MDFlexSimulation::estimateNumberOfIterations() const {
   }
 }
 
-bool MDFlexSimulation::needsMoreIterations() {
+bool Simulation::needsMoreIterations() {
   return _iteration < _configuration->iterations.value or
          _numTuningPhasesCompleted < _configuration->tuningPhases.value;
 }
 
-void MDFlexSimulation::printProgress(size_t iterationProgress, size_t maxIterations, bool maxIsPrecise) {
+void Simulation::printProgress(size_t iterationProgress, size_t maxIterations, bool maxIsPrecise) {
   // percentage of iterations complete
   double fractionDone = static_cast<double>(iterationProgress) / maxIterations;
 
@@ -118,7 +165,7 @@ void MDFlexSimulation::printProgress(size_t iterationProgress, size_t maxIterati
   std::cout << progressbar.str() << info.str() << std::flush;
 }
 
-void MDFlexSimulation::writeVTKFile() {
+void Simulation::writeVTKFile() {
   _timers.vtk.start();
 
   std::string fileBaseName = _configuration->vtkFileName.value;
@@ -188,7 +235,7 @@ void MDFlexSimulation::writeVTKFile() {
   _timers.vtk.stop();
 }
 
-std::string MDFlexSimulation::getMPISuffix() {
+std::string Simulation::getMPISuffix() {
   std::string suffix;
 #ifdef AUTOPAS_INTERNODE_TUNING
   int rank;
@@ -200,7 +247,7 @@ std::string MDFlexSimulation::getMPISuffix() {
   return suffix;
 }
 
-std::string MDFlexSimulation::timerToString(const std::string &name, long timeNS, size_t numberWidth, long maxTime) {
+std::string Simulation::timerToString(const std::string &name, long timeNS, size_t numberWidth, long maxTime) {
   // only print timers that were actually used
   if (timeNS == 0) {
     return "";
@@ -219,12 +266,12 @@ std::string MDFlexSimulation::timerToString(const std::string &name, long timeNS
   return ss.str();
 }
 
-void MDFlexSimulation::updatePositions() {
+void Simulation::updatePositions() {
   TimeDiscretization::calculatePositions(*_autoPasContainer, *(_configuration->getParticlePropertiesLibrary()),
                                          _configuration->deltaT.value);
 }
 
-void MDFlexSimulation::updateForces() {
+void Simulation::updateForces() {
   _timers.forceUpdateTotal.start();
 
   bool isTuningIteration = false;
@@ -263,8 +310,7 @@ void MDFlexSimulation::updateForces() {
   _timers.forceUpdateTotal.stop();
 }
 
-void MDFlexSimulation::updateVelocities() {
-  // only do time step related stuff when there actually is time-stepping
+void Simulation::updateVelocities() {
   const double deltaT = _configuration->deltaT.value;
   ParticlePropertiesLibraryType particlePropertiesLibrary = *(_configuration->getParticlePropertiesLibrary());
 
@@ -273,13 +319,19 @@ void MDFlexSimulation::updateVelocities() {
 
   if (deltaT != 0) {
     _timers.velocityUpdate.start();
-    TimeDiscretization::calculateVelocities(*_autoPasContainer, particlePropertiesLibrary, deltaT, useThermostat,
-                                            _configuration->targetTemperature.value);
+    TimeDiscretization::calculateVelocities(*_autoPasContainer, particlePropertiesLibrary, deltaT);
     _timers.velocityUpdate.stop();
   }
 }
 
-void MDFlexSimulation::initializeAutoPasContainer() {
+void Simulation::updateThermostat() {
+  if (_configuration->useThermostat.value and (_iteration % _configuration->thermostatInterval.value) == 0) {
+    Thermostat::apply(*_autoPasContainer, *(_configuration->getParticlePropertiesLibrary()),
+                      _configuration->targetTemperature.value, _configuration->deltaTemp.value);
+  }
+}
+
+void Simulation::initializeAutoPasContainer() {
   if (_configuration->logFileName.value.empty()) {
     _outputStream = &std::cout;
   } else {
@@ -326,8 +378,7 @@ void MDFlexSimulation::initializeAutoPasContainer() {
 
   for (auto &particle : _configuration->getParticles()) {
     ParticleType autoPasParticle;
-    if (getDomainDecomposition()->isInsideLocalDomain(
-            {particle.position[0], particle.position[1], particle.position[2]})) {
+    if (_domainDecomposition->isInsideLocalDomain(particle.position)) {
       autoPasParticle = ParticleSerializationTools::convertParticleAttributesToParticle(particle);
       _autoPasContainer->addParticle(autoPasParticle);
     }

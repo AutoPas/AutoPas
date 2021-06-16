@@ -8,9 +8,9 @@
 #include <list>
 #include <memory>
 
-#include "autopas/AutoPas.h"
 #include "DomainDecomposition.h"
-#include "mpi.h"
+#include "autopas/AutoPas.h"
+#include "autopas/utils/WrapMPI.h"
 #include "src/TypeDefinitions.h"
 
 /**
@@ -20,28 +20,28 @@
 class RegularGrid final : public DomainDecomposition {
  public:
   /**
-  * Constructor.
-  * @param argc The argument count passed to the main function.
-  * @param argv The argument vector passed to the main function.
-  * @param dimensionCount The number of dimensions for this domain decomposition.
-  * @param globalBoxMin The minimum coordinates of the global domain.
-  * @param globalBoxMax The maximum coordinates of the global domain.
-  */
+   * Constructor.
+   * @param argc The argument count passed to the main function.
+   * @param argv The argument vector passed to the main function.
+   * @param dimensionCount The number of dimensions for this domain decomposition.
+   * @param globalBoxMin The minimum coordinates of the global domain.
+   * @param globalBoxMax The maximum coordinates of the global domain.
+   */
   RegularGrid(const int &dimensionCount, const std::vector<double> &globalBoxMin,
-              const std::vector<double> &globalBoxMax);
+              const std::vector<double> &globalBoxMax, const double &cutoffWidth, const double &skinWidth);
 
   /**
    * Destructor.
    */
-  ~RegularGrid();
+  virtual ~RegularGrid();
 
-  /** 
+  /**
    * Type for the AutoPas container
    */
   using SharedAutoPasContainer = std::shared_ptr<autopas::AutoPas<ParticleType>>;
 
   /**
-   * Used to update the domain to the current topology. 
+   * Used to update the domain to the current topology.
    * Currently does nothing
    */
   void update() override;
@@ -72,14 +72,25 @@ class RegularGrid final : public DomainDecomposition {
   std::vector<double> getLocalBoxMax() override { return _localBoxMax; }
 
   /**
+   * Returns this domain's index / the processor's rank.
+   */
+  int getDomainIndex() { return _domainIndex; }
+
+  /**
+   * Returns the number of domains in each dimension
+   */
+  std::vector<int> getDecomposition() { return _decomposition; }
+
+  /**
    * Checks if the provided coordinates are located in the local domain.
    */
   bool isInsideLocalDomain(const std::vector<double> &coordinates) override;
 
   /**
-   * Converts a domain id to the domain index, i.e. rank of the local processor.
+   * Checks if the provided coordinates are located in the local domain.
+   * Instead of a vector, the coordinates are of type std::array<double, 3> to be compatible with AutoPas.
    */
-  int convertIdToIndex(const std::vector<int> &domainIndex);
+  bool isInsideLocalDomain(const std::array<double, 3> &coordinates) override;
 
   /**
    * Exchanges halo particles with all neighbours of the provided AutoPasContainer.
@@ -94,38 +105,9 @@ class RegularGrid final : public DomainDecomposition {
   void exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer);
 
   /**
-   * Received data which has been sent by a specifig neighbour of this domain.
-   * @param neighbour The neighbour where the data originates from.
-   * @param dataBuffer The buffer where the received data will be stored.
-   */
-  void receiveDataFromNeighbour(const int &neighbour, std::vector<char> &dataBuffer);
-
-  /**
-   * Sends data to a specific neighbour of this domain.
-   * @param sendBuffer The buffer which will be sent to the neighbour.
-   * @param neighbour The neighbour to which the data will be sent.
-   */
-  void sendDataToNeighbour(std::vector<char> sendBuffer, const int &neighbour);
-
-  /**
-   * Synchronizes all processes which own a domain in this decomposition.
-   */
-  void synchronizeDomains();
-
-  /** 
    * Waits for all send requests to be finished.
    */
   void waitForSendRequests();
-
-  /**
-   * Returns this domain's index / the processor's rank.
-   */
-  int getDomainIndex() { return _domainIndex; }
-
-  /** 
-   * Returns the number of domains in each dimension
-   */
-   std::vector<int> getDecomposition() { return _decomposition; }
 
  private:
   /**
@@ -156,7 +138,17 @@ class RegularGrid final : public DomainDecomposition {
   /**
    * The MPI communicator containing all processes which own a subdomain in this decomposition.
    */
-  MPI_Comm _communicator;
+  autopas::AutoPas_MPI_Comm _communicator;
+
+  /**
+   * Stores the domain cutoff width.
+   */
+  double _cutoffWidth;
+
+  /**
+   * Stores the domain skin width.
+   */
+  double _skinWidth;
 
   /**
    * The index of the current processor's domain.
@@ -186,20 +178,29 @@ class RegularGrid final : public DomainDecomposition {
   std::vector<double> _localBoxMax;
 
   /**
+   * Stores the maximum and minimum coordinates of all halo boxes. 
+   * The halo box coordinates differ only at a single index from the local box coordinates. Therfore it is
+   * enough to store 2 values for each neighbour.
+   * The values for the left neighbour in the nth dimension are starting at index 4 * n.
+   * The values for the right neighbour in the nth dimension are starting at index 4 * n + 2.
+   */
+  std::vector<double> _haloBoxes;
+
+  /**
    * A temporary buffer used for MPI send requests.
    */
-  std::vector<MPI_Request> _sendRequests;
+  std::vector<autopas::AutoPas_MPI_Request> _sendRequests;
 
   /**
    * A temporary buffer for data which is sent by MPI_Send.
    */
   std::vector<std::vector<char>> _sendBuffers;
 
-  /**
-   * Initializes the domain decomposition.
-   * This needs to be called before initialzieMPICommunicator.
-   */
-  void initializeDecomposition();
+	/**
+	 * Initializes the decomposition of the domain.
+	 * This needs to be called before initializeMPICommunicator.
+	 */
+	void initializeDecomposition();
 
   /**
    * Initializes the MPI communicator.
@@ -236,6 +237,11 @@ class RegularGrid final : public DomainDecomposition {
   void updateLocalBox();
 
   /**
+   * Updates the boxes used to identify halo particles.
+   */
+  void updateHaloBoxes();
+
+  /**
    * Sends particles of type ParticleType to a receiver.
    * @param particles The particles to be sent to the receiver.
    * @param receiver The recipient of the particels.
@@ -248,4 +254,23 @@ class RegularGrid final : public DomainDecomposition {
    * @param source The sender id/rank.
    */
   void receiveParticles(std::vector<ParticleType> &receivedParticles, int &source);
+
+  /**
+   * Received data which has been sent by a specifig neighbour of this domain.
+   * @param neighbour The neighbour where the data originates from.
+   * @param dataBuffer The buffer where the received data will be stored.
+   */
+  void receiveDataFromNeighbour(const int &neighbour, std::vector<char> &dataBuffer);
+
+  /**
+   * Sends data to a specific neighbour of this domain.
+   * @param sendBuffer The buffer which will be sent to the neighbour.
+   * @param neighbour The neighbour to which the data will be sent.
+   */
+  void sendDataToNeighbour(std::vector<char> sendBuffer, const int &neighbour);
+
+  /**
+   * Converts a domain id to the domain index, i.e. rank of the local processor.
+   */
+  int convertIdToIndex(const std::vector<int> &domainIndex);
 };

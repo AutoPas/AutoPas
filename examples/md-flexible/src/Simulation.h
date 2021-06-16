@@ -1,5 +1,5 @@
 /**
- * @file MDFlexSimulation.h
+ * @file Simulation.h
  * @author J. Körner
  * @date 07.04.2021
  */
@@ -10,46 +10,48 @@
 #include <string>
 #include <tuple>
 
-#include "../TypeDefinitions.h"
-#include "../configuration/MDFlexConfig.h"
-#include "../domainDecomposition/DomainDecomposition.h"
 #include "autopas/AutoPas.h"
+#include "src/configuration/MDFlexConfig.h"
+#include "src/domainDecomposition/DomainDecomposition.h"
+#include "src/domainDecomposition/RegularGrid.h"
+#include "src/ParallelVtkWriter.h"
+#include "src/TypeDefinitions.h"
 
 /**
  * Handles minimal initialization requriements for MD-Flexible simulations.
  * Derivce this class to create custom simulations.
  */
-class MDFlexSimulation {
+class Simulation {
  public:
-  /**
-   * Runs the simulation
-   */
-  virtual void run() = 0;
-  
-  /**
-   * Initializes the domain decomposition for this simulation.
-   */
-  virtual void initializeDomainDecomposition(int &dimensionCount) = 0;
-
-  /**
-   * Returns the domain decomposition for this simulation.
-   */
-  virtual DomainDecomposition *getDomainDecomposition() = 0;
-
- protected:
   /**
    * Initializes the simulation on a domain according to the arguments passed to the main function.
    * @param dimensionCount The number of dimensions in the simulation domain.
    * @param argc The number of arguments passed in argv.
    * @param argv The arguments passed to the program.
    */
-  MDFlexSimulation() = default;
+  Simulation(int dimensionCount, int argc, char **argv);
 
   /**
    * Destructor.
    */
-  virtual ~MDFlexSimulation();
+  virtual ~Simulation();
 
+  /**
+   * Runs the simulation
+   */
+  void run();
+
+  /**
+   * Initializes the domain decomposition for this simulation.
+   */
+  void initializeDomainDecomposition(int &dimensionCount);
+
+  /**
+   * Returns the domain decomposition for this simulation.
+   */
+  DomainDecomposition *getDomainDecomposition();
+
+ protected:
   /**
    * Stores the argument count passed to the constructor for later reuse.
    */
@@ -59,7 +61,7 @@ class MDFlexSimulation {
    * Stores the arguments passed to the constructor for later reuse.
    */
   char **_argv;
-  
+
   /**
    * Stores the configuration used for the simulation.
    * The configuration is defined by the .yaml file passed to the application  with the '--yaml-file' argument.
@@ -132,10 +134,32 @@ class MDFlexSimulation {
   } _timers;
 
   /**
+   * Parallel VTK file writer.
+   */
+  std::shared_ptr<ParallelVtkWriter> _vtkWriter;
+
+  /**
+   * Defines, if vtk files should be created or not.
+   */
+  bool _createVtkFiles;
+
+  /**
+   * Stores the maximum digits an iteration index can have.
+   */
+  int _maximumIterationDigits;
+
+  /**
    * Initializes the simulation.
-   * Call this function in the constructor of derived classes.
+   * This function needs to be called in the constructor of the deriving class, because initializeDomainDecomposition
+   * can not be called by the constructor of Simulation, because it is a pure virtual function.
    */
   void initialize(int dimensionCount, int argc, char **argv);
+
+  /**
+   * Executes a superstep of the simulation.
+   */
+  void executeSuperstep(const int iterationsPerSuperstep);
+
 
   /**
    * Checks if there are any iterations left to compute.
@@ -179,12 +203,41 @@ class MDFlexSimulation {
 
   /**
    * Updates the velocities of particles in the local AutoPas container.
+   */ void updateVelocities();
+  /**
+   * Updates the thermostat of for the local domain.
+   * @todo The thermostat shoud act globally and therefore needs to be communicated to all processes.
    */
-  void updateVelocities();
+  void updateThermostat();
 
  private:
+  /**
+   * This simulation's domain decomposition.
+   */
+  std::shared_ptr<RegularGrid> _domainDecomposition;
+
   /**
    * Initializes the local AutoPas container.
    */
   void initializeAutoPasContainer();
+
+  /**
+   * Updates the particles in the local AutoPas container.
+   */
+  void updateParticles();
+
+  /**
+   * Sends particles of type ParticleType to a specific receiver.
+   * @param particles The particles to be sent to the receiver.
+   * @param receiver The recipient of the particles.
+   */
+  void sendParticles(std::vector<ParticleType> &particles, int &receiver);
+
+  /**
+   * Receives particels of type ParticleType which have been send by a specific sender.
+   * @param receivedParticels The container where the received particles will be stored.
+   * @param source The sender of the particles.
+   */
+  void receiveParticles(std::vector<ParticleType> &receivedParticles, int &source);
+
 };

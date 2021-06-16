@@ -86,21 +86,25 @@ class CubeGauss : public Object {
     return output.str();
   }
 
-  /** 
+  /**
    * Generates the particles based on the configuration of the cube gauss object provided in the yaml file.
    * @param particles The container where the new particles will be stored.
    */
   void generate(std::vector<ParticleAttributes> &particles) const override {
     ParticleAttributes particle = getDummyParticle(particles.size());
+
     std::default_random_engine generator(42);
     std::array<std::normal_distribution<double>, 3> distributions = {
         std::normal_distribution<double>{_distributionMean[0], _distributionStdDev[0]},
         std::normal_distribution<double>{_distributionMean[1], _distributionStdDev[1]},
         std::normal_distribution<double>{_distributionMean[2], _distributionStdDev[2]}};
+
     for (int i = 0; i < _numParticles; ++i) {
-      particle.id++;
-      particle.position = {distributions[0](generator), distributions[1](generator), distributions[2](generator)};
+      particle.position[0] = _bottomLeftCorner[0] + distributions[0](generator);
+      particle.position[1] = _bottomLeftCorner[1] + distributions[1](generator);
+      particle.position[2] = _bottomLeftCorner[2] + distributions[2](generator);
       particles.push_back(particle);
+      particle.id++;
     }
   }
 
@@ -114,7 +118,7 @@ class CubeGauss : public Object {
    * The length of the box in each dimension.
    */
   std::array<double, 3> _boxLength;
-  
+
   /**
    * The mean value for the gaussian distribution of the particles.
    */

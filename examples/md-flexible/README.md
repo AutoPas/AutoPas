@@ -26,6 +26,11 @@ make mdFlexTests
 ctest -R mdFlexTests
 ```
 
+To run Tests with MPI enabled:
+```bash
+mpiexec -np 4 ./examples/md-flexible/tests/mdFlexTests
+```
+
 ## Usage
 
 When starting md-flexible without any arguments a default simulation with

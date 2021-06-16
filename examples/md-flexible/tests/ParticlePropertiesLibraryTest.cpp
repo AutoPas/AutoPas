@@ -73,10 +73,12 @@ TEST_F(ParticlePropertiesLibraryTest, mixedShiftTestUpot) {
 }
 
 TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitialization) {
-  std::string arguments =
-      "md-flexible --yaml-filename " + std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml";
+  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
+                                        std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml"};
 
-  MDFlexConfig configuration(3, reinterpret_cast<char **>(arguments.data()));
+  char *argv[3] = {arguments[0].data(), arguments[1].data(), arguments[2].data()};
+
+  MDFlexConfig configuration(3, argv);
 
   EXPECT_EQ(configuration.getParticlePropertiesLibrary()->getMass(0), 1.0);
   EXPECT_EQ(configuration.getParticlePropertiesLibrary()->get24Epsilon(0), 24.0);
@@ -90,11 +92,4 @@ TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitialization) {
   EXPECT_EQ(configuration.getParticlePropertiesLibrary()->getMass(3), 4.0);
   EXPECT_EQ(configuration.getParticlePropertiesLibrary()->get24Epsilon(3), 96.0);
   EXPECT_EQ(configuration.getParticlePropertiesLibrary()->getSigmaSquare(3), 16.0);
-}
-
-TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitializationDefault) {
-  ParticlePropertiesLibrary particlePropertiesLibrary(3);
-  EXPECT_EQ(particlePropertiesLibrary.getMass(0), 1.0);
-  EXPECT_EQ(particlePropertiesLibrary.get24Epsilon(0), 24.0);
-  EXPECT_EQ(particlePropertiesLibrary.getSigmaSquare(0), 1.0);
 }

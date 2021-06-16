@@ -4,10 +4,8 @@
  * @author F. Gratl
  */
 
-#include "mpi.h"
-
-#include "simulations/MDFlexMPI.h"
-#include "simulations/MDFlexSingleRank.h"
+#include "autopas/utils/WrapMPI.h"
+#include "Simulation.h"
 
 /**
  * The main function for md-flexible.
@@ -16,10 +14,10 @@
  * @return
  */
 int main(int argc, char **argv) {
-  MPI_Init(&argc, &argv);
-  MDFlexMPI simulation(3, argc, argv);
+  autopas::AutoPas_MPI_Init(&argc, &argv);
+  Simulation simulation(3, argc, argv);
   simulation.run();
 
-  MPI_Finalize();
+  autopas::AutoPas_MPI_Finalize();
   return EXIT_SUCCESS;
 }
