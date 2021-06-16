@@ -40,6 +40,9 @@ void MDFlexSimulation::initialize(int dimensionCount, int argc, char **argv) {
   _argv = argv;
 
   _configuration = std::make_shared<MDFlexConfig>(argc, argv);
+  _createVtkFiles = not _configuration->vtkFileName.value.empty();
+  _maximumIterationDigits = std::to_string(_configuration->iterations.value).size();
+  _vtkWriter = std::make_shared<ParallelVtkWriter>(_configuration->vtkFileName.value, "output");
 
   initializeDomainDecomposition(dimensionCount);
 
@@ -264,7 +267,6 @@ void MDFlexSimulation::updateForces() {
 }
 
 void MDFlexSimulation::updateVelocities() {
-  // only do time step related stuff when there actually is time-stepping
   const double deltaT = _configuration->deltaT.value;
   ParticlePropertiesLibraryType particlePropertiesLibrary = *(_configuration->getParticlePropertiesLibrary());
 
@@ -331,9 +333,10 @@ void MDFlexSimulation::initializeAutoPasContainer() {
   }
 
   for (auto &particle : _configuration->getParticles()) {
-    if (getDomainDecomposition()->isInsideLocalDomain(
-            {particle.position[0], particle.position[1], particle.position[2]})) {
-      _autoPasContainer->addParticle(ParticleSerializationTools::convertParticleAttributesToParticle(particle));
+    ParticleType autoPasParticle;
+    if (getDomainDecomposition()->isInsideLocalDomain(particle.position)) {
+      autoPasParticle = ParticleSerializationTools::convertParticleAttributesToParticle(particle);
+      _autoPasContainer->addParticle(autoPasParticle);
     }
   }
 }

@@ -10,10 +10,11 @@
 #include <string>
 #include <tuple>
 
-#include "../TypeDefinitions.h"
-#include "../configuration/MDFlexConfig.h"
-#include "../domainDecomposition/DomainDecomposition.h"
 #include "autopas/AutoPas.h"
+#include "src/configuration/MDFlexConfig.h"
+#include "src/domainDecomposition/DomainDecomposition.h"
+#include "src/ParallelVtkWriter.h"
+#include "src/TypeDefinitions.h"
 
 /**
  * Handles minimal initialization requriements for MD-Flexible simulations.
@@ -130,6 +131,21 @@ class MDFlexSimulation {
     autopas::utils::Timer thermostat;
     autopas::utils::Timer boundaries;
   } _timers;
+
+  /**
+   * Parallel VTK file writer.
+   */
+  std::shared_ptr<ParallelVtkWriter> _vtkWriter;
+
+  /**
+   * Defines, if vtk files should be created or not.
+   */
+  bool _createVtkFiles;
+
+  /**
+   * Stores the maximum digits an iteration index can have.
+   */
+  int _maximumIterationDigits;
 
   /**
    * Initializes the simulation.

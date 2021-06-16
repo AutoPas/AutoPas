@@ -6,6 +6,7 @@
 #pragma once
 
 #include <vector>
+#include <array>
 
 /**
  * An interface for domain decompositions which can be used in the simulation
@@ -51,4 +52,10 @@ class DomainDecomposition {
    * Checks if provided cooridnates are within the local domain.
    */
   virtual bool isInsideLocalDomain(const std::vector<double> &coordinates) = 0;
+
+  /**
+   * Checks if the provided coordinates are located in the local domain.
+   * Instead of a vector, the coordinates are of type std::array<double, 3> to be compatible with AutoPas.
+   */
+  virtual bool isInsideLocalDomain(const std::array<double, 3> &coordinates) = 0;
 };

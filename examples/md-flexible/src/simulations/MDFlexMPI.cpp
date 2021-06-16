@@ -14,10 +14,9 @@
 MDFlexMPI::MDFlexMPI(int dimensionCount, int argc, char **argv) { this->initialize(dimensionCount, argc, argv); }
 
 void MDFlexMPI::run() {
-  // @todo: make variable part of MDFlexConfig
+  // @todo: make variable part of MDFlexConfig, needs to be equal to verletRebuildFrequency.
   int iterationsPerSuperstep = 10;
   int remainingIterations = _configuration->iterations.value;
-
   for (int i = 0; i < _configuration->iterations.value; i += iterationsPerSuperstep) {
     executeSuperstep(iterationsPerSuperstep);
   }
@@ -26,7 +25,12 @@ void MDFlexMPI::run() {
 void MDFlexMPI::executeSuperstep(const int iterationsPerSuperstep) {
   _domainDecomposition->exchangeHaloParticles(_autoPasContainer);
 
-  for (int i = 1; i < iterationsPerSuperstep; ++i) {
+  for (int i = 0; i < iterationsPerSuperstep; ++i) {
+    if (_createVtkFiles and _iteration % _configuration->vtkWriteFrequency.value == 0) {
+      _vtkWriter->recordTimestep(_iteration, _maximumIterationDigits, *_autoPasContainer);
+    }
+
+    ++_iteration;
     updateParticles();
   }
 
@@ -44,9 +48,8 @@ void MDFlexMPI::initializeDomainDecomposition(int &dimensionCount) {
   std::vector<double> boxMin(_configuration->boxMin.value.begin(), _configuration->boxMin.value.end());
   std::vector<double> boxMax(_configuration->boxMax.value.begin(), _configuration->boxMax.value.end());
 
-  _domainDecomposition = std::make_shared<RegularGrid>(dimensionCount, boxMin, boxMax);
-
-  _domainDecomposition->setHaloWidth(_configuration->cutoff.value + _configuration->verletSkinRadius.value);
+  _domainDecomposition = std::make_shared<RegularGrid>(dimensionCount, boxMin, boxMax, _configuration->cutoff.value,
+    _configuration->verletSkinRadius.value);
 
   std::vector<double> localBoxMin = _domainDecomposition->getLocalBoxMin();
   std::vector<double> localBoxMax = _domainDecomposition->getLocalBoxMax();
