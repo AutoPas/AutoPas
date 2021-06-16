@@ -105,8 +105,8 @@ class OctreeNodeInterface {
    * @param max The maximum coordinate in 3D space of the query area
    * @return A set of all leaf nodes that are in the query region
    */
-  virtual std::set<OctreeNodeInterface<Particle> *> getLeavesInRange(std::array<double, 3> min,
-                                                                     std::array<double, 3> max) = 0;
+  virtual std::set<OctreeLeafNode<Particle> *> getLeavesInRange(std::array<double, 3> min,
+                                                                std::array<double, 3> max) = 0;
 
 #if 0
   virtual std::optional<OctreeNodeInterface<Particle> *> getGreaterParentAlongAxis(

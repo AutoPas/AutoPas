@@ -135,8 +135,7 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
 
   void appendAllLeaves(std::vector<OctreeLeafNode<Particle> *> &leaves) override { leaves.push_back(this); }
 
-  std::set<OctreeNodeInterface<Particle> *> getLeavesInRange(std::array<double, 3> min,
-                                                             std::array<double, 3> max) override {
+  std::set<OctreeLeafNode<Particle> *> getLeavesInRange(std::array<double, 3> min, std::array<double, 3> max) override {
     // TODO(johannes): Check what counts as zero
     if (this->getEnclosedVolumeWith(min, max) < 0.0001f) {
       throw std::runtime_error("[OctreeLeafNode.h] The given region does not overlap with this leaf");

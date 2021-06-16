@@ -204,9 +204,8 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
     }
   }
 
-  std::set<OctreeNodeInterface<Particle> *> getLeavesInRange(std::array<double, 3> min,
-                                                             std::array<double, 3> max) override {
-    std::set<OctreeNodeInterface<Particle> *> result;
+  std::set<OctreeLeafNode<Particle> *> getLeavesInRange(std::array<double, 3> min, std::array<double, 3> max) override {
+    std::set<OctreeLeafNode<Particle> *> result;
     for (auto &child : _children) {
       if (child->getEnclosedVolumeWith(min, max)) {
         auto leaves = child->getLeavesInRange(min, max);
