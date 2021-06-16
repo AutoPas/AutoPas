@@ -42,7 +42,7 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param cutoff cutoff (this is enough for the octree traversal, please don't use the interaction length here.)
    */
-  explicit OTC01Traversal(PairwiseFunctor *pairwiseFunctor, double cutoff)
+  explicit OTC01Traversal(PairwiseFunctor *pairwiseFunctor, double cutoff, double interactionLength)
       : CellPairTraversal<ParticleCell>({2, 1, 1}),
         _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/),
         _dataLayoutConverter(pairwiseFunctor) {}
@@ -82,14 +82,28 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
    * @note This function expects a vector of exactly two cells. First cell is the main region, second is halo.
    */
   void traverseParticlePairs() override {
+    auto *haloWrapper = dynamic_cast<OctreeNodeWrapper<Particle> *>(&(*_cells)[1]);
+
     // Get neighboring cells for each leaf
     for (OctreeLeafNode<Particle> *leaf : _leaves) {
       // Process cell itself
       _cellFunctor.processCell(*leaf);
 
-      // Process connection to all neighbors
+      // Process connection to all neighbors in this octree
       auto uniqueNeighboringLeaves = leaf->getNeighborLeaves();
       for (OctreeLeafNode<Particle> *neighborLeaf : uniqueNeighboringLeaves) {
+        _cellFunctor.processCellPair(*leaf, *neighborLeaf);
+      }
+
+      // Process particles in halo cell that are in range
+      auto leafCenter = utils::ArrayMath::add(leaf->getBoxMin(), leaf->getBoxMax());
+      leafCenter = utils::ArrayMath::mulScalar(leafCenter, 0.5);
+
+      auto min = utils::ArrayMath::subScalar(leafCenter, _interactionLength);
+      auto max = utils::ArrayMath::addScalar(leafCenter, _interactionLength);
+      auto haloNeighbors = haloWrapper->getLeavesInRange(min, max);
+
+      for (OctreeLeafNode<Particle> *neighborLeaf : haloNeighbors) {
         _cellFunctor.processCellPair(*leaf, *neighborLeaf);
       }
     }
@@ -119,6 +133,11 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
    * TODO: Include the halo octree
    */
   std::vector<OctreeLeafNode<Particle> *> _leaves;
+
+  /**
+   * The interaction length is used for finding neighbors
+   */
+  double _interactionLength;
 };
 
 }  // namespace autopas

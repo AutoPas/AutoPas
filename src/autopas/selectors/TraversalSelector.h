@@ -265,7 +265,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
     case TraversalOption::ot_c01: {
       using ParticleType = typename ParticleCell::ParticleType;
       return std::make_unique<OTC01Traversal<ParticleType, PairwiseFunctor, dataLayout, useNewton3>>(
-          &pairwiseFunctor, info.interactionLength);
+          &pairwiseFunctor, info.interactionLength, info.interactionLength);
     }
   }
   autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known type!", traversalType.to_string());
