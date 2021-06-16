@@ -11,11 +11,11 @@
 #include <tuple>
 
 #include "autopas/AutoPas.h"
+#include "src/ParallelVtkWriter.h"
+#include "src/TypeDefinitions.h"
 #include "src/configuration/MDFlexConfig.h"
 #include "src/domainDecomposition/DomainDecomposition.h"
 #include "src/domainDecomposition/RegularGrid.h"
-#include "src/ParallelVtkWriter.h"
-#include "src/TypeDefinitions.h"
 
 /**
  * Handles minimal initialization requriements for MD-Flexible simulations.
@@ -155,7 +155,6 @@ class Simulation {
    */
   void executeSuperstep(const int iterationsPerSuperstep);
 
-
   /**
    * Checks if there are any iterations left to compute.
    */
@@ -198,7 +197,8 @@ class Simulation {
 
   /**
    * Updates the velocities of particles in the local AutoPas container.
-   */ void updateVelocities();
+   */
+  void updateVelocities();
   /**
    * Updates the thermostat of for the local domain.
    * @todo The thermostat shoud act globally and therefore needs to be communicated to all processes.
@@ -234,5 +234,4 @@ class Simulation {
    * @param source The sender of the particles.
    */
   void receiveParticles(std::vector<ParticleType> &receivedParticles, int &source);
-
 };

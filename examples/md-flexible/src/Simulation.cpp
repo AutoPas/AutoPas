@@ -16,7 +16,8 @@
 #include "configuration/MDFlexConfig.h"
 #include "src/ParticleSerializationTools.h"
 
-Simulation::Simulation(const MDFlexConfig &configuration, RegularGrid &domainDecomposition, int argc, char **argv): _configuration(configuration), _domainDecomposition(domainDecomposition), _argc(argc), _argv(argv) {
+Simulation::Simulation(const MDFlexConfig &configuration, RegularGrid &domainDecomposition, int argc, char **argv)
+    : _configuration(configuration), _domainDecomposition(domainDecomposition), _argc(argc), _argv(argv) {
   _timers.total.start();
   _timers.initialization.start();
 
@@ -77,7 +78,6 @@ void Simulation::executeSuperstep(const int iterationsPerSuperstep) {
   _domainDecomposition.exchangeMigratingParticles(_autoPasContainer);
 }
 
-
 std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
   if (_configuration.tuningPhases.value > 0) {
     // @TODO: this can be improved by considering the tuning strategy
@@ -97,8 +97,7 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
 }
 
 bool Simulation::needsMoreIterations() {
-  return _iteration < _configuration.iterations.value or
-         _numTuningPhasesCompleted < _configuration.tuningPhases.value;
+  return _iteration < _configuration.iterations.value or _numTuningPhasesCompleted < _configuration.tuningPhases.value;
 }
 
 void Simulation::printProgress(size_t iterationProgress, size_t maxIterations, bool maxIsPrecise) {

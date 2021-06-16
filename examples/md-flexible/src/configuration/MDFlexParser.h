@@ -26,4 +26,4 @@ namespace MDFlexParser {
  */
 exitCodes parseInput(int argc, char **argv, MDFlexConfig &config);
 
-}
+}  // namespace MDFlexParser

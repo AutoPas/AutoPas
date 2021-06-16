@@ -4,8 +4,8 @@
  * @author F. Gratl
  */
 
-#include "autopas/utils/WrapMPI.h"
 #include "Simulation.h"
+#include "autopas/utils/WrapMPI.h"
 
 /**
  * The main function for md-flexible.
@@ -15,14 +15,14 @@
  */
 int main(int argc, char **argv) {
   autopas::AutoPas_MPI_Init(&argc, &argv);
-	
-	MDFlexConfig configuration(argc, argv);
+
+  MDFlexConfig configuration(argc, argv);
 
   std::vector<double> boxMin(configuration.boxMin.value.begin(), configuration.boxMin.value.end());
   std::vector<double> boxMax(configuration.boxMax.value.begin(), configuration.boxMax.value.end());
 
   RegularGrid domainDecomposition(3, boxMin, boxMax, configuration.cutoff.value, configuration.verletSkinRadius.value);
-	
+
   std::vector<double> localBoxMin = domainDecomposition.getLocalBoxMin();
   std::vector<double> localBoxMax = domainDecomposition.getLocalBoxMax();
 

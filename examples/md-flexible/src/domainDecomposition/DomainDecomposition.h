@@ -5,8 +5,8 @@
  */
 #pragma once
 
-#include <vector>
 #include <array>
+#include <vector>
 
 /**
  * An interface for domain decompositions which can be used in the simulation

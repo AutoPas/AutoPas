@@ -16,4 +16,4 @@ enum class exitCodes {
   helpFlagFound,
   completionsFlagFound,
 };
-}
+}  // namespace MDFlexParser

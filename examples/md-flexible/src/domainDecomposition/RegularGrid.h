@@ -178,7 +178,7 @@ class RegularGrid final : public DomainDecomposition {
   std::vector<double> _localBoxMax;
 
   /**
-   * Stores the maximum and minimum coordinates of all halo boxes. 
+   * Stores the maximum and minimum coordinates of all halo boxes.
    * The halo box coordinates differ only at a single index from the local box coordinates. Therfore it is
    * enough to store 2 values for each neighbour.
    * The values for the left neighbour in the nth dimension are starting at index 4 * n.
@@ -196,11 +196,11 @@ class RegularGrid final : public DomainDecomposition {
    */
   std::vector<std::vector<char>> _sendBuffers;
 
-	/**
-	 * Initializes the decomposition of the domain.
-	 * This needs to be called before initializeMPICommunicator.
-	 */
-	void initializeDecomposition();
+  /**
+   * Initializes the decomposition of the domain.
+   * This needs to be called before initializeMPICommunicator.
+   */
+  void initializeDecomposition();
 
   /**
    * Initializes the MPI communicator.

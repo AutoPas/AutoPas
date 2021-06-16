@@ -42,4 +42,4 @@ void deserializeParticleData(std::vector<char> &particlesData, std::vector<Parti
  * @return a particle of type MoleculeLJ<double>
  */
 ParticleType convertParticleAttributesToParticle(ParticleAttributes &attributes);
-}
+}  // namespace ParticleSerializationTools

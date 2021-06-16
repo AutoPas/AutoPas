@@ -91,7 +91,7 @@ class Sphere : public Object {
     }
   }
 
-  /** 
+  /**
    * Returns the total amount of particles which will be / have been generated.
    */
   [[nodiscard]] size_t getParticlesTotal() const override {

@@ -6,6 +6,7 @@
 #include "RegularGrid.h"
 
 #include <math.h>
+
 #include <algorithm>
 #include <functional>
 #include <numeric>
@@ -37,9 +38,8 @@ void calculatePrimeFactors(unsigned int number, std::list<unsigned int> &oPrimeF
 }  // namespace
 
 RegularGrid::RegularGrid(const int &dimensionCount, const std::vector<double> &globalBoxMin,
-              const std::vector<double> &globalBoxMax, const double &cutoffWidth, const double &skinWidth)
-              : _dimensionCount(dimensionCount), _cutoffWidth(cutoffWidth), _skinWidth(skinWidth) {
-
+                         const std::vector<double> &globalBoxMax, const double &cutoffWidth, const double &skinWidth)
+    : _dimensionCount(dimensionCount), _cutoffWidth(cutoffWidth), _skinWidth(skinWidth) {
   autopas::AutoPas_MPI_Comm_size(autopas::AUTOPAS_MPI_COMM_WORLD, &_subdomainCount);
 
   DomainTools::generateDecomposition(_subdomainCount, _dimensionCount, _decomposition);
@@ -54,8 +54,9 @@ RegularGrid::RegularGrid(const int &dimensionCount, const std::vector<double> &g
 
   initializeNeighbourIds();
 
-	std::cout << "Neighbours: " << autopas::utils::ArrayUtils::to_string(_neighbourDomainIndices) << std::endl;
-	std::cout << "LocalBox: " << autopas::utils::ArrayUtils::to_string(_localBoxMin) << ", " << autopas::utils::ArrayUtils::to_string(_localBoxMax) << std::endl;
+  std::cout << "Neighbours: " << autopas::utils::ArrayUtils::to_string(_neighbourDomainIndices) << std::endl;
+  std::cout << "LocalBox: " << autopas::utils::ArrayUtils::to_string(_localBoxMin) << ", "
+            << autopas::utils::ArrayUtils::to_string(_localBoxMax) << std::endl;
 }
 
 RegularGrid::~RegularGrid() {}
@@ -188,14 +189,13 @@ void RegularGrid::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer
     std::vector<ParticleType> haloParticles;
 
     if (leftNeighbour != _domainIndex && rightNeighbour != _domainIndex) {
-
       std::vector<ParticleType> particlesForLeftNeighbour;
       std::vector<ParticleType> particlesForRightNeighbour;
 
       std::array<double, 3> periodicShift;
       for (auto particle = autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
         double particlePosition = particle->getR()[i];
-        if (particlePosition >= _haloBoxes[4 * i] && particlePosition < _haloBoxes[4 * i + 1] ) {
+        if (particlePosition >= _haloBoxes[4 * i] && particlePosition < _haloBoxes[4 * i + 1]) {
           particlesForLeftNeighbour.push_back(*particle);
 
           if (_localBoxMin[i] == _globalBoxMin[i]) {
@@ -213,7 +213,7 @@ void RegularGrid::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer
 
           if (_localBoxMax[i] == _globalBoxMax[i]) {
             periodicShift = {0.0, 0.0, 0.0};
-            periodicShift[i] = - (_globalBoxMax[i] - _globalBoxMin[i]);
+            periodicShift[i] = -(_globalBoxMax[i] - _globalBoxMin[i]);
             particlesForRightNeighbour.back().addR(periodicShift);
           }
         }
@@ -250,12 +250,14 @@ void RegularGrid::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer
           }
         }
 
-        if (particlePosition > _haloBoxes[4 * nextDimensionIndex + 2] && particlePosition < _haloBoxes[4 * nextDimensionIndex + 3]) {
+        if (particlePosition > _haloBoxes[4 * nextDimensionIndex + 2] &&
+            particlePosition < _haloBoxes[4 * nextDimensionIndex + 3]) {
           particlesForRightNeighbour.push_back(particle);
 
           if (_localBoxMax[nextDimensionIndex] == _globalBoxMax[nextDimensionIndex]) {
             periodicShift = {0.0, 0.0, 0.0};
-            periodicShift[nextDimensionIndex] = - (_globalBoxMax[nextDimensionIndex] - _globalBoxMin[nextDimensionIndex]);
+            periodicShift[nextDimensionIndex] =
+                -(_globalBoxMax[nextDimensionIndex] - _globalBoxMin[nextDimensionIndex]);
             particlesForRightNeighbour.back().addR(periodicShift);
           }
         }
@@ -288,82 +290,79 @@ void RegularGrid::exchangeMigratingParticles(SharedAutoPasContainer &autoPasCont
     int leftNeighbour = _neighbourDomainIndices[(i * 2) % neighbourCount];
     int rightNeighbour = _neighbourDomainIndices[(i * 2 + 1) % neighbourCount];
 
-		std::vector<ParticleType> particlesForLeftNeighbour;
-		std::vector<ParticleType> particlesForRightNeighbour;
+    std::vector<ParticleType> particlesForLeftNeighbour;
+    std::vector<ParticleType> particlesForRightNeighbour;
 
-		std::array<double, 3> periodicShift;
+    std::array<double, 3> periodicShift;
 
-		for (const auto &particle : emigrants) {
-			double particlePosition = particle.getR()[i];
-			if (particlePosition < _localBoxMin[i]) {
-				particlesForLeftNeighbour.push_back(particle);
+    for (const auto &particle : emigrants) {
+      double particlePosition = particle.getR()[i];
+      if (particlePosition < _localBoxMin[i]) {
+        particlesForLeftNeighbour.push_back(particle);
 
-				if (_localBoxMin[i] == _globalBoxMin[i]) {
-					periodicShift = {0.0, 0.0, 0.0};
-					periodicShift[i] = _globalBoxMax[i] - _globalBoxMin[i];
-					particlesForLeftNeighbour.back().addR(periodicShift);
-				}
-			}
-			else if (particlePosition > _localBoxMax[i]) {
-				particlesForRightNeighbour.push_back(particle);
+        if (_localBoxMin[i] == _globalBoxMin[i]) {
+          periodicShift = {0.0, 0.0, 0.0};
+          periodicShift[i] = _globalBoxMax[i] - _globalBoxMin[i];
+          particlesForLeftNeighbour.back().addR(periodicShift);
+        }
+      } else if (particlePosition > _localBoxMax[i]) {
+        particlesForRightNeighbour.push_back(particle);
 
-				if (_localBoxMax[i] == _globalBoxMax[i]) {
-					periodicShift = {0.0, 0.0, 0.0};
-					periodicShift[i] = - (_globalBoxMax[i] - _globalBoxMin[i]);
-					particlesForRightNeighbour.back().addR(periodicShift);
-				}
-			}
-		}
+        if (_localBoxMax[i] == _globalBoxMax[i]) {
+          periodicShift = {0.0, 0.0, 0.0};
+          periodicShift[i] = -(_globalBoxMax[i] - _globalBoxMin[i]);
+          particlesForRightNeighbour.back().addR(periodicShift);
+        }
+      }
+    }
 
-		sendParticles(emigrants, leftNeighbour);
-		sendParticles(emigrants, rightNeighbour);
+    sendParticles(emigrants, leftNeighbour);
+    sendParticles(emigrants, rightNeighbour);
 
-		receiveParticles(immigrants, leftNeighbour);
-		receiveParticles(immigrants, rightNeighbour);
+    receiveParticles(immigrants, leftNeighbour);
+    receiveParticles(immigrants, rightNeighbour);
 
-		for (auto &particle : immigrants) {
-			if(isInsideLocalDomain(particle.getR())) {
-				if (particle.getID() == 4484) {
-					std::cout << "IsInsideLocalDomain" << std::endl;
-				}
-				autoPasContainer->addParticle(particle);
-			}
-			else {
-				migrants.push_back(particle);
-			}
-		}
+    for (auto &particle : immigrants) {
+      if (isInsideLocalDomain(particle.getR())) {
+        if (particle.getID() == 4484) {
+          std::cout << "IsInsideLocalDomain" << std::endl;
+        }
+        autoPasContainer->addParticle(particle);
+      } else {
+        migrants.push_back(particle);
+      }
+    }
 
-		immigrants.clear();
+    immigrants.clear();
 
-		waitForSendRequests();
-		
+    waitForSendRequests();
+
     leftNeighbour = _neighbourDomainIndices[(leftNeighbour + 2) % neighbourCount];
     rightNeighbour = _neighbourDomainIndices[(rightNeighbour + 2) % neighbourCount];
 
     particlesForLeftNeighbour.clear();
     particlesForRightNeighbour.clear();
 
-		for (const auto &particle : emigrants) {
-			double particlePosition = particle.getR()[i];
-			if (particlePosition < _localBoxMin[i]) {
-				particlesForLeftNeighbour.push_back(particle);
+    for (const auto &particle : emigrants) {
+      double particlePosition = particle.getR()[i];
+      if (particlePosition < _localBoxMin[i]) {
+        particlesForLeftNeighbour.push_back(particle);
 
-				if (_localBoxMin[i] == _globalBoxMin[i]) {
-					periodicShift = {0.0, 0.0, 0.0};
-					periodicShift[i] = _globalBoxMax[i] - _globalBoxMin[i];
-					particlesForLeftNeighbour.back().addR(periodicShift);
-				}
-			}
-			else if (particlePosition > _localBoxMax[i]) {
-				particlesForRightNeighbour.push_back(particle);
+        if (_localBoxMin[i] == _globalBoxMin[i]) {
+          periodicShift = {0.0, 0.0, 0.0};
+          periodicShift[i] = _globalBoxMax[i] - _globalBoxMin[i];
+          particlesForLeftNeighbour.back().addR(periodicShift);
+        }
+      } else if (particlePosition > _localBoxMax[i]) {
+        particlesForRightNeighbour.push_back(particle);
 
-				if (_localBoxMax[i] == _globalBoxMax[i]) {
-					periodicShift = {0.0, 0.0, 0.0};
-					periodicShift[i] = - (_globalBoxMax[i] - _globalBoxMin[i]);
-					particlesForRightNeighbour.back().addR(periodicShift);
-				}
-			}
-		}
+        if (_localBoxMax[i] == _globalBoxMax[i]) {
+          periodicShift = {0.0, 0.0, 0.0};
+          periodicShift[i] = -(_globalBoxMax[i] - _globalBoxMin[i]);
+          particlesForRightNeighbour.back().addR(periodicShift);
+        }
+      }
+    }
 
     int nextDimensionIndex = (i + 1) % dimensionCount;
 
@@ -374,7 +373,7 @@ void RegularGrid::exchangeMigratingParticles(SharedAutoPasContainer &autoPasCont
     receiveParticles(immigrants, rightNeighbour);
 
     for (auto &particle : immigrants) {
-      if(isInsideLocalDomain(particle.getR())) {
+      if (isInsideLocalDomain(particle.getR())) {
         autoPasContainer->addParticle(particle);
       }
     }
@@ -457,11 +456,11 @@ void RegularGrid::updateHaloBoxes() {
     int haloBoxesStartIndex = 4 * dimensionIndex;
 
     // Halo box values for left neighbour
-    _haloBoxes[haloBoxesStartIndex] = _localBoxMin[dimensionIndex] - _skinWidth; 
-    _haloBoxes[haloBoxesStartIndex + 1] = _localBoxMin[dimensionIndex] + _cutoffWidth + _skinWidth; 
+    _haloBoxes[haloBoxesStartIndex] = _localBoxMin[dimensionIndex] - _skinWidth;
+    _haloBoxes[haloBoxesStartIndex + 1] = _localBoxMin[dimensionIndex] + _cutoffWidth + _skinWidth;
 
     // Halo box values for left neighbour
-    _haloBoxes[haloBoxesStartIndex + 2] = _localBoxMax[dimensionIndex] - _cutoffWidth - _skinWidth; 
-    _haloBoxes[haloBoxesStartIndex + 3] = _localBoxMax[dimensionIndex] + _skinWidth; 
+    _haloBoxes[haloBoxesStartIndex + 2] = _localBoxMax[dimensionIndex] - _cutoffWidth - _skinWidth;
+    _haloBoxes[haloBoxesStartIndex + 3] = _localBoxMax[dimensionIndex] + _skinWidth;
   }
 }

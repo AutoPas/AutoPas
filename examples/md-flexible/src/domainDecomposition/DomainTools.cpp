@@ -20,7 +20,8 @@ bool isInsideDomain(const std::vector<double> &coordinates, std::vector<double> 
   return isInsideLocalDomain;
 }
 
-bool isInsideDomain(const std::array<double, 3> &coordinates, std::array<double, 3> &boxMin, std::array<double, 3> &boxMax) {
+bool isInsideDomain(const std::array<double, 3> &coordinates, std::array<double, 3> &boxMin,
+                    std::array<double, 3> &boxMax) {
   bool isInsideLocalDomain = true;
   for (int i = 0; i < coordinates.size(); ++i) {
     if (!isInsideLocalDomain) {
@@ -31,45 +32,45 @@ bool isInsideDomain(const std::array<double, 3> &coordinates, std::array<double,
   return isInsideLocalDomain;
 }
 
-double getDistanceToDomain(const std::vector<double> &coordinates, std::vector<double> &boxMin, std::vector<double> &boxMax) {
-  if ( coordinates.size() == boxMin.size() && coordinates.size() == boxMax.size()) {
+double getDistanceToDomain(const std::vector<double> &coordinates, std::vector<double> &boxMin,
+                           std::vector<double> &boxMax) {
+  if (coordinates.size() == boxMin.size() && coordinates.size() == boxMax.size()) {
     std::vector<double> differences(coordinates.size(), 0.0);
     for (int i = 0; i < coordinates.size(); ++i) {
-      if (coordinates[i] < boxMin[i]){
+      if (coordinates[i] < boxMin[i]) {
         differences[i] = boxMin[i] - coordinates[i];
-      }
-      else if (coordinates[i] > boxMax[i]) {
+      } else if (coordinates[i] > boxMax[i]) {
         differences[i] = coordinates[i] - boxMax[i];
       }
     }
-  
+
     double distance = 0.0;
     for (const auto &difference : differences) {
       distance += std::pow(difference, 2.0);
     }
-  
+
     return std::pow(distance, 1.0 / differences.size());
   }
   return -1;
 }
 
-double getDistanceToDomain(const std::array<double, 3> &coordinates, std::array<double, 3> &boxMin, std::array<double, 3> &boxMax) {
-  if ( coordinates.size() == boxMin.size() && coordinates.size() == boxMax.size()) {
+double getDistanceToDomain(const std::array<double, 3> &coordinates, std::array<double, 3> &boxMin,
+                           std::array<double, 3> &boxMax) {
+  if (coordinates.size() == boxMin.size() && coordinates.size() == boxMax.size()) {
     std::vector<double> differences(coordinates.size(), 0.0);
     for (int i = 0; i < coordinates.size(); ++i) {
-      if (coordinates[i] < boxMin[i]){
+      if (coordinates[i] < boxMin[i]) {
         differences[i] = boxMin[i] - coordinates[i];
-      }
-      else if (coordinates[i] > boxMax[i]) {
+      } else if (coordinates[i] > boxMax[i]) {
         differences[i] = coordinates[i] - boxMax[i];
       }
     }
-  
+
     double distance = 0.0;
     for (const auto &difference : differences) {
       distance += std::pow(difference, 2.0);
     }
-  
+
     return std::pow(distance, 1.0 / differences.size());
   }
   return -1;

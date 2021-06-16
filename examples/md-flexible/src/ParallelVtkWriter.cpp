@@ -14,28 +14,30 @@
 #include "autopas/utils/WrapMPI.h"
 
 ParallelVtkWriter::ParallelVtkWriter(const std::string &sessionName, const std::string &outputFolder)
-  : _sessionName(sessionName) {
+    : _sessionName(sessionName) {
   _mpiRank = 0;
   autopas::AutoPas_MPI_Comm_rank(autopas::AUTOPAS_MPI_COMM_WORLD, &_mpiRank);
 
   if (_mpiRank == 0) {
-     tryCreateSessionFolder(_sessionName, outputFolder);
+    tryCreateSessionFolder(_sessionName, outputFolder);
   }
 
   int sessionFolderPathLength = _sessionFolderPath.size();
   autopas::AutoPas_MPI_Bcast(&sessionFolderPathLength, 1, autopas::AUTOPAS_MPI_INT, 0, autopas::AUTOPAS_MPI_COMM_WORLD);
 
-  if (_mpiRank != 0){
+  if (_mpiRank != 0) {
     _sessionFolderPath.resize(sessionFolderPathLength);
   }
 
-  autopas::AutoPas_MPI_Bcast(_sessionFolderPath.data(), sessionFolderPathLength, autopas::AUTOPAS_MPI_CHAR, 0, autopas::AUTOPAS_MPI_COMM_WORLD);
+  autopas::AutoPas_MPI_Bcast(_sessionFolderPath.data(), sessionFolderPathLength, autopas::AUTOPAS_MPI_CHAR, 0,
+                             autopas::AUTOPAS_MPI_COMM_WORLD);
 }
 
-void ParallelVtkWriter::recordTimestep(const int &currentIteration, const int &maximumNumberOfDigitsInIteration, const autopas::AutoPas<ParticleType> &autoPasContainer){
+void ParallelVtkWriter::recordTimestep(const int &currentIteration, const int &maximumNumberOfDigitsInIteration,
+                                       const autopas::AutoPas<ParticleType> &autoPasContainer) {
   std::ostringstream timestepFileName;
-  timestepFileName << _sessionFolderPath << _sessionName <<  "_" << _mpiRank << "_" << std::setfill('0')
-    << std::setw(maximumNumberOfDigitsInIteration) << currentIteration << ".vtk";
+  timestepFileName << _sessionFolderPath << _sessionName << "_" << _mpiRank << "_" << std::setfill('0')
+                   << std::setw(maximumNumberOfDigitsInIteration) << currentIteration << ".vtk";
 
   std::ofstream timestepFile;
   timestepFile.open(timestepFileName.str(), std::ios::out | std::ios::binary);
@@ -45,15 +47,15 @@ void ParallelVtkWriter::recordTimestep(const int &currentIteration, const int &m
   }
 
   timestepFile << "# vtk DataFile Version 2.0\n"
-          << "Timestep\n"
-          << "ASCII\n";
+               << "Timestep\n"
+               << "ASCII\n";
 
   const auto numberOfParticles = autoPasContainer.getNumberOfParticles(autopas::IteratorBehavior::owned);
 
   // print positions
   timestepFile << "DATASET STRUCTURED_GRID\n"
-          << "DIMENSIONS 1 1 1\n"
-          << "POINTS " << numberOfParticles << " double\n";
+               << "DIMENSIONS 1 1 1\n"
+               << "POINTS " << numberOfParticles << " double\n";
 
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     auto pos = particle->getR();
@@ -97,28 +99,26 @@ void ParallelVtkWriter::recordTimestep(const int &currentIteration, const int &m
   timestepFile.close();
 }
 
-void ParallelVtkWriter::tryCreateSessionFolder(const std::string &name, std::string location){
+void ParallelVtkWriter::tryCreateSessionFolder(const std::string &name, std::string location) {
   time_t rawTime;
   time(&rawTime);
 
-  struct tm* timeInformation;
+  struct tm *timeInformation;
   timeInformation = localtime(&rawTime);
 
   char buffer[80];
-  strftime(buffer,sizeof(buffer),"%d%m%Y_%H%M%S",timeInformation);
+  strftime(buffer, sizeof(buffer), "%d%m%Y_%H%M%S", timeInformation);
   std::string timeString(buffer);
 
   _sessionFolderPath = location + "/" + name + "_" + timeString + "/";
   tryCreateFolder(name + "_" + timeString, location);
 }
 
-void ParallelVtkWriter::tryCreateFolder(const std::string &name, const std::string &location){
+void ParallelVtkWriter::tryCreateFolder(const std::string &name, const std::string &location) {
   try {
     std::filesystem::path newDirectoryPath(location + "/" + name);
     std::filesystem::create_directory(newDirectoryPath);
-  }
-  catch(std::filesystem::filesystem_error const& ex) {
+  } catch (std::filesystem::filesystem_error const &ex) {
     throw std::runtime_error("The output location " + location + " passed to ParallelVtkWriter is invalid");
   }
 }
-
