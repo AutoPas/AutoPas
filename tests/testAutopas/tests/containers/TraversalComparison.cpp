@@ -275,7 +275,7 @@ auto TraversalComparison::getTestParams() {
               for (double cellSizeFactor : {0.5, 1., 2.}) {
                 for (auto numHalo : {/*0ul,*/ 200ul}) {
                   for (bool slightMove : {true, false}) {
-                    for (bool globals : {true, false}) {
+                    for (bool globals : {true, /*false*/}) {
                       for (DeletionPosition particleDeletionPosition :
                            {DeletionPosition::never, /*DeletionPosition::beforeLists, DeletionPosition::afterLists,*/
                             DeletionPosition::beforeAndAfterLists}) {
