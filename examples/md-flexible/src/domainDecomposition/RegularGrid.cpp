@@ -39,7 +39,7 @@ RegularGrid::RegularGrid(const int &dimensionCount, const std::vector<double> &g
               const std::vector<double> &globalBoxMax, const double &cutoffWidth, const double &skinWidth)
               : _dimensionCount(dimensionCount), _cutoffWidth(cutoffWidth), _skinWidth(skinWidth) {
 
-  MPI_Comm_size(MPI_COMM_WORLD, &_subdomainCount);
+  autopas::AutoPas_MPI_Comm_size(autopas::AUTOPAS_MPI_COMM_WORLD, &_subdomainCount);
 
   initializeDecomposition();
 
@@ -52,9 +52,6 @@ RegularGrid::RegularGrid(const int &dimensionCount, const std::vector<double> &g
   initializeLocalBox();
 
   initializeNeighbourIds();
-
-  std::cout << "Rank: " << _domainIndex << ", NeighbourRanks: " << autopas::utils::ArrayUtils::to_string(_neighbourDomainIndices)
-            << std::endl;
 }
 
 RegularGrid::~RegularGrid() {}
@@ -86,16 +83,22 @@ void RegularGrid::initializeDecomposition() {
 
 void RegularGrid::initializeMPICommunicator() {
   std::vector<int> periods(_dimensionCount, 1);
-  MPI_Cart_create(MPI_COMM_WORLD, _dimensionCount, _decomposition.data(), periods.data(), true, &_communicator);
-  MPI_Comm_rank(_communicator, &_domainIndex);
+  autopas::AutoPas_MPI_Cart_create(autopas::AUTOPAS_MPI_COMM_WORLD, _dimensionCount, _decomposition.data(),
+                                   periods.data(), true, &_communicator);
+  autopas::AutoPas_MPI_Comm_rank(_communicator, &_domainIndex);
 }
 
 void RegularGrid::initializeLocalDomain() {
   _domainId.resize(_dimensionCount);
-  MPI_Comm_rank(_communicator, &_domainIndex);
+  autopas::AutoPas_MPI_Comm_rank(_communicator, &_domainIndex);
 
   std::vector<int> periods(_dimensionCount, 1);
-  MPI_Cart_get(_communicator, _dimensionCount, _decomposition.data(), periods.data(), _domainId.data());
+  autopas::AutoPas_MPI_Cart_get(_communicator, _dimensionCount, _decomposition.data(), periods.data(),
+                                _domainId.data());
+
+  if (_domainId.empty()) {
+    _domainId.resize(_dimensionCount, 0);
+  }
 }
 
 void RegularGrid::initializeLocalBox() {
@@ -388,28 +391,29 @@ void RegularGrid::receiveParticles(std::vector<ParticleType> &receivedParticles,
 void RegularGrid::sendDataToNeighbour(std::vector<char> sendBuffer, const int &neighbour) {
   _sendBuffers.push_back(sendBuffer);
 
-  MPI_Request sendRequest;
+  autopas::AutoPas_MPI_Request sendRequest;
   _sendRequests.push_back(sendRequest);
 
-  MPI_Isend(_sendBuffers.back().data(), _sendBuffers.back().size(), MPI_CHAR, neighbour, 0, _communicator,
-            &_sendRequests.back());
+  autopas::AutoPas_MPI_Isend(_sendBuffers.back().data(), _sendBuffers.back().size(), autopas::AUTOPAS_MPI_CHAR,
+                             neighbour, 0, _communicator, &_sendRequests.back());
 }
 
 void RegularGrid::receiveDataFromNeighbour(const int &neighbour, std::vector<char> &receiveBuffer) {
-  MPI_Status status;
-  MPI_Probe(neighbour, 0, _communicator, &status);
+  autopas::AutoPas_MPI_Status status;
+  autopas::AutoPas_MPI_Probe(neighbour, 0, _communicator, &status);
 
   int receiveBufferSize;
-  MPI_Get_count(&status, MPI_CHAR, &receiveBufferSize);
+  autopas::AutoPas_MPI_Get_count(&status, autopas::AUTOPAS_MPI_CHAR, &receiveBufferSize);
   receiveBuffer.resize(receiveBufferSize);
 
-  MPI_Recv(receiveBuffer.data(), receiveBufferSize, MPI_CHAR, neighbour, 0, _communicator, MPI_STATUS_IGNORE);
+  autopas::AutoPas_MPI_Recv(receiveBuffer.data(), receiveBufferSize, autopas::AUTOPAS_MPI_CHAR, neighbour, 0,
+                            _communicator, AUTOPAS_MPI_STATUS_IGNORE);
 }
 
 void RegularGrid::waitForSendRequests() {
-  std::vector<MPI_Status> sendStates;
+  std::vector<autopas::AutoPas_MPI_Status> sendStates;
   sendStates.resize(_sendRequests.size());
-  MPI_Waitall(_sendRequests.size(), _sendRequests.data(), sendStates.data());
+  autopas::AutoPas_MPI_Waitall(_sendRequests.size(), _sendRequests.data(), sendStates.data());
   _sendRequests.clear();
   _sendBuffers.clear();
 }

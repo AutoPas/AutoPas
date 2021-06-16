@@ -12,7 +12,7 @@
  * May be extended when necessary.
  */
 
-#if defined(AUTOPAS_INTERNODE_TUNING)
+#if defined(AUTOPAS_INCLUDE_MPI)
 #include <mpi.h>
 #else
 #include <cstdio>
@@ -23,7 +23,7 @@
 
 namespace autopas {
 
-#if defined(AUTOPAS_INTERNODE_TUNING)
+#if defined(AUTOPAS_INCLUDE_MPI)
 
 // MPI_Comm
 /** Wrapper for MPI_COMM_NULL */
@@ -324,7 +324,66 @@ inline int AutoPas_MPI_Wait(AutoPas_MPI_Request *request, AutoPas_MPI_Status *st
  */
 inline int AutoPas_MPI_Request_free(AutoPas_MPI_Request *request);
 
-#if defined(AUTOPAS_INTERNODE_TUNING)
+/**
+ * Wrapper for MPI_Cart_create
+ * @param comm: The AutoPas_MPI_Communicator for which to generate the cartesian grid.
+ * @param nDims: The number of dimensions in the resulting cartesian grid.
+ * @param dims: The size of the cartesian grid in each dimension.
+ * @param periods: An array defining for each dimension if it has periodic boundaries.
+ * @param reorder: Defines if ranking may be reordered (true) or not (false).
+ * @param cartCommunicator: The resulting MPI communicator.
+ */
+inline int AutoPas_MPI_Cart_create(AutoPas_MPI_Comm comm, int nDims, const int *dims, const int *periods, int reorder,
+                                   AutoPas_MPI_Comm *comm_cart);
+
+/**
+ * Wrapper for MPI_Cart_get.
+ * @param comm: Communicator with Cartesian structure (handle).
+ * @param maxdims: Length of vectors dims, periods, and coords in the calling program (integer).
+ * @param dims: Number of processes for each Cartesian dimension (array of integers).
+ * @param periods: Periodicity (true/false) for each Cartesian dimension (array of logicals).
+ * @param coords: Coordinates of calling process in Cartesian structure (array of integers).
+ */
+inline int AutoPas_MPI_Cart_get(AutoPas_MPI_Comm comm, int maxdims, int dims[], int periods[], int coords[]);
+
+/**
+ * Wrapper for MPI_Isend.
+ * @param buf: Initial address of send buffer (choice).
+ * @param count: Number of elements in send buffer (integer).
+ * @param datatype: Datatype of each send buffer element (handle).
+ * @param dest: Rank of destination (integer).
+ * @param tag: Message tag (integer).
+ * @param comm: Communicator (handle).
+ */
+inline int AutoPas_MPI_Isend(const void *buf, int count, AutoPas_MPI_Datatype datatype, int dest, int tag,
+                             AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request);
+
+/**
+ * Wrapper for MPI_Probe.
+ * @param source: Source rank (integer).
+ * @param tag: Tag value (integer).
+ * @param comm: Communicator (handle).
+ */
+inline int AutoPas_MPI_Probe(int source, int tag, AutoPas_MPI_Comm comm, AutoPas_MPI_Status *status);
+
+/**
+ * Wrapper for MPI_Get_count.
+ * @param status: Return status of receive operation (status).
+ * @param datatype: Datatype of each receive buffer element (handle).
+ * @param count: Number of received elements (integer).
+ */
+inline int AutoPas_MPI_Get_count(const AutoPas_MPI_Status *status, AutoPas_MPI_Datatype datatype, int *count);
+
+/**
+ * Wrapper for MPI_Waitall.
+ * @param count: Lists length (integer).
+ * @param array_of_requests: Array of requests (array of handles).
+ * @param array_of_statuses: Array of status objects (array of status).
+ */
+inline int AutoPas_MPI_Waitall(int count, AutoPas_MPI_Request array_of_requests[],
+                               AutoPas_MPI_Status *array_of_statuses);
+
+#if defined(AUTOPAS_INCLUDE_MPI)
 
 inline int AutoPas_MPI_Init(int *argc, char ***argv) { return MPI_Init(argc, argv); }
 
@@ -390,6 +449,33 @@ inline int AutoPas_MPI_Wait(AutoPas_MPI_Request *request, AutoPas_MPI_Status *st
 }
 
 inline int AutoPas_MPI_Request_free(AutoPas_MPI_Request *request) { return MPI_Request_free(request); }
+
+inline int AutoPas_MPI_Cart_create(AutoPas_MPI_Comm comm, int nDims, const int *dims, const int *periods, int reorder,
+                                   AutoPas_MPI_Comm *comm_cart) {
+  return MPI_Cart_create(comm, nDims, dims, periods, reorder, comm_cart);
+}
+
+inline int AutoPas_MPI_Cart_get(AutoPas_MPI_Comm comm, int maxdims, int dims[], int periods[], int coords[]) {
+  return MPI_Cart_get(comm, maxdims, dims, periods, coords);
+}
+
+inline int AutoPas_MPI_Isend(const void *buf, int count, AutoPas_MPI_Datatype datatype, int dest, int tag,
+                             AutoPas_MPI_Comm comm, Autopas_MPI_Request *request) {
+  return MPI_Isend(buf, count, datatype, dest, tag, comm, request);
+}
+
+inline int AutoPas_MPI_Probe(int source, int tag, AutoPas_MPI_Comm comm, AutoPas_MPI_Status *status) {
+  return MPI_Probe(source, tag, comm, status);
+}
+
+inline int AutoPas_MPI_Get_count(const AutoPas_MPI_Status *status, AutoPas_MPI_Datatype datatype, int *count) {
+  return MPI_Get_count(status, datatype, count);
+}
+
+inline int AutoPas_MPI_Waitall(int count, AutoPas_MPI_Request array_of_requests[],
+                               AutoPas_MPI_Status *array_of_statuses) {
+  return MPI_Waitall(count, array_of_requests, array_of_statuses);
+}
 
 #else
 
@@ -511,5 +597,35 @@ inline int AutoPas_MPI_Request_free(AutoPas_MPI_Request *request) {
     return AUTOPAS_MPI_SUCCESS;
   }
 }
+
+inline int AutoPas_MPI_Cart_create(AutoPas_MPI_Comm comm, int nDims, const int *dims, const int *periods, int reorder,
+                                   AutoPas_MPI_Comm *comm_cart) {
+  *comm_cart = AUTOPAS_MPI_COMM_WORLD;
+  return AUTOPAS_MPI_SUCCESS;
+}
+
+inline int AutoPas_MPI_Cart_get(AutoPas_MPI_Comm comm, int maxdims, int dims[], int periods[], int coords[]) {
+  return AUTOPAS_MPI_SUCCESS;
+}
+
+inline int AutoPas_MPI_Isend(const void *buf, int count, AutoPas_MPI_Datatype datatype, int dest, int tag,
+                             AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request) {
+  return AUTOPAS_MPI_SUCCESS;
+}
+
+inline int AutoPas_MPI_Probe(int source, int tag, AutoPas_MPI_Comm comm, AutoPas_MPI_Status *status) {
+  return AUTOPAS_MPI_SUCCESS;
+}
+
+inline int AutoPas_MPI_Get_count(const AutoPas_MPI_Status *status, AutoPas_MPI_Datatype datatype, int *count) {
+  *count = 0;
+  return AUTOPAS_MPI_SUCCESS;
+}
+
+inline int AutoPas_MPI_Waitall(int count, AutoPas_MPI_Request array_of_requests[],
+                               AutoPas_MPI_Status *array_of_statuses) {
+  return AUTOPAS_MPI_SUCCESS;
+}
+
 #endif
 }  // namespace autopas
