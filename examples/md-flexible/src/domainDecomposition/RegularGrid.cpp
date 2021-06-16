@@ -53,6 +53,9 @@ RegularGrid::RegularGrid(const int &dimensionCount, const std::vector<double> &g
   initializeLocalBox();
 
   initializeNeighbourIds();
+
+	std::cout << "Neighbours: " << autopas::utils::ArrayUtils::to_string(_neighbourDomainIndices) << std::endl;
+	std::cout << "LocalBox: " << autopas::utils::ArrayUtils::to_string(_localBoxMin) << ", " << autopas::utils::ArrayUtils::to_string(_localBoxMax) << std::endl;
 }
 
 RegularGrid::~RegularGrid() {}
@@ -185,6 +188,7 @@ void RegularGrid::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer
     std::vector<ParticleType> haloParticles;
 
     if (leftNeighbour != _domainIndex && rightNeighbour != _domainIndex) {
+
       std::vector<ParticleType> particlesForLeftNeighbour;
       std::vector<ParticleType> particlesForRightNeighbour;
 
@@ -284,78 +288,98 @@ void RegularGrid::exchangeMigratingParticles(SharedAutoPasContainer &autoPasCont
     int leftNeighbour = _neighbourDomainIndices[(i * 2) % neighbourCount];
     int rightNeighbour = _neighbourDomainIndices[(i * 2 + 1) % neighbourCount];
 
-    if (leftNeighbour != _domainIndex && rightNeighbour != _domainIndex) {
-      std::vector<ParticleType> particlesForLeftNeighbour;
-      std::vector<ParticleType> particlesForRightNeighbour;
+		std::vector<ParticleType> particlesForLeftNeighbour;
+		std::vector<ParticleType> particlesForRightNeighbour;
 
-      std::array<double, 3> periodicShift;
-      for (const auto &particle : emigrants) {
-        double particlePosition = particle.getR()[i];
-        if (particlePosition < _localBoxMin[i]) {
-          particlesForLeftNeighbour.push_back(particle);
+		std::array<double, 3> periodicShift;
 
-          if (_localBoxMin[i] == _globalBoxMin[i]) {
-            periodicShift = {0.0, 0.0, 0.0};
-            periodicShift[i] = _globalBoxMax[i] - _globalBoxMin[i];
-            particlesForLeftNeighbour.back().addR(periodicShift);
-          }
-        }
-        else if (particlePosition > _localBoxMax[i]) {
-          particlesForRightNeighbour.push_back(particle);
+		for (const auto &particle : emigrants) {
+			double particlePosition = particle.getR()[i];
+			if (particlePosition < _localBoxMin[i]) {
+				particlesForLeftNeighbour.push_back(particle);
 
-          if (_localBoxMax[i] == _globalBoxMax[i]) {
-            periodicShift = {0.0, 0.0, 0.0};
-            periodicShift[i] = - (_globalBoxMax[i] - _globalBoxMin[i]);
-            particlesForRightNeighbour.back().addR(periodicShift);
-          }
-        }
+				if (_localBoxMin[i] == _globalBoxMin[i]) {
+					periodicShift = {0.0, 0.0, 0.0};
+					periodicShift[i] = _globalBoxMax[i] - _globalBoxMin[i];
+					particlesForLeftNeighbour.back().addR(periodicShift);
+				}
+			}
+			else if (particlePosition > _localBoxMax[i]) {
+				particlesForRightNeighbour.push_back(particle);
+
+				if (_localBoxMax[i] == _globalBoxMax[i]) {
+					periodicShift = {0.0, 0.0, 0.0};
+					periodicShift[i] = - (_globalBoxMax[i] - _globalBoxMin[i]);
+					particlesForRightNeighbour.back().addR(periodicShift);
+				}
+			}
+		}
+
+		sendParticles(emigrants, leftNeighbour);
+		sendParticles(emigrants, rightNeighbour);
+
+		receiveParticles(immigrants, leftNeighbour);
+		receiveParticles(immigrants, rightNeighbour);
+
+		for (auto &particle : immigrants) {
+			if(isInsideLocalDomain(particle.getR())) {
+				if (particle.getID() == 4484) {
+					std::cout << "IsInsideLocalDomain" << std::endl;
+				}
+				autoPasContainer->addParticle(particle);
+			}
+			else {
+				migrants.push_back(particle);
+			}
+		}
+
+		immigrants.clear();
+
+		waitForSendRequests();
+		
+    leftNeighbour = _neighbourDomainIndices[(leftNeighbour + 2) % neighbourCount];
+    rightNeighbour = _neighbourDomainIndices[(rightNeighbour + 2) % neighbourCount];
+
+    particlesForLeftNeighbour.clear();
+    particlesForRightNeighbour.clear();
+
+		for (const auto &particle : emigrants) {
+			double particlePosition = particle.getR()[i];
+			if (particlePosition < _localBoxMin[i]) {
+				particlesForLeftNeighbour.push_back(particle);
+
+				if (_localBoxMin[i] == _globalBoxMin[i]) {
+					periodicShift = {0.0, 0.0, 0.0};
+					periodicShift[i] = _globalBoxMax[i] - _globalBoxMin[i];
+					particlesForLeftNeighbour.back().addR(periodicShift);
+				}
+			}
+			else if (particlePosition > _localBoxMax[i]) {
+				particlesForRightNeighbour.push_back(particle);
+
+				if (_localBoxMax[i] == _globalBoxMax[i]) {
+					periodicShift = {0.0, 0.0, 0.0};
+					periodicShift[i] = - (_globalBoxMax[i] - _globalBoxMin[i]);
+					particlesForRightNeighbour.back().addR(periodicShift);
+				}
+			}
+		}
+
+    int nextDimensionIndex = (i + 1) % dimensionCount;
+
+    sendParticles(migrants, leftNeighbour);
+    sendParticles(migrants, rightNeighbour);
+
+    receiveParticles(immigrants, leftNeighbour);
+    receiveParticles(immigrants, rightNeighbour);
+
+    for (auto &particle : immigrants) {
+      if(isInsideLocalDomain(particle.getR())) {
+        autoPasContainer->addParticle(particle);
       }
-
-      sendParticles(emigrants, leftNeighbour);
-      sendParticles(emigrants, rightNeighbour);
-
-      receiveParticles(immigrants, leftNeighbour);
-      receiveParticles(immigrants, rightNeighbour);
-
-      for (auto &particle : immigrants) {
-        if(isInsideLocalDomain(particle.getR())) {
-          if (particle.getID() == 4484) {
-            std::cout << "IsInsideLocalDomain" << std::endl;
-          }
-          autoPasContainer->addParticle(particle);
-        }
-        else {
-          migrants.push_back(particle);
-        }
-      }
-
-      immigrants.clear();
-
-      waitForSendRequests();
     }
 
-    //leftNeighbour = _neighbourDomainIndices[(leftNeighbour + 2) % neighbourCount];
-    //rightNeighbour = _neighbourDomainIndices[(rightNeighbour + 2) % neighbourCount];
-
-    //if (leftNeighbour != _domainIndex && rightNeighbour != _domainIndex) {
-    //  std::vector<ParticleType> particlesForLeftNeighbour;
-    //  std::vector<ParticleType> particlesForRightNeighbour;
-
-    //  int nextDimensionIndex = (i + 1) % dimensionCount;
-
-    //  sendParticles(migrants, leftNeighbour);
-    //  sendParticles(migrants, rightNeighbour);
-
-    //  receiveParticles(immigrants, leftNeighbour);
-    //  receiveParticles(immigrants, rightNeighbour);
-
-    //  for (auto &particle : immigrants) {
-    //    if(isInsideLocalDomain(particle.getR())) {
-    //      autoPasContainer->addParticle(particle);
-    //    }
-    //  }
-    //  waitForSendRequests();
-    //}
+    waitForSendRequests();
   }
 }
 

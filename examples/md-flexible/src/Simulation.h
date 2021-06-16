@@ -29,7 +29,7 @@ class Simulation {
    * @param argc The number of arguments passed in argv.
    * @param argv The arguments passed to the program.
    */
-  Simulation(int dimensionCount, int argc, char **argv);
+  Simulation(const MDFlexConfig &configuration, RegularGrid &domainDecomposition, int argc, char **argv);
 
   /**
    * Destructor.
@@ -46,11 +46,6 @@ class Simulation {
    */
   void initializeDomainDecomposition(int &dimensionCount);
 
-  /**
-   * Returns the domain decomposition for this simulation.
-   */
-  DomainDecomposition *getDomainDecomposition();
-
  protected:
   /**
    * Stores the argument count passed to the constructor for later reuse.
@@ -66,7 +61,7 @@ class Simulation {
    * Stores the configuration used for the simulation.
    * The configuration is defined by the .yaml file passed to the application  with the '--yaml-file' argument.
    */
-  std::shared_ptr<MDFlexConfig> _configuration;
+  MDFlexConfig _configuration;
 
   /**
    * The the nodes' autopas container used for simulation.
@@ -214,7 +209,7 @@ class Simulation {
   /**
    * This simulation's domain decomposition.
    */
-  std::shared_ptr<RegularGrid> _domainDecomposition;
+  RegularGrid _domainDecomposition;
 
   /**
    * Initializes the local AutoPas container.
