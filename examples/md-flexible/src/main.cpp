@@ -5,7 +5,7 @@
  */
 
 #include "autopas/utils/WrapMPI.h"
-#include "simulations/MDFlexMPI.h"
+#include "Simulation.h"
 
 /**
  * The main function for md-flexible.
@@ -15,7 +15,7 @@
  */
 int main(int argc, char **argv) {
   autopas::AutoPas_MPI_Init(&argc, &argv);
-  MDFlexMPI simulation(3, argc, argv);
+  Simulation simulation(3, argc, argv);
   simulation.run();
 
   autopas::AutoPas_MPI_Finalize();
