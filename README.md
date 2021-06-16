@@ -246,8 +246,8 @@ There exist some things you have to be careful about when using multiple functor
 ## Developing AutoPas
 Please look at our [contribution guidelines](https://github.com/AutoPas/AutoPas/blob/master/.github/CONTRIBUTING.md).
 
-For profiling the compile time, the cmake option `AUTOPAS_ENABLE_COMPILE_TIME_PROFILING` can be turned on. This enables gcc's -ftime-report and clang's -ftime-trace. 
-It is recommended to use clang, as its output is more detailed. -ftime-trace generates a json file for each compilation unit next to the generated object file (inside one of the CMakeFiles directories). Chrome has a built-in tool for viewing these files in a flame graph. It can be accessed through the URL `chrome://tracing`.
+For profiling the compile time, the cmake option `AUTOPAS_COMPILE_TIME_PROFILING` can be turned on. This enables gcc's -`ftime-report` and clang's `-ftime-trace`. 
+It is recommended to use clang, as its output is more detailed. `-ftime-trace` generates a .json file for each compilation unit next to the generated object file (inside one of the CMakeFiles directories). Chrome has a built-in tool for viewing these files in a flame graph. It can be accessed through the URL `chrome://tracing`.
 
 ## Acknowledgements
 This work was financially supported by:

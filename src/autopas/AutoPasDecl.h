@@ -5,13 +5,9 @@
 
 #pragma once
 
-#include <iostream>
 #include <memory>
 #include <set>
-#include <type_traits>
 
-#include "autopas/InstanceCounter.h"
-#include "autopas/Version.h"
 #include "autopas/iterators/ParticleIteratorWrapper.h"
 #include "autopas/options//ExtrapolationMethodOption.h"
 #include "autopas/options/AcquisitionFunctionOption.h"

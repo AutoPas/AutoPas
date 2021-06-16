@@ -6,7 +6,16 @@
 
 #pragma once
 
+#include <array>
+#include <memory>
+#include <ostream>
+#include <type_traits>
+
 #include "autopas/AutoPasDecl.h"
+#include "autopas/InstanceCounter.h"
+#include "autopas/Version.h"
+
+// These next three includes have dependencies to all of AutoPas and thus are moved here from AutoPasDecl.h.
 #include "autopas/LogicHandler.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/tuningStrategy/TuningStrategyFactory.h"

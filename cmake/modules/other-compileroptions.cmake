@@ -1,6 +1,6 @@
 # needed for GCC to vectorize LJFunctor.SoAFunctor
 option(
-    AUTOPAS_ENABLE_FAST_MATH "Sets --ffast-math which is needed for gcc to vectoize efficiently" OFF
+    AUTOPAS_ENABLE_FAST_MATH "Sets --ffast-math which is needed for gcc to vectorize efficiently" OFF
 )
 if (AUTOPAS_ENABLE_FAST_MATH)
     message(
@@ -10,7 +10,7 @@ if (AUTOPAS_ENABLE_FAST_MATH)
 endif ()
 
 option(
-    AUTOPAS_ENABLE_COMPILE_TIME_PROFILING "Sets clang's -ftime-trace and gcc's -ftime-report" OFF
+    AUTOPAS_COMPILE_TIME_PROFILING "Sets clang's -ftime-trace or gcc's -ftime-report" OFF
 )
 
 # autopas requires c++17. If cmake < 3.17 is used this is set globally in the top level
@@ -27,8 +27,8 @@ target_compile_options(
         # fast math for better vectorization
         $<$<AND:$<BOOL:${AUTOPAS_ENABLE_FAST_MATH}>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-ffast-math>
         # compiler profiling
-        $<$<AND:$<BOOL:${AUTOPAS_ENABLE_COMPILE_TIME_PROFILING}>,$<CXX_COMPILER_ID:GNU>>:-ftime-report>
-        $<$<AND:$<BOOL:${AUTOPAS_ENABLE_COMPILE_TIME_PROFILING}>,$<CXX_COMPILER_ID:Clang>>:-ftime-trace>
+        $<$<AND:$<BOOL:${AUTOPAS_COMPILE_TIME_PROFILING}>,$<CXX_COMPILER_ID:GNU>>:-ftime-report>
+        $<$<AND:$<BOOL:${AUTOPAS_COMPILE_TIME_PROFILING}>,$<CXX_COMPILER_ID:Clang>>:-ftime-trace>
         # Clang: set OpenMP version to 4.5
         $<$<CXX_COMPILER_ID:Clang>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-fopenmp-version=45>
         # INTEL: per default fast math is on. Disable via fp-model precise
