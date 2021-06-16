@@ -93,7 +93,7 @@ enum Face {
 /**
  * A datatype that is wide enough to hold faces, edges or vertices.
  */
-typedef int unsigned Any;
+using Any = int unsigned;
 
 /**
  * Create a bitfield for an edge given by the template parameters.
@@ -216,7 +216,7 @@ inline int vertexToIndex(Vertex vertex) {
 /**
  * A vertex is also capable of specifying an arbitrary octant in 3D.
  */
-typedef Vertex Octant;
+using Octant = Vertex;
 
 /**
  * Check if a given list of elements contains the element to test.
