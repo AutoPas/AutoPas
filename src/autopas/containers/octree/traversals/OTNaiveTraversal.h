@@ -51,14 +51,7 @@ class OTNaiveTraversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::ot_naive; }
 
   [[nodiscard]] bool isApplicable() const override {
-    int nDevices = 0;
-#if defined(AUTOPAS_CUDA)
-    cudaGetDeviceCount(&nDevices);
-#endif
-    if (dataLayout == DataLayoutOption::cuda)
-      return nDevices > 0;
-    else
-      return true;
+    return true;
   }
 
   [[nodiscard]] bool getUseNewton3() const override { return useNewton3; };
