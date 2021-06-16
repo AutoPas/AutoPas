@@ -93,8 +93,11 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
     if (_configIterator != nullptr) {
       _configIterator.reset();
     }
+    /* FIXME: should look like this to work with all Particles. But this leads to a Linking Error
+     * autopas::utils::AutoPasConfigurationCommunicator::distributeRanksInBuckets<Particle>(_comm, &_bucket, container);
+     */
     autopas::utils::AutoPasConfigurationCommunicator::distributeRanksInBuckets(_comm, &_bucket, container);
-    AutoPasLog(debug, "finished distribution");
+    AutoPasLog(debug, "finished bucket distribution");
     try {
       _tuningStrategy->reset(iteration);
     } catch (utils::ExceptionHandler::AutoPasException &exception) {

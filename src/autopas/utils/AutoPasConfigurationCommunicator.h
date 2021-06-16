@@ -85,7 +85,11 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
  * @param commSize
  * @param bucket
  */
-void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket, std::shared_ptr<autopas::ParticleContainerInterface<MoleculeLJ<double>>> container);
+/* FIXME: should look like this to work with all Particles. But this leads to a Linking Error
+ * template<class Particle>
+ * void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket, const std::shared_ptr<autopas::ParticleContainerInterface<Particle>>& container)
+ */
+void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket, const std::shared_ptr<autopas::ParticleContainerInterface<MoleculeLJ<double>>>& container);
 
 /**
  * Serializes a configuration object for communication via MPI.

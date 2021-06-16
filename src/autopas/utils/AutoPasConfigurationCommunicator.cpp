@@ -159,25 +159,24 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
                                 dataLayoutOptions, newton3Options));
 }
 
+/* FIXME: should look like this to work with all Particles. But this leads to a Linking Error
+ * template<class Particle>
+ * void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket, const std::shared_ptr<autopas::ParticleContainerInterface<Particle>>& container)
+ */
 void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket,
-                              std::shared_ptr<autopas::ParticleContainerInterface<MoleculeLJ<double>>> container) {
+                              const std::shared_ptr<autopas::ParticleContainerInterface<MoleculeLJ<double>>>& container) {
   int rank;
   AutoPas_MPI_Comm_rank(comm, &rank);
   int commSize;
   AutoPas_MPI_Comm_size(comm, &commSize);
 
   auto *homogeneities_pointer = static_cast<double *>(malloc(commSize * sizeof(double)));
-  double homogeneity = autopas::utils::calculateHomogeneity(container)[0];
+  /* FIXME: should look like this to work with all Particles. But this leads to a Linking Error
+   * double homogeneity = autopas::utils::calculateHomogeneity<Particle>(container)[0];
+   */
+  double homogeneity = autopas::utils::calculateHomogeneity<MoleculeLJ<double>>(container)[0];
 
   AutoPas_MPI_Allgather(&homogeneity, 1, AUTOPAS_MPI_DOUBLE, homogeneities_pointer, 1, AUTOPAS_MPI_DOUBLE, comm);
-
-  std::ostringstream ostringstream;
-
-  for (int i = 0; i < commSize; ++i) {
-    ostringstream << std::to_string(*(homogeneities_pointer + i)) << ", ";
-  }
-
-  AutoPasLog(debug, "homogeneities: " + ostringstream.str());
 
   std::vector<double> homogeneities;
   homogeneities.assign(homogeneities_pointer, homogeneities_pointer + commSize);
@@ -190,7 +189,7 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket,
   std::transform(diffs.begin(), diffs.end(), homogeneities.begin(), diffs.begin(), std::divides<double>());
 
   int current_bucket = 0;
-  int my_bucket;
+  int my_bucket = 0;
   // print out the results
 
   for (int i = 0; (size_t)i < homogeneities.size(); i++) {
@@ -198,7 +197,7 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket,
     if (diffs[i] > 0.2) current_bucket++;
 
     // print out an item:
-    AutoPasLog(debug, "rank: " + std::to_string(rank) + "bucket: " + std::to_string(current_bucket) +
+    AutoPasLog(debug, "rank: " + std::to_string(rank) + " bucket: " + std::to_string(current_bucket) +
                           "  new value: " + std::to_string(homogeneities[i]));
     if (homogeneities[i] == homogeneity) my_bucket = current_bucket;
   }
