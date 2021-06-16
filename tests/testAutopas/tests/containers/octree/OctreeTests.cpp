@@ -30,7 +30,7 @@ TEST_F(OctreeTest, testDebugIndexing) {
 
   std::array<double, 3> min = {0, 0, 0}, max = {1, 1, 1};
   std::unique_ptr<OctreeNodeInterface<ParticleFP64>> root =
-      std::make_unique<OctreeLeafNode<ParticleFP64>>(min, max, nullptr);
+      std::make_unique<OctreeLeafNode<ParticleFP64>>(min, max, nullptr, 4);
   // Add some dummy particles that split the nodes
   int dummyParticleCount = 8;
   for (int i = 0; i < 8; ++i) {
@@ -311,7 +311,7 @@ TEST_F(OctreeTest, testChildIndexing) {
 
   // Create an inner node that is split once.
   std::array<double, 3> min = {0, 0, 0}, max = {1, 1, 1};
-  OctreeInnerNode<ParticleFP64> inner(min, max, nullptr);
+  OctreeInnerNode<ParticleFP64> inner(min, max, nullptr, 16);
 
   // Get the center of the node
   std::array<double, 3> center = utils::ArrayMath::mulScalar(utils::ArrayMath::add(min, max), 0.5);
@@ -433,7 +433,7 @@ TEST_F(OctreeTest, testNeighborLocator) {
   // Create an octree with a random particle configuration.
   std::array<double, 3> min = {0, 0, 0}, max = {1, 1, 1};
   std::unique_ptr<OctreeNodeInterface<ParticleFP64>> root =
-      std::make_unique<OctreeLeafNode<ParticleFP64>>(min, max, nullptr);
+      std::make_unique<OctreeLeafNode<ParticleFP64>>(min, max, nullptr, 16);
   srand(1234);
   for (int particleIndex = 0; particleIndex < 1000; ++particleIndex) {
     std::array<double, 3> randomPosition = {(double)rand() / (double)RAND_MAX, (double)rand() / (double)RAND_MAX,

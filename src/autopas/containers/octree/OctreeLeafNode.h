@@ -29,9 +29,11 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
    * @param boxMin The min coordinate of the octree box
    * @param boxMax The max coordinate of the octree box
    * @param parent A pointer to the parent node. Should be nullptr for root nodes.
+   * @param treeSplitThreshold Maximum number of particles inside a leaf before it tries to split itself
    */
-  OctreeLeafNode(std::array<double, 3> boxMin, std::array<double, 3> boxMax, OctreeNodeInterface<Particle> *parent)
-      : OctreeNodeInterface<Particle>(boxMin, boxMax, parent),
+  OctreeLeafNode(std::array<double, 3> boxMin, std::array<double, 3> boxMax, OctreeNodeInterface<Particle> *parent,
+                 int unsigned treeSplitThreshold)
+      : OctreeNodeInterface<Particle>(boxMin, boxMax, parent, treeSplitThreshold),
         FullParticleCell<Particle>(utils::ArrayMath::sub(boxMax, boxMin)) {}
 
   /**
@@ -42,14 +44,12 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
       throw std::runtime_error("[OctreeLeafNode.h] Attempting to insert particle that is not inside this node");
     }
 
-    // TODO(johannes): Make this constant tunable or move it to a better suited location
-    const int unsigned maxParticlesInLeaf = 16;
-
-    if (this->_particles.size() < maxParticlesInLeaf) {
+    // TODO(johannes): Check if the size of the new leaves is >= cellSizeFactor*interactionLength
+    if (this->_particles.size() < this->_treeSplitThreshold) {
       this->_particles.push_back(p);
     } else {
-      std::unique_ptr<OctreeNodeInterface<Particle>> newInner =
-          std::make_unique<OctreeInnerNode<Particle>>(this->getBoxMin(), this->getBoxMax(), this->_parent);
+      std::unique_ptr<OctreeNodeInterface<Particle>> newInner = std::make_unique<OctreeInnerNode<Particle>>(
+          this->getBoxMin(), this->getBoxMax(), this->_parent, this->_treeSplitThreshold);
       newInner->insert(newInner, p);
       for (auto cachedParticle : this->_particles) {
         newInner->insert(newInner, cachedParticle);
@@ -138,7 +138,7 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
   std::set<OctreeNodeInterface<Particle> *> getLeavesInRange(std::array<double, 3> min,
                                                              std::array<double, 3> max) override {
     // TODO(johannes): Check what counts as zero
-    if(this->getEnclosedVolumeWith(min, max) < 0.0001f) {
+    if (this->getEnclosedVolumeWith(min, max) < 0.0001f) {
       throw std::runtime_error("[OctreeLeafNode.h] The given region does not overlap with this leaf");
     }
     return {this};

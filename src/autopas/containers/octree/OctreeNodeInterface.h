@@ -33,9 +33,11 @@ class OctreeNodeInterface {
    * @param boxMin The minimum coordinate of the enclosing box
    * @param boxMax The maximum coordinate of the enclosing box
    * @param parent A pointer to the parent of this node, may be nullptr for the root.
+   * @param treeSplitThreshold Maximum number of particles inside a leaf before it tries to split itself
    */
-  OctreeNodeInterface(std::array<double, 3> boxMin, std::array<double, 3> boxMax, OctreeNodeInterface<Particle> *parent)
-      : _boxMin(boxMin), _boxMax(boxMax), _parent(parent) {}
+  OctreeNodeInterface(std::array<double, 3> boxMin, std::array<double, 3> boxMax, OctreeNodeInterface<Particle> *parent,
+                      int unsigned treeSplitThreshold)
+      : _boxMin(boxMin), _boxMax(boxMax), _parent(parent), _treeSplitThreshold(treeSplitThreshold) {}
 
   /** To make clang happy. */
   virtual ~OctreeNodeInterface() = default;
@@ -230,21 +232,21 @@ class OctreeNodeInterface {
    */
   static double getEnclosedVolumeWith(std::array<double, 3> aMin, std::array<double, 3> aMax,
                                       std::array<double, 3> bMin, std::array<double, 3> bMax) {
-      auto product = 1.0;
-      int count = 0;
-      for (auto d = 0; d < 3; ++d) {
-          auto minOnAxis = std::max(aMin[d], bMin[d]);
-          auto maxOnAxis = std::min(aMax[d], bMax[d]);
-          auto dim = (maxOnAxis - minOnAxis);
-          if(dim > 0) {
-            ++count;
-          } else {
-            break;
-          }
-          product *= dim;
+    auto product = 1.0;
+    int count = 0;
+    for (auto d = 0; d < 3; ++d) {
+      auto minOnAxis = std::max(aMin[d], bMin[d]);
+      auto maxOnAxis = std::min(aMax[d], bMax[d]);
+      auto dim = (maxOnAxis - minOnAxis);
+      if (dim > 0) {
+        ++count;
+      } else {
+        break;
       }
-      auto result = count == 3 ? product : 0;
-      return result;
+      product *= dim;
+    }
+    auto result = count == 3 ? product : 0;
+    return result;
   }
 
   /**
@@ -442,6 +444,11 @@ class OctreeNodeInterface {
    * The max coordinate of the enclosed volume.
    */
   std::array<double, 3> _boxMax;
+
+  /**
+   * Maximum number of particles inside a leaf node before the leaf tries to split itself.
+   */
+  int unsigned _treeSplitThreshold;
 };
 
 /**
