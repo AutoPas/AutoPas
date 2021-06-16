@@ -83,6 +83,10 @@ class TraversalOption : public Option<TraversalOption> {
 
     // Octree Traversals:
     // TODO(johannes): Documentation
+    /**
+     * OTC01Traversal : Simple DFS traversal without newton 3 optimization
+     */
+    ot_c01,
     ot_naive,
 
     // VerletClusterCells Traversals:
@@ -268,6 +272,7 @@ class TraversalOption : public Option<TraversalOption> {
 
         // Octree Traversals:
         {TraversalOption::ot_naive, "ot_naive"},
+        {TraversalOption::ot_c01, "ot_c01"},
     };
   };
 

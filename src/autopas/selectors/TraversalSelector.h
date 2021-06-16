@@ -23,6 +23,8 @@
 #include "autopas/containers/linkedCells/traversals/LCSlicedBalancedTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCSlicedC02Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCSlicedTraversal.h"
+#include "autopas/containers/octree/traversals/OTC01Traversal.h"
+#include "autopas/containers/octree/traversals/OTNaiveTraversal.h"
 #include "autopas/containers/verletClusterCells/traversals/VCCClusterIterationCUDATraversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLC01BalancedTraversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLC06Traversal.h"
@@ -39,7 +41,6 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCSlicedBalancedTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCSlicedC02Traversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCSlicedTraversal.h"
-#include "autopas/containers/octree/traversals/OTNaiveTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/SelectorStrategyOption.h"
@@ -258,6 +259,12 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
     case TraversalOption::ot_naive: {
       using ParticleType = typename ParticleCell::ParticleType;
       return std::make_unique<OTNaiveTraversal<ParticleType, PairwiseFunctor, dataLayout, useNewton3>>(
+          &pairwiseFunctor, info.interactionLength);
+    }
+
+    case TraversalOption::ot_c01: {
+      using ParticleType = typename ParticleCell::ParticleType;
+      return std::make_unique<OTC01Traversal<ParticleType, PairwiseFunctor, dataLayout, useNewton3>>(
           &pairwiseFunctor, info.interactionLength);
     }
   }
