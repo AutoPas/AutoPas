@@ -20,7 +20,11 @@ endif (AUTOPAS_INTERNODE_TUNING)
 
 include_directories(SYSTEM ${MPI_INCLUDE_PATH})
 
-add_executable(md-flexible ${MDFlex_SRC})
+add_custom_command(OUTPUT LJFunctorISPC.o
+        COMMAND ispc --opt=fast-math --pic ${CMAKE_SOURCE_DIR}/examples/md-flexible/src/LJFunctor.ispc -o LJFunctorISPC.o
+        DEPENDS ${CMAKE_SOURCE_DIR}/examples/md-flexible/src/LJFunctor.ispc)
+
+add_executable(md-flexible ${MDFlex_SRC} LJFunctorISPC.o)
 
 target_include_directories(md-flexible PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
