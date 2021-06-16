@@ -50,7 +50,7 @@ class OTNaiveTraversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::ot_naive; }
 
-  [[nodiscard]] bool isApplicable() const override { return true; }
+  [[nodiscard]] bool isApplicable() const override { return useNewton3; }
 
   [[nodiscard]] bool getUseNewton3() const override { return useNewton3; };
 
@@ -91,21 +91,13 @@ class OTNaiveTraversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
       // Process connection to all neighbors
       auto uniqueNeighboringLeaves = leaf->getNeighborLeaves();
       for (OctreeLeafNode<Particle> *neighborLeaf : uniqueNeighboringLeaves) {
-        // TODO(johannes): Is this check still required if we are using newton3 (and compare to bidirectional).
-        bool shouldProcessLeafPair = true;
-        if constexpr (useNewton3) {
-          shouldProcessLeafPair = !leaf->alreadyProcessed(neighborLeaf) && !neighborLeaf->alreadyProcessed(leaf);
-        }
-
-        if (shouldProcessLeafPair) {
+        if (!leaf->alreadyProcessed(neighborLeaf) && !neighborLeaf->alreadyProcessed(leaf)) {
           // Execute the cell functor
           _cellFunctor.processCellPair(*leaf, *neighborLeaf);
 
-          if constexpr (useNewton3) {
             // Mark the neighbor as processed in the leaf
-            leaf->markAlreadyProcessed(neighborLeaf);
-            neighborLeaf->markAlreadyProcessed(leaf);
-          }
+          leaf->markAlreadyProcessed(neighborLeaf);
+          neighborLeaf->markAlreadyProcessed(leaf);
         }
       }
     }
@@ -118,8 +110,6 @@ class OTNaiveTraversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
   void setCells(std::vector<OctreeNodeWrapper<Particle>> *cells) override { _cells = cells; }
 
  private:
-  // TODO(johannes): Can we use the newton3 optimization at all if we process the cells without the "alreadyProcessed"
-  //  nodes?
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
