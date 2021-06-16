@@ -12,10 +12,12 @@ TEST_F(TestDomainTools, testIsInsideDomain) {
   std::vector<double> globalBoxMax = {10.0, 10.0, 10.0};
 
   std::vector<double> inside = {5.0, 5.0, 5.0};
-  std::vector<double> onBoundary = {1.0, 1.0, 10.0};
+  std::vector<double> onLowerBoundary = {1.0, 2.0, 5.0};
+  std::vector<double> onUpperBoundary = {2.0, 10.0, 5.0};
   std::vector<double> outside = {0.0, 0.0, 0.0};
 
   EXPECT_EQ(true, DomainTools::isInsideDomain(inside, globalBoxMin, globalBoxMax));
-  EXPECT_EQ(true, DomainTools::isInsideDomain(onBoundary, globalBoxMin, globalBoxMax));
+  EXPECT_EQ(true, DomainTools::isInsideDomain(onLowerBoundary, globalBoxMin, globalBoxMax));
+  EXPECT_EQ(false, DomainTools::isInsideDomain(onUpperBoundary, globalBoxMin, globalBoxMax));
   EXPECT_EQ(false, DomainTools::isInsideDomain(outside, globalBoxMin, globalBoxMax));
 }

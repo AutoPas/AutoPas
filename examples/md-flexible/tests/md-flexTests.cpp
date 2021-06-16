@@ -6,14 +6,14 @@
 
 #include <gtest/gtest.h>
 
-#include "mpi.h"
+#include "autopas/utils/WrapMPI.h"
 
 int main(int argc, char **argv) {
   testing::InitGoogleTest(&argc, argv);
   // set the gtest death test style to threadsafe
   testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-  MPI_Init(&argc, &argv);
+  autopas::AutoPas_MPI_Init(&argc, &argv);
   return RUN_ALL_TESTS();
-  MPI_Finalize();
+  autopas::AutoPas_MPI_Finalize();
 }

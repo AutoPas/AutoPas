@@ -5,7 +5,7 @@
  */
 #include "TestRegularGrid.h"
 
-#include "mpi.h"
+#include "autopas/utils/WrapMPI.h"
 #include "src/ParticleAttributes.h"
 #include "src/ParticleSerializationTools.h"
 #include "src/TypeDefinitions.h"
@@ -67,12 +67,12 @@ TEST_F(TestRegularGrid, testGetLocalDomain) {
   std::vector<double> globalBoxMin = {1.0, 1.0, 1.0};
   std::vector<double> globalBoxMax = {10.0, 10.0, 10.0};
 
-  RegularGrid domainDecomposition(3, globalBoxMin, globalBoxMax);
+  RegularGrid domainDecomposition(3, globalBoxMin, globalBoxMax, 0, 0);
 
   std::vector<double> globalBoxExtend = sub(globalBoxMax, globalBoxMin);
 
   int numberOfProcesses;
-  MPI_Comm_size(MPI_COMM_WORLD, &numberOfProcesses);
+  autopas::AutoPas_MPI_Comm_size(autopas::AUTOPAS_MPI_COMM_WORLD, &numberOfProcesses);
 
   std::vector<int> decomposition;
   DomainTools::generateDecomposition(numberOfProcesses, 3, decomposition);
@@ -97,7 +97,7 @@ TEST_F(TestRegularGrid, testExchangeHaloParticles) {
   std::vector<double> globalBoxMin = {1.0, 1.0, 1.0};
   std::vector<double> globalBoxMax = {10.0, 10.0, 10.0};
 
-  RegularGrid domainDecomposition(3, globalBoxMin, globalBoxMax);
+  RegularGrid domainDecomposition(3, globalBoxMin, globalBoxMax, 0, 0);
 
   std::vector<double> localBoxMin = domainDecomposition.getLocalBoxMin();
   std::vector<double> localBoxMax = domainDecomposition.getLocalBoxMax();
@@ -111,7 +111,7 @@ TEST_F(TestRegularGrid, testExchangeHaloParticles) {
   initializeAutoPasContainer(autoPasContainer, configuration);
 
   for (auto &particle : configuration.getParticles()) {
-    if (domainDecomposition.isInsideLocalDomain({particle.position[0], particle.position[1], particle.position[2]})) {
+    if (domainDecomposition.isInsideLocalDomain(particle.position)) {
       autoPasContainer->addParticle(ParticleSerializationTools::convertParticleAttributesToParticle(particle));
     }
   }
@@ -129,7 +129,7 @@ TEST_F(TestRegularGrid, testExchangeMigratingParticles) {
   std::vector<double> globalBoxMin = {1.0, 1.0, 1.0};
   std::vector<double> globalBoxMax = {10.0, 10.0, 10.0};
 
-  RegularGrid domainDecomposition(3, globalBoxMin, globalBoxMax);
+  RegularGrid domainDecomposition(3, globalBoxMin, globalBoxMax, 0, 0);
 
   std::vector<double> localBoxMin = domainDecomposition.getLocalBoxMin();
   std::vector<double> localBoxMax = domainDecomposition.getLocalBoxMax();
@@ -143,7 +143,7 @@ TEST_F(TestRegularGrid, testExchangeMigratingParticles) {
   initializeAutoPasContainer(autoPasContainer, configuration);
 
   for (auto &particle : configuration.getParticles()) {
-    if (domainDecomposition.isInsideLocalDomain({particle.position[0], particle.position[1], particle.position[2]})) {
+    if (domainDecomposition.isInsideLocalDomain(particle.position)) {
       autoPasContainer->addParticle(ParticleSerializationTools::convertParticleAttributesToParticle(particle));
     }
   }
