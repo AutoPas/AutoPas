@@ -12,7 +12,7 @@
  * May be extended when necessary.
  */
 
-#if defined(AUTOPAS_INCLUDE_MPI)
+#if defined(AUTOPAS_INTERNODE_TUNING)
 #include <mpi.h>
 #else
 #include <cstdio>
@@ -23,7 +23,7 @@
 
 namespace autopas {
 
-#if defined(AUTOPAS_INCLUDE_MPI)
+#if defined(AUTOPAS_INTERNODE_TUNING)
 
 // MPI_Comm
 /** Wrapper for MPI_COMM_NULL */
@@ -383,7 +383,7 @@ inline int AutoPas_MPI_Get_count(const AutoPas_MPI_Status *status, AutoPas_MPI_D
 inline int AutoPas_MPI_Waitall(int count, AutoPas_MPI_Request array_of_requests[],
                                AutoPas_MPI_Status *array_of_statuses);
 
-#if defined(AUTOPAS_INCLUDE_MPI)
+#if defined(AUTOPAS_INTERNODE_TUNING)
 
 inline int AutoPas_MPI_Init(int *argc, char ***argv) { return MPI_Init(argc, argv); }
 
@@ -460,7 +460,7 @@ inline int AutoPas_MPI_Cart_get(AutoPas_MPI_Comm comm, int maxdims, int dims[], 
 }
 
 inline int AutoPas_MPI_Isend(const void *buf, int count, AutoPas_MPI_Datatype datatype, int dest, int tag,
-                             AutoPas_MPI_Comm comm, Autopas_MPI_Request *request) {
+                             AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request) {
   return MPI_Isend(buf, count, datatype, dest, tag, comm, request);
 }
 

@@ -15,22 +15,25 @@
 
 ParallelVtkWriter::ParallelVtkWriter(const std::string &sessionName, const std::string &outputFolder)
     : _sessionName(sessionName) {
+  // This using directive is necessary, because 'autopas::AUTOPAS_...' variables defined in WrapMPI.h do not exist
+  // when compiling with MPI. When compiling without MPI the namespace prefix needs to be used.
+  using namespace autopas;
+
   _mpiRank = 0;
-  autopas::AutoPas_MPI_Comm_rank(autopas::AUTOPAS_MPI_COMM_WORLD, &_mpiRank);
+  AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &_mpiRank);
 
   if (_mpiRank == 0) {
     tryCreateSessionFolder(_sessionName, outputFolder);
   }
 
   int sessionFolderPathLength = _sessionFolderPath.size();
-  autopas::AutoPas_MPI_Bcast(&sessionFolderPathLength, 1, autopas::AUTOPAS_MPI_INT, 0, autopas::AUTOPAS_MPI_COMM_WORLD);
+  AutoPas_MPI_Bcast(&sessionFolderPathLength, 1, AUTOPAS_MPI_INT, 0, AUTOPAS_MPI_COMM_WORLD);
 
   if (_mpiRank != 0) {
     _sessionFolderPath.resize(sessionFolderPathLength);
   }
 
-  autopas::AutoPas_MPI_Bcast(_sessionFolderPath.data(), sessionFolderPathLength, autopas::AUTOPAS_MPI_CHAR, 0,
-                             autopas::AUTOPAS_MPI_COMM_WORLD);
+  AutoPas_MPI_Bcast(_sessionFolderPath.data(), sessionFolderPathLength, AUTOPAS_MPI_CHAR, 0, AUTOPAS_MPI_COMM_WORLD);
 }
 
 void ParallelVtkWriter::recordTimestep(const int &currentIteration, const int &maximumNumberOfDigitsInIteration,

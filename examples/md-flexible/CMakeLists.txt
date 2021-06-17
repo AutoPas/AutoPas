@@ -10,6 +10,8 @@ target_include_directories(md-flexible PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 include(autopas_yaml-cpp)
 
+option(AUTOPAS_INCLUDE_MPI "Enable this variable to use MPI." OFF)
+
 if (AUTOPAS_INTERNODE_TUNING OR AUTOPAS_INCLUDE_MPI)
     message(STATUS "AUTOPAS_INTERNODE_TUNING set, searching for mpi to link against md-flexible ...")
     find_package(MPI)
@@ -19,6 +21,7 @@ if (AUTOPAS_INTERNODE_TUNING OR AUTOPAS_INCLUDE_MPI)
     else ()
         message(STATUS "cxx mpi found: ${MPI_CXX_COMPILER}")
         set(MD_FLEXIBLE_USE_MPI ON)
+        add_definitions(-DAUTOPAS_INTERNODE_TUNING)
     endif ()
 else ()
     message(STATUS "AUTOPAS_INTERNODE_TUNING not set, not linking MPI to md-flexible.")

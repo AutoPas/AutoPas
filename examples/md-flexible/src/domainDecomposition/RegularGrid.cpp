@@ -40,7 +40,11 @@ void calculatePrimeFactors(unsigned int number, std::list<unsigned int> &oPrimeF
 RegularGrid::RegularGrid(const int &dimensionCount, const std::vector<double> &globalBoxMin,
                          const std::vector<double> &globalBoxMax, const double &cutoffWidth, const double &skinWidth)
     : _dimensionCount(dimensionCount), _cutoffWidth(cutoffWidth), _skinWidth(skinWidth) {
-  autopas::AutoPas_MPI_Comm_size(autopas::AUTOPAS_MPI_COMM_WORLD, &_subdomainCount);
+  // This using directive is necessary, because 'autopas::AUTOPAS_...' variables defined in WrapMPI.h do not exist
+  // when compiling with MPI. When compiling without MPI the namespace prefix needs to be used.
+  using namespace autopas;
+
+  AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &_subdomainCount);
 
   DomainTools::generateDecomposition(_subdomainCount, _dimensionCount, _decomposition);
 
@@ -87,19 +91,26 @@ void RegularGrid::initializeDecomposition() {
 }
 
 void RegularGrid::initializeMPICommunicator() {
+  // This using directive is necessary, because 'autopas::AUTOPAS_...' variables defined in WrapMPI.h do not exist
+  // when compiling with MPI. When compiling without MPI the namespace prefix needs to be used.
+  using namespace autopas;
+
   std::vector<int> periods(_dimensionCount, 1);
-  autopas::AutoPas_MPI_Cart_create(autopas::AUTOPAS_MPI_COMM_WORLD, _dimensionCount, _decomposition.data(),
-                                   periods.data(), true, &_communicator);
-  autopas::AutoPas_MPI_Comm_rank(_communicator, &_domainIndex);
+  AutoPas_MPI_Cart_create(AUTOPAS_MPI_COMM_WORLD, _dimensionCount, _decomposition.data(), periods.data(), true,
+                          &_communicator);
+  AutoPas_MPI_Comm_rank(_communicator, &_domainIndex);
 }
 
 void RegularGrid::initializeLocalDomain() {
+  // This using directive is necessary, because 'autopas::AUTOPAS_...' variables defined in WrapMPI.h do not exist
+  // when compiling with MPI. When compiling without MPI the namespace prefix needs to be used.
+  using namespace autopas;
+
   _domainId.resize(_dimensionCount);
-  autopas::AutoPas_MPI_Comm_rank(_communicator, &_domainIndex);
+  AutoPas_MPI_Comm_rank(_communicator, &_domainIndex);
 
   std::vector<int> periods(_dimensionCount, 1);
-  autopas::AutoPas_MPI_Cart_get(_communicator, _dimensionCount, _decomposition.data(), periods.data(),
-                                _domainId.data());
+  AutoPas_MPI_Cart_get(_communicator, _dimensionCount, _decomposition.data(), periods.data(), _domainId.data());
 
   if (_domainId.empty()) {
     _domainId.resize(_dimensionCount, 0);
@@ -405,25 +416,33 @@ void RegularGrid::receiveParticles(std::vector<ParticleType> &receivedParticles,
 }
 
 void RegularGrid::sendDataToNeighbour(std::vector<char> sendBuffer, const int &neighbour) {
+  // This using directive is necessary, because 'autopas::AUTOPAS_...' variables defined in WrapMPI.h do not exist
+  // when compiling with MPI. When compiling without MPI the namespace prefix needs to be used.
+  using namespace autopas;
+
   _sendBuffers.push_back(sendBuffer);
 
   autopas::AutoPas_MPI_Request sendRequest;
   _sendRequests.push_back(sendRequest);
 
-  autopas::AutoPas_MPI_Isend(_sendBuffers.back().data(), _sendBuffers.back().size(), autopas::AUTOPAS_MPI_CHAR,
-                             neighbour, 0, _communicator, &_sendRequests.back());
+  AutoPas_MPI_Isend(_sendBuffers.back().data(), _sendBuffers.back().size(), AUTOPAS_MPI_CHAR, neighbour, 0,
+                    _communicator, &_sendRequests.back());
 }
 
 void RegularGrid::receiveDataFromNeighbour(const int &neighbour, std::vector<char> &receiveBuffer) {
-  autopas::AutoPas_MPI_Status status;
-  autopas::AutoPas_MPI_Probe(neighbour, 0, _communicator, &status);
+  // This using directive is necessary, because 'autopas::AUTOPAS_...' variables defined in WrapMPI.h do not exist
+  // when compiling with MPI. When compiling without MPI the namespace prefix needs to be used.
+  using namespace autopas;
+
+  AutoPas_MPI_Status status;
+  AutoPas_MPI_Probe(neighbour, 0, _communicator, &status);
 
   int receiveBufferSize;
-  autopas::AutoPas_MPI_Get_count(&status, autopas::AUTOPAS_MPI_CHAR, &receiveBufferSize);
+  AutoPas_MPI_Get_count(&status, AUTOPAS_MPI_CHAR, &receiveBufferSize);
   receiveBuffer.resize(receiveBufferSize);
 
-  autopas::AutoPas_MPI_Recv(receiveBuffer.data(), receiveBufferSize, autopas::AUTOPAS_MPI_CHAR, neighbour, 0,
-                            _communicator, AUTOPAS_MPI_STATUS_IGNORE);
+  AutoPas_MPI_Recv(receiveBuffer.data(), receiveBufferSize, AUTOPAS_MPI_CHAR, neighbour, 0, _communicator,
+                   AUTOPAS_MPI_STATUS_IGNORE);
 }
 
 void RegularGrid::waitForSendRequests() {
