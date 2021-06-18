@@ -215,7 +215,8 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
             &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBorderFlagManager, behavior, nullptr));
   }
 
-  void forEachInRegion(const std::function<void(Particle)> forEachLambda, const std::array<double, 3> &lowerCorner,
+  template<typename Lambda>
+  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                        const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
     auto forEach = [&](ParticleCell cell) {
       for (Particle p : cell._particles) {
