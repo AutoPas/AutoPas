@@ -31,22 +31,22 @@ class DomainDecomposition {
   /**
    * Returns the minimum coordinates of the global domain.
    */
-  virtual std::vector<double> getGlobalBoxMin() = 0;
+  virtual const std::vector<double> getGlobalBoxMin() = 0;
 
   /**
    * Returns the maximum coordinates of the global domain.
    */
-  virtual std::vector<double> getGlobalBoxMax() = 0;
+  virtual const std::vector<double> getGlobalBoxMax() = 0;
 
   /**
    * Returns the minimum coordinates of the local domain.
    */
-  virtual std::vector<double> getLocalBoxMin() = 0;
+  virtual const std::vector<double> getLocalBoxMin() = 0;
 
   /**
    * Returns the maximum coordinates of the local domain.
    */
-  virtual std::vector<double> getLocalBoxMax() = 0;
+  virtual const std::vector<double> getLocalBoxMax() = 0;
 
   /**
    * Checks if provided cooridnates are within the local domain.

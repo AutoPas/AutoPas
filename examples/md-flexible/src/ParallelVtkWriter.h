@@ -20,7 +20,7 @@ class ParallelVtkWriter {
    * @param sessionName Sets the prefix for every created folder / file.
    * @param outputFolder Sets the folder where the vtk files will be created.
    */
-  ParallelVtkWriter(const std::string &sessionName, const std::string &outputFolder);
+  ParallelVtkWriter(std::string sessionName, const std::string &outputFolder);
 
   /**
    * Destructor.
@@ -55,24 +55,9 @@ class ParallelVtkWriter {
   std::string _sessionFolderPath;
 
   /**
-   * Stores the path to the current processes's output folder.
-   */
-  // std::string _processFolderPath;
-
-  /**
    * Stores the name of output .vtu file for the current process.
    */
   std::string _outputFileName;
-
-  /**
-   * Sets the parallel vtk writer up for MPI.
-   */
-  // initializeWithMPI();
-
-  /**
-   * Sets the parallel vtk write up without MPI.
-   */
-  // initializeWithoutMPI();
 
   /**
    * Tries to create a folder for the current writer session and stores it in _sessionFolderPath.

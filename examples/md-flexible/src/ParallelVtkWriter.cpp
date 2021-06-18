@@ -5,28 +5,29 @@
  */
 #include "ParallelVtkWriter.h"
 
+#include <cstddef>
 #include <ctime>
 #include <filesystem>
 #include <fstream>
 #include <ios>
 #include <iostream>
+#include <utility>
 
 #include "autopas/utils/WrapMPI.h"
 
-ParallelVtkWriter::ParallelVtkWriter(const std::string &sessionName, const std::string &outputFolder)
-    : _sessionName(sessionName) {
+ParallelVtkWriter::ParallelVtkWriter(std::string sessionName, const std::string &outputFolder)
+    : _sessionName(std::move(sessionName)), _mpiRank(0) {
   // This using directive is necessary, because 'autopas::AUTOPAS_...' variables defined in WrapMPI.h do not exist
   // when compiling with MPI. When compiling without MPI the namespace prefix needs to be used.
   using namespace autopas;
 
-  _mpiRank = 0;
   AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &_mpiRank);
 
   if (_mpiRank == 0) {
     tryCreateSessionFolder(_sessionName, outputFolder);
   }
 
-  int sessionFolderPathLength = _sessionFolderPath.size();
+  size_t sessionFolderPathLength = _sessionFolderPath.size();
   AutoPas_MPI_Bcast(&sessionFolderPathLength, 1, AUTOPAS_MPI_INT, 0, AUTOPAS_MPI_COMM_WORLD);
 
   if (_mpiRank != 0) {

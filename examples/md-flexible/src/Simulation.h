@@ -5,6 +5,7 @@
  */
 #pragma once
 
+#include <cstddef>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -34,17 +35,12 @@ class Simulation {
   /**
    * Destructor.
    */
-  virtual ~Simulation();
+  ~Simulation();
 
   /**
    * Runs the simulation
    */
   void run();
-
-  /**
-   * Initializes the domain decomposition for this simulation.
-   */
-  void initializeDomainDecomposition(int &dimensionCount);
 
  protected:
   /**
@@ -141,7 +137,7 @@ class Simulation {
   /**
    * Stores the maximum digits an iteration index can have.
    */
-  int _maximumIterationDigits;
+  size_t _maximumIterationDigits;
 
   /**
    * Initializes the simulation.

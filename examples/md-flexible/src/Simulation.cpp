@@ -18,11 +18,13 @@
 
 Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecomposition &domainDecomposition, int argc,
                        char **argv)
-    : _configuration(configuration), _domainDecomposition(domainDecomposition), _argc(argc), _argv(argv) {
+    : _configuration(configuration),
+      _domainDecomposition(domainDecomposition),
+      _argc(argc),
+      _argv(argv),
+      _createVtkFiles(not configuration.vtkFileName.value.empty()) {
   _timers.total.start();
   _timers.initialization.start();
-
-  _createVtkFiles = not _configuration.vtkFileName.value.empty();
 
   _maximumIterationDigits = std::to_string(_configuration.iterations.value).size();
   _vtkWriter = std::make_shared<ParallelVtkWriter>(_configuration.vtkFileName.value, "output");
@@ -72,8 +74,8 @@ void Simulation::executeSuperstep(const int iterationsPerSuperstep) {
       _vtkWriter->recordTimestep(_iteration, _maximumIterationDigits, *_autoPasContainer);
     }
 
-    ++_iteration;
     updateParticles();
+    ++_iteration;
   }
 
   _domainDecomposition.exchangeMigratingParticles(_autoPasContainer);
@@ -295,14 +297,11 @@ void Simulation::updateForces() {
 
 void Simulation::updateVelocities() {
   const double deltaT = _configuration.deltaT.value;
-  ParticlePropertiesLibraryType particlePropertiesLibrary = *(_configuration.getParticlePropertiesLibrary());
-
-  const bool useThermostat =
-      _configuration.useThermostat.value and (_iteration % _configuration.thermostatInterval.value) == 0;
 
   if (deltaT != 0) {
     _timers.velocityUpdate.start();
-    TimeDiscretization::calculateVelocities(*_autoPasContainer, particlePropertiesLibrary, deltaT);
+    TimeDiscretization::calculateVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+                                            deltaT);
     _timers.velocityUpdate.stop();
   }
 }
@@ -359,6 +358,7 @@ void Simulation::initializeAutoPasContainer() {
                       _configuration.initTemperature.value, std::numeric_limits<double>::max());
   }
 
+  // @todo: the object generators should only generate particles relevant for the current ranks domain
   for (auto &particle : _configuration.getParticles()) {
     ParticleType autoPasParticle;
     if (_domainDecomposition.isInsideLocalDomain(particle.position)) {

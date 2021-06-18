@@ -5,7 +5,6 @@
  */
 #include "TimeDiscretization.h"
 
-#include "Thermostat.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
 #include "autopas/utils/ArrayMath.h"

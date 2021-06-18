@@ -9,7 +9,7 @@
 
 #include "autopas/particles/OwnershipState.h"
 
-/*
+/**
  * A struct containing all properties of autopas::MoleculeLJ<double>.
  * This can be used to align the attributes of a particle in memory to make serialization and deserialization easier.
  */

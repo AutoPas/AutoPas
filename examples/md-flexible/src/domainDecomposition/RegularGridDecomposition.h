@@ -54,32 +54,32 @@ class RegularGridDecomposition final : public DomainDecomposition {
   /**
    * Returns the minimum coordinates of global domain.
    */
-  std::vector<double> getGlobalBoxMin() override { return _globalBoxMin; }
+  const std::vector<double> getGlobalBoxMin() override { return _globalBoxMin; }
 
   /**
    * Returns the maximum coordinates of global domain.
    */
-  std::vector<double> getGlobalBoxMax() override { return _globalBoxMax; }
+  const std::vector<double> getGlobalBoxMax() override { return _globalBoxMax; }
 
   /**
    * Returns the minimum coordinates of local domain.
    */
-  std::vector<double> getLocalBoxMin() override { return _localBoxMin; }
+  const std::vector<double> getLocalBoxMin() override { return _localBoxMin; }
 
   /**
    * Returns the maximum coordinates of local domain.
    */
-  std::vector<double> getLocalBoxMax() override { return _localBoxMax; }
+  const std::vector<double> getLocalBoxMax() override { return _localBoxMax; }
 
   /**
    * Returns this domain's index / the processor's rank.
    */
-  int getDomainIndex() { return _domainIndex; }
+  const int getDomainIndex() { return _domainIndex; }
 
   /**
    * Returns the number of domains in each dimension
    */
-  std::vector<int> getDecomposition() { return _decomposition; }
+  const std::vector<int> getDecomposition() { return _decomposition; }
 
   /**
    * Checks if the provided coordinates are located in the local domain.

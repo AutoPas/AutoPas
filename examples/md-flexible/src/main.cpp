@@ -18,13 +18,14 @@ int main(int argc, char **argv) {
 
   MDFlexConfig configuration(argc, argv);
 
-  std::vector<double> boxMin(configuration.boxMin.value.begin(), configuration.boxMin.value.end());
-  std::vector<double> boxMax(configuration.boxMax.value.begin(), configuration.boxMax.value.end());
+  const std::vector<double> boxMin(configuration.boxMin.value.begin(), configuration.boxMin.value.end());
+  const std::vector<double> boxMax(configuration.boxMax.value.begin(), configuration.boxMax.value.end());
 
-  RegularGrid domainDecomposition(3, boxMin, boxMax, configuration.cutoff.value, configuration.verletSkinRadius.value);
+  RegularGridDecomposition domainDecomposition(3, boxMin, boxMax, configuration.cutoff.value,
+                                               configuration.verletSkinRadius.value);
 
-  std::vector<double> localBoxMin = domainDecomposition.getLocalBoxMin();
-  std::vector<double> localBoxMax = domainDecomposition.getLocalBoxMax();
+  const std::vector<double> localBoxMin = domainDecomposition.getLocalBoxMin();
+  const std::vector<double> localBoxMax = domainDecomposition.getLocalBoxMax();
 
   for (int i = 0; i < localBoxMin.size(); ++i) {
     configuration.boxMin.value[i] = localBoxMin[i];
@@ -33,6 +34,10 @@ int main(int argc, char **argv) {
 
   Simulation simulation(configuration, domainDecomposition, argc, argv);
   simulation.run();
+
+  if (domainDecomposition.getDomainIndex() == 0) {
+    std::cout << std::endl << "Using " << autopas::autopas_get_max_threads() << " Threads" << std::endl;
+  }
 
   autopas::AutoPas_MPI_Finalize();
   return EXIT_SUCCESS;
