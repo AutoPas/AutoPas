@@ -16,6 +16,7 @@
 #include "autopas/utils/NumberSet.h"
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/molecularDynamics/MoleculeLJ.h"
+#include "autopas/utils/SimilarityFunctions.h"
 
 /**
  * Provides several functions for handling configurations among mpi ranks.
@@ -85,11 +86,44 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
  * @param commSize
  * @param bucket
  */
-/* FIXME: should look like this to work with all Particles. But this leads to a Linking Error
- * template<class Particle>
- * void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket, const std::shared_ptr<autopas::ParticleContainerInterface<Particle>>& container)
- */
-void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket, const std::shared_ptr<autopas::ParticleContainerInterface<MoleculeLJ<double>>>& container);
+template<class Particle>
+void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket, const std::shared_ptr<autopas::ParticleContainerInterface<Particle>>& container) {
+  int rank;
+  AutoPas_MPI_Comm_rank(comm, &rank);
+  int commSize;
+  AutoPas_MPI_Comm_size(comm, &commSize);
+
+  auto *homogeneities_pointer = static_cast<double *>(malloc(commSize * sizeof(double)));
+
+  double homogeneity = autopas::utils::calculateHomogeneityAndMaxDensity<Particle>(container)[0];
+
+  AutoPas_MPI_Allgather(&homogeneity, 1, AUTOPAS_MPI_DOUBLE, homogeneities_pointer, 1, AUTOPAS_MPI_DOUBLE, comm);
+
+  std::vector<double> homogeneities;
+  homogeneities.assign(homogeneities_pointer, homogeneities_pointer + commSize);
+  std::sort(homogeneities.begin(), homogeneities.end());
+
+  std::vector<double> diffs;
+  std::adjacent_difference(homogeneities.begin(), homogeneities.end(), std::back_inserter(diffs));
+
+  // convert differences to percentage changes
+  std::transform(diffs.begin(), diffs.end(), homogeneities.begin(), diffs.begin(), std::divides<double>());
+
+  int current_bucket = 0;
+  int my_bucket = 0;
+  // print out the results
+
+  for (int i = 0; (size_t)i < homogeneities.size(); i++) {
+    // if a difference exceeds 20%, start a new group:
+    if (diffs[i] > 0.2) current_bucket++;
+
+    // print out an item:
+    AutoPasLog(debug, "rank: " + std::to_string(rank) + " bucket: " + std::to_string(current_bucket) +
+                      "  new value: " + std::to_string(homogeneities[i]));
+    if (homogeneities[i] == homogeneity) my_bucket = current_bucket;
+  }
+  AutoPas_MPI_Comm_split(comm, my_bucket, rank, bucket);
+}
 
 /**
  * Serializes a configuration object for communication via MPI.

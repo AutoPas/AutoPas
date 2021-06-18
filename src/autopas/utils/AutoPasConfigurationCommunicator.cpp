@@ -10,7 +10,6 @@
 #include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/utils/ConfigurationAndRankIteratorHandler.h"
-#include "autopas/utils/SimilarityFunctions.h"
 #include "autopas/utils/logging/Logger.h"
 
 namespace autopas::utils::AutoPasConfigurationCommunicator {
