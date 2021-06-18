@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include "options/IteratorBehavior.h"
 #include "ThreeDimensionalMapping.h"
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/molecularDynamics/MoleculeLJ.h"
