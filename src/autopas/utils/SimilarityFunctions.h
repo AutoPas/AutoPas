@@ -20,7 +20,7 @@ namespace autopas::utils {
  * @return  [homogeneity, max_density]
  */
 template<class Particle>
-double static *calculateHomogeneity(const std::shared_ptr<autopas::ParticleContainerInterface<Particle>>& container) {
+double static *calculateHomogeneityAndMaxDensity(const std::shared_ptr<autopas::ParticleContainerInterface<Particle>>& container) {
   auto *data = new double[2];
   size_t numberOfParticles = container->getNumParticles();
   // approximately the resolution we want to get.
