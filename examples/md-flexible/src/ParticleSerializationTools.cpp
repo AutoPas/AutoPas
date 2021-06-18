@@ -11,9 +11,9 @@ void serializeParticle(ParticleType &particle, std::vector<char> &serializedPart
     .position{particle.getR()},
     .velocity{particle.getV()},
     .force{particle.getF()},
-    .id(particle.getID()),
-    .ownershipState(particle.getOwnsershipState()),
-    .typeId(particle.getTypeId()),
+    .id = particle.getID(),
+    .ownershipState = particle.getOwnsershipState(),
+    .typeId = particle.getTypeId(),
     .oldForce{particle.getOldF()}
   };
 
