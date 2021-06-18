@@ -1,4 +1,4 @@
-# MD-Flexible
+#MD - Flexible
 
 This demo shows how to easily create and simulate molecular dynamic
 scenarios using AutoPas and flexibly configure all of it's options.
@@ -25,7 +25,6 @@ Simple tests can be run via:
 make mdFlexTests
 ctest -R mdFlexTests
 ```
-
 To run Tests with MPI enabled:
 ```bash
 mpiexec -np 4 ./examples/md-flexible/tests/mdFlexTests
