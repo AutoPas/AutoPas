@@ -38,7 +38,8 @@ void calculatePrimeFactors(unsigned int number, std::list<unsigned int> &oPrimeF
 }  // namespace
 
 RegularGridDecomposition::RegularGridDecomposition(const int &dimensionCount, const std::vector<double> &globalBoxMin,
-                         const std::vector<double> &globalBoxMax, const double &cutoffWidth, const double &skinWidth)
+                                                   const std::vector<double> &globalBoxMax, const double &cutoffWidth,
+                                                   const double &skinWidth)
     : _dimensionCount(dimensionCount), _cutoffWidth(cutoffWidth), _skinWidth(skinWidth) {
   // This using directive is necessary, because 'autopas::AUTOPAS_...' variables defined in WrapMPI.h do not exist
   // when compiling with MPI. When compiling without MPI the namespace prefix needs to be used.
@@ -157,7 +158,7 @@ void RegularGridDecomposition::updateLocalBox() {
 }
 
 void RegularGridDecomposition::initializeGlobalBox(const std::vector<double> &globalBoxMin,
-                                      const std::vector<double> &globalBoxMax) {
+                                                   const std::vector<double> &globalBoxMax) {
   _globalBoxMin.resize(_dimensionCount);
   _globalBoxMax.resize(_dimensionCount);
   for (int i = 0; i < _dimensionCount; ++i) {

@@ -34,7 +34,8 @@ std::vector<double> div(std::vector<double> a, std::vector<int> b) {
   return result;
 }
 
-void initializeAutoPasContainer(RegularGridDecomposition::SharedAutoPasContainer &autoPasContainer, MDFlexConfig &configuration) {
+void initializeAutoPasContainer(RegularGridDecomposition::SharedAutoPasContainer &autoPasContainer,
+                                MDFlexConfig &configuration) {
   autoPasContainer->setAllowedCellSizeFactors(*configuration.cellSizeFactors.value);
   autoPasContainer->setAllowedContainers(configuration.containerOptions.value);
   autoPasContainer->setAllowedDataLayouts(configuration.dataLayoutOptions.value);

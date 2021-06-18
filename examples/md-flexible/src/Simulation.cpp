@@ -16,7 +16,8 @@
 #include "configuration/MDFlexConfig.h"
 #include "src/ParticleSerializationTools.h"
 
-Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecomposition &domainDecomposition, int argc, char **argv)
+Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecomposition &domainDecomposition, int argc,
+                       char **argv)
     : _configuration(configuration), _domainDecomposition(domainDecomposition), _argc(argc), _argv(argv) {
   _timers.total.start();
   _timers.initialization.start();

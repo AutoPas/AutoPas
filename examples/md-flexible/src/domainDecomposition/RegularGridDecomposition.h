@@ -28,7 +28,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param globalBoxMax The maximum coordinates of the global domain.
    */
   RegularGridDecomposition(const int &dimensionCount, const std::vector<double> &globalBoxMin,
-              const std::vector<double> &globalBoxMax, const double &cutoffWidth, const double &skinWidth);
+                           const std::vector<double> &globalBoxMax, const double &cutoffWidth, const double &skinWidth);
 
   /**
    * Destructor.
