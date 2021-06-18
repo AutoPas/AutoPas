@@ -117,9 +117,10 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
   }
   // AutoPas works always on 3 dimensions
   constexpr unsigned int dimensions{3};
-
-  for (auto [kinEIter, numParIter] = std::tuple{kineticEnergyMul2Map.begin(), numParticleMap.begin()};
-       kinEIter != kineticEnergyMul2Map.end(); ++kinEIter, ++numParIter) {
+   
+  auto kineticEnergyAndParticleMaps = std::make_tuple( kineticEnergyMul2Map.begin(), numParticleMap.begin() );
+  
+  for (auto [kinEIter, numParIter] = kineticEnergyAndParticleMaps; kinEIter != kineticEnergyMul2Map.end(); ++kinEIter, ++numParIter) {
     kinEIter->second /= numParIter->second * dimensions;
   }
   return kineticEnergyMul2Map;

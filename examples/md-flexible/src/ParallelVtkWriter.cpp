@@ -33,7 +33,7 @@ ParallelVtkWriter::ParallelVtkWriter(const std::string &sessionName, const std::
     _sessionFolderPath.resize(sessionFolderPathLength);
   }
 
-  AutoPas_MPI_Bcast(_sessionFolderPath.data(), sessionFolderPathLength, AUTOPAS_MPI_CHAR, 0, AUTOPAS_MPI_COMM_WORLD);
+  AutoPas_MPI_Bcast(&_sessionFolderPath[0], sessionFolderPathLength, AUTOPAS_MPI_CHAR, 0, AUTOPAS_MPI_COMM_WORLD);
 }
 
 void ParallelVtkWriter::recordTimestep(const int &currentIteration, const int &maximumNumberOfDigitsInIteration,
