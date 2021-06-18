@@ -118,7 +118,7 @@ class Simulation {
    * @param autopas
    * @return double
    */
-  [[nodiscard]] double* calculateHomogeneity(autopas::AutoPas<ParticleType> &autopas) const;
+  [[nodiscard]] double calculateHomogeneity(autopas::AutoPas<ParticleType> &autopas) const;
 
  private:
   /**
@@ -194,9 +194,4 @@ class Simulation {
    * Homogeneity of the scenario, calculated by the standard deviation of the density.
    */
   double _homogeneity = 0;
-
-  std::string _homoName;
-
-  //autopas::AutoPas_MPI_Comm _comm{AUTOPAS_MPI_COMM_NULL};
-
 };

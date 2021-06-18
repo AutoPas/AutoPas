@@ -108,7 +108,7 @@ void createZSHCompletionFile(const std::tuple<T...> &cliOptions) {
   autopas::utils::TupleUtils::for_each(cliOptions, [&](auto &option) {
     // the keyword to look for value suggestions
     constexpr auto keywordForValues{"Possible Values:"};
-    const std::pair<char, char> bracketsForValues = std::make_pair('(', ')');
+    constexpr std::pair<char, char> bracketsForValues = std::make_pair('(', ')');
     constexpr auto keywordForPaths{"Path to"};
 
     // basic name and description for every option.

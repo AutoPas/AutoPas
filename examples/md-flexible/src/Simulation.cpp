@@ -43,12 +43,6 @@ void Simulation::initializeParticlePropertiesLibrary() {
 void Simulation::initialize(const MDFlexConfig &mdFlexConfig, autopas::AutoPas<ParticleType> &autopas) {
   _timers.init.start();
 
-//#ifdef AUTOPAS_INTERNODE_TUNING
-//  if (_comm == AUTOPAS_MPI_COMM_NULL) {
-//    autopas::AutoPas_MPI_Comm_dup(AUTOPAS_MPI_COMM_WORLD, &_comm);
-//  }
-//#endif
-
   _config = std::make_shared<MDFlexConfig>(mdFlexConfig);
   initializeParticlePropertiesLibrary();
 
@@ -79,17 +73,6 @@ void Simulation::initialize(const MDFlexConfig &mdFlexConfig, autopas::AutoPas<P
   autopas.setOutputSuffix(getMPISuffix());
   autopas::Logger::get()->set_level(_config->logLevel.value);
   autopas.init();
-
-  _homoName = "HomogeneityLogger_" + getMPISuffix();
-
-  auto outputFileName("AutoPas_iterationHomogeneity_" + getMPISuffix() + ".csv");
-  auto headerLoggerName = _homoName + "header";
-  auto headerLogger = spdlog::basic_logger_mt(headerLoggerName, outputFileName);
-  headerLogger->set_pattern("%v");
-  headerLogger->info("Iteration,homogeneity,max_density,hitrate,calculations,particles");
-  spdlog::drop(headerLoggerName);
-  auto logger = spdlog::basic_logger_mt<spdlog::async_factory>(_homoName, outputFileName);
-  logger->set_pattern("%v");
 
   // load checkpoint
   if (not _config->checkpointfile.value.empty()) {
@@ -184,31 +167,15 @@ void Simulation::globalForces(autopas::AutoPas<ParticleType> &autopas) {
 }
 
 void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
-  this->_homogeneity = Simulation::calculateHomogeneity(autopas)[0];
+  this->_homogeneity = Simulation::calculateHomogeneity(autopas);
   _timers.simulate.start();
 
   auto [maxIterationsEstimate, maxIterationsIsPrecise] = estimateNumIterations();
-  auto *data = static_cast<double *>(malloc(2 * sizeof(double)));
 
   // main simulation loop
   for (; needsMoreIterations(); ++_iteration) {
     if (not _config->dontShowProgressBar.value) {
       printProgress(_iteration, maxIterationsEstimate, maxIterationsIsPrecise);
-    }
-
-    double *tmp = calculateHomogeneity(autopas);
-    data[0] += tmp[0];
-    data[1] += tmp[1];
-
-    if ((_iteration + 1) % 10 == 0) {
-      autopas::FlopCounterFunctor<ParticleType> flopCounterFunctor(autopas.getCutoff());
-      autopas.iteratePairwise(&flopCounterFunctor);
-
-      spdlog::get(_homoName)->info("{},{},{},{},{},{}", _iteration, data[0] / 10, data[1] / 10,
-                                   flopCounterFunctor.getHitRate(), flopCounterFunctor.getDistanceCalculations(),
-                                   autopas.getNumberOfParticles());
-      data[0] = 0.0;
-      data[1] = 0.0;
     }
 
     // only do time step related stuff when there actually is time-stepping
@@ -270,12 +237,6 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
         _timers.thermostat.stop();
       }
     }
-
-    // MPI Barrier, so simulate communication between ranks
-//#ifdef AUTOPAS_INTERNODE_TUNING
-//    MPI_Barrier(MPI_COMM_WORLD);
-//#endif
-
   }
   // final update for a full progress bar
   if (not _config->dontShowProgressBar.value) {
@@ -491,8 +452,7 @@ void Simulation::writeVTKFile(autopas::AutoPas<ParticleType> &autopas) {
   _timers.vtk.stop();
 }
 
-double *Simulation::calculateHomogeneity(autopas::AutoPas<ParticleType> &autopas) const {
-  double *data = new double[2];
+double Simulation::calculateHomogeneity(autopas::AutoPas<ParticleType> &autopas) const {
   size_t numberOfParticles = autopas.getNumberOfParticles();
   // approximately the resolution we want to get.
   size_t numberOfCells = ceil(numberOfParticles / 10.);
@@ -546,14 +506,10 @@ double *Simulation::calculateHomogeneity(autopas::AutoPas<ParticleType> &autopas
   }
 
   // calculate density for each cell
-  data[1] = 0; // max density
   std::vector<double> densityPerCell(numberOfCells, 0.0);
   for (int i = 0; i < particlesPerCell.size(); i++) {
     densityPerCell[i] =
         (allVolumes[i] == 0) ? 0 : (particlesPerCell[i] / allVolumes[i]);  // make sure there is no division of zero
-    if (densityPerCell[i] > data[1]) {
-      data[1] = densityPerCell[i];
-    }
   }
 
   // get mean and reserve variable for variance
@@ -567,9 +523,7 @@ double *Simulation::calculateHomogeneity(autopas::AutoPas<ParticleType> &autopas
   }
 
   // finally calculate standard deviation
-  // return sqrt(variance);
-  data[0] = sqrt(variance);
-  return data;
+  return sqrt(variance);
 }
 
 void Simulation::printProgress(size_t iterationProgress, size_t maxIterations, bool maxIsPrecise) {
