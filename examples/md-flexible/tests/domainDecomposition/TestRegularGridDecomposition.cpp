@@ -1,9 +1,9 @@
 /**
- * @file TestRegularGrid.cpp
+ * @file TestRegularGridDecomposition.cpp
  * @author J. Körner
  * @date 27/05/21
  */
-#include "TestRegularGrid.h"
+#include "TestRegularGridDecomposition.h"
 
 #include "autopas/utils/WrapMPI.h"
 #include "src/ParticleAttributes.h"
@@ -11,7 +11,7 @@
 #include "src/TypeDefinitions.h"
 #include "src/configuration/MDFlexConfig.h"
 #include "src/domainDecomposition/DomainTools.h"
-#include "src/domainDecomposition/RegularGrid.h"
+#include "src/domainDecomposition/RegularGridDecomposition.h"
 
 namespace {
 std::vector<double> sub(std::vector<double> a, std::vector<double> b) {
@@ -34,7 +34,7 @@ std::vector<double> div(std::vector<double> a, std::vector<int> b) {
   return result;
 }
 
-void initializeAutoPasContainer(RegularGrid::SharedAutoPasContainer &autoPasContainer, MDFlexConfig &configuration) {
+void initializeAutoPasContainer(RegularGridDecomposition::SharedAutoPasContainer &autoPasContainer, MDFlexConfig &configuration) {
   autoPasContainer->setAllowedCellSizeFactors(*configuration.cellSizeFactors.value);
   autoPasContainer->setAllowedContainers(configuration.containerOptions.value);
   autoPasContainer->setAllowedDataLayouts(configuration.dataLayoutOptions.value);
@@ -63,7 +63,7 @@ void initializeAutoPasContainer(RegularGrid::SharedAutoPasContainer &autoPasCont
 }
 }  // namespace
 
-TEST_F(TestRegularGrid, testGetLocalDomain) {
+TEST_F(TestRegularGridDecomposition, testGetLocalDomain) {
   // This using directive is necessary, because 'autopas::AUTOPAS_...' variables defined in WrapMPI.h do not exist
   // when compiling with MPI. When compiling without MPI the namespace prefix needs to be used.
   using namespace autopas;
@@ -71,7 +71,7 @@ TEST_F(TestRegularGrid, testGetLocalDomain) {
   std::vector<double> globalBoxMin = {1.0, 1.0, 1.0};
   std::vector<double> globalBoxMax = {10.0, 10.0, 10.0};
 
-  RegularGrid domainDecomposition(3, globalBoxMin, globalBoxMax, 0, 0);
+  RegularGridDecomposition domainDecomposition(3, globalBoxMin, globalBoxMax, 0, 0);
 
   std::vector<double> globalBoxExtend = sub(globalBoxMax, globalBoxMin);
 
@@ -91,7 +91,7 @@ TEST_F(TestRegularGrid, testGetLocalDomain) {
   EXPECT_NEAR(expectedLocalBoxExtend[2], resultingLocalBoxExtend[2], 1e-10);
 }
 
-TEST_F(TestRegularGrid, testExchangeHaloParticles) {
+TEST_F(TestRegularGridDecomposition, testExchangeHaloParticles) {
   std::vector<std::string> arguments = {"md-flexible", "--yaml-filename", std::string(YAMLDIRECTORY) + "cubeGrid.yaml"};
 
   char *argv[3] = {arguments[0].data(), arguments[1].data(), arguments[2].data()};
@@ -101,7 +101,7 @@ TEST_F(TestRegularGrid, testExchangeHaloParticles) {
   std::vector<double> globalBoxMin = {1.0, 1.0, 1.0};
   std::vector<double> globalBoxMax = {10.0, 10.0, 10.0};
 
-  RegularGrid domainDecomposition(3, globalBoxMin, globalBoxMax, 0, 0);
+  RegularGridDecomposition domainDecomposition(3, globalBoxMin, globalBoxMax, 0, 0);
 
   std::vector<double> localBoxMin = domainDecomposition.getLocalBoxMin();
   std::vector<double> localBoxMax = domainDecomposition.getLocalBoxMax();
@@ -123,7 +123,7 @@ TEST_F(TestRegularGrid, testExchangeHaloParticles) {
   EXPECT_NO_THROW(domainDecomposition.exchangeHaloParticles(autoPasContainer));
 }
 
-TEST_F(TestRegularGrid, testExchangeMigratingParticles) {
+TEST_F(TestRegularGridDecomposition, testExchangeMigratingParticles) {
   std::vector<std::string> arguments = {"md-flexible", "--yaml-filename", std::string(YAMLDIRECTORY) + "cubeGrid.yaml"};
 
   char *argv[3] = {arguments[0].data(), arguments[1].data(), arguments[2].data()};
@@ -133,7 +133,7 @@ TEST_F(TestRegularGrid, testExchangeMigratingParticles) {
   std::vector<double> globalBoxMin = {1.0, 1.0, 1.0};
   std::vector<double> globalBoxMax = {10.0, 10.0, 10.0};
 
-  RegularGrid domainDecomposition(3, globalBoxMin, globalBoxMax, 0, 0);
+  RegularGridDecomposition domainDecomposition(3, globalBoxMin, globalBoxMax, 0, 0);
 
   std::vector<double> localBoxMin = domainDecomposition.getLocalBoxMin();
   std::vector<double> localBoxMax = domainDecomposition.getLocalBoxMax();

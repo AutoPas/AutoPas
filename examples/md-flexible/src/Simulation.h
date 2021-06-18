@@ -15,7 +15,7 @@
 #include "src/TypeDefinitions.h"
 #include "src/configuration/MDFlexConfig.h"
 #include "src/domainDecomposition/DomainDecomposition.h"
-#include "src/domainDecomposition/RegularGrid.h"
+#include "src/domainDecomposition/RegularGridDecomposition.h"
 
 /**
  * Handles minimal initialization requriements for MD-Flexible simulations.
@@ -29,7 +29,7 @@ class Simulation {
    * @param argc The number of arguments passed in argv.
    * @param argv The arguments passed to the program.
    */
-  Simulation(const MDFlexConfig &configuration, RegularGrid &domainDecomposition, int argc, char **argv);
+  Simulation(const MDFlexConfig &configuration, RegularGridDecomposition &domainDecomposition, int argc, char **argv);
 
   /**
    * Destructor.
@@ -209,7 +209,7 @@ class Simulation {
   /**
    * This simulation's domain decomposition.
    */
-  RegularGrid _domainDecomposition;
+  RegularGridDecomposition _domainDecomposition;
 
   /**
    * Initializes the local AutoPas container.

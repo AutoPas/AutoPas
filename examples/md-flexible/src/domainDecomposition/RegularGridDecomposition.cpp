@@ -1,9 +1,9 @@
 /**
- * @file RegularGrid.cpp
+ * @file RegularGridDecomposition.cpp
  * @author J. Körner
  * @date 19.04.2021
  */
-#include "RegularGrid.h"
+#include "RegularGridDecomposition.h"
 
 #include <math.h>
 
@@ -37,7 +37,7 @@ void calculatePrimeFactors(unsigned int number, std::list<unsigned int> &oPrimeF
 }
 }  // namespace
 
-RegularGrid::RegularGrid(const int &dimensionCount, const std::vector<double> &globalBoxMin,
+RegularGridDecomposition::RegularGridDecomposition(const int &dimensionCount, const std::vector<double> &globalBoxMin,
                          const std::vector<double> &globalBoxMax, const double &cutoffWidth, const double &skinWidth)
     : _dimensionCount(dimensionCount), _cutoffWidth(cutoffWidth), _skinWidth(skinWidth) {
   // This using directive is necessary, because 'autopas::AUTOPAS_...' variables defined in WrapMPI.h do not exist
@@ -63,11 +63,11 @@ RegularGrid::RegularGrid(const int &dimensionCount, const std::vector<double> &g
             << autopas::utils::ArrayUtils::to_string(_localBoxMax) << std::endl;
 }
 
-RegularGrid::~RegularGrid() {}
+RegularGridDecomposition::~RegularGridDecomposition() {}
 
-void RegularGrid::update() { updateLocalBox(); }
+void RegularGridDecomposition::update() { updateLocalBox(); }
 
-void RegularGrid::initializeDecomposition() {
+void RegularGridDecomposition::initializeDecomposition() {
   std::list<unsigned int> primeFactors;
   calculatePrimeFactors(_subdomainCount, primeFactors);
 
@@ -90,7 +90,7 @@ void RegularGrid::initializeDecomposition() {
   }
 }
 
-void RegularGrid::initializeMPICommunicator() {
+void RegularGridDecomposition::initializeMPICommunicator() {
   // This using directive is necessary, because 'autopas::AUTOPAS_...' variables defined in WrapMPI.h do not exist
   // when compiling with MPI. When compiling without MPI the namespace prefix needs to be used.
   using namespace autopas;
@@ -101,7 +101,7 @@ void RegularGrid::initializeMPICommunicator() {
   AutoPas_MPI_Comm_rank(_communicator, &_domainIndex);
 }
 
-void RegularGrid::initializeLocalDomain() {
+void RegularGridDecomposition::initializeLocalDomain() {
   // This using directive is necessary, because 'autopas::AUTOPAS_...' variables defined in WrapMPI.h do not exist
   // when compiling with MPI. When compiling without MPI the namespace prefix needs to be used.
   using namespace autopas;
@@ -117,7 +117,7 @@ void RegularGrid::initializeLocalDomain() {
   }
 }
 
-void RegularGrid::initializeLocalBox() {
+void RegularGridDecomposition::initializeLocalBox() {
   _localBoxMin.resize(_dimensionCount);
   _localBoxMax.resize(_dimensionCount);
   updateLocalBox();
@@ -125,7 +125,7 @@ void RegularGrid::initializeLocalBox() {
   updateHaloBoxes();
 }
 
-void RegularGrid::initializeNeighbourIds() {
+void RegularGridDecomposition::initializeNeighbourIds() {
   _neighbourDomainIndices.resize(_dimensionCount * 2);
 
   for (int i = 0; i < _dimensionCount; ++i) {
@@ -141,7 +141,7 @@ void RegularGrid::initializeNeighbourIds() {
   }
 }
 
-void RegularGrid::updateLocalBox() {
+void RegularGridDecomposition::updateLocalBox() {
   for (int i = 0; i < _dimensionCount; ++i) {
     double localBoxWidth = (_globalBoxMax[i] - _globalBoxMin[i]) / static_cast<double>(_decomposition[i]);
 
@@ -156,7 +156,7 @@ void RegularGrid::updateLocalBox() {
   }
 }
 
-void RegularGrid::initializeGlobalBox(const std::vector<double> &globalBoxMin,
+void RegularGridDecomposition::initializeGlobalBox(const std::vector<double> &globalBoxMin,
                                       const std::vector<double> &globalBoxMax) {
   _globalBoxMin.resize(_dimensionCount);
   _globalBoxMax.resize(_dimensionCount);
@@ -166,17 +166,17 @@ void RegularGrid::initializeGlobalBox(const std::vector<double> &globalBoxMin,
   }
 }
 
-bool RegularGrid::isInsideLocalDomain(const std::vector<double> &coordinates) {
+bool RegularGridDecomposition::isInsideLocalDomain(const std::vector<double> &coordinates) {
   return DomainTools::isInsideDomain(coordinates, _localBoxMin, _localBoxMax);
 }
 
-bool RegularGrid::isInsideLocalDomain(const std::array<double, 3> &coordinates) {
+bool RegularGridDecomposition::isInsideLocalDomain(const std::array<double, 3> &coordinates) {
   std::vector<double> coordinatesVector;
   coordinatesVector.insert(coordinatesVector.begin(), coordinates.begin(), coordinates.end());
   return isInsideLocalDomain(coordinatesVector);
 }
 
-void RegularGrid::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer) {
+void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer) {
   int dimensionCount = _localBoxMin.size();
   int neighbourCount = dimensionCount * 2;
 
@@ -289,7 +289,7 @@ void RegularGrid::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer
   }
 }
 
-void RegularGrid::exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer) {
+void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer) {
   auto [emigrants, updated] = autoPasContainer->updateContainer();
 
   int dimensionCount = _localBoxMin.size();
@@ -393,7 +393,7 @@ void RegularGrid::exchangeMigratingParticles(SharedAutoPasContainer &autoPasCont
   }
 }
 
-void RegularGrid::sendParticles(std::vector<ParticleType> &particles, int &receiver) {
+void RegularGridDecomposition::sendParticles(std::vector<ParticleType> &particles, int &receiver) {
   std::vector<char> buffer;
 
   for (auto &particle : particles) {
@@ -405,7 +405,7 @@ void RegularGrid::sendParticles(std::vector<ParticleType> &particles, int &recei
   sendDataToNeighbour(buffer, receiver);
 }
 
-void RegularGrid::receiveParticles(std::vector<ParticleType> &receivedParticles, int &source) {
+void RegularGridDecomposition::receiveParticles(std::vector<ParticleType> &receivedParticles, int &source) {
   std::vector<char> receiveBuffer;
 
   receiveDataFromNeighbour(source, receiveBuffer);
@@ -415,7 +415,7 @@ void RegularGrid::receiveParticles(std::vector<ParticleType> &receivedParticles,
   }
 }
 
-void RegularGrid::sendDataToNeighbour(std::vector<char> sendBuffer, const int &neighbour) {
+void RegularGridDecomposition::sendDataToNeighbour(std::vector<char> sendBuffer, const int &neighbour) {
   // This using directive is necessary, because 'autopas::AUTOPAS_...' variables defined in WrapMPI.h do not exist
   // when compiling with MPI. When compiling without MPI the namespace prefix needs to be used.
   using namespace autopas;
@@ -429,7 +429,7 @@ void RegularGrid::sendDataToNeighbour(std::vector<char> sendBuffer, const int &n
                     _communicator, &_sendRequests.back());
 }
 
-void RegularGrid::receiveDataFromNeighbour(const int &neighbour, std::vector<char> &receiveBuffer) {
+void RegularGridDecomposition::receiveDataFromNeighbour(const int &neighbour, std::vector<char> &receiveBuffer) {
   // This using directive is necessary, because 'autopas::AUTOPAS_...' variables defined in WrapMPI.h do not exist
   // when compiling with MPI. When compiling without MPI the namespace prefix needs to be used.
   using namespace autopas;
@@ -445,7 +445,7 @@ void RegularGrid::receiveDataFromNeighbour(const int &neighbour, std::vector<cha
                    AUTOPAS_MPI_STATUS_IGNORE);
 }
 
-void RegularGrid::waitForSendRequests() {
+void RegularGridDecomposition::waitForSendRequests() {
   std::vector<autopas::AutoPas_MPI_Status> sendStates;
   sendStates.resize(_sendRequests.size());
   autopas::AutoPas_MPI_Waitall(_sendRequests.size(), _sendRequests.data(), sendStates.data());
@@ -453,7 +453,7 @@ void RegularGrid::waitForSendRequests() {
   _sendBuffers.clear();
 }
 
-int RegularGrid::convertIdToIndex(const std::vector<int> &domainId) {
+int RegularGridDecomposition::convertIdToIndex(const std::vector<int> &domainId) {
   int neighbourDomainIndex = 0;
 
   for (int i = 0; i < _dimensionCount; ++i) {
@@ -470,7 +470,7 @@ int RegularGrid::convertIdToIndex(const std::vector<int> &domainId) {
   return neighbourDomainIndex;
 }
 
-void RegularGrid::updateHaloBoxes() {
+void RegularGridDecomposition::updateHaloBoxes() {
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
     int haloBoxesStartIndex = 4 * dimensionIndex;
 

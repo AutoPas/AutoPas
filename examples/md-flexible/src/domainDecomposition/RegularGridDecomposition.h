@@ -1,5 +1,5 @@
 /**
- * @file RegularGrid.h
+ * @file RegularGridDecomposition.h
  * @author J. Körner
  * @date 19.04.2021
  */
@@ -17,7 +17,7 @@
  * This class can be used as a domain decomposition which divides the domain in equal sized rectangular subdomains.
  * The number of subdomains is equal to the number of MPI processes available.
  */
-class RegularGrid final : public DomainDecomposition {
+class RegularGridDecomposition final : public DomainDecomposition {
  public:
   /**
    * Constructor.
@@ -27,13 +27,13 @@ class RegularGrid final : public DomainDecomposition {
    * @param globalBoxMin The minimum coordinates of the global domain.
    * @param globalBoxMax The maximum coordinates of the global domain.
    */
-  RegularGrid(const int &dimensionCount, const std::vector<double> &globalBoxMin,
+  RegularGridDecomposition(const int &dimensionCount, const std::vector<double> &globalBoxMin,
               const std::vector<double> &globalBoxMax, const double &cutoffWidth, const double &skinWidth);
 
   /**
    * Destructor.
    */
-  virtual ~RegularGrid();
+  virtual ~RegularGridDecomposition();
 
   /**
    * Type for the AutoPas container
