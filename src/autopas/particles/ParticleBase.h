@@ -203,6 +203,11 @@ class ParticleBase {
   [[nodiscard]] bool isDummy() const { return _ownershipState == OwnershipState::dummy; }
 
   /**
+   * Returns the particle's ownership state.
+   */
+  [[nodiscard]] OwnershipState getOwnsershipState() const { return _ownershipState; }
+
+  /**
    * Set the OwnershipState to the given value
    * @param ownershipState
    */

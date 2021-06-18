@@ -184,6 +184,7 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
   double particlePosition;
 
   std::array<double, 3> localBoxMin, localBoxMax, leftHaloBoxMin, leftHaloBoxMax, rightHaloBoxMin, rightHaloBoxMax;
+  std::array<double, 3> skin = {_skinWidth, _skinWidth, _skinWidth};
 
   localBoxMin = {_localBoxMin[0], _localBoxMin[1], _localBoxMin[2]};
   localBoxMax = {_localBoxMax[0], _localBoxMax[1], _localBoxMax[2]};
@@ -191,8 +192,6 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
   int leftNeighbour, rightNeighbour;
 
   int nextDimensionIndex;
-
-  int haloWidth = _cutoffWidth + _skinWidth;
 
   for (int i = 0; i < dimensionCount && _decomposition[i] > 1; ++i) {
     leftNeighbour = _neighbourDomainIndices[(i * 2) % neighbourCount];
@@ -205,29 +204,41 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
       std::vector<ParticleType> particlesForRightNeighbour;
 
       std::array<double, 3> periodicShift;
-      for (auto particle = autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-        double particlePosition = particle->getR()[i];
-        if (particlePosition >= _haloBoxes[4 * i] && particlePosition < _haloBoxes[4 * i + 1]) {
-          particlesForLeftNeighbour.push_back(*particle);
 
-          if (_localBoxMin[i] == _globalBoxMin[i]) {
-            periodicShift = {0.0, 0.0, 0.0};
-            periodicShift[i] = _globalBoxMax[i] - _globalBoxMin[i];
-            particlesForLeftNeighbour.back().addR(periodicShift);
-          }
+      std::array<double, 3> haloBoxMin = autopas::utils::ArrayMath::sub(localBoxMin, skin);
+      haloBoxMin[i] = _haloBoxes[4 * i];
+      std::array<double, 3> haloBoxMax = autopas::utils::ArrayMath::add(localBoxMax, skin);
+      haloBoxMax[i] = _haloBoxes[4 * i + 1];
+
+      std::cout << "HaloBoxMin: " << autopas::utils::ArrayUtils::to_string(haloBoxMin) << ", "
+                << "HaloBoxMax: " << autopas::utils::ArrayUtils::to_string(haloBoxMax) << std::endl;
+
+      for (auto particle =
+               autoPasContainer->getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::owned);
+           particle.isValid(); ++particle) {
+        particlesForLeftNeighbour.push_back(*particle);
+
+        if (_localBoxMin[i] == _globalBoxMin[i]) {
+          periodicShift = {0.0, 0.0, 0.0};
+          periodicShift[i] = _globalBoxMax[i] - _globalBoxMin[i];
+          particlesForLeftNeighbour.back().addR(periodicShift);
         }
       }
 
-      for (auto particle = autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-        double particlePosition = particle->getR()[i];
-        if (particlePosition > _haloBoxes[4 * i + 2] && particlePosition < _haloBoxes[4 * i + 3]) {
-          particlesForRightNeighbour.push_back(*particle);
+      haloBoxMin = autopas::utils::ArrayMath::sub(localBoxMin, skin);
+      haloBoxMin[i] = _haloBoxes[4 * i + 2];
+      haloBoxMax = autopas::utils::ArrayMath::add(localBoxMax, skin);
+      haloBoxMax[i] = _haloBoxes[4 * i + 3];
 
-          if (_localBoxMax[i] == _globalBoxMax[i]) {
-            periodicShift = {0.0, 0.0, 0.0};
-            periodicShift[i] = -(_globalBoxMax[i] - _globalBoxMin[i]);
-            particlesForRightNeighbour.back().addR(periodicShift);
-          }
+      for (auto particle =
+               autoPasContainer->getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::owned);
+           particle.isValid(); ++particle) {
+        particlesForRightNeighbour.push_back(*particle);
+
+        if (_localBoxMax[i] == _globalBoxMax[i]) {
+          periodicShift = {0.0, 0.0, 0.0};
+          periodicShift[i] = -(_globalBoxMax[i] - _globalBoxMin[i]);
+          particlesForRightNeighbour.back().addR(periodicShift);
         }
       }
 
@@ -291,106 +302,122 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
 }
 
 void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer) {
-  auto [emigrants, updated] = autoPasContainer->updateContainer();
+  auto [emigrants, updated] = autoPasContainer->updateContainer(false);
 
-  int dimensionCount = _localBoxMin.size();
-  int neighbourCount = _neighbourDomainIndices.size();
+  if (updated) {
+    const std::array<double, 3> localBoxMin = autoPasContainer->getBoxMin();
+    const std::array<double, 3> localBoxMax = autoPasContainer->getBoxMax();
 
-  for (int i = 0; i < dimensionCount; ++i) {
-    std::vector<ParticleType> immigrants, migrants;
+    const auto boxLength = autopas::utils::ArrayMath::sub(localBoxMax, localBoxMin);
 
-    int leftNeighbour = _neighbourDomainIndices[(i * 2) % neighbourCount];
-    int rightNeighbour = _neighbourDomainIndices[(i * 2 + 1) % neighbourCount];
-
-    std::vector<ParticleType> particlesForLeftNeighbour;
-    std::vector<ParticleType> particlesForRightNeighbour;
-
-    std::array<double, 3> periodicShift;
+    for (auto &particle : emigrants) {
+      std::array<double, 3> position = particle.getR();
+      for (int i = 0; i < _dimensionCount; ++i) {
+        if (position[i] < localBoxMin[i] && _localBoxMin[i] == _globalBoxMin[i]) {
+          position[i] = std::min(std::nextafter(localBoxMax[i], localBoxMin[i]), position[i] + boxLength[i]);
+        } else if (position[i] >= localBoxMax[i] && _localBoxMax[i] == _globalBoxMax[i]) {
+          position[i] = std::max(localBoxMin[i], position[i] - boxLength[i]);
+        }
+      }
+      particle.setR(position);
+    }
 
     for (const auto &particle : emigrants) {
-      double particlePosition = particle.getR()[i];
-      if (particlePosition < _localBoxMin[i]) {
-        particlesForLeftNeighbour.push_back(particle);
-
-        if (_localBoxMin[i] == _globalBoxMin[i]) {
-          periodicShift = {0.0, 0.0, 0.0};
-          periodicShift[i] = _globalBoxMax[i] - _globalBoxMin[i];
-          particlesForLeftNeighbour.back().addR(periodicShift);
-        }
-      } else if (particlePosition > _localBoxMax[i]) {
-        particlesForRightNeighbour.push_back(particle);
-
-        if (_localBoxMax[i] == _globalBoxMax[i]) {
-          periodicShift = {0.0, 0.0, 0.0};
-          periodicShift[i] = -(_globalBoxMax[i] - _globalBoxMin[i]);
-          particlesForRightNeighbour.back().addR(periodicShift);
-        }
-      }
+      autoPasContainer->addParticle(particle);
     }
 
-    sendParticles(emigrants, leftNeighbour);
-    sendParticles(emigrants, rightNeighbour);
+    // int neighbourCount = _neighbourDomainIndices.size();
 
-    receiveParticles(immigrants, leftNeighbour);
-    receiveParticles(immigrants, rightNeighbour);
+    // for (int i = 0; i < _dimensionCount; ++i) {
+    //  std::vector<ParticleType> immigrants, migrants;
 
-    for (auto &particle : immigrants) {
-      if (isInsideLocalDomain(particle.getR())) {
-        if (particle.getID() == 4484) {
-          std::cout << "IsInsideLocalDomain" << std::endl;
-        }
-        autoPasContainer->addParticle(particle);
-      } else {
-        migrants.push_back(particle);
-      }
-    }
+    //  std::vector<ParticleType> particlesForLeftNeighbour;
+    //  std::vector<ParticleType> particlesForRightNeighbour;
 
-    immigrants.clear();
+    //  int leftNeighbour = _neighbourDomainIndices[(i * 2) % neighbourCount];
+    //  int rightNeighbour = _neighbourDomainIndices[(i * 2 + 1) % neighbourCount];
 
-    waitForSendRequests();
+    //  for (const auto &particle : emigrants) {
+    //    if (particle.getR()[i] < _localBoxMin[i]){
+    //      particlesForLeftNeighbour.push_back(particle);
+    //    }
+    //    if (particle.getR()[i] >= _localBoxMax[i]){
+    //      particlesForRightNeighbour.push_back(particle);
+    //    }
+    //  }
 
-    leftNeighbour = _neighbourDomainIndices[(leftNeighbour + 2) % neighbourCount];
-    rightNeighbour = _neighbourDomainIndices[(rightNeighbour + 2) % neighbourCount];
+    //  sendParticles(particlesForLeftNeighbour, leftNeighbour);
+    //  sendParticles(particlesForRightNeighbour, rightNeighbour);
 
-    particlesForLeftNeighbour.clear();
-    particlesForRightNeighbour.clear();
+    //  if (_domainIndex != leftNeighbour){
+    //    receiveParticles(immigrants, leftNeighbour);
+    //  }
+    //  else {
+    //    immigrants.insert(immigrants.end(), particlesForLeftNeighbour.begin(), particlesForLeftNeighbour.end());
+    //  }
+    //  if (_domainIndex != rightNeighbour){
+    //    receiveParticles(immigrants, rightNeighbour);
+    //  }
+    //  else {
+    //    immigrants.insert(immigrants.end(), particlesForRightNeighbour.begin(), particlesForRightNeighbour.end());
+    //  }
 
-    for (const auto &particle : emigrants) {
-      double particlePosition = particle.getR()[i];
-      if (particlePosition < _localBoxMin[i]) {
-        particlesForLeftNeighbour.push_back(particle);
+    //  for (const auto &particle : immigrants) {
+    //    if (isInsideLocalDomain(particle.getR())) {
+    //      autoPasContainer->addParticle(particle);
+    //    } else {
+    //      migrants.push_back(particle);
+    //    }
+    //  }
 
-        if (_localBoxMin[i] == _globalBoxMin[i]) {
-          periodicShift = {0.0, 0.0, 0.0};
-          periodicShift[i] = _globalBoxMax[i] - _globalBoxMin[i];
-          particlesForLeftNeighbour.back().addR(periodicShift);
-        }
-      } else if (particlePosition > _localBoxMax[i]) {
-        particlesForRightNeighbour.push_back(particle);
+    //  waitForSendRequests();
 
-        if (_localBoxMax[i] == _globalBoxMax[i]) {
-          periodicShift = {0.0, 0.0, 0.0};
-          periodicShift[i] = -(_globalBoxMax[i] - _globalBoxMin[i]);
-          particlesForRightNeighbour.back().addR(periodicShift);
-        }
-      }
-    }
+    //  immigrants.clear();
 
-    int nextDimensionIndex = (i + 1) % dimensionCount;
+    //  leftNeighbour = _neighbourDomainIndices[(leftNeighbour + 2) % neighbourCount];
+    //  rightNeighbour = _neighbourDomainIndices[(rightNeighbour + 2) % neighbourCount];
 
-    sendParticles(migrants, leftNeighbour);
-    sendParticles(migrants, rightNeighbour);
+    //  int nextDimensionIndex = (i + 1) % _dimensionCount;
 
-    receiveParticles(immigrants, leftNeighbour);
-    receiveParticles(immigrants, rightNeighbour);
+    //  //for (const auto &particle : migrants) {
+    //  //  double particlePosition = particle.getR()[nextDimensionIndex];
+    //  //  periodicShift = {0.0, 0.0, 0.0};
+    //  //  if (particlePosition < _localBoxMin[nextDimensionIndex]) {
+    //  //    particlesForLeftNeighbour.push_back(particle);
 
-    for (auto &particle : immigrants) {
-      if (isInsideLocalDomain(particle.getR())) {
-        autoPasContainer->addParticle(particle);
-      }
-    }
+    //  //    if (_localBoxMin[nextDimensionIndex] == _globalBoxMin[nextDimensionIndex]) {
+    //  //      periodicShift[nextDimensionIndex] = _globalBoxMax[nextDimensionIndex] -
+    //  _globalBoxMin[nextDimensionIndex];
+    //  //      particlesForLeftNeighbour.back().addR(periodicShift);
+    //  //    }
+    //  //  } else if (particlePosition > _localBoxMax[nextDimensionIndex]) {
+    //  //    particlesForRightNeighbour.push_back(particle);
 
-    waitForSendRequests();
+    //  //    if (_localBoxMax[nextDimensionIndex] == _globalBoxMax[nextDimensionIndex]) {
+    //  //      periodicShift[nextDimensionIndex] = -(_globalBoxMax[nextDimensionIndex] -
+    //  _globalBoxMin[nextDimensionIndex]);
+    //  //      particlesForRightNeighbour.back().addR(periodicShift);
+    //  //    }
+    //  //  }
+    //  //}
+
+    //  //sendParticles(migrants, leftNeighbour);
+    //  //sendParticles(migrants, rightNeighbour);
+
+    //  //receiveParticles(immigrants, leftNeighbour);
+    //  //receiveParticles(immigrants, rightNeighbour);
+
+    //  //for (auto &particle : immigrants) {
+    //  //  if (particle.getID() == 2890) {
+    //  //    std::cout << "Position: " << autopas::utils::ArrayUtils::to_string(particle.getR()) << std::endl;
+    //  //  }
+    //  //  if (isInsideLocalDomain(particle.getR())) {
+    //  //    autoPasContainer->addParticle(particle);
+    //  //  }
+    //  //}
+
+    //  //waitForSendRequests();
+    //}
   }
 }
 

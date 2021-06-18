@@ -7,31 +7,20 @@
 
 namespace ParticleSerializationTools {
 void serializeParticle(ParticleType &particle, std::vector<char> &serializedParticles) {
-  ParticleAttributes attributes;
-
-  attributes.position = particle.getR();
-  attributes.velocity = particle.getV();
-  attributes.force = particle.getF();
-
-  if (particle.isDummy()) {
-    attributes.ownershipState = autopas::OwnershipState::dummy;
-  } else if (particle.isOwned()) {
-    attributes.ownershipState = autopas::OwnershipState::owned;
-  } else if (particle.isHalo()) {
-    attributes.ownershipState = autopas::OwnershipState::halo;
-  }
-
-  attributes.id = particle.getID();
-  attributes.typeId = particle.getTypeId();
-  attributes.oldForce = particle.getOldF();
+  ParticleAttributes attributes{
+    .position{particle.getR()},
+    .velocity{particle.getV()},
+    .force{particle.getF()},
+    .id(particle.getID()),
+    .ownershipState(particle.getOwnsershipState()),
+    .typeId(particle.getTypeId()),
+    .oldForce{particle.getOldF()}
+  };
 
   std::vector<char> attributesVector;
   attributesVector.resize(sizeof(ParticleAttributes));
 
   std::memcpy(&attributesVector[0], &attributes, sizeof(ParticleAttributes));
-
-  ParticleType deserializedParticle;
-  deserializeParticleData(attributesVector.data(), deserializedParticle);
 
   serializedParticles.insert(serializedParticles.end(), attributesVector.begin(), attributesVector.end());
 }

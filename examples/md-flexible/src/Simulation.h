@@ -30,12 +30,12 @@ class Simulation {
    * @param argc The number of arguments passed in argv.
    * @param argv The arguments passed to the program.
    */
-  Simulation(const MDFlexConfig &configuration, RegularGridDecomposition &domainDecomposition, int argc, char **argv);
+  Simulation(const MDFlexConfig &configuration, RegularGridDecomposition &domainDecomposition);
 
   /**
    * Destructor.
    */
-  ~Simulation();
+  ~Simulation() = default;
 
   /**
    * Runs the simulation
@@ -43,16 +43,6 @@ class Simulation {
   void run();
 
  protected:
-  /**
-   * Stores the argument count passed to the constructor for later reuse.
-   */
-  int _argc;
-
-  /**
-   * Stores the arguments passed to the constructor for later reuse.
-   */
-  char **_argv;
-
   /**
    * Stores the configuration used for the simulation.
    * The configuration is defined by the .yaml file passed to the application  with the '--yaml-file' argument.
@@ -206,16 +196,6 @@ class Simulation {
    * This simulation's domain decomposition.
    */
   RegularGridDecomposition _domainDecomposition;
-
-  /**
-   * Initializes the local AutoPas container.
-   */
-  void initializeAutoPasContainer();
-
-  /**
-   * Updates the particles in the local AutoPas container.
-   */
-  void updateParticles();
 
   /**
    * Sends particles of type ParticleType to a specific receiver.

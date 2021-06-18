@@ -11,74 +11,109 @@
 #include <fstream>
 #include <iostream>
 
+#include "BoundaryConditions.h"
 #include "Thermostat.h"
 #include "TimeDiscretization.h"
 #include "configuration/MDFlexConfig.h"
 #include "src/ParticleSerializationTools.h"
 
-Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecomposition &domainDecomposition, int argc,
-                       char **argv)
+Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecomposition &domainDecomposition)
     : _configuration(configuration),
       _domainDecomposition(domainDecomposition),
-      _argc(argc),
-      _argv(argv),
-      _createVtkFiles(not configuration.vtkFileName.value.empty()) {
+      _createVtkFiles(not configuration.vtkFileName.value.empty()),
+      _maximumIterationDigits(std::to_string(_configuration.iterations.value).size()),
+      _vtkWriter(std::make_shared<ParallelVtkWriter>(_configuration.vtkFileName.value, "output")) {
   _timers.total.start();
   _timers.initialization.start();
 
-  _maximumIterationDigits = std::to_string(_configuration.iterations.value).size();
-  _vtkWriter = std::make_shared<ParallelVtkWriter>(_configuration.vtkFileName.value, "output");
+  if (_configuration.logFileName.value.empty()) {
+    _outputStream = &std::cout;
+  } else {
+    _logFile = std::make_shared<std::ofstream>();
+    _logFile->open(_configuration.logFileName.value);
+    _outputStream = &(*_logFile);
+  }
 
-  initializeAutoPasContainer();
+  const std::vector<double> localBoxMin = _domainDecomposition.getLocalBoxMin();
+  const std::vector<double> localBoxMax = _domainDecomposition.getLocalBoxMax();
+
+  _autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(*_outputStream);
+  _autoPasContainer->setAllowedCellSizeFactors(*_configuration.cellSizeFactors.value);
+  _autoPasContainer->setAllowedContainers(_configuration.containerOptions.value);
+  _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions.value);
+  _autoPasContainer->setAllowedNewton3Options(_configuration.newton3Options.value);
+  _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions.value);
+  _autoPasContainer->setAllowedLoadEstimators(_configuration.loadEstimatorOptions.value);
+  _autoPasContainer->setBoxMin({localBoxMin[0], localBoxMin[1], localBoxMin[2]});
+  _autoPasContainer->setBoxMax({localBoxMax[0], localBoxMax[1], localBoxMax[2]});
+  _autoPasContainer->setCutoff(_configuration.cutoff.value);
+  _autoPasContainer->setRelativeOptimumRange(_configuration.relativeOptimumRange.value);
+  _autoPasContainer->setMaxTuningPhasesWithoutTest(_configuration.maxTuningPhasesWithoutTest.value);
+  _autoPasContainer->setRelativeBlacklistRange(_configuration.relativeBlacklistRange.value);
+  _autoPasContainer->setEvidenceFirstPrediction(_configuration.evidenceFirstPrediction.value);
+  _autoPasContainer->setExtrapolationMethodOption(_configuration.extrapolationMethodOption.value);
+  _autoPasContainer->setNumSamples(_configuration.tuningSamples.value);
+  _autoPasContainer->setMaxEvidence(_configuration.tuningMaxEvidence.value);
+  _autoPasContainer->setSelectorStrategy(_configuration.selectorStrategy.value);
+  _autoPasContainer->setTuningInterval(_configuration.tuningInterval.value);
+  _autoPasContainer->setTuningStrategyOption(_configuration.tuningStrategyOption.value);
+  _autoPasContainer->setMPIStrategy(_configuration.mpiStrategyOption.value);
+  _autoPasContainer->setVerletClusterSize(_configuration.verletClusterSize.value);
+  _autoPasContainer->setVerletRebuildFrequency(_configuration.verletRebuildFrequency.value);
+  _autoPasContainer->setVerletSkin(_configuration.verletSkinRadius.value);
+  _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
+  _autoPasContainer->init();
+
+  // @todo: the object generators should only generate particles relevant for the current ranks domain
+  for (auto &particle : _configuration.getParticles()) {
+    ParticleType autoPasParticle;
+    if (_domainDecomposition.isInsideLocalDomain(particle.position)) {
+      autoPasParticle = ParticleSerializationTools::convertParticleAttributesToParticle(particle);
+      _autoPasContainer->addParticle(autoPasParticle);
+    }
+  }
+
+  if (_configuration.useThermostat.value and _configuration.deltaT.value != 0) {
+    if (_configuration.addBrownianMotion.value) {
+      Thermostat::addBrownianMotion(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+                                    _configuration.initTemperature.value);
+    }
+    Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+                      _configuration.initTemperature.value, std::numeric_limits<double>::max());
+  }
 
   _timers.initialization.stop();
 }
 
-Simulation::~Simulation() {
-  if (_configuration.dontCreateEndConfig.value) {
-    std::ofstream configFileEnd("MDFlex_end_" + autopas::utils::Timer::getDateStamp() + ".yaml");
-    if (configFileEnd.is_open()) {
-      configFileEnd << "# Generated by:" << std::endl;
-      configFileEnd << "# ";
-      for (int i = 0; i < _argc; ++i) {
-        configFileEnd << _argv[i] << " ";
-      }
-      configFileEnd << std::endl;
-      configFileEnd << _configuration;
-      configFileEnd.close();
-    }
-  }
-}
-
 void Simulation::run() {
   // @todo: make variable part of MDFlexConfig, needs to be equal to verletRebuildFrequency.
-  int iterationsPerSuperstep = 10;
+  int iterationsPerSuperstep = 1;
   int remainingIterations = _configuration.iterations.value;
   for (int i = 0; i < _configuration.iterations.value; i += iterationsPerSuperstep) {
     executeSuperstep(iterationsPerSuperstep);
   }
 }
 
-void Simulation::updateParticles() {
-  updatePositions();
-  updateForces();
-  updateVelocities();
-  updateThermostat();
-}
-
 void Simulation::executeSuperstep(const int iterationsPerSuperstep) {
-  _domainDecomposition.exchangeHaloParticles(_autoPasContainer);
-
   for (int i = 0; i < iterationsPerSuperstep; ++i) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
       _vtkWriter->recordTimestep(_iteration, _maximumIterationDigits, *_autoPasContainer);
     }
 
-    updateParticles();
+    updatePositions();
+
+    _domainDecomposition.exchangeMigratingParticles(_autoPasContainer);
+    // BoundaryConditions::applyPeriodic(*_autoPasContainer, false);
+    _domainDecomposition.exchangeHaloParticles(_autoPasContainer);
+
+    updateForces();
+
+    updateVelocities();
+
+    updateThermostat();
+
     ++_iteration;
   }
-
-  _domainDecomposition.exchangeMigratingParticles(_autoPasContainer);
 }
 
 std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
@@ -310,60 +345,5 @@ void Simulation::updateThermostat() {
   if (_configuration.useThermostat.value and (_iteration % _configuration.thermostatInterval.value) == 0) {
     Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                       _configuration.targetTemperature.value, _configuration.deltaTemp.value);
-  }
-}
-
-void Simulation::initializeAutoPasContainer() {
-  if (_configuration.logFileName.value.empty()) {
-    _outputStream = &std::cout;
-  } else {
-    _logFile = std::make_shared<std::ofstream>();
-    _logFile->open(_configuration.logFileName.value);
-    _outputStream = &(*_logFile);
-  }
-
-  _autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(*_outputStream);
-  _autoPasContainer->setAllowedCellSizeFactors(*_configuration.cellSizeFactors.value);
-  _autoPasContainer->setAllowedContainers(_configuration.containerOptions.value);
-  _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions.value);
-  _autoPasContainer->setAllowedNewton3Options(_configuration.newton3Options.value);
-  _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions.value);
-  _autoPasContainer->setAllowedLoadEstimators(_configuration.loadEstimatorOptions.value);
-  _autoPasContainer->setBoxMin(_configuration.boxMin.value);
-  _autoPasContainer->setBoxMax(_configuration.boxMax.value);
-  _autoPasContainer->setCutoff(_configuration.cutoff.value);
-  _autoPasContainer->setRelativeOptimumRange(_configuration.relativeOptimumRange.value);
-  _autoPasContainer->setMaxTuningPhasesWithoutTest(_configuration.maxTuningPhasesWithoutTest.value);
-  _autoPasContainer->setRelativeBlacklistRange(_configuration.relativeBlacklistRange.value);
-  _autoPasContainer->setEvidenceFirstPrediction(_configuration.evidenceFirstPrediction.value);
-  _autoPasContainer->setExtrapolationMethodOption(_configuration.extrapolationMethodOption.value);
-  _autoPasContainer->setNumSamples(_configuration.tuningSamples.value);
-  _autoPasContainer->setMaxEvidence(_configuration.tuningMaxEvidence.value);
-  _autoPasContainer->setSelectorStrategy(_configuration.selectorStrategy.value);
-  _autoPasContainer->setTuningInterval(_configuration.tuningInterval.value);
-  _autoPasContainer->setTuningStrategyOption(_configuration.tuningStrategyOption.value);
-  _autoPasContainer->setMPIStrategy(_configuration.mpiStrategyOption.value);
-  _autoPasContainer->setVerletClusterSize(_configuration.verletClusterSize.value);
-  _autoPasContainer->setVerletRebuildFrequency(_configuration.verletRebuildFrequency.value);
-  _autoPasContainer->setVerletSkin(_configuration.verletSkinRadius.value);
-  _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
-  _autoPasContainer->init();
-
-  if (_configuration.useThermostat.value and _configuration.deltaT.value != 0) {
-    if (_configuration.addBrownianMotion.value) {
-      Thermostat::addBrownianMotion(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-                                    _configuration.initTemperature.value);
-    }
-    Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-                      _configuration.initTemperature.value, std::numeric_limits<double>::max());
-  }
-
-  // @todo: the object generators should only generate particles relevant for the current ranks domain
-  for (auto &particle : _configuration.getParticles()) {
-    ParticleType autoPasParticle;
-    if (_domainDecomposition.isInsideLocalDomain(particle.position)) {
-      autoPasParticle = ParticleSerializationTools::convertParticleAttributesToParticle(particle);
-      _autoPasContainer->addParticle(autoPasParticle);
-    }
   }
 }
