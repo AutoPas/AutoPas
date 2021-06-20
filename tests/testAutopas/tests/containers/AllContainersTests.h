@@ -25,7 +25,7 @@ class AllContainersTests : public AutoPasTestBase, public ::testing::WithParamIn
   std::array<double, 3> boxMin = {0, 0, 0};
   std::array<double, 3> boxMax = {10, 10, 10};
 
-  template <class ParticleType = autopas::Particle>
+  template <class ParticleType = autopas::ParticleFP64>
   auto getInitializedContainer() {
     auto containerOptionToTest = GetParam();
     double cutoff = 1;

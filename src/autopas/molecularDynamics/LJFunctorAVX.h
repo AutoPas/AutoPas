@@ -44,6 +44,7 @@ class LJFunctorAVX
     : public Functor<Particle,
                      LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
   using SoAArraysType = typename Particle::SoAArraysType;
+  using SoAFloatPrecision = typename Particle::ParticleSoAFloatPrecision;
 
  public:
   /**
@@ -99,7 +100,7 @@ class LJFunctorAVX
    * @param cutoff
    * @param particlePropertiesLibrary
    */
-  explicit LJFunctorAVX(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+  explicit LJFunctorAVX(double cutoff, ParticlePropertiesLibrary<SoAFloatPrecision, size_t> &particlePropertiesLibrary)
       : LJFunctorAVX(cutoff, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
@@ -153,7 +154,7 @@ class LJFunctorAVX
       j.subF(f);
     }
     if (calculateGlobals) {
-      auto virial = utils::ArrayMath::mul(dr, f);
+      auto virial = utils::ArrayUtils::static_cast_array<double>(utils::ArrayMath::mul(dr, f));
       double upot = epsilon24 * lj12m6 + shift6;
 
       const int threadnum = autopas_get_thread_num();
@@ -1022,7 +1023,7 @@ class LJFunctorAVX
   const double _cutoffsquareAoS = 0;
   double _epsilon24AoS, _sigmaSquareAoS, _shift6AoS = 0;
 
-  ParticlePropertiesLibrary<double, size_t> *_PPLibrary = nullptr;
+  ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
 
   // sum of the potential energy, only calculated if calculateGlobals is true
   double _upotSum;

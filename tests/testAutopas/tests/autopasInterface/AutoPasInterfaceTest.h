@@ -84,7 +84,7 @@ static inline auto getTestableContainerOptions() {
  * @param container
  * @return Vector of added particles
  */
-template <class Container, class ParticleType = autopas::Particle>
+template <class Container, class ParticleType = autopas::ParticleFP64>
 std::vector<ParticleType> addParticlesMinMidMax(Container &container) {
   constexpr size_t numParticles = 3;
   std::vector<ParticleType> addedParticles;

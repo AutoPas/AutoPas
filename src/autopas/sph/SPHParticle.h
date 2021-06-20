@@ -16,14 +16,14 @@ namespace sph {
 /**
  * Basic SPHParticle class.
  */
-class SPHParticle : public autopas::Particle {
+class SPHParticle : public autopas::ParticleFP64 {
  public:
   /**
    * Default constructor of SPHParticle.
    * Will initialize all values to some basic defaults.
    */
   SPHParticle()
-      : autopas::Particle(),
+      : autopas::ParticleFP64(),
         _density(0.),
         _pressure(0.),
         _mass(0.),
@@ -44,7 +44,7 @@ class SPHParticle : public autopas::Particle {
    * @param id id of the particle. This id should be unique
    */
   SPHParticle(std::array<double, 3> r, std::array<double, 3> v, unsigned long id)
-      : autopas::Particle(r, v, id),
+      : autopas::ParticleFP64(r, v, id),
         _density(0.),
         _pressure(0.),
         _mass(0.),
@@ -69,7 +69,7 @@ class SPHParticle : public autopas::Particle {
    * @param snds speed of sound (SouND Speed)
    */
   SPHParticle(std::array<double, 3> r, std::array<double, 3> v, unsigned long id, double mass, double smth, double snds)
-      : autopas::Particle(r, v, id),
+      : autopas::ParticleFP64(r, v, id),
         _density(0.),
         _pressure(0.),
         _mass(mass),

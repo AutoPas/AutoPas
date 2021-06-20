@@ -7,12 +7,12 @@
 #include "DirectSumContainerTest.h"
 
 TEST_F(DirectSumContainerTest, testUpdateContainerCloseToBoundary) {
-  autopas::DirectSum<autopas::Particle> directSum({0., 0., 0.}, {10., 10., 10.}, 1., 0.);
+  autopas::DirectSum<autopas::ParticleFP64> directSum({0., 0., 0.}, {10., 10., 10.}, 1., 0.);
   int id = 1;
   for (double x : {0., 5., 9.999}) {
     for (double y : {0., 5., 9.999}) {
       for (double z : {0., 5., 9.999}) {
-        autopas::Particle p({x, y, z}, {0., 0., 0.}, id++);
+        autopas::ParticleFP64 p({x, y, z}, {0., 0., 0.}, id++);
         EXPECT_NO_THROW(directSum.addParticle(p));  // inside, therefore ok!
       }
     }

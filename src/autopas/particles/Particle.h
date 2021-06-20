@@ -20,8 +20,9 @@ using ParticleFP32 = ParticleBase<float, unsigned long>;
  */
 using ParticleFP64 = ParticleBase<double, unsigned long>;
 /**
- * Alias for Particle with all variables in 64 bit precision
+ * Alias for Particle with unsigned long id
  */
-using Particle = ParticleFP64;
+template<typename floatType>
+using Particle = ParticleBase<floatType, unsigned long>;
 
 }  // namespace autopas

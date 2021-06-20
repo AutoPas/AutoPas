@@ -183,9 +183,12 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     pCopy.setOwnershipState(OwnershipState::halo);
 
     // this might be called from a parallel region so force this iterator to be sequential
-    for (auto it = getRegionIterator(utils::ArrayMath::subScalar(pCopy.getR(), this->getSkin() / 2),
-                                     utils::ArrayMath::addScalar(pCopy.getR(), this->getSkin() / 2),
-                                     IteratorBehavior::halo | IteratorBehavior::forceSequential);
+    for (auto it =
+             getRegionIterator(utils::ArrayUtils::static_cast_array<double>(
+                                   utils::ArrayMath::subScalar(pCopy.getR(), this->getSkin() / 2)),
+                               utils::ArrayUtils::static_cast_array<double>(
+                                   utils::ArrayMath::addScalar(pCopy.getR(), this->getSkin() / 2)),
+                               IteratorBehavior::halo | IteratorBehavior::forceSequential);
          it.isValid(); ++it) {
       if (pCopy.getID() == it->getID()) {
         *it = pCopy;

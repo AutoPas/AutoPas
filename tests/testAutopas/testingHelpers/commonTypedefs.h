@@ -16,11 +16,11 @@
 /**
  * Short for AutoPas Particle
  */
-using Particle = autopas::Particle;
+using Particle = autopas::ParticleFP64;
 /**
  * Short for a FullParticle Cell with the AutoPas Particle
  */
-using FPCell = autopas::FullParticleCell<autopas::Particle>;
+using FPCell = autopas::FullParticleCell<autopas::ParticleFP64>;
 
 /**
  * Short for the AutoPas single center Lennard-Jones molecule
@@ -35,4 +35,4 @@ using FMCell = autopas::FullParticleCell<Molecule>;
 /**
  * Short for Mock Functor
  */
-using MFunctor = MockFunctor<autopas::Particle>;
+using MFunctor = MockFunctor<autopas::ParticleFP64>;

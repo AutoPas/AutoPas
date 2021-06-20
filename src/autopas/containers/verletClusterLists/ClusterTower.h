@@ -11,6 +11,7 @@
 #include "autopas/containers/verletClusterLists/Cluster.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/markParticleAsDeleted.h"
+#include "autopas/utils/ArrayUtils.h"
 
 namespace autopas::internal {
 
@@ -113,7 +114,8 @@ class ClusterTower : public ParticleCell<Particle> {
     for (size_t index = 1; index <= _numDummyParticles; index++) {
       lastCluster[_clusterSize - index] = lastCluster[0];  // use first Particle in last cluster as dummy particle!
       lastCluster[_clusterSize - index].setOwnershipState(OwnershipState::dummy);
-      lastCluster[_clusterSize - index].setR({dummyStartX, 0, dummyDistZ * index});
+      lastCluster[_clusterSize - index].setR(utils::ArrayUtils::static_cast_array<
+          typename Particle::ParticleSoAFloatPrecision>(std::array<double, 3>{dummyStartX, 0, dummyDistZ * index}));
       lastCluster[_clusterSize - index].setID(std::numeric_limits<size_t>::max());
     }
   }

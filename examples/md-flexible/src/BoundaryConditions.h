@@ -107,7 +107,8 @@ std::vector<Particle> identifyNewHaloParticles(autopas::AutoPas<Particle> &autoP
         for (auto iter = autoPas.getRegionIterator(min, max, autopas::IteratorBehavior::owned); iter.isValid();
              ++iter) {
           auto particleCopy = *iter;
-          particleCopy.addR(shiftVec);
+          particleCopy.addR(autopas::utils::ArrayUtils::static_cast_array<typename Particle::ParticleSoAFloatPrecision>(
+              shiftVec));
           haloParticles.push_back(particleCopy);
         }
       }
@@ -117,7 +118,7 @@ std::vector<Particle> identifyNewHaloParticles(autopas::AutoPas<Particle> &autoP
 }
 
 /**
- * Insertes the given entering particles into the AutoPas object.
+ * Inserts the given entering particles into the AutoPas object.
  * @tparam Particle
  * @param autoPas
  * @param enteringParticles

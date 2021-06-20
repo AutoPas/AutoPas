@@ -23,6 +23,7 @@ class Object {
    * Type of all particles generated.
    */
   using ParticleType = ::ParticleType;
+  using floatType = ParticleType::ParticleSoAFloatPrecision;
 
   /**
    * Constructor that should be used by inheriting types.
@@ -52,7 +53,8 @@ class Object {
    */
   [[nodiscard]] ParticleType getDummyParticle(const autopas::AutoPas<ParticleType> &autopas) const {
     ParticleType dummyParticle;
-    dummyParticle.setV(_velocity);
+
+    dummyParticle.setV(autopas::utils::ArrayUtils::static_cast_array<floatType>(_velocity));
     dummyParticle.setID(autopas.getNumberOfParticles());
     dummyParticle.setTypeId(_typeId);
     return dummyParticle;

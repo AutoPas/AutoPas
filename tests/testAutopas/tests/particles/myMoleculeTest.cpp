@@ -10,11 +10,11 @@
 
 using namespace autopas;
 
-class MyMolecule : public Particle {
+class MyMolecule : public ParticleFP64 {
  public:
-  MyMolecule() : Particle(), _myvar(0) {}
+  MyMolecule() : ParticleFP64(), _myvar(0) {}
   MyMolecule(std::array<double, 3> r, std::array<double, 3> v, unsigned long i, int myvar)
-      : Particle(r, v, i), _myvar(myvar) {}
+      : ParticleFP64(r, v, i), _myvar(myvar) {}
   void print() {
     std::cout << "Molecule with position: ";
     for (auto &r : getR()) {

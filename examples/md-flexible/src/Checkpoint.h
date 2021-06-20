@@ -80,9 +80,10 @@ void loadParticles(AutoPasTemplate &autopas, const std::string &vtkFilename) {
   // creating Particles from checkpoint:
   for (auto i = 0ul; i < numParticles; ++i) {
     typename AutoPasTemplate::Particle_t p;
-    p.setR(positions[i]);
-    p.setV(velocities[i]);
-    p.setF(forces[i]);
+    using namespace autopas::utils::ArrayUtils;
+    p.setR(static_cast_array<typename AutoPasTemplate::Particle_t::ParticleSoAFloatPrecision>(positions[i]));
+    p.setV(static_cast_array<typename AutoPasTemplate::Particle_t::ParticleSoAFloatPrecision>(velocities[i]));
+    p.setF(static_cast_array<typename AutoPasTemplate::Particle_t::ParticleSoAFloatPrecision>(forces[i]));
     p.setTypeId(typeID[i]);
     p.setID(i);
     autopas.addParticle(p);
