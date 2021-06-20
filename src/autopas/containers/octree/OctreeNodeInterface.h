@@ -173,6 +173,7 @@ class OctreeNodeInterface {
 #endif
 
   /**
+   * TODO(johannes): This should probably be renamed to "contains"
    * Check if a 3d point is inside the node's axis aligned bounding box. (Set by the boxMin and boxMax fields.)
    * @param point The node to test
    * @return true if the point is inside the node's bounding box and false otherwise

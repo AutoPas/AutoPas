@@ -420,6 +420,48 @@ static void verifyFaceNeighbor(autopas::Face face, autopas::OctreeNodeInterface<
 }
 
 /**
+ * Create a 3D point in a given box
+ * @param min The minimum coordinate of the box
+ * @param max The maximum coordinate of the box
+ * @return A poorly random-sampled point in the box
+ */
+static std::array<double, 3> random3D(std::array<double, 3> min, std::array<double, 3> max) {
+  using namespace autopas;
+
+  // Create a random point in the [0,0,0] to [1,1,1] cube
+  std::array<double, 3> randomPosition = {(double)rand() / (double)RAND_MAX, (double)rand() / (double)RAND_MAX,
+                                          (double)rand() / (double)RAND_MAX};
+
+  // Map in the given space
+  std::array<double, 3> dim = utils::ArrayMath::sub(max, min);
+  randomPosition = utils::ArrayMath::mul(randomPosition, dim);  // Map [0,1] to [0,width on axis]
+  randomPosition = utils::ArrayMath::add(randomPosition, min);
+
+  return randomPosition;
+}
+
+/**
+ * Create an octree filled with particles whose positions are created by a very bad random number generator
+ * @param rootRef A reference in which the newly generated octree will be saved
+ * @param seed A seed value for the very bad RNG
+ * @param min The minimum coordinate of the octree's bounding box
+ * @param max The maximum coordinate of the octree's bounding box
+ * @param randomParticleCount How many particles should be spawned
+ */
+static void createRandomOctree(std::unique_ptr<autopas::OctreeNodeInterface<autopas::ParticleFP64>> &rootRef, int seed,
+                               std::array<double, 3> min, std::array<double, 3> max, int randomParticleCount) {
+  using namespace autopas;
+  std::unique_ptr<autopas::OctreeNodeInterface<autopas::ParticleFP64>> root =
+      std::make_unique<OctreeLeafNode<ParticleFP64>>(min, max, nullptr, 16);
+  srand(seed);
+  for (int particleIndex = 0; particleIndex < randomParticleCount; ++particleIndex) {
+    auto randomPosition = random3D(min, max);
+    root->insert(root, ParticleFP64(randomPosition, {0, 0, 0}, 0));
+  }
+  rootRef = std::move(root);
+}
+
+/**
  * This testcase
  * 1. instantiates an octree data structure (not the octree container itself),
  * 2. puts a fixed number of randomly distributed particles in it,
@@ -431,15 +473,8 @@ TEST_F(OctreeTest, testNeighborLocator) {
   using namespace autopas;
 
   // Create an octree with a random particle configuration.
-  std::array<double, 3> min = {0, 0, 0}, max = {1, 1, 1};
-  std::unique_ptr<OctreeNodeInterface<ParticleFP64>> root =
-      std::make_unique<OctreeLeafNode<ParticleFP64>>(min, max, nullptr, 16);
-  srand(1234);
-  for (int particleIndex = 0; particleIndex < 1000; ++particleIndex) {
-    std::array<double, 3> randomPosition = {(double)rand() / (double)RAND_MAX, (double)rand() / (double)RAND_MAX,
-                                            (double)rand() / (double)RAND_MAX};
-    root->insert(root, ParticleFP64(randomPosition, {0, 0, 0}, 0));
-  }
+  std::unique_ptr<OctreeNodeInterface<ParticleFP64>> root;
+  createRandomOctree(root, 1234, {0, 0, 0}, {1, 1, 1}, 1000);
 
   // Find all leaves
   std::vector<OctreeLeafNode<ParticleFP64> *> leaves;
@@ -497,7 +532,43 @@ TEST_F(OctreeTest, testNeighborLocator) {
  */
 TEST_F(OctreeTest, testOverlapVolume) {
   using namespace autopas;
-  ASSERT_DOUBLE_EQ(OctreeNodeInterface<ParticleFP64>::getEnclosedVolumeWith({0, 0, 0}, {1, 1, 1}, {1, 0, 0}, {2, 1, 1}), 0);
-  ASSERT_DOUBLE_EQ(OctreeNodeInterface<ParticleFP64>::getEnclosedVolumeWith({0, 0, 0}, {1, 1, 1}, {0, 0, 0}, {1, 1, 1}), 1);
-  ASSERT_DOUBLE_EQ(OctreeNodeInterface<ParticleFP64>::getEnclosedVolumeWith({0, 0, 0}, {1, 1, 1}, {0.5, 0.5, 0.5}, {1, 1, 1}), 0.5*0.5*0.5);
+  ASSERT_DOUBLE_EQ(OctreeNodeInterface<ParticleFP64>::getEnclosedVolumeWith({0, 0, 0}, {1, 1, 1}, {1, 0, 0}, {2, 1, 1}),
+                   0);
+  ASSERT_DOUBLE_EQ(OctreeNodeInterface<ParticleFP64>::getEnclosedVolumeWith({0, 0, 0}, {1, 1, 1}, {0, 0, 0}, {1, 1, 1}),
+                   1);
+  ASSERT_DOUBLE_EQ(
+      OctreeNodeInterface<ParticleFP64>::getEnclosedVolumeWith({0, 0, 0}, {1, 1, 1}, {0.5, 0.5, 0.5}, {1, 1, 1}),
+      0.5 * 0.5 * 0.5);
+}
+
+/**
+ * Create a octree filled with particles randomly distributed across a fixed box. Then, for each particle it is checked
+ * whether the range neighbor finding algorithm only finds boxes that are valid.
+ */
+TEST_F(OctreeTest, testRangeNeighborFinding) {
+  using namespace autopas;
+
+  // Create an octree with a random particle configuration.
+  std::unique_ptr<OctreeNodeInterface<ParticleFP64>> root;
+  std::array<double, 3> min = {0, 0, 0}, max = {1,1,1};
+  createRandomOctree(root, 1234, min, max, 1000);
+
+  // Iterate all particles
+  std::vector<OctreeLeafNode<ParticleFP64> *> leaves;
+  root->appendAllLeaves(leaves);
+
+  // Pick random points and see if the found boxes contain the point
+  for (int pointIndex = 0; pointIndex < 1000; ++pointIndex) {
+    auto randomPosition = random3D(min, max);
+
+    for (double pseudoInteractionLength : {0.1, 1.0}) {
+      auto pseudoBoxMin = utils::ArrayMath::subScalar(randomPosition, pseudoInteractionLength);
+      auto pseudoBoxMax = utils::ArrayMath::addScalar(randomPosition, pseudoInteractionLength);
+
+      auto containingBoxes = root->getLeavesInRange(pseudoBoxMin, pseudoBoxMax);
+      for (OctreeLeafNode<ParticleFP64> *leaf : containingBoxes) {
+        ASSERT_GE(leaf->getEnclosedVolumeWith(pseudoBoxMin, pseudoBoxMax), 0);
+      }
+    }
+  }
 }

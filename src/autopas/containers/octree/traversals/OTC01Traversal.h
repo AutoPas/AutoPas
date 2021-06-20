@@ -97,11 +97,8 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
       }
 
       // Process particles in halo cell that are in range
-      auto leafCenter = utils::ArrayMath::add(leaf->getBoxMin(), leaf->getBoxMax());
-      leafCenter = utils::ArrayMath::mulScalar(leafCenter, 0.5);
-
-      auto min = utils::ArrayMath::subScalar(leafCenter, _interactionLength);
-      auto max = utils::ArrayMath::addScalar(leafCenter, _interactionLength);
+      auto min = utils::ArrayMath::subScalar(leaf->getBoxMin(), _interactionLength);
+      auto max = utils::ArrayMath::addScalar(leaf->getBoxMax(), _interactionLength);
       auto haloNeighbors = haloWrapper->getLeavesInRange(min, max);
 
       for (OctreeLeafNode<Particle> *neighborLeaf : haloNeighbors) {

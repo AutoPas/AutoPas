@@ -60,7 +60,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
   Octree(std::array<double, 3> boxMin, std::array<double, 3> boxMax, const double cutoff, const double skin)
       : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skin) {
     // TODO(johannes): Obtain this from a configuration
-    int unsigned treeSplitThreshold = 16;
+    int unsigned treeSplitThreshold = 4;//16;
     this->_cells.push_back(OctreeNodeWrapper<Particle>(boxMin, boxMax, treeSplitThreshold));
 
     // Extend the halo region with cutoff + skin in all dimensions
@@ -141,29 +141,11 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
   }
 
   [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> begin(IteratorBehavior behavior) override {
-    printf("Johannes' Octree::begin<..., true>\n");
-
-    /*std::vector<OctreeLeafNode<Particle> *> leaves;
-    _root->appendAllLeafNodesInside(leaves, this->getBoxMin(), this->getBoxMax());
-
-    std::vector<OctreeLeafNode<Particle>> flatLeaves;
-    for(auto *leaf : leaves) {
-        flatLeaves.push_back(*leaf);
-    }*/
-    // std::vector<FullParticleCell<Particle>> cells;
-    //_root->appendAllParticleCellsInside(cells);
-    /*for(auto *leaf : leaves) {
-        auto *cell = dynamic_cast<FullParticleCell<Particle> *>(leaf);
-        cells.push_back(*cell);
-    }*/
-    // std::vector<FullParticleCell<Particle>> cells = flatLeaves;
-
     return ParticleIteratorWrapper<ParticleType, true>(
         new internal::ParticleIterator<ParticleType, ParticleCell, true>(&this->_cells, 0, this, behavior));
   }
 
   [[nodiscard]] ParticleIteratorWrapper<ParticleType, false> begin(IteratorBehavior behavior) const override {
-    // printf("Johannes' Octree::begin<..., false>\n");
     return ParticleIteratorWrapper<ParticleType, false>(
         new internal::ParticleIterator<ParticleType, ParticleCell, false>(&this->_cells, 0, this, behavior));
   }
@@ -172,8 +154,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
                                                                               const std::array<double, 3> &higherCorner,
                                                                               IteratorBehavior behavior) override {
     printf("Johannes' Octree::getRegionIterator<..., true>\n");
-    // TODO(johannes): This is a bad implementation, it does not utilize the spacial structure of the octree :(
-    std::vector<size_t> cellsOfInterest = {CellTypes::OWNED};  // TODO(johannes): Add the second cell here
+    std::vector<size_t> cellsOfInterest = {CellTypes::OWNED, CellTypes::HALO};
     return ParticleIteratorWrapper<ParticleType, true>(
         new internal::RegionParticleIterator<ParticleType, ParticleCell, true>(&this->_cells, lowerCorner, higherCorner,
                                                                                cellsOfInterest, this, behavior));
@@ -183,8 +164,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior) const override {
     printf("Johannes' Octree::getRegionIterator<..., false>\n");
-    // TODO(johannes): This is a bad implementation, it does not utilize the spacial structure of the octree :(
-    std::vector<size_t> cellsOfInterest = {CellTypes::OWNED};  // TODO(johannes): Add the second cell here
+    std::vector<size_t> cellsOfInterest = {CellTypes::OWNED, CellTypes::HALO};
     return ParticleIteratorWrapper<ParticleType, false>(
         new internal::RegionParticleIterator<ParticleType, ParticleCell, false>(
             &this->_cells, lowerCorner, higherCorner, cellsOfInterest, this, behavior));
@@ -216,7 +196,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
 
   [[nodiscard]] bool cellCanContainHaloParticles(std::size_t i) const override {
     if (i > 1) {
-      throw std::runtime_error("This cell container (octree) contains only two cells");
+      throw std::runtime_error("[Octree.h]: This cell container (octree) contains only two cells");
     }
     return i == CellTypes::HALO;
   }
