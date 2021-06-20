@@ -197,7 +197,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     // TODO(johannes): Figure out what these values should be
     std::array<unsigned long, 3> dims = {1, 1, 1};
     std::array<double, 3> cellLength = {1, 1, 1};
-    return TraversalSelectorInfo(dims, 0.0, cellLength, 1);
+    return TraversalSelectorInfo(dims, this->getInteractionLength(), cellLength, 0);
   }
 
   /**

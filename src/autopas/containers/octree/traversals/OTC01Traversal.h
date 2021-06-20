@@ -45,7 +45,8 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
   explicit OTC01Traversal(PairwiseFunctor *pairwiseFunctor, double cutoff, double interactionLength)
       : CellPairTraversal<ParticleCell>({2, 1, 1}),
         _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/),
-        _dataLayoutConverter(pairwiseFunctor) {}
+        _dataLayoutConverter(pairwiseFunctor),
+        _interactionLength(interactionLength) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::ot_c01; }
 
@@ -130,7 +131,6 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
 
   /**
    * A list of all leaves in the octree
-   * TODO: Include the halo octree
    */
   std::vector<OctreeLeafNode<Particle> *> _leaves;
 
