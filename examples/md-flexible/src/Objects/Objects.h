@@ -10,7 +10,7 @@
 #include <iosfwd>
 #include <vector>
 
-#include "autopas/AutoPas.h"
+#include "autopas/AutoPasDecl.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "src/TypeDefinitions.h"
 
