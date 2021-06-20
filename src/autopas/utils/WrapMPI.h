@@ -80,7 +80,7 @@ enum AutoPas_MPI_Comm {
 /** Wrapper for MPI_COMM_NULL */
 #define AUTOPAS_MPI_COMM_NULL autopas::AutoPas_MPI_Comm::COMM_NULL
 /** Wrapper for MPI_COMM_WORLD */
-#define AUTOPAS_MPI_COMM_WORLD autopas::AutoPAs_MPI_Comm::COMM_WORLD
+#define AUTOPAS_MPI_COMM_WORLD autopas::AutoPas_MPI_Comm::COMM_WORLD
 
 /**
  * Dummy for MPI_Datatype.
@@ -579,10 +579,10 @@ inline int AutoPas_MPI_Bcast(void *buffer, int count, AutoPas_MPI_Datatype datat
 inline int AutoPas_MPI_Ibcast(void *buffer, int count, AutoPas_MPI_Datatype datatype, int root, AutoPas_MPI_Comm comm,
                               AutoPas_MPI_Request *request) {
   if (root > 0) {
-    *request = AUTOPAS_MPI_REQUEST_NULL;
+    *request = REQUEST_NULL;
     return AUTOPAS_MPI_ERR_RANK;
   } else {
-    *request = _AUTOPAS_MPI_COMPLETED_REQUEST;
+    *request = COMPLETED_REQUEST;
     return AUTOPAS_MPI_SUCCESS;
   }
 }
@@ -595,33 +595,33 @@ inline int AutoPas_MPI_Allreduce(const void *sendbuf, void *recvbuf, int count, 
 
 inline int AutoPas_MPI_Iallreduce(const void *sendbuf, void *recvbuf, int count, AutoPas_MPI_Datatype datatype,
                                   AutoPas_MPI_Op op, AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request) {
-  *request = _AUTOPAS_MPI_COMPLETED_REQUEST;
+  *request = COMPLETED_REQUEST;
   return AutoPas_MPI_Allreduce(sendbuf, recvbuf, count, datatype, op, comm);
 }
 
 inline int AutoPas_MPI_Barrier(AutoPas_MPI_Comm comm) { return AUTOPAS_MPI_SUCCESS; }
 
 inline int AutoPas_MPI_Ibarrier(AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request) {
-  *request = _AUTOPAS_MPI_COMPLETED_REQUEST;
+  *request = COMPLETED_REQUEST;
   return AUTOPAS_MPI_SUCCESS;
 }
 
 inline int AutoPas_MPI_Test(AutoPas_MPI_Request *request, int *flag, AutoPas_MPI_Status *status) {
-  *request = AUTOPAS_MPI_REQUEST_NULL;
+  *request = REQUEST_NULL;
   *flag = 1;
   return AUTOPAS_MPI_SUCCESS;
 }
 
 inline int AutoPas_MPI_Wait(AutoPas_MPI_Request *request, AutoPas_MPI_Status *status) {
-  *request = AUTOPAS_MPI_REQUEST_NULL;
+  *request = REQUEST_NULL;
   return AUTOPAS_MPI_SUCCESS;
 }
 
 inline int AutoPas_MPI_Request_free(AutoPas_MPI_Request *request) {
-  if (*request != _AUTOPAS_MPI_COMPLETED_REQUEST) {
+  if (*request != COMPLETED_REQUEST) {
     return AUTOPAS_MPI_ERR_REQUEST;
   } else {
-    *request = AUTOPAS_MPI_REQUEST_NULL;
+    *request = REQUEST_NULL;
     return AUTOPAS_MPI_SUCCESS;
   }
 }
