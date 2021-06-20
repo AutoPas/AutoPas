@@ -87,7 +87,7 @@ void calculatePairwiseForces(autopas::AutoPas<ParticleType> &autoPasContainer,
   }
 }
 
-void calculateGlobalForces(autopas::AutoPas<ParticleType> &autoPasContainer, std::array<double, 3> &globalForce) {
+void calculateGlobalForces(autopas::AutoPas<ParticleType> &autoPasContainer, const std::array<double, 3> &globalForce) {
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel default(none) shared(_autoPasContainer)
 #endif

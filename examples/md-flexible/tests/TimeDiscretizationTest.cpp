@@ -6,9 +6,12 @@
 
 #include "TimeDiscretizationTest.h"
 
+#include <memory>
+
 #include "autopas/utils/ArrayMath.h"
 #include "autopasTools/generators/GridGenerator.h"
 #include "src/TimeDiscretization.h"
+#include "src/configuration/MDFlexConfig.h"
 
 void TimeDiscretizationTest::fillWithParticlesAndInit(autopas::AutoPas<Molecule> &autopas) {
   autopas.setBoxMin({0., 0., 0.});
@@ -21,11 +24,11 @@ void TimeDiscretizationTest::fillWithParticlesAndInit(autopas::AutoPas<Molecule>
 }
 
 TEST_F(TimeDiscretizationTest, testCalculateVelocities) {
-  auto autoPas = autopas::AutoPas<Molecule>();
-  fillWithParticlesAndInit(autoPas);
+  auto autoPas = std::make_shared<autopas::AutoPas<Molecule>>();
+  fillWithParticlesAndInit(*autoPas);
 
-  TimeDiscretization::calculateVelocities(autoPas, _particlePropertiesLibrary, 0.1);
-  for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
+  TimeDiscretization::calculateVelocities(*autoPas, _particlePropertiesLibrary, 0.1);
+  for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
     // only velocity in one direction is expected, as the force is initialized to point only in z-direction.
     EXPECT_EQ(iter->getV()[0], 0);
     EXPECT_EQ(iter->getV()[1], 0);
@@ -37,8 +40,8 @@ TEST_F(TimeDiscretizationTest, testCalculateVelocities) {
     iter->setF({0, 0, 2});
   }
 
-  TimeDiscretization::calculateVelocities(autoPas, _particlePropertiesLibrary, 0.1);
-  for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
+  TimeDiscretization::calculateVelocities(*autoPas, _particlePropertiesLibrary, 0.1);
+  for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
     // only velocity in one direction is expected
     EXPECT_EQ(iter->getV()[0], 0);
     EXPECT_EQ(iter->getV()[1], 0);
@@ -48,13 +51,13 @@ TEST_F(TimeDiscretizationTest, testCalculateVelocities) {
 }
 
 TEST_F(TimeDiscretizationTest, testCalculatePositions) {
-  auto autoPas = autopas::AutoPas<Molecule>();
-  auto autoPasRef = autopas::AutoPas<Molecule>();
-  fillWithParticlesAndInit(autoPas);
-  fillWithParticlesAndInit(autoPasRef);
+  auto autoPas = std::make_shared<autopas::AutoPas<Molecule>>();
+  auto autoPasRef = std::make_shared<autopas::AutoPas<Molecule>>();
+  fillWithParticlesAndInit(*autoPas);
+  fillWithParticlesAndInit(*autoPasRef);
 
-  TimeDiscretization::calculatePositions(autoPas, _particlePropertiesLibrary, 0.1);
-  for (auto iter = autoPas.begin(), iterRef = autoPasRef.begin(); iter.isValid(); ++iter, ++iterRef) {
+  TimeDiscretization::calculatePositions(*autoPas, _particlePropertiesLibrary, 0.1);
+  for (auto iter = autoPas->begin(), iterRef = autoPasRef->begin(); iter.isValid(); ++iter, ++iterRef) {
     // only change in one direction is expected
     EXPECT_EQ(iter->getR()[0], iterRef->getR()[0]);
     EXPECT_EQ(iter->getR()[1], iterRef->getR()[1]);
@@ -72,8 +75,8 @@ TEST_F(TimeDiscretizationTest, testCalculatePositions) {
     iterRef->setR(iter->getR());
   }
 
-  TimeDiscretization::calculatePositions(autoPas, _particlePropertiesLibrary, 0.1);
-  for (auto iter = autoPas.begin(), iterRef = autoPasRef.begin(); iter.isValid(); ++iter, ++iterRef) {
+  TimeDiscretization::calculatePositions(*autoPas, _particlePropertiesLibrary, 0.1);
+  for (auto iter = autoPas->begin(), iterRef = autoPasRef->begin(); iter.isValid(); ++iter, ++iterRef) {
     // only velocity in one direction is expected
     EXPECT_EQ(iter->getR()[0], iterRef->getR()[0]);
     EXPECT_EQ(iter->getR()[1], iterRef->getR()[1]);
@@ -84,20 +87,52 @@ TEST_F(TimeDiscretizationTest, testCalculatePositions) {
 
 // @todo: Implement forces tests
 
-// TEST_F(TimeDiscretizationTest, calculatePairwiseForces){
-// auto autoPas = autopas::AutoPas<Molecule>();
-// fillWithParticlesAndInit(autoPas);
-//
-// TimeDiscretization::calculatePairwiseForces(autoPas, _particlePropertiesLibrary, 0.1);
-// for (auto iter = autoPas.begin(), iterRef = autoPasRef.begin(); iter.isValid(); ++iter, ++iterRef) {
-//}
-//}
+TEST_F(TimeDiscretizationTest, calculatePairwiseForces) {
+  auto autoPas = std::make_shared<autopas::AutoPas<Molecule>>();
+  fillWithParticlesAndInit(*autoPas);
 
-// TEST_F(TimeDiscretizationTest, calculateGlobalForces){
-// auto autoPas = autopas::AutoPas<Molecule>();
-// fillWithParticlesAndInit(autoPas);
-//
-// TimeDiscretization::calculateGlobalForces(autoPas, _particlePropertiesLibrary, 0.1);
-// for (auto iter = autoPas.begin(), iterRef = autoPasRef.begin(); iter.isValid(); ++iter, ++iterRef) {
-//}
-//}
+  ParticlePropertiesLibraryType particlePropertiesLibrary = ParticlePropertiesLibraryType(3.0);
+  particlePropertiesLibrary.addType(0, 4.0, 4.0, 4.0);
+  particlePropertiesLibrary.calculateMixingCoefficients();
+
+  bool wasTuningIteration = false;
+
+  TimeDiscretization::calculatePairwiseForces(*autoPas, particlePropertiesLibrary, 0.1,
+                                              MDFlexConfig::FunctorOption::lj12_6, wasTuningIteration);
+
+  const std::vector<std::array<double, 3>> expectedForces = {
+      {-3.22083e+09, -3.22083e+09, -3.22083e+09}, {3.22083e+09, -3.22083e+09, -3.22083e+09},
+      {-3.22083e+09, 3.22083e+09, -3.22083e+09},  {3.22083e+09, 3.22083e+09, -3.22083e+09},
+      {-3.22083e+09, -3.22083e+09, 3.22083e+09},  {3.22083e+09, -3.22083e+09, 3.22083e+09},
+      {-3.22083e+09, 3.22083e+09, 3.22083e+09},   {3.22083e+09, 3.22083e+09, 3.22083e+09}};
+
+  int particleIndex = 0;
+  for (auto particle = autoPas->begin(); particle.isValid(); ++particle) {
+    const std::array<double, 3> force = particle->getF();
+
+    EXPECT_NEAR(force[0], expectedForces[particleIndex][0], 1e+9);
+    EXPECT_NEAR(force[1], expectedForces[particleIndex][1], 1e+9);
+    EXPECT_NEAR(force[2], expectedForces[particleIndex][2], 1e+9);
+
+    ++particleIndex;
+  }
+}
+
+TEST_F(TimeDiscretizationTest, calculateGlobalForces) {
+  auto autoPas = std::make_shared<autopas::AutoPas<Molecule>>();
+  fillWithParticlesAndInit(*autoPas);
+
+  const std::array<double, 3> globalForce = {0.0, -1.0, 0.0};
+
+  TimeDiscretization::calculateGlobalForces(*autoPas, globalForce);
+
+  const std::array<double, 3> expectedForce = {0, -1, 1};
+
+  for (auto particle = autoPas->begin(); particle.isValid(); ++particle) {
+    const std::array<double, 3> force = particle->getF();
+
+    EXPECT_EQ(force[0], expectedForce[0]);
+    EXPECT_EQ(force[1], expectedForce[1]);
+    EXPECT_EQ(force[2], expectedForce[2]);
+  }
+}
