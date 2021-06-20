@@ -15,8 +15,8 @@
 
 #include "autopas/utils/WrapMPI.h"
 
-ParallelVtkWriter::ParallelVtkWriter(std::string sessionName, const std::string &outputFolder)
-    : _sessionName(std::move(sessionName)), _mpiRank(0) {
+ParallelVtkWriter::ParallelVtkWriter(std::string sessionName, const std::string &outputFolder, const int &maximumNumberOfDigitsInIteration)
+    : _sessionName(std::move(sessionName)), _mpiRank(0), _maximumNumberOfDigitsInIteration(maximumNumberOfDigitsInIteration) {
   // This using directive is necessary, because 'autopas::AUTOPAS_...' variables defined in WrapMPI.h do not exist
   // when compiling with MPI. When compiling without MPI the namespace prefix needs to be used.
   using namespace autopas;
@@ -37,11 +37,14 @@ ParallelVtkWriter::ParallelVtkWriter(std::string sessionName, const std::string 
   AutoPas_MPI_Bcast(&_sessionFolderPath[0], sessionFolderPathLength, AUTOPAS_MPI_CHAR, 0, AUTOPAS_MPI_COMM_WORLD);
 }
 
-void ParallelVtkWriter::recordTimestep(const int &currentIteration, const int &maximumNumberOfDigitsInIteration,
-                                       const autopas::AutoPas<ParticleType> &autoPasContainer) {
+void ParallelVtkWriter::recordTimestep(const int &currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer) {
+  if (_mpiRank == 0) {
+    // todo: Create .pvtu file
+  }
+
   std::ostringstream timestepFileName;
   timestepFileName << _sessionFolderPath << _sessionName << "_" << _mpiRank << "_" << std::setfill('0')
-                   << std::setw(maximumNumberOfDigitsInIteration) << currentIteration << ".vtk";
+                   << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".vtk";
 
   std::ofstream timestepFile;
   timestepFile.open(timestepFileName.str(), std::ios::out | std::ios::binary);
@@ -103,7 +106,7 @@ void ParallelVtkWriter::recordTimestep(const int &currentIteration, const int &m
   timestepFile.close();
 }
 
-void ParallelVtkWriter::tryCreateSessionFolder(const std::string &name, std::string location) {
+void ParallelVtkWriter::tryCreateSessionAndDataFolder(const std::string &name, std::string location) {
   time_t rawTime;
   time(&rawTime);
 
@@ -116,6 +119,9 @@ void ParallelVtkWriter::tryCreateSessionFolder(const std::string &name, std::str
 
   _sessionFolderPath = location + "/" + name + "_" + timeString + "/";
   tryCreateFolder(name + "_" + timeString, location);
+
+  _dataFolderPath = _sessionFolderPath + "data/";
+  tryCreateFolder("data", _sessionFolderPath);
 }
 
 void ParallelVtkWriter::tryCreateFolder(const std::string &name, const std::string &location) {

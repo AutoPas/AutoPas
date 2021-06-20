@@ -19,8 +19,9 @@ class ParallelVtkWriter {
    * Constructor.
    * @param sessionName Sets the prefix for every created folder / file.
    * @param outputFolder Sets the folder where the vtk files will be created.
+   * @param maximumNumberOfDigitsInIteration The maximum number of digits an iteration index can have.
    */
-  ParallelVtkWriter(std::string sessionName, const std::string &outputFolder);
+  ParallelVtkWriter(std::string sessionName, const std::string &outputFolder, const int &maximumNumberOfDigitsInIteration);
 
   /**
    * Destructor.
@@ -33,8 +34,7 @@ class ParallelVtkWriter {
    * @param maximumNumberOfDigitsInIteration The maximum number of digits an iteration index may have.
    * @param autoPasContainer The AutoPas container whose owned particles will be logged.
    */
-  void recordTimestep(const int &currentIteration, const int &maximumNumberOfDigitsInIteration,
-                      const autopas::AutoPas<ParticleType> &autoPasContainer);
+  void recordTimestep(const int &currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer);
 
  private:
   /**
@@ -42,7 +42,7 @@ class ParallelVtkWriter {
    * Every process will write into it's own vtk file, while the process with rank 0 will
    * create the parallel .pvtu file.
    */
-  int _mpiRank;
+   int _mpiRank;
 
   /**
    * Stores the session name.
@@ -55,15 +55,32 @@ class ParallelVtkWriter {
   std::string _sessionFolderPath;
 
   /**
+   * Stores the path to the folder where the current session's actual data is stored.
+   */
+  std::string _dataFolderPath;
+
+  /**
    * Stores the name of output .vtu file for the current process.
    */
   std::string _outputFileName;
 
   /**
+   * Stores the maximum number of digits an iteration can have.
+   * This is used to determine the number of leading zeros for each timestep record.
+   */
+  int _maximumNumberOfDigitsInIteration;
+
+  /**
    * Tries to create a folder for the current writer session and stores it in _sessionFolderPath.
    */
-  void tryCreateSessionFolder(const std::string &name, const std::string location);
+  void tryCreateSessionAndDataFolders(const std::string &name, const std::string location);
 
+  /**
+   * Creates the .pvtu file used for loading records of multiple ranks
+   * If the location does not exist this function will throw an error.
+   */
+  void createParallelUnstructuredGridFile(const int &currentIteration);
+  
   /**
    * Tries to create a folder at a location.
    * If the location does not exist this function will throw an error.

@@ -21,8 +21,7 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
     : _configuration(configuration),
       _domainDecomposition(domainDecomposition),
       _createVtkFiles(not configuration.vtkFileName.value.empty()),
-      _maximumIterationDigits(std::to_string(_configuration.iterations.value).size()),
-      _vtkWriter(std::make_shared<ParallelVtkWriter>(_configuration.vtkFileName.value, "output")) {
+      _vtkWriter(std::make_shared<ParallelVtkWriter>(_configuration.vtkFileName.value, "output", std::to_string(_configuration.iterations.value).size())) {
   _timers.total.start();
   _timers.initialization.start();
 
@@ -97,7 +96,7 @@ void Simulation::run() {
 void Simulation::executeSuperstep(const int iterationsPerSuperstep) {
   for (int i = 0; i < iterationsPerSuperstep; ++i) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
-      _vtkWriter->recordTimestep(_iteration, _maximumIterationDigits, *_autoPasContainer);
+      _vtkWriter->recordTimestep(_iteration, *_autoPasContainer);
     }
 
     updatePositions();

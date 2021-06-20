@@ -125,11 +125,6 @@ class Simulation {
   bool _createVtkFiles;
 
   /**
-   * Stores the maximum digits an iteration index can have.
-   */
-  size_t _maximumIterationDigits;
-
-  /**
    * Initializes the simulation.
    * This function needs to be called in the constructor of the deriving class, because initializeDomainDecomposition
    * can not be called by the constructor of Simulation, because it is a pure virtual function.
