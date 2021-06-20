@@ -38,8 +38,14 @@ class ParallelVtkWriter {
 
  private:
   /**
+   * Stores the number of ranks used in the simulation.
+   * This information is required when creating the .pvtu file.
+   */
+   int _numberOfRanks;
+
+  /**
    * Stores the MPI rank of the current process.
-   * Every process will write into it's own vtk file, while the process with rank 0 will
+   * Every process will write into it's own .vtu file, while the process with rank 0 will
    * create the parallel .pvtu file.
    */
    int _mpiRank;
@@ -76,11 +82,11 @@ class ParallelVtkWriter {
   void tryCreateSessionAndDataFolders(const std::string &name, const std::string location);
 
   /**
-   * Creates the .pvtu file used for loading records of multiple ranks
-   * If the location does not exist this function will throw an error.
+   * Creates the .pvtu file required to load data from multiple ranks into paraview.
+   * @param currentIteration: The simulation's current iteration.
    */
-  void createParallelUnstructuredGridFile(const int &currentIteration);
-  
+  void createPvtuFile(const int &currentIteration);
+
   /**
    * Tries to create a folder at a location.
    * If the location does not exist this function will throw an error.
