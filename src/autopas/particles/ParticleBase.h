@@ -204,8 +204,9 @@ class ParticleBase {
 
   /**
    * Returns the particle's ownership state.
+   * @ return the current OwnershipState
    */
-  [[nodiscard]] OwnershipState getOwnsershipState() const { return _ownershipState; }
+  [[nodiscard]] OwnershipState getOwnershipState() const { return _ownershipState; }
 
   /**
    * Set the OwnershipState to the given value

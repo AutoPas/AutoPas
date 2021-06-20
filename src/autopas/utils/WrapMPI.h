@@ -74,30 +74,48 @@ using AutoPas_MPI_Request = MPI_Request;
  * Dummy for MPI_Comm.
  */
 enum AutoPas_MPI_Comm {
-  AUTOPAS_MPI_COMM_NULL = 0,
-  AUTOPAS_MPI_COMM_WORLD,
+  COMM_NULL = 0,
+  COMM_WORLD,
 };
+/** Wrapper for MPI_COMM_NULL */
+#define AUTOPAS_MPI_COMM_NULL autopas::AutoPas_MPI_Comm::COMM_NULL
+/** Wrapper for MPI_COMM_WORLD */
+#define AUTOPAS_MPI_COMM_WORLD autopas::AutoPAs_MPI_Comm::COMM_WORLD
 
 /**
  * Dummy for MPI_Datatype.
  * initialize values to the size of the respective type in bytes.
  */
 enum AutoPas_MPI_Datatype {
-  AUTOPAS_MPI_BYTE = 1,
-  AUTOPAS_MPI_CXX_BOOL = sizeof(bool),
-  AUTOPAS_MPI_CHAR = sizeof(char),
-  AUTOPAS_MPI_INT = sizeof(int),
-  AUTOPAS_MPI_UNSIGNED_LONG = sizeof(unsigned long),
+  BYTE = 1,
+  CXX_BOOL = sizeof(bool),
+  CHAR = sizeof(char),
+  INT = sizeof(int),
+  UNSIGNED_LONG = sizeof(unsigned long)
 };
+// MPI_Datatype
+/** Wrapper for MPI_BYTE */
+#define AUTOPAS_MPI_BYTE autopas::AutoPas_MPI_Datatype::BYTE
+/** Wrapper for MPI_CXX_BOOL */
+#define AUTOPAS_MPI_CXX_BOOL autopas::AutoPas_MPI_Datatype::CXX_BOOL
+/** Wrapper for MPI_CHAR */
+#define AUTOPAS_MPI_CHAR autopas::AutoPas_MPI_Datatype::CHAR
+/** Wrapper for MPI_INT */
+#define AUTOPAS_MPI_INT autopas::AutoPas_MPI_Datatype::INT
+/** Wrapper for MPI_UNSIGNED LONG */
+#define AUTOPAS_MPI_UNSIGNED_LONG autopas::AutoPas_MPI_Datatype::UNSIGNED_LONG
 
 /**
  * Dummy for MPI_Op.
  */
-enum AutoPas_MPI_Op {
-  AUTOPAS_MPI_LAND,
-  AUTOPAS_MPI_MIN,
-  AUTOPAS_MPI_MINLOC,
-};
+enum AutoPas_MPI_Op { LAND, MIN, MINLOC };
+// MPI_Op
+/** Wrapper for MPI_LAND */
+#define AUTOPAS_MPI_LAND autopas::AutoPas_MPI_Op::LAND
+/** Wrapper for MPI_MIN */
+#define AUTOPAS_MPI_MIN autopas::AutoPas_MPI_Op::MIN
+/** Wrapper for MPI_MINLOC */
+#define AUTOPAS_MPI_MINLOC autopas::AutoPas_MPI_Op::MINLOC
 
 /**
  * @struct AutoPas_MPI_Status
@@ -123,10 +141,12 @@ struct AutoPas_MPI_Status {
  * Dummy for MPI_Request.
  */
 enum AutoPas_MPI_Request {
-  AUTOPAS_MPI_REQUEST_NULL,
-  _AUTOPAS_MPI_COMPLETED_REQUEST,
-  _AUTOPAS_MPI_INCOMPLETE_REQUEST,
+  REQUEST_NULL,
+  COMPLETED_REQUEST,
+  INCOMPLETE_REQUEST,
 };
+/** Dummy for MPI_REQUEST_NULL */
+#define AUTOPAS_MPI_REQUEST_NULL autopas::AutoPas_MPI_Request::REQUEST_NULL
 
 /**
  * Dummy for MPI_Error
@@ -331,7 +351,8 @@ inline int AutoPas_MPI_Request_free(AutoPas_MPI_Request *request);
  * @param dims: The size of the cartesian grid in each dimension.
  * @param periods: An array defining for each dimension if it has periodic boundaries.
  * @param reorder: Defines if ranking may be reordered (true) or not (false).
- * @param cartCommunicator: The resulting MPI communicator.
+ * @param comm_cart: The resulting MPI communicator.
+ * @return MPMI error value
  */
 inline int AutoPas_MPI_Cart_create(AutoPas_MPI_Comm comm, int nDims, const int *dims, const int *periods, int reorder,
                                    AutoPas_MPI_Comm *comm_cart);
@@ -343,6 +364,7 @@ inline int AutoPas_MPI_Cart_create(AutoPas_MPI_Comm comm, int nDims, const int *
  * @param dims: Number of processes for each Cartesian dimension (array of integers).
  * @param periods: Periodicity (true/false) for each Cartesian dimension (array of logicals).
  * @param coords: Coordinates of calling process in Cartesian structure (array of integers).
+ * @return MPMI error value
  */
 inline int AutoPas_MPI_Cart_get(AutoPas_MPI_Comm comm, int maxdims, int dims[], int periods[], int coords[]);
 
@@ -354,6 +376,8 @@ inline int AutoPas_MPI_Cart_get(AutoPas_MPI_Comm comm, int maxdims, int dims[], 
  * @param dest: Rank of destination (integer).
  * @param tag: Message tag (integer).
  * @param comm: Communicator (handle).
+ * @param request: A pointer to the created send request.
+ * @return MPMI error value
  */
 inline int AutoPas_MPI_Isend(const void *buf, int count, AutoPas_MPI_Datatype datatype, int dest, int tag,
                              AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request);
@@ -363,6 +387,8 @@ inline int AutoPas_MPI_Isend(const void *buf, int count, AutoPas_MPI_Datatype da
  * @param source: Source rank (integer).
  * @param tag: Tag value (integer).
  * @param comm: Communicator (handle).
+ * @param status: The status of the probed reqeust.
+ * @return MPMI error value
  */
 inline int AutoPas_MPI_Probe(int source, int tag, AutoPas_MPI_Comm comm, AutoPas_MPI_Status *status);
 
@@ -371,6 +397,7 @@ inline int AutoPas_MPI_Probe(int source, int tag, AutoPas_MPI_Comm comm, AutoPas
  * @param status: Return status of receive operation (status).
  * @param datatype: Datatype of each receive buffer element (handle).
  * @param count: Number of received elements (integer).
+ * @return MPMI error value
  */
 inline int AutoPas_MPI_Get_count(const AutoPas_MPI_Status *status, AutoPas_MPI_Datatype datatype, int *count);
 
@@ -379,6 +406,7 @@ inline int AutoPas_MPI_Get_count(const AutoPas_MPI_Status *status, AutoPas_MPI_D
  * @param count: Lists length (integer).
  * @param array_of_requests: Array of requests (array of handles).
  * @param array_of_statuses: Array of status objects (array of status).
+ * @return MPMI error value
  */
 inline int AutoPas_MPI_Waitall(int count, AutoPas_MPI_Request array_of_requests[],
                                AutoPas_MPI_Status *array_of_statuses);

@@ -65,10 +65,6 @@ void initializeAutoPasContainer(RegularGridDecomposition::SharedAutoPasContainer
 }  // namespace
 
 TEST_F(TestRegularGridDecomposition, testGetLocalDomain) {
-  // This using directive is necessary, because 'autopas::AUTOPAS_...' variables defined in WrapMPI.h do not exist
-  // when compiling with MPI. When compiling without MPI the namespace prefix needs to be used.
-  using namespace autopas;
-
   std::vector<double> globalBoxMin = {1.0, 1.0, 1.0};
   std::vector<double> globalBoxMax = {10.0, 10.0, 10.0};
 
@@ -77,7 +73,7 @@ TEST_F(TestRegularGridDecomposition, testGetLocalDomain) {
   std::vector<double> globalBoxExtend = sub(globalBoxMax, globalBoxMin);
 
   int numberOfProcesses;
-  AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &numberOfProcesses);
+  autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &numberOfProcesses);
 
   std::vector<int> decomposition;
   DomainTools::generateDecomposition(numberOfProcesses, 3, decomposition);
