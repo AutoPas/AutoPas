@@ -16,8 +16,7 @@
 namespace autopas::utils {
 
 /**
- * enum that defines the behavior of the expectionhandling
- * please check the enum values for a more detailed description
+ * Enum that defines the behavior of the expection handling.
  */
 enum ExceptionBehavior {
   /**
