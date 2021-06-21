@@ -143,7 +143,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
   }
   if (node[config.maxDifferenceForBucket.name]) {
     config.maxDifferenceForBucket.value = node[config.maxDifferenceForBucket.name].as<double>();
-  }if (node[config.weightForMaxDensity.name]) {
+  }
+  if (node[config.weightForMaxDensity.name]) {
     config.weightForMaxDensity.value = node[config.weightForMaxDensity.name].as<double>();
   }
   if (node[config.acquisitionFunctionOption.name]) {

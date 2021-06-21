@@ -55,15 +55,17 @@ class AutoTuner {
    * @param verletSkin Length added to the cutoff for the Verlet lists' skin.
    * @param verletClusterSize Number of particles in a cluster to use in verlet list.
    * @param tuningStrategy Object implementing the modelling and exploration of a search space.
+   * @param maxDifferenceForBucket maximum difference of two scenarios to get in the same bucket for MPI-tuning
+   * @param weightForMaxDensity weight for maxDensity in calculation for bucket distribution
    * @param selectorStrategy Strategy for the configuration selection.
    * @param tuningInterval Number of time steps after which the auto-tuner shall reevaluate all selections.
    * @param maxSamples Number of samples that shall be collected for each combination.
    * @param outputSuffix Suffix for all output files produced by this class.
    */
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
-            unsigned int verletClusterSize, std::unique_ptr<TuningStrategyInterface> tuningStrategy, double maxDifferenceForBucket, double weightForMaxDensity,
-            SelectorStrategyOption selectorStrategy, unsigned int tuningInterval, unsigned int maxSamples,
-            const std::string &outputSuffix = "")
+            unsigned int verletClusterSize, std::unique_ptr<TuningStrategyInterface> tuningStrategy,
+            double maxDifferenceForBucket, double weightForMaxDensity, SelectorStrategyOption selectorStrategy,
+            unsigned int tuningInterval, unsigned int maxSamples, const std::string &outputSuffix = "")
       : _selectorStrategy(selectorStrategy),
         _tuningStrategy(std::move(tuningStrategy)),
         _tuningInterval(tuningInterval),
