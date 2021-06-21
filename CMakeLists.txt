@@ -48,15 +48,6 @@ if (NOT CMAKE_BUILD_TYPE)
     )
 endif (NOT CMAKE_BUILD_TYPE)
 
-# CUDA options
-option(AUTOPAS_ENABLE_CUDA "Activates Cuda Components" OFF)
-if (AUTOPAS_ENABLE_CUDA)
-    message(STATUS "Cuda enabled.")
-    enable_language(CUDA)
-else ()
-    message(STATUS "Cuda disabled.")
-endif ()
-
 enable_testing()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/)
@@ -86,7 +77,6 @@ include(coloring)
 include(logging)
 include(other-compileroptions)
 include(vectorization)
-include(cuda)
 
 # tests and examples
 add_subdirectory(examples)

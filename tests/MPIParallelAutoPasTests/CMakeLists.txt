@@ -4,14 +4,6 @@ file(
     "*.cpp"
     "*.h"
 )
-if (AUTOPAS_ENABLE_CUDA)
-    file(
-        GLOB_RECURSE
-        CU_SRC
-        "*.cu"
-        "*.cuh"
-    )
-endif ()
 
 if (NOT AUTOPAS_INTERNODE_TUNING)
     return()
@@ -28,7 +20,7 @@ endif ()
 
 include_directories(SYSTEM ${MPI_INCLUDE_PATH})
 
-add_executable(runMPITests $<$<BOOL:${AUTOPAS_ENABLE_CUDA}>:${CU_SRC}> ${MY_SRC})
+add_executable(runMPITests ${MY_SRC})
 
 target_compile_definitions(runMPITests PRIVATE)
 
