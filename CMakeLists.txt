@@ -17,10 +17,9 @@ set(AUTOPAS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 if (CMAKE_VERSION VERSION_LESS 3.17)
     message(
         STATUS
-            "Setting CMAKE_CXX_STANDARD and CMAKE_CUDA_STANDARD globally because cmake < 3.17 is used."
+            "Setting CMAKE_CXX_STANDARD globally because cmake < 3.17 is used."
     )
     set(CMAKE_CXX_STANDARD 17)
-    set(CMAKE_CUDA_STANDARD 14)
 endif ()
 
 if (NOT CYGWIN)

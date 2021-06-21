@@ -43,10 +43,6 @@ class ContainerOption : public Option<ContainerOption> {
      */
     varVerletListsAsBuild,
     /**
-     * VerletClusterCells : Same algorithm as VerletClusterLists but CUDA implementation.
-     */
-    verletClusterCells,
-    /**
      * VerletClusterLists : Particles are grouped in clusters of fixed size. Similar to VerletLists for every cluster
      * a list of neighbor clusters is generated. Clusters always interact with whole clusters so vectorization is
      * possible.

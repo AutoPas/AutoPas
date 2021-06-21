@@ -59,12 +59,6 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
       configsPerContainer[autopas::ContainerOption::linkedCells] - 4;
   // VerletLists:           vl_list_iteration           (AoS <=> SoA, noNewton3)                             = 2
   configsPerContainer[autopas::ContainerOption::verletLists] = 2;
-  // VerletListsCells:      vlc_sliced                  (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        vlc_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3, 3 heuristics)   = 12
-  //                        vlc_sliced_colored          (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        vlc_c18                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        vlc_c01                     (AoS <=> SoA, noNewton3)                             = 2
-  configsPerContainer[autopas::ContainerOption::verletListsCells] = 26;
   // VerletClusterLists:    vcl_cluster_iteration       (AoS <=> SoA, noNewton3)                             = 2
   //                        vcl_c06                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   //                        vcl_c01_balanced            (AoS <=> SoA, noNewton3)                             = 2
@@ -82,26 +76,12 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   //                        vlp_c01                     (AoS <=> SoA, noNewton3)                             = 2
   configsPerContainer[autopas::ContainerOption::pairwiseVerletLists] = 18;
 
-  // check that there is an entry for every container. Except VCC because they are only relevant for CUDA...
-  ASSERT_EQ(configsPerContainer.size(), autopas::ContainerOption::getAllOptions().size() - 1);
-
-  // Additional with cuda
-  // VerletClusterCells:    vcc_cluster_iteration       (Cuda, newton3 <=> noNewton3)                        = 2
-  // Direct Sum:            ds_sequential               (Cuda, newton3 <=> noNewton3)                        = 2
-  // LinkedCells:           lc_c01_cuda                 (Cuda, newton3 <=> noNewton3)                        = 2
-  constexpr size_t CUDAconfigs = 6;
-  //
-  // currently disabled:
-  // CUDA:
-  // LCC01CudaTraversal for enabled N3, see #420                                                              -1
-  //                                                                                                    --------
+  // check that there is an entry for every container.
+  ASSERT_EQ(configsPerContainer.size(), autopas::ContainerOption::getAllOptions().size());
 
   size_t numberOfConfigs = std::accumulate(configsPerContainer.begin(), configsPerContainer.end(), 0ul,
                                            [](auto acc, auto &pair) { return acc + pair.second; });
-#ifdef AUTOPAS_CUDA
-  // only add cuda configs if compiling with cuda
-  numberOfConfigs += CUDAconfigs;
-#endif
+
   // total number of possible configurations * number of samples + last iteration after tuning
   const size_t expectedNumberOfIterations = numberOfConfigs * maxSamples + 1;
 

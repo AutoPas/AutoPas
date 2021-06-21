@@ -15,19 +15,11 @@
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/StaticBoolSelector.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
-#if defined(AUTOPAS_CUDA)
-#include "LJFunctorCudaConstants.cuh"
-#include "autopas/molecularDynamics/LJFunctorCuda.cuh"
-#include "autopas/molecularDynamics/LJFunctorCudaGlobals.cuh"
-#include "autopas/utils/CudaDeviceVector.h"
-#include "autopas/utils/CudaStreamHandler.h"
-#else
-#include "autopas/utils/ExceptionHandler.h"
-#endif
 
 namespace autopas {
 
@@ -119,18 +111,6 @@ class LJFunctor
 
   bool allowsNonNewton3() final {
     return useNewton3 == FunctorN3Modes::Newton3Off or useNewton3 == FunctorN3Modes::Both;
-  }
-
-  bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const final {
-    if (dataLayout == DataLayoutOption::cuda) {
-#if defined(AUTOPAS_CUDA)
-      return _cudawrapper.isAppropriateClusterSize(clusterSize);
-#endif
-      return false;
-    } else {
-      return dataLayout == DataLayoutOption::aos;  // LJFunctor does not yet support soa for clusters.
-      // The reason for this is that the owned state is not handled correctly, see #396.
-    }
   }
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
@@ -528,36 +508,9 @@ class LJFunctor
   }
 
   /**
-   * Functor using Cuda on SoA in device Memory
-   *
-   * This Functor calculates the pair-wise interactions between particles in the device_handle on the GPU
-   *
-   * @param device_handle soa in device memory
-   * @param newton3 defines whether or whether not to use newton
-   */
-  void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle, bool newton3) final {
-#if defined(AUTOPAS_CUDA)
-    const size_t size = device_handle.template get<Particle::AttributeNames::posX>().size();
-    if (size == 0) {
-      return;
-    }
-    auto cudaSoA = this->createFunctorCudaSoA(device_handle);
-    if (newton3) {
-      _cudawrapper.SoAFunctorN3Wrapper(cudaSoA.get(), 0);
-    } else {
-      _cudawrapper.SoAFunctorNoN3Wrapper(cudaSoA.get(), 0);
-    }
-
-#else
-    utils::ExceptionHandler::exception("LJFunctor::CudaFunctor: AutoPas was compiled without CUDA support!");
-#endif
-  }
-
-  /**
    * Sets the particle properties constants for this functor.
    *
    * This is only necessary if no particlePropertiesLibrary is used.
-   * If compiled with CUDA this function also loads the values to the GPU.
    *
    * @param epsilon24
    * @param sigmaSquare
@@ -570,128 +523,6 @@ class LJFunctor
     } else {
       _shift6 = 0.;
     }
-#if defined(AUTOPAS_CUDA)
-    LJFunctorConstants<SoAFloatPrecision> constants(_cutoffsquare, _epsilon24 /* epsilon24 */,
-                                                    _sigmasquare /* sigmasquare */, _shift6);
-    _cudawrapper.loadConstants(&constants);
-#endif
-  }
-
-  /**
-   * Functor using Cuda on SoAs in device Memory
-   *
-   * This Functor calculates the pair-wise interactions between particles in the device_handle1 and device_handle2 on
-   * the GPU
-   *
-   * @param device_handle1 first soa in device memory
-   * @param device_handle2 second soa in device memory
-   * @param newton3 defines whether or whether not to use newton
-   */
-  void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1,
-                   CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2, bool newton3) final {
-#if defined(AUTOPAS_CUDA)
-    const size_t size1 = device_handle1.template get<Particle::AttributeNames::posX>().size();
-    const size_t size2 = device_handle2.template get<Particle::AttributeNames::posX>().size();
-    if ((size1 == 0) or (size2 == 0)) {
-      return;
-    }
-    auto cudaSoA1 = this->createFunctorCudaSoA(device_handle1);
-    auto cudaSoA2 = this->createFunctorCudaSoA(device_handle2);
-
-    if (newton3) {
-      if (size1 > size2) {
-        _cudawrapper.SoAFunctorN3PairWrapper(cudaSoA1.get(), cudaSoA2.get(), 0);
-      } else {
-        _cudawrapper.SoAFunctorN3PairWrapper(cudaSoA2.get(), cudaSoA1.get(), 0);
-      }
-    } else {
-      _cudawrapper.SoAFunctorNoN3PairWrapper(cudaSoA1.get(), cudaSoA2.get(), 0);
-    }
-#else
-    utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
-#endif
-  }
-#if defined(AUTOPAS_CUDA)
-  CudaWrapperInterface<SoAFloatPrecision> *getCudaWrapper() final { return &_cudawrapper; }
-
-  std::unique_ptr<FunctorCudaSoA<SoAFloatPrecision>> createFunctorCudaSoA(
-      CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) final {
-    if (calculateGlobals) {
-      return std::make_unique<LJFunctorCudaGlobalsSoA<SoAFloatPrecision>>(
-          device_handle.template get<Particle::AttributeNames::posX>().size(),
-          device_handle.template get<Particle::AttributeNames::posX>().get(),
-          device_handle.template get<Particle::AttributeNames::posY>().get(),
-          device_handle.template get<Particle::AttributeNames::posZ>().get(),
-          device_handle.template get<Particle::AttributeNames::forceX>().get(),
-          device_handle.template get<Particle::AttributeNames::forceY>().get(),
-          device_handle.template get<Particle::AttributeNames::forceZ>().get(),
-          device_handle.template get<Particle::AttributeNames::ownershipState>().get(), _cudaGlobals.get());
-    } else {
-      return std::make_unique<LJFunctorCudaSoA<SoAFloatPrecision>>(
-          device_handle.template get<Particle::AttributeNames::posX>().size(),
-          device_handle.template get<Particle::AttributeNames::posX>().get(),
-          device_handle.template get<Particle::AttributeNames::posY>().get(),
-          device_handle.template get<Particle::AttributeNames::posZ>().get(),
-          device_handle.template get<Particle::AttributeNames::forceX>().get(),
-          device_handle.template get<Particle::AttributeNames::forceY>().get(),
-          device_handle.template get<Particle::AttributeNames::forceZ>().get(),
-          device_handle.template get<Particle::AttributeNames::ownershipState>().get());
-    }
-  }
-#endif
-
-  /**
-   * @copydoc Functor::deviceSoALoader
-   */
-  void deviceSoALoader(::autopas::SoA<SoAArraysType> &soa,
-                       CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) final {
-#if defined(AUTOPAS_CUDA)
-
-    const size_t size = soa.getNumParticles();
-    if (size == 0) return;
-
-    device_handle.template get<Particle::AttributeNames::posX>().copyHostToDevice(
-        size, soa.template begin<Particle::AttributeNames::posX>());
-    device_handle.template get<Particle::AttributeNames::posY>().copyHostToDevice(
-        size, soa.template begin<Particle::AttributeNames::posY>());
-    device_handle.template get<Particle::AttributeNames::posZ>().copyHostToDevice(
-        size, soa.template begin<Particle::AttributeNames::posZ>());
-
-    device_handle.template get<Particle::AttributeNames::forceX>().copyHostToDevice(
-        size, soa.template begin<Particle::AttributeNames::forceX>());
-    device_handle.template get<Particle::AttributeNames::forceY>().copyHostToDevice(
-        size, soa.template begin<Particle::AttributeNames::forceY>());
-    device_handle.template get<Particle::AttributeNames::forceZ>().copyHostToDevice(
-        size, soa.template begin<Particle::AttributeNames::forceZ>());
-
-    device_handle.template get<Particle::AttributeNames::ownershipState>().copyHostToDevice(
-        size, soa.template begin<Particle::AttributeNames::ownershipState>());
-
-#else
-    utils::ExceptionHandler::exception("LJFunctor::deviceSoALoader: AutoPas was compiled without CUDA support!");
-#endif
-  }
-
-  /**
-   * @copydoc Functor::deviceSoAExtractor
-   */
-  void deviceSoAExtractor(::autopas::SoA<SoAArraysType> &soa,
-                          CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) final {
-#if defined(AUTOPAS_CUDA)
-
-    const size_t size = soa.getNumParticles();
-    if (size == 0) return;
-
-    device_handle.template get<Particle::AttributeNames::forceX>().copyDeviceToHost(
-        size, soa.template begin<Particle::AttributeNames::forceX>());
-    device_handle.template get<Particle::AttributeNames::forceY>().copyDeviceToHost(
-        size, soa.template begin<Particle::AttributeNames::forceY>());
-    device_handle.template get<Particle::AttributeNames::forceZ>().copyDeviceToHost(
-        size, soa.template begin<Particle::AttributeNames::forceZ>());
-
-#else
-    utils::ExceptionHandler::exception("LJFunctor::deviceSoAExtractor: AutoPas was compiled without CUDA support!");
-#endif
   }
 
   /**
@@ -750,12 +581,6 @@ class LJFunctor
     for (size_t i = 0; i < _aosThreadData.size(); ++i) {
       _aosThreadData[i].setZero();
     }
-#if defined(AUTOPAS_CUDA)
-    if (calculateGlobals) {
-      std::array<SoAFloatPrecision, 4> globals{0, 0, 0, 0};
-      _cudaGlobals.copyHostToDevice(4, globals.data());
-    }
-#endif
   }
 
   /**
@@ -768,14 +593,6 @@ class LJFunctor
           "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
     }
     if (calculateGlobals) {
-#if defined(AUTOPAS_CUDA)
-      std::array<SoAFloatPrecision, 4> globals{0, 0, 0, 0};
-      _cudaGlobals.copyDeviceToHost(4, globals.data());
-      _virialSum[0] += globals[0];
-      _virialSum[1] += globals[1];
-      _virialSum[2] += globals[2];
-      _upotSum += globals[3];
-#endif
       for (size_t i = 0; i < _aosThreadData.size(); ++i) {
         _upotSum += _aosThreadData[i].upotSum;
         _virialSum = utils::ArrayMath::add(_virialSum, _aosThreadData[i].virialSum);
@@ -1127,16 +944,5 @@ class LJFunctor
 
   // defines whether or whether not the global values are already preprocessed
   bool _postProcessed;
-
-#if defined(AUTOPAS_CUDA)
-  using CudaWrapperType = typename std::conditional<calculateGlobals, LJFunctorCudaGlobalsWrapper<SoAFloatPrecision>,
-                                                    LJFunctorCudaWrapper<SoAFloatPrecision>>::type;
-  // contains wrapper functions for cuda calls
-  CudaWrapperType _cudawrapper;
-
-  // contains device globals
-  utils::CudaDeviceVector<SoAFloatPrecision> _cudaGlobals;
-
-#endif
 };
 }  // namespace autopas
