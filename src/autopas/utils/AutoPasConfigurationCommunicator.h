@@ -89,37 +89,42 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
 template <class Particle>
 void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket,
                               const std::shared_ptr<autopas::ParticleContainerInterface<Particle>> &container) {
+  double maxDifferenceForBucket = 0.2;
+  double weightForMaxDensity = 0.1;
+
   int rank;
   AutoPas_MPI_Comm_rank(comm, &rank);
   int commSize;
   AutoPas_MPI_Comm_size(comm, &commSize);
 
-  std::vector<double> homogeneities(commSize);
+  std::vector<double> scenarios(commSize);
+  std::pair<double, double> homogeneityAndMaxDensity =
+      autopas::utils::calculateHomogeneityAndMaxDensity<Particle>(container);
+  double scenario = homogeneityAndMaxDensity.first + weightForMaxDensity * homogeneityAndMaxDensity.second;
 
-  double homogeneity = autopas::utils::calculateHomogeneityAndMaxDensity<Particle>(container).first;
+  AutoPas_MPI_Allgather(&scenario, 1, AUTOPAS_MPI_DOUBLE, scenarios.data(), 1, AUTOPAS_MPI_DOUBLE, comm);
 
-  AutoPas_MPI_Allgather(&homogeneity, 1, AUTOPAS_MPI_DOUBLE, homogeneities.data(), 1, AUTOPAS_MPI_DOUBLE, comm);
+  std::sort(scenarios.begin(), scenarios.end());
 
-  std::sort(homogeneities.begin(), homogeneities.end());
-
-  std::vector<double> diffs;
-  std::adjacent_difference(homogeneities.begin(), homogeneities.end(), std::back_inserter(diffs));
+  std::vector<double> differences;
+  std::adjacent_difference(scenarios.begin(), scenarios.end(), std::back_inserter(differences));
 
   // convert differences to percentage changes
-  std::transform(diffs.begin(), diffs.end(), homogeneities.begin(), diffs.begin(), std::divides<double>());
+  std::transform(differences.begin(), differences.end(), scenarios.begin(), differences.begin(),
+                 std::divides<double>());
 
   int current_bucket = 0;
   int my_bucket = 0;
   // print out the results
 
-  for (int i = 0; (size_t)i < homogeneities.size(); i++) {
+  for (int i = 0; (size_t)i < scenarios.size(); i++) {
     // if a difference exceeds 20%, start a new group:
-    if (diffs[i] > 0.2) current_bucket++;
+    if (differences[i] > maxDifferenceForBucket) current_bucket++;
 
     // print out an item:
     AutoPasLog(debug, "rank: " + std::to_string(rank) + " bucket: " + std::to_string(current_bucket) +
-                          "  new value: " + std::to_string(homogeneities[i]));
-    if (homogeneities[i] == homogeneity) my_bucket = current_bucket;
+                          "  new value: " + std::to_string(scenarios[i]));
+    if (scenarios[i] == scenario) my_bucket = current_bucket;
   }
   AutoPas_MPI_Comm_split(comm, my_bucket, rank, bucket);
 }

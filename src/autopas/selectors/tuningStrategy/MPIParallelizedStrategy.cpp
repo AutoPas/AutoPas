@@ -10,7 +10,7 @@ namespace autopas {
 
 bool MPIParallelizedStrategy::tune(bool currentInvalid) {
   if (_bucket == AUTOPAS_MPI_COMM_NULL) {
-    AutoPasLog(warn, "_bucket was NULL");
+    AutoPasLog(warn, "_bucket was AUTOPAS_MPI_COMM_NULL");
     _bucket = _comm;
   }
 
