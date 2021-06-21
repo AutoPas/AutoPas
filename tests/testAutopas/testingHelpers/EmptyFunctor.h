@@ -66,13 +66,6 @@ class EmptyFunctor : public autopas::Functor<Particle, EmptyFunctor<Particle>> {
   bool allowsNonNewton3() override { return true; }
 
   /**
-   * @copydoc autopas::Functor::isAppropriateClusterSize()
-   */
-  bool isAppropriateClusterSize(unsigned int clusterSize, autopas::DataLayoutOption::Value dataLayout) const override {
-    return true;
-  }
-
-  /**
    * @copydoc autopas::Functor::isRelevantForTuning()
    */
   bool isRelevantForTuning() override { return true; }

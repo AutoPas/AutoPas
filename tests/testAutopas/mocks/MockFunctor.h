@@ -59,9 +59,6 @@ class MockFunctor : public autopas::Functor<Particle, MockFunctor<Particle>> {
   // virtual bool allowsNonNewton3() { return false; }
   MOCK_METHOD(bool, allowsNonNewton3, (), (override));
 
-  MOCK_METHOD(bool, isAppropriateClusterSize, (unsigned int clusterSize, autopas::DataLayoutOption::Value dataLayout),
-              (const, override));
-
   //  bool isRelevantForTuning() { return true; }
   MOCK_METHOD(bool, isRelevantForTuning, (), (override));
 };
