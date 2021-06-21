@@ -93,14 +93,12 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket, c
   int commSize;
   AutoPas_MPI_Comm_size(comm, &commSize);
 
-  auto *homogeneities_pointer = static_cast<double *>(malloc(commSize * sizeof(double)));
+  std::vector<double> homogeneities(commSize);
 
   double homogeneity = autopas::utils::calculateHomogeneityAndMaxDensity<Particle>(container)[0];
 
-  AutoPas_MPI_Allgather(&homogeneity, 1, AUTOPAS_MPI_DOUBLE, homogeneities_pointer, 1, AUTOPAS_MPI_DOUBLE, comm);
+  AutoPas_MPI_Allgather(&homogeneity, 1, AUTOPAS_MPI_DOUBLE, homogeneities.data(), 1, AUTOPAS_MPI_DOUBLE, comm);
 
-  std::vector<double> homogeneities;
-  homogeneities.assign(homogeneities_pointer, homogeneities_pointer + commSize);
   std::sort(homogeneities.begin(), homogeneities.end());
 
   std::vector<double> diffs;
