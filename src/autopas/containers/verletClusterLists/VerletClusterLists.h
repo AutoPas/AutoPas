@@ -275,7 +275,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    */
   [[nodiscard]] ParticleIteratorWrapper<Particle, true> begin(
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) override {
-    prepareContainerForIterator(behavior);
+    prepareContainerForIteration(behavior);
 
     return ParticleIteratorWrapper<Particle, true>(
         new internal::ParticleIterator<Particle, internal::ClusterTower<Particle>, true>(
@@ -307,9 +307,73 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
   }
 
+  /**
+   * @copydoc ParticleContainerInterface::forEach()
+   * @note This function additionally rebuilds the towers if the tower-structure isn't valid.
+   */
   template <typename Lambda>
-  void forEach(Lambda forEachLambda, IteratorBehavior behaviour) {
-    utils::ExceptionHandler::exception("not yet implemented");
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) {
+    prepareContainerForIteration(behavior);
+
+    for (auto tower : this->_towers) {
+      tower.forEach(forEachLambda, behavior);
+    }
+  }
+
+  /**
+   * @copydoc ParticleContainerInterface::forEach()
+   * @note const version.
+   * @note This function additionally iterates over the _particlesToAdd vector if the tower-structure isn't valid.
+   */
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) const {
+    if (_isValid != ValidityState::invalid) {
+      if (not particlesToAddEmpty()) {
+        autopas::utils::ExceptionHandler::exception(
+            "VerletClusterLists::begin() const: Error: particle container is valid, but _particlesToAdd isn't empty!");
+      }
+      // If the particles are sorted into the towers, we can simply use the iteration over towers.
+
+      for (auto tower : this->_towers) {
+        tower.forEach(forEachLambda, behavior);
+      }
+
+//      return ParticleIteratorWrapper<Particle, false>{
+//          new internal::ParticleIterator<Particle, internal::ClusterTower<Particle>, false>(
+//              &(this->_towers), 0, &unknowingCellBorderAndFlagManager, behavior, nullptr)};
+    } else {
+      // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
+
+      for (auto tower : this->_towers) {
+        tower.forEach(forEachLambda, behavior);
+      }
+
+      //TODO lgaertner: vector<vector<particle>>
+      auto isParticleValid = [&](Particle &p) -> bool {
+        switch (behavior) {
+          case options::IteratorBehavior::ownedOrHaloOrDummy:
+            return true;
+          case options::IteratorBehavior::ownedOrHalo:
+            return not p.isDummy();
+          case options::IteratorBehavior::halo:
+            return p.isHalo();
+          case options::IteratorBehavior::owned:
+            return p.isOwned();
+          default:
+            utils::ExceptionHandler::exception("unknown iterator behavior");
+            return false;
+        }
+      };
+      for (auto &particle : _particlesToAdd[0]) {
+        if (isParticleValid(particle)) {
+          forEachLambda(particle);
+        }
+      }
+
+//      return ParticleIteratorWrapper<Particle, false>{
+//          new internal::ParticleIterator<Particle, internal::ClusterTower<Particle>, false>(
+//              &(this->_towers), 0, &unknowingCellBorderAndFlagManager, behavior, &_particlesToAdd)};
+    }
   }
 
   /**
@@ -319,7 +383,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   [[nodiscard]] ParticleIteratorWrapper<Particle, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
                                                                           const std::array<double, 3> &higherCorner,
                                                                           IteratorBehavior behavior) override {
-    prepareContainerForIterator(behavior);
+    prepareContainerForIteration(behavior);
 
     auto [lowerCornerInBounds, upperCornerInBounds, cellsOfInterest] =
         getRegionIteratorHelper(lowerCorner, higherCorner, behavior);
@@ -770,7 +834,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    *
    * @param behavior
    */
-  void prepareContainerForIterator(const IteratorBehavior &behavior) {
+  void prepareContainerForIteration(const IteratorBehavior &behavior) {
     // For good openmp scalability we want the particles to be sorted into the clusters, so we do this!
 
     // If multiple asynchronous iterators are used the container must already be valid.
@@ -778,7 +842,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     if (behavior & IteratorBehavior::forceSequential) {
       if (_isValid == ValidityState::invalid) {
         autopas::utils::ExceptionHandler::exception(
-            "VerletClusterLists::prepareContainerForIterator(): Parallel iterators with behavior containing "
+            "VerletClusterLists::prepareContainerForIteration(): Parallel iterators with behavior containing "
             "forceSequential encountered, but the container is invalid.");
       }
     } else {

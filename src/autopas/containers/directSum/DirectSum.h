@@ -218,22 +218,18 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
   template<typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                        const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
-    auto forEach = [&](ParticleCell cell) {
-      for (Particle p : cell._particles) {
-        forEachLambda(p);
-      }
-    };
 
     std::vector<size_t> cellsOfInterest;
 
     if (behavior & IteratorBehavior::owned) {
-      forEach(getCell());
+      getCell().forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
       cellsOfInterest.push_back(0);
     }
     if (behavior & IteratorBehavior::halo) {
-      forEach(getHaloCell());
+      getHaloCell().forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
       cellsOfInterest.push_back(1);
     }
+
     // sanity check
     if (cellsOfInterest.empty()) {
       utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");

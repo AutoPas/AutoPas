@@ -166,8 +166,8 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
 
   template<typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
-                       const std::array<double, 3> &higherCorner, IteratorBehavior behaviour) {
-    utils::ExceptionHandler::exception("not yet implemented");
+                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    _linkedCells.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
   }
 
   /**

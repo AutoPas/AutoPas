@@ -230,6 +230,12 @@ class ClusterTower : public ParticleCell<Particle> {
         new SingleCellIterator<Particle, ClusterTower<Particle>, false>(this)};
   }
 
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior) {
+    _particlesStorage.forEach(forEachLambda, behavior);
+  }
+
+
   /**
    * Returns the particle at position index. Needed by SingleCellIterator.
    * @param index the position of the particle to return.
