@@ -4,8 +4,26 @@
  * @date 01.03.2021
  */
 
-#include "Simulation.h"
+#include "TypeDefinitions.h"
+#include "autopas/AutoPasDecl.h"
+#include "autopas/molecularDynamics/LJFunctor.h"
+#include "autopas/molecularDynamics/LJFunctorAVX.h"
+#include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 
+// Declare the main AutoPas class and the iteratePairwise() methods with all used functors as extern template
+// instantiation. They are instantiated in the respective cpp file inside the templateInstantiations folder.
+//! @cond Doxygen_Suppress
+extern template class autopas::AutoPas<ParticleType>;
+extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctor<ParticleType, true, true> *);
+extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(
+    autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true> *);
+extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctorAVX<ParticleType, true, true> *);
+extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::FlopCounterFunctor<ParticleType> *);
+//! @endcond
+
+#ifdef AUTOPAS_INTERNODE_TUNING
+#include <mpi.h>
+#endif
 #include <sys/ioctl.h>
 #include <unistd.h>
 
@@ -14,11 +32,9 @@
 
 #include "BoundaryConditions.h"
 #include "Checkpoint.h"
+#include "Simulation.h"
 #include "Thermostat.h"
 #include "TimeDiscretization.h"
-#include "autopas/molecularDynamics/LJFunctor.h"
-#include "autopas/molecularDynamics/LJFunctorAVX.h"
-#include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 #include "autopas/utils/MemoryProfiler.h"
 
 void Simulation::initializeParticlePropertiesLibrary() {

@@ -4,7 +4,7 @@
  * @date 13/05/19
  */
 #pragma once
-#include "autopas/AutoPas.h"
+#include "autopas/AutoPasDecl.h"
 #include "autopas/utils/ArrayMath.h"
 
 /**

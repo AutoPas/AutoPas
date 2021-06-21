@@ -11,7 +11,11 @@
 #include <iostream>
 
 #include "Simulation.h"
+#include "autopas/utils/WrapOpenMP.h"
 #include "parsing/MDFlexParser.h"
+
+// Declare the main AutoPas class as extern template instantiation. It is instantiated in AutoPasClass.cpp.
+extern template class autopas::AutoPas<Simulation::ParticleType>;
 
 /**
  * The main function for md-flexible.

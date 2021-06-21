@@ -6,7 +6,8 @@
 #pragma once
 
 #include "TypeDefinitions.h"
-#include "autopas/AutoPas.h"
+#include "autopas/AutoPasDecl.h"
+#include "autopas/utils/Timer.h"
 #include "parsing/MDFlexConfig.h"
 #ifdef AUTOPAS_INTERNODE_TUNING
 #include <mpi.h>
