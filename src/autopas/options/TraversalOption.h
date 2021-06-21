@@ -102,7 +102,7 @@ class TraversalOption : public Option<TraversalOption> {
      */
     vcl_sliced_balanced,
     /**
-     * VCCSlicedC02Traversal : 1D slicing with as many slices of minimal thickness as possible. No locks but two way
+     * VCLSlicedC02Traversal : 1D slicing with as many slices of minimal thickness as possible. No locks but two way
      * coloring of slices.
      */
     vcl_sliced_c02,

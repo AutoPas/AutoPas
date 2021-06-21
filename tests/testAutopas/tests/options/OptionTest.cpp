@@ -46,7 +46,6 @@ TEST(OptionTest, parseContainerOptionsTest) {
       {autopas::ContainerOption::directSum, "directSum"},
       {autopas::ContainerOption::linkedCells, "linkedCells"},
       {autopas::ContainerOption::varVerletListsAsBuild, "varVerletListsAsBuild"},
-      {autopas::ContainerOption::verletClusterCells, "vclustercells"},
       {autopas::ContainerOption::verletClusterLists, "vclusterlists"},
       {autopas::ContainerOption::verletLists, "verletLists"},
       {autopas::ContainerOption::verletListsCells, "verletLists-cells"},
