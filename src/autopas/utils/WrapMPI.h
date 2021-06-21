@@ -327,6 +327,32 @@ inline int AutoPas_MPI_Wait(AutoPas_MPI_Request *request, AutoPas_MPI_Status *st
  */
 inline int AutoPas_MPI_Request_free(AutoPas_MPI_Request *request);
 
+/**
+ * Wrapper for MPI_Allgather
+ * @param buffer_send: send buffer
+ * @param count_send: number of elements in send buffer
+ * @param datatype_send: type of elements in send buffer
+ * @param buffer_recv: receive buffer
+ * @param count_recv: number of elements received from each rank
+ * @param datatype_recv: type of elements in receive buffer
+ * @param comm: communicator (handle)
+ * @return
+ */
+inline int AutoPas_MPI_Allgather(void *buffer_send, int count_send, AutoPas_MPI_Datatype datatype_send,
+                                 void *buffer_recv, int count_recv, AutoPas_MPI_Datatype datatype_recv,
+                                 AutoPas_MPI_Comm comm);
+
+/**
+ * Wrapper for MPI_Request_free
+ * @param old_communicator: old communicator (handle)
+ * @param color: determines which ranks ar in the same bucket
+ * @param key: determines rank order in new communicator
+ * @param new_communicator: pointer to new communicator
+ * @return
+ */
+inline int AutoPas_MPI_Comm_split(AutoPas_MPI_Comm old_communicator, int color, int key,
+                                  AutoPas_MPI_Comm *new_communicator);
+
 #if defined(AUTOPAS_INTERNODE_TUNING)
 
 inline int AutoPas_MPI_Init(int *argc, char ***argv) { return MPI_Init(argc, argv); }
@@ -394,11 +420,14 @@ inline int AutoPas_MPI_Wait(AutoPas_MPI_Request *request, AutoPas_MPI_Status *st
 
 inline int AutoPas_MPI_Request_free(AutoPas_MPI_Request *request) { return MPI_Request_free(request); }
 
-inline int AutoPas_MPI_Allgather(void *buffer_send, int count_send, AutoPas_MPI_Datatype datatype_send, void *buffer_recv, int count_recv, AutoPas_MPI_Datatype datatype_recv, AutoPas_MPI_Comm comm) {
+inline int AutoPas_MPI_Allgather(void *buffer_send, int count_send, AutoPas_MPI_Datatype datatype_send,
+                                 void *buffer_recv, int count_recv, AutoPas_MPI_Datatype datatype_recv,
+                                 AutoPas_MPI_Comm comm) {
   return MPI_Allgather(buffer_send, count_send, datatype_send, buffer_recv, count_recv, datatype_recv, comm);
 }
 
-inline int AutoPas_MPI_Comm_split(AutoPas_MPI_Comm old_communicator, int color, int key, AutoPas_MPI_Comm* new_communicator) {
+inline int AutoPas_MPI_Comm_split(AutoPas_MPI_Comm old_communicator, int color, int key,
+                                  AutoPas_MPI_Comm *new_communicator) {
   return MPI_Comm_split(old_communicator, color, key, new_communicator);
 }
 
@@ -523,13 +552,17 @@ inline int AutoPas_MPI_Request_free(AutoPas_MPI_Request *request) {
   }
 }
 
-inline int AutoPas_MPI_Allgather(void *buffer_send, int count_send, AutoPas_MPI_Datatype datatype_send, void *buffer_recv, int count_recv, AutoPas_MPI_Datatype datatype_recv, AutoPas_MPI_Comm comm) {
-  for (int i=0; i < (count_recv / count_send); i++)
-    memcpy(static_cast<char *>(buffer_recv) + (i * count_send * sizeof(datatype_send)) ,buffer_send,count_send * sizeof(datatype_send));
+inline int AutoPas_MPI_Allgather(void *buffer_send, int count_send, AutoPas_MPI_Datatype datatype_send,
+                                 void *buffer_recv, int count_recv, AutoPas_MPI_Datatype datatype_recv,
+                                 AutoPas_MPI_Comm comm) {
+  for (int i = 0; i < (count_recv / count_send); i++)
+    memcpy(static_cast<char *>(buffer_recv) + (i * count_send * sizeof(datatype_send)), buffer_send,
+           count_send * sizeof(datatype_send));
   return AUTOPAS_MPI_SUCCESS;
 }
 
-inline int AutoPas_MPI_Comm_split(AutoPas_MPI_Comm old_communicator, int color, int key, AutoPas_MPI_Comm* new_communicator) {
+inline int AutoPas_MPI_Comm_split(AutoPas_MPI_Comm old_communicator, int color, int key,
+                                  AutoPas_MPI_Comm *new_communicator) {
   new_communicator = &old_communicator;
   return AUTOPAS_MPI_SUCCESS;
 }

@@ -18,6 +18,7 @@
 #include "autopas/selectors/ContainerSelector.h"
 #include "autopas/selectors/OptimumSelector.h"
 #include "autopas/selectors/TraversalSelector.h"
+#include "autopas/selectors/tuningStrategy/MPIParallelizedStrategy.h"
 #include "autopas/selectors/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/StaticCellSelector.h"
@@ -25,7 +26,6 @@
 #include "autopas/utils/logging/IterationLogger.h"
 #include "autopas/utils/logging/TuningDataLogger.h"
 #include "autopas/utils/logging/TuningResultLogger.h"
-#include "autopas/selectors/tuningStrategy/MPIParallelizedStrategy.h"
 
 namespace autopas {
 
@@ -437,7 +437,7 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
   if (_iterationsSinceTuning == _tuningInterval) {
 #ifdef AUTOPAS_INTERNODE_TUNING
     try {
-      auto& mpiStrategy = dynamic_cast<MPIParallelizedStrategy&>(*_tuningStrategy);
+      auto &mpiStrategy = dynamic_cast<MPIParallelizedStrategy &>(*_tuningStrategy);
       mpiStrategy.resetMpi<Particle>(_iteration, getContainer());
     } catch (std::bad_cast &bad_cast) {
       _tuningStrategy->reset(_iteration);
