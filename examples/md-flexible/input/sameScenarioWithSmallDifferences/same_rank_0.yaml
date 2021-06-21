@@ -38,6 +38,5 @@ log-level                        :  debug
 no-flops                         :  false
 no-end-config                    :  true
 no-progress-bar                  :  false
-max-difference-for-bucket        :  0.2
-weight-for-max-density           :  0.1
+mpi-strategy                     :  divide-and-conquer
 
