@@ -214,10 +214,11 @@ class MDFlexConfig {
           autopas::utils::ArrayUtils::to_string(autopas::MPIStrategyOption::getAllOptions(), " ", {"(", ")"})};
 
   /**
-    * maxDifferenceForBucket
-    */
-  MDFlexOption<double, __LINE__> maxDifferenceForBucket{0.2, "max-difference-for-bucket", true,
-                                                        "maximum difference of two scenarios to get in the same bucket for MPI-tuning"};
+   * maxDifferenceForBucket
+   */
+  MDFlexOption<double, __LINE__> maxDifferenceForBucket{
+      0.2, "max-difference-for-bucket", true,
+      "maximum difference of two scenarios to get in the same bucket for MPI-tuning"};
 
   /**
    * weightForMaxDensity
