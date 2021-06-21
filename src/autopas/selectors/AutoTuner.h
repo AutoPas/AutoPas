@@ -61,7 +61,7 @@ class AutoTuner {
    * @param outputSuffix Suffix for all output files produced by this class.
    */
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
-            unsigned int verletClusterSize, std::unique_ptr<TuningStrategyInterface> tuningStrategy,
+            unsigned int verletClusterSize, std::unique_ptr<TuningStrategyInterface> tuningStrategy, double maxDifferenceForBucket, double weightForMaxDensity,
             SelectorStrategyOption selectorStrategy, unsigned int tuningInterval, unsigned int maxSamples,
             const std::string &outputSuffix = "")
       : _selectorStrategy(selectorStrategy),
@@ -71,6 +71,8 @@ class AutoTuner {
         _containerSelector(boxMin, boxMax, cutoff),
         _verletSkin(verletSkin),
         _verletClusterSize(verletClusterSize),
+        _maxDifferenceForBucket(maxDifferenceForBucket),
+        _weightForMaxDensity(weightForMaxDensity),
         _maxSamples(maxSamples),
         _samples(maxSamples),
         _iteration(0),
@@ -234,6 +236,12 @@ class AutoTuner {
    * How many times each configuration should be tested.
    */
   const size_t _maxSamples;
+
+  /**
+   * variable for bucket distribution
+   */
+  double _maxDifferenceForBucket;
+  double _weightForMaxDensity;
 
   /**
    * Raw time samples of the current configuration from which one evidence will be produced.
@@ -438,7 +446,7 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
 #ifdef AUTOPAS_INTERNODE_TUNING
     try {
       auto &mpiStrategy = dynamic_cast<MPIParallelizedStrategy &>(*_tuningStrategy);
-      mpiStrategy.resetMpi<Particle>(_iteration, getContainer());
+      mpiStrategy.resetMpi<Particle>(_iteration, getContainer(), _maxDifferenceForBucket, _weightForMaxDensity);
     } catch (std::bad_cast &bad_cast) {
       _tuningStrategy->reset(_iteration);
     }
