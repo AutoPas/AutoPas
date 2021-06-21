@@ -575,6 +575,18 @@ class AutoPas {
    */
   void setMPIStrategy(MPIStrategyOption mpiStrategyOption) { _mpiStrategyOption = mpiStrategyOption; }
 
+  /**
+   * Setter for the maximal Difference for the bucket distribution
+   * @param maxDifferenceForBucket
+   */
+  void setMaxDifferenceForBucket(double maxDifferenceForBucket) { _maxDifferenceForBucket = maxDifferenceForBucket; }
+
+  /**
+   * Setter for the maxDensity-Weight in calculation for bucket distribution
+   * @param weightForMaxDensity
+   */
+  void setWeightForMaxDensity(double weightForMaxDensity) { _weightForMaxDensity = weightForMaxDensity; }
+
 // Only define the interface for the MPI communicator if AUTOPAS_INTERNODE_TUNING=ON
 // The internal implementation will use _autopasMPICommunicator with WrapMPI regardless of AUTOPAS_INTERNODE_TUNING
 #if defined(AUTOPAS_INTERNODE_TUNING)
@@ -705,6 +717,16 @@ class AutoPas {
    * Whether the chosen tuning strategy will be parallelized by MPI
    */
   MPIStrategyOption _mpiStrategyOption{MPIStrategyOption::noMPI};
+
+  /**
+   * Maximum difference of two scenarios to get in the same bucket for MPI-tuning
+   */
+  double _maxDifferenceForBucket{0.2};
+
+  /**
+   * Weight for maxDensity in calculation for bucket distribution
+   */
+  double _weightForMaxDensity{0.1};
 
   /**
    * Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and VerletListsCells).

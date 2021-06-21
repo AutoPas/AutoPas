@@ -37,7 +37,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.distributionMean, config.maxTuningPhasesWithoutTest, config.particlesPerDim, config.particlesTotal,
       config.relativeOptimumRange, config.relativeBlacklistRange, config.periodic, config.tuningPhases,
       config.verletClusterSize, config.verletSkinRadius, config.particleSpacing, config.tuningSamples,
-      config.traversalOptions, config.tuningStrategyOption, config.mpiStrategyOption, config.useThermostat,
+      config.traversalOptions, config.tuningStrategyOption, config.mpiStrategyOption, config.maxDifferenceForBucket, config.weightForMaxDensity ,config.useThermostat,
       config.verletRebuildFrequency, config.vtkFileName, config.vtkWriteFrequency, config.selectorStrategy,
       config.yamlFilename, config.distributionStdDev, config.globalForce, zshCompletionsOption, helpOption)};
 
@@ -476,6 +476,24 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           displayHelp = true;
         }
         config.mpiStrategyOption.value = *parsedOptions.begin();
+        break;
+      }
+      case decltype(config.maxDifferenceForBucket)::getoptChar: {
+        try {
+          config.maxDifferenceForBucket.value = stod(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing maxDifferenceForBucket value: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.weightForMaxDensity)::getoptChar: {
+        try {
+          config.weightForMaxDensity.value = stod(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing weightForMaxDensity value: " << optarg << endl;
+          displayHelp = true;
+        }
         break;
       }
       case decltype(config.useThermostat)::getoptChar: {
