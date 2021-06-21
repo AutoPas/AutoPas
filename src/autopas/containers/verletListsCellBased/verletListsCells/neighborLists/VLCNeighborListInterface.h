@@ -19,9 +19,9 @@ template <class Particle>
 class VLCNeighborListInterface {
  public:
   /**
-   * Default destructor.
+   * Virtual default destructor.
    */
-  ~VLCNeighborListInterface() = default;
+  virtual ~VLCNeighborListInterface() = default;
 
   /**
    * Builds AoS neighbor list from underlying linked cells object.
