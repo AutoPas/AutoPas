@@ -7,6 +7,9 @@
 #pragma once
 
 #include <cstdlib>
+#include <functional>
+#include <mutex>
+#include <string>
 
 #include "autopas/utils/logging/Logger.h"
 
