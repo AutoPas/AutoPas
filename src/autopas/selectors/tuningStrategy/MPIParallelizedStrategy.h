@@ -7,13 +7,13 @@
 #pragma once
 
 #include "TuningStrategyInterface.h"
+#include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/utils/AutoPasConfigurationCommunicator.h"
 #include "autopas/utils/ConfigurationAndRankIteratorHandler.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/WrapMPI.h"
-#include "autopas/containers/ParticleContainerInterface.h"
 
 namespace autopas {
 
@@ -84,6 +84,13 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
     }
   }
 
+  /**
+   * Reset all internal parameters to the beginning of a new tuning cycle.
+   * Also distribute ranks in buckets for MPI tuning
+   * @tparam Particle
+   * @param iteration Gives the current iteration to the tuning strategy.
+   * @param container container of current simulation
+   */
   template <class Particle>
   void resetMpi(size_t iteration, std::shared_ptr<autopas::ParticleContainerInterface<Particle>> container) {
     _optimalConfiguration = Configuration();
@@ -93,15 +100,14 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
     if (_configIterator != nullptr) {
       _configIterator.reset();
     }
-    /* FIXME: should look like this to work with all Particles. But this leads to a Linking Error
-     * autopas::utils::AutoPasConfigurationCommunicator::distributeRanksInBuckets<Particle>(_comm, &_bucket, container);
-     */
     autopas::utils::AutoPasConfigurationCommunicator::distributeRanksInBuckets<Particle>(_comm, &_bucket, container);
     AutoPasLog(debug, "finished bucket distribution");
     try {
       _tuningStrategy->reset(iteration);
     } catch (utils::ExceptionHandler::AutoPasException &exception) {
-      AutoPasLog(warn, "MPIParallelizedStrategy: Underlying strategy failed (with error: {}). Reverting to fallback-mode.", exception.what());
+      AutoPasLog(warn,
+                 "MPIParallelizedStrategy: Underlying strategy failed (with error: {}). Reverting to fallback-mode.",
+                 exception.what());
       setupFallbackOptions();
     }
   }

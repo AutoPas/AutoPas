@@ -11,11 +11,11 @@
 #include <vector>
 
 #include "WrapMPI.h"
+#include "autopas/containers/ParticleContainerInterface.h"
+#include "autopas/molecularDynamics/MoleculeLJ.h"
 #include "autopas/selectors/Configuration.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/NumberSet.h"
-#include "autopas/containers/ParticleContainerInterface.h"
-#include "autopas/molecularDynamics/MoleculeLJ.h"
 #include "autopas/utils/SimilarityFunctions.h"
 
 /**
@@ -81,13 +81,14 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
 /**
  * Distribute ranks in buckets, which contain only ranks with similar scenarios.
  * Each bucket then has its own search space.
- * @param comm
- * @param rank
- * @param commSize
- * @param bucket
+ * @tparam Particle
+ * @param comm MPI communicator
+ * @param bucket new MPI communicator for its bucket
+ * @param container container of current simulation
  */
-template<class Particle>
-void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket, const std::shared_ptr<autopas::ParticleContainerInterface<Particle>>& container) {
+template <class Particle>
+void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket,
+                              const std::shared_ptr<autopas::ParticleContainerInterface<Particle>> &container) {
   int rank;
   AutoPas_MPI_Comm_rank(comm, &rank);
   int commSize;
@@ -95,7 +96,7 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket, c
 
   std::vector<double> homogeneities(commSize);
 
-  double homogeneity = autopas::utils::calculateHomogeneityAndMaxDensity<Particle>(container)[0];
+  double homogeneity = autopas::utils::calculateHomogeneityAndMaxDensity<Particle>(container).first;
 
   AutoPas_MPI_Allgather(&homogeneity, 1, AUTOPAS_MPI_DOUBLE, homogeneities.data(), 1, AUTOPAS_MPI_DOUBLE, comm);
 
@@ -117,7 +118,7 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket, c
 
     // print out an item:
     AutoPasLog(debug, "rank: " + std::to_string(rank) + " bucket: " + std::to_string(current_bucket) +
-                      "  new value: " + std::to_string(homogeneities[i]));
+                          "  new value: " + std::to_string(homogeneities[i]));
     if (homogeneities[i] == homogeneity) my_bucket = current_bucket;
   }
   AutoPas_MPI_Comm_split(comm, my_bucket, rank, bucket);

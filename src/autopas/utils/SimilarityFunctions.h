@@ -14,13 +14,16 @@ namespace autopas::utils {
 
 /**
  * calculates homogeneity and max density of given AutoPas simulation
+ * homogeneity > 0.0, normally < 1.0, but for extreme scenarios > 1.0
+ * maxDensity > 0.0, normally < 3.0, but for extreme scenarios >> 3.0
  *
  * @tparam Particle
- * @param autopas
- * @return  [homogeneity, max_density]
+ * @param container container of current simulation
+ * @return {homogeneity, maxDensity}
  */
-template<class Particle>
-std::pair<double,double> calculateHomogeneityAndMaxDensity(const std::shared_ptr<autopas::ParticleContainerInterface<Particle>>& container) {
+template <class Particle>
+std::pair<double, double> calculateHomogeneityAndMaxDensity(
+    const std::shared_ptr<autopas::ParticleContainerInterface<Particle>> &container) {
   size_t numberOfParticles = container->getNumParticles();
   // approximately the resolution we want to get.
   size_t numberOfCells = ceil(numberOfParticles / 10.);
@@ -56,14 +59,14 @@ std::pair<double,double> calculateHomogeneityAndMaxDensity(const std::shared_ptr
   for (auto particleItr = container->begin(autopas::IteratorBehavior::owned); particleItr.isValid(); ++particleItr) {
     std::array<double, 3> particleLocation = particleItr->getR();
     std::array<size_t, 3> index = {};
-    for (int i = 0; (size_t) i < particleLocation.size(); i++) {
+    for (int i = 0; (size_t)i < particleLocation.size(); i++) {
       index[i] = particleLocation[i] / cellLength;
     }
     const size_t cellIndex = autopas::utils::ThreeDimensionalMapping::threeToOneD(index, cellsPerDimension);
     particlesPerCell[cellIndex] += 1;
     // calculate the size of the current cell
     allVolumes[cellIndex] = 1;
-    for (int i = 0; (size_t) i < cellsPerDimension.size(); ++i) {
+    for (int i = 0; (size_t)i < cellsPerDimension.size(); ++i) {
       // the last cell layer has a special size
       if (index[i] == cellsPerDimension[i] - 1) {
         allVolumes[cellIndex] *= outerCellSizePerDimension[i];
@@ -76,7 +79,7 @@ std::pair<double,double> calculateHomogeneityAndMaxDensity(const std::shared_ptr
   // calculate density for each cell
   double maxDensity{0.};
   std::vector<double> densityPerCell(numberOfCells, 0.0);
-  for (int i = 0; (size_t) i < particlesPerCell.size(); i++) {
+  for (int i = 0; (size_t)i < particlesPerCell.size(); i++) {
     densityPerCell[i] =
         (allVolumes[i] == 0) ? 0 : (particlesPerCell[i] / allVolumes[i]);  // make sure there is no division of zero
     if (densityPerCell[i] > maxDensity) {
@@ -89,15 +92,15 @@ std::pair<double,double> calculateHomogeneityAndMaxDensity(const std::shared_ptr
   double densityVariance = 0.0;
 
   // calculate densityVariance
-  for (int r = 0; (size_t) r < densityPerCell.size(); ++r) {
+  for (int r = 0; (size_t)r < densityPerCell.size(); ++r) {
     double distance = densityPerCell[r] - densityMean;
     densityVariance += (distance * distance / densityPerCell.size());
   }
 
   // finally calculate standard deviation
-  // return sqrt(densityVariance);
+  // normally
   double homogeneity = sqrt(densityVariance);
   return {homogeneity, maxDensity};
 }
 
-} // namespace autopas::utils
+}  // namespace autopas::utils

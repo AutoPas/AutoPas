@@ -9,7 +9,6 @@
 namespace autopas {
 
 bool MPIParallelizedStrategy::tune(bool currentInvalid) {
-
   if (_bucket == AUTOPAS_MPI_COMM_NULL) {
     AutoPasLog(warn, "_bucket was NULL");
     _bucket = _comm;
@@ -49,7 +48,8 @@ bool MPIParallelizedStrategy::tune(bool currentInvalid) {
       config = _tuningStrategy->getCurrentConfiguration();
       localOptimalTime = _tuningStrategy->getEvidence(config);
     }
-    _optimalConfiguration = utils::AutoPasConfigurationCommunicator::optimizeConfiguration(_bucket, config, localOptimalTime);
+    _optimalConfiguration =
+        utils::AutoPasConfigurationCommunicator::optimizeConfiguration(_bucket, config, localOptimalTime);
 
     return false;
   }

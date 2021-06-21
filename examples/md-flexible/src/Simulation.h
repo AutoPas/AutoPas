@@ -8,8 +8,6 @@
 #include "TypeDefinitions.h"
 #include "autopas/AutoPas.h"
 #include "parsing/MDFlexConfig.h"
-#include <iostream>
-#include <fstream>
 #ifdef AUTOPAS_INTERNODE_TUNING
 #include <mpi.h>
 #endif
