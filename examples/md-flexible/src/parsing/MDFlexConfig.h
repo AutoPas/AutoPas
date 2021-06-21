@@ -216,13 +216,13 @@ class MDFlexConfig {
   /**
     * maxDifferenceForBucket
     */
-  MDFlexOption<double, __LINE__> maxDifferenceForBucket{0.2, "maxDifferenceForBucket", true,
+  MDFlexOption<double, __LINE__> maxDifferenceForBucket{0.2, "max-difference-for-bucket", true,
                                                         "maximum difference of two scenarios to get in the same bucket for MPI-tuning"};
 
   /**
    * weightForMaxDensity
    */
-  MDFlexOption<double, __LINE__> weightForMaxDensity{0.1, "weightForMaxDensity", true,
+  MDFlexOption<double, __LINE__> weightForMaxDensity{0.1, "weight-for-max-density", true,
                                                      "weight for maxDensity in calculation for bucket distribution"};
 
   /**
