@@ -171,4 +171,4 @@ void ExceptionHandler::exception(std::string exceptionString, First first, Args.
   exception(s);
 }
 
-}  // namespace autopas
+}  // namespace autopas::utils
