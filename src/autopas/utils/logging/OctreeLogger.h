@@ -119,7 +119,162 @@ class OctreeLogger {
     //#endif
   }
 
+  /**
+   * Convert a list of octree leaves to JSON and write it to an output file. The output list consists of JSON objects
+   * containing the following fields:
+   * - `"minmax"`\n
+   *   A list of numbers specifying the concatenated minimum and maximum coordinate of the leaf box in 3D.
+   *   This is how the coordinate list is encoded in JSON: [x1,y1,z1,x2,y2,z2].
+   * - `"fn"`\n
+   *   A list of min/max coordinates of all greater than or equal face-neighbors of the leaf
+   * - `"fnl"`\n
+   *   A list of min/max coordinates of all leaves that touch this leaf via a face.
+   * - `"en"`\n
+   *   A list of min/max coordinates of all greater than or equal edge-neighbors of the leaf
+   * - `"enl"`\n
+   *   A list of min/max coordinates of all leaves that touch this leaf via a edge.
+   * - `"vn"`\n
+   *   A list of min/max coordinates of all greater than or equal vertex-neighbors of the leaf
+   * - `"vnl"`\n
+   *   A list of min/max coordinates of all leaves that touch this leaf via a vertex.
+   *
+   * @tparam Particle The enclosed particle type
+   * @param out A FILE pointer to the file that should contain the JSON data after the operation
+   * @param leaves A list of octree leaves that are echoed into the JSON file
+   * @return The FILE pointer is just passed through
+   */
+  template <typename Particle>
+  static FILE *leavesToJSON(FILE *out, std::vector<OctreeLeafNode<Particle> *> &leaves) {
+    if (out) {
+      fprintf(out, "[\n");
+      for (int leafIndex = 0; leafIndex < leaves.size(); ++leafIndex) {
+        auto leaf = leaves[leafIndex];
+        fprintf(out, "{\"minmax\": ");
+        outLocationArrayJSON(out, leaf);
+
+        // Print face neighbors
+        fprintf(out, ", \"fn\": [");
+        bool first = true;
+        for (Face *face = getFaces(); *face != O; ++face) {
+          auto neighbor = leaf->GTEQ_FACE_NEIGHBOR(*face);
+          if (neighbor) {
+            if (!first) {
+              fprintf(out, ", ");
+            }
+            first = false;
+            outLocationArrayJSON(out, neighbor);
+          }
+        }
+
+        // Print face neighbor leaves
+        fprintf(out, "], \"fnl\": [");
+        first = true;
+        for (Face *face = getFaces(); *face != O; ++face) {
+          auto neighbor = leaf->GTEQ_FACE_NEIGHBOR(*face);
+          if (neighbor) {
+            auto neighborLeaves = neighbor->getNeighborLeaves(*face);
+            for (auto neighborLeaf : neighborLeaves) {
+              if (!first) {
+                fprintf(out, ", ");
+              }
+              first = false;
+              outLocationArrayJSON(out, neighborLeaf);
+            }
+          }
+        }
+
+        // Print edge neighbors
+        fprintf(out, "], \"en\": [");
+        first = true;
+        for (Edge *edge = getEdges(); *edge != OO; ++edge) {
+          auto neighbor = leaf->GTEQ_EDGE_NEIGHBOR(*edge);
+          if (neighbor) {
+            if (!first) {
+              fprintf(out, ", ");
+            }
+            first = false;
+            outLocationArrayJSON(out, neighbor);
+          }
+        }
+
+        // Print edge neighbor leaves
+        fprintf(out, "], \"enl\": [");
+        first = true;
+        for (Edge *edge = getEdges(); *edge != OO; ++edge) {
+          auto neighbor = leaf->GTEQ_EDGE_NEIGHBOR(*edge);
+          if (neighbor) {
+            auto neighborLeaves = neighbor->getNeighborLeaves(*edge);
+            for (auto neighborLeaf : neighborLeaves) {
+              if (!first) {
+                fprintf(out, ", ");
+              }
+              first = false;
+              outLocationArrayJSON(out, neighborLeaf);
+            }
+          }
+        }
+
+        // Print vertex neighbors
+        fprintf(out, "], \"vn\": [");
+        first = true;
+        for (Vertex *vertex = VERTICES(); *vertex != OOO; ++vertex) {
+          auto neighbor = leaf->GTEQ_VERTEX_NEIGHBOR(*vertex);
+          if (neighbor) {
+            if (!first) {
+              fprintf(out, ", ");
+            }
+            first = false;
+            outLocationArrayJSON(out, neighbor);
+          }
+        }
+
+        // Print vertex neighbor leaves
+        fprintf(out, "], \"vnl\": [");
+        first = true;
+        for (Vertex *vertex = VERTICES(); *vertex != OOO; ++vertex) {
+          auto neighbor = leaf->GTEQ_VERTEX_NEIGHBOR(*vertex);
+          if (neighbor) {
+            auto neighborLeaves = neighbor->getNeighborLeaves(*vertex);
+
+            for (auto neighborLeaf : neighborLeaves) {
+              if (!first) {
+                fprintf(out, ", ");
+              }
+              first = false;
+              outLocationArrayJSON(out, neighborLeaf);
+            }
+          }
+        }
+
+        fprintf(out, "]}");
+        if (leafIndex < (leaves.size() - 1)) {
+          fprintf(out, ",");
+        }
+        fprintf(out, "\n");
+      }
+      fprintf(out, "]\n");
+    } else {
+      fprintf(stderr, "ERROR: Dump file is nullptr.\n");
+    }
+
+    return out;
+  }
+
  private:
+  /**
+   * Print the box minimum and maximum coordinates to a given FILE pointer as a JSON list of the form
+   * `[min_x, min_y, min_z, max_x, max_y, max_z]`.
+   * @tparam Particle The enclosed particle type
+   * @param out The FILE pointer
+   * @param node An octree node to obtain the box minimum and maximum coordinates from
+   */
+  template <typename Particle>
+  static void outLocationArrayJSON(FILE *out, OctreeNodeInterface<Particle> *node) {
+    auto min = node->getBoxMin();
+    auto max = node->getBoxMax();
+    fprintf(out, "[%.3f,%.3f,%.3f,%.3f,%.3f,%.3f]", min[0], min[1], min[2], max[0], max[1], max[2]);
+  }
+
   /**
    * Count the iterations to give the written octrees unique filenames
    */

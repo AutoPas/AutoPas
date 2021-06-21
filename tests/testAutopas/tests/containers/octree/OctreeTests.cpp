@@ -178,131 +178,6 @@ static double planeEquation(std::array<double, 3> planeNormal, std::array<double
  */
 static int getAxis(autopas::Face f) { return (f - 1) >> 1; }
 
-static void outLocationArrayJSON(FILE *out, autopas::OctreeNodeInterface<autopas::ParticleFP64> *node) {
-  auto min = node->getBoxMin();
-  fprintf(out, "[%.3f,%.3f,%.3f,", min[0], min[1], min[2]);
-  auto max = node->getBoxMax();
-  fprintf(out, "%.3f,%.3f,%.3f]", max[0], max[1], max[2]);
-}
-
-static void leavesToJSON(std::vector<autopas::OctreeLeafNode<autopas::ParticleFP64> *> &leaves) {
-  using namespace autopas;
-
-  FILE *out = fopen("leaves.json", "w");
-  if (out) {
-    fprintf(out, "[\n");
-    for (int leafIndex = 0; leafIndex < leaves.size(); ++leafIndex) {
-      auto leaf = leaves[leafIndex];
-      fprintf(out, "{\"minmax\": ");
-      outLocationArrayJSON(out, leaf);
-
-      // Print face neighbors
-      fprintf(out, ", \"fn\": [");
-      bool first = true;
-      for (Face *face = getFaces(); *face != O; ++face) {
-        auto neighbor = leaf->GTEQ_FACE_NEIGHBOR(*face);
-        if (neighbor) {
-          if (!first) {
-            fprintf(out, ", ");
-          }
-          first = false;
-          outLocationArrayJSON(out, neighbor);
-        }
-      }
-
-      // Print face neighbor leaves
-      fprintf(out, "], \"fnl\": [");
-      first = true;
-      for (Face *face = getFaces(); *face != O; ++face) {
-        auto neighbor = leaf->GTEQ_FACE_NEIGHBOR(*face);
-        if (neighbor) {
-          auto neighborLeaves = neighbor->getNeighborLeaves(*face);
-          for (auto neighborLeaf : neighborLeaves) {
-            if (!first) {
-              fprintf(out, ", ");
-            }
-            first = false;
-            outLocationArrayJSON(out, neighborLeaf);
-          }
-        }
-      }
-
-      // Print edge neighbors
-      fprintf(out, "], \"en\": [");
-      first = true;
-      for (Edge *edge = getEdges(); *edge != OO; ++edge) {
-        auto neighbor = leaf->GTEQ_EDGE_NEIGHBOR(*edge);
-        if (neighbor) {
-          if (!first) {
-            fprintf(out, ", ");
-          }
-          first = false;
-          outLocationArrayJSON(out, neighbor);
-        }
-      }
-
-      // Print edge neighbor leaves
-      fprintf(out, "], \"enl\": [");
-      first = true;
-      for (Edge *edge = getEdges(); *edge != OO; ++edge) {
-        auto neighbor = leaf->GTEQ_EDGE_NEIGHBOR(*edge);
-        if (neighbor) {
-          auto neighborLeaves = neighbor->getNeighborLeaves(*edge);
-          for (auto neighborLeaf : neighborLeaves) {
-            if (!first) {
-              fprintf(out, ", ");
-            }
-            first = false;
-            outLocationArrayJSON(out, neighborLeaf);
-          }
-        }
-      }
-
-      // Print vertex neighbors
-      fprintf(out, "], \"vn\": [");
-      first = true;
-      for (Vertex *vertex = VERTICES(); *vertex != OOO; ++vertex) {
-        auto neighbor = leaf->GTEQ_VERTEX_NEIGHBOR(*vertex);
-        if (neighbor) {
-          if (!first) {
-            fprintf(out, ", ");
-          }
-          first = false;
-          outLocationArrayJSON(out, neighbor);
-        }
-      }
-
-      // Print vertex neighbor leaves
-      fprintf(out, "], \"vnl\": [");
-      first = true;
-      for (Vertex *vertex = VERTICES(); *vertex != OOO; ++vertex) {
-        auto neighbor = leaf->GTEQ_VERTEX_NEIGHBOR(*vertex);
-        if (neighbor) {
-          auto neighborLeaves = neighbor->getNeighborLeaves(*vertex);
-
-          for (auto neighborLeaf : neighborLeaves) {
-            if (!first) {
-              fprintf(out, ", ");
-            }
-            first = false;
-            outLocationArrayJSON(out, neighborLeaf);
-          }
-        }
-      }
-
-      fprintf(out, "]}");
-      if (leafIndex < (leaves.size() - 1)) {
-        fprintf(out, ",");
-      }
-      fprintf(out, "\n");
-    }
-    fprintf(out, "]\n");
-    fclose(out);
-  } else {
-    fprintf(stderr, "ERROR: Unable to open dump file.\n");
-  }
-}
-
 /**
  * This testcase checks if the indexing of octree node children works as intended.
  */
@@ -479,7 +354,11 @@ TEST_F(OctreeTest, testNeighborLocator) {
   // Find all leaves
   std::vector<OctreeLeafNode<ParticleFP64> *> leaves;
   root->appendAllLeaves(leaves);
-  leavesToJSON(leaves);
+  // Log the leaves
+  FILE *out = OctreeLogger::leavesToJSON(fopen("leaves.json", "w"), leaves);
+  if (out) {
+    fclose(out);
+  }
 
   // Check the properties of each found neighbor for each leaf.
   int leafIndex = 0;
@@ -550,7 +429,7 @@ TEST_F(OctreeTest, testRangeNeighborFinding) {
 
   // Create an octree with a random particle configuration.
   std::unique_ptr<OctreeNodeInterface<ParticleFP64>> root;
-  std::array<double, 3> min = {0, 0, 0}, max = {1,1,1};
+  std::array<double, 3> min = {0, 0, 0}, max = {1, 1, 1};
   createRandomOctree(root, 1234, min, max, 1000);
 
   // Iterate all particles
