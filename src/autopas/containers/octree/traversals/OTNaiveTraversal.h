@@ -50,7 +50,11 @@ class OTNaiveTraversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::ot_naive; }
 
-  [[nodiscard]] bool isApplicable() const override { return useNewton3; }
+  [[nodiscard]] bool isApplicable() const override {
+    //return useNewton3;
+    // TODO(johannes): Re-enable this traversal
+    return false;
+  }
 
   [[nodiscard]] bool getUseNewton3() const override { return useNewton3; };
 
