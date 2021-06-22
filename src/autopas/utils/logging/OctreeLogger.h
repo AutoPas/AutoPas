@@ -260,6 +260,15 @@ class OctreeLogger {
     return out;
   }
 
+  /**
+   * Print a list of particle positions to a file as JSON. The list is obtained from the octree root node.
+   * @tparam Particle The enclosed particle type
+   * @param out The FILE pointer to write the JSON to
+   * TODO(johannes): Remove the prefix, this can be set from the outer code
+   * @param jsonFieldPrefix A short prefix, that will be prepended to the JSON array
+   * @param root The root from which the particles should be obtained
+   * @return The file pointer
+   */
   template <typename Particle>
   static FILE *particlesToJSON(FILE *out, char const *jsonFieldPrefix, OctreeNodeInterface<Particle> *root) {
     if (out) {

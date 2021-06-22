@@ -42,6 +42,7 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
    * Constructor for the Octree traversal.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param cutoff cutoff (this is enough for the octree traversal, please don't use the interaction length here.)
+   * @param interactionLength The minimum distance at which a force is considered nonzero, cutoff+skin.
    */
   explicit OTC01Traversal(PairwiseFunctor *pairwiseFunctor, double cutoff, double interactionLength)
       : CellPairTraversal<ParticleCell>({2, 1, 1}),
