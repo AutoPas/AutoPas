@@ -34,10 +34,15 @@ class OctreeNodeInterface {
    * @param boxMax The maximum coordinate of the enclosing box
    * @param parent A pointer to the parent of this node, may be nullptr for the root.
    * @param treeSplitThreshold Maximum number of particles inside a leaf before it tries to split itself
+   * @param interactionLength The minimum distance at which a force is considered nonzero, cutoff+skin.
    */
   OctreeNodeInterface(std::array<double, 3> boxMin, std::array<double, 3> boxMax, OctreeNodeInterface<Particle> *parent,
-                      int unsigned treeSplitThreshold)
-      : _boxMin(boxMin), _boxMax(boxMax), _parent(parent), _treeSplitThreshold(treeSplitThreshold) {}
+                      int unsigned treeSplitThreshold, double interactionLength)
+      : _boxMin(boxMin),
+        _boxMax(boxMax),
+        _parent(parent),
+        _treeSplitThreshold(treeSplitThreshold),
+        _interactionLength(interactionLength) {}
 
   /** To make clang happy. */
   virtual ~OctreeNodeInterface() = default;
@@ -450,6 +455,11 @@ class OctreeNodeInterface {
    * Maximum number of particles inside a leaf node before the leaf tries to split itself.
    */
   int unsigned _treeSplitThreshold;
+
+  /**
+   * The minimum distance at which a force is considered nonzero, cutoff+skin.
+   */
+  double _interactionLength;
 };
 
 /**

@@ -35,9 +35,12 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @param boxMin The min coordinate of the box containing the octree
    * @param boxMax The max coordinate of the box containing the octree
    * @param treeSplitThreshold Maximum number of particles inside a leaf before it tries to split itself
+   * @param interactionLength The minimum distance at which a force is considered nonzero, cutoff+skin.
    */
-  OctreeNodeWrapper(std::array<double, 3> boxMin, std::array<double, 3> boxMax, int unsigned treeSplitThreshold) {
-    _pointer = std::make_unique<OctreeLeafNode<Particle>>(boxMin, boxMax, nullptr, treeSplitThreshold);
+  OctreeNodeWrapper(std::array<double, 3> boxMin, std::array<double, 3> boxMax, int unsigned treeSplitThreshold,
+                    double interactionLength) {
+    _pointer =
+        std::make_unique<OctreeLeafNode<Particle>>(boxMin, boxMax, nullptr, treeSplitThreshold, interactionLength);
   }
 
   /**

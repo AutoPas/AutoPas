@@ -30,10 +30,11 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
    * @param boxMax The max coordinate of the octree box
    * @param parent A pointer to the parent node. Should be nullptr for root nodes.
    * @param treeSplitThreshold Maximum number of particles inside a leaf before it tries to split itself
+   * @param interactionLength The minimum distance at which a force is considered nonzero, cutoff+skin.
    */
   OctreeLeafNode(std::array<double, 3> boxMin, std::array<double, 3> boxMax, OctreeNodeInterface<Particle> *parent,
-                 int unsigned treeSplitThreshold)
-      : OctreeNodeInterface<Particle>(boxMin, boxMax, parent, treeSplitThreshold),
+                 int unsigned treeSplitThreshold, double interactionLength)
+      : OctreeNodeInterface<Particle>(boxMin, boxMax, parent, treeSplitThreshold, interactionLength),
         FullParticleCell<Particle>(utils::ArrayMath::sub(boxMax, boxMin)) {}
 
   /**
@@ -44,12 +45,24 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
       throw std::runtime_error("[OctreeLeafNode.h] Attempting to insert particle that is not inside this node");
     }
 
-    // TODO(johannes): Check if the size of the new leaves is >= cellSizeFactor*interactionLength
-    if (this->_particles.size() < this->_treeSplitThreshold) {
+    // Check if the size of the new leaves would become smaller than cellSizeFactor*interactionLength
+    std::array<double, 3> splitLeafDimensions = utils::ArrayMath::add(this->getBoxMin(), this->getBoxMax());
+    splitLeafDimensions = utils::ArrayMath::mulScalar(splitLeafDimensions, 0.5);
+    bool anyNewDimSmallerThanMinSize = false;
+    for(auto d = 0; d < 3; ++d) {
+      // TODO(johannes): Obtain the cellSizeFactor from the configuration
+      auto cellSizeFactor = 1.0;
+      if(splitLeafDimensions[d] < (cellSizeFactor*this->_interactionLength)) {
+        anyNewDimSmallerThanMinSize = true;
+        break;
+      }
+    }
+
+    if ((this->_particles.size() < this->_treeSplitThreshold) or anyNewDimSmallerThanMinSize) {
       this->_particles.push_back(p);
     } else {
       std::unique_ptr<OctreeNodeInterface<Particle>> newInner = std::make_unique<OctreeInnerNode<Particle>>(
-          this->getBoxMin(), this->getBoxMax(), this->_parent, this->_treeSplitThreshold);
+          this->getBoxMin(), this->getBoxMax(), this->_parent, this->_treeSplitThreshold, this->_interactionLength);
       newInner->insert(newInner, p);
       for (auto cachedParticle : this->_particles) {
         newInner->insert(newInner, cachedParticle);

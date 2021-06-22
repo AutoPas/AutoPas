@@ -27,10 +27,11 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
    * @param boxMax The max coordinate of the octree box
    * @param parent A pointer to the parent node. Should be nullptr for root nodes.
    * @param treeSplitThreshold Maximum number of particles inside a leaf before it tries to split itself
+   * @param interactionLength The minimum distance at which a force is considered nonzero, cutoff+skin.
    */
   OctreeInnerNode(std::array<double, 3> boxMin, std::array<double, 3> boxMax, OctreeNodeInterface<Particle> *parent,
-                  int unsigned treeSplitThreshold)
-      : OctreeNodeInterface<Particle>(boxMin, boxMax, parent, treeSplitThreshold) {
+                  int unsigned treeSplitThreshold, double interactionLength)
+      : OctreeNodeInterface<Particle>(boxMin, boxMax, parent, treeSplitThreshold, interactionLength) {
     using namespace autopas::utils;
 
     // The inner node is initialized with 8 leaves.
@@ -50,7 +51,8 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
       }
 
       // Assign new leaves as the children.
-      _children[i] = std::make_unique<OctreeLeafNode<Particle>>(newBoxMin, newBoxMax, this, treeSplitThreshold);
+      _children[i] =
+          std::make_unique<OctreeLeafNode<Particle>>(newBoxMin, newBoxMax, this, treeSplitThreshold, interactionLength);
     }
   }
 
@@ -99,7 +101,7 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
     }
 
     std::unique_ptr<OctreeLeafNode<Particle>> newLeaf = std::make_unique<OctreeLeafNode<Particle>>(
-        this->getBoxMin(), this->getBoxMax(), this->_parent, this->_treeSplitThreshold);
+        this->getBoxMin(), this->getBoxMax(), this->_parent, this->_treeSplitThreshold, this->_interactionLength);
     ref = std::move(newLeaf);
   }
 
