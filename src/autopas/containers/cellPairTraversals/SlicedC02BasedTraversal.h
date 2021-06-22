@@ -66,8 +66,7 @@ class SlicedC02BasedTraversal
    * @return true iff the traversal can be applied.
    */
   [[nodiscard]] bool isApplicable() const override {
-    return not(dataLayout == DataLayoutOption::cuda) and
-           this->_cellsPerDimension[this->_dimsPerLength[0]] >= this->_overlapLongestAxis;
+    return this->_cellsPerDimension[this->_dimsPerLength[0]] >= this->_overlapLongestAxis;
   }
 
   /**

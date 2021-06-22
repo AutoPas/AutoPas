@@ -23,33 +23,33 @@ target_compile_options(
     autopas
     PUBLIC
         # Needed to vectorize sqrt()
-        $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-fno-math-errno
+        -fno-math-errno
         # fast math for better vectorization
-        $<$<AND:$<BOOL:${AUTOPAS_ENABLE_FAST_MATH}>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-ffast-math>
+        $<$<AND:$<BOOL:${AUTOPAS_ENABLE_FAST_MATH}>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:-ffast-math>
         # compiler profiling
         $<$<AND:$<BOOL:${AUTOPAS_COMPILE_TIME_PROFILING}>,$<CXX_COMPILER_ID:GNU>>:-ftime-report>
         $<$<AND:$<BOOL:${AUTOPAS_COMPILE_TIME_PROFILING}>,$<CXX_COMPILER_ID:Clang>>:-ftime-trace>
         # Clang: set OpenMP version to 4.5
-        $<$<CXX_COMPILER_ID:Clang>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-fopenmp-version=45>
+        $<$<CXX_COMPILER_ID:Clang>:-fopenmp-version=45>
         # INTEL: per default fast math is on. Disable via fp-model precise
-        $<$<AND:$<NOT:$<BOOL:${AUTOPAS_ENABLE_FAST_MATH}>>,$<CXX_COMPILER_ID:Intel>>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-fp-model
+        $<$<AND:$<NOT:$<BOOL:${AUTOPAS_ENABLE_FAST_MATH}>>,$<CXX_COMPILER_ID:Intel>>:-fp-model
         precise>
         # Warnings:
     PRIVATE
         # no warnings for intel because it's mainly spam, but we disable one, because of a compiler
         # bug:
         # https://software.intel.com/en-us/forums/intel-c-compiler/topic/814098
-        $<$<CXX_COMPILER_ID:Intel>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-wd13212>
+        $<$<CXX_COMPILER_ID:Intel>:-wd13212>
         $<$<CXX_COMPILER_ID:GNU>:
-        $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-Wsuggest-override
-        $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-Wall
-        $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-Wno-unused-variable
-        $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-Wno-unused-function
+        -Wsuggest-override
+        -Wall
+        -Wno-unused-variable
+        -Wno-unused-function
         >
         $<$<CXX_COMPILER_ID:Clang>:
-        $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-Wall
-        $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-Wextra
-        $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-Wno-unused-parameter     # triggered by functions with disabled bodies
+        -Wall
+        -Wextra
+        -Wno-unused-parameter     # triggered by functions with disabled bodies
         >
         # @TODO clean up code with -Weffc++
 )

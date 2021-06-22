@@ -8,9 +8,6 @@
 
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/TraversalOption.h"
-#if defined(AUTOPAS_CUDA)
-#include "cuda_runtime.h"
-#endif
 
 namespace autopas {
 
