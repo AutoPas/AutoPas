@@ -150,7 +150,7 @@ class OctreeLogger {
       for (int leafIndex = 0; leafIndex < leaves.size(); ++leafIndex) {
         auto leaf = leaves[leafIndex];
         fprintf(out, "{\"minmax\": ");
-        outLocationArrayJSON(out, leaf);
+        outBoxCoordinatesJSON<Particle>(out, leaf);
 
         // Print face neighbors
         fprintf(out, ", \"fn\": [");
@@ -162,7 +162,7 @@ class OctreeLogger {
               fprintf(out, ", ");
             }
             first = false;
-            outLocationArrayJSON(out, neighbor);
+            outBoxCoordinatesJSON<Particle>(out, neighbor);
           }
         }
 
@@ -178,7 +178,7 @@ class OctreeLogger {
                 fprintf(out, ", ");
               }
               first = false;
-              outLocationArrayJSON(out, neighborLeaf);
+              outBoxCoordinatesJSON<Particle>(out, neighborLeaf);
             }
           }
         }
@@ -193,7 +193,7 @@ class OctreeLogger {
               fprintf(out, ", ");
             }
             first = false;
-            outLocationArrayJSON(out, neighbor);
+            outBoxCoordinatesJSON<Particle>(out, neighbor);
           }
         }
 
@@ -209,7 +209,7 @@ class OctreeLogger {
                 fprintf(out, ", ");
               }
               first = false;
-              outLocationArrayJSON(out, neighborLeaf);
+              outBoxCoordinatesJSON<Particle>(out, neighborLeaf);
             }
           }
         }
@@ -224,7 +224,7 @@ class OctreeLogger {
               fprintf(out, ", ");
             }
             first = false;
-            outLocationArrayJSON(out, neighbor);
+            outBoxCoordinatesJSON<Particle>(out, neighbor);
           }
         }
 
@@ -241,7 +241,7 @@ class OctreeLogger {
                 fprintf(out, ", ");
               }
               first = false;
-              outLocationArrayJSON(out, neighborLeaf);
+              outBoxCoordinatesJSON<Particle>(out, neighborLeaf);
             }
           }
         }
@@ -260,19 +260,73 @@ class OctreeLogger {
     return out;
   }
 
+  template <typename Particle>
+  static FILE *particlesToJSON(FILE *out, char const *jsonFieldPrefix, OctreeNodeInterface<Particle> *root) {
+    if (out) {
+      // Get all leaves
+      std::vector<OctreeLeafNode<Particle> *> leaves;
+      root->appendAllLeaves(leaves);
+
+      fprintf(out, "\"%s\": [", jsonFieldPrefix);
+      for (int leafIndex = 0; leafIndex < leaves.size(); ++leafIndex) {
+        OctreeLeafNode<Particle> *leaf = leaves[leafIndex];
+
+        auto n = leaf->numParticles();
+        for (int particleIndex = 0; particleIndex < n; ++particleIndex) {
+          Particle &particle = leaf->at(particleIndex);
+          auto p = particle.getR();
+          fputc('[', out);
+          out3(out, p[0], p[1], p[2]);
+          fputc(']', out);
+          if ((particleIndex < (n - 1)) || (leafIndex < (leaves.size() - 1))) {
+            fprintf(out, ",");
+          }
+        }
+      }
+      fprintf(out, "]");
+    } else {
+      fprintf(stderr, "ERROR: Dump file is nullptr.\n");
+    }
+
+    return out;
+  }
+
  private:
+  /**
+   *
+   * @param out
+   * @param x
+   * @param y
+   * @param z
+   */
+  static void out3(FILE *out, double x, double y, double z) { fprintf(out, "%.3f,%.3f,%.3f", x, y, z); }
+
   /**
    * Print the box minimum and maximum coordinates to a given FILE pointer as a JSON list of the form
    * `[min_x, min_y, min_z, max_x, max_y, max_z]`.
+   * @param out The FILE pointer
+   * @param min The minimum coordinate
+   * @param max The maximum coordinate
+   */
+  static void outLocationArrayJSON(FILE *out, std::array<double, 3> min, std::array<double, 3> max) {
+    fputc('[', out);
+    out3(out, min[0], min[1], min[2]);
+    fputc(',', out);
+    out3(out, max[0], max[1], max[2]);
+    fputc(']', out);
+  }
+
+  /**
+   * Print the box minimum and maximum coordinates of an octree node.
    * @tparam Particle The enclosed particle type
    * @param out The FILE pointer
    * @param node An octree node to obtain the box minimum and maximum coordinates from
    */
   template <typename Particle>
-  static void outLocationArrayJSON(FILE *out, OctreeNodeInterface<Particle> *node) {
-    auto min = node->getBoxMin();
-    auto max = node->getBoxMax();
-    fprintf(out, "[%.3f,%.3f,%.3f,%.3f,%.3f,%.3f]", min[0], min[1], min[2], max[0], max[1], max[2]);
+  static void outBoxCoordinatesJSON(FILE *out, OctreeNodeInterface<Particle> *node) {
+    std::array<double, 3> min = node->getBoxMin();
+    std::array<double, 3> max = node->getBoxMax();
+    outLocationArrayJSON(out, min, max);
   }
 
   /**
