@@ -24,7 +24,6 @@
 #include "autopas/containers/linkedCells/traversals/LCSlicedTraversal.h"
 #include "autopas/containers/octree/traversals/OTC01Traversal.h"
 #include "autopas/containers/octree/traversals/OTNaiveTraversal.h"
-#include "autopas/containers/verletClusterCells/traversals/VCCClusterIterationCUDATraversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLC01BalancedTraversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLC06Traversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLClusterIterationTraversal.h"

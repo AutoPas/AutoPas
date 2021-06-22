@@ -85,13 +85,6 @@ class TraversalOption : public Option<TraversalOption> {
     ot_c01,
     ot_naive,
 
-    // VerletClusterCells Traversals:
-    /**
-     * VCCClusterIterationCUDATraversal : CUDA. Concurrent processing of all clusters avoiding data races through
-     * atomics.
-     */
-    vcc_cluster_iteration_cuda,
-
     // VerletClusterLists Traversals:
     /**
      * VCLC01BalancedTraversal : Assign a fixed set of towers to each thread balanced by number of contained clusters.
