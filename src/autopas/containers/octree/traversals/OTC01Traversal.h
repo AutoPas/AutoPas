@@ -15,6 +15,7 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/DataLayoutConverter.h"
+#include "autopas/utils/logging/OctreeLogger.h"
 
 namespace autopas {
 
@@ -57,25 +58,15 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
   [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; };
 
   void initTraversal() override {
-    // Gather all leaves
-    auto *wrapper = dynamic_cast<OctreeNodeWrapper<Particle> *>(&(*_cells)[0]);
-    wrapper->appendAllLeaves(_leaves);
-
     // Preprocess all leaves
-    for (OctreeLeafNode<Particle> *leaf : _leaves) {
-      leaf->clearAlreadyProcessedList();
-      _dataLayoutConverter.loadDataLayout(*leaf);
-    }
+    loadBuffers(getOwned(), _ownedLeaves);
+    loadBuffers(getHalo(), _haloLeaves);
   }
 
   void endTraversal() override {
     // Postprocess all leaves
-    for (OctreeLeafNode<Particle> *leaf : _leaves) {
-      _dataLayoutConverter.storeDataLayout(*leaf);
-    }
-
-    // Remove the cached leaves
-    _leaves.clear();
+    unloadBuffers(_ownedLeaves);
+    unloadBuffers(_haloLeaves);
   }
 
   /**
@@ -83,10 +74,22 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
    * @note This function expects a vector of exactly two cells. First cell is the main region, second is halo.
    */
   void traverseParticlePairs() override {
-    auto *haloWrapper = dynamic_cast<OctreeNodeWrapper<Particle> *>(&(*_cells)[1]);
+    auto *haloWrapper = getHalo();
+
+#if 0
+    // FOR DEBUGGING ONLY
+    fclose(OctreeLogger::leavesToJSON(fopen("leaves.json", "w"), _ownedLeaves));  // Log all leaves for this octree
+    FILE *particles = fopen("particles.json", "w");
+    fprintf(particles, "{");
+    OctreeLogger::particlesToJSON(particles, "owned", getOwned()->getRaw());
+    fprintf(particles, ",\n");
+    OctreeLogger::particlesToJSON(particles, "halo", getHalo()->getRaw());
+    fprintf(particles, "}");
+    fclose(particles);
+#endif
 
     // Get neighboring cells for each leaf
-    for (OctreeLeafNode<Particle> *leaf : _leaves) {
+    for (OctreeLeafNode<Particle> *leaf : _ownedLeaves) {
       // Process cell itself
       _cellFunctor.processCell(*leaf);
 
@@ -114,6 +117,28 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
   void setCells(std::vector<OctreeNodeWrapper<Particle>> *cells) override { _cells = cells; }
 
  private:
+  void loadBuffers(OctreeNodeWrapper<Particle> *wrapper, std::vector<OctreeLeafNode<Particle> *> &leaves) {
+    wrapper->appendAllLeaves(leaves);
+
+    for (OctreeLeafNode<Particle> *leaf : leaves) {
+      leaf->clearAlreadyProcessedList();
+      _dataLayoutConverter.loadDataLayout(*leaf);
+    }
+  }
+
+  void unloadBuffers(std::vector<OctreeLeafNode<Particle> *> &leaves) {
+    for (OctreeLeafNode<Particle> *leaf : leaves) {
+      _dataLayoutConverter.storeDataLayout(*leaf);
+    }
+
+    // Remove the cached leaves
+    leaves.clear();
+  }
+
+  OctreeNodeWrapper<Particle> *getOwned() { return dynamic_cast<OctreeNodeWrapper<Particle> *>(&(*_cells)[0]); }
+
+  OctreeNodeWrapper<Particle> *getHalo() { return dynamic_cast<OctreeNodeWrapper<Particle> *>(&(*_cells)[1]); }
+
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
@@ -127,9 +152,14 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
   std::vector<OctreeNodeWrapper<Particle>> *_cells;
 
   /**
-   * A list of all leaves in the octree
+   * A list of all leaves in the owned octree
    */
-  std::vector<OctreeLeafNode<Particle> *> _leaves;
+  std::vector<OctreeLeafNode<Particle> *> _ownedLeaves;
+
+  /**
+   * A list of all leaves in the halo octree
+   */
+  std::vector<OctreeLeafNode<Particle> *> _haloLeaves;
 
   /**
    * The interaction length is used for finding neighbors
