@@ -17,10 +17,9 @@ set(AUTOPAS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 if (CMAKE_VERSION VERSION_LESS 3.17)
     message(
         STATUS
-            "Setting CMAKE_CXX_STANDARD and CMAKE_CUDA_STANDARD globally because cmake < 3.17 is used."
+            "Setting CMAKE_CXX_STANDARD globally because cmake < 3.17 is used."
     )
     set(CMAKE_CXX_STANDARD 17)
-    set(CMAKE_CUDA_STANDARD 14)
 endif ()
 
 if (NOT CYGWIN)
@@ -48,15 +47,6 @@ if (NOT CMAKE_BUILD_TYPE)
             FORCE
     )
 endif (NOT CMAKE_BUILD_TYPE)
-
-# CUDA options
-option(AUTOPAS_ENABLE_CUDA "Activates Cuda Components" OFF)
-if (AUTOPAS_ENABLE_CUDA)
-    message(STATUS "Cuda enabled.")
-    enable_language(CUDA)
-else ()
-    message(STATUS "Cuda disabled.")
-endif ()
 
 enable_testing()
 
@@ -87,7 +77,6 @@ include(coloring)
 include(logging)
 include(other-compileroptions)
 include(vectorization)
-include(cuda)
 
 # tests and examples
 add_subdirectory(examples)

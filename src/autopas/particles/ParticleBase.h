@@ -14,7 +14,6 @@
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ArrayUtils.h"
-#include "autopas/utils/CudaSoAType.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/SoAStorage.h"
 #include "autopas/utils/SoAType.h"
@@ -232,22 +231,6 @@ class ParticleBase {
       typename autopas::utils::SoAType<ParticleBase<floatType, idType> *, idType /*id*/, floatType /*x*/,
                                        floatType /*y*/, floatType /*z*/, floatType /*fx*/, floatType /*fy*/,
                                        floatType /*fz*/, OwnershipState /*ownershipState*/>::Type;
-
-#if defined(AUTOPAS_CUDA)
-  /**
-   * The type for storage arrays for Cuda.
-   */
-  using CudaDeviceArraysType =
-      typename autopas::utils::CudaSoAType<ParticleBase<floatType, idType> *, idType /*id*/, floatType /*x*/,
-                                           floatType /*y*/, floatType /*z*/, floatType /*fx*/, floatType /*fy*/,
-                                           floatType /*fz*/, OwnershipState /*ownershipState*/>::Type;
-#else
-  /**
-   * The type for storage arrays for Cuda.
-   * empty if compiled without Cuda Support.
-   */
-  using CudaDeviceArraysType = typename autopas::utils::CudaSoAType<>::Type;
-#endif
 
   /**
    * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).

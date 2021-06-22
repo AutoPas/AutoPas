@@ -12,7 +12,6 @@
 
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/iterators/SingleCellIterator.h"
-#include "autopas/utils/CudaSoA.h"
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -152,11 +151,6 @@ class FullParticleCell : public ParticleCell<Particle> {
    * SoA buffer of this cell.
    */
   SoA<SoAArraysType> _particleSoABuffer;
-
-  /**
-   * Device particle SoABuffer.
-   */
-  CudaSoA<typename Particle::CudaDeviceArraysType> _particleSoABufferDevice;
 
   /**
    * Type of the internal iterator.
