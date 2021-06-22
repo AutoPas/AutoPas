@@ -133,11 +133,6 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
                                                          containerInfo.verletClusterSize, containerInfo.loadEstimator);
       break;
     }
-    case ContainerOption::verletClusterCells: {
-      container = std::make_unique<VerletClusterCells<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
-                                                                 containerInfo.verletClusterSize);
-      break;
-    }
     case ContainerOption::varVerletListsAsBuild: {
       container = std::make_unique<VarVerletLists<Particle, VerletNeighborListAsBuild<Particle>>>(
           _boxMin, _boxMax, _cutoff, containerInfo.verletSkin);

@@ -169,7 +169,6 @@ INSTANTIATE_TEST_SUITE_P(
     Generated, TraversalTest,
     ValuesIn([]() -> std::set<std::tuple<autopas::TraversalOption, bool, autopas::LoadEstimatorOption>> {
       auto allTraversals = autopas::compatibleTraversals::allLCCompatibleTraversals();
-      allTraversals.erase(autopas::TraversalOption::lc_c01_cuda);
       allTraversals.erase(autopas::TraversalOption::lc_c01_combined_SoA);
       allTraversals.erase(autopas::TraversalOption::lc_c04_combined_SoA);
       std::set<std::tuple<autopas::TraversalOption, bool, autopas::LoadEstimatorOption>> res;

@@ -13,7 +13,6 @@
 
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/directSum/traversals/DSSequentialTraversal.h"
-#include "autopas/containers/linkedCells/traversals/LCC01CudaTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC01Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04CombinedSoATraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04HCPTraversal.h"
@@ -126,10 +125,6 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
       return std::make_unique<LCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, true>>(
           info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
-    case TraversalOption::lc_c01_cuda: {
-      return std::make_unique<LCC01CudaTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
-          info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
-    }
     case TraversalOption::lc_c04_combined_SoA: {
       return std::make_unique<LCC04CombinedSoATraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
           info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
@@ -217,13 +212,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
       return std::make_unique<VCLC06Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(&pairwiseFunctor,
                                                                                                       info.clusterSize);
     }
-    // Verlet Cluster Cells
-    case TraversalOption::vcc_cluster_iteration_cuda: {
-      return std::make_unique<VCCClusterIterationCUDATraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
-          &pairwiseFunctor, info.clusterSize);
-    }
-
-      // Pairwise Verlet Lists
+    // Pairwise Verlet Lists
     case TraversalOption::vlp_sliced: {
       return std::make_unique<VLCSlicedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
                                                  VLCCellPairNeighborList<typename ParticleCell::ParticleType>,
@@ -295,17 +284,6 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
                                                                                  traversalInfo);
       } else {
         return TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, DataLayoutOption::soa,
-                                                                           false>(traversalType, pairwiseFunctor,
-                                                                                  traversalInfo);
-      }
-    }
-    case DataLayoutOption::cuda: {
-      if (newton3 == Newton3Option::enabled) {
-        return TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, DataLayoutOption::cuda,
-                                                                           true>(traversalType, pairwiseFunctor,
-                                                                                 traversalInfo);
-      } else {
-        return TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, DataLayoutOption::cuda,
                                                                            false>(traversalType, pairwiseFunctor,
                                                                                   traversalInfo);
       }

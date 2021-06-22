@@ -54,10 +54,8 @@ traversals__LinkedCells=lc_c08
 traversals__VerletLists=vl_list_iteration
 traversals__VerletCells=vlc_c18
 traversals__VerletClusterLists=vcl_c06
-#traversals__VerletClusterCells=vcc_cluster_iteration
 
 # iterate over containers
-# add VerletClusterCells when it supports SoAs with global calculation
 for container in DirectSum LinkedCells VerletLists VerletClusterLists VerletCells ;
 do
     separate "Container: ${container}"

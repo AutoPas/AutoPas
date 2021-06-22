@@ -29,10 +29,6 @@ class DataLayoutOption : public Option<DataLayoutOption> {
      * Structure of arrays (SoA) : One Vector for each particle property.
      */
     soa,
-    /**
-     * CUDA in SoA style.
-     */
-    cuda,
   };
 
   /**
@@ -66,9 +62,6 @@ class DataLayoutOption : public Option<DataLayoutOption> {
     return {
         {DataLayoutOption::aos, "AoS"},
         {DataLayoutOption::soa, "SoA"},
-#ifdef AUTOPAS_CUDA
-        {DataLayoutOption::cuda, "CUDA"},
-#endif
     };
   };
 

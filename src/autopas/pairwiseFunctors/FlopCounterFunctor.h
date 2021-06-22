@@ -30,11 +30,6 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
 
   bool allowsNonNewton3() override { return true; }
 
-  [[nodiscard]] bool isAppropriateClusterSize(unsigned int /*clusterSize*/,
-                                              DataLayoutOption::Value dataLayout) const override {
-    return dataLayout == DataLayoutOption::aos;  // no support for clusters yet, unless aos.
-  }
-
   /**
    * constructor of FlopCounterFunctor
    * @param cutoffRadius the cutoff radius
@@ -249,78 +244,6 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
     }
     _distanceCalculations.fetch_add(distanceCalculationsAcc, std::memory_order_relaxed);
     _kernelCalls.fetch_add(kernelCallsAcc, std::memory_order_relaxed);
-  }
-
-  void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle, bool /*newton3*/) override {
-#if defined(AUTOPAS_CUDA)
-    // estimate flops on GPU
-    size_t size = device_handle.template get<Particle::AttributeNames::posX>().size();
-    _distanceCalculations += size * size;
-    _kernelCalls += size * size;
-#else
-    utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
-#endif
-  }
-
-  void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1,
-                   CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2, bool /*newton3*/) override {
-#if defined(AUTOPAS_CUDA)
-    // estimate flops on GPU
-    size_t size1 = device_handle1.template get<Particle::AttributeNames::posX>().size();
-    size_t size2 = device_handle2.template get<Particle::AttributeNames::posX>().size();
-
-    _distanceCalculations += size1 * size2;
-    _kernelCalls += size1 * size2;
-#else
-    utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
-#endif
-  }
-
-  /**
-   * @copydoc Functor::deviceSoALoader
-   */
-  void deviceSoALoader(::autopas::SoA<typename Particle::SoAArraysType> &soa,
-                       CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {
-#if defined(AUTOPAS_CUDA)
-    size_t size = soa.getNumParticles();
-    if (size == 0) return;
-
-    device_handle.template get<Particle::AttributeNames::posX>().copyHostToDevice(
-        size, soa.template begin<Particle::AttributeNames::posX>());
-    device_handle.template get<Particle::AttributeNames::posY>().copyHostToDevice(
-        size, soa.template begin<Particle::AttributeNames::posY>());
-    device_handle.template get<Particle::AttributeNames::posZ>().copyHostToDevice(
-        size, soa.template begin<Particle::AttributeNames::posZ>());
-
-    device_handle.template get<Particle::AttributeNames::forceX>().copyHostToDevice(
-        size, soa.template begin<Particle::AttributeNames::forceX>());
-    device_handle.template get<Particle::AttributeNames::forceY>().copyHostToDevice(
-        size, soa.template begin<Particle::AttributeNames::forceY>());
-    device_handle.template get<Particle::AttributeNames::forceZ>().copyHostToDevice(
-        size, soa.template begin<Particle::AttributeNames::forceZ>());
-#else
-    utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
-#endif
-  }
-
-  /**
-   * @copydoc Functor::deviceSoAExtractor
-   */
-  void deviceSoAExtractor(::autopas::SoA<typename Particle::SoAArraysType> &soa,
-                          CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {
-#if defined(AUTOPAS_CUDA)
-    size_t size = soa.getNumParticles();
-    if (size == 0) return;
-
-    device_handle.template get<Particle::AttributeNames::forceX>().copyDeviceToHost(
-        size, soa.template begin<Particle::AttributeNames::forceX>());
-    device_handle.template get<Particle::AttributeNames::forceY>().copyDeviceToHost(
-        size, soa.template begin<Particle::AttributeNames::forceY>());
-    device_handle.template get<Particle::AttributeNames::forceZ>().copyDeviceToHost(
-        size, soa.template begin<Particle::AttributeNames::forceZ>());
-#else
-    utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
-#endif
   }
 
   /**
