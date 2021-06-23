@@ -6,11 +6,17 @@
 
 #include "OctreeTests.h"
 
+#include <autopas/molecularDynamics/LJFunctor.h>
+#include <autopas/selectors/ContainerSelector.h>
+#include <autopas/utils/StaticCellSelector.h>
+#include <testingHelpers/commonTypedefs.h>
+
 #include <cstdio>
 
 #include "autopas/containers/octree/Octree.h"
 #include "autopas/containers/octree/OctreeDirection.h"
 #include "autopas/containers/octree/OctreeNodeInterface.h"
+#include "autopas/options/Newton3Option.h"
 #include "autopas/particles/Particle.h"
 
 TEST_F(OctreeTest, testDummy) {
@@ -513,5 +519,122 @@ TEST_F(OctreeTest, testAbleToSplit) {
     auto particle = getRandomlyDistributedParticle(min, max);
     root->insert(root, particle);
     ASSERT_TRUE(root->hasChildren());
+  }
+}
+
+static std::vector<std::array<double, 3>> calculateForces(autopas::ContainerOption containerOption,
+                                                          autopas::TraversalOption traversalOption,
+                                                          autopas::DataLayoutOption dataLayoutOption,
+                                                          autopas::Newton3Option newton3Option, size_t numParticles,
+                                                          size_t numHaloParticles, std::array<double, 3> boxMax,
+                                                          double cellSizeFactor, bool doSlightShift) {
+  using namespace autopas;
+
+  std::array<double, 3> _boxMin{0, 0, 0};
+  double _cutoff{1.};
+  static constexpr double _eps{1.};
+  static constexpr double _sig{1.};
+
+  // Construct container
+  ContainerSelector<Molecule> selector{_boxMin, boxMax, _cutoff};
+  double skin = _cutoff * 0.1;
+  double interactionLength = _cutoff + skin;
+  selector.selectContainer(
+      containerOption, autopas::ContainerSelectorInfo{cellSizeFactor, skin, 32, autopas::LoadEstimatorOption::none});
+  auto container = selector.getCurrentContainer();
+
+  // TODO(johannes): Here I probably want to use the mock functor
+  autopas::LJFunctor<Molecule, true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both,
+                     true /*calculateGlobals*/>
+      functor{_cutoff};
+  functor.setParticleProperties(_eps * 24, _sig * _sig);
+
+  // Initialize the RNG in order to be able to initialize both containers with the same particles
+  srand(1234);
+
+  // Fill a smaller portion of the octree region with particles
+  auto boxCenter = utils::ArrayMath::add(_boxMin, boxMax);
+  boxCenter = utils::ArrayMath::mulScalar(boxCenter, 0.5);
+  for(int unsigned i = 0; i < numParticles; ++i) {
+    auto position = random3D(_boxMin, boxCenter);
+    auto particle = Molecule(position, {0, 0, 0}, i);
+    container->addParticle(particle);
+  }
+
+  // Fill a small cube near the octree with halo particles
+  auto haloMin = utils::ArrayMath::subScalar(_boxMin, interactionLength);
+  for(int unsigned i = 0; i < numHaloParticles; ++i) {
+    auto position = random3D(haloMin, _boxMin);
+    auto particle = Molecule(position, {0, 0, 0}, i);
+    container->addHaloParticle(particle);
+  }
+
+  auto traversal =
+      autopas::utils::withStaticCellType<Molecule>(container->getParticleCellTypeEnum(), [&](auto particleCellDummy) {
+        return autopas::TraversalSelector<decltype(particleCellDummy)>::generateTraversal(
+            traversalOption, functor, container->getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
+      });
+
+#if 0
+  // TODO(johannes): Find out why this ASSERT_TRUE does not work here
+  bool applicable = traversal->isApplicable();
+  ASSERT_TRUE(true);
+#endif
+
+  if (doSlightShift) {
+    // TODO(johannes): Shift the particles
+  }
+
+  functor.initTraversal();
+  container->iteratePairwise(traversal.get());
+  functor.endTraversal(newton3Option);
+
+  std::vector<std::array<double, 3>> forces(numParticles);
+  for (auto it = container->begin(autopas::IteratorBehavior::owned); it.isValid(); ++it) {
+    EXPECT_TRUE(it->isOwned());
+    forces.at(it->getID()) = it->getF();
+  }
+
+  return forces;
+}
+
+TEST_F(OctreeTest, testCustomParticleDistribution) {
+  using namespace autopas;
+
+  // Stolen from the traversalTest
+  constexpr double rel_err_tolerance = 1.0e-10;
+  constexpr double rel_err_tolerance_globals = 1.0e-12;
+
+  // Obtain a starting configuration
+  auto containerOption = ContainerOption::octree;
+  auto traversalOption = TraversalOption::ot_c01;
+  auto dataLayoutOption = DataLayoutOption::aos;
+  auto newton3Option = Newton3Option::disabled;
+  auto numParticles = 30;
+  auto numHaloParticles = 1;
+  auto boxMax = std::array<double, 3>{3, 3, 3};
+  auto cellSizeFactor = 1;
+  auto doSlightShift = false;
+  auto particleDeletionPosition =
+      false;  // TODO: Change this to DeletionPosition::never or something more reasonable in general and put it back in
+
+  // Calculate the forces using the octree
+  std::vector<std::array<double, 3>> calculatedForces =
+      calculateForces(containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles, numHaloParticles,
+                      boxMax, cellSizeFactor, doSlightShift);
+
+  // Calculate the forces using the reference implementation
+  std::vector<std::array<double, 3>> referenceForces = calculateForces(
+      autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c08, autopas::DataLayoutOption::aos,
+      autopas::Newton3Option::enabled, numParticles, numHaloParticles, boxMax, cellSizeFactor, doSlightShift);
+
+  // Check whether the forces generated by the octree match the reference forces
+  for (size_t i = 0; i < numParticles; ++i) {
+    for (unsigned int d = 0; d < 3; ++d) {
+      double calculatedForce = calculatedForces[i][d];
+      double referenceForce = referenceForces[i][d];
+      EXPECT_NEAR(calculatedForce, referenceForce, std::fabs(calculatedForce * rel_err_tolerance))
+                << "Particle id: " << i;
+    }
   }
 }
