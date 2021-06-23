@@ -315,7 +315,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) {
     prepareContainerForIteration(behavior);
 
-    for (auto tower : this->_towers) {
+    for (auto &tower : this->_towers) {
       tower.forEach(forEachLambda, behavior);
     }
   }
