@@ -12,5 +12,4 @@
 //#include "autopas/containers/CellBlock3D.h"
 //#include "testingHelpers/commonTypedefs.h"
 
-class OctreeTest : public AutoPasTestBase {
-};
+class OctreeTest : public AutoPasTestBase {};

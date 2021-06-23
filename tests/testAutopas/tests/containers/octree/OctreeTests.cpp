@@ -478,7 +478,7 @@ TEST_F(OctreeTest, testUnableToSplit) {
 
   // Insert particles
   srand(1234);
-  for(int unsigned i = 0; i < 2*treeSplitThreshold; ++i) {
+  for (int unsigned i = 0; i < 2 * treeSplitThreshold; ++i) {
     auto particle = getRandomlyDistributedParticle(min, max);
     root->insert(root, particle);
 
@@ -502,14 +502,14 @@ TEST_F(OctreeTest, testAbleToSplit) {
 
   // Insert particles, the first should not cause the octree to split
   srand(1234);
-  for(int unsigned i = 0; i < treeSplitThreshold; ++i) {
+  for (int unsigned i = 0; i < treeSplitThreshold; ++i) {
     auto particle = getRandomlyDistributedParticle(min, max);
     root->insert(root, particle);
     ASSERT_FALSE(root->hasChildren());
   }
 
   // These should cause the octree to split
-  for(int unsigned i = 0; i < treeSplitThreshold; ++i) {
+  for (int unsigned i = 0; i < treeSplitThreshold; ++i) {
     auto particle = getRandomlyDistributedParticle(min, max);
     root->insert(root, particle);
     ASSERT_TRUE(root->hasChildren());

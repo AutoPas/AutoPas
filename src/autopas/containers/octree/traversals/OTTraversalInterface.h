@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "autopas/containers/octree/OctreeNodeWrapper.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
+#include "autopas/containers/octree/OctreeNodeWrapper.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/DataLayoutConverter.h"
@@ -28,4 +28,4 @@ class OTTraversalInterface {
   virtual void setCells(std::vector<ParticleCell> *cells) = 0;
 };
 
-} // namespace autopas
+}  // namespace autopas

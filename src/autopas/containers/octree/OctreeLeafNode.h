@@ -49,10 +49,10 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
     std::array<double, 3> splitLeafDimensions = utils::ArrayMath::add(this->getBoxMin(), this->getBoxMax());
     splitLeafDimensions = utils::ArrayMath::mulScalar(splitLeafDimensions, 0.5);
     bool anyNewDimSmallerThanMinSize = false;
-    for(auto d = 0; d < 3; ++d) {
+    for (auto d = 0; d < 3; ++d) {
       // TODO(johannes): Obtain the cellSizeFactor from the configuration
       auto cellSizeFactor = 1.0;
-      if(splitLeafDimensions[d] < (cellSizeFactor*this->_interactionLength)) {
+      if (splitLeafDimensions[d] < (cellSizeFactor * this->_interactionLength)) {
         anyNewDimSmallerThanMinSize = true;
         break;
       }

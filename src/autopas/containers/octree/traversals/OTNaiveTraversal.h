@@ -51,7 +51,7 @@ class OTNaiveTraversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::ot_naive; }
 
   [[nodiscard]] bool isApplicable() const override {
-    //return useNewton3;
+    // return useNewton3;
     // TODO(johannes): Re-enable this traversal
     return false;
   }
@@ -99,7 +99,7 @@ class OTNaiveTraversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
           // Execute the cell functor
           _cellFunctor.processCellPair(*leaf, *neighborLeaf);
 
-            // Mark the neighbor as processed in the leaf
+          // Mark the neighbor as processed in the leaf
           leaf->markAlreadyProcessed(neighborLeaf);
           neighborLeaf->markAlreadyProcessed(leaf);
         }

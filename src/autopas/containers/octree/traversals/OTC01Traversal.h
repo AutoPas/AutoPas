@@ -77,7 +77,7 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
   void traverseParticlePairs() override {
     auto *haloWrapper = getHalo();
 
-#if 0
+#if 1
     // FOR DEBUGGING ONLY
     fclose(OctreeLogger::leavesToJSON(fopen("leaves.json", "w"), _ownedLeaves));  // Log all leaves for this octree
     FILE *particles = fopen("particles.json", "w");

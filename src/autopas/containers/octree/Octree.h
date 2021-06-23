@@ -60,7 +60,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
   Octree(std::array<double, 3> boxMin, std::array<double, 3> boxMax, const double cutoff, const double skin)
       : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skin) {
     // TODO(johannes): Obtain this from a configuration
-    int unsigned treeSplitThreshold = 4;  // 16;
+    int unsigned treeSplitThreshold = 2;  // 16;
     this->_cells.push_back(
         OctreeNodeWrapper<Particle>(boxMin, boxMax, treeSplitThreshold, this->getInteractionLength()));
 
