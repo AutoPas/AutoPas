@@ -41,7 +41,26 @@ RegularGridDecomposition::RegularGridDecomposition(const int &dimensionCount, co
                                                    const std::vector<double> &globalBoxMax, const double &cutoffWidth,
                                                    const double &skinWidth)
     : _dimensionCount(dimensionCount), _cutoffWidth(cutoffWidth), _skinWidth(skinWidth) {
+
+
+#if defined(AUTOPAS_INCLUDE_MPI)
+  _mpiIsEnabled = true;
+#else
+  _mpiIsEnabled = false;
+#endif
+
   autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &_subdomainCount);
+
+  if (_subdomainCount == 1){
+    _mpiIsEnabled = false;
+  }
+
+  if (_mpiIsEnabled) {
+    std::cout << "MPI will be used." << std::endl;
+  }
+  else {
+    std::cout << "MPI will not be used." << std::endl;
+  }
 
   DomainTools::generateDecomposition(_subdomainCount, _dimensionCount, _decomposition);
 
@@ -182,31 +201,24 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
 
   int nextDimensionIndex;
 
-  for (int i = 0; i < dimensionCount && _decomposition[i] > 1; ++i) {
+  for (int i = 0; i < dimensionCount; ++i) {
     leftNeighbour = _neighbourDomainIndices[(i * 2) % neighbourCount];
     rightNeighbour = _neighbourDomainIndices[(i * 2 + 1) % neighbourCount];
 
     std::vector<ParticleType> haloParticles;
 
-    if (leftNeighbour != _domainIndex && rightNeighbour != _domainIndex) {
-      std::vector<ParticleType> particlesForLeftNeighbour;
-      std::vector<ParticleType> particlesForRightNeighbour;
+    std::vector<ParticleType> particlesForLeftNeighbour;
+    std::vector<ParticleType> particlesForRightNeighbour;
 
-      std::array<double, 3> periodicShift;
+    // @todo: exchange local with global
+    const auto globalBoxLength = autopas::utils::ArrayMath::sub(localBoxMax, localBoxMin);
 
-      std::array<double, 3> haloBoxMin = autopas::utils::ArrayMath::sub(localBoxMin, skin);
-      haloBoxMin[i] = _haloBoxes[4 * i];
-      std::array<double, 3> haloBoxMax = autopas::utils::ArrayMath::add(localBoxMax, skin);
-      haloBoxMax[i] = _haloBoxes[4 * i + 1];
+    std::array<double, 3> periodicShift = {0.0, 0.0, 0.0};
 
-      std::cout << "HaloBoxMin: " << autopas::utils::ArrayUtils::to_string(haloBoxMin) << ", "
-                << "HaloBoxMax: " << autopas::utils::ArrayUtils::to_string(haloBoxMax) << std::endl;
-
-      for (auto particle =
-               autoPasContainer->getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::owned);
-           particle.isValid(); ++particle) {
+    for (auto particle = autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+      double particlePosition = particle->getR()[i];
+      if (particlePosition >= _haloBoxes[4 * i] && particlePosition < _haloBoxes[4 * i + 1]) {
         particlesForLeftNeighbour.push_back(*particle);
-
         if (_localBoxMin[i] == _globalBoxMin[i]) {
           periodicShift = {0.0, 0.0, 0.0};
           periodicShift[i] = _globalBoxMax[i] - _globalBoxMin[i];
@@ -214,23 +226,17 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
         }
       }
 
-      haloBoxMin = autopas::utils::ArrayMath::sub(localBoxMin, skin);
-      haloBoxMin[i] = _haloBoxes[4 * i + 2];
-      haloBoxMax = autopas::utils::ArrayMath::add(localBoxMax, skin);
-      haloBoxMax[i] = _haloBoxes[4 * i + 3];
-
-      for (auto particle =
-               autoPasContainer->getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::owned);
-           particle.isValid(); ++particle) {
+      if (particlePosition > _haloBoxes[4 * i + 2] && particlePosition < _haloBoxes[4 * i + 3]) {
         particlesForRightNeighbour.push_back(*particle);
-
         if (_localBoxMax[i] == _globalBoxMax[i]) {
           periodicShift = {0.0, 0.0, 0.0};
           periodicShift[i] = -(_globalBoxMax[i] - _globalBoxMin[i]);
           particlesForRightNeighbour.back().addR(periodicShift);
         }
       }
+    }
 
+    if (_mpiIsEnabled) {
       sendParticles(particlesForLeftNeighbour, leftNeighbour);
       sendParticles(particlesForRightNeighbour, rightNeighbour);
 
@@ -239,42 +245,43 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
 
       waitForSendRequests();
     }
+    else {
+      haloParticles.insert(haloParticles.end(), particlesForLeftNeighbour.begin(), particlesForLeftNeighbour.end());
+      haloParticles.insert(haloParticles.end(), particlesForRightNeighbour.begin(), particlesForRightNeighbour.end());
+    }
+
+    particlesForLeftNeighbour.clear();
+    particlesForRightNeighbour.clear();
 
     leftNeighbour = _neighbourDomainIndices[(leftNeighbour + 2) % neighbourCount];
     rightNeighbour = _neighbourDomainIndices[(rightNeighbour + 2) % neighbourCount];
 
-    if (leftNeighbour != _domainIndex && rightNeighbour != _domainIndex) {
-      std::vector<ParticleType> particlesForLeftNeighbour;
-      std::vector<ParticleType> particlesForRightNeighbour;
+    nextDimensionIndex = (i + 1) % dimensionCount;
 
-      nextDimensionIndex = (i + 1) % dimensionCount;
-
-      std::array<double, 3> periodicShift;
-      for (const auto &particle : haloParticles) {
-        double particlePosition = particle.getR()[nextDimensionIndex];
-        if (particlePosition >= _haloBoxes[4 * nextDimensionIndex] && particlePosition < _haloBoxes[4 * i + 1]) {
-          particlesForLeftNeighbour.push_back(particle);
-
-          if (_localBoxMin[nextDimensionIndex] == _globalBoxMin[nextDimensionIndex]) {
-            periodicShift = {0.0, 0.0, 0.0};
-            periodicShift[nextDimensionIndex] = _globalBoxMax[nextDimensionIndex] - _globalBoxMin[nextDimensionIndex];
-            particlesForLeftNeighbour.back().addR(periodicShift);
-          }
-        }
-
-        if (particlePosition > _haloBoxes[4 * nextDimensionIndex + 2] &&
-            particlePosition < _haloBoxes[4 * nextDimensionIndex + 3]) {
-          particlesForRightNeighbour.push_back(particle);
-
-          if (_localBoxMax[nextDimensionIndex] == _globalBoxMax[nextDimensionIndex]) {
-            periodicShift = {0.0, 0.0, 0.0};
-            periodicShift[nextDimensionIndex] =
-                -(_globalBoxMax[nextDimensionIndex] - _globalBoxMin[nextDimensionIndex]);
-            particlesForRightNeighbour.back().addR(periodicShift);
-          }
+    for (auto &particle : haloParticles) {
+      double particlePosition = particle.getR()[nextDimensionIndex];
+      if (particlePosition >= _haloBoxes[4 * nextDimensionIndex] && particlePosition < _haloBoxes[4 * i + 1]) {
+        particlesForLeftNeighbour.push_back(particle);
+        if (_localBoxMin[nextDimensionIndex] == _globalBoxMin[nextDimensionIndex]) {
+          periodicShift = {0.0, 0.0, 0.0};
+          periodicShift[nextDimensionIndex] = _globalBoxMax[nextDimensionIndex] - _globalBoxMin[nextDimensionIndex];
+          particlesForLeftNeighbour.back().addR(periodicShift);
         }
       }
 
+      if (particlePosition > _haloBoxes[4 * nextDimensionIndex + 2] &&
+          particlePosition < _haloBoxes[4 * nextDimensionIndex + 3]) {
+        particlesForRightNeighbour.push_back(particle);
+        if (_localBoxMax[nextDimensionIndex] == _globalBoxMax[nextDimensionIndex]) {
+          periodicShift = {0.0, 0.0, 0.0};
+          periodicShift[nextDimensionIndex] =
+              -(_globalBoxMax[nextDimensionIndex] - _globalBoxMin[nextDimensionIndex]);
+          particlesForRightNeighbour.back().addR(periodicShift);
+        }
+      }
+    }
+
+    if (_mpiIsEnabled) {
       sendParticles(particlesForLeftNeighbour, leftNeighbour);
       sendParticles(particlesForRightNeighbour, rightNeighbour);
 

@@ -85,16 +85,25 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
 }
 
 void Simulation::run() {
-  // @todo: make variable part of MDFlexConfig, needs to be equal to verletRebuildFrequency.
-  int iterationsPerSuperstep = 1;
-  int remainingIterations = _configuration.iterations.value;
+  const int iterationsPerSuperstep = _configuration.verletRebuildFrequency.value;
   for (int i = 0; i < _configuration.iterations.value; i += iterationsPerSuperstep) {
     executeSuperstep(iterationsPerSuperstep);
+  }
+
+  // Record last state of simulation.
+  if (_createVtkFiles) {
+    _vtkWriter->recordTimestep(_iteration, *_autoPasContainer);
   }
 }
 
 void Simulation::executeSuperstep(const int iterationsPerSuperstep) {
   for (int i = 0; i < iterationsPerSuperstep; ++i) {
+
+    //auto [maxIterationsEstimate, maxIterationsIsPrecise] = estimateNumberOfIterations();
+    //if (not _configuration.dontShowProgressBar.value) {
+    //  printProgress(_iteration, maxIterationsEstimate, maxIterationsIsPrecise);
+    //}
+
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
       _vtkWriter->recordTimestep(_iteration, *_autoPasContainer);
     }

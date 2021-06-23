@@ -111,6 +111,12 @@ class RegularGridDecomposition final : public DomainDecomposition {
 
  private:
   /**
+   * Indicates if MPI is enabled and if it will be used.
+   * In the case that MPI is enabled, but only one process is being used, this variable will be false.
+   */
+  bool _mpiIsEnabled;
+
+  /**
    * The number of dimensions in this decomposition.
    */
   int _dimensionCount;
