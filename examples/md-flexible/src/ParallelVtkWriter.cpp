@@ -26,12 +26,18 @@ ParallelVtkWriter::ParallelVtkWriter(std::string sessionName, const std::string 
 
   size_t sessionFolderPathLength = _sessionFolderPath.size();
   autopas::AutoPas_MPI_Bcast(&sessionFolderPathLength, 1, AUTOPAS_MPI_INT, 0, AUTOPAS_MPI_COMM_WORLD);
+  
+  size_t dataFolderPathLength = _dataFolderPath.size();
+  autopas::AutoPas_MPI_Bcast(&dataFolderPathLength, 1, AUTOPAS_MPI_INT, 0, AUTOPAS_MPI_COMM_WORLD);
 
   if (_mpiRank != 0) {
     _sessionFolderPath.resize(sessionFolderPathLength);
+    _dataFolderPath.resize(dataFolderPathLength);
   }
 
   autopas::AutoPas_MPI_Bcast(&_sessionFolderPath[0], sessionFolderPathLength, AUTOPAS_MPI_CHAR, 0,
+                             AUTOPAS_MPI_COMM_WORLD);
+  autopas::AutoPas_MPI_Bcast(&_dataFolderPath[0], dataFolderPathLength, AUTOPAS_MPI_CHAR, 0,
                              AUTOPAS_MPI_COMM_WORLD);
 }
 
