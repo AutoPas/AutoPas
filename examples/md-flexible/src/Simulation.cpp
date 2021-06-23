@@ -99,10 +99,12 @@ void Simulation::run() {
 void Simulation::executeSuperstep(const int iterationsPerSuperstep) {
   for (int i = 0; i < iterationsPerSuperstep; ++i) {
 
-    //auto [maxIterationsEstimate, maxIterationsIsPrecise] = estimateNumberOfIterations();
-    //if (not _configuration.dontShowProgressBar.value) {
-    //  printProgress(_iteration, maxIterationsEstimate, maxIterationsIsPrecise);
-    //}
+    if(_domainDecomposition.getDomainIndex() == 0){
+      auto [maxIterationsEstimate, maxIterationsIsPrecise] = estimateNumberOfIterations();
+      if (not _configuration.dontShowProgressBar.value) {
+        printProgress(_iteration, maxIterationsEstimate, maxIterationsIsPrecise);
+      }
+    }
 
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
       _vtkWriter->recordTimestep(_iteration, *_autoPasContainer);

@@ -47,6 +47,11 @@ class RegularGridDecomposition final : public DomainDecomposition {
   void update() override;
 
   /**
+   * Returns the index of the local domain in the global domain context.
+   */
+  const int getDomainIndex() { return _domainIndex; }
+
+  /**
    * Returns the number of dimesnions in the domain decomposition.
    */
   const int getDimensionCount() override { return _dimensionCount; }
@@ -70,11 +75,6 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Returns the maximum coordinates of local domain.
    */
   const std::vector<double> getLocalBoxMax() override { return _localBoxMax; }
-
-  /**
-   * Returns this domain's index / the processor's rank.
-   */
-  const int getDomainIndex() { return _domainIndex; }
 
   /**
    * Returns the number of domains in each dimension

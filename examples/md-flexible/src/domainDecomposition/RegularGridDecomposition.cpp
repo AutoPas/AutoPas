@@ -191,9 +191,6 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
 
   double particlePosition;
 
-  const std::array<double, 3> localBoxMin = {_localBoxMin[0], _localBoxMin[1], _localBoxMin[2]};
-  const std::array<double, 3> localBoxMax = {_localBoxMax[0], _localBoxMax[1], _localBoxMax[2]};
-  const std::array<double, 3> skin = {_skinWidth, _skinWidth, _skinWidth};
   const std::array<double, 3> globalBoxMin = {_globalBoxMin[0], _globalBoxMin[1], _globalBoxMin[2]};
   const std::array<double, 3> globalBoxMax = {_globalBoxMax[0], _globalBoxMax[1], _globalBoxMax[2]};
   const std::array<double, 3> globalBoxLengths = autopas::utils::ArrayMath::sub(globalBoxMax, globalBoxMin);
@@ -300,119 +297,107 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
   auto [emigrants, updated] = autoPasContainer->updateContainer(false);
 
   if (updated) {
-    const std::array<double, 3> localBoxMin = autoPasContainer->getBoxMin();
-    const std::array<double, 3> localBoxMax = autoPasContainer->getBoxMax();
+    const std::array<double, 3> globalBoxMin = {_globalBoxMin[0], _globalBoxMin[1], _globalBoxMin[2]};
+    const std::array<double, 3> globalBoxMax = {_globalBoxMax[0], _globalBoxMax[1], _globalBoxMax[2]};
+    const std::array<double, 3> globalBoxLengths = autopas::utils::ArrayMath::sub(globalBoxMax, globalBoxMin);
 
-    const auto boxLength = autopas::utils::ArrayMath::sub(localBoxMax, localBoxMin);
+    int neighbourCount = _neighbourDomainIndices.size();
 
-    for (auto &particle : emigrants) {
-      std::array<double, 3> position = particle.getR();
-      for (int i = 0; i < _dimensionCount; ++i) {
-        if (position[i] < localBoxMin[i] && _localBoxMin[i] == _globalBoxMin[i]) {
-          position[i] = std::min(std::nextafter(localBoxMax[i], localBoxMin[i]), position[i] + boxLength[i]);
-        } else if (position[i] >= localBoxMax[i] && _localBoxMax[i] == _globalBoxMax[i]) {
-          position[i] = std::max(localBoxMin[i], position[i] - boxLength[i]);
+    for (int i = 0; i < _dimensionCount; ++i) {
+      std::vector<ParticleType> immigrants, migrants;
+
+      std::vector<ParticleType> particlesForLeftNeighbour;
+      std::vector<ParticleType> particlesForRightNeighbour;
+
+      int leftNeighbour = _neighbourDomainIndices[(i * 2) % neighbourCount];
+      int rightNeighbour = _neighbourDomainIndices[(i * 2 + 1) % neighbourCount];
+
+      for (const auto &particle : emigrants) {
+        std::array<double, 3> position = particle.getR();
+        if (position[i] < _localBoxMin[i]){
+          particlesForLeftNeighbour.push_back(particle);
+          if (_localBoxMin[i] == _globalBoxMin[i]){
+            position[i] = std::min(std::nextafter(_globalBoxMax[i], _globalBoxMin[i]), position[i] + globalBoxLengths[i]);
+            particlesForLeftNeighbour.back().setR(position);
+          }
+        }
+        else if (position[i] >= _localBoxMax[i]){
+          particlesForRightNeighbour.push_back(particle);
+          if (_localBoxMax[i] == _globalBoxMax[i]){
+            position[i] = std::max(_globalBoxMin[i], position[i] - globalBoxLengths[i]);
+            particlesForRightNeighbour.back().setR(position);
+          }
         }
       }
-      particle.setR(position);
+
+      if(_mpiIsEnabled){
+        sendParticles(particlesForLeftNeighbour, leftNeighbour);
+        sendParticles(particlesForRightNeighbour, rightNeighbour);
+
+        receiveParticles(immigrants, leftNeighbour);
+        receiveParticles(immigrants, rightNeighbour);
+
+        waitForSendRequests();
+      }
+      else {
+        immigrants.insert(immigrants.end(), particlesForLeftNeighbour.begin(), particlesForLeftNeighbour.end());
+        immigrants.insert(immigrants.end(), particlesForRightNeighbour.begin(), particlesForRightNeighbour.end());
+      }
+
+      for (const auto &particle : immigrants) {
+        if (isInsideLocalDomain(particle.getR())) {
+          autoPasContainer->addParticle(particle);
+        } else {
+          migrants.push_back(particle);
+        }
+      }
+
+      immigrants.clear();
+
+      leftNeighbour = _neighbourDomainIndices[(leftNeighbour + 2) % neighbourCount];
+      rightNeighbour = _neighbourDomainIndices[(rightNeighbour + 2) % neighbourCount];
+
+      // index of next dimension
+      int j = (i + 1) % _dimensionCount;
+
+      for (const auto &particle : migrants) {
+        std::array<double, 3> position = particle.getR();
+        if (position[j] < _localBoxMin[j]){
+          particlesForLeftNeighbour.push_back(particle);
+          if (_localBoxMin[j] == _globalBoxMin[j]){
+            position[j] = std::min(std::nextafter(_globalBoxMax[j], _globalBoxMin[j]), position[j] + globalBoxLengths[j]);
+            particlesForLeftNeighbour.back().setR(position);
+          }
+        }
+        else if (position[j] >= _localBoxMax[j]){
+          particlesForRightNeighbour.push_back(particle);
+          if (_localBoxMax[j] == _globalBoxMax[j]){
+            position[j] = std::max(_globalBoxMin[j], position[j] - globalBoxLengths[j]);
+            particlesForRightNeighbour.back().setR(position);
+          }
+        }
+      }
+
+      if(_mpiIsEnabled){
+        sendParticles(particlesForLeftNeighbour, leftNeighbour);
+        sendParticles(particlesForRightNeighbour, rightNeighbour);
+
+        receiveParticles(immigrants, leftNeighbour);
+        receiveParticles(immigrants, rightNeighbour);
+
+        waitForSendRequests();
+      }
+      else {
+        immigrants.insert(immigrants.end(), particlesForLeftNeighbour.begin(), particlesForLeftNeighbour.end());
+        immigrants.insert(immigrants.end(), particlesForRightNeighbour.begin(), particlesForRightNeighbour.end());
+      }
+
+      for (auto &particle : immigrants) {
+        autoPasContainer->addParticle(particle);
+      }
+
+      waitForSendRequests();
     }
-
-    for (const auto &particle : emigrants) {
-      autoPasContainer->addParticle(particle);
-    }
-
-    // int neighbourCount = _neighbourDomainIndices.size();
-
-    // for (int i = 0; i < _dimensionCount; ++i) {
-    //  std::vector<ParticleType> immigrants, migrants;
-
-    //  std::vector<ParticleType> particlesForLeftNeighbour;
-    //  std::vector<ParticleType> particlesForRightNeighbour;
-
-    //  int leftNeighbour = _neighbourDomainIndices[(i * 2) % neighbourCount];
-    //  int rightNeighbour = _neighbourDomainIndices[(i * 2 + 1) % neighbourCount];
-
-    //  for (const auto &particle : emigrants) {
-    //    if (particle.getR()[i] < _localBoxMin[i]){
-    //      particlesForLeftNeighbour.push_back(particle);
-    //    }
-    //    if (particle.getR()[i] >= _localBoxMax[i]){
-    //      particlesForRightNeighbour.push_back(particle);
-    //    }
-    //  }
-
-    //  sendParticles(particlesForLeftNeighbour, leftNeighbour);
-    //  sendParticles(particlesForRightNeighbour, rightNeighbour);
-
-    //  if (_domainIndex != leftNeighbour){
-    //    receiveParticles(immigrants, leftNeighbour);
-    //  }
-    //  else {
-    //    immigrants.insert(immigrants.end(), particlesForLeftNeighbour.begin(), particlesForLeftNeighbour.end());
-    //  }
-    //  if (_domainIndex != rightNeighbour){
-    //    receiveParticles(immigrants, rightNeighbour);
-    //  }
-    //  else {
-    //    immigrants.insert(immigrants.end(), particlesForRightNeighbour.begin(), particlesForRightNeighbour.end());
-    //  }
-
-    //  for (const auto &particle : immigrants) {
-    //    if (isInsideLocalDomain(particle.getR())) {
-    //      autoPasContainer->addParticle(particle);
-    //    } else {
-    //      migrants.push_back(particle);
-    //    }
-    //  }
-
-    //  waitForSendRequests();
-
-    //  immigrants.clear();
-
-    //  leftNeighbour = _neighbourDomainIndices[(leftNeighbour + 2) % neighbourCount];
-    //  rightNeighbour = _neighbourDomainIndices[(rightNeighbour + 2) % neighbourCount];
-
-    //  int nextDimensionIndex = (i + 1) % _dimensionCount;
-
-    //  //for (const auto &particle : migrants) {
-    //  //  double particlePosition = particle.getR()[nextDimensionIndex];
-    //  //  periodicShift = {0.0, 0.0, 0.0};
-    //  //  if (particlePosition < _localBoxMin[nextDimensionIndex]) {
-    //  //    particlesForLeftNeighbour.push_back(particle);
-
-    //  //    if (_localBoxMin[nextDimensionIndex] == _globalBoxMin[nextDimensionIndex]) {
-    //  //      periodicShift[nextDimensionIndex] = _globalBoxMax[nextDimensionIndex] -
-    //  _globalBoxMin[nextDimensionIndex];
-    //  //      particlesForLeftNeighbour.back().addR(periodicShift);
-    //  //    }
-    //  //  } else if (particlePosition > _localBoxMax[nextDimensionIndex]) {
-    //  //    particlesForRightNeighbour.push_back(particle);
-
-    //  //    if (_localBoxMax[nextDimensionIndex] == _globalBoxMax[nextDimensionIndex]) {
-    //  //      periodicShift[nextDimensionIndex] = -(_globalBoxMax[nextDimensionIndex] -
-    //  _globalBoxMin[nextDimensionIndex]);
-    //  //      particlesForRightNeighbour.back().addR(periodicShift);
-    //  //    }
-    //  //  }
-    //  //}
-
-    //  //sendParticles(migrants, leftNeighbour);
-    //  //sendParticles(migrants, rightNeighbour);
-
-    //  //receiveParticles(immigrants, leftNeighbour);
-    //  //receiveParticles(immigrants, rightNeighbour);
-
-    //  //for (auto &particle : immigrants) {
-    //  //  if (particle.getID() == 2890) {
-    //  //    std::cout << "Position: " << autopas::utils::ArrayUtils::to_string(particle.getR()) << std::endl;
-    //  //  }
-    //  //  if (isInsideLocalDomain(particle.getR())) {
-    //  //    autoPasContainer->addParticle(particle);
-    //  //  }
-    //  //}
-
-    //  //waitForSendRequests();
-    //}
   }
 }
 

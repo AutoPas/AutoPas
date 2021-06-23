@@ -25,6 +25,11 @@ class DomainDecomposition {
   virtual void update() = 0;
 
   /**
+   * Returns the index of the local domain in the global domain context.
+   */
+  virtual const int getDomainIndex() = 0;
+
+  /**
    * Returns the number of dimensions in this domain decomposition.
    */
   virtual const int getDimensionCount() = 0;
