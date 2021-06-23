@@ -167,7 +167,6 @@ void ParallelVtkWriter::createPvtuFile(const int &currentIteration){
   timestepFile << "</VTKFile>" << std::endl;
 
   timestepFile.close();
-
 }
 
 void ParallelVtkWriter::tryCreateFolder(const std::string &name, const std::string &location) {

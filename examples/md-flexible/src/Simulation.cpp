@@ -111,7 +111,6 @@ void Simulation::executeSuperstep(const int iterationsPerSuperstep) {
     updatePositions();
 
     _domainDecomposition.exchangeMigratingParticles(_autoPasContainer);
-    // BoundaryConditions::applyPeriodic(*_autoPasContainer, false);
     _domainDecomposition.exchangeHaloParticles(_autoPasContainer);
 
     updateForces();
