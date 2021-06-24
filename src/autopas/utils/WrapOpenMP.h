@@ -180,7 +180,7 @@ class AutoPasLock {
 #endif
 
 // These properties are needed because we use AutoPasLock in vectors on which we call resize().
-static_assert(std::is_default_constructible<AutoPasLock>, "AutoPasLock needs to be default constructible!");
-static_assert(std::is_move_constructible<AutoPasLock>, "AutoPasLock needs to be move constructible!");
+static_assert(std::is_default_constructible_v<AutoPasLock>, "AutoPasLock needs to be default constructible!");
+static_assert(std::is_move_constructible_v<AutoPasLock>, "AutoPasLock needs to be move constructible!");
 
 }  // namespace autopas
