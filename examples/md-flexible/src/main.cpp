@@ -9,6 +9,9 @@
 #include "Simulation.h"
 #include "autopas/utils/WrapMPI.h"
 
+// Declare the main AutoPas class as extern template instantiation. It is instantiated in AutoPasClass.cpp.
+extern template class autopas::AutoPas<ParticleType>;
+
 /**
  * The main function for md-flexible.
  * @param argc

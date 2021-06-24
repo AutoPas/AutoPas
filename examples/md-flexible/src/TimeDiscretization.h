@@ -1,13 +1,13 @@
 /**
  * @file TimeDiscretization.h
- * @author J. Körner
- * @date 20/05/21
+ * @author N. Fottner
+ * @date 13/05/19
  */
 #pragma once
 
-#include "TypeDefinitions.h"
-#include "autopas/AutoPas.h"
+#include "autopas/AutoPasDecl.h"
 #include "src/configuration/MDFlexConfig.h"
+#include "TypeDefinitions.h"
 
 /**
  * Functions for updating velocities and positions as simulation time progresses.

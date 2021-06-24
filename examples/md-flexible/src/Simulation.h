@@ -11,7 +11,7 @@
 #include <string>
 #include <tuple>
 
-#include "autopas/AutoPas.h"
+#include "autopas/AutoPasDecl.h"
 #include "src/ParallelVtkWriter.h"
 #include "src/TypeDefinitions.h"
 #include "src/configuration/MDFlexConfig.h"

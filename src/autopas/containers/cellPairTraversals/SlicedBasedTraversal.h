@@ -61,7 +61,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
   [[nodiscard]] bool isApplicable() const override {
     auto minSliceThickness = _overlapLongestAxis + 1;
     auto maxNumSlices = this->_cellsPerDimension[_dimsPerLength[0]] / minSliceThickness;
-    return not(dataLayout == DataLayoutOption::cuda) and maxNumSlices > 0;
+    return maxNumSlices > 0;
   }
 
   /**

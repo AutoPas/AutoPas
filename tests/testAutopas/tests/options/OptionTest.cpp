@@ -46,7 +46,6 @@ TEST(OptionTest, parseContainerOptionsTest) {
       {autopas::ContainerOption::directSum, "directSum"},
       {autopas::ContainerOption::linkedCells, "linkedCells"},
       {autopas::ContainerOption::varVerletListsAsBuild, "varVerletListsAsBuild"},
-      {autopas::ContainerOption::verletClusterCells, "vclustercells"},
       {autopas::ContainerOption::verletClusterLists, "vclusterlists"},
       {autopas::ContainerOption::verletLists, "verletLists"},
       {autopas::ContainerOption::verletListsCells, "verletLists-cells"},
@@ -61,11 +60,8 @@ TEST(OptionTest, parseContainerOptionsTest) {
 
 TEST(OptionTest, parseDataLayoutOptionsTest) {
   std::map<autopas::DataLayoutOption, std::string> mapEnumString = {
-    {autopas::DataLayoutOption::aos, "aos"},
-    {autopas::DataLayoutOption::soa, "soa"},
-#if defined(AUTOPAS_CUDA)
-    {autopas::DataLayoutOption::cuda, "cuda"},
-#endif
+      {autopas::DataLayoutOption::aos, "aos"},
+      {autopas::DataLayoutOption::soa, "soa"},
   };
 
   EXPECT_EQ(mapEnumString.size(), autopas::DataLayoutOption::getOptionNames().size());

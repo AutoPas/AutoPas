@@ -69,7 +69,7 @@ class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, d
    * C18 traversal is always usable.
    * @return
    */
-  [[nodiscard]] bool isApplicable() const override { return not(dataLayout == DataLayoutOption::cuda); }
+  [[nodiscard]] bool isApplicable() const override { return true; }
 
   [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
 

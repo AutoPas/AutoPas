@@ -264,9 +264,6 @@ void setFromOptions(const testingTuple &options, autopas::AutoPas<Molecule> &aut
   auto newton3Option = std::get<2>(options);
   auto cellSizeOption = std::get<3>(options);
 
-#ifdef AUTOPAS_CUDA
-  autoPas.setVerletClusterSize(32);
-#endif
   autoPas.setAllowedContainers({containerOption});
   autoPas.setAllowedTraversals({traversalOption});
   autoPas.setAllowedLoadEstimators({loadEstimatorOption});
@@ -514,16 +511,10 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
   autoPas1.setOutputSuffix("1_");
   autoPas1.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption1});
   autoPas1.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(containerOption1));
-#ifdef AUTOPAS_CUDA
-  autoPas1.setVerletClusterSize(32);
-#endif
   autopas::AutoPas<Molecule> autoPas2;
   autoPas2.setOutputSuffix("2_");
   autoPas2.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption2});
   autoPas2.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(containerOption2));
-#ifdef AUTOPAS_CUDA
-  autoPas2.setVerletClusterSize(32);
-#endif
 
   defaultInit(autoPas1, autoPas2, autoPasDirection);
 

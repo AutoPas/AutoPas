@@ -22,10 +22,6 @@ auto RegionParticleIteratorTest::defaultInit(AutoPasT &autoPas, autopas::Contain
   autoPas.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(containerOption));
   autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeFactor})));
 
-#ifdef AUTOPAS_CUDA
-  autoPas.setVerletClusterSize(32);
-#endif
-
   autoPas.init();
 
   auto haloBoxMin =
@@ -99,15 +95,7 @@ using ::testing::UnorderedElementsAreArray;
 using ::testing::Values;
 using ::testing::ValuesIn;
 
-static inline auto getTestableContainerOptions() {
-#ifdef AUTOPAS_CUDA
-  return autopas::ContainerOption::getAllOptions();
-#else
-  auto containerOptions = autopas::ContainerOption::getAllOptions();
-  containerOptions.erase(containerOptions.find(autopas::ContainerOption::verletClusterCells));
-  return containerOptions;
-#endif
-}
+static inline auto getTestableContainerOptions() { return autopas::ContainerOption::getAllOptions(); }
 
 INSTANTIATE_TEST_SUITE_P(Generated, RegionParticleIteratorTest,
                          Combine(ValuesIn(getTestableContainerOptions()), /*cell size factor*/ Values(0.5, 1., 1.5),

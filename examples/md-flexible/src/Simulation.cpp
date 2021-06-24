@@ -1,9 +1,26 @@
 /**
  * @file Simulation.cpp
- * @author J. Körner
- * @date 07.04.2021
+ * @author F. Gratl
+ * @date 01.03.2021
  */
 #include "Simulation.h"
+
+#include "TypeDefinitions.h"
+#include "autopas/AutoPasDecl.h"
+#include "autopas/molecularDynamics/LJFunctor.h"
+#include "autopas/molecularDynamics/LJFunctorAVX.h"
+#include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
+
+// Declare the main AutoPas class and the iteratePairwise() methods with all used functors as extern template
+// instantiation. They are instantiated in the respective cpp file inside the templateInstantiations folder.
+//! @cond Doxygen_Suppress
+extern template class autopas::AutoPas<ParticleType>;
+extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctor<ParticleType, true, true> *);
+extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(
+    autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true> *);
+extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctorAVX<ParticleType, true, true> *);
+extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::FlopCounterFunctor<ParticleType> *);
+//! @endcond
 
 #include <sys/ioctl.h>
 #include <unistd.h>
@@ -193,87 +210,7 @@ void Simulation::printProgress(size_t iterationProgress, size_t maxIterations, b
   std::cout << progressbar.str() << info.str() << std::flush;
 }
 
-void Simulation::writeVTKFile() {
-  _timers.vtk.start();
 
-  std::string fileBaseName = _configuration.vtkFileName.value;
-  // only count number of owned particles here
-  const auto numParticles = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned);
-  std::ostringstream strstr;
-  auto maxNumDigits = std::to_string(_configuration.iterations.value).length();
-  strstr << fileBaseName << "_" << getMPISuffix() << std::setfill('0') << std::setw(maxNumDigits) << _iteration
-         << ".vtk";
-  std::ofstream vtkFile;
-  vtkFile.open(strstr.str());
-
-  if (not vtkFile.is_open()) {
-    throw std::runtime_error("Simulation::writeVTKFile(): Failed to open file \"" + strstr.str() + "\"");
-  }
-
-  vtkFile << "# vtk DataFile Version 2.0\n"
-          << "Timestep\n"
-          << "ASCII\n";
-
-  // print positions
-  vtkFile << "DATASET STRUCTURED_GRID\n"
-          << "DIMENSIONS 1 1 1\n"
-          << "POINTS " << numParticles << " double\n";
-
-  for (auto iter = _autoPasContainer->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    auto pos = iter->getR();
-    vtkFile << pos[0] << " " << pos[1] << " " << pos[2] << "\n";
-  }
-  vtkFile << "\n";
-
-  vtkFile << "POINT_DATA " << numParticles << "\n";
-  // print velocities
-  vtkFile << "VECTORS velocities double\n";
-  for (auto iter = _autoPasContainer->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    auto v = iter->getV();
-    vtkFile << v[0] << " " << v[1] << " " << v[2] << "\n";
-  }
-  vtkFile << "\n";
-
-  // print Forces
-  vtkFile << "VECTORS forces double\n";
-  for (auto iter = _autoPasContainer->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    auto f = iter->getF();
-    vtkFile << f[0] << " " << f[1] << " " << f[2] << "\n";
-  }
-  vtkFile << "\n";
-
-  // print TypeIDs
-  vtkFile << "SCALARS typeIds int\n";
-  vtkFile << "LOOKUP_TABLE default\n";
-  for (auto iter = _autoPasContainer->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    vtkFile << iter->getTypeId() << "\n";
-  }
-  vtkFile << "\n";
-
-  // print TypeIDs
-  vtkFile << "SCALARS particleIds int\n";
-  vtkFile << "LOOKUP_TABLE default\n";
-  for (auto iter = _autoPasContainer->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    vtkFile << iter->getID() << "\n";
-  }
-  vtkFile << "\n";
-
-  vtkFile.close();
-
-  _timers.vtk.stop();
-}
-
-std::string Simulation::getMPISuffix() {
-  std::string suffix;
-#ifdef AUTOPAS_INTERNODE_TUNING
-  int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  std::ostringstream output;
-  output << "mpi_rank_" << rank << "_";
-  suffix = output.str();
-#endif
-  return suffix;
-}
 
 std::string Simulation::timerToString(const std::string &name, long timeNS, size_t numberWidth, long maxTime) {
   // only print timers that were actually used
