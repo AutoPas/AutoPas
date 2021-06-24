@@ -21,7 +21,8 @@ class ParallelVtkWriter {
    * @param outputFolder Sets the folder where the vtk files will be created.
    * @param maximumNumberOfDigitsInIteration The maximum number of digits an iteration index can have.
    */
-  ParallelVtkWriter(std::string sessionName, const std::string &outputFolder, const int &maximumNumberOfDigitsInIteration);
+  ParallelVtkWriter(std::string sessionName, const std::string &outputFolder,
+                    const int &maximumNumberOfDigitsInIteration);
 
   /**
    * Destructor.
@@ -41,14 +42,14 @@ class ParallelVtkWriter {
    * Stores the number of ranks used in the simulation.
    * This information is required when creating the .pvtu file.
    */
-   int _numberOfRanks;
+  int _numberOfRanks;
 
   /**
    * Stores the MPI rank of the current process.
    * Every process will write into it's own .vtu file, while the process with rank 0 will
    * create the parallel .pvtu file.
    */
-   int _mpiRank;
+  int _mpiRank;
 
   /**
    * Stores the session name.

@@ -5,9 +5,9 @@
  */
 #pragma once
 
+#include "TypeDefinitions.h"
 #include "autopas/AutoPasDecl.h"
 #include "src/configuration/MDFlexConfig.h"
-#include "TypeDefinitions.h"
 
 /**
  * Functions for updating velocities and positions as simulation time progresses.

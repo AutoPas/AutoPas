@@ -159,13 +159,13 @@ void applyPeriodic(autopas::AutoPas<Particle> &autoPas, bool forceUpdate) {
   // 1. update Container; return value is a vector of the particles leaving the domain box
   // and a flag whether an update occured.
 
-  //auto [leavingParticles, updated] = autoPas.updateContainer(forceUpdate);
+  // auto [leavingParticles, updated] = autoPas.updateContainer(forceUpdate);
 
-  //if (updated) {
-    // 2. apply periodic wrap by shifting positions of leaving particles to positions of periodic images.
-    //wrapPositionsAroundBoundaries(autoPas, leavingParticles);
-    // 2b. re-insert shifted particles
-    //addEnteringParticles(autoPas, leavingParticles);
+  // if (updated) {
+  // 2. apply periodic wrap by shifting positions of leaving particles to positions of periodic images.
+  // wrapPositionsAroundBoundaries(autoPas, leavingParticles);
+  // 2b. re-insert shifted particles
+  // addEnteringParticles(autoPas, leavingParticles);
   //}
 
   // 3. identify inner particles for which a periodic copy in the opposing halo region is needed.

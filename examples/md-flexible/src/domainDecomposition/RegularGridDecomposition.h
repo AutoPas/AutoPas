@@ -49,7 +49,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
   /**
    * Returns the index of the local domain in the global domain context.
    */
-  const int getDomainIndex() { return _domainIndex; }
+  const int getDomainIndex() override { return _domainIndex; }
 
   /**
    * Returns the number of dimesnions in the domain decomposition.
@@ -277,8 +277,10 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param leftNeighbour: The left neighbour's index / rank.
    * @param rightNeighbour: The right neighbour's index / rank.
    * @param receivedParticles: Container for the particles received from either neighbour.
-   */ 
-  void sendAndReceiveParticlesLeftAndRight(const std::vector<ParticleType>& particlesToLeft, const std::vector<ParticleType>& particlesToRight, const int& leftNeighbour, const int& rightNeighbour, std::vector<ParticleType>& receivedParticles);
+   */
+  void sendAndReceiveParticlesLeftAndRight(const std::vector<ParticleType> &particlesToLeft,
+                                           const std::vector<ParticleType> &particlesToRight, const int &leftNeighbour,
+                                           const int &rightNeighbour, std::vector<ParticleType> &receivedParticles);
 
   /**
    * Waits for all send requests to be finished.

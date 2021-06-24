@@ -38,7 +38,8 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
     : _configuration(configuration),
       _domainDecomposition(domainDecomposition),
       _createVtkFiles(not configuration.vtkFileName.value.empty()),
-      _vtkWriter(std::make_shared<ParallelVtkWriter>(_configuration.vtkFileName.value, "output", std::to_string(_configuration.iterations.value).size())) {
+      _vtkWriter(std::make_shared<ParallelVtkWriter>(_configuration.vtkFileName.value, "output",
+                                                     std::to_string(_configuration.iterations.value).size())) {
   _timers.total.start();
   _timers.initialization.start();
 
@@ -115,7 +116,7 @@ void Simulation::run() {
 
 void Simulation::executeSuperstep(const int iterationsPerSuperstep) {
   for (int i = 0; i < iterationsPerSuperstep; ++i) {
-    if(_domainDecomposition.getDomainIndex() == 0){
+    if (_domainDecomposition.getDomainIndex() == 0) {
       auto [maxIterationsEstimate, maxIterationsIsPrecise] = estimateNumberOfIterations();
       if (not _configuration.dontShowProgressBar.value) {
         printProgress(_iteration, maxIterationsEstimate, maxIterationsIsPrecise);
@@ -209,8 +210,6 @@ void Simulation::printProgress(size_t iterationProgress, size_t maxIterations, b
   // print everything
   std::cout << progressbar.str() << info.str() << std::flush;
 }
-
-
 
 std::string Simulation::timerToString(const std::string &name, long timeNS, size_t numberWidth, long maxTime) {
   // only print timers that were actually used
