@@ -192,26 +192,15 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
   int dimensionCount = _localBoxMin.size();
   int neighbourCount = dimensionCount * 2;
 
-  double particlePosition;
-
   const std::array<double, 3> globalBoxMin = {_globalBoxMin[0], _globalBoxMin[1], _globalBoxMin[2]};
   const std::array<double, 3> globalBoxMax = {_globalBoxMax[0], _globalBoxMax[1], _globalBoxMax[2]};
   const std::array<double, 3> globalBoxLengths = autopas::utils::ArrayMath::sub(globalBoxMax, globalBoxMin);
   
-  int leftNeighbour, rightNeighbour;
-
-  // index of next dimension
-  int j;
-
   for (int i = 0; i < dimensionCount; ++i) {
-    leftNeighbour = _neighbourDomainIndices[(i * 2) % neighbourCount];
-    rightNeighbour = _neighbourDomainIndices[(i * 2 + 1) % neighbourCount];
+    int leftNeighbour = _neighbourDomainIndices[(i * 2) % neighbourCount];
+    int rightNeighbour = _neighbourDomainIndices[(i * 2 + 1) % neighbourCount];
 
-    std::vector<ParticleType> haloParticles;
-
-    std::vector<ParticleType> particlesForLeftNeighbour;
-    std::vector<ParticleType> particlesForRightNeighbour;
-    auto maximumShiftedPosition = std::nextafter(_globalBoxMax[i], _globalBoxMin[i]);
+    std::vector<ParticleType> haloParticles, particlesForLeftNeighbour, particlesForRightNeighbour;
 
     for (auto particle = autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
       std::array<double, 3> particlePosition = particle->getR();
@@ -240,14 +229,15 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
     particlesForLeftNeighbour.clear();
     particlesForRightNeighbour.clear();
 
-    leftNeighbour = _neighbourDomainIndices[(leftNeighbour + 2) % neighbourCount];
-    rightNeighbour = _neighbourDomainIndices[(rightNeighbour + 2) % neighbourCount];
+    // index of next dimension
+    int j = (i + 1) % dimensionCount;
 
-    j = (i + 1) % dimensionCount;
-
+    leftNeighbour = _neighbourDomainIndices[(j * 2) % neighbourCount];
+    rightNeighbour = _neighbourDomainIndices[(j * 2 + 1) % neighbourCount];
+    
     for (auto &particle : haloParticles) {
       std::array<double, 3> particlePosition = particle.getR();
-      if (particlePosition[j] >= _haloBoxes[4 * j] && particlePosition[j] < _haloBoxes[4 * i + 1]) {
+      if (particlePosition[j] >= _haloBoxes[4 * j] && particlePosition[j] < _haloBoxes[4 * j + 1]) {
         particlesForLeftNeighbour.push_back(particle);
         if (_localBoxMin[j] == _globalBoxMin[j]) {
           particlePosition[j] = particlePosition[j] + globalBoxLengths[j];
@@ -284,7 +274,7 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
     int neighbourCount = _neighbourDomainIndices.size();
 
     for (int i = 0; i < _dimensionCount; ++i) {
-      std::vector<ParticleType> immigrants, migrants;
+      std::vector<ParticleType> immigrants, migrants, remainingEmigrants;
 
       std::vector<ParticleType> particlesForLeftNeighbour;
       std::vector<ParticleType> particlesForRightNeighbour;
@@ -308,9 +298,16 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
             particlesForRightNeighbour.back().setR(position);
           }
         }
+        else {
+          remainingEmigrants.push_back(particle);
+        }
       }
+      emigrants = remainingEmigrants;
 
       sendAndReceiveParticlesLeftAndRight(particlesForLeftNeighbour, particlesForRightNeighbour, leftNeighbour, rightNeighbour, immigrants);
+
+      particlesForLeftNeighbour.clear();
+      particlesForRightNeighbour.clear();
 
       for (const auto &particle : immigrants) {
         if (isInsideLocalDomain(particle.getR())) {
@@ -322,11 +319,11 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
 
       immigrants.clear();
 
-      leftNeighbour = _neighbourDomainIndices[(leftNeighbour + 2) % neighbourCount];
-      rightNeighbour = _neighbourDomainIndices[(rightNeighbour + 2) % neighbourCount];
-
       // index of next dimension
       int j = (i + 1) % _dimensionCount;
+
+      leftNeighbour = _neighbourDomainIndices[(j * 2) % neighbourCount];
+      rightNeighbour = _neighbourDomainIndices[(j * 2 + 1) % neighbourCount];
 
       for (const auto &particle : migrants) {
         std::array<double, 3> position = particle.getR();

@@ -98,7 +98,6 @@ void Simulation::run() {
 
 void Simulation::executeSuperstep(const int iterationsPerSuperstep) {
   for (int i = 0; i < iterationsPerSuperstep; ++i) {
-
     if(_domainDecomposition.getDomainIndex() == 0){
       auto [maxIterationsEstimate, maxIterationsIsPrecise] = estimateNumberOfIterations();
       if (not _configuration.dontShowProgressBar.value) {
