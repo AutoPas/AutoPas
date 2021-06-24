@@ -85,8 +85,8 @@ class MDFlexConfig {
     MDFlexOption(T value, std::string newName, bool requiresArgument, std::string newDescription)
         : requiresArgument(requiresArgument),
           name(std::move(newName)),
-          description(std::move(newDescription)),
-          value(std::move(value)) {}
+          value(std::move(value)),
+          description(std::move(newDescription)) {}
 
     /**
      * Returns a getopt option struct for this object.
