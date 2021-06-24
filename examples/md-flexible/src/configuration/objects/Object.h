@@ -40,7 +40,6 @@ class Object {
 
   /**
    * Generate the object in the given AutoPas container.
-   * @note Particle IDs for the new particles will start at particles.size().
    * @param particles The container to which the new particles will be appended to.
    */
   virtual void generate(std::vector<ParticleAttributes> &particles) const = 0;

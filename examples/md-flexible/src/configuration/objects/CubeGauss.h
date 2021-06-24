@@ -51,16 +51,19 @@ class CubeGauss : public Object {
 
   /**
    * Returns the number of particles generated in this CubeGauss object.
+   * @return number of particles
    */
   [[nodiscard]] size_t getParticlesTotal() const override { return _numParticles; }
 
   /**
-   * returns the bottom left corner of the cube.
+   * Returns the bottom left corner of the cube.
+   * @return bottom left corner.
    */
   [[nodiscard]] std::array<double, 3> getBoxMin() const override { return _bottomLeftCorner; }
 
   /**
    * Returns the top right corner of the cube.
+   * @return top right corner.
    */
   [[nodiscard]] std::array<double, 3> getBoxMax() const override {
     return autopas::utils::ArrayMath::add(_bottomLeftCorner, _boxLength);
@@ -68,6 +71,7 @@ class CubeGauss : public Object {
 
   /**
    * Converts the cube gauss object to a human readable string.
+   * @return human readable cube gauss object.
    */
   [[nodiscard]] std::string to_string() const override {
     std::ostringstream output;

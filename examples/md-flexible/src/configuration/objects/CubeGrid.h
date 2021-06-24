@@ -37,7 +37,8 @@ class CubeGrid : public Object {
         _bottomLeftCorner(bottomLeftCorner) {}
 
   /**
-   * Returns the particle spacing
+   * Returns the particle spacing.
+   * @return spacing between particles.
    */
   [[nodiscard]] double getParticleSpacing() const override { return _particleSpacing; }
 
@@ -48,7 +49,8 @@ class CubeGrid : public Object {
   [[nodiscard]] const std::array<size_t, 3> &getParticlesPerDim() const { return _particlesPerDim; }
 
   /**
-   * Returns the total ammaount of particles which will be / have been generated.
+   * Returns the total ammount of particles which will be / have been generated.
+   * @return number of generated particles.
    */
   [[nodiscard]] size_t getParticlesTotal() const override {
     return std::accumulate(std::begin(_particlesPerDim), std::end(_particlesPerDim), 1, std::multiplies<double>());
@@ -56,11 +58,13 @@ class CubeGrid : public Object {
 
   /**
    * Returns the coordinates of the bottom left corner.
+   * @return bottom left corner.
    */
   [[nodiscard]] std::array<double, 3> getBoxMin() const override { return _bottomLeftCorner; }
 
   /**
    * Returns the coordinates of the top right corner.
+   * @return top right corner.
    */
   [[nodiscard]] std::array<double, 3> getBoxMax() const override {
     auto particlesPerDimDouble = autopas::utils::ArrayUtils::static_cast_array<double>(_particlesPerDim);
@@ -73,7 +77,8 @@ class CubeGrid : public Object {
   }
 
   /**
-   * Returns the coordinates of the top right corner.
+   * Turns the cube grid object into a human readable string.
+   * @returns human readable string of cube grid object.
    */
   [[nodiscard]] std::string to_string() const override {
     std::ostringstream output;

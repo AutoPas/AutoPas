@@ -38,7 +38,7 @@ void deserializeParticleData(std::vector<char> &particlesData, std::vector<Parti
 
 /**
  * Converts ParticleAttributes to a particle of type MoleculeLJ<double>.
- * @param particleAttributes The attributes which will be applied to the returne particle.
+ * @param attributes The attributes which will be applied to the returne particle.
  * @return a particle of type MoleculeLJ<double>
  */
 ParticleType convertParticleAttributesToParticle(ParticleAttributes &attributes);

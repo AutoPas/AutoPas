@@ -23,9 +23,9 @@ class CubeUniform : public Object {
    * @param epsilon
    * @param sigma
    * @param mass
-   * @param _numParticles
-   * @param _boxLength
-   * @param _bottomLeftCorner
+   * @param numParticles
+   * @param boxLength
+   * @param bottomLeftCorner
    */
   CubeUniform(const std::array<double, 3> &velocity, unsigned long typeId, double epsilon, double sigma, double mass,
               size_t _numParticles, const std::array<double, 3> &_boxLength,
@@ -37,16 +37,19 @@ class CubeUniform : public Object {
 
   /**
    * Returns the total amount of particles which will be / have been generated.
+   * @return total amount of particles.
    */
   [[nodiscard]] size_t getParticlesTotal() const override { return _numParticles; }
 
   /**
    * Returns the coordinates of the bottom left corner.
+   * @return bottom left corner of the cube.
    */
   [[nodiscard]] std::array<double, 3> getBoxMin() const override { return _bottomLeftCorner; }
 
   /**
    * Returns the coordinates of the top right corner.
+   * @return top right corner of the cube.
    */
   [[nodiscard]] std::array<double, 3> getBoxMax() const override {
     return autopas::utils::ArrayMath::add(_bottomLeftCorner, _boxLength);
@@ -54,6 +57,7 @@ class CubeUniform : public Object {
 
   /**
    * Converts the object to a human readable string.
+   * @return human readable string of the uniform cube.
    */
   [[nodiscard]] std::string to_string() const override {
     std::ostringstream output;
