@@ -35,7 +35,7 @@ class Simulation {
   /**
    * Destructor.
    */
-  ~Simulation() = default;
+  ~Simulation();
 
   /**
    * Runs the simulation
@@ -111,7 +111,6 @@ class Simulation {
     autopas::utils::Timer initialization;
     autopas::utils::Timer total;
     autopas::utils::Timer thermostat;
-    autopas::utils::Timer boundaries;
   } _timers;
 
   /**
@@ -125,21 +124,9 @@ class Simulation {
   bool _createVtkFiles;
 
   /**
-   * Initializes the simulation.
-   * This function needs to be called in the constructor of the deriving class, because initializeDomainDecomposition
-   * can not be called by the constructor of Simulation, because it is a pure virtual function.
-   */
-  void initialize(int dimensionCount, int argc, char **argv);
-
-  /**
    * Executes a superstep of the simulation.
    */
   void executeSuperstep(const int iterationsPerSuperstep);
-
-  /**
-   * Checks if there are any iterations left to compute.
-   */
-  bool needsMoreIterations();
 
   /**
    * Estimates the number of tuning iterations which ocurred during the simulation so far.
@@ -150,16 +137,6 @@ class Simulation {
    * Prints a progress bar to the terminal.
    */
   void printProgress(size_t iterationProgress, size_t maxIterations, bool maxIsPrecise);
-
-  /**
-   * Writes the current simulation state to a vtk-file.
-   */
-  void writeVTKFile();
-
-  /**
-   * Returns an 'mpi_rank_<rank>_', where <rank> is the rank of the current MPI process.
-   */
-  std::string getMPISuffix();
 
   /**
    * Turns the timers into a human readable string.

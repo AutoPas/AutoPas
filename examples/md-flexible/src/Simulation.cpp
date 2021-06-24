@@ -102,11 +102,17 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
   _timers.initialization.stop();
 }
 
+Simulation::~Simulation(){
+  _timers.total.stop();
+}
+
 void Simulation::run() {
   const int iterationsPerSuperstep = _configuration.verletRebuildFrequency.value;
+  _timers.simulate.start();
   for (int i = 0; i < _configuration.iterations.value; i += iterationsPerSuperstep) {
     executeSuperstep(iterationsPerSuperstep);
   }
+  _timers.simulate.stop();
 
   // Record last state of simulation.
   if (_createVtkFiles) {
@@ -116,15 +122,10 @@ void Simulation::run() {
 
 void Simulation::executeSuperstep(const int iterationsPerSuperstep) {
   for (int i = 0; i < iterationsPerSuperstep; ++i) {
-    if (_domainDecomposition.getDomainIndex() == 0) {
-      auto [maxIterationsEstimate, maxIterationsIsPrecise] = estimateNumberOfIterations();
-      if (not _configuration.dontShowProgressBar.value) {
-        printProgress(_iteration, maxIterationsEstimate, maxIterationsIsPrecise);
-      }
-    }
-
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
+      _timers.vtk.start();
       _vtkWriter->recordTimestep(_iteration, *_autoPasContainer);
+      _timers.vtk.stop();
     }
 
     updatePositions();
@@ -139,6 +140,13 @@ void Simulation::executeSuperstep(const int iterationsPerSuperstep) {
     updateThermostat();
 
     ++_iteration;
+
+    if (_domainDecomposition.getDomainIndex() == 0) {
+      auto [maxIterationsEstimate, maxIterationsIsPrecise] = estimateNumberOfIterations();
+      if (not _configuration.dontShowProgressBar.value) {
+        printProgress(_iteration, maxIterationsEstimate, maxIterationsIsPrecise);
+      }
+    }
   }
 }
 
@@ -158,10 +166,6 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
   } else {
     return {_configuration.iterations.value, true};
   }
-}
-
-bool Simulation::needsMoreIterations() {
-  return _iteration < _configuration.iterations.value or _numTuningPhasesCompleted < _configuration.tuningPhases.value;
 }
 
 void Simulation::printProgress(size_t iterationProgress, size_t maxIterations, bool maxIsPrecise) {
@@ -231,8 +235,10 @@ std::string Simulation::timerToString(const std::string &name, long timeNS, size
 }
 
 void Simulation::updatePositions() {
+  _timers.positionUpdate.start();
   TimeDiscretization::calculatePositions(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                                          _configuration.deltaT.value);
+  _timers.positionUpdate.stop();
 }
 
 void Simulation::updateForces() {
@@ -287,7 +293,9 @@ void Simulation::updateVelocities() {
 
 void Simulation::updateThermostat() {
   if (_configuration.useThermostat.value and (_iteration % _configuration.thermostatInterval.value) == 0) {
+    _timers.thermostat.start();
     Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                       _configuration.targetTemperature.value, _configuration.deltaTemp.value);
+    _timers.thermostat.stop();
   }
 }
