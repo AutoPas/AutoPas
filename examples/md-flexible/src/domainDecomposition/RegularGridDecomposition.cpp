@@ -74,9 +74,12 @@ RegularGridDecomposition::RegularGridDecomposition(const int &dimensionCount, co
 
   initializeNeighbourIds();
 
-  std::cout << "Neighbours: " << autopas::utils::ArrayUtils::to_string(_neighbourDomainIndices) << std::endl;
-  std::cout << "LocalBox: " << autopas::utils::ArrayUtils::to_string(_localBoxMin) << ", "
-            << autopas::utils::ArrayUtils::to_string(_localBoxMax) << std::endl;
+  std::cout
+    << "DomainIndex: " << _domainIndex << ", "
+    << "DomainId: " << autopas::utils::ArrayUtils::to_string(_domainId) << ", "
+    << "Neighbours: " << autopas::utils::ArrayUtils::to_string(_neighbourDomainIndices) << ", "
+    << "LocalBox: " << autopas::utils::ArrayUtils::to_string(_localBoxMin) << ", "
+    << autopas::utils::ArrayUtils::to_string(_localBoxMax) << std::endl;
 }
 
 RegularGridDecomposition::~RegularGridDecomposition() {}
@@ -228,20 +231,8 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
       }
     }
 
-    if (_mpiIsEnabled) {
-      sendParticles(particlesForLeftNeighbour, leftNeighbour);
-      sendParticles(particlesForRightNeighbour, rightNeighbour);
-
-      receiveParticles(haloParticles, leftNeighbour);
-      receiveParticles(haloParticles, rightNeighbour);
-
-      waitForSendRequests();
-    }
-    else {
-      haloParticles.insert(haloParticles.end(), particlesForLeftNeighbour.begin(), particlesForLeftNeighbour.end());
-      haloParticles.insert(haloParticles.end(), particlesForRightNeighbour.begin(), particlesForRightNeighbour.end());
-    }
-
+    sendAndReceiveParticlesLeftAndRight(particlesForLeftNeighbour, particlesForRightNeighbour, leftNeighbour, rightNeighbour, haloParticles);
+    
     for (auto &particle : haloParticles) {
       autoPasContainer->addOrUpdateHaloParticle(particle);
     }
@@ -272,20 +263,9 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
       }
     }
 
-    if (_mpiIsEnabled) {
-      sendParticles(particlesForLeftNeighbour, leftNeighbour);
-      sendParticles(particlesForRightNeighbour, rightNeighbour);
+    haloParticles.clear();
 
-      receiveParticles(haloParticles, leftNeighbour);
-      receiveParticles(haloParticles, rightNeighbour);
-
-      waitForSendRequests();
-    }
-    else {
-      haloParticles.clear();
-      haloParticles.insert(haloParticles.end(), particlesForLeftNeighbour.begin(), particlesForLeftNeighbour.end());
-      haloParticles.insert(haloParticles.end(), particlesForRightNeighbour.begin(), particlesForRightNeighbour.end());
-    }
+    sendAndReceiveParticlesLeftAndRight(particlesForLeftNeighbour, particlesForRightNeighbour, leftNeighbour, rightNeighbour, haloParticles);
 
     for (auto &particle : haloParticles) {
       autoPasContainer->addOrUpdateHaloParticle(particle);
@@ -330,19 +310,7 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
         }
       }
 
-      if(_mpiIsEnabled){
-        sendParticles(particlesForLeftNeighbour, leftNeighbour);
-        sendParticles(particlesForRightNeighbour, rightNeighbour);
-
-        receiveParticles(immigrants, leftNeighbour);
-        receiveParticles(immigrants, rightNeighbour);
-
-        waitForSendRequests();
-      }
-      else {
-        immigrants.insert(immigrants.end(), particlesForLeftNeighbour.begin(), particlesForLeftNeighbour.end());
-        immigrants.insert(immigrants.end(), particlesForRightNeighbour.begin(), particlesForRightNeighbour.end());
-      }
+      sendAndReceiveParticlesLeftAndRight(particlesForLeftNeighbour, particlesForRightNeighbour, leftNeighbour, rightNeighbour, immigrants);
 
       for (const auto &particle : immigrants) {
         if (isInsideLocalDomain(particle.getR())) {
@@ -378,19 +346,7 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
         }
       }
 
-      if(_mpiIsEnabled){
-        sendParticles(particlesForLeftNeighbour, leftNeighbour);
-        sendParticles(particlesForRightNeighbour, rightNeighbour);
-
-        receiveParticles(immigrants, leftNeighbour);
-        receiveParticles(immigrants, rightNeighbour);
-
-        waitForSendRequests();
-      }
-      else {
-        immigrants.insert(immigrants.end(), particlesForLeftNeighbour.begin(), particlesForLeftNeighbour.end());
-        immigrants.insert(immigrants.end(), particlesForRightNeighbour.begin(), particlesForRightNeighbour.end());
-      }
+      sendAndReceiveParticlesLeftAndRight(particlesForLeftNeighbour, particlesForRightNeighbour, leftNeighbour, rightNeighbour, immigrants);
 
       for (auto &particle : immigrants) {
         autoPasContainer->addParticle(particle);
@@ -401,7 +357,7 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
   }
 }
 
-void RegularGridDecomposition::sendParticles(std::vector<ParticleType> &particles, int &receiver) {
+void RegularGridDecomposition::sendParticles(const std::vector<ParticleType> &particles, const int &receiver) {
   std::vector<char> buffer;
 
   for (auto &particle : particles) {
@@ -413,7 +369,7 @@ void RegularGridDecomposition::sendParticles(std::vector<ParticleType> &particle
   sendDataToNeighbour(buffer, receiver);
 }
 
-void RegularGridDecomposition::receiveParticles(std::vector<ParticleType> &receivedParticles, int &source) {
+void RegularGridDecomposition::receiveParticles(std::vector<ParticleType> &receivedParticles, const int &source) {
   std::vector<char> receiveBuffer;
 
   receiveDataFromNeighbour(source, receiveBuffer);
@@ -443,6 +399,22 @@ void RegularGridDecomposition::receiveDataFromNeighbour(const int &neighbour, st
 
   autopas::AutoPas_MPI_Recv(receiveBuffer.data(), receiveBufferSize, AUTOPAS_MPI_CHAR, neighbour, 0, _communicator,
                             AUTOPAS_MPI_STATUS_IGNORE);
+}
+
+void RegularGridDecomposition::sendAndReceiveParticlesLeftAndRight(const std::vector<ParticleType>& particlesToLeft, const std::vector<ParticleType>& particlesToRight, const int& leftNeighbour, const int& rightNeighbour, std::vector<ParticleType>& receivedParticles){
+  if (_mpiIsEnabled && leftNeighbour != _domainIndex) {
+    sendParticles(particlesToLeft, leftNeighbour);
+    sendParticles(particlesToRight, rightNeighbour);
+
+    receiveParticles(receivedParticles, leftNeighbour);
+    receiveParticles(receivedParticles, rightNeighbour);
+
+    waitForSendRequests();
+  }
+  else{
+    receivedParticles.insert(receivedParticles.end(), particlesToLeft.begin(), particlesToLeft.end());
+    receivedParticles.insert(receivedParticles.end(), particlesToRight.begin(), particlesToRight.end());
+  }
 }
 
 void RegularGridDecomposition::waitForSendRequests() {

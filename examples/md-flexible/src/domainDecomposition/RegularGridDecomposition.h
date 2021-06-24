@@ -104,11 +104,6 @@ class RegularGridDecomposition final : public DomainDecomposition {
    */
   void exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer);
 
-  /**
-   * Waits for all send requests to be finished.
-   */
-  void waitForSendRequests();
-
  private:
   /**
    * Indicates if MPI is enabled and if it will be used.
@@ -252,14 +247,14 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param particles The particles to be sent to the receiver.
    * @param receiver The recipient of the particels.
    */
-  void sendParticles(std::vector<ParticleType> &particles, int &receiver);
+  void sendParticles(const std::vector<ParticleType> &particles, const int &receiver);
 
   /**
    * Received particles sent by a sender.
    * @param receivedParticles The container where the received particles will be stored.
    * @param source The sender id/rank.
    */
-  void receiveParticles(std::vector<ParticleType> &receivedParticles, int &source);
+  void receiveParticles(std::vector<ParticleType> &receivedParticles, const int &source);
 
   /**
    * Received data which has been sent by a specifig neighbour of this domain.
@@ -274,6 +269,21 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param neighbour The neighbour to which the data will be sent.
    */
   void sendDataToNeighbour(std::vector<char> sendBuffer, const int &neighbour);
+
+  /**
+   * Sends and also receives particles to and from the left and right neighbours.
+   * @param particlesToLeft: Particles which get send to the left neighbour.
+   * @param particlesToRight: Particles which get send to the right neighbor.
+   * @param leftNeighbour: The left neighbour's index / rank.
+   * @param rightNeighbour: The right neighbour's index / rank.
+   * @param receivedParticles: Container for the particles received from either neighbour.
+   */ 
+  void sendAndReceiveParticlesLeftAndRight(const std::vector<ParticleType>& particlesToLeft, const std::vector<ParticleType>& particlesToRight, const int& leftNeighbour, const int& rightNeighbour, std::vector<ParticleType>& receivedParticles);
+
+  /**
+   * Waits for all send requests to be finished.
+   */
+  void waitForSendRequests();
 
   /**
    * Converts a domain id to the domain index, i.e. rank of the local processor.

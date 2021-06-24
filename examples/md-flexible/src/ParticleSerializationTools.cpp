@@ -6,7 +6,7 @@
 #include "ParticleSerializationTools.h"
 
 namespace ParticleSerializationTools {
-void serializeParticle(ParticleType &particle, std::vector<char> &serializedParticles) {
+void serializeParticle(const ParticleType &particle, std::vector<char> &serializedParticles) {
   ParticleAttributes attributes{.position{particle.getR()},
                                 .velocity{particle.getV()},
                                 .force{particle.getF()},
