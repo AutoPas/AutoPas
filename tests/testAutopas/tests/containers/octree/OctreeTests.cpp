@@ -13,12 +13,15 @@
 
 #include <cstdio>
 #include <string>
+#include <vector>
 
 #include "autopas/containers/octree/Octree.h"
 #include "autopas/containers/octree/OctreeDirection.h"
 #include "autopas/containers/octree/OctreeNodeInterface.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/particles/Particle.h"
+
+using ::testing::_;
 
 TEST_F(OctreeTest, testDummy) {
   using namespace autopas;
@@ -523,12 +526,11 @@ TEST_F(OctreeTest, testAbleToSplit) {
   }
 }
 
-static std::vector<std::array<double, 3>> calculateForces(autopas::ContainerOption containerOption,
-                                                          autopas::TraversalOption traversalOption,
-                                                          autopas::DataLayoutOption dataLayoutOption,
-                                                          autopas::Newton3Option newton3Option, size_t numParticles,
-                                                          size_t numHaloParticles, std::array<double, 3> boxMax,
-                                                          double cellSizeFactor, bool doSlightShift) {
+std::pair<std::vector<std::array<double, 3>>, std::vector<std::pair<unsigned long, unsigned long>>>
+OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
+                                    autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option,
+                                    size_t numParticles, size_t numHaloParticles, std::array<double, 3> boxMax,
+                                    double cellSizeFactor, bool doSlightShift) {
   using namespace autopas;
 
   std::array<double, 3> _boxMin{0, 0, 0};
@@ -544,11 +546,11 @@ static std::vector<std::array<double, 3>> calculateForces(autopas::ContainerOpti
       containerOption, autopas::ContainerSelectorInfo{cellSizeFactor, skin, 32, autopas::LoadEstimatorOption::none});
   auto container = selector.getCurrentContainer();
 
-  // TODO(johannes): Here I probably want to use the mock functor
+  // Create a functor that is able to calculate forces
   autopas::LJFunctor<Molecule, true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both,
-                     true /*calculateGlobals*/>
-      functor{_cutoff};
-  functor.setParticleProperties(_eps * 24, _sig * _sig);
+                     false /*calculateGlobals*/>
+      ljFunctor{_cutoff};
+  ljFunctor.setParticleProperties(_eps * 24, _sig * _sig);
 
   // Initialize the RNG in order to be able to initialize both containers with the same particles
   srand(1234);
@@ -574,33 +576,54 @@ static std::vector<std::array<double, 3>> calculateForces(autopas::ContainerOpti
     }
   }
 
+  // Obtain a compatible traversal
   auto traversal =
       autopas::utils::withStaticCellType<Molecule>(container->getParticleCellTypeEnum(), [&](auto particleCellDummy) {
         return autopas::TraversalSelector<decltype(particleCellDummy)>::generateTraversal(
-            traversalOption, functor, container->getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
+            traversalOption, mockFunctor, container->getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
       });
-
-#if 0
-  // TODO(johannes): Find out why this ASSERT_TRUE does not work here
-  bool applicable = traversal->isApplicable();
-  ASSERT_TRUE(true);
-#endif
 
   if (doSlightShift) {
     // TODO(johannes): Shift the particles
   }
 
-  functor.initTraversal();
-  container->iteratePairwise(traversal.get());
-  functor.endTraversal(newton3Option);
+  // Specify the behavior that should be executed for each particle pair
+  int unsigned numPairs = 0;
+  std::vector<std::pair<unsigned long, unsigned long>> particlePairs;
+  bool useNewton3 = newton3Option == Newton3Option::enabled;
+  EXPECT_CALL(mockFunctor, AoSFunctor(_, _, useNewton3))
+      .Times(testing::AtLeast(1))
+      .WillRepeatedly(
+          testing::WithArgs<0, 1>([&](auto &i, auto &j) {
+            ++numPairs;
 
+            // Store the particle pair interaction
+            particlePairs.template emplace_back(i.getID(), j.getID());
+
+            // Do, what the LJ functor would do
+            ljFunctor.AoSFunctor(i, j, useNewton3);
+          }));
+
+  // non useNewton3 variant should not happen
+  EXPECT_CALL(mockFunctor, AoSFunctor(_, _, not useNewton3)).Times(0);
+
+  // Perform the traversal
+  mockFunctor.initTraversal();
+  container->iteratePairwise(traversal.get());
+  mockFunctor.endTraversal(newton3Option);
+
+  printf("Johannes' AoS functor called %d times\n", numPairs);
+
+  // Obtain all calculated forces
   std::vector<std::array<double, 3>> forces(numParticles);
   for (auto it = container->begin(autopas::IteratorBehavior::owned); it.isValid(); ++it) {
     EXPECT_TRUE(it->isOwned());
-    forces.at(it->getID()) = it->getF();
+    auto f = it->getF();
+    auto id = it->getID();
+    forces.at(id) = f;
   }
 
-  return forces;
+  return std::make_pair(forces, particlePairs);
 }
 
 TEST_P(OctreeTest, testCustomParticleDistribution) {
@@ -624,12 +647,12 @@ TEST_P(OctreeTest, testCustomParticleDistribution) {
       false;  // TODO: Change this to DeletionPosition::never or something more reasonable in general and put it back in
 
   // Calculate the forces using the octree
-  std::vector<std::array<double, 3>> calculatedForces =
-      calculateForces(containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles, numHaloParticles,
-                      boxMax, cellSizeFactor, doSlightShift);
+  auto [calculatedForces, calculatedPairs] =
+      calculateForcesAndPairs(containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles,
+                              numHaloParticles, boxMax, cellSizeFactor, doSlightShift);
 
   // Calculate the forces using the reference implementation
-  std::vector<std::array<double, 3>> referenceForces = calculateForces(
+  auto [referenceForces, referencePairs] = calculateForcesAndPairs(
       autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c08, autopas::DataLayoutOption::aos,
       autopas::Newton3Option::enabled, numParticles, numHaloParticles, boxMax, cellSizeFactor, doSlightShift);
 
