@@ -526,7 +526,7 @@ TEST_F(OctreeTest, testAbleToSplit) {
   }
 }
 
-std::pair<std::vector<std::array<double, 3>>, std::vector<std::pair<unsigned long, unsigned long>>>
+std::pair<std::vector<std::array<double, 3>>, std::vector<std::tuple<unsigned long, unsigned long, double>>>
 OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
                                     autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option,
                                     size_t numParticles, size_t numHaloParticles, std::array<double, 3> boxMax,
@@ -590,7 +590,7 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
 
   // Specify the behavior that should be executed for each particle pair
   int unsigned numPairs = 0;
-  std::vector<std::pair<unsigned long, unsigned long>> particlePairs;
+  std::vector<std::tuple<unsigned long, unsigned long, double>> particlePairs;
   bool useNewton3 = newton3Option == Newton3Option::enabled;
   EXPECT_CALL(mockFunctor, AoSFunctor(_, _, useNewton3))
       .Times(testing::AtLeast(1))
@@ -601,7 +601,7 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
         auto dr = utils::ArrayMath::sub(i.getR(), j.getR());
         double dr2 = utils::ArrayMath::dot(dr, dr);
         if (dr2 <= _cutoffsquare) {
-          particlePairs.template emplace_back(i.getID(), j.getID());
+          particlePairs.template emplace_back(i.getID(), j.getID(), dr2);
         }
 
         // Do, what the LJ functor would do
@@ -663,7 +663,7 @@ TEST_P(OctreeTest, testCustomParticleDistribution) {
   // Calculate which pairs are in the set difference between the reference pairs and the calculated pairs
   std::sort(calculatedPairs.begin(), calculatedPairs.end());
   std::sort(referencePairs.begin(), referencePairs.end());
-  std::vector<std::pair<long unsigned, long unsigned>> diff;
+  std::vector<std::tuple<long unsigned, long unsigned, double>> diff;
   std::set_difference(referencePairs.begin(), referencePairs.end(), calculatedPairs.begin(), calculatedPairs.end(),
                       std::inserter(diff, diff.begin()));
   EXPECT_EQ(diff.size(), 0);
@@ -677,18 +677,18 @@ TEST_P(OctreeTest, testCustomParticleDistribution) {
           << "#p" << numParticles << " #hp" << numHaloParticles << " Particle id: " << i;
     }
 
-    for(auto pair : diff) {
+    for(std::tuple<long unsigned, long unsigned, double> &tup : diff) {
       long unsigned missing;
-      if(pair.first == i) {
-        missing = pair.second;
-      } else if(pair.second == i) {
-        missing = pair.first;
+      if(std::get<0>(tup) == i) {
+        missing = std::get<1>(tup);
+      } else if(std::get<1>(tup) == i) {
+        missing = std::get<0>(tup);
       } else {
         continue;
       }
 
       // There should not be a missing pair
-      printf("Interaction between %lu<->%lu is missing\n", i, missing);
+      printf("Interaction between %lu<->%lu (distance: %f) is missing\n", i, missing, std::sqrt(std::get<2>(tup)));
     }
   }
 }

@@ -25,7 +25,7 @@ using GeneratorSpec = std::tuple<int unsigned /*numParticles*/, int unsigned /*n
 
 class OctreeTest : public AutoPasTestBase, public ::testing::WithParamInterface<GeneratorSpec> {
  public:
-  std::pair<std::vector<std::array<double, 3>>, std::vector<std::pair<unsigned long, unsigned long>>>
+  std::pair<std::vector<std::array<double, 3>>, std::vector<std::tuple<unsigned long, unsigned long, double>>>
   calculateForcesAndPairs(autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
                           autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option,
                           size_t numParticles, size_t numHaloParticles, std::array<double, 3> boxMax,
