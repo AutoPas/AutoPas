@@ -12,4 +12,6 @@
 //#include "autopas/containers/CellBlock3D.h"
 //#include "testingHelpers/commonTypedefs.h"
 
-class OctreeTest : public AutoPasTestBase {};
+using GeneratorSpec = std::tuple<int unsigned, int unsigned>;
+
+class OctreeTest : public AutoPasTestBase, public ::testing::WithParamInterface<GeneratorSpec> {};

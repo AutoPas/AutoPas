@@ -12,6 +12,7 @@
 #include <testingHelpers/commonTypedefs.h>
 
 #include <cstdio>
+#include <string>
 
 #include "autopas/containers/octree/Octree.h"
 #include "autopas/containers/octree/OctreeDirection.h"
@@ -555,18 +556,22 @@ static std::vector<std::array<double, 3>> calculateForces(autopas::ContainerOpti
   // Fill a smaller portion of the octree region with particles
   auto boxCenter = utils::ArrayMath::add(_boxMin, boxMax);
   boxCenter = utils::ArrayMath::mulScalar(boxCenter, 0.5);
-  for(int unsigned i = 0; i < numParticles; ++i) {
-    auto position = random3D(_boxMin, boxCenter);
+  for (int unsigned i = 0; i < numParticles; ++i) {
+    auto position = random3D(_boxMin, boxMax);
     auto particle = Molecule(position, {0, 0, 0}, i);
     container->addParticle(particle);
   }
 
-  // Fill a small cube near the octree with halo particles
+  // Fill the area around the octree with halo particles
   auto haloMin = utils::ArrayMath::subScalar(_boxMin, interactionLength);
-  for(int unsigned i = 0; i < numHaloParticles; ++i) {
-    auto position = random3D(haloMin, _boxMin);
-    auto particle = Molecule(position, {0, 0, 0}, i);
-    container->addHaloParticle(particle);
+  auto haloMax = utils::ArrayMath::addScalar(boxMax, interactionLength);
+  for (int unsigned i = 0; i < numHaloParticles;) {
+    auto position = random3D(haloMin, haloMax);
+    if (!utils::inBox(position, _boxMin, boxMax)) {
+      auto particle = Molecule(position, {0, 0, 0}, i);
+      container->addHaloParticle(particle);
+      ++i;
+    }
   }
 
   auto traversal =
@@ -598,8 +603,10 @@ static std::vector<std::array<double, 3>> calculateForces(autopas::ContainerOpti
   return forces;
 }
 
-TEST_F(OctreeTest, testCustomParticleDistribution) {
+TEST_P(OctreeTest, testCustomParticleDistribution) {
   using namespace autopas;
+
+  auto [numParticles, numHaloParticles] = GetParam();
 
   // Stolen from the traversalTest
   constexpr double rel_err_tolerance = 1.0e-10;
@@ -610,8 +617,6 @@ TEST_F(OctreeTest, testCustomParticleDistribution) {
   auto traversalOption = TraversalOption::ot_c01;
   auto dataLayoutOption = DataLayoutOption::aos;
   auto newton3Option = Newton3Option::disabled;
-  auto numParticles = 30;
-  auto numHaloParticles = 1;
   auto boxMax = std::array<double, 3>{3, 3, 3};
   auto cellSizeFactor = 1;
   auto doSlightShift = false;
@@ -634,7 +639,32 @@ TEST_F(OctreeTest, testCustomParticleDistribution) {
       double calculatedForce = calculatedForces[i][d];
       double referenceForce = referenceForces[i][d];
       EXPECT_NEAR(calculatedForce, referenceForce, std::fabs(calculatedForce * rel_err_tolerance))
-                << "Particle id: " << i;
+          << "#p" << numParticles << " #hp" << numHaloParticles << " Particle id: " << i;
     }
   }
 }
+
+/**
+ * Lambda to generate a readable string out of the parameters of this test.
+ */
+static auto toString = [](const auto &info) {
+  auto [numParticles, numHaloParticles] = info.param;
+  std::stringstream resStream;
+  resStream << "NP" << std::to_string(numParticles) << "_NH" << std::to_string(numHaloParticles);
+  std::string res = resStream.str();
+  std::replace(res.begin(), res.end(), '-', '_');
+  std::replace(res.begin(), res.end(), '.', '_');
+  return res;
+};
+
+static std::vector<GeneratorSpec> getTestParams() {
+  std::vector<GeneratorSpec> result = {};
+  for (auto numParticles : {40, 50, 60, 70, 80}) {
+    for (auto numHaloParticles : {1}) {
+      result.emplace_back(numParticles, numHaloParticles);
+    }
+  }
+  return result;
+}
+
+INSTANTIATE_TEST_SUITE_P(Generated, OctreeTest, ::testing::ValuesIn(getTestParams()), toString);
