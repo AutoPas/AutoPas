@@ -46,7 +46,7 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
     }
 
     // Check if the size of the new leaves would become smaller than cellSizeFactor*interactionLength
-    std::array<double, 3> splitLeafDimensions = utils::ArrayMath::add(this->getBoxMin(), this->getBoxMax());
+    std::array<double, 3> splitLeafDimensions = utils::ArrayMath::sub(this->getBoxMax(), this->getBoxMin());
     splitLeafDimensions = utils::ArrayMath::mulScalar(splitLeafDimensions, 0.5);
     bool anyNewDimSmallerThanMinSize = false;
     for (auto d = 0; d < 3; ++d) {
