@@ -59,7 +59,7 @@ double getDistanceToDomain(const std::array<double, 3> &coordinates, std::array<
  * This function uses prime factorization to determine the number of subdomains in each dimension.
  * @param subdomainCount The number of subdomains in the resulting decomposition
  * @param dimensionCount The number of dimensions in the simulation.
- * @param oDecomposition The resulting decomposition.
+ * @param decomposition The resulting decomposition.
  */
-void generateDecomposition(unsigned int subdomainCount, int dimensionCount, std::vector<int> &oDecomposition);
+void generateDecomposition(unsigned int subdomainCount, int dimensionCount, std::vector<int> &decomposition);
 }  // namespace DomainTools
