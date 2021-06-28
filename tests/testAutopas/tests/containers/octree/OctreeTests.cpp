@@ -575,6 +575,7 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
     // TODO(johannes): Shift the particles
   }
 
+  std::cout << "Container switch to " << autopas::ContainerOption::getOptionNames()[containerOption] << "\n";
   // Specify the behavior that should be executed for each particle pair
   int unsigned numPairs = 0;
   std::vector<std::tuple<unsigned long, unsigned long, double>> particlePairs;
@@ -584,15 +585,15 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
       .WillRepeatedly(testing::WithArgs<0, 1>([&](auto &i, auto &j) {
         ++numPairs;
 
-        if (i.getID() == 3 and j.getID() == 15) {
-          printf("Got it\n");
-        }
-
         // Store the particle pair interaction if it is within cutoff range
         auto dr = utils::ArrayMath::sub(i.getR(), j.getR());
         double dr2 = utils::ArrayMath::dot(dr, dr);
         if (dr2 <= _cutoffsquare) {
           particlePairs.template emplace_back(i.getID(), j.getID(), dr2);
+        }
+
+        if ((i.getID() == 48 and j.getID() == 47) or (i.getID() == 47 and j.getID() == 48)) {
+          printf("Interaction between %lu<-%lu\n", i.getID(), j.getID());
         }
 
         // Do, what the LJ functor would do
@@ -623,6 +624,32 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
   // TODO(johannes): Remove "positions" from the returned value, since the particle positions are now passed into this
   //  function
   return std::make_tuple(positions, forces, particlePairs);
+}
+
+/**
+ * Only take the pairs that are in ref and missing in cal.
+ * @param ref The set of reference interactions
+ * @param cal The set of interactions to test
+ * @return A list of interactions that are missing in cal
+ */
+static std::vector<std::tuple<unsigned long, unsigned long, double>> onlyFromRef(
+    std::vector<std::tuple<unsigned long, unsigned long, double>> &ref,
+    std::vector<std::tuple<unsigned long, unsigned long, double>> &cal) {
+  using namespace autopas;
+  std::vector<std::tuple<unsigned long, unsigned long, double>> result;
+  for (auto r : ref) {
+    bool found = false;
+    for (auto c : cal) {
+      if (std::get<0>(r) == std::get<0>(c) and std::get<1>(r) == std::get<1>(c)) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      result.push_back(r);
+    }
+  }
+  return result;
 }
 
 TEST_P(OctreeTest, testCustomParticleDistribution) {
@@ -688,12 +715,12 @@ TEST_P(OctreeTest, testCustomParticleDistribution) {
       _cutoff, skin, interactionLength, particlePositions, haloParticlePositions);
 
   // Calculate which pairs are in the set difference between the reference pairs and the calculated pairs
-  std::sort(calculatedPairs.begin(), calculatedPairs.end());
-  std::sort(referencePairs.begin(), referencePairs.end());
-  std::vector<std::tuple<long unsigned, long unsigned, double>> diff;
-  std::set_difference(referencePairs.begin(), referencePairs.end(), calculatedPairs.begin(), calculatedPairs.end(),
-                      std::inserter(diff, diff.begin()));
-  EXPECT_TRUE(diff.empty());
+  // std::sort(calculatedPairs.begin(), calculatedPairs.end());
+  // std::sort(referencePairs.begin(), referencePairs.end());
+  std::vector<std::tuple<long unsigned, long unsigned, double>> diff = onlyFromRef(referencePairs, calculatedPairs);
+  // std::set_difference(referencePairs.begin(), referencePairs.end(), calculatedPairs.begin(), calculatedPairs.end(),
+  //                     std::inserter(diff, diff.begin()));
+  EXPECT_EQ(diff.size(), 0);
 
   // A very strange lambda expression to get the position of a halo or owned particle by one consecutive index
   auto getParticlePosition = [particlePositions = particlePositions, haloParticlePositions = haloParticlePositions,
@@ -704,7 +731,7 @@ TEST_P(OctreeTest, testCustomParticleDistribution) {
     } else if (index < (numParticles + numHaloParticles)) {
       result = haloParticlePositions[index - numParticles];
     } else {
-      // NOTE: Cannot use FAIL or any assertion by googletest here, since they have a "return;" statement built in that
+      // NOTE: Cannot use FAIL or any ASSERTion by googletest here, since they have a "return;" statement built in that
       // does not comply with the return value (std::array => non-void) of this lambda.
       throw std::runtime_error("[OctreeTests.cpp] Index out of range");
     }
@@ -728,24 +755,18 @@ TEST_P(OctreeTest, testCustomParticleDistribution) {
       EXPECT_NEAR(calculatedPosition, referencePosition, std::fabs(calculatedPosition * rel_err_tolerance))
           << "#p" << numParticles << " #hp" << numHaloParticles << " Particle id: " << i;
     }
+  }
 
-    for (std::tuple<long unsigned, long unsigned, double> &tup : diff) {
-      // Get the index of the missing particle
-      long unsigned missing;
-      if (std::get<0>(tup) == i) {
-        missing = std::get<1>(tup);
-      } else if (std::get<1>(tup) == i) {
-        missing = std::get<0>(tup);
-      } else {
-        continue;
-      }
+  // Print missing interactions
+  for (std::tuple<long unsigned, long unsigned, double> &tup : diff) {
+    long unsigned a = std::get<0>(tup);
+    long unsigned b = std::get<1>(tup);
 
-      double dr = std::sqrt(std::get<2>(tup));
-      auto p1 = getParticlePosition(i);
-      auto p2 = getParticlePosition(missing);
-      printf("Interaction between particles %lu<->%lu (positions: %f, %f, %f, %f, %f, %f, distance: %f) is missing\n",
-             i, missing, p1[0], p1[1], p1[2], p2[0], p2[1], p2[2], dr);
-    }
+    double dr = std::sqrt(std::get<2>(tup));
+    auto p1 = getParticlePosition(a);
+    auto p2 = getParticlePosition(b);
+    printf("Interaction between particles %lu<->%lu (positions: %f, %f, %f, %f, %f, %f, distance: %f) is missing\n", a,
+           b, p1[0], p1[1], p1[2], p2[0], p2[1], p2[2], dr);
   }
 }
 
@@ -765,9 +786,10 @@ static auto toString = [](const auto &info) {
 
 static std::vector<GeneratorSpec> getTestParams() {
   std::vector<GeneratorSpec> result = {};
-  for (auto boxMax : std::vector<std::array<double, 3>>{{3.0, 3.0, 3.0}, {10.0, 10.0, 10.0}, {20.0, 20.0, 20.0}}) {
-    for (auto numParticles : {40, 50, 60, 70, 80}) {
-      for (auto numHaloParticles : {0, 1, 50}) {
+  for (auto boxMax :
+       std::vector<std::array<double, 3>>{{1.5, 1.5, 1.5}, {3.0, 3.0, 3.0}, {10.0, 10.0, 10.0}, {20.0, 20.0, 20.0}}) {
+    for (auto numParticles : {40, 50, 60, 300}) {
+      for (auto numHaloParticles : {0, 1, 5, 10, 80, 100}) {
         result.emplace_back(boxMax, numParticles, numHaloParticles);
       }
     }
