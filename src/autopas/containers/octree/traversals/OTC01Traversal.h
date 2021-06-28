@@ -79,7 +79,10 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
 
 #if 1
     // FOR DEBUGGING ONLY
-    fclose(OctreeLogger::leavesToJSON(fopen("leaves.json", "w"), _ownedLeaves));  // Log all leaves for this octree
+    // Log all owned leaves for this octree
+    fclose(OctreeLogger::leavesToJSON(fopen("owned.json", "w"), _ownedLeaves));
+    // Log all halo leaves for this octree
+    fclose(OctreeLogger::leavesToJSON(fopen("halo.json", "w"), _haloLeaves));
     FILE *particles = fopen("particles.json", "w");
     fprintf(particles, "{");
     OctreeLogger::particlesToJSON(particles, "owned", getOwned()->getRaw());
