@@ -530,20 +530,18 @@ std::tuple<OctreeTest::Vector3DList, OctreeTest::Vector3DList,
            std::vector<std::tuple<unsigned long, unsigned long, double>>>
 OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
                                     autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option,
-                                    size_t numParticles, size_t numHaloParticles, std::array<double, 3> boxMax,
-                                    double cellSizeFactor, bool doSlightShift) {
+                                    size_t numParticles, size_t numHaloParticles, std::array<double, 3> boxMin,
+                                    std::array<double, 3> boxMax, double cellSizeFactor, bool doSlightShift,
+                                    double cutoff, double skin, double interactionLength,
+                                    Vector3DList particlePositions, Vector3DList haloParticlePositions) {
   using namespace autopas;
 
-  std::array<double, 3> _boxMin{0, 0, 0};
-  double _cutoff{1.};
-  double _cutoffsquare = _cutoff * _cutoff;
+  double _cutoffsquare = cutoff * cutoff;
   static constexpr double _eps{1.};
   static constexpr double _sig{1.};
 
   // Construct container
-  ContainerSelector<Molecule> selector{_boxMin, boxMax, _cutoff};
-  double skin = _cutoff * 0.1;
-  double interactionLength = _cutoff + skin;
+  ContainerSelector<Molecule> selector{boxMin, boxMax, cutoff};
   selector.selectContainer(
       containerOption, autopas::ContainerSelectorInfo{cellSizeFactor, skin, 32, autopas::LoadEstimatorOption::none});
   auto container = selector.getCurrentContainer();
@@ -551,31 +549,19 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
   // Create a functor that is able to calculate forces
   autopas::LJFunctor<Molecule, true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both,
                      false /*calculateGlobals*/>
-      ljFunctor{_cutoff};
+      ljFunctor{cutoff};
   ljFunctor.setParticleProperties(_eps * 24, _sig * _sig);
 
-  // Initialize the RNG in order to be able to initialize both containers with the same particles
-  srand(1234);
-
-  // Fill a smaller portion of the octree region with particles
-  auto boxCenter = utils::ArrayMath::add(_boxMin, boxMax);
-  boxCenter = utils::ArrayMath::mulScalar(boxCenter, 0.5);
   for (int unsigned i = 0; i < numParticles; ++i) {
-    auto position = random3D(_boxMin, boxMax);
+    auto position = particlePositions[i];
     auto particle = Molecule(position, {0, 0, 0}, i);
     container->addParticle(particle);
   }
 
-  // Fill the area around the octree with halo particles
-  auto haloMin = utils::ArrayMath::subScalar(_boxMin, interactionLength);
-  auto haloMax = utils::ArrayMath::addScalar(boxMax, interactionLength);
-  for (int unsigned i = 0; i < numHaloParticles;) {
-    auto position = random3D(haloMin, haloMax);
-    if (!utils::inBox(position, _boxMin, boxMax)) {
-      auto particle = Molecule(position, {0, 0, 0}, i);
-      container->addHaloParticle(particle);
-      ++i;
-    }
+  for (int unsigned i = 0; i < numHaloParticles; ++i) {
+    auto position = haloParticlePositions[i];
+    auto particle = Molecule(position, {0, 0, 0}, numParticles + i);
+    container->addHaloParticle(particle);
   }
 
   // Obtain a compatible traversal
@@ -597,6 +583,10 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
       .Times(testing::AtLeast(1))
       .WillRepeatedly(testing::WithArgs<0, 1>([&](auto &i, auto &j) {
         ++numPairs;
+
+        if (i.getID() == 3 and j.getID() == 15) {
+          printf("Got it\n");
+        }
 
         // Store the particle pair interaction if it is within cutoff range
         auto dr = utils::ArrayMath::sub(i.getR(), j.getR());
@@ -642,6 +632,11 @@ TEST_P(OctreeTest, testCustomParticleDistribution) {
   constexpr double rel_err_tolerance = 1.0e-10;
   constexpr double rel_err_tolerance_globals = 1.0e-12;
 
+  std::array<double, 3> _boxMin{0, 0, 0};
+  double _cutoff{1.};
+  double skin = _cutoff * 0.1;
+  double interactionLength = _cutoff + skin;
+
   // Obtain a starting configuration
   auto containerOption = ContainerOption::octree;
   auto traversalOption = TraversalOption::ot_c01;
@@ -652,15 +647,43 @@ TEST_P(OctreeTest, testCustomParticleDistribution) {
   auto particleDeletionPosition =
       false;  // TODO: Change this to DeletionPosition::never or something more reasonable in general and put it back in
 
+  // Pre-generate the particles
+
+  // Initialize the RNG in order to be able to initialize both containers with the same particles
+  srand(1234);
+
+  // Fill a smaller portion of the octree region with particles
+  std::vector<std::array<double, 3>> particlePositions;
+  auto boxCenter = utils::ArrayMath::add(_boxMin, boxMax);
+  boxCenter = utils::ArrayMath::mulScalar(boxCenter, 0.5);
+  for (int unsigned i = 0; i < numParticles; ++i) {
+    auto position = random3D(_boxMin, boxMax);
+    particlePositions.push_back(position);
+  }
+
+  // Fill the area around the octree with halo particles
+  std::vector<std::array<double, 3>> haloParticlePositions;
+  auto haloMin = utils::ArrayMath::subScalar(_boxMin, interactionLength);
+  auto haloMax = utils::ArrayMath::addScalar(boxMax, interactionLength);
+  for (int unsigned i = 0; i < numHaloParticles;) {
+    auto position = random3D(haloMin, haloMax);
+    if (!utils::inBox(position, _boxMin, boxMax)) {
+      haloParticlePositions.push_back(position);
+      ++i;
+    }
+  }
+
   // Calculate the forces using the octree
   auto [calculatedPositions, calculatedForces, calculatedPairs] =
       calculateForcesAndPairs(containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles,
-                              numHaloParticles, boxMax, cellSizeFactor, doSlightShift);
+                              numHaloParticles, _boxMin, boxMax, cellSizeFactor, doSlightShift, _cutoff, skin,
+                              interactionLength, particlePositions, haloParticlePositions);
 
   // Calculate the forces using the reference implementation
   auto [referencePositions, referenceForces, referencePairs] = calculateForcesAndPairs(
       autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c08, autopas::DataLayoutOption::aos,
-      autopas::Newton3Option::enabled, numParticles, numHaloParticles, boxMax, cellSizeFactor, doSlightShift);
+      autopas::Newton3Option::enabled, numParticles, numHaloParticles, _boxMin, boxMax, cellSizeFactor, doSlightShift,
+      _cutoff, skin, interactionLength, particlePositions, haloParticlePositions);
 
   // Calculate which pairs are in the set difference between the reference pairs and the calculated pairs
   std::sort(calculatedPairs.begin(), calculatedPairs.end());
