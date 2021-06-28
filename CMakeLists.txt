@@ -46,18 +46,24 @@ if (NOT CMAKE_BUILD_TYPE)
             STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel."
             FORCE
     )
-endif (NOT CMAKE_BUILD_TYPE)
+endif ()
 
 enable_testing()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/)
 
+option(AUTOPAS_FORMATTING_TARGETS
+       "Adds targets for code formatting in AutoPas. Highly useful when developing AutoPas but might cause conflicts when only using it."
+       OFF)
+if(AUTOPAS_FORMATTING_TARGETS)
+    include(clang-format)
+    include(cmake-format)
+    include(format)
+endif ()
+
 include(ccache)
-include(clang-format)
 include(clang-sanitizers)
 include(clang-tidy)
-include(cmake-format)
-include(format)
 include(CodeCoverageAutopas)
 include(OpenMP)
 include(mpi)
