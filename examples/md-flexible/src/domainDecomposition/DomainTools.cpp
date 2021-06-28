@@ -60,7 +60,7 @@ double getDistanceToDomain(const std::vector<double> &coordinates, std::vector<d
 double getDistanceToDomain(const std::array<double, 3> &coordinates, std::array<double, 3> &boxMin,
                            std::array<double, 3> &boxMax) {
   if (coordinates.size() == boxMin.size() && coordinates.size() == boxMax.size()) {
-    std::vector<double> differences(coordinates.size(), 0.0);
+    std::array<double, 3> differences;
     for (int i = 0; i < coordinates.size(); ++i) {
       if (coordinates[i] < boxMin[i]) {
         differences[i] = boxMin[i] - coordinates[i];
@@ -69,7 +69,7 @@ double getDistanceToDomain(const std::array<double, 3> &coordinates, std::array<
       }
     }
     
-    return autopas::utils::ArrayMath(differences);
+    return autopas::utils::ArrayMath::L2Norm(differences);
   }
   return -1;
 }

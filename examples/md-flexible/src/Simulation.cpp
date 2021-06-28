@@ -191,6 +191,9 @@ void Simulation::printProgress(size_t iterationProgress, size_t maxIterations, b
   struct winsize w {};
   ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
   auto terminalWidth = w.ws_col;
+  if (terminalWidth == 0){
+    terminalWidth = 100;
+  }
   // the bar should fill the terminal window so subtract everything else (-2 for "] ")
   size_t maxBarWidth = terminalWidth - info.str().size() - progressbar.str().size() - 2;
   // sanity check for underflow
