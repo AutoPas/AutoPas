@@ -41,11 +41,7 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
       std::array<double, 3> newBoxMin = {};
       std::array<double, 3> newBoxMax = {};
       for (auto d = 0; d < 3; ++d) {
-#if 1
         auto mask = 4 >> d;
-#else
-        auto mask = 1 << d;
-#endif
         newBoxMin[d] = !(i & mask) ? boxMin[d] : center[d];
         newBoxMax[d] = !(i & mask) ? center[d] : boxMax[d];
       }
@@ -187,6 +183,10 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
     // Only take the children that are allowed (i.e. those which are in the given directions list)
     for (auto d : directions) {
       int childIndex = vertexToIndex(d);
+      if (childIndex == -1) {
+        throw std::runtime_error("[OctreeInnerNode.h] Calculated invalid child index");
+      }
+
       auto child = getChild(childIndex);
       auto childLeaves = child->getLeavesFromDirections(directions);
       result.insert(result.end(), childLeaves.begin(), childLeaves.end());
