@@ -179,15 +179,6 @@ class RegularGridDecomposition final : public DomainDecomposition {
   std::vector<double> _localBoxMax;
 
   /**
-   * Stores the maximum and minimum coordinates of all halo boxes.
-   * The halo box coordinates differ only at a single index from the local box coordinates. Therfore it is
-   * enough to store 2 values for each neighbour.
-   * The values for the left neighbour in the nth dimension are starting at index 4 * n.
-   * The values for the right neighbour in the nth dimension are starting at index 4 * n + 2.
-   */
-  std::vector<double> _haloBoxes;
-
-  /**
    * A temporary buffer used for MPI send requests.
    */
   std::vector<autopas::AutoPas_MPI_Request> _sendRequests;
@@ -236,11 +227,6 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Updates the local box.
    */
   void updateLocalBox();
-
-  /**
-   * Updates the boxes used to identify halo particles.
-   */
-  void updateHaloBoxes();
 
   /**
    * Sends particles of type ParticleType to a receiver.
