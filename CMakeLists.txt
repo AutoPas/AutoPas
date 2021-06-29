@@ -70,17 +70,17 @@ cmake_dependent_option(AUTOPAS_FORMATTING_TARGETS
 )
 
 if(AUTOPAS_FORMATTING_TARGETS)
-    include(clang-format)
-    include(cmake-format)
-    include(format)
+    include(autopas_clang-format)
+    include(autopas_cmake-format)
+    include(autopas_format)
 endif ()
 
-include(ccache)
-include(clang-sanitizers)
-include(clang-tidy)
-include(CodeCoverageAutopas)
-include(OpenMP)
-include(mpi)
+include(autopas_ccache)
+include(autopas_clang-sanitizers)
+include(autopas_clang-tidy)
+include(autopas_CodeCoverage)
+include(autopas_OpenMP)
+include(autopas_mpi)
 
 include(version.cmake)
 
@@ -93,16 +93,16 @@ add_subdirectory(src)
 add_subdirectory(tools)
 
 # modules needing targets:
-include(coloring)
-include(logging)
-include(other-compileroptions)
-include(vectorization)
+include(autopas_coloring)
+include(autopas_logging)
+include(autopas_other-compileroptions)
+include(autopas_vectorization)
 
 # tests and examples
 add_subdirectory(examples)
 add_subdirectory(tests)
 
-include(doxygen) # does not really need a target but the variable AUTOPAS_BUILD_EXAMPLES, which is defined in examples.
+include(autopas_doxygen) # does not really need a target but the variable AUTOPAS_BUILD_EXAMPLES, which is defined in examples.
 
 # write version information
 include(CMakePackageConfigHelpers)
