@@ -144,7 +144,16 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    */
   bool updateHaloParticle(const ParticleType &haloParticle) override {
     printf("Johannes' Octree::updateHaloParticle\n");
-    return true;
+    // TODO(johannes): This is not very efficient
+    std::vector<Particle *> haloParticles;
+    this->_cells[CellTypes::HALO].appendAllParticles(haloParticles);
+    for(Particle *test : haloParticles) {
+      if(test->getID() == haloParticle.getID()) {
+        *test = haloParticle; // Update the actual particle
+        return true;
+      }
+    }
+    return false;
   }
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
