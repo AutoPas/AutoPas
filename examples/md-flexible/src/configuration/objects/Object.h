@@ -54,7 +54,7 @@ class Object {
     particle.id = particleId;
     particle.typeId = _typeId;
     particle.ownershipState = autopas::OwnershipState::owned;
-    particle.velocity = velocity;
+    particle.velocity = _velocity;
     particle.force = {0.0, 0.0, 0.0};
     particle.oldForce = {0.0, 0.0, 0.0};
 

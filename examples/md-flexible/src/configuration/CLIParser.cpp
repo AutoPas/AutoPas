@@ -7,7 +7,6 @@
 #include "CLIParser.h"
 
 #include <sys/stat.h>
-
 #include <any>
 #include <fstream>
 
@@ -41,7 +40,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.verletRebuildFrequency, config.vtkFileName, config.vtkWriteFrequency, config.selectorStrategy,
       config.yamlFilename, config.distributionStdDev, config.globalForce, zshCompletionsOption, helpOption)};
 
-  constexpr auto relevantOptionsSize = std::tuple_size<decltype(relevantOptions)>{};
+  constexpr auto relevantOptionsSize = std::tuple_size_v<decltype(relevantOptions)>;
 
   // sanity check that all getopt chars are unique. Brackets for scoping.
   {

@@ -18,8 +18,7 @@
 /**
  * Parser for input from the command line.
  */
-namespace MDFlexParser {
-namespace CLIParser {
+namespace MDFlexParser::CLIParser {
 /**
  * Checks if a checkpoint or yaml file is specified in the given command line arguments.
  * If any files are found, their paths are saves in the respective fields of the given configuration.
@@ -150,5 +149,4 @@ void createZSHCompletionFile(const std::tuple<T...> &cliOptions) {
   std::cout << "Created file: " << filename << std::endl;
 }
 
-}  // namespace CLIParser
-}  // namespace MDFlexParser
+}  // namespace MDFlexParser::CLIParser

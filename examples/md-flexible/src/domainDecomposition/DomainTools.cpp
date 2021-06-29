@@ -5,6 +5,7 @@
  */
 #include "DomainTools.h"
 
+#include <algorithm>
 #include <cmath>
 #include <list>
 
