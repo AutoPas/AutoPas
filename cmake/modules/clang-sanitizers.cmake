@@ -1,6 +1,18 @@
-option(AUTOPAS_ENABLE_ADDRESS_SANITIZER "Adds clang's address sanitizer to the build options" OFF)
-option(AUTOPAS_ENABLE_MEMORY_SANITIZER "Adds clang's memory sanitizer to the build options" OFF)
-option(AUTOPAS_ENABLE_THREAD_SANITIZER "Adds clang's thread sanitizer to the build options" OFF)
+cmake_dependent_option(AUTOPAS_ENABLE_ADDRESS_SANITIZER "Adds clang's address sanitizer to the build options"
+        OFF
+        AUTOPAS_STANDALONE_BUILD
+        OFF
+)
+cmake_dependent_option(AUTOPAS_ENABLE_MEMORY_SANITIZER "Adds clang's memory sanitizer to the build options"
+        OFF
+        AUTOPAS_STANDALONE_BUILD
+        OFF
+)
+cmake_dependent_option(AUTOPAS_ENABLE_THREAD_SANITIZER "Adds clang's thread sanitizer to the build options"
+        OFF
+        AUTOPAS_STANDALONE_BUILD
+        OFF
+)
 
 if (
     AUTOPAS_ENABLE_ADDRESS_SANITIZER

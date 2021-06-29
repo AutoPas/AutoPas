@@ -1,5 +1,10 @@
 # make exapmles optional. Useful when only the library is needed.
-option(AUTOPAS_BUILD_EXAMPLES "Build examples." ON)
+cmake_dependent_option(AUTOPAS_BUILD_EXAMPLES
+        "Build examples."
+        ON
+        AUTOPAS_STANDALONE_BUILD
+        OFF
+)
 
 # do nothing if nothing should be done
 if (NOT AUTOPAS_BUILD_EXAMPLES)

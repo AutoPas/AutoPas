@@ -1,4 +1,9 @@
-option(AUTOPAS_CODE_COVERAGE "Code Coverage" OFF)
+cmake_dependent_option(AUTOPAS_CODE_COVERAGE
+        "Code Coverage"
+        OFF
+        AUTOPAS_STANDALONE_BUILD
+        OFF
+)
 
 if (AUTOPAS_CODE_COVERAGE MATCHES ON)
     if (CMAKE_BUILD_TYPE MATCHES Debug)

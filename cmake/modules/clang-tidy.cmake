@@ -1,5 +1,10 @@
-option(AUTOPAS_ENABLE_CLANG_TIDY "Add clang-tidy automatically to builds")
-# set(AUTOPAS_ENABLE_CLANG_TIDY ON BOOL "Add clang-tidy automatically to builds")
+cmake_dependent_option(AUTOPAS_ENABLE_CLANG_TIDY
+        "Add clang-tidy automatically to builds"
+        OFF
+        AUTOPAS_STANDALONE_BUILD
+        OFF
+)
+
 if (AUTOPAS_ENABLE_CLANG_TIDY)
     find_program(CLANG_TIDY_EXE NAMES "clang-tidy" DOC "Path to clang-tidy executable")
     if (CLANG_TIDY_EXE)

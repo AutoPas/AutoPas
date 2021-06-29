@@ -13,6 +13,16 @@ cmake_policy(SET CMP0079 NEW)
 set(AUTOPAS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(AUTOPAS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
+include(CMakeDependentOption)
+
+# Determine if AutoPas is built as the primary project or not.
+cmake_dependent_option(AUTOPAS_STANDALONE_BUILD
+        "Add options and targets which are only relevant for developers of AutoPas"
+        ON
+        "AUTOPAS_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR"
+        OFF
+)
+
 # starting with cmake 3.17 this is set using target_compile_features.
 if (CMAKE_VERSION VERSION_LESS 3.17)
     message(
@@ -52,9 +62,13 @@ enable_testing()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/)
 
-option(AUTOPAS_FORMATTING_TARGETS
-       "Adds targets for code formatting in AutoPas. Highly useful when developing AutoPas but might cause conflicts when only using it."
-       OFF)
+cmake_dependent_option(AUTOPAS_FORMATTING_TARGETS
+        "Adds targets for code formatting in AutoPas. Highly useful when developing AutoPas but might cause conflicts when only using it."
+        ON
+        AUTOPAS_STANDALONE_BUILD
+        OFF
+)
+
 if(AUTOPAS_FORMATTING_TARGETS)
     include(clang-format)
     include(cmake-format)
