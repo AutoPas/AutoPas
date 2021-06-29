@@ -80,7 +80,7 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
    * @copydoc OctreeNodeInterface::appendAllParticles()
    */
   void appendAllParticles(std::vector<Particle *> &ps) override {
-    for(Particle &p : this->_particles) {
+    for (Particle &p : this->_particles) {
       ps.push_back(&p);
     }
   }

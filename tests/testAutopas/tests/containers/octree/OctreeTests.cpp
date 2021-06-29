@@ -575,7 +575,7 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
     // TODO(johannes): Shift the particles
   }
 
-  //std::cout << "Container switch to " << autopas::ContainerOption::getOptionNames()[containerOption] << "\n";
+  // std::cout << "Container switch to " << autopas::ContainerOption::getOptionNames()[containerOption] << "\n";
 
   // Specify the behavior that should be executed for each particle pair
   int unsigned numPairs = 0;
