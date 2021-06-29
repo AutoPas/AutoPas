@@ -147,9 +147,9 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     // TODO(johannes): This is not very efficient
     std::vector<Particle *> haloParticles;
     this->_cells[CellTypes::HALO].appendAllParticles(haloParticles);
-    for(Particle *test : haloParticles) {
-      if(test->getID() == haloParticle.getID()) {
-        *test = haloParticle; // Update the actual particle
+    for (Particle *test : haloParticles) {
+      if (test->getID() == haloParticle.getID()) {
+        *test = haloParticle;  // Update the actual particle
         return true;
       }
     }
