@@ -66,24 +66,6 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
 
   bool tune(bool currentInvalid) override;
 
-  void reset(size_t iteration) override {
-    _optimalConfiguration = Configuration();
-    _allGlobalConfigurationsTested = false;
-    _allLocalConfigurationsTested = false;
-    _strategyStillWorking = true;
-    if (_configIterator != nullptr) {
-      _configIterator.reset();
-    }
-    try {
-      _tuningStrategy->reset(iteration);
-    } catch (utils::ExceptionHandler::AutoPasException &exception) {
-      AutoPasLog(warn,
-                 "MPIParallelizedStrategy: Underlying strategy failed (with error: {}). Reverting to fallback-mode.",
-                 exception.what());
-      setupFallbackOptions();
-    }
-  }
-
   /**
    * Reset all internal parameters to the beginning of a new tuning cycle.
    * Also distribute ranks in buckets for MPI tuning
@@ -94,7 +76,7 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
    * @param MPITuningWeightForMaxDensity For MPI-tuning: Weight for maxDensity in the calculation for bucket distribution.
    */
   template <class Particle>
-  void resetMpi(size_t iteration, std::shared_ptr<autopas::ParticleContainerInterface<Particle>> container,
+  void reset(size_t iteration, std::shared_ptr<autopas::ParticleContainerInterface<Particle>> container,
                 double MPITuningMaxDifferenceForBucket, double MPITuningWeightForMaxDensity) {
     _optimalConfiguration = Configuration();
     _allGlobalConfigurationsTested = false;

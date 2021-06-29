@@ -8,12 +8,12 @@
 
 #include "ThreeDimensionalMapping.h"
 #include "autopas/containers/ParticleContainerInterface.h"
-#include "autopas/molecularDynamics/MoleculeLJ.h"
 
 namespace autopas::utils {
 
 /**
- * calculates homogeneity and max density of given AutoPas simulation
+ * Calculates homogeneity and max density of given AutoPas simulation.
+ * Both values are computed at once to avoid iterating over the same space twice.
  * homogeneity > 0.0, normally < 1.0, but for extreme scenarios > 1.0
  * maxDensity > 0.0, normally < 3.0, but for extreme scenarios >> 3.0
  *
@@ -24,21 +24,21 @@ namespace autopas::utils {
 template <class Particle>
 std::pair<double, double> calculateHomogeneityAndMaxDensity(
     const std::shared_ptr<autopas::ParticleContainerInterface<Particle>> &container) {
-  size_t numberOfParticles = container->getNumParticles();
+  const size_t numberOfParticles = container->getNumParticles();
   // approximately the resolution we want to get.
   size_t numberOfCells = ceil(numberOfParticles / 10.);
 
-  std::array<double, 3> startCorner = container->getBoxMin();
-  std::array<double, 3> endCorner = container->getBoxMax();
+  const std::array<double, 3> startCorner = container->getBoxMin();
+  const std::array<double, 3> endCorner = container->getBoxMax();
   std::array<double, 3> domainSizePerDimension = {};
   for (int i = 0; i < 3; ++i) {
     domainSizePerDimension[i] = endCorner[i] - startCorner[i];
   }
 
   // get cellLength which is equal in each direction, derived from the domainsize and the requested number of cells
-  double volume = domainSizePerDimension[0] * domainSizePerDimension[1] * domainSizePerDimension[2];
-  double cellVolume = volume / numberOfCells;
-  double cellLength = cbrt(cellVolume);
+  const double volume = domainSizePerDimension[0] * domainSizePerDimension[1] * domainSizePerDimension[2];
+  const double cellVolume = volume / numberOfCells;
+  const double cellLength = cbrt(cellVolume);
 
   // calculate the size of the boundary cells, which might be smaller then the other cells
   std::array<size_t, 3> cellsPerDimension = {};
@@ -57,7 +57,7 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(
 
   // add particles accordingly to their cell to get the amount of particles in each cell
   for (auto particleItr = container->begin(autopas::IteratorBehavior::owned); particleItr.isValid(); ++particleItr) {
-    std::array<double, 3> particleLocation = particleItr->getR();
+    const std::array<double, 3> particleLocation = particleItr->getR();
     std::array<size_t, 3> index = {};
     for (int i = 0; (size_t)i < particleLocation.size(); i++) {
       index[i] = particleLocation[i] / cellLength;
@@ -88,7 +88,7 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(
   }
 
   // get mean and reserve variable for densityVariance
-  double densityMean = numberOfParticles / volume;
+  const double densityMean = numberOfParticles / volume;
   double densityVariance = 0.0;
 
   // calculate densityVariance
@@ -99,7 +99,7 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(
 
   // finally calculate standard deviation
   // normally
-  double homogeneity = sqrt(densityVariance);
+  const double homogeneity = sqrt(densityVariance);
   return {homogeneity, maxDensity};
 }
 

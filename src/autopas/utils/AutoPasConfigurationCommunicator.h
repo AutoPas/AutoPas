@@ -97,35 +97,37 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket,
   int commSize;
   AutoPas_MPI_Comm_size(comm, &commSize);
 
-  std::vector<double> scenarios(commSize);
-  std::pair<double, double> homogeneityAndMaxDensity =
-      autopas::utils::calculateHomogeneityAndMaxDensity<Particle>(container);
-  double scenario = homogeneityAndMaxDensity.first + MPITuningWeightForMaxDensity * homogeneityAndMaxDensity.second;
+  std::vector<double> similarityMetrics(commSize);
+  const auto [homogeneity, maxDensity] = autopas::utils::calculateHomogeneityAndMaxDensity<Particle>(container);
+  double similarityMetric = homogeneity + MPITuningWeightForMaxDensity * maxDensity;
 
-  AutoPas_MPI_Allgather(&scenario, 1, AUTOPAS_MPI_DOUBLE, scenarios.data(), 1, AUTOPAS_MPI_DOUBLE, comm);
+  // get all the similarityMetrics of the other ranks
+  AutoPas_MPI_Allgather(&similarityMetric, 1, AUTOPAS_MPI_DOUBLE, similarityMetrics.data(), 1, AUTOPAS_MPI_DOUBLE, comm);
 
-  std::sort(scenarios.begin(), scenarios.end());
+  // sort all values
+  std::sort(similarityMetrics.begin(), similarityMetrics.end());
 
+  // calculate absolute differences between neighbouring values
   std::vector<double> differences;
-  std::adjacent_difference(scenarios.begin(), scenarios.end(), std::back_inserter(differences));
+  std::adjacent_difference(similarityMetrics.begin(), similarityMetrics.end(), std::back_inserter(differences));
 
   // convert differences to percentage changes
-  std::transform(differences.begin(), differences.end(), scenarios.begin(), differences.begin(),
-                 std::divides<double>());
+  std::transform(differences.begin(), differences.end(), similarityMetrics.begin(), differences.begin(),
+                 std::divides<>());
 
   int current_bucket = 0;
   int my_bucket = 0;
-  // print out the results
 
-  for (int i = 0; (size_t)i < scenarios.size(); i++) {
-    // if a difference exceeds 20%, start a new group:
+  for (int i = 0; (size_t)i < similarityMetrics.size(); i++) {
+    // if a difference exceeds MPITuningMaxDifferenceForBucket, start a new bucket
     if (differences[i] > MPITuningMaxDifferenceForBucket) current_bucket++;
 
-    // print out an item:
+    // debug print for evaluation
     AutoPasLog(debug, "rank: " + std::to_string(rank) + " bucket: " + std::to_string(current_bucket) +
-                          "  new value: " + std::to_string(scenarios[i]));
-    if (scenarios[i] == scenario) my_bucket = current_bucket;
+                          "  new value: " + std::to_string(similarityMetrics[i]));
+    if (similarityMetrics[i] == similarityMetric) my_bucket = current_bucket;
   }
+  // split MPI_Comm in as many new communications as there are groups with similar scenarios
   AutoPas_MPI_Comm_split(comm, my_bucket, rank, bucket);
 }
 

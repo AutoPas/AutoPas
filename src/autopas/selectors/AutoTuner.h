@@ -449,16 +449,14 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
   tuningTimer.start();
   // first tuning iteration -> reset to first config
   if (_iterationsSinceTuning == _tuningInterval) {
-#ifdef AUTOPAS_INTERNODE_TUNING
+    // FIXME: replace try,catch with if,else
     try {
       auto &mpiStrategy = dynamic_cast<MPIParallelizedStrategy &>(*_tuningStrategy);
-      mpiStrategy.resetMpi<Particle>(_iteration, getContainer(), _mpiTuningMaxDifferenceForBucket, _mpiTuningWeightForMaxDensity);
+      mpiStrategy.reset<Particle>(_iteration, getContainer(), _mpiTuningMaxDifferenceForBucket,
+                                  _mpiTuningWeightForMaxDensity);
     } catch (std::bad_cast &bad_cast) {
       _tuningStrategy->reset(_iteration);
     }
-#else
-    _tuningStrategy->reset(_iteration);
-#endif
   } else {  // enough samples -> next config
     stillTuning = _tuningStrategy->tune();
   }
