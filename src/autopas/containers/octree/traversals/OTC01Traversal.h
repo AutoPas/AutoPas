@@ -77,7 +77,7 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
   void traverseParticlePairs() override {
     auto *haloWrapper = getHalo();
 
-#if 1
+#if 0
     // FOR DEBUGGING ONLY
     // Log all owned leaves for this octree
     fclose(OctreeLogger::leavesToJSON(fopen("owned.json", "w"), _ownedLeaves));
@@ -110,24 +110,8 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
 
       for (OctreeLeafNode<Particle> *neighborLeaf : haloNeighbors) {
         _cellFunctor.processCellPair(*leaf, *neighborLeaf);
-
-        // Apply the reverse direction here since it is guaranteed that there is no reverse pass
-        //_cellFunctor.processCellPair(*neighborLeaf, *leaf);
       }
     }
-
-#if 0
-    for (OctreeLeafNode<Particle> *leaf : _haloLeaves) {
-      // Process halo cell itself
-      _cellFunctor.processCell(*leaf);
-
-      // Process connection to all neighbors in this octree
-      auto uniqueNeighboringLeaves = leaf->getNeighborLeaves();
-      for (OctreeLeafNode<Particle> *neighborLeaf : uniqueNeighboringLeaves) {
-        _cellFunctor.processCellPair(*leaf, *neighborLeaf);
-      }
-    }
-#endif
   }
 
   /**
