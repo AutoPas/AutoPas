@@ -188,11 +188,13 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
   }
 
   /**
-   * Get the number of particles that belong to this octree. (Only the owned particles.)
+   * Get the number of particles that belong to this octree. (Owned and and halo.)
    *
    * @return The integer # of particles in the container
    */
-  [[nodiscard]] unsigned long getNumParticles() const override { return this->_cells[CellTypes::OWNED].numParticles(); }
+  [[nodiscard]] unsigned long getNumParticles() const override {
+    return this->_cells[CellTypes::OWNED].numParticles() + this->_cells[CellTypes::HALO].numParticles();
+  }
 
   /**
    * Deletes all particles from the container.
