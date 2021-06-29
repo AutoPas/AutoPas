@@ -112,10 +112,11 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
         _cellFunctor.processCellPair(*leaf, *neighborLeaf);
 
         // Apply the reverse direction here since it is guaranteed that there is no reverse pass
-        _cellFunctor.processCellPair(*neighborLeaf, *leaf);
+        //_cellFunctor.processCellPair(*neighborLeaf, *leaf);
       }
     }
 
+#if 0
     for (OctreeLeafNode<Particle> *leaf : _haloLeaves) {
       // Process halo cell itself
       _cellFunctor.processCell(*leaf);
@@ -126,6 +127,7 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
         _cellFunctor.processCellPair(*leaf, *neighborLeaf);
       }
     }
+#endif
   }
 
   /**

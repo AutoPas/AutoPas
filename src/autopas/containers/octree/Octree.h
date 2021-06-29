@@ -81,8 +81,14 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
 
     // leaving: all outside boxMin/Max
 
+    // TODO(johannes): Make this less indirect. (Find a better way to iterate all particles inside the octree to change
+    //  this function back to a function that actually copies all particles out of the octree.)
+    std::vector<Particle *> particleRefs;
+    this->_cells[CellTypes::OWNED].appendAllParticles(particleRefs);
     std::vector<Particle> particles;
-    this->_cells[CellTypes::OWNED].appendAllParticles(particles);
+    for(auto *p : particleRefs) {
+      particles.push_back(*p);
+    }
 
     deleteAllParticles();
 

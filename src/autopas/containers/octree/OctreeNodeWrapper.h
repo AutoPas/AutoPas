@@ -47,7 +47,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * Append all particles in the octree to a list using DFS.
    * @param ps The list to which the particles should be appended to
    */
-  void appendAllParticles(std::vector<Particle> &ps) { _pointer->appendAllParticles(ps); }
+  void appendAllParticles(std::vector<Particle *> &ps) { _pointer->appendAllParticles(ps); }
 
   /**
    * Append all leaves in the octree to a list.
@@ -134,13 +134,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @param index The index of the particle
    * @return A ref to a particle
    */
-  Particle &at(size_t index) {
-    // TODO: This is really bad
-    static std::vector<Particle> ps;
-    ps.clear();
-    _pointer->appendAllParticles(ps);
-    return ps[index];
-  }
+  Particle &at(size_t index) { return getFromReloadingIterator(index); }
 
   /**
    * Get a particle from the iterator
@@ -148,13 +142,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @param index The index of the particle
    * @return A const ref to a particle
    */
-  const Particle &at(size_t index) const {
-    // TODO: This is really bad
-    static std::vector<Particle> ps;
-    ps.clear();
-    _pointer->appendAllParticles(ps);
-    return ps[index];
-  }
+  const Particle &at(size_t index) const { return getFromReloadingIterator(index); }
 
   /**
    * Find all leaves below this subtree that are in the given range.
@@ -184,6 +172,17 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
   using const_iterator_t = internal::SingleCellIterator<Particle, OctreeNodeWrapper<Particle>, false>;
 
  private:
+  Particle &getFromReloadingIterator(size_t index) const {
+    static std::vector<Particle *> ps;
+    // Reload the buffer only when the index is zero, this saves a little bit of compute time, since only one
+    // "traversal" of the octree is required in order to gather all particles
+    if (index == 0) {
+      ps.clear();
+      _pointer->appendAllParticles(ps);
+    }
+    return *ps[index];
+  }
+
   std::unique_ptr<OctreeNodeInterface<Particle>> _pointer;
 };
 }  // namespace autopas

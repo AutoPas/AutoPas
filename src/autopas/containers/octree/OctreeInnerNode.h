@@ -72,7 +72,7 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
   /**
    * @copydoc OctreeNodeInterface::appendAllParticles()
    */
-  void appendAllParticles(std::vector<Particle> &ps) override {
+  void appendAllParticles(std::vector<Particle *> &ps) override {
     // An inner node does not contain particles, traverse down to the children.
     for (auto &child : _children) {
       child->appendAllParticles(ps);

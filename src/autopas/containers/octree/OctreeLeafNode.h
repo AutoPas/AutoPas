@@ -79,8 +79,10 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
   /**
    * @copydoc OctreeNodeInterface::appendAllParticles()
    */
-  void appendAllParticles(std::vector<Particle> &ps) override {
-    ps.insert(ps.end(), this->_particles.begin(), this->_particles.end());
+  void appendAllParticles(std::vector<Particle *> &ps) override {
+    for(Particle &p : this->_particles) {
+      ps.push_back(&p);
+    }
   }
 
   /**

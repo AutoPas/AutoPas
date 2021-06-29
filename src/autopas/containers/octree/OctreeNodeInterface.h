@@ -58,7 +58,7 @@ class OctreeNodeInterface {
    * Put all particles that are below this node into the vector.
    * @param ps A reference to the vector that should contain the particles after the operation
    */
-  virtual void appendAllParticles(std::vector<Particle> &ps) = 0;
+  virtual void appendAllParticles(std::vector<Particle *> &ps) = 0;
 
   /**
    * Put the min/max corner coordinates of every leaf into the vector.
