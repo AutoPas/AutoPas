@@ -6,9 +6,6 @@
 
 #include "OctreeTests.h"
 
-#include <autopas/molecularDynamics/LJFunctor.h>
-#include <autopas/selectors/ContainerSelector.h>
-#include <autopas/utils/StaticCellSelector.h>
 #include <testingHelpers/commonTypedefs.h>
 
 #include <cstdio>
@@ -18,8 +15,11 @@
 #include "autopas/containers/octree/Octree.h"
 #include "autopas/containers/octree/OctreeDirection.h"
 #include "autopas/containers/octree/OctreeNodeInterface.h"
+#include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/particles/Particle.h"
+#include "autopas/selectors/ContainerSelector.h"
+#include "autopas/utils/StaticCellSelector.h"
 
 using ::testing::_;
 
@@ -575,7 +575,8 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
     // TODO(johannes): Shift the particles
   }
 
-  std::cout << "Container switch to " << autopas::ContainerOption::getOptionNames()[containerOption] << "\n";
+  //std::cout << "Container switch to " << autopas::ContainerOption::getOptionNames()[containerOption] << "\n";
+
   // Specify the behavior that should be executed for each particle pair
   int unsigned numPairs = 0;
   std::vector<std::tuple<unsigned long, unsigned long, double>> particlePairs;
@@ -588,12 +589,9 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
         // Store the particle pair interaction if it is within cutoff range
         auto dr = utils::ArrayMath::sub(i.getR(), j.getR());
         double dr2 = utils::ArrayMath::dot(dr, dr);
-        if (dr2 <= _cutoffsquare) {
+        // Exclude halo interactions from the diff since they are the wrong way around sometimes.
+        if (dr2 <= _cutoffsquare and i.getID() < numParticles and j.getID() < numHaloParticles) {
           particlePairs.template emplace_back(i.getID(), j.getID(), dr2);
-        }
-
-        if ((i.getID() == 48 and j.getID() == 47) or (i.getID() == 47 and j.getID() == 48)) {
-          printf("Interaction between %lu<-%lu\n", i.getID(), j.getID());
         }
 
         // Do, what the LJ functor would do
@@ -608,7 +606,9 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
   container->iteratePairwise(traversal.get());
   mockFunctor.endTraversal(newton3Option);
 
-  printf("Johannes' AoS functor called %d times\n", numPairs);
+  // TODO(johannes): This is an interesting metric, find out whether there is "turning" point in which the octree has
+  //  less interactions
+  // printf("Johannes' AoS functor called %d times\n", numPairs);
 
   // Obtain all calculated forces
   std::vector<std::array<double, 3>> forces(numParticles), positions(numParticles);

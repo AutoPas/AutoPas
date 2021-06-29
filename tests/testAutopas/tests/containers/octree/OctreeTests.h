@@ -6,9 +6,6 @@
 
 #pragma once
 
-#include <autopas/options/ContainerOption.h>
-#include <autopas/options/Newton3Option.h>
-#include <autopas/options/TraversalOption.h>
 #include <gtest/gtest.h>
 #include <testingHelpers/commonTypedefs.h>
 
@@ -16,6 +13,9 @@
 #include <vector>
 
 #include "AutoPasTestBase.h"
+#include "autopas/options/ContainerOption.h"
+#include "autopas/options/Newton3Option.h"
+#include "autopas/options/TraversalOption.h"
 #include "mocks/MockFunctor.h"
 
 /**
