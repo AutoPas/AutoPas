@@ -40,7 +40,7 @@ TEST_F(OctreeTest, testDebugIndexing) {
 
   std::array<double, 3> min = {0, 0, 0}, max = {1, 1, 1};
   std::unique_ptr<OctreeNodeInterface<ParticleFP64>> root =
-      std::make_unique<OctreeLeafNode<ParticleFP64>>(min, max, nullptr, 4, 1);
+      std::make_unique<OctreeLeafNode<ParticleFP64>>(min, max, nullptr, 4, 0.1);
   // Add some dummy particles that split the nodes
   int dummyParticleCount = 8;
   for (int i = 0; i < 8; ++i) {
@@ -50,10 +50,10 @@ TEST_F(OctreeTest, testDebugIndexing) {
   int axisPairs[3][4][2] = {
       {
           // x axis cases
-          {0b000, 0b001},
-          {0b010, 0b011},
-          {0b100, 0b101},
-          {0b110, 0b111},
+          {0b000, 0b100},
+          {0b001, 0b101},
+          {0b010, 0b110},
+          {0b011, 0b111},
       },
       {
           // y axis cases
@@ -64,10 +64,10 @@ TEST_F(OctreeTest, testDebugIndexing) {
       },
       {
           // z axis cases
-          {0b000, 0b100},
-          {0b001, 0b101},
-          {0b010, 0b110},
-          {0b011, 0b111},
+          {0b000, 0b001},
+          {0b010, 0b011},
+          {0b100, 0b101},
+          {0b110, 0b111},
       },
   };
 
