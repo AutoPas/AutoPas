@@ -26,7 +26,7 @@ Please keep in mind the following notes while working.
 * To enable code formatting targets set the `cmake` variable `AUTOPAS_FORMATTING_TARGETS` to `ON`.
 * Clang format version 9 is enforced (Other versions might format slightly differently).
 * Use `make clangformat` before submitting a PR.
-* [cmake format](https://github.com/cheshirekow/cmake_format/tree/master/cmake_format) is enforced.
+* [cmake format](https://github.com/cheshirekow/cmake_format) is enforced.
 * Use `make cmakeformat` before submitting a PR.
 
 ### Comment Style
