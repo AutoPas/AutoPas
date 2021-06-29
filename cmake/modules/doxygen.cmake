@@ -1,6 +1,7 @@
 # make doc_doxygen optional if someone does not have / like doxygen
+set(AUTOPAS_BUILD_TARGET_DOC_DOC "Create \"make doc_doxygen\" target (requires Doxygen)")
 cmake_dependent_option(AUTOPAS_BUILD_TARGET_DOC
-        "Create \"make doc_doxygen\" target (requires Doxygen)"
+        ${AUTOPAS_BUILD_TARGET_DOC_DOC}
         ON
         AUTOPAS_STANDALONE_BUILD
         OFF
@@ -56,5 +57,5 @@ else ()
         WARNING
             "Doxygen needs to be installed to generate the doxygen documentation, you might also have to install dot (graphviz)"
     )
-    set(AUTOPAS_BUILD_TARGET_DOC OFF CACHE BOOL "" FORCE)
+    set(AUTOPAS_BUILD_TARGET_DOC OFF CACHE BOOL ${AUTOPAS_BUILD_TARGET_DOC_DOC} FORCE )
 endif ()
