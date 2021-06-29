@@ -94,8 +94,12 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
       addParticleImpl(particle);
     }
 
+    // This should happen according to the documentation in the ParticleContainerInterface#updateContainer
+    deleteHaloParticles();
+
     // logger.logTree(_root);
 
+    // TODO(johannes): Actually return removed particles
     auto result = std::vector<ParticleType>();
     return result;
   }
