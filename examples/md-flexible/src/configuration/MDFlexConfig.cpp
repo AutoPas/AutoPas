@@ -6,7 +6,6 @@
 #include "MDFlexConfig.h"
 
 #include "MDFlexParser.h"
-#include "autopas/utils/StringUtils.h"
 #include "src/ParticleSerializationTools.h"
 #include "src/Thermostat.h"
 
@@ -246,6 +245,10 @@ void MDFlexConfig::addParticleType(unsigned long typeId, double epsilon, double 
     sigmaMap.value.emplace(typeId, sigma);
     massMap.value.emplace(typeId, mass);
   }
+}
+
+void MDFlexConfig::flushParticles(){
+  _particles.clear();
 }
 
 void MDFlexConfig::initializeParticlePropertiesLibrary() {

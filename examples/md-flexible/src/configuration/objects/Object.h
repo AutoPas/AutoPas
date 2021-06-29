@@ -49,12 +49,12 @@ class Object {
    * @param autopas
    * @return
    */
-  [[nodiscard]] ParticleAttributes getDummyParticle(const int &particleId) const {
+  [[nodiscard]] ParticleAttributes getDummyParticle(const size_t &particleId) const {
     ParticleAttributes particle;
     particle.id = particleId;
     particle.typeId = _typeId;
     particle.ownershipState = autopas::OwnershipState::owned;
-    particle.velocity = {_velocity[0], _velocity[1], _velocity[2]};
+    particle.velocity = velocity;
     particle.force = {0.0, 0.0, 0.0};
     particle.oldForce = {0.0, 0.0, 0.0};
 

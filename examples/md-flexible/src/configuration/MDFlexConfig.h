@@ -130,6 +130,11 @@ class MDFlexConfig {
   void addParticleType(unsigned long typeId, double epsilon, double sigma, double mass);
 
   /**
+   * Flushes the particles as they are not required anymore after initialization.
+   */
+  void flushParticles();
+
+  /**
    * Choice of the functor
    */
   enum class FunctorOption { lj12_6, lj12_6_AVX, lj12_6_Globals };
@@ -452,8 +457,10 @@ class MDFlexConfig {
   /**
    * cubeGridObjects
    */
-  std::vector<CubeGrid> cubeGridObjects{}; /** * cubeGaussObjectsStr
-                                            */
+  std::vector<CubeGrid> cubeGridObjects{};
+  /**
+  * cubeGaussObjectsStr
+  */
   static inline const char *const cubeGaussObjectsStr{"CubeGauss"};
   /**
    * cubeGaussObjects
@@ -581,8 +588,7 @@ class MDFlexConfig {
   void initializeParticlePropertiesLibrary();
 
   /**
-   * Iniitalizes all particles present at the start of the simulation.
-   * The particles are contained in a normalized domain where every coordinate is between 0 and 1.
+   * Initializes all particles present at the start of the simulation.
    */
   void initializeObjects();
 

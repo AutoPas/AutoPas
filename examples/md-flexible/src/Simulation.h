@@ -157,6 +157,7 @@ class Simulation {
    * Updates the velocities of particles in the local AutoPas container.
    */
   void updateVelocities();
+
   /**
    * Updates the thermostat of for the local domain.
    * @todo The thermostat shoud act globally and therefore needs to be communicated to all processes.

@@ -90,6 +90,8 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
     }
   }
 
+  _configuration.flushParticles();
+
   if (_configuration.useThermostat.value and _configuration.deltaT.value != 0) {
     if (_configuration.addBrownianMotion.value) {
       Thermostat::addBrownianMotion(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),

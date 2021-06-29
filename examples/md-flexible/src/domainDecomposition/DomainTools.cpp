@@ -39,12 +39,7 @@ double getDistanceToDomain(const std::vector<double> &coordinates, std::vector<d
   if (coordinates.size() == boxMin.size() && coordinates.size() == boxMax.size()) {
     std::vector<double> differences(coordinates.size(), 0.0);
     for (int i = 0; i < coordinates.size(); ++i) {
-      differences[i] = std::abs(boxMin[i] - coordinates[i]);
-      if (coordinates[i] < boxMin[i]) {
-        differences[i] = boxMin[i] - coordinates[i];
-      } else if (coordinates[i] > boxMax[i]) {
-        differences[i] = coordinates[i] - boxMax[i];
-      }
+      differences[i] = std::clamp(coordinates[i], boxMin[i], boxMax[i]);
     }
 
     double distance = 0.0;
@@ -61,12 +56,8 @@ double getDistanceToDomain(const std::array<double, 3> &coordinates, std::array<
                            std::array<double, 3> &boxMax) {
   if (coordinates.size() == boxMin.size() && coordinates.size() == boxMax.size()) {
     std::array<double, 3> differences;
-    for (int i = 0; i < coordinates.size(); ++i) {
-      if (coordinates[i] < boxMin[i]) {
-        differences[i] = boxMin[i] - coordinates[i];
-      } else if (coordinates[i] > boxMax[i]) {
-        differences[i] = coordinates[i] - boxMax[i];
-      }
+    for (int i = 0; i < 3; ++i) {
+      differences[i] = std::clamp(coordinates[i], boxMin[i], boxMax[i]);
     }
     
     return autopas::utils::ArrayMath::L2Norm(differences);
@@ -98,7 +89,7 @@ void generateDecomposition(unsigned int subdomainCount, int dimensionCount, std:
   decomposition.resize(dimensionCount);
 
   for (auto &dimensionSize : decomposition) {
-    if (primeFactors.size() > 0) {
+    if (not primeFactors.empty()) {
       dimensionSize = primeFactors.front();
       primeFactors.pop_front();
     } else {
