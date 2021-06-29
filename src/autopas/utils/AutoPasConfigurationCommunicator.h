@@ -85,13 +85,13 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
  * @param comm MPI communicator
  * @param bucket new MPI communicator for its bucket
  * @param container container of current simulation
- * @param maxDifferenceForBucket maximum difference of two scenarios to get in the same bucket for MPI-tuning
- * @param weightForMaxDensity weight for maxDensity in calculation for bucket distribution
+ * @param MPITuningMaxDifferenceForBucket For MPI-tuning: Maximum of the relative difference in the comparison metric for two ranks which exchange their tuning information.
+ * @param MPITuningWeightForMaxDensity For MPI-tuning: Weight for maxDensity in the calculation for bucket distribution.
  */
 template <class Particle>
 void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket,
                               const std::shared_ptr<autopas::ParticleContainerInterface<Particle>> &container,
-                              double maxDifferenceForBucket, double weightForMaxDensity) {
+                              double MPITuningMaxDifferenceForBucket, double MPITuningWeightForMaxDensity) {
   int rank;
   AutoPas_MPI_Comm_rank(comm, &rank);
   int commSize;
@@ -100,7 +100,7 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket,
   std::vector<double> scenarios(commSize);
   std::pair<double, double> homogeneityAndMaxDensity =
       autopas::utils::calculateHomogeneityAndMaxDensity<Particle>(container);
-  double scenario = homogeneityAndMaxDensity.first + weightForMaxDensity * homogeneityAndMaxDensity.second;
+  double scenario = homogeneityAndMaxDensity.first + MPITuningWeightForMaxDensity * homogeneityAndMaxDensity.second;
 
   AutoPas_MPI_Allgather(&scenario, 1, AUTOPAS_MPI_DOUBLE, scenarios.data(), 1, AUTOPAS_MPI_DOUBLE, comm);
 
@@ -119,7 +119,7 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket,
 
   for (int i = 0; (size_t)i < scenarios.size(); i++) {
     // if a difference exceeds 20%, start a new group:
-    if (differences[i] > maxDifferenceForBucket) current_bucket++;
+    if (differences[i] > MPITuningMaxDifferenceForBucket) current_bucket++;
 
     // print out an item:
     AutoPasLog(debug, "rank: " + std::to_string(rank) + " bucket: " + std::to_string(current_bucket) +

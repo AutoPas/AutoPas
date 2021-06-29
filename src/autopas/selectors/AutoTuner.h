@@ -55,8 +55,8 @@ class AutoTuner {
    * @param verletSkin Length added to the cutoff for the Verlet lists' skin.
    * @param verletClusterSize Number of particles in a cluster to use in verlet list.
    * @param tuningStrategy Object implementing the modelling and exploration of a search space.
-   * @param maxDifferenceForBucket maximum difference of two scenarios to get in the same bucket for MPI-tuning
-   * @param weightForMaxDensity weight for maxDensity in calculation for bucket distribution
+   * @param MPITuningMaxDifferenceForBucket For MPI-tuning: Maximum of the relative difference in the comparison metric for two ranks which exchange their tuning information.
+   * @param MPITuningWeightForMaxDensity For MPI-tuning: Weight for maxDensity in the calculation for bucket distribution.
    * @param selectorStrategy Strategy for the configuration selection.
    * @param tuningInterval Number of time steps after which the auto-tuner shall reevaluate all selections.
    * @param maxSamples Number of samples that shall be collected for each combination.
@@ -64,7 +64,7 @@ class AutoTuner {
    */
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
             unsigned int verletClusterSize, std::unique_ptr<TuningStrategyInterface> tuningStrategy,
-            double maxDifferenceForBucket, double weightForMaxDensity, SelectorStrategyOption selectorStrategy,
+            double MPITuningMaxDifferenceForBucket, double MPITuningWeightForMaxDensity, SelectorStrategyOption selectorStrategy,
             unsigned int tuningInterval, unsigned int maxSamples, const std::string &outputSuffix = "")
       : _selectorStrategy(selectorStrategy),
         _tuningStrategy(std::move(tuningStrategy)),
@@ -73,8 +73,8 @@ class AutoTuner {
         _containerSelector(boxMin, boxMax, cutoff),
         _verletSkin(verletSkin),
         _verletClusterSize(verletClusterSize),
-        _maxDifferenceForBucket(maxDifferenceForBucket),
-        _weightForMaxDensity(weightForMaxDensity),
+        _mpiTuningMaxDifferenceForBucket(MPITuningMaxDifferenceForBucket),
+        _mpiTuningWeightForMaxDensity(MPITuningWeightForMaxDensity),
         _maxSamples(maxSamples),
         _samples(maxSamples),
         _iteration(0),
@@ -240,10 +240,14 @@ class AutoTuner {
   const size_t _maxSamples;
 
   /**
-   * variable for bucket distribution
+   * Parameter used For MPI-tuning: Maximum of the relative difference in the comparison metric for two ranks which exchange their tuning information.
    */
-  double _maxDifferenceForBucket;
-  double _weightForMaxDensity;
+  double _mpiTuningMaxDifferenceForBucket;
+
+  /**
+   * Parameter used For MPI-tuning: Weight for maxDensity in the calculation for bucket distribution.
+   */
+  double _mpiTuningWeightForMaxDensity;
 
   /**
    * Raw time samples of the current configuration from which one evidence will be produced.
@@ -448,7 +452,7 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
 #ifdef AUTOPAS_INTERNODE_TUNING
     try {
       auto &mpiStrategy = dynamic_cast<MPIParallelizedStrategy &>(*_tuningStrategy);
-      mpiStrategy.resetMpi<Particle>(_iteration, getContainer(), _maxDifferenceForBucket, _weightForMaxDensity);
+      mpiStrategy.resetMpi<Particle>(_iteration, getContainer(), _mpiTuningMaxDifferenceForBucket, _mpiTuningWeightForMaxDensity);
     } catch (std::bad_cast &bad_cast) {
       _tuningStrategy->reset(_iteration);
     }

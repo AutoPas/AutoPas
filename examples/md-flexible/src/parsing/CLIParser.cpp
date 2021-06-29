@@ -37,8 +37,8 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.distributionMean, config.maxTuningPhasesWithoutTest, config.particlesPerDim, config.particlesTotal,
       config.relativeOptimumRange, config.relativeBlacklistRange, config.periodic, config.tuningPhases,
       config.verletClusterSize, config.verletSkinRadius, config.particleSpacing, config.tuningSamples,
-      config.traversalOptions, config.tuningStrategyOption, config.mpiStrategyOption, config.maxDifferenceForBucket,
-      config.weightForMaxDensity, config.useThermostat, config.verletRebuildFrequency, config.vtkFileName,
+      config.traversalOptions, config.tuningStrategyOption, config.mpiStrategyOption, config.MPITuningMaxDifferenceForBucket,
+      config.MPITuningWeightForMaxDensity, config.useThermostat, config.verletRebuildFrequency, config.vtkFileName,
       config.vtkWriteFrequency, config.selectorStrategy, config.yamlFilename, config.distributionStdDev,
       config.globalForce, zshCompletionsOption, helpOption)};
 
@@ -479,20 +479,20 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         config.mpiStrategyOption.value = *parsedOptions.begin();
         break;
       }
-      case decltype(config.maxDifferenceForBucket)::getoptChar: {
+      case decltype(config.MPITuningMaxDifferenceForBucket)::getoptChar: {
         try {
-          config.maxDifferenceForBucket.value = stod(strArg);
+          config.MPITuningMaxDifferenceForBucket.value = stod(strArg);
         } catch (const exception &) {
-          cerr << "Error parsing maxDifferenceForBucket value: " << optarg << endl;
+          cerr << "Error parsing MPITuningMaxDifferenceForBucket value: " << optarg << endl;
           displayHelp = true;
         }
         break;
       }
-      case decltype(config.weightForMaxDensity)::getoptChar: {
+      case decltype(config.MPITuningWeightForMaxDensity)::getoptChar: {
         try {
-          config.weightForMaxDensity.value = stod(strArg);
+          config.MPITuningWeightForMaxDensity.value = stod(strArg);
         } catch (const exception &) {
-          cerr << "Error parsing weightForMaxDensity value: " << optarg << endl;
+          cerr << "Error parsing MPITuningWeightForMaxDensity value: " << optarg << endl;
           displayHelp = true;
         }
         break;

@@ -82,8 +82,8 @@ void Simulation::initialize(const MDFlexConfig &mdFlexConfig, autopas::AutoPas<P
   autopas.setTuningInterval(_config->tuningInterval.value);
   autopas.setTuningStrategyOption(_config->tuningStrategyOption.value);
   autopas.setMPIStrategy(_config->mpiStrategyOption.value);
-  autopas.setMaxDifferenceForBucket(_config->maxDifferenceForBucket.value);
-  autopas.setWeightForMaxDensity(_config->weightForMaxDensity.value);
+  autopas.setMPITuningMaxDifferenceForBucket(_config->MPITuningMaxDifferenceForBucket.value);
+  autopas.setMPITuningWeightForMaxDensity(_config->MPITuningWeightForMaxDensity.value);
   autopas.setVerletClusterSize(_config->verletClusterSize.value);
   autopas.setVerletRebuildFrequency(_config->verletRebuildFrequency.value);
   autopas.setVerletSkin(_config->verletSkinRadius.value);

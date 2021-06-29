@@ -90,12 +90,12 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
    * @tparam Particle
    * @param iteration Gives the current iteration to the tuning strategy.
    * @param container container of current simulation
-   * @param maxDifferenceForBucket maximum difference of two scenarios to get in the same bucket for MPI-tuning
-   * @param weightForMaxDensity weight for maxDensity in calculation for bucket distribution
+   * @param MPITuningMaxDifferenceForBucket For MPI-tuning: Maximum of the relative difference in the comparison metric for two ranks which exchange their tuning information.
+   * @param MPITuningWeightForMaxDensity For MPI-tuning: Weight for maxDensity in the calculation for bucket distribution.
    */
   template <class Particle>
   void resetMpi(size_t iteration, std::shared_ptr<autopas::ParticleContainerInterface<Particle>> container,
-                double maxDifferenceForBucket, double weightForMaxDensity) {
+                double MPITuningMaxDifferenceForBucket, double MPITuningWeightForMaxDensity) {
     _optimalConfiguration = Configuration();
     _allGlobalConfigurationsTested = false;
     _allLocalConfigurationsTested = false;
@@ -104,7 +104,7 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
       _configIterator.reset();
     }
     autopas::utils::AutoPasConfigurationCommunicator::distributeRanksInBuckets<Particle>(
-        _comm, &_bucket, container, maxDifferenceForBucket, weightForMaxDensity);
+        _comm, &_bucket, container, MPITuningMaxDifferenceForBucket, MPITuningWeightForMaxDensity);
     AutoPasLog(debug, "finished bucket distribution");
     try {
       _tuningStrategy->reset(iteration);

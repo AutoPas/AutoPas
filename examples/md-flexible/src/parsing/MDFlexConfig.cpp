@@ -38,8 +38,8 @@ std::string MDFlexConfig::to_string() const {
   }
   os << setw(valueOffset) << left << mpiStrategyOption.name << ":  " << mpiStrategyOption.value << endl;
   if (mpiStrategyOption.value == autopas::MPIStrategyOption::divideAndConquer) {
-    os << setw(valueOffset) << left << maxDifferenceForBucket.name << ":  " << maxDifferenceForBucket.value << endl;
-    os << setw(valueOffset) << left << weightForMaxDensity.name << ":  " << weightForMaxDensity.value << endl;
+    os << setw(valueOffset) << left << MPITuningMaxDifferenceForBucket.name << ":  " << MPITuningMaxDifferenceForBucket.value << endl;
+    os << setw(valueOffset) << left << MPITuningWeightForMaxDensity.name << ":  " << MPITuningWeightForMaxDensity.value << endl;
   }
   os << setw(valueOffset) << left << tuningInterval.name << ":  " << tuningInterval.value << endl;
   os << setw(valueOffset) << left << tuningSamples.name << ":  " << tuningSamples.value << endl;
