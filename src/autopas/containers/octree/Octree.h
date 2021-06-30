@@ -108,8 +108,6 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
   }
 
   void iteratePairwise(TraversalInterface *traversal) override {
-    printf("Johannes' Octree::iteratePairwise\n");
-
     auto *traversalInterface = dynamic_cast<OTTraversalInterface<ParticleCell> *>(traversal);
     if (traversalInterface) {
       traversalInterface->setCells(&this->_cells);
@@ -154,7 +152,6 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
   }
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
-    printf("Johannes' Octree::rebuildNeighborLists\n");
   }
 
   [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> begin(IteratorBehavior behavior) override {
