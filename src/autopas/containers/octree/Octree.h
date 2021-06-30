@@ -87,7 +87,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     std::vector<Particle> particles;
     auto result = std::vector<ParticleType>();
     for (auto *p : particleRefs) {
-      if(utils::inBox(p->getR(), this->getBoxMin(), this->getBoxMax())) {
+      if (utils::inBox(p->getR(), this->getBoxMin(), this->getBoxMax())) {
         particles.push_back(*p);
       } else {
         result.push_back(*p);
