@@ -94,7 +94,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
       }
     }
 
-    deleteAllParticles();
+    this->deleteAllParticles();
 
     for (auto &particle : particles) {
       addParticleImpl(particle);
@@ -139,7 +139,9 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    * @copydoc ParticleContainerInterface::addHaloParticleImpl()
    */
   void addHaloParticleImpl(const ParticleType &haloParticle) override {
-    this->_cells[CellTypes::HALO].addParticle(haloParticle);
+    ParticleType p_copy = haloParticle;
+    p_copy.setOwnershipState(OwnershipState::halo);
+    this->_cells[CellTypes::HALO].addParticle(p_copy);
   }
 
   /**
@@ -183,7 +185,13 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
                                                                               const std::array<double, 3> &higherCorner,
                                                                               IteratorBehavior behavior) override {
     printf("Johannes' Octree::getRegionIterator<..., true>\n");
-    std::vector<size_t> cellsOfInterest = {CellTypes::OWNED, CellTypes::HALO};
+    std::vector<size_t> cellsOfInterest;
+    if (behavior & IteratorBehavior::owned) {
+      cellsOfInterest.push_back(CellTypes::OWNED);
+    }
+    if (behavior & IteratorBehavior::halo) {
+      cellsOfInterest.push_back(CellTypes::HALO);
+    }
     return ParticleIteratorWrapper<ParticleType, true>(
         new internal::RegionParticleIterator<ParticleType, ParticleCell, true>(&this->_cells, lowerCorner, higherCorner,
                                                                                cellsOfInterest, this, behavior));
@@ -193,7 +201,13 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior) const override {
     printf("Johannes' Octree::getRegionIterator<..., false>\n");
-    std::vector<size_t> cellsOfInterest = {CellTypes::OWNED, CellTypes::HALO};
+    std::vector<size_t> cellsOfInterest;
+    if (behavior & IteratorBehavior::owned) {
+      cellsOfInterest.push_back(CellTypes::OWNED);
+    }
+    if (behavior & IteratorBehavior::halo) {
+      cellsOfInterest.push_back(CellTypes::HALO);
+    }
     return ParticleIteratorWrapper<ParticleType, false>(
         new internal::RegionParticleIterator<ParticleType, ParticleCell, false>(
             &this->_cells, lowerCorner, higherCorner, cellsOfInterest, this, behavior));
@@ -216,11 +230,6 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
   [[nodiscard]] unsigned long getNumParticles() const override {
     return this->_cells[CellTypes::OWNED].numParticles() + this->_cells[CellTypes::HALO].numParticles();
   }
-
-  /**
-   * Deletes all particles from the container.
-   */
-  void deleteAllParticles() override { this->_cells[CellTypes::OWNED].clear(); }
 
   void deleteHaloParticles() override { this->_cells[CellTypes::HALO].clear(); }
 
