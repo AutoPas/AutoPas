@@ -151,8 +151,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     return internal::checkParticleInCellAndUpdateByIDAndPosition(this->_cells[CellTypes::HALO], pCopy, this->getSkin());
   }
 
-  void rebuildNeighborLists(TraversalInterface *traversal) override {
-  }
+  void rebuildNeighborLists(TraversalInterface *traversal) override {}
 
   [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> begin(IteratorBehavior behavior) override {
     return ParticleIteratorWrapper<ParticleType, true>(
