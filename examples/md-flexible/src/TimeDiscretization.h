@@ -36,8 +36,8 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
  * @param autoPasContainer The container for which to update the pairwise forces.
  * @param particlePropertiesLibrary The particle properties library for the particles in the container.
  * @param deltaT The time step width.
- *	@param funtorOption The functor on which to base the force calculations.
- * @param wasTuninIteration Tells the user if the current iteration of force calculations was a tuning iteration.
+ * @param functorOption The functor on which to base the force calculations.
+ * @param wasTuningIteration Tells the user if the current iteration of force calculations was a tuning iteration.
  */
 void calculatePairwiseForces(autopas::AutoPas<ParticleType> &autoPasContainer,
                              ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,

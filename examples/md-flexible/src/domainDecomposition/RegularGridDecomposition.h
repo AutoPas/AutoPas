@@ -23,7 +23,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Constructor.
    * @param globalBoxMin: The minimum coordinates of the global domain.
    * @param globalBoxMax: The maximum coordinates of the global domain.
-   * @param cutoofWidth: The cutoff width for halo particles.
+   * @param cutoffWidth: The cutoff width for halo particles.
    * @param skinWidth: The skin width of an autopas container domain.
    */
   RegularGridDecomposition(const std::array<double, 3> &globalBoxMin, const std::array<double, 3> &globalBoxMax,
@@ -47,36 +47,44 @@ class RegularGridDecomposition final : public DomainDecomposition {
 
   /**
    * Returns the index of the local domain in the global domain context.
+   * @return domain index.
    */
   const int getDomainIndex() override { return _domainIndex; }
 
   /**
    * Returns the minimum coordinates of global domain.
+   * @return bottom left corner of the global domain.
    */
   const std::array<double, 3> getGlobalBoxMin() override { return _globalBoxMin; }
 
   /**
    * Returns the maximum coordinates of global domain.
+   * @return top right corner of the global domain.
    */
   const std::array<double, 3> getGlobalBoxMax() override { return _globalBoxMax; }
 
   /**
    * Returns the minimum coordinates of local domain.
+   * @return bottom left corner of the local domain.
    */
   const std::array<double, 3> getLocalBoxMin() override { return _localBoxMin; }
 
   /**
    * Returns the maximum coordinates of local domain.
+   * @return top right corner of the local domain.
    */
   const std::array<double, 3> getLocalBoxMax() override { return _localBoxMax; }
 
   /**
    * Returns the number of domains in each dimension
+   * @return vector containing the number of subdomains along each dimension
    */
   const std::array<int, 3> getDecomposition() { return _decomposition; }
 
   /**
    * Checks if the provided coordinates are located in the local domain.
+   * @param coordinates: The coordinates in question.
+   * @return true if the coordinates lie inside the local domain, false otherwise.
    */
   bool isInsideLocalDomain(const std::array<double, 3> &coordinates) override;
 

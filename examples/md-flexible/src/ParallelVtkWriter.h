@@ -32,7 +32,6 @@ class ParallelVtkWriter {
   /**
    * Writes the current state of particles into a vtk file.
    * @param currentIteration The simulation's current iteration.
-   * @param maximumNumberOfDigitsInIteration The maximum number of digits an iteration index may have.
    * @param autoPasContainer The AutoPas container whose owned particles will be logged.
    */
   void recordTimestep(const int &currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer);

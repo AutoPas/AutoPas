@@ -28,11 +28,11 @@ class CubeUniform : public Object {
    * @param bottomLeftCorner
    */
   CubeUniform(const std::array<double, 3> &velocity, unsigned long typeId, double epsilon, double sigma, double mass,
-              size_t _numParticles, const std::array<double, 3> &_boxLength,
+              size_t numParticles, const std::array<double, 3> &boxLength,
               const std::array<double, 3> &bottomLeftCorner)
       : Object(velocity, typeId, epsilon, sigma, mass),
-        _numParticles(_numParticles),
-        _boxLength(_boxLength),
+        _numParticles(numParticles),
+        _boxLength(boxLength),
         _bottomLeftCorner(bottomLeftCorner) {}
 
   /**

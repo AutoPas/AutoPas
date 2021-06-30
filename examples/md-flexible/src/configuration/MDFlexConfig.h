@@ -35,6 +35,11 @@
  */
 class MDFlexConfig {
  public:
+  /**
+   * Constructor.
+   * @param argc: the argument count of the arguments passed to the main function.
+   * @param argv: the argument vector passed to the main function.
+   */
   MDFlexConfig(int argc, char **argv);
 
   /**
@@ -112,12 +117,14 @@ class MDFlexConfig {
   void calcSimulationBox();
 
   /**
-   * Returns the particles generated based on the povided configuration file
+   * Returns the particles generated based on the povided configuration file.
+   * @return a vector containing the generated particles.
    */
   std::vector<ParticleAttributes> getParticles() { return _particles; }
 
   /**
-   * Returns the ParticlePropertiesLibrary
+   * Returns the ParticlePropertiesLibrary containing the properties of the particle types used in this simulation.
+   * @return the ParticlePropertiesLibrary
    */
   std::shared_ptr<ParticlePropertiesLibraryType> getParticlePropertiesLibrary() { return _particlePropertiesLibrary; }
   /**
@@ -459,8 +466,8 @@ class MDFlexConfig {
    */
   std::vector<CubeGrid> cubeGridObjects{};
   /**
-  * cubeGaussObjectsStr
-  */
+   * cubeGaussObjectsStr
+   */
   static inline const char *const cubeGaussObjectsStr{"CubeGauss"};
   /**
    * cubeGaussObjects

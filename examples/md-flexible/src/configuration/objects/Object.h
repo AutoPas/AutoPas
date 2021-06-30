@@ -1,5 +1,5 @@
 /**
- * @file Objects.h
+ * @file Object.h
  * @author N. Fottner
  * @date 1/8/19
  */
@@ -46,11 +46,11 @@ class Object {
 
   /**
    * Create a particle that acts as blueprint for all particles to be created for the object.
-   * @param autopas
-   * @return
+   * @param particleId: Defines the id of the generated dummy particle.
+   * @return Particle in form of the ParticleAttributes struct.
    */
   [[nodiscard]] ParticleAttributes getDummyParticle(const size_t &particleId) const {
-    ParticleAttributes particle;
+    ParticleAttributes particle{};
     particle.id = particleId;
     particle.typeId = _typeId;
     particle.ownershipState = autopas::OwnershipState::owned;

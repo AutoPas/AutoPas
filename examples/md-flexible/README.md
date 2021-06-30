@@ -1,4 +1,4 @@
-#MD-Flexible
+# MD-Flexible
 
 This demo shows how to easily create and simulate molecular dynamic
 scenarios using AutoPas and flexibly configure all of it's options.

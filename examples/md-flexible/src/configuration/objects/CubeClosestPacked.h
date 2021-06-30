@@ -65,8 +65,8 @@ class CubeClosestPacked : public Object {
   }
 
   /**
-   * Generates particles based on the parameters provided to the CubeClosestPacked Object in the configuration file
-   * @param the container, where the new particles get stored
+   * Generates particles based on the parameters provided to the CubeClosestPacked Object in the configuration file.
+   * @param particles: The container, where the new particles get stored.
    */
   void generate(std::vector<ParticleAttributes> &particles) const override {
     ParticleAttributes particle = getDummyParticle(particles.size());

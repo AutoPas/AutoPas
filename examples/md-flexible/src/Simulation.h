@@ -26,9 +26,8 @@ class Simulation {
  public:
   /**
    * Initializes the simulation on a domain according to the arguments passed to the main function.
-   * @param dimensionCount The number of dimensions in the simulation domain.
-   * @param argc The number of arguments passed in argv.
-   * @param argv The arguments passed to the program.
+   * @param configuration: The configuration of this simulation.
+   * @param domainDecomposition: The domain decomposition used for this simulation
    */
   Simulation(const MDFlexConfig &configuration, RegularGridDecomposition &domainDecomposition);
 
@@ -99,17 +98,65 @@ class Simulation {
    * Struct containing all timers used for the simulation.
    */
   struct Timers {
+    /**
+     * Records the time used for the position updates of all particles.
+     */
     autopas::utils::Timer positionUpdate;
+
+    /**
+     * Records the time used for the total force update of all particles.
+     */
     autopas::utils::Timer forceUpdateTotal;
+
+    /**
+     * Records the time used for the pairwise force update of all particles.
+     */
     autopas::utils::Timer forceUpdatePairwise;
+
+    /**
+     * Records the time used for the global force update of all particles.
+     */
     autopas::utils::Timer forceUpdateGlobal;
+
+    /**
+     * Records the time used for the force update of all particles during the tuning iterations.
+     */
     autopas::utils::Timer forceUpdateTuning;
+
+    /**
+     * Records the time used for force updates of all particles during the non tuning iterations.
+     */
     autopas::utils::Timer forceUpdateNonTuning;
+
+    /**
+     * Records the time used for the velocity updates of all particles.
+     */
     autopas::utils::Timer velocityUpdate;
+
+    /**
+     * Records the time used for actively simulating the provided scenario.
+     * This excludes initialization time, among others.
+     */
     autopas::utils::Timer simulate;
+
+    /**
+     * Records the time used for the creation of the timestep records.
+     */
     autopas::utils::Timer vtk;
+
+    /**
+     * Records the time used for the initialization of the simulation.
+     */
     autopas::utils::Timer initialization;
+
+    /**
+     * Records the total time required for the simulation.
+     */
     autopas::utils::Timer total;
+
+    /**
+     * Records the time required for the thermostat updates.
+     */
     autopas::utils::Timer thermostat;
   } _timers;
 
@@ -124,22 +171,32 @@ class Simulation {
   bool _createVtkFiles;
 
   /**
-   * Executes a superstep of the simulation.
+   * Executes a sequence of  supersteps for the simulation.
+   * @param iterations: The number of iterations which will be simulated during the excution of this function.
    */
-  void executeSuperstep(const int iterationsPerSuperstep);
+  void executeSupersteps(const int iterations);
 
   /**
    * Estimates the number of tuning iterations which ocurred during the simulation so far.
+   * @return an estimation of the number of tuning iterations which occured so far.
    */
   std::tuple<size_t, bool> estimateNumberOfIterations() const;
 
   /**
    * Prints a progress bar to the terminal.
+   * @param iterationProgress: the number of already computed iterations.
+   * @param maxIterations: the number of maximum iterations.
+   * @param maxIsPrecise: Decides if the "~" symbol will be printed before the max iterations.
    */
   void printProgress(size_t iterationProgress, size_t maxIterations, bool maxIsPrecise);
 
   /**
    * Turns the timers into a human readable string.
+   * @param name: The timer's name.
+   * @param timeNS: The time in nano seconds.
+   * @param numberWidth: The precision of the printed number.
+   * @param maxTime: The simulation's total execution time.
+   * @return All information of the timer in a human readable string.
    */
   std::string timerToString(const std::string &name, long timeNS, size_t numberWidth, long maxTime);
 

@@ -15,7 +15,7 @@
 namespace TimeDiscretization {
 /**
  * Calculate and update the position for every particle using the Störmer-Verlet Algorithm.
- * @param autopas
+ * @param autoPasContainer
  * @param particlePropertiesLibrary
  * @param deltaT time step width
  */

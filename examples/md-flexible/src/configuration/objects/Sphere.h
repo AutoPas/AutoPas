@@ -46,6 +46,7 @@ class Sphere : public Object {
 
   /**
    * Returns the amount of space between each particle.
+   * @return spacing of the particles.
    */
   [[nodiscard]] double getParticleSpacing() const override { return _particleSpacing; }
 
@@ -93,6 +94,7 @@ class Sphere : public Object {
 
   /**
    * Returns the total amount of particles which will be / have been generated.
+   * @return the total number of particles initialized for the sphere object.
    */
   [[nodiscard]] size_t getParticlesTotal() const override {
     // this should look different if the generator for spheres changes
@@ -103,6 +105,7 @@ class Sphere : public Object {
 
   /**
    * Returns the coordinates of box's the bottom left corner.
+   * @return the bottom left corner of the sphere's box domain.
    */
   [[nodiscard]] std::array<double, 3> getBoxMin() const override {
     return {_center[0] - ((double)_radius) * _particleSpacing, _center[1] - ((double)_radius) * _particleSpacing,
@@ -111,6 +114,7 @@ class Sphere : public Object {
 
   /**
    * Returns the coordinates of box's the top right corner.
+   * @return the top right corner of the sphere's box domain.
    */
   [[nodiscard]] std::array<double, 3> getBoxMax() const override {
     return {_center[0] + ((double)_radius) * _particleSpacing, _center[1] + ((double)_radius) * _particleSpacing,
@@ -119,6 +123,7 @@ class Sphere : public Object {
 
   /**
    * Converts the object to a human readable string.
+   * @return a human readable string containing information about the sphere object.
    */
   [[nodiscard]] std::string to_string() const override {
     std::ostringstream output;
