@@ -151,20 +151,6 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     ParticleType pCopy = haloParticle;
     pCopy.setOwnershipState(OwnershipState::halo);
     return internal::checkParticleInCellAndUpdateByIDAndPosition(this->_cells[CellTypes::HALO], pCopy, this->getSkin());
-
-    printf("Johannes' Octree::updateHaloParticle\n");
-    // TODO(johannes): This is not very efficient
-    std::vector<Particle *> haloParticles;
-    // TODO(johannes): Maybe checkParticleInCellAndUpdateByIDAndPosition or checkParticleInCellAndUpdateByID
-    this->_cells[CellTypes::HALO].appendAllParticles(haloParticles);
-    for (Particle *test : haloParticles) {
-      if (test->getID() == haloParticle.getID()) {
-        *test = haloParticle;  // Update the actual particle
-        test->setOwnershipState(OwnershipState::halo);
-        return true;
-      }
-    }
-    return false;
   }
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
@@ -184,7 +170,6 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
   [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
                                                                               const std::array<double, 3> &higherCorner,
                                                                               IteratorBehavior behavior) override {
-    printf("Johannes' Octree::getRegionIterator<..., true>\n");
     std::vector<size_t> cellsOfInterest;
     if (behavior & IteratorBehavior::owned) {
       cellsOfInterest.push_back(CellTypes::OWNED);
@@ -200,7 +185,6 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
   [[nodiscard]] ParticleIteratorWrapper<ParticleType, false> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
       IteratorBehavior behavior) const override {
-    printf("Johannes' Octree::getRegionIterator<..., false>\n");
     std::vector<size_t> cellsOfInterest;
     if (behavior & IteratorBehavior::owned) {
       cellsOfInterest.push_back(CellTypes::OWNED);

@@ -116,33 +116,6 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
     throw std::runtime_error("[OctreeLeafNode] Unable to return child by index in leaf");
   }
 
-#if 0
-  std::optional<OctreeNodeInterface<Particle> *> getGreaterParentAlongAxis(
-      int axis, int dir, OctreeNodeInterface<Particle> *embedded) override {
-    std::optional<OctreeNodeInterface<Particle> *> result = std::nullopt;
-    if (this->hasParent()) {
-      result = this->_parent->getGreaterParentAlongAxis(axis, dir, embedded);
-    }
-    return result;
-  }
-
-  std::vector<OctreeNodeInterface<Particle> *> findTouchingLeaves(int axis, int dir,
-                                                                  OctreeNodeInterface<Particle> *embedded) override {
-    int otherAxis1 = (axis + 1) % 3;
-    int otherAxis2 = (axis + 2) % 3;
-    if (!OctreeNodeInterface<Particle>::volumeExistsOnAxis(otherAxis1, this->getBoxMin(), this->getBoxMax(),
-                                                           embedded->getBoxMin(), embedded->getBoxMax()) ||
-        !OctreeNodeInterface<Particle>::volumeExistsOnAxis(otherAxis2, this->getBoxMin(), this->getBoxMax(),
-                                                           embedded->getBoxMin(), embedded->getBoxMax())) {
-      throw std::runtime_error("[OctreeLeafNode] Leaf does not overlap with requested box on necessary axis.");
-    }
-
-    std::vector<OctreeNodeInterface<Particle> *> result;
-    result.push_back(this);
-    return result;
-  }
-#endif
-
   std::vector<OctreeLeafNode<Particle> *> getLeavesFromDirections(std::vector<Vertex> directions) override {
     return {this};
   }

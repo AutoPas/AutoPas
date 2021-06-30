@@ -148,17 +148,6 @@ TEST_F(OctreeTest, testParentFinding) {
 }
 #endif
 
-TEST_F(OctreeTest, testDirectionIndexing) {
-  using namespace autopas;
-
-  ASSERT_EQ(NEG_X, getDirection(0, false));
-  ASSERT_EQ(POS_X, getDirection(0, true));
-  ASSERT_EQ(NEG_Y, getDirection(1, false));
-  ASSERT_EQ(POS_Y, getDirection(1, true));
-  ASSERT_EQ(NEG_Z, getDirection(2, false));
-  ASSERT_EQ(POS_Z, getDirection(2, true));
-}
-
 static bool isOdd(int n) { return (n % 2) == 1; }
 
 /**

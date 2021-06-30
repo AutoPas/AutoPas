@@ -123,62 +123,6 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
    */
   OctreeNodeInterface<Particle> *getChild(int index) override { return _children[index].get(); }
 
-#if 0
-  std::optional<OctreeNodeInterface<Particle> *> getGreaterParentAlongAxis(
-      int axis, int dir, OctreeNodeInterface<Particle> *embedded) override {
-    auto posDir = (dir > 0);
-    auto negDir = (dir < 0);
-    if (!posDir && !negDir) {
-      throw std::runtime_error("[OctreeInnerNode] dir must be -1 or 1.");
-    }
-
-    // TODO(johannes): Check if those two hold for every case.
-    auto smallerOnAxis = (embedded->getBoxMax()[axis] < this->getBoxMax()[axis]);
-    auto biggerOnAxis = (embedded->getBoxMin()[axis] > this->getBoxMin()[axis]);
-
-    std::optional<OctreeNodeInterface<Particle> *> result = std::nullopt;
-    if ((posDir && smallerOnAxis) || (negDir && biggerOnAxis)) {
-      result = std::make_optional(this);
-    } else if (this->hasParent()) {
-      // See if this node's parent includes a neighbor
-      result = this->_parent->getGreaterParentAlongAxis(axis, dir, embedded);
-    }
-    return result;
-  }
-
-  bool isNearestInDirection(int childIndex, int axis, int dir) {
-    int dirFlag = (childIndex >> axis) & 1;
-    return (dirFlag == 0) == this->isNegative(dir);
-  }
-
-  std::vector<OctreeNodeInterface<Particle> *> findTouchingLeaves(int axis, int dir,
-                                                                  OctreeNodeInterface<Particle> *embedded) override {
-    std::vector<OctreeNodeInterface<Particle> *> result;
-    for (int i = 0; i < _children.size(); ++i) {
-      auto &child = _children[i];
-
-      // Check if the child is in the right search direction
-      if (isNearestInDirection(i, axis, dir)) {
-        // Check if the child overlaps with the embedded node on the axis that are not the search axis
-        int otherAxis1 = (axis + 1) % 3;
-        bool volumeOnAxis1 = OctreeNodeInterface<Particle>::volumeExistsOnAxis(
-            otherAxis1, child->getBoxMin(), child->getBoxMax(), embedded->getBoxMin(), embedded->getBoxMax());
-
-        int otherAxis2 = (axis + 2) % 3;
-        bool volumeOnAxis2 = OctreeNodeInterface<Particle>::volumeExistsOnAxis(
-            otherAxis2, child->getBoxMin(), child->getBoxMax(), embedded->getBoxMin(), embedded->getBoxMax());
-
-        if (volumeOnAxis1 && volumeOnAxis2) {
-          auto otherTouching = child->findTouchingLeaves(axis, dir, embedded);
-          result.insert(result.end(), otherTouching.begin(), otherTouching.end());
-        }
-      }
-    }
-
-    return result;
-  }
-#endif
-
   std::vector<OctreeLeafNode<Particle> *> getLeavesFromDirections(std::vector<Vertex> directions) override {
     std::vector<OctreeLeafNode<Particle> *> result;
     // Only take the children that are allowed (i.e. those which are in the given directions list)
