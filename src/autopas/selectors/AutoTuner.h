@@ -447,6 +447,9 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
   }
   utils::Timer tuningTimer;
   tuningTimer.start();
+
+  // TODO: calculate homogeneity and max density of last 10 iterations for smoothing
+
   // first tuning iteration -> reset to first config
   if (_iterationsSinceTuning == _tuningInterval) {
     // FIXME: replace try,catch with if,else

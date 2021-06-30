@@ -87,6 +87,9 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(
     }
   }
 
+  if ( maxDensity < 0.0 )
+    throw std::runtime_error("maxDensity can never be smaller than 0.0, but is:" + std::to_string(maxDensity));
+
   // get mean and reserve variable for densityVariance
   const double densityMean = numberOfParticles / volume;
   double densityVariance = 0.0;
@@ -100,6 +103,8 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(
   // finally calculate standard deviation
   // normally
   const double homogeneity = sqrt(densityVariance);
+  if ( homogeneity < 0.0 )
+    throw std::runtime_error("homogeneity can never be smaller than 0.0, but is:" + std::to_string(homogeneity));
   return {homogeneity, maxDensity};
 }
 
