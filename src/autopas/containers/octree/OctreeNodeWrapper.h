@@ -9,6 +9,7 @@
 #include <memory>
 
 #include "autopas/containers/octree/OctreeNodeInterface.h"
+#include "autopas/utils/ArrayMath.h"
 
 namespace autopas {
 /**

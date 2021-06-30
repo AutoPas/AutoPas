@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "autopas/containers/octree/OctreeNodeInterface.h"
+#include "autopas/containers/octree/OctreeNodeWrapper.h"
 
 namespace autopas {
 /**
@@ -33,6 +34,14 @@ class OctreeLogger {
    * Destructor
    */
   ~OctreeLogger() = default;
+
+  /**
+   * Write the octree below the wrapper to a .vtk file
+   * @param wrapper A pointer to the octree node wrapper
+   */
+  void logTree(OctreeNodeWrapper<Particle> *wrapper) {
+    logTree(wrapper->getRaw());
+  }
 
   /**
    * This function writes the octree to a .vtk file
