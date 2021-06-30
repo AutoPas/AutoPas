@@ -27,7 +27,7 @@ TEST_F(ParticleSerializationToolsTest, testSeralizeParticle) {
   std::vector<char> serializedParticle;
   ParticleSerializationTools::serializeParticle(_molecule, serializedParticle);
 
-  ParticleAttributes *attributes = reinterpret_cast<ParticleAttributes *>(&serializedParticle[0]);
+  auto *attributes = reinterpret_cast<ParticleAttributes *>(&serializedParticle[0]);
 
   EXPECT_EQ(attributes->position, _particle.position);
   EXPECT_EQ(attributes->velocity, _particle.velocity);

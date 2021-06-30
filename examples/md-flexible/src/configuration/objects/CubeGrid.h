@@ -49,7 +49,7 @@ class CubeGrid : public Object {
   [[nodiscard]] const std::array<size_t, 3> &getParticlesPerDim() const { return _particlesPerDim; }
 
   /**
-   * Returns the total ammount of particles which will be / have been generated.
+   * Returns the total amount of particles which will be / have been generated.
    * @return number of generated particles.
    */
   [[nodiscard]] size_t getParticlesTotal() const override {

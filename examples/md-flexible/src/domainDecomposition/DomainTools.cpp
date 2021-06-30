@@ -27,7 +27,7 @@ bool isInsideDomain(const std::array<double, 3> &coordinates, std::array<double,
 double getDistanceToDomain(const std::array<double, 3> &coordinates, std::array<double, 3> &boxMin,
                            std::array<double, 3> &boxMax) {
   if (coordinates.size() == boxMin.size() && coordinates.size() == boxMax.size()) {
-    std::array<double, 3> differences;
+    std::array<double, 3> differences = { 0, 0, 0 };
     for (int i = 0; i < 3; ++i) {
       differences[i] = std::clamp(coordinates[i], boxMin[i], boxMax[i]);
     }
@@ -44,7 +44,7 @@ void generateDecomposition(unsigned int subdomainCount, std::array<int, 3> &deco
     subdomainCount = subdomainCount / 2;
   }
 
-  for (unsigned int i = 3; i <= subdomainCount; i = i + 2) {
+  for (int i = 3; i <= subdomainCount; i = i + 2) {
     while (subdomainCount % i == 0) {
       primeFactors.push_back(i);
       subdomainCount = subdomainCount / i;
