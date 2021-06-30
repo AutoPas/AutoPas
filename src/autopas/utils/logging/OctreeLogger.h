@@ -6,9 +6,8 @@
 
 #pragma once
 
-#include <cstring>
-
 #include <array>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -39,9 +38,7 @@ class OctreeLogger {
    * Write the octree below the wrapper to a .vtk file
    * @param wrapper A pointer to the octree node wrapper
    */
-  void logTree(OctreeNodeWrapper<Particle> *wrapper) {
-    logTree(wrapper->getRaw());
-  }
+  void logTree(OctreeNodeWrapper<Particle> *wrapper) { logTree(wrapper->getRaw()); }
 
   /**
    * This function writes the octree to a .vtk file
