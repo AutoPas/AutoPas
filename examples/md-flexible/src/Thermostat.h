@@ -10,6 +10,7 @@
 #include "autopas/AutoPasDecl.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/WrapOpenMP.h"
+#include "TypeDefinitions.h"
 
 /**
  * Thermostat to adjust the Temperature of the Simulation.
@@ -25,7 +26,7 @@ namespace {
  * @param randomEngine Random engine used for the generation of the velocity.
  * @param normalDistribution Distribution used for constructing the maxwell boltzmann distribution.
  */
-void addMaxwellBoltzmannDistributedVelocity(autopas::Particle &p, const double averageVelocity,
+void addMaxwellBoltzmannDistributedVelocity(ParticleType &p, const double averageVelocity,
                                             std::default_random_engine &randomEngine,
                                             std::normal_distribution<double> &normalDistribution) {
   // when adding independent normally distributed values to all velocity components

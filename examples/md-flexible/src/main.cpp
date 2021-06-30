@@ -23,7 +23,8 @@ int main(int argc, char **argv) {
 
   MDFlexConfig configuration(argc, argv);
 
-  RegularGridDecomposition domainDecomposition(configuration.boxMin.value, configuration.boxMax.value, configuration.cutoff.value, configuration.verletSkinRadius.value);
+  RegularGridDecomposition domainDecomposition(configuration.boxMin.value, configuration.boxMax.value,
+                                               configuration.cutoff.value, configuration.verletSkinRadius.value);
 
   Simulation simulation(configuration, domainDecomposition);
   simulation.run();

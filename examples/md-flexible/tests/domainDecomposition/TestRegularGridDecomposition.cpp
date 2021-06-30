@@ -59,9 +59,11 @@ TEST_F(TestRegularGridDecomposition, testGetLocalDomain) {
   std::array<int, 3> decomposition;
   DomainTools::generateDecomposition(numberOfProcesses, decomposition);
 
-  std::array<double, 3> expectedLocalBoxExtend = autopas::utils::ArrayMath::div(globalBoxExtend, { (double)decomposition[0], (double)decomposition[1], (double)decomposition[2] });
+  std::array<double, 3> expectedLocalBoxExtend = autopas::utils::ArrayMath::div(
+      globalBoxExtend, {(double)decomposition[0], (double)decomposition[1], (double)decomposition[2]});
 
-  std::array<double, 3> resultingLocalBoxExtend = autopas::utils::ArrayMath::sub(domainDecomposition.getLocalBoxMax(), domainDecomposition.getLocalBoxMin());
+  std::array<double, 3> resultingLocalBoxExtend =
+      autopas::utils::ArrayMath::sub(domainDecomposition.getLocalBoxMax(), domainDecomposition.getLocalBoxMin());
 
   EXPECT_NEAR(expectedLocalBoxExtend[0], resultingLocalBoxExtend[0], 1e-10);
   EXPECT_NEAR(expectedLocalBoxExtend[1], resultingLocalBoxExtend[1], 1e-10);
@@ -104,7 +106,6 @@ TEST_F(TestRegularGridDecomposition, testExchangeMigratingParticles) {
   std::vector<std::string> arguments = {"md-flexible", "--yaml-filename", std::string(YAMLDIRECTORY) + "cubeGrid.yaml"};
 
   char *argv[3] = {arguments[0].data(), arguments[1].data(), arguments[2].data()};
-
   MDFlexConfig configuration(3, argv);
 
   std::array<double, 3> globalBoxMin = {1.0, 1.0, 1.0};

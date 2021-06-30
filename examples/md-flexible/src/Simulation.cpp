@@ -101,9 +101,7 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
   _timers.initialization.stop();
 }
 
-Simulation::~Simulation(){
-  _timers.total.stop();
-}
+Simulation::~Simulation() { _timers.total.stop(); }
 
 void Simulation::run() {
   const int iterationsPerSuperstep = _configuration.verletRebuildFrequency.value;
@@ -190,7 +188,7 @@ void Simulation::printProgress(size_t iterationProgress, size_t maxIterations, b
   struct winsize w {};
   ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
   auto terminalWidth = w.ws_col;
-  if (terminalWidth == 0){
+  if (terminalWidth == 0) {
     terminalWidth = 100;
   }
   // the bar should fill the terminal window so subtract everything else (-2 for "] ")

@@ -31,7 +31,7 @@ double getDistanceToDomain(const std::array<double, 3> &coordinates, std::array<
     for (int i = 0; i < 3; ++i) {
       differences[i] = std::clamp(coordinates[i], boxMin[i], boxMax[i]);
     }
-    
+
     return autopas::utils::ArrayMath::L2Norm(differences);
   }
   return -1;
