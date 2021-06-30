@@ -176,7 +176,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
     static std::vector<Particle *> ps;
     // Reload the buffer only when the index is zero, this saves a little bit of compute time, since only one
     // "traversal" of the octree is required in order to gather all particles
-    if (index == 0) {
+    if (index == 0 or ps.empty()) {
       ps.clear();
       _pointer->appendAllParticles(ps);
     }
