@@ -375,7 +375,7 @@ TEST_F(OctreeTest, testNeighborLocator) {
   std::vector<OctreeLeafNode<ParticleFP64> *> leaves;
   root->appendAllLeaves(leaves);
   // Log the leaves
-  FILE *out = OctreeLogger::leavesToJSON(fopen("leaves.json", "w"), leaves);
+  FILE *out = OctreeLogger<ParticleFP64>::leavesToJSON(fopen("leaves.json", "w"), leaves);
   if (out) {
     fclose(out);
   }

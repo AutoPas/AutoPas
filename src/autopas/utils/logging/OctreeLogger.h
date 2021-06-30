@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <string.h>
+#include <cstring>
 
 #include <array>
 #include <fstream>
@@ -19,25 +19,25 @@
 namespace autopas {
 /**
  * Log an octree to a .vtk file
+ * @tparam Particle The enclosed particle type
  */
+template <typename Particle>
 class OctreeLogger {
  public:
   /**
    * Constructor
    */
-  explicit OctreeLogger();
+  explicit OctreeLogger() = default;
 
   /**
    * Destructor
    */
-  ~OctreeLogger();
+  ~OctreeLogger() = default;
 
   /**
    * This function writes the octree to a .vtk file
-   * @tparam Particle The enclosed particle type
    * @param root A pointer to the octree root node
    */
-  template <typename Particle>
   void logTree(OctreeNodeInterface<Particle> *root) {
     // Load the leaf boxes
     using Position = std::array<double, 3>;
@@ -138,19 +138,17 @@ class OctreeLogger {
    * - `"vnl"`\n
    *   A list of min/max coordinates of all leaves that touch this leaf via a vertex.
    *
-   * @tparam Particle The enclosed particle type
    * @param out A FILE pointer to the file that should contain the JSON data after the operation
    * @param leaves A list of octree leaves that are echoed into the JSON file
    * @return The FILE pointer is just passed through
    */
-  template <typename Particle>
   static FILE *leavesToJSON(FILE *out, std::vector<OctreeLeafNode<Particle> *> &leaves) {
     if (out) {
       fprintf(out, "[\n");
       for (int leafIndex = 0; leafIndex < leaves.size(); ++leafIndex) {
         auto leaf = leaves[leafIndex];
         fprintf(out, "{\"minmax\": ");
-        outBoxCoordinatesJSON<Particle>(out, leaf);
+        outBoxCoordinatesJSON(out, leaf);
 
         // Print face neighbors
         fprintf(out, ", \"fn\": [");
@@ -162,7 +160,7 @@ class OctreeLogger {
               fprintf(out, ", ");
             }
             first = false;
-            outBoxCoordinatesJSON<Particle>(out, neighbor);
+            outBoxCoordinatesJSON(out, neighbor);
           }
         }
 
@@ -178,7 +176,7 @@ class OctreeLogger {
                 fprintf(out, ", ");
               }
               first = false;
-              outBoxCoordinatesJSON<Particle>(out, neighborLeaf);
+              outBoxCoordinatesJSON(out, neighborLeaf);
             }
           }
         }
@@ -193,7 +191,7 @@ class OctreeLogger {
               fprintf(out, ", ");
             }
             first = false;
-            outBoxCoordinatesJSON<Particle>(out, neighbor);
+            outBoxCoordinatesJSON(out, neighbor);
           }
         }
 
@@ -209,7 +207,7 @@ class OctreeLogger {
                 fprintf(out, ", ");
               }
               first = false;
-              outBoxCoordinatesJSON<Particle>(out, neighborLeaf);
+              outBoxCoordinatesJSON(out, neighborLeaf);
             }
           }
         }
@@ -224,7 +222,7 @@ class OctreeLogger {
               fprintf(out, ", ");
             }
             first = false;
-            outBoxCoordinatesJSON<Particle>(out, neighbor);
+            outBoxCoordinatesJSON(out, neighbor);
           }
         }
 
@@ -241,7 +239,7 @@ class OctreeLogger {
                 fprintf(out, ", ");
               }
               first = false;
-              outBoxCoordinatesJSON<Particle>(out, neighborLeaf);
+              outBoxCoordinatesJSON(out, neighborLeaf);
             }
           }
         }
@@ -262,14 +260,12 @@ class OctreeLogger {
 
   /**
    * Print a list of particle positions to a file as JSON. The list is obtained from the octree root node.
-   * @tparam Particle The enclosed particle type
    * @param out The FILE pointer to write the JSON to
    * TODO(johannes): Remove the prefix, this can be set from the outer code
    * @param jsonFieldPrefix A short prefix, that will be prepended to the JSON array
    * @param root The root from which the particles should be obtained
    * @return The file pointer
    */
-  template <typename Particle>
   static FILE *particlesToJSON(FILE *out, char const *jsonFieldPrefix, OctreeNodeInterface<Particle> *root) {
     if (out) {
       // Get all leaves
@@ -327,11 +323,9 @@ class OctreeLogger {
 
   /**
    * Print the box minimum and maximum coordinates of an octree node.
-   * @tparam Particle The enclosed particle type
    * @param out The FILE pointer
    * @param node An octree node to obtain the box minimum and maximum coordinates from
    */
-  template <typename Particle>
   static void outBoxCoordinatesJSON(FILE *out, OctreeNodeInterface<Particle> *node) {
     std::array<double, 3> min = node->getBoxMin();
     std::array<double, 3> max = node->getBoxMax();

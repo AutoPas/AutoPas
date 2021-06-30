@@ -242,7 +242,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
   /**
    * A logger that can be called to log the octree data structure.
    */
-  OctreeLogger logger;
+  OctreeLogger<Particle> logger;
 };
 
 }  // namespace autopas
