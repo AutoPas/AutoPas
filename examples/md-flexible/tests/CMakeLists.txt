@@ -22,19 +22,19 @@ endforeach ()
 
 add_executable(mdFlexTests ${MDFlexTest_SRC})
 
-if (AUTOPAS_INTERNODE_TUNING OR AUTOPAS_INCLUDE_MPI)
-    message(STATUS "AUTOPAS_INTERNODE_TUNING set, searching for mpi to link against md-flexible ...")
+if (AUTOPAS_INCLUDE_MPI)
+    message(STATUS "AUTOPAS_INCLUDE_MPI set, searching for mpi to link against md-flexible ...")
     find_package(MPI)
 
     if (NOT ${MPI_CXX_FOUND})
-        message(FATAL_ERROR "cxx mpi could not be found, even though AUTOPAS_INTERNODE_TUNING was set.")
+        message(FATAL_ERROR "cxx mpi could not be found, even though AUTOPAS_INCLUDE_MPI was set.")
     else ()
         message(STATUS "cxx mpi found: ${MPI_CXX_COMPILER}")
         set(MD_FLEXIBLE_USE_MPI ON)
-        add_definitions(-DAUTOPAS_INTERNODE_TUNING)
+        add_definitions(-DAUTOPAS_INCLUDE_MPI)
     endif ()
 else ()
-    message(STATUS "AUTOPAS_INTERNODE_TUNING not set, not linking MPI to md-flexible.")
+    message(STATUS "AUTOPAS_INCLUDE_MPI not set, not linking MPI to md-flexible.")
 endif ()
 
 target_compile_definitions(
