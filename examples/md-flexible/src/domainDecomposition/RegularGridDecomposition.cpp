@@ -316,7 +316,7 @@ void RegularGridDecomposition::receiveParticles(std::vector<ParticleType> &recei
   receiveDataFromNeighbour(source, receiveBuffer);
 
   if (!receiveBuffer.empty()) {
-    ParticleSerializationTools::deserializeParticleData(receiveBuffer, receivedParticles);
+    ParticleSerializationTools::deserializeParticles(receiveBuffer, receivedParticles);
   }
 }
 

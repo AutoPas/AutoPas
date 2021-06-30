@@ -23,7 +23,7 @@ void serializeParticle(const ParticleType &particle, std::vector<char> &serializ
   serializedParticles.insert(serializedParticles.end(), attributesVector.begin(), attributesVector.end());
 }
 
-void deserializeParticleData(char *particleData, ParticleType &particle) {
+void deserializeParticle(char *particleData, ParticleType &particle) {
   ParticleAttributes attributes;
   std::memcpy(&attributes, particleData, sizeof(ParticleAttributes));
 
@@ -36,11 +36,11 @@ void deserializeParticleData(char *particleData, ParticleType &particle) {
   particle.setTypeId(attributes.typeId);
 }
 
-void deserializeParticleData(std::vector<char> &particlesData, std::vector<ParticleType> &particles) {
+void deserializeParticles(std::vector<char> &particlesData, std::vector<ParticleType> &particles) {
   ParticleType particle;
   size_t sizeOfParticleAttributes = sizeof(ParticleAttributes);
   for (size_t i = 0; i < particlesData.size(); i += sizeOfParticleAttributes) {
-    deserializeParticleData(&particlesData[i], particle);
+    deserializeParticle(&particlesData[i], particle);
     particles.push_back(particle);
   }
 }

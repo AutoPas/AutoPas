@@ -158,7 +158,12 @@ class Simulation {
      * Records the time required for the thermostat updates.
      */
     autopas::utils::Timer thermostat;
-  } _timers;
+  };
+
+  /**
+   * The timers used during the simulation.
+   */
+  struct Timers _timers;
 
   /**
    * Parallel VTK file writer.
@@ -229,15 +234,15 @@ class Simulation {
 
   /**
    * Sends particles of type ParticleType to a specific receiver.
-   * @param particles The particles to be sent to the receiver.
-   * @param receiver The recipient of the particles.
+   * @param particles: The particles to be sent to the receiver.
+   * @param receiver: The recipient of the particles.
    */
   void sendParticles(std::vector<ParticleType> &particles, int &receiver);
 
   /**
    * Receives particels of type ParticleType which have been send by a specific sender.
-   * @param receivedParticels The container where the received particles will be stored.
-   * @param source The sender of the particles.
+   * @param receivedParticles: The container where the received particles will be stored.
+   * @param source: The sender of the particles.
    */
   void receiveParticles(std::vector<ParticleType> &receivedParticles, int &source);
 };

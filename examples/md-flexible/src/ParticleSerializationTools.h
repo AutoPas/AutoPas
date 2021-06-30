@@ -27,14 +27,14 @@ void serializeParticle(const ParticleType &particle, std::vector<char> &serializ
  * @param particleData A pointer to the serialized particle data.
  * @param particle The particle to which the desierialized attributes will be applied.
  */
-void deserializeParticleData(char *particleData, ParticleType &particle);
+void deserializeParticle(char *particleData, ParticleType &particle);
 
 /**
  * Deserializes a container of serialized particles.
  * @param particlesData A pointer to the serialized particle data.
  * @param particles The particle container to which to append the deserialized particles to.
  */
-void deserializeParticleData(std::vector<char> &particlesData, std::vector<ParticleType> &particles);
+void deserializeParticles(std::vector<char> &particlesData, std::vector<ParticleType> &particles);
 
 /**
  * Converts ParticleAttributes to a particle of type MoleculeLJ<double>.

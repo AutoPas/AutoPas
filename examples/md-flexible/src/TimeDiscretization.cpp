@@ -42,7 +42,7 @@ void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
 
 /**
  * Calculate and update the velocity for every particle using the the Störmer-Verlet Algorithm.
- * @param autopas
+ * @param autoPasContainer
  * @param particlePropertiesLibrary
  * @param deltaT time step width
  */
