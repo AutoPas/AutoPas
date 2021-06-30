@@ -20,6 +20,7 @@
 #include "autopas/containers/octree/traversals/OTTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
+#include "autopas/utils/ParticleCellHelpers.h"
 #include "autopas/utils/logging/OctreeLogger.h"
 
 namespace autopas {
@@ -84,8 +85,13 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     std::vector<Particle *> particleRefs;
     this->_cells[CellTypes::OWNED].appendAllParticles(particleRefs);
     std::vector<Particle> particles;
+    auto result = std::vector<ParticleType>();
     for (auto *p : particleRefs) {
-      particles.push_back(*p);
+      if(utils::inBox(p->getR(), this->getBoxMin(), this->getBoxMax())) {
+        particles.push_back(*p);
+      } else {
+        result.push_back(*p);
+      }
     }
 
     deleteAllParticles();
@@ -98,9 +104,6 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     deleteHaloParticles();
 
     // logger.logTree(_root);
-
-    // TODO(johannes): Actually return removed particles
-    auto result = std::vector<ParticleType>();
     return result;
   }
 
@@ -143,13 +146,19 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    * @copydoc ParticleContainerInterface::updateHaloParticle()
    */
   bool updateHaloParticle(const ParticleType &haloParticle) override {
+    ParticleType pCopy = haloParticle;
+    pCopy.setOwnershipState(OwnershipState::halo);
+    return internal::checkParticleInCellAndUpdateByIDAndPosition(this->_cells[CellTypes::HALO], pCopy, this->getSkin());
+
     printf("Johannes' Octree::updateHaloParticle\n");
     // TODO(johannes): This is not very efficient
     std::vector<Particle *> haloParticles;
+    // TODO(johannes): Maybe checkParticleInCellAndUpdateByIDAndPosition or checkParticleInCellAndUpdateByID
     this->_cells[CellTypes::HALO].appendAllParticles(haloParticles);
     for (Particle *test : haloParticles) {
       if (test->getID() == haloParticle.getID()) {
         *test = haloParticle;  // Update the actual particle
+        test->setOwnershipState(OwnershipState::halo);
         return true;
       }
     }
@@ -194,9 +203,8 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    * @copydoc ParticleContainerInterface::getTraversalSelectorInfo()
    */
   [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
-    // TODO(johannes): Figure out what these values should be
     std::array<unsigned long, 3> dims = {1, 1, 1};
-    std::array<double, 3> cellLength = {1, 1, 1};
+    std::array<double, 3> cellLength = utils::ArrayMath::sub(this->getBoxMax(), this->getBoxMin());
     return TraversalSelectorInfo(dims, this->getInteractionLength(), cellLength, 0);
   }
 
