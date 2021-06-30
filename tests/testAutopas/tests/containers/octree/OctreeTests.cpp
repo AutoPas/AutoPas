@@ -515,6 +515,7 @@ TEST_F(OctreeTest, testAbleToSplit) {
   }
 }
 
+#if !defined(AUTOPAS_OPENMP)
 std::tuple<OctreeTest::Vector3DList, OctreeTest::Vector3DList,
            std::vector<std::tuple<unsigned long, unsigned long, double>>>
 OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
@@ -787,3 +788,4 @@ static std::vector<GeneratorSpec> getTestParams() {
 }
 
 INSTANTIATE_TEST_SUITE_P(OctreeTestGenerated, OctreeTest, ::testing::ValuesIn(getTestParams()), toString);
+#endif
