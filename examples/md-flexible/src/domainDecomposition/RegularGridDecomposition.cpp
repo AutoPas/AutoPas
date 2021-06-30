@@ -16,31 +16,10 @@
 #include "autopas/utils/ArrayUtils.h"
 #include "src/ParticleSerializationTools.h"
 
-namespace {
-/**
- * Calculates the prime factorization of a number.
- * @param number The number for which the factirization will be calculated.
- * @oPrimeFactors The container, where the prime factos will be appended.
- */
-void calculatePrimeFactors(unsigned int number, std::list<unsigned int> &oPrimeFactors) {
-  while (number % 2 == 0) {
-    oPrimeFactors.push_back(2);
-    number = number / 2;
-  }
-
-  for (unsigned int i = 3; i <= number; i = i + 2) {
-    while (number % i == 0) {
-      oPrimeFactors.push_back(i);
-      number = number / i;
-    }
-  }
-}
-}  // namespace
-
-RegularGridDecomposition::RegularGridDecomposition(const int &dimensionCount, const std::vector<double> &globalBoxMin,
-                                                   const std::vector<double> &globalBoxMax, const double &cutoffWidth,
+RegularGridDecomposition::RegularGridDecomposition(const std::array<double, 3> &globalBoxMin,
+                                                   const std::array<double, 3> &globalBoxMax, const double &cutoffWidth,
                                                    const double &skinWidth)
-    : _dimensionCount(dimensionCount), _cutoffWidth(cutoffWidth), _skinWidth(skinWidth) {
+    : _cutoffWidth(cutoffWidth), _skinWidth(skinWidth) {
 #if defined(AUTOPAS_INCLUDE_MPI)
   _mpiIsEnabled = true;
 #else
@@ -59,7 +38,7 @@ RegularGridDecomposition::RegularGridDecomposition(const int &dimensionCount, co
     std::cout << "MPI will not be used." << std::endl;
   }
 
-  DomainTools::generateDecomposition(_subdomainCount, _dimensionCount, _decomposition);
+  DomainTools::generateDecomposition(_subdomainCount, _decomposition);
 
   initializeMPICommunicator();
 
@@ -82,59 +61,27 @@ RegularGridDecomposition::~RegularGridDecomposition() {}
 
 void RegularGridDecomposition::update() { updateLocalBox(); }
 
-void RegularGridDecomposition::initializeDecomposition() {
-  std::list<unsigned int> primeFactors;
-  calculatePrimeFactors(_subdomainCount, primeFactors);
-
-  while (primeFactors.size() > _dimensionCount) {
-    primeFactors.sort();
-    auto firstElement = primeFactors.front();
-    primeFactors.pop_front();
-    primeFactors.front() *= firstElement;
-  }
-
-  _decomposition.resize(_dimensionCount);
-
-  for (auto &dimensionSize : _decomposition) {
-    if (primeFactors.size() > 0) {
-      dimensionSize = primeFactors.front();
-      primeFactors.pop_front();
-    } else {
-      dimensionSize = 1;
-    }
-  }
-}
-
 void RegularGridDecomposition::initializeMPICommunicator() {
-  std::vector<int> periods(_dimensionCount, 1);
-  autopas::AutoPas_MPI_Cart_create(AUTOPAS_MPI_COMM_WORLD, _dimensionCount, _decomposition.data(), periods.data(), true,
+  std::vector<int> periods(3, 1);
+  autopas::AutoPas_MPI_Cart_create(AUTOPAS_MPI_COMM_WORLD, 3, _decomposition.data(), periods.data(), true,
                                    &_communicator);
   autopas::AutoPas_MPI_Comm_rank(_communicator, &_domainIndex);
 }
 
 void RegularGridDecomposition::initializeLocalDomain() {
-  _domainId.resize(_dimensionCount);
+  _domainId = {0, 0, 0};
   autopas::AutoPas_MPI_Comm_rank(_communicator, &_domainIndex);
 
-  std::vector<int> periods(_dimensionCount, 1);
-  autopas::AutoPas_MPI_Cart_get(_communicator, _dimensionCount, _decomposition.data(), periods.data(),
-                                _domainId.data());
-
-  if (_domainId.empty()) {
-    _domainId.resize(_dimensionCount, 0);
-  }
+  std::vector<int> periods(3, 1);
+  autopas::AutoPas_MPI_Cart_get(_communicator, 3, _decomposition.data(), periods.data(), _domainId.data());
 }
 
 void RegularGridDecomposition::initializeLocalBox() {
-  _localBoxMin.resize(_dimensionCount);
-  _localBoxMax.resize(_dimensionCount);
   updateLocalBox();
 }
 
 void RegularGridDecomposition::initializeNeighbourIds() {
-  _neighbourDomainIndices.resize(_dimensionCount * 2);
-
-  for (int i = 0; i < _dimensionCount; ++i) {
+  for (int i = 0; i < 3; ++i) {
     auto neighbourIndex = i * 2;
     auto preceedingNeighbourId = _domainId;
     preceedingNeighbourId[i] = (--preceedingNeighbourId[i] + _decomposition[i]) % _decomposition[i];
@@ -148,7 +95,7 @@ void RegularGridDecomposition::initializeNeighbourIds() {
 }
 
 void RegularGridDecomposition::updateLocalBox() {
-  for (int i = 0; i < _dimensionCount; ++i) {
+  for (int i = 0; i < 3; ++i) {
     double localBoxWidth = (_globalBoxMax[i] - _globalBoxMin[i]) / static_cast<double>(_decomposition[i]);
 
     _localBoxMin[i] = _domainId[i] * localBoxWidth + _globalBoxMin[i];
@@ -162,34 +109,24 @@ void RegularGridDecomposition::updateLocalBox() {
   }
 }
 
-void RegularGridDecomposition::initializeGlobalBox(const std::vector<double> &globalBoxMin,
-                                                   const std::vector<double> &globalBoxMax) {
-  _globalBoxMin.resize(_dimensionCount);
-  _globalBoxMax.resize(_dimensionCount);
-  for (int i = 0; i < _dimensionCount; ++i) {
+void RegularGridDecomposition::initializeGlobalBox(const std::array<double, 3> &globalBoxMin,
+                                                   const std::array<double, 3> &globalBoxMax) {
+  for (int i = 0; i < 3; ++i) {
     _globalBoxMin[i] = globalBoxMin[i];
     _globalBoxMax[i] = globalBoxMax[i];
   }
 }
 
-bool RegularGridDecomposition::isInsideLocalDomain(const std::vector<double> &coordinates) {
+bool RegularGridDecomposition::isInsideLocalDomain(const std::array<double, 3> &coordinates) {
   return DomainTools::isInsideDomain(coordinates, _localBoxMin, _localBoxMax);
 }
 
-bool RegularGridDecomposition::isInsideLocalDomain(const std::array<double, 3> &coordinates) {
-  std::vector<double> coordinatesVector;
-  coordinatesVector.insert(coordinatesVector.begin(), coordinates.begin(), coordinates.end());
-  return isInsideLocalDomain(coordinatesVector);
-}
-
 void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer) {
-  int neighbourCount = _dimensionCount * 2;
-
-  for (int i = 0; i < _dimensionCount; ++i) {
+  for (int i = 0; i < 3; ++i) {
     std::vector<ParticleType> particlesForLeftNeighbour, particlesForRightNeighbour, haloParticles;
 
     std::array<double, 3> haloBoxMin, haloBoxMax;
-    haloBoxMin = { _localBoxMin[0] - _skinWidth , _localBoxMin[1] - _skinWidth, _localBoxMin[2] - _skinWidth }; for (int i = 0; i < _dimensionCount; ++i){
+    haloBoxMin = { _localBoxMin[0] - _skinWidth , _localBoxMin[1] - _skinWidth, _localBoxMin[2] - _skinWidth }; for (int i = 0; i < 3; ++i){
        haloBoxMax[i] = _localBoxMin[i] + _skinWidth + (_localBoxMax[i] - _localBoxMin[i]);
     }
     haloBoxMax[i] = _localBoxMin[i] + _cutoffWidth + _skinWidth;
@@ -203,7 +140,7 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
       }
     }
 
-    for (int i = 0; i < _dimensionCount; ++i){
+    for (int i = 0; i < 3; ++i){
       haloBoxMin[i] = _localBoxMax[i] - _skinWidth - (_localBoxMax[i] - _localBoxMin[i]);
     }
     haloBoxMin[i] = _localBoxMax[i] - _cutoffWidth - _skinWidth;
@@ -218,8 +155,8 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
       }
     }
 
-    int leftNeighbour = _neighbourDomainIndices[(i * 2) % neighbourCount];
-    int rightNeighbour = _neighbourDomainIndices[(i * 2 + 1) % neighbourCount];
+    int leftNeighbour = _neighbourDomainIndices[(i * 2) % 6];
+    int rightNeighbour = _neighbourDomainIndices[(i * 2 + 1) % 6];
     sendAndReceiveParticlesLeftAndRight(particlesForLeftNeighbour, particlesForRightNeighbour, leftNeighbour,
                                         rightNeighbour, haloParticles);
 
@@ -231,7 +168,7 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
     particlesForRightNeighbour.clear();
 
     // index of next dimension
-    int j = (i + 1) % _dimensionCount;
+    int j = (i + 1) % 3;
 
     double leftHaloMin = _localBoxMin[j] - _skinWidth;
     double leftHaloMax = _localBoxMin[j] + _cutoffWidth + _skinWidth;
@@ -258,8 +195,8 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
 
     haloParticles.clear();
 
-    leftNeighbour = _neighbourDomainIndices[(j * 2) % neighbourCount];
-    rightNeighbour = _neighbourDomainIndices[(j * 2 + 1) % neighbourCount];
+    leftNeighbour = _neighbourDomainIndices[(j * 2) % 6];
+    rightNeighbour = _neighbourDomainIndices[(j * 2 + 1) % 6];
     sendAndReceiveParticlesLeftAndRight(particlesForLeftNeighbour, particlesForRightNeighbour, leftNeighbour,
                                         rightNeighbour, haloParticles);
 
@@ -277,16 +214,14 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
     const std::array<double, 3> globalBoxMax = {_globalBoxMax[0], _globalBoxMax[1], _globalBoxMax[2]};
     const std::array<double, 3> globalBoxLength = autopas::utils::ArrayMath::sub(globalBoxMax, globalBoxMin);
 
-    int neighbourCount = _neighbourDomainIndices.size();
-
-    for (int i = 0; i < _dimensionCount; ++i) {
+    for (int i = 0; i < 3; ++i) {
       std::vector<ParticleType> immigrants, migrants, remainingEmigrants;
 
       std::vector<ParticleType> particlesForLeftNeighbour;
       std::vector<ParticleType> particlesForRightNeighbour;
 
-      int leftNeighbour = _neighbourDomainIndices[(i * 2) % neighbourCount];
-      int rightNeighbour = _neighbourDomainIndices[(i * 2 + 1) % neighbourCount];
+      int leftNeighbour = _neighbourDomainIndices[(i * 2) % 6];
+      int rightNeighbour = _neighbourDomainIndices[(i * 2 + 1) % 6];
 
       std::array<double, 3> position;
       for (const auto &particle : emigrants) {
@@ -327,10 +262,10 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
       immigrants.clear();
 
       // index of next dimension
-      int j = (i + 1) % _dimensionCount;
+      int j = (i + 1) % 3;
 
-      leftNeighbour = _neighbourDomainIndices[(j * 2) % neighbourCount];
-      rightNeighbour = _neighbourDomainIndices[(j * 2 + 1) % neighbourCount];
+      leftNeighbour = _neighbourDomainIndices[(j * 2) % 6];
+      rightNeighbour = _neighbourDomainIndices[(j * 2 + 1) % 6];
 
       for (const auto &particle : migrants) {
         std::array<double, 3> position = particle.getR();
@@ -432,10 +367,10 @@ void RegularGridDecomposition::waitForSendRequests() {
   _sendBuffers.clear();
 }
 
-int RegularGridDecomposition::convertIdToIndex(const std::vector<int> &domainId) {
+int RegularGridDecomposition::convertIdToIndex(const std::array<int, 3> &domainId) {
   int neighbourDomainIndex = 0;
 
-  for (int i = 0; i < _dimensionCount; ++i) {
+  for (int i = 0; i < 3; ++i) {
     int accumulatedTail = 1;
 
     if (i < _decomposition.size() - 1) {

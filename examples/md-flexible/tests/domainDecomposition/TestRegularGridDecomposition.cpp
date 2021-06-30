@@ -5,6 +5,7 @@
  */
 #include "TestRegularGridDecomposition.h"
 
+#include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/WrapMPI.h"
 #include "src/ParticleAttributes.h"
 #include "src/ParticleSerializationTools.h"
@@ -14,26 +15,6 @@
 #include "src/domainDecomposition/RegularGridDecomposition.h"
 
 namespace {
-std::vector<double> sub(std::vector<double> a, std::vector<double> b) {
-  std::vector<double> difference = a;
-  if (a.size() == b.size()) {
-    for (int i = 0; i < a.size(); ++i) {
-      difference[i] = a[i] - b[i];
-    }
-  }
-  return difference;
-}
-
-std::vector<double> div(std::vector<double> a, std::vector<int> b) {
-  std::vector<double> result = a;
-  if (a.size() == b.size()) {
-    for (int i = 0; i < a.size(); ++i) {
-      result[i] = a[i] / (double)b[i];
-    }
-  }
-  return result;
-}
-
 void initializeAutoPasContainer(RegularGridDecomposition::SharedAutoPasContainer &autoPasContainer,
                                 MDFlexConfig &configuration) {
   autoPasContainer->setAllowedCellSizeFactors(*configuration.cellSizeFactors.value);
@@ -65,23 +46,22 @@ void initializeAutoPasContainer(RegularGridDecomposition::SharedAutoPasContainer
 }  // namespace
 
 TEST_F(TestRegularGridDecomposition, testGetLocalDomain) {
-  std::vector<double> globalBoxMin = {1.0, 1.0, 1.0};
-  std::vector<double> globalBoxMax = {10.0, 10.0, 10.0};
+  std::array<double, 3> globalBoxMin = {1.0, 1.0, 1.0};
+  std::array<double, 3> globalBoxMax = {10.0, 10.0, 10.0};
 
-  RegularGridDecomposition domainDecomposition(3, globalBoxMin, globalBoxMax, 0, 0);
+  RegularGridDecomposition domainDecomposition(globalBoxMin, globalBoxMax, 0, 0);
 
-  std::vector<double> globalBoxExtend = sub(globalBoxMax, globalBoxMin);
+  std::array<double, 3> globalBoxExtend = autopas::utils::ArrayMath::sub(globalBoxMax, globalBoxMin);
 
   int numberOfProcesses;
   autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &numberOfProcesses);
 
-  std::vector<int> decomposition;
-  DomainTools::generateDecomposition(numberOfProcesses, 3, decomposition);
+  std::array<int, 3> decomposition;
+  DomainTools::generateDecomposition(numberOfProcesses, decomposition);
 
-  std::vector<double> expectedLocalBoxExtend = div(globalBoxExtend, decomposition);
+  std::array<double, 3> expectedLocalBoxExtend = autopas::utils::ArrayMath::div(globalBoxExtend, { (double)decomposition[0], (double)decomposition[1], (double)decomposition[2] });
 
-  std::vector<double> resultingLocalBoxExtend =
-      sub(domainDecomposition.getLocalBoxMax(), domainDecomposition.getLocalBoxMin());
+  std::array<double, 3> resultingLocalBoxExtend = autopas::utils::ArrayMath::sub(domainDecomposition.getLocalBoxMax(), domainDecomposition.getLocalBoxMin());
 
   EXPECT_NEAR(expectedLocalBoxExtend[0], resultingLocalBoxExtend[0], 1e-10);
   EXPECT_NEAR(expectedLocalBoxExtend[1], resultingLocalBoxExtend[1], 1e-10);
@@ -95,13 +75,13 @@ TEST_F(TestRegularGridDecomposition, testExchangeHaloParticles) {
 
   MDFlexConfig configuration(3, argv);
 
-  std::vector<double> globalBoxMin = {1.0, 1.0, 1.0};
-  std::vector<double> globalBoxMax = {10.0, 10.0, 10.0};
+  std::array<double, 3> globalBoxMin = {1.0, 1.0, 1.0};
+  std::array<double, 3> globalBoxMax = {10.0, 10.0, 10.0};
 
-  RegularGridDecomposition domainDecomposition(3, globalBoxMin, globalBoxMax, 0, 0);
+  RegularGridDecomposition domainDecomposition(globalBoxMin, globalBoxMax, 0, 0);
 
-  std::vector<double> localBoxMin = domainDecomposition.getLocalBoxMin();
-  std::vector<double> localBoxMax = domainDecomposition.getLocalBoxMax();
+  std::array<double, 3> localBoxMin = domainDecomposition.getLocalBoxMin();
+  std::array<double, 3> localBoxMax = domainDecomposition.getLocalBoxMax();
   for (int i = 0; i < localBoxMin.size(); ++i) {
     configuration.boxMin.value[i] = localBoxMin[i];
     configuration.boxMax.value[i] = localBoxMax[i];
@@ -127,13 +107,13 @@ TEST_F(TestRegularGridDecomposition, testExchangeMigratingParticles) {
 
   MDFlexConfig configuration(3, argv);
 
-  std::vector<double> globalBoxMin = {1.0, 1.0, 1.0};
-  std::vector<double> globalBoxMax = {10.0, 10.0, 10.0};
+  std::array<double, 3> globalBoxMin = {1.0, 1.0, 1.0};
+  std::array<double, 3> globalBoxMax = {10.0, 10.0, 10.0};
 
-  RegularGridDecomposition domainDecomposition(3, globalBoxMin, globalBoxMax, 0, 0);
+  RegularGridDecomposition domainDecomposition(globalBoxMin, globalBoxMax, 0, 0);
 
-  std::vector<double> localBoxMin = domainDecomposition.getLocalBoxMin();
-  std::vector<double> localBoxMax = domainDecomposition.getLocalBoxMax();
+  std::array<double, 3> localBoxMin = domainDecomposition.getLocalBoxMin();
+  std::array<double, 3> localBoxMax = domainDecomposition.getLocalBoxMax();
   for (int i = 0; i < localBoxMin.size(); ++i) {
     configuration.boxMin.value[i] = localBoxMin[i];
     configuration.boxMax.value[i] = localBoxMax[i];

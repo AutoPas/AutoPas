@@ -23,11 +23,7 @@ int main(int argc, char **argv) {
 
   MDFlexConfig configuration(argc, argv);
 
-  const std::vector<double> boxMin(configuration.boxMin.value.begin(), configuration.boxMin.value.end());
-  const std::vector<double> boxMax(configuration.boxMax.value.begin(), configuration.boxMax.value.end());
-
-  RegularGridDecomposition domainDecomposition(3, boxMin, boxMax, configuration.cutoff.value,
-                                               configuration.verletSkinRadius.value);
+  RegularGridDecomposition domainDecomposition(configuration.boxMin.value, configuration.boxMax.value, configuration.cutoff.value, configuration.verletSkinRadius.value);
 
   Simulation simulation(configuration, domainDecomposition);
   simulation.run();

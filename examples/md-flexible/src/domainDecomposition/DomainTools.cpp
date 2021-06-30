@@ -12,17 +12,6 @@
 #include "autopas/utils/ArrayMath.h"
 
 namespace DomainTools {
-bool isInsideDomain(const std::vector<double> &coordinates, std::vector<double> &boxMin, std::vector<double> &boxMax) {
-  bool isInsideLocalDomain = true;
-  for (int i = 0; i < coordinates.size(); ++i) {
-    if (!isInsideLocalDomain) {
-      break;
-    }
-    isInsideLocalDomain = coordinates[i] >= boxMin[i] && coordinates[i] < boxMax[i];
-  }
-  return isInsideLocalDomain;
-}
-
 bool isInsideDomain(const std::array<double, 3> &coordinates, std::array<double, 3> &boxMin,
                     std::array<double, 3> &boxMax) {
   bool isInsideLocalDomain = true;
@@ -33,24 +22,6 @@ bool isInsideDomain(const std::array<double, 3> &coordinates, std::array<double,
     isInsideLocalDomain = coordinates[i] >= boxMin[i] && coordinates[i] < boxMax[i];
   }
   return isInsideLocalDomain;
-}
-
-double getDistanceToDomain(const std::vector<double> &coordinates, std::vector<double> &boxMin,
-                           std::vector<double> &boxMax) {
-  if (coordinates.size() == boxMin.size() && coordinates.size() == boxMax.size()) {
-    std::vector<double> differences(coordinates.size(), 0.0);
-    for (int i = 0; i < coordinates.size(); ++i) {
-      differences[i] = std::clamp(coordinates[i], boxMin[i], boxMax[i]);
-    }
-
-    double distance = 0.0;
-    for (const auto &difference : differences) {
-      distance += std::pow(difference, 2.0);
-    }
-
-    return std::pow(distance, 1.0 / differences.size());
-  }
-  return -1;
 }
 
 double getDistanceToDomain(const std::array<double, 3> &coordinates, std::array<double, 3> &boxMin,
@@ -66,7 +37,7 @@ double getDistanceToDomain(const std::array<double, 3> &coordinates, std::array<
   return -1;
 }
 
-void generateDecomposition(unsigned int subdomainCount, int dimensionCount, std::vector<int> &decomposition) {
+void generateDecomposition(unsigned int subdomainCount, std::array<int, 3> &decomposition) {
   std::list<int> primeFactors;
   while (subdomainCount % 2 == 0) {
     primeFactors.push_back(2);
@@ -80,14 +51,12 @@ void generateDecomposition(unsigned int subdomainCount, int dimensionCount, std:
     }
   }
 
-  while (primeFactors.size() > dimensionCount) {
+  while (primeFactors.size() > 3) {
     primeFactors.sort();
     auto firstElement = primeFactors.front();
     primeFactors.pop_front();
     primeFactors.front() *= firstElement;
   }
-
-  decomposition.resize(dimensionCount);
 
   for (auto &dimensionSize : decomposition) {
     if (not primeFactors.empty()) {

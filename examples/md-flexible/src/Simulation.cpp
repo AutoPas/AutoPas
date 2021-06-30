@@ -51,9 +51,6 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
     _outputStream = &(*_logFile);
   }
 
-  const std::vector<double> localBoxMin = _domainDecomposition.getLocalBoxMin();
-  const std::vector<double> localBoxMax = _domainDecomposition.getLocalBoxMax();
-
   _autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(*_outputStream);
   _autoPasContainer->setAllowedCellSizeFactors(*_configuration.cellSizeFactors.value);
   _autoPasContainer->setAllowedContainers(_configuration.containerOptions.value);
@@ -61,8 +58,8 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
   _autoPasContainer->setAllowedNewton3Options(_configuration.newton3Options.value);
   _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions.value);
   _autoPasContainer->setAllowedLoadEstimators(_configuration.loadEstimatorOptions.value);
-  _autoPasContainer->setBoxMin({localBoxMin[0], localBoxMin[1], localBoxMin[2]});
-  _autoPasContainer->setBoxMax({localBoxMax[0], localBoxMax[1], localBoxMax[2]});
+  _autoPasContainer->setBoxMin(_domainDecomposition.getLocalBoxMin());
+  _autoPasContainer->setBoxMax(_domainDecomposition.getLocalBoxMax());
   _autoPasContainer->setCutoff(_configuration.cutoff.value);
   _autoPasContainer->setRelativeOptimumRange(_configuration.relativeOptimumRange.value);
   _autoPasContainer->setMaxTuningPhasesWithoutTest(_configuration.maxTuningPhasesWithoutTest.value);

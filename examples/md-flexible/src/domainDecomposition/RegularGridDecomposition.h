@@ -21,14 +21,12 @@ class RegularGridDecomposition final : public DomainDecomposition {
  public:
   /**
    * Constructor.
-   * @param argc The argument count passed to the main function.
-   * @param argv The argument vector passed to the main function.
-   * @param dimensionCount The number of dimensions for this domain decomposition.
-   * @param globalBoxMin The minimum coordinates of the global domain.
-   * @param globalBoxMax The maximum coordinates of the global domain.
+   * @param globalBoxMin: The minimum coordinates of the global domain.
+   * @param globalBoxMax: The maximum coordinates of the global domain.
+   * @param cutoofWidth: The cutoff width for halo particles.
+   * @param skinWidth: The skin width of an autopas container domain.
    */
-  RegularGridDecomposition(const int &dimensionCount, const std::vector<double> &globalBoxMin,
-                           const std::vector<double> &globalBoxMax, const double &cutoffWidth, const double &skinWidth);
+  RegularGridDecomposition(const std::array<double, 3> &globalBoxMin, const std::array<double, 3> &globalBoxMax, const double &cutoffWidth, const double &skinWidth);
 
   /**
    * Destructor.
@@ -52,43 +50,32 @@ class RegularGridDecomposition final : public DomainDecomposition {
   const int getDomainIndex() override { return _domainIndex; }
 
   /**
-   * Returns the number of dimesnions in the domain decomposition.
-   */
-  const int getDimensionCount() override { return _dimensionCount; }
-
-  /**
    * Returns the minimum coordinates of global domain.
    */
-  const std::vector<double> getGlobalBoxMin() override { return _globalBoxMin; }
+  const std::array<double, 3> getGlobalBoxMin() override { return _globalBoxMin; }
 
   /**
    * Returns the maximum coordinates of global domain.
    */
-  const std::vector<double> getGlobalBoxMax() override { return _globalBoxMax; }
+  const std::array<double, 3> getGlobalBoxMax() override { return _globalBoxMax; }
 
   /**
    * Returns the minimum coordinates of local domain.
    */
-  const std::vector<double> getLocalBoxMin() override { return _localBoxMin; }
+  const std::array<double, 3> getLocalBoxMin() override { return _localBoxMin; }
 
   /**
    * Returns the maximum coordinates of local domain.
    */
-  const std::vector<double> getLocalBoxMax() override { return _localBoxMax; }
+  const std::array<double, 3> getLocalBoxMax() override { return _localBoxMax; }
 
   /**
    * Returns the number of domains in each dimension
    */
-  const std::vector<int> getDecomposition() { return _decomposition; }
+  const std::array<int, 3> getDecomposition() { return _decomposition; }
 
   /**
    * Checks if the provided coordinates are located in the local domain.
-   */
-  bool isInsideLocalDomain(const std::vector<double> &coordinates) override;
-
-  /**
-   * Checks if the provided coordinates are located in the local domain.
-   * Instead of a vector, the coordinates are of type std::array<double, 3> to be compatible with AutoPas.
    */
   bool isInsideLocalDomain(const std::array<double, 3> &coordinates) override;
 
@@ -112,11 +99,6 @@ class RegularGridDecomposition final : public DomainDecomposition {
   bool _mpiIsEnabled;
 
   /**
-   * The number of dimensions in this decomposition.
-   */
-  int _dimensionCount;
-
-  /**
    * The number of subdomains in this decomposition.
    */
   int _subdomainCount;
@@ -124,17 +106,17 @@ class RegularGridDecomposition final : public DomainDecomposition {
   /**
    * The minimum coordinates of the global domain.
    */
-  std::vector<double> _globalBoxMin;
+  std::array<double, 3> _globalBoxMin;
 
   /**
    * The maximum coordinates of the global domain.
    */
-  std::vector<double> _globalBoxMax;
+  std::array<double, 3> _globalBoxMax;
 
   /**
    * The decomposition computed depending on the number of subdomains.
    */
-  std::vector<int> _decomposition;
+  std::array<int, 3> _decomposition;
 
   /**
    * The MPI communicator containing all processes which own a subdomain in this decomposition.
@@ -160,23 +142,22 @@ class RegularGridDecomposition final : public DomainDecomposition {
   /**
    * The ID of the current processor's domain.
    */
-  std::vector<int> _domainId;
+  std::array<int, 3> _domainId;
 
   /**
    * The indices of the local domain's neighbours.
-   * These correspond to the ranks of the processors which own the neigbour domain.
-   */
-  std::vector<int> _neighbourDomainIndices;
+   * These correspond to the ranks of the processors which own the neigbour domain.  */
+  std::array<int, 6> _neighbourDomainIndices;
 
   /**
    * The minimum cooridnates of the local domain.
    */
-  std::vector<double> _localBoxMin;
+  std::array<double, 3> _localBoxMin;
 
   /**
    * The maximum cooridnates of the local domain.
    */
-  std::vector<double> _localBoxMax;
+  std::array<double, 3> _localBoxMax;
 
   /**
    * A temporary buffer used for MPI send requests.
@@ -209,7 +190,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
   /**
    * Initializes the global domain coordinates.
    */
-  void initializeGlobalBox(const std::vector<double> &globalBoxMin, const std::vector<double> &globalBoxMax);
+  void initializeGlobalBox(const std::array<double, 3> &globalBoxMin, const std::array<double, 3> &globalBoxMax);
 
   /**
    * Initializes the local domain coordinates.
@@ -276,5 +257,5 @@ class RegularGridDecomposition final : public DomainDecomposition {
   /**
    * Converts a domain id to the domain index, i.e. rank of the local processor.
    */
-  int convertIdToIndex(const std::vector<int> &domainIndex);
+  int convertIdToIndex(const std::array<int, 3> &domainIndex);
 };
