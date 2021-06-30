@@ -55,8 +55,10 @@ class AutoTuner {
    * @param verletSkin Length added to the cutoff for the Verlet lists' skin.
    * @param verletClusterSize Number of particles in a cluster to use in verlet list.
    * @param tuningStrategy Object implementing the modelling and exploration of a search space.
-   * @param MPITuningMaxDifferenceForBucket For MPI-tuning: Maximum of the relative difference in the comparison metric for two ranks which exchange their tuning information.
-   * @param MPITuningWeightForMaxDensity For MPI-tuning: Weight for maxDensity in the calculation for bucket distribution.
+   * @param MPITuningMaxDifferenceForBucket For MPI-tuning: Maximum of the relative difference in the comparison metric
+   * for two ranks which exchange their tuning information.
+   * @param MPITuningWeightForMaxDensity For MPI-tuning: Weight for maxDensity in the calculation for bucket
+   * distribution.
    * @param selectorStrategy Strategy for the configuration selection.
    * @param tuningInterval Number of time steps after which the auto-tuner shall reevaluate all selections.
    * @param maxSamples Number of samples that shall be collected for each combination.
@@ -64,8 +66,9 @@ class AutoTuner {
    */
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
             unsigned int verletClusterSize, std::unique_ptr<TuningStrategyInterface> tuningStrategy,
-            double MPITuningMaxDifferenceForBucket, double MPITuningWeightForMaxDensity, SelectorStrategyOption selectorStrategy,
-            unsigned int tuningInterval, unsigned int maxSamples, const std::string &outputSuffix = "")
+            double MPITuningMaxDifferenceForBucket, double MPITuningWeightForMaxDensity,
+            SelectorStrategyOption selectorStrategy, unsigned int tuningInterval, unsigned int maxSamples,
+            const std::string &outputSuffix = "")
       : _selectorStrategy(selectorStrategy),
         _tuningStrategy(std::move(tuningStrategy)),
         _tuningInterval(tuningInterval),
@@ -240,7 +243,8 @@ class AutoTuner {
   const size_t _maxSamples;
 
   /**
-   * Parameter used For MPI-tuning: Maximum of the relative difference in the comparison metric for two ranks which exchange their tuning information.
+   * Parameter used For MPI-tuning: Maximum of the relative difference in the comparison metric for two ranks which
+   * exchange their tuning information.
    */
   double _mpiTuningMaxDifferenceForBucket;
 
@@ -248,6 +252,17 @@ class AutoTuner {
    * Parameter used For MPI-tuning: Weight for maxDensity in the calculation for bucket distribution.
    */
   double _mpiTuningWeightForMaxDensity;
+
+
+  /**
+   * Buffer for the homogeneities of the last ten Iterations
+   */
+  std::vector<double> _homogeneitiesOfLastTenIterations;
+
+  /**
+   * Buffer for the homogeneities of the last ten Iterations
+   */
+  std::vector<double> _maxDensitiesOfLastTenIterations;
 
   /**
    * Raw time samples of the current configuration from which one evidence will be produced.
@@ -288,6 +303,11 @@ bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild
   // - more than one config exists
   // - currently in tuning phase
   // - functor is relevant
+  if (_iterationsSinceTuning >= _tuningInterval - 10) {
+    const auto [homogeneity, maxDensity] = autopas::utils::calculateHomogeneityAndMaxDensity<Particle>(getContainer());
+    _homogeneitiesOfLastTenIterations.push_back(homogeneity);
+    _maxDensitiesOfLastTenIterations.push_back(maxDensity);
+  }
   if ((not _tuningStrategy->searchSpaceIsTrivial()) and _iterationsSinceTuning >= _tuningInterval and
       f->isRelevantForTuning()) {
     isTuning = tune<PairwiseFunctor>(*f);
@@ -448,18 +468,26 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
   utils::Timer tuningTimer;
   tuningTimer.start();
 
-  // TODO: calculate homogeneity and max density of last 10 iterations for smoothing
-
   // first tuning iteration -> reset to first config
   if (_iterationsSinceTuning == _tuningInterval) {
-    // FIXME: replace try,catch with if,else
-    try {
-      auto &mpiStrategy = dynamic_cast<MPIParallelizedStrategy &>(*_tuningStrategy);
-      mpiStrategy.reset<Particle>(_iteration, getContainer(), _mpiTuningMaxDifferenceForBucket,
-                                  _mpiTuningWeightForMaxDensity);
-    } catch (std::bad_cast &bad_cast) {
+    if (auto *mpiStrategy = dynamic_cast<MPIParallelizedStrategy *>(_tuningStrategy.get())) {
+      std::ostringstream oss;
+      std::copy(_homogeneitiesOfLastTenIterations.begin(), _homogeneitiesOfLastTenIterations.end()-1,
+                std::ostream_iterator<double>(oss, ","));
+      oss << _homogeneitiesOfLastTenIterations.back();
+      AutoPasLog(debug, "Collected Homogeneities: " + oss.str());
+      oss.clear();
+      std::copy(_maxDensitiesOfLastTenIterations.begin(), _maxDensitiesOfLastTenIterations.end()-1,
+                std::ostream_iterator<double>(oss, ","));
+      oss << _maxDensitiesOfLastTenIterations.back();
+      AutoPasLog(debug, "Collected max Densities: " + oss.str());
+      mpiStrategy->reset<Particle>(_iteration, getContainer(), _mpiTuningMaxDifferenceForBucket,
+                                   _mpiTuningWeightForMaxDensity);
+    } else {
       _tuningStrategy->reset(_iteration);
     }
+    _homogeneitiesOfLastTenIterations.erase(_homogeneitiesOfLastTenIterations.begin(), _homogeneitiesOfLastTenIterations.end());
+    _maxDensitiesOfLastTenIterations.erase(_maxDensitiesOfLastTenIterations.begin(), _maxDensitiesOfLastTenIterations.end());
   } else {  // enough samples -> next config
     stillTuning = _tuningStrategy->tune();
   }

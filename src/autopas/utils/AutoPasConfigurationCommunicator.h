@@ -85,7 +85,8 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
  * @param comm MPI communicator
  * @param bucket new MPI communicator for its bucket
  * @param container container of current simulation
- * @param MPITuningMaxDifferenceForBucket For MPI-tuning: Maximum of the relative difference in the comparison metric for two ranks which exchange their tuning information.
+ * @param MPITuningMaxDifferenceForBucket For MPI-tuning: Maximum of the relative difference in the comparison metric
+ * for two ranks which exchange their tuning information.
  * @param MPITuningWeightForMaxDensity For MPI-tuning: Weight for maxDensity in the calculation for bucket distribution.
  */
 template <class Particle>
@@ -101,8 +102,12 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket,
   const auto [homogeneity, maxDensity] = autopas::utils::calculateHomogeneityAndMaxDensity<Particle>(container);
   double similarityMetric = homogeneity + MPITuningWeightForMaxDensity * maxDensity;
 
+  // debug print for evaluation
+  AutoPasLog(debug, "Homogeneity of rank: " + std::to_string(rank) + " is: " + std::to_string(homogeneity));
+
   // get all the similarityMetrics of the other ranks
-  AutoPas_MPI_Allgather(&similarityMetric, 1, AUTOPAS_MPI_DOUBLE, similarityMetrics.data(), 1, AUTOPAS_MPI_DOUBLE, comm);
+  AutoPas_MPI_Allgather(&similarityMetric, 1, AUTOPAS_MPI_DOUBLE, similarityMetrics.data(), 1, AUTOPAS_MPI_DOUBLE,
+                        comm);
 
   // sort all values
   std::sort(similarityMetrics.begin(), similarityMetrics.end());
@@ -123,7 +128,7 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket,
     if (differences[i] > MPITuningMaxDifferenceForBucket) current_bucket++;
 
     // debug print for evaluation
-    AutoPasLog(debug, "rank: " + std::to_string(rank) + " bucket: " + std::to_string(current_bucket) +
+    AutoPasLog(debug, "I am rank: " + std::to_string(rank) + " bucket: " + std::to_string(current_bucket) +
                           "  new value: " + std::to_string(similarityMetrics[i]));
     if (similarityMetrics[i] == similarityMetric) my_bucket = current_bucket;
   }

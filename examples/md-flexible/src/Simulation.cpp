@@ -185,6 +185,7 @@ void Simulation::globalForces(autopas::AutoPas<ParticleType> &autopas) {
 }
 
 void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
+  // TODO use function in SimilarityFunctions.h
   this->_homogeneity = Simulation::calculateHomogeneity(autopas);
   _timers.simulate.start();
 
