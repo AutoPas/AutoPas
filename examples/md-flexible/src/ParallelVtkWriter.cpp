@@ -43,6 +43,11 @@ ParallelVtkWriter::ParallelVtkWriter(std::string sessionName, const std::string 
   autopas::AutoPas_MPI_Bcast(&_dataFolderPath[0], dataFolderPathLength, AUTOPAS_MPI_CHAR, 0, AUTOPAS_MPI_COMM_WORLD);
 }
 
+/**
+ * @todo: Currently this function runs over all the particles for each property separately.
+ * This can be improved by using multiple string streams (one for each property).
+ * The streams can be combined to a single output stream after iterating over the particles, once.
+ */
 void ParallelVtkWriter::recordTimestep(const int &currentIteration,
                                        const autopas::AutoPas<ParticleType> &autoPasContainer) {
   if (_mpiRank == 0) {
