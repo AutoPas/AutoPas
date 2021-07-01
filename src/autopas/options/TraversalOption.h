@@ -39,10 +39,6 @@ class TraversalOption : public Option<TraversalOption> {
      */
     lc_c01_combined_SoA,
     /**
-     * LCC01CudaTraversal : CUDA version of LCC01Traversal.
-     */
-    lc_c01_cuda,
-    /**
      * LCC04Traversal : Four-way domain coloring using plus-shaped clusters of cells that are processed with the c08
      * base-step. Less scheduling overhead than LCC08Traversal because of fewer barriers but more coarse-grained.
      */
@@ -81,13 +77,6 @@ class TraversalOption : public Option<TraversalOption> {
      */
     lc_sliced_c02,
 
-    // VerletClusterCells Traversals:
-    /**
-     * VCCClusterIterationCUDATraversal : CUDA. Concurrent processing of all clusters avoiding data races through
-     * atomics.
-     */
-    vcc_cluster_iteration_cuda,
-
     // VerletClusterLists Traversals:
     /**
      * VCLC01BalancedTraversal : Assign a fixed set of towers to each thread balanced by number of contained clusters.
@@ -113,7 +102,7 @@ class TraversalOption : public Option<TraversalOption> {
      */
     vcl_sliced_balanced,
     /**
-     * VCCSlicedC02Traversal : 1D slicing with as many slices of minimal thickness as possible. No locks but two way
+     * VCLSlicedC02Traversal : 1D slicing with as many slices of minimal thickness as possible. No locks but two way
      * coloring of slices.
      */
     vcl_sliced_c02,
@@ -223,16 +212,12 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::lc_sliced_balanced, "lc_sliced_balanced"},
         {TraversalOption::lc_sliced_c02, "lc_sliced_c02"},
         {TraversalOption::lc_c01, "lc_c01"},
-        {TraversalOption::lc_c01_cuda, "lc_c01_cuda"},
         {TraversalOption::lc_c01_combined_SoA, "lc_c01_combined_SoA"},
         {TraversalOption::lc_c04, "lc_c04"},
         {TraversalOption::lc_c04_HCP, "lc_c04_HCP"},
         {TraversalOption::lc_c04_combined_SoA, "lc_c04_combined_SoA"},
         {TraversalOption::lc_c08, "lc_c08"},
         {TraversalOption::lc_c18, "lc_c18"},
-
-        // VerletClusterCells Traversals:
-        {TraversalOption::vcc_cluster_iteration_cuda, "vcc_cluster_iteration_cuda"},
 
         // VerletClusterLists Traversals:
         {TraversalOption::vcl_cluster_iteration, "vcl_cluster_iteration"},

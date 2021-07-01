@@ -22,7 +22,7 @@ add_custom_command(OUTPUT ispc.o
         COMMAND ispc --opt=fast-math --pic ${ISPC_SRC} -o ispc.o
         DEPENDS ${ISPC_SRC})
 
-add_library(autopas STATIC $<$<BOOL:${AUTOPAS_ENABLE_CUDA}>:${CU_SRC}> ${MY_SRC} ispc.o)
+add_library(autopas STATIC ${MY_SRC} ispc.o)
 
 target_link_libraries(
     autopas
@@ -43,15 +43,11 @@ target_compile_definitions(
     autopas
     PUBLIC
     $<$<BOOL:${AUTOPAS_OPENMP}>:AUTOPAS_OPENMP>
-    $<$<BOOL:${AUTOPAS_ENABLE_CUDA}>:AUTOPAS_CUDA>
     $<$<NOT:$<BOOL:${AUTOPAS_OPENMP}>>:EIGEN_DONT_PARALLELIZE>
     $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:AUTOPAS_INTERNODE_TUNING>
     _USE_MATH_DEFINES
 )
 
-if (AUTOPAS_ENABLE_CUDA)
-    target_include_directories(autopas SYSTEM PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-endif ()
 
 target_include_directories(autopas PUBLIC ${AUTOPAS_SOURCE_DIR}/src/)
 target_include_directories(autopas PUBLIC ${AUTOPAS_BINARY_DIR}/src/)

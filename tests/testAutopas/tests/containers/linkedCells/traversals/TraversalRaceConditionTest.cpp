@@ -42,11 +42,6 @@ TEST_F(TraversalRaceConditionTest, testRCNonDeterministic) {
         continue;
       }
 
-      if (traversal == autopas::TraversalOption::lc_c01_cuda) {
-        // lc_c01_cuda traversal does not work with dataLayout Option AoS used in this test.
-        continue;
-      }
-
       // @TODO: extend Simple Functor for SoA
       for (auto &dataLayout :
            /*autopas::DataLayoutOption::getAllOptions()*/ {autopas::DataLayoutOption(autopas::DataLayoutOption::aos)}) {

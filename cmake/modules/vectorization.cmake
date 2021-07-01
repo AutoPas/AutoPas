@@ -18,18 +18,18 @@ if (AUTOPAS_USE_VECTORIZATION)
         autopas
         PUBLIC
             # openmp simd
-            $<$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-fopenmp-simd>
-            $<$<CXX_COMPILER_ID:Intel>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-qopenmp-simd>
+            $<$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>:-fopenmp-simd>
+            $<$<CXX_COMPILER_ID:Intel>:-qopenmp-simd>
             # vector instruction set
-            $<$<STREQUAL:${AUTOPAS_VECTOR_INSTRUCTIONS},NATIVE>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-march=native>
-            $<$<STREQUAL:${AUTOPAS_VECTOR_INSTRUCTIONS},SSE>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-msse3>
-            $<$<STREQUAL:${AUTOPAS_VECTOR_INSTRUCTIONS},AVX>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-mavx>
-            $<$<AND:$<STREQUAL:${AUTOPAS_VECTOR_INSTRUCTIONS},AVX2>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-mavx2
-            $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-mfma>
-            $<$<AND:$<STREQUAL:${AUTOPAS_VECTOR_INSTRUCTIONS},AVX2>,$<CXX_COMPILER_ID:Intel>>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-march=core-avx2
-            $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-fma>
-            $<$<AND:$<STREQUAL:${AUTOPAS_VECTOR_INSTRUCTIONS},KNL>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-march=knl>
-            $<$<AND:$<STREQUAL:${AUTOPAS_VECTOR_INSTRUCTIONS},KNL>,$<CXX_COMPILER_ID:Intel>>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-xMIC-AVX512>
+            $<$<STREQUAL:${AUTOPAS_VECTOR_INSTRUCTIONS},NATIVE>:-march=native>
+            $<$<STREQUAL:${AUTOPAS_VECTOR_INSTRUCTIONS},SSE>:-msse3>
+            $<$<STREQUAL:${AUTOPAS_VECTOR_INSTRUCTIONS},AVX>:-mavx>
+            $<$<AND:$<STREQUAL:${AUTOPAS_VECTOR_INSTRUCTIONS},AVX2>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:-mavx2
+            -mfma>
+            $<$<AND:$<STREQUAL:${AUTOPAS_VECTOR_INSTRUCTIONS},AVX2>,$<CXX_COMPILER_ID:Intel>>:-march=core-avx2
+            -fma>
+            $<$<AND:$<STREQUAL:${AUTOPAS_VECTOR_INSTRUCTIONS},KNL>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:-march=knl>
+            $<$<AND:$<STREQUAL:${AUTOPAS_VECTOR_INSTRUCTIONS},KNL>,$<CXX_COMPILER_ID:Intel>>:-xMIC-AVX512>
     )
 else ()
     message(STATUS "Vectorization disabled.")
@@ -37,8 +37,8 @@ else ()
     target_compile_options(
         autopas
         PUBLIC
-            $<$<CXX_COMPILER_ID:GNU>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-fno-tree-vectorize>
-            $<$<CXX_COMPILER_ID:Clang>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-fno-vectorize>
-            $<$<CXX_COMPILER_ID:Intel>:$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>-no-vec>
+            $<$<CXX_COMPILER_ID:GNU>:-fno-tree-vectorize>
+            $<$<CXX_COMPILER_ID:Clang>:-fno-vectorize>
+            $<$<CXX_COMPILER_ID:Intel>:-no-vec>
     )
 endif ()

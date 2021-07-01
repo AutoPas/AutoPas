@@ -18,7 +18,6 @@ def getAllTraversals():
                 traversalList = currentLine[0].split(", ")
                 for c in traversalList:
                     allTraversals.append(c)
-                allTraversals.remove("cuda-c01")
                 print(allTraversals)
 
 

@@ -138,7 +138,6 @@ for datafile in datafiles:
         "VerletListsCells": '#0000FF',  # blue
         "VerletClusterLists": '#4B0082',  # indigo
         "VarVerletListsAsBuild": '#FFA500',  # orange
-        "VerletClusterCells": "#90EE90"  # lightgreen
     }
 
     shown = {
@@ -148,7 +147,6 @@ for datafile in datafiles:
         "VerletListsCells": False,
         "VerletClusterLists": False,
         "VarVerletListsAsBuild": False,
-        "VerletClusterCells": False
     }
 
     # plotting predictions
