@@ -14,8 +14,7 @@
 /**
  * Class describing a regular 3D particle grid object.
  */
-template <class ParticleClass>
-class CubeGrid : public Object<ParticleClass> {
+class CubeGrid : public Object {
  public:
   /**
    * Constructor.
@@ -31,7 +30,7 @@ class CubeGrid : public Object<ParticleClass> {
   CubeGrid(const std::array<double, 3> &velocity, unsigned long typeId, double epsilon, double sigma, double mass,
            const std::array<size_t, 3> &particlesPerDim, double particleSpacing,
            const std::array<double, 3> &bottomLeftCorner)
-      : Object<ParticleClass>(velocity, typeId, epsilon, sigma, mass),
+      : Object(velocity, typeId, epsilon, sigma, mass),
         _particlesPerDim(particlesPerDim),
         _particleSpacing(particleSpacing),
         _bottomLeftCorner(bottomLeftCorner) {}
@@ -57,14 +56,14 @@ class CubeGrid : public Object<ParticleClass> {
   }
 
   /**
-   * Returns the coordinates of the bottom left front corner.
-   * @return bottom left front corner.
+   * Returns the coordinates of the bottom left corner.
+   * @return bottom left corner.
    */
   [[nodiscard]] std::array<double, 3> getBoxMin() const override { return _bottomLeftCorner; }
 
   /**
-   * Returns the coordinates of the top right back corner.
-   * @return top right back corner.
+   * Returns the coordinates of the top right corner.
+   * @return top right corner.
    */
   [[nodiscard]] std::array<double, 3> getBoxMax() const override {
     auto particlesPerDimDouble = autopas::utils::ArrayUtils::static_cast_array<double>(_particlesPerDim);
@@ -83,13 +82,13 @@ class CubeGrid : public Object<ParticleClass> {
   [[nodiscard]] std::string to_string() const override {
     std::ostringstream output;
 
-    output << std::setw(this->_valueOffset) << std::left << "particles-per-dimension"
+    output << std::setw(_valueOffset) << std::left << "particles-per-dimension"
            << ":  " << autopas::utils::ArrayUtils::to_string(_particlesPerDim) << std::endl;
-    output << std::setw(this->_valueOffset) << std::left << "particle-spacing"
+    output << std::setw(_valueOffset) << std::left << "particle-spacing"
            << ":  " << _particleSpacing << std::endl;
-    output << std::setw(this->_valueOffset) << std::left << "bottomLeftCorner"
+    output << std::setw(_valueOffset) << std::left << "bottomLeftCorner"
            << ":  " << autopas::utils::ArrayUtils::to_string(_bottomLeftCorner) << std::endl;
-    output << Object<ParticleClass>::to_string();
+    output << Object::to_string();
     return output.str();
   }
 
@@ -97,15 +96,17 @@ class CubeGrid : public Object<ParticleClass> {
    * Generates the particles based on the configuration of the CubeGrid object provided in the yaml file.
    * @param particles The container in which the generated particles get stored.
    */
-  void generate(std::vector<ParticleClass> &particles) const override {
-    ParticleClass particle = getDummyParticle(particles.size());
+  void generate(std::vector<ParticleType> &particles) const override {
+    ParticleType particle = getDummyParticle(particles.size());
 
     for (unsigned long z = 0; z < _particlesPerDim[2]; ++z) {
       for (unsigned long y = 0; y < _particlesPerDim[1]; ++y) {
         for (unsigned long x = 0; x < _particlesPerDim[0]; ++x) {
-          particle.setR({_bottomLeftCorner[0] + static_cast<double>(x) * _particleSpacing,
-                         _bottomLeftCorner[1] + static_cast<double>(y) * _particleSpacing,
-                         _bottomLeftCorner[2] + static_cast<double>(z) * _particleSpacing});
+          particle.setR({
+            _bottomLeftCorner[0] + static_cast<double>(x) * _particleSpacing,
+            _bottomLeftCorner[1] + static_cast<double>(y) * _particleSpacing,
+            _bottomLeftCorner[2] + static_cast<double>(z) * _particleSpacing
+          });
           particles.push_back(particle);
           particle.setID(particle.getID() + 1);
         }
@@ -125,7 +126,7 @@ class CubeGrid : public Object<ParticleClass> {
   double _particleSpacing;
 
   /**
-   * Stores the coordinates of the bottom left front corner.
+   * Stores the coordinates of the bottom left corner.
    */
   std::array<double, 3> _bottomLeftCorner;
 };

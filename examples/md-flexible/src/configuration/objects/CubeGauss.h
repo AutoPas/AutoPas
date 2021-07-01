@@ -11,8 +11,7 @@
 /**
  * Class describing an cuboid object filled with gaussian randomly distributed particles.
  */
-template <class ParticleClass>
-class CubeGauss : public Object<ParticleClass> {
+class CubeGauss : public Object {
  public:
   /**
    * Constructor.
@@ -30,7 +29,7 @@ class CubeGauss : public Object<ParticleClass> {
   CubeGauss(const std::array<double, 3> &velocity, unsigned long typeId, double epsilon, double sigma, double mass,
             size_t numParticles, const std::array<double, 3> &boxLength, const std::array<double, 3> &distributionMean,
             const std::array<double, 3> &distributionStdDev, const std::array<double, 3> &bottomLeftCorner)
-      : Object<ParticleClass>(velocity, typeId, epsilon, sigma, mass),
+      : Object(velocity, typeId, epsilon, sigma, mass),
         _numParticles(numParticles),
         _boxLength(boxLength),
         _distributionMean(distributionMean),
@@ -56,14 +55,14 @@ class CubeGauss : public Object<ParticleClass> {
   [[nodiscard]] size_t getParticlesTotal() const override { return _numParticles; }
 
   /**
-   * Returns the bottom left front corner of the cube.
-   * @return bottom left front corner.
+   * Returns the bottom left corner of the cube.
+   * @return bottom left corner.
    */
   [[nodiscard]] std::array<double, 3> getBoxMin() const override { return _bottomLeftCorner; }
 
   /**
-   * Returns the top right back corner of the cube.
-   * @return top right back corner.
+   * Returns the top right corner of the cube.
+   * @return top right corner.
    */
   [[nodiscard]] std::array<double, 3> getBoxMax() const override {
     return autopas::utils::ArrayMath::add(_bottomLeftCorner, _boxLength);
@@ -76,17 +75,17 @@ class CubeGauss : public Object<ParticleClass> {
   [[nodiscard]] std::string to_string() const override {
     std::ostringstream output;
 
-    output << std::setw(this->_valueOffset) << std::left << "distribution-mean"
+    output << std::setw(_valueOffset) << std::left << "distribution-mean"
            << ":  " << autopas::utils::ArrayUtils::to_string(_distributionMean) << std::endl;
-    output << std::setw(this->_valueOffset) << std::left << "distribution-stddeviation"
+    output << std::setw(_valueOffset) << std::left << "distribution-stddeviation"
            << ":  " << autopas::utils::ArrayUtils::to_string(_distributionStdDev) << std::endl;
-    output << std::setw(this->_valueOffset) << std::left << "numberOfParticles"
+    output << std::setw(_valueOffset) << std::left << "numberOfParticles"
            << ":  " << _numParticles << std::endl;
-    output << std::setw(this->_valueOffset) << std::left << "box-length"
+    output << std::setw(_valueOffset) << std::left << "box-length"
            << ":  " << autopas::utils::ArrayUtils::to_string(_boxLength) << std::endl;
-    output << std::setw(this->_valueOffset) << std::left << "bottomLeftCorner"
+    output << std::setw(_valueOffset) << std::left << "bottomLeftCorner"
            << ":  " << autopas::utils::ArrayUtils::to_string(_bottomLeftCorner) << std::endl;
-    output << Object<ParticleClass>::to_string();
+    output << Object::to_string();
     return output.str();
   }
 
@@ -94,8 +93,8 @@ class CubeGauss : public Object<ParticleClass> {
    * Generates the particles based on the configuration of the cube gauss object provided in the yaml file.
    * @param particles The container where the new particles will be stored.
    */
-  void generate(std::vector<ParticleClass> &particles) const override {
-    ParticleClass particle = getDummyParticle(particles.size());
+  void generate(std::vector<ParticleType> &particles) const override {
+    ParticleType particle = getDummyParticle(particles.size());
 
     std::default_random_engine generator(42);
     std::array<std::normal_distribution<double>, 3> distributions = {
@@ -104,9 +103,11 @@ class CubeGauss : public Object<ParticleClass> {
         std::normal_distribution<double>{_distributionMean[2], _distributionStdDev[2]}};
 
     for (int i = 0; i < _numParticles; ++i) {
-      particle.setR({_bottomLeftCorner[0] + distributions[0](generator),
-                     _bottomLeftCorner[1] + distributions[1](generator),
-                     _bottomLeftCorner[2] + distributions[2](generator)});
+      particle.setR({
+        _bottomLeftCorner[0] + distributions[0](generator),
+        _bottomLeftCorner[1] + distributions[1](generator),
+        _bottomLeftCorner[2] + distributions[2](generator)
+      });
 
       particles.push_back(particle);
       particle.setID(particle.getID() + 1);
@@ -135,7 +136,7 @@ class CubeGauss : public Object<ParticleClass> {
   std::array<double, 3> _distributionStdDev;
 
   /**
-   * The coordinates of the bottom left front corner of the cube object.
+   * The coordinates of the bottom left corner of the cube object.
    */
   std::array<double, 3> _bottomLeftCorner;
 };

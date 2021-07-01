@@ -17,9 +17,13 @@
 /**
  * Base class for describing objects made of particles.
  */
-template <class ParticleClass>
 class Object {
  public:
+  /**
+   * Type of all particles generated.
+   */
+  using ParticleType = ::ParticleType;
+
   /**
    * Constructor that should be used by inheriting types.
    * @param velocity
@@ -37,18 +41,21 @@ class Object {
    * Generate the object in the given AutoPas container.
    * @param particles The container to which the new particles will be appended to.
    */
-  virtual void generate(std::vector<ParticleClass> &particles) const = 0;
+  virtual void generate(std::vector<ParticleType> &particles) const = 0;
 
   /**
    * Create a particle that acts as blueprint for all particles to be created for the object.
    * @param particleId: Defines the id of the generated dummy particle.
    * @return a particle initialized with default values.
    */
-  [[nodiscard]] ParticleClass getDummyParticle(const size_t &particleId) const {
-    ParticleClass particle{};
+  [[nodiscard]] ParticleType getDummyParticle(const size_t &particleId) const {
+    ParticleType particle{};
     particle.setID(particleId);
     particle.setTypeId(_typeId);
+    particle.setOwnershipState(autopas::OwnershipState::owned);
     particle.setV(_velocity);
+    particle.setF({0.0, 0.0, 0.0});
+    particle.setOldF({0.0, 0.0, 0.0});
 
     return particle;
   }

@@ -11,8 +11,7 @@
 /**
  * Class describing a regular 3D spherical particle grid object.
  */
-template <class ParticleClass>
-class Sphere : public Object<ParticleClass> {
+class Sphere : public Object {
  public:
   /**
    * Constructor.
@@ -27,7 +26,7 @@ class Sphere : public Object<ParticleClass> {
    */
   Sphere(const std::array<double, 3> &velocity, unsigned long typeId, double epsilon, double sigma, double mass,
          const std::array<double, 3> &center, int radius, double particleSpacing)
-      : Object<ParticleClass>(velocity, typeId, epsilon, sigma, mass),
+      : Object(velocity, typeId, epsilon, sigma, mass),
         _center(center),
         _radius(radius),
         _particleSpacing(particleSpacing) {}
@@ -104,8 +103,8 @@ class Sphere : public Object<ParticleClass> {
   }
 
   /**
-   * Returns the coordinates of box's the bottom left front corner.
-   * @return the bottom left front corner of the sphere's box domain.
+   * Returns the coordinates of box's the bottom left corner.
+   * @return the bottom left corner of the sphere's box domain.
    */
   [[nodiscard]] std::array<double, 3> getBoxMin() const override {
     return {_center[0] - ((double)_radius) * _particleSpacing, _center[1] - ((double)_radius) * _particleSpacing,
@@ -113,8 +112,8 @@ class Sphere : public Object<ParticleClass> {
   }
 
   /**
-   * Returns the coordinates of box's the top right back corner.
-   * @return the top right back corner of the sphere's box domain.
+   * Returns the coordinates of box's the top right corner.
+   * @return the top right corner of the sphere's box domain.
    */
   [[nodiscard]] std::array<double, 3> getBoxMax() const override {
     return {_center[0] + ((double)_radius) * _particleSpacing, _center[1] + ((double)_radius) * _particleSpacing,
@@ -128,13 +127,13 @@ class Sphere : public Object<ParticleClass> {
   [[nodiscard]] std::string to_string() const override {
     std::ostringstream output;
 
-    output << std::setw(this->_valueOffset) << std::left << "center"
+    output << std::setw(_valueOffset) << std::left << "center"
            << ":  " << autopas::utils::ArrayUtils::to_string(_center) << std::endl;
-    output << std::setw(this->_valueOffset) << std::left << "radius"
+    output << std::setw(_valueOffset) << std::left << "radius"
            << ":  " << _radius << std::endl;
-    output << std::setw(this->_valueOffset) << std::left << "particle-spacing"
+    output << std::setw(_valueOffset) << std::left << "particle-spacing"
            << ":  " << _particleSpacing << std::endl;
-    output << Object<ParticleClass>::to_string();
+    output << Object::to_string();
     return output.str();
   }
 
@@ -142,8 +141,8 @@ class Sphere : public Object<ParticleClass> {
    * Generates the particles based on the configuration of the sphere object provided in the yaml file.
    * @param particles The container where the generated particles will be stored.
    */
-  void generate(std::vector<ParticleClass> &particles) const override {
-    ParticleClass particle = getDummyParticle(particles.size());
+  void generate(std::vector<ParticleType> &particles) const override {
+    ParticleType particle = getDummyParticle(particles.size());
     iteratePositions([&](const auto &pos) {
       particle.setR(pos);
       particles.push_back(particle);
