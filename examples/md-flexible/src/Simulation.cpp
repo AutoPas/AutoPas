@@ -34,6 +34,7 @@ extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::Fl
 #include "configuration/MDFlexConfig.h"
 #include "src/ParticleSerializationTools.h"
 
+// @todo: create configuration variable to set output folder for the vtk writer. Currently it is "output".
 Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecomposition &domainDecomposition)
     : _configuration(configuration),
       _domainDecomposition(domainDecomposition),
@@ -78,7 +79,7 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
   _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
   _autoPasContainer->init();
 
-  // @todo: the object generators should only generate particles relevant for the current ranks domain
+  // @todo: the object generators should only generate particles relevant for the current rank's domain
   for (auto &particle : _configuration.getParticles()) {
     if (_domainDecomposition.isInsideLocalDomain(particle.getR())) {
       _autoPasContainer->addParticle(particle);
