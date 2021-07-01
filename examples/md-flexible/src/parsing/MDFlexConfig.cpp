@@ -63,6 +63,10 @@ std::string MDFlexConfig::to_string() const {
       os << "Lennard-Jones (12-6) with globals" << endl;
       break;
     }
+    case FunctorOption::lj12_6_ISPC: {
+      os << "Lennard-Jones (12-6) ISPC" << endl;
+      break;
+    }
   }
   os << setw(valueOffset) << left << newton3Options.name << ":  "
      << autopas::utils::ArrayUtils::to_string(newton3Options.value) << endl;

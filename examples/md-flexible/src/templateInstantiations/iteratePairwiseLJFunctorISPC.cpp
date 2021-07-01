@@ -1,16 +1,16 @@
 /**
- * @file iteratePairwiseLJFunctorGlobals.cpp
+ * @file iteratePairwiseLJFunctorISPC.cpp
  *
- * Contains a explicit template instantiation for the iteratePairwise() method with the LJFunctor w. globals of the main
+ * Contains a explicit template instantiation for the iteratePairwise() method with the LJFunctorISPC of the main
  * AutoPas class and the particle type used by md-flexible. This is linked into the md-flexible executable to enable the
  * other compilation units to only declare, but not instantiate this template.
  */
 
 #include "autopas/AutoPasImpl.h"
-#include "autopas/molecularDynamics/LJFunctor.h"
+#include "autopas/molecularDynamics/LJFunctorISPC.h"
 #include "src/TypeDefinitions.h"
 
 //! @cond Doxygen_Suppress
 template bool autopas::AutoPas<ParticleType>::iteratePairwise(
-    autopas::LJFunctor<ParticleType, false, false, autopas::FunctorN3Modes::Both, /* globals */ true>*);
+    autopas::LJFunctorISPC<ParticleType, false, false>*);
 //! @endcond

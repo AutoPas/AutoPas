@@ -8,9 +8,8 @@
 #include "autopas/AutoPasDecl.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
+#include "autopas/molecularDynamics/LJFunctorISPC.h"
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
-
-#include "LJFunctorISPC.h"
 
 // Declare the main AutoPas class and the iteratePairwise() methods with all used functors as extern template
 // instantiation. They are instantiated in the respective cpp file inside the templateInstantiations folder.
@@ -18,9 +17,11 @@
 extern template class autopas::AutoPas<ParticleType>;
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctor<ParticleType, false, false> *);
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(
-    autopas::LJFunctorISPC<ParticleType, false, false> *);
+    autopas::LJFunctor<ParticleType, false, false, autopas::FunctorN3Modes::Both, /* globals */ true> *);
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctorAVX<ParticleType, false, false> *);
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::FlopCounterFunctor<ParticleType> *);
+extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(
+    autopas::LJFunctorISPC<ParticleType, false, false> *);
 //! @endcond
 
 #ifdef AUTOPAS_INTERNODE_TUNING
@@ -141,6 +142,7 @@ void Simulation::calculateForces(autopas::AutoPas<ParticleType> &autopas) {
 
   _timers.forceUpdatePairwise.start();
 
+  // TODO: Enable support for mixing again
   FunctorType functor{autopas.getCutoff()};//, *_particlePropertiesLibrary};
   bool tuningIteration = autopas.iteratePairwise(&functor);
 
@@ -221,18 +223,23 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
     }
     // invoke the force calculation with the functor specified in the configuration
     switch (this->_config->functorOption.value) {
+        // TODO(tobias): Use _shifting and _mixing again
       case MDFlexConfig::FunctorOption::lj12_6: {
         this->calculateForces<autopas::LJFunctor<ParticleType, false, false>>(autopas);
         break;
       }
       case MDFlexConfig::FunctorOption::lj12_6_Globals: {
         this->calculateForces<
-            autopas::LJFunctorISPC<ParticleType, false, false>>(
+            autopas::LJFunctor<ParticleType, false, false, autopas::FunctorN3Modes::Both, /* globals */ true>>(
             autopas);
         break;
       }
       case MDFlexConfig::FunctorOption::lj12_6_AVX: {
         this->calculateForces<autopas::LJFunctorAVX<ParticleType, false, false>>(autopas);
+        break;
+      }
+      case MDFlexConfig::FunctorOption::lj12_6_ISPC: {
+        this->calculateForces<autopas::LJFunctorISPC<ParticleType, false, false>>(autopas);
         break;
       }
     }
@@ -298,6 +305,11 @@ void Simulation::printStatistics(autopas::AutoPas<ParticleType> &autopas) {
     }
     case MDFlexConfig::FunctorOption ::lj12_6_AVX: {
       flopsPerKernelCall = autopas::LJFunctorAVX<ParticleType, _shifting, _mixing>::getNumFlopsPerKernelCall();
+      break;
+    }
+    case MDFlexConfig::FunctorOption::lj12_6_ISPC: {
+      // TODO: Enable shifting and mixing again
+      flopsPerKernelCall = autopas::LJFunctorISPC<ParticleType, false, false>::getNumFlopsPerKernelCall();
       break;
     }
     default:

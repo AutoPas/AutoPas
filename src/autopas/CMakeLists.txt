@@ -12,7 +12,17 @@ file(
     "*.cuh"
 )
 
-add_library(autopas STATIC $<$<BOOL:${AUTOPAS_ENABLE_CUDA}>:${CU_SRC}> ${MY_SRC})
+file(
+    GLOB_RECURSE
+    ISPC_SRC
+    "*.ispc"
+)
+
+add_custom_command(OUTPUT ispc.o
+        COMMAND ispc --opt=fast-math --pic ${ISPC_SRC} -o ispc.o
+        DEPENDS ${ISPC_SRC})
+
+add_library(autopas STATIC $<$<BOOL:${AUTOPAS_ENABLE_CUDA}>:${CU_SRC}> ${MY_SRC} ispc.o)
 
 target_link_libraries(
     autopas
