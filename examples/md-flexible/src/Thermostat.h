@@ -7,10 +7,10 @@
 #pragma once
 #include <cstdlib>
 
+#include "TypeDefinitions.h"
 #include "autopas/AutoPasDecl.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/WrapOpenMP.h"
-#include "TypeDefinitions.h"
 
 /**
  * Thermostat to adjust the Temperature of the Simulation.

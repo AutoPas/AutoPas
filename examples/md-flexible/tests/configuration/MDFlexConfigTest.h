@@ -18,7 +18,7 @@
 
 class MDFlexConfigTest : public AutoPasTestBase {
  public:
-  MDFlexConfigTest() : AutoPasTestBase() { }
+  MDFlexConfigTest() : AutoPasTestBase() {}
 
  protected:
   std::shared_ptr<MDFlexConfig> _configuration;

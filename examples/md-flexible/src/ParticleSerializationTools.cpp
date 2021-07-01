@@ -23,7 +23,7 @@ void serializeParticle(const ParticleType &particle, std::vector<char> &serializ
   serializedParticles.insert(serializedParticles.end(), attributesVector.begin(), attributesVector.end());
 }
 
-void deserializeParticle(char* particleData, ParticleType &particle) {
+void deserializeParticle(char *particleData, ParticleType &particle) {
   ParticleAttributes attributes;
   std::memcpy(&attributes, particleData, sizeof(ParticleAttributes));
 

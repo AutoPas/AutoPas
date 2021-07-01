@@ -144,7 +144,7 @@ void ParallelVtkWriter::tryCreateSessionAndDataFolders(const std::string &name, 
   strftime(buffer, sizeof(buffer), "%d%m%Y_%H%M%S", timeInformation);
   std::string timeString(buffer);
 
-  if(not std::filesystem::exists(location)) {
+  if (not std::filesystem::exists(location)) {
     tryCreateFolder(location, "./");
   }
 

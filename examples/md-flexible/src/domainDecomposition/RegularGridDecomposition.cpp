@@ -223,7 +223,8 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
   if (updated) {
     const std::array<double, _dimensionCount> globalBoxMin = {_globalBoxMin[0], _globalBoxMin[1], _globalBoxMin[2]};
     const std::array<double, _dimensionCount> globalBoxMax = {_globalBoxMax[0], _globalBoxMax[1], _globalBoxMax[2]};
-    const std::array<double, _dimensionCount> globalBoxLength = autopas::utils::ArrayMath::sub(globalBoxMax, globalBoxMin);
+    const std::array<double, _dimensionCount> globalBoxLength =
+        autopas::utils::ArrayMath::sub(globalBoxMax, globalBoxMin);
 
     for (int i = 0; i < _dimensionCount; ++i) {
       std::vector<ParticleType> immigrants, migrants, remainingEmigrants;
