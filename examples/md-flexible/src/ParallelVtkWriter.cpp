@@ -67,11 +67,11 @@ void ParallelVtkWriter::recordTimestep(const int &currentIteration,
 
   const auto numberOfParticles = autoPasContainer.getNumberOfParticles(autopas::IteratorBehavior::owned);
 
-  timestepFile << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>" << std::endl;
-  timestepFile << "<VTKFile byte_order=\"LittleEndian\" type=\"UnstructuredGrid\" version=\"0.1\">" << std::endl;
-  timestepFile << "  <UnstructuredGrid>" << std::endl;
-  timestepFile << "    <Piece NumberOfCells=\"0\" NumberOfPoints=\"" << numberOfParticles << "\">" << std::endl;
-  timestepFile << "      <PointData>" << std::endl;
+  timestepFile << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>\n";
+  timestepFile << "<VTKFile byte_order=\"LittleEndian\" type=\"UnstructuredGrid\" version=\"0.1\">\n";
+  timestepFile << "  <UnstructuredGrid>\n";
+  timestepFile << "    <Piece NumberOfCells=\"0\" NumberOfPoints=\"" << numberOfParticles << "\">\n";
+  timestepFile << "      <PointData>\n";
 
   // print velocities
   timestepFile << "        <DataArray Name=\"velocities\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">"
@@ -80,7 +80,7 @@ void ParallelVtkWriter::recordTimestep(const int &currentIteration,
     auto v = particle->getV();
     timestepFile << "        " << v[0] << " " << v[1] << " " << v[2] << std::endl;
   }
-  timestepFile << "        </DataArray>" << std::endl;
+  timestepFile << "        </DataArray>\n";
 
   // print forces
   timestepFile << "        <DataArray Name=\"forces\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">"
@@ -89,7 +89,7 @@ void ParallelVtkWriter::recordTimestep(const int &currentIteration,
     auto f = particle->getF();
     timestepFile << "        " << f[0] << " " << f[1] << " " << f[2] << std::endl;
   }
-  timestepFile << "        </DataArray>" << std::endl;
+  timestepFile << "        </DataArray>\n";
 
   // print type ids
   timestepFile << "        <DataArray Name=\"typeIds\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float32\">"
@@ -97,7 +97,7 @@ void ParallelVtkWriter::recordTimestep(const int &currentIteration,
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     timestepFile << "        " << particle->getTypeId() << std::endl;
   }
-  timestepFile << "        </DataArray>" << std::endl;
+  timestepFile << "        </DataArray>\n";
 
   // print ids
   timestepFile << "        <DataArray Name=\"ids\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float32\">"
@@ -106,11 +106,11 @@ void ParallelVtkWriter::recordTimestep(const int &currentIteration,
     timestepFile << "        " << particle->getID() << std::endl;
     ;
   }
-  timestepFile << "        </DataArray>" << std::endl;
+  timestepFile << "        </DataArray>\n";
 
-  timestepFile << "      </PointData>" << std::endl;
-  timestepFile << "      <CellData/>" << std::endl;
-  timestepFile << "      <Points>" << std::endl;
+  timestepFile << "      </PointData>\n";
+  timestepFile << "      <CellData/>\n";
+  timestepFile << "      <Points>\n";
 
   // print positions
   timestepFile << "        <DataArray Name=\"position\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">"
@@ -119,16 +119,16 @@ void ParallelVtkWriter::recordTimestep(const int &currentIteration,
     auto pos = particle->getR();
     timestepFile << "        " << pos[0] << " " << pos[1] << " " << pos[2] << std::endl;
   }
-  timestepFile << "        </DataArray>" << std::endl;
+  timestepFile << "        </DataArray>\n";
 
-  timestepFile << "      </Points>" << std::endl;
-  timestepFile << "      <Cells>" << std::endl;
+  timestepFile << "      </Points>\n";
+  timestepFile << "      <Cells>\n";
   timestepFile << "        <DataArray Name=\"types\" NumberOfComponents=\"0\" format=\"ascii\" type=\"Float32\"/>"
                << std::endl;
-  timestepFile << "      </Cells>" << std::endl;
-  timestepFile << "    </Piece>" << std::endl;
-  timestepFile << "  </UnstructuredGrid>" << std::endl;
-  timestepFile << "</VTKFile>" << std::endl;
+  timestepFile << "      </Cells>\n";
+  timestepFile << "    </Piece>\n";
+  timestepFile << "  </UnstructuredGrid>\n";
+  timestepFile << "</VTKFile>\n";
 
   timestepFile.close();
 }
@@ -163,10 +163,10 @@ void ParallelVtkWriter::createPvtuFile(const int &currentIteration) {
     throw std::runtime_error("Simulation::writeVTKFile(): Failed to open file \"" + filename.str() + "\"");
   }
 
-  timestepFile << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>" << std::endl;
-  timestepFile << "<VTKFile byte_order=\"LittleEndian\" type=\"PUnstructuredGrid\" version=\"0.1\">" << std::endl;
-  timestepFile << "  <PUnstructuredGrid GhostLevel=\"0\">" << std::endl;
-  timestepFile << "    <PPointData>" << std::endl;
+  timestepFile << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>\n";
+  timestepFile << "<VTKFile byte_order=\"LittleEndian\" type=\"PUnstructuredGrid\" version=\"0.1\">\n";
+  timestepFile << "  <PUnstructuredGrid GhostLevel=\"0\">\n";
+  timestepFile << "    <PPointData>\n";
   timestepFile << "      <PDataArray Name=\"velocities\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>"
                << std::endl;
   timestepFile << "      <PDataArray Name=\"forces\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Int32\"/>"
@@ -175,24 +175,24 @@ void ParallelVtkWriter::createPvtuFile(const int &currentIteration) {
                << std::endl;
   timestepFile << "      <PDataArray Name=\"ids\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float32\"/>"
                << std::endl;
-  timestepFile << "    </PPointData>" << std::endl;
-  timestepFile << "    <PCellData/>" << std::endl;
-  timestepFile << "    <PPoints>" << std::endl;
+  timestepFile << "    </PPointData>\n";
+  timestepFile << "    <PCellData/>\n";
+  timestepFile << "    <PPoints>\n";
   timestepFile << "      <PDataArray Name=\"points\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>"
                << std::endl;
-  timestepFile << "    </PPoints>" << std::endl;
-  timestepFile << "    <PCells>" << std::endl;
+  timestepFile << "    </PPoints>\n";
+  timestepFile << "    <PCells>\n";
   timestepFile << "      <PDataArray Name=\"types\" NumberOfComponents=\"0\" format=\"ascii\" type=\"Float32\"/>"
                << std::endl;
-  timestepFile << "    </PCells>" << std::endl;
+  timestepFile << "    </PCells>\n";
 
   for (int i = 0; i < _numberOfRanks; ++i) {
     timestepFile << "    <Piece Source=\"./data/" << _sessionName << "_" << i << "_" << std::setfill('0')
-                 << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".vtu\"/>" << std::endl;
+                 << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".vtu\"/>\n";
   }
 
-  timestepFile << "  </PUnstructuredGrid>" << std::endl;
-  timestepFile << "</VTKFile>" << std::endl;
+  timestepFile << "  </PUnstructuredGrid>\n";
+  timestepFile << "</VTKFile>\n";
 
   timestepFile.close();
 }
