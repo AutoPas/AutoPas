@@ -102,6 +102,17 @@ class RegularGridDecomposition final : public DomainDecomposition {
 
  private:
   /**
+   * The number of neighbours of a rectangular domain.
+   * This number does not include diagonal neighbours.
+   */
+  static constexpr int _neighbourCount = 6; 
+
+  /**
+   * The number of dimensions in the simulation domain.
+   */
+  static constexpr int _dimensionCount = 3;
+   
+  /**
    * Indicates if MPI is enabled and if it will be used.
    * In the case that MPI is enabled, but only one process is being used, this variable will be false.
    */

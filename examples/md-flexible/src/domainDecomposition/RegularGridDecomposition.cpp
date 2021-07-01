@@ -120,27 +120,29 @@ bool RegularGridDecomposition::isInsideLocalDomain(const std::array<double, 3> &
 }
 
 void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer) {
-  for (int i = 0; i < 3; ++i) {
+  for (int i = 0; i < _dimensionCount; ++i) {
     std::vector<ParticleType> particlesForLeftNeighbour, particlesForRightNeighbour, haloParticles;
 
-    std::array<double, 3> haloBoxMin, haloBoxMax;
+    std::array<double, _dimensionCount> haloBoxMin, haloBoxMax;
     haloBoxMin = {_localBoxMin[0] - _skinWidth, _localBoxMin[1] - _skinWidth, _localBoxMin[2] - _skinWidth};
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < _dimensionCount; ++i) {
       haloBoxMax[i] = _localBoxMin[i] + _skinWidth + (_localBoxMax[i] - _localBoxMin[i]);
     }
     haloBoxMax[i] = _localBoxMin[i] + _cutoffWidth + _skinWidth;
 
     for (auto particle = autoPasContainer->getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::owned);
          particle.isValid(); ++particle) {
-      std::array<double, 3> position = particle->getR();
+      std::array<double, _dimensionCount> position = particle->getR();
       particlesForLeftNeighbour.push_back(*particle);
+
+      // Apply boundary condition
       if (_localBoxMin[i] == _globalBoxMin[i]) {
         position[i] = position[i] + (_globalBoxMax[i] - _globalBoxMin[i]);
         particlesForLeftNeighbour.back().setR(position);
       }
     }
 
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < _dimensionCount; ++i) {
       haloBoxMin[i] = _localBoxMax[i] - _skinWidth - (_localBoxMax[i] - _localBoxMin[i]);
     }
     haloBoxMin[i] = _localBoxMax[i] - _cutoffWidth - _skinWidth;
@@ -148,16 +150,19 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
 
     for (auto particle = autoPasContainer->getRegionIterator(haloBoxMin, haloBoxMax, autopas::IteratorBehavior::owned);
          particle.isValid(); ++particle) {
-      std::array<double, 3> position = particle->getR();
+      std::array<double, _dimensionCount> position = particle->getR();
       particlesForRightNeighbour.push_back(*particle);
+
+      // Apply boundary condition
       if (_localBoxMax[i] == _globalBoxMax[i]) {
         position[i] = position[i] - (_globalBoxMax[i] - _globalBoxMin[i]);
         particlesForRightNeighbour.back().setR(position);
       }
     }
 
-    int leftNeighbour = _neighbourDomainIndices[(i * 2) % 6];
-    int rightNeighbour = _neighbourDomainIndices[(i * 2 + 1) % 6];
+    // See documentation for _neighbourDomainIndices to explain the indexing
+    int leftNeighbour = _neighbourDomainIndices[(i * 2) % _neighbourCount];
+    int rightNeighbour = _neighbourDomainIndices[(i * 2 + 1) % _neighbourCount];
     sendAndReceiveParticlesLeftAndRight(particlesForLeftNeighbour, particlesForRightNeighbour, leftNeighbour,
                                         rightNeighbour, haloParticles);
 
@@ -169,7 +174,7 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
     particlesForRightNeighbour.clear();
 
     // index of next dimension
-    int j = (i + 1) % 3;
+    int j = (i + 1) % _dimensionCount;
 
     double leftHaloMin = _localBoxMin[j] - _skinWidth;
     double leftHaloMax = _localBoxMin[j] + _cutoffWidth + _skinWidth;
@@ -177,9 +182,11 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
     double rightHaloMax = _localBoxMax[j] + _skinWidth;
 
     for (const auto &particle : haloParticles) {
-      std::array<double, 3> position = particle.getR();
+      std::array<double, _dimensionCount> position = particle.getR();
       if (position[j] >= leftHaloMin && position[j] < leftHaloMax) {
         particlesForLeftNeighbour.push_back(particle);
+
+        // Apply boundary condition
         if (_localBoxMin[j] == _globalBoxMin[j]) {
           position[j] = position[j] + (_globalBoxMax[j] - _globalBoxMin[j]);
           particlesForLeftNeighbour.back().setR(position);
@@ -187,6 +194,8 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
       }
       if (position[j] >= rightHaloMin && position[j] < rightHaloMax) {
         particlesForLeftNeighbour.push_back(particle);
+
+        // Apply boundary condition
         if (_localBoxMin[j] == _globalBoxMin[j]) {
           position[j] = position[j] + (_globalBoxMax[j] - _globalBoxMin[j]);
           particlesForLeftNeighbour.back().setR(position);
@@ -196,8 +205,9 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
 
     haloParticles.clear();
 
-    leftNeighbour = _neighbourDomainIndices[(j * 2) % 6];
-    rightNeighbour = _neighbourDomainIndices[(j * 2 + 1) % 6];
+    // See documentation for _neighbourDomainIndices to explain the indexing
+    leftNeighbour = _neighbourDomainIndices[(j * 2) % _neighbourCount];
+    rightNeighbour = _neighbourDomainIndices[(j * 2 + 1) % _neighbourCount];
     sendAndReceiveParticlesLeftAndRight(particlesForLeftNeighbour, particlesForRightNeighbour, leftNeighbour,
                                         rightNeighbour, haloParticles);
 
@@ -211,24 +221,27 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
   auto [emigrants, updated] = autoPasContainer->updateContainer(false);
 
   if (updated) {
-    const std::array<double, 3> globalBoxMin = {_globalBoxMin[0], _globalBoxMin[1], _globalBoxMin[2]};
-    const std::array<double, 3> globalBoxMax = {_globalBoxMax[0], _globalBoxMax[1], _globalBoxMax[2]};
-    const std::array<double, 3> globalBoxLength = autopas::utils::ArrayMath::sub(globalBoxMax, globalBoxMin);
+    const std::array<double, _dimensionCount> globalBoxMin = {_globalBoxMin[0], _globalBoxMin[1], _globalBoxMin[2]};
+    const std::array<double, _dimensionCount> globalBoxMax = {_globalBoxMax[0], _globalBoxMax[1], _globalBoxMax[2]};
+    const std::array<double, _dimensionCount> globalBoxLength = autopas::utils::ArrayMath::sub(globalBoxMax, globalBoxMin);
 
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < _dimensionCount; ++i) {
       std::vector<ParticleType> immigrants, migrants, remainingEmigrants;
 
       std::vector<ParticleType> particlesForLeftNeighbour;
       std::vector<ParticleType> particlesForRightNeighbour;
 
-      int leftNeighbour = _neighbourDomainIndices[(i * 2) % 6];
-      int rightNeighbour = _neighbourDomainIndices[(i * 2 + 1) % 6];
+      // See documentation for _neighbourDomainIndices to explain the indexing
+      int leftNeighbour = _neighbourDomainIndices[(i * 2) % _neighbourCount];
+      int rightNeighbour = _neighbourDomainIndices[(i * 2 + 1) % _neighbourCount];
 
-      std::array<double, 3> position;
+      std::array<double, _dimensionCount> position;
       for (const auto &particle : emigrants) {
         position = particle.getR();
         if (position[i] < _localBoxMin[i]) {
           particlesForLeftNeighbour.push_back(particle);
+
+          // Apply boundary condition
           if (_localBoxMin[i] == _globalBoxMin[i]) {
             position[i] =
                 std::min(std::nextafter(_globalBoxMax[i], _globalBoxMin[i]), position[i] + globalBoxLength[i]);
@@ -236,6 +249,8 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
           }
         } else if (position[i] >= _localBoxMax[i]) {
           particlesForRightNeighbour.push_back(particle);
+
+          // Apply boundary condition
           if (_localBoxMax[i] == _globalBoxMax[i]) {
             position[i] = std::max(_globalBoxMin[i], position[i] - globalBoxLength[i]);
             particlesForRightNeighbour.back().setR(position);
@@ -263,15 +278,18 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
       immigrants.clear();
 
       // index of next dimension
-      int j = (i + 1) % 3;
+      int j = (i + 1) % _dimensionCount;
 
-      leftNeighbour = _neighbourDomainIndices[(j * 2) % 6];
-      rightNeighbour = _neighbourDomainIndices[(j * 2 + 1) % 6];
+      // See documentation for _neighbourDomainIndices to explain the indexing
+      leftNeighbour = _neighbourDomainIndices[(j * 2) % _neighbourCount];
+      rightNeighbour = _neighbourDomainIndices[(j * 2 + 1) % _neighbourCount];
 
       for (const auto &particle : migrants) {
-        std::array<double, 3> position = particle.getR();
+        std::array<double, _dimensionCount> position = particle.getR();
         if (position[j] < _localBoxMin[j]) {
           particlesForLeftNeighbour.push_back(particle);
+
+          // Apply boundary condition
           if (_localBoxMin[j] == _globalBoxMin[j]) {
             position[j] =
                 std::min(std::nextafter(_globalBoxMax[j], _globalBoxMin[j]), position[j] + globalBoxLength[j]);
@@ -279,6 +297,8 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
           }
         } else if (position[j] >= _localBoxMax[j]) {
           particlesForRightNeighbour.push_back(particle);
+
+          // Apply boundary condition
           if (_localBoxMax[j] == _globalBoxMax[j]) {
             position[j] = std::max(_globalBoxMin[j], position[j] - globalBoxLength[j]);
             particlesForRightNeighbour.back().setR(position);
