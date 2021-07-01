@@ -10,7 +10,6 @@
 
 #include "Object.h"
 #include "autopas/utils/ArrayMath.h"
-#include "src/ParticleAttributes.h"
 
 /**
  * Class describing a regular 3D particle grid object.
@@ -97,17 +96,19 @@ class CubeGrid : public Object {
    * Generates the particles based on the configuration of the CubeGrid object provided in the yaml file.
    * @param particles The container in which the generated particles get stored.
    */
-  void generate(std::vector<ParticleAttributes> &particles) const override {
-    ParticleAttributes particle = getDummyParticle(particles.size());
+  void generate(std::vector<ParticleType> &particles) const override {
+    ParticleType particle = getDummyParticle(particles.size());
 
     for (unsigned long z = 0; z < _particlesPerDim[2]; ++z) {
       for (unsigned long y = 0; y < _particlesPerDim[1]; ++y) {
         for (unsigned long x = 0; x < _particlesPerDim[0]; ++x) {
-          particle.position[0] = _bottomLeftCorner[0] + static_cast<double>(x) * _particleSpacing;
-          particle.position[1] = _bottomLeftCorner[1] + static_cast<double>(y) * _particleSpacing;
-          particle.position[2] = _bottomLeftCorner[2] + static_cast<double>(z) * _particleSpacing;
+          particle.setR({
+            _bottomLeftCorner[0] + static_cast<double>(x) * _particleSpacing,
+            _bottomLeftCorner[1] + static_cast<double>(y) * _particleSpacing,
+            _bottomLeftCorner[2] + static_cast<double>(z) * _particleSpacing
+          });
           particles.push_back(particle);
-          particle.id++;
+          particle.setID(particle.getID() + 1);
         }
       }
     }

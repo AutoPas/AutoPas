@@ -9,7 +9,6 @@
 
 #include "Object.h"
 #include "autopas/utils/ArrayMath.h"
-#include "src/ParticleAttributes.h"
 
 /**
  * Class describing an cuboid object filled with uniformly randomly distributed particles.
@@ -76,15 +75,17 @@ class CubeUniform : public Object {
    * Generates the particles based on the configuration of the cube object defined in the yaml file.
    * @param particles The container where the generated particles will be stored.
    */
-  void generate(std::vector<ParticleAttributes> &particles) const override {
-    ParticleAttributes particle = getDummyParticle(particles.size());
+  void generate(std::vector<ParticleType> &particles) const override {
+    ParticleType particle = getDummyParticle(particles.size());
     std::srand(std::time(0));
     for (unsigned long i = 0; i < _numParticles; ++i) {
-      particle.position[0] = _bottomLeftCorner[0] + (static_cast<double>(std::rand()) / RAND_MAX) * _boxLength[0];
-      particle.position[1] = _bottomLeftCorner[1] + (static_cast<double>(std::rand()) / RAND_MAX) * _boxLength[1];
-      particle.position[2] = _bottomLeftCorner[2] + (static_cast<double>(std::rand()) / RAND_MAX) * _boxLength[2];
+      particle.setR({
+        _bottomLeftCorner[0] + (static_cast<double>(std::rand()) / RAND_MAX) * _boxLength[0],
+        _bottomLeftCorner[1] + (static_cast<double>(std::rand()) / RAND_MAX) * _boxLength[1],
+        _bottomLeftCorner[2] + (static_cast<double>(std::rand()) / RAND_MAX) * _boxLength[2]
+      });
       particles.push_back(particle);
-      particle.id++;
+      particle.setID(particle.getID() + 1);
     }
   }
 

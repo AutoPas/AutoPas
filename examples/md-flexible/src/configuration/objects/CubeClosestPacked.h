@@ -12,7 +12,6 @@
 
 #include "Object.h"
 #include "autopas/utils/ArrayMath.h"
-#include "src/ParticleAttributes.h"
 
 /**
  * Class describing a cube of hexagonally closest packed particles.
@@ -68,8 +67,8 @@ class CubeClosestPacked : public Object {
    * Generates particles based on the parameters provided to the CubeClosestPacked Object in the configuration file.
    * @param particles: The container, where the new particles get stored.
    */
-  void generate(std::vector<ParticleAttributes> &particles) const override {
-    ParticleAttributes particle = getDummyParticle(particles.size());
+  void generate(std::vector<ParticleType> &particles) const override {
+    ParticleType particle = getDummyParticle(particles.size());
 
     const double spacingRow = _particleSpacing * sqrt(3. / 4.);
     const double spacingLayer = _particleSpacing * sqrt(2. / 3.);
@@ -84,10 +83,10 @@ class CubeClosestPacked : public Object {
       for (double y = starty; y < _topRightCorner[1]; y += spacingRow) {
         double startx = evenRow ? _bottomLeftCorner[0] : _bottomLeftCorner[0] + xOffset;
         for (double x = startx; x < _topRightCorner[0]; x += _particleSpacing) {
-          particle.position = {x, y, z};
+          particle.setR({x, y, z});
           particles.push_back(particle);
 
-          particle.id++;
+          particle.setID(particle.getID() + 1);
         }
         evenRow = not evenRow;
       }

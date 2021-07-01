@@ -308,14 +308,13 @@ void MDFlexConfig::loadParticlesFromCheckpoint() {
 
   // creating Particles from checkpoint:
   for (auto i = 0ul; i < numParticles; ++i) {
-    ParticleAttributes particle;
+    ParticleType particle;
 
-    particle.position = positions[i];
-    particle.velocity = velocities[i];
-    particle.force = forces[i];
-
-    particle.id = i;
-    particle.typeId = typeID[i];
+    particle.setR(positions[i]);
+    particle.setV(velocities[i]);
+    particle.setF(forces[i]);
+    particle.setID(i);
+    particle.setTypeId(typeID[i]);
 
     _particles.push_back(particle);
   }

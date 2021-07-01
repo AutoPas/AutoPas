@@ -80,10 +80,8 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
 
   // @todo: the object generators should only generate particles relevant for the current ranks domain
   for (auto &particle : _configuration.getParticles()) {
-    ParticleType autoPasParticle;
-    if (_domainDecomposition.isInsideLocalDomain(particle.position)) {
-      autoPasParticle = ParticleSerializationTools::convertParticleAttributesToParticle(particle);
-      _autoPasContainer->addParticle(autoPasParticle);
+    if (_domainDecomposition.isInsideLocalDomain(particle.getR())) {
+      _autoPasContainer->addParticle(particle);
     }
   }
 

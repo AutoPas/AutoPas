@@ -35,11 +35,4 @@ void deserializeParticle(char* particleData, ParticleType &particle);
  * @param particles The particle container to which to append the deserialized particles to.
  */
 void deserializeParticles(std::vector<char> &particlesData, std::vector<ParticleType> &particles);
-
-/**
- * Converts ParticleAttributes to a particle of type MoleculeLJ<double>.
- * @param attributes The attributes which will be applied to the returne particle.
- * @return a particle of type MoleculeLJ<double>
- */
-ParticleType convertParticleAttributesToParticle(ParticleAttributes &attributes);
 }  // namespace ParticleSerializationTools

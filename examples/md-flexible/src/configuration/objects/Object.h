@@ -12,7 +12,6 @@
 
 #include "autopas/AutoPasDecl.h"
 #include "autopas/utils/ArrayUtils.h"
-#include "src/ParticleAttributes.h"
 #include "src/TypeDefinitions.h"
 
 /**
@@ -42,21 +41,21 @@ class Object {
    * Generate the object in the given AutoPas container.
    * @param particles The container to which the new particles will be appended to.
    */
-  virtual void generate(std::vector<ParticleAttributes> &particles) const = 0;
+  virtual void generate(std::vector<ParticleType> &particles) const = 0;
 
   /**
    * Create a particle that acts as blueprint for all particles to be created for the object.
    * @param particleId: Defines the id of the generated dummy particle.
-   * @return Particle in form of the ParticleAttributes struct.
+   * @return a particle initialized with default values.
    */
-  [[nodiscard]] ParticleAttributes getDummyParticle(const size_t &particleId) const {
-    ParticleAttributes particle{};
-    particle.id = particleId;
-    particle.typeId = _typeId;
-    particle.ownershipState = autopas::OwnershipState::owned;
-    particle.velocity = _velocity;
-    particle.force = {0.0, 0.0, 0.0};
-    particle.oldForce = {0.0, 0.0, 0.0};
+  [[nodiscard]] ParticleType getDummyParticle(const size_t &particleId) const {
+    ParticleType particle{};
+    particle.setID(particleId);
+    particle.setTypeId(_typeId);
+    particle.setOwnershipState(autopas::OwnershipState::owned);
+    particle.setV(_velocity);
+    particle.setF({0.0, 0.0, 0.0});
+    particle.setOldF({0.0, 0.0, 0.0});
 
     return particle;
   }

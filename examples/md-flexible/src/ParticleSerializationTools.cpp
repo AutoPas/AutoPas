@@ -45,17 +45,4 @@ void deserializeParticles(std::vector<char> &particlesData, std::vector<Particle
   }
 }
 
-ParticleType convertParticleAttributesToParticle(ParticleAttributes &attributes) {
-  ParticleType particle;
-
-  particle.setR(attributes.position);
-  particle.setV(attributes.velocity);
-  particle.setF(attributes.force);
-  particle.setOldF(attributes.oldForce);
-  particle.setID(attributes.id);
-  particle.setOwnershipState(attributes.ownershipState);
-  particle.setTypeId(attributes.typeId);
-
-  return particle;
-}
 }  // namespace ParticleSerializationTools
