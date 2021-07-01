@@ -434,6 +434,11 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
   tuningTimer.start();
   // first tuning iteration -> reset to first config
   if (_iterationsSinceTuning == _tuningInterval) {
+    if(_tuningStrategy->needsLiveInfo()) {
+      LiveInfo info{};
+      info.gather(*_containerSelector.getCurrentContainer());
+      _tuningStrategy->receiveLiveInfo(std::move(info));
+    }
     _tuningStrategy->reset(_iteration);
   } else {  // enough samples -> next config
     stillTuning = _tuningStrategy->tune();

@@ -8,6 +8,8 @@
 
 #include "autopas/selectors/Configuration.h"
 
+#include "LiveInfo.h"
+
 namespace autopas {
 
 /**
@@ -55,6 +57,12 @@ class TuningStrategyInterface {
    * @param iteration Gives the current iteration to the tuning strategy.
    */
   virtual void reset(size_t iteration) = 0;
+
+  [[nodiscard]] virtual bool needsLiveInfo() const {
+    return false;
+  }
+
+  virtual void receiveLiveInfo(LiveInfo info) {};
 
   /**
    * Returns all container options the strategy might choose.

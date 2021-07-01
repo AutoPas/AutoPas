@@ -15,6 +15,7 @@
 #include "RandomSearch.h"
 #include "autopas/options/MPIStrategyOption.h"
 #include "autopas/utils/AutoPasConfigurationCommunicator.h"
+#include "autopas/selectors/tuningStrategy/ruleBasedTuning/RuleBasedTuning.h"
 
 std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory::generateTuningStrategy(
     autopas::TuningStrategyOption tuningStrategyOption, std::set<autopas::ContainerOption> &allowedContainers,
@@ -142,6 +143,13 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
                                                   tuningStrategyOption);
       break;
     }
+  }
+
+  constexpr bool wrapRuleBased = true;
+  if (wrapRuleBased) {
+    tuningStrategy = std::make_unique<RuleBasedTuning>(allowedContainers, allowedCellSizeFactors.getAll(),
+                                                       allowedTraversals, allowedLoadEstimators, allowedDataLayouts,
+                                                       allowedNewton3Options);
   }
 
   // ======== Wrap strategy into MPI wrapper if appropriate ===================
