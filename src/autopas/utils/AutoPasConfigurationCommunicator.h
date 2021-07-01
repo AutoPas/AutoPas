@@ -92,6 +92,7 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
 template <class Particle>
 void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket,
                               const std::shared_ptr<autopas::ParticleContainerInterface<Particle>> &container,
+                              const std::pair<double, double> smoothedHomogeneityAndMaxDensity,
                               double MPITuningMaxDifferenceForBucket, double MPITuningWeightForMaxDensity) {
   int rank;
   AutoPas_MPI_Comm_rank(comm, &rank);
@@ -99,13 +100,13 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket,
   AutoPas_MPI_Comm_size(comm, &commSize);
 
   std::vector<double> similarityMetrics(commSize);
-  const auto [homogeneity, maxDensity] =
-      autopas::utils::calculateHomogeneityAndMaxDensity<std::shared_ptr<autopas::ParticleContainerInterface<Particle>>>(
-          container);
-  double similarityMetric = homogeneity + MPITuningWeightForMaxDensity * maxDensity;
+  double similarityMetric =
+      smoothedHomogeneityAndMaxDensity.first + MPITuningWeightForMaxDensity * smoothedHomogeneityAndMaxDensity.second;
 
   // debug print for evaluation
   AutoPasLog(debug, "similarityMetric of rank: " + std::to_string(rank) + " is: " + std::to_string(similarityMetric));
+  AutoPasLog(debug, "smoothedHomogeneity of rank: " + std::to_string(rank) + " is: " + std::to_string(smoothedHomogeneityAndMaxDensity.first));
+  AutoPasLog(debug, "smoothedMaxDensity of rank: " + std::to_string(rank) + " is: " + std::to_string(smoothedHomogeneityAndMaxDensity.second));
 
   // get all the similarityMetrics of the other ranks
   AutoPas_MPI_Allgather(&similarityMetric, 1, AUTOPAS_MPI_DOUBLE, similarityMetrics.data(), 1, AUTOPAS_MPI_DOUBLE,

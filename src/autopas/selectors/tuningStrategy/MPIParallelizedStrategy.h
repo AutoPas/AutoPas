@@ -97,7 +97,8 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
    */
   template <class Particle>
   void reset(size_t iteration, std::shared_ptr<autopas::ParticleContainerInterface<Particle>> container,
-             double MPITuningMaxDifferenceForBucket, double MPITuningWeightForMaxDensity) {
+             const std::pair<double, double> smoothedHomogeneityAndMaxDensity, double MPITuningMaxDifferenceForBucket,
+             double MPITuningWeightForMaxDensity) {
     _optimalConfiguration = Configuration();
     _allGlobalConfigurationsTested = false;
     _allLocalConfigurationsTested = false;
@@ -106,7 +107,8 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
       _configIterator.reset();
     }
     autopas::utils::AutoPasConfigurationCommunicator::distributeRanksInBuckets<Particle>(
-        _comm, &_bucket, container, MPITuningMaxDifferenceForBucket, MPITuningWeightForMaxDensity);
+        _comm, &_bucket, container, smoothedHomogeneityAndMaxDensity, MPITuningMaxDifferenceForBucket,
+        MPITuningWeightForMaxDensity);
     AutoPasLog(debug, "finished bucket distribution");
     try {
       _tuningStrategy->reset(iteration);

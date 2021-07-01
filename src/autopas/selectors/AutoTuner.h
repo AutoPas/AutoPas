@@ -470,19 +470,24 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
   // first tuning iteration -> reset to first config
   if (_iterationsSinceTuning == _tuningInterval) {
     if (auto *mpiStrategy = dynamic_cast<MPIParallelizedStrategy *>(_tuningStrategy.get())) {
-      std::ostringstream oss;
-      std::copy(_homogeneitiesOfLastTenIterations.begin(), _homogeneitiesOfLastTenIterations.end() - 1,
-                std::ostream_iterator<double>(oss, ","));
-      oss << _homogeneitiesOfLastTenIterations.back();
-      AutoPasLog(debug, "Collected Homogeneities: " + oss.str());
-      oss.str("");
-      oss.clear();
-      std::copy(_maxDensitiesOfLastTenIterations.begin(), _maxDensitiesOfLastTenIterations.end() - 1,
-                std::ostream_iterator<double>(oss, ","));
-      oss << _maxDensitiesOfLastTenIterations.back();
-      AutoPasLog(debug, "Collected max Densities: " + oss.str());
-      mpiStrategy->reset<Particle>(_iteration, getContainer(), _mpiTuningMaxDifferenceForBucket,
-                                   _mpiTuningWeightForMaxDensity);
+      //      std::ostringstream oss;
+      //      std::copy(_homogeneitiesOfLastTenIterations.begin(), _homogeneitiesOfLastTenIterations.end() - 1,
+      //                std::ostream_iterator<double>(oss, ","));
+      //      oss << _homogeneitiesOfLastTenIterations.back();
+      //      AutoPasLog(debug, "Collected Homogeneities: " + oss.str());
+      //      oss.str("");
+      //      oss.clear();
+      //      std::copy(_maxDensitiesOfLastTenIterations.begin(), _maxDensitiesOfLastTenIterations.end() - 1,
+      //                std::ostream_iterator<double>(oss, ","));
+      //      oss << _maxDensitiesOfLastTenIterations.back();
+      //      AutoPasLog(debug, "Collected max Densities: " + oss.str());
+      const std::pair<double, double> smoothedHomogeneityAndMaxDensity{
+          std::accumulate(_homogeneitiesOfLastTenIterations.begin(), _homogeneitiesOfLastTenIterations.end(), 0.0) /
+              _homogeneitiesOfLastTenIterations.size(),
+          std::accumulate(_maxDensitiesOfLastTenIterations.begin(), _maxDensitiesOfLastTenIterations.end(), 0.0) /
+              _maxDensitiesOfLastTenIterations.size()};
+      mpiStrategy->reset<Particle>(_iteration, getContainer(), smoothedHomogeneityAndMaxDensity,
+                                   _mpiTuningMaxDifferenceForBucket, _mpiTuningWeightForMaxDensity);
     } else {
       _tuningStrategy->reset(_iteration);
     }
