@@ -1,10 +1,8 @@
 # make test optional. Useful also when no network connection is available
-cmake_dependent_option(
+option_conditional(
     AUTOPAS_BUILD_TESTS
     "Build tests based on the Google Test Framework (will be downloaded if not available)"
-    ON
     AUTOPAS_STANDALONE_BUILD
-    OFF
 )
 
 # do nothing if nothing should be done

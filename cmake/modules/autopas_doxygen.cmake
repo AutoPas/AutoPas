@@ -1,10 +1,8 @@
 # make doc_doxygen optional if someone does not have / like doxygen
 set(AUTOPAS_BUILD_TARGET_DOC_DOC "Create \"make doc_doxygen\" target (requires Doxygen)")
-cmake_dependent_option(AUTOPAS_BUILD_TARGET_DOC
+option_conditional(AUTOPAS_BUILD_TARGET_DOC
         ${AUTOPAS_BUILD_TARGET_DOC_DOC}
-        ON
         AUTOPAS_STANDALONE_BUILD
-        OFF
 )
 
 # do nothing if nothing should be done
