@@ -96,9 +96,9 @@ auto fillContainerAroundBoundary(AutoPasT &autoPas, std::array<double, 3> boxOfI
   // sanity check. Can not use ASSERT_EQ because this introduces a different return.
   EXPECT_EQ(particleIDsOwned.size() + particleIDsHalo.size(),
             numParticles1dTotal * numParticles1dTotal * numParticles1dTotal);
-  // getNumberOfParticles works via counters in the logic handler
-  EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::owned), particleIDsOwned.size());
-  EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::halo), particleIDsHalo.size());
+  // getNumParticles works via counters in the logic handler
+  EXPECT_EQ(autoPas.getNumParticles(autopas::IteratorBehavior::owned), particleIDsOwned.size());
+  EXPECT_EQ(autoPas.getNumParticles(autopas::IteratorBehavior::halo), particleIDsHalo.size());
   return std::make_tuple(particleIDsOwned, particleIDsHalo, particleIDsInterestOwned, particleIDsInterestHalo);
 }
 

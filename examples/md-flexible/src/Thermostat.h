@@ -61,7 +61,7 @@ double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibrary
   }
   // AutoPas works always on 3 dimensions
   constexpr unsigned int dimensions{3};
-  return kineticEnergyMul2 / (autopas.getNumberOfParticles() * dimensions);
+  return kineticEnergyMul2 / (autopas.getNumParticles() * dimensions);
 }
 
 /**

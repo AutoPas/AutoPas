@@ -99,7 +99,9 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket,
   AutoPas_MPI_Comm_size(comm, &commSize);
 
   std::vector<double> similarityMetrics(commSize);
-  const auto [homogeneity, maxDensity] = autopas::utils::calculateHomogeneityAndMaxDensity<Particle>(container);
+  const auto [homogeneity, maxDensity] =
+      autopas::utils::calculateHomogeneityAndMaxDensity<std::shared_ptr<autopas::ParticleContainerInterface<Particle>>>(
+          container);
   double similarityMetric = homogeneity + MPITuningWeightForMaxDensity * maxDensity;
 
   // debug print for evaluation

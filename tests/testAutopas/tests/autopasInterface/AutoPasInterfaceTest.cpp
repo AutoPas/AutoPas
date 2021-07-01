@@ -467,12 +467,12 @@ TEST_P(AutoPasInterface1ContainersTest, testResize) {
 
   autoPas.init();
 
-  ASSERT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::ownedOrHalo), 0)
+  ASSERT_EQ(autoPas.getNumParticles(autopas::IteratorBehavior::ownedOrHalo), 0)
       << "Container was not initialized empty!";
 
   // add three purposely placed particles
   auto expectedParticles = addParticlesMinMidMax(autoPas);
-  ASSERT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::owned), expectedParticles.size())
+  ASSERT_EQ(autoPas.getNumParticles(autopas::IteratorBehavior::owned), expectedParticles.size())
       << "Container did not receive all particles before resize()!";
 
   auto boxMinNew = autopas::utils::ArrayMath::add(autoPas.getBoxMin(), {.5, .5, .5});
@@ -490,11 +490,11 @@ TEST_P(AutoPasInterface1ContainersTest, testResize) {
     }
   }
 
-  ASSERT_EQ(autoPas.getNumberOfParticles(), expectedParticles.size())
+  ASSERT_EQ(autoPas.getNumParticles(), expectedParticles.size())
       << "Container does not contain all particles after resize!";
 
   std::vector<Particle> particlesInsideAfterResize{};
-  particlesInsideAfterResize.reserve(autoPas.getNumberOfParticles());
+  particlesInsideAfterResize.reserve(autoPas.getNumParticles());
   for (auto &p : autoPas) {
     particlesInsideAfterResize.push_back(p);
   }

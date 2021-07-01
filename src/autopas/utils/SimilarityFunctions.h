@@ -21,10 +21,8 @@ namespace autopas::utils {
  * @param container container of current simulation
  * @return {homogeneity, maxDensity}
  */
-// TODO container template
-template <class Particle>
-std::pair<double, double> calculateHomogeneityAndMaxDensity(
-    const std::shared_ptr<autopas::ParticleContainerInterface<Particle>> &container) {
+template <class Container>
+std::pair<double, double> calculateHomogeneityAndMaxDensity(const Container &container) {
   const size_t numberOfParticles = container->getNumParticles();
   // approximately the resolution we want to get.
   size_t numberOfCells = ceil(numberOfParticles / 10.);
