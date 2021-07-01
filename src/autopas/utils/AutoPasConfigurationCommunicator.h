@@ -103,7 +103,7 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket,
   double similarityMetric = homogeneity + MPITuningWeightForMaxDensity * maxDensity;
 
   // debug print for evaluation
-  AutoPasLog(debug, "Homogeneity of rank: " + std::to_string(rank) + " is: " + std::to_string(homogeneity));
+  AutoPasLog(debug, "similarityMetric of rank: " + std::to_string(rank) + " is: " + std::to_string(similarityMetric));
 
   // get all the similarityMetrics of the other ranks
   AutoPas_MPI_Allgather(&similarityMetric, 1, AUTOPAS_MPI_DOUBLE, similarityMetrics.data(), 1, AUTOPAS_MPI_DOUBLE,

@@ -579,13 +579,17 @@ class AutoPas {
    * Setter for the maximal Difference for the bucket distribution
    * @param MPITuningMaxDifferenceForBucket
    */
-  void setMPITuningMaxDifferenceForBucket(double MPITuningMaxDifferenceForBucket) { _mpiTuningMaxDifferenceForBucket = MPITuningMaxDifferenceForBucket; }
+  void setMPITuningMaxDifferenceForBucket(double MPITuningMaxDifferenceForBucket) {
+    _mpiTuningMaxDifferenceForBucket = MPITuningMaxDifferenceForBucket;
+  }
 
   /**
    * Setter for the maxDensity-Weight in calculation for bucket distribution
    * @param MPITuningWeightForMaxDensity
    */
-  void setMPITuningWeightForMaxDensity(double MPITuningWeightForMaxDensity) { _mpiTuningWeightForMaxDensity = MPITuningWeightForMaxDensity; }
+  void setMPITuningWeightForMaxDensity(double MPITuningWeightForMaxDensity) {
+    _mpiTuningWeightForMaxDensity = MPITuningWeightForMaxDensity;
+  }
 
 // Only define the interface for the MPI communicator if AUTOPAS_INTERNODE_TUNING=ON
 // The internal implementation will use _autopasMPICommunicator with WrapMPI regardless of AUTOPAS_INTERNODE_TUNING
@@ -719,7 +723,8 @@ class AutoPas {
   MPIStrategyOption _mpiStrategyOption{MPIStrategyOption::noMPI};
 
   /**
-   * For MPI-tuning: Maximum of the relative difference in the comparison metric for two ranks which exchange their tuning information.
+   * For MPI-tuning: Maximum of the relative difference in the comparison metric for two ranks which exchange their
+   * tuning information.
    */
   double _mpiTuningMaxDifferenceForBucket{0.15};
 

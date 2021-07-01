@@ -253,7 +253,6 @@ class AutoTuner {
    */
   double _mpiTuningWeightForMaxDensity;
 
-
   /**
    * Buffer for the homogeneities of the last ten Iterations
    */
@@ -303,7 +302,7 @@ bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild
   // - more than one config exists
   // - currently in tuning phase
   // - functor is relevant
-  if (_iterationsSinceTuning >= _tuningInterval - 10) {
+  if (_iterationsSinceTuning >= _tuningInterval - 9 and _iterationsSinceTuning <= _tuningInterval) {
     const auto [homogeneity, maxDensity] = autopas::utils::calculateHomogeneityAndMaxDensity<Particle>(getContainer());
     _homogeneitiesOfLastTenIterations.push_back(homogeneity);
     _maxDensitiesOfLastTenIterations.push_back(maxDensity);
@@ -472,12 +471,13 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
   if (_iterationsSinceTuning == _tuningInterval) {
     if (auto *mpiStrategy = dynamic_cast<MPIParallelizedStrategy *>(_tuningStrategy.get())) {
       std::ostringstream oss;
-      std::copy(_homogeneitiesOfLastTenIterations.begin(), _homogeneitiesOfLastTenIterations.end()-1,
+      std::copy(_homogeneitiesOfLastTenIterations.begin(), _homogeneitiesOfLastTenIterations.end() - 1,
                 std::ostream_iterator<double>(oss, ","));
       oss << _homogeneitiesOfLastTenIterations.back();
       AutoPasLog(debug, "Collected Homogeneities: " + oss.str());
+      oss.str("");
       oss.clear();
-      std::copy(_maxDensitiesOfLastTenIterations.begin(), _maxDensitiesOfLastTenIterations.end()-1,
+      std::copy(_maxDensitiesOfLastTenIterations.begin(), _maxDensitiesOfLastTenIterations.end() - 1,
                 std::ostream_iterator<double>(oss, ","));
       oss << _maxDensitiesOfLastTenIterations.back();
       AutoPasLog(debug, "Collected max Densities: " + oss.str());
@@ -486,8 +486,10 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
     } else {
       _tuningStrategy->reset(_iteration);
     }
-    _homogeneitiesOfLastTenIterations.erase(_homogeneitiesOfLastTenIterations.begin(), _homogeneitiesOfLastTenIterations.end());
-    _maxDensitiesOfLastTenIterations.erase(_maxDensitiesOfLastTenIterations.begin(), _maxDensitiesOfLastTenIterations.end());
+    _homogeneitiesOfLastTenIterations.erase(_homogeneitiesOfLastTenIterations.begin(),
+                                            _homogeneitiesOfLastTenIterations.end());
+    _maxDensitiesOfLastTenIterations.erase(_maxDensitiesOfLastTenIterations.begin(),
+                                           _maxDensitiesOfLastTenIterations.end());
   } else {  // enough samples -> next config
     stillTuning = _tuningStrategy->tune();
   }
