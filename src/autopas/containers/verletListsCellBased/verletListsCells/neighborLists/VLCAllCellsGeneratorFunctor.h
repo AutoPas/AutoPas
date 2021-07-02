@@ -47,10 +47,6 @@ class VLCAllCellsGeneratorFunctor : public Functor<Particle, VLCAllCellsGenerato
     return true;
   }
 
-  bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
-    return false;  // this functor shouldn't be called with clusters!
-  }
-
   /**
    * @copydoc Functor::AoSFunctor()
    */

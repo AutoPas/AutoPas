@@ -17,6 +17,8 @@
 
 #if defined(AUTOPAS_OPENMP)
 #include <omp.h>
+
+#include <vector>
 #else
 #include "ExceptionHandler.h"
 #endif

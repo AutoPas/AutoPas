@@ -30,11 +30,6 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
 
   bool allowsNonNewton3() override { return true; }
 
-  [[nodiscard]] bool isAppropriateClusterSize(unsigned int /*clusterSize*/,
-                                              DataLayoutOption::Value dataLayout) const override {
-    return dataLayout == DataLayoutOption::aos;  // no support for clusters yet, unless aos.
-  }
-
   /**
    * constructor of FlopCounterFunctor
    * @param cutoffRadius the cutoff radius
@@ -63,20 +58,20 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
    * @param soa
    */
   void SoAFunctorSingle(SoAView<typename Particle::SoAArraysType> soa, bool /*newton3*/) override {
-    if (soa.getNumberOfParticles() == 0) return;
+    if (soa.getNumParticles() == 0) return;
 
     double *const __restrict x1ptr = soa.template begin<Particle::AttributeNames::posX>();
     double *const __restrict y1ptr = soa.template begin<Particle::AttributeNames::posY>();
     double *const __restrict z1ptr = soa.template begin<Particle::AttributeNames::posZ>();
 
-    for (size_t i = 0; i < soa.getNumberOfParticles(); ++i) {
+    for (size_t i = 0; i < soa.getNumParticles(); ++i) {
       size_t distanceCalculationsAcc = 0;
       size_t kernelCallsAcc = 0;
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : kernelCallsAcc, distanceCalculationsAcc)
-      for (size_t j = i + 1; j < soa.getNumberOfParticles(); ++j) {
+      for (size_t j = i + 1; j < soa.getNumParticles(); ++j) {
         ++distanceCalculationsAcc;
 
         const double drx = x1ptr[i] - x1ptr[j];
@@ -112,14 +107,14 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
     double *const __restrict y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
     double *const __restrict z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
 
-    for (size_t i = 0; i < soa1.getNumberOfParticles(); ++i) {
+    for (size_t i = 0; i < soa1.getNumParticles(); ++i) {
       size_t distanceCalculationsAcc = 0;
       size_t kernelCallsAcc = 0;
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : kernelCallsAcc, distanceCalculationsAcc)
-      for (size_t j = 0; j < soa2.getNumberOfParticles(); ++j) {
+      for (size_t j = 0; j < soa2.getNumParticles(); ++j) {
         ++distanceCalculationsAcc;
 
         const double drx = x1ptr[i] - x2ptr[j];
@@ -150,7 +145,7 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
   void SoAFunctorVerlet(SoAView<typename Particle::SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                         bool /*newton3*/) override {
-    auto numParts = soa.getNumberOfParticles();
+    auto numParts = soa.getNumParticles();
 
     if (numParts == 0) return;
 
@@ -249,78 +244,6 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
     }
     _distanceCalculations.fetch_add(distanceCalculationsAcc, std::memory_order_relaxed);
     _kernelCalls.fetch_add(kernelCallsAcc, std::memory_order_relaxed);
-  }
-
-  void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle, bool /*newton3*/) override {
-#if defined(AUTOPAS_CUDA)
-    // estimate flops on GPU
-    size_t size = device_handle.template get<Particle::AttributeNames::posX>().size();
-    _distanceCalculations += size * size;
-    _kernelCalls += size * size;
-#else
-    utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
-#endif
-  }
-
-  void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1,
-                   CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2, bool /*newton3*/) override {
-#if defined(AUTOPAS_CUDA)
-    // estimate flops on GPU
-    size_t size1 = device_handle1.template get<Particle::AttributeNames::posX>().size();
-    size_t size2 = device_handle2.template get<Particle::AttributeNames::posX>().size();
-
-    _distanceCalculations += size1 * size2;
-    _kernelCalls += size1 * size2;
-#else
-    utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
-#endif
-  }
-
-  /**
-   * @copydoc Functor::deviceSoALoader
-   */
-  void deviceSoALoader(::autopas::SoA<typename Particle::SoAArraysType> &soa,
-                       CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {
-#if defined(AUTOPAS_CUDA)
-    size_t size = soa.getNumberOfParticles();
-    if (size == 0) return;
-
-    device_handle.template get<Particle::AttributeNames::posX>().copyHostToDevice(
-        size, soa.template begin<Particle::AttributeNames::posX>());
-    device_handle.template get<Particle::AttributeNames::posY>().copyHostToDevice(
-        size, soa.template begin<Particle::AttributeNames::posY>());
-    device_handle.template get<Particle::AttributeNames::posZ>().copyHostToDevice(
-        size, soa.template begin<Particle::AttributeNames::posZ>());
-
-    device_handle.template get<Particle::AttributeNames::forceX>().copyHostToDevice(
-        size, soa.template begin<Particle::AttributeNames::forceX>());
-    device_handle.template get<Particle::AttributeNames::forceY>().copyHostToDevice(
-        size, soa.template begin<Particle::AttributeNames::forceY>());
-    device_handle.template get<Particle::AttributeNames::forceZ>().copyHostToDevice(
-        size, soa.template begin<Particle::AttributeNames::forceZ>());
-#else
-    utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
-#endif
-  }
-
-  /**
-   * @copydoc Functor::deviceSoAExtractor
-   */
-  void deviceSoAExtractor(::autopas::SoA<typename Particle::SoAArraysType> &soa,
-                          CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {
-#if defined(AUTOPAS_CUDA)
-    size_t size = soa.getNumberOfParticles();
-    if (size == 0) return;
-
-    device_handle.template get<Particle::AttributeNames::forceX>().copyDeviceToHost(
-        size, soa.template begin<Particle::AttributeNames::forceX>());
-    device_handle.template get<Particle::AttributeNames::forceY>().copyDeviceToHost(
-        size, soa.template begin<Particle::AttributeNames::forceY>());
-    device_handle.template get<Particle::AttributeNames::forceZ>().copyDeviceToHost(
-        size, soa.template begin<Particle::AttributeNames::forceZ>());
-#else
-    utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
-#endif
   }
 
   /**

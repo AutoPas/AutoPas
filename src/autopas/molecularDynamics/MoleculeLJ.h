@@ -51,22 +51,6 @@ class MoleculeLJ final : public Particle {
                                        floatType /*z*/, floatType /*fx*/, floatType /*fy*/, floatType /*fz*/,
                                        size_t /*typeid*/, OwnershipState /*ownershipState*/>::Type;
 
-#if defined(AUTOPAS_CUDA)
-  /**
-   * The type for storage arrays for Cuda.
-   */
-  using CudaDeviceArraysType =
-      typename autopas::utils::CudaSoAType<MoleculeLJ<floatType> *, size_t /*id*/, floatType /*x*/, floatType /*y*/,
-                                           floatType /*z*/, floatType /*fx*/, floatType /*fy*/, floatType /*fz*/,
-                                           size_t /*typeid*/, OwnershipState /*ownershipState*/>::Type;
-#else
-  /**
-   * The type for storage arrays for Cuda.
-   * empty if compiled without Cuda Support.
-   */
-  using CudaDeviceArraysType = typename autopas::utils::CudaSoAType<>::Type;
-#endif
-
   /**
    * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).
    * @tparam attribute Attribute name.

@@ -115,10 +115,6 @@ class LJFunctorAVX
     return useNewton3 == FunctorN3Modes::Newton3Off or useNewton3 == FunctorN3Modes::Both;
   }
 
-  bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const final {
-    return dataLayout == DataLayoutOption::aos;  // LJFunctorAVX does only support clusters via aos.
-  }
-
   void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
     if (i.isDummy() or j.isDummy()) {
       return;

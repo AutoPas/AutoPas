@@ -13,7 +13,6 @@
 #include "autopas/containers/directSum/DirectSum.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/LinkedCellsReferences.h"
-#include "autopas/containers/verletClusterCells/VerletClusterCells.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/VarVerletLists.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/neighborLists/asBuild/VerletNeighborListAsBuild.h"
@@ -130,11 +129,6 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
       container =
           std::make_unique<VerletClusterLists<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
                                                          containerInfo.verletClusterSize, containerInfo.loadEstimator);
-      break;
-    }
-    case ContainerOption::verletClusterCells: {
-      container = std::make_unique<VerletClusterCells<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
-                                                                 containerInfo.verletClusterSize);
       break;
     }
     case ContainerOption::varVerletListsAsBuild: {

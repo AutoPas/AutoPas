@@ -366,28 +366,6 @@ bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild
       }
       break;
     }
-#if defined(AUTOPAS_CUDA)
-    case DataLayoutOption::cuda: {
-      if (_tuningStrategy->getCurrentConfiguration().newton3 == Newton3Option::enabled) {
-        if (isTuning) {
-          iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::cuda, /*Newton3*/ true,
-                                        /*tuning*/ true>(f, doListRebuild);
-        } else {
-          iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::cuda, /*Newton3*/ true,
-                                        /*tuning*/ false>(f, doListRebuild);
-        }
-      } else {
-        if (isTuning) {
-          iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::cuda, /*Newton3*/ false,
-                                        /*tuning*/ true>(f, doListRebuild);
-        } else {
-          iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::cuda, /*Newton3*/ false,
-                                        /*tuning*/ false>(f, doListRebuild);
-        }
-      }
-      break;
-    }
-#endif
     default:
       utils::ExceptionHandler::exception("AutoTuner: Unknown data layout : {}",
                                          _tuningStrategy->getCurrentConfiguration().dataLayout);
