@@ -348,7 +348,7 @@ class VerletClusterCells : public CellBasedParticleContainer<FullParticleCell<Pa
    * Get the number of particles excluding dummy Particles saved in the container.
    * @return Number of particles in the container.
    */
-  unsigned long getNumParticles() const override {
+  unsigned long getNumberOfParticles() const override {
     size_t numParticles = 0ul;
 #ifdef AUTOPAS_OPENMP
     /// @todo: find a sensible value for magic number

@@ -224,7 +224,7 @@ class VCCClusterIterationCUDATraversal : public CellPairTraversal<ParticleCell>,
 
     auto cudaSoA = _functor->createFunctorCudaSoA(_storageCell._particleSoABufferDevice);
     // if no particles exist no need to call a traversal
-    if (auto numParticlesInSoA = _storageCell._particleSoABuffer.getNumParticles(); numParticlesInSoA != 0) {
+    if (auto numParticlesInSoA = _storageCell._particleSoABuffer.getNumberOfParticles(); numParticlesInSoA != 0) {
       if (useNewton3) {
         _functor->getCudaWrapper()->CellVerletTraversalN3Wrapper(cudaSoA.get(), numParticlesInSoA / _clusterSize,
                                                                  _clusterSize, *_neighborMatrixDim,

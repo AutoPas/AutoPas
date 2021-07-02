@@ -316,9 +316,9 @@ void Simulation::printStatistics(autopas::AutoPas<ParticleType> &autopas) {
   // Statistics
   cout << endl;
   cout << "Total number of particles at end of Simulation: "
-       << autopas.getNumParticles(autopas::IteratorBehavior::ownedOrHalo) << endl;
-  cout << "  Owned: " << autopas.getNumParticles(autopas::IteratorBehavior::owned) << endl;
-  cout << "  Halo : " << autopas.getNumParticles(autopas::IteratorBehavior::halo) << endl;
+       << autopas.getNumberOfParticles(autopas::IteratorBehavior::ownedOrHalo) << endl;
+  cout << "  Owned: " << autopas.getNumberOfParticles(autopas::IteratorBehavior::owned) << endl;
+  cout << "  Halo : " << autopas.getNumberOfParticles(autopas::IteratorBehavior::halo) << endl;
   cout << "Standard Deviation of Homogeneity    : " << _homogeneity << endl;
 
   cout << fixed << setprecision(_floatStringPrecision);
@@ -340,7 +340,7 @@ void Simulation::printStatistics(autopas::AutoPas<ParticleType> &autopas) {
 
   cout << timerToString("One iteration   ", _timers.simulate.getTotalTime() / _iteration, digitsTimeTotalNS,
                         durationTotal);
-  auto mfups = autopas.getNumParticles(autopas::IteratorBehavior::owned) * _iteration * 1e-6 /
+  auto mfups = autopas.getNumberOfParticles(autopas::IteratorBehavior::owned) * _iteration * 1e-6 /
                (_timers.forceUpdateTotal.getTotalTime() * 1e-9);  // 1e-9 for ns to s, 1e-6 for M in MFUP
   cout << "Tuning iterations: " << _numTuningIterations << " / " << _iteration << " = "
        << ((double)_numTuningIterations / _iteration * 100) << "%" << endl;
@@ -407,7 +407,7 @@ void Simulation::writeVTKFile(autopas::AutoPas<ParticleType> &autopas) {
 
   std::string fileBaseName = _config->vtkFileName.value;
   // only count number of owned particles here
-  const auto numParticles = autopas.getNumParticles(autopas::IteratorBehavior::owned);
+  const auto numParticles = autopas.getNumberOfParticles(autopas::IteratorBehavior::owned);
   std::ostringstream strstr;
   auto maxNumDigits = std::to_string(_config->iterations.value).length();
   strstr << fileBaseName << "_" << getMPISuffix() << std::setfill('0') << std::setw(maxNumDigits) << _iteration

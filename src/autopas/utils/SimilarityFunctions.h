@@ -23,7 +23,7 @@ namespace autopas::utils {
  */
 template <class Container>
 std::pair<double, double> calculateHomogeneityAndMaxDensity(const Container &container) {
-  const size_t numberOfParticles = container->getNumParticles();
+  const size_t numberOfParticles = container->getNumberOfParticles();
   // approximately the resolution we want to get.
   size_t numberOfCells = ceil(numberOfParticles / 10.);
 

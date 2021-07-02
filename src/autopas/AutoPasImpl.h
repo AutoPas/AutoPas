@@ -94,7 +94,7 @@ bool AutoPas<Particle>::iteratePairwise(Functor *f) {
 }
 
 template <class Particle>
-size_t AutoPas<Particle>::getNumParticles(IteratorBehavior behavior) const {
+size_t AutoPas<Particle>::getNumberOfParticles(IteratorBehavior behavior) const {
   size_t numParticles{0};
   if (behavior & IteratorBehavior::owned) {
     numParticles += _logicHandler->getNumParticlesOwned();
@@ -105,7 +105,7 @@ size_t AutoPas<Particle>::getNumParticles(IteratorBehavior behavior) const {
   // non fatal sanity check whether the behavior contained anything else
   if (behavior & ~(IteratorBehavior::ownedOrHalo)) {
     utils::ExceptionHandler::exception(
-        "AutoPas::getNumParticles() does not support iterator behaviors other than owned or halo.");
+        "AutoPas::getNumberOfParticles() does not support iterator behaviors other than owned or halo.");
   }
 
   return numParticles;

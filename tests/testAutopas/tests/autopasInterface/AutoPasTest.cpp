@@ -115,7 +115,7 @@ TEST_F(AutoPasTest, checkRebuildingCopyCreateNew) {
   autoPas.addParticle(p2);
   {
     std::vector<Particle> particleVector;
-    particleVector.reserve(autoPas.getNumParticles());
+    particleVector.reserve(autoPas.getNumberOfParticles());
 
     // 1. copy particles out of first container
     for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
@@ -185,20 +185,20 @@ void testConstIterator(const AP &ap, int numParticles) {
 
 TEST_F(AutoPasTest, checkConstIterator) {
   // with 0 particles
-  testConstIterator(autoPas, autoPas.getNumParticles());
+  testConstIterator(autoPas, autoPas.getNumberOfParticles());
 
   Particle p1({1., 1., 1.}, {0., 0., 0.}, 0);
   autoPas.addParticle(p1);
   Particle p2({2., 2., 2.}, {0., 0., 0.}, 1);
   autoPas.addParticle(p2);
   // with 2 particles
-  testConstIterator(autoPas, autoPas.getNumParticles());
+  testConstIterator(autoPas, autoPas.getNumberOfParticles());
 }
 
 void AutoPasTest::expectedParticles(size_t expectedOwned, size_t expectedHalo) {
-  EXPECT_EQ(autoPas.getNumParticles(autopas::IteratorBehavior::ownedOrHalo), expectedHalo + expectedOwned);
-  EXPECT_EQ(autoPas.getNumParticles(autopas::IteratorBehavior::owned), expectedOwned);
-  EXPECT_EQ(autoPas.getNumParticles(autopas::IteratorBehavior::halo), expectedHalo);
+  EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::ownedOrHalo), expectedHalo + expectedOwned);
+  EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::owned), expectedOwned);
+  EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::halo), expectedHalo);
 }
 
 TEST_F(AutoPasTest, getNumParticlesTest) {

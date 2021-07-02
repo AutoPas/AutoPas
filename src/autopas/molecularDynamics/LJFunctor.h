@@ -194,7 +194,7 @@ class LJFunctor
    * to use it correctly for the global values.
    */
   void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) final {
-    if (soa.getNumParticles() == 0) return;
+    if (soa.getNumberOfParticles() == 0) return;
 
     const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
@@ -220,11 +220,11 @@ class LJFunctor
     if constexpr (useMixing) {
       // Preload all sigma and epsilons for next vectorized region.
       // Not preloading and directly using the values, will produce worse results.
-      sigmaSquares.resize(soa.getNumParticles());
-      epsilon24s.resize(soa.getNumParticles());
+      sigmaSquares.resize(soa.getNumberOfParticles());
+      epsilon24s.resize(soa.getNumberOfParticles());
       // if no mixing or mixing but no shift shift6 is constant therefore we do not need this vector.
       if constexpr (applyShift) {
-        shift6s.resize(soa.getNumParticles());
+        shift6s.resize(soa.getNumberOfParticles());
       }
     }
 
@@ -232,7 +232,7 @@ class LJFunctor
     const SoAFloatPrecision const_sigmasquare = _sigmasquare;
     const SoAFloatPrecision const_epsilon24 = _epsilon24;
 
-    for (unsigned int i = 0; i < soa.getNumParticles(); ++i) {
+    for (unsigned int i = 0; i < soa.getNumberOfParticles(); ++i) {
       const auto ownedStateI = ownedStatePtr[i];
       if (ownedStateI == OwnershipState::dummy) {
         continue;
@@ -243,7 +243,7 @@ class LJFunctor
       SoAFloatPrecision fzacc = 0.;
 
       if constexpr (useMixing) {
-        for (unsigned int j = 0; j < soa.getNumParticles(); ++j) {
+        for (unsigned int j = 0; j < soa.getNumberOfParticles(); ++j) {
           auto mixingData = _PPLibrary->getMixingData(typeptr[i], typeptr[j]);
           sigmaSquares[j] = mixingData.sigmaSquare;
           epsilon24s[j] = mixingData.epsilon24;
@@ -256,7 +256,7 @@ class LJFunctor
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
-      for (unsigned int j = i + 1; j < soa.getNumParticles(); ++j) {
+      for (unsigned int j = i + 1; j < soa.getNumberOfParticles(); ++j) {
         SoAFloatPrecision shift6 = const_shift6;
         SoAFloatPrecision sigmasquare = const_sigmasquare;
         SoAFloatPrecision epsilon24 = const_epsilon24;
@@ -359,7 +359,7 @@ class LJFunctor
    */
   template <bool newton3>
   void SoAFunctorPairImpl(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2) {
-    if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
+    if (soa1.getNumberOfParticles() == 0 || soa2.getNumberOfParticles() == 0) return;
 
     const auto *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
@@ -395,15 +395,15 @@ class LJFunctor
     std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> epsilon24s;
     std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> shift6s;
     if constexpr (useMixing) {
-      sigmaSquares.resize(soa2.getNumParticles());
-      epsilon24s.resize(soa2.getNumParticles());
+      sigmaSquares.resize(soa2.getNumberOfParticles());
+      epsilon24s.resize(soa2.getNumberOfParticles());
       // if no mixing or mixing but no shift shift6 is constant therefore we do not need this vector.
       if constexpr (applyShift) {
-        shift6s.resize(soa2.getNumParticles());
+        shift6s.resize(soa2.getNumberOfParticles());
       }
     }
 
-    for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
+    for (unsigned int i = 0; i < soa1.getNumberOfParticles(); ++i) {
       SoAFloatPrecision fxacc = 0;
       SoAFloatPrecision fyacc = 0;
       SoAFloatPrecision fzacc = 0;
@@ -415,7 +415,7 @@ class LJFunctor
 
       // preload all sigma and epsilons for next vectorized region
       if constexpr (useMixing) {
-        for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
+        for (unsigned int j = 0; j < soa2.getNumberOfParticles(); ++j) {
           sigmaSquares[j] = _PPLibrary->mixingSigmaSquare(typeptr1[i], typeptr2[j]);
           epsilon24s[j] = _PPLibrary->mixing24Epsilon(typeptr1[i], typeptr2[j]);
           if constexpr (applyShift) {
@@ -427,7 +427,7 @@ class LJFunctor
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
-      for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
+      for (unsigned int j = 0; j < soa2.getNumberOfParticles(); ++j) {
         if constexpr (useMixing) {
           sigmasquare = sigmaSquares[j];
           epsilon24 = epsilon24s[j];
@@ -519,7 +519,7 @@ class LJFunctor
   void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                         bool newton3) final {
-    if (soa.getNumParticles() == 0 or neighborList.empty()) return;
+    if (soa.getNumberOfParticles() == 0 or neighborList.empty()) return;
     if (newton3) {
       SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
     } else {
@@ -647,7 +647,7 @@ class LJFunctor
                        CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) final {
 #if defined(AUTOPAS_CUDA)
 
-    const size_t size = soa.getNumParticles();
+    const size_t size = soa.getNumberOfParticles();
     if (size == 0) return;
 
     device_handle.template get<Particle::AttributeNames::posX>().copyHostToDevice(
@@ -679,7 +679,7 @@ class LJFunctor
                           CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) final {
 #if defined(AUTOPAS_CUDA)
 
-    const size_t size = soa.getNumParticles();
+    const size_t size = soa.getNumberOfParticles();
     if (size == 0) return;
 
     device_handle.template get<Particle::AttributeNames::forceX>().copyDeviceToHost(

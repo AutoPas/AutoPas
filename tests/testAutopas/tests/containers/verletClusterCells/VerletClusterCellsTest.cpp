@@ -96,7 +96,7 @@ TEST_F(VerletClusterCellsTest, testVerletListIterator) {
     ++numBoth;
   }
   EXPECT_EQ(numBoth, numOwn + numHalo);
-  EXPECT_EQ(verletLists.getNumParticles(), 550);
+  EXPECT_EQ(verletLists.getNumberOfParticles(), 550);
 
   for (auto &it : particlesOwn) {
     EXPECT_EQ(it, 1);
@@ -166,7 +166,7 @@ TEST_F(VerletClusterCellsTest, testVerletListIteratorDelete) {
     ++numBoth;
   }
   EXPECT_EQ(numBoth, 550 / 2);
-  EXPECT_EQ(verletLists.getNumParticles(), 550 / 2);
+  EXPECT_EQ(verletLists.getNumberOfParticles(), 550 / 2);
 
   int i = 0;
   for (; i < 50; ++i) {
@@ -257,35 +257,35 @@ TEST_F(VerletClusterCellsTest, testUpdateHaloParticle) {
 
 TEST_F(VerletClusterCellsTest, testGetNumParticles) {
   autopas::VerletClusterCells<Particle> verletClusterCells({0., 0., 0.}, {10., 10., 10.}, 1.);
-  EXPECT_EQ(verletClusterCells.getNumParticles(), 0);
+  EXPECT_EQ(verletClusterCells.getNumberOfParticles(), 0);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
   verletClusterCells.addParticle(p);
-  EXPECT_EQ(verletClusterCells.getNumParticles(), 1);
+  EXPECT_EQ(verletClusterCells.getNumberOfParticles(), 1);
 
   std::array<double, 3> r2 = {1.5, 2, 2};
   Particle p2(r2, {0., 0., 0.}, 1);
   verletClusterCells.addParticle(p2);
-  EXPECT_EQ(verletClusterCells.getNumParticles(), 2);
+  EXPECT_EQ(verletClusterCells.getNumberOfParticles(), 2);
 }
 
 TEST_F(VerletClusterCellsTest, testDeleteAllParticles) {
   autopas::VerletClusterCells<Particle> verletClusterCells({0., 0., 0.}, {10., 10., 10.}, 1.);
-  EXPECT_EQ(verletClusterCells.getNumParticles(), 0);
+  EXPECT_EQ(verletClusterCells.getNumberOfParticles(), 0);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
   verletClusterCells.addParticle(p);
-  EXPECT_EQ(verletClusterCells.getNumParticles(), 1);
+  EXPECT_EQ(verletClusterCells.getNumberOfParticles(), 1);
 
   std::array<double, 3> r2 = {1.5, 2, 2};
   Particle p2(r2, {0., 0., 0.}, 1);
   verletClusterCells.addParticle(p2);
-  EXPECT_EQ(verletClusterCells.getNumParticles(), 2);
+  EXPECT_EQ(verletClusterCells.getNumberOfParticles(), 2);
 
   verletClusterCells.deleteAllParticles();
-  EXPECT_EQ(verletClusterCells.getNumParticles(), 0);
+  EXPECT_EQ(verletClusterCells.getNumberOfParticles(), 0);
 }
 
 TEST_F(VerletClusterCellsTest, testVerletListRegionIterator) {

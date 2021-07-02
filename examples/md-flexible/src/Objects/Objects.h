@@ -39,7 +39,7 @@ class Object {
 
   /**
    * Generate the object in the given AutoPas container.
-   * @note Particle IDs for the new particles will start at the current value of autopas.getNumParticles().
+   * @note Particle IDs for the new particles will start at the current value of autopas.getNumberOfParticles().
    *
    * @param autopas
    */
@@ -53,7 +53,7 @@ class Object {
   [[nodiscard]] ParticleType getDummyParticle(const autopas::AutoPas<ParticleType> &autopas) const {
     ParticleType dummyParticle;
     dummyParticle.setV(_velocity);
-    dummyParticle.setID(autopas.getNumParticles());
+    dummyParticle.setID(autopas.getNumberOfParticles());
     dummyParticle.setTypeId(_typeId);
     return dummyParticle;
   }

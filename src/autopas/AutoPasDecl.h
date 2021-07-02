@@ -220,7 +220,7 @@ class AutoPas {
    * @param behavior Tells this function to report the number of halo, owned or all particles.
    * @return the number of particles in this container.
    */
-  [[nodiscard]] size_t getNumParticles(IteratorBehavior behavior = IteratorBehavior::owned) const;
+  [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior = IteratorBehavior::owned) const;
 
   /**
    * Returns the type of the currently used container.

@@ -112,7 +112,7 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
    * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
    */
   void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
-    if (soa.getNumParticles() == 0) return;
+    if (soa.getNumberOfParticles() == 0) return;
 
     double *const __restrict massptr = soa.template begin<Particle::AttributeNames::mass>();
     double *const __restrict densityptr = soa.template begin<Particle::AttributeNames::density>();
@@ -134,7 +134,7 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
 
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
-    for (unsigned int indexFirst = 0; indexFirst < soa.getNumParticles(); ++indexFirst) {
+    for (unsigned int indexFirst = 0; indexFirst < soa.getNumberOfParticles(); ++indexFirst) {
       // checks whether particle i is owned.
       if (ownedStatePtr[indexFirst] == OwnershipState::dummy) {
         continue;
@@ -149,7 +149,7 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
       // icpc vectorizes this.
       // g++ only with -ffast-math or -funsafe-math-optimizations
       //#pragma omp simd reduction(+ : localengdotsum, localAccX, localAccY, localAccZ), reduction(max : localvsigmax)
-      for (unsigned int j = indexFirst + 1; j < soa.getNumParticles(); ++j) {
+      for (unsigned int j = indexFirst + 1; j < soa.getNumberOfParticles(); ++j) {
         const double drx = xptr[indexFirst] - xptr[j];
         const double dry = yptr[indexFirst] - yptr[j];
         const double drz = zptr[indexFirst] - zptr[j];
@@ -229,7 +229,7 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
    * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType>, SoAView<SoAArraysType>, bool)
    */
   void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) override {
-    if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
+    if (soa1.getNumberOfParticles() == 0 || soa2.getNumberOfParticles() == 0) return;
 
     double *const __restrict massptr1 = soa1.template begin<Particle::AttributeNames::mass>();
     double *const __restrict densityptr1 = soa1.template begin<Particle::AttributeNames::density>();
@@ -270,7 +270,7 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
     const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle::AttributeNames::ownershipState>();
     const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle::AttributeNames::ownershipState>();
 
-    for (unsigned int indexFirst = 0; indexFirst < soa1.getNumParticles(); ++indexFirst) {
+    for (unsigned int indexFirst = 0; indexFirst < soa1.getNumberOfParticles(); ++indexFirst) {
       // checks whether particle i is owned.
       if (ownedStatePtr1[indexFirst] == OwnershipState::dummy) {
         continue;
@@ -285,7 +285,7 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
       // icpc vectorizes this.
       // g++ only with -ffast-math or -funsafe-math-optimizations
       //#pragma omp simd reduction(+ : localengdotsum, localAccX, localAccY, localAccZ), reduction(max : localvsigmax)
-      for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
+      for (unsigned int j = 0; j < soa2.getNumberOfParticles(); ++j) {
         const double drx = xptr1[indexFirst] - xptr2[j];
         const double dry = yptr1[indexFirst] - yptr2[j];
         const double drz = zptr1[indexFirst] - zptr2[j];
@@ -371,7 +371,7 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
   void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                         bool newton3) override {
-    if (soa.getNumParticles() == 0) return;
+    if (soa.getNumberOfParticles() == 0) return;
 
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 

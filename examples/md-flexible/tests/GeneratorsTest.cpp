@@ -59,19 +59,19 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
 
   cubeGrid[0].generate(autoPas);
   idcounter += cubeGrid.at(0).getParticlesTotal();
-  EXPECT_EQ(autoPas.getNumParticles(), idcounter) << "CubeGrid generator added a wrong number of particles!";
+  EXPECT_EQ(autoPas.getNumberOfParticles(), idcounter) << "CubeGrid generator added a wrong number of particles!";
 
   cubeGauss[0].generate(autoPas);
   idcounter += cubeGauss.at(0).getParticlesTotal();
-  EXPECT_EQ(autoPas.getNumParticles(), idcounter) << "CubeGauss generator added a wrong number of particles!";
+  EXPECT_EQ(autoPas.getNumberOfParticles(), idcounter) << "CubeGauss generator added a wrong number of particles!";
 
   cubeUniform[0].generate(autoPas);
   idcounter += cubeUniform.at(0).getParticlesTotal();
-  EXPECT_EQ(autoPas.getNumParticles(), idcounter) << "CubeRandom generator added a wrong number of particles!";
+  EXPECT_EQ(autoPas.getNumberOfParticles(), idcounter) << "CubeRandom generator added a wrong number of particles!";
 
   sphere[0].generate(autoPas);
   idcounter += sphere.at(0).getParticlesTotal();
-  ASSERT_EQ(autoPas.getNumParticles(), idcounter) << "Sphere generator added a wrong number of particles!";
+  ASSERT_EQ(autoPas.getNumberOfParticles(), idcounter) << "Sphere generator added a wrong number of particles!";
 
   // counters to checks if all particles types are well initialized for different Objects:
   int gridCounter = 0;
@@ -113,5 +113,5 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
     ASSERT_EQ(ids.count(iter->getID()), 0) << "Two particles have the same ID: " << iter->toString();
     ids.insert(iter->getID());
   }
-  EXPECT_EQ(ids.size(), autoPas.getNumParticles());
+  EXPECT_EQ(ids.size(), autoPas.getNumberOfParticles());
 }
