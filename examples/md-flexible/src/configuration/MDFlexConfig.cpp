@@ -247,9 +247,7 @@ void MDFlexConfig::addParticleType(unsigned long typeId, double epsilon, double 
   }
 }
 
-void MDFlexConfig::flushParticles(){
-  _particles.clear();
-}
+void MDFlexConfig::flushParticles() { _particles.clear(); }
 
 void MDFlexConfig::initializeParticlePropertiesLibrary() {
   if (epsilonMap.value.empty()) {

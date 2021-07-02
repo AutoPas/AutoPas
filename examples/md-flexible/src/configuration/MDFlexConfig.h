@@ -30,7 +30,6 @@
 #include "objects/Sphere.h"
 #include "src/TypeDefinitions.h"
 
-
 /**
  * Class containing all necessary parameters for configuring a md-flexible simulation.
  */
