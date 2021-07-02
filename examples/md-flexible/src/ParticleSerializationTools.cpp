@@ -6,6 +6,24 @@
 #include "ParticleSerializationTools.h"
 
 namespace ParticleSerializationTools {
+
+void serializeParticle(const ParticleType &particle, std::vector<char> &serializedParticles) {
+  ParticleAttributes attributes{.position{particle.getR()},
+                                .velocity{particle.getV()},
+                                .force{particle.getF()},
+                                .id = particle.getID(),
+                                .ownershipState = particle.getOwnershipState(),
+                                .typeId = particle.getTypeId(),
+                                .oldForce{particle.getOldF()}};
+
+  std::vector<char> attributesVector;
+  attributesVector.resize(sizeof(ParticleAttributes));
+
+  std::memcpy(&attributesVector[0], &attributes, sizeof(ParticleAttributes));
+
+  serializedParticles.insert(serializedParticles.end(), attributesVector.begin(), attributesVector.end());
+}
+
 void serializeParticle(const ParticleType &particle, std::vector<char> &serializedParticles) {
   ParticleAttributes attributes{.position{particle.getR()},
                                 .velocity{particle.getV()},

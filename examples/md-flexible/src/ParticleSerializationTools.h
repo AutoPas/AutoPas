@@ -16,6 +16,11 @@
  */
 namespace ParticleSerializationTools {
 /**
+ * Names of the particle attributes which need to be de-/serialized for MPI messages.
+ */
+enum AttributeNames : int { id, posX, posY, posZ, forceX, forceY, forceZ, ownershipState, typeId };
+
+/**
  * Serializes a particle and appends it to the serializedParticles container.
  * @param particle The particle which will be serialized.
  * @param serializedParticles The container to wich the serialized particle will be appended.
