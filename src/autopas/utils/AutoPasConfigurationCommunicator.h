@@ -85,6 +85,7 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
  * @param comm MPI communicator
  * @param bucket new MPI communicator for its bucket
  * @param container container of current simulation
+ * @param smoothedHomogeneityAndMaxDensity [homogeneity, maxDensity] smoothed over last 10 iterations.
  * @param MPITuningMaxDifferenceForBucket For MPI-tuning: Maximum of the relative difference in the comparison metric
  * for two ranks which exchange their tuning information.
  * @param MPITuningWeightForMaxDensity For MPI-tuning: Weight for maxDensity in the calculation for bucket distribution.
@@ -105,8 +106,10 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket,
 
   // debug print for evaluation
   AutoPasLog(debug, "similarityMetric of rank: " + std::to_string(rank) + " is: " + std::to_string(similarityMetric));
-  AutoPasLog(debug, "smoothedHomogeneity of rank: " + std::to_string(rank) + " is: " + std::to_string(smoothedHomogeneityAndMaxDensity.first));
-  AutoPasLog(debug, "smoothedMaxDensity of rank: " + std::to_string(rank) + " is: " + std::to_string(smoothedHomogeneityAndMaxDensity.second));
+  AutoPasLog(debug, "smoothedHomogeneity of rank: " + std::to_string(rank) +
+                        " is: " + std::to_string(smoothedHomogeneityAndMaxDensity.first));
+  AutoPasLog(debug, "smoothedMaxDensity of rank: " + std::to_string(rank) +
+                        " is: " + std::to_string(smoothedHomogeneityAndMaxDensity.second));
 
   // get all the similarityMetrics of the other ranks
   AutoPas_MPI_Allgather(&similarityMetric, 1, AUTOPAS_MPI_DOUBLE, similarityMetrics.data(), 1, AUTOPAS_MPI_DOUBLE,
