@@ -53,8 +53,8 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
 
   std::array<double, 3> velocity = {0., 0., 0.};
   for (auto &particle : configuration.getParticles()) {
-    EXPECT_EQ(velocity, particle.velocity);  // velocity set to {0.,0.,0.} in parsingFile
-    switch (particle.typeId) {
+    EXPECT_EQ(velocity, particle.getV());  // velocity set to {0.,0.,0.} in parsingFile
+    switch (particle.getTypeId()) {
       case 0: {
         gridCounter++;
         break;
@@ -84,8 +84,9 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   // check if during initialization, not 2 Particles were initialized with same id
   std::set<size_t> ids;
   for (auto &particle : configuration.getParticles()) {
-    ASSERT_EQ(ids.count(particle.id), 0) << "Two particles have the same ID " << particle.id;
-    ids.insert(particle.id);
+    int particleId = particle.getID();
+    ASSERT_EQ(ids.count(particleId), 0) << "Two particles have the same ID " << particleId;
+    ids.insert(particleId);
   }
   EXPECT_EQ(ids.size(), configuration.getParticles().size());
 }

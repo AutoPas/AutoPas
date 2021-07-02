@@ -8,7 +8,6 @@
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/WrapMPI.h"
 #include "src/ParticleAttributes.h"
-#include "src/ParticleSerializationTools.h"
 #include "src/TypeDefinitions.h"
 #include "src/configuration/MDFlexConfig.h"
 #include "src/domainDecomposition/DomainTools.h"
@@ -94,8 +93,8 @@ TEST_F(TestRegularGridDecomposition, testExchangeHaloParticles) {
   initializeAutoPasContainer(autoPasContainer, configuration);
 
   for (auto &particle : configuration.getParticles()) {
-    if (domainDecomposition.isInsideLocalDomain(particle.position)) {
-      autoPasContainer->addParticle(ParticleSerializationTools::convertParticleAttributesToParticle(particle));
+    if (domainDecomposition.isInsideLocalDomain(particle.getR())) {
+      autoPasContainer->addParticle(particle);
     }
   }
 
@@ -125,8 +124,8 @@ TEST_F(TestRegularGridDecomposition, testExchangeMigratingParticles) {
   initializeAutoPasContainer(autoPasContainer, configuration);
 
   for (auto &particle : configuration.getParticles()) {
-    if (domainDecomposition.isInsideLocalDomain(particle.position)) {
-      autoPasContainer->addParticle(ParticleSerializationTools::convertParticleAttributesToParticle(particle));
+    if (domainDecomposition.isInsideLocalDomain(particle.getR())) {
+      autoPasContainer->addParticle(particle);
     }
   }
 

@@ -37,12 +37,12 @@ TEST_F(ParticleSerializationToolsTest, testSeralizeParticle) {
   EXPECT_EQ(attributes->oldForce, _particle.oldForce);
 }
 
-TEST_F(ParticleSerializationToolsTest, testDeserializeParticleData) {
+TEST_F(ParticleSerializationToolsTest, testDeserializeParticle) {
   std::vector<char> serializedParticle;
   ParticleSerializationTools::serializeParticle(_molecule, serializedParticle);
 
   autopas::MoleculeLJ<double> deserializedMolecule;
-  ParticleSerializationTools::deserializeParticleData(&serializedParticle[0], deserializedMolecule);
+  ParticleSerializationTools::deserializeParticle(&serializedParticle[0], deserializedMolecule);
 
   EXPECT_EQ(_molecule.getR(), deserializedMolecule.getR());
   EXPECT_EQ(_molecule.getV(), deserializedMolecule.getV());
@@ -53,18 +53,4 @@ TEST_F(ParticleSerializationToolsTest, testDeserializeParticleData) {
   EXPECT_EQ(_molecule.isOwned(), deserializedMolecule.isOwned());
   EXPECT_EQ(_molecule.isHalo(), deserializedMolecule.isHalo());
   EXPECT_EQ(_molecule.getTypeId(), deserializedMolecule.getTypeId());
-}
-
-TEST_F(ParticleSerializationToolsTest, testConvertParticleAttributesToParticle) {
-  autopas::MoleculeLJ<double> molecule = ParticleSerializationTools::convertParticleAttributesToParticle(_particle);
-
-  EXPECT_EQ(_molecule.getR(), molecule.getR());
-  EXPECT_EQ(_molecule.getV(), molecule.getV());
-  EXPECT_EQ(_molecule.getF(), molecule.getF());
-  EXPECT_EQ(_molecule.getOldF(), molecule.getOldF());
-  EXPECT_EQ(_molecule.getID(), molecule.getID());
-  EXPECT_EQ(_molecule.isDummy(), molecule.isDummy());
-  EXPECT_EQ(_molecule.isOwned(), molecule.isOwned());
-  EXPECT_EQ(_molecule.isHalo(), molecule.isHalo());
-  EXPECT_EQ(_molecule.getTypeId(), molecule.getTypeId());
 }
