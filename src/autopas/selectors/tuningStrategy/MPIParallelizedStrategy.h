@@ -131,6 +131,8 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
 
   [[nodiscard]] inline bool searchSpaceIsEmpty() const override { return _tuningStrategy->searchSpaceIsEmpty(); }
 
+  [[nodiscard]] inline bool smoothedHomogeneityAndMaxDensityNeeded() const override { return true; }
+
  private:
   /**
    * Essentially sets up a full-search-esque configuration selection, in case the underlying search strategy fails.
