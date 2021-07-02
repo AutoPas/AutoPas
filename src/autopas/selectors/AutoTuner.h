@@ -503,7 +503,8 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
     if (_tuningStrategy->smoothedHomogeneityAndMaxDensityNeeded()) {
       int rank;
       MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-      AutoPasLog(debug, "Calculating homogeneities took added up {} ns on rank {}.", _timerCalculateHomogeneity.getTotalTime(), rank);
+      AutoPasLog(debug, "Calculating homogeneities took added up {} ns on rank {}.",
+                 _timerCalculateHomogeneity.getTotalTime(), rank);
       _homogeneitiesOfLastTenIterations.erase(_homogeneitiesOfLastTenIterations.begin(),
                                               _homogeneitiesOfLastTenIterations.end());
       _maxDensitiesOfLastTenIterations.erase(_maxDensitiesOfLastTenIterations.begin(),
