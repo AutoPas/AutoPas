@@ -478,9 +478,12 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
     } else {
       _tuningStrategy->reset(_iteration);
     }
+    // only used temporarily of evaluation of smoothing
     if (_tuningStrategy->smoothedHomogeneityAndMaxDensityNeeded()) {
-      int rank;
+      int rank{0};
+#ifdef AUTOPAS_INTERNODE_TUNING
       MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
       AutoPasLog(debug, "Calculating homogeneities took added up {} ns on rank {}.",
                  _timerCalculateHomogeneity.getTotalTime(), rank);
       _homogeneitiesOfLastTenIterations.erase(_homogeneitiesOfLastTenIterations.begin(),
