@@ -276,6 +276,12 @@ class AutoTuner {
    */
   std::map<Configuration, std::vector<std::pair<size_t, long>>> _evidence;
 
+  /**
+   * Timer used to determine how much time is wasted by calculating multiple homogeneities for smoothing
+   * Only used temporarily
+   */
+  autopas::utils::Timer _timerCalculateHomogeneity;
+
   IterationLogger _iterationLogger;
   TuningResultLogger _tuningResultLogger;
   TuningDataLogger _tuningDataLogger;
@@ -302,10 +308,13 @@ bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild
   // - more than one config exists
   // - currently in tuning phase
   // - functor is relevant
-  if ( _tuningStrategy->smoothedHomogeneityAndMaxDensityNeeded() and _iterationsSinceTuning >= _tuningInterval - 9 and _iterationsSinceTuning <= _tuningInterval) {
+  if (_tuningStrategy->smoothedHomogeneityAndMaxDensityNeeded() and _iterationsSinceTuning >= _tuningInterval - 9 and
+      _iterationsSinceTuning <= _tuningInterval) {
+    _timerCalculateHomogeneity.start();
     const auto [homogeneity, maxDensity] = autopas::utils::calculateHomogeneityAndMaxDensity(getContainer());
     _homogeneitiesOfLastTenIterations.push_back(homogeneity);
     _maxDensitiesOfLastTenIterations.push_back(maxDensity);
+    _timerCalculateHomogeneity.stop();
   }
   if ((not _tuningStrategy->searchSpaceIsTrivial()) and _iterationsSinceTuning >= _tuningInterval and
       f->isRelevantForTuning()) {
@@ -491,10 +500,15 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
     } else {
       _tuningStrategy->reset(_iteration);
     }
-    _homogeneitiesOfLastTenIterations.erase(_homogeneitiesOfLastTenIterations.begin(),
-                                            _homogeneitiesOfLastTenIterations.end());
-    _maxDensitiesOfLastTenIterations.erase(_maxDensitiesOfLastTenIterations.begin(),
-                                           _maxDensitiesOfLastTenIterations.end());
+    if (_tuningStrategy->smoothedHomogeneityAndMaxDensityNeeded()) {
+      int rank;
+      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+      AutoPasLog(debug, "Calculating homogeneities took added up {} ns on rank {}.", _timerCalculateHomogeneity.getTotalTime(), rank);
+      _homogeneitiesOfLastTenIterations.erase(_homogeneitiesOfLastTenIterations.begin(),
+                                              _homogeneitiesOfLastTenIterations.end());
+      _maxDensitiesOfLastTenIterations.erase(_maxDensitiesOfLastTenIterations.begin(),
+                                             _maxDensitiesOfLastTenIterations.end());
+    }
   } else {  // enough samples -> next config
     stillTuning = _tuningStrategy->tune();
   }
