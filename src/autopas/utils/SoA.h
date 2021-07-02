@@ -259,7 +259,8 @@ class SoA {
   void appendSingleArray(const SoAView<SoAArraysType> &valArrays) {
     auto &currentVector = soaStorage.template get<attribute>();
     auto otherVectorIterator = valArrays.template begin<attribute>();
-    currentVector.insert(currentVector.end(), otherVectorIterator, otherVectorIterator + valArrays.getNumberOfParticles());
+    currentVector.insert(currentVector.end(), otherVectorIterator,
+                         otherVectorIterator + valArrays.getNumberOfParticles());
   }
 
   // actual implementation of append
