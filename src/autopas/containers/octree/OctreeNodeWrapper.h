@@ -10,6 +10,7 @@
 
 #include "autopas/containers/octree/OctreeNodeInterface.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 /**
@@ -42,6 +43,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
                     double interactionLength) {
     _pointer =
         std::make_unique<OctreeLeafNode<Particle>>(boxMin, boxMax, nullptr, treeSplitThreshold, interactionLength);
+    // omp_init_lock(&_lock);
   }
 
   /**
@@ -174,16 +176,26 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
 
  private:
   Particle &getFromReloadingIterator(size_t index) const {
-    static std::vector<Particle *> ps;
+#if 0
+    // TODO(johannes): Make this thread-safe?
     // Reload the buffer only when the index is zero, this saves a little bit of compute time, since only one
     // "traversal" of the octree is required in order to gather all particles
+    omp_set_lock((omp_lock_t *)&_lock);
+    printf("Querying: index=%lu of %lu on T%d\n", index, ps.size(), omp_get_thread_num());
     if (index == 0 or ps.empty()) {
       ps.clear();
-      _pointer->appendAllParticles(ps);
     }
+    omp_unset_lock((omp_lock_t *)&_lock);
+#endif
+
+    // TODO(johannes): This needs severe improvement. If we just copy out all particles, the implementation becomes
+    //  unsafe for threading. We need a way to iterate the octree using a better traversal idea.
+    std::vector<Particle *> ps;
+    _pointer->appendAllParticles(ps);
     return *ps[index];
   }
 
+  // omp_lock_t _lock;
   std::unique_ptr<OctreeNodeInterface<Particle>> _pointer;
 };
 }  // namespace autopas
