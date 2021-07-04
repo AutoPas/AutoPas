@@ -176,7 +176,7 @@ void TraversalComparison::generateReference(mykey_t key) {
     _globalValuesReference[key] = calculatedGlobals;
   } else {
     auto [calculatedForces, calculatedGlobals] =
-        calculateForces<false>(autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c08,
+        calculateForces<false>(autopas::ContainerOption::verletClusterLists, autopas::TraversalOption::vcl_c06,
                                autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, numParticles,
                                numHaloParticles, boxMax, 1., doSlightShift, particleDeletionPosition);
     _forcesReference[key] = calculatedForces;

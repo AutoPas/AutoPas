@@ -206,6 +206,12 @@ inline void LCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
         pos[2] = std::max(0l, (std::abs(z) - 1l)) * this->_cellLength[2];
         const double distSquare = utils::ArrayMath::dot(pos, pos);
         if (distSquare <= interactionLengthSquare) {
+          std::array<double, 3> sortingDir = {static_cast<double>(x),static_cast<double>(y),static_cast<double>(z)};
+          if(x == 0 and y == 0 and z == 0){
+            sortingDir = {1.,1.,1.};
+          }
+          sortingDir = utils::ArrayMath::normalize(sortingDir);
+
           const long currentOffset = utils::ThreeDimensionalMapping::threeToOneD(
               x, y, z, utils::ArrayUtils::static_cast_array<long>(this->_cellsPerDimension));
           const bool containCurrentOffset =
@@ -221,9 +227,9 @@ inline void LCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
             if (y == 0l and z == 0l) {
               // make sure center of slice is always at the beginning
               _cellOffsets[index].insert(_cellOffsets[index].cbegin(),
-                                         std::make_pair(offset, utils::ArrayMath::normalize(pos)));
+                                         std::make_pair(offset, utils::ArrayMath::normalize(sortingDir)));
             } else {
-              _cellOffsets[index].push_back(std::make_pair(offset, utils::ArrayMath::normalize(pos)));
+              _cellOffsets[index].push_back(std::make_pair(offset, utils::ArrayMath::normalize(sortingDir)));
             }
           }
         }
