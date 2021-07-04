@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <autopas/molecularDynamics/LJFunctorISPC.h>
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
@@ -49,6 +50,8 @@ template <bool shift, bool mixing, bool globals>
 using LJFunMol = autopas::LJFunctor<Molecule, shift, mixing, autopas::FunctorN3Modes::Both, globals>;
 template <bool shift, bool mixing, bool globals>
 using LJFunAVXMol = autopas::LJFunctorAVX<Molecule, shift, mixing, autopas::FunctorN3Modes::Both, globals>;
+template <bool shift, bool mixing, bool globals>
+using LJFunISPCMol = autopas::LJFunctorISPC<Molecule, shift, mixing, autopas::FunctorN3Modes::Both, globals>;
 
 // struct aliasing for readable names
 struct LJFunShiftMixNoGlob : public LJFunMol<true, true, false> {
@@ -74,4 +77,7 @@ struct LJFunAVXShiftMixGlob : public LJFunAVXMol<true, true, true> {
 };
 struct LJFunAVXShiftNoMixGlob : public LJFunAVXMol<true, false, true> {
   using LJFunAVXMol<true, false, true>::LJFunctorAVX;
+};
+struct LJFunISPCNoShiftNoMixNoGlob : public LJFunISPCMol<false, false, false> {
+  using LJFunISPCMol<false, false, false>::LJFunctorISPC;
 };
