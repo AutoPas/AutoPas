@@ -18,7 +18,41 @@ using ::testing::Bool;
 using ::testing::Combine;
 using ::testing::Values;
 using ::testing::ValuesIn;
-
+static double rand_doub(double fmin, double fmax){
+  double f = (double) rand()/((double)RAND_MAX);
+  return fmin + f*(fmax - fmin);
+}
+template <int nmol>
+static std::array<Particle, nmol> gen_rand_particles(int bmvindex){
+  std::array<Particle, nmol> res;
+  for(int i = 0; i < nmol; ++i){
+    res[i] = autopas::MoleculeLJ({rand_doub(0.,static_cast<double>(TraversalComparison::_boxMaxVector[bmvindex][0])),
+                                  rand_doub(0.,static_cast<double>(TraversalComparison::_boxMaxVector[bmvindex][1])),
+                                  rand_doub(0.,static_cast<double>(TraversalComparison::_boxMaxVector[bmvindex][2]))},
+                                 {0.,0.,0.}, i);
+  }
+  return res;
+}
+static int counter_debug = 0;
+template <int nmol>
+static std::array<Particle, nmol> make_particles(){
+  std::array<std::array<double, 3>, nmol> pos;
+  int counter = 0;
+  pos[counter++] = {0.209266, 2.84798, 1.57799}; //important
+  pos[counter++] = {0.424808, 1.82091, 0.0489017}; //important
+  pos[counter++] = {0.326426, 2.99677, 0.654771}; //important
+  counter_debug = counter;
+  std::array<Particle, nmol> res;
+  for (int i = 0; i < counter; ++i) {
+    res[i] = autopas::MoleculeLJ(pos[i],{0.,0.,0.},i);
+  }
+  return res;
+}
+static std::array<Particle, 2000> rand_particles1 = gen_rand_particles<2000>(0);
+static std::array<Particle, 2000> rand_particles2 = gen_rand_particles<2000>(1);
+static std::array<Particle, 2000> rand_particles3 = gen_rand_particles<2000>(2);
+static std::array<Particle, 2000> rand_particles4 = gen_rand_particles<2000>(3);
+static std::array<Particle, 2000> minimal_particles = make_particles<2000>();
 std::tuple<std::vector<std::array<double, 3>>, std::array<double, 2>> TraversalComparison::calculateForces(
     autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
     autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, unsigned long numMolecules,
@@ -42,12 +76,22 @@ std::tuple<std::vector<std::array<double, 3>>, std::array<double, 2>> TraversalC
   //    *container, autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, 0), container->getBoxMin(), container->getBoxMax(),
   //    numMolecules, 42);
   size_t id = 0;
-  container->addParticle(autopas::MoleculeLJ({0.506842, 1.69005, 2.33747}, {0., 0., 0.}, id++));
-  container->addParticle(autopas::MoleculeLJ({0.398906, 1.32114, 1.93465}, {0., 0., 0.}, id++));
-  //container->addParticle(autopas::MoleculeLJ({0.346245, 1.72199, 2.18384}, {0., 0., 0.}, id++));
-  //container->addParticle(autopas::MoleculeLJ({0.306954, 1.59373, 1.8959}, {0., 0., 0.}, id++));
+  for(; id < counter_debug;) {
+//    double x = rand_doub(0.,boxMax[0]);
+//    double y = rand_doub(0.,boxMax[1]);
+//    double z = rand_doub(0.,boxMax[2]);
+    auto pos = minimal_particles[id].getR();
+    container->addParticle(autopas::MoleculeLJ(pos, {0., 0., 0.}, id++));
 
-  container->addParticle(autopas::MoleculeLJ({0.824299, 2.48879, 2.74104}, {0., 0., 0.}, id++));
+  }
+//  container->addParticle(autopas::MoleculeLJ({0.506842, 1.69005, 2.33747}, {0., 0., 0.}, id++));
+//  container->addParticle(autopas::MoleculeLJ({0.398906, 1.32114, 1.93465}, {0., 0., 0.}, id++));
+//  //container->addParticle(autopas::MoleculeLJ({2.0,0.5,0.5}, {0., 0., 0.}, id++));
+//  //container->addParticle(autopas::MoleculeLJ({1.5,0.5,0.5}, {0., 0., 0.}, id++));
+//  //container->addParticle(autopas::MoleculeLJ({0.346245, 1.72199, 2.18384}, {0., 0., 0.}, id++));
+//  //container->addParticle(autopas::MoleculeLJ({0.306954, 1.59373, 1.8959}, {0., 0., 0.}, id++));
+//  container->addParticle(autopas::MoleculeLJ({0.824299, 2.48879, 2.74104}, {0., 0., 0.}, id++));
+//  //container->addParticle(autopas::MoleculeLJ({2.75, 0.5, 0.5}, {0., 0., 0.}, id++));
   //container->addParticle(autopas::MoleculeLJ({0.646592, 2.66593, 2.9507}, {0., 0., 0.}, id++));
   //container->addParticle(autopas::MoleculeLJ({0.725419, 2.77819, 2.7126}, {0., 0., 0.}, id++));
   //container->addParticle(autopas::MoleculeLJ({0.97298, 2.6236, 2.63311}, {0., 0., 0.}, id++));
@@ -74,19 +118,20 @@ void TraversalComparison::SetUpTestSuite() {
   for (auto numParticles : _numParticlesVector) {
     for (auto boxMax : _boxMaxVector) {
       auto [calculatedForces, calculatedGlobals] =
-          calculateForces(autopas::ContainerOption::linkedCells, autopas::TraversalOption::c08,
-                          autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, numParticles, boxMax, 1.);
+          calculateForces(autopas::ContainerOption::verletClusterLists, autopas::TraversalOption::verletClusters,
+                          autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, numParticles, boxMax, 1.);
       _forcesReference[{numParticles, boxMax}] = calculatedForces;
       _globalValuesReference[{numParticles, boxMax}] = calculatedGlobals;
     }
   }
 
-  autopas::Logger::unregister();
+  //autopas::Logger::unregister();
 }
 
 TEST_P(TraversalComparison, traversalTest) {
   auto [containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles, boxMax, cellSizeFactor] =
       GetParam();
+  //SetUpTestSuite();
 
   // empirically determined and set near the minimal possible value for 2000 particles
   // i.e. if something changes, it may be needed to increase value
@@ -100,10 +145,11 @@ TEST_P(TraversalComparison, traversalTest) {
     GTEST_SKIP_("Not applicable!");
   }
 
+  std::vector<std::array<double, 3>> ref = _forcesReference[{numParticles, boxMax}];
   for (size_t i = 0; i < numParticles; ++i) {
     for (unsigned int d = 0; d < 3; ++d) {
       double calculatedForce = calculatedForces[i][d];
-      double referenceForce = _forcesReference[{numParticles, boxMax}][i][d];
+      double referenceForce = ref[i][d];
       EXPECT_NEAR(calculatedForce, referenceForce, std::fabs(calculatedForce * rel_err_tolerance))
           << "particle id: " << i;
     }
@@ -111,9 +157,9 @@ TEST_P(TraversalComparison, traversalTest) {
 
   auto &globalValuesReferenceRef = _globalValuesReference[{numParticles, boxMax}];
   for (size_t index : {0, 1}) {
-    EXPECT_NE(calculatedGlobals[index], 0);
-    EXPECT_NEAR(calculatedGlobals[index], globalValuesReferenceRef[index],
-                rel_err_tolerance_globals * globalValuesReferenceRef[index]);
+//    EXPECT_NE(calculatedGlobals[index], 0);
+//    EXPECT_NEAR(calculatedGlobals[index], globalValuesReferenceRef[index],
+//                rel_err_tolerance_globals * globalValuesReferenceRef[index]);
   }
 }
 
@@ -132,14 +178,14 @@ static auto toString = [](const auto &info) {
 
 auto TraversalComparison::getTestParams() {
   std::vector<TestingTuple> params{};
-  for (auto containerOption : autopas::ContainerOption::getAllOptions()) {
-    for (auto traversalOption : autopas::compatibleTraversals::allCompatibleTraversals(containerOption)) {
-      for (auto dataLayoutOption : autopas::DataLayoutOption::getAllOptions()) {
-        for (auto newton3Option : autopas::Newton3Option::getAllOptions()) {
+  auto containerOption = autopas::ContainerOption::linkedCells; {
+    for (auto traversalOption : {autopas::TraversalOption::c01}) {
+      for (auto dataLayoutOption : {autopas::DataLayoutOption::aos}) {
+        for (auto newton3Option : {autopas::Newton3Option::disabled}) {
           for (auto numParticles : _numParticlesVector) {
             for (auto boxMax : _boxMaxVector) {
               // for (double cellSizeFactor : {0.5, 1., 2.}) {
-              for (double cellSizeFactor : {0.5}) {
+              for (double cellSizeFactor : {0.5, 1., 2.}) {
                 params.emplace_back(containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles,
                                     boxMax, cellSizeFactor);
               }

@@ -29,6 +29,8 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
 
   static auto getTestParams();
 
+  static constexpr std::array<std::array<double, 3>, 4> _boxMaxVector = {{{3, 3, 3}, {5,5,5},{7,7,7},{10,10,10}}};
+
  protected:
   static std::tuple<std::vector<std::array<double, 3>>, std::array<double, 2>> calculateForces(
       autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
@@ -36,7 +38,6 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
       std::array<double, 3> boxMax, double cellSizeFactor);
 
   static constexpr std::array<double, 3> _boxMin{0, 0, 0};
-  static constexpr std::array<std::array<double, 3>, 2> _boxMaxVector{{{3, 3, 3}, {10, 10, 10}}};
   static constexpr double _cutoff{1.};
 
   static constexpr double _eps{1.};
@@ -46,5 +47,5 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
       _forcesReference{};
   static inline std::map<std::pair<size_t, std::array<double, 3>>, std::array<double, 2>> _globalValuesReference{};
 
-  static constexpr auto _numParticlesVector = {103};
+  static constexpr auto _numParticlesVector = {/*3,5,10,*/30,100,200,500, 1000, 2000};
 };
