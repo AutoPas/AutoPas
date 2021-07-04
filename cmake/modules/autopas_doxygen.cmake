@@ -1,5 +1,9 @@
 # make doc_doxygen optional if someone does not have / like doxygen
-option(AUTOPAS_BUILD_TARGET_DOC "Create \"make doc_doxygen\" target (requires Doxygen)" ON)
+set(AUTOPAS_BUILD_TARGET_DOC_DOC "Create \"make doc_doxygen\" target (requires Doxygen)")
+option_conditional(AUTOPAS_BUILD_TARGET_DOC
+        ${AUTOPAS_BUILD_TARGET_DOC_DOC}
+        AUTOPAS_STANDALONE_BUILD
+)
 
 # do nothing if nothing should be done
 if (NOT AUTOPAS_BUILD_TARGET_DOC)
@@ -51,5 +55,5 @@ else ()
         WARNING
             "Doxygen needs to be installed to generate the doxygen documentation, you might also have to install dot (graphviz)"
     )
-    set(AUTOPAS_BUILD_TARGET_DOC OFF CACHE BOOL "" FORCE)
+    set(AUTOPAS_BUILD_TARGET_DOC OFF CACHE BOOL ${AUTOPAS_BUILD_TARGET_DOC_DOC} FORCE )
 endif ()
