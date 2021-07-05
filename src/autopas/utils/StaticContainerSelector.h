@@ -12,6 +12,7 @@
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/LinkedCellsReferences.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
+#include "autopas/containers/verletListsCellBased/varVerletLists/VarVerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 
@@ -41,15 +42,17 @@ decltype(auto) withStaticContainerType(std::shared_ptr<ParticleContainerInterfac
     case ContainerOption::verletLists:
       return function(dynamic_cast<autopas::VerletLists<Particle> *>(containerPtr));
     case ContainerOption::verletListsCells:
-      // return function(dynamic_cast<autopas::VerletListsCells<Particle> *>(containerPtr));
-      autopas::utils::ExceptionHandler::exception("not implemented correctly");
+       return function(dynamic_cast<autopas::VerletListsCells<Particle, VLCAllCellsNeighborList<Particle>> *>(containerPtr));
+//      autopas::utils::ExceptionHandler::exception("not implemented correctly");
     case ContainerOption::verletClusterLists:
       return function(dynamic_cast<autopas::VerletClusterLists<Particle> *>(containerPtr));
     case ContainerOption::pairwiseVerletLists:
-      // return function(dynamic_cast<autopas::VerletListsCells<Particle> *>(containerPtr));
+//       return function(dynamic_cast<autopas::<Particle> *>(containerPtr));
       autopas::utils::ExceptionHandler::exception("not implemented correctly");
-  }
-  autopas::utils::ExceptionHandler::exception("Unknown type of container in StaticContainerSelector.h. Type: {}",
+    case ContainerOption::varVerletListsAsBuild:
+      return function(dynamic_cast<autopas::VarVerletLists<Particle, VerletNeighborListAsBuild<Particle>> *>(containerPtr));
+}
+autopas::utils::ExceptionHandler::exception("Unknown type of container in StaticContainerSelector.h. Type: {}",
                                               container->getContainerType());
 }
 
