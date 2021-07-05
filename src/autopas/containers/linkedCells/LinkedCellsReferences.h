@@ -271,8 +271,18 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   }
 
   template <typename Lambda>
-  void forEach(Lambda forEachLambda, IteratorBehavior behaviour) {
-    utils::ExceptionHandler::exception("not yet implemented");
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHaloOrDummy) {
+
+    if (behavior == IteratorBehavior::ownedOrHaloOrDummy) {
+//      iterate over all particles, so execute directly on particle vector
+      _particleList.forEach(forEachLambda);
+    } else {
+//      iterate with condition maybe known by cellblock
+//      TODO lgaertner: use CellBlock3D to check if cell automatically disqualifies because of ownership
+      for (ReferenceCell &cell : this->_cells) {
+        cell.forEach(forEachLambda, behavior);
+      }
+    }
   }
 
   ParticleIteratorWrapper<ParticleType, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
@@ -333,8 +343,30 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
 
   template<typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
-                       const std::array<double, 3> &higherCorner, IteratorBehavior behaviour) {
-    utils::ExceptionHandler::exception("not yet implemented");
+                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    // We increase the search region by skin, as particles can move over cell borders.
+    auto startIndex3D =
+        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::subScalar(lowerCorner, this->getSkin()));
+    auto stopIndex3D =
+        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::addScalar(higherCorner, this->getSkin()));
+
+    size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
+                                (stopIndex3D[2] - startIndex3D[2] + 1);
+    std::vector<size_t> cellsOfInterest(numCellsOfInterest);
+
+    int i = 0;
+    for (size_t z = startIndex3D[2]; z <= stopIndex3D[2]; ++z) {
+      for (size_t y = startIndex3D[1]; y <= stopIndex3D[1]; ++y) {
+        for (size_t x = startIndex3D[0]; x <= stopIndex3D[0]; ++x) {
+          cellsOfInterest[i++] =
+              utils::ThreeDimensionalMapping::threeToOneD({x, y, z}, this->_cellBlock.getCellsPerDimensionWithHalo());
+        }
+      }
+    }
+
+    for (size_t index : cellsOfInterest) {
+      getCells()[index].forEach(forEachLambda, lowerCorner, higherCorner, behavior);
+    }
   }
 
   /**
