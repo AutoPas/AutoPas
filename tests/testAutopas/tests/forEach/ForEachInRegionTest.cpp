@@ -110,7 +110,6 @@ static inline auto getTestableContainerOptions() {
   return autopas::ContainerOption::getAllOptions();
 #else
   auto containerOptions = autopas::ContainerOption::getAllOptions();
-  containerOptions.erase(containerOptions.find(autopas::ContainerOption::verletClusterCells));
   return containerOptions;
 #endif
 }

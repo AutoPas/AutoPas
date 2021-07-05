@@ -9,6 +9,7 @@
 
 #include <chrono>
 #include <iomanip>
+#include <sstream>
 #include <string>
 
 namespace autopas::utils {

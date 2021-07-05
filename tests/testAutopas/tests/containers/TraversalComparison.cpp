@@ -275,18 +275,10 @@ auto TraversalComparison::getTestParams() {
               for (double cellSizeFactor : {0.5, 1., 2.}) {
                 for (auto numHalo : {/*0ul,*/ 200ul}) {
                   for (bool slightMove : {true, false}) {
-                    for (bool globals : {true, false}) {
+                    for (bool globals : {true, /*false*/}) {
                       for (DeletionPosition particleDeletionPosition :
                            {DeletionPosition::never, /*DeletionPosition::beforeLists, DeletionPosition::afterLists,*/
                             DeletionPosition::beforeAndAfterLists}) {
-                        if (dataLayoutOption == autopas::DataLayoutOption::Value::cuda and
-                            traversalOption == autopas::TraversalOption::Value::lc_c01_cuda and (boxMax[0] < 5.) and
-                            (numParticles > 500)) {
-                          // LJFunctor for cuda doesn't support this, yet: see
-                          // https://github.com/AutoPas/AutoPas/issues/419
-                          /// @todo reenable
-                          continue;
-                        }
                         params.emplace_back(containerOption, traversalOption, dataLayoutOption, newton3Option,
                                             numParticles, numHalo, boxMax, cellSizeFactor, slightMove,
                                             particleDeletionPosition, globals);

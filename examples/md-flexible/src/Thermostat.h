@@ -7,7 +7,7 @@
 #pragma once
 #include <cstdlib>
 
-#include "autopas/AutoPas.h"
+#include "autopas/AutoPasDecl.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/WrapOpenMP.h"
 

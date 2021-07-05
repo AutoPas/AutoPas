@@ -58,7 +58,7 @@ pipeline {
                     steps {
                         dir("format") {
                             container('autopas-clang6-cmake-ninja-make') {
-                                sh "CC=clang CXX=clang++ cmake -G Ninja -DAUTOPAS_OPENMP=ON .."
+                                sh "CC=clang CXX=clang++ cmake -G Ninja -DAUTOPAS_OPENMP=ON -DAUTOPAS_FORMATTING_TARGETS=ON .."
                                 sh "ninja clangformat"
                                 sh "ninja cmakeformat"
                             }
@@ -100,52 +100,6 @@ pipeline {
                 timeout(time: 8, unit: 'HOURS')
             }
             parallel {
-                stage('gpu cloud') {
-                    agent { label 'openshift-autoscale-gpu' }
-                    steps {
-                        container('cuda-10') {
-                            dir("build-cuda") {
-                                sh "cmake -DAUTOPAS_ENABLE_CUDA=ON -DCCACHE=ON .."
-                                sh "entrypoint.sh make -j 4 > buildlog-cuda.txt 2>&1 || (cat buildlog-cuda.txt && exit 1)"
-                                sh "./tests/testAutopas/runTests"
-                            }
-                            dir('build-cuda/examples') {
-                                sh "ctest -C checkExamples -j8 --verbose"
-                            }
-                        }
-                    }
-                    post {
-                        always {
-                            recordIssues qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]], tools: [gcc(id: 'cuda-gcc', pattern: 'build*/buildlog-cuda.txt')]
-                        }
-                    }
-                }
-                stage('gpu cloud - clang') {
-                    agent { label 'openshift-autoscale-gpu' }
-                    steps {
-                        container('cuda-10') {
-                            dir("build-cuda") {
-                                sh "CC=clang CXX=clang++ cmake -DCCACHE=ON -DAUTOPAS_ENABLE_CUDA=ON .."
-                                sh "entrypoint.sh make -j 4 > buildlog-cuda-clang.txt 2>&1 || (cat buildlog-cuda-clang.txt && exit 1)"
-                                sh "./tests/testAutopas/runTests"
-                                // cuda variants of valgrind:
-                                sh "cuda-memcheck --tool memcheck ./tests/testAutopas/runTests"
-                                sh "cuda-memcheck --tool racecheck ./tests/testAutopas/runTests"
-                                sh "cuda-memcheck --tool synccheck ./tests/testAutopas/runTests"
-                                // initcheck does not pass, I think because we don't initialize patted values.
-                                //sh "cuda-memcheck --tool initcheck ./tests/testAutopas/runTests"
-                            }
-                            dir('build-cuda/examples') {
-                                sh "ctest -C checkExamples -j8 --verbose"
-                            }
-                        }
-                    }
-                    post {
-                        always {
-                            recordIssues qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]], tools: [clang(id: 'cuda-clang', pattern: 'build*/buildlog-cuda-clang.txt')]
-                        }
-                    }
-                }
                 stage("default") {
                     steps {
                         container('autopas-gcc7-cmake-make') {
