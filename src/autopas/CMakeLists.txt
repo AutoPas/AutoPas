@@ -27,7 +27,7 @@ target_link_libraries(
         harmony Eigen3
 )
 
-# Ompstuff needs to be here because OpenMP.cmake needs to run before this file to create to OpenMP
+# Ompstuff needs to be here because autopas_OpenMP.cmake needs to run before this file to create to OpenMP
 # target. this can be resolved by upgrading to CMake 3.13 and enforcing CMP0079.
 target_compile_definitions(
     autopas
