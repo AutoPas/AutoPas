@@ -113,7 +113,7 @@ class OctreeLogger {
 
     // Write cell types
     vtkFile << "CELL_TYPES " << boxCount << "\n";
-    for (Box box : boxes) {
+    for (int i = 0; i < boxes.size(); ++i) {
       vtkFile << "12\n";  // Write VTK_HEXAHEDRON type for each cell
     }
 
