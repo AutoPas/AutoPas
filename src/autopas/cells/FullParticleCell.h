@@ -63,63 +63,21 @@ class FullParticleCell : public ParticleCell<Particle> {
   }
 
   template <typename Lambda>
-  void forEach(Lambda forEachLambda,
-               IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) {
-    auto isParticleValid = [&](Particle &p) -> bool {
-      switch (behavior) {
-        case autopas::IteratorBehavior::ownedOrHaloOrDummy:
-          return true;
-        case autopas::IteratorBehavior::ownedOrHalo:
-          return not p.isDummy();
-        case autopas::IteratorBehavior::halo:
-          return p.isHalo();
-        case autopas::IteratorBehavior::owned:
-          return p.isOwned();
-        default:
-          utils::ExceptionHandler::exception("unknown iterator behavior");
-          return false;
-      }
-    };
-
-    for (Particle &p : _particles) {
-      if (isParticleValid(p)) {
-        forEachLambda(p);
-      }
-    }
+  void forEach(Lambda forEachLambda) {
+    const std::array<double, 3> dummy = std::array<double, 3>(); //TODO lgaertner: is this necessary?
+    _forEach<false, false>(forEachLambda, dummy, dummy);
   }
 
   template <typename Lambda>
-  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior) {
+    _forEach<true, false>(forEachLambda, nullptr, nullptr, behavior);
+  }
+
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                        const std::array<double, 3> &higherCorner,
-               IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) {
-
-    auto isParticleInRegion = [&] (Particle &p) -> bool {
-      return utils::inBox(p.getR(), lowerCorner, higherCorner);
-    };
-
-    auto isParticleValid = [&](Particle &p) -> bool {
-      switch (behavior) {
-        case options::IteratorBehavior::ownedOrHaloOrDummy:
-          return true;
-        case options::IteratorBehavior::ownedOrHalo:
-          return not p.isDummy();
-        case options::IteratorBehavior::halo:
-          return p.isHalo();
-        case options::IteratorBehavior::owned:
-          return p.isOwned();
-        default:
-          utils::ExceptionHandler::exception("unknown iterator behavior");
-          return false;
-      }
-    };
-
-    for (Particle &p : _particles) {
-      if (isParticleValid(p)) {
-        if (isParticleInRegion(p)) {
-          forEachLambda(p);
-        }
-      }
-    }
+               IteratorBehavior behavior) {
+    _forEach<true, true>(forEachLambda, lowerCorner, higherCorner, behavior);
   }
 
   [[nodiscard]] unsigned long numParticles() const override { return _particles.size(); }
@@ -233,5 +191,40 @@ class FullParticleCell : public ParticleCell<Particle> {
  private:
   AutoPasLock particlesLock;
   std::array<double, 3> _cellLength;
+
+  template <bool ownershipCheck, bool regionCheck, typename Lambda>
+  void _forEach(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+                const std::array<double, 3> &higherCorner,
+                IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) {
+
+    auto isParticleInRegion = [&] (Particle &p) -> bool {
+      return utils::inBox(p.getR(), lowerCorner, higherCorner);
+    };
+
+    auto isParticleValid = [&](Particle &p) -> bool {
+      switch (behavior) {
+        case options::IteratorBehavior::ownedOrHaloOrDummy:
+          return true;
+        case options::IteratorBehavior::ownedOrHalo:
+          return not p.isDummy();
+        case options::IteratorBehavior::halo:
+          return p.isHalo();
+        case options::IteratorBehavior::owned:
+          return p.isOwned();
+        default:
+          utils::ExceptionHandler::exception("unknown iterator behavior");
+          return false;
+      }
+    };
+
+    for (Particle &p : _particles) {
+      if (ownershipCheck & isParticleValid(p)) {
+        if (regionCheck & isParticleInRegion(p)) {
+          forEachLambda(p);
+        }
+      }
+    }
+  }
+
 };
 }  // namespace autopas

@@ -319,8 +319,8 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
       }
     }
 
-    for (auto &cell : cellsOfInterest) {
-      getCells()[cell].forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+    for (auto cell : cellsOfInterest) {
+      getCells()[cell].forEach(forEachLambda, lowerCorner, higherCorner, behavior);
     }
   }
 

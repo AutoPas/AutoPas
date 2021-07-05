@@ -318,7 +318,7 @@ class LogicHandler {
   }
 
   template <typename Lambda>
-  void forEachInRegion(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> lowerCorner, const std::array<double, 3> higherCorner,
                        IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     auto execOnContainer = [&](auto container) {
       container->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
@@ -328,10 +328,10 @@ class LogicHandler {
   }
 
   template <typename Lambda>
-  void forEachInRegion(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> lowerCorner, const std::array<double, 3> higherCorner,
                        IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     auto execOnContainer = [&](auto container) {
-      container->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+      container->forEach(forEachLambda, lowerCorner, higherCorner, behavior);
     };
 
     withStaticContainerType(_autoTuner.getContainer(), execOnContainer);

@@ -160,11 +160,11 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     std::vector<size_t> cellsOfInterest;
 
     if (behavior & IteratorBehavior::owned) {
-      forEach(getCell());
+      getCell().forEach(forEachLambda);
       cellsOfInterest.push_back(0);
     }
     if (behavior & IteratorBehavior::halo) {
-      forEach(getHaloCell());
+      getHaloCell().forEach(forEachLambda);
       cellsOfInterest.push_back(1);
     }
     // sanity check
@@ -222,11 +222,11 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     std::vector<size_t> cellsOfInterest;
 
     if (behavior & IteratorBehavior::owned) {
-      getCell().forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+      getCell().forEach(forEachLambda, lowerCorner, higherCorner, behavior);
       cellsOfInterest.push_back(0);
     }
     if (behavior & IteratorBehavior::halo) {
-      getHaloCell().forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+      getHaloCell().forEach(forEachLambda, lowerCorner, higherCorner, behavior);
       cellsOfInterest.push_back(1);
     }
 

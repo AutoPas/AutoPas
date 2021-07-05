@@ -417,10 +417,84 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
             _isValid != ValidityState::invalid ? nullptr : &_particlesToAdd));
   }
 
-  template<typename Lambda>
+  /**
+   * @copydoc ParticleContainerInterface::forEach()
+   * @note This function additionally rebuilds the towers if the tower-structure isn't valid.
+   */
+  template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
-                       const std::array<double, 3> &higherCorner, IteratorBehavior behaviour) {
-    utils::ExceptionHandler::exception("not yet implemented");
+                       const std::array<double, 3> &higherCorner,
+                       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) {
+    prepareContainerForIteration( behavior);
+
+    for (auto &tower : this->_towers) {
+      tower.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+    }
+  }
+
+  /**
+   * @copydoc ParticleContainerInterface::forEach()
+   * @note const version.
+   * @note This function additionally iterates over the _particlesToAdd vector if the tower-structure isn't valid.
+   */
+  template <typename Lambda>
+  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+                       const std::array<double, 3> &higherCorner,
+                       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) const {
+    if (_isValid != ValidityState::invalid) {
+      if (not particlesToAddEmpty()) {
+        autopas::utils::ExceptionHandler::exception(
+            "VerletClusterLists::begin() const: Error: particle container is valid, but _particlesToAdd isn't empty!");
+      }
+      // If the particles are sorted into the towers, we can simply use the iteration over towers.
+
+      for (auto tower : this->_towers) {
+        tower.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+      }
+
+//      return ParticleIteratorWrapper<Particle, false>{
+//          new internal::ParticleIterator<Particle, internal::ClusterTower<Particle>, false>(
+//              &(this->_towers), 0, &unknowingCellBorderAndFlagManager, behavior, nullptr)};
+    } else {
+      // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
+
+      for (auto tower : this->_towers) {
+        tower.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+      }
+
+      //TODO lgaertner: vector<vector<particle>>
+
+      auto isParticleInRegion = [&] (Particle &p) -> bool {
+        return utils::inBox(p.getR(), lowerCorner, higherCorner);
+      };
+
+      auto isParticleValid = [&](Particle &p) -> bool {
+        switch (behavior) {
+          case options::IteratorBehavior::ownedOrHaloOrDummy:
+            return true;
+          case options::IteratorBehavior::ownedOrHalo:
+            return not p.isDummy();
+          case options::IteratorBehavior::halo:
+            return p.isHalo();
+          case options::IteratorBehavior::owned:
+            return p.isOwned();
+          default:
+            utils::ExceptionHandler::exception("unknown iterator behavior");
+            return false;
+        }
+      };
+      for (auto &particle : _particlesToAdd[0]) {
+        if (isParticleValid(particle)) {
+          if (isParticleInRegion(particle)) {
+            forEachLambda(particle);
+          }
+        }
+      }
+
+//      return ParticleIteratorWrapper<Particle, false>{
+//          new internal::ParticleIterator<Particle, internal::ClusterTower<Particle>, false>(
+//              &(this->_towers), 0, &unknowingCellBorderAndFlagManager, behavior, &_particlesToAdd)};
+    }
   }
 
   /**

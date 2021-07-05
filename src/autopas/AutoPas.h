@@ -292,13 +292,13 @@ class AutoPas {
   }
 
   template <typename Lambda>
-  void forEachInRegion(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> lowerCorner, const std::array<double, 3> higherCorner,
                        IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     _logicHandler->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
   }
 
   template <typename Lambda>
-  void forEachInRegion(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> lowerCorner, const std::array<double, 3> higherCorner,
                        IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     _logicHandler->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
   }
