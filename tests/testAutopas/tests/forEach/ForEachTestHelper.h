@@ -238,14 +238,12 @@ template <class AutoPasT, class Lambda>
 void findParticles(AutoPasT &autopas, Lambda forEachInRegionLambda, const std::vector<size_t> &particleIDsExpected) {
   std::vector<size_t> particleIDsFound;
 
-//#ifdef AUTOPAS_OPENMP
-//  // aparently the version from WrapOpenMP.h can not be found
-//#pragma omp declare reduction(vecMergeWorkaround : std::vector<size_t> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
-//#pragma omp parallel reduction(vecMergeWorkaround : particleIDsFound)
-//#endif
+  //#ifdef AUTOPAS_OPENMP
+  //  // aparently the version from WrapOpenMP.h can not be found
+  //#pragma omp declare reduction(vecMergeWorkaround : std::vector<size_t> : omp_out.insert(omp_out.end(),
+  // omp_in.begin(), omp_in.end())) #pragma omp parallel reduction(vecMergeWorkaround : particleIDsFound) #endif
   {
-
-    auto lambda = [&] (auto &p) {
+    auto lambda = [&](auto &p) {
       auto id = p.getID();
       particleIDsFound.push_back(id);
     };
@@ -283,4 +281,4 @@ static std::vector<FMCell> generateCellsWithPattern(const size_t numCells, const
   }
   return cells;
 }
-}  // namespace IteratorTestHelper
+}  // namespace ForEachTestHelper

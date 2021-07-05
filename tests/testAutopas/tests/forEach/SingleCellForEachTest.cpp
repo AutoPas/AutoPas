@@ -31,20 +31,20 @@ TEST_F(SingleCellForEachTest, testFullParticleCell) {
   auto iter = fpc.begin();
   int i = 0;
 
-  auto forEachLambda = [&] (auto p) {
+  auto forEachLambda = [&](auto p) {
     for (int d = 0; d < 3; ++d) {
       ASSERT_DOUBLE_EQ(p.getR()[d], _vecOfMolecules[i].getR()[d]);
     }
     ASSERT_EQ(p.getID(), _vecOfMolecules[i].getID());
-    ++i; //TODO lgaertner: wtf NO, but how else? maybe _vecOfMolecules.containsID(p.getID())
+    ++i;  // TODO lgaertner: wtf NO, but how else? maybe _vecOfMolecules.containsID(p.getID())
   };
 
   fpc.forEach(forEachLambda);
 
-//  for (; iter.isValid(); ++iter, ++i) {
-//    for (int d = 0; d < 3; ++d) {
-//      ASSERT_DOUBLE_EQ(iter->getR()[d], _vecOfMolecules[i].getR()[d]);
-//    }
-//    ASSERT_EQ(iter->getID(), _vecOfMolecules[i].getID());
-//  }
+  //  for (; iter.isValid(); ++iter, ++i) {
+  //    for (int d = 0; d < 3; ++d) {
+  //      ASSERT_DOUBLE_EQ(iter->getR()[d], _vecOfMolecules[i].getR()[d]);
+  //    }
+  //    ASSERT_EQ(iter->getID(), _vecOfMolecules[i].getID());
+  //  }
 }

@@ -236,10 +236,10 @@ class ClusterTower : public ParticleCell<Particle> {
   }
 
   template <typename Lambda>
-  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
     _particlesStorage.forEach(forEachLambda, lowerCorner, higherCorner, behavior);
   }
-
 
   /**
    * Returns the particle at position index. Needed by SingleCellIterator.

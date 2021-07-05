@@ -5,8 +5,8 @@
  */
 #pragma once
 #include "autopas/AutoPas.h"
-#include "autopas/utils/ArrayMath.h"
 #include "autopas/options/IteratorBehavior.h"
+#include "autopas/utils/ArrayMath.h"
 
 /**
  * Functions for updating velocities and positions as simulation time progresses.

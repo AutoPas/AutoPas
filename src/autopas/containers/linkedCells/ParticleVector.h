@@ -106,12 +106,12 @@ class ParticleVector {
    * Iterate over all particles and execute lambda function on them
    * @param forEachLambda lambda function that defines how to modify particles
    */
-   template <typename Lambda>
+  template <typename Lambda>
   void forEach(Lambda forEachLambda) {
-     for (Type &p : _particleListImp) {
-       forEachLambda(p);
-     }
-   }
+    for (Type &p : _particleListImp) {
+      forEachLambda(p);
+    }
+  }
 
  private:
   /**

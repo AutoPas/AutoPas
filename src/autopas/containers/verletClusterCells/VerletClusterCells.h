@@ -349,7 +349,7 @@ class VerletClusterCells : public CellBasedParticleContainer<FullParticleCell<Pa
     }
   }
 
-  template<typename Lambda>
+  template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                        const std::array<double, 3> &higherCorner, IteratorBehavior behaviour) {
     utils::ExceptionHandler::exception("not yet implemented");

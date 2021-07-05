@@ -16,10 +16,10 @@
 #include "autopas/Version.h"
 #include "autopas/options//ExtrapolationMethodOption.h"
 #include "autopas/options/AcquisitionFunctionOption.h"
+#include "autopas/options/IteratorBehavior.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/MPIStrategyOption.h"
 #include "autopas/options/TuningStrategyOption.h"
-#include "autopas/options/IteratorBehavior.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/tuningStrategy/TuningStrategyFactory.h"
 #include "autopas/utils/NumberSet.h"
@@ -292,13 +292,15 @@ class AutoPas {
   }
 
   template <typename Lambda>
-  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> lowerCorner, const std::array<double, 3> higherCorner,
+  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> lowerCorner,
+                       const std::array<double, 3> higherCorner,
                        IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     _logicHandler->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
   }
 
   template <typename Lambda>
-  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> lowerCorner, const std::array<double, 3> higherCorner,
+  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> lowerCorner,
+                       const std::array<double, 3> higherCorner,
                        IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     _logicHandler->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
   }

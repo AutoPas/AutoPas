@@ -272,13 +272,12 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
 
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHaloOrDummy) {
-
     if (behavior == IteratorBehavior::ownedOrHaloOrDummy) {
-//      iterate over all particles, so execute directly on particle vector
+      //      iterate over all particles, so execute directly on particle vector
       _particleList.forEach(forEachLambda);
     } else {
-//      iterate with condition maybe known by cellblock
-//      TODO lgaertner: use CellBlock3D to check if cell automatically disqualifies because of ownership
+      //      iterate with condition maybe known by cellblock
+      //      TODO lgaertner: use CellBlock3D to check if cell automatically disqualifies because of ownership
       for (ReferenceCell &cell : this->_cells) {
         cell.forEach(forEachLambda, behavior);
       }
@@ -341,7 +340,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
             &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBlock, behavior, nullptr));
   }
 
-  template<typename Lambda>
+  template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                        const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
     // We increase the search region by skin, as particles can move over cell borders.

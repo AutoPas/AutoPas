@@ -338,9 +338,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
         tower.forEach(forEachLambda, behavior);
       }
 
-//      return ParticleIteratorWrapper<Particle, false>{
-//          new internal::ParticleIterator<Particle, internal::ClusterTower<Particle>, false>(
-//              &(this->_towers), 0, &unknowingCellBorderAndFlagManager, behavior, nullptr)};
+      //      return ParticleIteratorWrapper<Particle, false>{
+      //          new internal::ParticleIterator<Particle, internal::ClusterTower<Particle>, false>(
+      //              &(this->_towers), 0, &unknowingCellBorderAndFlagManager, behavior, nullptr)};
     } else {
       // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
 
@@ -348,7 +348,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
         tower.forEach(forEachLambda, behavior);
       }
 
-      //TODO lgaertner: vector<vector<particle>>
+      // TODO lgaertner: vector<vector<particle>>
       auto isParticleValid = [&](Particle &p) -> bool {
         switch (behavior) {
           case options::IteratorBehavior::ownedOrHaloOrDummy:
@@ -370,9 +370,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
         }
       }
 
-//      return ParticleIteratorWrapper<Particle, false>{
-//          new internal::ParticleIterator<Particle, internal::ClusterTower<Particle>, false>(
-//              &(this->_towers), 0, &unknowingCellBorderAndFlagManager, behavior, &_particlesToAdd)};
+      //      return ParticleIteratorWrapper<Particle, false>{
+      //          new internal::ParticleIterator<Particle, internal::ClusterTower<Particle>, false>(
+      //              &(this->_towers), 0, &unknowingCellBorderAndFlagManager, behavior, &_particlesToAdd)};
     }
   }
 
@@ -425,7 +425,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                        const std::array<double, 3> &higherCorner,
                        IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) {
-    prepareContainerForIteration( behavior);
+    prepareContainerForIteration(behavior);
 
     for (auto &tower : this->_towers) {
       tower.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
@@ -452,9 +452,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
         tower.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
       }
 
-//      return ParticleIteratorWrapper<Particle, false>{
-//          new internal::ParticleIterator<Particle, internal::ClusterTower<Particle>, false>(
-//              &(this->_towers), 0, &unknowingCellBorderAndFlagManager, behavior, nullptr)};
+      //      return ParticleIteratorWrapper<Particle, false>{
+      //          new internal::ParticleIterator<Particle, internal::ClusterTower<Particle>, false>(
+      //              &(this->_towers), 0, &unknowingCellBorderAndFlagManager, behavior, nullptr)};
     } else {
       // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
 
@@ -462,11 +462,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
         tower.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
       }
 
-      //TODO lgaertner: vector<vector<particle>>
+      // TODO lgaertner: vector<vector<particle>>
 
-      auto isParticleInRegion = [&] (Particle &p) -> bool {
-        return utils::inBox(p.getR(), lowerCorner, higherCorner);
-      };
+      auto isParticleInRegion = [&](Particle &p) -> bool { return utils::inBox(p.getR(), lowerCorner, higherCorner); };
 
       auto isParticleValid = [&](Particle &p) -> bool {
         switch (behavior) {
@@ -491,9 +489,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
         }
       }
 
-//      return ParticleIteratorWrapper<Particle, false>{
-//          new internal::ParticleIterator<Particle, internal::ClusterTower<Particle>, false>(
-//              &(this->_towers), 0, &unknowingCellBorderAndFlagManager, behavior, &_particlesToAdd)};
+      //      return ParticleIteratorWrapper<Particle, false>{
+      //          new internal::ParticleIterator<Particle, internal::ClusterTower<Particle>, false>(
+      //              &(this->_towers), 0, &unknowingCellBorderAndFlagManager, behavior, &_particlesToAdd)};
     }
   }
 

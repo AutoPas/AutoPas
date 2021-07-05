@@ -8,11 +8,11 @@
 #include <limits>
 
 #include "autopas/iterators/ParticleIteratorWrapper.h"
+#include "autopas/options/IteratorBehavior.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/logging/Logger.h"
 #include "autopas/utils/markParticleAsDeleted.h"
-#include "autopas/options/IteratorBehavior.h"
 
 namespace autopas {
 
@@ -318,7 +318,8 @@ class LogicHandler {
   }
 
   template <typename Lambda>
-  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> lowerCorner, const std::array<double, 3> higherCorner,
+  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> lowerCorner,
+                       const std::array<double, 3> higherCorner,
                        IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     auto execOnContainer = [&](auto container) {
       container->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
@@ -328,7 +329,8 @@ class LogicHandler {
   }
 
   template <typename Lambda>
-  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> lowerCorner, const std::array<double, 3> higherCorner,
+  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> lowerCorner,
+                       const std::array<double, 3> higherCorner,
                        IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     auto execOnContainer = [&](auto container) {
       container->forEach(forEachLambda, lowerCorner, higherCorner, behavior);

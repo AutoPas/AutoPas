@@ -15,7 +15,7 @@
 using testingTuple = std::tuple<autopas::ContainerOption, double /*cell size factor*/, bool /*testConstIterators*/,
                                 bool /*priorForceCalc*/, autopas::IteratorBehavior>;
 
-class ForEachInRegionTest: public AutoPasTestBase, public ::testing::WithParamInterface<testingTuple> {
+class ForEachInRegionTest : public AutoPasTestBase, public ::testing::WithParamInterface<testingTuple> {
  public:
   struct PrintToStringParamName {
     template <class ParamType>

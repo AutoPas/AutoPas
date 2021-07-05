@@ -12,11 +12,11 @@
 
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/iterators/SingleCellIterator.h"
+#include "autopas/options/IteratorBehavior.h"
 #include "autopas/utils/CudaSoA.h"
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
-#include "autopas/options/IteratorBehavior.h"
 
 namespace autopas {
 
@@ -64,7 +64,7 @@ class FullParticleCell : public ParticleCell<Particle> {
 
   template <typename Lambda>
   void forEach(Lambda forEachLambda) {
-    const std::array<double, 3> dummy = std::array<double, 3>(); //TODO lgaertner: is this necessary?
+    const std::array<double, 3> dummy = std::array<double, 3>();  // TODO lgaertner: is this necessary?
     _forEach<false, false>(forEachLambda, dummy, dummy);
   }
 
@@ -75,8 +75,7 @@ class FullParticleCell : public ParticleCell<Particle> {
 
   template <typename Lambda>
   void forEach(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
-                       const std::array<double, 3> &higherCorner,
-               IteratorBehavior behavior) {
+               const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
     _forEach<true, true>(forEachLambda, lowerCorner, higherCorner, behavior);
   }
 
@@ -196,10 +195,7 @@ class FullParticleCell : public ParticleCell<Particle> {
   void _forEach(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                 const std::array<double, 3> &higherCorner,
                 IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) {
-
-    auto isParticleInRegion = [&] (Particle &p) -> bool {
-      return utils::inBox(p.getR(), lowerCorner, higherCorner);
-    };
+    auto isParticleInRegion = [&](Particle &p) -> bool { return utils::inBox(p.getR(), lowerCorner, higherCorner); };
 
     auto isParticleValid = [&](Particle &p) -> bool {
       switch (behavior) {
@@ -225,6 +221,5 @@ class FullParticleCell : public ParticleCell<Particle> {
       }
     }
   }
-
 };
 }  // namespace autopas

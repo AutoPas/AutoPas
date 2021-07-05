@@ -4,13 +4,14 @@
  * @date 08.03.21
  */
 #include "ForEachInRegionTest.h"
+
 #include "ForEachTestHelper.h"
 #include "autopas/AutoPas.h"
 #include "testingHelpers/EmptyFunctor.h"
 
 template <typename AutoPasT>
 auto ForEachInRegionTest::defaultInit(AutoPasT &autoPas, autopas::ContainerOption &containerOption,
-                                             double cellSizeFactor) {
+                                      double cellSizeFactor) {
   autoPas.setBoxMin({0., 0., 0.});
   autoPas.setBoxMax({10., 10., 10.});
   autoPas.setCutoff(1);
@@ -88,15 +89,15 @@ TEST_P(ForEachInRegionTest, testRegionAroundCorner) {
   ASSERT_THAT(expectedIDs, ::testing::Not(::testing::IsEmpty()));
 
   // actual test
-  auto bh = behavior; //necessary for compiler, behavior not detected as variable
-  auto forEachInRegionLambda = [&, bh] (auto lambda) {
+  auto bh = behavior;  // necessary for compiler, behavior not detected as variable
+  auto forEachInRegionLambda = [&, bh](auto lambda) {
     autoPas.forEachInRegion(lambda, searchBoxMin, searchBoxMax, bh);
   };
   ForEachTestHelper::findParticles(autoPas, forEachInRegionLambda, expectedIDs);
 
-//  IteratorTestHelper::provideRegionIterator(
-//      useConstIterator, autoPas, behavior, searchBoxMin, searchBoxMax,
-//      [&](const auto &autopas, auto &iter) { ForEachTestHelper::findParticles(autoPas, iter, expectedIDs); });
+  //  IteratorTestHelper::provideRegionIterator(
+  //      useConstIterator, autoPas, behavior, searchBoxMin, searchBoxMax,
+  //      [&](const auto &autopas, auto &iter) { ForEachTestHelper::findParticles(autoPas, iter, expectedIDs); });
 }
 
 using ::testing::Combine;

@@ -164,7 +164,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
     return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior);
   }
 
-  template<typename Lambda>
+  template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                        const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
     _linkedCells.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
