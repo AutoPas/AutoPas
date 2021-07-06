@@ -459,14 +459,13 @@ TEST_F(OctreeTest, testAbleToSplit) {
 }
 
 #if !defined(AUTOPAS_OPENMP)
-std::tuple<OctreeTest::Vector3DList, OctreeTest::Vector3DList,
-           std::vector<std::tuple<unsigned long, unsigned long, double>>>
+std::pair<OctreeTest::Vector3DList, std::vector<std::tuple<unsigned long, unsigned long, double>>>
 OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
                                     autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option,
                                     size_t numParticles, size_t numHaloParticles, std::array<double, 3> boxMin,
-                                    std::array<double, 3> boxMax, double cellSizeFactor, bool doSlightShift,
-                                    double cutoff, double skin, double interactionLength,
-                                    Vector3DList particlePositions, Vector3DList haloParticlePositions) {
+                                    std::array<double, 3> boxMax, double cellSizeFactor, double cutoff, double skin,
+                                    double interactionLength, Vector3DList particlePositions,
+                                    Vector3DList haloParticlePositions) {
   using namespace autopas;
 
   double _cutoffsquare = cutoff * cutoff;
@@ -548,9 +547,7 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
     positions.at(id) = r;
   }
 
-  // TODO(johannes): Remove "positions" from the returned value, since the particle positions are now passed into this
-  //  function
-  return std::make_tuple(positions, forces, particlePairs);
+  return std::make_pair(forces, particlePairs);
 }
 
 /**
@@ -599,9 +596,6 @@ TEST_P(OctreeTest, testCustomParticleDistribution) {
   auto dataLayoutOption = DataLayoutOption::aos;
   auto newton3Option = Newton3Option::disabled;
   auto cellSizeFactor = 1;
-  auto doSlightShift = false;
-  auto particleDeletionPosition =
-      false;  // TODO: Change this to DeletionPosition::never or something more reasonable in general and put it back in
 
   // Pre-generate the particles
 
@@ -630,16 +624,15 @@ TEST_P(OctreeTest, testCustomParticleDistribution) {
   }
 
   // Calculate the forces using the octree
-  auto [calculatedPositions, calculatedForces, calculatedPairs] =
-      calculateForcesAndPairs(containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles,
-                              numHaloParticles, _boxMin, boxMax, cellSizeFactor, doSlightShift, _cutoff, skin,
-                              interactionLength, particlePositions, haloParticlePositions);
+  auto [calculatedForces, calculatedPairs] = calculateForcesAndPairs(
+      containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles, numHaloParticles, _boxMin,
+      boxMax, cellSizeFactor, _cutoff, skin, interactionLength, particlePositions, haloParticlePositions);
 
   // Calculate the forces using the reference implementation
-  auto [referencePositions, referenceForces, referencePairs] = calculateForcesAndPairs(
+  auto [referenceForces, referencePairs] = calculateForcesAndPairs(
       autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c08, autopas::DataLayoutOption::aos,
-      autopas::Newton3Option::enabled, numParticles, numHaloParticles, _boxMin, boxMax, cellSizeFactor, doSlightShift,
-      _cutoff, skin, interactionLength, particlePositions, haloParticlePositions);
+      autopas::Newton3Option::enabled, numParticles, numHaloParticles, _boxMin, boxMax, cellSizeFactor, _cutoff, skin,
+      interactionLength, particlePositions, haloParticlePositions);
 
   // Calculate which pairs are in the set difference between the reference pairs and the calculated pairs
   // std::sort(calculatedPairs.begin(), calculatedPairs.end());
@@ -672,14 +665,6 @@ TEST_P(OctreeTest, testCustomParticleDistribution) {
       double calculatedForce = calculatedForces[i][d];
       double referenceForce = referenceForces[i][d];
       EXPECT_NEAR(calculatedForce, referenceForce, std::fabs(calculatedForce * rel_err_tolerance))
-          << "#p" << numParticles << " #hp" << numHaloParticles << " Particle id: " << i;
-    }
-
-    // Check if returned particle positions match
-    for (unsigned int d = 0; d < 3; ++d) {
-      double calculatedPosition = calculatedPositions[i][d];
-      double referencePosition = referencePositions[i][d];
-      EXPECT_NEAR(calculatedPosition, referencePosition, std::fabs(calculatedPosition * rel_err_tolerance))
           << "#p" << numParticles << " #hp" << numHaloParticles << " Particle id: " << i;
     }
   }
