@@ -91,63 +91,6 @@ TEST_F(OctreeTest, testDebugIndexing) {
   }
 }
 
-#if 0
-/**
- * This is a giant test case that simulates an entire octree run in one route.
- */
-TEST_F(OctreeTest, testParentFinding) {
-  using namespace autopas;
-
-  using Position = std::array<double, 3>;
-
-  std::array<double, 3> min = {0, 0, 0}, max = {1, 1, 1};
-  std::unique_ptr<OctreeNodeInterface<ParticleFP64>> root =
-      std::make_unique<OctreeLeafNode<ParticleFP64>>(min, max, nullptr);
-
-  // Create some particle positions that are in a specific cell
-  auto maxParticlesPerCell = 4;
-  auto dummyParticleCount = 4 * maxParticlesPerCell;
-  std::vector<Position> positions;
-  for (int i = 0; i < dummyParticleCount; ++i) {
-    positions.push_back({(double)i / (double)dummyParticleCount, 0.1, 0.1});
-  }
-
-  // Insert the particles
-  for (int i = 0; i < dummyParticleCount; ++i) {
-    root->insert(root, ParticleFP64(positions[i], {0, 0, 0}, 0));
-  }
-
-  // Get the split cells
-  ASSERT_TRUE(root->hasChildren());
-  OctreeNodeInterface<ParticleFP64> *child0 = root->getChild(0b000);
-  ASSERT_TRUE(child0->hasChildren());
-  OctreeNodeInterface<ParticleFP64> *child01 = child0->getChild(0b001);
-  ASSERT_FALSE(child01->hasChildren());
-  ASSERT_EQ(child01->getNumParticles(), 4);
-
-  // Check if we get the node we wanted from getGreaterParentAlongAxis
-  if (auto greaterParentChild01Optional = child01->getGreaterParentAlongAxis(0, 1, child01)) {
-    auto greaterParentChild01 = *greaterParentChild01Optional;
-    ASSERT_EQ(greaterParentChild01, root.get());
-    ASSERT_TRUE(greaterParentChild01->hasChildren());
-
-    auto phaseTwoStartNode = greaterParentChild01->getChild(0b001);
-    auto touching = phaseTwoStartNode->findTouchingLeaves(0, -1, child01);
-
-    // The elements returned from the find touching routine should all be leaves.
-    for (auto *elem : touching) {
-      ASSERT_FALSE(elem->hasChildren());
-    }
-
-    ASSERT_EQ(touching.size(), 1);
-    auto methodTouching = child01->getNeighborsAlongAxis(0, 1);
-    // ASSERT_EQ(touching[0], methodTouching[0]);
-  } else {
-    FAIL();
-  }
-}
-#endif
-
 static bool isOdd(int n) { return (n % 2) == 1; }
 
 /**
