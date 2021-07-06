@@ -224,33 +224,35 @@ inline bool ADJ(Any direction, Vertex octant) {
     throw std::runtime_error("[OctreeDirection.h] Received invalid octant");
   }
 
-  // TODO: Is this actually initialized static??
-  table[L] = {true, true, true, true, false, false, false, false};
-  table[R] = {false, false, false, false, true, true, true, true};
-  table[D] = {true, true, false, false, true, true, false, false};
-  table[U] = {false, false, true, true, false, false, true, true};
-  table[B] = {true, false, true, false, true, false, true, false};
-  table[F] = {false, true, false, true, false, true, false, true};
-  table[LD] = {true, true, false, false, false, false, false, false};
-  table[LU] = {false, false, true, true, false, false, false, false};
-  table[LB] = {true, false, true, false, false, false, false, false};
-  table[LF] = {false, true, false, true, false, false, false, false};
-  table[RD] = {false, false, false, false, true, true, false, false};
-  table[RU] = {false, false, false, false, false, false, true, true};
-  table[RB] = {false, false, false, false, true, false, true, false};
-  table[RF] = {false, false, false, false, false, true, false, true};
-  table[DB] = {true, false, false, false, true, false, false, false};
-  table[DF] = {false, true, false, false, false, true, false, false};
-  table[UB] = {false, false, true, false, false, false, true, false};
-  table[UF] = {false, false, false, true, false, false, false, true};
-  table[LDB] = {true, false, false, false, false, false, false, false};
-  table[LDF] = {false, true, false, false, false, false, false, false};
-  table[LUB] = {false, false, true, false, false, false, false, false};
-  table[LUF] = {false, false, false, true, false, false, false, false};
-  table[RDB] = {false, false, false, false, true, false, false, false};
-  table[RDF] = {false, false, false, false, false, true, false, false};
-  table[RUB] = {false, false, false, false, false, false, true, false};
-  table[RUF] = {false, false, false, false, false, false, false, true};
+  // Initialize if the first element is not present
+  if (!table[L][0]) {
+    table[L] = {true, true, true, true, false, false, false, false};
+    table[R] = {false, false, false, false, true, true, true, true};
+    table[D] = {true, true, false, false, true, true, false, false};
+    table[U] = {false, false, true, true, false, false, true, true};
+    table[B] = {true, false, true, false, true, false, true, false};
+    table[F] = {false, true, false, true, false, true, false, true};
+    table[LD] = {true, true, false, false, false, false, false, false};
+    table[LU] = {false, false, true, true, false, false, false, false};
+    table[LB] = {true, false, true, false, false, false, false, false};
+    table[LF] = {false, true, false, true, false, false, false, false};
+    table[RD] = {false, false, false, false, true, true, false, false};
+    table[RU] = {false, false, false, false, false, false, true, true};
+    table[RB] = {false, false, false, false, true, false, true, false};
+    table[RF] = {false, false, false, false, false, true, false, true};
+    table[DB] = {true, false, false, false, true, false, false, false};
+    table[DF] = {false, true, false, false, false, true, false, false};
+    table[UB] = {false, false, true, false, false, false, true, false};
+    table[UF] = {false, false, false, true, false, false, false, true};
+    table[LDB] = {true, false, false, false, false, false, false, false};
+    table[LDF] = {false, true, false, false, false, false, false, false};
+    table[LUB] = {false, false, true, false, false, false, false, false};
+    table[LUF] = {false, false, false, true, false, false, false, false};
+    table[RDB] = {false, false, false, false, true, false, false, false};
+    table[RDF] = {false, false, false, false, false, true, false, false};
+    table[RUB] = {false, false, false, false, false, false, true, false};
+    table[RUF] = {false, false, false, false, false, false, false, true};
+  }
 
   int flatOctant = vertexToIndex(octant);
   bool result = table[direction][flatOctant];
@@ -279,32 +281,35 @@ inline Octant REFLECT(Any direction, Octant octant) {
     throw std::runtime_error("[OctreeDirection.h] Received invalid octant");
   }
 
-  table[L] = {RDB, RDF, RUB, RUF, LDB, LDF, LUB, LUF};
-  table[R] = {RDB, RDF, RUB, RUF, LDB, LDF, LUB, LUF};
-  table[D] = {LUB, LUF, LDB, LDF, RUB, RUF, RDB, RDF};
-  table[U] = {LUB, LUF, LDB, LDF, RUB, RUF, RDB, RDF};
-  table[B] = {LDF, LDB, LUF, LUB, RDF, RDB, RUF, RUB};
-  table[F] = {LDF, LDB, LUF, LUB, RDF, RDB, RUF, RUB};
-  table[LD] = {RUB, RUF, RDB, RDF, LUB, LUF, LDB, LDF};
-  table[LU] = {RUB, RUF, RDB, RDF, LUB, LUF, LDB, LDF};
-  table[LB] = {RDF, RDB, RUF, RUB, LDF, LDB, LUF, LUB};
-  table[LF] = {RDF, RDB, RUF, RUB, LDF, LDB, LUF, LUB};
-  table[RD] = {RUB, RUF, RDB, RDF, LUB, LUF, LDB, LDF};
-  table[RU] = {RUB, RUF, RDB, RDF, LUB, LUF, LDB, LDF};
-  table[RB] = {RDF, RDB, RUF, RUB, LDF, LDB, LUF, LUB};
-  table[RF] = {RDF, RDB, RUF, RUB, LDF, LDB, LUF, LUB};
-  table[DB] = {LUF, LUB, LDF, LDB, RUF, RUB, RDF, RDB};
-  table[DF] = {LUF, LUB, LDF, LDB, RUF, RUB, RDF, RDB};
-  table[UB] = {LUF, LUB, LDF, LDB, RUF, RUB, RDF, RDB};
-  table[UF] = {LUF, LUB, LDF, LDB, RUF, RUB, RDF, RDB};
-  table[LDB] = {RUF, RUB, RDF, RDB, LUF, LUB, LDF, LDB};
-  table[LDF] = {RUF, RUB, RDF, RDB, LUF, LUB, LDF, LDB};
-  table[LUB] = {RUF, RUB, RDF, RDB, LUF, LUB, LDF, LDB};
-  table[LUF] = {RUF, RUB, RDF, RDB, LUF, LUB, LDF, LDB};
-  table[RDB] = {RUF, RUB, RDF, RDB, LUF, LUB, LDF, LDB};
-  table[RDF] = {RUF, RUB, RDF, RDB, LUF, LUB, LDF, LDB};
-  table[RUB] = {RUF, RUB, RDF, RDB, LUF, LUB, LDF, LDB};
-  table[RUF] = {RUF, RUB, RDF, RDB, LUF, LUB, LDF, LDB};
+  // Initialize if the first element is not present
+  if (table[L][0] != RDB) {
+    table[L] = {RDB, RDF, RUB, RUF, LDB, LDF, LUB, LUF};
+    table[R] = {RDB, RDF, RUB, RUF, LDB, LDF, LUB, LUF};
+    table[D] = {LUB, LUF, LDB, LDF, RUB, RUF, RDB, RDF};
+    table[U] = {LUB, LUF, LDB, LDF, RUB, RUF, RDB, RDF};
+    table[B] = {LDF, LDB, LUF, LUB, RDF, RDB, RUF, RUB};
+    table[F] = {LDF, LDB, LUF, LUB, RDF, RDB, RUF, RUB};
+    table[LD] = {RUB, RUF, RDB, RDF, LUB, LUF, LDB, LDF};
+    table[LU] = {RUB, RUF, RDB, RDF, LUB, LUF, LDB, LDF};
+    table[LB] = {RDF, RDB, RUF, RUB, LDF, LDB, LUF, LUB};
+    table[LF] = {RDF, RDB, RUF, RUB, LDF, LDB, LUF, LUB};
+    table[RD] = {RUB, RUF, RDB, RDF, LUB, LUF, LDB, LDF};
+    table[RU] = {RUB, RUF, RDB, RDF, LUB, LUF, LDB, LDF};
+    table[RB] = {RDF, RDB, RUF, RUB, LDF, LDB, LUF, LUB};
+    table[RF] = {RDF, RDB, RUF, RUB, LDF, LDB, LUF, LUB};
+    table[DB] = {LUF, LUB, LDF, LDB, RUF, RUB, RDF, RDB};
+    table[DF] = {LUF, LUB, LDF, LDB, RUF, RUB, RDF, RDB};
+    table[UB] = {LUF, LUB, LDF, LDB, RUF, RUB, RDF, RDB};
+    table[UF] = {LUF, LUB, LDF, LDB, RUF, RUB, RDF, RDB};
+    table[LDB] = {RUF, RUB, RDF, RDB, LUF, LUB, LDF, LDB};
+    table[LDF] = {RUF, RUB, RDF, RDB, LUF, LUB, LDF, LDB};
+    table[LUB] = {RUF, RUB, RDF, RDB, LUF, LUB, LDF, LDB};
+    table[LUF] = {RUF, RUB, RDF, RDB, LUF, LUB, LDF, LDB};
+    table[RDB] = {RUF, RUB, RDF, RDB, LUF, LUB, LDF, LDB};
+    table[RDF] = {RUF, RUB, RDF, RDB, LUF, LUB, LDF, LDB};
+    table[RUB] = {RUF, RUB, RDF, RDB, LUF, LUB, LDF, LDB};
+    table[RUF] = {RUF, RUB, RDF, RDB, LUF, LUB, LDF, LDB};
+  }
 
   int flatOctant = vertexToIndex(octant);
   Octant result = table[direction][flatOctant];
@@ -332,26 +337,28 @@ inline Face COMMON_FACE(Any direction, Vertex octant) {
     throw std::runtime_error("[OctreeDirection.h] Received invalid octant");
   }
 
-  table[LD] = {O, O, L, L, D, D, O, O};
-  table[LU] = {L, L, O, O, O, O, U, U};
-  table[LB] = {O, L, O, L, B, O, B, O};
-  table[LF] = {L, O, L, O, O, F, O, F};
-  table[RD] = {D, D, O, O, O, O, R, R};
-  table[RU] = {O, O, U, U, R, R, O, O};
-  table[RB] = {B, O, B, O, O, R, O, R};
-  table[RF] = {O, F, O, F, R, O, R, O};
-  table[DB] = {O, D, B, O, O, D, B, O};
-  table[DF] = {D, O, O, F, D, O, O, F};
-  table[UB] = {B, O, O, U, B, O, O, U};
-  table[UF] = {O, F, U, O, O, F, U, O};
-  table[LDB] = {O, O, O, L, O, D, B, O};
-  table[LDF] = {O, O, L, O, D, O, O, F};
-  table[LUB] = {O, L, O, O, B, O, O, U};
-  table[LUF] = {L, O, O, O, O, F, U, O};
-  table[RDB] = {O, D, B, O, O, O, O, R};
-  table[RDF] = {D, O, O, F, O, O, R, O};
-  table[RUB] = {B, O, O, U, O, R, O, O};
-  table[RUF] = {O, F, U, O, R, O, O, O};
+  if (table[LD][2] != L) {
+    table[LD] = {O, O, L, L, D, D, O, O};
+    table[LU] = {L, L, O, O, O, O, U, U};
+    table[LB] = {O, L, O, L, B, O, B, O};
+    table[LF] = {L, O, L, O, O, F, O, F};
+    table[RD] = {D, D, O, O, O, O, R, R};
+    table[RU] = {O, O, U, U, R, R, O, O};
+    table[RB] = {B, O, B, O, O, R, O, R};
+    table[RF] = {O, F, O, F, R, O, R, O};
+    table[DB] = {O, D, B, O, O, D, B, O};
+    table[DF] = {D, O, O, F, D, O, O, F};
+    table[UB] = {B, O, O, U, B, O, O, U};
+    table[UF] = {O, F, U, O, O, F, U, O};
+    table[LDB] = {O, O, O, L, O, D, B, O};
+    table[LDF] = {O, O, L, O, D, O, O, F};
+    table[LUB] = {O, L, O, O, B, O, O, U};
+    table[LUF] = {L, O, O, O, O, F, U, O};
+    table[RDB] = {O, D, B, O, O, O, O, R};
+    table[RDF] = {D, O, O, F, O, O, R, O};
+    table[RUB] = {B, O, O, U, O, R, O, O};
+    table[RUF] = {O, F, U, O, R, O, O, O};
+  }
 
   int flatOctant = vertexToIndex(octant);
   Face result = table[direction][flatOctant];
@@ -379,17 +386,24 @@ inline Edge COMMON_EDGE(Any direction, Vertex octant) {
     throw std::runtime_error("[OctreeDirection.h] Received invalid octant");
   }
 
-  table[LDB] = {OO, LD, LB, OO, DB, OO, OO, OO};
-  table[LDF] = {LD, OO, OO, LF, OO, DF, OO, OO};
-  table[LUB] = {LB, OO, OO, LU, OO, OO, UB, OO};
-  table[LUF] = {OO, LF, LU, OO, OO, OO, OO, UF};
-  table[RDB] = {DB, OO, OO, OO, OO, RD, RB, OO};
-  table[RDF] = {OO, DF, OO, OO, RD, OO, OO, RF};
-  table[RUB] = {OO, OO, UB, OO, RB, OO, OO, RU};
-  table[RUF] = {OO, OO, OO, UF, OO, RF, RU, OO};
+  if (table[LDB][2] != LB) {
+    table[LDB] = {OO, LD, LB, OO, DB, OO, OO, OO};
+    table[LDF] = {LD, OO, OO, LF, OO, DF, OO, OO};
+    table[LUB] = {LB, OO, OO, LU, OO, OO, UB, OO};
+    table[LUF] = {OO, LF, LU, OO, OO, OO, OO, UF};
+    table[RDB] = {DB, OO, OO, OO, OO, RD, RB, OO};
+    table[RDF] = {OO, DF, OO, OO, RD, OO, OO, RF};
+    table[RUB] = {OO, OO, UB, OO, RB, OO, OO, RU};
+    table[RUF] = {OO, OO, OO, UF, OO, RF, RU, OO};
+  }
 
   int flatOctant = vertexToIndex(octant);
   Edge result = table[direction][flatOctant];
+
+  if (not(contains(getEdges(), OO, result) or result == OO)) {
+    throw std::runtime_error("[OctreeDirection.h] Invalid output");
+  }
+
   return result;
 }
 
@@ -402,39 +416,46 @@ inline Edge COMMON_EDGE(Any direction, Vertex octant) {
 inline autopas::Any getOppositeDirection(autopas::Any direction) {
   using namespace autopas;
 
-  // TODO: Check parameter preconditions
+  if (!contains(getFaces(), O, direction) && !contains(getEdges(), OO, direction) &&
+      !contains(VERTICES(), OOO, direction)) {
+    throw std::runtime_error("[OctreeDirection.h] Received invalid direction");
+  }
 
   static std::array<Any, 1 << 9> table = {};
-  table[L] = R;
-  table[R] = L;
-  table[D] = U;
-  table[U] = D;
-  table[B] = F;
-  table[F] = B;
-  table[LD] = RU;
-  table[LU] = RD;
-  table[LB] = RF;
-  table[LF] = RB;
-  table[RD] = LU;
-  table[RU] = LD;
-  table[RB] = LF;
-  table[RF] = LB;
-  table[DB] = UF;
-  table[DF] = UB;
-  table[UB] = DF;
-  table[UF] = DB;
-  table[LDB] = RUF;
-  table[LDF] = RUB;
-  table[LUB] = RDF;
-  table[LUF] = RDB;
-  table[RDB] = LUF;
-  table[RDF] = LUB;
-  table[RUB] = LDF;
-  table[RUF] = LDB;
+  if (table[L] != R) {
+    table[L] = R;
+    table[R] = L;
+    table[D] = U;
+    table[U] = D;
+    table[B] = F;
+    table[F] = B;
+    table[LD] = RU;
+    table[LU] = RD;
+    table[LB] = RF;
+    table[LF] = RB;
+    table[RD] = LU;
+    table[RU] = LD;
+    table[RB] = LF;
+    table[RF] = LB;
+    table[DB] = UF;
+    table[DF] = UB;
+    table[UB] = DF;
+    table[UF] = DB;
+    table[LDB] = RUF;
+    table[LDF] = RUB;
+    table[LUB] = RDF;
+    table[LUF] = RDB;
+    table[RDB] = LUF;
+    table[RDF] = LUB;
+    table[RUB] = LDF;
+    table[RUF] = LDB;
+  }
 
   Any result = table[direction];
 
-  // TODO: Check post-conditions
+  if (not(contains(getFaces(), O, result) or contains(getEdges(), OO, result) or contains(VERTICES(), OOO, result))) {
+    throw std::runtime_error("[OctreeDirection.h] Invalid output");
+  }
 
   return result;
 }
@@ -448,35 +469,39 @@ inline autopas::Any getOppositeDirection(autopas::Any direction) {
 inline std::vector<autopas::Octant> getAllowedDirections(autopas::Any along) {
   using namespace autopas;
 
-  // TODO: Check parameter preconditions
+  if (!contains(getFaces(), O, along) && !contains(getEdges(), OO, along) && !contains(VERTICES(), OOO, along)) {
+    throw std::runtime_error("[OctreeDirection.h] Received invalid direction");
+  }
 
   static std::array<std::vector<Octant>, 1 << 9> table = {};
-  table[L] = {LDB, LDF, LUB, LUF};
-  table[R] = {RDB, RDF, RUB, RUF};
-  table[D] = {LDB, LDF, RDB, RDF};
-  table[U] = {LUB, LUF, RUB, RUF};
-  table[B] = {LDB, LUB, RDB, RUB};
-  table[F] = {LDF, LUF, RDF, RUF};
-  table[LD] = {LDB, LDF};
-  table[LU] = {LUB, LUF};
-  table[LB] = {LDB, LUB};
-  table[LF] = {LDF, LUF};
-  table[RD] = {RDB, RDF};
-  table[RU] = {RUB, RUF};
-  table[RB] = {RDB, RUB};
-  table[RF] = {RDF, RUF};
-  table[DB] = {LDB, RDB};
-  table[DF] = {LDF, RDF};
-  table[UB] = {LUB, RUB};
-  table[UF] = {LUF, RUF};
-  table[LDB] = {LDB};
-  table[LDF] = {LDF};
-  table[LUB] = {LUB};
-  table[LUF] = {LUF};
-  table[RDB] = {RDB};
-  table[RDF] = {RDF};
-  table[RUB] = {RUB};
-  table[RUF] = {RUF};
+  if (table[L][0] != LDB) {
+    table[L] = {LDB, LDF, LUB, LUF};
+    table[R] = {RDB, RDF, RUB, RUF};
+    table[D] = {LDB, LDF, RDB, RDF};
+    table[U] = {LUB, LUF, RUB, RUF};
+    table[B] = {LDB, LUB, RDB, RUB};
+    table[F] = {LDF, LUF, RDF, RUF};
+    table[LD] = {LDB, LDF};
+    table[LU] = {LUB, LUF};
+    table[LB] = {LDB, LUB};
+    table[LF] = {LDF, LUF};
+    table[RD] = {RDB, RDF};
+    table[RU] = {RUB, RUF};
+    table[RB] = {RDB, RUB};
+    table[RF] = {RDF, RUF};
+    table[DB] = {LDB, RDB};
+    table[DF] = {LDF, RDF};
+    table[UB] = {LUB, RUB};
+    table[UF] = {LUF, RUF};
+    table[LDB] = {LDB};
+    table[LDF] = {LDF};
+    table[LUB] = {LUB};
+    table[LUF] = {LUF};
+    table[RDB] = {RDB};
+    table[RDF] = {RDF};
+    table[RUB] = {RUB};
+    table[RUF] = {RUF};
+  }
 
   auto result = table[along];
 
