@@ -504,12 +504,6 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
             traversalOption, mockFunctor, container->getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
       });
 
-  if (doSlightShift) {
-    // TODO(johannes): Shift the particles
-  }
-
-  // std::cout << "Container switch to " << autopas::ContainerOption::getOptionNames()[containerOption] << "\n";
-
   // Specify the behavior that should be executed for each particle pair
   int unsigned numPairs = 0;
   std::vector<std::tuple<unsigned long, unsigned long, double>> particlePairs;
@@ -539,7 +533,7 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
   container->iteratePairwise(traversal.get());
   mockFunctor.endTraversal(newton3Option);
 
-  // TODO(johannes): This is an interesting metric, find out whether there is "turning" point in which the octree has
+  // NOTE(johannes): This is an interesting metric, find out whether there is "turning" point in which the octree has
   //  less interactions
   // printf("Johannes' AoS functor called %d times\n", numPairs);
 
