@@ -36,8 +36,6 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
    */
   using ParticleCell = OctreeLeafNode<Particle>;
 
-  // TODO(johannes): The TraversalSelector passes the interactionLength as the cutoff value: Keep in mind when
-  // implementing...
   /**
    * Constructor for the Octree traversal.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
