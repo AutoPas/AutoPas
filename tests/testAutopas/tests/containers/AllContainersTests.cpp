@@ -65,8 +65,7 @@ TEST_P(AllContainersTests, testParticleAdding) {
         autopas::Particle p({x, y, z}, {0., 0., 0.}, id++);
         if (x == -1.5 or y == -1.5 or z == -1.5 or x == 11.5 or y == 11.5 or z == 11.5) {
           EXPECT_ANY_THROW(container->addParticle(p));  // outside, therefore not ok!
-          EXPECT_NO_THROW(container->addHaloParticle(p))
-              << " x=" << x << " y=" << y << " z=" << z;  // much outside, still ok because it is ignored!
+          EXPECT_NO_THROW(container->addHaloParticle(p));  // much outside, still ok because it is ignored!
         } else if (x == 10. or y == 10. or z == 10. or x == -.5 or y == -.5 or z == -.5 or x == 10.5 or y == 10.5 or
                    z == 10.5) {
           EXPECT_ANY_THROW(container->addParticle(p));     // outside, therefore not ok!
