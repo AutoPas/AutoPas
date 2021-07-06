@@ -126,7 +126,6 @@ class OTNaiveTraversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
 
   /**
    * A list of all leaves in the octree
-   * TODO: Include the halo octree
    */
   std::vector<OctreeLeafNode<Particle> *> _leaves;
 };
