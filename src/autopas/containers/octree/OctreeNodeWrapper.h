@@ -41,9 +41,9 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @param interactionLength The minimum distance at which a force is considered nonzero, cutoff+skin.
    */
   OctreeNodeWrapper(std::array<double, 3> boxMin, std::array<double, 3> boxMax, int unsigned treeSplitThreshold,
-                    double interactionLength) {
-    _pointer =
-        std::make_unique<OctreeLeafNode<Particle>>(boxMin, boxMax, nullptr, treeSplitThreshold, interactionLength);
+                    double interactionLength, double cellSizeFactor) {
+    _pointer = std::make_unique<OctreeLeafNode<Particle>>(boxMin, boxMax, nullptr, treeSplitThreshold,
+                                                          interactionLength, cellSizeFactor);
     // omp_init_lock(&_lock);
   }
 
@@ -203,19 +203,6 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
 #endif
 
  private:
-  template <bool modifiable>
-  OctreeIterator<Particle, modifiable> *getIterator() const {
-    auto *root = getRaw();
-    OctreeIterator<Particle, modifiable> *iter;
-    // TODO(johannes): Decide this in the nodes for transparency
-    if (root->hasChildren()) {
-      iter = new OctreeInnerNodeIterator<Particle, modifiable>(static_cast<OctreeInnerNode<Particle> *>(root));
-    } else {
-      iter = new OctreeLeafNodeIterator<Particle, modifiable>(static_cast<OctreeLeafNode<Particle> *>(root));
-    }
-    return iter;
-  }
-
   Particle &getFromReloadingIterator(size_t index) const {
 #if 0
     // TODO(johannes): Make this thread-safe?

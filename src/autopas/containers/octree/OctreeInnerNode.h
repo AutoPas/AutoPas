@@ -30,8 +30,8 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
    * @param interactionLength The minimum distance at which a force is considered nonzero, cutoff+skin.
    */
   OctreeInnerNode(std::array<double, 3> boxMin, std::array<double, 3> boxMax, OctreeNodeInterface<Particle> *parent,
-                  int unsigned treeSplitThreshold, double interactionLength)
-      : OctreeNodeInterface<Particle>(boxMin, boxMax, parent, treeSplitThreshold, interactionLength) {
+                  int unsigned treeSplitThreshold, double interactionLength, double cellSizeFactor)
+      : OctreeNodeInterface<Particle>(boxMin, boxMax, parent, treeSplitThreshold, interactionLength, cellSizeFactor) {
     using namespace autopas::utils;
 
     // The inner node is initialized with 8 leaves.
@@ -47,14 +47,14 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
       }
 
       // Assign new leaves as the children.
-      _children[i] =
-          std::make_unique<OctreeLeafNode<Particle>>(newBoxMin, newBoxMax, this, treeSplitThreshold, interactionLength);
+      _children[i] = std::make_unique<OctreeLeafNode<Particle>>(newBoxMin, newBoxMax, this, treeSplitThreshold,
+                                                                interactionLength, cellSizeFactor);
     }
   }
 
   OctreeInnerNode(const OctreeInnerNode<Particle> &other)
       : OctreeNodeInterface<Particle>(other._boxMin, other._boxMax, other._parent, other._treeSplitThreshold,
-                                      other._interactionLength) {
+                                      other._interactionLength, other._cellSizeFactor) {
     for (auto i = 0; i < other._children.size(); ++i) {
       auto *otherChild = other._children[i].get();
       if (otherChild->hasChildren()) {
@@ -116,7 +116,8 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
     }
 
     std::unique_ptr<OctreeLeafNode<Particle>> newLeaf = std::make_unique<OctreeLeafNode<Particle>>(
-        this->getBoxMin(), this->getBoxMax(), this->_parent, this->_treeSplitThreshold, this->_interactionLength);
+        this->getBoxMin(), this->getBoxMax(), this->_parent, this->_treeSplitThreshold, this->_interactionLength,
+        this->_cellSizeFactor);
     ref = std::move(newLeaf);
   }
 

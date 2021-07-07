@@ -27,7 +27,7 @@ TEST_F(OctreeTest, testDummy) {
   using namespace autopas;
 
   std::array<double, 3> min = {0, 0, 0}, max = {2, 2, 2};
-  Octree<ParticleFP64> tree(min, max, 0.001f, 0.1f);
+  Octree<ParticleFP64> tree(min, max, 0.001f, 0.1f, 1.0f);
 }
 
 /**
@@ -40,7 +40,7 @@ TEST_F(OctreeTest, testDebugIndexing) {
 
   std::array<double, 3> min = {0, 0, 0}, max = {1, 1, 1};
   std::unique_ptr<OctreeNodeInterface<ParticleFP64>> root =
-      std::make_unique<OctreeLeafNode<ParticleFP64>>(min, max, nullptr, 4, 0.1);
+      std::make_unique<OctreeLeafNode<ParticleFP64>>(min, max, nullptr, 4, 0.1, 1.0);
   // Add some dummy particles that split the nodes
   int dummyParticleCount = 8;
   for (int i = 0; i < 8; ++i) {
@@ -131,7 +131,7 @@ TEST_F(OctreeTest, testChildIndexing) {
 
   // Create an inner node that is split once.
   std::array<double, 3> min = {0, 0, 0}, max = {1, 1, 1};
-  OctreeInnerNode<ParticleFP64> inner(min, max, nullptr, 16, 1);
+  OctreeInnerNode<ParticleFP64> inner(min, max, nullptr, 16, 1, 1.0);
 
   // Get the center of the node
   std::array<double, 3> center = utils::ArrayMath::mulScalar(utils::ArrayMath::add(min, max), 0.5);
@@ -282,7 +282,7 @@ static std::unique_ptr<autopas::OctreeNodeInterface<autopas::ParticleFP64>> crea
     std::array<double, 3> min, std::array<double, 3> max, int randomParticleCount) {
   using namespace autopas;
   std::unique_ptr<OctreeNodeInterface<autopas::ParticleFP64>> root =
-      std::make_unique<OctreeLeafNode<ParticleFP64>>(min, max, nullptr, 16, 1);
+      std::make_unique<OctreeLeafNode<ParticleFP64>>(min, max, nullptr, 16, 1, 1.0);
   for (int particleIndex = 0; particleIndex < randomParticleCount; ++particleIndex) {
     auto randomParticle = getRandomlyDistributedParticle(min, max);
     auto opt = root->insert(randomParticle);
@@ -419,7 +419,7 @@ TEST_F(OctreeTest, testUnableToSplit) {
   std::array<double, 3> min = {}, max = {1, 1, 1};
   int unsigned treeSplitThreshold = 4;
   std::unique_ptr<OctreeNodeInterface<ParticleFP64>> root =
-      std::make_unique<OctreeLeafNode<ParticleFP64>>(min, max, nullptr, treeSplitThreshold, 1.0);
+      std::make_unique<OctreeLeafNode<ParticleFP64>>(min, max, nullptr, treeSplitThreshold, 1.0, 1.0);
   ASSERT_FALSE(root->hasChildren());
 
   // Insert particles
@@ -446,7 +446,7 @@ TEST_F(OctreeTest, testAbleToSplit) {
   std::array<double, 3> min = {}, max = {1, 1, 1};
   int unsigned treeSplitThreshold = 4;
   std::unique_ptr<OctreeNodeInterface<ParticleFP64>> root =
-      std::make_unique<OctreeLeafNode<ParticleFP64>>(min, max, nullptr, treeSplitThreshold, .5);
+      std::make_unique<OctreeLeafNode<ParticleFP64>>(min, max, nullptr, treeSplitThreshold, .5, 1.);
   ASSERT_FALSE(root->hasChildren());
 
   // Insert particles, the first should not cause the octree to split

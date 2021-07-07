@@ -58,18 +58,21 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    * @param cutoff The cutoff radius
    * @param skin The skin radius
    */
-  Octree(std::array<double, 3> boxMin, std::array<double, 3> boxMax, const double cutoff, const double skin)
+  Octree(std::array<double, 3> boxMin, std::array<double, 3> boxMax, const double cutoff, const double skin,
+         const double cellSizeFactor)
       : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skin) {
     // TODO(johannes): Obtain this from a configuration
     int unsigned treeSplitThreshold = 2;  // 16;
 
     double interactionLength = this->getInteractionLength();
-    this->_cells.push_back(OctreeNodeWrapper<Particle>(boxMin, boxMax, treeSplitThreshold, interactionLength));
+    this->_cells.push_back(
+        OctreeNodeWrapper<Particle>(boxMin, boxMax, treeSplitThreshold, interactionLength, cellSizeFactor));
 
     // Extend the halo region with cutoff + skin in all dimensions
     auto haloBoxMin = utils::ArrayMath::subScalar(boxMin, this->getInteractionLength());
     auto haloBoxMax = utils::ArrayMath::addScalar(boxMax, this->getInteractionLength());
-    this->_cells.push_back(OctreeNodeWrapper<Particle>(haloBoxMin, haloBoxMax, treeSplitThreshold, interactionLength));
+    this->_cells.push_back(
+        OctreeNodeWrapper<Particle>(haloBoxMin, haloBoxMax, treeSplitThreshold, interactionLength, cellSizeFactor));
   }
 
   [[nodiscard]] std::vector<ParticleType> updateContainer() override {

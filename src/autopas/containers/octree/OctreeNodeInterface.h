@@ -37,12 +37,13 @@ class OctreeNodeInterface {
    * @param interactionLength The minimum distance at which a force is considered nonzero, cutoff+skin.
    */
   OctreeNodeInterface(std::array<double, 3> boxMin, std::array<double, 3> boxMax, OctreeNodeInterface<Particle> *parent,
-                      int unsigned treeSplitThreshold, double interactionLength)
+                      int unsigned treeSplitThreshold, double interactionLength, double cellSizeFactor)
       : _boxMin(boxMin),
         _boxMax(boxMax),
         _parent(parent),
         _treeSplitThreshold(treeSplitThreshold),
-        _interactionLength(interactionLength) {}
+        _interactionLength(interactionLength),
+        _cellSizeFactor(cellSizeFactor) {}
 
   /** To make clang happy. */
   virtual ~OctreeNodeInterface() = default;
@@ -398,6 +399,11 @@ class OctreeNodeInterface {
    * The minimum distance at which a force is considered nonzero, cutoff+skin.
    */
   double _interactionLength;
+
+  /**
+   * The cell size factor for this node
+   */
+  double _cellSizeFactor;
 };
 
 /**

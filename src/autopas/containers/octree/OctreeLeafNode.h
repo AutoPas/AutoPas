@@ -12,6 +12,8 @@
 #include "autopas/containers/octree/OctreeNodeInterface.h"
 #include "autopas/utils/ArrayMath.h"
 
+#include <optional>
+
 namespace autopas {
 template <typename Particle>
 class Octree;

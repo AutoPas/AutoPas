@@ -145,7 +145,8 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
       break;
     }
     case ContainerOption::octree: {
-      container = std::make_unique<Octree<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
+      container = std::make_unique<Octree<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+                                                     containerInfo.cellSizeFactor);
       break;
     }
     default: {
