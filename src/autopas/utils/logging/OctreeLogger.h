@@ -267,18 +267,17 @@ class OctreeLogger {
   /**
    * Print a list of particle positions to a file as JSON. The list is obtained from the octree root node.
    * @param out The FILE pointer to write the JSON to
-   * TODO(johannes): Remove the prefix, this can be set from the outer code
    * @param jsonFieldPrefix A short prefix, that will be prepended to the JSON array
    * @param root The root from which the particles should be obtained
    * @return The file pointer
    */
-  static FILE *particlesToJSON(FILE *out, char const *jsonFieldPrefix, OctreeNodeInterface<Particle> *root) {
+  static FILE *particlesToJSON(FILE *out, OctreeNodeInterface<Particle> *root) {
     if (out) {
       // Get all leaves
       std::vector<OctreeLeafNode<Particle> *> leaves;
       root->appendAllLeaves(leaves);
 
-      fprintf(out, "\"%s\": [", jsonFieldPrefix);
+      fprintf(out, "[");
       for (int leafIndex = 0; leafIndex < leaves.size(); ++leafIndex) {
         OctreeLeafNode<Particle> *leaf = leaves[leafIndex];
 
@@ -300,6 +299,24 @@ class OctreeLogger {
     }
 
     return out;
+  }
+
+  static void octreeToJSON(OctreeNodeInterface<Particle> *owned, OctreeNodeInterface<Particle> *halo,
+                           std::vector<OctreeLeafNode<Particle> *> &ownedLeaves,
+                           std::vector<OctreeLeafNode<Particle> *> &haloLeaves) {
+#if AUTOPAS_LOG_OCTREE
+    // Log all owned leaves for this octree
+    fclose(OctreeLogger::leavesToJSON(fopen("owned.json", "w"), ownedLeaves));
+    // Log all halo leaves for this octree
+    fclose(OctreeLogger::leavesToJSON(fopen("halo.json", "w"), haloLeaves));
+    FILE *particles = fopen("particles.json", "w");
+    fprintf(particles, "{\"owned\": ");
+    OctreeLogger::particlesToJSON(particles, owned);
+    fprintf(particles, ", \"halo\": \n");
+    OctreeLogger::particlesToJSON(particles, halo);
+    fprintf(particles, "}");
+    fclose(particles);
+#endif
   }
 
  private:

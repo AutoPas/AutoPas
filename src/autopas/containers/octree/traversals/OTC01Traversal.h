@@ -75,20 +75,7 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
   void traverseParticlePairs() override {
     auto *haloWrapper = getHalo();
 
-#if 0
-    // FOR DEBUGGING ONLY
-    // Log all owned leaves for this octree
-    fclose(OctreeLogger::leavesToJSON(fopen("owned.json", "w"), _ownedLeaves));
-    // Log all halo leaves for this octree
-    fclose(OctreeLogger::leavesToJSON(fopen("halo.json", "w"), _haloLeaves));
-    FILE *particles = fopen("particles.json", "w");
-    fprintf(particles, "{");
-    OctreeLogger::particlesToJSON(particles, "owned", getOwned()->getRaw());
-    fprintf(particles, ",\n");
-    OctreeLogger::particlesToJSON(particles, "halo", getHalo()->getRaw());
-    fprintf(particles, "}");
-    fclose(particles);
-#endif
+    OctreeLogger<Particle>::octreeToJSON(getOwned()->getRaw(), getHalo()->getRaw(), _ownedLeaves, _haloLeaves);
 
     // Get neighboring cells for each leaf
     //#pragma omp parallel for
