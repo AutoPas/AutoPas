@@ -474,7 +474,7 @@ inline std::vector<autopas::Octant> getAllowedDirections(autopas::Any along) {
   }
 
   static std::array<std::vector<Octant>, 1 << 9> table = {};
-  if (table[L][0] != LDB) {
+  if (table[L].empty()) {
     table[L] = {LDB, LDF, LUB, LUF};
     table[R] = {RDB, RDF, RUB, RUF};
     table[D] = {LDB, LDF, RDB, RDF};
