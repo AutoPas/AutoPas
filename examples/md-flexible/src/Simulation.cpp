@@ -40,7 +40,7 @@ namespace {
  * If no width can be identified, the function defaults to 80.
  * @return width of the terminal.
  */
-size_t getTerminalWidth(){
+size_t getTerminalWidth() {
   size_t terminalWidth = 0;
   // test all std pipes to get the current terminal width
   for (auto fd : {STDOUT_FILENO, STDIN_FILENO, STDERR_FILENO}) {
@@ -67,7 +67,7 @@ size_t getTerminalWidth(){
 
   return terminalWidth;
 }
-}
+}  // namespace
 
 // @todo: create configuration variable to set output folder for the vtk writer. Currently it is "output".
 Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecomposition &domainDecomposition)

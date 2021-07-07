@@ -74,7 +74,8 @@ void ParallelVtkWriter::recordTimestep(const int &currentIteration,
   timestepFile << "      <PointData>\n";
 
   // print velocities
-  timestepFile << "        <DataArray Name=\"velocities\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
+  timestepFile
+      << "        <DataArray Name=\"velocities\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     auto v = particle->getV();
     timestepFile << "        " << v[0] << " " << v[1] << " " << v[2] << "\n";
@@ -165,7 +166,8 @@ void ParallelVtkWriter::createPvtuFile(const int &currentIteration) {
   timestepFile << "<VTKFile byte_order=\"LittleEndian\" type=\"PUnstructuredGrid\" version=\"0.1\">\n";
   timestepFile << "  <PUnstructuredGrid GhostLevel=\"0\">\n";
   timestepFile << "    <PPointData>\n";
-  timestepFile << "      <PDataArray Name=\"velocities\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>\n";
+  timestepFile
+      << "      <PDataArray Name=\"velocities\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>\n";
   timestepFile << "      <PDataArray Name=\"forces\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Int32\"/>\n";
   timestepFile << "      <PDataArray Name=\"typeIds\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float32\"/>\n";
   timestepFile << "      <PDataArray Name=\"ids\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float32\"/>\n";
