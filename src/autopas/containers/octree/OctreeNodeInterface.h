@@ -47,12 +47,14 @@ class OctreeNodeInterface {
   /** To make clang happy. */
   virtual ~OctreeNodeInterface() = default;
 
+  OctreeNodeInterface(const OctreeNodeInterface<Particle> &other) = default;
+
   /**
    * Insert a particle into the octree.
    * @param ref A pointer reference to the location at which a possible new child can point to
    * @param p The particle to insert
    */
-  virtual void insert(std::unique_ptr<OctreeNodeInterface<Particle>> &ref, Particle p) = 0;
+  virtual std::optional<std::unique_ptr<OctreeNodeInterface<Particle>>> insert(Particle p) = 0;
 
   /**
    * Put all particles that are below this node into the vector.
@@ -441,7 +443,7 @@ static Octant SONTYPE(OctreeNodeInterface<Particle> *node) {
       }
     }
     if (result == OOO) {
-      throw std::runtime_error("[OctreeNodeInterface.h] Unable to determine SONTYPE");
+      // throw std::runtime_error("[OctreeNodeInterface.h] Unable to determine SONTYPE");
     }
   }
   return result;

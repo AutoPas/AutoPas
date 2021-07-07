@@ -44,7 +44,10 @@ TEST_F(OctreeTest, testDebugIndexing) {
   // Add some dummy particles that split the nodes
   int dummyParticleCount = 8;
   for (int i = 0; i < 8; ++i) {
-    root->insert(root, ParticleFP64({0.01f, (double)i / (double)dummyParticleCount, 0.01f}, {0, 0, 0}, 0));
+    auto opt = root->insert(ParticleFP64({0.01f, (double)i / (double)dummyParticleCount, 0.01f}, {0, 0, 0}, 0));
+    if(opt) {
+      root = std::move(*opt);
+    }
   }
 
   int axisPairs[3][4][2] = {
@@ -275,16 +278,19 @@ static autopas::ParticleFP64 getRandomlyDistributedParticle(std::array<double, 3
  * @param max The maximum coordinate of the octree's bounding box
  * @param randomParticleCount How many particles should be spawned
  */
-static void createRandomOctree(std::unique_ptr<autopas::OctreeNodeInterface<autopas::ParticleFP64>> &rootRef,
-                               std::array<double, 3> min, std::array<double, 3> max, int randomParticleCount) {
+static std::unique_ptr<autopas::OctreeNodeInterface<autopas::ParticleFP64>> createRandomOctree(
+    std::array<double, 3> min, std::array<double, 3> max, int randomParticleCount) {
   using namespace autopas;
   std::unique_ptr<OctreeNodeInterface<autopas::ParticleFP64>> root =
       std::make_unique<OctreeLeafNode<ParticleFP64>>(min, max, nullptr, 16, 1);
   for (int particleIndex = 0; particleIndex < randomParticleCount; ++particleIndex) {
     auto randomParticle = getRandomlyDistributedParticle(min, max);
-    root->insert(root, randomParticle);
+    auto opt = root->insert(randomParticle);
+    if(opt) {
+      root = std::move(*opt);
+    }
   }
-  rootRef = std::move(root);
+  return root;
 }
 
 /**
@@ -299,9 +305,8 @@ TEST_F(OctreeTest, testNeighborLocator) {
   using namespace autopas;
 
   // Create an octree with a random particle configuration.
-  std::unique_ptr<OctreeNodeInterface<ParticleFP64>> root;
   srand(1234);
-  createRandomOctree(root, {0, 0, 0}, {1, 1, 1}, 1000);
+  std::unique_ptr<OctreeNodeInterface<ParticleFP64>> root = createRandomOctree({0, 0, 0}, {1, 1, 1}, 1000);
 
   // Find all leaves
   std::vector<OctreeLeafNode<ParticleFP64> *> leaves;
@@ -380,10 +385,9 @@ TEST_F(OctreeTest, testRangeNeighborFinding) {
   using namespace autopas;
 
   // Create an octree with a random particle configuration.
-  std::unique_ptr<OctreeNodeInterface<ParticleFP64>> root;
   std::array<double, 3> min = {0, 0, 0}, max = {1, 1, 1};
   srand(1234);
-  createRandomOctree(root, min, max, 1000);
+  std::unique_ptr<OctreeNodeInterface<ParticleFP64>> root = createRandomOctree(min, max, 1000);
 
   // Iterate all particles
   std::vector<OctreeLeafNode<ParticleFP64> *> leaves;
@@ -422,7 +426,10 @@ TEST_F(OctreeTest, testUnableToSplit) {
   srand(1234);
   for (int unsigned i = 0; i < 2 * treeSplitThreshold; ++i) {
     auto particle = getRandomlyDistributedParticle(min, max);
-    root->insert(root, particle);
+    auto opt = root->insert(particle);
+    if(opt) {
+      root = std::move(*opt);
+    }
 
     // The node should never split because of the interaction length
     ASSERT_FALSE(root->hasChildren());
@@ -446,14 +453,20 @@ TEST_F(OctreeTest, testAbleToSplit) {
   srand(1234);
   for (int unsigned i = 0; i < treeSplitThreshold; ++i) {
     auto particle = getRandomlyDistributedParticle(min, max);
-    root->insert(root, particle);
+    auto opt = root->insert(particle);
+    if(opt) {
+      root = std::move(*opt);
+    }
     ASSERT_FALSE(root->hasChildren());
   }
 
   // These should cause the octree to split
   for (int unsigned i = 0; i < treeSplitThreshold; ++i) {
     auto particle = getRandomlyDistributedParticle(min, max);
-    root->insert(root, particle);
+    auto opt = root->insert(particle);
+    if(opt) {
+      root = std::move(*opt);
+    }
     ASSERT_TRUE(root->hasChildren());
   }
 }

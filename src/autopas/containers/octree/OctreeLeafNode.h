@@ -37,10 +37,19 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
       : OctreeNodeInterface<Particle>(boxMin, boxMax, parent, treeSplitThreshold, interactionLength),
         FullParticleCell<Particle>(utils::ArrayMath::sub(boxMax, boxMin)) {}
 
+  OctreeLeafNode(OctreeLeafNode<Particle> const &other)
+      : OctreeNodeInterface<Particle>(other._boxMin, other._boxMax, other._parent, other._treeSplitThreshold,
+                                      other._interactionLength),
+        FullParticleCell<Particle>(utils::ArrayMath::sub(other._boxMax, other._boxMin)) {
+    for (auto &p : other._particles) {
+      this->_particles.push_back(p);
+    }
+  }
+
   /**
    * @copydoc OctreeNodeInterface::insert()
    */
-  void insert(std::unique_ptr<OctreeNodeInterface<Particle>> &ref, Particle p) override {
+  std::optional<std::unique_ptr<OctreeNodeInterface<Particle>>> insert(Particle p) override {
     if (not this->isInside(p.getR())) {
       // The exception is suppressed for AllContainersTests#testParticleAdding
       // throw std::runtime_error("[OctreeLeafNode.h] Attempting to insert particle that is not inside this node");
@@ -62,19 +71,44 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
     if ((this->_particles.size() < this->_treeSplitThreshold) or anyNewDimSmallerThanMinSize) {
       this->_particles.push_back(p);
     } else {
+#if 0
+      std::unique_ptr<OctreeNodeInterface<Particle>> newInnerInner = std::make_unique<OctreeInnerNode<Particle>>(
+          this->getBoxMin(), this->getBoxMax(), this->_parent, this->_treeSplitThreshold, this->_interactionLength);
+      std::optional<std::unique_ptr<OctreeNodeInterface<Particle>>> newInner =
+          std::make_optional<std::unique_ptr<OctreeNodeInterface<Particle>>>(newInnerInner);
+      auto opt = *newInner->insert(p);
+      if (opt) {
+        newInner = *opt;
+      }
+      for (auto cachedParticle : this->_particles) {
+        opt = *newInner->insert(cachedParticle);
+        if (opt) {
+          newInner = *opt;
+        }
+      }
+#else
       std::unique_ptr<OctreeNodeInterface<Particle>> newInner = std::make_unique<OctreeInnerNode<Particle>>(
           this->getBoxMin(), this->getBoxMax(), this->_parent, this->_treeSplitThreshold, this->_interactionLength);
-      newInner->insert(newInner, p);
-      for (auto cachedParticle : this->_particles) {
-        newInner->insert(newInner, cachedParticle);
+      auto opt = newInner->insert(p);
+      if(opt) {
+        newInner = std::move(*opt);
       }
+      for (auto cachedParticle : this->_particles) {
+        opt = newInner->insert(cachedParticle);
+        if(opt) {
+          newInner = std::move(*opt);
+        }
+      }
+#endif
 
       // Set the reference of the parent to this leaf to the new inner node.
-      ref = std::move(newInner);
+      // ref = std::move(newInner);
+      return newInner;
     }
 
     // TODO: Take a look at this later
     // return std::make_unique<OctreeNodeInterface<Particle>>(*this);
+    return std::nullopt;
   }
 
   /**

@@ -52,10 +52,23 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
     }
   }
 
+  OctreeInnerNode(const OctreeInnerNode<Particle> &other)
+      : OctreeNodeInterface<Particle>(other._boxMin, other._boxMax, other._parent, other._treeSplitThreshold,
+                                      other._interactionLength) {
+    for (auto i = 0; i < other._children.size(); ++i) {
+      auto *otherChild = other._children[i].get();
+      if (otherChild->hasChildren()) {
+        _children[i] = std::make_unique<OctreeInnerNode<Particle>>((OctreeInnerNode<Particle> &)*other._children[i]);
+      } else {
+        _children[i] = std::make_unique<OctreeLeafNode<Particle>>((OctreeLeafNode<Particle> &)*other._children[i]);
+      }
+    }
+  }
+
   /**
    * @copydoc OctreeNodeInterface::insert()
    */
-  void insert(std::unique_ptr<OctreeNodeInterface<Particle>> &ref, Particle p) override {
+  std::optional<std::unique_ptr<OctreeNodeInterface<Particle>>> insert(Particle p) override {
     if (!this->isInside(p.getR())) {
       // The exception is suppressed for AllContainersTests#testParticleAdding
       // throw std::runtime_error("[OctreeInnerNode.h] Attempting to insert particle that is not inside this node");
@@ -64,10 +77,15 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
     // Find a child to insert the particle into.
     for (auto &child : _children) {
       if (child->isInside(p.getR())) {
-        child->insert(child, p);
+        auto opt = child->insert(p);
+        if(opt) {
+          child = std::move(*opt);
+        }
         break;
       }
     }
+
+    return std::nullopt;
   }
 
   /**
