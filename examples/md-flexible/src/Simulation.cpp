@@ -184,11 +184,28 @@ void Simulation::printProgress(size_t iterationProgress, size_t maxIterations, b
   std::stringstream progressbar;
   progressbar << "[";
   // get current terminal width
-  struct winsize w {};
-  ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-  auto terminalWidth = w.ws_col;
+  size_t terminalWidth = 0;
+  // test all std pipes to get the current terminal width
+  for (auto fd : {STDOUT_FILENO, STDIN_FILENO, STDERR_FILENO}) {
+    if (isatty(fd)) {
+      struct winsize w {};
+      ioctl(fd, TIOCGWINSZ, &w);
+      terminalWidth = w.ws_col;
+      break;
+    }
+  }
+
+  // if width is still zero try the environment variable COLUMNS
   if (terminalWidth == 0) {
-    terminalWidth = 100;
+    if (auto *teminalWidthCharArr = std::getenv("COLUMNS")) {
+      terminalWidth = atoi(teminalWidthCharArr);
+    }
+  }
+
+  // if all of the above fail fall back to a fixed width
+  if (terminalWidth == 0) {
+    // this seems to be the default width in most terminal windows
+    terminalWidth = 80;
   }
   // the bar should fill the terminal window so subtract everything else (-2 for "] ")
   size_t maxBarWidth = terminalWidth - info.str().size() - progressbar.str().size() - 2;
