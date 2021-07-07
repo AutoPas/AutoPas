@@ -14,69 +14,6 @@
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
-template <class Particle, bool modifiable>
-class OctreeIterator : public internal::SingleCellIterator<Particle, OctreeLeafNode<Particle>, modifiable> {
- public:
-  OctreeIterator() = default;
-
-  explicit OctreeIterator(OctreeLeafNode<Particle> *container)
-      : internal::SingleCellIterator<Particle, OctreeLeafNode<Particle>, modifiable>(container) {}
-};
-
-template <class Particle, bool modifiable>
-class OctreeLeafNodeIterator : public OctreeIterator<Particle, modifiable> {
- public:
-  explicit OctreeLeafNodeIterator(OctreeLeafNode<Particle> *leaf) : OctreeIterator<Particle, modifiable>(leaf) {}
-};
-
-template <class Particle, bool modifiable>
-class OctreeInnerNodeIterator : public OctreeIterator<Particle, modifiable> {
- public:
-  explicit OctreeInnerNodeIterator(OctreeInnerNode<Particle> *inner) : _inner(inner), _childIndex(0) {
-    _currentChildIterator = getCurrentIterator();
-  }
-
-  inline OctreeInnerNodeIterator &operator++() override {
-    if (_currentChildIterator.isValid()) {
-      // TODO(johannes): Check if delete was called
-      // if (not _deleted) ++_index;
-      //_deleted = false;
-      ++_currentChildIterator;
-    } else {
-      ++_childIndex;
-      _currentChildIterator = getCurrentIterator();
-    }
-    return *this;
-  }
-
-  inline Particle &operator*() const override {
-    const Particle &result = _currentChildIterator.operator*();
-    return (Particle &)result;
-  }
-
-  inline bool isValid() const override {
-    bool result = _currentChildIterator.isValid() or _childIndex < 8;
-    return result;
-  }
-
- private:
-  OctreeIterator<Particle, modifiable> getCurrentIterator() {
-    auto *firstChild = _inner->getChild(_childIndex);
-    OctreeIterator<Particle, modifiable> iter;
-    // TODO(johannes): Decide this in the nodes for transparency
-    if (firstChild->hasChildren()) {
-      iter = OctreeInnerNodeIterator<Particle, modifiable>(static_cast<OctreeInnerNode<Particle> *>(firstChild));
-    } else {
-      iter = OctreeLeafNodeIterator<Particle, modifiable>(static_cast<OctreeLeafNode<Particle> *>(firstChild));
-    }
-    return iter;
-  }
-
-  int _childIndex;
-  OctreeIterator<Particle, modifiable> _currentChildIterator;
-  OctreeInnerNode<Particle> *_inner;
-};
-
 /**
  * This class wraps the functionality provided by the octree leaves and inner nodes in a structure that adheres to the
  * ParticleCell concept. This is necessary to use the octree nodes as particle containers.
