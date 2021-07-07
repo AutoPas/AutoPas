@@ -45,7 +45,7 @@ TEST_F(OctreeTest, testDebugIndexing) {
   int dummyParticleCount = 8;
   for (int i = 0; i < 8; ++i) {
     auto opt = root->insert(ParticleFP64({0.01f, (double)i / (double)dummyParticleCount, 0.01f}, {0, 0, 0}, 0));
-    if(opt) {
+    if (opt) {
       root = std::move(*opt);
     }
   }
@@ -286,7 +286,7 @@ static std::unique_ptr<autopas::OctreeNodeInterface<autopas::ParticleFP64>> crea
   for (int particleIndex = 0; particleIndex < randomParticleCount; ++particleIndex) {
     auto randomParticle = getRandomlyDistributedParticle(min, max);
     auto opt = root->insert(randomParticle);
-    if(opt) {
+    if (opt) {
       root = std::move(*opt);
     }
   }
@@ -427,7 +427,7 @@ TEST_F(OctreeTest, testUnableToSplit) {
   for (int unsigned i = 0; i < 2 * treeSplitThreshold; ++i) {
     auto particle = getRandomlyDistributedParticle(min, max);
     auto opt = root->insert(particle);
-    if(opt) {
+    if (opt) {
       root = std::move(*opt);
     }
 
@@ -454,7 +454,7 @@ TEST_F(OctreeTest, testAbleToSplit) {
   for (int unsigned i = 0; i < treeSplitThreshold; ++i) {
     auto particle = getRandomlyDistributedParticle(min, max);
     auto opt = root->insert(particle);
-    if(opt) {
+    if (opt) {
       root = std::move(*opt);
     }
     ASSERT_FALSE(root->hasChildren());
@@ -464,7 +464,7 @@ TEST_F(OctreeTest, testAbleToSplit) {
   for (int unsigned i = 0; i < treeSplitThreshold; ++i) {
     auto particle = getRandomlyDistributedParticle(min, max);
     auto opt = root->insert(particle);
-    if(opt) {
+    if (opt) {
       root = std::move(*opt);
     }
     ASSERT_TRUE(root->hasChildren());

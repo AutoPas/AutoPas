@@ -70,45 +70,25 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
 
     if ((this->_particles.size() < this->_treeSplitThreshold) or anyNewDimSmallerThanMinSize) {
       this->_particles.push_back(p);
+      return std::nullopt;
     } else {
-#if 0
-      std::unique_ptr<OctreeNodeInterface<Particle>> newInnerInner = std::make_unique<OctreeInnerNode<Particle>>(
-          this->getBoxMin(), this->getBoxMax(), this->_parent, this->_treeSplitThreshold, this->_interactionLength);
-      std::optional<std::unique_ptr<OctreeNodeInterface<Particle>>> newInner =
-          std::make_optional<std::unique_ptr<OctreeNodeInterface<Particle>>>(newInnerInner);
-      auto opt = *newInner->insert(p);
-      if (opt) {
-        newInner = *opt;
-      }
-      for (auto cachedParticle : this->_particles) {
-        opt = *newInner->insert(cachedParticle);
-        if (opt) {
-          newInner = *opt;
-        }
-      }
-#else
       std::unique_ptr<OctreeNodeInterface<Particle>> newInner = std::make_unique<OctreeInnerNode<Particle>>(
           this->getBoxMin(), this->getBoxMax(), this->_parent, this->_treeSplitThreshold, this->_interactionLength);
       auto opt = newInner->insert(p);
-      if(opt) {
+      if (opt) {
         newInner = std::move(*opt);
       }
       for (auto cachedParticle : this->_particles) {
         opt = newInner->insert(cachedParticle);
-        if(opt) {
+        if (opt) {
           newInner = std::move(*opt);
         }
       }
-#endif
 
       // Set the reference of the parent to this leaf to the new inner node.
       // ref = std::move(newInner);
       return newInner;
     }
-
-    // TODO: Take a look at this later
-    // return std::make_unique<OctreeNodeInterface<Particle>>(*this);
-    return std::nullopt;
   }
 
   /**

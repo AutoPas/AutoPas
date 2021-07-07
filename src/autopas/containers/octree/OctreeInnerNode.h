@@ -78,7 +78,7 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
     for (auto &child : _children) {
       if (child->isInside(p.getR())) {
         auto opt = child->insert(p);
-        if(opt) {
+        if (opt) {
           child = std::move(*opt);
         }
         break;

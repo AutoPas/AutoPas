@@ -128,7 +128,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    */
   void addParticle(const Particle &p) override {
     auto opt = _pointer->insert(p);
-    if(opt) {
+    if (opt) {
       _pointer = std::move(*opt);
     }
   }
