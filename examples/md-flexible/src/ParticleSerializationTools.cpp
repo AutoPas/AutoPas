@@ -5,40 +5,51 @@
  */
 #include "ParticleSerializationTools.h"
 
-namespace ParticleSerializationTools {
+namespace {
 
-void serializeParticle(const ParticleType &particle, std::vector<char> &serializedParticles) {
-  ParticleAttributes attributes{.position{particle.getR()},
-                                .velocity{particle.getV()},
-                                .force{particle.getF()},
-                                .id = particle.getID(),
-                                .ownershipState = particle.getOwnershipState(),
-                                .typeId = particle.getTypeId(),
-                                .oldForce{particle.getOldF()}};
+constexpr static std::array<typename ParticleType::AttributeNames, 15> Attributes = { ParticleType::AttributeNames::id, ParticleType::AttributeNames::posX, ParticleType::AttributeNames::posY, ParticleType::AttributeNames::posZ, ParticleType::AttributeNames::velocityX, ParticleType::AttributeNames::velocityY, ParticleType::AttributeNames::velocityZ, ParticleType::AttributeNames::forceX, ParticleType::AttributeNames::forceY, ParticleType::AttributeNames::forceZ, ParticleType::AttributeNames::oldForceX, ParticleType::AttributeNames::oldForceY, ParticleType::AttributeNames::oldForceZ, ParticleType::AttributeNames::typeId, ParticleType::AttributeNames::ownershipState };
 
+template<size_t I>
+void serializeAttribute(const ParticleType &particle, std::vector<char> &attributesVector) {
+  const auto startIndex = attributesVector.size();
+  constexpr auto attributeType = Attributes[I];
+  const auto value = particle.get<attributeType>();
+  const auto sizeOfValue = sizeof(value);
+  attributesVector.resize(startIndex + sizeOfValue);
+  std::memcpy(&attributesVector[startIndex], &value, sizeOfValue);
+}
+
+template<size_t... I>
+void serializeParticleImpl(const ParticleType &particle, std::vector<char> &serializedParticles, std::index_sequence<I...>){
   std::vector<char> attributesVector;
-  attributesVector.resize(sizeof(ParticleAttributes));
 
-  std::memcpy(&attributesVector[0], &attributes, sizeof(ParticleAttributes));
+  (serializeAttribute<I>(particle, attributesVector), ...);
 
   serializedParticles.insert(serializedParticles.end(), attributesVector.begin(), attributesVector.end());
 }
+}
+
+namespace ParticleSerializationTools {
+
+//void serializeParticle(const ParticleType &particle, std::vector<char> &serializedParticles) {
+//  ParticleAttributes attributes{.position{particle.getR()},
+//                                .velocity{particle.getV()},
+//                                .force{particle.getF()},
+//                                .id = particle.getID(),
+//                                .ownershipState = particle.getOwnershipState(),
+//                                .typeId = particle.getTypeId(),
+//                                .oldForce{particle.getOldF()}};
+//
+//  std::vector<char> attributesVector;
+//  attributesVector.resize(sizeof(ParticleAttributes));
+//
+//  std::memcpy(&attributesVector[0], &attributes, sizeof(ParticleAttributes));
+//
+//  serializedParticles.insert(serializedParticles.end(), attributesVector.begin(), attributesVector.end());
+//}
 
 void serializeParticle(const ParticleType &particle, std::vector<char> &serializedParticles) {
-  ParticleAttributes attributes{.position{particle.getR()},
-                                .velocity{particle.getV()},
-                                .force{particle.getF()},
-                                .id = particle.getID(),
-                                .ownershipState = particle.getOwnershipState(),
-                                .typeId = particle.getTypeId(),
-                                .oldForce{particle.getOldF()}};
-
-  std::vector<char> attributesVector;
-  attributesVector.resize(sizeof(ParticleAttributes));
-
-  std::memcpy(&attributesVector[0], &attributes, sizeof(ParticleAttributes));
-
-  serializedParticles.insert(serializedParticles.end(), attributesVector.begin(), attributesVector.end());
+  serializeParticleImpl(particle, serializedParticles, std::make_index_sequence<Attributes.size()>{});
 }
 
 void deserializeParticle(char *particleData, ParticleType &particle) {

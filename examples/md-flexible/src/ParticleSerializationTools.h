@@ -6,6 +6,7 @@
 #pragma once
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "ParticleAttributes.h"
@@ -15,10 +16,11 @@
  * Provides tools to de-/serialize particles of type autopas::MoleculeLJ<double>.
  */
 namespace ParticleSerializationTools {
-/**
- * Names of the particle attributes which need to be de-/serialized for MPI messages.
- */
-enum AttributeNames : int { id, posX, posY, posZ, forceX, forceY, forceZ, ownershipState, typeId };
+//using AttributeSequence = std::integer_sequence<size_t, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15>;
+//enum AttributeNames { id = 1, posX = 2, posY = 3, posZ = 4, velocityX = 5, velocityY = 6, velocityZ = 7, forceX = 8, forceY = 9, forceZ = 10, oldForceX = 11, oldForceY = 12, oldForceZ = 13, typeId = 14, ownershipState = 15};
+//constexpr static std::array<AttributeNames, 0> getNeededAttr();
+
+//constexpr static auto Attributes = std::make_tuple(ParticleType::AttributeNames::id, ParticleType::AttributeNames::posX, ParticleType::AttributeNames::posY, ParticleType::AttributeNames::posZ, ParticleType::AttributeNames::velocityX, ParticleType::AttributeNames::velocityY, ParticleType::AttributeNames::velocityZ, ParticleType::AttributeNames::forceX, ParticleType::AttributeNames::forceY, ParticleType::AttributeNames::forceZ, ParticleType::AttributeNames::oldForceX, ParticleType::AttributeNames::oldForceY, ParticleType::AttributeNames::oldForceZ, ParticleType::AttributeNames::typeId, ParticleType::AttributeNames::ownershipState);
 
 /**
  * Serializes a particle and appends it to the serializedParticles container.
