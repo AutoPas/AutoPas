@@ -100,7 +100,10 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
   _timers.initialization.stop();
 }
 
-Simulation::~Simulation() { _timers.total.stop(); }
+Simulation::~Simulation() {
+  _timers.total.stop();
+  logTimers();
+}
 
 void Simulation::run() {
   const int iterationsPerSuperstep = _configuration.verletRebuildFrequency.value;
@@ -313,5 +316,48 @@ void Simulation::updateThermostat() {
     Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                       _configuration.targetTemperature.value, _configuration.deltaTemp.value);
     _timers.thermostat.stop();
+  }
+}
+
+long Simulation::accumulateTime(const long &time) {
+  long reducedTime;
+  autopas::AutoPas_MPI_Reduce(&time, &reducedTime, 1, AUTOPAS_MPI_LONG, AUTOPAS_MPI_SUM, 0, AUTOPAS_MPI_COMM_WORLD);
+
+  return reducedTime;
+}
+
+void Simulation::logTimers() {
+  long positionUpdate = accumulateTime(_timers.positionUpdate.getTotalTime());
+  long forceUpdateTotal = accumulateTime(_timers.forceUpdateTotal.getTotalTime());
+  long forceUpdatePairwise = accumulateTime(_timers.forceUpdatePairwise.getTotalTime());
+  long forceUpdateGlobal = accumulateTime(_timers.forceUpdateGlobal.getTotalTime());
+  long forceUpdateTuning = accumulateTime(_timers.forceUpdateTuning.getTotalTime());
+  long forceUpdateNonTuning = accumulateTime(_timers.forceUpdateNonTuning.getTotalTime());
+  long velocityUpdate = accumulateTime(_timers.velocityUpdate.getTotalTime());
+  long simulate = accumulateTime(_timers.simulate.getTotalTime());
+  long vtk = accumulateTime(_timers.vtk.getTotalTime());
+  long initialization = accumulateTime(_timers.initialization.getTotalTime());
+  long total = accumulateTime(_timers.total.getTotalTime());
+  long thermostat = accumulateTime(_timers.thermostat.getTotalTime());
+
+  if (_domainDecomposition.getDomainIndex() == 0) {
+    auto maximumNumberOfDigits = std::to_string(total).length();
+    std::cout << std::endl;
+    std::cout << timerToString("Total", total, maximumNumberOfDigits, total);
+    std::cout << timerToString("Simulate", simulate, maximumNumberOfDigits, total);
+    std::cout << timerToString("Initialization", initialization, maximumNumberOfDigits, total);
+    std::cout << timerToString("PositionUpdate", positionUpdate, maximumNumberOfDigits, total);
+    std::cout << timerToString("VelocityUpdate", velocityUpdate, maximumNumberOfDigits, total);
+    std::cout << timerToString("ForceUpdateTotal", forceUpdateTotal, maximumNumberOfDigits, total);
+    std::cout << timerToString("ForceUpdatePairwise compared to ForceUpdateTotal", forceUpdatePairwise,
+                               maximumNumberOfDigits, forceUpdateTotal);
+    std::cout << timerToString("ForceUdpateGlobal compared to ForceUpdateTotal", forceUpdateGlobal,
+                               maximumNumberOfDigits, forceUpdateTotal);
+    std::cout << timerToString("ForceUpdateTuning compared to ForceUpdateTotal", forceUpdateTuning,
+                               maximumNumberOfDigits, forceUpdateTotal);
+    std::cout << timerToString("ForceUpdateNonTuninng compared to ForceUpdateTotal", forceUpdateNonTuning,
+                               maximumNumberOfDigits, forceUpdateTotal);
+    std::cout << timerToString("Thermostat", thermostat, maximumNumberOfDigits, total);
+    std::cout << timerToString("Vtk", vtk, maximumNumberOfDigits, total);
   }
 }

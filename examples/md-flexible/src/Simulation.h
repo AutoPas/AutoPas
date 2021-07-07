@@ -114,7 +114,7 @@ class Simulation {
     autopas::utils::Timer forceUpdatePairwise;
 
     /**
-     * Records the time used for the global force update of all particles.
+     * Records the time used for the update of the global forces of all particles.
      */
     autopas::utils::Timer forceUpdateGlobal;
 
@@ -245,4 +245,19 @@ class Simulation {
    * @param source: The sender of the particles.
    */
   void receiveParticles(std::vector<ParticleType> &receivedParticles, int &source);
+
+  /**
+   * Accumulates the times of all processes at the process with rank 0 if MPI is ebabled.
+   * Otherwise, this function does nothing.
+   * @param time: the time to accumulate.
+   * @return the accumulated time of all ranks.
+   */
+  long accumulateTime(const long &time);
+
+  /**
+   * Logs the times recorded by the timers.
+   * When MPI is enabled it acumulates the times (user time) of all ranks. In this case, the total
+   * time will exceed the wall-clock time.
+   */
+  void logTimers();
 };

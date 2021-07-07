@@ -26,8 +26,12 @@ int main(int argc, char **argv) {
   RegularGridDecomposition domainDecomposition(configuration.boxMin.value, configuration.boxMax.value,
                                                configuration.cutoff.value, configuration.verletSkinRadius.value);
 
-  Simulation simulation(configuration, domainDecomposition);
-  simulation.run();
+  // This needs to be encapsulated in an additional scope, so that the destructor of Simulation will be called before
+  // MPI_Finalize()
+  {
+    Simulation simulation(configuration, domainDecomposition);
+    simulation.run();
+  }
 
   if (domainDecomposition.getDomainIndex() == 0) {
     std::cout << std::endl << "Using " << autopas::autopas_get_max_threads() << " Threads" << std::endl;
