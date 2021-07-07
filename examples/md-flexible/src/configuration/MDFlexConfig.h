@@ -23,11 +23,11 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/utils/NumberSet.h"
-#include "objects/CubeClosestPacked.h"
-#include "objects/CubeGauss.h"
-#include "objects/CubeGrid.h"
-#include "objects/CubeUniform.h"
-#include "objects/Sphere.h"
+#include "src/configuration/objects/CubeClosestPacked.h"
+#include "src/configuration/objects/CubeGauss.h"
+#include "src/configuration/objects/CubeGrid.h"
+#include "src/configuration/objects/CubeUniform.h"
+#include "src/configuration/objects/Sphere.h"
 #include "src/TypeDefinitions.h"
 
 /**
