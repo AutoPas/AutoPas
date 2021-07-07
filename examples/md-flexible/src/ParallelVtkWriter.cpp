@@ -43,19 +43,26 @@ ParallelVtkWriter::ParallelVtkWriter(std::string sessionName, const std::string 
   autopas::AutoPas_MPI_Bcast(&_dataFolderPath[0], dataFolderPathLength, AUTOPAS_MPI_CHAR, 0, AUTOPAS_MPI_COMM_WORLD);
 }
 
+void ParallelVtkWriter::recordTimestep(const int &currentIteration,
+                                       const autopas::AutoPas<ParticleType> &autoPasContainer) {
+  recordParticleStates(currentIteration, autoPasContainer);
+  recordDomainSubdivision();
+}
+
 /**
  * @todo: Currently this function runs over all the particles for each property separately.
  * This can be improved by using multiple string streams (one for each property).
  * The streams can be combined to a single output stream after iterating over the particles, once.
  */
-void ParallelVtkWriter::recordTimestep(const int &currentIteration,
+void ParallelVtkWriter::recordParticleStates(const int &currentIteration,
                                        const autopas::AutoPas<ParticleType> &autoPasContainer) {
+  std::string context = "ParticleStates"
   if (_mpiRank == 0) {
-    createPvtuFile(currentIteration);
+    createPvtuFile(currentIteration, context);
   }
 
   std::ostringstream timestepFileName;
-  timestepFileName << _dataFolderPath << _sessionName << "_" << _mpiRank << "_" << std::setfill('0')
+  timestepFileName << _dataFolderPath << _sessionName << "_" << context << "_" << _mpiRank << "_" << std::setfill('0')
                    << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".vtu";
 
   std::ofstream timestepFile;
@@ -150,9 +157,9 @@ void ParallelVtkWriter::tryCreateSessionAndDataFolders(const std::string &name, 
   tryCreateFolder("data", _sessionFolderPath);
 }
 
-void ParallelVtkWriter::createPvtuFile(const int &currentIteration) {
+void ParallelVtkWriter::createPvtuFile(const int &currentIteration, const std::string filenameSuffix) {
   std::ostringstream filename;
-  filename << _sessionFolderPath << _sessionName << "_" << std::setfill('0')
+  filename << _sessionFolderPath << _sessionName << "_" << filenameSuffix << "_" << std::setfill('0')
            << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".pvtu";
 
   std::ofstream timestepFile;
@@ -198,4 +205,7 @@ void ParallelVtkWriter::tryCreateFolder(const std::string &name, const std::stri
   } catch (std::filesystem::filesystem_error const &ex) {
     throw std::runtime_error("The output location " + location + " passed to ParallelVtkWriter is invalid");
   }
+}
+void ParallelVtkWriter::recordDomainSubdivision() {
+  
 }
