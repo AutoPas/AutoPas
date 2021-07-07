@@ -1,4 +1,4 @@
-option(yaml-cpp_ForceBundled "Do not look for an installed version, always use bundled." OFF)
+option(yaml-cpp_ForceBundled "Do not look for an installed version, always use bundled." ON)
 
 if (NOT ${yaml-cpp_ForceBundled})
     set(expectedVersion 0.5.2)
