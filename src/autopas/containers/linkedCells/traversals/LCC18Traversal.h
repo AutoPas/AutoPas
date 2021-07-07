@@ -138,9 +138,10 @@ inline void LCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
                 // only add cell offset if cell is within cutoff radius
                 if (distSquare <= interactionLengthSquare) {
                   // sorting direction is NOT distance vector. Sorting fix:
-                  std::array<double, 3> sortingDir = {static_cast<double>(x),static_cast<double>(y),static_cast<double>(z)};
-                  if(x == 0 and y == 0 and z == 0){
-                    sortingDir = {1.,1.,1.};
+                  std::array<double, 3> sortingDir = {static_cast<double>(x), static_cast<double>(y),
+                                                      static_cast<double>(z)};
+                  if (x == 0 and y == 0 and z == 0) {
+                    sortingDir = {1., 1., 1.};
                   }
                   sortingDir = utils::ArrayMath::normalize(sortingDir);
 

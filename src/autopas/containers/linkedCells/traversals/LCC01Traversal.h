@@ -209,11 +209,12 @@ inline void LCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
         const double distSquare = utils::ArrayMath::dot(pos, pos);
         if (distSquare <= interactionLengthSquare) {
           // following has been moved below since seemingly ix and not x is used for the direction
-//          std::array<double, 3> sortingDir = {static_cast<double>(x),static_cast<double>(y),static_cast<double>(z)};
-//          if(x == 0 and y == 0 and z == 0){
-//            sortingDir = {1.,1.,1.};
-//          }
-//          sortingDir = utils::ArrayMath::normalize(sortingDir);
+          //          std::array<double, 3> sortingDir =
+          //          {static_cast<double>(x),static_cast<double>(y),static_cast<double>(z)}; if(x == 0 and y == 0 and z
+          //          == 0){
+          //            sortingDir = {1.,1.,1.};
+          //          }
+          //          sortingDir = utils::ArrayMath::normalize(sortingDir);
 
           const long currentOffset = utils::ThreeDimensionalMapping::threeToOneD(
               x, y, z, utils::ArrayUtils::static_cast_array<long>(this->_cellsPerDimension));
@@ -228,26 +229,27 @@ inline void LCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
                 ix, y, z, utils::ArrayUtils::static_cast_array<long>(this->_cellsPerDimension));
             const size_t index = ix + this->_overlap[0];
             // ix seems to be used - if this is pushed, this passes the tests
-            std::array<double, 3> sortingDir = {static_cast<double>(ix),static_cast<double>(y),static_cast<double>(z)};
-            if(sortingDir[0] == 0 and y == 0 and z == 0){
-              sortingDir = {1.,1.,1.};
+            std::array<double, 3> sortingDir = {static_cast<double>(ix), static_cast<double>(y),
+                                                static_cast<double>(z)};
+            if (sortingDir[0] == 0 and y == 0 and z == 0) {
+              sortingDir = {1., 1., 1.};
             }
             sortingDir = utils::ArrayMath::normalize(sortingDir);
 
             if (y == 0l and z == 0l) {
               // norm: l2norm(pos) = 0 iff pos = 0
               // only in this case, pos can be 0 and hence l2norm(pos) = 0
-              // if l2norm(pos) = 0, normalization is impossible. (represents offset 0, so no offset should be stored anyway...)
-//              if(x == 0l){
-//                pos[0] = 1l;
-//                pos[1] = 1l;
-//                pos[2] = 1l;
-//              }
+              // if l2norm(pos) = 0, normalization is impossible. (represents offset 0, so no offset should be stored
+              // anyway...)
+              //              if(x == 0l){
+              //                pos[0] = 1l;
+              //                pos[1] = 1l;
+              //                pos[2] = 1l;
+              //              }
               // make sure center of slice is always at the beginning
-              _cellOffsets[index].insert(_cellOffsets[index].cbegin(),
-                                         std::make_pair(offset, sortingDir));
+              _cellOffsets[index].insert(_cellOffsets[index].cbegin(), std::make_pair(offset, sortingDir));
             } else {
-              _cellOffsets[index].push_back(std::make_pair(offset,  sortingDir) );
+              _cellOffsets[index].push_back(std::make_pair(offset, sortingDir));
             }
           }
         }
