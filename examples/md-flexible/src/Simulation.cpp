@@ -41,6 +41,7 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
       _createVtkFiles(not configuration.vtkFileName.value.empty()),
       _vtkWriter(std::make_shared<ParallelVtkWriter>(_configuration.vtkFileName.value, "output",
                                                      std::to_string(_configuration.iterations.value).size())) {
+  _timers.totalWallClock.start();
   _timers.total.start();
   _timers.initialization.start();
 
@@ -102,6 +103,10 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
 
 Simulation::~Simulation() {
   _timers.total.stop();
+  _timers.totalWallClock.stop();
+
+  autopas::AutoPas_MPI_Barrier(AUTOPAS_MPI_COMM_WORLD);
+
   logTimers();
 }
 
@@ -129,8 +134,13 @@ void Simulation::executeSupersteps(const int iterationsPerSuperstep) {
 
     updatePositions();
 
+    _timers.migratingParticleExchange.start();
     _domainDecomposition.exchangeMigratingParticles(_autoPasContainer);
+    _timers.migratingParticleExchange.stop();
+
+    _timers.haloParticleExchange.start();
     _domainDecomposition.exchangeHaloParticles(_autoPasContainer);
+    _timers.haloParticleExchange.stop();
 
     updateForces();
 
@@ -339,6 +349,8 @@ void Simulation::logTimers() {
   long initialization = accumulateTime(_timers.initialization.getTotalTime());
   long total = accumulateTime(_timers.total.getTotalTime());
   long thermostat = accumulateTime(_timers.thermostat.getTotalTime());
+  long haloParticleExchange = accumulateTime(_timers.haloParticleExchange.getTotalTime());
+  long migratingParticleExchange = accumulateTime(_timers.migratingParticleExchange.getTotalTime());
 
   if (_domainDecomposition.getDomainIndex() == 0) {
     auto maximumNumberOfDigits = std::to_string(total).length();
@@ -359,5 +371,12 @@ void Simulation::logTimers() {
                                maximumNumberOfDigits, forceUpdateTotal);
     std::cout << timerToString("Thermostat", thermostat, maximumNumberOfDigits, total);
     std::cout << timerToString("Vtk", vtk, maximumNumberOfDigits, total);
+    std::cout << timerToString("HaloParticleExchange", haloParticleExchange, maximumNumberOfDigits, total);
+    std::cout << timerToString("MigratingParticleExchange", migratingParticleExchange, maximumNumberOfDigits, total);
+
+    const long wallClockTime = _timers.totalWallClock.getTotalTime();
+    std::cout << std::endl;
+    std::cout << timerToString("Total wall-clock time", wallClockTime, std::to_string(wallClockTime).length(),
+                               wallClockTime);
   }
 }

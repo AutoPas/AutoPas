@@ -32,10 +32,15 @@ RegularGridDecomposition::RegularGridDecomposition(const std::array<double, 3> &
     _mpiIsEnabled = false;
   }
 
-  if (_mpiIsEnabled) {
-    std::cout << "MPI will be used." << std::endl;
-  } else {
-    std::cout << "MPI will not be used." << std::endl;
+  int rank;
+  autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
+
+  if (rank == 0) {
+    if (_mpiIsEnabled) {
+      std::cout << "MPI will be used." << std::endl;
+    } else {
+      std::cout << "MPI will not be used." << std::endl;
+    }
   }
 
   DomainTools::generateDecomposition(_subdomainCount, _decomposition);

@@ -155,9 +155,24 @@ class Simulation {
     autopas::utils::Timer total;
 
     /**
+     * Records the total wall-clock time required for the simulation.
+     */
+    autopas::utils::Timer totalWallClock;
+
+    /**
      * Records the time required for the thermostat updates.
      */
     autopas::utils::Timer thermostat;
+
+    /**
+     * Records the time required to exchange the halo particles.
+     */
+    autopas::utils::Timer haloParticleExchange;
+
+    /**
+     * Records the time required to exchange migrating particles.
+     */
+    autopas::utils::Timer migratingParticleExchange;
   };
 
   /**
