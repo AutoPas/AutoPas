@@ -7,12 +7,12 @@
 
 #pragma once
 
+#include <optional>
+
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/octree/OctreeInnerNode.h"
 #include "autopas/containers/octree/OctreeNodeInterface.h"
 #include "autopas/utils/ArrayMath.h"
-
-#include <optional>
 
 namespace autopas {
 template <typename Particle>
