@@ -45,7 +45,6 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
                     double interactionLength, double cellSizeFactor) {
     _pointer = std::make_unique<OctreeLeafNode<Particle>>(boxMin, boxMax, nullptr, treeSplitThreshold,
                                                           interactionLength, cellSizeFactor);
-    // omp_init_lock(&_lock);
   }
 
   /**
@@ -69,7 +68,6 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
     if (ret) _pointer = std::move(ret);
   }
 
-#if 1
   /**
    * Get an iterator to the start of a ParticleCell.
    * normal use:
@@ -87,25 +85,6 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
   SingleCellIteratorWrapper<Particle, false> begin() const override {
     return SingleCellIteratorWrapper<ParticleType, false>(new const_iterator_t(this));
   }
-#else
-  /**
-   * Get an iterator to the start of a ParticleCell.
-   * normal use:
-   * for(auto iter = cell.begin(); iter.isValid; ++iter){...}
-   * @return the iterator
-   */
-  SingleCellIteratorWrapper<Particle, true> begin() override {
-    return SingleCellIteratorWrapper<ParticleType, true>(getIterator<true>());
-  }
-
-  /**
-   * @copydoc begin()
-   * @note const version
-   */
-  SingleCellIteratorWrapper<Particle, false> begin() const override {
-    return SingleCellIteratorWrapper<ParticleType, false>(getIterator<false>());
-  }
-#endif
 
   /**
    * Get the number of particles stored in this cell.
@@ -189,7 +168,6 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    */
   OctreeNodeInterface<Particle> *getRaw() const { return _pointer.get(); }
 
-#if 1
   /**
    * Type of the internal iterator.
    */
@@ -199,21 +177,9 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * Type of the internal const iterator.
    */
   using const_iterator_t = internal::SingleCellIterator<Particle, OctreeNodeWrapper<Particle>, false>;
-#endif
 
  private:
   Particle &getFromReloadingIterator(size_t index) const {
-#if 0
-    // Reload the buffer only when the index is zero, this saves a little bit of compute time, since only one
-    // "traversal" of the octree is required in order to gather all particles
-    omp_set_lock((omp_lock_t *)&_lock);
-    printf("Querying: index=%lu of %lu on T%d\n", index, ps.size(), omp_get_thread_num());
-    if (index == 0 or ps.empty()) {
-      ps.clear();
-    }
-    omp_unset_lock((omp_lock_t *)&_lock);
-#endif
-
     // TODO(johannes): This needs severe improvement. If we just copy out all particles, the implementation becomes
     //  unsafe for threading. We need a way to iterate the octree using a better traversal idea.
     //  Referenced in https://github.com/AutoPas/AutoPas/issues/625
@@ -222,7 +188,6 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
     return *ps[index];
   }
 
-  // omp_lock_t _lock;
   std::unique_ptr<OctreeNodeInterface<Particle>> _pointer;
 };
 }  // namespace autopas
