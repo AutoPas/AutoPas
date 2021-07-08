@@ -11,6 +11,7 @@
 #include "autopas/containers/directSum/DirectSum.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/LinkedCellsReferences.h"
+#include "autopas/containers/octree/Octree.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
@@ -46,6 +47,8 @@ decltype(auto) withStaticContainerType(std::shared_ptr<CellBasedParticleContaine
       return function(dynamic_cast<autopas::VerletClusterLists<Particle> *>(containerPtr));
     case ContainerOption::pairwiseVerletLists:
       return function(dynamic_cast<autopas::VerletListsCells<Particle> *>(containerPtr));
+    case ContainerOption::octree:
+      return function(dynamic_cast<autopas::Octree> * > (containerPtr))
   }
   autopas::utils::ExceptionHandler::exception("Unknown type of container in StaticContainerSelector.h. Type: {}",
                                               container->getContainerType());

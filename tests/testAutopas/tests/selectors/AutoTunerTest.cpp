@@ -82,6 +82,11 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   //                        vlp_c01                     (AoS <=> SoA, noNewton3)                             = 2
   configsPerContainer[autopas::ContainerOption::pairwiseVerletLists] = 18;
 
+  // Octree:                ot_c01                      (AoS <=> SoA, noNewton3)                             = 2
+  // NOTE: Why this is disabled is stated in https://github.com/AutoPas/AutoPas/issues/621
+  //                        ot_naive                    (disabled)                                           = 0
+  configsPerContainer[autopas::ContainerOption::octree] = 2;
+
   // check that there is an entry for every container.
   ASSERT_EQ(configsPerContainer.size(), autopas::ContainerOption::getAllOptions().size());
 
