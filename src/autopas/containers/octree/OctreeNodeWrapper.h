@@ -64,10 +64,8 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @param p the particle to be added
    */
   void addParticle(const Particle &p) override {
-    auto opt = _pointer->insert(p);
-    if (opt) {
-      _pointer = std::move(*opt);
-    }
+    auto ret = _pointer->insert(p);
+    if (ret) _pointer = std::move(ret);
   }
 
 #if 1

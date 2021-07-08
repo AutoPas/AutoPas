@@ -51,7 +51,7 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
   /**
    * @copydoc OctreeNodeInterface::insert()
    */
-  std::optional<std::unique_ptr<OctreeNodeInterface<Particle>>> insert(Particle p) override {
+  std::unique_ptr<OctreeNodeInterface<Particle>> insert(Particle p) override {
     if (not this->isInside(p.getR())) {
       // The exception is suppressed for AllContainersTests#testParticleAdding
       // throw std::runtime_error("[OctreeLeafNode.h] Attempting to insert particle that is not inside this node");
@@ -75,20 +75,16 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
 
     if ((this->_particles.size() < this->_treeSplitThreshold) or anyNewDimSmallerThanMinSize) {
       this->_particles.push_back(p);
-      return std::nullopt;
+      return nullptr;
     } else {
       std::unique_ptr<OctreeNodeInterface<Particle>> newInner = std::make_unique<OctreeInnerNode<Particle>>(
           this->getBoxMin(), this->getBoxMax(), this->_parent, this->_treeSplitThreshold, this->_interactionLength,
           this->_cellSizeFactor);
-      auto opt = newInner->insert(p);
-      if (opt) {
-        newInner = std::move(*opt);
-      }
+      auto ret = newInner->insert(p);
+      if (ret) newInner = std::move(ret);
       for (auto cachedParticle : this->_particles) {
-        opt = newInner->insert(cachedParticle);
-        if (opt) {
-          newInner = std::move(*opt);
-        }
+        ret = newInner->insert(cachedParticle);
+        if (ret) newInner = std::move(ret);
       }
 
       return newInner;

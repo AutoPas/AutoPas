@@ -44,10 +44,8 @@ TEST_F(OctreeTest, testDebugIndexing) {
   // Add some dummy particles that split the nodes
   int dummyParticleCount = 8;
   for (int i = 0; i < 8; ++i) {
-    auto opt = root->insert(ParticleFP64({0.01f, (double)i / (double)dummyParticleCount, 0.01f}, {0, 0, 0}, 0));
-    if (opt) {
-      root = std::move(*opt);
-    }
+    auto ret = root->insert(ParticleFP64({0.01f, (double)i / (double)dummyParticleCount, 0.01f}, {0, 0, 0}, 0));
+    if (ret) root = std::move(ret);
   }
 
   int axisPairs[3][4][2] = {
@@ -285,10 +283,8 @@ static std::unique_ptr<autopas::OctreeNodeInterface<autopas::ParticleFP64>> crea
       std::make_unique<OctreeLeafNode<ParticleFP64>>(min, max, nullptr, 16, 1, 1.0);
   for (int particleIndex = 0; particleIndex < randomParticleCount; ++particleIndex) {
     auto randomParticle = getRandomlyDistributedParticle(min, max);
-    auto opt = root->insert(randomParticle);
-    if (opt) {
-      root = std::move(*opt);
-    }
+    auto ret = root->insert(randomParticle);
+    if (ret) root = std::move(ret);
   }
   return root;
 }
@@ -426,10 +422,8 @@ TEST_F(OctreeTest, testUnableToSplit) {
   srand(1234);
   for (int unsigned i = 0; i < 2 * treeSplitThreshold; ++i) {
     auto particle = getRandomlyDistributedParticle(min, max);
-    auto opt = root->insert(particle);
-    if (opt) {
-      root = std::move(*opt);
-    }
+    auto ret = root->insert(particle);
+    if (ret) root = std::move(ret);
 
     // The node should never split because of the interaction length
     ASSERT_FALSE(root->hasChildren());
@@ -453,20 +447,16 @@ TEST_F(OctreeTest, testAbleToSplit) {
   srand(1234);
   for (int unsigned i = 0; i < treeSplitThreshold; ++i) {
     auto particle = getRandomlyDistributedParticle(min, max);
-    auto opt = root->insert(particle);
-    if (opt) {
-      root = std::move(*opt);
-    }
+    auto ret = root->insert(particle);
+    if (ret) root = std::move(ret);
     ASSERT_FALSE(root->hasChildren());
   }
 
   // These should cause the octree to split
   for (int unsigned i = 0; i < treeSplitThreshold; ++i) {
     auto particle = getRandomlyDistributedParticle(min, max);
-    auto opt = root->insert(particle);
-    if (opt) {
-      root = std::move(*opt);
-    }
+    auto ret = root->insert(particle);
+    if (ret) root = std::move(ret);
     ASSERT_TRUE(root->hasChildren());
   }
 }

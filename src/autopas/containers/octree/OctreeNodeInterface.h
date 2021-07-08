@@ -55,7 +55,7 @@ class OctreeNodeInterface {
    * @param ref A pointer reference to the location at which a possible new child can point to
    * @param p The particle to insert
    */
-  virtual std::optional<std::unique_ptr<OctreeNodeInterface<Particle>>> insert(Particle p) = 0;
+  virtual std::unique_ptr<OctreeNodeInterface<Particle>> insert(Particle p) = 0;
 
   /**
    * Put all particles that are below this node into the vector.
