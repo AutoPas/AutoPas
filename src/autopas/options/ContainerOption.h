@@ -63,7 +63,10 @@ class ContainerOption : public Option<ContainerOption> {
      * Improves data locality and cache efficiency.
      */
     pairwiseVerletLists,
-    // TODO(johannes): Documentation
+    /**
+     * Octree : Particles are put into an octree. This data structure is optimized if the data is non-uniformly
+     * distributed since it is space adaptive
+     */
     octree,
   };
 
