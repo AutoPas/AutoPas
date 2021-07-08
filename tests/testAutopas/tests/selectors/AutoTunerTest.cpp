@@ -83,6 +83,7 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   configsPerContainer[autopas::ContainerOption::pairwiseVerletLists] = 18;
 
   // Octree:                ot_c01                      (AoS <=> SoA, noNewton3)                             = 2
+  // NOTE: Why this is disabled is stated in https://github.com/AutoPas/AutoPas/issues/621
   //                        ot_naive                    (disabled)                                           = 0
   configsPerContainer[autopas::ContainerOption::octree] = 2;
 
