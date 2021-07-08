@@ -86,6 +86,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
 
     // TODO(johannes): Make this less indirect. (Find a better way to iterate all particles inside the octree to change
     //  this function back to a function that actually copies all particles out of the octree.)
+    //  The problem is captured by https://github.com/AutoPas/AutoPas/issues/622
     std::vector<Particle *> particleRefs;
     this->_cells[CellTypes::OWNED].appendAllParticles(particleRefs);
     std::vector<Particle> particles;
@@ -97,7 +98,6 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
         result.push_back(*p);
       }
     }
-
     this->deleteAllParticles();
 
     for (auto &particle : particles) {
@@ -107,7 +107,6 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     // This should happen according to the documentation in the ParticleContainerInterface#updateContainer
     deleteHaloParticles();
 
-    // logger.logTree(_root);
     return result;
   }
 
