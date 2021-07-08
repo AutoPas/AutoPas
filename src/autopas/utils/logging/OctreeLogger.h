@@ -267,7 +267,6 @@ class OctreeLogger {
   /**
    * Print a list of particle positions to a file as JSON. The list is obtained from the octree root node.
    * @param out The FILE pointer to write the JSON to
-   * @param jsonFieldPrefix A short prefix, that will be prepended to the JSON array
    * @param root The root from which the particles should be obtained
    * @return The file pointer
    */
@@ -301,6 +300,13 @@ class OctreeLogger {
     return out;
   }
 
+  /**
+   * Log the octree to JSON files understandable by https://github.com/AutoPas/OctreeVisualization
+   * @param owned A pointer to the root node of the owned octree
+   * @param halo A pointer to the root node of the halo octree
+   * @param ownedLeaves A list of leaf nodes from the owned octree
+   * @param haloLeaves A list of leaf nodes from the halo octree
+   */
   static void octreeToJSON(OctreeNodeInterface<Particle> *owned, OctreeNodeInterface<Particle> *halo,
                            std::vector<OctreeLeafNode<Particle> *> &ownedLeaves,
                            std::vector<OctreeLeafNode<Particle> *> &haloLeaves) {

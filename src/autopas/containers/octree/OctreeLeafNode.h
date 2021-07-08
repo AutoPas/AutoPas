@@ -33,12 +33,17 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
    * @param parent A pointer to the parent node. Should be nullptr for root nodes.
    * @param treeSplitThreshold Maximum number of particles inside a leaf before it tries to split itself
    * @param interactionLength The minimum distance at which a force is considered nonzero, cutoff+skin.
+   * @param cellSizeFactor The cell size factor
    */
   OctreeLeafNode(std::array<double, 3> boxMin, std::array<double, 3> boxMax, OctreeNodeInterface<Particle> *parent,
                  int unsigned treeSplitThreshold, double interactionLength, double cellSizeFactor)
       : OctreeNodeInterface<Particle>(boxMin, boxMax, parent, treeSplitThreshold, interactionLength, cellSizeFactor),
         FullParticleCell<Particle>(utils::ArrayMath::sub(boxMax, boxMin)) {}
 
+  /**
+   * Copy a leaf by copying all particles from the other leaf to this leaf.
+   * @param other The leaf to copy from
+   */
   OctreeLeafNode(OctreeLeafNode<Particle> const &other)
       : OctreeNodeInterface<Particle>(other._boxMin, other._boxMax, other._parent, other._treeSplitThreshold,
                                       other._interactionLength),

@@ -35,6 +35,7 @@ class OctreeNodeInterface {
    * @param parent A pointer to the parent of this node, may be nullptr for the root.
    * @param treeSplitThreshold Maximum number of particles inside a leaf before it tries to split itself
    * @param interactionLength The minimum distance at which a force is considered nonzero, cutoff+skin.
+   * @param cellSizeFactor The cell size factor
    */
   OctreeNodeInterface(std::array<double, 3> boxMin, std::array<double, 3> boxMax, OctreeNodeInterface<Particle> *parent,
                       int unsigned treeSplitThreshold, double interactionLength, double cellSizeFactor)
@@ -48,12 +49,13 @@ class OctreeNodeInterface {
   /** To make clang happy. */
   virtual ~OctreeNodeInterface() = default;
 
-  OctreeNodeInterface(const OctreeNodeInterface<Particle> &other) = default;
+  /** Default copy constructor */
+  OctreeNodeInterface(const OctreeNodeInterface<Particle> &) = default;
 
   /**
    * Insert a particle into the octree.
-   * @param ref A pointer reference to the location at which a possible new child can point to
    * @param p The particle to insert
+   * @return A std::unique_ptr to a newly created subtree or nullptr if the subtree did not change
    */
   virtual std::unique_ptr<OctreeNodeInterface<Particle>> insert(Particle p) = 0;
 

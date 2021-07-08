@@ -28,6 +28,7 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
    * @param parent A pointer to the parent node. Should be nullptr for root nodes.
    * @param treeSplitThreshold Maximum number of particles inside a leaf before it tries to split itself
    * @param interactionLength The minimum distance at which a force is considered nonzero, cutoff+skin.
+   * @param cellSizeFactor The cell size factor
    */
   OctreeInnerNode(std::array<double, 3> boxMin, std::array<double, 3> boxMax, OctreeNodeInterface<Particle> *parent,
                   int unsigned treeSplitThreshold, double interactionLength, double cellSizeFactor)
@@ -52,6 +53,10 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
     }
   }
 
+  /**
+   * Copy all children from the other octree into this octree. (Create a new, copied subtree)
+   * @param other The other octree (to copy from)
+   */
   OctreeInnerNode(const OctreeInnerNode<Particle> &other)
       : OctreeNodeInterface<Particle>(other._boxMin, other._boxMax, other._parent, other._treeSplitThreshold,
                                       other._interactionLength, other._cellSizeFactor) {
