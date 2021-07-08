@@ -6,7 +6,6 @@
 #include "ParallelVtkWriter.h"
 
 #include <cstddef>
-#include <ctime>
 #include <filesystem>
 #include <fstream>
 #include <ios>
@@ -44,9 +43,10 @@ ParallelVtkWriter::ParallelVtkWriter(std::string sessionName, const std::string 
 }
 
 void ParallelVtkWriter::recordTimestep(const int &currentIteration,
-                                       const autopas::AutoPas<ParticleType> &autoPasContainer) {
+                                       const autopas::AutoPas<ParticleType> &autoPasContainer,
+                                       const RegularGridDecomposition &decomposition) {
   recordParticleStates(currentIteration, autoPasContainer);
-  recordDomainSubdivision();
+  recordDomainSubdivision(currentIteration, decomposition);
 }
 
 /**
@@ -55,14 +55,13 @@ void ParallelVtkWriter::recordTimestep(const int &currentIteration,
  * The streams can be combined to a single output stream after iterating over the particles, once.
  */
 void ParallelVtkWriter::recordParticleStates(const int &currentIteration,
-                                       const autopas::AutoPas<ParticleType> &autoPasContainer) {
-  std::string context = "ParticleStates"
+                                             const autopas::AutoPas<ParticleType> &autoPasContainer) {
   if (_mpiRank == 0) {
-    createPvtuFile(currentIteration, context);
+    createPvtuFile(currentIteration);
   }
 
   std::ostringstream timestepFileName;
-  timestepFileName << _dataFolderPath << _sessionName << "_" << context << "_" << _mpiRank << "_" << std::setfill('0')
+  timestepFileName << _dataFolderPath << _sessionName << "_particles_" << _mpiRank << "_" << std::setfill('0')
                    << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".vtu";
 
   std::ofstream timestepFile;
@@ -135,6 +134,65 @@ void ParallelVtkWriter::recordParticleStates(const int &currentIteration,
   timestepFile.close();
 }
 
+void ParallelVtkWriter::recordDomainSubdivision(const int &currentIteration,
+                                                const RegularGridDecomposition &decomposition) {
+  if (_mpiRank == 0) {
+    createPvtsFile(currentIteration, decomposition);
+  }
+
+  std::ostringstream timestepFileName;
+  timestepFileName << _dataFolderPath << _sessionName << "_subdivision_" << _mpiRank << "_" << std::setfill('0')
+                   << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".vts";
+
+  std::ofstream timestepFile;
+  timestepFile.open(timestepFileName.str(), std::ios::out | std::ios::binary);
+
+  if (not timestepFile.is_open()) {
+    throw std::runtime_error("Simulation::writeVTKFile(): Failed to open file \"" + timestepFileName.str() + "\"");
+  }
+
+  const std::array<int, 6> wholeExtent = calculateWholeExtent(decomposition);
+  const std::array<double, 3> localBoxMin = decomposition.getLocalBoxMin();
+  const std::array<double, 3> localBoxMax = decomposition.getLocalBoxMax();
+
+  timestepFile << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>\n";
+  timestepFile << "<VTKFile byte_order=\"LittleEndian\" type=\"StructuredGrid\" version=\"0.1\">\n";
+  timestepFile << "  <StructuredGrid WholeExtent=\"" << wholeExtent[0] << " " << wholeExtent[1] << " " << wholeExtent[2]
+               << " " << wholeExtent[3] << " " << wholeExtent[4] << " " << wholeExtent[5] << "\">\n";
+  timestepFile << "    <Piece Extent=\"" << wholeExtent[0] << " " << wholeExtent[1] << " " << wholeExtent[2] << " "
+               << wholeExtent[3] << " " << wholeExtent[4] << " " << wholeExtent[5] << "\">\n";
+  timestepFile << "      <PointData/>\n";
+  timestepFile << "      <CellData/>\n";
+  timestepFile << "      <Points>\n";
+  timestepFile << "        <DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">\n";
+  timestepFile << "          " << localBoxMin[0] << " " << localBoxMin[1] << " " << localBoxMin[2] << "\n";
+  timestepFile << "          " << localBoxMax[0] << " " << localBoxMin[1] << " " << localBoxMin[2] << "\n";
+  timestepFile << "          " << localBoxMin[0] << " " << localBoxMax[1] << " " << localBoxMin[2] << "\n";
+  timestepFile << "          " << localBoxMax[0] << " " << localBoxMax[1] << " " << localBoxMin[2] << "\n";
+  timestepFile << "          " << localBoxMin[0] << " " << localBoxMin[1] << " " << localBoxMax[2] << "\n";
+  timestepFile << "          " << localBoxMax[0] << " " << localBoxMin[1] << " " << localBoxMax[2] << "\n";
+  timestepFile << "          " << localBoxMin[0] << " " << localBoxMax[1] << " " << localBoxMax[2] << "\n";
+  timestepFile << "          " << localBoxMax[0] << " " << localBoxMax[1] << " " << localBoxMax[2] << "\n";
+  timestepFile << "        </DataArray>\n";
+  timestepFile << "      </Points>\n";
+  timestepFile << "    </Piece>\n";
+  timestepFile << "  </StructuredGrid>\n";
+  timestepFile << "</VTKFile>\n";
+
+  timestepFile.close();
+}
+
+std::array<int, 6> ParallelVtkWriter::calculateWholeExtent(const RegularGridDecomposition &domainDecomposition) {
+  std::array<int, 6> wholeExtent;
+  std::array<int, 3> domainId = domainDecomposition.getDomainId();
+  std::array<int, 3> decomposition = domainDecomposition.getDecomposition();
+  for (int i = 0; i < 3; ++i) {
+    wholeExtent[2 * i] = domainId[i];
+    wholeExtent[2 * i + 1] = std::min(domainId[i] + 1, decomposition[i]);
+  }
+  return wholeExtent;
+}
+
 void ParallelVtkWriter::tryCreateSessionAndDataFolders(const std::string &name, std::string location) {
   time_t rawTime;
   time(&rawTime);
@@ -157,9 +215,9 @@ void ParallelVtkWriter::tryCreateSessionAndDataFolders(const std::string &name, 
   tryCreateFolder("data", _sessionFolderPath);
 }
 
-void ParallelVtkWriter::createPvtuFile(const int &currentIteration, const std::string filenameSuffix) {
+void ParallelVtkWriter::createPvtuFile(const int &currentIteration) {
   std::ostringstream filename;
-  filename << _sessionFolderPath << _sessionName << "_" << filenameSuffix << "_" << std::setfill('0')
+  filename << _sessionFolderPath << _sessionName << "_particles_" << std::setfill('0')
            << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".pvtu";
 
   std::ofstream timestepFile;
@@ -188,11 +246,61 @@ void ParallelVtkWriter::createPvtuFile(const int &currentIteration, const std::s
   timestepFile << "    </PCells>\n";
 
   for (int i = 0; i < _numberOfRanks; ++i) {
-    timestepFile << "    <Piece Source=\"./data/" << _sessionName << "_" << i << "_" << std::setfill('0')
+    timestepFile << "    <Piece Source=\"./data/" << _sessionName << "_particles_" << i << "_" << std::setfill('0')
                  << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".vtu\"/>\n";
   }
 
   timestepFile << "  </PUnstructuredGrid>\n";
+  timestepFile << "</VTKFile>\n";
+
+  timestepFile.close();
+}
+
+void ParallelVtkWriter::createPvtsFile(const int &currentIteration, const RegularGridDecomposition &decomposition) {
+  std::ostringstream filename;
+  filename << _sessionFolderPath << _sessionName << "_subdivision_" << std::setfill('0')
+           << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".pvts";
+
+  std::ofstream timestepFile;
+  timestepFile.open(filename.str(), std::ios::out | std::ios::binary);
+
+  if (not timestepFile.is_open()) {
+    throw std::runtime_error("Simulation::writeVTKFile(): Failed to open file \"" + filename.str() + "\"");
+  }
+
+  const std::array<int, 3> wholeExtent = decomposition.getDecomposition();
+  const std::array<double, 3> globalBoxMin = decomposition.getGlobalBoxMin();
+  const std::array<double, 3> globalBoxMax = decomposition.getGlobalBoxMax();
+
+  timestepFile << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>\n";
+  timestepFile << "<VTKFile byte_order=\"LittleEndian\" type=\"PStructuredGrid\" version=\"0.1\">\n";
+  timestepFile << "  <PStructuredGrid WholeExtent=\"0 " << wholeExtent[0] << " 0 " << wholeExtent[1] << " 0 "
+               << wholeExtent[2] << "\" GhostLevel=\"0\">\n";
+  timestepFile << "    <PPointData/>\n";
+  timestepFile << "    <PCellData/>\n";
+  timestepFile << "    <PPoints>\n";
+  timestepFile << "      <DataArray NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
+  timestepFile << "        " << globalBoxMin[0] << " " << globalBoxMin[1] << " " << globalBoxMin[2] << "\n";
+  timestepFile << "        " << globalBoxMax[0] << " " << globalBoxMin[1] << " " << globalBoxMin[2] << "\n";
+  timestepFile << "        " << globalBoxMin[0] << " " << globalBoxMax[1] << " " << globalBoxMin[2] << "\n";
+  timestepFile << "        " << globalBoxMax[0] << " " << globalBoxMax[1] << " " << globalBoxMin[2] << "\n";
+  timestepFile << "        " << globalBoxMin[0] << " " << globalBoxMin[1] << " " << globalBoxMax[2] << "\n";
+  timestepFile << "        " << globalBoxMax[0] << " " << globalBoxMin[1] << " " << globalBoxMax[2] << "\n";
+  timestepFile << "        " << globalBoxMin[0] << " " << globalBoxMax[1] << " " << globalBoxMax[2] << "\n";
+  timestepFile << "        " << globalBoxMax[0] << " " << globalBoxMax[1] << " " << globalBoxMax[2] << "\n";
+  timestepFile << "      </DataArray>\n";
+  timestepFile << "    </PPoints>\n";
+
+  for (int i = 0; i < _numberOfRanks; ++i) {
+    std::array<int, 6> pieceExtent = decomposition.getExtentOfSubdomain(i);
+    timestepFile << "    <Piece "
+                 << "Extent=\"" << pieceExtent[0] << " " << pieceExtent[1] << " " << pieceExtent[2] << " "
+                 << pieceExtent[3] << " " << pieceExtent[4] << " " << pieceExtent[5] << "\" "
+                 << "Source=\"./data/" << _sessionName << "_subdivision_" << i << "_" << std::setfill('0')
+                 << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".vts\"/>\n";
+  }
+
+  timestepFile << "  </PStructuredGrid>\n";
   timestepFile << "</VTKFile>\n";
 
   timestepFile.close();
@@ -205,7 +313,4 @@ void ParallelVtkWriter::tryCreateFolder(const std::string &name, const std::stri
   } catch (std::filesystem::filesystem_error const &ex) {
     throw std::runtime_error("The output location " + location + " passed to ParallelVtkWriter is invalid");
   }
-}
-void ParallelVtkWriter::recordDomainSubdivision() {
-  
 }

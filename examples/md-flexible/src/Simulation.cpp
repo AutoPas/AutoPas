@@ -147,7 +147,7 @@ void Simulation::run() {
 
   // Record last state of simulation.
   if (_createVtkFiles) {
-    _vtkWriter->recordTimestep(_iteration, *_autoPasContainer);
+    _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, _domainDecomposition);
   }
 }
 
@@ -155,7 +155,7 @@ void Simulation::executeSupersteps(const int iterationsPerSuperstep) {
   for (int i = 0; i < iterationsPerSuperstep; ++i) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
       _timers.vtk.start();
-      _vtkWriter->recordTimestep(_iteration, *_autoPasContainer);
+      _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, _domainDecomposition);
       _timers.vtk.stop();
     }
 

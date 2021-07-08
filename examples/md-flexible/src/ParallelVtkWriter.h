@@ -5,10 +5,12 @@
  */
 #pragma once
 
+#include <array>
 #include <string>
 
 #include "autopas/AutoPas.h"
 #include "src/TypeDefinitions.h"
+#include "src/domainDecomposition/RegularGridDecomposition.h"
 
 /**
  * The ParallelVtkWriter can be used to create vtk-files for MPI parallel processes.
@@ -34,7 +36,8 @@ class ParallelVtkWriter {
    * @param currentIteration The simulation's current iteration.
    * @param autoPasContainer The AutoPas container whose owned particles will be logged.
    */
-  void recordTimestep(const int &currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer);
+  void recordTimestep(const int &currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer,
+                      const RegularGridDecomposition &decomposition);
 
  private:
   /**
@@ -78,13 +81,26 @@ class ParallelVtkWriter {
 
   /**
    * Writes the current state of particles into vtk files.
+   * @param currentIteration: The simulations current iteration.
+   * @param autoPasContainer The AutoPas container whose owned particles will be logged.
    */
   void recordParticleStates(const int &currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer);
 
   /**
    * Writes the current domain subdivision into vtk files.
+   * @param currentIteration: The simulations current iteration.
+   * @param decomposition: The simulations domain decomposition.
    */
-  void recordDomainSubdivision();
+  void recordDomainSubdivision(const int &currentIteration, const RegularGridDecomposition &decomposition);
+
+  /**
+   * Calculates the whole extent of the decompositions local domain.
+   * The whole extent defines the space this local domain is occupying in the global domain.
+   * The layout of the returned array is [ xmin, xmax, ymin, ymax, zmin, zmax ].
+   * @param decomposition: The simulations domain decomposition.
+   * @return the whole extent of the local domain.
+   */
+  std::array<int, 6> calculateWholeExtent(const RegularGridDecomposition &domainDecomposition);
 
   /**
    * Tries to create a folder for the current writer session and stores it in _sessionFolderPath.
@@ -92,10 +108,15 @@ class ParallelVtkWriter {
   void tryCreateSessionAndDataFolders(const std::string &name, const std::string location);
 
   /**
-   * Creates the .pvtu file required to load data from multiple ranks into paraview.
+   * Creates the .pvtu file required to load unstrictured grid data from multiple ranks into paraview.
    * @param currentIteration: The simulation's current iteration.
    */
   void createPvtuFile(const int &currentIteration);
+
+  /**
+   * Creates the .pvts file required to load structured grid data from multiple ranks into paraview.
+   */
+  void createPvtsFile(const int &currentIteration, const RegularGridDecomposition &decomposition);
 
   /**
    * Tries to create a folder at a location.
