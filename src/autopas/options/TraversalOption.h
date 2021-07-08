@@ -78,11 +78,14 @@ class TraversalOption : public Option<TraversalOption> {
     lc_sliced_c02,
 
     // Octree Traversals:
-    // TODO(johannes): Documentation
     /**
      * OTC01Traversal : Simple DFS traversal without newton 3 optimization
      */
     ot_c01,
+    /**
+     * OTNaiveTraversal : DFS traversal with newton 3 optimization that checks whether a neighbor has already been
+     * processed
+     */
     ot_naive,
 
     // VerletClusterLists Traversals:
