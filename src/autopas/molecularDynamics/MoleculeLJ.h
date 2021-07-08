@@ -37,7 +37,24 @@ class MoleculeLJ final : public Particle {
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
    */
-  enum AttributeNames : int { ptr, id, posX, posY, posZ, velocityX, velocityY, velocityZ, forceX, forceY, forceZ, oldForceX, oldForceY, oldForceZ, typeId, ownershipState };
+  enum AttributeNames : int {
+    ptr,
+    id,
+    posX,
+    posY,
+    posZ,
+    velocityX,
+    velocityY,
+    velocityZ,
+    forceX,
+    forceY,
+    forceZ,
+    oldForceX,
+    oldForceY,
+    oldForceZ,
+    typeId,
+    ownershipState
+  };
 
   /**
    * The type for the SoA storage.
@@ -46,10 +63,10 @@ class MoleculeLJ final : public Particle {
    * This means it shall always only take values 0.0 (=false) or 1.0 (=true).
    * The reason for this is the easier use of the value in calculations (See LJFunctor "energyFactor")
    */
-  using SoAArraysType =
-      typename autopas::utils::SoAType<MoleculeLJ<floatType> *, size_t /*id*/, floatType /*x*/, floatType /*y*/,
-                                       floatType /*z*/, floatType /*vx*/,floatType /*vy*/, floatType /*vz*/,floatType /*fx*/, floatType /*fy*/, floatType /*fz*/, floatType /*oldFx*/,floatType /*oldFy*/, floatType /*oldFz*/,
-                                       size_t /*typeid*/, OwnershipState /*ownershipState*/>::Type;
+  using SoAArraysType = typename autopas::utils::SoAType<
+      MoleculeLJ<floatType> *, size_t /*id*/, floatType /*x*/, floatType /*y*/, floatType /*z*/, floatType /*vx*/,
+      floatType /*vy*/, floatType /*vz*/, floatType /*fx*/, floatType /*fy*/, floatType /*fz*/, floatType /*oldFx*/,
+      floatType /*oldFy*/, floatType /*oldFz*/, size_t /*typeid*/, OwnershipState /*ownershipState*/>::Type;
 
   /**
    * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).
