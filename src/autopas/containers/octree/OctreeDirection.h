@@ -125,7 +125,6 @@ inline Vertex *VERTICES() {
  * @return A flat index in the range of 0 to 7 for any valid vertex. For invalid input -1 is returned.
  */
 inline int vertexToIndex(Vertex vertex) {
-#if 1
   // TODO(johannes): This is very slow and could be sped up.
   //  Mentioned in https://github.com/AutoPas/AutoPas/issues/623
   int result = -1;
@@ -135,10 +134,6 @@ inline int vertexToIndex(Vertex vertex) {
       break;
     }
   }
-#else
-  // This is very buggy, why do I always optimize premature...
-  int result = (((vertex >> 6) & 1) | ((vertex >> 3) & 2) | ((vertex & 1) << 2)) ^ 7;
-#endif
   return result;
 }
 
