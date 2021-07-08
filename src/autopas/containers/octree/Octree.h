@@ -63,7 +63,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
          const double cellSizeFactor)
       : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skin) {
     // TODO(johannes): Obtain this from a configuration
-    int unsigned treeSplitThreshold = 2;  // 16;
+    int unsigned treeSplitThreshold = 16;
 
     double interactionLength = this->getInteractionLength();
     this->_cells.push_back(
