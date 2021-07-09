@@ -41,14 +41,14 @@ class CubeUniform : public Object {
   [[nodiscard]] size_t getParticlesTotal() const override { return _numParticles; }
 
   /**
-   * Returns the coordinates of the bottom left corner.
-   * @return bottom left corner of the cube.
+   * Returns the coordinates of the bottom left front corner.
+   * @return bottom left front corner of the cube.
    */
   [[nodiscard]] std::array<double, 3> getBoxMin() const override { return _bottomLeftCorner; }
 
   /**
-   * Returns the coordinates of the top right corner.
-   * @return top right corner of the cube.
+   * Returns the coordinates of the top right back corner.
+   * @return top right back corner of the cube.
    */
   [[nodiscard]] std::array<double, 3> getBoxMax() const override {
     return autopas::utils::ArrayMath::add(_bottomLeftCorner, _boxLength);
@@ -99,7 +99,7 @@ class CubeUniform : public Object {
   std::array<double, 3> _boxLength;
 
   /**
-   * The Coordinates of the bottom left corner.
+   * The Coordinates of the bottom left front corner.
    */
   std::array<double, 3> _bottomLeftCorner;
 };

@@ -56,14 +56,14 @@ class CubeGrid : public Object {
   }
 
   /**
-   * Returns the coordinates of the bottom left corner.
-   * @return bottom left corner.
+   * Returns the coordinates of the bottom left front corner.
+   * @return bottom left front corner.
    */
   [[nodiscard]] std::array<double, 3> getBoxMin() const override { return _bottomLeftCorner; }
 
   /**
-   * Returns the coordinates of the top right corner.
-   * @return top right corner.
+   * Returns the coordinates of the top right back corner.
+   * @return top right back corner.
    */
   [[nodiscard]] std::array<double, 3> getBoxMax() const override {
     auto particlesPerDimDouble = autopas::utils::ArrayUtils::static_cast_array<double>(_particlesPerDim);
@@ -124,7 +124,7 @@ class CubeGrid : public Object {
   double _particleSpacing;
 
   /**
-   * Stores the coordinates of the bottom left corner.
+   * Stores the coordinates of the bottom left front corner.
    */
   std::array<double, 3> _bottomLeftCorner;
 };

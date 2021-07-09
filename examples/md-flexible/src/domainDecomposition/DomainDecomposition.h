@@ -6,7 +6,6 @@
 #pragma once
 
 #include <array>
-#include <vector>
 
 /**
  * An interface for domain decompositions which can be used in the simulation
@@ -31,25 +30,25 @@ class DomainDecomposition {
 
   /**
    * Returns the minimum coordinates of the global domain.
-   * @return bottom left corner of the global domain.
+   * @return bottom left front corner of the global domain.
    */
   virtual const std::array<double, 3> getGlobalBoxMin() = 0;
 
   /**
    * Returns the maximum coordinates of the global domain.
-   * @return top right corner of the global domain.
+   * @return top right back corner of the global domain.
    */
   virtual const std::array<double, 3> getGlobalBoxMax() = 0;
 
   /**
    * Returns the minimum coordinates of the local domain.
-   * @return bottom left corner of the local domain.
+   * @return bottom left front corner of the local domain.
    */
   virtual const std::array<double, 3> getLocalBoxMin() = 0;
 
   /**
    * Returns the maximum coordinates of the local domain.
-   * @return top right corner of the local domain.
+   * @return top right back corner of the local domain.
    */
   virtual const std::array<double, 3> getLocalBoxMax() = 0;
 

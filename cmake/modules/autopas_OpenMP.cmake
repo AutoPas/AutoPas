@@ -1,4 +1,5 @@
-option(AUTOPAS_OPENMP "Activates OpenMP shared memory parallelization." OFF)
+set(AUTOPAS_OPENMP_DOC "Activates OpenMP shared memory parallelization. (requires OpenMP 4.5)")
+option(AUTOPAS_OPENMP ${AUTOPAS_OPENMP_DOC} ON)
 
 if (AUTOPAS_OPENMP)
     message(STATUS "OpenMP enabled.")
@@ -12,6 +13,8 @@ if (AUTOPAS_OPENMP)
              AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 6)
              )
     )
+        # Disable AUTOPAS_OPENMP if no sufficient OpenMP version is available.
+        set(AUTOPAS_OPENMP OFF CACHE BOOL ${AUTOPAS_OPENMP_DOC} FORCE )
         message(
             FATAL_ERROR
                 "OpenMP version not supported (specification date: ${OpenMP_CXX_SPEC_DATE}). Required version: 4.5+"
