@@ -69,12 +69,12 @@ size_t getTerminalWidth() {
 }
 }  // namespace
 
-// @todo: create configuration variable to set output folder for the vtk writer. Currently it is "output".
 Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecomposition &domainDecomposition)
     : _configuration(configuration),
       _domainDecomposition(domainDecomposition),
       _createVtkFiles(not configuration.vtkFileName.value.empty()),
-      _vtkWriter(std::make_shared<ParallelVtkWriter>(_configuration.vtkFileName.value, "output",
+      _vtkWriter(std::make_shared<ParallelVtkWriter>(_configuration.vtkFileName.value,
+                                                     _configuration.vtkOutputFolder.value,
                                                      std::to_string(_configuration.iterations.value).size())) {
   _timers.total.start();
   _timers.initialization.start();
