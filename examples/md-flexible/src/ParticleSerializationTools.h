@@ -9,7 +9,6 @@
 #include <utility>
 #include <vector>
 
-#include "ParticleAttributes.h"
 #include "TypeDefinitions.h"
 
 /*
