@@ -52,10 +52,7 @@ class Object {
     ParticleType particle{};
     particle.setID(particleId);
     particle.setTypeId(_typeId);
-    particle.setOwnershipState(autopas::OwnershipState::owned);
     particle.setV(_velocity);
-    particle.setF({0.0, 0.0, 0.0});
-    particle.setOldF({0.0, 0.0, 0.0});
 
     return particle;
   }
