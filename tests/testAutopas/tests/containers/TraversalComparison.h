@@ -68,11 +68,12 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
       DeletionPosition particleDeletionPosition);
 
   static constexpr std::array<double, 3> _boxMin{0, 0, 0};
-  static constexpr double _cutoff{1.};
+  static constexpr double _cutoff{3.};
 
   static constexpr double _eps{1.};
   static constexpr double _sig{1.};
 
   static inline std::map<mykey_t, std::vector<std::array<double, 3>>> _forcesReference{};
   static inline std::map<mykey_t, Globals> _globalValuesReference{};
+  static void test_7x8x9_scenario();
 };
