@@ -101,7 +101,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
     autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
     autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, size_t numMolecules,
     size_t numHaloMolecules, std::array<double, 3> boxMax, double cellSizeFactor, bool doSlightShift,
-    DeletionPosition particleDeletionPosition) {
+    DeletionPosition particleDeletionPosition, bool gridgeneration) {
   // Construct container
   autopas::ContainerSelector<Molecule> selector{_boxMin, boxMax, _cutoff};
   constexpr double skin = _cutoff * 0.1;
@@ -113,11 +113,13 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
       functor{_cutoff};
   functor.setParticleProperties(_eps * 24, _sig * _sig);
 
-//  autopasTools::generators::RandomGenerator::fillWithParticles(*container, Molecule({0., 0., 0.}, {0., 0., 0.}, 0),
-//                                                               container->getBoxMin(), container->getBoxMax(),
-//                                                               numMolecules);
-  autopasTools::generators::GridGenerator::fillWithParticles(*container,{7ul, 8ul, 9ul});
-
+  if(!gridgeneration) {
+      autopasTools::generators::RandomGenerator::fillWithParticles(*container, Molecule({0., 0., 0.}, {0., 0., 0.}, 0),
+                                                                   container->getBoxMin(), container->getBoxMax(),
+                                                                   numMolecules);
+  } else {
+    autopasTools::generators::GridGenerator::fillWithParticles(*container, {7ul, 8ul, 9ul});
+  }
 //  autopasTools::generators::RandomGenerator::fillWithHaloParticles(
 //      *container, Molecule({0., 0., 0.}, {0., 0., 0.}, numMolecules /*initial ID*/), container->getCutoff(),
 //      numHaloMolecules);
@@ -169,20 +171,20 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
  * @param key The key that specifies the simulation.
  */
 void TraversalComparison::generateReference(mykey_t key) {
-  auto [numParticles, numHaloParticles, boxMax, doSlightShift, particleDeletionPosition, globals] = key;
+  auto [numParticles, numHaloParticles, boxMax, doSlightShift, particleDeletionPosition, globals, gridgeneration] = key;
   // Calculate reference forces
   if (globals) {
     auto [calculatedForces, calculatedGlobals] =
         calculateForces<true>(autopas::ContainerOption::verletClusterLists, autopas::TraversalOption::vcl_c06,
                               autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, numParticles,
-                              numHaloParticles, boxMax, 1., doSlightShift, particleDeletionPosition);
+                              numHaloParticles, boxMax, 1., doSlightShift, particleDeletionPosition, gridgeneration);
     _forcesReference[key] = calculatedForces;
     _globalValuesReference[key] = calculatedGlobals;
   } else {
     auto [calculatedForces, calculatedGlobals] =
         calculateForces<false>(autopas::ContainerOption::verletClusterLists, autopas::TraversalOption::vcl_c06,
                                autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, numParticles,
-                               numHaloParticles, boxMax, 1., doSlightShift, particleDeletionPosition);
+                               numHaloParticles, boxMax, 1., doSlightShift, particleDeletionPosition, gridgeneration);
     _forcesReference[key] = calculatedForces;
     _globalValuesReference[key] = calculatedGlobals;
   }
@@ -193,7 +195,7 @@ void TraversalComparison::generateReference(mykey_t key) {
  */
 TEST_P(TraversalComparison, traversalTest) {
   auto [containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles, numHaloParticles, boxMax,
-        cellSizeFactor, doSlightShift, particleDeletionPosition, globals] = GetParam();
+        cellSizeFactor, doSlightShift, particleDeletionPosition, globals, gridgeneration] = GetParam();
 
   // empirically determined and set near the minimal possible value for 2000 particles
   // i.e. if something changes, it may be needed to increase value
@@ -206,18 +208,18 @@ TEST_P(TraversalComparison, traversalTest) {
   if (globals) {
     std::tie(calculatedForces, calculatedGlobals) =
         calculateForces<true>(containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles,
-                              numHaloParticles, boxMax, cellSizeFactor, doSlightShift, particleDeletionPosition);
+                              numHaloParticles, boxMax, cellSizeFactor, doSlightShift, particleDeletionPosition, gridgeneration);
   } else {
     std::tie(calculatedForces, calculatedGlobals) =
         calculateForces<false>(containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles,
-                               numHaloParticles, boxMax, cellSizeFactor, doSlightShift, particleDeletionPosition);
+                               numHaloParticles, boxMax, cellSizeFactor, doSlightShift, particleDeletionPosition, gridgeneration);
   }
   if (calculatedForces.empty()) {
     GTEST_SKIP_("Not applicable!");
   }
 
   TraversalComparison::mykey_t key{numParticles,  numHaloParticles,         boxMax,
-                                   doSlightShift, particleDeletionPosition, globals};
+                                   doSlightShift, particleDeletionPosition, globals, gridgeneration};
   if (_forcesReference.count(key) == 0) {
     generateReference(key);
   }
@@ -305,7 +307,7 @@ void TraversalComparison::test_7x8x9_scenario(){
  */
 static auto toString = [](const auto &info) {
   auto [containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles, numHaloParticles, boxMax,
-        cellSizeFactor, doSlightShift, particleDeletionPosition, globals] = info.param;
+        cellSizeFactor, doSlightShift, particleDeletionPosition, globals, gridgeneration] = info.param;
   std::stringstream resStream;
   resStream << containerOption.to_string() << "_" << traversalOption.to_string() << "_" << dataLayoutOption.to_string()
             << "_" << (newton3Option == autopas::Newton3Option::enabled ? "_N3" : "_noN3") << "_NP" << numParticles
@@ -314,13 +316,13 @@ static auto toString = [](const auto &info) {
             << (particleDeletionPosition == DeletionPosition::never ? "_NoDeletions" : "")
             << (particleDeletionPosition & DeletionPosition::beforeLists ? "_DeletionsBeforeLists" : "")
             << (particleDeletionPosition & DeletionPosition::afterLists ? "_DeletionsAfterLists" : "")
-            << (globals ? "_globals" : "_noGlobals");
+            << (globals ? "_globals" : "_noGlobals")
+            << (gridgeneration ? "_grid" : "random");
   std::string res = resStream.str();
   std::replace(res.begin(), res.end(), '-', '_');
   std::replace(res.begin(), res.end(), '.', '_');
   return res;
 };
-
 /**
  * Function to generate all possible configurations.
  * @return
@@ -331,26 +333,28 @@ auto TraversalComparison::getTestParams() {
     for (auto traversalOption : autopas::compatibleTraversals::allCompatibleTraversals(containerOption)) {
       for (auto dataLayoutOption : autopas::DataLayoutOption::getAllOptions()) {
         for (auto newton3Option : autopas::Newton3Option::getAllOptions()) {
-          for (auto numParticles : {7ul*8ul*9ul}) {
-            for (auto boxMax : std::vector<std::array<double, 3>>{{7., 8., 9.}, {10., 10., 10.}}) {
-              for (double cellSizeFactor : {0.5, 1., 2.}) {
-                for (auto numHalo : {0ul/* 200ul*/}) {
-                  for (bool slightMove : {/*true, */false}) {
-                    for (bool globals : {/*true, */false}) {
-                      for (DeletionPosition particleDeletionPosition :
-                           {DeletionPosition::never, /*DeletionPosition::beforeLists, DeletionPosition::afterLists,*/
-                            DeletionPosition::beforeAndAfterLists}) {
-                        if (dataLayoutOption == autopas::DataLayoutOption::Value::cuda and
-                            traversalOption == autopas::TraversalOption::Value::lc_c01_cuda and (boxMax[0] < 5.) and
-                            (numParticles > 500)) {
-                          // LJFunctor for cuda doesn't support this, yet: see
-                          // https://github.com/AutoPas/AutoPas/issues/419
-                          /// @todo reenable
-                          continue;
+          for (auto boxMax : std::vector<std::array<double, 3>>{{7., 8., 9.}, {10., 10., 10.}}) {
+            for (double cellSizeFactor : {0.5, 1., 2.}) {
+              for (auto numHalo : {0ul/* 200ul*/}) {
+                for (bool slightMove : {/*true, */false}) {
+                  for (bool globals : {/*true, */false}) {
+                    for(bool gridgeneration : {true, false}) {
+                      for (auto numParticles : {(gridgeneration ? 7ul*8ul*9ul : 200ul)}) {
+                        for (DeletionPosition particleDeletionPosition :
+                             {DeletionPosition::never, /*DeletionPosition::beforeLists, DeletionPosition::afterLists,*/
+                              DeletionPosition::beforeAndAfterLists}) {
+                          if (dataLayoutOption == autopas::DataLayoutOption::Value::cuda and
+                              traversalOption == autopas::TraversalOption::Value::lc_c01_cuda and (boxMax[0] < 5.) and
+                              (numParticles > 500)) {
+                            // LJFunctor for cuda doesn't support this, yet: see
+                            // https://github.com/AutoPas/AutoPas/issues/419
+                            /// @todo reenable
+                            continue;
+                          }
+                          params.emplace_back(containerOption, traversalOption, dataLayoutOption, newton3Option,
+                                              numParticles, numHalo, boxMax, cellSizeFactor, slightMove,
+                                              particleDeletionPosition, globals, gridgeneration);
                         }
-                        params.emplace_back(containerOption, traversalOption, dataLayoutOption, newton3Option,
-                                            numParticles, numHalo, boxMax, cellSizeFactor, slightMove,
-                                            particleDeletionPosition, globals);
                       }
                     }
                   }
