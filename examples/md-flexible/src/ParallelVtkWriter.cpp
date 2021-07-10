@@ -161,8 +161,11 @@ void ParallelVtkWriter::recordDomainSubdivision(const int &currentIteration,
                << " " << wholeExtent[3] << " " << wholeExtent[4] << " " << wholeExtent[5] << "\">\n";
   timestepFile << "    <Piece Extent=\"" << wholeExtent[0] << " " << wholeExtent[1] << " " << wholeExtent[2] << " "
                << wholeExtent[3] << " " << wholeExtent[4] << " " << wholeExtent[5] << "\">\n";
-  timestepFile << "      <PointData/>\n";
-  timestepFile << "      <CellData/>\n";
+  timestepFile << "      <CellData Scalars=\"DomainId\">\n";
+  timestepFile << "        <DataArray type=\"Int32\" Name=\"DomainId\" format=\"ascii\">\n";
+  timestepFile << "          " << decomposition.getDomainIndex() << "\n";
+  timestepFile << "        </DataArray>\n";
+  timestepFile << "      </CellData>\n";
   timestepFile << "      <Points>\n";
   timestepFile << "        <DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">\n";
   timestepFile << "          " << localBoxMin[0] << " " << localBoxMin[1] << " " << localBoxMin[2] << "\n";
@@ -267,17 +270,17 @@ void ParallelVtkWriter::createPvtsFile(const int &currentIteration, const Regula
   if (not timestepFile.is_open()) {
     throw std::runtime_error("Simulation::writeVTKFile(): Failed to open file \"" + filename.str() + "\"");
   }
-
   const std::array<int, 3> wholeExtent = decomposition.getDecomposition();
   const std::array<double, 3> globalBoxMin = decomposition.getGlobalBoxMin();
   const std::array<double, 3> globalBoxMax = decomposition.getGlobalBoxMax();
-
   timestepFile << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>\n";
   timestepFile << "<VTKFile byte_order=\"LittleEndian\" type=\"PStructuredGrid\" version=\"0.1\">\n";
   timestepFile << "  <PStructuredGrid WholeExtent=\"0 " << wholeExtent[0] << " 0 " << wholeExtent[1] << " 0 "
                << wholeExtent[2] << "\" GhostLevel=\"0\">\n";
   timestepFile << "    <PPointData/>\n";
-  timestepFile << "    <PCellData/>\n";
+  timestepFile << "    <PCellData Scalars=\"DomainId\">\n";
+  timestepFile << "      <PDataArray type=\"Int32\" Name=\"DomainId\" />\n";
+  timestepFile << "    </PCellData>\n";
   timestepFile << "    <PPoints>\n";
   timestepFile << "      <DataArray NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
   timestepFile << "        " << globalBoxMin[0] << " " << globalBoxMin[1] << " " << globalBoxMin[2] << "\n";
