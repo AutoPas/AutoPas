@@ -355,28 +355,29 @@ void Simulation::logTimers() {
   if (_domainDecomposition.getDomainIndex() == 0) {
     auto maximumNumberOfDigits = std::to_string(total).length();
     std::cout << std::endl;
-    std::cout << timerToString("Total", total, maximumNumberOfDigits, total);
-    std::cout << timerToString("Simulate", simulate, maximumNumberOfDigits, total);
-    std::cout << timerToString("Initialization", initialization, maximumNumberOfDigits, total);
-    std::cout << timerToString("PositionUpdate", positionUpdate, maximumNumberOfDigits, total);
-    std::cout << timerToString("VelocityUpdate", velocityUpdate, maximumNumberOfDigits, total);
-    std::cout << timerToString("ForceUpdateTotal", forceUpdateTotal, maximumNumberOfDigits, total);
-    std::cout << timerToString("ForceUpdatePairwise compared to ForceUpdateTotal", forceUpdatePairwise,
-                               maximumNumberOfDigits, forceUpdateTotal);
-    std::cout << timerToString("ForceUdpateGlobal compared to ForceUpdateTotal", forceUpdateGlobal,
-                               maximumNumberOfDigits, forceUpdateTotal);
-    std::cout << timerToString("ForceUpdateTuning compared to ForceUpdateTotal", forceUpdateTuning,
-                               maximumNumberOfDigits, forceUpdateTotal);
-    std::cout << timerToString("ForceUpdateNonTuninng compared to ForceUpdateTotal", forceUpdateNonTuning,
-                               maximumNumberOfDigits, forceUpdateTotal);
-    std::cout << timerToString("Thermostat", thermostat, maximumNumberOfDigits, total);
-    std::cout << timerToString("Vtk", vtk, maximumNumberOfDigits, total);
-    std::cout << timerToString("HaloParticleExchange", haloParticleExchange, maximumNumberOfDigits, total);
-    std::cout << timerToString("MigratingParticleExchange", migratingParticleExchange, maximumNumberOfDigits, total);
+    std::cout << timerToString("Total                      ", total, maximumNumberOfDigits, total);
+    std::cout << timerToString("Simulate                   ", simulate, maximumNumberOfDigits, total);
+    std::cout << timerToString("  Initialization           ", initialization, maximumNumberOfDigits, simulate);
+    std::cout << timerToString("  PositionUpdate           ", positionUpdate, maximumNumberOfDigits, simulate);
+    std::cout << timerToString("  VelocityUpdate           ", velocityUpdate, maximumNumberOfDigits, simulate);
+    std::cout << timerToString("  ForceUpdateTotal         ", forceUpdateTotal, maximumNumberOfDigits, simulate);
+    std::cout << timerToString("    ForceUpdatePairwise    ", forceUpdatePairwise, maximumNumberOfDigits,
+                               forceUpdateTotal);
+    std::cout << timerToString("    ForceUdpateGlobal      ", forceUpdateGlobal, maximumNumberOfDigits,
+                               forceUpdateTotal);
+    std::cout << timerToString("    ForceUpdateTuning      ", forceUpdateTuning, maximumNumberOfDigits,
+                               forceUpdateTotal);
+    std::cout << timerToString("    ForceUpdateNonTuninng  ", forceUpdateNonTuning, maximumNumberOfDigits,
+                               forceUpdateTotal);
+    std::cout << timerToString("  Thermostat               ", thermostat, maximumNumberOfDigits, simulate);
+    std::cout << timerToString("  Vtk                      ", vtk, maximumNumberOfDigits, simulate);
+    std::cout << timerToString("  HaloParticleExchange     ", haloParticleExchange, maximumNumberOfDigits, simulate);
+    std::cout << timerToString("  MigratingParticleExchange", migratingParticleExchange, maximumNumberOfDigits,
+                               simulate);
 
     const long wallClockTime = _timers.totalWallClock.getTotalTime();
     std::cout << std::endl;
-    std::cout << timerToString("Total wall-clock time", wallClockTime, std::to_string(wallClockTime).length(),
+    std::cout << timerToString("Total wall-clock time    ", wallClockTime, std::to_string(wallClockTime).length(),
                                wallClockTime);
   }
 }
