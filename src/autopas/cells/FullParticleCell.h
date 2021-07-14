@@ -11,8 +11,8 @@
 #include <vector>
 
 #include "autopas/cells/ParticleCell.h"
-#include "autopas/options/IteratorBehavior.h"
 #include "autopas/iterators/SingleCellIterator.h"
+#include "autopas/options/IteratorBehavior.h"
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
@@ -193,8 +193,7 @@ class FullParticleCell : public ParticleCell<Particle> {
     auto isParticleInRegion = [&](Particle &p) -> bool { return utils::inBox(p.getR(), lowerCorner, higherCorner); };
 
     auto isParticleValid = [&](Particle &p) -> bool {
-
-//      auto ownershipState = p.get.template <Particle::AttributeNames::ownershipState>();
+      //      auto ownershipState = p.get.template <Particle::AttributeNames::ownershipState>();
       switch (behavior) {
         case options::IteratorBehavior::ownedOrHaloOrDummy:
           return true;

@@ -37,8 +37,8 @@ class SingleCellForEachTest : public AutoPasTestBase {
 
   Molecule getMoleculeWithId(size_t id) {
     for (auto m : _vecOfMolecules) {
-             if (m.getID() == id) return m;
-         }
+      if (m.getID() == id) return m;
+    }
     autopas::utils::ExceptionHandler::exception("particle with ID " + std::to_string(id) + " not in _vecOfMolecules");
     return Molecule();
   }
@@ -50,6 +50,7 @@ class SingleCellForEachTest : public AutoPasTestBase {
 
   std::array<double, 3> dummy{};
 
-  template<typename Cell>
-  void testCell(Cell cell, std::vector<size_t> &numMolecules, autopas::IteratorBehavior iteratorBehavior, std::array<double, 3> const lowerCorner, std::array<double, 3> const higherCorner);
+  template <typename Cell>
+  void testCell(Cell cell, std::vector<size_t> &numMolecules, autopas::IteratorBehavior iteratorBehavior,
+                std::array<double, 3> const lowerCorner, std::array<double, 3> const higherCorner);
 };

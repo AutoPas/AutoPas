@@ -279,7 +279,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
       //      iterate with condition maybe known by cellblock
       //      TODO lgaertner: use CellBlock3D to check if cell automatically disqualifies because of ownership
       for (ReferenceCell &cell : this->_cells) {
-//        _cellBlock.cellCanContainHaloParticles(i)
+        //        _cellBlock.cellCanContainHaloParticles(i)
         cell.forEach(forEachLambda, behavior);
       }
     }

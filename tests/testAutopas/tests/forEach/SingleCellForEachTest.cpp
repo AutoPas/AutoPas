@@ -113,7 +113,9 @@ TEST_F(SingleCellForEachTest, testAllParticlesInRegionRpc) {
   testCell(rpc, expectedIndices, IteratorBehavior::ownedOrHaloOrDummy, lowerCorner, higherCorner);
 }
 template <typename Cell>
-void SingleCellForEachTest::testCell(Cell cell, std::vector<size_t> &expectedIndices, IteratorBehavior iteratorBehavior, std::array<double, 3> const lowerCorner, std::array<double, 3> const higherCorner ){
+void SingleCellForEachTest::testCell(Cell cell, std::vector<size_t> &expectedIndices, IteratorBehavior iteratorBehavior,
+                                     std::array<double, 3> const lowerCorner,
+                                     std::array<double, 3> const higherCorner) {
   std::vector<size_t> foundParticles;
 
   auto forEachLambda = [&](auto &p) {

@@ -222,15 +222,12 @@ class AutoPas {
                                      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
 
   template <typename Lambda>
-  void forEachInRegion(Lambda forEachLambda, std::array<double, 3> lowerCorner,
-                       std::array<double, 3> higherCorner,
+  void forEachInRegion(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
                        IteratorBehavior behavior = IteratorBehavior::ownedOrHalo);
 
   template <typename Lambda>
-  void forEachInRegion(Lambda forEachLambda, std::array<double, 3> lowerCorner,
-                       std::array<double, 3> higherCorner,
+  void forEachInRegion(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
                        IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
-
 
   /**
    * Returns the number of particles in this container.
