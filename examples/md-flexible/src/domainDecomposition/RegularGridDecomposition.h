@@ -275,6 +275,26 @@ class RegularGridDecomposition final : public DomainDecomposition {
   void waitForSendRequests();
 
   /**
+   * Collects the halo particles for the left neighbour.
+   * Halo particle positions will be wrapped around the global domain boundary if necessary.
+   * @param autoPasContainer: The autopas container which owns the potential halo particles.
+   * @param direction: The direction along which the neighbour is located.
+   * @param haloParticles: The container the identified halo particles are gathered in to.
+   */
+  void collectHaloParticlesForLeftNeighbour(SharedAutoPasContainer &autoPasContainer, const size_t &direction,
+                                            std::vector<ParticleType> &haloParticles);
+
+  /**
+   * Collects the halo particles for the right neighbour.
+   * Halo particle positions will be wrapped around the global domain boundary if necessary.
+   * @param autoPasContainer: The autopas container which owns the potential halo particles.
+   * @param direction: The direction along which the neighbour is located.
+   * @param haloParticles: The container the identified halo particles are gathered in to.
+   */
+  void collectHaloParticlesForRightNeighbour(SharedAutoPasContainer &autoPasContainer, const size_t &direction,
+                                             std::vector<ParticleType> &haloParticles);
+
+  /**
    * Converts a domain id to the domain index, i.e. rank of the local processor.
    */
   int convertIdToIndex(const std::array<int, 3> &domainIndex);
