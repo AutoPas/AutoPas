@@ -65,7 +65,8 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
 
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior) {
-    _forEach<false>(forEachLambda, nullptr, nullptr, behavior);
+    const std::array<double, 3> dummy{};
+    _forEach<false>(forEachLambda, dummy, dummy, behavior);
   }
 
   template <typename Lambda>
@@ -189,7 +190,7 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
                 IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) {
     auto isParticleInRegion = [&](Particle &p) -> bool { return utils::inBox(p.getR(), lowerCorner, higherCorner); };
 
-    auto isParticleValid = [&](Particle &p) -> bool {
+    auto isParticleValid = [&](Particle p) -> bool {
       switch (behavior) {
         case options::IteratorBehavior::ownedOrHaloOrDummy:
           return true;
@@ -207,7 +208,7 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
 
     for (Particle *p : _particles) {
       if (isParticleValid(*p)) {
-        if (regionCheck & isParticleInRegion(*p)) {
+        if ((not regionCheck) or isParticleInRegion(*p)) {
           forEachLambda(*p);
         }
       }

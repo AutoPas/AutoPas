@@ -63,13 +63,14 @@ class FullParticleCell : public ParticleCell<Particle> {
 
   template <typename Lambda>
   void forEach(Lambda forEachLambda) {
-    const std::array<double, 3> dummy = std::array<double, 3>();  // TODO lgaertner: is this necessary?
+    const std::array<double, 3> dummy{};
     _forEach<false, false>(forEachLambda, dummy, dummy);
   }
 
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior) {
-    _forEach<true, false>(forEachLambda, nullptr, nullptr, behavior);
+    const std::array<double, 3> dummy{};
+    _forEach<true, false>(forEachLambda, dummy, dummy, behavior);
   }
 
   template <typename Lambda>
@@ -192,6 +193,8 @@ class FullParticleCell : public ParticleCell<Particle> {
     auto isParticleInRegion = [&](Particle &p) -> bool { return utils::inBox(p.getR(), lowerCorner, higherCorner); };
 
     auto isParticleValid = [&](Particle &p) -> bool {
+
+//      auto ownershipState = p.get.template <Particle::AttributeNames::ownershipState>();
       switch (behavior) {
         case options::IteratorBehavior::ownedOrHaloOrDummy:
           return true;
@@ -208,8 +211,8 @@ class FullParticleCell : public ParticleCell<Particle> {
     };
 
     for (Particle &p : _particles) {
-      if (ownershipCheck & isParticleValid(p)) {
-        if (regionCheck & isParticleInRegion(p)) {
+      if ((not ownershipCheck) or isParticleValid(p)) {
+        if ((not regionCheck) or isParticleInRegion(p)) {
           forEachLambda(p);
         }
       }

@@ -43,12 +43,10 @@ decltype(auto) withStaticContainerType(std::shared_ptr<ParticleContainerInterfac
       return function(dynamic_cast<autopas::VerletLists<Particle> *>(containerPtr));
     case ContainerOption::verletListsCells:
        return function(dynamic_cast<autopas::VerletListsCells<Particle, VLCAllCellsNeighborList<Particle>> *>(containerPtr));
-//      autopas::utils::ExceptionHandler::exception("not implemented correctly");
     case ContainerOption::verletClusterLists:
       return function(dynamic_cast<autopas::VerletClusterLists<Particle> *>(containerPtr));
     case ContainerOption::pairwiseVerletLists:
-//       return function(dynamic_cast<autopas::<Particle> *>(containerPtr));
-      autopas::utils::ExceptionHandler::exception("not implemented correctly");
+      return function(dynamic_cast<autopas::VerletListsCells<Particle, VLCCellPairNeighborList<Particle>> *>(containerPtr));
     case ContainerOption::varVerletListsAsBuild:
       return function(dynamic_cast<autopas::VarVerletLists<Particle, VerletNeighborListAsBuild<Particle>> *>(containerPtr));
 }
