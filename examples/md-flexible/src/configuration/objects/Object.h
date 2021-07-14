@@ -1,5 +1,5 @@
 /**
- * @file Objects.h
+ * @file Object.h
  * @author N. Fottner
  * @date 1/8/19
  */
@@ -39,24 +39,24 @@ class Object {
 
   /**
    * Generate the object in the given AutoPas container.
-   * @note Particle IDs for the new particles will start at the current value of autopas.getNumberOfParticles().
-   *
-   * @param autopas
+   * @param particles The container to which the new particles will be appended to.
    */
-  virtual void generate(autopas::AutoPas<ParticleType> &autopas) const = 0;
+  virtual void generate(std::vector<ParticleType> &particles) const = 0;
 
   /**
    * Create a particle that acts as blueprint for all particles to be created for the object.
-   * @param autopas
-   * @return
+   * @param particleId: Defines the id of the generated dummy particle.
+   * @return a particle initialized with default values.
    */
-  [[nodiscard]] ParticleType getDummyParticle(const autopas::AutoPas<ParticleType> &autopas) const {
-    ParticleType dummyParticle;
-    dummyParticle.setV(_velocity);
-    dummyParticle.setID(autopas.getNumberOfParticles());
-    dummyParticle.setTypeId(_typeId);
-    return dummyParticle;
+  [[nodiscard]] ParticleType getDummyParticle(const size_t &particleId) const {
+    ParticleType particle{};
+    particle.setID(particleId);
+    particle.setTypeId(_typeId);
+    particle.setV(_velocity);
+
+    return particle;
   }
+
   /**
    * Getter for Velocity
    * @return velocity

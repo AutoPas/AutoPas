@@ -14,6 +14,21 @@ file(
 
 add_library(autopas STATIC ${MY_SRC})
 
+if (AUTOPAS_INCLUDE_MPI)
+    message(STATUS "AUTOPAS_INCLUDE_MPI set, searching for mpi to link against md-flexible ...")
+    find_package(MPI)
+
+    if (NOT ${MPI_CXX_FOUND})
+        message(FATAL_ERROR "cxx mpi could not be found, even though AUTOPAS_INCLUDE_MPI was set.")
+    else ()
+        message(STATUS "cxx mpi found: ${MPI_CXX_COMPILER}")
+        set(AUTOPAS_INCLUDE_MPI ON)
+        add_definitions(-DAUTOPAS_INCLUDE_MPI)
+    endif ()
+else ()
+    message(STATUS "AUTOPAS_INCLUDE_MPI not set, not linking MPI to md-flexible.")
+endif ()
+
 target_link_libraries(
     autopas
     PUBLIC
@@ -21,7 +36,7 @@ target_link_libraries(
         ${CMAKE_THREAD_LIBS_INIT} # required for Logger and ExceptionHandler
         $<$<BOOL:${AUTOPAS_OPENMP}>:OpenMP::OpenMP_CXX>
         spdlog::spdlog
-        $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:MPI::MPI_CXX>
+        $<$<BOOL:${AUTOPAS_INCLUDE_MPI}>:MPI::MPI_CXX>
     PRIVATE
         # harmony and Eigen3 are only needed privately when building AutoPas.
         harmony Eigen3
@@ -34,7 +49,7 @@ target_compile_definitions(
     PUBLIC
     $<$<BOOL:${AUTOPAS_OPENMP}>:AUTOPAS_OPENMP>
     $<$<NOT:$<BOOL:${AUTOPAS_OPENMP}>>:EIGEN_DONT_PARALLELIZE>
-    $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:AUTOPAS_INTERNODE_TUNING>
+    $<$<BOOL:${AUTOPAS_INCLUDE_MPI}>:AUTOPAS_INCLUDE_MPI>
     _USE_MATH_DEFINES
 )
 

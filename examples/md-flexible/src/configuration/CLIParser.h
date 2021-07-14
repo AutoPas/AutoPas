@@ -55,7 +55,7 @@ void printHelpMessage(std::ostream &ostream, const std::string &relPathOfExecuta
   // vector that will hold the lines for options
   std::vector<std::string> outputLines;
   // reserve one vector entry for each tuple element
-  outputLines.reserve(std::tuple_size_v<std::tuple<T...>>);
+  outputLines.reserve(std::tuple_size<std::tuple<T...>>{});
 
   autopas::utils::TupleUtils::for_each(relevantOptions, [&](auto &elem) {
     std::stringstream ss;

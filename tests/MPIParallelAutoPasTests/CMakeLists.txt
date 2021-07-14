@@ -5,7 +5,7 @@ file(
     "*.h"
 )
 
-if (NOT AUTOPAS_INTERNODE_TUNING)
+if (NOT AUTOPAS_INCLUDE_MPI)
     return()
 endif()
 

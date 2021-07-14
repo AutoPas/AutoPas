@@ -1,0 +1,15 @@
+#yaml input for cubeUniform
+#used in:
+#MDFlexConfigTests.UniformBoxMinMax
+#YamlParser
+Objects:
+  CubeUniform:
+    0:
+      particle-type: 0
+      particle-epsilon: 3.
+      particle-sigma: 3.
+      particle-mass: 3.
+      numberOfParticles: 100
+      box-length: [10.,10.,10.]
+      velocity: [0.,0.,0.]
+      bottomLeftCorner: [0.,0.,-15.]

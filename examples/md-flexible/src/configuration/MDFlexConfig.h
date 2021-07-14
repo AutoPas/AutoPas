@@ -23,18 +23,24 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/utils/NumberSet.h"
-#include "src/Objects/CubeClosestPacked.h"
-#include "src/Objects/CubeGauss.h"
-#include "src/Objects/CubeGrid.h"
-#include "src/Objects/CubeUniform.h"
-#include "src/Objects/Sphere.h"
+#include "src/TypeDefinitions.h"
+#include "src/configuration/objects/CubeClosestPacked.h"
+#include "src/configuration/objects/CubeGauss.h"
+#include "src/configuration/objects/CubeGrid.h"
+#include "src/configuration/objects/CubeUniform.h"
+#include "src/configuration/objects/Sphere.h"
 
 /**
  * Class containing all necessary parameters for configuring a md-flexible simulation.
  */
 class MDFlexConfig {
  public:
-  MDFlexConfig() = default;
+  /**
+   * Constructor.
+   * @param argc: the argument count of the arguments passed to the main function.
+   * @param argv: the argument vector passed to the main function.
+   */
+  MDFlexConfig(int argc, char **argv);
 
   /**
    * Struct to bundle information for options.
@@ -84,8 +90,8 @@ class MDFlexConfig {
     MDFlexOption(T value, std::string newName, bool requiresArgument, std::string newDescription)
         : requiresArgument(requiresArgument),
           name(std::move(newName)),
-          description(std::move(newDescription)),
-          value(std::move(value)) {}
+          value(std::move(value)),
+          description(std::move(newDescription)) {}
 
     /**
      * Returns a getopt option struct for this object.
@@ -111,6 +117,17 @@ class MDFlexConfig {
   void calcSimulationBox();
 
   /**
+   * Returns the particles generated based on the povided configuration file.
+   * @return a vector containing the generated particles.
+   */
+  std::vector<ParticleType> getParticles() { return _particles; }
+
+  /**
+   * Returns the ParticlePropertiesLibrary containing the properties of the particle types used in this simulation.
+   * @return the ParticlePropertiesLibrary
+   */
+  std::shared_ptr<ParticlePropertiesLibraryType> getParticlePropertiesLibrary() { return _particlePropertiesLibrary; }
+  /**
    * Adds parameters to all relevant particle property attributes and checks if the type already exists.
    * @param typeId
    * @param epsilon
@@ -118,6 +135,11 @@ class MDFlexConfig {
    * @param mass
    */
   void addParticleType(unsigned long typeId, double epsilon, double sigma, double mass);
+
+  /**
+   * Flushes the particles as they are not required anymore after initialization.
+   */
+  void flushParticles();
 
   /**
    * Choice of the functor
@@ -267,6 +289,11 @@ class MDFlexConfig {
       "For predictive based tuning strategies: The extrapolation method that calculates the prediction. Possible "
       "Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::ExtrapolationMethodOption::getAllOptions(), " ", {"(", ")"})};
+  /**
+   * vtkOutputFolder
+   */
+  MDFlexOption<std::string, __LINE__> vtkOutputFolder{"output", "vtk-output-folder", true,
+                                                      "The location where the vtk output will be created."};
   /**
    * vtkFileName
    */
@@ -553,6 +580,34 @@ class MDFlexConfig {
    * valueOffset used for cli-output alignment
    */
   static constexpr size_t valueOffset{33};
+
+ private:
+  /**
+   * Stores the particles generated based on the provided configuration file
+   * These particles can be added to the respective autopas container,
+   * but have to be converted to the respective particle type, first.
+   */
+  std::vector<ParticleType> _particles;
+
+  /**
+   * Stores the physical properties of the particles used in the an MDFlexSimulation
+   */
+  std::shared_ptr<ParticlePropertiesLibraryType> _particlePropertiesLibrary;
+
+  /**
+   * Initializes the ParticlePropertiesLibrary
+   */
+  void initializeParticlePropertiesLibrary();
+
+  /**
+   * Initializes all particles present at the start of the simulation.
+   */
+  void initializeObjects();
+
+  /**
+   * Loads the particles from the checkpoint file defined in the configuration file.
+   */
+  void loadParticlesFromCheckpoint();
 };
 
 /**

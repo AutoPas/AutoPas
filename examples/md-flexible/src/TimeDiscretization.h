@@ -4,66 +4,49 @@
  * @date 13/05/19
  */
 #pragma once
+
+#include "TypeDefinitions.h"
 #include "autopas/AutoPasDecl.h"
-#include "autopas/utils/ArrayMath.h"
+#include "src/configuration/MDFlexConfig.h"
 
 /**
  * Functions for updating velocities and positions as simulation time progresses.
  */
 namespace TimeDiscretization {
-
 /**
  * Calculate and update the position for every particle using the Störmer-Verlet Algorithm.
- * @param autopas
- * @param particlePropertiesLibrary
- * @param deltaT time step width
+ * @param autoPasContainer The container for which to update the positions.
+ * @param particlePropertiesLibrary The particle properties library for the particles in the container.
+ * @param deltaT The time step width.
  */
-template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
-void calculatePositions(AutoPasTemplate &autopas, const ParticlePropertiesLibraryTemplate &particlePropertiesLibrary,
-                        const double deltaT) {
-  // helper declarations for operations with vector
-  using autopas::utils::ArrayMath::add;
-  using autopas::utils::ArrayMath::mulScalar;
-
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
-  for (auto iter = autopas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    auto v = iter->getV();
-    auto m = particlePropertiesLibrary.getMass(iter->getTypeId());
-    auto f = iter->getF();
-    iter->setOldF(f);
-    iter->setF({0., 0., 0.});
-    v = mulScalar(v, deltaT);
-    f = mulScalar(f, (deltaT * deltaT / (2 * m)));
-    auto newR = add(v, f);
-    iter->addR(newR);
-  }
-}
+void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
+                        const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
 
 /**
  * Calculate and update the velocity for every particle using the the Störmer-Verlet Algorithm.
- * @param autopas
- * @param particlePropertiesLibrary
- * @param deltaT time step width
+ * @param autoPasContainer The container for which to update the velocities.
+ * @param particlePropertiesLibrary The particle properties library for the particles in the container.
+ * @param deltaT The time step width.
  */
-template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
-void calculateVelocities(AutoPasTemplate &autopas, const ParticlePropertiesLibraryTemplate &particlePropertiesLibrary,
-                         const double deltaT) {
-  // helper declarations for operations with vector
-  using autopas::utils::ArrayMath::add;
-  using autopas::utils::ArrayMath::mulScalar;
+void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
+                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
 
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
-  for (auto iter = autopas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    auto m = particlePropertiesLibrary.getMass(iter->getTypeId());
-    auto force = iter->getF();
-    auto oldForce = iter->getOldf();
-    auto newV = mulScalar((add(force, oldForce)), deltaT / (2 * m));
-    iter->addV(newV);
-  }
-}
+/**
+ * Calculates the pairwise forces between particles in an autopas container.
+ * @param autoPasContainer The container for which to update the pairwise forces.
+ * @param particlePropertiesLibrary The particle properties library for the particles in the container.
+ * @param deltaT The time step width.
+ * @param functorOption The functor on which to base the force calculations.
+ * @param wasTuningIteration Tells the user if the current iteration of force calculations was a tuning iteration.
+ */
+void calculatePairwiseForces(autopas::AutoPas<ParticleType> &autoPasContainer,
+                             ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
+                             MDFlexConfig::FunctorOption functorOption, bool &wasTuningIteration);
 
+/**
+ * Adds global forces to the particles in the container.
+ * @param autoPasContainer The container for which to update the particle forces.
+ * @param globalForce The global force which will be applied to each particle in the container.
+ */
+void calculateGlobalForces(autopas::AutoPas<ParticleType> &autoPasContainer, const std::array<double, 3> &globalForce);
 }  // namespace TimeDiscretization

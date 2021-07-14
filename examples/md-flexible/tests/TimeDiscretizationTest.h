@@ -21,7 +21,7 @@ class TimeDiscretizationTest : public AutoPasTestBase {
     _particlePropertiesLibrary.addType(0, 1, 1, 1);
     _particlePropertiesLibrary.calculateMixingCoefficients();
   }
-  void fillWithParticlesAndInit(autopas::AutoPas<Molecule> &autopas);
+  static void fillWithParticlesAndInit(autopas::AutoPas<Molecule> &autopas);
 
  protected:
   ParticlePropertiesLibrary<double, size_t> _particlePropertiesLibrary;

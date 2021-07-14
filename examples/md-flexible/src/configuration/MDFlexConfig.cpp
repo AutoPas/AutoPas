@@ -3,10 +3,71 @@
  * @author F. Gratl
  * @date 18.10.2019
  */
-
 #include "MDFlexConfig.h"
 
-#include "autopas/utils/StringUtils.h"
+#include "MDFlexParser.h"
+#include "src/ParticleSerializationTools.h"
+#include "src/Thermostat.h"
+
+namespace {
+/**
+ * Reads the next numberOfParticles lines from file. The lines are expected to contain xyz data.
+ * @tparam dataType type of the data to be read. (Can be scalars or containers that support [])
+ * @tparam size number of entries per dataType.
+ * @param file
+ * @param numberOfParticles
+ * @return Vector of read data.
+ */
+template <class dataType, int size>
+std::vector<dataType> readPayload(std::ifstream &file, size_t numberOfParticles) {
+  std::vector<dataType> data(numberOfParticles);
+  // loop over every line (=particle)
+  for (size_t i = 0; i < numberOfParticles; ++i) {
+    // loop over line (=coordinates)
+    if constexpr (size == 1) {
+      file >> data[i];
+    } else {
+      for (size_t j = 0; j < size; ++j) {
+        file >> data[i][j];
+      }
+    }
+  }
+  return data;
+}
+
+/**
+ * Searches the file word by word and sets the file accessor directly behind the first found position.
+ * @param file
+ * @param word
+ */
+void findWord(std::ifstream &file, const std::string &word) {
+  std::string currentWord;
+  while (currentWord != word) {
+    file >> currentWord;
+  }
+}
+}  // namespace
+
+MDFlexConfig::MDFlexConfig(int argc, char **argv) {
+  auto parserExitCode = MDFlexParser::parseInput(argc, argv, *this);
+  if (parserExitCode != MDFlexParser::exitCodes::success) {
+    if (parserExitCode == MDFlexParser::exitCodes::parsingError) {
+      std::cout << "Error when parsing configuration file." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    exit(EXIT_SUCCESS);
+  }
+
+  calcSimulationBox();
+
+  if (tuningPhases.value > 0) {
+    iterations.value = 0ul;
+  }
+
+  initializeParticlePropertiesLibrary();
+
+  initializeObjects();
+}
 
 std::string MDFlexConfig::to_string() const {
   using namespace std;
@@ -183,5 +244,81 @@ void MDFlexConfig::addParticleType(unsigned long typeId, double epsilon, double 
     epsilonMap.value.emplace(typeId, epsilon);
     sigmaMap.value.emplace(typeId, sigma);
     massMap.value.emplace(typeId, mass);
+  }
+}
+
+void MDFlexConfig::flushParticles() { _particles.clear(); }
+
+void MDFlexConfig::initializeParticlePropertiesLibrary() {
+  if (epsilonMap.value.empty()) {
+    throw std::runtime_error("No properties found in particle properties library!");
+  }
+
+  if (epsilonMap.value.size() != sigmaMap.value.size() or epsilonMap.value.size() != massMap.value.size()) {
+    throw std::runtime_error("Number of particle properties differ!");
+  }
+
+  _particlePropertiesLibrary = std::make_shared<ParticlePropertiesLibraryType>(cutoff.value);
+
+  for (auto [type, epsilon] : epsilonMap.value) {
+    _particlePropertiesLibrary->addType(type, epsilon, sigmaMap.value.at(type), massMap.value.at(type));
+  }
+  _particlePropertiesLibrary->calculateMixingCoefficients();
+}
+
+void MDFlexConfig::initializeObjects() {
+  if (not checkpointfile.value.empty()) {
+    loadParticlesFromCheckpoint();
+  }
+  for (const auto &object : cubeGridObjects) {
+    object.generate(_particles);
+  }
+  for (const auto &object : cubeGaussObjects) {
+    object.generate(_particles);
+  }
+  for (const auto &object : cubeUniformObjects) {
+    object.generate(_particles);
+  }
+  for (const auto &object : sphereObjects) {
+    object.generate(_particles);
+  }
+  for (const auto &object : cubeClosestPackedObjects) {
+    object.generate(_particles);
+  }
+}
+
+void MDFlexConfig::loadParticlesFromCheckpoint() {
+  std::ifstream infile(checkpointfile.value);
+  size_t numParticles;
+  std::string dataType;
+
+  if (not infile.is_open()) {
+    std::cout << "Could not load checkpoint file " << checkpointfile.value << "." << std::endl;
+    return;
+  }
+
+  findWord(infile, "POINTS");
+  infile >> numParticles >> dataType;
+
+  auto positions = readPayload<std::array<double, 3>, 3>(infile, numParticles);
+  // next payload block is always preceded by the datatype
+  findWord(infile, dataType);
+  auto velocities = readPayload<std::array<double, 3>, 3>(infile, numParticles);
+  findWord(infile, dataType);
+  auto forces = readPayload<std::array<double, 3>, 3>(infile, numParticles);
+  findWord(infile, "default");
+  auto typeID = readPayload<size_t, 1>(infile, numParticles);
+
+  // creating Particles from checkpoint:
+  for (auto i = 0ul; i < numParticles; ++i) {
+    ParticleType particle;
+
+    particle.setR(positions[i]);
+    particle.setV(velocities[i]);
+    particle.setF(forces[i]);
+    particle.setID(i);
+    particle.setTypeId(typeID[i]);
+
+    _particles.push_back(particle);
   }
 }

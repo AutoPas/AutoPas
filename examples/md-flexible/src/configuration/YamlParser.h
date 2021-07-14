@@ -7,16 +7,9 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include <algorithm>
-#include <array>
-#include <iomanip>
-#include <iostream>
-#include <limits>
-#include <string>
-
 #include "MDFlexConfig.h"
 #include "autopas/utils/NumberSet.h"
-#include "src/Objects/Objects.h"
+#include "objects/Object.h"
 
 /**
  * Parser for input through YAML files.

@@ -1,0 +1,15 @@
+#yaml input for sphere object
+#used in:
+#MDFLexConfigTests.SphereBoxMin
+#YamlParser
+Objects:
+  Sphere:
+    0:
+      particle-type: 0
+      particle-epsilon: 4.
+      particle-sigma: 4.
+      particle-mass: 4.
+      center: [5.,-10.,0.]
+      radius: 10
+      particle-spacing: 1.5
+      velocity: [0.,0.,0.]
