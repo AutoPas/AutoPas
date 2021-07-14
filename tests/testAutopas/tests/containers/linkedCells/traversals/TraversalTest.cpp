@@ -30,7 +30,7 @@ void testTraversal(autopas::TraversalOption traversalOption, autopas::LoadEstima
                                              loadEstimatorOption);
 
   autopasTools::generators::GridGenerator::fillWithParticles(linkedCells, edgeLength);
-  ASSERT_EQ(linkedCells.getNumParticles(), edgeLength[0] * edgeLength[1] * edgeLength[2]);
+  ASSERT_EQ(linkedCells.getNumberOfParticles(), edgeLength[0] * edgeLength[1] * edgeLength[2]);
 
   std::array<unsigned long, 3> overlap = {};
   for (unsigned int d = 0; d < 3; d++) {

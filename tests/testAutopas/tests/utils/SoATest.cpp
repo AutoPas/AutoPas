@@ -88,7 +88,7 @@ TEST_F(SoATest, SoATestPush) {
   using autopas::Particle;
   autopas::SoA<Particle::SoAArraysType> soa;
 
-  EXPECT_EQ(soa.getNumParticles(), 0);
+  EXPECT_EQ(soa.getNumberOfParticles(), 0);
 
   soa.push<Particle::AttributeNames::id>(2);
   soa.push<Particle::AttributeNames::posX>(0.3);
@@ -98,7 +98,7 @@ TEST_F(SoATest, SoATestPush) {
   soa.push<Particle::AttributeNames::forceY>(0.7);
   soa.push<Particle::AttributeNames::forceZ>(0.07);
 
-  EXPECT_EQ(soa.getNumParticles(), 1);
+  EXPECT_EQ(soa.getNumberOfParticles(), 1);
 
   EXPECT_EQ(soa.read<Particle::AttributeNames::id>(0), 2);
   EXPECT_EQ(soa.read<Particle::AttributeNames::posX>(0), 0.3);
@@ -122,12 +122,12 @@ TEST_F(SoATest, SoATestAppend) {
   soaBuffer[0].push<Particle::AttributeNames::forceY>(0.7);
   soaBuffer[0].push<Particle::AttributeNames::forceZ>(0.07);
 
-  EXPECT_EQ(soaBuffer[0].getNumParticles(), 1);
-  EXPECT_EQ(soaBuffer[1].getNumParticles(), 0);
+  EXPECT_EQ(soaBuffer[0].getNumberOfParticles(), 1);
+  EXPECT_EQ(soaBuffer[1].getNumberOfParticles(), 0);
   // Append to empty buffer
   soaBuffer[1].append(soaBuffer[0]);
-  EXPECT_EQ(soaBuffer[0].getNumParticles(), 1);
-  EXPECT_EQ(soaBuffer[1].getNumParticles(), 1);
+  EXPECT_EQ(soaBuffer[0].getNumberOfParticles(), 1);
+  EXPECT_EQ(soaBuffer[1].getNumberOfParticles(), 1);
 
   EXPECT_EQ(soaBuffer[1].read<Particle::AttributeNames::id>(0), 2);
   EXPECT_EQ(soaBuffer[1].read<Particle::AttributeNames::posX>(0), 0.3);
@@ -138,8 +138,8 @@ TEST_F(SoATest, SoATestAppend) {
   EXPECT_EQ(soaBuffer[1].read<Particle::AttributeNames::forceZ>(0), 0.07);
   // Append to filled buffer
   soaBuffer[0].append(soaBuffer[1]);
-  EXPECT_EQ(soaBuffer[0].getNumParticles(), 2);
-  EXPECT_EQ(soaBuffer[1].getNumParticles(), 1);
+  EXPECT_EQ(soaBuffer[0].getNumberOfParticles(), 2);
+  EXPECT_EQ(soaBuffer[1].getNumberOfParticles(), 1);
 }
 
 TEST_F(SoATest, SoATestSwap) {
@@ -209,7 +209,7 @@ TEST_F(SoATest, SoATestMultiWriteRead) {
 
   soa.begin<Particle::AttributeNames::id>()[0] = 1;
 
-  EXPECT_EQ(soa.getNumParticles(), 1);
+  EXPECT_EQ(soa.getNumberOfParticles(), 1);
 
   soa.writeMultiple<Particle::AttributeNames::posX, Particle::AttributeNames::posY, Particle::AttributeNames::posZ>(
       0, {4., 5., 6.});
@@ -242,7 +242,7 @@ TEST_F(SoATest, SoATestComplicatedAccess) {
   using autopas::Particle;
   autopas::SoA<Particle::SoAArraysType> soa;
 
-  EXPECT_EQ(soa.getNumParticles(), 0);
+  EXPECT_EQ(soa.getNumberOfParticles(), 0);
 
   soa.push<Particle::AttributeNames::id>(2);
   soa.push<Particle::AttributeNames::posX>(0.3);
@@ -252,7 +252,7 @@ TEST_F(SoATest, SoATestComplicatedAccess) {
   soa.push<Particle::AttributeNames::forceY>(0.7);
   soa.push<Particle::AttributeNames::forceZ>(0.07);
 
-  EXPECT_EQ(soa.getNumParticles(), 1);
+  EXPECT_EQ(soa.getNumberOfParticles(), 1);
 
   EXPECT_EQ(soa.read<Particle::AttributeNames::id>(0), 2);
   EXPECT_EQ(soa.read<Particle::AttributeNames::posX>(0), 0.3);
@@ -264,7 +264,7 @@ TEST_F(SoATest, SoATestComplicatedAccess) {
 
   soa.clear();
 
-  EXPECT_EQ(soa.getNumParticles(), 0);
+  EXPECT_EQ(soa.getNumberOfParticles(), 0);
 
   soa.push<Particle::AttributeNames::id>(3);
   soa.push<Particle::AttributeNames::posX>(1.3);
@@ -274,7 +274,7 @@ TEST_F(SoATest, SoATestComplicatedAccess) {
   soa.push<Particle::AttributeNames::forceY>(1.7);
   soa.push<Particle::AttributeNames::forceZ>(1.07);
 
-  EXPECT_EQ(soa.getNumParticles(), 1);
+  EXPECT_EQ(soa.getNumberOfParticles(), 1);
 
   EXPECT_EQ(soa.read<Particle::AttributeNames::id>(0), 3);
   EXPECT_EQ(soa.read<Particle::AttributeNames::posX>(0), 1.3);
@@ -330,7 +330,7 @@ TEST_F(SoATest, SoATestComplicatedAccess) {
 
   soa.pop_back();
 
-  EXPECT_EQ(soa.getNumParticles(), 1);
+  EXPECT_EQ(soa.getNumberOfParticles(), 1);
 
   soa.writeMultiple<Particle::AttributeNames::posX, Particle::AttributeNames::posY, Particle::AttributeNames::posZ>(
       0, {4., 5., 6.});

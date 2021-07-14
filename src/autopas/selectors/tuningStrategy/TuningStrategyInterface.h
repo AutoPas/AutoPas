@@ -80,5 +80,11 @@ class TuningStrategyInterface {
    * @return
    */
   virtual bool searchSpaceIsEmpty() const = 0;
+
+  /**
+   * Indicate whether the strategy needs smoothed values of homogeneity and max density
+   * @return
+   */
+  virtual bool smoothedHomogeneityAndMaxDensityNeeded() const = 0;
 };
 }  // namespace autopas

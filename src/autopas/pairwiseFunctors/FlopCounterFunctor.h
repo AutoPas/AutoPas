@@ -58,20 +58,20 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
    * @param soa
    */
   void SoAFunctorSingle(SoAView<typename Particle::SoAArraysType> soa, bool /*newton3*/) override {
-    if (soa.getNumParticles() == 0) return;
+    if (soa.getNumberOfParticles() == 0) return;
 
     double *const __restrict x1ptr = soa.template begin<Particle::AttributeNames::posX>();
     double *const __restrict y1ptr = soa.template begin<Particle::AttributeNames::posY>();
     double *const __restrict z1ptr = soa.template begin<Particle::AttributeNames::posZ>();
 
-    for (size_t i = 0; i < soa.getNumParticles(); ++i) {
+    for (size_t i = 0; i < soa.getNumberOfParticles(); ++i) {
       size_t distanceCalculationsAcc = 0;
       size_t kernelCallsAcc = 0;
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : kernelCallsAcc, distanceCalculationsAcc)
-      for (size_t j = i + 1; j < soa.getNumParticles(); ++j) {
+      for (size_t j = i + 1; j < soa.getNumberOfParticles(); ++j) {
         ++distanceCalculationsAcc;
 
         const double drx = x1ptr[i] - x1ptr[j];
@@ -107,14 +107,14 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
     double *const __restrict y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
     double *const __restrict z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
 
-    for (size_t i = 0; i < soa1.getNumParticles(); ++i) {
+    for (size_t i = 0; i < soa1.getNumberOfParticles(); ++i) {
       size_t distanceCalculationsAcc = 0;
       size_t kernelCallsAcc = 0;
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : kernelCallsAcc, distanceCalculationsAcc)
-      for (size_t j = 0; j < soa2.getNumParticles(); ++j) {
+      for (size_t j = 0; j < soa2.getNumberOfParticles(); ++j) {
         ++distanceCalculationsAcc;
 
         const double drx = x1ptr[i] - x2ptr[j];
@@ -145,7 +145,7 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
   void SoAFunctorVerlet(SoAView<typename Particle::SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                         bool /*newton3*/) override {
-    auto numParts = soa.getNumParticles();
+    auto numParts = soa.getNumberOfParticles();
 
     if (numParts == 0) return;
 

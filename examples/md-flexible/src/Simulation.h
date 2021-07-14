@@ -9,6 +9,9 @@
 #include "autopas/AutoPasDecl.h"
 #include "autopas/utils/Timer.h"
 #include "parsing/MDFlexConfig.h"
+#ifdef AUTOPAS_INTERNODE_TUNING
+#include <mpi.h>
+#endif
 
 /**
  * The main simulation class.
@@ -108,13 +111,6 @@ class Simulation {
    * @return unique_prt(ParticlePropertiesLibrary)
    */
   [[nodiscard]] const std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> &getPpl() const;
-
-  /**
-   * Calculate the homogeneity of the scenario by using the standard deviation.
-   * @param autopas
-   * @return double
-   */
-  [[nodiscard]] double calculateHomogeneity(autopas::AutoPas<ParticleType> &autopas) const;
 
  private:
   /**

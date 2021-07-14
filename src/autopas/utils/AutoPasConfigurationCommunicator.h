@@ -11,9 +11,12 @@
 #include <vector>
 
 #include "WrapMPI.h"
+#include "autopas/containers/ParticleContainerInterface.h"
+#include "autopas/molecularDynamics/MoleculeLJ.h"
 #include "autopas/selectors/Configuration.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/NumberSet.h"
+#include "autopas/utils/SimilarityFunctions.h"
 
 /**
  * Provides several functions for handling configurations among mpi ranks.
@@ -74,6 +77,70 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
                               std::set<LoadEstimatorOption> &loadEstimatorOptions,
                               std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options,
                               int rank, int commSize);
+
+/**
+ * Distribute ranks in buckets, which contain only ranks with similar scenarios.
+ * Each bucket then has its own search space.
+ * @tparam Particle
+ * @param comm MPI communicator
+ * @param bucket new MPI communicator for its bucket
+ * @param container container of current simulation
+ * @param smoothedHomogeneityAndMaxDensity [homogeneity, maxDensity] smoothed over last 10 iterations.
+ * @param MPITuningMaxDifferenceForBucket For MPI-tuning: Maximum of the relative difference in the comparison metric
+ * for two ranks which exchange their tuning information.
+ * @param MPITuningWeightForMaxDensity For MPI-tuning: Weight for maxDensity in the calculation for bucket distribution.
+ */
+template <class Particle>
+void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket,
+                              const std::shared_ptr<autopas::ParticleContainerInterface<Particle>> &container,
+                              const std::pair<double, double> smoothedHomogeneityAndMaxDensity,
+                              double MPITuningMaxDifferenceForBucket, double MPITuningWeightForMaxDensity) {
+  int rank;
+  AutoPas_MPI_Comm_rank(comm, &rank);
+  int commSize;
+  AutoPas_MPI_Comm_size(comm, &commSize);
+
+  std::vector<double> similarityMetrics(commSize);
+  double similarityMetric =
+      smoothedHomogeneityAndMaxDensity.first + MPITuningWeightForMaxDensity * smoothedHomogeneityAndMaxDensity.second;
+
+  // debug print for evaluation
+  AutoPasLog(debug, "similarityMetric of rank: " + std::to_string(rank) + " is: " + std::to_string(similarityMetric));
+  AutoPasLog(debug, "smoothedHomogeneity of rank: " + std::to_string(rank) +
+                        " is: " + std::to_string(smoothedHomogeneityAndMaxDensity.first));
+  AutoPasLog(debug, "smoothedMaxDensity of rank: " + std::to_string(rank) +
+                        " is: " + std::to_string(smoothedHomogeneityAndMaxDensity.second));
+
+  // get all the similarityMetrics of the other ranks
+  AutoPas_MPI_Allgather(&similarityMetric, 1, AUTOPAS_MPI_DOUBLE, similarityMetrics.data(), 1, AUTOPAS_MPI_DOUBLE,
+                        comm);
+
+  // sort all values
+  std::sort(similarityMetrics.begin(), similarityMetrics.end());
+
+  // calculate absolute differences between neighbouring values
+  std::vector<double> differences;
+  std::adjacent_difference(similarityMetrics.begin(), similarityMetrics.end(), std::back_inserter(differences));
+
+  // convert differences to percentage changes
+  std::transform(differences.begin(), differences.end(), similarityMetrics.begin(), differences.begin(),
+                 std::divides<>());
+
+  int current_bucket = 0;
+  int my_bucket = 0;
+
+  for (int i = 0; (size_t)i < similarityMetrics.size(); i++) {
+    // if a difference exceeds MPITuningMaxDifferenceForBucket, start a new bucket
+    if (differences[i] > MPITuningMaxDifferenceForBucket) current_bucket++;
+
+    // debug print for evaluation
+    AutoPasLog(debug, "I am rank: " + std::to_string(rank) + " bucket: " + std::to_string(current_bucket) +
+                          "  new value: " + std::to_string(similarityMetrics[i]));
+    if (similarityMetrics[i] == similarityMetric) my_bucket = current_bucket;
+  }
+  // split MPI_Comm in as many new communications as there are groups with similar scenarios
+  AutoPas_MPI_Comm_split(comm, my_bucket, rank, bucket);
+}
 
 /**
  * Serializes a configuration object for communication via MPI.
