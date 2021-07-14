@@ -185,46 +185,21 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
   auto [emigrants, updated] = autoPasContainer->updateContainer(false);
 
   if (updated) {
-    const std::array<double, _dimensionCount> globalBoxMin = {_globalBoxMin[0], _globalBoxMin[1], _globalBoxMin[2]};
-    const std::array<double, _dimensionCount> globalBoxMax = {_globalBoxMax[0], _globalBoxMax[1], _globalBoxMax[2]};
-    const std::array<double, _dimensionCount> globalBoxLength =
-        autopas::utils::ArrayMath::sub(globalBoxMax, globalBoxMin);
-
     for (int i = 0; i < _dimensionCount; ++i) {
       std::vector<ParticleType> immigrants, migrants, remainingEmigrants;
 
       std::vector<ParticleType> particlesForLeftNeighbour;
       std::vector<ParticleType> particlesForRightNeighbour;
 
+      categorizeParticlesIntoLeftAndRightNeighbour(emigrants, i, particlesForLeftNeighbour, particlesForRightNeighbour,
+                                                   remainingEmigrants);
+
+      // Assign remaining emigrants to emigrants for next loop iteration.
+      emigrants = remainingEmigrants;
+
       // See documentation for _neighbourDomainIndices to explain the indexing
       int leftNeighbour = _neighbourDomainIndices[(i * 2) % _neighbourCount];
       int rightNeighbour = _neighbourDomainIndices[(i * 2 + 1) % _neighbourCount];
-
-      std::array<double, _dimensionCount> position;
-      for (const auto &particle : emigrants) {
-        position = particle.getR();
-        if (position[i] < _localBoxMin[i]) {
-          particlesForLeftNeighbour.push_back(particle);
-
-          // Apply boundary condition
-          if (_localBoxMin[i] == _globalBoxMin[i]) {
-            position[i] =
-                std::min(std::nextafter(_globalBoxMax[i], _globalBoxMin[i]), position[i] + globalBoxLength[i]);
-            particlesForLeftNeighbour.back().setR(position);
-          }
-        } else if (position[i] >= _localBoxMax[i]) {
-          particlesForRightNeighbour.push_back(particle);
-
-          // Apply boundary condition
-          if (_localBoxMax[i] == _globalBoxMax[i]) {
-            position[i] = std::max(_globalBoxMin[i], position[i] - globalBoxLength[i]);
-            particlesForRightNeighbour.back().setR(position);
-          }
-        } else {
-          remainingEmigrants.push_back(particle);
-        }
-      }
-      emigrants = remainingEmigrants;
 
       sendAndReceiveParticlesLeftAndRight(particlesForLeftNeighbour, particlesForRightNeighbour, leftNeighbour,
                                           rightNeighbour, immigrants);
@@ -249,27 +224,10 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
       leftNeighbour = _neighbourDomainIndices[(j * 2) % _neighbourCount];
       rightNeighbour = _neighbourDomainIndices[(j * 2 + 1) % _neighbourCount];
 
-      for (const auto &particle : migrants) {
-        std::array<double, _dimensionCount> position = particle.getR();
-        if (position[j] < _localBoxMin[j]) {
-          particlesForLeftNeighbour.push_back(particle);
-
-          // Apply boundary condition
-          if (_localBoxMin[j] == _globalBoxMin[j]) {
-            position[j] =
-                std::min(std::nextafter(_globalBoxMax[j], _globalBoxMin[j]), position[j] + globalBoxLength[j]);
-            particlesForLeftNeighbour.back().setR(position);
-          }
-        } else if (position[j] >= _localBoxMax[j]) {
-          particlesForRightNeighbour.push_back(particle);
-
-          // Apply boundary condition
-          if (_localBoxMax[j] == _globalBoxMax[j]) {
-            position[j] = std::max(_globalBoxMin[j], position[j] - globalBoxLength[j]);
-            particlesForRightNeighbour.back().setR(position);
-          }
-        }
-      }
+      // This call should not change the reaminingEmigrants vector because there should not be any particles
+      // which cannot be assigned to either the left or the right neighbour.
+      categorizeParticlesIntoLeftAndRightNeighbour(migrants, j, particlesForLeftNeighbour, particlesForRightNeighbour,
+                                                   remainingEmigrants);
 
       sendAndReceiveParticlesLeftAndRight(particlesForLeftNeighbour, particlesForRightNeighbour, leftNeighbour,
                                           rightNeighbour, immigrants);
@@ -401,6 +359,36 @@ void RegularGridDecomposition::collectHaloParticlesForRightNeighbour(SharedAutoP
     if (_localBoxMax[direction] == _globalBoxMax[direction]) {
       position[direction] = position[direction] - (_globalBoxMax[direction] - _globalBoxMin[direction]);
       haloParticles.back().setR(position);
+    }
+  }
+}
+
+void RegularGridDecomposition::categorizeParticlesIntoLeftAndRightNeighbour(
+    const std::vector<ParticleType> &particles, const size_t &direction,
+    std::vector<ParticleType> &leftNeighbourParticles, std::vector<ParticleType> &rightNeighbourParticles,
+    std::vector<ParticleType> &uncategorizedParticles) {
+  for (const auto &particle : particles) {
+    std::array<double, _dimensionCount> position = particle.getR();
+    if (position[direction] < _localBoxMin[direction]) {
+      leftNeighbourParticles.push_back(particle);
+
+      // Apply boundary condition
+      if (_localBoxMin[direction] == _globalBoxMin[direction]) {
+        position[direction] = std::min(std::nextafter(_globalBoxMax[direction], _globalBoxMin[direction]),
+                                       position[direction] + _globalBoxMax[direction] - _globalBoxMin[direction]);
+        leftNeighbourParticles.back().setR(position);
+      }
+    } else if (position[direction] >= _localBoxMax[direction]) {
+      rightNeighbourParticles.push_back(particle);
+
+      // Apply boundary condition
+      if (_localBoxMax[direction] == _globalBoxMax[direction]) {
+        position[direction] = std::max(_globalBoxMin[direction],
+                                       position[direction] - (_globalBoxMax[direction] - _globalBoxMin[direction]));
+        rightNeighbourParticles.back().setR(position);
+      }
+    } else {
+      uncategorizedParticles.push_back(particle);
     }
   }
 }
