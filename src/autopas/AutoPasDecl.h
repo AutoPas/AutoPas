@@ -726,12 +726,12 @@ class AutoPas {
    * For MPI-tuning: Maximum of the relative difference in the comparison metric for two ranks which exchange their
    * tuning information.
    */
-  double _mpiTuningMaxDifferenceForBucket{0.15};
+  double _mpiTuningMaxDifferenceForBucket{0.3};
 
   /**
    * For MPI-tuning: Weight for maxDensity in the calculation for bucket distribution.
    */
-  double _mpiTuningWeightForMaxDensity{0.};
+  double _mpiTuningWeightForMaxDensity{0.0};
 
   /**
    * Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and VerletListsCells).
