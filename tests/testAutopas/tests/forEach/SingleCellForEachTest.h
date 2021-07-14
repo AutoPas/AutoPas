@@ -48,6 +48,8 @@ class SingleCellForEachTest : public AutoPasTestBase {
   // for each unit test.
   std::vector<Molecule> _vecOfMolecules;
 
+  std::array<double, 3> dummy{};
+
   template<typename Cell>
-  void testCell(Cell cell, std::vector<size_t> &numMolecules, autopas::IteratorBehavior iteratorBehavior);
+  void testCell(Cell cell, std::vector<size_t> &numMolecules, autopas::IteratorBehavior iteratorBehavior, std::array<double, 3> const lowerCorner, std::array<double, 3> const higherCorner);
 };

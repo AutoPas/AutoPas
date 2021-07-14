@@ -34,7 +34,7 @@ TEST_F(SingleCellForEachTest, testAllParticlesFpc) {
   std::vector<size_t> expectedIndices(_vecOfMolecules.size());
   std::iota(expectedIndices.begin(), expectedIndices.end(), 0);
 
-  testCell(fpc, expectedIndices, IteratorBehavior::ownedOrHaloOrDummy);
+  testCell(fpc, expectedIndices, IteratorBehavior::ownedOrHaloOrDummy, dummy, dummy);
 }
 
 TEST_F(SingleCellForEachTest, testOwnedOrHaloFpc) {
@@ -44,7 +44,7 @@ TEST_F(SingleCellForEachTest, testOwnedOrHaloFpc) {
   std::vector<size_t> expectedIndices(_vecOfMolecules.size() - 1);
   std::iota(expectedIndices.begin(), expectedIndices.end(), 1);
 
-  testCell(fpc, expectedIndices, IteratorBehavior::ownedOrHalo);
+  testCell(fpc, expectedIndices, IteratorBehavior::ownedOrHalo, dummy, dummy);
 }
 
 TEST_F(SingleCellForEachTest, testOwnedFpc) {
@@ -54,9 +54,21 @@ TEST_F(SingleCellForEachTest, testOwnedFpc) {
   std::vector<size_t> expectedIndices(_vecOfMolecules.size() - 2);
   std::iota(expectedIndices.begin(), expectedIndices.end(), 2);
 
-  testCell(fpc, expectedIndices, IteratorBehavior::owned);
+  testCell(fpc, expectedIndices, IteratorBehavior::owned, dummy, dummy);
 }
 
+TEST_F(SingleCellForEachTest, testAllParticlesInRegionFpc) {
+  FMCell fpc;
+  fillWithParticles(&fpc);
+
+  std::vector<size_t> expectedIndices(_vecOfMolecules.size() - 2);
+  std::iota(expectedIndices.begin(), expectedIndices.end(), 1);
+
+  const std::array<double, 3> lowerCorner{0.5, 0.5, 0.5};
+  const std::array<double, 3> higherCorner{2.5, 2.5, 2.5};
+
+  testCell(fpc, expectedIndices, IteratorBehavior::ownedOrHaloOrDummy, lowerCorner, higherCorner);
+}
 
 TEST_F(SingleCellForEachTest, testAllParticlesRpc) {
   ReferenceParticleCell<Molecule> rpc;
@@ -65,7 +77,7 @@ TEST_F(SingleCellForEachTest, testAllParticlesRpc) {
   std::vector<size_t> expectedIndices(_vecOfMolecules.size());
   std::iota(expectedIndices.begin(), expectedIndices.end(), 0);
 
-  testCell(rpc, expectedIndices, IteratorBehavior::ownedOrHaloOrDummy);
+  testCell(rpc, expectedIndices, IteratorBehavior::ownedOrHaloOrDummy, dummy, dummy);
 }
 
 TEST_F(SingleCellForEachTest, testOwnedOrHaloParticlesRpc) {
@@ -75,7 +87,7 @@ TEST_F(SingleCellForEachTest, testOwnedOrHaloParticlesRpc) {
   std::vector<size_t> expectedIndices(_vecOfMolecules.size() - 1);
   std::iota(expectedIndices.begin(), expectedIndices.end(), 1);
 
-  testCell(rpc, expectedIndices, IteratorBehavior::ownedOrHalo);
+  testCell(rpc, expectedIndices, IteratorBehavior::ownedOrHalo, dummy, dummy);
 }
 
 TEST_F(SingleCellForEachTest, testOwnedParticlesRpc) {
@@ -85,11 +97,23 @@ TEST_F(SingleCellForEachTest, testOwnedParticlesRpc) {
   std::vector<size_t> expectedIndices(_vecOfMolecules.size() - 2);
   std::iota(expectedIndices.begin(), expectedIndices.end(), 2);
 
-  testCell(rpc, expectedIndices, IteratorBehavior::owned);
+  testCell(rpc, expectedIndices, IteratorBehavior::owned, dummy, dummy);
 }
 
+TEST_F(SingleCellForEachTest, testAllParticlesInRegionRpc) {
+  ReferenceParticleCell<Molecule> rpc;
+  fillWithParticleReferences(&rpc);
+
+  std::vector<size_t> expectedIndices(_vecOfMolecules.size() - 2);
+  std::iota(expectedIndices.begin(), expectedIndices.end(), 1);
+
+  const std::array<double, 3> lowerCorner{0.5, 0.5, 0.5};
+  const std::array<double, 3> higherCorner{2.5, 2.5, 2.5};
+
+  testCell(rpc, expectedIndices, IteratorBehavior::ownedOrHaloOrDummy, lowerCorner, higherCorner);
+}
 template <typename Cell>
-void SingleCellForEachTest::testCell(Cell cell, std::vector<size_t> &expectedIndices, IteratorBehavior iteratorBehavior){
+void SingleCellForEachTest::testCell(Cell cell, std::vector<size_t> &expectedIndices, IteratorBehavior iteratorBehavior, std::array<double, 3> const lowerCorner, std::array<double, 3> const higherCorner ){
   std::vector<size_t> foundParticles;
 
   auto forEachLambda = [&](auto &p) {
@@ -101,7 +125,11 @@ void SingleCellForEachTest::testCell(Cell cell, std::vector<size_t> &expectedInd
     foundParticles.push_back(p.getID());
   };
 
-  cell.forEach(forEachLambda, iteratorBehavior);
+  if (lowerCorner[0] == 0.f) {
+    cell.forEach(forEachLambda, iteratorBehavior);
+  } else {
+    cell.forEach(forEachLambda, lowerCorner, higherCorner, iteratorBehavior);
+  }
 
   ASSERT_THAT(foundParticles, ::testing::UnorderedElementsAreArray(expectedIndices));
 }
