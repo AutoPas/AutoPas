@@ -35,6 +35,11 @@ class Timer {
    */
   long stop();
 
+  /** 
+   * Resets the timer to 0.
+   */
+  void reset();
+
   /**
    * Adds the given amount of nanoseconds to the total time.
    * @param nanoseconds

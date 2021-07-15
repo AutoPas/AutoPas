@@ -5,13 +5,12 @@
  */
 #pragma once
 
+#include <ALL.hpp>
 #include <list>
 #include <memory>
 
 #include "DomainDecomposition.h"
-#include "autopas/AutoPas.h"
 #include "autopas/utils/WrapMPI.h"
-#include "src/TypeDefinitions.h"
 
 /**
  * This class can be used as a domain decomposition which divides the domain in equal sized rectangular subdomains.
@@ -35,15 +34,11 @@ class RegularGridDecomposition final : public DomainDecomposition {
   virtual ~RegularGridDecomposition();
 
   /**
-   * Type for the AutoPas container
-   */
-  using SharedAutoPasContainer = std::shared_ptr<autopas::AutoPas<ParticleType>>;
-
-  /**
    * Used to update the domain to the current topology.
-   * Currently does nothing
+   * Handles the diffuse load balancing by resizing the domains according to their work done.
+   * See member _all for more information.
    */
-  void update() override;
+  void update(SharedAutoPasContainer &autoPasContainer, const double &work) override;
 
   /**
    * Returns the index of the local domain in the global domain context.
@@ -178,6 +173,11 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * The maximum cooridnates of the local domain.
    */
   std::array<double, 3> _localBoxMax;
+  
+  /**
+   * Used for load balancing the decomposition.
+   */
+  ALL::ALL<double, double> *_all;
 
   /**
    * A temporary buffer used for MPI send requests.

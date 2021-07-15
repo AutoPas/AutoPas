@@ -7,6 +7,9 @@
 
 #include <array>
 
+#include "autopas/AutoPas.h"
+#include "src/TypeDefinitions.h"
+
 /**
  * An interface for domain decompositions which can be used in the simulation
  */
@@ -18,9 +21,14 @@ class DomainDecomposition {
   virtual ~DomainDecomposition() = default;
 
   /**
+   * Type for the AutoPas container
+   */
+  using SharedAutoPasContainer = std::shared_ptr<autopas::AutoPas<ParticleType>>;
+
+  /**
    * Updates the domain decomposition to the current topology.
    */
-  virtual void update() = 0;
+  virtual void update(SharedAutoPasContainer &autoPasContainer, const double &work) = 0;
 
   /**
    * Returns the index of the local domain in the global domain context.

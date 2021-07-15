@@ -27,6 +27,7 @@ RegularGridDecomposition::RegularGridDecomposition(const std::array<double, 3> &
 #endif
 
   autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &_subdomainCount);
+  _all = new ALL::ALL<double, double>(ALL::LB_t::STAGGERED, 3, 0);
 
   if (_subdomainCount == 1) {
     _mpiIsEnabled = false;
@@ -53,7 +54,38 @@ RegularGridDecomposition::RegularGridDecomposition(const std::array<double, 3> &
 
 RegularGridDecomposition::~RegularGridDecomposition() {}
 
-void RegularGridDecomposition::update() { updateLocalBox(); }
+void RegularGridDecomposition::update(SharedAutoPasContainer &autoPasContainer, const double &work) {
+#if defined(AUTOPAS_INCLUDE_MPI)
+  const double safetyFactor = 1.0 + 1.e+10;
+  const std::vector<double> minimumDomainSize = {(_skinWidth + _cutoffWidth + safetyFactor) * 2, (_skinWidth + _cutoffWidth + safetyFactor) * 2, (_skinWidth + _cutoffWidth + safetyFactor) * 2};
+
+  std::vector<ALL::Point<double>> points;
+  points.emplace_back(3, _localBoxMin.data());
+  points.emplace_back(3, _localBoxMax.data());
+
+  //_all.setProcGridParams({_domainId[0], _domainId[1], _domainId[2]} , {_decomposition[0], _decomposition[1], _decomposition[2]});
+  _all->setVertices(points);
+  _all->setCommunicator(_communicator);
+  _all->setWork(work);
+  _all->setProcTag(_domainIndex);
+  _all->setMinDomainSize(minimumDomainSize);
+  _all->setup();
+
+  _all->balance();
+
+  auto resultVertices = _all->getVertices();
+  //_localBoxMin = {resultVertices[0][0], resultVertices[0][1], resultVertices[0][2]};
+  //_localBoxMax = {resultVertices[1][0], resultVertices[1][1], resultVertices[1][2]};
+  //autoPasContainer->setBoxMin(_localBoxMin);
+  //autoPasContainer->setBoxMax(_localBoxMax);
+
+  auto neighbours = _all->getNeighbors();
+  std::cout
+    << "DomainIndex: " << _domainIndex << "\n"
+    << "OldNeighbours: " << autopas::utils::ArrayUtils::to_string(_neighbourDomainIndices) << "\n"
+    << "NewNeighbours: " << autopas::utils::ArrayUtils::to_string(neighbours)  << std::endl;
+#endif
+}
 
 void RegularGridDecomposition::initializeMPICommunicator() {
   std::vector<int> periods(3, 1);
@@ -70,7 +102,20 @@ void RegularGridDecomposition::initializeLocalDomain() {
   autopas::AutoPas_MPI_Cart_get(_communicator, 3, _decomposition.data(), periods.data(), _domainId.data());
 }
 
-void RegularGridDecomposition::initializeLocalBox() { updateLocalBox(); }
+void RegularGridDecomposition::initializeLocalBox() {
+  for (int i = 0; i < 3; ++i) {
+    double localBoxWidth = (_globalBoxMax[i] - _globalBoxMin[i]) / static_cast<double>(_decomposition[i]);
+
+    _localBoxMin[i] = _domainId[i] * localBoxWidth + _globalBoxMin[i];
+    _localBoxMax[i] = (_domainId[i] + 1) * localBoxWidth + _globalBoxMin[i];
+
+    if (_domainId[i] == 0) {
+      _localBoxMin[i] = _globalBoxMin[i];
+    } else if (_domainId[i] == _decomposition[i] - 1) {
+      _localBoxMax[i] = _globalBoxMax[i];
+    }
+  }
+}
 
 void RegularGridDecomposition::initializeNeighbourIds() {
   for (int i = 0; i < 3; ++i) {
@@ -83,21 +128,6 @@ void RegularGridDecomposition::initializeNeighbourIds() {
     auto succeedingNeighbourId = _domainId;
     succeedingNeighbourId[i] = (++succeedingNeighbourId[i] + _decomposition[i]) % _decomposition[i];
     _neighbourDomainIndices[neighbourIndex] = convertIdToIndex(succeedingNeighbourId);
-  }
-}
-
-void RegularGridDecomposition::updateLocalBox() {
-  for (int i = 0; i < 3; ++i) {
-    double localBoxWidth = (_globalBoxMax[i] - _globalBoxMin[i]) / static_cast<double>(_decomposition[i]);
-
-    _localBoxMin[i] = _domainId[i] * localBoxWidth + _globalBoxMin[i];
-    _localBoxMax[i] = (_domainId[i] + 1) * localBoxWidth + _globalBoxMin[i];
-
-    if (_domainId[i] == 0) {
-      _localBoxMin[i] = _globalBoxMin[i];
-    } else if (_domainId[i] == _decomposition[i] - 1) {
-      _localBoxMax[i] = _globalBoxMax[i];
-    }
   }
 }
 

@@ -142,6 +142,8 @@ void Simulation::run() {
   _timers.simulate.start();
   for (int i = 0; i < _configuration.iterations.value; i += iterationsPerSuperstep) {
     executeSupersteps(iterationsPerSuperstep);
+    _domainDecomposition.update(_autoPasContainer, _timers.work.getTotalTime());
+    _timers.work.reset();
   }
   _timers.simulate.stop();
 
@@ -159,16 +161,20 @@ void Simulation::executeSupersteps(const int iterationsPerSuperstep) {
       _timers.vtk.stop();
     }
 
+    _timers.work.start();
     updatePositions();
+    _timers.work.stop();
 
     _domainDecomposition.exchangeMigratingParticles(_autoPasContainer);
     _domainDecomposition.exchangeHaloParticles(_autoPasContainer);
 
+    _timers.work.start();
     updateForces();
 
     updateVelocities();
 
     updateThermostat();
+    _timers.work.stop();
 
     ++_iteration;
 
