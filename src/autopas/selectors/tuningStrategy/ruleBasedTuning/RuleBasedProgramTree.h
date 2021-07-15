@@ -41,6 +41,9 @@ namespace rule_syntax {
 
 class CodeGenerationContext;
 
+using StatementVal = std::variant<class If, class Define, class DefineList, class ConfigurationOrder>;
+using ExpressionVal = std::variant<class Literal, class Variable, class BinaryOperator>;
+
 struct Statement {
   virtual void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const = 0;
 };
@@ -112,9 +115,9 @@ struct Literal : public Expression {
 
 struct DefineList : public Statement {
   std::string listName;
-  std::vector<std::shared_ptr<Literal>> values;
+  std::vector<Literal> values;
 
-  DefineList(std::string listName, std::vector<std::shared_ptr<Literal>> values)
+  DefineList(std::string listName, std::vector<Literal> values)
       : listName(std::move(listName)), values(std::move(values)) {}
 
   void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override {
@@ -135,15 +138,42 @@ struct ConfigurationOrder : public Statement {
   }
 };
 
+struct Variable : public Expression {
+  Define *definition;
+
+  explicit Variable(Define *definition) : definition(definition) {}
+
+  [[nodiscard]] Type getType() const override;
+
+  void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override;
+};
+
+struct BinaryOperator : public Expression {
+  enum Operator { LESS, GREATER, AND };
+
+  Operator op;
+  std::shared_ptr<ExpressionVal> left;
+  std::shared_ptr<ExpressionVal> right;
+
+  BinaryOperator(Operator op, ExpressionVal left, ExpressionVal right)
+      : op(op), left(std::make_shared<ExpressionVal>(std::move(left))),
+        right(std::make_shared<ExpressionVal>(std::move(right))) {}
+
+  [[nodiscard]] Type getType() const override { return Type::BOOL; }
+
+  void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override;
+};
+
+
 struct Define : public Statement {
   std::string variable;
-  std::shared_ptr<Expression> value;
+  ExpressionVal value;
 
-  Define(std::string variable, std::shared_ptr<Expression> value)
+  Define(std::string variable, ExpressionVal value)
       : variable(std::move(variable)), value(std::move(value)) {}
 
   void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override {
-    value->generateCode(context, program);
+    std::visit([&](const auto& expr) {expr.generateCode(context, program);}, value);
 
     context.addVariable(variable);
     program.instructions.push_back({RuleVM::STOREA, context.addressOf(variable)});
@@ -151,57 +181,21 @@ struct Define : public Statement {
   }
 };
 
-struct Variable : public Expression {
-  Define *definition;
-
-  explicit Variable(Define *definition) : definition(definition) {}
-
-  [[nodiscard]] Type getType() const override { return definition->value->getType(); }
-
-  void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override {
-    program.instructions.push_back({RuleVM::LOADA, context.addressOf(definition->variable)});
-    context.allocateStack(1);
-  }
-};
-
-struct BinaryOperator : public Expression {
-  enum Operator { LESS, GREATER, AND };
-
-  Operator op;
-  std::shared_ptr<Expression> left;
-  std::shared_ptr<Expression> right;
-
-  BinaryOperator(Operator op, std::shared_ptr<Expression> left, std::shared_ptr<Expression> right)
-      : op(op), left(std::move(left)), right(std::move(right)) {}
-
-  [[nodiscard]] Type getType() const override { return Type::BOOL; }
-
-  void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override {
-    left->generateCode(context, program);
-    right->generateCode(context, program);
-
-    auto opCode = op == LESS ? RuleVM::LESS : (op == GREATER ? RuleVM::GREATER : RuleVM::AND);
-    program.instructions.push_back({opCode});
-
-    context.freeStack(1);
-  }
-};
-
 struct If : public Statement {
-  std::shared_ptr<Expression> condition;
-  std::vector<std::shared_ptr<Statement>> consequences;
+  ExpressionVal condition;
+  std::vector<StatementVal> consequences;
 
-  If(std::shared_ptr<Expression> condition, std::vector<std::shared_ptr<Statement>> consequences)
+  If(ExpressionVal condition, std::vector<StatementVal> consequences)
       : condition(std::move(condition)), consequences(std::move(consequences)) {}
 
   void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override {
-    condition->generateCode(context, program);
+    std::visit([&](const auto& expr) {expr.generateCode(context, program); }, condition);
     program.instructions.push_back({RuleVM::JUMPZERO});
     context.freeStack(1);
     auto &jumpInstr = program.instructions.back();
 
     for (const auto &statement : consequences) {
-      statement->generateCode(context, program);
+      std::visit([&](const auto& statement) {statement.generateCode(context, program); }, statement);
     }
 
     jumpInstr.payload = program.instructions.size();
@@ -209,12 +203,12 @@ struct If : public Statement {
 };
 
 struct RuleBasedProgramTree {
-  std::vector<std::shared_ptr<Statement>> statements;
+  std::vector<StatementVal> statements;
 
   [[nodiscard]] RuleVM::Program generateCode(CodeGenerationContext context) const {
     RuleVM::Program program;
     for (const auto &statement : statements) {
-      statement->generateCode(context, program);
+      std::visit([&](const auto& statement) {statement.generateCode(context, program); }, statement);
     }
     program.neededStackSize = context.getMaxStackSize();
     program.instructions.push_back({RuleVM::HALT});

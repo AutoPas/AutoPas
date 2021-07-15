@@ -1,13 +1,19 @@
 #pragma once
 
-#include "RuleBasedProgramTree.h"
+#include <any>
 #include <boost/spirit/home/x3.hpp>
+
+#include "RuleBasedProgramTree.h"
 
 namespace autopas::rule_syntax {
 
 
 
 namespace grammar {
+struct VariableDefContext {
+  std::map<std::string, Define*> definitions;
+};
+
 using namespace boost::spirit;
 
 struct ContainerOption_ : x3::symbols<Literal> {
@@ -78,30 +84,42 @@ inline auto toLiteral = [](const auto& ctx) {
   x3::_val(ctx) = Literal{x3::_attr(ctx)};
 };
 
-inline auto toSharedPtr = [](const auto& ctx) {
-  x3::_val(ctx) = std::make_shared<std::remove_reference_t<decltype(x3::_attr(ctx))>>(x3::_attr(ctx));
+/*inline auto toSharedPtr = [](const auto& ctx) {
+  using value_t = std::remove_reference_t<decltype(x3::_attr(ctx))>;
+  x3::_val(ctx) = std::make_shared<value_t>(x3::_attr(ctx));
+};*/
+
+inline auto variableDefineForName = [](const auto& ctx) {
+  x3::_val(ctx) = x3::get<VariableDefContext>(ctx).get().definitions.at(x3::_attr(ctx));
+};
+
+inline auto addToVariableDefines = [](const auto& ctx) {
+  x3::get<VariableDefContext>(ctx).get().definitions[x3::_attr(ctx)->variable] = &x3::_attr(ctx).get();
 };
 
 inline x3::rule <class unsigned_val, Literal> unsigned_val = "unsigned val";
-auto const unsigned_val_define = x3::ulong_;
+auto const unsigned_val_def = x3::ulong_[toLiteral];
 
-inline x3::rule<class literal, std::shared_ptr<Literal>> literal = "literal";
-auto const literal_def = (TraversalOption_{} | ContainerOption_{} | LoadEstimatorOption_{} | DataLayoutOption_{}
-                         | Newton3Option_{} | unsigned_val | Bool_{})[toSharedPtr];
+inline x3::rule<class literal_val, Literal> literal_val = "literal_val";
+auto const literal_val_def = (TraversalOption_{} | ContainerOption_{} | LoadEstimatorOption_{} | DataLayoutOption_{}
+                          | Newton3Option_{} | unsigned_val | Bool_{});
+
+inline x3::rule<class literal, Literal> literal = "literal";
+auto const literal_def = literal_val;
 
 inline x3::rule<class variable_name, std::string> variable_name = "variable name";
 auto const variable_name_def = x3::ascii::alpha >> *(x3::ascii::alnum);
 
-inline x3::rule<class define_list, std::shared_ptr<DefineList>> define_list = "define_list";
+inline x3::rule<class define_list, DefineList> define_list = "define_list";
 auto const define_list_def = "define_list" >> variable_name >> '=' >> (literal % ',') >> ';';
 
-inline x3::rule<class define, std::shared_ptr<Define>> define = "define";
+inline x3::rule<class define, Define> define = "define";
 auto const define_def = "define" >> variable_name >> '=' >> literal >> ';';
 
-inline x3::rule<class variable, std::shared_ptr<Variable>> variable = "variable";
-auto const variable_def = variable_name;  // TODO: Find out how to find definition
+inline x3::rule<class variable, Variable> variable = "variable";
+auto const variable_def = variable_name[variableDefineForName];
 
-inline x3::rule<class expression, std::shared_ptr<Expression>> expression = "expression";
+inline x3::rule<class expression, ExpressionVal> expression = "expression";
 inline x3::rule<class binary_operator, BinaryOperator> binary_operator = "binary operator";
 
 inline x3::rule<class property_value, std::vector<Literal>> property_value = "property value";
@@ -116,22 +134,19 @@ auto const configuration_pattern_def = '[' >> (ConfigurationProperty_{} >> '=' >
 inline x3::rule<class configuration_order, ConfigurationOrder> configuration_order = "configuration order";
 auto const configuration_order_def = configuration_pattern >> ">=" >> configuration_pattern >> ';';
 
-inline x3::rule<class statement, std::shared_ptr<Statement>> statement = "statement";
+inline x3::rule<class statement, StatementVal> statement = "statement";
 inline x3::rule<class if_statement, If> if_statement = "if";
 
 auto const if_statement_def = "if" >> expression >> ":" >> statement % x3::space >> "endif";
-auto const statement_def = define_list | define | if_statement | configuration_order;
+auto const statement_def = define_list | define[addToVariableDefines] | if_statement | configuration_order;
 
 inline x3::rule<class program, RuleBasedProgramTree> program = "program";
 auto const program_def = statement % x3::space;
 
-BOOST_SPIRIT_DEFINE(literal);
-
-//BOOST_SPIRIT_DEFINE(program, if_statement, statement, configuration_order, configuration_pattern, property_value,
-//                    binary_operator, expression, variable, define, define_list, variable_name, literal);
+BOOST_SPIRIT_DEFINE(unsigned_val, literal_val, literal, variable_name, define, define_list, variable, expression,
+                    binary_operator, property_value, configuration_pattern, configuration_order,
+                    statement, if_statement, program);
 }
-
-
 
 class RuleBasedProgramParser {
  public:
@@ -146,12 +161,17 @@ class RuleBasedProgramParser {
   static void test() {
     using namespace boost::spirit;
 
-    std::shared_ptr<Literal> values;
+
+    RuleBasedProgramTree program;
+    std::any testRes;
+    Define defi{"", Literal()};
 
     std::string test{"lc_c08"};
+    grammar::VariableDefContext varContext;
     auto first = test.begin();
     bool matches = x3::phrase_parse(first, test.end(),
-                                    grammar::literal, x3::space, values);
+                                    x3::with<grammar::VariableDefContext>(std::ref(varContext))[grammar::expression],
+                                    x3::space, testRes);
     std::cout << "Matches: " << matches << std::endl;
     std::cout << "Full Match: " << (first == test.end()) << std::endl;
     //for(const auto& val : values) {
@@ -168,7 +188,7 @@ class RuleBasedProgramParser {
     RuleBasedProgramTree program;
     std::stringstream input{programCode};
     while (not input.eof()) {
-      program.statements.push_back(parseStatement(input));
+      //program.statements.push_back(parseStatement(input));
     }
 
     return {{}, context};

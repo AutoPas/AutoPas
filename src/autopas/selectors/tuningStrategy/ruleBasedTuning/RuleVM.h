@@ -1,5 +1,9 @@
 #pragma once
 
+#include <variant>
+#include <cstddef>
+#include "autopas/selectors/Configuration.h"
+
 namespace autopas {
 class RuleVM {
  public:

@@ -75,30 +75,30 @@ class RuleBasedTuning : public FullSearch {
 
 
     using namespace rule_syntax;
-    Define numParticlesDef{"numParticles", std::make_shared<Literal>(info.numParticles)};
-    Define numCellsDef{"numCells", std::make_shared<Literal>(numCells)};
+    Define numParticlesDef{"numParticles", Literal(info.numParticles)};
+    Define numCellsDef{"numCells", Literal(numCells)};
     CodeGenerationContext context{{}};
     context.addVariable(numCellsDef.variable);
     context.addVariable(numParticlesDef.variable);
 
-    auto verletLists = std::make_shared<DefineList>("VerletListsContainer",
-                                                    std::vector<std::shared_ptr<Literal>>{
-                                                        std::make_shared<Literal>(ContainerOption::linkedCells),
-                                                        std::make_shared<Literal>(ContainerOption::verletListsCells)});
-    auto threshold = std::make_shared<Define>("LC_VL_THRESHOLD", std::make_shared<Literal>(2ul << 20));
+    auto verletLists = DefineList("VerletListsContainer",
+                                                    std::vector<Literal>{
+                                                        Literal(ContainerOption::linkedCells),
+                                                        Literal(ContainerOption::verletListsCells)});
+    auto threshold = Define("LC_VL_THRESHOLD", Literal(2ul << 20));
     RuleBasedProgramTree programTree{
         {
             verletLists,
             threshold,
-            std::make_shared<If>(
-                std::make_shared<BinaryOperator>(BinaryOperator::AND,
-                                                 std::make_shared<BinaryOperator>(BinaryOperator::GREATER,
-                                                                                  std::make_shared<Variable>(&numParticlesDef),
-                                                                                      std::make_shared<Variable>(&*threshold)),
-                                                 std::make_shared<BinaryOperator>(BinaryOperator::LESS,
-                                                                                  std::make_shared<Variable>(&numCellsDef),
-                                                                                      std::make_shared<Variable>(&numParticlesDef))),
-                std::vector<std::shared_ptr<Statement>>{std::make_shared<ConfigurationOrder>(patterns[0], patterns[0])})
+            If(
+                BinaryOperator(BinaryOperator::AND,
+                                                 BinaryOperator(BinaryOperator::GREATER,
+                                                                                  Variable(&numParticlesDef),
+                                                                                      Variable(&threshold)),
+                                                 BinaryOperator(BinaryOperator::LESS,
+                                                                                  Variable(&numCellsDef),
+                                                                                      Variable(&numParticlesDef))),
+                std::vector<StatementVal>{ConfigurationOrder(patterns[0], patterns[0])})
     }};
     auto generatedProgram = programTree.generateCode(context);
 
