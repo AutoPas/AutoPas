@@ -10,9 +10,28 @@
 #include <fstream>
 #include <ios>
 #include <iostream>
+#include <string>
 #include <utility>
 
 #include "autopas/utils/WrapMPI.h"
+
+namespace {
+/**
+ * Converts a regular string to an ASCII encoded string with spaces between characters.
+ * The encoded string ends with the NULL character '0'.
+ * Example: "AoS" is encoded to "65 111 83 0".
+ * @param original: The string to be encoded in ASCII.
+ * @return the corresponding ASCII encoded and NUll-terminated string.
+ */
+std::string convertToAsciiString(const std::string &original) {
+  std::string encodedString = "";
+  for (size_t i = 0; i < original.length(); ++i) {
+    encodedString = encodedString + std::to_string(original[i]) + " ";
+  }
+  encodedString.append("0");
+  return encodedString;
+}
+}  // namespace
 
 ParallelVtkWriter::ParallelVtkWriter(std::string sessionName, const std::string &outputFolder,
                                      const int &maximumNumberOfDigitsInIteration)
@@ -46,7 +65,7 @@ void ParallelVtkWriter::recordTimestep(const int &currentIteration,
                                        const autopas::AutoPas<ParticleType> &autoPasContainer,
                                        const RegularGridDecomposition &decomposition) {
   recordParticleStates(currentIteration, autoPasContainer);
-  recordDomainSubdivision(currentIteration, decomposition);
+  recordDomainSubdivision(currentIteration, autoPasContainer.getCurrentConfig(), decomposition);
 }
 
 /**
@@ -135,6 +154,7 @@ void ParallelVtkWriter::recordParticleStates(const int &currentIteration,
 }
 
 void ParallelVtkWriter::recordDomainSubdivision(const int &currentIteration,
+                                                const autopas::Configuration &autoPasConfiguration,
                                                 const RegularGridDecomposition &decomposition) {
   if (_mpiRank == 0) {
     createPvtsFile(currentIteration, decomposition);
@@ -161,10 +181,34 @@ void ParallelVtkWriter::recordDomainSubdivision(const int &currentIteration,
                << " " << wholeExtent[3] << " " << wholeExtent[4] << " " << wholeExtent[5] << "\">\n";
   timestepFile << "    <Piece Extent=\"" << wholeExtent[0] << " " << wholeExtent[1] << " " << wholeExtent[2] << " "
                << wholeExtent[3] << " " << wholeExtent[4] << " " << wholeExtent[5] << "\">\n";
-  timestepFile << "      <CellData Scalars=\"DomainId\">\n";
+  timestepFile << "      <CellData>\n";
   timestepFile << "        <DataArray type=\"Int32\" Name=\"DomainId\" format=\"ascii\">\n";
   timestepFile << "          " << decomposition.getDomainIndex() << "\n";
   timestepFile << "        </DataArray>\n";
+  timestepFile << "        <DataArray type=\"Float32\" Name=\"CellSizeFactor\">\n";
+  timestepFile << "          " << autoPasConfiguration.cellSizeFactor << "\n";
+  timestepFile << "        </DataArray>\n";
+  timestepFile << "        <DataArray type=\"String\" Name=\"Container\">\n";
+  timestepFile << "          " << convertToAsciiString(autoPasConfiguration.container.to_string()) << "\n";
+  timestepFile << "        </DataArray>\n";
+  timestepFile << "        <DataArray type=\"String\" Name=\"DataLayout\">\n";
+  timestepFile << "          " << convertToAsciiString(autoPasConfiguration.dataLayout.to_string()) << "\n";
+  timestepFile << "        </DataArray>\n";
+  timestepFile << "        <DataArray type=\"String\" Name=\"FullConfiguration\">\n";
+  timestepFile << "          " << convertToAsciiString(autoPasConfiguration.toString()) << "\n";
+  timestepFile << "        </DataArray>\n";
+  timestepFile << "        <DataArray type=\"String\" Name=\"LoadEstimator\">\n";
+  timestepFile << "          " << convertToAsciiString(autoPasConfiguration.loadEstimator.to_string()) << "\n";
+  timestepFile << "        </DataArray>\n";
+  timestepFile << "        <DataArray type=\"String\" Name=\"Traversal\">\n";
+  timestepFile << "          " << convertToAsciiString(autoPasConfiguration.traversal.to_string()) << "\n";
+  timestepFile << "        </DataArray>\n";
+  timestepFile << "        <DataArray type=\"String\" Name=\"Newton3\">\n";
+  timestepFile << "          " << convertToAsciiString(autoPasConfiguration.newton3.to_string()) << "\n";
+  timestepFile << "        </DataArray>\n";
+  timestepFile << "        <DataArray type=\"Int32\" Name=\"Rank\">\n";
+  timestepFile << "          " << _mpiRank << "\n";
+  timestepFile << "      </DataArray>\n";
   timestepFile << "      </CellData>\n";
   timestepFile << "      <Points>\n";
   timestepFile << "        <DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">\n";
@@ -278,8 +322,16 @@ void ParallelVtkWriter::createPvtsFile(const int &currentIteration, const Regula
   timestepFile << "  <PStructuredGrid WholeExtent=\"0 " << wholeExtent[0] << " 0 " << wholeExtent[1] << " 0 "
                << wholeExtent[2] << "\" GhostLevel=\"0\">\n";
   timestepFile << "    <PPointData/>\n";
-  timestepFile << "    <PCellData Scalars=\"DomainId\">\n";
+  timestepFile << "    <PCellData>\n";
   timestepFile << "      <PDataArray type=\"Int32\" Name=\"DomainId\" />\n";
+  timestepFile << "      <PDataArray type=\"Float32\" Name=\"CellSizeFactor\" />\n";
+  timestepFile << "      <PDataArray type=\"String\" Name=\"Container\" />\n";
+  timestepFile << "      <PDataArray type=\"String\" Name=\"DataLayout\" />\n";
+  timestepFile << "      <PDataArray type=\"String\" Name=\"FullConfiguration\" />\n";
+  timestepFile << "      <PDataArray type=\"String\" Name=\"LoadEstimator\" />\n";
+  timestepFile << "      <PDataArray type=\"String\" Name=\"Traversal\" />\n";
+  timestepFile << "      <PDataArray type=\"String\" Name=\"Newton3\" />\n";
+  timestepFile << "      <PDataArray type=\"Int32\" Name=\"Rank\" />\n";
   timestepFile << "    </PCellData>\n";
   timestepFile << "    <PPoints>\n";
   timestepFile << "      <DataArray NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";

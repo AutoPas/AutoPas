@@ -9,6 +9,7 @@
 #include <string>
 
 #include "autopas/AutoPas.h"
+#include "autopas/selectors/Configuration.h"
 #include "src/TypeDefinitions.h"
 #include "src/domainDecomposition/RegularGridDecomposition.h"
 
@@ -91,7 +92,8 @@ class ParallelVtkWriter {
    * @param currentIteration: The simulations current iteration.
    * @param decomposition: The simulations domain decomposition.
    */
-  void recordDomainSubdivision(const int &currentIteration, const RegularGridDecomposition &decomposition);
+  void recordDomainSubdivision(const int &currentIteration, const autopas::Configuration &autoPasConfiguration,
+                               const RegularGridDecomposition &decomposition);
 
   /**
    * Calculates the whole extent of the decompositions local domain.
