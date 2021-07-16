@@ -78,12 +78,6 @@ void RegularGridDecomposition::update(SharedAutoPasContainer &autoPasContainer, 
   //_localBoxMax = {resultVertices[1][0], resultVertices[1][1], resultVertices[1][2]};
   //autoPasContainer->setBoxMin(_localBoxMin);
   //autoPasContainer->setBoxMax(_localBoxMax);
-
-  auto neighbours = _all->getNeighbors();
-  std::cout
-    << "DomainIndex: " << _domainIndex << "\n"
-    << "OldNeighbours: " << autopas::utils::ArrayUtils::to_string(_neighbourDomainIndices) << "\n"
-    << "NewNeighbours: " << autopas::utils::ArrayUtils::to_string(neighbours)  << std::endl;
 #endif
 }
 
