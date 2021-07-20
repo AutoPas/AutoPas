@@ -102,6 +102,12 @@ class ParticleVector {
    */
   auto endDirty() { return _particleListImp.end(); }
 
+  auto begin() { return _particleListImp.begin(); }
+  auto end() { return _particleListImp.end(); }
+  auto operator [](size_t index){
+    return _particleListImp[index];
+  }
+
  private:
   /**
    * Flag indicating whether there are out-of-date references in the vector.

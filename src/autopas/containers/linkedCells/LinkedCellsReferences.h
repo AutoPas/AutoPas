@@ -38,6 +38,10 @@ namespace autopas {
 template <class Particle>
 class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticleCell<Particle>> {
  public:
+
+  enum SortingAlgorithm {
+    none, stdsort, quicksort, radixsort, countingsort
+  };
   /**
    *  Type of the Particle.
    */
@@ -46,6 +50,10 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    *  Type of the ParticleCell.
    */
   using ReferenceCell = ReferenceParticleCell<Particle>;
+
+  SortingAlgorithm sorting;
+  int sort_loop_iterations;
+  std::array<double, 3> boxmin_, boxmax_;
   /**
    * Constructor of the LinkedCells class
    * @param boxMin
@@ -58,11 +66,166 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    */
   LinkedCellsReferences(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                         const double skin, const double cellSizeFactor = 1.0,
-                        LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
+                        LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell, SortingAlgorithm _sorting = quicksort, int _sort_loop_iterations = 100)
       : CellBasedParticleContainer<ReferenceCell>(boxMin, boxMax, cutoff, skin),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor),
-        _loadEstimator(loadEstimator) {}
+        _loadEstimator(loadEstimator) {
+    sorting = _sorting;
+    boxmin_ = boxMin;
+    boxmax_ = boxMax;
+    sort_loop_iterations = _sort_loop_iterations;
+  }
 
+  static double keyof(Particle x){
+    return x.getR()[0];
+  }
+  static bool compare(Particle a, Particle b){
+    return keyof(a) < keyof(b);
+  }
+  enum QuicksortPivotStrategy {
+    first, middle, med3, last
+  };
+
+  void sort(){
+    switch(sorting){
+      case stdsort: {
+        sort_std();
+        break;
+      }
+      case none:
+        break;
+      case countingsort: {
+        throw "Counting sort not implemented yet.";
+        break;
+      }
+      case quicksort: {
+        sort_quick();
+        break;
+      }
+      case radixsort: {
+        throw "Radix sort not implemented yet.";
+        break;
+      }
+    }
+    // updateContainer();
+  }
+  void sort_std(){
+    std::sort(_particleList.begin(), _particleList.end(),
+              [](const Particle a, const Particle b) -> bool { return compare(a,b) ; });
+  }
+  int64_t getMantissa(double d){
+    return reinterpret_cast<int64_t&>(d) & (((int64_t)1 << 53) - 1);
+  }
+  int getExp(double d){
+    int exp;
+    frexp(d, &exp);
+    return exp;
+  }
+  void sort_radix_simple(){
+    // currently only an extremely reduced version to only approximate the effect of sorting.
+    // (also currently not implemented because of in-place demand)
+    throw "Radix sort not yet implemented.";
+  }
+  void sort_radix(){
+    // for cache efficiency, it should be enough to only sort some bits.
+    // bit_accuracy is the number of MSDs that are used for sorting. This can be changed empirically!:
+    int bit_accuracy = 10;
+    // ...also possible to set it depending on the approx. bit differences of positions inside different cells
+    int maxexp = getExp(boxmax_[0]);
+    int minexp = getExp(boxmin_[0]);
+    int n = 0;
+    for(int filter = 0x8000; n < 16 && (maxexp & filter) == (minexp & filter); filter >>= 1, n++);
+    // first key: exponent, first position n where exponents differ in [0,16] (16 if exponent is equal)
+    // (later since exponent contains MSDs)
+    // (16-n) are the bits we need to handle with the first key
+    // the remaining (bit_accuracy - (16-n)) bits will be handled with the second key
+    // second key: mantissa, only need to inspect (bit_accuracy - (16-n)) bits (if <= 0, nothing has to be done)
+    int second_n = bit_accuracy - (16 - n);
+    if(second_n > 0) {
+      // mantissa is 53 bit
+      int64_t mantissa_filter = ((int64_t)1) << 52;
+      // special case: min and max exponents are equal. Then:
+      if(second_n == bit_accuracy) { // search first bit difference in mantissa
+        int64_t maxmant = getMantissa(boxmax_[0]);
+        int64_t minmant = getMantissa(boxmin_[0]);
+        int n2 = 0;
+        for (; n2 < 53 && (maxmant & mantissa_filter) == (minmant & mantissa_filter); mantissa_filter >>= 1, n2++);
+        int still_remaining = (53 - n2); // n2=53 iff mantissas are equal (iff boxmin[0]=boxmax[0])
+        if(still_remaining < bit_accuracy){
+          // accuracy is less than bit_accuracy -> fewer digits to sort!
+          second_n -= (bit_accuracy - still_remaining);
+        }
+      }
+      // radix sort stage 1 - mantissa
+      sort_radix_mantissa(second_n, mantissa_filter);
+
+    }
+
+  }
+  void swap(int i, int j){
+       auto temp = _particleList[i];
+       _particleList[i] = _particleList[j];
+       _particleList[j] = temp;
+//      std::swap(_particleList[i], _particleList[j]);
+  }
+  bool get_nth_bit_mantissa(double d, int n){
+    // true iff 1
+    int64_t mantissa = getMantissa(d);
+    int64_t mask = ((int64_t)1) << (52 - n);
+    return (mantissa & mask) == mask;
+  }
+  bool get_nth_bit_exponent_16bit(double d, int n){
+    int exp = getExp(d);
+    int mask = 1 << (15 - n);
+    return (exp & mask) == mask;
+  }
+  void sort_radix_mantissa(int digits, int64_t mantissa_filter = ((int64_t)1) << 52){
+    throw "Radix Sort: binary digit sorting -> mantissa sorting stage not yet implemented.";
+    for(; digits > 0; digits--, mantissa_filter >>= 1){
+      int i = 0;
+      int j = _particleList.totalSize() - 1;
+      while (i < j){
+        //while (i < j && _particleList[i]);
+      }
+    }
+  }
+  void sort_radix_exp(){
+    throw "Radix Sort: binary digit sorting -> exponent sorting stage not yet implemented.";
+  }
+  void sort_quick(QuicksortPivotStrategy pivot = last, int left = 0, int right = 0, bool top_level = true){
+    if(top_level)
+      right = _particleList.totalSize();
+    if (right - left <= 0) return;
+    switch(pivot){
+      case last: {
+        break;
+      }
+      case first: {
+        swap(left, right);
+        break;
+      }
+      case middle: {
+        int m = (left+right)/2;
+        swap(m, right);
+        break;
+      }
+      case med3: {
+        throw "3-Median not implemented yet.";
+        break;
+      }
+    }
+    double pivotkey = keyof(_particleList[right]);
+    // Hoare partitioning
+    int i = left-1, j = right;
+    do {
+      do { i++; } while (keyof(_particleList[i]) < pivotkey);
+      do { j--; } while (j >= left && keyof(_particleList[j]) > pivotkey);
+      if(i < j) swap(i,j);
+    } while (i < j);
+    swap(right, i);
+    sort_quick(pivot, left, i-1, false);
+    sort_quick(pivot, i+1, right, false);
+  }
   /**
    * @copydoc ParticleContainerInterface::getContainerType()
    */
@@ -173,6 +336,10 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   }
 
   void iteratePairwise(TraversalInterface *traversal) override {
+    if(sort_counter % sort_loop_iterations == 0){
+      sort();
+    }
+    sort_counter++;
     // Check if traversal is allowed for this container and give it the data it needs.
     auto *traversalInterface = dynamic_cast<LCTraversalInterface<ReferenceCell> *>(traversal);
     auto *cellPairTraversal = dynamic_cast<CellPairTraversal<ReferenceCell> *>(traversal);
@@ -194,6 +361,9 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
 
   std::vector<ParticleType> updateContainer() override {
     this->deleteHaloParticles();
+
+    // if sorting is none, the following will have no impact
+    sort();
 
     std::vector<ParticleType> invalidParticles;
 #ifdef AUTOPAS_OPENMP
@@ -367,6 +537,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * Workaround for adding particles in parallel -> https://github.com/AutoPas/AutoPas/issues/555
    */
   AutoPasLock addParticleLock;
+
+  int sort_counter = 0;
 };
 
 }  // namespace autopas
