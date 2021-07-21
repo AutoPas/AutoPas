@@ -183,11 +183,18 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
     // TODO(johannes): This needs severe improvement. If we just copy out all particles, the implementation becomes
     //  unsafe for threading. We need a way to iterate the octree using a better traversal idea.
     //  Referenced in https://github.com/AutoPas/AutoPas/issues/625
-    std::vector<Particle *> ps;
-    _pointer->appendAllParticles(ps);
+
+    lock.lock();
+    if(ps.empty() || index == 0) {
+      ps.clear();
+      _pointer->appendAllParticles(ps);
+    }
+    lock.unlock();
     return *ps[index];
   }
 
   std::unique_ptr<OctreeNodeInterface<Particle>> _pointer;
+  mutable std::vector<Particle *> ps;
+  mutable AutoPasLock lock;
 };
 }  // namespace autopas
