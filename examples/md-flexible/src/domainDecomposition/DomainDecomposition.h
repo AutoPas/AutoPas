@@ -28,7 +28,7 @@ class DomainDecomposition {
   /**
    * Updates the domain decomposition to the current topology.
    */
-  virtual void update(SharedAutoPasContainer &autoPasContainer, const double &work) = 0;
+  virtual void update(const double &work) = 0;
 
   /**
    * Returns the index of the local domain in the global domain context.

@@ -5,7 +5,6 @@
  */
 #pragma once
 
-#include <ALL.hpp>
 #include <list>
 #include <memory>
 
@@ -38,7 +37,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Handles the diffuse load balancing by resizing the domains according to their work done.
    * See member _all for more information.
    */
-  void update(SharedAutoPasContainer &autoPasContainer, const double &work) override;
+  void update(const double &work) override;
 
   /**
    * Returns the index of the local domain in the global domain context.
@@ -173,11 +172,6 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * The maximum cooridnates of the local domain.
    */
   std::array<double, 3> _localBoxMax;
-  
-  /**
-   * Used for load balancing the decomposition.
-   */
-  ALL::ALL<double, double> *_all;
 
   /**
    * A temporary buffer used for MPI send requests.
@@ -278,4 +272,28 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Converts a domain id to the domain index, i.e. rank of the local processor.
    */
   int convertIdToIndex(const std::array<int, 3> &domainIndex);
+
+  /**
+   * Calculates the amount of work which will be considered along respecive local domain boundaries.
+   * If a domain has a total work of 10 and 4 boundary planes which do not lie on a global boundary plane,
+   * the resulting distributed work is 10/4 = 2.5.
+   * Boundary planes which lie on globale boundary planes cannot be shifted.
+   * This distributed work can be used to adjust the respective domain boundaries.
+   * @param work: The total work performed within the local box.
+   * @return work which can be used to adjust each siftable boundary plane position.
+   */
+  double calculateDistributedWork(const double work);
+
+  /**
+   * Calculates the new position of a boundary between two domains depending on the work performed inside the
+   * domains and the size of the domains.
+   * @param leftDomainsWork: The work performed in the domain on the left side of the boundary.
+   * @param rightDomainsWork: The work performed in the domain on the right side of the boundary.
+   * @param leftDomainsMinBoundaryPosition: The the position of the left domain minimum boundary.
+   * @param rightDomainsMaxBoundaryPosition: The the position of the right domain maximum boundary.
+   * @returns the updated position of the shared boundary between the two domains.
+   */
+  double updateBoundaryPosition(const double &leftDomainsWork, const double &rightDomainsWork,
+                                const double &leftDomainsMinBoundaryPosition,
+                                const double &rightDomainsMaxBoundaryPosition);
 };

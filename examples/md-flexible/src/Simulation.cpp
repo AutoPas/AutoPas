@@ -142,7 +142,9 @@ void Simulation::run() {
   _timers.simulate.start();
   for (int i = 0; i < _configuration.iterations.value; i += iterationsPerSuperstep) {
     executeSupersteps(iterationsPerSuperstep);
-    _domainDecomposition.update(_autoPasContainer, _timers.work.getTotalTime());
+    _domainDecomposition.update(_timers.work.getTotalTime());
+    _autoPasContainer->setBoxMin(_domainDecomposition.getLocalBoxMin());
+    _autoPasContainer->setBoxMax(_domainDecomposition.getLocalBoxMax());
     _timers.work.reset();
   }
   _timers.simulate.stop();

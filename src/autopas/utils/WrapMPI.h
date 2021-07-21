@@ -42,6 +42,8 @@ namespace autopas {
 #define AUTOPAS_MPI_INT MPI_INT
 /** Wrapper for MPI_UNSIGNED LONG */
 #define AUTOPAS_MPI_UNSIGNED_LONG MPI_UNSIGNED_LONG
+/** Wrapper for MPI_DOUBLE */
+#define AUTOPAS_MPI_DOUBLE MPI_DOUBLE
 
 // MPI_Op
 /** Wrapper for MPI_LAND */
@@ -50,6 +52,8 @@ namespace autopas {
 #define AUTOPAS_MPI_MIN MPI_MIN
 /** Wrapper for MPI_MINLOC */
 #define AUTOPAS_MPI_MINLOC MPI_MINLOC
+/** Wrapper for MPI_SUM */
+#define AUTOPAS_MPI_SUM MPI_SUM
 
 // MPI_Status
 /** Wrapper for MPI_STATUS IGNORE */
@@ -91,7 +95,7 @@ enum AutoPas_MPI_Datatype {
   CXX_BOOL = sizeof(bool),
   CHAR = sizeof(char),
   INT = sizeof(int),
-  UNSIGNED_LONG = sizeof(unsigned long)
+  UNSIGNED_LONG = sizeof(unsigned long) DOUBLE = sizeof(double),
 };
 // MPI_Datatype
 /** Wrapper for MPI_BYTE */
@@ -104,11 +108,13 @@ enum AutoPas_MPI_Datatype {
 #define AUTOPAS_MPI_INT autopas::AutoPas_MPI_Datatype::INT
 /** Wrapper for MPI_UNSIGNED LONG */
 #define AUTOPAS_MPI_UNSIGNED_LONG autopas::AutoPas_MPI_Datatype::UNSIGNED_LONG
+/** Wrapper for MPI_DOUBLE */
+#define AUTOPAS_MPI_DOUBLE autopas::AutoPas_MPI_Datatype::DOUBLE
 
 /**
  * Dummy for MPI_Op.
  */
-enum AutoPas_MPI_Op { LAND, MIN, MINLOC };
+enum AutoPas_MPI_Op { LAND, MIN, MINLOC, SUM };
 // MPI_Op
 /** Wrapper for MPI_LAND */
 #define AUTOPAS_MPI_LAND autopas::AutoPas_MPI_Op::LAND
@@ -116,6 +122,8 @@ enum AutoPas_MPI_Op { LAND, MIN, MINLOC };
 #define AUTOPAS_MPI_MIN autopas::AutoPas_MPI_Op::MIN
 /** Wrapper for MPI_MINLOC */
 #define AUTOPAS_MPI_MINLOC autopas::AutoPas_MPI_Op::MINLOC
+/** Wrapper for MPI_SUM */
+#define AUTOPAS_MPI_SUM autopas::AutoPas_MPI_Op::SUM
 
 /**
  * @struct AutoPas_MPI_Status
@@ -226,6 +234,15 @@ inline int AutoPas_MPI_Comm_dup(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *newComm
  * @return MPI error value
  */
 inline int AutoPas_MPI_Comm_free(AutoPas_MPI_Comm *comm);
+
+/**
+ * Wrapper for MPI_Comm_split.
+ * @param comm: Communicator (handle).
+ * @param color: Control of subset assignment (nonnegative integer).
+ * @param key: Control of rank assignment (integer).
+ * @return MPI error value
+ */
+inline int AutoPas_MPI_Comm_split(AutoPas_MPI_Comm comm, int color, int key, AutoPas_MPI_Comm *newcomm);
 
 /**
  * Wrapper for MPI_Send
@@ -433,6 +450,10 @@ inline int AutoPas_MPI_Comm_dup(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *newComm
 
 inline int AutoPas_MPI_Comm_free(AutoPas_MPI_Comm *comm) { return MPI_Comm_free(comm); }
 
+inline int AutoPas_MPI_Comm_split(AutoPas_MPI_Comm comm, int color, int key, AutoPas_MPI_Comm *newcomm) {
+  return MPI_Comm_split(comm, color, key, newcomm);
+}
+
 inline int AutoPas_MPI_Send(const void *buf, int count, AutoPas_MPI_Datatype datatype, int dest, int tag,
                             AutoPas_MPI_Comm comm) {
   return MPI_Send(buf, count, datatype, dest, tag, comm);
@@ -553,6 +574,11 @@ inline int AutoPas_MPI_Comm_dup(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *newComm
 
 inline int AutoPas_MPI_Comm_free(AutoPas_MPI_Comm *comm) {
   *comm = AUTOPAS_MPI_COMM_NULL;
+  return AUTOPAS_MPI_SUCCESS;
+}
+
+inline int AutoPas_MPI_Comm_split(AutoPas_MPI_Comm comm, int color, int key, AutoPas_MPI_Comm *newcomm) {
+  *newcomm = AUTOPAS_MPI_COMM_WORLD;
   return AUTOPAS_MPI_SUCCESS;
 }
 

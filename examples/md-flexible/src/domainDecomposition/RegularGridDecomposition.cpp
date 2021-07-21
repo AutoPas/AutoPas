@@ -27,7 +27,6 @@ RegularGridDecomposition::RegularGridDecomposition(const std::array<double, 3> &
 #endif
 
   autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &_subdomainCount);
-  _all = new ALL::ALL<double, double>(ALL::LB_t::STAGGERED, 3, 0);
 
   if (_subdomainCount == 1) {
     _mpiIsEnabled = false;
@@ -35,6 +34,13 @@ RegularGridDecomposition::RegularGridDecomposition(const std::array<double, 3> &
 
   if (_mpiIsEnabled) {
     std::cout << "MPI will be used." << std::endl;
+
+    // std::vector<ALL::Point<double>> points;
+    // points.emplace_back(3, _globalBoxMin.data());
+    // points.emplace_back(3, _globalBoxMax.data());
+
+    //_all = new ALL::ALL<double, double>(ALL::LB_t::STAGGERED, 3, points, 0);
+
   } else {
     std::cout << "MPI will not be used." << std::endl;
   }
@@ -54,31 +60,62 @@ RegularGridDecomposition::RegularGridDecomposition(const std::array<double, 3> &
 
 RegularGridDecomposition::~RegularGridDecomposition() {}
 
-void RegularGridDecomposition::update(SharedAutoPasContainer &autoPasContainer, const double &work) {
-#if defined(AUTOPAS_INCLUDE_MPI)
-  const double safetyFactor = 1.0 + 1.e+10;
-  const std::vector<double> minimumDomainSize = {(_skinWidth + _cutoffWidth + safetyFactor) * 2, (_skinWidth + _cutoffWidth + safetyFactor) * 2, (_skinWidth + _cutoffWidth + safetyFactor) * 2};
+void RegularGridDecomposition::update(const double &work) {
+  if (_mpiIsEnabled) {
+    // This corresponds to the work for each direction (dimension * 2).
+    const double distributedWork = calculateDistributedWork(work);
 
-  std::vector<ALL::Point<double>> points;
-  points.emplace_back(3, _localBoxMin.data());
-  points.emplace_back(3, _localBoxMax.data());
+    // This is a dummy variable which is not being used.
+    autopas::AutoPas_MPI_Request dummyRequest;
 
-  //_all.setProcGridParams({_domainId[0], _domainId[1], _domainId[2]} , {_decomposition[0], _decomposition[1], _decomposition[2]});
-  _all->setVertices(points);
-  _all->setCommunicator(_communicator);
-  _all->setWork(work);
-  _all->setProcTag(_domainIndex);
-  _all->setMinDomainSize(minimumDomainSize);
-  _all->setup();
+    for (int i = 0; i < _dimensionCount; ++i) {
+      // Create planar communicator along shift axis. The shift axis is vertical to the dimension's direction.
+      autopas::AutoPas_MPI_Comm planarCommunicator;
+      autopas::AutoPas_MPI_Comm_split(_communicator, _domainId[i + 1], _domainId[i], &planarCommunicator);
 
-  _all->balance();
+      // Calculate average distributed work in planar communicator.
+      double distributedWorkInPlane;
+      autopas::AutoPas_MPI_Allreduce(&distributedWork, &distributedWorkInPlane, 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM,
+                                     planarCommunicator);
+      distributedWorkInPlane = distributedWorkInPlane / _decomposition[i + 1];
 
-  auto resultVertices = _all->getVertices();
-  //_localBoxMin = {resultVertices[0][0], resultVertices[0][1], resultVertices[0][2]};
-  //_localBoxMax = {resultVertices[1][0], resultVertices[1][1], resultVertices[1][2]};
-  //autoPasContainer->setBoxMin(_localBoxMin);
-  //autoPasContainer->setBoxMax(_localBoxMax);
-#endif
+      const int leftNeighbour = _neighbourDomainIndices[(i * 2) % _neighbourCount];
+      const int rightNeighbour = _neighbourDomainIndices[(i * 2 + 1) % _neighbourCount];
+      if (_localBoxMin[i] != _globalBoxMin[i]) {
+        autopas::AutoPas_MPI_Isend(&distributedWorkInPlane, 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
+                                   &dummyRequest);
+        autopas::AutoPas_MPI_Isend(&_localBoxMax[i], 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
+                                   &dummyRequest);
+      }
+      if (_localBoxMax[i] != _globalBoxMax[i]) {
+        autopas::AutoPas_MPI_Isend(&distributedWorkInPlane, 1, AUTOPAS_MPI_DOUBLE, rightNeighbour, 0, _communicator,
+                                   &dummyRequest);
+        autopas::AutoPas_MPI_Isend(&_localBoxMin[i], 1, AUTOPAS_MPI_DOUBLE, rightNeighbour, 0, _communicator,
+                                   &dummyRequest);
+      }
+
+      if (_localBoxMin[i] != _globalBoxMin[i]) {
+        double neighbourPlaneWork, neighbourBoundary;
+        autopas::AutoPas_MPI_Recv(&neighbourPlaneWork, 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
+                                  AUTOPAS_MPI_STATUS_IGNORE);
+        autopas::AutoPas_MPI_Recv(&neighbourBoundary, 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
+                                  AUTOPAS_MPI_STATUS_IGNORE);
+
+        _localBoxMin[i] =
+            updateBoundaryPosition(neighbourPlaneWork, distributedWorkInPlane, neighbourBoundary, _localBoxMax[i]);
+      }
+      if (_localBoxMax[i] != _globalBoxMax[i]) {
+        double neighbourPlaneWork, neighbourBoundary;
+        autopas::AutoPas_MPI_Recv(&neighbourPlaneWork, 1, AUTOPAS_MPI_DOUBLE, rightNeighbour, 0, _communicator,
+                                  AUTOPAS_MPI_STATUS_IGNORE);
+        autopas::AutoPas_MPI_Recv(&neighbourBoundary, 1, AUTOPAS_MPI_DOUBLE, rightNeighbour, 0, _communicator,
+                                  AUTOPAS_MPI_STATUS_IGNORE);
+
+        _localBoxMax[i] =
+            updateBoundaryPosition(distributedWorkInPlane, neighbourPlaneWork, _localBoxMin[i], neighbourBoundary);
+      }
+    }
+  }
 }
 
 void RegularGridDecomposition::initializeMPICommunicator() {
@@ -422,4 +459,24 @@ int RegularGridDecomposition::convertIdToIndex(const std::array<int, 3> &domainI
   }
 
   return neighbourDomainIndex;
+}
+
+double RegularGridDecomposition::calculateDistributedWork(const double work) {
+  size_t numberOfShiftableBoundaries = 0;
+  for (int i = 0; i < _dimensionCount; ++i) {
+    if (_localBoxMin[i] != _globalBoxMin[i]) {
+      numberOfShiftableBoundaries++;
+    }
+    if (_localBoxMax[i] != _globalBoxMax[i]) {
+      numberOfShiftableBoundaries++;
+    }
+  }
+  return work / numberOfShiftableBoundaries;
+}
+
+double RegularGridDecomposition::updateBoundaryPosition(const double &leftDomainsWork, const double &rightDomainsWork,
+                                                        const double &leftDomainsMinBoundaryPosition,
+                                                        const double &rightDomainsMaxBoundaryPosition) {
+  return (leftDomainsWork * leftDomainsMinBoundaryPosition + rightDomainsWork * rightDomainsMaxBoundaryPosition) /
+         (leftDomainsWork + rightDomainsWork);
 }
