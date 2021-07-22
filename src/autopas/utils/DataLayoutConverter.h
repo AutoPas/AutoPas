@@ -1,4 +1,4 @@
-/*
+/**
  *@file DataLayoutConverter.h
  *@author jspahl
  *@date 2.4.19
