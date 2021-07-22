@@ -5,7 +5,7 @@
  */
 #pragma once
 
-#include <ctime>
+#include <random>
 
 #include "Object.h"
 #include "autopas/utils/ArrayMath.h"
@@ -77,11 +77,16 @@ class CubeUniform : public Object {
    */
   void generate(std::vector<ParticleType> &particles) const override {
     ParticleType particle = getDummyParticle(particles.size());
-    std::srand(std::time(0));
+
+    // Set up random number generation
+    std::random_device randomDevice;
+    std::mt19937 randomNumberEngine(randomDevice());
+    std::uniform_real_distribution<double> distribution(0.0, 1.0);
+
     for (unsigned long i = 0; i < _numParticles; ++i) {
-      particle.setR({_bottomLeftCorner[0] + (static_cast<double>(std::rand()) / RAND_MAX) * _boxLength[0],
-                     _bottomLeftCorner[1] + (static_cast<double>(std::rand()) / RAND_MAX) * _boxLength[1],
-                     _bottomLeftCorner[2] + (static_cast<double>(std::rand()) / RAND_MAX) * _boxLength[2]});
+      particle.setR({_bottomLeftCorner[0] + distribution(randomNumberEngine) * _boxLength[0],
+                     _bottomLeftCorner[1] + distribution(randomNumberEngine) * _boxLength[1],
+                     _bottomLeftCorner[2] + distribution(randomNumberEngine) * _boxLength[2]});
       particles.push_back(particle);
       particle.setID(particle.getID() + 1);
     }

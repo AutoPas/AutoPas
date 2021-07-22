@@ -290,6 +290,11 @@ class MDFlexConfig {
       "Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::ExtrapolationMethodOption::getAllOptions(), " ", {"(", ")"})};
   /**
+   * vtkOutputFolder
+   */
+  MDFlexOption<std::string, __LINE__> vtkOutputFolder{"output", "vtk-output-folder", true,
+                                                      "The location where the vtk output will be created."};
+  /**
    * vtkFileName
    */
   MDFlexOption<std::string, __LINE__> vtkFileName{"", "vtk-filename", true, "Basename for all VTK output files."};
