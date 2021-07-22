@@ -48,13 +48,6 @@ T safeAdd(const T &a, const T &b, const T &valUnderflow = std::numeric_limits<T>
  * If over or underflow is detected, the function returns the specified values.
  *
  * @note Underflow here refers to a value more negative than representable and not the underflow gap around zero.
- *
- * @tparam T
- * @param a
- * @param b
- * @param valUnderflow Return value in case of underflow.
- * @param valOverflow Returns value in case of overflow.
- * @return Sum or valUnderflow or valOverflow.
  */
 template <class T, std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
 T safeAdd(const T &a, const T &b, const T &valUnderflow = -std::numeric_limits<T>::max(),
@@ -101,13 +94,6 @@ T safeSub(const T &a, const T &b, const T &valUnderflow = std::numeric_limits<T>
  * If over or underflow is detected, the function returns the specified values.
  *
  * @note Underflow here refers to a value more negative than representable and not the underflow gap around zero.
- *
- * @tparam T
- * @param a
- * @param b
- * @param valUnderflow Return value in case of underflow.
- * @param valOverflow Returns value in case of overflow.
- * @return Sum or valUnderflow or valOverflow.
  */
 template <class T, std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
 T safeSub(const T &a, const T &b, const T &valUnderflow = -std::numeric_limits<T>::max(),
@@ -154,13 +140,6 @@ T safeMul(const T &a, const T &b, const T &valUnderflow = std::numeric_limits<T>
  * If over or underflow is detected, the function returns the specified values.
  *
  * @note Underflow here refers to a value more negative than representable and not the underflow gap around zero.
- *
- * @tparam T
- * @param a
- * @param b
- * @param valUnderflow Return value in case of underflow.
- * @param valOverflow Returns value in case of overflow.
- * @return Product or valUnderflow or valOverflow.
  */
 template <class T, std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
 T safeMul(const T &a, const T &b, const T &valUnderflow = -std::numeric_limits<T>::max(),
