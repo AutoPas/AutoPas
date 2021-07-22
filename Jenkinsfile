@@ -58,7 +58,7 @@ pipeline {
                     steps {
                         dir("format") {
                             container('autopas-clang6-cmake-ninja-make') {
-                                sh "CC=clang CXX=clang++ cmake -G Ninja -DAUTOPAS_OPENMP=ON .."
+                                sh "CC=clang CXX=clang++ cmake -G Ninja -DAUTOPAS_OPENMP=ON -DAUTOPAS_FORMATTING_TARGETS=ON .."
                                 sh "ninja clangformat"
                                 sh "ninja cmakeformat"
                             }
