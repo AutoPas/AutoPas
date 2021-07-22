@@ -39,4 +39,18 @@ double getDistanceToDomain(const std::array<double, 3> &coordinates, std::array<
  * @param decomposition Array containing the number of subdomains per dimension.
  */
 void generateDecomposition(unsigned int subdomainCount, std::array<int, 3> &decomposition);
+
+/**
+ * Balances two domains by shifting their shared boundary.
+ * The balancing depends on work performed in each domain and on the areas of the domain.
+ * The two domains have to be part of a regular grid and adjacent to each other.
+ * @param leftDomainsWork: The work performed in the domain on the left side of the boundary.
+ * @param rightDomainsWork: The work performed in the domain on the right side of the boundary.
+ * @param leftDomainsMinBoundaryPosition: The the position of the left domain minimum boundary.
+ * @param rightDomainsMaxBoundaryPosition: The the position of the right domain maximum boundary.
+ * @returns the updated position of the shared boundary between the two domains.
+ */
+double balanceAdjacentDomains(const double &leftDomainsWork, const double &rightDomainsWork,
+                              const double &leftDomainsMinBoundaryPosition,
+                              const double &rightDomainsMaxBoundaryPosition);
 }  // namespace DomainTools

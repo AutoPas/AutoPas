@@ -283,17 +283,4 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @return work which can be used to adjust each siftable boundary plane position.
    */
   double calculateDistributedWork(const double work);
-
-  /**
-   * Calculates the new position of a boundary between two domains depending on the work performed inside the
-   * domains and the size of the domains.
-   * @param leftDomainsWork: The work performed in the domain on the left side of the boundary.
-   * @param rightDomainsWork: The work performed in the domain on the right side of the boundary.
-   * @param leftDomainsMinBoundaryPosition: The the position of the left domain minimum boundary.
-   * @param rightDomainsMaxBoundaryPosition: The the position of the right domain maximum boundary.
-   * @returns the updated position of the shared boundary between the two domains.
-   */
-  double updateBoundaryPosition(const double &leftDomainsWork, const double &rightDomainsWork,
-                                const double &leftDomainsMinBoundaryPosition,
-                                const double &rightDomainsMaxBoundaryPosition);
 };

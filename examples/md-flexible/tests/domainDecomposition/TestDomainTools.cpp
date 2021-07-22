@@ -21,3 +21,12 @@ TEST_F(TestDomainTools, testIsInsideDomain) {
   EXPECT_EQ(false, DomainTools::isInsideDomain(onUpperBoundary, globalBoxMin, globalBoxMax));
   EXPECT_EQ(false, DomainTools::isInsideDomain(outside, globalBoxMin, globalBoxMax));
 }
+
+TEST_F(TestDomainTools, testBalanceAdjacentDomains) {
+  const double workA = 6;
+  const double workB = 4;
+  const double minA = 2;
+  const double maxB = 24;
+
+  EXPECT_EQ(10.8, DomainTools::balanceAdjacentDomains(workA, workB, minA, maxB));
+}

@@ -101,8 +101,8 @@ void RegularGridDecomposition::update(const double &work) {
         autopas::AutoPas_MPI_Recv(&neighbourBoundary, 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
                                   AUTOPAS_MPI_STATUS_IGNORE);
 
-        _localBoxMin[i] =
-            updateBoundaryPosition(neighbourPlaneWork, distributedWorkInPlane, neighbourBoundary, _localBoxMax[i]);
+        _localBoxMin[i] = DomainTools::balanceAdjacentDomains(neighbourPlaneWork, distributedWorkInPlane,
+                                                              neighbourBoundary, _localBoxMax[i]);
       }
       if (_localBoxMax[i] != _globalBoxMax[i]) {
         double neighbourPlaneWork, neighbourBoundary;
@@ -111,8 +111,8 @@ void RegularGridDecomposition::update(const double &work) {
         autopas::AutoPas_MPI_Recv(&neighbourBoundary, 1, AUTOPAS_MPI_DOUBLE, rightNeighbour, 0, _communicator,
                                   AUTOPAS_MPI_STATUS_IGNORE);
 
-        _localBoxMax[i] =
-            updateBoundaryPosition(distributedWorkInPlane, neighbourPlaneWork, _localBoxMin[i], neighbourBoundary);
+        _localBoxMax[i] = DomainTools::balanceAdjacentDomains(distributedWorkInPlane, neighbourPlaneWork,
+                                                              _localBoxMin[i], neighbourBoundary);
       }
     }
   }
@@ -472,11 +472,4 @@ double RegularGridDecomposition::calculateDistributedWork(const double work) {
     }
   }
   return work / numberOfShiftableBoundaries;
-}
-
-double RegularGridDecomposition::updateBoundaryPosition(const double &leftDomainsWork, const double &rightDomainsWork,
-                                                        const double &leftDomainsMinBoundaryPosition,
-                                                        const double &rightDomainsMaxBoundaryPosition) {
-  return (leftDomainsWork * leftDomainsMinBoundaryPosition + rightDomainsWork * rightDomainsMaxBoundaryPosition) /
-         (leftDomainsWork + rightDomainsWork);
 }

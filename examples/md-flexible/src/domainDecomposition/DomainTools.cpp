@@ -72,4 +72,11 @@ void generateDecomposition(unsigned int subdomainCount, std::array<int, 3> &deco
     }
   }
 }
+
+double balanceAdjacentDomains(const double &leftDomainsWork, const double &rightDomainsWork,
+                              const double &leftDomainsMinBoundaryPosition,
+                              const double &rightDomainsMaxBoundaryPosition) {
+  return (leftDomainsWork * leftDomainsMinBoundaryPosition + rightDomainsWork * rightDomainsMaxBoundaryPosition) /
+         (leftDomainsWork + rightDomainsWork);
+}
 }  // namespace DomainTools
