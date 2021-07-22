@@ -471,5 +471,6 @@ double RegularGridDecomposition::calculateDistributedWork(const double work) {
       numberOfShiftableBoundaries++;
     }
   }
-  return work / numberOfShiftableBoundaries;
+
+  return work / (numberOfShiftableBoundaries != 0 ? numberOfShiftableBoundaries : 1);
 }
