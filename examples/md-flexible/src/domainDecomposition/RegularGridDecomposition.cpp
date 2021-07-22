@@ -54,12 +54,6 @@ RegularGridDecomposition::RegularGridDecomposition(const std::array<double, 3> &
   initializeLocalBox();
 
   initializeNeighbourIds();
-
-  std::cout << "DomainIndex: " << _domainIndex << ", "
-            << "DomainId: " << autopas::utils::ArrayUtils::to_string(_domainId) << ", "
-            << "Neighbours: " << autopas::utils::ArrayUtils::to_string(_neighbourDomainIndices) << ", "
-            << "LocalBox: " << autopas::utils::ArrayUtils::to_string(_localBoxMin) << ", "
-            << autopas::utils::ArrayUtils::to_string(_localBoxMax) << std::endl;
 }
 
 RegularGridDecomposition::~RegularGridDecomposition() {}

@@ -23,12 +23,12 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/utils/NumberSet.h"
+#include "src/TypeDefinitions.h"
 #include "src/configuration/objects/CubeClosestPacked.h"
 #include "src/configuration/objects/CubeGauss.h"
 #include "src/configuration/objects/CubeGrid.h"
 #include "src/configuration/objects/CubeUniform.h"
 #include "src/configuration/objects/Sphere.h"
-#include "src/TypeDefinitions.h"
 
 /**
  * Class containing all necessary parameters for configuring a md-flexible simulation.
@@ -289,6 +289,11 @@ class MDFlexConfig {
       "For predictive based tuning strategies: The extrapolation method that calculates the prediction. Possible "
       "Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::ExtrapolationMethodOption::getAllOptions(), " ", {"(", ")"})};
+  /**
+   * vtkOutputFolder
+   */
+  MDFlexOption<std::string, __LINE__> vtkOutputFolder{"output", "vtk-output-folder", true,
+                                                      "The location where the vtk output will be created."};
   /**
    * vtkFileName
    */

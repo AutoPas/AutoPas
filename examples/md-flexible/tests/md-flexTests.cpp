@@ -14,6 +14,7 @@ int main(int argc, char **argv) {
   testing::FLAGS_gtest_death_test_style = "threadsafe";
 
   autopas::AutoPas_MPI_Init(&argc, &argv);
-  return RUN_ALL_TESTS();
+  int output = RUN_ALL_TESTS();
   autopas::AutoPas_MPI_Finalize();
+  return output;
 }

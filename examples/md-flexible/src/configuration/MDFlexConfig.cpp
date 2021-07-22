@@ -292,6 +292,11 @@ void MDFlexConfig::loadParticlesFromCheckpoint() {
   size_t numParticles;
   std::string dataType;
 
+  if (not infile.is_open()) {
+    std::cout << "Could not load checkpoint file " << checkpointfile.value << "." << std::endl;
+    return;
+  }
+
   findWord(infile, "POINTS");
   infile >> numParticles >> dataType;
 

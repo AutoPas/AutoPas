@@ -34,12 +34,47 @@ extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::Fl
 #include "configuration/MDFlexConfig.h"
 #include "src/ParticleSerializationTools.h"
 
-// @todo: create configuration variable to set output folder for the vtk writer. Currently it is "output".
+namespace {
+/**
+ * Tries to identify the width of the terminal where the simulation is running.
+ * If no width can be identified, the function defaults to 80.
+ * @return width of the terminal.
+ */
+size_t getTerminalWidth() {
+  size_t terminalWidth = 0;
+  // test all std pipes to get the current terminal width
+  for (auto fd : {STDOUT_FILENO, STDIN_FILENO, STDERR_FILENO}) {
+    if (isatty(fd)) {
+      struct winsize w {};
+      ioctl(fd, TIOCGWINSZ, &w);
+      terminalWidth = w.ws_col;
+      break;
+    }
+  }
+
+  // if width is still zero try the environment variable COLUMNS
+  if (terminalWidth == 0) {
+    if (auto *teminalWidthCharArr = std::getenv("COLUMNS")) {
+      terminalWidth = atoi(teminalWidthCharArr);
+    }
+  }
+
+  // if all of the above fail fall back to a fixed width
+  if (terminalWidth == 0) {
+    // this seems to be the default width in most terminal windows
+    terminalWidth = 80;
+  }
+
+  return terminalWidth;
+}
+}  // namespace
+
 Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecomposition &domainDecomposition)
     : _configuration(configuration),
       _domainDecomposition(domainDecomposition),
       _createVtkFiles(not configuration.vtkFileName.value.empty()),
-      _vtkWriter(std::make_shared<ParallelVtkWriter>(_configuration.vtkFileName.value, "output",
+      _vtkWriter(std::make_shared<ParallelVtkWriter>(_configuration.vtkFileName.value,
+                                                     _configuration.vtkOutputFolder.value,
                                                      std::to_string(_configuration.iterations.value).size())) {
   _timers.totalWallClock.start();
   _timers.total.start();
@@ -197,29 +232,8 @@ void Simulation::printProgress(size_t iterationProgress, size_t maxIterations, b
   std::stringstream progressbar;
   progressbar << "[";
   // get current terminal width
-  size_t terminalWidth = 0;
-  // test all std pipes to get the current terminal width
-  for (auto fd : {STDOUT_FILENO, STDIN_FILENO, STDERR_FILENO}) {
-    if (isatty(fd)) {
-      struct winsize w {};
-      ioctl(fd, TIOCGWINSZ, &w);
-      terminalWidth = w.ws_col;
-      break;
-    }
-  }
+  size_t terminalWidth = getTerminalWidth();
 
-  // if width is still zero try the environment variable COLUMNS
-  if (terminalWidth == 0) {
-    if (auto *teminalWidthCharArr = std::getenv("COLUMNS")) {
-      terminalWidth = atoi(teminalWidthCharArr);
-    }
-  }
-
-  // if all of the above fail fall back to a fixed width
-  if (terminalWidth == 0) {
-    // this seems to be the default width in most terminal windows
-    terminalWidth = 80;
-  }
   // the bar should fill the terminal window so subtract everything else (-2 for "] ")
   size_t maxBarWidth = terminalWidth - info.str().size() - progressbar.str().size() - 2;
   // sanity check for underflow
