@@ -35,7 +35,7 @@ class Timer {
    */
   long stop();
 
-  /** 
+  /**
    * Resets the timer to 0.
    */
   void reset();
