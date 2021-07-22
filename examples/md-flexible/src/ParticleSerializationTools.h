@@ -11,7 +11,7 @@
 #include "ParticleAttributes.h"
 #include "TypeDefinitions.h"
 
-/*
+/**
  * Provides tools to de-/serialize particles of type autopas::MoleculeLJ<double>.
  */
 namespace ParticleSerializationTools {
@@ -22,7 +22,7 @@ namespace ParticleSerializationTools {
  */
 void serializeParticle(const ParticleType &particle, std::vector<char> &serializedParticles);
 
-/*
+/**
  * Deserializes a serialized particle.
  * @param particleData A pointer to the serialized particle data.
  * @param particle The particle to which the desierialized attributes will be applied.
