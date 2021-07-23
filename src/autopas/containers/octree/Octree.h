@@ -62,31 +62,34 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
   Octree(std::array<double, 3> boxMin, std::array<double, 3> boxMax, const double cutoff, const double skin,
          const double cellSizeFactor)
       : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skin) {
-    // TODO(johannes): Obtain this from a configuration, reported in https://github.com/AutoPas/AutoPas/issues/624
+    // @todo Obtain this from a configuration, reported in https://github.com/AutoPas/AutoPas/issues/624
     int unsigned treeSplitThreshold = 16;
 
     double interactionLength = this->getInteractionLength();
+
+    // Create the octree for the owned particles
     this->_cells.push_back(
         OctreeNodeWrapper<Particle>(boxMin, boxMax, treeSplitThreshold, interactionLength, cellSizeFactor));
 
     // Extend the halo region with cutoff + skin in all dimensions
-    auto haloBoxMin = utils::ArrayMath::subScalar(boxMin, this->getInteractionLength());
-    auto haloBoxMax = utils::ArrayMath::addScalar(boxMax, this->getInteractionLength());
+    auto haloBoxMin = utils::ArrayMath::subScalar(boxMin, interactionLength);
+    auto haloBoxMax = utils::ArrayMath::addScalar(boxMax, interactionLength);
+    // Create the octree for the halo particles
     this->_cells.push_back(
         OctreeNodeWrapper<Particle>(haloBoxMin, haloBoxMax, treeSplitThreshold, interactionLength, cellSizeFactor));
   }
 
   [[nodiscard]] std::vector<ParticleType> updateContainer() override {
-    // This is a very primitive and inefficient way to recreate the container:
+    // This is a very primitive and inefficient way to rebuild the container:
     // 1. Copy all particles out of the container
     // 2. Clear the container
     // 3. Insert the particles back into the container
 
     // leaving: all outside boxMin/Max
 
-    // TODO(johannes): Make this less indirect. (Find a better way to iterate all particles inside the octree to change
-    //  this function back to a function that actually copies all particles out of the octree.)
-    //  The problem is captured by https://github.com/AutoPas/AutoPas/issues/622
+    // @todo Make this less indirect. (Find a better way to iterate all particles inside the octree to change
+    //   this function back to a function that actually copies all particles out of the octree.)
+    //   The problem is captured by https://github.com/AutoPas/AutoPas/issues/622
     std::vector<Particle *> particleRefs;
     this->_cells[CellTypes::OWNED].appendAllParticles(particleRefs);
     std::vector<Particle> particles;
@@ -104,15 +107,11 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
       addParticleImpl(particle);
     }
 
-    // This should happen according to the documentation in the ParticleContainerInterface#updateContainer
-    deleteHaloParticles();
-
     return result;
   }
 
   void iteratePairwise(TraversalInterface *traversal) override {
-    auto *traversalInterface = dynamic_cast<OTTraversalInterface<ParticleCell> *>(traversal);
-    if (traversalInterface) {
+    if (auto *traversalInterface = dynamic_cast<OTTraversalInterface<ParticleCell> *>(traversal)) {
       traversalInterface->setCells(&this->_cells);
     }
 
@@ -200,6 +199,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    * @copydoc ParticleContainerInterface::getTraversalSelectorInfo()
    */
   [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
+    // this is a dummy since it is not actually used
     std::array<unsigned long, 3> dims = {1, 1, 1};
     std::array<double, 3> cellLength = utils::ArrayMath::sub(this->getBoxMax(), this->getBoxMin());
     return TraversalSelectorInfo(dims, this->getInteractionLength(), cellLength, 0);

@@ -68,10 +68,10 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
     bool anyNewDimSmallerThanMinSize = false;
     for (auto d = 0; d < 3; ++d) {
       auto cellSizeFactor = 1.0;
-      // TODO: The condition below should actually be
-      //  splitLeafDimensions[d] < (this->_cellSizeFactor * this->_interactionLength)
-      //  But with this condition, the TraversalComparison test fails for cell size factor 0.5. Find out why the octree
-      //  cannot handle this value.
+      // @todo The condition below should actually be
+      //   splitLeafDimensions[d] < (this->_cellSizeFactor * this->_interactionLength)
+      //   But with this condition, the TraversalComparison test fails for cell size factor 0.5. Find out why the octree
+      //   cannot handle this value.
       if (splitLeafDimensions[d] < this->_interactionLength) {
         anyNewDimSmallerThanMinSize = true;
         break;
