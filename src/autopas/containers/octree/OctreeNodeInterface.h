@@ -69,7 +69,8 @@ class OctreeNodeInterface {
    * Put the min/max corner coordinates of every leaf into the vector.
    * @param boxes A reference to the vector that should contain pairs of the min/max corner coordinates
    */
-  virtual void appendAllLeafBoxes(std::vector<std::pair<std::array<double, 3>, std::array<double, 3>>> &boxes) const = 0;
+  virtual void appendAllLeafBoxes(
+      std::vector<std::pair<std::array<double, 3>, std::array<double, 3>>> &boxes) const = 0;
 
   /**
    * Put all leaves below this subtree into a given list.
