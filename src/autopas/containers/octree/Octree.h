@@ -92,13 +92,14 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     //   The problem is captured by https://github.com/AutoPas/AutoPas/issues/622
     std::vector<Particle *> particleRefs;
     this->_cells[CellTypes::OWNED].appendAllParticles(particleRefs);
-    std::vector<Particle> particles;
-    auto result = std::vector<ParticleType>();
+    std::vector<Particle> particles{};
+    particles.reserve(particleRefs.size());
+    std::vector<Particle> invalidParticles{};
     for (auto *p : particleRefs) {
       if (utils::inBox(p->getR(), this->getBoxMin(), this->getBoxMax())) {
         particles.push_back(*p);
       } else {
-        result.push_back(*p);
+        invalidParticles.push_back(*p);
       }
     }
     this->deleteAllParticles();
@@ -107,7 +108,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
       addParticleImpl(particle);
     }
 
-    return result;
+    return invalidParticles;
   }
 
   void iteratePairwise(TraversalInterface *traversal) override {
