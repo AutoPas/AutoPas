@@ -62,7 +62,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
   Octree(std::array<double, 3> boxMin, std::array<double, 3> boxMax, const double cutoff, const double skin,
          const double cellSizeFactor)
       : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skin) {
-    // TODO(johannes): Obtain this from a configuration, reported in https://github.com/AutoPas/AutoPas/issues/624
+    // @todo Obtain this from a configuration, reported in https://github.com/AutoPas/AutoPas/issues/624
     int unsigned treeSplitThreshold = 16;
 
     double interactionLength = this->getInteractionLength();
@@ -90,9 +90,9 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
 
     // leaving: all outside boxMin/Max
 
-    // TODO(johannes): Make this less indirect. (Find a better way to iterate all particles inside the octree to change
-    //  this function back to a function that actually copies all particles out of the octree.)
-    //  The problem is captured by https://github.com/AutoPas/AutoPas/issues/622
+    // @todo Make this less indirect. (Find a better way to iterate all particles inside the octree to change
+    //   this function back to a function that actually copies all particles out of the octree.)
+    //   The problem is captured by https://github.com/AutoPas/AutoPas/issues/622
     std::vector<Particle *> particleRefs;
     this->_cells[CellTypes::OWNED].appendAllParticles(particleRefs);
     std::vector<Particle> particles;

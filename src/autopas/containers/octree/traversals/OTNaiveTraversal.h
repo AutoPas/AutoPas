@@ -50,7 +50,7 @@ class OTNaiveTraversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
 
   [[nodiscard]] bool isApplicable() const override {
     // return useNewton3;
-    // TODO(johannes): Re-enable this traversal, when fixing https://github.com/AutoPas/AutoPas/issues/621
+    // @todo Re-enable this traversal, when fixing https://github.com/AutoPas/AutoPas/issues/621
     return false;
   }
 
