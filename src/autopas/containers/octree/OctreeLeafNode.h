@@ -99,16 +99,16 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
   /**
    * @copydoc OctreeNodeInterface::appendAllParticles()
    */
-  void appendAllParticles(std::vector<Particle *> &ps) override {
-    for (Particle &p : this->_particles) {
-      ps.push_back(&p);
+  void appendAllParticles(std::vector<Particle *> &ps) const override {
+    for (Particle const &p : this->_particles) {
+      ps.push_back((Particle *)&p);
     }
   }
 
   /**
    * @copydoc OctreeNodeInterface::appendAllLeafBoxes()
    */
-  void appendAllLeafBoxes(std::vector<std::pair<std::array<double, 3>, std::array<double, 3>>> &boxes) override {
+  void appendAllLeafBoxes(std::vector<std::pair<std::array<double, 3>, std::array<double, 3>>> &boxes) const override {
     auto minMax = std::make_pair(this->getBoxMin(), this->getBoxMax());
     boxes.push_back(minMax);
   }
@@ -141,7 +141,9 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
 
   OctreeNodeInterface<Particle> *SON(Octant O) override { throw std::runtime_error("Unable to get SON of leaf node"); }
 
-  void appendAllLeaves(std::vector<OctreeLeafNode<Particle> *> &leaves) override { leaves.push_back(this); }
+  void appendAllLeaves(std::vector<OctreeLeafNode<Particle> *> &leaves) const override {
+    leaves.push_back((OctreeLeafNode<Particle> *)this);
+  }
 
   std::set<OctreeLeafNode<Particle> *> getLeavesInRange(std::array<double, 3> min, std::array<double, 3> max) override {
     if (this->getEnclosedVolumeWith(min, max) > 0.0) {
