@@ -70,8 +70,8 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
         OctreeNodeWrapper<Particle>(boxMin, boxMax, treeSplitThreshold, interactionLength, cellSizeFactor));
 
     // Extend the halo region with cutoff + skin in all dimensions
-    auto haloBoxMin = utils::ArrayMath::subScalar(boxMin, this->getInteractionLength());
-    auto haloBoxMax = utils::ArrayMath::addScalar(boxMax, this->getInteractionLength());
+    auto haloBoxMin = utils::ArrayMath::subScalar(boxMin, interactionLength);
+    auto haloBoxMax = utils::ArrayMath::addScalar(boxMax, interactionLength);
     this->_cells.push_back(
         OctreeNodeWrapper<Particle>(haloBoxMin, haloBoxMax, treeSplitThreshold, interactionLength, cellSizeFactor));
   }
