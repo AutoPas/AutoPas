@@ -200,6 +200,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    * @copydoc ParticleContainerInterface::getTraversalSelectorInfo()
    */
   [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
+    // this is a dummy since it is not actually used
     std::array<unsigned long, 3> dims = {1, 1, 1};
     std::array<double, 3> cellLength = utils::ArrayMath::sub(this->getBoxMax(), this->getBoxMin());
     return TraversalSelectorInfo(dims, this->getInteractionLength(), cellLength, 0);
