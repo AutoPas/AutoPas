@@ -66,14 +66,20 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     int unsigned treeSplitThreshold = 16;
 
     double interactionLength = this->getInteractionLength();
-    this->_cells.push_back(
-        OctreeNodeWrapper<Particle>(boxMin, boxMax, treeSplitThreshold, interactionLength, cellSizeFactor));
+
+    // Reserve space for the owned (inner) octree and the halo octree
+    this->_cells.reserve(2);
+
+    // Create the octree for the owned particles
+    this->_cells[OWNED] =
+        OctreeNodeWrapper<Particle>(boxMin, boxMax, treeSplitThreshold, interactionLength, cellSizeFactor);
 
     // Extend the halo region with cutoff + skin in all dimensions
     auto haloBoxMin = utils::ArrayMath::subScalar(boxMin, interactionLength);
     auto haloBoxMax = utils::ArrayMath::addScalar(boxMax, interactionLength);
-    this->_cells.push_back(
-        OctreeNodeWrapper<Particle>(haloBoxMin, haloBoxMax, treeSplitThreshold, interactionLength, cellSizeFactor));
+    // Create the octree for the halo particles
+    this->_cells[HALO] =
+        OctreeNodeWrapper<Particle>(haloBoxMin, haloBoxMax, treeSplitThreshold, interactionLength, cellSizeFactor);
   }
 
   [[nodiscard]] std::vector<ParticleType> updateContainer() override {
@@ -111,7 +117,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
   }
 
   void iteratePairwise(TraversalInterface *traversal) override {
-        if (auto *traversalInterface = dynamic_cast<OTTraversalInterface<ParticleCell> *>(traversal)) {
+    if (auto *traversalInterface = dynamic_cast<OTTraversalInterface<ParticleCell> *>(traversal)) {
       traversalInterface->setCells(&this->_cells);
     }
 
