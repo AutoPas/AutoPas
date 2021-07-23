@@ -107,9 +107,6 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
       addParticleImpl(particle);
     }
 
-    // This should happen according to the documentation in the ParticleContainerInterface#updateContainer
-    deleteHaloParticles();
-
     return result;
   }
 
