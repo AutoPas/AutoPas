@@ -77,7 +77,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
   }
 
   [[nodiscard]] std::vector<ParticleType> updateContainer() override {
-    // This is a very primitive and inefficient way to recreate the container:
+    // This is a very primitive and inefficient way to rebuild the container:
     // 1. Copy all particles out of the container
     // 2. Clear the container
     // 3. Insert the particles back into the container
