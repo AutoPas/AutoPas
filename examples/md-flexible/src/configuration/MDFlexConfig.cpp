@@ -5,7 +5,15 @@
  */
 #include "MDFlexConfig.h"
 
+#include <algorithm>
+#include <fstream>
+#include <iostream>
+#include <limits>
+#include <string>
+#include <vector>
+
 #include "MDFlexParser.h"
+#include "autopas/utils/WrapMPI.h"
 #include "src/ParticleSerializationTools.h"
 #include "src/Thermostat.h"
 
@@ -41,9 +49,15 @@ std::vector<dataType> readPayload(std::ifstream &file, size_t numberOfParticles)
  * @param word
  */
 void findWord(std::ifstream &file, const std::string &word) {
+  std::vector<char> separators{' ', '/', '.', ',', '?', '!', '"', '\'', '<', '>', '=', ':', ';', '\n'};
   std::string currentWord;
-  while (currentWord != word) {
-    file >> currentWord;
+  while (not file.eof() && currentWord != word) {
+    char currentChar = file.get();
+    if (std::find(separators.begin(), separators.end(), currentChar) != separators.end()) {
+      currentWord = "";
+    } else {
+      currentWord += currentChar;
+    }
   }
 }
 }  // namespace
@@ -267,9 +281,6 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
 }
 
 void MDFlexConfig::initializeObjects() {
-  if (not checkpointfile.value.empty()) {
-    loadParticlesFromCheckpoint();
-  }
   for (const auto &object : cubeGridObjects) {
     object.generate(_particles);
   }
@@ -287,27 +298,62 @@ void MDFlexConfig::initializeObjects() {
   }
 }
 
-void MDFlexConfig::loadParticlesFromCheckpoint() {
-  std::ifstream infile(checkpointfile.value);
-  size_t numParticles;
-  std::string dataType;
+void MDFlexConfig::loadParticlesFromCheckpoint(const size_t &rank) {
+  std::string filename = checkpointfile.value;
 
-  if (not infile.is_open()) {
-    std::cout << "Could not load checkpoint file " << checkpointfile.value << "." << std::endl;
+  const size_t filenameStart = filename.find_last_of('/');
+  std::string fileLocation = filename.substr(0, filenameStart);
+
+  std::cout << fileLocation << std::endl;
+
+  std::string scenarioName, iteration, word;
+
+  for (size_t i = filenameStart; i < filename.length(); ++i) {
+    switch (filename[i]) {
+      case '_':
+        scenarioName = word;
+        word = "";
+        break;
+      case '.':
+        iteration = word;
+        word = "";
+        break;
+      default:
+        word += filename[i];
+    }
+  }
+  std::string rankFilename =
+      fileLocation + "/data/" + scenarioName + "_" + std::to_string(rank) + "_" + iteration + ".vtu";
+  std::ifstream inputStream(rankFilename);
+  if (not inputStream.is_open()) {
+    std::cout << "Could not load checkpoint file " << rankFilename << "." << std::endl;
     return;
   }
 
-  findWord(infile, "POINTS");
-  infile >> numParticles >> dataType;
+  size_t numParticles;
+  findWord(inputStream, "NumberOfPoints");
+  inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '"');
+  inputStream >> numParticles;
 
-  auto positions = readPayload<std::array<double, 3>, 3>(infile, numParticles);
-  // next payload block is always preceded by the datatype
-  findWord(infile, dataType);
-  auto velocities = readPayload<std::array<double, 3>, 3>(infile, numParticles);
-  findWord(infile, dataType);
-  auto forces = readPayload<std::array<double, 3>, 3>(infile, numParticles);
-  findWord(infile, "default");
-  auto typeID = readPayload<size_t, 1>(infile, numParticles);
+  findWord(inputStream, "velocities");
+  inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  auto velocities = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
+
+  findWord(inputStream, "forces");
+  inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  auto forces = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
+
+  findWord(inputStream, "typeIds");
+  inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  auto typeIds = readPayload<size_t, 1>(inputStream, numParticles);
+
+  findWord(inputStream, "ids");
+  inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  auto ids = readPayload<size_t, 1>(inputStream, numParticles);
+
+  findWord(inputStream, "positions");
+  inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  auto positions = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
 
   // creating Particles from checkpoint:
   for (auto i = 0ul; i < numParticles; ++i) {
@@ -316,8 +362,8 @@ void MDFlexConfig::loadParticlesFromCheckpoint() {
     particle.setR(positions[i]);
     particle.setV(velocities[i]);
     particle.setF(forces[i]);
-    particle.setID(i);
-    particle.setTypeId(typeID[i]);
+    particle.setID(ids[i]);
+    particle.setTypeId(typeIds[i]);
 
     _particles.push_back(particle);
   }

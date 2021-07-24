@@ -137,9 +137,19 @@ class MDFlexConfig {
   void addParticleType(unsigned long typeId, double epsilon, double sigma, double mass);
 
   /**
-   * Flushes the particles as they are not required anymore after initialization.
+   * Flushes the particles.
    */
   void flushParticles();
+
+  /**
+   * Loads the particles from the checkpoint file defined in the configuration file.
+   * If the checkpoint has been recorded using multiple processes, the rank of the current process needs to be passed.
+   * The provided rank also needs to respect the domain decomposition. E. g. if the a regular grid decomposition is
+   * used,   * don't pass the MPI_COMM_WORLD rank, as it might differ from the grid rank derived in the decomposition
+   * scheme. The wrong rank might result in a very bad network topology and therefore increase communication cost.
+   * @param rank: The MPI rank of the current process.
+   */
+  void loadParticlesFromCheckpoint(const size_t &rank = 0);
 
   /**
    * Choice of the functor
@@ -603,11 +613,6 @@ class MDFlexConfig {
    * Initializes all particles present at the start of the simulation.
    */
   void initializeObjects();
-
-  /**
-   * Loads the particles from the checkpoint file defined in the configuration file.
-   */
-  void loadParticlesFromCheckpoint();
 };
 
 /**

@@ -27,6 +27,11 @@ int main(int argc, char **argv) {
   RegularGridDecomposition domainDecomposition(configuration.boxMin.value, configuration.boxMax.value,
                                                configuration.cutoff.value, configuration.verletSkinRadius.value);
 
+  if (not configuration.checkpointfile.value.empty()) {
+    configuration.flushParticles();
+    configuration.loadParticlesFromCheckpoint(domainDecomposition.getDomainIndex());
+  }
+
   if (domainDecomposition.getDomainIndex() == 0) {
     std::cout << std::endl << "Using " << autopas::autopas_get_max_threads() << " Threads" << std::endl;
   }
