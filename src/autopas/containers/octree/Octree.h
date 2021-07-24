@@ -128,6 +128,9 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
 
   /**
    * @copydoc ParticleContainerInterface::getParticleCellTypeEnum()
+   * @note The octree stores the particles in its leaves. Even though the leaves inherit from `FullParticleCell`, they
+   * are an extension of `FullParticleCell`. However, the interface stays the same and the leaves can be treated just
+   * like regular `FullParticleCell`s.
    */
   [[nodiscard]] CellType getParticleCellTypeEnum() override { return CellType::FullParticleCell; }
 
