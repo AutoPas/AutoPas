@@ -336,10 +336,10 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   }
 
   void iteratePairwise(TraversalInterface *traversal) override {
-    if(sort_counter % sort_loop_iterations == 0){
-      sort();
-    }
-    sort_counter++;
+//    if(sort_counter % sort_loop_iterations == 0){
+//      sort();
+//    }
+//    sort_counter++;
     // Check if traversal is allowed for this container and give it the data it needs.
     auto *traversalInterface = dynamic_cast<LCTraversalInterface<ReferenceCell> *>(traversal);
     auto *cellPairTraversal = dynamic_cast<CellPairTraversal<ReferenceCell> *>(traversal);

@@ -442,7 +442,7 @@ void Simulation::writeVTKFile(autopas::AutoPas<ParticleType> &autopas) {
   }
   vtkFile << "\n";
 
-  // print TypeIDs
+  // print IDs
   vtkFile << "SCALARS particleIds int\n";
   vtkFile << "LOOKUP_TABLE default\n";
   for (auto iter = autopas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
