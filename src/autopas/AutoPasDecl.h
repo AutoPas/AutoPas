@@ -24,6 +24,11 @@
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/WrapMPI.h"
 
+// These next three includes have dependencies to all of AutoPas and thus are moved here from AutoPasDecl.h.
+#include "autopas/LogicHandler.h"
+#include "autopas/selectors/AutoTuner.h"
+#include "autopas/selectors/tuningStrategy/TuningStrategyFactory.h"
+
 namespace autopas {
 
 // Forward declare AutoTuner and LogicHandler so that including this header does not include the whole library with all
@@ -184,10 +189,14 @@ class AutoPas {
   const_iterator_t begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
 
   template <typename Lambda>
-  void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo);
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+    _logicHandler->forEach(forEachLambda, behavior);
+  }
 
   template <typename Lambda>
-  void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
+      _logicHandler->forEach(forEachLambda, behavior);
+  }
 
   /**
    * @copydoc begin()
@@ -223,11 +232,15 @@ class AutoPas {
 
   template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-                       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo);
+                       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+    _logicHandler->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+  }
 
   template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-                       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
+                       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
+    std::as_const(*_logicHandler).forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+  }
 
   /**
    * Returns the number of particles in this container.
