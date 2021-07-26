@@ -217,7 +217,7 @@ class LogicHandler {
 
   /**
    * Deletes a single particle and updates internal particle counters.
-   * @param iter
+   * @param particle reference to particles that should be deleted
    */
   void deleteParticle(Particle &particle) {
     if ((*particle).isOwned()) {
@@ -261,6 +261,9 @@ class LogicHandler {
     return std::as_const(_autoTuner).getContainer()->begin(behavior);
   }
 
+  /**
+   * @copydoc AutoPas::forEach()
+   */
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     auto execOnContainer = [&](auto container) { container->forEach(forEachLambda, behavior); };
@@ -268,6 +271,9 @@ class LogicHandler {
     withStaticContainerType(_autoTuner.getContainer(), execOnContainer);
   }
 
+  /**
+   * @copydoc AutoPas::forEach()
+   */
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     auto execOnContainer = [&](auto container) { container->forEach(forEachLambda, behavior); };
@@ -317,6 +323,9 @@ class LogicHandler {
     return std::as_const(_autoTuner).getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior);
   }
 
+  /**
+   * @copydoc AutoPas::forEachInRegion()
+   */
   template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> lowerCorner,
                        const std::array<double, 3> higherCorner,
@@ -328,6 +337,9 @@ class LogicHandler {
     withStaticContainerType(_autoTuner.getContainer(), execOnContainer);
   }
 
+  /**
+   * @copydoc AutoPas::forEachInRegion()
+   */
   template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> lowerCorner,
                        const std::array<double, 3> higherCorner,

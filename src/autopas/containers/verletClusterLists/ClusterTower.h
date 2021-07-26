@@ -230,11 +230,17 @@ class ClusterTower : public ParticleCell<Particle> {
         new SingleCellIterator<Particle, ClusterTower<Particle>, false>(this)};
   }
 
+  /**
+   * @copydoc VerletClusterLists::forEach()
+   */
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior) {
     _particlesStorage.forEach(forEachLambda, behavior);
   }
 
+  /**
+   * @copydoc VerletClusterLists::forEachInRegion()
+   */
   template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                        const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {

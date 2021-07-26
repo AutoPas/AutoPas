@@ -270,6 +270,9 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
                                                                            nullptr));
   }
 
+  /**
+   * @copydoc LinkedCells::forEach()
+   */
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHaloOrDummy) {
     if (behavior == IteratorBehavior::ownedOrHaloOrDummy) {
@@ -341,6 +344,9 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
             &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBlock, behavior, nullptr));
   }
 
+  /**
+   * @copydoc LinkedCells::forEachInRegion()
+   */
   template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                        const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {

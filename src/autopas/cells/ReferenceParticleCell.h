@@ -63,12 +63,26 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
     return SingleCellIteratorWrapper<Particle, false>(new const_iterator_t(this));
   }
 
+  /**
+   * executes code for every particle in this cell as defined by lambda function
+   * @tparam Lambda (Particle &p) -> void
+   * @param forEachLambda code to be executed on particles
+   * @param behavior ownerships of particles that should be in-/excluded
+   */
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior) {
     const std::array<double, 3> dummy{};
     _forEach<false>(forEachLambda, dummy, dummy, behavior);
   }
 
+  /**
+   * executes code for every particle in this cell as defined by lambda function
+   * @tparam Lambda (Particle &p) -> void
+   * @param forEachLambda code to be executed on particles
+   * @param lowerCorner lower corner of bounding box
+   * @param higherCorner higher corner of bounding box
+   * @param behavior ownerships of particles that should be in-/excluded
+   */
   template <typename Lambda>
   void forEach(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
