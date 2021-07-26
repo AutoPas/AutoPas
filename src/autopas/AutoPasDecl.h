@@ -195,7 +195,7 @@ class AutoPas {
 
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
-      _logicHandler->forEach(forEachLambda, behavior);
+    _logicHandler->forEach(forEachLambda, behavior);
   }
 
   /**
