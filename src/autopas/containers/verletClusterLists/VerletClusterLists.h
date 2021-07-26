@@ -308,7 +308,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
-   * @copydoc ParticleContainerInterface::forEach()
+   * @copydoc LinkedCells::forEach()
    * @note This function additionally rebuilds the towers if the tower-structure isn't valid.
    */
   template <typename Lambda>
@@ -321,7 +321,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
-   * @copydoc ParticleContainerInterface::forEach()
+   * @copydoc LinkedCells::forEach()
    * @note const version.
    * @note This function additionally iterates over the _particlesToAdd vector if the tower-structure isn't valid.
    */
@@ -418,7 +418,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
-   * @copydoc ParticleContainerInterface::forEach()
+   * @copydoc LinkedCells::forEachInRegion()
    * @note This function additionally rebuilds the towers if the tower-structure isn't valid.
    */
   template <typename Lambda>
@@ -433,7 +433,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
-   * @copydoc ParticleContainerInterface::forEach()
+   * @copydoc LinkedCells::forEachInRegion()
    * @note const version.
    * @note This function additionally iterates over the _particlesToAdd vector if the tower-structure isn't valid.
    */

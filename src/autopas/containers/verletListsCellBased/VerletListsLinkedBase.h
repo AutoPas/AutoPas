@@ -141,6 +141,9 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
     return _linkedCells.begin(behavior);
   }
 
+  /**
+   * @copydoc autopas::LinkedCells::forEach()
+   */
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior) {
     return _linkedCells.forEach(forEachLambda, behavior);
@@ -164,6 +167,9 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
     return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior);
   }
 
+  /**
+   * @copydoc autopas::LinkedCells::forEachInRegion()
+   */
   template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                        const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {

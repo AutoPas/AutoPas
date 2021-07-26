@@ -188,11 +188,21 @@ class AutoPas {
    */
   const_iterator_t begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
 
+  /**
+   * execute code on all particles as defined by a lambda function
+   * @tparam Lambda (Particle &p) -> void
+   * @param forEachLambda code to be executed on all particles
+   * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownerOrHalo
+   */
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     _logicHandler->forEach(forEachLambda, behavior);
   }
 
+  /**
+   * @copydoc forEach()
+   * @note const version
+   */
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     _logicHandler->forEach(forEachLambda, behavior);
@@ -230,12 +240,24 @@ class AutoPas {
   const_iterator_t getRegionIterator(std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
                                      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
 
+  /**
+   * execute code on all particles in a certain region as defined by a lambda function
+   * @tparam Lambda (Particle &p) -> void
+   * @param forEachLambda code to be executed on all particles
+   * @param lowerCorner lower corner of bounding box
+   * @param higherCorner higher corner of bounding box
+   * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownerOrHalo
+   */
   template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
                        IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     _logicHandler->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
   }
 
+  /**
+   * @copydoc forEachInRegion()
+   * @note const version
+   */
   template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
                        IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
