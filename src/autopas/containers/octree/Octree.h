@@ -112,7 +112,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
   }
 
   void iteratePairwise(TraversalInterface *traversal) override {
-    if (auto *traversalInterface = dynamic_cast<OTTraversalInterface<ParticleCell> *>(traversal)) {
+    if (auto *traversalInterface = dynamic_cast<OTTraversalInterface<Particle, ParticleCell> *>(traversal)) {
       traversalInterface->setCells(&this->_cells);
     }
 

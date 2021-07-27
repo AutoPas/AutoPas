@@ -277,13 +277,14 @@ static autopas::ParticleFP64 getRandomlyDistributedParticle(std::array<double, 3
  * @param randomParticleCount How many particles should be spawned
  */
 static std::unique_ptr<autopas::OctreeNodeInterface<autopas::ParticleFP64>> createRandomOctree(
-    std::array<double, 3> min, std::array<double, 3> max, int randomParticleCount) {
+    std::array<double, 3> min, std::array<double, 3> max, int randomParticleCount, int treeSplitThreshold = 16) {
   using namespace autopas;
+  int idCounter = 0;
   std::unique_ptr<OctreeNodeInterface<autopas::ParticleFP64>> root =
-      std::make_unique<OctreeLeafNode<ParticleFP64>>(min, max, nullptr, 16, 1, 1.0);
+      std::make_unique<OctreeLeafNode<ParticleFP64>>(min, max, nullptr, treeSplitThreshold, 1, 1.0, &idCounter);
   for (int particleIndex = 0; particleIndex < randomParticleCount; ++particleIndex) {
     auto randomParticle = getRandomlyDistributedParticle(min, max);
-    auto ret = root->insert(randomParticle);
+    auto ret = root->insert(randomParticle, &idCounter);
     if (ret) root = std::move(ret);
   }
   return root;
@@ -714,3 +715,25 @@ static std::vector<GeneratorSpec> getTestParams() {
 
 INSTANTIATE_TEST_SUITE_P(OctreeTestGenerated, OctreeTest, ::testing::ValuesIn(getTestParams()), toString);
 #endif
+
+/**
+ * Test whether the counter creates correct IDs
+ */
+TEST_F(OctreeTest, testLeafIDs) {
+  using namespace autopas;
+
+  // Create an octree with a random particle configuration.
+  srand(1234);
+  std::unique_ptr<OctreeNodeInterface<ParticleFP64>> root = createRandomOctree({0, 0, 0}, {100, 100, 100}, 1000, 4);
+
+  // Get leaves
+  std::vector<OctreeLeafNode<ParticleFP64> *> leaves;
+  root->appendAllLeaves(leaves);
+
+  std::vector<int> ids, expected;
+  for (int i = 0; i < leaves.size(); ++i) {
+    ids.push_back(leaves[i]->getID());
+    expected.push_back(i);
+  }
+  ASSERT_THAT(ids, ::testing::UnorderedElementsAreArray(expected));
+}
