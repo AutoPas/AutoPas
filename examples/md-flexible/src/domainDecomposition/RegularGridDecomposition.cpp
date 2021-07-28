@@ -14,7 +14,7 @@
 #include "DomainTools.h"
 #include "autopas/AutoPas.h"
 #include "autopas/utils/ArrayUtils.h"
-#include "src/ParticleSerializationTools.h"
+#include "src/ParticleCommunicator.h"
 
 RegularGridDecomposition::RegularGridDecomposition(const std::array<double, 3> &globalBoxMin,
                                                    const std::array<double, 3> &globalBoxMax, const double &cutoffWidth,
@@ -368,54 +368,8 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
       for (auto &particle : immigrants) {
         autoPasContainer->addParticle(particle);
       }
-
-      waitForSendRequests();
     }
   }
-}
-
-void RegularGridDecomposition::sendParticles(const std::vector<ParticleType> &particles, const int &receiver) {
-  std::vector<char> buffer;
-
-  for (auto &particle : particles) {
-    ParticleSerializationTools::serializeParticle(particle, buffer);
-  }
-
-  size_t sizeOfParticleAttributes = sizeof(ParticleAttributes);
-
-  sendDataToNeighbour(buffer, receiver);
-}
-
-void RegularGridDecomposition::receiveParticles(std::vector<ParticleType> &receivedParticles, const int &source) {
-  std::vector<char> receiveBuffer;
-
-  receiveDataFromNeighbour(source, receiveBuffer);
-
-  if (!receiveBuffer.empty()) {
-    ParticleSerializationTools::deserializeParticles(receiveBuffer, receivedParticles);
-  }
-}
-
-void RegularGridDecomposition::sendDataToNeighbour(std::vector<char> sendBuffer, const int &neighbour) {
-  _sendBuffers.push_back(sendBuffer);
-
-  autopas::AutoPas_MPI_Request sendRequest;
-  _sendRequests.push_back(sendRequest);
-
-  autopas::AutoPas_MPI_Isend(_sendBuffers.back().data(), _sendBuffers.back().size(), AUTOPAS_MPI_CHAR, neighbour, 0,
-                             _communicator, &_sendRequests.back());
-}
-
-void RegularGridDecomposition::receiveDataFromNeighbour(const int &neighbour, std::vector<char> &receiveBuffer) {
-  autopas::AutoPas_MPI_Status status;
-  autopas::AutoPas_MPI_Probe(neighbour, 0, _communicator, &status);
-
-  int receiveBufferSize;
-  autopas::AutoPas_MPI_Get_count(&status, AUTOPAS_MPI_CHAR, &receiveBufferSize);
-  receiveBuffer.resize(receiveBufferSize);
-
-  autopas::AutoPas_MPI_Recv(receiveBuffer.data(), receiveBufferSize, AUTOPAS_MPI_CHAR, neighbour, 0, _communicator,
-                            AUTOPAS_MPI_STATUS_IGNORE);
 }
 
 void RegularGridDecomposition::sendAndReceiveParticlesLeftAndRight(const std::vector<ParticleType> &particlesToLeft,
@@ -423,25 +377,18 @@ void RegularGridDecomposition::sendAndReceiveParticlesLeftAndRight(const std::ve
                                                                    const int &leftNeighbour, const int &rightNeighbour,
                                                                    std::vector<ParticleType> &receivedParticles) {
   if (_mpiIsEnabled && leftNeighbour != _domainIndex) {
-    sendParticles(particlesToLeft, leftNeighbour);
-    sendParticles(particlesToRight, rightNeighbour);
+    ParticleCommunicator particleCommunicator(_communicator);
+    particleCommunicator.sendParticles(particlesToLeft, leftNeighbour);
+    particleCommunicator.sendParticles(particlesToRight, rightNeighbour);
 
-    receiveParticles(receivedParticles, leftNeighbour);
-    receiveParticles(receivedParticles, rightNeighbour);
+    particleCommunicator.receiveParticles(receivedParticles, leftNeighbour);
+    particleCommunicator.receiveParticles(receivedParticles, rightNeighbour);
 
-    waitForSendRequests();
+    particleCommunicator.waitForSendRequests();
   } else {
     receivedParticles.insert(receivedParticles.end(), particlesToLeft.begin(), particlesToLeft.end());
     receivedParticles.insert(receivedParticles.end(), particlesToRight.begin(), particlesToRight.end());
   }
-}
-
-void RegularGridDecomposition::waitForSendRequests() {
-  std::vector<autopas::AutoPas_MPI_Status> sendStates;
-  sendStates.resize(_sendRequests.size());
-  autopas::AutoPas_MPI_Waitall(_sendRequests.size(), _sendRequests.data(), sendStates.data());
-  _sendRequests.clear();
-  _sendBuffers.clear();
 }
 
 int RegularGridDecomposition::convertIdToIndex(const std::array<int, 3> &domainId) {
