@@ -328,6 +328,16 @@ class MDFlexConfig {
    */
   MDFlexOption<std::array<double, 3>, 0> boxMax{
       {1, 1, 1}, "box-max", true, "Upper back right corner of the simulation box."};
+
+  /**
+   * subdivideDimension
+   */
+  MDFlexOption<std::array<bool, 3>, 0> subdivideDimension{
+      {true, true, true},
+      "subdivide-dimension",
+      true,
+      "Indicates which dimension will be subdivided when subdividing the global domain"};
+
   /**
    * acquisitionFunctionOption
    */
