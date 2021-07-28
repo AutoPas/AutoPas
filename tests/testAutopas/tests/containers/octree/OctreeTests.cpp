@@ -728,6 +728,7 @@ TEST_F(OctreeTest, testLeafIDs) {
   // Get leaves
   std::vector<OctreeLeafNode<ParticleFP64> *> leaves;
   root->appendAllLeaves(leaves);
+  OTC18Traversal<ParticleFP64, LJFunctor<ParticleFP64>, DataLayoutOption::aos, true>::assignIDs(leaves);
 
   std::vector<int> ids, expected;
   for (int i = 0; i < leaves.size(); ++i) {
@@ -735,6 +736,5 @@ TEST_F(OctreeTest, testLeafIDs) {
     expected.push_back(i);
   }
 
-  int i = 0;
-  //ASSERT_THAT(ids, ::testing::UnorderedElementsAreArray(expected));
+  ASSERT_THAT(ids, ::testing::UnorderedElementsAreArray(expected));
 }
