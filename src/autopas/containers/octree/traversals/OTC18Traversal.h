@@ -47,7 +47,7 @@ class OTC18Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
         _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/),
         _dataLayoutConverter(pairwiseFunctor) {}
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::ot_naive; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::ot_c18; }
 
   [[nodiscard]] bool isApplicable() const override {
     return useNewton3;
