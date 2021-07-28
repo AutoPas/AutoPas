@@ -177,6 +177,18 @@ template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particlePropertiesLibrary,
            const double targetTemperature, const double deltaTemperature) {
   auto currentTemperatureMap = calcTemperatureComponent(autopas, particlePropertiesLibrary);
+
+  for (auto &[particleTypeID, currentTemperature] : currentTemperatureMap) {
+    double aggregatedTemperature;
+    autopas::AutoPas_MPI_Allreduce(&currentTemperature, &aggregatedTemperature, 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM,
+                                   AUTOPAS_MPI_COMM_WORLD);
+
+    int communicatorSize;
+    autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &communicatorSize);
+
+    currentTemperature = aggregatedTemperature / communicatorSize;
+  }
+
   // make sure we work with a positive delta
   const double deltaTemperaturePositive = std::abs(deltaTemperature);
   decltype(currentTemperatureMap) scalingMap;
