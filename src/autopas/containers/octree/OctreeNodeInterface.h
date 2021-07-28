@@ -57,7 +57,7 @@ class OctreeNodeInterface {
    * @param p The particle to insert
    * @return A std::unique_ptr to a newly created subtree or nullptr if the subtree did not change
    */
-  virtual std::unique_ptr<OctreeNodeInterface<Particle>> insert(Particle p, int *idCounter = nullptr) = 0;
+  virtual std::unique_ptr<OctreeNodeInterface<Particle>> insert(Particle p) = 0;
 
   /**
    * Put all particles that are below this node into the vector.

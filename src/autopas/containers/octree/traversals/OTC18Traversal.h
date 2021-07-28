@@ -63,6 +63,16 @@ class OTC18Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
     // Preprocess all leaves
     this->loadBuffers(_dataLayoutConverter, this->getOwned(), this->_ownedLeaves);
     this->loadBuffers(_dataLayoutConverter, this->getHalo(), this->_haloLeaves);
+
+    // Assign IDs to the owned leaves
+    for (int i = 0; i < this->_ownedLeaves.size(); ++i) {
+      this->_ownedLeaves[i]->setID(i);
+    }
+
+    // Assign IDs to the halo leaves
+    for (int i = 0; i < this->_haloLeaves.size(); ++i) {
+      this->_haloLeaves[i]->setID(this->_ownedLeaves.size() + i);
+    }
   }
 
   void endTraversal() override {

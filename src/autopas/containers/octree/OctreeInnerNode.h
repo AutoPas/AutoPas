@@ -31,8 +31,7 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
    * @param cellSizeFactor The cell size factor
    */
   OctreeInnerNode(std::array<double, 3> boxMin, std::array<double, 3> boxMax, OctreeNodeInterface<Particle> *parent,
-                  int unsigned treeSplitThreshold, double interactionLength, double cellSizeFactor,
-                  int *idCounter = nullptr)
+                  int unsigned treeSplitThreshold, double interactionLength, double cellSizeFactor)
       : OctreeNodeInterface<Particle>(boxMin, boxMax, parent, treeSplitThreshold, interactionLength, cellSizeFactor) {
     using namespace autopas::utils;
 
@@ -50,7 +49,7 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
 
       // Assign new leaves as the children.
       _children[i] = std::make_unique<OctreeLeafNode<Particle>>(newBoxMin, newBoxMax, this, treeSplitThreshold,
-                                                                interactionLength, cellSizeFactor, idCounter);
+                                                                interactionLength, cellSizeFactor);
     }
   }
 
@@ -74,7 +73,7 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
   /**
    * @copydoc OctreeNodeInterface::insert()
    */
-  std::unique_ptr<OctreeNodeInterface<Particle>> insert(Particle p, int *idCounter) override {
+  std::unique_ptr<OctreeNodeInterface<Particle>> insert(Particle p) override {
     if (!this->isInside(p.getR())) {
       // The exception is suppressed for AllContainersTests#testParticleAdding
       // throw std::runtime_error("[OctreeInnerNode.h] Attempting to insert particle that is not inside this node");
@@ -83,7 +82,7 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
     // Find a child to insert the particle into.
     for (auto &child : _children) {
       if (child->isInside(p.getR())) {
-        auto ret = child->insert(p, idCounter);
+        auto ret = child->insert(p);
         if (ret) child = std::move(ret);
         break;
       }

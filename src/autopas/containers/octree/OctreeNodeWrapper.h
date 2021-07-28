@@ -57,7 +57,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
   OctreeNodeWrapper(std::array<double, 3> boxMin, std::array<double, 3> boxMax, int unsigned treeSplitThreshold,
                     double interactionLength, double cellSizeFactor) {
     _pointer = std::make_unique<OctreeLeafNode<Particle>>(boxMin, boxMax, nullptr, treeSplitThreshold,
-                                                          interactionLength, cellSizeFactor, &idCounter);
+                                                          interactionLength, cellSizeFactor);
   }
 
   /**
@@ -77,7 +77,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @param p the particle to be added
    */
   void addParticle(const Particle &p) override {
-    auto ret = _pointer->insert(p, &idCounter);
+    auto ret = _pointer->insert(p);
     if (ret) _pointer = std::move(ret);
   }
 
@@ -114,14 +114,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
   /**
    * Deletes all particles in this cell.
    */
-  void clear() override {
-    // Set the ID counter back to 0. This is done to ensure that the tree can always be constructed with IDs that do not
-    // overflow.
-    idCounter = 0;
-
-    // Clear the octree
-    _pointer->clearChildren(_pointer);
-  }
+  void clear() override { _pointer->clearChildren(_pointer); }
 
   /**
    * Deletes all dummy particles in this cell.
@@ -209,7 +202,5 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
   }
 
   std::unique_ptr<OctreeNodeInterface<Particle>> _pointer;
-
-  int idCounter;
 };
 }  // namespace autopas

@@ -36,18 +36,10 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
    * @param cellSizeFactor The cell size factor
    */
   OctreeLeafNode(std::array<double, 3> boxMin, std::array<double, 3> boxMax, OctreeNodeInterface<Particle> *parent,
-                 int unsigned treeSplitThreshold, double interactionLength, double cellSizeFactor,
-                 int *idCounter = nullptr)
+                 int unsigned treeSplitThreshold, double interactionLength, double cellSizeFactor)
       : OctreeNodeInterface<Particle>(boxMin, boxMax, parent, treeSplitThreshold, interactionLength, cellSizeFactor),
-        FullParticleCell<Particle>(utils::ArrayMath::sub(boxMax, boxMin)) {
-    if(idCounter) {
-      // Assign this container a new ID
-      int val = *idCounter;
-      (*idCounter)++;
-      _id = val;
-      printf("_id=%d, idCounter=%p, *idCounter=%d\n", _id, idCounter, *idCounter);
-    }
-  }
+        FullParticleCell<Particle>(utils::ArrayMath::sub(boxMax, boxMin)),
+        _id(-1) {}
 
   /**
    * Copy a leaf by copying all particles from the other leaf to this leaf.
@@ -66,7 +58,7 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
   /**
    * @copydoc OctreeNodeInterface::insert()
    */
-  std::unique_ptr<OctreeNodeInterface<Particle>> insert(Particle p, int *idCounter) override {
+  std::unique_ptr<OctreeNodeInterface<Particle>> insert(Particle p) override {
     if (not this->isInside(p.getR())) {
       // The exception is suppressed for AllContainersTests#testParticleAdding
       // throw std::runtime_error("[OctreeLeafNode.h] Attempting to insert particle that is not inside this node");
@@ -94,11 +86,11 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
     } else {
       std::unique_ptr<OctreeNodeInterface<Particle>> newInner = std::make_unique<OctreeInnerNode<Particle>>(
           this->getBoxMin(), this->getBoxMax(), this->_parent, this->_treeSplitThreshold, this->_interactionLength,
-          this->_cellSizeFactor, idCounter);
-      auto ret = newInner->insert(p, idCounter);
+          this->_cellSizeFactor);
+      auto ret = newInner->insert(p);
       if (ret) newInner = std::move(ret);
       for (auto cachedParticle : this->_particles) {
-        ret = newInner->insert(cachedParticle, idCounter);
+        ret = newInner->insert(cachedParticle);
         if (ret) newInner = std::move(ret);
       }
 
@@ -184,6 +176,8 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
   void markAlreadyProcessed(OctreeLeafNode<Particle> *other) { _alreadyProcessed.push_back(other); }
 
   int getID() { return _id; }
+
+  void setID(int id) { this->_id = id; }
 
  private:
   /**
