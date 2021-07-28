@@ -175,8 +175,16 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
    */
   void markAlreadyProcessed(OctreeLeafNode<Particle> *other) { _alreadyProcessed.push_back(other); }
 
+  /**
+   * Get the assigned id of this leaf node
+   * @return An ID (or -1 if there was no ID assigned to this node)
+   */
   int getID() { return _id; }
 
+  /**
+   * Set the ID of this node
+   * @param id An integer ID
+   */
   void setID(int id) { this->_id = id; }
 
  private:
@@ -185,6 +193,9 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
    */
   std::vector<OctreeLeafNode<Particle> *> _alreadyProcessed;
 
+  /**
+   * The ID assigned to this node (-1 if unassigned)
+   */
   int _id;
 };
 }  // namespace autopas
