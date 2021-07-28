@@ -9,6 +9,7 @@
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <list>
 #include <string>
 #include <vector>
 
@@ -195,8 +196,11 @@ std::string MDFlexConfig::to_string() const {
     os << setw(valueOffset) << left << vtkFileName.name << ":  " << vtkFileName.value << endl;
     os << setw(valueOffset) << left << vtkWriteFrequency.name << ":  " << vtkWriteFrequency.value << endl;
   }
-  if (not checkpointfile.value.empty())
+  if (not checkpointfile.value.empty()) {
     os << setw(valueOffset) << left << checkpointfile.name << ":  " << checkpointfile.value << endl;
+    os << setw(valueOffset) << left << checkpointScenarioName.name << ":  " << checkpointScenarioName.value << endl;
+    os << setw(valueOffset) << left << checkpointIteration.name << ":  " << checkpointIteration.value << endl;
+  }
 
   os << setw(valueOffset) << logLevel.name << ":  " << (logLevel.value) << endl;
 
@@ -299,31 +303,12 @@ void MDFlexConfig::initializeObjects() {
 }
 
 void MDFlexConfig::loadParticlesFromCheckpoint(const size_t &rank) {
-  std::string filename = checkpointfile.value;
+  const size_t filenameStart = checkpointfile.value.find_last_of('/');
+  std::string fileLocation = checkpointfile.value.substr(0, filenameStart);
 
-  const size_t filenameStart = filename.find_last_of('/');
-  std::string fileLocation = filename.substr(0, filenameStart);
+  std::string rankFilename = fileLocation + "/data/" + checkpointScenarioName.value + "_" + std::to_string(rank) + "_" +
+                             std::to_string(checkpointIteration.value) + ".vtu";
 
-  std::cout << fileLocation << std::endl;
-
-  std::string scenarioName, iteration, word;
-
-  for (size_t i = filenameStart; i < filename.length(); ++i) {
-    switch (filename[i]) {
-      case '_':
-        scenarioName = word;
-        word = "";
-        break;
-      case '.':
-        iteration = word;
-        word = "";
-        break;
-      default:
-        word += filename[i];
-    }
-  }
-  std::string rankFilename =
-      fileLocation + "/data/" + scenarioName + "_" + std::to_string(rank) + "_" + iteration + ".vtu";
   std::ifstream inputStream(rankFilename);
   if (not inputStream.is_open()) {
     std::cout << "Could not load checkpoint file " << rankFilename << "." << std::endl;
