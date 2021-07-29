@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
   }
 
   Simulation simulation(configuration, domainDecomposition);
-  //  simulation.run();
+  simulation.run();
 
   if (domainDecomposition.getDomainIndex() == 0) {
     std::cout << std::endl << "Using " << autopas::autopas_get_max_threads() << " Threads" << std::endl;
