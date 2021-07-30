@@ -352,7 +352,7 @@ void Simulation::logTimers() {
   long positionUpdate = accumulateTime(_timers.positionUpdate.getTotalTime());
   long forceUpdateTotal = accumulateTime(_timers.forceUpdateTotal.getTotalTime());
   long forceUpdatePairwise = accumulateTime(_timers.forceUpdatePairwise.getTotalTime());
-  long forceUpdateGlobal = accumulateTime(_timers.forceUpdateGlobal.getTotalTime());
+  long forceUpdateGlobalForce = accumulateTime(_timers.forceUpdateGlobal.getTotalTime());
   long forceUpdateTuning = accumulateTime(_timers.forceUpdateTuning.getTotalTime());
   long forceUpdateNonTuning = accumulateTime(_timers.forceUpdateNonTuning.getTotalTime());
   long velocityUpdate = accumulateTime(_timers.velocityUpdate.getTotalTime());
@@ -375,7 +375,7 @@ void Simulation::logTimers() {
     std::cout << timerToString("  ForceUpdateTotal         ", forceUpdateTotal, maximumNumberOfDigits, simulate);
     std::cout << timerToString("    ForceUpdatePairwise    ", forceUpdatePairwise, maximumNumberOfDigits,
                                forceUpdateTotal);
-    std::cout << timerToString("    ForceUdpateGlobal      ", forceUpdateGlobal, maximumNumberOfDigits,
+    std::cout << timerToString("    ForceUdpateGlobalForce      ", forceUpdateGlobalForce, maximumNumberOfDigits,
                                forceUpdateTotal);
     std::cout << timerToString("    ForceUpdateTuning      ", forceUpdateTuning, maximumNumberOfDigits,
                                forceUpdateTotal);
