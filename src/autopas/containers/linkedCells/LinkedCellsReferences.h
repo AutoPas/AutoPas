@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <autopas/utils/Timer.h>
+
 #include "autopas/cells/ReferenceParticleCell.h"
 #include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/CellBlock3D.h"
@@ -54,6 +56,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   SortingAlgorithm sorting;
   int sort_loop_iterations;
   std::array<double, 3> boxmin_, boxmax_;
+  autopas::utils::Timer sorting_timer;
   /**
    * Constructor of the LinkedCells class
    * @param boxMin
@@ -87,6 +90,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   };
 
   void sort(){
+    sorting_timer.start();
     switch(sorting){
       case stdsort: {
         sort_std();
@@ -108,6 +112,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
       }
     }
     // updateContainer();
+    sorting_timer.stop();
+    std::cout << "Sorting took "<<sorting_timer.getTotalTime()<<" in total so far."<<std::endl;
   }
   void sort_std(){
     std::sort(_particleList.begin(), _particleList.end(),
