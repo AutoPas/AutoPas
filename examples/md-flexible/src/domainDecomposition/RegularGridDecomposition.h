@@ -116,7 +116,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Indicates if MPI is enabled and if it will be used.
    * In the case that MPI is enabled, but only one process is being used, this variable will be false.
    */
-  bool _mpiIsEnabled;
+  bool _mpiCommunicationNeeded;
 
   /**
    * The number of subdomains in this decomposition.

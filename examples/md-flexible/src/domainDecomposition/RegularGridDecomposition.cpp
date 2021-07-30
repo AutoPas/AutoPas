@@ -21,22 +21,22 @@ RegularGridDecomposition::RegularGridDecomposition(const std::array<double, 3> &
                                                    const double &skinWidth)
     : _cutoffWidth(cutoffWidth), _skinWidth(skinWidth) {
 #if defined(AUTOPAS_INCLUDE_MPI)
-  _mpiIsEnabled = true;
+  _mpiCommunicationNeeded = true;
 #else
-  _mpiIsEnabled = false;
+  _mpiCommunicationNeeded = false;
 #endif
 
   autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &_subdomainCount);
 
   if (_subdomainCount == 1) {
-    _mpiIsEnabled = false;
+    _mpiCommunicationNeeded = false;
   }
 
   int rank;
   autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
 
   if (rank == 0) {
-    if (_mpiIsEnabled) {
+    if (_mpiCommunicationNeeded) {
       std::cout << "MPI will be used." << std::endl;
     } else {
       std::cout << "MPI will not be used." << std::endl;
@@ -366,7 +366,7 @@ void RegularGridDecomposition::sendAndReceiveParticlesLeftAndRight(const std::ve
                                                                    const std::vector<ParticleType> &particlesToRight,
                                                                    const int &leftNeighbour, const int &rightNeighbour,
                                                                    std::vector<ParticleType> &receivedParticles) {
-  if (_mpiIsEnabled && leftNeighbour != _domainIndex) {
+  if (_mpiCommunicationNeeded && leftNeighbour != _domainIndex) {
     sendParticles(particlesToLeft, leftNeighbour);
     sendParticles(particlesToRight, rightNeighbour);
 
