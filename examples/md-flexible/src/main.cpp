@@ -31,12 +31,9 @@ int main(int argc, char **argv) {
     std::cout << std::endl << "Using " << autopas::autopas_get_max_threads() << " Threads" << std::endl;
   }
 
-  // This needs to be encapsulated in an additional scope, so that the destructor of Simulation will be called before
-  // MPI_Finalize()
-  {
-    Simulation simulation(configuration, domainDecomposition);
-    simulation.run();
-  }
+  Simulation simulation(configuration, domainDecomposition);
+  simulation.run();
+  simulation.finalize();
 
   if (domainDecomposition.getDomainIndex() == 0) {
     std::cout << std::endl << "Using " << autopas::autopas_get_max_threads() << " Threads" << std::endl;

@@ -34,12 +34,17 @@ class Simulation {
   /**
    * Destructor.
    */
-  ~Simulation();
+  ~Simulation() = default;
 
   /**
    * Runs the simulation
    */
   void run();
+
+  /**
+   * Stops remaining timers and logs the result of all the timers.
+   */
+  void finalize();
 
  protected:
   /**

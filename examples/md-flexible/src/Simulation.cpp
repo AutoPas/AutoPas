@@ -135,14 +135,6 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
   _timers.initialization.stop();
 }
 
-Simulation::~Simulation() {
-  _timers.total.stop();
-
-  autopas::AutoPas_MPI_Barrier(AUTOPAS_MPI_COMM_WORLD);
-
-  logTimers();
-}
-
 void Simulation::run() {
   const int iterationsPerSuperstep = _configuration.verletRebuildFrequency.value;
   _timers.simulate.start();
@@ -155,6 +147,14 @@ void Simulation::run() {
   if (_createVtkFiles) {
     _vtkWriter->recordTimestep(_iteration, *_autoPasContainer);
   }
+}
+
+void Simulation::finalize() {
+  _timers.total.stop();
+
+  autopas::AutoPas_MPI_Barrier(AUTOPAS_MPI_COMM_WORLD);
+
+  logTimers();
 }
 
 void Simulation::executeSupersteps(const int iterationsPerSuperstep) {
