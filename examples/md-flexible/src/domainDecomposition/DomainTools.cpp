@@ -83,11 +83,10 @@ int convertIdToIndex(const std::array<int, 3> &domainId, const std::array<int, 3
 }
 
 std::array<int, 3> convertIndexToId(int domainIndex, const std::array<int, 3> decomposition) {
-  std::array<int, 3> id;
+  std::array<int, 3> id{};
 
   for (size_t i = 0; i < 3; ++i) {
     int accumulatedTail = getAccumulatedTail(i, decomposition);
-    ;
     id[i] = domainIndex / accumulatedTail;
     domainIndex -= accumulatedTail * id[i];
   }
@@ -95,17 +94,16 @@ std::array<int, 3> convertIndexToId(int domainIndex, const std::array<int, 3> de
   return id;
 }
 
-size_t getAccumulatedTail(const size_t index, const std::array<int, 3> decomposition) {
+int getAccumulatedTail(const size_t index, const std::array<int, 3> decomposition) {
   int accumulatedTail = 1;
   if (index < decomposition.size() - 1) {
-    accumulatedTail =
-        std::accumulate(decomposition.begin() + index + 1, decomposition.end(), 1, std::multiplies<int>());
+    accumulatedTail = std::accumulate(decomposition.begin() + index + 1, decomposition.end(), 1, std::multiplies<>());
   }
   return accumulatedTail;
 }
 
 std::array<int, 6> getExtentOfSubdomain(const int subdomainIndex, const std::array<int, 3> decomposition) {
-  std::array<int, 6> extentOfSubdomain = {0, 0, 0, 0, 0, 0};
+  std::array<int, 6> extentOfSubdomain{};
 
   const std::array<int, 3> subdomainId = convertIndexToId(subdomainIndex, decomposition);
 

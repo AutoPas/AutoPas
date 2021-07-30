@@ -54,7 +54,7 @@ std::array<int, 3> convertIndexToId(const int domainIndex, const std::array<int,
  * @param decomposition: The global domain's decomposition.
  * @return the accumulated tail starting at index.
  */
-size_t getAccumulatedTail(const size_t index, const std::array<int, 3> decomposition);
+int getAccumulatedTail(const size_t index, const std::array<int, 3> decomposition);
 
 /**
  * Returns the extent of a subdomain in a domain decomposition.
