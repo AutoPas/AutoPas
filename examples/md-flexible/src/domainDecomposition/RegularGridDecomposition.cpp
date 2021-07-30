@@ -20,27 +20,23 @@ RegularGridDecomposition::RegularGridDecomposition(const std::array<double, 3> &
                                                    const std::array<double, 3> &globalBoxMax, const double &cutoffWidth,
                                                    const double &skinWidth)
     : _cutoffWidth(cutoffWidth), _skinWidth(skinWidth) {
-#if defined(AUTOPAS_INCLUDE_MPI)
-  _mpiCommunicationNeeded = true;
-#else
-  _mpiCommunicationNeeded = false;
-#endif
-
   autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &_subdomainCount);
-
-  if (_subdomainCount == 1) {
-    _mpiCommunicationNeeded = false;
-  }
 
   int rank;
   autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
 
+#if defined(AUTOPAS_INCLUDE_MPI)
+  _mpiCommunicationNeeded = true;
   if (rank == 0) {
-    if (_mpiCommunicationNeeded) {
-      std::cout << "MPI will be used." << std::endl;
-    } else {
-      std::cout << "MPI will not be used." << std::endl;
-    }
+    std::cout << "MPI is running with " << _subdomainCount << " ranks." << std::endl;
+  }
+#else
+  std::cout << "MPI is disabled." std::endl;
+  _mpiCommunicationNeeded = false;
+#endif
+
+  if (_subdomainCount == 1) {
+    _mpiCommunicationNeeded = false;
   }
 
   DomainTools::generateDecomposition(_subdomainCount, _decomposition);
