@@ -31,6 +31,7 @@ std::string convertToAsciiString(const std::string &original) {
   encodedString.append("0");
   return encodedString;
 }
+
 }  // namespace
 
 ParallelVtkWriter::ParallelVtkWriter(std::string sessionName, const std::string &outputFolder,
@@ -80,8 +81,7 @@ void ParallelVtkWriter::recordParticleStates(const int &currentIteration,
   }
 
   std::ostringstream timestepFileName;
-  timestepFileName << _dataFolderPath << _sessionName << "_particles_" << _mpiRank << "_" << std::setfill('0')
-                   << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".vtu";
+  generateFilename("particles", "vtu", currentIteration, timestepFileName);
 
   std::ofstream timestepFile;
   timestepFile.open(timestepFileName.str(), std::ios::out | std::ios::binary);
@@ -161,8 +161,7 @@ void ParallelVtkWriter::recordDomainSubdivision(const int &currentIteration,
   }
 
   std::ostringstream timestepFileName;
-  timestepFileName << _dataFolderPath << _sessionName << "_subdivision_" << _mpiRank << "_" << std::setfill('0')
-                   << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".vts";
+  generateFilename("subdivision", "vts", currentIteration, timestepFileName);
 
   std::ofstream timestepFile;
   timestepFile.open(timestepFileName.str(), std::ios::out | std::ios::binary);
@@ -368,4 +367,17 @@ void ParallelVtkWriter::tryCreateFolder(const std::string &name, const std::stri
   } catch (std::filesystem::filesystem_error const &ex) {
     throw std::runtime_error("The output location " + location + " passed to ParallelVtkWriter is invalid");
   }
+}
+
+/**
+ * Generates the file name for a given vtk file type.
+ * @param fileContent: The type of data which will be recorded in this file.
+ * @param filetype: The vtk file type extension. Pass the extension without the '.'.
+ * @param currentIteration: The current iteration to record.
+ * @param filenameStream: The output string string for the filename.
+ */
+void ParallelVtkWriter::generateFilename(const std::string &fileContent, const std::string &filetype,
+                                         const int &currentIteration, std::ostringstream &filenameStream) {
+  filenameStream << _dataFolderPath << _sessionName << "_" << fileContent << "_" << _mpiRank << "_" << std::setfill('0')
+                 << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << "." << filetype;
 }
