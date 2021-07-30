@@ -76,7 +76,6 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
       _vtkWriter(std::make_shared<ParallelVtkWriter>(_configuration.vtkFileName.value,
                                                      _configuration.vtkOutputFolder.value,
                                                      std::to_string(_configuration.iterations.value).size())) {
-  _timers.totalWallClock.start();
   _timers.total.start();
   _timers.initialization.start();
 
@@ -138,7 +137,6 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
 
 Simulation::~Simulation() {
   _timers.total.stop();
-  _timers.totalWallClock.stop();
 
   autopas::AutoPas_MPI_Barrier(AUTOPAS_MPI_COMM_WORLD);
 
@@ -389,7 +387,7 @@ void Simulation::logTimers() {
     std::cout << timerToString("  MigratingParticleExchange", migratingParticleExchange, maximumNumberOfDigits,
                                simulate);
 
-    const long wallClockTime = _timers.totalWallClock.getTotalTime();
+    const long wallClockTime = _timers.total.getTotalTime();
     std::cout << std::endl;
     std::cout << timerToString("Total wall-clock time    ", wallClockTime, std::to_string(wallClockTime).length(),
                                wallClockTime);
