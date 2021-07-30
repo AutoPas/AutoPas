@@ -262,7 +262,7 @@ class Simulation {
   void receiveParticles(std::vector<ParticleType> &receivedParticles, int &source);
 
   /**
-   * Accumulates the times of all processes at the process with rank 0 if MPI is ebabled.
+   * If MPI is enabled, accumulates the times of all ranks on rank 0.
    * Otherwise, this function does nothing.
    * @param time: the time to accumulate.
    * @return the accumulated time of all ranks.
