@@ -174,6 +174,19 @@ void ParallelVtkWriter::recordDomainSubdivision(const int &currentIteration,
   const std::array<double, 3> localBoxMin = decomposition.getLocalBoxMin();
   const std::array<double, 3> localBoxMax = decomposition.getLocalBoxMax();
 
+  auto printDataArray = [&](const auto &data, const std::string &type, const std::string name) {
+    timestepFile << "        <DataArray type=\"" << type << "\" Name=\"" << name << "\" format=\"ascii\">\n";
+    timestepFile << "          " << data << "\n";
+    timestepFile << "        </DataArray>\n";
+  };
+
+  // Paraview expects ASCII indices for each character in a DataArray of type "String".
+  auto printAsciiDataArray = [&](const auto &data, const std::string &name) {
+    timestepFile << "        <DataArray type=\"String\" Name=\"" << name << "\" format=\"ascii\">\n";
+    timestepFile << "          " << convertToAsciiString(data) << "\n";
+    timestepFile << "        </DataArray>\n";
+  };
+
   timestepFile << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>\n";
   timestepFile << "<VTKFile byte_order=\"LittleEndian\" type=\"StructuredGrid\" version=\"0.1\">\n";
   timestepFile << "  <StructuredGrid WholeExtent=\"" << wholeExtent[0] << " " << wholeExtent[1] << " " << wholeExtent[2]
@@ -181,33 +194,15 @@ void ParallelVtkWriter::recordDomainSubdivision(const int &currentIteration,
   timestepFile << "    <Piece Extent=\"" << wholeExtent[0] << " " << wholeExtent[1] << " " << wholeExtent[2] << " "
                << wholeExtent[3] << " " << wholeExtent[4] << " " << wholeExtent[5] << "\">\n";
   timestepFile << "      <CellData>\n";
-  timestepFile << "        <DataArray type=\"Int32\" Name=\"DomainId\" format=\"ascii\">\n";
-  timestepFile << "          " << decomposition.getDomainIndex() << "\n";
-  timestepFile << "        </DataArray>\n";
-  timestepFile << "        <DataArray type=\"Float32\" Name=\"CellSizeFactor\">\n";
-  timestepFile << "          " << autoPasConfiguration.cellSizeFactor << "\n";
-  timestepFile << "        </DataArray>\n";
-  timestepFile << "        <DataArray type=\"String\" Name=\"Container\">\n";
-  timestepFile << "          " << convertToAsciiString(autoPasConfiguration.container.to_string()) << "\n";
-  timestepFile << "        </DataArray>\n";
-  timestepFile << "        <DataArray type=\"String\" Name=\"DataLayout\">\n";
-  timestepFile << "          " << convertToAsciiString(autoPasConfiguration.dataLayout.to_string()) << "\n";
-  timestepFile << "        </DataArray>\n";
-  timestepFile << "        <DataArray type=\"String\" Name=\"FullConfiguration\">\n";
-  timestepFile << "          " << convertToAsciiString(autoPasConfiguration.toString()) << "\n";
-  timestepFile << "        </DataArray>\n";
-  timestepFile << "        <DataArray type=\"String\" Name=\"LoadEstimator\">\n";
-  timestepFile << "          " << convertToAsciiString(autoPasConfiguration.loadEstimator.to_string()) << "\n";
-  timestepFile << "        </DataArray>\n";
-  timestepFile << "        <DataArray type=\"String\" Name=\"Traversal\">\n";
-  timestepFile << "          " << convertToAsciiString(autoPasConfiguration.traversal.to_string()) << "\n";
-  timestepFile << "        </DataArray>\n";
-  timestepFile << "        <DataArray type=\"String\" Name=\"Newton3\">\n";
-  timestepFile << "          " << convertToAsciiString(autoPasConfiguration.newton3.to_string()) << "\n";
-  timestepFile << "        </DataArray>\n";
-  timestepFile << "        <DataArray type=\"Int32\" Name=\"Rank\">\n";
-  timestepFile << "          " << _mpiRank << "\n";
-  timestepFile << "      </DataArray>\n";
+  printDataArray(decomposition.getDomainIndex(), "Int32", "DomainId");
+  printDataArray(autoPasConfiguration.cellSizeFactor, "Float32", "CellSizeFactor");
+  printAsciiDataArray(autoPasConfiguration.container.to_string(), "Container");
+  printAsciiDataArray(autoPasConfiguration.dataLayout.to_string(), "DataLayout");
+  printAsciiDataArray(autoPasConfiguration.toString(), "FullConfiguration");
+  printAsciiDataArray(autoPasConfiguration.loadEstimator.to_string(), "LoadEstimator");
+  printAsciiDataArray(autoPasConfiguration.traversal.to_string(), "Traversal");
+  printAsciiDataArray(autoPasConfiguration.newton3.to_string(), "Newton3");
+  printDataArray(_mpiRank, "Int32", "Rank");
   timestepFile << "      </CellData>\n";
   timestepFile << "      <Points>\n";
   timestepFile << "        <DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">\n";
