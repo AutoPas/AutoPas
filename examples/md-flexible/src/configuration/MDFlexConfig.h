@@ -148,8 +148,9 @@ class MDFlexConfig {
    * used,   * don't pass the MPI_COMM_WORLD rank, as it might differ from the grid rank derived in the decomposition
    * scheme. The wrong rank might result in a very bad network topology and therefore increase communication cost.
    * @param rank: The MPI rank of the current process.
+   * @param communicatorSize: The size of the MPI communicator used for the simulation.
    */
-  void loadParticlesFromCheckpoint(const size_t &rank = 0);
+  void loadParticlesFromCheckpoint(const size_t &rank, const size_t &communicatorSize);
 
   /**
    * Choice of the functor

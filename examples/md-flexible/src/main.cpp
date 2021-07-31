@@ -29,7 +29,8 @@ int main(int argc, char **argv) {
 
   if (not configuration.checkpointfile.value.empty()) {
     configuration.flushParticles();
-    configuration.loadParticlesFromCheckpoint(domainDecomposition.getDomainIndex());
+    configuration.loadParticlesFromCheckpoint(domainDecomposition.getDomainIndex(),
+                                              domainDecomposition.getSubdomainCount());
   }
 
   if (domainDecomposition.getDomainIndex() == 0) {
