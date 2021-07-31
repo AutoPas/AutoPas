@@ -1,7 +1,6 @@
 /**
  * @file MDFlexConfig.h
- * @author F. Gratl
- * @date 18.10.2019
+ * @author F. Gratl * @date 18.10.2019
  */
 
 #pragma once
@@ -585,7 +584,18 @@ class MDFlexConfig {
    * checkpointfile
    */
   MDFlexOption<std::string, __LINE__> checkpointfile{"", "checkpoint", true,
-                                                     "Path to a .vtk File to load as a checkpoint."};
+                                                     "Path to a .pvtu File to load as a checkpoint."};
+  /**
+   * checkpointScenarioName
+   */
+  MDFlexOption<std::string, __LINE__> checkpointScenarioName{
+      "", "checkpoint-scenarioname", true,
+      "The scenario name corresponds to the vtk-filename name used in the simulation which created the checkpoint"};
+
+  /**
+   * checkpointIteration
+   */
+  MDFlexOption<size_t, 0> checkpointIteration{0, "checkpoint-iteration", true, "The iteration of the checkpoint file"};
 
   /**
    * valueOffset used for cli-output alignment

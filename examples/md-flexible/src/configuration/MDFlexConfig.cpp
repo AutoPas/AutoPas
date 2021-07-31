@@ -9,6 +9,7 @@
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <list>
 #include <string>
 #include <vector>
 
@@ -49,7 +50,7 @@ std::vector<dataType> readPayload(std::ifstream &file, size_t numberOfParticles)
  * @param word
  */
 void findWord(std::ifstream &file, const std::string &word) {
-  std::vector<char> separators{' ', '/', '.', ',', '?', '!', '"', '\'', '<', '>', '=', ':', ';', '\n'};
+  std::vector<char> separators{' ', '/', '.', ',', '?', '!', '"', '\'', '<', '>', '=', ':', ';', '\n', '\t', '\r'};
   std::string currentWord;
   while (not file.eof() && currentWord != word) {
     char currentChar = file.get();
@@ -72,6 +73,7 @@ void findWord(std::ifstream &file, const std::string &word) {
 bool checkpointWasCreatedWithEqualNumberOfRanks(const std::string filename, const size_t communicatorSize,
                                                 size_t &checkpointCommunicatorSize) {
   checkpointCommunicatorSize = 0;
+  std::cout << filename << std::endl;
   std::ifstream inputStream(filename);
   findWord(inputStream, "Piece");
   while (not inputStream.eof()) {
@@ -84,34 +86,20 @@ bool checkpointWasCreatedWithEqualNumberOfRanks(const std::string filename, cons
 /**
  * Loads the particles from a checkpoint written with a specific rank.
  * @param filename: The name of the pvtu file.
+ * @param scenarioName: The name of the scenario where the checkoint as been created.
+ *        See MDFlexConfig::checkpointScenarioName for more details.
+ * @param iterationN: The iteration for which the checkpoint has been created.
  * @param rank: The rank which created the respective vtu file.
  * @param particles: Container for the particles recorded in the respective vts file.
  */
-void loadParticlesFromRankRecord(const std::string &filename, const size_t &rank,
-                                 std::vector<ParticleType> &particles) {
+void loadParticlesFromRankRecord(const std::string &filename, const std::string &scenarioName, const size_t iteration,
+                                 const size_t &rank, std::vector<ParticleType> &particles) {
   const size_t filenameStart = filename.find_last_of('/');
   std::string fileLocation = filename.substr(0, filenameStart);
 
-  std::cout << fileLocation << std::endl;
-
-  std::string scenarioName, iteration, word;
-
-  for (size_t i = filenameStart; i < filename.length(); ++i) {
-    switch (filename[i]) {
-      case '_':
-        scenarioName = word;
-        word = "";
-        break;
-      case '.':
-        iteration = word;
-        word = "";
-        break;
-      default:
-        word += filename[i];
-    }
-  }
   std::string rankFilename =
-      fileLocation + "/data/" + scenarioName + "_" + std::to_string(rank) + "_" + iteration + ".vtu";
+      fileLocation + "/data/" + scenarioName + "_" + std::to_string(rank) + "_" + std::to_string(iteration) + ".vtu";
+
   std::ifstream inputStream(rankFilename);
   if (not inputStream.is_open()) {
     std::cout << "Could not load checkpoint file " << rankFilename << "." << std::endl;
@@ -291,8 +279,11 @@ std::string MDFlexConfig::to_string() const {
     os << setw(valueOffset) << left << vtkFileName.name << ":  " << vtkFileName.value << endl;
     os << setw(valueOffset) << left << vtkWriteFrequency.name << ":  " << vtkWriteFrequency.value << endl;
   }
-  if (not checkpointfile.value.empty())
+  if (not checkpointfile.value.empty()) {
     os << setw(valueOffset) << left << checkpointfile.name << ":  " << checkpointfile.value << endl;
+    os << setw(valueOffset) << left << checkpointScenarioName.name << ":  " << checkpointScenarioName.value << endl;
+    os << setw(valueOffset) << left << checkpointIteration.name << ":  " << checkpointIteration.value << endl;
+  }
 
   os << setw(valueOffset) << logLevel.name << ":  " << (logLevel.value) << endl;
 
@@ -397,15 +388,21 @@ void MDFlexConfig::initializeObjects() {
 void MDFlexConfig::loadParticlesFromCheckpoint(const size_t &rank, const size_t &communicatorSize) {
   std::string filename = checkpointfile.value;
 
+  std::ifstream inputStream(filename);
+  if (not inputStream.is_open()) {
+    std::cout << "Could not load checkpoint file " << filename << "." << std::endl;
+    return;
+  }
+
   std::vector<std::array<double, 3>> positions, velocities, forces;
   std::vector<size_t> ids, typIds;
 
   size_t checkpointCommunicatorSize;
   if (checkpointWasCreatedWithEqualNumberOfRanks(filename, communicatorSize, checkpointCommunicatorSize)) {
-    loadParticlesFromRankRecord(filename, rank, _particles);
+    loadParticlesFromRankRecord(filename, checkpointScenarioName.value, checkpointIteration.value, rank, _particles);
   } else {
-    for (size_t i = 0; i < communicatorSize; ++i) {
-      loadParticlesFromRankRecord(filename, i, _particles);
+    for (size_t i = 0; i < checkpointCommunicatorSize; ++i) {
+      loadParticlesFromRankRecord(filename, checkpointScenarioName.value, checkpointIteration.value, i, _particles);
     }
   }
 }
