@@ -20,7 +20,7 @@ endif (AUTOPAS_INTERNODE_TUNING)
 
 include_directories(SYSTEM ${MPI_INCLUDE_PATH})
 
-add_executable(md-flexible ${MDFlex_SRC} ../../src/autopas/options/SortingAlgorithmOption.h ../../src/autopas/options/ProjectionSortingOption.h)
+add_executable(md-flexible ${MDFlex_SRC})
 
 target_include_directories(md-flexible PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
