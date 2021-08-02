@@ -59,7 +59,7 @@ class DataLayoutOption : public Option<DataLayoutOption> {
   static std::set<DataLayoutOption> getDiscouragedOptions() { return {}; }
 
   /**
-   * Provides a way to iterate over the possible choices of TraversalOption.
+   * Provides a way to iterate over the possible choices of DataLayoutOption.
    * @return map option -> string representation
    */
   static std::map<DataLayoutOption, std::string> getOptionNames() {

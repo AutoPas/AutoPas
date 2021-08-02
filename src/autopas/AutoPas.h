@@ -19,6 +19,8 @@
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/MPIStrategyOption.h"
 #include "autopas/options/TuningStrategyOption.h"
+#include "autopas/options/ProjectionSortingOption.h"
+#include "autopas/options/SortingAlgorithmOption.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/tuningStrategy/TuningStrategyFactory.h"
 #include "autopas/utils/NumberSet.h"
@@ -343,6 +345,31 @@ class AutoPas {
     }
     AutoPas::_cutoff = cutoff;
   }
+
+  [[nodiscard]] const std::set<ProjectionSortingOption> &getAllowedProjectionSortingOptions() const { return _allowedProjectionSortingOptions; }
+  void setProjectionSorting(const std::set<ProjectionSortingOption> &allowedProjectionSortingOptions){
+    AutoPas::_allowedProjectionSortingOptions = allowedProjectionSortingOptions;
+  }
+
+  [[nodiscard]] const std::set<SortingAlgorithmOption> &getAllowedSortingAlgorithmOptions() const { return _allowedSortingAlgorithmOptions; }
+  void setSortingAlgorithm(const std::set<SortingAlgorithmOption> &allowedSortingAlgorithmOptions){
+    AutoPas::_allowedSortingAlgorithmOptions = allowedSortingAlgorithmOptions;
+  }
+
+//  /**
+//   * Get the list of allowed newton 3 options.
+//   * @return
+//   */
+//  [[nodiscard]] const std::set<Newton3Option> &getAllowedNewton3Options() const { return _allowedNewton3Options; }
+//
+//  /**
+//   * Set the list of allowed newton 3 options.
+//   * For possible newton 3 choices see options::Newton3Option::Value.
+//   * @param allowedNewton3Options
+//   */
+//  void setAllowedNewton3Options(const std::set<Newton3Option> &allowedNewton3Options) {
+//    AutoPas::_allowedNewton3Options = allowedNewton3Options;
+//  }
 
   /**
    * Get allowed cell size factors (only relevant for LinkedCells, VerletLists and VerletListsCells).
@@ -774,6 +801,9 @@ class AutoPas {
    * Whether AutoPas is allowed to exploit Newton's third law of motion.
    */
   std::set<Newton3Option> _allowedNewton3Options{Newton3Option::getMostOptions()};
+
+  std::set<SortingAlgorithmOption> _allowedSortingAlgorithmOptions{SortingAlgorithmOption::getMostOptions()};
+  std::set<ProjectionSortingOption> _allowedProjectionSortingOptions{ProjectionSortingOption::getMostOptions()};
 
   /**
    * Whether the chosen tuning strategy will be parallelized by MPI

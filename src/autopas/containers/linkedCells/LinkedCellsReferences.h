@@ -25,6 +25,7 @@
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
+#include <algorithm>
 
 namespace autopas {
 
@@ -79,10 +80,11 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     sort_loop_iterations = _sort_loop_iterations;
   }
 
-  static double keyof(Particle x){
-    return x.getR()[0];
+  double keyof(Particle x){
+//    return x.getR()[0];
+    return static_cast<double>(_cellBlock.get1DIndexOfPosition(x.getR()));
   }
-  static bool compare(Particle a, Particle b){
+  bool compare(Particle a, Particle b){
     return keyof(a) < keyof(b);
   }
   enum QuicksortPivotStrategy {
@@ -116,8 +118,9 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     std::cout << "Sorting took "<<sorting_timer.getTotalTime()<<" in total so far."<<std::endl;
   }
   void sort_std(){
+    LinkedCellsReferences* lcr = this;
     std::sort(_particleList.begin(), _particleList.end(),
-              [](const Particle a, const Particle b) -> bool { return compare(a,b) ; });
+              [&lcr](const Particle a, const Particle b) -> bool { return lcr->compare(a,b) ; });
   }
   int64_t getMantissa(double d){
     return reinterpret_cast<int64_t&>(d) & (((int64_t)1 << 53) - 1);
@@ -168,11 +171,11 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     }
 
   }
-  void swap(int i, int j){
-       auto temp = _particleList[i];
-       _particleList[i] = _particleList[j];
-       _particleList[j] = temp;
-//      std::swap(_particleList[i], _particleList[j]);
+  void swap(size_t i, size_t j){
+//       ParticleType temp = _particleList[i];
+//       _particleList[i] = _particleList[j];
+//       _particleList[j] = temp;
+      std::swap((_particleList[i]), (_particleList[j]));
   }
   bool get_nth_bit_mantissa(double d, int n){
     // true iff 1
@@ -198,10 +201,11 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   void sort_radix_exp(){
     throw "Radix Sort: binary digit sorting -> exponent sorting stage not yet implemented.";
   }
-  void sort_quick(QuicksortPivotStrategy pivot = last, int left = 0, int right = 0, bool top_level = true){
+  void sort_quick(QuicksortPivotStrategy pivot = last, size_t left = 0, size_t right = 0, bool top_level = true){
+    if(_particleList.totalSize() == 0) return;
     if(top_level)
-      right = _particleList.totalSize();
-    if (right - left <= 0) return;
+      right = _particleList.totalSize() - 1;
+    if (right <= left) return;
     switch(pivot){
       case last: {
         break;
@@ -211,7 +215,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
         break;
       }
       case middle: {
-        int m = (left+right)/2;
+        size_t m = (left+right)/2;
         swap(m, right);
         break;
       }
@@ -222,14 +226,18 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     }
     double pivotkey = keyof(_particleList[right]);
     // Hoare partitioning
-    int i = left-1, j = right;
+    size_t i = left-1, j = right;
     do {
       do { i++; } while (keyof(_particleList[i]) < pivotkey);
-      do { j--; } while (j >= left && keyof(_particleList[j]) > pivotkey);
+      do {
+        if(j == 0) break;
+        j--;
+      } while (j >= left && keyof(_particleList[j]) > pivotkey);
       if(i < j) swap(i,j);
     } while (i < j);
-    swap(right, i);
-    sort_quick(pivot, left, i-1, false);
+    this->swap(right, i);
+    if(i != 0) //i == 0 -> size_t underflow. Solution: skip since nothing has to be done for index interval [0,0]
+      sort_quick(pivot, left, i-1, false);
     sort_quick(pivot, i+1, right, false);
   }
   /**

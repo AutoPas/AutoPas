@@ -104,8 +104,9 @@ class ParticleVector {
 
   auto begin() { return _particleListImp.begin(); }
   auto end() { return _particleListImp.end(); }
-  auto operator [](size_t index){
-    return _particleListImp[index];
+  Type& operator [](size_t index){
+    return _particleListImp.at(index);
+    //return _particleListImp[index];
   }
 
  private:

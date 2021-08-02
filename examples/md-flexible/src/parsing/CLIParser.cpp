@@ -440,6 +440,22 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
+      case decltype(config.sortingAlgorithmOptions)::getoptChar: {
+          config.sortingAlgorithmOptions.value = autopas::SortingAlgorithmOption::parseOptions(strArg);
+          if (config.sortingAlgorithmOptions.value.empty()) {
+              cerr << "Unknown Sorting Algorithm option: " << strArg << endl;
+              displayHelp = true;
+          }
+        break;
+      }
+      case decltype(config.projectionSortingOptions)::getoptChar: {
+          config.projectionSortingOptions.value = autopas::ProjectionSortingOption::parseOptions(strArg);
+          if (config.projectionSortingOptions.value.empty()) {
+              cerr << "Unknown Projection Sorting option: " << strArg << endl;
+              displayHelp = true;
+          }
+        break;
+      }
       case decltype(config.traversalOptions)::getoptChar: {
         config.traversalOptions.value = autopas::TraversalOption::parseOptions(strArg);
         if (config.traversalOptions.value.empty()) {

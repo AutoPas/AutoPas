@@ -12,7 +12,7 @@ file(
     "*.cuh"
 )
 
-add_library(autopas STATIC $<$<BOOL:${AUTOPAS_ENABLE_CUDA}>:${CU_SRC}> ${MY_SRC})
+add_library(autopas STATIC $<$<BOOL:${AUTOPAS_ENABLE_CUDA}>:${CU_SRC}> ${MY_SRC} options/SortingAlgorithmOption.h options/ProjectionSortingOption.h)
 
 target_link_libraries(
     autopas
