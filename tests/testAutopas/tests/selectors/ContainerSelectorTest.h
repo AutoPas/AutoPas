@@ -12,19 +12,10 @@
 #include "autopas/selectors/ContainerSelector.h"
 #include "testingHelpers/commonTypedefs.h"
 
-class ContainerSelectorTest : public AutoPasTestBase, public ::testing::WithParamInterface<autopas::ContainerOption> {
+class ContainerSelectorTest : public AutoPasTestBase {
  public:
   ContainerSelectorTest() = default;
   ~ContainerSelectorTest() override = default;
-
-  struct oneParamToString {
-    template <class ParamType>
-    std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
-      // tuple of ContainerOption
-      const auto &option = static_cast<ParamType>(info.param);
-      return option.to_string();
-    }
-  };
 
  protected:
   const std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {10, 10, 10};
