@@ -26,7 +26,7 @@ target_link_libraries(sph-main-mpi autopas MPI::MPI_CXX)
 # cmake-format: off
 add_test(
     NAME sph-main-mpi.test
-    COMMAND mpirun -n 4 sph-main-mpi | grep "time step" | grep -v "the time step" | tail -1 | grep -q "time step 8"
+    COMMAND mpirun -n 4 ./sph-main-mpi | grep "time step" | grep -v "the time step" | tail -1 | grep -q "time step 8"
     CONFIGURATIONS checkExamples checkExamplesMPI
 )
 # cmake-format: on
