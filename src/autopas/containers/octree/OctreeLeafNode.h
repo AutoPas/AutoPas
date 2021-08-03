@@ -38,7 +38,8 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
   OctreeLeafNode(std::array<double, 3> boxMin, std::array<double, 3> boxMax, OctreeNodeInterface<Particle> *parent,
                  int unsigned treeSplitThreshold, double interactionLength, double cellSizeFactor)
       : OctreeNodeInterface<Particle>(boxMin, boxMax, parent, treeSplitThreshold, interactionLength, cellSizeFactor),
-        FullParticleCell<Particle>(utils::ArrayMath::sub(boxMax, boxMin)) {}
+        FullParticleCell<Particle>(utils::ArrayMath::sub(boxMax, boxMin)),
+        _id(-1) {}
 
   /**
    * Copy a leaf by copying all particles from the other leaf to this leaf.
@@ -47,7 +48,8 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
   OctreeLeafNode(OctreeLeafNode<Particle> const &other)
       : OctreeNodeInterface<Particle>(other._boxMin, other._boxMax, other._parent, other._treeSplitThreshold,
                                       other._interactionLength),
-        FullParticleCell<Particle>(utils::ArrayMath::sub(other._boxMax, other._boxMin)) {
+        FullParticleCell<Particle>(utils::ArrayMath::sub(other._boxMax, other._boxMin)),
+        _id(other.getID()) {
     for (auto &p : other._particles) {
       this->_particles.push_back(p);
     }
@@ -68,10 +70,10 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
     bool anyNewDimSmallerThanMinSize = false;
     for (auto d = 0; d < 3; ++d) {
       auto cellSizeFactor = 1.0;
-      // TODO: The condition below should actually be
-      //  splitLeafDimensions[d] < (this->_cellSizeFactor * this->_interactionLength)
-      //  But with this condition, the TraversalComparison test fails for cell size factor 0.5. Find out why the octree
-      //  cannot handle this value.
+      // @todo The condition below should actually be
+      //   splitLeafDimensions[d] < (this->_cellSizeFactor * this->_interactionLength)
+      //   But with this condition, the TraversalComparison test fails for cell size factor 0.5. Find out why the octree
+      //   cannot handle this value.
       if (splitLeafDimensions[d] < this->_interactionLength) {
         anyNewDimSmallerThanMinSize = true;
         break;
@@ -99,16 +101,16 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
   /**
    * @copydoc OctreeNodeInterface::appendAllParticles()
    */
-  void appendAllParticles(std::vector<Particle *> &ps) override {
-    for (Particle &p : this->_particles) {
-      ps.push_back(&p);
+  void appendAllParticles(std::vector<Particle *> &ps) const override {
+    for (Particle const &p : this->_particles) {
+      ps.push_back((Particle *)&p);
     }
   }
 
   /**
    * @copydoc OctreeNodeInterface::appendAllLeafBoxes()
    */
-  void appendAllLeafBoxes(std::vector<std::pair<std::array<double, 3>, std::array<double, 3>>> &boxes) override {
+  void appendAllLeafBoxes(std::vector<std::pair<std::array<double, 3>, std::array<double, 3>>> &boxes) const override {
     auto minMax = std::make_pair(this->getBoxMin(), this->getBoxMax());
     boxes.push_back(minMax);
   }
@@ -141,7 +143,9 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
 
   OctreeNodeInterface<Particle> *SON(Octant O) override { throw std::runtime_error("Unable to get SON of leaf node"); }
 
-  void appendAllLeaves(std::vector<OctreeLeafNode<Particle> *> &leaves) override { leaves.push_back(this); }
+  void appendAllLeaves(std::vector<OctreeLeafNode<Particle> *> &leaves) const override {
+    leaves.push_back((OctreeLeafNode<Particle> *)this);
+  }
 
   std::set<OctreeLeafNode<Particle> *> getLeavesInRange(std::array<double, 3> min, std::array<double, 3> max) override {
     if (this->getEnclosedVolumeWith(min, max) > 0.0) {
@@ -171,10 +175,27 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
    */
   void markAlreadyProcessed(OctreeLeafNode<Particle> *other) { _alreadyProcessed.push_back(other); }
 
+  /**
+   * Get the assigned id of this leaf node
+   * @return An ID (or -1 if there was no ID assigned to this node)
+   */
+  int getID() { return _id; }
+
+  /**
+   * Set the ID of this node
+   * @param id An integer ID
+   */
+  void setID(int id) { this->_id = id; }
+
  private:
   /**
    * The list that contains the neighbors that have already been processed in one traversal run.
    */
   std::vector<OctreeLeafNode<Particle> *> _alreadyProcessed;
+
+  /**
+   * The ID assigned to this node (-1 if unassigned)
+   */
+  int _id;
 };
 }  // namespace autopas

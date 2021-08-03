@@ -94,7 +94,7 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
   /**
    * @copydoc OctreeNodeInterface::appendAllParticles()
    */
-  void appendAllParticles(std::vector<Particle *> &ps) override {
+  void appendAllParticles(std::vector<Particle *> &ps) const override {
     // An inner node does not contain particles, traverse down to the children.
     for (auto &child : _children) {
       child->appendAllParticles(ps);
@@ -104,7 +104,7 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
   /**
    * @copydoc OctreeNodeInterface::appendAllLeafBoxes()
    */
-  void appendAllLeafBoxes(std::vector<std::pair<std::array<double, 3>, std::array<double, 3>>> &boxes) override {
+  void appendAllLeafBoxes(std::vector<std::pair<std::array<double, 3>, std::array<double, 3>>> &boxes) const override {
     for (auto &child : _children) {
       child->appendAllLeafBoxes(boxes);
     }
@@ -167,7 +167,7 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
     return _children[flat].get();
   }
 
-  void appendAllLeaves(std::vector<OctreeLeafNode<Particle> *> &leaves) override {
+  void appendAllLeaves(std::vector<OctreeLeafNode<Particle> *> &leaves) const override {
     for (auto &child : _children) {
       child->appendAllLeaves(leaves);
     }

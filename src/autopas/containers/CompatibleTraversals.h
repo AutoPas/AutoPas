@@ -107,7 +107,7 @@ static const std::set<TraversalOption> &allVLPCompatibleTraversals() {
  * @return set of all applicable traversal options.
  */
 static const std::set<TraversalOption> &allOTCompatibleTraversals() {
-  static const std::set<TraversalOption> s{TraversalOption::ot_naive, TraversalOption::ot_c01};
+  static const std::set<TraversalOption> s{TraversalOption::ot_c18, TraversalOption::ot_c01};
   return s;
 }
 

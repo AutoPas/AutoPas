@@ -16,7 +16,20 @@
 namespace autopas {
 /**
  * This class wraps the functionality provided by the octree leaves and inner nodes in a structure that adheres to the
- * ParticleCell concept. This is necessary to use the octree nodes as particle containers.
+ * ParticleCell concept.
+ *
+ * What this wrapper does is the following: It _hides implementation details_ of the octree nodes that should not be
+ * exposed to the outside. (For instance, the `insert` method of the `OctreeNodeInterface<Particle>` has a very specific
+ * method signature that requires the caller to change the pointer to a subtree if necessary. Since this functionality
+ * should be transparent for the user, it is wrapped in this class inside of the `addParticle` method. This method does
+ * not have to be treated special like `insert`.)
+ *
+ * This class includes some proxy methods: `appendAllParticles`, `appendAllLeaves` and some more. Those methods only
+ * invoke similar functions on the pointer to an octree. This indirection could be removed by implementing the
+ * `OctreeNodeInterface<Particle>`. However, if this class inherited directly from `OctreeNodeInterface<Particle>`, it
+ * would have to implement the _entire interface_ provided by `OctreeNodeInterface<Particle>`. This does not increase
+ * the code quality, since one would have to implement other interface methods (like `insert`) that should not be
+ * exposed to the outside. Having proxy calls inside this class keeps the interface clean.
  *
  * @tparam Particle The particle class that should be used in the octree cell.
  */
@@ -180,10 +193,6 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
 
  private:
   Particle &getFromReloadingIterator(size_t index) const {
-    // TODO(johannes): This needs severe improvement. If we just copy out all particles, the implementation becomes
-    //  unsafe for threading. We need a way to iterate the octree using a better traversal idea.
-    //  Referenced in https://github.com/AutoPas/AutoPas/issues/625
-
     lock.lock();
     if(ps.empty() || index == 0) {
       ps.clear();

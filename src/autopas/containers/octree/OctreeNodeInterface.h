@@ -63,19 +63,20 @@ class OctreeNodeInterface {
    * Put all particles that are below this node into the vector.
    * @param ps A reference to the vector that should contain the particles after the operation
    */
-  virtual void appendAllParticles(std::vector<Particle *> &ps) = 0;
+  virtual void appendAllParticles(std::vector<Particle *> &ps) const = 0;
 
   /**
    * Put the min/max corner coordinates of every leaf into the vector.
    * @param boxes A reference to the vector that should contain pairs of the min/max corner coordinates
    */
-  virtual void appendAllLeafBoxes(std::vector<std::pair<std::array<double, 3>, std::array<double, 3>>> &boxes) = 0;
+  virtual void appendAllLeafBoxes(
+      std::vector<std::pair<std::array<double, 3>, std::array<double, 3>>> &boxes) const = 0;
 
   /**
    * Put all leaves below this subtree into a given list.
    * @param leaves A reference to the vector that should contain pointers to the leaves
    */
-  virtual void appendAllLeaves(std::vector<OctreeLeafNode<Particle> *> &leaves) = 0;
+  virtual void appendAllLeaves(std::vector<OctreeLeafNode<Particle> *> &leaves) const = 0;
 
   /**
    * Delete the entire tree below this node.
@@ -355,19 +356,19 @@ class OctreeNodeInterface {
    * Get the minimum coordinate of the enclosing box.
    * @return A point in 3D space
    */
-  std::array<double, 3> getBoxMin() { return _boxMin; }
+  [[nodiscard]] std::array<double, 3> getBoxMin() const { return _boxMin; }
 
   /**
    * Get the maximum coordinate of the enclosing box.
    * @return A point in 3D space
    */
-  std::array<double, 3> getBoxMax() { return _boxMax; }
+  [[nodiscard]] std::array<double, 3> getBoxMax() const { return _boxMax; }
 
   /**
    * Get the parent node of this node.
    * @return A pointer to the parent, can be nullptr.
    */
-  OctreeNodeInterface<Particle> *getParent() { return _parent; }
+  OctreeNodeInterface<Particle> *getParent() const { return _parent; }
 
  protected:
   /**

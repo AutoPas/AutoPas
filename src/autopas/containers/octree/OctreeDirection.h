@@ -125,8 +125,8 @@ inline Vertex *VERTICES() {
  * @return A flat index in the range of 0 to 7 for any valid vertex. For invalid input -1 is returned.
  */
 inline int vertexToIndex(Vertex vertex) {
-  // TODO(johannes): This is very slow and could be sped up.
-  //  Mentioned in https://github.com/AutoPas/AutoPas/issues/623
+  // @todo This is very slow and could be sped up.
+  //   Mentioned in https://github.com/AutoPas/AutoPas/issues/623
   int result = -1;
   for (int i = 0; i < 8; ++i) {
     if (vertex == VERTICES()[i]) {
