@@ -59,11 +59,6 @@ class AsBuildPairGeneratorFunctor
   bool allowsNewton3() override { return true; }
   bool allowsNonNewton3() override { return true; }
 
-  [[nodiscard]] bool isAppropriateClusterSize(unsigned int clusterSize,
-                                              DataLayoutOption::Value dataLayout) const override {
-    return false;  // this functor shouldn't be called with clusters!
-  }
-
   /**
    * Constructor of the functor.
    * @param neighborList The neighbor list to fill.

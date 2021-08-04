@@ -1,4 +1,4 @@
-# container                        :  [DirectSum, LinkedCells, VerletLists, VerletListsCells, VerletClusterLists, VarVerletListsAsBuild, VerletClusterCells]
+# container                        :  [DirectSum, LinkedCells, VerletLists, VerletListsCells, VerletClusterLists, VarVerletListsAsBuild]
 verlet-rebuild-frequency         :  10
 verlet-skin-radius               :  0.3
 verlet-cluster-size              :  4

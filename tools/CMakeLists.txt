@@ -12,7 +12,7 @@ file(
     "*.cuh"
 )
 
-add_library(autopasTools STATIC $<$<BOOL:${AUTOPAS_ENABLE_CUDA}>:${CU_SRC}> ${MY_SRC})
+add_library(autopasTools STATIC ${MY_SRC})
 
 target_link_libraries(autopasTools PUBLIC autopas)
 

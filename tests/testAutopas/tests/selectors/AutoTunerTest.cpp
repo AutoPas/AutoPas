@@ -82,26 +82,12 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   //                        vlp_c01                     (AoS <=> SoA, noNewton3)                             = 2
   configsPerContainer[autopas::ContainerOption::pairwiseVerletLists] = 18;
 
-  // check that there is an entry for every container. Except VCC because they are only relevant for CUDA...
-  ASSERT_EQ(configsPerContainer.size(), autopas::ContainerOption::getAllOptions().size() - 1);
-
-  // Additional with cuda
-  // VerletClusterCells:    vcc_cluster_iteration       (Cuda, newton3 <=> noNewton3)                        = 2
-  // Direct Sum:            ds_sequential               (Cuda, newton3 <=> noNewton3)                        = 2
-  // LinkedCells:           lc_c01_cuda                 (Cuda, newton3 <=> noNewton3)                        = 2
-  constexpr size_t CUDAconfigs = 6;
-  //
-  // currently disabled:
-  // CUDA:
-  // LCC01CudaTraversal for enabled N3, see #420                                                              -1
-  //                                                                                                    --------
+  // check that there is an entry for every container.
+  ASSERT_EQ(configsPerContainer.size(), autopas::ContainerOption::getAllOptions().size());
 
   size_t numberOfConfigs = std::accumulate(configsPerContainer.begin(), configsPerContainer.end(), 0ul,
                                            [](auto acc, auto &pair) { return acc + pair.second; });
-#ifdef AUTOPAS_CUDA
-  // only add cuda configs if compiling with cuda
-  numberOfConfigs += CUDAconfigs;
-#endif
+
   // total number of possible configurations * number of samples + last iteration after tuning
   const size_t expectedNumberOfIterations = numberOfConfigs * maxSamples + 1;
 

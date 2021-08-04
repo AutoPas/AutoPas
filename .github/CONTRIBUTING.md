@@ -23,9 +23,10 @@ Please keep in mind the following notes while working.
 * Class names start with a capital letter.
 * Use camelCase over snake_case.
 * Google code style is enforced by the CI server.
+* To enable code formatting targets set the `cmake` variable `AUTOPAS_FORMATTING_TARGETS` to `ON`.
 * Clang format version 9 is enforced (Other versions might format slightly differently).
 * Use `make clangformat` before submitting a PR.
-* [cmake format](https://github.com/cheshirekow/cmake_format/tree/master/cmake_format) is enforced.
+* [cmake format](https://github.com/cheshirekow/cmake_format) is enforced.
 * Use `make cmakeformat` before submitting a PR.
 
 ### Comment Style
@@ -55,19 +56,18 @@ Please keep in mind the following notes while working.
 * Please avoid using commits to save your unfinished work before switching branches, this pollutes the commit history. Please use `git stash` instead.
 
 ## Docker
-You want to compile AutoPas with CUDA or any sanitizers but do not have the appropriate compiler? Don't fret! There are docker containers for that. The containers are built from the [AutoPas-Dockerfiles repository](https://github.com/AutoPas/AutoPas-Dockerfiles) and prebuilds are hosted at [dockerhub](https://hub.docker.com/search?q=autopas%2F&type=image). To use a compiler from a container either mount your AutoPas folder and start bash in the container:
+You want to compile AutoPas with any sanitizers but do not have the appropriate compiler? Don't fret! There are docker containers for that. The containers are built from the [AutoPas-Dockerfiles repository](https://github.com/AutoPas/AutoPas-Dockerfiles) and prebuilds are hosted at [dockerhub](https://hub.docker.com/search?q=autopas%2F&type=image). To use a compiler from a container either mount your AutoPas folder and start bash in the container:
 ```bash
-docker run -v ${PathToAutoPasRoot}/:/autopas -it autopas/autopas-build-cuda bash
+docker run -v ${PathToAutoPasRoot}/:/autopas -it autopas/autopas-build-intel bash
 ```
 or directly start the compilation process:
 ```bash
-docker run -v ${PathToAutoPasRoot}/:/autopas -it autopas/autopas-build-cuda \
+docker run -v ${PathToAutoPasRoot}/:/autopas -it autopas/autopas-build-intel \
   bash -c "cd /autopas/build \
   && cmake -G Ninja .. \
   && ninja"
 ```
-You will not be able to completely compile the unit tests with CUDA without a GPU in your system since CMake will try to run tests during the build process.
-The tests executed within Jenkins are using these docker images.
+The tests executed through Jenkins are using these docker images.
 
 ## Jenkins/CI
 A continuous integration setup (CI) is automatically run for each open pull request and for the master.
