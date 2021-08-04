@@ -20,10 +20,14 @@
 #include "autopas/containers/octree/traversals/OTTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
 #include "autopas/iterators/RegionParticleIterator.h"
+#include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ParticleCellHelpers.h"
 #include "autopas/utils/logging/OctreeLogger.h"
 
 namespace autopas {
+
+template <typename Particle>
+class OctreeLogger;
 
 /**
  * The octree is a CellBasedParticleContainer that is comprised of two cells:
@@ -107,6 +111,9 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     for (auto &particle : particles) {
       addParticleImpl(particle);
     }
+
+    logger.logTree(OWNED, &this->_cells[OWNED]);
+    logger.logTree(HALO, &this->_cells[HALO]);
 
     return invalidParticles;
   }

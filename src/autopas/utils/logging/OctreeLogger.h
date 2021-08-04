@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 
+#include "autopas/containers/octree/Octree.h"
 #include "autopas/containers/octree/OctreeNodeInterface.h"
 #include "autopas/containers/octree/OctreeNodeWrapper.h"
 
@@ -38,13 +39,13 @@ class OctreeLogger {
    * Write the octree below the wrapper to a .vtk file
    * @param wrapper A pointer to the octree node wrapper
    */
-  void logTree(OctreeNodeWrapper<Particle> *wrapper) { logTree(wrapper->getRaw()); }
+  void logTree(int type, OctreeNodeWrapper<Particle> *wrapper) { logTree(type, wrapper->getRaw()); }
 
   /**
    * This function writes the octree to a .vtk file
    * @param root A pointer to the octree root node
    */
-  void logTree(OctreeNodeInterface<Particle> *root) {
+  void logTree(int type, OctreeNodeInterface<Particle> *root) {
     // Load the leaf boxes
     using Position = std::array<double, 3>;
     using Box = std::pair<Position, Position>;
@@ -55,7 +56,18 @@ class OctreeLogger {
 
     // Open the VTK file
     char filename[256] = {0};
-    snprintf(filename, sizeof(filename), "octree_%d.vtk", iteration++);
+    switch (type) {
+      case Octree<Particle>::CellTypes::OWNED:
+        snprintf(filename, sizeof(filename), "octree_owned_%d.vtk", ownedIteration++);
+        break;
+      case Octree<Particle>::CellTypes::HALO:
+        snprintf(filename, sizeof(filename), "octree_halo_%d.vtk", haloIteration++);
+        break;
+      default:
+        snprintf(filename, sizeof(filename), "octree_%d.vtk", iteration++);
+        break;
+    }
+
     std::ofstream vtkFile;
     vtkFile.open(filename);
 
@@ -365,5 +377,15 @@ class OctreeLogger {
    * Count the iterations to give the written octrees unique filenames
    */
   int unsigned iteration = 0;
+
+  /**
+   * Count the iterations to give the written owned octrees unique filenames
+   */
+  int unsigned ownedIteration = 0;
+
+  /**
+   * Count the iterations to give the written halo octrees unique filenames
+   */
+  int unsigned haloIteration = 0;
 };
 }  // namespace autopas
