@@ -112,13 +112,6 @@ class Simulation {
    */
   [[nodiscard]] const std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> &getPpl() const;
 
-  /**
-   * Calculate the homogeneity of the scenario by using the standard deviation.
-   * @param autopas
-   * @return double
-   */
-  [[nodiscard]] std::pair<double, double> calculateHomogeneity(autopas::AutoPas<ParticleType> &autopas) const;
-
  private:
   /**
    * Print a progressbar and progress information to the console.

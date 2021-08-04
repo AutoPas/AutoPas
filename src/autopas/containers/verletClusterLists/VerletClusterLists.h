@@ -259,7 +259,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
     auto boxSizeWithHalo = utils::ArrayMath::sub(this->getHaloBoxMax(), this->getHaloBoxMin());
     auto towerSideLength = internal::VerletClusterListsRebuilder<Particle>::estimateOptimalGridSideLength(
-        this->getNumParticles(), boxSizeWithHalo, _clusterSize);
+        this->getNumberOfParticles(), boxSizeWithHalo, _clusterSize);
     auto towersPerDim =
         internal::VerletClusterListsRebuilder<Particle>::calculateTowersPerDim(boxSizeWithHalo, 1.0 / towerSideLength);
     std::array<double, 3> towerSize = {towerSideLength, towerSideLength,
@@ -386,9 +386,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
-   * @copydoc ParticleContainerInterface::getNumParticles()
+   * @copydoc ParticleContainerInterface::getNumberOfParticles()
    */
-  [[nodiscard]] unsigned long getNumParticles() const override {
+  [[nodiscard]] unsigned long getNumberOfParticles() const override {
     size_t sum = std::accumulate(_towers.begin(), _towers.end(), 0,
                                  [](size_t acc, const auto &tower) { return acc + tower.getNumActualParticles(); });
     sum = std::accumulate(_particlesToAdd.begin(), _particlesToAdd.end(), sum,

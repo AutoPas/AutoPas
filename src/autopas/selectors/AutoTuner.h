@@ -55,13 +55,18 @@ class AutoTuner {
    * @param verletSkin Length added to the cutoff for the Verlet lists' skin.
    * @param verletClusterSize Number of particles in a cluster to use in verlet list.
    * @param tuningStrategy Object implementing the modelling and exploration of a search space.
+   * @param MPITuningMaxDifferenceForBucket For MPI-tuning: Maximum of the relative difference in the comparison metric
+   * for two ranks which exchange their tuning information.
+   * @param MPITuningWeightForMaxDensity For MPI-tuning: Weight for maxDensity in the calculation for bucket
+   * distribution.
    * @param selectorStrategy Strategy for the configuration selection.
    * @param tuningInterval Number of time steps after which the auto-tuner shall reevaluate all selections.
    * @param maxSamples Number of samples that shall be collected for each combination.
    * @param outputSuffix Suffix for all output files produced by this class.
    */
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
-            unsigned int verletClusterSize, std::unique_ptr<TuningStrategyInterface> tuningStrategy, double maxDifferenceForBucket, double weightForMaxDensity,
+            unsigned int verletClusterSize, std::unique_ptr<TuningStrategyInterface> tuningStrategy,
+            double MPITuningMaxDifferenceForBucket, double MPITuningWeightForMaxDensity,
             SelectorStrategyOption selectorStrategy, unsigned int tuningInterval, unsigned int maxSamples,
             const std::string &outputSuffix = "")
       : _selectorStrategy(selectorStrategy),
@@ -71,8 +76,8 @@ class AutoTuner {
         _containerSelector(boxMin, boxMax, cutoff),
         _verletSkin(verletSkin),
         _verletClusterSize(verletClusterSize),
-        _maxDifferenceForBucket(maxDifferenceForBucket),
-        _weightForMaxDensity(weightForMaxDensity),
+        _mpiTuningMaxDifferenceForBucket(MPITuningMaxDifferenceForBucket),
+        _mpiTuningWeightForMaxDensity(MPITuningWeightForMaxDensity),
         _maxSamples(maxSamples),
         _samples(maxSamples),
         _iteration(0),
@@ -238,10 +243,25 @@ class AutoTuner {
   const size_t _maxSamples;
 
   /**
-   * variable for bucket distribution
+   * Parameter used For MPI-tuning: Maximum of the relative difference in the comparison metric for two ranks which
+   * exchange their tuning information.
    */
-  double _maxDifferenceForBucket;
-  double _weightForMaxDensity;
+  double _mpiTuningMaxDifferenceForBucket;
+
+  /**
+   * Parameter used For MPI-tuning: Weight for maxDensity in the calculation for bucket distribution.
+   */
+  double _mpiTuningWeightForMaxDensity;
+
+  /**
+   * Buffer for the homogeneities of the last ten Iterations
+   */
+  std::vector<double> _homogeneitiesOfLastTenIterations;
+
+  /**
+   * Buffer for the homogeneities of the last ten Iterations
+   */
+  std::vector<double> _maxDensitiesOfLastTenIterations;
 
   /**
    * Raw time samples of the current configuration from which one evidence will be produced.
@@ -255,6 +275,12 @@ class AutoTuner {
    * Configuration -> vector< iteration, time >
    */
   std::map<Configuration, std::vector<std::pair<size_t, long>>> _evidence;
+
+  /**
+   * Timer used to determine how much time is wasted by calculating multiple homogeneities for smoothing
+   * Only used temporarily
+   */
+  autopas::utils::Timer _timerCalculateHomogeneity;
 
   IterationLogger _iterationLogger;
   TuningResultLogger _tuningResultLogger;
@@ -282,6 +308,14 @@ bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild
   // - more than one config exists
   // - currently in tuning phase
   // - functor is relevant
+  if (_tuningStrategy->smoothedHomogeneityAndMaxDensityNeeded() and _iterationsSinceTuning >= _tuningInterval - 9 and
+      _iterationsSinceTuning <= _tuningInterval) {
+    _timerCalculateHomogeneity.start();
+    const auto [homogeneity, maxDensity] = autopas::utils::calculateHomogeneityAndMaxDensity(getContainer());
+    _homogeneitiesOfLastTenIterations.push_back(homogeneity);
+    _maxDensitiesOfLastTenIterations.push_back(maxDensity);
+    _timerCalculateHomogeneity.stop();
+  }
   if ((not _tuningStrategy->searchSpaceIsTrivial()) and _iterationsSinceTuning >= _tuningInterval and
       f->isRelevantForTuning()) {
     isTuning = tune<PairwiseFunctor>(*f);
@@ -419,18 +453,30 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
   }
   utils::Timer tuningTimer;
   tuningTimer.start();
+
   // first tuning iteration -> reset to first config
   if (_iterationsSinceTuning == _tuningInterval) {
-#ifdef AUTOPAS_INTERNODE_TUNING
-    try {
-      auto &mpiStrategy = dynamic_cast<MPIParallelizedStrategy &>(*_tuningStrategy);
-      mpiStrategy.resetMpi<Particle>(_iteration, getContainer(), _maxDifferenceForBucket, _weightForMaxDensity);
-    } catch (std::bad_cast &bad_cast) {
+    if (auto *mpiStrategy = dynamic_cast<MPIParallelizedStrategy *>(_tuningStrategy.get())) {
+      const std::pair<double, double> smoothedHomogeneityAndMaxDensity{
+          autopas::OptimumSelector::medianValue(_homogeneitiesOfLastTenIterations),autopas::OptimumSelector::medianValue(_maxDensitiesOfLastTenIterations)};
+      mpiStrategy->reset<Particle>(_iteration, getContainer(), smoothedHomogeneityAndMaxDensity,
+                                   _mpiTuningMaxDifferenceForBucket, _mpiTuningWeightForMaxDensity);
+    } else {
       _tuningStrategy->reset(_iteration);
     }
-#else
-    _tuningStrategy->reset(_iteration);
+    // only used temporarily of evaluation of smoothing
+    if (_tuningStrategy->smoothedHomogeneityAndMaxDensityNeeded()) {
+      int rank{0};
+#ifdef AUTOPAS_INTERNODE_TUNING
+      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
+      AutoPasLog(debug, "Calculating homogeneities took added up {} ns on rank {}.",
+                 _timerCalculateHomogeneity.getTotalTime(), rank);
+      _homogeneitiesOfLastTenIterations.erase(_homogeneitiesOfLastTenIterations.begin(),
+                                              _homogeneitiesOfLastTenIterations.end());
+      _maxDensitiesOfLastTenIterations.erase(_maxDensitiesOfLastTenIterations.begin(),
+                                             _maxDensitiesOfLastTenIterations.end());
+    }
   } else {  // enough samples -> next config
     stillTuning = _tuningStrategy->tune();
   }

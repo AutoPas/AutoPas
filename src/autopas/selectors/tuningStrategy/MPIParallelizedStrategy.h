@@ -37,18 +37,18 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
    * @param fallbackNewton3s
    */
   MPIParallelizedStrategy(std::unique_ptr<TuningStrategyInterface> tuningStrategy, const AutoPas_MPI_Comm comm,
-                          const std::set<autopas::ContainerOption> &fallbackContainers,
-                          const std::set<autopas::TraversalOption> &fallbackTraversals,
-                          const std::set<autopas::LoadEstimatorOption> &fallbackLoadEstimators,
-                          const std::set<autopas::DataLayoutOption> &fallbackDataLayouts,
-                          const std::set<autopas::Newton3Option> &fallbackNewton3s)
+                          std::set<autopas::ContainerOption> fallbackContainers,
+                          std::set<autopas::TraversalOption> fallbackTraversals,
+                          std::set<autopas::LoadEstimatorOption> fallbackLoadEstimators,
+                          std::set<autopas::DataLayoutOption> fallbackDataLayouts,
+                          std::set<autopas::Newton3Option> fallbackNewton3s)
       : _tuningStrategy(std::move(tuningStrategy)),
         _comm(comm),
-        _fallbackContainers(fallbackContainers),
-        _fallbackTraversalOptions(fallbackTraversals),
-        _fallbackLoadEstimators(fallbackLoadEstimators),
-        _fallbackDataLayouts(fallbackDataLayouts),
-        _fallbackNewton3s(fallbackNewton3s) {}
+        _fallbackContainers(std::move(fallbackContainers)),
+        _fallbackTraversalOptions(std::move(fallbackTraversals)),
+        _fallbackLoadEstimators(std::move(fallbackLoadEstimators)),
+        _fallbackDataLayouts(std::move(fallbackDataLayouts)),
+        _fallbackNewton3s(std::move(fallbackNewton3s)) {}
 
   inline void addEvidence(long time, size_t iteration) override { _tuningStrategy->addEvidence(time, iteration); }
 
@@ -90,9 +90,16 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
    * @tparam Particle
    * @param iteration Gives the current iteration to the tuning strategy.
    * @param container container of current simulation
+   * @param smoothedHomogeneityAndMaxDensity [homogeneity, maxDensity] smoothed over last 10 iterations.
+   * @param MPITuningMaxDifferenceForBucket For MPI-tuning: Maximum of the relative difference in the comparison metric
+   * for two ranks which exchange their tuning information.
+   * @param MPITuningWeightForMaxDensity For MPI-tuning: Weight for maxDensity in the calculation for bucket
+   * distribution.
    */
   template <class Particle>
-  void resetMpi(size_t iteration, std::shared_ptr<autopas::ParticleContainerInterface<Particle>> container, double maxDifferenceForBucket, double weightForMaxDensity) {
+  void reset(size_t iteration, std::shared_ptr<autopas::ParticleContainerInterface<Particle>> container,
+             const std::pair<double, double> smoothedHomogeneityAndMaxDensity, double MPITuningMaxDifferenceForBucket,
+             double MPITuningWeightForMaxDensity) {
     _optimalConfiguration = Configuration();
     _allGlobalConfigurationsTested = false;
     _allLocalConfigurationsTested = false;
@@ -100,7 +107,9 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
     if (_configIterator != nullptr) {
       _configIterator.reset();
     }
-    autopas::utils::AutoPasConfigurationCommunicator::distributeRanksInBuckets<Particle>(_comm, &_bucket, container, maxDifferenceForBucket, weightForMaxDensity);
+    autopas::utils::AutoPasConfigurationCommunicator::distributeRanksInBuckets<Particle>(
+        _comm, &_bucket, container, smoothedHomogeneityAndMaxDensity, MPITuningMaxDifferenceForBucket,
+        MPITuningWeightForMaxDensity);
     AutoPasLog(debug, "finished bucket distribution");
     try {
       _tuningStrategy->reset(iteration);
@@ -122,6 +131,8 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
 
   [[nodiscard]] inline bool searchSpaceIsEmpty() const override { return _tuningStrategy->searchSpaceIsEmpty(); }
 
+  [[nodiscard]] inline bool smoothedHomogeneityAndMaxDensityNeeded() const override { return true; }
+
  private:
   /**
    * Essentially sets up a full-search-esque configuration selection, in case the underlying search strategy fails.
@@ -140,7 +151,7 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
   std::unique_ptr<TuningStrategyInterface> _tuningStrategy;
 
   AutoPas_MPI_Comm _comm;
-  AutoPas_MPI_Comm _bucket;
+  AutoPas_MPI_Comm _bucket{AUTOPAS_MPI_COMM_NULL};
   AutoPas_MPI_Request _request{AUTOPAS_MPI_REQUEST_NULL};
 
   /**
