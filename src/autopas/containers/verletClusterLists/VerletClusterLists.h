@@ -338,9 +338,6 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
         tower.forEach(forEachLambda, behavior);
       }
 
-      //      return ParticleIteratorWrapper<Particle, false>{
-      //          new internal::ParticleIterator<Particle, internal::ClusterTower<Particle>, false>(
-      //              &(this->_towers), 0, &unknowingCellBorderAndFlagManager, behavior, nullptr)};
     } else {
       // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
 
@@ -369,10 +366,6 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
           forEachLambda(particle);
         }
       }
-
-      //      return ParticleIteratorWrapper<Particle, false>{
-      //          new internal::ParticleIterator<Particle, internal::ClusterTower<Particle>, false>(
-      //              &(this->_towers), 0, &unknowingCellBorderAndFlagManager, behavior, &_particlesToAdd)};
     }
   }
 

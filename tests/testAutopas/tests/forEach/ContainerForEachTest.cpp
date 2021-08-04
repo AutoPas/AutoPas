@@ -1,16 +1,16 @@
 /**
- * @file ForEachInRegionTest.cpp
+ * @file ContainerForEachTest.cpp
  * @author F. Gratl
  * @date 08.03.21
  */
-#include "ForEachInRegionTest.h"
+#include "ContainerForEachTest.h"
 
 #include "ForEachTestHelper.h"
 #include "autopas/AutoPas.h"
 #include "testingHelpers/EmptyFunctor.h"
 
 template <typename AutoPasT>
-auto ForEachInRegionTest::defaultInit(AutoPasT &autoPas, autopas::ContainerOption &containerOption,
+auto ContainerForEachTest::defaultInit(AutoPasT &autoPas, autopas::ContainerOption &containerOption,
                                       double cellSizeFactor) {
   autoPas.setBoxMin({0., 0., 0.});
   autoPas.setBoxMax({10., 10., 10.});
@@ -22,10 +22,6 @@ auto ForEachInRegionTest::defaultInit(AutoPasT &autoPas, autopas::ContainerOptio
   autoPas.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(containerOption));
   autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeFactor})));
 
-#ifdef AUTOPAS_CUDA
-  autoPas.setVerletClusterSize(32);
-#endif
-
   autoPas.init();
 
   auto haloBoxMin =
@@ -36,7 +32,7 @@ auto ForEachInRegionTest::defaultInit(AutoPasT &autoPas, autopas::ContainerOptio
   return std::make_tuple(haloBoxMin, haloBoxMax);
 }
 
-TEST_P(ForEachInRegionTest, testRegionAroundCorner) {
+TEST_P(ContainerForEachTest, testRegionAroundCorner) {
   auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc, behavior] = GetParam();
 
   // init autopas and fill it with some particles
@@ -94,10 +90,6 @@ TEST_P(ForEachInRegionTest, testRegionAroundCorner) {
     autoPas.forEachInRegion(lambda, searchBoxMin, searchBoxMax, bh);
   };
   ForEachTestHelper::findParticles(autoPas, forEachInRegionLambda, expectedIDs);
-
-  //  IteratorTestHelper::provideRegionIterator(
-  //      useConstIterator, autoPas, behavior, searchBoxMin, searchBoxMax,
-  //      [&](const auto &autopas, auto &iter) { ForEachTestHelper::findParticles(autoPas, iter, expectedIDs); });
 }
 
 using ::testing::Combine;
@@ -114,8 +106,8 @@ static inline auto getTestableContainerOptions() {
 #endif
 }
 
-INSTANTIATE_TEST_SUITE_P(Generated, ForEachInRegionTest,
+INSTANTIATE_TEST_SUITE_P(Generated, ContainerForEachTest,
                          Combine(ValuesIn(getTestableContainerOptions()), /*cell size factor*/ Values(0.5, 1., 1.5),
                                  /*use const*/ Values(true, false), /*prior force calc*/ Values(true, false),
                                  ValuesIn(autopas::IteratorBehavior::getMostOptions())),
-                         ForEachInRegionTest::PrintToStringParamName());
+                         ContainerForEachTest::PrintToStringParamName());
