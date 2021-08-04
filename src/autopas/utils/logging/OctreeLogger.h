@@ -37,12 +37,14 @@ class OctreeLogger {
 
   /**
    * Write the octree below the wrapper to a .vtk file
+   * @param type CellTypes::OWNED or CellTypes HALO
    * @param wrapper A pointer to the octree node wrapper
    */
   void logTree(int type, OctreeNodeWrapper<Particle> *wrapper) { logTree(type, wrapper->getRaw()); }
 
   /**
    * This function writes the octree to a .vtk file
+   * @param type CellTypes::OWNED or CellTypes HALO
    * @param root A pointer to the octree root node
    */
   void logTree(int type, OctreeNodeInterface<Particle> *root) {
