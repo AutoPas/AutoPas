@@ -24,6 +24,7 @@ extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::Fl
 #ifdef AUTOPAS_INTERNODE_TUNING
 #include <mpi.h>
 #endif
+#include <spdlog/async.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 
@@ -93,16 +94,16 @@ void Simulation::initialize(const MDFlexConfig &mdFlexConfig, autopas::AutoPas<P
   autopas::Logger::get()->set_level(_config->logLevel.value);
   autopas.init();
 
-//  _homoName = "HomogeneityLogger_" + getMPISuffix();
-//
-//  auto outputFileName("AutoPas_iterationHomogeneity_" + getMPISuffix() + ".csv");
-//  auto headerLoggerName = _homoName + "header";
-//  auto headerLogger = spdlog::basic_logger_mt(headerLoggerName, outputFileName);
-//  headerLogger->set_pattern("%v");
-//  headerLogger->info("Iteration,homogeneity,max_density,hitrate,calculations,particles");
-//  spdlog::drop(headerLoggerName);
-//  auto logger = spdlog::basic_logger_mt<spdlog::async_factory>(_homoName, outputFileName);
-//  logger->set_pattern("%v");
+  _homoName = "HomogeneityLogger_" + getMPISuffix();
+
+  auto outputFileName("AutoPas_iterationHomogeneity_" + getMPISuffix() + ".csv");
+  auto headerLoggerName = _homoName + "header";
+  auto headerLogger = spdlog::basic_logger_mt(headerLoggerName, outputFileName);
+  headerLogger->set_pattern("%v");
+  headerLogger->info("Iteration,homogeneity,max_density,particles");
+  spdlog::drop(headerLoggerName);
+  auto logger = spdlog::basic_logger_mt<spdlog::async_factory>(_homoName, outputFileName);
+  logger->set_pattern("%v");
 
   // load checkpoint
   if (not _config->checkpointfile.value.empty()) {
@@ -210,20 +211,17 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
       printProgress(_iteration, maxIterationsEstimate, maxIterationsIsPrecise);
     }
 
-//    std::pair<double, double> homogeneityAndMaxDensity = calculateHomogeneity(autopas);
-//    data[0] += homogeneityAndMaxDensity.first;
-//    data[1] += homogeneityAndMaxDensity.second;
-//
-//    if ((_iteration + 1) % 10 == 0) {
-//      autopas::FlopCounterFunctor<ParticleType> flopCounterFunctor(autopas.getCutoff());
-//      autopas.iteratePairwise(&flopCounterFunctor);
-//
-//      spdlog::get(_homoName)->info("{},{},{},{},{},{}", _iteration, data[0] / 10, data[1] / 10,
-//                                   flopCounterFunctor.getHitRate(), flopCounterFunctor.getDistanceCalculations(),
-//                                   autopas.getNumberOfParticles());
-//      data[0] = 0.0;
-//      data[1] = 0.0;
-//    }
+    std::pair<double, double> homogeneityAndMaxDensity = autopas::utils::calculateHomogeneityAndMaxDensity<autopas::AutoPas<ParticleType> *>(&autopas);
+    data[0] += homogeneityAndMaxDensity.first;
+    data[1] += homogeneityAndMaxDensity.second;
+
+    if ((_iteration + 1) % 10 == 0) {
+
+      spdlog::get(_homoName)->info("{},{},{},{}", _iteration, data[0] / 10, data[1] / 10, autopas.getNumberOfParticles());
+      data[0] = 0.0;
+      data[1] = 0.0;
+
+    }
 
     // only do time step related stuff when there actually is time-stepping
     if (_config->deltaT.value != 0) {

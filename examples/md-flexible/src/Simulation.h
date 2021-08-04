@@ -187,7 +187,7 @@ class Simulation {
    */
   double _homogeneity = 0;
 
-//  std::string _homoName;
+  std::string _homoName;
 
   //autopas::AutoPas_MPI_Comm _comm{AUTOPAS_MPI_COMM_NULL};
 
