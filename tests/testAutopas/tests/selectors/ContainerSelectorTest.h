@@ -14,8 +14,6 @@
 
 class ContainerSelectorTest : public AutoPasTestBase {
  public:
-  ContainerSelectorTest() = default;
-  ~ContainerSelectorTest() override = default;
 
  protected:
   const std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {10, 10, 10};
