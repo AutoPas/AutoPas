@@ -13,8 +13,6 @@
 #include "testingHelpers/commonTypedefs.h"
 
 class ContainerSelectorTest : public AutoPasTestBase {
- public:
-
  protected:
   const std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {10, 10, 10};
   const double cutoff = 1;
