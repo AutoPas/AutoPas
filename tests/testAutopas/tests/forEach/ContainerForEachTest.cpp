@@ -32,7 +32,7 @@ auto ContainerForEachTest::defaultInit(AutoPasT &autoPas, autopas::ContainerOpti
   return std::make_tuple(haloBoxMin, haloBoxMax);
 }
 
-TEST_P(ContainerForEachTest, testRegionAroundCorner) {
+TEST_P(ContainerForEachTest, testForEachInRegion) {
   auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc, behavior] = GetParam();
 
   // init autopas and fill it with some particles
@@ -92,6 +92,66 @@ TEST_P(ContainerForEachTest, testRegionAroundCorner) {
   ForEachTestHelper::findParticles(autoPas, forEachInRegionLambda, expectedIDs);
 }
 
+TEST_P(ContainerForEachTest, testForEach) {
+  auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc, behavior] = GetParam();
+
+  // init autopas and fill it with some particles
+  autopas::AutoPas<Molecule> autoPas;
+  defaultInit(autoPas, containerOption, cellSizeFactor);
+
+  using ::autopas::utils::ArrayMath::add;
+  using ::autopas::utils::ArrayMath::mulScalar;
+  using ::autopas::utils::ArrayMath::sub;
+  auto domainLength = sub(autoPas.getBoxMax(), autoPas.getBoxMin());
+  // draw a box around the lower corner of the domain
+  auto searchBoxLengthHalf = mulScalar(domainLength, 0.3);
+  std::array<double, 3> searchBoxMin = sub(autoPas.getBoxMin(), searchBoxLengthHalf);
+  std::array<double, 3> searchBoxMax = add(autoPas.getBoxMin(), searchBoxLengthHalf);
+
+  auto [particleIDsOwned, particleIDsHalo, particleIDsInBoxOwned, particleIDsInBoxHalo] =
+  ForEachTestHelper::fillContainerAroundBoundary(autoPas, searchBoxMin, searchBoxMax);
+
+  if (priorForceCalc) {
+    // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
+    EmptyFunctor<Molecule> eFunctor;
+    autoPas.iteratePairwise(&eFunctor);
+  }
+
+  std::vector<size_t> expectedIDs;
+  switch (behavior) {
+    case autopas::IteratorBehavior::owned: {
+      expectedIDs = particleIDsOwned;
+      break;
+    }
+    case autopas::IteratorBehavior::halo: {
+      expectedIDs = particleIDsHalo;
+      break;
+    }
+    case autopas::IteratorBehavior::ownedOrHalo: {
+      expectedIDs = particleIDsOwned;
+      expectedIDs.insert(expectedIDs.end(), particleIDsHalo.begin(), particleIDsHalo.end());
+      break;
+    }
+    default: {
+      GTEST_FAIL() << "IteratorBehavior::" << behavior
+                   << "  should not be tested through this test!\n"
+                      "Container behavior with dummy particles is not uniform.\n"
+                      "Using forceSequential is not supported.";
+      break;
+    }
+  }
+
+  // sanity check: there should be particles in the expected region
+  ASSERT_THAT(expectedIDs, ::testing::Not(::testing::IsEmpty()));
+
+  // actual test
+  auto bh = behavior;  // necessary for compiler, behavior not detected as variable
+  auto forEachLambda = [&, bh](auto lambda) {
+    autoPas.forEach(lambda, bh);
+  };
+  ForEachTestHelper::findParticles(autoPas, forEachLambda, expectedIDs);
+}
+
 using ::testing::Combine;
 using ::testing::UnorderedElementsAreArray;
 using ::testing::Values;
@@ -108,6 +168,6 @@ static inline auto getTestableContainerOptions() {
 
 INSTANTIATE_TEST_SUITE_P(Generated, ContainerForEachTest,
                          Combine(ValuesIn(getTestableContainerOptions()), /*cell size factor*/ Values(0.5, 1., 1.5),
-                                 /*use const*/ Values(true, false), /*prior force calc*/ Values(true, false),
+                             /*use const*/ Values(true, false), /*prior force calc*/ Values(true, false),
                                  ValuesIn(autopas::IteratorBehavior::getMostOptions())),
                          ContainerForEachTest::PrintToStringParamName());

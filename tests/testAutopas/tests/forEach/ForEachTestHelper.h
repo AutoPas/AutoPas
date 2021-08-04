@@ -167,66 +167,6 @@ auto getHaloBoxMinMax(AutoPasT &autoPas) {
 }
 
 /**
- * Creates a function to instantiate an iterator with the given properties and passes this function on to fun.
- * The iterator always covers the whole domain and, if necessary the halo.
- * This is necessary so that fun can decide for itself if it wants iterators to be created in an OpenMP region or not.
- * @tparam AutoPasT
- * @tparam F f(AutoPas, Iterator)
- * @param useRegionIterator
- * @param useConstIterator
- * @param behavior
- * @param autoPas
- * @param fun Function taking the AutoPas object and the generated iterator.
- */
-template <bool useConstIterator, class AutoPasT, class F>
-void provideIterator(AutoPasT &autoPas, autopas::IteratorBehavior behavior, bool useRegionIterator, F fun) {
-  if (useRegionIterator) {
-    std::array<double, 3> haloBoxMin, haloBoxMax;
-    std::tie(haloBoxMin, haloBoxMax) = getHaloBoxMinMax(autoPas);
-    if constexpr (useConstIterator) {
-      const auto &autoPasRef = autoPas;
-      auto getIter = [&]() -> typename AutoPasT::const_iterator_t {
-        return autoPasRef.getRegionIterator(haloBoxMin, haloBoxMax, behavior);
-      };
-      fun(autoPasRef, getIter);
-    } else {
-      auto getIter = [&]() -> typename AutoPasT::iterator_t {
-        return autoPas.getRegionIterator(haloBoxMin, haloBoxMax, behavior);
-      };
-      fun(autoPas, getIter);
-    }
-  } else {
-    if constexpr (useConstIterator) {
-      auto getIter = [&]() -> typename AutoPasT::const_iterator_t { return autoPas.cbegin(behavior); };
-      fun(autoPas, getIter);
-    } else {
-      auto getIter = [&]() -> typename AutoPasT::iterator_t { return autoPas.begin(behavior); };
-      fun(autoPas, getIter);
-    }
-  }
-}
-
-/**
- * Same as provideIterator() but `useConstIterator` is a run-time variable.
- * @tparam useConstIterator
- * @tparam AutoPasT
- * @tparam F f(AutoPas, Iterator)
- * @param useRegionIterator
- * @param behavior
- * @param autoPas
- * @param fun Function taking the AutoPas object and the generated iterator.
- */
-template <class AutoPasT, class F>
-void provideIterator(bool useConstIterator, AutoPasT &autoPas, autopas::IteratorBehavior behavior,
-                     bool useRegionIterator, F fun) {
-  if (useConstIterator) {
-    provideIterator<true>(autoPas, behavior, useRegionIterator, fun);
-  } else {
-    provideIterator<false>(autoPas, behavior, useRegionIterator, fun);
-  }
-}
-
-/**
  * Apply an iterator, track what particle IDs are found and compare this to a vector of expected IDs
  * @tparam AutoPasT
  * @tparam IteratorT
