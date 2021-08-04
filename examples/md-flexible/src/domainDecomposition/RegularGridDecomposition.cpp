@@ -71,7 +71,7 @@ void RegularGridDecomposition::update(const double &work) {
     for (int i = 0; i < _dimensionCount; ++i) {
       // Create planar communicator along shift axis. The shift axis is vertical to the dimension's direction.
       autopas::AutoPas_MPI_Comm planarCommunicator;
-      autopas::AutoPas_MPI_Comm_split(_communicator, _domainId[i + 1], _domainId[i], &planarCommunicator);
+      autopas::AutoPas_MPI_Comm_split(_communicator, _domainId[i], _domainId[i], &planarCommunicator);
 
       // Calculate average distributed work in planar communicator.
       double distributedWorkInPlane;
