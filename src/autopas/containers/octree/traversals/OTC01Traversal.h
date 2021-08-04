@@ -79,7 +79,7 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
                                          this->_haloLeaves);
 
     // Get neighboring cells for each leaf
-    //#pragma omp parallel for
+    #pragma omp parallel for default(none) shared(haloWrapper)
     for (int i = 0; i < this->_ownedLeaves.size(); ++i) {
       OctreeLeafNode<Particle> *leaf = this->_ownedLeaves[i];
 
