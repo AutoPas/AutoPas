@@ -55,7 +55,8 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @param cellSizeFactor The cell size factor
    */
   OctreeNodeWrapper(std::array<double, 3> boxMin, std::array<double, 3> boxMax, int unsigned treeSplitThreshold,
-                    double interactionLength, double cellSizeFactor) {
+                    double interactionLength, double cellSizeFactor)
+      : enclosedParticleCount(0) {
     _pointer = std::make_unique<OctreeLeafNode<Particle>>(boxMin, boxMax, nullptr, treeSplitThreshold,
                                                           interactionLength, cellSizeFactor);
   }
@@ -79,6 +80,8 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
   void addParticle(const Particle &p) override {
     auto ret = _pointer->insert(p);
     if (ret) _pointer = std::move(ret);
+
+    ++enclosedParticleCount;
   }
 
   /**
@@ -103,18 +106,21 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * Get the number of particles stored in this cell.
    * @return number of particles stored in this cell
    */
-  [[nodiscard]] unsigned long numParticles() const override { return _pointer->getNumParticles(); }
+  [[nodiscard]] unsigned long numParticles() const override { return enclosedParticleCount; }
 
   /**
    * Check if the cell is not empty.
    * @return true if at least one particle is stored in this cell
    */
-  [[nodiscard]] bool isNotEmpty() const override { return numParticles() > 0; }
+  [[nodiscard]] bool isNotEmpty() const override { return enclosedParticleCount > 0; }
 
   /**
    * Deletes all particles in this cell.
    */
-  void clear() override { _pointer->clearChildren(_pointer); }
+  void clear() override {
+    _pointer->clearChildren(_pointer);
+    enclosedParticleCount = 0;
+  }
 
   /**
    * Deletes all dummy particles in this cell.
@@ -131,7 +137,9 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * Deletes the index-th particle.
    * @param index the index of the particle that shall be deleted
    */
-  void deleteByIndex(size_t index) override {}
+  void deleteByIndex(size_t index) override {
+    throw std::runtime_error("[OctreeNodeWrapper.h] Operation not supported");
+  }
 
   /**
    * Set the side lengths of this cell.
@@ -193,14 +201,22 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
 
  private:
   Particle &getFromReloadingIterator(size_t index) const {
-    // @todo This needs severe improvement. If we just copy out all particles, the implementation becomes
-    //   unsafe for threading. We need a way to iterate the octree using a better traversal idea.
-    //   Referenced in https://github.com/AutoPas/AutoPas/issues/625
-    std::vector<Particle *> ps;
-    _pointer->appendAllParticles(ps);
+    lock.lock();
+    if (ps.empty() || index == 0) {
+      // printf("Reloading particles (ps.empty()=%s, index=%ld) %ld times\n", ps.empty() ? "true" : "false", index,
+      // count++);
+      ps.clear();
+      _pointer->appendAllParticles(ps);
+    }
+    lock.unlock();
     return *ps[index];
   }
 
   std::unique_ptr<OctreeNodeInterface<Particle>> _pointer;
+  mutable std::vector<Particle *> ps;
+  mutable AutoPasLock lock;
+  mutable long count = 0;
+
+  long enclosedParticleCount;
 };
 }  // namespace autopas
