@@ -26,9 +26,12 @@ class DomainDecomposition {
   using SharedAutoPasContainer = std::shared_ptr<autopas::AutoPas<ParticleType>>;
 
   /**
-   * Updates the domain decomposition to the current topology.
+   * Used to update the domain to the current topology.
+   * Handles the diffuse load balancing by resizing the domains according to their work done.
+   * @param autoPasContainer: The AutoPas container which has to be resized.
+   * @param work: The work performed in the AutoPas container.
    */
-  virtual void update(const double &work) = 0;
+  virtual void update(SharedAutoPasContainer &autoPasContainer, const double &work) = 0;
 
   /**
    * Returns the index of the local domain in the global domain context.

@@ -142,10 +142,6 @@ void Simulation::run() {
   _timers.simulate.start();
   for (int i = 0; i < _configuration.iterations.value; i += iterationsPerSuperstep) {
     executeSupersteps(iterationsPerSuperstep);
-    _domainDecomposition.update(_timers.work.getTotalTime());
-    _autoPasContainer->setBoxMin(_domainDecomposition.getLocalBoxMin());
-    _autoPasContainer->setBoxMax(_domainDecomposition.getLocalBoxMax());
-    _timers.work.reset();
   }
   _timers.simulate.stop();
 
@@ -156,6 +152,9 @@ void Simulation::run() {
 }
 
 void Simulation::executeSupersteps(const int iterationsPerSuperstep) {
+  _domainDecomposition.update(_autoPasContainer, _timers.work.getTotalTime());
+  _timers.work.reset();
+
   for (int i = 0; i < iterationsPerSuperstep; ++i) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
       _timers.vtk.start();
@@ -165,12 +164,11 @@ void Simulation::executeSupersteps(const int iterationsPerSuperstep) {
 
     _timers.work.start();
     updatePositions();
-    _timers.work.stop();
 
-    _domainDecomposition.exchangeMigratingParticles(_autoPasContainer);
+    auto [emigrants, updated] = _autoPasContainer->updateContainer(false);
+    _domainDecomposition.exchangeMigratingParticles(_autoPasContainer, emigrants, updated);
     _domainDecomposition.exchangeHaloParticles(_autoPasContainer);
 
-    _timers.work.start();
     updateForces();
 
     updateVelocities();

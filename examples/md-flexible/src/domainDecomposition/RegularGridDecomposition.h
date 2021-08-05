@@ -35,9 +35,10 @@ class RegularGridDecomposition final : public DomainDecomposition {
   /**
    * Used to update the domain to the current topology.
    * Handles the diffuse load balancing by resizing the domains according to their work done.
-   * See member _all for more information.
+   * @param autoPasContainer: The AutoPas container which has to be resized.
+   * @param work: The work performed in the AutoPas container.
    */
-  void update(const double &work) override;
+  void update(SharedAutoPasContainer &autoPasContainer, const double &work) override;
 
   /**
    * Returns the index of the local domain in the global domain context.
@@ -90,9 +91,12 @@ class RegularGridDecomposition final : public DomainDecomposition {
 
   /**
    * Exchanges migrating particles with all neighbours of the provided AutoPasContainer.
-   * @param autoPasContainer The container, where the migrating particles originate from.
+   * @param autoPasContainer: The container, where the migrating particles originate from.
+   * @param emigrants: The emigrating particles send to neighbours.
+   * @param updated: Indicates if the autoPasContainer has been updated.
+   *                 In most cases use value returned from container.updateContainer().
    */
-  void exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer);
+  void exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer, std::vector<ParticleType> &emigrants, const bool &updated);
 
  private:
   /**

@@ -60,7 +60,7 @@ RegularGridDecomposition::RegularGridDecomposition(const std::array<double, 3> &
 
 RegularGridDecomposition::~RegularGridDecomposition() {}
 
-void RegularGridDecomposition::update(const double &work) {
+void RegularGridDecomposition::update(SharedAutoPasContainer &autoPasContainer, const double &work) {
   if (_mpiIsEnabled) {
     // This corresponds to the work for each direction (dimension * 2).
     const double distributedWork = calculateDistributedWork(work);
@@ -115,6 +115,13 @@ void RegularGridDecomposition::update(const double &work) {
                                                               _localBoxMin[i], neighbourBoundary);
       }
     }
+    
+    autoPasContainer->setBoxMin(_localBoxMin);
+    autoPasContainer->setBoxMax(_localBoxMax);
+
+    auto [emigrants, updated] = autoPasContainer->updateContainer(false);
+    exchangeMigratingParticles(autoPasContainer, emigrants, true);
+    exchangeHaloParticles(autoPasContainer);
   }
 }
 
@@ -272,8 +279,7 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
   }
 }
 
-void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer) {
-  auto [emigrants, updated] = autoPasContainer->updateContainer(false);
+void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer, std::vector<ParticleType> &emigrants, const bool &updated) {
 
   if (updated) {
     const std::array<double, _dimensionCount> globalBoxMin = {_globalBoxMin[0], _globalBoxMin[1], _globalBoxMin[2]};
