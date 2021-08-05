@@ -161,7 +161,19 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
   bool updateHaloParticle(const ParticleType &haloParticle) override {
     ParticleType pCopy = haloParticle;
     pCopy.setOwnershipState(OwnershipState::halo);
-    return internal::checkParticleInCellAndUpdateByIDAndPosition(this->_cells[CellTypes::HALO], pCopy, this->getSkin());
+
+    std::array<double, 3> min = utils::ArrayMath::subScalar(haloParticle.getR(), this->getSkin());
+    std::array<double, 3> max = utils::ArrayMath::addScalar(haloParticle.getR(), this->getSkin());
+
+    auto &haloWrapper = this->_cells[CellTypes::HALO];
+    auto leavesThatCouldContainParticle = haloWrapper.getLeavesInRange(min, max);
+
+    for(auto &leaf : leavesThatCouldContainParticle) {
+      if(internal::checkParticleInCellAndUpdateByIDAndPosition(*leaf, pCopy, this->getSkin())) {
+        return true;
+      }
+    }
+    return false;
   }
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {}
