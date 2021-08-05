@@ -245,4 +245,16 @@ class Simulation {
    * @param source: The sender of the particles.
    */
   void receiveParticles(std::vector<ParticleType> &receivedParticles, int &source);
+
+  /**
+   * Calculates the pairwise forces between particles in the autopas container.
+   * @param wasTuningIteration Tells the user if the current iteration of force calculations was a tuning iteration.
+   */
+  void calculatePairwiseForces(bool &wasTuningIteration);
+
+  /**
+   * Adds global forces to the particles in the container.
+   * @param globalForce The global force which will be applied to each particle in the container.
+   */
+  void calculateGlobalForces(const std::array<double, 3> &globalForce);
 };

@@ -64,35 +64,4 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
   }
 }
 
-void calculatePairwiseForces(autopas::AutoPas<ParticleType> &autoPasContainer,
-                             ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
-                             MDFlexConfig::FunctorOption functorOption, bool &wasTuningIteration) {
-  switch (functorOption) {
-    case MDFlexConfig::FunctorOption::lj12_6: {
-      autopas::LJFunctor<ParticleType, true, true> functor{autoPasContainer.getCutoff(), particlePropertiesLibrary};
-      wasTuningIteration = autoPasContainer.iteratePairwise(&functor);
-      break;
-    }
-    case MDFlexConfig::FunctorOption::lj12_6_Globals: {
-      autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true> functor{
-          autoPasContainer.getCutoff(), particlePropertiesLibrary};
-      wasTuningIteration = autoPasContainer.iteratePairwise(&functor);
-      break;
-    }
-    case MDFlexConfig::FunctorOption::lj12_6_AVX: {
-      autopas::LJFunctorAVX<ParticleType, true, true> functor{autoPasContainer.getCutoff(), particlePropertiesLibrary};
-      wasTuningIteration = autoPasContainer.iteratePairwise(&functor);
-      break;
-    }
-  }
-}
-
-void calculateGlobalForces(autopas::AutoPas<ParticleType> &autoPasContainer, const std::array<double, 3> &globalForce) {
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel shared(autoPasContainer)
-#endif
-  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    particle->addF(globalForce);
-  }
-}
 }  // namespace TimeDiscretization

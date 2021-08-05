@@ -285,9 +285,7 @@ void Simulation::updateForces() {
   bool isTuningIteration = false;
   _timers.forceUpdatePairwise.start();
 
-  TimeDiscretization::calculatePairwiseForces(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-                                              _configuration.deltaT.value, _configuration.functorOption.value,
-                                              isTuningIteration);
+  calculatePairwiseForces(isTuningIteration);
 
   _timers.forceUpdateTotal.stop();
 
@@ -311,7 +309,7 @@ void Simulation::updateForces() {
   _timers.forceUpdateGlobal.start();
 
   if (!_configuration.globalForceIsZero()) {
-    TimeDiscretization::calculateGlobalForces(*_autoPasContainer, _configuration.globalForce.value);
+    calculateGlobalForces(_configuration.globalForce.value);
   }
 
   _timers.forceUpdateGlobal.stop();
@@ -335,5 +333,38 @@ void Simulation::updateThermostat() {
     Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                       _configuration.targetTemperature.value, _configuration.deltaTemp.value);
     _timers.thermostat.stop();
+  }
+}
+
+void Simulation::calculatePairwiseForces(bool &wasTuningIteration) {
+  auto particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
+
+  switch (_configuration.functorOption.value) {
+    case MDFlexConfig::FunctorOption::lj12_6: {
+      autopas::LJFunctor<ParticleType, true, true> functor{_autoPasContainer->getCutoff(), particlePropertiesLibrary};
+      wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
+      break;
+    }
+    case MDFlexConfig::FunctorOption::lj12_6_Globals: {
+      autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true> functor{
+          _autoPasContainer->getCutoff(), particlePropertiesLibrary};
+      wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
+      break;
+    }
+    case MDFlexConfig::FunctorOption::lj12_6_AVX: {
+      autopas::LJFunctorAVX<ParticleType, true, true> functor{_autoPasContainer->getCutoff(),
+                                                              particlePropertiesLibrary};
+      wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
+      break;
+    }
+  }
+}
+
+void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce) {
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel shared(autoPasContainer)
+#endif
+  for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    particle->addF(globalForce);
   }
 }
