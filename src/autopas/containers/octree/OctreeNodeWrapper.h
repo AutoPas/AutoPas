@@ -91,6 +91,10 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @return the iterator
    */
   SingleCellIteratorWrapper<Particle, true> begin() override {
+    lock.lock();
+    ps.clear();
+    _pointer->appendAllParticles(ps);
+    lock.unlock();
     return SingleCellIteratorWrapper<ParticleType, true>(new iterator_t(this));
   }
 
@@ -99,6 +103,10 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @note const version
    */
   SingleCellIteratorWrapper<Particle, false> begin() const override {
+    lock.lock();
+    ps.clear();
+    _pointer->appendAllParticles(ps);
+    lock.unlock();
     return SingleCellIteratorWrapper<ParticleType, false>(new const_iterator_t(this));
   }
 
@@ -201,6 +209,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
 
  private:
   Particle &getFromReloadingIterator(size_t index) const {
+#if 0
     lock.lock();
     if (ps.empty() || index == 0) {
       // printf("Reloading particles (ps.empty()=%s, index=%ld) %ld times\n", ps.empty() ? "true" : "false", index,
@@ -209,6 +218,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
       _pointer->appendAllParticles(ps);
     }
     lock.unlock();
+#endif
     return *ps[index];
   }
 
