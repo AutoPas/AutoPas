@@ -143,7 +143,7 @@ Simulation::~Simulation() { _timers.total.stop(); }
 void Simulation::run() {
   const int iterationsPerSuperstep = _configuration.verletRebuildFrequency.value;
   _timers.simulate.start();
-  for (int i = 0; i < _configuration.iterations.value && needsMoreIterations(); i += iterationsPerSuperstep) {
+  for (int i = 0; i < _configuration.iterations.value; i += iterationsPerSuperstep) {
     executeSupersteps(iterationsPerSuperstep);
   }
   _timers.simulate.stop();
@@ -155,7 +155,7 @@ void Simulation::run() {
 }
 
 void Simulation::executeSupersteps(const int iterationsPerSuperstep) {
-  for (int i = 0; i < iterationsPerSuperstep; ++i) {
+  for (int i = 0; i < iterationsPerSuperstep && needsMoreIterations(); ++i) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
       _timers.vtk.start();
       _vtkWriter->recordTimestep(_iteration, *_autoPasContainer);
