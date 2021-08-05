@@ -95,7 +95,8 @@ enum AutoPas_MPI_Datatype {
   CXX_BOOL = sizeof(bool),
   CHAR = sizeof(char),
   INT = sizeof(int),
-  UNSIGNED_LONG = sizeof(unsigned long) LONG = sizeof(double)
+  UNSIGNED_LONG = sizeof(unsigned long),
+  LONG = sizeof(double)
 };
 // MPI_Datatype
 /** Wrapper for MPI_BYTE */
