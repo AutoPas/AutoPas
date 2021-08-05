@@ -13,12 +13,6 @@
  * Functions for updating velocities and positions as simulation time progresses.
  */
 namespace TimeDiscretization {
-/**
- * Calculate and update the position for every particle using the Störmer-Verlet Algorithm.
- * @param autoPasContainer
- * @param particlePropertiesLibrary
- * @param deltaT time step width
- */
 void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
   using autopas::utils::ArrayMath::add;
@@ -40,12 +34,6 @@ void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
   }
 }
 
-/**
- * Calculate and update the velocity for every particle using the the Störmer-Verlet Algorithm.
- * @param autoPasContainer
- * @param particlePropertiesLibrary
- * @param deltaT time step width
- */
 void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
                          const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
   // helper declarations for operations with vector
@@ -63,5 +51,4 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
     iter->addV(newV);
   }
 }
-
 }  // namespace TimeDiscretization
