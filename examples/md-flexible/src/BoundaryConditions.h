@@ -5,6 +5,8 @@
  */
 
 #pragma once
+#include <autopas/utils/Timer.h>
+
 #include <array>
 #include <vector>
 
@@ -155,18 +157,29 @@ void addHaloParticles(autopas::AutoPas<Particle> &autoPas, std::vector<Particle>
  * @param forceUpdate If a container update should be forced or left to AutoPas.
  */
 template <class Particle>
-void applyPeriodic(autopas::AutoPas<Particle> &autoPas, bool forceUpdate) {
+std::tuple<long, long, long> applyPeriodic(autopas::AutoPas<Particle> &autoPas, bool forceUpdate) {
   // 1. update Container; return value is a vector of the particles leaving the domain box
-  // and a flag whether an update occured.
+  // and a flag whether an update occurred.
+  autopas::utils::Timer timer1, timer2, timer3;
+  timer1.start();
   auto [leavingParticles, updated] = autoPas.updateContainer(forceUpdate);
+  timer1.stop();
+
+  timer2.start();
   if (updated) {
     // 2. apply periodic wrap by shifting positions of leaving particles to positions of periodic images.
     wrapPositionsAroundBoundaries(autoPas, leavingParticles);
     // 2b. re-insert shifted particles
     addEnteringParticles(autoPas, leavingParticles);
   }
+  timer2.stop();
+
+  timer3.start();
   // 3. identify inner particles for which a periodic copy in the opposing halo region is needed.
   auto haloParticles = identifyNewHaloParticles(autoPas);
   addHaloParticles(autoPas, haloParticles);
+  timer3.stop();
+
+  return std::make_tuple(timer1.getTotalTime(), timer2.getTotalTime(), timer3.getTotalTime());
 }
 }  // namespace BoundaryConditions

@@ -272,8 +272,12 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
   // writes final state of the simulation
   if ((not _config->vtkFileName.value.empty())) {
     _timers.boundaries.start();
-    BoundaryConditions::applyPeriodic(autopas, true);
+    auto updateContainerDurations = BoundaryConditions::applyPeriodic(autopas, true);
     _timers.boundaries.stop();
+
+    _timers.updateContainer.addTime(std::get<0>(updateContainerDurations));
+    _timers.boundariesPart2.addTime(std::get<1>(updateContainerDurations));
+    _timers.boundariesPart3.addTime(std::get<2>(updateContainerDurations));
     this->writeVTKFile(autopas);
   }
 
@@ -319,22 +323,34 @@ void Simulation::printStatistics(autopas::AutoPas<ParticleType> &autopas) {
 
   cout << fixed << setprecision(_floatStringPrecision);
   cout << "Measurements:" << endl;
-  cout << timerToString("Time total      ", durationTotal, digitsTimeTotalNS);
-  cout << timerToString("  Initialization", _timers.init.getTotalTime(), digitsTimeTotalNS, durationTotal);
-  cout << timerToString("  Simulation    ", durationSimulate, digitsTimeTotalNS, durationTotal);
-  cout << timerToString("    Boundaries  ", _timers.boundaries.getTotalTime(), digitsTimeTotalNS, durationSimulate);
-  cout << timerToString("    Position    ", _timers.positionUpdate.getTotalTime(), digitsTimeTotalNS, durationSimulate);
-  cout << timerToString("    Force       ", _timers.forceUpdateTotal.getTotalTime(), digitsTimeTotalNS,
-                        durationSimulate);
-  cout << timerToString("      Tuning    ", _timers.forceUpdateTuning.getTotalTime(), digitsTimeTotalNS,
-                        _timers.forceUpdateTotal.getTotalTime());
-  cout << timerToString("      NonTuning ", _timers.forceUpdateNonTuning.getTotalTime(), digitsTimeTotalNS,
-                        _timers.forceUpdateTotal.getTotalTime());
-  cout << timerToString("    Velocity    ", _timers.velocityUpdate.getTotalTime(), digitsTimeTotalNS, durationSimulate);
-  cout << timerToString("    VTK         ", _timers.vtk.getTotalTime(), digitsTimeTotalNS, durationSimulate);
-  cout << timerToString("    Thermostat  ", _timers.thermostat.getTotalTime(), digitsTimeTotalNS, durationSimulate);
+  cout << timerToString("Time total            ", durationTotal, digitsTimeTotalNS);
+  cout << timerToString("  Initialization      ", _timers.init.getTotalTime(), digitsTimeTotalNS, durationTotal);
+  cout << timerToString("  Simulation          ", durationSimulate, digitsTimeTotalNS, durationTotal);
 
-  cout << timerToString("One iteration   ", _timers.simulate.getTotalTime() / _iteration, digitsTimeTotalNS,
+  cout << timerToString("    Boundaries        ", _timers.boundaries.getTotalTime(), digitsTimeTotalNS,
+                        durationSimulate);
+  cout << timerToString("      updateContainer ", _timers.updateContainer.getTotalTime(), digitsTimeTotalNS,
+                        _timers.boundaries.getTotalTime());
+  cout << timerToString("      Part 2          ", _timers.boundariesPart2.getTotalTime(), digitsTimeTotalNS,
+                        _timers.boundaries.getTotalTime());
+  cout << timerToString("      Part 3          ", _timers.boundariesPart3.getTotalTime(), digitsTimeTotalNS,
+                        _timers.boundaries.getTotalTime());
+
+  cout << timerToString("    Position          ", _timers.positionUpdate.getTotalTime(), digitsTimeTotalNS,
+                        durationSimulate);
+  cout << timerToString("    Force             ", _timers.forceUpdateTotal.getTotalTime(), digitsTimeTotalNS,
+                        durationSimulate);
+  cout << timerToString("      Tuning          ", _timers.forceUpdateTuning.getTotalTime(), digitsTimeTotalNS,
+                        _timers.forceUpdateTotal.getTotalTime());
+  cout << timerToString("      NonTuning       ", _timers.forceUpdateNonTuning.getTotalTime(), digitsTimeTotalNS,
+                        _timers.forceUpdateTotal.getTotalTime());
+  cout << timerToString("    Velocity          ", _timers.velocityUpdate.getTotalTime(), digitsTimeTotalNS,
+                        durationSimulate);
+  cout << timerToString("    VTK               ", _timers.vtk.getTotalTime(), digitsTimeTotalNS, durationSimulate);
+  cout << timerToString("    Thermostat        ", _timers.thermostat.getTotalTime(), digitsTimeTotalNS,
+                        durationSimulate);
+
+  cout << timerToString("One iteration         ", _timers.simulate.getTotalTime() / _iteration, digitsTimeTotalNS,
                         durationTotal);
   auto mfups = autopas.getNumberOfParticles(autopas::IteratorBehavior::owned) * _iteration * 1e-6 /
                (_timers.forceUpdateTotal.getTotalTime() * 1e-9);  // 1e-9 for ns to s, 1e-6 for M in MFUP
