@@ -57,86 +57,93 @@ class OctreeLogger {
     auto pointCount = 8 * boxCount;
 
     // Open the VTK file
+    // @todo Make shouldWrite dependent on the vtk-write-frequency
+    bool shouldWrite;
     char filename[256] = {0};
     switch (type) {
       case Octree<Particle>::CellTypes::OWNED:
-        snprintf(filename, sizeof(filename), "octree_owned_%d.vtk", ownedIteration++);
+        snprintf(filename, sizeof(filename), "octree_owned_%d.vtk", ownedIteration);
+        shouldWrite = (ownedIteration++ % 50) == 0;
         break;
       case Octree<Particle>::CellTypes::HALO:
-        snprintf(filename, sizeof(filename), "octree_halo_%d.vtk", haloIteration++);
+        snprintf(filename, sizeof(filename), "octree_halo_%d.vtk", haloIteration);
+        shouldWrite = (haloIteration++ % 50) == 0;
         break;
       default:
-        snprintf(filename, sizeof(filename), "octree_%d.vtk", iteration++);
+        snprintf(filename, sizeof(filename), "octree_%d.vtk", iteration);
+        shouldWrite = (iteration++ % 50) == 0;
         break;
     }
 
-    std::ofstream vtkFile;
-    vtkFile.open(filename);
+    if(shouldWrite) {
+      std::ofstream vtkFile;
+      vtkFile.open(filename);
 
-    if (not vtkFile.is_open()) {
-      throw std::runtime_error("OctreeLogger::logTree(): Failed to open file \"" + std::string(filename) + "\".");
-    }
+      if (not vtkFile.is_open()) {
+        throw std::runtime_error("OctreeLogger::logTree(): Failed to open file \"" + std::string(filename) + "\".");
+      }
 
-    // Write the header
-    vtkFile << "# vtk DataFile Version 2.0\n"
-            << "Octree boxes\n"
-            << "ASCII\n"
+      // Write the header
+      vtkFile << "# vtk DataFile Version 2.0\n"
+              << "Octree boxes\n"
+              << "ASCII\n"
 
-            << "DATASET UNSTRUCTURED_GRID\n"
-            << "\n";
+              << "DATASET UNSTRUCTURED_GRID\n"
+              << "\n";
 
-    // Write points
-    vtkFile << "POINTS " << pointCount << " float\n";  // Points header
-    for (Box box : boxes) {
-      Position min = box.first;
-      Position max = box.second;
+      // Write points
+      vtkFile << "POINTS " << pointCount << " float\n";  // Points header
+      for (Box box : boxes) {
+        Position min = box.first;
+        Position max = box.second;
 
-      auto [minX, minY, minZ] = min;
-      auto [maxX, maxY, maxZ] = max;
+        auto [minX, minY, minZ] = min;
+        auto [maxX, maxY, maxZ] = max;
 
-      // Write the points in the order of the VTK_HEXAHEDRON. Each point is
-      // written on its own line.
+        // Write the points in the order of the VTK_HEXAHEDRON. Each point is
+        // written on its own line.
 
-      vtkFile << minX << " " << minY << " " << minZ << "\n";  // 0 ---
-      vtkFile << maxX << " " << minY << " " << minZ << "\n";  // 1 +--
-      vtkFile << maxX << " " << maxY << " " << minZ << "\n";  // 2 ++-
-      vtkFile << minX << " " << maxY << " " << minZ << "\n";  // 3 -+-
-      vtkFile << minX << " " << minY << " " << maxZ << "\n";  // 4 --+
-      vtkFile << maxX << " " << minY << " " << maxZ << "\n";  // 5 +-+
-      vtkFile << maxX << " " << maxY << " " << maxZ << "\n";  // 6 +++
-      vtkFile << minX << " " << maxY << " " << maxZ << "\n";  // 7 -++
-    }
-    vtkFile << "\n";
-
-    // Write cells
-    auto cellListSize = pointCount + boxCount;
-    vtkFile << "CELLS " << boxCount << " " << cellListSize << "\n";
-    for (auto boxIndex = 0; boxIndex < boxCount; ++boxIndex) {
-      vtkFile << "8 ";  // Output # of elements in the following line.
-      for (auto pointIndex = 0; pointIndex < 8; ++pointIndex) {
-        // Generate an index that points to the corresponding point in the points list.
-        auto offset = 8 * boxIndex + pointIndex;
-        vtkFile << offset;
-        if (pointIndex < 7) {
-          vtkFile << " ";
-        }
+        vtkFile << minX << " " << minY << " " << minZ << "\n";  // 0 ---
+        vtkFile << maxX << " " << minY << " " << minZ << "\n";  // 1 +--
+        vtkFile << maxX << " " << maxY << " " << minZ << "\n";  // 2 ++-
+        vtkFile << minX << " " << maxY << " " << minZ << "\n";  // 3 -+-
+        vtkFile << minX << " " << minY << " " << maxZ << "\n";  // 4 --+
+        vtkFile << maxX << " " << minY << " " << maxZ << "\n";  // 5 +-+
+        vtkFile << maxX << " " << maxY << " " << maxZ << "\n";  // 6 +++
+        vtkFile << minX << " " << maxY << " " << maxZ << "\n";  // 7 -++
       }
       vtkFile << "\n";
+
+      // Write cells
+      auto cellListSize = pointCount + boxCount;
+      vtkFile << "CELLS " << boxCount << " " << cellListSize << "\n";
+      for (auto boxIndex = 0; boxIndex < boxCount; ++boxIndex) {
+        vtkFile << "8 ";  // Output # of elements in the following line.
+        for (auto pointIndex = 0; pointIndex < 8; ++pointIndex) {
+          // Generate an index that points to the corresponding point in the points list.
+          auto offset = 8 * boxIndex + pointIndex;
+          vtkFile << offset;
+          if (pointIndex < 7) {
+            vtkFile << " ";
+          }
+        }
+        vtkFile << "\n";
+      }
+      vtkFile << "\n";
+
+      // Write cell types
+      vtkFile << "CELL_TYPES " << boxCount << "\n";
+      for (int i = 0; i < boxes.size(); ++i) {
+        vtkFile << "12\n";  // Write VTK_HEXAHEDRON type for each cell
+      }
+
+      // Cleanup
+      vtkFile.close();
+
+      // TODO(johannes): Enclose with macro
+      //#ifdef AUTOPAS_LOG_OCTREE
+      //#endif
     }
-    vtkFile << "\n";
-
-    // Write cell types
-    vtkFile << "CELL_TYPES " << boxCount << "\n";
-    for (int i = 0; i < boxes.size(); ++i) {
-      vtkFile << "12\n";  // Write VTK_HEXAHEDRON type for each cell
-    }
-
-    // Cleanup
-    vtkFile.close();
-
-    // TODO(johannes): Enclose with macro
-    //#ifdef AUTOPAS_LOG_OCTREE
-    //#endif
   }
 
   /**

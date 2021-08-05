@@ -112,9 +112,6 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
       addParticleImpl(particle);
     }
 
-    logger.logTree(OWNED, &this->_cells[OWNED]);
-    logger.logTree(HALO, &this->_cells[HALO]);
-
     return invalidParticles;
   }
 
@@ -126,6 +123,9 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     traversal->initTraversal();
     traversal->traverseParticlePairs();
     traversal->endTraversal();
+
+    logger.logTree(OWNED, &this->_cells[OWNED]);
+    logger.logTree(HALO, &this->_cells[HALO]);
   }
 
   /**
