@@ -89,7 +89,9 @@ class OTC18Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
     auto *haloWrapper = this->getHalo();
 
     // Get neighboring cells for each leaf
-    #pragma omp parallel for default(none) shared(haloWrapper)
+#if defined(AUTOPAS_OPENMP)
+#pragma omp parallel for
+#endif
     for (int i = 0; i < this->_ownedLeaves.size(); ++i) {
       OctreeLeafNode<Particle> *leaf = this->_ownedLeaves[i];
       // Process cell itself
