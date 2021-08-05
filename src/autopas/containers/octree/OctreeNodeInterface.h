@@ -114,10 +114,10 @@ class OctreeNodeInterface {
    * Find all leaves below this subtree that are in the given range.
    * @param min The minimum coordinate in 3D space of the query area
    * @param max The maximum coordinate in 3D space of the query area
-   * @return A set of all leaf nodes that are in the query region
+   * @return A vector of all leaf nodes that are in the query region
    */
-  virtual std::set<OctreeLeafNode<Particle> *> getLeavesInRange(std::array<double, 3> min,
-                                                                std::array<double, 3> max) = 0;
+  virtual std::vector<OctreeLeafNode<Particle> *> getLeavesInRange(std::array<double, 3> min,
+                                                                   std::array<double, 3> max) = 0;
 
   /**
    * Check if a 3d point is inside the node's axis aligned bounding box. (Set by the boxMin and boxMax fields.)

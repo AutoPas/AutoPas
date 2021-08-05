@@ -184,9 +184,9 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * Find all leaves below this subtree that are in the given range.
    * @param min The minimum coordinate in 3D space of the query area
    * @param max The maximum coordinate in 3D space of the query area
-   * @return A set of all leaf nodes that are in the query region
+   * @return A vector of all leaf nodes that are in the query region
    */
-  std::set<OctreeLeafNode<Particle> *> getLeavesInRange(std::array<double, 3> min, std::array<double, 3> max) {
+  std::vector<OctreeLeafNode<Particle> *> getLeavesInRange(std::array<double, 3> min, std::array<double, 3> max) {
     return _pointer->getLeavesInRange(min, max);
   }
 

@@ -147,7 +147,8 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
     leaves.push_back((OctreeLeafNode<Particle> *)this);
   }
 
-  std::set<OctreeLeafNode<Particle> *> getLeavesInRange(std::array<double, 3> min, std::array<double, 3> max) override {
+  std::vector<OctreeLeafNode<Particle> *> getLeavesInRange(std::array<double, 3> min,
+                                                           std::array<double, 3> max) override {
     if (this->getEnclosedVolumeWith(min, max) > 0.0) {
       return {this};
     } else {
