@@ -257,4 +257,11 @@ class Simulation {
    * @param globalForce The global force which will be applied to each particle in the container.
    */
   void calculateGlobalForces(const std::array<double, 3> &globalForce);
+
+  /**
+   * Indicates if enough iterations were completed yet.
+   * Uses class member variables.
+   * @return
+   */
+  [[nodiscard]] bool needsMoreIterations() const;
 };

@@ -143,7 +143,7 @@ Simulation::~Simulation() { _timers.total.stop(); }
 void Simulation::run() {
   const int iterationsPerSuperstep = _configuration.verletRebuildFrequency.value;
   _timers.simulate.start();
-  for (int i = 0; i < _configuration.iterations.value; i += iterationsPerSuperstep) {
+  for (int i = 0; i < _configuration.iterations.value && needsMoreIterations(); i += iterationsPerSuperstep) {
     executeSupersteps(iterationsPerSuperstep);
   }
   _timers.simulate.stop();
@@ -367,4 +367,8 @@ void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce)
   for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     particle->addF(globalForce);
   }
+}
+
+bool Simulation::needsMoreIterations() const {
+  return _iteration < _configuration.iterations.value or _numTuningPhasesCompleted < _configuration.tuningPhases.value;
 }
