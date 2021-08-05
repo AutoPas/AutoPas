@@ -116,10 +116,7 @@ void RegularGridDecomposition::update(SharedAutoPasContainer &autoPasContainer, 
       }
     }
     
-    autoPasContainer->setBoxMin(_localBoxMin);
-    autoPasContainer->setBoxMax(_localBoxMax);
-
-    auto [emigrants, updated] = autoPasContainer->updateContainer(false);
+    auto emigrants = autoPasContainer->resizeBox(_localBoxMin, _localBoxMax);
     exchangeMigratingParticles(autoPasContainer, emigrants, true);
     exchangeHaloParticles(autoPasContainer);
   }
