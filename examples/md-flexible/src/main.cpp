@@ -29,6 +29,14 @@ int main(int argc, char **argv) {
 
   if (domainDecomposition.getDomainIndex() == 0) {
     std::cout << std::endl << "Using " << autopas::autopas_get_max_threads() << " Threads" << std::endl;
+#if defined(AUTOPAS_INCLUDE_MPI)
+    auto decomposition = domainDecomposition.getDecomposition();
+    std::cout << "MPI is running with "
+              << std::accumulate(decomposition.begin(), decomposition.end(), 1, std::multiplies<int>()) << " ranks."
+              << std::endl;
+#else
+    std::cout << "MPI is disabled." std::endl;
+#endif
   }
 
   Simulation simulation(configuration, domainDecomposition);

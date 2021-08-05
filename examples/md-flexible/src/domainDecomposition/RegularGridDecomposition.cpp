@@ -27,11 +27,7 @@ RegularGridDecomposition::RegularGridDecomposition(const std::array<double, 3> &
 
 #if defined(AUTOPAS_INCLUDE_MPI)
   _mpiCommunicationNeeded = true;
-  if (rank == 0) {
-    std::cout << "MPI is running with " << _subdomainCount << " ranks." << std::endl;
-  }
 #else
-  std::cout << "MPI is disabled." std::endl;
   _mpiCommunicationNeeded = false;
 #endif
 
