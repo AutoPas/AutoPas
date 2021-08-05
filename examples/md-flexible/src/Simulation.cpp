@@ -31,6 +31,7 @@ extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::Fl
 #include "BoundaryConditions.h"
 #include "Thermostat.h"
 #include "TimeDiscretization.h"
+#include "autopas/utils/MemoryProfiler.h"
 #include "configuration/MDFlexConfig.h"
 #include "src/ParticleSerializationTools.h"
 
@@ -114,6 +115,8 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
   _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
   _autoPasContainer->init();
 
+  autopas::Logger::get()->set_level(_configuration.logLevel.value);
+
   // @todo: the object generators should only generate particles relevant for the current rank's domain
   for (auto &particle : _configuration.getParticles()) {
     if (_domainDecomposition.isInsideLocalDomain(particle.getR())) {
@@ -155,7 +158,7 @@ void Simulation::executeSupersteps(const int iterationsPerSuperstep) {
   _domainDecomposition.update(_autoPasContainer, _timers.work.getTotalTime());
   _timers.work.reset();
 
-  for (int i = 0; i < iterationsPerSuperstep; ++i) {
+  for (int i = 0; i < iterationsPerSuperstep && needsMoreIterations(); ++i) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
       _timers.vtk.start();
       _vtkWriter->recordTimestep(_iteration, *_autoPasContainer);
@@ -170,6 +173,11 @@ void Simulation::executeSupersteps(const int iterationsPerSuperstep) {
     _domainDecomposition.exchangeHaloParticles(_autoPasContainer);
 
     updateForces();
+
+    if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
+      std::cout << "Current Memory usage on rank " << _domainDecomposition.getDomainIndex() << ": "
+                << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
+    }
 
     updateVelocities();
 
@@ -283,9 +291,7 @@ void Simulation::updateForces() {
   bool isTuningIteration = false;
   _timers.forceUpdatePairwise.start();
 
-  TimeDiscretization::calculatePairwiseForces(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-                                              _configuration.deltaT.value, _configuration.functorOption.value,
-                                              isTuningIteration);
+  calculatePairwiseForces(isTuningIteration);
 
   _timers.forceUpdateTotal.stop();
 
@@ -309,7 +315,7 @@ void Simulation::updateForces() {
   _timers.forceUpdateGlobal.start();
 
   if (!_configuration.globalForceIsZero()) {
-    TimeDiscretization::calculateGlobalForces(*_autoPasContainer, _configuration.globalForce.value);
+    calculateGlobalForces(_configuration.globalForce.value);
   }
 
   _timers.forceUpdateGlobal.stop();
@@ -334,4 +340,41 @@ void Simulation::updateThermostat() {
                       _configuration.targetTemperature.value, _configuration.deltaTemp.value);
     _timers.thermostat.stop();
   }
+}
+
+void Simulation::calculatePairwiseForces(bool &wasTuningIteration) {
+  auto particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
+
+  switch (_configuration.functorOption.value) {
+    case MDFlexConfig::FunctorOption::lj12_6: {
+      autopas::LJFunctor<ParticleType, true, true> functor{_autoPasContainer->getCutoff(), particlePropertiesLibrary};
+      wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
+      break;
+    }
+    case MDFlexConfig::FunctorOption::lj12_6_Globals: {
+      autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true> functor{
+          _autoPasContainer->getCutoff(), particlePropertiesLibrary};
+      wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
+      break;
+    }
+    case MDFlexConfig::FunctorOption::lj12_6_AVX: {
+      autopas::LJFunctorAVX<ParticleType, true, true> functor{_autoPasContainer->getCutoff(),
+                                                              particlePropertiesLibrary};
+      wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
+      break;
+    }
+  }
+}
+
+void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce) {
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel shared(autoPasContainer)
+#endif
+  for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    particle->addF(globalForce);
+  }
+}
+
+bool Simulation::needsMoreIterations() const {
+  return _iteration < _configuration.iterations.value or _numTuningPhasesCompleted < _configuration.tuningPhases.value;
 }

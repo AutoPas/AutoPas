@@ -30,7 +30,6 @@
 # ~~~
 
 # Check prereqs
-find_package(PythonInterp 2.7 REQUIRED)
 find_program(GCOV_PATH gcov)
 find_program(LCOV_PATH lcov)
 find_program(GENHTML_PATH genhtml)
@@ -172,10 +171,6 @@ function (
     _testcommandparam
     _customexcludepattern
 )
-
-    if (NOT PYTHON_EXECUTABLE)
-        message(FATAL_ERROR "Python not found! Aborting...")
-    endif () # NOT PYTHON_EXECUTABLE
 
     if (NOT GCOVR_PATH)
         message(FATAL_ERROR "gcovr not found! Aborting...")
