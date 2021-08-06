@@ -38,9 +38,9 @@ class NonConstructibleParticle : public autopas::Particle {
    * @note The value of owned is return as floating point number (true = 1.0, false = 0.0).
    */
   template <AttributeNames attribute>
-  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
+  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
     if constexpr (attribute == AttributeNames::ptr) {
-      return this;
+      return const_cast<typename std::tuple_element<attribute, SoAArraysType>::type::value_type>(this);
     } else if constexpr (attribute == AttributeNames::id) {
       return getID();
     } else if constexpr (attribute == AttributeNames::posX) {

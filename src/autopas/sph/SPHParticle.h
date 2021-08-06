@@ -413,9 +413,9 @@ class SPHParticle : public autopas::Particle {
    * @return Value of the requested attribute.
    */
   template <AttributeNames attribute>
-  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
+  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
     if constexpr (attribute == AttributeNames::ptr) {
-      return this;
+      return const_cast<typename std::tuple_element<attribute, SoAArraysType>::type::value_type>(this);
     } else if constexpr (attribute == AttributeNames::mass) {
       return getMass();
     } else if constexpr (attribute == AttributeNames::posX) {
