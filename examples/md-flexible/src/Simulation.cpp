@@ -31,6 +31,7 @@ extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::Fl
 #include "BoundaryConditions.h"
 #include "Thermostat.h"
 #include "TimeDiscretization.h"
+#include "autopas/utils/MemoryProfiler.h"
 #include "configuration/MDFlexConfig.h"
 #include "src/ParticleSerializationTools.h"
 
@@ -114,6 +115,8 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
   _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
   _autoPasContainer->init();
 
+  autopas::Logger::get()->set_level(_configuration.logLevel.value);
+
   // @todo: the object generators should only generate particles relevant for the current rank's domain
   for (auto &particle : _configuration.getParticles()) {
     if (_domainDecomposition.isInsideLocalDomain(particle.getR())) {
@@ -176,6 +179,11 @@ void Simulation::executeSupersteps(const int iterationsPerSuperstep) {
     _timers.haloParticleExchange.stop();
 
     updateForces();
+
+    if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
+      std::cout << "Current Memory usage on rank " << _domainDecomposition.getDomainIndex() << ": "
+                << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
+    }
 
     updateVelocities();
 
