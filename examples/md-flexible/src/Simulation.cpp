@@ -142,9 +142,10 @@ void Simulation::finalize() {
 
   autopas::AutoPas_MPI_Barrier(AUTOPAS_MPI_COMM_WORLD);
 
-  logSimulationState();
-
-  logMeasurements();
+  if (_domainDecomposition.getDomainIndex() == 0) {
+    logSimulationState();
+    logMeasurements();
+  }
 }
 
 void Simulation::run() {
