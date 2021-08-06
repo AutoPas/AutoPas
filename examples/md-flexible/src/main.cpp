@@ -30,10 +30,7 @@ int main(int argc, char **argv) {
     std::cout << configuration.to_string() << std::endl;
     std::cout << std::endl << "Using " << autopas::autopas_get_max_threads() << " Threads" << std::endl;
 #if defined(AUTOPAS_INCLUDE_MPI)
-    auto decomposition = domainDecomposition.getDecomposition();
-    std::cout << "MPI is running with "
-              << std::accumulate(decomposition.begin(), decomposition.end(), 1, std::multiplies<int>()) << " ranks."
-              << std::endl;
+    std::cout << "MPI is running with " << domainDecomposition.getNumberOfSubdomains() << " ranks." << std::endl;
 #else
     std::cout << "MPI is disabled." std::endl;
 #endif

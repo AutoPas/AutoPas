@@ -50,6 +50,10 @@ RegularGridDecomposition::RegularGridDecomposition(const std::array<double, 3> &
 
 RegularGridDecomposition::~RegularGridDecomposition() {}
 
+const int RegularGridDecomposition::getNumberOfSubdomains() {
+  return std::accumulate(_decomposition.begin(), _decomposition.end(), 1, std::multiplies<int>());
+}
+
 void RegularGridDecomposition::update() { updateLocalBox(); }
 
 void RegularGridDecomposition::initializeMPICommunicator() {

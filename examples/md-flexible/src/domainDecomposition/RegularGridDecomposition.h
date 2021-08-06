@@ -82,6 +82,12 @@ class RegularGridDecomposition final : public DomainDecomposition {
   const std::array<int, 3> getDecomposition() { return _decomposition; }
 
   /**
+   * Returns the number of subdomains in the simulation.
+   * @return number of subdomains
+   */
+  const int getNumberOfSubdomains();
+
+  /**
    * Checks if the provided coordinates are located in the local domain.
    * @param coordinates: The coordinates in question.
    * @return true if the coordinates lie inside the local domain, false otherwise.

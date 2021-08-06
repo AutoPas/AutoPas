@@ -190,6 +190,7 @@ class Simulation {
    */
   bool _createVtkFiles;
 
+ private:
   /**
    * Estimates the number of tuning iterations which ocurred during the simulation so far.
    * @return an estimation of the number of tuning iterations which occured so far.
@@ -215,6 +216,12 @@ class Simulation {
   std::string timerToString(const std::string &name, long timeNS, size_t numberWidth, long maxTime);
 
   /**
+   * Calculate the homogeneity of the scenario by using the standard deviation.
+   * @return homogeneity
+   */
+  double calculateHomogeneity() const;
+
+  /**
    * Updates the position of particles in the local AutoPas container.
    */
   void updatePositions();
@@ -235,7 +242,6 @@ class Simulation {
    */
   void updateThermostat();
 
- private:
   /**
    * This simulation's domain decomposition.
    */
@@ -264,13 +270,6 @@ class Simulation {
   long accumulateTime(const long &time);
 
   /**
-   * Logs the times recorded by the timers.
-   * When MPI is enabled it acumulates the times (user time) of all ranks. In this case, the total
-   * time will exceed the wall-clock time.
-   */
-  void logTimers();
-
-  /**
    * Calculates the pairwise forces between particles in the autopas container.
    * @param wasTuningIteration Tells the user if the current iteration of force calculations was a tuning iteration.
    */
@@ -288,4 +287,16 @@ class Simulation {
    * @return
    */
   [[nodiscard]] bool needsMoreIterations() const;
+
+  /**
+   * Logs the number of total/owned/halo particles in the simulation, aswell as the standard deviation of Homogeneity.
+   */
+  void logSimulationState();
+
+  /**
+   * Logs the times recorded by the timers.
+   * When MPI is enabled it acumulates the times (user time) of all ranks. In this case, the total
+   * time will exceed the wall-clock time.
+   */
+  void logMeasurements();
 };

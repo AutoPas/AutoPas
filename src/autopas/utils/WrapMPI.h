@@ -44,6 +44,8 @@ namespace autopas {
 #define AUTOPAS_MPI_UNSIGNED_LONG MPI_UNSIGNED_LONG
 /** Wrapper for MPI_LONG */
 #define AUTOPAS_MPI_LONG MPI_LONG
+/** Wrapper for MPI_DOUBLE */
+#define AUTOPAS_MPI_DOUBLE MPI_DOUBLE
 
 // MPI_Op
 /** Wrapper for MPI_LAND */
@@ -96,7 +98,8 @@ enum AutoPas_MPI_Datatype {
   CHAR = sizeof(char),
   INT = sizeof(int),
   UNSIGNED_LONG = sizeof(unsigned long),
-  LONG = sizeof(double)
+  LONG = sizeof(double),
+  DOUBLE = sizeof(double)
 };
 // MPI_Datatype
 /** Wrapper for MPI_BYTE */
@@ -111,6 +114,8 @@ enum AutoPas_MPI_Datatype {
 #define AUTOPAS_MPI_UNSIGNED_LONG autopas::AutoPas_MPI_Datatype::UNSIGNED_LONG
 /** Wrapper for MPI_LONG */
 #define AUTOPAS_MPI_LONG autopas::AutoPas_MPI_Datatype::LONG
+/** Wrapper for MPI_DOUBLE */
+#define AUTOPAS_MPI_DOUBLE autopas::AutoPas_MPI_Datatype::DOUBLE
 
 /**
  * Dummy for MPI_Op.
