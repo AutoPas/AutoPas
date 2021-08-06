@@ -176,12 +176,6 @@ class Simulation {
   bool _createVtkFiles;
 
   /**
-   * Executes a sequence of  supersteps for the simulation.
-   * @param iterations: The number of iterations which will be simulated during the excution of this function.
-   */
-  void executeSupersteps(const int iterations);
-
-  /**
    * Estimates the number of tuning iterations which ocurred during the simulation so far.
    * @return an estimation of the number of tuning iterations which occured so far.
    */

@@ -35,7 +35,6 @@ int main(int argc, char **argv) {
   simulation.run();
 
   if (domainDecomposition.getDomainIndex() == 0) {
-
     if (configuration.dontCreateEndConfig.value) {
       std::ofstream configFileEnd("MDFlex_end_" + autopas::utils::Timer::getDateStamp() + ".yaml");
       if (configFileEnd.is_open()) {
