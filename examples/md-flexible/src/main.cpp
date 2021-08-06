@@ -44,8 +44,6 @@ int main(int argc, char **argv) {
   simulation.finalize();
 
   if (domainDecomposition.getDomainIndex() == 0) {
-    std::cout << std::endl << "Using " << autopas::autopas_get_max_threads() << " Threads" << std::endl;
-
     if (configuration.dontCreateEndConfig.value) {
       std::ofstream configFileEnd("MDFlex_end_" + autopas::utils::Timer::getDateStamp() + ".yaml");
       if (configFileEnd.is_open()) {

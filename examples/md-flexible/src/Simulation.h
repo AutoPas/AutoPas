@@ -191,12 +191,6 @@ class Simulation {
   bool _createVtkFiles;
 
   /**
-   * Executes a sequence of  supersteps for the simulation.
-   * @param iterations: The number of iterations which will be simulated during the excution of this function.
-   */
-  void executeSupersteps(const int iterations);
-
-  /**
    * Estimates the number of tuning iterations which ocurred during the simulation so far.
    * @return an estimation of the number of tuning iterations which occured so far.
    */
@@ -275,4 +269,23 @@ class Simulation {
    * time will exceed the wall-clock time.
    */
   void logTimers();
+
+  /**
+   * Calculates the pairwise forces between particles in the autopas container.
+   * @param wasTuningIteration Tells the user if the current iteration of force calculations was a tuning iteration.
+   */
+  void calculatePairwiseForces(bool &wasTuningIteration);
+
+  /**
+   * Adds global forces to the particles in the container.
+   * @param globalForce The global force which will be applied to each particle in the container.
+   */
+  void calculateGlobalForces(const std::array<double, 3> &globalForce);
+
+  /**
+   * Indicates if enough iterations were completed yet.
+   * Uses class member variables.
+   * @return
+   */
+  [[nodiscard]] bool needsMoreIterations() const;
 };
