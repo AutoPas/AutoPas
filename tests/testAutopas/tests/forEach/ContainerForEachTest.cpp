@@ -11,7 +11,7 @@
 
 template <typename AutoPasT>
 auto ContainerForEachTest::defaultInit(AutoPasT &autoPas, autopas::ContainerOption &containerOption,
-                                      double cellSizeFactor) {
+                                       double cellSizeFactor) {
   autoPas.setBoxMin({0., 0., 0.});
   autoPas.setBoxMax({10., 10., 10.});
   autoPas.setCutoff(1);
@@ -109,7 +109,7 @@ TEST_P(ContainerForEachTest, testForEach) {
   std::array<double, 3> searchBoxMax = add(autoPas.getBoxMin(), searchBoxLengthHalf);
 
   auto [particleIDsOwned, particleIDsHalo, particleIDsInBoxOwned, particleIDsInBoxHalo] =
-  ForEachTestHelper::fillContainerAroundBoundary(autoPas, searchBoxMin, searchBoxMax);
+      ForEachTestHelper::fillContainerAroundBoundary(autoPas, searchBoxMin, searchBoxMax);
 
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
@@ -146,9 +146,7 @@ TEST_P(ContainerForEachTest, testForEach) {
 
   // actual test
   auto bh = behavior;  // necessary for compiler, behavior not detected as variable
-  auto forEachLambda = [&, bh](auto lambda) {
-    autoPas.forEach(lambda, bh);
-  };
+  auto forEachLambda = [&, bh](auto lambda) { autoPas.forEach(lambda, bh); };
   ForEachTestHelper::findParticles(autoPas, forEachLambda, expectedIDs);
 }
 
@@ -168,6 +166,6 @@ static inline auto getTestableContainerOptions() {
 
 INSTANTIATE_TEST_SUITE_P(Generated, ContainerForEachTest,
                          Combine(ValuesIn(getTestableContainerOptions()), /*cell size factor*/ Values(0.5, 1., 1.5),
-                             /*use const*/ Values(true, false), /*prior force calc*/ Values(true, false),
+                                 /*use const*/ Values(true, false), /*prior force calc*/ Values(true, false),
                                  ValuesIn(autopas::IteratorBehavior::getMostOptions())),
                          ContainerForEachTest::PrintToStringParamName());
