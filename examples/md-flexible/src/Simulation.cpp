@@ -113,9 +113,8 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
   _autoPasContainer->setVerletRebuildFrequency(_configuration.verletRebuildFrequency.value);
   _autoPasContainer->setVerletSkin(_configuration.verletSkinRadius.value);
   _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
-  _autoPasContainer->init();
-
   autopas::Logger::get()->set_level(_configuration.logLevel.value);
+  _autoPasContainer->init();
 
   // @todo: the object generators should only generate particles relevant for the current rank's domain
   for (auto &particle : _configuration.getParticles()) {
@@ -141,21 +140,8 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
 Simulation::~Simulation() { _timers.total.stop(); }
 
 void Simulation::run() {
-  const int iterationsPerSuperstep = _configuration.verletRebuildFrequency.value;
   _timers.simulate.start();
-  for (int i = 0; i < _configuration.iterations.value; i += iterationsPerSuperstep) {
-    executeSupersteps(iterationsPerSuperstep);
-  }
-  _timers.simulate.stop();
-
-  // Record last state of simulation.
-  if (_createVtkFiles) {
-    _vtkWriter->recordTimestep(_iteration, *_autoPasContainer);
-  }
-}
-
-void Simulation::executeSupersteps(const int iterationsPerSuperstep) {
-  for (int i = 0; i < iterationsPerSuperstep && needsMoreIterations(); ++i) {
+  while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
       _timers.vtk.start();
       _vtkWriter->recordTimestep(_iteration, *_autoPasContainer);
@@ -196,6 +182,12 @@ void Simulation::executeSupersteps(const int iterationsPerSuperstep) {
         printProgress(_iteration, maxIterationsEstimate, maxIterationsIsPrecise);
       }
     }
+  }
+  _timers.simulate.stop();
+
+  // Record last state of simulation.
+  if (_createVtkFiles) {
+    _vtkWriter->recordTimestep(_iteration, *_autoPasContainer);
   }
 }
 
@@ -372,7 +364,7 @@ void Simulation::calculatePairwiseForces(bool &wasTuningIteration) {
 
 void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce) {
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel shared(autoPasContainer)
+#pragma omp parallel shared(_autoPasContainer)
 #endif
   for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     particle->addF(globalForce);
