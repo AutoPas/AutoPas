@@ -280,7 +280,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
       _particleList.forEach(forEachLambda);
     } else {
       for (size_t index = 0; index < getCells().size(); index++) {
-        if(!_cellBlock.ignoreCellForIteration(index, behavior)) {
+        if (!_cellBlock.ignoreCellForIteration(index, behavior)) {
           getCells()[index].forEach(forEachLambda, behavior);
         }
       }
