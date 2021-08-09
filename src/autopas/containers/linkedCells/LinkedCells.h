@@ -240,9 +240,17 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
    * @param behavior @see IteratorBehavior
    */
   template <typename Lambda>
-  void forEach(Lambda forEachLambda, IteratorBehavior behavior) {
-    for (auto &cell : this->_cells) {
-      cell.forEach(forEachLambda, behavior);
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHaloOrDummy) {
+    if (behavior == IteratorBehavior::ownedOrHaloOrDummy) {
+      for (auto &cell : getCells()) {
+        cell.forEach(forEachLambda);
+      }
+    } else {
+      for (size_t index = 0; index < getCells().size(); index++) {
+        if (!_cellBlock.ignoreCellForIteration(index, behavior)) {
+          getCells()[index].forEach(forEachLambda, behavior);
+        }
+      }
     }
   }
 
@@ -332,8 +340,10 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
       }
     }
 
-    for (auto cell : cellsOfInterest) {
-      getCells()[cell].forEach(forEachLambda, lowerCorner, higherCorner, behavior);
+    for (auto cellIndex : cellsOfInterest) {
+      if (!_cellBlock.ignoreCellForIteration(cellIndex, behavior)) {
+        getCells()[cellIndex].forEach(forEachLambda, lowerCorner, higherCorner, behavior);
+      }
     }
   }
 

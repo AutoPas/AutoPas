@@ -276,14 +276,13 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHaloOrDummy) {
     if (behavior == IteratorBehavior::ownedOrHaloOrDummy) {
-      //      iterate over all particles, so execute directly on particle vector
+      // iterate over all particles, so execute directly on particle vector
       _particleList.forEach(forEachLambda);
     } else {
-      //      iterate with condition maybe known by cellblock
-      //      TODO lgaertner: use CellBlock3D to check if cell automatically disqualifies because of ownership
-      for (ReferenceCell &cell : this->_cells) {
-        //        _cellBlock.cellCanContainHaloParticles(i)
-        cell.forEach(forEachLambda, behavior);
+      for (size_t index = 0; index < getCells().size(); index++) {
+        if(!_cellBlock.ignoreCellForIteration(index, behavior)) {
+          getCells()[index].forEach(forEachLambda, behavior);
+        }
       }
     }
   }
@@ -371,7 +370,9 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     }
 
     for (size_t index : cellsOfInterest) {
-      getCells()[index].forEach(forEachLambda, lowerCorner, higherCorner, behavior);
+      if (!_cellBlock.ignoreCellForIteration(index, behavior)) {
+        getCells()[index].forEach(forEachLambda, lowerCorner, higherCorner, behavior);
+      }
     }
   }
 
