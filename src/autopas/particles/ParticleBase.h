@@ -232,6 +232,11 @@ class ParticleBase {
                                        floatType /*y*/, floatType /*z*/, floatType /*fx*/, floatType /*fy*/,
                                        floatType /*fz*/, OwnershipState /*ownershipState*/>::Type;
 
+  /**
+   * Non-const getter for the pointer of this object.
+   * @tparam attribute Attribute name.
+   * @return this.
+   */
   template <AttributeNames attribute, std::enable_if_t<attribute == AttributeNames::ptr, bool> = true>
   constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
     return this;

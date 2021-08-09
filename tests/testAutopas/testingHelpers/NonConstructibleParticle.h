@@ -31,6 +31,11 @@ class NonConstructibleParticle : public autopas::Particle {
                                        double /*z*/, double /*fx*/, double /*fy*/, double /*fz*/,
                                        autopas::OwnershipState /*ownershipState*/>::Type;
 
+  /**
+   * Non-const getter for the pointer of this object.
+   * @tparam attribute Attribute name.
+   * @return this.
+   */
   template <AttributeNames attribute, std::enable_if_t<attribute == AttributeNames::ptr, bool> = true>
   constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
     return this;
