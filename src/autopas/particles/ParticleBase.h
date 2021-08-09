@@ -232,17 +232,20 @@ class ParticleBase {
                                        floatType /*y*/, floatType /*z*/, floatType /*fx*/, floatType /*fy*/,
                                        floatType /*fz*/, OwnershipState /*ownershipState*/>::Type;
 
+  template <AttributeNames attribute, std::enable_if_t<attribute == AttributeNames::ptr, bool> = true>
+  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
+    return this;
+  }
+
   /**
    * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).
    * @tparam attribute Attribute name.
    * @return Value of the requested attribute.
    * @note The value of owned is return as floating point number (true = 1.0, false = 0.0).
    */
-  template <AttributeNames attribute>
+  template <AttributeNames attribute, std::enable_if_t<attribute != AttributeNames::ptr, bool> = true>
   constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
-    if constexpr (attribute == AttributeNames::ptr) {
-      return const_cast<typename std::tuple_element<attribute, SoAArraysType>::type::value_type>(this);
-    } else if constexpr (attribute == AttributeNames::id) {
+    if constexpr (attribute == AttributeNames::id) {
       return getID();
     } else if constexpr (attribute == AttributeNames::posX) {
       return getR()[0];

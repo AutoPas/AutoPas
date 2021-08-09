@@ -407,16 +407,19 @@ class SPHParticle : public autopas::Particle {
       autopas::utils::SoAType<SPHParticle *, double, double, double, double, double, double, double, double, double,
                               double, double, double, double, double, double, double, OwnershipState>::Type;
 
+  template <AttributeNames attribute, std::enable_if_t<attribute == AttributeNames::ptr, bool> = true>
+  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
+    return this;
+  }
+
   /**
    * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).
    * @tparam attribute Attribute name.
    * @return Value of the requested attribute.
    */
-  template <AttributeNames attribute>
+  template <AttributeNames attribute, std::enable_if_t<attribute != AttributeNames::ptr, bool> = true>
   constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
-    if constexpr (attribute == AttributeNames::ptr) {
-      return const_cast<typename std::tuple_element<attribute, SoAArraysType>::type::value_type>(this);
-    } else if constexpr (attribute == AttributeNames::mass) {
+    if constexpr (attribute == AttributeNames::mass) {
       return getMass();
     } else if constexpr (attribute == AttributeNames::posX) {
       return getR()[0];
