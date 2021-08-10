@@ -22,3 +22,6 @@ venv/
 *.srctrlbm
 *.srctrldb
 *.srctrlprj
+
+# output files
+*.vtk
