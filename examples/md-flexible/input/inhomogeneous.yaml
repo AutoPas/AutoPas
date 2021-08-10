@@ -1,6 +1,6 @@
 # container                        :  [DirectSum, LinkedCells, VerletLists, VerletListsCells, VerletClusterLists, VarVerletListsAsBuild]
 verlet-rebuild-frequency         :  10
-verlet-skin-radius               :  0.3
+verlet-skin-radius               :  2.0
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 # data-layout                      :  [AoS, SoA]
@@ -19,7 +19,7 @@ cell-size                        :  [1]
 deltaT                           :  0.0005
 iterations                       :  100000
 periodic-boundaries              :  true
-globalForce                      :  [0,0,-14]
+globalForce                      :  [0,0,-12]
 Objects:
   # since md-flex currently has no reflecting boundaries we use walls of particles with infinite (or max double) mass.
   # bottom wall
