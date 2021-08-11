@@ -1,6 +1,6 @@
 # container                        :  [DirectSum, LinkedCells, VerletLists, VerletListsCells, VerletClusterLists, VarVerletListsAsBuild]
-verlet-rebuild-frequency         :  10
-verlet-skin-radius               :  2.0
+verlet-rebuild-frequency         :  2
+verlet-skin-radius               :  0.3
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 # data-layout                      :  [AoS, SoA]
@@ -17,7 +17,7 @@ cutoff                           :  3
 # box-max                          :  [7.25, 7.25, 7.25]
 cell-size                        :  [1]
 deltaT                           :  0.0005
-iterations                       :  100000
+iterations                       :  50000
 periodic-boundaries              :  true
 globalForce                      :  [0,0,-12]
 Objects:
@@ -49,33 +49,33 @@ Objects:
     0:
       particle-spacing           :  1.122462048
       bottomLeftCorner           :  [1, 1, 1]
-      box-length                 :  [200, 100, 3]
+      box-length                 :  [100, 80, 3]
       velocity                   :  [0, 0, 0]
       particle-type              :  1
       particle-epsilon           :  1
       particle-sigma             :  1
       particle-mass              :  1
   Sphere:
-    0:
-      center                     :  [18, 15, 20]
-      radius                     :  4
-      particle-spacing           :  1.122462048
-      velocity                   :  [0, 0, 0]
-      particle-type              :  2
-      particle-epsilon           :  1
-      particle-sigma             :  1
-      particle-mass              :  1
-    1:
-      center                     :  [60, 15, 20]
-      radius                     :  6
-      particle-spacing           :  1.122462048
-      velocity                   :  [0, 0, 0]
-      particle-type              :  2
-      particle-epsilon           :  1
-      particle-sigma             :  1
-      particle-mass              :  1
+    #0:
+    #  center                     :  [18, 15, 20]
+    # radius                     :  4
+    #  particle-spacing           :  1.122462048
+    #  velocity                   :  [0, 0, 0]
+    #  particle-type              :  2
+    #  particle-epsilon           :  1
+    #  particle-sigma             :  1
+    #  particle-mass              :  1
+    #1:
+    #  center                     :  [60, 15, 20]
+    #  radius                     :  6
+    #  particle-spacing           :  1.122462048
+    #  velocity                   :  [0, 0, 0]
+    #  particle-type              :  2
+    #  particle-epsilon           :  1
+    #  particle-sigma             :  1
+    #  particle-mass              :  1
     2:
-      center                     :  [160, 70, 60]
+      center                     :  [40, 20, 60]
       radius                     :  6
       particle-spacing           :  1.122462048
       velocity                   :  [0, 0, 0]
@@ -84,7 +84,7 @@ Objects:
       particle-sigma             :  1
       particle-mass              :  1
     3:
-      center                     :  [100, 50, 80]
+      center                     :  [60, 40, 80]
       radius                     :  20
       particle-spacing           :  1.122462048
       velocity                   :  [0, 0, 0]
