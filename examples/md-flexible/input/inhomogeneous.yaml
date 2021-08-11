@@ -1,5 +1,5 @@
 # container                        :  [DirectSum, LinkedCells, VerletLists, VerletListsCells, VerletClusterLists, VarVerletListsAsBuild]
-verlet-rebuild-frequency         :  2
+verlet-rebuild-frequency         :  4
 verlet-skin-radius               :  0.3
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
@@ -12,7 +12,7 @@ tuning-samples                   :  3
 tuning-max-evidence              :  10
 functor                          :  Lennard-Jones (12-6)
 newton3                          :  [disabled, enabled]
-cutoff                           :  3
+cutoff                           :  2
 # box-min                          :  [0, 0, 0]
 # box-max                          :  [7.25, 7.25, 7.25]
 cell-size                        :  [1]
@@ -25,7 +25,7 @@ Objects:
   # bottom wall
   CubeGrid:
     0:
-      particles-per-dimension    :  [51, 31, 1]
+      particles-per-dimension    :  [101, 81, 1]
       particle-spacing           :  1
       bottomLeftCorner           :  [0, 0, 0]
       velocity                   :  [0, 0, 0]
@@ -49,7 +49,7 @@ Objects:
     0:
       particle-spacing           :  1.122462048
       bottomLeftCorner           :  [1, 1, 1]
-      box-length                 :  [100, 80, 3]
+      box-length                 :  [98, 78, 3]
       velocity                   :  [0, 0, 0]
       particle-type              :  1
       particle-epsilon           :  1
