@@ -75,7 +75,7 @@ Objects:
     #  particle-sigma             :  1
     #  particle-mass              :  1
     2:
-      center                     :  [40, 20, 60]
+      center                     :  [40, 20, 20]
       radius                     :  6
       particle-spacing           :  1.122462048
       velocity                   :  [0, 0, 0]
@@ -84,7 +84,7 @@ Objects:
       particle-sigma             :  1
       particle-mass              :  1
     3:
-      center                     :  [60, 40, 80]
+      center                     :  [60, 40, 30]
       radius                     :  20
       particle-spacing           :  1.122462048
       velocity                   :  [0, 0, 0]
