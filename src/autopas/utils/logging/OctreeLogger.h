@@ -58,20 +58,21 @@ class OctreeLogger {
 
     // Open the VTK file
     // @todo Make shouldWrite dependent on the vtk-write-frequency
+    int unsigned writeFrequency = 50;
     bool shouldWrite;
     char filename[256] = {0};
     switch (type) {
       case Octree<Particle>::CellTypes::OWNED:
         snprintf(filename, sizeof(filename), "octree_owned_%d.vtk", ownedIteration);
-        shouldWrite = (ownedIteration++ % 50) == 0;
+        shouldWrite = (ownedIteration++ % writeFrequency) == 0;
         break;
       case Octree<Particle>::CellTypes::HALO:
         snprintf(filename, sizeof(filename), "octree_halo_%d.vtk", haloIteration);
-        shouldWrite = (haloIteration++ % 50) == 0;
+        shouldWrite = (haloIteration++ % writeFrequency) == 0;
         break;
       default:
         snprintf(filename, sizeof(filename), "octree_%d.vtk", iteration);
-        shouldWrite = (iteration++ % 50) == 0;
+        shouldWrite = (iteration++ % writeFrequency) == 0;
         break;
     }
 
