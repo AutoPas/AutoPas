@@ -218,7 +218,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
    * @return
    */
   [[nodiscard]] std::vector<Particle> collectLeavingParticlesAndMarkHaloAsDummy() {
-    utils::ExceptionHandler::exception("Not yet implemented!");
+    utils::ExceptionHandler::exception("LinkedCells::collectLeavingParticlesAndMarkHaloAsDummy() not yet implemented!");
     return {};
   }
 
