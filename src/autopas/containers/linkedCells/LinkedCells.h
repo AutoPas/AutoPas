@@ -158,7 +158,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     traversal->endTraversal();
   }
 
-  [[nodiscard]] std::vector<ParticleType> updateContainer() override {
+  [[nodiscard]] std::vector<ParticleType> updateContainer(bool keepNeighborListsValid) override {
     this->deleteHaloParticles();
 
     std::vector<ParticleType> invalidParticles;
@@ -210,6 +210,16 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
       }
     }
     return invalidParticles;
+  }
+
+  /**
+   * Collects leaving particles and mark halo particles as dummy.
+   * @note This function does not move or actually delete any particles!
+   * @return
+   */
+  [[nodiscard]] std::vector<Particle> collectLeavingParticlesAndMarkHaloAsDummy() {
+    utils::ExceptionHandler::exception("Not yet implemented!");
+    return {};
   }
 
   /**

@@ -14,11 +14,14 @@
 #include "autopas/particles/Particle.h"
 #include "testingHelpers/commonTypedefs.h"
 
-template <class LinkedCellsType>
+template <class TestingType>
 class LinkedCellsTest : public AutoPasTestBase {
  public:
+  using LinkedCellsType = std::tuple_element_t<0, TestingType>;
+  using keepListsValid = std::tuple_element_t<1, TestingType>;
   LinkedCellsTest() : _linkedCells({0., 0., 0.}, {10., 10., 10.}, 1., 0., 1.) {}
 
  protected:
   LinkedCellsType _linkedCells;
+  bool _keepListsValid{keepListsValid()};
 };

@@ -144,6 +144,8 @@ class AutoPas {
    * close enough to the domain (at most cutoff + skin/2)
    *
    * @param haloParticle particle to be added or updated
+   *
+   * @todo: rename to addHaloParticle!
    */
   void addOrUpdateHaloParticle(const Particle &haloParticle);
 

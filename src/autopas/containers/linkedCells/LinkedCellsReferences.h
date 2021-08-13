@@ -192,7 +192,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     traversal->endTraversal();
   }
 
-  std::vector<ParticleType> updateContainer() override {
+  std::vector<ParticleType> updateContainer(bool keepNeighborListsValid) override {
     this->deleteHaloParticles();
 
     std::vector<ParticleType> invalidParticles;

@@ -9,8 +9,7 @@
 TYPED_TEST_SUITE_P(LinkedCellsTest);
 
 TYPED_TEST_P(LinkedCellsTest, testUpdateContainer) {
-  using LinkedCellsType = TypeParam;
-  LinkedCellsType linkedCells({0., 0., 0.}, {3., 3., 3.}, 1., 0., 1.);
+  decltype(this->_linkedCells) linkedCells({0., 0., 0.}, {3., 3., 3.}, 1., 0., 1.);
 
   autopas::Particle p1({0.5, 0.5, 0.5}, {0, 0, 0}, 0);
   autopas::Particle p2({1.5, 1.5, 1.5}, {0, 0, 0}, 1);
@@ -49,7 +48,7 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainer) {
   linkedCells.getCells()[62].begin()->setR({2.5, 1.5, 0.5});
   linkedCells.getCells()[63].begin()->setR({-0.5, -0.5, -0.5});
   linkedCells.getCells()[93].begin()->setR({1.6, 0.5, 0.5});
-  auto invalidParticles = linkedCells.updateContainer();
+  auto invalidParticles = linkedCells.updateContainer(this->_keepListsValid);
 
   ASSERT_EQ(invalidParticles.size(), 1);
   EXPECT_EQ(invalidParticles[0].getID(), 3);
@@ -106,7 +105,7 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainerCloseToBoundary) {
   }
 
   // now update the container!
-  auto invalidParticles = this->_linkedCells.updateContainer();
+  auto invalidParticles = this->_linkedCells.updateContainer(this->_keepListsValid);
 
   // the particles should no longer be in the inner cells!
   for (auto iter = this->_linkedCells.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
@@ -122,5 +121,8 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainerCloseToBoundary) {
 
 REGISTER_TYPED_TEST_SUITE_P(LinkedCellsTest, testUpdateContainer, testUpdateContainerCloseToBoundary);
 
-using MyTypes = ::testing::Types<autopas::LinkedCells<Particle>, autopas::LinkedCellsReferences<Particle>>;
+using MyTypes = ::testing::Types<std::tuple<autopas::LinkedCells<Particle>, std::true_type>,
+                                 std::tuple<autopas::LinkedCells<Particle>, std::false_type>,
+                                 std::tuple<autopas::LinkedCellsReferences<Particle>, std::true_type>,
+                                 std::tuple<autopas::LinkedCellsReferences<Particle>, std::false_type> >;
 INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, LinkedCellsTest, MyTypes);

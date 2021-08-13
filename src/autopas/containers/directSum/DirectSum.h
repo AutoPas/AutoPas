@@ -109,7 +109,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     traversal->endTraversal();
   }
 
-  [[nodiscard]] std::vector<ParticleType> updateContainer() override {
+  [[nodiscard]] std::vector<ParticleType> updateContainer(bool keepNeighborListsValid) override {
     // first we delete halo particles, as we don't want them here.
     deleteHaloParticles();
     getCell().deleteDummyParticles();

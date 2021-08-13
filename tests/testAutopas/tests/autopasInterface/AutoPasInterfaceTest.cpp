@@ -93,20 +93,20 @@ auto identifyAndSendHaloParticles(autopas::AutoPas<Molecule> &autoPas) {
           // The search domain has to be enlarged as the position of the particles is not certain.
           bool needsShift = false;
           if (direction[dim] == -1) {
-            min[dim] = autoPas.getBoxMin()[dim] - skin;
-            max[dim] = autoPas.getBoxMin()[dim] + cutoff + skin;
+            min[dim] = autoPas.getBoxMin()[dim];
+            max[dim] = autoPas.getBoxMin()[dim] + cutoff;
             if (autoPas.getBoxMin()[dim] == boxMin[dim]) {
               needsShift = true;
             }
           } else if (direction[dim] == 1) {
-            min[dim] = autoPas.getBoxMax()[dim] - cutoff - skin;
-            max[dim] = autoPas.getBoxMax()[dim] + skin;
+            min[dim] = autoPas.getBoxMax()[dim] - cutoff;
+            max[dim] = autoPas.getBoxMax()[dim];
             if (autoPas.getBoxMax()[dim] == boxMax[dim]) {
               needsShift = true;
             }
           } else {  // 0
-            min[dim] = autoPas.getBoxMin()[dim] - skin;
-            max[dim] = autoPas.getBoxMax()[dim] + skin;
+            min[dim] = autoPas.getBoxMin()[dim];
+            max[dim] = autoPas.getBoxMax()[dim];
           }
           if (needsShift) {
             shiftVec[dim] = -(boxMax[dim] - boxMin[dim]) * direction[dim];
@@ -150,15 +150,17 @@ void doSimulationLoop(autopas::AutoPas<Molecule> &autoPas, Functor *functor) {
   // 1. update Container; return value is vector of invalid == leaving particles!
   auto [invalidParticles, updated] = autoPas.updateContainer();
 
-  if (updated) {
-    // 2. leaving and entering particles
-    const auto &sendLeavingParticles = invalidParticles;
-    // 2b. get+add entering particles (addParticle)
-    const auto &enteringParticles = convertToEnteringParticles(sendLeavingParticles);
-    auto numAdded = addEnteringParticles(autoPas, enteringParticles);
+  // linked cells interface should ALWAYS update!
+  ASSERT_TRUE(updated);
 
-    EXPECT_EQ(numAdded, enteringParticles.size());
-  }
+  // 2. leaving and entering particles
+  const auto &sendLeavingParticles = invalidParticles;
+  // 2b. get+add entering particles (addParticle)
+  const auto &enteringParticles = convertToEnteringParticles(sendLeavingParticles);
+  auto numAdded = addEnteringParticles(autoPas, enteringParticles);
+
+  EXPECT_EQ(numAdded, enteringParticles.size());
+
   // 3. halo particles
   // 3a. identify and send inner particles that are in the halo of other autopas instances or itself.
   auto sendHaloParticles = identifyAndSendHaloParticles(autoPas);
@@ -178,24 +180,25 @@ void doSimulationLoop(autopas::AutoPas<Molecule> &autoPas1, autopas::AutoPas<Mol
   auto [invalidParticles1, updated1] = autoPas1.updateContainer();
   auto [invalidParticles2, updated2] = autoPas2.updateContainer();
 
-  ASSERT_EQ(updated1, updated2);
-  if (updated1) {
-    // 2. leaving and entering particles
-    const auto &sendLeavingParticles1 = invalidParticles1;
-    const auto &sendLeavingParticles2 = invalidParticles2;
-    // 2b. get+add entering particles (addParticle)
-    const auto &enteringParticles2 = convertToEnteringParticles(sendLeavingParticles1);
-    const auto &enteringParticles1 = convertToEnteringParticles(sendLeavingParticles2);
+  ASSERT_TRUE(updated1);
+  ASSERT_TRUE(updated2);
 
-    // the particles may either still be in the same container (just going over periodic boundaries) or in the other.
-    size_t numAdded = 0;
-    numAdded += addEnteringParticles(autoPas1, enteringParticles1);
-    numAdded += addEnteringParticles(autoPas1, enteringParticles2);
-    numAdded += addEnteringParticles(autoPas2, enteringParticles1);
-    numAdded += addEnteringParticles(autoPas2, enteringParticles2);
+  // 2. leaving and entering particles
+  const auto &sendLeavingParticles1 = invalidParticles1;
+  const auto &sendLeavingParticles2 = invalidParticles2;
+  // 2b. get+add entering particles (addParticle)
+  const auto &enteringParticles2 = convertToEnteringParticles(sendLeavingParticles1);
+  const auto &enteringParticles1 = convertToEnteringParticles(sendLeavingParticles2);
 
-    ASSERT_EQ(numAdded, enteringParticles1.size() + enteringParticles2.size());
-  }
+  // the particles may either still be in the same container (just going over periodic boundaries) or in the other.
+  size_t numAdded = 0;
+  numAdded += addEnteringParticles(autoPas1, enteringParticles1);
+  numAdded += addEnteringParticles(autoPas1, enteringParticles2);
+  numAdded += addEnteringParticles(autoPas2, enteringParticles1);
+  numAdded += addEnteringParticles(autoPas2, enteringParticles2);
+
+  ASSERT_EQ(numAdded, enteringParticles1.size() + enteringParticles2.size());
+
   // 3. halo particles
   // 3a. identify and send inner particles that are in the halo of other autopas instances or itself.
   auto sendHaloParticles1 = identifyAndSendHaloParticles(autoPas1);

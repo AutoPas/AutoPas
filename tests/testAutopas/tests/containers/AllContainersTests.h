@@ -10,13 +10,14 @@
 #include "autopas/selectors/ContainerSelector.h"
 #include "testingHelpers/commonTypedefs.h"
 
-using ParamType = autopas::ContainerOption;
+using ParamType = std::tuple<autopas::ContainerOption, bool /**/>;
 
 class AllContainersTests : public AutoPasTestBase, public ::testing::WithParamInterface<ParamType> {
  public:
   static auto getParamToStringFunction() {
     static const auto paramToString = [](const testing::TestParamInfo<ParamType> &info) {
-      return info.param.to_string();
+      auto [containerOption, keepListValid] = info.param;
+      return containerOption.to_string() + "_" + (keepListValid ? "keepListsValid" : "allowListInvalidation");
     };
     return paramToString;
   }
@@ -27,7 +28,7 @@ class AllContainersTests : public AutoPasTestBase, public ::testing::WithParamIn
 
   template <class ParticleType = autopas::Particle>
   auto getInitializedContainer() {
-    auto containerOptionToTest = GetParam();
+    auto containerOptionToTest = std::get<0>(GetParam());
     double cutoff = 1;
     double skin = 0.2;
     double cellSizeFactor = 1;

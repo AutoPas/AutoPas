@@ -148,7 +148,8 @@ class AutoTuner {
    * @return true if this was a tuning iteration.
    */
   template <class PairwiseFunctor>
-  bool iteratePairwise(PairwiseFunctor *f, bool doListRebuild);
+  bool iteratePairwise(PairwiseFunctor *f, bool doListRebuild, std::vector<Particle> &additionalParticleVector,
+                       std::vector<Particle> &additionalHaloParticleVector);
 
   /**
    * Returns whether the configuration will be changed in the next iteration.
@@ -187,7 +188,9 @@ class AutoTuner {
   void selectCurrentContainer();
 
   template <class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, bool inTuningPhase>
-  void iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool doListRebuild);
+  void iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool doListRebuild,
+                                     std::vector<Particle> &additionalParticleVector,
+                                     std::vector<Particle> &additionalHaloParticleVector);
 
   /**
    * Tune available algorithm configurations.
@@ -267,7 +270,9 @@ void AutoTuner<Particle>::forceRetune() {
 
 template <class Particle>
 template <class PairwiseFunctor>
-bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild) {
+bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild,
+                                          std::vector<Particle>& additionalParticleVector,
+                                          std::vector<Particle>& additionalHaloParticleVector) {
   bool isTuning = false;
   // tune if :
   // - more than one config exists
@@ -287,18 +292,22 @@ bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild
       if (_tuningStrategy->getCurrentConfiguration().newton3 == Newton3Option::enabled) {
         if (isTuning) {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::aos, /*Newton3*/ true,
-                                        /*tuning*/ true>(f, doListRebuild);
+                                        /*tuning*/ true>(f, doListRebuild, additionalParticleVector,
+                                                         additionalHaloParticleVector);
         } else {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::aos, /*Newton3*/ true,
-                                        /*tuning*/ false>(f, doListRebuild);
+                                        /*tuning*/ false>(f, doListRebuild, additionalParticleVector,
+                                                          additionalHaloParticleVector);
         }
       } else {
         if (isTuning) {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::aos, /*Newton3*/ false,
-                                        /*tuning*/ true>(f, doListRebuild);
+                                        /*tuning*/ true>(f, doListRebuild, additionalParticleVector,
+                                                         additionalHaloParticleVector);
         } else {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::aos, /*Newton3*/ false,
-                                        /*tuning*/ false>(f, doListRebuild);
+                                        /*tuning*/ false>(f, doListRebuild, additionalParticleVector,
+                                                          additionalHaloParticleVector);
         }
       }
       break;
@@ -307,18 +316,22 @@ bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild
       if (_tuningStrategy->getCurrentConfiguration().newton3 == Newton3Option::enabled) {
         if (isTuning) {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::soa, /*Newton3*/ true,
-                                        /*tuning*/ true>(f, doListRebuild);
+                                        /*tuning*/ true>(f, doListRebuild, additionalParticleVector,
+                                                         additionalHaloParticleVector);
         } else {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::soa, /*Newton3*/ true,
-                                        /*tuning*/ false>(f, doListRebuild);
+                                        /*tuning*/ false>(f, doListRebuild, additionalParticleVector,
+                                                          additionalHaloParticleVector);
         }
       } else {
         if (isTuning) {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::soa, /*Newton3*/ false,
-                                        /*tuning*/ true>(f, doListRebuild);
+                                        /*tuning*/ true>(f, doListRebuild, additionalParticleVector,
+                                                         additionalHaloParticleVector);
         } else {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::soa, /*Newton3*/ false,
-                                        /*tuning*/ false>(f, doListRebuild);
+                                        /*tuning*/ false>(f, doListRebuild, additionalParticleVector,
+                                                          additionalHaloParticleVector);
         }
       }
       break;
@@ -335,9 +348,37 @@ bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild
   return isTuning;
 }
 
+template <bool newton3, class Particle, class T, class PairwiseFunctor>
+void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<Particle> &additionalParticleVector,
+                          std::vector<Particle> &additionalHaloParticleVector) {
+  // 1. _additionalParticleVector with all close particles in container
+  for (auto &&p : additionalParticleVector) {
+    auto pos = p.getR();
+    auto min = autopas::utils::ArrayMath::subScalar(pos, containerPtr->getCutoff());
+    auto max = autopas::utils::ArrayMath::addScalar(pos, containerPtr->getCutoff());
+    for (auto iter2 = containerPtr->getRegionIterator(min, max, IteratorBehavior::ownedOrHalo); iter2.isValid();
+         ++iter2) {
+      if (newton3) {
+        f->AoSFunctor(p, *iter2, true);
+      } else {
+        f->AoSFunctor(p, *iter2, false);
+        f->AoSFunctor(*iter2, p, false);
+      }
+    }
+  }
+
+  // 2. _additionalHaloParticleVector with owned, close particles in container
+
+  // 3. _additionalParticleVector with itself
+
+  // 4. _additionalParticleVector with _additionalHaloParticleVector
+}
+
 template <class Particle>
 template <class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, bool inTuningPhase>
-void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool doListRebuild) {
+void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool doListRebuild,
+                                                        std::vector<Particle> &additionalParticleVector,
+                                                        std::vector<Particle> &additionalHaloParticleVector) {
   auto containerPtr = getContainer();
   AutoPasLog(debug, "Iterating with configuration: {} tuning: {}",
              _tuningStrategy->getCurrentConfiguration().toString(), inTuningPhase ? "true" : "false");
@@ -373,6 +414,8 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
   }
   timerIteratePairwise.start();
   containerPtr->iteratePairwise(traversal.get());
+
+  doRemainderTraversal<useNewton3>(f, containerPtr, additionalParticleVector, additionalHaloParticleVector);
   timerIteratePairwise.stop();
   f->endTraversal(useNewton3);
 

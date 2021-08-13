@@ -8,7 +8,9 @@
 
 #include <gtest/gtest.h>
 
-INSTANTIATE_TEST_SUITE_P(Generated, AllContainersTests, testing::ValuesIn(autopas::ContainerOption::getAllOptions()),
+INSTANTIATE_TEST_SUITE_P(Generated, AllContainersTests,
+                         ::testing::Combine(::testing::ValuesIn(autopas::ContainerOption::getAllOptions()),
+                                            ::testing::Bool()),
                          AllContainersTests::getParamToStringFunction());
 
 /**
@@ -138,7 +140,7 @@ TEST_P(AllContainersTests, testUpdateContainerHalo) {
   EXPECT_EQ(container->getNumParticles(), 1);
   EXPECT_EQ(container->begin()->getID(), 42);
 
-  auto invalidParticles = container->updateContainer();
+  auto invalidParticles = container->updateContainer(std::get<1>(GetParam()));
 
   // no particle should be returned
   EXPECT_EQ(invalidParticles.size(), 0);
@@ -190,7 +192,7 @@ void AllContainersTests::testUpdateContainerDeletesDummy(bool previouslyOwned) {
   }
 
   // This should remove the dummy particle(s), while not returning it as invalid particle.
-  auto invalidParticles = container->updateContainer();
+  auto invalidParticles = container->updateContainer(std::get<1>(GetParam()));
 
   // No particle should be returned
   EXPECT_EQ(invalidParticles.size(), 0);

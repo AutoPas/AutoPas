@@ -117,7 +117,7 @@ void AutoPas<Particle>::addParticle(const Particle &p) {
 
 template <class Particle>
 std::pair<std::vector<Particle>, bool> AutoPas<Particle>::updateContainer(bool forced) {
-  return _logicHandler->updateContainer(forced);
+  return std::make_pair(_logicHandler->updateContainer(forced), true);
 }
 
 template <class Particle>
@@ -135,7 +135,7 @@ void AutoPas<Particle>::forceRetune() {
 
 template <class Particle>
 void AutoPas<Particle>::addOrUpdateHaloParticle(const Particle &haloParticle) {
-  _logicHandler->addOrUpdateHaloParticle(haloParticle);
+  _logicHandler->addHaloParticle(haloParticle);
 }
 
 template <class Particle>

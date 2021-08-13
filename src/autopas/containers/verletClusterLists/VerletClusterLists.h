@@ -9,8 +9,8 @@
 #include <cmath>
 
 #include "autopas/cells/FullParticleCell.h"
-#include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/CompatibleTraversals.h"
+#include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/containers/ParticleDeletedObserver.h"
 #include "autopas/containers/UnknowingCellBorderAndFlagManager.h"
 #include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
@@ -217,7 +217,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   /**
    * @copydoc VerletLists::updateContainer()
    */
-  [[nodiscard]] std::vector<Particle> updateContainer() override {
+  [[nodiscard]] std::vector<Particle> updateContainer(bool keepNeighborListsValid) override {
     // First delete all halo particles.
     this->deleteHaloParticles();
     // Delete dummy particles.
