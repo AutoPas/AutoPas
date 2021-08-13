@@ -10,6 +10,7 @@
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/CompatibleTraversals.h"
+#include "autopas/containers/LeavingParticleCollector.h"
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/containers/ParticleDeletedObserver.h"
 #include "autopas/containers/UnknowingCellBorderAndFlagManager.h"
@@ -218,6 +219,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @copydoc VerletLists::updateContainer()
    */
   [[nodiscard]] std::vector<Particle> updateContainer(bool keepNeighborListsValid) override {
+    if (keepNeighborListsValid) {
+      return autopas::LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);
+    }
     // First delete all halo particles.
     this->deleteHaloParticles();
     // Delete dummy particles.

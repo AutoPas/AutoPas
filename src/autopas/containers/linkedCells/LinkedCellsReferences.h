@@ -10,6 +10,7 @@
 #include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/CellBlock3D.h"
 #include "autopas/containers/CompatibleTraversals.h"
+#include "autopas/containers/LeavingParticleCollector.h"
 #include "autopas/containers/LoadEstimators.h"
 #include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
 #include "autopas/containers/linkedCells/ParticleVector.h"
@@ -193,6 +194,9 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   }
 
   std::vector<ParticleType> updateContainer(bool keepNeighborListsValid) override {
+    if (keepNeighborListsValid) {
+      return autopas::LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);
+    }
     this->deleteHaloParticles();
 
     std::vector<ParticleType> invalidParticles;

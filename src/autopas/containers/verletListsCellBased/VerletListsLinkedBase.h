@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "autopas/containers/LeavingParticleCollector.h"
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/utils/ArrayMath.h"
@@ -96,13 +97,11 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    * @note This function invalidates the neighbor lists.
    */
   [[nodiscard]] std::vector<Particle> updateContainer(bool keepNeighborListsValid) override {
-    AutoPasLog(debug, "updating container");
-    _neighborListIsValid = false;
-    if(keepNeighborListsValid) {
-      return _linkedCells.collectLeavingParticlesAndMarkHaloAsDummy();
-    }else{
-      return _linkedCells.updateContainer(false);
+    if (keepNeighborListsValid) {
+      return autopas::LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(_linkedCells);
     }
+    _neighborListIsValid = false;
+    return _linkedCells.updateContainer(false);
   }
 
   /**

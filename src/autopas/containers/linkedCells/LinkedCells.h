@@ -11,6 +11,7 @@
 #include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/CellBlock3D.h"
 #include "autopas/containers/CompatibleTraversals.h"
+#include "autopas/containers/LeavingParticleCollector.h"
 #include "autopas/containers/LoadEstimators.h"
 #include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCTraversalInterface.h"
@@ -159,6 +160,10 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
   }
 
   [[nodiscard]] std::vector<ParticleType> updateContainer(bool keepNeighborListsValid) override {
+    if (keepNeighborListsValid) {
+      return autopas::LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);
+    }
+
     this->deleteHaloParticles();
 
     std::vector<ParticleType> invalidParticles;
@@ -210,16 +215,6 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
       }
     }
     return invalidParticles;
-  }
-
-  /**
-   * Collects leaving particles and mark halo particles as dummy.
-   * @note This function does not move or actually delete any particles!
-   * @return
-   */
-  [[nodiscard]] std::vector<Particle> collectLeavingParticlesAndMarkHaloAsDummy() {
-    utils::ExceptionHandler::exception("LinkedCells::collectLeavingParticlesAndMarkHaloAsDummy() not yet implemented!");
-    return {};
   }
 
   /**
