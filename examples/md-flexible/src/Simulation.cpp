@@ -141,6 +141,7 @@ Simulation::~Simulation() { _timers.total.stop(); }
 
 void Simulation::run() {
   _timers.simulate.start();
+
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
       _timers.vtk.start();
@@ -148,23 +149,33 @@ void Simulation::run() {
       _timers.vtk.stop();
     }
 
-    updatePositions();
+    if (_configuration.deltaT.value != 0) {
+      if (!_configuration.periodic.value) {
+        throw std::runtime_error(
+            "Simulation::simulate(): at least one boundary condition has to be set. Please enable the periodic "
+            "boundary conditions!");
+      }
 
-    _domainDecomposition.exchangeMigratingParticles(_autoPasContainer);
-    _domainDecomposition.exchangeHaloParticles(_autoPasContainer);
+      updatePositions();
+
+      _domainDecomposition.exchangeMigratingParticles(_autoPasContainer);
+
+      _domainDecomposition.exchangeHaloParticles(_autoPasContainer);
+    }
 
     updateForces();
+
+    if (_configuration.deltaT.value != 0) {
+      updateVelocities();
+      updateThermostat();
+    }
+
+    ++_iteration;
 
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Current Memory usage on rank " << _domainDecomposition.getDomainIndex() << ": "
                 << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
     }
-
-    updateVelocities();
-
-    updateThermostat();
-
-    ++_iteration;
 
     if (_domainDecomposition.getDomainIndex() == 0) {
       auto [maxIterationsEstimate, maxIterationsIsPrecise] = estimateNumberOfIterations();
