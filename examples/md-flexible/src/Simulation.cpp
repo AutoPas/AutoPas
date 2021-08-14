@@ -141,6 +141,7 @@ Simulation::~Simulation() { _timers.total.stop(); }
 
 void Simulation::run() {
   _timers.simulate.start();
+
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
       _timers.vtk.start();
@@ -148,37 +149,46 @@ void Simulation::run() {
       _timers.vtk.stop();
     }
 
-    _timers.work.start();
-    updatePositions();
-    auto [emigrants, updated] =
-        _autoPasContainer->updateContainer(_iteration % _configuration.verletRebuildFrequency.value == 0);
-    _domainDecomposition.exchangeMigratingParticles(_autoPasContainer, emigrants, updated);
+    if (_configuration.deltaT.value != 0) {
+      if (!_configuration.periodic.value) {
+        throw std::runtime_error(
+            "Simulation::simulate(): at least one boundary condition has to be set. Please enable the periodic "
+            "boundary conditions!");
+      }
 
-    if (updated) {
-      _timers.work.stop();
-      _domainDecomposition.update(_timers.work.getTotalTime());
-      auto emigrants =
-          _autoPasContainer->resizeBox(_domainDecomposition.getLocalBoxMin(), _domainDecomposition.getLocalBoxMax());
-      _domainDecomposition.exchangeMigratingParticles(_autoPasContainer, emigrants, true);
-      _timers.work.reset();
       _timers.work.start();
+      updatePositions();
+      auto [emigrants, updated] =
+          _autoPasContainer->updateContainer(_iteration % _configuration.verletRebuildFrequency.value == 0);
+      _domainDecomposition.exchangeMigratingParticles(_autoPasContainer, emigrants, updated);
+
+      if (updated) {
+        _timers.work.stop();
+        _domainDecomposition.update(_timers.work.getTotalTime());
+        auto emigrants =
+            _autoPasContainer->resizeBox(_domainDecomposition.getLocalBoxMin(), _domainDecomposition.getLocalBoxMax());
+        _domainDecomposition.exchangeMigratingParticles(_autoPasContainer, emigrants, true);
+        _timers.work.reset();
+        _timers.work.start();
+      }
+
+      _domainDecomposition.exchangeHaloParticles(_autoPasContainer);
     }
 
-    _domainDecomposition.exchangeHaloParticles(_autoPasContainer);
-
     updateForces();
+
+    if (_configuration.deltaT.value != 0) {
+      updateVelocities();
+      updateThermostat();
+    }
+    _timers.work.stop();
+
+    ++_iteration;
 
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Current Memory usage on rank " << _domainDecomposition.getDomainIndex() << ": "
                 << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
     }
-
-    updateVelocities();
-
-    updateThermostat();
-    _timers.work.stop();
-
-    ++_iteration;
 
     if (_domainDecomposition.getDomainIndex() == 0) {
       auto [maxIterationsEstimate, maxIterationsIsPrecise] = estimateNumberOfIterations();
