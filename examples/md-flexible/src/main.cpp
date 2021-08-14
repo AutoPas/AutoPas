@@ -22,13 +22,13 @@ int main(int argc, char **argv) {
   autopas::AutoPas_MPI_Init(&argc, &argv);
 
   MDFlexConfig configuration(argc, argv);
-  std::cout << configuration.to_string() << std::endl;
 
   RegularGridDecomposition domainDecomposition(configuration.boxMin.value, configuration.boxMax.value,
                                                configuration.subdivideDimension.value, configuration.cutoff.value,
                                                configuration.verletSkinRadius.value);
 
   if (domainDecomposition.getDomainIndex() == 0) {
+    std::cout << configuration.to_string() << std::endl;
     std::cout << std::endl << "Using " << autopas::autopas_get_max_threads() << " Threads" << std::endl;
   }
 
@@ -36,8 +36,6 @@ int main(int argc, char **argv) {
   simulation.run();
 
   if (domainDecomposition.getDomainIndex() == 0) {
-    std::cout << std::endl << "Using " << autopas::autopas_get_max_threads() << " Threads" << std::endl;
-
     if (configuration.dontCreateEndConfig.value) {
       std::ofstream configFileEnd("MDFlex_end_" + autopas::utils::Timer::getDateStamp() + ".yaml");
       if (configFileEnd.is_open()) {

@@ -85,54 +85,55 @@ TEST_F(TimeDiscretizationTest, testCalculatePositions) {
   }
 }
 
-// @todo: Implement forces tests
+// @todo: move tests to new class SimulationTest.cpp -> Issue #641
+// https://github.com/AutoPas/AutoPas/issues/641
 
-TEST_F(TimeDiscretizationTest, calculatePairwiseForces) {
-  auto autoPas = std::make_shared<autopas::AutoPas<Molecule>>();
-  fillWithParticlesAndInit(*autoPas);
+// TEST_F(TimeDiscretizationTest, calculatePairwiseForces) {
+//   auto autoPas = std::make_shared<autopas::AutoPas<Molecule>>();
+//   fillWithParticlesAndInit(*autoPas);
 
-  ParticlePropertiesLibraryType particlePropertiesLibrary = ParticlePropertiesLibraryType(3.0);
-  particlePropertiesLibrary.addType(0, 4.0, 4.0, 4.0);
-  particlePropertiesLibrary.calculateMixingCoefficients();
+//   ParticlePropertiesLibraryType particlePropertiesLibrary = ParticlePropertiesLibraryType(3.0);
+//   particlePropertiesLibrary.addType(0, 4.0, 4.0, 4.0);
+//   particlePropertiesLibrary.calculateMixingCoefficients();
 
-  bool wasTuningIteration = false;
+//   bool wasTuningIteration = false;
 
-  TimeDiscretization::calculatePairwiseForces(*autoPas, particlePropertiesLibrary, 0.1,
-                                              MDFlexConfig::FunctorOption::lj12_6, wasTuningIteration);
+//   TimeDiscretization::calculatePairwiseForces(*autoPas, particlePropertiesLibrary, 0.1,
+//                                               MDFlexConfig::FunctorOption::lj12_6, wasTuningIteration);
 
-  const std::vector<std::array<double, 3>> expectedForces = {
-      {-3.22083e+09, -3.22083e+09, -3.22083e+09}, {3.22083e+09, -3.22083e+09, -3.22083e+09},
-      {-3.22083e+09, 3.22083e+09, -3.22083e+09},  {3.22083e+09, 3.22083e+09, -3.22083e+09},
-      {-3.22083e+09, -3.22083e+09, 3.22083e+09},  {3.22083e+09, -3.22083e+09, 3.22083e+09},
-      {-3.22083e+09, 3.22083e+09, 3.22083e+09},   {3.22083e+09, 3.22083e+09, 3.22083e+09}};
+//   const std::vector<std::array<double, 3>> expectedForces = {
+//       {-3.22083e+09, -3.22083e+09, -3.22083e+09}, {3.22083e+09, -3.22083e+09, -3.22083e+09},
+//       {-3.22083e+09, 3.22083e+09, -3.22083e+09},  {3.22083e+09, 3.22083e+09, -3.22083e+09},
+//       {-3.22083e+09, -3.22083e+09, 3.22083e+09},  {3.22083e+09, -3.22083e+09, 3.22083e+09},
+//       {-3.22083e+09, 3.22083e+09, 3.22083e+09},   {3.22083e+09, 3.22083e+09, 3.22083e+09}};
 
-  int particleIndex = 0;
-  for (auto particle = autoPas->begin(); particle.isValid(); ++particle) {
-    const std::array<double, 3> force = particle->getF();
+//   int particleIndex = 0;
+//   for (auto particle = autoPas->begin(); particle.isValid(); ++particle) {
+//     const std::array<double, 3> force = particle->getF();
 
-    EXPECT_NEAR(force[0], expectedForces[particleIndex][0], 1e+9);
-    EXPECT_NEAR(force[1], expectedForces[particleIndex][1], 1e+9);
-    EXPECT_NEAR(force[2], expectedForces[particleIndex][2], 1e+9);
+//     EXPECT_NEAR(force[0], expectedForces[particleIndex][0], 1e+9);
+//     EXPECT_NEAR(force[1], expectedForces[particleIndex][1], 1e+9);
+//     EXPECT_NEAR(force[2], expectedForces[particleIndex][2], 1e+9);
 
-    ++particleIndex;
-  }
-}
+//     ++particleIndex;
+//   }
+// }
 
-TEST_F(TimeDiscretizationTest, calculateGlobalForces) {
-  auto autoPas = std::make_shared<autopas::AutoPas<Molecule>>();
-  fillWithParticlesAndInit(*autoPas);
+// TEST_F(TimeDiscretizationTest, calculateGlobalForces) {
+//   auto autoPas = std::make_shared<autopas::AutoPas<Molecule>>();
+//   fillWithParticlesAndInit(*autoPas);
 
-  const std::array<double, 3> globalForce = {0.0, -1.0, 0.0};
+//   const std::array<double, 3> globalForce = {0.0, -1.0, 0.0};
 
-  TimeDiscretization::calculateGlobalForces(*autoPas, globalForce);
+//   TimeDiscretization::calculateGlobalForces(*autoPas, globalForce);
 
-  const std::array<double, 3> expectedForce = {0, -1, 1};
+//   const std::array<double, 3> expectedForce = {0, -1, 1};
 
-  for (auto particle = autoPas->begin(); particle.isValid(); ++particle) {
-    const std::array<double, 3> force = particle->getF();
+//   for (auto particle = autoPas->begin(); particle.isValid(); ++particle) {
+//     const std::array<double, 3> force = particle->getF();
 
-    EXPECT_EQ(force[0], expectedForce[0]);
-    EXPECT_EQ(force[1], expectedForce[1]);
-    EXPECT_EQ(force[2], expectedForce[2]);
-  }
-}
+//     EXPECT_EQ(force[0], expectedForce[0]);
+//     EXPECT_EQ(force[1], expectedForce[1]);
+//     EXPECT_EQ(force[2], expectedForce[2]);
+//   }
+// }

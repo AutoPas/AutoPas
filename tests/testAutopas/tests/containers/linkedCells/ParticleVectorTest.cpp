@@ -7,8 +7,6 @@
 
 #include "ParticleVectorTest.h"
 
-#include <gmock/gmock-generated-matchers.h>
-
 #include "autopas/containers/linkedCells/ParticleVector.h"
 
 ParticleVectorTest::ParticleVectorTest() = default;
