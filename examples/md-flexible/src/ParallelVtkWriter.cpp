@@ -129,7 +129,8 @@ void ParallelVtkWriter::recordTimestep(const int &currentIteration,
 }
 
 void ParallelVtkWriter::tryCreateSessionAndDataFolders(const std::string &name, std::string location) {
-  const time_t rawTime = time(NULL);
+  time_t rawTime;
+  time(&rawTime);
 
   struct tm timeInformation;
   gmtime_r(&rawTime, &timeInformation);
