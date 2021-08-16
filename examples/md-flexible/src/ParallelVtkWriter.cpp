@@ -129,14 +129,13 @@ void ParallelVtkWriter::recordTimestep(const int &currentIteration,
 }
 
 void ParallelVtkWriter::tryCreateSessionAndDataFolders(const std::string &name, std::string location) {
-  time_t rawTime;
-  time(&rawTime);
+  const time_t rawTime = time(NULL);
 
-  struct tm *timeInformation;
-  timeInformation = localtime(&rawTime);
+  struct tm timeInformation;
+  gmtime_r(&rawTime, &timeInformation);
 
   char buffer[80];
-  strftime(buffer, sizeof(buffer), "%d%m%Y_%H%M%S", timeInformation);
+  strftime(buffer, sizeof(buffer), "%d%m%Y_%H%M%S", &timeInformation);
   std::string timeString(buffer);
 
   if (not std::filesystem::exists(location)) {
