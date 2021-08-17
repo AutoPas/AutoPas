@@ -5,14 +5,14 @@ file(
     "*.h"
 )
 
-message(STATUS "searching for mpi...")
+message(STATUS "sph-mpi: searching for mpi...")
 find_package(MPI)
 
 if (NOT ${MPI_CXX_FOUND})
-    message(STATUS "cxx mpi not found, not building sph-main-mpi")
+    message(STATUS "MPI compiler NOT found! Not building sph-main-mpi.")
     return()
 else ()
-    message(STATUS "cxx mpi found: ${MPI_CXX_COMPILER}")
+    message(STATUS "MPI compiler found: ${MPI_CXX_COMPILER}")
 endif ()
 
 include_directories(SYSTEM ${MPI_INCLUDE_PATH})
@@ -26,7 +26,7 @@ target_link_libraries(sph-main-mpi autopas MPI::MPI_CXX)
 # cmake-format: off
 add_test(
     NAME sph-main-mpi.test
-    COMMAND mpirun -n 4 sph-main-mpi | grep "time step" | grep -v "the time step" | tail -1 | grep -q "time step 8"
+    COMMAND mpirun -n 4 ./sph-main-mpi | grep "time step" | grep -v "the time step" | tail -1 | grep -q "time step 8"
     CONFIGURATIONS checkExamples checkExamplesMPI
 )
 # cmake-format: on
