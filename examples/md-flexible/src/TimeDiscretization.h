@@ -31,22 +31,4 @@ void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
 void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
                          const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
 
-/**
- * Calculates the pairwise forces between particles in an autopas container.
- * @param autoPasContainer The container for which to update the pairwise forces.
- * @param particlePropertiesLibrary The particle properties library for the particles in the container.
- * @param deltaT The time step width.
- * @param functorOption The functor on which to base the force calculations.
- * @param wasTuningIteration Tells the user if the current iteration of force calculations was a tuning iteration.
- */
-void calculatePairwiseForces(autopas::AutoPas<ParticleType> &autoPasContainer,
-                             ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
-                             MDFlexConfig::FunctorOption functorOption, bool &wasTuningIteration);
-
-/**
- * Adds global forces to the particles in the container.
- * @param autoPasContainer The container for which to update the particle forces.
- * @param globalForce The global force which will be applied to each particle in the container.
- */
-void calculateGlobalForces(autopas::AutoPas<ParticleType> &autoPasContainer, const std::array<double, 3> &globalForce);
 }  // namespace TimeDiscretization

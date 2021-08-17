@@ -71,7 +71,7 @@ void RegularGridDecomposition::update(const double &work) {
     for (int i = 0; i < _dimensionCount; ++i) {
       // Create planar communicator along shift axis. The shift axis is vertical to the dimension's direction.
       autopas::AutoPas_MPI_Comm planarCommunicator;
-      autopas::AutoPas_MPI_Comm_split(_communicator, _domainId[i + 1], _domainId[i], &planarCommunicator);
+      autopas::AutoPas_MPI_Comm_split(_communicator, _domainId[i], _domainId[i], &planarCommunicator);
 
       // Calculate average distributed work in planar communicator.
       double distributedWorkInPlane;
@@ -230,7 +230,6 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
 
     // index of next dimension
     int j = (i + 1) % _dimensionCount;
-
     double leftHaloMin = _localBoxMin[j] - _skinWidth;
     double leftHaloMax = _localBoxMin[j] + _cutoffWidth + _skinWidth;
     double rightHaloMin = _localBoxMax[j] - _cutoffWidth - _skinWidth;
@@ -246,14 +245,13 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
           position[j] = position[j] + (_globalBoxMax[j] - _globalBoxMin[j]);
           particlesForLeftNeighbour.back().setR(position);
         }
-      }
-      if (position[j] >= rightHaloMin && position[j] < rightHaloMax) {
-        particlesForLeftNeighbour.push_back(particle);
+      } else if (position[j] >= rightHaloMin && position[j] < rightHaloMax) {
+        particlesForRightNeighbour.push_back(particle);
 
         // Apply boundary condition
         if (_localBoxMin[j] == _globalBoxMin[j]) {
           position[j] = position[j] + (_globalBoxMax[j] - _globalBoxMin[j]);
-          particlesForLeftNeighbour.back().setR(position);
+          particlesForRightNeighbour.back().setR(position);
         }
       }
     }
@@ -272,9 +270,8 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
   }
 }
 
-void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer) {
-  auto [emigrants, updated] = autoPasContainer->updateContainer(false);
-
+void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer,
+                                                          std::vector<ParticleType> &emigrants, const bool &updated) {
   if (updated) {
     const std::array<double, _dimensionCount> globalBoxMin = {_globalBoxMin[0], _globalBoxMin[1], _globalBoxMin[2]};
     const std::array<double, _dimensionCount> globalBoxMax = {_globalBoxMax[0], _globalBoxMax[1], _globalBoxMax[2]};
