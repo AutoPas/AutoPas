@@ -188,8 +188,8 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
         particlesForRightNeighbour.push_back(particle);
 
         // Apply boundary condition
-        if (_localBoxMin[j] == _globalBoxMin[j]) {
-          position[j] = position[j] + (_globalBoxMax[j] - _globalBoxMin[j]);
+        if (_localBoxMax[j] == _globalBoxMax[j]) {
+          position[j] = position[j] - (_globalBoxMax[j] - _globalBoxMin[j]);
           particlesForRightNeighbour.back().setR(position);
         }
       }
