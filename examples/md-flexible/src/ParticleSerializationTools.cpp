@@ -86,7 +86,7 @@ void deserializeParticleImpl(char *particleData, ParticleType &particle, std::in
 }  // namespace
 
 namespace ParticleSerializationTools {
-void serializeParticle(ParticleType particle, std::vector<char> &serializedParticles) {
+void serializeParticle(ParticleType &particle, std::vector<char> &serializedParticles) {
   serializeParticleImpl(particle, serializedParticles, std::make_index_sequence<Attributes.size()>{});
 }
 
