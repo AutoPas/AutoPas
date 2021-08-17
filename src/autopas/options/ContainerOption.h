@@ -86,7 +86,9 @@ class ContainerOption : public Option<ContainerOption> {
    * Set of options that are very unlikely to be interesting.
    * @return
    */
-  static std::set<ContainerOption> getDiscouragedOptions() { return {Value::directSum, Value::linkedCellsReferences}; }
+  static std::set<ContainerOption> getDiscouragedOptions() {
+    return {Value::directSum, Value::linkedCellsReferences, Value::verletClusterLists};
+  }
 
   /**
    * Provides a way to iterate over the possible choices of ContainerOption.

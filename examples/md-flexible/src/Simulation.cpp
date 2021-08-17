@@ -31,6 +31,7 @@ extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::Fl
 #include "BoundaryConditions.h"
 #include "Thermostat.h"
 #include "TimeDiscretization.h"
+#include "autopas/utils/MemoryProfiler.h"
 #include "configuration/MDFlexConfig.h"
 #include "src/ParticleSerializationTools.h"
 
@@ -112,6 +113,7 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
   _autoPasContainer->setVerletRebuildFrequency(_configuration.verletRebuildFrequency.value);
   _autoPasContainer->setVerletSkin(_configuration.verletSkinRadius.value);
   _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
+  autopas::Logger::get()->set_level(_configuration.logLevel.value);
   _autoPasContainer->init();
 
   // @todo: the object generators should only generate particles relevant for the current rank's domain
@@ -136,10 +138,53 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
 }
 
 void Simulation::run() {
-  const int iterationsPerSuperstep = _configuration.verletRebuildFrequency.value;
   _timers.simulate.start();
-  for (int i = 0; i < _configuration.iterations.value; i += iterationsPerSuperstep) {
-    executeSupersteps(iterationsPerSuperstep);
+  while (needsMoreIterations()) {
+    if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
+      _timers.vtk.start();
+      _vtkWriter->recordTimestep(_iteration, *_autoPasContainer);
+      _timers.vtk.stop();
+    }
+
+    if (_configuration.deltaT.value != 0) {
+      if (!_configuration.periodic.value) {
+        throw std::runtime_error(
+            "Simulation::simulate(): at least one boundary condition has to be set. Please enable the periodic "
+            "boundary conditions!");
+      }
+
+      updatePositions();
+
+      _timers.migratingParticleExchange.start();
+      _domainDecomposition.exchangeMigratingParticles(_autoPasContainer);
+      _timers.migratingParticleExchange.stop();
+
+      _timers.haloParticleExchange.start();
+      _domainDecomposition.exchangeHaloParticles(_autoPasContainer);
+      _timers.haloParticleExchange.stop();
+
+    }
+
+    updateForces();
+
+    if (_configuration.deltaT.value != 0) {
+      updateVelocities();
+      updateThermostat();
+    }
+
+    ++_iteration;
+
+    if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
+      std::cout << "Current Memory usage on rank " << _domainDecomposition.getDomainIndex() << ": "
+                << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
+    }
+
+    if (_domainDecomposition.getDomainIndex() == 0) {
+      auto [maxIterationsEstimate, maxIterationsIsPrecise] = estimateNumberOfIterations();
+      if (not _configuration.dontShowProgressBar.value) {
+        printProgress(_iteration, maxIterationsEstimate, maxIterationsIsPrecise);
+      }
+    }
   }
   _timers.simulate.stop();
 
@@ -155,41 +200,6 @@ void Simulation::finalize() {
   autopas::AutoPas_MPI_Barrier(AUTOPAS_MPI_COMM_WORLD);
 
   logTimers();
-}
-
-void Simulation::executeSupersteps(const int iterationsPerSuperstep) {
-  for (int i = 0; i < iterationsPerSuperstep; ++i) {
-    if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
-      _timers.vtk.start();
-      _vtkWriter->recordTimestep(_iteration, *_autoPasContainer);
-      _timers.vtk.stop();
-    }
-
-    updatePositions();
-
-    _timers.migratingParticleExchange.start();
-    _domainDecomposition.exchangeMigratingParticles(_autoPasContainer);
-    _timers.migratingParticleExchange.stop();
-
-    _timers.haloParticleExchange.start();
-    _domainDecomposition.exchangeHaloParticles(_autoPasContainer);
-    _timers.haloParticleExchange.stop();
-
-    updateForces();
-
-    updateVelocities();
-
-    updateThermostat();
-
-    ++_iteration;
-
-    if (_domainDecomposition.getDomainIndex() == 0) {
-      auto [maxIterationsEstimate, maxIterationsIsPrecise] = estimateNumberOfIterations();
-      if (not _configuration.dontShowProgressBar.value) {
-        printProgress(_iteration, maxIterationsEstimate, maxIterationsIsPrecise);
-      }
-    }
-  }
 }
 
 std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
@@ -288,9 +298,7 @@ void Simulation::updateForces() {
   bool isTuningIteration = false;
   _timers.forceUpdatePairwise.start();
 
-  TimeDiscretization::calculatePairwiseForces(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-                                              _configuration.deltaT.value, _configuration.functorOption.value,
-                                              isTuningIteration);
+  calculatePairwiseForces(isTuningIteration);
 
   _timers.forceUpdateTotal.stop();
 
@@ -314,7 +322,7 @@ void Simulation::updateForces() {
   _timers.forceUpdateGlobal.start();
 
   if (!_configuration.globalForceIsZero()) {
-    TimeDiscretization::calculateGlobalForces(*_autoPasContainer, _configuration.globalForce.value);
+    calculateGlobalForces(_configuration.globalForce.value);
   }
 
   _timers.forceUpdateGlobal.stop();
@@ -392,4 +400,41 @@ void Simulation::logTimers() {
     std::cout << timerToString("Total wall-clock time    ", wallClockTime, std::to_string(wallClockTime).length(),
                                wallClockTime);
   }
+}
+
+void Simulation::calculatePairwiseForces(bool &wasTuningIteration) {
+  auto particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
+
+  switch (_configuration.functorOption.value) {
+    case MDFlexConfig::FunctorOption::lj12_6: {
+      autopas::LJFunctor<ParticleType, true, true> functor{_autoPasContainer->getCutoff(), particlePropertiesLibrary};
+      wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
+      break;
+    }
+    case MDFlexConfig::FunctorOption::lj12_6_Globals: {
+      autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true> functor{
+          _autoPasContainer->getCutoff(), particlePropertiesLibrary};
+      wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
+      break;
+    }
+    case MDFlexConfig::FunctorOption::lj12_6_AVX: {
+      autopas::LJFunctorAVX<ParticleType, true, true> functor{_autoPasContainer->getCutoff(),
+                                                              particlePropertiesLibrary};
+      wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
+      break;
+    }
+  }
+}
+
+void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce) {
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel shared(_autoPasContainer)
+#endif
+  for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    particle->addF(globalForce);
+  }
+}
+
+bool Simulation::needsMoreIterations() const {
+  return _iteration < _configuration.iterations.value or _numTuningPhasesCompleted < _configuration.tuningPhases.value;
 }
