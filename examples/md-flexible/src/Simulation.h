@@ -270,6 +270,20 @@ class Simulation {
   long accumulateTime(const long &time);
 
   /**
+   * Logs the number of total/owned/halo particles in the simulation, aswell as the standard deviation of Homogeneity.
+   */
+  void logSimulationState();
+
+
+  /**
+   * Logs the times recorded by the timers.
+   * When MPI is enabled it acumulates the times (user time) of all ranks. In this case, the total
+   * time will exceed the wall-clock time.
+   */
+  void logMeasurements();
+
+
+  /**
    * Calculates the pairwise forces between particles in the autopas container.
    * @param wasTuningIteration Tells the user if the current iteration of force calculations was a tuning iteration.
    */
@@ -287,16 +301,4 @@ class Simulation {
    * @return
    */
   [[nodiscard]] bool needsMoreIterations() const;
-
-  /**
-   * Logs the number of total/owned/halo particles in the simulation, aswell as the standard deviation of Homogeneity.
-   */
-  void logSimulationState();
-
-  /**
-   * Logs the times recorded by the timers.
-   * When MPI is enabled it acumulates the times (user time) of all ranks. In this case, the total
-   * time will exceed the wall-clock time.
-   */
-  void logMeasurements();
 };

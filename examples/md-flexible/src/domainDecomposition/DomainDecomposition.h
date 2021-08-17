@@ -26,7 +26,7 @@ class DomainDecomposition {
    * Returns the index of the local domain in the global domain context.
    * @return domain index.
    */
-  virtual const int getDomainIndex() = 0;
+  virtual int getDomainIndex() const = 0;
 
   /**
    * Returns the minimum coordinates of the global domain.

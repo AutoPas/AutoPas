@@ -49,7 +49,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Returns the index of the local domain in the global domain context.
    * @return domain index.
    */
-  const int getDomainIndex() override { return _domainIndex; }
+  int getDomainIndex() const override { return _domainIndex; }
 
   /**
    * Returns the minimum coordinates of global domain.
@@ -96,13 +96,13 @@ class RegularGridDecomposition final : public DomainDecomposition {
 
   /**
    * Exchanges halo particles with all neighbours of the provided AutoPasContainer.
-   * @param autoPasContainer The container, where the halo particles originate from.
+   * @param autoPasContainer: The container, where the halo particles originate from.
    */
   void exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer);
 
   /**
    * Exchanges migrating particles with all neighbours of the provided AutoPasContainer.
-   * @param autoPasContainer The container, where the migrating particles originate from.
+   * @param autoPasContainer: The container, where the migrating particles originate from.
    */
   void exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer);
 

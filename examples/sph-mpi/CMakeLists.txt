@@ -5,14 +5,14 @@ file(
     "*.h"
 )
 
-message(STATUS "searching for mpi...")
+message(STATUS "sph-mpi: searching for mpi...")
 find_package(MPI)
 
 if (NOT ${MPI_CXX_FOUND})
-    message(STATUS "cxx mpi not found, not building sph-main-mpi")
+    message(STATUS "MPI compiler NOT found! Not building sph-main-mpi.")
     return()
 else ()
-    message(STATUS "cxx mpi found: ${MPI_CXX_COMPILER}")
+    message(STATUS "MPI compiler found: ${MPI_CXX_COMPILER}")
 endif ()
 
 include_directories(SYSTEM ${MPI_INCLUDE_PATH})
