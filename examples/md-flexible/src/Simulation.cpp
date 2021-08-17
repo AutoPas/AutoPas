@@ -466,10 +466,6 @@ void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce)
   }
 }
 
-bool Simulation::needsMoreIterations() const {
-  return _iteration < _configuration.iterations.value or _numTuningPhasesCompleted < _configuration.tuningPhases.value;
-}
-
 void Simulation::logSimulationState() {
   int totalNumberOfParticles, ownedParticles, haloParticles;
 
@@ -539,39 +535,6 @@ void Simulation::logMeasurements() {
     std::cout << std::endl;
     std::cout << timerToString("Total wall-clock time    ", wallClockTime, std::to_string(wallClockTime).length(),
                                wallClockTime);
-  }
-}
-
-void Simulation::calculatePairwiseForces(bool &wasTuningIteration) {
-  auto particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
-
-  switch (_configuration.functorOption.value) {
-    case MDFlexConfig::FunctorOption::lj12_6: {
-      autopas::LJFunctor<ParticleType, true, true> functor{_autoPasContainer->getCutoff(), particlePropertiesLibrary};
-      wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
-      break;
-    }
-    case MDFlexConfig::FunctorOption::lj12_6_Globals: {
-      autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true> functor{
-          _autoPasContainer->getCutoff(), particlePropertiesLibrary};
-      wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
-      break;
-    }
-    case MDFlexConfig::FunctorOption::lj12_6_AVX: {
-      autopas::LJFunctorAVX<ParticleType, true, true> functor{_autoPasContainer->getCutoff(),
-                                                              particlePropertiesLibrary};
-      wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
-      break;
-    }
-  }
-}
-
-void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce) {
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel shared(_autoPasContainer)
-#endif
-  for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    particle->addF(globalForce);
   }
 }
 
