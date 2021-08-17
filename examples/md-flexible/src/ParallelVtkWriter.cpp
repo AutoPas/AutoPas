@@ -132,11 +132,11 @@ void ParallelVtkWriter::tryCreateSessionAndDataFolders(const std::string &name, 
   time_t rawTime;
   time(&rawTime);
 
-  struct tm *timeInformation;
-  timeInformation = localtime(&rawTime);
+  struct tm timeInformation;
+  gmtime_r(&rawTime, &timeInformation);
 
   char buffer[80];
-  strftime(buffer, sizeof(buffer), "%d%m%Y_%H%M%S", timeInformation);
+  strftime(buffer, sizeof(buffer), "%d%m%Y_%H%M%S", &timeInformation);
   std::string timeString(buffer);
 
   if (not std::filesystem::exists(location)) {

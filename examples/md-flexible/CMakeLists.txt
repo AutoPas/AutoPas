@@ -10,22 +10,7 @@ target_include_directories(md-flexible PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 include(autopas_yaml-cpp)
 
-option(AUTOPAS_INCLUDE_MPI "Enable this variable to use MPI." OFF)
-
-if (AUTOPAS_INCLUDE_MPI)
-    message(STATUS "AUTOPAS_INCLUDE_MPI set, searching for mpi to link against md-flexible ...")
-    find_package(MPI)
-
-    if (NOT ${MPI_CXX_FOUND})
-        message(FATAL_ERROR "cxx mpi could not be found, even though AUTOPAS_INCLUDE_MPI was set.")
-    else ()
-        message(STATUS "cxx mpi found: ${MPI_CXX_COMPILER}")
-        set(MD_FLEXIBLE_USE_MPI ON)
-        add_definitions(-DAUTOPAS_INCLUDE_MPI)
-    endif ()
-else ()
-    message(STATUS "AUTOPAS_INCLUDE_MPI not set, not linking MPI to md-flexible.")
-endif ()
+option(MD_FLEXIBLE_USE_MPI "Enable MPI parallelism for md-flexible." OFF)
 
 target_link_libraries(md-flexible PUBLIC autopas autopasTools yaml-cpp $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
 
