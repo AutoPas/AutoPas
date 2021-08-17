@@ -135,7 +135,6 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
 
     // index of next dimension
     int j = (i + 1) % _dimensionCount;
-
     double leftHaloMin = _localBoxMin[j] - _skinWidth;
     double leftHaloMax = _localBoxMin[j] + _cutoffWidth + _skinWidth;
     double rightHaloMin = _localBoxMax[j] - _cutoffWidth - _skinWidth;
@@ -153,10 +152,8 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
           position[j] = position[j] + (_globalBoxMax[j] - _globalBoxMin[j]);
           particlesForLeftNeighbour.back().setR(position);
         }
-      }
-
-      // Collect halo particles for right neighbour
-      if (position[j] >= rightHaloMin && position[j] < rightHaloMax) {
+<<<<<<< HEAD
+      } else if (position[j] >= rightHaloMin && position[j] < rightHaloMax) {
         particlesForRightNeighbour.push_back(particle);
 
         // Apply boundary condition

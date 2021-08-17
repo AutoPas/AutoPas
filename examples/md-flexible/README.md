@@ -20,10 +20,9 @@ make md-flexible
 ```
 
 ### Compiling with MPI
-To run md-flexible using MPI add '-DAUTOPAS\_INCLUDE\_MPI=1' to the cmake call:
+To use the MPI parallelization of md-flexible activate `AUTOPAS_INCLUDE_MPI` via `cmake`:
 ```bash
-cmake -DAUTOPAS\_INCLUDE\_MPI=1 ..
-```
+cmake -DAUTOPAS_INCLUDE_MPI=ON ..
 Using this option does not guarantee that MPI will be used. There are some additional requirements:
 * MPI is installed
 * mpirun is called with more than 1 process

@@ -7,13 +7,14 @@
 
 namespace ParticleSerializationTools {
 void serializeParticle(const ParticleType &particle, std::vector<char> &serializedParticles) {
-  ParticleAttributes attributes{.position{particle.getR()},
-                                .velocity{particle.getV()},
-                                .force{particle.getF()},
-                                .id = particle.getID(),
-                                .ownershipState = particle.getOwnershipState(),
-                                .typeId = particle.getTypeId(),
-                                .oldForce{particle.getOldF()}};
+  ParticleAttributes attributes;
+  attributes.position = particle.getR();
+  attributes.velocity = particle.getV();
+  attributes.force = particle.getF();
+  attributes.id = particle.getID();
+  attributes.ownershipState = particle.getOwnershipState();
+  attributes.typeId = particle.getTypeId();
+  attributes.oldForce = particle.getOldF();
 
   std::vector<char> attributesVector;
   attributesVector.resize(sizeof(ParticleAttributes));

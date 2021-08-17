@@ -22,3 +22,9 @@ venv/
 *.srctrlbm
 *.srctrldb
 *.srctrlprj
+
+# simulation output
+*.vtk
+*.csv
+*.out
+*.log

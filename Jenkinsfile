@@ -100,12 +100,12 @@ pipeline {
                 timeout(time: 8, unit: 'HOURS')
             }
             parallel {
-                stage("default") {
+                stage("clang no-openmp") {
                     steps {
-                        container('autopas-gcc7-cmake-make') {
+                        container('autopas-clang6-cmake-ninja-make') {
                             dir("build") {
-                                sh "cmake -DCCACHE=ON .."
-                                sh "entrypoint.sh make -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
+                                sh "CC=clang CXX=clang++ cmake -G Ninja -DCCACHE=ON -DAUTOPAS_OPENMP=OFF .."
+                                sh "entrypoint.sh ninja -j 4 > buildlog.txt 2>&1 || (cat buildlog.txt && exit 1)"
                                 sh 'env GTEST_OUTPUT="xml:$(pwd)/test.xml" ./tests/testAutopas/runTests'
                             }
                             dir("build/examples") {
@@ -114,6 +114,7 @@ pipeline {
                         }
                     }
                 }
+                // this is basically default
                 stage("gcc openmp") {
                     steps {
                         container('autopas-gcc7-cmake-make') {
