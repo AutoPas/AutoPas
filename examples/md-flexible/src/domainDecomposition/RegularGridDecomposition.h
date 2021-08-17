@@ -51,7 +51,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Returns the index of the local domain in the global domain context.
    * @return domain index.
    */
-  const int getDomainIndex() override { return _domainIndex; }
+  int getDomainIndex() const override { return _domainIndex; }
 
   /**
    * Returns the minimum coordinates of global domain.
