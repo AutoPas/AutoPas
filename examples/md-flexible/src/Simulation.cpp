@@ -172,7 +172,6 @@ void Simulation::run() {
       _timers.haloParticleExchange.start();
       _domainDecomposition.exchangeHaloParticles(_autoPasContainer);
       _timers.haloParticleExchange.stop();
-
     }
 
     updateForces();
@@ -511,30 +510,57 @@ void Simulation::logMeasurements() {
   if (_domainDecomposition.getDomainIndex() == 0) {
     auto maximumNumberOfDigits = std::to_string(total).length();
     std::cout << "Measurements:" << std::endl;
-    std::cout << timerToString("Total                      ", total, maximumNumberOfDigits, total);
-    std::cout << timerToString("Simulate                   ", simulate, maximumNumberOfDigits, total);
-    std::cout << timerToString("  Initialization           ", initialization, maximumNumberOfDigits, simulate);
-    std::cout << timerToString("  PositionUpdate           ", positionUpdate, maximumNumberOfDigits, simulate);
-    std::cout << timerToString("  VelocityUpdate           ", velocityUpdate, maximumNumberOfDigits, simulate);
-    std::cout << timerToString("  ForceUpdateTotal         ", forceUpdateTotal, maximumNumberOfDigits, simulate);
-    std::cout << timerToString("    ForceUpdatePairwise    ", forceUpdatePairwise, maximumNumberOfDigits,
-                               forceUpdateTotal);
-    std::cout << timerToString("    ForceUdpateGlobalForces", forceUpdateGlobalForces, maximumNumberOfDigits,
-                               forceUpdateTotal);
-    std::cout << timerToString("    ForceUpdateTuning      ", forceUpdateTuning, maximumNumberOfDigits,
-                               forceUpdateTotal);
-    std::cout << timerToString("    ForceUpdateNonTuninng  ", forceUpdateNonTuning, maximumNumberOfDigits,
-                               forceUpdateTotal);
-    std::cout << timerToString("  Thermostat               ", thermostat, maximumNumberOfDigits, simulate);
-    std::cout << timerToString("  Vtk                      ", vtk, maximumNumberOfDigits, simulate);
-    std::cout << timerToString("  HaloParticleExchange     ", haloParticleExchange, maximumNumberOfDigits, simulate);
-    std::cout << timerToString("  MigratingParticleExchange", migratingParticleExchange, maximumNumberOfDigits,
+    std::cout << timerToString("Total                        ", total, maximumNumberOfDigits, total);
+    std::cout << timerToString("  Initialization             ", initialization, maximumNumberOfDigits, simulate);
+    std::cout << timerToString("  Simulate                   ", simulate, maximumNumberOfDigits, total);
+    std::cout << timerToString("  PositionUpdate             ", positionUpdate, maximumNumberOfDigits, simulate);
+    std::cout << timerToString("  Boundaries:                ", haloParticleExchange + migratingParticleExchange,
+                               maximumNumberOfDigits, simulate);
+    std::cout << timerToString("    HaloParticleExchange     ", haloParticleExchange, maximumNumberOfDigits, simulate);
+    std::cout << timerToString("    MigratingParticleExchange", migratingParticleExchange, maximumNumberOfDigits,
                                simulate);
+    std::cout << timerToString("  ForceUpdateTotal           ", forceUpdateTotal, maximumNumberOfDigits, simulate);
+    std::cout << timerToString("    ForceUpdatePairwise      ", forceUpdatePairwise, maximumNumberOfDigits,
+                               forceUpdateTotal);
+    std::cout << timerToString("    ForceUdpateGlobalForces  ", forceUpdateGlobalForces, maximumNumberOfDigits,
+                               forceUpdateTotal);
+    std::cout << timerToString("    ForceUpdateTuning        ", forceUpdateTuning, maximumNumberOfDigits,
+                               forceUpdateTotal);
+    std::cout << timerToString("    ForceUpdateNonTuninng    ", forceUpdateNonTuning, maximumNumberOfDigits,
+                               forceUpdateTotal);
+    std::cout << timerToString("  VelocityUpdate             ", velocityUpdate, maximumNumberOfDigits, simulate);
+    std::cout << timerToString("  Thermostat                 ", thermostat, maximumNumberOfDigits, simulate);
+    std::cout << timerToString("  Vtk                        ", vtk, maximumNumberOfDigits, simulate);
+    std::cout << timerToString("One iteration                ", total / _iteration, maximumNumberOfDigits, simulate);
 
     const long wallClockTime = _timers.total.getTotalTime();
-    std::cout << std::endl;
-    std::cout << timerToString("Total wall-clock time    ", wallClockTime, std::to_string(wallClockTime).length(),
+    std::cout << timerToString("Total wall-clock time        ", wallClockTime, std::to_string(wallClockTime).length(),
                                wallClockTime);
+    std::cout << std::endl;
+
+    std::cout << "Tuning iterations             : " << _numTuningIterations << " / " << _iteration << " = "
+              << ((double)_numTuningIterations / _iteration * 100) << "%" << std::endl;
+
+    auto mfups = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned) * _iteration * 1e-6 /
+                 (forceUpdateTotal * 1e-9);  // 1e-9 for ns to s, 1e-6 for M in MFUP
+    std::cout << "MFUPs/sec                     : " << mfups << std::endl;
+
+    if (_configuration.dontMeasureFlops.value) {
+      autopas::FlopCounterFunctor<ParticleType> flopCounterFunctor(_autoPasContainer->getCutoff());
+      _autoPasContainer->iteratePairwise(&flopCounterFunctor);
+
+      size_t flopsPerKernelCall;
+      auto flops = flopCounterFunctor.getFlops(flopsPerKernelCall) * _iteration;
+      // approximation for flops of verlet list generation
+      if (_autoPasContainer->getContainerType() == autopas::ContainerOption::verletLists)
+        flops += flopCounterFunctor.getDistanceCalculations() *
+                 decltype(flopCounterFunctor)::numFlopsPerDistanceCalculation *
+                 floor(_iteration / _configuration.verletRebuildFrequency.value);
+
+      std::cout << "GFLOPs                        : " << flops * 1e-9 << std::endl;
+      std::cout << "GFLOPs/sec                    : " << flops * 1e-9 / (simulate * 1e-9) << std::endl;
+      std::cout << "Hit rate                      : " << flopCounterFunctor.getHitRate() << std::endl;
+    }
   }
 }
 
