@@ -274,14 +274,12 @@ class Simulation {
    */
   void logSimulationState();
 
-
   /**
    * Logs the times recorded by the timers.
    * When MPI is enabled it acumulates the times (user time) of all ranks. In this case, the total
    * time will exceed the wall-clock time.
    */
   void logMeasurements();
-
 
   /**
    * Calculates the pairwise forces between particles in the autopas container.
