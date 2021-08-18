@@ -22,6 +22,8 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   const double cellSizeFactor = 1;
   const double verletSkin = 0;
   const unsigned int verletClusterSize = 64;
+  const double mpiTuningMaxDifferenceForBucket = 0.3;
+  const double mpiTuningWeightForMaxDensity = 0.0;
   const unsigned int maxSamples = 2;
   autopas::LJFunctor<Molecule> functor(cutoff);
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(
@@ -29,8 +31,9 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
       autopas::TraversalOption::getAllOptions(), autopas::LoadEstimatorOption::getAllOptions(),
       autopas::DataLayoutOption::getAllOptions(), autopas::Newton3Option::getAllOptions());
   autopas::AutoTuner<Molecule> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, verletClusterSize,
-                                         std::move(tuningStrategy), 0.3, 0.0,
-                                         autopas::SelectorStrategyOption::fastestAbs, 100, maxSamples);
+                                         std::move(tuningStrategy), mpiTuningMaxDifferenceForBucket,
+                                         mpiTuningWeightForMaxDensity, autopas::SelectorStrategyOption::fastestAbs, 100,
+                                         maxSamples);
 
   autopas::Logger::get()->set_level(autopas::Logger::LogLevel::off);
   //  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
@@ -270,13 +273,16 @@ TEST_F(AutoTunerTest, testForceRetuneBetweenPhases) {
   const double cutoff = 1;
   const double verletSkin = 0;
   const unsigned int verletClusterSize = 4;
+  const double mpiTuningMaxDifferenceForBucket = 0.3;
+  const double mpiTuningWeightForMaxDensity = 0.0;
   const unsigned int maxSamples = 3;
 
   auto configsList = {_confLc_c01, _confLc_c04, _confLc_c08};
 
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
-  autopas::AutoTuner<Particle> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, verletClusterSize, 0.3, 0.0,
-                                         std::move(tuningStrategy), autopas::SelectorStrategyOption::fastestAbs, 100,
+  autopas::AutoTuner<Particle> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, verletClusterSize,
+                                         std::move(tuningStrategy), mpiTuningMaxDifferenceForBucket,
+                                         mpiTuningWeightForMaxDensity, autopas::SelectorStrategyOption::fastestAbs, 100,
                                          maxSamples);
 
   size_t numExpectedTuningIterations = configsList.size() * maxSamples;
@@ -310,6 +316,8 @@ TEST_F(AutoTunerTest, testForceRetuneInPhase) {
   const double cellSizeFactor = 1;
   const double verletSkin = 0;
   const unsigned int verletClusterSize = 4;
+  const double mpiTuningMaxDifferenceForBucket = 0.3;
+  const double mpiTuningWeightForMaxDensity = 0.0;
   const unsigned int maxSamples = 3;
 
   autopas::Configuration confLc_c01(autopas::ContainerOption::linkedCells, cellSizeFactor,
@@ -325,8 +333,9 @@ TEST_F(AutoTunerTest, testForceRetuneInPhase) {
   auto configsList = {confLc_c01, confLc_c04, confLc_c08};
 
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
-  autopas::AutoTuner<Particle> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, verletClusterSize, 0.3, 0.0,
-                                         std::move(tuningStrategy), autopas::SelectorStrategyOption::fastestAbs, 100,
+  autopas::AutoTuner<Particle> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, verletClusterSize,
+                                         std::move(tuningStrategy), mpiTuningMaxDifferenceForBucket,
+                                         mpiTuningWeightForMaxDensity, autopas::SelectorStrategyOption::fastestAbs, 100,
                                          maxSamples);
 
   size_t numExpectedTuningIterations = configsList.size() * maxSamples;
