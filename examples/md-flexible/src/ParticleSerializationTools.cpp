@@ -34,7 +34,7 @@ constexpr std::array<typename ParticleType::AttributeNames, 15> Attributes = {
  */
 constexpr size_t AttributesSize = 120;
 
-/** 
+/**
  * Serializes the attribute defined by I.
  */
 template <size_t I>
