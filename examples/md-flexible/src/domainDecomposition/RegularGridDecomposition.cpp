@@ -153,12 +153,12 @@ void RegularGridDecomposition::initializeNeighbourIds() {
     auto neighbourIndex = i * 2;
     auto preceedingNeighbourId = _domainId;
     preceedingNeighbourId[i] = (--preceedingNeighbourId[i] + _decomposition[i]) % _decomposition[i];
-    _neighbourDomainIndices[neighbourIndex] = convertIdToIndex(preceedingNeighbourId);
+    _neighbourDomainIndices[neighbourIndex] = DomainTools::convertIdToIndex(preceedingNeighbourId, _decomposition);
 
     ++neighbourIndex;
     auto succeedingNeighbourId = _domainId;
     succeedingNeighbourId[i] = (++succeedingNeighbourId[i] + _decomposition[i]) % _decomposition[i];
-    _neighbourDomainIndices[neighbourIndex] = convertIdToIndex(succeedingNeighbourId);
+    _neighbourDomainIndices[neighbourIndex] = DomainTools::convertIdToIndex(succeedingNeighbourId, _decomposition);
   }
 }
 
@@ -170,8 +170,12 @@ void RegularGridDecomposition::initializeGlobalBox(const std::array<double, 3> &
   }
 }
 
-bool RegularGridDecomposition::isInsideLocalDomain(const std::array<double, 3> &coordinates) {
+bool RegularGridDecomposition::isInsideLocalDomain(const std::array<double, 3> &coordinates) const {
   return DomainTools::isInsideDomain(coordinates, _localBoxMin, _localBoxMax);
+}
+
+std::array<int, 6> RegularGridDecomposition::getExtentOfSubdomain(const int subdomainIndex) const {
+  return DomainTools::getExtentOfSubdomain(subdomainIndex, _decomposition);
 }
 
 void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer) {

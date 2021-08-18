@@ -6,14 +6,33 @@
 #include "ParallelVtkWriter.h"
 
 #include <cstddef>
-#include <ctime>
 #include <filesystem>
 #include <fstream>
 #include <ios>
 #include <iostream>
+#include <string>
 #include <utility>
 
 #include "autopas/utils/WrapMPI.h"
+
+namespace {
+/**
+ * Converts a regular string to an ASCII encoded string with spaces between characters.
+ * The encoded string ends with the NULL character '0'.
+ * Example: "AoS" is encoded to "65 111 83 0".
+ * @param original: The string to be encoded in ASCII.
+ * @return the corresponding ASCII encoded and NUll-terminated string.
+ */
+std::string convertToAsciiString(const std::string &original) {
+  std::string encodedString = "";
+  for (size_t i = 0; i < original.length(); ++i) {
+    encodedString = encodedString + std::to_string(original[i]) + " ";
+  }
+  encodedString.append("0");
+  return encodedString;
+}
+
+}  // namespace
 
 ParallelVtkWriter::ParallelVtkWriter(std::string sessionName, const std::string &outputFolder,
                                      const int &maximumNumberOfDigitsInIteration)
@@ -43,20 +62,26 @@ ParallelVtkWriter::ParallelVtkWriter(std::string sessionName, const std::string 
   autopas::AutoPas_MPI_Bcast(&_dataFolderPath[0], dataFolderPathLength, AUTOPAS_MPI_CHAR, 0, AUTOPAS_MPI_COMM_WORLD);
 }
 
+void ParallelVtkWriter::recordTimestep(const int &currentIteration,
+                                       const autopas::AutoPas<ParticleType> &autoPasContainer,
+                                       const RegularGridDecomposition &decomposition) {
+  recordParticleStates(currentIteration, autoPasContainer);
+  recordDomainSubdivision(currentIteration, autoPasContainer.getCurrentConfig(), decomposition);
+}
+
 /**
  * @todo: Currently this function runs over all the particles for each property separately.
  * This can be improved by using multiple string streams (one for each property).
  * The streams can be combined to a single output stream after iterating over the particles, once.
  */
-void ParallelVtkWriter::recordTimestep(const int &currentIteration,
-                                       const autopas::AutoPas<ParticleType> &autoPasContainer) {
+void ParallelVtkWriter::recordParticleStates(const int &currentIteration,
+                                             const autopas::AutoPas<ParticleType> &autoPasContainer) {
   if (_mpiRank == 0) {
     createPvtuFile(currentIteration);
   }
 
   std::ostringstream timestepFileName;
-  timestepFileName << _dataFolderPath << _sessionName << "_" << _mpiRank << "_" << std::setfill('0')
-                   << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".vtu";
+  generateFilename("particles", "vtu", currentIteration, timestepFileName);
 
   std::ofstream timestepFile;
   timestepFile.open(timestepFileName.str(), std::ios::out | std::ios::binary);
@@ -128,6 +153,87 @@ void ParallelVtkWriter::recordTimestep(const int &currentIteration,
   timestepFile.close();
 }
 
+void ParallelVtkWriter::recordDomainSubdivision(const int &currentIteration,
+                                                const autopas::Configuration &autoPasConfiguration,
+                                                const RegularGridDecomposition &decomposition) {
+  if (_mpiRank == 0) {
+    createPvtsFile(currentIteration, decomposition);
+  }
+
+  std::ostringstream timestepFileName;
+  generateFilename("subdivision", "vts", currentIteration, timestepFileName);
+
+  std::ofstream timestepFile;
+  timestepFile.open(timestepFileName.str(), std::ios::out | std::ios::binary);
+
+  if (not timestepFile.is_open()) {
+    throw std::runtime_error("Simulation::writeVTKFile(): Failed to open file \"" + timestepFileName.str() + "\"");
+  }
+
+  const std::array<int, 6> wholeExtent = calculateWholeExtent(decomposition);
+  const std::array<double, 3> localBoxMin = decomposition.getLocalBoxMin();
+  const std::array<double, 3> localBoxMax = decomposition.getLocalBoxMax();
+
+  auto printDataArray = [&](const auto &data, const std::string &type, const std::string name) {
+    timestepFile << "        <DataArray type=\"" << type << "\" Name=\"" << name << "\" format=\"ascii\">\n";
+    timestepFile << "          " << data << "\n";
+    timestepFile << "        </DataArray>\n";
+  };
+
+  // Paraview expects ASCII indices for each character in a DataArray of type "String".
+  auto printAsciiDataArray = [&](const auto &data, const std::string &name) {
+    timestepFile << "        <DataArray type=\"String\" Name=\"" << name << "\" format=\"ascii\">\n";
+    timestepFile << "          " << convertToAsciiString(data) << "\n";
+    timestepFile << "        </DataArray>\n";
+  };
+
+  timestepFile << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>\n";
+  timestepFile << "<VTKFile byte_order=\"LittleEndian\" type=\"StructuredGrid\" version=\"0.1\">\n";
+  timestepFile << "  <StructuredGrid WholeExtent=\"" << wholeExtent[0] << " " << wholeExtent[1] << " " << wholeExtent[2]
+               << " " << wholeExtent[3] << " " << wholeExtent[4] << " " << wholeExtent[5] << "\">\n";
+  timestepFile << "    <Piece Extent=\"" << wholeExtent[0] << " " << wholeExtent[1] << " " << wholeExtent[2] << " "
+               << wholeExtent[3] << " " << wholeExtent[4] << " " << wholeExtent[5] << "\">\n";
+  timestepFile << "      <CellData>\n";
+  printDataArray(decomposition.getDomainIndex(), "Int32", "DomainId");
+  printDataArray(autoPasConfiguration.cellSizeFactor, "Float32", "CellSizeFactor");
+  printAsciiDataArray(autoPasConfiguration.container.to_string(), "Container");
+  printAsciiDataArray(autoPasConfiguration.dataLayout.to_string(), "DataLayout");
+  printAsciiDataArray(autoPasConfiguration.toString(), "FullConfiguration");
+  printAsciiDataArray(autoPasConfiguration.loadEstimator.to_string(), "LoadEstimator");
+  printAsciiDataArray(autoPasConfiguration.traversal.to_string(), "Traversal");
+  printAsciiDataArray(autoPasConfiguration.newton3.to_string(), "Newton3");
+  printDataArray(_mpiRank, "Int32", "Rank");
+  timestepFile << "      </CellData>\n";
+  timestepFile << "      <Points>\n";
+  timestepFile << "        <DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">\n";
+  timestepFile << "          " << localBoxMin[0] << " " << localBoxMin[1] << " " << localBoxMin[2] << "\n";
+  timestepFile << "          " << localBoxMax[0] << " " << localBoxMin[1] << " " << localBoxMin[2] << "\n";
+  timestepFile << "          " << localBoxMin[0] << " " << localBoxMax[1] << " " << localBoxMin[2] << "\n";
+  timestepFile << "          " << localBoxMax[0] << " " << localBoxMax[1] << " " << localBoxMin[2] << "\n";
+  timestepFile << "          " << localBoxMin[0] << " " << localBoxMin[1] << " " << localBoxMax[2] << "\n";
+  timestepFile << "          " << localBoxMax[0] << " " << localBoxMin[1] << " " << localBoxMax[2] << "\n";
+  timestepFile << "          " << localBoxMin[0] << " " << localBoxMax[1] << " " << localBoxMax[2] << "\n";
+  timestepFile << "          " << localBoxMax[0] << " " << localBoxMax[1] << " " << localBoxMax[2] << "\n";
+  timestepFile << "        </DataArray>\n";
+  timestepFile << "      </Points>\n";
+  timestepFile << "    </Piece>\n";
+  timestepFile << "  </StructuredGrid>\n";
+  timestepFile << "</VTKFile>\n";
+
+  timestepFile.close();
+}
+
+std::array<int, 6> ParallelVtkWriter::calculateWholeExtent(const RegularGridDecomposition &domainDecomposition) {
+  std::array<int, 6> wholeExtent;
+  std::array<int, 3> domainId = domainDecomposition.getDomainId();
+  std::array<int, 3> decomposition = domainDecomposition.getDecomposition();
+  for (int i = 0; i < 3; ++i) {
+    wholeExtent[2 * i] = domainId[i];
+    wholeExtent[2 * i + 1] = std::min(domainId[i] + 1, decomposition[i]);
+  }
+  return wholeExtent;
+}
+
 void ParallelVtkWriter::tryCreateSessionAndDataFolders(const std::string &name, std::string location) {
   time_t rawTime;
   time(&rawTime);
@@ -152,7 +258,7 @@ void ParallelVtkWriter::tryCreateSessionAndDataFolders(const std::string &name, 
 
 void ParallelVtkWriter::createPvtuFile(const int &currentIteration) {
   std::ostringstream filename;
-  filename << _sessionFolderPath << _sessionName << "_" << std::setfill('0')
+  filename << _sessionFolderPath << _sessionName << "_particles_" << std::setfill('0')
            << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".pvtu";
 
   std::ofstream timestepFile;
@@ -181,11 +287,69 @@ void ParallelVtkWriter::createPvtuFile(const int &currentIteration) {
   timestepFile << "    </PCells>\n";
 
   for (int i = 0; i < _numberOfRanks; ++i) {
-    timestepFile << "    <Piece Source=\"./data/" << _sessionName << "_" << i << "_" << std::setfill('0')
+    timestepFile << "    <Piece Source=\"./data/" << _sessionName << "_particles_" << i << "_" << std::setfill('0')
                  << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".vtu\"/>\n";
   }
 
   timestepFile << "  </PUnstructuredGrid>\n";
+  timestepFile << "</VTKFile>\n";
+
+  timestepFile.close();
+}
+
+void ParallelVtkWriter::createPvtsFile(const int &currentIteration, const RegularGridDecomposition &decomposition) {
+  std::ostringstream filename;
+  filename << _sessionFolderPath << _sessionName << "_subdivision_" << std::setfill('0')
+           << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".pvts";
+
+  std::ofstream timestepFile;
+  timestepFile.open(filename.str(), std::ios::out | std::ios::binary);
+
+  if (not timestepFile.is_open()) {
+    throw std::runtime_error("Simulation::writeVTKFile(): Failed to open file \"" + filename.str() + "\"");
+  }
+  const std::array<int, 3> wholeExtent = decomposition.getDecomposition();
+  const std::array<double, 3> globalBoxMin = decomposition.getGlobalBoxMin();
+  const std::array<double, 3> globalBoxMax = decomposition.getGlobalBoxMax();
+  timestepFile << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>\n";
+  timestepFile << "<VTKFile byte_order=\"LittleEndian\" type=\"PStructuredGrid\" version=\"0.1\">\n";
+  timestepFile << "  <PStructuredGrid WholeExtent=\"0 " << wholeExtent[0] << " 0 " << wholeExtent[1] << " 0 "
+               << wholeExtent[2] << "\" GhostLevel=\"0\">\n";
+  timestepFile << "    <PPointData/>\n";
+  timestepFile << "    <PCellData>\n";
+  timestepFile << "      <PDataArray type=\"Int32\" Name=\"DomainId\" />\n";
+  timestepFile << "      <PDataArray type=\"Float32\" Name=\"CellSizeFactor\" />\n";
+  timestepFile << "      <PDataArray type=\"String\" Name=\"Container\" />\n";
+  timestepFile << "      <PDataArray type=\"String\" Name=\"DataLayout\" />\n";
+  timestepFile << "      <PDataArray type=\"String\" Name=\"FullConfiguration\" />\n";
+  timestepFile << "      <PDataArray type=\"String\" Name=\"LoadEstimator\" />\n";
+  timestepFile << "      <PDataArray type=\"String\" Name=\"Traversal\" />\n";
+  timestepFile << "      <PDataArray type=\"String\" Name=\"Newton3\" />\n";
+  timestepFile << "      <PDataArray type=\"Int32\" Name=\"Rank\" />\n";
+  timestepFile << "    </PCellData>\n";
+  timestepFile << "    <PPoints>\n";
+  timestepFile << "      <DataArray NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
+  timestepFile << "        " << globalBoxMin[0] << " " << globalBoxMin[1] << " " << globalBoxMin[2] << "\n";
+  timestepFile << "        " << globalBoxMax[0] << " " << globalBoxMin[1] << " " << globalBoxMin[2] << "\n";
+  timestepFile << "        " << globalBoxMin[0] << " " << globalBoxMax[1] << " " << globalBoxMin[2] << "\n";
+  timestepFile << "        " << globalBoxMax[0] << " " << globalBoxMax[1] << " " << globalBoxMin[2] << "\n";
+  timestepFile << "        " << globalBoxMin[0] << " " << globalBoxMin[1] << " " << globalBoxMax[2] << "\n";
+  timestepFile << "        " << globalBoxMax[0] << " " << globalBoxMin[1] << " " << globalBoxMax[2] << "\n";
+  timestepFile << "        " << globalBoxMin[0] << " " << globalBoxMax[1] << " " << globalBoxMax[2] << "\n";
+  timestepFile << "        " << globalBoxMax[0] << " " << globalBoxMax[1] << " " << globalBoxMax[2] << "\n";
+  timestepFile << "      </DataArray>\n";
+  timestepFile << "    </PPoints>\n";
+
+  for (int i = 0; i < _numberOfRanks; ++i) {
+    std::array<int, 6> pieceExtent = decomposition.getExtentOfSubdomain(i);
+    timestepFile << "    <Piece "
+                 << "Extent=\"" << pieceExtent[0] << " " << pieceExtent[1] << " " << pieceExtent[2] << " "
+                 << pieceExtent[3] << " " << pieceExtent[4] << " " << pieceExtent[5] << "\" "
+                 << "Source=\"./data/" << _sessionName << "_subdivision_" << i << "_" << std::setfill('0')
+                 << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".vts\"/>\n";
+  }
+
+  timestepFile << "  </PStructuredGrid>\n";
   timestepFile << "</VTKFile>\n";
 
   timestepFile.close();
@@ -198,4 +362,17 @@ void ParallelVtkWriter::tryCreateFolder(const std::string &name, const std::stri
   } catch (std::filesystem::filesystem_error const &ex) {
     throw std::runtime_error("The output location " + location + " passed to ParallelVtkWriter is invalid");
   }
+}
+
+/**
+ * Generates the file name for a given vtk file type.
+ * @param fileContent: The type of data which will be recorded in this file.
+ * @param filetype: The vtk file type extension. Pass the extension without the '.'.
+ * @param currentIteration: The current iteration to record.
+ * @param filenameStream: The output string string for the filename.
+ */
+void ParallelVtkWriter::generateFilename(const std::string &fileContent, const std::string &filetype,
+                                         const int &currentIteration, std::ostringstream &filenameStream) {
+  filenameStream << _dataFolderPath << _sessionName << "_" << fileContent << "_" << _mpiRank << "_" << std::setfill('0')
+                 << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << "." << filetype;
 }
