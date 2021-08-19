@@ -38,11 +38,13 @@ void generateDecomposition(unsigned int subdomainCount, std::array<int, 3> &deco
  * @param rightDomainsWork: The work performed in the domain on the right side of the boundary.
  * @param leftDomainsMinBoundaryPosition: The the position of the left domain minimum boundary.
  * @param rightDomainsMaxBoundaryPosition: The the position of the right domain maximum boundary.
+ * @param minWidth: Defines a minimum resulting width of the domain.
  * @returns the updated position of the shared boundary between the two domains.
  */
 double balanceAdjacentDomains(const double &leftDomainsWork, const double &rightDomainsWork,
                               const double &leftDomainsMinBoundaryPosition,
-                              const double &rightDomainsMaxBoundaryPosition);
+                              const double &rightDomainsMaxBoundaryPosition, const double &minWidth);
+
 /**
  * Converts a domain id to the domain index, i.e. rank of the local processor.
  * @param domainId: the domain id to be converted to an index.
