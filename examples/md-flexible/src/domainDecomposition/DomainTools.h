@@ -25,10 +25,14 @@ bool isInsideDomain(const std::array<double, 3> &coordinates, const std::array<d
 /**
  * Generates a decomposition with a specific number of subdomains.
  * This function uses prime factorization to determine the number of subdomains in each dimension.
- * @param subdomainCount The number of subdomains in the resulting decomposition.
- * @param decomposition Array containing the number of subdomains per dimension.
+ * Subdivision of a dimension can be prevented using the subdivideDimension argument.
+ * By preventing subdivision in a dimension one can achieve different grid layouts (e. g. collumn layout)
+ * @param subdomainCount: The number of subdomains in the resulting decomposition.
+ * @param subdivideDimension: Decides if a dimension will be subdivided.
+ * @param decomposition: Array containing the number of subdomains per dimension.
  */
-void generateDecomposition(unsigned int subdomainCount, std::array<int, 3> &decomposition);
+void generateDecomposition(unsigned int subdomainCount, std::array<bool, 3> subdivideDimension,
+                           std::array<int, 3> &decomposition);
 
 /**
  * Balances two domains by shifting their shared boundary.

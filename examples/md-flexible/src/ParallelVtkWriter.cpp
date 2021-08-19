@@ -116,14 +116,14 @@ void ParallelVtkWriter::recordParticleStates(const int &currentIteration,
   timestepFile << "        </DataArray>\n";
 
   // print type ids
-  timestepFile << "        <DataArray Name=\"typeIds\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float32\">\n";
+  timestepFile << "        <DataArray Name=\"typeIds\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\">\n";
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     timestepFile << "        " << particle->getTypeId() << "\n";
   }
   timestepFile << "        </DataArray>\n";
 
   // print ids
-  timestepFile << "        <DataArray Name=\"ids\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float32\">\n";
+  timestepFile << "        <DataArray Name=\"ids\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\">\n";
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     timestepFile << "        " << particle->getID() << "\n";
     ;
@@ -135,7 +135,7 @@ void ParallelVtkWriter::recordParticleStates(const int &currentIteration,
   timestepFile << "      <Points>\n";
 
   // print positions
-  timestepFile << "        <DataArray Name=\"position\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
+  timestepFile << "        <DataArray Name=\"positions\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     auto pos = particle->getR();
     timestepFile << "        " << pos[0] << " " << pos[1] << " " << pos[2] << "\n";
@@ -196,12 +196,12 @@ void ParallelVtkWriter::recordDomainSubdivision(const int &currentIteration,
   timestepFile << "      <CellData>\n";
   printDataArray(decomposition.getDomainIndex(), "Int32", "DomainId");
   printDataArray(autoPasConfiguration.cellSizeFactor, "Float32", "CellSizeFactor");
-  printAsciiDataArray(autoPasConfiguration.container.to_string(), "Container");
-  printAsciiDataArray(autoPasConfiguration.dataLayout.to_string(), "DataLayout");
-  printAsciiDataArray(autoPasConfiguration.toString(), "FullConfiguration");
-  printAsciiDataArray(autoPasConfiguration.loadEstimator.to_string(), "LoadEstimator");
-  printAsciiDataArray(autoPasConfiguration.traversal.to_string(), "Traversal");
-  printAsciiDataArray(autoPasConfiguration.newton3.to_string(), "Newton3");
+  //printAsciiDataArray(autoPasConfiguration.container.to_string(), "Container");
+  //printAsciiDataArray(autoPasConfiguration.dataLayout.to_string(), "DataLayout");
+  //printAsciiDataArray(autoPasConfiguration.toString(), "FullConfiguration");
+  //printAsciiDataArray(autoPasConfiguration.loadEstimator.to_string(), "LoadEstimator");
+  //printAsciiDataArray(autoPasConfiguration.traversal.to_string(), "Traversal");
+  //printAsciiDataArray(autoPasConfiguration.newton3.to_string(), "Newton3");
   printDataArray(_mpiRank, "Int32", "Rank");
   timestepFile << "      </CellData>\n";
   timestepFile << "      <Points>\n";
@@ -274,13 +274,13 @@ void ParallelVtkWriter::createPvtuFile(const int &currentIteration) {
   timestepFile << "    <PPointData>\n";
   timestepFile
       << "      <PDataArray Name=\"velocities\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>\n";
-  timestepFile << "      <PDataArray Name=\"forces\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Int32\"/>\n";
-  timestepFile << "      <PDataArray Name=\"typeIds\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float32\"/>\n";
-  timestepFile << "      <PDataArray Name=\"ids\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float32\"/>\n";
+  timestepFile << "      <PDataArray Name=\"forces\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>\n";
+  timestepFile << "      <PDataArray Name=\"typeIds\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\"/>\n";
+  timestepFile << "      <PDataArray Name=\"ids\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\"/>\n";
   timestepFile << "    </PPointData>\n";
   timestepFile << "    <PCellData/>\n";
   timestepFile << "    <PPoints>\n";
-  timestepFile << "      <PDataArray Name=\"points\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>\n";
+  timestepFile << "      <PDataArray Name=\"positions\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>\n";
   timestepFile << "    </PPoints>\n";
   timestepFile << "    <PCells>\n";
   timestepFile << "      <PDataArray Name=\"types\" NumberOfComponents=\"0\" format=\"ascii\" type=\"Float32\"/>\n";
@@ -319,12 +319,12 @@ void ParallelVtkWriter::createPvtsFile(const int &currentIteration, const Regula
   timestepFile << "    <PCellData>\n";
   timestepFile << "      <PDataArray type=\"Int32\" Name=\"DomainId\" />\n";
   timestepFile << "      <PDataArray type=\"Float32\" Name=\"CellSizeFactor\" />\n";
-  timestepFile << "      <PDataArray type=\"String\" Name=\"Container\" />\n";
-  timestepFile << "      <PDataArray type=\"String\" Name=\"DataLayout\" />\n";
-  timestepFile << "      <PDataArray type=\"String\" Name=\"FullConfiguration\" />\n";
-  timestepFile << "      <PDataArray type=\"String\" Name=\"LoadEstimator\" />\n";
-  timestepFile << "      <PDataArray type=\"String\" Name=\"Traversal\" />\n";
-  timestepFile << "      <PDataArray type=\"String\" Name=\"Newton3\" />\n";
+  //timestepFile << "      <PDataArray type=\"String\" Name=\"Container\" />\n";
+  //timestepFile << "      <PDataArray type=\"String\" Name=\"DataLayout\" />\n";
+  //timestepFile << "      <PDataArray type=\"String\" Name=\"FullConfiguration\" />\n";
+  //timestepFile << "      <PDataArray type=\"String\" Name=\"LoadEstimator\" />\n";
+  //timestepFile << "      <PDataArray type=\"String\" Name=\"Traversal\" />\n";
+  //timestepFile << "      <PDataArray type=\"String\" Name=\"Newton3\" />\n";
   timestepFile << "      <PDataArray type=\"Int32\" Name=\"Rank\" />\n";
   timestepFile << "    </PCellData>\n";
   timestepFile << "    <PPoints>\n";
