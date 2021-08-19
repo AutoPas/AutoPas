@@ -73,7 +73,7 @@ void RegularGridDecomposition::update(const double &work) {
       double distributedWorkInPlane;
       autopas::AutoPas_MPI_Allreduce(&distributedWork, &distributedWorkInPlane, 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM,
                                      _planarCommunicators[i]);
-      distributedWorkInPlane = distributedWorkInPlane / _decomposition[i + 1];
+      distributedWorkInPlane = distributedWorkInPlane / _decomposition[(i + 1) % _dimensionCount];
 
       const int leftNeighbour = _neighbourDomainIndices[(i * 2) % _neighbourCount];
       const int rightNeighbour = _neighbourDomainIndices[(i * 2 + 1) % _neighbourCount];
