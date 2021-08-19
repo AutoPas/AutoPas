@@ -142,6 +142,12 @@ class RegularGridDecomposition final : public DomainDecomposition {
   autopas::AutoPas_MPI_Comm _communicator;
 
   /**
+   * Contains the planar communicators along each dimension where the current process is a part of.
+   * A planar communicator contains all processes with the same coordinate in a single dimension.
+   */
+  std::array<autopas::AutoPas_MPI_Comm, 3> _planarCommunicators;
+
+  /**
    * Stores the domain cutoff width.
    */
   double _cutoffWidth;

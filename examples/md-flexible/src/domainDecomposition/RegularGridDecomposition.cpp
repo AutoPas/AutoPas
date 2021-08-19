@@ -69,24 +69,22 @@ void RegularGridDecomposition::update(const double &work) {
     autopas::AutoPas_MPI_Request dummyRequest;
 
     for (int i = 0; i < _dimensionCount; ++i) {
-      // Create planar communicator along shift axis. The shift axis is vertical to the dimension's direction.
-      autopas::AutoPas_MPI_Comm planarCommunicator;
-      autopas::AutoPas_MPI_Comm_split(_communicator, _domainId[i], _domainId[i], &planarCommunicator);
-
       // Calculate average distributed work in planar communicator.
       double distributedWorkInPlane;
       autopas::AutoPas_MPI_Allreduce(&distributedWork, &distributedWorkInPlane, 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM,
-                                     planarCommunicator);
+                                     _planarCommunicators[i]);
       distributedWorkInPlane = distributedWorkInPlane / _decomposition[i + 1];
 
       const int leftNeighbour = _neighbourDomainIndices[(i * 2) % _neighbourCount];
       const int rightNeighbour = _neighbourDomainIndices[(i * 2 + 1) % _neighbourCount];
+
       if (_localBoxMin[i] != _globalBoxMin[i]) {
         autopas::AutoPas_MPI_Isend(&distributedWorkInPlane, 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
                                    &dummyRequest);
         autopas::AutoPas_MPI_Isend(&_localBoxMax[i], 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
                                    &dummyRequest);
       }
+
       if (_localBoxMax[i] != _globalBoxMax[i]) {
         autopas::AutoPas_MPI_Isend(&distributedWorkInPlane, 1, AUTOPAS_MPI_DOUBLE, rightNeighbour, 0, _communicator,
                                    &dummyRequest);
@@ -104,6 +102,7 @@ void RegularGridDecomposition::update(const double &work) {
         _localBoxMin[i] = DomainTools::balanceAdjacentDomains(neighbourPlaneWork, distributedWorkInPlane,
                                                               neighbourBoundary, _localBoxMax[i]);
       }
+
       if (_localBoxMax[i] != _globalBoxMax[i]) {
         double neighbourPlaneWork, neighbourBoundary;
         autopas::AutoPas_MPI_Recv(&neighbourPlaneWork, 1, AUTOPAS_MPI_DOUBLE, rightNeighbour, 0, _communicator,
@@ -123,6 +122,11 @@ void RegularGridDecomposition::initializeMPICommunicator() {
   autopas::AutoPas_MPI_Cart_create(AUTOPAS_MPI_COMM_WORLD, 3, _decomposition.data(), periods.data(), true,
                                    &_communicator);
   autopas::AutoPas_MPI_Comm_rank(_communicator, &_domainIndex);
+
+  // Create planar communicators used for diffuse load balancing.
+  for (int i = 0; i < _dimensionCount; ++i) {
+    autopas::AutoPas_MPI_Comm_split(_communicator, _domainId[i], _domainId[i], &_planarCommunicators[i]);
+  }
 }
 
 void RegularGridDecomposition::initializeLocalDomain() {
