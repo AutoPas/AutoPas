@@ -136,5 +136,5 @@ TEST_F(TestRegularGridDecomposition, testExchangeMigratingParticles) {
 
   auto [emigrants, updated] = autoPasContainer->updateContainer(true);
 
-  EXPECT_NO_THROW(domainDecomposition.exchangeMigratingParticles(autoPasContainer, emigrants));
+  EXPECT_NO_THROW(domainDecomposition.exchangeMigratingParticles(autoPasContainer, emigrants, updated));
 }
