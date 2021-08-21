@@ -130,9 +130,11 @@ TEST_F(TestRegularGridDecomposition, testExchangeMigratingParticles) {
   }
 
   for (auto particle = autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    std::array<double, 3> deltaPosition({0.01, 0.0, 0.0});
+    std::array<double, 3> deltaPosition({0.1, 0.0, 0.0});
     particle->addR(deltaPosition);
   }
 
-  EXPECT_NO_THROW(domainDecomposition.exchangeMigratingParticles(autoPasContainer));
+  auto [emigrants, updated] = autoPasContainer->updateContainer(true);
+
+  EXPECT_NO_THROW(domainDecomposition.exchangeMigratingParticles(autoPasContainer, emigrants));
 }

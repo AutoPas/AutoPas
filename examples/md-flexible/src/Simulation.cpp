@@ -159,14 +159,14 @@ void Simulation::run() {
       updatePositions();
       auto [emigrants, updated] =
           _autoPasContainer->updateContainer(_iteration % _configuration.verletRebuildFrequency.value == 0);
-      _domainDecomposition.exchangeMigratingParticles(_autoPasContainer, emigrants, updated);
 
       if (updated) {
         _timers.work.stop();
         _domainDecomposition.update(_timers.work.getTotalTime());
-        auto emigrants =
+        auto additionalEmigrants =
             _autoPasContainer->resizeBox(_domainDecomposition.getLocalBoxMin(), _domainDecomposition.getLocalBoxMax());
-        _domainDecomposition.exchangeMigratingParticles(_autoPasContainer, emigrants, true);
+        emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
+        _domainDecomposition.exchangeMigratingParticles(_autoPasContainer, emigrants);
         _timers.work.reset();
         _timers.work.start();
       }

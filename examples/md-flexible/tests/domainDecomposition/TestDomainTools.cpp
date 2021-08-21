@@ -29,7 +29,7 @@ TEST_F(TestDomainTools, testBalanceAdjacentDomains) {
   const double minA = 2;
   const double maxB = 24;
 
-  EXPECT_EQ(10.8, DomainTools::balanceAdjacentDomains(workA, workB, minA, maxB));
+  EXPECT_EQ(10.8, DomainTools::balanceAdjacentDomains(workA, workB, minA, maxB, 0));
 }
 
 TEST_F(TestDomainTools, testGenerateDecomposition) {
