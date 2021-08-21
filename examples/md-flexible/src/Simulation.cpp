@@ -166,11 +166,11 @@ void Simulation::run() {
         auto additionalEmigrants =
             _autoPasContainer->resizeBox(_domainDecomposition.getLocalBoxMin(), _domainDecomposition.getLocalBoxMax());
         emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
-        _domainDecomposition.exchangeMigratingParticles(_autoPasContainer, emigrants);
         _timers.work.reset();
         _timers.work.start();
       }
 
+      _domainDecomposition.exchangeMigratingParticles(_autoPasContainer, emigrants, updated);
       _domainDecomposition.exchangeHaloParticles(_autoPasContainer);
     }
 
