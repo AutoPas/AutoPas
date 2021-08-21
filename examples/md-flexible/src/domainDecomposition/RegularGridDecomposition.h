@@ -92,11 +92,8 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Exchanges migrating particles with all neighbours of the provided AutoPasContainer.
    * @param autoPasContainer: The container, where the migrating particles originate from.
    * @param emigrants: The emigrating particles send to neighbours.
-   * @param updated: Indicates if the autoPasContainer has been updated.
-   *                 In most cases use value returned from container.updateContainer().
    */
-  void exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer, std::vector<ParticleType> &emigrants,
-                                  const bool &updated);
+  void exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer, std::vector<ParticleType> &emigrants);
 
  private:
   /**
