@@ -19,11 +19,23 @@ cmake ..
 make md-flexible
 ```
 
+### Compiling with MPI
+To use the MPI parallelization of md-flexible activate `AUTOPAS_INCLUDE_MPI` via `cmake`:
+```bash
+cmake -DAUTOPAS_INCLUDE_MPI=ON ..
+Using this option does not guarantee that MPI will be used. There are some additional requirements:
+* MPI is installed
+* mpirun is called with more than 1 process
+
 ## Testing
 Simple tests can be run via:
 ```bash
 make mdFlexTests
 ctest -R mdFlexTests
+```
+To run Tests with MPI enabled:
+```bash
+mpiexec -np 4 ./examples/md-flexible/tests/mdFlexTests
 ```
 
 ## Usage
@@ -42,6 +54,12 @@ The Falling Drop example simulation can be started with:
  cd examples/md-flexible
  ./md-flexible --yaml-filename fallingDrop.yaml
 ```
+
+To execute md-flexible using MPI run the following command in the build directory:
+```bash
+mpirun -np 4 ./examples/md-flexible/md-flexible --yaml-filename ./examples/md-flexible/fallingDrop.yaml
+```
+The number 4 can be exchanged by any number assuming the hardware supports the selected number of processes.
 
 ### Input
 

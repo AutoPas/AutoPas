@@ -126,7 +126,7 @@ class MoleculeLJ final : public Particle {
    * Get the old force.
    * @return
    */
-  [[nodiscard]] std::array<double, 3> getOldf() const { return _oldF; }
+  [[nodiscard]] std::array<double, 3> getOldF() const { return _oldF; }
 
   /**
    * Set old force.
