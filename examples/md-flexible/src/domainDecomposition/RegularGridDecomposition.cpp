@@ -393,14 +393,12 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
   }
 }
 
-void RegularGridDecomposition::sendParticles(const std::vector<ParticleType> &particles, const int &receiver) {
+void RegularGridDecomposition::sendParticles(std::vector<ParticleType> &particles, const int &receiver) {
   std::vector<char> buffer;
 
   for (auto &particle : particles) {
     ParticleSerializationTools::serializeParticle(particle, buffer);
   }
-
-  size_t sizeOfParticleAttributes = sizeof(ParticleAttributes);
 
   sendDataToNeighbour(buffer, receiver);
 }
@@ -437,8 +435,8 @@ void RegularGridDecomposition::receiveDataFromNeighbour(const int &neighbour, st
                             AUTOPAS_MPI_STATUS_IGNORE);
 }
 
-void RegularGridDecomposition::sendAndReceiveParticlesLeftAndRight(const std::vector<ParticleType> &particlesToLeft,
-                                                                   const std::vector<ParticleType> &particlesToRight,
+void RegularGridDecomposition::sendAndReceiveParticlesLeftAndRight(std::vector<ParticleType> &particlesToLeft,
+                                                                   std::vector<ParticleType> &particlesToRight,
                                                                    const int &leftNeighbour, const int &rightNeighbour,
                                                                    std::vector<ParticleType> &receivedParticles) {
   if (_mpiIsEnabled && leftNeighbour != _domainIndex) {

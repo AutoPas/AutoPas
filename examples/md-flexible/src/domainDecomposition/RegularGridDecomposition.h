@@ -84,6 +84,12 @@ class RegularGridDecomposition final : public DomainDecomposition {
   const std::array<int, 3> getDomainId() const { return _domainId; }
 
   /**
+   * Returns the numnber of subdomains in the decomposition.
+   * @return numner of subdomains in the decomposition.
+   */
+  const int getSubdomainCount() { return _subdomainCount; }
+
+  /**
    * Checks if the provided coordinates are located in the local domain.
    * @param coordinates: The coordinates in question.
    * @return true if the coordinates lie inside the local domain, false otherwise.
@@ -251,7 +257,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param particles The particles to be sent to the receiver.
    * @param receiver The recipient of the particels.
    */
-  void sendParticles(const std::vector<ParticleType> &particles, const int &receiver);
+  void sendParticles(std::vector<ParticleType> &particles, const int &receiver);
 
   /**
    * Received particles sent by a sender.
@@ -282,8 +288,8 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param rightNeighbour: The right neighbour's index / rank.
    * @param receivedParticles: Container for the particles received from either neighbour.
    */
-  void sendAndReceiveParticlesLeftAndRight(const std::vector<ParticleType> &particlesToLeft,
-                                           const std::vector<ParticleType> &particlesToRight, const int &leftNeighbour,
+  void sendAndReceiveParticlesLeftAndRight(std::vector<ParticleType> &particlesToLeft,
+                                           std::vector<ParticleType> &particlesToRight, const int &leftNeighbour,
                                            const int &rightNeighbour, std::vector<ParticleType> &receivedParticles);
 
   /**
