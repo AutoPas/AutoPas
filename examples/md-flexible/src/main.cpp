@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
 #if defined(AUTOPAS_INCLUDE_MPI)
     std::cout << "MPI is running with " << domainDecomposition.getNumberOfSubdomains() << " ranks." << std::endl;
 #else
-    std::cout << "MPI is disabled." std::endl;
+    std::cout << "MPI is disabled." << std::endl;
 #endif
   }
 
