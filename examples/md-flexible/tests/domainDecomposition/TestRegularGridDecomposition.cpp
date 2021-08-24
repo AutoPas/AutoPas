@@ -47,8 +47,9 @@ void initializeAutoPasContainer(RegularGridDecomposition::SharedAutoPasContainer
 TEST_F(TestRegularGridDecomposition, testGetLocalDomain) {
   std::array<double, 3> globalBoxMin = {1.0, 1.0, 1.0};
   std::array<double, 3> globalBoxMax = {10.0, 10.0, 10.0};
+  std::array<bool, 3> subdividableDomains = {true, true, true};
 
-  RegularGridDecomposition domainDecomposition(globalBoxMin, globalBoxMax, 0, 0);
+  RegularGridDecomposition domainDecomposition(globalBoxMin, globalBoxMax, subdividableDomains, 0, 0);
 
   std::array<double, 3> globalBoxExtend = autopas::utils::ArrayMath::sub(globalBoxMax, globalBoxMin);
 
@@ -56,7 +57,7 @@ TEST_F(TestRegularGridDecomposition, testGetLocalDomain) {
   autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &numberOfProcesses);
 
   std::array<int, 3> decomposition;
-  DomainTools::generateDecomposition(numberOfProcesses, decomposition);
+  DomainTools::generateDecomposition(numberOfProcesses, subdividableDomains, decomposition);
 
   std::array<double, 3> expectedLocalBoxExtend = autopas::utils::ArrayMath::div(
       globalBoxExtend, {(double)decomposition[0], (double)decomposition[1], (double)decomposition[2]});
@@ -78,8 +79,9 @@ TEST_F(TestRegularGridDecomposition, testExchangeHaloParticles) {
 
   std::array<double, 3> globalBoxMin = {1.0, 1.0, 1.0};
   std::array<double, 3> globalBoxMax = {10.0, 10.0, 10.0};
+  std::array<bool, 3> subdividableDomains = {true, true, true};
 
-  RegularGridDecomposition domainDecomposition(globalBoxMin, globalBoxMax, 0, 0);
+  RegularGridDecomposition domainDecomposition(globalBoxMin, globalBoxMax, subdividableDomains, 0, 0);
 
   std::array<double, 3> localBoxMin = domainDecomposition.getLocalBoxMin();
   std::array<double, 3> localBoxMax = domainDecomposition.getLocalBoxMax();
@@ -109,8 +111,9 @@ TEST_F(TestRegularGridDecomposition, testExchangeMigratingParticles) {
 
   std::array<double, 3> globalBoxMin = {1.0, 1.0, 1.0};
   std::array<double, 3> globalBoxMax = {10.0, 10.0, 10.0};
+  std::array<bool, 3> subdividableDomains = {true, true, true};
 
-  RegularGridDecomposition domainDecomposition(globalBoxMin, globalBoxMax, 0, 0);
+  RegularGridDecomposition domainDecomposition(globalBoxMin, globalBoxMax, subdividableDomains, 0, 0);
 
   std::array<double, 3> localBoxMin = domainDecomposition.getLocalBoxMin();
   std::array<double, 3> localBoxMax = domainDecomposition.getLocalBoxMax();
