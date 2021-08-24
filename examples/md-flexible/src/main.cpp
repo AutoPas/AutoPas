@@ -26,6 +26,7 @@ int main(int argc, char **argv) {
   RegularGridDecomposition domainDecomposition(configuration.boxMin.value, configuration.boxMax.value,
                                                configuration.cutoff.value, configuration.verletSkinRadius.value);
 
+  // print start configuration and parallelization info
   if (domainDecomposition.getDomainIndex() == 0) {
     std::cout << configuration.to_string() << std::endl;
     std::cout << std::endl << "Using " << autopas::autopas_get_max_threads() << " Threads" << std::endl;
@@ -40,6 +41,7 @@ int main(int argc, char **argv) {
   simulation.run();
   simulation.finalize();
 
+  // if desired, print the configuration as a file at the end of the simulation.
   if (domainDecomposition.getDomainIndex() == 0) {
     if (configuration.dontCreateEndConfig.value) {
       std::ofstream configFileEnd("MDFlex_end_" + autopas::utils::Timer::getDateStamp() + ".yaml");
