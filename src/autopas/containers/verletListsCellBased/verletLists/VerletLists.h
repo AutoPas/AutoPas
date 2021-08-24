@@ -190,7 +190,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
       _particlePtr2indexMap[&(*iter)] = index;
     }
     size_t accumulatedListSize = 0;
-    for (auto &[particlePtr, neighborPtrVector] : _aosNeighborLists) {
+    for (const auto &[particlePtr, neighborPtrVector] : _aosNeighborLists) {
       accumulatedListSize += neighborPtrVector.size();
       size_t i_id = _particlePtr2indexMap[particlePtr];
       // each soa neighbor list should be of the same size as for aos
@@ -219,7 +219,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
    * Mapping of every particle, represented by its pointer, to an index.
    * The index indexes all particles in the container.
    */
-  std::unordered_map<Particle *, size_t> _particlePtr2indexMap;
+  std::unordered_map<const Particle *, size_t> _particlePtr2indexMap;
 
   /**
    * verlet list for SoA:
