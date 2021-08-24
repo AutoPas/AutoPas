@@ -9,6 +9,9 @@
 
 namespace {
 
+/**
+ * Stores the AttributeNames of the attributes of ParticleType which have to be communicated using MPI.
+ */
 constexpr std::array<typename ParticleType::AttributeNames, 15> Attributes = {
     ParticleType::AttributeNames::id,
     ParticleType::AttributeNames::posX,
@@ -26,8 +29,14 @@ constexpr std::array<typename ParticleType::AttributeNames, 15> Attributes = {
     ParticleType::AttributeNames::typeId,
     ParticleType::AttributeNames::ownershipState};
 
+/**
+ * The combined size in byte of the attributes which need to be communicated using MPI.
+ */
 constexpr size_t AttributesSize = 120;
 
+/**
+ * Serializes the attribute defined by I.
+ */
 template <size_t I>
 void serializeAttribute(ParticleType &particle, std::vector<char> &attributeVector, size_t &startIndex) {
   const auto attribute = particle.get<Attributes[I]>();
@@ -36,6 +45,9 @@ void serializeAttribute(ParticleType &particle, std::vector<char> &attributeVect
   startIndex += sizeOfValue;
 }
 
+/**
+ * Deserializes the attribute defined by I.
+ */
 template <size_t I>
 void deserializeAttribute(char *&attributeVector, ParticleType &particle, size_t &startIndex) {
   auto attribute = particle.get<Attributes[I]>();
@@ -45,13 +57,13 @@ void deserializeAttribute(char *&attributeVector, ParticleType &particle, size_t
   startIndex += sizeOfValue;
 }
 
+/**
+ * The implementation of serializeParticle using the expansion operator.
+ * @param particle: The particle which will be serialized.
+ * @param serializedParticle: The char array of the particles serialized attributes.
+ */
 template <size_t... I>
 void serializeParticleImpl(ParticleType &particle, std::vector<char> &serializedParticle, std::index_sequence<I...>) {
-  // Calculate size of serialized attributes
-  // size_t sizeOfAttributes = 0;
-  // auto increaseAttributesSize = [&](size_t addition) { sizeOfAttributes += addition; };
-  //(increaseAttributesSize(sizeof(particle.get<Attributes[I]>())), ...);
-
   // Serialize particle attributes
   size_t startIndex = 0;
   std::vector<char> attributesVector(AttributesSize);
@@ -61,6 +73,11 @@ void serializeParticleImpl(ParticleType &particle, std::vector<char> &serialized
   serializedParticle.insert(serializedParticle.end(), attributesVector.begin(), attributesVector.end());
 }
 
+/**
+ * The implementation fo deserializeParticle using the expansion operator.
+ * @param particleData: The particle data which will be deserialized.
+ * @param particle: The particle to which the deserialized attributes will be applied.
+ */
 template <size_t... I>
 void deserializeParticleImpl(char *particleData, ParticleType &particle, std::index_sequence<I...>) {
   size_t startIndex = 0;
@@ -69,7 +86,7 @@ void deserializeParticleImpl(char *particleData, ParticleType &particle, std::in
 }  // namespace
 
 namespace ParticleSerializationTools {
-void serializeParticle(ParticleType particle, std::vector<char> &serializedParticles) {
+void serializeParticle(ParticleType &particle, std::vector<char> &serializedParticles) {
   serializeParticleImpl(particle, serializedParticles, std::make_index_sequence<Attributes.size()>{});
 }
 

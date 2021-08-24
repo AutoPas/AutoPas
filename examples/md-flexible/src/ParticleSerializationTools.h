@@ -20,7 +20,7 @@ namespace ParticleSerializationTools {
  * @param particle The particle which will be serialized.
  * @param serializedParticles The container to wich the serialized particle will be appended.
  */
-void serializeParticle(ParticleType particle, std::vector<char> &serializedParticles);
+void serializeParticle(ParticleType &particle, std::vector<char> &serializedParticles);
 
 /**
  * Deserializes a serialized particle.
