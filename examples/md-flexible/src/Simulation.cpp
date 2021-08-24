@@ -485,10 +485,11 @@ void Simulation::logSimulationState() {
                                  AUTOPAS_MPI_COMM_WORLD);
   standardDeviationOfHomogeneity = standardDeviationOfHomogeneity / _domainDecomposition.getNumberOfSubdomains();
 
-  std::cout << "Total number of particles at the end of Simulation: " << totalNumberOfParticles << std::endl;
-  std::cout << "Owned: " << ownedParticles << std::endl;
-  std::cout << "Halo: " << haloParticles << std::endl;
-  std::cout << "Standard Deviation of Homogeneity: " << standardDeviationOfHomogeneity << std::endl;
+  std::cout << "\n\n"
+            << "Total number of particles at the end of Simulation: " << totalNumberOfParticles << "\n"
+            << "Owned: " << ownedParticles << "\n"
+            << "Halo: " << haloParticles << "\n"
+            << "Standard Deviation of Homogeneity: " << standardDeviationOfHomogeneity << std::endl;
 }
 
 void Simulation::logMeasurements() {
