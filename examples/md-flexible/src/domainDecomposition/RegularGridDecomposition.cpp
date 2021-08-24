@@ -55,9 +55,6 @@ RegularGridDecomposition::~RegularGridDecomposition() {}
 
 void RegularGridDecomposition::update(const double &work) {
   if (_mpiIsEnabled) {
-    // This corresponds to the work for each direction (dimension * 2).
-    const double distributedWork = calculateDistributedWork(work);
-
     // This is a dummy variable which is not being used.
     autopas::AutoPas_MPI_Request dummyRequest;
 
@@ -65,10 +62,10 @@ void RegularGridDecomposition::update(const double &work) {
       // Calculate average distributed work in planar communicator.
       const int domainCountAlongDimension = _decomposition[(i + 1) % _dimensionCount];
 
-      double distributedWorkInPlane = distributedWork;
+      double distributedWorkInPlane = work;
       if (domainCountAlongDimension > 1) {
-        autopas::AutoPas_MPI_Allreduce(&distributedWork, &distributedWorkInPlane, 1, AUTOPAS_MPI_DOUBLE,
-                                       AUTOPAS_MPI_SUM, _planarCommunicators[i]);
+        autopas::AutoPas_MPI_Allreduce(&work, &distributedWorkInPlane, 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM,
+                                       _planarCommunicators[i]);
         distributedWorkInPlane = distributedWorkInPlane / domainCountAlongDimension;
       }
 
@@ -128,7 +125,8 @@ void RegularGridDecomposition::initializeMPICommunicator() {
   // Create planar communicators used for diffuse load balancing.
   for (int i = 0; i < _dimensionCount; ++i) {
     if (_mpiIsEnabled) {
-      autopas::AutoPas_MPI_Comm_split(_communicator, _domainId[i], _domainId[i], &_planarCommunicators[i]);
+      autopas::AutoPas_MPI_Comm_split(_communicator, _domainId[(i + 2) % _dimensionCount], _domainId[i],
+                                      &_planarCommunicators[i]);
     } else {
       _planarCommunicators[i] = AUTOPAS_MPI_COMM_WORLD;
     }
@@ -471,18 +469,4 @@ int RegularGridDecomposition::convertIdToIndex(const std::array<int, 3> &domainI
   }
 
   return neighbourDomainIndex;
-}
-
-double RegularGridDecomposition::calculateDistributedWork(const double work) {
-  size_t numberOfShiftableBoundaries = 0;
-  for (int i = 0; i < _dimensionCount; ++i) {
-    if (_localBoxMin[i] != _globalBoxMin[i]) {
-      numberOfShiftableBoundaries++;
-    }
-    if (_localBoxMax[i] != _globalBoxMax[i]) {
-      numberOfShiftableBoundaries++;
-    }
-  }
-
-  return work / (numberOfShiftableBoundaries != 0 ? numberOfShiftableBoundaries : 1);
 }

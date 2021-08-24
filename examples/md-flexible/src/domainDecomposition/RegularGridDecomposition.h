@@ -280,15 +280,4 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Converts a domain id to the domain index, i.e. rank of the local processor.
    */
   int convertIdToIndex(const std::array<int, 3> &domainIndex);
-
-  /**
-   * Calculates the amount of work which will be considered along respecive local domain boundaries.
-   * If a domain has a total work of 10 and 4 boundary planes which do not lie on a global boundary plane,
-   * the resulting distributed work is 10/4 = 2.5.
-   * Boundary planes which lie on globale boundary planes cannot be shifted.
-   * This distributed work can be used to adjust the respective domain boundaries.
-   * @param work: The total work performed within the local box.
-   * @return work which can be used to adjust each siftable boundary plane position.
-   */
-  double calculateDistributedWork(const double work);
 };
