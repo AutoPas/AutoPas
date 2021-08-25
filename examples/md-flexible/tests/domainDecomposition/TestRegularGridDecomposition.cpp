@@ -70,68 +70,115 @@ TEST_F(TestRegularGridDecomposition, testGetLocalDomain) {
 }
 
 TEST_F(TestRegularGridDecomposition, testExchangeHaloParticles) {
-  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename", std::string(YAMLDIRECTORY) + "cubeGrid.yaml"};
+  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename", std::string(YAMLDIRECTORY) + "particleExchangeTest.yaml"};
 
   char *argv[3] = {arguments[0].data(), arguments[1].data(), arguments[2].data()};
 
   MDFlexConfig configuration(3, argv);
 
-  std::array<double, 3> globalBoxMin = {1.0, 1.0, 1.0};
-  std::array<double, 3> globalBoxMax = {10.0, 10.0, 10.0};
+  std::array<double, 3> localBoxMin = configuration.boxMin.value;
+  std::array<double, 3> localBoxMax = configuration.boxMax.value;
 
-  RegularGridDecomposition domainDecomposition(globalBoxMin, globalBoxMax, 0, 0);
-
-  std::array<double, 3> localBoxMin = domainDecomposition.getLocalBoxMin();
-  std::array<double, 3> localBoxMax = domainDecomposition.getLocalBoxMax();
-  for (int i = 0; i < localBoxMin.size(); ++i) {
-    configuration.boxMin.value[i] = localBoxMin[i];
-    configuration.boxMax.value[i] = localBoxMax[i];
-  }
+  RegularGridDecomposition domainDecomposition(configuration.boxMin.value, configuration.boxMax.value, configuration.cutoff.value, configuration.verletSkinRadius.value);
 
   auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
 
   initializeAutoPasContainer(autoPasContainer, configuration);
 
-  for (auto &particle : configuration.getParticles()) {
-    if (domainDecomposition.isInsideLocalDomain(particle.getR())) {
+  std::vector<std::vector<double>> particlePositions = {
+    {1.5, 1.5, 1.5}, {5.0, 1.5, 1.5}, {8.5, 1.5,  1.5},
+    {1.5, 5.0, 1.5}, {5.0, 5.0, 1.5}, {8.5, 5.0,  1.5},
+    {1.5, 8.5, 1.5}, {5.0, 8.5, 1.5}, {8.5, 8.5,  1.5},
+
+    {1.5, 1.5, 5.0}, {5.0, 1.5, 5.0}, {8.5, 1.5,  5.0},
+    {1.5, 5.0, 5.0}, {5.0, 5.0, 5.0}, {8.5, 5.0,  5.0},
+    {1.5, 8.5, 5.0}, {5.0, 8.5, 5.0}, {8.5, 8.5,  5.0},
+
+    {1.5, 1.5, 8.5}, {5.0, 1.5, 8.5}, {8.5, 1.5,  8.5},
+    {1.5, 5.0, 8.5}, {5.0, 5.0, 8.5}, {8.5, 5.0,  8.5},
+    {1.5, 8.5, 8.5}, {5.0, 8.5, 8.5}, {8.5, 8.5,  8.5}
+  };
+  
+  size_t id = 0;
+  for (const auto position : particlePositions) {
+      ParticleType particle;
+      particle.setID(id);
+      particle.setR({position[0], position[1], position[2]});
+
       autoPasContainer->addParticle(particle);
-    }
+
+      ++id;
   }
 
   EXPECT_NO_THROW(domainDecomposition.exchangeHaloParticles(autoPasContainer));
+
+  const size_t haloParticleCount = autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::halo);
+  EXPECT_EQ(haloParticleCount,98);
 }
 
 TEST_F(TestRegularGridDecomposition, testExchangeMigratingParticles) {
-  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename", std::string(YAMLDIRECTORY) + "cubeGrid.yaml"};
+  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename", std::string(YAMLDIRECTORY) + "particleExchangeTest.yaml"};
 
   char *argv[3] = {arguments[0].data(), arguments[1].data(), arguments[2].data()};
+
   MDFlexConfig configuration(3, argv);
 
-  std::array<double, 3> globalBoxMin = {1.0, 1.0, 1.0};
-  std::array<double, 3> globalBoxMax = {10.0, 10.0, 10.0};
+  std::array<double, 3> localBoxMin = configuration.boxMin.value;
+  std::array<double, 3> localBoxMax = configuration.boxMax.value;
 
-  RegularGridDecomposition domainDecomposition(globalBoxMin, globalBoxMax, 0, 0);
-
-  std::array<double, 3> localBoxMin = domainDecomposition.getLocalBoxMin();
-  std::array<double, 3> localBoxMax = domainDecomposition.getLocalBoxMax();
-  for (int i = 0; i < localBoxMin.size(); ++i) {
-    configuration.boxMin.value[i] = localBoxMin[i];
-    configuration.boxMax.value[i] = localBoxMax[i];
-  }
+  RegularGridDecomposition domainDecomposition(configuration.boxMin.value, configuration.boxMax.value, configuration.cutoff.value, configuration.verletSkinRadius.value);
 
   auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
 
   initializeAutoPasContainer(autoPasContainer, configuration);
 
-  for (auto &particle : configuration.getParticles()) {
-    if (domainDecomposition.isInsideLocalDomain(particle.getR())) {
+  std::vector<std::vector<double>> particlePositions = {
+    {1.5, 1.5, 1.5}, {5.0, 1.5, 1.5}, {8.5, 1.5,  1.5},
+    {1.5, 5.0, 1.5}, {5.0, 5.0, 1.5}, {8.5, 5.0,  1.5},
+    {1.5, 8.5, 1.5}, {5.0, 8.5, 1.5}, {8.5, 8.5,  1.5},
+
+    {1.5, 1.5, 5.0}, {5.0, 1.5, 5.0}, {8.5, 1.5,  5.0},
+    {1.5, 5.0, 5.0}, {5.0, 5.0, 5.0}, {8.5, 5.0,  5.0},
+    {1.5, 8.5, 5.0}, {5.0, 8.5, 5.0}, {8.5, 8.5,  5.0},
+
+    {1.5, 1.5, 8.5}, {5.0, 1.5, 8.5}, {8.5, 1.5,  8.5},
+    {1.5, 5.0, 8.5}, {5.0, 5.0, 8.5}, {8.5, 5.0,  8.5},
+    {1.5, 8.5, 8.5}, {5.0, 8.5, 8.5}, {8.5, 8.5,  8.5}
+  };
+  
+  size_t id = 0;
+  for (const auto position : particlePositions) {
+      ParticleType particle;
+      particle.setID(id);
+      particle.setR({position[0], position[1], position[2]});
+
       autoPasContainer->addParticle(particle);
-    }
+
+      ++id;
   }
 
+
   for (auto particle = autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    std::array<double, 3> deltaPosition({0.01, 0.0, 0.0});
-    particle->addR(deltaPosition);
+    auto position = particle->getR();
+    if (position[0] < 2.5) {
+      position[0] -= 3.0;
+    }
+    else if (position[0] > 7.5) {
+      position[0] += 3.0;
+    }
+    if (position[1] < 2.5) {
+      position[1] -= 3.0;
+    }
+    else if (position[1] > 7.5) {
+      position[1] += 3.0;
+    }
+    if (position[2] < 2.5) {
+      position[2] -= 3.0;
+    }
+    else if (position[2] > 7.5) {
+      position[2] += 3.0;
+    }
+    particle->setR(position);
   }
 
   EXPECT_NO_THROW(domainDecomposition.exchangeMigratingParticles(autoPasContainer));
