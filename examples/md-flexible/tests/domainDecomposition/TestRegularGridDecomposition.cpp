@@ -75,9 +75,6 @@ TEST_F(TestRegularGridDecomposition, testExchangeHaloParticles) {
   char *argv[3] = {arguments[0].data(), arguments[1].data(), arguments[2].data()};
 
   MDFlexConfig configuration(3, argv);
-  std::cout << "Configuration: " << configuration.cutoff.value << ", " << configuration.verletSkinRadius.value << std::endl;
-  std::cout << "BoxMin: " << autopas::utils::ArrayUtils::to_string(configuration.boxMin.value) << std::endl;
-  std::cout << "BoxMax: " << autopas::utils::ArrayUtils::to_string(configuration.boxMax.value) << std::endl;
 
   std::array<double, 3> localBoxMin = configuration.boxMin.value;
   std::array<double, 3> localBoxMax = configuration.boxMax.value;
