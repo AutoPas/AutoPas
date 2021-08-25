@@ -388,7 +388,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @note This function additionally iterates over the _particlesToAdd vector if the tower-structure isn't valid.
    */
   template <typename Lambda, typename A>
-  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) const {
+  void reduce(Lambda reduceLambda, A &result,
+              IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) const {
     if (_isValid != ValidityState::invalid) {
       if (not particlesToAddEmpty()) {
         autopas::utils::ExceptionHandler::exception(

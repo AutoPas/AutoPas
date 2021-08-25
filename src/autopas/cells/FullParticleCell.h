@@ -284,8 +284,8 @@ class FullParticleCell : public ParticleCell<Particle> {
 
   template <bool ownershipCheck, bool regionCheck, typename Lambda, typename A>
   void _reduce(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
-                const std::array<double, 3> &higherCorner,
-                IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) {
+               const std::array<double, 3> &higherCorner,
+               IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) {
     for (Particle &p : _particles) {
       if ((not ownershipCheck) or isParticleValid(p, behavior)) {
         if ((not regionCheck) or isParticleInRegion(p, lowerCorner, higherCorner)) {
