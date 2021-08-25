@@ -271,8 +271,9 @@ class AutoPas {
    * @note not actually parallel until kokkos integration
    */
   template <typename Lambda>
-  void forEachInRegionParallel(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-                       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+  void forEachInRegionParallel(Lambda forEachLambda, std::array<double, 3> lowerCorner,
+                               std::array<double, 3> higherCorner,
+                               IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     _logicHandler->forEachInRegionParallel(forEachLambda, lowerCorner, higherCorner, behavior);
   }
 
@@ -281,8 +282,9 @@ class AutoPas {
    * @note const version
    */
   template <typename Lambda>
-  void forEachInRegionParallel(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-                       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
+  void forEachInRegionParallel(Lambda forEachLambda, std::array<double, 3> lowerCorner,
+                               std::array<double, 3> higherCorner,
+                               IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     std::as_const(*_logicHandler).forEachInRegionParallel(forEachLambda, lowerCorner, higherCorner, behavior);
   }
 

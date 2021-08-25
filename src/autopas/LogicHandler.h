@@ -266,8 +266,9 @@ class LogicHandler {
    */
   template <typename Lambda>
   void forEachParallel(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    //TODO lgaertner: parallelize with kokkos integration
-    withStaticContainerType(_autoTuner.getContainer(), [&](auto container) { container->forEach(forEachLambda, behavior); });
+    // TODO lgaertner: parallelize with kokkos integration
+    withStaticContainerType(_autoTuner.getContainer(),
+                            [&](auto container) { container->forEach(forEachLambda, behavior); });
   }
 
   /**
@@ -275,8 +276,9 @@ class LogicHandler {
    */
   template <typename Lambda>
   void forEachParallel(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
-    //TODO lgaertner: parallelize with kokkos integration
-    withStaticContainerType(_autoTuner.getContainer(), [&](auto container) { container->forEach(forEachLambda, behavior); });
+    // TODO lgaertner: parallelize with kokkos integration
+    withStaticContainerType(_autoTuner.getContainer(),
+                            [&](auto container) { container->forEach(forEachLambda, behavior); });
   }
 
   /**
@@ -284,7 +286,8 @@ class LogicHandler {
    */
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    withStaticContainerType(_autoTuner.getContainer(), [&](auto container) { container->forEach(forEachLambda, behavior); });
+    withStaticContainerType(_autoTuner.getContainer(),
+                            [&](auto container) { container->forEach(forEachLambda, behavior); });
   }
 
   /**
@@ -292,7 +295,8 @@ class LogicHandler {
    */
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
-    withStaticContainerType(_autoTuner.getContainer(), [&](auto container) { container->forEach(forEachLambda, behavior); });
+    withStaticContainerType(_autoTuner.getContainer(),
+                            [&](auto container) { container->forEach(forEachLambda, behavior); });
   }
 
   /**
@@ -342,9 +346,9 @@ class LogicHandler {
    */
   template <typename Lambda>
   void forEachInRegionParallel(Lambda forEachLambda, const std::array<double, 3> lowerCorner,
-                       const std::array<double, 3> higherCorner,
-                       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    //TODO (lgaertner): parallelize with kokkos integration
+                               const std::array<double, 3> higherCorner,
+                               IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+    // TODO (lgaertner): parallelize with kokkos integration
     withStaticContainerType(_autoTuner.getContainer(), [&](auto container) {
       container->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
     });
@@ -355,9 +359,9 @@ class LogicHandler {
    */
   template <typename Lambda>
   void forEachInRegionParallel(Lambda forEachLambda, const std::array<double, 3> lowerCorner,
-                       const std::array<double, 3> higherCorner,
-                       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
-    //TODO (lgaertner): parallelize with kokkos integration
+                               const std::array<double, 3> higherCorner,
+                               IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
+    // TODO (lgaertner): parallelize with kokkos integration
     withStaticContainerType(_autoTuner.getContainer(), [&](auto container) {
       container->forEach(forEachLambda, lowerCorner, higherCorner, behavior);
     });

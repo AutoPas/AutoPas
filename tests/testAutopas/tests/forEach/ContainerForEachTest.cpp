@@ -32,8 +32,8 @@ auto ContainerForEachTest::defaultInit(AutoPasT &autoPas, autopas::ContainerOpti
   return std::make_tuple(haloBoxMin, haloBoxMax);
 }
 
-template<typename Ids>
-std::vector<size_t> getExpectedIds (autopas::IteratorBehavior behavior, Ids owned, Ids halo) {
+template <typename Ids>
+std::vector<size_t> getExpectedIds(autopas::IteratorBehavior behavior, Ids owned, Ids halo) {
   std::vector<size_t> expectedIDs;
   switch (behavior) {
     case autopas::IteratorBehavior::owned: {
@@ -161,7 +161,7 @@ TEST_P(ContainerForEachTest, testForEachInRegionParallel) {
   std::array<double, 3> searchBoxMax = add(autoPas.getBoxMin(), searchBoxLengthHalf);
 
   auto [particleIDsOwned, particleIDsHalo, particleIDsInBoxOwned, particleIDsInBoxHalo] =
-  ForEachTestHelper::fillContainerAroundBoundary(autoPas, searchBoxMin, searchBoxMax);
+      ForEachTestHelper::fillContainerAroundBoundary(autoPas, searchBoxMin, searchBoxMax);
 
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
@@ -206,7 +206,7 @@ TEST_P(ContainerForEachTest, testForEachParallel) {
   std::array<double, 3> searchBoxMax = add(autoPas.getBoxMin(), searchBoxLengthHalf);
 
   auto [particleIDsOwned, particleIDsHalo, particleIDsInBoxOwned, particleIDsInBoxHalo] =
-  ForEachTestHelper::fillContainerAroundBoundary(autoPas, searchBoxMin, searchBoxMax);
+      ForEachTestHelper::fillContainerAroundBoundary(autoPas, searchBoxMin, searchBoxMax);
 
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
