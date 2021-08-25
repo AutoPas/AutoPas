@@ -1,21 +1,16 @@
 #pragma once
 
 #include <any>
-#include <boost/spirit/home/x3.hpp>
 
 #include "RuleBasedProgramTree.h"
 
 namespace autopas::rule_syntax {
 
-
-
 namespace grammar {
 struct VariableDefContext {
   std::map<std::string, Define*> definitions;
 };
-
-using namespace boost::spirit;
-
+/*
 struct ContainerOption_ : x3::symbols<Literal> {
   ContainerOption_() {
     for (const auto &[option, name] : ContainerOption::getOptionNames()) {
@@ -84,13 +79,19 @@ inline auto toLiteral = [](const auto& ctx) {
   x3::_val(ctx) = Literal{x3::_attr(ctx)};
 };
 
-/*inline auto toSharedPtr = [](const auto& ctx) {
-  using value_t = std::remove_reference_t<decltype(x3::_attr(ctx))>;
-  x3::_val(ctx) = std::make_shared<value_t>(x3::_attr(ctx));
-};*/
+inline auto toSharedPtrVariant = [](const auto& ctx) {
+  using value_t = decltype(*(x3::_val(ctx).get()));
+
+  boost::apply_visitor( [&](const auto& val) { x3::_val(ctx) = std::make_shared<value_t>(val); },
+      x3::_attr(ctx));
+};
+
+inline auto createConfigurationPattern = [](const auto& ctx) {
+
+};
 
 inline auto variableDefineForName = [](const auto& ctx) {
-  x3::_val(ctx) = x3::get<VariableDefContext>(ctx).get().definitions.at(x3::_attr(ctx));
+  x3::_val(ctx) = Variable{x3::get<VariableDefContext>(ctx).get().definitions.at(x3::_attr(ctx))};
 };
 
 inline auto addToVariableDefines = [](const auto& ctx) {
@@ -117,19 +118,19 @@ inline x3::rule<class define, Define> define = "define";
 auto const define_def = "define" >> variable_name >> '=' >> literal >> ';';
 
 inline x3::rule<class variable, Variable> variable = "variable";
-auto const variable_def = variable_name[variableDefineForName];
+auto const variable_def = x3::eps >> (variable_name[variableDefineForName]);
 
-inline x3::rule<class expression, ExpressionVal> expression = "expression";
+inline x3::rule<class expression, std::shared_ptr<ExpressionVal>> expression = "expression";
 inline x3::rule<class binary_operator, BinaryOperator> binary_operator = "binary operator";
 
 inline x3::rule<class property_value, std::vector<Literal>> property_value = "property value";
 auto const property_value_def = variable_name | literal;
 
-auto const expression_def = binary_operator | variable | literal;
+auto const expression_def = (binary_operator | variable | literal)[toSharedPtrVariant];
 auto const binary_operator_def = expression >> BinaryOperator_{} >> expression;
 
 inline x3::rule<class configuration_pattern, ConfigurationPattern> configuration_pattern = "configuration pattern";
-auto const configuration_pattern_def = '[' >> (ConfigurationProperty_{} >> '=' >> property_value) % ',' >> ']' ;
+auto const configuration_pattern_def = ('[' >> (ConfigurationProperty_{} >> '=' >> property_value) % ',' >> ']')[createConfigurationPattern];
 
 inline x3::rule<class configuration_order, ConfigurationOrder> configuration_order = "configuration order";
 auto const configuration_order_def = configuration_pattern >> ">=" >> configuration_pattern >> ';';
@@ -146,22 +147,22 @@ auto const program_def = statement % x3::space;
 BOOST_SPIRIT_DEFINE(unsigned_val, literal_val, literal, variable_name, define, define_list, variable, expression,
                     binary_operator, property_value, configuration_pattern, configuration_order,
                     statement, if_statement, program);
+*/
 }
 
 class RuleBasedProgramParser {
  public:
-  explicit RuleBasedProgramParser(std::map<std::string, Define> initialDefinitions)
-      : _initialDefinitions(std::move(initialDefinitions)) {}
+ explicit RuleBasedProgramParser(std::map<std::string, Define>& initialDefinitions)
+      : _initialDefinitions(initialDefinitions) {}
 
   std::shared_ptr<Statement> parseStatement(std::stringstream &input) {
     switch (input.peek()) { }
     return {};
   }
 
-  static void test() {
-    using namespace boost::spirit;
+  static void test();
 
-
+/*
     RuleBasedProgramTree program;
     std::any testRes;
     Define defi{"", Literal()};
@@ -171,32 +172,18 @@ class RuleBasedProgramParser {
     auto first = test.begin();
     bool matches = x3::phrase_parse(first, test.end(),
                                     x3::with<grammar::VariableDefContext>(std::ref(varContext))[grammar::expression],
-                                    x3::space, testRes);
-    std::cout << "Matches: " << matches << std::endl;
-    std::cout << "Full Match: " << (first == test.end()) << std::endl;
+                                    x3::space, testRes);*/
+    //std::cout << "Matches: " << matches << std::endl;
+    //std::cout << "Full Match: " << (first == test.end()) << std::endl;
     //for(const auto& val : values) {
       //std::cout << ContainerOption::getOptionNames()[val] << std::endl;
     //}
-  }
 
-  std::pair<RuleBasedProgramTree, CodeGenerationContext> parse(const std::string &programCode) {
-    CodeGenerationContext context{{}};
-    for (const auto &def : _initialDefinitions) {
-      context.addVariable(def.second.variable);
-    }
-
-    RuleBasedProgramTree program;
-    std::stringstream input{programCode};
-    while (not input.eof()) {
-      //program.statements.push_back(parseStatement(input));
-    }
-
-    return {{}, context};
-  }
+  std::pair<RuleBasedProgramTree, CodeGenerationContext> parse(const std::string &programCode);
 
  private:
-  std::map<std::string, Define> _initialDefinitions;
+  std::map<std::string, Define>& _initialDefinitions;
   std::map<std::string, DefineList> _lists;
 };
 
-} // namespace autopas
+} // namespace autopas_rule_syntax

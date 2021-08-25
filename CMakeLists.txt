@@ -77,6 +77,8 @@ include(version.cmake)
 # libraries
 add_subdirectory(libs)
 
+include(antlr4cpp)
+
 # autopas
 add_subdirectory(src)
 # autopasTools

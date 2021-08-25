@@ -78,8 +78,8 @@ class RuleBasedTuning : public FullSearch {
     Define numParticlesDef{"numParticles", Literal(info.numParticles)};
     Define numCellsDef{"numCells", Literal(numCells)};
     CodeGenerationContext context{{}};
-    context.addVariable(numCellsDef.variable);
-    context.addVariable(numParticlesDef.variable);
+    context.addVariable(numCellsDef);
+    context.addVariable(numParticlesDef);
 
     auto verletLists = DefineList("VerletListsContainer",
                                                     std::vector<Literal>{

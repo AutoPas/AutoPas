@@ -19,4 +19,17 @@ namespace autopas::rule_syntax {
 
     context.freeStack(1);
   }
-} // namespace autopas::rule_syntax
+
+  void CodeGenerationContext::addVariable(const Define &definition) {
+    addressEnvironment.insert({definition.variable, {&definition, addressEnvironment.size()}});
+  }
+
+  [[nodiscard]] size_t CodeGenerationContext::addressOf(const std::string &name) const {
+    return addressEnvironment.at(name).second;
+  }
+
+  const Define* CodeGenerationContext::definitionOf(const std::string& name) const {
+    return addressEnvironment.at(name).first;
+  }
+
+} // namespace autopas_rule_syntax

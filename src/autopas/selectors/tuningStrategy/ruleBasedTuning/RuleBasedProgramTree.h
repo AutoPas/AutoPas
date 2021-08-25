@@ -13,6 +13,8 @@
 
 namespace autopas {
 
+enum class Type { BOOL, DOUBLE, SIZE_T, CONTAINER, TRAVERSAL, LOAD_ESTIMATOR, DATA_LAYOUT, NEWTON3, CELL_SIZE_FACTOR };
+
 struct ConfigurationPattern {
   std::set<ContainerOption> _containers;
   std::set<TraversalOption> _traversals;
@@ -20,6 +22,15 @@ struct ConfigurationPattern {
   std::set<DataLayoutOption> _dataLayouts;
   std::set<Newton3Option> _newton3Options;
   std::set<double> _cellSizeFactors;
+
+  ConfigurationPattern() = default;
+
+  void add(const RuleVM::MemoryCell& value) {
+    std::visit([&](const auto& val) {
+      addHelper(val, _containers, _traversals, _loadEstimators, _dataLayouts, _newton3Options,
+                _cellSizeFactors);
+    }, value);
+  }
 
   [[nodiscard]] bool matches(const Configuration &configuration) const {
     return (_containers.empty() or contains(_containers, configuration.container)) and
@@ -35,20 +46,30 @@ struct ConfigurationPattern {
   [[nodiscard]] bool contains(const std::set<T> &set, const T &option) const {
     return set.find(option) != set.end();
   }
+
+  template<class T, class SetT>
+  void addHelper2(T value, SetT& set) {
+    if constexpr (std::is_same_v<T, typename SetT::value_type>) {
+      set.insert(value);
+    }
+  }
+
+  template<class T, class... SetT>
+  void addHelper(T value, SetT&... sets) {
+    (addHelper2(value, sets), ...);
+  }
 };
 
 namespace rule_syntax {
 
 class CodeGenerationContext;
 
-using StatementVal = std::variant<class If, class Define, class DefineList, class ConfigurationOrder>;
-using ExpressionVal = std::variant<class Literal, class Variable, class BinaryOperator>;
+using StatementVal = std::variant<struct If, struct Define, struct DefineList, struct ConfigurationOrder>;
+using ExpressionVal = std::variant<struct Literal, struct Variable, struct BinaryOperator>;
 
 struct Statement {
   virtual void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const = 0;
 };
-
-enum class Type { BOOL, DOUBLE, SIZE_T, CONTAINER, TRAVERSAL, LOAD_ESTIMATOR, DATA_LAYOUT, NEWTON3, CELL_SIZE_FACTOR };
 
 inline Type typeOf(const RuleVM::MemoryCell &memoryCell) { return static_cast<Type>(memoryCell.index()); }
 
@@ -61,7 +82,7 @@ struct DefineList;
 
 class CodeGenerationContext {
  public:
-  explicit CodeGenerationContext(std::map<std::string, size_t> initialAddressEnvironment)
+  explicit CodeGenerationContext(std::map<std::string, std::pair<const Define*, size_t>> initialAddressEnvironment)
       : currentNeededStack(0), maxNeededStack(0), addressEnvironment(std::move(initialAddressEnvironment)) {}
 
   void allocateStack(size_t num) {
@@ -71,9 +92,11 @@ class CodeGenerationContext {
 
   void freeStack(size_t num) { currentNeededStack -= num; }
 
-  void addVariable(const std::string &name) { addressEnvironment.insert({name, addressEnvironment.size()}); }
+  void addVariable(const Define &definition);
 
-  [[nodiscard]] size_t addressOf(const std::string &name) const { return addressEnvironment.at(name); }
+  [[nodiscard]] size_t addressOf(const std::string &name) const;
+
+  [[nodiscard]] const Define* definitionOf(const std::string& name) const;
 
   [[nodiscard]] auto getMaxStackSize() const { return maxNeededStack; }
 
@@ -92,7 +115,7 @@ class CodeGenerationContext {
   size_t currentNeededStack;
   size_t maxNeededStack;
 
-  std::map<std::string, size_t> addressEnvironment;
+  std::map<std::string, std::pair<const Define*, size_t>> addressEnvironment;
   std::map<std::string, const DefineList *> lists;
   std::vector<ConfigurationPattern> configurationPatterns;
 };
@@ -117,17 +140,22 @@ struct DefineList : public Statement {
   std::string listName;
   std::vector<Literal> values;
 
+  DefineList() = default;
+
   DefineList(std::string listName, std::vector<Literal> values)
       : listName(std::move(listName)), values(std::move(values)) {}
 
   void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override {
     context.addList(listName, this);
   }
+
 };
 
 struct ConfigurationOrder : public Statement {
   ConfigurationPattern greater;
   ConfigurationPattern smaller;
+
+  ConfigurationOrder() = default;
 
   ConfigurationOrder(ConfigurationPattern greater, ConfigurationPattern smaller)
       : greater(std::move(greater)), smaller(std::move(smaller)) {}
@@ -139,9 +167,11 @@ struct ConfigurationOrder : public Statement {
 };
 
 struct Variable : public Expression {
-  Define *definition;
+  const Define *definition;
 
-  explicit Variable(Define *definition) : definition(definition) {}
+  Variable() = default;
+
+  explicit Variable(const Define *definition) : definition(definition) {}
 
   [[nodiscard]] Type getType() const override;
 
@@ -151,12 +181,14 @@ struct Variable : public Expression {
 struct BinaryOperator : public Expression {
   enum Operator { LESS, GREATER, AND };
 
-  Operator op;
   std::shared_ptr<ExpressionVal> left;
+  Operator op;
   std::shared_ptr<ExpressionVal> right;
 
+  BinaryOperator() = default;
+
   BinaryOperator(Operator op, ExpressionVal left, ExpressionVal right)
-      : op(op), left(std::make_shared<ExpressionVal>(std::move(left))),
+      : left(std::make_shared<ExpressionVal>(std::move(left))), op(op),
         right(std::make_shared<ExpressionVal>(std::move(right))) {}
 
   [[nodiscard]] Type getType() const override { return Type::BOOL; }
@@ -169,13 +201,18 @@ struct Define : public Statement {
   std::string variable;
   ExpressionVal value;
 
+  Define() = default;
+
   Define(std::string variable, ExpressionVal value)
+      : variable(std::move(variable)), value(std::move(value)) {}
+
+  Define(std::string variable, Literal value)
       : variable(std::move(variable)), value(std::move(value)) {}
 
   void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override {
     std::visit([&](const auto& expr) {expr.generateCode(context, program);}, value);
 
-    context.addVariable(variable);
+    context.addVariable(*this);
     program.instructions.push_back({RuleVM::STOREA, context.addressOf(variable)});
     context.freeStack(1);
   }
@@ -184,6 +221,8 @@ struct Define : public Statement {
 struct If : public Statement {
   ExpressionVal condition;
   std::vector<StatementVal> consequences;
+
+  If() = default;
 
   If(ExpressionVal condition, std::vector<StatementVal> consequences)
       : condition(std::move(condition)), consequences(std::move(consequences)) {}

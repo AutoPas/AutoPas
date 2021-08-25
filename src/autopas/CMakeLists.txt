@@ -22,6 +22,7 @@ target_link_libraries(
         $<$<BOOL:${AUTOPAS_OPENMP}>:OpenMP::OpenMP_CXX>
         spdlog::spdlog
         $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:MPI::MPI_CXX>
+        antlr4cpp
     PRIVATE
         # harmony and Eigen3 are only needed privately when building AutoPas.
         harmony Eigen3
@@ -45,3 +46,4 @@ endif ()
 
 target_include_directories(autopas PUBLIC ${AUTOPAS_SOURCE_DIR}/src/)
 target_include_directories(autopas PUBLIC ${AUTOPAS_BINARY_DIR}/src/)
+#target_include_directories(autopas PUBLIC "/usr/include/antlr4-runtime/")
