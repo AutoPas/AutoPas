@@ -6,8 +6,6 @@
 
 #include "LinkedCellsTest.h"
 
-#include <gmock/gmock-generated-matchers.h>
-
 TYPED_TEST_SUITE_P(LinkedCellsTest);
 
 TYPED_TEST_P(LinkedCellsTest, testUpdateContainer) {

@@ -104,13 +104,12 @@ std::vector<Particle> identifyNewHaloParticles(autopas::AutoPas<Particle> &autoP
           }
         }
         // Find non-halo particles in the designated region, create periodic copies of them and insert those as halos.
-
-        auto forEachInRegionLambda = [&](const Particle &particle) {
-          auto particleCopy = particle;
+        for (auto iter = autoPas.getRegionIterator(min, max, autopas::IteratorBehavior::owned); iter.isValid();
+             ++iter) {
+          auto particleCopy = *iter;
           particleCopy.addR(shiftVec);
           haloParticles.push_back(particleCopy);
-        };
-        autoPas.forEachInRegion(forEachInRegionLambda, min, max, autopas::IteratorBehavior::owned);
+        }
       }
     }
   }
@@ -159,13 +158,16 @@ template <class Particle>
 void applyPeriodic(autopas::AutoPas<Particle> &autoPas, bool forceUpdate) {
   // 1. update Container; return value is a vector of the particles leaving the domain box
   // and a flag whether an update occured.
-  auto [leavingParticles, updated] = autoPas.updateContainer(forceUpdate);
-  if (updated) {
-    // 2. apply periodic wrap by shifting positions of leaving particles to positions of periodic images.
-    wrapPositionsAroundBoundaries(autoPas, leavingParticles);
-    // 2b. re-insert shifted particles
-    addEnteringParticles(autoPas, leavingParticles);
-  }
+
+  // auto [leavingParticles, updated] = autoPas.updateContainer(forceUpdate);
+
+  // if (updated) {
+  // 2. apply periodic wrap by shifting positions of leaving particles to positions of periodic images.
+  // wrapPositionsAroundBoundaries(autoPas, leavingParticles);
+  // 2b. re-insert shifted particles
+  // addEnteringParticles(autoPas, leavingParticles);
+  //}
+
   // 3. identify inner particles for which a periodic copy in the opposing halo region is needed.
   auto haloParticles = identifyNewHaloParticles(autoPas);
   addHaloParticles(autoPas, haloParticles);
