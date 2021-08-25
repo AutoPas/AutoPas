@@ -51,6 +51,7 @@ class SingleCellReduceTest : public AutoPasTestBase {
   std::array<double, 3> dummy{};
 
   template <typename Cell>
-  void testCell(Cell cell, std::vector<size_t> &numMolecules, size_t expectedReductionValue, autopas::IteratorBehavior iteratorBehavior,
-                std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner);
+  void testCell(Cell cell, std::vector<size_t> &numMolecules, size_t expectedReductionValue,
+                autopas::IteratorBehavior iteratorBehavior, std::array<double, 3> lowerCorner,
+                std::array<double, 3> higherCorner);
 };

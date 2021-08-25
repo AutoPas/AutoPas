@@ -68,7 +68,8 @@ TEST_F(SingleCellReduceTest, testAllParticlesInRegionFpc) {
   const std::array<double, 3> lowerCorner{0.5, 0.5, 0.5};
   const std::array<double, 3> higherCorner{2.5, 2.5, 2.5};
 
-  testCell(fpc, expectedIndices, expectedReductionValue, IteratorBehavior::ownedOrHaloOrDummy, lowerCorner, higherCorner);
+  testCell(fpc, expectedIndices, expectedReductionValue, IteratorBehavior::ownedOrHaloOrDummy, lowerCorner,
+           higherCorner);
 }
 
 TEST_F(SingleCellReduceTest, testAllParticlesRpc) {
@@ -115,12 +116,13 @@ TEST_F(SingleCellReduceTest, testAllParticlesInRegionRpc) {
   const std::array<double, 3> lowerCorner{0.5, 0.5, 0.5};
   const std::array<double, 3> higherCorner{2.5, 2.5, 2.5};
 
-  testCell(rpc, expectedIndices, expectedReductionValue, IteratorBehavior::ownedOrHaloOrDummy, lowerCorner, higherCorner);
+  testCell(rpc, expectedIndices, expectedReductionValue, IteratorBehavior::ownedOrHaloOrDummy, lowerCorner,
+           higherCorner);
 }
 template <typename Cell>
-void SingleCellReduceTest::testCell(Cell cell, std::vector<size_t> &expectedIndices, size_t expectedReductionValue, IteratorBehavior iteratorBehavior,
-                                     std::array<double, 3> const lowerCorner,
-                                     std::array<double, 3> const higherCorner) {
+void SingleCellReduceTest::testCell(Cell cell, std::vector<size_t> &expectedIndices, size_t expectedReductionValue,
+                                    IteratorBehavior iteratorBehavior, std::array<double, 3> const lowerCorner,
+                                    std::array<double, 3> const higherCorner) {
   std::vector<size_t> foundParticles;
   double reductionValue = 0.0f;
 
