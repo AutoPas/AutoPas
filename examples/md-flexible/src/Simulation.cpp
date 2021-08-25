@@ -209,8 +209,12 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
       // apply boundary conditions AFTER the position update!
       if (_config->periodic.value) {
         _timers.boundaries.start();
-        BoundaryConditions::applyPeriodic(autopas, false);
+        auto updateContainerDurations = BoundaryConditions::applyPeriodic(autopas, false);
         _timers.boundaries.stop();
+
+        _timers.updateContainer.addTime(std::get<0>(updateContainerDurations));
+        _timers.boundariesPart2.addTime(std::get<1>(updateContainerDurations));
+        _timers.boundariesPart3.addTime(std::get<2>(updateContainerDurations));
       } else {
         throw std::runtime_error(
             "Simulation::simulate(): at least one boundary condition has to be set. Please enable the periodic "
