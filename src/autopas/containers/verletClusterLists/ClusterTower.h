@@ -239,6 +239,14 @@ class ClusterTower : public ParticleCell<Particle> {
   }
 
   /**
+   * @copydoc VerletClusterLists::reduce()
+   */
+  template <typename Lambda, typename A>
+  void reduce(Lambda forEachLambda, A &result, IteratorBehavior behavior) {
+    _particlesStorage.reduce(forEachLambda, result, behavior);
+  }
+
+  /**
    * @copydoc VerletClusterLists::forEachInRegion()
    */
   template <typename Lambda>

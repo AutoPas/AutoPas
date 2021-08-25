@@ -230,6 +230,28 @@ class AutoPas {
   }
 
   /**
+   * reduce properties of particles as defined by a lambda function
+   * @tparam Lambda (Particle p, A &initialValue) -> void
+   * @tparam reference to result of type A
+   * @param reduceLambda code to reduce properties of particles
+   * @param result reference to result of type A
+   * @param behavior @see IteratorBehavior default: @See IteratorBehavior::ownedOrHalo
+   */
+  template <typename Lambda, typename A>
+  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+    _logicHandler->reduce(reduceLambda, behavior);
+  }
+
+  /**
+   * @copydoc forEach()
+   * @note const version
+   */
+  template <typename Lambda, typename A>
+  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
+    std::as_const(*_logicHandler).reduce(reduceLambda, behavior);
+  }
+
+  /**
    * @copydoc begin()
    * @note cbegin will guarantee to return a const_iterator.
    */

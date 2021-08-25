@@ -98,6 +98,49 @@ class FullParticleCell : public ParticleCell<Particle> {
     _forEach<true, true>(forEachLambda, lowerCorner, higherCorner, behavior);
   }
 
+  /**
+   * reduce properties of particles as defined by a lambda function
+   * @tparam Lambda (Particle p, A initialValue) -> void
+   * @tparam A type of particle attribute to be reduced
+   * @param reduceLambda code to reduce properties of particles
+   * @param result reference to result of type A
+   */
+  template <typename Lambda, typename A>
+  void reduce(Lambda reduceLambda, A &result) {
+    const std::array<double, 3> dummy{};
+    _reduce<false, false>(reduceLambda, result, dummy, dummy);
+  }
+
+  /**
+   * reduce properties of particles as defined by a lambda function
+   * @tparam Lambda (Particle p, A initialValue) -> void
+   * @tparam A type of particle attribute to be reduced
+   * @param reduceLambda code to reduce properties of particles
+   * @param result reference to result of type A
+   * @param behavior ownerships of particles that should be in-/excluded
+   */
+  template <typename Lambda, typename A>
+  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior) {
+    const std::array<double, 3> dummy{};
+    _reduce<true, false>(reduceLambda, result, dummy, dummy, behavior);
+  }
+
+  /**
+   * reduce properties of particles as defined by a lambda function
+   * @tparam Lambda (Particle p, A initialValue) -> void
+   * @tparam A type of particle attribute to be reduced
+   * @param reduceLambda code to reduce properties of particles
+   * @param result reference to result of type A
+   * @param lowerCorner lower corner of bounding box
+   * @param higherCorner higher corner of bounding box
+   * @param behavior ownerships of particles that should be in-/excluded
+   */
+  template <typename Lambda, typename A>
+  void reduce(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+              const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    _reduce<true, true>(reduceLambda, result, lowerCorner, higherCorner, behavior);
+  }
+
   [[nodiscard]] unsigned long numParticles() const override { return _particles.size(); }
 
   /**
@@ -205,33 +248,48 @@ class FullParticleCell : public ParticleCell<Particle> {
   AutoPasLock particlesLock;
   std::array<double, 3> _cellLength;
 
+  inline bool isParticleInRegion(Particle &p, const std::array<double, 3> &lowerCorner,
+                                 const std::array<double, 3> &higherCorner) {
+    return utils::inBox(p.getR(), lowerCorner, higherCorner);
+  }
+
+  inline bool isParticleValid(Particle &p, IteratorBehavior behavior) {
+    switch (behavior) {
+      case options::IteratorBehavior::ownedOrHaloOrDummy:
+        return true;
+      case options::IteratorBehavior::ownedOrHalo:
+        return not p.isDummy();
+      case options::IteratorBehavior::halo:
+        return p.isHalo();
+      case options::IteratorBehavior::owned:
+        return p.isOwned();
+      default:
+        utils::ExceptionHandler::exception("unknown iterator behavior");
+        return false;
+    }
+  }
+
   template <bool ownershipCheck, bool regionCheck, typename Lambda>
   void _forEach(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                 const std::array<double, 3> &higherCorner,
                 IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) {
-    auto isParticleInRegion = [&](Particle &p) -> bool { return utils::inBox(p.getR(), lowerCorner, higherCorner); };
-
-    auto isParticleValid = [&](Particle &p) -> bool {
-      //      auto ownershipState = p.get.template <Particle::AttributeNames::ownershipState>();
-      switch (behavior) {
-        case options::IteratorBehavior::ownedOrHaloOrDummy:
-          return true;
-        case options::IteratorBehavior::ownedOrHalo:
-          return not p.isDummy();
-        case options::IteratorBehavior::halo:
-          return p.isHalo();
-        case options::IteratorBehavior::owned:
-          return p.isOwned();
-        default:
-          utils::ExceptionHandler::exception("unknown iterator behavior");
-          return false;
-      }
-    };
-
     for (Particle &p : _particles) {
-      if ((not ownershipCheck) or isParticleValid(p)) {
-        if ((not regionCheck) or isParticleInRegion(p)) {
+      if ((not ownershipCheck) or isParticleValid(p, behavior)) {
+        if ((not regionCheck) or isParticleInRegion(p, lowerCorner, higherCorner)) {
           forEachLambda(p);
+        }
+      }
+    }
+  }
+
+  template <bool ownershipCheck, bool regionCheck, typename Lambda, typename A>
+  void _reduce(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+                const std::array<double, 3> &higherCorner,
+                IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) {
+    for (Particle &p : _particles) {
+      if ((not ownershipCheck) or isParticleValid(p, behavior)) {
+        if ((not regionCheck) or isParticleInRegion(p, lowerCorner, higherCorner)) {
+          reduceLambda(p, result);
         }
       }
     }

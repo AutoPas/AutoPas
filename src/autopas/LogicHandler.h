@@ -300,6 +300,24 @@ class LogicHandler {
   }
 
   /**
+   * @copydoc AutoPas::reduce()
+   */
+  template <typename Lambda>
+  void reduce(Lambda reduceLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+    withStaticContainerType(_autoTuner.getContainer(),
+                            [&](auto container) { container->reduce(reduceLambda, behavior); });
+  }
+
+  /**
+   * @copydoc AutoPas::reduce()
+   */
+  template <typename Lambda>
+  void reduce(Lambda reduceLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
+    withStaticContainerType(_autoTuner.getContainer(),
+                            [&](auto container) { container->reduce(reduceLambda, behavior); });
+  }
+
+  /**
    * @copydoc AutoPas::getRegionIterator()
    */
   autopas::ParticleIteratorWrapper<Particle, true> getRegionIterator(std::array<double, 3> lowerCorner,

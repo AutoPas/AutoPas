@@ -118,55 +118,6 @@ auto fillContainerAroundBoundary(AutoPasT &autoPas) {
 }
 
 /**
- * Creats a grid of particles in the given AutoPas object.
- * Grid width is `sparsity * ( boxLength / ((cutoff + skin) * cellSizeFactor) )`.
- * E.g., for a sparsity of 1, 1 particle is inserted for every cell. For a sparsity of .5, 8 particles are inserted.
- * The lower corner of the grid is offset from boxMin by half the grid width in every dimension.
- * This way there should be one particle in every third Linked Cells cell.
- * @tparam AutoPasT
- * @param autoPas
- * @param sparsity
- * @return Vector of all particle IDs added.
- */
-template <class AutoPasT>
-auto fillContainerWithGrid(AutoPasT &autoPas, double sparsity) {
-  auto cutoff = autoPas.getCutoff();
-  auto skin = autoPas.getVerletSkin();
-  auto cellSizeFactor = *(autoPas.getAllowedCellSizeFactors().getAll().begin());
-
-  auto boxLength = autopas::utils::ArrayMath::sub(autoPas.getBoxMax(), autoPas.getBoxMin());
-
-  auto gridWidth1D = (cutoff + skin) * cellSizeFactor;
-  auto gridEdgesPerDim = autopas::utils::ArrayMath::mulScalar(boxLength, 1 / gridWidth1D);
-  auto gridWidth3D = autopas::utils::ArrayMath::div(boxLength, gridEdgesPerDim);
-
-  size_t id = 0;
-  std::vector<size_t> particleIDs;
-  for (double x = gridWidth3D[0] / 2; x < boxLength[0]; x += sparsity * gridWidth3D[0]) {
-    for (double y = gridWidth3D[1] / 2; y < boxLength[1]; y += sparsity * gridWidth3D[1]) {
-      for (double z = gridWidth3D[2] / 2; z < boxLength[2]; z += sparsity * gridWidth3D[2]) {
-        std::array<double, 3> pos{x, y, z};
-        Molecule p(pos, {0., 0., 0.}, id++, 0);
-        autoPas.addParticle(p);
-        particleIDs.push_back(p.getID());
-      }
-    }
-  }
-
-  return particleIDs;
-}
-
-template <class AutoPasT>
-auto getHaloBoxMinMax(AutoPasT &autoPas) {
-  const auto interactionLength = autoPas.getCutoff() + autoPas.getVerletSkin();
-  // halo has width of interactionLength
-  const auto haloBoxMin = autopas::utils::ArrayMath::subScalar(autoPas.getBoxMin(), interactionLength);
-  const auto haloBoxMax = autopas::utils::ArrayMath::addScalar(autoPas.getBoxMax(), interactionLength);
-
-  return std::make_tuple(haloBoxMin, haloBoxMax);
-}
-
-/**
  * Apply an iterator, track what particle IDs are found and compare this to a vector of expected IDs
  * @tparam AutoPasT
  * @tparam IteratorT
@@ -192,33 +143,5 @@ void findParticles(AutoPasT &autopas, Lambda forEachInRegionLambda, const std::v
 
   // check that everything was found
   EXPECT_THAT(particleIDsFound, ::testing::UnorderedElementsAreArray(particleIDsExpected));
-}
-
-/**
- * Generates a given amount of cells where only indicated cells contain a given amount of particles.
- * Cells can be considered to be on the main diagonal through 3D space. So the xyz coordinates of each cell's lower
- * corner are {cellID, cellID, cellID}. The particles are also placed along this line within their cells. Within each
- * cell the particles are placed equidistant around the center.
- * @param numCells
- * @param cellsToFill
- * @param particlesPerCell
- * @return Vector of generated and filled cells.
- */
-static std::vector<FMCell> generateCellsWithPattern(const size_t numCells, const std::vector<size_t> &cellsToFill,
-                                                    const size_t particlesPerCell) {
-  constexpr double cellDiagonal = 1.;
-  // distance between particles within one cell
-  const double distBetweenParticles = cellDiagonal / (particlesPerCell + 1.);
-
-  std::vector<FMCell> cells(numCells);
-  size_t numParticlesAdded = 0;
-  for (auto cellId : cellsToFill) {
-    for (size_t i = 0; i < particlesPerCell; ++i) {
-      auto position = cellId + distBetweenParticles * (i + 1.);
-      Molecule m({position, position, position}, {0, 0, 0}, numParticlesAdded++, 0);
-      cells[cellId].addParticle(m);
-    }
-  }
-  return cells;
 }
 }  // namespace ForEachTestHelper

@@ -175,6 +175,33 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     }
   }
 
+  /**
+   * @copydoc LinkedCells::reduce()
+   */
+  template <typename Lambda, typename A>
+  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior) {
+    auto forEach = [&](ParticleCell cell) {
+      for (Particle p : cell._particles) {
+        reduceLambda(p, result);
+      }
+    };
+
+    std::vector<size_t> cellsOfInterest;
+
+    if (behavior & IteratorBehavior::owned) {
+      getCell().reduce(reduceLambda, result);
+      cellsOfInterest.push_back(0);
+    }
+    if (behavior & IteratorBehavior::halo) {
+      getHaloCell().reduce(reduceLambda, result);
+      cellsOfInterest.push_back(1);
+    }
+    // sanity check
+    if (cellsOfInterest.empty()) {
+      utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
+    }
+  }
+
   [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
                                                                               const std::array<double, 3> &higherCorner,
                                                                               IteratorBehavior behavior) override {

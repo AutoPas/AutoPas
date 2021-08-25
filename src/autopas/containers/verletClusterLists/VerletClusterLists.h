@@ -370,6 +370,68 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
+   * @copydoc LinkedCells::forEach()
+   * @note This function additionally rebuilds the towers if the tower-structure isn't valid.
+   */
+  template <typename Lambda, typename A>
+  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) {
+    prepareContainerForIteration(behavior);
+
+    for (auto &tower : this->_towers) {
+      tower.reduce(reduceLambda, result, behavior);
+    }
+  }
+
+  /**
+   * @copydoc LinkedCells::forEach()
+   * @note const version.
+   * @note This function additionally iterates over the _particlesToAdd vector if the tower-structure isn't valid.
+   */
+  template <typename Lambda, typename A>
+  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) const {
+    if (_isValid != ValidityState::invalid) {
+      if (not particlesToAddEmpty()) {
+        autopas::utils::ExceptionHandler::exception(
+            "VerletClusterLists::begin() const: Error: particle container is valid, but _particlesToAdd isn't empty!");
+      }
+      // If the particles are sorted into the towers, we can simply use the iteration over towers.
+
+      for (auto tower : this->_towers) {
+        tower.reduce(reduceLambda, result, behavior);
+      }
+
+    } else {
+      // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
+
+      for (auto tower : this->_towers) {
+        tower.reduce(reduceLambda, result, behavior);
+      }
+
+      // TODO lgaertner: vector<vector<particle>>
+      auto isParticleValid = [&](Particle &p) -> bool {
+        switch (behavior) {
+          case options::IteratorBehavior::ownedOrHaloOrDummy:
+            return true;
+          case options::IteratorBehavior::ownedOrHalo:
+            return not p.isDummy();
+          case options::IteratorBehavior::halo:
+            return p.isHalo();
+          case options::IteratorBehavior::owned:
+            return p.isOwned();
+          default:
+            utils::ExceptionHandler::exception("unknown iterator behavior");
+            return false;
+        }
+      };
+      for (auto &particle : _particlesToAdd[0]) {
+        if (isParticleValid(particle)) {
+          reduceLambda(particle, result);
+        }
+      }
+    }
+  }
+
+  /**
    * @copydoc ParticleContainerInterface::getRegionIterator()
    * @note This function additionally rebuilds the towers if the tower-structure isn't valid.
    */

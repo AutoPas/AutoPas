@@ -240,7 +240,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
    * @param behavior @see IteratorBehavior
    */
   template <typename Lambda>
-  void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHaloOrDummy) {
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     if (behavior == IteratorBehavior::ownedOrHaloOrDummy) {
       for (auto &cell : getCells()) {
         cell.forEach(forEachLambda);
@@ -249,6 +249,29 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
       for (size_t index = 0; index < getCells().size(); index++) {
         if (!_cellBlock.ignoreCellForIteration(index, behavior)) {
           getCells()[index].forEach(forEachLambda, behavior);
+        }
+      }
+    }
+  }
+
+  /**
+   * reduce properties of particles as defined by a lambda function
+   * @tparam Lambda (Particle p, A initialValue) -> void
+   * @tparam A type of particle attribute to be reduced
+   * @param reduceLambda code to reduce properties of particles
+   * @param result reference to result of type A
+   * @param behavior @see IteratorBehavior default: @See IteratorBehavior::ownedOrHalo
+   */
+  template <typename Lambda, typename A>
+  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+    if (behavior == IteratorBehavior::ownedOrHaloOrDummy) {
+      for (auto &cell : getCells()) {
+        cell.reduce(reduceLambda, result);
+      }
+    } else {
+      for (size_t index = 0; index < getCells().size(); index++) {
+        if (!_cellBlock.ignoreCellForIteration(index, behavior)) {
+          getCells()[index].reduce(reduceLambda, result, behavior);
         }
       }
     }

@@ -150,6 +150,14 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   }
 
   /**
+   * @copydoc autopas::LinkedCells::reduce()
+   */
+  template <typename Lambda, typename A>
+  void reduce(Lambda forEachLambda, A &result, IteratorBehavior behavior) {
+    return _linkedCells.reduce(forEachLambda, result, behavior);
+  }
+
+  /**
    * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
    */
   [[nodiscard]] ParticleIteratorWrapper<Particle, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
