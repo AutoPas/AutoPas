@@ -1,7 +1,7 @@
 /**
- * @file SingleCellIteratorTest.h
- * @author tchipev
- * @date 19.01.18
+ * @file SingleCellForEachTest.h
+ * @author lgaertner
+ * @date 25.08.2021
  */
 
 #pragma once

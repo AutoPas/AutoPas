@@ -1,7 +1,7 @@
 /**
- * @file SingleCellIteratorTest.cpp
- * @author tchipev
- * @date 19.01.18
+ * @file SingleCellForEachTest.cpp
+ * @author lgaertner
+ * @date 25.08.2021
  */
 
 #include "SingleCellForEachTest.h"
