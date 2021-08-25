@@ -121,6 +121,7 @@ TEST_F(TestRegularGridDecomposition, testExchangeHaloParticles) {
 
   const size_t haloParticleCount = autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::halo);
   EXPECT_EQ(haloParticleCount,98);
+  EXPECT_EQ(true,false);
 }
 
 TEST_F(TestRegularGridDecomposition, testExchangeMigratingParticles) {
