@@ -1,8 +1,0 @@
-#yaml input for an empty configuration
-#used in:
-#TestRegularGridDecomposition.testExchangeHaloParticles
-#YamlParser
-cutoff                    : 3
-verlet-skin-radius        : 0
-box-min                   : [0,0,0]
-box-max                   : [9,9,9]
