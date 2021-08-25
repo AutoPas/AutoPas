@@ -262,13 +262,29 @@ class LogicHandler {
   }
 
   /**
+   * @copydoc AutoPas::forEachParallel()
+   */
+  template <typename Lambda>
+  void forEachParallel(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+    //TODO lgaertner: parallelize with kokkos integration
+    withStaticContainerType(_autoTuner.getContainer(), [&](auto container) { container->forEach(forEachLambda, behavior); });
+  }
+
+  /**
+   * @copydoc AutoPas::forEachParallel()
+   */
+  template <typename Lambda>
+  void forEachParallel(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
+    //TODO lgaertner: parallelize with kokkos integration
+    withStaticContainerType(_autoTuner.getContainer(), [&](auto container) { container->forEach(forEachLambda, behavior); });
+  }
+
+  /**
    * @copydoc AutoPas::forEach()
    */
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    auto execOnContainer = [&](auto container) { container->forEach(forEachLambda, behavior); };
-
-    withStaticContainerType(_autoTuner.getContainer(), execOnContainer);
+    withStaticContainerType(_autoTuner.getContainer(), [&](auto container) { container->forEach(forEachLambda, behavior); });
   }
 
   /**
@@ -276,9 +292,7 @@ class LogicHandler {
    */
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
-    auto execOnContainer = [&](auto container) { container->forEach(forEachLambda, behavior); };
-
-    withStaticContainerType(_autoTuner.getContainer(), execOnContainer);
+    withStaticContainerType(_autoTuner.getContainer(), [&](auto container) { container->forEach(forEachLambda, behavior); });
   }
 
   /**
@@ -324,17 +338,41 @@ class LogicHandler {
   }
 
   /**
+   * @copydoc AutoPas::forEachInRegionParallel()
+   */
+  template <typename Lambda>
+  void forEachInRegionParallel(Lambda forEachLambda, const std::array<double, 3> lowerCorner,
+                       const std::array<double, 3> higherCorner,
+                       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+    //TODO (lgaertner): parallelize with kokkos integration
+    withStaticContainerType(_autoTuner.getContainer(), [&](auto container) {
+      container->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+    });
+  }
+
+  /**
+   * @copydoc AutoPas::forEachInRegionParallel()
+   */
+  template <typename Lambda>
+  void forEachInRegionParallel(Lambda forEachLambda, const std::array<double, 3> lowerCorner,
+                       const std::array<double, 3> higherCorner,
+                       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
+    //TODO (lgaertner): parallelize with kokkos integration
+    withStaticContainerType(_autoTuner.getContainer(), [&](auto container) {
+      container->forEach(forEachLambda, lowerCorner, higherCorner, behavior);
+    });
+  }
+
+  /**
    * @copydoc AutoPas::forEachInRegion()
    */
   template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> lowerCorner,
                        const std::array<double, 3> higherCorner,
                        IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    auto execOnContainer = [&](auto container) {
+    withStaticContainerType(_autoTuner.getContainer(), [&](auto container) {
       container->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
-    };
-
-    withStaticContainerType(_autoTuner.getContainer(), execOnContainer);
+    });
   }
 
   /**
@@ -344,11 +382,9 @@ class LogicHandler {
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> lowerCorner,
                        const std::array<double, 3> higherCorner,
                        IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
-    auto execOnContainer = [&](auto container) {
+    withStaticContainerType(_autoTuner.getContainer(), [&](auto container) {
       container->forEach(forEachLambda, lowerCorner, higherCorner, behavior);
-    };
-
-    withStaticContainerType(_autoTuner.getContainer(), execOnContainer);
+    });
   }
 
   /**

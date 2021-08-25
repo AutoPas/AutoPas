@@ -189,6 +189,27 @@ class AutoPas {
   const_iterator_t begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
 
   /**
+   * execute code on all particles in parallel as defined by a lambda function
+   * @tparam Lambda (Particle &p) -> void
+   * @param forEachLambda code to be executed on all particles
+   * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownerOrHalo
+   * @note not actually parallel until kokkos integration
+   */
+  template <typename Lambda>
+  void forEachParallel(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+    _logicHandler->forEachParallel(forEachLambda, behavior);
+  }
+
+  /**
+   * @copydoc forEachParallel()
+   * @note const version
+   */
+  template <typename Lambda>
+  void forEachParallel(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
+    std::as_const(*_logicHandler).forEachParallel(forEachLambda, behavior);
+  }
+
+  /**
    * execute code on all particles as defined by a lambda function
    * @tparam Lambda (Particle &p) -> void
    * @param forEachLambda code to be executed on all particles
@@ -205,7 +226,7 @@ class AutoPas {
    */
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
-    _logicHandler->forEach(forEachLambda, behavior);
+    std::as_const(*_logicHandler).forEach(forEachLambda, behavior);
   }
 
   /**
@@ -239,6 +260,31 @@ class AutoPas {
    */
   const_iterator_t getRegionIterator(std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
                                      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
+
+  /**
+   * execute code on all particles in a certain region in parallel as defined by a lambda function
+   * @tparam Lambda (Particle &p) -> void
+   * @param forEachLambda code to be executed on all particles
+   * @param lowerCorner lower corner of bounding box
+   * @param higherCorner higher corner of bounding box
+   * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownerOrHalo
+   * @note not actually parallel until kokkos integration
+   */
+  template <typename Lambda>
+  void forEachInRegionParallel(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+                       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+    _logicHandler->forEachInRegionParallel(forEachLambda, lowerCorner, higherCorner, behavior);
+  }
+
+  /**
+   * @copydoc forEachInRegionParallel()
+   * @note const version
+   */
+  template <typename Lambda>
+  void forEachInRegionParallel(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+                       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
+    std::as_const(*_logicHandler).forEachInRegionParallel(forEachLambda, lowerCorner, higherCorner, behavior);
+  }
 
   /**
    * execute code on all particles in a certain region as defined by a lambda function
