@@ -110,13 +110,15 @@ class ParallelVtkWriter {
   void tryCreateSessionAndDataFolders(const std::string &name, const std::string location);
 
   /**
-   * Creates the .pvtu file required to load unstrictured grid data from multiple ranks into paraview.
+   * Creates the .pvtu file required to load unstructured grid data from multiple ranks into ParaView.
    * @param currentIteration: The simulation's current iteration.
    */
   void createPvtuFile(const int &currentIteration);
 
   /**
-   * Creates the .pvts file required to load structured grid data from multiple ranks into paraview.
+   * Creates the .pvts file required to load structured grid data from multiple ranks into ParaView.
+   * @param currentIteration: The simulation's current iteration.
+   * @param decomposition: The decomposition of the domain.
    */
   void createPvtsFile(const int &currentIteration, const RegularGridDecomposition &decomposition);
 
