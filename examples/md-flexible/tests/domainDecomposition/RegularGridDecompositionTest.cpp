@@ -122,7 +122,7 @@ TEST_F(RegularGridDecompositionTest, testExchangeHaloParticles) {
   const size_t haloParticleCount = autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::halo);
 
   // The resulting haloParticleCount has to be 98 because, the 8 corner particles have to be replicated 7 times each,
-  // resulting in 56 halo particles resulting in 56 halo particles for the corner cells. The 12 particles contained
+  // resulting in 56 halo particles for the corner cells. The 12 particles contained
   // in the edge cells of the rubik's cube need to be replicated 3 times each raising the total number of halo particles
   // to 90. The remaining 6 particles with a single adjacent cell only produce a single halo particle each.
   // Therefor the total amount of particles is 98.
