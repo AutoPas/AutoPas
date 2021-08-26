@@ -298,6 +298,40 @@ class RegularGridDecomposition final : public DomainDecomposition {
   void waitForSendRequests();
 
   /**
+   * Collects the halo particles for the left neighbour.
+   * Halo particle positions will be wrapped around the global domain boundary if necessary.
+   * @param autoPasContainer: The autopas container which owns the potential halo particles.
+   * @param direction: The direction along which the neighbour is located.
+   * @param haloParticles: The container the identified halo particles are gathered in to.
+   */
+  void collectHaloParticlesForLeftNeighbour(SharedAutoPasContainer &autoPasContainer, const size_t &direction,
+                                            std::vector<ParticleType> &haloParticles);
+
+  /**
+   * Collects the halo particles for the right neighbour.
+   * Halo particle positions will be wrapped around the global domain boundary if necessary.
+   * @param autoPasContainer: The autopas container which owns the potential halo particles.
+   * @param direction: The direction along which the neighbour is located.
+   * @param haloParticles: The container the identified halo particles are gathered in to.
+   */
+  void collectHaloParticlesForRightNeighbour(SharedAutoPasContainer &autoPasContainer, const size_t &direction,
+                                             std::vector<ParticleType> &haloParticles);
+
+  /**
+   * Categorizes the provided particles as particles for the left or the right neighbour and adds them to the respective
+   * output vector. Particle positions will be wrapped around the global domain boundary if necessary.
+   * @param particles: The particles which need to be categorized.
+   * @param leftNeighbourParticles: Contains the particles for the left neighbour after function execution.
+   * @param rightNeighbourParticles: Contains the particles for the right neighbour after function execution.
+   * @param uncagtegorizedParticles: Contains particles which could neither be assigned to the left nor the right
+   * neighbour.
+   */
+  void categorizeParticlesIntoLeftAndRightNeighbour(const std::vector<ParticleType> &particles, const size_t &direction,
+                                                    std::vector<ParticleType> &leftNeighbourParticles,
+                                                    std::vector<ParticleType> &rightNeighbourParticles,
+                                                    std::vector<ParticleType> &uncategorizedParticles);
+
+  /**
    * Converts a domain id to the domain index, i.e. rank of the local processor.
    */
   int convertIdToIndex(const std::array<int, 3> &domainIndex);
