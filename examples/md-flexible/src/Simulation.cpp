@@ -469,21 +469,22 @@ void Simulation::logSimulationState() {
   size_t totalNumberOfParticles{0ul}, ownedParticles{0ul}, haloParticles{0ul};
 
   int particleCount = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::ownedOrHalo);
-  autopas::AutoPas_MPI_Allreduce(&particleCount, &totalNumberOfParticles, 1, AUTOPAS_MPI_INT, AUTOPAS_MPI_SUM,
+  autopas::AutoPas_MPI_Allreduce(&particleCount, &totalNumberOfParticles, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM,
                                  AUTOPAS_MPI_COMM_WORLD);
 
   particleCount = _autoPasContainer->getNumberOfParticles();
-  autopas::AutoPas_MPI_Allreduce(&particleCount, &ownedParticles, 1, AUTOPAS_MPI_INT, AUTOPAS_MPI_SUM,
+  autopas::AutoPas_MPI_Allreduce(&particleCount, &ownedParticles, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM,
                                  AUTOPAS_MPI_COMM_WORLD);
 
   particleCount = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::halo);
-  autopas::AutoPas_MPI_Allreduce(&particleCount, &haloParticles, 1, AUTOPAS_MPI_INT, AUTOPAS_MPI_SUM,
+  autopas::AutoPas_MPI_Allreduce(&particleCount, &haloParticles, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM,
                                  AUTOPAS_MPI_COMM_WORLD);
 
+  double squaredHomogeneity = _homogeneity * _homogeneity;
   double standardDeviationOfHomogeneity;
-  autopas::AutoPas_MPI_Allreduce(&_homogeneity, &standardDeviationOfHomogeneity, 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM,
-                                 AUTOPAS_MPI_COMM_WORLD);
-  standardDeviationOfHomogeneity = standardDeviationOfHomogeneity / _domainDecomposition.getNumberOfSubdomains();
+  autopas::AutoPas_MPI_Allreduce(&squaredHomogeneity, &standardDeviationOfHomogeneity, 1, AUTOPAS_MPI_DOUBLE,
+                                 AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
+  standardDeviationOfHomogeneity = std::sqrt(standardDeviationOfHomogeneity);
 
   std::cout << "\n\n"
             << "Total number of particles at the end of Simulation: " << totalNumberOfParticles << "\n"
@@ -511,13 +512,14 @@ void Simulation::logMeasurements() {
   if (_domainDecomposition.getDomainIndex() == 0) {
     auto maximumNumberOfDigits = std::to_string(total).length();
     std::cout << "Measurements:" << std::endl;
-    std::cout << timerToString("Total accumulated            ", total, maximumNumberOfDigits);
-    std::cout << timerToString("  Initialization             ", initialization, maximumNumberOfDigits, total);
-    std::cout << timerToString("  Simulate                   ", simulate, maximumNumberOfDigits, total);
+    std::cout << timerToString("Total accumulated              ", total, maximumNumberOfDigits);
+    std::cout << timerToString("  Initialization               ", initialization, maximumNumberOfDigits, total);
+    std::cout << timerToString("  Simulate                     ", simulate, maximumNumberOfDigits, total);
     std::cout << timerToString("    PositionUpdate             ", positionUpdate, maximumNumberOfDigits, simulate);
     std::cout << timerToString("    Boundaries:                ", haloParticleExchange + migratingParticleExchange,
                                maximumNumberOfDigits, simulate);
-    std::cout << timerToString("      HaloParticleExchange     ", haloParticleExchange, maximumNumberOfDigits, haloParticleExchange + migratingParticleExchange);
+    std::cout << timerToString("      HaloParticleExchange     ", haloParticleExchange, maximumNumberOfDigits,
+                               haloParticleExchange + migratingParticleExchange);
     std::cout << timerToString("      MigratingParticleExchange", migratingParticleExchange, maximumNumberOfDigits,
                                haloParticleExchange + migratingParticleExchange);
     std::cout << timerToString("    ForceUpdateTotal           ", forceUpdateTotal, maximumNumberOfDigits, simulate);
@@ -532,19 +534,19 @@ void Simulation::logMeasurements() {
     std::cout << timerToString("    VelocityUpdate             ", velocityUpdate, maximumNumberOfDigits, simulate);
     std::cout << timerToString("    Thermostat                 ", thermostat, maximumNumberOfDigits, simulate);
     std::cout << timerToString("    Vtk                        ", vtk, maximumNumberOfDigits, simulate);
-    std::cout << timerToString("One iteration                ", simulate / _iteration, maximumNumberOfDigits, total);
+    std::cout << timerToString("One iteration                  ", simulate / _iteration, maximumNumberOfDigits, total);
 
     const long wallClockTime = _timers.total.getTotalTime();
-    std::cout << timerToString("Total wall-clock time        ", wallClockTime, std::to_string(wallClockTime).length(),
+    std::cout << timerToString("Total wall-clock time          ", wallClockTime, std::to_string(wallClockTime).length(),
                                wallClockTime);
     std::cout << std::endl;
 
-    std::cout << "Tuning iterations             : " << _numTuningIterations << " / " << _iteration << " = "
+    std::cout << "Tuning iterations               : " << _numTuningIterations << " / " << _iteration << " = "
               << ((double)_numTuningIterations / _iteration * 100) << "%" << std::endl;
 
     auto mfups = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned) * _iteration * 1e-6 /
                  (forceUpdateTotal * 1e-9);  // 1e-9 for ns to s, 1e-6 for M in MFUP
-    std::cout << "MFUPs/sec                     : " << mfups << std::endl;
+    std::cout << "MFUPs/sec                       : " << mfups << std::endl;
 
     if (_configuration.dontMeasureFlops.value) {
       autopas::FlopCounterFunctor<ParticleType> flopCounterFunctor(_autoPasContainer->getCutoff());
@@ -558,9 +560,9 @@ void Simulation::logMeasurements() {
                  decltype(flopCounterFunctor)::numFlopsPerDistanceCalculation *
                  floor(_iteration / _configuration.verletRebuildFrequency.value);
 
-      std::cout << "GFLOPs                        : " << flops * 1e-9 << std::endl;
-      std::cout << "GFLOPs/sec                    : " << flops * 1e-9 / (simulate * 1e-9) << std::endl;
-      std::cout << "Hit rate                      : " << flopCounterFunctor.getHitRate() << std::endl;
+      std::cout << "GFLOPs                          : " << flops * 1e-9 << std::endl;
+      std::cout << "GFLOPs/sec                      : " << flops * 1e-9 / (simulate * 1e-9) << std::endl;
+      std::cout << "Hit rate                        : " << flopCounterFunctor.getHitRate() << std::endl;
     }
   }
 }
