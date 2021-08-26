@@ -85,7 +85,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Returns the number of subdomains in the simulation.
    * @return number of subdomains
    */
-  const int getNumberOfSubdomains();
+  int getNumberOfSubdomains() const;
 
   /**
    * Checks if the provided coordinates are located in the local domain.
