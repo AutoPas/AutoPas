@@ -213,7 +213,7 @@ class Simulation {
    * @param maxTime: The simulation's total execution time.
    * @return All information of the timer in a human readable string.
    */
-  std::string timerToString(const std::string &name, long timeNS, size_t numberWidth, long maxTime);
+  std::string timerToString(const std::string &name, long timeNS, size_t numberWidth = 0ul, long maxTime = 0ul);
 
   /**
    * Calculate the homogeneity of the scenario by using the standard deviation.
