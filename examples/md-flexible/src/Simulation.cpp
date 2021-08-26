@@ -553,6 +553,23 @@ void Simulation::logMeasurements() {
       _autoPasContainer->iteratePairwise(&flopCounterFunctor);
 
       size_t flopsPerKernelCall;
+        switch (_config->functorOption.value) {
+    case MDFlexConfig::FunctorOption ::lj12_6: {
+      flopsPerKernelCall = autopas::LJFunctor<ParticleType, _shifting, _mixing>::getNumFlopsPerKernelCall();
+      break;
+    }
+    case MDFlexConfig::FunctorOption ::lj12_6_Globals: {
+      flopsPerKernelCall = autopas::LJFunctor<ParticleType, _shifting, _mixing, autopas::FunctorN3Modes::Both,
+                                              /* globals */ true>::getNumFlopsPerKernelCall();
+      break;
+    }
+    case MDFlexConfig::FunctorOption ::lj12_6_AVX: {
+      flopsPerKernelCall = autopas::LJFunctorAVX<ParticleType, _shifting, _mixing>::getNumFlopsPerKernelCall();
+      break;
+    }
+    default:
+      throw std::runtime_error("Invalid Functor choice");
+  }
       auto flops = flopCounterFunctor.getFlops(flopsPerKernelCall) * _iteration;
       // approximation for flops of verlet list generation
       if (_autoPasContainer->getContainerType() == autopas::ContainerOption::verletLists)
