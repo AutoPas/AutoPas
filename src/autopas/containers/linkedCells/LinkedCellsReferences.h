@@ -80,9 +80,19 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     sort_loop_iterations = _sort_loop_iterations;
   }
 
+  std::map<long, std::size_t> cellIndices{};
+  // the sorting can be enhanced by switching to integer values (i.e. size_t) when using cell indices as key.
+  // this would make the static cast to double obsolete.
+  // for experimental purpose (different key calculations), this has been kept as double so far.
   double keyof(Particle x){
 //    return x.getR()[0];
-    return static_cast<double>(_cellBlock.get1DIndexOfPosition(x.getR()));
+    if(cellIndices.count(x.getID())){
+      return static_cast<double>(cellIndices[x.getID()]);
+    } else {
+      std::size_t index = _cellBlock.get1DIndexOfPosition(x.getR());
+      cellIndices[x.getID()] = index;
+      return static_cast<double>(index);
+    }
   }
   bool compare(Particle a, Particle b){
     return keyof(a) < keyof(b);
@@ -93,6 +103,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
 
   void sort(){
     sorting_timer.start();
+    // since the indices have possibly changed, the map has to be updated.
+    cellIndices.clear();
     switch(sorting){
       case stdsort: {
         sort_std();
@@ -114,8 +126,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
       }
     }
     // updateContainer();
-    sorting_timer.stop();
-    std::cout << "Sorting took "<<sorting_timer.getTotalTime()<<" in total so far."<<std::endl;
+    long lasttime = sorting_timer.stop();
+    std::cout << "Sorting took "<<lasttime<<" in the last step."<<std::endl;
   }
   void sort_std(){
     LinkedCellsReferences* lcr = this;
@@ -228,7 +240,9 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     // Hoare partitioning
     size_t i = left-1, j = right;
     do {
-      do { i++; } while (keyof(_particleList[i]) < pivotkey);
+      do {
+        i++;
+      } while (keyof(_particleList[i]) < pivotkey);
       do {
         if(j == 0) break;
         j--;
