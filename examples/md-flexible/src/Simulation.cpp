@@ -512,7 +512,7 @@ void Simulation::logMeasurements() {
     auto maximumNumberOfDigits = std::to_string(total).length();
     std::cout << "Measurements:" << std::endl;
     std::cout << timerToString("Total                        ", total, maximumNumberOfDigits, total);
-    std::cout << timerToString("  Initialization             ", initialization, maximumNumberOfDigits, simulate);
+    std::cout << timerToString("  Initialization             ", initialization, maximumNumberOfDigits, total);
     std::cout << timerToString("  Simulate                   ", simulate, maximumNumberOfDigits, total);
     std::cout << timerToString("  PositionUpdate             ", positionUpdate, maximumNumberOfDigits, simulate);
     std::cout << timerToString("  Boundaries:                ", haloParticleExchange + migratingParticleExchange,
