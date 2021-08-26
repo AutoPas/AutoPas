@@ -98,7 +98,8 @@ class ParallelVtkWriter {
   /**
    * Calculates the whole extent of the decompositions local domain.
    * The whole extent defines the space this local domain is occupying in the global domain.
-   * The layout of the returned array is [ xmin, xmax, ymin, ymax, zmin, zmax ].
+   * The layout of the returned array is [ xmin, xmax, ymin, ymax, zmin, zmax ], where x and y are coordinates in
+   * in the decomposition grid.
    * @param decomposition: The simulations domain decomposition.
    * @return the whole extent of the local domain.
    */
