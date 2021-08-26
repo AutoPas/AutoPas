@@ -56,7 +56,7 @@ void generateDecomposition(unsigned int subdomainCount, std::array<bool, 3> subd
   // Determine number of dimensions which have to be subdivided.
   size_t numberOfDimensionsToSubdivide = 0;
   for (auto element : subdivideDimension) {
-    numberOfDimensionsToSubdivide = numberOfDimensionsToSubdivide + (element ? 1 : 0);
+    numberOfDimensionsToSubdivide += element;
   }
 
   // Reduces the primeFactors to 3 elements, one for each dimension of the domain.
