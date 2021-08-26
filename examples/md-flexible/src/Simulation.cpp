@@ -532,7 +532,7 @@ void Simulation::logMeasurements() {
     std::cout << timerToString("  VelocityUpdate             ", velocityUpdate, maximumNumberOfDigits, simulate);
     std::cout << timerToString("  Thermostat                 ", thermostat, maximumNumberOfDigits, simulate);
     std::cout << timerToString("  Vtk                        ", vtk, maximumNumberOfDigits, simulate);
-    std::cout << timerToString("One iteration                ", total / _iteration, maximumNumberOfDigits, simulate);
+    std::cout << timerToString("One iteration                ", simulate / _iteration, maximumNumberOfDigits, total);
 
     const long wallClockTime = _timers.total.getTotalTime();
     std::cout << timerToString("Total wall-clock time        ", wallClockTime, std::to_string(wallClockTime).length(),
