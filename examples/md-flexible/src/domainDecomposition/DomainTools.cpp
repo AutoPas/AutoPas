@@ -71,7 +71,7 @@ void generateDecomposition(unsigned int subdomainCount, std::array<bool, 3> subd
   // If the prime factorization ends up having less factors than dimensions in the domain,
   // fill those dimensions with 1.
   for (int i = 0; i < 3; ++i) {
-    if (not primeFactors.empty() && subdivideDimension[i]) {
+    if (not primeFactors.empty() and subdivideDimension[i]) {
       decomposition[i] = primeFactors.front();
       primeFactors.pop_front();
     } else {
