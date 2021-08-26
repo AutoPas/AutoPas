@@ -5,6 +5,7 @@ pipeline {
             agent { label 'master' }
             steps {
                 echo 'aborting old jobs'
+                // By passing the milestones, old builds are aborted.
                 milestone label: '', ordinal:  Integer.parseInt(env.BUILD_ID) - 1
                 milestone label: '', ordinal:  Integer.parseInt(env.BUILD_ID)
             }
