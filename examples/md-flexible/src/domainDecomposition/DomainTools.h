@@ -41,6 +41,6 @@ double getDistanceToDomain(const std::array<double, 3> &coordinates, std::array<
  * @param subdivideDimension: Decides if a dimension will be subdivided.
  * @param decomposition: Array containing the number of subdomains per dimension.
  */
-void generateDecomposition(unsigned int subdomainCount, std::array<bool, 3> subdivideDimension,
+void generateDecomposition(unsigned int subdomainCount, const std::array<bool, 3> &subdivideDimension,
                            std::array<int, 3> &decomposition);
 }  // namespace DomainTools

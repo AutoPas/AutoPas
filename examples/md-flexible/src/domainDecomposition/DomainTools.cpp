@@ -33,7 +33,7 @@ double getDistanceToDomain(const std::array<double, 3> &coordinates, std::array<
   return autopas::utils::ArrayMath::L2Norm(differences);
 }
 
-void generateDecomposition(unsigned int subdomainCount, std::array<bool, 3> subdivideDimension,
+void generateDecomposition(unsigned int subdomainCount, const std::array<bool, 3> &subdivideDimension,
                            std::array<int, 3> &decomposition) {
   std::list<int> primeFactors;
   // Add 2 to prime factorization as many times as subdomainCount is dividable by 2.
