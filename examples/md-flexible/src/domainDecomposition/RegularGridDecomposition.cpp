@@ -313,10 +313,10 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
   }
 }
 
-void RegularGridDecomposition::sendParticles(std::vector<ParticleType> &particles, const int &receiver) {
+void RegularGridDecomposition::sendParticles(const std::vector<ParticleType> &particles, const int &receiver) {
   std::vector<char> buffer;
 
-  for (auto &particle : particles) {
+  for (const auto &particle : particles) {
     ParticleSerializationTools::serializeParticle(particle, buffer);
   }
 
