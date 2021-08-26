@@ -9,6 +9,7 @@ pipeline {
         stage('abort old jobs') {
             agent { label 'master' }
             steps {
+                echo 'aborting old jobs'
                 milestone label: '', ordinal:  Integer.parseInt(env.BUILD_ID) - 1
                 milestone label: '', ordinal:  Integer.parseInt(env.BUILD_ID)
             }
