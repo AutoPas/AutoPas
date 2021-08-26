@@ -1,13 +1,13 @@
 /**
- * @file TestDomainTools.cpp
+ * @file DomainToolsTest.cpp
  * @author J. Körner
  * @date 27/05/21
  */
-#include "TestDomainTools.h"
+#include "DomainToolsTest.h"
 
 #include "src/domainDecomposition/DomainTools.h"
 
-TEST_F(TestDomainTools, testIsInsideDomain) {
+TEST_F(DomainToolsTest, testIsInsideDomain) {
   std::array<double, 3> globalBoxMin = {1.0, 1.0, 1.0};
   std::array<double, 3> globalBoxMax = {10.0, 10.0, 10.0};
 

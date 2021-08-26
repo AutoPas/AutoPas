@@ -1,9 +1,9 @@
 /**
- * @file TestRegularGridDecomposition.cpp
+ * @file RegularGridDecompositionTest.cpp
  * @author J. Körner
  * @date 27/05/21
  */
-#include "TestRegularGridDecomposition.h"
+#include "RegularGridDecompositionTest.h"
 
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/WrapMPI.h"
@@ -44,7 +44,7 @@ void initializeAutoPasContainer(RegularGridDecomposition::SharedAutoPasContainer
 }
 }  // namespace
 
-TEST_F(TestRegularGridDecomposition, testGetLocalDomain) {
+TEST_F(RegularGridDecompositionTest, testGetLocalDomain) {
   std::array<double, 3> globalBoxMin = {1.0, 1.0, 1.0};
   std::array<double, 3> globalBoxMax = {10.0, 10.0, 10.0};
 
@@ -69,7 +69,12 @@ TEST_F(TestRegularGridDecomposition, testGetLocalDomain) {
   EXPECT_NEAR(expectedLocalBoxExtend[2], resultingLocalBoxExtend[2], 1e-10);
 }
 
-TEST_F(TestRegularGridDecomposition, testExchangeHaloParticles) {
+/**
+ * This test is designed to check if halo particles are properly being created.
+ * It uses a very specific set of particles create a controlled test case.
+ * For more information see the comments in the test.
+ */
+TEST_F(RegularGridDecompositionTest, testExchangeHaloParticles) {
   std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
                                         std::string(YAMLDIRECTORY) + "particleExchangeTest.yaml"};
 
@@ -87,6 +92,10 @@ TEST_F(TestRegularGridDecomposition, testExchangeHaloParticles) {
 
   initializeAutoPasContainer(autoPasContainer, configuration);
 
+  // Setup 27 particles of which 26 will be relevant during halo update. Imagine a rubik's cube where each cell 
+  // contains a single particle. This layout contains 8 particles with 3 adjacent cell which is outside the cube,
+  // 12 particles with two adjacent cells which are outside the cube and 6 particles with a single adjacent cell 
+  // outside the cube. 
   std::vector<std::vector<double>> particlePositions = {
       {1.5, 1.5, 1.5}, {5.0, 1.5, 1.5}, {8.5, 1.5, 1.5}, {1.5, 5.0, 1.5}, {5.0, 5.0, 1.5},
       {8.5, 5.0, 1.5}, {1.5, 8.5, 1.5}, {5.0, 8.5, 1.5}, {8.5, 8.5, 1.5},
@@ -111,10 +120,21 @@ TEST_F(TestRegularGridDecomposition, testExchangeHaloParticles) {
   EXPECT_NO_THROW(domainDecomposition.exchangeHaloParticles(autoPasContainer));
 
   const size_t haloParticleCount = autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::halo);
+
+  // The resulting haloParticleCount has to be 98 because, the 8 corner particles have to be replicated 7 times each,
+  // resulting in 56 halo particles resulting in 56 halo particles for the corner cells. The 12 particles contained
+  // in the edge cells of the rubik's cube need to be replicated 3 times each raising the total number of halo particles
+  // to 90. The remaining 6 particles with a single adjacent cell only produce a single halo particle each.
+  // Therefor the total amount of particles is 98.
   EXPECT_EQ(haloParticleCount, 98);
 }
 
-TEST_F(TestRegularGridDecomposition, testExchangeMigratingParticles) {
+/**
+ * This test is designed to check if particles are properly being migrated.
+ * It uses a very specific set of particles create a controlled test case.
+ * For more information see the comments in the test.
+ */
+TEST_F(RegularGridDecompositionTest, testExchangeMigratingParticles) {
   std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
                                         std::string(YAMLDIRECTORY) + "particleExchangeTest.yaml"};
 
@@ -132,6 +152,7 @@ TEST_F(TestRegularGridDecomposition, testExchangeMigratingParticles) {
 
   initializeAutoPasContainer(autoPasContainer, configuration);
 
+  // Setup 27 particles. Imagine a rubik's cube where each cell contains a single particle.
   std::vector<std::vector<double>> particlePositions = {
       {1.5, 1.5, 1.5}, {5.0, 1.5, 1.5}, {8.5, 1.5, 1.5}, {1.5, 5.0, 1.5}, {5.0, 5.0, 1.5},
       {8.5, 5.0, 1.5}, {1.5, 8.5, 1.5}, {5.0, 8.5, 1.5}, {8.5, 8.5, 1.5},
@@ -153,6 +174,11 @@ TEST_F(TestRegularGridDecomposition, testExchangeMigratingParticles) {
     ++id;
   }
 
+  // Move particles outside the simulation box to make them migrate. 
+  // Particles in corner cells (of the rubik's cube) will be moved diagonally in all dimensions.
+  // Particles in edge cells will be sifted diagonally in two dimiensions.
+  // Particles in surface cells which are neither a corner nor a edge will be moved along a single dimension.
+  // Particles which are not in a surface cell will not be moved at all.
   for (auto particle = autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     auto position = particle->getR();
     if (position[0] < 2.5) {
@@ -174,4 +200,42 @@ TEST_F(TestRegularGridDecomposition, testExchangeMigratingParticles) {
   }
 
   EXPECT_NO_THROW(domainDecomposition.exchangeMigratingParticles(autoPasContainer));
+
+  std::vector<std::array<double, 3>> expectedPositionsAfterMigration = {
+    {9.725, 9.725, 9.725},
+    {5, 9.725, 9.725},
+    {0.275, 9.725, 9.725},
+    {9.725, 5, 9.725},
+    {5, 5, 9.725},
+    {0.275, 5, 9.725},
+    {9.725, 0.275, 9.725},
+    {5, 0.275, 9.725},
+    {0.275, 0.275, 9.725},
+    {9.725, 9.725, 5},
+    {5, 9.725, 5},
+    {0.275, 9.725, 5},
+    {9.725, 5, 5},
+    {5, 5, 5},
+    {0.275, 5, 5},
+    {9.725, 0.275, 5},
+    {5, 0.275, 5},
+    {0.275, 0.275, 5},
+    {9.725, 9.725, 0.275},
+    {5, 9.725, 0.275},
+    {0.275, 9.725, 0.275},
+    {9.725, 5, 0.275},
+    {5, 5, 0.275},
+    {0.275, 5, 0.275},
+    {9.725, 0.275, 0.275},
+    {5, 0.275, 0.275},
+    {0.275, 0.275, 0.275}
+  };
+
+  for (auto particle = autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    const auto id = particle->getID();
+    const auto position = particle->getR();
+    EXPECT_NEAR(position[0], expectedPositionsAfterMigration[id][0], 1e-13);
+    EXPECT_NEAR(position[1], expectedPositionsAfterMigration[id][1], 1e-13);
+    EXPECT_NEAR(position[2], expectedPositionsAfterMigration[id][2], 1e-13);
+  }
 }

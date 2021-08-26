@@ -1,5 +1,5 @@
 /**
- * @file TestRegularGridDecomposition.h
+ * @file RegularGridDecompositionTest.h
  * @author J. Körner
  * @date 27/05/21
  */
@@ -12,10 +12,10 @@
 /**
  * Test class for the RegularGridDecomposition domain decomposition class.
  */
-class TestRegularGridDecomposition : public AutoPasTestBase {
+class RegularGridDecompositionTest : public AutoPasTestBase {
  public:
   /**
    * Constructor.
    */
-  TestRegularGridDecomposition() = default;
+  RegularGridDecompositionTest() = default;
 };
