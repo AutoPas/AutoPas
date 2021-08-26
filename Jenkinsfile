@@ -6,6 +6,13 @@ pipeline {
         }
     }
     stages {
+        stage('abort old jobs') {
+            agent { label 'master' }
+            steps {
+                milestone label: '', ordinal:  Integer.parseInt(env.BUILD_ID) - 1
+                milestone label: '', ordinal:  Integer.parseInt(env.BUILD_ID)
+            }
+        }
         stage('setup') {
             steps {
                 echo 'Starting AutoPas Pipeline'
