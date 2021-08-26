@@ -337,13 +337,6 @@ void ParallelVtkWriter::tryCreateFolder(const std::string &name, const std::stri
   }
 }
 
-/**
- * Generates the file name for a given vtk file type.
- * @param fileContent: The type of data which will be recorded in this file.
- * @param filetype: The vtk file type extension. Pass the extension without the '.'.
- * @param currentIteration: The current iteration to record.
- * @param filenameStream: The output string string for the filename.
- */
 void ParallelVtkWriter::generateFilename(const std::string &fileContent, const std::string &filetype,
                                          const int &currentIteration, std::ostringstream &filenameStream) {
   filenameStream << _dataFolderPath << _sessionName << "_" << fileContent << "_" << _mpiRank << "_" << std::setfill('0')

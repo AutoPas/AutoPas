@@ -36,6 +36,7 @@ class ParallelVtkWriter {
    * Writes the current state of particles and the current domain subdivision into vtk files.
    * @param currentIteration The simulation's current iteration.
    * @param autoPasContainer The AutoPas container whose owned particles will be logged.
+   * @param decomposition: The decomposition of the global domain.
    */
   void recordTimestep(const int &currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer,
                       const RegularGridDecomposition &decomposition);
@@ -90,6 +91,7 @@ class ParallelVtkWriter {
   /**
    * Writes the current domain subdivision into vtk files.
    * @param currentIteration: The simulations current iteration.
+   * @param autoPasConfiguration: The configuration of an autoPasContainer.
    * @param decomposition: The simulations domain decomposition.
    */
   void recordDomainSubdivision(const int &currentIteration, const autopas::Configuration &autoPasConfiguration,
@@ -100,7 +102,7 @@ class ParallelVtkWriter {
    * The whole extent defines the space this local domain is occupying in the global domain.
    * The layout of the returned array is [ xmin, xmax, ymin, ymax, zmin, zmax ], where x, y and z are coordinates in
    * in the decomposition grid.
-   * @param decomposition: The simulations domain decomposition.
+   * @param domainDecomposition: The simulations domain decomposition.
    * @return the whole extent of the local domain.
    */
   std::array<int, 6> calculateWholeExtent(const RegularGridDecomposition &domainDecomposition);
