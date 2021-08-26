@@ -104,5 +104,4 @@ std::array<int, 6> getExtentOfSubdomain(const int subdomainIndex, const std::arr
 
   return extentOfSubdomain;
 }
-
 }  // namespace DomainTools
