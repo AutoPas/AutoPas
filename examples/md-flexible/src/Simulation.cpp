@@ -466,7 +466,7 @@ void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce)
 }
 
 void Simulation::logSimulationState() {
-  int totalNumberOfParticles, ownedParticles, haloParticles;
+  size_t totalNumberOfParticles{0ul}, ownedParticles{0ul}, haloParticles{0ul};
 
   int particleCount = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::ownedOrHalo);
   autopas::AutoPas_MPI_Allreduce(&particleCount, &totalNumberOfParticles, 1, AUTOPAS_MPI_INT, AUTOPAS_MPI_SUM,
