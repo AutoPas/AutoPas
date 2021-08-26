@@ -38,7 +38,7 @@ constexpr size_t AttributesSize = 120;
  * Serializes the attribute defined by I.
  */
 template <size_t I>
-void serializeAttribute(ParticleType &particle, std::vector<char> &attributeVector, size_t &startIndex) {
+void serializeAttribute(const ParticleType &particle, std::vector<char> &attributeVector, size_t &startIndex) {
   const auto attribute = particle.get<Attributes[I]>();
   const auto sizeOfValue = sizeof(attribute);
   std::memcpy(&attributeVector[startIndex], &attribute, sizeOfValue);
@@ -63,7 +63,8 @@ void deserializeAttribute(char *&attributeVector, ParticleType &particle, size_t
  * @param serializedParticle: The char array of the particles serialized attributes.
  */
 template <size_t... I>
-void serializeParticleImpl(ParticleType &particle, std::vector<char> &serializedParticle, std::index_sequence<I...>) {
+void serializeParticleImpl(const ParticleType &particle, std::vector<char> &serializedParticle,
+                           std::index_sequence<I...>) {
   // Serialize particle attributes
   size_t startIndex = 0;
   std::vector<char> attributesVector(AttributesSize);
@@ -86,7 +87,7 @@ void deserializeParticleImpl(char *particleData, ParticleType &particle, std::in
 }  // namespace
 
 namespace ParticleSerializationTools {
-void serializeParticle(ParticleType &particle, std::vector<char> &serializedParticles) {
+void serializeParticle(const ParticleType &particle, std::vector<char> &serializedParticles) {
   serializeParticleImpl(particle, serializedParticles, std::make_index_sequence<Attributes.size()>{});
 }
 

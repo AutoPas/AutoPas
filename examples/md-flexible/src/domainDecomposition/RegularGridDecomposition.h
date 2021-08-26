@@ -234,7 +234,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param particles The particles to be sent to the receiver.
    * @param receiver The recipient of the particels.
    */
-  void sendParticles(std::vector<ParticleType> &particles, const int &receiver);
+  void sendParticles(const std::vector<ParticleType> &particles, const int &receiver);
 
   /**
    * Received particles sent by a sender.
