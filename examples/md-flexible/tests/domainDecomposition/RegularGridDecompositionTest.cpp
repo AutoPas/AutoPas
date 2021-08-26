@@ -92,10 +92,10 @@ TEST_F(RegularGridDecompositionTest, testExchangeHaloParticles) {
 
   initializeAutoPasContainer(autoPasContainer, configuration);
 
-  // Setup 27 particles of which 26 will be relevant during halo update. Imagine a rubik's cube where each cell 
+  // Setup 27 particles of which 26 will be relevant during halo update. Imagine a rubik's cube where each cell
   // contains a single particle. This layout contains 8 particles with 3 adjacent cell which is outside the cube,
-  // 12 particles with two adjacent cells which are outside the cube and 6 particles with a single adjacent cell 
-  // outside the cube. 
+  // 12 particles with two adjacent cells which are outside the cube and 6 particles with a single adjacent cell
+  // outside the cube.
   std::vector<std::vector<double>> particlePositions = {
       {1.5, 1.5, 1.5}, {5.0, 1.5, 1.5}, {8.5, 1.5, 1.5}, {1.5, 5.0, 1.5}, {5.0, 5.0, 1.5},
       {8.5, 5.0, 1.5}, {1.5, 8.5, 1.5}, {5.0, 8.5, 1.5}, {8.5, 8.5, 1.5},
@@ -174,7 +174,7 @@ TEST_F(RegularGridDecompositionTest, testExchangeMigratingParticles) {
     ++id;
   }
 
-  // Move particles outside the simulation box to make them migrate. 
+  // Move particles outside the simulation box to make them migrate.
   // Particles in corner cells (of the rubik's cube) will be moved diagonally in all dimensions.
   // Particles in edge cells will be sifted diagonally in two dimiensions.
   // Particles in surface cells which are neither a corner nor a edge will be moved along a single dimension.
@@ -202,34 +202,13 @@ TEST_F(RegularGridDecompositionTest, testExchangeMigratingParticles) {
   EXPECT_NO_THROW(domainDecomposition.exchangeMigratingParticles(autoPasContainer));
 
   std::vector<std::array<double, 3>> expectedPositionsAfterMigration = {
-    {9.725, 9.725, 9.725},
-    {5, 9.725, 9.725},
-    {0.275, 9.725, 9.725},
-    {9.725, 5, 9.725},
-    {5, 5, 9.725},
-    {0.275, 5, 9.725},
-    {9.725, 0.275, 9.725},
-    {5, 0.275, 9.725},
-    {0.275, 0.275, 9.725},
-    {9.725, 9.725, 5},
-    {5, 9.725, 5},
-    {0.275, 9.725, 5},
-    {9.725, 5, 5},
-    {5, 5, 5},
-    {0.275, 5, 5},
-    {9.725, 0.275, 5},
-    {5, 0.275, 5},
-    {0.275, 0.275, 5},
-    {9.725, 9.725, 0.275},
-    {5, 9.725, 0.275},
-    {0.275, 9.725, 0.275},
-    {9.725, 5, 0.275},
-    {5, 5, 0.275},
-    {0.275, 5, 0.275},
-    {9.725, 0.275, 0.275},
-    {5, 0.275, 0.275},
-    {0.275, 0.275, 0.275}
-  };
+      {9.725, 9.725, 9.725}, {5, 9.725, 9.725}, {0.275, 9.725, 9.725}, {9.725, 5, 9.725},
+      {5, 5, 9.725},         {0.275, 5, 9.725}, {9.725, 0.275, 9.725}, {5, 0.275, 9.725},
+      {0.275, 0.275, 9.725}, {9.725, 9.725, 5}, {5, 9.725, 5},         {0.275, 9.725, 5},
+      {9.725, 5, 5},         {5, 5, 5},         {0.275, 5, 5},         {9.725, 0.275, 5},
+      {5, 0.275, 5},         {0.275, 0.275, 5}, {9.725, 9.725, 0.275}, {5, 9.725, 0.275},
+      {0.275, 9.725, 0.275}, {9.725, 5, 0.275}, {5, 5, 0.275},         {0.275, 5, 0.275},
+      {9.725, 0.275, 0.275}, {5, 0.275, 0.275}, {0.275, 0.275, 0.275}};
 
   for (auto particle = autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     const auto id = particle->getID();

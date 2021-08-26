@@ -124,7 +124,7 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
       if (j == i) {
         haloBoxMin = {_localBoxMin[0] - _skinWidth, _localBoxMin[1] - _skinWidth, _localBoxMin[2] - _skinWidth};
         for (int k = 0; k < _dimensionCount; ++k) {
-          haloBoxMax[k] =  _skinWidth + _localBoxMax[k];
+          haloBoxMax[k] = _skinWidth + _localBoxMax[k];
         }
         haloBoxMax[dimensionIndex] = _localBoxMin[dimensionIndex] + _cutoffWidth + _skinWidth;
 
