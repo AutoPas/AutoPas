@@ -88,10 +88,13 @@ For examples how to define and configure each object see [`input/AllOptions.yaml
 
 ### Output
 
-* After every execution, a configuration YAML file is generated. It is
-possible to use this file as input for a new simulation.
+* After every execution, a configuration YAML file is generated. It is possible to use this file as input for a new simulation.
+
 * You can generate vtk output by providing a vtk-filename
-(see help for details).
+(see help for details). The output contains two different vtk files. One for visualizing the particles another for the visualization of the subdomains of the domain decomposition.
+The cells contain additional information about the configuration of the AutoPas container responsible for simulating the cell.
+To visualize the particle records load the .pvtu files in ParaView. To visualize the cells of the decomposition load the .pvts files in ParaView.
+
 
 ### Checkpoints
 
