@@ -33,7 +33,7 @@ double getDistanceToDomain(const std::array<double, 3> &coordinates, const std::
   return autopas::utils::ArrayMath::L2Norm(differences);
 }
 
-void generateDecomposition(unsigned int subdomainCount, std::array<bool, 3> subdivideDimension,
+void generateDecomposition(unsigned int subdomainCount, const std::array<bool, 3> &subdivideDimension,
                            std::array<int, 3> &decomposition) {
   std::list<int> primeFactors;
   // Add 2 to prime factorization as many times as subdomainCount is dividable by 2.
@@ -55,7 +55,7 @@ void generateDecomposition(unsigned int subdomainCount, std::array<bool, 3> subd
   // Determine number of dimensions which have to be subdivided.
   size_t numberOfDimensionsToSubdivide = 0;
   for (auto element : subdivideDimension) {
-    numberOfDimensionsToSubdivide = numberOfDimensionsToSubdivide + (element ? 1 : 0);
+    numberOfDimensionsToSubdivide += element;
   }
 
   // Reduces the primeFactors to 3 elements, one for each dimension of the domain.
@@ -70,7 +70,7 @@ void generateDecomposition(unsigned int subdomainCount, std::array<bool, 3> subd
   // If the prime factorization ends up having less factors than dimensions in the domain,
   // fill those dimensions with 1.
   for (int i = 0; i < 3; ++i) {
-    if (not primeFactors.empty() && subdivideDimension[i]) {
+    if (not primeFactors.empty() and subdivideDimension[i]) {
       decomposition[i] = primeFactors.front();
       primeFactors.pop_front();
     } else {

@@ -26,7 +26,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param skinWidth: The skin width of an autopas container domain.
    */
   RegularGridDecomposition(const std::array<double, 3> &globalBoxMin, const std::array<double, 3> &globalBoxMax,
-                           const std::array<bool, 3> subdivideDimension, const double &cutoffWidth,
+                           const std::array<bool, 3> &subdivideDimension, const double &cutoffWidth,
                            const double &skinWidth);
 
   /**

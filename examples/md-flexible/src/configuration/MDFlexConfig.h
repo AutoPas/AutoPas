@@ -346,7 +346,7 @@ class MDFlexConfig {
       {true, true, true},
       "subdivide-dimension",
       true,
-      "Indicates which dimension will be subdivided when subdividing the global domain"};
+      "Indicates in which dimensions the global domain can be subdivided by the MPI decomposition"};
 
   /**
    * acquisitionFunctionOption

@@ -18,7 +18,7 @@
 
 RegularGridDecomposition::RegularGridDecomposition(const std::array<double, 3> &globalBoxMin,
                                                    const std::array<double, 3> &globalBoxMax,
-                                                   const std::array<bool, 3> subdivideDimension,
+                                                   const std::array<bool, 3> &subdivideDimension,
                                                    const double &cutoffWidth, const double &skinWidth)
     : _cutoffWidth(cutoffWidth), _skinWidth(skinWidth) {
 #if defined(AUTOPAS_INCLUDE_MPI)
