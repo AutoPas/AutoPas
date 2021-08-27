@@ -8,6 +8,7 @@
 #include <memory>
 #include <set>
 
+#include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/iterators/ParticleIteratorWrapper.h"
 #include "autopas/options//ExtrapolationMethodOption.h"
 #include "autopas/options/AcquisitionFunctionOption.h"
@@ -23,11 +24,6 @@
 #include "autopas/selectors/Configuration.h"
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/WrapMPI.h"
-
-// These next three includes have dependencies to all of AutoPas and thus are moved here from AutoPasDecl.h.
-#include "autopas/LogicHandler.h"
-#include "autopas/selectors/AutoTuner.h"
-#include "autopas/selectors/tuningStrategy/TuningStrategyFactory.h"
 
 namespace autopas {
 
@@ -197,7 +193,8 @@ class AutoPas {
    */
   template <typename Lambda>
   void forEachParallel(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    _logicHandler->forEachParallel(forEachLambda, behavior);
+    // TODO lgaertner: parallelize with kokkos integration
+    withStaticContainerType(getContainer(), [&](auto container) { container->forEach(forEachLambda, behavior); });
   }
 
   /**
@@ -206,7 +203,8 @@ class AutoPas {
    */
   template <typename Lambda>
   void forEachParallel(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
-    std::as_const(*_logicHandler).forEachParallel(forEachLambda, behavior);
+    // TODO lgaertner: parallelize with kokkos integration
+    withStaticContainerType(getContainer(), [&](auto container) { container->forEach(forEachLambda, behavior); });
   }
 
   /**
@@ -217,7 +215,7 @@ class AutoPas {
    */
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    _logicHandler->forEach(forEachLambda, behavior);
+    withStaticContainerType(getContainer(), [&](auto container) { container->forEach(forEachLambda, behavior); });
   }
 
   /**
@@ -226,7 +224,7 @@ class AutoPas {
    */
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
-    std::as_const(*_logicHandler).forEach(forEachLambda, behavior);
+    withStaticContainerType(getContainer(), [&](auto container) { container->forEach(forEachLambda, behavior); });
   }
 
   /**
@@ -239,7 +237,7 @@ class AutoPas {
    */
   template <typename Lambda, typename A>
   void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    _logicHandler->reduce(reduceLambda, result, behavior);
+    withStaticContainerType(getContainer(), [&](auto container) { container->reduce(reduceLambda, result, behavior); });
   }
 
   /**
@@ -248,7 +246,7 @@ class AutoPas {
    */
   template <typename Lambda, typename A>
   void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
-    std::as_const(*_logicHandler).reduce(reduceLambda, result, behavior);
+    withStaticContainerType(getContainer(), [&](auto container) { container->reduce(reduceLambda, result, behavior); });
   }
 
   /**
@@ -296,7 +294,10 @@ class AutoPas {
   void forEachInRegionParallel(Lambda forEachLambda, std::array<double, 3> lowerCorner,
                                std::array<double, 3> higherCorner,
                                IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    _logicHandler->forEachInRegionParallel(forEachLambda, lowerCorner, higherCorner, behavior);
+    // TODO (lgaertner): parallelize with kokkos integration
+    withStaticContainerType(getContainer(), [&](auto container) {
+      container->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+    });
   }
 
   /**
@@ -307,7 +308,10 @@ class AutoPas {
   void forEachInRegionParallel(Lambda forEachLambda, std::array<double, 3> lowerCorner,
                                std::array<double, 3> higherCorner,
                                IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
-    std::as_const(*_logicHandler).forEachInRegionParallel(forEachLambda, lowerCorner, higherCorner, behavior);
+    // TODO (lgaertner): parallelize with kokkos integration
+    withStaticContainerType(getContainer(), [&](auto container) {
+      container->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+    });
   }
 
   /**
@@ -321,7 +325,9 @@ class AutoPas {
   template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
                        IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    _logicHandler->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+    withStaticContainerType(getContainer(), [&](auto container) {
+      container->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+    });
   }
 
   /**
@@ -331,23 +337,27 @@ class AutoPas {
   template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
                        IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
-    std::as_const(*_logicHandler).forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+    withStaticContainerType(getContainer(), [&](auto container) {
+      container->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+    });
   }
 
   /**
    * execute code on all particles in a certain region as defined by a lambda function
-   * @tparam Lambda (Particle &p, A &reductionValue) -> void
+   * @tparam Lambda (Particle &p, A &result) -> void
    * @tparam A type of reduction value
    * @param reduceLambda code to be executed on all particles
-   * @param reductionValue reference to starting and final value of reduction
+   * @param result reference to starting and final value of reduction
    * @param lowerCorner lower corner of bounding box
    * @param higherCorner higher corner of bounding box
    * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownerOrHalo
    */
   template <typename Lambda, typename A>
-  void reduceInRegion(Lambda reduceLambda, A &reductionValue, std::array<double, 3> lowerCorner,
+  void reduceInRegion(Lambda reduceLambda, A &result, std::array<double, 3> lowerCorner,
                       std::array<double, 3> higherCorner, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    _logicHandler->reduceInRegion(reduceLambda, reductionValue, lowerCorner, higherCorner, behavior);
+    withStaticContainerType(getContainer(), [&](auto container) {
+      container->forEachInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
+    });
   }
 
   /**
@@ -355,10 +365,12 @@ class AutoPas {
    * @note const version
    */
   template <typename Lambda, typename A>
-  void reduceInRegion(Lambda reduceLambda, A &reductionValue, std::array<double, 3> lowerCorner,
+  void reduceInRegion(Lambda reduceLambda, A &result, std::array<double, 3> lowerCorner,
                       std::array<double, 3> higherCorner,
                       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
-    std::as_const(*_logicHandler).reduceInRegion(reduceLambda, reductionValue, lowerCorner, higherCorner, behavior);
+    withStaticContainerType(getContainer(), [&](auto container) {
+      container->forEachInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
+    });
   }
 
   /**
@@ -744,6 +756,11 @@ class AutoPas {
    * @param suffix
    */
   void setOutputSuffix(const std::string &suffix) { _outputSuffix = suffix; }
+
+ private:
+  ParticleContainerInterface<Particle> &getContainer();
+
+  const ParticleContainerInterface<Particle> &getContainer() const;
 
  private:
   /**
