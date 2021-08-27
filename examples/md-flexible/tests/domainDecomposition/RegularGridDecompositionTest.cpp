@@ -97,14 +97,11 @@ TEST_F(RegularGridDecompositionTest, testExchangeHaloParticles) {
   // 12 particles with two adjacent cells which are outside the cube and 6 particles with a single adjacent cell
   // outside the cube.
   std::vector<std::vector<double>> particlePositions = {
-      {1.5, 1.5, 1.5}, {5.0, 1.5, 1.5}, {8.5, 1.5, 1.5}, {1.5, 5.0, 1.5}, {5.0, 5.0, 1.5},
-      {8.5, 5.0, 1.5}, {1.5, 8.5, 1.5}, {5.0, 8.5, 1.5}, {8.5, 8.5, 1.5},
-
-      {1.5, 1.5, 5.0}, {5.0, 1.5, 5.0}, {8.5, 1.5, 5.0}, {1.5, 5.0, 5.0}, {5.0, 5.0, 5.0},
-      {8.5, 5.0, 5.0}, {1.5, 8.5, 5.0}, {5.0, 8.5, 5.0}, {8.5, 8.5, 5.0},
-
-      {1.5, 1.5, 8.5}, {5.0, 1.5, 8.5}, {8.5, 1.5, 8.5}, {1.5, 5.0, 8.5}, {5.0, 5.0, 8.5},
-      {8.5, 5.0, 8.5}, {1.5, 8.5, 8.5}, {5.0, 8.5, 8.5}, {8.5, 8.5, 8.5}};
+      {1.5, 1.5, 1.5}, {5.0, 1.5, 1.5}, {8.5, 1.5, 1.5}, {1.5, 5.0, 1.5}, {5.0, 5.0, 1.5}, {8.5, 5.0, 1.5},
+      {1.5, 8.5, 1.5}, {5.0, 8.5, 1.5}, {8.5, 8.5, 1.5}, {1.5, 1.5, 5.0}, {5.0, 1.5, 5.0}, {8.5, 1.5, 5.0},
+      {1.5, 5.0, 5.0}, {5.0, 5.0, 5.0}, {8.5, 5.0, 5.0}, {1.5, 8.5, 5.0}, {5.0, 8.5, 5.0}, {8.5, 8.5, 5.0},
+      {1.5, 1.5, 8.5}, {5.0, 1.5, 8.5}, {8.5, 1.5, 8.5}, {1.5, 5.0, 8.5}, {5.0, 5.0, 8.5}, {8.5, 5.0, 8.5},
+      {1.5, 8.5, 8.5}, {5.0, 8.5, 8.5}, {8.5, 8.5, 8.5}};
 
   size_t id = 0;
   for (const auto position : particlePositions) {
@@ -119,14 +116,50 @@ TEST_F(RegularGridDecompositionTest, testExchangeHaloParticles) {
 
   EXPECT_NO_THROW(domainDecomposition.exchangeHaloParticles(autoPasContainer));
 
-  const size_t haloParticleCount = autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::halo);
-
   // The resulting haloParticleCount has to be 98 because, the 8 corner particles have to be replicated 7 times each,
   // resulting in 56 halo particles for the corner cells. The 12 particles contained
   // in the edge cells of the rubik's cube need to be replicated 3 times each raising the total number of halo particles
   // to 90. The remaining 6 particles with a single adjacent cell only produce a single halo particle each.
   // Therefor the total amount of particles is 98.
-  EXPECT_EQ(haloParticleCount, 98);
+  std::vector<std::vector<double>> expectedHaloParticlePositions = {
+      {-2.725, -2.725, -2.725}, {1.5, -2.725, -2.725},    {5, -2.725, -2.725},   {8.5, -2.725, -2.725},
+      {12.725, -2.725, -2.725}, {-2.725, 1.5, -2.725},    {1.5, 1.5, -2.725},    {5, 1.5, -2.725},
+      {8.5, 1.5, -2.725},       {12.725, 1.5, -2.725},    {-2.725, 5, -2.725},   {1.5, 5, -2.725},
+      {5, 5, -2.725},           {8.5, 5, -2.725},         {12.725, 5, -2.725},   {-2.725, 8.5, -2.725},
+      {1.5, 8.5, -2.725},       {5, 8.5, -2.725},         {8.5, 8.5, -2.725},    {12.725, 8.5, -2.725},
+      {-2.725, 12.725, -2.725}, {1.5, 12.725, -2.725},    {5, 12.725, -2.725},   {8.5, 12.725, -2.725},
+      {12.725, 12.725, -2.725}, {-2.725, -2.725, 1.5},    {1.5, -2.725, 1.5},    {5, -2.725, 1.5},
+      {8.5, -2.725, 1.5},       {12.725, -2.725, 1.5},    {-2.725, 1.5, 1.5},    {12.725, 1.5, 1.5},
+      {-2.725, 5, 1.5},         {12.725, 5, 1.5},         {-2.725, 8.5, 1.5},    {12.725, 8.5, 1.5},
+      {-2.725, 12.725, 1.5},    {1.5, 12.725, 1.5},       {5, 12.725, 1.5},      {8.5, 12.725, 1.5},
+      {12.725, 12.725, 1.5},    {-2.725, -2.725, 5},      {1.5, -2.725, 5},      {5, -2.725, 5},
+      {8.5, -2.725, 5},         {12.725, -2.725, 5},      {-2.725, 1.5, 5},      {12.725, 1.5, 5},
+      {-2.725, 5, 5},           {12.725, 5, 5},           {-2.725, 8.5, 5},      {12.725, 8.5, 5},
+      {-2.725, 12.725, 5},      {1.5, 12.725, 5},         {5, 12.725, 5},        {8.5, 12.725, 5},
+      {12.725, 12.725, 5},      {-2.725, -2.725, 8.5},    {1.5, -2.725, 8.5},    {5, -2.725, 8.5},
+      {8.5, -2.725, 8.5},       {12.725, -2.725, 8.5},    {-2.725, 1.5, 8.5},    {12.725, 1.5, 8.5},
+      {-2.725, 5, 8.5},         {12.725, 5, 8.5},         {-2.725, 8.5, 8.5},    {12.725, 8.5, 8.5},
+      {-2.725, 12.725, 8.5},    {1.5, 12.725, 8.5},       {5, 12.725, 8.5},      {8.5, 12.725, 8.5},
+      {12.725, 12.725, 8.5},    {-2.725, -2.725, 12.725}, {1.5, -2.725, 12.725}, {5, -2.725, 12.725},
+      {8.5, -2.725, 12.725},    {12.725, -2.725, 12.725}, {-2.725, 1.5, 12.725}, {1.5, 1.5, 12.725},
+      {5, 1.5, 12.725},         {8.5, 1.5, 12.725},       {12.725, 1.5, 12.725}, {-2.725, 5, 12.725},
+      {1.5, 5, 12.725},         {5, 5, 12.725},           {8.5, 5, 12.725},      {12.725, 5, 12.725},
+      {-2.725, 8.5, 12.725},    {1.5, 8.5, 12.725},       {5, 8.5, 12.725},      {8.5, 8.5, 12.725},
+      {12.725, 8.5, 12.725},    {-2.725, 12.725, 12.725}, {1.5, 12.725, 12.725}, {5, 12.725, 12.725},
+      {8.5, 12.725, 12.725},    {12.725, 12.725, 12.725}};
+  const size_t haloParticleCount = autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::halo);
+
+  EXPECT_EQ(haloParticleCount, expectedHaloParticlePositions.size());
+
+  size_t index = 0;
+  for (auto particle = autoPasContainer->begin(autopas::IteratorBehavior::halo); particle.isValid(); ++particle) {
+    const auto particlePosition = particle->getR();
+    EXPECT_NEAR(particlePosition[0], expectedHaloParticlePositions[index][0], 1e-13);
+    EXPECT_NEAR(particlePosition[1], expectedHaloParticlePositions[index][1], 1e-13);
+    EXPECT_NEAR(particlePosition[2], expectedHaloParticlePositions[index][2], 1e-13);
+
+    ++index;
+  }
 }
 
 /**
@@ -154,14 +187,11 @@ TEST_F(RegularGridDecompositionTest, testExchangeMigratingParticles) {
 
   // Setup 27 particles. Imagine a rubik's cube where each cell contains a single particle.
   std::vector<std::vector<double>> particlePositions = {
-      {1.5, 1.5, 1.5}, {5.0, 1.5, 1.5}, {8.5, 1.5, 1.5}, {1.5, 5.0, 1.5}, {5.0, 5.0, 1.5},
-      {8.5, 5.0, 1.5}, {1.5, 8.5, 1.5}, {5.0, 8.5, 1.5}, {8.5, 8.5, 1.5},
-
-      {1.5, 1.5, 5.0}, {5.0, 1.5, 5.0}, {8.5, 1.5, 5.0}, {1.5, 5.0, 5.0}, {5.0, 5.0, 5.0},
-      {8.5, 5.0, 5.0}, {1.5, 8.5, 5.0}, {5.0, 8.5, 5.0}, {8.5, 8.5, 5.0},
-
-      {1.5, 1.5, 8.5}, {5.0, 1.5, 8.5}, {8.5, 1.5, 8.5}, {1.5, 5.0, 8.5}, {5.0, 5.0, 8.5},
-      {8.5, 5.0, 8.5}, {1.5, 8.5, 8.5}, {5.0, 8.5, 8.5}, {8.5, 8.5, 8.5}};
+      {1.5, 1.5, 1.5}, {5.0, 1.5, 1.5}, {8.5, 1.5, 1.5}, {1.5, 5.0, 1.5}, {5.0, 5.0, 1.5}, {8.5, 5.0, 1.5},
+      {1.5, 8.5, 1.5}, {5.0, 8.5, 1.5}, {8.5, 8.5, 1.5}, {1.5, 1.5, 5.0}, {5.0, 1.5, 5.0}, {8.5, 1.5, 5.0},
+      {1.5, 5.0, 5.0}, {5.0, 5.0, 5.0}, {8.5, 5.0, 5.0}, {1.5, 8.5, 5.0}, {5.0, 8.5, 5.0}, {8.5, 8.5, 5.0},
+      {1.5, 1.5, 8.5}, {5.0, 1.5, 8.5}, {8.5, 1.5, 8.5}, {1.5, 5.0, 8.5}, {5.0, 5.0, 8.5}, {8.5, 5.0, 8.5},
+      {1.5, 8.5, 8.5}, {5.0, 8.5, 8.5}, {8.5, 8.5, 8.5}};
 
   size_t id = 0;
   for (const auto position : particlePositions) {
