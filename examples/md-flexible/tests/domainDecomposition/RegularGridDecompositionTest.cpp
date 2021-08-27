@@ -147,6 +147,7 @@ TEST_F(RegularGridDecompositionTest, testExchangeHaloParticles) {
       {-2.725, 8.5, 12.725},    {1.5, 8.5, 12.725},       {5, 8.5, 12.725},      {8.5, 8.5, 12.725},
       {12.725, 8.5, 12.725},    {-2.725, 12.725, 12.725}, {1.5, 12.725, 12.725}, {5, 12.725, 12.725},
       {8.5, 12.725, 12.725},    {12.725, 12.725, 12.725}};
+
   const size_t haloParticleCount = autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::halo);
 
   EXPECT_EQ(haloParticleCount, expectedHaloParticlePositions.size());
