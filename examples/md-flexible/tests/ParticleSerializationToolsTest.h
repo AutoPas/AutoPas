@@ -22,7 +22,6 @@ class ParticleSerializationToolsTest : public AutoPasTestBase {
   ParticleSerializationToolsTest();
 
  protected:
-
   /**
    * Molecule used for testing.
    */
