@@ -88,7 +88,7 @@ bool checkpointWasCreatedWithEqualNumberOfRanks(const std::string filename, cons
  * @param filename: The name of the pvtu file.
  * @param scenarioName: The name of the scenario where the checkoint as been created.
  *        See MDFlexConfig::checkpointScenarioName for more details.
- * @param iterationN: The iteration for which the checkpoint has been created.
+ * @param iteration: The iteration for which the checkpoint has been created.
  * @param rank: The rank which created the respective vtu file.
  * @param particles: Container for the particles recorded in the respective vts file.
  */
