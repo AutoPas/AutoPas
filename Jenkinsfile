@@ -5,7 +5,9 @@ pipeline {
             agent { label 'master' }
             steps {
                 echo 'aborting old jobs'
-                // By passing the milestones, old builds are aborted.
+                // We are using Nr. 3 from the doc (https://plugins.jenkins.io/pipeline-milestone-step/):
+                // - When a build passes a milestone, any older build that passed the previous milestone but not this one is aborted.
+                // E.g. build 4 passes 3 and 4, afterwards build 5 passes 4 and 5. Hence, build 4 passes milestone 4, but not 5 and is thus aborted.
                 milestone label: '', ordinal:  Integer.parseInt(env.BUILD_ID) - 1
                 milestone label: '', ordinal:  Integer.parseInt(env.BUILD_ID)
             }
