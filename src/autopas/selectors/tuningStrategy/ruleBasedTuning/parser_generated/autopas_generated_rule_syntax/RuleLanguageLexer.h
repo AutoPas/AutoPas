@@ -7,17 +7,17 @@
 #include "antlr4-runtime.h"
 
 
-namespace autopas::rule_syntax {
+namespace autopas_generated_rule_syntax {
 
 
 class  RuleLanguageLexer : public antlr4::Lexer {
 public:
   enum {
     T__0 = 1, T__1 = 2, T__2 = 3, T__3 = 4, T__4 = 5, T__5 = 6, T__6 = 7, 
-    T__7 = 8, T__8 = 9, T__9 = 10, T__10 = 11, Container_opt = 12, Traversal_opt = 13, 
-    Load_estimator_opt = 14, Data_layout_opt = 15, Newton3_opt = 16, Bool_val = 17, 
-    Binary_op = 18, Configuration_property = 19, DIGIT = 20, Unsigned_val = 21, 
-    Variable_name = 22
+    T__7 = 8, T__8 = 9, T__9 = 10, T__10 = 11, T__11 = 12, T__12 = 13, T__13 = 14, 
+    T__14 = 15, WS = 16, Container_opt = 17, Traversal_opt = 18, Load_estimator_opt = 19, 
+    Data_layout_opt = 20, Newton3_opt = 21, Bool_val = 22, Configuration_property = 23, 
+    DIGIT = 24, Unsigned_val = 25, Double_val = 26, Variable_name = 27
   };
 
   explicit RuleLanguageLexer(antlr4::CharStream *input);
@@ -59,4 +59,4 @@ private:
   static Initializer _init;
 };
 
-}  // namespace autopas_rule_syntax
+}  // namespace autopas_generated_rule_syntax

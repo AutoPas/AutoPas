@@ -7,12 +7,12 @@ namespace autopas::rule_syntax {
   }
 
   Type Variable::getType() const {
-    return std::visit([this](const auto& expr) {return expr.getType(); }, definition->value);
+    return definition->value->getType();
   }
 
   void BinaryOperator::generateCode(CodeGenerationContext &context, RuleVM::Program &program) const {
-    std::visit([&](const auto& expr) {expr.generateCode(context, program); }, *left);
-    std::visit([&](const auto& expr) {expr.generateCode(context, program); }, *right);
+    left->generateCode(context, program);
+    right->generateCode(context, program);
 
     auto opCode = op == LESS ? RuleVM::LESS : (op == GREATER ? RuleVM::GREATER : RuleVM::AND);
     program.instructions.push_back({opCode});
@@ -20,8 +20,13 @@ namespace autopas::rule_syntax {
     context.freeStack(1);
   }
 
-  void CodeGenerationContext::addVariable(const Define &definition) {
+  void CodeGenerationContext::addLocalVariable(const Define &definition) {
     addressEnvironment.insert({definition.variable, {&definition, addressEnvironment.size()}});
+  }
+
+  void CodeGenerationContext::addGlobalVariable(const Define &definition) {
+    initialNumVariables++;
+    addLocalVariable(definition);
   }
 
   [[nodiscard]] size_t CodeGenerationContext::addressOf(const std::string &name) const {

@@ -41,21 +41,47 @@ struct ConfigurationPattern {
            (_cellSizeFactors.empty() or contains(_cellSizeFactors, configuration.cellSizeFactor));
   }
 
+
+
+  [[nodiscard]] std::string toString() const {
+    std::string res = optionSetToString(_containers) + "; " + optionSetToString(_traversals) + "; " +
+                      optionSetToString(_loadEstimators) + "; " + optionSetToString(_loadEstimators) + "; " +
+                      optionSetToString(_dataLayouts) + "; " + optionSetToString(_newton3Options) + "; ";
+    if(not _cellSizeFactors.empty()) {
+      res += std::accumulate(std::next(_cellSizeFactors.begin()), _cellSizeFactors.end(),
+                             std::to_string(*_cellSizeFactors.begin()),
+                      [](std::string s, double d) {return std::move(s) + ',', std::to_string(d);});
+    }
+    return res;
+  }
+
  private:
+  template<class T>
+  [[nodiscard]] static std::string optionSetToString(const std::set<T>& set) {
+    if(not set.empty()) {
+      auto comma_fold = [](std::string a, T b) {
+        return std::move(a) + ',' + b.to_string();
+      };
+
+      return std::accumulate(std::next(set.begin()), set.end(), set.begin()->to_string(), comma_fold);
+    }
+    return {};
+  }
+
   template <typename T>
-  [[nodiscard]] bool contains(const std::set<T> &set, const T &option) const {
+  [[nodiscard]] static bool contains(const std::set<T> &set, const T &option) {
     return set.find(option) != set.end();
   }
 
   template<class T, class SetT>
-  void addHelper2(T value, SetT& set) {
+  static void addHelper2(T value, SetT& set) {
     if constexpr (std::is_same_v<T, typename SetT::value_type>) {
       set.insert(value);
     }
   }
 
   template<class T, class... SetT>
-  void addHelper(T value, SetT&... sets) {
+  static void addHelper(T value, SetT&... sets) {
     (addHelper2(value, sets), ...);
   }
 };
@@ -64,8 +90,7 @@ namespace rule_syntax {
 
 class CodeGenerationContext;
 
-using StatementVal = std::variant<struct If, struct Define, struct DefineList, struct ConfigurationOrder>;
-using ExpressionVal = std::variant<struct Literal, struct Variable, struct BinaryOperator>;
+class Define;
 
 struct Statement {
   virtual void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const = 0;
@@ -83,7 +108,8 @@ struct DefineList;
 class CodeGenerationContext {
  public:
   explicit CodeGenerationContext(std::map<std::string, std::pair<const Define*, size_t>> initialAddressEnvironment)
-      : currentNeededStack(0), maxNeededStack(0), addressEnvironment(std::move(initialAddressEnvironment)) {}
+      : currentNeededStack(0), maxNeededStack(0), addressEnvironment(std::move(initialAddressEnvironment)),
+        initialNumVariables(addressEnvironment.size()) {}
 
   void allocateStack(size_t num) {
     currentNeededStack += num;
@@ -92,7 +118,9 @@ class CodeGenerationContext {
 
   void freeStack(size_t num) { currentNeededStack -= num; }
 
-  void addVariable(const Define &definition);
+  void addLocalVariable(const Define &definition);
+
+  void addGlobalVariable(const Define &definition);
 
   [[nodiscard]] size_t addressOf(const std::string &name) const;
 
@@ -111,11 +139,16 @@ class CodeGenerationContext {
 
   [[nodiscard]] auto getConfigurationPatterns() const { return configurationPatterns; }
 
+  [[nodiscard]] auto getNumLocalVariables() const {
+    return addressEnvironment.size() - initialNumVariables;
+  }
+
  private:
   size_t currentNeededStack;
   size_t maxNeededStack;
 
   std::map<std::string, std::pair<const Define*, size_t>> addressEnvironment;
+  size_t initialNumVariables;
   std::map<std::string, const DefineList *> lists;
   std::vector<ConfigurationPattern> configurationPatterns;
 };
@@ -181,15 +214,14 @@ struct Variable : public Expression {
 struct BinaryOperator : public Expression {
   enum Operator { LESS, GREATER, AND };
 
-  std::shared_ptr<ExpressionVal> left;
+  std::shared_ptr<Expression> left;
   Operator op;
-  std::shared_ptr<ExpressionVal> right;
+  std::shared_ptr<Expression> right;
 
   BinaryOperator() = default;
 
-  BinaryOperator(Operator op, ExpressionVal left, ExpressionVal right)
-      : left(std::make_shared<ExpressionVal>(std::move(left))), op(op),
-        right(std::make_shared<ExpressionVal>(std::move(right))) {}
+  BinaryOperator(Operator op, std::shared_ptr<Expression> left, std::shared_ptr<Expression> right)
+      : left(std::move(left)), op(op), right(std::move(right)) {}
 
   [[nodiscard]] Type getType() const override { return Type::BOOL; }
 
@@ -199,57 +231,57 @@ struct BinaryOperator : public Expression {
 
 struct Define : public Statement {
   std::string variable;
-  ExpressionVal value;
+  std::shared_ptr<Expression> value;
 
   Define() = default;
 
-  Define(std::string variable, ExpressionVal value)
-      : variable(std::move(variable)), value(std::move(value)) {}
-
-  Define(std::string variable, Literal value)
+  Define(std::string variable, std::shared_ptr<Expression> value)
       : variable(std::move(variable)), value(std::move(value)) {}
 
   void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override {
-    std::visit([&](const auto& expr) {expr.generateCode(context, program);}, value);
+    value->generateCode(context, program);
 
-    context.addVariable(*this);
+    context.addLocalVariable(*this);
     program.instructions.push_back({RuleVM::STOREA, context.addressOf(variable)});
     context.freeStack(1);
   }
 };
 
 struct If : public Statement {
-  ExpressionVal condition;
-  std::vector<StatementVal> consequences;
+  std::shared_ptr<Expression> condition;
+  std::vector<std::shared_ptr<Statement>> consequences;
 
   If() = default;
 
-  If(ExpressionVal condition, std::vector<StatementVal> consequences)
+  If(std::shared_ptr<Expression> condition, std::vector<std::shared_ptr<Statement>> consequences)
       : condition(std::move(condition)), consequences(std::move(consequences)) {}
 
   void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override {
-    std::visit([&](const auto& expr) {expr.generateCode(context, program); }, condition);
+    condition->generateCode(context, program);
     program.instructions.push_back({RuleVM::JUMPZERO});
     context.freeStack(1);
-    auto &jumpInstr = program.instructions.back();
+    auto jumpInstrIdx = program.instructions.size() - 1;
 
     for (const auto &statement : consequences) {
-      std::visit([&](const auto& statement) {statement.generateCode(context, program); }, statement);
+      statement->generateCode(context, program);
     }
 
-    jumpInstr.payload = program.instructions.size();
+    program.instructions[jumpInstrIdx].payload = program.instructions.size();
   }
 };
 
 struct RuleBasedProgramTree {
-  std::vector<StatementVal> statements;
+  std::vector<std::shared_ptr<Statement>> statements;
 
-  [[nodiscard]] RuleVM::Program generateCode(CodeGenerationContext context) const {
+  [[nodiscard]] RuleVM::Program generateCode(CodeGenerationContext& context) const {
     RuleVM::Program program;
+    program.instructions.push_back({RuleVM::RESERVE, 0ul});
+    auto reserveInstructionIdx = program.instructions.size() - 1;
     for (const auto &statement : statements) {
-      std::visit([&](const auto& statement) {statement.generateCode(context, program); }, statement);
+      statement->generateCode(context, program);
     }
-    program.neededStackSize = context.getMaxStackSize();
+    program.instructions[reserveInstructionIdx].payload = context.getNumLocalVariables();
+    program.neededStackSize = context.getNumLocalVariables() + context.getMaxStackSize();
     program.instructions.push_back({RuleVM::HALT});
     return program;
   }

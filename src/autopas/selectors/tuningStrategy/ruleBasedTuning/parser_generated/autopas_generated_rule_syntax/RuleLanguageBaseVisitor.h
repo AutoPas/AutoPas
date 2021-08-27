@@ -8,7 +8,7 @@
 #include "RuleLanguageVisitor.h"
 
 
-namespace autopas::rule_syntax {
+namespace autopas_generated_rule_syntax {
 
 /**
  * This class provides an empty implementation of RuleLanguageVisitor, which can be
@@ -34,6 +34,14 @@ public:
   }
 
   virtual antlrcpp::Any visitVariable(RuleLanguageParser::VariableContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitAtom_expr(RuleLanguageParser::Atom_exprContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitComp_expr(RuleLanguageParser::Comp_exprContext *ctx) override {
     return visitChildren(ctx);
   }
 
@@ -64,4 +72,4 @@ public:
 
 };
 
-}  // namespace autopas_rule_syntax
+}  // namespace autopas_generated_rule_syntax

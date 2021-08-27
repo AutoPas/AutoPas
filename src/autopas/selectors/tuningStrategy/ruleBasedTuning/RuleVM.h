@@ -11,7 +11,7 @@ class RuleVM {
       DataLayoutOption, Newton3Option>;
 
   enum CMD {
-    LOADC, LOADA, STOREA, LESS, GREATER, EQUAL, JUMPZERO, OUTPUTC, CONDOUTPUTC, HALT, AND, OR, POP
+    LOADC, LOADA, STOREA, RESERVE, LESS, GREATER, EQUAL, JUMPZERO, OUTPUTC, CONDOUTPUTC, HALT, AND, OR, POP
   };
 
   struct Instruction {
@@ -51,6 +51,9 @@ class RuleVM {
       case STOREA:
         _stack.at(std::get<size_t>(instruction.payload)) = _stack.at(_stackPointer--);
         break;
+      case RESERVE:
+        _stackPointer += std::get<size_t>(instruction.payload);
+        break;
       case LESS: {
         bool res = compare<std::less>();
         _stackPointer--;
@@ -70,7 +73,7 @@ class RuleVM {
         break;
       }
       case JUMPZERO: {
-        bool shouldJump = std::get<bool>(_stack.at(_stackPointer--));
+        bool shouldJump = not std::get<bool>(_stack.at(_stackPointer--));
         if(shouldJump) {
           _programCounter = std::get<size_t>(instruction.payload);
         }

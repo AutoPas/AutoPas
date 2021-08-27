@@ -8,7 +8,7 @@
 #include "RuleLanguageParser.h"
 
 
-namespace autopas::rule_syntax {
+namespace autopas_generated_rule_syntax {
 
 /**
  * This class defines an abstract visitor for a parse tree
@@ -30,6 +30,10 @@ public:
 
     virtual antlrcpp::Any visitVariable(RuleLanguageParser::VariableContext *context) = 0;
 
+    virtual antlrcpp::Any visitAtom_expr(RuleLanguageParser::Atom_exprContext *context) = 0;
+
+    virtual antlrcpp::Any visitComp_expr(RuleLanguageParser::Comp_exprContext *context) = 0;
+
     virtual antlrcpp::Any visitExpression(RuleLanguageParser::ExpressionContext *context) = 0;
 
     virtual antlrcpp::Any visitProperty_value(RuleLanguageParser::Property_valueContext *context) = 0;
@@ -45,4 +49,4 @@ public:
 
 };
 
-}  // namespace autopas_rule_syntax
+}  // namespace autopas_generated_rule_syntax

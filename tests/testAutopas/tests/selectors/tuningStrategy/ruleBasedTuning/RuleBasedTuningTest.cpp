@@ -7,5 +7,5 @@
 #include "RuleBasedTuningTest.h"
 
 TEST_F(RuleBasedTuningTest, testParser) {
-  autopas::rule_syntax::RuleBasedProgramParser::test();
+
 }
