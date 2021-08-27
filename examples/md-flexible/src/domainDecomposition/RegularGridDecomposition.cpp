@@ -62,15 +62,18 @@ void RegularGridDecomposition::update(const double &work) {
     autopas::AutoPas_MPI_Request dummyRequest;
 
     for (int i = 0; i < _dimensionCount; ++i) {
-      // Calculate average distributed work in planar communicator.
-      const int domainCountAlongDimension = _decomposition[(i + 1) % _dimensionCount];
+      const int domainCountInPlane =
+          _decomposition[(i + 1) % _dimensionCount] * _decomposition[(i + 2) % _dimensionCount];
 
       double distributedWorkInPlane = work;
-      if (domainCountAlongDimension > 1) {
+      if (domainCountInPlane > 1) {
         autopas::AutoPas_MPI_Allreduce(&work, &distributedWorkInPlane, 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM,
                                        _planarCommunicators[i]);
-        distributedWorkInPlane = distributedWorkInPlane / domainCountAlongDimension;
+        distributedWorkInPlane = distributedWorkInPlane / domainCountInPlane;
       }
+
+      // std::cout << i << ": " << _domainIndex << ", " << autopas::utils::ArrayUtils::to_string(_domainId) << ", " <<
+      // distributedWorkInPlane << std::endl;
 
       const int leftNeighbour = _neighbourDomainIndices[i * 2];
       const int rightNeighbour = _neighbourDomainIndices[i * 2 + 1];
@@ -124,16 +127,6 @@ void RegularGridDecomposition::initializeMPICommunicator() {
   autopas::AutoPas_MPI_Cart_create(AUTOPAS_MPI_COMM_WORLD, 3, _decomposition.data(), periods.data(), true,
                                    &_communicator);
   autopas::AutoPas_MPI_Comm_rank(_communicator, &_domainIndex);
-
-  // Create planar communicators used for diffuse load balancing.
-  for (int i = 0; i < _dimensionCount; ++i) {
-    if (_mpiIsEnabled) {
-      autopas::AutoPas_MPI_Comm_split(_communicator, _domainId[(i + 2) % _dimensionCount], _domainId[i],
-                                      &_planarCommunicators[i]);
-    } else {
-      _planarCommunicators[i] = AUTOPAS_MPI_COMM_WORLD;
-    }
-  }
 }
 
 void RegularGridDecomposition::initializeLocalDomain() {
@@ -142,6 +135,17 @@ void RegularGridDecomposition::initializeLocalDomain() {
 
   std::vector<int> periods(3, 1);
   autopas::AutoPas_MPI_Cart_get(_communicator, 3, _decomposition.data(), periods.data(), _domainId.data());
+
+  // Create planar communicators used for diffuse load balancing.
+  for (int i = 0; i < _dimensionCount; ++i) {
+    if (_mpiIsEnabled) {
+      const size_t key = _decomposition[(i + 1) % _dimensionCount] * _domainId[(i + 2) % _dimensionCount] +
+                         _domainId[(i + 1) % _dimensionCount];
+      autopas::AutoPas_MPI_Comm_split(_communicator, _domainId[i], key, &_planarCommunicators[i]);
+    } else {
+      _planarCommunicators[i] = AUTOPAS_MPI_COMM_WORLD;
+    }
+  }
 }
 
 void RegularGridDecomposition::initializeLocalBox() {
