@@ -35,19 +35,27 @@ class OctreeLogger {
    */
   ~OctreeLogger() = default;
 
+  static void logTree(Octree<Particle> *octree, size_t iteration) {
+    auto &owned = octree->getOwned(), &halo = octree->getHalo();
+    OctreeLogger<Particle>::logTree(0, iteration, owned.getRaw());
+    OctreeLogger<Particle>::logTree(1, iteration, halo.getRaw());
+  }
+
   /**
    * Write the octree below the wrapper to a .vtk file
    * @param type CellTypes::OWNED or CellTypes HALO
    * @param wrapper A pointer to the octree node wrapper
    */
-  void logTree(int type, OctreeNodeWrapper<Particle> *wrapper) { logTree(type, wrapper->getRaw()); }
+  static void logTree(int type, size_t iteration, OctreeNodeWrapper<Particle> *wrapper) {
+    logTree(type, iteration, wrapper->getRaw());
+  }
 
   /**
    * This function writes the octree to a .vtk file
    * @param type CellTypes::OWNED or CellTypes HALO
    * @param root A pointer to the octree root node
    */
-  void logTree(int type, OctreeNodeInterface<Particle> *root) {
+  static void logTree(int type, size_t iteration, OctreeNodeInterface<Particle> *root) {
     // Load the leaf boxes
     using Position = std::array<double, 3>;
     using Box = std::pair<Position, Position>;
@@ -58,9 +66,15 @@ class OctreeLogger {
 
     // Open the VTK file
     // @todo Make shouldWrite dependent on the vtk-write-frequency
+#if defined(AUTOPAS_OCTREE_LOG_FREQUENCY)
+    int unsigned writeFrequency = AUTOPAS_OCTREE_LOG_FREQUENCY;
+#else
     int unsigned writeFrequency = 50;
-    bool shouldWrite;
+#endif
+
     char filename[256] = {0};
+    bool shouldWrite;
+#if 0
     switch (type) {
       case Octree<Particle>::CellTypes::OWNED:
         snprintf(filename, sizeof(filename), "octree_owned_%d.vtk", ownedIteration);
@@ -75,8 +89,22 @@ class OctreeLogger {
         shouldWrite = (iteration++ % writeFrequency) == 0;
         break;
     }
+#else
+    shouldWrite = true;
+    switch (type) {
+      case Octree<Particle>::CellTypes::OWNED:
+        snprintf(filename, sizeof(filename), "octree_owned_%ld.vtk", iteration);
+        break;
+      case Octree<Particle>::CellTypes::HALO:
+        snprintf(filename, sizeof(filename), "octree_halo_%ld.vtk", iteration);
+        break;
+      default:
+        snprintf(filename, sizeof(filename), "octree_%ld.vtk", iteration);
+        break;
+    }
+#endif
 
-    if(shouldWrite) {
+    if (shouldWrite) {
       std::ofstream vtkFile;
       vtkFile.open(filename);
 

@@ -199,6 +199,9 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
       // only write vtk files periodically and if a filename is given.
       if ((not _config->vtkFileName.value.empty()) and _iteration % _config->vtkWriteFrequency.value == 0) {
         this->writeVTKFile(autopas);
+        if(autopas.getContainerType() == autopas::ContainerOption::octree) {
+          autopas.logOctree(_iteration);
+        }
       }
 
       // calculate new positions
@@ -283,6 +286,9 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
     _timers.boundariesPart2.addTime(std::get<1>(updateContainerDurations));
     _timers.boundariesPart3.addTime(std::get<2>(updateContainerDurations));
     this->writeVTKFile(autopas);
+    if(autopas.getContainerType() == autopas::ContainerOption::octree) {
+      autopas.logOctree(_iteration);
+    }
   }
 
   _timers.simulate.stop();

@@ -178,6 +178,12 @@ unsigned long AutoPas<Particle>::getContainerType() const {
 }
 
 template <class Particle>
+void AutoPas<Particle>::logOctree(size_t iteration) {
+  auto *octree = (Octree<Particle> *)_autoTuner->getContainer().get();
+  OctreeLogger<Particle>::logTree(octree, iteration);
+}
+
+template <class Particle>
 std::array<double, 3> AutoPas<Particle>::getBoxMin() const {
   return _autoTuner->getContainer()->getBoxMin();
 }

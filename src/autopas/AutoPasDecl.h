@@ -228,6 +228,8 @@ class AutoPas {
    */
   [[nodiscard]] unsigned long getContainerType() const;
 
+  void logOctree(size_t iteration);
+
   /**
    * Get the lower corner of the container without the halo.
    * @return lower corner of the container.

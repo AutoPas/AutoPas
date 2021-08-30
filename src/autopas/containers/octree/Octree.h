@@ -124,8 +124,8 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     traversal->traverseParticlePairs();
     traversal->endTraversal();
 
-    logger.logTree(OWNED, &this->_cells[OWNED]);
-    logger.logTree(HALO, &this->_cells[HALO]);
+    //logger.logTree(OWNED, &this->_cells[OWNED]);
+    //logger.logTree(HALO, &this->_cells[HALO]);
   }
 
   /**
@@ -251,6 +251,14 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
       throw std::runtime_error("[Octree.h]: This cell container (octree) contains only two cells");
     }
     return i == CellTypes::OWNED;
+  }
+
+  OctreeNodeWrapper<Particle> &getOwned() {
+    return this->_cells[CellTypes::OWNED];
+  }
+
+  OctreeNodeWrapper<Particle> &getHalo() {
+    return this->_cells[CellTypes::HALO];
   }
 
  private:

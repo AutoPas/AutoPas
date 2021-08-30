@@ -73,10 +73,8 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
    * @note This function expects a vector of exactly two cells. First cell is the main region, second is halo.
    */
   void traverseParticlePairs() override {
-    auto *haloWrapper = this->getHalo();
-
-    OctreeLogger<Particle>::octreeToJSON(this->getOwned()->getRaw(), this->getHalo()->getRaw(), this->_ownedLeaves,
-                                         this->_haloLeaves);
+    //OctreeLogger<Particle>::octreeToJSON(this->getOwned()->getRaw(), this->getHalo()->getRaw(), this->_ownedLeaves,
+    //                                     this->_haloLeaves);
 
     // Get neighboring cells for each leaf
     //#pragma omp parallel for default(none) shared(haloWrapper)
@@ -98,7 +96,7 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
       // Process particles in halo cell that are in range
       auto min = utils::ArrayMath::subScalar(leaf->getBoxMin(), this->_interactionLength);
       auto max = utils::ArrayMath::addScalar(leaf->getBoxMax(), this->_interactionLength);
-      auto haloNeighbors = haloWrapper->getLeavesInRange(min, max);
+      auto haloNeighbors = this->getHalo()->getLeavesInRange(min, max);
 
       for (OctreeLeafNode<Particle> *neighborLeaf : haloNeighbors) {
         _cellFunctor.processCellPair(*leaf, *neighborLeaf);
