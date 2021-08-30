@@ -203,6 +203,9 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
           autopas.logOctree(_iteration);
         }
       }
+      if(autopas.getContainerType() == autopas::ContainerOption::octree) {
+        autopas.logOctreeMemoryConsumption(_iteration);
+      }
 
       // calculate new positions
       _timers.positionUpdate.start();
@@ -288,6 +291,7 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
     this->writeVTKFile(autopas);
     if(autopas.getContainerType() == autopas::ContainerOption::octree) {
       autopas.logOctree(_iteration);
+      autopas.logOctreeMemoryConsumption(_iteration);
     }
   }
 

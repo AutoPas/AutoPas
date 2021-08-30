@@ -20,6 +20,68 @@ class OctreeLeafNode;
 template <typename Particle>
 class OctreeInnerNode;
 
+template <typename T>
+struct OctreeCounter {
+  void add(T t = 1) {
+    val += t;
+    min = std::min(min, t);
+    max = std::max(max, t);
+    avg = val / ++count;
+  }
+
+  void operator+=(OctreeCounter<T> other) {
+    min = std::min(min, other.min);
+    max = std::max(max, other.max);
+    val += other.val;
+    count += other.count;
+    avg = val / count;
+  }
+
+  T min, max, val, avg;
+  size_t count;
+};
+
+template <class Particle>
+struct OctreeMemoryFootprint {
+  size_t leafCount = 0;
+  size_t innerNodeCount = 0;
+  OctreeCounter<double> particleCount{};
+
+  void operator+=(OctreeMemoryFootprint<Particle> other) {
+    leafCount += other.leafCount;
+    innerNodeCount += other.innerNodeCount;
+    particleCount += other.particleCount;
+  }
+
+  size_t getNodeCount() { return leafCount + innerNodeCount; }
+
+  void dumpCSV(char const *filename, size_t iteration) {
+    // check if file exists
+    FILE *f = fopen(filename, "r");
+    bool writeHeader = (f == nullptr);
+    if (f) fclose(f);
+
+    f = fopen(filename, "a");
+    if (f) {
+      if (writeHeader) {
+        fprintf(f,
+                "iteration,nodeCount,totalSize,leafCount,leavesSize,innerNodeCount,innerNodesSize,pplMin,pplMax,pplAvg,"
+                "particleCount\n");
+      }
+
+      size_t leavesSize = sizeof(OctreeLeafNode<Particle>) * leafCount;
+      size_t innerNodesSize = sizeof(OctreeInnerNode<Particle>) * innerNodeCount;
+      fprintf(f, "%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%.02f,%ld\n", iteration, getNodeCount(),
+              leavesSize + innerNodesSize, leafCount, leavesSize, innerNodeCount, innerNodesSize,
+              (size_t)particleCount.min, (size_t)particleCount.max, particleCount.avg, (size_t)particleCount.val);
+
+      fclose(f);
+    } else {
+      throw std::runtime_error("ERROR: Unable to open dump file!");
+    }
+  }
+};
+
 /**
  * The base class that provides the necessary function definitions that can be applied to an octree.
  *
@@ -28,6 +90,20 @@ class OctreeInnerNode;
 template <class Particle>
 class OctreeNodeInterface {
  public:
+  OctreeMemoryFootprint<Particle> getFootprint() {
+    OctreeMemoryFootprint<Particle> result;
+    if (hasChildren()) {
+      ++result.innerNodeCount;
+      for (int i = 0; i < 8; ++i) {
+        result += getChild(i)->getFootprint();
+      }
+    } else {
+      ++result.leafCount;
+      result.particleCount.add(this->getNumParticles());
+    }
+    return result;
+  }
+
   /**
    * Create an octree node interface by initializing the given fields.
    * @param boxMin The minimum coordinate of the enclosing box

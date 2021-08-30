@@ -184,6 +184,12 @@ void AutoPas<Particle>::logOctree(size_t iteration) {
 }
 
 template <class Particle>
+void AutoPas<Particle>::logOctreeMemoryConsumption(size_t iteration) {
+  auto *octree = (Octree<Particle> *)_autoTuner->getContainer().get();
+  OctreeLogger<Particle>::logTreeMemoryConsumption(octree, iteration);
+}
+
+template <class Particle>
 std::array<double, 3> AutoPas<Particle>::getBoxMin() const {
   return _autoTuner->getContainer()->getBoxMin();
 }

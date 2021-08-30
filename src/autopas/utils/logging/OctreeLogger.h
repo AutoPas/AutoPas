@@ -36,9 +36,17 @@ class OctreeLogger {
   ~OctreeLogger() = default;
 
   static void logTree(Octree<Particle> *octree, size_t iteration) {
-    auto &owned = octree->getOwned(), &halo = octree->getHalo();
-    OctreeLogger<Particle>::logTree(0, iteration, owned.getRaw());
-    OctreeLogger<Particle>::logTree(1, iteration, halo.getRaw());
+    auto *owned = octree->getOwned().getRaw(), *halo = octree->getHalo().getRaw();
+    OctreeLogger<Particle>::logTree(0, iteration, owned);
+    OctreeLogger<Particle>::logTree(1, iteration, halo);
+  }
+
+  static void logTreeMemoryConsumption(Octree<Particle> *octree, size_t iteration) {
+    auto *owned = octree->getOwned().getRaw(), *halo = octree->getHalo().getRaw();
+    OctreeMemoryFootprint<Particle> ownedFootprint = owned->getFootprint();
+    OctreeMemoryFootprint<Particle> haloFootprint = halo->getFootprint();
+    ownedFootprint.dumpCSV("owned_memory.csv", iteration);
+    haloFootprint.dumpCSV("halo_memory.csv", iteration);
   }
 
   /**
