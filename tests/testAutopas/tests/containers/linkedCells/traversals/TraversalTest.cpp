@@ -157,7 +157,7 @@ TEST_P(TraversalTest, testTraversal_7x8x9_overlap3) {
   autopas::LoadEstimatorOption loadEstimatorOption = std::get<2>(GetParam());
   auto newton3 = std::get<1>(GetParam());
   std::array<size_t, 3> domain = {7ul, 8ul, 9ul};
-  const auto cutoff = 3.0;
+  const auto cutoff = 3.000001;
 
   if (traversalOption == autopas::TraversalOption::lc_c04) {
     GTEST_SKIP_("C04 doesn't support cellSizeFactors < 1.0");
