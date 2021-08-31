@@ -85,7 +85,9 @@ TEST_F(RegularGridDecompositionTest, testExchangeHaloParticles) {
   std::array<double, 3> localBoxMin = configuration.boxMin.value;
   std::array<double, 3> localBoxMax = configuration.boxMax.value;
 
-  RegularGridDecomposition domainDecomposition(configuration.boxMin.value, configuration.boxMax.value, configuration.subdivideDimension.value, configuration.cutoff.value, configuration.verletSkinRadius.value);
+  RegularGridDecomposition domainDecomposition(configuration.boxMin.value, configuration.boxMax.value,
+                                               configuration.subdivideDimension.value, configuration.cutoff.value,
+                                               configuration.verletSkinRadius.value);
 
   auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
 
@@ -144,7 +146,9 @@ TEST_F(RegularGridDecompositionTest, testExchangeMigratingParticles) {
   std::array<double, 3> localBoxMin = configuration.boxMin.value;
   std::array<double, 3> localBoxMax = configuration.boxMax.value;
 
-  RegularGridDecomposition domainDecomposition(configuration.boxMin.value, configuration.boxMax.value, configuration.subdivideDimension.value, configuration.cutoff.value, configuration.verletSkinRadius.value);
+  RegularGridDecomposition domainDecomposition(configuration.boxMin.value, configuration.boxMax.value,
+                                               configuration.subdivideDimension.value, configuration.cutoff.value,
+                                               configuration.verletSkinRadius.value);
 
   auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
 

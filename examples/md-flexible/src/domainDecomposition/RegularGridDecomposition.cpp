@@ -47,6 +47,9 @@ RegularGridDecomposition::RegularGridDecomposition(const std::array<double, 3> &
 
   initializeLocalDomain();
 
+  if (_domainIndex == 0) {
+    std::cout << autopas::utils::ArrayUtils::to_string(globalBoxMin) << ", " << autopas::utils::ArrayUtils::to_string(globalBoxMax) << std::endl;
+  }
   initializeGlobalBox(globalBoxMin, globalBoxMax);
 
   initializeLocalBox();
@@ -72,28 +75,16 @@ void RegularGridDecomposition::update(const double &work) {
         distributedWorkInPlane = distributedWorkInPlane / domainCountInPlane;
       }
 
-      // std::cout << i << ": " << _domainIndex << ", " << autopas::utils::ArrayUtils::to_string(_domainId) << ", " <<
-      // distributedWorkInPlane << std::endl;
-
       const int leftNeighbour = _neighbourDomainIndices[i * 2];
       const int rightNeighbour = _neighbourDomainIndices[i * 2 + 1];
 
+      double balancedPosition;
       if (_localBoxMin[i] != _globalBoxMin[i]) {
         autopas::AutoPas_MPI_Isend(&distributedWorkInPlane, 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
                                    &dummyRequest);
         autopas::AutoPas_MPI_Isend(&_localBoxMax[i], 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
                                    &dummyRequest);
-      }
 
-      if (_localBoxMax[i] != _globalBoxMax[i]) {
-        autopas::AutoPas_MPI_Isend(&distributedWorkInPlane, 1, AUTOPAS_MPI_DOUBLE, rightNeighbour, 0, _communicator,
-                                   &dummyRequest);
-        autopas::AutoPas_MPI_Isend(&_localBoxMin[i], 1, AUTOPAS_MPI_DOUBLE, rightNeighbour, 0, _communicator,
-                                   &dummyRequest);
-      }
-
-      double balancedPosition;
-      if (_localBoxMin[i] != _globalBoxMin[i]) {
         double neighbourPlaneWork, neighbourBoundary;
         autopas::AutoPas_MPI_Recv(&neighbourPlaneWork, 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
                                   AUTOPAS_MPI_STATUS_IGNORE);
@@ -107,6 +98,11 @@ void RegularGridDecomposition::update(const double &work) {
       }
 
       if (_localBoxMax[i] != _globalBoxMax[i]) {
+        autopas::AutoPas_MPI_Isend(&distributedWorkInPlane, 1, AUTOPAS_MPI_DOUBLE, rightNeighbour, 0, _communicator,
+                                   &dummyRequest);
+        autopas::AutoPas_MPI_Isend(&_localBoxMin[i], 1, AUTOPAS_MPI_DOUBLE, rightNeighbour, 0, _communicator,
+                                   &dummyRequest);
+
         double neighbourPlaneWork, neighbourBoundary;
         autopas::AutoPas_MPI_Recv(&neighbourPlaneWork, 1, AUTOPAS_MPI_DOUBLE, rightNeighbour, 0, _communicator,
                                   AUTOPAS_MPI_STATUS_IGNORE);
@@ -195,6 +191,7 @@ std::array<int, 6> RegularGridDecomposition::getExtentOfSubdomain(const int subd
 
 void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer) {
   std::vector<ParticleType> haloParticles{};
+
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
     std::vector<ParticleType> particlesForLeftNeighbour{};
     std::vector<ParticleType> particlesForRightNeighbour{};
@@ -229,7 +226,6 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
         }
       }
     }
-
     // See documentation for _neighbourDomainIndices to explain the indexing
     int leftNeighbour = _neighbourDomainIndices[(dimensionIndex * 2) % _neighbourCount];
     int rightNeighbour = _neighbourDomainIndices[(dimensionIndex * 2 + 1) % _neighbourCount];
@@ -258,9 +254,8 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
       int leftNeighbour = _neighbourDomainIndices[(dimensionIndex * 2) % _neighbourCount];
       int rightNeighbour = _neighbourDomainIndices[(dimensionIndex * 2 + 1) % _neighbourCount];
 
-      std::array<double, _dimensionCount> position;
       for (const auto &particle : emigrants) {
-        position = particle.getR();
+        std::array<double, _dimensionCount> position = particle.getR();
         if (position[dimensionIndex] < _localBoxMin[dimensionIndex]) {
           particlesForLeftNeighbour.push_back(particle);
 
@@ -297,6 +292,7 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
         }
       }
     }
+
     // Add remaining emigrants to current container
     for (auto &particle : emigrants) {
       autoPasContainer->addParticle(particle);

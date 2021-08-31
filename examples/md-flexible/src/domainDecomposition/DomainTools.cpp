@@ -60,7 +60,7 @@ void generateDecomposition(unsigned int subdomainCount, const std::array<bool, 3
 
   // Reduces the primeFactors to 3 elements, one for each dimension of the domain.
   // It multiplies the smallest two factors and stores it in the second factor.
-  while (primeFactors.size() > 3) {
+  while (primeFactors.size() > numberOfDimensionsToSubdivide) {
     primeFactors.sort();
     auto firstElement = primeFactors.front();
     primeFactors.pop_front();
