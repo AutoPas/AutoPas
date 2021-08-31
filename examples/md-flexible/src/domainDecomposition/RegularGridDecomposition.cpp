@@ -296,10 +296,7 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
           emigrants.push_back(particle);
         }
       }
-
-      immigrants.clear();
     }
-
     // Add remaining emigrants to current container
     for (auto &particle : emigrants) {
       autoPasContainer->addParticle(particle);
