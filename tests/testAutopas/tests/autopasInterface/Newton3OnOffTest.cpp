@@ -8,8 +8,8 @@
 
 #include "autopas/selectors/ContainerSelector.h"
 #include "autopas/selectors/TraversalSelector.h"
-#include "autopas/utils/Logger.h"
 #include "autopas/utils/StaticCellSelector.h"
+#include "autopas/utils/logging/Logger.h"
 
 using ::testing::_;
 using ::testing::Combine;
@@ -51,14 +51,14 @@ INSTANTIATE_TEST_SUITE_P(
                 MockFunctor<Particle> f;
                 // generate both newton3 versions of the same traversal and check that both are applicable
                 bool configOk = autopas::utils::withStaticCellType<Particle>(
-                    containerSelector.getCurrentContainer()->getParticleCellTypeEnum(), [&](auto particleCellDummy) {
+                    container->getParticleCellTypeEnum(), [&](auto particleCellDummy) {
                       auto traversalSelector = autopas::TraversalSelector<decltype(particleCellDummy)>();
-                      auto traversalWithN3 = traversalSelector.generateTraversal(
-                          traversalOption, f, containerSelector.getCurrentContainer()->getTraversalSelectorInfo(),
-                          dataLayoutOption, autopas::Newton3Option::enabled);
-                      auto traversalWithoutN3 = traversalSelector.generateTraversal(
-                          traversalOption, f, containerSelector.getCurrentContainer()->getTraversalSelectorInfo(),
-                          dataLayoutOption, autopas::Newton3Option::disabled);
+                      auto traversalWithN3 =
+                          traversalSelector.generateTraversal(traversalOption, f, container->getTraversalSelectorInfo(),
+                                                              dataLayoutOption, autopas::Newton3Option::enabled);
+                      auto traversalWithoutN3 =
+                          traversalSelector.generateTraversal(traversalOption, f, container->getTraversalSelectorInfo(),
+                                                              dataLayoutOption, autopas::Newton3Option::disabled);
 
                       return traversalWithN3->isApplicable() and traversalWithoutN3->isApplicable();
                     });
@@ -96,7 +96,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
 
   EXPECT_CALL(mockFunctor, isRelevantForTuning()).WillRepeatedly(Return(true));
 
-  if (dataLayout == autopas::DataLayoutOption::soa or dataLayout == autopas::DataLayoutOption::cuda) {
+  if (dataLayout == autopas::DataLayoutOption::soa) {
     // loader and extractor will be called, we don't care how often.
     autopas::utils::withStaticCellType<Particle>(container->getParticleCellTypeEnum(), [&](auto particleCellDummy) {
       EXPECT_CALL(mockFunctor, SoALoader(::testing::Matcher<decltype(particleCellDummy) &>(_), _, _))
@@ -107,12 +107,6 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
           .Times(testing::AtLeast(1));
     });
   }
-#if defined(AUTOPAS_CUDA)
-  if (dataLayout == autopas::DataLayoutOption::cuda) {
-    EXPECT_CALL(mockFunctor, deviceSoALoader(_, _)).Times(testing::AtLeast(1));
-    EXPECT_CALL(mockFunctor, deviceSoAExtractor(_, _)).Times(testing::AtLeast(1));
-  }
-#endif
 
   const auto [callsNewton3SC, callsNewton3Pair] = eval<true>(dataLayout, container, traversalOption);
   const auto [callsNonNewton3SC, callsNonNewton3Pair] = eval<false>(dataLayout, container, traversalOption);
@@ -186,19 +180,6 @@ std::pair<size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataL
       // non useNewton3 variant should not happen
       EXPECT_CALL(mockFunctor, AoSFunctor(_, _, not useNewton3)).Times(0);
 
-      break;
-    }
-    case autopas::DataLayoutOption::cuda: {
-#if defined(AUTOPAS_CUDA)
-      EXPECT_CALL(mockFunctor, CudaFunctor(_, useNewton3))
-          .Times(testing::AtLeast(1))
-          .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsSC++; }));
-      EXPECT_CALL(mockFunctor, CudaFunctor(_, _, useNewton3))
-          .Times(testing::AtLeast(1))
-          .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsPair++; }));
-
-      EXPECT_CALL(mockFunctor, CudaFunctor(_, _, not useNewton3)).Times(0);
-#endif
       break;
     }
     default: {

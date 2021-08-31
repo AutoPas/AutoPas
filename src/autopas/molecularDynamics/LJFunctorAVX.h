@@ -6,7 +6,9 @@
  */
 #pragma once
 
+#ifdef __AVX__
 #include <immintrin.h>
+#endif
 
 #include <array>
 
@@ -105,21 +107,15 @@ class LJFunctorAVX
     _PPLibrary = &particlePropertiesLibrary;
   }
 
-  bool isRelevantForTuning() override { return relevantForTuning; }
+  bool isRelevantForTuning() final { return relevantForTuning; }
 
-  bool allowsNewton3() override {
-    return useNewton3 == FunctorN3Modes::Newton3Only or useNewton3 == FunctorN3Modes::Both;
-  }
+  bool allowsNewton3() final { return useNewton3 == FunctorN3Modes::Newton3Only or useNewton3 == FunctorN3Modes::Both; }
 
-  bool allowsNonNewton3() override {
+  bool allowsNonNewton3() final {
     return useNewton3 == FunctorN3Modes::Newton3Off or useNewton3 == FunctorN3Modes::Both;
   }
 
-  bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
-    return dataLayout == DataLayoutOption::aos;  // LJFunctorAVX does only support clusters via aos.
-  }
-
-  void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
+  void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
     if (i.isDummy() or j.isDummy()) {
       return;
     }
@@ -178,7 +174,7 @@ class LJFunctorAVX
    * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3)
    * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
    */
-  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
+  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) final {
     if (newton3) {
       SoAFunctorSingleImpl<true>(soa);
     } else {
@@ -191,7 +187,7 @@ class LJFunctorAVX
    * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
    */
   // clang-format on
-  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3) override {
+  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3) final {
     if (newton3) {
       SoAFunctorPairImpl<true>(soa1, soa2);
     } else {
@@ -210,17 +206,17 @@ class LJFunctorAVX
 #ifdef __AVX__
     if (soa.getNumParticles() == 0) return;
 
-    const auto *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
 
-    const auto *const __restrict__ ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
-    auto *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-    auto *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-    auto *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+    auto *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
+    auto *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
+    auto *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
-    const auto *const __restrict__ typeIDptr = soa.template begin<Particle::AttributeNames::typeId>();
+    const auto *const __restrict typeIDptr = soa.template begin<Particle::AttributeNames::typeId>();
 
     __m256d virialSumX = _mm256_setzero_pd();
     __m256d virialSumY = _mm256_setzero_pd();
@@ -327,25 +323,25 @@ class LJFunctorAVX
 #ifdef __AVX__
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
-    const auto *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
-    const auto *const __restrict__ x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
 
-    const auto *const __restrict__ ownedStatePtr1 = soa1.template begin<Particle::AttributeNames::ownershipState>();
-    const auto *const __restrict__ ownedStatePtr2 = soa2.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle::AttributeNames::ownershipState>();
 
-    auto *const __restrict__ fx1ptr = soa1.template begin<Particle::AttributeNames::forceX>();
-    auto *const __restrict__ fy1ptr = soa1.template begin<Particle::AttributeNames::forceY>();
-    auto *const __restrict__ fz1ptr = soa1.template begin<Particle::AttributeNames::forceZ>();
-    auto *const __restrict__ fx2ptr = soa2.template begin<Particle::AttributeNames::forceX>();
-    auto *const __restrict__ fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
-    auto *const __restrict__ fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
+    auto *const __restrict fx1ptr = soa1.template begin<Particle::AttributeNames::forceX>();
+    auto *const __restrict fy1ptr = soa1.template begin<Particle::AttributeNames::forceY>();
+    auto *const __restrict fz1ptr = soa1.template begin<Particle::AttributeNames::forceZ>();
+    auto *const __restrict fx2ptr = soa2.template begin<Particle::AttributeNames::forceX>();
+    auto *const __restrict fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
+    auto *const __restrict fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
 
-    const auto *const __restrict__ typeID1ptr = soa1.template begin<Particle::AttributeNames::typeId>();
-    const auto *const __restrict__ typeID2ptr = soa2.template begin<Particle::AttributeNames::typeId>();
+    const auto *const __restrict typeID1ptr = soa1.template begin<Particle::AttributeNames::typeId>();
+    const auto *const __restrict typeID2ptr = soa2.template begin<Particle::AttributeNames::typeId>();
 
     __m256d virialSumX = _mm256_setzero_pd();
     __m256d virialSumY = _mm256_setzero_pd();
@@ -442,6 +438,7 @@ class LJFunctorAVX
 #endif
   }
 
+#ifdef __AVX__
   /**
    * Actual inner kernel of the SoAFunctors.
    *
@@ -472,15 +469,13 @@ class LJFunctorAVX
    * @param rest
    */
   template <bool newton3, bool remainderIsMasked>
-  inline void SoAKernel(const size_t j, const __m256i ownedStateI, const int64_t *const __restrict__ ownedStatePtr2,
-                        const __m256d &x1, const __m256d &y1, const __m256d &z1, const double *const __restrict__ x2ptr,
-                        const double *const __restrict__ y2ptr, const double *const __restrict__ z2ptr,
-                        double *const __restrict__ fx2ptr, double *const __restrict__ fy2ptr,
-                        double *const __restrict__ fz2ptr, const size_t *const typeID1ptr,
-                        const size_t *const typeID2ptr, __m256d &fxacc, __m256d &fyacc, __m256d &fzacc,
-                        __m256d *virialSumX, __m256d *virialSumY, __m256d *virialSumZ, __m256d *upotSum,
-                        const unsigned int rest = 0) {
-#ifdef __AVX__
+  inline void SoAKernel(const size_t j, const __m256i ownedStateI, const int64_t *const __restrict ownedStatePtr2,
+                        const __m256d &x1, const __m256d &y1, const __m256d &z1, const double *const __restrict x2ptr,
+                        const double *const __restrict y2ptr, const double *const __restrict z2ptr,
+                        double *const __restrict fx2ptr, double *const __restrict fy2ptr,
+                        double *const __restrict fz2ptr, const size_t *const typeID1ptr, const size_t *const typeID2ptr,
+                        __m256d &fxacc, __m256d &fyacc, __m256d &fzacc, __m256d *virialSumX, __m256d *virialSumY,
+                        __m256d *virialSumZ, __m256d *upotSum, const unsigned int rest = 0) {
     __m256d epsilon24s = _epsilon24;
     __m256d sigmaSquares = _sigmaSquare;
     __m256d shift6s = _shift6;
@@ -608,8 +603,8 @@ class LJFunctorAVX
       *virialSumY = wrapperFMA(energyFactor, virialY, *virialSumY);
       *virialSumZ = wrapperFMA(energyFactor, virialZ, *virialSumZ);
     }
-#endif
   }
+#endif
 
  public:
   // clang-format off
@@ -621,7 +616,7 @@ class LJFunctorAVX
   // clang-format on
   void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
-                        bool newton3) override {
+                        bool newton3) final {
     if (soa.getNumParticles() == 0 or neighborList.empty()) return;
     if (newton3) {
       SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
@@ -635,20 +630,20 @@ class LJFunctorAVX
   void SoAFunctorVerletImpl(SoAView<SoAArraysType> soa, const size_t indexFirst,
                             const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
 #ifdef __AVX__
-    const auto *const __restrict__ ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
     if (ownedStatePtr[indexFirst] == OwnershipState::dummy) {
       return;
     }
 
-    const auto *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
 
-    auto *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-    auto *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-    auto *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+    auto *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
+    auto *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
+    auto *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
-    const auto *const __restrict__ typeIDptr = soa.template begin<Particle::AttributeNames::typeId>();
+    const auto *const __restrict typeIDptr = soa.template begin<Particle::AttributeNames::typeId>();
 
     // accumulators
     __m256d virialSumX = _mm256_setzero_pd();
@@ -862,7 +857,7 @@ class LJFunctorAVX
    * Reset the global values.
    * Will set the global values to zero to prepare for the next iteration.
    */
-  void initTraversal() override {
+  void initTraversal() final {
     _upotSum = 0.;
     _virialSum = {0., 0., 0.};
     _postProcessed = false;
@@ -875,7 +870,7 @@ class LJFunctorAVX
    * Accumulates global values, e.g. upot and virial.
    * @param newton3
    */
-  void endTraversal(bool newton3) override {
+  void endTraversal(bool newton3) final {
     if (_postProcessed) {
       throw utils::ExceptionHandler::AutoPasException(
           "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
@@ -960,6 +955,7 @@ class LJFunctorAVX
   }
 
  private:
+#ifdef __AVX__
   /**
    * Wrapper function for FMA. If FMA is not supported it executes first the multiplication then the addition.
    * @param factorA
@@ -978,6 +974,7 @@ class LJFunctorAVX
     return __m256d();
 #endif
   }
+#endif
 
   /**
    * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
@@ -1038,6 +1035,5 @@ class LJFunctorAVX
   // number of double values that fit into a vector register.
   // MUST be power of 2 because some optimizations make this assumption
   constexpr static size_t vecLength = 4;
-
-};  // namespace autopas
+};
 }  // namespace autopas

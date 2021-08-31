@@ -1,4 +1,4 @@
-option(spdlog_ForceBundled "Do not look for an installed version, always use bundled." OFF)
+option(spdlog_ForceBundled "Do not look for an installed version, always use bundled." ON)
 
 if (NOT ${spdlog_ForceBundled})
     # first try: check if we find any installed version

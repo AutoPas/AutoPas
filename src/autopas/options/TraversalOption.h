@@ -18,7 +18,7 @@ inline namespace options {
 class TraversalOption : public Option<TraversalOption> {
  public:
   /**
-   * Possible choices for the cell pair traversal.
+   * Possible choices for the cell pair traversal. Try to maintain lexicographic ordering.
    */
   enum Value {
     // DirectSum Traversals:
@@ -29,21 +29,6 @@ class TraversalOption : public Option<TraversalOption> {
 
     // LinkedCell Traversals:
     /**
-     * LCSlicedTraversal : 1D equidistant slicing of the domain with one slice per thread. One lock per slice interface.
-     * Uses c08 base-step per cell. Minimal scheduling overhead at the cost of no load balancing at all.
-     */
-    lc_sliced,
-    /**
-     * LCSlicedBalancedTraversal : Same as lc_sliced but tries to balance slice thickness according to a given
-     * LoadEstimatorOption.
-     */
-    lc_sliced_balanced,
-    /**
-     * LCSlicedC02Traversal : 1D slicing with as many slices of minimal thickness as possible. No locks but two way
-     * coloring of slices.
-     */
-    lc_sliced_c02,
-    /**
      * LCC01Traversal : Every cell interacts with all neighbors. Is not compatible with Newton3 thus embarrassingly
      * parallel. Good load balancing and no overhead.
      */
@@ -53,10 +38,6 @@ class TraversalOption : public Option<TraversalOption> {
      * line-wise.
      */
     lc_c01_combined_SoA,
-    /**
-     * LCC01CudaTraversal : CUDA version of LCC01Traversal.
-     */
-    lc_c01_cuda,
     /**
      * LCC04Traversal : Four-way domain coloring using plus-shaped clusters of cells that are processed with the c08
      * base-step. Less scheduling overhead than LCC08Traversal because of fewer barriers but more coarse-grained.
@@ -80,29 +61,37 @@ class TraversalOption : public Option<TraversalOption> {
      * LCC18Traversal : More compact form of LCC01Traversal supporting Newton3 by only accessing forward neighbors.
      */
     lc_c18,
-
-    // VerletClusterCells Traversals:
     /**
-     * VCCClusterIterationCUDATraversal : CUDA. Concurrent processing of all clusters avoiding data races through
-     * atomics.
+     * LCSlicedTraversal : 1D equidistant slicing of the domain with one slice per thread. One lock per slice interface.
+     * Uses c08 base-step per cell. Minimal scheduling overhead at the cost of no load balancing at all.
      */
-    vcc_cluster_iteration_cuda,
+    lc_sliced,
+    /**
+     * LCSlicedBalancedTraversal : Same as lc_sliced but tries to balance slice thickness according to a given
+     * LoadEstimatorOption.
+     */
+    lc_sliced_balanced,
+    /**
+     * LCSlicedC02Traversal : 1D slicing with as many slices of minimal thickness as possible. No locks but two way
+     * coloring of slices.
+     */
+    lc_sliced_c02,
 
     // VerletClusterLists Traversals:
     /**
-     * VCLClusterIterationTraversal : Schedule ClusterTower to threads.
+     * VCLC01BalancedTraversal : Assign a fixed set of towers to each thread balanced by number of contained clusters.
+     * Does not support Newton3.
      */
-    vcl_cluster_iteration,
+    vcl_c01_balanced,
     /**
      * VCLC06Traversal : Six-way coloring of the 2D ClusterTower grid in the c18 base step style.
      * Rather coarse but dynamically balanced.
      */
     vcl_c06,
     /**
-     * VCLC01BalancedTraversal : Assign a fixed set of towers to each thread balanced by number of contained clusters.
-     * Does not support Newton3.
+     * VCLClusterIterationTraversal : Schedule ClusterTower to threads.
      */
-    vcl_c01_balanced,
+    vcl_cluster_iteration,
     /**
      * VCLSlicedTraversal : Equivalent to lc_sliced with slicing applied to the tower grid.
      */
@@ -113,7 +102,7 @@ class TraversalOption : public Option<TraversalOption> {
      */
     vcl_sliced_balanced,
     /**
-     * VCCSlicedC02Traversal : 1D slicing with as many slices of minimal thickness as possible. No locks but two way
+     * VCLSlicedC02Traversal : 1D slicing with as many slices of minimal thickness as possible. No locks but two way
      * coloring of slices.
      */
     vcl_sliced_c02,
@@ -150,14 +139,6 @@ class TraversalOption : public Option<TraversalOption> {
      */
     vlc_sliced_c02,
 
-    // VarVerlet Traversals:
-    /**
-     * VVLAsBuildTraversal : Track which thread built what neighbor list and schedule them the same way for the pairwise
-     * iteration. Provides some kind of load balancing if the force calculation is cheap but is sensitive to hardware
-     * fluctuations.
-     */
-    vvl_as_built,
-
     // PairwiseVerletLists Traversals - same traversals as VLC but with a new name for the pairwise container
     /**
      * VLCC01Traversal : Equivalent to LCC01Traversal. Schedules all neighbor lists of one cell at once.
@@ -187,6 +168,14 @@ class TraversalOption : public Option<TraversalOption> {
      * TODO
      */
      vlp_c08,
+
+    // VarVerlet Traversals:
+    /**
+     * VVLAsBuildTraversal : Track which thread built what neighbor list and schedule them the same way for the pairwise
+     * iteration. Provides some kind of load balancing if the force calculation is cheap but is sensitive to hardware
+     * fluctuations.
+     */
+    vvl_as_built,
   };
 
   /**
@@ -228,16 +217,12 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::lc_sliced_balanced, "lc_sliced_balanced"},
         {TraversalOption::lc_sliced_c02, "lc_sliced_c02"},
         {TraversalOption::lc_c01, "lc_c01"},
-        {TraversalOption::lc_c01_cuda, "lc_c01_cuda"},
         {TraversalOption::lc_c01_combined_SoA, "lc_c01_combined_SoA"},
         {TraversalOption::lc_c04, "lc_c04"},
         {TraversalOption::lc_c04_HCP, "lc_c04_HCP"},
         {TraversalOption::lc_c04_combined_SoA, "lc_c04_combined_SoA"},
         {TraversalOption::lc_c08, "lc_c08"},
         {TraversalOption::lc_c18, "lc_c18"},
-
-        // VerletClusterCells Traversals:
-        {TraversalOption::vcc_cluster_iteration_cuda, "vcc_cluster_iteration_cuda"},
 
         // VerletClusterLists Traversals:
         {TraversalOption::vcl_cluster_iteration, "vcl_cluster_iteration"},

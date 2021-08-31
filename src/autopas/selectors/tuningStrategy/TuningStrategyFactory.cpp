@@ -24,7 +24,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     unsigned int maxEvidence, double relativeOptimum, unsigned int maxTuningPhasesWithoutTest,
     double relativeBlacklistRange, unsigned int evidenceFirstPrediction,
     AcquisitionFunctionOption acquisitionFunctionOption, ExtrapolationMethodOption extrapolationMethodOption,
-    MPIStrategyOption mpiStrategyOption, AutoPas_MPI_Comm comm) {
+    const std::string &outputSuffix, MPIStrategyOption mpiStrategyOption, AutoPas_MPI_Comm comm) {
   // ======== prepare MPI =====================================================
 
   // only needed in the MPI case, but need to be declared here.
@@ -41,9 +41,9 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     }
 
     case MPIStrategyOption::divideAndConquer: {
-#ifndef AUTOPAS_MPI
+#ifndef AUTOPAS_INTERNODE_TUNING
       utils::ExceptionHandler::exception(
-          "Cannot use the divideAndConquer search-strategy without AUTOPAS_MPI=ON."
+          "Cannot use the divideAndConquer search-strategy without AUTOPAS_INTERNODE_TUNING=ON."
           "aborting.");
 #endif
       if (tuningStrategyOption == TuningStrategyOption::activeHarmony and getenv("HARMONY_HOST") != nullptr) {
@@ -111,13 +111,13 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     case TuningStrategyOption::bayesianClusterSearch: {
       tuningStrategy = std::make_unique<BayesianClusterSearch>(
           allowedContainers, allowedCellSizeFactors, allowedTraversals, allowedLoadEstimators, allowedDataLayouts,
-          allowedNewton3Options, maxEvidence, acquisitionFunctionOption);
+          allowedNewton3Options, maxEvidence, acquisitionFunctionOption, outputSuffix);
       break;
     }
 
     case TuningStrategyOption::activeHarmony: {
       // If a AH-server is provided, but MPI is disallowed, we have to ignore the server.
-      if (getenv("HARMONY_HOST") != nullptr and mpiStrategyOption == MPIStrategyOption::noMPI) {
+      if (std::getenv("HARMONY_HOST") != nullptr and mpiStrategyOption == MPIStrategyOption::noMPI) {
         unsetenv("HARMONY_HOST");
         AutoPasLog(warn,
                    "HARMONY_HOST is set to a value, but the MPI strategy option is set to noMPI. "
@@ -133,7 +133,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
       tuningStrategy = std::make_unique<PredictiveTuning>(
           allowedContainers, allowedCellSizeFactors.getAll(), allowedTraversals, allowedLoadEstimators,
           allowedDataLayouts, allowedNewton3Options, relativeOptimum, maxTuningPhasesWithoutTest,
-          relativeBlacklistRange, evidenceFirstPrediction, extrapolationMethodOption);
+          relativeBlacklistRange, evidenceFirstPrediction, extrapolationMethodOption, outputSuffix);
       break;
     }
 

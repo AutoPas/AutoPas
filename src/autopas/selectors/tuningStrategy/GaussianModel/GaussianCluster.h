@@ -9,14 +9,15 @@
 #include <Eigen/Core>
 #include <utility>
 
-#include "GaussianClusterLogger.h"
-#include "GaussianProcess.h"
 #include "autopas/options/AcquisitionFunctionOption.h"
+#include "autopas/selectors/tuningStrategy/GaussianModel/GaussianModelTypes.h"
+#include "autopas/selectors/tuningStrategy/GaussianModel/GaussianProcess.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/Math.h"
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/Random.h"
 #include "autopas/utils/WrapOpenMP.h"
+#include "autopas/utils/logging/GaussianClusterLogger.h"
 
 namespace autopas {
 
@@ -61,9 +62,11 @@ class GaussianCluster {
    * @param sigma fixed noise
    * @param rngRef reference to random number generator
    * @param vectorToString function to convert vectors to a readable string
+   * @param outputSuffix Suffix for all output files produced by this class.
    */
   GaussianCluster(const std::vector<int> &dimRestriction, size_t continuousDims, WeightFunction weightFun, double sigma,
-                  Random &rngRef, const GaussianModelTypes::VectorToStringFun &vectorToString = defaultVecToString)
+                  Random &rngRef, const GaussianModelTypes::VectorToStringFun &vectorToString = defaultVecToString,
+                  const std::string &outputSuffix = "")
       : _dimRestriction(dimRestriction),
         _continuousDims(continuousDims),
         _clusters(),
@@ -73,7 +76,7 @@ class GaussianCluster {
         _numEvidence(0),
         _sigma(sigma),
         _rng(rngRef),
-        _logger(std::make_unique<GaussianClusterLogger>(vectorToString)) {
+        _logger(std::make_unique<GaussianClusterLogger>(vectorToString, outputSuffix)) {
     initClusters();
   }
 
@@ -243,7 +246,7 @@ class GaussianCluster {
       }
     }
 
-    _logger->end();
+    _logger->flush();
 
     return acquisitions;
   }
@@ -268,7 +271,7 @@ class GaussianCluster {
       _logger->add(_clusters, _discreteVectorMap, continuousSample, means, vars, neighbourWeights);
     }
 
-    _logger->end();
+    _logger->flush();
   }
   /**
    * Change the used function to convert from vector to string.
@@ -330,6 +333,30 @@ class GaussianCluster {
     }
 
     return orderedVectors;
+  }
+
+  /**
+   * Default function used to convert vectors to readable strings.
+   * @note begin() and end() currently not available for Eigen::Vector, so AutoPas ArrayUtils cannot be used.
+   * @param vec
+   * @return string with format (a,b,...,n) beginning with discrete values.
+   */
+  static std::string defaultVecToString(const GaussianModelTypes::VectorPairDiscreteContinuous &vec) {
+    std::stringstream result;
+    const auto &[discreteVec, continuousVec] = vec;
+
+    result << "(" << discreteVec[0];
+    for (long d = 1; d < discreteVec.size(); ++d) {
+      result << "," << discreteVec[d];
+    }
+
+    for (long c = 0; c < continuousVec.size(); ++c) {
+      result << "," << continuousVec[c];
+    }
+
+    result << ")";
+
+    return result.str();
   }
 
  private:
@@ -534,30 +561,6 @@ class GaussianCluster {
         }
       }
     }
-  }
-
-  /**
-   * Default function used to convert vectors to readable strings.
-   * @note begin() and end() currently not available for Eigen::Vector, so AutoPas ArrayUtils cannot be used.
-   * @param vec
-   * @return string with format (a,b,...,n) beginning with discrete values.
-   */
-  static std::string defaultVecToString(const GaussianModelTypes::VectorPairDiscreteContinuous &vec) {
-    std::stringstream result;
-    const auto &[discreteVec, continuousVec] = vec;
-
-    result << "(" << discreteVec[0];
-    for (long d = 1; d < discreteVec.size(); ++d) {
-      result << "," << discreteVec[d];
-    }
-
-    for (long c = 0; c < continuousVec.size(); ++c) {
-      result << "," << continuousVec[c];
-    }
-
-    result << ")";
-
-    return result.str();
   }
 
   /**

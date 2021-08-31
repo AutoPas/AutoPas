@@ -11,10 +11,11 @@
 
 namespace autopas {
 
-template <class Particle>
 /**
  * This functor generates pairwise verlet lists (a verlet list attached to every pair of neighboring cells).
  */
+template <class Particle>
+
 class VLCCellPairGeneratorFunctor : public Functor<Particle, VLCCellPairGeneratorFunctor<Particle>> {
   using PairwiseNeighborListsType = typename VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType;
   using SoAArraysType = typename Particle::SoAArraysType;
@@ -48,10 +49,6 @@ class VLCCellPairGeneratorFunctor : public Functor<Particle, VLCCellPairGenerato
     utils::ExceptionHandler::exception(
         "VLCAllCellsGeneratorFunctor::allowsNonNewton3() is not implemented, because it should not be called.");
     return true;
-  }
-
-  bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
-    return false;  // this functor shouldn't be called with clusters!
   }
 
   /**

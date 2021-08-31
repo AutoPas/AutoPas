@@ -10,23 +10,15 @@
 #include <array>
 
 #include "ParticlePropertiesLibrary.h"
-#include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/SoA.h"
 #include "autopas/utils/StaticBoolSelector.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
-#if defined(AUTOPAS_CUDA)
-#include "LJFunctorCudaConstants.cuh"
-#include "autopas/molecularDynamics/LJFunctorCuda.cuh"
-#include "autopas/molecularDynamics/LJFunctorCudaGlobals.cuh"
-#include "autopas/utils/CudaDeviceVector.h"
-#include "autopas/utils/CudaStreamHandler.h"
-#else
-#include "autopas/utils/ExceptionHandler.h"
-#endif
 
 namespace autopas {
 
@@ -112,29 +104,15 @@ class LJFunctor
     _PPLibrary = &particlePropertiesLibrary;
   }
 
-  bool isRelevantForTuning() override { return relevantForTuning; }
+  bool isRelevantForTuning() final { return relevantForTuning; }
 
-  bool allowsNewton3() override {
-    return useNewton3 == FunctorN3Modes::Newton3Only or useNewton3 == FunctorN3Modes::Both;
-  }
+  bool allowsNewton3() final { return useNewton3 == FunctorN3Modes::Newton3Only or useNewton3 == FunctorN3Modes::Both; }
 
-  bool allowsNonNewton3() override {
+  bool allowsNonNewton3() final {
     return useNewton3 == FunctorN3Modes::Newton3Off or useNewton3 == FunctorN3Modes::Both;
   }
 
-  bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
-    if (dataLayout == DataLayoutOption::cuda) {
-#if defined(AUTOPAS_CUDA)
-      return _cudawrapper.isAppropriateClusterSize(clusterSize);
-#endif
-      return false;
-    } else {
-      return dataLayout == DataLayoutOption::aos;  // LJFunctor does not yet support soa for clusters.
-      // The reason for this is that the owned state is not handled correctly, see #396.
-    }
-  }
-
-  void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
+  void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
     if (i.isDummy() or j.isDummy()) {
       return;
     }
@@ -194,19 +172,19 @@ class LJFunctor
    * This functor ignores will use a newton3 like traversing of the soa, however, it still needs to know about newton3
    * to use it correctly for the global values.
    */
-  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
+  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) final {
     if (soa.getNumParticles() == 0) return;
 
-    const auto *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
-    const auto *const __restrict__ ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
-    SoAFloatPrecision *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-    SoAFloatPrecision *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-    SoAFloatPrecision *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+    SoAFloatPrecision *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
+    SoAFloatPrecision *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
+    SoAFloatPrecision *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
-    [[maybe_unused]] auto *const __restrict__ typeptr = soa.template begin<Particle::AttributeNames::typeId>();
+    [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
     // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
     const SoAFloatPrecision cutoffsquare = _cutoffsquare;
 
@@ -342,7 +320,7 @@ class LJFunctor
   /**
    * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
    */
-  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3) override {
+  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3) final {
     if (newton3) {
       SoAFunctorPairImpl<true>(soa1, soa2);
     } else {
@@ -362,23 +340,23 @@ class LJFunctor
   void SoAFunctorPairImpl(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2) {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
-    const auto *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
-    const auto *const __restrict__ x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
-    const auto *const __restrict__ ownedStatePtr1 = soa1.template begin<Particle::AttributeNames::ownershipState>();
-    const auto *const __restrict__ ownedStatePtr2 = soa2.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle::AttributeNames::ownershipState>();
 
-    auto *const __restrict__ fx1ptr = soa1.template begin<Particle::AttributeNames::forceX>();
-    auto *const __restrict__ fy1ptr = soa1.template begin<Particle::AttributeNames::forceY>();
-    auto *const __restrict__ fz1ptr = soa1.template begin<Particle::AttributeNames::forceZ>();
-    auto *const __restrict__ fx2ptr = soa2.template begin<Particle::AttributeNames::forceX>();
-    auto *const __restrict__ fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
-    auto *const __restrict__ fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
-    [[maybe_unused]] auto *const __restrict__ typeptr1 = soa1.template begin<Particle::AttributeNames::typeId>();
-    [[maybe_unused]] auto *const __restrict__ typeptr2 = soa2.template begin<Particle::AttributeNames::typeId>();
+    auto *const __restrict fx1ptr = soa1.template begin<Particle::AttributeNames::forceX>();
+    auto *const __restrict fy1ptr = soa1.template begin<Particle::AttributeNames::forceY>();
+    auto *const __restrict fz1ptr = soa1.template begin<Particle::AttributeNames::forceZ>();
+    auto *const __restrict fx2ptr = soa2.template begin<Particle::AttributeNames::forceX>();
+    auto *const __restrict fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
+    auto *const __restrict fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
+    [[maybe_unused]] auto *const __restrict typeptr1 = soa1.template begin<Particle::AttributeNames::typeId>();
+    [[maybe_unused]] auto *const __restrict typeptr2 = soa2.template begin<Particle::AttributeNames::typeId>();
 
     // Checks whether the cells are halo cells.
     SoAFloatPrecision upotSum = 0.;
@@ -519,7 +497,7 @@ class LJFunctor
   // clang-format on
   void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
-                        bool newton3) override {
+                        bool newton3) final {
     if (soa.getNumParticles() == 0 or neighborList.empty()) return;
     if (newton3) {
       SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
@@ -529,36 +507,9 @@ class LJFunctor
   }
 
   /**
-   * Functor using Cuda on SoA in device Memory
-   *
-   * This Functor calculates the pair-wise interactions between particles in the device_handle on the GPU
-   *
-   * @param device_handle soa in device memory
-   * @param newton3 defines whether or whether not to use newton
-   */
-  void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle, bool newton3) override {
-#if defined(AUTOPAS_CUDA)
-    const size_t size = device_handle.template get<Particle::AttributeNames::posX>().size();
-    if (size == 0) {
-      return;
-    }
-    auto cudaSoA = this->createFunctorCudaSoA(device_handle);
-    if (newton3) {
-      _cudawrapper.SoAFunctorN3Wrapper(cudaSoA.get(), 0);
-    } else {
-      _cudawrapper.SoAFunctorNoN3Wrapper(cudaSoA.get(), 0);
-    }
-
-#else
-    utils::ExceptionHandler::exception("LJFunctor::CudaFunctor: AutoPas was compiled without CUDA support!");
-#endif
-  }
-
-  /**
    * Sets the particle properties constants for this functor.
    *
    * This is only necessary if no particlePropertiesLibrary is used.
-   * If compiled with CUDA this function also loads the values to the GPU.
    *
    * @param epsilon24
    * @param sigmaSquare
@@ -571,128 +522,6 @@ class LJFunctor
     } else {
       _shift6 = 0.;
     }
-#if defined(AUTOPAS_CUDA)
-    LJFunctorConstants<SoAFloatPrecision> constants(_cutoffsquare, _epsilon24 /* epsilon24 */,
-                                                    _sigmasquare /* sigmasquare */, _shift6);
-    _cudawrapper.loadConstants(&constants);
-#endif
-  }
-
-  /**
-   * Functor using Cuda on SoAs in device Memory
-   *
-   * This Functor calculates the pair-wise interactions between particles in the device_handle1 and device_handle2 on
-   * the GPU
-   *
-   * @param device_handle1 first soa in device memory
-   * @param device_handle2 second soa in device memory
-   * @param newton3 defines whether or whether not to use newton
-   */
-  void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1,
-                   CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2, bool newton3) override {
-#if defined(AUTOPAS_CUDA)
-    const size_t size1 = device_handle1.template get<Particle::AttributeNames::posX>().size();
-    const size_t size2 = device_handle2.template get<Particle::AttributeNames::posX>().size();
-    if ((size1 == 0) or (size2 == 0)) {
-      return;
-    }
-    auto cudaSoA1 = this->createFunctorCudaSoA(device_handle1);
-    auto cudaSoA2 = this->createFunctorCudaSoA(device_handle2);
-
-    if (newton3) {
-      if (size1 > size2) {
-        _cudawrapper.SoAFunctorN3PairWrapper(cudaSoA1.get(), cudaSoA2.get(), 0);
-      } else {
-        _cudawrapper.SoAFunctorN3PairWrapper(cudaSoA2.get(), cudaSoA1.get(), 0);
-      }
-    } else {
-      _cudawrapper.SoAFunctorNoN3PairWrapper(cudaSoA1.get(), cudaSoA2.get(), 0);
-    }
-#else
-    utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
-#endif
-  }
-#if defined(AUTOPAS_CUDA)
-  CudaWrapperInterface<SoAFloatPrecision> *getCudaWrapper() override { return &_cudawrapper; }
-
-  std::unique_ptr<FunctorCudaSoA<SoAFloatPrecision>> createFunctorCudaSoA(
-      CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {
-    if (calculateGlobals) {
-      return std::make_unique<LJFunctorCudaGlobalsSoA<SoAFloatPrecision>>(
-          device_handle.template get<Particle::AttributeNames::posX>().size(),
-          device_handle.template get<Particle::AttributeNames::posX>().get(),
-          device_handle.template get<Particle::AttributeNames::posY>().get(),
-          device_handle.template get<Particle::AttributeNames::posZ>().get(),
-          device_handle.template get<Particle::AttributeNames::forceX>().get(),
-          device_handle.template get<Particle::AttributeNames::forceY>().get(),
-          device_handle.template get<Particle::AttributeNames::forceZ>().get(),
-          device_handle.template get<Particle::AttributeNames::ownershipState>().get(), _cudaGlobals.get());
-    } else {
-      return std::make_unique<LJFunctorCudaSoA<SoAFloatPrecision>>(
-          device_handle.template get<Particle::AttributeNames::posX>().size(),
-          device_handle.template get<Particle::AttributeNames::posX>().get(),
-          device_handle.template get<Particle::AttributeNames::posY>().get(),
-          device_handle.template get<Particle::AttributeNames::posZ>().get(),
-          device_handle.template get<Particle::AttributeNames::forceX>().get(),
-          device_handle.template get<Particle::AttributeNames::forceY>().get(),
-          device_handle.template get<Particle::AttributeNames::forceZ>().get(),
-          device_handle.template get<Particle::AttributeNames::ownershipState>().get());
-    }
-  }
-#endif
-
-  /**
-   * @copydoc Functor::deviceSoALoader
-   */
-  void deviceSoALoader(::autopas::SoA<SoAArraysType> &soa,
-                       CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {
-#if defined(AUTOPAS_CUDA)
-
-    const size_t size = soa.getNumParticles();
-    if (size == 0) return;
-
-    device_handle.template get<Particle::AttributeNames::posX>().copyHostToDevice(
-        size, soa.template begin<Particle::AttributeNames::posX>());
-    device_handle.template get<Particle::AttributeNames::posY>().copyHostToDevice(
-        size, soa.template begin<Particle::AttributeNames::posY>());
-    device_handle.template get<Particle::AttributeNames::posZ>().copyHostToDevice(
-        size, soa.template begin<Particle::AttributeNames::posZ>());
-
-    device_handle.template get<Particle::AttributeNames::forceX>().copyHostToDevice(
-        size, soa.template begin<Particle::AttributeNames::forceX>());
-    device_handle.template get<Particle::AttributeNames::forceY>().copyHostToDevice(
-        size, soa.template begin<Particle::AttributeNames::forceY>());
-    device_handle.template get<Particle::AttributeNames::forceZ>().copyHostToDevice(
-        size, soa.template begin<Particle::AttributeNames::forceZ>());
-
-    device_handle.template get<Particle::AttributeNames::ownershipState>().copyHostToDevice(
-        size, soa.template begin<Particle::AttributeNames::ownershipState>());
-
-#else
-    utils::ExceptionHandler::exception("LJFunctor::deviceSoALoader: AutoPas was compiled without CUDA support!");
-#endif
-  }
-
-  /**
-   * @copydoc Functor::deviceSoAExtractor
-   */
-  void deviceSoAExtractor(::autopas::SoA<SoAArraysType> &soa,
-                          CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {
-#if defined(AUTOPAS_CUDA)
-
-    const size_t size = soa.getNumParticles();
-    if (size == 0) return;
-
-    device_handle.template get<Particle::AttributeNames::forceX>().copyDeviceToHost(
-        size, soa.template begin<Particle::AttributeNames::forceX>());
-    device_handle.template get<Particle::AttributeNames::forceY>().copyDeviceToHost(
-        size, soa.template begin<Particle::AttributeNames::forceY>());
-    device_handle.template get<Particle::AttributeNames::forceZ>().copyDeviceToHost(
-        size, soa.template begin<Particle::AttributeNames::forceZ>());
-
-#else
-    utils::ExceptionHandler::exception("LJFunctor::deviceSoAExtractor: AutoPas was compiled without CUDA support!");
-#endif
   }
 
   /**
@@ -744,39 +573,25 @@ class LJFunctor
    * Reset the global values.
    * Will set the global values to zero to prepare for the next iteration.
    */
-  void initTraversal() override {
+  void initTraversal() final {
     _upotSum = 0.;
     _virialSum = {0., 0., 0.};
     _postProcessed = false;
     for (size_t i = 0; i < _aosThreadData.size(); ++i) {
       _aosThreadData[i].setZero();
     }
-#if defined(AUTOPAS_CUDA)
-    if (calculateGlobals) {
-      std::array<SoAFloatPrecision, 4> globals{0, 0, 0, 0};
-      _cudaGlobals.copyHostToDevice(4, globals.data());
-    }
-#endif
   }
 
   /**
    * Postprocesses global values, e.g. upot and virial
    * @param newton3
    */
-  void endTraversal(bool newton3) override {
+  void endTraversal(bool newton3) final {
     if (_postProcessed) {
       throw utils::ExceptionHandler::AutoPasException(
           "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
     }
     if (calculateGlobals) {
-#if defined(AUTOPAS_CUDA)
-      std::array<SoAFloatPrecision, 4> globals{0, 0, 0, 0};
-      _cudaGlobals.copyDeviceToHost(4, globals.data());
-      _virialSum[0] += globals[0];
-      _virialSum[1] += globals[1];
-      _virialSum[2] += globals[2];
-      _upotSum += globals[3];
-#endif
       for (size_t i = 0; i < _aosThreadData.size(); ++i) {
         _upotSum += _aosThreadData[i].upotSum;
         _virialSum = utils::ArrayMath::add(_virialSum, _aosThreadData[i].virialSum);
@@ -841,17 +656,17 @@ class LJFunctor
   template <bool newton3>
   void SoAFunctorVerletImpl(SoAView<SoAArraysType> soa, const size_t indexFirst,
                             const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
-    const auto *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
 
-    auto *const __restrict__ fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-    auto *const __restrict__ fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-    auto *const __restrict__ fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
-    [[maybe_unused]] auto *const __restrict__ typeptr1 = soa.template begin<Particle::AttributeNames::typeId>();
-    [[maybe_unused]] auto *const __restrict__ typeptr2 = soa.template begin<Particle::AttributeNames::typeId>();
+    auto *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
+    auto *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
+    auto *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+    [[maybe_unused]] auto *const __restrict typeptr1 = soa.template begin<Particle::AttributeNames::typeId>();
+    [[maybe_unused]] auto *const __restrict typeptr2 = soa.template begin<Particle::AttributeNames::typeId>();
 
-    const auto *const __restrict__ ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
     const SoAFloatPrecision cutoffsquare = _cutoffsquare;
     SoAFloatPrecision shift6 = _shift6;
@@ -867,7 +682,7 @@ class LJFunctor
     SoAFloatPrecision fyacc = 0;
     SoAFloatPrecision fzacc = 0;
     const size_t neighborListSize = neighborList.size();
-    const size_t *const __restrict__ neighborListPtr = neighborList.data();
+    const size_t *const __restrict neighborListPtr = neighborList.data();
 
     // checks whether particle i is owned.
     const auto ownedStateI = ownedStatePtr[indexFirst];
@@ -1128,17 +943,5 @@ class LJFunctor
 
   // defines whether or whether not the global values are already preprocessed
   bool _postProcessed;
-
-#if defined(AUTOPAS_CUDA)
-  using CudaWrapperType = typename std::conditional<calculateGlobals, LJFunctorCudaGlobalsWrapper<SoAFloatPrecision>,
-                                                    LJFunctorCudaWrapper<SoAFloatPrecision>>::type;
-  // contains wrapper functions for cuda calls
-  CudaWrapperType _cudawrapper;
-
-  // contains device globals
-  utils::CudaDeviceVector<SoAFloatPrecision> _cudaGlobals;
-
-#endif
-
-};  // namespace autopas
+};
 }  // namespace autopas

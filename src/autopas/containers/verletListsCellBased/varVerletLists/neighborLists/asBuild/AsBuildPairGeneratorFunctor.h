@@ -59,11 +59,6 @@ class AsBuildPairGeneratorFunctor
   bool allowsNewton3() override { return true; }
   bool allowsNonNewton3() override { return true; }
 
-  [[nodiscard]] bool isAppropriateClusterSize(unsigned int clusterSize,
-                                              DataLayoutOption::Value dataLayout) const override {
-    return false;  // this functor shouldn't be called with clusters!
-  }
-
   /**
    * Constructor of the functor.
    * @param neighborList The neighbor list to fill.
@@ -102,10 +97,10 @@ class AsBuildPairGeneratorFunctor
   void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
     if (soa.getNumParticles() == 0) return;
 
-    auto **const __restrict__ ptrptr = soa.template begin<Particle::AttributeNames::ptr>();
-    double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    auto **const __restrict ptrptr = soa.template begin<Particle::AttributeNames::ptr>();
+    double *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
 
     size_t numPart = soa.getNumParticles();
     for (unsigned int i = 0; i < numPart; ++i) {
@@ -138,15 +133,15 @@ class AsBuildPairGeneratorFunctor
   void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/) override {
     if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
-    auto **const __restrict__ ptrptr1 = soa1.template begin<Particle::AttributeNames::ptr>();
-    double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
+    auto **const __restrict ptrptr1 = soa1.template begin<Particle::AttributeNames::ptr>();
+    double *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
 
-    auto **const __restrict__ ptrptr2 = soa2.template begin<Particle::AttributeNames::ptr>();
-    double *const __restrict__ x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
+    auto **const __restrict ptrptr2 = soa2.template begin<Particle::AttributeNames::ptr>();
+    double *const __restrict x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
 
     size_t numPart1 = soa1.getNumParticles();
     for (unsigned int i = 0; i < numPart1; ++i) {

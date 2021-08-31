@@ -14,14 +14,14 @@ namespace autopas {
 /**
  * Interface of neighbor lists to be used with VerletListsCells container.
  * @tparam Particle Type of particle to be used for the neighbor list.
- * */
+ */
 template <class Particle>
 class VLCNeighborListInterface {
  public:
   /**
-   * Default destructor.
-   * */
-  ~VLCNeighborListInterface() = default;
+   * Virtual default destructor.
+   */
+  virtual ~VLCNeighborListInterface() = default;
 
   /**
    * Builds AoS neighbor list from underlying linked cells object.
@@ -32,7 +32,7 @@ class VLCNeighborListInterface {
    * @param interactionLength Interaction length of the underlying linked cells object.
    * @param buildTraversalOption Traversal option necessary for generator functor.
    * @param buildType Type of build functor to be used for the generation of the neighbor list.
-   * */
+   */
   virtual void buildAoSNeighborList(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
                                     double interactionLength, const TraversalOption buildTraversalOption,
                                     typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType) = 0;
@@ -42,7 +42,7 @@ class VLCNeighborListInterface {
    * @param particle
    * @return the size of the neighbor list(s) of this particle
    */
-  virtual const size_t getNumberOfPartners(const Particle *particle) const = 0;
+  virtual size_t getNumberOfPartners(const Particle *particle) const = 0;
 
   /**
    * Returns the container type of this neighbor list and the container it belongs to.
@@ -52,6 +52,8 @@ class VLCNeighborListInterface {
 
   /**
    * Generates neighbor list in SoA layout from available neighbor list in AoS layout.
+   * Copies the structure of the AoS neighbor list and replaces the particle pointers with the global indices of the
+   * particles.
    * @param linkedCells Underlying linked cells structure.
    */
   virtual void generateSoAFromAoS(LinkedCells<Particle> &linkedCells) = 0;
@@ -101,7 +103,7 @@ class VLCNeighborListInterface {
   SoA<typename Particle::SoAArraysType> _soa;
 
   /**
-   * Creates and applies generator functor for the building of the neighbor list.
+   * Creates and applies a generator functor for the building of the neighbor list.
    * @param linkedCells Linked Cells object used to build the neighbor list.
    * @param useNewton3 Whether Newton 3 should be used for the neighbor list.
    * @param cutoff Cutoff radius.
@@ -109,7 +111,7 @@ class VLCNeighborListInterface {
    * @param interactionLength Interaction length of the underlying linked cells object.
    * @param buildTraversalOption Traversal option necessary for generator functor.
    * @param buildType Type of build functor to be used for the generation of the neighbor list.
-   * */
+   */
   virtual void applyBuildFunctor(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
                                  double interactionLength, const TraversalOption buildTraversalOption,
                                  typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType) = 0;

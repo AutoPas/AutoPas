@@ -49,7 +49,7 @@ void SetupIC(AutoPasContainer &sphSystem, double *end_time, const std::array<dou
     throw std::runtime_error("No particle added in sph-main-mpi::SetupIC.");
   }
 
-  for (auto part = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); part.isValid(); ++part) {
+  for (auto part = sphSystem.begin(autopas::IteratorBehavior::owned); part.isValid(); ++part) {
     part->setMass(part->getMass() * bBoxMax[0] * bBoxMax[1] * bBoxMax[2] / (double)(i));
   }
 
@@ -67,7 +67,7 @@ void SetupIC(AutoPasContainer &sphSystem, double *end_time, const std::array<dou
 
 void Initialize(AutoPasContainer &sphSystem) {
   std::cout << "initialize... started" << std::endl;
-  for (auto part = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); part.isValid(); ++part) {
+  for (auto part = sphSystem.begin(autopas::IteratorBehavior::owned); part.isValid(); ++part) {
     part->calcPressure();
   }
   std::cout << "initialize... completed" << std::endl;
@@ -75,7 +75,7 @@ void Initialize(AutoPasContainer &sphSystem) {
 
 double getTimeStepGlobal(AutoPasContainer &sphSystem, MPI_Comm &comm) {
   double dt = 1.0e+30;  // set VERY LARGE VALUE
-  for (auto part = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); part.isValid(); ++part) {
+  for (auto part = sphSystem.begin(autopas::IteratorBehavior::owned); part.isValid(); ++part) {
     part->calcDt();
     if (part->getDt() < 0.002) {
       std::cout << "small time step for particle " << part->getID() << " at [" << part->getR()[0] << ", "
@@ -92,7 +92,7 @@ double getTimeStepGlobal(AutoPasContainer &sphSystem, MPI_Comm &comm) {
 }
 
 void leapfrogInitialKick(AutoPasContainer &sphSystem, const double dt) {
-  for (auto part = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); part.isValid(); ++part) {
+  for (auto part = sphSystem.begin(autopas::IteratorBehavior::owned); part.isValid(); ++part) {
     part->setVel_half(autopas::utils::ArrayMath::add(
         part->getV(), autopas::utils::ArrayMath::mulScalar(part->getAcceleration(), 0.5 * dt)));
     part->setEng_half(part->getEnergy() + 0.5 * dt * part->getEngDot());
@@ -101,20 +101,20 @@ void leapfrogInitialKick(AutoPasContainer &sphSystem, const double dt) {
 
 void leapfrogFullDrift(AutoPasContainer &sphSystem, const double dt) {
   // time becomes t + dt;
-  for (auto part = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); part.isValid(); ++part) {
+  for (auto part = sphSystem.begin(autopas::IteratorBehavior::owned); part.isValid(); ++part) {
     part->addR(autopas::utils::ArrayMath::mulScalar(part->getVel_half(), dt));
   }
 }
 
 void leapfrogPredict(AutoPasContainer &sphSystem, const double dt) {
-  for (auto part = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); part.isValid(); ++part) {
+  for (auto part = sphSystem.begin(autopas::IteratorBehavior::owned); part.isValid(); ++part) {
     part->addV(autopas::utils::ArrayMath::mulScalar(part->getAcceleration(), dt));
     part->addEnergy(part->getEngDot() * dt);
   }
 }
 
 void leapfrogFinalKick(AutoPasContainer &sphSystem, const double dt) {
-  for (auto part = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); part.isValid(); ++part) {
+  for (auto part = sphSystem.begin(autopas::IteratorBehavior::owned); part.isValid(); ++part) {
     part->setV(autopas::utils::ArrayMath::add(part->getVel_half(),
                                               autopas::utils::ArrayMath::mulScalar(part->getAcceleration(), 0.5 * dt)));
     part->setEnergy(part->getEng_half() + 0.5 * dt * part->getEngDot());
@@ -122,7 +122,7 @@ void leapfrogFinalKick(AutoPasContainer &sphSystem, const double dt) {
 }
 
 void setPressure(AutoPasContainer &sphSystem) {
-  for (auto part = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); part.isValid(); ++part) {
+  for (auto part = sphSystem.begin(autopas::IteratorBehavior::owned); part.isValid(); ++part) {
     part->calcPressure();
   }
 }
@@ -288,7 +288,7 @@ void updateHaloParticles(AutoPasContainer &sphSystem, MPI_Comm &comm, const std:
         }
 
         for (auto iterator =
-                 sphSystem.getRegionIterator(requiredHaloMin, requiredHaloMax, autopas::IteratorBehavior::ownedOnly);
+                 sphSystem.getRegionIterator(requiredHaloMin, requiredHaloMax, autopas::IteratorBehavior::owned);
              iterator.isValid(); ++iterator) {
           Particle p = *iterator;  // copies Particle
           p.addR(shift);
@@ -376,7 +376,7 @@ void densityPressureHydroForce(AutoPasContainer &sphSystem, MPI_Comm &comm, cons
   updateHaloParticles(sphSystem, comm, globalBoxMin, globalBoxMax);
 
   // 1.2 then calculate density
-  for (auto part = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); part.isValid(); ++part) {
+  for (auto part = sphSystem.begin(autopas::IteratorBehavior::owned); part.isValid(); ++part) {
     part->setDensity(0.);
     densityFunctor.AoSFunctor(*part, *part);
     part->setDensity(part->getDensity() / 2);
@@ -392,7 +392,7 @@ void densityPressureHydroForce(AutoPasContainer &sphSystem, MPI_Comm &comm, cons
   updateHaloParticles(sphSystem, comm, globalBoxMin, globalBoxMax);
 
   // 0.3.2 then calculate hydro force
-  for (auto part = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); part.isValid(); ++part) {
+  for (auto part = sphSystem.begin(autopas::IteratorBehavior::owned); part.isValid(); ++part) {
     // self interaction leeds to:
     // 1) vsigmax = 2*part->getSoundSpeed()
     // 2) no change in acceleration
@@ -407,7 +407,7 @@ void densityPressureHydroForce(AutoPasContainer &sphSystem, MPI_Comm &comm, cons
 void printConservativeVariables(AutoPasContainer &sphSystem, MPI_Comm &comm) {
   std::array<double, 3> momSum = {0., 0., 0.};  // total momentum
   double energySum = 0.;                        // total energy
-  for (auto it = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); it.isValid(); ++it) {
+  for (auto it = sphSystem.begin(autopas::IteratorBehavior::owned); it.isValid(); ++it) {
     momSum = autopas::utils::ArrayMath::add(momSum, autopas::utils::ArrayMath::mulScalar(it->getV(), it->getMass()));
     energySum += (it->getEnergy() + 0.5 * autopas::utils::ArrayMath::dot(it->getV(), it->getV())) * it->getMass();
   }
@@ -490,12 +490,10 @@ int main(int argc, char *argv[]) {
                                                        autopas::ContainerOption::verletListsCells};
   sphSystem.setAllowedContainers(allowedContainers);
 
-  auto dataLayouts = autopas::DataLayoutOption::getAllOptions();
-  if (dataLayouts.find(autopas::DataLayoutOption::cuda) != dataLayouts.end()) {
-    dataLayouts.erase(dataLayouts.find(autopas::DataLayoutOption::cuda));
-  }
-  sphSystem.setAllowedDataLayouts(dataLayouts);
+  int rank;
+  MPI_Comm_rank(comm, &rank);
 
+  sphSystem.setOutputSuffix("Rank" + std::to_string(rank) + "_");
   sphSystem.init();
 
   double dt;
@@ -519,8 +517,6 @@ int main(int argc, char *argv[]) {
 
   // 1 ---- START MAIN LOOP ----
   size_t step = 0;
-  int rank;
-  MPI_Comm_rank(comm, &rank);
   for (double time = 0.; time < t_end && step < 55; time += dt, ++step) {
     if (rank == 0) {
       std::cout << "\n-------------------------\ntime step " << step << "(t = " << time << ")..." << std::endl;
@@ -545,7 +541,7 @@ int main(int argc, char *argv[]) {
     // 1.6 Leap frog: final Kick
     leapfrogFinalKick(sphSystem, dt);
 
-    //    for (auto part = sphSystem.begin(autopas::IteratorBehavior::ownedOnly); part.isValid(); ++part) {
+    //    for (auto part = sphSystem.begin(autopas::IteratorBehavior::owned); part.isValid(); ++part) {
     //      printf(
     //          "%lu\t%lf\t%lf\t%lf\t%lf\t%lf\t"
     //          "%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",

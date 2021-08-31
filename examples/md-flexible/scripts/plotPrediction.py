@@ -58,16 +58,15 @@ for datafile in datafiles:
         configurationTest = {}
         iteration = 0
 
-        regexConfigurationPrediction = '.* Traversal time prediction for +({.*}).*: *([0-9]+)'
-        regexNoPrediction = '.* No traversal time prediction for +({.*})'
+        regexConfigurationPrediction = '.*Prediction for +({.*}).*: *(.+)'
         regexCollectedTimes = '.* Collected times for +({.*})..*\[(.*)\].*: *([0-9]+)'
         regexIter = '.*Iteration +([0-9]+)'
 
         for line in file.readlines():
             if (match := re.search(regexIter, line)) is not None:
                 iteration = match.group(1)
-            elif (match := re.search(regexNoPrediction, line)) is not None:
-                continue
+                if (match.group(2) == 'none') :
+                    continue
             elif (match := re.search(regexConfigurationPrediction, line)) is not None:
                 m = match.group(1)
                 if match.group(1) in configurationPrediction:
@@ -105,7 +104,6 @@ for datafile in datafiles:
         "VerletListsCells": '#0000FF',  # blue
         "VerletClusterLists": '#4B0082',  # indigo
         "VarVerletListsAsBuild": '#FFA500',  # orange
-        "VerletClusterCells": "#90EE90"  # lightgreen
     }
 
     shown = {
@@ -115,7 +113,6 @@ for datafile in datafiles:
         "VerletListsCells": False,
         "VerletClusterLists": False,
         "VarVerletListsAsBuild": False,
-        "VerletClusterCells": False
     }
 
     # plotting predictions

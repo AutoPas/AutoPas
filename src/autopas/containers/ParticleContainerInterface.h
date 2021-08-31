@@ -15,6 +15,7 @@
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/iterators/ParticleIteratorWrapper.h"
 #include "autopas/options/ContainerOption.h"
+#include "autopas/options/IteratorBehavior.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/selectors/TraversalSelectorInfo.h"
 #include "autopas/utils/AutoPasMacros.h"
@@ -75,9 +76,9 @@ class ParticleContainerInterface {
 
   /**
    * Adds a particle to the container.
-   * @param p The particle to be added.
    * @tparam checkInBox Specifies whether a boundary check should be performed. Only disable this if the check has
    * already been performed.
+   * @param p The particle to be added.
    */
   template <bool checkInBox = true>
   void addParticle(const Particle &p) {
@@ -87,8 +88,12 @@ class ParticleContainerInterface {
       if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
         addParticleImpl(p);
       } else {
-        utils::ExceptionHandler::exception("Trying to add a particle that is not in the bounding box.\n" +
-                                           p.toString());
+        std::stringstream error;
+        error << "Trying to add a particle that is not in the bounding box.\n"
+              << "Box Min " << autopas::utils::ArrayUtils::to_string(this->getBoxMin()) << "\n"
+              << "Box Max " << autopas::utils::ArrayUtils::to_string(this->getBoxMax()) << "\n"
+              << p.toString();
+        utils::ExceptionHandler::exception(error.str());
       }
     }
   };
@@ -158,7 +163,7 @@ class ParticleContainerInterface {
   virtual void deleteAllParticles() = 0;
 
   /**
-   * Get the number of particles saved in the container.
+   * Get the total number of particles saved in the container (owned and halo but not dummies).
    * @return Number of particles in the container.
    */
   [[nodiscard]] virtual unsigned long getNumParticles() const = 0;
@@ -167,24 +172,25 @@ class ParticleContainerInterface {
    * Iterate over all particles using
    * for(auto iter = container.begin(); iter.isValid(); ++iter) .
    * @param behavior Behavior of the iterator, see IteratorBehavior.
+   * @note Default argument necessary to enable range based for loops.
    * @return Iterator to the first particle.
    */
   [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, true> begin(
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) = 0;
+      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) = 0;
 
   /**
    * @copydoc begin()
    * @note const version
    */
   [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, false> begin(
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const = 0;
+      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) const = 0;
 
   /**
    * @copydoc begin()
    * @note cbegin will guarantee to return a const_iterator.
    */
   [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, false> cbegin(
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const final {
+      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) const final {
     return begin(behavior);
   };
 
@@ -198,7 +204,7 @@ class ParticleContainerInterface {
    */
   [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) = 0;
+      IteratorBehavior behavior) = 0;
 
   /**
    * @copydoc getRegionIterator()
@@ -206,7 +212,7 @@ class ParticleContainerInterface {
    */
   [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, false> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
-      IteratorBehavior behavior = IteratorBehavior::haloAndOwned) const = 0;
+      IteratorBehavior behavior) const = 0;
 
   /**
    * End expression for all containers, this simply returns false.

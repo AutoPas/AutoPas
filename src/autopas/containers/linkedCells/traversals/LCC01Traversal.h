@@ -123,8 +123,7 @@ class LCC01Traversal
    * @return
    */
   [[nodiscard]] bool isApplicable() const override {
-    return not(dataLayout == DataLayoutOption::cuda) and not useNewton3 and
-           not(combineSoA && dataLayout != DataLayoutOption::soa);
+    return not useNewton3 and not(combineSoA and dataLayout != DataLayoutOption::soa);
   }
 
   [[nodiscard]] TraversalOption getTraversalType() const override {

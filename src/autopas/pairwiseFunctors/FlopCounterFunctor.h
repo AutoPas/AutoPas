@@ -17,8 +17,7 @@ namespace autopas {
  * operations.
  * @todo this class currently is limited to the following case:
  *  - constant cutoff radius
- *  - constant amount of floating point operations for one kernel call (distance
- * < cutoff)
+ *  - constant amount of floating point operations for one kernel call (distance < cutoff)
  * @tparam Particle
  * @tparam ParticleCell
  */
@@ -31,10 +30,6 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
 
   bool allowsNonNewton3() override { return true; }
 
-  bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
-    return dataLayout == DataLayoutOption::aos;  // no support for clusters yet, unless aos.
-  }
-
   /**
    * constructor of FlopCounterFunctor
    * @param cutoffRadius the cutoff radius
@@ -45,7 +40,7 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
         _distanceCalculations(0ul),
         _kernelCalls(0ul) {}
 
-  void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
+  void AoSFunctor(Particle &i, Particle &j, bool /*newton3*/) override {
     if (i.isDummy() or j.isDummy()) {
       return;
     }
@@ -59,23 +54,24 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
   }
 
   /**
-   * @copydoc Functor::SoAFunctorSingle()
+   * See Functor::SoAFunctorSingle()
+   * @param soa
    */
-  void SoAFunctorSingle(SoAView<typename Particle::SoAArraysType> soa, bool newton3) override {
+  void SoAFunctorSingle(SoAView<typename Particle::SoAArraysType> soa, bool /*newton3*/) override {
     if (soa.getNumParticles() == 0) return;
 
-    double *const __restrict__ x1ptr = soa.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ y1ptr = soa.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ z1ptr = soa.template begin<Particle::AttributeNames::posZ>();
+    double *const __restrict x1ptr = soa.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict y1ptr = soa.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict z1ptr = soa.template begin<Particle::AttributeNames::posZ>();
 
-    for (unsigned int i = 0; i < soa.getNumParticles(); ++i) {
-      unsigned long distanceCalculationsAcc = 0;
-      unsigned long kernelCallsAcc = 0;
+    for (size_t i = 0; i < soa.getNumParticles(); ++i) {
+      size_t distanceCalculationsAcc = 0;
+      size_t kernelCallsAcc = 0;
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : kernelCallsAcc, distanceCalculationsAcc)
-      for (unsigned int j = i + 1; j < soa.getNumParticles(); ++j) {
+      for (size_t j = i + 1; j < soa.getNumParticles(); ++j) {
         ++distanceCalculationsAcc;
 
         const double drx = x1ptr[i] - x1ptr[j];
@@ -88,7 +84,9 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
 
         const double dr2 = drx2 + dry2 + drz2;
 
-        if (dr2 <= _cutoffSquare) ++kernelCallsAcc;
+        if (dr2 <= _cutoffSquare) {
+          ++kernelCallsAcc;
+        }
       }
       _distanceCalculations.fetch_add(distanceCalculationsAcc, std::memory_order_relaxed);
       _kernelCalls.fetch_add(kernelCallsAcc, std::memory_order_relaxed);
@@ -96,25 +94,27 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
   }
 
   /**
-   * @copydoc Functor::SoAFunctorPair()
+   * See Functor::SoAFunctorPair()
+   * @param soa1
+   * @param soa2
    */
   void SoAFunctorPair(SoAView<typename Particle::SoAArraysType> soa1, SoAView<typename Particle::SoAArraysType> soa2,
-                      bool newton3) override {
-    double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
-    double *const __restrict__ x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
+                      bool /*newton3*/) override {
+    double *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
+    double *const __restrict x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
 
-    for (unsigned int i = 0; i < soa1.getNumParticles(); ++i) {
-      unsigned long distanceCalculationsAcc = 0;
-      unsigned long kernelCallsAcc = 0;
+    for (size_t i = 0; i < soa1.getNumParticles(); ++i) {
+      size_t distanceCalculationsAcc = 0;
+      size_t kernelCallsAcc = 0;
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : kernelCallsAcc, distanceCalculationsAcc)
-      for (unsigned int j = 0; j < soa2.getNumParticles(); ++j) {
+      for (size_t j = 0; j < soa2.getNumParticles(); ++j) {
         ++distanceCalculationsAcc;
 
         const double drx = x1ptr[i] - x2ptr[j];
@@ -137,21 +137,24 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
   }
 
   /**
-   * @copydoc Functor::SoAFunctorVerlet()
+   * See Functor::SoAFunctorVerlet()
+   * @param soa
+   * @param indexFirst
+   * @param neighborList
    */
   void SoAFunctorVerlet(SoAView<typename Particle::SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
-                        bool newton3) override {
+                        bool /*newton3*/) override {
     auto numParts = soa.getNumParticles();
 
     if (numParts == 0) return;
 
-    double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    double *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
 
     const size_t listSizeI = neighborList.size();
-    const size_t *const __restrict__ currentList = neighborList.data();
+    const size_t *const __restrict currentList = neighborList.data();
 
     // this is a magic number, that should correspond to at least
     // vectorization width*N have testet multiple sizes:
@@ -181,8 +184,8 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
       }
       // loop over the verlet list from 0 to x*vecsize
       for (; joff < listSizeI - vecsize + 1; joff += vecsize) {
-        unsigned long distanceCalculationsAcc = 0;
-        unsigned long kernelCallsAcc = 0;
+        size_t distanceCalculationsAcc = 0;
+        size_t kernelCallsAcc = 0;
         // in each iteration we calculate the interactions of particle i with
         // vecsize particles in the neighborlist of particle i starting at
         // particle joff
@@ -217,8 +220,8 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
         _kernelCalls.fetch_add(kernelCallsAcc, std::memory_order_relaxed);
       }
     }
-    unsigned long distanceCalculationsAcc = 0;
-    unsigned long kernelCallsAcc = 0;
+    size_t distanceCalculationsAcc = 0;
+    size_t kernelCallsAcc = 0;
     // this loop goes over the remainder and uses no optimizations
     for (size_t jNeighIndex = joff; jNeighIndex < listSizeI; ++jNeighIndex) {
       size_t j = neighborList[jNeighIndex];
@@ -241,78 +244,6 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
     }
     _distanceCalculations.fetch_add(distanceCalculationsAcc, std::memory_order_relaxed);
     _kernelCalls.fetch_add(kernelCallsAcc, std::memory_order_relaxed);
-  }
-
-  void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle, bool newton3) override {
-#if defined(AUTOPAS_CUDA)
-    // estimate flops on GPU
-    size_t size = device_handle.template get<Particle::AttributeNames::posX>().size();
-    _distanceCalculations += size * size;
-    _kernelCalls += size * size;
-#else
-    utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
-#endif
-  }
-
-  void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1,
-                   CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2, bool newton3) override {
-#if defined(AUTOPAS_CUDA)
-    // estimate flops on GPU
-    size_t size1 = device_handle1.template get<Particle::AttributeNames::posX>().size();
-    size_t size2 = device_handle2.template get<Particle::AttributeNames::posX>().size();
-
-    _distanceCalculations += size1 * size2;
-    _kernelCalls += size1 * size2;
-#else
-    utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
-#endif
-  }
-
-  /**
-   * @copydoc Functor::deviceSoALoader
-   */
-  void deviceSoALoader(::autopas::SoA<typename Particle::SoAArraysType> &soa,
-                       CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {
-#if defined(AUTOPAS_CUDA)
-    size_t size = soa.getNumParticles();
-    if (size == 0) return;
-
-    device_handle.template get<Particle::AttributeNames::posX>().copyHostToDevice(
-        size, soa.template begin<Particle::AttributeNames::posX>());
-    device_handle.template get<Particle::AttributeNames::posY>().copyHostToDevice(
-        size, soa.template begin<Particle::AttributeNames::posY>());
-    device_handle.template get<Particle::AttributeNames::posZ>().copyHostToDevice(
-        size, soa.template begin<Particle::AttributeNames::posZ>());
-
-    device_handle.template get<Particle::AttributeNames::forceX>().copyHostToDevice(
-        size, soa.template begin<Particle::AttributeNames::forceX>());
-    device_handle.template get<Particle::AttributeNames::forceY>().copyHostToDevice(
-        size, soa.template begin<Particle::AttributeNames::forceY>());
-    device_handle.template get<Particle::AttributeNames::forceZ>().copyHostToDevice(
-        size, soa.template begin<Particle::AttributeNames::forceZ>());
-#else
-    utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
-#endif
-  }
-
-  /**
-   * @copydoc Functor::deviceSoAExtractor
-   */
-  void deviceSoAExtractor(::autopas::SoA<typename Particle::SoAArraysType> &soa,
-                          CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) override {
-#if defined(AUTOPAS_CUDA)
-    size_t size = soa.getNumParticles();
-    if (size == 0) return;
-
-    device_handle.template get<Particle::AttributeNames::forceX>().copyDeviceToHost(
-        size, soa.template begin<Particle::AttributeNames::forceX>());
-    device_handle.template get<Particle::AttributeNames::forceY>().copyDeviceToHost(
-        size, soa.template begin<Particle::AttributeNames::forceY>());
-    device_handle.template get<Particle::AttributeNames::forceZ>().copyDeviceToHost(
-        size, soa.template begin<Particle::AttributeNames::forceZ>());
-#else
-    utils::ExceptionHandler::exception("AutoPas was compiled without CUDA support!");
-#endif
   }
 
   /**
@@ -349,9 +280,9 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
    * @param numFlopsPerKernelCall
    * @return
    */
-  double getFlops(unsigned long numFlopsPerKernelCall) const {
-    const double distFlops = numFlopsPerDistanceCalculation * static_cast<double>(_distanceCalculations);
-    const double kernFlops = numFlopsPerKernelCall * static_cast<double>(_kernelCalls);
+  [[nodiscard]] size_t getFlops(size_t numFlopsPerKernelCall) const {
+    const auto distFlops = numFlopsPerDistanceCalculation * _distanceCalculations;
+    const auto kernFlops = numFlopsPerKernelCall * _kernelCalls;
     return distFlops + kernFlops;
   }
 
@@ -359,14 +290,14 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
    * get the number of calculated distance operations
    * @return
    */
-  unsigned long getDistanceCalculations() const { return _distanceCalculations; }
+  [[nodiscard]] size_t getDistanceCalculations() const { return _distanceCalculations; }
 
   /**
    * get the number of kernel calls, i.e. the number of pairs of particles with
    * a distance not larger than the cutoff
    * @return
    */
-  unsigned long getKernelCalls() const { return _kernelCalls; }
+  [[nodiscard]] size_t getKernelCalls() const { return _kernelCalls; }
 
   /**
    * number of flops for one distance calculation.

@@ -13,14 +13,24 @@ cmake_policy(SET CMP0079 NEW)
 set(AUTOPAS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(AUTOPAS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
+# append custom modules to the module path
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/)
+# load custom conditional options
+include(optionConditional)
+
+# Determine if AutoPas is built as the primary project or not.
+option_conditional(AUTOPAS_STANDALONE_BUILD
+        "Add options and targets which are only relevant for developers of AutoPas"
+        "AUTOPAS_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR"
+)
+
 # starting with cmake 3.17 this is set using target_compile_features.
 if (CMAKE_VERSION VERSION_LESS 3.17)
     message(
         STATUS
-            "Setting CMAKE_CXX_STANDARD and CMAKE_CUDA_STANDARD globally because cmake < 3.17 is used."
+            "Setting CMAKE_CXX_STANDARD globally because cmake < 3.17 is used."
     )
     set(CMAKE_CXX_STANDARD 17)
-    set(CMAKE_CUDA_STANDARD 14)
 endif ()
 
 if (NOT CYGWIN)
@@ -47,30 +57,27 @@ if (NOT CMAKE_BUILD_TYPE)
             STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel."
             FORCE
     )
-endif (NOT CMAKE_BUILD_TYPE)
-
-# CUDA options
-option(AUTOPAS_ENABLE_CUDA "Activates Cuda Components" OFF)
-if (AUTOPAS_ENABLE_CUDA)
-    message(STATUS "Cuda enabled.")
-    enable_language(CUDA)
-else ()
-    message(STATUS "Cuda disabled.")
 endif ()
 
 enable_testing()
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/)
+option_conditional(AUTOPAS_FORMATTING_TARGETS
+        "Adds targets for code formatting in AutoPas. Highly useful when developing AutoPas but might cause conflicts when only using it."
+        AUTOPAS_STANDALONE_BUILD
+)
 
-include(ccache)
-include(clang-format)
-include(clang-sanitizers)
-include(clang-tidy)
-include(cmake-format)
-include(format)
-include(CodeCoverageAutopas)
-include(OpenMP)
-include(mpi)
+if(AUTOPAS_FORMATTING_TARGETS)
+    include(autopas_clang-format)
+    include(autopas_cmake-format)
+    include(autopas_format)
+endif ()
+
+include(autopas_ccache)
+include(autopas_clang-sanitizers)
+include(autopas_clang-tidy)
+include(autopas_CodeCoverage)
+include(autopas_OpenMP)
+include(autopas_mpi)
 
 include(version.cmake)
 
@@ -83,17 +90,16 @@ add_subdirectory(src)
 add_subdirectory(tools)
 
 # modules needing targets:
-include(coloring)
-include(logging)
-include(other-compileroptions)
-include(vectorization)
-include(cuda)
+include(autopas_coloring)
+include(autopas_logging)
+include(autopas_other-compileroptions)
+include(autopas_vectorization)
 
 # tests and examples
 add_subdirectory(examples)
 add_subdirectory(tests)
 
-include(doxygen) # does not really need a target but the variable AUTOPAS_BUILD_EXAMPLES, which is defined in examples.
+include(autopas_doxygen) # does not really need a target but the variable AUTOPAS_BUILD_EXAMPLES, which is defined in examples.
 
 # write version information
 include(CMakePackageConfigHelpers)

@@ -47,7 +47,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
    * @param skin the skin radius
    * @param cellSizeFactor cell size factor relative to cutoff
    * @param loadEstimator load estimation algorithm for balanced traversals
-   * @param buildType
+   * @param buildType data layout of the particles which are used to generate the neighbor lists
    */
   VerletListsCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                    const double skin = 0, const double cellSizeFactor = 1.0,
@@ -112,16 +112,14 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
    * @param particle
    * @return the size of the neighbor list(s) of this particle
    */
-  const size_t getNumberOfPartners(const Particle *particle) const {
-    return _neighborList.getNumberOfPartners(particle);
-  }
+  size_t getNumberOfPartners(const Particle *particle) const { return _neighborList.getNumberOfPartners(particle); }
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
-    bool useNewton3 = traversal->getUseNewton3();
-    this->_verletBuiltNewton3 = useNewton3;
+    this->_verletBuiltNewton3 = traversal->getUseNewton3();
 
-    _neighborList.buildAoSNeighborList(this->_linkedCells, useNewton3, this->getCutoff(), this->getSkin(),
-                                       this->getInteractionLength(), TraversalOption::lc_c18, _buildType);
+    _neighborList.buildAoSNeighborList(this->_linkedCells, this->_verletBuiltNewton3, this->getCutoff(),
+                                       this->getSkin(), this->getInteractionLength(), TraversalOption::lc_c18,
+                                       _buildType);
 
     if (traversal->getDataLayout() == DataLayoutOption::soa) {
       _neighborList.generateSoAFromAoS(this->_linkedCells);
@@ -151,9 +149,8 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
   autopas::LoadEstimatorOption _loadEstimator;
 
   /**
-   * TODO
+   * Data layout of the particles which are used to generate the neighbor lists.
    */
   typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value _buildType;
 };
-
 }  // namespace autopas

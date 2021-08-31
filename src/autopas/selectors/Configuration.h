@@ -56,6 +56,18 @@ class Configuration {
   }
 
   /**
+   * Generate a csv header containing all keys from the toString() method.
+   * @return Contains the header.
+   */
+  [[nodiscard]] std::string getCSVHeader() const { return getCSVRepresentation(true); }
+
+  /**
+   * Generate a csv representation containing all values from the toString() method.
+   * @return String representing the current configuration.
+   */
+  [[nodiscard]] std::string getCSVLine() const { return getCSVRepresentation(false); }
+
+  /**
    * Returns whether the configuration has been initialized with valid values or as an invalid one.
    * Does not return false if it has valid values whose combination is invalid (e.g. when the container and traversal do
    * not fit).
@@ -90,6 +102,35 @@ class Configuration {
    * CellSizeFactor
    */
   double cellSizeFactor;
+
+ private:
+  /**
+   * Helper function to return a csv representation of the current object.
+   * @param returnHeaderOnly Switch to return the header or content.
+   * @return
+   */
+  [[nodiscard]] std::string getCSVRepresentation(bool returnHeaderOnly) const {
+    auto rgx = returnHeaderOnly ?
+                                // match any sequence before a colon and drop any spaces, comma or brackets before it
+                   std::regex("[{, ]+([^:]+):[^,]*")
+                                :
+                                // match any sequence after a colon and drop any spaces, comma or brackets around it
+                   std::regex(": ([^,]+)(?: ,|})");
+    auto searchString = toString();
+    std::sregex_iterator matchIter(searchString.begin(), searchString.end(), rgx);
+    std::sregex_iterator end;
+    std::stringstream retStream;
+
+    while (matchIter != end) {
+      // first submatch is the match of the capture group
+      retStream << matchIter->str(1) << ",";
+      ++matchIter;
+    }
+    auto retString = retStream.str();
+    // drop trailing ','
+    retString.pop_back();
+    return retString;
+  }
 };
 
 /**

@@ -12,22 +12,10 @@
 #include "autopas/selectors/ContainerSelector.h"
 #include "testingHelpers/commonTypedefs.h"
 
-class ContainerSelectorTest
-    : public AutoPasTestBase,
-      public ::testing::WithParamInterface<std::tuple<autopas::ContainerOption, autopas::ContainerOption>> {
- public:
-  ContainerSelectorTest() = default;
-  ~ContainerSelectorTest() override = default;
-
-  struct PrintToStringParamName {
-    template <class ParamType>
-    std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
-      auto inputTuple = static_cast<ParamType>(info.param);
-      std::string fromStr(std::get<0>(inputTuple).to_string());
-      std::string toStr(std::get<1>(inputTuple).to_string());
-      // replace all '-' with '_', otherwise the test name is invalid
-      // std::replace(traversal.begin(), traversal.end(), '-', '_');
-      return "from" + fromStr + "To" + toStr;
-    }
-  };
+class ContainerSelectorTest : public AutoPasTestBase {
+ protected:
+  const std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {10, 10, 10};
+  const double cutoff = 1;
+  const double cellSizeFactor = 1;
+  const double verletSkin = 0.1;
 };

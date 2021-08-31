@@ -1,3 +1,8 @@
+if (NOT AUTOPAS_BUILD_TESTS)
+    message(STATUS "AUTOPAS_BUILD_TESTS is disabled. Not building MDFlex tests!")
+    return()
+endif ()
+
 file(
     GLOB_RECURSE
     MDFlexTest_SRC
@@ -27,12 +32,13 @@ target_include_directories(
 )
 
 target_link_libraries(
-    mdFlexTests
-    PUBLIC
-        autopas
-        autopasTools
-        gmock # gmock includes the gtest target
-        yaml-cpp
+  mdFlexTests
+  PUBLIC
+    autopas
+    autopasTools
+    gmock
+    yaml-cpp
+    $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>
 )
 
 # this cmake module was only introduced in 3.10

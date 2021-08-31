@@ -26,13 +26,13 @@ class VLCCellPairTraversalInterface;
  * Pairwise verlet lists iterates through each pair of neighboring cells
  * and generates a neighbor list for each particle from cell1, which consists of its (potential) partners from cell2.
  * @tparam Particle Type of particle to be used for this neighbor list.
- * */
+ */
 template <class Particle>
 class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
  public:
   /**
    * Type of the data structure used to save the neighbor lists.
-   * */
+   */
   using listType = typename VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType;
 
   /**
@@ -48,13 +48,13 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
 
   /**
    * @copydoc VLCNeighborListInterface::getContainerType()
-   * */
+   */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::pairwiseVerletLists; }
 
   /**
    * @copydoc VLCNeighborListInterface::getNumberOfPartners()
-   * */
-  const size_t getNumberOfPartners(const Particle *particle) const override {
+   */
+  size_t getNumberOfPartners(const Particle *particle) const override {
     size_t listSize = 0;
     const auto &[firstCellIndex, particleInCellIndex] = _particleToCellMap.at(const_cast<Particle *>(particle));
     for (auto &cellPair : _aosNeighborList[firstCellIndex]) {
@@ -66,7 +66,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
   /**
    * Returns the neighbor list in AoS layout.
    * @return Neighbor list in AoS layout.
-   * */
+   */
   typename VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType &getAoSNeighborList() {
     return _aosNeighborList;
   }
@@ -79,12 +79,12 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
   /**
    * Returns the neighbor list in SoA layout.
    * @return Neighbor list in SoA layout.
-   * */
+   */
   auto &getSoANeighborList() { return _soaNeighborList; }
 
   /**
    * @copydoc VLCNeighborListInterface::buildAoSNeighborList()
-   * */
+   */
   void buildAoSNeighborList(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
                             double interactionLength, const TraversalOption buildTraversalOption,
                             typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType) override {
@@ -163,44 +163,48 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
 
   /**
    * @copydoc VLCNeighborListInterface::generateSoAFromAoS()
-   * */
+   */
   void generateSoAFromAoS(LinkedCells<Particle> &linkedCells) override {
     _soaNeighborList.clear();
 
-    std::unordered_map<Particle *, size_t> _particleToIndex;
-    _particleToIndex.reserve(linkedCells.getNumParticles());
+    // particle pointer to global index of particle
+    std::unordered_map<Particle *, size_t> particleToIndex;
+    particleToIndex.reserve(linkedCells.getNumParticles());
     size_t i = 0;
-    for (auto iter = linkedCells.begin(IteratorBehavior::haloOwnedAndDummy); iter.isValid(); ++iter, ++i) {
-      _particleToIndex[&(*iter)] = i;
+    for (auto iter = linkedCells.begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++i) {
+      particleToIndex[&(*iter)] = i;
     }
 
-    auto &cells = linkedCells.getCells();
-    size_t cellsSize = cells.size();
-    _soaNeighborList.resize(cellsSize);
+    _soaNeighborList.resize(linkedCells.getCells().size());
 
-    // iterate over aosNeighborList and insert indices instead of particles in the respective place in soaNeighborList
+    // iterate over cells
     for (size_t firstCellIndex = 0; firstCellIndex < _aosNeighborList.size(); ++firstCellIndex) {
-      auto &aosCurrentCell = _aosNeighborList[firstCellIndex];
+      const auto &aosCurrentCell = _aosNeighborList[firstCellIndex];
       auto &soaCurrentCell = _soaNeighborList[firstCellIndex];
       soaCurrentCell.resize(aosCurrentCell.size());
 
+      // iterate over each cell's neighboring cells
       for (size_t secondCellIndex = 0; secondCellIndex < aosCurrentCell.size(); ++secondCellIndex) {
-        auto &aosCellPair = aosCurrentCell[secondCellIndex];
+        const auto &aosCellPair = aosCurrentCell[secondCellIndex];
         auto &soaCellPair = soaCurrentCell[secondCellIndex];
         soaCellPair.reserve(aosCellPair.capacity());
 
-        size_t particleIndexInCurrentCell = 0;
-        for (auto &aosParticleAndParticleList : aosCellPair) {
+        // iterate over pairs of particle and neighbor list
+        for (const auto &aosParticleAndParticleList : aosCellPair) {
           Particle *currentParticle = aosParticleAndParticleList.first;
-          size_t currentParticleGlobalIndex = _particleToIndex.at(currentParticle);
+          // global index of current particle
+          size_t currentParticleGlobalIndex = particleToIndex.at(currentParticle);
 
-          soaCellPair.emplace_back(
-              std::make_pair(currentParticleGlobalIndex, std::vector<size_t, autopas::AlignedAllocator<size_t>>()));
+          // create SoA neighbor list for current particle
+          std::vector<size_t, autopas::AlignedAllocator<size_t>> currentSoANeighborList{};
 
-          for (auto &neighborOfCurrentParticle : aosParticleAndParticleList.second) {
-            soaCellPair[particleIndexInCurrentCell].second.emplace_back(_particleToIndex.at(neighborOfCurrentParticle));
+          // fill the SoA neighbor list with the indices of the particles from the corresponding AoS neighbor list
+          for (const auto &neighborOfCurrentParticle : aosParticleAndParticleList.second) {
+            currentSoANeighborList.emplace_back(particleToIndex.at(neighborOfCurrentParticle));
           }
-          particleIndexInCurrentCell++;
+
+          // add newly constructed pair of particle index and SoA particle neighbor list to cell pair
+          soaCellPair.emplace_back(std::make_pair(currentParticleGlobalIndex, currentSoANeighborList));
         }
       }
     }
@@ -235,7 +239,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
  private:
   /**
    * @copydoc VLCNeighborListInterface::applyBuildFunctor()
-   * */
+   */
   void applyBuildFunctor(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
                          double interactionLength, const TraversalOption buildTraversalOption,
                          typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType) override {
@@ -247,10 +251,13 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
     TraversalSelectorInfo traversalSelectorInfo(linkedCells.getCellBlock().getCellsPerDimensionWithHalo(),
                                                 interactionLength, linkedCells.getCellBlock().getCellLength(), 0);
 
+    // Build the AoS list using the AoS or SoA functor depending on buildType
     if (buildType == VerletListsCellsHelpers<Particle>::VLCBuildType::Value::aosBuild) {
       autopas::utils::withStaticBool(useNewton3, [&](auto n3) {
-        auto buildTraversal = traversalSelector.template generateTraversal<decltype(f), DataLayoutOption::aos, n3>(
-            buildTraversalOption, f, traversalSelectorInfo);
+        auto buildTraversal =
+            traversalSelector
+                .template generateTraversal<std::remove_reference_t<decltype(f)>, DataLayoutOption::aos, n3>(
+                    buildTraversalOption, f, traversalSelectorInfo);
         linkedCells.iteratePairwise(buildTraversal.get());
       });
     }

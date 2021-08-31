@@ -1,6 +1,6 @@
 /**
  * @file BoundaryConditions.h
- * @author N. Fottner
+ * @author F. Gratl
  * @date 2/8/19
  */
 
@@ -8,118 +8,103 @@
 #include <array>
 #include <vector>
 
-#include "autopas/AutoPas.h"
+#include "autopas/AutoPasDecl.h"
 
 /**
- * This Class implements the Periodic Boudaries for an AutoPas Object
- * The implementation was taken from "AutoPasInterfaceTest.cpp"
+ * This namespace implements functions for periodic boundaries using AutoPas.
  */
-template <typename Particle>
-class BoundaryConditions {
- public:
-  /**
-   * Default constructor.
-   */
-  BoundaryConditions() = default;
+namespace BoundaryConditions {
+/**
+ * Anonymous namespace for internal helpers.
+ */
+namespace {
+/**
+ * Convert the leaving particle to entering particles.
+ * This function updates the positions of the given particles to periodic images inside the domain.
+ * @tparam Particle
+ * @param autoPas
+ * @param particles Particles that are outside the domain box.
+ */
+template <class Particle>
+void wrapPositionsAroundBoundaries(autopas::AutoPas<Particle> &autoPas, std::vector<Particle> &particles) {
+  const auto &boxMin = autoPas.getBoxMin();
+  const auto &boxMax = autoPas.getBoxMax();
+  const auto boxLength = std::array<double, 3>{
+      boxMax[0] - boxMin[0],
+      boxMax[1] - boxMin[1],
+      boxMax[2] - boxMin[2],
+  };
 
-  /**
-   * Default destructor.
-   */
-  virtual ~BoundaryConditions() = default;
-
-  /**
-   * Convert the leaving particle to entering particles.
-   * Hereby the periodic boundary position change is done.
-   * @param autopas
-   * @param leavingParticles
-   * @return vector of particles that will enter the container.
-   */
-  static std::vector<Particle> convertToEnteringParticles(autopas::AutoPas<Particle> &autopas,
-                                                          const std::vector<Particle> &leavingParticles);
-
-  /**
-   * Identifies and sends particles that are in the halo of neighboring AutoPas instances or the same instance (periodic
-   * boundaries).
-   * @param autoPas
-   * @return vector of particles that are already shifted for the next process.
-   */
-  static std::vector<Particle> identifyAndSendHaloParticles(autopas::AutoPas<Particle> &autoPas);
-
-  /**
-   * Adds entering Particles to the Autopas Object
-   * @param autoPas
-   * @param enteringParticles
-   * @return number of Particles Added
-   */
-  static size_t addEnteringParticles(autopas::AutoPas<Particle> &autoPas, std::vector<Particle> &enteringParticles);
-
-  /**
-   * Adds Halo Particles to the AutoPas Object
-   * @param autoPas
-   * @param haloParticles
-   */
-  static void addHaloParticles(autopas::AutoPas<Particle> &autoPas, std::vector<Particle> &haloParticles);
-
-  /**
-   * Realizes periodic Boundaries for the simulation by handling halo particles and updating the container
-   * @param autoPas
-   * @param forceUpdate If the container update should be forced or left to autopas.
-   */
-  static void applyPeriodic(autopas::AutoPas<Particle> &autoPas, bool forceUpdate);
-};
-template <typename Particle>
-std::vector<Particle> BoundaryConditions<Particle>::convertToEnteringParticles(
-    autopas::AutoPas<Particle> &autopas, const std::vector<Particle> &leavingParticles) {
-  std::vector<Particle> enteringParticles{leavingParticles};
-  for (auto &p : enteringParticles) {
+  for (auto &p : particles) {
     auto pos = p.getR();
-    for (auto dim = 0; dim < 3; dim++) {
-      if (pos[dim] < autopas.getBoxMin()[dim]) {
+    for (auto dim = 0ul; dim < pos.size(); dim++) {
+      if (pos[dim] < boxMin[dim]) {
         // has to be smaller than boxMax
-        pos[dim] = std::min(std::nextafter(autopas.getBoxMax()[dim], -1),
-                            pos[dim] + (autopas.getBoxMax()[dim] - autopas.getBoxMin()[dim]));
-      } else if (pos[dim] >= autopas.getBoxMax()[dim]) {
+        pos[dim] = std::min(std::nextafter(boxMax[dim], boxMin[dim]), pos[dim] + boxLength[dim]);
+      } else if (pos[dim] >= boxMax[dim]) {
         // should at least be boxMin
-        pos[dim] = std::max(autopas.getBoxMin()[dim], pos[dim] - (autopas.getBoxMax()[dim] - autopas.getBoxMin()[dim]));
+        pos[dim] = std::max(boxMin[dim], pos[dim] - boxLength[dim]);
       }
     }
     p.setR(pos);
   }
-  return enteringParticles;
 }
-template <typename Particle>
-std::vector<Particle> BoundaryConditions<Particle>::identifyAndSendHaloParticles(autopas::AutoPas<Particle> &autoPas) {
+
+/**
+ * Identifies particles that are near the edge of the domain and returns properly shifted periodic copies of them as
+ * halo particles.
+ *
+ * @tparam Particle
+ * @param autoPas
+ * @return vector of particles that are already shifted for the next process.
+ */
+template <class Particle>
+std::vector<Particle> identifyNewHaloParticles(autopas::AutoPas<Particle> &autoPas) {
   std::vector<Particle> haloParticles;
 
-  for (short x : {-1, 0, 1}) {
-    for (short y : {-1, 0, 1}) {
-      for (short z : {-1, 0, 1}) {
+  const auto &boxMin = autoPas.getBoxMin();
+  const auto &boxMax = autoPas.getBoxMax();
+  const auto boxLength = std::array<double, 3>{
+      boxMax[0] - boxMin[0],
+      boxMax[1] - boxMin[1],
+      boxMax[2] - boxMin[2],
+  };
+
+  // look in every direction
+  for (auto x : {-1, 0, 1}) {
+    for (auto y : {-1, 0, 1}) {
+      for (auto z : {-1, 0, 1}) {
         if (x == 0 and y == 0 and z == 0) continue;
-        std::array<short, 3> direction{x, y, z};
+        std::array<int, 3> direction{x, y, z};
+        // Define a region where to search for particles that need to be copied to the halo.
         std::array<double, 3> min{}, max{}, shiftVec{};
-        for (size_t dim = 0; dim < 3; ++dim) {
-          // The search domain has to be enlarged as the position of the particles is not certain.
+        for (auto dim = 0ul; dim < direction.size(); ++dim) {
+          // Flag for the periodic wrap. Will occur in at least one direction.
           bool needsShift = false;
+          // The search domain has to be enlarged by the skin as the position of the particles is not certain.
           if (direction[dim] == -1) {
-            min[dim] = autoPas.getBoxMin()[dim] - autoPas.getVerletSkin();
-            max[dim] = autoPas.getBoxMin()[dim] + autoPas.getCutoff() + autoPas.getVerletSkin();
+            // just inside of boxMin
+            min[dim] = boxMin[dim] - autoPas.getVerletSkin();
+            max[dim] = boxMin[dim] + autoPas.getCutoff() + autoPas.getVerletSkin();
             needsShift = true;
           } else if (direction[dim] == 1) {
-            min[dim] = autoPas.getBoxMax()[dim] - autoPas.getCutoff() - autoPas.getVerletSkin();
-            max[dim] = autoPas.getBoxMax()[dim] + autoPas.getVerletSkin();
+            // just inside of boxMax
+            min[dim] = boxMax[dim] - autoPas.getCutoff() - autoPas.getVerletSkin();
+            max[dim] = boxMax[dim] + autoPas.getVerletSkin();
             needsShift = true;
-          } else {  // 0
-            min[dim] = autoPas.getBoxMin()[dim] - autoPas.getVerletSkin();
-            max[dim] = autoPas.getBoxMax()[dim] + autoPas.getVerletSkin();
+          } else {  // direction[dim] == 0
+            min[dim] = boxMin[dim] - autoPas.getVerletSkin();
+            max[dim] = boxMax[dim] + autoPas.getVerletSkin();
           }
           if (needsShift) {
-            shiftVec[dim] = -(autoPas.getBoxMax()[dim] - autoPas.getBoxMin()[dim]) * direction[dim];
+            // particles left of min (direction == -1) need a shift by +boxLength. For right of max the opposite.
+            shiftVec[dim] = -boxLength[dim] * direction[dim];
           } else {
             shiftVec[dim] = 0;
           }
         }
-        // here it is important to only iterate over the owned particles!
-        for (auto iter = autoPas.getRegionIterator(min, max, autopas::IteratorBehavior::ownedOnly); iter.isValid();
+        // Find non-halo particles in the designated region, create periodic copies of them and insert those as halos.
+        for (auto iter = autoPas.getRegionIterator(min, max, autopas::IteratorBehavior::owned); iter.isValid();
              ++iter) {
           auto particleCopy = *iter;
           particleCopy.addR(shiftVec);
@@ -131,42 +116,60 @@ std::vector<Particle> BoundaryConditions<Particle>::identifyAndSendHaloParticles
   return haloParticles;
 }
 
-template <typename Particle>
-size_t BoundaryConditions<Particle>::addEnteringParticles(autopas::AutoPas<Particle> &autoPas,
-                                                          std::vector<Particle> &enteringParticles) {
-  size_t numAdded = 0;
+/**
+ * Insertes the given entering particles into the AutoPas object.
+ * @tparam Particle
+ * @param autoPas
+ * @param enteringParticles
+ */
+template <class Particle>
+void addEnteringParticles(autopas::AutoPas<Particle> &autoPas, std::vector<Particle> &enteringParticles) {
   for (auto &p : enteringParticles) {
-    if (autopas::utils::inBox(p.getR(), autoPas.getBoxMin(), autoPas.getBoxMax())) {
-      autoPas.addParticle(p);
-      ++numAdded;
-    }
+    autoPas.addParticle(p);
   }
-  return numAdded;
 }
-template <typename Particle>
-void BoundaryConditions<Particle>::addHaloParticles(autopas::AutoPas<Particle> &autoPas,
-                                                    std::vector<Particle> &haloParticles) {
+
+/**
+ * Inserts the given halo particles into the AutoPas object.
+ * @tparam Particle
+ * @param autoPas
+ * @param haloParticles
+ */
+template <class Particle>
+void addHaloParticles(autopas::AutoPas<Particle> &autoPas, std::vector<Particle> &haloParticles) {
   for (auto &p : haloParticles) {
     autoPas.addOrUpdateHaloParticle(p);
   }
 }
 
-template <typename Particle>
-void BoundaryConditions<Particle>::applyPeriodic(autopas::AutoPas<Particle> &autoPas, bool forceUpdate) {
-  // 1. update Container; return value is vector of invalid == leaving particles!
-  auto [invalidParticles, updated] = autoPas.updateContainer(forceUpdate);
-  if (updated) {
-    // 2. leaving and entering particles
-    const auto &sendLeavingParticles = invalidParticles;
-    // 2b. get+add entering particles (addParticle)
-    std::vector<Particle> enteringParticles = convertToEnteringParticles(autoPas, sendLeavingParticles);
-    addEnteringParticles(autoPas, enteringParticles);
-  }
-  // 3. halo particles
-  // 3a. identify and send inner particles that are in the halo of other autopas instances or itself.
-  auto sendHaloParticles = identifyAndSendHaloParticles(autoPas);
-  // 3b. get halo particles
-  auto &recvHaloParticles = sendHaloParticles;
-  addHaloParticles(autoPas, recvHaloParticles);
-  // after this, pairwise force calculation
+}  // namespace
+
+/**
+ * Applies periodic boundary conditions to inner and halo particles.
+ *
+ * Inner particles that leave the domain are re-inserted on the opposing side.
+ * For inner particles that are near the edge of the domain, copies are placed in the halo on the opposing side.
+ *
+ * @tparam Particle
+ * @param autoPas
+ * @param forceUpdate If a container update should be forced or left to AutoPas.
+ */
+template <class Particle>
+void applyPeriodic(autopas::AutoPas<Particle> &autoPas, bool forceUpdate) {
+  // 1. update Container; return value is a vector of the particles leaving the domain box
+  // and a flag whether an update occured.
+
+  // auto [leavingParticles, updated] = autoPas.updateContainer(forceUpdate);
+
+  // if (updated) {
+  // 2. apply periodic wrap by shifting positions of leaving particles to positions of periodic images.
+  // wrapPositionsAroundBoundaries(autoPas, leavingParticles);
+  // 2b. re-insert shifted particles
+  // addEnteringParticles(autoPas, leavingParticles);
+  //}
+
+  // 3. identify inner particles for which a periodic copy in the opposing halo region is needed.
+  auto haloParticles = identifyNewHaloParticles(autoPas);
+  addHaloParticles(autoPas, haloParticles);
 }
+}  // namespace BoundaryConditions

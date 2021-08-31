@@ -6,12 +6,12 @@
 
 #pragma once
 
+#include <array>
 #include <mutex>
 #include <vector>
 
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/iterators/SingleCellIterator.h"
-#include "autopas/utils/CudaSoA.h"
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -59,7 +59,7 @@ class FullParticleCell : public ParticleCell<Particle> {
     return SingleCellIteratorWrapper<Particle, false>(new const_iterator_t(this));
   }
 
-  unsigned long numParticles() const override { return _particles.size(); }
+  [[nodiscard]] unsigned long numParticles() const override { return _particles.size(); }
 
   /**
    * Returns a reference to the element at position n in the cell.
@@ -94,7 +94,7 @@ class FullParticleCell : public ParticleCell<Particle> {
    */
   const Particle &at(size_t index) const { return _particles.at(index); }
 
-  bool isNotEmpty() const override { return numParticles() > 0; }
+  [[nodiscard]] bool isNotEmpty() const override { return numParticles() > 0; }
 
   void clear() override { _particles.clear(); }
 
@@ -118,7 +118,7 @@ class FullParticleCell : public ParticleCell<Particle> {
 
   void setCellLength(std::array<double, 3> &cellLength) override { _cellLength = cellLength; }
 
-  std::array<double, 3> getCellLength() const override { return _cellLength; }
+  [[nodiscard]] std::array<double, 3> getCellLength() const override { return _cellLength; }
 
   /**
    * Resizes the container so that it contains n elements.
@@ -151,11 +151,6 @@ class FullParticleCell : public ParticleCell<Particle> {
    * SoA buffer of this cell.
    */
   SoA<SoAArraysType> _particleSoABuffer;
-
-  /**
-   * Device particle SoABuffer.
-   */
-  CudaSoA<typename Particle::CudaDeviceArraysType> _particleSoABufferDevice;
 
   /**
    * Type of the internal iterator.

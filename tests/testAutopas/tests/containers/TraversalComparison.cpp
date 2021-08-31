@@ -48,7 +48,7 @@ void TraversalComparison::executeShift(ContainerPtrType containerPtr, double mag
     elem = randomShift(magnitude, generator);
   }
   size_t numIteratedParticles = 0;
-  for (auto iter = containerPtr->begin(autopas::IteratorBehavior::haloOwnedAndDummy); iter != containerPtr->end();
+  for (auto iter = containerPtr->begin(autopas::IteratorBehavior::ownedOrHaloOrDummy); iter != containerPtr->end();
        ++iter) {
     if (not iter->isDummy()) {
       iter->addR(shiftVectorByID[iter->getID()]);
@@ -147,7 +147,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   functor.endTraversal(newton3Option);
 
   std::vector<std::array<double, 3>> forces(numMolecules);
-  for (auto it = container->begin(autopas::IteratorBehavior::ownedOnly); it.isValid(); ++it) {
+  for (auto it = container->begin(autopas::IteratorBehavior::owned); it.isValid(); ++it) {
     EXPECT_TRUE(it->isOwned());
     forces.at(it->getID()) = it->getF();
   }
@@ -275,18 +275,10 @@ auto TraversalComparison::getTestParams() {
               for (double cellSizeFactor : {0.5, 1., 2.}) {
                 for (auto numHalo : {/*0ul,*/ 200ul}) {
                   for (bool slightMove : {true, false}) {
-                    for (bool globals : {true, false}) {
+                    for (bool globals : {true, /*false*/}) {
                       for (DeletionPosition particleDeletionPosition :
                            {DeletionPosition::never, /*DeletionPosition::beforeLists, DeletionPosition::afterLists,*/
                             DeletionPosition::beforeAndAfterLists}) {
-                        if (dataLayoutOption == autopas::DataLayoutOption::Value::cuda and
-                            traversalOption == autopas::TraversalOption::Value::lc_c01_cuda and (boxMax[0] < 5.) and
-                            (numParticles > 500)) {
-                          // LJFunctor for cuda doesn't support this, yet: see
-                          // https://github.com/AutoPas/AutoPas/issues/419
-                          /// @todo reenable
-                          continue;
-                        }
                         params.emplace_back(containerOption, traversalOption, dataLayoutOption, newton3Option,
                                             numParticles, numHalo, boxMax, cellSizeFactor, slightMove,
                                             particleDeletionPosition, globals);

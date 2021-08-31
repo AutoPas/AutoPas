@@ -63,15 +63,16 @@ class BayesianClusterSearch : public TuningStrategyInterface {
   /**
    * Constructor
    * @param allowedContainerOptions
+   * @param allowedCellSizeFactors
    * @param allowedTraversalOptions
    * @param allowedLoadEstimatorOptions
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
-   * @param allowedCellSizeFactors
-   * @param predAcqFunction acquisition function used for prediction while tuning.
-   * @param predNumLHSamples number of latin-hypercube-samples used to find a evidence with high predicted acquisition
-   * @param maxEvidence stop tuning after given number of evidence provided.
-   * @param seed seed of random number generator (should only be used for tests)
+   * @param maxEvidence Stop tuning after given number of evidence provided.
+   * @param predAcqFunction Acquisition function used for prediction while tuning.
+   * @param outputSuffix Suffix for output logger.
+   * @param predNumLHSamples Number of latin-hypercube-samples used to find a evidence with high predicted acquisition
+   * @param seed Seed of random number generator (should only be used for tests)
    */
   explicit BayesianClusterSearch(
       const std::set<ContainerOption> &allowedContainerOptions = ContainerOption::getAllOptions(),
@@ -81,7 +82,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
       const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
       const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(), size_t maxEvidence = 10,
       AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::upperConfidenceBound,
-      size_t predNumLHSamples = 50, unsigned long seed = std::random_device()())
+      const std::string &outputSuffix = "", size_t predNumLHSamples = 50, unsigned long seed = std::random_device()())
       : _containerOptionsSet(allowedContainerOptions),
         _dataLayoutOptions(allowedDataLayoutOptions.begin(), allowedDataLayoutOptions.end()),
         _newton3Options(allowedNewton3Options.begin(), allowedNewton3Options.end()),
@@ -92,7 +93,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
         _traversalTimes(),
         _rng(seed),
         _gaussianCluster({}, continuousDims, GaussianCluster::WeightFunction::evidenceMatchingScaledProbabilityGM,
-                         sigma, _rng),
+                         sigma, _rng, GaussianCluster::defaultVecToString, outputSuffix),
         _neighbourFun([this](const Eigen::VectorXi &target) -> std::vector<std::pair<Eigen::VectorXi, double>> {
           return _encoder.clusterNeighboursManhattan1Container(target);
         }),
@@ -313,7 +314,6 @@ bool BayesianClusterSearch::tune(bool currentInvalid) {
   if (_currentNumEvidence >= _maxEvidence) {
     // select best config of current tuning phase
     _currentConfig = _currentOptimalConfig;
-    AutoPasLog(debug, "Selected Configuration {}", _currentConfig.toString());
 
     return false;
   }

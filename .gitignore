@@ -11,6 +11,8 @@ build*/
 venv/
 *.timestamp
 *.synctex.gz
+.clangd/
+.cache/
 
 # benchmark output folder
 *testTuning_*/
@@ -20,3 +22,9 @@ venv/
 *.srctrlbm
 *.srctrldb
 *.srctrlprj
+
+# simulation output
+*.vtk
+*.csv
+*.out
+*.log

@@ -307,7 +307,7 @@ class SPHParticle : public autopas::Particle {
     auto id = this->getID();
     double id_dbl;
     memcpy(&id_dbl, &id, sizeof(double));
-    static_assert(sizeof(id) == sizeof(double), "sizes shoule be the same, otherwise the above will not work");
+    static_assert(sizeof(id) == sizeof(double), "sizes should be the same, otherwise the above will not work");
 
     stream.push_back(id_dbl);
     stream.push_back(_density);
@@ -347,7 +347,7 @@ class SPHParticle : public autopas::Particle {
     double id_dbl = stream[index++];
     unsigned long id;
     memcpy(&id, &id_dbl, sizeof(double));
-    static_assert(sizeof(id) == sizeof(double), "sizes shoule be the same, otherwise the above will not work");
+    static_assert(sizeof(id) == sizeof(double), "sizes should be the same, otherwise the above will not work");
 
     double density = stream[index++];
     double pressure = stream[index++];
@@ -408,15 +408,23 @@ class SPHParticle : public autopas::Particle {
                               double, double, double, double, double, double, double, OwnershipState>::Type;
 
   /**
+   * Non-const getter for the pointer of this object.
+   * @tparam attribute Attribute name.
+   * @return this.
+   */
+  template <AttributeNames attribute, std::enable_if_t<attribute == AttributeNames::ptr, bool> = true>
+  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
+    return this;
+  }
+
+  /**
    * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).
    * @tparam attribute Attribute name.
    * @return Value of the requested attribute.
    */
-  template <AttributeNames attribute>
-  constexpr typename std::tuple_element<static_cast<size_t>(attribute), SoAArraysType>::type::value_type get() {
-    if constexpr (attribute == AttributeNames::ptr) {
-      return this;
-    } else if constexpr (attribute == AttributeNames::mass) {
+  template <AttributeNames attribute, std::enable_if_t<attribute != AttributeNames::ptr, bool> = true>
+  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
+    if constexpr (attribute == AttributeNames::mass) {
       return getMass();
     } else if constexpr (attribute == AttributeNames::posX) {
       return getR()[0];
@@ -461,8 +469,7 @@ class SPHParticle : public autopas::Particle {
    * @param value New value of the requested attribute.
    */
   template <AttributeNames attribute>
-  constexpr void set(
-      typename std::tuple_element<static_cast<size_t>(attribute), SoAArraysType>::type::value_type value) {
+  constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
     if constexpr (attribute == AttributeNames::mass) {
       setMass(value);
     } else if constexpr (attribute == AttributeNames::posX) {

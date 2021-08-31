@@ -163,7 +163,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
     _aosNeighborLists.clear();
     // DON'T simply parallelize this loop!!! this needs modifications if you want to parallelize it!
     // We have to iterate also over dummy particles here to ensure a correct size of the arrays.
-    for (auto iter = this->begin(IteratorBehavior::haloOwnedAndDummy); iter.isValid(); ++iter, ++numParticles) {
+    for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++numParticles) {
       // create the verlet list entries for all particles
       _aosNeighborLists[&(*iter)];
     }
@@ -185,12 +185,12 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
 
     // Here we have to iterate over all particles, as particles might be later on marked for deletion, and we cannot
     // differentiate them from particles already marked for deletion.
-    for (auto iter = this->begin(IteratorBehavior::haloOwnedAndDummy); iter.isValid(); ++iter, ++index) {
+    for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++index) {
       // set the map
       _particlePtr2indexMap[&(*iter)] = index;
     }
     size_t accumulatedListSize = 0;
-    for (auto &[particlePtr, neighborPtrVector] : _aosNeighborLists) {
+    for (const auto &[particlePtr, neighborPtrVector] : _aosNeighborLists) {
       accumulatedListSize += neighborPtrVector.size();
       size_t i_id = _particlePtr2indexMap[particlePtr];
       // each soa neighbor list should be of the same size as for aos
@@ -219,7 +219,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
    * Mapping of every particle, represented by its pointer, to an index.
    * The index indexes all particles in the container.
    */
-  std::unordered_map<Particle *, size_t> _particlePtr2indexMap;
+  std::unordered_map<const Particle *, size_t> _particlePtr2indexMap;
 
   /**
    * verlet list for SoA:

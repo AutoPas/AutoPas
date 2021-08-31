@@ -56,7 +56,7 @@ class LCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, d
    * C08 traversals are always usable.
    * @return
    */
-  [[nodiscard]] bool isApplicable() const override { return not(dataLayout == DataLayoutOption::cuda); }
+  [[nodiscard]] bool isApplicable() const override { return true; }
 
  private:
   LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> _cellHandler;

@@ -14,7 +14,7 @@
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ArrayUtils.h"
-#include "autopas/utils/CudaSoAType.h"
+#include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/SoAStorage.h"
 #include "autopas/utils/SoAType.h"
 #include "autopas/utils/markParticleAsDeleted.h"
@@ -94,7 +94,7 @@ class ParticleBase {
    * get the force acting on the particle
    * @return force
    */
-  const std::array<double, 3> &getF() const { return _f; }
+  [[nodiscard]] const std::array<double, 3> &getF() const { return _f; }
 
   /**
    * Set the force acting on the particle
@@ -130,7 +130,7 @@ class ParticleBase {
    * Get the position of the particle
    * @return current position
    */
-  const std::array<double, 3> &getR() const { return _r; }
+  [[nodiscard]] const std::array<double, 3> &getR() const { return _r; }
 
   /**
    * Set the position of the particle
@@ -148,7 +148,7 @@ class ParticleBase {
    * Get the velocity of the particle
    * @return current velocity
    */
-  const std::array<double, 3> &getV() const { return _v; }
+  [[nodiscard]] const std::array<double, 3> &getV() const { return _v; }
 
   /**
    * Set the velocity of the particle
@@ -166,7 +166,7 @@ class ParticleBase {
    * Creates a string containing all data of the particle.
    * @return String representation.
    */
-  virtual std::string toString() const {
+  [[nodiscard]] virtual std::string toString() const {
     std::ostringstream text;
     // clang-format off
     text << "Particle"
@@ -187,20 +187,26 @@ class ParticleBase {
    * Defines whether the particle is owned by the current AutoPas object (aka (MPI-)process)
    * @return true if the particle is owned by the current AutoPas object, false otherwise
    */
-  bool isOwned() const { return _ownershipState == OwnershipState::owned; }
+  [[nodiscard]] bool isOwned() const { return _ownershipState == OwnershipState::owned; }
 
   /**
    * Defines whether the particle is a halo particle, i.e., not owned by the current AutoPas object (aka (MPI-)process)
    * @return true if the particle is not owned by the current AutoPas object, false otherwise.
    * @note when a
    */
-  bool isHalo() const { return _ownershipState == OwnershipState::halo; }
+  [[nodiscard]] bool isHalo() const { return _ownershipState == OwnershipState::halo; }
 
   /**
    * Returns whether the particle is a dummy particle.
    * @return true if the particle is a dummy.
    */
-  bool isDummy() const { return _ownershipState == OwnershipState::dummy; }
+  [[nodiscard]] bool isDummy() const { return _ownershipState == OwnershipState::dummy; }
+
+  /**
+   * Returns the particle's ownership state.
+   * @return the current OwnershipState
+   */
+  [[nodiscard]] OwnershipState getOwnershipState() const { return _ownershipState; }
 
   /**
    * Set the OwnershipState to the given value
@@ -232,21 +238,15 @@ class ParticleBase {
                                        floatType /*y*/, floatType /*z*/, floatType /*fx*/, floatType /*fy*/,
                                        floatType /*fz*/, OwnershipState /*ownershipState*/>::Type;
 
-#if defined(AUTOPAS_CUDA)
   /**
-   * The type for storage arrays for Cuda.
+   * Non-const getter for the pointer of this object.
+   * @tparam attribute Attribute name.
+   * @return this.
    */
-  using CudaDeviceArraysType =
-      typename autopas::utils::CudaSoAType<ParticleBase<floatType, idType> *, idType /*id*/, floatType /*x*/,
-                                           floatType /*y*/, floatType /*z*/, floatType /*fx*/, floatType /*fy*/,
-                                           floatType /*fz*/, OwnershipState /*ownershipState*/>::Type;
-#else
-  /**
-   * The type for storage arrays for Cuda.
-   * empty if compiled without Cuda Support.
-   */
-  using CudaDeviceArraysType = typename autopas::utils::CudaSoAType<>::Type;
-#endif
+  template <AttributeNames attribute, std::enable_if_t<attribute == AttributeNames::ptr, bool> = true>
+  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
+    return this;
+  }
 
   /**
    * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).
@@ -254,11 +254,9 @@ class ParticleBase {
    * @return Value of the requested attribute.
    * @note The value of owned is return as floating point number (true = 1.0, false = 0.0).
    */
-  template <AttributeNames attribute>
-  constexpr typename std::tuple_element<static_cast<size_t>(attribute), SoAArraysType>::type::value_type get() {
-    if constexpr (attribute == AttributeNames::ptr) {
-      return this;
-    } else if constexpr (attribute == AttributeNames::id) {
+  template <AttributeNames attribute, std::enable_if_t<attribute != AttributeNames::ptr, bool> = true>
+  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
+    if constexpr (attribute == AttributeNames::id) {
       return getID();
     } else if constexpr (attribute == AttributeNames::posX) {
       return getR()[0];
@@ -286,8 +284,7 @@ class ParticleBase {
    * @note The value of owned is extracted from a floating point number (true = 1.0, false = 0.0).
    */
   template <AttributeNames attribute>
-  constexpr void set(
-      typename std::tuple_element<static_cast<size_t>(attribute), SoAArraysType>::type::value_type value) {
+  constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
     if constexpr (attribute == AttributeNames::id) {
       setID(value);
     } else if constexpr (attribute == AttributeNames::posX) {

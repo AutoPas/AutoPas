@@ -17,7 +17,7 @@ namespace autopas {
  * Molecule class for the LJFunctor.
  */
 template <typename floatType = double>
-class MoleculeLJ : public Particle {
+class MoleculeLJ final : public Particle {
  public:
   MoleculeLJ() = default;
 
@@ -32,7 +32,7 @@ class MoleculeLJ : public Particle {
                       unsigned long typeId = 0)
       : Particle(pos, v, moleculeId), _typeId(typeId) {}
 
-  ~MoleculeLJ() override = default;
+  ~MoleculeLJ() final = default;
 
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
@@ -51,33 +51,24 @@ class MoleculeLJ : public Particle {
                                        floatType /*z*/, floatType /*fx*/, floatType /*fy*/, floatType /*fz*/,
                                        size_t /*typeid*/, OwnershipState /*ownershipState*/>::Type;
 
-#if defined(AUTOPAS_CUDA)
   /**
-   * The type for storage arrays for Cuda.
+   * Non-const getter for the pointer of this object.
+   * @tparam attribute Attribute name.
+   * @return this.
    */
-  using CudaDeviceArraysType =
-      typename autopas::utils::CudaSoAType<MoleculeLJ<floatType> *, size_t /*id*/, floatType /*x*/, floatType /*y*/,
-                                           floatType /*z*/, floatType /*fx*/, floatType /*fy*/, floatType /*fz*/,
-                                           size_t /*typeid*/, OwnershipState /*ownershipState*/>::Type;
-#else
-  /**
-   * The type for storage arrays for Cuda.
-   * empty if compiled without Cuda Support.
-   */
-  using CudaDeviceArraysType = typename autopas::utils::CudaSoAType<>::Type;
-#endif
-
+  template <AttributeNames attribute, std::enable_if_t<attribute == AttributeNames::ptr, bool> = true>
+  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
+    return this;
+  }
   /**
    * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).
    * @tparam attribute Attribute name.
    * @return Value of the requested attribute.
    * @note The value of owned is return as floating point number (true = 1.0, false = 0.0).
    */
-  template <AttributeNames attribute>
-  constexpr typename std::tuple_element<static_cast<size_t>(attribute), SoAArraysType>::type::value_type get() {
-    if constexpr (attribute == AttributeNames::ptr) {
-      return this;
-    } else if constexpr (attribute == AttributeNames::id) {
+  template <AttributeNames attribute, std::enable_if_t<attribute != AttributeNames::ptr, bool> = true>
+  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
+    if constexpr (attribute == AttributeNames::id) {
       return getID();
     } else if constexpr (attribute == AttributeNames::posX) {
       return getR()[0];
@@ -107,8 +98,7 @@ class MoleculeLJ : public Particle {
    * @note The value of owned is extracted from a floating point number (true = 1.0, false = 0.0).
    */
   template <AttributeNames attribute>
-  constexpr void set(
-      typename std::tuple_element<static_cast<size_t>(attribute), SoAArraysType>::type::value_type value) {
+  constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
     if constexpr (attribute == AttributeNames::id) {
       setID(value);
     } else if constexpr (attribute == AttributeNames::posX) {
@@ -136,7 +126,7 @@ class MoleculeLJ : public Particle {
    * Get the old force.
    * @return
    */
-  [[nodiscard]] std::array<double, 3> getOldf() const { return _oldF; }
+  [[nodiscard]] std::array<double, 3> getOldF() const { return _oldF; }
 
   /**
    * Set old force.

@@ -175,9 +175,12 @@ for(auto iter = autoPas.getRegionIterator(lowCorner, highCorner); iter != autoPa
 Both `begin()` and `getRegionIterator()` can also take the additional parameter `IteratorBehavior`,
 which indicates over which particles the iteration should be performed. See [autopas::IteratorBehavior
 ](https://autopas.github.io/doxygen_documentation/git-master/namespaceautopas.html#a520fefd51e4555074cd16e7c3fd19c42) for possible options and details.
-The default parameter is `haloAndOwned`, which is also used for range-based for loops.
+The default parameter is `ownedOrHalo`, which is also used for range-based for loops.
 
 Analogously to `begin()`, `cbegin()` is also defined, which guarantees to return a `const_iterator`.
+
+Iterators are not guaranteed to be valid after particle insertion. 
+However, particle deletion while iterating is supported via `autoPas.deleteParticle(iterator)`.
 
 ### Simulation Loop
 One simulation loop should always consist of the following phases:
@@ -243,9 +246,13 @@ There exist some things you have to be careful about when using multiple functor
 ## Developing AutoPas
 Please look at our [contribution guidelines](https://github.com/AutoPas/AutoPas/blob/master/.github/CONTRIBUTING.md).
 
+For profiling the compile time, the cmake option `AUTOPAS_COMPILE_TIME_PROFILING` can be turned on. This enables gcc's -`ftime-report` and clang's `-ftime-trace`. 
+It is recommended to use clang, as its output is more detailed. `-ftime-trace` generates a .json file for each compilation unit next to the generated object file (inside one of the CMakeFiles directories). Chrome has a built-in tool for viewing these files in a flame graph. It can be accessed through the URL `chrome://tracing`.
+
 ## Acknowledgements
 This work was financially supported by:
 * the Federal Ministry of Education and Research, Germany, project “Task-based load balancing and auto-tuning in particle simulations” (TaLPas) 8 , grant numbers 01IH16008A and 01IH16008B.
 
 ## Papers to cite
-* F. A. Gratl, S. Seckler, N. Tchipev, H.-J. Bungartz and P. Neumann: [AutoPas: Auto-Tuning for Particle Simulations](https://ieeexplore.ieee.org/document/8778280) [BibTeX](https://mediatum.ub.tum.de/services/export/node/1535848/?format=template_test&mask=bibtex&lang=de&template=$$[defaultexport]$$&mimetype=text/plain) [MediaTum](https://mediatum.ub.tum.de/1535848), In 2019 IEEE International Parallel and Distributed Processing Symposium Workshops (IPDPSW), Rio de Janeiro, May 2019.
+* F. A. Gratl, S. Seckler, N. Tchipev, H.-J. Bungartz and P. Neumann: [AutoPas: Auto-Tuning for Particle Simulations](https://ieeexplore.ieee.org/document/8778280), In 2019 IEEE International Parallel and Distributed Processing Symposium Workshops (IPDPSW), Rio de Janeiro, May 2019. ([BibTeX](https://mediatum.ub.tum.de/export/1535848/bibtex), [MediaTUM](https://mediatum.ub.tum.de/1535848))
+* S. Seckler, F. Gratl, M. Heinen, J. Vrabec, H.-J. Bungartz, P. Neumann: [AutoPas in ls1 mardyn: Massively parallel particle simulations with node-level auto-tuning](https://www.sciencedirect.com/science/article/abs/pii/S1877750320305901), In Journal of Computational Science, Volume 50, 2021. ([BibTeX](https://mediatum.ub.tum.de/export/1595680/bibtex), [MediaTUM](https://mediatum.ub.tum.de/1595680))

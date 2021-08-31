@@ -1,5 +1,5 @@
 /**
- * @file TestsAllContainers.cpp
+ * @file AllContainersTests.cpp
  * @author humig
  * @date 08.07.2019
  */
@@ -56,9 +56,12 @@ TEST_P(AllContainersTests, testDeleteAllParticles) {
 TEST_P(AllContainersTests, testParticleAdding) {
   auto container = getInitializedContainer();
   int id = 1;
-  for (double x : {-1.5, -.5, 0., 5., 9.999, 10., 10.5, 11.5}) {
-    for (double y : {-1.5, -.5, 0., 5., 9.999, 10., 10.5, 11.5}) {
-      for (double z : {-1.5, -.5, 0., 5., 9.999, 10., 10.5, 11.5}) {
+  for (double x : {boxMin[0] - 1.5, boxMin[0] - .5, boxMin[0], boxMin[0] + 5., boxMax[0] - 0.001, boxMax[0],
+                   boxMax[0] + .5, boxMax[0] + 1.5}) {
+    for (double y : {boxMin[1] - 1.5, boxMin[1] - .5, boxMin[1], boxMin[1] + 5., boxMax[1] - 0.001, boxMax[1],
+                     boxMax[1] + .5, boxMax[1] + 1.5}) {
+      for (double z : {boxMin[2] - 1.5, boxMin[2] - .5, boxMin[2], boxMin[2] + 5., boxMax[2] - 0.001, boxMax[2],
+                       boxMax[2] + .5, boxMax[2] + 1.5}) {
         autopas::Particle p({x, y, z}, {0., 0., 0.}, id++);
         if (x == -1.5 or y == -1.5 or z == -1.5 or x == 11.5 or y == 11.5 or z == 11.5) {
           EXPECT_ANY_THROW(container->addParticle(p));     // outside, therefore not ok!
@@ -79,11 +82,57 @@ TEST_P(AllContainersTests, testParticleAdding) {
 }
 
 /**
+ * Add particles in the halo in every direction. Then delete them via deleteHaloParticles() and check that they are
+ * gone.
+ */
+TEST_P(AllContainersTests, testDeleteHaloParticles) {
+  using autopas::utils::ArrayMath::add;
+  using autopas::utils::ArrayMath::mulScalar;
+  using autopas::utils::ArrayMath::sub;
+
+  auto container = getInitializedContainer();
+
+  std::array<double, 3> zeros{0, 0, 0};
+
+  // counter and id for particles to be added
+  size_t numParticles = 0;
+
+  // calculate some distances needed later
+  auto domainSize = sub(container->getBoxMax(), container->getBoxMin());
+  auto domainSizeHalf = mulScalar(domainSize, 0.5);
+  auto domainCenter = add(container->getBoxMin(), domainSizeHalf);
+  auto interactionLengthHalf = container->getInteractionLength() * 0.5;
+  auto distCenterToMidHalo = add(domainSizeHalf, {interactionLengthHalf, interactionLengthHalf, interactionLengthHalf});
+
+  // setup: add some halo particles on every side and corner
+  for (int x : {-1, 0, 1}) {
+    for (int y : {-1, 0, 1}) {
+      for (int z : {-1, 0, 1}) {
+        if (x == 0 and y == 0 and z == 0) {
+          continue;
+        }
+        auto pos =
+            add(domainCenter, {distCenterToMidHalo[0] * x, distCenterToMidHalo[1] * y, distCenterToMidHalo[2] * z});
+        Particle p{pos, zeros, numParticles++};
+        container->addHaloParticle(p);
+      }
+    }
+  }
+  // sanity checks
+  ASSERT_GT(numParticles, 0);
+  ASSERT_EQ(container->getNumParticles(), numParticles);
+
+  // actual test:
+  container->deleteHaloParticles();
+  ASSERT_EQ(container->getNumParticles(), 0);
+}
+
+/**
  * Checks if updateContainer() deletes particles in halo.
  */
 TEST_P(AllContainersTests, testUpdateContainerHalo) {
   auto container = getInitializedContainer();
-  autopas::Particle p({-0.5, -0.5, -0.5}, {0, 0, 0}, 42);
+  autopas::Particle p({boxMin[0] - 0.5, boxMin[1] - 0.5, boxMin[2] - 0.5}, {0, 0, 0}, 42);
   container->addHaloParticle(p);
 
   EXPECT_EQ(container->getNumParticles(), 1);

@@ -50,10 +50,6 @@ class CollectParticlePairsFunctor : public autopas::Functor<autopas::Particle, C
   bool allowsNewton3() override { return true; }
   bool allowsNonNewton3() override { return true; }
 
-  bool isAppropriateClusterSize(unsigned int clusterSize, autopas::DataLayoutOption::Value dataLayout) const override {
-    return true;
-  }
-
   auto getParticlePairs() { return _pairs; }
 };
 
@@ -86,10 +82,6 @@ class CollectParticlesPerThreadFunctor : public autopas::Functor<autopas::Partic
 
   bool allowsNewton3() override { return true; }
   bool allowsNonNewton3() override { return true; }
-
-  bool isAppropriateClusterSize(unsigned int clusterSize, autopas::DataLayoutOption::Value dataLayout) const override {
-    return dataLayout == autopas::DataLayoutOption::aos;  // this functor supports clusters only for aos!
-  }
 
   void nextColor(int newColor) { _currentColor = newColor; }
 };

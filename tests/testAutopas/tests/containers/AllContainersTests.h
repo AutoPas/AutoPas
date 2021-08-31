@@ -1,5 +1,5 @@
 /**
- * @file TestsAllContainers.h
+ * @file AllContainersTests.h
  * @author humig
  * @date 08.07.2019
  */
@@ -22,11 +22,12 @@ class AllContainersTests : public AutoPasTestBase, public ::testing::WithParamIn
   }
 
  protected:
+  std::array<double, 3> boxMin = {0, 0, 0};
+  std::array<double, 3> boxMax = {10, 10, 10};
+
   template <class ParticleType = autopas::Particle>
   auto getInitializedContainer() {
     auto containerOptionToTest = GetParam();
-    std::array<double, 3> boxMin = {0, 0, 0};
-    std::array<double, 3> boxMax = {10, 10, 10};
     double cutoff = 1;
     double skin = 0.2;
     double cellSizeFactor = 1;

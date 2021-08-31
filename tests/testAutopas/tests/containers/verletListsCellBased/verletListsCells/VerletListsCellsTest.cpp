@@ -31,8 +31,7 @@ void applyFunctor(MockFunctor<Particle> &functor, const double cellSizefactor,
   verletLists.addParticle(p2);
 
   autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true,
-                           autopas::VLCAllCellsNeighborList<Particle>,
-                           autopas::VerletListsCellsHelpers<Particle>::VLCTypeOfList::vlc>
+                           autopas::VLCAllCellsNeighborList<Particle>, autopas::ContainerOption::verletListsCells>
       traversal(verletLists.getCellsPerDimension(), &functor, verletLists.getInteractionLength(),
                 verletLists.getCellLength());
 
@@ -40,7 +39,9 @@ void applyFunctor(MockFunctor<Particle> &functor, const double cellSizefactor,
   verletLists.iteratePairwise(&traversal);
 
   std::vector<Particle *> list;
-  for (auto iter = verletLists.begin(); iter.isValid(); ++iter) list.push_back(&*iter);
+  for (auto iter = verletLists.begin(autopas::IteratorBehavior::ownedOrHalo); iter.isValid(); ++iter) {
+    list.push_back(&*iter);
+  }
 
   EXPECT_EQ(list.size(), 2);
   size_t partners = 0;
@@ -81,13 +82,11 @@ void soaTest(const double cellSizeFactor,
   ljFunctor.setParticleProperties(1., 1.);
 
   autopas::VLCC18Traversal<FMCell, autopas::LJFunctor<Molecule>, autopas::DataLayoutOption::aos, true,
-                           autopas::VLCCellPairNeighborList<Molecule>,
-                           autopas::VerletListsCellsHelpers<Molecule>::VLCTypeOfList::vlc>
+                           autopas::VLCCellPairNeighborList<Molecule>, autopas::ContainerOption::verletListsCells>
       verletTraversal1(verletLists1.getCellsPerDimension(), &ljFunctor, verletLists1.getInteractionLength(),
                        verletLists1.getCellLength());
   autopas::VLCC18Traversal<FMCell, autopas::LJFunctor<Molecule>, autopas::DataLayoutOption::soa, true,
-                           autopas::VLCCellPairNeighborList<Molecule>,
-                           autopas::VerletListsCellsHelpers<Molecule>::VLCTypeOfList::vlc>
+                           autopas::VLCCellPairNeighborList<Molecule>, autopas::ContainerOption::verletListsCells>
       soaTraversal(verletLists2.getCellsPerDimension(), &ljFunctor, verletLists2.getInteractionLength(),
                    verletLists2.getCellLength());
 

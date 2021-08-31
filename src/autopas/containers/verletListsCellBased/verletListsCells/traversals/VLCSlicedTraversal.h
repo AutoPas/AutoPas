@@ -39,13 +39,10 @@ namespace autopas {
  */
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          class NeighborList,
-          typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::VLCTypeOfList::Value typeOfList>
+          class NeighborList, ContainerOption::Value typeOfList>
 class VLCSlicedTraversal
     : public SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false>,
-      public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList>
-{
-  using VLCTypeOfList = typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::VLCTypeOfList;
+      public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
 
  public:
   /**
@@ -70,15 +67,17 @@ class VLCSlicedTraversal
 
   [[nodiscard]] TraversalOption getTraversalType() const override {
     switch (typeOfList) {
-      case (VLCTypeOfList::vlc):
+      case (ContainerOption::verletListsCells):
         return TraversalOption::vlc_sliced;
-      case (VLCTypeOfList::vlp):
+      case (ContainerOption::pairwiseVerletLists):
         return TraversalOption::vlp_sliced;
     }
+    // should never be reached.
+    return TraversalOption();
   }
 
   [[nodiscard]] bool isApplicable() const override {
-    return (dataLayout == DataLayoutOption::aos || dataLayout == DataLayoutOption::soa);
+    return (dataLayout == DataLayoutOption::aos or dataLayout == DataLayoutOption::soa);
   }
 
  private:
@@ -86,12 +85,11 @@ class VLCSlicedTraversal
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          class NeighborList,
-          typename VerletListsCellsHelpers<typename ParticleCell::ParticleType>::VLCTypeOfList::Value typeOfList>
+          class NeighborList, ContainerOption::Value typeOfList>
 inline void VLCSlicedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, NeighborList,
                                typeOfList>::traverseParticlePairs() {
   if (dataLayout == DataLayoutOption::soa) {
-    this->setupLoadSoA(_functor, *(this->_verletList));
+    this->loadSoA(_functor, *(this->_verletList));
   }
 
   this->slicedTraversal([&](unsigned long x, unsigned long y, unsigned long z) {
@@ -100,7 +98,7 @@ inline void VLCSlicedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNew
   });
 
   if (dataLayout == DataLayoutOption::soa) {
-    this->setupExtractSoA(_functor, *(this->_verletList));
+    this->extractSoA(_functor, *(this->_verletList));
   }
 }
 
