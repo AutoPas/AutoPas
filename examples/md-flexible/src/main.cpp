@@ -24,7 +24,8 @@ int main(int argc, char **argv) {
   MDFlexConfig configuration(argc, argv);
 
   RegularGridDecomposition domainDecomposition(configuration.boxMin.value, configuration.boxMax.value,
-                                               configuration.cutoff.value, configuration.verletSkinRadius.value);
+                                               configuration.subdivideDimension.value, configuration.cutoff.value,
+                                               configuration.verletSkinRadius.value);
 
   // print start configuration and parallelization info
   if (domainDecomposition.getDomainIndex() == 0) {
