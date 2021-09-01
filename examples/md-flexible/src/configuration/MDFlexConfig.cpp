@@ -50,23 +50,24 @@ void findWord(std::ifstream &file, const std::string &word) {
 
 MDFlexConfig::MDFlexConfig(int argc, char **argv) {
   auto parserExitCode = MDFlexParser::parseInput(argc, argv, *this);
-  if (parserExitCode != MDFlexParser::exitCodes::success) {
-    if (parserExitCode == MDFlexParser::exitCodes::parsingError) {
-      std::cout << "Error when parsing configuration file." << std::endl;
-      exit(EXIT_FAILURE);
-    }
-    exit(EXIT_SUCCESS);
-  }
 
-  calcSimulationBox();
+  // if (parserExitCode != MDFlexParser::exitCodes::success) {
+  //  if (parserExitCode == MDFlexParser::exitCodes::parsingError) {
+  //    std::cout << "Error when parsing configuration file." << std::endl;
+  //    exit(EXIT_FAILURE);
+  //  }
+  //  exit(EXIT_SUCCESS);
+  //}
 
-  if (tuningPhases.value > 0) {
-    iterations.value = 0ul;
-  }
+  // calcSimulationBox();
 
-  initializeParticlePropertiesLibrary();
+  // if (tuningPhases.value > 0) {
+  //  iterations.value = 0ul;
+  //}
 
-  initializeObjects();
+  // initializeParticlePropertiesLibrary();
+
+  // initializeObjects();
 }
 
 std::string MDFlexConfig::to_string() const {
