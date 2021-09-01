@@ -300,9 +300,10 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Categorizes the provided particles as particles for the left or the right neighbour and adds them to the respective
    * output vector. Particle positions will be wrapped around the global domain boundary if necessary.
    * @param particles: The particles which need to be categorized.
+   * @param direction: The index of the dimension along which the left and right neighbour lie.
    * @param leftNeighbourParticles: Contains the particles for the left neighbour after function execution.
    * @param rightNeighbourParticles: Contains the particles for the right neighbour after function execution.
-   * @param uncagtegorizedParticles: Contains particles which could neither be assigned to the left nor the right
+   * @param uncategorizedParticles: Contains particles which could neither be assigned to the left nor the right
    * neighbour.
    */
   void categorizeParticlesIntoLeftAndRightNeighbour(const std::vector<ParticleType> &particles, const size_t &direction,
