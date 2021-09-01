@@ -1,5 +1,5 @@
 /**
- * @file TestDomainTools.h
+ * @file DomainToolsTest.h
  * @author J. Körner
  * @date 27/05/21
  */
@@ -12,10 +12,10 @@
 /**
  * Test class for the DomainTools class.
  */
-class TestDomainTools : public AutoPasTestBase {
+class DomainToolsTest : public AutoPasTestBase {
  public:
   /**
    * Constructor.
    */
-  TestDomainTools() = default;
+  DomainToolsTest() = default;
 };

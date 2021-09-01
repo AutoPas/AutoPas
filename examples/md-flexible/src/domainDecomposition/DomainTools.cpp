@@ -23,7 +23,8 @@ bool isInsideDomain(const std::array<double, 3> &coordinates, const std::array<d
   return isInsideLocalDomain;
 }
 
-void generateDecomposition(unsigned int subdomainCount, std::array<int, 3> &decomposition) {
+void generateDecomposition(unsigned int subdomainCount, const std::array<bool, 3> &subdivideDimension,
+                           std::array<int, 3> &decomposition) {
   std::list<int> primeFactors;
   // Add 2 to prime factorization as many times as subdomainCount is dividable by 2.
   while (subdomainCount % 2 == 0) {
@@ -41,9 +42,15 @@ void generateDecomposition(unsigned int subdomainCount, std::array<int, 3> &deco
     }
   }
 
+  // Determine number of dimensions which have to be subdivided.
+  size_t numberOfDimensionsToSubdivide = 0;
+  for (auto element : subdivideDimension) {
+    numberOfDimensionsToSubdivide += element;
+  }
+
   // Reduces the primeFactors to 3 elements, one for each dimension of the domain.
   // It multiplies the smallest two factors and stores it in the second factor.
-  while (primeFactors.size() > 3) {
+  while (primeFactors.size() > numberOfDimensionsToSubdivide) {
     primeFactors.sort();
     auto firstElement = primeFactors.front();
     primeFactors.pop_front();
@@ -52,12 +59,12 @@ void generateDecomposition(unsigned int subdomainCount, std::array<int, 3> &deco
 
   // If the prime factorization ends up having less factors than dimensions in the domain,
   // fill those dimensions with 1.
-  for (auto &dimensionSize : decomposition) {
-    if (not primeFactors.empty()) {
-      dimensionSize = primeFactors.front();
+  for (int i = 0; i < 3; ++i) {
+    if (not primeFactors.empty() and subdivideDimension[i]) {
+      decomposition[i] = primeFactors.front();
       primeFactors.pop_front();
     } else {
-      dimensionSize = 1;
+      decomposition[i] = 1;
     }
   }
 }

@@ -23,14 +23,6 @@ bool isInsideDomain(const std::array<double, 3> &coordinates, const std::array<d
                     const std::array<double, 3> &boxMax);
 
 /**
- * Generates a decomposition with a specific number of subdomains.
- * This function uses prime factorization to determine the number of subdomains in each dimension.
- * @param subdomainCount The number of subdomains in the resulting decomposition.
- * @param decomposition Array containing the number of subdomains per dimension.
- */
-void generateDecomposition(unsigned int subdomainCount, std::array<int, 3> &decomposition);
-
-/**
  * Converts a domain id to the domain index, i.e. rank of the local processor.
  * @param domainId: the domain id to be converted to an index.
  * @param decomposition: The global domain's decomposition.
@@ -69,4 +61,16 @@ int getAccumulatedTail(const size_t index, const std::array<int, 3> decompositio
  * @return the extent of the subdomain with index subdomainIndex.
  */
 std::array<int, 6> getExtentOfSubdomain(const int subdomainIndex, const std::array<int, 3> decomposition);
+
+/**
+ * Generates a decomposition with a specific number of subdomains.
+ * This function uses prime factorization to determine the number of subdomains in each dimension.
+ * Subdivision of a dimension can be prevented using the subdivideDimension argument.
+ * By preventing subdivision in a dimension one can achieve different grid layouts (e. g. collumn layout)
+ * @param subdomainCount: The number of subdomains in the resulting decomposition.
+ * @param subdivideDimension: Decides if a dimension will be subdivided.
+ * @param decomposition: Array containing the number of subdomains per dimension.
+ */
+void generateDecomposition(unsigned int subdomainCount, const std::array<bool, 3> &subdivideDimension,
+                           std::array<int, 3> &decomposition);
 }  // namespace DomainTools

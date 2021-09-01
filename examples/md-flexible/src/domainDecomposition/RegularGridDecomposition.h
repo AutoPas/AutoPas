@@ -23,11 +23,13 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Constructor.
    * @param globalBoxMin: The minimum coordinates of the global domain.
    * @param globalBoxMax: The maximum coordinates of the global domain.
+   * @param subdivideDimension: Decides if a dimension will be subdivided.
    * @param cutoffWidth: The cutoff width for halo particles.
    * @param skinWidth: The skin width of an autopas container domain.
    */
   RegularGridDecomposition(const std::array<double, 3> &globalBoxMin, const std::array<double, 3> &globalBoxMax,
-                           const double &cutoffWidth, const double &skinWidth);
+                           const std::array<bool, 3> &subdivideDimension, const double &cutoffWidth,
+                           const double &skinWidth);
 
   /**
    * Destructor.
