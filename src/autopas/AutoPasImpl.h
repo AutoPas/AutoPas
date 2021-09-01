@@ -68,7 +68,7 @@ void AutoPas<Particle>::init() {
     _externalMPICommunicator = true;
   }
   _autoTuner = std::make_unique<autopas::AutoTuner<Particle>>(
-      _boxMin, _boxMax, _cutoff, _verletSkin, _verletClusterSize,
+      _boxMin, _boxMax, _cutoff, _verletSkin, _verletClusterSize, _treeSplitThreshold,
       std::move(TuningStrategyFactory::generateTuningStrategy(
           _tuningStrategyOption, _allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
           _allowedLoadEstimators, _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _relativeOptimumRange,

@@ -20,7 +20,11 @@ class ContainerSelectorInfo {
    * Default Constructor.
    */
   ContainerSelectorInfo()
-      : cellSizeFactor(1.), verletSkin(0.), verletClusterSize(64), loadEstimator(autopas::LoadEstimatorOption::none) {}
+      : cellSizeFactor(1.),
+        verletSkin(0.),
+        verletClusterSize(64),
+        treeSplitThreshold(16),
+        loadEstimator(autopas::LoadEstimatorOption::none) {}
 
   /**
    * Constructor.
@@ -28,14 +32,16 @@ class ContainerSelectorInfo {
    * VerletListsCells).
    * @param verletSkin Length added to the cutoff for the verlet lists' skin.
    * @param verletClusterSize Size of verlet Clusters
+   * @param treeSplitThreshold octree splitting threshold
    * @param loadEstimator load estimation algorithm for balanced traversals.
    */
   explicit ContainerSelectorInfo(double cellSizeFactor, double verletSkin, unsigned int verletClusterSize,
-                                 autopas::LoadEstimatorOption loadEstimator)
+                                 unsigned int treeSplitThreshold, autopas::LoadEstimatorOption loadEstimator)
       : cellSizeFactor(cellSizeFactor),
         verletSkin(verletSkin),
         verletClusterSize(verletClusterSize),
-        loadEstimator(loadEstimator) {}
+        loadEstimator(loadEstimator),
+        treeSplitThreshold(treeSplitThreshold) {}
 
   /**
    * Equality between ContainerSelectorInfo
@@ -44,7 +50,8 @@ class ContainerSelectorInfo {
    */
   bool operator==(const ContainerSelectorInfo &other) const {
     return cellSizeFactor == other.cellSizeFactor and verletSkin == other.verletSkin and
-           verletClusterSize == other.verletClusterSize and loadEstimator == other.loadEstimator;
+           verletClusterSize == other.verletClusterSize and loadEstimator == other.loadEstimator and
+           treeSplitThreshold == other.treeSplitThreshold;
   }
 
   /**
@@ -63,8 +70,9 @@ class ContainerSelectorInfo {
    * @return
    */
   bool operator<(const ContainerSelectorInfo &other) {
-    return std::tie(cellSizeFactor, verletSkin, verletClusterSize, loadEstimator) <
-           std::tie(other.cellSizeFactor, other.verletSkin, other.verletClusterSize, other.loadEstimator);
+    return std::tie(cellSizeFactor, verletSkin, verletClusterSize, loadEstimator, treeSplitThreshold) <
+           std::tie(other.cellSizeFactor, other.verletSkin, other.verletClusterSize, other.loadEstimator,
+                    other.treeSplitThreshold);
   }
 
   /**
@@ -80,6 +88,11 @@ class ContainerSelectorInfo {
    * Size of Verlet Clusters
    */
   unsigned int verletClusterSize;
+
+  /**
+   * Maximum number of particles in one octree leaf
+   */
+  unsigned int treeSplitThreshold;
 
   /**
    * Load estimator for balanced sliced traversals.

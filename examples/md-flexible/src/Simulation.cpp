@@ -85,6 +85,7 @@ void Simulation::initialize(const MDFlexConfig &mdFlexConfig, autopas::AutoPas<P
   autopas.setVerletClusterSize(_config->verletClusterSize.value);
   autopas.setVerletRebuildFrequency(_config->verletRebuildFrequency.value);
   autopas.setVerletSkin(_config->verletSkinRadius.value);
+  autopas.setTreeSplitThreshold(_config->treeSplitThreshold.value);
   autopas.setAcquisitionFunction(_config->acquisitionFunctionOption.value);
   autopas.setOutputSuffix(getMPISuffix());
   autopas::Logger::get()->set_level(_config->logLevel.value);

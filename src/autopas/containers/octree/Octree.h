@@ -62,13 +62,12 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    * @param cutoff The cutoff radius
    * @param skin The skin radius
    * @param cellSizeFactor The cell size factor
+   * @param treeSplitThreshold Maximum number of particles inside one octree leaf
    */
   Octree(std::array<double, 3> boxMin, std::array<double, 3> boxMax, const double cutoff, const double skin,
-         const double cellSizeFactor)
+         const double cellSizeFactor, int unsigned treeSplitThreshold)
       : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skin) {
-    // @todo Obtain this from a configuration, reported in https://github.com/AutoPas/AutoPas/issues/624
-    int unsigned treeSplitThreshold = 16;
-
+    // @todo Mark https://github.com/AutoPas/AutoPas/issues/624 solved
     double interactionLength = this->getInteractionLength();
 
     // Create the octree for the owned particles

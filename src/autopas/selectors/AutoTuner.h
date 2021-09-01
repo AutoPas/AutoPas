@@ -53,6 +53,7 @@ class AutoTuner {
    * @param cutoff Cutoff radius to be used in this container.
    * @param verletSkin Length added to the cutoff for the Verlet lists' skin.
    * @param verletClusterSize Number of particles in a cluster to use in verlet list.
+   * @param treeSplitThreshold Maximum number of particles in an octree leaf node.
    * @param tuningStrategy Object implementing the modelling and exploration of a search space.
    * @param selectorStrategy Strategy for the configuration selection.
    * @param tuningInterval Number of time steps after which the auto-tuner shall reevaluate all selections.
@@ -60,9 +61,9 @@ class AutoTuner {
    * @param outputSuffix Suffix for all output files produced by this class.
    */
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
-            unsigned int verletClusterSize, std::unique_ptr<TuningStrategyInterface> tuningStrategy,
-            SelectorStrategyOption selectorStrategy, unsigned int tuningInterval, unsigned int maxSamples,
-            const std::string &outputSuffix = "")
+            unsigned int verletClusterSize, unsigned int treeSplitThreshold,
+            std::unique_ptr<TuningStrategyInterface> tuningStrategy, SelectorStrategyOption selectorStrategy,
+            unsigned int tuningInterval, unsigned int maxSamples, const std::string &outputSuffix = "")
       : _selectorStrategy(selectorStrategy),
         _tuningStrategy(std::move(tuningStrategy)),
         _tuningInterval(tuningInterval),
@@ -70,6 +71,7 @@ class AutoTuner {
         _containerSelector(boxMin, boxMax, cutoff),
         _verletSkin(verletSkin),
         _verletClusterSize(verletClusterSize),
+        _treeSplitThreshold(treeSplitThreshold),
         _maxSamples(maxSamples),
         _samples(maxSamples),
         _iteration(0),
@@ -228,6 +230,7 @@ class AutoTuner {
 
   double _verletSkin;
   unsigned int _verletClusterSize;
+  unsigned int _treeSplitThreshold;
 
   /**
    * How many times each configuration should be tested.
@@ -256,7 +259,8 @@ template <class Particle>
 void AutoTuner<Particle>::selectCurrentContainer() {
   auto conf = _tuningStrategy->getCurrentConfiguration();
   _containerSelector.selectContainer(
-      conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin, _verletClusterSize, conf.loadEstimator));
+      conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin, _verletClusterSize, _treeSplitThreshold,
+                                            conf.loadEstimator));
 }
 
 template <class Particle>
@@ -465,7 +469,8 @@ bool AutoTuner<Particle>::configApplicable(const Configuration &conf, PairwiseFu
   }
 
   _containerSelector.selectContainer(
-      conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin, _verletClusterSize, conf.loadEstimator));
+      conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin, _verletClusterSize, _treeSplitThreshold,
+                                            conf.loadEstimator));
   auto traversalInfo = _containerSelector.getCurrentContainer()->getTraversalSelectorInfo();
 
   auto containerPtr = getContainer();

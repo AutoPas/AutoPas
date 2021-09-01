@@ -343,6 +343,18 @@ class AutoPas {
   void setVerletClusterSize(unsigned int verletClusterSize) { AutoPas::_verletClusterSize = verletClusterSize; }
 
   /**
+   * Get tree split threshold.
+   * @return
+   */
+  [[nodiscard]] unsigned int getTreeSplitThreshold() const { return _treeSplitThreshold; }
+
+  /**
+   * Set tree split threshold.
+   * @param treeSplitThreshold
+   */
+  void setTreeSplitThreshold(unsigned int treeSplitThreshold) { AutoPas::_treeSplitThreshold = treeSplitThreshold; }
+
+  /**
    * Get tuning interval.
    * @return
    */
@@ -628,6 +640,10 @@ class AutoPas {
    * Specifies the size of clusters for Verlet lists.
    */
   unsigned int _verletClusterSize{4};
+  /**
+   * Specifies the maximum number of particles per octree leaf.
+   */
+  unsigned int _treeSplitThreshold{16};
   /**
    * Number of timesteps after which the auto-tuner shall reevaluate all selections.
    */

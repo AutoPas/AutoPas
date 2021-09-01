@@ -291,6 +291,15 @@ class MDFlexConfig {
    */
   MDFlexOption<double, __LINE__> verletSkinRadius{.2, "verlet-skin-radius", true,
                                                   "Skin added to the cutoff to form the interaction length."};
+
+  /**
+   * treeSplitThreshold
+   */
+  MDFlexOption<double, __LINE__> treeSplitThreshold{
+      16, "tree-split-threshold", true,
+      "Maximum number of particles inside a leaf node of a tree based data structure before it tries to split. (Should "
+      "be a positive integer number.)"};
+
   /**
    * boxMin
    */
