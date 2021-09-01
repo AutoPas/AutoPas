@@ -133,6 +133,8 @@ std::string MDFlexConfig::to_string() const {
      << endl;
   os << setw(valueOffset) << left << boxMax.name << ":  " << autopas::utils::ArrayUtils::to_string(boxMax.value)
      << endl;
+  os << setw(valueOffset) << left << subdivideDimension.name << ":  "
+     << autopas::utils::ArrayUtils::to_string(subdivideDimension.value) << endl;
   os << setw(valueOffset) << left << cellSizeFactors.name << ":  " << *cellSizeFactors.value << endl;
   os << setw(valueOffset) << left << deltaT.name << ":  " << deltaT.value << endl;
   // simulation length is either dictated by tuning phases or iterations
