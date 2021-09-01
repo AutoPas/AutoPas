@@ -83,8 +83,7 @@ TEST_F(RegularGridDecompositionTest, testExchangeHaloParticles) {
 
   if (numberOfRanks != 1) {
     EXPECT_EQ(true, true);
-  }
-  else {
+  } else {
     std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
                                           std::string(YAMLDIRECTORY) + "particleExchangeTest.yaml"};
 
@@ -129,8 +128,8 @@ TEST_F(RegularGridDecompositionTest, testExchangeHaloParticles) {
 
     // The resulting haloParticleCount has to be 98 because, the 8 corner particles have to be replicated 7 times each,
     // resulting in 56 halo particles for the corner cells. The 12 particles contained
-    // in the edge cells of the rubik's cube need to be replicated 3 times each raising the total number of halo particles
-    // to 90. The remaining 6 particles with a single adjacent cell only produce a single halo particle each.
+    // in the edge cells of the rubik's cube need to be replicated 3 times each raising the total number of halo
+    // particles to 90. The remaining 6 particles with a single adjacent cell only produce a single halo particle each.
     // Therefor the total amount of particles is 98.
     std::vector<std::vector<double>> expectedHaloParticlePositions = {
         {-2.725, -2.725, -2.725}, {1.5, -2.725, -2.725},    {5, -2.725, -2.725},   {8.5, -2.725, -2.725},
@@ -186,8 +185,7 @@ TEST_F(RegularGridDecompositionTest, testExchangeMigratingParticles) {
 
   if (numberOfRanks != 1) {
     EXPECT_EQ(true, true);
-  }
-  else {
+  } else {
     std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
                                           std::string(YAMLDIRECTORY) + "particleExchangeTest.yaml"};
     char *argv[3] = {arguments[0].data(), arguments[1].data(), arguments[2].data()};
