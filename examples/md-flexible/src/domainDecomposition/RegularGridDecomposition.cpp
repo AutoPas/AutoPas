@@ -38,7 +38,6 @@ RegularGridDecomposition::RegularGridDecomposition(const std::array<double, 3> &
 
   DomainTools::generateDecomposition(_subdomainCount, subdivideDimension, _decomposition);
 
-
   initializeMPICommunicator();
 
   initializeLocalDomain();
