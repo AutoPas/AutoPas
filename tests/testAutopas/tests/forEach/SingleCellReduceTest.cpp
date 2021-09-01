@@ -30,7 +30,7 @@ TEST_F(SingleCellReduceTest, testAllParticlesFpc) {
 
   std::vector<size_t> expectedIndices(_vecOfMolecules.size());
   std::iota(expectedIndices.begin(), expectedIndices.end(), 0);
-  size_t expectedReductionValue = std::accumulate(expectedIndices.begin(), expectedIndices.end(), 0l);
+  size_t expectedReductionValue = std::accumulate(expectedIndices.begin(), expectedIndices.end(), 0ul);
 
   testCell(fpc, expectedIndices, expectedReductionValue, IteratorBehavior::ownedOrHaloOrDummy, dummy, dummy);
 }
@@ -41,7 +41,7 @@ TEST_F(SingleCellReduceTest, testOwnedOrHaloFpc) {
 
   std::vector<size_t> expectedIndices(_vecOfMolecules.size() - 1);
   std::iota(expectedIndices.begin(), expectedIndices.end(), 1);
-  size_t expectedReductionValue = std::accumulate(expectedIndices.begin(), expectedIndices.end(), 0l);
+  size_t expectedReductionValue = std::accumulate(expectedIndices.begin(), expectedIndices.end(), 0ul);
 
   testCell(fpc, expectedIndices, expectedReductionValue, IteratorBehavior::ownedOrHalo, dummy, dummy);
 }
@@ -52,7 +52,7 @@ TEST_F(SingleCellReduceTest, testOwnedFpc) {
 
   std::vector<size_t> expectedIndices(_vecOfMolecules.size() - 2);
   std::iota(expectedIndices.begin(), expectedIndices.end(), 2);
-  size_t expectedReductionValue = std::accumulate(expectedIndices.begin(), expectedIndices.end(), 0l);
+  size_t expectedReductionValue = std::accumulate(expectedIndices.begin(), expectedIndices.end(), 0ul);
 
   testCell(fpc, expectedIndices, expectedReductionValue, IteratorBehavior::owned, dummy, dummy);
 }
@@ -63,7 +63,7 @@ TEST_F(SingleCellReduceTest, testAllParticlesInRegionFpc) {
 
   std::vector<size_t> expectedIndices(_vecOfMolecules.size() - 2);
   std::iota(expectedIndices.begin(), expectedIndices.end(), 1);
-  size_t expectedReductionValue = std::accumulate(expectedIndices.begin(), expectedIndices.end(), 0l);
+  size_t expectedReductionValue = std::accumulate(expectedIndices.begin(), expectedIndices.end(), 0ul);
 
   const std::array<double, 3> lowerCorner{0.5, 0.5, 0.5};
   const std::array<double, 3> higherCorner{2.5, 2.5, 2.5};
@@ -78,7 +78,7 @@ TEST_F(SingleCellReduceTest, testAllParticlesRpc) {
 
   std::vector<size_t> expectedIndices(_vecOfMolecules.size());
   std::iota(expectedIndices.begin(), expectedIndices.end(), 0);
-  size_t expectedReductionValue = std::accumulate(expectedIndices.begin(), expectedIndices.end(), 0l);
+  size_t expectedReductionValue = std::accumulate(expectedIndices.begin(), expectedIndices.end(), 0ul);
 
   testCell(rpc, expectedIndices, expectedReductionValue, IteratorBehavior::ownedOrHaloOrDummy, dummy, dummy);
 }
@@ -89,7 +89,7 @@ TEST_F(SingleCellReduceTest, testOwnedOrHaloParticlesRpc) {
 
   std::vector<size_t> expectedIndices(_vecOfMolecules.size() - 1);
   std::iota(expectedIndices.begin(), expectedIndices.end(), 1);
-  size_t expectedReductionValue = std::accumulate(expectedIndices.begin(), expectedIndices.end(), 0l);
+  size_t expectedReductionValue = std::accumulate(expectedIndices.begin(), expectedIndices.end(), 0ul);
 
   testCell(rpc, expectedIndices, expectedReductionValue, IteratorBehavior::ownedOrHalo, dummy, dummy);
 }
@@ -100,7 +100,7 @@ TEST_F(SingleCellReduceTest, testOwnedParticlesRpc) {
 
   std::vector<size_t> expectedIndices(_vecOfMolecules.size() - 2);
   std::iota(expectedIndices.begin(), expectedIndices.end(), 2);
-  size_t expectedReductionValue = std::accumulate(expectedIndices.begin(), expectedIndices.end(), 0l);
+  size_t expectedReductionValue = std::accumulate(expectedIndices.begin(), expectedIndices.end(), 0ul);
 
   testCell(rpc, expectedIndices, expectedReductionValue, IteratorBehavior::owned, dummy, dummy);
 }
@@ -111,7 +111,7 @@ TEST_F(SingleCellReduceTest, testAllParticlesInRegionRpc) {
 
   std::vector<size_t> expectedIndices(_vecOfMolecules.size() - 2);
   std::iota(expectedIndices.begin(), expectedIndices.end(), 1);
-  size_t expectedReductionValue = std::accumulate(expectedIndices.begin(), expectedIndices.end(), 0l);
+  size_t expectedReductionValue = std::accumulate(expectedIndices.begin(), expectedIndices.end(), 0ul);
 
   const std::array<double, 3> lowerCorner{0.5, 0.5, 0.5};
   const std::array<double, 3> higherCorner{2.5, 2.5, 2.5};
