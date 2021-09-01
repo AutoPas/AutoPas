@@ -152,7 +152,7 @@ class Simulation {
   struct timers {
     autopas::utils::Timer positionUpdate, forceUpdateTotal, forceUpdatePairwise, forceUpdateGlobal, forceUpdateTuning,
         forceUpdateNonTuning, velocityUpdate, simulate, vtk, init, total, thermostat, boundaries, updateContainer,
-        boundariesPart2, boundariesPart3;
+        addEnteringParticles, haloParticleIdentification, haloParticleInsertion;
   } _timers;
 
   /**

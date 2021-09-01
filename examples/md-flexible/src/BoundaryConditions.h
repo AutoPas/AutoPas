@@ -157,10 +157,10 @@ void addHaloParticles(autopas::AutoPas<Particle> &autoPas, std::vector<Particle>
  * @param forceUpdate If a container update should be forced or left to AutoPas.
  */
 template <class Particle>
-std::tuple<long, long, long> applyPeriodic(autopas::AutoPas<Particle> &autoPas, bool forceUpdate) {
+std::tuple<long, long, long, long> applyPeriodic(autopas::AutoPas<Particle> &autoPas, bool forceUpdate) {
   // 1. update Container; return value is a vector of the particles leaving the domain box
   // and a flag whether an update occurred.
-  autopas::utils::Timer timer1, timer2, timer3;
+  autopas::utils::Timer timer1, timer2, timer3, timer4;
   timer1.start();
   auto [leavingParticles, updated] = autoPas.updateContainer(forceUpdate);
   timer1.stop();
@@ -177,9 +177,12 @@ std::tuple<long, long, long> applyPeriodic(autopas::AutoPas<Particle> &autoPas, 
   timer3.start();
   // 3. identify inner particles for which a periodic copy in the opposing halo region is needed.
   auto haloParticles = identifyNewHaloParticles(autoPas);
-  addHaloParticles(autoPas, haloParticles);
   timer3.stop();
 
-  return std::make_tuple(timer1.getTotalTime(), timer2.getTotalTime(), timer3.getTotalTime());
+  timer4.start();
+  addHaloParticles(autoPas, haloParticles);
+  timer4.stop();
+
+  return std::make_tuple(timer1.getTotalTime(), timer2.getTotalTime(), timer3.getTotalTime(), timer4.getTotalTime());
 }
 }  // namespace BoundaryConditions
