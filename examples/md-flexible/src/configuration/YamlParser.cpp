@@ -22,6 +22,10 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     auto tmpNode = node[config.boxMax.name];
     config.boxMax.value = {tmpNode[0].as<double>(), tmpNode[1].as<double>(), tmpNode[2].as<double>()};
   }
+  if (node[config.subdivideDimension.name]) {
+    auto tmpNode = node[config.subdivideDimension.name];
+    config.subdivideDimension.value = {tmpNode[0].as<bool>(), tmpNode[1].as<bool>(), tmpNode[2].as<bool>()};
+  }
   if (node[config.selectorStrategy.name]) {
     auto parsedOptions =
         autopas::SelectorStrategyOption::parseOptions(node[config.selectorStrategy.name].as<std::string>());
