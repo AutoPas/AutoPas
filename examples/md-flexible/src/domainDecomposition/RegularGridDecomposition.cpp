@@ -17,8 +17,9 @@
 #include "src/ParticleSerializationTools.h"
 
 RegularGridDecomposition::RegularGridDecomposition(const std::array<double, 3> &globalBoxMin,
-                                                   const std::array<double, 3> &globalBoxMax, const double &cutoffWidth,
-                                                   const double &skinWidth)
+                                                   const std::array<double, 3> &globalBoxMax,
+                                                   const std::array<bool, 3> &subdivideDimension,
+                                                   const double &cutoffWidth, const double &skinWidth)
     : _cutoffWidth(cutoffWidth), _skinWidth(skinWidth) {
 #if defined(AUTOPAS_INCLUDE_MPI)
   _mpiIsEnabled = true;
@@ -38,7 +39,7 @@ RegularGridDecomposition::RegularGridDecomposition(const std::array<double, 3> &
     std::cout << "MPI will not be used." << std::endl;
   }
 
-  DomainTools::generateDecomposition(_subdomainCount, _decomposition);
+  DomainTools::generateDecomposition(_subdomainCount, subdivideDimension, _decomposition);
 
   initializeMPICommunicator();
 
