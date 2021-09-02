@@ -57,5 +57,5 @@ class DomainDecomposition {
    * @param coordinates: The coordinates in question.
    * @return true if the coordinates lie inside the local domain, false otherwise.
    */
-  virtual bool isInsideLocalDomain(const std::array<double, 3> &coordinates) = 0;
+  virtual bool isInsideLocalDomain(const std::array<double, 3> &coordinates) const = 0;
 };

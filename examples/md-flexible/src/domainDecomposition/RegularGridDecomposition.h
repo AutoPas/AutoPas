@@ -90,11 +90,24 @@ class RegularGridDecomposition final : public DomainDecomposition {
   int getSubdomainCount() const { return _subdomainCount; }
 
   /**
+   * Returns the current processes domain id.
+   * @return domain id of the current processor
+   */
+  const std::array<int, 3> getDomainId() const { return _domainId; }
+
+  /**
    * Checks if the provided coordinates are located in the local domain.
    * @param coordinates: The coordinates in question.
    * @return true if the coordinates lie inside the local domain, false otherwise.
    */
-  bool isInsideLocalDomain(const std::array<double, 3> &coordinates) override;
+  bool isInsideLocalDomain(const std::array<double, 3> &coordinates) const override;
+
+  /**
+   * Calculates and returns the extent of the subdomain with inde subdomainIndex.
+   * @param subdomainIndex: The index of the subdomain for which to calculate the extent.
+   * @return extent of the subdomain with index subdomainIndex.
+   */
+  std::array<int, 6> getExtentOfSubdomain(const int subdomainIndex) const;
 
   /**
    * Exchanges halo particles with all neighbours of the provided AutoPasContainer.
@@ -281,9 +294,4 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Waits for all send requests to be finished.
    */
   void waitForSendRequests();
-
-  /**
-   * Converts a domain id to the domain index, i.e. rank of the local processor.
-   */
-  int convertIdToIndex(const std::array<int, 3> &domainIndex);
 };
