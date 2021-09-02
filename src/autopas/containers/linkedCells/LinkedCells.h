@@ -382,7 +382,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
    */
   template <typename Lambda, typename A>
   void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
-                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+                      const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
     auto startIndex3D =
         this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::subScalar(lowerCorner, this->getSkin()));
     auto stopIndex3D =

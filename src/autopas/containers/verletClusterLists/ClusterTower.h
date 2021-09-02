@@ -260,7 +260,7 @@ class ClusterTower : public ParticleCell<Particle> {
    */
   template <typename Lambda, typename A>
   void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
-                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+                      const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
     _particlesStorage.reduce(reduceLambda, result, lowerCorner, higherCorner, behavior);
   }
 

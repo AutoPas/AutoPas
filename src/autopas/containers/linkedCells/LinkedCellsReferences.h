@@ -398,7 +398,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    */
   template <typename Lambda, typename A>
   void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
-                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+                      const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
     // We increase the search region by skin, as particles can move over cell borders.
     auto startIndex3D =
         this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::subScalar(lowerCorner, this->getSkin()));

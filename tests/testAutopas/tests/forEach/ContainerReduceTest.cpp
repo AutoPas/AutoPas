@@ -11,7 +11,7 @@
 
 template <typename AutoPasT>
 auto ContainerReduceTest::defaultInit(AutoPasT &autoPas, autopas::ContainerOption &containerOption,
-                                       double cellSizeFactor) {
+                                      double cellSizeFactor) {
   autoPas.setBoxMin({0., 0., 0.});
   autoPas.setBoxMax({10., 10., 10.});
   autoPas.setCutoff(1);
@@ -73,7 +73,7 @@ TEST_P(ContainerReduceTest, testReduceInRegion) {
   std::array<double, 3> searchBoxMax = add(autoPas.getBoxMin(), searchBoxLengthHalf);
 
   auto [particleIDsOwned, particleIDsHalo, particleIDsInBoxOwned, particleIDsInBoxHalo] =
-  ForEachTestHelper::fillContainerAroundBoundary(autoPas, searchBoxMin, searchBoxMax);
+      ForEachTestHelper::fillContainerAroundBoundary(autoPas, searchBoxMin, searchBoxMax);
 
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
@@ -97,11 +97,13 @@ TEST_P(ContainerReduceTest, testReduceInRegion) {
   std::vector<size_t> particleIDsFound;
   size_t reductionValue = 0ul;
 
-  autoPas.reduceInRegion([&](auto &p, size_t &rv) {
-    auto id = p.getID();
-    rv += id;
-    particleIDsFound.push_back(id);
-  }, reductionValue, searchBoxMin, searchBoxMax, behavior);
+  autoPas.reduceInRegion(
+      [&](auto &p, size_t &rv) {
+        auto id = p.getID();
+        rv += id;
+        particleIDsFound.push_back(id);
+      },
+      reductionValue, searchBoxMin, searchBoxMax, behavior);
 
   // check that everything was found
   EXPECT_THAT(particleIDsFound, ::testing::UnorderedElementsAreArray(expectedIDs));
@@ -127,7 +129,7 @@ TEST_P(ContainerReduceTest, testReduce) {
   std::array<double, 3> searchBoxMax = add(autoPas.getBoxMin(), searchBoxLengthHalf);
 
   auto [particleIDsOwned, particleIDsHalo, particleIDsInBoxOwned, particleIDsInBoxHalo] =
-  ForEachTestHelper::fillContainerAroundBoundary(autoPas, searchBoxMin, searchBoxMax);
+      ForEachTestHelper::fillContainerAroundBoundary(autoPas, searchBoxMin, searchBoxMax);
 
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
@@ -151,11 +153,13 @@ TEST_P(ContainerReduceTest, testReduce) {
   std::vector<size_t> particleIDsFound;
   size_t reductionValue = 0ul;
 
-  autoPas.reduce([&](auto &p, size_t &rv) {
-    auto id = p.getID();
-    rv += id;
-    particleIDsFound.push_back(id);
-  }, reductionValue, behavior);
+  autoPas.reduce(
+      [&](auto &p, size_t &rv) {
+        auto id = p.getID();
+        rv += id;
+        particleIDsFound.push_back(id);
+      },
+      reductionValue, behavior);
 
   // check that everything was found
   EXPECT_THAT(particleIDsFound, ::testing::UnorderedElementsAreArray(expectedIDs));
@@ -180,6 +184,6 @@ static inline auto getTestableContainerOptions() {
 
 INSTANTIATE_TEST_SUITE_P(Generated, ContainerReduceTest,
                          Combine(ValuesIn(getTestableContainerOptions()), /*cell size factor*/ Values(0.5, 1., 1.5),
-                             /*use const*/ Values(true, false), /*prior force calc*/ Values(true, false),
+                                 /*use const*/ Values(true, false), /*prior force calc*/ Values(true, false),
                                  ValuesIn(autopas::IteratorBehavior::getMostOptions())),
                          ContainerReduceTest::PrintToStringParamName());

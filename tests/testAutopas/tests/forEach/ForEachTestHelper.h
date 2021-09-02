@@ -126,7 +126,8 @@ auto fillContainerAroundBoundary(AutoPasT &autoPas) {
  * @param particleIDsExpected
  */
 template <class AutoPasT, class Lambda>
-void forEachParticleTest(AutoPasT &autopas, Lambda forEachInRegionLambda, const std::vector<size_t> &particleIDsExpected) {
+void forEachParticleTest(AutoPasT &autopas, Lambda forEachInRegionLambda,
+                         const std::vector<size_t> &particleIDsExpected) {
   std::vector<size_t> particleIDsFound;
 
   //#ifdef AUTOPAS_OPENMP
@@ -154,7 +155,8 @@ void forEachParticleTest(AutoPasT &autopas, Lambda forEachInRegionLambda, const 
  * @param particleIDsExpected
  */
 template <class AutoPasT, class Lambda>
-void reduceParticlesTest(AutoPasT &autopas, Lambda reduceInRegionLambda, const std::vector<size_t> &particleIDsExpected) {
+void reduceParticlesTest(AutoPasT &autopas, Lambda reduceInRegionLambda,
+                         const std::vector<size_t> &particleIDsExpected) {
   std::vector<size_t> particleIDsFound;
   size_t reductionValue = 0ul;
 

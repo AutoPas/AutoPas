@@ -189,7 +189,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    */
   template <typename Lambda, typename A>
   void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
-                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+                      const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
     _linkedCells.reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
   }
 

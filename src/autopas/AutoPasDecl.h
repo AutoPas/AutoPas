@@ -345,8 +345,8 @@ class AutoPas {
    * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownerOrHalo
    */
   template <typename Lambda, typename A>
-  void reduceInRegion(Lambda reduceLambda, A &reductionValue, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-                       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+  void reduceInRegion(Lambda reduceLambda, A &reductionValue, std::array<double, 3> lowerCorner,
+                      std::array<double, 3> higherCorner, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     _logicHandler->reduceInRegion(reduceLambda, reductionValue, lowerCorner, higherCorner, behavior);
   }
 
@@ -354,9 +354,10 @@ class AutoPas {
    * @copydoc forEachInRegion()
    * @note const version
    */
-  template <typename Lambda, typename  A>
-  void reduceInRegion(Lambda reduceLambda, A &reductionValue, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-                       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
+  template <typename Lambda, typename A>
+  void reduceInRegion(Lambda reduceLambda, A &reductionValue, std::array<double, 3> lowerCorner,
+                      std::array<double, 3> higherCorner,
+                      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     std::as_const(*_logicHandler).reduceInRegion(reduceLambda, reductionValue, lowerCorner, higherCorner, behavior);
   }
 

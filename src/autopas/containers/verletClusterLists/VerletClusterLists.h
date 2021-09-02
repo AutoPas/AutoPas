@@ -547,8 +547,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    */
   template <typename Lambda, typename A>
   void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
-                       const std::array<double, 3> &higherCorner,
-                       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) {
+                      const std::array<double, 3> &higherCorner,
+                      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) {
     prepareContainerForIteration(behavior);
 
     for (auto &tower : this->_towers) {
@@ -563,8 +563,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    */
   template <typename Lambda, typename A>
   void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
-                       const std::array<double, 3> &higherCorner,
-                       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) const {
+                      const std::array<double, 3> &higherCorner,
+                      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) const {
     if (_isValid != ValidityState::invalid) {
       if (not particlesToAddEmpty()) {
         autopas::utils::ExceptionHandler::exception(

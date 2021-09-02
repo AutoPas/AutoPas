@@ -272,7 +272,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
    */
   template <typename Lambda, typename A>
   void reduceInRegion(Lambda reductionLambda, A &reductionValue, const std::array<double, 3> &lowerCorner,
-                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+                      const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
     std::vector<size_t> cellsOfInterest;
 
     if (behavior & IteratorBehavior::owned) {

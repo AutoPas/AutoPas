@@ -13,7 +13,7 @@
 #include "autopas/options/IteratorBehavior.h"
 
 using testingTuple = std::tuple<autopas::ContainerOption, double /*cell size factor*/, bool /*testConstIterators*/,
-    bool /*priorForceCalc*/, autopas::IteratorBehavior>;
+                                bool /*priorForceCalc*/, autopas::IteratorBehavior>;
 
 class ContainerReduceTest : public AutoPasTestBase, public ::testing::WithParamInterface<testingTuple> {
  public:
@@ -21,7 +21,7 @@ class ContainerReduceTest : public AutoPasTestBase, public ::testing::WithParamI
     template <class ParamType>
     std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
       auto [containerOption, cellSizeFactor, testConstIterators, priorForceCalc, behavior] =
-      static_cast<ParamType>(info.param);
+          static_cast<ParamType>(info.param);
       std::string str;
       str += containerOption.to_string() + "_";
       str += std::string{"cellSizeFactor"} + std::to_string(cellSizeFactor);

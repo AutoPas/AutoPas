@@ -414,8 +414,8 @@ class LogicHandler {
    */
   template <typename Lambda, typename A>
   void reduceInRegion(Lambda forEachLambda, A &reductionValue, const std::array<double, 3> lowerCorner,
-                       const std::array<double, 3> higherCorner,
-                       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+                      const std::array<double, 3> higherCorner,
+                      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     withStaticContainerType(_autoTuner.getContainer(), [&](auto container) {
       container->reduceInRegion(forEachLambda, reductionValue, lowerCorner, higherCorner, behavior);
     });
@@ -426,8 +426,8 @@ class LogicHandler {
    */
   template <typename Lambda, typename A>
   void reduceInRegion(Lambda forEachLambda, A &reductionValue, const std::array<double, 3> lowerCorner,
-                       const std::array<double, 3> higherCorner,
-                       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
+                      const std::array<double, 3> higherCorner,
+                      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     withStaticContainerType(_autoTuner.getContainer(), [&](auto container) {
       container->reduceInRegion(forEachLambda, reductionValue, lowerCorner, higherCorner, behavior);
     });
