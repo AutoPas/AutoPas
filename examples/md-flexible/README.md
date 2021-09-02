@@ -20,12 +20,13 @@ make md-flexible
 ```
 
 ### Compiling with MPI
-To use the MPI parallelization of md-flexible activate `AUTOPAS_INCLUDE_MPI` via `cmake`:
+To use the MPI parallelization of md-flexible activate `MD_FLEXIBLE_USE_MPI` via `cmake`:
 ```bash
-cmake -DAUTOPAS_INCLUDE_MPI=ON ..
+cmake -DMD_FLEXIBLE_USE_MPI=ON ..
 Using this option does not guarantee that MPI will be used. There are some additional requirements:
 * MPI is installed
 * mpirun is called with more than 1 process
+```
 
 ## Testing
 Simple tests can be run via:
