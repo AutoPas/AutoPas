@@ -24,8 +24,13 @@ void FlopCounterTest::test(autopas::DataLayoutOption dataLayoutOption) {
   autoPas.setAllowedNewton3Options({autopas::Newton3Option::enabled});
   autoPas.init();
 
-  std::vector<Particle> molVec{Particle({1, 1, 1}, {0, 0, 0}, 0), Particle({1, 1, 2}, {0, 0, 0}, 1),
-                               Particle({1, 2, 1}, {0, 0, 0}, 2), Particle({1, 2, 2}, {0, 0, 0}, 3)};
+  // made s.t. it is somewhat orthogonal to the projection line for single cells (1,1,1) in SortedCellView
+  // -> projection values are all small enough s.t. flopCounterFunctor will always be called
+  // SortedCellView is possibly used since DS uses one cell -> CellFunctor
+  std::vector<Particle> molVec{Particle({1, 1.14, 1}, {0, 0, 0}, 0), Particle({0.83, 0.54, 1.78}, {0, 0, 0}, 1),
+                               Particle({1.63, 0, 1.53}, {0, 0, 0}, 2), Particle({1.8, 0.6, 0.75}, {0, 0, 0}, 3)};
+  /*std::vector<Particle> molVec{Particle({1, 1, 1}, {0, 0, 0}, 0), Particle({1, 1, 2}, {0, 0, 0}, 1),
+                               Particle({1, 2, 1}, {0, 0, 0}, 2), Particle({1, 2, 2}, {0, 0, 0}, 3)};*/
 
   for (auto &m : molVec) {
     autoPas.addParticle(m);
