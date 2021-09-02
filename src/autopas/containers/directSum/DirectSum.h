@@ -267,6 +267,29 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     }
   }
 
+  /**
+   * @copydoc LinkedCells::reduceInRegion()
+   */
+  template <typename Lambda, typename A>
+  void reduceInRegion(Lambda reductionLambda, A &reductionValue, const std::array<double, 3> &lowerCorner,
+                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    std::vector<size_t> cellsOfInterest;
+
+    if (behavior & IteratorBehavior::owned) {
+      getCell().reduce(reductionLambda, reductionValue, lowerCorner, higherCorner, behavior);
+      cellsOfInterest.push_back(0);
+    }
+    if (behavior & IteratorBehavior::halo) {
+      getHaloCell().reduce(reductionLambda, reductionValue, lowerCorner, higherCorner, behavior);
+      cellsOfInterest.push_back(1);
+    }
+
+    // sanity check
+    if (cellsOfInterest.empty()) {
+      utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
+    }
+  }
+
  private:
   class DirectSumCellBorderAndFlagManager : public internal::CellBorderAndFlagManager {
     /**

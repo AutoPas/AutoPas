@@ -287,6 +287,23 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     }
   }
 
+  /**
+   * @copydoc LinkedCells::reduce()
+   */
+  template <typename Lambda, typename A>
+  void reduce(Lambda forEachLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHaloOrDummy) {
+    if (behavior == IteratorBehavior::ownedOrHaloOrDummy) {
+      // iterate over all particles, so execute directly on particle vector
+      _particleList.reduce(forEachLambda, result);
+    } else {
+      for (size_t index = 0; index < getCells().size(); index++) {
+        if (!_cellBlock.ignoreCellForIteration(index, behavior)) {
+          getCells()[index].reduce(forEachLambda, result, behavior);
+        }
+      }
+    }
+  }
+
   ParticleIteratorWrapper<ParticleType, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
                                                                 const std::array<double, 3> &higherCorner,
                                                                 IteratorBehavior behavior) override {
@@ -372,6 +389,39 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     for (size_t index : cellsOfInterest) {
       if (!_cellBlock.ignoreCellForIteration(index, behavior)) {
         getCells()[index].forEach(forEachLambda, lowerCorner, higherCorner, behavior);
+      }
+    }
+  }
+
+  /**
+   * @copydoc LinkedCells::reduceInRegion()
+   */
+  template <typename Lambda, typename A>
+  void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    // We increase the search region by skin, as particles can move over cell borders.
+    auto startIndex3D =
+        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::subScalar(lowerCorner, this->getSkin()));
+    auto stopIndex3D =
+        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::addScalar(higherCorner, this->getSkin()));
+
+    size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
+                                (stopIndex3D[2] - startIndex3D[2] + 1);
+    std::vector<size_t> cellsOfInterest(numCellsOfInterest);
+
+    int i = 0;
+    for (size_t z = startIndex3D[2]; z <= stopIndex3D[2]; ++z) {
+      for (size_t y = startIndex3D[1]; y <= stopIndex3D[1]; ++y) {
+        for (size_t x = startIndex3D[0]; x <= stopIndex3D[0]; ++x) {
+          cellsOfInterest[i++] =
+              utils::ThreeDimensionalMapping::threeToOneD({x, y, z}, this->_cellBlock.getCellsPerDimensionWithHalo());
+        }
+      }
+    }
+
+    for (size_t index : cellsOfInterest) {
+      if (!_cellBlock.ignoreCellForIteration(index, behavior)) {
+        getCells()[index].reduce(reduceLambda, result, lowerCorner, higherCorner, behavior);
       }
     }
   }

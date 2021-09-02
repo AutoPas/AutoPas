@@ -256,6 +256,15 @@ class ClusterTower : public ParticleCell<Particle> {
   }
 
   /**
+   * @copydoc VerletClusterLists::reduceInRegion()
+   */
+  template <typename Lambda, typename A>
+  void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    _particlesStorage.reduce(reduceLambda, result, lowerCorner, higherCorner, behavior);
+  }
+
+  /**
    * Returns the particle at position index. Needed by SingleCellIterator.
    * @param index the position of the particle to return.
    * @return the particle at position index.

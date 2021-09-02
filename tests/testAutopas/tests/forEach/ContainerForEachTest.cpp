@@ -98,7 +98,7 @@ TEST_P(ContainerForEachTest, testForEachInRegionSequential) {
   auto forEachInRegionLambda = [&, bh](auto lambda) {
     autoPas.forEachInRegion(lambda, searchBoxMin, searchBoxMax, bh);
   };
-  ForEachTestHelper::findParticles(autoPas, forEachInRegionLambda, expectedIDs);
+  ForEachTestHelper::forEachParticleTest(autoPas, forEachInRegionLambda, expectedIDs);
 }
 
 TEST_P(ContainerForEachTest, testForEachSequential) {
@@ -141,7 +141,7 @@ TEST_P(ContainerForEachTest, testForEachSequential) {
   // actual test
   auto bh = behavior;  // necessary for compiler, behavior not detected as variable
   auto forEachLambda = [&, bh](auto lambda) { autoPas.forEach(lambda, bh); };
-  ForEachTestHelper::findParticles(autoPas, forEachLambda, expectedIDs);
+  ForEachTestHelper::forEachParticleTest(autoPas, forEachLambda, expectedIDs);
 }
 
 TEST_P(ContainerForEachTest, testForEachInRegionParallel) {
@@ -186,7 +186,7 @@ TEST_P(ContainerForEachTest, testForEachInRegionParallel) {
   auto forEachInRegionLambda = [&, bh](auto lambda) {
     autoPas.forEachInRegionParallel(lambda, searchBoxMin, searchBoxMax, bh);
   };
-  ForEachTestHelper::findParticles(autoPas, forEachInRegionLambda, expectedIDs);
+  ForEachTestHelper::forEachParticleTest(autoPas, forEachInRegionLambda, expectedIDs);
 }
 
 TEST_P(ContainerForEachTest, testForEachParallel) {
@@ -229,7 +229,7 @@ TEST_P(ContainerForEachTest, testForEachParallel) {
   // actual test
   auto bh = behavior;  // necessary for compiler, behavior not detected as variable
   auto forEachLambda = [&, bh](auto lambda) { autoPas.forEachParallel(lambda, bh); };
-  ForEachTestHelper::findParticles(autoPas, forEachLambda, expectedIDs);
+  ForEachTestHelper::forEachParticleTest(autoPas, forEachLambda, expectedIDs);
 }
 
 using ::testing::Combine;

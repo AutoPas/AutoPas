@@ -126,7 +126,7 @@ auto fillContainerAroundBoundary(AutoPasT &autoPas) {
  * @param particleIDsExpected
  */
 template <class AutoPasT, class Lambda>
-void findParticles(AutoPasT &autopas, Lambda forEachInRegionLambda, const std::vector<size_t> &particleIDsExpected) {
+void forEachParticleTest(AutoPasT &autopas, Lambda forEachInRegionLambda, const std::vector<size_t> &particleIDsExpected) {
   std::vector<size_t> particleIDsFound;
 
   //#ifdef AUTOPAS_OPENMP
@@ -143,5 +143,38 @@ void findParticles(AutoPasT &autopas, Lambda forEachInRegionLambda, const std::v
 
   // check that everything was found
   EXPECT_THAT(particleIDsFound, ::testing::UnorderedElementsAreArray(particleIDsExpected));
+}
+
+/**
+ * Apply an iterator, track what particle IDs are found and compare this to a vector of expected IDs
+ * @tparam AutoPasT
+ * @tparam IteratorT
+ * @param autopas
+ * @param iterator
+ * @param particleIDsExpected
+ */
+template <class AutoPasT, class Lambda>
+void reduceParticlesTest(AutoPasT &autopas, Lambda reduceInRegionLambda, const std::vector<size_t> &particleIDsExpected) {
+  std::vector<size_t> particleIDsFound;
+  size_t reductionValue = 0ul;
+
+  //#ifdef AUTOPAS_OPENMP
+  //  // aparently the version from WrapOpenMP.h can not be found
+  //#pragma omp declare reduction(vecMergeWorkaround : std::vector<size_t> : omp_out.insert(omp_out.end(),
+  // omp_in.begin(), omp_in.end())) #pragma omp parallel reduction(vecMergeWorkaround : particleIDsFound) #endif
+  {
+    auto lambda = [&](auto &p, size_t &rv) {
+      auto id = p.getID();
+      rv += id;
+      particleIDsFound.push_back(id);
+    };
+    reduceInRegionLambda(lambda, reductionValue);
+  }
+
+  // check that everything was found
+  EXPECT_THAT(particleIDsFound, ::testing::UnorderedElementsAreArray(particleIDsExpected));
+
+  size_t expectedReductionValue = std::accumulate(particleIDsExpected.begin(), particleIDsExpected.end(), 0ul);
+  EXPECT_EQ(reductionValue, expectedReductionValue);
 }
 }  // namespace ForEachTestHelper

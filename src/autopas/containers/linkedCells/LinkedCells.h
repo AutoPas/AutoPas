@@ -371,6 +371,45 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
   }
 
   /**
+   * execute code on all particles in this container in a certain region as defined by a lambda function
+   * @tparam Lambda (Particle &p, A &result) -> void
+   * @tparam A type of reduction Value
+   * @param reduceLambda code to be executed on all particles
+   * @param result reference to starting and final value for reduction
+   * @param lowerCorner lower corner of bounding box
+   * @param higherCorner higher corner of bounding box
+   * @param behavior @see IteratorBehavior
+   */
+  template <typename Lambda, typename A>
+  void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    auto startIndex3D =
+        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::subScalar(lowerCorner, this->getSkin()));
+    auto stopIndex3D =
+        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::addScalar(higherCorner, this->getSkin()));
+
+    size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
+                                (stopIndex3D[2] - startIndex3D[2] + 1);
+    std::vector<size_t> cellsOfInterest(numCellsOfInterest);
+
+    int i = 0;
+    for (size_t z = startIndex3D[2]; z <= stopIndex3D[2]; ++z) {
+      for (size_t y = startIndex3D[1]; y <= stopIndex3D[1]; ++y) {
+        for (size_t x = startIndex3D[0]; x <= stopIndex3D[0]; ++x) {
+          cellsOfInterest[i++] =
+              utils::ThreeDimensionalMapping::threeToOneD({x, y, z}, this->_cellBlock.getCellsPerDimensionWithHalo());
+        }
+      }
+    }
+
+    for (auto cellIndex : cellsOfInterest) {
+      if (!_cellBlock.ignoreCellForIteration(cellIndex, behavior)) {
+        getCells()[cellIndex].reduce(reduceLambda, result, lowerCorner, higherCorner, behavior);
+      }
+    }
+  }
+
+  /**
    * Get the cell block, not supposed to be used except by verlet lists
    * @return the cell block
    */

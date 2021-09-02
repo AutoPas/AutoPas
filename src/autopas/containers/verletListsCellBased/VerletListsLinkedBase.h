@@ -185,6 +185,15 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   }
 
   /**
+   * @copydoc autopas::LinkedCells::reduceInRegion()
+   */
+  template <typename Lambda, typename A>
+  void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    _linkedCells.reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
+  }
+
+  /**
    * Get the dimension of the used cellblock including the haloboxes.
    * @return the dimensions of the used cellblock
    */

@@ -302,19 +302,19 @@ class LogicHandler {
   /**
    * @copydoc AutoPas::reduce()
    */
-  template <typename Lambda>
-  void reduce(Lambda reduceLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+  template <typename Lambda, typename A>
+  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     withStaticContainerType(_autoTuner.getContainer(),
-                            [&](auto container) { container->reduce(reduceLambda, behavior); });
+                            [&](auto container) { container->reduce(reduceLambda, result, behavior); });
   }
 
   /**
    * @copydoc AutoPas::reduce()
    */
-  template <typename Lambda>
-  void reduce(Lambda reduceLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
+  template <typename Lambda, typename A>
+  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     withStaticContainerType(_autoTuner.getContainer(),
-                            [&](auto container) { container->reduce(reduceLambda, behavior); });
+                            [&](auto container) { container->reduce(reduceLambda, result, behavior); });
   }
 
   /**
@@ -381,7 +381,7 @@ class LogicHandler {
                                IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     // TODO (lgaertner): parallelize with kokkos integration
     withStaticContainerType(_autoTuner.getContainer(), [&](auto container) {
-      container->forEach(forEachLambda, lowerCorner, higherCorner, behavior);
+      container->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
     });
   }
 
@@ -405,7 +405,31 @@ class LogicHandler {
                        const std::array<double, 3> higherCorner,
                        IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     withStaticContainerType(_autoTuner.getContainer(), [&](auto container) {
-      container->forEach(forEachLambda, lowerCorner, higherCorner, behavior);
+      container->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+    });
+  }
+
+  /**
+   * @copydoc AutoPas::forEachInRegion()
+   */
+  template <typename Lambda, typename A>
+  void reduceInRegion(Lambda forEachLambda, A &reductionValue, const std::array<double, 3> lowerCorner,
+                       const std::array<double, 3> higherCorner,
+                       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+    withStaticContainerType(_autoTuner.getContainer(), [&](auto container) {
+      container->reduceInRegion(forEachLambda, reductionValue, lowerCorner, higherCorner, behavior);
+    });
+  }
+
+  /**
+   * @copydoc AutoPas::forEachInRegion()
+   */
+  template <typename Lambda, typename A>
+  void reduceInRegion(Lambda forEachLambda, A &reductionValue, const std::array<double, 3> lowerCorner,
+                       const std::array<double, 3> higherCorner,
+                       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
+    withStaticContainerType(_autoTuner.getContainer(), [&](auto container) {
+      container->reduceInRegion(forEachLambda, reductionValue, lowerCorner, higherCorner, behavior);
     });
   }
 

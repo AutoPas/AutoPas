@@ -239,7 +239,7 @@ class AutoPas {
    */
   template <typename Lambda, typename A>
   void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    _logicHandler->reduce(reduceLambda, behavior);
+    _logicHandler->reduce(reduceLambda, result, behavior);
   }
 
   /**
@@ -248,7 +248,7 @@ class AutoPas {
    */
   template <typename Lambda, typename A>
   void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
-    std::as_const(*_logicHandler).reduce(reduceLambda, behavior);
+    std::as_const(*_logicHandler).reduce(reduceLambda, result, behavior);
   }
 
   /**
@@ -332,6 +332,32 @@ class AutoPas {
   void forEachInRegion(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
                        IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     std::as_const(*_logicHandler).forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+  }
+
+  /**
+   * execute code on all particles in a certain region as defined by a lambda function
+   * @tparam Lambda (Particle &p, A &reductionValue) -> void
+   * @tparam A type of reduction value
+   * @param reduceLambda code to be executed on all particles
+   * @param reductionValue reference to starting and final value of reduction
+   * @param lowerCorner lower corner of bounding box
+   * @param higherCorner higher corner of bounding box
+   * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownerOrHalo
+   */
+  template <typename Lambda, typename A>
+  void reduceInRegion(Lambda reduceLambda, A &reductionValue, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+                       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+    _logicHandler->reduceInRegion(reduceLambda, reductionValue, lowerCorner, higherCorner, behavior);
+  }
+
+  /**
+   * @copydoc forEachInRegion()
+   * @note const version
+   */
+  template <typename Lambda, typename  A>
+  void reduceInRegion(Lambda reduceLambda, A &reductionValue, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+                       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
+    std::as_const(*_logicHandler).reduceInRegion(reduceLambda, reductionValue, lowerCorner, higherCorner, behavior);
   }
 
   /**
