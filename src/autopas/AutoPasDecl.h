@@ -356,7 +356,7 @@ class AutoPas {
   void reduceInRegion(Lambda reduceLambda, A &result, std::array<double, 3> lowerCorner,
                       std::array<double, 3> higherCorner, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     withStaticContainerType(getContainer(), [&](auto container) {
-      container->forEachInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
+      container->reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
     });
   }
 
@@ -369,7 +369,7 @@ class AutoPas {
                       std::array<double, 3> higherCorner,
                       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     withStaticContainerType(getContainer(), [&](auto container) {
-      container->forEachInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
+      container->reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
     });
   }
 
