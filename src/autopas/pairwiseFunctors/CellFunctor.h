@@ -55,6 +55,10 @@ class CellFunctor {
   void processCellPair(ParticleCell &cell1, ParticleCell &cell2,
                        const std::array<double, 3> &sortingDirection = {0., 0., 0.});
 
+  static bool sortingActivated(){
+    return _startSorting != std::numeric_limits<unsigned long>::max();
+  }
+
  private:
   /**
    * Applies the functor to all particle pairs exploiting newtons third law of
