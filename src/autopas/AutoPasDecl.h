@@ -758,9 +758,9 @@ class AutoPas {
   void setOutputSuffix(const std::string &suffix) { _outputSuffix = suffix; }
 
  private:
-  ParticleContainerInterface<Particle> &getContainer();
+  std::shared_ptr<autopas::ParticleContainerInterface<Particle>> getContainer();
 
-  const ParticleContainerInterface<Particle> &getContainer() const;
+  const std::shared_ptr<autopas::ParticleContainerInterface<Particle>> getContainer() const;
 
  private:
   /**

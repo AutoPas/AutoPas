@@ -214,13 +214,13 @@ std::array<double, 3> AutoPas<Particle>::getBoxMax() const {
 }
 
 template <class Particle>
-ParticleContainerInterface<Particle> &AutoPas<Particle>::getContainer() {
-  return *(_autoTuner->getContainer());
+std::shared_ptr<autopas::ParticleContainerInterface<Particle>> AutoPas<Particle>::getContainer() {
+  return _autoTuner->getContainer();
 }
 
 template <class Particle>
-const ParticleContainerInterface<Particle> &AutoPas<Particle>::getContainer() const {
-  return *(_autoTuner->getContainer());
+const std::shared_ptr<autopas::ParticleContainerInterface<Particle>> AutoPas<Particle>::getContainer() const {
+  return _autoTuner->getContainer();
 }
 
 }  // namespace autopas
