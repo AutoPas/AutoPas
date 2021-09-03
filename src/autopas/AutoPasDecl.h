@@ -228,6 +228,31 @@ class AutoPas {
   }
 
   /**
+   * reduce properties of particles in parallel as defined by a lambda function
+   * @tparam Lambda (Particle p, A &initialValue) -> void
+   * @tparam reference to result of type A
+   * @param reduceLambda code to reduce properties of particles
+   * @param result reference to result of type A
+   * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownedOrHalo
+   * @note not actually parallel until kokkos integration
+   */
+  template <typename Lambda, typename A>
+  void reduceParallel(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+    // TODO lgaertner: parallelize with kokkos integration
+    withStaticContainerType(getContainer(), [&](auto container) { container->reduce(reduceLambda, result, behavior); });
+  }
+
+  /**
+   * @copydoc reduce()
+   * @note const version
+   */
+  template <typename Lambda, typename A>
+  void reduceParallel(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
+    // TODO lgaertner: parallelize with kokkos integration
+    withStaticContainerType(getContainer(), [&](auto container) { container->reduce(reduceLambda, result, behavior); });
+  }
+
+  /**
    * reduce properties of particles as defined by a lambda function
    * @tparam Lambda (Particle p, A &initialValue) -> void
    * @tparam reference to result of type A
@@ -339,6 +364,41 @@ class AutoPas {
                        IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     withStaticContainerType(getContainer(), [&](auto container) {
       container->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+    });
+  }
+
+  /**
+   * execute code on all particles in a certain region in parallel as defined by a lambda function
+   * @tparam Lambda (Particle &p, A &result) -> void
+   * @tparam A type of reduction value
+   * @param reduceLambda code to be executed on all particles
+   * @param result reference to starting and final value of reduction
+   * @param lowerCorner lower corner of bounding box
+   * @param higherCorner higher corner of bounding box
+   * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownerOrHalo
+   * @note not actually parallel until kokkos integration
+   */
+  template <typename Lambda, typename A>
+  void reduceInRegionParallel(Lambda reduceLambda, A &result, std::array<double, 3> lowerCorner,
+                              std::array<double, 3> higherCorner,
+                              IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+    // TODO lgaertner: parallelize with kokkos integration
+    withStaticContainerType(getContainer(), [&](auto container) {
+      container->reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
+    });
+  }
+
+  /**
+   * @copydoc reduceInRegion()
+   * @note const version
+   */
+  template <typename Lambda, typename A>
+  void reduceInRegionParallel(Lambda reduceLambda, A &result, std::array<double, 3> lowerCorner,
+                              std::array<double, 3> higherCorner,
+                              IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
+    // TODO lgaertner: parallelize with kokkos integration
+    withStaticContainerType(getContainer(), [&](auto container) {
+      container->reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
     });
   }
 
