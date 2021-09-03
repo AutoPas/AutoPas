@@ -18,18 +18,21 @@ MDFlexParser::exitCodes MDFlexParser::parseInput(int argc, char **argv, MDFlexCo
 
   CLIParser::inputFilesPresent(argc, argv, config);
 
+  MDFlexParser::exitCodes exitCode;
   if (not config.yamlFilename.value.empty()) {
     if (not YamlParser::parseYamlFile(config)) {
-      return MDFlexParser::exitCodes::parsingError;
+      exitCode == MDFlexParser::exitCodes::parsingError;
     }
   }
 
-  auto cliParseExitCode = CLIParser::parseInput(argc, argvCopy, config);
+  if (exitCode != MDFlexParser::exitCodes::parsingError) {
+    exitCode = CLIParser::parseInput(argc, argvCopy, config);
+  }
 
-  for (int i = 0; i < argc + 1; i++) {
+  for (int i = 0; i < argc; i++) {
     delete[] argvCopy[i];
   }
   delete[] argvCopy;
 
-  return cliParseExitCode;
+  return exitCode;
 }
