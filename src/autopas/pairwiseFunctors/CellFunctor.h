@@ -55,6 +55,11 @@ class CellFunctor {
   void processCellPair(ParticleCell &cell1, ParticleCell &cell2,
                        const std::array<double, 3> &sortingDirection = {0., 0., 0.});
 
+  /**
+   * Returns whether sorting is activated.
+   * Checks _startSorting for std::numeric_limits<unsigned long>::max().
+   * @return true iff _startSorting is not the maximal long value.
+   */
   static bool sortingActivated(){
     return _startSorting != std::numeric_limits<unsigned long>::max();
   }
