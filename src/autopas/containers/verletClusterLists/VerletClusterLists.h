@@ -542,7 +542,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
-   * @copydoc LinkedCells::forEachInRegion()
+   * @copydoc LinkedCells::reduceInRegion()
    * @note This function additionally rebuilds the towers if the tower-structure isn't valid.
    */
   template <typename Lambda, typename A>

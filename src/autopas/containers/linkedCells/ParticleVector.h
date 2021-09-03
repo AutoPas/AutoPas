@@ -116,9 +116,10 @@ class ParticleVector {
   /**
    * Iterate over all particles and execute lambda function on them
    * @param reduceLambda lambda function that defines how to modify particles
+   * @param result reference to variable where result will be stored after operation
    */
   template <typename Lambda, typename A>
-  void reduce(Lambda reduceLambda, A result) {
+  void reduce(Lambda reduceLambda, A &result) {
     for (Type &p : _particleListImp) {
       reduceLambda(p, result);
     }

@@ -260,7 +260,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
    * @tparam A type of particle attribute to be reduced
    * @param reduceLambda code to reduce properties of particles
    * @param result reference to result of type A
-   * @param behavior @see IteratorBehavior default: @See IteratorBehavior::ownedOrHalo
+   * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownedOrHalo
    */
   template <typename Lambda, typename A>
   void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {

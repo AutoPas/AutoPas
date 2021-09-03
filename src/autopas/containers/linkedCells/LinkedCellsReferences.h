@@ -291,14 +291,14 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * @copydoc LinkedCells::reduce()
    */
   template <typename Lambda, typename A>
-  void reduce(Lambda forEachLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHaloOrDummy) {
+  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHaloOrDummy) {
     if (behavior == IteratorBehavior::ownedOrHaloOrDummy) {
       // iterate over all particles, so execute directly on particle vector
-      _particleList.reduce(forEachLambda, result);
+      _particleList.reduce(reduceLambda, result);
     } else {
       for (size_t index = 0; index < getCells().size(); index++) {
         if (!_cellBlock.ignoreCellForIteration(index, behavior)) {
-          getCells()[index].reduce(forEachLambda, result, behavior);
+          getCells()[index].reduce(reduceLambda, result, behavior);
         }
       }
     }
