@@ -7,7 +7,6 @@
 
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/WrapMPI.h"
-#include "src/ParticleAttributes.h"
 #include "src/TypeDefinitions.h"
 #include "src/configuration/MDFlexConfig.h"
 #include "src/domainDecomposition/DomainTools.h"

@@ -116,7 +116,7 @@ void ParallelVtkWriter::recordParticleStates(const int &currentIteration,
   timestepFile << "      <Points>\n";
 
   // print positions
-  timestepFile << "        <DataArray Name=\"position\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
+  timestepFile << "        <DataArray Name=\"positions\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     auto pos = particle->getR();
     timestepFile << "        " << pos[0] << " " << pos[1] << " " << pos[2] << "\n";
