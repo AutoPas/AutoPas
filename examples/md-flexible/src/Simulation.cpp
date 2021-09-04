@@ -152,7 +152,7 @@ void Simulation::run() {
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
       _timers.vtk.start();
-      _vtkWriter->recordTimestep(_iteration, *_autoPasContainer);
+      _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, _domainDecomposition);
       _timers.vtk.stop();
     }
 
@@ -199,7 +199,7 @@ void Simulation::run() {
 
   // Record last state of simulation.
   if (_createVtkFiles) {
-    _vtkWriter->recordTimestep(_iteration, *_autoPasContainer);
+    _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, _domainDecomposition);
   }
 }
 
