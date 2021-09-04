@@ -18,10 +18,10 @@ MDFlexParser::exitCodes MDFlexParser::parseInput(int argc, char **argv, MDFlexCo
 
   CLIParser::inputFilesPresent(argc, argv, config);
 
-  MDFlexParser::exitCodes exitCode;
+  MDFlexParser::exitCodes exitCode MDFLexParser::exitCodes::success;
   if (not config.yamlFilename.value.empty()) {
     if (not YamlParser::parseYamlFile(config)) {
-      exitCode == MDFlexParser::exitCodes::parsingError;
+      exitCode = MDFlexParser::exitCodes::parsingError;
     }
   }
 
