@@ -15,25 +15,6 @@
 
 #include "autopas/utils/WrapMPI.h"
 
-namespace {
-/**
- * Converts a regular string to an ASCII encoded string with spaces between characters.
- * The encoded string ends with the NULL character '0'.
- * Example: "AoS" is encoded to "65 111 83 0".
- * @param original: The string to be encoded in ASCII.
- * @return the corresponding ASCII encoded and NUll-terminated string.
- */
-std::string convertToAsciiString(const std::string &original) {
-  std::string encodedString = "";
-  for (size_t i = 0; i < original.length(); ++i) {
-    encodedString = encodedString + std::to_string(original[i]) + " ";
-  }
-  encodedString.append("0");
-  return encodedString;
-}
-
-}  // namespace
-
 ParallelVtkWriter::ParallelVtkWriter(std::string sessionName, const std::string &outputFolder,
                                      const int &maximumNumberOfDigitsInIteration)
     : _sessionName(std::move(sessionName)),
@@ -180,13 +161,6 @@ void ParallelVtkWriter::recordDomainSubdivision(const int &currentIteration,
     timestepFile << "        </DataArray>\n";
   };
 
-  // Paraview expects ASCII indices for each character in a DataArray of type "String".
-  auto printAsciiDataArray = [&](const auto &data, const std::string &name) {
-    timestepFile << "        <DataArray type=\"String\" Name=\"" << name << "\" format=\"ascii\">\n";
-    timestepFile << "          " << convertToAsciiString(data) << "\n";
-    timestepFile << "        </DataArray>\n";
-  };
-
   timestepFile << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>\n";
   timestepFile << "<VTKFile byte_order=\"LittleEndian\" type=\"StructuredGrid\" version=\"0.1\">\n";
   timestepFile << "  <StructuredGrid WholeExtent=\"" << wholeExtent[0] << " " << wholeExtent[1] << " " << wholeExtent[2]
@@ -196,12 +170,11 @@ void ParallelVtkWriter::recordDomainSubdivision(const int &currentIteration,
   timestepFile << "      <CellData>\n";
   printDataArray(decomposition.getDomainIndex(), "Int32", "DomainId");
   printDataArray(autoPasConfiguration.cellSizeFactor, "Float32", "CellSizeFactor");
-  //printAsciiDataArray(autoPasConfiguration.container.to_string(), "Container");
-  //printAsciiDataArray(autoPasConfiguration.dataLayout.to_string(), "DataLayout");
-  //printAsciiDataArray(autoPasConfiguration.toString(), "FullConfiguration");
-  //printAsciiDataArray(autoPasConfiguration.loadEstimator.to_string(), "LoadEstimator");
-  //printAsciiDataArray(autoPasConfiguration.traversal.to_string(), "Traversal");
-  //printAsciiDataArray(autoPasConfiguration.newton3.to_string(), "Newton3");
+  printDataArray(static_cast<int>(autoPasConfiguration.container), "Int32", "Container");
+  printDataArray(static_cast<int>(autoPasConfiguration.dataLayout), "Int32", "DataLayout");
+  printDataArray(static_cast<int>(autoPasConfiguration.loadEstimator), "Int32", "LoadEstimator");
+  printDataArray(static_cast<int>(autoPasConfiguration.traversal), "Int32", "Traversal");
+  printDataArray(static_cast<int>(autoPasConfiguration.newton3), "Int32", "Newton3");
   printDataArray(_mpiRank, "Int32", "Rank");
   timestepFile << "      </CellData>\n";
   timestepFile << "      <Points>\n";
@@ -319,12 +292,12 @@ void ParallelVtkWriter::createPvtsFile(const int &currentIteration, const Regula
   timestepFile << "    <PCellData>\n";
   timestepFile << "      <PDataArray type=\"Int32\" Name=\"DomainId\" />\n";
   timestepFile << "      <PDataArray type=\"Float32\" Name=\"CellSizeFactor\" />\n";
-  //timestepFile << "      <PDataArray type=\"String\" Name=\"Container\" />\n";
-  //timestepFile << "      <PDataArray type=\"String\" Name=\"DataLayout\" />\n";
-  //timestepFile << "      <PDataArray type=\"String\" Name=\"FullConfiguration\" />\n";
-  //timestepFile << "      <PDataArray type=\"String\" Name=\"LoadEstimator\" />\n";
-  //timestepFile << "      <PDataArray type=\"String\" Name=\"Traversal\" />\n";
-  //timestepFile << "      <PDataArray type=\"String\" Name=\"Newton3\" />\n";
+  timestepFile << "      <PDataArray type=\"Int32\" Name=\"Container\" />\n";
+  timestepFile << "      <PDataArray type=\"Int32\" Name=\"DataLayout\" />\n";
+  timestepFile << "      <PDataArray type=\"Int32\" Name=\"FullConfiguration\" />\n";
+  timestepFile << "      <PDataArray type=\"Int32\" Name=\"LoadEstimator\" />\n";
+  timestepFile << "      <PDataArray type=\"Int32\" Name=\"Traversal\" />\n";
+  timestepFile << "      <PDataArray type=\"Int32\" Name=\"Newton3\" />\n";
   timestepFile << "      <PDataArray type=\"Int32\" Name=\"Rank\" />\n";
   timestepFile << "    </PCellData>\n";
   timestepFile << "    <PPoints>\n";
@@ -364,13 +337,6 @@ void ParallelVtkWriter::tryCreateFolder(const std::string &name, const std::stri
   }
 }
 
-/**
- * Generates the file name for a given vtk file type.
- * @param fileContent: The type of data which will be recorded in this file.
- * @param filetype: The vtk file type extension. Pass the extension without the '.'.
- * @param currentIteration: The current iteration to record.
- * @param filenameStream: The output string string for the filename.
- */
 void ParallelVtkWriter::generateFilename(const std::string &fileContent, const std::string &filetype,
                                          const int &currentIteration, std::ostringstream &filenameStream) {
   filenameStream << _dataFolderPath << _sessionName << "_" << fileContent << "_" << _mpiRank << "_" << std::setfill('0')

@@ -53,6 +53,7 @@ double balanceAdjacentDomains(const double &leftDomainsWork, const double &right
  * Converts a domain id to the domain index, i.e. rank of the local processor.
  * @param domainId: the domain id to be converted to an index.
  * @param decomposition: The global domain's decomposition.
+ * @return the domain index which corresponds to the provided domain id.
  */
 int convertIdToIndex(const std::array<int, 3> &domainId, const std::array<int, 3> decomposition);
 
@@ -60,6 +61,7 @@ int convertIdToIndex(const std::array<int, 3> &domainId, const std::array<int, 3
  * Convert a domain index to the corresponding domain id.
  * @param domainIndex: The index to be converted to a domain id.
  * @param decomposition: The global domain's decomposition.
+ * @return the domain id which corresponds to the provided domain index.
  */
 std::array<int, 3> convertIndexToId(const int domainIndex, const std::array<int, 3> decomposition);
 

@@ -23,16 +23,6 @@ bool isInsideDomain(const std::array<double, 3> &coordinates, const std::array<d
   return isInsideLocalDomain;
 }
 
-double getDistanceToDomain(const std::array<double, 3> &coordinates, const std::array<double, 3> &boxMin,
-                           const std::array<double, 3> &boxMax) {
-  std::array<double, 3> differences = {0, 0, 0};
-  for (int i = 0; i < 3; ++i) {
-    differences[i] = std::clamp(coordinates[i], boxMin[i], boxMax[i]);
-  }
-
-  return autopas::utils::ArrayMath::L2Norm(differences);
-}
-
 void generateDecomposition(unsigned int subdomainCount, const std::array<bool, 3> &subdivideDimension,
                            std::array<int, 3> &decomposition) {
   std::list<int> primeFactors;
