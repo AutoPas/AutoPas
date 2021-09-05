@@ -210,11 +210,6 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
     }
   }
 
-  typename VerletListsCellsHelpers<Particle>::VLCTypeOfList::Value getTypeOfList()
-  {
-    return VerletListsCellsHelpers<Particle>::VLCTypeOfList::vlp;
-  }
-
   void setUpTraversal(TraversalInterface *traversal) override
   {
     auto vTraversal = dynamic_cast<VLCCellPairTraversalInterface<Particle> *>(traversal);

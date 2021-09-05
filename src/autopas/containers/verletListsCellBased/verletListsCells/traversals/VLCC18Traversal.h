@@ -35,7 +35,7 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dat
 class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
                         public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
 
-};
+
  public:
   /**
    * Constructor of the lc_c18 traversal.
