@@ -27,6 +27,12 @@ int main(int argc, char **argv) {
                                                configuration.subdivideDimension.value, configuration.cutoff.value,
                                                configuration.verletSkinRadius.value);
 
+  if (not configuration.checkpointfile.value.empty()) {
+    configuration.flushParticles();
+    configuration.loadParticlesFromCheckpoint(domainDecomposition.getDomainIndex(),
+                                              domainDecomposition.getSubdomainCount());
+  }
+
   // print start configuration and parallelization info
   if (domainDecomposition.getDomainIndex() == 0) {
     std::cout << configuration.to_string() << std::endl;
