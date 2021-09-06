@@ -36,6 +36,9 @@ constexpr size_t AttributesSize = 120;
 
 /**
  * Serializes the attribute defined by I.
+ * @param particle: The particle who's attribute needs to be serialized.
+ * @param attributeVector: The container in which the serialized attribute will be stored.
+ * @param startIndex: The startindex in the container where to store the serialized attribute.
  */
 template <size_t I>
 void serializeAttribute(const ParticleType &particle, std::vector<char> &attributeVector, size_t &startIndex) {
@@ -47,6 +50,9 @@ void serializeAttribute(const ParticleType &particle, std::vector<char> &attribu
 
 /**
  * Deserializes the attribute defined by I.
+ * @param attributeVector: The vector containing the data which needs to be deserialized.
+ * @param particle: The particle to which the serialized data will be applied.
+ * @param startIndex: The start index in the attributeVector of the attribute which needs to be deserialized.
  */
 template <size_t I>
 void deserializeAttribute(char *&attributeVector, ParticleType &particle, size_t &startIndex) {

@@ -41,15 +41,10 @@ RegularGridDecomposition::RegularGridDecomposition(const std::array<double, 3> &
 
   DomainTools::generateDecomposition(_subdomainCount, subdivideDimension, _decomposition);
 
-  std::cout << "Decomposition: " << autopas::utils::ArrayUtils::to_string(_decomposition) << std::endl;
-
   initializeMPICommunicator();
 
   initializeLocalDomain();
 
-  if (_domainIndex == 0) {
-    std::cout << autopas::utils::ArrayUtils::to_string(globalBoxMin) << ", " << autopas::utils::ArrayUtils::to_string(globalBoxMax) << std::endl;
-  }
   initializeGlobalBox(globalBoxMin, globalBoxMax);
 
   initializeLocalBox();
@@ -448,21 +443,4 @@ void RegularGridDecomposition::categorizeParticlesIntoLeftAndRightNeighbour(
       uncategorizedParticles.push_back(particle);
     }
   }
-}
-
-int RegularGridDecomposition::convertIdToIndex(const std::array<int, 3> &domainId) {
-  int neighbourDomainIndex = 0;
-
-  for (int i = 0; i < 3; ++i) {
-    int accumulatedTail = 1;
-
-    if (i < _decomposition.size() - 1) {
-      accumulatedTail =
-          std::accumulate(_decomposition.begin() + i + 1, _decomposition.end(), 1, std::multiplies<int>());
-    }
-
-    neighbourDomainIndex += accumulatedTail * domainId[i];
-  }
-
-  return neighbourDomainIndex;
 }

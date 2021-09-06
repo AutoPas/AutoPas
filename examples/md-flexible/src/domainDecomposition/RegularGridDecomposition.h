@@ -51,43 +51,43 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Returns the minimum coordinates of global domain.
    * @return bottom left front corner of the global domain.
    */
-  const std::array<double, 3> getGlobalBoxMin() const override { return _globalBoxMin; }
+  std::array<double, 3> getGlobalBoxMin() const override { return _globalBoxMin; }
 
   /**
    * Returns the maximum coordinates of global domain.
    * @return top right back corner of the global domain.
    */
-  const std::array<double, 3> getGlobalBoxMax() const override { return _globalBoxMax; }
+  std::array<double, 3> getGlobalBoxMax() const override { return _globalBoxMax; }
 
   /**
    * Returns the minimum coordinates of local domain.
    * @return bottom left front corner of the local domain.
    */
-  const std::array<double, 3> getLocalBoxMin() const override { return _localBoxMin; }
+  std::array<double, 3> getLocalBoxMin() const override { return _localBoxMin; }
 
   /**
    * Returns the maximum coordinates of local domain.
    * @return top right back corner of the local domain.
    */
-  const std::array<double, 3> getLocalBoxMax() const override { return _localBoxMax; }
+  std::array<double, 3> getLocalBoxMax() const override { return _localBoxMax; }
 
   /**
    * Returns the number of domains in each dimension
    * @return vector containing the number of subdomains along each dimension
    */
-  const std::array<int, 3> getDecomposition() const { return _decomposition; }
+  std::array<int, 3> getDecomposition() const { return _decomposition; }
+
+  /**
+   * Returns the numnber of subdomains in the decomposition.
+   * @return numner of subdomains in the decomposition.
+   */
+  int getSubdomainCount() const { return _subdomainCount; }
 
   /**
    * Returns the current processes domain id.
    * @return domain id of the current processor
    */
   const std::array<int, 3> getDomainId() const { return _domainId; }
-
-  /**
-   * Returns the numnber of subdomains in the decomposition.
-   * @return numner of subdomains in the decomposition.
-   */
-  const int getSubdomainCount() { return _subdomainCount; }
 
   /**
    * Checks if the provided coordinates are located in the local domain.
@@ -321,18 +321,14 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Categorizes the provided particles as particles for the left or the right neighbour and adds them to the respective
    * output vector. Particle positions will be wrapped around the global domain boundary if necessary.
    * @param particles: The particles which need to be categorized.
+   * @param direction: The index of the dimension along which the left and right neighbour lie.
    * @param leftNeighbourParticles: Contains the particles for the left neighbour after function execution.
    * @param rightNeighbourParticles: Contains the particles for the right neighbour after function execution.
-   * @param uncagtegorizedParticles: Contains particles which could neither be assigned to the left nor the right
+   * @param uncategorizedParticles: Contains particles which could neither be assigned to the left nor the right
    * neighbour.
    */
   void categorizeParticlesIntoLeftAndRightNeighbour(const std::vector<ParticleType> &particles, const size_t &direction,
                                                     std::vector<ParticleType> &leftNeighbourParticles,
                                                     std::vector<ParticleType> &rightNeighbourParticles,
                                                     std::vector<ParticleType> &uncategorizedParticles);
-
-  /**
-   * Converts a domain id to the domain index, i.e. rank of the local processor.
-   */
-  int convertIdToIndex(const std::array<int, 3> &domainIndex);
 };
