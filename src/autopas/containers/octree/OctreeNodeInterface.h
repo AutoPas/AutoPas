@@ -9,6 +9,7 @@
 #include <array>
 #include <set>
 #include <vector>
+#include <cstdarg>
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/octree/OctreeDirection.h"
@@ -41,6 +42,29 @@ struct OctreeCounter {
   size_t count;
 };
 
+static void csv(char const *filename, char const *header, char const *line, ...) {
+  // check if file exists
+  FILE *f = fopen(filename, "r");
+  bool writeHeader = (f == nullptr);
+  if (f) fclose(f);
+
+  f = fopen(filename, "a");
+  if (f) {
+    if (writeHeader) {
+      fprintf(f, "%s\n", header);
+    }
+
+    va_list l;
+    va_start(l, line);
+    vfprintf(f, line, l);
+    va_end(l);
+
+    fclose(f);
+  } else {
+    throw std::runtime_error("ERROR: Unable to open dump file!");
+  }
+}
+
 template <class Particle>
 struct OctreeMemoryFootprint {
   size_t leafCount = 0;
@@ -56,29 +80,14 @@ struct OctreeMemoryFootprint {
   size_t getNodeCount() { return leafCount + innerNodeCount; }
 
   void dumpCSV(char const *filename, size_t iteration) {
-    // check if file exists
-    FILE *f = fopen(filename, "r");
-    bool writeHeader = (f == nullptr);
-    if (f) fclose(f);
-
-    f = fopen(filename, "a");
-    if (f) {
-      if (writeHeader) {
-        fprintf(f,
-                "iteration,nodeCount,totalSize,leafCount,leavesSize,innerNodeCount,innerNodesSize,pplMin,pplMax,pplAvg,"
-                "particleCount\n");
-      }
-
-      size_t leavesSize = sizeof(OctreeLeafNode<Particle>) * leafCount;
-      size_t innerNodesSize = sizeof(OctreeInnerNode<Particle>) * innerNodeCount;
-      fprintf(f, "%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%.02f,%ld\n", iteration, getNodeCount(),
-              leavesSize + innerNodesSize, leafCount, leavesSize, innerNodeCount, innerNodesSize,
-              (size_t)particleCount.min, (size_t)particleCount.max, particleCount.avg, (size_t)particleCount.val);
-
-      fclose(f);
-    } else {
-      throw std::runtime_error("ERROR: Unable to open dump file!");
-    }
+    size_t leavesSize = sizeof(OctreeLeafNode<Particle>) * leafCount;
+    size_t innerNodesSize = sizeof(OctreeInnerNode<Particle>) * innerNodeCount;
+    csv(filename,
+        "iteration,nodeCount,totalSize,leafCount,leavesSize,innerNodeCount,innerNodesSize,pplMin,pplMax,pplAvg,"
+        "particleCount",
+        "%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%.02f,%ld\n", iteration, getNodeCount(), leavesSize + innerNodesSize,
+        leafCount, leavesSize, innerNodeCount, innerNodesSize, (size_t)particleCount.min, (size_t)particleCount.max,
+        particleCount.avg, (size_t)particleCount.val);
   }
 };
 
