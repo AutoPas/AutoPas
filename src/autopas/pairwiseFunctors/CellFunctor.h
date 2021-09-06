@@ -60,9 +60,7 @@ class CellFunctor {
    * Checks _startSorting for std::numeric_limits<unsigned long>::max().
    * @return true iff _startSorting is not the maximal long value.
    */
-  static bool sortingActivated(){
-    return _startSorting != std::numeric_limits<unsigned long>::max();
-  }
+  static bool sortingActivated() { return _startSorting != std::numeric_limits<unsigned long>::max(); }
 
  private:
   /**
