@@ -19,11 +19,24 @@ cmake ..
 make md-flexible
 ```
 
+### Compiling with MPI
+To use the MPI parallelization of md-flexible activate `MD_FLEXIBLE_USE_MPI` via `cmake`:
+```bash
+cmake -DMD_FLEXIBLE_USE_MPI=ON ..
+Using this option does not guarantee that MPI will be used. There are some additional requirements:
+* MPI is installed
+* mpirun is called with more than 1 process
+```
+
 ## Testing
 Simple tests can be run via:
 ```bash
 make mdFlexTests
 ctest -R mdFlexTests
+```
+To run Tests with MPI enabled:
+```bash
+mpiexec -np 4 ./examples/md-flexible/tests/mdFlexTests
 ```
 
 ## Usage
@@ -42,6 +55,12 @@ The Falling Drop example simulation can be started with:
  cd examples/md-flexible
  ./md-flexible --yaml-filename fallingDrop.yaml
 ```
+
+To execute md-flexible using MPI run the following command in the build directory:
+```bash
+mpirun -np 4 ./examples/md-flexible/md-flexible --yaml-filename ./examples/md-flexible/fallingDrop.yaml
+```
+The number 4 can be exchanged by any number assuming the hardware supports the selected number of processes.
 
 ### Input
 
@@ -70,10 +89,13 @@ For examples how to define and configure each object see [`input/AllOptions.yaml
 
 ### Output
 
-* After every execution, a configuration YAML file is generated. It is
-possible to use this file as input for a new simulation.
+* After every execution, a configuration YAML file is generated. It is possible to use this file as input for a new simulation.
+
 * You can generate vtk output by providing a vtk-filename
-(see help for details).
+(see help for details). The output contains two different vtk files. One for visualizing the particles another for the visualization of the subdomains of the domain decomposition.
+The cells contain additional information about the configuration of the AutoPas container responsible for simulating the cell.
+To visualize the particle records load the .pvtu files in ParaView. To visualize the cells of the decomposition load the .pvts files in ParaView.
+
 
 ### Checkpoints
 

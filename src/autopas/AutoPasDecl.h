@@ -577,9 +577,9 @@ class AutoPas {
    */
   void setMPIStrategy(MPIStrategyOption mpiStrategyOption) { _mpiStrategyOption = mpiStrategyOption; }
 
-// Only define the interface for the MPI communicator if AUTOPAS_INTERNODE_TUNING=ON
-// The internal implementation will use _autopasMPICommunicator with WrapMPI regardless of AUTOPAS_INTERNODE_TUNING
-#if defined(AUTOPAS_INTERNODE_TUNING)
+// Only define the interface for the MPI communicator if AUTOPAS_INCLUDE_MPI=ON
+// The internal implementation will use _autopasMPICommunicator with WrapMPI regardless of AUTOPAS_INCLUDE_MPI
+#if defined(AUTOPAS_INCLUDE_MPI)
   /**
    * Setter for the MPI communicator that AutoPas uses for potential MPI calls.
    * If not set, MPI_COMM_WORLD will be used.
