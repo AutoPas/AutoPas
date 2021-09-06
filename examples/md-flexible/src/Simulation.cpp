@@ -32,6 +32,7 @@ extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::Fl
 #include "Thermostat.h"
 #include "TimeDiscretization.h"
 #include "autopas/utils/MemoryProfiler.h"
+#include "autopas/utils/WrapMPI.h"
 #include "configuration/MDFlexConfig.h"
 #include "src/ParticleSerializationTools.h"
 
@@ -205,11 +206,14 @@ void Simulation::run() {
 
 double Simulation::calculateHomogeneity() const {
   size_t numberOfParticles = _autoPasContainer->getNumberOfParticles();
+  autopas::AutoPas_MPI_Allreduce(&numberOfParticles, &numberOfParticles, 1, AUTOPAS_MPI_INT, AUTOPAS_MPI_SUM,
+                                 AUTOPAS_MPI_COMM_WORLD);
+
   // approximately the resolution we want to get.
   size_t numberOfCells = ceil(numberOfParticles / 10.);
 
-  std::array<double, 3> startCorner = _autoPasContainer->getBoxMin();
-  std::array<double, 3> endCorner = _autoPasContainer->getBoxMax();
+  std::array<double, 3> startCorner = _domainDecomposition.getGlobalBoxMin();
+  std::array<double, 3> endCorner = _domainDecomposition.getGlobalBoxMax();
   std::array<double, 3> domainSizePerDimension = {};
   for (int i = 0; i < 3; ++i) {
     domainSizePerDimension[i] = endCorner[i] - startCorner[i];
