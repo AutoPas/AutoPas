@@ -1,4 +1,4 @@
-functor                          :  Lennard-Jones (12-6)
+functor                          :  Lennard-Jones (12-6) AVX
 cutoff                           :  2.5
 verlet-rebuild-frequency         :  10 # significantly reduced rebuild frequency (default: 20)
 # these are the box size values for a equilibration with 160x160x160 and spacing 1.5
