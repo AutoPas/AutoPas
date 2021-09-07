@@ -51,38 +51,57 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Returns the minimum coordinates of global domain.
    * @return bottom left front corner of the global domain.
    */
-  const std::array<double, 3> getGlobalBoxMin() override { return _globalBoxMin; }
+  std::array<double, 3> getGlobalBoxMin() const override { return _globalBoxMin; }
 
   /**
    * Returns the maximum coordinates of global domain.
    * @return top right back corner of the global domain.
    */
-  const std::array<double, 3> getGlobalBoxMax() override { return _globalBoxMax; }
+  std::array<double, 3> getGlobalBoxMax() const override { return _globalBoxMax; }
 
   /**
    * Returns the minimum coordinates of local domain.
    * @return bottom left front corner of the local domain.
    */
-  const std::array<double, 3> getLocalBoxMin() override { return _localBoxMin; }
+  std::array<double, 3> getLocalBoxMin() const override { return _localBoxMin; }
 
   /**
    * Returns the maximum coordinates of local domain.
    * @return top right back corner of the local domain.
    */
-  const std::array<double, 3> getLocalBoxMax() override { return _localBoxMax; }
+  std::array<double, 3> getLocalBoxMax() const override { return _localBoxMax; }
 
   /**
    * Returns the number of domains in each dimension
    * @return vector containing the number of subdomains along each dimension
    */
-  const std::array<int, 3> getDecomposition() { return _decomposition; }
+  std::array<int, 3> getDecomposition() const { return _decomposition; }
+
+  /**
+   * Returns the numnber of subdomains in the decomposition.
+   * @return numner of subdomains in the decomposition.
+   */
+  int getSubdomainCount() const { return _subdomainCount; }
+
+  /**
+   * Returns the current processes domain id.
+   * @return domain id of the current processor
+   */
+  const std::array<int, 3> getDomainId() const { return _domainId; }
 
   /**
    * Checks if the provided coordinates are located in the local domain.
    * @param coordinates: The coordinates in question.
    * @return true if the coordinates lie inside the local domain, false otherwise.
    */
-  bool isInsideLocalDomain(const std::array<double, 3> &coordinates) override;
+  bool isInsideLocalDomain(const std::array<double, 3> &coordinates) const override;
+
+  /**
+   * Calculates and returns the extent of the subdomain with inde subdomainIndex.
+   * @param subdomainIndex: The index of the subdomain for which to calculate the extent.
+   * @return extent of the subdomain with index subdomainIndex.
+   */
+  std::array<int, 6> getExtentOfSubdomain(const int subdomainIndex) const;
 
   /**
    * Exchanges halo particles with all neighbours of the provided AutoPasContainer.
@@ -94,8 +113,6 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Exchanges migrating particles with all neighbours of the provided AutoPasContainer.
    * @param autoPasContainer: The container, where the migrating particles originate from.
    * @param emigrants: The emigrating particles send to neighbours.
-   * @param updated: Indicates if the autoPasContainer has been updated.
-   *                 In most cases use value returned from container.updateContainer().
    */
   void exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer, std::vector<ParticleType> &emigrants,
                                   const bool &updated);
@@ -142,6 +159,12 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * The MPI communicator containing all processes which own a subdomain in this decomposition.
    */
   autopas::AutoPas_MPI_Comm _communicator;
+
+  /**
+   * Contains the planar communicators along each dimension where the current process is a part of.
+   * A planar communicator contains all processes with the same coordinate in a single dimension.
+   */
+  std::array<autopas::AutoPas_MPI_Comm, 3> _planarCommunicators;
 
   /**
    * Stores the domain cutoff width.
@@ -227,23 +250,42 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param rightNeighbour: The right neighbour's index / rank.
    * @param receivedParticles: Container for the particles received from either neighbour.
    */
-  void sendAndReceiveParticlesLeftAndRight(const std::vector<ParticleType> &particlesToLeft,
-                                           const std::vector<ParticleType> &particlesToRight, const int &leftNeighbour,
+  void sendAndReceiveParticlesLeftAndRight(std::vector<ParticleType> &particlesToLeft,
+                                           std::vector<ParticleType> &particlesToRight, const int &leftNeighbour,
                                            const int &rightNeighbour, std::vector<ParticleType> &receivedParticles);
 
   /**
-   * Converts a domain id to the domain index, i.e. rank of the local processor.
+   * Collects the halo particles for the left neighbour.
+   * Halo particle positions will be wrapped around the global domain boundary if necessary.
+   * @param autoPasContainer: The autopas container which owns the potential halo particles.
+   * @param direction: The direction along which the neighbour is located.
+   * @param haloParticles: The container the identified halo particles are gathered in to.
    */
-  int convertIdToIndex(const std::array<int, 3> &domainIndex);
+  void collectHaloParticlesForLeftNeighbour(SharedAutoPasContainer &autoPasContainer, const size_t &direction,
+                                            std::vector<ParticleType> &haloParticles);
 
   /**
-   * Calculates the amount of work which will be considered along respecive local domain boundaries.
-   * If a domain has a total work of 10 and 4 boundary planes which do not lie on a global boundary plane,
-   * the resulting distributed work is 10/4 = 2.5.
-   * Boundary planes which lie on globale boundary planes cannot be shifted.
-   * This distributed work can be used to adjust the respective domain boundaries.
-   * @param work: The total work performed within the local box.
-   * @return work which can be used to adjust each siftable boundary plane position.
+   * Collects the halo particles for the right neighbour.
+   * Halo particle positions will be wrapped around the global domain boundary if necessary.
+   * @param autoPasContainer: The autopas container which owns the potential halo particles.
+   * @param direction: The direction along which the neighbour is located.
+   * @param haloParticles: The container the identified halo particles are gathered in to.
    */
-  double calculateDistributedWork(const double work);
+  void collectHaloParticlesForRightNeighbour(SharedAutoPasContainer &autoPasContainer, const size_t &direction,
+                                             std::vector<ParticleType> &haloParticles);
+
+  /**
+   * Categorizes the provided particles as particles for the left or the right neighbour and adds them to the respective
+   * output vector. Particle positions will be wrapped around the global domain boundary if necessary.
+   * @param particles: The particles which need to be categorized.
+   * @param direction: The index of the dimension along which the left and right neighbour lie.
+   * @param leftNeighbourParticles: Contains the particles for the left neighbour after function execution.
+   * @param rightNeighbourParticles: Contains the particles for the right neighbour after function execution.
+   * @param uncategorizedParticles: Contains particles which could neither be assigned to the left nor the right
+   * neighbour.
+   */
+  void categorizeParticlesIntoLeftAndRightNeighbour(const std::vector<ParticleType> &particles, const size_t &direction,
+                                                    std::vector<ParticleType> &leftNeighbourParticles,
+                                                    std::vector<ParticleType> &rightNeighbourParticles,
+                                                    std::vector<ParticleType> &uncategorizedParticles);
 };

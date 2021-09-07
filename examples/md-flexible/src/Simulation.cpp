@@ -141,11 +141,10 @@ Simulation::~Simulation() { _timers.total.stop(); }
 
 void Simulation::run() {
   _timers.simulate.start();
-
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
       _timers.vtk.start();
-      _vtkWriter->recordTimestep(_iteration, *_autoPasContainer);
+      _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, _domainDecomposition);
       _timers.vtk.stop();
     }
 
@@ -160,19 +159,20 @@ void Simulation::run() {
       updatePositions();
       auto [emigrants, updated] =
           _autoPasContainer->updateContainer(_iteration % _configuration.verletRebuildFrequency.value == 0);
-      _domainDecomposition.exchangeMigratingParticles(_autoPasContainer, emigrants, updated);
 
+      _timers.work.stop();
       if (updated) {
-        _timers.work.stop();
         _domainDecomposition.update(_timers.work.getTotalTime());
-        auto emigrants =
+        auto additionalEmigrants =
             _autoPasContainer->resizeBox(_domainDecomposition.getLocalBoxMin(), _domainDecomposition.getLocalBoxMax());
-        _domainDecomposition.exchangeMigratingParticles(_autoPasContainer, emigrants, true);
+        emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
+
         _timers.work.reset();
-        _timers.work.start();
       }
 
+      _domainDecomposition.exchangeMigratingParticles(_autoPasContainer, emigrants, updated);
       _domainDecomposition.exchangeHaloParticles(_autoPasContainer);
+      _timers.work.start();
     }
 
     updateForces();
@@ -201,7 +201,7 @@ void Simulation::run() {
 
   // Record last state of simulation.
   if (_createVtkFiles) {
-    _vtkWriter->recordTimestep(_iteration, *_autoPasContainer);
+    _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, _domainDecomposition);
   }
 }
 

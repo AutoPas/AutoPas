@@ -19,8 +19,6 @@ void ParticleCommunicator::sendParticles(const std::vector<ParticleType> &partic
     ParticleSerializationTools::serializeParticle(particle, buffer);
   }
 
-  size_t sizeOfParticleAttributes = sizeof(ParticleAttributes);
-
   sendDataToNeighbour(buffer, receiver);
 }
 
