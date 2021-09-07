@@ -160,7 +160,7 @@ class Simulation {
     autopas::utils::Timer thermostat;
 
     /**
-     * Used for balancing with ALL load balancing.
+     * Used for diffuse load balancing.
      */
     autopas::utils::Timer work;
   };
