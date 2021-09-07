@@ -1,7 +1,6 @@
 /**
  * @file MDFlexConfig.h
- * @author F. Gratl
- * @date 18.10.2019
+ * @author F. Gratl * @date 18.10.2019
  */
 
 #pragma once
@@ -137,9 +136,20 @@ class MDFlexConfig {
   void addParticleType(unsigned long typeId, double epsilon, double sigma, double mass);
 
   /**
-   * Flushes the particles as they are not required anymore after initialization.
+   * Flushes the particles.
    */
   void flushParticles();
+
+  /**
+   * Loads the particles from the checkpoint file defined in the configuration file.
+   * If the checkpoint has been recorded using multiple processes, the rank of the current process needs to be passed.
+   * The provided rank also needs to respect the domain decomposition. E. g. if the a regular grid decomposition is
+   * used,   * don't pass the MPI_COMM_WORLD rank, as it might differ from the grid rank derived in the decomposition
+   * scheme. The wrong rank might result in a very bad network topology and therefore increase communication cost.
+   * @param rank: The MPI rank of the current process.
+   * @param communicatorSize: The size of the MPI communicator used for the simulation.
+   */
+  void loadParticlesFromCheckpoint(const size_t &rank, const size_t &communicatorSize);
 
   /**
    * Choice of the functor
@@ -328,6 +338,16 @@ class MDFlexConfig {
    */
   MDFlexOption<std::array<double, 3>, 0> boxMax{
       {1, 1, 1}, "box-max", true, "Upper back right corner of the simulation box."};
+
+  /**
+   * subdivideDimension
+   */
+  MDFlexOption<std::array<bool, 3>, 0> subdivideDimension{
+      {true, true, true},
+      "subdivide-dimension",
+      true,
+      "Indicates in which dimensions the global domain can be subdivided by the MPI decomposition"};
+
   /**
    * acquisitionFunctionOption
    */
@@ -574,7 +594,18 @@ class MDFlexConfig {
    * checkpointfile
    */
   MDFlexOption<std::string, __LINE__> checkpointfile{"", "checkpoint", true,
-                                                     "Path to a .vtk File to load as a checkpoint."};
+                                                     "Path to a .pvtu File to load as a checkpoint."};
+  /**
+   * checkpointScenarioName
+   */
+  MDFlexOption<std::string, __LINE__> checkpointScenarioName{
+      "", "checkpoint-scenarioname", true,
+      "The scenario name corresponds to the vtk-filename name used in the simulation which created the checkpoint"};
+
+  /**
+   * checkpointIteration
+   */
+  MDFlexOption<size_t, 0> checkpointIteration{0, "checkpoint-iteration", true, "The iteration of the checkpoint file"};
 
   /**
    * valueOffset used for cli-output alignment
@@ -603,11 +634,6 @@ class MDFlexConfig {
    * Initializes all particles present at the start of the simulation.
    */
   void initializeObjects();
-
-  /**
-   * Loads the particles from the checkpoint file defined in the configuration file.
-   */
-  void loadParticlesFromCheckpoint();
 };
 
 /**

@@ -5,10 +5,13 @@
  */
 #pragma once
 
+#include <array>
 #include <string>
 
 #include "autopas/AutoPas.h"
+#include "autopas/selectors/Configuration.h"
 #include "src/TypeDefinitions.h"
+#include "src/domainDecomposition/RegularGridDecomposition.h"
 
 /**
  * The ParallelVtkWriter can be used to create vtk-files for MPI parallel processes.
@@ -30,11 +33,13 @@ class ParallelVtkWriter {
   ~ParallelVtkWriter() = default;
 
   /**
-   * Writes the current state of particles into a vtk file.
+   * Writes the current state of particles and the current domain subdivision into vtk files.
    * @param currentIteration The simulation's current iteration.
    * @param autoPasContainer The AutoPas container whose owned particles will be logged.
+   * @param decomposition: The decomposition of the global domain.
    */
-  void recordTimestep(const int &currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer);
+  void recordTimestep(const int &currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer,
+                      const RegularGridDecomposition &decomposition);
 
  private:
   /**
@@ -77,15 +82,48 @@ class ParallelVtkWriter {
   int _maximumNumberOfDigitsInIteration;
 
   /**
+   * Writes the current state of particles into vtk files.
+   * @param currentIteration: The simulations current iteration.
+   * @param autoPasContainer The AutoPas container whose owned particles will be logged.
+   */
+  void recordParticleStates(const int &currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer);
+
+  /**
+   * Writes the current domain subdivision into vtk files.
+   * @param currentIteration: The simulations current iteration.
+   * @param autoPasConfiguration: The configuration of an autoPasContainer.
+   * @param decomposition: The simulations domain decomposition.
+   */
+  void recordDomainSubdivision(const int &currentIteration, const autopas::Configuration &autoPasConfiguration,
+                               const RegularGridDecomposition &decomposition);
+
+  /**
+   * Calculates the whole extent of the decompositions local domain.
+   * The whole extent defines the space this local domain is occupying in the global domain.
+   * The layout of the returned array is [ xmin, xmax, ymin, ymax, zmin, zmax ], where x, y and z are coordinates in
+   * in the decomposition grid.
+   * @param domainDecomposition: The simulations domain decomposition.
+   * @return the whole extent of the local domain.
+   */
+  std::array<int, 6> calculateWholeExtent(const RegularGridDecomposition &domainDecomposition);
+
+  /**
    * Tries to create a folder for the current writer session and stores it in _sessionFolderPath.
    */
   void tryCreateSessionAndDataFolders(const std::string &name, const std::string location);
 
   /**
-   * Creates the .pvtu file required to load data from multiple ranks into paraview.
+   * Creates the .pvtu file required to load unstructured grid data from multiple ranks into ParaView.
    * @param currentIteration: The simulation's current iteration.
    */
   void createPvtuFile(const int &currentIteration);
+
+  /**
+   * Creates the .pvts file required to load structured grid data from multiple ranks into ParaView.
+   * @param currentIteration: The simulation's current iteration.
+   * @param decomposition: The decomposition of the domain.
+   */
+  void createPvtsFile(const int &currentIteration, const RegularGridDecomposition &decomposition);
 
   /**
    * Tries to create a folder at a location.
@@ -94,4 +132,14 @@ class ParallelVtkWriter {
    * @param location The location where the new folder will be created.
    */
   void tryCreateFolder(const std::string &name, const std::string &location);
+
+  /**
+   * Generates the file name for a given vtk file type.
+   * @param currentIteration: The current iteration to record.
+   * @param fileContent: The type of data which will be recorded in this file.
+   * @param filetype: The vtk file type extension. Pass the extension without the '.'.
+   * @param filenameStream: The output string string for the filename.
+   */
+  void generateFilename(const std::string &fileContent, const std::string &filetype, const int &currentIteration,
+                        std::ostringstream &filenameStream);
 };
