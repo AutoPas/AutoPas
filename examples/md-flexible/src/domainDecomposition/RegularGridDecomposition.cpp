@@ -58,6 +58,7 @@ void RegularGridDecomposition::update(const double &work) {
   if (_mpiIsEnabled) {
     // This is a dummy variable which is not being used.
     autopas::AutoPas_MPI_Request dummyRequest;
+
     auto oldLocalBoxMin = _localBoxMin;
     auto oldLocalBoxMax = _localBoxMax;
 
@@ -79,14 +80,14 @@ void RegularGridDecomposition::update(const double &work) {
       if (_localBoxMin[i] != _globalBoxMin[i]) {
         autopas::AutoPas_MPI_Isend(&distributedWorkInPlane, 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
                                    &dummyRequest);
-        autopas::AutoPas_MPI_Isend(&_localBoxMax[i], 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
+        autopas::AutoPas_MPI_Isend(&oldLocalBoxMax[i], 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
                                    &dummyRequest);
       }
 
       if (_localBoxMax[i] != _globalBoxMax[i]) {
         autopas::AutoPas_MPI_Isend(&distributedWorkInPlane, 1, AUTOPAS_MPI_DOUBLE, rightNeighbour, 0, _communicator,
                                    &dummyRequest);
-        autopas::AutoPas_MPI_Isend(&_localBoxMin[i], 1, AUTOPAS_MPI_DOUBLE, rightNeighbour, 0, _communicator,
+        autopas::AutoPas_MPI_Isend(&oldLocalBoxMin[i], 1, AUTOPAS_MPI_DOUBLE, rightNeighbour, 0, _communicator,
                                    &dummyRequest);
       }
 
