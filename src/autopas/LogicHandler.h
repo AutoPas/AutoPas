@@ -125,7 +125,8 @@ class LogicHandler {
       _autoTuner.getContainer()->addParticle(p);
       _numParticlesOwned.fetch_add(1, std::memory_order_relaxed);
     } else {
-      _additionalParticleVector.push_back(p);
+      // If the container is valid, we add it to the particle buffer.
+      _particleBuffer.push_back(p);
     }
   }
 
@@ -141,14 +142,16 @@ class LogicHandler {
 
     auto container = _autoTuner.getContainer();
     if (not neighborListsAreValid()) {
+      // If the neighbor lists are not valid, we can add the particle.
       container->template addHaloParticle</* checkInBox */ false>(haloParticle);
       _numParticlesHalo.fetch_add(1, std::memory_order_relaxed);
     } else {
-      // check if the halo particle is actually a halo particle, i.e., not inside of the domain.
+      // Check if we can update an existing halo(dummy) particle.
       bool updated = _autoTuner.getContainer()->updateHaloParticle(haloParticle);
       if (not updated) {
-        _additionalHaloParticleVector.push_back(haloParticle);
-        _additionalHaloParticleVector.back().setOwnershipState(OwnershipState::halo);
+        // If we couldn't find an existing particle, add it to the halo particle buffer.
+        _haloParticleBuffer.push_back(haloParticle);
+        _haloParticleBuffer.back().setOwnershipState(OwnershipState::halo);
       }
     }
   }
@@ -159,8 +162,8 @@ class LogicHandler {
   void deleteAllParticles() {
     _neighborListsAreValid = false;
     _autoTuner.getContainer()->deleteAllParticles();
-    _additionalParticleVector.clear();
-    _additionalHaloParticleVector.clear();
+    _particleBuffer.clear();
+    _haloParticleBuffer.clear();
     // all particles are gone -> reset counters.
     _numParticlesOwned.exchange(0, std::memory_order_relaxed);
     _numParticlesHalo.exchange(0, std::memory_order_relaxed);
@@ -188,20 +191,20 @@ class LogicHandler {
 
     if(doRebuild) {
       // if a rebuild is performed, add the buffered particles to the container!
-      for (auto &&p : _additionalParticleVector) {
+      for (auto &&p : _particleBuffer) {
         if (not p.isDummy()) {
           _autoTuner.getContainer()->template addParticle(p);
         }
       }
-      _additionalParticleVector.clear();
-      for (auto &&p : _additionalHaloParticleVector) {
+      _particleBuffer.clear();
+      for (auto &&p : _haloParticleBuffer) {
         if (not p.isDummy()) {
           _autoTuner.getContainer()->template addHaloParticle(p);
         }
       }
-      _additionalHaloParticleVector.clear();
+      _haloParticleBuffer.clear();
     }
-    bool result = _autoTuner.iteratePairwise(f, doRebuild, _additionalParticleVector, _additionalHaloParticleVector);
+    bool result = _autoTuner.iteratePairwise(f, doRebuild, _particleBuffer, _haloParticleBuffer);
 
     if (doRebuild /*we have done a rebuild now*/) {
       // list is now valid
@@ -334,7 +337,14 @@ class LogicHandler {
    */
   std::atomic<size_t> _numParticlesHalo{0ul};
 
-  std::vector<Particle> _additionalParticleVector;
-  std::vector<Particle> _additionalHaloParticleVector;
+  /**
+   * Buffer to store particles that should not yet be added to the container.
+   */
+  std::vector<Particle> _particleBuffer;
+
+  /**
+   * Buffer to store halo particles that should not yet be added to the container.
+   */
+  std::vector<Particle> _haloParticleBuffer;
 };
 }  // namespace autopas
