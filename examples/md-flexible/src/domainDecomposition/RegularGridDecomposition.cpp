@@ -62,15 +62,17 @@ void RegularGridDecomposition::update(const double &work) {
     auto oldLocalBoxMin = _localBoxMin;
     auto oldLocalBoxMax = _localBoxMax;
 
+    std::array<double, 3> distributedWorkInPlane{};
+
     for (int i = 0; i < _dimensionCount; ++i) {
       const int domainCountInPlane =
           _decomposition[(i + 1) % _dimensionCount] * _decomposition[(i + 2) % _dimensionCount];
 
-      double distributedWorkInPlane = work;
+      distributedWorkInPlane[i] = work;
       if (domainCountInPlane > 1) {
-        autopas::AutoPas_MPI_Allreduce(&work, &distributedWorkInPlane, 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM,
+        autopas::AutoPas_MPI_Allreduce(&work, &distributedWorkInPlane[i], 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM,
                                        _planarCommunicators[i]);
-        distributedWorkInPlane = distributedWorkInPlane / domainCountInPlane;
+        distributedWorkInPlane[i] = distributedWorkInPlane[i] / domainCountInPlane;
       }
 
       const int leftNeighbour = _neighbourDomainIndices[i * 2];
@@ -78,19 +80,21 @@ void RegularGridDecomposition::update(const double &work) {
 
       double balancedPosition;
       if (_localBoxMin[i] != _globalBoxMin[i]) {
-        autopas::AutoPas_MPI_Isend(&distributedWorkInPlane, 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
+        autopas::AutoPas_MPI_Isend(&distributedWorkInPlane[i], 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
                                    &dummyRequest);
         autopas::AutoPas_MPI_Isend(&oldLocalBoxMax[i], 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
                                    &dummyRequest);
       }
 
       if (_localBoxMax[i] != _globalBoxMax[i]) {
-        autopas::AutoPas_MPI_Isend(&distributedWorkInPlane, 1, AUTOPAS_MPI_DOUBLE, rightNeighbour, 0, _communicator,
+        autopas::AutoPas_MPI_Isend(&distributedWorkInPlane[i], 1, AUTOPAS_MPI_DOUBLE, rightNeighbour, 0, _communicator,
                                    &dummyRequest);
         autopas::AutoPas_MPI_Isend(&oldLocalBoxMin[i], 1, AUTOPAS_MPI_DOUBLE, rightNeighbour, 0, _communicator,
                                    &dummyRequest);
       }
+    }
 
+    for (int i = 0; i < _dimensionCount; ++i) {
       double neighbourPlaneWork, neighbourBoundary;
       if (_localBoxMin[i] != _globalBoxMin[i]) {
         autopas::AutoPas_MPI_Recv(&neighbourPlaneWork, 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
@@ -99,7 +103,7 @@ void RegularGridDecomposition::update(const double &work) {
                                   AUTOPAS_MPI_STATUS_IGNORE);
 
         balancedPosition =
-            DomainTools::balanceAdjacentDomains(neighbourPlaneWork, distributedWorkInPlane, neighbourBoundary,
+            DomainTools::balanceAdjacentDomains(neighbourPlaneWork, distributedWorkInPlane[i], neighbourBoundary,
                                                 oldLocalBoxMax[i], 2 * (_cutoffWidth + _skinWidth));
         _localBoxMin[i] += (balancedPosition - _localBoxMin[i]) / 2;
       }
@@ -112,7 +116,7 @@ void RegularGridDecomposition::update(const double &work) {
                                   AUTOPAS_MPI_STATUS_IGNORE);
 
         balancedPosition =
-            DomainTools::balanceAdjacentDomains(distributedWorkInPlane, neighbourPlaneWork, oldLocalBoxMin[i],
+            DomainTools::balanceAdjacentDomains(distributedWorkInPlane[i], neighbourPlaneWork, oldLocalBoxMin[i],
                                                 neighbourBoundary, 2 * (_cutoffWidth + _skinWidth));
         _localBoxMax[i] += (balancedPosition - _localBoxMax[i]) / 2;
       }
