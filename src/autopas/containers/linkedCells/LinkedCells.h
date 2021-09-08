@@ -181,7 +181,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
         this->getCells()[cellId].deleteDummyParticles();
 
         // if empty
-        if (not this->getCells()[cellId].isNotEmpty()) continue;
+        if (this->getCells()[cellId].isEmpty()) continue;
 
         auto [cellLowerCorner, cellUpperCorner] = this->getCellBlock().getCellBoundingBox(cellId);
 

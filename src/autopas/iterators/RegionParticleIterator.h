@@ -135,7 +135,7 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
          this->_iteratorAcrossCells += iteratorInc) {
       _currentRegionIndex += stride;
 
-      if (this->_iteratorAcrossCells < this->_vectorOfCells->end() and this->_iteratorAcrossCells->isNotEmpty() and
+      if (this->_iteratorAcrossCells < this->_vectorOfCells->end() and not this->_iteratorAcrossCells->isEmpty() and
           this->isCellTypeBehaviorCorrect()) {
         this->_iteratorWithinOneCell = this->_iteratorAcrossCells->begin();
         break;

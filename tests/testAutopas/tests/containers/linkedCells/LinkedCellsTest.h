@@ -55,8 +55,7 @@ void LinkedCellsTest<TestingType>::checkParticleIDsInCells(
         EXPECT_THAT(foundIDs, testing::UnorderedElementsAreArray(expectedIDs)) << "called from line: " << line;
       }
     } else {
-      EXPECT_FALSE(linkedCells.getCells()[i].isNotEmpty()) << "Cell: " << i << std::endl
-                                                           << "called from line: " << line;
+      EXPECT_TRUE(linkedCells.getCells()[i].isEmpty()) << "Cell: " << i << std::endl << "called from line: " << line;
     }
   }
 }
