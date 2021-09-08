@@ -12,8 +12,8 @@
  * May be extended when necessary.
  */
 
-#include <stdint.h>
 #include <limits.h>
+#include <stdint.h>
 
 #if defined(AUTOPAS_INCLUDE_MPI)
 #include <mpi.h>
