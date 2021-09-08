@@ -327,4 +327,10 @@ class RegularGridDecomposition final : public DomainDecomposition {
                                                     std::vector<ParticleType> &leftNeighbourParticles,
                                                     std::vector<ParticleType> &rightNeighbourParticles,
                                                     std::vector<ParticleType> &uncategorizedParticles);
+
+  /**
+   * Balances the subdomains of the grid decomposition using the inverted pressure balancing algorithm.
+   * @param work: The work performed by the process owning this sudomain.
+   */
+  void balanceWithInvertedPressureLoadBalancer(const double &work);
 };
