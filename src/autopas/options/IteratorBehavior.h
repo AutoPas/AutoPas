@@ -112,6 +112,12 @@ class IteratorBehavior : public Option<IteratorBehavior> {
     };
   }
 
+  /**
+   * check whether this iterator behavior covers the given particle
+   * @tparam ParticleType
+   * @param particle particle to be checked
+   * @return true if this iterator behavior covers the given particle, false otherwise
+   */
   template <typename ParticleType>
   bool contains(ParticleType &particle) {
     switch (this->_value) {

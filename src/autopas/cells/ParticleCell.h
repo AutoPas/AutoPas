@@ -132,6 +132,13 @@ class ParticleCell {
    */
   [[nodiscard]] virtual std::array<double, 3> getCellLength() const = 0;
 
+  /**
+   * Check whether particle is positioned within box
+   * @param p particle to check
+   * @param lowerCorner lower corner of box
+   * @param higherCorner higher corner of box
+   * @returns true if the given particle is positioned within the box
+   */
   inline bool isParticleInRegion(Particle &p, const std::array<double, 3> &lowerCorner,
                                  const std::array<double, 3> &higherCorner) {
     return utils::inBox(p.getR(), lowerCorner, higherCorner);
