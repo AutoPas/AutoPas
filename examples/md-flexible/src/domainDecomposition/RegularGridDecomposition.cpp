@@ -16,11 +16,8 @@
 #include "autopas/utils/ArrayUtils.h"
 #include "src/ParticleSerializationTools.h"
 
-RegularGridDecomposition::RegularGridDecomposition(const std::array<double, 3> &globalBoxMin,
-                                                   const std::array<double, 3> &globalBoxMax,
-                                                   const std::array<bool, 3> &subdivideDimension,
-                                                   const double &cutoffWidth, const double &skinWidth)
-    : _cutoffWidth(cutoffWidth), _skinWidth(skinWidth) {
+RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configuration)
+    : _cutoffWidth(configuration.cutoff.value), _skinWidth(configuration.verletSkinRadius.value) {
 #if defined(AUTOPAS_INCLUDE_MPI)
   _mpiIsEnabled = true;
 #else
@@ -39,13 +36,13 @@ RegularGridDecomposition::RegularGridDecomposition(const std::array<double, 3> &
     std::cout << "MPI will not be used." << std::endl;
   }
 
-  DomainTools::generateDecomposition(_subdomainCount, subdivideDimension, _decomposition);
+  DomainTools::generateDecomposition(_subdomainCount, configuration.subdivideDimension.value, _decomposition);
 
   initializeMPICommunicator();
 
   initializeLocalDomain();
 
-  initializeGlobalBox(globalBoxMin, globalBoxMax);
+  initializeGlobalBox(configuration.boxMin.value, configuration.boxMax.value);
 
   initializeLocalBox();
 
