@@ -19,6 +19,8 @@ namespace LeavingParticleCollector {
 /**
  * Collects leaving particles and marks halo particles as dummy.
  * @note This function does not move or actually delete any particles!
+ * @tparam ContainerType The type of the container.
+ * @param container The container from which particles should be collected.
  * @return Returns a vector of leaving particles.
  * @todo: openmp parallelization, general optimizations (do not iterate over all particles, but only over boundary,
  * eventually merge both loops?

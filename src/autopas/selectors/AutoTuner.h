@@ -340,11 +340,22 @@ bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild
   return isTuning;
 }
 
+/**
+ * Performs the remaining needed traversal for the additional particles.
+ * @tparam newton3
+ * @tparam Particle
+ * @tparam T
+ * @tparam PairwiseFunctor
+ * @param f
+ * @param containerPtr
+ * @param particleBuffer
+ * @param haloParticleBuffer
+ */
 template <bool newton3, class Particle, class T, class PairwiseFunctor>
-void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<Particle> &additionalParticleVector,
-                          std::vector<Particle> &additionalHaloParticleVector) {
-  // 1. _additionalParticleVector with all close particles in container
-  for (auto &&p : additionalParticleVector) {
+void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<Particle> &particleBuffer,
+                          std::vector<Particle> &haloParticleBuffer) {
+  // 1. particleBuffer with all close particles in container
+  for (auto &&p : particleBuffer) {
     auto pos = p.getR();
     auto min = autopas::utils::ArrayMath::subScalar(pos, containerPtr->getCutoff());
     auto max = autopas::utils::ArrayMath::addScalar(pos, containerPtr->getCutoff());
@@ -359,11 +370,55 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<Partic
     }
   }
 
-  // 2. _additionalHaloParticleVector with owned, close particles in container
+  // 2. haloParticleBuffer with owned, close particles in container
+  for (auto &&p : haloParticleBuffer) {
+    auto pos = p.getR();
+    auto min = autopas::utils::ArrayMath::subScalar(pos, containerPtr->getCutoff());
+    auto max = autopas::utils::ArrayMath::addScalar(pos, containerPtr->getCutoff());
+    for (auto iter2 = containerPtr->getRegionIterator(min, max, IteratorBehavior::owned); iter2.isValid(); ++iter2) {
+      if (newton3) {
+        f->AoSFunctor(p, *iter2, true);
+      } else {
+        // Here, we do not need to interact p with *iter2, because p is a halo particle and an AoSFunctor call with an
+        // halo particle as first argument has no effect if newton3 == false.
+        f->AoSFunctor(*iter2, p, false);
+      }
+    }
+  }
 
-  // 3. _additionalParticleVector with itself
+  // 3. particleBuffer with itself
+  for (size_t i = 0; i < particleBuffer.size(); ++i) {
+    auto &&p1 = particleBuffer[i];
+    for (size_t j = newton3 ? i + 1 : 0; j < particleBuffer.size(); ++j) {
+      if (i == j) {
+        continue;
+      }
+      auto &&p2 = particleBuffer[j];
+      if (newton3) {
+        f->AoSFunctor(p1, p2, true);
+      } else {
+        f->AoSFunctor(p1, p2, false);
+        f->AoSFunctor(p2, p1, false);
+      }
+    }
+  }
 
-  // 4. _additionalParticleVector with _additionalHaloParticleVector
+  // 4. particleBuffer with haloParticleBuffer
+  for (size_t i = 0; i < particleBuffer.size(); ++i) {
+    auto &&p1 = particleBuffer[i];
+    for (size_t j = 0; j < haloParticleBuffer.size(); ++j) {
+      auto &&p2 = haloParticleBuffer[j];
+      if (newton3) {
+        f->AoSFunctor(p1, p2, true);
+      } else {
+        // Here, we do not need to interact p2 with p1, because p2 is a halo particle and an AoSFunctor call with an
+        // halo particle as first argument has no effect if newton3 == false.
+        f->AoSFunctor(p1, p2, false);
+      }
+    }
+  }
+
+  // Note: haloParticleBuffer with itself is NOT needed, as interactions between halo particles are unneeded!
 }
 
 template <class Particle>
