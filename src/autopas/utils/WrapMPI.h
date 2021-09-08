@@ -12,6 +12,9 @@
  * May be extended when necessary.
  */
 
+#include <stdint.h>
+#include <limits.h>
+
 #if defined(AUTOPAS_INCLUDE_MPI)
 #include <mpi.h>
 #else
@@ -46,6 +49,18 @@ namespace autopas {
 #define AUTOPAS_MPI_LONG MPI_LONG
 /** Wrapper for MPI_DOUBLE */
 #define AUTOPAS_MPI_DOUBLE MPI_DOUBLE
+
+#if SIZE_MAX == UCHAR_MAX
+#define AUTOPAS_MPI_SIZE_T MPI_UNSIGNED_CHAR
+#elif SIZE_MAX == USHRT_MAX
+#define AUTOPAS_MPI_SIZE_T MPI_UNSIGNED_SHORT
+#elif SIZE_MAX == UINT_MAX
+#define AUTOPAS_MPI_SIZE_T MPI_UNSIGNED
+#elif SIZE_MAX == ULONG_MAX
+#define AUTOPAS_MPI_SIZE_T MPI_UNSIGNED_LONG
+#elif SIZE_MAX == ULLONG_MAX
+#define AUTOPAS_MPI_SIZE_T MPI_UNSIGNED_LONG_LONG
+#endif
 
 // MPI_Op
 /** Wrapper for MPI_LAND */
@@ -96,8 +111,12 @@ enum AutoPas_MPI_Datatype {
   BYTE = 1,
   CXX_BOOL = sizeof(bool),
   CHAR = sizeof(char),
+  UNSIGNED_CHAR = sizeof(unsigned char),
+  UNSIGNED_SHORT = sizeof(unsigned short),
   INT = sizeof(int),
+  UNSIGNED_INT = sizeof(unsigned int),
   UNSIGNED_LONG = sizeof(unsigned long),
+  UNSIGNED_LONG_LONG = sizeof(unsigned long long),
   LONG = sizeof(double),
   DOUBLE = sizeof(double)
 };
@@ -116,6 +135,18 @@ enum AutoPas_MPI_Datatype {
 #define AUTOPAS_MPI_LONG autopas::AutoPas_MPI_Datatype::LONG
 /** Wrapper for MPI_DOUBLE */
 #define AUTOPAS_MPI_DOUBLE autopas::AutoPas_MPI_Datatype::DOUBLE
+
+#if SIZE_MAX == UCHAR_MAX
+#define AUTOPAS_MPI_SIZE_T autopas::AutoPas_MPI_Datatype::UNSIGNED_CHAR
+#elif SIZE_MAX == USHRT_MAX
+#define AUTOPAS_MPI_SIZE_T autopas::AutoPas_MPI_Datatype::UNSIGNED_SHORT
+#elif SIZE_MAX == UINT_MAX
+#define AUTOPAS_MPI_SIZE_T autopas::AutoPas_MPI_Datatype::UNSIGNED_INT
+#elif SIZE_MAX == ULONG_MAX
+#define AUTOPAS_MPI_SIZE_T autopas::AutoPas_MPI_Datatype::UNSINGED_LONG
+#elif SIZE_MAX == ULLONG_MAX
+#define AUTOPAS_MPI_SIZE_T autopas::AutoPas_MPI_Datatype::UNSIGNED_LONG_LONG
+#endif
 
 /**
  * Dummy for MPI_Op.

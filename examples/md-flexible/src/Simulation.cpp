@@ -206,7 +206,7 @@ void Simulation::run() {
 
 double Simulation::calculateHomogeneity() const {
   size_t numberOfParticles = _autoPasContainer->getNumberOfParticles();
-  autopas::AutoPas_MPI_Allreduce(&numberOfParticles, &numberOfParticles, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM,
+  autopas::AutoPas_MPI_Allreduce(&numberOfParticles, &numberOfParticles, 1, AUTOPAS_MPI_SIZE_T, AUTOPAS_MPI_SUM,
                                  AUTOPAS_MPI_COMM_WORLD);
 
   // approximately the resolution we want to get.
