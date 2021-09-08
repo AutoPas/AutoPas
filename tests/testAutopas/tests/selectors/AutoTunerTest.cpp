@@ -297,7 +297,8 @@ TEST_F(AutoTunerTest, testForceRetuneBetweenPhases) {
     EXPECT_TRUE(autoTuner.iteratePairwise(&emptyFunctor, false, emptyVec, emptyVec)) << "Tuner should still be tuning.";
   }
   // first iteration after tuning phase
-  EXPECT_FALSE(autoTuner.iteratePairwise(&emptyFunctor, false, emptyVec, emptyVec)) << "Tuner should be done be tuning.";
+  EXPECT_FALSE(autoTuner.iteratePairwise(&emptyFunctor, false, emptyVec, emptyVec))
+      << "Tuner should be done be tuning.";
 
   EXPECT_FALSE(autoTuner.willRebuild()) << "No rebuilding expected here.";
   // instead of waiting the full tuning interval restart tuning immediately
@@ -310,7 +311,8 @@ TEST_F(AutoTunerTest, testForceRetuneBetweenPhases) {
     EXPECT_TRUE(autoTuner.iteratePairwise(&emptyFunctor, false, emptyVec, emptyVec)) << "Tuner should still be tuning.";
   }
   // first iteration after tuning phase
-  EXPECT_FALSE(autoTuner.iteratePairwise(&emptyFunctor, false, emptyVec, emptyVec)) << "Tuner should be done be tuning.";
+  EXPECT_FALSE(autoTuner.iteratePairwise(&emptyFunctor, false, emptyVec, emptyVec))
+      << "Tuner should be done be tuning.";
 }
 
 TEST_F(AutoTunerTest, testForceRetuneInPhase) {
@@ -349,10 +351,11 @@ TEST_F(AutoTunerTest, testForceRetuneInPhase) {
   size_t iteration = 0;
   for (; iteration < maxSamples + 1; ++iteration) {
     // since we don't actually do anything doRebuild can always be false.
-    EXPECT_TRUE(autoTuner.iteratePairwise(&emptyFunctor, false, emptyVec, emptyVec)) << "Tuner should still be tuning.\n"
-                                                                    "Phase 1\n"
-                                                                    "Iteration "
-                                                                 << iteration;
+    EXPECT_TRUE(autoTuner.iteratePairwise(&emptyFunctor, false, emptyVec, emptyVec))
+        << "Tuner should still be tuning.\n"
+           "Phase 1\n"
+           "Iteration "
+        << iteration;
   }
   // restart the full tuning phase
   autoTuner.forceRetune();
@@ -361,15 +364,17 @@ TEST_F(AutoTunerTest, testForceRetuneInPhase) {
   // expect a full tuning phase
   for (size_t i = 0; i < numExpectedTuningIterations; ++i, ++iteration) {
     // since we don't actually do anything doRebuild can always be false.
-    EXPECT_TRUE(autoTuner.iteratePairwise(&emptyFunctor, false, emptyVec, emptyVec)) << "Tuner should still be tuning.\n"
-                                                                    "Phase 2\n"
-                                                                    "Iteration "
-                                                                 << iteration;
+    EXPECT_TRUE(autoTuner.iteratePairwise(&emptyFunctor, false, emptyVec, emptyVec))
+        << "Tuner should still be tuning.\n"
+           "Phase 2\n"
+           "Iteration "
+        << iteration;
   }
   // first iteration after tuning phase
-  EXPECT_FALSE(autoTuner.iteratePairwise(&emptyFunctor, false, emptyVec, emptyVec)) << "Tuner should be done be tuning.\n"
-                                                                   "Iteration "
-                                                                << iteration;
+  EXPECT_FALSE(autoTuner.iteratePairwise(&emptyFunctor, false, emptyVec, emptyVec))
+      << "Tuner should be done be tuning.\n"
+         "Iteration "
+      << iteration;
 }
 
 /**
@@ -497,5 +502,6 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
   std::vector<Particle> emptyVec;
 
   bool doRebuild = true;
-  EXPECT_THROW(tuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec), autopas::utils::ExceptionHandler::AutoPasException);
+  EXPECT_THROW(tuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec),
+               autopas::utils::ExceptionHandler::AutoPasException);
 }

@@ -43,7 +43,8 @@ class AllContainersTests : public AllContainersTestsBase, public ::testing::With
 
 using ParamTypeBothUpdates = std::tuple<autopas::ContainerOption, bool /*keep Lists Valid*/>;
 
-class AllContainersTestsBothUpdates : public AllContainersTestsBase, public ::testing::WithParamInterface<ParamTypeBothUpdates> {
+class AllContainersTestsBothUpdates : public AllContainersTestsBase,
+                                      public ::testing::WithParamInterface<ParamTypeBothUpdates> {
  public:
   static auto getParamToStringFunction() {
     static const auto paramToString = [](const testing::TestParamInfo<ParamType> &info) {
@@ -52,6 +53,7 @@ class AllContainersTestsBothUpdates : public AllContainersTestsBase, public ::te
     };
     return paramToString;
   }
+
  protected:
   void testUpdateContainerDeletesDummy(bool previouslyOwned);
 };

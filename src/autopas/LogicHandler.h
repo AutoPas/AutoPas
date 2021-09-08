@@ -189,7 +189,7 @@ class LogicHandler {
   bool iteratePairwise(Functor *f) {
     const bool doRebuild = not neighborListsAreValid();
 
-    if(doRebuild) {
+    if (doRebuild) {
       // if a rebuild is performed, add the buffered particles to the container!
       for (auto &&p : _particleBuffer) {
         if (not p.isDummy()) {
@@ -339,11 +339,13 @@ class LogicHandler {
 
   /**
    * Buffer to store particles that should not yet be added to the container.
+   * @note This buffer could potentially be replaced by a ParticleCell.
    */
   std::vector<Particle> _particleBuffer;
 
   /**
    * Buffer to store halo particles that should not yet be added to the container.
+   * @note This buffer could potentially be replaced by a ParticleCell.
    */
   std::vector<Particle> _haloParticleBuffer;
 };
