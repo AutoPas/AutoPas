@@ -78,7 +78,6 @@ void RegularGridDecomposition::update(const double &work) {
       const int leftNeighbour = _neighbourDomainIndices[i * 2];
       const int rightNeighbour = _neighbourDomainIndices[i * 2 + 1];
 
-      double balancedPosition;
       if (_localBoxMin[i] != _globalBoxMin[i]) {
         autopas::AutoPas_MPI_Isend(&distributedWorkInPlane[i], 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
                                    &dummyRequest);
@@ -95,7 +94,10 @@ void RegularGridDecomposition::update(const double &work) {
     }
 
     for (int i = 0; i < _dimensionCount; ++i) {
-      double neighbourPlaneWork, neighbourBoundary;
+      const int leftNeighbour = _neighbourDomainIndices[i * 2];
+      const int rightNeighbour = _neighbourDomainIndices[i * 2 + 1];
+
+      double neighbourPlaneWork, neighbourBoundary, balancedPosition;
       if (_localBoxMin[i] != _globalBoxMin[i]) {
         autopas::AutoPas_MPI_Recv(&neighbourPlaneWork, 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
                                   AUTOPAS_MPI_STATUS_IGNORE);
