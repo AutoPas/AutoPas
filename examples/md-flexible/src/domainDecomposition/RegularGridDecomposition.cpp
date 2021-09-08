@@ -47,13 +47,27 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
   initializeLocalBox();
 
   initializeNeighbourIds();
+
+  _loadBalancer = configuration.loadBalancer.value;
 }
 
 RegularGridDecomposition::~RegularGridDecomposition() {}
 
 void RegularGridDecomposition::update(const double &work) {
   if (_mpiIsEnabled) {
-    balanceWithInvertedPressureLoadBalancer(work);
+    switch (_loadBalancer) {
+      case LoadBalancerOption::invertedPressure: {
+        balanceWithInvertedPressureLoadBalancer(work);
+        break;
+      }
+      case LoadBalancerOption::all: {
+        balanceWithAllLoadBalancer(work);
+        break;
+      }
+      default: {
+        // do nothing
+      }
+    }
   }
 }
 
@@ -458,3 +472,5 @@ void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(const dou
     }
   }
 }
+
+void RegularGridDecomposition::balanceWithAllLoadBalancer(const double &work) {}

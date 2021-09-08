@@ -209,6 +209,11 @@ class RegularGridDecomposition final : public DomainDecomposition {
   std::vector<std::vector<char>> _sendBuffers;
 
   /**
+   * Defines which load balancer will be used.
+   */
+  LoadBalancerOption _loadBalancer;
+
+  /**
    * Initializes the decomposition of the domain.
    * This needs to be called before initializeMPICommunicator.
    */
@@ -333,4 +338,10 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param work: The work performed by the process owning this sudomain.
    */
   void balanceWithInvertedPressureLoadBalancer(const double &work);
+
+  /**
+   * Balances the subdomains of the grid decomposition using the ALL load balancer.
+   * @param work: The work performed by the process owning this sudomain.
+   */
+  void balanceWithAllLoadBalancer(const double &work);
 };

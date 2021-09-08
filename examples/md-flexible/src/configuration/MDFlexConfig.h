@@ -200,7 +200,7 @@ class MDFlexConfig {
       "List of traversal options to use. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::TraversalOption::getAllOptions(), " ", {"(", ")"})};
   /**
-   * traversalOptions
+   * load-estimator
    */
   MDFlexOption<std::set<autopas::LoadEstimatorOption>, __LINE__> loadEstimatorOptions{
       autopas::LoadEstimatorOption::getMostOptions(), "load-estimator", true,
@@ -609,7 +609,7 @@ class MDFlexConfig {
   MDFlexOption<size_t, 0> checkpointIteration{0, "checkpoint-iteration", true, "The iteration of the checkpoint file"};
 
   /**
-   * load balancing options
+   * loadBalancer
    */
   MDFlexOption<LoadBalancerOption, __LINE__> loadBalancer{
       LoadBalancerOption::invertedPressure, "load-balancer", true,
