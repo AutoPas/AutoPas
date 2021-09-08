@@ -32,20 +32,66 @@ class LogicHandler {
     checkMinimalSize();
   }
 
+  [[nodiscard]] std::vector<Particle> collectLeavingParticlesFromBuffer(bool insertOwnedParticlesToContainer) {
+    std::vector<Particle> leavingBufferParticles;
+    if (insertOwnedParticlesToContainer) {
+      for (auto &&p : _particleBuffer) {
+        if (p.isDummy()) {
+          continue;
+        }
+        if (utils::inBox(p.getR(), _autoTuner.getContainer()->getBoxMin(), _autoTuner.getContainer()->getBoxMax())) {
+          _autoTuner.getContainer()->template addParticle(p);
+        } else {
+          leavingBufferParticles.push_back(p);
+        }
+      }
+      _particleBuffer.clear();
+    } else {
+      for (auto iter = _particleBuffer.begin(); iter != _particleBuffer.end();) {
+        auto &&p = *iter;
+
+        auto fastRemove = [&]() {
+          // Fast remove of particle, i.e., swap with last entry && pop.
+          std::swap(p, leavingBufferParticles.back());
+          leavingBufferParticles.pop_back();
+          // Do not increment the iter afterwards!
+        };
+        if (p.isDummy()) {
+          // We remove dummies!
+          fastRemove();
+        }
+        if (utils::notInBox(p.getR(), _autoTuner.getContainer()->getBoxMin(), _autoTuner.getContainer()->getBoxMax())) {
+          leavingBufferParticles.push_back(p);
+          fastRemove();
+        } else {
+          ++iter;
+        }
+      }
+    }
+    return leavingBufferParticles;
+  }
+
   /**
    * @copydoc AutoPas::updateContainer()
    */
   [[nodiscard]] std::vector<Particle> updateContainer(bool forced) {
     bool doCompleteContainerUpdate = not neighborListsAreValid() or forced;
     bool keepNeighborListsValid = not doCompleteContainerUpdate;
+
     if (doCompleteContainerUpdate) {
       _neighborListsAreValid = false;
     }
+    // The next call also adds particles to the container if doCompleteContainerUpdate is true.
+    auto leavingBufferParticles = collectLeavingParticlesFromBuffer(doCompleteContainerUpdate);
+
     AutoPasLog(debug, "Initiating container update.");
     auto leavingParticles = _autoTuner.getContainer()->updateContainer(keepNeighborListsValid);
+    leavingParticles.insert(leavingParticles.end(), leavingBufferParticles.begin(), leavingBufferParticles.end());
+
     // Substract the amount of leaving particles from the number of owned particles.
     _numParticlesOwned.fetch_sub(leavingParticles.size(), std::memory_order_relaxed);
     // updateContainer deletes all halo particles.
+    _haloParticleBuffer.clear();
     _numParticlesHalo.exchange(0, std::memory_order_relaxed);
     return leavingParticles;
   }
