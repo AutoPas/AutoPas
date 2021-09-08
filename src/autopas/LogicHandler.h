@@ -186,17 +186,20 @@ class LogicHandler {
   bool iteratePairwise(Functor *f) {
     const bool doRebuild = not neighborListsAreValid();
 
-    if(doRebuild){
+    if(doRebuild) {
+      // if a rebuild is performed, add the buffered particles to the container!
       for (auto &&p : _additionalParticleVector) {
         if (not p.isDummy()) {
           _autoTuner.getContainer()->template addParticle(p);
         }
       }
+      _additionalParticleVector.clear();
       for (auto &&p : _additionalHaloParticleVector) {
         if (not p.isDummy()) {
           _autoTuner.getContainer()->template addHaloParticle(p);
         }
       }
+      _additionalHaloParticleVector.clear();
     }
     bool result = _autoTuner.iteratePairwise(f, doRebuild, _additionalParticleVector, _additionalHaloParticleVector);
 
