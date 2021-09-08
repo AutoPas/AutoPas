@@ -158,6 +158,11 @@ class Simulation {
      * Records the time required for the thermostat updates.
      */
     autopas::utils::Timer thermostat;
+
+    /**
+     * Used for diffuse load balancing.
+     */
+    autopas::utils::Timer work;
   };
 
   /**

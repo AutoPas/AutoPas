@@ -155,11 +155,24 @@ void Simulation::run() {
             "boundary conditions!");
       }
 
+      _timers.work.start();
       updatePositions();
+      auto [emigrants, updated] =
+          _autoPasContainer->updateContainer(_iteration % _configuration.verletRebuildFrequency.value == 0);
 
-      _domainDecomposition.exchangeMigratingParticles(_autoPasContainer);
+      _timers.work.stop();
+      if (updated) {
+        _domainDecomposition.update(_timers.work.getTotalTime());
+        auto additionalEmigrants =
+            _autoPasContainer->resizeBox(_domainDecomposition.getLocalBoxMin(), _domainDecomposition.getLocalBoxMax());
+        emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
 
+        _timers.work.reset();
+      }
+
+      _domainDecomposition.exchangeMigratingParticles(_autoPasContainer, emigrants, updated);
       _domainDecomposition.exchangeHaloParticles(_autoPasContainer);
+      _timers.work.start();
     }
 
     updateForces();
@@ -168,6 +181,7 @@ void Simulation::run() {
       updateVelocities();
       updateThermostat();
     }
+    _timers.work.stop();
 
     ++_iteration;
 

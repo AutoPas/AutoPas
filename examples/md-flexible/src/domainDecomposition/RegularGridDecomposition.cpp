@@ -51,7 +51,77 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
 
 RegularGridDecomposition::~RegularGridDecomposition() {}
 
-void RegularGridDecomposition::update() { updateLocalBox(); }
+void RegularGridDecomposition::update(const double &work) {
+  if (_mpiIsEnabled) {
+    // This is a dummy variable which is not being used.
+    autopas::AutoPas_MPI_Request dummyRequest;
+
+    auto oldLocalBoxMin = _localBoxMin;
+    auto oldLocalBoxMax = _localBoxMax;
+
+    std::array<double, 3> distributedWorkInPlane{};
+
+    for (int i = 0; i < _dimensionCount; ++i) {
+      const int domainCountInPlane =
+          _decomposition[(i + 1) % _dimensionCount] * _decomposition[(i + 2) % _dimensionCount];
+
+      distributedWorkInPlane[i] = work;
+      if (domainCountInPlane > 1) {
+        autopas::AutoPas_MPI_Allreduce(&work, &distributedWorkInPlane[i], 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM,
+                                       _planarCommunicators[i]);
+        distributedWorkInPlane[i] = distributedWorkInPlane[i] / domainCountInPlane;
+      }
+
+      const int leftNeighbour = _neighbourDomainIndices[i * 2];
+      const int rightNeighbour = _neighbourDomainIndices[i * 2 + 1];
+
+      if (_localBoxMin[i] != _globalBoxMin[i]) {
+        autopas::AutoPas_MPI_Isend(&distributedWorkInPlane[i], 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
+                                   &dummyRequest);
+        autopas::AutoPas_MPI_Isend(&oldLocalBoxMax[i], 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
+                                   &dummyRequest);
+      }
+
+      if (_localBoxMax[i] != _globalBoxMax[i]) {
+        autopas::AutoPas_MPI_Isend(&distributedWorkInPlane[i], 1, AUTOPAS_MPI_DOUBLE, rightNeighbour, 0, _communicator,
+                                   &dummyRequest);
+        autopas::AutoPas_MPI_Isend(&oldLocalBoxMin[i], 1, AUTOPAS_MPI_DOUBLE, rightNeighbour, 0, _communicator,
+                                   &dummyRequest);
+      }
+    }
+
+    for (int i = 0; i < _dimensionCount; ++i) {
+      const int leftNeighbour = _neighbourDomainIndices[i * 2];
+      const int rightNeighbour = _neighbourDomainIndices[i * 2 + 1];
+
+      double neighbourPlaneWork, neighbourBoundary, balancedPosition;
+      if (_localBoxMin[i] != _globalBoxMin[i]) {
+        autopas::AutoPas_MPI_Recv(&neighbourPlaneWork, 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
+                                  AUTOPAS_MPI_STATUS_IGNORE);
+        autopas::AutoPas_MPI_Recv(&neighbourBoundary, 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
+                                  AUTOPAS_MPI_STATUS_IGNORE);
+
+        balancedPosition =
+            DomainTools::balanceAdjacentDomains(neighbourPlaneWork, distributedWorkInPlane[i], neighbourBoundary,
+                                                oldLocalBoxMax[i], 2 * (_cutoffWidth + _skinWidth));
+        _localBoxMin[i] += (balancedPosition - _localBoxMin[i]) / 2;
+      }
+
+      if (_localBoxMax[i] != _globalBoxMax[i]) {
+        double neighbourPlaneWork, neighbourBoundary;
+        autopas::AutoPas_MPI_Recv(&neighbourPlaneWork, 1, AUTOPAS_MPI_DOUBLE, rightNeighbour, 0, _communicator,
+                                  AUTOPAS_MPI_STATUS_IGNORE);
+        autopas::AutoPas_MPI_Recv(&neighbourBoundary, 1, AUTOPAS_MPI_DOUBLE, rightNeighbour, 0, _communicator,
+                                  AUTOPAS_MPI_STATUS_IGNORE);
+
+        balancedPosition =
+            DomainTools::balanceAdjacentDomains(distributedWorkInPlane[i], neighbourPlaneWork, oldLocalBoxMin[i],
+                                                neighbourBoundary, 2 * (_cutoffWidth + _skinWidth));
+        _localBoxMax[i] += (balancedPosition - _localBoxMax[i]) / 2;
+      }
+    }
+  }
+}
 
 void RegularGridDecomposition::initializeMPICommunicator() {
   std::vector<int> periods(3, 1);
@@ -66,9 +136,33 @@ void RegularGridDecomposition::initializeLocalDomain() {
 
   std::vector<int> periods(3, 1);
   autopas::AutoPas_MPI_Cart_get(_communicator, 3, _decomposition.data(), periods.data(), _domainId.data());
+
+  // Create planar communicators used for diffuse load balancing.
+  for (int i = 0; i < _dimensionCount; ++i) {
+    if (_mpiIsEnabled) {
+      const size_t key = _decomposition[(i + 1) % _dimensionCount] * _domainId[(i + 2) % _dimensionCount] +
+                         _domainId[(i + 1) % _dimensionCount];
+      autopas::AutoPas_MPI_Comm_split(_communicator, _domainId[i], key, &_planarCommunicators[i]);
+    } else {
+      _planarCommunicators[i] = AUTOPAS_MPI_COMM_WORLD;
+    }
+  }
 }
 
-void RegularGridDecomposition::initializeLocalBox() { updateLocalBox(); }
+void RegularGridDecomposition::initializeLocalBox() {
+  for (int i = 0; i < 3; ++i) {
+    double localBoxWidth = (_globalBoxMax[i] - _globalBoxMin[i]) / static_cast<double>(_decomposition[i]);
+
+    _localBoxMin[i] = _domainId[i] * localBoxWidth + _globalBoxMin[i];
+    _localBoxMax[i] = (_domainId[i] + 1) * localBoxWidth + _globalBoxMin[i];
+
+    if (_domainId[i] == 0) {
+      _localBoxMin[i] = _globalBoxMin[i];
+    } else if (_domainId[i] == _decomposition[i] - 1) {
+      _localBoxMax[i] = _globalBoxMax[i];
+    }
+  }
+}
 
 void RegularGridDecomposition::initializeNeighbourIds() {
   for (int i = 0; i < 3; ++i) {
@@ -81,21 +175,6 @@ void RegularGridDecomposition::initializeNeighbourIds() {
     auto succeedingNeighbourId = _domainId;
     succeedingNeighbourId[i] = (++succeedingNeighbourId[i] + _decomposition[i]) % _decomposition[i];
     _neighbourDomainIndices[neighbourIndex] = DomainTools::convertIdToIndex(succeedingNeighbourId, _decomposition);
-  }
-}
-
-void RegularGridDecomposition::updateLocalBox() {
-  for (int i = 0; i < 3; ++i) {
-    double localBoxWidth = (_globalBoxMax[i] - _globalBoxMin[i]) / static_cast<double>(_decomposition[i]);
-
-    _localBoxMin[i] = _domainId[i] * localBoxWidth + _globalBoxMin[i];
-    _localBoxMax[i] = (_domainId[i] + 1) * localBoxWidth + _globalBoxMin[i];
-
-    if (_domainId[i] == 0) {
-      _localBoxMin[i] = _globalBoxMin[i];
-    } else if (_domainId[i] == _decomposition[i] - 1) {
-      _localBoxMax[i] = _globalBoxMax[i];
-    }
   }
 }
 
@@ -116,121 +195,112 @@ std::array<int, 6> RegularGridDecomposition::getExtentOfSubdomain(const int subd
 }
 
 void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer) {
-  for (int i = 0; i < _dimensionCount; ++i) {
-    std::vector<ParticleType> haloParticles{};
-    for (int j = i; j < _dimensionCount; ++j) {
-      const size_t dimensionIndex = j % _dimensionCount;
-      std::vector<ParticleType> particlesForLeftNeighbour{};
-      std::vector<ParticleType> particlesForRightNeighbour{};
+  std::vector<ParticleType> haloParticles{};
 
-      if (j == i) {
-        collectHaloParticlesForLeftNeighbour(autoPasContainer, dimensionIndex, particlesForLeftNeighbour);
-        collectHaloParticlesForRightNeighbour(autoPasContainer, dimensionIndex, particlesForRightNeighbour);
-      }
+  for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
+    std::vector<ParticleType> particlesForLeftNeighbour{};
+    std::vector<ParticleType> particlesForRightNeighbour{};
 
-      double leftHaloMin = _localBoxMin[dimensionIndex] - _skinWidth;
-      double leftHaloMax = _localBoxMin[dimensionIndex] + _cutoffWidth + _skinWidth;
-      double rightHaloMin = _localBoxMax[dimensionIndex] - _cutoffWidth - _skinWidth;
-      double rightHaloMax = _localBoxMax[dimensionIndex] + _skinWidth;
+    collectHaloParticlesForLeftNeighbour(autoPasContainer, dimensionIndex, particlesForLeftNeighbour);
+    collectHaloParticlesForRightNeighbour(autoPasContainer, dimensionIndex, particlesForRightNeighbour);
 
-      for (const auto &particle : haloParticles) {
-        std::array<double, _dimensionCount> position = particle.getR();
-        if (position[dimensionIndex] >= leftHaloMin and position[dimensionIndex] < leftHaloMax) {
-          particlesForLeftNeighbour.push_back(particle);
+    double leftHaloMin = _localBoxMin[dimensionIndex] - _skinWidth;
+    double leftHaloMax = _localBoxMin[dimensionIndex] + _cutoffWidth + _skinWidth;
+    double rightHaloMin = _localBoxMax[dimensionIndex] - _cutoffWidth - _skinWidth;
+    double rightHaloMax = _localBoxMax[dimensionIndex] + _skinWidth;
 
-          // Apply boundary condition
-          if (_localBoxMin[dimensionIndex] == _globalBoxMin[dimensionIndex]) {
-            position[dimensionIndex] =
-                position[dimensionIndex] + (_globalBoxMax[dimensionIndex] - _globalBoxMin[dimensionIndex]);
-            particlesForLeftNeighbour.back().setR(position);
-          }
-        } else if (position[dimensionIndex] >= rightHaloMin and position[dimensionIndex] < rightHaloMax) {
-          particlesForRightNeighbour.push_back(particle);
+    for (const auto &particle : haloParticles) {
+      std::array<double, _dimensionCount> position = particle.getR();
+      if (position[dimensionIndex] >= leftHaloMin and position[dimensionIndex] < leftHaloMax) {
+        particlesForLeftNeighbour.push_back(particle);
 
-          // Apply boundary condition
-          if (_localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex]) {
-            position[dimensionIndex] =
-                position[dimensionIndex] - (_globalBoxMax[dimensionIndex] - _globalBoxMin[dimensionIndex]);
-            particlesForRightNeighbour.back().setR(position);
-          }
+        // Apply boundary condition
+        if (_localBoxMin[dimensionIndex] == _globalBoxMin[dimensionIndex]) {
+          position[dimensionIndex] =
+              position[dimensionIndex] + (_globalBoxMax[dimensionIndex] - _globalBoxMin[dimensionIndex]);
+          particlesForLeftNeighbour.back().setR(position);
+        }
+      } else if (position[dimensionIndex] >= rightHaloMin and position[dimensionIndex] < rightHaloMax) {
+        particlesForRightNeighbour.push_back(particle);
+
+        // Apply boundary condition
+        if (_localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex]) {
+          position[dimensionIndex] =
+              position[dimensionIndex] - (_globalBoxMax[dimensionIndex] - _globalBoxMin[dimensionIndex]);
+          particlesForRightNeighbour.back().setR(position);
         }
       }
-
-      // See documentation for _neighbourDomainIndices to explain the indexing
-      int leftNeighbour = _neighbourDomainIndices[(dimensionIndex * 2) % _neighbourCount];
-      int rightNeighbour = _neighbourDomainIndices[(dimensionIndex * 2 + 1) % _neighbourCount];
-      sendAndReceiveParticlesLeftAndRight(particlesForLeftNeighbour, particlesForRightNeighbour, leftNeighbour,
-                                          rightNeighbour, haloParticles);
     }
-
-    for (auto &particle : haloParticles) {
-      autoPasContainer->addOrUpdateHaloParticle(particle);
-    }
+    // See documentation for _neighbourDomainIndices to explain the indexing
+    int leftNeighbour = _neighbourDomainIndices[(dimensionIndex * 2) % _neighbourCount];
+    int rightNeighbour = _neighbourDomainIndices[(dimensionIndex * 2 + 1) % _neighbourCount];
+    sendAndReceiveParticlesLeftAndRight(particlesForLeftNeighbour, particlesForRightNeighbour, leftNeighbour,
+                                        rightNeighbour, haloParticles);
+  }
+  for (auto &particle : haloParticles) {
+    autoPasContainer->addOrUpdateHaloParticle(particle);
   }
 }
 
-void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer) {
-  auto [emigrants, updated] = autoPasContainer->updateContainer(false);
-
+void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer,
+                                                          std::vector<ParticleType> &emigrants, const bool &updated) {
   if (updated) {
     const std::array<double, _dimensionCount> globalBoxMin = {_globalBoxMin[0], _globalBoxMin[1], _globalBoxMin[2]};
     const std::array<double, _dimensionCount> globalBoxMax = {_globalBoxMax[0], _globalBoxMax[1], _globalBoxMax[2]};
     const std::array<double, _dimensionCount> globalBoxLength =
         autopas::utils::ArrayMath::sub(globalBoxMax, globalBoxMin);
 
-    for (int i = 0; i < _dimensionCount; ++i) {
-      for (int j = i; j < _dimensionCount; ++j) {
-        const size_t dimensionIndex = j % _dimensionCount;
+    for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
+      std::vector<ParticleType> immigrants, remainingEmigrants;
+      std::vector<ParticleType> particlesForLeftNeighbour;
+      std::vector<ParticleType> particlesForRightNeighbour;
 
-        std::vector<ParticleType> immigrants, remainingEmigrants;
-        std::vector<ParticleType> particlesForLeftNeighbour;
-        std::vector<ParticleType> particlesForRightNeighbour;
+      // See documentation for _neighbourDomainIndices to explain the indexing
+      int leftNeighbour = _neighbourDomainIndices[(dimensionIndex * 2) % _neighbourCount];
+      int rightNeighbour = _neighbourDomainIndices[(dimensionIndex * 2 + 1) % _neighbourCount];
 
-        // See documentation for _neighbourDomainIndices to explain the indexing
-        int leftNeighbour = _neighbourDomainIndices[(dimensionIndex * 2) % _neighbourCount];
-        int rightNeighbour = _neighbourDomainIndices[(dimensionIndex * 2 + 1) % _neighbourCount];
+      for (const auto &particle : emigrants) {
+        std::array<double, _dimensionCount> position = particle.getR();
+        if (position[dimensionIndex] < _localBoxMin[dimensionIndex]) {
+          particlesForLeftNeighbour.push_back(particle);
 
-        std::array<double, _dimensionCount> position;
-        for (const auto &particle : emigrants) {
-          position = particle.getR();
-          if (position[dimensionIndex] < _localBoxMin[dimensionIndex]) {
-            particlesForLeftNeighbour.push_back(particle);
-
-            // Apply boundary condition
-            if (_localBoxMin[dimensionIndex] == _globalBoxMin[dimensionIndex]) {
-              position[dimensionIndex] =
-                  std::min(std::nextafter(_globalBoxMax[dimensionIndex], _globalBoxMin[dimensionIndex]),
-                           position[dimensionIndex] + globalBoxLength[dimensionIndex]);
-              particlesForLeftNeighbour.back().setR(position);
-            }
-          } else if (position[dimensionIndex] >= _localBoxMax[dimensionIndex]) {
-            particlesForRightNeighbour.push_back(particle);
-
-            // Apply boundary condition
-            if (_localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex]) {
-              position[dimensionIndex] =
-                  std::max(_globalBoxMin[dimensionIndex], position[dimensionIndex] - globalBoxLength[dimensionIndex]);
-              particlesForRightNeighbour.back().setR(position);
-            }
-          } else {
-            remainingEmigrants.push_back(particle);
+          // Apply boundary condition
+          if (_localBoxMin[dimensionIndex] == _globalBoxMin[dimensionIndex]) {
+            position[dimensionIndex] =
+                std::min(std::nextafter(_globalBoxMax[dimensionIndex], _globalBoxMin[dimensionIndex]),
+                         position[dimensionIndex] + globalBoxLength[dimensionIndex]);
+            particlesForLeftNeighbour.back().setR(position);
           }
-        }
-        emigrants = remainingEmigrants;
+        } else if (position[dimensionIndex] >= _localBoxMax[dimensionIndex]) {
+          particlesForRightNeighbour.push_back(particle);
 
-        sendAndReceiveParticlesLeftAndRight(particlesForLeftNeighbour, particlesForRightNeighbour, leftNeighbour,
-                                            rightNeighbour, immigrants);
-
-        for (const auto &particle : immigrants) {
-          if (isInsideLocalDomain(particle.getR())) {
-            autoPasContainer->addParticle(particle);
-          } else {
-            emigrants.push_back(particle);
+          // Apply boundary condition
+          if (_localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex]) {
+            position[dimensionIndex] =
+                std::max(_globalBoxMin[dimensionIndex], position[dimensionIndex] - globalBoxLength[dimensionIndex]);
+            particlesForRightNeighbour.back().setR(position);
           }
+        } else {
+          remainingEmigrants.push_back(particle);
         }
-
-        immigrants.clear();
       }
+      emigrants = remainingEmigrants;
+
+      sendAndReceiveParticlesLeftAndRight(particlesForLeftNeighbour, particlesForRightNeighbour, leftNeighbour,
+                                          rightNeighbour, immigrants);
+
+      for (const auto &particle : immigrants) {
+        if (isInsideLocalDomain(particle.getR())) {
+          autoPasContainer->addParticle(particle);
+        } else {
+          emigrants.push_back(particle);
+        }
+      }
+    }
+
+    // Add remaining emigrants to current container
+    for (auto &particle : emigrants) {
+      autoPasContainer->addParticle(particle);
     }
   }
 }

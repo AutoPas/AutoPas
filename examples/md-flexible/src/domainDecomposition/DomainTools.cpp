@@ -69,6 +69,22 @@ void generateDecomposition(unsigned int subdomainCount, const std::array<bool, 3
   }
 }
 
+double balanceAdjacentDomains(const double &leftDomainsWork, const double &rightDomainsWork,
+                              const double &leftDomainsMinBoundaryPosition,
+                              const double &rightDomainsMaxBoundaryPosition, const double &minWidth) {
+  double balancedPosition =
+      (leftDomainsWork * leftDomainsMinBoundaryPosition + rightDomainsWork * rightDomainsMaxBoundaryPosition) /
+      (leftDomainsWork + rightDomainsWork);
+
+  if (balancedPosition - leftDomainsMinBoundaryPosition < minWidth) {
+    return leftDomainsMinBoundaryPosition + minWidth;
+  }
+  if (rightDomainsMaxBoundaryPosition - balancedPosition < minWidth) {
+    return rightDomainsMaxBoundaryPosition - minWidth;
+  }
+  return balancedPosition;
+}
+
 int convertIdToIndex(const std::array<int, 3> &domainId, const std::array<int, 3> decomposition) {
   int domainIndex = 0;
 

@@ -9,7 +9,6 @@
 #include <memory>
 
 #include "DomainDecomposition.h"
-#include "autopas/AutoPas.h"
 #include "autopas/utils/WrapMPI.h"
 #include "src/TypeDefinitions.h"
 #include "src/configuration/MDFlexConfig.h"
@@ -32,15 +31,11 @@ class RegularGridDecomposition final : public DomainDecomposition {
   virtual ~RegularGridDecomposition();
 
   /**
-   * Type for the AutoPas container
-   */
-  using SharedAutoPasContainer = std::shared_ptr<autopas::AutoPas<ParticleType>>;
-
-  /**
    * Used to update the domain to the current topology.
-   * Currently does nothing
+   * Handles the diffuse load balancing by resizing the domains according to their work done.
+   * @param work: The work performed in the AutoPas container.
    */
-  void update() override;
+  void update(const double &work) override;
 
   /**
    * Returns the index of the local domain in the global domain context.
@@ -113,8 +108,10 @@ class RegularGridDecomposition final : public DomainDecomposition {
   /**
    * Exchanges migrating particles with all neighbours of the provided AutoPasContainer.
    * @param autoPasContainer: The container, where the migrating particles originate from.
+   * @param emigrants: The emigrating particles send to neighbours.
    */
-  void exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer);
+  void exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer, std::vector<ParticleType> &emigrants,
+                                  const bool &updated);
 
  private:
   /**
@@ -158,6 +155,12 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * The MPI communicator containing all processes which own a subdomain in this decomposition.
    */
   autopas::AutoPas_MPI_Comm _communicator;
+
+  /**
+   * Contains the planar communicators along each dimension where the current process is a part of.
+   * A planar communicator contains all processes with the same coordinate in a single dimension.
+   */
+  std::array<autopas::AutoPas_MPI_Comm, 3> _planarCommunicators;
 
   /**
    * Stores the domain cutoff width.
