@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <autopas/utils/inBox.h>
+
 #include "autopas/iterators/SingleCellIteratorWrapper.h"
 
 namespace autopas {
@@ -129,6 +131,11 @@ class ParticleCell {
    * @return cell side length
    */
   [[nodiscard]] virtual std::array<double, 3> getCellLength() const = 0;
+
+  inline bool isParticleInRegion(Particle &p, const std::array<double, 3> &lowerCorner,
+                                 const std::array<double, 3> &higherCorner) {
+    return utils::inBox(p.getR(), lowerCorner, higherCorner);
+  }
 };
 
 }  // namespace autopas

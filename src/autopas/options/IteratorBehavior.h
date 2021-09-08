@@ -112,6 +112,23 @@ class IteratorBehavior : public Option<IteratorBehavior> {
     };
   }
 
+  template <typename ParticleType>
+  bool contains(ParticleType &particle) {
+    switch (this->_value) {
+      case options::IteratorBehavior::ownedOrHaloOrDummy:
+        return true;
+      case options::IteratorBehavior::ownedOrHalo:
+        return not particle.isDummy();
+      case options::IteratorBehavior::halo:
+        return particle.isHalo();
+      case options::IteratorBehavior::owned:
+        return particle.isOwned();
+      default:
+        utils::ExceptionHandler::exception("unknown iterator behavior");
+        return false;
+    }
+  }
+
  private:
   Value _value{Value(-1)};
 };
