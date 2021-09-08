@@ -145,7 +145,7 @@ enum AutoPas_MPI_Datatype {
 #elif SIZE_MAX == UINT_MAX
 #define AUTOPAS_MPI_SIZE_T autopas::AutoPas_MPI_Datatype::UNSIGNED_INT
 #elif SIZE_MAX == ULONG_MAX
-#define AUTOPAS_MPI_SIZE_T autopas::AutoPas_MPI_Datatype::UNSINGED_LONG
+#define AUTOPAS_MPI_SIZE_T autopas::AutoPas_MPI_Datatype::UNSIGNED_LONG
 #elif SIZE_MAX == ULLONG_MAX
 #define AUTOPAS_MPI_SIZE_T autopas::AutoPas_MPI_Datatype::UNSIGNED_LONG_LONG
 #endif
