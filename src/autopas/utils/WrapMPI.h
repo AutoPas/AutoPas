@@ -50,6 +50,7 @@ namespace autopas {
 /** Wrapper for MPI_DOUBLE */
 #define AUTOPAS_MPI_DOUBLE MPI_DOUBLE
 
+/** Defines MPI Datatype for size_t */
 #if SIZE_MAX == UCHAR_MAX
 #define AUTOPAS_MPI_SIZE_T MPI_UNSIGNED_CHAR
 #elif SIZE_MAX == USHRT_MAX
@@ -136,6 +137,7 @@ enum AutoPas_MPI_Datatype {
 /** Wrapper for MPI_DOUBLE */
 #define AUTOPAS_MPI_DOUBLE autopas::AutoPas_MPI_Datatype::DOUBLE
 
+/** Defines MPI Datatype for size_t */
 #if SIZE_MAX == UCHAR_MAX
 #define AUTOPAS_MPI_SIZE_T autopas::AutoPas_MPI_Datatype::UNSIGNED_CHAR
 #elif SIZE_MAX == USHRT_MAX
