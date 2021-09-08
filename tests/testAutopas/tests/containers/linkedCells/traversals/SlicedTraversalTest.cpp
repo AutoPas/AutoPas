@@ -7,10 +7,10 @@
 #include "SlicedTraversalTest.h"
 
 #include "autopas/containers/linkedCells/traversals/LCSlicedTraversal.h"
+#include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 #include "autopasTools/generators/GridGenerator.h"
 #include "testingHelpers/NumThreadGuard.h"
 #include "testingHelpers/commonTypedefs.h"
-#include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 
 using ::testing::_;
 
@@ -25,8 +25,9 @@ void testSlicedTraversal(const std::array<size_t, 3> &edgeLength) {
 
   NumThreadGuard numThreadGuard(4);
 
-  autopas::LCSlicedTraversal<FPCell, autopas::FlopCounterFunctor<autopas::Particle>, autopas::DataLayoutOption::aos, true> slicedTraversal(
-      edgeLength, &f, 1., {1., 1., 1.});
+  autopas::LCSlicedTraversal<FPCell, autopas::FlopCounterFunctor<autopas::Particle>, autopas::DataLayoutOption::aos,
+                             true>
+      slicedTraversal(edgeLength, &f, 1., {1., 1., 1.});
 
   EXPECT_TRUE(slicedTraversal.isApplicable());
   slicedTraversal.setCellsToTraverse(cells);
