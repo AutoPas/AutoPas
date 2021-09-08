@@ -250,8 +250,8 @@ class FullParticleCell : public ParticleCell<Particle> {
 
   template <bool ownershipCheck, bool regionCheck, typename Lambda>
   void forEachImpl(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
-                const std::array<double, 3> &higherCorner,
-                IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) {
+                   const std::array<double, 3> &higherCorner,
+                   IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) {
     for (Particle &p : _particles) {
       if ((not ownershipCheck) or behavior.contains(p)) {
         if ((not regionCheck) or this->isParticleInRegion(p, lowerCorner, higherCorner)) {
@@ -263,8 +263,8 @@ class FullParticleCell : public ParticleCell<Particle> {
 
   template <bool ownershipCheck, bool regionCheck, typename Lambda, typename A>
   void reduceImpl(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
-               const std::array<double, 3> &higherCorner,
-               IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) {
+                  const std::array<double, 3> &higherCorner,
+                  IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) {
     for (Particle &p : _particles) {
       if ((not ownershipCheck) or behavior.contains(p)) {
         if ((not regionCheck) or this->isParticleInRegion(p, lowerCorner, higherCorner)) {
