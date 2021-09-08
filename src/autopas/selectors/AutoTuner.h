@@ -350,6 +350,8 @@ bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild
  * @param containerPtr
  * @param particleBuffer
  * @param haloParticleBuffer
+ * @note If the buffers are replaced with actual cells, we could use the CellFunctor to simplify things and potentially
+ * even use SoA.
  */
 template <bool newton3, class Particle, class T, class PairwiseFunctor>
 void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<Particle> &particleBuffer,
