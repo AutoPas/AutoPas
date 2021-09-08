@@ -23,54 +23,26 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainer) {
   linkedCells.addParticle(p4);
   linkedCells.addParticle(p5);
 
-  // check particles are where we expect them to be (and nothing else)
-  for (size_t i = 0; i < linkedCells.getCells().size(); ++i) {
-    if (i == 31) {
-      EXPECT_EQ(linkedCells.getCells()[i].numParticles(), 1);
-      EXPECT_EQ(linkedCells.getCells()[i].begin()->getID(), 0);
-    } else if (i == 62) {
-      EXPECT_EQ(linkedCells.getCells()[i].numParticles(), 2);
-      EXPECT_EQ(linkedCells.getCells()[i].begin()->getID(), 1);
-      EXPECT_EQ((++(linkedCells.getCells()[i].begin()))->getID(), 2);
-    } else if (i == 63) {
-      EXPECT_EQ(linkedCells.getCells()[i].numParticles(), 1);
-      EXPECT_EQ(linkedCells.getCells()[i].begin()->getID(), 3);
-    } else if (i == 93) {
-      EXPECT_EQ(linkedCells.getCells()[i].numParticles(), 1);
-      EXPECT_EQ(linkedCells.getCells()[i].begin()->getID(), 4);
-    } else {
-      EXPECT_FALSE(linkedCells.getCells()[i].isNotEmpty());
-    }
-  }
+  this->checkParticleIDsInCells(linkedCells, {{31ul, {0}}, {62ul, {1, 2}}, {63ul, {3}}, {93ul, {4}}}, true, __LINE__);
 
   // new locations for particles
   linkedCells.getCells()[31].begin()->setR({1.5, 0.5, 0.5});
   linkedCells.getCells()[62].begin()->setR({2.5, 1.5, 0.5});
   linkedCells.getCells()[63].begin()->setR({-0.5, -0.5, -0.5});
   linkedCells.getCells()[93].begin()->setR({1.6, 0.5, 0.5});
+
   auto invalidParticles = linkedCells.updateContainer(this->_keepListsValid);
 
   ASSERT_EQ(invalidParticles.size(), 1);
   EXPECT_EQ(invalidParticles[0].getID(), 3);
 
-  // verify particles are in correct new cells (and nowhere else)
-  for (size_t i = 0; i < linkedCells.getCells().size(); ++i) {
-    if (i == 0) {
-      EXPECT_EQ(linkedCells.getCells()[i].numParticles(), 0);
-    } else if (i == 32) {
-      EXPECT_EQ(linkedCells.getCells()[i].numParticles(), 2);
-      auto pIter = linkedCells.getCells()[i].begin();
-      auto ids = {pIter->getID(), (++pIter)->getID()};
-      EXPECT_THAT(ids, testing::UnorderedElementsAre(0, 4));
-    } else if (i == 38) {
-      EXPECT_EQ(linkedCells.getCells()[i].numParticles(), 1);
-      EXPECT_EQ(linkedCells.getCells()[i].begin()->getID(), 1);
-    } else if (i == 62) {
-      EXPECT_EQ(linkedCells.getCells()[i].numParticles(), 1);
-      EXPECT_EQ(linkedCells.getCells()[i].begin()->getID(), 2);
-    } else {
-      EXPECT_FALSE(linkedCells.getCells()[i].isNotEmpty());
-    }
+  if (this->_keepListsValid) {
+    // if the lists are kept valid, particles are NOT moved between cells!
+    this->checkParticleIDsInCells(linkedCells, {{31ul, {0}}, {62ul, {1, 2}}, {93ul, {4}}}, true, __LINE__);
+  } else {
+    // if the lists are not kept valid, particles should be moved between cells, so update the cells!
+    this->checkParticleIDsInCells(linkedCells, {{32ul, {0, 4}}, {38ul, {1}}, {62ul, {2}}},
+                                  false /*here, we do not know the order!*/, __LINE__);
   }
 }
 
