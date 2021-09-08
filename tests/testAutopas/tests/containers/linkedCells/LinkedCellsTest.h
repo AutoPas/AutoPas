@@ -55,7 +55,14 @@ void LinkedCellsTest<TestingType>::checkParticleIDsInCells(
         EXPECT_THAT(foundIDs, testing::UnorderedElementsAreArray(expectedIDs)) << "called from line: " << line;
       }
     } else {
-      EXPECT_TRUE(linkedCells.getCells()[i].isEmpty()) << "Cell: " << i << std::endl << "called from line: " << line;
+      bool isEmpty = linkedCells.getCells()[i].isEmpty();
+      if (not isEmpty) {
+        // If the cell isn't empty, all particles should be dummy particles!
+        for (auto pIter = linkedCells.getCells()[i].begin(); pIter.isValid(); ++pIter) {
+          EXPECT_TRUE(pIter->isDummy()) << "Cell: " << i << " Particle ID: " << pIter->getID() << std::endl
+                                        << "called from line: " << line;
+        }
+      }
     }
   }
 }
