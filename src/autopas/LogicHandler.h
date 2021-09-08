@@ -32,6 +32,11 @@ class LogicHandler {
     checkMinimalSize();
   }
 
+  /**
+   * Collects leaving particles from buffer and potentially inserts owned particles to the container.
+   * @param insertOwnedParticlesToContainer Decides whether to insert owned particles to the container.
+   * @return Leaving particles.
+   */
   [[nodiscard]] std::vector<Particle> collectLeavingParticlesFromBuffer(bool insertOwnedParticlesToContainer) {
     std::vector<Particle> leavingBufferParticles;
     if (insertOwnedParticlesToContainer) {
