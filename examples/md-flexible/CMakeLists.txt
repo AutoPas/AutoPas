@@ -12,7 +12,15 @@ include(autopas_yaml-cpp)
 
 option(MD_FLEXIBLE_USE_MPI "Enable MPI parallelism for md-flexible." OFF)
 
-target_link_libraries(md-flexible PUBLIC autopas autopasTools yaml-cpp $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
+find_package(ALL 0.9.1)
+if (${ALL_FOUND})
+  set(MD_FLEXIBLE_INCLUDE_ALL ON)
+  MESSAGE("-- ALL Loadbalancer has been located")
+else()
+  MESSAGE("-- ALL Loadbalancer could not be located")
+endif()
+
+target_link_libraries(md-flexible PUBLIC autopas autopasTools yaml-cpp $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX> $<$<BOOL:${MD_FLEXIBLE_INCLUDE_ALL}>:ALL::ALL>)
 
 # --- copy script files to build dir ---
 file(

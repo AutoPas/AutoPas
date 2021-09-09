@@ -11,6 +11,7 @@
 #include <iomanip>
 #include <numeric>
 
+#include <ALL.hpp>
 #include "DomainTools.h"
 #include "autopas/AutoPas.h"
 #include "autopas/utils/ArrayUtils.h"
@@ -49,13 +50,33 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
   initializeNeighbourIds();
 
   _loadBalancer = configuration.loadBalancer.value;
+
+#if defined(MD_FLEXIBLE_INCLUDE_ALL)
+  std::cout << "ALL can be used" << std::endl;
+#else
+  std::cout << "ALL can not be used" << std::endl;
+#endif
+
+  switch(_loadBalancer) {
+    case LoadBalancerOption::invertedPressure: {
+      std::cout << "Inverted Pressure" << std::endl;
+      break;
+    }
+    case LoadBalancerOption::all: {
+      std::cout << "ALL" << std::endl;
+      break;
+    }
+    default: {
+      // do nothing
+    }
+  }
 }
 
 RegularGridDecomposition::~RegularGridDecomposition() {}
 
 void RegularGridDecomposition::update(const double &work) {
   if (_mpiIsEnabled) {
-    switch (_loadBalancer) {
+    switch(_loadBalancer) {
       case LoadBalancerOption::invertedPressure: {
         balanceWithInvertedPressureLoadBalancer(work);
         break;
@@ -473,4 +494,17 @@ void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(const dou
   }
 }
 
-void RegularGridDecomposition::balanceWithAllLoadBalancer(const double &work) {}
+void RegularGridDecomposition::balanceWithAllLoadBalancer(const double &work) {
+//  static ALL::ALL<double, double> allLoadBalanceri(ALL::STAGGERED, _dimensionCount, 0);
+//  allLoadBalance.setCommunicator(_communicator);
+//
+//	std::vector<ALL::Point<double>> domain(2, ALL::Point<double>(3));
+//
+//  for(int i = 0; i < 3; ++i) {
+//			domain[0][i] = _localBoxMin[i];
+//			domain[1][i] = _localBoxMax[i];
+//	}
+//
+//	allLoadBalancer.setVertices(DomainVertices);
+//	allLoadBalancer.setWork(work);
+}
