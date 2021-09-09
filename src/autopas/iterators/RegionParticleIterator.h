@@ -27,7 +27,7 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
   using ParticleType = std::conditional_t<modifiable, Particle, const Particle>;
   using CellBorderAndFlagManagerType =
       std::conditional_t<modifiable, internal::CellBorderAndFlagManager, const internal::CellBorderAndFlagManager>;
-  using ParticleVecType =
+  using ParticleVecTypeInput =
       std::conditional_t<modifiable, std::vector<std::vector<Particle>>, const std::vector<std::vector<Particle>>>;
   using ParticleIteratorType = ParticleIterator<Particle, ParticleCell, modifiable>;
 
@@ -48,7 +48,7 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
                                   std::vector<size_t> &indicesInRegion,
                                   const CellBorderAndFlagManagerType *flagManager = nullptr,
                                   IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-                                  ParticleVecType *additionalParticleVectorToIterate = nullptr)
+                                  ParticleVecTypeInput *additionalParticleVectorToIterate = nullptr)
       : ParticleIteratorType(cont, flagManager, behavior, additionalParticleVectorToIterate),
         _startRegion(startRegion),
         _endRegion(endRegion),

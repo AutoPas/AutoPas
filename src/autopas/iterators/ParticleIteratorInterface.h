@@ -110,6 +110,13 @@ class ParticleIteratorInterfaceImpl : public ParticleIteratorInterface<Particle,
    * @return the clone
    */
   virtual ParticleIteratorInterfaceImpl<Particle, modifiable> *clone() const = 0;
+
+  /**
+   * Adds an additional particle vector to the iterator.
+   * @param additionalVector The additional particle vector that should also be iterated over.
+   */
+  virtual void addAdditionalVector(
+      std::conditional_t<modifiable, std::vector<Particle> &, const std::vector<Particle> &> additionalVector) = 0;
 };
 
 }  // namespace internal
