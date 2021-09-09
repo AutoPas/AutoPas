@@ -242,6 +242,9 @@ class LogicHandler {
 
     if (doRebuild) {
       // if a rebuild is performed, add the buffered particles to the container!
+      // NOTE: This assumes that particles are not allowed to be moved between updateContainer and iteratePairwise
+      // calls! As, otherwise, particles could have left the domain and adding them to the container will produce
+      // unexpected results/undefined behavior.
       for (auto &&p : _particleBuffer) {
         if (not p.isDummy()) {
           _autoTuner.getContainer()->template addParticle(p);
