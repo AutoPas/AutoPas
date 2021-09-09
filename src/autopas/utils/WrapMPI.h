@@ -43,25 +43,14 @@ namespace autopas {
 #define AUTOPAS_MPI_CHAR MPI_CHAR
 /** Wrapper for MPI_INT */
 #define AUTOPAS_MPI_INT MPI_INT
+/** Wrapper for MPI_UNSIGNED */
+#define AUTOPAS_MPI_UNSIGNED_INT MPI_UNSIGNED
 /** Wrapper for MPI_UNSIGNED_LONG */
 #define AUTOPAS_MPI_UNSIGNED_LONG MPI_UNSIGNED_LONG
 /** Wrapper for MPI_LONG */
 #define AUTOPAS_MPI_LONG MPI_LONG
 /** Wrapper for MPI_DOUBLE */
 #define AUTOPAS_MPI_DOUBLE MPI_DOUBLE
-
-/** Defines MPI Datatype for size_t */
-#if SIZE_MAX == UCHAR_MAX
-#define AUTOPAS_MPI_SIZE_T MPI_UNSIGNED_CHAR
-#elif SIZE_MAX == USHRT_MAX
-#define AUTOPAS_MPI_SIZE_T MPI_UNSIGNED_SHORT
-#elif SIZE_MAX == UINT_MAX
-#define AUTOPAS_MPI_SIZE_T MPI_UNSIGNED
-#elif SIZE_MAX == ULONG_MAX
-#define AUTOPAS_MPI_SIZE_T MPI_UNSIGNED_LONG
-#elif SIZE_MAX == ULLONG_MAX
-#define AUTOPAS_MPI_SIZE_T MPI_UNSIGNED_LONG_LONG
-#endif
 
 // MPI_Op
 /** Wrapper for MPI_LAND */
@@ -130,25 +119,14 @@ enum AutoPas_MPI_Datatype {
 #define AUTOPAS_MPI_CHAR autopas::AutoPas_MPI_Datatype::CHAR
 /** Wrapper for MPI_INT */
 #define AUTOPAS_MPI_INT autopas::AutoPas_MPI_Datatype::INT
+/** Wrapper for MPI_UNSIGNED */
+#define AUTOPAS_MPI_UNSIGNED_INT autopas::AutoPas_MPI_Datatype::UNSIGNED_INT
 /** Wrapper for MPI_UNSIGNED LONG */
 #define AUTOPAS_MPI_UNSIGNED_LONG autopas::AutoPas_MPI_Datatype::UNSIGNED_LONG
 /** Wrapper for MPI_LONG */
 #define AUTOPAS_MPI_LONG autopas::AutoPas_MPI_Datatype::LONG
 /** Wrapper for MPI_DOUBLE */
 #define AUTOPAS_MPI_DOUBLE autopas::AutoPas_MPI_Datatype::DOUBLE
-
-/** Defines MPI Datatype for size_t */
-#if SIZE_MAX == UCHAR_MAX
-#define AUTOPAS_MPI_SIZE_T autopas::AutoPas_MPI_Datatype::UNSIGNED_CHAR
-#elif SIZE_MAX == USHRT_MAX
-#define AUTOPAS_MPI_SIZE_T autopas::AutoPas_MPI_Datatype::UNSIGNED_SHORT
-#elif SIZE_MAX == UINT_MAX
-#define AUTOPAS_MPI_SIZE_T autopas::AutoPas_MPI_Datatype::UNSIGNED_INT
-#elif SIZE_MAX == ULONG_MAX
-#define AUTOPAS_MPI_SIZE_T autopas::AutoPas_MPI_Datatype::UNSIGNED_LONG
-#elif SIZE_MAX == ULLONG_MAX
-#define AUTOPAS_MPI_SIZE_T autopas::AutoPas_MPI_Datatype::UNSIGNED_LONG_LONG
-#endif
 
 /**
  * Dummy for MPI_Op.
