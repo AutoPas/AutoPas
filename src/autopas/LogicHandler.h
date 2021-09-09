@@ -291,7 +291,7 @@ class LogicHandler {
                                                                      IteratorBehavior behavior) {
     // sanity check: Most of our stuff depends on `inBox` which does not handle lowerCorner > higherCorner well.
     for (size_t d = 0; d < 3; ++d) {
-      if (lowerCorner > higherCorner) {
+      if (lowerCorner[d] > higherCorner[d]) {
         autopas::utils::ExceptionHandler::exception(
             "Requesting region Iterator where the upper corner is lower than the lower corner!\n"
             "Lower corner: {}\n"
@@ -312,7 +312,7 @@ class LogicHandler {
                                                                       IteratorBehavior behavior) const {
     // sanity check: Most of our stuff depends on `inBox` which does not handle lowerCorner > higherCorner well.
     for (size_t d = 0; d < 3; ++d) {
-      if (lowerCorner > higherCorner) {
+      if (lowerCorner[d] > higherCorner[d]) {
         autopas::utils::ExceptionHandler::exception(
             "Requesting region Iterator where the upper corner is lower than the lower corner!\n"
             "Lower corner: {}\n"
