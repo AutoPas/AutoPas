@@ -5,7 +5,6 @@
  */
 #include "RegularGridDecomposition.h"
 
-#include <ALL.hpp>
 #include <algorithm>
 #include <cmath>
 #include <functional>
@@ -50,6 +49,12 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
   initializeNeighbourIds();
 
   _loadBalancer = configuration.loadBalancer.value;
+
+#if defined(MD_FLEXIBLE_INCLUDE_ALL)
+  _allLoadBalancer = new ALL::ALL<double, double>(ALL::STAGGERED, _dimensionCount, 0);
+  _allLoadBalancer->setCommunicator(_communicator);
+  _allLoadBalancer->setup();
+#endif
 }
 
 RegularGridDecomposition::~RegularGridDecomposition() {}
@@ -474,17 +479,26 @@ void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(const dou
   }
 }
 
+#if defined(MD_FLEXIBLE_INCLUDE_ALL)
 void RegularGridDecomposition::balanceWithAllLoadBalancer(const double &work) {
-  //  static ALL::ALL<double, double> allLoadBalanceri(ALL::STAGGERED, _dimensionCount, 0);
-  //  allLoadBalance.setCommunicator(_communicator);
-  //
-  //	std::vector<ALL::Point<double>> domain(2, ALL::Point<double>(3));
-  //
-  //  for(int i = 0; i < 3; ++i) {
-  //			domain[0][i] = _localBoxMin[i];
-  //			domain[1][i] = _localBoxMax[i];
-  //	}
-  //
-  //	allLoadBalancer.setVertices(DomainVertices);
-  //	allLoadBalancer.setWork(work);
+  std::vector<ALL::Point<double>> domain(2, ALL::Point<double>(3));
+
+  for (int i = 0; i < 3; ++i) {
+    domain[0][i] = _localBoxMin[i];
+    domain[1][i] = _localBoxMax[i];
+  }
+
+  _allLoadBalancer->setVertices(domain);
+  _allLoadBalancer->setWork(work);
+  _allLoadBalancer->balance();
+
+  std::vector<ALL::Point<double>> updatedVertices = _allLoadBalancer->getVertices();
+
+  for (int i = 0; i < 3; ++i) {
+    _localBoxMin[i] = updatedVertices[0][i];
+    _localBoxMax[i] = updatedVertices[1][i];
+  }
 }
+
+void RegularGridDecomposition::deleteAllLoadBalancer() { delete _allLoadBalancer; }
+#endif

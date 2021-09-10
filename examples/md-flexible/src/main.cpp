@@ -37,7 +37,8 @@ int main(int argc, char **argv) {
   }
 
   Simulation simulation(configuration, domainDecomposition);
-//  simulation.run();
+  simulation.run();
+  simulation.finalize();
 
   if (domainDecomposition.getDomainIndex() == 0) {
     if (configuration.dontCreateEndConfig.value) {

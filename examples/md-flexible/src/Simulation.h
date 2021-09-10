@@ -41,6 +41,12 @@ class Simulation {
    */
   void run();
 
+  /**
+   * Finalizes the simulation.
+   * This nees to be called before MPI_Finalize if MPI is enabled.
+   */
+  void finalize();
+
  protected:
   /**
    * Stores the configuration used for the simulation.

@@ -5,8 +5,11 @@
  */
 #pragma once
 
-#include <list>
 #include <memory>
+
+#if defined(MD_FLEXIBLE_INCLUDE_ALL)
+#include <ALL.hpp>
+#endif
 
 #include "DomainDecomposition.h"
 #include "autopas/utils/WrapMPI.h"
@@ -113,6 +116,13 @@ class RegularGridDecomposition final : public DomainDecomposition {
   void exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer, std::vector<ParticleType> &emigrants,
                                   const bool &updated);
 
+#if defined(MD_FLEXIBLE_INCLUDE_ALL)
+  /**
+   * Deletes the _allLoadBalancerObject
+   */
+  void deleteAllLoadBalancer();
+#endif
+
  private:
   /**
    * The number of neighbours of a rectangular domain.
@@ -212,6 +222,15 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Defines which load balancer will be used.
    */
   LoadBalancerOption _loadBalancer;
+
+#if defined(MD_FLEXIBLE_INCLUDE_ALL)
+  /**
+   * The ALL load balancer used for diffuse load balancing
+   * We cannot use a shared pointer here, because whenn the load balancer is deleted, it calls MPI_Comm_free after
+   * we call MPI_Finalize().
+   */
+  ALL::ALL<double, double> *_allLoadBalancer;
+#endif
 
   /**
    * Initializes the decomposition of the domain.
@@ -339,9 +358,11 @@ class RegularGridDecomposition final : public DomainDecomposition {
    */
   void balanceWithInvertedPressureLoadBalancer(const double &work);
 
+#if defined(MD_FLEXIBLE_INCLUDE_ALL)
   /**
    * Balances the subdomains of the grid decomposition using the ALL load balancer.
    * @param work: The work performed by the process owning this sudomain.
    */
   void balanceWithAllLoadBalancer(const double &work);
+#endif
 };

@@ -205,6 +205,12 @@ void Simulation::run() {
   }
 }
 
+void Simulation::finalize() {
+#if defined(MD_FLEXIBLE_INCLUDE_ALL)
+  _domainDecomposition.deleteAllLoadBalancer();
+#endif
+}
+
 std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
   if (_configuration.tuningPhases.value > 0) {
     // @TODO: this can be improved by considering the tuning strategy
