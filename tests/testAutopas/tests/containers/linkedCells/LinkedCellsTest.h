@@ -30,6 +30,7 @@ class LinkedCellsTest : public AutoPasTestBase {
       std::map<unsigned long /*cellID*/, std::vector<int> /*particleIDs*/> expectedParticleIDsInCells, bool ordered,
       int line);
 };
+
 template <class TestingType>
 void LinkedCellsTest<TestingType>::checkParticleIDsInCells(
     LinkedCellsType &linkedCells, std::map<unsigned long, std::vector<int>> expectedParticleIDsInCells, bool ordered,
