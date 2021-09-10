@@ -72,7 +72,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
                                                     : AdditionalParticleVectorToIterateState::ignore),
         _additionalVectorIndex((behavior & IteratorBehavior::forceSequential) ? 0 : autopas_get_thread_num()),
         _additionalVectorPosition(0) {
-    if(additionalVectorsToIterate) {
+    if (additionalVectorsToIterate) {
       for (auto &&vec : *additionalVectorsToIterate) {
         _additionalVectors.push_back(&vec);
       }
