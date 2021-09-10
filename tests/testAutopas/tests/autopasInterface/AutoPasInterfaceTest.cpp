@@ -216,47 +216,56 @@ void doSimulationLoop(autopas::AutoPas<Molecule> &autoPas1, autopas::AutoPas<Mol
 }
 
 template <typename Functor>
-void doAssertions(autopas::AutoPas<Molecule> &autoPas, Functor *functor, unsigned long numParticlesExpected) {
+void doAssertions(autopas::AutoPas<Molecule> &autoPas, Functor *functor, unsigned long numParticlesExpected, int line) {
   std::vector<Molecule> molecules(numParticlesExpected);
   size_t numParticles = 0;
   for (auto iter = autoPas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    ASSERT_LT(numParticles, numParticlesExpected) << "Too many particles owned by this container.";
+    ASSERT_LT(numParticles, numParticlesExpected) << "Too many particles owned by this container." << std::endl
+                                                  << "Called from line: " << line;
     molecules[numParticles++] = *iter;
   }
   ASSERT_EQ(numParticles, numParticlesExpected)
-      << "The container should own exactly " << numParticlesExpected << " particles!";
+      << "The container should own exactly " << numParticlesExpected << " particles!" << std::endl
+      << "Called from line: " << line;
 
   for (auto &mol : molecules) {
     EXPECT_NEAR(autopas::utils::ArrayMath::dot(mol.getF(), mol.getF()), 390144. * 390144., 1.)
-        << "wrong force calculated for particle: " << mol.toString();
+        << "wrong force calculated for particle: " << mol.toString() << std::endl
+        << "Called from line: " << line;
   }
 
-  EXPECT_NEAR(functor->getUpot(), 16128.983372449373 * numParticles / 2., 1e-5) << "wrong upot calculated";
-  EXPECT_NEAR(functor->getVirial(), 195072. * numParticles / 2., 1e-5) << "wrong virial calculated";
+  EXPECT_NEAR(functor->getUpot(), 16128.983372449373 * numParticles / 2., 1e-5) << "wrong upot calculated" << std::endl
+                                                                                << "Called from line: " << line;
+  EXPECT_NEAR(functor->getVirial(), 195072. * numParticles / 2., 1e-5) << "wrong virial calculated" << std::endl
+                                                                       << "Called from line: " << line;
 }
 
 template <typename Functor>
 void doAssertions(autopas::AutoPas<Molecule> &autoPas1, autopas::AutoPas<Molecule> &autoPas2, Functor *functor1,
-                  Functor *functor2) {
+                  Functor *functor2, int line) {
   std::array<Molecule, 2> molecules{};
   size_t numParticles = 0;
   for (auto iter = autoPas1.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    ASSERT_LT(numParticles, 2) << "Too many owned particles.";
+    ASSERT_LT(numParticles, 2) << "Too many owned particles." << std::endl << "Called from line: " << line;
     molecules[numParticles++] = *iter;
   }
   for (auto iter = autoPas2.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    ASSERT_LT(numParticles, 2) << "Too many owned particles.";
+    ASSERT_LT(numParticles, 2) << "Too many owned particles." << std::endl << "Called from line: " << line;
     molecules[numParticles++] = *iter;
   }
-  ASSERT_EQ(numParticles, 2) << "There should be exactly two owned particles!";
+  ASSERT_EQ(numParticles, 2) << "There should be exactly two owned particles!" << std::endl
+                             << "Called from line: " << line;
 
   for (auto &mol : molecules) {
     EXPECT_DOUBLE_EQ(autopas::utils::ArrayMath::dot(mol.getF(), mol.getF()), 390144. * 390144)
         << "wrong force calculated.";
   }
 
-  EXPECT_DOUBLE_EQ(functor1->getUpot() + functor2->getUpot(), 16128.983372449373) << "wrong upot calculated";
-  EXPECT_DOUBLE_EQ(functor1->getVirial() + functor2->getVirial(), 195072.) << "wrong virial calculated";
+  EXPECT_DOUBLE_EQ(functor1->getUpot() + functor2->getUpot(), 16128.983372449373)
+      << "wrong upot calculated" << std::endl
+      << "Called from line: " << line;
+  EXPECT_DOUBLE_EQ(functor1->getVirial() + functor2->getVirial(), 195072.) << "wrong virial calculated" << std::endl
+                                                                           << "Called from line: " << line;
 }
 
 void setFromOptions(const testingTuple &options, autopas::AutoPas<Molecule> &autoPas) {
@@ -304,7 +313,7 @@ void testSimulationLoop(testingTuple options) {
   // do first simulation loop
   doSimulationLoop(autoPas, &functor);
 
-  doAssertions(autoPas, &functor, 2);
+  doAssertions(autoPas, &functor, 2, __LINE__);
 
   // update positions a bit (outside of domain!) + reset F
   {
@@ -318,7 +327,7 @@ void testSimulationLoop(testingTuple options) {
   // do second simulation loop
   doSimulationLoop(autoPas, &functor);
 
-  doAssertions(autoPas, &functor, 2);
+  doAssertions(autoPas, &functor, 2, __LINE__);
 
   // no position update this time, but resetF!
   {
@@ -329,7 +338,7 @@ void testSimulationLoop(testingTuple options) {
   // do third simulation loop, tests rebuilding of container.
   doSimulationLoop(autoPas, &functor);
 
-  doAssertions(autoPas, &functor, 2);
+  doAssertions(autoPas, &functor, 2, __LINE__);
 }
 
 /**
@@ -385,7 +394,7 @@ void testHaloCalculation(testingTuple options) {
 
   autoPas.iteratePairwise(&functor);
 
-  doAssertions(autoPas, &functor, 26);
+  doAssertions(autoPas, &functor, 26, __LINE__);
 }
 
 TEST_P(AutoPasInterfaceTest, SimulationLoopTest) {
@@ -550,7 +559,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
   // do first simulation loop
   doSimulationLoop(autoPas1, autoPas2, &functor1, &functor2);
 
-  doAssertions(autoPas1, autoPas2, &functor1, &functor2);
+  doAssertions(autoPas1, autoPas2, &functor1, &functor2, __LINE__);
 
   // update positions a bit (outside of domain!) + reset F
   {
@@ -566,7 +575,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
   // do second simulation loop
   doSimulationLoop(autoPas1, autoPas2, &functor1, &functor2);
 
-  doAssertions(autoPas1, autoPas2, &functor1, &functor2);
+  doAssertions(autoPas1, autoPas2, &functor1, &functor2, __LINE__);
 
   // reset F
   for (auto *aP : {&autoPas1, &autoPas2}) {
@@ -578,7 +587,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
   // do third simulation loop, no position update
   doSimulationLoop(autoPas1, autoPas2, &functor1, &functor2);
 
-  doAssertions(autoPas1, autoPas2, &functor1, &functor2);
+  doAssertions(autoPas1, autoPas2, &functor1, &functor2, __LINE__);
 }
 
 TEST_P(AutoPasInterface2ContainersTest, SimulationLoopTest) {
