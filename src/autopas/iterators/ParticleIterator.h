@@ -365,7 +365,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
   /**
    * Vector of pointers to additional Particle Vectors this ParticleIterator will iterate over.
    */
-  ParticleVecTypeInternal _additionalVectors{nullptr};
+  ParticleVecTypeInternal _additionalVectors;
 
   /**
    * Index of the additional vector that is currently processed.
