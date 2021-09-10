@@ -148,6 +148,7 @@ void Simulation::run() {
       _timers.vtk.stop();
     }
 
+    _timers.work.start();
     if (_configuration.deltaT.value != 0) {
       if (!_configuration.periodic.value) {
         throw std::runtime_error(
@@ -155,7 +156,6 @@ void Simulation::run() {
             "boundary conditions!");
       }
 
-      _timers.work.start();
       updatePositions();
       auto [emigrants, updated] =
           _autoPasContainer->updateContainer(_iteration % _configuration.verletRebuildFrequency.value == 0);
