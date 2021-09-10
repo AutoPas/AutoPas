@@ -93,8 +93,27 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainerCloseToBoundary) {
 
 REGISTER_TYPED_TEST_SUITE_P(LinkedCellsTest, testUpdateContainer, testUpdateContainerCloseToBoundary);
 
-using MyTypes = ::testing::Types<std::tuple<autopas::LinkedCells<Particle>, std::true_type>,
-                                 std::tuple<autopas::LinkedCells<Particle>, std::false_type>,
-                                 std::tuple<autopas::LinkedCellsReferences<Particle>, std::true_type>,
-                                 std::tuple<autopas::LinkedCellsReferences<Particle>, std::false_type> >;
+// Workaround for storing two types.
+// Currently, clang produces bugs if one tries to store this using a tuple or a pair.
+// This problem is described in P0641R2 and occurs if an explicitly defaulted constructor cannot be instantiated.
+// This is fixed in c++20.
+template <typename first, typename second>
+struct two_values {
+  using first_t = first;
+  using second_t = second;
+};
+
+using LC_true = two_values<autopas::LinkedCells<Particle>, std::true_type>;
+using LC_false = two_values<autopas::LinkedCells<Particle>, std::false_type>;
+using LCRef_true = two_values<autopas::LinkedCellsReferences<Particle>, std::true_type>;
+using LCRef_false = two_values<autopas::LinkedCellsReferences<Particle>, std::false_type>;
+
+using MyTypes = ::testing::Types<LC_true, LC_false, LCRef_true, LCRef_false>;
+
+/// @todo c++20: replace with:
+// using MyTypes = ::testing::Types<std::tuple<autopas::LinkedCells<Particle>, std::true_type>,
+//                                  std::tuple<autopas::LinkedCells<Particle>, std::false_type>,
+//                                  std::tuple<autopas::LinkedCellsReferences<Particle>, std::true_type>,
+//                                  std::tuple<autopas::LinkedCellsReferences<Particle>, std::false_type> >;
+
 INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, LinkedCellsTest, MyTypes);

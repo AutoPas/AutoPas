@@ -17,8 +17,11 @@
 template <class TestingType>
 class LinkedCellsTest : public AutoPasTestBase {
  public:
-  using LinkedCellsType = std::tuple_element_t<0, TestingType>;
-  using keepListsValid = std::tuple_element_t<1, TestingType>;
+  /// @todo c++20 replace with:
+  /// using LinkedCellsType = std::tuple_element_t<0, TestingType>;
+  //  using keepListsValid = std::tuple_element_t<1, TestingType>;
+  using LinkedCellsType = typename TestingType::first_t;
+  using keepListsValid = typename TestingType::second_t;
   LinkedCellsTest() : _linkedCells({0., 0., 0.}, {10., 10., 10.}, 1., 0., 1.) {}
 
  protected:
