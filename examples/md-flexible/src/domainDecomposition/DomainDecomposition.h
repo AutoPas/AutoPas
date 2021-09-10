@@ -28,7 +28,6 @@ class DomainDecomposition {
   /**
    * Used to update the domain to the current topology.
    * Handles the diffuse load balancing by resizing the domains according to their work done.
-   * @param autoPasContainer: The AutoPas container which has to be resized.
    * @param work: The work performed in the AutoPas container.
    */
   virtual void update(const double &work) = 0;

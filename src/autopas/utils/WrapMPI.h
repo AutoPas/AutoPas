@@ -241,6 +241,7 @@ inline int AutoPas_MPI_Comm_free(AutoPas_MPI_Comm *comm);
  * @param comm: Communicator (handle).
  * @param color: Control of subset assignment (nonnegative integer).
  * @param key: Control of rank assignment (integer).
+ * @param newcomm: The newly created communicator.
  * @return MPI error value
  */
 inline int AutoPas_MPI_Comm_split(AutoPas_MPI_Comm comm, int color, int key, AutoPas_MPI_Comm *newcomm);
