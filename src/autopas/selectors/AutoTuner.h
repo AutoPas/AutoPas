@@ -391,7 +391,7 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<Partic
   // 3. particleBuffer with itself
   for (size_t i = 0; i < particleBuffer.size(); ++i) {
     auto &&p1 = particleBuffer[i];
-    for (size_t j = newton3 ? i + 1 : 0; j < particleBuffer.size(); ++j) {
+    for (size_t j = i + 1; j < particleBuffer.size(); ++j) {
       if (i == j) {
         continue;
       }
