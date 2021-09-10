@@ -251,9 +251,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 #endif
       invalidParticles.insert(invalidParticles.end(), myInvalidParticles.begin(), myInvalidParticles.end());
     }
-    if (not invalidParticles.empty()) {
-      _isValid = ValidityState::invalid;
-    }
+    _isValid = ValidityState::invalid;
     return invalidParticles;
   }
 
