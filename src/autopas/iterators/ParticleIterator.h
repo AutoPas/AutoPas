@@ -211,6 +211,9 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
   void addAdditionalVector(std::conditional_t<modifiable, std::vector<Particle> &, const std::vector<Particle> &>
                                additionalVector) override {
     _additionalVectors.push_back(&additionalVector);
+    if (_additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::ignore) {
+      _additionalParticleVectorToIterateState = AdditionalParticleVectorToIterateState::notStarted;
+    }
     if (not isValid()) {
       // In case the iterator isn't valid, we have to perform operator++
       operator++();
