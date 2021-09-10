@@ -97,17 +97,14 @@ void RegularGridDecomposition::update(const double &work) {
       const int leftNeighbour = _neighbourDomainIndices[i * 2];
       const int rightNeighbour = _neighbourDomainIndices[i * 2 + 1];
 
-      double neighbourPlaneWork, neighbourBoundary, balancedPosition;
+      double neighbourPlaneWork, neighbourBoundary;
       if (_localBoxMin[i] != _globalBoxMin[i]) {
         autopas::AutoPas_MPI_Recv(&neighbourPlaneWork, 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
                                   AUTOPAS_MPI_STATUS_IGNORE);
         autopas::AutoPas_MPI_Recv(&neighbourBoundary, 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
                                   AUTOPAS_MPI_STATUS_IGNORE);
 
-        balancedPosition =
-            DomainTools::balanceAdjacentDomains(neighbourPlaneWork, distributedWorkInPlane[i], neighbourBoundary,
-                                                oldLocalBoxMax[i], 2 * (_cutoffWidth + _skinWidth));
-        _localBoxMin[i] += (balancedPosition - _localBoxMin[i]) / 2;
+        _localBoxMin[i] = DomainTools::balanceAdjacentDomains(neighbourPlaneWork, distributedWorkInPlane[i], neighbourBoundary, oldLocalBoxMax[i], 2 * (_cutoffWidth + _skinWidth));
       }
 
       if (_localBoxMax[i] != _globalBoxMax[i]) {
@@ -117,10 +114,7 @@ void RegularGridDecomposition::update(const double &work) {
         autopas::AutoPas_MPI_Recv(&neighbourBoundary, 1, AUTOPAS_MPI_DOUBLE, rightNeighbour, 0, _communicator,
                                   AUTOPAS_MPI_STATUS_IGNORE);
 
-        balancedPosition =
-            DomainTools::balanceAdjacentDomains(distributedWorkInPlane[i], neighbourPlaneWork, oldLocalBoxMin[i],
-                                                neighbourBoundary, 2 * (_cutoffWidth + _skinWidth));
-        _localBoxMax[i] += (balancedPosition - _localBoxMax[i]) / 2;
+        _localBoxMax[i] = DomainTools::balanceAdjacentDomains(distributedWorkInPlane[i], neighbourPlaneWork, oldLocalBoxMin[i], neighbourBoundary, 2 * (_cutoffWidth + _skinWidth));
       }
     }
   }
