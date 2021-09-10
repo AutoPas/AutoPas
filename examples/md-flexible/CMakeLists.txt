@@ -14,7 +14,7 @@ option(MD_FLEXIBLE_USE_MPI "Enable MPI parallelism for md-flexible." OFF)
 
 find_package(ALL 0.9.1)
 if (${ALL_FOUND})
-  set(MD_FLEXIBLE_INCLUDE_ALL ON)
+  add_definitions(-DMD_FLEXIBLE_INCLUDE_ALL)
   MESSAGE("-- ALL Loadbalancer has been located")
 else()
   MESSAGE("-- ALL Loadbalancer could not be located")
