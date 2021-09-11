@@ -12,6 +12,9 @@
  * May be extended when necessary.
  */
 
+#include <limits.h>
+#include <stdint.h>
+
 #if defined(AUTOPAS_INCLUDE_MPI)
 #include <mpi.h>
 #else
@@ -40,8 +43,14 @@ namespace autopas {
 #define AUTOPAS_MPI_CHAR MPI_CHAR
 /** Wrapper for MPI_INT */
 #define AUTOPAS_MPI_INT MPI_INT
-/** Wrapper for MPI_UNSIGNED LONG */
+/** Wrapper for MPI_UNSIGNED */
+#define AUTOPAS_MPI_UNSIGNED_INT MPI_UNSIGNED
+/** Wrapper for MPI_UNSIGNED_LONG */
 #define AUTOPAS_MPI_UNSIGNED_LONG MPI_UNSIGNED_LONG
+/** Wrapper for MPI_LONG */
+#define AUTOPAS_MPI_LONG MPI_LONG
+/** Wrapper for MPI_DOUBLE */
+#define AUTOPAS_MPI_DOUBLE MPI_DOUBLE
 
 // MPI_Op
 /** Wrapper for MPI_LAND */
@@ -50,6 +59,8 @@ namespace autopas {
 #define AUTOPAS_MPI_MIN MPI_MIN
 /** Wrapper for MPI_MINLOC */
 #define AUTOPAS_MPI_MINLOC MPI_MINLOC
+/** Wrapper for MPI_SUM */
+#define AUTOPAS_MPI_SUM MPI_SUM
 
 // MPI_Status
 /** Wrapper for MPI_STATUS IGNORE */
@@ -90,8 +101,14 @@ enum AutoPas_MPI_Datatype {
   BYTE = 1,
   CXX_BOOL = sizeof(bool),
   CHAR = sizeof(char),
+  UNSIGNED_CHAR = sizeof(unsigned char),
+  UNSIGNED_SHORT = sizeof(unsigned short),
   INT = sizeof(int),
-  UNSIGNED_LONG = sizeof(unsigned long)
+  UNSIGNED_INT = sizeof(unsigned int),
+  UNSIGNED_LONG = sizeof(unsigned long),
+  UNSIGNED_LONG_LONG = sizeof(unsigned long long),
+  LONG = sizeof(double),
+  DOUBLE = sizeof(double)
 };
 // MPI_Datatype
 /** Wrapper for MPI_BYTE */
@@ -102,13 +119,19 @@ enum AutoPas_MPI_Datatype {
 #define AUTOPAS_MPI_CHAR autopas::AutoPas_MPI_Datatype::CHAR
 /** Wrapper for MPI_INT */
 #define AUTOPAS_MPI_INT autopas::AutoPas_MPI_Datatype::INT
+/** Wrapper for MPI_UNSIGNED */
+#define AUTOPAS_MPI_UNSIGNED_INT autopas::AutoPas_MPI_Datatype::UNSIGNED_INT
 /** Wrapper for MPI_UNSIGNED LONG */
 #define AUTOPAS_MPI_UNSIGNED_LONG autopas::AutoPas_MPI_Datatype::UNSIGNED_LONG
+/** Wrapper for MPI_LONG */
+#define AUTOPAS_MPI_LONG autopas::AutoPas_MPI_Datatype::LONG
+/** Wrapper for MPI_DOUBLE */
+#define AUTOPAS_MPI_DOUBLE autopas::AutoPas_MPI_Datatype::DOUBLE
 
 /**
  * Dummy for MPI_Op.
  */
-enum AutoPas_MPI_Op { LAND, MIN, MINLOC };
+enum AutoPas_MPI_Op { LAND, MIN, MINLOC, SUM };
 // MPI_Op
 /** Wrapper for MPI_LAND */
 #define AUTOPAS_MPI_LAND autopas::AutoPas_MPI_Op::LAND
@@ -116,6 +139,8 @@ enum AutoPas_MPI_Op { LAND, MIN, MINLOC };
 #define AUTOPAS_MPI_MIN autopas::AutoPas_MPI_Op::MIN
 /** Wrapper for MPI_MINLOC */
 #define AUTOPAS_MPI_MINLOC autopas::AutoPas_MPI_Op::MINLOC
+/** Wrapper for MPI_SUM */
+#define AUTOPAS_MPI_SUM autopas::AutoPas_MPI_Op::SUM
 
 /**
  * @struct AutoPas_MPI_Status
@@ -277,6 +302,19 @@ inline int AutoPas_MPI_Bcast(void *buffer, int count, AutoPas_MPI_Datatype datat
  */
 inline int AutoPas_MPI_Ibcast(void *buffer, int count, AutoPas_MPI_Datatype datatype, int root, AutoPas_MPI_Comm comm,
                               AutoPas_MPI_Request *request);
+/**
+ * Wrapper for MPI_Reduce
+ * @param sendbuf: send buffer
+ * @param recvbuf: outputs receive buffer
+ * @param count: number of elements in send buffer
+ * @param datatype: type of elements in send buffer
+ * @param op: reduction operation (handle)
+ * @param root: the rank of the root process
+ * @param comm: communicator (handle)
+ * @return MPI error value
+ */
+inline int AutoPas_MPI_Reduce(const void *sendbuf, void *recvbuf, int count, AutoPas_MPI_Datatype datatype,
+                              AutoPas_MPI_Op op, int root, AutoPas_MPI_Comm comm);
 
 /**
  * Wrapper for MPI_Allreduce
@@ -452,6 +490,11 @@ inline int AutoPas_MPI_Ibcast(void *buffer, int count, AutoPas_MPI_Datatype data
   return MPI_Ibcast(buffer, count, datatype, root, comm, request);
 }
 
+inline int AutoPas_MPI_Reduce(const void *sendbuf, void *recvbuf, int count, AutoPas_MPI_Datatype datatype,
+                              AutoPas_MPI_Op op, int root, AutoPas_MPI_Comm comm) {
+  return MPI_Reduce(sendbuf, recvbuf, count, datatype, op, root, comm);
+}
+
 inline int AutoPas_MPI_Allreduce(const void *sendbuf, void *recvbuf, int count, AutoPas_MPI_Datatype datatype,
                                  AutoPas_MPI_Op op, AutoPas_MPI_Comm comm) {
   return MPI_Allreduce(sendbuf, recvbuf, count, datatype, op, comm);
@@ -585,6 +628,12 @@ inline int AutoPas_MPI_Ibcast(void *buffer, int count, AutoPas_MPI_Datatype data
     *request = COMPLETED_REQUEST;
     return AUTOPAS_MPI_SUCCESS;
   }
+}
+
+inline int AutoPas_MPI_Reduce(const void *sendbuf, void *recvbuf, int count, AutoPas_MPI_Datatype datatype,
+                              AutoPas_MPI_Op op, int root, AutoPas_MPI_Comm comm) {
+  memcpy(recvbuf, sendbuf, datatype * static_cast<size_t>(count));
+  return AUTOPAS_MPI_SUCCESS;
 }
 
 inline int AutoPas_MPI_Allreduce(const void *sendbuf, void *recvbuf, int count, AutoPas_MPI_Datatype datatype,

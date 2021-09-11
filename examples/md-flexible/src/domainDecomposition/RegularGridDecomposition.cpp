@@ -21,22 +21,19 @@ RegularGridDecomposition::RegularGridDecomposition(const std::array<double, 3> &
                                                    const std::array<bool, 3> &subdivideDimension,
                                                    const double &cutoffWidth, const double &skinWidth)
     : _cutoffWidth(cutoffWidth), _skinWidth(skinWidth) {
-#if defined(AUTOPAS_INCLUDE_MPI)
-  _mpiIsEnabled = true;
-#else
-  _mpiIsEnabled = false;
-#endif
-
   autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &_subdomainCount);
 
-  if (_subdomainCount == 1) {
-    _mpiIsEnabled = false;
-  }
+  int rank;
+  autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
 
-  if (_mpiIsEnabled) {
-    std::cout << "MPI will be used." << std::endl;
-  } else {
-    std::cout << "MPI will not be used." << std::endl;
+#if defined(AUTOPAS_INCLUDE_MPI)
+  _mpiCommunicationNeeded = true;
+#else
+  _mpiCommunicationNeeded = false;
+#endif
+
+  if (_subdomainCount == 1) {
+    _mpiCommunicationNeeded = false;
   }
 
   DomainTools::generateDecomposition(_subdomainCount, subdivideDimension, _decomposition);
@@ -53,6 +50,10 @@ RegularGridDecomposition::RegularGridDecomposition(const std::array<double, 3> &
 }
 
 RegularGridDecomposition::~RegularGridDecomposition() {}
+
+int RegularGridDecomposition::getNumberOfSubdomains() const {
+  return std::accumulate(_decomposition.begin(), _decomposition.end(), 1, std::multiplies<int>());
+}
 
 void RegularGridDecomposition::update() { updateLocalBox(); }
 
@@ -284,7 +285,7 @@ void RegularGridDecomposition::sendAndReceiveParticlesLeftAndRight(std::vector<P
                                                                    std::vector<ParticleType> &particlesToRight,
                                                                    const int &leftNeighbour, const int &rightNeighbour,
                                                                    std::vector<ParticleType> &receivedParticles) {
-  if (_mpiIsEnabled and leftNeighbour != _domainIndex) {
+  if (_mpiCommunicationNeeded and leftNeighbour != _domainIndex) {
     sendParticles(particlesToLeft, leftNeighbour);
     sendParticles(particlesToRight, rightNeighbour);
 
