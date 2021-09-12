@@ -18,22 +18,16 @@
 
 RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configuration)
     : _cutoffWidth(configuration.cutoff.value), _skinWidth(configuration.verletSkinRadius.value) {
-#if defined(AUTOPAS_INCLUDE_MPI)
-  _mpiIsEnabled = true;
-#else
-  _mpiIsEnabled = false;
-#endif
-
   autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &_subdomainCount);
 
-  if (_subdomainCount == 1) {
-    _mpiIsEnabled = false;
-  }
+#if defined(AUTOPAS_INCLUDE_MPI)
+  _mpiCommunicationNeeded = true;
+#else
+  _mpiCommunicationNeeded = false;
+#endif
 
-  if (_mpiIsEnabled) {
-    std::cout << "MPI will be used." << std::endl;
-  } else {
-    std::cout << "MPI will not be used." << std::endl;
+  if (_subdomainCount == 1) {
+    _mpiCommunicationNeeded = false;
   }
 
   DomainTools::generateDecomposition(_subdomainCount, configuration.subdivideDimension.value, _decomposition);
@@ -60,7 +54,7 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
 RegularGridDecomposition::~RegularGridDecomposition() {}
 
 void RegularGridDecomposition::update(const double &work) {
-  if (_mpiIsEnabled) {
+  if (_mpiCommunicationNeeded) {
     switch (_loadBalancer) {
       case LoadBalancerOption::invertedPressure: {
         balanceWithInvertedPressureLoadBalancer(work);
@@ -79,6 +73,10 @@ void RegularGridDecomposition::update(const double &work) {
   }
 }
 
+int RegularGridDecomposition::getNumberOfSubdomains() const {
+  return std::accumulate(_decomposition.begin(), _decomposition.end(), 1, std::multiplies<int>());
+}
+
 void RegularGridDecomposition::initializeMPICommunicator() {
   std::vector<int> periods(3, 1);
   autopas::AutoPas_MPI_Cart_create(AUTOPAS_MPI_COMM_WORLD, 3, _decomposition.data(), periods.data(), true,
@@ -95,7 +93,7 @@ void RegularGridDecomposition::initializeLocalDomain() {
 
   // Create planar communicators used for diffuse load balancing.
   for (int i = 0; i < _dimensionCount; ++i) {
-    if (_mpiIsEnabled) {
+    if (_mpiCommunicationNeeded) {
       const size_t key = _decomposition[(i + 1) % _dimensionCount] * _domainId[(i + 2) % _dimensionCount] +
                          _domainId[(i + 1) % _dimensionCount];
       autopas::AutoPas_MPI_Comm_split(_communicator, _domainId[i], key, &_planarCommunicators[i]);
@@ -305,7 +303,7 @@ void RegularGridDecomposition::sendAndReceiveParticlesLeftAndRight(std::vector<P
                                                                    std::vector<ParticleType> &particlesToRight,
                                                                    const int &leftNeighbour, const int &rightNeighbour,
                                                                    std::vector<ParticleType> &receivedParticles) {
-  if (_mpiIsEnabled and leftNeighbour != _domainIndex) {
+  if (_mpiCommunicationNeeded and leftNeighbour != _domainIndex) {
     sendParticles(particlesToLeft, leftNeighbour);
     sendParticles(particlesToRight, rightNeighbour);
 

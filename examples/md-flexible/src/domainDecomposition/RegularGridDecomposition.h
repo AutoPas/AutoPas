@@ -89,6 +89,12 @@ class RegularGridDecomposition final : public DomainDecomposition {
   const std::array<int, 3> getDomainId() const { return _domainId; }
 
   /**
+   * Returns the number of subdomains in the simulation.
+   * @return number of subdomains
+   */
+  int getNumberOfSubdomains() const;
+
+  /**
    * Checks if the provided coordinates are located in the local domain.
    * @param coordinates: The coordinates in question.
    * @return true if the coordinates lie inside the local domain, false otherwise.
@@ -138,7 +144,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Indicates if MPI is enabled and if it will be used.
    * In the case that MPI is enabled, but only one process is being used, this variable will be false.
    */
-  bool _mpiIsEnabled;
+  bool _mpiCommunicationNeeded;
 
   /**
    * The number of subdomains in this decomposition.

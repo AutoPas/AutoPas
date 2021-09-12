@@ -34,7 +34,7 @@ class Simulation {
   /**
    * Destructor.
    */
-  ~Simulation();
+  ~Simulation() = default;
 
   /**
    * Runs the simulation
@@ -43,7 +43,8 @@ class Simulation {
 
   /**
    * Finalizes the simulation.
-   * This nees to be called before MPI_Finalize if MPI is enabled.
+   * Stops remaining timers and logs the result of all the timers.
+   * This needs to be called before MPI_Finalize if MPI is enabled.
    */
   void finalize();
 
@@ -120,7 +121,7 @@ class Simulation {
     autopas::utils::Timer forceUpdatePairwise;
 
     /**
-     * Records the time used for the global force update of all particles.
+     * Records the time used for the update of the global forces of all particles.
      */
     autopas::utils::Timer forceUpdateGlobal;
 
@@ -166,6 +167,16 @@ class Simulation {
     autopas::utils::Timer thermostat;
 
     /**
+     * Records the time required to exchange the halo particles.
+     */
+    autopas::utils::Timer haloParticleExchange;
+
+    /**
+     * Records the time required to exchange migrating particles.
+     */
+    autopas::utils::Timer migratingParticleExchange;
+
+    /**
      * Used for diffuse load balancing.
      */
     autopas::utils::Timer work;
@@ -186,6 +197,7 @@ class Simulation {
    */
   bool _createVtkFiles;
 
+ private:
   /**
    * Estimates the number of tuning iterations which ocurred during the simulation so far.
    * @return an estimation of the number of tuning iterations which occured so far.
@@ -208,7 +220,13 @@ class Simulation {
    * @param maxTime: The simulation's total execution time.
    * @return All information of the timer in a human readable string.
    */
-  std::string timerToString(const std::string &name, long timeNS, size_t numberWidth, long maxTime);
+  std::string timerToString(const std::string &name, long timeNS, size_t numberWidth = 0ul, long maxTime = 0ul);
+
+  /**
+   * Calculate the homogeneity of the scenario by using the standard deviation.
+   * @return homogeneity
+   */
+  double calculateHomogeneity() const;
 
   /**
    * Updates the position of particles in the local AutoPas container.
@@ -231,7 +249,6 @@ class Simulation {
    */
   void updateThermostat();
 
- private:
   /**
    * This simulation's domain decomposition.
    */
@@ -250,6 +267,26 @@ class Simulation {
    * @param source: The sender of the particles.
    */
   void receiveParticles(std::vector<ParticleType> &receivedParticles, int &source);
+
+  /**
+   * If MPI is enabled, accumulates the times of all ranks on rank 0.
+   * Otherwise, this function does nothing.
+   * @param time: the time to accumulate.
+   * @return the accumulated time of all ranks.
+   */
+  long accumulateTime(const long &time);
+
+  /**
+   * Logs the number of total/owned/halo particles in the simulation, aswell as the standard deviation of Homogeneity.
+   */
+  void logSimulationState();
+
+  /**
+   * Logs the times recorded by the timers.
+   * When MPI is enabled it acumulates the times (user time) of all ranks. In this case, the total
+   * time will exceed the wall-clock time.
+   */
+  void logMeasurements();
 
   /**
    * Calculates the pairwise forces between particles in the autopas container.
