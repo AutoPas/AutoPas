@@ -58,8 +58,8 @@ TEST_F(ThermostatTest, BrownianMotionTest_InitV1) {
 
 TEST_F(ThermostatTest, MultiComponentTest) {
 #if defined(AUTOPAS_INCLUDE_MPI)
-  EXPECT_EQ(true,true);
-#else 
+  EXPECT_EQ(true, true);
+#else
   Molecule dummyMolecule;
   // fill with particles of type 0 and init
   initContainer(_autopas, dummyMolecule, {25, 25, 25});
@@ -95,8 +95,8 @@ TEST_F(ThermostatTest, MultiComponentTest) {
  */
 TEST_P(ThermostatTest, testApplyAndCalcTemperature) {
 #if defined(AUTOPAS_INCLUDE_MPI)
-  EXPECT_EQ(true,true);
-#else 
+  EXPECT_EQ(true, true);
+#else
   const double initialTemperature = std::get<0>(GetParam());
   const double targetTemperature = std::get<1>(GetParam());
   const double deltaTemperature = std::get<2>(GetParam());
