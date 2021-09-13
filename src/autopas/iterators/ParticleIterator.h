@@ -168,14 +168,19 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
     if (_additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::iterating) {
       // Simply increase the counter, as long as we aren't valid.
       do {
+        if (_additionalVectorIndex >= _additionalVectors.size()) {
+          // return if we get to be invalid!
+          _additionalParticleVectorToIterateState = AdditionalParticleVectorToIterateState::ignore;
+          return *this;
+        }
         ++_additionalVectorPosition;
         // if we reach the end of this buffer jump to the next
         if (_additionalVectorPosition >= _additionalVectors[_additionalVectorIndex]->size()) {
           _additionalVectorIndex += (_behavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads();
           _additionalVectorPosition = 0;
         }
-        // continue looking for valid iterator positions until there are no buffers left
-      } while (not isValid() and _additionalVectorIndex < _additionalVectors.size());
+        // continue looking for valid iterator positions, while we aren't valid.
+      } while (not isValid());
     }
     return *this;
   }
