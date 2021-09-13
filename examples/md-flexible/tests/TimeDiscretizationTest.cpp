@@ -52,17 +52,21 @@ TEST_F(TimeDiscretizationTest, testCalculateVelocities) {
 
 TEST_F(TimeDiscretizationTest, testCalculatePositions) {
   auto autoPas = std::make_shared<autopas::AutoPas<Molecule>>();
-  auto autoPasRef = std::make_shared<autopas::AutoPas<Molecule>>();
   fillWithParticlesAndInit(*autoPas);
-  fillWithParticlesAndInit(*autoPasRef);
 
+  // The reference positions are the positiosn of the particles in the AutoPas container before
+  // calling calculatePositions.
+  std::vector<std::array<double, 3>> referencePositions = {{0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {1, 1, 0},
+                                                           {0, 0, 1}, {1, 0, 1}, {0, 1, 1}, {1, 1, 1}};
+
+  size_t index = 0;
   TimeDiscretization::calculatePositions(*autoPas, _particlePropertiesLibrary, 0.1);
-  for (auto iter = autoPas->begin(), iterRef = autoPasRef->begin(); iter.isValid(); ++iter, ++iterRef) {
+  for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
     // only change in one direction is expected
-    EXPECT_EQ(iter->getR()[0], iterRef->getR()[0]);
-    EXPECT_EQ(iter->getR()[1], iterRef->getR()[1]);
+    EXPECT_EQ(iter->getR()[0], referencePositions[index][0]);
+    EXPECT_EQ(iter->getR()[1], referencePositions[index][1]);
     // Störmer-Verlet: 0.1 * 1 + 0.1^2 * (1 / 2) = 0.105
-    EXPECT_NEAR(iter->getR()[2], iterRef->getR()[2] + 0.105, 1e-13);
+    EXPECT_NEAR(iter->getR()[2], referencePositions[index][2] + 0.105, 1e-13);
 
     // expect force to be reset
     EXPECT_THAT(iter->getF(), ::testing::ElementsAreArray({0, 0, 0}));
@@ -71,17 +75,23 @@ TEST_F(TimeDiscretizationTest, testCalculatePositions) {
     iter->setF({0, 0, 2});
     iter->setV({0, 0, .5});
 
-    // update reference position
-    iterRef->setR(iter->getR());
+    ++index;
   }
 
+  // The reference positions are the positiosn of the particles in the AutoPas container before
+  // calling calculatePositions.
+  referencePositions = {{0, 0, 0.105}, {1, 0, 0.105}, {0, 1, 0.105}, {1, 1, 0.105},
+                        {0, 0, 1.105}, {1, 0, 1.105}, {0, 1, 1.105}, {1, 1, 1.105}};
+
   TimeDiscretization::calculatePositions(*autoPas, _particlePropertiesLibrary, 0.1);
-  for (auto iter = autoPas->begin(), iterRef = autoPasRef->begin(); iter.isValid(); ++iter, ++iterRef) {
-    // only velocity in one direction is expected
-    EXPECT_EQ(iter->getR()[0], iterRef->getR()[0]);
-    EXPECT_EQ(iter->getR()[1], iterRef->getR()[1]);
+  index = 0;
+
+  for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
+    EXPECT_EQ(iter->getR()[0], referencePositions[index][0]);
+    EXPECT_EQ(iter->getR()[1], referencePositions[index][1]);
     // Störmer-Verlet: 0.1 * .5 + 0.1^2 * (2 / 2) = 0.06
-    EXPECT_NEAR(iter->getR()[2], iterRef->getR()[2] + 0.06, 1e-13);
+    EXPECT_NEAR(iter->getR()[2], referencePositions[index][2] + 0.06, 1e-13);
+    ++index;
   }
 }
 

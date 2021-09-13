@@ -32,6 +32,7 @@ extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::Fl
 #include "Thermostat.h"
 #include "TimeDiscretization.h"
 #include "autopas/utils/MemoryProfiler.h"
+#include "autopas/utils/WrapMPI.h"
 #include "configuration/MDFlexConfig.h"
 #include "src/ParticleSerializationTools.h"
 
@@ -137,9 +138,17 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
   _timers.initialization.stop();
 }
 
-Simulation::~Simulation() { _timers.total.stop(); }
+void Simulation::finalize() {
+  _timers.total.stop();
+
+  autopas::AutoPas_MPI_Barrier(AUTOPAS_MPI_COMM_WORLD);
+
+  logSimulationState();
+  logMeasurements();
+}
 
 void Simulation::run() {
+  _homogeneity = calculateHomogeneity();
   _timers.simulate.start();
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
@@ -157,9 +166,13 @@ void Simulation::run() {
 
       updatePositions();
 
+      _timers.migratingParticleExchange.start();
       _domainDecomposition.exchangeMigratingParticles(_autoPasContainer);
+      _timers.migratingParticleExchange.stop();
 
+      _timers.haloParticleExchange.start();
       _domainDecomposition.exchangeHaloParticles(_autoPasContainer);
+      _timers.haloParticleExchange.stop();
     }
 
     updateForces();
@@ -189,6 +202,84 @@ void Simulation::run() {
   if (_createVtkFiles) {
     _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, _domainDecomposition);
   }
+}
+
+double Simulation::calculateHomogeneity() const {
+  unsigned int numberOfParticles = static_cast<unsigned int>(_autoPasContainer->getNumberOfParticles());
+  autopas::AutoPas_MPI_Allreduce(&numberOfParticles, &numberOfParticles, 1, AUTOPAS_MPI_UNSIGNED_INT, AUTOPAS_MPI_SUM,
+                                 AUTOPAS_MPI_COMM_WORLD);
+
+  // approximately the resolution we want to get.
+  size_t numberOfCells = ceil(numberOfParticles / 10.);
+
+  std::array<double, 3> startCorner = _domainDecomposition.getGlobalBoxMin();
+  std::array<double, 3> endCorner = _domainDecomposition.getGlobalBoxMax();
+  std::array<double, 3> domainSizePerDimension = {};
+  for (int i = 0; i < 3; ++i) {
+    domainSizePerDimension[i] = endCorner[i] - startCorner[i];
+  }
+
+  // get cellLength which is equal in each direction, derived from the domainsize and the requested number of cells
+  double volume = domainSizePerDimension[0] * domainSizePerDimension[1] * domainSizePerDimension[2];
+  double cellVolume = volume / numberOfCells;
+  double cellLength = cbrt(cellVolume);
+
+  // calculate the size of the boundary cells, which might be smaller then the other cells
+  std::array<size_t, 3> cellsPerDimension = {};
+  // size of the last cell layer per dimension. This cell might get truncated to fit in the domain.
+  std::array<double, 3> outerCellSizePerDimension = {};
+  for (int i = 0; i < 3; ++i) {
+    outerCellSizePerDimension[i] =
+        domainSizePerDimension[i] - (floor(domainSizePerDimension[i] / cellLength) * cellLength);
+    cellsPerDimension[i] = ceil(domainSizePerDimension[i] / cellLength);
+  }
+  // Actual number of cells we end up with
+  numberOfCells = cellsPerDimension[0] * cellsPerDimension[1] * cellsPerDimension[2];
+
+  std::vector<size_t> particlesPerCell(numberOfCells, 0);
+  std::vector<double> allVolumes(numberOfCells, 0);
+
+  // add particles accordingly to their cell to get the amount of particles in each cell
+  for (auto particleItr = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particleItr.isValid();
+       ++particleItr) {
+    std::array<double, 3> particleLocation = particleItr->getR();
+    std::array<size_t, 3> index = {};
+    for (int i = 0; i < particleLocation.size(); i++) {
+      index[i] = particleLocation[i] / cellLength;
+    }
+    const size_t cellIndex = autopas::utils::ThreeDimensionalMapping::threeToOneD(index, cellsPerDimension);
+    particlesPerCell[cellIndex] += 1;
+    // calculate the size of the current cell
+    allVolumes[cellIndex] = 1;
+    for (int i = 0; i < cellsPerDimension.size(); ++i) {
+      // the last cell layer has a special size
+      if (index[i] == cellsPerDimension[i] - 1) {
+        allVolumes[cellIndex] *= outerCellSizePerDimension[i];
+      } else {
+        allVolumes[cellIndex] *= cellLength;
+      }
+    }
+  }
+
+  // calculate density for each cell
+  std::vector<double> densityPerCell(numberOfCells, 0.0);
+  for (int i = 0; i < particlesPerCell.size(); i++) {
+    densityPerCell[i] =
+        (allVolumes[i] == 0) ? 0 : (particlesPerCell[i] / allVolumes[i]);  // make sure there is no division of zero
+  }
+
+  // get mean and reserve variable for variance
+  double mean = numberOfParticles / volume;
+  double variance = 0.0;
+
+  // calculate variance
+  for (int r = 0; r < densityPerCell.size(); ++r) {
+    double distance = densityPerCell[r] - mean;
+    variance += (distance * distance / densityPerCell.size());
+  }
+
+  // finally calculate standard deviation
+  return sqrt(variance);
 }
 
 std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
@@ -338,6 +429,13 @@ void Simulation::updateThermostat() {
   }
 }
 
+long Simulation::accumulateTime(const long &time) {
+  long reducedTime;
+  autopas::AutoPas_MPI_Reduce(&time, &reducedTime, 1, AUTOPAS_MPI_LONG, AUTOPAS_MPI_SUM, 0, AUTOPAS_MPI_COMM_WORLD);
+
+  return reducedTime;
+}
+
 void Simulation::calculatePairwiseForces(bool &wasTuningIteration) {
   auto particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
 
@@ -368,6 +466,125 @@ void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce)
 #endif
   for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     particle->addF(globalForce);
+  }
+}
+
+void Simulation::logSimulationState() {
+  size_t totalNumberOfParticles{0ul}, ownedParticles{0ul}, haloParticles{0ul};
+
+  int particleCount = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::ownedOrHalo);
+  autopas::AutoPas_MPI_Allreduce(&particleCount, &totalNumberOfParticles, 1, AUTOPAS_MPI_INT, AUTOPAS_MPI_SUM,
+                                 AUTOPAS_MPI_COMM_WORLD);
+
+  particleCount = _autoPasContainer->getNumberOfParticles();
+  autopas::AutoPas_MPI_Allreduce(&particleCount, &ownedParticles, 1, AUTOPAS_MPI_INT, AUTOPAS_MPI_SUM,
+                                 AUTOPAS_MPI_COMM_WORLD);
+
+  particleCount = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::halo);
+  autopas::AutoPas_MPI_Allreduce(&particleCount, &haloParticles, 1, AUTOPAS_MPI_INT, AUTOPAS_MPI_SUM,
+                                 AUTOPAS_MPI_COMM_WORLD);
+
+  double squaredHomogeneity = _homogeneity * _homogeneity;
+  double standardDeviationOfHomogeneity;
+  autopas::AutoPas_MPI_Allreduce(&squaredHomogeneity, &standardDeviationOfHomogeneity, 1, AUTOPAS_MPI_DOUBLE,
+                                 AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
+  standardDeviationOfHomogeneity = std::sqrt(standardDeviationOfHomogeneity);
+
+  std::cout << "\n\n"
+            << "Total number of particles at the end of Simulation: " << totalNumberOfParticles << "\n"
+            << "Owned: " << ownedParticles << "\n"
+            << "Halo: " << haloParticles << "\n"
+            << "Standard Deviation of Homogeneity: " << standardDeviationOfHomogeneity << std::endl;
+}
+
+void Simulation::logMeasurements() {
+  long positionUpdate = accumulateTime(_timers.positionUpdate.getTotalTime());
+  long forceUpdateTotal = accumulateTime(_timers.forceUpdateTotal.getTotalTime());
+  long forceUpdatePairwise = accumulateTime(_timers.forceUpdatePairwise.getTotalTime());
+  long forceUpdateGlobalForces = accumulateTime(_timers.forceUpdateGlobal.getTotalTime());
+  long forceUpdateTuning = accumulateTime(_timers.forceUpdateTuning.getTotalTime());
+  long forceUpdateNonTuning = accumulateTime(_timers.forceUpdateNonTuning.getTotalTime());
+  long velocityUpdate = accumulateTime(_timers.velocityUpdate.getTotalTime());
+  long simulate = accumulateTime(_timers.simulate.getTotalTime());
+  long vtk = accumulateTime(_timers.vtk.getTotalTime());
+  long initialization = accumulateTime(_timers.initialization.getTotalTime());
+  long total = accumulateTime(_timers.total.getTotalTime());
+  long thermostat = accumulateTime(_timers.thermostat.getTotalTime());
+  long haloParticleExchange = accumulateTime(_timers.haloParticleExchange.getTotalTime());
+  long migratingParticleExchange = accumulateTime(_timers.migratingParticleExchange.getTotalTime());
+
+  if (_domainDecomposition.getDomainIndex() == 0) {
+    auto maximumNumberOfDigits = std::to_string(total).length();
+    std::cout << "Measurements:" << std::endl;
+    std::cout << timerToString("Total accumulated              ", total, maximumNumberOfDigits);
+    std::cout << timerToString("  Initialization               ", initialization, maximumNumberOfDigits, total);
+    std::cout << timerToString("  Simulate                     ", simulate, maximumNumberOfDigits, total);
+    std::cout << timerToString("    PositionUpdate             ", positionUpdate, maximumNumberOfDigits, simulate);
+    std::cout << timerToString("    Boundaries:                ", haloParticleExchange + migratingParticleExchange,
+                               maximumNumberOfDigits, simulate);
+    std::cout << timerToString("      HaloParticleExchange     ", haloParticleExchange, maximumNumberOfDigits,
+                               haloParticleExchange + migratingParticleExchange);
+    std::cout << timerToString("      MigratingParticleExchange", migratingParticleExchange, maximumNumberOfDigits,
+                               haloParticleExchange + migratingParticleExchange);
+    std::cout << timerToString("    ForceUpdateTotal           ", forceUpdateTotal, maximumNumberOfDigits, simulate);
+    std::cout << timerToString("      ForceUpdatePairwise      ", forceUpdatePairwise, maximumNumberOfDigits,
+                               forceUpdateTotal);
+    std::cout << timerToString("      ForceUdpateGlobalForces  ", forceUpdateGlobalForces, maximumNumberOfDigits,
+                               forceUpdateTotal);
+    std::cout << timerToString("      ForceUpdateTuning        ", forceUpdateTuning, maximumNumberOfDigits,
+                               forceUpdateTotal);
+    std::cout << timerToString("      ForceUpdateNonTuninng    ", forceUpdateNonTuning, maximumNumberOfDigits,
+                               forceUpdateTotal);
+    std::cout << timerToString("    VelocityUpdate             ", velocityUpdate, maximumNumberOfDigits, simulate);
+    std::cout << timerToString("    Thermostat                 ", thermostat, maximumNumberOfDigits, simulate);
+    std::cout << timerToString("    Vtk                        ", vtk, maximumNumberOfDigits, simulate);
+    std::cout << timerToString("One iteration                  ", simulate / _iteration, maximumNumberOfDigits, total);
+
+    const long wallClockTime = _timers.total.getTotalTime();
+    std::cout << timerToString("Total wall-clock time          ", wallClockTime, std::to_string(wallClockTime).length(),
+                               total);
+    std::cout << std::endl;
+
+    std::cout << "Tuning iterations               : " << _numTuningIterations << " / " << _iteration << " = "
+              << ((double)_numTuningIterations / _iteration * 100) << "%" << std::endl;
+
+    auto mfups = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned) * _iteration * 1e-6 /
+                 (forceUpdateTotal * 1e-9);  // 1e-9 for ns to s, 1e-6 for M in MFUP
+    std::cout << "MFUPs/sec                       : " << mfups << std::endl;
+
+    if (_configuration.dontMeasureFlops.value) {
+      autopas::FlopCounterFunctor<ParticleType> flopCounterFunctor(_autoPasContainer->getCutoff());
+      _autoPasContainer->iteratePairwise(&flopCounterFunctor);
+
+      size_t flopsPerKernelCall;
+      switch (_configuration.functorOption.value) {
+        case MDFlexConfig::FunctorOption ::lj12_6: {
+          flopsPerKernelCall = autopas::LJFunctor<ParticleType, true, true>::getNumFlopsPerKernelCall();
+          break;
+        }
+        case MDFlexConfig::FunctorOption ::lj12_6_Globals: {
+          flopsPerKernelCall = autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
+                                                  /* globals */ true>::getNumFlopsPerKernelCall();
+          break;
+        }
+        case MDFlexConfig::FunctorOption ::lj12_6_AVX: {
+          flopsPerKernelCall = autopas::LJFunctorAVX<ParticleType, true, true>::getNumFlopsPerKernelCall();
+          break;
+        }
+        default:
+          throw std::runtime_error("Invalid Functor choice");
+      }
+      auto flops = flopCounterFunctor.getFlops(flopsPerKernelCall) * _iteration;
+      // approximation for flops of verlet list generation
+      if (_autoPasContainer->getContainerType() == autopas::ContainerOption::verletLists)
+        flops += flopCounterFunctor.getDistanceCalculations() *
+                 decltype(flopCounterFunctor)::numFlopsPerDistanceCalculation *
+                 floor(_iteration / _configuration.verletRebuildFrequency.value);
+
+      std::cout << "GFLOPs                          : " << flops * 1e-9 << std::endl;
+      std::cout << "GFLOPs/sec                      : " << flops * 1e-9 / (simulate * 1e-9) << std::endl;
+      std::cout << "Hit rate                        : " << flopCounterFunctor.getHitRate() << std::endl;
+    }
   }
 }
 
