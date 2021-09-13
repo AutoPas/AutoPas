@@ -277,9 +277,12 @@ void printConservativeVariables(AutoPasContainer &sphSystem) {
     energySum += (it->getEnergy() + 0.5 * autopas::utils::ArrayMath::dot(it->getV(), it->getV())) * it->getMass();
   }
   printf("%.16e\n", energySum);
-  printf("%.16e\n", momSum[0]);
-  printf("%.16e\n", momSum[1]);
-  printf("%.16e\n", momSum[2]);
+  for (int i = 0; i < 3; ++i) {
+    printf("%.16e\n", momSum[i]);
+    if (std::abs(momSum[i]) > 1.e-15) {
+      throw std::runtime_error("ERROR: bad moment sum detected (should be small, but isn't!");
+    }
+  }
 }
 
 int main() {
