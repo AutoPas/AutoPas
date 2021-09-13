@@ -207,7 +207,7 @@ void provideIterator(AutoPasT &autoPas, autopas::IteratorBehavior behavior, bool
 }
 
 /**
- * Same as provideIterator() but `useConstIterator` is a run-time variable.
+ * Same as provideIterator(), but `useConstIterator` is a run-time variable.
  * @tparam useConstIterator
  * @tparam AutoPasT
  * @tparam F f(AutoPas, Iterator)
