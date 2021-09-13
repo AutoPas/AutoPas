@@ -303,7 +303,7 @@ void testSimulationLoop(testingTuple options) {
 
     Molecule particle1(pos1, {0., 0., 0.}, maxID++, 0);
     Molecule particle2(pos2, {0., 0., 0.}, maxID++, 0);
-    numParticles +=2;
+    numParticles += 2;
 
     // add the two particles!
     autoPas.addParticle(particle1);
@@ -317,9 +317,9 @@ void testSimulationLoop(testingTuple options) {
     }
   };
 
-  auto deleteIDs = [&autoPas, &numParticles](std::set<unsigned long> ids){
+  auto deleteIDs = [&autoPas, &numParticles](std::set<unsigned long> ids) {
     for (auto iter = autoPas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-      if(ids.find(iter->getID()) != ids.end()){
+      if (ids.find(iter->getID()) != ids.end()) {
         autoPas.deleteParticle(iter);
         --numParticles;
       }
@@ -347,7 +347,7 @@ void testSimulationLoop(testingTuple options) {
 
   moveParticlesAndResetF({-skin / 6, 0., 0.});
   addParticlePair({9.99, 7., 5.});
-  deleteIDs({2,3});
+  deleteIDs({2, 3});
 
   // do third simulation loop.
   doSimulationLoop(autoPas, &functor);
