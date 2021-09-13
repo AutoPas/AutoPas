@@ -57,8 +57,8 @@ class LogicHandler {
 
         auto fastRemove = [&]() {
           // Fast remove of particle, i.e., swap with last entry && pop.
-          std::swap(p, leavingBufferParticles.back());
-          leavingBufferParticles.pop_back();
+          std::swap(p, _particleBuffer.back());
+          _particleBuffer.pop_back();
           // Do not increment the iter afterwards!
         };
         if (p.isDummy()) {
