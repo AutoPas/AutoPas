@@ -141,22 +141,21 @@ void addEnteringParticles(AutoPasContainer &sphSystem, std::vector<Particle> &in
  * @param reqMin
  * @param reqMax
  * @param cutoff
- * @param skin
  * @param shift
  */
-void getRequiredHalo(double boxMin, double boxMax, int diff, double &reqMin, double &reqMax, double cutoff, double skin,
+void getRequiredHalo(double boxMin, double boxMax, int diff, double &reqMin, double &reqMax, double cutoff,
                      double &shift) {
   if (diff == 0) {
-    reqMin = boxMin - skin;
-    reqMax = boxMax + skin;
+    reqMin = boxMin;
+    reqMax = boxMax;
     shift = 0;
   } else if (diff == -1) {
-    reqMin = boxMax - cutoff - skin;
-    reqMax = boxMax + skin;
+    reqMin = boxMax - cutoff;
+    reqMax = boxMax;
     shift = boxMin - boxMax;
   } else if (diff == 1) {
-    reqMin = boxMin - skin;
-    reqMax = boxMin + cutoff + skin;
+    reqMin = boxMin;
+    reqMax = boxMin + cutoff;
     shift = boxMax - boxMin;
   }
 }
@@ -174,7 +173,6 @@ void updateHaloParticles(AutoPasContainer &sphSystem) {
   std::array<int, 3> diff{0, 0, 0};
   std::array<double, 3> shift{0., 0., 0.};
   double cutoff = sphSystem.getCutoff();
-  double skin = sphSystem.getVerletSkin();
   for (diff[0] = -1; diff[0] < 2; diff[0]++) {
     for (diff[1] = -1; diff[1] < 2; diff[1]++) {
       for (diff[2] = -1; diff[2] < 2; diff[2]++) {
@@ -185,8 +183,7 @@ void updateHaloParticles(AutoPasContainer &sphSystem) {
         }
         // figure out from where we get our halo particles
         for (int i = 0; i < 3; ++i) {
-          getRequiredHalo(boxMin[i], boxMax[i], diff[i], requiredHaloMin[i], requiredHaloMax[i], cutoff, skin,
-                          shift[i]);
+          getRequiredHalo(boxMin[i], boxMax[i], diff[i], requiredHaloMin[i], requiredHaloMax[i], cutoff, shift[i]);
         }
         for (auto iterator =
                  sphSystem.getRegionIterator(requiredHaloMin, requiredHaloMax, autopas::IteratorBehavior::owned);
