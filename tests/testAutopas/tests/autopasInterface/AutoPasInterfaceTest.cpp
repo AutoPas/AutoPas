@@ -23,8 +23,8 @@ void defaultInit(AutoPasT &autoPas) {
   autoPas.setBoxMax(boxMax);
   autoPas.setCutoff(cutoff);
   autoPas.setVerletSkin(skin);
-  autoPas.setVerletRebuildFrequency(2);
-  autoPas.setNumSamples(2);
+  autoPas.setVerletRebuildFrequency(3);
+  autoPas.setNumSamples(3);
   // init autopas
   autoPas.init();
 }
@@ -292,20 +292,42 @@ void testSimulationLoop(testingTuple options) {
 
   defaultInit(autoPas);
 
-  // create two particles with distance .5
-  double distance = .5;
-  std::array<double, 3> pos1{9.99, 5., 5.};
-  std::array<double, 3> distVec{0., distance, 0.};
-  std::array<double, 3> pos2 = autopas::utils::ArrayMath::add(pos1, distVec);
+  int numParticles = 0;
+  int maxID = 0;
 
-  {
-    Molecule particle1(pos1, {0., 0., 0.}, 0, 0);
-    Molecule particle2(pos2, {0., 0., 0.}, 1, 0);
+  auto addParticlePair = [&autoPas, &numParticles, &maxID](std::array<double, 3> pos1) {
+    // create two particles with distance .5
+    double distance = .5;
+    std::array<double, 3> distVec{0., distance, 0.};
+    std::array<double, 3> pos2 = autopas::utils::ArrayMath::add(pos1, distVec);
+
+    Molecule particle1(pos1, {0., 0., 0.}, maxID++, 0);
+    Molecule particle2(pos2, {0., 0., 0.}, maxID++, 0);
+    numParticles +=2;
 
     // add the two particles!
     autoPas.addParticle(particle1);
     autoPas.addParticle(particle2);
-  }
+  };
+
+  auto moveParticlesAndResetF = [&autoPas](std::array<double, 3> moveVec) {
+    for (auto iter = autoPas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+      iter->setR(autopas::utils::ArrayMath::add(iter->getR(), moveVec));
+      iter->setF(zeroArr);
+    }
+  };
+
+  auto deleteIDs = [&autoPas, &numParticles](std::set<unsigned long> ids){
+    for (auto iter = autoPas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+      if(ids.find(iter->getID()) != ids.end()){
+        autoPas.deleteParticle(iter);
+        --numParticles;
+      }
+    }
+  };
+
+  addParticlePair({9.99, 5., 5.});
+
   autopas::LJFunctor<Molecule, /* shifting */ true, /* mixing */ false, autopas::FunctorN3Modes::Both,
                      /* globals */ true>
       functor(cutoff);
@@ -313,32 +335,32 @@ void testSimulationLoop(testingTuple options) {
   // do first simulation loop
   doSimulationLoop(autoPas, &functor);
 
-  doAssertions(autoPas, &functor, 2, __LINE__);
+  doAssertions(autoPas, &functor, numParticles, __LINE__);
 
-  // update positions a bit (outside of domain!) + reset F
-  {
-    std::array<double, 3> moveVec{skin / 3., 0., 0.};
-    for (auto iter = autoPas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-      iter->setR(autopas::utils::ArrayMath::add(iter->getR(), moveVec));
-      iter->setF(zeroArr);
-    }
-  }
+  moveParticlesAndResetF({skin / 6, 0., 0.});
+  addParticlePair({9.99, 1., 5.});
 
   // do second simulation loop
   doSimulationLoop(autoPas, &functor);
 
-  doAssertions(autoPas, &functor, 2, __LINE__);
+  doAssertions(autoPas, &functor, numParticles, __LINE__);
 
-  // no position update this time, but resetF!
-  {
-    for (auto iter = autoPas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-      iter->setF(zeroArr);
-    }
-  }
-  // do third simulation loop, tests rebuilding of container.
+  moveParticlesAndResetF({-skin / 6, 0., 0.});
+  addParticlePair({9.99, 7., 5.});
+  deleteIDs({2,3});
+
+  // do third simulation loop.
   doSimulationLoop(autoPas, &functor);
 
-  doAssertions(autoPas, &functor, 2, __LINE__);
+  doAssertions(autoPas, &functor, numParticles, __LINE__);
+
+  // update positions a bit (outside of domain!) + reset F
+  moveParticlesAndResetF({skin / 6, 0., 0.});
+
+  // do fourth simulation loop, tests rebuilding of container.
+  doSimulationLoop(autoPas, &functor);
+
+  doAssertions(autoPas, &functor, numParticles, __LINE__);
 }
 
 /**
@@ -577,14 +599,34 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
 
   doAssertions(autoPas1, autoPas2, &functor1, &functor2, __LINE__);
 
-  // reset F
-  for (auto *aP : {&autoPas1, &autoPas2}) {
-    for (auto iter = aP->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-      iter->setF(zeroArr);
+  // update positions a bit (outside of domain!) + reset F
+  {
+    std::array<double, 3> moveVec{-skin / 3., 0., 0.};
+    for (auto *aP : {&autoPas1, &autoPas2}) {
+      for (auto iter = aP->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+        iter->setR(autopas::utils::ArrayMath::add(iter->getR(), moveVec));
+        iter->setF(zeroArr);
+      }
     }
   }
 
-  // do third simulation loop, no position update
+  // do third simulation loop
+  doSimulationLoop(autoPas1, autoPas2, &functor1, &functor2);
+
+  doAssertions(autoPas1, autoPas2, &functor1, &functor2, __LINE__);
+
+  // update positions a bit (outside of domain!) + reset F
+  {
+    std::array<double, 3> moveVec{skin / 3., 0., 0.};
+    for (auto *aP : {&autoPas1, &autoPas2}) {
+      for (auto iter = aP->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+        iter->setR(autopas::utils::ArrayMath::add(iter->getR(), moveVec));
+        iter->setF(zeroArr);
+      }
+    }
+  }
+
+  // do fourth simulation loop
   doSimulationLoop(autoPas1, autoPas2, &functor1, &functor2);
 
   doAssertions(autoPas1, autoPas2, &functor1, &functor2, __LINE__);
