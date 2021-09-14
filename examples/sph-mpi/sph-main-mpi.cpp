@@ -384,6 +384,11 @@ void densityPressureHydroForce(AutoPasContainer &sphSystem, MPI_Comm &comm, cons
 
   sphSystem.iteratePairwise(&densityFunctor);
 
+  // 1.3 delete halo particles, as their values are no longer valid
+  for (auto part = sphSystem.begin(autopas::IteratorBehavior::halo); part.isValid(); ++part) {
+    sphSystem.deleteParticle(part);
+  }
+
   // 2. then update pressure
   setPressure(sphSystem);
 
