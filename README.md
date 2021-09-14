@@ -56,7 +56,7 @@ use bundled versions. To make use of this feature, call `cmake` with:
 ```bash
 cmake -D spdlog_ForceBundled=ON    # replace spdlog by the lib you want to force
 ```
-Or better have a look at the variables exposed in `ccmake`. 
+Or better, have a look at the variables exposed in `ccmake`. 
 
 ## Testing
 
