@@ -240,8 +240,8 @@ void densityPressureHydroForce(AutoPasContainer &sphSystem) {
   setPressure(sphSystem);
   std::cout << "calculation of pressure... completed" << std::endl;
 
-  // 0.3 then calculate hydro force
-  // 0.3.1 to calculate the density we need the halo particles
+  // 3 then calculate hydro force
+  // 3.1 to calculate the density we need the halo particles
   updateHaloParticles(sphSystem);
 
   std::cout << "haloparticles... ";
@@ -256,7 +256,7 @@ void densityPressureHydroForce(AutoPasContainer &sphSystem) {
   std::cout << haloparts << std::endl;
   std::cout << "particles... " << innerparts << std::endl;
 
-  // 0.3.2 then calculate hydro force
+  // 3.2 then calculate hydro force
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::owned); part.isValid(); ++part) {
     // self interaction leeds to:
     // 1) vsigmax = 2*part->getSoundSpeed()
