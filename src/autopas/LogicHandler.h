@@ -79,8 +79,8 @@ class LogicHandler {
   /**
    * @copydoc AutoPas::updateContainer()
    */
-  [[nodiscard]] std::vector<Particle> updateContainer(bool forced) {
-    bool doCompleteContainerUpdate = not neighborListsAreValid() or forced;
+  [[nodiscard]] std::vector<Particle> updateContainer() {
+    bool doCompleteContainerUpdate = not neighborListsAreValid();
     bool keepNeighborListsValid = not doCompleteContainerUpdate;
 
     if (doCompleteContainerUpdate) {

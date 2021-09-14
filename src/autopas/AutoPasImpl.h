@@ -116,8 +116,8 @@ void AutoPas<Particle>::addParticle(const Particle &p) {
 }
 
 template <class Particle>
-std::pair<std::vector<Particle>, bool> AutoPas<Particle>::updateContainer(bool forced) {
-  return std::make_pair(_logicHandler->updateContainer(forced), true);
+std::vector<Particle> AutoPas<Particle>::updateContainer() {
+  return _logicHandler->updateContainer();
 }
 
 template <class Particle>

@@ -148,10 +148,7 @@ void addHaloParticles(autopas::AutoPas<Molecule> &autoPas, const std::vector<Mol
 template <typename Functor>
 void doSimulationLoop(autopas::AutoPas<Molecule> &autoPas, Functor *functor) {
   // 1. update Container; return value is vector of invalid == leaving particles!
-  auto [invalidParticles, updated] = autoPas.updateContainer();
-
-  // linked cells interface should ALWAYS update!
-  ASSERT_TRUE(updated);
+  auto invalidParticles = autoPas.updateContainer();
 
   // 2. leaving and entering particles
   const auto &sendLeavingParticles = invalidParticles;
@@ -177,11 +174,8 @@ template <typename Functor>
 void doSimulationLoop(autopas::AutoPas<Molecule> &autoPas1, autopas::AutoPas<Molecule> &autoPas2, Functor *functor1,
                       Functor *functor2) {
   // 1. update Container; return value is vector of invalid = leaving particles!
-  auto [invalidParticles1, updated1] = autoPas1.updateContainer();
-  auto [invalidParticles2, updated2] = autoPas2.updateContainer();
-
-  ASSERT_TRUE(updated1);
-  ASSERT_TRUE(updated2);
+  auto invalidParticles1 = autoPas1.updateContainer();
+  auto invalidParticles2 = autoPas2.updateContainer();
 
   // 2. leaving and entering particles
   const auto &sendLeavingParticles1 = invalidParticles1;

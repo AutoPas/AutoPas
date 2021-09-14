@@ -111,17 +111,11 @@ class AutoPas {
 
   /**
    * Updates the container.
-   * On an update, halo particles are deleted, the particles are resorted into appropriate cells and particles that do
-   * no longer belong into the container will be returned, the lists will be invalidated. If the internal container is
-   * still valid and a rebuild of the container is not forced, this will return an empty list of particles and nothing
-   * else will happen.
-   * @param forced specifies whether an update of the container is enforced.
-   * @return A pair of a vector of invalid particles that do no belong in the current container and a bool that
-   * specifies whether the container was updated. If the bool is false, the vector will be an empty vector. If the
-   * returned bool evaluates to true, the vector can both be empty or non-empty, depending on whether particles have
-   * left the container or not.
+   * On an update, halo particles are deleted and particles that do no longer belong into the container will be
+   * returned.
+   * @return A vector of invalid particles that do no longer belong in the current container.
    */
-  [[nodiscard]] std::pair<std::vector<Particle>, bool> updateContainer(bool forced = false);
+  [[nodiscard]] std::vector<Particle> updateContainer();
 
   /**
    * Adds a particle to the container.
