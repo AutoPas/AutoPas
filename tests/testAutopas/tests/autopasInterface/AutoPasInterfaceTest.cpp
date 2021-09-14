@@ -141,7 +141,7 @@ size_t addEnteringParticles(autopas::AutoPas<Molecule> &autoPas, const std::vect
 
 void addHaloParticles(autopas::AutoPas<Molecule> &autoPas, const std::vector<Molecule> &haloParticles) {
   for (const auto &p : haloParticles) {
-    autoPas.addOrUpdateHaloParticle(p);
+    autoPas.addHaloParticle(p);
   }
 }
 
@@ -404,7 +404,7 @@ void testHaloCalculation(testingTuple options) {
         Molecule particle1(pos1, {0., 0., 0.}, id++);
         autoPas.addParticle(particle1);
         Molecule particle2(pos2, {0., 0., 0.}, id++);
-        autoPas.addOrUpdateHaloParticle(particle2);
+        autoPas.addHaloParticle(particle2);
       }
     }
   }

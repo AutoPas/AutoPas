@@ -214,7 +214,7 @@ TEST_F(AutoPasTest, getNumParticlesTest) {
 
   // add a particle outside the domain -> halo
   particle.setR({-0.1, -0.1, -0.1});
-  autoPas.addOrUpdateHaloParticle(particle);
+  autoPas.addHaloParticle(particle);
   expectedParticles(1, 1);
 
   // update container is expected to remove all halo particles

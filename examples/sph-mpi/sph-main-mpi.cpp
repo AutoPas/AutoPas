@@ -299,7 +299,7 @@ void updateHaloParticles(AutoPasContainer &sphSystem, MPI_Comm &comm, const std:
         std::vector<Particle> receiveParticles;
         receive(receiveParticles, diff, comm);
         for (auto &particle : receiveParticles) {
-          sphSystem.addOrUpdateHaloParticle(particle);
+          sphSystem.addHaloParticle(particle);
         }
         waitSend(sendRequest);
         buffer.clear();

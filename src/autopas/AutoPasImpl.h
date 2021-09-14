@@ -134,7 +134,7 @@ void AutoPas<Particle>::forceRetune() {
 }
 
 template <class Particle>
-void AutoPas<Particle>::addOrUpdateHaloParticle(const Particle &haloParticle) {
+void AutoPas<Particle>::addHaloParticle(const Particle &haloParticle) {
   _logicHandler->addHaloParticle(haloParticle);
 }
 

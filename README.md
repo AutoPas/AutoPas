@@ -214,7 +214,7 @@ One simulation loop should always consist of the following phases:
    * Identify the halo particles by use of AutoPas' iterators and send them in a similar way as the leaving particles.
    * Add the particles as haloParticles using
       ```cpp
-      autoPas.addOrUpdateHaloParticle(haloParticle)
+      autoPas.addHaloParticle(haloParticle)
       ```
 
 4. Perform an iteratePairwise step.

@@ -83,7 +83,7 @@ auto fillContainerAroundBoundary(AutoPasT &autoPas, std::array<double, 3> boxOfI
           }
         } else {
           // AutoPas should set the ownership state of this particle to halo
-          autoPas.addOrUpdateHaloParticle(p);
+          autoPas.addHaloParticle(p);
           particleIDsHalo.push_back(p.getID());
           if (autopas::utils::inBox(pos, boxOfInterestMin, boxOfInterestMax)) {
             particleIDsInterestHalo.push_back(p.getID());

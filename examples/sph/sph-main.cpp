@@ -190,7 +190,7 @@ void updateHaloParticles(AutoPasContainer &sphSystem) {
              iterator.isValid(); ++iterator) {
           Particle p = *iterator;
           p.addR(shift);
-          sphSystem.addOrUpdateHaloParticle(p);
+          sphSystem.addHaloParticle(p);
         }
       }
     }

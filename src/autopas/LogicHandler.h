@@ -182,7 +182,7 @@ class LogicHandler {
   }
 
   /**
-   * @copydoc AutoPas::addOrUpdateHaloParticle()
+   * @copydoc AutoPas::addHaloParticle()
    */
   void addHaloParticle(const Particle &haloParticle) {
     if (utils::inBox(haloParticle.getR(), _autoTuner.getContainer()->getBoxMin(),

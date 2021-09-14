@@ -138,7 +138,7 @@ void addEnteringParticles(autopas::AutoPas<Particle> &autoPas, std::vector<Parti
 template <class Particle>
 void addHaloParticles(autopas::AutoPas<Particle> &autoPas, std::vector<Particle> &haloParticles) {
   for (auto &p : haloParticles) {
-    autoPas.addOrUpdateHaloParticle(p);
+    autoPas.addHaloParticle(p);
   }
 }
 
