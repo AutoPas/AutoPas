@@ -185,28 +185,27 @@ void waitSend(MPI_Request &sendRequest) { MPI_Wait(&sendRequest, MPI_STATUS_IGNO
  * @param sendMin
  * @param sendMax
  * @param cutoff
- * @param skin
  * @param shift
  * @param globalBoxMin
  * @param globalBoxMax
  */
-void getSendHalo(double boxMin, double boxMax, int diff, double &sendMin, double &sendMax, double cutoff, double skin,
-                 double &shift, const double globalBoxMin, const double globalBoxMax) {
+void getSendHalo(double boxMin, double boxMax, int diff, double &sendMin, double &sendMax, double cutoff, double &shift,
+                 const double globalBoxMin, const double globalBoxMax) {
   if (diff == 0) {
-    sendMin = boxMin - skin;
-    sendMax = boxMax + skin;
+    sendMin = boxMin;
+    sendMax = boxMax;
     shift = 0;
   } else if (diff == -1) {
-    sendMin = boxMin - skin;
-    sendMax = boxMin + cutoff + skin;
+    sendMin = boxMin;
+    sendMax = boxMin + cutoff;
     if (boxMin == globalBoxMin) {
       shift = globalBoxMax - globalBoxMin;
     } else {
       shift = 0;
     }
   } else if (diff == 1) {
-    sendMin = boxMax - cutoff - skin;
-    sendMax = boxMax + skin;
+    sendMin = boxMax - cutoff;
+    sendMax = boxMax;
     if (boxMax == globalBoxMax) {
       shift = globalBoxMin - globalBoxMax;
     } else {
@@ -283,7 +282,7 @@ void updateHaloParticles(AutoPasContainer &sphSystem, MPI_Comm &comm, const std:
         }
         // figure out which particles we send
         for (int i = 0; i < 3; ++i) {
-          getSendHalo(boxMin[i], boxMax[i], diff[i], requiredHaloMin[i], requiredHaloMax[i], cutoff, skin, shift[i],
+          getSendHalo(boxMin[i], boxMax[i], diff[i], requiredHaloMin[i], requiredHaloMax[i], cutoff, shift[i],
                       globalBoxMin[i], globalBoxMax[i]);
         }
 
