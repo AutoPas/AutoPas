@@ -139,9 +139,17 @@ autoPas.iteratePairwise(&myFunctor);
 
 ### Particle Ownership
 Particles saved in an AutoPas container can be one of two possible states:
-* owned: Particles that belong to this AutoPas instance. These particles are either inside of the boundary of the AutoPas instance or very close to the boundary (less than a distance of skin/2 away). If a particle is added via `addParticle()`, it is automatically added as an owned particle. An owned particle can explicitly be removed by deleting the particle using an iterator (`autoPas.deleteParticle(iterator)`). On an update of the AutoPas container (using `updateContainer()`) owned particles that move outside of the boundary of its parent AutoPas container are returned.
-* halo: Particles that do not belong to the current AutoPas instance. These normally are ghost particles arising from either periodic boundary conditions or particles of a neighboring AutoPas object (if you split the entire domain over multiple AutoPas objects, i.e., you use a domain decomposition algorithm). The halo particles are needed for the correct calculation of the pairwise forces. On update of the AutoPas container, halo particles are deleted (note that not every call to `updateContainer()` does this!, see [Simulation Loop](#simulation-loop)).
-* dummy: Particles that are about to be deleted or that act as filler for certain algorithms. These particles do not affect the force calculation.
+* owned: Particles that belong to this AutoPas instance. 
+  These particles are typically inside of the boundary of the AutoPas instance.
+  If a particle is added via `addParticle()`, it is automatically added as an owned particle.
+  An owned particle can explicitly be removed by deleting the particle using an iterator (`autoPas.deleteParticle(iterator)`).
+  On an update of the AutoPas container (using `updateContainer()`) owned particles that moved outside the boundary of its parent AutoPas container are returned.
+* halo: Particles that do not belong to the current AutoPas instance.
+  These normally are ghost particles arising from either periodic boundary conditions or particles of a neighboring AutoPas object
+  (if you split the entire domain over multiple AutoPas objects, i.e., you use a domain decomposition algorithm).
+  The halo particles are needed for the correct calculation of the pairwise forces.
+  On update of the AutoPas container, halo particles are deleted (see [Simulation Loop](#simulation-loop)).
+* dummy: Particles that are deleted or that act as filler for certain algorithms. These particles do not affect the force calculation.
 
 ### Iterating Through Particles
 Iterators to iterate over particle are provided.
@@ -187,21 +195,13 @@ One simulation loop should always consist of the following phases:
 
 1. Updating the Container:
    ```cpp
-   auto [invalidParticles, updated] = autoPas.updateContainer();
+   auto invalidParticles = autoPas.updateContainer();
    ```
-   This call will potentially trigger an update of the container inside of AutoPas. The update will be performed if either
-   
-    a. The AutoTuner collected enough samples for the current configuration and will move to the next one OR
-    
-    b. The rebuild frequency of the container is reached.
-   
-   If the update is performed, the returned bool `updated` is `true`. The returned vector `invalidParticles` consists of the particles that are not anymore within the boundaries of this container and hence are deleted from it. These are particles that were previously owned by this AutoPas container but have left the boundary of this container, i.e., their current position resides outside of the container.
-   
-   If the update is not performed, `updated` will be false and the returned vector `invalidParticles` will be empty.
-   An update is sometimes skipped to ensure that containers do not change, which allows containers to reuse neighbor lists thus enabling better performance.
+   This call will trigger an update of the container inside AutoPas. 
+   The returned vector `invalidParticles` consists of the particles that were previously owned by this AutoPas container
+   but have left the boundary of this container, i.e., their current position resides outside the container.
 
 2. Handling the leaving particles
-   * This step can be skipped if `updated` was false. If you use multiple MPI instances, you have to ensure that all instances rebuild during the same time step. This is guaranteed if the sampling frequency is the same as (or a multiple of) the rebuild frequency.
    * Apply boundary conditions on them
    * Potentially send them to other mpi-processes, skip this if MPI is not needed
    * Add them to the containers using
@@ -210,7 +210,6 @@ One simulation loop should always consist of the following phases:
       ```
 
 3. Handle halo particles:
-   * This step always has to be performed, even if `updated` was false.
    * Identify the halo particles by use of AutoPas' iterators and send them in a similar way as the leaving particles.
    * Add the particles as haloParticles using
       ```cpp
@@ -223,31 +222,32 @@ One simulation loop should always consist of the following phases:
    ```
 
 ### Inserting additional particles
-Before inserting additional particles (e.g. through a grand-canonical thermostat ),
-you always have to enforce a containerUpdate on ALL AutoPas instances, i.e.,
-on all mpi processes, by calling
-```cpp
-autoPas.updateContainerForced();
-```
-This will invalidate the internal neighbor lists and containers.
+Additional particles (e.g. through a grand-canonical thermostat), can be inserted at any point in the simulation loop.
+For periodic boundary conditions, or in an MPI-parallel simulation, you, as the user, is responsible for inserting the appropriate halo particles.
 
 ### Using multiple functors
 
 AutoPas is able to work with simulation setups using multiple functors that describe different forces.
 A good demonstration for that is the sph example found under examples/sph or examples/sph-mpi.
 There exist some things you have to be careful about when using multiple functors:
-* If you use multiple functors it is necessary that all functors support the same newton3 options. If there is one functor not supporting newton3, you have to disable newton3 support for AutoPas by calling
+* If you use multiple functors it is necessary that all functors support the same newton3 options.
+  If there is one functor not supporting newton3, you have to disable newton3 support for AutoPas by calling
   ```cpp
   autoPas.setAllowedNewton3Options({false});
   ```
-* If you have `n` functors within one iteration and update the particle position only at the end or start of the iteration, the rebuildFrequency and the samplingRate have to be a multiple of `n`.
-* Functors must be marked as (not) relevant for tuning by specifying `Functor::isRelevantForTuning()`. Functors marked as relevant should have a near-identical performance profile otherwise the sampling of configurations will be distorted. It is recommended, to only mark the most expensive functor as relevant.
+* If you have `n` functors within one iteration and update the particle position only at the end or start of the iteration,
+  the rebuildFrequency and the samplingRate have to be a multiple of `n`.
+* Functors must be marked as (not) relevant for tuning by specifying `Functor::isRelevantForTuning()`.
+  Functors marked as relevant should have a near-identical performance profile otherwise the sampling of configurations will be distorted.
+  It is recommended, to only mark the most expensive functor as relevant.
 
 ## Developing AutoPas
 Please look at our [contribution guidelines](https://github.com/AutoPas/AutoPas/blob/master/.github/CONTRIBUTING.md).
 
-For profiling the compile time, the cmake option `AUTOPAS_COMPILE_TIME_PROFILING` can be turned on. This enables gcc's -`ftime-report` and clang's `-ftime-trace`. 
-It is recommended to use clang, as its output is more detailed. `-ftime-trace` generates a .json file for each compilation unit next to the generated object file (inside one of the CMakeFiles directories). Chrome has a built-in tool for viewing these files in a flame graph. It can be accessed through the URL `chrome://tracing`.
+For profiling the compile-time, the cmake option `AUTOPAS_COMPILE_TIME_PROFILING` can be turned on. This enables gcc's -`ftime-report` and clang's `-ftime-trace`. 
+It is recommended to use clang, as its output is more detailed.
+`-ftime-trace` generates a .json file for each compilation unit next to the generated object file (inside one of the CMakeFiles directories).
+Chrome has a built-in tool for viewing these files in a flame graph. It can be accessed through the URL `chrome://tracing`.
 
 ## Acknowledgements
 This work was financially supported by:
