@@ -89,7 +89,7 @@ There are multiple possibilities. In order of recommendation:
    ```
  
 ### Debugging Tests
-Many IDEs (e.g., CLion) have integrated support for googletest and you can debug the tests directly within the IDE.
+Many IDEs (e.g., CLion) have integrated support for googletest, and you can debug the tests directly within the IDE.
 
 If you prefer `gdb`:
 1. Find out the command to start your desired test with `-N` aka. `--show-only`:
