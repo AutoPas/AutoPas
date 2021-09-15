@@ -408,6 +408,7 @@ void RegularGridDecomposition::categorizeParticlesIntoLeftAndRightNeighbour(
 }
 
 void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(const double &work) {
+  const double halfWork = work / 2;
   // This is a dummy variable which is not being used.
   autopas::AutoPas_MPI_Request dummyRequest;
 
@@ -420,9 +421,9 @@ void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(const dou
     const int domainCountInPlane =
         _decomposition[(i + 1) % _dimensionCount] * _decomposition[(i + 2) % _dimensionCount];
 
-    distributedWorkInPlane[i] = work;
+    distributedWorkInPlane[i] = halfWork;
     if (domainCountInPlane > 1) {
-      autopas::AutoPas_MPI_Allreduce(&work, &distributedWorkInPlane[i], 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM,
+      autopas::AutoPas_MPI_Allreduce(&halfWork, &distributedWorkInPlane[i], 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM,
                                      _planarCommunicators[i]);
       distributedWorkInPlane[i] = distributedWorkInPlane[i] / domainCountInPlane;
     }
