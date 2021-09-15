@@ -50,8 +50,8 @@ CC=`which gcc` CXX=`which g++` cmake ..
 make
 ```
 
-AutoPas relies on a small number of dependencies. By default AutoPas looks for
-installed versions of those libraries but it can also be forced to (selectively)
+AutoPas relies on a small number of dependencies. By default, AutoPas looks for
+installed versions of those libraries, but it can also be forced to (selectively)
 use bundled versions. To make use of this feature, call `cmake` with:
 ```bash
 cmake -D spdlog_ForceBundled=ON    # replace spdlog by the lib you want to force
