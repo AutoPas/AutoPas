@@ -58,9 +58,6 @@ void RegularGridDecomposition::update(const double &work) {
     // This is a dummy variable which is not being used.
     autopas::AutoPas_MPI_Request dummyRequest;
 
-    auto oldLocalBoxMin = _localBoxMin;
-    auto oldLocalBoxMax = _localBoxMax;
-
     std::array<double, 3> distributedWorkInPlane{};
 
     for (int i = 0; i < _dimensionCount; ++i) {
@@ -80,32 +77,8 @@ void RegularGridDecomposition::update(const double &work) {
       if (_localBoxMin[i] != _globalBoxMin[i]) {
         autopas::AutoPas_MPI_Isend(&distributedWorkInPlane[i], 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
                                    &dummyRequest);
-        autopas::AutoPas_MPI_Isend(&oldLocalBoxMax[i], 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
+        autopas::AutoPas_MPI_Isend(&_localBoxMax[i], 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
                                    &dummyRequest);
-      }
-
-      if (_localBoxMax[i] != _globalBoxMax[i]) {
-        autopas::AutoPas_MPI_Isend(&distributedWorkInPlane[i], 1, AUTOPAS_MPI_DOUBLE, rightNeighbour, 0, _communicator,
-                                   &dummyRequest);
-        autopas::AutoPas_MPI_Isend(&oldLocalBoxMin[i], 1, AUTOPAS_MPI_DOUBLE, rightNeighbour, 0, _communicator,
-                                   &dummyRequest);
-      }
-    }
-
-    for (int i = 0; i < _dimensionCount; ++i) {
-      const int leftNeighbour = _neighbourDomainIndices[i * 2];
-      const int rightNeighbour = _neighbourDomainIndices[i * 2 + 1];
-
-      double neighbourPlaneWork, neighbourBoundary;
-      if (_localBoxMin[i] != _globalBoxMin[i]) {
-        autopas::AutoPas_MPI_Recv(&neighbourPlaneWork, 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
-                                  AUTOPAS_MPI_STATUS_IGNORE);
-        autopas::AutoPas_MPI_Recv(&neighbourBoundary, 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
-                                  AUTOPAS_MPI_STATUS_IGNORE);
-
-        _localBoxMin[i] =
-            DomainTools::balanceAdjacentDomains(neighbourPlaneWork, distributedWorkInPlane[i], neighbourBoundary,
-                                                oldLocalBoxMax[i], 2 * (_cutoffWidth + _skinWidth));
       }
 
       if (_localBoxMax[i] != _globalBoxMax[i]) {
@@ -116,8 +89,32 @@ void RegularGridDecomposition::update(const double &work) {
                                   AUTOPAS_MPI_STATUS_IGNORE);
 
         _localBoxMax[i] =
-            DomainTools::balanceAdjacentDomains(distributedWorkInPlane[i], neighbourPlaneWork, oldLocalBoxMin[i],
+            DomainTools::balanceAdjacentDomains(distributedWorkInPlane[i], neighbourPlaneWork, _localBoxMin[i],
                                                 neighbourBoundary, 2 * (_cutoffWidth + _skinWidth));
+      }
+    }
+
+    for (int i = 0; i < _dimensionCount; ++i) {
+      const int leftNeighbour = _neighbourDomainIndices[i * 2];
+      const int rightNeighbour = _neighbourDomainIndices[i * 2 + 1];
+
+      if (_localBoxMax[i] != _globalBoxMax[i]) {
+        autopas::AutoPas_MPI_Isend(&distributedWorkInPlane[i], 1, AUTOPAS_MPI_DOUBLE, rightNeighbour, 0, _communicator,
+                                   &dummyRequest);
+        autopas::AutoPas_MPI_Isend(&_localBoxMin[i], 1, AUTOPAS_MPI_DOUBLE, rightNeighbour, 0, _communicator,
+                                   &dummyRequest);
+      }
+
+      double neighbourPlaneWork, neighbourBoundary;
+      if (_localBoxMin[i] != _globalBoxMin[i]) {
+        autopas::AutoPas_MPI_Recv(&neighbourPlaneWork, 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
+                                  AUTOPAS_MPI_STATUS_IGNORE);
+        autopas::AutoPas_MPI_Recv(&neighbourBoundary, 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
+                                  AUTOPAS_MPI_STATUS_IGNORE);
+
+        _localBoxMin[i] =
+            DomainTools::balanceAdjacentDomains(neighbourPlaneWork, distributedWorkInPlane[i], neighbourBoundary,
+                                                _localBoxMax[i], 2 * (_cutoffWidth + _skinWidth));
       }
     }
   }
