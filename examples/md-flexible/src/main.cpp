@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
   {
     MDFlexConfig configuration(argc, argv);
 
-    auto domainDecomposition = std::make_unique<RegularGridDecomposition>(configuration);
+    auto domainDecomposition = std::make_shared<RegularGridDecomposition>(configuration);
 
     if (not configuration.checkpointfile.value.empty()) {
       configuration.flushParticles();

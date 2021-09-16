@@ -45,7 +45,7 @@ ParallelVtkWriter::ParallelVtkWriter(std::string sessionName, const std::string 
 
 void ParallelVtkWriter::recordTimestep(const int &currentIteration,
                                        const autopas::AutoPas<ParticleType> &autoPasContainer,
-                                       const std::unique_ptr<RegularGridDecomposition> &decomposition) {
+                                       const std::shared_ptr<RegularGridDecomposition> &decomposition) {
   recordParticleStates(currentIteration, autoPasContainer);
   recordDomainSubdivision(currentIteration, autoPasContainer.getCurrentConfig(), decomposition);
 }
@@ -136,7 +136,7 @@ void ParallelVtkWriter::recordParticleStates(const int &currentIteration,
 
 void ParallelVtkWriter::recordDomainSubdivision(const int &currentIteration,
                                                 const autopas::Configuration &autoPasConfiguration,
-                                                const std::unique_ptr<RegularGridDecomposition> &decomposition) {
+                                                const std::shared_ptr<RegularGridDecomposition> &decomposition) {
   if (_mpiRank == 0) {
     createPvtsFile(currentIteration, decomposition);
   }
@@ -197,7 +197,7 @@ void ParallelVtkWriter::recordDomainSubdivision(const int &currentIteration,
 }
 
 std::array<int, 6> ParallelVtkWriter::calculateWholeExtent(
-    const std::unique_ptr<RegularGridDecomposition> &domainDecomposition) {
+    const std::shared_ptr<RegularGridDecomposition> &domainDecomposition) {
   std::array<int, 6> wholeExtent;
   std::array<int, 3> domainId = domainDecomposition->getDomainId();
   std::array<int, 3> decomposition = domainDecomposition->getDecomposition();
@@ -272,7 +272,7 @@ void ParallelVtkWriter::createPvtuFile(const int &currentIteration) {
 }
 
 void ParallelVtkWriter::createPvtsFile(const int &currentIteration,
-                                       const std::unique_ptr<RegularGridDecomposition> &decomposition) {
+                                       const std::shared_ptr<RegularGridDecomposition> &decomposition) {
   std::ostringstream filename;
   filename << _sessionFolderPath << _sessionName << "_subdivision_" << std::setfill('0')
            << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".pvts";
