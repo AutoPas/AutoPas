@@ -74,7 +74,7 @@ size_t getTerminalWidth() {
 Simulation::Simulation(const MDFlexConfig &configuration,
                        std::unique_ptr<RegularGridDecomposition> &domainDecomposition)
     : _configuration(configuration),
-      _domainDecomposition(domainDecomposition),
+      _domainDecomposition(std::move(domainDecomposition)),
       _createVtkFiles(not configuration.vtkFileName.value.empty()),
       _vtkWriter(std::make_shared<ParallelVtkWriter>(_configuration.vtkFileName.value,
                                                      _configuration.vtkOutputFolder.value,

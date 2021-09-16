@@ -45,7 +45,7 @@ ParallelVtkWriter::ParallelVtkWriter(std::string sessionName, const std::string 
 
 void ParallelVtkWriter::recordTimestep(const int &currentIteration,
                                        const autopas::AutoPas<ParticleType> &autoPasContainer,
-                                       const RegularGridDecomposition &decomposition) {
+                                       const std::unique_ptr<RegularGridDecomposition> &decomposition) {
   recordParticleStates(currentIteration, autoPasContainer);
   recordDomainSubdivision(currentIteration, autoPasContainer.getCurrentConfig(), decomposition);
 }
@@ -136,7 +136,7 @@ void ParallelVtkWriter::recordParticleStates(const int &currentIteration,
 
 void ParallelVtkWriter::recordDomainSubdivision(const int &currentIteration,
                                                 const autopas::Configuration &autoPasConfiguration,
-                                                const RegularGridDecomposition &decomposition) {
+                                                const std::unique_ptr<RegularGridDecomposition> &decomposition) {
   if (_mpiRank == 0) {
     createPvtsFile(currentIteration, decomposition);
   }
@@ -152,8 +152,8 @@ void ParallelVtkWriter::recordDomainSubdivision(const int &currentIteration,
   }
 
   const std::array<int, 6> wholeExtent = calculateWholeExtent(decomposition);
-  const std::array<double, 3> localBoxMin = decomposition.getLocalBoxMin();
-  const std::array<double, 3> localBoxMax = decomposition.getLocalBoxMax();
+  const std::array<double, 3> localBoxMin = decomposition->getLocalBoxMin();
+  const std::array<double, 3> localBoxMax = decomposition->getLocalBoxMax();
 
   auto printDataArray = [&](const auto &data, const std::string &type, const std::string name) {
     timestepFile << "        <DataArray type=\"" << type << "\" Name=\"" << name << "\" format=\"ascii\">\n";
@@ -168,7 +168,7 @@ void ParallelVtkWriter::recordDomainSubdivision(const int &currentIteration,
   timestepFile << "    <Piece Extent=\"" << wholeExtent[0] << " " << wholeExtent[1] << " " << wholeExtent[2] << " "
                << wholeExtent[3] << " " << wholeExtent[4] << " " << wholeExtent[5] << "\">\n";
   timestepFile << "      <CellData>\n";
-  printDataArray(decomposition.getDomainIndex(), "Int32", "DomainId");
+  printDataArray(decomposition->getDomainIndex(), "Int32", "DomainId");
   printDataArray(autoPasConfiguration.cellSizeFactor, "Float32", "CellSizeFactor");
   printDataArray(static_cast<int>(autoPasConfiguration.container), "Int32", "Container");
   printDataArray(static_cast<int>(autoPasConfiguration.dataLayout), "Int32", "DataLayout");
@@ -196,10 +196,11 @@ void ParallelVtkWriter::recordDomainSubdivision(const int &currentIteration,
   timestepFile.close();
 }
 
-std::array<int, 6> ParallelVtkWriter::calculateWholeExtent(const RegularGridDecomposition &domainDecomposition) {
+std::array<int, 6> ParallelVtkWriter::calculateWholeExtent(
+    const std::unique_ptr<RegularGridDecomposition> &domainDecomposition) {
   std::array<int, 6> wholeExtent;
-  std::array<int, 3> domainId = domainDecomposition.getDomainId();
-  std::array<int, 3> decomposition = domainDecomposition.getDecomposition();
+  std::array<int, 3> domainId = domainDecomposition->getDomainId();
+  std::array<int, 3> decomposition = domainDecomposition->getDecomposition();
   for (int i = 0; i < 3; ++i) {
     wholeExtent[2 * i] = domainId[i];
     wholeExtent[2 * i + 1] = std::min(domainId[i] + 1, decomposition[i]);
@@ -270,7 +271,8 @@ void ParallelVtkWriter::createPvtuFile(const int &currentIteration) {
   timestepFile.close();
 }
 
-void ParallelVtkWriter::createPvtsFile(const int &currentIteration, const RegularGridDecomposition &decomposition) {
+void ParallelVtkWriter::createPvtsFile(const int &currentIteration,
+                                       const std::unique_ptr<RegularGridDecomposition> &decomposition) {
   std::ostringstream filename;
   filename << _sessionFolderPath << _sessionName << "_subdivision_" << std::setfill('0')
            << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".pvts";
@@ -281,9 +283,9 @@ void ParallelVtkWriter::createPvtsFile(const int &currentIteration, const Regula
   if (not timestepFile.is_open()) {
     throw std::runtime_error("Simulation::writeVTKFile(): Failed to open file \"" + filename.str() + "\"");
   }
-  const std::array<int, 3> wholeExtent = decomposition.getDecomposition();
-  const std::array<double, 3> globalBoxMin = decomposition.getGlobalBoxMin();
-  const std::array<double, 3> globalBoxMax = decomposition.getGlobalBoxMax();
+  const std::array<int, 3> wholeExtent = decomposition->getDecomposition();
+  const std::array<double, 3> globalBoxMin = decomposition->getGlobalBoxMin();
+  const std::array<double, 3> globalBoxMax = decomposition->getGlobalBoxMax();
   timestepFile << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>\n";
   timestepFile << "<VTKFile byte_order=\"LittleEndian\" type=\"PStructuredGrid\" version=\"0.1\">\n";
   timestepFile << "  <PStructuredGrid WholeExtent=\"0 " << wholeExtent[0] << " 0 " << wholeExtent[1] << " 0 "
@@ -314,7 +316,7 @@ void ParallelVtkWriter::createPvtsFile(const int &currentIteration, const Regula
   timestepFile << "    </PPoints>\n";
 
   for (int i = 0; i < _numberOfRanks; ++i) {
-    std::array<int, 6> pieceExtent = decomposition.getExtentOfSubdomain(i);
+    std::array<int, 6> pieceExtent = decomposition->getExtentOfSubdomain(i);
     timestepFile << "    <Piece "
                  << "Extent=\"" << pieceExtent[0] << " " << pieceExtent[1] << " " << pieceExtent[2] << " "
                  << pieceExtent[3] << " " << pieceExtent[4] << " " << pieceExtent[5] << "\" "
