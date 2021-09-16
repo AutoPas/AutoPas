@@ -29,7 +29,7 @@ class Simulation {
    * @param configuration: The configuration of this simulation.
    * @param domainDecomposition: The domain decomposition used for this simulation
    */
-  Simulation(const MDFlexConfig &configuration, RegularGridDecomposition &domainDecomposition);
+  Simulation(const MDFlexConfig &configuration, std::unique_ptr<RegularGridDecomposition> &domainDecomposition);
 
   /**
    * Destructor.
@@ -252,7 +252,7 @@ class Simulation {
   /**
    * This simulation's domain decomposition.
    */
-  RegularGridDecomposition _domainDecomposition;
+  std::unique_ptr<RegularGridDecomposition> _domainDecomposition;
 
   /**
    * Sends particles of type ParticleType to a specific receiver.

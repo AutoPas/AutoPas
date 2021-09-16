@@ -45,7 +45,7 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
   _loadBalancer = configuration.loadBalancer.value;
 
 #if defined(MD_FLEXIBLE_INCLUDE_ALL)
-  _allLoadBalancer = new ALL::ALL<double, double>(ALL::STAGGERED, _dimensionCount, 0);
+  _allLoadBalancer = std::make_unique<ALL::ALL<double, double>>(ALL::STAGGERED, _dimensionCount, 0);
   _allLoadBalancer->setCommunicator(_communicator);
   _allLoadBalancer->setup();
 #endif
@@ -496,6 +496,4 @@ void RegularGridDecomposition::balanceWithAllLoadBalancer(const double &work) {
     _localBoxMax[i] = updatedVertices[1][i];
   }
 }
-
-void RegularGridDecomposition::deleteAllLoadBalancer() { delete _allLoadBalancer; }
 #endif

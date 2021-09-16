@@ -121,13 +121,6 @@ class RegularGridDecomposition final : public DomainDecomposition {
    */
   void exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer, std::vector<ParticleType> &emigrants);
 
-#if defined(MD_FLEXIBLE_INCLUDE_ALL)
-  /**
-   * Deletes the _allLoadBalancerObject
-   */
-  void deleteAllLoadBalancer();
-#endif
-
  private:
   /**
    * The number of neighbours of a rectangular domain.
@@ -234,7 +227,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * We cannot use a shared pointer here, because whenn the load balancer is deleted, it calls MPI_Comm_free after
    * we call MPI_Finalize().
    */
-  ALL::ALL<double, double> *_allLoadBalancer;
+  std::unique_ptr<ALL::ALL<double, double>> _allLoadBalancer;
 #endif
 
   /**

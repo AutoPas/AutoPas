@@ -71,7 +71,8 @@ size_t getTerminalWidth() {
 }
 }  // namespace
 
-Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecomposition &domainDecomposition)
+Simulation::Simulation(const MDFlexConfig &configuration,
+                       std::unique_ptr<RegularGridDecomposition> &domainDecomposition)
     : _configuration(configuration),
       _domainDecomposition(domainDecomposition),
       _createVtkFiles(not configuration.vtkFileName.value.empty()),
@@ -96,8 +97,8 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
   _autoPasContainer->setAllowedNewton3Options(_configuration.newton3Options.value);
   _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions.value);
   _autoPasContainer->setAllowedLoadEstimators(_configuration.loadEstimatorOptions.value);
-  _autoPasContainer->setBoxMin(_domainDecomposition.getLocalBoxMin());
-  _autoPasContainer->setBoxMax(_domainDecomposition.getLocalBoxMax());
+  _autoPasContainer->setBoxMin(_domainDecomposition->getLocalBoxMin());
+  _autoPasContainer->setBoxMax(_domainDecomposition->getLocalBoxMax());
   _autoPasContainer->setCutoff(_configuration.cutoff.value);
   _autoPasContainer->setRelativeOptimumRange(_configuration.relativeOptimumRange.value);
   _autoPasContainer->setMaxTuningPhasesWithoutTest(_configuration.maxTuningPhasesWithoutTest.value);
@@ -119,7 +120,7 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
 
   // @todo: the object generators should only generate particles relevant for the current rank's domain
   for (auto &particle : _configuration.getParticles()) {
-    if (_domainDecomposition.isInsideLocalDomain(particle.getR())) {
+    if (_domainDecomposition->isInsideLocalDomain(particle.getR())) {
       _autoPasContainer->addParticle(particle);
     }
   }
@@ -142,10 +143,6 @@ void Simulation::finalize() {
   _timers.total.stop();
 
   autopas::AutoPas_MPI_Barrier(AUTOPAS_MPI_COMM_WORLD);
-
-#if defined(MD_FLEXIBLE_INCLUDE_ALL)
-  _domainDecomposition.deleteAllLoadBalancer();
-#endif
 
   logSimulationState();
   logMeasurements();
@@ -176,17 +173,17 @@ void Simulation::run() {
 
       _timers.work.stop();
       if (updated) {
-        _domainDecomposition.update(_timers.work.getTotalTime());
-        auto additionalEmigrants =
-            _autoPasContainer->resizeBox(_domainDecomposition.getLocalBoxMin(), _domainDecomposition.getLocalBoxMax());
+        _domainDecomposition->update(_timers.work.getTotalTime());
+        auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(),
+                                                                _domainDecomposition->getLocalBoxMax());
         emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
         _timers.work.reset();
 
-        _domainDecomposition.exchangeMigratingParticles(_autoPasContainer, emigrants);
+        _domainDecomposition->exchangeMigratingParticles(_autoPasContainer, emigrants);
       }
 
       _timers.haloParticleExchange.start();
-      _domainDecomposition.exchangeHaloParticles(_autoPasContainer);
+      _domainDecomposition->exchangeHaloParticles(_autoPasContainer);
       _timers.haloParticleExchange.stop();
 
       _timers.work.start();
@@ -203,11 +200,11 @@ void Simulation::run() {
     ++_iteration;
 
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
-      std::cout << "Current Memory usage on rank " << _domainDecomposition.getDomainIndex() << ": "
+      std::cout << "Current Memory usage on rank " << _domainDecomposition->getDomainIndex() << ": "
                 << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
     }
 
-    if (_domainDecomposition.getDomainIndex() == 0) {
+    if (_domainDecomposition->getDomainIndex() == 0) {
       auto [maxIterationsEstimate, maxIterationsIsPrecise] = estimateNumberOfIterations();
       if (not _configuration.dontShowProgressBar.value) {
         printProgress(_iteration, maxIterationsEstimate, maxIterationsIsPrecise);
@@ -230,8 +227,8 @@ double Simulation::calculateHomogeneity() const {
   // approximately the resolution we want to get.
   size_t numberOfCells = ceil(numberOfParticles / 10.);
 
-  std::array<double, 3> startCorner = _domainDecomposition.getGlobalBoxMin();
-  std::array<double, 3> endCorner = _domainDecomposition.getGlobalBoxMax();
+  std::array<double, 3> startCorner = _domainDecomposition->getGlobalBoxMin();
+  std::array<double, 3> endCorner = _domainDecomposition->getGlobalBoxMax();
   std::array<double, 3> domainSizePerDimension = {};
   for (int i = 0; i < 3; ++i) {
     domainSizePerDimension[i] = endCorner[i] - startCorner[i];
@@ -531,7 +528,7 @@ void Simulation::logMeasurements() {
   long haloParticleExchange = accumulateTime(_timers.haloParticleExchange.getTotalTime());
   long migratingParticleExchange = accumulateTime(_timers.migratingParticleExchange.getTotalTime());
 
-  if (_domainDecomposition.getDomainIndex() == 0) {
+  if (_domainDecomposition->getDomainIndex() == 0) {
     auto maximumNumberOfDigits = std::to_string(total).length();
     std::cout << "Measurements:" << std::endl;
     std::cout << timerToString("Total accumulated              ", total, maximumNumberOfDigits);
