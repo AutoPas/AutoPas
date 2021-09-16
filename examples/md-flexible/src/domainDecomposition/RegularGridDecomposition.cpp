@@ -45,8 +45,11 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
   _loadBalancer = configuration.loadBalancer.value;
 
 #if defined(MD_FLEXIBLE_INCLUDE_ALL)
-  _allLoadBalancer = std::make_unique<ALL::ALL<double, double>>(ALL::STAGGERED, _dimensionCount, 0);
+  _allLoadBalancer = std::make_unique<ALL::ALL<double, double>>(ALL::TENSOR, _dimensionCount, 0);
   _allLoadBalancer->setCommunicator(_communicator);
+
+  const double minDomainSize = 2 * (_cutoffWidth + _skinWidth);
+  _allLoadBalancer->setMinDomainSize({minDomainSize, minDomainSize, minDomainSize});
   _allLoadBalancer->setup();
 #endif
 }
@@ -463,10 +466,10 @@ void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(const dou
       autopas::AutoPas_MPI_Recv(&neighbourBoundary, 1, AUTOPAS_MPI_DOUBLE, leftNeighbour, 0, _communicator,
                                 AUTOPAS_MPI_STATUS_IGNORE);
 
-        balancedPosition =
-            DomainTools::balanceAdjacentDomains(neighbourPlaneWork, distributedWorkInPlane[i], neighbourBoundary,
-                                                oldLocalBoxMax[i], 2 * (_cutoffWidth + _skinWidth));
-        _localBoxMin[i] += (balancedPosition - _localBoxMin[i]) / 2;
+      balancedPosition =
+          DomainTools::balanceAdjacentDomains(neighbourPlaneWork, distributedWorkInPlane[i], neighbourBoundary,
+                                              oldLocalBoxMax[i], 2 * (_cutoffWidth + _skinWidth));
+      _localBoxMin[i] += (balancedPosition - _localBoxMin[i]) / 2;
     }
 
     if (_localBoxMax[i] != _globalBoxMax[i]) {
@@ -476,10 +479,10 @@ void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(const dou
       autopas::AutoPas_MPI_Recv(&neighbourBoundary, 1, AUTOPAS_MPI_DOUBLE, rightNeighbour, 0, _communicator,
                                 AUTOPAS_MPI_STATUS_IGNORE);
 
-        balancedPosition =
-            DomainTools::balanceAdjacentDomains(distributedWorkInPlane[i], neighbourPlaneWork, oldLocalBoxMin[i],
-                                                neighbourBoundary, 2 * (_cutoffWidth + _skinWidth));
-        _localBoxMax[i] += (balancedPosition - _localBoxMax[i]) / 2;
+      balancedPosition =
+          DomainTools::balanceAdjacentDomains(distributedWorkInPlane[i], neighbourPlaneWork, oldLocalBoxMin[i],
+                                              neighbourBoundary, 2 * (_cutoffWidth + _skinWidth));
+      _localBoxMax[i] += (balancedPosition - _localBoxMax[i]) / 2;
     }
   }
 }
