@@ -336,4 +336,12 @@ class RegularGridDecomposition final : public DomainDecomposition {
                                                     std::vector<ParticleType> &leftNeighbourParticles,
                                                     std::vector<ParticleType> &rightNeighbourParticles,
                                                     std::vector<ParticleType> &uncategorizedParticles);
+
+  /**
+   * Calculates the distributed work required for the inverted pressure load balancing.
+   * Depending on how many domain boundaries can be shifted the work needs to be distributed in each shifable direction.
+   * @param work: The work to distribute.
+   * @return distributed work.
+   */
+  double calculateDistributedWork(const double &work);
 };
