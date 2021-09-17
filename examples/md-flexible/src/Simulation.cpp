@@ -171,15 +171,18 @@ void Simulation::run() {
       auto [emigrants, updated] =
           _autoPasContainer->updateContainer(_iteration % _configuration.verletRebuildFrequency.value == 0);
 
-      _timers.work.stop();
+      const double work = _timers.work.stop();
       if (updated) {
-        _domainDecomposition->update(_timers.work.getTotalTime());
+        _timers.loadBalancing.start();
+        _domainDecomposition->update(work);
         auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(),
                                                                 _domainDecomposition->getLocalBoxMax());
         emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
-        _timers.work.reset();
+        _timers.loadBalancing.stop();
 
+        _timers.migratingParticleExchange.start();
         _domainDecomposition->exchangeMigratingParticles(_autoPasContainer, emigrants);
+        _timers.migratingParticleExchange.stop();
       }
 
       _timers.haloParticleExchange.start();
@@ -527,6 +530,7 @@ void Simulation::logMeasurements() {
   long thermostat = accumulateTime(_timers.thermostat.getTotalTime());
   long haloParticleExchange = accumulateTime(_timers.haloParticleExchange.getTotalTime());
   long migratingParticleExchange = accumulateTime(_timers.migratingParticleExchange.getTotalTime());
+  long loadBalancing = accumulateTime(_timers.loadBalancing.getTotalTime());
 
   if (_domainDecomposition->getDomainIndex() == 0) {
     auto maximumNumberOfDigits = std::to_string(total).length();
@@ -553,6 +557,7 @@ void Simulation::logMeasurements() {
     std::cout << timerToString("    VelocityUpdate             ", velocityUpdate, maximumNumberOfDigits, simulate);
     std::cout << timerToString("    Thermostat                 ", thermostat, maximumNumberOfDigits, simulate);
     std::cout << timerToString("    Vtk                        ", vtk, maximumNumberOfDigits, simulate);
+    std::cout << timerToString("    LoadBalancing              ", loadBalancing, maximumNumberOfDigits, simulate);
     std::cout << timerToString("One iteration                  ", simulate / _iteration, maximumNumberOfDigits, total);
 
     const long wallClockTime = _timers.total.getTotalTime();

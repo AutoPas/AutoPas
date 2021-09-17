@@ -7,7 +7,7 @@
 
 #include <array>
 
-#include "autopas/AutoPas.h"
+#include "autopas/AutoPasDecl.h"
 #include "src/TypeDefinitions.h"
 
 /**
