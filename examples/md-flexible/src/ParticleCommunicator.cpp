@@ -40,7 +40,7 @@ void ParticleCommunicator::waitForSendRequests() {
   _sendBuffers.clear();
 }
 
-void ParticleCommunicator::sendDataToNeighbour(std::vector<char> sendBuffer, const int &neighbour) {
+void ParticleCommunicator::sendDataToNeighbour(const std::vector<char> &sendBuffer, const int &neighbour) {
   _sendBuffers.push_back(sendBuffer);
 
   autopas::AutoPas_MPI_Request sendRequest;
