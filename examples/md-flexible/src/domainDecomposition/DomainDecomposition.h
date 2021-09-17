@@ -7,7 +7,7 @@
 
 #include <array>
 
-#include "autopas/AutoPas.h"
+#include "autopas/AutoPasDecl.h"
 #include "src/TypeDefinitions.h"
 
 /**
@@ -30,7 +30,7 @@ class DomainDecomposition {
    * Handles the diffuse load balancing by resizing the domains according to their work done.
    * @param work: The work performed in the AutoPas container.
    */
-  virtual void update(const double &work) = 0;
+  virtual void update(const long &work) = 0;
 
   /**
    * Returns the index of the local domain in the global domain context.
