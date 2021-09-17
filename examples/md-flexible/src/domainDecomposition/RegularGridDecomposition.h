@@ -45,69 +45,69 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Returns the index of the local domain in the global domain context.
    * @return domain index.
    */
-  int getDomainIndex() const override { return _domainIndex; }
+  [[nodiscard]] int getDomainIndex() const override { return _domainIndex; }
 
   /**
    * Returns the minimum coordinates of global domain.
    * @return bottom left front corner of the global domain.
    */
-  std::array<double, 3> getGlobalBoxMin() const override { return _globalBoxMin; }
+  [[nodiscard]] std::array<double, 3> getGlobalBoxMin() const override { return _globalBoxMin; }
 
   /**
    * Returns the maximum coordinates of global domain.
    * @return top right back corner of the global domain.
    */
-  std::array<double, 3> getGlobalBoxMax() const override { return _globalBoxMax; }
+  [[nodiscard]] std::array<double, 3> getGlobalBoxMax() const override { return _globalBoxMax; }
 
   /**
    * Returns the minimum coordinates of local domain.
    * @return bottom left front corner of the local domain.
    */
-  std::array<double, 3> getLocalBoxMin() const override { return _localBoxMin; }
+  [[nodiscard]] std::array<double, 3> getLocalBoxMin() const override { return _localBoxMin; }
 
   /**
    * Returns the maximum coordinates of local domain.
    * @return top right back corner of the local domain.
    */
-  std::array<double, 3> getLocalBoxMax() const override { return _localBoxMax; }
+  [[nodiscard]] std::array<double, 3> getLocalBoxMax() const override { return _localBoxMax; }
 
   /**
    * Returns the number of domains in each dimension
    * @return vector containing the number of subdomains along each dimension
    */
-  std::array<int, 3> getDecomposition() const { return _decomposition; }
+  [[nodiscard]] std::array<int, 3> getDecomposition() const { return _decomposition; }
 
   /**
    * Returns the numnber of subdomains in the decomposition.
    * @return numner of subdomains in the decomposition.
    */
-  int getSubdomainCount() const { return _subdomainCount; }
+  [[nodiscard]] int getSubdomainCount() const { return _subdomainCount; }
 
   /**
    * Returns the current processes domain id.
    * @return domain id of the current processor
    */
-  const std::array<int, 3> getDomainId() const { return _domainId; }
+  [[nodiscard]] const std::array<int, 3> getDomainId() const { return _domainId; }
 
   /**
    * Returns the number of subdomains in the simulation.
    * @return number of subdomains
    */
-  int getNumberOfSubdomains() const;
+  [[nodiscard]] int getNumberOfSubdomains() const;
 
   /**
    * Checks if the provided coordinates are located in the local domain.
    * @param coordinates: The coordinates in question.
    * @return true if the coordinates lie inside the local domain, false otherwise.
    */
-  bool isInsideLocalDomain(const std::array<double, 3> &coordinates) const override;
+  [[nodiscard]] bool isInsideLocalDomain(const std::array<double, 3> &coordinates) const override;
 
   /**
    * Calculates and returns the extent of the subdomain with inde subdomainIndex.
    * @param subdomainIndex: The index of the subdomain for which to calculate the extent.
    * @return extent of the subdomain with index subdomainIndex.
    */
-  std::array<int, 6> getExtentOfSubdomain(const int subdomainIndex) const;
+  [[nodiscard]] std::array<int, 6> getExtentOfSubdomain(const int subdomainIndex) const;
 
   /**
    * Exchanges halo particles with all neighbors of the provided AutoPasContainer.

@@ -205,7 +205,7 @@ class Simulation {
    * Estimates the number of tuning iterations which ocurred during the simulation so far.
    * @return an estimation of the number of tuning iterations which occured so far.
    */
-  std::tuple<size_t, bool> estimateNumberOfIterations() const;
+  [[nodiscard]] std::tuple<size_t, bool> estimateNumberOfIterations() const;
 
   /**
    * Prints a progress bar to the terminal.
@@ -223,13 +223,14 @@ class Simulation {
    * @param maxTime: The simulation's total execution time.
    * @return All information of the timer in a human readable string.
    */
-  std::string timerToString(const std::string &name, long timeNS, size_t numberWidth = 0ul, long maxTime = 0ul);
+  [[nodiscard]] std::string timerToString(const std::string &name, long timeNS, size_t numberWidth = 0ul,
+                                          long maxTime = 0ul);
 
   /**
    * Calculate the homogeneity of the scenario by using the standard deviation.
    * @return homogeneity
    */
-  double calculateHomogeneity() const;
+  [[nodiscard]] double calculateHomogeneity() const;
 
   /**
    * Updates the position of particles in the local AutoPas container.
@@ -277,7 +278,7 @@ class Simulation {
    * @param time: the time to accumulate.
    * @return the accumulated time of all ranks.
    */
-  long accumulateTime(const long &time);
+  [[nodiscard]] long accumulateTime(const long &time);
 
   /**
    * Logs the number of total/owned/halo particles in the simulation, aswell as the standard deviation of Homogeneity.
