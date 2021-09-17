@@ -179,7 +179,7 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
   auto currentTemperatureMap = calcTemperatureComponent(autopas, particlePropertiesLibrary);
 
   for (auto &[particleTypeID, currentTemperature] : currentTemperatureMap) {
-    double aggregatedTemperature;
+    double aggregatedTemperature = 0.;
     autopas::AutoPas_MPI_Allreduce(&currentTemperature, &aggregatedTemperature, 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM,
                                    AUTOPAS_MPI_COMM_WORLD);
 
