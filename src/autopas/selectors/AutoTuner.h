@@ -311,7 +311,7 @@ bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild
   if (_tuningStrategy->smoothedHomogeneityAndMaxDensityNeeded() and _iterationsSinceTuning >= _tuningInterval - 9 and
       _iterationsSinceTuning <= _tuningInterval) {
     _timerCalculateHomogeneity.start();
-    const auto [homogeneity, maxDensity] = autopas::utils::calculateHomogeneityAndMaxDensity(getContainer());
+    const auto [homogeneity, maxDensity] = autopas::utils::calculateHomogeneityAndMaxDensity(*getContainer());
     _homogeneitiesOfLastTenIterations.push_back(homogeneity);
     _maxDensitiesOfLastTenIterations.push_back(maxDensity);
     _timerCalculateHomogeneity.stop();
