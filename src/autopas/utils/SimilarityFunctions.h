@@ -22,13 +22,12 @@ namespace autopas::utils {
  * @return {homogeneity, maxDensity}
  */
 template <class Container>
-std::pair<double, double> calculateHomogeneityAndMaxDensity(const Container &container) {
-  const size_t numberOfParticles = container->getNumberOfParticles();
+std::pair<double, double> calculateHomogeneityAndMaxDensity(const Container &container, const std::array<double, 3> startCorner, const std::array<double, 3> endCorner) {
+  unsigned int numberOfParticles = static_cast<unsigned int>(container->getNumberOfParticles());
+  autopas::AutoPas_MPI_Allreduce(&numberOfParticles, &numberOfParticles, 1, AUTOPAS_MPI_UNSIGNED_INT, AUTOPAS_MPI_SUM,
+                                 AUTOPAS_MPI_COMM_WORLD);
   // approximately the resolution we want to get.
   size_t numberOfCells = ceil(numberOfParticles / 10.);
-
-  const std::array<double, 3> startCorner = container->getBoxMin();
-  const std::array<double, 3> endCorner = container->getBoxMax();
   std::array<double, 3> domainSizePerDimension = {};
   for (int i = 0; i < 3; ++i) {
     domainSizePerDimension[i] = endCorner[i] - startCorner[i];
@@ -100,8 +99,8 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const Container &con
   }
 
   // finally calculate standard deviation
-  // normally
   const double homogeneity = sqrt(densityVariance);
+  // normally between 0.0 and 1.5
   if (homogeneity < 0.0)
     throw std::runtime_error("homogeneity can never be smaller than 0.0, but is:" + std::to_string(homogeneity));
   return {homogeneity, maxDensity};

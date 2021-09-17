@@ -4,29 +4,15 @@ file(
         "src/*.cpp"
         "src/*.h"
 )
-
-if (AUTOPAS_INTERNODE_TUNING)
-    message(STATUS "AUTOPAS_INTERNODE_TUNING set, searching for mpi to link against md-flexible ...")
-    find_package(MPI)
-
-    if (NOT ${MPI_CXX_FOUND})
-        message(FATAL_ERROR "cxx mpi could not be found, even though AUTOPAS_INTERNODE_TUNING was set.")
-    else ()
-        message(STATUS "cxx mpi found: ${MPI_CXX_COMPILER}")
-    endif ()
-else ()
-    message(STATUS "AUTOPAS_INTERNODE_TUNING not set, not linking MPI to md-flexible.")
-endif (AUTOPAS_INTERNODE_TUNING)
-
-include_directories(SYSTEM ${MPI_INCLUDE_PATH})
-
 add_executable(md-flexible ${MDFlex_SRC})
 
 target_include_directories(md-flexible PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 include(autopas_yaml-cpp)
 
-target_link_libraries(md-flexible PUBLIC autopas autopasTools yaml-cpp $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:MPI::MPI_CXX>)
+option(MD_FLEXIBLE_USE_MPI "Enable MPI parallelism for md-flexible." OFF)
+
+target_link_libraries(md-flexible PUBLIC autopas autopasTools yaml-cpp $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
 
 # --- copy script files to build dir ---
 file(
