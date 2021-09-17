@@ -54,7 +54,7 @@ void ParticleCommunicator::receiveDataFromNeighbour(const int &neighbour, std::v
   autopas::AutoPas_MPI_Status status;
   autopas::AutoPas_MPI_Probe(neighbour, 0, _communicator, &status);
 
-  int receiveBufferSize;
+  int receiveBufferSize = 0;
   autopas::AutoPas_MPI_Get_count(&status, AUTOPAS_MPI_CHAR, &receiveBufferSize);
   receiveBuffer.resize(receiveBufferSize);
 
