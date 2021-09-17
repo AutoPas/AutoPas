@@ -39,7 +39,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Handles the diffuse load balancing by resizing the domains according to their work done.
    * @param work: The work performed in the AutoPas container.
    */
-  void update(const long &work) override;
+  void update(const double &work) override;
 
   /**
    * Returns the index of the local domain in the global domain context.
