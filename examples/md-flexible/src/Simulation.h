@@ -175,7 +175,7 @@ class Simulation {
     autopas::utils::Timer migratingParticleExchange;
 
     /**
-     * Used for diffuse load balancing.
+     * Used for the diffuse load balancing as the metric to determine the imbalance.
      */
     autopas::utils::Timer work;
   };
