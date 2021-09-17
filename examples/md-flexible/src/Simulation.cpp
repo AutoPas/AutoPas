@@ -170,7 +170,7 @@ void Simulation::run() {
       auto [emigrants, updated] =
           _autoPasContainer->updateContainer(_iteration % _configuration.verletRebuildFrequency.value == 0);
 
-      const long work = _timers.work.stop();
+      const double work = _timers.work.stop();
       if (updated) {
         _timers.loadBalancing.start();
         _domainDecomposition.update(work);
