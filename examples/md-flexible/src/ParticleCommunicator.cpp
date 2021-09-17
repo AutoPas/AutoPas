@@ -43,7 +43,7 @@ autopas::AutoPas_MPI_Waitall(static_cast<int>(_sendRequests.size()), _sendReques
 void ParticleCommunicator::sendDataToNeighbour(const std::vector<char> &sendBuffer, const int &neighbour) {
   _sendBuffers.push_back(sendBuffer);
 
-  autopas::AutoPas_MPI_Request sendRequest;
+  autopas::AutoPas_MPI_Request sendRequest{};
   _sendRequests.push_back(sendRequest);
 
   autopas::AutoPas_MPI_Isend(_sendBuffers.back().data(), _sendBuffers.back().size(), AUTOPAS_MPI_CHAR, neighbour, 0,
