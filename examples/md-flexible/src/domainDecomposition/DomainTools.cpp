@@ -72,6 +72,16 @@ void generateDecomposition(unsigned int subdomainCount, const std::array<bool, 3
 double balanceAdjacentDomains(const double &leftDomainsWork, const double &rightDomainsWork,
                               const double &leftDomainsMinBoundaryPosition,
                               const double &rightDomainsMaxBoundaryPosition, const double &minWidth) {
+  /**
+   * This formular is based on the idea, that the work / volume relation of the two adjacent domain should be the same.
+   * In the context of pressure the domain with large pressure (work) would press against the wall adjacent to
+   * the domain with low pressure trying to even the pressure out between the domains.
+   * This is represented by the following formula:
+   * pressureOfDomainA / volumeOfDomainA = pressureOfDomainB / volumeOfDomainB
+   * In our case we want the domain with larger pressure (work) to shrink. So instead of dividing work by volume
+   * we divide volume by work. The volume is based on the box coordinates. Now if we solve the resulting equation for
+   * the parameter wich represents the domain boundary we want to shift, we get the formula used here.
+   */
   double balancedPosition =
       (leftDomainsWork * leftDomainsMinBoundaryPosition + rightDomainsWork * rightDomainsMaxBoundaryPosition) /
       (leftDomainsWork + rightDomainsWork);
