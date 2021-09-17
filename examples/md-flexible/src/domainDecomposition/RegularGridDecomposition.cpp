@@ -51,7 +51,7 @@ RegularGridDecomposition::RegularGridDecomposition(const std::array<double, 3> &
 
 RegularGridDecomposition::~RegularGridDecomposition() {}
 
-void RegularGridDecomposition::update(const long &work) {
+void RegularGridDecomposition::update(const double &work) {
   if (_mpiCommunicationNeeded) {
     const double halfWork = work / 2;
 
@@ -114,7 +114,6 @@ void RegularGridDecomposition::update(const long &work) {
       }
 
       if (_localBoxMax[i] != _globalBoxMax[i]) {
-        double neighborPlaneWork, neighborBoundary;
         autopas::AutoPas_MPI_Recv(&neighborPlaneWork, 1, AUTOPAS_MPI_DOUBLE, rightNeighbor, 0, _communicator,
                                   AUTOPAS_MPI_STATUS_IGNORE);
         autopas::AutoPas_MPI_Recv(&neighborBoundary, 1, AUTOPAS_MPI_DOUBLE, rightNeighbor, 0, _communicator,
@@ -259,11 +258,6 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
 
 void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer,
                                                           std::vector<ParticleType> &emigrants) {
-  const std::array<double, _dimensionCount> globalBoxMin = {_globalBoxMin[0], _globalBoxMin[1], _globalBoxMin[2]};
-  const std::array<double, _dimensionCount> globalBoxMax = {_globalBoxMax[0], _globalBoxMax[1], _globalBoxMax[2]};
-  const std::array<double, _dimensionCount> globalBoxLength =
-      autopas::utils::ArrayMath::sub(globalBoxMax, globalBoxMin);
-
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
     std::vector<ParticleType> immigrants, remainingEmigrants;
     std::vector<ParticleType> particlesForLeftNeighbor;
@@ -420,12 +414,15 @@ void RegularGridDecomposition::categorizeParticlesIntoLeftAndRightNeighbor(
     const std::vector<ParticleType> &particles, const size_t &direction,
     std::vector<ParticleType> &leftNeighborParticles, std::vector<ParticleType> &rightNeighborParticles,
     std::vector<ParticleType> &uncategorizedParticles) {
+  const std::array<double, _dimensionCount> globalBoxLength =
+      autopas::utils::ArrayMath::sub(_globalBoxMax, _globalBoxMin);
+
   /**
    * The chosen size is the best guess based on the particles vector being distributed into three other vectors.
    */
-  leftNeighborParticles.resize(particles.size() / 3);
-  rightNeighborParticles.resize(particles.size() / 3);
-  uncategorizedParticles.resize(particles.size() / 3);
+  leftNeighborParticles.reserve(particles.size() / 3);
+  rightNeighborParticles.reserve(particles.size() / 3);
+  uncategorizedParticles.reserve(particles.size() / 3);
 
   for (const auto &particle : particles) {
     std::array<double, _dimensionCount> position = particle.getR();
@@ -435,7 +432,7 @@ void RegularGridDecomposition::categorizeParticlesIntoLeftAndRightNeighbor(
       // Apply boundary condition
       if (_localBoxMin[direction] == _globalBoxMin[direction]) {
         position[direction] = std::min(std::nextafter(_globalBoxMax[direction], _globalBoxMin[direction]),
-                                       position[direction] + _globalBoxMax[direction] - _globalBoxMin[direction]);
+                                       position[direction] + globalBoxLength[direction]);
         leftNeighborParticles.back().setR(position);
       }
     } else if (position[direction] >= _localBoxMax[direction]) {
@@ -443,8 +440,7 @@ void RegularGridDecomposition::categorizeParticlesIntoLeftAndRightNeighbor(
 
       // Apply boundary condition
       if (_localBoxMax[direction] == _globalBoxMax[direction]) {
-        position[direction] = std::max(_globalBoxMin[direction],
-                                       position[direction] - (_globalBoxMax[direction] - _globalBoxMin[direction]));
+        position[direction] = std::max(_globalBoxMin[direction], position[direction] - globalBoxLength[direction]);
         rightNeighborParticles.back().setR(position);
       }
     } else {
