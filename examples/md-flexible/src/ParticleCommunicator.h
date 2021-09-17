@@ -66,7 +66,7 @@ class ParticleCommunicator {
    * @param sendBuffer The buffer which will be sent to the neighbour.
    * @param neighbour The neighbour to which the data will be sent.
    */
-  void sendDataToNeighbour(std::vector<char> sendBuffer, const int &neighbour);
+  void sendDataToNeighbour(const std::vector<char> &sendBuffer, const int &neighbour);
 
   /**
    * Received data which has been sent by a specifig neighbour of this domain.
