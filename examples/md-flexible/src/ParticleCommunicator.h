@@ -19,7 +19,7 @@ class ParticleCommunicator {
    * Constructor
    * @param communicator: The MPI communicator used for communication.
    */
-  ParticleCommunicator(const autopas::AutoPas_MPI_Comm &communicator);
+  explicit ParticleCommunicator(const autopas::AutoPas_MPI_Comm &communicator);
 
   /**
    * Destructor.
