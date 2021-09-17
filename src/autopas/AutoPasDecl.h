@@ -111,8 +111,8 @@ class AutoPas {
 
   /**
    * Updates the container.
-   * On an update, halo particles are deleted and particles that do no longer belong into the container will be
-   * returned.
+   * On an update, halo particles are deleted and particles that do no longer belong into the container will be removed
+   * and returned.
    * @return A vector of invalid particles that do no longer belong in the current container.
    */
   [[nodiscard]] std::vector<Particle> updateContainer();
@@ -121,6 +121,9 @@ class AutoPas {
    * Adds a particle to the container.
    * This is only allowed if the neighbor lists are not valid.
    * @param p Reference to the particle to be added
+   * @note An exception is thrown if the particle is added and it is not inside of the owned domain (defined by
+   * boxmin and boxmax) of the container.
+   * @note This function is NOT thread-safe.
    */
   void addParticle(const Particle &p);
 
@@ -129,6 +132,7 @@ class AutoPas {
    * @param haloParticle Particle to be added.
    * @note An exception is thrown if the halo particle is added and it is inside of the owned domain (defined by boxmin
    * and boxmax) of the container.
+   * @note This function is NOT thread-safe.
    */
   void addHaloParticle(const Particle &haloParticle);
 

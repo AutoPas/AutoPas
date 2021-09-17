@@ -40,7 +40,7 @@ class LogicHandler {
   [[nodiscard]] std::vector<Particle> collectLeavingParticlesFromBuffer(bool insertOwnedParticlesToContainer) {
     std::vector<Particle> leavingBufferParticles;
     if (insertOwnedParticlesToContainer) {
-      for (auto &&p : _particleBuffer) {
+      for (const auto &p : _particleBuffer) {
         if (p.isDummy()) {
           continue;
         }
@@ -53,9 +53,9 @@ class LogicHandler {
       _particleBuffer.clear();
     } else {
       for (auto iter = _particleBuffer.begin(); iter != _particleBuffer.end();) {
-        auto &&p = *iter;
+        auto &p = *iter;
 
-        auto fastRemove = [&]() {
+        auto fastRemoveP = [&]() {
           // Fast remove of particle, i.e., swap with last entry && pop.
           std::swap(p, _particleBuffer.back());
           _particleBuffer.pop_back();
@@ -63,11 +63,11 @@ class LogicHandler {
         };
         if (p.isDummy()) {
           // We remove dummies!
-          fastRemove();
+          fastRemoveP();
         }
         if (utils::notInBox(p.getR(), _autoTuner.getContainer()->getBoxMin(), _autoTuner.getContainer()->getBoxMax())) {
           leavingBufferParticles.push_back(p);
-          fastRemove();
+          fastRemoveP();
         } else {
           ++iter;
         }
@@ -80,17 +80,16 @@ class LogicHandler {
    * @copydoc AutoPas::updateContainer()
    */
   [[nodiscard]] std::vector<Particle> updateContainer() {
-    bool doCompleteContainerUpdate = not neighborListsAreValid();
-    bool keepNeighborListsValid = not doCompleteContainerUpdate;
+    bool doDataStructureUpdate = not neighborListsAreValid();
 
-    if (doCompleteContainerUpdate) {
+    if (doDataStructureUpdate) {
       _neighborListsAreValid = false;
     }
-    // The next call also adds particles to the container if doCompleteContainerUpdate is true.
-    auto leavingBufferParticles = collectLeavingParticlesFromBuffer(doCompleteContainerUpdate);
+    // The next call also adds particles to the container if doDataStructureUpdate is true.
+    auto leavingBufferParticles = collectLeavingParticlesFromBuffer(doDataStructureUpdate);
 
     AutoPasLog(debug, "Initiating container update.");
-    auto leavingParticles = _autoTuner.getContainer()->updateContainer(keepNeighborListsValid);
+    auto leavingParticles = _autoTuner.getContainer()->updateContainer(not doDataStructureUpdate);
     leavingParticles.insert(leavingParticles.end(), leavingBufferParticles.begin(), leavingBufferParticles.end());
 
     // Substract the amount of leaving particles from the number of owned particles.
@@ -162,6 +161,7 @@ class LogicHandler {
 
     // actually resize the container
     _autoTuner.resizeBox(boxMin, boxMax);
+    // Set this flag, s.t., the container is rebuilt!
     _neighborListsAreValid = false;
 
     return particlesNowOutside;
@@ -174,11 +174,18 @@ class LogicHandler {
     if (not neighborListsAreValid()) {
       // Container has to be invalid to be able to add Particles!
       _autoTuner.getContainer()->addParticle(p);
-      _numParticlesOwned.fetch_add(1, std::memory_order_relaxed);
     } else {
+      const auto &boxMin = _autoTuner.getContainer()->getBoxMin();
+      const auto &boxMax = _autoTuner.getContainer()->getBoxMax();
+      if (utils::notInBox(p.getR(), boxMin, boxMax)) {
+        autopas::utils::ExceptionHandler::exception(
+            "Trying to add a particle, which is not inside the box of the container ({}, {}).\nThe particle: {}",
+            utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), p.to_string());
+      }
       // If the container is valid, we add it to the particle buffer.
       _particleBuffer.push_back(p);
     }
+    _numParticlesOwned.fetch_add(1, std::memory_order_relaxed);
   }
 
   /**
@@ -195,8 +202,14 @@ class LogicHandler {
     if (not neighborListsAreValid()) {
       // If the neighbor lists are not valid, we can add the particle.
       container->template addHaloParticle</* checkInBox */ false>(haloParticle);
-      _numParticlesHalo.fetch_add(1, std::memory_order_relaxed);
     } else {
+      const auto &boxMin = _autoTuner.getContainer()->getBoxMin();
+      const auto &boxMax = _autoTuner.getContainer()->getBoxMax();
+      if (utils::inBox(haloParticle.getR(), boxMin, boxMax)) {
+        autopas::utils::ExceptionHandler::exception(
+            "Trying to add a halo particle, which is inside the box of the container ({}, {}).\nThe particle: {}",
+            utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), haloParticle.to_string());
+      }
       // Check if we can update an existing halo(dummy) particle.
       bool updated = _autoTuner.getContainer()->updateHaloParticle(haloParticle);
       if (not updated) {
@@ -205,6 +218,7 @@ class LogicHandler {
         _haloParticleBuffer.back().setOwnershipState(OwnershipState::halo);
       }
     }
+    _numParticlesHalo.fetch_add(1, std::memory_order_relaxed);
   }
 
   /**

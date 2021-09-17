@@ -240,8 +240,9 @@ maintain a particle buffer that allows to add particles to AutoPas without modif
 particle buffer is considered in the force calculation and when iterating through particles.
 
 Another performance optimization is made possible by allowing to reuse the neighbor list entries of halo particles of
-previous time steps. While they have already been implicitly deleted (marked as dummy), they still exist. For their
-reuse, we try to add halo particles in their original memory location. If that is, however, not possible, we add them to another particle buffer.
+previous time steps. While the actual particles have already been implicitly deleted (marked as dummy), they still
+exist. For their reuse, we try to add halo particles in their original memory location. If that is, however, not
+possible, we add them to another particle buffer (the haloParticleBuffer).
 
 Additional information can be found in [PR 642](https://github.com/AutoPas/AutoPas/pull/642)
 
