@@ -35,7 +35,7 @@ void ParticleCommunicator::receiveParticles(std::vector<ParticleType> &receivedP
 void ParticleCommunicator::waitForSendRequests() {
   std::vector<autopas::AutoPas_MPI_Status> sendStates;
   sendStates.resize(_sendRequests.size());
-autopas::AutoPas_MPI_Waitall(static_cast<int>(_sendRequests.size()), _sendRequests.data(), sendStates.data());
+  autopas::AutoPas_MPI_Waitall(static_cast<int>(_sendRequests.size()), _sendRequests.data(), sendStates.data());
   _sendRequests.clear();
   _sendBuffers.clear();
 }
