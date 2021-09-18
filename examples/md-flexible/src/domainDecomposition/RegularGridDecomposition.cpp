@@ -53,8 +53,6 @@ RegularGridDecomposition::~RegularGridDecomposition() {}
 
 void RegularGridDecomposition::update(const double &work) {
   if (_mpiCommunicationNeeded) {
-    const double halfWork = work / 2;
-
     // This is a dummy variable which is not being used.
     autopas::AutoPas_MPI_Request dummyRequest;
 
@@ -67,9 +65,9 @@ void RegularGridDecomposition::update(const double &work) {
       const int domainCountInPlane =
           _decomposition[(i + 1) % _dimensionCount] * _decomposition[(i + 2) % _dimensionCount];
 
-      distributedWorkInPlane[i] = halfWork;
+      distributedWorkInPlane[i] = work;
       if (domainCountInPlane > 1) {
-        autopas::AutoPas_MPI_Allreduce(&halfWork, &distributedWorkInPlane[i], 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM,
+        autopas::AutoPas_MPI_Allreduce(&work, &distributedWorkInPlane[i], 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM,
                                        _planarCommunicators[i]);
         distributedWorkInPlane[i] = distributedWorkInPlane[i] / domainCountInPlane;
       }
@@ -106,6 +104,7 @@ void RegularGridDecomposition::update(const double &work) {
         balancedPosition =
             DomainTools::balanceAdjacentDomains(neighborPlaneWork, distributedWorkInPlane[i], neighborBoundary,
                                                 oldLocalBoxMax[i], 2 * (_cutoffWidth + _skinWidth));
+
         /**
          * balanceAdjacentDomains does not consider boundaries which have been shifted already. To avoid boundaries
          * shifting over each other, we use the midpoint of the shift for the new boundary.
