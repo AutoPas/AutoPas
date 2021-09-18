@@ -180,7 +180,7 @@ class LogicHandler {
       if (utils::notInBox(p.getR(), boxMin, boxMax)) {
         autopas::utils::ExceptionHandler::exception(
             "Trying to add a particle, which is not inside the box of the container ({}, {}).\nThe particle: {}",
-            utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), p.to_string());
+            utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), p.toString());
       }
       // If the container is valid, we add it to the particle buffer.
       _particleBuffer.push_back(p);
@@ -208,7 +208,7 @@ class LogicHandler {
       if (utils::inBox(haloParticle.getR(), boxMin, boxMax)) {
         autopas::utils::ExceptionHandler::exception(
             "Trying to add a halo particle, which is inside the box of the container ({}, {}).\nThe particle: {}",
-            utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), haloParticle.to_string());
+            utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), haloParticle.toString());
       }
       // Check if we can update an existing halo(dummy) particle.
       bool updated = _autoTuner.getContainer()->updateHaloParticle(haloParticle);
