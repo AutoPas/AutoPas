@@ -490,11 +490,13 @@ void Simulation::logSimulationState() {
                                  AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
   standardDeviationOfHomogeneity = std::sqrt(standardDeviationOfHomogeneity);
 
-  std::cout << "\n\n"
-            << "Total number of particles at the end of Simulation: " << totalNumberOfParticles << "\n"
-            << "Owned: " << ownedParticles << "\n"
-            << "Halo: " << haloParticles << "\n"
-            << "Standard Deviation of Homogeneity: " << standardDeviationOfHomogeneity << std::endl;
+  if (_domainDecomposition.getDomainIndex() == 0) {
+    std::cout << "\n\n"
+              << "Total number of particles at the end of Simulation: " << totalNumberOfParticles << "\n"
+              << "Owned: " << ownedParticles << "\n"
+              << "Halo: " << haloParticles << "\n"
+              << "Standard Deviation of Homogeneity: " << standardDeviationOfHomogeneity << std::endl;
+  }
 }
 
 void Simulation::logMeasurements() {
