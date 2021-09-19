@@ -94,7 +94,7 @@ class FullParticleCell : public ParticleCell<Particle> {
    */
   const Particle &at(size_t index) const { return _particles.at(index); }
 
-  [[nodiscard]] bool isNotEmpty() const override { return numParticles() > 0; }
+  [[nodiscard]] bool isEmpty() const override { return numParticles() == 0; }
 
   void clear() override { _particles.clear(); }
 

@@ -27,7 +27,7 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
   using ParticleType = std::conditional_t<modifiable, Particle, const Particle>;
   using CellBorderAndFlagManagerType =
       std::conditional_t<modifiable, internal::CellBorderAndFlagManager, const internal::CellBorderAndFlagManager>;
-  using ParticleVecType =
+  using ParticleVecTypeInput =
       std::conditional_t<modifiable, std::vector<std::vector<Particle>>, const std::vector<std::vector<Particle>>>;
   using ParticleIteratorType = ParticleIterator<Particle, ParticleCell, modifiable>;
 
@@ -48,7 +48,7 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
                                   std::vector<size_t> &indicesInRegion,
                                   const CellBorderAndFlagManagerType *flagManager = nullptr,
                                   IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-                                  ParticleVecType *additionalParticleVectorToIterate = nullptr)
+                                  ParticleVecTypeInput *additionalParticleVectorToIterate = nullptr)
       : ParticleIteratorType(cont, flagManager, behavior, additionalParticleVectorToIterate),
         _startRegion(startRegion),
         _endRegion(endRegion),
@@ -135,7 +135,7 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
          this->_iteratorAcrossCells += iteratorInc) {
       _currentRegionIndex += stride;
 
-      if (this->_iteratorAcrossCells < this->_vectorOfCells->end() and this->_iteratorAcrossCells->isNotEmpty() and
+      if (this->_iteratorAcrossCells < this->_vectorOfCells->end() and not this->_iteratorAcrossCells->isEmpty() and
           this->isCellTypeBehaviorCorrect()) {
         this->_iteratorWithinOneCell = this->_iteratorAcrossCells->begin();
         break;
