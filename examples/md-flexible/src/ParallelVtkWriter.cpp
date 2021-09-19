@@ -253,14 +253,14 @@ void ParallelVtkWriter::createPvtuFile(const int &currentIteration) {
   timestepFile << "    </PPointData>\n";
   timestepFile << "    <PCellData/>\n";
   timestepFile << "    <PPoints>\n";
-  timestepFile << "      <PDataArray Name=\"points\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>\n";
+  timestepFile << "      <PDataArray Name=\"positions\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>\n";
   timestepFile << "    </PPoints>\n";
   timestepFile << "    <PCells>\n";
   timestepFile << "      <PDataArray Name=\"types\" NumberOfComponents=\"0\" format=\"ascii\" type=\"Float32\"/>\n";
   timestepFile << "    </PCells>\n";
 
   for (int i = 0; i < _numberOfRanks; ++i) {
-    timestepFile << "    <Piece Source=\"./data/" << _sessionName << "_particles_" << i << "_" << std::setfill('0')
+    timestepFile << "    <Piece Source=\"./data/" << _sessionName << "_" << i << "_" << std::setfill('0')
                  << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".vtu\"/>\n";
   }
 
@@ -318,7 +318,7 @@ void ParallelVtkWriter::createPvtsFile(const int &currentIteration, const Regula
     timestepFile << "    <Piece "
                  << "Extent=\"" << pieceExtent[0] << " " << pieceExtent[1] << " " << pieceExtent[2] << " "
                  << pieceExtent[3] << " " << pieceExtent[4] << " " << pieceExtent[5] << "\" "
-                 << "Source=\"./data/" << _sessionName << "_subdivision_" << i << "_" << std::setfill('0')
+                 << "Source=\"./data/" << _sessionName << "_" << i << "_" << std::setfill('0')
                  << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".vts\"/>\n";
   }
 
