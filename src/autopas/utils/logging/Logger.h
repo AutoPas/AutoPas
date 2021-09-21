@@ -51,7 +51,7 @@ namespace autopas {
  */
 class Logger {
  private:
-  static inline auto loggerName() { return "AutoPasLog"; };
+  static inline auto loggerName() { return "AutoPasLog"; }
 
  public:
   /**

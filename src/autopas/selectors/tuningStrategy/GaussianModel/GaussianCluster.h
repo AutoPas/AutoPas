@@ -187,7 +187,7 @@ class GaussianCluster {
    * @param input (x,y)
    * @param output f((x,y))
    */
-  inline void addEvidence(const GaussianModelTypes::VectorPairDiscreteContinuous &input, double output) {
+  void addEvidence(const GaussianModelTypes::VectorPairDiscreteContinuous &input, double output) {
     addEvidence(input.first, input.second, output);
   }
 

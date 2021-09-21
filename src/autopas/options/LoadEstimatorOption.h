@@ -68,7 +68,7 @@ class LoadEstimatorOption : public Option<LoadEstimatorOption> {
         {LoadEstimatorOption::squaredParticlesPerCell, "squared-particles-per-cell"},
         {LoadEstimatorOption::neighborListLength, "neighbor-list-length"},
     };
-  };
+  }
 
  private:
   Value _value{Value(-1)};

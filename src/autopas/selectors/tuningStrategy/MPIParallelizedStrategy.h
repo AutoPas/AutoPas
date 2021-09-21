@@ -49,9 +49,9 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
         _fallbackDataLayouts(fallbackDataLayouts),
         _fallbackNewton3s(fallbackNewton3s) {}
 
-  inline void addEvidence(long time, size_t iteration) override { _tuningStrategy->addEvidence(time, iteration); }
+  void addEvidence(long time, size_t iteration) override { _tuningStrategy->addEvidence(time, iteration); }
 
-  [[nodiscard]] inline long getEvidence(Configuration configuration) const override {
+  [[nodiscard]] long getEvidence(Configuration configuration) const override {
     return _tuningStrategy->getEvidence(configuration);
   }
 
@@ -87,11 +87,11 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
     return _tuningStrategy->getAllowedContainerOptions();
   }
 
-  inline void removeN3Option(Newton3Option badN3Option) override { _tuningStrategy->removeN3Option(badN3Option); }
+  void removeN3Option(Newton3Option badN3Option) override { _tuningStrategy->removeN3Option(badN3Option); }
 
-  [[nodiscard]] inline bool searchSpaceIsTrivial() const override { return _tuningStrategy->searchSpaceIsTrivial(); }
+  [[nodiscard]] bool searchSpaceIsTrivial() const override { return _tuningStrategy->searchSpaceIsTrivial(); }
 
-  [[nodiscard]] inline bool searchSpaceIsEmpty() const override { return _tuningStrategy->searchSpaceIsEmpty(); }
+  [[nodiscard]] bool searchSpaceIsEmpty() const override { return _tuningStrategy->searchSpaceIsEmpty(); }
 
  private:
   /**

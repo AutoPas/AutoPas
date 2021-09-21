@@ -62,7 +62,7 @@ class ExtrapolationMethodOption : public Option<ExtrapolationMethodOption> {
         {ExtrapolationMethodOption::linearRegression, "linear-regression"},
         {ExtrapolationMethodOption::newton, "newton"},
     };
-  };
+  }
 
  private:
   Value _value{Value(-1)};

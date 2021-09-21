@@ -52,17 +52,17 @@ class SetSearchSpaceBasedTuningStrategy : public TuningStrategyInterface {
     _currentConfig = _searchSpace.begin();
   }
 
-  [[nodiscard]] inline std::set<ContainerOption> getAllowedContainerOptions() const override {
+  [[nodiscard]] std::set<ContainerOption> getAllowedContainerOptions() const override {
     return _allowedContainerOptions;
   }
 
-  inline const Configuration &getCurrentConfiguration() const override { return *_currentConfig; }
+  const Configuration &getCurrentConfiguration() const override { return *_currentConfig; }
 
-  [[nodiscard]] inline bool searchSpaceIsTrivial() const override { return _searchSpace.size() == 1; }
+  [[nodiscard]] bool searchSpaceIsTrivial() const override { return _searchSpace.size() == 1; }
 
-  [[nodiscard]] inline bool searchSpaceIsEmpty() const override { return _searchSpace.empty(); }
+  [[nodiscard]] bool searchSpaceIsEmpty() const override { return _searchSpace.empty(); }
 
-  inline void removeN3Option(Newton3Option badNewton3Option) override;
+  void removeN3Option(Newton3Option badNewton3Option) override;
 
  protected:
   /**
@@ -74,7 +74,7 @@ class SetSearchSpaceBasedTuningStrategy : public TuningStrategyInterface {
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
    */
-  inline void populateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
+  void populateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
                                   const std::set<double> &allowedCellSizeFactors,
                                   const std::set<TraversalOption> &allowedTraversalOptions,
                                   const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
@@ -86,7 +86,7 @@ class SetSearchSpaceBasedTuningStrategy : public TuningStrategyInterface {
    * @param searchSpace Map<Configuration, runTime> to search.
    * @return Iterator to optimal (=fastest) configuration.
    */
-  static inline auto getOptimum(const std::unordered_map<Configuration, long, ConfigHash> &searchSpace);
+  static auto getOptimum(const std::unordered_map<Configuration, long, ConfigHash> &searchSpace);
 
   /**
    * Contains every allowed container option.

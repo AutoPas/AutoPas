@@ -236,7 +236,7 @@ class GaussianProcess {
    * @return a(i). This value can be compared with values a(x) of other inputs x to weigh which input would give the
    * most gain if its evidence were provided.
    */
-  [[nodiscard]] inline double calcAcquisition(AcquisitionFunctionOption af, const Vector &input) const {
+  [[nodiscard]] double calcAcquisition(AcquisitionFunctionOption af, const Vector &input) const {
     return AcquisitionFunction::calcAcquisition(af, predictMean(input), predictVar(input), _evidenceMaxValue);
   }
 
@@ -425,7 +425,7 @@ class GaussianProcess {
    * @param dimScale
    * @return
    */
-  [[nodiscard]] static inline double kernel(const Vector &input1, const Vector &input2, double theta,
+  [[nodiscard]] static double kernel(const Vector &input1, const Vector &input2, double theta,
                                             const Eigen::VectorXd &dimScale) {
     double dot = 0;
     for (int i = 0; i < input1.size(); ++i) {

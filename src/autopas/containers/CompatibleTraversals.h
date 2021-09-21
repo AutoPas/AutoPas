@@ -107,7 +107,7 @@ static const std::set<TraversalOption> &allVLPCompatibleTraversals() {
  * @param containerOption ContainerOption
  * @return set of all applicable traversal options.
  */
-static inline const std::set<TraversalOption> &allCompatibleTraversals(ContainerOption containerOption) {
+static const std::set<TraversalOption> &allCompatibleTraversals(ContainerOption containerOption) {
   switch (containerOption) {
     case ContainerOption::linkedCells: {
       return allLCCompatibleTraversals();
@@ -147,7 +147,7 @@ static inline const std::set<TraversalOption> &allCompatibleTraversals(Container
  * @param traversalOption TraversalOption
  * @return set of all compatible container options.
  */
-static inline std::set<ContainerOption> allCompatibleContainers(TraversalOption traversalOption) {
+static std::set<ContainerOption> allCompatibleContainers(TraversalOption traversalOption) {
   std::set<ContainerOption> result{};
 
   for (const auto &container : ContainerOption::getAllOptions()) {

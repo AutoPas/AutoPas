@@ -35,7 +35,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
   std::set<autopas::DataLayoutOption> fallbackDataLayouts;
   std::set<autopas::Newton3Option> fallbackNewton3;
   // if an mpi-strategy is used, the local search space is set up here, as well as the fallback options.
-  switch (static_cast<autopas::MPIStrategyOption>(mpiStrategyOption)) {
+  switch (mpiStrategyOption) {
     case MPIStrategyOption::noMPI: {
       break;
     }
@@ -53,17 +53,17 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
       int rank, commSize;
       AutoPas_MPI_Comm_rank(comm, &rank);
       AutoPas_MPI_Comm_size(comm, &commSize);
-      fallbackContainers = std::set<autopas::ContainerOption>(allowedContainers);
+      fallbackContainers = allowedContainers;
       if (allowedCellSizeFactors.isFinite()) {
         fallbackCellSizeFactors = std::make_unique<autopas::NumberSetFinite<double>>(allowedCellSizeFactors.getAll());
       } else {
         fallbackCellSizeFactors = std::make_unique<autopas::NumberInterval<double>>(allowedCellSizeFactors.getMin(),
                                                                                     allowedCellSizeFactors.getMax());
       }
-      fallbackTraversals = std::set<autopas::TraversalOption>(allowedTraversals);
-      fallbackLoadEstimators = std::set<autopas::LoadEstimatorOption>(allowedLoadEstimators);
-      fallbackDataLayouts = std::set<autopas::DataLayoutOption>(allowedDataLayouts);
-      fallbackNewton3 = std::set<autopas::Newton3Option>(allowedNewton3Options);
+      fallbackTraversals = allowedTraversals;
+      fallbackLoadEstimators = allowedLoadEstimators;
+      fallbackDataLayouts = allowedDataLayouts;
+      fallbackNewton3 = allowedNewton3Options;
 
       utils::AutoPasConfigurationCommunicator::distributeConfigurations(
           allowedContainers, allowedCellSizeFactors, allowedTraversals, allowedLoadEstimators, allowedDataLayouts,
@@ -80,7 +80,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
   // ======== initiate tuning strategy ========================================
 
   std::unique_ptr<autopas::TuningStrategyInterface> tuningStrategy = nullptr;
-  switch (static_cast<autopas::TuningStrategyOption>(tuningStrategyOption)) {
+  switch (tuningStrategyOption) {
     case TuningStrategyOption::randomSearch: {
       tuningStrategy =
           std::make_unique<RandomSearch>(allowedContainers, allowedCellSizeFactors, allowedTraversals,
@@ -146,7 +146,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
 
   // ======== Wrap strategy into MPI wrapper if appropriate ===================
 
-  switch (static_cast<MPIStrategyOption>(mpiStrategyOption)) {
+  switch (mpiStrategyOption) {
     case MPIStrategyOption::noMPI: {
       return tuningStrategy;
     }

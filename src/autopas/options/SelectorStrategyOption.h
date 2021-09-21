@@ -68,7 +68,7 @@ class SelectorStrategyOption : public Option<SelectorStrategyOption> {
         {SelectorStrategyOption::fastestMean, "Fastest-Mean-Value"},
         {SelectorStrategyOption::fastestMedian, "Fastest-Median-Value"},
     };
-  };
+  }
 
  private:
   Value _value{Value(-1)};

@@ -108,11 +108,11 @@ class BayesianSearch : public TuningStrategyInterface {
     tune();
   }
 
-  inline const Configuration &getCurrentConfiguration() const override { return _currentConfig; }
+  const Configuration &getCurrentConfiguration() const override { return _currentConfig; }
 
-  inline void removeN3Option(Newton3Option badNewton3Option) override;
+  void removeN3Option(Newton3Option badNewton3Option) override;
 
-  inline void addEvidence(long time, size_t iteration) override {
+  void addEvidence(long time, size_t iteration) override {
     // time is converted to seconds, to big values may lead to errors in GaussianProcess. Time is also negated to
     // represent a maximization problem
     _gaussianProcess.addEvidence(_encoder.oneHotEncode(_currentConfig), -time * secondsPerMicroseconds, true);
@@ -120,22 +120,22 @@ class BayesianSearch : public TuningStrategyInterface {
     _traversalTimes[_currentConfig] = time;
   }
 
-  inline long getEvidence(Configuration configuration) const override { return _traversalTimes.at(configuration); }
+  long getEvidence(Configuration configuration) const override { return _traversalTimes.at(configuration); }
 
-  inline void reset(size_t iteration) override {
+  void reset(size_t iteration) override {
     _gaussianProcess.clear();
     _currentSamples.clear();
     _traversalTimes.clear();
     tune();
   }
 
-  inline bool tune(bool currentInvalid = false) override;
+  bool tune(bool currentInvalid = false) override;
 
-  inline std::set<ContainerOption> getAllowedContainerOptions() const override { return _containerOptionsSet; }
+  std::set<ContainerOption> getAllowedContainerOptions() const override { return _containerOptionsSet; }
 
-  inline bool searchSpaceIsTrivial() const override;
+  bool searchSpaceIsTrivial() const override;
 
-  inline bool searchSpaceIsEmpty() const override;
+  bool searchSpaceIsEmpty() const override;
 
  private:
   /**
@@ -144,7 +144,7 @@ class BayesianSearch : public TuningStrategyInterface {
    * @param n numSamples
    * @param af acquisition function
    */
-  inline void sampleAcquisitions(size_t n, AcquisitionFunctionOption af);
+  void sampleAcquisitions(size_t n, AcquisitionFunctionOption af);
 
   std::set<ContainerOption> _containerOptionsSet;
   std::vector<FeatureVector::ContainerTraversalEstimatorOption> _containerTraversalEstimatorOptions;

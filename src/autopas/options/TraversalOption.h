@@ -247,7 +247,7 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::vlp_c01, "vlp_c01"},
         {TraversalOption::vlp_sliced_balanced, "vlp_sliced_balanced"},
     };
-  };
+  }
 
  private:
   Value _value{Value(-1)};

@@ -26,7 +26,7 @@ size_t autopas::memoryProfiler::currentMemoryUsage() {
     if (needleStart != std::string::npos) {
       auto needleEnd = line.find_first_of(" \n", needleStart);
       // parse whole text after colon. strtol ignores leading whitespaces and stops after number.
-      return (size_t)std::strtol(line.substr(needleStart + 7, needleEnd).c_str(), nullptr, 10);
+      return static_cast<size_t>(std::strtol(line.substr(needleStart + 7, needleEnd).c_str(), nullptr, 10));
     }
   }
 

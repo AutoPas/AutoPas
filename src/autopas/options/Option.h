@@ -37,7 +37,7 @@ class Option {
     std::for_each(mapOptionNames.begin(), mapOptionNames.end(),
                   [&retSet](auto pairOpStr) { retSet.insert(pairOpStr.first); });
     return retSet;
-  };
+  }
 
   /**
    * Provides a way to iterate over the possible options minus those that are very unlikely to be on interest.

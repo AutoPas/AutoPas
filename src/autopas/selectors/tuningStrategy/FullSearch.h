@@ -50,21 +50,21 @@ class FullSearch : public SetSearchSpaceBasedTuningStrategy {
   explicit FullSearch(std::set<Configuration> allowedConfigurations)
       : SetSearchSpaceBasedTuningStrategy(std::move(allowedConfigurations)) {}
 
-  inline void addEvidence(long time, size_t iteration) override { _traversalTimes[*_currentConfig] = time; }
+  void addEvidence(long time, size_t iteration) override { _traversalTimes[*_currentConfig] = time; }
 
-  inline long getEvidence(Configuration configuration) const override { return _traversalTimes.at(configuration); }
+  long getEvidence(Configuration configuration) const override { return _traversalTimes.at(configuration); }
 
-  inline const Configuration &getCurrentConfiguration() const override { return *_currentConfig; }
+  const Configuration &getCurrentConfiguration() const override { return *_currentConfig; }
 
-  inline void reset(size_t iteration) override {
+  void reset(size_t iteration) override {
     _traversalTimes.clear();
     _currentConfig = _searchSpace.begin();
   }
 
-  inline bool tune(bool = false) override;
+  bool tune(bool = false) override;
 
  private:
-  inline void selectOptimalConfiguration();
+  void selectOptimalConfiguration();
 
   std::unordered_map<Configuration, size_t, ConfigHash> _traversalTimes;
 };

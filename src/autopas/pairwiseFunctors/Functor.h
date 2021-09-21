@@ -55,7 +55,7 @@ class Functor {
    * Constructor
    * @param cutoff
    */
-  explicit Functor(double cutoff) : _cutoff(cutoff){};
+  explicit Functor(double cutoff) : _cutoff(cutoff){}
 
   virtual ~Functor() = default;
 
@@ -63,14 +63,14 @@ class Functor {
    * This function is called at the start of each traversal.
    * Use it for resetting global values or initializing them.
    */
-  virtual void initTraversal(){};
+  virtual void initTraversal(){}
 
   /**
    * This function is called at the end of each traversal.
    * You may accumulate values in this step.
    * @param newton3
    */
-  virtual void endTraversal(bool newton3){};
+  virtual void endTraversal(bool newton3){}
 
   /**
    * Functor for arrays of structures (AoS).

@@ -105,7 +105,7 @@ class ContainerOption : public Option<ContainerOption> {
         {ContainerOption::varVerletListsAsBuild, "VarVerletListsAsBuild"},
         {ContainerOption::pairwiseVerletLists, "PairwiseVerletLists"},
     };
-  };
+  }
 
  private:
   Value _value{Value(-1)};

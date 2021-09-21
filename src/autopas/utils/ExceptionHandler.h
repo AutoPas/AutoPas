@@ -140,7 +140,7 @@ class ExceptionHandler {
      * constructor
      * @param description a descriptive string
      */
-    explicit AutoPasException(std::string description) : _description(std::move(description)){};
+    explicit AutoPasException(std::string description) : _description(std::move(description)){}
 
     /**
      * returns the description

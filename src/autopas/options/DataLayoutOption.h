@@ -63,7 +63,7 @@ class DataLayoutOption : public Option<DataLayoutOption> {
         {DataLayoutOption::aos, "AoS"},
         {DataLayoutOption::soa, "SoA"},
     };
-  };
+  }
 
  private:
   Value _value{Value(-1)};

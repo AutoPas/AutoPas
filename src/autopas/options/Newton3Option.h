@@ -63,7 +63,7 @@ class Newton3Option : public Option<Newton3Option> {
         {Newton3Option::disabled, "disabled"},
         {Newton3Option::enabled, "enabled"},
     };
-  };
+  }
 
  private:
   Value _value{Value(-1)};

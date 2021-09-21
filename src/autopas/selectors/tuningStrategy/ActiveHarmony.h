@@ -95,23 +95,23 @@ class ActiveHarmony : public TuningStrategyInterface {
     }
   }
 
-  inline void addEvidence(long time, size_t iteration) override;
+  void addEvidence(long time, size_t iteration) override;
 
-  inline long getEvidence(Configuration configuration) const override { return _traversalTimes.at(configuration); }
+  long getEvidence(Configuration configuration) const override { return _traversalTimes.at(configuration); }
 
-  inline bool tune(bool currentInvalid) override;
+  bool tune(bool currentInvalid) override;
 
-  inline void removeN3Option(Newton3Option option) override;
+  void removeN3Option(Newton3Option option) override;
 
-  inline bool searchSpaceIsTrivial() const override;
+  bool searchSpaceIsTrivial() const override;
 
-  inline bool searchSpaceIsEmpty() const override;
+  bool searchSpaceIsEmpty() const override;
 
-  inline const Configuration &getCurrentConfiguration() const override;
+  const Configuration &getCurrentConfiguration() const override;
 
-  inline void reset(size_t iteration) override;
+  void reset(size_t iteration) override;
 
-  inline std::set<ContainerOption> getAllowedContainerOptions() const override;
+  std::set<ContainerOption> getAllowedContainerOptions() const override;
 
  private:
   /**
@@ -144,17 +144,17 @@ class ActiveHarmony : public TuningStrategyInterface {
   /**
    * Resets the Harmony Server but keeps evidence.
    */
-  inline void resetHarmony();
+  void resetHarmony();
 
   /**
    * Fetch parameter-values from harmony server and update _currentConfig.
    */
-  inline void fetchConfiguration();
+  void fetchConfiguration();
 
   /**
    * Invalidates the current configuration by reporting the worst possible performance to the harmony server.
    */
-  inline void invalidateConfiguration();
+  void invalidateConfiguration();
 
   /**
    * Define the tuning parameter in the ActiveHarmony tuning definition as enum and set possible values.
@@ -164,7 +164,7 @@ class ActiveHarmony : public TuningStrategyInterface {
    * @param options Set of possible values of the tuning parameter.
    */
   template <class OptionClass>
-  inline void configureTuningParameter(hdef_t *hdef, const char *name, const std::set<OptionClass> options);
+  void configureTuningParameter(hdef_t *hdef, const char *name, const std::set<OptionClass> options);
 
   /**
    * Fetch value for enum-type tuning parameter.
@@ -174,9 +174,9 @@ class ActiveHarmony : public TuningStrategyInterface {
    * @return Value for tuning parameter.
    */
   template <class OptionClass>
-  inline OptionClass fetchTuningParameter(const char *name, const std::set<OptionClass> options);
+  OptionClass fetchTuningParameter(const char *name, const std::set<OptionClass> options);
 
-  inline void setupTuningParameters(int commSize, hdef_t *hdef);
+  void setupTuningParameters(int commSize, hdef_t *hdef);
 
   static constexpr int cellSizeSamples = 100;
 

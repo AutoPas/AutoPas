@@ -144,11 +144,11 @@ class BayesianClusterSearch : public TuningStrategyInterface {
     _currentConfig = _fullSearch.getCurrentConfiguration();
   }
 
-  inline const Configuration &getCurrentConfiguration() const override { return _currentConfig; }
+  const Configuration &getCurrentConfiguration() const override { return _currentConfig; }
 
-  inline void removeN3Option(Newton3Option badNewton3Option) override;
+  void removeN3Option(Newton3Option badNewton3Option) override;
 
-  inline void addEvidence(long time, size_t iteration) override {
+  void addEvidence(long time, size_t iteration) override {
     if (_firstTuningPhase) {
       _fullSearch.addEvidence(time, iteration);
     }
@@ -172,9 +172,9 @@ class BayesianClusterSearch : public TuningStrategyInterface {
     _traversalTimes[_currentConfig] = time;
   }
 
-  inline long getEvidence(Configuration configuration) const override { return _traversalTimes.at(configuration); }
+  long getEvidence(Configuration configuration) const override { return _traversalTimes.at(configuration); }
 
-  inline void reset(size_t iteration) override {
+  void reset(size_t iteration) override {
     size_t iterationSinceLastEvidence = iteration - _currentIteration;
     if (iterationSinceLastEvidence * _iterationScale > suggestedMaxDistance) {
       AutoPasLog(warn, "BayesianClusterSearch: Time since the last evidence may be too long.");
@@ -193,13 +193,13 @@ class BayesianClusterSearch : public TuningStrategyInterface {
     }
   }
 
-  inline bool tune(bool currentInvalid = false) override;
+  bool tune(bool currentInvalid = false) override;
 
-  inline std::set<ContainerOption> getAllowedContainerOptions() const override { return _containerOptionsSet; }
+  std::set<ContainerOption> getAllowedContainerOptions() const override { return _containerOptionsSet; }
 
-  inline bool searchSpaceIsTrivial() const override;
+  bool searchSpaceIsTrivial() const override;
 
-  inline bool searchSpaceIsEmpty() const override;
+  bool searchSpaceIsEmpty() const override;
 
  private:
   /**
@@ -209,13 +209,13 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    * @param n numSamples
    * @param af acquisition function
    */
-  inline void sampleAcquisitions(size_t n, AcquisitionFunctionOption af);
+  void sampleAcquisitions(size_t n, AcquisitionFunctionOption af);
 
   /**
    * If allowed options are changed this functions should be called
    * to update encoder and clusters.
    */
-  inline void updateOptions();
+  void updateOptions();
 
   std::set<ContainerOption> _containerOptionsSet;
   std::vector<FeatureVector::ContainerTraversalEstimatorOption> _containerTraversalEstimatorOptions;

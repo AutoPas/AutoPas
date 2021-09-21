@@ -70,11 +70,11 @@ class RandomSearch : public TuningStrategyInterface {
     tune();
   }
 
-  inline const Configuration &getCurrentConfiguration() const override { return _currentConfig; }
+  const Configuration &getCurrentConfiguration() const override { return _currentConfig; }
 
-  inline void removeN3Option(Newton3Option badNewton3Option) override;
+  void removeN3Option(Newton3Option badNewton3Option) override;
 
-  inline void addEvidence(long time, size_t iteration) override {
+  void addEvidence(long time, size_t iteration) override {
     // Count the number of valid, tested configurations to test if there are still untested configurations that could be
     // valid.
     // Ignore CellSizeFactors because infinite CSFs make this test difficult.
@@ -87,25 +87,25 @@ class RandomSearch : public TuningStrategyInterface {
     _traversalTimes[_currentConfig] = time;
   }
 
-  inline long getEvidence(Configuration configuration) const override { return _traversalTimes.at(configuration); }
+  long getEvidence(Configuration configuration) const override { return _traversalTimes.at(configuration); }
 
-  inline void reset(size_t iteration) override {
+  void reset(size_t iteration) override {
     _traversalTimes.clear();
     _invalidConfigs.clear();
     _numTestedConfigsNoCSF = 0;
     tune();
   }
 
-  inline bool tune(bool currentInvalid = false) override;
+  bool tune(bool currentInvalid = false) override;
 
-  inline std::set<ContainerOption> getAllowedContainerOptions() const override { return _containerOptions; }
+  std::set<ContainerOption> getAllowedContainerOptions() const override { return _containerOptions; }
 
-  inline bool searchSpaceIsTrivial() const override;
+  bool searchSpaceIsTrivial() const override;
 
-  inline bool searchSpaceIsEmpty() const override;
+  bool searchSpaceIsEmpty() const override;
 
  private:
-  inline void selectOptimalConfiguration();
+  void selectOptimalConfiguration();
 
   std::set<ContainerOption> _containerOptions;
   std::set<TraversalOption> _traversalOptions;
@@ -159,7 +159,7 @@ bool RandomSearch::tune(bool currentInvalid) {
     _currentConfig.dataLayout = _rng.pickRandom(_dataLayoutOptions);
     _currentConfig.newton3 = _rng.pickRandom(_newton3Options);
 
-    testingConfig = Configuration(_currentConfig);
+    testingConfig = _currentConfig;
     if (not _cellSizeFactors->isFinite()) {
       testingConfig.cellSizeFactor = 1;
     }
