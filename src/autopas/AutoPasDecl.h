@@ -110,42 +110,31 @@ class AutoPas {
   }
 
   /**
-   * Potentially updates the internal container.
-   * On an update, halo particles are deleted, the particles are resorted into appropriate cells and particles that do
-   * no longer belong into the container will be returned, the lists will be invalidated. If the internal container is
-   * still valid and a rebuild of the container is not forced, this will return an empty list of particles and nothing
-   * else will happen.
-   * @param forced specifies whether an update of the container is enforced.
-   * @return A pair of a vector of invalid particles that do no belong in the current container and a bool that
-   * specifies whether the container was updated. If the bool is false, the vector will be an empty vector. If the
-   * returned bool evaluates to true, the vector can both be empty or non-empty, depending on whether particles have
-   * left the container or not.
+   * Updates the container.
+   * On an update, halo particles are deleted and particles that do no longer belong into the container will be removed
+   * and returned.
+   * @return A vector of invalid particles that do no longer belong in the current container.
    */
-  [[nodiscard]] std::pair<std::vector<Particle>, bool> updateContainer(bool forced = false);
+  [[nodiscard]] std::vector<Particle> updateContainer();
 
   /**
    * Adds a particle to the container.
    * This is only allowed if the neighbor lists are not valid.
    * @param p Reference to the particle to be added
+   * @note An exception is thrown if the particle is added and it is not inside of the owned domain (defined by
+   * boxmin and boxmax) of the container.
+   * @note This function is NOT thread-safe.
    */
   void addParticle(const Particle &p);
 
   /**
-   * Adds or updates a particle to/in the container that lies in the halo region of the container.
-   * If the neighbor lists inside of AutoPas are NOT valid, the halo particle will be added.
-   * If the neighbor lists of AutoPas are valid the particle will be used to update an already existing halo particle.
-   * In this case if there is no matching halo particle, the given haloParticle will be ignored.
-   * @note Exceptions are thrown in the following cases:
-   * 1. If the halo particle is added and it is inside of the owned domain (defined by boxmin and boxmax)of the
-   * container.
-   * 2. If the halo particle should be updated and the given haloParticle is too far inside of the domain (by more than
-   * skin/2)
-   * 3. If the halo particle should be updated, but no matching particle is found, even though the given haloParticle is
-   * close enough to the domain (at most cutoff + skin/2)
-   *
-   * @param haloParticle particle to be added or updated
+   * Adds a particle to the container that lies in the halo region of the container.
+   * @param haloParticle Particle to be added.
+   * @note An exception is thrown if the halo particle is added and it is inside of the owned domain (defined by boxmin
+   * and boxmax) of the container.
+   * @note This function is NOT thread-safe.
    */
-  void addOrUpdateHaloParticle(const Particle &haloParticle);
+  void addHaloParticle(const Particle &haloParticle);
 
   /**
    * Deletes all particles.

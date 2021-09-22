@@ -6,7 +6,9 @@
 
 #include "DirectSumContainerTest.h"
 
-TEST_F(DirectSumContainerTest, testUpdateContainerCloseToBoundary) {
+INSTANTIATE_TEST_SUITE_P(Generated, DirectSumContainerTest, testing::Bool());
+
+TEST_P(DirectSumContainerTest, testUpdateContainerCloseToBoundary) {
   autopas::DirectSum<autopas::Particle> directSum({0., 0., 0.}, {10., 10., 10.}, 1., 0.);
   int id = 1;
   for (double x : {0., 5., 9.999}) {
@@ -38,7 +40,7 @@ TEST_F(DirectSumContainerTest, testUpdateContainerCloseToBoundary) {
   }
 
   // now update the container!
-  auto invalidParticles = directSum.updateContainer();
+  auto invalidParticles = directSum.updateContainer(GetParam());
 
   // the particles should no longer be in the inner cells!
   for (auto iter = directSum.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
