@@ -167,11 +167,10 @@ void Simulation::run() {
 
       updatePositions();
 
-      auto [emigrants, updated] =
-          _autoPasContainer->updateContainer(_iteration % _configuration.verletRebuildFrequency.value == 0);
+      auto emigrants = _autoPasContainer->updateContainer();
 
       const double work = _timers.work.stop();
-      if (updated) {
+      if (not emigrants.empty()) {
         _timers.loadBalancing.start();
         _domainDecomposition.update(work);
         auto additionalEmigrants =

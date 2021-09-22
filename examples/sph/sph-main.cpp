@@ -141,22 +141,21 @@ void addEnteringParticles(AutoPasContainer &sphSystem, std::vector<Particle> &in
  * @param reqMin
  * @param reqMax
  * @param cutoff
- * @param skin
  * @param shift
  */
-void getRequiredHalo(double boxMin, double boxMax, int diff, double &reqMin, double &reqMax, double cutoff, double skin,
+void getRequiredHalo(double boxMin, double boxMax, int diff, double &reqMin, double &reqMax, double cutoff,
                      double &shift) {
   if (diff == 0) {
-    reqMin = boxMin - skin;
-    reqMax = boxMax + skin;
+    reqMin = boxMin;
+    reqMax = boxMax;
     shift = 0;
   } else if (diff == -1) {
-    reqMin = boxMax - cutoff - skin;
-    reqMax = boxMax + skin;
+    reqMin = boxMax - cutoff;
+    reqMax = boxMax;
     shift = boxMin - boxMax;
   } else if (diff == 1) {
-    reqMin = boxMin - skin;
-    reqMax = boxMin + cutoff + skin;
+    reqMin = boxMin;
+    reqMax = boxMin + cutoff;
     shift = boxMax - boxMin;
   }
 }
@@ -174,7 +173,6 @@ void updateHaloParticles(AutoPasContainer &sphSystem) {
   std::array<int, 3> diff{0, 0, 0};
   std::array<double, 3> shift{0., 0., 0.};
   double cutoff = sphSystem.getCutoff();
-  double skin = sphSystem.getVerletSkin();
   for (diff[0] = -1; diff[0] < 2; diff[0]++) {
     for (diff[1] = -1; diff[1] < 2; diff[1]++) {
       for (diff[2] = -1; diff[2] < 2; diff[2]++) {
@@ -185,15 +183,14 @@ void updateHaloParticles(AutoPasContainer &sphSystem) {
         }
         // figure out from where we get our halo particles
         for (int i = 0; i < 3; ++i) {
-          getRequiredHalo(boxMin[i], boxMax[i], diff[i], requiredHaloMin[i], requiredHaloMax[i], cutoff, skin,
-                          shift[i]);
+          getRequiredHalo(boxMin[i], boxMax[i], diff[i], requiredHaloMin[i], requiredHaloMax[i], cutoff, shift[i]);
         }
         for (auto iterator =
                  sphSystem.getRegionIterator(requiredHaloMin, requiredHaloMax, autopas::IteratorBehavior::owned);
              iterator.isValid(); ++iterator) {
           Particle p = *iterator;
           p.addR(shift);
-          sphSystem.addOrUpdateHaloParticle(p);
+          sphSystem.addHaloParticle(p);
         }
       }
     }
@@ -234,14 +231,17 @@ void densityPressureHydroForce(AutoPasContainer &sphSystem) {
   sphSystem.iteratePairwise(&densityFunctor);
   std::cout << "calculation of density... completed" << std::endl;
   // 1.3 delete halo particles, as their values are no longer valid
+  for (auto part = sphSystem.begin(autopas::IteratorBehavior::halo); part.isValid(); ++part) {
+    sphSystem.deleteParticle(part);
+  }
 
   // 2. then update pressure
   std::cout << "calculation of pressure... started" << std::endl;
   setPressure(sphSystem);
   std::cout << "calculation of pressure... completed" << std::endl;
 
-  // 0.3 then calculate hydro force
-  // 0.3.1 to calculate the density we need the halo particles
+  // 3 then calculate hydro force
+  // 3.1 to calculate the density we need the halo particles
   updateHaloParticles(sphSystem);
 
   std::cout << "haloparticles... ";
@@ -256,7 +256,7 @@ void densityPressureHydroForce(AutoPasContainer &sphSystem) {
   std::cout << haloparts << std::endl;
   std::cout << "particles... " << innerparts << std::endl;
 
-  // 0.3.2 then calculate hydro force
+  // 3.2 then calculate hydro force
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::owned); part.isValid(); ++part) {
     // self interaction leeds to:
     // 1) vsigmax = 2*part->getSoundSpeed()
@@ -280,9 +280,12 @@ void printConservativeVariables(AutoPasContainer &sphSystem) {
     energySum += (it->getEnergy() + 0.5 * autopas::utils::ArrayMath::dot(it->getV(), it->getV())) * it->getMass();
   }
   printf("%.16e\n", energySum);
-  printf("%.16e\n", momSum[0]);
-  printf("%.16e\n", momSum[1]);
-  printf("%.16e\n", momSum[2]);
+  for (int i = 0; i < 3; ++i) {
+    printf("%.16e\n", momSum[i]);
+    if (std::abs(momSum[i]) > 1.e-15) {
+      throw std::runtime_error("ERROR: bad moment sum detected (should be small, but isn't!");
+    }
+  }
 }
 
 int main() {
@@ -342,12 +345,11 @@ int main() {
     leapfrogFullDrift(sphSystem, dt);
 
     // 1.2.1 positions have changed, so the container needs to be updated!
-    auto [invalidParticles, updated] = sphSystem.updateContainer();
+    auto invalidParticles = sphSystem.updateContainer();
 
-    if (updated) {
-      // 1.2.2 adjust positions based on boundary conditions (here: periodic)
-      addEnteringParticles(sphSystem, invalidParticles);
-    }
+    // 1.2.2 adjust positions based on boundary conditions (here: periodic)
+    addEnteringParticles(sphSystem, invalidParticles);
+
     // 1.3 Leap frog: predict
     leapfrogPredict(sphSystem, dt);
     // 1.4 Calculate density, pressure and hydrodynamic forces

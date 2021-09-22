@@ -246,7 +246,7 @@ TEST_F(RegularGridDecompositionTest, testExchangeMigratingParticles) {
       particle->setR(position);
     }
 
-    auto [emigrants, updated] = autoPasContainer->updateContainer(true);
+    auto emigrants = autoPasContainer->updateContainer();
     EXPECT_NO_THROW(domainDecomposition.exchangeMigratingParticles(autoPasContainer, emigrants));
 
     std::vector<std::array<double, 3>> expectedPositionsAfterMigration = {
