@@ -44,14 +44,14 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
 
   _loadBalancer = configuration.loadBalancer.value;
 
-#if defined(MD_FLEXIBLE_INCLUDE_ALL)
-  _allLoadBalancer = std::make_unique<ALL::ALL<double, double>>(ALL::TENSOR, _dimensionCount, 0);
-  _allLoadBalancer->setCommunicator(_communicator);
+  if (_loadBalancer == LoadBalancerOption::all) {
+    _allLoadBalancer = std::make_unique<ALL::ALL<double, double>>(ALL::TENSOR, _dimensionCount, 0);
+    _allLoadBalancer->setCommunicator(_communicator);
 
-  const double minDomainSize = 2 * (_cutoffWidth + _skinWidth);
-  _allLoadBalancer->setMinDomainSize({minDomainSize, minDomainSize, minDomainSize});
-  _allLoadBalancer->setup();
-#endif
+    const double minDomainSize = 2 * (_cutoffWidth + _skinWidth);
+    _allLoadBalancer->setMinDomainSize({minDomainSize, minDomainSize, minDomainSize});
+    _allLoadBalancer->setup();
+  }
 }
 
 RegularGridDecomposition::~RegularGridDecomposition() {}
@@ -63,12 +63,10 @@ void RegularGridDecomposition::update(const double &work) {
         balanceWithInvertedPressureLoadBalancer(work);
         break;
       }
-#if defined(MD_FLEXIBLE_INCLUDE_ALL)
       case LoadBalancerOption::all: {
         balanceWithAllLoadBalancer(work);
         break;
       }
-#endif
       default: {
         // do nothing
       }
@@ -471,7 +469,6 @@ void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(const dou
   }
 }
 
-#if defined(MD_FLEXIBLE_INCLUDE_ALL)
 void RegularGridDecomposition::balanceWithAllLoadBalancer(const double &work) {
   std::vector<ALL::Point<double>> domain(2, ALL::Point<double>(3));
 
@@ -491,4 +488,3 @@ void RegularGridDecomposition::balanceWithAllLoadBalancer(const double &work) {
     _localBoxMax[i] = updatedVertices[1][i];
   }
 }
-#endif

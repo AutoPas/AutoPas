@@ -7,10 +7,7 @@
 
 #include <memory>
 
-#if defined(MD_FLEXIBLE_INCLUDE_ALL)
-#include <ALL.hpp>
-#endif
-
+#include "ALL.hpp"
 #include "DomainDecomposition.h"
 #include "autopas/utils/WrapMPI.h"
 #include "src/TypeDefinitions.h"
@@ -221,14 +218,12 @@ class RegularGridDecomposition final : public DomainDecomposition {
    */
   LoadBalancerOption _loadBalancer;
 
-#if defined(MD_FLEXIBLE_INCLUDE_ALL)
   /**
    * The ALL load balancer used for diffuse load balancing
    * We cannot use a shared pointer here, because whenn the load balancer is deleted, it calls MPI_Comm_free after
    * we call MPI_Finalize().
    */
   std::unique_ptr<ALL::ALL<double, double>> _allLoadBalancer;
-#endif
 
   /**
    * Initializes the decomposition of the domain.
@@ -356,11 +351,9 @@ class RegularGridDecomposition final : public DomainDecomposition {
    */
   void balanceWithInvertedPressureLoadBalancer(const double &work);
 
-#if defined(MD_FLEXIBLE_INCLUDE_ALL)
   /**
    * Balances the subdomains of the grid decomposition using the ALL load balancer.
    * @param work: The work performed by the process owning this sudomain.
    */
   void balanceWithAllLoadBalancer(const double &work);
-#endif
 };
