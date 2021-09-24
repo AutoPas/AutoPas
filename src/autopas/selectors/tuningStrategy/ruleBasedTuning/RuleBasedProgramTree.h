@@ -105,6 +105,83 @@ struct Expression {
 
 struct DefineList;
 
+struct ConfigurationOrder : public Statement {
+  ConfigurationPattern greater;
+  ConfigurationPattern smaller;
+
+  enum class SameProperty {
+    container, traversal, dataLayout, newton3, loadEstimator, cellSizeFactor
+  };
+
+  std::vector<SameProperty> sameProperties;
+
+  ConfigurationOrder() = default;
+
+  ConfigurationOrder(ConfigurationPattern greater, ConfigurationPattern smaller, std::vector<SameProperty> same = {})
+      : greater(std::move(greater)), smaller(std::move(smaller)), sameProperties(std::move(same)) {}
+
+  void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override;
+
+  [[nodiscard]] std::string toString() const {
+    std::string sameString = sameProperties.empty() ? "" : "with same ";
+    for(auto same : sameProperties) {
+      sameString += samePropertyToString(same) + ", ";
+    }
+    return greater.toString() + " >= " + smaller.toString() + sameString;
+  }
+
+  [[nodiscard]] bool haveEqualSameProperties(const Configuration& conf1, const Configuration& conf2) const {
+    for(auto same : sameProperties) {
+      switch (same) {
+        case SameProperty::container:
+          if(conf1.container != conf2.container)
+            return false;
+          break;
+        case SameProperty::traversal:
+          if(conf1.traversal != conf2.traversal)
+            return false;
+          break;
+        case SameProperty::dataLayout:
+          if(conf1.dataLayout != conf2.dataLayout)
+            return false;
+          break;
+        case SameProperty::newton3:
+          if(conf1.newton3 != conf2.newton3)
+            return false;
+          break;
+        case SameProperty::loadEstimator:
+          if(conf1.loadEstimator != conf2.loadEstimator)
+            return false;
+          break;
+        case SameProperty::cellSizeFactor:
+          if(conf1.cellSizeFactor != conf2.cellSizeFactor)
+            return false;
+          break;
+      }
+    }
+    return true;
+  }
+
+ private:
+  static std::string samePropertyToString(SameProperty same) {
+    switch (same) {
+      case SameProperty::container:
+        return "container";
+      case SameProperty::traversal:
+        return "traversal";
+      case SameProperty::dataLayout:
+        return "dataLayout";
+      case SameProperty::newton3:
+        return "newton3";
+      case SameProperty::loadEstimator:
+        return "loadEstimator";
+      case SameProperty::cellSizeFactor:
+        return "cellSizeFactor";
+    }
+    return {};
+  }
+};
+
 class CodeGenerationContext {
  public:
   explicit CodeGenerationContext(std::map<std::string, std::pair<const Define*, size_t>> initialAddressEnvironment)
@@ -132,12 +209,16 @@ class CodeGenerationContext {
 
   auto getList(const std::string &name) { return lists.at(name); }
 
-  auto addConfigurationPattern(const ConfigurationPattern &configurationPattern) {
-    configurationPatterns.push_back(configurationPattern);
-    return configurationPatterns.size() - 1;
+  auto addConfigurationOrder(const ConfigurationOrder &configurationOrder) {
+    configurationOrders.emplace_back(configurationOrder);
+    return configurationOrders.size() - 1;
   }
 
-  [[nodiscard]] auto getConfigurationPatterns() const { return configurationPatterns; }
+  [[nodiscard]] const auto& getConfigurationOrders() const { return configurationOrders; }
+
+  [[nodiscard]] auto smallerConfigurationPatternByIndex(size_t idx) const {
+    return configurationOrders.at(idx).smaller;
+  }
 
   [[nodiscard]] auto getNumLocalVariables() const {
     return addressEnvironment.size() - initialNumVariables;
@@ -150,7 +231,7 @@ class CodeGenerationContext {
   std::map<std::string, std::pair<const Define*, size_t>> addressEnvironment;
   size_t initialNumVariables;
   std::map<std::string, const DefineList *> lists;
-  std::vector<ConfigurationPattern> configurationPatterns;
+  std::vector<ConfigurationOrder> configurationOrders;
 };
 
 struct Literal : public Expression {
@@ -182,21 +263,6 @@ struct DefineList : public Statement {
     context.addList(listName, this);
   }
 
-};
-
-struct ConfigurationOrder : public Statement {
-  ConfigurationPattern greater;
-  ConfigurationPattern smaller;
-
-  ConfigurationOrder() = default;
-
-  ConfigurationOrder(ConfigurationPattern greater, ConfigurationPattern smaller)
-      : greater(std::move(greater)), smaller(std::move(smaller)) {}
-
-  void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override {
-    auto idx = context.addConfigurationPattern(smaller);
-    program.instructions.push_back({RuleVM::OUTPUTC, idx});
-  }
 };
 
 struct Variable : public Expression {

@@ -20,6 +20,11 @@ namespace autopas::rule_syntax {
     context.freeStack(1);
   }
 
+  void ConfigurationOrder::generateCode(CodeGenerationContext &context, RuleVM::Program &program) const {
+    auto idx = context.addConfigurationOrder(*this);
+    program.instructions.push_back({RuleVM::OUTPUTC, idx});
+  }
+
   void CodeGenerationContext::addLocalVariable(const Define &definition) {
     addressEnvironment.insert({definition.variable, {&definition, addressEnvironment.size()}});
   }

@@ -115,7 +115,7 @@ configuration_pattern
                 ;
 
 configuration_order
-                : configuration_pattern '>=' configuration_pattern ';' ;
+                : configuration_pattern '>=' configuration_pattern ('with same' Configuration_property (',' Configuration_property)*)? ';' ;
 
 statement
                 : define_list

@@ -15,9 +15,10 @@ public:
   enum {
     T__0 = 1, T__1 = 2, T__2 = 3, T__3 = 4, T__4 = 5, T__5 = 6, T__6 = 7, 
     T__7 = 8, T__8 = 9, T__9 = 10, T__10 = 11, T__11 = 12, T__12 = 13, T__13 = 14, 
-    T__14 = 15, WS = 16, Container_opt = 17, Traversal_opt = 18, Load_estimator_opt = 19, 
-    Data_layout_opt = 20, Newton3_opt = 21, Bool_val = 22, Configuration_property = 23, 
-    DIGIT = 24, Unsigned_val = 25, Double_val = 26, Variable_name = 27
+    T__14 = 15, T__15 = 16, WS = 17, Container_opt = 18, Traversal_opt = 19, 
+    Load_estimator_opt = 20, Data_layout_opt = 21, Newton3_opt = 22, Bool_val = 23, 
+    Configuration_property = 24, DIGIT = 25, Unsigned_val = 26, Double_val = 27, 
+    Variable_name = 28
   };
 
   enum {
@@ -206,6 +207,8 @@ public:
     virtual size_t getRuleIndex() const override;
     std::vector<Configuration_patternContext *> configuration_pattern();
     Configuration_patternContext* configuration_pattern(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> Configuration_property();
+    antlr4::tree::TerminalNode* Configuration_property(size_t i);
 
 
     virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;

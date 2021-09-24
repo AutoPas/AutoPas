@@ -20,15 +20,14 @@ namespace autopas {
 
 class RuleBasedTuning : public FullSearch {
  public:
-
   RuleBasedTuning(const std::set<ContainerOption> &allowedContainerOptions, const std::set<double> &allowedCellSizeFactors,
              const std::set<TraversalOption> &allowedTraversalOptions,
              const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
              const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-             const std::set<Newton3Option> &allowedNewton3Options)
+             const std::set<Newton3Option> &allowedNewton3Options, bool verifyModeEnabled = true)
       : FullSearch(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions, allowedLoadEstimatorOptions,
                    allowedDataLayoutOptions, allowedNewton3Options), _originalSearchSpace(this->_searchSpace.begin(),
-                             this->_searchSpace.end())
+                             this->_searchSpace.end()), _verifyModeEnabled(verifyModeEnabled)
       {}
 
   bool needsLiveInfo() const override {
@@ -36,14 +35,49 @@ class RuleBasedTuning : public FullSearch {
   }
 
   void receiveLiveInfo(LiveInfo info) override {
-    applyRules(std::move(info));
+    _lastApplicableConfigurationOrders = applyRules(std::move(info));
+  }
+
+  void addEvidence(long time, size_t iteration) override {
+    FullSearch::addEvidence(time, iteration);
+    if(_verifyModeEnabled) {
+      verifyCurrentConfigTime();
+    }
   }
 
  private:
-  void applyRules(LiveInfo info) {
-    std::cout << info.toString() << std::endl;
+  void verifyCurrentConfigTime() const {
+    for(const auto& order : _lastApplicableConfigurationOrders) {
+      bool shouldBeBetter;
+      if(order.smaller.matches(*_currentConfig)) {
+        shouldBeBetter = true;
+      } else if(order.greater.matches(*_currentConfig)) {
+        shouldBeBetter = false;
+      } else {
+        continue;
+      }
 
-    auto newSearchSpace = _originalSearchSpace;
+      const auto& comparePattern = shouldBeBetter ? order.greater : order.smaller;
+      for(const auto& [otherConfig, time] : _traversalTimes) {
+        bool error = false;
+        if(comparePattern.matches(otherConfig) and order.haveEqualSameProperties(*_currentConfig, otherConfig)) {
+          if((shouldBeBetter and time > _traversalTimes.at(*_currentConfig)) or
+              (not shouldBeBetter and time < _traversalTimes.at(*_currentConfig))) {
+            error = true;
+          }
+        }
+        if (error) {
+          std::cerr << "Error in ConfigurationOrder " << order.toString() << ":" << std::endl;
+          std::cerr << "\tConfig " << _currentConfig->toShortString() << ": " << _traversalTimes.at(*_currentConfig)
+                    << std::endl;
+          std::cerr << "\tConfig " << otherConfig.toShortString() << ": " << time << std::endl << std::endl;
+        }
+      }
+    }
+  }
+
+  std::vector<rule_syntax::ConfigurationOrder> applyRules(LiveInfo info) {
+    std::cout << info.toString() << std::endl;
 
     std::vector<RuleVM::MemoryCell> initialStack;
     std::vector<std::pair<std::string, rule_syntax::Define>> defines{};
@@ -66,30 +100,35 @@ class RuleBasedTuning : public FullSearch {
 
     std::cout << "Remove patterns (Count " << removePatterns.size() << "):" << std::endl;
     std::vector<ConfigurationPattern> toRemovePatterns{};
+    std::vector<rule_syntax::ConfigurationOrder> applicableConfigurationOrders{};
     for(const auto& patternIdx : removePatterns) {
-      auto pattern = context.getConfigurationPatterns().at(patternIdx);
+      auto pattern = context.smallerConfigurationPatternByIndex(patternIdx);
       toRemovePatterns.push_back(pattern);
       auto str = pattern.toString();
       std::cout << "Remove " << str << std::endl;
+
+      applicableConfigurationOrders.push_back(context.getConfigurationOrders().at(patternIdx));
     }
 
-    newSearchSpace.remove_if(
-        [&toRemovePatterns](const Configuration& configuration) {
-          bool res =
-              std::any_of(toRemovePatterns.begin(), toRemovePatterns.end(),
-                          [&configuration](const auto& pattern) {
-                            return pattern.matches(configuration);
-                         });
-          if (res) {
-            //std::cout << "!!!! Remove " << configuration.toString() << std::endl;
-          }
-          return res;
-        });
+    if(not _verifyModeEnabled) {
+      auto newSearchSpace = _originalSearchSpace;
+      newSearchSpace.remove_if(
+          [&toRemovePatterns](const Configuration& configuration) {
+            return std::any_of(toRemovePatterns.begin(), toRemovePatterns.end(),
+                            [&configuration](const auto& pattern) {
+                              return pattern.matches(configuration);
+                            });
+          });
 
-    this->_searchSpace = {newSearchSpace.begin(), newSearchSpace.end()};
+      this->_searchSpace = {newSearchSpace.begin(), newSearchSpace.end()};
+    }
+
+    return applicableConfigurationOrders;
   }
 
  private:
   const std::list<Configuration> _originalSearchSpace;
+  std::vector<rule_syntax::ConfigurationOrder> _lastApplicableConfigurationOrders;
+  bool _verifyModeEnabled;
 };
 }  // namespace autopas

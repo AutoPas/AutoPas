@@ -56,6 +56,16 @@ class Configuration {
   }
 
   /**
+   * Returns short string representation of the configuration object.
+   * @return String representation.
+   */
+  [[nodiscard]] std::string toShortString() const {
+    return "{" + container.to_string() + " , " + std::to_string(cellSizeFactor) +
+           " , " + traversal.to_string() + " , " + loadEstimator.to_string() +
+           " , " + dataLayout.to_string() + " , " + newton3.to_string() + "}";
+  }
+
+  /**
    * Generate a csv header containing all keys from the toString() method.
    * @return Contains the header.
    */

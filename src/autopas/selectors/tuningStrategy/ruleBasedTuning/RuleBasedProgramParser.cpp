@@ -192,7 +192,25 @@ class TranslationVisitor : public RuleLanguageBaseVisitor {
   }
 
   antlrcpp::Any visitConfiguration_order(RuleLanguageParser::Configuration_orderContext *ctx) override {
-    return std::make_shared<ConfigurationOrder>(visit(ctx->configuration_pattern(0)), visit(ctx->configuration_pattern(1)));
+    std::vector<ConfigurationOrder::SameProperty> sameProperties{};
+    for(size_t i = 0; i < ctx->Configuration_property().size(); i++) {
+      auto property = ctx->Configuration_property(i)->getText();
+      if(property == "container") {
+        sameProperties.push_back(ConfigurationOrder::SameProperty::container);
+      } else if (property == "traversal") {
+        sameProperties.push_back(ConfigurationOrder::SameProperty::traversal);
+      } else if (property == "dataLayout") {
+        sameProperties.push_back(ConfigurationOrder::SameProperty::dataLayout);
+      } else if (property == "newton3") {
+        sameProperties.push_back(ConfigurationOrder::SameProperty::newton3);
+      } else if (property == "loadEstimator") {
+        sameProperties.push_back(ConfigurationOrder::SameProperty::loadEstimator);
+      } else if (property == "cellSizeFactor") {
+        sameProperties.push_back(ConfigurationOrder::SameProperty::cellSizeFactor);
+      }
+    }
+    return std::make_shared<ConfigurationOrder>(visit(ctx->configuration_pattern(0)),
+                                                visit(ctx->configuration_pattern(1)), sameProperties);
   }
 
   antlrcpp::Any visitStatement(RuleLanguageParser::StatementContext *ctx) override {
