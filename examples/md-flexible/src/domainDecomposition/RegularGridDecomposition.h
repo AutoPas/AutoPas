@@ -32,7 +32,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
   /**
    * Destructor.
    */
-  virtual ~RegularGridDecomposition();
+  ~RegularGridDecomposition() override;
 
   /**
    * Used to update the domain to the current topology.
