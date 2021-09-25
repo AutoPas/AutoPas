@@ -6,8 +6,8 @@
 #pragma once
 
 #include <memory>
+#include <ALL.hpp>
 
-#include "ALL.hpp"
 #include "DomainDecomposition.h"
 #include "autopas/utils/WrapMPI.h"
 #include "src/TypeDefinitions.h"
