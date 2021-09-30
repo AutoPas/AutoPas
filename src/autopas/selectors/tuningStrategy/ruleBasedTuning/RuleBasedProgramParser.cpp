@@ -256,8 +256,6 @@ std::pair<RuleBasedProgramTree, CodeGenerationContext> RuleBasedProgramParser::p
   TranslationVisitor visitor{context};
   auto ownTree = visitor.visit(tree).as<RuleBasedProgramTree>();
 
-  std::cout << tree->toStringTree(&parser) << std::endl << std::endl;
-
   return {ownTree, context};
 }
 

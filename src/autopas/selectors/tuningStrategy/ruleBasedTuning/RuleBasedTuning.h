@@ -15,6 +15,7 @@
 #include "RuleBasedProgramTree.h"
 #include "RuleVM.h"
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
+#include "autopas/utils/logging/Logger.h"
 
 namespace autopas {
 
@@ -67,17 +68,16 @@ class RuleBasedTuning : public FullSearch {
           }
         }
         if (error) {
-          std::cerr << "Error in ConfigurationOrder " << order.toString() << ":" << std::endl;
-          std::cerr << "\tConfig " << _currentConfig->toShortString() << ": " << _traversalTimes.at(*_currentConfig)
-                    << std::endl;
-          std::cerr << "\tConfig " << otherConfig.toShortString() << ": " << time << std::endl << std::endl;
+          AutoPasLog(error, "Error in ConfigurationOrder {}:", order.toString());
+          AutoPasLog(error, "\tConfig {}: {}", _currentConfig->toShortString(), _traversalTimes.at(*_currentConfig));
+          AutoPasLog(error, "\tConfig {}: {}", otherConfig.toShortString(), time);
         }
       }
     }
   }
 
   std::vector<rule_syntax::ConfigurationOrder> applyRules(LiveInfo info) {
-    std::cout << info.toString() << std::endl;
+    AutoPasLog(debug, info.toString());
 
     std::vector<RuleVM::MemoryCell> initialStack;
     std::vector<std::pair<std::string, rule_syntax::Define>> defines{};
@@ -98,28 +98,29 @@ class RuleBasedTuning : public FullSearch {
     RuleVM vm{};
     auto removePatterns = vm.execute(generatedProgram, initialStack);
 
-    std::cout << "Remove patterns (Count " << removePatterns.size() << "):" << std::endl;
+    AutoPasLog(debug, "Remove patterns (Count {}):", removePatterns.size());
     std::vector<ConfigurationPattern> toRemovePatterns{};
     std::vector<rule_syntax::ConfigurationOrder> applicableConfigurationOrders{};
     for(const auto& patternIdx : removePatterns) {
       auto pattern = context.smallerConfigurationPatternByIndex(patternIdx);
       toRemovePatterns.push_back(pattern);
       auto str = pattern.toString();
-      std::cout << "Remove " << str << std::endl;
+      AutoPasLog(debug, "Remove {}", str);
 
       applicableConfigurationOrders.push_back(context.getConfigurationOrders().at(patternIdx));
     }
 
+    auto newSearchSpace = _originalSearchSpace;
+    newSearchSpace.remove_if(
+        [&toRemovePatterns](const Configuration& configuration) {
+          return std::any_of(toRemovePatterns.begin(), toRemovePatterns.end(),
+                             [&configuration](const auto& pattern) {
+                               return pattern.matches(configuration);
+                             });
+        });
+    AutoPasLog(debug, "Rules remove {} out of {} configurations", _originalSearchSpace.size() - newSearchSpace.size(),
+               _originalSearchSpace.size());
     if(not _verifyModeEnabled) {
-      auto newSearchSpace = _originalSearchSpace;
-      newSearchSpace.remove_if(
-          [&toRemovePatterns](const Configuration& configuration) {
-            return std::any_of(toRemovePatterns.begin(), toRemovePatterns.end(),
-                            [&configuration](const auto& pattern) {
-                              return pattern.matches(configuration);
-                            });
-          });
-
       this->_searchSpace = {newSearchSpace.begin(), newSearchSpace.end()};
     }
 
