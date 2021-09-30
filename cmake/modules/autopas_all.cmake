@@ -3,14 +3,16 @@
 # Enable ExternalProject CMake module
 include(FetchContent)
 FetchContent_Declare(
-  all
-  URL ${CMAKE_CURRENT_SOURCE_DIR}/ALL_20210925.zip
-  URL_HASH MD5=75384d1773e28abae1b81b5b9cefe991
+  allfetch
+  URL ${CMAKE_CURRENT_SOURCE_DIR}/ALL_20210930.zip
+  URL_HASH MD5=841b87748f82da1666bdc26f2038a3a1
 )
 
 # Get ALL source and binary directories from CMake project
-FetchContent_GetProperties(all)
+FetchContent_GetProperties(allfetch)
 
-if (NOT all_POPULATED)
-  FetchContent_MakeAvailable(all)
+if (NOT allfetch)
+  FetchContent_MakeAvailable(allfetch)
 endif ()
+
+set(ALL_LIB "ALL")
