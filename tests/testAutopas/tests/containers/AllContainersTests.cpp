@@ -8,20 +8,14 @@
 
 #include <gtest/gtest.h>
 
-INSTANTIATE_TEST_SUITE_P(Generated, AllContainersTests,
-                         ::testing::Combine(::testing::ValuesIn(autopas::ContainerOption::getAllOptions())),
+INSTANTIATE_TEST_SUITE_P(Generated, AllContainersTests, testing::ValuesIn(autopas::ContainerOption::getAllOptions()),
                          AllContainersTests::getParamToStringFunction());
-
-INSTANTIATE_TEST_SUITE_P(Generated, AllContainersTestsBothUpdates,
-                         ::testing::Combine(::testing::ValuesIn(autopas::ContainerOption::getAllOptions()),
-                                            ::testing::Bool()),
-                         AllContainersTestsBothUpdates::getParamToStringFunction());
 
 /**
  * Checks if ParticleContainerInterface::getNumParticle() returns the correct number of particles.
  */
 TEST_P(AllContainersTests, testGetNumParticles) {
-  auto container = getInitializedContainer(std::get<0>(GetParam()));
+  auto container = getInitializedContainer();
   EXPECT_EQ(container->getNumParticles(), 0);
 
   std::array<double, 3> r = {2, 2, 2};
@@ -39,7 +33,7 @@ TEST_P(AllContainersTests, testGetNumParticles) {
  * Checks if ParticleContainerInterface::deleteAllParticles() deletes all particles.
  */
 TEST_P(AllContainersTests, testDeleteAllParticles) {
-  auto container = this->getInitializedContainer(std::get<0>(GetParam()));
+  auto container = getInitializedContainer();
   EXPECT_EQ(container->getNumParticles(), 0);
 
   std::array<double, 3> r = {2, 2, 2};
@@ -60,7 +54,7 @@ TEST_P(AllContainersTests, testDeleteAllParticles) {
  * throws.
  */
 TEST_P(AllContainersTests, testParticleAdding) {
-  auto container = getInitializedContainer(std::get<0>(GetParam()));
+  auto container = getInitializedContainer();
   int id = 1;
   for (double x : {boxMin[0] - 1.5, boxMin[0] - .5, boxMin[0], boxMin[0] + 5., boxMax[0] - 0.001, boxMax[0],
                    boxMax[0] + .5, boxMax[0] + 1.5}) {
@@ -96,7 +90,7 @@ TEST_P(AllContainersTests, testDeleteHaloParticles) {
   using autopas::utils::ArrayMath::mulScalar;
   using autopas::utils::ArrayMath::sub;
 
-  auto container = getInitializedContainer(std::get<0>(GetParam()));
+  auto container = getInitializedContainer();
 
   std::array<double, 3> zeros{0, 0, 0};
 
@@ -136,15 +130,15 @@ TEST_P(AllContainersTests, testDeleteHaloParticles) {
 /**
  * Checks if updateContainer() deletes particles in halo.
  */
-TEST_P(AllContainersTestsBothUpdates, testUpdateContainerHalo) {
-  auto container = getInitializedContainer(std::get<0>(GetParam()));
+TEST_P(AllContainersTests, testUpdateContainerHalo) {
+  auto container = getInitializedContainer();
   autopas::Particle p({boxMin[0] - 0.5, boxMin[1] - 0.5, boxMin[2] - 0.5}, {0, 0, 0}, 42);
   container->addHaloParticle(p);
 
   EXPECT_EQ(container->getNumParticles(), 1);
   EXPECT_EQ(container->begin()->getID(), 42);
 
-  auto invalidParticles = container->updateContainer(std::get<1>(GetParam()));
+  auto invalidParticles = container->updateContainer();
 
   // no particle should be returned
   EXPECT_EQ(invalidParticles.size(), 0);
@@ -158,7 +152,7 @@ TEST_P(AllContainersTestsBothUpdates, testUpdateContainerHalo) {
  * Checks if updateContainer deletes dummy particles.
  * @param previouslyOwned Specifies whether the particle was previously owned.
  */
-void AllContainersTestsBothUpdates::testUpdateContainerDeletesDummy(bool previouslyOwned) {
+void AllContainersTests::testUpdateContainerDeletesDummy(bool previouslyOwned) {
   static std::atomic<unsigned long> numParticles = 0;
 
   class TestParticle : public autopas::Particle {
@@ -171,7 +165,7 @@ void AllContainersTestsBothUpdates::testUpdateContainerDeletesDummy(bool previou
   };
 
   // We need the container to use TestParticle!
-  auto container = getInitializedContainer<TestParticle>(std::get<0>(GetParam()));
+  auto container = getInitializedContainer<TestParticle>();
 
   // Add particle
   {
@@ -196,7 +190,7 @@ void AllContainersTestsBothUpdates::testUpdateContainerDeletesDummy(bool previou
   }
 
   // This should remove the dummy particle(s), while not returning it as invalid particle.
-  auto invalidParticles = container->updateContainer(std::get<1>(GetParam()));
+  auto invalidParticles = container->updateContainer();
 
   // No particle should be returned
   EXPECT_EQ(invalidParticles.size(), 0);
@@ -213,76 +207,6 @@ void AllContainersTestsBothUpdates::testUpdateContainerDeletesDummy(bool previou
 /**
  * Checks if updateContainer deletes dummy particles.
  */
-TEST_P(AllContainersTestsBothUpdates, testUpdateContainerDeletesPreviouslyOwnedDummy) {
-  testUpdateContainerDeletesDummy(true);
-}
+TEST_P(AllContainersTests, testUpdateContainerDeletesPreviouslyOwnedDummy) { testUpdateContainerDeletesDummy(true); }
 
-TEST_P(AllContainersTestsBothUpdates, testUpdateContainerDeletesPreviouslyHaloDummy) {
-  testUpdateContainerDeletesDummy(false);
-}
-
-/**
- * This test checks the correct behavior of the updateContainer(true) call.
- * Hereby we check, that:
- * a) Halo and leaving particles are converted to dummy particles and NOT completely removed.
- * b) Owned particles are not moved within the container, i.e., the pointer to the particle is still the same.
- */
-TEST_P(AllContainersTests, testUpdateContainerKeepsNeighborListsValidIfSpecified) {
-  auto container = getInitializedContainer(std::get<0>(GetParam()));
-
-  {
-    Particle p({-.1, -.1, -.1}, {0., 0., 0.}, 0);
-    container->addHaloParticle(p);
-  }
-
-  {
-    Particle p({.02, .1, .1}, {0., 0., 0.}, 1);
-    container->addParticle(p);
-  }
-
-  {
-    Particle p({1.23, .1, .1}, {0., 0., 0.}, 2);
-    container->addParticle(p);
-  }
-  struct Values {
-    unsigned long id;
-    int occurrences;
-  };
-  std::map<Particle *, Values> previous_particles;
-  for (auto &&p : *container) {
-    // Iterates over owned and halo particles!
-    previous_particles[&p] = {p.getID(), 0};
-    if (p.getID() == 1) {
-      // moves particle 1 outside the container (leaving particle!)
-      p.addR({-0.04, 0., 0.});
-    } else if (p.getID() == 2) {
-      // Should normally move it to next linked cell, here the cell should NOT change!
-      p.addR({0.04, 0., 0.});
-    }
-  }
-
-  auto leavingParticles = container->updateContainer(true);
-
-  // Particle 1 should be returned!
-  ASSERT_EQ(leavingParticles.size(), 1ul);
-  EXPECT_EQ(leavingParticles[0].getID(), 1);
-
-  for (auto iter = container->begin(autopas::IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter) {
-    ASSERT_EQ(previous_particles.count(&*iter), 1ul);
-
-    ++previous_particles[&*iter].occurrences;
-    if (iter->getID() == 0 or iter->getID() == 1) {
-      // particle 0 and 1 should now be dummy!
-      EXPECT_TRUE(iter->isDummy());
-    } else {
-      // particle 2 should still be owned!
-      EXPECT_TRUE(iter->isOwned());
-    }
-  }
-
-  // Every previous particle should be visited exactly once!
-  for (auto [key, value] : previous_particles) {
-    EXPECT_EQ(value.occurrences, 1) << "Particle with id " << value.id << " at address " << key
-                                    << " not visited correctly!";
-  }
-}
+TEST_P(AllContainersTests, testUpdateContainerDeletesPreviouslyHaloDummy) { testUpdateContainerDeletesDummy(false); }

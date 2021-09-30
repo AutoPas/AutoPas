@@ -168,10 +168,11 @@ void Simulation::run() {
 
       updatePositions();
 
-      auto emigrants = _autoPasContainer->updateContainer();
+      auto [emigrants, updated] =
+          _autoPasContainer->updateContainer(_iteration % _configuration.verletRebuildFrequency.value == 0);
 
       const double work = _timers.work.stop();
-      if (not emigrants.empty()) {
+      if (updated) {
         _timers.loadBalancing.start();
         _domainDecomposition->update(work);
         auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(),
@@ -507,11 +508,13 @@ void Simulation::logSimulationState() {
                                  AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
   standardDeviationOfHomogeneity = std::sqrt(standardDeviationOfHomogeneity);
 
-  std::cout << "\n\n"
-            << "Total number of particles at the end of Simulation: " << totalNumberOfParticles << "\n"
-            << "Owned: " << ownedParticles << "\n"
-            << "Halo: " << haloParticles << "\n"
-            << "Standard Deviation of Homogeneity: " << standardDeviationOfHomogeneity << std::endl;
+  if (_domainDecomposition.getDomainIndex() == 0) {
+    std::cout << "\n\n"
+              << "Total number of particles at the end of Simulation: " << totalNumberOfParticles << "\n"
+              << "Owned: " << ownedParticles << "\n"
+              << "Halo: " << haloParticles << "\n"
+              << "Standard Deviation of Homogeneity: " << standardDeviationOfHomogeneity << std::endl;
+  }
 }
 
 void Simulation::logMeasurements() {

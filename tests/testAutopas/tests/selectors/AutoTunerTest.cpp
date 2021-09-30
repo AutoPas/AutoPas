@@ -107,8 +107,7 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
       autopasTools::generators::GridGenerator::fillWithParticles(*(autoTuner.getContainer().get()), particlesPerDim,
                                                                  defaultParticle, spacing, offset);
     }
-    std::vector<Molecule> emptyVec;
-    stillTuning = autoTuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);
+    stillTuning = autoTuner.iteratePairwise(&functor, doRebuild);
     doRebuild = false;
     ++iterations;
     ++collectedSamples;
@@ -151,31 +150,29 @@ TEST_F(AutoTunerTest, testWillRebuildDDL) {
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
 
-  std::vector<Particle> emptyVec;
-
   // Intended false positive
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild for first iteration.";
   bool doRebuild = true;
-  autoTuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);  // DS NoN3
+  autoTuner.iteratePairwise(&functor, doRebuild);  // DS NoN3
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
   doRebuild = false;
-  autoTuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);  // DS NoN3
+  autoTuner.iteratePairwise(&functor, doRebuild);  // DS NoN3
   // Intended false positive
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because we change config.";
   doRebuild = true;
-  autoTuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);  // DS N3
+  autoTuner.iteratePairwise(&functor, doRebuild);  // DS N3
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
   doRebuild = false;
-  autoTuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);  // DS N3
+  autoTuner.iteratePairwise(&functor, doRebuild);  // DS N3
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because we change config.";
   doRebuild = true;
-  autoTuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);  // LC NoN3
+  autoTuner.iteratePairwise(&functor, doRebuild);  // LC NoN3
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
   doRebuild = false;
-  autoTuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);  // LC NoN3
+  autoTuner.iteratePairwise(&functor, doRebuild);  // LC NoN3
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because reached end of tuning phase.";
   doRebuild = true;
-  autoTuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);  // optimum
+  autoTuner.iteratePairwise(&functor, doRebuild);  // optimum
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because not tuning.";
 }
 
@@ -205,24 +202,22 @@ TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
 
-  std::vector<Particle> emptyVec;
-
   // Intended false positive
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild for first iteration.";
   bool doRebuild = true;
-  autoTuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);  // DS N3
+  autoTuner.iteratePairwise(&functor, doRebuild);  // DS N3
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
   doRebuild = false;
-  autoTuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);  // DS N3
+  autoTuner.iteratePairwise(&functor, doRebuild);  // DS N3
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because we change config.";
   doRebuild = true;
-  autoTuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);  // LC N3
+  autoTuner.iteratePairwise(&functor, doRebuild);  // LC N3
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
   doRebuild = false;
-  autoTuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);  // LC N3
+  autoTuner.iteratePairwise(&functor, doRebuild);  // LC N3
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because reached end of tuning phase.";
   doRebuild = true;
-  autoTuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);  // optimum
+  autoTuner.iteratePairwise(&functor, doRebuild);  // optimum
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because not tuning.";
 }
 
@@ -247,24 +242,22 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
 
-  std::vector<Particle> emptyVec;
-
   // Intended false positive
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild for first iteration.";
   bool doRebuild = true;
-  autoTuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);  // DS NoN3
+  autoTuner.iteratePairwise(&functor, doRebuild);  // DS NoN3
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
   doRebuild = false;
-  autoTuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);  // DS NoN3
+  autoTuner.iteratePairwise(&functor, doRebuild);  // DS NoN3
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because we change config.";
   doRebuild = true;
-  autoTuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);  // LC NoN3
+  autoTuner.iteratePairwise(&functor, doRebuild);  // LC NoN3
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
   doRebuild = false;
-  autoTuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);  // LC NoN3
+  autoTuner.iteratePairwise(&functor, doRebuild);  // LC NoN3
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because reached end of tuning phase.";
   doRebuild = true;
-  autoTuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);  // optimum
+  autoTuner.iteratePairwise(&functor, doRebuild);  // optimum
   EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because not tuning.";
 }
 
@@ -289,16 +282,13 @@ TEST_F(AutoTunerTest, testForceRetuneBetweenPhases) {
   size_t numExpectedTuningIterations = configsList.size() * maxSamples;
   EmptyFunctor<Particle> emptyFunctor;
 
-  std::vector<Particle> emptyVec;
-
   // expect a full tuning phase
   for (size_t i = 0; i < numExpectedTuningIterations; ++i) {
     // since we don't actually do anything doRebuild can always be false.
-    EXPECT_TRUE(autoTuner.iteratePairwise(&emptyFunctor, false, emptyVec, emptyVec)) << "Tuner should still be tuning.";
+    EXPECT_TRUE(autoTuner.iteratePairwise(&emptyFunctor, false)) << "Tuner should still be tuning.";
   }
   // first iteration after tuning phase
-  EXPECT_FALSE(autoTuner.iteratePairwise(&emptyFunctor, false, emptyVec, emptyVec))
-      << "Tuner should be done be tuning.";
+  EXPECT_FALSE(autoTuner.iteratePairwise(&emptyFunctor, false)) << "Tuner should be done be tuning.";
 
   EXPECT_FALSE(autoTuner.willRebuild()) << "No rebuilding expected here.";
   // instead of waiting the full tuning interval restart tuning immediately
@@ -308,11 +298,10 @@ TEST_F(AutoTunerTest, testForceRetuneBetweenPhases) {
   // expect a full tuning phase
   for (size_t i = 0; i < numExpectedTuningIterations; ++i) {
     // since we don't actually do anything doRebuild can always be false.
-    EXPECT_TRUE(autoTuner.iteratePairwise(&emptyFunctor, false, emptyVec, emptyVec)) << "Tuner should still be tuning.";
+    EXPECT_TRUE(autoTuner.iteratePairwise(&emptyFunctor, false)) << "Tuner should still be tuning.";
   }
   // first iteration after tuning phase
-  EXPECT_FALSE(autoTuner.iteratePairwise(&emptyFunctor, false, emptyVec, emptyVec))
-      << "Tuner should be done be tuning.";
+  EXPECT_FALSE(autoTuner.iteratePairwise(&emptyFunctor, false)) << "Tuner should be done be tuning.";
 }
 
 TEST_F(AutoTunerTest, testForceRetuneInPhase) {
@@ -343,19 +332,16 @@ TEST_F(AutoTunerTest, testForceRetuneInPhase) {
   size_t numExpectedTuningIterations = configsList.size() * maxSamples;
   EmptyFunctor<Particle> emptyFunctor;
 
-  std::vector<Particle> emptyVec;
-
   // Do part of the tuning phase. After the loop we should be in the middle of sampling the second configuration.
   ASSERT_GT(maxSamples, 1);
   ASSERT_GT(configsList.size(), 1);
   size_t iteration = 0;
   for (; iteration < maxSamples + 1; ++iteration) {
     // since we don't actually do anything doRebuild can always be false.
-    EXPECT_TRUE(autoTuner.iteratePairwise(&emptyFunctor, false, emptyVec, emptyVec))
-        << "Tuner should still be tuning.\n"
-           "Phase 1\n"
-           "Iteration "
-        << iteration;
+    EXPECT_TRUE(autoTuner.iteratePairwise(&emptyFunctor, false)) << "Tuner should still be tuning.\n"
+                                                                    "Phase 1\n"
+                                                                    "Iteration "
+                                                                 << iteration;
   }
   // restart the full tuning phase
   autoTuner.forceRetune();
@@ -364,17 +350,15 @@ TEST_F(AutoTunerTest, testForceRetuneInPhase) {
   // expect a full tuning phase
   for (size_t i = 0; i < numExpectedTuningIterations; ++i, ++iteration) {
     // since we don't actually do anything doRebuild can always be false.
-    EXPECT_TRUE(autoTuner.iteratePairwise(&emptyFunctor, false, emptyVec, emptyVec))
-        << "Tuner should still be tuning.\n"
-           "Phase 2\n"
-           "Iteration "
-        << iteration;
+    EXPECT_TRUE(autoTuner.iteratePairwise(&emptyFunctor, false)) << "Tuner should still be tuning.\n"
+                                                                    "Phase 2\n"
+                                                                    "Iteration "
+                                                                 << iteration;
   }
   // first iteration after tuning phase
-  EXPECT_FALSE(autoTuner.iteratePairwise(&emptyFunctor, false, emptyVec, emptyVec))
-      << "Tuner should be done be tuning.\n"
-         "Iteration "
-      << iteration;
+  EXPECT_FALSE(autoTuner.iteratePairwise(&emptyFunctor, false)) << "Tuner should be done be tuning.\n"
+                                                                   "Iteration "
+                                                                << iteration;
 }
 
 /**
@@ -423,8 +407,6 @@ TEST_F(AutoTunerTest, testOneConfig) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
 
-  std::vector<Particle> emptyVec;
-
   bool doRebuild = true;
   size_t numSamples = 0;
   for (int i = 0; i < 5; ++i) {
@@ -432,7 +414,7 @@ TEST_F(AutoTunerTest, testOneConfig) {
       numSamples = 0;
       doRebuild = true;
     }
-    tuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);
+    tuner.iteratePairwise(&functor, doRebuild);
     doRebuild = false;
     ++numSamples;
     EXPECT_EQ(_confLc_c08, tuner.getCurrentConfig());
@@ -458,20 +440,18 @@ TEST_F(AutoTunerTest, testConfigSecondInvalid) {
 
   EXPECT_EQ(confNoN3, tuner.getCurrentConfig());
 
-  std::vector<Particle> emptyVec;
-
   MFunctor functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
   bool doRebuild = true;
-  tuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);
+  tuner.iteratePairwise(&functor, doRebuild);
   EXPECT_EQ(confN3, tuner.getCurrentConfig());
   doRebuild = false;
-  tuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);
+  tuner.iteratePairwise(&functor, doRebuild);
   EXPECT_EQ(confN3, tuner.getCurrentConfig());
   doRebuild = false;
-  tuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);
+  tuner.iteratePairwise(&functor, doRebuild);
   EXPECT_EQ(confN3, tuner.getCurrentConfig());
 }
 
@@ -499,9 +479,6 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(false));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
 
-  std::vector<Particle> emptyVec;
-
   bool doRebuild = true;
-  EXPECT_THROW(tuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec),
-               autopas::utils::ExceptionHandler::AutoPasException);
+  EXPECT_THROW(tuner.iteratePairwise(&functor, doRebuild), autopas::utils::ExceptionHandler::AutoPasException);
 }

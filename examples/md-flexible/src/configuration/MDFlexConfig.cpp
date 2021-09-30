@@ -73,7 +73,6 @@ void findWord(std::ifstream &file, const std::string &word) {
 bool checkpointWasCreatedWithEqualNumberOfRanks(const std::string filename, const size_t communicatorSize,
                                                 size_t &checkpointCommunicatorSize) {
   checkpointCommunicatorSize = 0;
-  std::cout << filename << std::endl;
   std::ifstream inputStream(filename);
   findWord(inputStream, "Piece");
   while (not inputStream.eof()) {
