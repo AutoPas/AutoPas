@@ -120,6 +120,59 @@ class LiveInfo {
     return res;
   }
 
+  friend std::ostream & operator <<(std::ostream &out, const LiveInfo& info)
+  {
+    out << info.infos.size() << ' ';
+    for(const auto& [name, val] : info.infos) {
+      out << name << ' ' << val.index() << ' ';
+      std::visit([&](const auto& v) {out << v << ' ';}, val);
+    }
+    return out;
+  }
+
+  friend std::istream & operator >>(std::istream &in, LiveInfo& info)
+  {
+    size_t numElements;
+    in >> numElements;
+    for(size_t i = 0; i < numElements; i++) {
+      std::string name;
+      in >> name;
+      size_t idx;
+      in >> idx;
+      auto val = readIndex<LiveInfo::InfoType>(in, idx);
+      info.infos[name] = val;
+    }
+    return in;
+  }
+
+ private:
+  template<class Particle, class PairwiseFunctor, size_t... Idx>
+  constexpr static auto calculateParticleSizeNeededByFunctor(std::index_sequence<Idx...>) {
+    return (0 + ... + sizeof(typename std::tuple_element<PairwiseFunctor::getNeededAttr()[Idx],
+                                                         typename Particle::SoAArraysType>::type::value_type));
+  }
+
+  template<class Variant, class Type, size_t Idx>
+  static void readIndexHelper2(std::istream& in, size_t idx, Variant& var) {
+    if(Idx == idx) {
+      Type val;
+      in >> val;
+      var = val;
+    }
+  }
+
+  template<class Variant, size_t... Idx>
+  static Variant readIndexHelper(std::istream& in, size_t idx, std::index_sequence<Idx...>) {
+    Variant var;
+    (readIndexHelper2<Variant, std::variant_alternative_t<Idx, Variant>, Idx>(in, idx, var), ...);
+    return var;
+  }
+
+  template<class Variant>
+  static Variant readIndex(std::istream &in, size_t idx) {
+    return readIndexHelper<Variant>(in, idx, std::make_index_sequence<std::variant_size_v<Variant>>());
+  }
+
  private:
   std::map<std::string, InfoType> infos;
 };

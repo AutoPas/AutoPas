@@ -153,6 +153,22 @@ inline std::ostream &operator<<(std::ostream &os, const Configuration &configura
   return os << configuration.toString();
 }
 
+inline std::istream &operator>>(std::istream &in, Configuration &configuration) {
+  in.ignore(std::numeric_limits<std::streamsize>::max(), ':');
+  in >> configuration.container;
+  in.ignore(std::numeric_limits<std::streamsize>::max(), ':');
+  in >> configuration.cellSizeFactor;
+  in.ignore(std::numeric_limits<std::streamsize>::max(), ':');
+  in >> configuration.traversal;
+  in.ignore(std::numeric_limits<std::streamsize>::max(), ':');
+  in >> configuration.loadEstimator;
+  in.ignore(std::numeric_limits<std::streamsize>::max(), ':');
+  in >> configuration.dataLayout;
+  in.ignore(std::numeric_limits<std::streamsize>::max(), ':');
+  in >> configuration.newton3;
+  return in;
+}
+
 /**
  * Equals operator for Configuration objects.
  *

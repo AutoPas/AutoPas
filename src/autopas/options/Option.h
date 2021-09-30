@@ -142,6 +142,22 @@ class Option {
     os << option.to_string();
     return os;
   }
+
+  friend std::istream &operator>>(std::istream &in, actualOption &option) {
+    char c = ' ';
+    while(std::iswspace(c)) {
+      in.get(c);
+    }
+    std::string str{c};
+    do {
+      in.get(c);
+      str.push_back(c);
+    } while(std::isalnum(c) || c == '_' || c == '-');
+    str.pop_back();
+
+    option = parseOptionExact(str);
+    return in;
+  }
 };
 }  // namespace options
 }  // namespace autopas

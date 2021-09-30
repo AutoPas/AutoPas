@@ -25,6 +25,7 @@
 #include "autopas/utils/logging/IterationLogger.h"
 #include "autopas/utils/logging/TuningDataLogger.h"
 #include "autopas/utils/logging/TuningResultLogger.h"
+#include "autopas/selectors/tuningStrategy/TuningStrategyLoggerProxy.h"
 
 namespace autopas {
 
@@ -64,7 +65,7 @@ class AutoTuner {
             SelectorStrategyOption selectorStrategy, unsigned int tuningInterval, unsigned int maxSamples,
             const std::string &outputSuffix = "")
       : _selectorStrategy(selectorStrategy),
-        _tuningStrategy(std::move(tuningStrategy)),
+        _tuningStrategy(std::make_unique<TuningStrategyLoggerProxy>(std::move(tuningStrategy))),
         _tuningInterval(tuningInterval),
         _iterationsSinceTuning(tuningInterval),  // init to max so that tuning happens in first iteration
         _containerSelector(boxMin, boxMax, cutoff),
