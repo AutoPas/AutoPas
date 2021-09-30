@@ -248,7 +248,7 @@ class ClusterTower : public ParticleCell<Particle> {
   // while those methods would not be needed, still complying to the whole interface should be helpful, if
   // maybe someday new necessary pure virtual methods are introduced there.
 
-  [[nodiscard]] bool isEmpty() const override { return getNumActualParticles() == 0; }
+  [[nodiscard]] bool isNotEmpty() const override { return getNumActualParticles() > 0; }
 
   void deleteDummyParticles() override {
     _particlesStorage.deleteDummyParticles();

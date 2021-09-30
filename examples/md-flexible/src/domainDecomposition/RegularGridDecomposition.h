@@ -38,8 +38,8 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Used to update the domain to the current topology.
    * Handles the diffuse load balancing by resizing the domains according to their work done.
    * Currently the metric used as work is the timins created by the simulation timer. Although they are of type 'long'
-   * the update function use type 'double' because the work will be implicitly converted to 'double' during load balancing
-   * anyway.
+   * the update function use type 'double' because the work will be implicitly converted to 'double' during load
+   * balancing anyway.
    * @param work: The work performed in the AutoPas container.
    */
   void update(const double &work) override;

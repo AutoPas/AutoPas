@@ -98,7 +98,7 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
    */
   [[nodiscard]] const Particle &at(size_t index) const { return *(_particles.at(index)); }
 
-  [[nodiscard]] bool isEmpty() const override { return numParticles() == 0; }
+  [[nodiscard]] bool isNotEmpty() const override { return numParticles() > 0; }
 
   void clear() override { _particles.clear(); }
 

@@ -145,13 +145,10 @@ class AutoTuner {
    * @tparam PairwiseFunctor
    * @param f Functor that describes the pair-potential.
    * @param doListRebuild Indicates whether or not the verlet lists should be rebuild.
-   * @param particleBuffer A buffer of additional particles to consider.
-   * @param haloParticleBuffer A buffer of additional halo particles to consider.
    * @return true if this was a tuning iteration.
    */
   template <class PairwiseFunctor>
-  bool iteratePairwise(PairwiseFunctor *f, bool doListRebuild, std::vector<Particle> &particleBuffer,
-                       std::vector<Particle> &haloParticleBuffer);
+  bool iteratePairwise(PairwiseFunctor *f, bool doListRebuild);
 
   /**
    * Returns whether the configuration will be changed in the next iteration.
@@ -190,8 +187,7 @@ class AutoTuner {
   void selectCurrentContainer();
 
   template <class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, bool inTuningPhase>
-  void iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool doListRebuild, std::vector<Particle> &particleBuffer,
-                                     std::vector<Particle> &haloParticleBuffer);
+  void iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool doListRebuild);
 
   /**
    * Tune available algorithm configurations.
@@ -271,8 +267,7 @@ void AutoTuner<Particle>::forceRetune() {
 
 template <class Particle>
 template <class PairwiseFunctor>
-bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild, std::vector<Particle> &particleBuffer,
-                                          std::vector<Particle> &haloParticleBuffer) {
+bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild) {
   bool isTuning = false;
   // tune if :
   // - more than one config exists
@@ -292,18 +287,18 @@ bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild
       if (_tuningStrategy->getCurrentConfiguration().newton3 == Newton3Option::enabled) {
         if (isTuning) {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::aos, /*Newton3*/ true,
-                                        /*tuning*/ true>(f, doListRebuild, particleBuffer, haloParticleBuffer);
+                                        /*tuning*/ true>(f, doListRebuild);
         } else {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::aos, /*Newton3*/ true,
-                                        /*tuning*/ false>(f, doListRebuild, particleBuffer, haloParticleBuffer);
+                                        /*tuning*/ false>(f, doListRebuild);
         }
       } else {
         if (isTuning) {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::aos, /*Newton3*/ false,
-                                        /*tuning*/ true>(f, doListRebuild, particleBuffer, haloParticleBuffer);
+                                        /*tuning*/ true>(f, doListRebuild);
         } else {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::aos, /*Newton3*/ false,
-                                        /*tuning*/ false>(f, doListRebuild, particleBuffer, haloParticleBuffer);
+                                        /*tuning*/ false>(f, doListRebuild);
         }
       }
       break;
@@ -312,18 +307,18 @@ bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild
       if (_tuningStrategy->getCurrentConfiguration().newton3 == Newton3Option::enabled) {
         if (isTuning) {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::soa, /*Newton3*/ true,
-                                        /*tuning*/ true>(f, doListRebuild, particleBuffer, haloParticleBuffer);
+                                        /*tuning*/ true>(f, doListRebuild);
         } else {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::soa, /*Newton3*/ true,
-                                        /*tuning*/ false>(f, doListRebuild, particleBuffer, haloParticleBuffer);
+                                        /*tuning*/ false>(f, doListRebuild);
         }
       } else {
         if (isTuning) {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::soa, /*Newton3*/ false,
-                                        /*tuning*/ true>(f, doListRebuild, particleBuffer, haloParticleBuffer);
+                                        /*tuning*/ true>(f, doListRebuild);
         } else {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::soa, /*Newton3*/ false,
-                                        /*tuning*/ false>(f, doListRebuild, particleBuffer, haloParticleBuffer);
+                                        /*tuning*/ false>(f, doListRebuild);
         }
       }
       break;
@@ -340,94 +335,9 @@ bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild
   return isTuning;
 }
 
-/**
- * Performs the remaining needed traversal for the additional particles.
- * @tparam newton3
- * @tparam Particle
- * @tparam T
- * @tparam PairwiseFunctor
- * @param f
- * @param containerPtr
- * @param particleBuffer
- * @param haloParticleBuffer
- * @note If the buffers are replaced with actual cells, we could use the CellFunctor to simplify things and potentially
- * even use SoA.
- */
-template <bool newton3, class Particle, class T, class PairwiseFunctor>
-void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<Particle> &particleBuffer,
-                          std::vector<Particle> &haloParticleBuffer) {
-  // 1. particleBuffer with all close particles in container
-  for (auto &&p : particleBuffer) {
-    auto pos = p.getR();
-    auto min = autopas::utils::ArrayMath::subScalar(pos, containerPtr->getCutoff());
-    auto max = autopas::utils::ArrayMath::addScalar(pos, containerPtr->getCutoff());
-    for (auto iter2 = containerPtr->getRegionIterator(min, max, IteratorBehavior::ownedOrHalo); iter2.isValid();
-         ++iter2) {
-      if (newton3) {
-        f->AoSFunctor(p, *iter2, true);
-      } else {
-        f->AoSFunctor(p, *iter2, false);
-        f->AoSFunctor(*iter2, p, false);
-      }
-    }
-  }
-
-  // 2. haloParticleBuffer with owned, close particles in container
-  for (auto &&p : haloParticleBuffer) {
-    auto pos = p.getR();
-    auto min = autopas::utils::ArrayMath::subScalar(pos, containerPtr->getCutoff());
-    auto max = autopas::utils::ArrayMath::addScalar(pos, containerPtr->getCutoff());
-    for (auto iter2 = containerPtr->getRegionIterator(min, max, IteratorBehavior::owned); iter2.isValid(); ++iter2) {
-      if (newton3) {
-        f->AoSFunctor(p, *iter2, true);
-      } else {
-        // Here, we do not need to interact p with *iter2, because p is a halo particle and an AoSFunctor call with an
-        // halo particle as first argument has no effect if newton3 == false.
-        f->AoSFunctor(*iter2, p, false);
-      }
-    }
-  }
-
-  // 3. particleBuffer with itself
-  for (size_t i = 0; i < particleBuffer.size(); ++i) {
-    auto &&p1 = particleBuffer[i];
-    for (size_t j = i + 1; j < particleBuffer.size(); ++j) {
-      if (i == j) {
-        continue;
-      }
-      auto &&p2 = particleBuffer[j];
-      if (newton3) {
-        f->AoSFunctor(p1, p2, true);
-      } else {
-        f->AoSFunctor(p1, p2, false);
-        f->AoSFunctor(p2, p1, false);
-      }
-    }
-  }
-
-  // 4. particleBuffer with haloParticleBuffer
-  for (size_t i = 0; i < particleBuffer.size(); ++i) {
-    auto &&p1 = particleBuffer[i];
-    for (size_t j = 0; j < haloParticleBuffer.size(); ++j) {
-      auto &&p2 = haloParticleBuffer[j];
-      if (newton3) {
-        f->AoSFunctor(p1, p2, true);
-      } else {
-        // Here, we do not need to interact p2 with p1, because p2 is a halo particle and an AoSFunctor call with an
-        // halo particle as first argument has no effect if newton3 == false.
-        f->AoSFunctor(p1, p2, false);
-      }
-    }
-  }
-
-  // Note: haloParticleBuffer with itself is NOT needed, as interactions between halo particles are unneeded!
-}
-
 template <class Particle>
 template <class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, bool inTuningPhase>
-void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool doListRebuild,
-                                                        std::vector<Particle> &particleBuffer,
-                                                        std::vector<Particle> &haloParticleBuffer) {
+void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool doListRebuild) {
   auto containerPtr = getContainer();
   AutoPasLog(debug, "Iterating with configuration: {} tuning: {}",
              _tuningStrategy->getCurrentConfiguration().toString(), inTuningPhase ? "true" : "false");
@@ -463,8 +373,6 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
   }
   timerIteratePairwise.start();
   containerPtr->iteratePairwise(traversal.get());
-
-  doRemainderTraversal<useNewton3>(f, containerPtr, particleBuffer, haloParticleBuffer);
   timerIteratePairwise.stop();
   f->endTraversal(useNewton3);
 

@@ -185,27 +185,28 @@ void waitSend(MPI_Request &sendRequest) { MPI_Wait(&sendRequest, MPI_STATUS_IGNO
  * @param sendMin
  * @param sendMax
  * @param cutoff
+ * @param skin
  * @param shift
  * @param globalBoxMin
  * @param globalBoxMax
  */
-void getSendHalo(double boxMin, double boxMax, int diff, double &sendMin, double &sendMax, double cutoff, double &shift,
-                 const double globalBoxMin, const double globalBoxMax) {
+void getSendHalo(double boxMin, double boxMax, int diff, double &sendMin, double &sendMax, double cutoff, double skin,
+                 double &shift, const double globalBoxMin, const double globalBoxMax) {
   if (diff == 0) {
-    sendMin = boxMin;
-    sendMax = boxMax;
+    sendMin = boxMin - skin;
+    sendMax = boxMax + skin;
     shift = 0;
   } else if (diff == -1) {
-    sendMin = boxMin;
-    sendMax = boxMin + cutoff;
+    sendMin = boxMin - skin;
+    sendMax = boxMin + cutoff + skin;
     if (boxMin == globalBoxMin) {
       shift = globalBoxMax - globalBoxMin;
     } else {
       shift = 0;
     }
   } else if (diff == 1) {
-    sendMin = boxMax - cutoff;
-    sendMax = boxMax;
+    sendMin = boxMax - cutoff - skin;
+    sendMax = boxMax + skin;
     if (boxMax == globalBoxMax) {
       shift = globalBoxMin - globalBoxMax;
     } else {
@@ -282,7 +283,7 @@ void updateHaloParticles(AutoPasContainer &sphSystem, MPI_Comm &comm, const std:
         }
         // figure out which particles we send
         for (int i = 0; i < 3; ++i) {
-          getSendHalo(boxMin[i], boxMax[i], diff[i], requiredHaloMin[i], requiredHaloMax[i], cutoff, shift[i],
+          getSendHalo(boxMin[i], boxMax[i], diff[i], requiredHaloMin[i], requiredHaloMax[i], cutoff, skin, shift[i],
                       globalBoxMin[i], globalBoxMax[i]);
         }
 
@@ -299,7 +300,7 @@ void updateHaloParticles(AutoPasContainer &sphSystem, MPI_Comm &comm, const std:
         std::vector<Particle> receiveParticles;
         receive(receiveParticles, diff, comm);
         for (auto &particle : receiveParticles) {
-          sphSystem.addHaloParticle(particle);
+          sphSystem.addOrUpdateHaloParticle(particle);
         }
         waitSend(sendRequest);
         buffer.clear();
@@ -383,19 +384,14 @@ void densityPressureHydroForce(AutoPasContainer &sphSystem, MPI_Comm &comm, cons
 
   sphSystem.iteratePairwise(&densityFunctor);
 
-  // 1.3 delete halo particles, as their values are no longer valid
-  for (auto part = sphSystem.begin(autopas::IteratorBehavior::halo); part.isValid(); ++part) {
-    sphSystem.deleteParticle(part);
-  }
-
   // 2. then update pressure
   setPressure(sphSystem);
 
-  // 3 then calculate hydro force
-  // 3.1 to calculate the density we need the halo particles
+  // 0.3 then calculate hydro force
+  // 0.3.1 to calculate the density we need the halo particles
   updateHaloParticles(sphSystem, comm, globalBoxMin, globalBoxMax);
 
-  // 3.2 then calculate hydro force
+  // 0.3.2 then calculate hydro force
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::owned); part.isValid(); ++part) {
     // self interaction leeds to:
     // 1) vsigmax = 2*part->getSoundSpeed()
@@ -423,12 +419,9 @@ void printConservativeVariables(AutoPasContainer &sphSystem, MPI_Comm &comm) {
     MPI_Reduce(MPI_IN_PLACE, &energySum, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
     MPI_Reduce(MPI_IN_PLACE, momSum.data(), 3, MPI_DOUBLE, MPI_SUM, 0, comm);
     printf("%.16e\n", energySum);
-    for (int i = 0; i < 3; ++i) {
-      printf("%.16e\n", momSum[i]);
-      if (std::abs(momSum[i]) > 1.e-15) {
-        throw std::runtime_error("ERROR: bad moment sum detected (should be small, but isn't!");
-      }
-    }
+    printf("%.16e\n", momSum[0]);
+    printf("%.16e\n", momSum[1]);
+    printf("%.16e\n", momSum[2]);
   } else {
     MPI_Reduce(&energySum, &energySum, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
     MPI_Reduce(momSum.data(), momSum.data(), 3, MPI_DOUBLE, MPI_SUM, 0, comm);
@@ -533,11 +526,12 @@ int main(int argc, char *argv[]) {
     leapfrogFullDrift(sphSystem, dt);  // changes position
 
     // 1.2.1 positions have changed, so the container needs to be updated!
-    auto invalidParticles = sphSystem.updateContainer();
+    auto [invalidParticles, updated] = sphSystem.updateContainer();
 
-    // 1.2.2 adjust positions based on boundary conditions (here: periodic)
-    periodicBoundaryUpdate(sphSystem, comm, invalidParticles, globalBoxMin, globalBoxMax);
-
+    if (updated) {
+      // 1.2.2 adjust positions based on boundary conditions (here: periodic)
+      periodicBoundaryUpdate(sphSystem, comm, invalidParticles, globalBoxMin, globalBoxMax);
+    }
     // 1.3 Leap frog: predict
     leapfrogPredict(sphSystem, dt);
     // 1.4 Calculate density, pressure and hydrodynamic forces

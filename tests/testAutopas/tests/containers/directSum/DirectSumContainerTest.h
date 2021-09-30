@@ -12,6 +12,4 @@
 #include "autopas/particles/Particle.h"
 #include "testingHelpers/commonTypedefs.h"
 
-using ParamType = bool;
-
-class DirectSumContainerTest : public AutoPasTestBase, public ::testing::WithParamInterface<ParamType> {};
+class DirectSumContainerTest : public AutoPasTestBase {};

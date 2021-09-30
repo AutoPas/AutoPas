@@ -243,17 +243,15 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
           particlesForRightNeighbor.back().setR(position);
         }
       }
-
-      // See documentation for _neighborDomainIndices to explain the indexing
-      int leftNeighbor = _neighborDomainIndices[(dimensionIndex * 2) % _neighborCount];
-      int rightNeighbor = _neighborDomainIndices[(dimensionIndex * 2 + 1) % _neighborCount];
-      sendAndReceiveParticlesLeftAndRight(particlesForLeftNeighbor, particlesForRightNeighbor, leftNeighbor,
-                                          rightNeighbor, haloParticles);
     }
+    // See documentation for _neighborDomainIndices to explain the indexing
+    int leftNeighbor = _neighborDomainIndices[(dimensionIndex * 2) % _neighborCount];
+    int rightNeighbor = _neighborDomainIndices[(dimensionIndex * 2 + 1) % _neighborCount];
+    sendAndReceiveParticlesLeftAndRight(particlesForLeftNeighbor, particlesForRightNeighbor, leftNeighbor,
+                                        rightNeighbor, haloParticles);
   }
-
   for (const auto &particle : haloParticles) {
-    autoPasContainer->addHaloParticle(particle);
+    autoPasContainer->addOrUpdateHaloParticle(particle);
   }
 }
 
@@ -282,8 +280,6 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
       } else {
         emigrants.push_back(particle);
       }
-
-      immigrants.clear();
     }
   }
 
