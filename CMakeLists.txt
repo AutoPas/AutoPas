@@ -84,6 +84,9 @@ add_subdirectory(src)
 # autopasTools
 add_subdirectory(tools)
 
+# ruleChecker
+add_subdirectory(ruleChecker)
+
 # modules needing targets:
 include(coloring)
 include(logging)
