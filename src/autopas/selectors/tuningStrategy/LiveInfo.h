@@ -10,6 +10,7 @@
 
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
@@ -20,43 +21,77 @@ class LiveInfo {
   using InfoType = std::variant<bool, double, size_t, ContainerOption, TraversalOption, LoadEstimatorOption,
   DataLayoutOption, Newton3Option>;
 
-  template<class Particle>
-  void gather(const autopas::ParticleContainerInterface<Particle>& container) {
+  template<class Particle, class PairwiseFunctor>
+  void gather(const autopas::ParticleContainerInterface<Particle>& container, const PairwiseFunctor& functor) {
     infos["numParticles"] = container.getNumParticles();
     infos["cutoff"] = container.getCutoff();
+    infos["skin"] = container.getSkin();
     auto domainSize = utils::ArrayMath::sub(container.getBoxMax(), container.getBoxMin());
 
-    auto cellsPerDim = utils::ArrayMath::mulScalar(domainSize, 1.0 / container.getCutoff());
-    auto numCells = static_cast<unsigned long>(std::ceil(cellsPerDim[0]) * std::ceil(cellsPerDim[1]) *
-        std::ceil(cellsPerDim[2]));
+    infos["domainSizeX"] = domainSize[0];
+    infos["domainSizeY"] = domainSize[1];
+    infos["domainSizeZ"] = domainSize[2];
+
+    infos["particleSize"] = sizeof(Particle);
+
+    using namespace utils::ArrayMath;
+    auto cellsPerDim = ceilToInt(mulScalar(domainSize, 1.0 / container.getCutoff()));
+    auto numCells = static_cast<size_t>(cellsPerDim[0] * cellsPerDim[1] * cellsPerDim[2]);
     infos["numCells"] = numCells;
 
-    infos["avgParticlesPerCell"] = static_cast<double>(container.getNumParticles() / numCells);
 
     std::vector<size_t> particleBins;
     particleBins.resize(numCells + 1);
     for(const Particle& particle : container) {
-      auto cell = utils::ArrayMath::mulScalar(utils::ArrayMath::add(particle.getR(), container.getBoxMin()),
-                                              1.0 / container.getCutoff());
-      auto idx = cell[0] * cellsPerDim[1] * cellsPerDim[2] + cell[1] * cellsPerDim[2] + cell[2];
-      if(idx > 0 and idx < particleBins.size()) {
-        particleBins[idx]++;
+      if(utils::inBox(particle.getR(), container.getBoxMin(), container.getBoxMax())) {
+        auto offset = sub(particle.getR(), container.getBoxMin());
+        auto cell = floorToInt(mulScalar(offset, 1.0 / container.getCutoff()));
+        auto idx = (cell[2] * cellsPerDim[1] + cell[1]) * cellsPerDim[0] + cell[0];
+        particleBins.at(idx)++;
       } else {
         particleBins.back()++;
+        std::cout << utils::ArrayUtils::to_string(particle.getR()) << std::endl;
       }
     }
+
+    infos["numHaloParticles"] = particleBins.back();
+
     auto avg = static_cast<double>(std::accumulate(particleBins.begin(), particleBins.end()-1, 0ul)) /
                static_cast<double>(particleBins.size() - 1);
     double maxDiff = 0;
     double sum = 0;
-    for(size_t particlesInBin : particleBins) {
+    size_t numEmptyCells = 0;
+    size_t maxParticlesPerCell = 0;
+    size_t minParticlesPerCell = std::numeric_limits<size_t>::max();
+    for(size_t i = 0; i < particleBins.size() - 1; i++) {
+      size_t particlesInBin = particleBins[i];
+      if(particlesInBin == 0) {
+        numEmptyCells++;
+      }
+      if(particlesInBin > maxParticlesPerCell) {
+        maxParticlesPerCell = particlesInBin;
+      }
+      if(particlesInBin < minParticlesPerCell) {
+        minParticlesPerCell = particlesInBin;
+      }
       auto diff = avg - static_cast<int>(particlesInBin);
       if(diff > maxDiff) {
         maxDiff = diff;
       }
       sum += std::sqrt(diff*diff);
     }
+    infos["numEmptyCells"] = numEmptyCells;
+    infos["maxParticlesPerCell"] = maxParticlesPerCell;
+    infos["minParticlesPerCell"] = minParticlesPerCell;
     infos["meanSquaredDiffParticlesPerCell"] = sum / static_cast<double>(particleBins.size() - 1);
+    infos["avgParticlesPerCell"] = static_cast<double>(container.getNumParticles() - particleBins.back()) / numCells;
+
+    infos["threadCount"] = static_cast<size_t>(autopas::autopas_get_max_threads());
+
+    constexpr size_t particleSizeNeededByFunctor = calculateParticleSizeNeededByFunctor<Particle, PairwiseFunctor>(
+        std::make_index_sequence<PairwiseFunctor::getNeededAttr().size()>()
+        );
+    infos["particleSizeNeededByFunctor"] = particleSizeNeededByFunctor;
   }
 
   [[nodiscard]] const auto& get() {
@@ -79,7 +114,7 @@ class LiveInfo {
     if(not infos.empty()) {
       res += std::accumulate(std::next(infos.begin()), infos.end(), toString(*infos.begin()),
                              [&](std::string s, const auto& elem) {
-          return std::move(s) + toString(elem);
+          return std::move(s) + " " + toString(elem);
       });
     }
     return res;

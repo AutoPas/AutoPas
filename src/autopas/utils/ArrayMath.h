@@ -232,4 +232,22 @@ template <class T, std::size_t SIZE>
   return mulScalar(a, static_cast<T>(1) / L2Norm(a));
 }
 
+template <class T, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<int, SIZE> floorToInt(const std::array<T, SIZE> &a) {
+  std::array<int, SIZE> result{};
+  for (std::size_t d = 0; d < SIZE; ++d) {
+    result[d] = static_cast<int>(floor(a[d]));
+  }
+  return result;
+}
+
+template <class T, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<int, SIZE> ceilToInt(const std::array<T, SIZE> &a) {
+  std::array<int, SIZE> result{};
+  for (std::size_t d = 0; d < SIZE; ++d) {
+    result[d] = static_cast<int>(ceil(a[d]));
+  }
+  return result;
+}
+
 }  // namespace autopas::utils::ArrayMath
