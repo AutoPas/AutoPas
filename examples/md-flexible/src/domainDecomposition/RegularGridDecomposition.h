@@ -251,7 +251,6 @@ class RegularGridDecomposition final : public DomainDecomposition {
   void updateLocalBox();
 
   /**
-<<<<<<< HEAD
    * Sends and also receives particles to and from the left and right neighbours.
    * @param particlesToLeft: Particles which get send to the left neighbour.
    * @param particlesToRight: Particles which get send to the right neighbor.
