@@ -49,7 +49,7 @@ RegularGridDecomposition::RegularGridDecomposition(const std::array<double, 3> &
   initializeNeighborIds();
 }
 
-RegularGridDecomposition::~RegularGridDecomposition() {}
+RegularGridDecomposition::~RegularGridDecomposition() = default;
 
 void RegularGridDecomposition::update(const double &work) {
   if (_mpiCommunicationNeeded) {

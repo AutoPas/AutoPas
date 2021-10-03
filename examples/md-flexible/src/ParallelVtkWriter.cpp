@@ -62,7 +62,7 @@ void ParallelVtkWriter::recordParticleStates(const int &currentIteration,
   }
 
   std::ostringstream timestepFileName;
-  generateFilename("particles", "vtu", currentIteration, timestepFileName);
+  generateFilename("vtu", currentIteration, timestepFileName);
 
   std::ofstream timestepFile;
   timestepFile.open(timestepFileName.str(), std::ios::out | std::ios::binary);
@@ -142,7 +142,7 @@ void ParallelVtkWriter::recordDomainSubdivision(const int &currentIteration,
   }
 
   std::ostringstream timestepFileName;
-  generateFilename("subdivision", "vts", currentIteration, timestepFileName);
+  generateFilename("vts", currentIteration, timestepFileName);
 
   std::ofstream timestepFile;
   timestepFile.open(timestepFileName.str(), std::ios::out | std::ios::binary);
@@ -231,7 +231,7 @@ void ParallelVtkWriter::tryCreateSessionAndDataFolders(const std::string &name, 
 
 void ParallelVtkWriter::createPvtuFile(const int &currentIteration) {
   std::ostringstream filename;
-  filename << _sessionFolderPath << _sessionName << "_particles_" << std::setfill('0')
+  filename << _sessionFolderPath << _sessionName << "_" << std::setfill('0')
            << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".pvtu";
 
   std::ofstream timestepFile;
@@ -260,7 +260,7 @@ void ParallelVtkWriter::createPvtuFile(const int &currentIteration) {
   timestepFile << "    </PCells>\n";
 
   for (int i = 0; i < _numberOfRanks; ++i) {
-    timestepFile << "    <Piece Source=\"./data/" << _sessionName << "_particles_" << i << "_" << std::setfill('0')
+    timestepFile << "    <Piece Source=\"./data/" << _sessionName << "_" << i << "_" << std::setfill('0')
                  << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".vtu\"/>\n";
   }
 
@@ -272,7 +272,7 @@ void ParallelVtkWriter::createPvtuFile(const int &currentIteration) {
 
 void ParallelVtkWriter::createPvtsFile(const int &currentIteration, const RegularGridDecomposition &decomposition) {
   std::ostringstream filename;
-  filename << _sessionFolderPath << _sessionName << "_subdivision_" << std::setfill('0')
+  filename << _sessionFolderPath << _sessionName << "_" << std::setfill('0')
            << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".pvts";
 
   std::ofstream timestepFile;
@@ -318,7 +318,7 @@ void ParallelVtkWriter::createPvtsFile(const int &currentIteration, const Regula
     timestepFile << "    <Piece "
                  << "Extent=\"" << pieceExtent[0] << " " << pieceExtent[1] << " " << pieceExtent[2] << " "
                  << pieceExtent[3] << " " << pieceExtent[4] << " " << pieceExtent[5] << "\" "
-                 << "Source=\"./data/" << _sessionName << "_subdivision_" << i << "_" << std::setfill('0')
+                 << "Source=\"./data/" << _sessionName << "_" << i << "_" << std::setfill('0')
                  << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".vts\"/>\n";
   }
 
@@ -337,8 +337,8 @@ void ParallelVtkWriter::tryCreateFolder(const std::string &name, const std::stri
   }
 }
 
-void ParallelVtkWriter::generateFilename(const std::string &fileContent, const std::string &filetype,
-                                         const int &currentIteration, std::ostringstream &filenameStream) {
-  filenameStream << _dataFolderPath << _sessionName << "_" << fileContent << "_" << _mpiRank << "_" << std::setfill('0')
+void ParallelVtkWriter::generateFilename(const std::string &filetype, const int &currentIteration,
+                                         std::ostringstream &filenameStream) {
+  filenameStream << _dataFolderPath << _sessionName << "_" << _mpiRank << "_" << std::setfill('0')
                  << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << "." << filetype;
 }
