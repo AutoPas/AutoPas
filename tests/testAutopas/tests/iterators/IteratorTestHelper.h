@@ -83,7 +83,7 @@ auto fillContainerAroundBoundary(AutoPasT &autoPas, std::array<double, 3> boxOfI
           }
         } else {
           // AutoPas should set the ownership state of this particle to halo
-          autoPas.addOrUpdateHaloParticle(p);
+          autoPas.addHaloParticle(p);
           particleIDsHalo.push_back(p.getID());
           if (autopas::utils::inBox(pos, boxOfInterestMin, boxOfInterestMax)) {
             particleIDsInterestHalo.push_back(p.getID());
@@ -207,7 +207,7 @@ void provideIterator(AutoPasT &autoPas, autopas::IteratorBehavior behavior, bool
 }
 
 /**
- * Same as provideIterator() but `useConstIterator` is a run-time variable.
+ * Same as provideIterator(), but `useConstIterator` is a run-time variable.
  * @tparam useConstIterator
  * @tparam AutoPasT
  * @tparam F f(AutoPas, Iterator)

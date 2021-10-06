@@ -59,10 +59,6 @@ class VerletListHelpers {
       return true;
     }
 
-    bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
-      return false;  // this functor shouldn't be called with clusters!
-    }
-
     void AoSFunctor(Particle &i, Particle &j, bool /*newton3*/) override {
       if (i.isDummy() or j.isDummy()) {
         return;
@@ -91,9 +87,9 @@ class VerletListHelpers {
       if (soa.getNumParticles() == 0) return;
 
       auto **const __restrict ptrptr = soa.template begin<Particle::AttributeNames::ptr>();
-      double *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
-      double *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
-      double *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+      const double *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
+      const double *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
+      const double *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
 
       size_t numPart = soa.getNumParticles();
       for (unsigned int i = 0; i < numPart; ++i) {
@@ -131,14 +127,14 @@ class VerletListHelpers {
       if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
 
       auto **const __restrict ptr1ptr = soa1.template begin<Particle::AttributeNames::ptr>();
-      double *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
-      double *const __restrict y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
-      double *const __restrict z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
+      const double *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
+      const double *const __restrict y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
+      const double *const __restrict z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
 
       auto **const __restrict ptr2ptr = soa2.template begin<Particle::AttributeNames::ptr>();
-      double *const __restrict x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
-      double *const __restrict y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
-      double *const __restrict z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
+      const double *const __restrict x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
+      const double *const __restrict y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
+      const double *const __restrict z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
 
       size_t numPart1 = soa1.getNumParticles();
       for (unsigned int i = 0; i < numPart1; ++i) {
@@ -223,10 +219,6 @@ class VerletListHelpers {
       utils::ExceptionHandler::exception(
           "VLCAllCellsGeneratorFunctor::allowsNonNewton3() is not implemented, because it should not be called.");
       return true;
-    }
-
-    bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
-      return false;  // this functor shouldn't be used with clusters!
     }
 
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {

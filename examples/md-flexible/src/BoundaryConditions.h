@@ -8,7 +8,7 @@
 #include <array>
 #include <vector>
 
-#include "autopas/AutoPas.h"
+#include "autopas/AutoPasDecl.h"
 
 /**
  * This namespace implements functions for periodic boundaries using AutoPas.
@@ -138,7 +138,7 @@ void addEnteringParticles(autopas::AutoPas<Particle> &autoPas, std::vector<Parti
 template <class Particle>
 void addHaloParticles(autopas::AutoPas<Particle> &autoPas, std::vector<Particle> &haloParticles) {
   for (auto &p : haloParticles) {
-    autoPas.addOrUpdateHaloParticle(p);
+    autoPas.addHaloParticle(p);
   }
 }
 
@@ -156,15 +156,15 @@ void addHaloParticles(autopas::AutoPas<Particle> &autoPas, std::vector<Particle>
  */
 template <class Particle>
 void applyPeriodic(autopas::AutoPas<Particle> &autoPas, bool forceUpdate) {
-  // 1. update Container; return value is a vector of the particles leaving the domain box
-  // and a flag whether an update occured.
-  auto [leavingParticles, updated] = autoPas.updateContainer(forceUpdate);
-  if (updated) {
-    // 2. apply periodic wrap by shifting positions of leaving particles to positions of periodic images.
-    wrapPositionsAroundBoundaries(autoPas, leavingParticles);
-    // 2b. re-insert shifted particles
-    addEnteringParticles(autoPas, leavingParticles);
-  }
+  // 1. update Container; return value is a vector of the particles leaving the domain box.
+
+  // auto leavingParticles = autoPas.updateContainer();
+
+  // 2. apply periodic wrap by shifting positions of leaving particles to positions of periodic images.
+  // wrapPositionsAroundBoundaries(autoPas, leavingParticles);
+  // 2b. re-insert shifted particles
+  // addEnteringParticles(autoPas, leavingParticles);
+
   // 3. identify inner particles for which a periodic copy in the opposing halo region is needed.
   auto haloParticles = identifyNewHaloParticles(autoPas);
   addHaloParticles(autoPas, haloParticles);

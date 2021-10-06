@@ -12,7 +12,7 @@ using namespace autopas;
 // Test if serializing and deserializing again works as expected.
 TEST_F(AutoPasConfigurationCommunicatorTest, testSerializeAndDeserialize) {
   Configuration config = Configuration(ContainerOption::directSum, 1.2, TraversalOption::lc_sliced,
-                                       LoadEstimatorOption::none, DataLayoutOption::cuda, Newton3Option::disabled);
+                                       LoadEstimatorOption::none, DataLayoutOption::soa, Newton3Option::disabled);
   Configuration passedConfig = deserializeConfiguration(serializeConfiguration(config));
   EXPECT_EQ(passedConfig, config);
 }
@@ -204,10 +204,10 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeOneConfigPerRank) {
 
 // Example search space.
 TEST_F(AutoPasConfigurationCommunicatorTest, testGetSearchSpaceSizeValid) {
-  std::set<ContainerOption> threeContainers{ContainerOption::linkedCells, ContainerOption::verletClusterCells,
+  std::set<ContainerOption> threeContainers{ContainerOption::linkedCells, ContainerOption::verletClusterLists,
                                             ContainerOption::directSum};
   autopas::NumberSetFinite<double> twoCellSizes{1, 1.2};
-  std::set<TraversalOption> threeTraversals{TraversalOption::lc_c08, TraversalOption::vcc_cluster_iteration_cuda,
+  std::set<TraversalOption> threeTraversals{TraversalOption::lc_c08, TraversalOption::vcl_c06,
                                             TraversalOption::ds_sequential};
   std::set<LoadEstimatorOption> twoLoadEstimators{LoadEstimatorOption::none,
                                                   LoadEstimatorOption::squaredParticlesPerCell};

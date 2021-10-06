@@ -1,180 +1,89 @@
 /**
  * @file Simulation.h
- * @author N. Fottner
- * @date 12.05.2019
+ * @author J. Körner
+ * @date 07.04.2021
  */
 #pragma once
 
-#include "TypeDefinitions.h"
-#include "autopas/AutoPas.h"
-#include "parsing/MDFlexConfig.h"
+#include <cstddef>
+#include <iostream>
+#include <memory>
+#include <string>
+#include <tuple>
+
+#include "autopas/AutoPasDecl.h"
+#include "src/ParallelVtkWriter.h"
+#include "src/TypeDefinitions.h"
+#include "src/configuration/MDFlexConfig.h"
+#include "src/domainDecomposition/DomainDecomposition.h"
+#include "src/domainDecomposition/RegularGridDecomposition.h"
 
 /**
- * The main simulation class.
+ * Handles minimal initialization requriements for MD-Flexible simulations.
+ * Derivce this class to create custom simulations.
  */
 class Simulation {
  public:
   /**
-   * Particle type used for the simulation.
+   * Initializes the simulation on a domain according to the arguments passed to the main function.
+   * @param configuration: The configuration of this simulation.
+   * @param domainDecomposition: The domain decomposition used for this simulation
    */
-  using ParticleType = ::ParticleType;
-
-  /**
-   * Constructor.
-   *
-   * This starts the timer for total simulation time.
-   */
-  explicit Simulation() { _timers.total.start(); };
+  Simulation(const MDFlexConfig &configuration, RegularGridDecomposition &domainDecomposition);
 
   /**
    * Destructor.
-   *
-   * Closes the log file if applicable.
    */
   ~Simulation() = default;
 
   /**
-   * Writes a VTK file for the current state of the AutoPas object.
-   * @param autopas
+   * Runs the simulation
    */
-  void writeVTKFile(autopas::AutoPas<ParticleType> &autopas);
+  void run();
 
   /**
-   * Initializes the ParticlePropertiesLibrary with properties from _config.
+   * Stops remaining timers and logs the result of all the timers.
    */
-  void initializeParticlePropertiesLibrary();
+  void finalize();
+
+ protected:
+  /**
+   * Stores the configuration used for the simulation.
+   * The configuration is defined by the .yaml file passed to the application  with the '--yaml-file' argument.
+   */
+  MDFlexConfig _configuration;
 
   /**
-   * Initializes the AutoPas Object with the given config and initializes the simulation domain with the Object
-   * Generators.
-   * @param mdFlexConfig
-   * @param autopas
+   * The the nodes' autopas container used for simulation.
+   * This member will not be initialized by the constructor and therefore has to be initialized by the deriving class.
    */
-  void initialize(const MDFlexConfig &mdFlexConfig, autopas::AutoPas<ParticleType> &autopas);
+  std::shared_ptr<autopas::AutoPas<ParticleType>> _autoPasContainer;
 
   /**
-   * Calculates the pairwise forces in the system and measures the runtime.
-   * @tparam Force Calculation Functor
-   * @param autopas
+   * Shared pointer to the logfile.
    */
-  template <class FunctorType>
-  void calculateForces(autopas::AutoPas<ParticleType> &autopas);
+  std::shared_ptr<std::ofstream> _logFile;
 
   /**
-   * Calculate influences from global, non pairwise forces, e.g. gravity.
-   * @param autopas
+   * Pointer to the output stream.
    */
-  void globalForces(autopas::AutoPas<ParticleType> &autopas);
-
-  /**
-   * This function processes the main simulation loop
-   * -calls the time discretization class(calculate fores, etc ...)
-   * -do the output each timestep
-   * -collects the duration of every Calculation(Position,Force,Velocity)
-   * @param autopas
-   */
-  void simulate(autopas::AutoPas<ParticleType> &autopas);
-
-  /**
-   * Indicates if enough iterations were completed yet.
-   * Uses class member variables.
-   * @return
-   */
-  [[nodiscard]] bool needsMoreIterations() const;
-
-  /**
-   * Returns Suffix for the mpi rank the process is running on.
-   * Otherwise returns empty string.
-   * @return suffix
-   */
-  [[nodiscard]] std::string getMPISuffix() const;
-
-  /**
-   * Gives an estimate of how many iterations the simulation will do in total.
-   * @return The estimate and true iff this is the correct number and not only an estimate.
-   */
-  [[nodiscard]] std::tuple<size_t, bool> estimateNumIterations() const;
-
-  /**
-   * Prints statistics like duration of calculation etc of the Simulation.
-   * @param autopas
-   */
-  void printStatistics(autopas::AutoPas<ParticleType> &autopas);
-
-  /**
-   * Getter for ParticlePropertiesLibrary of Simulation.
-   * @note Used for testing.
-   * @return unique_prt(ParticlePropertiesLibrary)
-   */
-  [[nodiscard]] const std::unique_ptr<ParticlePropertiesLibrary<double, size_t>> &getPpl() const;
-
-  /**
-   * Calculate the homogeneity of the scenario by using the standard deviation.
-   * @param autopas
-   * @return double
-   */
-  [[nodiscard]] double calculateHomogeneity(autopas::AutoPas<ParticleType> &autopas) const;
-
- private:
-  /**
-   * Print a progressbar and progress information to the console.
-   * @note Calling this function deletes the whole current line in the terminal.
-   *
-   * @param iterationProgress
-   * @param maxIterations
-   * @param maxIsPrecise Indicate whether maxIterations is precise (true) or an estimate (false).
-   */
-  void printProgress(size_t iterationProgress, size_t maxIterations, bool maxIsPrecise);
-
-  /**
-   * Use the variant of the LJFunctor that uses the shifted Lennard-Jones potential.
-   */
-  constexpr static bool _shifting = true;
-  /**
-   * Use the variant of the LJFunctor that supports mixing of particle types.
-   */
-  constexpr static bool _mixing = true;
-
-  /**
-   * Configuration of the scenario.
-   */
-  std::shared_ptr<MDFlexConfig> _config;
-
-  /**
-   * Container for properties (e.g. mass) per particle type.
-   */
-  std::unique_ptr<ParticlePropertiesLibraryType> _particlePropertiesLibrary;
-
-  /**
-   * Struct containing all timers used for the simulation.
-   */
-  struct timers {
-    autopas::utils::Timer positionUpdate, forceUpdateTotal, forceUpdatePairwise, forceUpdateGlobal, forceUpdateTuning,
-        forceUpdateNonTuning, velocityUpdate, simulate, vtk, init, total, thermostat, boundaries;
-  } _timers;
-
-  /**
-   * Convert a time and a name to a properly formatted string.
-   * @param name incl. offset.
-   * @param timeNS in nanoseconds.
-   * @param numberWidth Width to which the time should be offset.
-   * @param maxTime if passed the percentage of timeNS of maxTime is appended.
-   * @return formatted std::string
-   */
-  static std::string timerToString(const std::string &name, long timeNS, size_t numberWidth = 0, long maxTime = 0);
+  std::ostream *_outputStream;
 
   /**
    * Number of completed iterations. Aka. number of current iteration.
    */
   size_t _iteration = 0;
+
   /**
    * Counts completed iterations that were used for tuning
    */
   size_t _numTuningIterations = 0;
+
   /**
    * Counts completed tuning phases.
    */
   size_t _numTuningPhasesCompleted = 0;
+
   /**
    * Indicator if the previous iteration was used for tuning.
    */
@@ -189,4 +98,205 @@ class Simulation {
    * Homogeneity of the scenario, calculated by the standard deviation of the density.
    */
   double _homogeneity = 0;
+
+  /**
+   * Struct containing all timers used for the simulation.
+   */
+  struct Timers {
+    /**
+     * Records the time used for the position updates of all particles.
+     */
+    autopas::utils::Timer positionUpdate;
+
+    /**
+     * Records the time used for the total force update of all particles.
+     */
+    autopas::utils::Timer forceUpdateTotal;
+
+    /**
+     * Records the time used for the pairwise force update of all particles.
+     */
+    autopas::utils::Timer forceUpdatePairwise;
+
+    /**
+     * Records the time used for the update of the global forces of all particles.
+     */
+    autopas::utils::Timer forceUpdateGlobal;
+
+    /**
+     * Records the time used for the force update of all particles during the tuning iterations.
+     */
+    autopas::utils::Timer forceUpdateTuning;
+
+    /**
+     * Records the time used for force updates of all particles during the non tuning iterations.
+     */
+    autopas::utils::Timer forceUpdateNonTuning;
+
+    /**
+     * Records the time used for the velocity updates of all particles.
+     */
+    autopas::utils::Timer velocityUpdate;
+
+    /**
+     * Records the time used for actively simulating the provided scenario.
+     * This excludes initialization time, among others.
+     */
+    autopas::utils::Timer simulate;
+
+    /**
+     * Records the time used for the creation of the timestep records.
+     */
+    autopas::utils::Timer vtk;
+
+    /**
+     * Records the time used for the initialization of the simulation.
+     */
+    autopas::utils::Timer initialization;
+
+    /**
+     * Records the total time required for the simulation.
+     */
+    autopas::utils::Timer total;
+
+    /**
+     * Records the time required for the thermostat updates.
+     */
+    autopas::utils::Timer thermostat;
+
+    /**
+     * Records the time required to exchange the halo particles.
+     */
+    autopas::utils::Timer haloParticleExchange;
+
+    /**
+     * Records the time required to exchange migrating particles.
+     */
+    autopas::utils::Timer migratingParticleExchange;
+  };
+
+  /**
+   * The timers used during the simulation.
+   */
+  struct Timers _timers;
+
+  /**
+   * Parallel VTK file writer.
+   */
+  std::shared_ptr<ParallelVtkWriter> _vtkWriter;
+
+  /**
+   * Defines, if vtk files should be created or not.
+   */
+  bool _createVtkFiles;
+
+ private:
+  /**
+   * Estimates the number of tuning iterations which ocurred during the simulation so far.
+   * @return an estimation of the number of tuning iterations which occured so far.
+   */
+  std::tuple<size_t, bool> estimateNumberOfIterations() const;
+
+  /**
+   * Prints a progress bar to the terminal.
+   * @param iterationProgress: the number of already computed iterations.
+   * @param maxIterations: the number of maximum iterations.
+   * @param maxIsPrecise: Decides if the "~" symbol will be printed before the max iterations.
+   */
+  void printProgress(size_t iterationProgress, size_t maxIterations, bool maxIsPrecise);
+
+  /**
+   * Turns the timers into a human readable string.
+   * @param name: The timer's name.
+   * @param timeNS: The time in nano seconds.
+   * @param numberWidth: The precision of the printed number.
+   * @param maxTime: The simulation's total execution time.
+   * @return All information of the timer in a human readable string.
+   */
+  std::string timerToString(const std::string &name, long timeNS, size_t numberWidth = 0ul, long maxTime = 0ul);
+
+  /**
+   * Calculate the homogeneity of the scenario by using the standard deviation.
+   * @return homogeneity
+   */
+  double calculateHomogeneity() const;
+
+  /**
+   * Updates the position of particles in the local AutoPas container.
+   */
+  void updatePositions();
+
+  /**
+   * Updates the forces of particles in the local AutoPas container.
+   */
+  void updateForces();
+
+  /**
+   * Updates the velocities of particles in the local AutoPas container.
+   */
+  void updateVelocities();
+
+  /**
+   * Updates the thermostat of for the local domain.
+   * @todo The thermostat shoud act globally and therefore needs to be communicated to all processes.
+   */
+  void updateThermostat();
+
+  /**
+   * This simulation's domain decomposition.
+   */
+  RegularGridDecomposition _domainDecomposition;
+
+  /**
+   * Sends particles of type ParticleType to a specific receiver.
+   * @param particles: The particles to be sent to the receiver.
+   * @param receiver: The recipient of the particles.
+   */
+  void sendParticles(std::vector<ParticleType> &particles, int &receiver);
+
+  /**
+   * Receives particels of type ParticleType which have been send by a specific sender.
+   * @param receivedParticles: The container where the received particles will be stored.
+   * @param source: The sender of the particles.
+   */
+  void receiveParticles(std::vector<ParticleType> &receivedParticles, int &source);
+
+  /**
+   * If MPI is enabled, accumulates the times of all ranks on rank 0.
+   * Otherwise, this function does nothing.
+   * @param time: the time to accumulate.
+   * @return the accumulated time of all ranks.
+   */
+  long accumulateTime(const long &time);
+
+  /**
+   * Logs the number of total/owned/halo particles in the simulation, aswell as the standard deviation of Homogeneity.
+   */
+  void logSimulationState();
+
+  /**
+   * Logs the times recorded by the timers.
+   * When MPI is enabled it acumulates the times (user time) of all ranks. In this case, the total
+   * time will exceed the wall-clock time.
+   */
+  void logMeasurements();
+
+  /**
+   * Calculates the pairwise forces between particles in the autopas container.
+   * @param wasTuningIteration Tells the user if the current iteration of force calculations was a tuning iteration.
+   */
+  void calculatePairwiseForces(bool &wasTuningIteration);
+
+  /**
+   * Adds global forces to the particles in the container.
+   * @param globalForce The global force which will be applied to each particle in the container.
+   */
+  void calculateGlobalForces(const std::array<double, 3> &globalForce);
+
+  /**
+   * Indicates if enough iterations were completed yet.
+   * Uses class member variables.
+   * @return
+   */
+  [[nodiscard]] bool needsMoreIterations() const;
 };

@@ -1,4 +1,4 @@
-option(Eigen3_ForceBundled "Do not look for an installed version, always use bundled." OFF)
+option(Eigen3_ForceBundled "Do not look for an installed version, always use bundled." ON)
 
 if (NOT ${Eigen3_ForceBundled})
     set(expectedVersion 3.3.4)

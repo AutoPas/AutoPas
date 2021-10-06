@@ -14,7 +14,7 @@
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ArrayUtils.h"
-#include "autopas/utils/CudaSoAType.h"
+#include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/SoAStorage.h"
 #include "autopas/utils/SoAType.h"
 #include "autopas/utils/markParticleAsDeleted.h"
@@ -203,6 +203,12 @@ class ParticleBase {
   [[nodiscard]] bool isDummy() const { return _ownershipState == OwnershipState::dummy; }
 
   /**
+   * Returns the particle's ownership state.
+   * @return the current OwnershipState
+   */
+  [[nodiscard]] OwnershipState getOwnershipState() const { return _ownershipState; }
+
+  /**
    * Set the OwnershipState to the given value
    * @param ownershipState
    */
@@ -232,21 +238,15 @@ class ParticleBase {
                                        floatType /*y*/, floatType /*z*/, floatType /*fx*/, floatType /*fy*/,
                                        floatType /*fz*/, OwnershipState /*ownershipState*/>::Type;
 
-#if defined(AUTOPAS_CUDA)
   /**
-   * The type for storage arrays for Cuda.
+   * Non-const getter for the pointer of this object.
+   * @tparam attribute Attribute name.
+   * @return this.
    */
-  using CudaDeviceArraysType =
-      typename autopas::utils::CudaSoAType<ParticleBase<floatType, idType> *, idType /*id*/, floatType /*x*/,
-                                           floatType /*y*/, floatType /*z*/, floatType /*fx*/, floatType /*fy*/,
-                                           floatType /*fz*/, OwnershipState /*ownershipState*/>::Type;
-#else
-  /**
-   * The type for storage arrays for Cuda.
-   * empty if compiled without Cuda Support.
-   */
-  using CudaDeviceArraysType = typename autopas::utils::CudaSoAType<>::Type;
-#endif
+  template <AttributeNames attribute, std::enable_if_t<attribute == AttributeNames::ptr, bool> = true>
+  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
+    return this;
+  }
 
   /**
    * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).
@@ -254,11 +254,9 @@ class ParticleBase {
    * @return Value of the requested attribute.
    * @note The value of owned is return as floating point number (true = 1.0, false = 0.0).
    */
-  template <AttributeNames attribute>
-  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
-    if constexpr (attribute == AttributeNames::ptr) {
-      return this;
-    } else if constexpr (attribute == AttributeNames::id) {
+  template <AttributeNames attribute, std::enable_if_t<attribute != AttributeNames::ptr, bool> = true>
+  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
+    if constexpr (attribute == AttributeNames::id) {
       return getID();
     } else if constexpr (attribute == AttributeNames::posX) {
       return getR()[0];

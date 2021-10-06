@@ -20,7 +20,7 @@ class TraversalRaceConditionTest : public AutoPasTestBase {
 
   ~TraversalRaceConditionTest() override = default;
 
-  /*
+  /**
    * Simple AoS only functor which repulses paritcles from each other with a
    * constant force of 1.
    */
@@ -37,11 +37,6 @@ class TraversalRaceConditionTest : public AutoPasTestBase {
     bool allowsNewton3() override { return true; }
 
     bool allowsNonNewton3() override { return false; }
-
-    bool isAppropriateClusterSize(unsigned int clusterSize,
-                                  autopas::DataLayoutOption::Value dataLayout) const override {
-      return dataLayout == autopas::DataLayoutOption::aos;  // this functor supports clusters only for aos!
-    }
 
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
       if (i.isDummy() or j.isDummy()) {

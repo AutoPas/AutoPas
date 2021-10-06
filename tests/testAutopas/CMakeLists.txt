@@ -4,16 +4,8 @@ file(
     "*.cpp"
     "*.h"
 )
-if (AUTOPAS_ENABLE_CUDA)
-    file(
-        GLOB_RECURSE
-        CU_SRC
-        "*.cu"
-        "*.cuh"
-    )
-endif ()
 
-add_executable(runTests $<$<BOOL:${AUTOPAS_ENABLE_CUDA}>:${CU_SRC}> ${MY_SRC})
+add_executable(runTests ${MY_SRC})
 
 target_compile_definitions(runTests PRIVATE)
 

@@ -67,15 +67,7 @@ class AutoPasInterface2ContainersTest
   };
 };
 
-static inline auto getTestableContainerOptions() {
-#ifdef AUTOPAS_CUDA
-  return autopas::ContainerOption::getAllOptions();
-#else
-  auto containerOptions = autopas::ContainerOption::getAllOptions();
-  containerOptions.erase(containerOptions.find(autopas::ContainerOption::verletClusterCells));
-  return containerOptions;
-#endif
-}
+static inline auto getTestableContainerOptions() { return autopas::ContainerOption::getAllOptions(); }
 
 /**
  * Adds three particles (lower corner, mid, and high corner) to the container

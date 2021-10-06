@@ -1,0 +1,17 @@
+#yaml input for cubeGauss
+#used in:
+#MDFlexConfigTests.GaussBoxMinMax
+#YamlParser
+Objects:
+  CubeGauss:
+    0:
+      particle-type: 0
+      particle-epsilon: 2.
+      particle-sigma: 2.
+      particle-mass: 2.
+      numberOfParticles: 100
+      box-length: [8.,8.,8.]
+      distribution-mean: [17.0, 3.0, 6]
+      distribution-stddeviation: [2, 3, 1]
+      velocity: [0.,0.,0.]
+      bottomLeftCorner: [15.,0.,5.]

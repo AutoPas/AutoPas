@@ -12,7 +12,6 @@
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/CudaSoA.h"
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -56,7 +55,7 @@ class SortedCellView : public ParticleCell<Particle> {
 
   unsigned long numParticles() const override { return _particles.size(); }
 
-  bool isNotEmpty() const override { return numParticles() > 0; }
+  bool isEmpty() const override { return numParticles() == 0; }
 
   void clear() override { _particles.clear(); }
 
