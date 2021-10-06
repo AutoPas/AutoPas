@@ -56,6 +56,10 @@ std::vector<size_t> getExpectedIds(autopas::IteratorBehavior behavior, Ids owned
   return expectedIDs;
 }
 
+/**
+ * Test forEachInRegionSequential for every possible combination of [containerOption, cellSizeFactor, useConstIterator,
+ * priorForceCalc, behavior] by adding found particles indices to list and comparing with 'handmade' expectedIndices.
+ */
 TEST_P(ContainerForEachTest, testForEachInRegionSequential) {
   auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc, behavior] = GetParam();
 
@@ -98,9 +102,13 @@ TEST_P(ContainerForEachTest, testForEachInRegionSequential) {
   auto forEachInRegionLambda = [&, bh](auto lambda) {
     autoPas.forEachInRegion(lambda, searchBoxMin, searchBoxMax, bh);
   };
-  ForEachTestHelper::forEachParticleTest(autoPas, forEachInRegionLambda, expectedIDs);
+  ForEachTestHelper::forEachParticleTest(forEachInRegionLambda, expectedIDs);
 }
 
+/**
+ * Test forEachSequential for every possible combination of [containerOption, cellSizeFactor, useConstIterator,
+ * priorForceCalc, behavior] by adding found particles indices to list and comparing with 'handmade' expectedIndices.
+ */
 TEST_P(ContainerForEachTest, testForEachSequential) {
   auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc, behavior] = GetParam();
 
@@ -141,9 +149,13 @@ TEST_P(ContainerForEachTest, testForEachSequential) {
   // actual test
   auto bh = behavior;  // necessary for compiler, behavior not detected as variable
   auto forEachLambda = [&, bh](auto lambda) { autoPas.forEach(lambda, bh); };
-  ForEachTestHelper::forEachParticleTest(autoPas, forEachLambda, expectedIDs);
+  ForEachTestHelper::forEachParticleTest(forEachLambda, expectedIDs);
 }
 
+/**
+ * Test forEachInRegionParallel for every possible combination of [containerOption, cellSizeFactor, useConstIterator,
+ * priorForceCalc, behavior] by adding found particles indices to list and comparing with 'handmade' expectedIndices.
+ */
 TEST_P(ContainerForEachTest, testForEachInRegionParallel) {
   auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc, behavior] = GetParam();
 
@@ -186,9 +198,13 @@ TEST_P(ContainerForEachTest, testForEachInRegionParallel) {
   auto forEachInRegionLambda = [&, bh](auto lambda) {
     autoPas.forEachInRegionParallel(lambda, searchBoxMin, searchBoxMax, bh);
   };
-  ForEachTestHelper::forEachParticleTest(autoPas, forEachInRegionLambda, expectedIDs);
+  ForEachTestHelper::forEachParticleTest(forEachInRegionLambda, expectedIDs);
 }
 
+/**
+ * Test forEachParallel for every possible combination of [containerOption, cellSizeFactor, useConstIterator,
+ * priorForceCalc, behavior] by adding found particles indices to list and comparing with 'handmade' expectedIndices.
+ */
 TEST_P(ContainerForEachTest, testForEachParallel) {
   auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc, behavior] = GetParam();
 
@@ -229,7 +245,7 @@ TEST_P(ContainerForEachTest, testForEachParallel) {
   // actual test
   auto bh = behavior;  // necessary for compiler, behavior not detected as variable
   auto forEachLambda = [&, bh](auto lambda) { autoPas.forEachParallel(lambda, bh); };
-  ForEachTestHelper::forEachParticleTest(autoPas, forEachLambda, expectedIDs);
+  ForEachTestHelper::forEachParticleTest(forEachLambda, expectedIDs);
 }
 
 using ::testing::Combine;

@@ -28,7 +28,8 @@ void SingleCellForEachTest::SetUp() {
 void SingleCellForEachTest::TearDown() {}
 
 /**
- * Testing logic for SingleCellForEachTest by adding particle indices to a list of 'foundParticles' and comparing to 'expectedIndices'.
+ * Testing logic for SingleCellForEachTest by adding particle indices to a list of 'foundParticles' and comparing to
+ * 'expectedIndices'.
  * @tparam Cell FullParticleCell or ReferenceParticleCell
  * @param cell
  * @param expectedIndices of particles that should be taken into account for forEach
@@ -43,17 +44,17 @@ void SingleCellForEachTest::testCell(Cell cell, std::vector<size_t> &expectedInd
   std::vector<size_t> foundParticles;
 
   auto forEachLambda = [&](auto &p) {
-    //compare the position of particle iterated over with forEach to particle with same index
+    // compare the position of particle iterated over with forEach to particle with same index
     auto referenceMolecule = getMoleculeWithId(p.getID());
     for (int d = 0; d < 3; ++d) {
       EXPECT_NEAR(p.getR()[d], referenceMolecule.getR()[d], 1e-12);
     }
 
-    //add particle to foundParticles list
+    // add particle to foundParticles list
     foundParticles.push_back(p.getID());
   };
 
-  //call correct forEach function of cell (with or without region check)
+  // call correct forEach function of cell (with or without region check)
   if (lowerCorner[0] == 0.f) {
     cell.forEach(forEachLambda, iteratorBehavior);
   } else {

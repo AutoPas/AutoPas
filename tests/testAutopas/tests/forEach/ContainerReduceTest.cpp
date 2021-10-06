@@ -56,6 +56,10 @@ std::vector<size_t> getExpectedIds(autopas::IteratorBehavior behavior, Ids owned
   return expectedIDs;
 }
 
+/**
+ * Test reduceInRegionSequential for every possible combination of [containerOption, cellSizeFactor, useConstIterator,
+ * priorForceCalc, behavior] by adding found particles indices to list and comparing with 'handmade' expectedIndices and checking if the sum of both index lists equal.
+ */
 TEST_P(ContainerReduceTest, testReduceInRegion) {
   auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc, behavior] = GetParam();
 
@@ -112,6 +116,10 @@ TEST_P(ContainerReduceTest, testReduceInRegion) {
   EXPECT_EQ(reductionValue, expectedReductionValue);
 }
 
+/**
+ * Test reduceSequential for every possible combination of [containerOption, cellSizeFactor, useConstIterator,
+ * priorForceCalc, behavior] by adding found particles indices to list and comparing with 'handmade' expectedIndices and checking if the sum of both index lists equal.
+ */
 TEST_P(ContainerReduceTest, testReduce) {
   auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc, behavior] = GetParam();
 
@@ -168,6 +176,10 @@ TEST_P(ContainerReduceTest, testReduce) {
   EXPECT_EQ(reductionValue, expectedReductionValue);
 }
 
+/**
+ * Test reduceInRegionParallel for every possible combination of [containerOption, cellSizeFactor, useConstIterator,
+ * priorForceCalc, behavior] by adding found particles indices to list and comparing with 'handmade' expectedIndices and checking if the sum of both index lists equal.
+ */
 TEST_P(ContainerReduceTest, testReduceInRegionParallel) {
   auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc, behavior] = GetParam();
 
@@ -224,6 +236,10 @@ TEST_P(ContainerReduceTest, testReduceInRegionParallel) {
   EXPECT_EQ(reductionValue, expectedReductionValue);
 }
 
+/**
+ * Test reduceParallel for every possible combination of [containerOption, cellSizeFactor, useConstIterator,
+ * priorForceCalc, behavior] by adding found particles indices to list and comparing with 'handmade' expectedIndices and checking if the sum of both index lists equal.
+ */
 TEST_P(ContainerReduceTest, testReduceParallel) {
   auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc, behavior] = GetParam();
 

@@ -24,9 +24,9 @@ void SingleCellReduceTest::SetUp() {
 
 void SingleCellReduceTest::TearDown() {}
 
-
 /**
- * Testing logic for SingleCellReduceTest by summing up indices of particles.
+ * Testing logic for SingleCellReduceTest which sums up the indices of all found particles and compares it with the sum
+ * of the given expectedIndices.
  * @tparam Cell FullParticleCell or ReferenceParticleCell
  * @param cell
  * @param expectedIndices of particles that should be taken into account for reduction
@@ -35,24 +35,23 @@ void SingleCellReduceTest::TearDown() {}
  * @param higherCorner preferred higher corner of bounding box to test cell against reduceInRegion
  */
 template <typename Cell>
-void SingleCellReduceTest::testCell(Cell cell, std::vector<size_t> &expectedIndices,
-                                    IteratorBehavior iteratorBehavior, std::array<double, 3> const lowerCorner,
-                                    std::array<double, 3> const higherCorner) {
-  //expectedReductionValue is sum of all expectedIndices
+void SingleCellReduceTest::testCell(Cell cell, std::vector<size_t> &expectedIndices, IteratorBehavior iteratorBehavior,
+                                    std::array<double, 3> const lowerCorner, std::array<double, 3> const higherCorner) {
+  // expectedReductionValue is sum of all expectedIndices
   size_t expectedReductionValue = std::accumulate(expectedIndices.begin(), expectedIndices.end(), 0ul);
 
   std::vector<size_t> foundParticles;
   double reductionValue = 0.0f;
 
   auto reduceLambda = [&](auto &p, auto &result) {
-    //actual reduction
+    // actual reduction
     result += p.getID();
 
-    //similar foundParticles test as in SingleCellForEach to improve debugging
+    // similar foundParticles test as in SingleCellForEach to improve debugging
     foundParticles.push_back(p.getID());
   };
 
-  //call correct reduction function of cell (with or without region check)
+  // call correct reduction function of cell (with or without region check)
   if (lowerCorner[0] == 0.f) {
     cell.reduce(reduceLambda, reductionValue, iteratorBehavior);
   } else {
@@ -115,8 +114,7 @@ TEST_F(SingleCellReduceTest, testAllParticlesInRegionFpc) {
   const std::array<double, 3> lowerCorner{0.5, 0.5, 0.5};
   const std::array<double, 3> higherCorner{2.5, 2.5, 2.5};
 
-  testCell(fpc, expectedIndices, IteratorBehavior::ownedOrHaloOrDummy, lowerCorner,
-           higherCorner);
+  testCell(fpc, expectedIndices, IteratorBehavior::ownedOrHaloOrDummy, lowerCorner, higherCorner);
 }
 
 /**
@@ -171,6 +169,5 @@ TEST_F(SingleCellReduceTest, testAllParticlesInRegionRpc) {
   const std::array<double, 3> lowerCorner{0.5, 0.5, 0.5};
   const std::array<double, 3> higherCorner{2.5, 2.5, 2.5};
 
-  testCell(rpc, expectedIndices, IteratorBehavior::ownedOrHaloOrDummy, lowerCorner,
-           higherCorner);
+  testCell(rpc, expectedIndices, IteratorBehavior::ownedOrHaloOrDummy, lowerCorner, higherCorner);
 }
