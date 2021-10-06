@@ -2,15 +2,6 @@
 
 #include "RuleVM.h"
 
-/**
- * define_list VerletListsContainer = "VerletLists", "VerletClusterLists", "VerletListsCells";
-  define LC_VL_Threshold = 2^20;
-
-  if numParticles > LC_VL_Threshold and numCells < numParticles:
-       {container="LinkedCells", dataLayout="SoA"} >= {container=VerletListsContainer};
-  endif
- */
-
 namespace autopas {
 
 enum class Type { BOOL, DOUBLE, SIZE_T, CONTAINER, TRAVERSAL, LOAD_ESTIMATOR, DATA_LAYOUT, NEWTON3, CELL_SIZE_FACTOR };
@@ -90,7 +81,7 @@ namespace rule_syntax {
 
 class CodeGenerationContext;
 
-class Define;
+struct Define;
 
 struct Statement {
   virtual void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const = 0;
@@ -238,8 +229,6 @@ struct Literal : public Expression {
   RuleVM::MemoryCell value;
   Type type;
 
-  Literal() = default;
-
   explicit Literal(RuleVM::MemoryCell value) : value(value), type(typeOf(value)) {}
 
   [[nodiscard]] Type getType() const override { return type; }
@@ -254,8 +243,6 @@ struct DefineList : public Statement {
   std::string listName;
   std::vector<Literal> values;
 
-  DefineList() = default;
-
   DefineList(std::string listName, std::vector<Literal> values)
       : listName(std::move(listName)), values(std::move(values)) {}
 
@@ -267,8 +254,6 @@ struct DefineList : public Statement {
 
 struct Variable : public Expression {
   const Define *definition;
-
-  Variable() = default;
 
   explicit Variable(const Define *definition) : definition(definition) {}
 
@@ -284,8 +269,6 @@ struct BinaryOperator : public Expression {
   Operator op;
   std::shared_ptr<Expression> right;
 
-  BinaryOperator() = default;
-
   BinaryOperator(Operator op, std::shared_ptr<Expression> left, std::shared_ptr<Expression> right)
       : left(std::move(left)), op(op), right(std::move(right)) {}
 
@@ -298,8 +281,6 @@ struct BinaryOperator : public Expression {
 struct Define : public Statement {
   std::string variable;
   std::shared_ptr<Expression> value;
-
-  Define() = default;
 
   Define(std::string variable, std::shared_ptr<Expression> value)
       : variable(std::move(variable)), value(std::move(value)) {}
@@ -316,8 +297,6 @@ struct Define : public Statement {
 struct If : public Statement {
   std::shared_ptr<Expression> condition;
   std::vector<std::shared_ptr<Statement>> consequences;
-
-  If() = default;
 
   If(std::shared_ptr<Expression> condition, std::vector<std::shared_ptr<Statement>> consequences)
       : condition(std::move(condition)), consequences(std::move(consequences)) {}
