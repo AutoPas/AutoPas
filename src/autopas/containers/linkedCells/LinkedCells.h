@@ -247,7 +247,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
       }
     } else {
       for (size_t index = 0; index < getCells().size(); index++) {
-        if (!_cellBlock.ignoreCellForIteration(index, behavior)) {
+        if (not _cellBlock.ignoreCellForIteration(index, behavior)) {
           getCells()[index].forEach(forEachLambda, behavior);
         }
       }
@@ -353,18 +353,20 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
                                 (stopIndex3D[2] - startIndex3D[2] + 1);
     std::vector<size_t> cellsOfInterest(numCellsOfInterest);
 
-    int i = 0;
+    const auto cellsPerDimensionWithHalo = this->_cellBlock.getCellsPerDimensionWithHalo();
+
+    size_t i = 0;
     for (size_t z = startIndex3D[2]; z <= stopIndex3D[2]; ++z) {
       for (size_t y = startIndex3D[1]; y <= stopIndex3D[1]; ++y) {
         for (size_t x = startIndex3D[0]; x <= stopIndex3D[0]; ++x) {
           cellsOfInterest[i++] =
-              utils::ThreeDimensionalMapping::threeToOneD({x, y, z}, this->_cellBlock.getCellsPerDimensionWithHalo());
+              utils::ThreeDimensionalMapping::threeToOneD({x, y, z}, cellsPerDimensionWithHalo);
         }
       }
     }
 
     for (auto cellIndex : cellsOfInterest) {
-      if (!_cellBlock.ignoreCellForIteration(cellIndex, behavior)) {
+      if (not _cellBlock.ignoreCellForIteration(cellIndex, behavior)) {
         getCells()[cellIndex].forEach(forEachLambda, lowerCorner, higherCorner, behavior);
       }
     }
@@ -392,18 +394,20 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
                                 (stopIndex3D[2] - startIndex3D[2] + 1);
     std::vector<size_t> cellsOfInterest(numCellsOfInterest);
 
+    auto cellsPerDimensionWithHalo = this->_cellBlock.getCellsPerDimensionWithHalo();
+
     int i = 0;
     for (size_t z = startIndex3D[2]; z <= stopIndex3D[2]; ++z) {
       for (size_t y = startIndex3D[1]; y <= stopIndex3D[1]; ++y) {
         for (size_t x = startIndex3D[0]; x <= stopIndex3D[0]; ++x) {
           cellsOfInterest[i++] =
-              utils::ThreeDimensionalMapping::threeToOneD({x, y, z}, this->_cellBlock.getCellsPerDimensionWithHalo());
+              utils::ThreeDimensionalMapping::threeToOneD({x, y, z}, cellsPerDimensionWithHalo);
         }
       }
     }
 
     for (auto cellIndex : cellsOfInterest) {
-      if (!_cellBlock.ignoreCellForIteration(cellIndex, behavior)) {
+      if (not _cellBlock.ignoreCellForIteration(cellIndex, behavior)) {
         getCells()[cellIndex].reduce(reduceLambda, result, lowerCorner, higherCorner, behavior);
       }
     }
