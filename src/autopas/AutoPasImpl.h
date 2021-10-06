@@ -158,18 +158,6 @@ typename AutoPas<Particle>::const_iterator_t AutoPas<Particle>::begin(IteratorBe
   return std::as_const(*_logicHandler).begin(behavior);
 }
 
-// template <class particle>
-// template <typename lambda>
-// void AutoPas<Particle>::forEach(Lambda forEachLambda, IteratorBehavior behavior) {
-//  _logicHandler->forEach(forEachLambda, behavior);
-//}
-
-// template <class Particle>
-// template <typename Lambda>
-// void AutoPas<Particle>::forEach(Lambda forEachLambda, IteratorBehavior behavior) const {
-//  std::as_const(*_logicHandler).forEach(forEachLambda, behavior);
-//}
-
 template <class Particle>
 typename AutoPas<Particle>::iterator_t AutoPas<Particle>::getRegionIterator(std::array<double, 3> lowerCorner,
                                                                             std::array<double, 3> higherCorner,
@@ -183,20 +171,6 @@ typename AutoPas<Particle>::const_iterator_t AutoPas<Particle>::getRegionIterato
                                                                                   IteratorBehavior behavior) const {
   return std::as_const(*_logicHandler).getRegionIterator(lowerCorner, higherCorner, behavior);
 }
-
-// template <class Particle>
-// template <typename Lambda>
-// void AutoPas<Particle>::forEachInRegion(Lambda forEachLambda, const std::array<double, 3> lowerCorner,
-//                                        const std::array<double, 3> higherCorner, IteratorBehavior behavior) {
-//  _logicHandler->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
-//}
-//
-// template <class Particle>
-// template <typename Lambda>
-// void AutoPas<Particle>::forEachInRegion(Lambda forEachLambda, const std::array<double, 3> lowerCorner,
-//                                        const std::array<double, 3> higherCorner, IteratorBehavior behavior) const {
-//  std::as_const(*_logicHandler).forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
-//}
 
 template <class Particle>
 unsigned long AutoPas<Particle>::getContainerType() const {
