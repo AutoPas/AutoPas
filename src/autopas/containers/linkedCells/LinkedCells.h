@@ -270,7 +270,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
       }
     } else {
       for (size_t index = 0; index < getCells().size(); index++) {
-        if (!_cellBlock.ignoreCellForIteration(index, behavior)) {
+        if (not _cellBlock.ignoreCellForIteration(index, behavior)) {
           getCells()[index].reduce(reduceLambda, result, behavior);
         }
       }
