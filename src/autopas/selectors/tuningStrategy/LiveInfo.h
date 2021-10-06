@@ -1,14 +1,19 @@
 /**
-* @file LiveInfo.h
+ * @file LiveInfo.h
  * @author humig
  * @date 28.06.2021
-*/
+ */
 
 #pragma once
 
 #include <variant>
 
 #include "autopas/containers/ParticleContainerInterface.h"
+#include "autopas/options/ContainerOption.h"
+#include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/LoadEstimatorOption.h"
+#include "autopas/options/Newton3Option.h"
+#include "autopas/options/TraversalOption.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -28,7 +33,7 @@ class LiveInfo {
    * The type of an info.
    */
   using InfoType = std::variant<bool, double, size_t, ContainerOption, TraversalOption, LoadEstimatorOption,
-  DataLayoutOption, Newton3Option>;
+                                DataLayoutOption, Newton3Option>;
 
   /**
    * Gathers important information from a particle container and functor.
@@ -61,8 +66,8 @@ class LiveInfo {
    * @param container The container to gather the infos from.
    * @param functor The functor to gather the infos from.
    */
-  template<class Particle, class PairwiseFunctor>
-  void gather(const autopas::ParticleContainerInterface<Particle>& container, const PairwiseFunctor& functor) {
+  template <class Particle, class PairwiseFunctor>
+  void gather(const autopas::ParticleContainerInterface<Particle> &container, const PairwiseFunctor &functor) {
     infos["numParticles"] = container.getNumParticles();
     infos["cutoff"] = container.getCutoff();
     infos["skin"] = container.getSkin();
@@ -79,11 +84,10 @@ class LiveInfo {
     auto numCells = static_cast<size_t>(cellsPerDim[0] * cellsPerDim[1] * cellsPerDim[2]);
     infos["numCells"] = numCells;
 
-
     std::vector<size_t> particleBins;
     particleBins.resize(numCells + 1);
-    for(const Particle& particle : container) {
-      if(utils::inBox(particle.getR(), container.getBoxMin(), container.getBoxMax())) {
+    for (const Particle &particle : container) {
+      if (utils::inBox(particle.getR(), container.getBoxMin(), container.getBoxMax())) {
         auto offset = sub(particle.getR(), container.getBoxMin());
         auto cell = floorToInt(mulScalar(offset, 1.0 / container.getCutoff()));
         auto idx = (cell[2] * cellsPerDim[1] + cell[1]) * cellsPerDim[0] + cell[0];
@@ -95,26 +99,26 @@ class LiveInfo {
 
     infos["numHaloParticles"] = particleBins.back();
 
-    auto avg = static_cast<double>(std::accumulate(particleBins.begin(), particleBins.end()-1, 0ul)) /
+    auto avg = static_cast<double>(std::accumulate(particleBins.begin(), particleBins.end() - 1, 0ul)) /
                static_cast<double>(particleBins.size() - 1);
     double maxDiff = 0;
     double sum = 0;
     size_t numEmptyCells = 0;
     size_t maxParticlesPerCell = 0;
     size_t minParticlesPerCell = std::numeric_limits<size_t>::max();
-    for(size_t i = 0; i < particleBins.size() - 1; i++) {
+    for (size_t i = 0; i < particleBins.size() - 1; i++) {
       size_t particlesInBin = particleBins[i];
-      if(particlesInBin == 0) {
+      if (particlesInBin == 0) {
         numEmptyCells++;
       }
-      if(particlesInBin > maxParticlesPerCell) {
+      if (particlesInBin > maxParticlesPerCell) {
         maxParticlesPerCell = particlesInBin;
       }
-      if(particlesInBin < minParticlesPerCell) {
+      if (particlesInBin < minParticlesPerCell) {
         minParticlesPerCell = particlesInBin;
       }
       auto diff = avg - static_cast<int>(particlesInBin);
-      if(diff > maxDiff) {
+      if (diff > maxDiff) {
         maxDiff = diff;
       }
       sum += diff * diff;
@@ -128,8 +132,7 @@ class LiveInfo {
     infos["threadCount"] = static_cast<size_t>(autopas::autopas_get_max_threads());
 
     constexpr size_t particleSizeNeededByFunctor = calculateParticleSizeNeededByFunctor<Particle, PairwiseFunctor>(
-        std::make_index_sequence<PairwiseFunctor::getNeededAttr().size()>()
-        );
+        std::make_index_sequence<PairwiseFunctor::getNeededAttr().size()>());
     infos["particleSizeNeededByFunctor"] = particleSizeNeededByFunctor;
   }
 
@@ -137,9 +140,7 @@ class LiveInfo {
    * Returns a map of all infos.
    * @return A map of all infos.
    */
-  [[nodiscard]] const auto& get() {
-    return infos;
-  }
+  [[nodiscard]] const auto &get() { return infos; }
 
   /**
    * Creates a string containing all live info gathered.
@@ -148,21 +149,18 @@ class LiveInfo {
   [[nodiscard]] std::string toString() {
     std::string res{"Live Info: "};
     auto typeToString = [](auto type) {
-        if constexpr (std::is_same_v<decltype(type), bool> or
-        std::is_same_v<decltype(type), double> or std::is_same_v<decltype(type), size_t>) {
-          return std::to_string(type);
-        } else if constexpr( std::is_base_of_v<Option<decltype(type)>, decltype(type)>) {
-          return type.to_string();
-        }
-        return std::string{"fail"};
+      if constexpr (std::is_same_v<decltype(type), bool> or std::is_same_v<decltype(type), double> or
+                    std::is_same_v<decltype(type), size_t>) {
+        return std::to_string(type);
+      } else if constexpr (std::is_base_of_v<Option<decltype(type)>, decltype(type)>) {
+        return type.to_string();
+      }
+      return std::string{"fail"};
     };
-    auto toString = [&](const auto& pair) {
-      return pair.first + "=" + std::visit(typeToString, pair.second);};
-    if(not infos.empty()) {
+    auto toString = [&](const auto &pair) { return pair.first + "=" + std::visit(typeToString, pair.second); };
+    if (not infos.empty()) {
       res += std::accumulate(std::next(infos.begin()), infos.end(), toString(*infos.begin()),
-                             [&](std::string s, const auto& elem) {
-          return std::move(s) + " " + toString(elem);
-      });
+                             [&](std::string s, const auto &elem) { return std::move(s) + " " + toString(elem); });
     }
     return res;
   }
@@ -173,12 +171,11 @@ class LiveInfo {
    * @param info
    * @return
    */
-  friend std::ostream & operator <<(std::ostream &out, const LiveInfo& info)
-  {
+  friend std::ostream &operator<<(std::ostream &out, const LiveInfo &info) {
     out << info.infos.size() << ' ';
-    for(const auto& [name, val] : info.infos) {
+    for (const auto &[name, val] : info.infos) {
       out << name << ' ' << val.index() << ' ';
-      std::visit([&](const auto& v) {out << v << ' ';}, val);
+      std::visit([&](const auto &v) { out << v << ' '; }, val);
     }
     return out;
   }
@@ -189,17 +186,16 @@ class LiveInfo {
    * @param info
    * @return
    */
-  friend std::istream & operator >>(std::istream &in, LiveInfo& info)
-  {
+  friend std::istream &operator>>(std::istream &in, LiveInfo &info) {
     size_t numElements;
     in >> numElements;
-    for(size_t i = 0; i < numElements; i++) {
+    for (size_t i = 0; i < numElements; i++) {
       std::string name;
       in >> name;
       size_t idx;
       in >> idx;
-      auto val = readIndex<LiveInfo::InfoType>(in, idx,
-                                               std::make_index_sequence<std::variant_size_v<LiveInfo::InfoType>>());
+      auto val =
+          readIndex<LiveInfo::InfoType>(in, idx, std::make_index_sequence<std::variant_size_v<LiveInfo::InfoType>>());
       info.infos[name] = val;
     }
     return in;
@@ -214,10 +210,11 @@ class LiveInfo {
    * @tparam Idx An index sequence for all elements of PairwiseFunctor::getNeededAttr() elements.
    * @return The number of bytes needed by the information of a particle the functor needs.
    */
-  template<class Particle, class PairwiseFunctor, size_t... Idx>
+  template <class Particle, class PairwiseFunctor, size_t... Idx>
   constexpr static auto calculateParticleSizeNeededByFunctor(std::index_sequence<Idx...>) {
-    return (0 + ... + sizeof(typename std::tuple_element<PairwiseFunctor::getNeededAttr()[Idx],
-                                                         typename Particle::SoAArraysType>::type::value_type));
+    return (0 + ... +
+            sizeof(typename std::tuple_element<PairwiseFunctor::getNeededAttr()[Idx],
+                                               typename Particle::SoAArraysType>::type::value_type));
   }
 
   /**
@@ -230,9 +227,9 @@ class LiveInfo {
    * @param idx The index to compare to the template argument Idx.
    * @param var The variant that is filled with the read value if Idx==idx.
    */
-  template<class Variant, class Type, size_t Idx>
-  static void readIndexHelper(std::istream& in, size_t idx, Variant& var) {
-    if(Idx == idx) {
+  template <class Variant, class Type, size_t Idx>
+  static void readIndexHelper(std::istream &in, size_t idx, Variant &var) {
+    if (Idx == idx) {
       Type val;
       in >> val;
       var = val;
@@ -247,8 +244,8 @@ class LiveInfo {
    * @param idx The index of the alternative that should be read in.
    * @return A variant that holds the read value of the type indexed by idx in the Variant.
    */
-  template<class Variant, size_t... Idx>
-  static Variant readIndex(std::istream& in, size_t idx, std::index_sequence<Idx...>) {
+  template <class Variant, size_t... Idx>
+  static Variant readIndex(std::istream &in, size_t idx, std::index_sequence<Idx...>) {
     Variant var;
     (readIndexHelper<Variant, std::variant_alternative_t<Idx, Variant>, Idx>(in, idx, var), ...);
     return var;
@@ -261,4 +258,4 @@ class LiveInfo {
   std::map<std::string, InfoType> infos;
 };
 
-} // namespace autopas
+}  // namespace autopas

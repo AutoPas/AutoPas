@@ -19,13 +19,13 @@
 #include "autopas/selectors/OptimumSelector.h"
 #include "autopas/selectors/TraversalSelector.h"
 #include "autopas/selectors/tuningStrategy/TuningStrategyInterface.h"
+#include "autopas/selectors/tuningStrategy/TuningStrategyLoggerProxy.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/StaticCellSelector.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/logging/IterationLogger.h"
 #include "autopas/utils/logging/TuningDataLogger.h"
 #include "autopas/utils/logging/TuningResultLogger.h"
-#include "autopas/selectors/tuningStrategy/TuningStrategyLoggerProxy.h"
 
 namespace autopas {
 
@@ -65,9 +65,9 @@ class AutoTuner {
             SelectorStrategyOption selectorStrategy, unsigned int tuningInterval, unsigned int maxSamples,
             const std::string &outputSuffix = "", bool useTuningStrategyLoggerProxy = false)
       : _selectorStrategy(selectorStrategy),
-        _tuningStrategy(useTuningStrategyLoggerProxy ? std::make_unique<TuningStrategyLoggerProxy>(
-                                                           std::move(tuningStrategy), outputSuffix)
-                : std::move(tuningStrategy)),
+        _tuningStrategy(useTuningStrategyLoggerProxy
+                            ? std::make_unique<TuningStrategyLoggerProxy>(std::move(tuningStrategy), outputSuffix)
+                            : std::move(tuningStrategy)),
         _tuningInterval(tuningInterval),
         _iterationsSinceTuning(tuningInterval),  // init to max so that tuning happens in first iteration
         _containerSelector(boxMin, boxMax, cutoff),
@@ -507,7 +507,7 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
   tuningTimer.start();
   // first tuning iteration -> reset to first config
   if (_iterationsSinceTuning == _tuningInterval) {
-    if(_tuningStrategy->needsLiveInfo()) {
+    if (_tuningStrategy->needsLiveInfo()) {
       LiveInfo info{};
       info.gather(*_containerSelector.getCurrentContainer(), pairwiseFunctor);
       _tuningStrategy->receiveLiveInfo(std::move(info));

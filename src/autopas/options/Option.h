@@ -151,14 +151,14 @@ class Option {
    */
   friend std::istream &operator>>(std::istream &in, actualOption &option) {
     char c = ' ';
-    while(std::iswspace(c)) {
+    while (std::iswspace(c)) {
       in.get(c);
     }
     std::string str{c};
     do {
       in.get(c);
       str.push_back(c);
-    } while(std::isalnum(c) || c == '_' || c == '-');   // This assumes that an option only contains alphanum, _, or -.
+    } while (std::isalnum(c) || c == '_' || c == '-');  // This assumes that an option only contains alphanum, _, or -.
     str.pop_back();
 
     option = parseOptionExact(str);

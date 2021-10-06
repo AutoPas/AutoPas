@@ -6,9 +6,8 @@
 
 #pragma once
 
-#include "autopas/selectors/Configuration.h"
-
 #include "LiveInfo.h"
+#include "autopas/selectors/Configuration.h"
 
 namespace autopas {
 
@@ -63,16 +62,14 @@ class TuningStrategyInterface {
    * @return True, if this tuning strategy can make use of a LiveInfo object passed before a new tuning phase via
    * receiveLiveInfo().
    */
-  [[nodiscard]] virtual bool needsLiveInfo() const {
-    return false;
-  }
+  [[nodiscard]] virtual bool needsLiveInfo() const { return false; }
 
   /**
    * Virtual method that subclasses can override to receive the LiveInfo object before a tuning phase if they return
    * true in needsLiveInfo().
    * @param info A new LiveInfo object that has already gathered its information.
    */
-  virtual void receiveLiveInfo(LiveInfo info) {};
+  virtual void receiveLiveInfo(LiveInfo info){};
 
   /**
    * Returns all container options the strategy might choose.

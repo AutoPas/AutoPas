@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <cstddef>
+
 #include "autopas/iterators/ParticleIteratorInterface.h"
 
 namespace autopas {

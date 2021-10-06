@@ -44,6 +44,5 @@ std::unique_ptr<autopas::TuningStrategyInterface> generateTuningStrategy(
     double relativeBlacklistRange, unsigned int evidenceFirstPrediction,
     AcquisitionFunctionOption acquisitionFunctionOption, ExtrapolationMethodOption extrapolationMethodOption,
     const std::string &ruleFileName, const std::string &outputSuffix = "",
-    MPIStrategyOption mpiStrategyOption = MPIStrategyOption::noMPI,
-    AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD);
+    MPIStrategyOption mpiStrategyOption = MPIStrategyOption::noMPI, AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD);
 }  // namespace autopas::TuningStrategyFactory

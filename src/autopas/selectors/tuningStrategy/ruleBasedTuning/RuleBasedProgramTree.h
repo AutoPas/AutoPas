@@ -16,11 +16,12 @@ struct ConfigurationPattern {
 
   ConfigurationPattern() = default;
 
-  void add(const RuleVM::MemoryCell& value) {
-    std::visit([&](const auto& val) {
-      addHelper(val, _containers, _traversals, _loadEstimators, _dataLayouts, _newton3Options,
-                _cellSizeFactors);
-    }, value);
+  void add(const RuleVM::MemoryCell &value) {
+    std::visit(
+        [&](const auto &val) {
+          addHelper(val, _containers, _traversals, _loadEstimators, _dataLayouts, _newton3Options, _cellSizeFactors);
+        },
+        value);
   }
 
   [[nodiscard]] bool matches(const Configuration &configuration) const {
@@ -32,27 +33,23 @@ struct ConfigurationPattern {
            (_cellSizeFactors.empty() or contains(_cellSizeFactors, configuration.cellSizeFactor));
   }
 
-
-
   [[nodiscard]] std::string toString() const {
     std::string res = optionSetToString(_containers) + "; " + optionSetToString(_traversals) + "; " +
                       optionSetToString(_loadEstimators) + "; " + optionSetToString(_loadEstimators) + "; " +
                       optionSetToString(_dataLayouts) + "; " + optionSetToString(_newton3Options) + "; ";
-    if(not _cellSizeFactors.empty()) {
+    if (not _cellSizeFactors.empty()) {
       res += std::accumulate(std::next(_cellSizeFactors.begin()), _cellSizeFactors.end(),
                              std::to_string(*_cellSizeFactors.begin()),
-                      [](std::string s, double d) {return std::move(s) + ',', std::to_string(d);});
+                             [](std::string s, double d) { return std::move(s) + ',', std::to_string(d); });
     }
     return res;
   }
 
  private:
-  template<class T>
-  [[nodiscard]] static std::string optionSetToString(const std::set<T>& set) {
-    if(not set.empty()) {
-      auto comma_fold = [](std::string a, T b) {
-        return std::move(a) + ',' + b.to_string();
-      };
+  template <class T>
+  [[nodiscard]] static std::string optionSetToString(const std::set<T> &set) {
+    if (not set.empty()) {
+      auto comma_fold = [](std::string a, T b) { return std::move(a) + ',' + b.to_string(); };
 
       return std::accumulate(std::next(set.begin()), set.end(), set.begin()->to_string(), comma_fold);
     }
@@ -64,15 +61,15 @@ struct ConfigurationPattern {
     return set.find(option) != set.end();
   }
 
-  template<class T, class SetT>
-  static void addHelper2(T value, SetT& set) {
+  template <class T, class SetT>
+  static void addHelper2(T value, SetT &set) {
     if constexpr (std::is_same_v<T, typename SetT::value_type>) {
       set.insert(value);
     }
   }
 
-  template<class T, class... SetT>
-  static void addHelper(T value, SetT&... sets) {
+  template <class T, class... SetT>
+  static void addHelper(T value, SetT &... sets) {
     (addHelper2(value, sets), ...);
   }
 };
@@ -100,9 +97,7 @@ struct ConfigurationOrder : public Statement {
   ConfigurationPattern greater;
   ConfigurationPattern smaller;
 
-  enum class SameProperty {
-    container, traversal, dataLayout, newton3, loadEstimator, cellSizeFactor
-  };
+  enum class SameProperty { container, traversal, dataLayout, newton3, loadEstimator, cellSizeFactor };
 
   std::vector<SameProperty> sameProperties;
 
@@ -115,38 +110,32 @@ struct ConfigurationOrder : public Statement {
 
   [[nodiscard]] std::string toString() const {
     std::string sameString = sameProperties.empty() ? "" : "with same ";
-    for(auto same : sameProperties) {
+    for (auto same : sameProperties) {
       sameString += samePropertyToString(same) + ", ";
     }
     return greater.toString() + " >= " + smaller.toString() + sameString;
   }
 
-  [[nodiscard]] bool haveEqualSameProperties(const Configuration& conf1, const Configuration& conf2) const {
-    for(auto same : sameProperties) {
+  [[nodiscard]] bool haveEqualSameProperties(const Configuration &conf1, const Configuration &conf2) const {
+    for (auto same : sameProperties) {
       switch (same) {
         case SameProperty::container:
-          if(conf1.container != conf2.container)
-            return false;
+          if (conf1.container != conf2.container) return false;
           break;
         case SameProperty::traversal:
-          if(conf1.traversal != conf2.traversal)
-            return false;
+          if (conf1.traversal != conf2.traversal) return false;
           break;
         case SameProperty::dataLayout:
-          if(conf1.dataLayout != conf2.dataLayout)
-            return false;
+          if (conf1.dataLayout != conf2.dataLayout) return false;
           break;
         case SameProperty::newton3:
-          if(conf1.newton3 != conf2.newton3)
-            return false;
+          if (conf1.newton3 != conf2.newton3) return false;
           break;
         case SameProperty::loadEstimator:
-          if(conf1.loadEstimator != conf2.loadEstimator)
-            return false;
+          if (conf1.loadEstimator != conf2.loadEstimator) return false;
           break;
         case SameProperty::cellSizeFactor:
-          if(conf1.cellSizeFactor != conf2.cellSizeFactor)
-            return false;
+          if (conf1.cellSizeFactor != conf2.cellSizeFactor) return false;
           break;
       }
     }
@@ -175,8 +164,10 @@ struct ConfigurationOrder : public Statement {
 
 class CodeGenerationContext {
  public:
-  explicit CodeGenerationContext(std::map<std::string, std::pair<const Define*, size_t>> initialAddressEnvironment)
-      : currentNeededStack(0), maxNeededStack(0), addressEnvironment(std::move(initialAddressEnvironment)),
+  explicit CodeGenerationContext(std::map<std::string, std::pair<const Define *, size_t>> initialAddressEnvironment)
+      : currentNeededStack(0),
+        maxNeededStack(0),
+        addressEnvironment(std::move(initialAddressEnvironment)),
         initialNumVariables(addressEnvironment.size()) {}
 
   void allocateStack(size_t num) {
@@ -192,7 +183,7 @@ class CodeGenerationContext {
 
   [[nodiscard]] size_t addressOf(const std::string &name) const;
 
-  [[nodiscard]] const Define* definitionOf(const std::string& name) const;
+  [[nodiscard]] const Define *definitionOf(const std::string &name) const;
 
   [[nodiscard]] auto getMaxStackSize() const { return maxNeededStack; }
 
@@ -205,21 +196,19 @@ class CodeGenerationContext {
     return configurationOrders.size() - 1;
   }
 
-  [[nodiscard]] const auto& getConfigurationOrders() const { return configurationOrders; }
+  [[nodiscard]] const auto &getConfigurationOrders() const { return configurationOrders; }
 
   [[nodiscard]] auto smallerConfigurationPatternByIndex(size_t idx) const {
     return configurationOrders.at(idx).smaller;
   }
 
-  [[nodiscard]] auto getNumLocalVariables() const {
-    return addressEnvironment.size() - initialNumVariables;
-  }
+  [[nodiscard]] auto getNumLocalVariables() const { return addressEnvironment.size() - initialNumVariables; }
 
  private:
   size_t currentNeededStack;
   size_t maxNeededStack;
 
-  std::map<std::string, std::pair<const Define*, size_t>> addressEnvironment;
+  std::map<std::string, std::pair<const Define *, size_t>> addressEnvironment;
   size_t initialNumVariables;
   std::map<std::string, const DefineList *> lists;
   std::vector<ConfigurationOrder> configurationOrders;
@@ -249,7 +238,6 @@ struct DefineList : public Statement {
   void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override {
     context.addList(listName, this);
   }
-
 };
 
 struct Variable : public Expression {
@@ -276,7 +264,6 @@ struct BinaryOperator : public Expression {
 
   void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override;
 };
-
 
 struct Define : public Statement {
   std::string variable;
@@ -318,7 +305,7 @@ struct If : public Statement {
 struct RuleBasedProgramTree {
   std::vector<std::shared_ptr<Statement>> statements;
 
-  [[nodiscard]] RuleVM::Program generateCode(CodeGenerationContext& context) const {
+  [[nodiscard]] RuleVM::Program generateCode(CodeGenerationContext &context) const {
     RuleVM::Program program;
     program.instructions.push_back({RuleVM::RESERVE, 0ul});
     auto reserveInstructionIdx = program.instructions.size() - 1;
@@ -332,5 +319,5 @@ struct RuleBasedProgramTree {
   }
 };
 
-} // namespace syntax
-} // namespace autopas
+}  // namespace rule_syntax
+}  // namespace autopas

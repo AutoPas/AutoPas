@@ -13,10 +13,10 @@
 
 namespace autopas {
 
-class TuningStrategyLoggerProxy : public TuningStrategyInterface{
+class TuningStrategyLoggerProxy : public TuningStrategyInterface {
  public:
   explicit TuningStrategyLoggerProxy(std::unique_ptr<TuningStrategyInterface> actualTuningStrategy,
-                                     const std::string& outputSuffix);
+                                     const std::string &outputSuffix);
 
   ~TuningStrategyLoggerProxy() override;
 
@@ -50,6 +50,7 @@ class TuningStrategyLogReplayer {
   TuningStrategyLogReplayer(std::string filename, std::unique_ptr<TuningStrategyInterface> tuningStrategy);
 
   void replay() const;
+
  private:
   std::string _filename;
   std::unique_ptr<TuningStrategyInterface> _tuningStrategy;

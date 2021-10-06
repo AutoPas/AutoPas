@@ -1,47 +1,46 @@
 #include "RuleBasedProgramParser.h"
 
 #include "antlr4-runtime.h"
-
+#include "parser_generated/autopas_generated_rule_syntax/RuleLanguageBaseVisitor.h"
 #include "parser_generated/autopas_generated_rule_syntax/RuleLanguageLexer.h"
 #include "parser_generated/autopas_generated_rule_syntax/RuleLanguageParser.h"
-#include "parser_generated/autopas_generated_rule_syntax/RuleLanguageBaseVisitor.h"
 
 namespace autopas::rule_syntax {
 using namespace autopas_generated_rule_syntax;
 
 class TranslationVisitor : public RuleLanguageBaseVisitor {
   struct ParserContext {
-    std::map<std::string, const Define*> definitions;
-    std::map<std::string, const DefineList*> lists;
+    std::map<std::string, const Define *> definitions;
+    std::map<std::string, const DefineList *> lists;
   };
 
  public:
-  explicit TranslationVisitor(CodeGenerationContext& context) : context(context) {}
+  explicit TranslationVisitor(CodeGenerationContext &context) : context(context) {}
 
-  static std::shared_ptr<Expression> getExprType(const antlrcpp::Any& expr) {
-    if(expr.is<std::shared_ptr<BinaryOperator>>()) {
+  static std::shared_ptr<Expression> getExprType(const antlrcpp::Any &expr) {
+    if (expr.is<std::shared_ptr<BinaryOperator>>()) {
       return expr.as<std::shared_ptr<BinaryOperator>>();
     }
-    if(expr.is<std::shared_ptr<Variable>>()) {
+    if (expr.is<std::shared_ptr<Variable>>()) {
       return expr.as<std::shared_ptr<Variable>>();
     }
-    if(expr.is<std::shared_ptr<Literal>>()) {
+    if (expr.is<std::shared_ptr<Literal>>()) {
       return expr.as<std::shared_ptr<Literal>>();
     }
     throw std::runtime_error("not an expression");
   }
 
-  static std::shared_ptr<Statement> getStatementType(const antlrcpp::Any& statement) {
-    if(statement.is<std::shared_ptr<DefineList>>()) {
+  static std::shared_ptr<Statement> getStatementType(const antlrcpp::Any &statement) {
+    if (statement.is<std::shared_ptr<DefineList>>()) {
       return statement.as<std::shared_ptr<DefineList>>();
     }
-    if(statement.is<std::shared_ptr<Define>>()) {
+    if (statement.is<std::shared_ptr<Define>>()) {
       return statement.as<std::shared_ptr<Define>>();
     }
-    if(statement.is<std::shared_ptr<If>>()) {
+    if (statement.is<std::shared_ptr<If>>()) {
       return statement.as<std::shared_ptr<If>>();
     }
-    if(statement.is<std::shared_ptr<ConfigurationOrder>>()) {
+    if (statement.is<std::shared_ptr<ConfigurationOrder>>()) {
       return statement.as<std::shared_ptr<ConfigurationOrder>>();
     }
     throw std::runtime_error("not a statement");
@@ -49,7 +48,7 @@ class TranslationVisitor : public RuleLanguageBaseVisitor {
 
   antlrcpp::Any visitProgram(RuleLanguageParser::ProgramContext *ctx) override {
     std::vector<std::shared_ptr<Statement>> statements;
-    for(auto* statementContext : ctx->statement()) {
+    for (auto *statementContext : ctx->statement()) {
       statements.push_back(getStatementType(visit(statementContext)));
     }
     return RuleBasedProgramTree{statements};
@@ -57,31 +56,23 @@ class TranslationVisitor : public RuleLanguageBaseVisitor {
 
   antlrcpp::Any visitLiteral(RuleLanguageParser::LiteralContext *ctx) override {
     RuleVM::MemoryCell literal;
-    if(ctx->Bool_val()) {
+    if (ctx->Bool_val()) {
       literal = ctx->Bool_val()->getText() == "true";
-    }
-    else if(ctx->Container_opt()) {
+    } else if (ctx->Container_opt()) {
       literal = ContainerOption::parseOptionExact(ctx->Container_opt()->getText());
-    }
-    else if(ctx->Traversal_opt()) {
+    } else if (ctx->Traversal_opt()) {
       literal = TraversalOption::parseOptionExact(ctx->Traversal_opt()->getText());
-    }
-    else if(ctx->Data_layout_opt()) {
+    } else if (ctx->Data_layout_opt()) {
       literal = DataLayoutOption::parseOptionExact(ctx->Data_layout_opt()->getText());
-    }
-    else if(ctx->Load_estimator_opt()) {
+    } else if (ctx->Load_estimator_opt()) {
       literal = LoadEstimatorOption::parseOptionExact(ctx->Load_estimator_opt()->getText());
-    }
-    else if(ctx->Newton3_opt()) {
+    } else if (ctx->Newton3_opt()) {
       literal = Newton3Option::parseOptionExact(ctx->Newton3_opt()->getText());
-    }
-    else if(ctx->Unsigned_val()) {
+    } else if (ctx->Unsigned_val()) {
       literal = std::stoull(ctx->Unsigned_val()->getText());
-    }
-    else if(ctx->Double_val()) {
+    } else if (ctx->Double_val()) {
       literal = std::stod(ctx->Double_val()->getText());
-    }
-    else {
+    } else {
       throw std::runtime_error("literal could not be parsed");
     }
 
@@ -90,7 +81,7 @@ class TranslationVisitor : public RuleLanguageBaseVisitor {
 
   antlrcpp::Any visitDefine_list(RuleLanguageParser::Define_listContext *ctx) override {
     std::vector<Literal> values;
-    for(auto* value : ctx->literal()) {
+    for (auto *value : ctx->literal()) {
       values.push_back(*(visit(value).as<std::shared_ptr<Literal>>().get()));
     }
     return std::make_shared<DefineList>(ctx->Variable_name()->getText(), values);
@@ -103,7 +94,7 @@ class TranslationVisitor : public RuleLanguageBaseVisitor {
   antlrcpp::Any visitVariable(RuleLanguageParser::VariableContext *ctx) override {
     auto varName = ctx->Variable_name()->getText();
     auto it = parserContext.definitions.find(varName);
-    if(it != parserContext.definitions.end()) {
+    if (it != parserContext.definitions.end()) {
       return std::make_shared<Variable>(it->second);
     } else {
       return std::make_shared<Variable>(context.definitionOf(varName));
@@ -111,34 +102,31 @@ class TranslationVisitor : public RuleLanguageBaseVisitor {
   }
 
   antlrcpp::Any visitAtom_expr(RuleLanguageParser::Atom_exprContext *ctx) override {
-    if(ctx->literal()) {
+    if (ctx->literal()) {
       return visit(ctx->literal());
     }
-    if(ctx->variable()) {
+    if (ctx->variable()) {
       return visit(ctx->variable());
     }
     return nullptr;
   }
 
   antlrcpp::Any visitComp_expr(RuleLanguageParser::Comp_exprContext *ctx) override {
-    if(ctx->atom_expr().size() > 1) {
+    if (ctx->atom_expr().size() > 1) {
       auto opText = ctx->op->getText();
       auto op = opText == "<" ? BinaryOperator::LESS : BinaryOperator::GREATER;
       return std::make_shared<BinaryOperator>(op, getExprType(visit(ctx->atom_expr(0))),
-                                               getExprType(visit(ctx->atom_expr(1))));
-    }
-    else {
+                                              getExprType(visit(ctx->atom_expr(1))));
+    } else {
       return visit(ctx->atom_expr(0));
     }
-
   }
 
   antlrcpp::Any visitExpression(RuleLanguageParser::ExpressionContext *ctx) override {
-    if(ctx->comp_expr().size() > 1) {
+    if (ctx->comp_expr().size() > 1) {
       return std::make_shared<BinaryOperator>(BinaryOperator::AND, getExprType(visit(ctx->comp_expr(0))),
                                               getExprType(visit(ctx->comp_expr(1))));
-    }
-    else {
+    } else {
       return visit(ctx->comp_expr(0));
     }
   }
@@ -147,7 +135,7 @@ class TranslationVisitor : public RuleLanguageBaseVisitor {
     return visitChildren(ctx);
   }
 
-  [[nodiscard]] auto resolveList(const std::string& name) const {
+  [[nodiscard]] auto resolveList(const std::string &name) const {
     auto it = parserContext.lists.find(name);
     if (it != parserContext.lists.end()) {
       return it->second;
@@ -158,34 +146,27 @@ class TranslationVisitor : public RuleLanguageBaseVisitor {
 
   antlrcpp::Any visitConfiguration_pattern(RuleLanguageParser::Configuration_patternContext *ctx) override {
     ConfigurationPattern pattern;
-    for(size_t i = 0; i < ctx->Configuration_property().size(); i++) {
+    for (size_t i = 0; i < ctx->Configuration_property().size(); i++) {
       auto property = ctx->Configuration_property(i)->getText();
       auto val = ctx->property_value(i);
       std::vector<Literal> value;
-      if(val->literal()) {
+      if (val->literal()) {
         value.push_back(*(visit(val->literal()).as<std::shared_ptr<Literal>>().get()));
-      }
-      else {
+      } else {
         value = resolveList(val->Variable_name()->getText())->values;
       }
 
-      for(const auto& literal : value) {
+      for (const auto &literal : value) {
         pattern.add(literal.value);
       }
 
       // TODO: Somehow check that type is correct. Maybe already in .g4 file during parsing
-      if(property == "container") {
-
+      if (property == "container") {
       } else if (property == "traversal") {
-
       } else if (property == "dataLayout") {
-
       } else if (property == "newton3") {
-
       } else if (property == "loadEstimator") {
-
       } else if (property == "cellSizeFactor") {
-
       }
     }
     return pattern;
@@ -193,9 +174,9 @@ class TranslationVisitor : public RuleLanguageBaseVisitor {
 
   antlrcpp::Any visitConfiguration_order(RuleLanguageParser::Configuration_orderContext *ctx) override {
     std::vector<ConfigurationOrder::SameProperty> sameProperties{};
-    for(size_t i = 0; i < ctx->Configuration_property().size(); i++) {
+    for (size_t i = 0; i < ctx->Configuration_property().size(); i++) {
       auto property = ctx->Configuration_property(i)->getText();
-      if(property == "container") {
+      if (property == "container") {
         sameProperties.push_back(ConfigurationOrder::SameProperty::container);
       } else if (property == "traversal") {
         sameProperties.push_back(ConfigurationOrder::SameProperty::traversal);
@@ -215,11 +196,11 @@ class TranslationVisitor : public RuleLanguageBaseVisitor {
 
   antlrcpp::Any visitStatement(RuleLanguageParser::StatementContext *ctx) override {
     auto res = visitChildren(ctx);
-    if(res.is<std::shared_ptr<Define>>()) {
+    if (res.is<std::shared_ptr<Define>>()) {
       parserContext.definitions[res.as<std::shared_ptr<Define>>()->variable] = res.as<std::shared_ptr<Define>>().get();
-    }
-    else if(res.is<std::shared_ptr<DefineList>>()) {
-      parserContext.lists[res.as<std::shared_ptr<DefineList>>()->listName] =  res.as<std::shared_ptr<DefineList>>().get();
+    } else if (res.is<std::shared_ptr<DefineList>>()) {
+      parserContext.lists[res.as<std::shared_ptr<DefineList>>()->listName] =
+          res.as<std::shared_ptr<DefineList>>().get();
     }
     return res;
   }
@@ -227,14 +208,14 @@ class TranslationVisitor : public RuleLanguageBaseVisitor {
   antlrcpp::Any visitIf_statement(RuleLanguageParser::If_statementContext *ctx) override {
     auto condition = getExprType(visit(ctx->expression()));
     std::vector<std::shared_ptr<Statement>> statements;
-    for(auto* statementContext : ctx->statement()) {
+    for (auto *statementContext : ctx->statement()) {
       statements.push_back(getStatementType(visit(statementContext)));
     }
     return std::make_shared<If>(condition, statements);
   }
 
  private:
-  CodeGenerationContext& context;
+  CodeGenerationContext &context;
   ParserContext parserContext;
 };
 
@@ -251,7 +232,7 @@ std::pair<RuleBasedProgramTree, CodeGenerationContext> RuleBasedProgramParser::p
   tokens.fill();
 
   RuleLanguageParser parser(&tokens);
-  antlr4::tree::ParseTree* tree = parser.program();
+  antlr4::tree::ParseTree *tree = parser.program();
 
   TranslationVisitor visitor{context};
   auto ownTree = visitor.visit(tree).as<RuleBasedProgramTree>();
@@ -259,4 +240,4 @@ std::pair<RuleBasedProgramTree, CodeGenerationContext> RuleBasedProgramParser::p
   return {ownTree, context};
 }
 
-} // namespace autopas_rule_syntax
+}  // namespace autopas::rule_syntax

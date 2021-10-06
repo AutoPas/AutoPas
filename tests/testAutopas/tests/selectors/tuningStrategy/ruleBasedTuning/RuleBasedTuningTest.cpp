@@ -6,6 +6,4 @@
 
 #include "RuleBasedTuningTest.h"
 
-TEST_F(RuleBasedTuningTest, testParser) {
-
-}
+TEST_F(RuleBasedTuningTest, testParser) {}

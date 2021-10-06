@@ -1,18 +1,17 @@
 #pragma once
 
-#include <variant>
 #include <cstddef>
+#include <variant>
+
 #include "autopas/selectors/Configuration.h"
 
 namespace autopas {
 class RuleVM {
  public:
   using MemoryCell = std::variant<bool, double, size_t, ContainerOption, TraversalOption, LoadEstimatorOption,
-      DataLayoutOption, Newton3Option>;
+                                  DataLayoutOption, Newton3Option>;
 
-  enum CMD {
-    LOADC, LOADA, STOREA, RESERVE, LESS, GREATER, EQUAL, JUMPZERO, OUTPUTC, CONDOUTPUTC, HALT, AND, OR, POP
-  };
+  enum CMD { LOADC, LOADA, STOREA, RESERVE, LESS, GREATER, EQUAL, JUMPZERO, OUTPUTC, CONDOUTPUTC, HALT, AND, OR, POP };
 
   struct Instruction {
     CMD cmd;
@@ -24,7 +23,7 @@ class RuleVM {
     size_t neededStackSize;
   };
 
-  std::vector<size_t> execute(const Program& program, const std::vector<MemoryCell>& initialStack) {
+  std::vector<size_t> execute(const Program &program, const std::vector<MemoryCell> &initialStack) {
     _programCounter = 0;
     _removedPatterns.clear();
     _stack = initialStack;
@@ -32,7 +31,7 @@ class RuleVM {
     _stackPointer = initialStack.size() - 1;
     _halt = false;
 
-    while(not _halt) {
+    while (not _halt) {
       executeInstruction(program.instructions.at(_programCounter++));
     }
 
@@ -74,7 +73,7 @@ class RuleVM {
       }
       case JUMPZERO: {
         bool shouldJump = not std::get<bool>(_stack.at(_stackPointer--));
-        if(shouldJump) {
+        if (shouldJump) {
           _programCounter = std::get<size_t>(instruction.payload);
         }
         break;
@@ -83,7 +82,7 @@ class RuleVM {
         _removedPatterns.push_back(std::get<size_t>(instruction.payload));
         break;
       case CONDOUTPUTC:
-        if(std::get<bool>(_stack.at(_stackPointer))) {
+        if (std::get<bool>(_stack.at(_stackPointer))) {
           _removedPatterns.push_back(std::get<size_t>(instruction.payload));
         }
         break;
@@ -94,8 +93,7 @@ class RuleVM {
         bool res = std::get<bool>(_stack.at(_stackPointer)) and std::get<bool>(_stack.at(_stackPointer - 1));
         _stack.at(--_stackPointer) = res;
         break;
-      }
-        break;
+      } break;
       case OR: {
         bool res = std::get<bool>(_stack.at(_stackPointer)) or std::get<bool>(_stack.at(_stackPointer - 1));
         _stack.at(--_stackPointer) = res;
@@ -107,16 +105,17 @@ class RuleVM {
     }
   }
 
-  template<template<class> typename Compare>
+  template <template <class> typename Compare>
   [[nodiscard]] bool compare() {
-    bool res = std::visit([](auto&& left, auto&& right) {
-      if constexpr(std::is_same_v<decltype(left), decltype(right)>) {
-        return Compare{}(left, right);
-      } else {
-        return false;
-      }
-
-    }, _stack.at(_stackPointer - 1), _stack.at(_stackPointer));
+    bool res = std::visit(
+        [](auto &&left, auto &&right) {
+          if constexpr (std::is_same_v<decltype(left), decltype(right)>) {
+            return Compare{}(left, right);
+          } else {
+            return false;
+          }
+        },
+        _stack.at(_stackPointer - 1), _stack.at(_stackPointer));
     return res;
   }
 
@@ -128,4 +127,4 @@ class RuleVM {
   std::vector<MemoryCell> _stack;
   std::vector<size_t> _removedPatterns;
 };
-} // namespace autopas
+}  // namespace autopas

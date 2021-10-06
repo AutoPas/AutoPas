@@ -14,8 +14,8 @@
 #include "PredictiveTuning.h"
 #include "RandomSearch.h"
 #include "autopas/options/MPIStrategyOption.h"
-#include "autopas/utils/AutoPasConfigurationCommunicator.h"
 #include "autopas/selectors/tuningStrategy/ruleBasedTuning/RuleBasedTuning.h"
+#include "autopas/utils/AutoPasConfigurationCommunicator.h"
 
 std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory::generateTuningStrategy(
     autopas::TuningStrategyOption tuningStrategyOption, std::set<autopas::ContainerOption> &allowedContainers,

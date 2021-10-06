@@ -8,14 +8,14 @@ namespace autopas::rule_syntax {
 
 class RuleBasedProgramParser {
  public:
- explicit RuleBasedProgramParser(std::vector<std::pair<std::string, Define>>& initialDefinitions)
+  explicit RuleBasedProgramParser(std::vector<std::pair<std::string, Define>> &initialDefinitions)
       : _initialDefinitions(initialDefinitions) {}
 
   std::pair<RuleBasedProgramTree, CodeGenerationContext> parse(const std::string &programCode);
 
  private:
-  std::vector<std::pair<std::string, Define>>& _initialDefinitions;
+  std::vector<std::pair<std::string, Define>> &_initialDefinitions;
   std::map<std::string, DefineList> _lists;
 };
 
-} // namespace autopas_rule_syntax
+}  // namespace autopas::rule_syntax
