@@ -333,7 +333,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
             "VerletClusterLists::begin() const: Error: particle container is valid, but _particlesToAdd isn't empty!");
       }
     }
-    
+
     // If the particles are sorted into the towers, we can simply use the iteration over towers.
     for (auto &tower : this->_towers) {
       tower.forEach(forEachLambda, behavior);
@@ -341,7 +341,6 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
     // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
     if (_isValid == ValidityState::invalid) {
-
       for (auto tower : this->_towers) {
         tower.forEach(forEachLambda, behavior);
       }

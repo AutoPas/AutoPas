@@ -359,8 +359,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     for (size_t z = startIndex3D[2]; z <= stopIndex3D[2]; ++z) {
       for (size_t y = startIndex3D[1]; y <= stopIndex3D[1]; ++y) {
         for (size_t x = startIndex3D[0]; x <= stopIndex3D[0]; ++x) {
-          cellsOfInterest[i++] =
-              utils::ThreeDimensionalMapping::threeToOneD({x, y, z}, cellsPerDimensionWithHalo);
+          cellsOfInterest[i++] = utils::ThreeDimensionalMapping::threeToOneD({x, y, z}, cellsPerDimensionWithHalo);
         }
       }
     }
@@ -400,8 +399,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     for (size_t z = startIndex3D[2]; z <= stopIndex3D[2]; ++z) {
       for (size_t y = startIndex3D[1]; y <= stopIndex3D[1]; ++y) {
         for (size_t x = startIndex3D[0]; x <= stopIndex3D[0]; ++x) {
-          cellsOfInterest[i++] =
-              utils::ThreeDimensionalMapping::threeToOneD({x, y, z}, cellsPerDimensionWithHalo);
+          cellsOfInterest[i++] = utils::ThreeDimensionalMapping::threeToOneD({x, y, z}, cellsPerDimensionWithHalo);
         }
       }
     }
