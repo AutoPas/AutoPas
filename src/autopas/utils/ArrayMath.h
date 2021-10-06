@@ -232,6 +232,13 @@ template <class T, std::size_t SIZE>
   return mulScalar(a, static_cast<T>(1) / L2Norm(a));
 }
 
+/**
+ * Floors all array elements and converts them to integers.
+ * @tparam T floating point type
+ * @tparam SIZE size of the array
+ * @param a input array
+ * @return New array with floored elements of new type int.
+ */
 template <class T, std::size_t SIZE>
 [[nodiscard]] constexpr std::array<int, SIZE> floorToInt(const std::array<T, SIZE> &a) {
   std::array<int, SIZE> result{};
@@ -241,6 +248,13 @@ template <class T, std::size_t SIZE>
   return result;
 }
 
+/**
+ * Ceils all array elements and converts them to integers.
+ * @tparam T floating point type
+ * @tparam SIZE size of the array
+ * @param a input array
+ * @return New array with ceiled elements of new type int.
+ */
 template <class T, std::size_t SIZE>
 [[nodiscard]] constexpr std::array<int, SIZE> ceilToInt(const std::array<T, SIZE> &a) {
   std::array<int, SIZE> result{};

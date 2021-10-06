@@ -56,8 +56,8 @@ class Configuration {
   }
 
   /**
-   * Returns short string representation of the configuration object.
-   * @return String representation.
+   * Returns a short string representation of the configuration object.
+   * @return A short string representation.
    */
   [[nodiscard]] std::string toShortString() const {
     return "{" + container.to_string() + " , " + std::to_string(cellSizeFactor) +
@@ -153,18 +153,25 @@ inline std::ostream &operator<<(std::ostream &os, const Configuration &configura
   return os << configuration.toString();
 }
 
+/**
+ * Stream extraction operator.
+ * @param in
+ * @param configuration
+ * @return
+ */
 inline std::istream &operator>>(std::istream &in, Configuration &configuration) {
-  in.ignore(std::numeric_limits<std::streamsize>::max(), ':');
+  constexpr auto max = std::numeric_limits<std::streamsize>::max();
+  in.ignore(max, ':');
   in >> configuration.container;
-  in.ignore(std::numeric_limits<std::streamsize>::max(), ':');
+  in.ignore(max, ':');
   in >> configuration.cellSizeFactor;
-  in.ignore(std::numeric_limits<std::streamsize>::max(), ':');
+  in.ignore(max, ':');
   in >> configuration.traversal;
-  in.ignore(std::numeric_limits<std::streamsize>::max(), ':');
+  in.ignore(max, ':');
   in >> configuration.loadEstimator;
-  in.ignore(std::numeric_limits<std::streamsize>::max(), ':');
+  in.ignore(max, ':');
   in >> configuration.dataLayout;
-  in.ignore(std::numeric_limits<std::streamsize>::max(), ':');
+  in.ignore(max, ':');
   in >> configuration.newton3;
   return in;
 }

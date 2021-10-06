@@ -14,13 +14,53 @@
 
 namespace autopas {
 
+/**
+ * This class is able to gather and store important information for a tuning phase from a container and functor.
+ * Infos are identified by a string. Their type is InfoType.
+ */
 class LiveInfo {
- public:
-  LiveInfo() = default;
+  // The class currently needs to be defined in a header only since iteration over a particle container requires to
+  // know the Particle type. Actually, no particle specific information can be used here, so only a pointer to
+  // ParticleBase would suffice, but iteration doesn't work that way at the moment.
 
+ public:
+  /**
+   * The type of an info.
+   */
   using InfoType = std::variant<bool, double, size_t, ContainerOption, TraversalOption, LoadEstimatorOption,
   DataLayoutOption, Newton3Option>;
 
+  /**
+   * Gathers important information from a particle container and functor.
+   *
+   * The gathered information should allow to estimate the performance of different configurations.
+   *
+   * Currently, it provides:
+   * - numParticles: The number of particles in the container.
+   * - numHaloParticles: The number of particles in the container that are outside of the domain.
+   * - cutoff: The configured cutoff radius.
+   * - skin: The configured skin radius.
+   * - domainSizeX: The size of the domain on the x-axis.
+   * - domainSizeY: The size of the domain on the y-axis.
+   * - domainSizeZ: The size of the domain on the z-axis.
+   * - particleSize: The number of bytes one particle in AoS layout needs.
+   * - particleSizeNeededByFunctor: The number of bytes the information needed by the functor from each particle
+   * occupies. Important for the SoA data layout, but irrelevant for the AoS data layout.
+   * - numCells: The number of cells in the domain if a cell has a side-length equal to the cutoff.
+   * - numEmptyCells: The number of empty cells in the domain.
+   * - minParticlesPerCell: The minimum number of particles a cell in the domain contains.
+   * - maxParticlesPerCell: The maximum number of particles a cell in the domain contains.
+   * - avgParticlesPerCell: The average number of particles per cell. (Cells are small so we don't expect outliers
+   * that make the average useless).
+   * - avgDeviationFromAvgParticlesPerCell: The average deviation of the number of particles in each cell from the
+   * average number of particles per cell.
+   * - threadCount: The number of threads that can be used.
+   *
+   * @tparam Particle The type of particle the container stores.
+   * @tparam PairwiseFunctor The type of functor.
+   * @param container The container to gather the infos from.
+   * @param functor The functor to gather the infos from.
+   */
   template<class Particle, class PairwiseFunctor>
   void gather(const autopas::ParticleContainerInterface<Particle>& container, const PairwiseFunctor& functor) {
     infos["numParticles"] = container.getNumParticles();
@@ -78,12 +118,12 @@ class LiveInfo {
       if(diff > maxDiff) {
         maxDiff = diff;
       }
-      sum += std::sqrt(diff*diff);
+      sum += std::abs(diff);
     }
     infos["numEmptyCells"] = numEmptyCells;
     infos["maxParticlesPerCell"] = maxParticlesPerCell;
     infos["minParticlesPerCell"] = minParticlesPerCell;
-    infos["meanSquaredDiffParticlesPerCell"] = sum / static_cast<double>(particleBins.size() - 1);
+    infos["avgDeviationFromAvgParticlesPerCell"] = sum / static_cast<double>(particleBins.size() - 1);
     infos["avgParticlesPerCell"] = static_cast<double>(container.getNumParticles() - particleBins.back()) / numCells;
 
     infos["threadCount"] = static_cast<size_t>(autopas::autopas_get_max_threads());
@@ -94,10 +134,18 @@ class LiveInfo {
     infos["particleSizeNeededByFunctor"] = particleSizeNeededByFunctor;
   }
 
+  /**
+   * Returns a map of all infos.
+   * @return A map of all infos.
+   */
   [[nodiscard]] const auto& get() {
     return infos;
   }
 
+  /**
+   * Creates a string containing all live info gathered.
+   * @return A string containing all live info gathered.
+   */
   [[nodiscard]] std::string toString() {
     std::string res{"Live Info: "};
     auto typeToString = [](auto type) {
@@ -120,6 +168,12 @@ class LiveInfo {
     return res;
   }
 
+  /**
+   * Stream operator to write the LiveInfo to a stream.
+   * @param out
+   * @param info
+   * @return
+   */
   friend std::ostream & operator <<(std::ostream &out, const LiveInfo& info)
   {
     out << info.infos.size() << ' ';
@@ -130,6 +184,12 @@ class LiveInfo {
     return out;
   }
 
+  /**
+   * Stream operator to read the LiveInfo in from a stream.
+   * @param in
+   * @param info
+   * @return
+   */
   friend std::istream & operator >>(std::istream &in, LiveInfo& info)
   {
     size_t numElements;
@@ -139,21 +199,40 @@ class LiveInfo {
       in >> name;
       size_t idx;
       in >> idx;
-      auto val = readIndex<LiveInfo::InfoType>(in, idx);
+      auto val = readIndex<LiveInfo::InfoType>(in, idx,
+                                               std::make_index_sequence<std::variant_size_v<LiveInfo::InfoType>>());
       info.infos[name] = val;
     }
     return in;
   }
 
  private:
+  /**
+   * Private helper to calculate the particle size needed by a functor. This is the sum of the size of the type of all
+   * needed attributes.
+   * @tparam Particle The type of the Particle
+   * @tparam PairwiseFunctor The Functor
+   * @tparam Idx An index sequence for all elements of PairwiseFunctor::getNeededAttr() elements.
+   * @return The number of bytes needed by the information of a particle the functor needs.
+   */
   template<class Particle, class PairwiseFunctor, size_t... Idx>
   constexpr static auto calculateParticleSizeNeededByFunctor(std::index_sequence<Idx...>) {
     return (0 + ... + sizeof(typename std::tuple_element<PairwiseFunctor::getNeededAttr()[Idx],
                                                          typename Particle::SoAArraysType>::type::value_type));
   }
 
+  /**
+   * If the template argument Idx is equal to the function argument idx, the method reads in Type from in and stores it
+   * in var.
+   * @tparam Variant The Variant to return (through var).
+   * @tparam Type The type to read in if Idx==idx.
+   * @tparam Idx The template argument Idx to compare idx with.
+   * @param in The stream to read from.
+   * @param idx The index to compare to the template argument Idx.
+   * @param var The variant that is filled with the read value if Idx==idx.
+   */
   template<class Variant, class Type, size_t Idx>
-  static void readIndexHelper2(std::istream& in, size_t idx, Variant& var) {
+  static void readIndexHelper(std::istream& in, size_t idx, Variant& var) {
     if(Idx == idx) {
       Type val;
       in >> val;
@@ -161,19 +240,25 @@ class LiveInfo {
     }
   }
 
+  /**
+   * Reads the value of type std::variant_alternative_t<idx, Variant> from the stream and returns the variant.
+   * @tparam Variant The variant that holds the types.
+   * @tparam Idx An index sequence for all possible alternatives in the variant.
+   * @param in The stream to read from.
+   * @param idx The index of the alternative that should be read in.
+   * @return A variant that holds the read value of the type indexed by idx in the Variant.
+   */
   template<class Variant, size_t... Idx>
-  static Variant readIndexHelper(std::istream& in, size_t idx, std::index_sequence<Idx...>) {
+  static Variant readIndex(std::istream& in, size_t idx, std::index_sequence<Idx...>) {
     Variant var;
-    (readIndexHelper2<Variant, std::variant_alternative_t<Idx, Variant>, Idx>(in, idx, var), ...);
+    (readIndexHelper<Variant, std::variant_alternative_t<Idx, Variant>, Idx>(in, idx, var), ...);
     return var;
   }
 
-  template<class Variant>
-  static Variant readIndex(std::istream &in, size_t idx) {
-    return readIndexHelper<Variant>(in, idx, std::make_index_sequence<std::variant_size_v<Variant>>());
-  }
-
  private:
+  /**
+   * The map that stores all infos gathered so far.
+   */
   std::map<std::string, InfoType> infos;
 };
 

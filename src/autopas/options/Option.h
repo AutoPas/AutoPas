@@ -57,7 +57,7 @@ class Option {
    * Converts an Option object to its respective string representation.
    * @return The string representation or "Unknown Option (<IntValue>)".
    */
-  std::string to_string() const {
+  [[nodiscard]] std::string to_string() const {
     auto &actualThis = *static_cast<const actualOption *>(this);
     auto mapOptNames = actualOption::getOptionNames();  // <- not copying the map destroys the strings
     auto match = mapOptNames.find(actualThis);
@@ -143,6 +143,12 @@ class Option {
     return os;
   }
 
+  /**
+   * Stream extraction operator.
+   * @param in
+   * @param option
+   * @return
+   */
   friend std::istream &operator>>(std::istream &in, actualOption &option) {
     char c = ' ';
     while(std::iswspace(c)) {
@@ -152,7 +158,7 @@ class Option {
     do {
       in.get(c);
       str.push_back(c);
-    } while(std::isalnum(c) || c == '_' || c == '-');
+    } while(std::isalnum(c) || c == '_' || c == '-');   // This assumes that an option only contains alphanum, _, or -.
     str.pop_back();
 
     option = parseOptionExact(str);
