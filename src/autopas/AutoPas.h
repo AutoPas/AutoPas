@@ -837,7 +837,7 @@ class AutoPas {
   /**
    * The filename of the .rule file for the RuleBasedTuning.
    */
-   std::string _ruleFileName;
+   std::string _ruleFileName{"tuningRules.rule"};
 
 };  // class AutoPas
 }  // namespace autopas

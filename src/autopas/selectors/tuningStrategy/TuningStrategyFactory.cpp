@@ -149,6 +149,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
       tuningStrategy = std::make_unique<RuleBasedTuning>(allowedContainers, allowedCellSizeFactors.getAll(),
                                                          allowedTraversals, allowedLoadEstimators, allowedDataLayouts,
                                                          allowedNewton3Options, false, ruleFileName);
+      break;
     }
 
     default: {

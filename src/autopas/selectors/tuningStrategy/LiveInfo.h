@@ -90,7 +90,6 @@ class LiveInfo {
         particleBins.at(idx)++;
       } else {
         particleBins.back()++;
-        std::cout << utils::ArrayUtils::to_string(particle.getR()) << std::endl;
       }
     }
 

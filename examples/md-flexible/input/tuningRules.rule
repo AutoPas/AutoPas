@@ -1,0 +1,22 @@
+define LCVLThreshold = 30000;
+define LCVLThresholdPerCell = 4.;
+define_list VerletListsContainer = "VerletLists", "VerletClusterLists", "VerletListsCells", "PairwiseVerletLists", "VerletClusterCells", "VarVerletListsAsBuild";
+
+if numParticles > LCVLThreshold and avgParticlesPerCell > LCVLThresholdPerCell:
+	[container="LinkedCells", dataLayout="SoA", newton3="enabled", traversal="lc_c08"] >= [container=VerletListsContainer];
+endif
+
+if numParticles > 1000: [container="LinkedCells"] >= [container="DirectSum"]; endif
+
+if numParticles < 500: [container="DirectSum"] >= [container="LinkedCells"]; endif
+
+if numCells < numParticles and numParticles > 50000:
+	[container="LinkedCells", dataLayout="SoA", newton3="enabled"] >= [container="LinkedCells", dataLayout="AoS", newton3="enabled"] with same traversal;
+	[container="LinkedCells", newton3="enabled"] >= [container="LinkedCells", newton3="disabled"] with same traversal;
+endif
+
+[container="VarVerletListsAsBuild", dataLayout="AoS"] >= [container="VarVerletListsAsBuild", dataLayout="SoA"] with same newton3, traversal;
+
+if avgParticlesPerCell < 100:
+	[container="VerletListsCells"] >= [container="PairwiseVerletLists"];
+endif
