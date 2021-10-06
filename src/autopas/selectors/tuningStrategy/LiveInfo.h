@@ -52,7 +52,7 @@ class LiveInfo {
    * - maxParticlesPerCell: The maximum number of particles a cell in the domain contains.
    * - avgParticlesPerCell: The average number of particles per cell. (Cells are small so we don't expect outliers
    * that make the average useless).
-   * - avgDeviationFromAvgParticlesPerCell: The average deviation of the number of particles in each cell from the
+   * - particlesPerCellStdDev: The standard deviation of the number of particles in each cell from the
    * average number of particles per cell.
    * - threadCount: The number of threads that can be used.
    *
@@ -118,12 +118,12 @@ class LiveInfo {
       if(diff > maxDiff) {
         maxDiff = diff;
       }
-      sum += std::abs(diff);
+      sum += diff * diff;
     }
     infos["numEmptyCells"] = numEmptyCells;
     infos["maxParticlesPerCell"] = maxParticlesPerCell;
     infos["minParticlesPerCell"] = minParticlesPerCell;
-    infos["avgDeviationFromAvgParticlesPerCell"] = sum / static_cast<double>(particleBins.size() - 1);
+    infos["particlesPerCellStdDev"] = std::sqrt(sum) / static_cast<double>(particleBins.size() - 1);
     infos["avgParticlesPerCell"] = static_cast<double>(container.getNumParticles() - particleBins.back()) / numCells;
 
     infos["threadCount"] = static_cast<size_t>(autopas::autopas_get_max_threads());
