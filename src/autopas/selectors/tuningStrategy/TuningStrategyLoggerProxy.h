@@ -15,7 +15,8 @@ namespace autopas {
 
 class TuningStrategyLoggerProxy : public TuningStrategyInterface{
  public:
-  explicit TuningStrategyLoggerProxy(std::unique_ptr<TuningStrategyInterface> actualTuningStrategy);
+  explicit TuningStrategyLoggerProxy(std::unique_ptr<TuningStrategyInterface> actualTuningStrategy,
+                                     const std::string& outputSuffix);
 
   ~TuningStrategyLoggerProxy() override;
 

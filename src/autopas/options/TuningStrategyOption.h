@@ -49,6 +49,11 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
      * range, and selects the best.
      */
     predictiveTuning,
+    /**
+     * Applies predefined rules to dynamically exclude configurations from tuning that are expected to perform worse
+     * than others in the next tuning phase.
+     */
+    ruleBasedTuning
   };
 
   /**
@@ -86,6 +91,7 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
         {TuningStrategyOption::randomSearch, "random-Search"},
         {TuningStrategyOption::activeHarmony, "active-harmony"},
         {TuningStrategyOption::predictiveTuning, "predictive-tuning"},
+        {TuningStrategyOption::ruleBasedTuning, "rule-based-tuning"},
     };
   }
 

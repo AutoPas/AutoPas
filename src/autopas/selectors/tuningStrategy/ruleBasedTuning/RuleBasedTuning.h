@@ -25,11 +25,15 @@ class RuleBasedTuning : public FullSearch {
              const std::set<TraversalOption> &allowedTraversalOptions,
              const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
              const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-             const std::set<Newton3Option> &allowedNewton3Options, bool verifyModeEnabled = true)
+             const std::set<Newton3Option> &allowedNewton3Options, bool verifyModeEnabled = false,
+                  std::string ruleFileName = "tuningRules.rule")
       : FullSearch(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions, allowedLoadEstimatorOptions,
                    allowedDataLayoutOptions, allowedNewton3Options), _originalSearchSpace(this->_searchSpace.begin(),
-                             this->_searchSpace.end()), _verifyModeEnabled(verifyModeEnabled)
-      {}
+                             this->_searchSpace.end()), _verifyModeEnabled(verifyModeEnabled),
+        _ruleFileName(std::move(ruleFileName))
+  {
+
+  }
 
   bool needsLiveInfo() const override {
     return true;
@@ -86,7 +90,7 @@ class RuleBasedTuning : public FullSearch {
       defines.push_back({name, {name, std::make_shared<rule_syntax::Literal>(value)}});
     }
 
-    std::ifstream ifs("/home/tobias/tmp/myfile.txt");
+    std::ifstream ifs{_ruleFileName};
     std::string content( (std::istreambuf_iterator<char>(ifs) ),
                          (std::istreambuf_iterator<char>()) );
 
@@ -131,5 +135,6 @@ class RuleBasedTuning : public FullSearch {
   const std::list<Configuration> _originalSearchSpace;
   std::vector<rule_syntax::ConfigurationOrder> _lastApplicableConfigurationOrders;
   bool _verifyModeEnabled;
+  std::string _ruleFileName;
 };
 }  // namespace autopas

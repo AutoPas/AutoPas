@@ -63,9 +63,11 @@ class AutoTuner {
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
             unsigned int verletClusterSize, std::unique_ptr<TuningStrategyInterface> tuningStrategy,
             SelectorStrategyOption selectorStrategy, unsigned int tuningInterval, unsigned int maxSamples,
-            const std::string &outputSuffix = "")
+            const std::string &outputSuffix = "", bool useTuningStrategyLoggerProxy = false)
       : _selectorStrategy(selectorStrategy),
-        _tuningStrategy(std::make_unique<TuningStrategyLoggerProxy>(std::move(tuningStrategy))),
+        _tuningStrategy(useTuningStrategyLoggerProxy ? std::make_unique<TuningStrategyLoggerProxy>(
+                                                           std::move(tuningStrategy), outputSuffix)
+                : std::move(tuningStrategy)),
         _tuningInterval(tuningInterval),
         _iterationsSinceTuning(tuningInterval),  // init to max so that tuning happens in first iteration
         _containerSelector(boxMin, boxMax, cutoff),

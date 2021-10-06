@@ -25,7 +25,8 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     unsigned int maxEvidence, double relativeOptimum, unsigned int maxTuningPhasesWithoutTest,
     double relativeBlacklistRange, unsigned int evidenceFirstPrediction,
     AcquisitionFunctionOption acquisitionFunctionOption, ExtrapolationMethodOption extrapolationMethodOption,
-    const std::string &outputSuffix, MPIStrategyOption mpiStrategyOption, AutoPas_MPI_Comm comm) {
+    const std::string &ruleFileName, const std::string &outputSuffix, MPIStrategyOption mpiStrategyOption,
+    AutoPas_MPI_Comm comm) {
   // ======== prepare MPI =====================================================
 
   // only needed in the MPI case, but need to be declared here.
@@ -138,18 +139,23 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
       break;
     }
 
+    case TuningStrategyOption::ruleBasedTuning: {
+      if (not allowedCellSizeFactors.isFinite()) {
+        autopas::utils::ExceptionHandler::exception(
+            "AutoPas::generateTuningStrategy: ruleBasedTuning can not handle infinite cellSizeFactors!");
+        return nullptr;
+      }
+
+      tuningStrategy = std::make_unique<RuleBasedTuning>(allowedContainers, allowedCellSizeFactors.getAll(),
+                                                         allowedTraversals, allowedLoadEstimators, allowedDataLayouts,
+                                                         allowedNewton3Options, false, ruleFileName);
+    }
+
     default: {
       autopas::utils::ExceptionHandler::exception("AutoPas::generateTuningStrategy: Unknown tuning strategy {}!",
                                                   tuningStrategyOption);
       break;
     }
-  }
-
-  constexpr bool wrapRuleBased = true;
-  if (wrapRuleBased) {
-    tuningStrategy = std::make_unique<RuleBasedTuning>(allowedContainers, allowedCellSizeFactors.getAll(),
-                                                       allowedTraversals, allowedLoadEstimators, allowedDataLayouts,
-                                                       allowedNewton3Options);
   }
 
   // ======== Wrap strategy into MPI wrapper if appropriate ===================

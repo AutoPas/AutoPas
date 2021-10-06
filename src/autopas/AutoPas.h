@@ -116,8 +116,8 @@ class AutoPas {
             _tuningStrategyOption, _allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
             _allowedLoadEstimators, _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _relativeOptimumRange,
             _maxTuningPhasesWithoutTest, _relativeBlacklistRange, _evidenceFirstPrediction, _acquisitionFunctionOption,
-            _extrapolationMethodOption, _outputSuffix, _mpiStrategyOption, _autopasMPICommunicator)),
-        _selectorStrategy, _tuningInterval, _numSamples, _outputSuffix);
+            _extrapolationMethodOption, _ruleFileName, _outputSuffix, _mpiStrategyOption, _autopasMPICommunicator)),
+        _selectorStrategy, _tuningInterval, _numSamples, _outputSuffix, _useTuningLogger);
     _logicHandler = std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(*(_autoTuner.get()),
                                                                                         _verletRebuildFrequency);
   }
@@ -673,6 +673,17 @@ class AutoPas {
    */
   void setOutputSuffix(const std::string &suffix) { _outputSuffix = suffix; }
 
+  /**
+   * Set if the tuning information should be logged to a file. It can then be replayed to test other tuning strategies.
+   * @param useTuningLogger
+   */
+  void setUseTuningLogger(bool useTuningLogger) { _useTuningLogger = useTuningLogger; }
+
+  /**
+   * Set rule file name for the RuleBasedTuning.
+   */
+   void setRuleFileName(const std::string& ruleFileName) { _ruleFileName = ruleFileName; }
+
  private:
   /**
    * Lower corner of the container.
@@ -817,6 +828,16 @@ class AutoPas {
    * This is useful when multiple instances of AutoPas exist, especially in an MPI context.
    */
   std::string _outputSuffix{""};
+
+  /**
+   * Stores whether to use the TuningStrategyLoggerProxy.
+   */
+  bool _useTuningLogger;
+
+  /**
+   * The filename of the .rule file for the RuleBasedTuning.
+   */
+   std::string _ruleFileName;
 
 };  // class AutoPas
 }  // namespace autopas

@@ -63,15 +63,13 @@ LiveInfo readLiveInfo(std::stringstream& str) {
 }
 };
 
-TuningStrategyLoggerProxy::TuningStrategyLoggerProxy(std::unique_ptr<TuningStrategyInterface> actualTuningStrategy)
+TuningStrategyLoggerProxy::TuningStrategyLoggerProxy(std::unique_ptr<TuningStrategyInterface> actualTuningStrategy,
+                                                     const std::string& outputSuffix)
     : _actualTuningStrategy(std::move(actualTuningStrategy)) {
   std::stringstream filename;
   filename << "tuningLog-";
   filename << utils::Timer::getDateStamp();
-  char* note = std::getenv("TUNING_LOGFILE_NAME");
-  if(note) {
-    filename << '-' << note;
-  }
+  filename << '-' << outputSuffix;
   filename << ".txt";
   _logOut.open(filename.str());
 }

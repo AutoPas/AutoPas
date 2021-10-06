@@ -1,5 +1,5 @@
 #include "autopas/selectors/tuningStrategy/TuningStrategyLoggerProxy.h"
-#include "autopas/selectors/tuningStrategy/TuningStrategyFactory.h"
+#include "autopas/selectors/tuningStrategy/ruleBasedTuning/RuleBasedTuning.h"
 
 int main(int argc, char** argv) {
   autopas::Logger::create();
@@ -21,15 +21,9 @@ int main(int argc, char** argv) {
 
   for(int i = 1; i < argc; i++) {
     AutoPasLog(info, "Checking with file {}", argv[i]);
-    auto strategy =
-        autopas::TuningStrategyFactory::generateTuningStrategy(
-            autopas::TuningStrategyOption::fullSearch, containers,
-            *std::make_unique<autopas::NumberSetFinite<double>>(std::set<double>({1.})),
-            traversals, loadEstimators, dataLayouts, newton3Options, 10, 1.2,
-            5, 0, 3,
-            autopas::AcquisitionFunctionOption::upperConfidenceBound,
-            autopas::ExtrapolationMethodOption::linearRegression, "", autopas::MPIStrategyOption::noMPI,
-            autopas::AutoPas_MPI_Comm::AUTOPAS_MPI_COMM_NULL);
+    auto strategy = std::make_unique<autopas::RuleBasedTuning>(
+        containers, std::set<double>({1.}), traversals, loadEstimators, dataLayouts, newton3Options,
+        true);
     autopas::TuningStrategyLogReplayer logReplayer{argv[i], std::move(strategy)};
     logReplayer.replay();
   }
