@@ -10,7 +10,6 @@
 #include "autopas/iterators/ParticleIteratorWrapper.h"
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/selectors/AutoTuner.h"
-#include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/logging/Logger.h"
 #include "autopas/utils/markParticleAsDeleted.h"
 
@@ -225,7 +224,7 @@ class LogicHandler {
     } else {
       _numParticlesHalo.fetch_sub(1, std::memory_order_relaxed);
     }
-    internal::markParticleAsDeleted(*particle);
+    internal::markParticleAsDeleted(particle);
   }
 
   /**
