@@ -29,7 +29,7 @@ namespace autopas {
  * @return Returns whatever function returns.
  */
 template <typename Particle, typename FunctionType>
-decltype(auto) withStaticContainerType(std::shared_ptr<ParticleContainerInterface<Particle>> container,
+decltype(auto) withStaticContainerType(const std::shared_ptr<ParticleContainerInterface<Particle>> &container,
                                        FunctionType &&function) {
   auto containerPtr = container.get();
   switch (container->getContainerType()) {
