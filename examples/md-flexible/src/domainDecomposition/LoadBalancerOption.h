@@ -50,7 +50,7 @@ class LoadBalancerOption : public autopas::Option<LoadBalancerOption> {
    * @return map option -> string representation
    */
   static std::map<LoadBalancerOption, std::string> getOptionNames() {
-    return {{LoadBalancerOption::invertedPressure, "Inverted Pressure"},
+    return {{LoadBalancerOption::invertedPressure, "InvertedPressure"},
             {LoadBalancerOption::all, "ALL"},
             {LoadBalancerOption::none, "None"}};
   }
