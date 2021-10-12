@@ -166,7 +166,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
       getHaloCell().forEach(forEachLambda);
     }
     // sanity check
-    if (not (behavior & IteratorBehavior::ownedOrHalo)) {
+    if (not(behavior & IteratorBehavior::ownedOrHalo)) {
       utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
     }
   }
@@ -189,7 +189,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
       getHaloCell().reduce(reduceLambda, result);
     }
     // sanity check
-    if (not (behavior & IteratorBehavior::ownedOrHalo)) {
+    if (not(behavior & IteratorBehavior::ownedOrHalo)) {
       utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
     }
   }
