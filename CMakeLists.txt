@@ -96,8 +96,9 @@ include(autopas_other-compileroptions)
 include(autopas_vectorization)
 
 # tests and examples
-add_subdirectory(examples)
 add_subdirectory(tests)
+# might also include tests, hence might need flags from tests subdirectory
+add_subdirectory(examples)
 
 include(autopas_doxygen) # does not really need a target but the variable AUTOPAS_BUILD_EXAMPLES, which is defined in examples.
 
