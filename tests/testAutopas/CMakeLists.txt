@@ -5,7 +5,7 @@ file(
     "*.h"
 )
 
-add_executable(runTests ${MY_SRC} tests/forEach/ContainerReduceTest.cpp tests/forEach/ContainerReduceTest.h)
+add_executable(runTests ${MY_SRC})
 
 target_compile_definitions(runTests PRIVATE)
 
