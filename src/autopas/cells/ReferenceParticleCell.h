@@ -233,7 +233,7 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
                    IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) {
     for (Particle *p : _particles) {
       if (behavior.contains(*p)) {
-        if ((not regionCheck) or this->isParticleInRegion(*p, lowerCorner, higherCorner)) {
+        if ((not regionCheck) or utils::inBox(p->getR(), lowerCorner, higherCorner)) {
           forEachLambda(*p);
         }
       }
@@ -246,7 +246,7 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
                   IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) {
     for (Particle *p : _particles) {
       if ((not ownershipCheck) or behavior.contains(*p)) {
-        if ((not regionCheck) or this->isParticleInRegion(*p, lowerCorner, higherCorner)) {
+        if ((not regionCheck) or utils::inBox(p->getR(), lowerCorner, higherCorner)) {
           reduceLambda(*p, result);
         }
       }
