@@ -57,8 +57,10 @@ class LiveInfo {
    * - maxParticlesPerCell: The maximum number of particles a cell in the domain contains.
    * - avgParticlesPerCell: The average number of particles per cell. (Cells are small so we don't expect outliers
    * that make the average useless).
-   * - particlesPerCellStdDev: The standard deviation of the number of particles in each cell from the
-   * average number of particles per cell.
+   * - percentParticlesPerCellStdDev: The standard deviation of the number of particles in each cell from the
+   * average number of particles per cell, divided by the avgParticlesPerCell.
+   * -percentParticlesPerBlurredCellStdDev: The standard deviation of the number of particles in each blurred cell,
+   * divided by the average number of particles per blurred cell. A blurred cell is exactly 1/27th of the domain.
    * - threadCount: The number of threads that can be used.
    *
    * @tparam Particle The type of particle the container stores.
@@ -86,12 +88,20 @@ class LiveInfo {
 
     std::vector<size_t> particleBins;
     particleBins.resize(numCells + 1);
+    // Each blurred bin is exactly 1/27th of the domain
+    std::vector<size_t> particleBinsBlurred;
+    particleBinsBlurred.resize(27);
+    auto blurredCellDimsReciproc = div({3.0, 3.0, 3.0}, sub(container.getBoxMax(), container.getBoxMin()));
     for (const Particle &particle : container) {
       if (utils::inBox(particle.getR(), container.getBoxMin(), container.getBoxMax())) {
         auto offset = sub(particle.getR(), container.getBoxMin());
         auto cell = floorToInt(mulScalar(offset, 1.0 / container.getCutoff()));
         auto idx = (cell[2] * cellsPerDim[1] + cell[1]) * cellsPerDim[0] + cell[0];
         particleBins.at(idx)++;
+
+        auto cellBlurred = floorToInt(mul(offset, blurredCellDimsReciproc));
+        auto idxBlurred = (cellBlurred[2] * 3 + cellBlurred[1]) * 3 + cellBlurred[0];
+        particleBinsBlurred.at(idxBlurred)++;
       } else {
         particleBins.back()++;
       }
@@ -99,10 +109,10 @@ class LiveInfo {
 
     infos["numHaloParticles"] = particleBins.back();
 
-    auto avg = static_cast<double>(std::accumulate(particleBins.begin(), particleBins.end() - 1, 0ul)) /
-               static_cast<double>(particleBins.size() - 1);
+    auto avg = static_cast<double>(container.getNumParticles() - particleBins.back()) / static_cast<double>(numCells);
+    auto avgBlurred = static_cast<double>(container.getNumParticles() - particleBins.back()) / 27;
     double maxDiff = 0;
-    double sum = 0;
+    double sumStddev = 0;
     size_t numEmptyCells = 0;
     size_t maxParticlesPerCell = 0;
     size_t minParticlesPerCell = std::numeric_limits<size_t>::max();
@@ -121,13 +131,22 @@ class LiveInfo {
       if (diff > maxDiff) {
         maxDiff = diff;
       }
-      sum += diff * diff;
+      sumStddev += diff * diff;
     }
     infos["numEmptyCells"] = numEmptyCells;
     infos["maxParticlesPerCell"] = maxParticlesPerCell;
     infos["minParticlesPerCell"] = minParticlesPerCell;
-    infos["particlesPerCellStdDev"] = std::sqrt(sum) / static_cast<double>(particleBins.size() - 1);
-    infos["avgParticlesPerCell"] = static_cast<double>(container.getNumParticles() - particleBins.back()) / numCells;
+    infos["particlesPerCellStdDev"] = std::sqrt(sumStddev) / static_cast<double>(particleBins.size() - 1) / avg;
+    infos["avgParticlesPerCell"] = avg;
+
+    double sumStddevBlurred = 0;
+    for (auto numParticlesInBin : particleBinsBlurred) {
+      auto diff = avgBlurred - static_cast<int>(numParticlesInBin);
+      sumStddevBlurred += diff * diff;
+    }
+
+    infos["particlesPerBlurredCellStdDev"] =
+        std::sqrt(sumStddevBlurred) / static_cast<double>(particleBinsBlurred.size()) / avgBlurred;
 
     infos["threadCount"] = static_cast<size_t>(autopas::autopas_get_max_threads());
 
