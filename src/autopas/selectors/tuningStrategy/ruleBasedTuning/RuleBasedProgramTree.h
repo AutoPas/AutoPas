@@ -253,7 +253,7 @@ struct Variable : public Expression {
 };
 
 struct BinaryOperator : public Expression {
-  enum Operator { LESS, GREATER, AND };
+  enum Operator { LESS, GREATER, AND, OR, ADD, SUB, MUL, DIV };
 
   std::shared_ptr<Expression> left;
   Operator op;
@@ -262,7 +262,11 @@ struct BinaryOperator : public Expression {
   BinaryOperator(Operator op, std::shared_ptr<Expression> left, std::shared_ptr<Expression> right)
       : left(std::move(left)), op(op), right(std::move(right)) {}
 
-  [[nodiscard]] Type getType() const override { return Type::BOOL; }
+  [[nodiscard]] Type getType() const override {
+    return op == LESS or op == GREATER or op == AND or op == OR
+               ? Type::BOOL
+               : (left->getType() == Type::SIZE_T and right->getType() == Type::SIZE_T ? Type::SIZE_T : Type::DOUBLE);
+  }
 
   void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override;
 };

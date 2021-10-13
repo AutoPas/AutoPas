@@ -68,8 +68,8 @@ class TranslationVisitor : public RuleLanguageBaseVisitor {
       literal = LoadEstimatorOption::parseOptionExact(ctx->Load_estimator_opt()->getText());
     } else if (ctx->Newton3_opt()) {
       literal = Newton3Option::parseOptionExact(ctx->Newton3_opt()->getText());
-    } else if (ctx->Unsigned_val()) {
-      literal = std::stoull(ctx->Unsigned_val()->getText());
+    } else if (ctx->unsigned_val()) {
+      literal = std::stoull(ctx->unsigned_val()->getText());
     } else if (ctx->Double_val()) {
       literal = std::stod(ctx->Double_val()->getText());
     } else {
@@ -101,33 +101,21 @@ class TranslationVisitor : public RuleLanguageBaseVisitor {
     }
   }
 
-  antlrcpp::Any visitAtom_expr(RuleLanguageParser::Atom_exprContext *ctx) override {
-    if (ctx->literal()) {
-      return visit(ctx->literal());
-    }
-    if (ctx->variable()) {
-      return visit(ctx->variable());
-    }
-    return nullptr;
-  }
-
-  antlrcpp::Any visitComp_expr(RuleLanguageParser::Comp_exprContext *ctx) override {
-    if (ctx->atom_expr().size() > 1) {
-      auto opText = ctx->op->getText();
-      auto op = opText == "<" ? BinaryOperator::LESS : BinaryOperator::GREATER;
-      return std::make_shared<BinaryOperator>(op, getExprType(visit(ctx->atom_expr(0))),
-                                              getExprType(visit(ctx->atom_expr(1))));
-    } else {
-      return visit(ctx->atom_expr(0));
-    }
-  }
-
   antlrcpp::Any visitExpression(RuleLanguageParser::ExpressionContext *ctx) override {
-    if (ctx->comp_expr().size() > 1) {
-      return std::make_shared<BinaryOperator>(BinaryOperator::AND, getExprType(visit(ctx->comp_expr(0))),
-                                              getExprType(visit(ctx->comp_expr(1))));
+    if (ctx->expression().size() > 1) {
+      ;
+      static const std::map<std::string, BinaryOperator::Operator> opMap{
+          {"*", BinaryOperator::MUL},   {"/", BinaryOperator::DIV},     {"+", BinaryOperator::ADD},
+          {"-", BinaryOperator::SUB},   {">", BinaryOperator::GREATER}, {"<", BinaryOperator::LESS},
+          {"and", BinaryOperator::AND}, {"or", BinaryOperator::OR}};
+      return std::make_shared<BinaryOperator>(opMap.at(ctx->op->getText()), getExprType(visit(ctx->expression(0))),
+                                              getExprType(visit(ctx->expression(1))));
+    } else if (ctx->literal()) {
+      return visit(ctx->literal());
+    } else if (ctx->variable()) {
+      return visit(ctx->variable());
     } else {
-      return visit(ctx->comp_expr(0));
+      return visit(ctx->expression(0));
     }
   }
 

@@ -12,7 +12,10 @@ void BinaryOperator::generateCode(CodeGenerationContext &context, RuleVM::Progra
   left->generateCode(context, program);
   right->generateCode(context, program);
 
-  auto opCode = op == LESS ? RuleVM::LESS : (op == GREATER ? RuleVM::GREATER : RuleVM::AND);
+  static const std::map<Operator, RuleVM::CMD> opMap{
+      {LESS, RuleVM::LESS}, {GREATER, RuleVM::GREATER}, {AND, RuleVM::AND}, {OR, RuleVM::OR},
+      {ADD, RuleVM::ADD},   {SUB, RuleVM::SUB},         {MUL, RuleVM::MUL}, {DIV, RuleVM::DIV}};
+  auto opCode = opMap.at(op);
   program.instructions.emplace_back(opCode);
 
   context.freeStack(1);

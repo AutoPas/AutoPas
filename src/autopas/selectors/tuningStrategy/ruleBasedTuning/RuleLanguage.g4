@@ -66,13 +66,18 @@ Double_val
                 : DIGIT+ '.' DIGIT*
                 ;
 
+unsigned_val
+                : Unsigned_val
+                | DIGIT
+                ;
+
 literal
                 : '"' Traversal_opt '"'
                 | '"' Container_opt '"'
                 | '"' Load_estimator_opt '"'
                 | '"' Data_layout_opt '"'
                 | '"' Newton3_opt '"'
-                | Unsigned_val
+                | unsigned_val
                 | Double_val
                 | '"' Bool_val '"'
                 ;
@@ -93,16 +98,14 @@ variable
                 : Variable_name
                 ;
 
-atom_expr
-                : variable | literal
-                ;
-
-comp_expr
-                : atom_expr (op=('>'|'<') atom_expr)?
-                ;
-
 expression
-                : comp_expr ('and' comp_expr)?
+                : expression op=('*'|'/') expression
+                | expression op=('+'|'-') expression
+                | expression op=('>'|'<') expression
+                | expression op=('and'|'or') expression
+                | literal
+                | variable
+                | '(' expression ')'
                 ;
 
 property_value

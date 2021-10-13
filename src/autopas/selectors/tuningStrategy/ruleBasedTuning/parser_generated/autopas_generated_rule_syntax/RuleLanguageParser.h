@@ -27,34 +27,40 @@ class RuleLanguageParser : public antlr4::Parser {
     T__13 = 14,
     T__14 = 15,
     T__15 = 16,
-    WS = 17,
-    Container_opt = 18,
-    Traversal_opt = 19,
-    Load_estimator_opt = 20,
-    Data_layout_opt = 21,
-    Newton3_opt = 22,
-    Bool_val = 23,
-    Configuration_property = 24,
-    DIGIT = 25,
-    Unsigned_val = 26,
-    Double_val = 27,
-    Variable_name = 28
+    T__16 = 17,
+    T__17 = 18,
+    T__18 = 19,
+    T__19 = 20,
+    T__20 = 21,
+    T__21 = 22,
+    T__22 = 23,
+    WS = 24,
+    Container_opt = 25,
+    Traversal_opt = 26,
+    Load_estimator_opt = 27,
+    Data_layout_opt = 28,
+    Newton3_opt = 29,
+    Bool_val = 30,
+    Configuration_property = 31,
+    DIGIT = 32,
+    Unsigned_val = 33,
+    Double_val = 34,
+    Variable_name = 35
   };
 
   enum {
     RuleProgram = 0,
-    RuleLiteral = 1,
-    RuleDefine_list = 2,
-    RuleDefine = 3,
-    RuleVariable = 4,
-    RuleAtom_expr = 5,
-    RuleComp_expr = 6,
-    RuleExpression = 7,
-    RuleProperty_value = 8,
-    RuleConfiguration_pattern = 9,
-    RuleConfiguration_order = 10,
-    RuleStatement = 11,
-    RuleIf_statement = 12
+    RuleUnsigned_val = 1,
+    RuleLiteral = 2,
+    RuleDefine_list = 3,
+    RuleDefine = 4,
+    RuleVariable = 5,
+    RuleExpression = 6,
+    RuleProperty_value = 7,
+    RuleConfiguration_pattern = 8,
+    RuleConfiguration_order = 9,
+    RuleStatement = 10,
+    RuleIf_statement = 11
   };
 
   explicit RuleLanguageParser(antlr4::TokenStream *input);
@@ -69,12 +75,11 @@ class RuleLanguageParser : public antlr4::Parser {
   virtual antlr4::dfa::Vocabulary &getVocabulary() const override;
 
   class ProgramContext;
+  class Unsigned_valContext;
   class LiteralContext;
   class Define_listContext;
   class DefineContext;
   class VariableContext;
-  class Atom_exprContext;
-  class Comp_exprContext;
   class ExpressionContext;
   class Property_valueContext;
   class Configuration_patternContext;
@@ -94,6 +99,18 @@ class RuleLanguageParser : public antlr4::Parser {
 
   ProgramContext *program();
 
+  class Unsigned_valContext : public antlr4::ParserRuleContext {
+   public:
+    Unsigned_valContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *Unsigned_val();
+    antlr4::tree::TerminalNode *DIGIT();
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  Unsigned_valContext *unsigned_val();
+
   class LiteralContext : public antlr4::ParserRuleContext {
    public:
     LiteralContext(antlr4::ParserRuleContext *parent, size_t invokingState);
@@ -103,7 +120,7 @@ class RuleLanguageParser : public antlr4::Parser {
     antlr4::tree::TerminalNode *Load_estimator_opt();
     antlr4::tree::TerminalNode *Data_layout_opt();
     antlr4::tree::TerminalNode *Newton3_opt();
-    antlr4::tree::TerminalNode *Unsigned_val();
+    Unsigned_valContext *unsigned_val();
     antlr4::tree::TerminalNode *Double_val();
     antlr4::tree::TerminalNode *Bool_val();
 
@@ -148,43 +165,21 @@ class RuleLanguageParser : public antlr4::Parser {
 
   VariableContext *variable();
 
-  class Atom_exprContext : public antlr4::ParserRuleContext {
-   public:
-    Atom_exprContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-    virtual size_t getRuleIndex() const override;
-    VariableContext *variable();
-    LiteralContext *literal();
-
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-  };
-
-  Atom_exprContext *atom_expr();
-
-  class Comp_exprContext : public antlr4::ParserRuleContext {
-   public:
-    antlr4::Token *op = nullptr;
-    Comp_exprContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-    virtual size_t getRuleIndex() const override;
-    std::vector<Atom_exprContext *> atom_expr();
-    Atom_exprContext *atom_expr(size_t i);
-
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-  };
-
-  Comp_exprContext *comp_expr();
-
   class ExpressionContext : public antlr4::ParserRuleContext {
    public:
+    antlr4::Token *op = nullptr;
     ExpressionContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    std::vector<Comp_exprContext *> comp_expr();
-    Comp_exprContext *comp_expr(size_t i);
+    LiteralContext *literal();
+    VariableContext *variable();
+    std::vector<ExpressionContext *> expression();
+    ExpressionContext *expression(size_t i);
 
     virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   ExpressionContext *expression();
-
+  ExpressionContext *expression(int precedence);
   class Property_valueContext : public antlr4::ParserRuleContext {
    public:
     Property_valueContext(antlr4::ParserRuleContext *parent, size_t invokingState);
@@ -251,6 +246,9 @@ class RuleLanguageParser : public antlr4::Parser {
   };
 
   If_statementContext *if_statement();
+
+  virtual bool sempred(antlr4::RuleContext *_localctx, size_t ruleIndex, size_t predicateIndex) override;
+  bool expressionSempred(ExpressionContext *_localctx, size_t predicateIndex);
 
  private:
   static std::vector<antlr4::dfa::DFA> _decisionToDFA;

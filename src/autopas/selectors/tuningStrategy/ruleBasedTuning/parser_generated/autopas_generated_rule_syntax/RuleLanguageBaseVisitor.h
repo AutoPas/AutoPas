@@ -17,6 +17,10 @@ class RuleLanguageBaseVisitor : public RuleLanguageVisitor {
  public:
   virtual antlrcpp::Any visitProgram(RuleLanguageParser::ProgramContext *ctx) override { return visitChildren(ctx); }
 
+  virtual antlrcpp::Any visitUnsigned_val(RuleLanguageParser::Unsigned_valContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual antlrcpp::Any visitLiteral(RuleLanguageParser::LiteralContext *ctx) override { return visitChildren(ctx); }
 
   virtual antlrcpp::Any visitDefine_list(RuleLanguageParser::Define_listContext *ctx) override {
@@ -26,14 +30,6 @@ class RuleLanguageBaseVisitor : public RuleLanguageVisitor {
   virtual antlrcpp::Any visitDefine(RuleLanguageParser::DefineContext *ctx) override { return visitChildren(ctx); }
 
   virtual antlrcpp::Any visitVariable(RuleLanguageParser::VariableContext *ctx) override { return visitChildren(ctx); }
-
-  virtual antlrcpp::Any visitAtom_expr(RuleLanguageParser::Atom_exprContext *ctx) override {
-    return visitChildren(ctx);
-  }
-
-  virtual antlrcpp::Any visitComp_expr(RuleLanguageParser::Comp_exprContext *ctx) override {
-    return visitChildren(ctx);
-  }
 
   virtual antlrcpp::Any visitExpression(RuleLanguageParser::ExpressionContext *ctx) override {
     return visitChildren(ctx);

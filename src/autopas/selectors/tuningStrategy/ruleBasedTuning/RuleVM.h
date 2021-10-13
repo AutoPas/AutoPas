@@ -11,7 +11,26 @@ class RuleVM {
   using MemoryCell = std::variant<bool, double, size_t, ContainerOption, TraversalOption, LoadEstimatorOption,
                                   DataLayoutOption, Newton3Option>;
 
-  enum CMD { LOADC, LOADA, STOREA, RESERVE, LESS, GREATER, EQUAL, JUMPZERO, OUTPUTC, CONDOUTPUTC, HALT, AND, OR, POP };
+  enum CMD {
+    LOADC,
+    LOADA,
+    STOREA,
+    RESERVE,
+    LESS,
+    GREATER,
+    EQUAL,
+    JUMPZERO,
+    OUTPUTC,
+    CONDOUTPUTC,
+    HALT,
+    AND,
+    OR,
+    POP,
+    MUL,
+    DIV,
+    ADD,
+    SUB
+  };
 
   struct Instruction {
     CMD cmd;
@@ -104,7 +123,37 @@ class RuleVM {
       case POP:
         _stackPointer--;
         break;
+      case MUL: {
+        auto res =
+            computeBinary(_stack.at(_stackPointer - 1), _stack.at(_stackPointer), [](auto l, auto r) { return l * r; });
+        _stack.at(--_stackPointer) = res;
+        break;
+      }
+      case DIV: {
+        auto res =
+            computeBinary(_stack.at(_stackPointer - 1), _stack.at(_stackPointer), [](auto l, auto r) { return l / r; });
+        _stack.at(--_stackPointer) = res;
+        break;
+      }
+      case ADD: {
+        auto res =
+            computeBinary(_stack.at(_stackPointer - 1), _stack.at(_stackPointer), [](auto l, auto r) { return l + r; });
+        _stack.at(--_stackPointer) = res;
+        break;
+      }
+      case SUB: {
+        auto res =
+            computeBinary(_stack.at(_stackPointer - 1), _stack.at(_stackPointer), [](auto l, auto r) { return l - r; });
+        _stack.at(--_stackPointer) = res;
+        break;
+      }
     }
+  }
+
+  template <class T>
+  static constexpr auto isNumericVal() {
+    using type = std::remove_cv_t<std::remove_reference_t<T>>;
+    return std::is_same_v<type, double> or std::is_same_v<type, size_t>;
   }
 
   template <template <class> typename Compare>
@@ -113,12 +162,29 @@ class RuleVM {
         [](auto &&left, auto &&right) {
           if constexpr (std::is_same_v<decltype(left), decltype(right)>) {
             return Compare{}(left, right);
+          } else if constexpr (isNumericVal<decltype(left)>() and isNumericVal<decltype(right)>()) {
+            return Compare{}(left, right);
           } else {
+            throw std::runtime_error("RuleVM: cannot compare");
             return false;
           }
         },
         _stack.at(_stackPointer - 1), _stack.at(_stackPointer));
     return res;
+  }
+
+  template <class Functor>
+  [[nodiscard]] MemoryCell computeBinary(const MemoryCell &left, const MemoryCell &right, Functor op) {
+    return std::visit(
+        [&op](auto &&l, auto &&r) {
+          if constexpr (isNumericVal<decltype(l)>() and isNumericVal<decltype(r)>()) {
+            return MemoryCell{op(l, r)};
+          } else {
+            throw std::runtime_error("RuleVM: cannot compute binary operator with these operators");
+            return MemoryCell{};
+          }
+        },
+        left, right);
   }
 
  private:

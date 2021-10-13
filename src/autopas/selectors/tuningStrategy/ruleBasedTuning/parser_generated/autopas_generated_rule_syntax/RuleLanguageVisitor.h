@@ -20,6 +20,8 @@ class RuleLanguageVisitor : public antlr4::tree::AbstractParseTreeVisitor {
    */
   virtual antlrcpp::Any visitProgram(RuleLanguageParser::ProgramContext *context) = 0;
 
+  virtual antlrcpp::Any visitUnsigned_val(RuleLanguageParser::Unsigned_valContext *context) = 0;
+
   virtual antlrcpp::Any visitLiteral(RuleLanguageParser::LiteralContext *context) = 0;
 
   virtual antlrcpp::Any visitDefine_list(RuleLanguageParser::Define_listContext *context) = 0;
@@ -27,10 +29,6 @@ class RuleLanguageVisitor : public antlr4::tree::AbstractParseTreeVisitor {
   virtual antlrcpp::Any visitDefine(RuleLanguageParser::DefineContext *context) = 0;
 
   virtual antlrcpp::Any visitVariable(RuleLanguageParser::VariableContext *context) = 0;
-
-  virtual antlrcpp::Any visitAtom_expr(RuleLanguageParser::Atom_exprContext *context) = 0;
-
-  virtual antlrcpp::Any visitComp_expr(RuleLanguageParser::Comp_exprContext *context) = 0;
 
   virtual antlrcpp::Any visitExpression(RuleLanguageParser::ExpressionContext *context) = 0;
 
