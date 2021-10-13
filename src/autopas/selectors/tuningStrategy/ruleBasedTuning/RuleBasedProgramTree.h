@@ -81,12 +81,14 @@ class CodeGenerationContext;
 struct Define;
 
 struct Statement {
+  virtual ~Statement() = default;
   virtual void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const = 0;
 };
 
 inline Type typeOf(const RuleVM::MemoryCell &memoryCell) { return static_cast<Type>(memoryCell.index()); }
 
 struct Expression {
+  virtual ~Expression() = default;
   [[nodiscard]] virtual Type getType() const = 0;
   virtual void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const = 0;
 };
@@ -223,7 +225,7 @@ struct Literal : public Expression {
   [[nodiscard]] Type getType() const override { return type; }
 
   void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override {
-    program.instructions.push_back({RuleVM::LOADC, value});
+    program.instructions.emplace_back(RuleVM::LOADC, value);
     context.allocateStack(1);
   }
 };
@@ -276,7 +278,7 @@ struct Define : public Statement {
     value->generateCode(context, program);
 
     context.addLocalVariable(*this);
-    program.instructions.push_back({RuleVM::STOREA, context.addressOf(variable)});
+    program.instructions.emplace_back(RuleVM::STOREA, context.addressOf(variable));
     context.freeStack(1);
   }
 };
@@ -290,7 +292,7 @@ struct If : public Statement {
 
   void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override {
     condition->generateCode(context, program);
-    program.instructions.push_back({RuleVM::JUMPZERO});
+    program.instructions.emplace_back(RuleVM::JUMPZERO);
     context.freeStack(1);
     auto jumpInstrIdx = program.instructions.size() - 1;
 
@@ -307,14 +309,14 @@ struct RuleBasedProgramTree {
 
   [[nodiscard]] RuleVM::Program generateCode(CodeGenerationContext &context) const {
     RuleVM::Program program;
-    program.instructions.push_back({RuleVM::RESERVE, 0ul});
+    program.instructions.emplace_back(RuleVM::RESERVE, 0ul);
     auto reserveInstructionIdx = program.instructions.size() - 1;
     for (const auto &statement : statements) {
       statement->generateCode(context, program);
     }
     program.instructions[reserveInstructionIdx].payload = context.getNumLocalVariables();
     program.neededStackSize = context.getNumLocalVariables() + context.getMaxStackSize();
-    program.instructions.push_back({RuleVM::HALT});
+    program.instructions.emplace_back(RuleVM::HALT);
     return program;
   }
 };

@@ -16,6 +16,8 @@ class RuleVM {
   struct Instruction {
     CMD cmd;
     MemoryCell payload;
+
+    explicit Instruction(CMD cmd, MemoryCell payload = 0ul) : cmd(cmd), payload(payload) {}
   };
 
   struct Program {

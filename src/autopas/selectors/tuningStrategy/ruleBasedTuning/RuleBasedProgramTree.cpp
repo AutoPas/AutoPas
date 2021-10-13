@@ -2,7 +2,7 @@
 
 namespace autopas::rule_syntax {
 void Variable::generateCode(CodeGenerationContext &context, RuleVM::Program &program) const {
-  program.instructions.push_back({RuleVM::LOADA, context.addressOf(definition->variable)});
+  program.instructions.emplace_back(RuleVM::LOADA, context.addressOf(definition->variable));
   context.allocateStack(1);
 }
 
@@ -13,14 +13,14 @@ void BinaryOperator::generateCode(CodeGenerationContext &context, RuleVM::Progra
   right->generateCode(context, program);
 
   auto opCode = op == LESS ? RuleVM::LESS : (op == GREATER ? RuleVM::GREATER : RuleVM::AND);
-  program.instructions.push_back({opCode});
+  program.instructions.emplace_back(opCode);
 
   context.freeStack(1);
 }
 
 void ConfigurationOrder::generateCode(CodeGenerationContext &context, RuleVM::Program &program) const {
   auto idx = context.addConfigurationOrder(*this);
-  program.instructions.push_back({RuleVM::OUTPUTC, idx});
+  program.instructions.emplace_back(RuleVM::OUTPUTC, idx);
 }
 
 void CodeGenerationContext::addLocalVariable(const Define &definition) {
