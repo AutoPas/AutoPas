@@ -198,7 +198,7 @@ class AutoPas {
   }
 
   /**
-   * execute code on all particles as defined by a lambda function
+   * Execute code on all particles as defined by a lambda function.
    * @tparam Lambda (Particle &p) -> void
    * @param forEachLambda code to be executed on all particles
    * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownerOrHalo
@@ -218,7 +218,7 @@ class AutoPas {
   }
 
   /**
-   * reduce properties of particles in parallel as defined by a lambda function
+   * Reduce properties of particles in parallel as defined by a lambda function.
    * @tparam Lambda (Particle p, A &initialValue) -> void
    * @tparam reference to result of type A
    * @param reduceLambda code to reduce properties of particles
@@ -245,7 +245,7 @@ class AutoPas {
   }
 
   /**
-   * reduce properties of particles as defined by a lambda function
+   * Reduce properties of particles as defined by a lambda function.
    * @tparam Lambda (Particle p, A &initialValue) -> void
    * @tparam reference to result of type A
    * @param reduceLambda code to reduce properties of particles
@@ -301,7 +301,7 @@ class AutoPas {
                                      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
 
   /**
-   * execute code on all particles in a certain region in parallel as defined by a lambda function
+   * Execute code on all particles in a certain region in parallel as defined by a lambda function.
    * @tparam Lambda (Particle &p) -> void
    * @param forEachLambda code to be executed on all particles
    * @param lowerCorner lower corner of bounding box
@@ -334,7 +334,7 @@ class AutoPas {
   }
 
   /**
-   * execute code on all particles in a certain region as defined by a lambda function
+   * Execute code on all particles in a certain region as defined by a lambda function.
    * @tparam Lambda (Particle &p) -> void
    * @param forEachLambda code to be executed on all particles
    * @param lowerCorner lower corner of bounding box
@@ -362,7 +362,7 @@ class AutoPas {
   }
 
   /**
-   * execute code on all particles in a certain region in parallel as defined by a lambda function
+   * Execute code on all particles in a certain region in parallel as defined by a lambda function.
    * @tparam Lambda (Particle &p, A &result) -> void
    * @tparam A type of reduction value
    * @param reduceLambda code to be executed on all particles
@@ -397,7 +397,7 @@ class AutoPas {
   }
 
   /**
-   * execute code on all particles in a certain region as defined by a lambda function
+   * Execute code on all particles in a certain region as defined by a lambda function.
    * @tparam Lambda (Particle &p, A &result) -> void
    * @tparam A type of reduction value
    * @param reduceLambda code to be executed on all particles

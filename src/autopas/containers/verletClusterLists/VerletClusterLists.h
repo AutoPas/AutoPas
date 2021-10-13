@@ -476,7 +476,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
 
     if (_isValid == ValidityState::invalid) {
-      // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
+      // If the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
       for (auto &particlesToAddPerThread : _particlesToAdd) {
         for (auto &particle : particlesToAddPerThread) {
           if (behavior.contains(particle)) {
@@ -525,7 +525,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
 
     if (_isValid == ValidityState::invalid) {
-      // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
+      // If the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
       for (auto &particlesToAddPerThread : _particlesToAdd) {
         for (auto &particle : particlesToAddPerThread) {
           if (behavior.contains(particle)) {

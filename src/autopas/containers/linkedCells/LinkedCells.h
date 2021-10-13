@@ -239,7 +239,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
   }
 
   /**
-   * execute code on all particles in this container as defined by a lambda function
+   * Execute code on all particles in this container as defined by a lambda function.
    * @tparam Lambda (Particle &p) -> void
    * @param forEachLambda code to be executed on all particles
    * @param behavior @see IteratorBehavior
@@ -260,7 +260,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
   }
 
   /**
-   * reduce properties of particles as defined by a lambda function
+   * Reduce properties of particles as defined by a lambda function.
    * @tparam Lambda (Particle p, A initialValue) -> void
    * @tparam A type of particle attribute to be reduced
    * @param reduceLambda code to reduce properties of particles
@@ -339,7 +339,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
   }
 
   /**
-   * execute code on all particles in this container in a certain region as defined by a lambda function
+   * Execute code on all particles in this container in a certain region as defined by a lambda function.
    * @tparam Lambda (Particle &p) -> void
    * @param forEachLambda code to be executed on all particles
    * @param lowerCorner lower corner of bounding box
@@ -377,7 +377,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
   }
 
   /**
-   * execute code on all particles in this container in a certain region as defined by a lambda function
+   * Execute code on all particles in this container in a certain region as defined by a lambda function.
    * @tparam Lambda (Particle &p, A &result) -> void
    * @tparam A type of reduction Value
    * @param reduceLambda code to be executed on all particles

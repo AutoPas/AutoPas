@@ -82,7 +82,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
   }
 
   /**
-   * checks if cell with index1d can be ignored for iteration with currently selected behavior
+   * Checks if cell with index1d can be ignored for iteration with currently selected behavior.
    * @param index1d 1d index of checked cell
    * @param behavior @see IteratorBehavior
    * @return false if this cell can contain particles that would be affected by current behavior

@@ -103,7 +103,7 @@ class ParticleVector {
   auto endDirty() { return _particleListImp.end(); }
 
   /**
-   * Iterate over all particles and execute lambda function on them
+   * Iterate over all particles and execute lambda function on them.
    * @param forEachLambda lambda function that defines how to modify particles
    */
   template <typename Lambda>
@@ -114,7 +114,7 @@ class ParticleVector {
   }
 
   /**
-   * Iterate over all particles and execute lambda function on them
+   * Iterate over all particles and execute lambda function on them.
    * @param reduceLambda lambda function that defines how to modify particles
    * @param result reference to variable where result will be stored after operation
    */

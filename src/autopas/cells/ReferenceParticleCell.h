@@ -64,7 +64,7 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
   }
 
   /**
-   * executes code for every particle in this cell as defined by lambda function
+   * Executes code for every particle in this cell as defined by lambda function.
    * @tparam Lambda (Particle &p) -> void
    * @param forEachLambda code to be executed on particles
    * @param behavior ownerships of particles that should be in-/excluded
@@ -76,7 +76,7 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
   }
 
   /**
-   * executes code for every particle in this cell as defined by lambda function
+   * Executes code for every particle in this cell as defined by lambda function.
    * @tparam Lambda (Particle &p) -> void
    * @param forEachLambda code to be executed on particles
    * @param lowerCorner lower corner of bounding box
@@ -89,7 +89,7 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
     forEachImpl<true>(forEachLambda, lowerCorner, higherCorner, behavior);
   }
   /**
-   * reduce properties of particles as defined by a lambda function
+   * Reduce properties of particles as defined by a lambda function.
    * @tparam Lambda (Particle p, A initialValue) -> void
    * @tparam A type of particle attribute to be reduced
    * @param reduceLambda code to reduce properties of particles
@@ -103,7 +103,7 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
   }
 
   /**
-   * reduce properties of particles as defined by a lambda function
+   * Reduce properties of particles as defined by a lambda function.
    * @tparam Lambda (Particle p, A initialValue) -> void
    * @tparam A type of particle attribute to be reduced
    * @param reduceLambda code to reduce properties of particles

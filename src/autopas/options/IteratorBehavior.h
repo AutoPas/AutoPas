@@ -113,7 +113,7 @@ class IteratorBehavior : public Option<IteratorBehavior> {
   }
 
   /**
-   * check whether this iterator behavior covers the given particle
+   * Check whether this iterator behavior covers the given particle
    * @tparam ParticleType
    * @param particle particle to be checked
    * @return true if this iterator behavior covers the given particle, false otherwise
