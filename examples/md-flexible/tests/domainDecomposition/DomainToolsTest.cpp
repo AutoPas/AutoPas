@@ -21,3 +21,50 @@ TEST_F(DomainToolsTest, testIsInsideDomain) {
   EXPECT_EQ(false, DomainTools::isInsideDomain(onUpperBoundary, globalBoxMin, globalBoxMax));
   EXPECT_EQ(false, DomainTools::isInsideDomain(outside, globalBoxMin, globalBoxMax));
 }
+
+TEST_F(DomainToolsTest, testGenerateDecomposition) {
+  const size_t subdomainCount = 27;
+  std::array<int, 3> decomposition;
+
+  std::array<bool, 3> subdivideDomains = {true, true, true};
+  DomainTools::generateDecomposition(subdomainCount, subdivideDomains, decomposition);
+  EXPECT_EQ(decomposition[0], 3);
+  EXPECT_EQ(decomposition[1], 3);
+  EXPECT_EQ(decomposition[2], 3);
+
+  subdivideDomains = {false, true, true};
+  DomainTools::generateDecomposition(subdomainCount, subdivideDomains, decomposition);
+  EXPECT_EQ(decomposition[0], 1);
+  EXPECT_EQ(decomposition[1], 9);
+  EXPECT_EQ(decomposition[2], 3);
+
+  subdivideDomains = {true, false, true};
+  DomainTools::generateDecomposition(subdomainCount, subdivideDomains, decomposition);
+  EXPECT_EQ(decomposition[0], 9);
+  EXPECT_EQ(decomposition[1], 1);
+  EXPECT_EQ(decomposition[2], 3);
+
+  subdivideDomains = {true, true, false};
+  DomainTools::generateDecomposition(subdomainCount, subdivideDomains, decomposition);
+  EXPECT_EQ(decomposition[0], 9);
+  EXPECT_EQ(decomposition[1], 3);
+  EXPECT_EQ(decomposition[2], 1);
+
+  subdivideDomains = {true, false, false};
+  DomainTools::generateDecomposition(subdomainCount, subdivideDomains, decomposition);
+  EXPECT_EQ(decomposition[0], 27);
+  EXPECT_EQ(decomposition[1], 1);
+  EXPECT_EQ(decomposition[2], 1);
+
+  subdivideDomains = {false, true, false};
+  DomainTools::generateDecomposition(subdomainCount, subdivideDomains, decomposition);
+  EXPECT_EQ(decomposition[0], 1);
+  EXPECT_EQ(decomposition[1], 27);
+  EXPECT_EQ(decomposition[2], 1);
+
+  subdivideDomains = {false, false, true};
+  DomainTools::generateDecomposition(subdomainCount, subdivideDomains, decomposition);
+  EXPECT_EQ(decomposition[0], 1);
+  EXPECT_EQ(decomposition[1], 1);
+  EXPECT_EQ(decomposition[2], 27);
+}

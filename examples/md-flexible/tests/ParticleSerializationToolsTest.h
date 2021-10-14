@@ -9,7 +9,6 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/molecularDynamics/MoleculeLJ.h"
-#include "src/ParticleAttributes.h"
 #include "src/ParticleSerializationTools.h"
 
 /**
@@ -23,11 +22,6 @@ class ParticleSerializationToolsTest : public AutoPasTestBase {
   ParticleSerializationToolsTest();
 
  protected:
-  /**
-   * Particle attributes used for testing.
-   */
-  ParticleAttributes _particle;
-
   /**
    * Molecule used for testing.
    */

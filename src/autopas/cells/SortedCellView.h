@@ -55,7 +55,7 @@ class SortedCellView : public ParticleCell<Particle> {
 
   unsigned long numParticles() const override { return _particles.size(); }
 
-  bool isNotEmpty() const override { return numParticles() > 0; }
+  bool isEmpty() const override { return numParticles() == 0; }
 
   void clear() override { _particles.clear(); }
 
