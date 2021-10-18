@@ -221,7 +221,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
   /**
    * Defines which load balancer will be used.
    */
-  LoadBalancerOption _loadBalancer;
+  LoadBalancerOption _loadBalancerOption;
 
 #if defined(AUTOPAS_ENABLE_ALLLBL)
   /**

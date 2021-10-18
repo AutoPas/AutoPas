@@ -106,6 +106,10 @@ particles positions, velocities, forces and typeIDs. All other options,
 especially the simulation box size and particle properties (still) need
 to be set through a YAML file.
 
+### Load Balancing
+MD-Flexible allows users to select between two load balancers: The Inverted Pressure method and ALL's Tensor method.
+The load balancer can be selected using the 'load-balancer' configuration option.
+
 ### Command line Completions
 
 md-flexible can generate a shell completions file with it's latest options.

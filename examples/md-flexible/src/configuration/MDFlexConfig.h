@@ -613,7 +613,8 @@ class MDFlexConfig {
    */
   MDFlexOption<LoadBalancerOption, __LINE__> loadBalancer{
       LoadBalancerOption::invertedPressure, "load-balancer", true,
-      "Defines which load balancing approach will be used with the adaptive grid decomposition. Possible Values: " +
+      "Defines which load balancing approach will be used with the adaptive grid decomposition. If ALL is chosen as "
+      "load balancer, MD-Flexible uses ALL's TENSOR method. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(LoadBalancerOption::getAllOptions(), " ", {"(", ")"})};
 
   /**

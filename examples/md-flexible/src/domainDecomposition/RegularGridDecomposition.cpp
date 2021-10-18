@@ -42,7 +42,7 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
 
   initializeNeighborIds();
 
-  _loadBalancer = configuration.loadBalancer.value;
+  _loadBalancerOption = configuration.loadBalancer.value;
 
 #if defined(AUTOPAS_ENABLE_ALLLBL)
   if (_loadBalancer == LoadBalancerOption::all) {
@@ -405,7 +405,7 @@ void RegularGridDecomposition::categorizeParticlesIntoLeftAndRightNeighbor(
 }
 
 void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(const double &work) {
-  // This is a dummy variable which is not being used.
+  // This is a dummy variable which is not being used. It is required by the non-blocking MPI_Send calls.
   autopas::AutoPas_MPI_Request dummyRequest;
 
   auto oldLocalBoxMin = _localBoxMin;
