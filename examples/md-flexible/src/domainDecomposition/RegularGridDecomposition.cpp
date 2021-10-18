@@ -45,7 +45,7 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
   _loadBalancerOption = configuration.loadBalancer.value;
 
 #if defined(AUTOPAS_ENABLE_ALLLBL)
-  if (_loadBalancer == LoadBalancerOption::all) {
+  if (_loadBalancerOption == LoadBalancerOption::all) {
     _allLoadBalancer = std::make_unique<ALL::ALL<double, double>>(ALL::TENSOR, _dimensionCount, 0);
     _allLoadBalancer->setCommunicator(_communicator);
 
@@ -54,7 +54,7 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
     _allLoadBalancer->setup();
   }
 #else
-  if (_domainIndex == 0 && _loadBalancer == LoadBalancerOption::all) {
+  if (_domainIndex == 0 && _loadBalancerOption == LoadBalancerOption::all) {
     std::cout << "ALL loadbalancer has been disabled during compile time. Load balancing will be turned off."
               << std::endl;
   }
@@ -65,7 +65,7 @@ RegularGridDecomposition::~RegularGridDecomposition() = default;
 
 void RegularGridDecomposition::update(const double &work) {
   if (_mpiCommunicationNeeded) {
-    switch (_loadBalancer) {
+    switch (_loadBalancerOption) {
       case LoadBalancerOption::invertedPressure: {
         balanceWithInvertedPressureLoadBalancer(work);
         break;
@@ -211,7 +211,7 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
     // If the ALL load balancer is used, it may happen that particles migrate to a non adjacent domain.
     // Therefore we need to migrate particles as many times as there are grid cells along the dimension.
-    int maximumSendSteps = _loadBalancer == LoadBalancerOption::all ? _decomposition[dimensionIndex] : 1;
+    int maximumSendSteps = _loadBalancerOption == LoadBalancerOption::all ? _decomposition[dimensionIndex] : 1;
 
     for (int gridIndex = 0; gridIndex < maximumSendSteps; ++gridIndex) {
       std::vector<ParticleType> immigrants, remainingEmigrants;
