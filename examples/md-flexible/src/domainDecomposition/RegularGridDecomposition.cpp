@@ -44,6 +44,7 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
 
   _loadBalancer = configuration.loadBalancer.value;
 
+#if defined(AUTOPAS_ENABLE_ALLLBL)
   if (_loadBalancer == LoadBalancerOption::all) {
     _allLoadBalancer = std::make_unique<ALL::ALL<double, double>>(ALL::TENSOR, _dimensionCount, 0);
     _allLoadBalancer->setCommunicator(_communicator);
@@ -52,6 +53,12 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
     _allLoadBalancer->setMinDomainSize({minDomainSize, minDomainSize, minDomainSize});
     _allLoadBalancer->setup();
   }
+#else
+  if (_domainIndex == 0 && _loadBalancer == LoadBalancerOption::all) {
+    std::cout << "ALL loadbalancer has been disabled during compile time. Load balancing will be turned off."
+              << std::endl;
+  }
+#endif
 }
 
 RegularGridDecomposition::~RegularGridDecomposition() = default;
@@ -63,10 +70,12 @@ void RegularGridDecomposition::update(const double &work) {
         balanceWithInvertedPressureLoadBalancer(work);
         break;
       }
+#if defined(AUTOPAS_ENABLE_ALLLBL)
       case LoadBalancerOption::all: {
         balanceWithAllLoadBalancer(work);
         break;
       }
+#endif
       default: {
         // do nothing
       }
@@ -465,6 +474,7 @@ void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(const dou
   }
 }
 
+#if defined(AUTOPAS_ENABLE_ALLLBL)
 void RegularGridDecomposition::balanceWithAllLoadBalancer(const double &work) {
   std::vector<ALL::Point<double>> domain(2, ALL::Point<double>(3));
 
@@ -484,3 +494,4 @@ void RegularGridDecomposition::balanceWithAllLoadBalancer(const double &work) {
     _localBoxMax[i] = updatedVertices[1][i];
   }
 }
+#endif

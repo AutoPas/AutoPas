@@ -39,7 +39,7 @@ class ParallelVtkWriter {
    * @param decomposition: The decomposition of the global domain.
    */
   void recordTimestep(const int &currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer,
-                      const std::shared_ptr<RegularGridDecomposition> &decomposition);
+                      const RegularGridDecomposition &decomposition);
 
  private:
   /**
@@ -95,7 +95,7 @@ class ParallelVtkWriter {
    * @param decomposition: The simulations domain decomposition.
    */
   void recordDomainSubdivision(const int &currentIteration, const autopas::Configuration &autoPasConfiguration,
-                               const std::shared_ptr<RegularGridDecomposition> &decomposition);
+                               const RegularGridDecomposition &decomposition);
 
   /**
    * Calculates the whole extent of the decompositions local domain.
@@ -105,7 +105,7 @@ class ParallelVtkWriter {
    * @param domainDecomposition: The simulations domain decomposition.
    * @return the whole extent of the local domain.
    */
-  std::array<int, 6> calculateWholeExtent(const std::shared_ptr<RegularGridDecomposition> &domainDecomposition);
+  std::array<int, 6> calculateWholeExtent(const RegularGridDecomposition &domainDecomposition);
 
   /**
    * Tries to create a folder for the current writer session and stores it in _sessionFolderPath.
@@ -123,7 +123,7 @@ class ParallelVtkWriter {
    * @param currentIteration: The simulation's current iteration.
    * @param decomposition: The decomposition of the domain.
    */
-  void createPvtsFile(const int &currentIteration, const std::shared_ptr<RegularGridDecomposition> &decomposition);
+  void createPvtsFile(const int &currentIteration, const RegularGridDecomposition &decomposition);
 
   /**
    * Tries to create a folder at a location.
