@@ -96,7 +96,6 @@ void RegularGridDecomposition::initializeMPICommunicator() {
 
 void RegularGridDecomposition::initializeLocalDomain() {
   _domainId = {0, 0, 0};
-  autopas::AutoPas_MPI_Comm_rank(_communicator, &_domainIndex);
 
   std::vector<int> periods(3, 1);
   autopas::AutoPas_MPI_Cart_get(_communicator, 3, _decomposition.data(), periods.data(), _domainId.data());
@@ -119,12 +118,6 @@ void RegularGridDecomposition::initializeLocalBox() {
 
     _localBoxMin[i] = _domainId[i] * localBoxWidth + _globalBoxMin[i];
     _localBoxMax[i] = (_domainId[i] + 1) * localBoxWidth + _globalBoxMin[i];
-
-    if (_domainId[i] == 0) {
-      _localBoxMin[i] = _globalBoxMin[i];
-    } else if (_domainId[i] == _decomposition[i] - 1) {
-      _localBoxMax[i] = _globalBoxMax[i];
-    }
   }
 }
 
@@ -411,31 +404,34 @@ void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(const dou
   auto oldLocalBoxMin = _localBoxMin;
   auto oldLocalBoxMax = _localBoxMax;
 
-  std::array<double, 3> distributedWorkInPlane{};
+  std::array<double, 3> averageWorkInPlane{};
 
   for (int i = 0; i < _dimensionCount; ++i) {
     const int domainCountInPlane =
         _decomposition[(i + 1) % _dimensionCount] * _decomposition[(i + 2) % _dimensionCount];
 
-    distributedWorkInPlane[i] = work;
+    // Calculate the average work in the process grid plane
+    averageWorkInPlane[i] = work;
     if (domainCountInPlane > 1) {
-      autopas::AutoPas_MPI_Allreduce(&work, &distributedWorkInPlane[i], 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM,
+      autopas::AutoPas_MPI_Allreduce(&work, &averageWorkInPlane[i], 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM,
                                      _planarCommunicators[i]);
-      distributedWorkInPlane[i] = distributedWorkInPlane[i] / domainCountInPlane;
+      averageWorkInPlane[i] = averageWorkInPlane[i] / domainCountInPlane;
     }
 
+    // Get neighbour indices
     const int leftNeighbor = _neighborDomainIndices[i * 2];
     const int rightNeighbor = _neighborDomainIndices[i * 2 + 1];
 
+    // Send average work in plane to neighbours
     if (_localBoxMin[i] != _globalBoxMin[i]) {
-      autopas::AutoPas_MPI_Isend(&distributedWorkInPlane[i], 1, AUTOPAS_MPI_DOUBLE, leftNeighbor, 0, _communicator,
+      autopas::AutoPas_MPI_Isend(&averageWorkInPlane[i], 1, AUTOPAS_MPI_DOUBLE, leftNeighbor, 0, _communicator,
                                  &dummyRequest);
       autopas::AutoPas_MPI_Isend(&oldLocalBoxMax[i], 1, AUTOPAS_MPI_DOUBLE, leftNeighbor, 0, _communicator,
                                  &dummyRequest);
     }
 
     if (_localBoxMax[i] != _globalBoxMax[i]) {
-      autopas::AutoPas_MPI_Isend(&distributedWorkInPlane[i], 1, AUTOPAS_MPI_DOUBLE, rightNeighbor, 0, _communicator,
+      autopas::AutoPas_MPI_Isend(&averageWorkInPlane[i], 1, AUTOPAS_MPI_DOUBLE, rightNeighbor, 0, _communicator,
                                  &dummyRequest);
       autopas::AutoPas_MPI_Isend(&oldLocalBoxMin[i], 1, AUTOPAS_MPI_DOUBLE, rightNeighbor, 0, _communicator,
                                  &dummyRequest);
@@ -443,31 +439,36 @@ void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(const dou
   }
 
   for (int i = 0; i < _dimensionCount; ++i) {
+    // Get neighbour indices
     const int leftNeighbor = _neighborDomainIndices[i * 2];
     const int rightNeighbor = _neighborDomainIndices[i * 2 + 1];
 
     double neighborPlaneWork, neighborBoundary, balancedPosition;
     if (_localBoxMin[i] != _globalBoxMin[i]) {
+      // Receive average work from neighbour planes.
       autopas::AutoPas_MPI_Recv(&neighborPlaneWork, 1, AUTOPAS_MPI_DOUBLE, leftNeighbor, 0, _communicator,
                                 AUTOPAS_MPI_STATUS_IGNORE);
       autopas::AutoPas_MPI_Recv(&neighborBoundary, 1, AUTOPAS_MPI_DOUBLE, leftNeighbor, 0, _communicator,
                                 AUTOPAS_MPI_STATUS_IGNORE);
 
-      balancedPosition =
-          DomainTools::balanceAdjacentDomains(neighborPlaneWork, distributedWorkInPlane[i], neighborBoundary,
-                                              oldLocalBoxMax[i], 2 * (_cutoffWidth + _skinWidth));
+      // Calculate balanced positions and only shift by half the resulting distance to prevent localBox min to be larger
+      // than localBoxMax.
+      balancedPosition = DomainTools::balanceAdjacentDomains(neighborPlaneWork, averageWorkInPlane[i], neighborBoundary,
+                                                             oldLocalBoxMax[i], 2 * (_cutoffWidth + _skinWidth));
       _localBoxMin[i] += (balancedPosition - _localBoxMin[i]) / 2;
     }
 
     if (_localBoxMax[i] != _globalBoxMax[i]) {
-      double neighborPlaneWork, neighborBoundary;
+      // Receive average work from neighbour planes.
       autopas::AutoPas_MPI_Recv(&neighborPlaneWork, 1, AUTOPAS_MPI_DOUBLE, rightNeighbor, 0, _communicator,
                                 AUTOPAS_MPI_STATUS_IGNORE);
       autopas::AutoPas_MPI_Recv(&neighborBoundary, 1, AUTOPAS_MPI_DOUBLE, rightNeighbor, 0, _communicator,
                                 AUTOPAS_MPI_STATUS_IGNORE);
 
+      // Calculate balanced positions and only shift by half the resulting distance to prevent localBox min to be larger
+      // than localBoxMax.
       balancedPosition =
-          DomainTools::balanceAdjacentDomains(distributedWorkInPlane[i], neighborPlaneWork, oldLocalBoxMin[i],
+          DomainTools::balanceAdjacentDomains(averageWorkInPlane[i], neighborPlaneWork, oldLocalBoxMin[i],
                                               neighborBoundary, 2 * (_cutoffWidth + _skinWidth));
       _localBoxMax[i] += (balancedPosition - _localBoxMax[i]) / 2;
     }
