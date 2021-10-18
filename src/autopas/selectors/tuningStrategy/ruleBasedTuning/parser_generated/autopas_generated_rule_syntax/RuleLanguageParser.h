@@ -34,18 +34,19 @@ class RuleLanguageParser : public antlr4::Parser {
     T__20 = 21,
     T__21 = 22,
     T__22 = 23,
-    WS = 24,
-    Container_opt = 25,
-    Traversal_opt = 26,
-    Load_estimator_opt = 27,
-    Data_layout_opt = 28,
-    Newton3_opt = 29,
-    Bool_val = 30,
-    Configuration_property = 31,
-    DIGIT = 32,
-    Unsigned_val = 33,
-    Double_val = 34,
-    Variable_name = 35
+    COMMENT = 24,
+    WS = 25,
+    Container_opt = 26,
+    Traversal_opt = 27,
+    Load_estimator_opt = 28,
+    Data_layout_opt = 29,
+    Newton3_opt = 30,
+    Bool_val = 31,
+    Configuration_property = 32,
+    DIGIT = 33,
+    Unsigned_val = 34,
+    Double_val = 35,
+    Variable_name = 36
   };
 
   enum {

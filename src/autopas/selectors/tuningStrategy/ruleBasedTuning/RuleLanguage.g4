@@ -3,6 +3,9 @@ grammar RuleLanguage;
 program
                 : statement+ ;
 
+COMMENT         : '#' .*? '\r'? '\n' -> skip
+                ;
+
 WS
                 : [ \r\n\t]+ -> skip
                 ;
