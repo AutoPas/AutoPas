@@ -89,6 +89,9 @@ class VLCNeighborListInterface {
     }
   }
 
+  /**
+   * TODO
+   */
   virtual void setUpTraversal(TraversalInterface *traversal) = 0;
 
  protected:

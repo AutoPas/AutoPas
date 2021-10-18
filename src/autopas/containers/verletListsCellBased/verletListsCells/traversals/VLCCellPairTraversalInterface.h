@@ -1,17 +1,21 @@
-//
-// Created by TinaVl on 1/11/2021.
-//
+/**
+ * @file VLCCellPairTraversalInterface.h
+ * @author tirgendetwas
+ * @date 11.01.21
+ */
 
 #pragma once
-namespace autopas
-{
+namespace autopas {
 template <class Particle>
-class VLCCellPairTraversalInterface
-{
+/**
+ * TODO
+ * @tparam Particle
+ */
+class VLCCellPairTraversalInterface {
  public:
   void setVerletList(VLCCellPairNeighborList<Particle> &verlet) { _cellPairVerletList = &verlet; }
 
  protected:
   VLCCellPairNeighborList<Particle> *_cellPairVerletList;
 };
-}
+}  // namespace autopas

@@ -148,8 +148,10 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
     }
   }
 
-  void setUpTraversal(TraversalInterface *traversal) override
-  {
+  /**
+   * TODO
+   */
+  void setUpTraversal(TraversalInterface *traversal) override {
     auto vTraversal = dynamic_cast<VLCTraversalInterface<Particle, VLCAllCellsNeighborList<Particle>> *>(traversal);
 
     if (vTraversal) {
@@ -160,6 +162,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
           traversal->getTraversalType());
     }
   }
+
  private:
   /**
    * @copydoc VLCNeighborListInterface::applyBuildFunctor()

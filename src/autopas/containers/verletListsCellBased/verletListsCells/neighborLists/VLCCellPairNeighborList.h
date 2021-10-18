@@ -71,10 +71,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
     return _aosNeighborList;
   }
 
-  auto &getGlobalToLocalMap()
-  {
-    return _globalToLocalIndex;
-  }
+  auto &getGlobalToLocalMap() { return _globalToLocalIndex; }
 
   /**
    * Returns the neighbor list in SoA layout.
@@ -123,16 +120,13 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
       }
     }
 
-    if(useNewton3 == true)
-    {
-      if(neighborCells % 2 == 0)
-      {
-        neighborCells/=2;
+    if (useNewton3 == true) {
+      if (neighborCells % 2 == 0) {
+        neighborCells /= 2;
       }
 
-      else
-      {
-        neighborCells/=2;
+      else {
+        neighborCells /= 2;
         neighborCells++;
       }
     }
@@ -148,8 +142,6 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
           // for each particle in cell1 make pair of particle and neighbor list
           Particle *currentParticle = &*particleIter;
           cellPair.emplace_back(std::make_pair(currentParticle, std::vector<Particle *>()));
-          // TODO reserve experiment - Tina
-          // TODO cellPair.back().second.reserve(?);
 
           // add pair of cell's index and particle's index in the cell
           _particleToCellMap[currentParticle] = std::make_pair(firstCellIndex, particleIndexCurrentCell);
@@ -210,20 +202,19 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
     }
   }
 
-  void setUpTraversal(TraversalInterface *traversal) override
-  {
+  /**
+   * TODO
+   */
+  void setUpTraversal(TraversalInterface *traversal) override {
     auto vTraversal = dynamic_cast<VLCCellPairTraversalInterface<Particle> *>(traversal);
 
     if (vTraversal) {
       vTraversal->setVerletList(*this);
     } else {
-      auto traversal2 = dynamic_cast<VLCTraversalInterface<Particle, VLCCellPairNeighborList<Particle>>*>(traversal);
-      if(traversal2)
-      {
+      auto traversal2 = dynamic_cast<VLCTraversalInterface<Particle, VLCCellPairNeighborList<Particle>> *>(traversal);
+      if (traversal2) {
         traversal2->setVerletList(*this);
-      }
-      else
-      {
+      } else {
         autopas::utils::ExceptionHandler::exception(
             "Trying to use a traversal of wrong type in VerletListCells.h. TraversalID: {}",
             traversal->getTraversalType());

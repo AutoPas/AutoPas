@@ -167,7 +167,7 @@ class TraversalOption : public Option<TraversalOption> {
     /**
      * TODO
      */
-     vlp_c08,
+    vlp_c08,
 
     // VarVerlet Traversals:
     /**

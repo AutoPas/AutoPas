@@ -58,7 +58,6 @@ class LCC08CellHandler {
   void processBaseCell(std::vector<ParticleCell> &cells, unsigned long baseIndex);
 
  protected:
-
   /**
    * Pair sets for processBaseCell().
    * Values are: offset of first cell, offset of second cell, sorting direction.

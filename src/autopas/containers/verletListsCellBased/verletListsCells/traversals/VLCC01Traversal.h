@@ -7,8 +7,8 @@
 #pragma once
 
 #include "autopas/containers/cellPairTraversals/C01BasedTraversal.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCCellPairTraversalInterface.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -30,7 +30,6 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dat
           class NeighborList, ContainerOption::Value typeOfList>
 class VLCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
                         public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
-
  public:
   /**
    * Constructor of the c01 traversal.

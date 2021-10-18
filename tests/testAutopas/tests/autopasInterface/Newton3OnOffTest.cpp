@@ -115,7 +115,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
     // within one cell no N3 optimization
     EXPECT_EQ(callsNewton3SC, callsNonNewton3SC) << "for containeroption: " << containerOption;
   }
-  
+
   // should be called exactly two times
   EXPECT_EQ(callsNewton3Pair * 2, callsNonNewton3Pair) << "for containeroption: " << containerOption;
 
