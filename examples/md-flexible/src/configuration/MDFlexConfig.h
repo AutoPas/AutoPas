@@ -341,6 +341,12 @@ class MDFlexConfig {
       {1, 1, 1}, "box-max", true, "Upper back right corner of the simulation box."};
 
   /**
+   * loadBalancingInterval
+   */
+  MDFlexOption<unsigned int, 0> loadBalancingInterval{
+      100, "load-balancing-interval", true, "Defines the iteration interval at which load balancing should occur."};
+
+  /**
    * subdivideDimension
    */
   MDFlexOption<std::array<bool, 3>, 0> subdivideDimension{

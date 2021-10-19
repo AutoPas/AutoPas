@@ -26,6 +26,9 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     auto tmpNode = node[config.subdivideDimension.name];
     config.subdivideDimension.value = {tmpNode[0].as<bool>(), tmpNode[1].as<bool>(), tmpNode[2].as<bool>()};
   }
+  if (node[config.loadBalancingInterval.name]) {
+    config.loadBalancingInterval.value = node[config.loadBalancingInterval.name].as<unsigned int>();
+  }
   if (node[config.selectorStrategy.name]) {
     auto parsedOptions =
         autopas::SelectorStrategyOption::parseOptions(node[config.selectorStrategy.name].as<std::string>());
