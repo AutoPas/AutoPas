@@ -256,7 +256,6 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     if (not(behavior & IteratorBehavior::ownedOrHalo)) {
       utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
     }
-
   }
 
   /**
@@ -275,7 +274,6 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     if (not(behavior & IteratorBehavior::ownedOrHalo)) {
       utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
     }
-
   }
 
  private:
