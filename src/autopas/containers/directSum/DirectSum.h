@@ -246,19 +246,15 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
   template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                        const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
-    std::vector<size_t> cellsOfInterest;
-
     if (behavior & IteratorBehavior::owned) {
       getCell().forEach(forEachLambda, lowerCorner, higherCorner, behavior);
-      cellsOfInterest.push_back(0);
     }
     if (behavior & IteratorBehavior::halo) {
       getHaloCell().forEach(forEachLambda, lowerCorner, higherCorner, behavior);
-      cellsOfInterest.push_back(1);
     }
 
     // sanity check
-    if (cellsOfInterest.empty()) {
+    if (not(behavior & IteratorBehavior::ownedOrHalo)) {
       utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
     }
   }
@@ -269,19 +265,15 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
   template <typename Lambda, typename A>
   void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
-    std::vector<size_t> cellsOfInterest;
-
     if (behavior & IteratorBehavior::owned) {
       getCell().reduce(reduceLambda, result, lowerCorner, higherCorner, behavior);
-      cellsOfInterest.push_back(0);
     }
     if (behavior & IteratorBehavior::halo) {
       getHaloCell().reduce(reduceLambda, result, lowerCorner, higherCorner, behavior);
-      cellsOfInterest.push_back(1);
     }
 
     // sanity check
-    if (cellsOfInterest.empty()) {
+    if (not(behavior & IteratorBehavior::ownedOrHalo)) {
       utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
     }
   }
