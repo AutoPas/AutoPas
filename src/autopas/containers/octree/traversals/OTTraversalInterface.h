@@ -35,26 +35,28 @@ class OTTraversalInterface {
    */
   void setCells(std::vector<OctreeNodeWrapper<Particle>> *cells) { _cells = cells; }
 
+  long leafGathering, startConversion, endConversion, leafClearing;
+
  protected:
   template <typename PairwiseFunctor, DataLayoutOption::Value dataLayout>
   void loadBuffers(utils::DataLayoutConverter<PairwiseFunctor, dataLayout> &dataLayoutConverter,
                    OctreeNodeWrapper<Particle> *wrapper, std::vector<OctreeLeafNode<Particle> *> &leaves) {
-    wrapper->appendAllLeaves(leaves);
+    TIME_IT(leafGathering, wrapper->appendAllLeaves(leaves));
 
-    for (OctreeLeafNode<Particle> *leaf : leaves) {
+    TIME_IT(startConversion, for (OctreeLeafNode<Particle> *leaf : leaves) {
       dataLayoutConverter.loadDataLayout(*leaf);
-    }
+    });
   }
 
   template <typename PairwiseFunctor, DataLayoutOption::Value dataLayout>
   void unloadBuffers(utils::DataLayoutConverter<PairwiseFunctor, dataLayout> &dataLayoutConverter,
                      std::vector<OctreeLeafNode<Particle> *> &leaves) {
-    for (OctreeLeafNode<Particle> *leaf : leaves) {
+    TIME_IT(endConversion, for (OctreeLeafNode<Particle> *leaf : leaves) {
       dataLayoutConverter.storeDataLayout(*leaf);
-    }
+    });
 
     // Remove the cached leaves
-    leaves.clear();
+    TIME_IT(leafClearing, leaves.clear());
   }
 
   OctreeNodeWrapper<Particle> *getOwned() { return dynamic_cast<OctreeNodeWrapper<Particle> *>(&(*_cells)[0]); }

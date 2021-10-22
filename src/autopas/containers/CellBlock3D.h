@@ -340,6 +340,11 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, c
     AutoPasLog(debug, "CellsPerDimensionWithHalo[{}]={}", d, _cellsPerDimensionWithHalo[d]);
   }
 
+  printf("CellBlock3D\n");
+  for(int d = 0; d<3; ++d) {
+    printf("\t_cellLength[%d]=%f\n", d, _cellLength[d]);
+  }
+
   _cells->resize(_numCells);
   for (auto &cell : *_cells) {
     cell.setCellLength(_cellLength);

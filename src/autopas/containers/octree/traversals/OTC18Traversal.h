@@ -86,6 +86,23 @@ class OTC18Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
    * @note This function expects a vector of exactly two cells. First cell is the main region, second is halo.
    */
   void traverseParticlePairs() override {
+    long totalNumParticlesInCells = 0, numCells = 0, numPairs = 0;
+
+    std::array<double, 3> minSize = {1000, 1000, 1000};
+    for(OctreeLeafNode<Particle> *leaf : this->_ownedLeaves) {
+      auto dim = utils::ArrayMath::sub(leaf->getBoxMax(), leaf->getBoxMin());
+      for(int d = 0; d<3; ++d) {
+        if(minSize[d] > dim[d]) {
+          minSize[d] = dim[d];
+        }
+      }
+    }
+
+    printf("Octree\n");
+    for(int d = 0; d<3; ++d) {
+      printf("\tminSize[%d]=%f\n", d, minSize[d]);
+    }
+
     // Get neighboring cells for each leaf
 #if defined(AUTOPAS_OPENMP)
 #pragma omp parallel for
@@ -94,6 +111,10 @@ class OTC18Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
       OctreeLeafNode<Particle> *leaf = this->_ownedLeaves[i];
       // Process cell itself
       _cellFunctor.processCell(*leaf);
+      auto numParticlesInLeaf = leaf->getNumParticles();
+      totalNumParticlesInCells += numParticlesInLeaf;
+      numPairs += numParticlesInLeaf * numParticlesInLeaf;
+      ++numCells;
 
       // Process connection to all neighbors
       auto uniqueNeighboringLeaves = leaf->getNeighborLeaves();
@@ -101,6 +122,10 @@ class OTC18Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
         if (leaf->getID() < neighborLeaf->getID()) {
           // Execute the cell functor
           _cellFunctor.processCellPair(*leaf, *neighborLeaf);
+          auto numParticlesInNeighbor = neighborLeaf->getNumParticles();
+          totalNumParticlesInCells += numParticlesInNeighbor;
+          numPairs += numParticlesInLeaf * numParticlesInNeighbor;
+          ++numCells;
         }
       }
 
@@ -112,9 +137,19 @@ class OTC18Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
       for (OctreeLeafNode<Particle> *neighborLeaf : haloNeighbors) {
         if (leaf->getID() < neighborLeaf->getID()) {
           _cellFunctor.processCellPair(*leaf, *neighborLeaf);
+          auto numParticlesInNeighbor = neighborLeaf->getNumParticles();
+          totalNumParticlesInCells += numParticlesInNeighbor;
+          numPairs += numParticlesInLeaf * numParticlesInNeighbor;
+          ++numCells;
         }
       }
     }
+
+    double avgParticlesPerCell = (double)totalNumParticlesInCells / (double)numCells;
+    printf("\tTotal num. of particles: %ld\n", totalNumParticlesInCells);
+    printf("\tNum. of cells processed: %ld\n", numCells);
+    printf("\tAvg. particles per cell: %.02f\n", avgParticlesPerCell);
+    printf("\tNum. pairwise checks:    %ld\n", numPairs);
   }
 
  private:

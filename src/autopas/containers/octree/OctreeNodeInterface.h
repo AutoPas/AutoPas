@@ -7,9 +7,9 @@
 #pragma once
 
 #include <array>
+#include <cstdarg>
 #include <set>
 #include <vector>
-#include <cstdarg>
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/octree/OctreeDirection.h"
@@ -90,6 +90,28 @@ struct OctreeMemoryFootprint {
         particleCount.avg, (size_t)particleCount.val);
   }
 };
+
+#define TIME_IT(name, stmt)    \
+  name = 0;                    \
+  do {                         \
+    utils::Timer t;            \
+    t.start();                 \
+    do {                       \
+      stmt;                    \
+    } while (0);               \
+    t.stop();                  \
+    (name) = t.getTotalTime(); \
+  } while (0)
+#define TIME_IT_MULTI(name, stmt) \
+  do {                            \
+    utils::Timer t;               \
+    t.start();                    \
+    do {                          \
+      stmt;                       \
+    } while (0);                  \
+    t.stop();                     \
+    (name) += t.getTotalTime();   \
+  } while (0)
 
 /**
  * The base class that provides the necessary function definitions that can be applied to an octree.

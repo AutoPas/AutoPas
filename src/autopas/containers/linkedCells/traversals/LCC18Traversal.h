@@ -61,7 +61,7 @@ class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, d
    * @param y Y-index of base cell.
    * @param z Z-index of base cell.
    */
-  void processBaseCell(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
+  std::tuple<long, long, long> processBaseCell(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c18; }
 
@@ -164,31 +164,56 @@ unsigned long LCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewto
 }
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-void LCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processBaseCell(
+std::tuple<long, long, long> LCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processBaseCell(
     std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z) {
   const unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
 
   const unsigned long xArray = getIndex(x, 0);
   const unsigned long yArray = getIndex(y, 1);
 
+  long numParticlesInCell = 0, numCells = 0, numPairs = 0;
+
   ParticleCell &baseCell = cells[baseIndex];
+  long baseCellParticleCount = baseCell.numParticles();
   offsetArray_t &offsets = this->_cellOffsets[yArray][xArray];
   for (auto const &[offset, r] : offsets) {
     unsigned long otherIndex = baseIndex + offset;
     ParticleCell &otherCell = cells[otherIndex];
+    long otherCellParticleCount = otherCell.numParticles();
 
     if (baseIndex == otherIndex) {
       this->_cellFunctor.processCell(baseCell);
+      numParticlesInCell += baseCellParticleCount;
+      numPairs += baseCellParticleCount * baseCellParticleCount;
+      ++numCells;
     } else {
       this->_cellFunctor.processCellPair(baseCell, otherCell, r);
+      numParticlesInCell += otherCellParticleCount;
+      numPairs += baseCellParticleCount * otherCellParticleCount;
+      ++numCells;
     }
   }
+
+  return {numParticlesInCell, numCells, numPairs};
 }
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 inline void LCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
   auto &cells = *(this->_cells);
-  this->c18Traversal([&](unsigned long x, unsigned long y, unsigned long z) { this->processBaseCell(cells, x, y, z); });
+
+  std::atomic_long totalNumParticlesInCells = 0, numCells = 0, numPairs = 0;
+  this->c18Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
+    auto numParticlesInCell_numCells_numPairs = this->processBaseCell(cells, x, y, z);
+    totalNumParticlesInCells += std::get<0>(numParticlesInCell_numCells_numPairs);
+    numCells += std::get<1>(numParticlesInCell_numCells_numPairs);
+    numPairs += std::get<2>(numParticlesInCell_numCells_numPairs);
+  });
+
+  double avgParticlesPerCell = (double)(totalNumParticlesInCells.operator long()) / (double)(numCells.operator long());
+  printf("\tTotal num. of particles: %ld\n", totalNumParticlesInCells.operator long());
+  printf("\tNum. of cells processed: %ld\n", numCells.operator long());
+  printf("\tAvg. particles per cell: %.02f\n", avgParticlesPerCell);
+  printf("\tNum. pairwise checks:    %ld\n", numPairs.operator long());
 }
 
 }  // namespace autopas

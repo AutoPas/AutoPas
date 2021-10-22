@@ -59,6 +59,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
       : enclosedParticleCount(0) {
     _pointer = std::make_unique<OctreeLeafNode<Particle>>(boxMin, boxMax, nullptr, treeSplitThreshold,
                                                           interactionLength, cellSizeFactor);
+    resetObservers();
   }
 
   /**
@@ -91,10 +92,14 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @return the iterator
    */
   SingleCellIteratorWrapper<Particle, true> begin() override {
-    lock.lock();
-    ps.clear();
-    _pointer->appendAllParticles(ps);
-    lock.unlock();
+    TIME_IT_MULTI(dynamicParticleReloadDuration, {
+      lock.lock();
+      ps.clear();
+      _pointer->appendAllParticles(ps);
+      lock.unlock();
+    });
+    ++dynamicParticleReloads;
+
     return SingleCellIteratorWrapper<ParticleType, true>(new iterator_t(this));
   }
 
@@ -103,10 +108,14 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @note const version
    */
   SingleCellIteratorWrapper<Particle, false> begin() const override {
-    lock.lock();
-    ps.clear();
-    _pointer->appendAllParticles(ps);
-    lock.unlock();
+    TIME_IT_MULTI(constParticleReloadDuration, {
+      lock.lock();
+      ps.clear();
+      _pointer->appendAllParticles(ps);
+      lock.unlock();
+    });
+    ++constParticleReloads;
+
     return SingleCellIteratorWrapper<ParticleType, false>(new const_iterator_t(this));
   }
 
@@ -206,6 +215,27 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * Type of the internal const iterator.
    */
   using const_iterator_t = internal::SingleCellIterator<Particle, OctreeNodeWrapper<Particle>, false>;
+
+  mutable long constParticleReloadDuration, constParticleReloads;
+  mutable long dynamicParticleReloadDuration, dynamicParticleReloads;
+
+  void resetObservers() const {
+    constParticleReloadDuration = constParticleReloads = 0;
+    dynamicParticleReloadDuration = dynamicParticleReloads = 0;
+  }
+
+  void logObservers(size_t iteration, int type) const {
+    char const *filenames[] = {"owned_boundary_durations.csv", "halo_boundary_durations.csv"};
+    char const *filename = filenames[type];
+
+    csv(filename, "iteration,cPartReloadDur[ns],cPartReloads,dPartReloadDur[ns],dPartReloads", "%ld,%ld,%ld,%ld,%ld\n",
+        iteration, constParticleReloadDuration, constParticleReloads, dynamicParticleReloadDuration,
+        dynamicParticleReloads);
+  }
+
+  std::tuple<long, long> getOwnedAccessTimers() const {
+    return {dynamicParticleReloadDuration, dynamicParticleReloads};
+  }
 
  private:
   Particle &getFromReloadingIterator(size_t index) const {

@@ -190,6 +190,24 @@ void AutoPas<Particle>::logOctreeMemoryConsumption(size_t iteration) {
 }
 
 template <class Particle>
+void AutoPas<Particle>::resetOctreeAccessTimers() {
+  auto *octree = (Octree<Particle> *)_autoTuner->getContainer().get();
+  for(const OctreeNodeWrapper<Particle> &cell : octree->getCells()) {
+    cell.resetObservers();
+  }
+}
+
+template <class Particle>
+std::tuple<long, long> AutoPas<Particle>::getOctreeAccessTimers() {
+  auto *octree = (Octree<Particle> *)_autoTuner->getContainer().get();
+  const std::vector<OctreeNodeWrapper<Particle>> &cells = octree->getCells();
+  //for(int type : {0, 1}) {
+  //  cells[type].logObservers(iteration, type);
+  //}
+  return cells[0].getOwnedAccessTimers();
+}
+
+template <class Particle>
 std::array<double, 3> AutoPas<Particle>::getBoxMin() const {
   return _autoTuner->getContainer()->getBoxMin();
 }

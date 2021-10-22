@@ -1,31 +1,33 @@
 # container                        :  [DirectSum, LinkedCells, VerletLists, VerletListsCells, VerletClusterLists, VarVerletListsAsBuild]
-verlet-rebuild-frequency         :  10
+verlet-rebuild-frequency         :  4
 verlet-skin-radius               :  0.3
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 # data-layout                      :  [AoS, SoA]
+data-layout                      :  [SoA]
 # Traversals for Release paper:
+traversal                        : [lc_c18, ot_c18]
 # traversal                        :  [ lc_c01, lc_c01_combined_soa, lc_c18, lc_c08, lc_c04_combined_SoA, lc_c04, lc_c04_HCP, lc_sliced, vl_list_iteration, vvl_as_built, vlc_c01, vlc_c18, vlc_sliced, vcl_cluster_iteration, vcl_c01_balanced, vcl_c06 ]
 tuning-strategy                  :  full-Search
-tuning-interval                  :  1000
-tuning-samples                   :  3
+tuning-interval                  :  80001
+tuning-samples                   :  0 # 3
 tuning-max-evidence              :  10
-functor                          :  Lennard-Jones (12-6)
-newton3                          :  [disabled, enabled]
-cutoff                           :  3
+functor                          :  Lennard-Jones (12-6) AVX
+newton3                          :  [enabled] # [disabled, enabled]
+cutoff                           :  2
 # box-min                          :  [0, 0, 0]
 # box-max                          :  [7.25, 7.25, 7.25]
 cell-size                        :  [1]
 deltaT                           :  0.0005
-iterations                       :  50000
+iterations                       :  40010
 periodic-boundaries              :  true
 globalForce                      :  [0,0,-12]
 Objects:
   # since md-flex currently has no reflecting boundaries we use walls of particles with infinite (or max double) mass.
   # bottom wall
   CubeGrid:
-    0:  
-      particles-per-dimension    :  [51, 31, 1]
+    0:
+      particles-per-dimension    :  [101, 81, 1]
       particle-spacing           :  1
       bottomLeftCorner           :  [0, 0, 0]
       velocity                   :  [0, 0, 0]
@@ -34,31 +36,58 @@ Objects:
       particle-sigma             :  1
       particle-mass              :  1.79769e+308
   # top wall
-#  CubeGrid:
-#    1:
-#      particles-per-dimension    :  [51, 31, 1]
-#      particle-spacing           :  1
-#      bottomLeftCorner           :  [1, 0, 40]
-#      velocity                   :  [0, 0, 0]
-#      particle-type              :  0
-#      particle-epsilon           :  1
-#      particle-sigma             :  1
-#      particle-mass              :  1.79769e+308
+  #  CubeGrid:
+  #    1:
+  #      particles-per-dimension    :  [51, 31, 1]
+  #      particle-spacing           :  1
+  #      bottomLeftCorner           :  [1, 0, 40]
+  #      velocity                   :  [0, 0, 0]
+  #      particle-type              :  0
+  #      particle-epsilon           :  1
+  #      particle-sigma             :  1
+  #      particle-mass              :  1.79769e+308
   # "water"
   CubeClosestPacked:
-    0:  
+    0:
       particle-spacing           :  1.122462048
       bottomLeftCorner           :  [1, 1, 1]
-      box-length                 :  [48, 28, 10]
+      box-length                 :  [98, 78, 3]
       velocity                   :  [0, 0, 0]
       particle-type              :  1
       particle-epsilon           :  1
       particle-sigma             :  1
       particle-mass              :  1
   Sphere:
-    0:  
-      center                     :  [18, 15, 30]
+    #0:
+    #  center                     :  [18, 15, 20]
+    # radius                     :  4
+    #  particle-spacing           :  1.122462048
+    #  velocity                   :  [0, 0, 0]
+    #  particle-type              :  2
+    #  particle-epsilon           :  1
+    #  particle-sigma             :  1
+    #  particle-mass              :  1
+    #1:
+    #  center                     :  [60, 15, 20]
+    #  radius                     :  6
+    #  particle-spacing           :  1.122462048
+    #  velocity                   :  [0, 0, 0]
+    #  particle-type              :  2
+    #  particle-epsilon           :  1
+    #  particle-sigma             :  1
+    #  particle-mass              :  1
+    2:
+      center                     :  [10, 20, 20]
       radius                     :  6
+      particle-spacing           :  1.122462048
+      velocity                   :  [0, 0, 0]
+      particle-type              :  2
+      particle-epsilon           :  1
+      particle-sigma             :  1
+      particle-mass              :  1
+    3:
+      center                     :  [60, 40, 30]
+      radius                     :  15
       particle-spacing           :  1.122462048
       velocity                   :  [0, 0, 0]
       particle-type              :  2
@@ -71,8 +100,8 @@ Objects:
 #   deltaTemperature               :  0.1
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
-vtk-filename                     :  fallingDrop
-vtk-write-frequency              :  500
+vtk-filename                     :  inhomogeneous
+vtk-write-frequency              :  50
 no-flops                         :  false
 no-end-config                    :  true
 log-level                        :  debug

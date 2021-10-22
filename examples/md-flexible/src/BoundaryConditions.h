@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "autopas/AutoPasDecl.h"
+#include "autopas/containers/octree/OctreeNodeInterface.h"
 
 /**
  * This namespace implements functions for periodic boundaries using AutoPas.
@@ -157,7 +158,8 @@ void addHaloParticles(autopas::AutoPas<Particle> &autoPas, std::vector<Particle>
  * @param forceUpdate If a container update should be forced or left to AutoPas.
  */
 template <class Particle>
-std::tuple<long, long, long, long> applyPeriodic(autopas::AutoPas<Particle> &autoPas, bool forceUpdate) {
+std::tuple<long, long, long, long> applyPeriodic(autopas::AutoPas<Particle> &autoPas, bool forceUpdate,
+                                                 size_t iteration) {
   // 1. update Container; return value is a vector of the particles leaving the domain box
   // and a flag whether an update occurred.
   autopas::utils::Timer timer1, timer2, timer3, timer4;
@@ -174,10 +176,24 @@ std::tuple<long, long, long, long> applyPeriodic(autopas::AutoPas<Particle> &aut
   }
   timer2.stop();
 
+  if (autoPas.getContainerType() == autopas::ContainerOption::octree) {
+    autoPas.resetOctreeAccessTimers();
+  }
+
   timer3.start();
   // 3. identify inner particles for which a periodic copy in the opposing halo region is needed.
   auto haloParticles = identifyNewHaloParticles(autoPas);
   timer3.stop();
+
+  if (autoPas.getContainerType() == autopas::ContainerOption::octree) {
+    std::tuple<long, long> octreeAccessTimers = autoPas.getOctreeAccessTimers();
+    long dynamicParticleReloadDuration = std::get<0>(octreeAccessTimers);
+    long dynamicParticleReloads = std::get<1>(octreeAccessTimers);
+
+    autopas::csv("owned_particle_reloads.csv", "iteration,identifyDur[ns],dPartReloadDur[ns],dPartReloads",
+                 "%ld,%ld,%ld,%ld\n", iteration, timer3.getTotalTime(), dynamicParticleReloadDuration,
+                 dynamicParticleReloads);
+  }
 
   timer4.start();
   addHaloParticles(autoPas, haloParticles);

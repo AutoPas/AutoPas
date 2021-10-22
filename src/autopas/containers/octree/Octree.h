@@ -115,16 +115,22 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
   }
 
   void iteratePairwise(TraversalInterface *traversal) override {
-    if (auto *traversalInterface = dynamic_cast<OTTraversalInterface<Particle, ParticleCell> *>(traversal)) {
+    auto *traversalInterface = dynamic_cast<OTTraversalInterface<Particle, ParticleCell> *>(traversal);
+    if (traversalInterface) {
       traversalInterface->setCells(&this->_cells);
     }
 
-    traversal->initTraversal();
-    traversal->traverseParticlePairs();
-    traversal->endTraversal();
+    long TIME_IT(initTime, traversal->initTraversal());
+    long TIME_IT(traversalTime, traversal->traverseParticlePairs());
+    long TIME_IT(endTime, traversal->endTraversal());
 
-    //logger.logTree(OWNED, &this->_cells[OWNED]);
-    //logger.logTree(HALO, &this->_cells[HALO]);
+    csv("pairwiseFractions.csv",
+        "init[ns],traversal[ns],teardown[ns],leafGathering[ns],startConv[ns],endConv[ns],leafClearing[ns]",
+        "%ld,%ld,%ld,%ld,%ld,%ld,%ld\n", initTime, traversalTime, endTime, traversalInterface->leafGathering,
+        traversalInterface->startConversion, traversalInterface->endConversion, traversalInterface->leafClearing);
+
+    // logger.logTree(OWNED, &this->_cells[OWNED]);
+    // logger.logTree(HALO, &this->_cells[HALO]);
   }
 
   /**
@@ -167,8 +173,8 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     auto &haloWrapper = this->_cells[CellTypes::HALO];
     auto leavesThatCouldContainParticle = haloWrapper.getLeavesInRange(min, max);
 
-    for(auto &leaf : leavesThatCouldContainParticle) {
-      if(internal::checkParticleInCellAndUpdateByIDAndPosition(*leaf, pCopy, this->getSkin())) {
+    for (auto &leaf : leavesThatCouldContainParticle) {
+      if (internal::checkParticleInCellAndUpdateByIDAndPosition(*leaf, pCopy, this->getSkin())) {
         return true;
       }
     }
@@ -252,13 +258,9 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     return i == CellTypes::OWNED;
   }
 
-  OctreeNodeWrapper<Particle> &getOwned() {
-    return this->_cells[CellTypes::OWNED];
-  }
+  OctreeNodeWrapper<Particle> &getOwned() { return this->_cells[CellTypes::OWNED]; }
 
-  OctreeNodeWrapper<Particle> &getHalo() {
-    return this->_cells[CellTypes::HALO];
-  }
+  OctreeNodeWrapper<Particle> &getHalo() { return this->_cells[CellTypes::HALO]; }
 
  private:
   /**

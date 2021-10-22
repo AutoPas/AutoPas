@@ -216,7 +216,7 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
       // apply boundary conditions AFTER the position update!
       if (_config->periodic.value) {
         _timers.boundaries.start();
-        auto updateContainerDurations = BoundaryConditions::applyPeriodic(autopas, false);
+        auto updateContainerDurations = BoundaryConditions::applyPeriodic(autopas, false, _iteration);
         _timers.boundaries.stop();
 
         _timers.updateContainer.addTime(std::get<0>(updateContainerDurations));
@@ -284,7 +284,7 @@ void Simulation::simulate(autopas::AutoPas<ParticleType> &autopas) {
   // writes final state of the simulation
   if ((not _config->vtkFileName.value.empty())) {
     _timers.boundaries.start();
-    auto updateContainerDurations = BoundaryConditions::applyPeriodic(autopas, true);
+    auto updateContainerDurations = BoundaryConditions::applyPeriodic(autopas, true, _iteration);
     _timers.boundaries.stop();
 
     _timers.updateContainer.addTime(std::get<0>(updateContainerDurations));

@@ -232,6 +232,9 @@ class AutoPas {
 
   void logOctreeMemoryConsumption(size_t iteration);
 
+  void resetOctreeAccessTimers();
+  std::tuple<long, long> getOctreeAccessTimers();
+
   /**
    * Get the lower corner of the container without the halo.
    * @return lower corner of the container.
