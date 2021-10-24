@@ -172,16 +172,20 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
  * @param particlePropertiesLibrary
  * @param targetTemperature
  * @param deltaTemperature Maximum temperature change.
+ * @param localTemperatureInfluence: The influence of the local domain on the temperature of the global domain.
  */
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particlePropertiesLibrary,
-           const double targetTemperature, const double deltaTemperature) {
+           const double targetTemperature, const double deltaTemperature,
+           const double localTemperatureInfluence = 1.0) {
   auto currentTemperatureMap = calcTemperatureComponent(autopas, particlePropertiesLibrary);
 
   for (auto &[particleTypeID, currentTemperature] : currentTemperatureMap) {
     double aggregatedTemperature = 0.;
-    autopas::AutoPas_MPI_Allreduce(&currentTemperature, &aggregatedTemperature, 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM,
-                                   AUTOPAS_MPI_COMM_WORLD);
+
+    auto weightedCurrentTemperature = currentTemperature * localTemperatureInfluence;
+    autopas::AutoPas_MPI_Allreduce(&weightedCurrentTemperature, &aggregatedTemperature, 1, AUTOPAS_MPI_DOUBLE,
+                                   AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
 
     int communicatorSize;
     autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &communicatorSize);

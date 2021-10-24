@@ -362,5 +362,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     config.deltaTemp.value = node[config.useThermostat.name][config.deltaTemp.name].as<double>();
     config.addBrownianMotion.value = node[config.useThermostat.name][config.addBrownianMotion.name].as<bool>();
   }
+  if (node[config.loadBalancer.name]) {
+    auto parsedOptions = LoadBalancerOption::parseOptions(node[config.loadBalancer.name].as<std::string>());
+    if (parsedOptions.size() != 1) {
+      throw std::runtime_error(
+          "YamlParser::parseYamlFile: Pass exactly one load balancer option! Possible values:\n" +
+          autopas::utils::ArrayUtils::to_string(LoadBalancerOption::getAllOptions(), "", {"(", ")"}));
+    }
+    config.loadBalancer.value = *parsedOptions.begin();
+  }
   return true;
 }

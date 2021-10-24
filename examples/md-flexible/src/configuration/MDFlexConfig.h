@@ -28,6 +28,7 @@
 #include "src/configuration/objects/CubeGrid.h"
 #include "src/configuration/objects/CubeUniform.h"
 #include "src/configuration/objects/Sphere.h"
+#include "src/domainDecomposition/LoadBalancerOption.h"
 
 /**
  * Class containing all necessary parameters for configuring a md-flexible simulation.
@@ -199,7 +200,7 @@ class MDFlexConfig {
       "List of traversal options to use. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::TraversalOption::getAllOptions(), " ", {"(", ")"})};
   /**
-   * traversalOptions
+   * load-estimator
    */
   MDFlexOption<std::set<autopas::LoadEstimatorOption>, __LINE__> loadEstimatorOptions{
       autopas::LoadEstimatorOption::getMostOptions(), "load-estimator", true,
@@ -606,6 +607,15 @@ class MDFlexConfig {
    * checkpointIteration
    */
   MDFlexOption<size_t, 0> checkpointIteration{0, "checkpoint-iteration", true, "The iteration of the checkpoint file"};
+
+  /**
+   * loadBalancer
+   */
+  MDFlexOption<LoadBalancerOption, __LINE__> loadBalancer{
+      LoadBalancerOption::invertedPressure, "load-balancer", true,
+      "Defines which load balancing approach will be used with the adaptive grid decomposition. If ALL is chosen as "
+      "load balancer, MD-Flexible uses ALL's TENSOR method. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(LoadBalancerOption::getAllOptions(), " ", {"(", ")"})};
 
   /**
    * valueOffset used for cli-output alignment

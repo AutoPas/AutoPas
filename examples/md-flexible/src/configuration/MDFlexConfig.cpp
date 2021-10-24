@@ -291,6 +291,7 @@ std::string MDFlexConfig::to_string() const {
   os << setw(valueOffset) << dontMeasureFlops.name << ":  " << (not dontMeasureFlops.value) << endl;
   os << setw(valueOffset) << dontCreateEndConfig.name << ":  " << (not dontCreateEndConfig.value) << endl;
   os << setw(valueOffset) << dontShowProgressBar.name << ":  " << (dontShowProgressBar.value) << endl;
+  os << setw(valueOffset) << loadBalancer.name << ":  " << loadBalancer.value << endl;
   return os.str();
 }
 

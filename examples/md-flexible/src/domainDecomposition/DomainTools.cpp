@@ -137,4 +137,8 @@ std::array<int, 6> getExtentOfSubdomain(const int subdomainIndex, const std::arr
 
   return extentOfSubdomain;
 }
+
+double getDomainVolume(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) {
+  return (boxMax[0] - boxMin[0]) * (boxMax[1] - boxMin[1]) * (boxMax[2] - boxMin[2]);
+}
 }  // namespace DomainTools

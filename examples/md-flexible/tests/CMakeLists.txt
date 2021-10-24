@@ -26,6 +26,9 @@ target_compile_definitions(
     mdFlexTests PRIVATE
     YAMLDIRECTORY=\"${PROJECT_SOURCE_DIR}/examples/md-flexible/tests/yamlTestFiles/\"
 )
+
+include(autopas_all)
+
 target_include_directories(
     mdFlexTests
     PUBLIC ${PROJECT_SOURCE_DIR}/tests/testAutopas ${PROJECT_SOURCE_DIR}/examples/md-flexible
@@ -38,6 +41,7 @@ target_link_libraries(
     autopasTools
     gmock
     yaml-cpp
+    ${ALL_LIB} 
     $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>
 )
 
