@@ -71,7 +71,8 @@ size_t getTerminalWidth() {
 }
 }  // namespace
 
-Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecomposition &domainDecomposition)
+Simulation::Simulation(const MDFlexConfig &configuration,
+                       std::shared_ptr<RegularGridDecomposition> &domainDecomposition)
     : _configuration(configuration),
       _domainDecomposition(domainDecomposition),
       _createVtkFiles(not configuration.vtkFileName.value.empty()),
@@ -96,8 +97,8 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
   _autoPasContainer->setAllowedNewton3Options(_configuration.newton3Options.value);
   _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions.value);
   _autoPasContainer->setAllowedLoadEstimators(_configuration.loadEstimatorOptions.value);
-  _autoPasContainer->setBoxMin(_domainDecomposition.getLocalBoxMin());
-  _autoPasContainer->setBoxMax(_domainDecomposition.getLocalBoxMax());
+  _autoPasContainer->setBoxMin(_domainDecomposition->getLocalBoxMin());
+  _autoPasContainer->setBoxMax(_domainDecomposition->getLocalBoxMax());
   _autoPasContainer->setCutoff(_configuration.cutoff.value);
   _autoPasContainer->setRelativeOptimumRange(_configuration.relativeOptimumRange.value);
   _autoPasContainer->setMaxTuningPhasesWithoutTest(_configuration.maxTuningPhasesWithoutTest.value);
@@ -119,7 +120,7 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
 
   // @todo: the object generators should only generate particles relevant for the current rank's domain
   for (auto &particle : _configuration.getParticles()) {
-    if (_domainDecomposition.isInsideLocalDomain(particle.getR())) {
+    if (_domainDecomposition->isInsideLocalDomain(particle.getR())) {
       _autoPasContainer->addParticle(particle);
     }
   }
@@ -153,7 +154,7 @@ void Simulation::run() {
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
       _timers.vtk.start();
-      _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, _domainDecomposition);
+      _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
       _timers.vtk.stop();
     }
 
@@ -173,19 +174,19 @@ void Simulation::run() {
       const double work = _timers.work.stop();
       if (updated) {
         _timers.loadBalancing.start();
-        _domainDecomposition.update(work);
-        auto additionalEmigrants =
-            _autoPasContainer->resizeBox(_domainDecomposition.getLocalBoxMin(), _domainDecomposition.getLocalBoxMax());
+        _domainDecomposition->update(work);
+        auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(),
+                                                                _domainDecomposition->getLocalBoxMax());
         emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
         _timers.loadBalancing.stop();
 
         _timers.migratingParticleExchange.start();
-        _domainDecomposition.exchangeMigratingParticles(_autoPasContainer, emigrants);
+        _domainDecomposition->exchangeMigratingParticles(_autoPasContainer, emigrants);
         _timers.migratingParticleExchange.stop();
       }
 
       _timers.haloParticleExchange.start();
-      _domainDecomposition.exchangeHaloParticles(_autoPasContainer);
+      _domainDecomposition->exchangeHaloParticles(_autoPasContainer);
       _timers.haloParticleExchange.stop();
 
       _timers.work.start();
@@ -202,11 +203,11 @@ void Simulation::run() {
     ++_iteration;
 
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
-      std::cout << "Current Memory usage on rank " << _domainDecomposition.getDomainIndex() << ": "
+      std::cout << "Current Memory usage on rank " << _domainDecomposition->getDomainIndex() << ": "
                 << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
     }
 
-    if (_domainDecomposition.getDomainIndex() == 0) {
+    if (_domainDecomposition->getDomainIndex() == 0) {
       auto [maxIterationsEstimate, maxIterationsIsPrecise] = estimateNumberOfIterations();
       if (not _configuration.dontShowProgressBar.value) {
         printProgress(_iteration, maxIterationsEstimate, maxIterationsIsPrecise);
@@ -217,7 +218,7 @@ void Simulation::run() {
 
   // Record last state of simulation.
   if (_createVtkFiles) {
-    _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, _domainDecomposition);
+    _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
   }
 }
 
@@ -229,8 +230,8 @@ double Simulation::calculateHomogeneity() const {
   // approximately the resolution we want to get.
   size_t numberOfCells = ceil(numberOfParticles / 10.);
 
-  std::array<double, 3> startCorner = _domainDecomposition.getGlobalBoxMin();
-  std::array<double, 3> endCorner = _domainDecomposition.getGlobalBoxMax();
+  std::array<double, 3> startCorner = _domainDecomposition->getGlobalBoxMin();
+  std::array<double, 3> endCorner = _domainDecomposition->getGlobalBoxMax();
   std::array<double, 3> domainSizePerDimension = {};
   for (int i = 0; i < 3; ++i) {
     domainSizePerDimension[i] = endCorner[i] - startCorner[i];
@@ -507,7 +508,7 @@ void Simulation::logSimulationState() {
                                  AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
   standardDeviationOfHomogeneity = std::sqrt(standardDeviationOfHomogeneity);
 
-  if (_domainDecomposition.getDomainIndex() == 0) {
+  if (_domainDecomposition->getDomainIndex() == 0) {
     std::cout << "\n\n"
               << "Total number of particles at the end of Simulation: " << totalNumberOfParticles << "\n"
               << "Owned: " << ownedParticles << "\n"
@@ -533,7 +534,7 @@ void Simulation::logMeasurements() {
   long migratingParticleExchange = accumulateTime(_timers.migratingParticleExchange.getTotalTime());
   long loadBalancing = accumulateTime(_timers.loadBalancing.getTotalTime());
 
-  if (_domainDecomposition.getDomainIndex() == 0) {
+  if (_domainDecomposition->getDomainIndex() == 0) {
     auto maximumNumberOfDigits = std::to_string(total).length();
     std::cout << "Measurements:" << std::endl;
     std::cout << timerToString("Total accumulated              ", total, maximumNumberOfDigits);

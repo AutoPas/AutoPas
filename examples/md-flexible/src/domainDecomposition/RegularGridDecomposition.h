@@ -5,11 +5,15 @@
  */
 #pragma once
 
-#include <list>
+#if defined(AUTOPAS_ENABLE_ALLLBL)
+#include <ALL.hpp>
+#endif
 #include <memory>
 
 #include "DomainDecomposition.h"
 #include "autopas/utils/WrapMPI.h"
+#include "src/TypeDefinitions.h"
+#include "src/configuration/MDFlexConfig.h"
 
 /**
  * This class can be used as a domain decomposition which divides the domain in equal sized rectangular subdomains.
@@ -19,15 +23,9 @@ class RegularGridDecomposition final : public DomainDecomposition {
  public:
   /**
    * Constructor.
-   * @param globalBoxMin: The minimum coordinates of the global domain.
-   * @param globalBoxMax: The maximum coordinates of the global domain.
-   * @param subdivideDimension: Decides if a dimension will be subdivided.
-   * @param cutoffWidth: The cutoff width for halo particles.
-   * @param skinWidth: The skin width of an autopas container domain.
+   * @param configuration: The configuration for definig the decomposition properties
    */
-  RegularGridDecomposition(const std::array<double, 3> &globalBoxMin, const std::array<double, 3> &globalBoxMax,
-                           const std::array<bool, 3> &subdivideDimension, const double &cutoffWidth,
-                           const double &skinWidth);
+  RegularGridDecomposition(const MDFlexConfig &configuration);
 
   /**
    * Destructor.
@@ -221,6 +219,20 @@ class RegularGridDecomposition final : public DomainDecomposition {
   std::vector<std::vector<char>> _sendBuffers;
 
   /**
+   * Defines which load balancer will be used.
+   */
+  LoadBalancerOption _loadBalancerOption;
+
+#if defined(AUTOPAS_ENABLE_ALLLBL)
+  /**
+   * The ALL load balancer used for diffuse load balancing
+   * We cannot use a shared pointer here, because whenn the load balancer is deleted, it calls MPI_Comm_free after
+   * we call MPI_Finalize().
+   */
+  std::unique_ptr<ALL::ALL<double, double>> _allLoadBalancer;
+#endif
+
+  /**
    * Initializes the decomposition of the domain.
    * This needs to be called before initializeMPICommunicator.
    */
@@ -339,4 +351,18 @@ class RegularGridDecomposition final : public DomainDecomposition {
                                                    std::vector<ParticleType> &leftNeighborParticles,
                                                    std::vector<ParticleType> &rightNeighborParticles,
                                                    std::vector<ParticleType> &uncategorizedParticles);
+
+  /**
+   * Balances the subdomains of the grid decomposition using the inverted pressure balancing algorithm.
+   * @param work: The work performed by the process owning this sudomain.
+   */
+  void balanceWithInvertedPressureLoadBalancer(const double &work);
+
+#if defined(AUTOPAS_ENABLE_ALLLBL)
+  /**
+   * Balances the subdomains of the grid decomposition using the ALL load balancer.
+   * @param work: The work performed by the process owning this sudomain.
+   */
+  void balanceWithAllLoadBalancer(const double &work);
+#endif
 };

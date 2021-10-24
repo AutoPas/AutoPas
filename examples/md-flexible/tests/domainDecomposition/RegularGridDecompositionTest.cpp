@@ -44,19 +44,27 @@ void initializeAutoPasContainer(RegularGridDecomposition::SharedAutoPasContainer
 }  // namespace
 
 TEST_F(RegularGridDecompositionTest, testGetLocalDomain) {
-  std::array<double, 3> globalBoxMin = {1.0, 1.0, 1.0};
-  std::array<double, 3> globalBoxMax = {10.0, 10.0, 10.0};
-  std::array<bool, 3> subdivideDimension = {true, true, true};
+  std::vector<std::string> arguments = {""};
 
-  RegularGridDecomposition domainDecomposition(globalBoxMin, globalBoxMax, subdivideDimension, 0, 0);
+  char *argv[3] = {arguments[0].data()};
 
-  std::array<double, 3> globalBoxExtend = autopas::utils::ArrayMath::sub(globalBoxMax, globalBoxMin);
+  MDFlexConfig configuration(0, argv);
+  configuration.boxMin.value = {1.0, 1.0, 1.0};
+  configuration.boxMax.value = {10.0, 10.0, 10.0};
+  configuration.subdivideDimension.value = {true, true, true};
+  configuration.verletSkinRadius.value = 0;
+  configuration.cutoff.value = 0;
+
+  RegularGridDecomposition domainDecomposition(configuration);
+
+  std::array<double, 3> globalBoxExtend =
+      autopas::utils::ArrayMath::sub(configuration.boxMax.value, configuration.boxMin.value);
 
   int numberOfProcesses;
   autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &numberOfProcesses);
 
   std::array<int, 3> decomposition;
-  DomainTools::generateDecomposition(numberOfProcesses, subdivideDimension, decomposition);
+  DomainTools::generateDecomposition(numberOfProcesses, configuration.subdivideDimension.value, decomposition);
 
   std::array<double, 3> expectedLocalBoxExtend = autopas::utils::ArrayMath::div(
       globalBoxExtend, {(double)decomposition[0], (double)decomposition[1], (double)decomposition[2]});
@@ -93,9 +101,7 @@ TEST_F(RegularGridDecompositionTest, testExchangeHaloParticles) {
     std::array<double, 3> localBoxMin = configuration.boxMin.value;
     std::array<double, 3> localBoxMax = configuration.boxMax.value;
 
-    RegularGridDecomposition domainDecomposition(configuration.boxMin.value, configuration.boxMax.value,
-                                                 configuration.subdivideDimension.value, configuration.cutoff.value,
-                                                 configuration.verletSkinRadius.value);
+    RegularGridDecomposition domainDecomposition(configuration);
 
     auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
 
@@ -194,9 +200,7 @@ TEST_F(RegularGridDecompositionTest, testExchangeMigratingParticles) {
     std::array<double, 3> localBoxMin = configuration.boxMin.value;
     std::array<double, 3> localBoxMax = configuration.boxMax.value;
 
-    RegularGridDecomposition domainDecomposition(configuration.boxMin.value, configuration.boxMax.value,
-                                                 configuration.subdivideDimension.value, configuration.cutoff.value,
-                                                 configuration.verletSkinRadius.value);
+    RegularGridDecomposition domainDecomposition(configuration);
 
     auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
 

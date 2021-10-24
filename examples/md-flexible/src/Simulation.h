@@ -29,7 +29,7 @@ class Simulation {
    * @param configuration: The configuration of this simulation.
    * @param domainDecomposition: The domain decomposition used for this simulation
    */
-  Simulation(const MDFlexConfig &configuration, RegularGridDecomposition &domainDecomposition);
+  Simulation(const MDFlexConfig &configuration, std::shared_ptr<RegularGridDecomposition> &domainDecomposition);
 
   /**
    * Destructor.
@@ -42,7 +42,9 @@ class Simulation {
   void run();
 
   /**
+   * Finalizes the simulation.
    * Stops remaining timers and logs the result of all the timers.
+   * This needs to be called before MPI_Finalize if MPI is enabled.
    */
   void finalize();
 
@@ -256,7 +258,7 @@ class Simulation {
   /**
    * This simulation's domain decomposition.
    */
-  RegularGridDecomposition _domainDecomposition;
+  std::shared_ptr<RegularGridDecomposition> _domainDecomposition;
 
   /**
    * Sends particles of type ParticleType to a specific receiver.
