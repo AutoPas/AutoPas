@@ -54,8 +54,9 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @param interactionLength The minimum distance at which a force is considered nonzero, cutoff+skin.
    * @param cellSizeFactor The cell size factor
    */
-  OctreeNodeWrapper(std::array<double, 3> boxMin, std::array<double, 3> boxMax, int unsigned treeSplitThreshold,
-                    double interactionLength, double cellSizeFactor) {
+  OctreeNodeWrapper(std::array<double, 3> const &boxMin, std::array<double, 3> const &boxMax,
+                    int unsigned const treeSplitThreshold, double const interactionLength,
+                    double const cellSizeFactor) {
     _pointer = std::make_unique<OctreeLeafNode<Particle>>(boxMin, boxMax, nullptr, treeSplitThreshold,
                                                           interactionLength, cellSizeFactor);
   }
