@@ -518,11 +518,9 @@ OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_VERTEX_NEIGHB
     throw std::runtime_error("[OctreeNodeInterface::GTEQ_VERTEX_NEIGHBOR()] Received invalid vertex.");
   }
 
-  auto null = [](OctreeNodeInterface<Particle> *T) { return T == nullptr; };
-
   // Find a common ancestor
   OctreeNodeInterface<Particle> *Q, *P = this;
-  if (null(FATHER(P))) {
+  if (not FATHER(P)) {
     Q = nullptr;
   } else if (ADJ(I, SONTYPE(P))) {
     Q = FATHER(P)->GTEQ_VERTEX_NEIGHBOR(I);
@@ -534,7 +532,7 @@ OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_VERTEX_NEIGHB
     Q = FATHER(P);
   }
 
-  if ((not null(Q)) and GRAY(Q)) {
+  if (Q and GRAY(Q)) {
     // Follow opposite path to locate the neighbor
     return Q->SON(REFLECT(I, SONTYPE(P)));
   } else {
