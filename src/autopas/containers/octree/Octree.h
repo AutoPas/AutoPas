@@ -80,32 +80,54 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
   }
 
   [[nodiscard]] std::vector<ParticleType> updateContainer(bool keepNeighborListValid) override {
-    // This is a very primitive and inefficient way to rebuild the container:
-    // 1. Copy all particles out of the container
-    // 2. Clear the container
-    // 3. Insert the particles back into the container
-
-    // leaving: all outside boxMin/Max
-
-    // @todo Make this less indirect. (Find a better way to iterate all particles inside the octree to change
-    //   this function back to a function that actually copies all particles out of the octree.)
-    //   The problem is captured by https://github.com/AutoPas/AutoPas/issues/622
-    std::vector<Particle *> particleRefs;
-    this->_cells[CellTypes::OWNED].appendAllParticles(particleRefs);
-    std::vector<Particle> particles{};
-    particles.reserve(particleRefs.size());
+    // invalidParticles: all outside boxMin/Max
     std::vector<Particle> invalidParticles{};
-    for (auto *p : particleRefs) {
-      if (utils::inBox(p->getR(), this->getBoxMin(), this->getBoxMax())) {
-        particles.push_back(*p);
-      } else {
-        invalidParticles.push_back(*p);
-      }
-    }
-    this->deleteAllParticles();
 
-    for (auto &particle : particles) {
-      addParticleImpl(particle);
+    if (keepNeighborListValid) {
+      // Mark leaving particles as dummy and add them to the invalidParticles list, but do not remove them.
+      std::vector<OctreeLeafNode<Particle> *> leaves{};
+      this->_cells[CellTypes::OWNED].appendAllLeaves(leaves);
+      for (auto *leaf : leaves) {
+        for (auto &particle : leaf->_particles) {
+          if (not utils::inBox(particle.getR(), this->getBoxMin(), this->getBoxMax())) {
+            particle.setOwnershipState(OwnershipState::dummy);
+            invalidParticles.push_back(particle);
+          }
+        }
+
+        // Mark all halo particles as dummy.
+        for(auto iter = this->begin(autopas::IteratorBehavior::halo); iter.isValid(); ++iter) {
+          (*iter).setOwnershipState(OwnershipState::dummy);
+        }
+      }
+    } else {
+      // This is a very primitive and inefficient way to rebuild the container:
+
+      // @todo Make this less indirect. (Find a better way to iterate all particles inside the octree to change
+      //   this function back to a function that actually copies all particles out of the octree.)
+      //   The problem is captured by https://github.com/AutoPas/AutoPas/issues/622
+
+      // 1. Copy all particles out of the container
+      std::vector<Particle *> particleRefs;
+      this->_cells[CellTypes::OWNED].appendAllParticles(particleRefs);
+      std::vector<Particle> particles{};
+      particles.reserve(particleRefs.size());
+
+      for (auto *p : particleRefs) {
+        if (utils::inBox(p->getR(), this->getBoxMin(), this->getBoxMax())) {
+          particles.push_back(*p);
+        } else {
+          invalidParticles.push_back(*p);
+        }
+      }
+
+      // 2. Clear the container
+      this->deleteAllParticles();
+
+      // 3. Insert the particles back into the container
+      for (auto &particle : particles) {
+        addParticleImpl(particle);
+      }
     }
 
     return invalidParticles;
