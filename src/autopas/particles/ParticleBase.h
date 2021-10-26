@@ -203,6 +203,12 @@ class ParticleBase {
   [[nodiscard]] bool isDummy() const { return _ownershipState == OwnershipState::dummy; }
 
   /**
+   * Returns the particle's ownership state.
+   * @return the current OwnershipState
+   */
+  [[nodiscard]] OwnershipState getOwnershipState() const { return _ownershipState; }
+
+  /**
    * Set the OwnershipState to the given value
    * @param ownershipState
    */
@@ -233,16 +239,24 @@ class ParticleBase {
                                        floatType /*fz*/, OwnershipState /*ownershipState*/>::Type;
 
   /**
+   * Non-const getter for the pointer of this object.
+   * @tparam attribute Attribute name.
+   * @return this.
+   */
+  template <AttributeNames attribute, std::enable_if_t<attribute == AttributeNames::ptr, bool> = true>
+  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
+    return this;
+  }
+
+  /**
    * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).
    * @tparam attribute Attribute name.
    * @return Value of the requested attribute.
    * @note The value of owned is return as floating point number (true = 1.0, false = 0.0).
    */
-  template <AttributeNames attribute>
-  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
-    if constexpr (attribute == AttributeNames::ptr) {
-      return this;
-    } else if constexpr (attribute == AttributeNames::id) {
+  template <AttributeNames attribute, std::enable_if_t<attribute != AttributeNames::ptr, bool> = true>
+  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
+    if constexpr (attribute == AttributeNames::id) {
       return getID();
     } else if constexpr (attribute == AttributeNames::posX) {
       return getR()[0];

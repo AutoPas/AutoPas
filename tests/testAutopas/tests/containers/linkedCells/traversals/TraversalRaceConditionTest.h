@@ -20,7 +20,7 @@ class TraversalRaceConditionTest : public AutoPasTestBase {
 
   ~TraversalRaceConditionTest() override = default;
 
-  /*
+  /**
    * Simple AoS only functor which repulses paritcles from each other with a
    * constant force of 1.
    */

@@ -214,18 +214,18 @@ TEST_F(AutoPasTest, getNumParticlesTest) {
 
   // add a particle outside the domain -> halo
   particle.setR({-0.1, -0.1, -0.1});
-  autoPas.addOrUpdateHaloParticle(particle);
+  autoPas.addHaloParticle(particle);
   expectedParticles(1, 1);
 
-  // update container is expected to remove all halo particles
-  auto [haloParticles, _] = autoPas.updateContainer(true);
-  EXPECT_EQ(haloParticles.size(), 0);
+  // update container is expected to delete all halo particles and return leaving particles
+  auto leavingParticles = autoPas.updateContainer();
+  EXPECT_EQ(leavingParticles.size(), 0);
   expectedParticles(1, 0);
 
   // move the owned particle in the halo
   autoPas.begin()->setR({-0.2, -0.2, -0.2});
-  haloParticles = std::get<0>(autoPas.updateContainer(true));
-  EXPECT_EQ(haloParticles.size(), 1);
+  leavingParticles = autoPas.updateContainer();
+  EXPECT_EQ(leavingParticles.size(), 1);
   expectedParticles(0, 0);
 }
 

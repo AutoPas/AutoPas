@@ -94,6 +94,15 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle, modif
    */
   bool operator!=(const bool &input) const { return not(*this == input); }
 
+  /**
+   * Adds an additional particle vector to the iterator.
+   * @param additionalVector The additional particle vector that should also be iterated over.
+   */
+  void addAdditionalVector(
+      std::conditional_t<modifiable, std::vector<Particle> &, const std::vector<Particle> &> additionalVector) {
+    _particleIterator->addAdditionalVector(additionalVector);
+  }
+
  protected:
   inline void deleteCurrentParticleImpl() override final {
     if constexpr (modifiable) {
