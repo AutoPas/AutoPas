@@ -36,8 +36,7 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
                  OctreeNodeInterface<Particle> *parent, const int unsigned treeSplitThreshold,
                  const double interactionLength, const double cellSizeFactor)
       : OctreeNodeInterface<Particle>(boxMin, boxMax, parent, treeSplitThreshold, interactionLength, cellSizeFactor),
-        FullParticleCell<Particle>(utils::ArrayMath::sub(boxMax, boxMin)),
-        _id(-1) {}
+        FullParticleCell<Particle>(utils::ArrayMath::sub(boxMax, boxMin)) {}
 
   /**
    * Copy a leaf by copying all particles from the other leaf to this leaf.
@@ -166,6 +165,6 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
   /**
    * The ID assigned to this node (-1 if unassigned)
    */
-  int _id;
+  int _id{-1};
 };
 }  // namespace autopas

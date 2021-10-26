@@ -18,8 +18,10 @@ namespace autopas {
 /**
  * This interface exists to provide a row interface for octree to add its cells.
  */
-template <typename Particle, typename ParticleCell>
+template <typename ParticleCell>
 class OTTraversalInterface {
+  using ParticleType = typename ParticleCell::ParticleType;
+
  public:
   OTTraversalInterface(double interactionLength) : _interactionLength(interactionLength) {}
 
@@ -27,13 +29,7 @@ class OTTraversalInterface {
    * Notify the traversal about the cells that it is able to traverse.
    * @param cells A vector of size 2 containing the owned and the halo octrees.
    */
-  // virtual void setCells(std::vector<ParticleCell> *cells) = 0;
-
-  /**
-   * Set the cells to iterate.
-   * @param cells A list of octree roots that should be used during iteration
-   */
-  void setCells(std::vector<OctreeNodeWrapper<Particle>> *cells) { _cells = cells; }
+  void setCells(std::vector<OctreeNodeWrapper<ParticleType>> *cells) { _cells = cells; }
 
  protected:
   /**
@@ -45,10 +41,10 @@ class OTTraversalInterface {
    */
   template <typename PairwiseFunctor, DataLayoutOption::Value dataLayout>
   void loadBuffers(utils::DataLayoutConverter<PairwiseFunctor, dataLayout> &dataLayoutConverter,
-                   OctreeNodeWrapper<Particle> *wrapper, std::vector<OctreeLeafNode<Particle> *> &leaves) {
+                   OctreeNodeWrapper<ParticleType> *wrapper, std::vector<OctreeLeafNode<ParticleType> *> &leaves) {
     wrapper->appendAllLeaves(leaves);
 
-    for (OctreeLeafNode<Particle> *leaf : leaves) {
+    for (OctreeLeafNode<ParticleType> *leaf : leaves) {
       dataLayoutConverter.loadDataLayout(*leaf);
     }
   }
@@ -61,8 +57,8 @@ class OTTraversalInterface {
    */
   template <typename PairwiseFunctor, DataLayoutOption::Value dataLayout>
   void unloadBuffers(utils::DataLayoutConverter<PairwiseFunctor, dataLayout> &dataLayoutConverter,
-                     std::vector<OctreeLeafNode<Particle> *> &leaves) {
-    for (OctreeLeafNode<Particle> *leaf : leaves) {
+                     std::vector<OctreeLeafNode<ParticleType> *> &leaves) {
+    for (OctreeLeafNode<ParticleType> *leaf : leaves) {
       dataLayoutConverter.storeDataLayout(*leaf);
     }
 
@@ -70,21 +66,21 @@ class OTTraversalInterface {
     leaves.clear();
   }
 
-  OctreeNodeWrapper<Particle> *getOwned() { return dynamic_cast<OctreeNodeWrapper<Particle> *>(&(*_cells)[0]); }
+  OctreeNodeWrapper<ParticleType> *getOwned() { return dynamic_cast<OctreeNodeWrapper<ParticleType> *>(&(*_cells)[0]); }
 
-  OctreeNodeWrapper<Particle> *getHalo() { return dynamic_cast<OctreeNodeWrapper<Particle> *>(&(*_cells)[1]); }
+  OctreeNodeWrapper<ParticleType> *getHalo() { return dynamic_cast<OctreeNodeWrapper<ParticleType> *>(&(*_cells)[1]); }
 
-  std::vector<OctreeNodeWrapper<Particle>> *_cells;
+  std::vector<OctreeNodeWrapper<ParticleType>> *_cells;
 
   /**
    * A list of all leaves in the owned octree
    */
-  std::vector<OctreeLeafNode<Particle> *> _ownedLeaves;
+  std::vector<OctreeLeafNode<ParticleType> *> _ownedLeaves;
 
   /**
    * A list of all leaves in the halo octree
    */
-  std::vector<OctreeLeafNode<Particle> *> _haloLeaves;
+  std::vector<OctreeLeafNode<ParticleType> *> _haloLeaves;
 
   /**
    * The interaction length is used for finding neighbors

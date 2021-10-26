@@ -29,7 +29,7 @@ namespace autopas {
  */
 template <class Particle, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class OTC18Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
-                       public OTTraversalInterface<Particle, OctreeNodeWrapper<Particle>> {
+                       public OTTraversalInterface<OctreeNodeWrapper<Particle>> {
  public:
   /**
    * A shortcut to specify the type of the actual iterated cell
@@ -46,7 +46,7 @@ class OTC18Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
       // {2, 1, 1} says that there are only two cells in the container (owned and halo), no other cell. Both are along
       // the (imaginary) x-axis. This results in the cuboid specified by {2, 1, 1}.
       : CellPairTraversal<ParticleCell>({2, 1, 1}),
-        OTTraversalInterface<Particle, OctreeNodeWrapper<Particle>>(interactionLength),
+        OTTraversalInterface<OctreeNodeWrapper<Particle>>(interactionLength),
         _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/),
         _dataLayoutConverter(pairwiseFunctor) {}
 
