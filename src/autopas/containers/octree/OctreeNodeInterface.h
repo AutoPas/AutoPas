@@ -515,7 +515,7 @@ template <class Particle>
 OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_VERTEX_NEIGHBOR(Vertex I) {
   // Check precondition
   if (not contains(VERTICES(), OOO, I)) {
-    throw std::runtime_error("[OctreeNodeInterface.h] Received invalid vertex.");
+    throw std::runtime_error("[OctreeNodeInterface::GTEQ_VERTEX_NEIGHBOR()] Received invalid vertex.");
   }
 
   auto null = [](OctreeNodeInterface<Particle> *T) { return T == nullptr; };
