@@ -36,7 +36,7 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
     using namespace autopas::utils;
 
     // The inner node is initialized with 8 leaves.
-    auto center = ArrayMath::mulScalar(ArrayMath::add(boxMin, boxMax), 0.5);
+    const auto center = ArrayMath::mulScalar(ArrayMath::add(boxMin, boxMax), 0.5);
     for (auto i = 0; i < _children.size(); ++i) {
       // Subdivide the bounding box of the parent.
       std::array<double, 3> newBoxMin = {};
