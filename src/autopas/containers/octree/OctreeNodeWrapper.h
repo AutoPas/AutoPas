@@ -56,7 +56,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    */
   OctreeNodeWrapper(std::array<double, 3> boxMin, std::array<double, 3> boxMax, int unsigned treeSplitThreshold,
                     double interactionLength, double cellSizeFactor)
-      : enclosedParticleCount(0) {
+      : _enclosedParticleCount(0) {
     _pointer = std::make_unique<OctreeLeafNode<Particle>>(boxMin, boxMax, nullptr, treeSplitThreshold,
                                                           interactionLength, cellSizeFactor);
   }
@@ -81,7 +81,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
     auto ret = _pointer->insert(p);
     if (ret) _pointer = std::move(ret);
 
-    ++enclosedParticleCount;
+    ++_enclosedParticleCount;
   }
 
   /**
@@ -91,10 +91,10 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @return the iterator
    */
   SingleCellIteratorWrapper<Particle, true> begin() override {
-    lock.lock();
-    ps.clear();
-    _pointer->appendAllParticles(ps);
-    lock.unlock();
+    _lock.lock();
+    _ps.clear();
+    _pointer->appendAllParticles(_ps);
+    _lock.unlock();
     return SingleCellIteratorWrapper<ParticleType, true>(new iterator_t(this));
   }
 
@@ -103,10 +103,10 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @note const version
    */
   SingleCellIteratorWrapper<Particle, false> begin() const override {
-    lock.lock();
-    ps.clear();
-    _pointer->appendAllParticles(ps);
-    lock.unlock();
+    _lock.lock();
+    _ps.clear();
+    _pointer->appendAllParticles(_ps);
+    _lock.unlock();
     return SingleCellIteratorWrapper<ParticleType, false>(new const_iterator_t(this));
   }
 
@@ -114,20 +114,20 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * Get the number of particles stored in this cell.
    * @return number of particles stored in this cell
    */
-  [[nodiscard]] unsigned long numParticles() const override { return enclosedParticleCount; }
+  [[nodiscard]] unsigned long numParticles() const override { return _enclosedParticleCount; }
 
   /**
    * Check if the cell is not empty.
    * @return true if at least one particle is stored in this cell
    */
-  [[nodiscard]] bool isEmpty() const override { return enclosedParticleCount == 0; }
+  [[nodiscard]] bool isEmpty() const override { return _enclosedParticleCount == 0; }
 
   /**
    * Deletes all particles in this cell.
    */
   void clear() override {
     _pointer->clearChildren(_pointer);
-    enclosedParticleCount = 0;
+    _enclosedParticleCount = 0;
   }
 
   /**
@@ -170,7 +170,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @param index The index of the particle
    * @return A ref to a particle
    */
-  Particle &at(size_t index) { return *ps[index]; }
+  Particle &at(size_t index) { return *_ps[index]; }
 
   /**
    * Get a particle from the iterator
@@ -178,7 +178,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @param index The index of the particle
    * @return A const ref to a particle
    */
-  const Particle &at(size_t index) const { return *ps[index]; }
+  const Particle &at(size_t index) const { return *_ps[index]; }
 
   /**
    * Find all leaves below this subtree that are in the given range.
@@ -219,18 +219,18 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * The field is marked mutable since it is used inside the `begin()` method, which is marked `const`. This function
    * loads the cache `ps`, which is therefore required to be mutable.
    */
-  mutable std::vector<Particle *> ps;
+  mutable std::vector<Particle *> _ps;
 
   /**
    * This lock is required to synchronize loading the cache `ps` across multiple threads. To change the state of the
    * lock from within the `begin()` method (marked `const`), this field has to be mutable.
    */
-  mutable AutoPasLock lock;
+  mutable AutoPasLock _lock;
 
   /**
    * To prevent unnecessary tree-traversals of the octree, this field stores the number of enclosed particles within
    * this node.
    */
-  long enclosedParticleCount;
+  long _enclosedParticleCount;
 };
 }  // namespace autopas
