@@ -91,7 +91,7 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
   /**
    * @copydoc OctreeNodeInterface::insert()
    */
-  std::unique_ptr<OctreeNodeInterface<Particle>> insert(Particle p) override {
+  std::unique_ptr<OctreeNodeInterface<Particle>> insert(const Particle &p) override {
     if (not this->isInside(p.getR())) {
       // The exception is suppressed for AllContainersTests#testParticleAdding
       // throw std::runtime_error("[OctreeInnerNode.h] Attempting to insert particle that is not inside this node");
@@ -163,7 +163,7 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
    */
   OctreeNodeInterface<Particle> *getChild(int index) override { return _children[index].get(); }
 
-  std::vector<OctreeLeafNode<Particle> *> getLeavesFromDirections(std::vector<Vertex> directions) override {
+  std::vector<OctreeLeafNode<Particle> *> getLeavesFromDirections(const std::vector<Vertex> &directions) override {
     std::vector<OctreeLeafNode<Particle> *> result;
     // Only take the children that are allowed (i.e. those which are in the given directions list)
     for (auto d : directions) {

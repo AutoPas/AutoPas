@@ -37,8 +37,9 @@ class OctreeNodeInterface {
    * @param interactionLength The minimum distance at which a force is considered nonzero, cutoff+skin.
    * @param cellSizeFactor The cell size factor
    */
-  OctreeNodeInterface(std::array<double, 3> boxMin, std::array<double, 3> boxMax, OctreeNodeInterface<Particle> *parent,
-                      int unsigned treeSplitThreshold, double interactionLength, double cellSizeFactor)
+  OctreeNodeInterface(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
+                      OctreeNodeInterface<Particle> *parent, const int unsigned treeSplitThreshold,
+                      const double interactionLength, const double cellSizeFactor)
       : _boxMin(boxMin),
         _boxMax(boxMax),
         _parent(parent),
@@ -57,7 +58,7 @@ class OctreeNodeInterface {
    * @param p The particle to insert
    * @return A std::unique_ptr to a newly created subtree or nullptr if the subtree did not change
    */
-  virtual std::unique_ptr<OctreeNodeInterface<Particle>> insert(Particle p) = 0;
+  virtual std::unique_ptr<OctreeNodeInterface<Particle>> insert(const Particle &p) = 0;
 
   /**
    * Put all particles that are below this node into the vector.
@@ -124,7 +125,7 @@ class OctreeNodeInterface {
    * @param point The node to test
    * @return true if the point is inside the node's bounding box and false otherwise
    */
-  bool isInside(std::array<double, 3> point) {
+  bool isInside(const std::array<double, 3> &point) {
     using namespace autopas::utils;
     return inBox(point, _boxMin, _boxMax);
   }
@@ -138,8 +139,8 @@ class OctreeNodeInterface {
    * @param bMax The maximum coordinate of b's volume
    * @return true iff the enclosed volume is greater than zero, false if the enclosed volume is equal to zero.
    */
-  static bool volumeExistsOnAxis(int axis, std::array<double, 3> aMin, std::array<double, 3> aMax,
-                                 std::array<double, 3> bMin, std::array<double, 3> bMax) {
+  static bool volumeExistsOnAxis(const int axis, const std::array<double, 3> &aMin, const std::array<double, 3> &aMax,
+                                 const std::array<double, 3> &bMin, const std::array<double, 3> &bMax) {
     const bool o1 = aMin[axis] < bMax[axis];
     const bool o2 = bMin[axis] < aMax[axis];
     return o1 and o2;
@@ -151,7 +152,7 @@ class OctreeNodeInterface {
    * @param other The octree node to check against.
    * @return true iff the enclosed volume is greater than zero, false if the enclosed volume is equal to zero.
    */
-  bool enclosesVolumeWithOtherOnAxis(int axis, OctreeNodeInterface<Particle> *other) {
+  bool enclosesVolumeWithOtherOnAxis(const int axis, const OctreeNodeInterface<Particle> *other) {
     return volumeExistsOnAxis(axis, this->getBoxMin(), this->getBoxMax(), other->getBoxMin(), other->getBoxMax());
   }
 
@@ -161,7 +162,7 @@ class OctreeNodeInterface {
    * @param otherMax The maximum coordinate of the other box
    * @return true iff the overlapping volume is non-negative
    */
-  bool overlapsBox(std::array<double, 3> otherMin, std::array<double, 3> otherMax) {
+  bool overlapsBox(const std::array<double, 3> &otherMin, const std::array<double, 3> &otherMax) {
     bool result = true;
     for (auto d = 0; d < 3; ++d) {
       result &= (this->_boxMin[d] <= otherMax[d]) and (this->_boxMax[d] >= otherMin[d]);
@@ -177,8 +178,8 @@ class OctreeNodeInterface {
    * @param bMax The maximum coordinate of box b
    * @return The enclosed volume or zero if the boxes do not overlap
    */
-  static double getEnclosedVolumeWith(std::array<double, 3> aMin, std::array<double, 3> aMax,
-                                      std::array<double, 3> bMin, std::array<double, 3> bMax) {
+  static double getEnclosedVolumeWith(const std::array<double, 3> &aMin, const std::array<double, 3> &aMax,
+                                      const std::array<double, 3> &bMin, const std::array<double, 3> &bMax) {
     auto product = 1.0;
     int count = 0;
     for (auto d = 0; d < 3; ++d) {
@@ -202,7 +203,7 @@ class OctreeNodeInterface {
    * @param otherMax The maximum coordinate of the other box
    * @return The volume enclosed by the two boxes
    */
-  double getEnclosedVolumeWith(std::array<double, 3> otherMin, std::array<double, 3> otherMax) {
+  double getEnclosedVolumeWith(const std::array<double, 3> &otherMin, const std::array<double, 3> &otherMax) {
     return getEnclosedVolumeWith(this->getBoxMin(), this->getBoxMax(), otherMin, otherMax);
   }
 
@@ -212,7 +213,7 @@ class OctreeNodeInterface {
    * @param I The face in which direction the search should find a node
    * @return An octree node
    */
-  OctreeNodeInterface<Particle> *EQ_FACE_NEIGHBOR(Face I) {
+  OctreeNodeInterface<Particle> *EQ_FACE_NEIGHBOR(const Face I) {
     OctreeNodeInterface<Particle> *param, *P = this;
     if (ADJ(I, SONTYPE(P))) {
       param = FATHER(P)->EQ_FACE_NEIGHBOR(I);
@@ -228,7 +229,7 @@ class OctreeNodeInterface {
    * @param I The edge in which direction the search should find a node
    * @return An octree node
    */
-  OctreeNodeInterface<Particle> *EQ_EDGE_NEIGHBOR(Edge I) {
+  OctreeNodeInterface<Particle> *EQ_EDGE_NEIGHBOR(const Edge I) {
     OctreeNodeInterface<Particle> *param, *P = this;
     if (ADJ(I, SONTYPE(P))) {
       param = FATHER(P)->EQ_EDGE_NEIGHBOR(I);
@@ -246,7 +247,7 @@ class OctreeNodeInterface {
    * @param I The face in which direction the search should find a node
    * @return An octree node
    */
-  OctreeNodeInterface<Particle> *EQ_VERTEX_NEIGHBOR(Vertex I) {
+  OctreeNodeInterface<Particle> *EQ_VERTEX_NEIGHBOR(const Vertex I) {
     OctreeNodeInterface<Particle> *param, *P = this;
     if (ADJ(I, SONTYPE(P))) {
       param = FATHER(P)->EQ_VERTEX_NEIGHBOR(I);
@@ -266,7 +267,7 @@ class OctreeNodeInterface {
    * @param I The face in which direction the search should find a node
    * @return An octree node
    */
-  OctreeNodeInterface<Particle> *GTEQ_FACE_NEIGHBOR(Face I);
+  OctreeNodeInterface<Particle> *GTEQ_FACE_NEIGHBOR(const Face I);
 
   /**
    * Find a node (via the pointer structure) that is of greater than or equal to the size of the current node's bounding
@@ -274,7 +275,7 @@ class OctreeNodeInterface {
    * @param I The edge in which direction the search should find a node
    * @return An octree node
    */
-  OctreeNodeInterface<Particle> *GTEQ_EDGE_NEIGHBOR(Edge I);
+  OctreeNodeInterface<Particle> *GTEQ_EDGE_NEIGHBOR(const Edge I);
 
   /**
    * Find a node (via the pointer structure) that is of greater than or equal to the size of the current node's bounding
@@ -282,21 +283,21 @@ class OctreeNodeInterface {
    * @param I The vertex in which direction the search should find a node
    * @return An octree node
    */
-  OctreeNodeInterface<Particle> *GTEQ_VERTEX_NEIGHBOR(Vertex I);
+  OctreeNodeInterface<Particle> *GTEQ_VERTEX_NEIGHBOR(const Vertex I);
 
   /**
    * Find all leaf nodes along a list of given directions.
    * @param directions A list of allowed directions for traversal.
    * @return A list of leaf nodes
    */
-  virtual std::vector<OctreeLeafNode<Particle> *> getLeavesFromDirections(std::vector<Vertex> directions) = 0;
+  virtual std::vector<OctreeLeafNode<Particle> *> getLeavesFromDirections(const std::vector<Vertex> &directions) = 0;
 
   /**
    * This function combines all required functions when traversing down a subtree of the octree and finding all leaves.
    * @param direction The "original" direction. The leaves will be found along the opposite direction.
    * @return A list of leaf nodes
    */
-  std::vector<OctreeLeafNode<Particle> *> getNeighborLeaves(Any direction) {
+  std::vector<OctreeLeafNode<Particle> *> getNeighborLeaves(const Any direction) {
     auto opposite = getOppositeDirection(direction);
     auto directions = getAllowedDirections(opposite);
     auto neighborLeaves = getLeavesFromDirections(directions);
@@ -344,13 +345,13 @@ class OctreeNodeInterface {
    * Set the minimum coordinate of the enclosing box.
    * @param boxMin A point in 3D space
    */
-  void setBoxMin(std::array<double, 3> boxMin) { _boxMin = boxMin; }
+  void setBoxMin(const std::array<double, 3> &boxMin) { _boxMin = boxMin; }
 
   /**
    * Set the maximum coordinate of the enclosing box.
    * @param boxMax A point in 3D space
    */
-  void setBoxMax(std::array<double, 3> boxMax) { _boxMax = boxMax; }
+  void setBoxMax(const std::array<double, 3> &boxMax) { _boxMax = boxMax; }
 
   /**
    * Get the minimum coordinate of the enclosing box.
@@ -428,7 +429,7 @@ inline bool GRAY(OctreeNodeInterface<Particle> *node) {
  * @return The parent of the given node if the node is not the root node, otherwise nullptr.
  */
 template <class Particle>
-inline OctreeNodeInterface<Particle> *FATHER(OctreeNodeInterface<Particle> *node) {
+inline OctreeNodeInterface<Particle> *FATHER(const OctreeNodeInterface<Particle> *node) {
   return node->getParent();
 }
 
@@ -441,7 +442,7 @@ inline OctreeNodeInterface<Particle> *FATHER(OctreeNodeInterface<Particle> *node
  * found in the parent.
  */
 template <class Particle>
-static Octant SONTYPE(OctreeNodeInterface<Particle> *node) {
+static Octant SONTYPE(const OctreeNodeInterface<Particle> *node) {
   Octant result = OOO;
   if (FATHER(node)) {
     for (Vertex *test = VERTICES(); *test != OOO; ++test) {
@@ -458,7 +459,7 @@ static Octant SONTYPE(OctreeNodeInterface<Particle> *node) {
 }
 
 template <class Particle>
-OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_FACE_NEIGHBOR(Face I) {
+OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_FACE_NEIGHBOR(const Face I) {
   // Check precondition
   if (not isFace(I)) {
     throw std::runtime_error("[OctreeNodeInterface::GTEQ_FACE_NEIGHBOR()] Received invalid face.");
@@ -483,7 +484,7 @@ OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_FACE_NEIGHBOR
 }
 
 template <class Particle>
-OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_EDGE_NEIGHBOR(Edge I) {
+OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_EDGE_NEIGHBOR(const Edge I) {
   // Check precondition
   if (not contains(getEdges(), OO, I)) {
     throw std::runtime_error("[OctreeNodeInterface::GTEQ_EDGE_NEIGHBOR()] Received invalid edge.");
@@ -512,7 +513,7 @@ OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_EDGE_NEIGHBOR
 }
 
 template <class Particle>
-OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_VERTEX_NEIGHBOR(Vertex I) {
+OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_VERTEX_NEIGHBOR(const Vertex I) {
   // Check precondition
   if (not contains(VERTICES(), OOO, I)) {
     throw std::runtime_error("[OctreeNodeInterface::GTEQ_VERTEX_NEIGHBOR()] Received invalid vertex.");

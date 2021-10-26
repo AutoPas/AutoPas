@@ -35,8 +35,9 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
    * @param interactionLength The minimum distance at which a force is considered nonzero, cutoff+skin.
    * @param cellSizeFactor The cell size factor
    */
-  OctreeLeafNode(std::array<double, 3> boxMin, std::array<double, 3> boxMax, OctreeNodeInterface<Particle> *parent,
-                 int unsigned treeSplitThreshold, double interactionLength, double cellSizeFactor)
+  OctreeLeafNode(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
+                 OctreeNodeInterface<Particle> *parent, const int unsigned treeSplitThreshold,
+                 const double interactionLength, const double cellSizeFactor)
       : OctreeNodeInterface<Particle>(boxMin, boxMax, parent, treeSplitThreshold, interactionLength, cellSizeFactor),
         FullParticleCell<Particle>(utils::ArrayMath::sub(boxMax, boxMin)) {}
 
@@ -56,7 +57,7 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
   /**
    * @copydoc OctreeNodeInterface::insert()
    */
-  std::unique_ptr<OctreeNodeInterface<Particle>> insert(Particle p) override {
+  std::unique_ptr<OctreeNodeInterface<Particle>> insert(const Particle &p) override {
     if (not this->isInside(p.getR())) {
       // The exception is suppressed for AllContainersTests#testParticleAdding
       // throw std::runtime_error("[OctreeLeafNode.h] Attempting to insert particle that is not inside this node");
@@ -135,7 +136,7 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
     throw std::runtime_error("[OctreeLeafNode] Unable to return child by index in leaf");
   }
 
-  std::vector<OctreeLeafNode<Particle> *> getLeavesFromDirections(std::vector<Vertex> directions) override {
+  std::vector<OctreeLeafNode<Particle> *> getLeavesFromDirections(const std::vector<Vertex> &directions) override {
     return {this};
   }
 
