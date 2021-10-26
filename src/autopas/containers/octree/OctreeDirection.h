@@ -88,15 +88,12 @@ enum Vertex : Any {
   RUF = buildVertex<R, U, F>(),
 };
 
+namespace Faces {
 /**
- * Get all available faces for a cube.
- *
- * @return A pointer to a static table. The last element is the "invalid" face O.
+ * All available faces for a cube. The "omega" face `O` is excluded.
  */
-inline Face *getFaces() {
-  static Face table[] = {L, R, D, U, B, F, O};
-  return table;
-}
+constexpr static std::array<Face, 6> table = {L, R, D, U, B, F};
+}  // namespace Faces
 
 /**
  * Get all available edges for a cube.
@@ -166,13 +163,12 @@ inline bool contains(T *all, T stop, Any test) {
 /**
  * Check if f is a face.
  *
- * @tparam T
  * @param f The parameter to check
  * @return true iff f is in the list returned from getFaces()
  */
 template <typename T>
 inline bool isFace(T f) {
-  return contains(getFaces(), O, f);
+  return std::find(Faces::table.begin(), Faces::table.end(), f) != Faces::table.end();
 }
 
 /**
@@ -211,8 +207,7 @@ inline bool ADJ(Any direction, Vertex octant) {
   static std::array<std::array<bool, 8>, 1 << 9> table;
 
   // Check the argument preconditions
-  if (!contains(getFaces(), O, direction) && !contains(getEdges(), OO, direction) &&
-      !contains(VERTICES(), OOO, direction)) {
+  if (!isFace(direction) && !contains(getEdges(), OO, direction) && !contains(VERTICES(), OOO, direction)) {
     throw std::runtime_error("[OctreeDirection.h] Received invalid direction");
   }
 
@@ -271,8 +266,7 @@ inline Octant REFLECT(Any direction, Octant octant) {
   static std::array<std::array<Octant, 8>, 1 << 9> table;
 
   // Check the argument preconditions
-  if (!contains(getFaces(), O, direction) && !contains(getEdges(), OO, direction) &&
-      !contains(VERTICES(), OOO, direction)) {
+  if (!isFace(direction) && !contains(getEdges(), OO, direction) && !contains(VERTICES(), OOO, direction)) {
     throw std::runtime_error("[OctreeDirection.h] Received invalid direction");
   }
 
@@ -424,8 +418,7 @@ inline Edge COMMON_EDGE(Any direction, Vertex octant) {
 inline autopas::Any getOppositeDirection(autopas::Any direction) {
   using namespace autopas;
 
-  if (!contains(getFaces(), O, direction) && !contains(getEdges(), OO, direction) &&
-      !contains(VERTICES(), OOO, direction)) {
+  if (!isFace(direction) && !isEdge(direction) && !isVertex(direction)) {
     throw std::runtime_error("[OctreeDirection.h] Received invalid direction");
   }
 
@@ -464,7 +457,7 @@ inline autopas::Any getOppositeDirection(autopas::Any direction) {
 
   Any result = table[direction];
 
-  if (not(contains(getFaces(), O, result) or contains(getEdges(), OO, result) or contains(VERTICES(), OOO, result))) {
+  if (not(isFace(result) or contains(getEdges(), OO, result) or contains(VERTICES(), OOO, result))) {
     throw std::runtime_error("[OctreeDirection.h] Invalid output");
   }
 
@@ -480,7 +473,7 @@ inline autopas::Any getOppositeDirection(autopas::Any direction) {
 inline std::vector<autopas::Octant> getAllowedDirections(autopas::Any along) {
   using namespace autopas;
 
-  if (!contains(getFaces(), O, along) && !contains(getEdges(), OO, along) && !contains(VERTICES(), OOO, along)) {
+  if (!isFace(along) && !contains(getEdges(), OO, along) && !contains(VERTICES(), OOO, along)) {
     throw std::runtime_error("[OctreeDirection.h] Received invalid direction");
   }
 

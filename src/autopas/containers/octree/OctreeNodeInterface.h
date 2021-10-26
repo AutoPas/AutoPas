@@ -311,10 +311,10 @@ class OctreeNodeInterface {
     std::set<OctreeLeafNode<Particle> *> result;
 
     // Get all face neighbors
-    for (Face *face = getFaces(); *face != O; ++face) {
-      OctreeNodeInterface<Particle> *neighbor = GTEQ_FACE_NEIGHBOR(*face);
+    for (Face face : Faces::table) {
+      OctreeNodeInterface<Particle> *neighbor = GTEQ_FACE_NEIGHBOR(face);
       if (neighbor) {
-        auto leaves = neighbor->getNeighborLeaves(*face);
+        auto leaves = neighbor->getNeighborLeaves(face);
         result.insert(leaves.begin(), leaves.end());
       }
     }
@@ -460,7 +460,7 @@ static Octant SONTYPE(OctreeNodeInterface<Particle> *node) {
 template <class Particle>
 OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_FACE_NEIGHBOR(Face I) {
   // Check precondition
-  if (!contains(getFaces(), O, I)) {
+  if (!isFace(I)) {
     throw std::runtime_error("[OctreeNodeInterface.h] Received invalid face.");
   }
 
