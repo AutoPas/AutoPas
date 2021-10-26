@@ -55,8 +55,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @param cellSizeFactor The cell size factor
    */
   OctreeNodeWrapper(std::array<double, 3> boxMin, std::array<double, 3> boxMax, int unsigned treeSplitThreshold,
-                    double interactionLength, double cellSizeFactor)
-      : _enclosedParticleCount(0) {
+                    double interactionLength, double cellSizeFactor) {
     _pointer = std::make_unique<OctreeLeafNode<Particle>>(boxMin, boxMax, nullptr, treeSplitThreshold,
                                                           interactionLength, cellSizeFactor);
   }
@@ -231,6 +230,6 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * To prevent unnecessary tree-traversals of the octree, this field stores the number of enclosed particles within
    * this node.
    */
-  long _enclosedParticleCount;
+  long _enclosedParticleCount{0L};
 };
 }  // namespace autopas
