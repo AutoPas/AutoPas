@@ -40,8 +40,11 @@ class OTC18Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
    * Constructor for the Octree traversal.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param cutoff cutoff (this is enough for the octree traversal, please don't use the interaction length here.)
+   * @param interactionLength The interaction length
    */
   explicit OTC18Traversal(PairwiseFunctor *pairwiseFunctor, double cutoff, double interactionLength)
+      // {2, 1, 1} says that there are only two cells in the container (owned and halo), no other cell. Both are along
+      // the (imaginary) x-axis. This results in the cuboid specified by {2, 1, 1}.
       : CellPairTraversal<ParticleCell>({2, 1, 1}),
         OTTraversalInterface<Particle, OctreeNodeWrapper<Particle>>(interactionLength),
         _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/),
@@ -126,5 +129,4 @@ class OTC18Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
    */
   utils::DataLayoutConverter<PairwiseFunctor, dataLayout> _dataLayoutConverter;
 };
-
 }  // namespace autopas

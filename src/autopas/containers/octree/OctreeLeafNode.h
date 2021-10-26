@@ -15,9 +15,6 @@
 #include "autopas/utils/ArrayMath.h"
 
 namespace autopas {
-template <typename Particle>
-class Octree;
-
 /**
  * An octree leaf node. This class utilizes the FullParticleCell to store the actual particles.
  *
@@ -35,8 +32,9 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
    * @param interactionLength The minimum distance at which a force is considered nonzero, cutoff+skin.
    * @param cellSizeFactor The cell size factor
    */
-  OctreeLeafNode(std::array<double, 3> boxMin, std::array<double, 3> boxMax, OctreeNodeInterface<Particle> *parent,
-                 int unsigned treeSplitThreshold, double interactionLength, double cellSizeFactor)
+  OctreeLeafNode(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
+                 OctreeNodeInterface<Particle> *parent, const int unsigned treeSplitThreshold,
+                 const double interactionLength, const double cellSizeFactor)
       : OctreeNodeInterface<Particle>(boxMin, boxMax, parent, treeSplitThreshold, interactionLength, cellSizeFactor),
         FullParticleCell<Particle>(utils::ArrayMath::sub(boxMax, boxMin)),
         _id(-1) {}
@@ -50,6 +48,7 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
                                       other._interactionLength),
         FullParticleCell<Particle>(utils::ArrayMath::sub(other._boxMax, other._boxMin)),
         _id(other.getID()) {
+    this->_particles.reserve(other._particles.size());
     for (auto &p : other._particles) {
       this->_particles.push_back(p);
     }
@@ -58,12 +57,7 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
   /**
    * @copydoc OctreeNodeInterface::insert()
    */
-  std::unique_ptr<OctreeNodeInterface<Particle>> insert(Particle p) override {
-    if (not this->isInside(p.getR())) {
-      // The exception is suppressed for AllContainersTests#testParticleAdding
-      // throw std::runtime_error("[OctreeLeafNode.h] Attempting to insert particle that is not inside this node");
-    }
-
+  std::unique_ptr<OctreeNodeInterface<Particle>> insert(const Particle &p) override {
     // Check if the size of the new leaves would become smaller than cellSizeFactor*interactionLength
     std::array<double, 3> splitLeafDimensions = utils::ArrayMath::sub(this->getBoxMax(), this->getBoxMin());
     splitLeafDimensions = utils::ArrayMath::mulScalar(splitLeafDimensions, 0.5);
@@ -102,8 +96,9 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
    * @copydoc OctreeNodeInterface::appendAllParticles()
    */
   void appendAllParticles(std::vector<Particle *> &ps) const override {
-    for (Particle const &p : this->_particles) {
-      ps.push_back((Particle *)&p);
+    ps.reserve(ps.size() + this->_particles.size());
+    for (const auto &particle : this->_particles) {
+      ps.push_back(const_cast<Particle *>(&particle));
     }
   }
 
@@ -137,7 +132,7 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
     throw std::runtime_error("[OctreeLeafNode] Unable to return child by index in leaf");
   }
 
-  std::vector<OctreeLeafNode<Particle> *> getLeavesFromDirections(std::vector<Vertex> directions) override {
+  std::vector<OctreeLeafNode<Particle> *> getLeavesFromDirections(const std::vector<Vertex> &directions) override {
     return {this};
   }
 

@@ -36,15 +36,33 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
     using namespace autopas::utils;
 
     // The inner node is initialized with 8 leaves.
-    auto center = ArrayMath::mulScalar(ArrayMath::add(boxMin, boxMax), 0.5);
+    const auto center = ArrayMath::mulScalar(ArrayMath::add(boxMin, boxMax), 0.5);
     for (auto i = 0; i < _children.size(); ++i) {
       // Subdivide the bounding box of the parent.
       std::array<double, 3> newBoxMin = {};
       std::array<double, 3> newBoxMax = {};
       for (auto d = 0; d < 3; ++d) {
-        auto mask = 4 >> d;
-        newBoxMin[d] = !(i & mask) ? boxMin[d] : center[d];
-        newBoxMax[d] = !(i & mask) ? center[d] : boxMax[d];
+        // `i`, `d` and `mask` are used to generate minimum and maximum coordinates for every octree leaf's bounding
+        // box. `i` represents a 3-bit wide number, where each bit corresponds to an axis. The following table
+        // visualizes this layout:
+        //
+        //          <-- msb   lsb -->
+        // +------++-----+---+---+---+
+        // | bit  || ... | 2 | 1 | 0 |
+        // +------+------+---+---+---+
+        // | axis ||       x | y | z |
+        // +------++---------+---+---+
+        //
+        // When an axis bit is not set, a leaf is expected to range from the minimum coordinate to the center of the
+        // enclosing box on the respective axis `d`. If the axis bit is set, the leaf's region should start at the
+        // center coordinate and end at the maximum coordinate of the enclosing box.
+        //
+        // `mask` is used to extract the individual axis components from `i`: Using the shift operation, `mask` can
+        // either become 0b100, 0b010 or 0b001 since `d` ranges from 0 to 2 inclusively. This covers all available axis
+        // in 3 dimensions.
+        const auto mask = 4 >> d;
+        newBoxMin[d] = (not(i & mask)) ? boxMin[d] : center[d];
+        newBoxMax[d] = (not(i & mask)) ? center[d] : boxMax[d];
       }
 
       // Assign new leaves as the children.
@@ -73,12 +91,7 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
   /**
    * @copydoc OctreeNodeInterface::insert()
    */
-  std::unique_ptr<OctreeNodeInterface<Particle>> insert(Particle p) override {
-    if (!this->isInside(p.getR())) {
-      // The exception is suppressed for AllContainersTests#testParticleAdding
-      // throw std::runtime_error("[OctreeInnerNode.h] Attempting to insert particle that is not inside this node");
-    }
-
+  std::unique_ptr<OctreeNodeInterface<Particle>> insert(const Particle &p) override {
     // Find a child to insert the particle into.
     for (auto &child : _children) {
       if (child->isInside(p.getR())) {
@@ -145,13 +158,13 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
    */
   OctreeNodeInterface<Particle> *getChild(int index) override { return _children[index].get(); }
 
-  std::vector<OctreeLeafNode<Particle> *> getLeavesFromDirections(std::vector<Vertex> directions) override {
+  std::vector<OctreeLeafNode<Particle> *> getLeavesFromDirections(const std::vector<Vertex> &directions) override {
     std::vector<OctreeLeafNode<Particle> *> result;
     // Only take the children that are allowed (i.e. those which are in the given directions list)
     for (auto d : directions) {
       int childIndex = vertexToIndex(d);
-      if (childIndex == -1) {
-        throw std::runtime_error("[OctreeInnerNode.h] Calculated invalid child index");
+      if (childIndex < 0) {
+        throw std::runtime_error("[OctreeInnerNode::getLeavesFromDirections()] Calculated invalid child index");
       }
 
       auto child = getChild(childIndex);

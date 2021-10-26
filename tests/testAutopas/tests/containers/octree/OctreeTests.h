@@ -35,6 +35,5 @@ class OctreeTest : public AutoPasTestBase, public ::testing::WithParamInterface<
       double cutoff, double skin, double interactionLength, Vector3DList particlePositions,
       Vector3DList haloParticlePositions);
 
- public:
   MockFunctor<Molecule> mockFunctor;
 };

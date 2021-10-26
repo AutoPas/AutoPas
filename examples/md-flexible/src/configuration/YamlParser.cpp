@@ -3,10 +3,9 @@
  * @author N. Fottner
  * @date 15.07.2019
  */
-
 #include "YamlParser.h"
 
-#include <ostream>
+#include <string>
 
 bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
   YAML::Node node = YAML::LoadFile(config.yamlFilename.value);
@@ -22,6 +21,10 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
   if (node[config.boxMax.name]) {
     auto tmpNode = node[config.boxMax.name];
     config.boxMax.value = {tmpNode[0].as<double>(), tmpNode[1].as<double>(), tmpNode[2].as<double>()};
+  }
+  if (node[config.subdivideDimension.name]) {
+    auto tmpNode = node[config.subdivideDimension.name];
+    config.subdivideDimension.value = {tmpNode[0].as<bool>(), tmpNode[1].as<bool>(), tmpNode[2].as<bool>()};
   }
   if (node[config.selectorStrategy.name]) {
     auto parsedOptions =
@@ -186,6 +189,12 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
   }
   if (node[config.checkpointfile.name]) {
     config.checkpointfile.value = node[config.checkpointfile.name].as<std::string>();
+  }
+  if (node[config.checkpointScenarioName.name]) {
+    config.checkpointScenarioName.value = node[config.checkpointScenarioName.name].as<std::string>();
+  }
+  if (node[config.checkpointIteration.name]) {
+    config.checkpointIteration.value = node[config.checkpointIteration.name].as<size_t>();
   }
   if (node[config.logFileName.name]) {
     config.logFileName.value = node[config.logFileName.name].as<std::string>();

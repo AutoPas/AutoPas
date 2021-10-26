@@ -11,6 +11,7 @@
 #include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/CellBlock3D.h"
 #include "autopas/containers/CompatibleTraversals.h"
+#include "autopas/containers/LeavingParticleCollector.h"
 #include "autopas/containers/LoadEstimators.h"
 #include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCTraversalInterface.h"
@@ -158,7 +159,11 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     traversal->endTraversal();
   }
 
-  [[nodiscard]] std::vector<ParticleType> updateContainer() override {
+  [[nodiscard]] std::vector<ParticleType> updateContainer(bool keepNeighborListsValid) override {
+    if (keepNeighborListsValid) {
+      return autopas::LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);
+    }
+
     this->deleteHaloParticles();
 
     std::vector<ParticleType> invalidParticles;
@@ -176,7 +181,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
         this->getCells()[cellId].deleteDummyParticles();
 
         // if empty
-        if (not this->getCells()[cellId].isNotEmpty()) continue;
+        if (this->getCells()[cellId].isEmpty()) continue;
 
         auto [cellLowerCorner, cellUpperCorner] = this->getCellBlock().getCellBoundingBox(cellId);
 

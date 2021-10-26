@@ -32,12 +32,13 @@ target_include_directories(
 )
 
 target_link_libraries(
-    mdFlexTests
-    PUBLIC
-        autopas
-        autopasTools
-        gmock # gmock includes the gtest target
-        yaml-cpp
+  mdFlexTests
+  PUBLIC
+    autopas
+    autopasTools
+    gmock
+    yaml-cpp
+    $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>
 )
 
 # this cmake module was only introduced in 3.10

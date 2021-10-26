@@ -159,8 +159,8 @@ class OctreeLogger {
         // Print face neighbors
         fprintf(out, ", \"fn\": [");
         bool first = true;
-        for (Face *face = getFaces(); *face != O; ++face) {
-          auto neighbor = leaf->GTEQ_FACE_NEIGHBOR(*face);
+        for (auto face : Faces::table) {
+          auto neighbor = leaf->GTEQ_FACE_NEIGHBOR(face);
           if (neighbor) {
             if (!first) {
               fprintf(out, ", ");
@@ -173,10 +173,10 @@ class OctreeLogger {
         // Print face neighbor leaves
         fprintf(out, "], \"fnl\": [");
         first = true;
-        for (Face *face = getFaces(); *face != O; ++face) {
-          auto neighbor = leaf->GTEQ_FACE_NEIGHBOR(*face);
+        for (auto face : Faces::table) {
+          auto neighbor = leaf->GTEQ_FACE_NEIGHBOR(face);
           if (neighbor) {
-            auto neighborLeaves = neighbor->getNeighborLeaves(*face);
+            auto neighborLeaves = neighbor->getNeighborLeaves(face);
             for (auto neighborLeaf : neighborLeaves) {
               if (!first) {
                 fprintf(out, ", ");

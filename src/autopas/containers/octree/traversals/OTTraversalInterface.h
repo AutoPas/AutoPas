@@ -36,6 +36,13 @@ class OTTraversalInterface {
   void setCells(std::vector<OctreeNodeWrapper<Particle>> *cells) { _cells = cells; }
 
  protected:
+  /**
+   * Gather all leaves and load the SoA/AoS buffers.
+   *
+   * @param dataLayoutConverter The converter to convert the buffers
+   * @param wrapper The octree to load the leaves from
+   * @param leaves The list to store the leaves in
+   */
   template <typename PairwiseFunctor, DataLayoutOption::Value dataLayout>
   void loadBuffers(utils::DataLayoutConverter<PairwiseFunctor, dataLayout> &dataLayoutConverter,
                    OctreeNodeWrapper<Particle> *wrapper, std::vector<OctreeLeafNode<Particle> *> &leaves) {
@@ -47,6 +54,12 @@ class OTTraversalInterface {
     }
   }
 
+  /**
+   * Unload the SoA/AoS buffers and clear the gathered leaves list.
+   *
+   * @param dataLayoutConverter The converter to convert the buffers
+   * @param leaves The list to unload the leaves from
+   */
   template <typename PairwiseFunctor, DataLayoutOption::Value dataLayout>
   void unloadBuffers(utils::DataLayoutConverter<PairwiseFunctor, dataLayout> &dataLayoutConverter,
                      std::vector<OctreeLeafNode<Particle> *> &leaves) {
