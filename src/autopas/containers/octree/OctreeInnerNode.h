@@ -92,7 +92,7 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
    * @copydoc OctreeNodeInterface::insert()
    */
   std::unique_ptr<OctreeNodeInterface<Particle>> insert(Particle p) override {
-    if (!this->isInside(p.getR())) {
+    if (not this->isInside(p.getR())) {
       // The exception is suppressed for AllContainersTests#testParticleAdding
       // throw std::runtime_error("[OctreeInnerNode.h] Attempting to insert particle that is not inside this node");
     }

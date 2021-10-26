@@ -50,7 +50,7 @@ static constexpr Any buildEdge() {
  */
 template <Face f1, Face f2, Face f3>
 static constexpr Any buildVertex() {
-  static_assert((f1 != f2) && (f2 != f3), "Faces must be different");
+  static_assert((f1 != f2) and (f2 != f3), "Faces must be different");
   return (f1 << 6) | (f2 << 3) | f3;
 }
 
@@ -207,16 +207,17 @@ inline bool ADJ(Any direction, Vertex octant) {
   static std::array<std::array<bool, 8>, 1 << 9> table;
 
   // Check the argument preconditions
-  if (!isFace(direction) && !contains(getEdges(), OO, direction) && !contains(VERTICES(), OOO, direction)) {
+  if ((not isFace(direction)) and (not contains(getEdges(), OO, direction)) and
+      (not contains(VERTICES(), OOO, direction))) {
     throw std::runtime_error("[OctreeDirection.h] Received invalid direction");
   }
 
-  if (!contains(VERTICES(), OOO, octant)) {
+  if (not contains(VERTICES(), OOO, octant)) {
     throw std::runtime_error("[OctreeDirection.h] Received invalid octant");
   }
 
   // Initialize if the first element is not present
-  if (!table[L][0]) {
+  if (not table[L][0]) {
 #pragma omp critical
     {
       table[L] = {true, true, true, true, false, false, false, false};
@@ -266,11 +267,12 @@ inline Octant REFLECT(Any direction, Octant octant) {
   static std::array<std::array<Octant, 8>, 1 << 9> table;
 
   // Check the argument preconditions
-  if (!isFace(direction) && !contains(getEdges(), OO, direction) && !contains(VERTICES(), OOO, direction)) {
+  if ((not isFace(direction)) and (not contains(getEdges(), OO, direction)) and
+      (not contains(VERTICES(), OOO, direction))) {
     throw std::runtime_error("[OctreeDirection.h] Received invalid direction");
   }
 
-  if (!contains(VERTICES(), OOO, octant)) {
+  if (not contains(VERTICES(), OOO, octant)) {
     throw std::runtime_error("[OctreeDirection.h] Received invalid octant");
   }
 
@@ -325,11 +327,11 @@ inline Face COMMON_FACE(Any direction, Vertex octant) {
   static std::array<std::array<Face, 8>, 1 << 9> table;
 
   // Check the argument preconditions
-  if (!contains(getEdges(), OO, direction) && !contains(VERTICES(), OOO, direction)) {
+  if ((not contains(getEdges(), OO, direction)) and (not contains(VERTICES(), OOO, direction))) {
     throw std::runtime_error("[OctreeDirection.h] Received invalid direction");
   }
 
-  if (!contains(VERTICES(), OOO, octant)) {
+  if (not contains(VERTICES(), OOO, octant)) {
     throw std::runtime_error("[OctreeDirection.h] Received invalid octant");
   }
 
@@ -377,11 +379,11 @@ inline Edge COMMON_EDGE(Any direction, Vertex octant) {
   static std::array<std::array<Edge, 8>, 1 << 9> table;
 
   // Check the argument preconditions
-  if (!contains(VERTICES(), OOO, direction)) {
+  if (not contains(VERTICES(), OOO, direction)) {
     throw std::runtime_error("[OctreeDirection.h] Received invalid direction");
   }
 
-  if (!contains(VERTICES(), OOO, octant)) {
+  if (not contains(VERTICES(), OOO, octant)) {
     throw std::runtime_error("[OctreeDirection.h] Received invalid octant");
   }
 
@@ -418,7 +420,7 @@ inline Edge COMMON_EDGE(Any direction, Vertex octant) {
 inline autopas::Any getOppositeDirection(autopas::Any direction) {
   using namespace autopas;
 
-  if (!isFace(direction) && !isEdge(direction) && !isVertex(direction)) {
+  if ((not isFace(direction)) and (not isEdge(direction)) and (not isVertex(direction))) {
     throw std::runtime_error("[OctreeDirection.h] Received invalid direction");
   }
 
@@ -473,7 +475,7 @@ inline autopas::Any getOppositeDirection(autopas::Any direction) {
 inline std::vector<autopas::Octant> getAllowedDirections(autopas::Any along) {
   using namespace autopas;
 
-  if (!isFace(along) && !contains(getEdges(), OO, along) && !contains(VERTICES(), OOO, along)) {
+  if ((not isFace(along)) and (not contains(getEdges(), OO, along)) and (not contains(VERTICES(), OOO, along))) {
     throw std::runtime_error("[OctreeDirection.h] Received invalid direction");
   }
 
@@ -514,7 +516,7 @@ inline std::vector<autopas::Octant> getAllowedDirections(autopas::Any along) {
 
   // Check post-conditions
   for (auto v : result) {
-    if (!contains(VERTICES(), OOO, v)) {
+    if (not contains(VERTICES(), OOO, v)) {
       throw std::runtime_error("[OctreeDirection.h] Result contains an illegal vertex.");
     }
   }

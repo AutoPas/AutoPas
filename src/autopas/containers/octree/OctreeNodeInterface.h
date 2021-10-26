@@ -142,7 +142,7 @@ class OctreeNodeInterface {
                                  std::array<double, 3> bMin, std::array<double, 3> bMax) {
     bool o1 = aMin[axis] < bMax[axis];
     bool o2 = bMin[axis] < aMax[axis];
-    return o1 && o2;
+    return o1 and o2;
   }
 
   /**
@@ -164,7 +164,7 @@ class OctreeNodeInterface {
   bool overlapsBox(std::array<double, 3> otherMin, std::array<double, 3> otherMax) {
     bool result = true;
     for (auto d = 0; d < 3; ++d) {
-      result &= (this->_boxMin[d] <= otherMax[d]) && (this->_boxMax[d] >= otherMin[d]);
+      result &= (this->_boxMin[d] <= otherMax[d]) and (this->_boxMax[d] >= otherMin[d]);
     }
     return result;
   }
@@ -460,7 +460,7 @@ static Octant SONTYPE(OctreeNodeInterface<Particle> *node) {
 template <class Particle>
 OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_FACE_NEIGHBOR(Face I) {
   // Check precondition
-  if (!isFace(I)) {
+  if (not isFace(I)) {
     throw std::runtime_error("[OctreeNodeInterface.h] Received invalid face.");
   }
 
@@ -485,7 +485,7 @@ OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_FACE_NEIGHBOR
 template <class Particle>
 OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_EDGE_NEIGHBOR(Edge I) {
   // Check precondition
-  if (!contains(getEdges(), OO, I)) {
+  if (not contains(getEdges(), OO, I)) {
     throw std::runtime_error("[OctreeNodeInterface.h] Received invalid edge.");
   }
 
@@ -514,7 +514,7 @@ OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_EDGE_NEIGHBOR
 template <class Particle>
 OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_VERTEX_NEIGHBOR(Vertex I) {
   // Check precondition
-  if (!contains(VERTICES(), OOO, I)) {
+  if (not contains(VERTICES(), OOO, I)) {
     throw std::runtime_error("[OctreeNodeInterface.h] Received invalid vertex.");
   }
 
