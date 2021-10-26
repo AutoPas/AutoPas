@@ -168,7 +168,7 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
     // Only take the children that are allowed (i.e. those which are in the given directions list)
     for (auto d : directions) {
       int childIndex = vertexToIndex(d);
-      if (childIndex == -1) {
+      if (childIndex < 0) {
         throw std::runtime_error("[OctreeInnerNode::getLeavesFromDirections()] Calculated invalid child index");
       }
 
