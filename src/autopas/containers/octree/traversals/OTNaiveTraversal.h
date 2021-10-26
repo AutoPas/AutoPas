@@ -42,6 +42,8 @@ class OTNaiveTraversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
    * @param cutoff cutoff (this is enough for the octree traversal, please don't use the interaction length here.)
    */
   explicit OTNaiveTraversal(PairwiseFunctor *pairwiseFunctor, double cutoff)
+      // {2, 1, 1} says that there are only two cells in the container (owned and halo), no other cell. Both are along
+      // the (imaginary) x-axis. This results in the cuboid specified by {2, 1, 1}.
       : CellPairTraversal<ParticleCell>({2, 1, 1}),
         _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/),
         _dataLayoutConverter(pairwiseFunctor) {}
