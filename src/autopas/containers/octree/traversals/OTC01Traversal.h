@@ -109,6 +109,12 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
   void setCells(std::vector<OctreeNodeWrapper<Particle>> *cells) override { _cells = cells; }
 
  private:
+  /**
+   * Gather all leaves and load the SoA/AoS buffers.
+   *
+   * @param wrapper The octree to load the leaves from
+   * @param leaves The list to store the leaves in
+   */
   void loadBuffers(OctreeNodeWrapper<Particle> *wrapper, std::vector<OctreeLeafNode<Particle> *> &leaves) {
     wrapper->appendAllLeaves(leaves);
 
@@ -118,6 +124,11 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
     }
   }
 
+  /**
+   * Unload the SoA/AoS buffers and clear the gathered leaves list.
+   *
+   * @param leaves The list to unload the leaves from
+   */
   void unloadBuffers(std::vector<OctreeLeafNode<Particle> *> &leaves) {
     for (OctreeLeafNode<Particle> *leaf : leaves) {
       _dataLayoutConverter.storeDataLayout(*leaf);
