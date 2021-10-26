@@ -169,7 +169,7 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
     for (auto d : directions) {
       int childIndex = vertexToIndex(d);
       if (childIndex == -1) {
-        throw std::runtime_error("[OctreeInnerNode.h] Calculated invalid child index");
+        throw std::runtime_error("[OctreeInnerNode::getLeavesFromDirections()] Calculated invalid child index");
       }
 
       auto child = getChild(childIndex);
