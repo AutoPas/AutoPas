@@ -19,16 +19,16 @@ namespace autopas {
  * ParticleCell concept.
  *
  * What this wrapper does is the following: It _hides implementation details_ of the octree nodes that should not be
- * exposed to the outside. (For instance, the `insert` method of the `OctreeNodeInterface<Particle>` has a very specific
- * method signature that requires the caller to change the pointer to a subtree if necessary. Since this functionality
- * should be transparent for the user, it is wrapped in this class inside of the `addParticle` method. This method does
- * not have to be treated special like `insert`.)
+ * exposed to the outside. (For instance, the `insert()` method of the `OctreeNodeInterface<Particle>` has a very
+ * specific method signature that requires the caller to change the pointer to a subtree if necessary. Since the user
+ * should not care about this, it is wrapped in this class inside of the `addParticle()` method. This method does not
+ * have to be treated special like `insert()`.)
  *
- * This class includes some proxy methods: `appendAllParticles`, `appendAllLeaves` and some more. Those methods only
+ * This class includes some proxy methods: `appendAllParticles()`, `appendAllLeaves()` and some more. Those methods only
  * invoke similar functions on the pointer to an octree. This indirection could be removed by implementing the
  * `OctreeNodeInterface<Particle>`. However, if this class inherited directly from `OctreeNodeInterface<Particle>`, it
  * would have to implement the _entire interface_ provided by `OctreeNodeInterface<Particle>`. This does not increase
- * the code quality, since one would have to implement other interface methods (like `insert`) that should not be
+ * the code quality, since one would have to implement other interface methods (like `insert()`) that should not be
  * exposed to the outside. Having proxy calls inside this class keeps the interface clean.
  *
  * @tparam Particle The particle class that should be used in the octree cell.
