@@ -15,10 +15,13 @@
 #include "autopas/utils/inBox.h"
 
 namespace autopas {
+/**
+ * This forward declaration is required since the `OctreeNodeInterface` provides a method to gather all
+ * `OctreeLeafNode`s.
+ * @tparam Particle
+ */
 template <typename Particle>
 class OctreeLeafNode;
-template <typename Particle>
-class OctreeInnerNode;
 
 /**
  * The base class that provides the necessary function definitions that can be applied to an octree.
