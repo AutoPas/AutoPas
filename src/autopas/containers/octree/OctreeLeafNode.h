@@ -15,9 +15,6 @@
 #include "autopas/utils/ArrayMath.h"
 
 namespace autopas {
-template <typename Particle>
-class Octree;
-
 /**
  * An octree leaf node. This class utilizes the FullParticleCell to store the actual particles.
  *
