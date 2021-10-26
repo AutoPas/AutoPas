@@ -96,7 +96,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
         }
 
         // Mark all halo particles as dummy.
-        for(auto iter = this->begin(autopas::IteratorBehavior::halo); iter.isValid(); ++iter) {
+        for (auto iter = this->begin(autopas::IteratorBehavior::halo); iter.isValid(); ++iter) {
           (*iter).setOwnershipState(OwnershipState::dummy);
         }
       }
