@@ -140,8 +140,8 @@ class OctreeNodeInterface {
    */
   static bool volumeExistsOnAxis(int axis, std::array<double, 3> aMin, std::array<double, 3> aMax,
                                  std::array<double, 3> bMin, std::array<double, 3> bMax) {
-    bool o1 = aMin[axis] < bMax[axis];
-    bool o2 = bMin[axis] < aMax[axis];
+    const bool o1 = aMin[axis] < bMax[axis];
+    const bool o2 = bMin[axis] < aMax[axis];
     return o1 and o2;
   }
 
