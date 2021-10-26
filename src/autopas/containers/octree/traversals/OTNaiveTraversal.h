@@ -129,5 +129,4 @@ class OTNaiveTraversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
    */
   std::vector<OctreeLeafNode<Particle> *> _leaves;
 };
-
 }  // namespace autopas
