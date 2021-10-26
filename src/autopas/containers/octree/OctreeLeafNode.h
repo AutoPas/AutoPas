@@ -58,11 +58,6 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
    * @copydoc OctreeNodeInterface::insert()
    */
   std::unique_ptr<OctreeNodeInterface<Particle>> insert(const Particle &p) override {
-    if (not this->isInside(p.getR())) {
-      // The exception is suppressed for AllContainersTests#testParticleAdding
-      // throw std::runtime_error("[OctreeLeafNode.h] Attempting to insert particle that is not inside this node");
-    }
-
     // Check if the size of the new leaves would become smaller than cellSizeFactor*interactionLength
     std::array<double, 3> splitLeafDimensions = utils::ArrayMath::sub(this->getBoxMax(), this->getBoxMin());
     splitLeafDimensions = utils::ArrayMath::mulScalar(splitLeafDimensions, 0.5);
