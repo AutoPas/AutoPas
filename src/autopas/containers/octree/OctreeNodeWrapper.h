@@ -222,11 +222,29 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
     return *ps[index];
   }
 
+  /**
+   * A pointer to the root node of the enclosed octree.
+   */
   std::unique_ptr<OctreeNodeInterface<Particle>> _pointer;
-  mutable std::vector<Particle *> ps;
-  mutable AutoPasLock lock;
-  mutable long count = 0;
 
+  /**
+   * A vector containing all particles when iterating. This serves as a cache such that the octree does not need to
+   * traversed every time the `at` function is called.
+   * The field is marked mutable since it is used inside the `begin()` method, which is marked `const`. This function
+   * loads the cache `ps`, which is therefore required to be mutable.
+   */
+  mutable std::vector<Particle *> ps;
+
+  /**
+   * This lock is required to synchronize loading the cache `ps` across multiple threads. To change the state of the
+   * lock from within the `begin()` method (marked `const`), this field has to be mutable.
+   */
+  mutable AutoPasLock lock;
+
+  /**
+   * To prevent unnecessary tree-traversals of the octree, this field stores the number of enclosed particles within
+   * this node.
+   */
   long enclosedParticleCount;
 };
 }  // namespace autopas
