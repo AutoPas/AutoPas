@@ -461,7 +461,7 @@ template <class Particle>
 OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_FACE_NEIGHBOR(Face I) {
   // Check precondition
   if (not isFace(I)) {
-    throw std::runtime_error("[OctreeNodeInterface.h] Received invalid face.");
+    throw std::runtime_error("[OctreeNodeInterface::GTEQ_FACE_NEIGHBOR()] Received invalid face.");
   }
 
   auto null = [](OctreeNodeInterface<Particle> *T) { return T == nullptr; };
