@@ -19,7 +19,7 @@ namespace autopas {
  * ParticleCell concept.
  *
  * What this wrapper does is the following: It _hides implementation details_ of the octree nodes that should not be
- * exposed to the outside. (For instance, the `OctreeNodeInterface<Particle>::insert()` method has a very
+ * exposed to the outside. (For instance, the `OctreeNodeInterface::insert()` method has a very
  * specific method signature that requires the caller to change the pointer to a subtree if necessary. Since the user
  * should not care about this, it is wrapped in this class inside of the `addParticle()` method. This method does not
  * have to be treated special like `insert()`.)
@@ -190,7 +190,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
   }
 
   /**
-   * Get a raw pointer to the enclosed cell. 
+   * Get a raw pointer to the enclosed cell.
    * @note This should only be used for debugging and insight into the internal structure fo the octree.
    * @return A raw C pointer to the enclosed node
    */
