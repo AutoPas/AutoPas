@@ -486,7 +486,7 @@ template <class Particle>
 OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_EDGE_NEIGHBOR(Edge I) {
   // Check precondition
   if (not contains(getEdges(), OO, I)) {
-    throw std::runtime_error("[OctreeNodeInterface.h] Received invalid edge.");
+    throw std::runtime_error("[OctreeNodeInterface::GTEQ_EDGE_NEIGHBOR()] Received invalid edge.");
   }
 
   auto null = [](OctreeNodeInterface<Particle> *T) { return T == nullptr; };
