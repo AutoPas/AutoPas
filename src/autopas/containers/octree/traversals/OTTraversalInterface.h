@@ -49,7 +49,6 @@ class OTTraversalInterface {
     wrapper->appendAllLeaves(leaves);
 
     for (OctreeLeafNode<Particle> *leaf : leaves) {
-      leaf->clearAlreadyProcessedList();
       dataLayoutConverter.loadDataLayout(*leaf);
     }
   }
