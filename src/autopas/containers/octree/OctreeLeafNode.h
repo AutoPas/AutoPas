@@ -46,6 +46,7 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
       : OctreeNodeInterface<Particle>(other._boxMin, other._boxMax, other._parent, other._treeSplitThreshold,
                                       other._interactionLength),
         FullParticleCell<Particle>(utils::ArrayMath::sub(other._boxMax, other._boxMin)) {
+    this->_particles.reserve(other._particles.size());
     for (auto &p : other._particles) {
       this->_particles.push_back(p);
     }
