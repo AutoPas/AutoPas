@@ -317,16 +317,16 @@ TEST_F(OctreeTest, testNeighborLocator) {
   int leafIndex = 0;
   for (auto leaf : leaves) {
     // Check for each available face if the returned neighbor is valid.
-    for (Face *face = getFaces(); *face != O; ++face) {
-      auto neighbor = leaf->GTEQ_FACE_NEIGHBOR(*face);
+    for (Face face : Faces::table) {
+      auto neighbor = leaf->GTEQ_FACE_NEIGHBOR(face);
       if (neighbor != nullptr) {
-        verifyFaceNeighbor(*face, leaf, neighbor);
+        verifyFaceNeighbor(face, leaf, neighbor);
 
-        auto neighborLeaves = neighbor->getNeighborLeaves(*face);
+        auto neighborLeaves = neighbor->getNeighborLeaves(face);
 
         for (auto neighborLeaf : neighborLeaves) {
           ASSERT_NE(neighborLeaf, nullptr);
-          verifyFaceNeighbor(*face, leaf, neighborLeaf);
+          verifyFaceNeighbor(face, leaf, neighborLeaf);
         }
       } else {
         // TODO(johannes): The only case in which it is allowed for the GTEQ_FACE_NEIGHBOR method to return nullptr is

@@ -93,7 +93,7 @@ class OTNaiveTraversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
       // Process connection to all neighbors
       auto uniqueNeighboringLeaves = leaf->getNeighborLeaves();
       for (OctreeLeafNode<Particle> *neighborLeaf : uniqueNeighboringLeaves) {
-        if (!leaf->alreadyProcessed(neighborLeaf) && !neighborLeaf->alreadyProcessed(leaf)) {
+        if ((not leaf->alreadyProcessed(neighborLeaf)) and (not neighborLeaf->alreadyProcessed(leaf))) {
           // Execute the cell functor
           _cellFunctor.processCellPair(*leaf, *neighborLeaf);
 
@@ -129,5 +129,4 @@ class OTNaiveTraversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
    */
   std::vector<OctreeLeafNode<Particle> *> _leaves;
 };
-
 }  // namespace autopas

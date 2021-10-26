@@ -37,7 +37,24 @@ class MoleculeLJ final : public Particle {
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
    */
-  enum AttributeNames : int { ptr, id, posX, posY, posZ, forceX, forceY, forceZ, typeId, ownershipState };
+  enum AttributeNames : int {
+    ptr,
+    id,
+    posX,
+    posY,
+    posZ,
+    velocityX,
+    velocityY,
+    velocityZ,
+    forceX,
+    forceY,
+    forceZ,
+    oldForceX,
+    oldForceY,
+    oldForceZ,
+    typeId,
+    ownershipState
+  };
 
   /**
    * The type for the SoA storage.
@@ -46,22 +63,29 @@ class MoleculeLJ final : public Particle {
    * This means it shall always only take values 0.0 (=false) or 1.0 (=true).
    * The reason for this is the easier use of the value in calculations (See LJFunctor "energyFactor")
    */
-  using SoAArraysType =
-      typename autopas::utils::SoAType<MoleculeLJ<floatType> *, size_t /*id*/, floatType /*x*/, floatType /*y*/,
-                                       floatType /*z*/, floatType /*fx*/, floatType /*fy*/, floatType /*fz*/,
-                                       size_t /*typeid*/, OwnershipState /*ownershipState*/>::Type;
+  using SoAArraysType = typename autopas::utils::SoAType<
+      MoleculeLJ<floatType> *, size_t /*id*/, floatType /*x*/, floatType /*y*/, floatType /*z*/, floatType /*vx*/,
+      floatType /*vy*/, floatType /*vz*/, floatType /*fx*/, floatType /*fy*/, floatType /*fz*/, floatType /*oldFx*/,
+      floatType /*oldFy*/, floatType /*oldFz*/, size_t /*typeid*/, OwnershipState /*ownershipState*/>::Type;
 
+  /**
+   * Non-const getter for the pointer of this object.
+   * @tparam attribute Attribute name.
+   * @return this.
+   */
+  template <AttributeNames attribute, std::enable_if_t<attribute == AttributeNames::ptr, bool> = true>
+  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
+    return this;
+  }
   /**
    * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).
    * @tparam attribute Attribute name.
    * @return Value of the requested attribute.
    * @note The value of owned is return as floating point number (true = 1.0, false = 0.0).
    */
-  template <AttributeNames attribute>
-  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
-    if constexpr (attribute == AttributeNames::ptr) {
-      return this;
-    } else if constexpr (attribute == AttributeNames::id) {
+  template <AttributeNames attribute, std::enable_if_t<attribute != AttributeNames::ptr, bool> = true>
+  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
+    if constexpr (attribute == AttributeNames::id) {
       return getID();
     } else if constexpr (attribute == AttributeNames::posX) {
       return getR()[0];
@@ -69,12 +93,24 @@ class MoleculeLJ final : public Particle {
       return getR()[1];
     } else if constexpr (attribute == AttributeNames::posZ) {
       return getR()[2];
+    } else if constexpr (attribute == AttributeNames::velocityX) {
+      return getV()[0];
+    } else if constexpr (attribute == AttributeNames::velocityY) {
+      return getV()[1];
+    } else if constexpr (attribute == AttributeNames::velocityZ) {
+      return getV()[2];
     } else if constexpr (attribute == AttributeNames::forceX) {
       return getF()[0];
     } else if constexpr (attribute == AttributeNames::forceY) {
       return getF()[1];
     } else if constexpr (attribute == AttributeNames::forceZ) {
       return getF()[2];
+    } else if constexpr (attribute == AttributeNames::oldForceX) {
+      return getOldF()[0];
+    } else if constexpr (attribute == AttributeNames::oldForceY) {
+      return getOldF()[1];
+    } else if constexpr (attribute == AttributeNames::oldForceZ) {
+      return getOldF()[2];
     } else if constexpr (attribute == AttributeNames::typeId) {
       return getTypeId();
     } else if constexpr (attribute == AttributeNames::ownershipState) {
@@ -100,12 +136,24 @@ class MoleculeLJ final : public Particle {
       _r[1] = value;
     } else if constexpr (attribute == AttributeNames::posZ) {
       _r[2] = value;
+    } else if constexpr (attribute == AttributeNames::velocityX) {
+      _v[0] = value;
+    } else if constexpr (attribute == AttributeNames::velocityY) {
+      _v[1] = value;
+    } else if constexpr (attribute == AttributeNames::velocityZ) {
+      _v[2] = value;
     } else if constexpr (attribute == AttributeNames::forceX) {
       _f[0] = value;
     } else if constexpr (attribute == AttributeNames::forceY) {
       _f[1] = value;
     } else if constexpr (attribute == AttributeNames::forceZ) {
       _f[2] = value;
+    } else if constexpr (attribute == AttributeNames::oldForceX) {
+      _oldF[0] = value;
+    } else if constexpr (attribute == AttributeNames::oldForceY) {
+      _oldF[1] = value;
+    } else if constexpr (attribute == AttributeNames::oldForceZ) {
+      _oldF[2] = value;
     } else if constexpr (attribute == AttributeNames::typeId) {
       setTypeId(value);
     } else if constexpr (attribute == AttributeNames::ownershipState) {
@@ -119,7 +167,7 @@ class MoleculeLJ final : public Particle {
    * Get the old force.
    * @return
    */
-  [[nodiscard]] std::array<double, 3> getOldf() const { return _oldF; }
+  [[nodiscard]] std::array<double, 3> getOldF() const { return _oldF; }
 
   /**
    * Set old force.

@@ -35,8 +35,9 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
    * @param interactionLength The minimum distance at which a force is considered nonzero, cutoff+skin.
    * @param cellSizeFactor The cell size factor
    */
-  OctreeLeafNode(std::array<double, 3> boxMin, std::array<double, 3> boxMax, OctreeNodeInterface<Particle> *parent,
-                 int unsigned treeSplitThreshold, double interactionLength, double cellSizeFactor)
+  OctreeLeafNode(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
+                 OctreeNodeInterface<Particle> *parent, const int unsigned treeSplitThreshold,
+                 const double interactionLength, const double cellSizeFactor)
       : OctreeNodeInterface<Particle>(boxMin, boxMax, parent, treeSplitThreshold, interactionLength, cellSizeFactor),
         FullParticleCell<Particle>(utils::ArrayMath::sub(boxMax, boxMin)) {}
 
@@ -56,7 +57,7 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
   /**
    * @copydoc OctreeNodeInterface::insert()
    */
-  std::unique_ptr<OctreeNodeInterface<Particle>> insert(Particle p) override {
+  std::unique_ptr<OctreeNodeInterface<Particle>> insert(const Particle &p) override {
     if (not this->isInside(p.getR())) {
       // The exception is suppressed for AllContainersTests#testParticleAdding
       // throw std::runtime_error("[OctreeLeafNode.h] Attempting to insert particle that is not inside this node");
@@ -99,16 +100,17 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
   /**
    * @copydoc OctreeNodeInterface::appendAllParticles()
    */
-  void appendAllParticles(std::vector<Particle *> &ps) override {
-    for (Particle &p : this->_particles) {
-      ps.push_back(&p);
+  void appendAllParticles(std::vector<Particle *> &ps) const override {
+    ps.reserve(ps.size() + this->_particles.size());
+    for (const auto &particle : this->_particles) {
+      ps.push_back(const_cast<Particle *>(&particle));
     }
   }
 
   /**
    * @copydoc OctreeNodeInterface::appendAllLeafBoxes()
    */
-  void appendAllLeafBoxes(std::vector<std::pair<std::array<double, 3>, std::array<double, 3>>> &boxes) override {
+  void appendAllLeafBoxes(std::vector<std::pair<std::array<double, 3>, std::array<double, 3>>> &boxes) const override {
     auto minMax = std::make_pair(this->getBoxMin(), this->getBoxMax());
     boxes.push_back(minMax);
   }
@@ -135,13 +137,15 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
     throw std::runtime_error("[OctreeLeafNode] Unable to return child by index in leaf");
   }
 
-  std::vector<OctreeLeafNode<Particle> *> getLeavesFromDirections(std::vector<Vertex> directions) override {
+  std::vector<OctreeLeafNode<Particle> *> getLeavesFromDirections(const std::vector<Vertex> &directions) override {
     return {this};
   }
 
   OctreeNodeInterface<Particle> *SON(Octant O) override { throw std::runtime_error("Unable to get SON of leaf node"); }
 
-  void appendAllLeaves(std::vector<OctreeLeafNode<Particle> *> &leaves) override { leaves.push_back(this); }
+  void appendAllLeaves(std::vector<OctreeLeafNode<Particle> *> &leaves) const override {
+    leaves.push_back((OctreeLeafNode<Particle> *)this);
+  }
 
   std::set<OctreeLeafNode<Particle> *> getLeavesInRange(std::array<double, 3> min, std::array<double, 3> max) override {
     if (this->getEnclosedVolumeWith(min, max) > 0.0) {
