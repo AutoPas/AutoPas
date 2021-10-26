@@ -42,9 +42,27 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
       std::array<double, 3> newBoxMin = {};
       std::array<double, 3> newBoxMax = {};
       for (auto d = 0; d < 3; ++d) {
-        auto mask = 4 >> d;
-        newBoxMin[d] = !(i & mask) ? boxMin[d] : center[d];
-        newBoxMax[d] = !(i & mask) ? center[d] : boxMax[d];
+        // `i`, `d` and `mask` are used to generate minimum and maximum coordinates for every octree leaf's bounding
+        // box. `i` represents a 3-bit wide number, where each bit corresponds to an axis. The following table
+        // visualizes this layout:
+        //
+        //          <-- msb   lsb -->
+        // +------++-----+---+---+---+
+        // | bit  || ... | 2 | 1 | 0 |
+        // +------+------+---+---+---+
+        // | axis ||       x | y | z |
+        // +------++---------+---+---+
+        //
+        // When an axis bit is not set, a leaf is expected to range from the minimum coordinate to the center of the
+        // enclosing box on the respective axis `d`. If the axis bit is set, the leaf's region should start at the
+        // center coordinate and end at the maximum coordinate of the enclosing box.
+        //
+        // `mask` is used to extract the individual axis components from `i`: Using the shift operation, `mask` can
+        // either become 0b100, 0b010 or 0b001 since `d` ranges from 0 to 2 inclusively. This covers all available axis
+        // in 3 dimensions.
+        const auto mask = 4 >> d;
+        newBoxMin[d] = (not(i & mask)) ? boxMin[d] : center[d];
+        newBoxMax[d] = (not(i & mask)) ? center[d] : boxMax[d];
       }
 
       // Assign new leaves as the children.
