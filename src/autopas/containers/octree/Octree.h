@@ -79,7 +79,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
         OctreeNodeWrapper<Particle>(haloBoxMin, haloBoxMax, treeSplitThreshold, interactionLength, cellSizeFactor));
   }
 
-  [[nodiscard]] std::vector<ParticleType> updateContainer() override {
+  [[nodiscard]] std::vector<ParticleType> updateContainer(bool keepNeighborListValid) override {
     // This is a very primitive and inefficient way to rebuild the container:
     // 1. Copy all particles out of the container
     // 2. Clear the container

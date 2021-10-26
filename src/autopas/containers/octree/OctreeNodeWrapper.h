@@ -120,7 +120,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * Check if the cell is not empty.
    * @return true if at least one particle is stored in this cell
    */
-  [[nodiscard]] bool isNotEmpty() const override { return enclosedParticleCount > 0; }
+  [[nodiscard]] bool isEmpty() const override { return enclosedParticleCount == 0; }
 
   /**
    * Deletes all particles in this cell.
