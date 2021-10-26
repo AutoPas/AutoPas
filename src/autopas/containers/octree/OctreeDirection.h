@@ -1,5 +1,5 @@
 /**
- * @file OctreeInnerNode.h
+ * @file OctreeDirection.h
  *
  * @author Johannes Spies
  * @date 18.05.2021
@@ -10,9 +10,14 @@
 namespace autopas {
 
 /**
+ * A datatype that is wide enough to hold faces, edges or vertices.
+ */
+using Any = int unsigned;
+
+/**
  * This enum can be used to index the faces of a cube including an "invalid" face.
  */
-enum Face {
+enum Face : Any {
   O = 0,  // omega/unknown
   L = 1,
   R = 2,
@@ -21,11 +26,6 @@ enum Face {
   B = 5,
   F = 6,
 };
-
-/**
- * A datatype that is wide enough to hold faces, edges or vertices.
- */
-using Any = int unsigned;
 
 /**
  * Create a bitfield for an edge given by the template parameters.
@@ -57,7 +57,7 @@ static constexpr Any buildVertex() {
 /**
  * This enum can be used to index all edges of a cube including an "invalid" edge.
  */
-enum Edge {
+enum Edge : Any {
   OO = 0,  // omega/unknown
   LD = buildEdge<L, D>(),
   LU = buildEdge<L, U>(),
@@ -76,7 +76,7 @@ enum Edge {
 /**
  * This enum can be used to index all vertices of a cube including an "invalid" vertex.
  */
-enum Vertex {
+enum Vertex : Any {
   OOO = 0,  // omega/unknown
   LDB = buildVertex<L, D, B>(),
   LDF = buildVertex<L, D, F>(),
