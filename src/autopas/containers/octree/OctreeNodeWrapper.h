@@ -153,7 +153,9 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * Set the side lengths of this cell.
    * @param cellLength cell side length
    */
-  void setCellLength(std::array<double, 3> &cellLength) override {}
+  void setCellLength(std::array<double, 3> &cellLength) override {
+    throw std::runtime_error("[OctreeNodeWrapper::setCellLength()] Operation not supported");
+  }
 
   /**
    * Get the side lengths of this cell.
