@@ -190,8 +190,8 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
   }
 
   /**
-   * Get a raw pointer to the enclosed cell. This should only be used for debugging and insight into the internal
-   * structure fo the octree.
+   * Get a raw pointer to the enclosed cell. 
+   * @note This should only be used for debugging and insight into the internal structure fo the octree.
    * @return A raw C pointer to the enclosed node
    */
   OctreeNodeInterface<Particle> *getRaw() const { return _pointer.get(); }
