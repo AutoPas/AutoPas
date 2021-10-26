@@ -170,7 +170,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @param index The index of the particle
    * @return A ref to a particle
    */
-  Particle &at(size_t index) { return getFromReloadingIterator(index); }
+  Particle &at(size_t index) { return *ps[index]; }
 
   /**
    * Get a particle from the iterator
@@ -178,7 +178,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @param index The index of the particle
    * @return A const ref to a particle
    */
-  const Particle &at(size_t index) const { return getFromReloadingIterator(index); }
+  const Particle &at(size_t index) const { return *ps[index]; }
 
   /**
    * Find all leaves below this subtree that are in the given range.
@@ -208,20 +208,6 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
   using const_iterator_t = internal::SingleCellIterator<Particle, OctreeNodeWrapper<Particle>, false>;
 
  private:
-  Particle &getFromReloadingIterator(size_t index) const {
-#if 0
-    lock.lock();
-    if (ps.empty() || index == 0) {
-      // printf("Reloading particles (ps.empty()=%s, index=%ld) %ld times\n", ps.empty() ? "true" : "false", index,
-      // count++);
-      ps.clear();
-      _pointer->appendAllParticles(ps);
-    }
-    lock.unlock();
-#endif
-    return *ps[index];
-  }
-
   /**
    * A pointer to the root node of the enclosed octree.
    */
