@@ -146,7 +146,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @param index the index of the particle that shall be deleted
    */
   void deleteByIndex(size_t index) override {
-    throw std::runtime_error("[OctreeNodeWrapper.h] Operation not supported");
+    throw std::runtime_error("[OctreeNodeWrapper::deleteByIndex()] Operation not supported");
   }
 
   /**
