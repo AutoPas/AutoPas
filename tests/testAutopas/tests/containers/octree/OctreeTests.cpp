@@ -317,7 +317,7 @@ TEST_F(OctreeTest, testNeighborLocator) {
   int leafIndex = 0;
   for (auto leaf : leaves) {
     // Check for each available face if the returned neighbor is valid.
-    for (Face face : Faces::table) {
+    for (auto face : Tables::faces) {
       auto neighbor = leaf->GTEQ_FACE_NEIGHBOR(face);
       if (neighbor != nullptr) {
         verifyFaceNeighbor(face, leaf, neighbor);
@@ -335,8 +335,8 @@ TEST_F(OctreeTest, testNeighborLocator) {
     }
 
     // Check for each available edge if the returned neighbor is valid.
-    for (Edge *edge = getEdges(); *edge != OO; ++edge) {
-      auto neighbor = leaf->GTEQ_EDGE_NEIGHBOR(*edge);
+    for (auto edge : Tables::edges) {
+      auto neighbor = leaf->GTEQ_EDGE_NEIGHBOR(edge);
       if (neighbor != nullptr) {
       } else {
         // TODO(johannes): Check if the leaf is touching the border in this direction

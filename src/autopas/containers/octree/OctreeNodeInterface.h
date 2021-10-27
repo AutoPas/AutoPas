@@ -315,7 +315,7 @@ class OctreeNodeInterface {
     std::set<OctreeLeafNode<Particle> *> result;
 
     // Get all face neighbors
-    for (Face face : Faces::table) {
+    for (Face face : Tables::faces) {
       OctreeNodeInterface<Particle> *neighbor = GTEQ_FACE_NEIGHBOR(face);
       if (neighbor) {
         auto leaves = neighbor->getNeighborLeaves(face);
@@ -324,10 +324,10 @@ class OctreeNodeInterface {
     }
 
     // Get all edge neighbors
-    for (Edge *edge = getEdges(); *edge != OO; ++edge) {
-      OctreeNodeInterface<Particle> *neighbor = GTEQ_EDGE_NEIGHBOR(*edge);
+    for (Edge edge : Tables::edges) {
+      OctreeNodeInterface<Particle> *neighbor = GTEQ_EDGE_NEIGHBOR(edge);
       if (neighbor) {
-        auto leaves = neighbor->getNeighborLeaves(*edge);
+        auto leaves = neighbor->getNeighborLeaves(edge);
         result.insert(leaves.begin(), leaves.end());
       }
     }
@@ -489,7 +489,7 @@ OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_FACE_NEIGHBOR
 template <class Particle>
 OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_EDGE_NEIGHBOR(const Edge I) {
   // Check precondition
-  if (not contains(getEdges(), OO, I)) {
+  if (not isEdge(I)) {
     throw std::runtime_error("[OctreeNodeInterface::GTEQ_EDGE_NEIGHBOR()] Received invalid edge.");
   }
 

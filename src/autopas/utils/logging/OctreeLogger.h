@@ -159,7 +159,7 @@ class OctreeLogger {
         // Print face neighbors
         fprintf(out, ", \"fn\": [");
         bool first = true;
-        for (auto face : Faces::table) {
+        for (auto face : Tables::faces) {
           auto neighbor = leaf->GTEQ_FACE_NEIGHBOR(face);
           if (neighbor) {
             if (!first) {
@@ -173,7 +173,7 @@ class OctreeLogger {
         // Print face neighbor leaves
         fprintf(out, "], \"fnl\": [");
         first = true;
-        for (auto face : Faces::table) {
+        for (auto face : Tables::faces) {
           auto neighbor = leaf->GTEQ_FACE_NEIGHBOR(face);
           if (neighbor) {
             auto neighborLeaves = neighbor->getNeighborLeaves(face);
@@ -190,8 +190,8 @@ class OctreeLogger {
         // Print edge neighbors
         fprintf(out, "], \"en\": [");
         first = true;
-        for (Edge *edge = getEdges(); *edge != OO; ++edge) {
-          auto neighbor = leaf->GTEQ_EDGE_NEIGHBOR(*edge);
+        for (auto edge : Tables::edges) {
+          auto neighbor = leaf->GTEQ_EDGE_NEIGHBOR(edge);
           if (neighbor) {
             if (!first) {
               fprintf(out, ", ");
@@ -204,10 +204,10 @@ class OctreeLogger {
         // Print edge neighbor leaves
         fprintf(out, "], \"enl\": [");
         first = true;
-        for (Edge *edge = getEdges(); *edge != OO; ++edge) {
-          auto neighbor = leaf->GTEQ_EDGE_NEIGHBOR(*edge);
+        for (auto edge : Tables::edges) {
+          auto neighbor = leaf->GTEQ_EDGE_NEIGHBOR(edge);
           if (neighbor) {
-            auto neighborLeaves = neighbor->getNeighborLeaves(*edge);
+            auto neighborLeaves = neighbor->getNeighborLeaves(edge);
             for (auto neighborLeaf : neighborLeaves) {
               if (!first) {
                 fprintf(out, ", ");
