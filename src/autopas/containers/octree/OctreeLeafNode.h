@@ -95,8 +95,10 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
    */
   void collectAllParticles(std::vector<Particle *> &ps) const override {
     ps.reserve(ps.size() + this->_particles.size());
-    for (const auto &particle : this->_particles) {
-      ps.push_back(const_cast<Particle *>(&particle));
+    for (auto &particle : this->_particles) {
+      // The cast here is required to remove the `const` modifier from the `Particle const &`. The particle should be
+      // modifiable outside the octree and should therefore not be marked `const`, which requires the cast.
+      ps.push_back((Particle *)&particle);
     }
   }
 
@@ -130,11 +132,14 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
     throw std::runtime_error("[OctreeLeafNode] Unable to return child by index in leaf");
   }
 
-  std::vector<OctreeLeafNode<Particle> *> getLeavesFromDirections(const std::vector<octree::Vertex> &directions) override {
+  std::vector<OctreeLeafNode<Particle> *> getLeavesFromDirections(
+      const std::vector<octree::Vertex> &directions) override {
     return {this};
   }
 
-  OctreeNodeInterface<Particle> *SON(octree::Octant O) override { throw std::runtime_error("Unable to get SON of leaf node"); }
+  OctreeNodeInterface<Particle> *SON(octree::Octant O) override {
+    throw std::runtime_error("Unable to get SON of leaf node");
+  }
 
   void appendAllLeaves(std::vector<OctreeLeafNode<Particle> *> &leaves) const override {
     leaves.push_back((OctreeLeafNode<Particle> *)this);
