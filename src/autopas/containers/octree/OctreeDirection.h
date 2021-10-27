@@ -133,27 +133,6 @@ inline int vertexToIndex(Vertex vertex) {
 using Octant = Vertex;
 
 /**
- * Check if a given list of elements contains the element to test.
- *
- * @tparam T The base type of the list elements
- * @param all A pointer to the start element in the list
- * @param stop A pointer to the element which is one past the last element in the list
- * @param test The element to check
- * @return true if the list contains the test element, false otherwise
- */
-template <typename T>
-inline bool contains(T *all, T stop, Any test) {
-  bool result = false;
-  for (T *t = all; *t != stop; ++t) {
-    if (test == *t) {
-      result = true;
-      break;
-    }
-  }
-  return result;
-}
-
-/**
  * Check if f is a face.
  *
  * @param f The parameter to check
