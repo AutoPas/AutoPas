@@ -158,7 +158,7 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
    */
   OctreeNodeInterface<Particle> *getChild(int index) override { return _children[index].get(); }
 
-  std::vector<OctreeLeafNode<Particle> *> getLeavesFromDirections(const std::vector<Vertex> &directions) override {
+  std::vector<OctreeLeafNode<Particle> *> getLeavesFromDirections(const std::vector<octree::Vertex> &directions) override {
     std::vector<OctreeLeafNode<Particle> *> result;
     // Only take the children that are allowed (i.e. those which are in the given directions list)
     for (auto d : directions) {
@@ -174,7 +174,7 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
     return result;
   }
 
-  OctreeNodeInterface<Particle> *SON(Octant octant) override {
+  OctreeNodeInterface<Particle> *SON(octree::Octant octant) override {
     // convert the Octant to a flat child index
     auto flat = vertexToIndex(octant);
     return _children[flat].get();

@@ -99,7 +99,7 @@ class OctreeNodeInterface {
    * @param O The octant
    * @return A pointer to a child node
    */
-  virtual OctreeNodeInterface<Particle> *SON(Octant O) = 0;
+  virtual OctreeNodeInterface<Particle> *SON(octree::Octant O) = 0;
 
   /**
    * Check if the node is a leaf or an inner node. The function exists for debugging.
@@ -216,7 +216,7 @@ class OctreeNodeInterface {
    * @param I The face in which direction the search should find a node
    * @return An octree node
    */
-  OctreeNodeInterface<Particle> *EQ_FACE_NEIGHBOR(const Face I) {
+  OctreeNodeInterface<Particle> *EQ_FACE_NEIGHBOR(const octree::Face I) {
     OctreeNodeInterface<Particle> *param, *P = this;
     if (ADJ(I, SONTYPE(P))) {
       param = FATHER(P)->EQ_FACE_NEIGHBOR(I);
@@ -232,11 +232,11 @@ class OctreeNodeInterface {
    * @param I The edge in which direction the search should find a node
    * @return An octree node
    */
-  OctreeNodeInterface<Particle> *EQ_EDGE_NEIGHBOR(const Edge I) {
+  OctreeNodeInterface<Particle> *EQ_EDGE_NEIGHBOR(const octree::Edge I) {
     OctreeNodeInterface<Particle> *param, *P = this;
     if (ADJ(I, SONTYPE(P))) {
       param = FATHER(P)->EQ_EDGE_NEIGHBOR(I);
-    } else if (COMMON_FACE(I, SONTYPE(P)) != O) {
+    } else if (COMMON_FACE(I, SONTYPE(P)) != octree::O) {
       param = FATHER(P)->EQ_FACE_NEIGHBOR(COMMON_FACE(I, SONTYPE(P)));
     } else {
       param = FATHER(P);
@@ -250,13 +250,13 @@ class OctreeNodeInterface {
    * @param I The face in which direction the search should find a node
    * @return An octree node
    */
-  OctreeNodeInterface<Particle> *EQ_VERTEX_NEIGHBOR(const Vertex I) {
+  OctreeNodeInterface<Particle> *EQ_VERTEX_NEIGHBOR(const octree::Vertex I) {
     OctreeNodeInterface<Particle> *param, *P = this;
     if (ADJ(I, SONTYPE(P))) {
       param = FATHER(P)->EQ_VERTEX_NEIGHBOR(I);
-    } else if (COMMON_EDGE(I, SONTYPE(P)) != OO) {
+    } else if (COMMON_EDGE(I, SONTYPE(P)) != octree::OO) {
       param = FATHER(P)->EQ_EDGE_NEIGHBOR(COMMON_EDGE(I, SONTYPE(P)));
-    } else if (COMMON_FACE(I, SONTYPE(P)) != O) {
+    } else if (COMMON_FACE(I, SONTYPE(P)) != octree::O) {
       param = FATHER(P)->EQ_FACE_NEIGHBOR(COMMON_FACE(I, SONTYPE(P)));
     } else {
       param = FATHER(P);
@@ -270,7 +270,7 @@ class OctreeNodeInterface {
    * @param I The face in which direction the search should find a node
    * @return An octree node
    */
-  OctreeNodeInterface<Particle> *GTEQ_FACE_NEIGHBOR(const Face I);
+  OctreeNodeInterface<Particle> *GTEQ_FACE_NEIGHBOR(const octree::Face I);
 
   /**
    * Find a node (via the pointer structure) that is of greater than or equal to the size of the current node's bounding
@@ -278,7 +278,7 @@ class OctreeNodeInterface {
    * @param I The edge in which direction the search should find a node
    * @return An octree node
    */
-  OctreeNodeInterface<Particle> *GTEQ_EDGE_NEIGHBOR(const Edge I);
+  OctreeNodeInterface<Particle> *GTEQ_EDGE_NEIGHBOR(const octree::Edge I);
 
   /**
    * Find a node (via the pointer structure) that is of greater than or equal to the size of the current node's bounding
@@ -286,23 +286,23 @@ class OctreeNodeInterface {
    * @param I The vertex in which direction the search should find a node
    * @return An octree node
    */
-  OctreeNodeInterface<Particle> *GTEQ_VERTEX_NEIGHBOR(const Vertex I);
+  OctreeNodeInterface<Particle> *GTEQ_VERTEX_NEIGHBOR(const octree::Vertex I);
 
   /**
    * Find all leaf nodes along a list of given directions.
    * @param directions A list of allowed directions for traversal.
    * @return A list of leaf nodes
    */
-  virtual std::vector<OctreeLeafNode<Particle> *> getLeavesFromDirections(const std::vector<Vertex> &directions) = 0;
+  virtual std::vector<OctreeLeafNode<Particle> *> getLeavesFromDirections(const std::vector<octree::Vertex> &directions) = 0;
 
   /**
    * This function combines all required functions when traversing down a subtree of the octree and finding all leaves.
    * @param direction The "original" direction. The leaves will be found along the opposite direction.
    * @return A list of leaf nodes
    */
-  std::vector<OctreeLeafNode<Particle> *> getNeighborLeaves(const Any direction) {
-    auto opposite = getOppositeDirection(direction);
-    auto directions = getAllowedDirections(opposite);
+  std::vector<OctreeLeafNode<Particle> *> getNeighborLeaves(const octree::Any direction) {
+    auto opposite = octree::getOppositeDirection(direction);
+    auto directions = octree::getAllowedDirections(opposite);
     auto neighborLeaves = getLeavesFromDirections(directions);
     return neighborLeaves;
   }
@@ -315,7 +315,7 @@ class OctreeNodeInterface {
     std::set<OctreeLeafNode<Particle> *> result;
 
     // Get all face neighbors
-    for (Face face : Tables::faces) {
+    for (auto face : octree::Tables::faces) {
       OctreeNodeInterface<Particle> *neighbor = GTEQ_FACE_NEIGHBOR(face);
       if (neighbor) {
         auto leaves = neighbor->getNeighborLeaves(face);
@@ -324,7 +324,7 @@ class OctreeNodeInterface {
     }
 
     // Get all edge neighbors
-    for (Edge edge : Tables::edges) {
+    for (auto edge : octree::Tables::edges) {
       OctreeNodeInterface<Particle> *neighbor = GTEQ_EDGE_NEIGHBOR(edge);
       if (neighbor) {
         auto leaves = neighbor->getNeighborLeaves(edge);
@@ -333,7 +333,7 @@ class OctreeNodeInterface {
     }
 
     // Get all face neighbors
-    for (Vertex vertex : Tables::vertices) {
+    for (auto vertex : octree::Tables::vertices) {
       OctreeNodeInterface<Particle> *neighbor = GTEQ_VERTEX_NEIGHBOR(vertex);
       if (neighbor) {
         auto leaves = neighbor->getNeighborLeaves(vertex);
@@ -445,16 +445,16 @@ inline OctreeNodeInterface<Particle> *FATHER(const OctreeNodeInterface<Particle>
  * found in the parent.
  */
 template <class Particle>
-static Octant SONTYPE(const OctreeNodeInterface<Particle> *node) {
-  Octant result = OOO;
+static octree::Octant SONTYPE(const OctreeNodeInterface<Particle> *node) {
+  octree::Octant result = octree::OOO;
   if (FATHER(node)) {
-    for (Vertex test : Tables::vertices) {
+    for (octree::Vertex test : octree::Tables::vertices) {
       if (FATHER(node)->SON(test) == node) {
         result = test;
         break;
       }
     }
-    if (result == OOO) {
+    if (result == octree::OOO) {
       throw std::runtime_error("[OctreeNodeInterface::SONTYPE()] Unable to determine SONTYPE");
     }
   }
@@ -462,7 +462,7 @@ static Octant SONTYPE(const OctreeNodeInterface<Particle> *node) {
 }
 
 template <class Particle>
-OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_FACE_NEIGHBOR(const Face I) {
+OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_FACE_NEIGHBOR(const octree::Face I) {
   // Check precondition
   if (not isFace(I)) {
     throw std::runtime_error("[OctreeNodeInterface::GTEQ_FACE_NEIGHBOR()] Received invalid face.");
@@ -487,7 +487,7 @@ OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_FACE_NEIGHBOR
 }
 
 template <class Particle>
-OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_EDGE_NEIGHBOR(const Edge I) {
+OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_EDGE_NEIGHBOR(const octree::Edge I) {
   // Check precondition
   if (not isEdge(I)) {
     throw std::runtime_error("[OctreeNodeInterface::GTEQ_EDGE_NEIGHBOR()] Received invalid edge.");
@@ -501,7 +501,7 @@ OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_EDGE_NEIGHBOR
     Q = nullptr;
   } else if (ADJ(I, SONTYPE(P))) {
     Q = FATHER(P)->GTEQ_EDGE_NEIGHBOR(I);
-  } else if (Face common = COMMON_FACE(I, SONTYPE(P)); common != O) {
+  } else if (octree::Face common = COMMON_FACE(I, SONTYPE(P)); common != octree::O) {
     Q = FATHER(P)->GTEQ_FACE_NEIGHBOR(common);
   } else {
     Q = FATHER(P);
@@ -516,7 +516,7 @@ OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_EDGE_NEIGHBOR
 }
 
 template <class Particle>
-OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_VERTEX_NEIGHBOR(const Vertex I) {
+OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_VERTEX_NEIGHBOR(const octree::Vertex I) {
   // Check precondition
   if (not isVertex(I)) {
     throw std::runtime_error("[OctreeNodeInterface::GTEQ_VERTEX_NEIGHBOR()] Received invalid vertex.");
@@ -528,9 +528,9 @@ OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_VERTEX_NEIGHB
     Q = nullptr;
   } else if (ADJ(I, SONTYPE(P))) {
     Q = FATHER(P)->GTEQ_VERTEX_NEIGHBOR(I);
-  } else if (Edge commonEdge = COMMON_EDGE(I, SONTYPE(P)); commonEdge != OO) {
+  } else if (octree::Edge commonEdge = COMMON_EDGE(I, SONTYPE(P)); commonEdge != octree::OO) {
     Q = FATHER(P)->GTEQ_EDGE_NEIGHBOR(commonEdge);
-  } else if (Face commonFace = COMMON_FACE(I, SONTYPE(P)); commonFace != O) {
+  } else if (octree::Face commonFace = COMMON_FACE(I, SONTYPE(P)); commonFace != octree::O) {
     Q = FATHER(P)->GTEQ_FACE_NEIGHBOR(commonFace);
   } else {
     Q = FATHER(P);

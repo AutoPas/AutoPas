@@ -119,7 +119,7 @@ static double planeEquation(std::array<double, 3> planeNormal, std::array<double
  * @param f The face
  * @return An axis index: 0, 1 or 2
  */
-static int getAxis(autopas::Face f) { return (f - 1) >> 1; }
+static int getAxis(autopas::octree::Face f) { return (f - 1) >> 1; }
 
 /**
  * This testcase checks if the indexing of octree node children works as intended.
@@ -138,13 +138,13 @@ TEST_F(OctreeTest, testChildIndexing) {
   using Node = OctreeNodeInterface<ParticleFP64>;
 
   // LDB
-  int ldbIndex = vertexToIndex(LDB);
+  int ldbIndex = vertexToIndex(octree::LDB);
   Node *ldb = inner.getChild(ldbIndex);
   ASSERT_EQ(ldb->getBoxMin(), min);
   ASSERT_EQ(ldb->getBoxMax(), center);
 
   // LDF
-  int ldfIndex = vertexToIndex(LDF);
+  int ldfIndex = vertexToIndex(octree::LDF);
   Node *ldf = inner.getChild(ldfIndex);
   ASSERT_EQ(ldf->getBoxMin()[0], min[0]);
   ASSERT_EQ(ldf->getBoxMin()[1], min[1]);
@@ -154,7 +154,7 @@ TEST_F(OctreeTest, testChildIndexing) {
   ASSERT_EQ(ldf->getBoxMax()[2], max[2]);
 
   // LUB
-  int lubIndex = vertexToIndex(LUB);
+  int lubIndex = vertexToIndex(octree::LUB);
   Node *lub = inner.getChild(lubIndex);
   ASSERT_EQ(lub->getBoxMin()[0], min[0]);
   ASSERT_EQ(lub->getBoxMin()[1], center[1]);
@@ -164,7 +164,7 @@ TEST_F(OctreeTest, testChildIndexing) {
   ASSERT_EQ(lub->getBoxMax()[2], center[2]);
 
   // LUF
-  int lufIndex = vertexToIndex(LUF);
+  int lufIndex = vertexToIndex(octree::LUF);
   Node *luf = inner.getChild(lufIndex);
   ASSERT_EQ(luf->getBoxMin()[0], min[0]);
   ASSERT_EQ(luf->getBoxMin()[1], center[1]);
@@ -174,7 +174,7 @@ TEST_F(OctreeTest, testChildIndexing) {
   ASSERT_EQ(luf->getBoxMax()[2], max[2]);
 
   // RDB
-  int rdbIndex = vertexToIndex(RDB);
+  int rdbIndex = vertexToIndex(octree::RDB);
   Node *rdb = inner.getChild(rdbIndex);
   ASSERT_EQ(rdb->getBoxMin()[0], center[0]);
   ASSERT_EQ(rdb->getBoxMin()[1], min[1]);
@@ -184,7 +184,7 @@ TEST_F(OctreeTest, testChildIndexing) {
   ASSERT_EQ(rdb->getBoxMax()[2], center[2]);
 
   // RDF
-  int rdfIndex = vertexToIndex(RDF);
+  int rdfIndex = vertexToIndex(octree::RDF);
   Node *rdf = inner.getChild(rdfIndex);
   ASSERT_EQ(rdf->getBoxMin()[0], center[0]);
   ASSERT_EQ(rdf->getBoxMin()[1], min[1]);
@@ -194,7 +194,7 @@ TEST_F(OctreeTest, testChildIndexing) {
   ASSERT_EQ(rdf->getBoxMax()[2], max[2]);
 
   // RUB
-  int rubIndex = vertexToIndex(RUB);
+  int rubIndex = vertexToIndex(octree::RUB);
   Node *rub = inner.getChild(rubIndex);
   ASSERT_EQ(rub->getBoxMin()[0], center[0]);
   ASSERT_EQ(rub->getBoxMin()[1], center[1]);
@@ -204,14 +204,14 @@ TEST_F(OctreeTest, testChildIndexing) {
   ASSERT_EQ(rub->getBoxMax()[2], center[2]);
 
   // RUF
-  int rufIndex = vertexToIndex(RUF);
+  int rufIndex = vertexToIndex(octree::RUF);
   Node *ruf = inner.getChild(rufIndex);
   ASSERT_EQ(ruf->getBoxMin(), center);
   ASSERT_EQ(ruf->getBoxMax(), max);
 }
 
 template <typename Particle>
-static void verifyFaceNeighbor(autopas::Face face, autopas::OctreeNodeInterface<Particle> *node,
+static void verifyFaceNeighbor(autopas::octree::Face face, autopas::OctreeNodeInterface<Particle> *node,
                                autopas::OctreeNodeInterface<Particle> *neighbor) {
   using namespace autopas;
 
@@ -317,7 +317,7 @@ TEST_F(OctreeTest, testNeighborLocator) {
   int leafIndex = 0;
   for (auto leaf : leaves) {
     // Check for each available face if the returned neighbor is valid.
-    for (auto face : Tables::faces) {
+    for (auto face : octree::Tables::faces) {
       auto neighbor = leaf->GTEQ_FACE_NEIGHBOR(face);
       if (neighbor != nullptr) {
         verifyFaceNeighbor(face, leaf, neighbor);
@@ -335,7 +335,7 @@ TEST_F(OctreeTest, testNeighborLocator) {
     }
 
     // Check for each available edge if the returned neighbor is valid.
-    for (auto edge : Tables::edges) {
+    for (auto edge : octree::Tables::edges) {
       auto neighbor = leaf->GTEQ_EDGE_NEIGHBOR(edge);
       if (neighbor != nullptr) {
       } else {
@@ -344,7 +344,7 @@ TEST_F(OctreeTest, testNeighborLocator) {
     }
 
     // Check for each available vertex if the returned neighbor is valid.
-    for (Vertex vertex : Tables::vertices) {
+    for (auto vertex : octree::Tables::vertices) {
       auto neighbor = leaf->GTEQ_VERTEX_NEIGHBOR(vertex);
       if (neighbor != nullptr) {
         // Get all corners of the leaf and the neighbor

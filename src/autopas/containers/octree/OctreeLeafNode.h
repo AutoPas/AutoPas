@@ -130,11 +130,11 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
     throw std::runtime_error("[OctreeLeafNode] Unable to return child by index in leaf");
   }
 
-  std::vector<OctreeLeafNode<Particle> *> getLeavesFromDirections(const std::vector<Vertex> &directions) override {
+  std::vector<OctreeLeafNode<Particle> *> getLeavesFromDirections(const std::vector<octree::Vertex> &directions) override {
     return {this};
   }
 
-  OctreeNodeInterface<Particle> *SON(Octant O) override { throw std::runtime_error("Unable to get SON of leaf node"); }
+  OctreeNodeInterface<Particle> *SON(octree::Octant O) override { throw std::runtime_error("Unable to get SON of leaf node"); }
 
   void appendAllLeaves(std::vector<OctreeLeafNode<Particle> *> &leaves) const override {
     leaves.push_back((OctreeLeafNode<Particle> *)this);

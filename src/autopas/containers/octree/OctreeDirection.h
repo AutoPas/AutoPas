@@ -7,7 +7,7 @@
 
 #pragma once
 
-namespace autopas {
+namespace autopas::octree {
 
 /**
  * A datatype that is wide enough to hold faces, edges or vertices.
@@ -501,7 +501,7 @@ inline Edge COMMON_EDGE(Any direction, Vertex octant) {
  * @param direction Any direction (Face, Edge or Vertex)
  * @return A direction that is opposing the given direction
  */
-inline autopas::Any getOppositeDirection(autopas::Any direction) {
+inline Any getOppositeDirection(Any direction) {
   using namespace autopas;
 
   if ((not isFace(direction)) and (not isEdge(direction)) and (not isVertex(direction))) {
@@ -523,7 +523,7 @@ inline autopas::Any getOppositeDirection(autopas::Any direction) {
  * @param along A direction the returned vertices should be admissible to
  * @return A list of octants that fits the given direction
  */
-inline std::vector<autopas::Octant> getAllowedDirections(autopas::Any along) {
+inline std::vector<Octant> getAllowedDirections(Any along) {
   using namespace autopas;
 
   if ((not isFace(along)) and (not isEdge(along)) and (not isVertex(along))) {
@@ -531,7 +531,7 @@ inline std::vector<autopas::Octant> getAllowedDirections(autopas::Any along) {
   }
 
   auto resultWithOOO = allowedDirectionsTable[along];
-  std::vector<autopas::Octant> result;
+  std::vector<Octant> result;
   // At most, there should be 4 elements in the result vector.
   result.reserve(4);
   for (auto v : resultWithOOO) {
@@ -549,4 +549,4 @@ inline std::vector<autopas::Octant> getAllowedDirections(autopas::Any along) {
   return result;
 }
 
-}  // namespace autopas
+}  // namespace autopas::octree

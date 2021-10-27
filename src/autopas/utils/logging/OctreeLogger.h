@@ -159,7 +159,7 @@ class OctreeLogger {
         // Print face neighbors
         fprintf(out, ", \"fn\": [");
         bool first = true;
-        for (auto face : Tables::faces) {
+        for (auto face : octree::Tables::faces) {
           auto neighbor = leaf->GTEQ_FACE_NEIGHBOR(face);
           if (neighbor) {
             if (!first) {
@@ -173,7 +173,7 @@ class OctreeLogger {
         // Print face neighbor leaves
         fprintf(out, "], \"fnl\": [");
         first = true;
-        for (auto face : Tables::faces) {
+        for (auto face : octree::Tables::faces) {
           auto neighbor = leaf->GTEQ_FACE_NEIGHBOR(face);
           if (neighbor) {
             auto neighborLeaves = neighbor->getNeighborLeaves(face);
@@ -190,7 +190,7 @@ class OctreeLogger {
         // Print edge neighbors
         fprintf(out, "], \"en\": [");
         first = true;
-        for (auto edge : Tables::edges) {
+        for (auto edge : octree::Tables::edges) {
           auto neighbor = leaf->GTEQ_EDGE_NEIGHBOR(edge);
           if (neighbor) {
             if (!first) {
@@ -204,7 +204,7 @@ class OctreeLogger {
         // Print edge neighbor leaves
         fprintf(out, "], \"enl\": [");
         first = true;
-        for (auto edge : Tables::edges) {
+        for (auto edge : octree::Tables::edges) {
           auto neighbor = leaf->GTEQ_EDGE_NEIGHBOR(edge);
           if (neighbor) {
             auto neighborLeaves = neighbor->getNeighborLeaves(edge);
@@ -221,7 +221,7 @@ class OctreeLogger {
         // Print vertex neighbors
         fprintf(out, "], \"vn\": [");
         first = true;
-        for (Vertex vertex : Tables::vertices) {
+        for (auto vertex : octree::Tables::vertices) {
           auto neighbor = leaf->GTEQ_VERTEX_NEIGHBOR(vertex);
           if (neighbor) {
             if (!first) {
@@ -235,7 +235,7 @@ class OctreeLogger {
         // Print vertex neighbor leaves
         fprintf(out, "], \"vnl\": [");
         first = true;
-        for (Vertex vertex : Tables::vertices) {
+        for (auto vertex : octree::Tables::vertices) {
           auto neighbor = leaf->GTEQ_VERTEX_NEIGHBOR(vertex);
           if (neighbor) {
             auto neighborLeaves = neighbor->getNeighborLeaves(vertex);
