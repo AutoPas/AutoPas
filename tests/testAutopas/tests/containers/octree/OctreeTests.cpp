@@ -344,8 +344,8 @@ TEST_F(OctreeTest, testNeighborLocator) {
     }
 
     // Check for each available vertex if the returned neighbor is valid.
-    for (Vertex *vertex = VERTICES(); *vertex != OOO; ++vertex) {
-      auto neighbor = leaf->GTEQ_VERTEX_NEIGHBOR(*vertex);
+    for (Vertex vertex : Tables::vertices) {
+      auto neighbor = leaf->GTEQ_VERTEX_NEIGHBOR(vertex);
       if (neighbor != nullptr) {
         // Get all corners of the leaf and the neighbor
 

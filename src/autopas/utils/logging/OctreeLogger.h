@@ -221,8 +221,8 @@ class OctreeLogger {
         // Print vertex neighbors
         fprintf(out, "], \"vn\": [");
         first = true;
-        for (Vertex *vertex = VERTICES(); *vertex != OOO; ++vertex) {
-          auto neighbor = leaf->GTEQ_VERTEX_NEIGHBOR(*vertex);
+        for (Vertex vertex : Tables::vertices) {
+          auto neighbor = leaf->GTEQ_VERTEX_NEIGHBOR(vertex);
           if (neighbor) {
             if (!first) {
               fprintf(out, ", ");
@@ -235,10 +235,10 @@ class OctreeLogger {
         // Print vertex neighbor leaves
         fprintf(out, "], \"vnl\": [");
         first = true;
-        for (Vertex *vertex = VERTICES(); *vertex != OOO; ++vertex) {
-          auto neighbor = leaf->GTEQ_VERTEX_NEIGHBOR(*vertex);
+        for (Vertex vertex : Tables::vertices) {
+          auto neighbor = leaf->GTEQ_VERTEX_NEIGHBOR(vertex);
           if (neighbor) {
-            auto neighborLeaves = neighbor->getNeighborLeaves(*vertex);
+            auto neighborLeaves = neighbor->getNeighborLeaves(vertex);
 
             for (auto neighborLeaf : neighborLeaves) {
               if (!first) {

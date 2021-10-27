@@ -333,10 +333,10 @@ class OctreeNodeInterface {
     }
 
     // Get all face neighbors
-    for (Vertex *vertex = VERTICES(); *vertex != OOO; ++vertex) {
-      OctreeNodeInterface<Particle> *neighbor = GTEQ_VERTEX_NEIGHBOR(*vertex);
+    for (Vertex vertex : Tables::vertices) {
+      OctreeNodeInterface<Particle> *neighbor = GTEQ_VERTEX_NEIGHBOR(vertex);
       if (neighbor) {
-        auto leaves = neighbor->getNeighborLeaves(*vertex);
+        auto leaves = neighbor->getNeighborLeaves(vertex);
         result.insert(leaves.begin(), leaves.end());
       }
     }
@@ -448,9 +448,9 @@ template <class Particle>
 static Octant SONTYPE(const OctreeNodeInterface<Particle> *node) {
   Octant result = OOO;
   if (FATHER(node)) {
-    for (Vertex *test = VERTICES(); *test != OOO; ++test) {
-      if (FATHER(node)->SON(*test) == node) {
-        result = *test;
+    for (Vertex test : Tables::vertices) {
+      if (FATHER(node)->SON(test) == node) {
+        result = test;
         break;
       }
     }
@@ -518,7 +518,7 @@ OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_EDGE_NEIGHBOR
 template <class Particle>
 OctreeNodeInterface<Particle> *OctreeNodeInterface<Particle>::GTEQ_VERTEX_NEIGHBOR(const Vertex I) {
   // Check precondition
-  if (not contains(VERTICES(), OOO, I)) {
+  if (not isVertex(I)) {
     throw std::runtime_error("[OctreeNodeInterface::GTEQ_VERTEX_NEIGHBOR()] Received invalid vertex.");
   }
 
