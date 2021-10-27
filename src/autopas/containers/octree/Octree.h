@@ -109,7 +109,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
 
       // 1. Copy all particles out of the container
       std::vector<Particle *> particleRefs;
-      this->_cells[CellTypes::OWNED].appendAllParticles(particleRefs);
+      this->_cells[CellTypes::OWNED].collectAllParticles(particleRefs);
       std::vector<Particle> particles{};
       particles.reserve(particleRefs.size());
 

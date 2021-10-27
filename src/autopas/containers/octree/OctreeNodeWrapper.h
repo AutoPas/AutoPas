@@ -65,7 +65,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * Append all particles in the octree to a list using DFS.
    * @param ps The list to which the particles should be appended to
    */
-  void appendAllParticles(std::vector<Particle *> &ps) { _pointer->appendAllParticles(ps); }
+  void collectAllParticles(std::vector<Particle *> &ps) { _pointer->collectAllParticles(ps); }
 
   /**
    * Append all leaves in the octree to a list.
@@ -93,7 +93,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
   SingleCellIteratorWrapper<Particle, true> begin() override {
     _lock.lock();
     _ps.clear();
-    _pointer->appendAllParticles(_ps);
+    _pointer->collectAllParticles(_ps);
     _lock.unlock();
     return SingleCellIteratorWrapper<ParticleType, true>(new iterator_t(this));
   }
@@ -105,7 +105,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
   SingleCellIteratorWrapper<Particle, false> begin() const override {
     _lock.lock();
     _ps.clear();
-    _pointer->appendAllParticles(_ps);
+    _pointer->collectAllParticles(_ps);
     _lock.unlock();
     return SingleCellIteratorWrapper<ParticleType, false>(new const_iterator_t(this));
   }

@@ -93,7 +93,7 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
   /**
    * @copydoc OctreeNodeInterface::appendAllParticles()
    */
-  void appendAllParticles(std::vector<Particle *> &ps) const override {
+  void collectAllParticles(std::vector<Particle *> &ps) const override {
     ps.reserve(ps.size() + this->_particles.size());
     for (const auto &particle : this->_particles) {
       ps.push_back(const_cast<Particle *>(&particle));
