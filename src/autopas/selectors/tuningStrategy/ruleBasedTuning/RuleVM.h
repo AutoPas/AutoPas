@@ -29,7 +29,8 @@ class RuleVM {
     MUL,
     DIV,
     ADD,
-    SUB
+    SUB,
+    NOT
   };
 
   struct Instruction {
@@ -147,6 +148,9 @@ class RuleVM {
         _stack.at(--_stackPointer) = res;
         break;
       }
+      case NOT:
+        _stack.at(_stackPointer) = not std::get<bool>(_stack.at(_stackPointer));
+        break;
     }
   }
 

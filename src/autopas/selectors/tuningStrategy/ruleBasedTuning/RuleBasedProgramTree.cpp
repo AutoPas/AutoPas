@@ -8,6 +8,12 @@ void Variable::generateCode(CodeGenerationContext &context, RuleVM::Program &pro
 
 Type Variable::getType() const { return definition->value->getType(); }
 
+void UnaryOperator::generateCode(CodeGenerationContext &context, RuleVM::Program &program) const {
+  child->generateCode(context, program);
+
+  program.instructions.emplace_back(RuleVM::NOT);
+}
+
 void BinaryOperator::generateCode(CodeGenerationContext &context, RuleVM::Program &program) const {
   left->generateCode(context, program);
   right->generateCode(context, program);

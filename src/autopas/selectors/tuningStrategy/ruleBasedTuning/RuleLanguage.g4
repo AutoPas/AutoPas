@@ -94,9 +94,6 @@ Variable_name
 define_list
                 : 'define_list' Variable_name '=' literal (',' literal)* ';' ;
 
-define
-                : 'define' Variable_name '=' literal ';' ;
-
 variable
                 : Variable_name
                 ;
@@ -105,10 +102,15 @@ expression
                 : expression op=('*'|'/') expression
                 | expression op=('+'|'-') expression
                 | expression op=('>'|'<') expression
+                | op='not' expression
                 | expression op=('and'|'or') expression
                 | literal
                 | variable
                 | '(' expression ')'
+                ;
+
+define
+                : 'define' Variable_name '=' expression ';'
                 ;
 
 property_value

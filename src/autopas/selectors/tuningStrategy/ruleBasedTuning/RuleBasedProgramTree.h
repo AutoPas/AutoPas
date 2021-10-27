@@ -252,6 +252,22 @@ struct Variable : public Expression {
   void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override;
 };
 
+struct UnaryOperator : public Expression {
+  enum Operator { NOT };
+
+  std::shared_ptr<Expression> child;
+  Operator op;
+
+  UnaryOperator(Operator op, std::shared_ptr<Expression> child)
+    : child(std::move(child)), op(op) {}
+
+  [[nodiscard]] Type getType() const override {
+    return Type::BOOL;
+  }
+
+  void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override;
+};
+
 struct BinaryOperator : public Expression {
   enum Operator { LESS, GREATER, AND, OR, ADD, SUB, MUL, DIV };
 

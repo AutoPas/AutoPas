@@ -27,6 +27,9 @@ class TranslationVisitor : public RuleLanguageBaseVisitor {
     if (expr.is<std::shared_ptr<Literal>>()) {
       return expr.as<std::shared_ptr<Literal>>();
     }
+    if (expr.is<std::shared_ptr<UnaryOperator>>()) {
+      return expr.as<std::shared_ptr<UnaryOperator>>();
+    }
     throw std::runtime_error("not an expression");
   }
 
@@ -73,7 +76,7 @@ class TranslationVisitor : public RuleLanguageBaseVisitor {
     } else if (ctx->Double_val()) {
       literal = std::stod(ctx->Double_val()->getText());
     } else {
-      throw std::runtime_error("literal could not be parsed");
+      throw std::runtime_error("literal '" + ctx->getText() + "' could not be parsed");
     }
 
     return std::make_shared<Literal>(literal);
@@ -88,7 +91,7 @@ class TranslationVisitor : public RuleLanguageBaseVisitor {
   }
 
   antlrcpp::Any visitDefine(RuleLanguageParser::DefineContext *ctx) override {
-    return std::make_shared<Define>(ctx->Variable_name()->getText(), getExprType(visit(ctx->literal())));
+    return std::make_shared<Define>(ctx->Variable_name()->getText(), getExprType(visit(ctx->expression())));
   }
 
   antlrcpp::Any visitVariable(RuleLanguageParser::VariableContext *ctx) override {
@@ -114,6 +117,8 @@ class TranslationVisitor : public RuleLanguageBaseVisitor {
       return visit(ctx->literal());
     } else if (ctx->variable()) {
       return visit(ctx->variable());
+    } else if (ctx->op->getText() == "not") {
+      return std::make_shared<UnaryOperator>(UnaryOperator::NOT, getExprType(visit(ctx->expression(0))));
     } else {
       return visit(ctx->expression(0));
     }
