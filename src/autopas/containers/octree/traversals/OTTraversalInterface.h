@@ -23,6 +23,11 @@ class OTTraversalInterface {
   using ParticleType = typename ParticleCell::ParticleType;
 
  public:
+  /**
+   * Create a new traversal interface, which provides functionality that is required by all octree traversals.
+   *
+   * @param interactionLength The interaction length
+   */
   OTTraversalInterface(double interactionLength) : _interactionLength(interactionLength) {}
 
   /**
@@ -66,10 +71,24 @@ class OTTraversalInterface {
     leaves.clear();
   }
 
+  /**
+   * Get the octree cell that contains the owned octree.
+   *
+   * @return A pointer to a wrapper containing the octree root
+   */
   OctreeNodeWrapper<ParticleType> *getOwned() { return dynamic_cast<OctreeNodeWrapper<ParticleType> *>(&(*_cells)[0]); }
 
+  /**
+   * Get the octree cell that contains the halo octree.
+   *
+   * @return A pointer to a wrapper containing the octree root
+   */
   OctreeNodeWrapper<ParticleType> *getHalo() { return dynamic_cast<OctreeNodeWrapper<ParticleType> *>(&(*_cells)[1]); }
 
+  /**
+   * A list containing two cells. The cell at index 0 contains the owned octree, the cell at index 1 contains the halo
+   * octree.
+   */
   std::vector<OctreeNodeWrapper<ParticleType>> *_cells;
 
   /**

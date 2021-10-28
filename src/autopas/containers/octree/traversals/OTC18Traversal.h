@@ -1,5 +1,5 @@
 /**
- * @file OTNaiveTraversal.h
+ * @file OTC18Traversal.h
  *
  * @author Johannes Spies
  * @date 09.04.2021
