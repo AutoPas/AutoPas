@@ -165,7 +165,7 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
 }
 
 /**
- * Scales velocity of particles towards a gived temperature.
+ * Scales velocity of particles towards a given temperature.
  * @tparam AutoPasTemplate Type of AutoPas Object (no pointer)
  * @tparam ParticlePropertiesLibraryTemplate Type of ParticlePropertiesLibrary Object (no pointer)
  * @param autopas
@@ -189,7 +189,7 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
 
     int communicatorSize;
     autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &communicatorSize);
-
+    // temperature is the average of all ranks weighted by domain size
     currentTemperature = aggregatedTemperature / communicatorSize;
   }
 

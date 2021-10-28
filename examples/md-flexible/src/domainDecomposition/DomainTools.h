@@ -93,7 +93,7 @@ std::array<int, 6> getExtentOfSubdomain(const int subdomainIndex, const std::arr
  * Calculates the volume of a rectangular domain.
  * @param boxMin: The bottom front left corner of the domain.
  * @param boxMax: The top back right corner of the domain.
- * @return the volume of the domain.
+ * @return The volume of the domain.
  */
 double getDomainVolume(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax);
 }  // namespace DomainTools

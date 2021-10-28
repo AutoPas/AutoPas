@@ -124,8 +124,8 @@ class RegularGridDecomposition final : public DomainDecomposition {
   void exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer, std::vector<ParticleType> &emigrants);
 
   /**
-   * Calculates the ratio of the size of the local domain compared to the global domain.
-   * @return the ratio of the local domain comapred to the global domain.
+   * Calculates the ratio of the size (volume) of the local domain compared to the global domain.
+   * @return vLocal / vGlobal
    */
   double getRatioOfLocalToGlobalDomain();
 
