@@ -20,6 +20,9 @@ namespace autopas {
  */
 template <typename ParticleCell>
 class OTTraversalInterface {
+  /**
+   * The particle type used in this traversal.
+   */
   using ParticleType = typename ParticleCell::ParticleType;
 
  public:
