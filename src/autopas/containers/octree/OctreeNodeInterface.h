@@ -270,7 +270,7 @@ class OctreeNodeInterface {
    * @param I The face in which direction the search should find a node
    * @return An octree node
    */
-  OctreeNodeInterface<Particle> *GTEQ_FACE_NEIGHBOR(const octree::Face I);
+  OctreeNodeInterface<Particle> *GTEQ_FACE_NEIGHBOR(octree::Face I);
 
   /**
    * Find a node (via the pointer structure) that is of greater than or equal to the size of the current node's bounding
@@ -278,7 +278,7 @@ class OctreeNodeInterface {
    * @param I The edge in which direction the search should find a node
    * @return An octree node
    */
-  OctreeNodeInterface<Particle> *GTEQ_EDGE_NEIGHBOR(const octree::Edge I);
+  OctreeNodeInterface<Particle> *GTEQ_EDGE_NEIGHBOR(octree::Edge I);
 
   /**
    * Find a node (via the pointer structure) that is of greater than or equal to the size of the current node's bounding
@@ -286,7 +286,7 @@ class OctreeNodeInterface {
    * @param I The vertex in which direction the search should find a node
    * @return An octree node
    */
-  OctreeNodeInterface<Particle> *GTEQ_VERTEX_NEIGHBOR(const octree::Vertex I);
+  OctreeNodeInterface<Particle> *GTEQ_VERTEX_NEIGHBOR(octree::Vertex I);
 
   /**
    * Find all leaf nodes along a list of given directions.
