@@ -65,7 +65,7 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
       // @todo The condition below should actually be
       //   splitLeafDimensions[d] < (this->_cellSizeFactor * this->_interactionLength)
       //   But with this condition, the TraversalComparison test fails for cell size factor 0.5. Find out why the octree
-      //   cannot handle this value.
+      //   cannot handle this value. This problem is addressed in https://github.com/AutoPas/AutoPas/issues/658.
       if (splitLeafDimensions[d] < this->_interactionLength) {
         anyNewDimSmallerThanMinSize = true;
         break;
