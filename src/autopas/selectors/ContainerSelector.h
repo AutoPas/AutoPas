@@ -134,7 +134,7 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
     }
     case ContainerOption::varVerletListsAsBuild: {
       container = std::make_unique<VarVerletLists<Particle, VerletNeighborListAsBuild<Particle>>>(
-          _boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
+          _boxMin, _boxMax, _cutoff, containerInfo.verletSkin, containerInfo.cellSizeFactor);
       break;
     }
 
