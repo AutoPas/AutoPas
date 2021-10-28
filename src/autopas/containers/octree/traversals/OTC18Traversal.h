@@ -52,16 +52,18 @@ class OTC18Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::ot_c18; }
 
-  [[nodiscard]] bool isApplicable() const override {
-    return useNewton3;
-    // @todo Re-enable this traversal, when fixing https://github.com/AutoPas/AutoPas/issues/621
-    return false;
-  }
+  [[nodiscard]] bool isApplicable() const override { return useNewton3; }
 
   [[nodiscard]] bool getUseNewton3() const override { return useNewton3; };
 
   [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; };
 
+  /**
+   * Assign an integer ID to every leaf
+   *
+   * @param leaves A list of leaves to assign the IDs to
+   * @param startID The minimum ID
+   */
   static void assignIDs(std::vector<OctreeLeafNode<Particle> *> &leaves, int startID = 0) {
     for (int i = 0; i < leaves.size(); ++i) {
       leaves[i]->setID(startID + i);
