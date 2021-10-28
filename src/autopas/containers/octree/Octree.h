@@ -14,6 +14,7 @@
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/CellBorderAndFlagManager.h"
+#include "autopas/containers/LeavingParticleCollector.h"
 #include "autopas/containers/octree/OctreeLeafNode.h"
 #include "autopas/containers/octree/OctreeNodeInterface.h"
 #include "autopas/containers/octree/OctreeNodeWrapper.h"
@@ -84,22 +85,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     std::vector<Particle> invalidParticles{};
 
     if (keepNeighborListValid) {
-      // Mark leaving particles as dummy and add them to the invalidParticles list, but do not remove them.
-      std::vector<OctreeLeafNode<Particle> *> leaves{};
-      this->_cells[CellTypes::OWNED].appendAllLeaves(leaves);
-      for (auto *leaf : leaves) {
-        for (auto &particle : leaf->_particles) {
-          if (not utils::inBox(particle.getR(), this->getBoxMin(), this->getBoxMax())) {
-            particle.setOwnershipState(OwnershipState::dummy);
-            invalidParticles.push_back(particle);
-          }
-        }
-
-        // Mark all halo particles as dummy.
-        for (auto iter = this->begin(autopas::IteratorBehavior::halo); iter.isValid(); ++iter) {
-          (*iter).setOwnershipState(OwnershipState::dummy);
-        }
-      }
+      invalidParticles = LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);
     } else {
       // This is a very primitive and inefficient way to rebuild the container:
 
