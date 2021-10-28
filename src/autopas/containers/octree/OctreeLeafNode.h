@@ -45,7 +45,8 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
   OctreeLeafNode(OctreeLeafNode<Particle> const &other)
       : OctreeNodeInterface<Particle>(other._boxMin, other._boxMax, other._parent, other._treeSplitThreshold,
                                       other._interactionLength),
-        FullParticleCell<Particle>(utils::ArrayMath::sub(other._boxMax, other._boxMin)) {
+        FullParticleCell<Particle>(utils::ArrayMath::sub(other._boxMax, other._boxMin)),
+        _id(other.getID()) {
     this->_particles.reserve(other._particles.size());
     for (auto &p : other._particles) {
       this->_particles.push_back(p);
@@ -129,7 +130,7 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
    * @copydoc OctreeNodeInterface::getChild()
    */
   OctreeNodeInterface<Particle> *getChild(int index) override {
-    throw std::runtime_error("[OctreeLeafNode] Unable to return child by index in leaf");
+    throw std::runtime_error("[OctreeLeafNode::getChild()] Unable to return child by index in leaf");
   }
 
   std::vector<OctreeLeafNode<Particle> *> getLeavesFromDirections(
@@ -154,29 +155,21 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
   }
 
   /**
-   * Clear the list that contains all neighbor nodes that have already been processed.
+   * Get the assigned id of this leaf node
+   * @return An ID (or -1 if there was no ID assigned to this node)
    */
-  void clearAlreadyProcessedList() { _alreadyProcessed.clear(); }
+  int getID() { return _id; }
 
   /**
-   * Check if a node has already been processed.
-   * @param other A pointer to another node
-   * @return True if the other node is in the already processed list
+   * Set the ID of this node
+   * @param id An integer ID
    */
-  bool alreadyProcessed(OctreeLeafNode<Particle> *other) {
-    return std::find(_alreadyProcessed.begin(), _alreadyProcessed.end(), other) != _alreadyProcessed.end();
-  }
-
-  /**
-   * Put a neighbor in the already processed list.
-   * @param other The node to put in
-   */
-  void markAlreadyProcessed(OctreeLeafNode<Particle> *other) { _alreadyProcessed.push_back(other); }
+  void setID(int id) { this->_id = id; }
 
  private:
   /**
-   * The list that contains the neighbors that have already been processed in one traversal run.
+   * The ID assigned to this node (-1 if unassigned)
    */
-  std::vector<OctreeLeafNode<Particle> *> _alreadyProcessed;
+  int _id{-1};
 };
 }  // namespace autopas

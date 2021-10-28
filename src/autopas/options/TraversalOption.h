@@ -83,10 +83,10 @@ class TraversalOption : public Option<TraversalOption> {
      */
     ot_c01,
     /**
-     * OTNaiveTraversal : DFS traversal with newton 3 optimization that checks whether a neighbor has already been
-     * processed
+     * OTC18Traversal : DFS traversal with newton 3 optimization that checks whether a neighbor has already been
+     * processed via ID comparison
      */
-    ot_naive,
+    ot_c18,
 
     // VerletClusterLists Traversals:
     /**
@@ -259,7 +259,7 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::vlp_sliced_balanced, "vlp_sliced_balanced"},
 
         // Octree Traversals:
-        {TraversalOption::ot_naive, "ot_naive"},
+        {TraversalOption::ot_c18, "ot_c18"},
         {TraversalOption::ot_c01, "ot_c01"},
     };
   };
