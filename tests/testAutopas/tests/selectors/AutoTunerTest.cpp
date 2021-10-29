@@ -83,9 +83,8 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   configsPerContainer[autopas::ContainerOption::pairwiseVerletLists] = 18;
 
   // Octree:                ot_c01                      (AoS <=> SoA, noNewton3)                             = 2
-  // NOTE: Why this is disabled is stated in https://github.com/AutoPas/AutoPas/issues/621
-  //                        ot_naive                    (disabled)                                           = 0
-  configsPerContainer[autopas::ContainerOption::octree] = 2;
+  //                        ot_c18                      (AoS <=> SoA, newton3)                               = 2
+  configsPerContainer[autopas::ContainerOption::octree] = 4;
 
   // check that there is an entry for every container.
   ASSERT_EQ(configsPerContainer.size(), autopas::ContainerOption::getAllOptions().size());
