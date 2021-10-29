@@ -180,12 +180,10 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
  * @param particlePropertiesLibrary
  * @param targetTemperature
  * @param deltaTemperature Maximum temperature change.
- * @param localTemperatureInfluence: The influence of the local domain on the temperature of the global domain.
  */
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particlePropertiesLibrary,
-           const double targetTemperature, const double deltaTemperature,
-           const double localTemperatureInfluence = 1.0) {
+           const double targetTemperature, const double deltaTemperature) {
   auto currentTemperatureMap = calcTemperatureComponent(autopas, particlePropertiesLibrary);
 
   // make sure we work with a positive delta
