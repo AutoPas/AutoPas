@@ -63,6 +63,61 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
     return SingleCellIteratorWrapper<Particle, false>(new const_iterator_t(this));
   }
 
+  /**
+   * Executes code for every particle in this cell as defined by lambda function.
+   * @tparam Lambda (Particle &p) -> void
+   * @param forEachLambda code to be executed on particles
+   * @param behavior ownerships of particles that should be in-/excluded
+   */
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior) {
+    const std::array<double, 3> dummy{};
+    forEachImpl<false>(forEachLambda, dummy, dummy, behavior);
+  }
+
+  /**
+   * Executes code for every particle in this cell as defined by lambda function.
+   * @tparam Lambda (Particle &p) -> void
+   * @param forEachLambda code to be executed on particles
+   * @param lowerCorner lower corner of bounding box
+   * @param higherCorner higher corner of bounding box
+   * @param behavior ownerships of particles that should be in-/excluded
+   */
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+               const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    forEachImpl<true>(forEachLambda, lowerCorner, higherCorner, behavior);
+  }
+  /**
+   * Reduce properties of particles as defined by a lambda function.
+   * @tparam Lambda (Particle p, A initialValue) -> void
+   * @tparam A type of particle attribute to be reduced
+   * @param reduceLambda code to reduce properties of particles
+   * @param result reference to result of type A
+   * @param behavior ownerships of particles that should be in-/excluded
+   */
+  template <typename Lambda, typename A>
+  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior) {
+    const std::array<double, 3> dummy{};
+    reduceImpl<true, false>(reduceLambda, result, dummy, dummy, behavior);
+  }
+
+  /**
+   * Reduce properties of particles as defined by a lambda function.
+   * @tparam Lambda (Particle p, A initialValue) -> void
+   * @tparam A type of particle attribute to be reduced
+   * @param reduceLambda code to reduce properties of particles
+   * @param result reference to result of type A
+   * @param lowerCorner lower corner of bounding box
+   * @param higherCorner higher corner of bounding box
+   * @param behavior ownerships of particles that should be in-/excluded
+   */
+  template <typename Lambda, typename A>
+  void reduce(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+              const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    reduceImpl<true, true>(reduceLambda, result, lowerCorner, higherCorner, behavior);
+  }
+
   [[nodiscard]] unsigned long numParticles() const override { return _particles.size(); }
 
   /**
@@ -171,5 +226,31 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
  private:
   AutoPasLock _particlesLock;
   std::array<double, 3> _cellLength;
+
+  template <bool regionCheck, typename Lambda>
+  void forEachImpl(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+                   const std::array<double, 3> &higherCorner,
+                   IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) {
+    for (Particle *p : _particles) {
+      if (behavior.contains(*p)) {
+        if ((not regionCheck) or utils::inBox(p->getR(), lowerCorner, higherCorner)) {
+          forEachLambda(*p);
+        }
+      }
+    }
+  }
+
+  template <bool ownershipCheck, bool regionCheck, typename Lambda, typename A>
+  void reduceImpl(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+                  const std::array<double, 3> &higherCorner,
+                  IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) {
+    for (Particle *p : _particles) {
+      if ((not ownershipCheck) or behavior.contains(*p)) {
+        if ((not regionCheck) or utils::inBox(p->getR(), lowerCorner, higherCorner)) {
+          reduceLambda(*p, result);
+        }
+      }
+    }
+  }
 };
 }  // namespace autopas

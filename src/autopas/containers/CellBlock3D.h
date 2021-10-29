@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "autopas/containers/CellBorderAndFlagManager.h"
+#include "autopas/options/IteratorBehavior.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
@@ -78,6 +79,25 @@ class CellBlock3D : public CellBorderAndFlagManager {
 
   [[nodiscard]] bool cellCanContainOwnedParticles(index_t index1d) const override {
     return not cellCanContainHaloParticles(index1d);
+  }
+
+  /**
+   * Checks if cell with index1d can be ignored for iteration with currently selected behavior.
+   * @param index1d 1d index of checked cell
+   * @param behavior @see IteratorBehavior
+   * @return false if this cell can contain particles that would be affected by current behavior
+   */
+  [[nodiscard]] bool ignoreCellForIteration(index_t index1d, IteratorBehavior behavior) const {
+    if ((behavior & IteratorBehavior::halo) and cellCanContainHaloParticles(index1d)) {
+      return false;
+    }
+    if ((behavior & IteratorBehavior::owned) and cellCanContainOwnedParticles(index1d)) {
+      return false;
+    }
+    if (behavior & IteratorBehavior::dummy) {
+      return false;
+    }
+    return true;
   }
 
   /**
