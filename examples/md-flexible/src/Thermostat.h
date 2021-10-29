@@ -10,6 +10,7 @@
 #include "TypeDefinitions.h"
 #include "autopas/AutoPasDecl.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 /**
@@ -119,6 +120,13 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
   // AutoPas works always on 3 dimensions
   constexpr unsigned int dimensions{3};
 
+  for (const auto &typeID : particlePropertiesLibrary.getTypes()) {
+    autopas::AutoPas_MPI_Allreduce(&kineticEnergyMul2Map[typeID], &kineticEnergyMul2Map[typeID], 1, AUTOPAS_MPI_DOUBLE,
+                                   AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
+    autopas::AutoPas_MPI_Allreduce(&numParticleMap[typeID], &numParticleMap[typeID], 1, AUTOPAS_MPI_DOUBLE,
+                                   AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
+  }
+
   auto kineticEnergyAndParticleMaps = std::make_tuple(kineticEnergyMul2Map.begin(), numParticleMap.begin());
 
   for (auto [kinEIter, numParIter] = kineticEnergyAndParticleMaps; kinEIter != kineticEnergyMul2Map.end();
@@ -165,7 +173,7 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
 }
 
 /**
- * Scales velocity of particles towards a gived temperature.
+ * Scales velocity of particles towards a given temperature.
  * @tparam AutoPasTemplate Type of AutoPas Object (no pointer)
  * @tparam ParticlePropertiesLibraryTemplate Type of ParticlePropertiesLibrary Object (no pointer)
  * @param autopas
@@ -177,6 +185,7 @@ template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particlePropertiesLibrary,
            const double targetTemperature, const double deltaTemperature) {
   auto currentTemperatureMap = calcTemperatureComponent(autopas, particlePropertiesLibrary);
+
   // make sure we work with a positive delta
   const double deltaTemperaturePositive = std::abs(deltaTemperature);
   decltype(currentTemperatureMap) scalingMap;

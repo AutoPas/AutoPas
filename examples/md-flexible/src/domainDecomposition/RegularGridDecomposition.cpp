@@ -14,7 +14,7 @@
 #include "DomainTools.h"
 #include "autopas/AutoPas.h"
 #include "autopas/utils/ArrayUtils.h"
-#include "src/ParticleSerializationTools.h"
+#include "src/ParticleCommunicator.h"
 
 RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configuration)
     : _cutoffWidth(configuration.cutoff.value), _skinWidth(configuration.verletSkinRadius.value) {
@@ -238,72 +238,24 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
   }
 }
 
-void RegularGridDecomposition::sendParticles(const std::vector<ParticleType> &particles, const int &receiver) {
-  std::vector<char> buffer;
-
-  for (const auto &particle : particles) {
-    ParticleSerializationTools::serializeParticle(particle, buffer);
-  }
-
-  sendDataToNeighbor(buffer, receiver);
-}
-
-void RegularGridDecomposition::receiveParticles(std::vector<ParticleType> &receivedParticles, const int &source) {
-  std::vector<char> receiveBuffer;
-
-  receiveDataFromNeighbor(source, receiveBuffer);
-
-  if (!receiveBuffer.empty()) {
-    ParticleSerializationTools::deserializeParticles(receiveBuffer, receivedParticles);
-  }
-}
-
-void RegularGridDecomposition::sendDataToNeighbor(std::vector<char> sendBuffer, const int &neighbor) {
-  _sendBuffers.push_back(sendBuffer);
-
-  autopas::AutoPas_MPI_Request sendRequest;
-  _sendRequests.push_back(sendRequest);
-
-  autopas::AutoPas_MPI_Isend(_sendBuffers.back().data(), _sendBuffers.back().size(), AUTOPAS_MPI_CHAR, neighbor, 0,
-                             _communicator, &_sendRequests.back());
-}
-
-void RegularGridDecomposition::receiveDataFromNeighbor(const int &neighbor, std::vector<char> &receiveBuffer) {
-  autopas::AutoPas_MPI_Status status;
-  autopas::AutoPas_MPI_Probe(neighbor, 0, _communicator, &status);
-
-  int receiveBufferSize;
-  autopas::AutoPas_MPI_Get_count(&status, AUTOPAS_MPI_CHAR, &receiveBufferSize);
-  receiveBuffer.resize(receiveBufferSize);
-
-  autopas::AutoPas_MPI_Recv(receiveBuffer.data(), receiveBufferSize, AUTOPAS_MPI_CHAR, neighbor, 0, _communicator,
-                            AUTOPAS_MPI_STATUS_IGNORE);
-}
-
 void RegularGridDecomposition::sendAndReceiveParticlesLeftAndRight(std::vector<ParticleType> &particlesToLeft,
                                                                    std::vector<ParticleType> &particlesToRight,
                                                                    const int &leftNeighbor, const int &rightNeighbor,
                                                                    std::vector<ParticleType> &receivedParticles) {
   if (_mpiCommunicationNeeded and leftNeighbor != _domainIndex) {
-    sendParticles(particlesToLeft, leftNeighbor);
-    sendParticles(particlesToRight, rightNeighbor);
+    ParticleCommunicator particleCommunicator(_communicator);
 
-    receiveParticles(receivedParticles, leftNeighbor);
-    receiveParticles(receivedParticles, rightNeighbor);
+    particleCommunicator.sendParticles(particlesToLeft, leftNeighbor);
+    particleCommunicator.sendParticles(particlesToRight, rightNeighbor);
 
-    waitForSendRequests();
+    particleCommunicator.receiveParticles(receivedParticles, leftNeighbor);
+    particleCommunicator.receiveParticles(receivedParticles, rightNeighbor);
+
+    particleCommunicator.waitForSendRequests();
   } else {
     receivedParticles.insert(receivedParticles.end(), particlesToLeft.begin(), particlesToLeft.end());
     receivedParticles.insert(receivedParticles.end(), particlesToRight.begin(), particlesToRight.end());
   }
-}
-
-void RegularGridDecomposition::waitForSendRequests() {
-  std::vector<autopas::AutoPas_MPI_Status> sendStates;
-  sendStates.resize(_sendRequests.size());
-  autopas::AutoPas_MPI_Waitall(_sendRequests.size(), _sendRequests.data(), sendStates.data());
-  _sendRequests.clear();
-  _sendBuffers.clear();
 }
 
 void RegularGridDecomposition::collectHaloParticlesForLeftNeighbor(SharedAutoPasContainer &autoPasContainer,
