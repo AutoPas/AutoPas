@@ -10,6 +10,7 @@
 #include "TypeDefinitions.h"
 #include "autopas/AutoPasDecl.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 /**
@@ -119,6 +120,13 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
   // AutoPas works always on 3 dimensions
   constexpr unsigned int dimensions{3};
 
+  for (const auto &typeID : particlePropertiesLibrary.getTypes()) {
+    autopas::AutoPas_MPI_Allreduce(&kineticEnergyMul2Map[typeID], &kineticEnergyMul2Map[typeID], 1, AUTOPAS_MPI_DOUBLE,
+                                   AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
+    autopas::AutoPas_MPI_Allreduce(&numParticleMap[typeID], &numParticleMap[typeID], 1, AUTOPAS_MPI_DOUBLE,
+                                   AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
+  }
+
   auto kineticEnergyAndParticleMaps = std::make_tuple(kineticEnergyMul2Map.begin(), numParticleMap.begin());
 
   for (auto [kinEIter, numParIter] = kineticEnergyAndParticleMaps; kinEIter != kineticEnergyMul2Map.end();
@@ -179,19 +187,6 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
            const double targetTemperature, const double deltaTemperature,
            const double localTemperatureInfluence = 1.0) {
   auto currentTemperatureMap = calcTemperatureComponent(autopas, particlePropertiesLibrary);
-
-  for (auto &[particleTypeID, currentTemperature] : currentTemperatureMap) {
-    double aggregatedTemperature = 0.;
-
-    auto weightedCurrentTemperature = currentTemperature * localTemperatureInfluence;
-    autopas::AutoPas_MPI_Allreduce(&weightedCurrentTemperature, &aggregatedTemperature, 1, AUTOPAS_MPI_DOUBLE,
-                                   AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
-
-    int communicatorSize;
-    autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &communicatorSize);
-
-    currentTemperature = aggregatedTemperature / communicatorSize;
-  }
 
   // make sure we work with a positive delta
   const double deltaTemperaturePositive = std::abs(deltaTemperature);

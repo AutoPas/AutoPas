@@ -238,11 +238,6 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
   }
 }
 
-double RegularGridDecomposition::getRatioOfLocalToGlobalDomain() {
-  return DomainTools::getDomainVolume(_localBoxMin, _localBoxMax) /
-         DomainTools::getDomainVolume(_globalBoxMin, _globalBoxMax);
-}
-
 void RegularGridDecomposition::sendAndReceiveParticlesLeftAndRight(std::vector<ParticleType> &particlesToLeft,
                                                                    std::vector<ParticleType> &particlesToRight,
                                                                    const int &leftNeighbor, const int &rightNeighbor,

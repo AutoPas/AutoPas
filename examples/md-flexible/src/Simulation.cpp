@@ -132,11 +132,6 @@ Simulation::Simulation(const MDFlexConfig &configuration,
       Thermostat::addBrownianMotion(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                                     _configuration.initTemperature.value);
     }
-
-    auto localTemperatureInfluence = _domainDecomposition->getRatioOfLocalToGlobalDomain();
-    Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-                      _configuration.initTemperature.value, std::numeric_limits<double>::max(),
-                      localTemperatureInfluence);
   }
 
   _timers.initialization.stop();
