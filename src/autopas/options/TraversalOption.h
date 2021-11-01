@@ -165,7 +165,9 @@ class TraversalOption : public Option<TraversalOption> {
     vlp_sliced_c02,
 
     /**
-     * TODO
+     * VLCCellPairC08Traversal : based on LCC08Traversal.
+     * The pairwise neighbor list allows access to the relevant pairs of interacting particles for each pair of cells,
+     * including the diagonal non-base pair of cells in the standard c08 step.
      */
     vlp_c08,
 

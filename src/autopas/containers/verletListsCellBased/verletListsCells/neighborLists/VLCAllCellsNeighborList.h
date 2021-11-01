@@ -149,7 +149,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
   }
 
   /**
-   * TODO
+   * @copydoc VLCNeighborListInterface::setUpTraversal()
    */
   void setUpTraversal(TraversalInterface *traversal) override {
     auto vTraversal = dynamic_cast<VLCTraversalInterface<Particle, VLCAllCellsNeighborList<Particle>> *>(traversal);

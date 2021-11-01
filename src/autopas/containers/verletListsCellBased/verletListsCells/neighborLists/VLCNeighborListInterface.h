@@ -90,7 +90,9 @@ class VLCNeighborListInterface {
   }
 
   /**
-   * TODO
+   * Assigns the current traversal to the correct traversal interface. The choice of traversal interface depends on the type(s) of neighbor list allowed to use the current traversal.
+   * Currently VLCCellPairTraversalInterface handles the traversals allowed solely for VLCCellPairNeighborList, while VLCTraversalInterface handles the traversals allowed for both VLCCellPairNeighborList and VLCAllCellsNeighborList.
+   * @param traversal the current traversal
    */
   virtual void setUpTraversal(TraversalInterface *traversal) = 0;
 
