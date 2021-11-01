@@ -12,6 +12,7 @@
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/LinkedCellsReferences.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
+#include "autopas/containers/verletListsCellBased/varVerletLists/VarVerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 
@@ -28,7 +29,7 @@ namespace autopas {
  * @return Returns whatever function returns.
  */
 template <typename Particle, typename FunctionType>
-decltype(auto) withStaticContainerType(std::shared_ptr<CellBasedParticleContainer<Particle>> &container,
+decltype(auto) withStaticContainerType(const std::shared_ptr<ParticleContainerInterface<Particle>> &container,
                                        FunctionType &&function) {
   auto containerPtr = container.get();
   switch (container->getContainerType()) {
@@ -41,11 +42,16 @@ decltype(auto) withStaticContainerType(std::shared_ptr<CellBasedParticleContaine
     case ContainerOption::verletLists:
       return function(dynamic_cast<autopas::VerletLists<Particle> *>(containerPtr));
     case ContainerOption::verletListsCells:
-      return function(dynamic_cast<autopas::VerletListsCells<Particle> *>(containerPtr));
+      return function(
+          dynamic_cast<autopas::VerletListsCells<Particle, VLCAllCellsNeighborList<Particle>> *>(containerPtr));
     case ContainerOption::verletClusterLists:
       return function(dynamic_cast<autopas::VerletClusterLists<Particle> *>(containerPtr));
     case ContainerOption::pairwiseVerletLists:
-      return function(dynamic_cast<autopas::VerletListsCells<Particle> *>(containerPtr));
+      return function(
+          dynamic_cast<autopas::VerletListsCells<Particle, VLCCellPairNeighborList<Particle>> *>(containerPtr));
+    case ContainerOption::varVerletListsAsBuild:
+      return function(
+          dynamic_cast<autopas::VarVerletLists<Particle, VerletNeighborListAsBuild<Particle>> *>(containerPtr));
   }
   autopas::utils::ExceptionHandler::exception("Unknown type of container in StaticContainerSelector.h. Type: {}",
                                               container->getContainerType());

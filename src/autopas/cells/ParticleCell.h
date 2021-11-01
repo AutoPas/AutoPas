@@ -7,6 +7,7 @@
 #pragma once
 
 #include "autopas/iterators/SingleCellIteratorWrapper.h"
+#include "autopas/utils/inBox.h"
 
 namespace autopas {
 

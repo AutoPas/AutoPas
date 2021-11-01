@@ -231,6 +231,40 @@ class ClusterTower : public ParticleCell<Particle> {
   }
 
   /**
+   * @copydoc VerletClusterLists::forEach()
+   */
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior) {
+    _particlesStorage.forEach(forEachLambda, behavior);
+  }
+
+  /**
+   * @copydoc VerletClusterLists::reduce()
+   */
+  template <typename Lambda, typename A>
+  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior) {
+    _particlesStorage.reduce(reduceLambda, result, behavior);
+  }
+
+  /**
+   * @copydoc VerletClusterLists::forEachInRegion()
+   */
+  template <typename Lambda>
+  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    _particlesStorage.forEach(forEachLambda, lowerCorner, higherCorner, behavior);
+  }
+
+  /**
+   * @copydoc VerletClusterLists::reduceInRegion()
+   */
+  template <typename Lambda, typename A>
+  void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+                      const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    _particlesStorage.reduce(reduceLambda, result, lowerCorner, higherCorner, behavior);
+  }
+
+  /**
    * Returns the particle at position index. Needed by SingleCellIterator.
    * @param index the position of the particle to return.
    * @return the particle at position index.
