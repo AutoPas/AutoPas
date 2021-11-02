@@ -106,6 +106,9 @@ To visualize the particle records load the .pvtu files in ParaView. To visualize
 ### Checkpoints
 
 MD-Flexible can be initialized through a previously written VTK file.
+For this pass the path to the `pvtu` file and make sure that the `vtu` files
+which it references are in the correct location.
+
 Please use only VTK files written by MD-Flexible since the parsing is
 rather strict. The VTK file only contains Information about all
 particles positions, velocities, forces and typeIDs. All other options,
@@ -114,7 +117,7 @@ to be set through a YAML file.
 
 ### Command line Completions
 
-md-flexible can generate a shell completions file with it's latest options.
+md-flexible can generate a shell completions file with its latest options.
 Feel free to add completions for your favorite shell.
 
 #### zsh
