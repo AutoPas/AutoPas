@@ -83,22 +83,19 @@ size_t getNumPiecesInCheckpoint(const std::string &filename) {
 /**
  * Loads the particles from a checkpoint written with a specific rank.
  * @param filename The name of the pvtu file.
- * @param scenarioName The name of the scenario where the checkoint as been created.
- *        See MDFlexConfig::checkpointScenarioName for more details.
- * @param iteration The iteration for which the checkpoint has been created.
  * @param rank The rank which created the respective vtu file.
  * @param particles Container for the particles recorded in the respective vts file.
  */
 void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, std::vector<ParticleType> &particles) {
   const size_t endOfPath = filename.find_last_of('/');
-  auto filePath = filename.substr(0ul, endOfPath);
-  auto fileBasename = filename.substr(endOfPath + 1);
+  const auto filePath = filename.substr(0ul, endOfPath);
+  const auto fileBasename = filename.substr(endOfPath + 1);
 
   // infer checkpoint data from the filename
   const size_t endOfScenarioName = fileBasename.find_last_of('_');
-  auto checkpointScenarioName = fileBasename.substr(0, endOfScenarioName);
+  const auto checkpointScenarioName = fileBasename.substr(0, endOfScenarioName);
   // +1 because we want to skip the separating '_'
-  auto checkpointIteration =
+  const auto checkpointIteration =
       fileBasename.substr(endOfScenarioName + 1, fileBasename.find_last_of('.') - endOfScenarioName - 1);
 
   std::string rankFilename{};
@@ -403,8 +400,7 @@ void MDFlexConfig::initializeObjects() {
 }
 
 void MDFlexConfig::loadParticlesFromCheckpoint(const size_t &rank, const size_t &communicatorSize) {
-  // todo const?
-  std::string filename = checkpointfile.value;
+  const std::string &filename = checkpointfile.value;
 
   std::ifstream inputStream(filename);
   if (not inputStream.is_open()) {
