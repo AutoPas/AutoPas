@@ -101,7 +101,7 @@ void loadParticlesFromRankRecord(const std::string &filename, const std::string 
 
   std::ifstream inputStream(rankFilename);
   if (not inputStream.is_open()) {
-    std::cout << "Could not load checkpoint file " << rankFilename << "." << std::endl;
+    throw std::runtime_error("Could not open rank-checkpoint file: " + rankFilename);
     return;
   }
 
@@ -391,7 +391,7 @@ void MDFlexConfig::loadParticlesFromCheckpoint(const size_t &rank, const size_t 
 
   std::ifstream inputStream(filename);
   if (not inputStream.is_open()) {
-    std::cout << "Could not load checkpoint file " << filename << "." << std::endl;
+    throw std::runtime_error("Could not open checkpoint file: " + filename);
     return;
   }
 
