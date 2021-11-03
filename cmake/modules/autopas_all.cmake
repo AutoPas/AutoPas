@@ -1,6 +1,6 @@
 # cmake module for adding ALL
 
-option(AUTOPAS_ENABLE_ALLLBL "Enable ALL load balancing library" ON)
+option(AUTOPAS_ENABLE_ALLLBL "Enable ALL load balancing library" OFF)
 
 # Enable ExternalProject CMake module
 if (AUTOPAS_ENABLE_ALLLBL)

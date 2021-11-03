@@ -132,6 +132,8 @@ Simulation::Simulation(const MDFlexConfig &configuration,
       Thermostat::addBrownianMotion(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                                     _configuration.initTemperature.value);
     }
+
+    // Set the simulation directly to the desired initial temperature.
     Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                       _configuration.initTemperature.value, std::numeric_limits<double>::max());
   }

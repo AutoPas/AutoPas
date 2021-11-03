@@ -273,36 +273,8 @@ class RegularGridDecomposition final : public DomainDecomposition {
   void updateLocalBox();
 
   /**
-   * Sends particles of type ParticleType to a receiver.
-   * @param particles The particles to be sent to the receiver.
-   * @param receiver The recipient of the particels.
-   */
-  void sendParticles(const std::vector<ParticleType> &particles, const int &receiver);
-
-  /**
-   * Received particles sent by a sender.
-   * @param receivedParticles The container where the received particles will be stored.
-   * @param source The sender id/rank.
-   */
-  void receiveParticles(std::vector<ParticleType> &receivedParticles, const int &source);
-
-  /**
-   * Received data which has been sent by a specifig neighbor of this domain.
-   * @param neighbor The neighbor where the data originates from.
-   * @param dataBuffer The buffer where the received data will be stored.
-   */
-  void receiveDataFromNeighbor(const int &neighbor, std::vector<char> &dataBuffer);
-
-  /**
-   * Sends data to a specific neighbor of this domain.
-   * @param sendBuffer The buffer which will be sent to the neighbor.
-   * @param neighbor The neighbor to which the data will be sent.
-   */
-  void sendDataToNeighbor(std::vector<char> sendBuffer, const int &neighbor);
-
-  /**
-   * Sends and also receives particles to and from the left and right neighbors.
-   * @param particlesToLeft: Particles which get send to the left neighbor.
+   * Sends and also receives particles to and from the left and right neighbours.
+   * @param particlesToLeft: Particles which get send to the left neighbour.
    * @param particlesToRight: Particles which get send to the right neighbor.
    * @param leftNeighbor: The left neighbor's index / rank.
    * @param rightNeighbor: The right neighbor's index / rank.
@@ -313,12 +285,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
                                            const int &rightNeighbor, std::vector<ParticleType> &receivedParticles);
 
   /**
-   * Waits for all send requests to be finished.
-   */
-  void waitForSendRequests();
-
-  /**
-   * Collects the halo particles for the left neighbor.
+   * Collects the halo particles for the left neighbour.
    * Halo particle positions will be wrapped around the global domain boundary if necessary.
    * @param autoPasContainer: The autopas container which owns the potential halo particles.
    * @param direction: The direction along which the neighbor is located.
