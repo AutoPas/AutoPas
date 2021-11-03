@@ -103,6 +103,15 @@ static const std::set<TraversalOption> &allVLPCompatibleTraversals() {
 }
 
 /**
+ * Lists all traversal options applicable for the Direct Sum container.
+ * @return set of all applicable traversal options.
+ */
+static const std::set<TraversalOption> &allKokkosCompatibleTraversals() {
+  static const std::set<TraversalOption> s{TraversalOption::ds_sequential};
+  return s;
+}
+
+/**
  * Lists all traversal options applicable for the given container.
  * @param containerOption ContainerOption
  * @return set of all applicable traversal options.
@@ -132,6 +141,9 @@ static inline const std::set<TraversalOption> &allCompatibleTraversals(Container
     }
     case ContainerOption::pairwiseVerletLists: {
       return allVLPCompatibleTraversals();
+    }
+    case ContainerOption::kokkosDirectSum: {
+      return allKokkosCompatibleTraversals();
     }
   }
 
