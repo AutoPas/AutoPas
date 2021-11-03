@@ -238,6 +238,50 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
                                                                           nullptr));
   }
 
+  /**
+   * Execute code on all particles in this container as defined by a lambda function.
+   * @tparam Lambda (Particle &p) -> void
+   * @param forEachLambda code to be executed on all particles
+   * @param behavior @see IteratorBehavior
+   */
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+    if (behavior == IteratorBehavior::ownedOrHaloOrDummy) {
+      for (auto &cell : getCells()) {
+        cell.forEach(forEachLambda);
+      }
+    } else {
+      for (size_t index = 0; index < getCells().size(); index++) {
+        if (not _cellBlock.ignoreCellForIteration(index, behavior)) {
+          getCells()[index].forEach(forEachLambda, behavior);
+        }
+      }
+    }
+  }
+
+  /**
+   * Reduce properties of particles as defined by a lambda function.
+   * @tparam Lambda (Particle p, A initialValue) -> void
+   * @tparam A type of particle attribute to be reduced
+   * @param reduceLambda code to reduce properties of particles
+   * @param result reference to result of type A
+   * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownedOrHalo
+   */
+  template <typename Lambda, typename A>
+  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+    if (behavior == IteratorBehavior::ownedOrHaloOrDummy) {
+      for (auto &cell : getCells()) {
+        cell.reduce(reduceLambda, result);
+      }
+    } else {
+      for (size_t index = 0; index < getCells().size(); index++) {
+        if (not _cellBlock.ignoreCellForIteration(index, behavior)) {
+          getCells()[index].reduce(reduceLambda, result, behavior);
+        }
+      }
+    }
+  }
+
   [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
                                                                               const std::array<double, 3> &higherCorner,
                                                                               IteratorBehavior behavior) override {
@@ -292,6 +336,84 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     return ParticleIteratorWrapper<ParticleType, false>(
         new internal::RegionParticleIterator<ParticleType, ParticleCell, false>(
             &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBlock, behavior, nullptr));
+  }
+
+  /**
+   * Execute code on all particles in this container in a certain region as defined by a lambda function.
+   * @tparam Lambda (Particle &p) -> void
+   * @param forEachLambda code to be executed on all particles
+   * @param lowerCorner lower corner of bounding box
+   * @param higherCorner higher corner of bounding box
+   * @param behavior @see IteratorBehavior
+   */
+  template <typename Lambda>
+  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    auto startIndex3D =
+        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::subScalar(lowerCorner, this->getSkin()));
+    auto stopIndex3D =
+        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::addScalar(higherCorner, this->getSkin()));
+
+    size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
+                                (stopIndex3D[2] - startIndex3D[2] + 1);
+    std::vector<size_t> cellsOfInterest(numCellsOfInterest);
+
+    const auto cellsPerDimensionWithHalo = this->_cellBlock.getCellsPerDimensionWithHalo();
+
+    size_t i = 0;
+    for (size_t z = startIndex3D[2]; z <= stopIndex3D[2]; ++z) {
+      for (size_t y = startIndex3D[1]; y <= stopIndex3D[1]; ++y) {
+        for (size_t x = startIndex3D[0]; x <= stopIndex3D[0]; ++x) {
+          cellsOfInterest[i++] = utils::ThreeDimensionalMapping::threeToOneD({x, y, z}, cellsPerDimensionWithHalo);
+        }
+      }
+    }
+
+    for (auto cellIndex : cellsOfInterest) {
+      if (not _cellBlock.ignoreCellForIteration(cellIndex, behavior)) {
+        getCells()[cellIndex].forEach(forEachLambda, lowerCorner, higherCorner, behavior);
+      }
+    }
+  }
+
+  /**
+   * Execute code on all particles in this container in a certain region as defined by a lambda function.
+   * @tparam Lambda (Particle &p, A &result) -> void
+   * @tparam A type of reduction Value
+   * @param reduceLambda code to be executed on all particles
+   * @param result reference to starting and final value for reduction
+   * @param lowerCorner lower corner of bounding box
+   * @param higherCorner higher corner of bounding box
+   * @param behavior @see IteratorBehavior
+   */
+  template <typename Lambda, typename A>
+  void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+                      const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    auto startIndex3D =
+        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::subScalar(lowerCorner, this->getSkin()));
+    auto stopIndex3D =
+        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::addScalar(higherCorner, this->getSkin()));
+
+    size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
+                                (stopIndex3D[2] - startIndex3D[2] + 1);
+    std::vector<size_t> cellsOfInterest(numCellsOfInterest);
+
+    auto cellsPerDimensionWithHalo = this->_cellBlock.getCellsPerDimensionWithHalo();
+
+    int i = 0;
+    for (size_t z = startIndex3D[2]; z <= stopIndex3D[2]; ++z) {
+      for (size_t y = startIndex3D[1]; y <= stopIndex3D[1]; ++y) {
+        for (size_t x = startIndex3D[0]; x <= stopIndex3D[0]; ++x) {
+          cellsOfInterest[i++] = utils::ThreeDimensionalMapping::threeToOneD({x, y, z}, cellsPerDimensionWithHalo);
+        }
+      }
+    }
+
+    for (auto cellIndex : cellsOfInterest) {
+      if (not _cellBlock.ignoreCellForIteration(cellIndex, behavior)) {
+        getCells()[cellIndex].reduce(reduceLambda, result, lowerCorner, higherCorner, behavior);
+      }
+    }
   }
 
   /**

@@ -166,6 +166,16 @@ pipeline {
                                 }
                             }
                         }
+                        stage("coverage") {
+                            steps {
+                                container('autopas-build-code-coverage') {
+                                    dir("coverage") {
+                                        sh "cmake -DAUTOPAS_CODE_COVERAGE=ON -DCCACHE=ON -DCMAKE_BUILD_TYPE=Debug .."
+                                        sh "entrypoint.sh make AutoPas_cobertura -j 4"
+                                    }
+                                }
+                            }
+                        }
                     }
                     post {
                         always {
@@ -175,17 +185,11 @@ pipeline {
                 }
                 stage("generate reports") {
                     steps {
-                        // get test results -- mainly to get number of tests
+                        // record test results -- mainly to get number of tests
                         junit 'build/test.xml'
 
-                        // generate coverage
-                        dir("coverage") {
-                            container('autopas-build-code-coverage') {
-                                sh "cmake -DAUTOPAS_CODE_COVERAGE=ON -DCCACHE=ON -DCMAKE_BUILD_TYPE=Debug .."
-                                sh "entrypoint.sh make AutoPas_cobertura -j 4"
-                            }
-                            cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: 'coverage.xml', conditionalCoverageTargets: '70, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
-                        }
+                        // record coverage
+                        cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: 'coverage/coverage.xml', conditionalCoverageTargets: '70, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
                     }
                 }
             }
