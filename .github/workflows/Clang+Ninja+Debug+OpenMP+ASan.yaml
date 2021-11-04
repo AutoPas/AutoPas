@@ -13,7 +13,7 @@ on:
 jobs:
   build:
     concurrency:
-      group: ${{ github.head_ref }}
+      group: ${{ github.head_ref }}-Clang+Ninja+Debug+OpenMP+ASan
       cancel-in-progress: true
     runs-on: ubuntu-latest
     container: autopas/autopas-build-clang
