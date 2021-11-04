@@ -12,6 +12,9 @@ on:
 
 jobs:
   build:
+    concurrency:
+      group: ${{ github.head_ref }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     container: autopas/autopas-build-clang
 

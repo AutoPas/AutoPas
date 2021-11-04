@@ -12,6 +12,9 @@ on:
 
 jobs:
   build:
+    concurrency:
+      group: ${{ github.head_ref }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     env:
       # this is currently dictated by the autopas-build-doxygen container
