@@ -31,14 +31,14 @@ jobs:
             -DAUTOPAS_OPENMP=ON \
             -DAUTOPAS_USE_VECTORIZATION=OFF \
             ..
-          TSAN_OPTIONS=ignore_noninstrumented_modules=1" entrypoint.sh ninja -j 3
+          TSAN_OPTIONS="ignore_noninstrumented_modules=1" entrypoint.sh ninja -j 3
       - name: Run tests
         run: |
           cd build
-          TSAN_OPTIONS=ignore_noninstrumented_modules=1" ctest -j 3
+          TSAN_OPTIONS="ignore_noninstrumented_modules=1" ctest -j 3
       - name: Run examples
         run: |
           cd build/examples
-          TSAN_OPTIONS=ignore_noninstrumented_modules=1" ctest -C checkExamples -j 3
+          TSAN_OPTIONS="ignore_noninstrumented_modules=1" ctest -C checkExamples -j 3
 
 
