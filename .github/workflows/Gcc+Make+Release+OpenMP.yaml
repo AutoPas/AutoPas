@@ -32,7 +32,7 @@ jobs:
             -DAUTOPAS_LOG_ALL=ON \
             -DAUTOPAS_OPENMP=ON \
             ..
-          entrypoint.sh ninja -j 3
+          entrypoint.sh ninja -j 2
       - name: Run tests
         run: |
           cd build
