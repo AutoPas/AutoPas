@@ -21,7 +21,7 @@ jobs:
 
       - name: Build everything
         run: |
-          take build
+          mkdir build && cd build
           CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake \
             -G Ninja \
             -DCCACHE=ON \
