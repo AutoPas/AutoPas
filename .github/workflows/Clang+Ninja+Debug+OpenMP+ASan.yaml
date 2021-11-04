@@ -1,4 +1,4 @@
-# Workflow for unit tests with clang+ninja+address sanitizer
+# Workflow for unit tests
 name: Clang+Ninja+Debug+OpenMP+ASan
 
 # Controls when the action will run.
