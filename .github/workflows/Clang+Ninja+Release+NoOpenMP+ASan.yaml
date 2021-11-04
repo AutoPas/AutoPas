@@ -1,5 +1,5 @@
 # Workflow for unit tests with clang+ninja+address sanitizer
-name: Clang-Ninja-ASan
+name: Clang+Ninja+Release+OpenMP+ASan
 
 # Controls when the action will run.
 on:
@@ -25,8 +25,9 @@ jobs:
           CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake \
             -G Ninja \
             -DCCACHE=ON \
-            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_BUILD_TYPE=Release \
             -DAUTOPAS_LOG_ALL=ON \
+            -DAUTOPAS_OPENMP=OFF \
             -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=ON \
             ..
           entrypoint.sh ninja -j 3

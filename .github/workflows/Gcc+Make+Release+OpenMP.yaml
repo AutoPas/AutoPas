@@ -1,0 +1,37 @@
+# Workflow for unit tests with clang+ninja+address sanitizer
+name: Clang+Ninja+Release+OpenMP+ASan
+
+# Controls when the action will run.
+on:
+  push:
+    # pushes to master
+    branches: [ master ]
+  pull_request:
+    # PRs to master
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: autopas/autopas-build-gcc
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build everything
+        run: |
+          mkdir build && cd build
+          CXXFLAGS=-Wno-pass-failed CC=gcc CXX=g++ cmake \
+            -G Ninja \
+            -DCCACHE=ON \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DAUTOPAS_LOG_ALL=ON \
+            -DAUTOPAS_OPENMP=ON \
+            ..
+          entrypoint.sh ninja -j 3
+      - name: Run tests
+        run: |
+          cd build
+          ctest -j 3
+
