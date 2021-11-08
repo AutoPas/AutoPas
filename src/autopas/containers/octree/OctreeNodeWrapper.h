@@ -65,7 +65,10 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * Append all particles in the octree to a list using DFS.
    * @param ps The list to which the particles should be appended to
    */
-  void collectAllParticles(std::vector<Particle *> &ps) { _pointer->collectAllParticles(ps); }
+  void collectAllParticles(std::vector<Particle *> &ps) {
+    std::lock_guard<AutoPasLock> lock(_lock);
+    _pointer->collectAllParticles(ps);
+  }
 
   /**
    * Append all leaves in the octree to a list.
@@ -78,6 +81,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @param p the particle to be added
    */
   void addParticle(const Particle &p) override {
+    std::lock_guard<AutoPasLock> lock(_lock);
     auto ret = _pointer->insert(p);
     if (ret) _pointer = std::move(ret);
 
@@ -91,10 +95,9 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @return the iterator
    */
   SingleCellIteratorWrapper<Particle, true> begin() override {
-    _lock.lock();
+    std::lock_guard<AutoPasLock> lock(_lock);
     _ps.clear();
     _pointer->collectAllParticles(_ps);
-    _lock.unlock();
     return SingleCellIteratorWrapper<ParticleType, true>(new iterator_t(this));
   }
 
@@ -103,10 +106,9 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @note const version
    */
   SingleCellIteratorWrapper<Particle, false> begin() const override {
-    _lock.lock();
+    std::lock_guard<AutoPasLock> lock(_lock);
     _ps.clear();
     _pointer->collectAllParticles(_ps);
-    _lock.unlock();
     return SingleCellIteratorWrapper<ParticleType, false>(new const_iterator_t(this));
   }
 
@@ -114,18 +116,25 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * Get the number of particles stored in this cell.
    * @return number of particles stored in this cell
    */
-  [[nodiscard]] unsigned long numParticles() const override { return _enclosedParticleCount; }
+  [[nodiscard]] unsigned long numParticles() const override {
+    std::lock_guard<AutoPasLock> lock(_lock);
+    return _enclosedParticleCount;
+  }
 
   /**
    * Check if the cell is not empty.
    * @return true if at least one particle is stored in this cell
    */
-  [[nodiscard]] bool isEmpty() const override { return _enclosedParticleCount == 0; }
+  [[nodiscard]] bool isEmpty() const override {
+    std::lock_guard<AutoPasLock> lock(_lock);
+    return _enclosedParticleCount == 0;
+  }
 
   /**
    * Deletes all particles in this cell.
    */
   void clear() override {
+    std::lock_guard<AutoPasLock> lock(_lock);
     _pointer->clearChildren(_pointer);
     _enclosedParticleCount = 0;
   }
@@ -171,7 +180,10 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @param index The index of the particle
    * @return A ref to a particle
    */
-  Particle &at(size_t index) { return *_ps[index]; }
+  Particle &at(size_t index) {
+    std::lock_guard<AutoPasLock> lock(_lock);
+    return *_ps[index];
+  }
 
   /**
    * Get a particle from the iterator
@@ -179,7 +191,10 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @param index The index of the particle
    * @return A const ref to a particle
    */
-  const Particle &at(size_t index) const { return *_ps[index]; }
+  const Particle &at(size_t index) const {
+    std::lock_guard<AutoPasLock> lock(_lock);
+    return *_ps[index];
+  }
 
   /**
    * Find all leaves below this subtree that are in the given range.
