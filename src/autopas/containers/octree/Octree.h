@@ -87,7 +87,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     if (keepNeighborListValid) {
       invalidParticles = LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);
     } else {
-      // This is a very primitive and inefficient way to rebuild the container.
+      // This is a very primitive and inefficient way to rebuild the container:
 
       // @todo Make this less indirect. (Find a better way to iterate all particles inside the octree to change
       //   this function back to a function that actually copies all particles out of the octree.)
