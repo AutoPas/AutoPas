@@ -15,11 +15,11 @@
 // instantiation. They are instantiated in the respective cpp file inside the templateInstantiations folder.
 //! @cond Doxygen_Suppress
 extern template class autopas::AutoPas<ParticleType>;
-extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctor<ParticleType, true, true> *);
+extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctor<ParticleType, true, true> *, double maxParticleMovementSinceLastIteration);
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(
-    autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true> *);
-extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctorAVX<ParticleType, true, true> *);
-extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::FlopCounterFunctor<ParticleType> *);
+    autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true> *, double maxParticleMovementSinceLastIteration);
+extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctorAVX<ParticleType, true, true> *, double maxParticleMovementSinceLastIteration);
+extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::FlopCounterFunctor<ParticleType> *, double maxParticleMovementSinceLastIteration);
 //! @endcond
 
 #include <sys/ioctl.h>
@@ -157,6 +157,7 @@ void Simulation::run() {
       _timers.vtk.stop();
     }
 
+    double maxParticleMovementSinceLastIteration = 0.0;
     if (_configuration.deltaT.value != 0) {
       if (!_configuration.periodic.value) {
         throw std::runtime_error(
@@ -164,7 +165,7 @@ void Simulation::run() {
             "boundary conditions!");
       }
 
-      updatePositions();
+      maxParticleMovementSinceLastIteration = updatePositions();
 
       _timers.migratingParticleExchange.start();
       _domainDecomposition.exchangeMigratingParticles(_autoPasContainer);
@@ -175,7 +176,7 @@ void Simulation::run() {
       _timers.haloParticleExchange.stop();
     }
 
-    updateForces();
+    updateForces(maxParticleMovementSinceLastIteration);
 
     if (_configuration.deltaT.value != 0) {
       updateVelocities();
@@ -365,20 +366,22 @@ std::string Simulation::timerToString(const std::string &name, long timeNS, size
   return ss.str();
 }
 
-void Simulation::updatePositions() {
+double Simulation::updatePositions() {
   _timers.positionUpdate.start();
-  TimeDiscretization::calculatePositions(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+  auto maxDistanceMoved = TimeDiscretization::calculatePositions(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                                          _configuration.deltaT.value);
+
   _timers.positionUpdate.stop();
+  return maxDistanceMoved;
 }
 
-void Simulation::updateForces() {
+void Simulation::updateForces(double maxParticleMovementSinceLastIteration) {
   _timers.forceUpdateTotal.start();
 
   bool isTuningIteration = false;
   _timers.forceUpdatePairwise.start();
 
-  calculatePairwiseForces(isTuningIteration);
+  calculatePairwiseForces(isTuningIteration, maxParticleMovementSinceLastIteration);
 
   _timers.forceUpdateTotal.stop();
 
@@ -436,25 +439,25 @@ long Simulation::accumulateTime(const long &time) {
   return reducedTime;
 }
 
-void Simulation::calculatePairwiseForces(bool &wasTuningIteration) {
+void Simulation::calculatePairwiseForces(bool &wasTuningIteration, double maxParticleMovementSinceLastIteration) {
   auto particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
 
   switch (_configuration.functorOption.value) {
     case MDFlexConfig::FunctorOption::lj12_6: {
       autopas::LJFunctor<ParticleType, true, true> functor{_autoPasContainer->getCutoff(), particlePropertiesLibrary};
-      wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
+      wasTuningIteration = _autoPasContainer->iteratePairwise(&functor, maxParticleMovementSinceLastIteration);
       break;
     }
     case MDFlexConfig::FunctorOption::lj12_6_Globals: {
       autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true> functor{
           _autoPasContainer->getCutoff(), particlePropertiesLibrary};
-      wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
+      wasTuningIteration = _autoPasContainer->iteratePairwise(&functor, maxParticleMovementSinceLastIteration);
       break;
     }
     case MDFlexConfig::FunctorOption::lj12_6_AVX: {
       autopas::LJFunctorAVX<ParticleType, true, true> functor{_autoPasContainer->getCutoff(),
                                                               particlePropertiesLibrary};
-      wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
+      wasTuningIteration = _autoPasContainer->iteratePairwise(&functor, maxParticleMovementSinceLastIteration);
       break;
     }
   }
@@ -556,7 +559,7 @@ void Simulation::logMeasurements() {
 
     if (_configuration.dontMeasureFlops.value) {
       autopas::FlopCounterFunctor<ParticleType> flopCounterFunctor(_autoPasContainer->getCutoff());
-      _autoPasContainer->iteratePairwise(&flopCounterFunctor);
+      _autoPasContainer->iteratePairwise(&flopCounterFunctor, 0);
 
       size_t flopsPerKernelCall;
       switch (_configuration.functorOption.value) {

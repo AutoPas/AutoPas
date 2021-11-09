@@ -18,8 +18,10 @@ namespace TimeDiscretization {
  * @param autoPasContainer The container for which to update the positions.
  * @param particlePropertiesLibrary The particle properties library for the particles in the container.
  * @param deltaT The time step width.
+ *
+ * @return The maximum distance a particle has moved.
  */
-void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
+double calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
 
 /**

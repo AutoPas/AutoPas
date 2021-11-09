@@ -265,7 +265,8 @@ class LogicHandler {
    * @copydoc AutoPas::iteratePairwise()
    */
   template <class Functor>
-  bool iteratePairwise(Functor *f) {
+  bool iteratePairwise(Functor *f, double maxParticleMovementSinceLastIteration) {
+    this->_maxParticleMovementSinceLastIteration += maxParticleMovementSinceLastIteration;
     const bool doRebuild = not neighborListsAreValid();
 
     bool result = _autoTuner.iteratePairwise(f, doRebuild, _particleBuffer, _haloParticleBuffer);
@@ -273,7 +274,9 @@ class LogicHandler {
     if (doRebuild /*we have done a rebuild now*/) {
       // list is now valid
       _neighborListsAreValid = true;
+      std::cout << "rebuild after " << _stepsSinceLastListRebuild << " steps" << std::endl;
       _stepsSinceLastListRebuild = 0;
+      _maxParticleMovementSinceLastIteration = 0.0;
     }
     ++_stepsSinceLastListRebuild;
 
@@ -393,7 +396,9 @@ class LogicHandler {
   }
 
   bool neighborListsAreValid() {
-    if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or _autoTuner.willRebuild()) {
+    if (_maxParticleMovementSinceLastIteration >= _autoTuner.getContainer()->getSkin() / 2.0
+        //_stepsSinceLastListRebuild >= _neighborListRebuildFrequency
+        or _autoTuner.willRebuild()) {
       _neighborListsAreValid = false;
     }
     return _neighborListsAreValid;
@@ -440,5 +445,7 @@ class LogicHandler {
    * @note This buffer could potentially be replaced by a ParticleCell.
    */
   std::vector<Particle> _haloParticleBuffer;
+
+  double _maxParticleMovementSinceLastIteration = 0.0;
 };
 }  // namespace autopas

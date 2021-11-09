@@ -224,12 +224,12 @@ class Simulation {
   /**
    * Updates the position of particles in the local AutoPas container.
    */
-  void updatePositions();
+  double updatePositions();
 
   /**
    * Updates the forces of particles in the local AutoPas container.
    */
-  void updateForces();
+  void updateForces(double maxParticleMovementSinceLastIteration);
 
   /**
    * Updates the velocities of particles in the local AutoPas container.
@@ -285,7 +285,7 @@ class Simulation {
    * Calculates the pairwise forces between particles in the autopas container.
    * @param wasTuningIteration Tells the user if the current iteration of force calculations was a tuning iteration.
    */
-  void calculatePairwiseForces(bool &wasTuningIteration);
+  void calculatePairwiseForces(bool &wasTuningIteration, double maxParticleMovementSinceLastIteration);
 
   /**
    * Adds global forces to the particles in the container.

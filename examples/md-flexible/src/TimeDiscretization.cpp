@@ -13,13 +13,14 @@
  * Functions for updating velocities and positions as simulation time progresses.
  */
 namespace TimeDiscretization {
-void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
+double calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
   using autopas::utils::ArrayMath::add;
   using autopas::utils::ArrayMath::mulScalar;
 
+  auto maxDistance = 0.;
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel
+#pragma omp parallel reduction(max:maxDistance)
 #endif
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     auto v = iter->getV();
@@ -30,8 +31,11 @@ void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
     v = mulScalar(v, deltaT);
     f = mulScalar(f, (deltaT * deltaT / (2 * m)));
     auto newR = add(v, f);
+    maxDistance = std::max(maxDistance, newR[0] * newR[0] + newR[1] * newR[1] + newR[2] * newR[2]);
     iter->addR(newR);
   }
+
+  return maxDistance;
 }
 
 void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,

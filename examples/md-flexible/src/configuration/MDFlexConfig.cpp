@@ -308,8 +308,8 @@ void MDFlexConfig::calcSimulationBox() {
       for (size_t i = 0; i < 3; ++i) {
         // pad domain such that periodic boundaries can work.
         // This is necessary if the given min/max is not at least half the spacing away of the farthest object.
-        boxMin.value[i] = std::min(boxMin.value[i], objectMin[i] - objectSpacing / 2);
-        boxMax.value[i] = std::max(boxMax.value[i], objectMax[i] + objectSpacing / 2);
+        boxMin.value[i] = std::min(boxMin.value[i], objectMin[i] - objectSpacing / 2 - cutoff.value);
+        boxMax.value[i] = std::max(boxMax.value[i], objectMax[i] + objectSpacing / 2 + cutoff.value);
       }
     }
   };

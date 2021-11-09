@@ -157,7 +157,7 @@ class AutoPas {
    * @return true if this was a tuning iteration.
    */
   template <class Functor>
-  bool iteratePairwise(Functor *f);
+  bool iteratePairwise(Functor *f, double maxParticleMovementSinceLastIteration);
 
   /**
    * Iterate over all particles by using
