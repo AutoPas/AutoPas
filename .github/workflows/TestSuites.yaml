@@ -10,9 +10,9 @@ on:
     # PRs to master
     branches: [ master ]
 # abort old runs if a new one is started
-concurrency:
-  group: ${{ github.head_ref }}-tests
-  cancel-in-progress: true
+# concurrency:
+#   group: ${{ github.head_ref }}-tests
+#   cancel-in-progress: true
 
 jobs:
   Clang+Ninja+Debug+OpenMP+ASan_1:
