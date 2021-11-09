@@ -242,6 +242,56 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     return i == CellTypes::OWNED;
   }
 
+  /**
+   * Execute code on all particles in this container as defined by a lambda function.
+   * @tparam Lambda (Particle &p) -> void
+   * @param forEachLambda code to be executed on all particles
+   * @param behavior @see IteratorBehavior
+   */
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+    for (auto iter = this->begin(behavior); iter.isValid(); ++iter) {
+      forEachLambda(*iter);
+    }
+  }
+
+  /**
+   * Reduce properties of particles as defined by a lambda function.
+   * @tparam Lambda (Particle p, A initialValue) -> void
+   * @tparam A type of particle attribute to be reduced
+   * @param reduceLambda code to reduce properties of particles
+   * @param result reference to result of type A
+   * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownedOrHalo
+   */
+  template <typename Lambda, typename A>
+  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+    for (auto iter = this->begin(behavior); iter.isValid(); ++iter) {
+      reduceLambda(*iter, result);
+    }
+  }
+
+  /**
+   * @copydoc LinkedCells::forEachInRegion()
+   */
+  template <typename Lambda>
+  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    for (auto iter = this->getRegionIterator(lowerCorner, higherCorner, behavior); iter.isValid(); ++iter) {
+      forEachLambda(*iter);
+    }
+  }
+
+  /**
+   * @copydoc LinkedCells::reduceInRegion()
+   */
+  template <typename Lambda, typename A>
+  void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+                      const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    for (auto iter = this->getRegionIterator(lowerCorner, higherCorner, behavior); iter.isValid(); ++iter) {
+      reduceLambda(*iter, result);
+    }
+  }
+
  private:
   /**
    * A logger that can be called to log the octree data structure.
