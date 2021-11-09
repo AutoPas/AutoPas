@@ -1,0 +1,284 @@
+# Workflow for unit tests
+name: Tests and Checks
+
+# Controls when the action will run.
+on:
+  push:
+    # pushes to master
+    branches: [ master ]
+  pull_request:
+    # PRs to master
+    branches: [ master ]
+# abort old runs if a new one is started
+concurrency:
+  group: ${{ github.head_ref }}-Gcc+Make+Release+OpenMP
+  cancel-in-progress: true
+
+jobs:
+  Clang+Ninja+Debug+OpenMP+ASan_1:
+    runs-on: ubuntu-latest
+    container: autopas/autopas-build-clang
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build everything
+        run: |
+          mkdir build && cd build
+          CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake \
+            -G Ninja \
+            -DCCACHE=ON \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DAUTOPAS_LOG_ALL=ON \
+            -DAUTOPAS_OPENMP=ON \
+            -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=ON \
+            ..
+          entrypoint.sh ninja -j 3
+      - name: Run tests 1/2
+        run: |
+          cd build
+          # Start with test 0 and do every second test
+          ctest -I 0,,2 -j 3
+
+  Clang+Ninja+Debug+OpenMP+ASan_2:
+    runs-on: ubuntu-latest
+    container: autopas/autopas-build-clang
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build everything
+        run: |
+          mkdir build && cd build
+          CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake \
+            -G Ninja \
+            -DCCACHE=ON \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DAUTOPAS_LOG_ALL=ON \
+            -DAUTOPAS_OPENMP=ON \
+            -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=ON \
+            ..
+          entrypoint.sh ninja -j 3
+      - name: Run tests 2/2
+        run: |
+          cd build
+          # Start with test 1 and do every second test
+          ctest -I 1,,2 -j 3
+
+  Clang+Ninja+Release+NoOpenMP+ASan_1:
+    runs-on: ubuntu-latest
+    container: autopas/autopas-build-clang
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build everything
+        run: |
+          mkdir build && cd build
+          CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake \
+            -G Ninja \
+            -DCCACHE=ON \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DAUTOPAS_LOG_ALL=ON \
+            -DAUTOPAS_OPENMP=OFF \
+            -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=ON \
+            ..
+          entrypoint.sh ninja -j 3
+      - name: Run tests 1/2
+        run: |
+          cd build
+          # Start with test 0 and do every second test
+          ctest -I 0,,2 -j 3
+
+  Clang+Ninja+Release+NoOpenMP+ASan_2:
+    runs-on: ubuntu-latest
+    container: autopas/autopas-build-clang
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build everything
+        run: |
+          mkdir build && cd build
+          CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake \
+            -G Ninja \
+            -DCCACHE=ON \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DAUTOPAS_LOG_ALL=ON \
+            -DAUTOPAS_OPENMP=OFF \
+            -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=ON \
+            ..
+          entrypoint.sh ninja -j 3
+      - name: Run tests 2/2
+        run: |
+          cd build
+          # Start with test 1 and do every second test
+          ctest -I 1,,2 -j 3
+
+
+  Clang+Ninja+Release+OpenMP+Archer_1:
+    runs-on: ubuntu-latest
+    container: autopas/autopas-build-archer
+    env: 
+      TSAN_OPTIONS: "ignore_noninstrumented_modules=1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build everything
+        run: |
+          mkdir build && cd build
+          CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake \
+            -G Ninja \
+            -DCCACHE=ON \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DAUTOPAS_LOG_ALL=ON \
+            -DAUTOPAS_OPENMP=ON \
+            -DAUTOPAS_ENABLE_THREAD_SANITIZER=ON \
+            -DAUTOPAS_USE_VECTORIZATION=OFF \
+            ..
+          entrypoint.sh ninja -j 3
+      - name: Run tests 1/2
+        run: |
+          cd build
+          # Start with test 0 and do every second test
+          ctest -I 0,,2 -j 3
+
+
+  Clang+Ninja+Release+OpenMP+Archer_2:
+    runs-on: ubuntu-latest
+    container: autopas/autopas-build-archer
+    env: 
+      TSAN_OPTIONS: "ignore_noninstrumented_modules=1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build everything
+        run: |
+          mkdir build && cd build
+          CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake \
+            -G Ninja \
+            -DCCACHE=ON \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DAUTOPAS_LOG_ALL=ON \
+            -DAUTOPAS_OPENMP=ON \
+            -DAUTOPAS_ENABLE_THREAD_SANITIZER=ON \
+            -DAUTOPAS_USE_VECTORIZATION=OFF \
+            ..
+          entrypoint.sh ninja -j 3
+      - name: Run tests 2/2
+        run: |
+          cd build
+          # Start with test 1 and do every second test
+          ctest -I 1,,2 -j 3
+
+
+  Clang+Ninja+Release+OpenMP+ASan_1:
+    runs-on: ubuntu-latest
+    container: autopas/autopas-build-clang
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build everything
+        run: |
+          mkdir build && cd build
+          CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake \
+            -G Ninja \
+            -DCCACHE=ON \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DAUTOPAS_LOG_ALL=ON \
+            -DAUTOPAS_OPENMP=ON \
+            -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=ON \
+            ..
+          entrypoint.sh ninja -j 3
+      - name: Run tests 1/2
+        run: |
+          cd build
+          # Start with test 0 and do every second test
+          ctest -I 0,,2 -j 3
+
+  Clang+Ninja+Release+OpenMP+ASan_2:
+    runs-on: ubuntu-latest
+    container: autopas/autopas-build-clang
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build everything
+        run: |
+          mkdir build && cd build
+          CXXFLAGS=-Wno-pass-failed CC=clang CXX=clang++ cmake \
+            -G Ninja \
+            -DCCACHE=ON \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DAUTOPAS_LOG_ALL=ON \
+            -DAUTOPAS_OPENMP=ON \
+            -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=ON \
+            ..
+          entrypoint.sh ninja -j 3
+      - name: Run tests 2/2
+        run: |
+          cd build
+          # Start with test 1 and do every second test
+          ctest -I 1,,2 -j 3
+
+
+  Gcc+Make+Release+OpenMP_1:
+    runs-on: ubuntu-latest
+    container: autopas/autopas-build-gcc
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build everything
+        run: |
+          mkdir build && cd build
+          CXXFLAGS=-Wno-pass-failed CC=gcc CXX=g++ cmake \
+            -G Ninja \
+            -DCCACHE=ON \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DAUTOPAS_LOG_ALL=ON \
+            -DAUTOPAS_OPENMP=ON \
+            ..
+          entrypoint.sh ninja -j 2
+      - name: Run tests 1/2
+        run: |
+          cd build
+          # Start with test 0 and do every second test
+          ctest -I 0,,2 -j 3
+
+  Gcc+Make+Release+OpenMP_2:
+    runs-on: ubuntu-latest
+    container: autopas/autopas-build-gcc
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build everything
+        run: |
+          mkdir build && cd build
+          CXXFLAGS=-Wno-pass-failed CC=gcc CXX=g++ cmake \
+            -G Ninja \
+            -DCCACHE=ON \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DAUTOPAS_LOG_ALL=ON \
+            -DAUTOPAS_OPENMP=ON \
+            ..
+          entrypoint.sh ninja -j 2
+      - name: Run tests 2/2
+        run: |
+          cd build
+          # Start with test 1 and do every second test
+          ctest -I 1,,2 -j 3
