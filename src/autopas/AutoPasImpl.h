@@ -187,4 +187,14 @@ std::array<double, 3> AutoPas<Particle>::getBoxMax() const {
   return _autoTuner->getContainer()->getBoxMax();
 }
 
+template <class Particle>
+std::shared_ptr<autopas::ParticleContainerInterface<Particle>> AutoPas<Particle>::getContainer() {
+  return _autoTuner->getContainer();
+}
+
+template <class Particle>
+const std::shared_ptr<autopas::ParticleContainerInterface<Particle>> AutoPas<Particle>::getContainer() const {
+  return _autoTuner->getContainer();
+}
+
 }  // namespace autopas
