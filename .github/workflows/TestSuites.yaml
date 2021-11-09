@@ -1,5 +1,5 @@
 # Workflow for unit tests
-name: Tests_and_Checks
+name: Tests and Checks
 
 # Controls when the action will run.
 on:
@@ -10,12 +10,12 @@ on:
     # PRs to master
     branches: [ master ]
 # abort old runs if a new one is started
-# concurrency:
-#   group: ${{ github.head_ref }}-tests
-#   cancel-in-progress: true
+concurrency:
+  group: ${{ github.head_ref }}-tests
+  cancel-in-progress: true
 
 jobs:
-  Clang+Ninja+Debug+OpenMP+ASan_1:
+  Clang-Ninja-Debug-OpenMP-ASan_1:
     runs-on: ubuntu-latest
     container: autopas/autopas-build-clang
 
@@ -41,7 +41,7 @@ jobs:
           # Start with test 0 and do every second test
           ctest -I 0,,2 -j 3
 
-  Clang+Ninja+Debug+OpenMP+ASan_2:
+  Clang-Ninja-Debug-OpenMP-ASan_2:
     runs-on: ubuntu-latest
     container: autopas/autopas-build-clang
 
@@ -67,7 +67,7 @@ jobs:
           # Start with test 1 and do every second test
           ctest -I 1,,2 -j 3
 
-  Clang+Ninja+Release+NoOpenMP+ASan_1:
+  Clang-Ninja-Release-NoOpenMP-ASan_1:
     runs-on: ubuntu-latest
     container: autopas/autopas-build-clang
 
@@ -93,7 +93,7 @@ jobs:
           # Start with test 0 and do every second test
           ctest -I 0,,2 -j 3
 
-  Clang+Ninja+Release+NoOpenMP+ASan_2:
+  Clang-Ninja-Release-NoOpenMP-ASan_2:
     runs-on: ubuntu-latest
     container: autopas/autopas-build-clang
 
@@ -120,7 +120,7 @@ jobs:
           ctest -I 1,,2 -j 3
 
 
-  Clang+Ninja+Release+OpenMP+Archer_1:
+  Clang-Ninja-Release-OpenMP-Archer_1:
     runs-on: ubuntu-latest
     container: autopas/autopas-build-archer
     env: 
@@ -150,7 +150,7 @@ jobs:
           ctest -I 0,,2 -j 3
 
 
-  Clang+Ninja+Release+OpenMP+Archer_2:
+  Clang-Ninja-Release-OpenMP-Archer_2:
     runs-on: ubuntu-latest
     container: autopas/autopas-build-archer
     env: 
@@ -180,7 +180,7 @@ jobs:
           ctest -I 1,,2 -j 3
 
 
-  Clang+Ninja+Release+OpenMP+ASan_1:
+  Clang-Ninja-Release-OpenMP-ASan_1:
     runs-on: ubuntu-latest
     container: autopas/autopas-build-clang
 
@@ -206,7 +206,7 @@ jobs:
           # Start with test 0 and do every second test
           ctest -I 0,,2 -j 3
 
-  Clang+Ninja+Release+OpenMP+ASan_2:
+  Clang-Ninja-Release-OpenMP-ASan_2:
     runs-on: ubuntu-latest
     container: autopas/autopas-build-clang
 
@@ -233,7 +233,7 @@ jobs:
           ctest -I 1,,2 -j 3
 
 
-  Gcc+Make+Release+OpenMP_1:
+  Gcc-Make-Release-OpenMP_1:
     runs-on: ubuntu-latest
     container: autopas/autopas-build-gcc
 
@@ -258,7 +258,7 @@ jobs:
           # Start with test 0 and do every second test
           ctest -I 0,,2 -j 3
 
-  Gcc+Make+Release+OpenMP_2:
+  Gcc-Make-Release-OpenMP_2:
     runs-on: ubuntu-latest
     container: autopas/autopas-build-gcc
 
