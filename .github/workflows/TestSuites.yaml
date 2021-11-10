@@ -51,5 +51,5 @@ jobs:
         run: |
           cd build
           # Start with test 0 or 1 and do every second test
-          ctest -I ${{ matrix.part }},,2 -j 3
+          ctest --output-on-failure -I ${{ matrix.part }},,2 -j 3
 
