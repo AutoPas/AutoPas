@@ -6,8 +6,12 @@
 
 #include "FlopCounterTest.h"
 
-#include "autopas/AutoPas.h"
+#include "autopas/AutoPasDecl.h"
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
+#include "testingHelpers/commonTypedefs.h"
+
+extern template class autopas::AutoPas<Particle>;
+extern template bool autopas::AutoPas<Molecule>::iteratePairwise(autopas::FlopCounterFunctor<Particle> *);
 
 /**
  * Generates a square of four particles, iterates over it with the FlopCounter and checks its values

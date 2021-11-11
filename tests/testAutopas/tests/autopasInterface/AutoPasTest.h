@@ -8,8 +8,10 @@
 
 #include <gtest/gtest.h>
 
-#include "autopas/AutoPas.h"
+#include "autopas/AutoPasDecl.h"
 #include "testingHelpers/commonTypedefs.h"
+
+extern template class autopas::AutoPas<Particle>;
 
 class AutoPasTest : public testing::Test {
  public:

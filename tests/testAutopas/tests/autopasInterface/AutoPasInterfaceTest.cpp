@@ -6,9 +6,14 @@
 
 #include "AutoPasInterfaceTest.h"
 
+#include "autopas/AutoPasDecl.h"
 #include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
+
+extern template class autopas::AutoPas<Molecule>;
+extern template class autopas::AutoPas<Particle>;
+extern template bool autopas::AutoPas<Molecule>::iteratePairwise(autopas::LJFunctor<Molecule, true, false> *);
 
 constexpr double cutoff = 1.1;
 constexpr double skin = 0.2;

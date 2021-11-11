@@ -6,8 +6,11 @@
 #include "RegionParticleIteratorTest.h"
 
 #include "IteratorTestHelper.h"
-#include "autopas/AutoPas.h"
+#include "autopas/AutoPasDecl.h"
 #include "testingHelpers/EmptyFunctor.h"
+
+extern template class autopas::AutoPas<Molecule>;
+extern template bool autopas::AutoPas<Molecule>::iteratePairwise(EmptyFunctor<Molecule> *);
 
 template <typename AutoPasT>
 auto RegionParticleIteratorTest::defaultInit(AutoPasT &autoPas, autopas::ContainerOption &containerOption,
