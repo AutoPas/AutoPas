@@ -15,7 +15,6 @@
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/TraversalOption.h"
-#include "autopas/particles/Particle.h"
 #include "autopas/utils/ArrayMath.h"
 
 using testingTuple =
@@ -80,10 +79,10 @@ static inline auto getTestableContainerOptions() { return autopas::ContainerOpti
  * @param container
  * @return Vector of added particles
  */
-template <class Container, class ParticleType = autopas::Particle>
-std::vector<ParticleType> addParticlesMinMidMax(Container &container) {
+template <class Container>
+std::vector<typename Container::Particle_t> addParticlesMinMidMax(Container &container) {
   constexpr size_t numParticles = 3;
-  std::vector<ParticleType> addedParticles;
+  std::vector<typename Container::Particle_t> addedParticles;
   addedParticles.reserve(numParticles);
 
   // helper for Positions
@@ -102,7 +101,7 @@ std::vector<ParticleType> addParticlesMinMidMax(Container &container) {
     // boxMin + i/scalingFactor * boxMax
     auto pos = autopas::utils::ArrayMath::add(nearBoxMin,
                                               autopas::utils::ArrayMath::mulScalar(nearBoxLength, i * scalingFactor));
-    ParticleType particle(pos, {0., 0., 0.}, 1);
+    typename Container::Particle_t particle(pos, {0., 0., 0.}, 1);
     container.addParticle(particle);
     addedParticles.push_back(particle);
   }

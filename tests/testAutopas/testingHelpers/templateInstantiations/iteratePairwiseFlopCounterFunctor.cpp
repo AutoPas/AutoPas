@@ -11,5 +11,5 @@
 #include "testingHelpers/commonTypedefs.h"
 
 //! @cond Doxygen_Suppress
-template bool autopas::AutoPas<Particle>::iteratePairwise(autopas::FlopCounterFunctor<Particle> *);
+template bool autopas::AutoPas<Molecule>::iteratePairwise(autopas::FlopCounterFunctor<Molecule> *);
 //! @endcond
