@@ -30,6 +30,8 @@ jobs:
         [autopas-build-gcc   , gcc  , g++    , "'Unix Makefiles'", Release, OpenMP  , OFF , OFF  ],
         ]
     container: autopas/${{ matrix.config[0] }}
+    env:
+        TSAN_OPTIONS="ignore_noninstrumented_modules=1"
     steps:
       - name: Checkout
         uses: actions/checkout@v2
