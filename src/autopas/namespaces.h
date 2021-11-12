@@ -76,4 +76,9 @@ namespace TupleUtils {}
  */
 namespace options {}
 
+/**
+ * Namespace that contains code that is used by the octree internally.
+ */
+namespace octree {}
+
 }  // namespace autopas
