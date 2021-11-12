@@ -32,6 +32,7 @@ jobs:
     container: autopas/${{ matrix.config[0] }}
     env:
         TSAN_OPTIONS: "ignore_noninstrumented_modules=1"
+        LSAN_OPTIONS: "verbosity=1:log_threads=1"
     steps:
       - name: Checkout
         uses: actions/checkout@v2
