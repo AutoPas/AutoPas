@@ -49,7 +49,7 @@ jobs:
             -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=${{ matrix.config[6] }} \
             -DAUTOPAS_ENABLE_THREAD_SANITIZER=${{ matrix.config[7] }} \
             ..
-          entrypoint.sh cmake --build . --parallel 2 
+          entrypoint.sh cmake --build . --parallel 1 
       - name: Run tests ${{ matrix.part }}/2
         run: |
           cd build
