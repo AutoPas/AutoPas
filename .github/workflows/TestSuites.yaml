@@ -22,12 +22,12 @@ jobs:
       matrix:
         part: [1, 2]
         config: [
-            # container      , CC   , CXX    , builder, mode   , OpenMP  , ASan, TSan
-        [autopas-build-clang , clang, clang++, Ninja  , Debug  , OpenMP  , ON  , OFF  ],
-        [autopas-build-clang , clang, clang++, Ninja  , Release, NoOpenMP, ON  , OFF  ],
-        [autopas-build-archer, clang, clang++, Ninja  , Release, OpenMP  , OFF , ON   ],
-        [autopas-build-clang , clang, clang++, Ninja  , Release, OpenMP  , ON  , OFF  ],
-        [autopas-build-gcc   , gcc  , g++    , "'Unix Makefiles'", Release, OpenMP  , OFF , OFF  ],
+            # container      , CC   , CXX    , builder, mode   , OpenMP , ASan, TSan
+        [autopas-build-clang , clang, clang++, Ninja  , Debug  , ON     , ON  , OFF  ],
+        [autopas-build-clang , clang, clang++, Ninja  , Release, OFF    , ON  , OFF  ],
+        [autopas-build-archer, clang, clang++, Ninja  , Release, ON     , OFF , ON   ],
+        [autopas-build-clang , clang, clang++, Ninja  , Release, ON     , ON  , OFF  ],
+        [autopas-build-gcc   , gcc, g++,"'Unix Makefiles'",Release, ON  , OFF , OFF  ],
         ]
     container: autopas/${{ matrix.config[0] }}
     env:
