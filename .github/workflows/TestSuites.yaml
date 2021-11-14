@@ -15,6 +15,49 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+
+  # Check that everything is formatted correctly. This does not apply any changes!
+  StyleCheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: DoozyX/clang-format-lint-action@v0.12
+        with:
+          source: 'src tests'
+          # exclude: 'none'
+          extensions: 'h,cpp'
+          clangFormatVersion: 9
+          style: file
+
+  # Make sure contribution guidelines are followed
+  CustomChecks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Checks
+        # this exits immediately when any command returns != 0
+        run: |
+          # enable retursive globbing syntax
+          shopt -s globstar
+          for d in src tests examples:
+          do
+            # '!' at the beginnig of the line negates the exit code
+            # all headers should contain pragma once
+            ! grep --files-without-match '#pragma once' **/*.h
+            # all files should contain a file comment
+            ! grep --files-without-match '@file' **/*.{h,cpp}
+            # no file should contain 'NULL'
+            ! grep --word-regexp 'NULL' **/*.{h,cpp}
+            # no file should contain 'assert'
+            ! grep --word-regexp 'assert' **/*.{h,cpp}
+            # no file should include autopas with '<>'
+            ! grep '#include <autopas' **/*.{h,cpp}
+            # prohibit 'typedef' to force 'using'
+            ! grep --word-regexp 'typedef' **/*.{h,cpp}
+          done
+
+
   MatrixJob:
     runs-on: ubuntu-latest
     strategy:
