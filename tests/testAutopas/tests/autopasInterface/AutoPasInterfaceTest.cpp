@@ -6,9 +6,13 @@
 
 #include "AutoPasInterfaceTest.h"
 
+#include "autopas/AutoPasDecl.h"
 #include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
+
+extern template class autopas::AutoPas<Molecule>;
+extern template bool autopas::AutoPas<Molecule>::iteratePairwise(autopas::LJFunctor<Molecule, true, false> *);
 
 constexpr double cutoff = 1.1;
 constexpr double skin = 0.2;
@@ -480,7 +484,7 @@ INSTANTIATE_TEST_SUITE_P(
 
 TEST_P(AutoPasInterface1ContainersTest, testResize) {
   // init an autopas object
-  autopas::AutoPas<Particle> autoPas;
+  autopas::AutoPas<Molecule> autoPas;
   autoPas.setBoxMin({0, 0, 0});
   autoPas.setBoxMax({10, 10, 10});
   autoPas.setCutoff(1);
@@ -518,7 +522,7 @@ TEST_P(AutoPasInterface1ContainersTest, testResize) {
   ASSERT_EQ(autoPas.getNumberOfParticles(), expectedParticles.size())
       << "Container does not contain all particles after resize!";
 
-  std::vector<Particle> particlesInsideAfterResize{};
+  std::vector<Molecule> particlesInsideAfterResize{};
   particlesInsideAfterResize.reserve(autoPas.getNumberOfParticles());
   for (auto &p : autoPas) {
     particlesInsideAfterResize.push_back(p);
