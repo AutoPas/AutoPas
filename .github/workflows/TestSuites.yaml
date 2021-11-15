@@ -67,6 +67,7 @@ jobs:
       matrix:
         part: [1, 2]
         config: [
+            #    0              1       2       3       4           5       6   7
             # container      , CC   , CXX    , builder, mode   , OpenMP , ASan, TSan
         [autopas-build-clang , clang, clang++, Ninja  , Debug  , ON     , ON  , OFF  ],
         [autopas-build-clang , clang, clang++, Ninja  , Release, OFF    , ON  , OFF  ],
@@ -74,6 +75,7 @@ jobs:
         [autopas-build-clang , clang, clang++, Ninja  , Release, ON     , ON  , OFF  ],
         [autopas-build-gcc   , gcc, g++,"'Unix Makefiles'",Release, ON  , OFF , OFF  ],
         ]
+    name: Matrix - ${{ matrix.config[1] }}|${{ matrix.config[4] }}|OpenMP=${{ matrix.config[5] }}|ASan=${{ matrix.config[6] }} TSan=${{ matrix.config[7] }} (${{ matrix.part }}/2)
     container: autopas/${{ matrix.config[0] }}
     env:
         TSAN_OPTIONS: "ignore_noninstrumented_modules=1"
