@@ -1,5 +1,5 @@
 # Workflow for unit tests
-name: Tests and Checks
+name: CI
 
 # Controls when the action will run.
 on:
