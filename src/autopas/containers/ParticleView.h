@@ -19,13 +19,14 @@ template <class ParticleType>
 class ParticleView {
 
  public:
-  ParticleView<ParticleType>() = default;
+  ParticleView<ParticleType>() : _particleListImp("ParticleView", _capacity) {};
 
   void addParticle(const ParticleType &p) {
     _particleListLock.lock();
 
     if (_size == _capacity) {
-      //resize
+      _capacity *= 2;
+      Kokkos::resize(_particleListImp, _capacity);
     }
     deep_copy(subview(_particleListImp, _size), p);
     _size++;
@@ -72,11 +73,9 @@ class ParticleView {
   bool _dirty = false;
 //  size_t _dirtyIndex{0};
 
-  const static size_t _INITIAL_CAPACITY{8};
-
-  size_t _capacity{_INITIAL_CAPACITY};
+  size_t _capacity{8};
   size_t _size{0};
 
   autopas::AutoPasLock _particleListLock;
-  Kokkos::View<ParticleType[_INITIAL_CAPACITY]> _particleListImp;
+  Kokkos::View<ParticleType *> _particleListImp;
 };
