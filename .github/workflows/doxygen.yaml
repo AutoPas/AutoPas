@@ -1,5 +1,5 @@
 # Workflow for generating, checking, and deploying our doxygen documentation.
-name: doxygen
+name: Doxygen
 
 # Controls when the action will run.
 on:
@@ -8,14 +8,20 @@ on:
     branches: [ master ]
   pull_request:
     # PRs to master
-    branches: [ master ]
+    # branches: [ master ]
+# abort old runs if a new one is started
+concurrency:
+  group: ${{ github.head_ref }}-doxygen
+  cancel-in-progress: true
 
 jobs:
-  build:
-    concurrency:
-      group: ${{ github.head_ref }}-doxygen
-      cancel-in-progress: true
+  DocumentationCheck:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        config: [ "", _md-flexible ]
+    name: DocumentationCheck AutoPas${{ matrix.config }}
     env:
       # this is currently dictated by the autopas-build-doxygen container
       BUILD_DIR: docker-build-doxygen
@@ -30,22 +36,21 @@ jobs:
           entrypoint: buildDocumentation.sh
           # arg1 make target
           # arg2 path to root of AutoPas directory.
-          args: doc_doxygen .
+          args: doc_doxygen${{ matrix.config }} .
 
       - name: Print warnings
         # Print all warnings collected previously. Exit code depends on number of warnings.
-        run: cat warnings.out && exit $(wc -l warnings.out | cut -d' ' -f1)
+        run: cat warnings.out && exit $(wc -l warnings.out | cut -d ' ' -f1)
         working-directory: ${{ env.BUILD_DIR }}
 
-      - name: Deploy AutoPas doxygen documentation (only on master)
+      - name: Deploy documentation (only on master)
         uses: peaceiris/actions-gh-pages@v3.7.2
         if: github.ref == 'refs/heads/master'
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
-          publish_dir: ./${{ env.BUILD_DIR }}/doc_doxygen/html/ # from dir
-          destination_dir: doxygen_documentation/git-master/ # to dir
-          publish_branch: main
+          publish_dir: ./${{ env.BUILD_DIR }}/doc_doxygen${{ matrix.config }}/html/ # from dir
+          destination_dir: doxygen_documentation${{ matrix.config }}/git-master/ # to dir
           external_repository: AutoPas/AutoPas.github.io
           user_name: github-actions[bot]
           user_email: github-actions[bot]@users.noreply.github.com
