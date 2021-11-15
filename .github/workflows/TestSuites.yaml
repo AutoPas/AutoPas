@@ -40,25 +40,19 @@ jobs:
         run: |
           # enable retursive globbing syntax
           shopt -s globstar
-          for d in src tests examples:
-          do
-            cd $d
-            # '!' at the beginnig of the line negates the exit code
-            # all headers should contain pragma once
-            ! grep --files-without-match '#pragma once' **/*.h
-            # all files should contain a file comment
-            ! grep --files-without-match '@file' **/*.{h,cpp}
-            # no file should contain 'NULL'
-            ! grep --word-regexp 'NULL' **/*.{h,cpp}
-            # no file should contain 'assert'
-            ! grep --word-regexp 'assert' **/*.{h,cpp}
-            # no file should include autopas with '<>'
-            ! grep '#include <autopas' **/*.{h,cpp}
-            # prohibit 'typedef' to force 'using'
-            ! grep --word-regexp 'typedef' **/*.{h,cpp}
-            cd ..
-          done
-
+          # '!' at the beginnig of the line negates the exit code
+          # all headers should contain pragma once
+          ! grep --files-without-match '#pragma once' **/*.h
+          # all files should contain a file comment
+          ! grep --files-without-match '@file' **/*.{h,cpp}
+          # no file should contain 'NULL'
+          ! grep --word-regexp 'NULL' **/*.{h,cpp}
+          # no file should contain 'assert'
+          ! grep --word-regexp 'assert' **/*.{h,cpp}
+          # no file should include autopas with '<>'
+          ! grep '#include <autopas' **/*.{h,cpp}
+          # prohibit 'typedef' to force 'using'
+          ! grep --word-regexp 'typedef' **/*.{h,cpp}
 
   MatrixJob:
     runs-on: ubuntu-latest
