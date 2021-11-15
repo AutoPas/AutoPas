@@ -8,7 +8,7 @@ on:
     branches: [ master ]
   pull_request:
     # PRs to master
-    branches: [ master ]
+    # branches: [ master ]
 # abort old runs if a new one is started
 concurrency:
   group: ${{ github.head_ref }}-tests
@@ -29,7 +29,7 @@ jobs:
           clangFormatVersion: 9
           style: file
 
-  # Make sure contribution guidelines are followed
+  # Make sure contribution guidelines are followed. This does not apply any changes!
   CustomChecks:
     runs-on: ubuntu-latest
     steps:
@@ -42,6 +42,7 @@ jobs:
           shopt -s globstar
           for d in src tests examples:
           do
+            cd $d
             # '!' at the beginnig of the line negates the exit code
             # all headers should contain pragma once
             ! grep --files-without-match '#pragma once' **/*.h
@@ -55,6 +56,7 @@ jobs:
             ! grep '#include <autopas' **/*.{h,cpp}
             # prohibit 'typedef' to force 'using'
             ! grep --word-regexp 'typedef' **/*.{h,cpp}
+            cd ..
           done
 
 
