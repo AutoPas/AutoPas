@@ -11,9 +11,9 @@
 
 #include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/directSum/DirectSum.h"
-#include "autopas/containers/linkedCellsKokkos/DirectSumKokkos.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/LinkedCellsReferences.h"
+#include "autopas/containers/linkedCellsKokkos/KokkosDirectSum.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/VarVerletLists.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/neighborLists/asBuild/VerletNeighborListAsBuild.h"
@@ -144,8 +144,9 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
           containerInfo.loadEstimator, VerletListsCellsHelpers<Particle>::VLCBuildType::Value::soaBuild);
       break;
     }
+
     case ContainerOption::kokkosDirectSum: {
-      container = std::make_unique<DirectSumKokkos<Particle>>(
+      container = std::make_unique<KokkosDirectSum<Particle>>(
           _boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
       break;
     }

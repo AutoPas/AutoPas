@@ -10,6 +10,7 @@
 #include <array>
 #include <sstream>
 #include <tuple>
+#include <Kokkos_Core.hpp>
 
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
@@ -79,6 +80,7 @@ class ParticleBase {
    * @param rhs
    * @return
    */
+  KOKKOS_INLINE_FUNCTION
   bool operator==(const ParticleBase &rhs) const {
     return std::tie(_r, _v, _f, _id) == std::tie(rhs._r, rhs._v, rhs._f, rhs._id);
   }
@@ -88,85 +90,103 @@ class ParticleBase {
    * @param rhs
    * @return
    */
+  KOKKOS_INLINE_FUNCTION
   bool operator!=(const ParticleBase &rhs) const { return not(rhs == *this); }
 
   /**
    * get the force acting on the particle
    * @return force
    */
-  [[nodiscard]] const std::array<double, 3> &getF() const { return _f; }
+   [[nodiscard]]
+  KOKKOS_INLINE_FUNCTION
+   const std::array<double, 3> &getF() const { return _f; }
 
   /**
    * Set the force acting on the particle
    * @param f force
    */
+  KOKKOS_INLINE_FUNCTION
   void setF(const std::array<double, 3> &f) { _f = f; }
 
   /**
    * Add a partial force to the force acting on the particle
    * @param f partial force to be added
    */
+  KOKKOS_INLINE_FUNCTION
   void addF(const std::array<double, 3> &f) { _f = utils::ArrayMath::add(_f, f); }
 
   /**
    * Substract a partial force from the force acting on the particle
    * @param f partial force to be substracted
    */
+  KOKKOS_INLINE_FUNCTION
   void subF(const std::array<double, 3> &f) { _f = utils::ArrayMath::sub(_f, f); }
 
   /**
    * Get the id of the particle
    * @return id
    */
+   KOKKOS_INLINE_FUNCTION
   idType getID() const { return _id; }
 
   /**
    * Set the id of the particle
    * @param id id
    */
+  KOKKOS_INLINE_FUNCTION
   void setID(idType id) { _id = id; }
 
   /**
    * Get the position of the particle
    * @return current position
    */
-  [[nodiscard]] const std::array<double, 3> &getR() const { return _r; }
+   [[nodiscard]]
+  KOKKOS_INLINE_FUNCTION
+   const std::array<double, 3> &getR() const { return _r; }
 
   /**
    * Set the position of the particle
    * @param r new position
    */
+  KOKKOS_INLINE_FUNCTION
   void setR(const std::array<double, 3> &r) { _r = r; }
 
   /**
    * Add a distance vector to the position of the particle
    * @param r vector to be added
    */
+  KOKKOS_INLINE_FUNCTION
   void addR(const std::array<double, 3> &r) { _r = utils::ArrayMath::add(_r, r); }
 
   /**
    * Get the velocity of the particle
    * @return current velocity
    */
-  [[nodiscard]] const std::array<double, 3> &getV() const { return _v; }
+   [[nodiscard]]
+  KOKKOS_INLINE_FUNCTION
+   const std::array<double, 3> &getV() const { return _v; }
 
   /**
    * Set the velocity of the particle
    * @param v new velocity
    */
+  KOKKOS_INLINE_FUNCTION
   void setV(const std::array<double, 3> &v) { _v = v; }
 
   /**
    * Add a vector to the current velocity of the particle
    * @param v vector to be added
    */
+  KOKKOS_INLINE_FUNCTION
   void addV(const std::array<double, 3> &v) { _v = utils::ArrayMath::add(_v, v); }
 
   /**
    * Creates a string containing all data of the particle.
    * @return String representation.
    */
-  [[nodiscard]] virtual std::string toString() const {
+   [[nodiscard]]
+  KOKKOS_INLINE_FUNCTION
+   virtual std::string toString() const {
     std::ostringstream text;
     // clang-format off
     text << "Particle"
@@ -187,31 +207,40 @@ class ParticleBase {
    * Defines whether the particle is owned by the current AutoPas object (aka (MPI-)process)
    * @return true if the particle is owned by the current AutoPas object, false otherwise
    */
-  [[nodiscard]] bool isOwned() const { return _ownershipState == OwnershipState::owned; }
+   [[nodiscard]]
+  KOKKOS_INLINE_FUNCTION
+   bool isOwned() const { return _ownershipState == OwnershipState::owned; }
 
   /**
    * Defines whether the particle is a halo particle, i.e., not owned by the current AutoPas object (aka (MPI-)process)
    * @return true if the particle is not owned by the current AutoPas object, false otherwise.
    * @note when a
    */
-  [[nodiscard]] bool isHalo() const { return _ownershipState == OwnershipState::halo; }
+   [[nodiscard]]
+  KOKKOS_INLINE_FUNCTION
+   bool isHalo() const { return _ownershipState == OwnershipState::halo; }
 
   /**
    * Returns whether the particle is a dummy particle.
    * @return true if the particle is a dummy.
    */
-  [[nodiscard]] bool isDummy() const { return _ownershipState == OwnershipState::dummy; }
+   [[nodiscard]]
+  KOKKOS_INLINE_FUNCTION
+   bool isDummy() const { return _ownershipState == OwnershipState::dummy; }
 
   /**
    * Returns the particle's ownership state.
    * @return the current OwnershipState
    */
-  [[nodiscard]] OwnershipState getOwnershipState() const { return _ownershipState; }
+  [[nodiscard]]
+  KOKKOS_INLINE_FUNCTION
+   OwnershipState getOwnershipState() const { return _ownershipState; }
 
   /**
    * Set the OwnershipState to the given value
    * @param ownershipState
    */
+  KOKKOS_INLINE_FUNCTION
   void setOwnershipState(OwnershipState ownershipState) { _ownershipState = ownershipState; }
 
   /**
@@ -255,6 +284,7 @@ class ParticleBase {
    * @note The value of owned is return as floating point number (true = 1.0, false = 0.0).
    */
   template <AttributeNames attribute, std::enable_if_t<attribute != AttributeNames::ptr, bool> = true>
+  KOKKOS_INLINE_FUNCTION
   constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
     if constexpr (attribute == AttributeNames::id) {
       return getID();
@@ -284,6 +314,7 @@ class ParticleBase {
    * @note The value of owned is extracted from a floating point number (true = 1.0, false = 0.0).
    */
   template <AttributeNames attribute>
+  KOKKOS_INLINE_FUNCTION
   constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
     if constexpr (attribute == AttributeNames::id) {
       setID(value);
@@ -312,6 +343,7 @@ class ParticleBase {
    * @note: This function should not be used from outside of AutoPas. Instead, use AutoPas::deleteParticle(iterator).
    * @note: From within autopas, you might want to use internal::markParticleAsDeleted(Particle &particle)
    */
+  KOKKOS_INLINE_FUNCTION
   void markAsDeleted() {
     // Set ownership as dummy.
     setOwnershipState(OwnershipState::dummy);
@@ -322,6 +354,7 @@ class ParticleBase {
    * @tparam ParticleIterator
    */
   template <class T>
+  KOKKOS_INLINE_FUNCTION
   friend void internal::markParticleAsDeleted(T &);
 };
 

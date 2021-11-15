@@ -109,6 +109,7 @@ class ContainerOption : public Option<ContainerOption> {
         {ContainerOption::verletClusterLists, "VerletClusterLists"},
         {ContainerOption::varVerletListsAsBuild, "VarVerletListsAsBuild"},
         {ContainerOption::pairwiseVerletLists, "PairwiseVerletLists"},
+        {ContainerOption::kokkosDirectSum, "KokkosDirectSum"},
     };
   };
 

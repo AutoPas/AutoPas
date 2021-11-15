@@ -37,6 +37,7 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCSlicedBalancedTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCSlicedC02Traversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCSlicedTraversal.h"
+#include "autopas/containers/linkedCellsKokkos/traversals/KokkosDSSequential.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/SelectorStrategyOption.h"
@@ -239,6 +240,10 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
                                               VLCCellPairNeighborList<typename ParticleCell::ParticleType>,
                                               ContainerOption::pairwiseVerletLists>>(
           info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
+    }
+      //Kokkos
+    case TraversalOption::kokkos_sequential: {
+      return std::make_unique<KokkosDSSequential<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(&pairwiseFunctor, info.interactionLength);
     }
   }
   autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known type!", traversalType.to_string());

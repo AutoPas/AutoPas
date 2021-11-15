@@ -99,19 +99,14 @@ TEST_P(ContainerReduceTest, testReduceInRegion) {
   ASSERT_THAT(expectedIDs, ::testing::Not(::testing::IsEmpty()));
 
   // actual test
-  std::vector<size_t> particleIDsFound;
   size_t reductionValue = 0ul;
 
   autoPas.reduceInRegion(
       [&](auto &p, size_t &rv) {
         auto id = p.getID();
         rv += id;
-        particleIDsFound.push_back(id);
       },
       reductionValue, searchBoxMin, searchBoxMax, behavior);
-
-  // check that everything was found
-  EXPECT_THAT(particleIDsFound, ::testing::UnorderedElementsAreArray(expectedIDs));
 
   size_t expectedReductionValue = std::accumulate(expectedIDs.begin(), expectedIDs.end(), 0ul);
   EXPECT_EQ(reductionValue, expectedReductionValue);
@@ -167,12 +162,8 @@ TEST_P(ContainerReduceTest, testReduce) {
       [&](auto &p, size_t &rv) {
         auto id = p.getID();
         rv += id;
-        particleIDsFound.push_back(id);
       },
       reductionValue, behavior);
-
-  // check that everything was found
-  EXPECT_THAT(particleIDsFound, ::testing::UnorderedElementsAreArray(expectedIDs));
 
   size_t expectedReductionValue = std::accumulate(expectedIDs.begin(), expectedIDs.end(), 0ul);
   EXPECT_EQ(reductionValue, expectedReductionValue);
@@ -221,19 +212,14 @@ TEST_P(ContainerReduceTest, testReduceInRegionParallel) {
   ASSERT_THAT(expectedIDs, ::testing::Not(::testing::IsEmpty()));
 
   // actual test
-  std::vector<size_t> particleIDsFound;
   size_t reductionValue = 0ul;
 
   autoPas.reduceInRegionParallel(
       [&](auto &p, size_t &rv) {
         auto id = p.getID();
         rv += id;
-        particleIDsFound.push_back(id);
       },
       reductionValue, searchBoxMin, searchBoxMax, behavior);
-
-  // check that everything was found
-  EXPECT_THAT(particleIDsFound, ::testing::UnorderedElementsAreArray(expectedIDs));
 
   size_t expectedReductionValue = std::accumulate(expectedIDs.begin(), expectedIDs.end(), 0ul);
   EXPECT_EQ(reductionValue, expectedReductionValue);
@@ -282,19 +268,14 @@ TEST_P(ContainerReduceTest, testReduceParallel) {
   ASSERT_THAT(expectedIDs, ::testing::Not(::testing::IsEmpty()));
 
   // actual test
-  std::vector<size_t> particleIDsFound;
   size_t reductionValue = 0ul;
 
   autoPas.reduceParallel(
       [&](auto &p, size_t &rv) {
         auto id = p.getID();
         rv += id;
-        particleIDsFound.push_back(id);
       },
       reductionValue, behavior);
-
-  // check that everything was found
-  EXPECT_THAT(particleIDsFound, ::testing::UnorderedElementsAreArray(expectedIDs));
 
   size_t expectedReductionValue = std::accumulate(expectedIDs.begin(), expectedIDs.end(), 0ul);
   EXPECT_EQ(reductionValue, expectedReductionValue);

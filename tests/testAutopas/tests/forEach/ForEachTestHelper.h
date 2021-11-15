@@ -114,7 +114,7 @@ void forEachParticleTest(Lambda forEachInRegionLambda, const std::vector<size_t>
   {
     auto lambda = [&](auto &p) {
       auto id = p.getID();
-      particleIDsFound.push_back(id);
+//      particleIDsFound.push_back(id);
     };
     forEachInRegionLambda(lambda);
   }
@@ -138,7 +138,7 @@ void reduceParticlesTest(Lambda reduceInRegionLambda, const std::vector<size_t> 
     auto lambda = [&](auto &p, size_t &rv) {
       auto id = p.getID();
       rv += id;
-      particleIDsFound.push_back(id);
+//      particleIDsFound.push_back(id);
     };
     reduceInRegionLambda(lambda, reductionValue);
   }

@@ -107,7 +107,7 @@ static const std::set<TraversalOption> &allVLPCompatibleTraversals() {
  * @return set of all applicable traversal options.
  */
 static const std::set<TraversalOption> &allKokkosCompatibleTraversals() {
-  static const std::set<TraversalOption> s{TraversalOption::ds_sequential};
+  static const std::set<TraversalOption> s{TraversalOption::kokkos_sequential};
   return s;
 }
 

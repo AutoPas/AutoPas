@@ -41,14 +41,14 @@ decltype(auto) withStaticCellType(autopas::CellType cellType, F &&func) {
       [[fallthrough]];
     case autopas::CellType::IsNoCell:
       [[fallthrough]];
+    case autopas::CellType::KokkosCell:
+      [[fallthrough]];
     case autopas::CellType::FullParticleCell:
       // todo c++20: return func.template operator()<autopas::FullParticleCell<ParticleType>>();
       return func(autopas::FullParticleCell<ParticleType>());
     case autopas::CellType::ReferenceParticleCell:
       // todo c++20: return func.template operator()<autopas::ReferenceParticleCell<ParticleType>>();
       return func(autopas::ReferenceParticleCell<ParticleType>());
-    case autopas::CellType::KokkosCell:
-      [[fallthrough]];
   }
   autopas::utils::ExceptionHandler::exception(
       "Trying to use a traversal of of a Celltype not specified in TravelComparison::calculateForces. "
