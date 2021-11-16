@@ -75,11 +75,16 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
     : _configuration(configuration),
       _domainDecomposition(domainDecomposition),
       _createVtkFiles(not configuration.vtkFileName.value.empty()),
-      _vtkWriter(std::make_shared<ParallelVtkWriter>(_configuration.vtkFileName.value,
-                                                     _configuration.vtkOutputFolder.value,
-                                                     std::to_string(_configuration.iterations.value).size())) {
+      _vtkWriter(nullptr) {
   _timers.total.start();
   _timers.initialization.start();
+
+  // only create the writer if necessary since this also creates the output dir
+  if (_createVtkFiles) {
+    _vtkWriter =
+        std::make_shared<ParallelVtkWriter>(_configuration.vtkFileName.value, _configuration.vtkOutputFolder.value,
+                                            std::to_string(_configuration.iterations.value).size());
+  }
 
   if (_configuration.logFileName.value.empty()) {
     _outputStream = &std::cout;
