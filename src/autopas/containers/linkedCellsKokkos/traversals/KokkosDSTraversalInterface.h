@@ -16,6 +16,6 @@ namespace autopas {
  * The container only accepts traversals in its iteratePairwise() method that implement this interface.
  * @tparam ParticleCell
  */
-class KokkosDSTraversalInterface{};
+class KokkosDSTraversalInterface {};
 
 }  // namespace autopas

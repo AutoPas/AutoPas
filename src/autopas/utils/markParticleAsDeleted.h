@@ -16,8 +16,7 @@ namespace autopas::internal {
  * @note: This function should not be used from outside of AutoPas. Instead, use AutoPas::deleteParticle(iterator).
  */
 template <typename Particle>
-KOKKOS_INLINE_FUNCTION
-void markParticleAsDeleted(Particle &p) {
+KOKKOS_INLINE_FUNCTION void markParticleAsDeleted(Particle &p) {
   p.markAsDeleted();
 }
 

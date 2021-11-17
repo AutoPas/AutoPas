@@ -17,7 +17,7 @@ namespace autopas {
 template <class Particle>
 class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
  public:
-  CellType getParticleCellTypeEnum () override {return CellType::KokkosCell;}
+  CellType getParticleCellTypeEnum() override { return CellType::KokkosCell; }
 
   /**
    * Constructor of the DirectSum class
@@ -29,26 +29,19 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
   KokkosDirectSum(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff, double skin)
       : KokkosCellBasedParticleContainer<Particle>(boxMin, boxMax, cutoff, skin) {}
 
-
   ~KokkosDirectSum() = default;
 
-  ContainerOption getContainerType() const override {
-      return ContainerOption::kokkosDirectSum;
-  };
+  ContainerOption getContainerType() const override { return ContainerOption::kokkosDirectSum; };
 
   /**
    * @copydoc ParticleContainerInterface::addParticleImpl()
    */
-  void addParticleImpl(const Particle &p) override {
-    this->_particles.addParticle(p);
-  }
+  void addParticleImpl(const Particle &p) override { this->_particles.addParticle(p); }
 
   /**
    * @copydoc ParticleContainerInterface::addParticleImpl()
    */
-  void addHaloParticleImpl(const Particle &p) override {
-    this->_particles.addParticle(p);
-  }
+  void addHaloParticleImpl(const Particle &p) override { this->_particles.addParticle(p); }
 
   /**
    * @copydoc ParticleContainerInterface::updateHaloParticle()
@@ -73,49 +66,47 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
   }
 
   void iteratePairwise(TraversalInterface *traversal) override {
-    //TODO lgaertner
+    // TODO lgaertner
   }
 
   std::vector<Particle> updateContainer(bool keepNeighborListsValid) override {
-    //TODO lgaertner
+    // TODO lgaertner
     return std::vector<Particle>();
   }
 
-  template<typename Lambda>
+  template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     if (behavior == IteratorBehavior::ownedOrHalo) {
       this->_particles.forEach(forEachLambda);
     } else {
       if (behavior & IteratorBehavior::owned) {
-        this->_particles.forEach(forEachLambda, _start[_OWNED], _cellSize[_OWNED]);
+//        this->_particles.forEach(forEachLambda, _start[_OWNED], _cellSize[_OWNED]);
       } else if (behavior & IteratorBehavior::halo) {
-        this->_particles.forEach(forEachLambda, _start[_HALO], _cellSize[_HALO]);
+//        this->_particles.forEach(forEachLambda, _start[_HALO], _cellSize[_HALO]);
       }
     }
   }
 
-  template<typename Lambda, typename A>
+  template <typename Lambda, typename A>
   void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior) {
     if (behavior == IteratorBehavior::ownedOrHalo) {
       this->_particles.reduce(reduceLambda, result);
     } else {
       if (behavior & IteratorBehavior::owned) {
-        this->_particles.reduce(reduceLambda, result, _start[_OWNED], _cellSize[_OWNED]);
+//        this->_particles.reduce(reduceLambda, result, _start[_OWNED], _cellSize[_OWNED]);
       } else if (behavior & IteratorBehavior::halo) {
-        this->_particles.reduce(reduceLambda, result, _start[_HALO], _cellSize[_HALO]);
+//        this->_particles.reduce(reduceLambda, result, _start[_HALO], _cellSize[_HALO]);
       }
     }
   }
 
-  template<typename Lambda>
+  template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
-                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
-  }
+                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {}
 
-  template<typename Lambda, typename A>
-  void reduceInRegion(Lambda reduceLambda, A &result,const std::array<double, 3> &lowerCorner,
-                      const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
-  }
+  template <typename Lambda, typename A>
+  void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+                      const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {}
 
   /**
    * @copydoc ParticleContainerInterface::getTraversalSelectorInfo()
@@ -125,16 +116,15 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
     std::array<size_t, 3> dummy{};
     std::array<double, 3> dummy2{};
 
-    return TraversalSelectorInfo(dummy, this->getInteractionLength(),
-                                 dummy2, 0);
+    return TraversalSelectorInfo(dummy, this->getInteractionLength(), dummy2, 0);
   }
 
  private:
-  Kokkos::View<size_t[2]> _start;
-  Kokkos::View<size_t[2]> _cellSize;
+//  Kokkos::View<size_t[2]> _start;
+//  Kokkos::View<size_t[2]> _cellSize;
 
   size_t _OWNED{0};
   size_t _HALO{1};
 };
 
-}
+}  // namespace autopas

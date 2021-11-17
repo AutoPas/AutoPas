@@ -15,7 +15,8 @@ int main(int argc, char **argv) {
 
   // damit nur meine Tests durchgelaufen werden
   Kokkos::initialize(argc, argv);
-  auto result = RUN_ALL_TESTS();
+  int result;
+  { result = RUN_ALL_TESTS(); }
   Kokkos::finalize();
 
   return result;

@@ -146,8 +146,7 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
     }
 
     case ContainerOption::kokkosDirectSum: {
-      container = std::make_unique<KokkosDirectSum<Particle>>(
-          _boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
+      container = std::make_unique<KokkosDirectSum<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
       break;
     }
     default: {

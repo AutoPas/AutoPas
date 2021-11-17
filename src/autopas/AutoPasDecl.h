@@ -240,8 +240,8 @@ class AutoPas {
   template <typename Lambda, typename A>
   void reduceParallel(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     // TODO lgaertner: parallelize with kokkos integration
-//    withStaticContainerType(getContainer(),
-//                            [&](auto containerPtr) { containerPtr->reduce(reduceLambda, result, behavior); });
+    //    withStaticContainerType(getContainer(),
+    //                            [&](auto containerPtr) { containerPtr->reduce(reduceLambda, result, behavior); });
   }
 
   /**
@@ -264,8 +264,8 @@ class AutoPas {
    */
   template <typename Lambda, typename A>
   void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
-//    withStaticContainerType(getContainer(),
-//                            [&](auto containerPtr) { containerPtr->reduce(reduceLambda, result, behavior); });
+    //    withStaticContainerType(getContainer(),
+    //                            [&](auto containerPtr) { containerPtr->reduce(reduceLambda, result, behavior); });
   }
 
   /**

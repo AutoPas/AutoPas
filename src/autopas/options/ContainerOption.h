@@ -65,7 +65,8 @@ class ContainerOption : public Option<ContainerOption> {
     pairwiseVerletLists,
 
     /**
-     * kokkosDirectSum : Similar to DirectSum, but sorted particle view is used for storage and only references to begining and end of cell within vector is kept.
+     * kokkosDirectSum : Similar to DirectSum, but sorted particle view is used for storage and only references to
+     * begining and end of cell within vector is kept.
      */
     kokkosDirectSum,
   };

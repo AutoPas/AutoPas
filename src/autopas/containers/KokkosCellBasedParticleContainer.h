@@ -22,7 +22,6 @@ namespace autopas {
 template <class Particle>
 class KokkosCellBasedParticleContainer : public ParticleContainerInterface<Particle> {
  public:
-
   /**
    * Constructor of KokkosCellBasedParticleContainer
    * @param boxMin
@@ -31,7 +30,7 @@ class KokkosCellBasedParticleContainer : public ParticleContainerInterface<Parti
    * @param skin
    */
   KokkosCellBasedParticleContainer(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax,
-                             const double cutoff, const double skin)
+                                   const double cutoff, const double skin)
       : _particles(), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff), _skin(skin) {}
 
   /**
@@ -102,17 +101,13 @@ class KokkosCellBasedParticleContainer : public ParticleContainerInterface<Parti
   /**
    * Deletes all particles from the container.
    */
-  void deleteAllParticles() override {
-    _particles.deleteAll();
-  }
+  void deleteAllParticles() override { _particles.deleteAll(); }
 
   /**
    * Get the number of particles saved in the container.
    * @return Number of particles in the container.
    */
-  [[nodiscard]] unsigned long getNumParticles() const override {
-    return _particles.getSize();
-  }
+  [[nodiscard]] unsigned long getNumParticles() const override { return _particles.getSize(); }
 
   ParticleIteratorWrapper<Particle, true> begin(
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) override {
@@ -129,18 +124,18 @@ class KokkosCellBasedParticleContainer : public ParticleContainerInterface<Parti
   ParticleIteratorWrapper<Particle, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
                                                             const std::array<double, 3> &higherCorner,
                                                             IteratorBehavior behavior) override {
-    autopas::utils::ExceptionHandler::exception("Deprecated function 'getRegionIterator' used. Use forEachInRegion instead!");
+    autopas::utils::ExceptionHandler::exception(
+        "Deprecated function 'getRegionIterator' used. Use forEachInRegion instead!");
     return ParticleIteratorWrapper<Particle, true>();
   }
 
   ParticleIteratorWrapper<Particle, false> getRegionIterator(const std::array<double, 3> &lowerCorner,
                                                              const std::array<double, 3> &higherCorner,
                                                              IteratorBehavior behavior) const override {
-    autopas::utils::ExceptionHandler::exception("Deprecated function 'getRegionIterator' used. Use forEachInRegion instead!");
+    autopas::utils::ExceptionHandler::exception(
+        "Deprecated function 'getRegionIterator' used. Use forEachInRegion instead!");
     return ParticleIteratorWrapper<Particle, false>();
   }
-
-
 
  protected:
   /**
@@ -154,4 +149,4 @@ class KokkosCellBasedParticleContainer : public ParticleContainerInterface<Parti
   double _cutoff;
   double _skin;
 };
-}
+}  // namespace autopas

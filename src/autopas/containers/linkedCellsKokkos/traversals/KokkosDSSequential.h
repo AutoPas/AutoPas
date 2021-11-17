@@ -33,9 +33,7 @@ class KokkosDSSequential : public TraversalInterface, public KokkosDSTraversalIn
    * @param cutoff cutoff (this is enough for the directsum traversal, please don't use the interaction length here.)
    */
   explicit KokkosDSSequential(PairwiseFunctor *pairwiseFunctor, double cutoff)
-      : TraversalInterface(),
-        _functor(pairwiseFunctor),
-        _dataLayoutConverter(pairwiseFunctor) {}
+      : TraversalInterface(), _functor(pairwiseFunctor), _dataLayoutConverter(pairwiseFunctor) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::kokkos_sequential; }
 
@@ -46,17 +44,17 @@ class KokkosDSSequential : public TraversalInterface, public KokkosDSTraversalIn
   [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; };
 
   void initTraversal() override {
-//    auto &cells = *(this->_cells);
-//    for (auto &cell : cells) {
-//      _dataLayoutConverter.loadDataLayout(cell);
-//    }
+    //    auto &cells = *(this->_cells);
+    //    for (auto &cell : cells) {
+    //      _dataLayoutConverter.loadDataLayout(cell);
+    //    }
   }
 
   void endTraversal() override {
-//    auto &cells = *(this->_cells);
-//    for (auto &cell : cells) {
-//      _dataLayoutConverter.storeDataLayout(cell);
-//    }
+    //    auto &cells = *(this->_cells);
+    //    for (auto &cell : cells) {
+    //      _dataLayoutConverter.storeDataLayout(cell);
+    //    }
   }
 
   /**
@@ -79,10 +77,10 @@ class KokkosDSSequential : public TraversalInterface, public KokkosDSTraversalIn
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 void KokkosDSSequential<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
-//  auto &cells = *(this->_cells);
+  //  auto &cells = *(this->_cells);
   // Assume cell[0] is the main domain and cell[1] is the halo
-//  _cellFunctor.processCell(cells[0]);
-//  _cellFunctor.processCellPair(cells[0], cells[1]);
+  //  _cellFunctor.processCell(cells[0]);
+  //  _cellFunctor.processCellPair(cells[0], cells[1]);
 }
 
 }  // namespace autopas
