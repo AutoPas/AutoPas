@@ -6,15 +6,19 @@
 
 #include "FlopCounterTest.h"
 
-#include "autopas/AutoPas.h"
+#include "autopas/AutoPasDecl.h"
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
+#include "testingHelpers/commonTypedefs.h"
+
+extern template class autopas::AutoPas<Molecule>;
+extern template bool autopas::AutoPas<Molecule>::iteratePairwise(autopas::FlopCounterFunctor<Molecule> *);
 
 /**
  * Generates a square of four particles, iterates over it with the FlopCounter and checks its values
  * @param dataLayoutOption
  */
 void FlopCounterTest::test(autopas::DataLayoutOption dataLayoutOption) {
-  autopas::AutoPas<Particle> autoPas;
+  autopas::AutoPas<Molecule> autoPas;
 
   autoPas.setBoxMin({0, 0, 0});
   autoPas.setBoxMax({3, 3, 3});
@@ -24,14 +28,14 @@ void FlopCounterTest::test(autopas::DataLayoutOption dataLayoutOption) {
   autoPas.setAllowedNewton3Options({autopas::Newton3Option::enabled});
   autoPas.init();
 
-  std::vector<Particle> molVec{Particle({1, 1, 1}, {0, 0, 0}, 0), Particle({1, 1, 2}, {0, 0, 0}, 1),
-                               Particle({1, 2, 1}, {0, 0, 0}, 2), Particle({1, 2, 2}, {0, 0, 0}, 3)};
+  std::vector<Molecule> molVec{Molecule({1, 1, 1}, {0, 0, 0}, 0), Molecule({1, 1, 2}, {0, 0, 0}, 1),
+                               Molecule({1, 2, 1}, {0, 0, 0}, 2), Molecule({1, 2, 2}, {0, 0, 0}, 3)};
 
   for (auto &m : molVec) {
     autoPas.addParticle(m);
   }
 
-  autopas::FlopCounterFunctor<Particle> flopCounterFunctor(autoPas.getCutoff());
+  autopas::FlopCounterFunctor<Molecule> flopCounterFunctor(autoPas.getCutoff());
 
   autoPas.iteratePairwise(&flopCounterFunctor);
 
@@ -66,7 +70,7 @@ TEST_F(FlopCounterTest, testFlopCounterAoSOpenMP) {
 
   double cutoff = 1.;
 
-  autopas::FlopCounterFunctor<Particle> functor(cutoff);
+  autopas::FlopCounterFunctor<Molecule> functor(cutoff);
 
   // This is a basic check for the global calculations, by checking the handling of two particle interactions in
   // parallel. If interactions are dangerous, archer will complain.
@@ -106,21 +110,21 @@ TEST_F(FlopCounterTest, testFlopCounterSoAOpenMP) {
 
   double cutoff = 1.;
 
-  autopas::FlopCounterFunctor<Particle> functor(cutoff);
+  autopas::FlopCounterFunctor<Molecule> functor(cutoff);
 
-  autopas::FullParticleCell<Particle> cell1;
+  autopas::FullParticleCell<Molecule> cell1;
   cell1.addParticle(p1);
   cell1.addParticle(p2);
 
-  autopas::FullParticleCell<Particle> cell2;
+  autopas::FullParticleCell<Molecule> cell2;
   cell2.addParticle(p3);
   cell2.addParticle(p4);
 
-  autopas::FullParticleCell<Particle> cell3;
+  autopas::FullParticleCell<Molecule> cell3;
   cell3.addParticle(p5);
   cell3.addParticle(p6);
 
-  autopas::FullParticleCell<Particle> cell4;
+  autopas::FullParticleCell<Molecule> cell4;
   cell3.addParticle(p7);
   cell3.addParticle(p8);
 

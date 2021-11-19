@@ -37,9 +37,9 @@ TEST_F(AutoPasTest, checkRebuildingNewMove) {
   ASSERT_DOUBLE_EQ(boxMax1[1], 10.);
   ASSERT_DOUBLE_EQ(boxMax1[2], 10.);
   // 0. add some particles
-  Particle p1({1., 1., 1.}, {0., 0., 0.}, 0);
+  Molecule p1({1., 1., 1.}, {0., 0., 0.}, 0);
   autoPas.addParticle(p1);
-  Particle p2({2., 2., 2.}, {0., 0., 0.}, 1);
+  Molecule p2({2., 2., 2.}, {0., 0., 0.}, 1);
   autoPas.addParticle(p2);
   {
     // 1. create new AutoPas container + initialize
@@ -109,12 +109,12 @@ TEST_F(AutoPasTest, checkRebuildingCopyCreateNew) {
   ASSERT_DOUBLE_EQ(boxMax1[2], 10.);
 
   // 0. add some particles
-  Particle p1({1., 1., 1.}, {0., 0., 0.}, 0);
+  Molecule p1({1., 1., 1.}, {0., 0., 0.}, 0);
   autoPas.addParticle(p1);
-  Particle p2({2., 2., 2.}, {0., 0., 0.}, 1);
+  Molecule p2({2., 2., 2.}, {0., 0., 0.}, 1);
   autoPas.addParticle(p2);
   {
-    std::vector<Particle> particleVector;
+    std::vector<Molecule> particleVector;
     particleVector.reserve(autoPas.getNumberOfParticles());
 
     // 1. copy particles out of first container
@@ -187,9 +187,9 @@ TEST_F(AutoPasTest, checkConstIterator) {
   // with 0 particles
   testConstIterator(autoPas, autoPas.getNumberOfParticles());
 
-  Particle p1({1., 1., 1.}, {0., 0., 0.}, 0);
+  Molecule p1({1., 1., 1.}, {0., 0., 0.}, 0);
   autoPas.addParticle(p1);
-  Particle p2({2., 2., 2.}, {0., 0., 0.}, 1);
+  Molecule p2({2., 2., 2.}, {0., 0., 0.}, 1);
   autoPas.addParticle(p2);
   // with 2 particles
   testConstIterator(autoPas, autoPas.getNumberOfParticles());
@@ -205,7 +205,7 @@ TEST_F(AutoPasTest, getNumParticlesTest) {
   // there should be no particles in an empty container
   expectedParticles(0, 0);
 
-  Particle particle;
+  Molecule particle{};
 
   // add a particle in the domain -> owned
   particle.setR({1, 1, 1});
@@ -214,18 +214,18 @@ TEST_F(AutoPasTest, getNumParticlesTest) {
 
   // add a particle outside the domain -> halo
   particle.setR({-0.1, -0.1, -0.1});
-  autoPas.addOrUpdateHaloParticle(particle);
+  autoPas.addHaloParticle(particle);
   expectedParticles(1, 1);
 
-  // update container is expected to remove all halo particles
-  auto [haloParticles, _] = autoPas.updateContainer(true);
-  EXPECT_EQ(haloParticles.size(), 0);
+  // update container is expected to delete all halo particles and return leaving particles
+  auto leavingParticles = autoPas.updateContainer();
+  EXPECT_EQ(leavingParticles.size(), 0);
   expectedParticles(1, 0);
 
   // move the owned particle in the halo
   autoPas.begin()->setR({-0.2, -0.2, -0.2});
-  haloParticles = std::get<0>(autoPas.updateContainer(true));
-  EXPECT_EQ(haloParticles.size(), 1);
+  leavingParticles = autoPas.updateContainer();
+  EXPECT_EQ(leavingParticles.size(), 1);
   expectedParticles(0, 0);
 }
 
@@ -233,7 +233,7 @@ TEST_F(AutoPasTest, getNumParticlesIteratorTest) {
   // there should be no particles in an empty container
   expectedParticles(0, 0);
 
-  Particle particle;
+  Molecule particle{};
 
   // add a particle in the domain -> owned
   int numParticles = 0;

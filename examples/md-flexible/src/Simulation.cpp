@@ -76,11 +76,16 @@ Simulation::Simulation(const MDFlexConfig &configuration,
     : _configuration(configuration),
       _domainDecomposition(domainDecomposition),
       _createVtkFiles(not configuration.vtkFileName.value.empty()),
-      _vtkWriter(std::make_shared<ParallelVtkWriter>(_configuration.vtkFileName.value,
-                                                     _configuration.vtkOutputFolder.value,
-                                                     std::to_string(_configuration.iterations.value).size())) {
+      _vtkWriter(nullptr) {
   _timers.total.start();
   _timers.initialization.start();
+
+  // only create the writer if necessary since this also creates the output dir
+  if (_createVtkFiles) {
+    _vtkWriter =
+        std::make_shared<ParallelVtkWriter>(_configuration.vtkFileName.value, _configuration.vtkOutputFolder.value,
+                                            std::to_string(_configuration.iterations.value).size());
+  }
 
   if (_configuration.logFileName.value.empty()) {
     _outputStream = &std::cout;
@@ -170,22 +175,20 @@ void Simulation::run() {
 
       updatePositions();
 
-      auto [emigrants, updated] =
-          _autoPasContainer->updateContainer(_iteration % _configuration.verletRebuildFrequency.value == 0);
+      auto emigrants = _autoPasContainer->updateContainer();
 
       const double work = _timers.work.stop();
-      if (updated) {
-        _timers.loadBalancing.start();
-        _domainDecomposition->update(work);
-        auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(),
-                                                                _domainDecomposition->getLocalBoxMax());
-        emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
-        _timers.loadBalancing.stop();
 
-        _timers.migratingParticleExchange.start();
-        _domainDecomposition->exchangeMigratingParticles(_autoPasContainer, emigrants);
-        _timers.migratingParticleExchange.stop();
-      }
+      _timers.loadBalancing.start();
+      _domainDecomposition->update(work);
+      auto additionalEmigrants =
+          _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(), _domainDecomposition->getLocalBoxMax());
+      emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
+      _timers.loadBalancing.stop();
+
+      _timers.migratingParticleExchange.start();
+      _domainDecomposition->exchangeMigratingParticles(_autoPasContainer, emigrants);
+      _timers.migratingParticleExchange.stop();
 
       _timers.haloParticleExchange.start();
       _domainDecomposition->exchangeHaloParticles(_autoPasContainer);
