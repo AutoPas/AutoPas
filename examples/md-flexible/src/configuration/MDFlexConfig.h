@@ -343,7 +343,7 @@ class MDFlexConfig {
   /**
    * loadBalancingInterval
    */
-  MDFlexOption<unsigned int, 0> loadBalancingInterval{
+  MDFlexOption<unsigned int, __LINE__> loadBalancingInterval{
       100, "load-balancing-interval", true, "Defines the iteration interval at which load balancing should occur."};
 
   /**
