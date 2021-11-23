@@ -134,6 +134,16 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     }
     config.tuningStrategyOption.value = *parsedOptions.begin();
   }
+  if (node[config.tuningMetricOption.name]) {
+    auto parsedOptions =
+        autopas::TuningMetricOption::parseOptions(node[config.tuningMetricOption.name].as<std::string>());
+    if (parsedOptions.size() != 1) {
+      throw std::runtime_error(
+          "YamlParser::parseYamlFile: Pass exactly one tuning Metric option! Possible values:\n" +
+          autopas::utils::ArrayUtils::to_string(autopas::TuningMetricOption::getAllOptions(), "", {"(", ")"}));
+    }
+    config.tuningMetricOption.value = *parsedOptions.begin();
+  }
   if (node[config.mpiStrategyOption.name]) {
     auto parsedOptions =
         autopas::MPIStrategyOption::parseOptions(node[config.mpiStrategyOption.name].as<std::string>());

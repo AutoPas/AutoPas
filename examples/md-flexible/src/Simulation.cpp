@@ -109,6 +109,7 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
   _autoPasContainer->setSelectorStrategy(_configuration.selectorStrategy.value);
   _autoPasContainer->setTuningInterval(_configuration.tuningInterval.value);
   _autoPasContainer->setTuningStrategyOption(_configuration.tuningStrategyOption.value);
+  _autoPasContainer->setTuningMetricOption(_configuration.tuningMetricOption.value);
   _autoPasContainer->setMPIStrategy(_configuration.mpiStrategyOption.value);
   _autoPasContainer->setVerletClusterSize(_configuration.verletClusterSize.value);
   _autoPasContainer->setVerletRebuildFrequency(_configuration.verletRebuildFrequency.value);

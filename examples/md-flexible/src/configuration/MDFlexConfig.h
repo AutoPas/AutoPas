@@ -20,6 +20,7 @@
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
+#include "autopas/options/TuningMetricOption.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/utils/NumberSet.h"
 #include "src/TypeDefinitions.h"
@@ -237,6 +238,13 @@ class MDFlexConfig {
       autopas::TuningStrategyOption::fullSearch, "tuning-strategy", true,
       "Strategy how to reduce the sample measurements to a single value. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::TuningStrategyOption::getAllOptions(), " ", {"(", ")"})};
+  /**
+   * tuningMetricOption
+   */
+  MDFlexOption<autopas::TuningMetricOption, __LINE__> tuningMetricOption{
+      autopas::TuningMetricOption::time, "tuning-metric", true,
+      "Metric to use for tuning. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(autopas::TuningMetricOption::getAllOptions(), " ", {"(", ")"})};
   /**
    * mpiStrategyOption
    */
