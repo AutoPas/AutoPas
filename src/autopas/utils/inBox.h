@@ -7,9 +7,9 @@
 
 #pragma once
 
+#include <Kokkos_Core.hpp>
 #include <array>
 #include <type_traits>
-#include <Kokkos_Core.hpp>
 
 namespace autopas::utils {
 /**
@@ -24,8 +24,8 @@ namespace autopas::utils {
  * @return true if position is inside the box, false otherwise
  */
 template <typename T>
-KOKKOS_INLINE_FUNCTION
-bool inBox(const std::array<T, 3> &position, const std::array<T, 3> &low, const std::array<T, 3> &high) {
+KOKKOS_INLINE_FUNCTION bool inBox(const std::array<T, 3> &position, const std::array<T, 3> &low,
+                                  const std::array<T, 3> &high) {
   static_assert(std::is_floating_point<T>::value, "inBox assumes floating point types");
 
   bool inBox = true;

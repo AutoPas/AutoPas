@@ -35,28 +35,39 @@ class ParticleView {
 
   template <typename Lambda>
   void forEach(Lambda forEachLambda, std::string label = "") {
-    Kokkos::parallel_for(
-        label, Kokkos::RangePolicy<>(0, _size), KOKKOS_LAMBDA(const size_t &i) { forEachLambda(_particleListImp[i]); });
+    std::array<double, 3> dummy{};
+    _forEach<false, false>(forEachLambda, autopas::IteratorBehavior::ownedOrHaloOrDummy, 0, _size, dummy, dummy, label);
+  }
+
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner, std::string label = "") {
+    _forEach<false, true>(forEachLambda, autopas::IteratorBehavior::ownedOrHaloOrDummy, 0, _size, lowerCorner, higherCorner, label);
   }
 
   // TODO (lgaertner): temporary solution until container binning is implemented (maybe keep as backup?)
   template <typename Lambda>
   void forEach(Lambda forEachLambda, autopas::IteratorBehavior behavior,
                std::string label = "ParticleView::forEach(behavior)") {
-    Kokkos::parallel_for(
-        label, Kokkos::RangePolicy<>(0, _size), KOKKOS_LAMBDA(const size_t &i) {
-          if (behavior.contains(_particleListImp[i])) {
-            forEachLambda(_particleListImp[i]);
-          }
-        });
+    std::array<double, 3> dummy{};
+    _forEach<true, false>(forEachLambda, behavior, 0, _size, dummy, dummy, label);
+  }
+
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner, autopas::IteratorBehavior behavior, std::string label = "") {
+    _forEach<true, true>(forEachLambda, behavior, 0, _size, lowerCorner, higherCorner, label);
   }
 
   template <typename Lambda>
   void forEach(Lambda forEachLambda, size_t begin, size_t cellSize, std::string label = "") {
-    Kokkos::parallel_for(
-        label, Kokkos::RangePolicy<>(begin, begin + cellSize),
-        KOKKOS_LAMBDA(const size_t &i) { forEachLambda(_particleListImp[i]); });
+    std::array<double, 3> dummy{};
+    _forEach<false, false>(forEachLambda, autopas::IteratorBehavior::ownedOrHaloOrDummy, begin, cellSize, dummy, dummy, label);
   }
+
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda, autopas::IteratorBehavior behavior, size_t begin, size_t cellSize, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner, std::string label = "") {
+    _forEach<true, true>(forEachLambda, behavior, begin, cellSize, lowerCorner, higherCorner, label);
+  }
+
 
 
 
@@ -64,12 +75,15 @@ class ParticleView {
   template <typename Lambda, typename A>
   void reduce(Lambda reduceLambda, A &result, std::string label = "") {
     std::array<double, 3> dummy{};
-    _reduce<false, false>(reduceLambda, result, autopas::IteratorBehavior::ownedOrHalo, 0ul, _size, dummy, dummy, label);
+    _reduce<false, false>(reduceLambda, result, autopas::IteratorBehavior::ownedOrHalo, 0ul, _size, dummy, dummy,
+                          label);
   }
 
   template <typename Lambda, typename A>
-  void reduce(Lambda reduceLambda, A &result, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner, std::string label = "") {
-    _reduce<false, true>(reduceLambda, result, autopas::IteratorBehavior::ownedOrHalo, 0ul, _size, lowerCorner, higherCorner, label);
+  void reduce(Lambda reduceLambda, A &result, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+              std::string label = "") {
+    _reduce<false, true>(reduceLambda, result, autopas::IteratorBehavior::ownedOrHalo, 0ul, _size, lowerCorner,
+                         higherCorner, label);
   }
 
   template <typename Lambda, typename A>
@@ -79,18 +93,21 @@ class ParticleView {
   }
 
   template <typename Lambda, typename A>
-  void reduce(Lambda reduceLambda, A &result, autopas::IteratorBehavior behavior, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner, std::string label = "") {
+  void reduce(Lambda reduceLambda, A &result, autopas::IteratorBehavior behavior, std::array<double, 3> lowerCorner,
+              std::array<double, 3> higherCorner, std::string label = "") {
     _reduce<true, true>(reduceLambda, result, behavior, 0ul, _size, lowerCorner, higherCorner, label);
   }
 
   template <typename Lambda, typename A>
   void reduce(Lambda reduceLambda, A &result, size_t begin, size_t cellSize, std::string label = "") {
     std::array<double, 3> dummy{};
-    _reduce<false, false>(reduceLambda, result, autopas::IteratorBehavior::ownedOrHalo, begin, cellSize, dummy, dummy, label);
+    _reduce<false, false>(reduceLambda, result, autopas::IteratorBehavior::ownedOrHalo, begin, cellSize, dummy, dummy,
+                          label);
   }
 
   template <typename Lambda, typename A>
-  void reduce(Lambda reduceLambda, A &result, autopas::IteratorBehavior behavior, size_t begin, size_t cellSize, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner, std::string label = "") {
+  void reduce(Lambda reduceLambda, A &result, autopas::IteratorBehavior behavior, size_t begin, size_t cellSize,
+              std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner, std::string label = "") {
     _reduce<true, true>(reduceLambda, result, behavior, begin, cellSize, lowerCorner, higherCorner, label);
   }
 
@@ -114,7 +131,21 @@ class ParticleView {
           }
         },
         Kokkos::Sum<A>(result));
-    }
+  }
+
+  template <bool ownershipCheck, bool regionCheck, typename Lambda>
+  void _forEach(Lambda forEachLambda, autopas::IteratorBehavior behavior, size_t begin, size_t cellSize,
+               std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner, std::string label) {
+    Kokkos::parallel_for(
+        label, Kokkos::RangePolicy<>(begin, begin + cellSize),
+        KOKKOS_LAMBDA(const size_t &i) {
+          if ((not ownershipCheck) or behavior.contains(_particleListImp[i])) {
+            if ((not regionCheck) or autopas::utils::inBox(_particleListImp[i].getR(), lowerCorner, higherCorner)) {
+              forEachLambda(_particleListImp[i]);
+            }
+          }
+        });
+  }
 
   /**
    * Flag indicating whether there are out-of-date references in the vector.

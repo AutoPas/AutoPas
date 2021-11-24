@@ -102,7 +102,8 @@ TEST_P(ContainerForEachTest, testForEachInRegionSequential) {
   auto forEachInRegionLambda = [&, bh](auto lambda) {
     autoPas.forEachInRegion(lambda, searchBoxMin, searchBoxMax, bh);
   };
-  ForEachTestHelper::forEachParticleTest(forEachInRegionLambda, expectedIDs);
+  ForEachTestHelper::forEachParticleTest(forEachInRegionLambda, expectedIDs,
+                                         autoPas.getNumberOfParticles(autopas::IteratorBehavior::ownedOrHalo));
 }
 
 /**
@@ -149,7 +150,8 @@ TEST_P(ContainerForEachTest, testForEachSequential) {
   // actual test
   auto bh = behavior;  // necessary for compiler, behavior not detected as variable
   auto forEachLambda = [&, bh](auto lambda) { autoPas.forEach(lambda, bh); };
-  ForEachTestHelper::forEachParticleTest(forEachLambda, expectedIDs);
+  ForEachTestHelper::forEachParticleTest(forEachLambda, expectedIDs,
+                                         autoPas.getNumberOfParticles(autopas::IteratorBehavior::ownedOrHalo));
 }
 
 /**
@@ -198,7 +200,8 @@ TEST_P(ContainerForEachTest, testForEachInRegionParallel) {
   auto forEachInRegionLambda = [&, bh](auto lambda) {
     autoPas.forEachInRegionParallel(lambda, searchBoxMin, searchBoxMax, bh);
   };
-  ForEachTestHelper::forEachParticleTest(forEachInRegionLambda, expectedIDs);
+  ForEachTestHelper::forEachParticleTest(forEachInRegionLambda, expectedIDs,
+                                         autoPas.getNumberOfParticles(autopas::IteratorBehavior::ownedOrHalo));
 }
 
 /**
@@ -245,7 +248,8 @@ TEST_P(ContainerForEachTest, testForEachParallel) {
   // actual test
   auto bh = behavior;  // necessary for compiler, behavior not detected as variable
   auto forEachLambda = [&, bh](auto lambda) { autoPas.forEachParallel(lambda, bh); };
-  ForEachTestHelper::forEachParticleTest(forEachLambda, expectedIDs);
+  ForEachTestHelper::forEachParticleTest(forEachLambda, expectedIDs,
+                                         autoPas.getNumberOfParticles(autopas::IteratorBehavior::ownedOrHalo));
 }
 
 using ::testing::Combine;

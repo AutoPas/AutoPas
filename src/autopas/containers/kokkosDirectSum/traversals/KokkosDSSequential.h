@@ -79,8 +79,8 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dat
 void KokkosDSSequential<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
   //  auto &cells = *(this->_cells);
   // Assume cell[0] is the main domain and cell[1] is the halo
-  //  _cellFunctor.processCell(cells[0]);
-  //  _cellFunctor.processCellPair(cells[0], cells[1]);
+  //    _cellFunctor.processCell(cells[0]);
+  //    _cellFunctor.processCellPair(cells[0], cells[1]);
 }
 
 }  // namespace autopas

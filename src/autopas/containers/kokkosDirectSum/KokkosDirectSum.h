@@ -115,12 +115,14 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
   template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                        const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    this->_particles.forEach(forEachLambda, lowerCorner, higherCorner, behavior, "KokkosDirectSum:forEach(lowerCorner, higherCorner, behavior)");
   }
 
   template <typename Lambda, typename A>
   void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
-    this->_particles.reduce(reduceLambda, result, behavior, lowerCorner, higherCorner, "KokkosDirectSum::reduce(behavior, lowerCorner, higherCorner)");
+    this->_particles.reduce(reduceLambda, result, behavior, lowerCorner, higherCorner,
+                            "KokkosDirectSum::reduce(behavior, lowerCorner, higherCorner)");
   }
 
   /**

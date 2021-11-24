@@ -8,6 +8,7 @@
 
 #include <gtest/gtest.h>
 
+#include <Kokkos_Core.hpp>
 #include <array>
 #include <vector>
 
@@ -108,19 +109,31 @@ auto fillContainerAroundBoundary(AutoPasT &autoPas, std::array<double, 3> boxOfI
  * @param particleIDsExpected
  */
 template <class Lambda>
-void forEachParticleTest(Lambda forEachInRegionLambda, const std::vector<size_t> &particleIDsExpected) {
-  std::vector<bool> particleIDsFound;
+void forEachParticleTest(Lambda forEachInRegionLambda, const std::vector<size_t> &particleIDsExpected,
+                         const size_t numParticles) {
+  Kokkos::View<bool *> idsExpected("idsExpected bool view", numParticles);
+  Kokkos::View<bool *> idsFound("idsFound bool view", numParticles);
+  // TODO lgaertner fix for cuda execution space
+  Kokkos::parallel_for(
+      "initialize idsExpected", Kokkos::RangePolicy<>(0, particleIDsExpected.size()),
+      KOKKOS_LAMBDA(const size_t &i) { idsExpected[particleIDsExpected[i]] = true; });
 
   {
     auto lambda = [&](auto &p) {
       auto id = p.getID();
-      //            particleIDsFound.push_back(id);
+      idsFound[id] = true;
     };
     forEachInRegionLambda(lambda);
   }
 
+  int result;
   // check that everything was found
-  //  EXPECT_THAT(particleIDsFound, ::testing::UnorderedElementsAreArray(particleIDsExpected));
+  Kokkos::parallel_reduce(
+      "check if all particles were found", Kokkos::RangePolicy<>(0ul, numParticles),
+      KOKKOS_LAMBDA(const size_t &i, int &r) { r = r or (idsExpected[i] xor idsFound[i]); }, Kokkos::LOr<int>(result));
+
+  EXPECT_FALSE(result);
+  //    EXPECT_THAT(particleIDsFound, ::testing::UnorderedElementsAreArray(particleIDsExpected));
 }
 
 /**
