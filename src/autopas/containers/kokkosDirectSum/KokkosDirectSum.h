@@ -41,7 +41,11 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
   /**
    * @copydoc ParticleContainerInterface::addParticleImpl()
    */
-  void addHaloParticleImpl(const Particle &p) override { this->_particles.addParticle(p); }
+  void addHaloParticleImpl(const Particle &p) override {
+    Particle pCopy = p;
+    pCopy.setOwnershipState(OwnershipState::halo);
+    this->_particles.addParticle(pCopy);
+  }
 
   /**
    * @copydoc ParticleContainerInterface::updateHaloParticle()
@@ -70,7 +74,10 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
   }
 
   std::vector<Particle> updateContainer(bool keepNeighborListsValid) override {
-    // TODO lgaertner
+    if (keepNeighborListsValid) {
+      //      basically do nothing and return
+    }
+
     return std::vector<Particle>();
   }
 
@@ -79,34 +86,42 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
     if (behavior == IteratorBehavior::ownedOrHalo) {
       this->_particles.forEach(forEachLambda);
     } else {
-      if (behavior & IteratorBehavior::owned) {
-//        this->_particles.forEach(forEachLambda, _start[_OWNED], _cellSize[_OWNED]);
-      } else if (behavior & IteratorBehavior::halo) {
-//        this->_particles.forEach(forEachLambda, _start[_HALO], _cellSize[_HALO]);
-      }
+      //      if (not this->_isDirty) {
+      //        this->updateContainer(false);
+      //      }
+      //      if (behavior & IteratorBehavior::owned) {
+      //        this->_particles.forEach(forEachLambda, _start[_OWNED], _cellSize[_OWNED]);
+      //      } else if (behavior & IteratorBehavior::halo) {
+      //        this->_particles.forEach(forEachLambda, _start[_HALO], _cellSize[_HALO]);
+      //      }
+      this->_particles.forEach(forEachLambda, behavior, "KokkosDirectSum:forEach");
     }
   }
 
   template <typename Lambda, typename A>
   void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior) {
-    if (behavior == IteratorBehavior::ownedOrHalo) {
-      this->_particles.reduce(reduceLambda, result);
-    } else {
-      if (behavior & IteratorBehavior::owned) {
-//        this->_particles.reduce(reduceLambda, result, _start[_OWNED], _cellSize[_OWNED]);
-      } else if (behavior & IteratorBehavior::halo) {
-//        this->_particles.reduce(reduceLambda, result, _start[_HALO], _cellSize[_HALO]);
-      }
-    }
+    //    if (behavior == IteratorBehavior::ownedOrHalo) {
+    //      this->_particles.reduce(reduceLambda, result);
+    //    } else {
+    //      if (behavior & IteratorBehavior::owned) {
+    //        this->_particles.reduce(reduceLambda, result, _start[_OWNED], _cellSize[_OWNED]);
+    //      } else if (behavior & IteratorBehavior::halo) {
+    //        this->_particles.reduce(reduceLambda, result, _start[_HALO], _cellSize[_HALO]);
+    //      }
+    //    }
+    this->_particles.reduce(reduceLambda, result, behavior, "KokkosDirectSum:reduce");
   }
 
   template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
-                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {}
+                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+  }
 
   template <typename Lambda, typename A>
   void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
-                      const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {}
+                      const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    this->_particles.reduce(reduceLambda, result, behavior, lowerCorner, higherCorner, "KokkosDirectSum::reduce(behavior, lowerCorner, higherCorner)");
+  }
 
   /**
    * @copydoc ParticleContainerInterface::getTraversalSelectorInfo()
@@ -120,8 +135,8 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
   }
 
  private:
-//  Kokkos::View<size_t[2]> _start;
-//  Kokkos::View<size_t[2]> _cellSize;
+  Kokkos::View<size_t[2]> _start;
+  Kokkos::View<size_t[2]> _cellSize;
 
   size_t _OWNED{0};
   size_t _HALO{1};

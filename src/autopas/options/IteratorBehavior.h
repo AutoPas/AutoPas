@@ -119,7 +119,7 @@ class IteratorBehavior : public Option<IteratorBehavior> {
    * @return true if this iterator behavior covers the given particle, false otherwise
    */
   template <typename ParticleType>
-  bool contains(ParticleType &particle) {
+  bool contains(ParticleType &particle) const {
     switch (this->_value) {
       case options::IteratorBehavior::ownedOrHaloOrDummy:
         return true;

@@ -142,6 +142,7 @@ class KokkosCellBasedParticleContainer : public ParticleContainerInterface<Parti
    * Managed view of all particles. This view is then sorted according to desired layout and particle properties.
    */
   ParticleView<Particle> _particles;
+  bool _isDirty;
 
  private:
   std::array<double, 3> _boxMin;
