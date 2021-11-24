@@ -607,6 +607,8 @@ class MDFlexConfig {
    */
   MDFlexOption<size_t, 0> checkpointIteration{0, "checkpoint-iteration", true, "The iteration of the checkpoint file"};
 
+  MDFlexOption<bool, __LINE__> useTuningLogger{false, "use-tuning-logger", true, "If tuning information should be logged"};
+
   /**
    * valueOffset used for cli-output alignment
    */

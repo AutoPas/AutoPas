@@ -39,7 +39,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.verletClusterSize, config.verletSkinRadius, config.particleSpacing, config.tuningSamples,
       config.traversalOptions, config.tuningStrategyOption, config.mpiStrategyOption, config.useThermostat,
       config.verletRebuildFrequency, config.vtkFileName, config.vtkWriteFrequency, config.selectorStrategy,
-      config.yamlFilename, config.distributionStdDev, config.globalForce, zshCompletionsOption, helpOption)};
+      config.yamlFilename, config.distributionStdDev, config.globalForce, config.useTuningLogger, zshCompletionsOption, helpOption)};
 
   constexpr auto relevantOptionsSize = std::tuple_size_v<decltype(relevantOptions)>;
 
@@ -541,7 +541,18 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-
+      case decltype(config.useTuningLogger)::getoptChar: {
+        if(strArg == "true") {
+          config.useTuningLogger.value = true;
+        } else if (strArg == "false") {
+          config.useTuningLogger.value = false;
+        } else {
+          cerr << "Error parsing 'useTuningLogger': " << optarg << endl;
+          cerr << "Value should be true or false." << endl;
+          displayHelp = true;
+        }
+        break;
+      }
       default: {
         // error message handled by getopt
         displayHelp = true;

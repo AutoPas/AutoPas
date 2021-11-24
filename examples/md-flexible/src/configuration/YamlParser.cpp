@@ -362,5 +362,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     config.deltaTemp.value = node[config.useThermostat.name][config.deltaTemp.name].as<double>();
     config.addBrownianMotion.value = node[config.useThermostat.name][config.addBrownianMotion.name].as<bool>();
   }
+  if (node[config.useTuningLogger.name]) {
+    config.useTuningLogger.value = node[config.useTuningLogger.name].as<bool>();
+  }
   return true;
 }

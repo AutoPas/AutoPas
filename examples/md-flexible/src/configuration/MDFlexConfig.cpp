@@ -286,6 +286,8 @@ std::string MDFlexConfig::to_string() const {
     os << setw(valueOffset) << left << checkpointIteration.name << ":  " << checkpointIteration.value << endl;
   }
 
+  os << setw(valueOffset) << left << useTuningLogger.name << ": " << useTuningLogger.value << endl;
+
   os << setw(valueOffset) << logLevel.name << ":  " << (logLevel.value) << endl;
 
   os << setw(valueOffset) << dontMeasureFlops.name << ":  " << (not dontMeasureFlops.value) << endl;
