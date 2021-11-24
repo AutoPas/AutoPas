@@ -93,7 +93,7 @@ void TuningStrategyLoggerProxy::reset(size_t iteration) {
   _actualTuningStrategy->reset(iteration);
 }
 
-bool TuningStrategyLoggerProxy::needsLiveInfo() const { return _actualTuningStrategy->needsLiveInfo(); }
+bool TuningStrategyLoggerProxy::needsLiveInfo() const { return true; }
 
 void TuningStrategyLoggerProxy::receiveLiveInfo(LiveInfo info) {
   _logOut << tuningLogEntry::writeLiveInfo(info) << std::endl;
