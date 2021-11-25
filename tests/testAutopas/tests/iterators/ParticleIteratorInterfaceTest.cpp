@@ -7,12 +7,15 @@
 #include "ParticleIteratorInterfaceTest.h"
 
 #include "IteratorTestHelper.h"
-#include "autopas/AutoPas.h"
+#include "autopas/AutoPasDecl.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/options/IteratorBehavior.h"
 #include "autopasTools/generators/RandomGenerator.h"
 #include "testingHelpers/EmptyFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
+
+extern template class autopas::AutoPas<Molecule>;
+extern template bool autopas::AutoPas<Molecule>::iteratePairwise(EmptyFunctor<Molecule> *);
 
 using ::testing::_;
 
