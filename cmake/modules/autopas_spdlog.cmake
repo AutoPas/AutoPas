@@ -30,9 +30,9 @@ FetchContent_Declare(
     URL
         # spdlog master:
         # https://github.com/gabime/spdlog/archive/v1.x.zip
-        # spdlog commit 79259fd:
+        # spdlog commit e86be93 (15.11.2021):
         ${AUTOPAS_SOURCE_DIR}/libs/spdlog-1.x.zip
-    URL_HASH MD5=7415a9768f3433bd93d78c1c87fd0576
+    URL_HASH MD5=77292ebfc86717e1b5914c4d7b69140f
 )
 
 # Disable stuff we don't need

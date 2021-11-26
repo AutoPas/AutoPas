@@ -11,6 +11,7 @@
 #include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/CellBorderAndFlagManager.h"
 #include "autopas/containers/CompatibleTraversals.h"
+#include "autopas/containers/LeavingParticleCollector.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/containers/directSum/traversals/DSTraversalInterface.h"
 #include "autopas/iterators/ParticleIterator.h"
@@ -109,7 +110,10 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     traversal->endTraversal();
   }
 
-  [[nodiscard]] std::vector<ParticleType> updateContainer() override {
+  [[nodiscard]] std::vector<ParticleType> updateContainer(bool keepNeighborListsValid) override {
+    if (keepNeighborListsValid) {
+      return autopas::LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);
+    }
     // first we delete halo particles, as we don't want them here.
     deleteHaloParticles();
     getCell().deleteDummyParticles();
@@ -146,6 +150,52 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     return ParticleIteratorWrapper<ParticleType, false>(
         new internal::ParticleIterator<ParticleType, ParticleCell, false>(&this->_cells, 0, &_cellBorderFlagManager,
                                                                           behavior, nullptr));
+  }
+
+  /**
+   * @copydoc LinkedCells::forEach()
+   */
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior) {
+    auto forEach = [&](ParticleCell &cell) {
+      for (Particle &p : cell._particles) {
+        forEachLambda(p);
+      }
+    };
+
+    if (behavior & IteratorBehavior::owned) {
+      getCell().forEach(forEachLambda);
+    }
+    if (behavior & IteratorBehavior::halo) {
+      getHaloCell().forEach(forEachLambda);
+    }
+    // sanity check
+    if (not(behavior & IteratorBehavior::ownedOrHalo)) {
+      utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
+    }
+  }
+
+  /**
+   * @copydoc LinkedCells::reduce()
+   */
+  template <typename Lambda, typename A>
+  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior) {
+    auto forEach = [&](ParticleCell &cell) {
+      for (Particle &p : cell._particles) {
+        reduceLambda(p, result);
+      }
+    };
+
+    if (behavior & IteratorBehavior::owned) {
+      getCell().reduce(reduceLambda, result);
+    }
+    if (behavior & IteratorBehavior::halo) {
+      getHaloCell().reduce(reduceLambda, result);
+    }
+    // sanity check
+    if (not(behavior & IteratorBehavior::ownedOrHalo)) {
+      utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
+    }
   }
 
   [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
@@ -188,6 +238,42 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     return ParticleIteratorWrapper<ParticleType, false>(
         new internal::RegionParticleIterator<ParticleType, ParticleCell, false>(
             &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBorderFlagManager, behavior, nullptr));
+  }
+
+  /**
+   * @copydoc LinkedCells::forEachInRegion()
+   */
+  template <typename Lambda>
+  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    if (behavior & IteratorBehavior::owned) {
+      getCell().forEach(forEachLambda, lowerCorner, higherCorner, behavior);
+    }
+    if (behavior & IteratorBehavior::halo) {
+      getHaloCell().forEach(forEachLambda, lowerCorner, higherCorner, behavior);
+    }
+    // sanity check
+    if (not(behavior & IteratorBehavior::ownedOrHalo)) {
+      utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
+    }
+  }
+
+  /**
+   * @copydoc LinkedCells::reduceInRegion()
+   */
+  template <typename Lambda, typename A>
+  void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+                      const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    if (behavior & IteratorBehavior::owned) {
+      getCell().reduce(reduceLambda, result, lowerCorner, higherCorner, behavior);
+    }
+    if (behavior & IteratorBehavior::halo) {
+      getHaloCell().reduce(reduceLambda, result, lowerCorner, higherCorner, behavior);
+    }
+    // sanity check
+    if (not(behavior & IteratorBehavior::ownedOrHalo)) {
+      utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
+    }
   }
 
  private:

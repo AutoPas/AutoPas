@@ -8,8 +8,10 @@
 
 #include <gtest/gtest.h>
 
-#include "autopas/AutoPas.h"
+#include "autopas/AutoPasDecl.h"
 #include "testingHelpers/commonTypedefs.h"
+
+extern template class autopas::AutoPas<Molecule>;
 
 class AutoPasTest : public testing::Test {
  public:
@@ -23,5 +25,5 @@ class AutoPasTest : public testing::Test {
  protected:
   void expectedParticles(size_t expectedOwned, size_t expectedHalo);
 
-  autopas::AutoPas<Particle> autoPas;
+  autopas::AutoPas<Molecule> autoPas;
 };

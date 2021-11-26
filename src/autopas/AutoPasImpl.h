@@ -116,8 +116,8 @@ void AutoPas<Particle>::addParticle(const Particle &p) {
 }
 
 template <class Particle>
-std::pair<std::vector<Particle>, bool> AutoPas<Particle>::updateContainer(bool forced) {
-  return _logicHandler->updateContainer(forced);
+std::vector<Particle> AutoPas<Particle>::updateContainer() {
+  return _logicHandler->updateContainer();
 }
 
 template <class Particle>
@@ -134,8 +134,8 @@ void AutoPas<Particle>::forceRetune() {
 }
 
 template <class Particle>
-void AutoPas<Particle>::addOrUpdateHaloParticle(const Particle &haloParticle) {
-  _logicHandler->addOrUpdateHaloParticle(haloParticle);
+void AutoPas<Particle>::addHaloParticle(const Particle &haloParticle) {
+  _logicHandler->addHaloParticle(haloParticle);
 }
 
 template <class Particle>
@@ -185,6 +185,16 @@ std::array<double, 3> AutoPas<Particle>::getBoxMin() const {
 template <class Particle>
 std::array<double, 3> AutoPas<Particle>::getBoxMax() const {
   return _autoTuner->getContainer()->getBoxMax();
+}
+
+template <class Particle>
+std::shared_ptr<autopas::ParticleContainerInterface<Particle>> AutoPas<Particle>::getContainer() {
+  return _autoTuner->getContainer();
+}
+
+template <class Particle>
+const std::shared_ptr<autopas::ParticleContainerInterface<Particle>> AutoPas<Particle>::getContainer() const {
+  return _autoTuner->getContainer();
 }
 
 }  // namespace autopas

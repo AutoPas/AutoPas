@@ -193,12 +193,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
   if (node[config.checkpointfile.name]) {
     config.checkpointfile.value = node[config.checkpointfile.name].as<std::string>();
   }
-  if (node[config.checkpointScenarioName.name]) {
-    config.checkpointScenarioName.value = node[config.checkpointScenarioName.name].as<std::string>();
-  }
-  if (node[config.checkpointIteration.name]) {
-    config.checkpointIteration.value = node[config.checkpointIteration.name].as<size_t>();
-  }
   if (node[config.logFileName.name]) {
     config.logFileName.value = node[config.logFileName.name].as<std::string>();
   }

@@ -102,6 +102,29 @@ class ParticleVector {
    */
   auto endDirty() { return _particleListImp.end(); }
 
+  /**
+   * Iterate over all particles and execute lambda function on them.
+   * @param forEachLambda lambda function that defines how to modify particles
+   */
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda) {
+    for (Type &p : _particleListImp) {
+      forEachLambda(p);
+    }
+  }
+
+  /**
+   * Iterate over all particles and execute lambda function on them.
+   * @param reduceLambda lambda function that defines how to modify particles
+   * @param result reference to variable where result will be stored after operation
+   */
+  template <typename Lambda, typename A>
+  void reduce(Lambda reduceLambda, A &result) {
+    for (Type &p : _particleListImp) {
+      reduceLambda(p, result);
+    }
+  }
+
  private:
   /**
    * Flag indicating whether there are out-of-date references in the vector.
