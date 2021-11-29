@@ -72,7 +72,7 @@ class TranslationVisitor : public RuleLanguageBaseVisitor {
     } else if (ctx->Newton3_opt()) {
       literal = Newton3Option::parseOptionExact(ctx->Newton3_opt()->getText());
     } else if (ctx->unsigned_val()) {
-      literal = std::stoull(ctx->unsigned_val()->getText());
+      literal = RuleVM::MemoryCell{static_cast<size_t>(std::stoull(ctx->unsigned_val()->getText()))};
     } else if (ctx->Double_val()) {
       literal = std::stod(ctx->Double_val()->getText());
     } else {
