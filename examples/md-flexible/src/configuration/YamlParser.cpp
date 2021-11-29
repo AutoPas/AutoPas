@@ -365,5 +365,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
   if (node[config.useTuningLogger.name]) {
     config.useTuningLogger.value = node[config.useTuningLogger.name].as<bool>();
   }
+  if (node[config.outputSuffix.name]) {
+    config.outputSuffix.value = node[config.outputSuffix.name].as<std::string>();
+  }
   return true;
 }

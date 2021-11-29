@@ -39,7 +39,8 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.verletClusterSize, config.verletSkinRadius, config.particleSpacing, config.tuningSamples,
       config.traversalOptions, config.tuningStrategyOption, config.mpiStrategyOption, config.useThermostat,
       config.verletRebuildFrequency, config.vtkFileName, config.vtkWriteFrequency, config.selectorStrategy,
-      config.yamlFilename, config.distributionStdDev, config.globalForce, config.useTuningLogger, zshCompletionsOption, helpOption)};
+      config.yamlFilename, config.distributionStdDev, config.globalForce, config.useTuningLogger, config.outputSuffix,
+      zshCompletionsOption, helpOption)};
 
   constexpr auto relevantOptionsSize = std::tuple_size_v<decltype(relevantOptions)>;
 
@@ -551,6 +552,10 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           cerr << "Value should be true or false." << endl;
           displayHelp = true;
         }
+        break;
+      }
+      case decltype(config.outputSuffix)::getoptChar: {
+        config.outputSuffix.value = strArg;
         break;
       }
       default: {
