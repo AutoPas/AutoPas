@@ -39,8 +39,8 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.verletClusterSize, config.verletSkinRadius, config.particleSpacing, config.tuningSamples,
       config.traversalOptions, config.tuningStrategyOption, config.mpiStrategyOption, config.useThermostat,
       config.verletRebuildFrequency, config.vtkFileName, config.vtkWriteFrequency, config.selectorStrategy,
-      config.yamlFilename, config.distributionStdDev, config.globalForce, config.loadBalancer, zshCompletionsOption,
-      helpOption)};
+      config.yamlFilename, config.distributionStdDev, config.globalForce, config.loadBalancer,
+      config.loadBalancingInterval, zshCompletionsOption, helpOption)};
 
   constexpr auto relevantOptionsSize = std::tuple_size_v<decltype(relevantOptions)>;
 
@@ -544,13 +544,20 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.loadBalancer)::getoptChar: {
         auto parsedOptions = LoadBalancerOption::parseOptions(strArg);
+
         if (parsedOptions.size() != 1) {
           cerr << "Pass exactly one load balancer option." << endl
                << "Passed: " << strArg << endl
                << "Parsed: " << autopas::utils::ArrayUtils::to_string(parsedOptions) << endl;
+
           displayHelp = true;
         }
+
         config.loadBalancer.value = *parsedOptions.begin();
+        break;
+      }
+      case decltype(config.loadBalancingInterval)::getoptChar: {
+        config.loadBalancingInterval.value = (unsigned int)stoul(strArg);
         break;
       }
 

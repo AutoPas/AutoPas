@@ -245,8 +245,6 @@ std::string MDFlexConfig::to_string() const {
      << endl;
   os << setw(valueOffset) << left << boxMax.name << ":  " << autopas::utils::ArrayUtils::to_string(boxMax.value)
      << endl;
-  os << setw(valueOffset) << left << subdivideDimension.name << ":  "
-     << autopas::utils::ArrayUtils::to_string(subdivideDimension.value) << endl;
   os << setw(valueOffset) << left << cellSizeFactors.name << ":  " << *cellSizeFactors.value << endl;
   os << setw(valueOffset) << left << deltaT.name << ":  " << deltaT.value << endl;
   // simulation length is either dictated by tuning phases or iterations
@@ -305,6 +303,9 @@ std::string MDFlexConfig::to_string() const {
   os << setw(valueOffset) << dontCreateEndConfig.name << ":  " << (not dontCreateEndConfig.value) << endl;
   os << setw(valueOffset) << dontShowProgressBar.name << ":  " << (dontShowProgressBar.value) << endl;
   os << setw(valueOffset) << loadBalancer.name << ":  " << loadBalancer.value << endl;
+  os << setw(valueOffset) << left << loadBalancingInterval.name << ":  " << loadBalancingInterval.value << endl;
+  os << setw(valueOffset) << left << subdivideDimension.name << ":  "
+     << autopas::utils::ArrayUtils::to_string(subdivideDimension.value) << endl;
   return os.str();
 }
 

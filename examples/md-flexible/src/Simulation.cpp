@@ -178,17 +178,15 @@ void Simulation::run() {
       auto emigrants = _autoPasContainer->updateContainer();
 
       const double work = _timers.work.stop();
-
-      _timers.loadBalancing.start();
-      _domainDecomposition->update(work);
-      auto additionalEmigrants =
-          _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(), _domainDecomposition->getLocalBoxMax());
-      emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
-      _timers.loadBalancing.stop();
-
-      _timers.migratingParticleExchange.start();
-      _domainDecomposition->exchangeMigratingParticles(_autoPasContainer, emigrants);
-      _timers.migratingParticleExchange.stop();
+      
+      if (_iteration % _configuration.loadBalancingInterval.value == 0) {
+        _timers.loadBalancing.start();
+        _domainDecomposition->update(work);
+        auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(),
+                                                                _domainDecomposition->getLocalBoxMax());
+        emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
+        _timers.loadBalancing.stop();
+      }
 
       _timers.haloParticleExchange.start();
       _domainDecomposition->exchangeHaloParticles(_autoPasContainer);

@@ -7,6 +7,10 @@
 
 #include "autopas/options/Option.h"
 
+/**
+ * Class representing the choices for load balancing during the MD-Flexible simulationt.
+ * Users can choose between the Inverted Pressure method or ALL's Tensor method.
+ */
 class LoadBalancerOption : public autopas::Option<LoadBalancerOption> {
  public:
   /**
