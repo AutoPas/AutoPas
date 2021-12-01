@@ -37,7 +37,8 @@ class TuningDataLogger {
   /**
    * Log the result of a tuning phase.
    * @param configuration
-   * @param samples
+   * @param samplesRebuildingNeighborLists
+   * @param samplesNotRebuildingNeighborLists
    * @param iteration
    * @param reducedValue
    * @param smoothedVale

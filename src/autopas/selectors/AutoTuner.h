@@ -6,8 +6,6 @@
 
 #pragma once
 
-#include <autopas/particles/Particle.h>
-
 #include <array>
 #include <memory>
 #include <set>
@@ -59,6 +57,7 @@ class AutoTuner {
    * @param selectorStrategy Strategy for the configuration selection.
    * @param tuningInterval Number of time steps after which the auto-tuner shall reevaluate all selections.
    * @param maxSamples Number of samples that shall be collected for each combination.
+   * @param rebuildFrequency The rebuild frequency this AutoPas instance uses.
    * @param outputSuffix Suffix for all output files produced by this class.
    */
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
@@ -617,7 +616,6 @@ const Configuration &AutoTuner<Particle>::getCurrentConfig() const {
 template <class Particle>
 void AutoTuner<Particle>::addTimeMeasurement(long time, bool neighborListRebuilt) {
   const auto &currentConfig = _tuningStrategy->getCurrentConfiguration();
-  std::cout << time << std::endl;
   if (getCurrentNumSamples() < _maxSamples) {
     AutoPasLog(trace, "Adding sample.");
     if (neighborListRebuilt) {
