@@ -27,7 +27,9 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
    * @param skin
    */
   KokkosDirectSum(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff, double skin)
-      : KokkosCellBasedParticleContainer<Particle>(boxMin, boxMax, cutoff, skin) {}
+      : KokkosCellBasedParticleContainer<Particle>(boxMin, boxMax, cutoff, skin),
+        _begin("KokkosDirectSum::_particles.begin", 2),
+        _cellSize("KokkosDirectSum::_particles.cellSize", 2) {}
 
   ~KokkosDirectSum() = default;
 
@@ -78,6 +80,11 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
       //      basically do nothing and return
     }
 
+    this->deleteHaloParticles();
+
+    auto particleBinningLambda = [&](Particle &p) -> size_t { return p.isOwned() ? 0ul : 1ul; };
+    this->_particles.binParticles(particleBinningLambda, _begin, _cellSize, "KokkosDirectSum::updateContainer: ");
+
     return std::vector<Particle>();
   }
 
@@ -90,9 +97,9 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
       //        this->updateContainer(false);
       //      }
       //      if (behavior & IteratorBehavior::owned) {
-      //        this->_particles.forEach(forEachLambda, _start[_OWNED], _cellSize[_OWNED]);
+      //        this->_particles.forEach(forEachLambda, _begin[_OWNED], _cellSize[_OWNED]);
       //      } else if (behavior & IteratorBehavior::halo) {
-      //        this->_particles.forEach(forEachLambda, _start[_HALO], _cellSize[_HALO]);
+      //        this->_particles.forEach(forEachLambda, _begin[_HALO], _cellSize[_HALO]);
       //      }
       this->_particles.forEach(forEachLambda, behavior, "KokkosDirectSum:forEach");
     }
@@ -104,9 +111,9 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
     //      this->_particles.reduce(reduceLambda, result);
     //    } else {
     //      if (behavior & IteratorBehavior::owned) {
-    //        this->_particles.reduce(reduceLambda, result, _start[_OWNED], _cellSize[_OWNED]);
+    //        this->_particles.reduce(reduceLambda, result, _begin[_OWNED], _cellSize[_OWNED]);
     //      } else if (behavior & IteratorBehavior::halo) {
-    //        this->_particles.reduce(reduceLambda, result, _start[_HALO], _cellSize[_HALO]);
+    //        this->_particles.reduce(reduceLambda, result, _begin[_HALO], _cellSize[_HALO]);
     //      }
     //    }
     this->_particles.reduce(reduceLambda, result, behavior, "KokkosDirectSum:reduce");
@@ -115,7 +122,8 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
   template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                        const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
-    this->_particles.forEach(forEachLambda, lowerCorner, higherCorner, behavior, "KokkosDirectSum:forEach(lowerCorner, higherCorner, behavior)");
+    this->_particles.forEach(forEachLambda, lowerCorner, higherCorner, behavior,
+                             "KokkosDirectSum:forEach(lowerCorner, higherCorner, behavior)");
   }
 
   template <typename Lambda, typename A>
@@ -137,8 +145,8 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
   }
 
  private:
-  Kokkos::View<size_t[2]> _start;
-  Kokkos::View<size_t[2]> _cellSize;
+  Kokkos::View<size_t *> _begin;
+  Kokkos::View<size_t *> _cellSize;
 
   size_t _OWNED{0};
   size_t _HALO{1};

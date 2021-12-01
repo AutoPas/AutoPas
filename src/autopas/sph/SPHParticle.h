@@ -22,6 +22,7 @@ class SPHParticle : public autopas::Particle {
    * Default constructor of SPHParticle.
    * Will initialize all values to some basic defaults.
    */
+  KOKKOS_FUNCTION
   SPHParticle()
       : autopas::Particle(),
         _density(0.),
@@ -43,6 +44,7 @@ class SPHParticle : public autopas::Particle {
    * @param v velocity of the particle
    * @param id id of the particle. This id should be unique
    */
+  KOKKOS_FUNCTION
   SPHParticle(std::array<double, 3> r, std::array<double, 3> v, unsigned long id)
       : autopas::Particle(r, v, id),
         _density(0.),
@@ -68,6 +70,7 @@ class SPHParticle : public autopas::Particle {
    * @param smth smoothing length of the particle
    * @param snds speed of sound (SouND Speed)
    */
+  KOKKOS_FUNCTION
   SPHParticle(std::array<double, 3> r, std::array<double, 3> v, unsigned long id, double mass, double smth, double snds)
       : autopas::Particle(r, v, id),
         _density(0.),
@@ -93,78 +96,91 @@ class SPHParticle : public autopas::Particle {
    * Getter for the Density
    * @return the current density of the particle
    */
+  KOKKOS_FUNCTION
   double getDensity() const { return _density; }
 
   /**
    * Adds the given density to the current density
    * @param density density to be added
    */
+  KOKKOS_FUNCTION
   void addDensity(double density) { _density += density; }
 
   /**
    * Setter for Density
    * @param density The value of the density to be set as the particle's density
    */
+  KOKKOS_FUNCTION
   void setDensity(double density) { _density = density; }
 
   /**
    * Getter for Pressure
    * @return current pressure of the particle
    */
+  KOKKOS_FUNCTION
   double getPressure() const { return _pressure; }
 
   /**
    * Calculates the pressure within the particle from the energy and density of
    * the particle and updates the pressure and sound of speed
    */
+  KOKKOS_FUNCTION
   void calcPressure();
 
   /**
    * Setter for the pressure
    * @param pressure pressure value to be set
    */
+  KOKKOS_FUNCTION
   void setPressure(double pressure) { _pressure = pressure; }
 
   /**
    * Getter for the mass of the particle
    * @return mass of particle
    */
+  KOKKOS_FUNCTION
   double getMass() const { return _mass; }
 
   /**
    * Setter for the mass of the particle
    * @param mass mass to be set
    */
+  KOKKOS_FUNCTION
   void setMass(double mass) { _mass = mass; }
 
   /**
    * Getter for the smoothing length of the particle
    * @return the smoothing length of the particle
    */
+  KOKKOS_FUNCTION
   double getSmoothingLength() const { return _smth; }
 
   /**
    * Setter for the smoothing length
    * @param smth smoothing lenth to be set
    */
+  KOKKOS_FUNCTION
   void setSmoothingLength(double smth) { _smth = smth; }
 
   /**
    * Getter for the speed of sound of the particle
    * @return speed of sound of the particle
    */
+  KOKKOS_FUNCTION
   double getSoundSpeed() const { return _snds; }
 
   /**
    * Setter for the speed of sound of the particle
    * @param snds speed of sound of the particle
    */
+  KOKKOS_FUNCTION
   void setSoundSpeed(double snds) { _snds = snds; }
 
   /**
    * Getter for the current maximally allowed signal velocity of the particle
    * @return the maximally allowed signal velocity of the particle
    */
+  KOKKOS_FUNCTION
   double getVSigMax() const { return _v_sig_max; }
 
   /**
@@ -172,18 +188,21 @@ class SPHParticle : public autopas::Particle {
    * and updates the local one if it is.
    * @param v_sig given signal velocity
    */
+  KOKKOS_FUNCTION
   void checkAndSetVSigMax(double v_sig) { _v_sig_max = std::max(v_sig, _v_sig_max); }
 
   /**
    * Setter for the maximally allowed signal velocity
    * @param v_sig_max the maximally allowed signal velocity
    */
+  KOKKOS_FUNCTION
   void setVSigMax(double v_sig_max) { _v_sig_max = v_sig_max; }
 
   /**
    * Getter for the acceleration of the particle
    * @return the acceleration of the particle
    */
+  KOKKOS_FUNCTION
   const std::array<double, 3> &getAcceleration() const { return _acc; }
 
   /**
@@ -191,6 +210,7 @@ class SPHParticle : public autopas::Particle {
    * Used to sum up different acceleration values.
    * @param acc Acceleration to be added
    */
+  KOKKOS_FUNCTION
   void addAcceleration(const std::array<double, 3> &acc);
 
   /**
@@ -198,18 +218,21 @@ class SPHParticle : public autopas::Particle {
    * Used to sum up different negative acceleration values.
    * @param acc Acceleration to be substracted
    */
+  KOKKOS_FUNCTION
   void subAcceleration(const std::array<double, 3> &acc);
 
   /**
    * Setter for the acceleration
    * @param acc Acceleration to be set
    */
+  KOKKOS_FUNCTION
   void setAcceleration(const std::array<double, 3> &acc) { _acc = acc; }
 
   /**
    * Getter for the time derivative of the energy of the particle
    * @return the time derivative of the energy of the particle
    */
+  KOKKOS_FUNCTION
   double getEngDot() const { return _energy_dot; }
 
   /**
@@ -217,48 +240,56 @@ class SPHParticle : public autopas::Particle {
    * energy
    * @param eng_dot
    */
+  KOKKOS_FUNCTION
   void addEngDot(double eng_dot) { _energy_dot += eng_dot; }
 
   /**
    * Setter for the time derivative of the energy
    * @param eng_dot
    */
+  KOKKOS_FUNCTION
   void setEngDot(double eng_dot) { _energy_dot = eng_dot; }
 
   /**
    * Getter for the energy of the particle
    * @return the energy of the particle
    */
+  KOKKOS_FUNCTION
   double getEnergy() const { return _energy; }
 
   /**
    * Setter for the energy of the particle
    * @param energy the energy of the particle
    */
+  KOKKOS_FUNCTION
   void setEnergy(double energy) { _energy = energy; }
 
   /**
    * Adds the given energy to the energy of the particle
    * @param energy the energy to be added
    */
+  KOKKOS_FUNCTION
   void addEnergy(double energy) { _energy += energy; }
 
   /**
    * Getter for the maximally allowed time step for this particle
    * @return the maximally allowed time step for this particle
    */
+  KOKKOS_FUNCTION
   double getDt() const { return _dt; }
 
   /**
    * Set the maximally allowed time step for this particle
    * @param dt the maximally allowed time step for this particle
    */
+  KOKKOS_FUNCTION
   void setDt(double dt) { _dt = dt; }
 
   /**
    * Calculate the maximally allowed time step for the particle based on the
    * smoothing length and the signal velocity of the particle
    */
+  KOKKOS_FUNCTION
   void calcDt() {
     const double C_CFL = 0.3;
     _dt = C_CFL * 2.0 * _smth / _v_sig_max;
@@ -268,24 +299,28 @@ class SPHParticle : public autopas::Particle {
    * Getter for velocity at half-time step (leapfrog)
    * @return
    */
+  KOKKOS_FUNCTION
   std::array<double, 3> getVel_half() const { return _vel_half; }
 
   /**
    * Setter for velocity at half-time step (leapfrog)
    * @param vel_half
    */
+  KOKKOS_FUNCTION
   void setVel_half(std::array<double, 3> vel_half) { SPHParticle::_vel_half = vel_half; }
 
   /**
    * Getter for energy at half-time step (leapfrog)
    * @return
    */
+  KOKKOS_FUNCTION
   double getEng_half() const { return _eng_half; }
 
   /**
    * Setter for energy at half-time step (leapfrog)
    * @param eng_half
    */
+  KOKKOS_FUNCTION
   void setEng_half(double eng_half) { SPHParticle::_eng_half = eng_half; }
 
   /**

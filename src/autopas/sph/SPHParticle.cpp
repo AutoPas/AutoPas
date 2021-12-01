@@ -12,10 +12,13 @@
 
 using namespace autopas::sph;
 
+KOKKOS_FUNCTION
 void SPHParticle::addAcceleration(const std::array<double, 3> &acc) { _acc = utils::ArrayMath::add(_acc, acc); }
 
+KOKKOS_FUNCTION
 void SPHParticle::subAcceleration(const std::array<double, 3> &acc) { _acc = utils::ArrayMath::sub(_acc, acc); }
 
+KOKKOS_FUNCTION
 void SPHParticle::calcPressure() {
   const double hcr = 1.4;
   _pressure = (hcr - 1.0) * _density * _energy;
