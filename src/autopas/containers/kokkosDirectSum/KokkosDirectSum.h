@@ -17,8 +17,6 @@ namespace autopas {
 template <class Particle>
 class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
  public:
-  CellType getParticleCellTypeEnum() override { return CellType::KokkosCell; }
-
   /**
    * Constructor of the DirectSum class
    * @param boxMin
@@ -34,6 +32,8 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
   ~KokkosDirectSum() = default;
 
   ContainerOption getContainerType() const override { return ContainerOption::kokkosDirectSum; };
+
+  CellType getParticleCellTypeEnum() override { return CellType::KokkosCell; }
 
   /**
    * @copydoc ParticleContainerInterface::addParticleImpl()
@@ -68,8 +68,7 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
    * @copydoc ParticleContainerInterface::deleteHaloParticles()
    */
   void deleteHaloParticles() override {
-    // TODO lgaertner
-    this->_particles.forEach([&](Particle p) { p.setOwnershipState(OwnershipState::dummy); }, IteratorBehavior::halo);
+    this->_particles.forEach([&](Particle &p) { p.setOwnershipState(OwnershipState::dummy); }, IteratorBehavior::halo);
   }
 
   void iteratePairwise(TraversalInterface *traversal) override {
