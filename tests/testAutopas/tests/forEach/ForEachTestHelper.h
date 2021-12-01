@@ -133,7 +133,6 @@ void forEachParticleTest(Lambda forEachInRegionLambda, const std::vector<size_t>
       KOKKOS_LAMBDA(const size_t &i, int &r) { r = r or (idsExpected[i] xor idsFound[i]); }, Kokkos::LOr<int>(result));
 
   EXPECT_FALSE(result);
-  //    EXPECT_THAT(particleIDsFound, ::testing::UnorderedElementsAreArray(particleIDsExpected));
 }
 
 /**

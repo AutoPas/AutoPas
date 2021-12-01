@@ -69,6 +69,7 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
    */
   void deleteHaloParticles() override {
     // TODO lgaertner
+    this->_particles.forEach([&](Particle p) { p.setOwnershipState(OwnershipState::dummy); }, IteratorBehavior::halo);
   }
 
   void iteratePairwise(TraversalInterface *traversal) override {
@@ -81,9 +82,8 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
     }
 
     this->deleteHaloParticles();
-
-    auto particleBinningLambda = [&](Particle &p) -> size_t { return p.isOwned() ? 0ul : 1ul; };
-    this->_particles.binParticles(particleBinningLambda, _begin, _cellSize, "KokkosDirectSum::updateContainer: ");
+    this->_particles.binParticles([&](Particle &p) -> size_t { return p.isOwned() ? _OWNED : _HALO; }, _begin,
+                                  _cellSize, "KokkosDirectSum::updateContainer: ");
 
     return std::vector<Particle>();
   }

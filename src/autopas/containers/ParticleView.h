@@ -36,10 +36,8 @@ class ParticleView {
   }
 
   template <typename Lambda>
-  void binParticles(Lambda &particleBinningLambda, Kokkos::View<size_t *> &begin, Kokkos::View<size_t *> &cellsize,
+  void binParticles(Lambda particleBinningLambda, Kokkos::View<size_t *> &begin, Kokkos::View<size_t *> &cellsize,
                     std::string label = "") {
-//    Kokkos::View<ParticleType> particleListImp = this->_particleListImp;
-
     if (_dirty) {
       // scan to create buckets
       auto nBuckets = begin.size();
@@ -54,8 +52,13 @@ class ParticleView {
       Kokkos::parallel_for(
           particleRange,
           KOKKOS_LAMBDA(const size_t &i) {
-            auto counts_data = counts_sv.access();
-            counts_data(particleBinningLambda(_particleListImp[i])) += 1;
+            auto p = _particleListImp[i];
+            if (not p.isDummy()) {
+              auto counts_data = counts_sv.access();
+              counts_data(particleBinningLambda(p)) += 1;
+            } else {
+              Kokkos::atomic_sub(&_size, 1ul);
+            }
           },
           label + "cell_count");
 
@@ -74,26 +77,26 @@ class ParticleView {
 
       // compute permutation vector
       Kokkos::View<size_t *> permutes(label + "permutation view", _size);
-      auto permutationLambda = KOKKOS_LAMBDA(const size_t &i) {
-        size_t cellId = particleBinningLambda(_particleListImp[i]);
-//        size_t cellId = 0;
-        int c = Kokkos::atomic_fetch_add(&cellsize[i], 1ul);
-        permutes[begin[cellId] + c] = i;
-      };
+      Kokkos::parallel_for("", particleRange, KOKKOS_LAMBDA(const size_t &i) {
+        auto p = _particleListImp[i];
+        if (not p.isDummy()) {
+          size_t cellId = particleBinningLambda(_particleListImp[i]);
+          int c = Kokkos::atomic_fetch_add(&cellsize[cellId], 1ul);
+          permutes[begin[cellId] + c] = i;
+        }
+      });
+
+      Kokkos::RangePolicy<> newParticleRange(0, _size);
 
       // insert particles into copy
       Kokkos::View<ParticleType *> copyParticleListImpl(label + "intermediate particles copy target view", _size);
-      Kokkos::parallel_for(
-          particleRange, KOKKOS_LAMBDA(const size_t &i) {
-            copyParticleListImpl[i] = _particleListImp[permutes[i]];
-          },
-          "");
+      Kokkos::parallel_for("",
+          newParticleRange, KOKKOS_LAMBDA(const size_t &i) { copyParticleListImpl[i] = _particleListImp[permutes[i]]; }
+          );
 
       // copy back
       Kokkos::parallel_for(
-          particleRange, KOKKOS_LAMBDA(const size_t &i) {
-            _particleListImp[i] = copyParticleListImpl[i];
-                                         }, "");
+          newParticleRange, KOKKOS_LAMBDA(const size_t &i) { _particleListImp[i] = copyParticleListImpl[i]; }, "");
     }
   }
 
@@ -181,6 +184,8 @@ class ParticleView {
   void deleteAll() {}
 
   size_t getSize() const { return _size; }
+  size_t getCapacity() const { return _capacity; }
+  Kokkos::View<ParticleType *> getParticles() const { return _particleListImp; };
 
  private:
   template <bool ownershipCheck, bool regionCheck, typename Lambda, typename A>
