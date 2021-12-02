@@ -151,7 +151,7 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
   * Add it to `MDFlexConfig::to_string`
   * Parse it in `examples/md-flexible/src/parsing/CLIParser.cpp` (in `CLIParser::parseInput()`: Add it to `relevantOptions` and switch)
   * Parse it in `examples/md-flexible/src/configuration/YamlParser.cpp`
-  * Pass the option value to AutoPas in `Simulation::Simulation()`
+  * If applicable, pass the option value to AutoPas in `Simulation::Simulation()`
   * Make sure that the description is parsable by `CLIParser::createZSHCompletionFile()`
 
 ### Making an Option tunable
