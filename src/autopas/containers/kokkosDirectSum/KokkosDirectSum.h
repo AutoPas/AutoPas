@@ -35,10 +35,18 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
 
   CellType getParticleCellTypeEnum() override { return CellType::KokkosCell; }
 
+  bool getIsDirty() {
+    return this->_isDirty;
+  }
+
   /**
    * @copydoc ParticleContainerInterface::addParticleImpl()
    */
-  void addParticleImpl(const Particle &p) override { this->_particles.addParticle(p); }
+  void addParticleImpl(const Particle &p) override {
+    this->_particles.addParticle(p);
+    //TODO lgaertner: maybe check for existence of halo particles?
+      this->_isDirty = true;
+  }
 
   /**
    * @copydoc ParticleContainerInterface::addParticleImpl()
@@ -83,6 +91,7 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
     this->deleteHaloParticles();
     this->_particles.binParticles([&](Particle &p) -> size_t { return p.isOwned() ? _OWNED : _HALO; }, _begin,
                                   _cellSize, "KokkosDirectSum::updateContainer: ");
+    this->_isDirty = false;
 
     return std::vector<Particle>();
   }
@@ -90,32 +99,34 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     if (behavior == IteratorBehavior::ownedOrHalo) {
-      this->_particles.forEach(forEachLambda);
+      this->_particles.forEach(forEachLambda, "KokkosDirectSum:forEach");
     } else {
-      //      if (not this->_isDirty) {
-      //        this->updateContainer(false);
-      //      }
-      //      if (behavior & IteratorBehavior::owned) {
-      //        this->_particles.forEach(forEachLambda, _begin[_OWNED], _cellSize[_OWNED]);
-      //      } else if (behavior & IteratorBehavior::halo) {
-      //        this->_particles.forEach(forEachLambda, _begin[_HALO], _cellSize[_HALO]);
-      //      }
-      this->_particles.forEach(forEachLambda, behavior, "KokkosDirectSum:forEach");
+      if (not this->_isDirty) {
+        this->_particles.forEach(forEachLambda, behavior, "KokkosDirectSum:forEach(behavior)");
+      }
+      if (behavior & IteratorBehavior::owned) {
+        this->_particles.forEach(forEachLambda, _begin[_OWNED], _cellSize[_OWNED], "KokkosDirectSum:forEach");
+      } else if (behavior & IteratorBehavior::halo) {
+        this->_particles.forEach(forEachLambda, _begin[_HALO], _cellSize[_HALO], "KokkosDirectSum:forEach");
+      }
     }
   }
 
   template <typename Lambda, typename A>
   void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior) {
-    //    if (behavior == IteratorBehavior::ownedOrHalo) {
-    //      this->_particles.reduce(reduceLambda, result);
-    //    } else {
-    //      if (behavior & IteratorBehavior::owned) {
-    //        this->_particles.reduce(reduceLambda, result, _begin[_OWNED], _cellSize[_OWNED]);
-    //      } else if (behavior & IteratorBehavior::halo) {
-    //        this->_particles.reduce(reduceLambda, result, _begin[_HALO], _cellSize[_HALO]);
-    //      }
-    //    }
-    this->_particles.reduce(reduceLambda, result, behavior, "KokkosDirectSum:reduce");
+    if (behavior == IteratorBehavior::ownedOrHalo) {
+      this->_particles.reduce(reduceLambda, result, "KokkosDirectSum:reduce");
+    } else {
+      if (this->_isDirty) {
+        this->_particles.reduce(reduceLambda, result, behavior, "KokkosDirectSum:reduce(behavior)");
+      } else {
+        if (behavior & IteratorBehavior::owned) {
+          this->_particles.reduce(reduceLambda, result, _begin[_OWNED], _cellSize[_OWNED], "KokkosDirectSum:reduce");
+        } else if (behavior & IteratorBehavior::halo) {
+          this->_particles.reduce(reduceLambda, result, _begin[_HALO], _cellSize[_HALO], "KokkosDirectSum:reduce");
+        }
+      }
+    }
   }
 
   template <typename Lambda>

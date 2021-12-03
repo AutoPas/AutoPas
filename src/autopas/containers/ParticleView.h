@@ -31,25 +31,24 @@ class ParticleView {
     deep_copy(subview(_particleListImp, _size), p);
     _size++;
 
-    _dirty = true;
     _particleListLock.unlock();
   }
 
   template <typename Lambda>
   void binParticles(Lambda particleBinningLambda, Kokkos::View<size_t *> &begin, Kokkos::View<size_t *> &cellsize,
-                    std::string label = "") {
-    if (_dirty) {
+                    std::string label = "binParticles") {
       // scan to create buckets
       auto nBuckets = begin.size();
       Kokkos::RangePolicy<> bucketRange(0, nBuckets);
       Kokkos::RangePolicy<> particleRange(0, _size);
 
-      Kokkos::View<size_t *> counts("Temporary view to count nParticles per bucket.", nBuckets);
+      Kokkos::View<size_t *> counts("nParticles-per-cell.", nBuckets);
 
       auto counts_sv = Kokkos::Experimental::create_scatter_view(counts);
 
-      // TODO
+      // count number of particles per cell
       Kokkos::parallel_for(
+          label + "compute-cellcount",
           particleRange,
           KOKKOS_LAMBDA(const size_t &i) {
             auto p = _particleListImp[i];
@@ -59,45 +58,46 @@ class ParticleView {
             } else {
               Kokkos::atomic_sub(&_size, 1ul);
             }
-          },
-          label + "cell_count");
+          });
 
       Kokkos::fence();
       Kokkos::Experimental::contribute(counts, counts_sv);
 
-      //
-      auto offset_scan = KOKKOS_LAMBDA(const std::size_t c, int &update, const bool final_pass) {
-        if (final_pass) begin[c] = update;
-        update += counts[c];
-      };
-      Kokkos::parallel_scan("Cabana::LinkedCellList::build::offset_scan", bucketRange, offset_scan);
+      //Scan offsets and compute begin cell indices
+      Kokkos::parallel_scan("offsetScan", bucketRange, KOKKOS_LAMBDA(const std::size_t c, int &update, const bool final_pass) {
+                if (final_pass) begin[c] = update;
+                update += counts[c];
+              });
       Kokkos::fence();
 
+      //Initialize cellsize with 0s
       Kokkos::deep_copy(cellsize, 0ul);
 
       // compute permutation vector
-      Kokkos::View<size_t *> permutes(label + "permutation view", _size);
-      Kokkos::parallel_for("", particleRange, KOKKOS_LAMBDA(const size_t &i) {
-        auto p = _particleListImp[i];
-        if (not p.isDummy()) {
-          size_t cellId = particleBinningLambda(_particleListImp[i]);
-          int c = Kokkos::atomic_fetch_add(&cellsize[cellId], 1ul);
-          permutes[begin[cellId] + c] = i;
-        }
-      });
+      Kokkos::View<size_t *> permutes(label + "particle-permutation-view", _size);
+      Kokkos::parallel_for(
+          "", particleRange, KOKKOS_LAMBDA(const size_t &i) {
+            auto p = _particleListImp[i];
+            if (not p.isDummy()) {
+              size_t cellId = particleBinningLambda(_particleListImp[i]);
+              int c = Kokkos::atomic_fetch_add(&cellsize[cellId], 1ul);
+              permutes[begin[cellId] + c] = i;
+            }
+          });
 
+      // particle range without dummy particles
       Kokkos::RangePolicy<> newParticleRange(0, _size);
 
       // insert particles into copy
-      Kokkos::View<ParticleType *> copyParticleListImpl(label + "intermediate particles copy target view", _size);
-      Kokkos::parallel_for("",
-          newParticleRange, KOKKOS_LAMBDA(const size_t &i) { copyParticleListImpl[i] = _particleListImp[permutes[i]]; }
-          );
+      Kokkos::View<ParticleType *> copyParticleListImpl(label + "intermediate-particles-sort-target-view", _size);
+      Kokkos::parallel_for(
+          "insert-into-copyParticleListImpl", newParticleRange,
+          KOKKOS_LAMBDA(const size_t &i) { copyParticleListImpl[i] = _particleListImp[permutes[i]]; });
 
       // copy back
-      Kokkos::parallel_for(
-          newParticleRange, KOKKOS_LAMBDA(const size_t &i) { _particleListImp[i] = copyParticleListImpl[i]; }, "");
-    }
+      Kokkos::parallel_for(label + "copyBack",
+          newParticleRange, KOKKOS_LAMBDA(const size_t &i) { _particleListImp[i] = copyParticleListImpl[i]; });
+
   }
 
   template <typename Lambda>
@@ -113,7 +113,6 @@ class ParticleView {
                           higherCorner, label);
   }
 
-  // TODO (lgaertner): temporary solution until container binning is implemented (maybe keep as backup?)
   template <typename Lambda>
   void forEach(Lambda forEachLambda, autopas::IteratorBehavior behavior,
                std::string label = "ParticleView::forEach(behavior)") {
@@ -181,7 +180,9 @@ class ParticleView {
 
   // TODO (lgaertner) reduce in region
 
-  void deleteAll() {}
+  void deleteAll() {
+    _size = 0;
+  }
 
   size_t getSize() const { return _size; }
   size_t getCapacity() const { return _capacity; }
@@ -215,12 +216,6 @@ class ParticleView {
           }
         });
   }
-
-  /**
-   * Flag indicating whether there are out-of-date references in the vector.
-   */
-  bool _dirty = false;
-  //  size_t _dirtyIndex{0};
 
   size_t _capacity{8};
   size_t _size{0};

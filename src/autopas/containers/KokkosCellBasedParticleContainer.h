@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include <autopas/containers/ParticleContainerInterface.h>
 #include <autopas/cells/KokkosParticleCell.h>
+#include <autopas/containers/ParticleContainerInterface.h>
 #include <autopas/containers/ParticleView.h>
 
 namespace autopas {
