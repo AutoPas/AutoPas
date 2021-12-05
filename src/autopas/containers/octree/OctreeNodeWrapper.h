@@ -224,16 +224,25 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    */
   using const_iterator_t = internal::SingleCellIterator<Particle, OctreeNodeWrapper<Particle>, false>;
 
+  /**
+   * @copydoc LinkedCells::forEach()
+   */
   template <typename Lambda>
   void forEach(Lambda forEachLambda) {
     withStaticNodeType(_pointer, [&](auto nodePtr) { nodePtr->forEach(forEachLambda); });
   }
 
+  /**
+   * @copydoc LinkedCells::reduce()
+   */
   template <typename Lambda, typename A>
   void reduce(Lambda reduceLambda, A &result) {
     withStaticNodeType(_pointer, [&](auto nodePtr) { nodePtr->reduce(reduceLambda, result); });
   }
 
+  /**
+   * @copydoc LinkedCells::forEachInRegion()
+   */
   template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                        const std::array<double, 3> &higherCorner) {
@@ -244,6 +253,9 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
     });
   }
 
+  /**
+   * @copydoc LinkedCells::reduceInRegion()
+   */
   template <typename Lambda, typename A>
   void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
                       const std::array<double, 3> &higherCorner) {

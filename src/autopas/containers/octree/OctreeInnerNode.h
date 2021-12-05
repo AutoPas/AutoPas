@@ -201,6 +201,9 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
     return result;
   }
 
+  /**
+   * @copydoc LinkedCells::forEach()
+   */
   template <typename Lambda>
   void forEach(Lambda forEachLambda) {
     for (auto &child : _children) {
@@ -208,6 +211,9 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
     }
   }
 
+  /**
+   * @copydoc LinkedCells::reduce()
+   */
   template <typename Lambda, typename A>
   void reduce(Lambda reduceLambda, A &result) {
     for (auto &child : _children) {
@@ -215,6 +221,9 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
     }
   }
 
+  /**
+   * @copydoc LinkedCells::forEachInRegion()
+   */
   template <typename Lambda>
   void forEach(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
@@ -226,6 +235,9 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
     }
   }
 
+  /**
+   * @copydoc LinkedCells::reduceInRegion()
+   */
   template <typename Lambda, typename A>
   void reduce(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
               const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
