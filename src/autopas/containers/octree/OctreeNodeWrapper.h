@@ -9,6 +9,7 @@
 #include <memory>
 
 #include "autopas/containers/octree/OctreeNodeInterface.h"
+#include "autopas/containers/octree/OctreeStaticNodeSelector.h"
 #include "autopas/iterators/ParticleIteratorWrapper.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -222,6 +223,36 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * Type of the internal const iterator.
    */
   using const_iterator_t = internal::SingleCellIterator<Particle, OctreeNodeWrapper<Particle>, false>;
+
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda) {
+    withStaticNodeType(_pointer, [&](auto nodePtr) { nodePtr->forEach(forEachLambda); });
+  }
+
+  template <typename Lambda, typename A>
+  void reduce(Lambda reduceLambda, A &result) {
+    withStaticNodeType(_pointer, [&](auto nodePtr) { nodePtr->reduce(reduceLambda, result); });
+  }
+
+  template <typename Lambda>
+  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+                       const std::array<double, 3> &higherCorner) {
+    withStaticNodeType(_pointer, [&](auto nodePtr) {
+      // The iterator behavior is set to ownedOrHalo to include all particles inside this subtree. The baseclass
+      // (Octree) decides whether this instance of OctreeNodeWrapper should be included in the iteration or not.
+      nodePtr->forEach(forEachLambda, lowerCorner, higherCorner, IteratorBehavior::ownedOrHalo);
+    });
+  }
+
+  template <typename Lambda, typename A>
+  void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+                       const std::array<double, 3> &higherCorner) {
+    withStaticNodeType(_pointer, [&](auto nodePtr) {
+      // The iterator behavior is set to ownedOrHalo to include all particles inside this subtree. The baseclass
+      // (Octree) decides whether this instance of OctreeNodeWrapper should be included in the iteration or not.
+      nodePtr->reduce(reduceLambda, result, lowerCorner, higherCorner, IteratorBehavior::ownedOrHalo);
+    });
+  }
 
  private:
   /**

@@ -8,6 +8,7 @@
 #pragma once
 
 #include "autopas/containers/octree/OctreeNodeInterface.h"
+#include "autopas/containers/octree/OctreeStaticNodeSelector.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/inBox.h"
 
@@ -198,6 +199,42 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
       }
     }
     return result;
+  }
+
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda) {
+    for (auto &child : _children) {
+      withStaticNodeType(child, [&](auto nodePtr) { nodePtr->forEach(forEachLambda); });
+    }
+  }
+
+  template <typename Lambda, typename A>
+  void reduce(Lambda reduceLambda, A &result) {
+    for (auto &child : _children) {
+      withStaticNodeType(child, [&](auto nodePtr) { nodePtr->reduce(reduceLambda, result); });
+    }
+  }
+
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+               const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    for (auto &child : _children) {
+      double vol = child->getEnclosedVolumeWith(lowerCorner, higherCorner);
+      if (vol > 0.0)
+        withStaticNodeType(child,
+                           [&](auto nodePtr) { nodePtr->forEach(forEachLambda, lowerCorner, higherCorner, behavior); });
+    }
+  }
+
+  template <typename Lambda, typename A>
+  void reduce(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+              const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    for (auto &child : _children) {
+      double vol = child->getEnclosedVolumeWith(lowerCorner, higherCorner);
+      if (vol > 0.0)
+        withStaticNodeType(
+            child, [&](auto nodePtr) { nodePtr->reduce(reduceLambda, result, lowerCorner, higherCorner, behavior); });
+    }
   }
 
  private:
