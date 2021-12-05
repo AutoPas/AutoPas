@@ -8,9 +8,9 @@
 
 #include <memory>
 
-#include "autopas/containers/octree/OctreeNodeWrapper.h"
 #include "autopas/containers/octree/OctreeInnerNode.h"
 #include "autopas/containers/octree/OctreeLeafNode.h"
+#include "autopas/containers/octree/OctreeNodeWrapper.h"
 
 namespace autopas {
 template <typename Particle>
