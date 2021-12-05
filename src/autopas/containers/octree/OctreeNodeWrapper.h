@@ -225,7 +225,10 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
   using const_iterator_t = internal::SingleCellIterator<Particle, OctreeNodeWrapper<Particle>, false>;
 
   /**
-   * @copydoc LinkedCells::forEach()
+   * Apply the forEach lambda to each particle.
+   *
+   * @tparam Lambda Function type
+   * @param forEachLambda Function to apply
    */
   template <typename Lambda>
   void forEach(Lambda forEachLambda) {
@@ -233,7 +236,12 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
   }
 
   /**
-   * @copydoc LinkedCells::reduce()
+   * Apply the reduce lambda to each particle.
+   *
+   * @tparam Lambda Function type
+   * @tparam A Initial value type
+   * @param reduceLambda Function to apply
+   * @param result Initial value
    */
   template <typename Lambda, typename A>
   void reduce(Lambda reduceLambda, A &result) {
@@ -241,7 +249,12 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
   }
 
   /**
-   * @copydoc LinkedCells::forEachInRegion()
+   * Apply the forEach lambda to each particle in the region.
+   *
+   * @tparam Lambda Function type
+   * @param forEachLambda Function to apply
+   * @param lowerCorner Lower corner of region
+   * @param higherCorner Higher corner of region
    */
   template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
@@ -254,7 +267,14 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
   }
 
   /**
-   * @copydoc LinkedCells::reduceInRegion()
+   * Apply the reduce lambda to each particle in the region.
+   *
+   * @tparam Lambda Function type
+   * @tparam A Initial value type
+   * @param reduceLambda Function to apply
+   * @param result Initial value
+   * @param lowerCorner Lower corner of region
+   * @param higherCorner Higher corner of region
    */
   template <typename Lambda, typename A>
   void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
