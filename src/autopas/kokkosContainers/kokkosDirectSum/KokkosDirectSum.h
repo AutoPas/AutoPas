@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "autopas/containers/KokkosCellBasedParticleContainer.h"
+#include <autopas/kokkosContainers/KokkosCellBasedParticleContainer.h>
 
 namespace autopas {
 
@@ -87,6 +87,17 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
     if (keepNeighborListsValid) {
       //      basically do nothing and return
     }
+
+//    TODO lgaertner
+//    std::vector<Particle> invalidParticles{};
+//    this->_particles.forEach();
+//    for (auto iter = getCell().begin(); iter.isValid(); ++iter) {
+//      if (utils::notInBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
+//        invalidParticles.push_back(*iter);
+//        internal::deleteParticle(iter);
+//      }
+//    }
+//    return invalidParticles;
 
     this->deleteHaloParticles();
     this->_particles.binParticles([&](Particle &p) -> size_t { return p.isOwned() ? _OWNED : _HALO; }, _begin,

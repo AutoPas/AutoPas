@@ -67,7 +67,10 @@ class KokkosDSSequential : public TraversalInterface, public KokkosDSTraversalIn
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  PairwiseFunctor *_functor;
+//  internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
+//      true>
+//      _cellFunctor;
+    PairwiseFunctor* _functor;
 
   /**
    * Data Layout Converter to be used with this traversal

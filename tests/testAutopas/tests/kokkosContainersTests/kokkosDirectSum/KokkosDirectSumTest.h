@@ -10,7 +10,7 @@
 
 #include "AutoPasTestBase.h"
 #include "testingHelpers/commonTypedefs.h"
-#include "autopas/containers/kokkosDirectSum/KokkosDirectSum.h"
+#include "autopas/kokkosContainers/kokkosDirectSum/KokkosDirectSum.h"
 
 class KokkosDirectSumTest : public AutoPasTestBase {
  public:

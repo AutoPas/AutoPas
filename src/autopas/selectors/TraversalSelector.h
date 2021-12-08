@@ -13,7 +13,6 @@
 
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/directSum/traversals/DSSequentialTraversal.h"
-#include "autopas/containers/kokkosDirectSum/traversals/KokkosDSSequential.h"
 #include "autopas/containers/linkedCells/traversals/LCC01Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04CombinedSoATraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04HCPTraversal.h"
@@ -38,6 +37,7 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCSlicedBalancedTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCSlicedC02Traversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCSlicedTraversal.h"
+#include "autopas/kokkosContainers/kokkosDirectSum/traversals/KokkosDSSequential.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/SelectorStrategyOption.h"

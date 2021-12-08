@@ -10,7 +10,7 @@
 
 #include "AutoPasTestBase.h"
 #include "testingHelpers/commonTypedefs.h"
-#include "autopas/containers/ParticleView.h"
+#include "autopas/kokkosContainers/ParticleView.h"
 
 class ParticleViewTest : public AutoPasTestBase {
  public:

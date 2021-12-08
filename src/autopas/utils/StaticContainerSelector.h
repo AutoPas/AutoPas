@@ -9,7 +9,7 @@
 #include <memory>
 
 #include "autopas/containers/directSum/DirectSum.h"
-#include "autopas/containers/kokkosDirectSum/KokkosDirectSum.h"
+#include "autopas/kokkosContainers/kokkosDirectSum/KokkosDirectSum.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/LinkedCellsReferences.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
