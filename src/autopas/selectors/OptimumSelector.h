@@ -54,6 +54,10 @@ inline long medianValue(std::vector<long> values) {
  * @return value
  */
 inline long optimumValue(const std::vector<long> &values, SelectorStrategyOption strategy) {
+  if (values.empty()) {
+    return std::numeric_limits<long>::max();
+  }
+
   switch (strategy) {
     case SelectorStrategyOption::fastestAbs: {
       return minValue(values);

@@ -31,6 +31,7 @@ template <class output_t, class input_t, std::size_t SIZE>
 
 /**
  * Generates a string representation of a container which fulfills the Container requirement (provide cbegin and cend).
+ * @note std::boolalpha is always enabled.
  * @tparam T Type of Container.
  * @param a Container.
  * @param delimiter String that is put between items.
@@ -46,7 +47,7 @@ template <class T>
     return surround[0] + surround[1];
   }
   std::ostringstream strStream;
-  strStream << surround[0] << *it;
+  strStream << std::boolalpha << surround[0] << *it;
   for (++it; it != end; ++it) {
     strStream << delimiter << *it;
   }

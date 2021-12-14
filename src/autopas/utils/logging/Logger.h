@@ -16,6 +16,11 @@
 
 #ifdef AUTOPAS_VERBOSE_LOG
 /**
+ * Helper Macro to get only the basename
+ */
+#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+
+/**
  * Macro for logging providing common meta information.
  * @param lvl Possible levels: trace, debug, info, warn, error, critical.
  * @param fmt Message with formatting tokens
@@ -23,10 +28,10 @@
  */
 #define AutoPasLog(lvl, fmt, ...)                                        \
   {                                                                      \
-    size_t textwidth = 26; /* If filenames get cropped increase this! */ \
+    size_t textwidth = 35; /* If filenames get cropped increase this! */ \
     std::string s;                                                       \
     s.reserve(textwidth);                                                \
-    s.append(SPDLOG_FILE_BASENAME(__FILE__));                            \
+    s.append(__FILENAME__);                                              \
     s.append(":");                                                       \
     s.append(std::to_string(__LINE__));                                  \
     s.resize(textwidth, ' ');                                            \

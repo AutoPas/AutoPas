@@ -58,12 +58,13 @@ class AutoTuner {
    * @param selectorStrategy Strategy for the configuration selection.
    * @param tuningInterval Number of time steps after which the auto-tuner shall reevaluate all selections.
    * @param maxSamples Number of samples that shall be collected for each combination.
+   * @param rebuildFrequency The rebuild frequency this AutoPas instance uses.
    * @param outputSuffix Suffix for all output files produced by this class.
    */
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
             unsigned int verletClusterSize, std::unique_ptr<TuningStrategyInterface> tuningStrategy,
             SelectorStrategyOption selectorStrategy, unsigned int tuningInterval, unsigned int maxSamples,
-            const std::string &outputSuffix = "", bool useTuningStrategyLoggerProxy = false)
+            unsigned int rebuildFrequency, const std::string &outputSuffix = "", bool useTuningStrategyLoggerProxy = false)
       : _selectorStrategy(selectorStrategy),
         _tuningStrategy(useTuningStrategyLoggerProxy
                             ? std::make_unique<TuningStrategyLoggerProxy>(std::move(tuningStrategy), outputSuffix)
@@ -73,8 +74,9 @@ class AutoTuner {
         _containerSelector(boxMin, boxMax, cutoff),
         _verletSkin(verletSkin),
         _verletClusterSize(verletClusterSize),
+        _rebuildFrequency(rebuildFrequency),
         _maxSamples(maxSamples),
-        _samples(maxSamples),
+        _samplesNotRebuildingNeighborLists(maxSamples),
         _iteration(0),
         _iterationLogger(outputSuffix),
         _tuningResultLogger(outputSuffix),
@@ -166,7 +168,7 @@ class AutoTuner {
     if (_tuningStrategy->searchSpaceIsTrivial()) {
       return false;
     }
-    return _iterationsSinceTuning >= _tuningInterval and _samples.size() >= _maxSamples;
+    return _iterationsSinceTuning >= _tuningInterval and getCurrentNumSamples() >= _maxSamples;
   }
 
   /**
@@ -176,6 +178,10 @@ class AutoTuner {
   [[nodiscard]] const Configuration &getCurrentConfig() const;
 
  private:
+  auto getCurrentNumSamples() const {
+    return _samplesNotRebuildingNeighborLists.size() + _samplesRebuildingNeighborLists.size();
+  }
+
   /**
    * Save the runtime of a given traversal.
    *
@@ -184,8 +190,27 @@ class AutoTuner {
    * The time argument is a long because std::chrono::duration::count returns a long.
    *
    * @param time
+   * @param neighborListRebuilt If the neighbor list as been rebuilt during the given time.
    */
-  void addTimeMeasurement(long time);
+  void addTimeMeasurement(long time, bool neighborListRebuilt);
+
+  /**
+   * @return the runtime from the current samples according to the SelectorStrategy and rebuild frequency.
+   */
+  [[nodiscard]] long estimateRuntimeFromSamples() const {
+    auto reducedValueBuilding =
+        autopas::OptimumSelector::optimumValue(this->_samplesRebuildingNeighborLists, this->_selectorStrategy);
+    auto reducedValueNotBuilding =
+        autopas::OptimumSelector::optimumValue(this->_samplesNotRebuildingNeighborLists, this->_selectorStrategy);
+    // Weight samples from iterations with rebuilding neighbor lists properly in according to the _rebuildFrequency
+    auto numIterationsNotBuilding = std::max(
+        0, static_cast<int>(this->_rebuildFrequency) - static_cast<int>(this->_samplesRebuildingNeighborLists.size()));
+    auto numIterationsBuilding = this->_rebuildFrequency - numIterationsNotBuilding;
+    const auto reducedValue =
+        (numIterationsBuilding * reducedValueBuilding + numIterationsNotBuilding * reducedValueNotBuilding) /
+        this->_rebuildFrequency;
+    return reducedValue;
+  }
 
   /**
    * Initialize the container specified by the TuningStrategy.
@@ -237,16 +262,28 @@ class AutoTuner {
   unsigned int _verletClusterSize;
 
   /**
+   * The rebuild frequency this instance of AutoPas uses.
+   */
+  unsigned int _rebuildFrequency;
+
+  /**
    * How many times each configuration should be tested.
    */
   const size_t _maxSamples;
 
   /**
-   * Raw time samples of the current configuration from which one evidence will be produced.
+   * Raw time samples of the current configuration. Contains only the samples of iterations where the neighbor lists are
+   * not rebuilt.
    *
    * @note Initialized with size of _maxSamples to start tuning at start of simulation.
    */
-  std::vector<long> _samples;
+  std::vector<long> _samplesNotRebuildingNeighborLists;
+
+  /**
+   * Raw time samples of the current configuration. Contains only the samples of iterations where the neighbor lists
+   * have been rebuilt.
+   */
+  std::vector<long> _samplesRebuildingNeighborLists;
 
   /**
    * For each configuration the collection of all evidence (smoothed values) collected so far and in which iteration.
@@ -269,7 +306,7 @@ void AutoTuner<Particle>::selectCurrentContainer() {
 template <class Particle>
 void AutoTuner<Particle>::forceRetune() {
   _iterationsSinceTuning = _tuningInterval;
-  _samples.resize(_maxSamples);
+  _samplesNotRebuildingNeighborLists.resize(_maxSamples);
 }
 
 template <class Particle>
@@ -487,7 +524,7 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
   // if tuning execute with time measurements
   if (inTuningPhase) {
     if (f->isRelevantForTuning()) {
-      addTimeMeasurement(timerTotal.getTotalTime());
+      addTimeMeasurement(timerTotal.getTotalTime(), doListRebuild);
     } else {
       AutoPasLog(trace, "Skipping adding of time measurement because functor is not marked relevant.");
     }
@@ -500,7 +537,7 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
   bool stillTuning = true;
 
   // need more samples; keep current config
-  if (_samples.size() < _maxSamples) {
+  if (getCurrentNumSamples() < _maxSamples) {
     return stillTuning;
   }
   utils::Timer tuningTimer;
@@ -540,7 +577,8 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
   // samples should only be cleared if we are still tuning, see `if (_samples.size() < _maxSamples)` from before.
   if (stillTuning) {
     // samples are no longer needed. Delete them here so willRebuild() works as expected.
-    _samples.clear();
+    _samplesNotRebuildingNeighborLists.clear();
+    _samplesRebuildingNeighborLists.clear();
   }
   tuningTimer.stop();
   // when a tuning result is found log it
@@ -584,17 +622,21 @@ const Configuration &AutoTuner<Particle>::getCurrentConfig() const {
 }
 
 template <class Particle>
-void AutoTuner<Particle>::addTimeMeasurement(long time) {
+void AutoTuner<Particle>::addTimeMeasurement(long time, bool neighborListRebuilt) {
   const auto &currentConfig = _tuningStrategy->getCurrentConfiguration();
-
-  if (_samples.size() < _maxSamples) {
+  if (getCurrentNumSamples() < _maxSamples) {
     AutoPasLog(trace, "Adding sample.");
-    _samples.push_back(time);
+    if (neighborListRebuilt) {
+      _samplesRebuildingNeighborLists.push_back(time);
+    } else {
+      _samplesNotRebuildingNeighborLists.push_back(time);
+    }
     // if this was the last sample:
-    if (_samples.size() == _maxSamples) {
+    if (getCurrentNumSamples() == _maxSamples) {
       auto &evidenceCurrentConfig = _evidence[currentConfig];
 
-      const auto reducedValue = OptimumSelector::optimumValue(_samples, _selectorStrategy);
+      long reducedValue = estimateRuntimeFromSamples();
+
       evidenceCurrentConfig.emplace_back(_iteration, reducedValue);
 
       // smooth evidence to remove high outliers. If smoothing results in a higher value use the original value.
@@ -611,11 +653,15 @@ void AutoTuner<Particle>::addTimeMeasurement(long time) {
         // print config
         ss << currentConfig.toString() << " : ";
         // print all timings
-        ss << utils::ArrayUtils::to_string(_samples, " ", {"[ ", " ]"});
+        ss << utils::ArrayUtils::to_string(_samplesRebuildingNeighborLists, " ",
+                                           {"With rebuilding neighbor lists [ ", " ]"});
+        ss << utils::ArrayUtils::to_string(_samplesNotRebuildingNeighborLists, " ",
+                                           {"Without rebuilding neighbor lists [ ", " ]"});
         ss << " Smoothed value: " << smoothedValue;
         AutoPasLog(debug, "Collected times for  {}", ss.str());
       }
-      _tuningDataLogger.logTuningData(currentConfig, _samples, _iteration, reducedValue, smoothedValue);
+      _tuningDataLogger.logTuningData(currentConfig, _samplesRebuildingNeighborLists,
+                                      _samplesNotRebuildingNeighborLists, _iteration, reducedValue, smoothedValue);
     }
   }
 }

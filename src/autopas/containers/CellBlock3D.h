@@ -356,9 +356,13 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, c
     _haloBoxMax[d] = _boxMax[d] + _cellsPerInteractionLength * _cellLength[d];
 
     _numCells *= _cellsPerDimensionWithHalo[d];
-
-    AutoPasLog(debug, "CellsPerDimensionWithHalo[{}]={}", d, _cellsPerDimensionWithHalo[d]);
   }
+  AutoPasLog(trace, "Box Length incl Halo : {}",
+             autopas::utils::ArrayUtils::to_string(autopas::utils::ArrayMath::sub(_haloBoxMax, _haloBoxMin)));
+  AutoPasLog(trace, "Cells/Dim  incl Halo : {}", autopas::utils::ArrayUtils::to_string(_cellsPerDimensionWithHalo));
+  AutoPasLog(trace, "Cell Length          : {}", autopas::utils::ArrayUtils::to_string(_cellLength));
+  AutoPasLog(trace, "Interaction Length   : {}", interactionLength);
+  AutoPasLog(trace, "Cell Size Factor     : {}", cellSizeFactor);
 
   _cells->resize(_numCells);
   for (auto &cell : *_cells) {
