@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import itertools
+import copy
 
 import yaml
 from yaml.loader import SafeLoader
@@ -24,7 +25,7 @@ cubeClosestPackedTemplate = {'CubeClosestPacked': {0: {'box-length': [40, 40, 40
 for boxLength, particleSpacing in itertools.product(particleGenShapes, [0.4, 0.6, 0.8]):
     cubeClosestPackedTemplate['CubeClosestPacked'][0]['box-length'] = boxLength
     cubeClosestPackedTemplate['CubeClosestPacked'][0]['particle-spacing'] = particleSpacing
-    objects.append({'content': cubeClosestPackedTemplate,
+    objects.append({'content': copy.deepcopy(cubeClosestPackedTemplate),
                     'name': 'CubeClosestPacked' + str(boxLength) + str(particleSpacing)})
 
 cubeUniformTemplate = {'CubeUniform': {0: {'numberOfParticles': 100,
@@ -36,13 +37,18 @@ cubeUniformTemplate = {'CubeUniform': {0: {'numberOfParticles': 100,
                                            'particle-sigma': 1,
                                            'particle-mass': 1}}}
 
-for boxLength, numberOfParticles in itertools.product([[5, 5, 5], [50, 50, 50], [10, 60, 60]], [5000, 50000, 500000,
-                                                                                                1000000]):
+uniformArguments = []
+for boxLength, numberOfParticles in itertools.product([[50, 50, 50], [10, 60, 60]], [5000, 50000, 500000,
+                                                                                     1000000]):
+    uniformArguments.append([boxLength, numberOfParticles])
+uniformArguments.append([[5, 5, 5], 4000])
+
+for boxLength, numberOfParticles in uniformArguments:
     if numberOfParticles > 1000000 and boxLength != [50, 50, 50]:
         continue
     cubeUniformTemplate['CubeUniform'][0]['numberOfParticles'] = numberOfParticles
     cubeUniformTemplate['CubeUniform'][0]['box-length'] = boxLength
-    objects.append({'content': cubeUniformTemplate,
+    objects.append({'content': copy.deepcopy(cubeUniformTemplate),
                     'name': 'CubeUniform' + str(boxLength) + str(numberOfParticles)})
 
 
@@ -60,7 +66,7 @@ cubeGaussTemplate = {'CubeGauss': {0: {'distribution-mean': [20, 20, 20],
 for numberOfParticles, stddev in itertools.product([150000, 750000], [[10, 10, 10], [16, 8, 8]]):
     cubeGaussTemplate['CubeGauss'][0]['numberOfParticles'] = numberOfParticles
     cubeGaussTemplate['CubeGauss'][0]['distribution-stddeviation'] = stddev
-    objects.append({'content': cubeGaussTemplate,
+    objects.append({'content': copy.deepcopy(cubeGaussTemplate),
                     'name': 'CubeGauss' + str(stddev) + str(numberOfParticles)})
 
 
