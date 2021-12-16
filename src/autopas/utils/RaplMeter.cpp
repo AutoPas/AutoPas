@@ -19,7 +19,7 @@
 
 namespace autopas::utils {
 
-int open_perf_event(int type, int config) {
+int RaplMeter::open_perf_event(int type, int config) {
   struct perf_event_attr attr;
   memset(&attr, 0, sizeof(attr));
   attr.type = type;
@@ -124,7 +124,7 @@ RaplMeter::~RaplMeter() {
   }
 }
 
-long read_perf_event(int fd) {
+long RaplMeter::read_perf_event(int fd) {
   if (fd == -1) {
     return 0;
   }

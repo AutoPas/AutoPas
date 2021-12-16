@@ -58,6 +58,7 @@ class AutoTuner {
    * @param tuningStrategy Object implementing the modelling and exploration of a search space.
    * @param selectorStrategy Strategy for the configuration selection.
    * @param tuningInterval Number of time steps after which the auto-tuner shall reevaluate all selections.
+   * @param tuningMetric Metric used to rate configurations (time or energy).
    * @param maxSamples Number of samples that shall be collected for each combination.
    * @param outputSuffix Suffix for all output files produced by this class.
    */
@@ -181,9 +182,9 @@ class AutoTuner {
    *
    * Samples are collected and reduced to one single value according to _selectorStrategy. Only then the value is passed
    * on to the tuning strategy. This function expects that samples of the same configuration are taken consecutively.
-   * The time argument is a long because std::chrono::duration::count returns a long.
+   * The sample argument is a long because std::chrono::duration::count returns a long.
    *
-   * @param time
+   * @param sample
    */
   void addMeasurement(long sample);
 
@@ -511,131 +512,131 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
   }
 }
 
-  template <class Particle>
-  template <class PairwiseFunctor>
-  bool AutoTuner<Particle>::tune(PairwiseFunctor & pairwiseFunctor) {
-    bool stillTuning = true;
+template <class Particle>
+template <class PairwiseFunctor>
+bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
+  bool stillTuning = true;
 
-    // need more samples; keep current config
-    if (_samples.size() < _maxSamples) {
-      return stillTuning;
-    }
-    utils::Timer tuningTimer;
-    tuningTimer.start();
-    // first tuning iteration -> reset to first config
-    if (_iterationsSinceTuning == _tuningInterval) {
-      _tuningStrategy->reset(_iteration);
-    } else {  // enough samples -> next config
-      stillTuning = _tuningStrategy->tune();
-    }
-
-    // repeat as long as traversals are not applicable or we run out of configs
-    while (true) {
-      auto &currentConfig = getCurrentConfig();
-      // check if newton3 works with this functor and remove config if not
-      if ((currentConfig.newton3 == Newton3Option::enabled and not pairwiseFunctor.allowsNewton3()) or
-          (currentConfig.newton3 == Newton3Option::disabled and not pairwiseFunctor.allowsNonNewton3())) {
-        AutoPasLog(warn, "Configuration with newton 3 {} called with a functor that does not support this!",
-                   currentConfig.newton3.to_string());
-
-        _tuningStrategy->removeN3Option(currentConfig.newton3);
-      } else {
-        if (configApplicable(currentConfig, pairwiseFunctor)) {
-          // we found a valid config!
-          break;
-        } else {
-          AutoPasLog(debug, "Skip not applicable configuration {}", currentConfig.toString());
-          stillTuning = _tuningStrategy->tune(true);
-        }
-      }
-    }
-    // samples should only be cleared if we are still tuning, see `if (_samples.size() < _maxSamples)` from before.
-    if (stillTuning) {
-      // samples are no longer needed. Delete them here so willRebuild() works as expected.
-      _samples.clear();
-    }
-    tuningTimer.stop();
-    // when a tuning result is found log it
-    if (not stillTuning) {
-      AutoPasLog(debug, "Selected Configuration {}", getCurrentConfig().toString());
-      _tuningResultLogger.logTuningResult(getCurrentConfig(), _iteration, tuningTimer.getTotalTime());
-    }
-    AutoPasLog(debug, "Tuning took {} ns.", tuningTimer.getTotalTime());
-    _iterationLogger.logTimeTuning(tuningTimer.getTotalTime());
-
-    selectCurrentContainer();
+  // need more samples; keep current config
+  if (_samples.size() < _maxSamples) {
     return stillTuning;
   }
-
-  template <class Particle>
-  template <class PairwiseFunctor>
-  bool AutoTuner<Particle>::configApplicable(const Configuration &conf, PairwiseFunctor &pairwiseFunctor) {
-    auto allContainerTraversals = compatibleTraversals::allCompatibleTraversals(conf.container);
-    if (allContainerTraversals.find(conf.traversal) == allContainerTraversals.end()) {
-      // container and traversal mismatch
-      return false;
-    }
-
-    _containerSelector.selectContainer(conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin,
-                                                                             _verletClusterSize, conf.loadEstimator));
-    auto traversalInfo = _containerSelector.getCurrentContainer()->getTraversalSelectorInfo();
-
-    auto containerPtr = getContainer();
-
-    return autopas::utils::withStaticCellType<Particle>(
-        containerPtr->getParticleCellTypeEnum(), [&](auto particleCellDummy) {
-          return TraversalSelector<decltype(particleCellDummy)>::template generateTraversal<PairwiseFunctor>(
-                     conf.traversal, pairwiseFunctor, traversalInfo, conf.dataLayout, conf.newton3)
-              ->isApplicable();
-        });
+  utils::Timer tuningTimer;
+  tuningTimer.start();
+  // first tuning iteration -> reset to first config
+  if (_iterationsSinceTuning == _tuningInterval) {
+    _tuningStrategy->reset(_iteration);
+  } else {  // enough samples -> next config
+    stillTuning = _tuningStrategy->tune();
   }
 
-  template <class Particle>
-  const Configuration &AutoTuner<Particle>::getCurrentConfig() const {
-    return _tuningStrategy->getCurrentConfiguration();
-  }
+  // repeat as long as traversals are not applicable or we run out of configs
+  while (true) {
+    auto &currentConfig = getCurrentConfig();
+    // check if newton3 works with this functor and remove config if not
+    if ((currentConfig.newton3 == Newton3Option::enabled and not pairwiseFunctor.allowsNewton3()) or
+        (currentConfig.newton3 == Newton3Option::disabled and not pairwiseFunctor.allowsNonNewton3())) {
+      AutoPasLog(warn, "Configuration with newton 3 {} called with a functor that does not support this!",
+                 currentConfig.newton3.to_string());
 
-  template <class Particle>
-  void AutoTuner<Particle>::addMeasurement(long sample) {
-    const auto &currentConfig = _tuningStrategy->getCurrentConfiguration();
-
-    if (_samples.size() < _maxSamples) {
-      AutoPasLog(trace, "Adding sample.");
-      _samples.push_back(sample);
-      // if this was the last sample:
-      if (_samples.size() == _maxSamples) {
-        auto &evidenceCurrentConfig = _evidence[currentConfig];
-
-        const auto reducedValue = OptimumSelector::optimumValue(_samples, _selectorStrategy);
-        evidenceCurrentConfig.emplace_back(_iteration, reducedValue);
-
-        // smooth evidence to remove high outliers. If smoothing results in a higher value use the original value.
-        const auto smoothedValue = std::min(reducedValue, smoothing::smoothLastPoint(evidenceCurrentConfig, 5));
-
-        // replace collected evidence with smoothed value to improve next smoothing
-        evidenceCurrentConfig.back().second = smoothedValue;
-
-        _tuningStrategy->addEvidence(smoothedValue, _iteration);
-
-        // print config, times and reduced value
-        if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
-          std::ostringstream ss;
-          // print config
-          ss << currentConfig.toString() << " : ";
-          // print all timings
-          ss << utils::ArrayUtils::to_string(_samples, " ", {"[ ", " ]"});
-          ss << " Smoothed value: " << smoothedValue;
-          switch (this->_tuningMetric) {
-            case TuningMetricOption::time:
-              AutoPasLog(debug, "Collected times for  {}", ss.str());
-              break;
-            case TuningMetricOption::energy:
-              AutoPasLog(debug, "Collected energy consumption for  {}", ss.str());
-              break;
-          }
-        }
-        _tuningDataLogger.logTuningData(currentConfig, _samples, _iteration, reducedValue, smoothedValue);
+      _tuningStrategy->removeN3Option(currentConfig.newton3);
+    } else {
+      if (configApplicable(currentConfig, pairwiseFunctor)) {
+        // we found a valid config!
+        break;
+      } else {
+        AutoPasLog(debug, "Skip not applicable configuration {}", currentConfig.toString());
+        stillTuning = _tuningStrategy->tune(true);
       }
     }
   }
-  }  // namespace autopas
+  // samples should only be cleared if we are still tuning, see `if (_samples.size() < _maxSamples)` from before.
+  if (stillTuning) {
+    // samples are no longer needed. Delete them here so willRebuild() works as expected.
+    _samples.clear();
+  }
+  tuningTimer.stop();
+  // when a tuning result is found log it
+  if (not stillTuning) {
+    AutoPasLog(debug, "Selected Configuration {}", getCurrentConfig().toString());
+    _tuningResultLogger.logTuningResult(getCurrentConfig(), _iteration, tuningTimer.getTotalTime());
+  }
+  AutoPasLog(debug, "Tuning took {} ns.", tuningTimer.getTotalTime());
+  _iterationLogger.logTimeTuning(tuningTimer.getTotalTime());
+
+  selectCurrentContainer();
+  return stillTuning;
+}
+
+template <class Particle>
+template <class PairwiseFunctor>
+bool AutoTuner<Particle>::configApplicable(const Configuration &conf, PairwiseFunctor &pairwiseFunctor) {
+  auto allContainerTraversals = compatibleTraversals::allCompatibleTraversals(conf.container);
+  if (allContainerTraversals.find(conf.traversal) == allContainerTraversals.end()) {
+    // container and traversal mismatch
+    return false;
+  }
+
+  _containerSelector.selectContainer(
+      conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin, _verletClusterSize, conf.loadEstimator));
+  auto traversalInfo = _containerSelector.getCurrentContainer()->getTraversalSelectorInfo();
+
+  auto containerPtr = getContainer();
+
+  return autopas::utils::withStaticCellType<Particle>(
+      containerPtr->getParticleCellTypeEnum(), [&](auto particleCellDummy) {
+        return TraversalSelector<decltype(particleCellDummy)>::template generateTraversal<PairwiseFunctor>(
+                   conf.traversal, pairwiseFunctor, traversalInfo, conf.dataLayout, conf.newton3)
+            ->isApplicable();
+      });
+}
+
+template <class Particle>
+const Configuration &AutoTuner<Particle>::getCurrentConfig() const {
+  return _tuningStrategy->getCurrentConfiguration();
+}
+
+template <class Particle>
+void AutoTuner<Particle>::addMeasurement(long sample) {
+  const auto &currentConfig = _tuningStrategy->getCurrentConfiguration();
+
+  if (_samples.size() < _maxSamples) {
+    AutoPasLog(trace, "Adding sample.");
+    _samples.push_back(sample);
+    // if this was the last sample:
+    if (_samples.size() == _maxSamples) {
+      auto &evidenceCurrentConfig = _evidence[currentConfig];
+
+      const auto reducedValue = OptimumSelector::optimumValue(_samples, _selectorStrategy);
+      evidenceCurrentConfig.emplace_back(_iteration, reducedValue);
+
+      // smooth evidence to remove high outliers. If smoothing results in a higher value use the original value.
+      const auto smoothedValue = std::min(reducedValue, smoothing::smoothLastPoint(evidenceCurrentConfig, 5));
+
+      // replace collected evidence with smoothed value to improve next smoothing
+      evidenceCurrentConfig.back().second = smoothedValue;
+
+      _tuningStrategy->addEvidence(smoothedValue, _iteration);
+
+      // print config, times and reduced value
+      if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
+        std::ostringstream ss;
+        // print config
+        ss << currentConfig.toString() << " : ";
+        // print all timings
+        ss << utils::ArrayUtils::to_string(_samples, " ", {"[ ", " ]"});
+        ss << " Smoothed value: " << smoothedValue;
+        switch (this->_tuningMetric) {
+          case TuningMetricOption::time:
+            AutoPasLog(debug, "Collected times for  {}", ss.str());
+            break;
+          case TuningMetricOption::energy:
+            AutoPasLog(debug, "Collected energy consumption for  {}", ss.str());
+            break;
+        }
+      }
+      _tuningDataLogger.logTuningData(currentConfig, _samples, _iteration, reducedValue, smoothedValue);
+    }
+  }
+}
+}  // namespace autopas
