@@ -39,21 +39,31 @@ class RaplMeter {
    */
   void sample();
 
-  /** returns the the energy in Joules consumed by the cpu package between the last call of sample() and the preceding
-   * call of reset() */
+  /** returns the energy consumed by the cpu package between the last call of sample() and the preceding
+   * call of reset()
+   * @return Energy in Joules
+   */
   double get_pkg_energy();
-  /** returns the the energy in Joules consumed by the cpu cores between the last call of sample() and the preceding
-   * call of reset() */
+  /** returns the energy consumed by the cpu cores between the last call of sample() and the preceding
+   * call of reset()
+   * @return Energy in Joules
+   */
   double get_cores_energy();
-  /** returns the the energy in Joules consumed by ram between the last call of sample() and the preceding call of
-   * reset() */
+  /** returns the energy consumed by ram between the last call of sample() and the preceding call of
+   * reset()
+   * @return Energy in Joules
+   */
   double get_ram_energy();
-  /** returns the the energy in Joules consumed by the entire system between the last call of sample() and the preceding
-   * call of reset() */
+  /** returns the energy consumed by the entire system between the last call of sample() and the preceding
+   * call of reset()
+   * @return Energy in Joules
+   */
   double get_psys_energy();
   // unscaled for tuning
-  /** return an unscaled  energy measurement for tuning purposes. Depending on which perf counters are available this
-   * may return psys, or a sum of pkg and ram
+  /** return energy measurement for tuning purposes. Depending on which perf counters are available this
+   * may return psys, or a sum of pkg and ram. Note that the units used here are not consistent across different
+   * systems.
+   * @return unscaled energy
    */
   long get_total_energy();
 };
