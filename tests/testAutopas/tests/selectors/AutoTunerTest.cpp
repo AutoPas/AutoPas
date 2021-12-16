@@ -411,7 +411,8 @@ TEST_F(AutoTunerTest, testNoConfig) {
     std::set<autopas::Configuration> configsList = {};
     auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
     autopas::AutoTuner<Molecule> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
-                                           autopas::SelectorStrategyOption::fastestAbs, 1000, 3);
+                                           autopas::SelectorStrategyOption::fastestAbs,
+                                           autopas::TuningMetricOption::time, 1000, 3);
   };
 
   EXPECT_THROW(exp1(), autopas::utils::ExceptionHandler::AutoPasException) << "Constructor with given configs";
