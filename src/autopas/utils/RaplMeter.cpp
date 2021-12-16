@@ -14,6 +14,7 @@
 #include <cstring>
 #include <sstream>
 
+#include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/logging/Logger.h"
 
 namespace autopas::utils {
@@ -28,6 +29,12 @@ int open_perf_event(int type, int config) {
   }
 
   int fd = syscall(__NR_perf_event_open, &attr, -1 /*PID*/, 0 /*CPU*/, -1 /*GROUP FD*/, 0 /*FLAGS*/);
+  if (fd < 0) {
+    if (errno == EACCES) {
+      throw ExceptionHandler::AutoPasException("Failed to open perf event: Permission denied");
+    }
+    throw ExceptionHandler::AutoPasException("Failed to open perf event");
+  }
   // TODO: Error handling
   return fd;
 }
@@ -35,7 +42,7 @@ int open_perf_event(int type, int config) {
 RaplMeter::RaplMeter() {
   FILE *fff = fopen("/sys/bus/event_source/devices/power/type", "r");
   if (fff == NULL) {
-    AutoPasLog(error, "No Support for Energy measurements");
+    throw ExceptionHandler::AutoPasException("No support for energy measurements detected.");
   } else {
     fscanf(fff, "%d", &this->_type);
     fclose(fff);
