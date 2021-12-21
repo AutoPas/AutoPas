@@ -9,8 +9,9 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
-#include "testingHelpers/commonTypedefs.h"
+#include "autopas/cells/KokkosParticleCell.h"
 #include "autopas/kokkosContainers/ParticleView.h"
+#include "testingHelpers/commonTypedefs.h"
 
 class ParticleViewTest : public AutoPasTestBase {
  public:

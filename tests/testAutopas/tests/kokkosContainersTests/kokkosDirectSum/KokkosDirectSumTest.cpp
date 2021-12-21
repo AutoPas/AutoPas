@@ -34,4 +34,10 @@ TEST_F(KokkosDirectSumTest, testUpdateContainer) {
 
   EXPECT_EQ(summedIndices, 5);
   EXPECT_EQ(kokkosDirectSum.getNumParticles(), 3);
+
+  Kokkos::View<autopas::KokkosParticleCell<autopas::Particle> *> cellsMirror = kokkosDirectSum.getCellsHost();
+  EXPECT_EQ(cellsMirror[0].begin, 0);
+  EXPECT_EQ(cellsMirror[0].cellSize, 3);
+  EXPECT_EQ(cellsMirror[1].begin, 3);
+  EXPECT_EQ(cellsMirror[1].cellSize, 0);
 }

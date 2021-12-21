@@ -11,7 +11,6 @@
 
 #include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/directSum/DirectSum.h"
-#include "autopas/kokkosContainers/kokkosDirectSum/KokkosDirectSum.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/LinkedCellsReferences.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
@@ -20,6 +19,7 @@
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
+#include "autopas/kokkosContainers/kokkosDirectSum/KokkosDirectSum.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/selectors/ContainerSelectorInfo.h"
 #include "autopas/utils/StringUtils.h"

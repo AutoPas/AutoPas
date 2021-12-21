@@ -9,8 +9,8 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
-#include "testingHelpers/commonTypedefs.h"
 #include "autopas/kokkosContainers/kokkosDirectSum/KokkosDirectSum.h"
+#include "testingHelpers/commonTypedefs.h"
 
 class KokkosDirectSumTest : public AutoPasTestBase {
  public:

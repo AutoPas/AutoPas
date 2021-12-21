@@ -9,13 +9,13 @@
 #include <memory>
 
 #include "autopas/containers/directSum/DirectSum.h"
-#include "autopas/kokkosContainers/kokkosDirectSum/KokkosDirectSum.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/LinkedCellsReferences.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/VarVerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
+#include "autopas/kokkosContainers/kokkosDirectSum/KokkosDirectSum.h"
 
 namespace autopas {
 /**

@@ -56,8 +56,9 @@ TEST_F(ParticleViewTest, testBinningParticles) {
   auto particleView = ParticleView<autopas::Particle>();
   auto particleRange = Kokkos::RangePolicy<>(0ul, 5ul);
 
-  Kokkos::View<size_t *> begin("testBinningParticles::begin", 2);
-  Kokkos::View<size_t *> cellSize("testBinningParticles::cellsize", 2);
+  Kokkos::View<autopas::KokkosParticleCell<autopas::Particle> *> cells("testBinningParticles::cells", 2);
+  Kokkos::View<autopas::KokkosParticleCell<autopas::Particle> *>::HostMirror cellsHostMirror =
+      Kokkos::create_mirror_view(cells);
 
   autopas::Particle p1({0.5, 0.5, 0.5}, {0, 0, 0}, 0);
   p1.setOwnershipState(autopas::OwnershipState::owned);
@@ -76,49 +77,61 @@ TEST_F(ParticleViewTest, testBinningParticles) {
   particleView.addParticle(p4);
   particleView.addParticle(p5);
 
-
   // expected ownerships before binning : {o,h,o,h,o}
   auto particlesBeforeBinning = particleView.getParticles();
   int resultBeforeBinning = 1;
-  Kokkos::parallel_reduce("testBinningParticles::fillCorrectOwnerships", particleRange, KOKKOS_LAMBDA (const size_t &i, int &r) {
-                                          if (i == 0 or i == 2 or i == 4) {
-                                            r = r and particlesBeforeBinning[i].isOwned();
-                                          } else {
-                                            r = r and particlesBeforeBinning[i].isHalo();
-                                          }
-  }, Kokkos::LAnd<int>(resultBeforeBinning));
+  Kokkos::parallel_reduce(
+      "testBinningParticles::fillCorrectOwnerships", particleRange,
+      KOKKOS_LAMBDA(const size_t &i, int &r) {
+        if (i == 0 or i == 2 or i == 4) {
+          r = r and particlesBeforeBinning[i].isOwned();
+        } else {
+          r = r and particlesBeforeBinning[i].isHalo();
+        }
+      },
+      Kokkos::LAnd<int>(resultBeforeBinning));
   EXPECT_TRUE(resultBeforeBinning);
 
-  auto particleBinningLambda = [] (autopas::Particle &p) -> size_t {
-    return p.isOwned() ? 0 : 1;
-  };
-  particleView.binParticles(particleBinningLambda, begin, cellSize, "testBinningParticles");
+  auto particleBinningLambda = [](autopas::Particle &p) -> size_t { return p.isOwned() ? 0 : 1; };
+  particleView.binParticles(particleBinningLambda, cells, "testBinningParticles");
 
   // expected ownerships after binning : {o,o,o,h,h}
   auto particlesAfterBinning = particleView.getParticles();
   int resultAfterBinning = 1;
-  Kokkos::parallel_reduce("testBinningParticles::fillCorrectOwnerships", particleRange, KOKKOS_LAMBDA (const size_t &i, int &r) {
-    auto p = particlesBeforeBinning[i];
-    if (i < 3) {
-      r = r and particlesAfterBinning[i].isOwned();
-    } else {
-      r = r and particlesAfterBinning[i].isHalo();
-    }
-  }, Kokkos::LAnd<int>(resultAfterBinning));
+  Kokkos::parallel_reduce(
+      "testBinningParticles::fillCorrectOwnerships", particleRange,
+      KOKKOS_LAMBDA(const size_t &i, int &r) {
+        auto p = particlesBeforeBinning[i];
+        if (i < 3) {
+          r = r and particlesAfterBinning[i].isOwned();
+        } else {
+          r = r and particlesAfterBinning[i].isHalo();
+        }
+      },
+      Kokkos::LAnd<int>(resultAfterBinning));
   EXPECT_TRUE(resultAfterBinning);
 
-  //also expect unchanged size and capacity
+  // also expect unchanged size and capacity
   EXPECT_EQ(particleView.getSize(), 5);
   EXPECT_EQ(particleView.getCapacity(), 8);
-}
 
+  // check indices in 'cells'
+  Kokkos::deep_copy(cellsHostMirror, cells);
+
+  EXPECT_EQ(cellsHostMirror[0].begin, 0);
+  EXPECT_EQ(cellsHostMirror[0].cellSize, 3);
+
+  EXPECT_EQ(cellsHostMirror[1].begin, 3);
+  EXPECT_EQ(cellsHostMirror[1].cellSize, 2);
+}
 
 TEST_F(ParticleViewTest, testBinningParticlesAndDeleteDummy) {
   auto particleView = ParticleView<autopas::Particle>();
   auto particleRange = Kokkos::RangePolicy<>(0ul, 5ul);
 
-  Kokkos::View<size_t *> begin("testBinningParticles::begin", 2);
-  Kokkos::View<size_t *> cellSize("testBinningParticles::cellsize", 2);
+  Kokkos::View<autopas::KokkosParticleCell<autopas::Particle> *> cells("testBinningParticles::cells", 2);
+  Kokkos::View<autopas::KokkosParticleCell<autopas::Particle> *>::HostMirror cellsHostMirror =
+      Kokkos::create_mirror_view(cells);
 
   autopas::Particle p1({0.5, 0.5, 0.5}, {0, 0, 0}, 0);
   p1.setOwnershipState(autopas::OwnershipState::owned);
@@ -140,38 +153,50 @@ TEST_F(ParticleViewTest, testBinningParticlesAndDeleteDummy) {
   // expected ownerships before binning : {o,d,d,h,o}
   auto particlesBeforeBinning = particleView.getParticles();
   int resultBeforeBinning = 1;
-  Kokkos::parallel_reduce("testBinningParticles::fillCorrectOwnerships", particleRange, KOKKOS_LAMBDA (const size_t &i, int &r) {
-    if (i == 0 or i == 4) {
-      r = r and particlesBeforeBinning[i].isOwned();
-    } else if (i == 3) {
-      r = r and particlesBeforeBinning[i].isHalo();
-    } else {
-      r = r and particlesBeforeBinning[i].isDummy();
-    }
-  }, Kokkos::LAnd<int>(resultBeforeBinning));
+  Kokkos::parallel_reduce(
+      "testBinningParticles::fillCorrectOwnerships", particleRange,
+      KOKKOS_LAMBDA(const size_t &i, int &r) {
+        if (i == 0 or i == 4) {
+          r = r and particlesBeforeBinning[i].isOwned();
+        } else if (i == 3) {
+          r = r and particlesBeforeBinning[i].isHalo();
+        } else {
+          r = r and particlesBeforeBinning[i].isDummy();
+        }
+      },
+      Kokkos::LAnd<int>(resultBeforeBinning));
   EXPECT_TRUE(resultBeforeBinning);
 
-  auto particleBinningLambda = [] (autopas::Particle &p) -> size_t {
-    return p.isOwned() ? 0 : 1;
-  };
-  particleView.binParticles(particleBinningLambda, begin, cellSize, "testBinningParticles");
+  auto particleBinningLambda = [](autopas::Particle &p) -> size_t { return p.isOwned() ? 0 : 1; };
+  particleView.binParticles(particleBinningLambda, cells, "testBinningParticles");
 
   // expected ownerships after binning : {o,o,h}
   auto particlesAfterBinning = particleView.getParticles();
   Kokkos::RangePolicy<> newParticleRange(0ul, 3ul);
   int resultAfterBinning = 1;
-  Kokkos::parallel_reduce("testBinningParticles::fillCorrectOwnerships", newParticleRange, KOKKOS_LAMBDA (const size_t &i, int &r) {
-    auto p = particlesBeforeBinning[i];
-    if (i < 2) {
-      r = r and particlesAfterBinning[i].isOwned();
-    } else {
-      r = r and particlesAfterBinning[i].isHalo();
-    }
-  }, Kokkos::LAnd<int>(resultAfterBinning));
+  Kokkos::parallel_reduce(
+      "testBinningParticles::fillCorrectOwnerships", newParticleRange,
+      KOKKOS_LAMBDA(const size_t &i, int &r) {
+        auto p = particlesBeforeBinning[i];
+        if (i < 2) {
+          r = r and particlesAfterBinning[i].isOwned();
+        } else {
+          r = r and particlesAfterBinning[i].isHalo();
+        }
+      },
+      Kokkos::LAnd<int>(resultAfterBinning));
   EXPECT_TRUE(resultAfterBinning);
 
-  //also expect unchanged size and capacity
+  // also expect unchanged size and capacity
   EXPECT_EQ(particleView.getSize(), 3);
   EXPECT_EQ(particleView.getCapacity(), 8);
 
+  // check indices in 'cells'
+  Kokkos::deep_copy(cellsHostMirror, cells);
+
+  EXPECT_EQ(cellsHostMirror[0].begin, 0);
+  EXPECT_EQ(cellsHostMirror[0].cellSize, 2);
+
+  EXPECT_EQ(cellsHostMirror[1].begin, 2);
+  EXPECT_EQ(cellsHostMirror[1].cellSize, 1);
 }
