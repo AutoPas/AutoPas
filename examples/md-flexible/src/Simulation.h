@@ -185,6 +185,11 @@ class Simulation {
      * Used for the diffuse load balancing as the metric to determine the imbalance.
      */
     autopas::utils::Timer work;
+
+    /**
+     * Records the time required for the update of the AutoPas container.
+     */
+    autopas::utils::Timer updateContainer;
   };
 
   /**

@@ -175,7 +175,9 @@ void Simulation::run() {
 
       updatePositions();
 
+      _timers.updateContainer.start();
       auto emigrants = _autoPasContainer->updateContainer();
+      _timers.updateContainer.stop();
 
       const double work = _timers.work.stop();
       
@@ -522,6 +524,7 @@ void Simulation::logSimulationState() {
 
 void Simulation::logMeasurements() {
   long positionUpdate = accumulateTime(_timers.positionUpdate.getTotalTime());
+  long updateContainer = accumulateTime(_timers.updateContainer.getTotalTime());
   long forceUpdateTotal = accumulateTime(_timers.forceUpdateTotal.getTotalTime());
   long forceUpdatePairwise = accumulateTime(_timers.forceUpdatePairwise.getTotalTime());
   long forceUpdateGlobalForces = accumulateTime(_timers.forceUpdateGlobal.getTotalTime());
@@ -544,6 +547,7 @@ void Simulation::logMeasurements() {
     std::cout << timerToString("  Initialization               ", initialization, maximumNumberOfDigits, total);
     std::cout << timerToString("  Simulate                     ", simulate, maximumNumberOfDigits, total);
     std::cout << timerToString("    PositionUpdate             ", positionUpdate, maximumNumberOfDigits, simulate);
+    std::cout << timerToString("    UpdateContainer            ", updateContainer, maximumNumberOfDigits, simulate);
     std::cout << timerToString("    Boundaries:                ", haloParticleExchange + migratingParticleExchange,
                                maximumNumberOfDigits, simulate);
     std::cout << timerToString("      HaloParticleExchange     ", haloParticleExchange, maximumNumberOfDigits,
