@@ -52,7 +52,7 @@ std::vector<dataType> readPayload(std::ifstream &file, size_t numberOfParticles)
 void findWord(std::ifstream &file, const std::string &word) {
   std::vector<char> separators{' ', '/', '.', ',', '?', '!', '"', '\'', '<', '>', '=', ':', ';', '\n', '\t', '\r'};
   std::string currentWord;
-  while (not file.eof() && currentWord != word) {
+  while (not file.eof() and currentWord != word) {
     char currentChar = file.get();
     if (std::find(separators.begin(), separators.end(), currentChar) != separators.end()) {
       currentWord = "";

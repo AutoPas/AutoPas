@@ -208,7 +208,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX;
         } else if (strArg.find("glob") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_Globals;
-        } else if (strArg.find("lj") != string::npos || strArg.find("lennard-jones") != string::npos) {
+        } else if (strArg.find("lj") != string::npos or strArg.find("lennard-jones") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
         } else {
           cerr << "Unknown functor: " << strArg << endl;
@@ -373,7 +373,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       case decltype(config.relativeBlacklistRange)::getoptChar: {
         try {
           config.relativeBlacklistRange.value = stod(strArg);
-          if (config.relativeBlacklistRange.value < 1 && config.relativeBlacklistRange.value != 0) {
+          if (config.relativeBlacklistRange.value < 1 and config.relativeBlacklistRange.value != 0) {
             cerr << "Relative range for blacklist range has to be greater or equal one or has to be zero!" << endl;
             displayHelp = true;
           }

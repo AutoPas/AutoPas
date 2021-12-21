@@ -54,7 +54,7 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
     _allLoadBalancer->setup();
   }
 #else
-  if (_domainIndex == 0 && _loadBalancerOption == LoadBalancerOption::all) {
+  if (_domainIndex == 0 and _loadBalancerOption == LoadBalancerOption::all) {
     std::cout << "ALL loadbalancer has been disabled during compile time. Load balancing will be turned off."
               << std::endl;
   }
