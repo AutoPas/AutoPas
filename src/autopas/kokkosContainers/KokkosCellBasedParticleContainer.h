@@ -154,8 +154,10 @@ class KokkosCellBasedParticleContainer : public ParticleContainerInterface<Parti
    * Managed view of all particles. This view is then sorted according to desired layout and particle properties.
    */
   ParticleView<Particle> _particles;
-  Kokkos::View<KokkosParticleCell<Particle> *> _cells;
+
+  Kokkos::View<KokkosParticleCell<Particle>*> _cells;
   typename Kokkos::View<KokkosParticleCell<Particle> *>::HostMirror _cellsHostMirror;
+
   bool _isDirty;
 
  private:

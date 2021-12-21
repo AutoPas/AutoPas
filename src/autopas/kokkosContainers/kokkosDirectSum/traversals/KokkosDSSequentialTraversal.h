@@ -24,9 +24,8 @@ namespace autopas {
  * @tparam dataLayout
  * @tparam useNewton3
  */
-template <class ParticleType, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class KokkosDSSequentialTraversal : public KokkosCellPairTraversal<ParticleType>, public KokkosDSTraversalInterface {
-  using ParticleCell = KokkosParticleCell<ParticleType>;
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+class KokkosDSSequentialTraversal : public KokkosCellPairTraversal<ParticleCell>, public KokkosDSTraversalInterface<ParticleCell> {
 
  public:
   /**
@@ -35,7 +34,7 @@ class KokkosDSSequentialTraversal : public KokkosCellPairTraversal<ParticleType>
    * @param cutoff cutoff (this is enough for the directsum traversal, please don't use the interaction length here.)
    */
   explicit KokkosDSSequentialTraversal(PairwiseFunctor *pairwiseFunctor, double cutoff)
-      : KokkosCellPairTraversal<ParticleType>({2, 1, 1}),
+      : KokkosCellPairTraversal<ParticleCell>({2, 1, 1}),
         _cellFunctor(pairwiseFunctor),
         _dataLayoutConverter(pairwiseFunctor) {}
 
@@ -71,7 +70,7 @@ class KokkosDSSequentialTraversal : public KokkosCellPairTraversal<ParticleType>
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  internal::KokkosCellFunctor<ParticleType, PairwiseFunctor, dataLayout, useNewton3, true> _cellFunctor;
+  internal::KokkosCellFunctor<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, true> _cellFunctor;
 
   /**
    * Data Layout Converter to be used with this traversal
@@ -79,8 +78,8 @@ class KokkosDSSequentialTraversal : public KokkosCellPairTraversal<ParticleType>
   utils::DataLayoutConverter<PairwiseFunctor, dataLayout> _dataLayoutConverter;
 };
 
-template <class ParticleType, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-void KokkosDSSequentialTraversal<ParticleType, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+void KokkosDSSequentialTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
   //  _cellFunctor.processCell(this->getCell(0));
   //  _cellFunctor.processCellPair(this->getCell(0), this->getCell(1));
 }

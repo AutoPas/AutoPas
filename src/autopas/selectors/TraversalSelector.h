@@ -244,7 +244,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
       // Kokkos
     case TraversalOption::kokkos_sequential: {
       return std::make_unique<
-          KokkosDSSequentialTraversal<typename ParticleCell::ParticleType, PairwiseFunctor, dataLayout, useNewton3>>(
+          KokkosDSSequentialTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
           &pairwiseFunctor, info.interactionLength);
     }
   }

@@ -9,6 +9,8 @@
 
 #include "autopas/kokkosContainers/KokkosCellBasedParticleContainer.h"
 #include "autopas/particles/OwnershipState.h"
+#include "autopas/kokkosContainers/kokkosDirectSum/traversals/KokkosDSTraversalInterface.h"
+#include "autopas/kokkosContainers/KokkosCellPairTraversals/KokkosCellPairTraversal.h"
 
 namespace autopas {
 
@@ -17,6 +19,8 @@ namespace autopas {
  */
 template <class Particle>
 class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
+  using ParticleCell = KokkosParticleCell<Particle>;
+
  public:
   /**
    * Constructor of the DirectSum class
@@ -77,7 +81,20 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
   }
 
   void iteratePairwise(TraversalInterface *traversal) override {
-    // TODO lgaertner
+    auto *traversalInterface = dynamic_cast<KokkosDSTraversalInterface<ParticleCell> *>(traversal);
+    auto *cellPairTraversal = dynamic_cast<KokkosCellPairTraversal<ParticleCell> *>(traversal);
+
+    if (traversalInterface && cellPairTraversal) {
+      cellPairTraversal->setCellsToTraverse(this->_cells);
+    } else {
+      autopas::utils::ExceptionHandler::exception(
+          "trying to use a traversal of wrong type in KokkosDirectSum::iteratePairwise");
+    }
+
+    cellPairTraversal->initTraversal();
+    cellPairTraversal->traverseParticlePairs();
+    cellPairTraversal->endTraversal();
+
   }
 
   std::vector<Particle> updateContainer(bool keepNeighborListsValid) override {
