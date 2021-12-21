@@ -179,8 +179,8 @@ void Simulation::run() {
       auto emigrants = _autoPasContainer->updateContainer();
       _timers.updateContainer.stop();
 
-      const double work = _timers.work.stop();
-      
+      const auto work = static_cast<double>(_timers.work.stop());
+
       if (_iteration % _configuration.loadBalancingInterval.value == 0) {
         _timers.loadBalancing.start();
         _domainDecomposition->update(work);
