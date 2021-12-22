@@ -71,6 +71,12 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
     return _aosNeighborList;
   }
 
+  /**
+   * Returns a map of each cell's global index to its local index in another cell's neighbor list. More specifically,
+   * for each cell1: a mapping of the "absolute" index of cell2 (in the base linked cells structure) to its "relative"
+   * index in cell1's neighbors.
+   * @return a map of each cell's global index to its local index in another cell's neighbor list
+   */
   auto &getGlobalToLocalMap() { return _globalToLocalIndex; }
 
   /**

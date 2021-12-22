@@ -8,7 +8,9 @@
 namespace autopas {
 template <class Particle>
 /**
- * Interface for traversals used with VLCCellPairNeighborList. Allows the distinction of traversals that are only usable for VLCCellPairNeighborList and not compatible with the VLCAllCellsNeighborList within the VerletListsCells container.
+ * Interface for traversals used with VLCCellPairNeighborList. Allows the distinction of traversals that are only usable
+ * for VLCCellPairNeighborList and not compatible with the VLCAllCellsNeighborList within the VerletListsCells
+ * container.
  * @tparam Particle type of particle
  */
 class VLCCellPairTraversalInterface {
