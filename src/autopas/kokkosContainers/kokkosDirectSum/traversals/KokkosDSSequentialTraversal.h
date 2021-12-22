@@ -47,17 +47,11 @@ class KokkosDSSequentialTraversal : public KokkosCellPairTraversal<ParticleCell>
   [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; };
 
   void initTraversal() override {
-    //    auto &cells = *(this->_cells);
-    //    for (auto &cell : cells) {
-    //      _dataLayoutConverter.loadDataLayout(cell);
-    //    }
+    //does nothing until aos / soa is supported
   }
 
   void endTraversal() override {
-    //    auto &cells = *(this->_cells);
-    //    for (auto &cell : cells) {
-    //      _dataLayoutConverter.storeDataLayout(cell);
-    //    }
+    //does nothing until aos / soa is supported
   }
 
   /**
