@@ -121,13 +121,15 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
 
     //    TODO lgaertner
     std::vector<Particle> invalidParticles{};
-    //    this->_particles.forEach();
-    //    for (auto iter = getCell().begin(); iter.isValid(); ++iter) {
-    //      if (utils::notInBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
-    //        invalidParticles.push_back(*iter);
-    //        internal::deleteParticle(iter);
-    //      }
-    //    }
+    auto boxMin = this->getBoxMin();
+    auto boxMax = this->getBoxMax();
+
+    this->_particles.forEach([&](Particle &p) {
+      if (utils::notInBox(p.getR(), boxMin, boxMax)) {
+        invalidParticles.push_back(p);
+        p.setOwnershipState(OwnershipState::dummy);
+      }
+    });
 
     this->deleteHaloParticles();
     this->_particles.template binParticles<false>([&](Particle &p) -> size_t { return p.isOwned() ? _OWNED : _HALO; },
@@ -139,7 +141,7 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
 
   void resortContainerAndDeleteDummies() {
     this->_particles.template binParticles<true>([&](Particle &p) -> size_t { return p.isOwned() ? _OWNED : _HALO; },
-                                                  this->_cells, "KokkosDirectSum::updateContainer:");
+                                                 this->_cells, "KokkosDirectSum::updateContainer:");
     this->_isDirty = false;
   }
 

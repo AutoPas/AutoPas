@@ -15,17 +15,21 @@ TEST_F(KokkosDirectSumTest, testUpdateContainer) {
   autopas::Particle p2({1.5, 1.5, 1.5}, {0, 0, 0}, 1);
   autopas::Particle p3({1.6, 1.5, 1.5}, {0, 0, 0}, 2);
   autopas::Particle p4({2.5, 1.5, 1.5}, {0, 0, 0}, 3);
-  autopas::Particle p5({2.5, 2.5, 2.5}, {0, 0, 0}, 4);
+  autopas::Particle p5({3.5, 3.5, 2.5}, {0, 0, 0}, 4);
+  autopas::Particle p6({5.5, 5.5, 5.5}, {0, 0, 0}, 5);
 
   kokkosDirectSum.addParticleImpl(p1);
   kokkosDirectSum.addParticleImpl(p2);
   kokkosDirectSum.addHaloParticleImpl(p3);
   kokkosDirectSum.addHaloParticleImpl(p4);
   kokkosDirectSum.addParticleImpl(p5);
-  EXPECT_EQ(kokkosDirectSum.getNumParticles(), 5);
+  kokkosDirectSum.addParticleImpl(p6);
+  EXPECT_EQ(kokkosDirectSum.getNumParticles(), 6);
   EXPECT_TRUE(kokkosDirectSum.getIsDirty());
 
-  kokkosDirectSum.updateContainer(false);
+  auto outParticles = kokkosDirectSum.updateContainer(false);
+
+  kokkosDirectSum.resortContainerAndDeleteDummies();
 
   // after updating the container, halo particles should be removed, owned particles remaining bunched together
   size_t summedIndices = 0;
@@ -34,6 +38,8 @@ TEST_F(KokkosDirectSumTest, testUpdateContainer) {
 
   EXPECT_EQ(summedIndices, 5);
   EXPECT_EQ(kokkosDirectSum.getNumParticles(), 3);
+
+  EXPECT_EQ(outParticles.size(), 1);
 
   // check cells[] metadata
   Kokkos::View<autopas::KokkosParticleCell<autopas::Particle> *> cellsMirror = kokkosDirectSum.getCellsHost();

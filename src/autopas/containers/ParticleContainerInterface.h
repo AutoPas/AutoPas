@@ -293,10 +293,11 @@ class ParticleContainerInterface {
 
   /**
    * Resorts the container.
-   * Currently only needed in KokkosCellBasedParticleContainer as updateContainer only marks halo particles as deleted, but actual deletion only happens here.
+   * Currently only needed in KokkosCellBasedParticleContainer as updateContainer only marks halo particles as deleted,
+   * but actual deletion only happens here.
    *
    */
-  [[nodiscard]] std::vector<ParticleType> resortContainerAndDeleteDummies(bool keepNeighborListsValid) {};
+  [[nodiscard]] std::vector<ParticleType> resortContainerAndDeleteDummies(bool keepNeighborListsValid){};
 
   /**
    * Generates a traversal selector info for this container.
