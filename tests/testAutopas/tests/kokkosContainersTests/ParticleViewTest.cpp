@@ -93,7 +93,7 @@ TEST_F(ParticleViewTest, testBinningParticles) {
   EXPECT_TRUE(resultBeforeBinning);
 
   auto particleBinningLambda = [](autopas::Particle &p) -> size_t { return p.isOwned() ? 0 : 1; };
-  particleView.binParticles(particleBinningLambda, cells, "testBinningParticles");
+  particleView.template binParticles<true>(particleBinningLambda, cells, "testBinningParticles");
 
   // expected ownerships after binning : {o,o,o,h,h}
   auto particlesAfterBinning = particleView.getParticles();
@@ -168,7 +168,7 @@ TEST_F(ParticleViewTest, testBinningParticlesAndDeleteDummy) {
   EXPECT_TRUE(resultBeforeBinning);
 
   auto particleBinningLambda = [](autopas::Particle &p) -> size_t { return p.isOwned() ? 0 : 1; };
-  particleView.binParticles(particleBinningLambda, cells, "testBinningParticles");
+  particleView.template binParticles<true>(particleBinningLambda, cells, "testBinningParticles");
 
   // expected ownerships after binning : {o,o,h}
   auto particlesAfterBinning = particleView.getParticles();

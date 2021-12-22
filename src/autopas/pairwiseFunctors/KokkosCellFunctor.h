@@ -75,8 +75,7 @@ class KokkosCellFunctor {
    * @param cell2
    * @param sortingDirection Normalized vector connecting centers of cell1 and cell2.
    */
-  void processCellPairAoSN3(ParticleCell &cell1, ParticleCell &cell2,
-                            const std::array<double, 3> &sortingDirection);
+  void processCellPairAoSN3(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection);
 
   /**
    * Applies the functor to all particle pairs between cell1 and cell2
@@ -85,8 +84,7 @@ class KokkosCellFunctor {
    * @param cell2
    * @param sortingDirection Normalized vector connecting centers of cell1 and cell2.
    */
-  void processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2,
-                              const std::array<double, 3> &sortingDirection);
+  void processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection);
 
   void processCellPairSoAN3(ParticleCell &cell1, ParticleCell &cell2);
 
@@ -132,8 +130,7 @@ template <class ParticleCell, class ParticleFunctor, DataLayoutOption::Value Dat
           bool bidirectional>
 void KokkosCellFunctor<ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellPair(
 
-    ParticleCell &cell1, ParticleCell &cell2,
-    const std::array<double, 3> &sortingDirection) {
+    ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
   if ((DataLayout == DataLayoutOption::soa &&
        (cell1._particleSoABuffer.getNumParticles() == 0 || cell2._particleSoABuffer.getNumParticles() == 0)) ||
       (DataLayout == DataLayoutOption::aos && (cell1.numParticles() == 0 || cell2.numParticles() == 0))) {
@@ -182,8 +179,7 @@ void KokkosCellFunctor<ParticleCell, ParticleFunctor, DataLayout, useNewton3, bi
 template <class ParticleCell, class ParticleFunctor, autopas::DataLayoutOption::Value DataLayout, bool useNewton3,
           bool bidirectional>
 void KokkosCellFunctor<ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellPairAoSN3(
-    ParticleCell &cell1, ParticleCell &cell2,
-    const std::array<double, 3> &sortingDirection) {
+    ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
   // NOTE: no sorting within cell
   for (size_t outer = 0; outer < cell1.getSize(); outer++) {
     for (size_t inner = 0; inner < cell2.getSize(); inner++) {
@@ -195,8 +191,7 @@ void KokkosCellFunctor<ParticleCell, ParticleFunctor, DataLayout, useNewton3, bi
 template <class ParticleCell, class ParticleFunctor, autopas::DataLayoutOption::Value DataLayout, bool useNewton3,
           bool bidirectional>
 void KokkosCellFunctor<ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellPairAoSNoN3(
-    ParticleCell &cell1, ParticleCell &cell2,
-    const std::array<double, 3> &sortingDirection) {
+    ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
   // NOTE: no sorting within cell
   for (size_t outer = 0; outer < cell1.getSize(); outer++) {
     for (size_t inner = 0; inner < cell2.getSize(); inner++) {

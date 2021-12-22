@@ -25,8 +25,8 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class KokkosDSSequentialTraversal : public KokkosCellPairTraversal<ParticleCell>, public KokkosDSTraversalInterface<ParticleCell> {
-
+class KokkosDSSequentialTraversal : public KokkosCellPairTraversal<ParticleCell>,
+                                    public KokkosDSTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor for the DirectSum traversal.

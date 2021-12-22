@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <Kokkos_Core.hpp>
 #include <array>
 #include <cmath>
 #include <numeric>
@@ -40,7 +41,8 @@ template <class T, std::size_t SIZE>
  * @return a - b
  */
 template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<T, SIZE> sub(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+[[nodiscard]] KOKKOS_INLINE_FUNCTION constexpr std::array<T, SIZE> sub(const std::array<T, SIZE> &a,
+                                                                       const std::array<T, SIZE> &b) {
   std::array<T, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
     result[d] = a[d] - b[d];
@@ -193,7 +195,7 @@ double dotAux(T a, T b, std::integer_sequence<size_t, I...>) {
  * @return dot product of a and b
  */
 template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr T dot(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+[[nodiscard]] KOKKOS_INLINE_FUNCTION constexpr T dot(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
   return dotAux(a, b, std::make_index_sequence<SIZE>{});
 }
 

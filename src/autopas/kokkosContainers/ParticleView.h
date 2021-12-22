@@ -39,12 +39,7 @@ class ParticleView {
     _particleViewLock.unlock();
   }
 
-  void addHaloParticle(const ParticleType &p) {
-    // TODO add second view for halo particles
-    addParticle(p);
-  }
-
-  template <typename Lambda>
+  template <bool deleteDummy, typename Lambda>
   void binParticles(Lambda particleBinningLambda, Kokkos::View<autopas::KokkosParticleCell<ParticleType> *> cells,
                     std::string label = "binParticles") {
     // scan to create buckets
@@ -62,11 +57,12 @@ class ParticleView {
     Kokkos::parallel_for(
         label + "compute-cellcount", particleRange, KOKKOS_LAMBDA(const size_t &i) {
           auto p = _particleViewImp[i];
-          if (not p.isDummy()) {
+          // if dummys should be deleted, check if particle is dummy and then disregard for binning
+          if (deleteDummy and p.isDummy()) {
+            Kokkos::atomic_sub(&_size, 1ul);
+          } else {
             auto counts_data = counts_sv.access();
             counts_data(particleBinningLambda(p)) += 1;
-          } else {
-            Kokkos::atomic_sub(&_size, 1ul);
           }
         });
 
@@ -90,7 +86,7 @@ class ParticleView {
     Kokkos::parallel_for(
         "", particleRange, KOKKOS_LAMBDA(const size_t &i) {
           auto p = _particleViewImp[i];
-          if (not p.isDummy()) {
+          if (not(deleteDummy and p.isDummy())) {
             size_t cellId = particleBinningLambda(_particleViewImp[i]);
             int c = Kokkos::atomic_fetch_add(&cells[cellId].cellSize, 1ul);
             permutes[cells[cellId].begin + c] = i;

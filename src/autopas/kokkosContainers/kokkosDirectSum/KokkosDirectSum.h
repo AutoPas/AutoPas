@@ -8,12 +8,12 @@
 #pragma once
 
 #include "autopas/kokkosContainers/KokkosCellBasedParticleContainer.h"
-#include "autopas/particles/OwnershipState.h"
-#include "autopas/kokkosContainers/kokkosDirectSum/traversals/KokkosDSTraversalInterface.h"
 #include "autopas/kokkosContainers/KokkosCellPairTraversals/KokkosCellPairTraversal.h"
+#include "autopas/kokkosContainers/kokkosDirectSum/traversals/KokkosDSTraversalInterface.h"
+#include "autopas/particles/OwnershipState.h"
+#include "autopas/utils/ArrayMath.h"
 
 namespace autopas {
-
 /**
  * KokkosDirectSum class.
  */
@@ -55,15 +55,32 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
   void addHaloParticleImpl(const Particle &p) override {
     Particle pCopy = p;
     pCopy.setOwnershipState(OwnershipState::halo);
-    this->_particles.addHaloParticle(pCopy);
+    this->_particles.addParticle(pCopy);
   }
 
   /**
    * @copydoc ParticleContainerInterface::updateHaloParticle()
    */
-  bool updateHaloParticle(const Particle &haloParticle) override {
-    // TODO lgaertner
-    return false;
+  bool updateHaloParticle(const Particle &hp) override {
+    Particle haloParticle = hp;
+    haloParticle.setOwnershipState(OwnershipState::halo);
+
+    bool isFound = false;
+    this->_particles.forEach(
+        [&](Particle &p) {
+          if (p.getID() == haloParticle.getID()) {
+            auto distanceVec = autopas::utils::ArrayMath::sub(p.getR(), haloParticle.getR());
+            auto distanceSqr = autopas::utils::ArrayMath::dot(distanceVec, distanceVec);
+            if (distanceSqr < this->getSkin() * this->getSkin()) {
+              p = haloParticle;
+              // found the particle, return true
+              isFound = true;  // should not run into race conditioning problems
+            }
+          }
+        },
+        "KokkosDirectSum::updateHaloParticle");
+    Kokkos::fence();
+    return isFound;
   }
 
   /**
@@ -77,6 +94,7 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
    * @copydoc ParticleContainerInterface::deleteHaloParticles()
    */
   void deleteHaloParticles() override {
+    // TODO update numParticles?
     this->_particles.forEach([&](Particle &p) { p.setOwnershipState(OwnershipState::dummy); }, IteratorBehavior::halo);
   }
 
@@ -94,7 +112,6 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
     cellPairTraversal->initTraversal();
     cellPairTraversal->traverseParticlePairs();
     cellPairTraversal->endTraversal();
-
   }
 
   std::vector<Particle> updateContainer(bool keepNeighborListsValid) override {
@@ -104,20 +121,26 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
 
     //    TODO lgaertner
     std::vector<Particle> invalidParticles{};
-//    this->_particles.forEach();
-//    for (auto iter = getCell().begin(); iter.isValid(); ++iter) {
-//      if (utils::notInBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
-//        invalidParticles.push_back(*iter);
-//        internal::deleteParticle(iter);
-//      }
-//    }
+    //    this->_particles.forEach();
+    //    for (auto iter = getCell().begin(); iter.isValid(); ++iter) {
+    //      if (utils::notInBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
+    //        invalidParticles.push_back(*iter);
+    //        internal::deleteParticle(iter);
+    //      }
+    //    }
 
     this->deleteHaloParticles();
-    this->_particles.binParticles([&](Particle &p) -> size_t { return p.isOwned() ? _OWNED : _HALO; }, this->_cells,
-                                  "KokkosDirectSum::updateContainer:");
+    this->_particles.template binParticles<false>([&](Particle &p) -> size_t { return p.isOwned() ? _OWNED : _HALO; },
+                                                  this->_cells, "KokkosDirectSum::updateContainer:");
     this->_isDirty = false;
 
     return invalidParticles;
+  }
+
+  void resortContainerAndDeleteDummies() {
+    this->_particles.template binParticles<true>([&](Particle &p) -> size_t { return p.isOwned() ? _OWNED : _HALO; },
+                                                  this->_cells, "KokkosDirectSum::updateContainer:");
+    this->_isDirty = false;
   }
 
   template <typename Lambda>

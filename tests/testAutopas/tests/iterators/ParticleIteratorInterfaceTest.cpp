@@ -252,7 +252,7 @@ using ::testing::UnorderedElementsAreArray;
 using ::testing::Values;
 using ::testing::ValuesIn;
 
-static inline auto getTestableContainerOptions() { return autopas::ContainerOption::getAllOptions(); }
+static inline auto getTestableContainerOptions() { return autopas::ContainerOption::getMostOptions(); }
 
 INSTANTIATE_TEST_SUITE_P(Generated, ParticleIteratorInterfaceTest,
                          Combine(ValuesIn(getTestableContainerOptions()), /*cell size factor*/ Values(0.5, 1., 1.5),

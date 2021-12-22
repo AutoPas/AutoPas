@@ -32,7 +32,8 @@ class KokkosCellBasedParticleContainer : public ParticleContainerInterface<Parti
   KokkosCellBasedParticleContainer(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax,
                                    const double cutoff, const double skin, const size_t cellcount)
       : _particles(), _cells("cellsView", cellcount), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff), _skin(skin) {
-    // change to create_view to avoid persisting changes when host= devicememoryspace, at cost of storing additional view
+    // change to create_view to avoid persisting changes when host= devicememoryspace, at cost of storing additional
+    // view
     _cellsHostMirror = Kokkos::create_mirror_view(_cells);
   }
 
@@ -108,7 +109,8 @@ class KokkosCellBasedParticleContainer : public ParticleContainerInterface<Parti
 
   /**
    * Fetches all cells from the DeviceMemory. !!!Use carefully, as changes are not persisent when using differing host-
-   * and device memory, but DO persist when host- = devicememoryspace. Fix by changing create_mirror_view to create_view!!!
+   * and device memory, but DO persist when host- = devicememoryspace. Fix by changing create_mirror_view to
+   * create_view!!!
    */
   Kokkos::View<KokkosParticleCell<Particle> *> getCellsHost() {
     Kokkos::deep_copy(_cellsHostMirror, _cells);
@@ -155,7 +157,7 @@ class KokkosCellBasedParticleContainer : public ParticleContainerInterface<Parti
    */
   ParticleView<Particle> _particles;
 
-  Kokkos::View<KokkosParticleCell<Particle>*> _cells;
+  Kokkos::View<KokkosParticleCell<Particle> *> _cells;
   typename Kokkos::View<KokkosParticleCell<Particle> *>::HostMirror _cellsHostMirror;
 
   bool _isDirty;

@@ -93,7 +93,7 @@ class ContainerOption : public Option<ContainerOption> {
    * @return
    */
   static std::set<ContainerOption> getDiscouragedOptions() {
-    return {Value::directSum, Value::linkedCellsReferences, Value::verletClusterLists};
+    return {Value::directSum, Value::linkedCellsReferences, Value::verletClusterLists, Value::kokkosDirectSum};
   }
 
   /**
