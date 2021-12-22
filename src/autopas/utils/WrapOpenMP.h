@@ -18,6 +18,7 @@
 #if defined(AUTOPAS_OPENMP)
 #include <omp.h>
 
+#include <cstddef>  // for size_t
 #include <vector>
 #else
 #include "ExceptionHandler.h"

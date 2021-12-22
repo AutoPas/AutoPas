@@ -2,7 +2,7 @@
 
 AutoPas is a node-level auto-tuned particle simulation library developed
 in the context of the [**TaLPas**](http://www.talpas.de) project.
-[![Build Status](https://www5.in.tum.de/jenkins/mardyn/buildStatus/icon?job=AutoPas-Multibranch/master)](https://www5.in.tum.de/jenkins/mardyn/job/AutoPas-Multibranch/job/master/)
+[![CI Status](https://github.com/AutoPas/AutoPas/actions/workflows/TestSuites.yaml/badge.svg)](https://github.com/AutoPas/AutoPas/actions/workflows/TestSuites.yaml)
 
 ## Documentation
 The documentation can be found at our website:
@@ -15,7 +15,7 @@ Alternatively you can build the documentation on your own:
 ## Requirements
 * CMake 3.14 or newer
 * make (build-essentials) or ninja
-* a c++17 compiler (gcc7, clang8 and ~~icpc 2019~~ are tested.)
+* a C++17 compiler (gcc9, clang9, and ~~icpc 2019~~ are tested.)
 
 ## Building AutoPas
 build instructions for make:
