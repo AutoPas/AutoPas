@@ -244,7 +244,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
    * @param forEachLambda code to be executed on all particles
    * @param behavior @see IteratorBehavior
    */
-  template <typename Lambda>
+  template <bool parallel, typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     if (behavior == IteratorBehavior::ownedOrHaloOrDummy) {
       for (auto &cell : getCells()) {
@@ -346,7 +346,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
    * @param higherCorner higher corner of bounding box
    * @param behavior @see IteratorBehavior
    */
-  template <typename Lambda>
+  template <bool parallel, typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                        const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
     auto startIndex3D =

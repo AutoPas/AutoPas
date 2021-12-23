@@ -277,7 +277,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   /**
    * @copydoc LinkedCells::forEach()
    */
-  template <typename Lambda>
+  template <bool parallel, typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHaloOrDummy) {
     if (behavior == IteratorBehavior::ownedOrHaloOrDummy) {
       // iterate over all particles, so execute directly on particle vector
@@ -367,7 +367,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   /**
    * @copydoc LinkedCells::forEachInRegion()
    */
-  template <typename Lambda>
+  template <bool parallel, typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                        const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
     // We increase the search region by skin, as particles can move over cell borders.

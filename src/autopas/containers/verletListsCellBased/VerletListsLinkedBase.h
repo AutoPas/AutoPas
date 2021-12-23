@@ -147,9 +147,9 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   /**
    * @copydoc autopas::LinkedCells::forEach()
    */
-  template <typename Lambda>
+  template <bool parallel, typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior) {
-    return _linkedCells.forEach(forEachLambda, behavior);
+    return _linkedCells.template forEach<parallel>(forEachLambda, behavior);
   }
 
   /**
@@ -181,10 +181,10 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   /**
    * @copydoc autopas::LinkedCells::forEachInRegion()
    */
-  template <typename Lambda>
+  template <bool parallel, typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                        const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
-    _linkedCells.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+    _linkedCells.template forEachInRegion<parallel>(forEachLambda, lowerCorner, higherCorner, behavior);
   }
 
   /**

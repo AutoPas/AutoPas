@@ -82,10 +82,17 @@ void ParallelVtkWriter::recordParticleStates(const int &currentIteration,
   // print velocities
   timestepFile
       << "        <DataArray Name=\"velocities\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
-  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    auto v = particle->getV();
-    timestepFile << "        " << v[0] << " " << v[1] << " " << v[2] << "\n";
-  }
+  autoPasContainer.forEach(
+      [&](ParticleType &p) {
+        auto v = p.getV();
+        timestepFile << "        " << v[0] << " " << v[1] << " " << v[2] << "\n";
+      },
+      autopas::IteratorBehavior::owned);
+
+  //  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+  //    auto v = particle->getV();
+  //    timestepFile << "        " << v[0] << " " << v[1] << " " << v[2] << "\n";
+  //  }
   timestepFile << "        </DataArray>\n";
 
   // print forces

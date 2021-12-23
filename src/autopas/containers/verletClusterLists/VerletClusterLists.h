@@ -313,7 +313,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @copydoc LinkedCells::forEach()
    * @note This function additionally rebuilds the towers if the tower-structure isn't valid.
    */
-  template <typename Lambda>
+  template <bool parallel, typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) {
     prepareContainerForIteration(behavior);
 
@@ -327,7 +327,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @note const version.
    * @note This function additionally iterates over the _particlesToAdd vector if the tower-structure isn't valid.
    */
-  template <typename Lambda>
+  template <bool parallel, typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) const {
     if (_isValid != ValidityState::invalid) {
       if (not particlesToAddEmpty()) {
@@ -443,7 +443,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @copydoc LinkedCells::forEachInRegion()
    * @note This function additionally rebuilds the towers if the tower-structure isn't valid.
    */
-  template <typename Lambda>
+  template <bool parallel, typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                        const std::array<double, 3> &higherCorner,
                        IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) {
@@ -459,7 +459,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @note const version.
    * @note This function additionally iterates over the _particlesToAdd vector if the tower-structure isn't valid.
    */
-  template <typename Lambda>
+  template <bool parallel, typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                        const std::array<double, 3> &higherCorner,
                        IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) const {
