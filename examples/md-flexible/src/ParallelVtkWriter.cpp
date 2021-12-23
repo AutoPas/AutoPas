@@ -88,34 +88,28 @@ void ParallelVtkWriter::recordParticleStates(const int &currentIteration,
         timestepFile << "        " << v[0] << " " << v[1] << " " << v[2] << "\n";
       },
       autopas::IteratorBehavior::owned);
-
-  //  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-  //    auto v = particle->getV();
-  //    timestepFile << "        " << v[0] << " " << v[1] << " " << v[2] << "\n";
-  //  }
   timestepFile << "        </DataArray>\n";
 
   // print forces
   timestepFile << "        <DataArray Name=\"forces\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
-  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    auto f = particle->getF();
+  autoPasContainer.forEach( [&] (ParticleType &p) {
+    auto f = p.getF();
     timestepFile << "        " << f[0] << " " << f[1] << " " << f[2] << "\n";
-  }
+  }, autopas::IteratorBehavior::owned);
   timestepFile << "        </DataArray>\n";
 
   // print type ids
   timestepFile << "        <DataArray Name=\"typeIds\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float32\">\n";
-  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    timestepFile << "        " << particle->getTypeId() << "\n";
-  }
+  autoPasContainer.forEach([&] (ParticleType &p) {
+    timestepFile << "        " << p.getTypeId() << "\n";
+  }, autopas::IteratorBehavior::owned);
   timestepFile << "        </DataArray>\n";
 
   // print ids
   timestepFile << "        <DataArray Name=\"ids\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float32\">\n";
-  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    timestepFile << "        " << particle->getID() << "\n";
-    ;
-  }
+  autoPasContainer.forEach([&] (ParticleType &p) {
+    timestepFile << "        " << p.getID() << "\n";
+  }, autopas::IteratorBehavior::owned);
   timestepFile << "        </DataArray>\n";
 
   timestepFile << "      </PointData>\n";
@@ -124,10 +118,10 @@ void ParallelVtkWriter::recordParticleStates(const int &currentIteration,
 
   // print positions
   timestepFile << "        <DataArray Name=\"positions\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
-  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    auto pos = particle->getR();
+  autoPasContainer.forEach([&] (ParticleType &p) {
+    auto pos = p.getR();
     timestepFile << "        " << pos[0] << " " << pos[1] << " " << pos[2] << "\n";
-  }
+  }, autopas::IteratorBehavior::owned);
   timestepFile << "        </DataArray>\n";
 
   timestepFile << "      </Points>\n";

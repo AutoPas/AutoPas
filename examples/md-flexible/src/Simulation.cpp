@@ -240,26 +240,25 @@ double Simulation::calculateHomogeneity() const {
   std::vector<double> allVolumes(numberOfCells, 0);
 
   // add particles accordingly to their cell to get the amount of particles in each cell
-  for (auto particleItr = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particleItr.isValid();
-       ++particleItr) {
-    std::array<double, 3> particleLocation = particleItr->getR();
-    std::array<size_t, 3> index = {};
-    for (int i = 0; i < particleLocation.size(); i++) {
-      index[i] = particleLocation[i] / cellLength;
-    }
-    const size_t cellIndex = autopas::utils::ThreeDimensionalMapping::threeToOneD(index, cellsPerDimension);
-    particlesPerCell[cellIndex] += 1;
-    // calculate the size of the current cell
-    allVolumes[cellIndex] = 1;
-    for (int i = 0; i < cellsPerDimension.size(); ++i) {
-      // the last cell layer has a special size
-      if (index[i] == cellsPerDimension[i] - 1) {
-        allVolumes[cellIndex] *= outerCellSizePerDimension[i];
-      } else {
-        allVolumes[cellIndex] *= cellLength;
-      }
-    }
-  }
+  _autoPasContainer->forEach([&] (autopas::Particle &p) {
+        std::array<double, 3> particleLocation = p.getR();
+        std::array<size_t, 3> index = {};
+        for (int i = 0; i < particleLocation.size(); i++) {
+          index[i] = particleLocation[i] / cellLength;
+        }
+        const size_t cellIndex = autopas::utils::ThreeDimensionalMapping::threeToOneD(index, cellsPerDimension);
+        particlesPerCell[cellIndex] += 1;
+        // calculate the size of the current cell
+        allVolumes[cellIndex] = 1;
+        for (int i = 0; i < cellsPerDimension.size(); ++i) {
+          // the last cell layer has a special size
+          if (index[i] == cellsPerDimension[i] - 1) {
+            allVolumes[cellIndex] *= outerCellSizePerDimension[i];
+          } else {
+            allVolumes[cellIndex] *= cellLength;
+          }
+        }
+  }, autopas::IteratorBehavior::owned);
 
   // calculate density for each cell
   std::vector<double> densityPerCell(numberOfCells, 0.0);
@@ -461,12 +460,9 @@ void Simulation::calculatePairwiseForces(bool &wasTuningIteration) {
 }
 
 void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce) {
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel shared(_autoPasContainer)
-#endif
-  for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    particle->addF(globalForce);
-  }
+  _autoPasContainer->forEachParallel([&] (autopas::Particle &p) {
+    p.addF(globalForce);
+  }, autopas::IteratorBehavior::owned);
 }
 
 void Simulation::logSimulationState() {

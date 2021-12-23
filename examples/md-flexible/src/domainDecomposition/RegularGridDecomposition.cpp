@@ -317,17 +317,16 @@ void RegularGridDecomposition::collectHaloParticlesForLeftNeighbour(SharedAutoPa
   boxMax[direction] = _localBoxMin[direction] + _cutoffWidth + _skinWidth;
 
   // Collect the halo particles for the left neighbour
-  for (auto particle = autoPasContainer->getRegionIterator(boxMin, boxMax, autopas::IteratorBehavior::owned);
-       particle.isValid(); ++particle) {
-    std::array<double, _dimensionCount> position = particle->getR();
-    haloParticles.push_back(*particle);
+  autoPasContainer->forEachInRegion([&] (ParticleType &p) {
+    std::array<double, _dimensionCount> position = p.getR();
+    haloParticles.push_back(p);
 
     // Apply boundary condition
     if (_localBoxMin[direction] == _globalBoxMin[direction]) {
       position[direction] = position[direction] + (_globalBoxMax[direction] - _globalBoxMin[direction]);
       haloParticles.back().setR(position);
     }
-  }
+  }, boxMin, boxMax, autopas::IteratorBehavior::owned);
 }
 
 void RegularGridDecomposition::collectHaloParticlesForRightNeighbour(SharedAutoPasContainer &autoPasContainer,
@@ -343,17 +342,16 @@ void RegularGridDecomposition::collectHaloParticlesForRightNeighbour(SharedAutoP
   boxMin[direction] = _localBoxMax[direction] - _cutoffWidth - _skinWidth;
 
   // Collect the halo particles for the right neighbour
-  for (auto particle = autoPasContainer->getRegionIterator(boxMin, boxMax, autopas::IteratorBehavior::owned);
-       particle.isValid(); ++particle) {
-    std::array<double, _dimensionCount> position = particle->getR();
-    haloParticles.push_back(*particle);
+  autoPasContainer->forEachInRegion([&] (ParticleType &p) {
+    std::array<double, _dimensionCount> position = p.getR();
+    haloParticles.push_back(p);
 
     // Apply boundary condition
     if (_localBoxMax[direction] == _globalBoxMax[direction]) {
       position[direction] = position[direction] - (_globalBoxMax[direction] - _globalBoxMin[direction]);
       haloParticles.back().setR(position);
     }
-  }
+  }, boxMin, boxMax, autopas::IteratorBehavior::owned);
 }
 
 void RegularGridDecomposition::categorizeParticlesIntoLeftAndRightNeighbour(

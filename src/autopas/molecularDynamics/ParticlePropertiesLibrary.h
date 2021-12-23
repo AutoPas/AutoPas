@@ -10,6 +10,7 @@
 #include <map>
 #include <set>
 #include <vector>
+#include <Kokkos_Core.hpp>
 
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ExceptionHandler.h"
@@ -211,6 +212,7 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
 }
 
 template <typename floatType, typename intType>
+KOKKOS_INLINE_FUNCTION
 floatType ParticlePropertiesLibrary<floatType, intType>::getMass(intType i) const {
   return _masses[i];
 }

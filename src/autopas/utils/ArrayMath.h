@@ -24,7 +24,9 @@ namespace autopas::utils::ArrayMath {
  * @return a + b
  */
 template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<T, SIZE> add(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+[[nodiscard]]
+KOKKOS_INLINE_FUNCTION
+constexpr std::array<T, SIZE> add(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
   std::array<T, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
     result[d] = a[d] + b[d];
@@ -161,7 +163,9 @@ template <class T, std::size_t SIZE>
  * @return array who's elements are a[i]*s
  */
 template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<T, SIZE> mulScalar(const std::array<T, SIZE> &a, T s) {
+[[nodiscard]]
+KOKKOS_INLINE_FUNCTION
+constexpr std::array<T, SIZE> mulScalar(const std::array<T, SIZE> &a, T s) {
   std::array<T, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
     result[d] = a[d] * s;

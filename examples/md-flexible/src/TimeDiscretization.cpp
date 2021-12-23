@@ -18,20 +18,17 @@ void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
   using autopas::utils::ArrayMath::add;
   using autopas::utils::ArrayMath::mulScalar;
 
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
-  for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    auto v = iter->getV();
-    auto m = particlePropertiesLibrary.getMass(iter->getTypeId());
-    auto f = iter->getF();
-    iter->setOldF(f);
-    iter->setF({0., 0., 0.});
-    v = mulScalar(v, deltaT);
-    f = mulScalar(f, (deltaT * deltaT / (2 * m)));
-    auto newR = add(v, f);
-    iter->addR(newR);
-  }
+  autoPasContainer.forEachParallel([&] (auto &p) {
+        auto v = p.getV();
+        auto m = particlePropertiesLibrary.getMass(p.getTypeId());
+        auto f = p.getF();
+        p.setOldF(f);
+        p.setF({0., 0., 0.});
+        v = mulScalar(v, deltaT);
+        f = mulScalar(f, (deltaT * deltaT / (2 * m)));
+        auto newR = add(v, f);
+        p.addR(newR);
+  }, autopas::IteratorBehavior::owned);
 }
 
 void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
@@ -40,15 +37,12 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
   using autopas::utils::ArrayMath::add;
   using autopas::utils::ArrayMath::mulScalar;
 
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
-  for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    auto m = particlePropertiesLibrary.getMass(iter->getTypeId());
-    auto force = iter->getF();
-    auto oldForce = iter->getOldF();
-    auto newV = mulScalar((add(force, oldForce)), deltaT / (2 * m));
-    iter->addV(newV);
-  }
+  autoPasContainer.forEach([&] (auto &p) {
+        auto m = particlePropertiesLibrary.getMass(p.getTypeId());
+        auto force = p.getF();
+        auto oldForce = p.getOldF();
+        auto newV = mulScalar((add(force, oldForce)), deltaT / (2 * m));
+        p.addV(newV);
+  }, autopas::IteratorBehavior::owned);
 }
 }  // namespace TimeDiscretization
