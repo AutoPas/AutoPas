@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "autopas/cells/KokkosParticleCell.h"
 #include "autopas/kokkosContainers/KokkosCellBasedParticleContainer.h"
 #include "autopas/kokkosContainers/KokkosCellPairTraversals/KokkosCellPairTraversal.h"
 #include "autopas/kokkosContainers/kokkosDirectSum/traversals/KokkosDSTraversalInterface.h"
@@ -19,9 +20,12 @@ namespace autopas {
  */
 template <class Particle>
 class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
+ public:
+  /**
+   *  Type of the ParticleCell.
+   */
   using ParticleCell = KokkosParticleCell<Particle>;
 
- public:
   /**
    * Constructor of the DirectSum class
    * @param boxMin
@@ -36,7 +40,7 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
 
   ContainerOption getContainerType() const override { return ContainerOption::kokkosDirectSum; };
 
-  CellType getParticleCellTypeEnum() override { return CellType::KokkosCell; }
+  CellType getParticleCellTypeEnum() override { return CellType::KokkosParticleCell; }
 
   bool getIsDirty() { return this->_isDirty; }
 
@@ -82,6 +86,13 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
     return isFound;
   }
 
+  void inspectContainer() {
+    auto view = this->getCellsHost();
+    auto cellOwned = view[_OWNED];
+    auto cellHalo = view[_HALO];
+    printf("");
+  }
+
   /**
    * @copydoc ParticleContainerInterface::rebuildNeighborLists()
    */
@@ -95,18 +106,22 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
   void deleteHaloParticles() override {
     // TODO update numParticles?
     this->_particles.template forEach<true>([&](Particle &p) { p.setOwnershipState(OwnershipState::dummy); },
-                                   IteratorBehavior::halo);
+                                            IteratorBehavior::halo);
   }
 
   void iteratePairwise(TraversalInterface *traversal) override {
+    // Check if traversal is allowed for this container and give it the data it needs.
+//    inspectContainer();
+    auto name = traversal->getTraversalType();
+    auto cell = traversal->isApplicable();
     auto *traversalInterface = dynamic_cast<KokkosDSTraversalInterface<ParticleCell> *>(traversal);
     auto *cellPairTraversal = dynamic_cast<KokkosCellPairTraversal<ParticleCell> *>(traversal);
-
     if (traversalInterface && cellPairTraversal) {
       cellPairTraversal->setCellsToTraverse(this->_cells);
     } else {
       autopas::utils::ExceptionHandler::exception(
-          "trying to use a traversal of wrong type in KokkosDirectSum::iteratePairwise");
+          "trying to use a traversal of wrong type in KokkosDirectSum::iteratePairwise " +
+          traversal->getTraversalType().to_string());
     }
 
     cellPairTraversal->initTraversal();
@@ -121,6 +136,9 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
 
     //    TODO lgaertner
     std::vector<Particle> invalidParticles{};
+//    inspectContainer();
+    this->deleteHaloParticles();
+
     auto boxMin = this->getBoxMin();
     auto boxMax = this->getBoxMax();
 
@@ -131,10 +149,10 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
       }
     });
 
-    this->deleteHaloParticles();
-    this->_particles.template binParticles<false>([&](Particle &p) -> size_t { return p.isOwned() ? _OWNED : _HALO; },
+    this->_particles.template binParticles<true>([&](Particle &p) -> size_t { return p.isOwned() ? _OWNED : _HALO; },
                                                   this->_cells, "KokkosDirectSum::updateContainer:");
     this->_isDirty = false;
+    inspectContainer();
 
     return invalidParticles;
   }
@@ -182,7 +200,7 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                        const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
     this->_particles.template forEach<parallel>(forEachLambda, lowerCorner, higherCorner, behavior,
-                                       "KokkosDirectSum:forEach(lowerCorner, higherCorner, behavior)");
+                                                "KokkosDirectSum:forEach(lowerCorner, higherCorner, behavior)");
   }
 
   template <typename Lambda, typename A>

@@ -173,7 +173,7 @@ class TraversalOption : public Option<TraversalOption> {
     vvl_as_built,
 
     // Kokkos sequential
-    kokkos_sequential,
+    kokkos_ds_sequential,
   };
 
   /**
@@ -251,7 +251,7 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::vlp_sliced_balanced, "vlp_sliced_balanced"},
 
         // Kokkos Traversals:
-        {TraversalOption::kokkos_sequential, "kokkos_sequential"},
+        {TraversalOption::kokkos_ds_sequential, "kokkos_ds_sequential"},
     };
   };
 

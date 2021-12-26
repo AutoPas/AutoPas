@@ -19,6 +19,7 @@
 #include "autopas/LogicHandler.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/tuningStrategy/TuningStrategyFactory.h"
+#include "autopas/pairwiseFunctors/Functor.h"
 
 namespace autopas {
 

@@ -22,6 +22,7 @@ extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJ
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::FlopCounterFunctor<ParticleType> *);
 //! @endcond
 
+#include <autopas/utils/ThreeDimensionalMapping.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 
@@ -240,7 +241,8 @@ double Simulation::calculateHomogeneity() const {
   std::vector<double> allVolumes(numberOfCells, 0);
 
   // add particles accordingly to their cell to get the amount of particles in each cell
-  _autoPasContainer->forEach([&] (autopas::Particle &p) {
+  _autoPasContainer->forEach(
+      [&](autopas::Particle &p) {
         std::array<double, 3> particleLocation = p.getR();
         std::array<size_t, 3> index = {};
         for (int i = 0; i < particleLocation.size(); i++) {
@@ -258,7 +260,8 @@ double Simulation::calculateHomogeneity() const {
             allVolumes[cellIndex] *= cellLength;
           }
         }
-  }, autopas::IteratorBehavior::owned);
+      },
+      autopas::IteratorBehavior::owned);
 
   // calculate density for each cell
   std::vector<double> densityPerCell(numberOfCells, 0.0);
@@ -460,9 +463,8 @@ void Simulation::calculatePairwiseForces(bool &wasTuningIteration) {
 }
 
 void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce) {
-  _autoPasContainer->forEachParallel([&] (autopas::Particle &p) {
-    p.addF(globalForce);
-  }, autopas::IteratorBehavior::owned);
+  _autoPasContainer->forEachParallel([&](autopas::Particle &p) { p.addF(globalForce); },
+                                     autopas::IteratorBehavior::owned);
 }
 
 void Simulation::logSimulationState() {

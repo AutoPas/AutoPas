@@ -19,6 +19,11 @@ namespace autopas {
 template <class Particle>
 class KokkosParticleCell {
  public:
+  /**
+   * The particle type for this cell.
+   */
+  using ParticleType = Particle;
+
   KokkosParticleCell() : particlesPtr(nullptr), begin(0ul), cellSize(0ul){};
 
   Kokkos::RangePolicy<> getKokkosRangePolicy() { return {begin, begin + cellSize}; }

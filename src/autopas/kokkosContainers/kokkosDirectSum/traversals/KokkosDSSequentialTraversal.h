@@ -38,7 +38,7 @@ class KokkosDSSequentialTraversal : public KokkosCellPairTraversal<ParticleCell>
         _cellFunctor(pairwiseFunctor),
         _dataLayoutConverter(pairwiseFunctor) {}
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::kokkos_sequential; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::kokkos_ds_sequential; }
 
   [[nodiscard]] bool isApplicable() const override { return true; }
 

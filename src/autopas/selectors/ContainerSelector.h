@@ -10,15 +10,15 @@
 #include <vector>
 
 #include "autopas/containers/CellBasedParticleContainer.h"
-#include "autopas/containers/directSum/DirectSum.h"
-#include "autopas/containers/linkedCells/LinkedCells.h"
-#include "autopas/containers/linkedCells/LinkedCellsReferences.h"
-#include "autopas/containers/verletClusterLists/VerletClusterLists.h"
-#include "autopas/containers/verletListsCellBased/varVerletLists/VarVerletLists.h"
-#include "autopas/containers/verletListsCellBased/varVerletLists/neighborLists/asBuild/VerletNeighborListAsBuild.h"
-#include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
+//#include "autopas/containers/directSum/DirectSum.h"
+//#include "autopas/containers/linkedCells/LinkedCells.h"
+//#include "autopas/containers/linkedCells/LinkedCellsReferences.h"
+//#include "autopas/containers/verletClusterLists/VerletClusterLists.h"
+//#include "autopas/containers/verletListsCellBased/varVerletLists/VarVerletLists.h"
+//#include "autopas/containers/verletListsCellBased/varVerletLists/neighborLists/asBuild/VerletNeighborListAsBuild.h"
+//#include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
+//#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
+//#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/kokkosContainers/kokkosDirectSum/KokkosDirectSum.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/selectors/ContainerSelectorInfo.h"
@@ -99,51 +99,51 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
     ContainerOption containerChoice, ContainerSelectorInfo containerInfo) {
   std::unique_ptr<autopas::ParticleContainerInterface<Particle>> container;
   switch (containerChoice) {
-    case ContainerOption::directSum: {
-      container = std::make_unique<DirectSum<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
-      break;
-    }
-
-    case ContainerOption::linkedCells: {
-      container = std::make_unique<LinkedCells<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
-                                                          containerInfo.cellSizeFactor, containerInfo.loadEstimator);
-      break;
-    }
-    case ContainerOption::linkedCellsReferences: {
-      container = std::make_unique<LinkedCellsReferences<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
-                                                                    containerInfo.cellSizeFactor);
-      break;
-    }
-    case ContainerOption::verletLists: {
-      container = std::make_unique<VerletLists<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
-                                                          VerletLists<Particle>::BuildVerletListType::VerletSoA,
-                                                          containerInfo.cellSizeFactor);
-      break;
-    }
-    case ContainerOption::verletListsCells: {
-      container = std::make_unique<VerletListsCells<Particle, VLCAllCellsNeighborList<Particle>>>(
-          _boxMin, _boxMax, _cutoff, TraversalOption::lc_c08, containerInfo.verletSkin, containerInfo.cellSizeFactor,
-          containerInfo.loadEstimator, VerletListsCellsHelpers<Particle>::VLCBuildType::Value::soaBuild);
-      break;
-    }
-    case ContainerOption::verletClusterLists: {
-      container =
-          std::make_unique<VerletClusterLists<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
-                                                         containerInfo.verletClusterSize, containerInfo.loadEstimator);
-      break;
-    }
-    case ContainerOption::varVerletListsAsBuild: {
-      container = std::make_unique<VarVerletLists<Particle, VerletNeighborListAsBuild<Particle>>>(
-          _boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
-      break;
-    }
-
-    case ContainerOption::pairwiseVerletLists: {
-      container = std::make_unique<VerletListsCells<Particle, VLCCellPairNeighborList<Particle>>>(
-          _boxMin, _boxMax, _cutoff, TraversalOption::lc_c08, containerInfo.verletSkin, containerInfo.cellSizeFactor,
-          containerInfo.loadEstimator, VerletListsCellsHelpers<Particle>::VLCBuildType::Value::soaBuild);
-      break;
-    }
+//    case ContainerOption::directSum: {
+//      container = std::make_unique<DirectSum<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
+//      break;
+//    }
+//
+//    case ContainerOption::linkedCells: {
+//      container = std::make_unique<LinkedCells<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+//                                                          containerInfo.cellSizeFactor, containerInfo.loadEstimator);
+//      break;
+//    }
+//    case ContainerOption::linkedCellsReferences: {
+//      container = std::make_unique<LinkedCellsReferences<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+//                                                                    containerInfo.cellSizeFactor);
+//      break;
+//    }
+//    case ContainerOption::verletLists: {
+//      container = std::make_unique<VerletLists<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+//                                                          VerletLists<Particle>::BuildVerletListType::VerletSoA,
+//                                                          containerInfo.cellSizeFactor);
+//      break;
+//    }
+//    case ContainerOption::verletListsCells: {
+//      container = std::make_unique<VerletListsCells<Particle, VLCAllCellsNeighborList<Particle>>>(
+//          _boxMin, _boxMax, _cutoff, TraversalOption::lc_c08, containerInfo.verletSkin, containerInfo.cellSizeFactor,
+//          containerInfo.loadEstimator, VerletListsCellsHelpers<Particle>::VLCBuildType::Value::soaBuild);
+//      break;
+//    }
+//    case ContainerOption::verletClusterLists: {
+//      container =
+//          std::make_unique<VerletClusterLists<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+//                                                         containerInfo.verletClusterSize, containerInfo.loadEstimator);
+//      break;
+//    }
+//    case ContainerOption::varVerletListsAsBuild: {
+//      container = std::make_unique<VarVerletLists<Particle, VerletNeighborListAsBuild<Particle>>>(
+//          _boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
+//      break;
+//    }
+//
+//    case ContainerOption::pairwiseVerletLists: {
+//      container = std::make_unique<VerletListsCells<Particle, VLCCellPairNeighborList<Particle>>>(
+//          _boxMin, _boxMax, _cutoff, TraversalOption::lc_c08, containerInfo.verletSkin, containerInfo.cellSizeFactor,
+//          containerInfo.loadEstimator, VerletListsCellsHelpers<Particle>::VLCBuildType::Value::soaBuild);
+//      break;
+//    }
 
     case ContainerOption::kokkosDirectSum: {
       container = std::make_unique<KokkosDirectSum<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin);

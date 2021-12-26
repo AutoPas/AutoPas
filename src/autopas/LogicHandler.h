@@ -222,6 +222,18 @@ class LogicHandler {
     _numParticlesHalo.fetch_add(1, std::memory_order_relaxed);
   }
 
+    /**
+     * Adds a particle to the container that lies in the halo region of the container.
+     * @param haloParticle Particle to be added.
+     * @note An exception is thrown if the halo particle is added and it is inside of the owned domain (defined by boxmin
+     * and boxmax) of the container.
+     * @note This function is NOT thread-safe.
+     */
+    void resortContainerAndDeleteDummies() {
+        withStaticContainerType(_autoTuner.getContainer(),
+                                [&](auto containerPtr) { containerPtr->resortAndDeleteDummies(); });
+  }
+
   /**
    * @copydoc AutoPas::deleteAllParticles()
    */

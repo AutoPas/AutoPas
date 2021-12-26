@@ -26,7 +26,7 @@ namespace {
  * @param randomEngine Random engine used for the generation of the velocity.
  * @param normalDistribution Distribution used for constructing the maxwell boltzmann distribution.
  */
- KOKKOS_INLINE_FUNCTION
+KOKKOS_INLINE_FUNCTION
 void addMaxwellBoltzmannDistributedVelocity(ParticleType &p, const double averageVelocity,
                                             std::default_random_engine &randomEngine,
                                             std::normal_distribution<double> &normalDistribution) {
@@ -56,11 +56,12 @@ double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibrary
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel reduction(+ : kineticEnergyMul2) default(none) shared(autopas, particlePropertiesLibrary)
 #endif
-  autopas.reduceParallel([&] (ParticleType &p, double reductionValue) {
-    auto vel = p.getV();
-    reductionValue +=
-        particlePropertiesLibrary.getMass(p.getTypeId()) * autopas::utils::ArrayMath::dot(vel, vel);
-  }, kineticEnergyMul2, autopas::IteratorBehavior::ownedOrHalo);
+  autopas.reduceParallel(
+      [&](ParticleType &p, double reductionValue) {
+        auto vel = p.getV();
+        reductionValue += particlePropertiesLibrary.getMass(p.getTypeId()) * autopas::utils::ArrayMath::dot(vel, vel);
+      },
+      kineticEnergyMul2, autopas::IteratorBehavior::ownedOrHalo);
 
   // AutoPas works always on 3 dimensions
   constexpr unsigned int dimensions{3};
@@ -84,23 +85,26 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
   // map of: particle typeID -> number of particles of this type
   std::map<size_t, size_t> numParticleMap;
 
-  //TODO lgaertner sucks ass... improve with allowing multiple reductions per loop?
+  // TODO lgaertner sucks ass... improve with allowing multiple reductions per loop?
   for (const auto &typeID : particlePropertiesLibrary.getTypes()) {
     double kemRedVal = 0.;
     size_t npmRedVal = 0ul;
-    autopas.reduce([&] (ParticleType &p, double redVal) {
-        if (p.getTypeId() == typeID) {
+    autopas.reduce(
+        [&](ParticleType &p, double redVal) {
+          if (p.getTypeId() == typeID) {
             auto vel = p.getV();
-            redVal +=
-                particlePropertiesLibrary.getMass(typeID) * autopas::utils::ArrayMath::dot(vel, vel);
+            redVal += particlePropertiesLibrary.getMass(typeID) * autopas::utils::ArrayMath::dot(vel, vel);
           }
-        }, kemRedVal, autopas::IteratorBehavior::ownedOrHalo);
+        },
+        kemRedVal, autopas::IteratorBehavior::ownedOrHalo);
 
-    autopas.reduce([&] (ParticleType &p, size_t redVal) {
-      if (p.getTypeId() == typeID) {
-        redVal += 1;
-      }
-    }, npmRedVal, autopas::IteratorBehavior::ownedOrHalo);
+    autopas.reduce(
+        [&](ParticleType &p, size_t redVal) {
+          if (p.getTypeId() == typeID) {
+            redVal += 1;
+          }
+        },
+        npmRedVal, autopas::IteratorBehavior::ownedOrHalo);
 
     kineticEnergyMul2Map[typeID] = 0.;
     numParticleMap[typeID] = 0ul;
@@ -139,18 +143,20 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
   for (auto typeID : particlePropertiesLibrary.getTypes()) {
     factors.emplace(typeID, std::sqrt(targetTemperature / particlePropertiesLibrary.getMass(typeID)));
   }
-//#ifdef AUTOPAS_OPENMP
-//#pragma omp parallel default(none) shared(autopas, factors)
-//#endif
+  //#ifdef AUTOPAS_OPENMP
+  //#pragma omp parallel default(none) shared(autopas, factors)
+  //#endif
   {
     // we use a constant seed for repeatability.
     // we need one random engine and distribution per thread
-    std::default_random_engine randomEngine(42 + autopas::autopas_get_thread_num()); // TODO lgaertner ?? why what how?
+    std::default_random_engine randomEngine(42 + autopas::autopas_get_thread_num());  // TODO lgaertner ?? why what how?
     std::normal_distribution<double> normalDistribution{0, 1};
-    autopas.forEachParallel([&] (ParticleType &p) {
-//      TODO lgaertner: fix random.h access for gpu usage
-      addMaxwellBoltzmannDistributedVelocity(p, factors[p.getTypeId()], randomEngine, normalDistribution);
-    }, autopas::IteratorBehavior::ownedOrHalo);
+    autopas.forEachParallel(
+        [&](ParticleType &p) {
+          //      TODO lgaertner: fix random.h access for gpu usage
+          addMaxwellBoltzmannDistributedVelocity(p, factors[p.getTypeId()], randomEngine, normalDistribution);
+        },
+        autopas::IteratorBehavior::ownedOrHalo);
   }
 }
 
@@ -183,8 +189,7 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
     }
     scalingMap[particleTypeID] = std::sqrt(nextTargetTemperature / currentTemperature);
   }
-  autopas.forEachParallel([&] (ParticleType &p) {
-    p.setV(autopas::utils::ArrayMath::mulScalar(p.getV(), scalingMap[p.getTypeId()]));
-  });
+  autopas.forEachParallel(
+      [&](ParticleType &p) { p.setV(autopas::utils::ArrayMath::mulScalar(p.getV(), scalingMap[p.getTypeId()])); });
 }
 }  // namespace Thermostat

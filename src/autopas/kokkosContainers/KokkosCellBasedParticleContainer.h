@@ -21,6 +21,8 @@ namespace autopas {
  */
 template <class Particle>
 class KokkosCellBasedParticleContainer : public ParticleContainerInterface<Particle> {
+  using ParticleCell = KokkosParticleCell<Particle>;
+
  public:
   /**
    * Constructor of KokkosCellBasedParticleContainer

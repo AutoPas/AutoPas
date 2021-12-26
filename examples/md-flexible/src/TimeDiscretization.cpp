@@ -18,7 +18,8 @@ void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
   using autopas::utils::ArrayMath::add;
   using autopas::utils::ArrayMath::mulScalar;
 
-  autoPasContainer.forEachParallel([&] (auto &p) {
+  autoPasContainer.forEachParallel(
+      [&](auto &p) {
         auto v = p.getV();
         auto m = particlePropertiesLibrary.getMass(p.getTypeId());
         auto f = p.getF();
@@ -28,7 +29,8 @@ void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
         f = mulScalar(f, (deltaT * deltaT / (2 * m)));
         auto newR = add(v, f);
         p.addR(newR);
-  }, autopas::IteratorBehavior::owned);
+      },
+      autopas::IteratorBehavior::owned);
 }
 
 void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
@@ -37,12 +39,14 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
   using autopas::utils::ArrayMath::add;
   using autopas::utils::ArrayMath::mulScalar;
 
-  autoPasContainer.forEach([&] (auto &p) {
+  autoPasContainer.forEach(
+      [&](auto &p) {
         auto m = particlePropertiesLibrary.getMass(p.getTypeId());
         auto force = p.getF();
         auto oldForce = p.getOldF();
         auto newV = mulScalar((add(force, oldForce)), deltaT / (2 * m));
         p.addV(newV);
-  }, autopas::IteratorBehavior::owned);
+      },
+      autopas::IteratorBehavior::owned);
 }
 }  // namespace TimeDiscretization

@@ -92,24 +92,24 @@ void ParallelVtkWriter::recordParticleStates(const int &currentIteration,
 
   // print forces
   timestepFile << "        <DataArray Name=\"forces\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
-  autoPasContainer.forEach( [&] (ParticleType &p) {
-    auto f = p.getF();
-    timestepFile << "        " << f[0] << " " << f[1] << " " << f[2] << "\n";
-  }, autopas::IteratorBehavior::owned);
+  autoPasContainer.forEach(
+      [&](ParticleType &p) {
+        auto f = p.getF();
+        timestepFile << "        " << f[0] << " " << f[1] << " " << f[2] << "\n";
+      },
+      autopas::IteratorBehavior::owned);
   timestepFile << "        </DataArray>\n";
 
   // print type ids
   timestepFile << "        <DataArray Name=\"typeIds\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float32\">\n";
-  autoPasContainer.forEach([&] (ParticleType &p) {
-    timestepFile << "        " << p.getTypeId() << "\n";
-  }, autopas::IteratorBehavior::owned);
+  autoPasContainer.forEach([&](ParticleType &p) { timestepFile << "        " << p.getTypeId() << "\n"; },
+                           autopas::IteratorBehavior::owned);
   timestepFile << "        </DataArray>\n";
 
   // print ids
   timestepFile << "        <DataArray Name=\"ids\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float32\">\n";
-  autoPasContainer.forEach([&] (ParticleType &p) {
-    timestepFile << "        " << p.getID() << "\n";
-  }, autopas::IteratorBehavior::owned);
+  autoPasContainer.forEach([&](ParticleType &p) { timestepFile << "        " << p.getID() << "\n"; },
+                           autopas::IteratorBehavior::owned);
   timestepFile << "        </DataArray>\n";
 
   timestepFile << "      </PointData>\n";
@@ -118,10 +118,12 @@ void ParallelVtkWriter::recordParticleStates(const int &currentIteration,
 
   // print positions
   timestepFile << "        <DataArray Name=\"positions\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
-  autoPasContainer.forEach([&] (ParticleType &p) {
-    auto pos = p.getR();
-    timestepFile << "        " << pos[0] << " " << pos[1] << " " << pos[2] << "\n";
-  }, autopas::IteratorBehavior::owned);
+  autoPasContainer.forEach(
+      [&](ParticleType &p) {
+        auto pos = p.getR();
+        timestepFile << "        " << pos[0] << " " << pos[1] << " " << pos[2] << "\n";
+      },
+      autopas::IteratorBehavior::owned);
   timestepFile << "        </DataArray>\n";
 
   timestepFile << "      </Points>\n";

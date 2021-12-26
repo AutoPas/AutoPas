@@ -103,11 +103,11 @@ static const std::set<TraversalOption> &allVLPCompatibleTraversals() {
 }
 
 /**
- * Lists all traversal options applicable for the Direct Sum container.
+ * Lists all traversal options applicable for the Kokkos Direct Sum container.
  * @return set of all applicable traversal options.
  */
 static const std::set<TraversalOption> &allKokkosCompatibleTraversals() {
-  static const std::set<TraversalOption> s{TraversalOption::kokkos_sequential};
+  static const std::set<TraversalOption> s{TraversalOption::kokkos_ds_sequential};
   return s;
 }
 

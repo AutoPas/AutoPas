@@ -21,6 +21,7 @@
 #include "autopas/selectors/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/StaticCellSelector.h"
+#include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/logging/IterationLogger.h"
 #include "autopas/utils/logging/TuningDataLogger.h"
@@ -361,31 +362,66 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<Partic
     auto pos = p.getR();
     auto min = autopas::utils::ArrayMath::subScalar(pos, containerPtr->getCutoff());
     auto max = autopas::utils::ArrayMath::addScalar(pos, containerPtr->getCutoff());
-    for (auto iter2 = containerPtr->getRegionIterator(min, max, IteratorBehavior::ownedOrHalo); iter2.isValid();
-         ++iter2) {
-      if (newton3) {
-        f->AoSFunctor(p, *iter2, true);
-      } else {
-        f->AoSFunctor(p, *iter2, false);
-        f->AoSFunctor(*iter2, p, false);
-      }
-    }
+    withStaticContainerType(containerPtr, [&] (auto container) {
+      container->template forEachInRegion<false>(
+          [&](Particle &particle) {
+            if (newton3) {
+              f->AoSFunctor(p, particle, true);
+            } else {
+              f->AoSFunctor(p, particle, false);
+              f->AoSFunctor(particle, p, false);
+            }
+          }, min, max,
+          IteratorBehavior::ownedOrHalo);
+    });
+//    containerPtr->template forEachInRegion<false>([&] (Particle &particle) {
+//      if (newton3) {
+//        f->AoSFunctor(p, particle, true);
+//      } else {
+//        f->AoSFunctor(p, particle, false);
+//        f->AoSFunctor(particle, p, false);
+//      }
+//    }, IteratorBehavior::ownedOrHalo);
+
+//    for (auto iter2 = containerPtr->getRegionIterator(min, max, IteratorBehavior::ownedOrHalo); iter2.isValid();
+//         ++iter2) {
+//      if (newton3) {
+//        f->AoSFunctor(p, *iter2, true);
+//      } else {
+//        f->AoSFunctor(p, *iter2, false);
+//        f->AoSFunctor(*iter2, p, false);
+//      }
+//    }
   }
+
 
   // 2. haloParticleBuffer with owned, close particles in container
   for (auto &&p : haloParticleBuffer) {
     auto pos = p.getR();
     auto min = autopas::utils::ArrayMath::subScalar(pos, containerPtr->getCutoff());
     auto max = autopas::utils::ArrayMath::addScalar(pos, containerPtr->getCutoff());
-    for (auto iter2 = containerPtr->getRegionIterator(min, max, IteratorBehavior::owned); iter2.isValid(); ++iter2) {
-      if (newton3) {
-        f->AoSFunctor(p, *iter2, true);
-      } else {
-        // Here, we do not need to interact p with *iter2, because p is a halo particle and an AoSFunctor call with an
-        // halo particle as first argument has no effect if newton3 == false.
-        f->AoSFunctor(*iter2, p, false);
-      }
-    }
+
+    withStaticContainerType(containerPtr, [&] (auto container) {
+      container->template forEachInRegion<false>(
+          [&](Particle &particle) {
+            if (newton3) {
+              f->AoSFunctor(p, particle, true);
+            } else {
+              f->AoSFunctor(particle, p, false);
+            }
+          },
+          min, max, IteratorBehavior::owned);
+    });
+
+//    for (auto iter2 = containerPtr->getRegionIterator(min, max, IteratorBehavior::owned); iter2.isValid(); ++iter2) {
+//      if (newton3) {
+//        f->AoSFunctor(p, *iter2, true);
+//      } else {
+//        // Here, we do not need to interact p with *iter2, because p is a halo particle and an AoSFunctor call with an
+//        // halo particle as first argument has no effect if newton3 == false.
+//        f->AoSFunctor(*iter2, p, false);
+//      }
+//    }
   }
 
   // 3. particleBuffer with itself
