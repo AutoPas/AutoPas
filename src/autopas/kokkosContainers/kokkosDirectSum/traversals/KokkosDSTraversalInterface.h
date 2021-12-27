@@ -17,7 +17,6 @@ namespace autopas {
  * @tparam ParticleCell
  */
 template <class ParticleType>
-class KokkosDSTraversalInterface {
-};
+class KokkosDSTraversalInterface {};
 
 }  // namespace autopas

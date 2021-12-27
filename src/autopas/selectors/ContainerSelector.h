@@ -99,51 +99,56 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
     ContainerOption containerChoice, ContainerSelectorInfo containerInfo) {
   std::unique_ptr<autopas::ParticleContainerInterface<Particle>> container;
   switch (containerChoice) {
-//    case ContainerOption::directSum: {
-//      container = std::make_unique<DirectSum<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
-//      break;
-//    }
-//
-//    case ContainerOption::linkedCells: {
-//      container = std::make_unique<LinkedCells<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
-//                                                          containerInfo.cellSizeFactor, containerInfo.loadEstimator);
-//      break;
-//    }
-//    case ContainerOption::linkedCellsReferences: {
-//      container = std::make_unique<LinkedCellsReferences<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
-//                                                                    containerInfo.cellSizeFactor);
-//      break;
-//    }
-//    case ContainerOption::verletLists: {
-//      container = std::make_unique<VerletLists<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
-//                                                          VerletLists<Particle>::BuildVerletListType::VerletSoA,
-//                                                          containerInfo.cellSizeFactor);
-//      break;
-//    }
-//    case ContainerOption::verletListsCells: {
-//      container = std::make_unique<VerletListsCells<Particle, VLCAllCellsNeighborList<Particle>>>(
-//          _boxMin, _boxMax, _cutoff, TraversalOption::lc_c08, containerInfo.verletSkin, containerInfo.cellSizeFactor,
-//          containerInfo.loadEstimator, VerletListsCellsHelpers<Particle>::VLCBuildType::Value::soaBuild);
-//      break;
-//    }
-//    case ContainerOption::verletClusterLists: {
-//      container =
-//          std::make_unique<VerletClusterLists<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
-//                                                         containerInfo.verletClusterSize, containerInfo.loadEstimator);
-//      break;
-//    }
-//    case ContainerOption::varVerletListsAsBuild: {
-//      container = std::make_unique<VarVerletLists<Particle, VerletNeighborListAsBuild<Particle>>>(
-//          _boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
-//      break;
-//    }
-//
-//    case ContainerOption::pairwiseVerletLists: {
-//      container = std::make_unique<VerletListsCells<Particle, VLCCellPairNeighborList<Particle>>>(
-//          _boxMin, _boxMax, _cutoff, TraversalOption::lc_c08, containerInfo.verletSkin, containerInfo.cellSizeFactor,
-//          containerInfo.loadEstimator, VerletListsCellsHelpers<Particle>::VLCBuildType::Value::soaBuild);
-//      break;
-//    }
+      //    case ContainerOption::directSum: {
+      //      container = std::make_unique<DirectSum<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
+      //      break;
+      //    }
+      //
+      //    case ContainerOption::linkedCells: {
+      //      container = std::make_unique<LinkedCells<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+      //                                                          containerInfo.cellSizeFactor,
+      //                                                          containerInfo.loadEstimator);
+      //      break;
+      //    }
+      //    case ContainerOption::linkedCellsReferences: {
+      //      container = std::make_unique<LinkedCellsReferences<Particle>>(_boxMin, _boxMax, _cutoff,
+      //      containerInfo.verletSkin,
+      //                                                                    containerInfo.cellSizeFactor);
+      //      break;
+      //    }
+      //    case ContainerOption::verletLists: {
+      //      container = std::make_unique<VerletLists<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+      //                                                          VerletLists<Particle>::BuildVerletListType::VerletSoA,
+      //                                                          containerInfo.cellSizeFactor);
+      //      break;
+      //    }
+      //    case ContainerOption::verletListsCells: {
+      //      container = std::make_unique<VerletListsCells<Particle, VLCAllCellsNeighborList<Particle>>>(
+      //          _boxMin, _boxMax, _cutoff, TraversalOption::lc_c08, containerInfo.verletSkin,
+      //          containerInfo.cellSizeFactor, containerInfo.loadEstimator,
+      //          VerletListsCellsHelpers<Particle>::VLCBuildType::Value::soaBuild);
+      //      break;
+      //    }
+      //    case ContainerOption::verletClusterLists: {
+      //      container =
+      //          std::make_unique<VerletClusterLists<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+      //                                                         containerInfo.verletClusterSize,
+      //                                                         containerInfo.loadEstimator);
+      //      break;
+      //    }
+      //    case ContainerOption::varVerletListsAsBuild: {
+      //      container = std::make_unique<VarVerletLists<Particle, VerletNeighborListAsBuild<Particle>>>(
+      //          _boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
+      //      break;
+      //    }
+      //
+      //    case ContainerOption::pairwiseVerletLists: {
+      //      container = std::make_unique<VerletListsCells<Particle, VLCCellPairNeighborList<Particle>>>(
+      //          _boxMin, _boxMax, _cutoff, TraversalOption::lc_c08, containerInfo.verletSkin,
+      //          containerInfo.cellSizeFactor, containerInfo.loadEstimator,
+      //          VerletListsCellsHelpers<Particle>::VLCBuildType::Value::soaBuild);
+      //      break;
+      //    }
 
     case ContainerOption::kokkosDirectSum: {
       container = std::make_unique<KokkosDirectSum<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin);

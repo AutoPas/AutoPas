@@ -34,25 +34,25 @@ decltype(auto) withStaticContainerType(const std::shared_ptr<ParticleContainerIn
                                        FunctionType &&function) {
   auto containerPtr = container.get();
   switch (container->getContainerType()) {
-//    case ContainerOption::directSum:
-//      return function(dynamic_cast<autopas::DirectSum<Particle> *>(containerPtr));
-//    case ContainerOption::linkedCells:
-//      return function(dynamic_cast<autopas::LinkedCells<Particle> *>(containerPtr));
-//    case ContainerOption::linkedCellsReferences:
-//      return function(dynamic_cast<autopas::LinkedCellsReferences<Particle> *>(containerPtr));
-//    case ContainerOption::verletLists:
-//      return function(dynamic_cast<autopas::VerletLists<Particle> *>(containerPtr));
-//    case ContainerOption::verletListsCells:
-//      return function(
-//          dynamic_cast<autopas::VerletListsCells<Particle, VLCAllCellsNeighborList<Particle>> *>(containerPtr));
-//    case ContainerOption::verletClusterLists:
-//      return function(dynamic_cast<autopas::VerletClusterLists<Particle> *>(containerPtr));
-//    case ContainerOption::pairwiseVerletLists:
-//      return function(
-//          dynamic_cast<autopas::VerletListsCells<Particle, VLCCellPairNeighborList<Particle>> *>(containerPtr));
-//    case ContainerOption::varVerletListsAsBuild:
-//      return function(
-//          dynamic_cast<autopas::VarVerletLists<Particle, VerletNeighborListAsBuild<Particle>> *>(containerPtr));
+      //    case ContainerOption::directSum:
+      //      return function(dynamic_cast<autopas::DirectSum<Particle> *>(containerPtr));
+      //    case ContainerOption::linkedCells:
+      //      return function(dynamic_cast<autopas::LinkedCells<Particle> *>(containerPtr));
+      //    case ContainerOption::linkedCellsReferences:
+      //      return function(dynamic_cast<autopas::LinkedCellsReferences<Particle> *>(containerPtr));
+      //    case ContainerOption::verletLists:
+      //      return function(dynamic_cast<autopas::VerletLists<Particle> *>(containerPtr));
+      //    case ContainerOption::verletListsCells:
+      //      return function(
+      //          dynamic_cast<autopas::VerletListsCells<Particle, VLCAllCellsNeighborList<Particle>> *>(containerPtr));
+      //    case ContainerOption::verletClusterLists:
+      //      return function(dynamic_cast<autopas::VerletClusterLists<Particle> *>(containerPtr));
+      //    case ContainerOption::pairwiseVerletLists:
+      //      return function(
+      //          dynamic_cast<autopas::VerletListsCells<Particle, VLCCellPairNeighborList<Particle>> *>(containerPtr));
+      //    case ContainerOption::varVerletListsAsBuild:
+      //      return function(
+      //          dynamic_cast<autopas::VarVerletLists<Particle, VerletNeighborListAsBuild<Particle>> *>(containerPtr));
     case ContainerOption::kokkosDirectSum:
       return function(dynamic_cast<autopas::KokkosDirectSum<Particle> *>(containerPtr));
   }

@@ -32,7 +32,8 @@ enum class CellType {
    */
   SortedCellView,
   /**
-   * KokkosParticleCell : Particles are managed in one managed Kokkos::View and cell structure is only kept via metadata.
+   * KokkosParticleCell : Particles are managed in one managed Kokkos::View and cell structure is only kept via
+   * metadata.
    */
   KokkosParticleCell,
   /**

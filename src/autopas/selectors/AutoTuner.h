@@ -362,7 +362,7 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<Partic
     auto pos = p.getR();
     auto min = autopas::utils::ArrayMath::subScalar(pos, containerPtr->getCutoff());
     auto max = autopas::utils::ArrayMath::addScalar(pos, containerPtr->getCutoff());
-    withStaticContainerType(containerPtr, [&] (auto container) {
+    withStaticContainerType(containerPtr, [&](auto container) {
       container->template forEachInRegion<false>(
           [&](Particle &particle) {
             if (newton3) {
@@ -371,29 +371,28 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<Partic
               f->AoSFunctor(p, particle, false);
               f->AoSFunctor(particle, p, false);
             }
-          }, min, max,
-          IteratorBehavior::ownedOrHalo);
+          },
+          min, max, IteratorBehavior::ownedOrHalo);
     });
-//    containerPtr->template forEachInRegion<false>([&] (Particle &particle) {
-//      if (newton3) {
-//        f->AoSFunctor(p, particle, true);
-//      } else {
-//        f->AoSFunctor(p, particle, false);
-//        f->AoSFunctor(particle, p, false);
-//      }
-//    }, IteratorBehavior::ownedOrHalo);
+    //    containerPtr->template forEachInRegion<false>([&] (Particle &particle) {
+    //      if (newton3) {
+    //        f->AoSFunctor(p, particle, true);
+    //      } else {
+    //        f->AoSFunctor(p, particle, false);
+    //        f->AoSFunctor(particle, p, false);
+    //      }
+    //    }, IteratorBehavior::ownedOrHalo);
 
-//    for (auto iter2 = containerPtr->getRegionIterator(min, max, IteratorBehavior::ownedOrHalo); iter2.isValid();
-//         ++iter2) {
-//      if (newton3) {
-//        f->AoSFunctor(p, *iter2, true);
-//      } else {
-//        f->AoSFunctor(p, *iter2, false);
-//        f->AoSFunctor(*iter2, p, false);
-//      }
-//    }
+    //    for (auto iter2 = containerPtr->getRegionIterator(min, max, IteratorBehavior::ownedOrHalo); iter2.isValid();
+    //         ++iter2) {
+    //      if (newton3) {
+    //        f->AoSFunctor(p, *iter2, true);
+    //      } else {
+    //        f->AoSFunctor(p, *iter2, false);
+    //        f->AoSFunctor(*iter2, p, false);
+    //      }
+    //    }
   }
-
 
   // 2. haloParticleBuffer with owned, close particles in container
   for (auto &&p : haloParticleBuffer) {
@@ -401,7 +400,7 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<Partic
     auto min = autopas::utils::ArrayMath::subScalar(pos, containerPtr->getCutoff());
     auto max = autopas::utils::ArrayMath::addScalar(pos, containerPtr->getCutoff());
 
-    withStaticContainerType(containerPtr, [&] (auto container) {
+    withStaticContainerType(containerPtr, [&](auto container) {
       container->template forEachInRegion<false>(
           [&](Particle &particle) {
             if (newton3) {
@@ -413,15 +412,17 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<Partic
           min, max, IteratorBehavior::owned);
     });
 
-//    for (auto iter2 = containerPtr->getRegionIterator(min, max, IteratorBehavior::owned); iter2.isValid(); ++iter2) {
-//      if (newton3) {
-//        f->AoSFunctor(p, *iter2, true);
-//      } else {
-//        // Here, we do not need to interact p with *iter2, because p is a halo particle and an AoSFunctor call with an
-//        // halo particle as first argument has no effect if newton3 == false.
-//        f->AoSFunctor(*iter2, p, false);
-//      }
-//    }
+    //    for (auto iter2 = containerPtr->getRegionIterator(min, max, IteratorBehavior::owned); iter2.isValid();
+    //    ++iter2) {
+    //      if (newton3) {
+    //        f->AoSFunctor(p, *iter2, true);
+    //      } else {
+    //        // Here, we do not need to interact p with *iter2, because p is a halo particle and an AoSFunctor call
+    //        with an
+    //        // halo particle as first argument has no effect if newton3 == false.
+    //        f->AoSFunctor(*iter2, p, false);
+    //      }
+    //    }
   }
 
   // 3. particleBuffer with itself

@@ -17,9 +17,9 @@
 
 // These next three includes have dependencies to all of AutoPas and thus are moved here from AutoPasDecl.h.
 #include "autopas/LogicHandler.h"
+#include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/tuningStrategy/TuningStrategyFactory.h"
-#include "autopas/pairwiseFunctors/Functor.h"
 
 namespace autopas {
 

@@ -111,7 +111,7 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
 
   void iteratePairwise(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
-//    inspectContainer();
+    //    inspectContainer();
     auto name = traversal->getTraversalType();
     auto cell = traversal->isApplicable();
     auto *traversalInterface = dynamic_cast<KokkosDSTraversalInterface<ParticleCell> *>(traversal);
@@ -131,11 +131,6 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
 
   std::vector<Particle> updateContainer(bool keepNeighborListsValid) override {
     std::vector<Particle> invalidParticles{};
-    if (keepNeighborListsValid) {
-      //TODO lgaertner
-//      return autopas::LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);
-      return invalidParticles;
-    }
 
     //    TODO lgaertner
     this->deleteHaloParticles();
@@ -143,17 +138,20 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
     auto boxMin = this->getBoxMin();
     auto boxMax = this->getBoxMax();
 
-    this->_particles.template forEach<false>([&](Particle &p) {
-      if (utils::notInBox(p.getR(), boxMin, boxMax)) {
-        invalidParticles.push_back(p);
-        p.setOwnershipState(OwnershipState::dummy);
-      }
-    }, IteratorBehavior::owned);
+    this->_particles.template forEach<false>(
+        [&](Particle &p) {
+          if (utils::notInBox(p.getR(), boxMin, boxMax)) {
+            invalidParticles.push_back(p);
+            p.setOwnershipState(OwnershipState::dummy);
+          }
+        },
+        IteratorBehavior::owned);
 
-    this->_particles.template binParticles<true>([&](Particle &p) -> size_t { return p.isOwned() ? _OWNED : _HALO; },
-                                                  this->_cells, "KokkosDirectSum::updateContainer:");
-    this->_isDirty = false;
-    inspectContainer();
+    if (not keepNeighborListsValid) {
+      this->_particles.template binParticles<true>([&](Particle &p) -> size_t { return p.isOwned() ? _OWNED : _HALO; },
+                                                   this->_cells, "KokkosDirectSum::updateContainer:");
+      this->_isDirty = false;
+    }
 
     return invalidParticles;
   }
