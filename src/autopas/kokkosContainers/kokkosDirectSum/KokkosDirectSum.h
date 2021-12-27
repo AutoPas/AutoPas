@@ -130,13 +130,14 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
   }
 
   std::vector<Particle> updateContainer(bool keepNeighborListsValid) override {
+    std::vector<Particle> invalidParticles{};
     if (keepNeighborListsValid) {
-      //      basically do nothing and return
+      //TODO lgaertner
+//      return autopas::LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);
+      return invalidParticles;
     }
 
     //    TODO lgaertner
-    std::vector<Particle> invalidParticles{};
-//    inspectContainer();
     this->deleteHaloParticles();
 
     auto boxMin = this->getBoxMin();
@@ -147,7 +148,7 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
         invalidParticles.push_back(p);
         p.setOwnershipState(OwnershipState::dummy);
       }
-    });
+    }, IteratorBehavior::owned);
 
     this->_particles.template binParticles<true>([&](Particle &p) -> size_t { return p.isOwned() ? _OWNED : _HALO; },
                                                   this->_cells, "KokkosDirectSum::updateContainer:");
