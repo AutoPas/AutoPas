@@ -167,7 +167,7 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
     if (behavior == IteratorBehavior::ownedOrHalo) {
       this->_particles.template forEach<parallel>(forEachLambda, "KokkosDirectSum:forEach");
     } else {
-      if (not this->_isDirty) {
+      if (this->_isDirty) {
         this->_particles.template forEach<parallel>(forEachLambda, behavior, "KokkosDirectSum:forEach(behavior)");
       }
       if (behavior & IteratorBehavior::owned) {

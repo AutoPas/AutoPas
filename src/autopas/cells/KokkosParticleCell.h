@@ -7,6 +7,7 @@
 #pragma once
 
 #include <Kokkos_Core.hpp>
+#include <array>
 
 #include "autopas/cells/ParticleCell.h"
 
@@ -26,7 +27,7 @@ class KokkosParticleCell {
 
   KokkosParticleCell() : particlesPtr(nullptr), begin(0ul), cellSize(0ul){};
 
-  Kokkos::RangePolicy<> getKokkosRangePolicy() { return {begin, begin + cellSize}; }
+  std::array<size_t, 2> getRange() { return {begin, begin + cellSize}; }
 
   size_t begin;
   size_t cellSize;

@@ -122,27 +122,27 @@ class ParticleView {
   void forEach(Lambda forEachLambda, std::string label = "") {
     std::array<double, 3> dummy{};
     _forEach<parallel, false, false>(forEachLambda, autopas::IteratorBehavior::ownedOrHaloOrDummy,
-                                     Kokkos::RangePolicy<>(0, _size), dummy, dummy, label);
+                                     {0, _size}, dummy, dummy, label);
   }
 
   template <bool parallel, typename Lambda>
   void forEach(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
                std::string label = "") {
     _forEach<parallel, false, true>(forEachLambda, autopas::IteratorBehavior::ownedOrHaloOrDummy,
-                                    Kokkos::RangePolicy<>(0, _size), lowerCorner, higherCorner, label);
+        {0, _size}, lowerCorner, higherCorner, label);
   }
 
   template <bool parallel, typename Lambda>
   void forEach(Lambda forEachLambda, autopas::IteratorBehavior behavior,
                std::string label = "ParticleView::forEach(behavior)") {
     std::array<double, 3> dummy{};
-    _forEach<parallel, true, false>(forEachLambda, behavior, Kokkos::RangePolicy<>(0, _size), dummy, dummy, label);
+    _forEach<parallel, true, false>(forEachLambda, behavior, {0, _size}, dummy, dummy, label);
   }
 
   template <bool parallel, typename Lambda>
   void forEach(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
                autopas::IteratorBehavior behavior, std::string label = "") {
-    _forEach<parallel, true, true>(forEachLambda, behavior, Kokkos::RangePolicy<>(0, _size), lowerCorner, higherCorner,
+    _forEach<parallel, true, true>(forEachLambda, behavior, {0, _size}, lowerCorner, higherCorner,
                                    label);
   }
 
@@ -150,13 +150,13 @@ class ParticleView {
   void forEach(Lambda forEachLambda, autopas::KokkosParticleCell<ParticleType> cell, std::string label = "") {
     std::array<double, 3> dummy{};
     _forEach<parallel, false, false>(forEachLambda, autopas::IteratorBehavior::ownedOrHaloOrDummy,
-                                     cell.getKokkosRangePolicy(), dummy, dummy, label);
+                                     cell.getRange(), dummy, dummy, label);
   }
 
   template <bool parallel, typename Lambda>
   void forEach(Lambda forEachLambda, autopas::IteratorBehavior behavior, autopas::KokkosParticleCell<ParticleType> cell,
                std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner, std::string label = "") {
-    _forEach<parallel, true, true>(forEachLambda, behavior, cell.getKokkosRangePolicy(), lowerCorner, higherCorner,
+    _forEach<parallel, true, true>(forEachLambda, behavior, cell.getRange(), lowerCorner, higherCorner,
                                    label);
   }
 
@@ -227,15 +227,20 @@ class ParticleView {
   }
 
   template <bool parallel, bool ownershipCheck, bool regionCheck, typename Lambda>
-  void _forEach(Lambda forEachLambda, autopas::IteratorBehavior behavior, Kokkos::RangePolicy<> rangePolicy,
+  void _forEach(Lambda forEachLambda, autopas::IteratorBehavior behavior, std::array<size_t, 2> range,
                 std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner, std::string label) {
-    size_t forBegin = 0ul;
-    size_t forEnd = 1ul;
+    size_t forBegin;
+    size_t forEnd;
+    Kokkos::RangePolicy<> rangePolicy;
 
     if (not parallel) {
-      forBegin = rangePolicy.begin();
-      forEnd = rangePolicy.end();
+      forBegin = range[0];
+      forEnd = range[1];
       rangePolicy = Kokkos::RangePolicy<>(0, 1);
+    } else {
+      forBegin = 0;
+      forEnd = 1;
+      rangePolicy = Kokkos::RangePolicy<>(range[0], range[1]);
     }
 
     Kokkos::parallel_for(
