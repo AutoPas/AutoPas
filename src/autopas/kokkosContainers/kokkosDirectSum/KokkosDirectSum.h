@@ -149,7 +149,7 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
 
     if (not keepNeighborListsValid) {
       this->_particles.template binParticles<false>([&](Particle &p) -> size_t { return p.isOwned() ? _OWNED : _HALO; },
-                                                   this->_cells, "KokkosDirectSum::updateContainer:");
+                                                    this->_cells, "KokkosDirectSum::updateContainer:");
       this->_isDirty = false;
     }
 

@@ -65,8 +65,8 @@ class ParticleView {
             counts_data(particleBinningLambda(p)) += 1;
           }
         });
-
     Kokkos::fence();
+
     Kokkos::Experimental::contribute(counts, counts_sv);
 
     // Scan offsets and compute begin cell indices
@@ -80,6 +80,7 @@ class ParticleView {
     // Initialize cellsize with 0s
     Kokkos::parallel_for(
         bucketRange, KOKKOS_LAMBDA(const size_t i) { cells[i].cellSize = 0; }, label + "initialize_cellsize");
+    Kokkos::fence();
 
     // compute permutation vector
     Kokkos::View<size_t *> permutes(label + "particle-permutation-view", _size);
@@ -92,6 +93,7 @@ class ParticleView {
             permutes[cells[cellId].begin + c] = i;
           }
         });
+    Kokkos::fence();
 
     // particle range without dummy particles
     Kokkos::RangePolicy<> newParticleRange(0, _size);
@@ -101,16 +103,19 @@ class ParticleView {
     Kokkos::parallel_for(
         "insert-into-copyParticleListImpl", newParticleRange,
         KOKKOS_LAMBDA(const size_t &i) { copyParticleListImpl[i] = _particleViewImp[permutes[i]]; });
+    Kokkos::fence();
 
     // copy back
     Kokkos::parallel_for(
         label + "copyBack", newParticleRange,
         KOKKOS_LAMBDA(const size_t &i) { _particleViewImp[i] = copyParticleListImpl[i]; });
+    Kokkos::fence();
 
     // copy back
     Kokkos::parallel_for(
         label + "setParticlePtr", bucketRange,
         KOKKOS_LAMBDA(const size_t &i) { cells[i].particlesPtr = &_particleViewImp; });
+    Kokkos::fence();
   }
 
   template <bool parallel, typename Lambda>
@@ -218,6 +223,7 @@ class ParticleView {
           }
         },
         Kokkos::Sum<A>(result));
+    Kokkos::fence();
   }
 
   template <bool parallel, bool ownershipCheck, bool regionCheck, typename Lambda>
@@ -244,6 +250,7 @@ class ParticleView {
             }
           }
         });
+    Kokkos::fence();
   }
 
   autopas::AutoPasLock _particleViewLock;
