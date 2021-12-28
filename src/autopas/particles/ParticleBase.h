@@ -63,7 +63,7 @@ class ParticleBase {
   /**
    * Force the particle experiences as 3D vector.
    */
-  std::array<floatType, 3> _f;
+  mutable std::array<floatType, 3> _f;
 
   /**
    * Particle id.
@@ -112,14 +112,14 @@ class ParticleBase {
    * @param f partial force to be added
    */
   KOKKOS_INLINE_FUNCTION
-  void addF(const std::array<double, 3> &f) { _f = utils::ArrayMath::add(_f, f); }
+  void addF(const std::array<double, 3> &f) const { _f = utils::ArrayMath::add(_f, f); }
 
   /**
    * Substract a partial force from the force acting on the particle
    * @param f partial force to be substracted
    */
   KOKKOS_INLINE_FUNCTION
-  void subF(const std::array<double, 3> &f) { _f = utils::ArrayMath::sub(_f, f); }
+  void subF(const std::array<double, 3> &f) const { _f = utils::ArrayMath::sub(_f, f); }
 
   /**
    * Get the id of the particle

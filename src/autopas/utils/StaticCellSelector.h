@@ -35,18 +35,18 @@ namespace autopas::utils {
 template <typename ParticleType, typename F>
 decltype(auto) withStaticCellType(autopas::CellType cellType, F &&func) {
   switch (cellType) {
-    case autopas::CellType::ClusterTower:
-      [[fallthrough]];
-    case autopas::CellType::SortedCellView:
-      [[fallthrough]];
-    case autopas::CellType::IsNoCell:
-      [[fallthrough]];
-    case autopas::CellType::FullParticleCell:
-      // todo c++20: return func.template operator()<autopas::FullParticleCell<ParticleType>>();
-      return func(autopas::FullParticleCell<ParticleType>());
-    case autopas::CellType::ReferenceParticleCell:
-      // todo c++20: return func.template operator()<autopas::ReferenceParticleCell<ParticleType>>();
-      return func(autopas::ReferenceParticleCell<ParticleType>());
+//    case autopas::CellType::ClusterTower:
+//      [[fallthrough]];
+//    case autopas::CellType::SortedCellView:
+//      [[fallthrough]];
+//    case autopas::CellType::IsNoCell:
+//      [[fallthrough]];
+//    case autopas::CellType::FullParticleCell:
+//      // todo c++20: return func.template operator()<autopas::FullParticleCell<ParticleType>>();
+//      return func(autopas::FullParticleCell<ParticleType>());
+//    case autopas::CellType::ReferenceParticleCell:
+//      // todo c++20: return func.template operator()<autopas::ReferenceParticleCell<ParticleType>>();
+//      return func(autopas::ReferenceParticleCell<ParticleType>());
     case autopas::CellType::KokkosParticleCell:
       return func(autopas::KokkosParticleCell<ParticleType>());
   }
@@ -54,6 +54,7 @@ decltype(auto) withStaticCellType(autopas::CellType cellType, F &&func) {
       "Trying to use a traversal of of a Celltype not specified in TravelComparison::calculateForces. "
       "CelltypeEnum: {}",
       cellType);
-  return decltype(func(autopas::FullParticleCell<ParticleType>()))();
+//  return decltype(func(autopas::FullParticleCell<ParticleType>()))();
+  return decltype(func(autopas::KokkosParticleCell<ParticleType>()))();
 }
 }  // namespace autopas::utils

@@ -161,11 +161,12 @@ template <bool newton3>
 void KokkosCellFunctor<ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellAoS(
     ParticleCell &cell) {
   // NOTE: no sorting within cell
-  size_t outer = 0ul;
-  for (; outer < cell.getSize(); ++outer) {
+  auto cellRange = cell.getRange();
+  size_t outer = cellRange[0];
+  for (; outer < cellRange[1]; ++outer) {
     auto inner = outer;
     ++inner;
-    for (; inner < cell.getSize(); ++inner) {
+    for (; inner < cellRange[1]; ++inner) {
       if constexpr (newton3) {
         _functor->AoSFunctor(cell[outer], cell[inner], true);
       } else {
@@ -181,8 +182,10 @@ template <class ParticleCell, class ParticleFunctor, autopas::DataLayoutOption::
 void KokkosCellFunctor<ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellPairAoSN3(
     ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
   // NOTE: no sorting within cell
-  for (size_t outer = 0; outer < cell1.getSize(); outer++) {
-    for (size_t inner = 0; inner < cell2.getSize(); inner++) {
+  auto outerRange = cell1.getRange();
+  for (size_t outer = outerRange[0]; outer < outerRange[1]; outer++) {
+    auto innerRange = cell2.getRange();
+    for (size_t inner = innerRange[0]; inner < innerRange[1]; inner++) {
       _functor->AoSFunctor(cell1[outer], cell2[inner], true);
     }
   }
@@ -193,8 +196,10 @@ template <class ParticleCell, class ParticleFunctor, autopas::DataLayoutOption::
 void KokkosCellFunctor<ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellPairAoSNoN3(
     ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
   // NOTE: no sorting within cell
-  for (size_t outer = 0; outer < cell1.getSize(); outer++) {
-    for (size_t inner = 0; inner < cell2.getSize(); inner++) {
+  auto outerRange = cell1.getRange();
+  for (size_t outer = outerRange[0]; outer < outerRange[1]; outer++) {
+    auto innerRange = cell2.getRange();
+    for (size_t inner = innerRange[0]; inner < innerRange[1]; inner++) {
       _functor->AoSFunctor(cell1[outer], cell2[inner], false);
       if (bidirectional) _functor->AoSFunctor(cell2[inner], cell1[outer], false);
     }

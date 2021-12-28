@@ -25,9 +25,23 @@ class KokkosParticleCell {
    */
   using ParticleType = Particle;
 
+  /**
+   * The structure of the SoAs is defined by the particle.
+   */
+  using SoAArraysType = typename Particle::SoAArraysType;
+  /**
+   * SoA buffer of this cell.
+   */
+  SoA<SoAArraysType> _particleSoABuffer;
+
   KokkosParticleCell() : particlesPtr(nullptr), begin(0ul), cellSize(0ul){};
 
   std::array<size_t, 2> getRange() { return {begin, begin + cellSize}; }
+  size_t numParticles() { return cellSize; }
+
+  Particle operator[] (const size_t &index) {
+      return particlesPtr->access(index);
+  };
 
   size_t begin;
   size_t cellSize;

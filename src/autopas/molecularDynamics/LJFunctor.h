@@ -112,7 +112,7 @@ class LJFunctor
     return useNewton3 == FunctorN3Modes::Newton3Off or useNewton3 == FunctorN3Modes::Both;
   }
 
-  void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
+  void AoSFunctor(const Particle &i, const Particle &j, bool newton3) final {
     if (i.isDummy() or j.isDummy()) {
       return;
     }
