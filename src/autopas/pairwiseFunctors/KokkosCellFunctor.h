@@ -107,6 +107,7 @@ template <class ParticleCell, class ParticleFunctor, DataLayoutOption::Value Dat
           bool bidirectional>
 void KokkosCellFunctor<ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCell(
     ParticleCell &cell) {
+  auto dl = DataLayout;
   if ((DataLayout == DataLayoutOption::soa && cell._particleSoABuffer.getNumParticles() == 0) ||
       (DataLayout == DataLayoutOption::aos && cell.numParticles() == 0)) {
     return;

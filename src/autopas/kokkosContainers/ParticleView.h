@@ -111,7 +111,7 @@ class ParticleView {
         KOKKOS_LAMBDA(const size_t &i) { _particleViewImp[i] = copyParticleListImpl[i]; });
     Kokkos::fence();
 
-    // copy back
+    // set _particleViewImp pointer in cells
     Kokkos::parallel_for(
         label + "setParticlePtr", bucketRange,
         KOKKOS_LAMBDA(const size_t &i) { cells[i].particlesPtr = &_particleViewImp; });
@@ -208,6 +208,10 @@ class ParticleView {
   size_t getSize() const { return _size; }
   size_t getCapacity() const { return _capacity; }
   Kokkos::View<ParticleType *> getParticles() const { return _particleViewImp; };
+
+  void inspect() {
+    printf("");
+  }
 
  private:
   template <bool ownershipCheck, bool regionCheck, typename Lambda, typename A>

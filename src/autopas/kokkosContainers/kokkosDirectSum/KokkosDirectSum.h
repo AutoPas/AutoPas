@@ -72,6 +72,7 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
     bool isFound = false;
     this->_particles.template forEach<true>(
         [&](Particle &p) {
+          bool dummy = p.isDummy();
           if (p.getID() == haloParticle.getID()) {
             auto distanceVec = autopas::utils::ArrayMath::sub(p.getR(), haloParticle.getR());
             auto distanceSqr = autopas::utils::ArrayMath::dot(distanceVec, distanceVec);
@@ -81,8 +82,7 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
               isFound = true;  // should not run into race conditioning problems
             }
           }
-        },
-        "KokkosDirectSum::updateHaloParticle");
+        }, IteratorBehavior::ownedOrHaloOrDummy, "KokkosDirectSum::updateHaloParticle");
     return isFound;
   }
 
@@ -90,7 +90,7 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
     auto view = this->getCellsHost();
     auto cellOwned = view[_OWNED];
     auto cellHalo = view[_HALO];
-    printf("");
+    this->_particles.inspect();
   }
 
   /**
@@ -124,6 +124,8 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
           traversal->getTraversalType().to_string());
     }
 
+    inspectContainer();
+
     cellPairTraversal->initTraversal();
     cellPairTraversal->traverseParticlePairs();
     cellPairTraversal->endTraversal();
@@ -153,12 +155,16 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
       this->_isDirty = false;
     }
 
+    inspectContainer();
+
     return invalidParticles;
   }
 
   void resortContainerAndDeleteDummies() {
     this->_particles.template binParticles<true>([&](Particle &p) -> size_t { return p.isOwned() ? _OWNED : _HALO; },
                                                  this->_cells, "KokkosDirectSum::updateContainer:");
+
+    inspectContainer();
     this->_isDirty = false;
   }
 
