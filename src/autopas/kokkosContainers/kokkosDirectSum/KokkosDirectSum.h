@@ -70,19 +70,24 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
     haloParticle.setOwnershipState(OwnershipState::halo);
 
     bool isFound = false;
-    this->_particles.template forEach<true>(
-        [&](Particle &p) {
-          bool dummy = p.isDummy();
-          if (p.getID() == haloParticle.getID()) {
-            auto distanceVec = autopas::utils::ArrayMath::sub(p.getR(), haloParticle.getR());
-            auto distanceSqr = autopas::utils::ArrayMath::dot(distanceVec, distanceVec);
-            if (distanceSqr < this->getSkin() * this->getSkin()) {
-              p = haloParticle;
-              // found the particle, return true
-              isFound = true;  // should not run into race conditioning problems
-            }
-          }
-        }, IteratorBehavior::ownedOrHaloOrDummy, "KokkosDirectSum::updateHaloParticle");
+    auto lambda = [&](Particle &p) {
+      if (p.isDummy() && p.getID() == haloParticle.getID()) {
+        auto distanceVec = autopas::utils::ArrayMath::sub(p.getR(), haloParticle.getR());
+        auto distanceSqr = autopas::utils::ArrayMath::dot(distanceVec, distanceVec);
+        if (distanceSqr < this->getSkin() * this->getSkin()) {
+          p = haloParticle;
+          // found the particle, return true
+          isFound = true;  // should not run into race conditioning problems
+        }
+      }
+    };
+
+    if (this->_isDirty) {
+      this->_particles.template forEach<true>(lambda, IteratorBehavior::ownedOrHaloOrDummy,
+                                              "KokkosDirectSum::updateHaloParticle");
+    } else {
+      this->_particles.template forEach<true>(lambda, this->_cells[_HALO]);
+    }
     return isFound;
   }
 
@@ -124,8 +129,6 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
           traversal->getTraversalType().to_string());
     }
 
-    inspectContainer();
-
     cellPairTraversal->initTraversal();
     cellPairTraversal->traverseParticlePairs();
     cellPairTraversal->endTraversal();
@@ -154,8 +157,6 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
                                                     this->_cells, "KokkosDirectSum::updateContainer:");
       this->_isDirty = false;
     }
-
-    inspectContainer();
 
     return invalidParticles;
   }

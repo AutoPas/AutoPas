@@ -39,9 +39,7 @@ class KokkosParticleCell {
   std::array<size_t, 2> getRange() { return {begin, begin + cellSize}; }
   size_t numParticles() { return cellSize; }
 
-  Particle operator[] (const size_t &index) {
-      return particlesPtr->access(index);
-  };
+  Particle operator[](const size_t &index) { return particlesPtr->access(index); };
 
   size_t begin;
   size_t cellSize;

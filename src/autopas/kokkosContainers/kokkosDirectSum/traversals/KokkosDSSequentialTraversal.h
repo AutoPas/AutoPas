@@ -74,8 +74,8 @@ class KokkosDSSequentialTraversal : public KokkosCellPairTraversal<ParticleCell>
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 void KokkosDSSequentialTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
-    _cellFunctor.processCell(this->cells(0));
-    _cellFunctor.processCellPair(this->cells(0), this->cells(1));
+  _cellFunctor.processCell(this->cells(0));
+  _cellFunctor.processCellPair(this->cells(0), this->cells(1));
 }
 
 }  // namespace autopas

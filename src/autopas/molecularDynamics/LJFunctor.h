@@ -112,10 +112,70 @@ class LJFunctor
     return useNewton3 == FunctorN3Modes::Newton3Off or useNewton3 == FunctorN3Modes::Both;
   }
 
-  void AoSFunctor(const Particle &i, const Particle &j, bool newton3) final {
+  void AoSFunctor(const size_t &iIndex, const size_t &jIndex, Kokkos::View<Particle *> &particles,
+                  bool newton3) override {
+    Particle i = particles(iIndex);
+    Particle j = particles(jIndex);
     if (i.isDummy() or j.isDummy()) {
       return;
     }
+
+    auto sigmasquare = _sigmasquare;
+    auto epsilon24 = _epsilon24;
+    auto shift6 = _shift6;
+    if constexpr (useMixing) {
+      sigmasquare = _PPLibrary->mixingSigmaSquare(i.getTypeId(), j.getTypeId());
+      epsilon24 = _PPLibrary->mixing24Epsilon(i.getTypeId(), j.getTypeId());
+      if constexpr (applyShift) {
+        shift6 = _PPLibrary->mixingShift6(i.getTypeId(), j.getTypeId());
+      }
+    }
+    auto dr = utils::ArrayMath::sub(i.getR(), j.getR());
+    double dr2 = utils::ArrayMath::dot(dr, dr);
+
+    if (dr2 > _cutoffsquare) {
+      return;
+    }
+
+    double invdr2 = 1. / dr2;
+    double lj6 = sigmasquare * invdr2;
+    lj6 = lj6 * lj6 * lj6;
+    double lj12 = lj6 * lj6;
+    double lj12m6 = lj12 - lj6;
+    double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
+    auto f = utils::ArrayMath::mulScalar(dr, fac);
+    particles[iIndex].addF(f);
+    if (newton3) {
+      // only if we use newton 3 here, we want to
+      particles[jIndex].subF(f);
+    }
+    if (calculateGlobals) {
+      auto virial = utils::ArrayMath::mul(dr, f);
+      double upot = epsilon24 * lj12m6 + shift6;
+
+      const int threadnum = autopas_get_thread_num();
+      // for non-newton3 the division is in the post-processing step.
+      if (newton3) {
+        upot *= 0.5;
+        virial = utils::ArrayMath::mulScalar(virial, (double)0.5);
+      }
+      if (i.isOwned()) {
+        _aosThreadData[threadnum].upotSum += upot;
+        _aosThreadData[threadnum].virialSum = utils::ArrayMath::add(_aosThreadData[threadnum].virialSum, virial);
+      }
+      // for non-newton3 the second particle will be considered in a separate calculation
+      if (newton3 and j.isOwned()) {
+        _aosThreadData[threadnum].upotSum += upot;
+        _aosThreadData[threadnum].virialSum = utils::ArrayMath::add(_aosThreadData[threadnum].virialSum, virial);
+      }
+    }
+  }
+
+  void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
+    if (i.isDummy() or j.isDummy()) {
+      return;
+    }
+
     auto sigmasquare = _sigmasquare;
     auto epsilon24 = _epsilon24;
     auto shift6 = _shift6;

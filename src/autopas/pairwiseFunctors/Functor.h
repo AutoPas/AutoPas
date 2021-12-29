@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <Kokkos_Core.hpp>
 #include <type_traits>
 
 #include "autopas/options/DataLayoutOption.h"
@@ -78,11 +79,27 @@ class Functor {
    * This functor should calculate the forces or any other pair-wise interaction
    * between two particles.
    * This should include a cutoff check if needed!
+   * @param iIndex index to Particle i in particles
+   * @param jIndex index to Particle j in particles
+   * @param particles pointer to particles view
+   * @param newton3 defines whether or whether not to use newton 3
+   */
+  virtual void AoSFunctor(const size_t &iIndex, const size_t &jIndex, Kokkos::View<Particle *> &particles,
+                          bool newton3) {
+    utils::ExceptionHandler::exception("Functor::AoSFunctor: not yet implemented");
+  }
+
+  /**
+   * Functor for arrays of structures (AoS).
+   *
+   * This functor should calculate the forces or any other pair-wise interaction
+   * between two particles.
+   * This should include a cutoff check if needed!
    * @param i Particle i
    * @param j Particle j
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void AoSFunctor(const Particle &i, const Particle &j, bool newton3) {
+  virtual void AoSFunctor(Particle &i, Particle &j, bool newton3) {
     utils::ExceptionHandler::exception("Functor::AoSFunctor: not yet implemented");
   }
 

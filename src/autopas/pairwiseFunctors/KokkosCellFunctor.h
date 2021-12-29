@@ -169,10 +169,10 @@ void KokkosCellFunctor<ParticleCell, ParticleFunctor, DataLayout, useNewton3, bi
     ++inner;
     for (; inner < cellRange[1]; ++inner) {
       if constexpr (newton3) {
-        _functor->AoSFunctor(cell[outer], cell[inner], true);
+        _functor->AoSFunctor(outer, inner, *(cell.particlesPtr), true);
       } else {
-        _functor->AoSFunctor(cell[inner], cell[outer], false);
-        _functor->AoSFunctor(cell[outer], cell[inner], false);
+        _functor->AoSFunctor(inner, outer, *(cell.particlesPtr), false);
+        _functor->AoSFunctor(outer, inner, *(cell.particlesPtr), false);
       }
     }
   }
@@ -187,7 +187,7 @@ void KokkosCellFunctor<ParticleCell, ParticleFunctor, DataLayout, useNewton3, bi
   for (size_t outer = outerRange[0]; outer < outerRange[1]; outer++) {
     auto innerRange = cell2.getRange();
     for (size_t inner = innerRange[0]; inner < innerRange[1]; inner++) {
-      _functor->AoSFunctor(cell1[outer], cell2[inner], true);
+      _functor->AoSFunctor(outer, inner, *(cell1.particlesPtr), true);
     }
   }
 }
@@ -201,8 +201,8 @@ void KokkosCellFunctor<ParticleCell, ParticleFunctor, DataLayout, useNewton3, bi
   for (size_t outer = outerRange[0]; outer < outerRange[1]; outer++) {
     auto innerRange = cell2.getRange();
     for (size_t inner = innerRange[0]; inner < innerRange[1]; inner++) {
-      _functor->AoSFunctor(cell1[outer], cell2[inner], false);
-      if (bidirectional) _functor->AoSFunctor(cell2[inner], cell1[outer], false);
+      _functor->AoSFunctor(outer, inner, *(cell1.particlesPtr), false);
+      if (bidirectional) _functor->AoSFunctor(inner, outer, *(cell1.particlesPtr), false);
     }
   }
 }

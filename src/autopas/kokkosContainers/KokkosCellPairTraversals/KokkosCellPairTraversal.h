@@ -41,9 +41,7 @@ class KokkosCellPairTraversal : public TraversalInterface {
    */
   virtual void setCellsToTraverse(Kokkos::View<ParticleCell *> &c) { this->cells = c; }
 
-  ParticleCell getCell (size_t index) {
-    return cells(index);
-  }
+  ParticleCell getCell(size_t index) { return cells(index); }
 
  protected:
   /**

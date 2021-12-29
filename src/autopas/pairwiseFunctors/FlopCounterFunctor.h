@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <Kokkos_Core.hpp>
+
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/utils/ArrayMath.h"
 
@@ -40,7 +42,24 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
         _distanceCalculations(0ul),
         _kernelCalls(0ul) {}
 
-  void AoSFunctor(const Particle &i, const Particle &j, bool /*newton3*/) override {
+  void AoSFunctor(const size_t &iIndex, const size_t &jIndex, Kokkos::View<Particle *> &particles,
+                  bool /*newton3*/) override {
+    Particle i = particles(iIndex);
+    Particle j = particles(jIndex);
+
+    if (i.isDummy() or j.isDummy()) {
+      return;
+    }
+    auto dr = utils::ArrayMath::sub(i.getR(), j.getR());
+    double dr2 = utils::ArrayMath::dot(dr, dr);
+    _distanceCalculations.fetch_add(1, std::memory_order_relaxed);
+
+    if (dr2 <= _cutoffSquare) {
+      _kernelCalls.fetch_add(1, std::memory_order_relaxed);
+    }
+  }
+
+  void AoSFunctor(Particle &i, Particle &j, bool /*newton3*/) override {
     if (i.isDummy() or j.isDummy()) {
       return;
     }

@@ -18,7 +18,8 @@ extern template class autopas::AutoPas<ParticleType>;
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctor<ParticleType, true, true> *);
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(
     autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true> *);
-extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctorAVX<ParticleType, true, true> *);
+// extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctorAVX<ParticleType, true, true>
+// *);
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::FlopCounterFunctor<ParticleType> *);
 //! @endcond
 
@@ -453,12 +454,12 @@ void Simulation::calculatePairwiseForces(bool &wasTuningIteration) {
       wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
       break;
     }
-    case MDFlexConfig::FunctorOption::lj12_6_AVX: {
-      autopas::LJFunctorAVX<ParticleType, true, true> functor{_autoPasContainer->getCutoff(),
-                                                              particlePropertiesLibrary};
-      wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
-      break;
-    }
+      //    case MDFlexConfig::FunctorOption::lj12_6_AVX: {
+      //      autopas::LJFunctorAVX<ParticleType, true, true> functor{_autoPasContainer->getCutoff(),
+      //                                                              particlePropertiesLibrary};
+      //      wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
+      //      break;
+      //    }
   }
 }
 
@@ -567,10 +568,10 @@ void Simulation::logMeasurements() {
                                                   /* globals */ true>::getNumFlopsPerKernelCall();
           break;
         }
-        case MDFlexConfig::FunctorOption ::lj12_6_AVX: {
-          flopsPerKernelCall = autopas::LJFunctorAVX<ParticleType, true, true>::getNumFlopsPerKernelCall();
-          break;
-        }
+          //        case MDFlexConfig::FunctorOption ::lj12_6_AVX: {
+          //          flopsPerKernelCall = autopas::LJFunctorAVX<ParticleType, true, true>::getNumFlopsPerKernelCall();
+          //          break;
+          //        }
         default:
           throw std::runtime_error("Invalid Functor choice");
       }
