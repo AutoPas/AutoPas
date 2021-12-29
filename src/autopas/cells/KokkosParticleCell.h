@@ -44,5 +44,6 @@ class KokkosParticleCell {
   size_t begin;
   size_t cellSize;
   Kokkos::View<Particle *> *particlesPtr;
+  size_t cellLength;
 };
 }  // namespace autopas

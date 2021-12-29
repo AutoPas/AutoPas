@@ -69,6 +69,11 @@ class ContainerOption : public Option<ContainerOption> {
      * begining and end of cell within vector is kept.
      */
     kokkosDirectSum,
+    /**
+     * kokkosDirectSum : Similar to LinkedCellsReferenced, but sorted particle view is used for storage and only
+     * references to begining and end of cell within vector is kept.
+     */
+    kokkosLinkedCells,
   };
 
   /**
@@ -111,6 +116,7 @@ class ContainerOption : public Option<ContainerOption> {
         {ContainerOption::varVerletListsAsBuild, "VarVerletListsAsBuild"},
         {ContainerOption::pairwiseVerletLists, "PairwiseVerletLists"},
         {ContainerOption::kokkosDirectSum, "KokkosDirectSum"},
+        {ContainerOption::kokkosLinkedCells, "KokkosLinkedCells"},
     };
   };
 

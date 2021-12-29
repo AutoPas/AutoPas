@@ -106,8 +106,17 @@ static const std::set<TraversalOption> &allVLPCompatibleTraversals() {
  * Lists all traversal options applicable for the Kokkos Direct Sum container.
  * @return set of all applicable traversal options.
  */
-static const std::set<TraversalOption> &allKokkosCompatibleTraversals() {
+static const std::set<TraversalOption> &allKokkosDSCompatibleTraversals() {
   static const std::set<TraversalOption> s{TraversalOption::kokkos_ds_sequential};
+  return s;
+}
+
+/**
+ * Lists all traversal options applicable for the Kokkos Linked Cells container.
+ * @return set of all applicable traversal options.
+ */
+static const std::set<TraversalOption> &allKokkosLCCompatibleTraversals() {
+  static const std::set<TraversalOption> s{TraversalOption::kokkos_lc_dummy, TraversalOption::kokkos_lc_c01};
   return s;
 }
 
@@ -143,7 +152,10 @@ static inline const std::set<TraversalOption> &allCompatibleTraversals(Container
       return allVLPCompatibleTraversals();
     }
     case ContainerOption::kokkosDirectSum: {
-      return allKokkosCompatibleTraversals();
+      return allKokkosDSCompatibleTraversals();
+    }
+    case ContainerOption::kokkosLinkedCells: {
+      return allKokkosLCCompatibleTraversals();
     }
   }
 

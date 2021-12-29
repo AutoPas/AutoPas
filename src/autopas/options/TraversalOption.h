@@ -174,6 +174,12 @@ class TraversalOption : public Option<TraversalOption> {
 
     // Kokkos sequential
     kokkos_ds_sequential,
+
+    // Kokkos sequential
+    kokkos_lc_dummy,
+
+    // Kokkos sequential
+    kokkos_lc_c01,
   };
 
   /**
@@ -198,7 +204,7 @@ class TraversalOption : public Option<TraversalOption> {
    * @return
    */
   static std::set<TraversalOption> getDiscouragedOptions() {
-    return {Value::ds_sequential, Value::vcl_cluster_iteration};
+    return {Value::ds_sequential, Value::vcl_cluster_iteration, Value::kokkos_lc_dummy};
   }
 
   /**
@@ -252,6 +258,8 @@ class TraversalOption : public Option<TraversalOption> {
 
         // Kokkos Traversals:
         {TraversalOption::kokkos_ds_sequential, "kokkos_ds_sequential"},
+        {TraversalOption::kokkos_lc_dummy, "kokkos_lc_dummy"},
+        {TraversalOption::kokkos_lc_c01, "kokkos_lc_c01"},
     };
   };
 

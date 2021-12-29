@@ -154,6 +154,11 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
       container = std::make_unique<KokkosDirectSum<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
       break;
     }
+    case ContainerOption::kokkosLinkedCells: {
+      container = std::make_unique<KokkosLinkedCells<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+                                                                containerInfo.cellSizeFactor);
+      break;
+    }
     default: {
       utils::ExceptionHandler::exception("ContainerSelector: Container type {} is not a known type!",
                                          containerChoice.to_string());

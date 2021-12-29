@@ -16,6 +16,7 @@
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 #include "autopas/kokkosContainers/kokkosDirectSum/KokkosDirectSum.h"
+#include "autopas/kokkosContainers/kokkosLinkedCells/KokkosLinkedCells.h"
 
 namespace autopas {
 /**
@@ -55,6 +56,8 @@ decltype(auto) withStaticContainerType(const std::shared_ptr<ParticleContainerIn
       //          dynamic_cast<autopas::VarVerletLists<Particle, VerletNeighborListAsBuild<Particle>> *>(containerPtr));
     case ContainerOption::kokkosDirectSum:
       return function(dynamic_cast<autopas::KokkosDirectSum<Particle> *>(containerPtr));
+    case ContainerOption::kokkosLinkedCells:
+      return function(dynamic_cast<autopas::KokkosLinkedCells<Particle> *>(containerPtr));
   }
   autopas::utils::ExceptionHandler::exception("Unknown type of container in StaticContainerSelector.h. Type: {}",
                                               container->getContainerType());

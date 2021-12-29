@@ -115,6 +115,7 @@ class KokkosCellBasedParticleContainer : public ParticleContainerInterface<Parti
    * create_view!!!
    */
   Kokkos::View<KokkosParticleCell<Particle> *> getCellsHost() {
+    Kokkos::resize(_cellsHostMirror, _cells.size());
     Kokkos::deep_copy(_cellsHostMirror, _cells);
     return _cellsHostMirror;
   }

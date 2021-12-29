@@ -39,9 +39,9 @@ class KokkosCellPairTraversal : public TraversalInterface {
    * Sets the cells to iterate over. Should always be called before initTraversal().
    * @param cells The cells to iterate over.
    */
-  virtual void setCellsToTraverse(Kokkos::View<ParticleCell *> &c) { this->cells = c; }
+  virtual void setCellsToTraverse(Kokkos::View<ParticleCell *> &c) { this->_cells = c; }
 
-  ParticleCell getCell(size_t index) { return cells(index); }
+  ParticleCell getCell(size_t index) { return _cells(index); }
 
  protected:
   /**
@@ -53,7 +53,7 @@ class KokkosCellPairTraversal : public TraversalInterface {
   /**
    * The cells to traverse.
    */
-  Kokkos::View<ParticleCell *> cells;
+  Kokkos::View<ParticleCell *> _cells;
 };
 
 }  // namespace autopas

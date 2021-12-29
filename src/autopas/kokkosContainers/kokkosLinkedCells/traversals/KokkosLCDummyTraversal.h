@@ -1,14 +1,14 @@
 /**
- * @file KokkosDSSequentialTraversal.h
+ * @file KokkosLCDummyTraversal.h
  * @author lgaertner
- * @date 10.11.21
+ * @date 29.12.21
  */
 
 #pragma once
 
 #include <vector>
 
-#include "KokkosDSTraversalInterface.h"
+#include "KokkosLCTraversalInterface.h"
 #include "autopas/kokkosContainers/kokkosCellPairTraversals/KokkosCellPairTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/pairwiseFunctors/KokkosCellFunctor.h"
@@ -25,20 +25,20 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class KokkosDSSequentialTraversal : public KokkosCellPairTraversal<ParticleCell>,
-                                    public KokkosDSTraversalInterface<ParticleCell> {
+class KokkosLCDummyTraversal : public KokkosCellPairTraversal<ParticleCell>,
+                               public KokkosLCTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor for the DirectSum traversal.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param cutoff cutoff (this is enough for the directsum traversal, please don't use the interaction length here.)
    */
-  explicit KokkosDSSequentialTraversal(PairwiseFunctor *pairwiseFunctor, double cutoff)
+  explicit KokkosLCDummyTraversal(PairwiseFunctor *pairwiseFunctor, double cutoff)
       : KokkosCellPairTraversal<ParticleCell>({2, 1, 1}),
         _cellFunctor(pairwiseFunctor),
         _dataLayoutConverter(pairwiseFunctor) {}
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::kokkos_ds_sequential; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::kokkos_lc_dummy; }
 
   [[nodiscard]] bool isApplicable() const override { return true; }
 
@@ -73,9 +73,9 @@ class KokkosDSSequentialTraversal : public KokkosCellPairTraversal<ParticleCell>
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-void KokkosDSSequentialTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
-  _cellFunctor.processCell(this->_cells(0));
-  _cellFunctor.processCellPair(this->_cells(0), this->_cells(1));
+void KokkosLCDummyTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
+  //  _cellFunctor.processCell(this->cells(0));
+  //  _cellFunctor.processCellPair(this->cells(0), this->cells(1));
 }
 
 }  // namespace autopas

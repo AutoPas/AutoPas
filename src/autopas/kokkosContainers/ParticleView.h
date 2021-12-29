@@ -43,8 +43,6 @@ class ParticleView {
   void binParticles(Lambda particleBinningLambda, Kokkos::View<autopas::KokkosParticleCell<ParticleType> *> cells,
                     std::string label = "binParticles") {
     // scan to create buckets
-    Kokkos::View<size_t *> begin;
-    Kokkos::View<size_t *> cellsize;
     auto nBuckets = cells.size();
     Kokkos::RangePolicy<> bucketRange(0, nBuckets);
     Kokkos::RangePolicy<> particleRange(0, _size);
@@ -83,13 +81,13 @@ class ParticleView {
     Kokkos::fence();
 
     // compute permutation vector
-    Kokkos::View<size_t *> permutes(label + "particle-permutation-view", _size);
+    Kokkos::View<size_t *> permutes(label + "particle_perm_view", _size);
     Kokkos::parallel_for(
         "", particleRange, KOKKOS_LAMBDA(const size_t &i) {
           auto p = _particleViewImp[i];
           if (not(deleteDummy and p.isDummy())) {
             size_t cellId = particleBinningLambda(_particleViewImp[i]);
-            int c = Kokkos::atomic_fetch_add(&cells[cellId].cellSize, 1ul);
+            size_t c = Kokkos::atomic_fetch_add(&cells[cellId].cellSize, 1ul);
             permutes[cells[cellId].begin + c] = i;
           }
         });

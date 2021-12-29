@@ -38,6 +38,8 @@
 //#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCSlicedC02Traversal.h"
 //#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCSlicedTraversal.h"
 #include "autopas/kokkosContainers/kokkosDirectSum/traversals/KokkosDSSequentialTraversal.h"
+#include "autopas/kokkosContainers/kokkosLinkedCells/traversals/KokkosLCDummyTraversal.h"
+#include "autopas/kokkosContainers/kokkosLinkedCells/traversals/KokkosLCC01Traversal.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/SelectorStrategyOption.h"
@@ -254,6 +256,14 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
     case TraversalOption::kokkos_ds_sequential: {
       return std::make_unique<KokkosDSSequentialTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
           &pairwiseFunctor, info.interactionLength);
+    }
+    case TraversalOption::kokkos_lc_dummy: {
+      return std::make_unique<KokkosLCDummyTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
+          &pairwiseFunctor, info.interactionLength);
+    }
+    case TraversalOption::kokkos_lc_c01: {
+      return std::make_unique<KokkosLCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
+          info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
   }
   autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known type!", traversalType.to_string());
