@@ -129,6 +129,8 @@ class IteratorBehavior : public Option<IteratorBehavior> {
         return particle.isHalo();
       case options::IteratorBehavior::owned:
         return particle.isOwned();
+      case options::IteratorBehavior::dummy:
+        return particle.isDummy();
       default:
         utils::ExceptionHandler::exception("unknown iterator behavior");
         return false;

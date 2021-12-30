@@ -140,12 +140,14 @@ inline void KokkosCBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, use
 
     // intel compiler demands following:
     const unsigned long start_x = start[0], start_y = start[1], start_z = start[2];
-    const unsigned long end_x = std::floor(end[0] / stride[0]), end_y = std::floor(end[1] / stride[1]),
-                        end_z = std::floor(end[2] / stride[2]);
+    const unsigned long end_x = std::floor(end[0] / stride[0]) - start_x, end_y = std::floor(end[1] / stride[1]) -start_y,
+                        end_z = std::floor(end[2] / stride[2]) - start_z;
 
     Kokkos::MDRangePolicy<Kokkos::Rank<3>> rangePolicy({0, 0, 0}, {end_x, end_y, end_z});
 
     Kokkos::parallel_for(rangePolicy, [&](const size_t z, const size_t y, const size_t x) {
+      size_t indexx = start_x + stride[0] * x, indexy = start_y + stride[1] * y, indexz = start_z + stride[2] * z;
+
       loopBody(start_x + stride[0] * x, start_y + stride[1] * y, start_z + stride[2] * z);
     });
 

@@ -77,7 +77,7 @@ class KokkosLinkedCells : public KokkosCellBasedParticleContainer<Particle> {
 
     bool isFound = false;
     auto lambda = [&](Particle &p) {
-      if (p.isDummy() && p.getID() == haloParticle.getID()) {
+      if (p.getID() == haloParticle.getID()) {
         auto distanceVec = autopas::utils::ArrayMath::sub(p.getR(), haloParticle.getR());
         auto distanceSqr = autopas::utils::ArrayMath::dot(distanceVec, distanceVec);
         if (distanceSqr < this->getSkin() * this->getSkin()) {
@@ -88,13 +88,12 @@ class KokkosLinkedCells : public KokkosCellBasedParticleContainer<Particle> {
       }
     };
 
-    //    if (this->_isDirty) {
-    this->_particles.template forEach<true>(lambda, IteratorBehavior::ownedOrHaloOrDummy,
+    if (this->_isDirty) {
+    this->_particles.template forEach<true>(lambda, IteratorBehavior::dummy,
                                             "KokkosLinkedCells::updateHaloParticle");
-    //    } else {
-    // TODO update to accept multiple cells
-    //      this->_particles.template forEach<true>(lambda, this->_cells[_HALO]);
-    //    }
+        } else {
+          this->_particles.template forEach<true>(lambda, this->_cells[_cellBlock.get1DIndexOfPosition(hp.getR())], IteratorBehavior::dummy);
+        }
     return isFound;
   }
 
@@ -170,7 +169,7 @@ class KokkosLinkedCells : public KokkosCellBasedParticleContainer<Particle> {
   }
 
   void resortContainerAndDeleteDummies() {
-    this->_particles.template binParticles<false>(
+    this->_particles.template binParticles<true>(
         [&](Particle &p) -> size_t { return _cellBlock.get1DIndexOfPosition(p.getR()); }, this->_cells,
         "KokkosLinkedCells::updateContainer:");
 

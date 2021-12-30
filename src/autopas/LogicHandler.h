@@ -213,7 +213,6 @@ class LogicHandler {
       }
       // Check if we can update an existing halo(dummy) particle.
       bool updated = _autoTuner.getContainer()->updateHaloParticle(haloParticle);
-      _autoTuner.getContainer()->updateHaloParticle(haloParticle);
       if (not updated) {
         // If we couldn't find an existing particle, add it to the halo particle buffer.
         _haloParticleBuffer.push_back(haloParticle);
