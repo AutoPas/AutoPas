@@ -9,6 +9,7 @@
 #include <memory>
 
 #include "autopas/containers/octree/OctreeNodeInterface.h"
+#include "autopas/containers/octree/OctreeStaticNodeSelector.h"
 #include "autopas/iterators/ParticleIteratorWrapper.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -222,6 +223,68 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * Type of the internal const iterator.
    */
   using const_iterator_t = internal::SingleCellIterator<Particle, OctreeNodeWrapper<Particle>, false>;
+
+  /**
+   * Apply the forEach lambda to each particle.
+   *
+   * @tparam Lambda Function type
+   * @param forEachLambda Function to apply
+   */
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda) {
+    withStaticNodeType(_pointer, [&](auto nodePtr) { nodePtr->forEach(forEachLambda); });
+  }
+
+  /**
+   * Apply the reduce lambda to each particle.
+   *
+   * @tparam Lambda Function type
+   * @tparam A Initial value type
+   * @param reduceLambda Function to apply
+   * @param result Initial value
+   */
+  template <typename Lambda, typename A>
+  void reduce(Lambda reduceLambda, A &result) {
+    withStaticNodeType(_pointer, [&](auto nodePtr) { nodePtr->reduce(reduceLambda, result); });
+  }
+
+  /**
+   * Apply the forEach lambda to each particle in the region.
+   *
+   * @tparam Lambda Function type
+   * @param forEachLambda Function to apply
+   * @param lowerCorner Lower corner of region
+   * @param higherCorner Higher corner of region
+   */
+  template <typename Lambda>
+  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+                       const std::array<double, 3> &higherCorner) {
+    withStaticNodeType(_pointer, [&](auto nodePtr) {
+      // The iterator behavior is set to ownedOrHalo to include all particles inside this subtree. The baseclass
+      // (Octree) decides whether this instance of OctreeNodeWrapper should be included in the iteration or not.
+      nodePtr->forEach(forEachLambda, lowerCorner, higherCorner, IteratorBehavior::ownedOrHalo);
+    });
+  }
+
+  /**
+   * Apply the reduce lambda to each particle in the region.
+   *
+   * @tparam Lambda Function type
+   * @tparam A Initial value type
+   * @param reduceLambda Function to apply
+   * @param result Initial value
+   * @param lowerCorner Lower corner of region
+   * @param higherCorner Higher corner of region
+   */
+  template <typename Lambda, typename A>
+  void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+                      const std::array<double, 3> &higherCorner) {
+    withStaticNodeType(_pointer, [&](auto nodePtr) {
+      // The iterator behavior is set to ownedOrHalo to include all particles inside this subtree. The baseclass
+      // (Octree) decides whether this instance of OctreeNodeWrapper should be included in the iteration or not.
+      nodePtr->reduce(reduceLambda, result, lowerCorner, higherCorner, IteratorBehavior::ownedOrHalo);
+    });
+  }
 
  private:
   /**

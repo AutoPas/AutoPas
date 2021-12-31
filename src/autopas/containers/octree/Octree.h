@@ -250,9 +250,10 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    */
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    for (auto iter = this->begin(behavior); iter.isValid(); ++iter) {
-      forEachLambda(*iter);
-    }
+    if (behavior & IteratorBehavior::owned) this->_cells[OWNED].forEach(forEachLambda);
+    if (behavior & IteratorBehavior::halo) this->_cells[HALO].forEach(forEachLambda);
+    if (not(behavior & IteratorBehavior::ownedOrHalo))
+      utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
   }
 
   /**
@@ -265,9 +266,10 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    */
   template <typename Lambda, typename A>
   void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    for (auto iter = this->begin(behavior); iter.isValid(); ++iter) {
-      reduceLambda(*iter, result);
-    }
+    if (behavior & IteratorBehavior::owned) this->_cells[OWNED].reduce(reduceLambda, result);
+    if (behavior & IteratorBehavior::halo) this->_cells[HALO].reduce(reduceLambda, result);
+    if (not(behavior & IteratorBehavior::ownedOrHalo))
+      utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
   }
 
   /**
@@ -276,9 +278,11 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
   template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                        const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
-    for (auto iter = this->getRegionIterator(lowerCorner, higherCorner, behavior); iter.isValid(); ++iter) {
-      forEachLambda(*iter);
-    }
+    if (behavior & IteratorBehavior::owned)
+      this->_cells[OWNED].forEachInRegion(forEachLambda, lowerCorner, higherCorner);
+    if (behavior & IteratorBehavior::halo) this->_cells[HALO].forEachInRegion(forEachLambda, lowerCorner, higherCorner);
+    if (not(behavior & IteratorBehavior::ownedOrHalo))
+      utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
   }
 
   /**
@@ -287,9 +291,12 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
   template <typename Lambda, typename A>
   void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
-    for (auto iter = this->getRegionIterator(lowerCorner, higherCorner, behavior); iter.isValid(); ++iter) {
-      reduceLambda(*iter, result);
-    }
+    if (behavior & IteratorBehavior::owned)
+      this->_cells[OWNED].reduceInRegion(reduceLambda, result, lowerCorner, higherCorner);
+    if (behavior & IteratorBehavior::halo)
+      this->_cells[HALO].reduceInRegion(reduceLambda, result, lowerCorner, higherCorner);
+    if (not(behavior & IteratorBehavior::ownedOrHalo))
+      utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
   }
 
  private:
