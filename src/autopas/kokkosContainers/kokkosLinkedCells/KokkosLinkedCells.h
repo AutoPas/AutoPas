@@ -83,17 +83,21 @@ class KokkosLinkedCells : public KokkosCellBasedParticleContainer<Particle> {
         if (distanceSqr < this->getSkin() * this->getSkin()) {
           p = haloParticle;
           // found the particle, return true
-          isFound = true;  // should not run into race conditioning problems
+          isFound = true;  // should not run into race conditioning problems (if so consider using OR reduce)
+
         }
       }
     };
 
     if (this->_isDirty) {
-    this->_particles.template forEach<true>(lambda, IteratorBehavior::dummy,
-                                            "KokkosLinkedCells::updateHaloParticle");
-        } else {
-          this->_particles.template forEach<true>(lambda, this->_cells[_cellBlock.get1DIndexOfPosition(hp.getR())], IteratorBehavior::dummy);
-        }
+      this->_particles.template forEach<true>(lambda, IteratorBehavior::dummy,
+                                              "KokkosLinkedCells::updateHaloParticle");
+    } else {
+      this->_particles.template forEach<true>(lambda, this->_cells[_cellBlock.get1DIndexOfPosition(hp.getR())], IteratorBehavior::dummy);
+    }
+    if (not isFound) {
+      AutoPasLog(trace, "UpdateHaloParticle was not able to update particle: {}", haloParticle.toString());
+    }
     return isFound;
   }
 
