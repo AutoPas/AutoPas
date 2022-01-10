@@ -185,15 +185,15 @@ class KokkosLinkedCells : public KokkosCellBasedParticleContainer<Particle> {
     if (behavior == IteratorBehavior::ownedOrHalo) {
       this->_particles.template forEach<parallel>(forEachLambda, "KokkosLinkedCells:forEach");
     } else {
-      if (this->_isDirty) {
+//      if (this->_isDirty) {
         this->_particles.template forEach<parallel>(forEachLambda, behavior, "KokkosLinkedCells:forEach(behavior)");
-      }
+//      }
       // TODO lgaertner reduce amount of prallel dispatched functions
-      for (size_t index = 0; index < this->_cells.size(); index++) {
-        if (not _cellBlock.ignoreCellForIteration(index, behavior)) {
-          this->_particles.template forEach<parallel>(forEachLambda, this->_cells[index], "KokkosLinkedCells:forEach");
-        }
-      }
+//      for (size_t index = 0; index < this->_cells.size(); index++) {
+//        if (not _cellBlock.ignoreCellForIteration(index, behavior)) {
+//          this->_particles.template forEach<parallel>(forEachLambda, this->_cells[index], "KokkosLinkedCells:forEach");
+//        }
+//      }
     }
   }
 
