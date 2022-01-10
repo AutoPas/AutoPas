@@ -368,6 +368,11 @@ std::string Simulation::timerToString(const std::string &name, long timeNS, size
   return ss.str();
 }
 
+template <typename T>
+void addValueToJson(std::ostringstream &stream, const std::string &name, T val) {
+  stream << "\"" << name << "\":" << val << "," << std::endl;
+}
+
 void Simulation::updatePositions() {
   _timers.positionUpdate.start();
   TimeDiscretization::calculatePositions(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
@@ -514,6 +519,29 @@ void Simulation::logMeasurements() {
   long haloParticleExchange = accumulateTime(_timers.haloParticleExchange.getTotalTime());
   long migratingParticleExchange = accumulateTime(_timers.migratingParticleExchange.getTotalTime());
 
+  size_t totalNumberOfParticles{0ul}, ownedParticles{0ul}, haloParticles{0ul};
+
+  int particleCount = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::ownedOrHalo);
+  autopas::AutoPas_MPI_Allreduce(&particleCount, &totalNumberOfParticles, 1, AUTOPAS_MPI_INT, AUTOPAS_MPI_SUM,
+                                 AUTOPAS_MPI_COMM_WORLD);
+
+  particleCount = _autoPasContainer->getNumberOfParticles();
+  autopas::AutoPas_MPI_Allreduce(&particleCount, &ownedParticles, 1, AUTOPAS_MPI_INT, AUTOPAS_MPI_SUM,
+                                 AUTOPAS_MPI_COMM_WORLD);
+
+  particleCount = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::halo);
+  autopas::AutoPas_MPI_Allreduce(&particleCount, &haloParticles, 1, AUTOPAS_MPI_INT, AUTOPAS_MPI_SUM,
+                                 AUTOPAS_MPI_COMM_WORLD);
+
+  std::ostringstream outputStream;
+  std::ostringstream filename;
+  filename << "measurements_" << totalNumberOfParticles;
+  outputStream << "{\n";
+
+  addValueToJson(outputStream, "total particle count", totalNumberOfParticles);
+  addValueToJson(outputStream, "owned particles", ownedParticles);
+  addValueToJson(outputStream, "halo particles", haloParticles);
+
   if (_domainDecomposition.getDomainIndex() == 0) {
     auto maximumNumberOfDigits = std::to_string(total).length();
     std::cout << "Measurements:" << std::endl;
@@ -553,6 +581,24 @@ void Simulation::logMeasurements() {
                  (forceUpdateTotal * 1e-9);  // 1e-9 for ns to s, 1e-6 for M in MFUP
     std::cout << "MFUPs/sec                       : " << mfups << std::endl;
 
+    addValueToJson(outputStream, "Total accumulated", total);
+    addValueToJson(outputStream, "Initialization", initialization);
+    addValueToJson(outputStream, "Simulate", simulate);
+    addValueToJson(outputStream, "PositionUpdate", positionUpdate);
+    addValueToJson(outputStream, "Boundaries", haloParticleExchange + migratingParticleExchange);
+    addValueToJson(outputStream, "HaloParticleExchane", haloParticleExchange);
+    addValueToJson(outputStream, "MigratingParticleExchange", migratingParticleExchange);
+    addValueToJson(outputStream, "ForceUpdateTotal", forceUpdateTotal);
+    addValueToJson(outputStream, "ForceUpdatePairwise", forceUpdatePairwise);
+    addValueToJson(outputStream, "ForceUpdateGlobalForces", forceUpdateGlobalForces);
+    addValueToJson(outputStream, "ForceUpdateTuning", forceUpdateTuning);
+    addValueToJson(outputStream, "ForceUpdateNonTuning", forceUpdateNonTuning);
+    addValueToJson(outputStream, "VelocityUpdate", velocityUpdate);
+    addValueToJson(outputStream, "Thermostat", thermostat);
+    addValueToJson(outputStream, "Vtk", vtk);
+    addValueToJson(outputStream, "One Iteration", simulate / _iteration);
+    addValueToJson(outputStream, "MFUPs/sec", mfups);
+
     if (_configuration.dontMeasureFlops.value) {
       autopas::FlopCounterFunctor<ParticleType> flopCounterFunctor(_autoPasContainer->getCutoff());
       _autoPasContainer->iteratePairwise(&flopCounterFunctor);
@@ -585,7 +631,19 @@ void Simulation::logMeasurements() {
       std::cout << "GFLOPs                          : " << flops * 1e-9 << std::endl;
       std::cout << "GFLOPs/sec                      : " << flops * 1e-9 / (simulate * 1e-9) << std::endl;
       std::cout << "Hit rate                        : " << flopCounterFunctor.getHitRate() << std::endl;
+
+      addValueToJson(outputStream, "GFLOPs", flops * 1e-9);
+      addValueToJson(outputStream, "GFLOPs/sec", flops * 1e-9 / (simulate * 1e-9));
+      addValueToJson(outputStream, "Hit rate", flopCounterFunctor.getHitRate());
     }
+    outputStream << "\}";
+
+    filename << ".json";
+
+    std::ofstream jsonFile;
+    jsonFile.open(filename.str());
+    jsonFile << outputStream.str();
+    jsonFile.close();
   }
 }
 
