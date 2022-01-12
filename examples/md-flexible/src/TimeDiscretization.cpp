@@ -14,7 +14,8 @@
  */
 namespace TimeDiscretization {
 void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
-                        const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
+                        const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
+                        const std::array<double, 3> globalForce) {
   using autopas::utils::ArrayMath::add;
   using autopas::utils::ArrayMath::mulScalar;
 
@@ -26,7 +27,7 @@ void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
     auto m = particlePropertiesLibrary.getMass(iter->getTypeId());
     auto f = iter->getF();
     iter->setOldF(f);
-    iter->setF({0., 0., 0.});
+    iter->setF(globalForce);
     v = mulScalar(v, deltaT);
     f = mulScalar(f, (deltaT * deltaT / (2 * m)));
     auto newR = add(v, f);

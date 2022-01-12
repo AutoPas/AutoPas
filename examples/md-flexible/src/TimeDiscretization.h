@@ -20,7 +20,8 @@ namespace TimeDiscretization {
  * @param deltaT The time step width.
  */
 void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
-                        const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
+                        const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
+                        const std::array<double, 3> globalForce);
 
 /**
  * Calculate and update the velocity for every particle using the the Störmer-Verlet Algorithm.

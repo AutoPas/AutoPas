@@ -373,21 +373,16 @@ std::string Simulation::timerToString(const std::string &name, long timeNS, size
 void Simulation::updatePositions() {
   _timers.positionUpdate.start();
   TimeDiscretization::calculatePositions(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-                                         _configuration.deltaT.value);
+                                         _configuration.deltaT.value, _configuration.globalForce.value);
   _timers.positionUpdate.stop();
 }
 
 void Simulation::updateForces() {
   _timers.forceUpdateTotal.start();
 
-  bool isTuningIteration = false;
-  _timers.forceUpdatePairwise.start();
+  const bool isTuningIteration = calculatePairwiseForces();
 
-  calculatePairwiseForces(isTuningIteration);
-
-  _timers.forceUpdateTotal.stop();
-
-  auto timeIteration = _timers.forceUpdatePairwise.stop();
+  const auto timeIteration = _timers.forceUpdateTotal.stop();
 
   // count time spent for tuning
   if (isTuningIteration) {
@@ -402,16 +397,6 @@ void Simulation::updateForces() {
     }
   }
   _previousIterationWasTuningIteration = isTuningIteration;
-
-  _timers.forceUpdateTotal.start();
-  _timers.forceUpdateGlobal.start();
-
-  if (!_configuration.globalForceIsZero()) {
-    calculateGlobalForces(_configuration.globalForce.value);
-  }
-
-  _timers.forceUpdateGlobal.stop();
-  _timers.forceUpdateTotal.stop();
 }
 
 void Simulation::updateVelocities() {
@@ -441,7 +426,8 @@ long Simulation::accumulateTime(const long &time) {
   return reducedTime;
 }
 
-void Simulation::calculatePairwiseForces(bool &wasTuningIteration) {
+bool Simulation::calculatePairwiseForces() {
+  bool wasTuningIteration = false;
   auto particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
 
   switch (_configuration.functorOption.value) {
@@ -463,6 +449,7 @@ void Simulation::calculatePairwiseForces(bool &wasTuningIteration) {
       break;
     }
   }
+  return wasTuningIteration;
 }
 
 void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce) {
@@ -507,8 +494,6 @@ void Simulation::logSimulationState() {
 void Simulation::logMeasurements() {
   long positionUpdate = accumulateTime(_timers.positionUpdate.getTotalTime());
   long forceUpdateTotal = accumulateTime(_timers.forceUpdateTotal.getTotalTime());
-  long forceUpdatePairwise = accumulateTime(_timers.forceUpdatePairwise.getTotalTime());
-  long forceUpdateGlobalForces = accumulateTime(_timers.forceUpdateGlobal.getTotalTime());
   long forceUpdateTuning = accumulateTime(_timers.forceUpdateTuning.getTotalTime());
   long forceUpdateNonTuning = accumulateTime(_timers.forceUpdateNonTuning.getTotalTime());
   long velocityUpdate = accumulateTime(_timers.velocityUpdate.getTotalTime());
@@ -534,13 +519,9 @@ void Simulation::logMeasurements() {
     std::cout << timerToString("      MigratingParticleExchange", migratingParticleExchange, maximumNumberOfDigits,
                                haloParticleExchange + migratingParticleExchange);
     std::cout << timerToString("    ForceUpdateTotal           ", forceUpdateTotal, maximumNumberOfDigits, simulate);
-    std::cout << timerToString("      ForceUpdatePairwise      ", forceUpdatePairwise, maximumNumberOfDigits,
+    std::cout << timerToString("      Tuning                   ", forceUpdateTuning, maximumNumberOfDigits,
                                forceUpdateTotal);
-    std::cout << timerToString("      ForceUdpateGlobalForces  ", forceUpdateGlobalForces, maximumNumberOfDigits,
-                               forceUpdateTotal);
-    std::cout << timerToString("      ForceUpdateTuning        ", forceUpdateTuning, maximumNumberOfDigits,
-                               forceUpdateTotal);
-    std::cout << timerToString("      ForceUpdateNonTuninng    ", forceUpdateNonTuning, maximumNumberOfDigits,
+    std::cout << timerToString("      NonTuninng               ", forceUpdateNonTuning, maximumNumberOfDigits,
                                forceUpdateTotal);
     std::cout << timerToString("    VelocityUpdate             ", velocityUpdate, maximumNumberOfDigits, simulate);
     std::cout << timerToString("    Thermostat                 ", thermostat, maximumNumberOfDigits, simulate);

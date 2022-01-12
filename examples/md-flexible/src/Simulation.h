@@ -114,16 +114,6 @@ class Simulation {
     autopas::utils::Timer forceUpdateTotal;
 
     /**
-     * Records the time used for the pairwise force update of all particles.
-     */
-    autopas::utils::Timer forceUpdatePairwise;
-
-    /**
-     * Records the time used for the update of the global forces of all particles.
-     */
-    autopas::utils::Timer forceUpdateGlobal;
-
-    /**
      * Records the time used for the force update of all particles during the tuning iterations.
      */
     autopas::utils::Timer forceUpdateTuning;
@@ -283,9 +273,9 @@ class Simulation {
 
   /**
    * Calculates the pairwise forces between particles in the autopas container.
-   * @param wasTuningIteration Tells the user if the current iteration of force calculations was a tuning iteration.
+   * @return Tells the user if the current iteration of force calculations was a tuning iteration.
    */
-  void calculatePairwiseForces(bool &wasTuningIteration);
+  bool calculatePairwiseForces();
 
   /**
    * Adds global forces to the particles in the container.
