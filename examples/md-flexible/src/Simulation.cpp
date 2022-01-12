@@ -420,7 +420,7 @@ void Simulation::updateThermostat() {
 }
 
 long Simulation::accumulateTime(const long &time) {
-  long reducedTime;
+  long reducedTime{};
   autopas::AutoPas_MPI_Reduce(&time, &reducedTime, 1, AUTOPAS_MPI_LONG, AUTOPAS_MPI_SUM, 0, AUTOPAS_MPI_COMM_WORLD);
 
   return reducedTime;
@@ -455,20 +455,20 @@ bool Simulation::calculatePairwiseForces() {
 void Simulation::logSimulationState() {
   size_t totalNumberOfParticles{0ul}, ownedParticles{0ul}, haloParticles{0ul};
 
-  int particleCount = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::ownedOrHalo);
-  autopas::AutoPas_MPI_Allreduce(&particleCount, &totalNumberOfParticles, 1, AUTOPAS_MPI_INT, AUTOPAS_MPI_SUM,
+  size_t particleCount = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::ownedOrHalo);
+  autopas::AutoPas_MPI_Allreduce(&particleCount, &totalNumberOfParticles, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM,
                                  AUTOPAS_MPI_COMM_WORLD);
 
-  particleCount = _autoPasContainer->getNumberOfParticles();
-  autopas::AutoPas_MPI_Allreduce(&particleCount, &ownedParticles, 1, AUTOPAS_MPI_INT, AUTOPAS_MPI_SUM,
+  particleCount = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned);
+  autopas::AutoPas_MPI_Allreduce(&particleCount, &ownedParticles, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM,
                                  AUTOPAS_MPI_COMM_WORLD);
 
   particleCount = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::halo);
-  autopas::AutoPas_MPI_Allreduce(&particleCount, &haloParticles, 1, AUTOPAS_MPI_INT, AUTOPAS_MPI_SUM,
+  autopas::AutoPas_MPI_Allreduce(&particleCount, &haloParticles, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM,
                                  AUTOPAS_MPI_COMM_WORLD);
 
   double squaredHomogeneity = _homogeneity * _homogeneity;
-  double standardDeviationOfHomogeneity;
+  double standardDeviationOfHomogeneity{};
   autopas::AutoPas_MPI_Allreduce(&squaredHomogeneity, &standardDeviationOfHomogeneity, 1, AUTOPAS_MPI_DOUBLE,
                                  AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
   standardDeviationOfHomogeneity = std::sqrt(standardDeviationOfHomogeneity);
