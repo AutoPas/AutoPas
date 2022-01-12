@@ -452,15 +452,6 @@ bool Simulation::calculatePairwiseForces() {
   return wasTuningIteration;
 }
 
-void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce) {
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel shared(_autoPasContainer)
-#endif
-  for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    particle->addF(globalForce);
-  }
-}
-
 void Simulation::logSimulationState() {
   size_t totalNumberOfParticles{0ul}, ownedParticles{0ul}, haloParticles{0ul};
 
