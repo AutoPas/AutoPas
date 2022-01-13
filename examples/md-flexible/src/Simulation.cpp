@@ -638,8 +638,7 @@ void Simulation::logMeasurements() {
     }
     addValueToJson(outputStream, "cellsize", _autoPasContainer->getAllowedCellSizeFactors().getMedian());
     outputStream << "\"container\":\"KokkosLinkedCells\" \n}";
-    outputStream << "\}";
-    
+
     filename << "_cs" << _autoPasContainer->getAllowedCellSizeFactors().getMedian();
     filename << ".json";
 
