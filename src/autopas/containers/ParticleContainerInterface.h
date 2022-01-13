@@ -151,7 +151,7 @@ class ParticleContainerInterface {
    * @param haloParticles vector of Particles to be updated.
    * @return Returns a vector of particles that were not updated.
    */
-  virtual std::vector<Particle> updateHaloParticles(const std::vector<Particle> &haloParticles) = 0;
+  virtual void updateHaloParticles(const std::vector<Particle> &haloParticles, std::vector<Particle> &notUpdated) = 0;
 
   /**
    * Rebuilds the neighbor lists.

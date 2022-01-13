@@ -251,10 +251,12 @@ class LogicHandler {
         }
       }
       // Check if we can update an existing halo(dummy) particle.
-      std::vector<Particle> notUpdated = _autoTuner.getContainer()->updateHaloParticles(haloParticles);
+      std::vector<Particle> notUpdated{};
+      _autoTuner.getContainer()->updateHaloParticles(haloParticles, notUpdated);
       for (auto p : notUpdated) {
 //        // If we couldn't find an existing particle, add it to the halo particle buffer.
         _haloParticleBuffer.push_back(p);
+        _haloParticleBuffer.back().setOwnershipState(OwnershipState::halo);
       }
     }
     _numParticlesHalo.fetch_add(haloParticles.size(), std::memory_order_relaxed);

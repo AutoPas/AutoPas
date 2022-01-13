@@ -157,7 +157,7 @@ class KokkosCellBasedParticleContainer : public ParticleContainerInterface<Parti
   /**
    * @copydoc ParticleContainerInterface::updateHaloParticles()
    */
-  std::vector<Particle> updateHaloParticles(const std::vector<Particle> &haloParticles) override {
+  void updateHaloParticles(const std::vector<Particle> &haloParticles, std::vector<Particle> &notUpdatedParticles) override {
     size_t numHaloParticles = haloParticles.size();
 
     //Kokkos: There are only two separate views defined if host and device memory space differ.
@@ -165,19 +165,19 @@ class KokkosCellBasedParticleContainer : public ParticleContainerInterface<Parti
     typename Kokkos::View<Particle *>::HostMirror haloParticlesHost = Kokkos::create_mirror_view(haloParticlesDevice);
 
     Kokkos::View<bool *> wasUpdatedDevice("", numHaloParticles);
-    Kokkos::View<bool *>::HostMirror wasUpdatedHost = Kokkos::create_mirror_view(wasUpdatedDevice);
+    typename Kokkos::View<bool *>::HostMirror wasUpdatedHost = Kokkos::create_mirror_view(wasUpdatedDevice);
 
     //TODO: Kokkos parallel for call on host?
-    for (size_t i = 0; i < haloParticles.size(); i++) {
-      haloParticlesHost[i] = haloParticles[i];
-      haloParticlesHost[i].setOwnershipState(OwnershipState::halo);
+    for (size_t i = 0; i < numHaloParticles; i++) {
+      Particle p = haloParticles[i];
+      p.setOwnershipState(OwnershipState::halo);
+      haloParticlesHost[i] = p;
     }
 
     //Kokkos: This is a noop if host and memory space are the same.
     Kokkos::deep_copy(haloParticlesDevice, haloParticlesHost);
 
-    // todo get biggest cell size to reduce range of j
-    Kokkos::RangePolicy<> rangePolicy(0ul, _particles.getSize());
+    Kokkos::RangePolicy<> rangePolicy(0ul, numHaloParticles);
     Kokkos::parallel_for("update halo particles", rangePolicy, KOKKOS_LAMBDA (const size_t i) {
       Particle haloParticle = haloParticlesDevice[i];
       size_t begin, end;
@@ -187,7 +187,7 @@ class KokkosCellBasedParticleContainer : public ParticleContainerInterface<Parti
       } else {
         size_t possibleCell = assignCellToParticle(haloParticle);
         begin = _cells[possibleCell].begin;
-        end = _cells[possibleCell].cellSize;
+        end = _cells[possibleCell].cellSize + begin;
       }
 
       bool updated = false;
@@ -210,14 +210,12 @@ class KokkosCellBasedParticleContainer : public ParticleContainerInterface<Parti
 
     Kokkos::deep_copy(wasUpdatedHost, wasUpdatedDevice);
 
-    std::vector<Particle> notUpdatedParticles{};
     for (size_t i = 0; i < numHaloParticles; i++) {
-      if (not wasUpdatedHost[i]) {
-        notUpdatedParticles.push_back(haloParticlesHost[i]);
+      if (not wasUpdatedDevice[i]) {
+        Particle p = haloParticles[i];
+        notUpdatedParticles.push_back(p);
       }
     }
-
-    return notUpdatedParticles;
   }
 
   virtual size_t assignCellToParticle(Particle &p) = 0;
