@@ -140,6 +140,11 @@ void AutoPas<Particle>::addHaloParticle(const Particle &haloParticle) {
 }
 
 template <class Particle>
+void AutoPas<Particle>::addHaloParticles(const std::vector<Particle> &haloParticles) {
+  _logicHandler->addHaloParticles(haloParticles);
+}
+
+template <class Particle>
 void AutoPas<Particle>::deleteAllParticles() {
   _logicHandler->deleteAllParticles();
 }

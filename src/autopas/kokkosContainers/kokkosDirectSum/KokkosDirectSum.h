@@ -153,7 +153,7 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
         IteratorBehavior::owned);
 
     if (not keepNeighborListsValid) {
-      this->_particles.template binParticles<false>([&](Particle &p) -> size_t { return p.isOwned() ? _OWNED : _HALO; },
+      this->_particles.template binParticles<false>([&](Particle &p) -> size_t { return assignCellToParticle(p); },
                                                     this->_cells, "KokkosDirectSum::updateContainer:");
       this->_isDirty = false;
     }
@@ -162,7 +162,7 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
   }
 
   void resortContainerAndDeleteDummies() {
-    this->_particles.template binParticles<true>([&](Particle &p) -> size_t { return p.isOwned() ? _OWNED : _HALO; },
+    this->_particles.template binParticles<true>([&](Particle &p) -> size_t { return assignCellToParticle(p); },
                                                  this->_cells, "KokkosDirectSum::updateContainer:");
 
     inspectContainer();
@@ -214,6 +214,10 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
     this->_particles.reduce(reduceLambda, result, behavior, lowerCorner, higherCorner,
                             "KokkosDirectSum::reduce(behavior, lowerCorner, higherCorner)");
+  }
+
+  size_t assignCellToParticle(Particle &p) override {
+    return p.isOwned() ? _OWNED : _HALO;
   }
 
   /**

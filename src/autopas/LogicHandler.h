@@ -223,6 +223,44 @@ class LogicHandler {
   }
 
   /**
+   * @copydoc AutoPas::addHaloParticle()
+   */
+  void addHaloParticles(const std::vector<Particle> &haloParticles) {
+    for (auto &p : haloParticles) {
+      if (utils::inBox(p.getR(), _autoTuner.getContainer()->getBoxMin(),
+                       _autoTuner.getContainer()->getBoxMax())) {
+        utils::ExceptionHandler::exception("Trying to add a halo particle that is not OUTSIDE of the bounding box.\n" +
+                                           p.toString());
+      }
+    }
+
+    auto container = _autoTuner.getContainer();
+    if (not neighborListsAreValid()) {
+      // If the neighbor lists are not valid, we can add the particles.
+      for (auto p : haloParticles) {
+        container->template addHaloParticle</* checkInBox */ false>(p);
+      }
+    } else {
+      const auto &boxMin = _autoTuner.getContainer()->getBoxMin();
+      const auto &boxMax = _autoTuner.getContainer()->getBoxMax();
+      for (auto p : haloParticles) {
+        if (utils::inBox(p.getR(), boxMin, boxMax)) {
+          autopas::utils::ExceptionHandler::exception(
+              "Trying to add a halo particle, which is inside the box of the container ({}, {}).\nThe particle: {}",
+              utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), p.toString());
+        }
+      }
+      // Check if we can update an existing halo(dummy) particle.
+      std::vector<Particle> notUpdated = _autoTuner.getContainer()->updateHaloParticles(haloParticles);
+      for (auto p : notUpdated) {
+//        // If we couldn't find an existing particle, add it to the halo particle buffer.
+        _haloParticleBuffer.push_back(p);
+      }
+    }
+    _numParticlesHalo.fetch_add(haloParticles.size(), std::memory_order_relaxed);
+  }
+
+  /**
    * Adds a particle to the container that lies in the halo region of the container.
    * @param haloParticle Particle to be added.
    * @note An exception is thrown if the halo particle is added and it is inside of the owned domain (defined by boxmin

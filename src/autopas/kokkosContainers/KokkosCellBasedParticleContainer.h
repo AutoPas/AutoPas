@@ -154,6 +154,74 @@ class KokkosCellBasedParticleContainer : public ParticleContainerInterface<Parti
     return ParticleIteratorWrapper<Particle, false>();
   }
 
+  /**
+   * @copydoc ParticleContainerInterface::updateHaloParticles()
+   */
+  std::vector<Particle> updateHaloParticles(const std::vector<Particle> &haloParticles) override {
+    size_t numHaloParticles = haloParticles.size();
+
+    //Kokkos: There are only two separate views defined if host and device memory space differ.
+    Kokkos::View<Particle *> haloParticlesDevice("", numHaloParticles);
+    typename Kokkos::View<Particle *>::HostMirror haloParticlesHost = Kokkos::create_mirror_view(haloParticlesDevice);
+
+    Kokkos::View<bool *> wasUpdatedDevice("", numHaloParticles);
+    Kokkos::View<bool *>::HostMirror wasUpdatedHost = Kokkos::create_mirror_view(wasUpdatedDevice);
+
+    //TODO: Kokkos parallel for call on host?
+    for (size_t i = 0; i < haloParticles.size(); i++) {
+      haloParticlesHost[i] = haloParticles[i];
+      haloParticlesHost[i].setOwnershipState(OwnershipState::halo);
+    }
+
+    //Kokkos: This is a noop if host and memory space are the same.
+    Kokkos::deep_copy(haloParticlesDevice, haloParticlesHost);
+
+    // todo get biggest cell size to reduce range of j
+    Kokkos::RangePolicy<> rangePolicy(0ul, _particles.getSize());
+    Kokkos::parallel_for("update halo particles", rangePolicy, KOKKOS_LAMBDA (const size_t i) {
+      Particle haloParticle = haloParticlesDevice[i];
+      size_t begin, end;
+      if (_isDirty) {
+        begin = 0ul;
+        end = _particles.getSize();
+      } else {
+        size_t possibleCell = assignCellToParticle(haloParticle);
+        begin = _cells[possibleCell].begin;
+        end = _cells[possibleCell].cellSize;
+      }
+
+      bool updated = false;
+      for(size_t j = begin; j < end; j++) {
+        Particle p = _particles.getParticles()[j];
+        if (p.getID() == haloParticle.getID()) {
+          auto distanceVec = autopas::utils::ArrayMath::sub(p.getR(), haloParticle.getR());
+          auto distanceSqr = autopas::utils::ArrayMath::dot(distanceVec, distanceVec);
+          if (distanceSqr < this->getSkin() * this->getSkin()) {
+            // found the particle -> update, set updated to true and break for loop
+            _particles.getParticles()[j] = haloParticle;
+            updated = true;
+            break;
+          }
+        }
+      }
+
+      wasUpdatedDevice[i] = updated;
+    });
+
+    Kokkos::deep_copy(wasUpdatedHost, wasUpdatedDevice);
+
+    std::vector<Particle> notUpdatedParticles{};
+    for (size_t i = 0; i < numHaloParticles; i++) {
+      if (not wasUpdatedHost[i]) {
+        notUpdatedParticles.push_back(haloParticlesHost[i]);
+      }
+    }
+
+    return notUpdatedParticles;
+  }
+
+  virtual size_t assignCellToParticle(Particle &p) = 0;
+
  protected:
   /**
    * Managed view of all particles. This view is then sorted according to desired layout and particle properties.

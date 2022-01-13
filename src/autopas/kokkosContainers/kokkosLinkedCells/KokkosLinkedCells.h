@@ -93,7 +93,7 @@ class KokkosLinkedCells : public KokkosCellBasedParticleContainer<Particle> {
       this->_particles.template forEach<true>(lambda, IteratorBehavior::dummy,
                                               "KokkosLinkedCells::updateHaloParticle");
     } else {
-      this->_particles.template forEach<true>(lambda, this->_cells[_cellBlock.get1DIndexOfPosition(hp.getR())], IteratorBehavior::dummy);
+      this->_particles.template forEach<true>(lambda, this->_cells[assignCellToParticle(haloParticle)], IteratorBehavior::dummy);
     }
     if (not isFound) {
       AutoPasLog(trace, "UpdateHaloParticle was not able to update particle: {}", haloParticle.toString());
@@ -144,6 +144,10 @@ class KokkosLinkedCells : public KokkosCellBasedParticleContainer<Particle> {
     cellPairTraversal->endTraversal();
   }
 
+  size_t assignCellToParticle(Particle &p) override {
+    return _cellBlock.get1DIndexOfPosition(p.getR());
+  }
+
   std::vector<Particle> updateContainer(bool keepNeighborListsValid) override {
     std::vector<Particle> invalidParticles{};
 
@@ -164,7 +168,7 @@ class KokkosLinkedCells : public KokkosCellBasedParticleContainer<Particle> {
 
     if (not keepNeighborListsValid) {
       this->_particles.template binParticles<false>(
-          [&](Particle &p) -> size_t { return _cellBlock.get1DIndexOfPosition(p.getR()); }, this->_cells,
+          [&](Particle &p) -> size_t { return assignCellToParticle(p); }, this->_cells,
           "KokkosLinkedCells::updateContainer:");
       this->_isDirty = false;
     }
@@ -174,7 +178,7 @@ class KokkosLinkedCells : public KokkosCellBasedParticleContainer<Particle> {
 
   void resortContainerAndDeleteDummies() {
     this->_particles.template binParticles<true>(
-        [&](Particle &p) -> size_t { return _cellBlock.get1DIndexOfPosition(p.getR()); }, this->_cells,
+        [&](Particle &p) -> size_t { return assignCellToParticle(p); }, this->_cells,
         "KokkosLinkedCells::updateContainer:");
 
     this->_isDirty = false;

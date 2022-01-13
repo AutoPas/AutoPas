@@ -147,6 +147,13 @@ class ParticleContainerInterface {
   virtual bool updateHaloParticle(const Particle &haloParticle) = 0;
 
   /**
+   * Update all matching halo particles of the container with the given vector of haloParticles.
+   * @param haloParticles vector of Particles to be updated.
+   * @return Returns a vector of particles that were not updated.
+   */
+  virtual std::vector<Particle> updateHaloParticles(const std::vector<Particle> &haloParticles) = 0;
+
+  /**
    * Rebuilds the neighbor lists.
    * @param traversal The used traversal.
    */
