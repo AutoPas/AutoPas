@@ -640,10 +640,10 @@ void Simulation::logMeasurements() {
 
     filename << ".json";
 
-    std::ofstream jsonFile;
-    jsonFile.open(filename.str());
-    jsonFile << outputStream.str();
-    jsonFile.close();
+//    std::ofstream jsonFile;
+//    jsonFile.open(filename.str());
+//    jsonFile << outputStream.str();
+//    jsonFile.close();
   }
 }
 
