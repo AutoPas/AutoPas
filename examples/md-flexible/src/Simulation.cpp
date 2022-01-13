@@ -636,8 +636,11 @@ void Simulation::logMeasurements() {
       addValueToJson(outputStream, "GFLOPs/sec", flops * 1e-9 / (simulate * 1e-9));
       addValueToJson(outputStream, "Hit rate", flopCounterFunctor.getHitRate());
     }
+    addValueToJson(outputStream, "cellsize", _autoPasContainer->getAllowedCellSizeFactors().getMedian());
+    outputStream << "\"container\":\"KokkosLinkedCells\" \n}";
     outputStream << "\}";
-
+    
+    filename << "_cs" << _autoPasContainer->getAllowedCellSizeFactors().getMedian();
     filename << ".json";
 
 //    std::ofstream jsonFile;
