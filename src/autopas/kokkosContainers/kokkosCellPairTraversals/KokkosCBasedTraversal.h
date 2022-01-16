@@ -151,7 +151,7 @@ inline void KokkosCBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, use
       }
     }
 
-    Kokkos::RangePolicy<> rangePolicy(0, ranges.size());
+    Kokkos::RangePolicy<Kokkos::Schedule<Kokkos::Dynamic>> rangePolicy(0, ranges.size());
 
     Kokkos::parallel_for(
         rangePolicy, KOKKOS_LAMBDA(const size_t i) { loopBody(ranges[i][0], ranges[i][1], ranges[i][2]); });
