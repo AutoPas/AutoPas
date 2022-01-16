@@ -60,8 +60,6 @@ class Functor {
 
   virtual ~Functor() = default;
 
-  Kokkos::View<Particle *> _particles;
-
   /**
    * This function is called at the start of each traversal.
    * Use it for resetting global values or initializing them.
@@ -75,10 +73,6 @@ class Functor {
    */
   virtual void endTraversal(bool newton3){};
 
-  void setParticles(Kokkos::View<Particle *> &particles){
-    _particles = particles;
-  }
-
   /**
    * Functor for arrays of structures (AoS).
    *
@@ -90,7 +84,7 @@ class Functor {
    * @param particles pointer to particles view
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void AoSFunctor(const size_t &iIndex, const size_t &jIndex,
+  virtual void AoSFunctor(const size_t &iIndex, const size_t &jIndex, Kokkos::View<Particle *> &particles,
                           bool newton3) {
     utils::ExceptionHandler::exception("Functor::AoSFunctor: not yet implemented");
   }

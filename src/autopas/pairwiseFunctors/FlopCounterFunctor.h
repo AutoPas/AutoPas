@@ -42,10 +42,10 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
         _distanceCalculations(0ul),
         _kernelCalls(0ul) {}
 
-  void AoSFunctor(const size_t &iIndex, const size_t &jIndex,
+  void AoSFunctor(const size_t &iIndex, const size_t &jIndex, Kokkos::View<Particle *> &particles,
                   bool /*newton3*/) override {
-    Particle i = this->_particles(iIndex);
-    Particle j = this->_particles(jIndex);
+    Particle i = particles(iIndex);
+    Particle j = particles(jIndex);
 
     if (i.isDummy() or j.isDummy()) {
       return;

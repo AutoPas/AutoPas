@@ -112,10 +112,10 @@ class LJFunctor
     return useNewton3 == FunctorN3Modes::Newton3Off or useNewton3 == FunctorN3Modes::Both;
   }
 
-  void AoSFunctor(const size_t &iIndex, const size_t &jIndex,
+  void AoSFunctor(const size_t &iIndex, const size_t &jIndex, Kokkos::View<Particle *> &particles,
                   bool newton3) override {
-    Particle i = this->_particles(iIndex);
-    Particle j = this->_particles(jIndex);
+    Particle i = particles(iIndex);
+    Particle j = particles(jIndex);
     if (i.isDummy() or j.isDummy()) {
       return;
     }
@@ -144,10 +144,10 @@ class LJFunctor
     double lj12m6 = lj12 - lj6;
     double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
     auto f = utils::ArrayMath::mulScalar(dr, fac);
-    this->_particles[iIndex].addF(f);
+    particles[iIndex].addF(f);
     if (newton3) {
       // only if we use newton 3 here, we want to
-      this->_particles[jIndex].subF(f);
+      particles[jIndex].subF(f);
     }
     if (calculateGlobals) {
       auto virial = utils::ArrayMath::mul(dr, f);
