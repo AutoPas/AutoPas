@@ -265,7 +265,7 @@ class ParticleView {
 
   autopas::AutoPasLock _particleViewLock;
 
-  size_t _capacity{8};
+  size_t _capacity{1024};
   size_t _size{0};
   Kokkos::View<ParticleType *> _particleViewImp;
 };
