@@ -641,7 +641,7 @@ void Simulation::logMeasurements() {
 
     filename << "_cs" << _autoPasContainer->getAllowedCellSizeFactors().getMedian();
 
-    switch(_configuration.generatorOption.value) {
+    switch (_configuration.generatorOption.value) {
       case MDFlexConfig::GeneratorOption::uniform:
         addValueToJson(outputStream, "generator", "uniform");
         filename << "_uniform";
@@ -657,8 +657,8 @@ void Simulation::logMeasurements() {
 
     std::ofstream jsonFile;
     jsonFile.open(filename.str());
-        jsonFile << outputStream.str();
-        jsonFile.close();
+    jsonFile << outputStream.str();
+    jsonFile.close();
   }
 }
 

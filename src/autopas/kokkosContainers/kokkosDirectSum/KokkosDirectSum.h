@@ -210,9 +210,7 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
                             "KokkosDirectSum::reduce(behavior, lowerCorner, higherCorner)");
   }
 
-  size_t assignCellToParticle(Particle &p) override {
-    return p.isOwned() ? _OWNED : _HALO;
-  }
+  size_t assignCellToParticle(Particle &p) override { return p.isOwned() ? _OWNED : _HALO; }
 
   /**
    * @copydoc ParticleContainerInterface::getTraversalSelectorInfo()

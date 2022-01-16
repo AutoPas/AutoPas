@@ -227,8 +227,7 @@ class LogicHandler {
    */
   void addHaloParticles(const std::vector<Particle> &haloParticles) {
     for (auto &p : haloParticles) {
-      if (utils::inBox(p.getR(), _autoTuner.getContainer()->getBoxMin(),
-                       _autoTuner.getContainer()->getBoxMax())) {
+      if (utils::inBox(p.getR(), _autoTuner.getContainer()->getBoxMin(), _autoTuner.getContainer()->getBoxMax())) {
         utils::ExceptionHandler::exception("Trying to add a halo particle that is not OUTSIDE of the bounding box.\n" +
                                            p.toString());
       }
@@ -254,7 +253,7 @@ class LogicHandler {
       std::vector<Particle> notUpdated{};
       _autoTuner.getContainer()->updateHaloParticles(haloParticles, notUpdated);
       for (auto p : notUpdated) {
-//        // If we couldn't find an existing particle, add it to the halo particle buffer.
+        //        // If we couldn't find an existing particle, add it to the halo particle buffer.
         _haloParticleBuffer.push_back(p);
         _haloParticleBuffer.back().setOwnershipState(OwnershipState::halo);
       }

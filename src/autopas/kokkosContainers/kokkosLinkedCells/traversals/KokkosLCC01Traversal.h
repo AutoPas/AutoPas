@@ -1,8 +1,8 @@
 /**
-* @file KokkosLCC01Traversal.h
-* @author nguyen
-* @date 16.09.2018
-*/
+ * @file KokkosLCC01Traversal.h
+ * @author nguyen
+ * @date 16.09.2018
+ */
 
 #pragma once
 
@@ -77,10 +77,9 @@ the initialized buffer must show the same behavior as a buffer which was updated
 * @tparam combineSoA
 */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-    bool combineSoA = false>
-class KokkosLCC01Traversal
-    : public KokkosC01BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
-      public KokkosLCTraversalInterface<ParticleCell> {
+          bool combineSoA = false>
+class KokkosLCC01Traversal : public KokkosC01BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
+                             public KokkosLCTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the c01 traversal.
@@ -93,9 +92,9 @@ class KokkosLCC01Traversal
    * in that case the interactionLength is needed!
    */
   explicit KokkosLCC01Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                          const double interactionLength, const std::array<double, 3> &cellLength)
-      : KokkosC01BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(
-      dims, pairwiseFunctor, interactionLength, cellLength),
+                                const double interactionLength, const std::array<double, 3> &cellLength)
+      : KokkosC01BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
+                                                                                       interactionLength, cellLength),
         _cellFunctor(pairwiseFunctor),
         _pairwiseFunctor(pairwiseFunctor),
         _cacheOffset(DEFAULT_CACHE_LINE_SIZE / sizeof(unsigned int)) {
@@ -168,8 +167,7 @@ class KokkosLCC01Traversal
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  internal::KokkosCellFunctor<ParticleCell, PairwiseFunctor, dataLayout, false, false>
-      _cellFunctor;
+  internal::KokkosCellFunctor<ParticleCell, PairwiseFunctor, dataLayout, false, false> _cellFunctor;
 
   PairwiseFunctor *_pairwiseFunctor;
 
@@ -190,7 +188,7 @@ class KokkosLCC01Traversal
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-    bool combineSoA>
+          bool combineSoA>
 inline void KokkosLCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, combineSoA>::computeOffsets() {
   _cellOffsets.resize(2 * this->_overlap[0] + 1);
 
@@ -232,7 +230,7 @@ inline void KokkosLCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useN
 }
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-    bool combineSoA>
+          bool combineSoA>
 inline void KokkosLCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, combineSoA>::processBaseCell(
     Kokkos::View<ParticleCell *> &cells, unsigned long x, unsigned long y, unsigned long z) {
   unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
@@ -326,7 +324,7 @@ inline void KokkosLCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useN
 }
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-    bool combineSoA>
+          bool combineSoA>
 inline void KokkosLCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, combineSoA>::resizeBuffers() {
   const auto numThreads = static_cast<size_t>(autopas_get_max_threads());
   if (_combinationSlices.size() != numThreads) {
@@ -339,8 +337,9 @@ inline void KokkosLCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useN
 }
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-    bool combineSoA>
-inline void KokkosLCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, combineSoA>::traverseParticlePairs() {
+          bool combineSoA>
+inline void
+KokkosLCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, combineSoA>::traverseParticlePairs() {
   if (not this->isApplicable()) {
     if constexpr (combineSoA) {
       utils::ExceptionHandler::exception(
@@ -354,7 +353,8 @@ inline void KokkosLCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useN
   if constexpr (combineSoA) {
     resizeBuffers();
   }
-  this->c01Traversal([&](unsigned long x, unsigned long y, unsigned long z) { this->processBaseCell(this->_cells, x, y, z); });
+  this->c01Traversal(
+      [&](unsigned long x, unsigned long y, unsigned long z) { this->processBaseCell(this->_cells, x, y, z); });
 }
 
 }  // namespace autopas

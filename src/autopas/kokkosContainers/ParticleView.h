@@ -151,10 +151,10 @@ class ParticleView {
   }
 
   template <bool parallel, typename Lambda>
-  void forEach(Lambda forEachLambda, autopas::KokkosParticleCell<ParticleType> cell, autopas::IteratorBehavior iteratorBehavior, std::string label = "") {
+  void forEach(Lambda forEachLambda, autopas::KokkosParticleCell<ParticleType> cell,
+               autopas::IteratorBehavior iteratorBehavior, std::string label = "") {
     std::array<double, 3> dummy{};
-    _forEach<parallel, true, false>(forEachLambda, iteratorBehavior, cell.getRange(),
-                                     dummy, dummy, label);
+    _forEach<parallel, true, false>(forEachLambda, iteratorBehavior, cell.getRange(), dummy, dummy, label);
   }
 
   template <bool parallel, typename Lambda>

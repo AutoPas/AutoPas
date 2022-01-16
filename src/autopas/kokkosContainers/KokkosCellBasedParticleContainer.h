@@ -157,57 +157,59 @@ class KokkosCellBasedParticleContainer : public ParticleContainerInterface<Parti
   /**
    * @copydoc ParticleContainerInterface::updateHaloParticles()
    */
-  void updateHaloParticles(const std::vector<Particle> &haloParticles, std::vector<Particle> &notUpdatedParticles) override {
+  void updateHaloParticles(const std::vector<Particle> &haloParticles,
+                           std::vector<Particle> &notUpdatedParticles) override {
     size_t numHaloParticles = haloParticles.size();
 
-    //Kokkos: There are only two separate views defined if host and device memory space differ.
+    // Kokkos: There are only two separate views defined if host and device memory space differ.
     Kokkos::View<Particle *> haloParticlesDevice("", numHaloParticles);
     typename Kokkos::View<Particle *>::HostMirror haloParticlesHost = Kokkos::create_mirror_view(haloParticlesDevice);
 
     Kokkos::View<bool *> wasUpdatedDevice("", numHaloParticles);
     typename Kokkos::View<bool *>::HostMirror wasUpdatedHost = Kokkos::create_mirror_view(wasUpdatedDevice);
 
-    Kokkos::parallel_for(Kokkos::RangePolicy<>(0, numHaloParticles), [=] (const size_t i) {
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0, numHaloParticles), [=](const size_t i) {
       Particle p = haloParticles[i];
       p.setOwnershipState(OwnershipState::halo);
       haloParticlesHost[i] = p;
     });
     Kokkos::fence();
 
-    //Kokkos: This is a noop if host and memory space are the same.
+    // Kokkos: This is a noop if host and memory space are the same.
     Kokkos::deep_copy(haloParticlesDevice, haloParticlesHost);
 
     Kokkos::RangePolicy<> rangePolicy(0ul, numHaloParticles);
     auto particles = _particles.getParticles();
-    Kokkos::parallel_for("update halo particles", rangePolicy, KOKKOS_LAMBDA (const size_t i) {
-      Particle haloParticle = haloParticlesDevice[i];
-      size_t begin, end;
-      if (_isDirty) {
-        begin = 0ul;
-        end = _particles.getSize();
-      } else {
-        size_t possibleCell = assignCellToParticle(haloParticle);
-        begin = _cells[possibleCell].begin;
-        end = _cells[possibleCell].cellSize + begin;
-      }
-
-      bool updated = false;
-      for(size_t j = begin; j < end; j++) {
-        Particle p = particles(j);
-        if (p.getID() == haloParticle.getID()) {
-          auto distanceVec = autopas::utils::ArrayMath::sub(p.getR(), haloParticle.getR());
-          auto distanceSqr = autopas::utils::ArrayMath::dot(distanceVec, distanceVec);
-          if (distanceSqr < this->getSkin() * this->getSkin()) {
-            // found the particle -> update, set updated to true and break for loop
-            _particles.getParticles()[j] = haloParticle;
-            updated = true;
-            break;
+    Kokkos::parallel_for(
+        "update halo particles", rangePolicy, KOKKOS_LAMBDA(const size_t i) {
+          Particle haloParticle = haloParticlesDevice[i];
+          size_t begin, end;
+          if (_isDirty) {
+            begin = 0ul;
+            end = _particles.getSize();
+          } else {
+            size_t possibleCell = assignCellToParticle(haloParticle);
+            begin = _cells[possibleCell].begin;
+            end = _cells[possibleCell].cellSize + begin;
           }
-        }
-      }
 
-      wasUpdatedDevice[i] = updated;
-    });
+          bool updated = false;
+          for (size_t j = begin; j < end; j++) {
+            Particle p = particles(j);
+            if (p.getID() == haloParticle.getID()) {
+              auto distanceVec = autopas::utils::ArrayMath::sub(p.getR(), haloParticle.getR());
+              auto distanceSqr = autopas::utils::ArrayMath::dot(distanceVec, distanceVec);
+              if (distanceSqr < this->getSkin() * this->getSkin()) {
+                // found the particle -> update, set updated to true and break for loop
+                _particles.getParticles()[j] = haloParticle;
+                updated = true;
+                break;
+              }
+            }
+          }
+
+          wasUpdatedDevice[i] = updated;
+        });
     Kokkos::fence();
 
     Kokkos::deep_copy(wasUpdatedHost, wasUpdatedDevice);
@@ -222,9 +224,7 @@ class KokkosCellBasedParticleContainer : public ParticleContainerInterface<Parti
 
   virtual size_t assignCellToParticle(Particle &p) = 0;
 
-  bool getIsDirty() override {
-    return _isDirty;
-  }
+  bool getIsDirty() override { return _isDirty; }
 
  protected:
   /**

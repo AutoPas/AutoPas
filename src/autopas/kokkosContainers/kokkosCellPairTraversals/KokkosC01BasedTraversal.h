@@ -1,8 +1,8 @@
 /**
-* @file KokkosC01BasedTraversal.h
-* @author lgaertner
-* @date 29.12.21
-*/
+ * @file KokkosC01BasedTraversal.h
+ * @author lgaertner
+ * @date 29.12.21
+ */
 
 #pragma once
 
@@ -12,15 +12,15 @@
 namespace autopas {
 
 /**
-* This class provides the base for traversals using the c01 base step.
-*
-* The traversal is defined in the function c01Traversal and uses 1 color. Interactions between two cells are allowed
-* only if particles of the first cell are modified. This means that newton3 optimizations are NOT allowed.
-*
-* @tparam ParticleCell the type of cells
-* @tparam PairwiseFunctor The functor that defines the interaction of two particles.
-* @tparam dataLayout indicates usage of SoA
-*/
+ * This class provides the base for traversals using the c01 base step.
+ *
+ * The traversal is defined in the function c01Traversal and uses 1 color. Interactions between two cells are allowed
+ * only if particles of the first cell are modified. This means that newton3 optimizations are NOT allowed.
+ *
+ * @tparam ParticleCell the type of cells
+ * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
+ * @tparam dataLayout indicates usage of SoA
+ */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class KokkosC01BasedTraversal : public KokkosCBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> {
  public:
@@ -33,9 +33,9 @@ class KokkosC01BasedTraversal : public KokkosCBasedTraversal<ParticleCell, Pairw
    * @param cellLength cell length.
    */
   explicit KokkosC01BasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                             double interactionLength, const std::array<double, 3> &cellLength)
-      : KokkosCBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(
-      dims, pairwiseFunctor, interactionLength, cellLength) {}
+                                   double interactionLength, const std::array<double, 3> &cellLength)
+      : KokkosCBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
+                                                                                     interactionLength, cellLength) {}
 
  protected:
   /**

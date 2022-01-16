@@ -82,16 +82,15 @@ class KokkosLinkedCells : public KokkosCellBasedParticleContainer<Particle> {
           p = haloParticle;
           // found the particle, return true
           isFound = true;  // should not run into race conditioning problems (if so consider using OR reduce)
-
         }
       }
     };
 
     if (this->_isDirty) {
-      this->_particles.template forEach<true>(lambda, IteratorBehavior::dummy,
-                                              "KokkosLinkedCells::updateHaloParticle");
+      this->_particles.template forEach<true>(lambda, IteratorBehavior::dummy, "KokkosLinkedCells::updateHaloParticle");
     } else {
-      this->_particles.template forEach<true>(lambda, this->_cells[assignCellToParticle(haloParticle)], IteratorBehavior::dummy);
+      this->_particles.template forEach<true>(lambda, this->_cells[assignCellToParticle(haloParticle)],
+                                              IteratorBehavior::dummy);
     }
     if (not isFound) {
       AutoPasLog(trace, "UpdateHaloParticle was not able to update particle: {}", haloParticle.toString());
@@ -140,15 +139,12 @@ class KokkosLinkedCells : public KokkosCellBasedParticleContainer<Particle> {
           traversal->getTraversalType().to_string());
     }
 
-
     cellPairTraversal->initTraversal();
     cellPairTraversal->traverseParticlePairs();
     cellPairTraversal->endTraversal();
   }
 
-  size_t assignCellToParticle(Particle &p) override {
-    return _cellBlock.get1DIndexOfPosition(p.getR());
-  }
+  size_t assignCellToParticle(Particle &p) override { return _cellBlock.get1DIndexOfPosition(p.getR()); }
 
   std::vector<Particle> updateContainer(bool keepNeighborListsValid) override {
     std::vector<Particle> invalidParticles{};
@@ -176,15 +172,16 @@ class KokkosLinkedCells : public KokkosCellBasedParticleContainer<Particle> {
     if (behavior == IteratorBehavior::ownedOrHalo) {
       this->_particles.template forEach<parallel>(forEachLambda, "KokkosLinkedCells:forEach");
     } else {
-//      if (this->_isDirty) {
-        this->_particles.template forEach<parallel>(forEachLambda, behavior, "KokkosLinkedCells:forEach(behavior)");
-//      }
+      //      if (this->_isDirty) {
+      this->_particles.template forEach<parallel>(forEachLambda, behavior, "KokkosLinkedCells:forEach(behavior)");
+      //      }
       // TODO lgaertner reduce amount of prallel dispatched functions
-//      for (size_t index = 0; index < this->_cells.size(); index++) {
-//        if (not _cellBlock.ignoreCellForIteration(index, behavior)) {
-//          this->_particles.template forEach<parallel>(forEachLambda, this->_cells[index], "KokkosLinkedCells:forEach");
-//        }
-//      }
+      //      for (size_t index = 0; index < this->_cells.size(); index++) {
+      //        if (not _cellBlock.ignoreCellForIteration(index, behavior)) {
+      //          this->_particles.template forEach<parallel>(forEachLambda, this->_cells[index],
+      //          "KokkosLinkedCells:forEach");
+      //        }
+      //      }
     }
   }
 
