@@ -48,8 +48,6 @@ class KokkosLinkedCells : public KokkosCellBasedParticleContainer<Particle> {
 
   CellType getParticleCellTypeEnum() override { return CellType::KokkosParticleCell; }
 
-  bool getIsDirty() { return this->_isDirty; }
-
   /**
    * @copydoc ParticleContainerInterface::addParticleImpl()
    */
@@ -111,7 +109,10 @@ class KokkosLinkedCells : public KokkosCellBasedParticleContainer<Particle> {
    * @copydoc ParticleContainerInterface::rebuildNeighborLists()
    */
   void rebuildNeighborLists(TraversalInterface *traversal) override {
-    // TODO lgaertner
+    this->_particles.template binParticles<true>([&](Particle &p) -> size_t { return assignCellToParticle(p); },
+                                                 this->_cells, "KokkosLinkedCells::updateContainer:");
+
+    this->_isDirty = false;
   }
 
   /**
@@ -138,6 +139,7 @@ class KokkosLinkedCells : public KokkosCellBasedParticleContainer<Particle> {
           "trying to use a traversal of wrong type in KokkosLinkedCells::iteratePairwise " +
           traversal->getTraversalType().to_string());
     }
+
 
     cellPairTraversal->initTraversal();
     cellPairTraversal->traverseParticlePairs();
@@ -166,22 +168,7 @@ class KokkosLinkedCells : public KokkosCellBasedParticleContainer<Particle> {
         },
         IteratorBehavior::owned);
 
-    if (not keepNeighborListsValid) {
-      this->_particles.template binParticles<false>(
-          [&](Particle &p) -> size_t { return assignCellToParticle(p); }, this->_cells,
-          "KokkosLinkedCells::updateContainer:");
-      this->_isDirty = false;
-    }
-
     return invalidParticles;
-  }
-
-  void resortContainerAndDeleteDummies() {
-    this->_particles.template binParticles<true>(
-        [&](Particle &p) -> size_t { return assignCellToParticle(p); }, this->_cells,
-        "KokkosLinkedCells::updateContainer:");
-
-    this->_isDirty = false;
   }
 
   template <bool parallel, typename Lambda>

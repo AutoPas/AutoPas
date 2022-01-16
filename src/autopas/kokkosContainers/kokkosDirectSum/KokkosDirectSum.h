@@ -42,8 +42,6 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
 
   CellType getParticleCellTypeEnum() override { return CellType::KokkosParticleCell; }
 
-  bool getIsDirty() { return this->_isDirty; }
-
   /**
    * @copydoc ParticleContainerInterface::addParticleImpl()
    */
@@ -102,7 +100,11 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
    * @copydoc ParticleContainerInterface::rebuildNeighborLists()
    */
   void rebuildNeighborLists(TraversalInterface *traversal) override {
-    // TODO lgaertner
+    this->_particles.template binParticles<true>([&](Particle &p) -> size_t { return assignCellToParticle(p); },
+                                                 this->_cells, "KokkosDirectSum::updateContainer:");
+
+    inspectContainer();
+    this->_isDirty = false;
   }
 
   /**
@@ -159,14 +161,6 @@ class KokkosDirectSum : public KokkosCellBasedParticleContainer<Particle> {
     }
 
     return invalidParticles;
-  }
-
-  void resortContainerAndDeleteDummies() {
-    this->_particles.template binParticles<true>([&](Particle &p) -> size_t { return assignCellToParticle(p); },
-                                                 this->_cells, "KokkosDirectSum::updateContainer:");
-
-    inspectContainer();
-    this->_isDirty = false;
   }
 
   template <bool parallel, typename Lambda>

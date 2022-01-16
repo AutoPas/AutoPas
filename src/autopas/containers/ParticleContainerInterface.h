@@ -299,14 +299,6 @@ class ParticleContainerInterface {
   [[nodiscard]] virtual std::vector<ParticleType> updateContainer(bool keepNeighborListsValid) = 0;
 
   /**
-   * Resorts the container.
-   * Currently only needed in KokkosCellBasedParticleContainer as updateContainer only marks halo particles as deleted,
-   * but actual deletion only happens here.
-   *
-   */
-  [[nodiscard]] std::vector<ParticleType> resortContainerAndDeleteDummies(bool keepNeighborListsValid){};
-
-  /**
    * Generates a traversal selector info for this container.
    * @return Traversal selector info for this container.
    */
@@ -322,6 +314,8 @@ class ParticleContainerInterface {
   [[nodiscard]] std::set<TraversalOption> getAllTraversals() const {
     return compatibleTraversals::allCompatibleTraversals(this->getContainerType());
   }
+
+  virtual bool getIsDirty() = 0;
 };
 
 }  // namespace autopas
