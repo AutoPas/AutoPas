@@ -354,6 +354,7 @@ inline void KokkosLCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useN
   if constexpr (combineSoA) {
     resizeBuffers();
   }
+  _pairwiseFunctor->setParticles(*(this->_cells[0].particlesPtr));
   this->c01Traversal([&](unsigned long x, unsigned long y, unsigned long z) { this->processBaseCell(this->_cells, x, y, z); });
 }
 

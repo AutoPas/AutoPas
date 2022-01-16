@@ -636,16 +636,29 @@ void Simulation::logMeasurements() {
       addValueToJson(outputStream, "GFLOPs/sec", flops * 1e-9 / (simulate * 1e-9));
       addValueToJson(outputStream, "Hit rate", flopCounterFunctor.getHitRate());
     }
+
     addValueToJson(outputStream, "cellsize", _autoPasContainer->getAllowedCellSizeFactors().getMedian());
-    outputStream << "\"container\":\"KokkosLinkedCells\" \n}";
 
     filename << "_cs" << _autoPasContainer->getAllowedCellSizeFactors().getMedian();
+
+    switch(_configuration.generatorOption.value) {
+      case MDFlexConfig::GeneratorOption::uniform:
+        addValueToJson(outputStream, "generator", "uniform");
+        filename << "_uniform";
+        break;
+      case MDFlexConfig::GeneratorOption::gaussian:
+        addValueToJson(outputStream, "generator", "gaussian");
+        filename << "_gaussian";
+        break;
+    }
+
+    outputStream << "\"container\":\"KokkosLinkedCells\" \n}";
     filename << ".json";
 
-//    std::ofstream jsonFile;
-//    jsonFile.open(filename.str());
-//    jsonFile << outputStream.str();
-//    jsonFile.close();
+    std::ofstream jsonFile;
+    jsonFile.open(filename.str());
+    jsonFile << outputStream.str();
+    jsonFile.close();
   }
 }
 
