@@ -643,11 +643,11 @@ void Simulation::logMeasurements() {
 
     switch (_configuration.generatorOption.value) {
       case MDFlexConfig::GeneratorOption::uniform:
-        addValueToJson(outputStream, "generator", "uniform");
+        addValueToJson(outputStream, "generator", "\"uniform\"");
         filename << "_uniform";
         break;
       case MDFlexConfig::GeneratorOption::gaussian:
-        addValueToJson(outputStream, "generator", "gaussian");
+        addValueToJson(outputStream, "generator", "\"gaussian\"");
         filename << "_gaussian";
         break;
     }
