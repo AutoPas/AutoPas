@@ -143,9 +143,9 @@ inline void KokkosCBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, use
     const unsigned long end_x = end[0], end_y = end[1], end_z = end[2];
 
     std::vector<std::array<size_t, 3>> ranges = {};
-    for (unsigned long z = start[2]; z <= end[2]; z += stride[2]) {
-      for (unsigned long y = start[1]; y <= end[1]; y += stride[1]) {
-        for (unsigned long x = start[0]; x <= end[0]; x += stride[0]) {
+    for (unsigned long z = start[2]; z < end[2]; z += stride[2]) {
+      for (unsigned long y = start[1]; y < end[1]; y += stride[1]) {
+        for (unsigned long x = start[0]; x < end[0]; x += stride[0]) {
           ranges.push_back({x, y, z});
         }
       }
