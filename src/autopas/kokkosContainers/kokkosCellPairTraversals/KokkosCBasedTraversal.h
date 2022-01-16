@@ -146,14 +146,15 @@ inline void KokkosCBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, use
     for (unsigned long z = start[2]; z <= end[2]; z += stride[2]) {
       for (unsigned long y = start[1]; y <= end[1]; y += stride[1]) {
         for (unsigned long x = start[0]; x <= end[0]; x += stride[0]) {
-          ranges.push_back({z, y, x});
+          ranges.push_back({x, y, z});
         }
       }
     }
 
     Kokkos::RangePolicy<> rangePolicy(0, ranges.size());
 
-    Kokkos::parallel_for(rangePolicy, [&](const size_t i) { loopBody(ranges[i][0], ranges[i][1], ranges[i][2]); });
+    Kokkos::parallel_for(
+        rangePolicy, KOKKOS_LAMBDA(const size_t i) { loopBody(ranges[i][0], ranges[i][1], ranges[i][2]); });
 
     Kokkos::fence();
     //    const unsigned long stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
