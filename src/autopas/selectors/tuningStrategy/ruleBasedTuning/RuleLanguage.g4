@@ -17,7 +17,6 @@ Container_opt
                 | 'DirectSum'
                 | 'LinkedCellsReferences'
                 | 'VarVerletListsAsBuild'
-                | 'VerletClusterCells'
                 | 'VerletLists'
                 | 'PairwiseVerletLists'
                 ;
@@ -32,7 +31,9 @@ Traversal_opt
                 ;
 
 Load_estimator_opt
-                : 'None'
+                : 'none'
+                | 'neighbor-list-length'
+                | 'squared-particles-per-cell'
                 ;
 
 Data_layout_opt

@@ -165,7 +165,7 @@ class LiveInfo {
    * Creates a string containing all live info gathered.
    * @return A string containing all live info gathered.
    */
-  [[nodiscard]] std::string toString() {
+  [[nodiscard]] std::string toString() const {
     std::string res{"Live Info: "};
     auto typeToString = [](auto type) {
       if constexpr (std::is_same_v<decltype(type), bool> or std::is_same_v<decltype(type), double> or

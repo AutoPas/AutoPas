@@ -57,15 +57,30 @@ class Option {
    * Converts an Option object to its respective string representation.
    * @return The string representation or "Unknown Option (<IntValue>)".
    */
-  [[nodiscard]] std::string to_string() const {
+  [[nodiscard]] std::string to_string(bool fixedLength = false) const {
     auto &actualThis = *static_cast<const actualOption *>(this);
     auto mapOptNames = actualOption::getOptionNames();  // <- not copying the map destroys the strings
     auto match = mapOptNames.find(actualThis);
     if (match == mapOptNames.end()) {
       return "Unknown Option (" + std::to_string(actualThis) + ")";
     } else {
-      return match->second;
+      std::string result = match->second;
+      if(fixedLength) {
+        result.resize(maxStringLength(), ' ');
+      }
+      return result;
     }
+  }
+
+  [[nodiscard]] static size_t maxStringLength() {
+    static size_t maxLength = 0;
+    if(maxLength == 0) {
+      for(const auto& pair : actualOption::getOptionNames()) {
+        auto& name = pair.second;
+        maxLength = std::max(maxLength, name.size());
+      }
+    }
+    return maxLength;
   }
 
   /**

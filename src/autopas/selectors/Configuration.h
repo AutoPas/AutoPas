@@ -60,8 +60,8 @@ class Configuration {
    * @return A short string representation.
    */
   [[nodiscard]] std::string toShortString() const {
-    return "{" + container.to_string() + " , " + std::to_string(cellSizeFactor) + " , " + traversal.to_string() +
-           " , " + loadEstimator.to_string() + " , " + dataLayout.to_string() + " , " + newton3.to_string() + "}";
+    return "{" + container.to_string(true) + " , " + std::to_string(cellSizeFactor) + " , " + traversal.to_string(true) +
+           " , " + loadEstimator.to_string(true) + " , " + dataLayout.to_string(true) + " , " + newton3.to_string(true) + "}";
   }
 
   /**

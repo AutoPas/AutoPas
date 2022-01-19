@@ -1190,8 +1190,7 @@ std::vector<std::string> RuleLanguageParser::_ruleNames = {
 std::vector<std::string> RuleLanguageParser::_literalNames = {
   "", "'\"'", "'define_list'", "'='", "','", "';'", "'*'", "'/'", "'+'", 
   "'-'", "'>'", "'<'", "'not'", "'and'", "'or'", "'('", "')'", "'define'", 
-  "'['", "']'", "'>='", "'with same'", "'if'", "':'", "'endif'", "", "", 
-  "", "", "'None'"
+  "'['", "']'", "'>='", "'with same'", "'if'", "':'", "'endif'"
 };
 
 std::vector<std::string> RuleLanguageParser::_symbolicNames = {

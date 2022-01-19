@@ -8,6 +8,7 @@
 
 #include <any>
 #include <fstream>
+#include <optional>
 
 #include "TuningStrategyInterface.h"
 
@@ -47,12 +48,16 @@ class TuningStrategyLoggerProxy : public TuningStrategyInterface {
 
 class TuningStrategyLogReplayer {
  public:
-  TuningStrategyLogReplayer(std::string filename, std::unique_ptr<TuningStrategyInterface> tuningStrategy);
+  TuningStrategyLogReplayer(std::string filename, std::shared_ptr<TuningStrategyInterface> tuningStrategy);
 
-  void replay() const;
+  /**
+   *
+   * @return best configuration found, if there is any
+   */
+  std::optional<Configuration> replay();
 
  private:
   std::string _filename;
-  std::unique_ptr<TuningStrategyInterface> _tuningStrategy;
+  std::shared_ptr<TuningStrategyInterface> _tuningStrategy;
 };
 }  // namespace autopas
