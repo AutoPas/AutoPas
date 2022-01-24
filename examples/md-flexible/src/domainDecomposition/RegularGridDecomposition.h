@@ -127,6 +127,12 @@ class RegularGridDecomposition final : public DomainDecomposition {
    */
   void exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer);
 
+  /**
+   * Reflects particles within a reflective skin along a boundary.
+   * @param autoPasContainer: The container, where the migrating particles originate from.
+   */
+  void reflectParticlesAtBoundaries(SharedAutoPasContainer &autoPasContainer);
+
  private:
   /**
    * The number of neighbours of a rectangular domain.
@@ -159,6 +165,17 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * The maximum coordinates of the global domain.
    */
   std::array<double, 3> _globalBoxMax;
+
+  /**
+   * The width of the reflective skin.
+   */
+   double _reflWidth = 0.1;
+
+   /**
+   * Boundary conditions upon the boundary face that is constant in the i^th dimension
+   * To-do: actually replace this with a proper enumeration class
+    */
+   std::array<int, 3> _boundaryType{0,1,1}; // currently 0 for periodic, 1 for reflective
 
   /**
    * The decomposition computed depending on the number of subdomains.
