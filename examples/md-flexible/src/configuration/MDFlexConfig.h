@@ -21,6 +21,7 @@
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/TuningStrategyOption.h"
+#include "src/options/BoundaryTypeOption.h"
 #include "autopas/utils/NumberSet.h"
 #include "src/TypeDefinitions.h"
 #include "src/configuration/objects/CubeClosestPacked.h"

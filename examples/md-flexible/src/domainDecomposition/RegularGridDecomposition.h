@@ -12,6 +12,7 @@
 #include "autopas/AutoPas.h"
 #include "autopas/utils/WrapMPI.h"
 #include "src/TypeDefinitions.h"
+#include "src/options/BoundaryTypeOption.h"
 
 /**
  * This class can be used as a domain decomposition which divides the domain in equal sized rectangular subdomains.
@@ -26,6 +27,8 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param subdivideDimension: Decides if a dimension will be subdivided.
    * @param cutoffWidth: The cutoff width for halo particles.
    * @param skinWidth: The skin width of an autopas container domain.
+   * @param reflWidth: The width of the reflective 'skin' in front of the boundary.
+   * @param boundaryConditions: An array of boundary conditions in the x, y, and z directions.
    */
   RegularGridDecomposition(const std::array<double, 3> &globalBoxMin, const std::array<double, 3> &globalBoxMax,
                            const std::array<bool, 3> &subdivideDimension, const double &cutoffWidth,
