@@ -171,11 +171,11 @@ void Simulation::run() {
 
       updatePositions();
 
-      _domainDecomposition.reflectParticlesAtBoundaries(_autoPasContainer);
-
       _timers.migratingParticleExchange.start();
       _domainDecomposition.exchangeMigratingParticles(_autoPasContainer);
       _timers.migratingParticleExchange.stop();
+
+      _domainDecomposition.reflectParticlesAtBoundaries(_autoPasContainer);
 
       _timers.haloParticleExchange.start();
       _domainDecomposition.exchangeHaloParticles(_autoPasContainer);

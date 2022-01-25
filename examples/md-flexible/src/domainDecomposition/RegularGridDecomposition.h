@@ -29,7 +29,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    */
   RegularGridDecomposition(const std::array<double, 3> &globalBoxMin, const std::array<double, 3> &globalBoxMax,
                            const std::array<bool, 3> &subdivideDimension, const double &cutoffWidth,
-                           const double &skinWidth);
+                           const double &skinWidth, const double &reflWidth, const std::array<autopas::BoundaryTypeOption,3> &boundaryConditions);
 
   /**
    * Destructor.
@@ -167,17 +167,6 @@ class RegularGridDecomposition final : public DomainDecomposition {
   std::array<double, 3> _globalBoxMax;
 
   /**
-   * The width of the reflective skin.
-   */
-   double _reflWidth = 0.1;
-
-   /**
-   * Boundary conditions upon the boundary face that is constant in the i^th dimension
-   * To-do: actually replace this with a proper enumeration class
-    */
-   std::array<int, 3> _boundaryType{0,1,1}; // currently 0 for periodic, 1 for reflective
-
-  /**
    * The decomposition computed depending on the number of subdomains.
    */
   std::array<int, 3> _decomposition;
@@ -224,6 +213,16 @@ class RegularGridDecomposition final : public DomainDecomposition {
   std::array<double, 3> _localBoxMax;
 
   /**
+   * Width of the reflective skin in front of a reflective boundary.
+   */
+   double _reflWidth;
+
+   /**
+    * Boundary condition types.
+    */
+   std::array<autopas::BoundaryTypeOption, 3> _boundaryType;
+
+  /**
    * A temporary buffer used for MPI send requests.
    */
   std::vector<autopas::AutoPas_MPI_Request> _sendRequests;
@@ -267,6 +266,16 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * This needs to be called after initializeLocalDomain.
    */
   void initializeNeighbourIds();
+
+  /**
+   * Initializes the reflective skin width.
+   */
+   void initializeReflWidth(const double &reflWidth);
+
+   /**
+    * Initializes the Boundary Condition types.
+    */
+    void initializeBoundaryConditions(const std::array<autopas::BoundaryTypeOption,3> &boundaryConditions);
 
   /**
    * Updates the local box.

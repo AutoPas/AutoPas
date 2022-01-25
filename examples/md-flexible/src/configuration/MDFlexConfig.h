@@ -385,6 +385,20 @@ class MDFlexConfig {
       true, "periodic-boundaries", true,
       "(De)Activate periodic boundaries. Possible Values: (true false) Default: true."};
   /**
+   * Width of reflective 'skin'
+   */
+  MDFlexOption<double, __LINE__> reflWidth{
+      0.1, "reflWidth", true, "Width of the 'skin' in which particles are reflected off a reflective boundary"
+  };
+  /**
+   * Boundary types.
+   *
+   */
+  MDFlexOption<std::array<autopas::BoundaryTypeOption,3>, __LINE__> boundaryOption{
+      {autopas::BoundaryTypeOption::periodic,autopas::BoundaryTypeOption::periodic,autopas::BoundaryTypeOption::periodic},"boundary-type",
+      false, "Boundary condition types for each of the three dimensions"
+                 };
+  /**
    * dontMeasureFlops
    */
   MDFlexOption<bool, __LINE__> dontMeasureFlops{true, "no-flops", false, "Set to omit the calculation of flops."};

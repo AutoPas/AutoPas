@@ -1,6 +1,9 @@
 box-min                          :  [0, 0, 0]
 box-max                          :  [5, 5, 5]
 
+reflWidth                        :  0.1
+boundary-type                    :  [periodic, reflective, reflective]
+
 iterations                       :  5000
 Objects:
   CubeGrid:
