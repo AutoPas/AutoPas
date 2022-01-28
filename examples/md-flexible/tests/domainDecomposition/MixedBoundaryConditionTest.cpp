@@ -41,7 +41,14 @@ void initializeAutoPasContainer(RegularGridDecomposition::SharedAutoPasContainer
 }  // namespace
 
 /**
- * Simple test designed to show that reflection at a corner between 2 reflective faces works correctly
+ * Simple test designed to show that reflection at a corner between 2 reflective faces works correctly.
+ * Places particles within reflective skin and tests for correct reflective behaviour including for:
+ * - cases where the particle's velocity is away from the boundary
+ * - cases where the particle is in a corner, including
+ *   + reflective/reflective
+ *   + reflective/periodic
+ *   + reflective/reflective/periodic
+ * - cases for both upper and lower boundaries
  */
 TEST_F(MixedBoundaryConditionTest, testSimpleReflection) {
   std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
@@ -56,28 +63,27 @@ TEST_F(MixedBoundaryConditionTest, testSimpleReflection) {
 
   RegularGridDecomposition domainDecomposition(configuration.boxMin.value, configuration.boxMax.value,
                                                configuration.subdivideDimension.value, configuration.cutoff.value,
-                                               configuration.verletSkinRadius.value, configuration.reflWidth.value,
-                                               configuration.boundaryOption.value);
+                                               configuration.verletSkinRadius.value, configuration.boundaryOption.value);
 
   auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
 
   initializeAutoPasContainer(autoPasContainer, configuration);
 
-  std::vector<std::vector<double>> particlePositions = {
+  const std::vector<std::array<double, 3>> particlePositions = {
       {1.0,0.05,1.0}, {2.0,0.05,1.0}, {1.0,0.05,0.05}, {2.0,0.05,0.05}, {4.95,0.05,0.05},
       {4.0,4.95,4.0}, {3.0,4.95,4.0}, {4.0,4.95,4.95}, {3.0,4.95,4.95}, {0.05,4.95,4.95}
   };
-  std::vector<std::vector<double>> particleVelocities = {
+  const std::vector<std::array<double, 3>> particleVelocities = {
       {0.0,-1.0,1.0}, {0.0,1.0,1.0}, {0.0,-1.0,-0.5}, {0.0,-1.0,0.5}, {1.0,-0.5,-0.2},
       {0.0,1.0,-1.0}, {0.0,-1.0,-1.0}, {0.0,1.0,0.5}, {0.0,1.0,-0.5}, {-1.0,0.5,0.2}
   };
 
   size_t id = 0;
-  for (const auto position : particlePositions) {
+  for (const auto &position : particlePositions) {
     ParticleType particle;
     particle.setID(id);
-    particle.setR({position[0], position[1], position[2]});
-    particle.setV({particleVelocities[id][0], particleVelocities[id][1], particleVelocities[id][2]});
+    particle.setR(particlePositions[id]);
+    particle.setV(particleVelocities[id]);
 
     autoPasContainer->addParticle(particle);
 
@@ -86,14 +92,24 @@ TEST_F(MixedBoundaryConditionTest, testSimpleReflection) {
 
   EXPECT_NO_THROW(domainDecomposition.reflectParticlesAtBoundaries(autoPasContainer));
 
-  std::vector<std::array<double, 3>> expectedVelocities = {
-      {0.0,1.0,1.0}, {0.0,1.0,1.0}, {0.0,1.0,0.5}, {0.0,1.0,0.5}, {1.0,0.5,0.2},
-      {0.0,-1.0,-1.0}, {0.0,-1.0,-1.0}, {0.0,-1.0,-0.5}, {0.0,-1.0,-0.5}, {-1.0,-0.5,-0.2}
-  };
+  // derive the expected velocities by reflecting the velocities in the appropriate directions
+  std::vector<std::array<double, 3>> expectedVelocities = particleVelocities;
+  expectedVelocities[0][1] *= -1;
+  // particle 1 should not reflect
+  expectedVelocities[2][1] *= -1; expectedVelocities[2][2] *= -1;
+  expectedVelocities[3][1] *= -1;
+  expectedVelocities[4][1] *= -1; expectedVelocities[4][2] *= -1;
+  expectedVelocities[5][1] *= -1;
+  // particle 6 should not reflect
+  expectedVelocities[7][1] *= -1; expectedVelocities[7][2] *= -1;
+  expectedVelocities[8][1] *= -1;
+  expectedVelocities[9][1] *= -1; expectedVelocities[9][2] *= -1;
+
+
 
   for (auto particle = autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     const auto id = particle->getID();
-    const auto velocity = particle->getV();
+    const auto &velocity = particle->getV();
     EXPECT_NEAR(velocity[0], expectedVelocities[id][0],1e-13);
     EXPECT_NEAR(velocity[1], expectedVelocities[id][1],1e-13);
     EXPECT_NEAR(velocity[2], expectedVelocities[id][2],1e-13);
@@ -105,6 +121,8 @@ TEST_F(MixedBoundaryConditionTest, testSimpleReflection) {
  * Designed to test that exchangeMigratingParticles and exchangeHaloParticles in the mixed boundary case
  * Note: this is not designed to replace the more extensive tests in RegularGridDecompositionTest, but to test the
  * periodic BC in the mixed case.
+ * Places particles in reflective skin and (primarily) outside of periodic boundary to test that particles
+ * translated (as a result of the periodic boundary) and halo particles have the correct reflections.
  */
 TEST_F(MixedBoundaryConditionTest, testPeriodic) {
   std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
@@ -117,21 +135,24 @@ TEST_F(MixedBoundaryConditionTest, testPeriodic) {
   std::array<double, 3> localBoxMin = configuration.boxMin.value;
   std::array<double, 3> localBoxMax = configuration.boxMax.value;
 
+  const std::array<double, 3> boxLength = {configuration.boxMax.value[0] - configuration.boxMin.value[0],
+                                            configuration.boxMax.value[1] - configuration.boxMin.value[1],
+                                            configuration.boxMax.value[2] - configuration.boxMin.value[2]};
+
   RegularGridDecomposition domainDecomposition(configuration.boxMin.value, configuration.boxMax.value,
                                                configuration.subdivideDimension.value, configuration.cutoff.value,
-                                               configuration.verletSkinRadius.value, configuration.reflWidth.value,
-                                               configuration.boundaryOption.value);
+                                               configuration.verletSkinRadius.value, configuration.boundaryOption.value);
 
   auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
 
   initializeAutoPasContainer(autoPasContainer, configuration);
 
   // the last position is purposfully nonsense - it is just to confirm periodic BCs aren't being applied to reflective boundaries
-  std::vector<std::vector<double>> particlePositions = {
+  const std::vector<std::array<double, 3>> particlePositions = {
       {-0.05,0.05,1.0}, {-0.05,0.05,2.0}, {-0.05,0.05,3.0}, {4.95,4.95,4.95}, {5.05,4.95,4.95}, {5.05,5.05,4.95}
   };
 
-  std::vector<std::vector<double>> particleVelocities = {
+  const std::vector<std::array<double, 3>> particleVelocities = {
       {-1.0,-1.0,0.0}, {-1.0,1.0,0.0}, {1.0,-1.0,0.0}, {1.0,1.0,1.0}, {1.0,1.0,1.0}, {1.0,1.0,1.0}
   };
 
@@ -146,8 +167,8 @@ TEST_F(MixedBoundaryConditionTest, testPeriodic) {
 
   for (auto particle = autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     const auto id = particle->getID();
-    particle->setR({particlePositions[id][0], particlePositions[id][1], particlePositions[id][2]});
-    particle->setV({particleVelocities[id][0], particleVelocities[id][1], particleVelocities[id][2]});
+    particle->setR(particlePositions[id]);
+    particle->setV(particleVelocities[id]);
 
   }
 
@@ -155,20 +176,39 @@ TEST_F(MixedBoundaryConditionTest, testPeriodic) {
   EXPECT_NO_THROW(domainDecomposition.reflectParticlesAtBoundaries(autoPasContainer));
   EXPECT_NO_THROW(domainDecomposition.exchangeHaloParticles(autoPasContainer));
 
-  std::vector<std::vector<double>> expectedPositions = {
-      {4.95,0.05,1.0}, {4.95,0.05,2.0}, {4.95,0.05,3.0}, {4.95,4.95,4.95}, {0.05,4.95,4.95}, {0.05,5.05,4.95}
-  };
-  std::vector<std::vector<double>> expectedVelocities = {
-      {-1.0,1.0,0.0}, {-1.0,1.0,0.0}, {1.0,1.0,0.0}, {1.0,-1.0,-1.0}, {1.0,-1.0, -1.0}, {1.0,1.0,-1.0}
-  };
+//  const std::vector<std::array<double, 3>> expectedPositions = {
+//      {4.95,0.05,1.0}, {4.95,0.05,2.0}, {4.95,0.05,3.0}, {4.95,4.95,4.95}, {0.05,4.95,4.95}, {0.05,5.05,4.95}
+//  };
+  // derive the expected positions
+  auto expectedPositions = particlePositions;
+  expectedPositions[0][0] += boxLength[0];
+  expectedPositions[1][0] += boxLength[0];
+  expectedPositions[2][0] += boxLength[0];
+  // particle 3 is not translated across periodic boundary
+  expectedPositions[4][0] -= boxLength[0];
+  expectedPositions[5][0] -= boxLength[0];
 
+  // derive the expected velocities
+  auto expectedVelocities = particleVelocities;
+  expectedVelocities[0][1] *= -1;
+  // particle 1 is not reflected
+  expectedVelocities[2][1] *= -1;
+  expectedVelocities[3][1] *= -1; expectedVelocities[3][2] *= -1;
+  expectedVelocities[4][1] *= -1; expectedVelocities[4][2] *= -1;
+  expectedVelocities[5][2] *= -1;
 
-  std::vector<std::vector<double>> expectedHaloPositions = {
-      {-0.05,0.05,1.0}, {-0.05,0.05,2.0}, {-0.05,0.05,3.0}, {-0.05,4.95,4.95}, {5.05,4.95,4.95}, {5.05,5.05,4.95}
-  };
-  std::vector<std::vector<double>> expectedHaloVelocities = {
-      {-1.0,1.0,0.0}, {-1.0,1.0,0.0}, {1.0,1.0,0.0}, {1.0,-1.0,-1.0}, {1.0,-1.0, -1.0}, {1.0,1.0,-1.0}
-  };
+  // derive expected halo particle positions
+  // except for particle 3, all particles are beyond the periodic boundary, thus they are translated to the other side
+  // of the box. Halo particles are created and translated back across the box to the original position. Thus, the
+  // expected halo positions should map the original position.
+  // Particle 3 is within the box, thus is not translated. A halo particle is still created by translating the position
+  // to the other side of the box.
+  auto expectedHaloPositions = particlePositions;
+  expectedHaloPositions[3][0] -= boxLength[0];
+
+  // derive expected halo particle velocities
+  // these should match completely the velocities of original particles
+  const auto expectedHaloVelocities = expectedVelocities;
 
 
   for (auto particle = autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
@@ -196,3 +236,71 @@ TEST_F(MixedBoundaryConditionTest, testPeriodic) {
   }
 }
 
+/**
+ * Checks that the logic used to decide whether or not to implement a certain boundary condition is not only working in
+ * the case where the boundaries are exclusively periodic or reflective. This should imply that there won't be any
+ * problems with adding additional boundary condition types in the future.
+ *
+ * This test does this by confirming that no periodic or reflective behaviour occurs when no boundary conditions are
+ * used. Two sets of particles are placed, one for the upper and lower boundaries, each of two particles - one just
+ * inside the boundary, the other just outside - and nothing should change.
+ */
+TEST_F(MixedBoundaryConditionTest, testNoBoundary) {
+  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
+                                        std::string(YAMLDIRECTORY) + "noBoundariesTest.yaml"};
+
+  char *argv[3] = {arguments[0].data(), arguments[1].data(), arguments[2].data()};
+
+  MDFlexConfig configuration(3, argv);
+
+  RegularGridDecomposition domainDecomposition(configuration.boxMin.value, configuration.boxMax.value,
+                                               configuration.subdivideDimension.value, configuration.cutoff.value,
+                                               configuration.verletSkinRadius.value, configuration.boundaryOption.value);
+
+  auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
+
+  initializeAutoPasContainer(autoPasContainer, configuration);
+
+  const std::vector<std::array<double, 3>> particlePositions = {
+      {-0.05, 2.5, 2.5}, {0.05, 2.5, 2.5}, {4.95, 2.5, 2.5}, {5.05, 2.5, 2.5}
+  };
+
+  const std::vector<std::array<double, 3>> particleVelocities = {
+      {-1.0, 1.0, 1.0}, {-1.0, 1.0, 1.0}, {1.0, 1.0, 1.0}, {1.0, 1.0, 1.0}
+  };
+
+  size_t id = 0;
+  for (const auto position : particlePositions) {
+    ParticleType particle;
+    particle.setID(id);
+    autoPasContainer->addParticle(particle);
+    ++id;
+  }
+
+  for (auto particle = autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    const auto id = particle->getID();
+    particle->setR(particlePositions[id]);
+    particle->setV(particleVelocities[id]);
+  }
+
+  EXPECT_NO_THROW(domainDecomposition.exchangeMigratingParticles(autoPasContainer));
+  EXPECT_NO_THROW(domainDecomposition.reflectParticlesAtBoundaries(autoPasContainer));
+  EXPECT_NO_THROW(domainDecomposition.exchangeHaloParticles(autoPasContainer));
+
+  // check positions and velocities have not changed
+  for (auto particle = autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    const auto id = particle->getID();
+    const auto position = particle->getR();
+    const auto velocity = particle->getV();
+    EXPECT_NEAR(position[0], particlePositions[id][0],1e-13);
+    EXPECT_NEAR(position[1], particlePositions[id][1],1e-13);
+    EXPECT_NEAR(position[2], particlePositions[id][2],1e-13);
+    EXPECT_NEAR(velocity[0], particleVelocities[id][0],1e-13);
+    EXPECT_NEAR(velocity[1], particleVelocities[id][1],1e-13);
+    EXPECT_NEAR(velocity[2], particleVelocities[id][2],1e-13);
+  }
+
+  // check that there are no halo particles - todo: is there a cleaner way to check this?
+  EXPECT_EQ(false, autoPasContainer->begin(autopas::IteratorBehavior::halo).isValid());
+
+}

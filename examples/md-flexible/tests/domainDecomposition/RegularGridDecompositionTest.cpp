@@ -48,8 +48,8 @@ TEST_F(RegularGridDecompositionTest, testGetLocalDomain) {
   std::array<double, 3> globalBoxMax = {10.0, 10.0, 10.0};
   std::array<bool, 3> subdivideDimension = {true, true, true};
 
-  RegularGridDecomposition domainDecomposition(globalBoxMin, globalBoxMax, subdivideDimension, 0, 0, 0.01,
-                                               {autopas::BoundaryTypeOption::periodic,autopas::BoundaryTypeOption::periodic,autopas::BoundaryTypeOption::periodic});
+  RegularGridDecomposition domainDecomposition(globalBoxMin, globalBoxMax, subdivideDimension, 0, 0,
+                                               {options::BoundaryTypeOption::periodic,options::BoundaryTypeOption::periodic,options::BoundaryTypeOption::periodic});
 
   std::array<double, 3> globalBoxExtend = autopas::utils::ArrayMath::sub(globalBoxMax, globalBoxMin);
 
@@ -96,8 +96,7 @@ TEST_F(RegularGridDecompositionTest, testExchangeHaloParticles) {
 
     RegularGridDecomposition domainDecomposition(configuration.boxMin.value, configuration.boxMax.value,
                                                  configuration.subdivideDimension.value, configuration.cutoff.value,
-                                                 configuration.verletSkinRadius.value, configuration.reflWidth.value,
-                                                 configuration.boundaryOption.value);
+                                                 configuration.verletSkinRadius.value, configuration.boundaryOption.value);
 
     auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
 
@@ -198,8 +197,7 @@ TEST_F(RegularGridDecompositionTest, testExchangeMigratingParticles) {
 
     RegularGridDecomposition domainDecomposition(configuration.boxMin.value, configuration.boxMax.value,
                                                  configuration.subdivideDimension.value, configuration.cutoff.value,
-                                                 configuration.verletSkinRadius.value, configuration.reflWidth.value,
-                                                 configuration.boundaryOption.value);
+                                                 configuration.verletSkinRadius.value, configuration.boundaryOption.value);
 
     auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
 

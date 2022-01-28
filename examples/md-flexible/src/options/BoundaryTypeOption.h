@@ -10,14 +10,11 @@
 
 #include "autopas/options/Option.h"
 
-#include "autopas/utils/StringUtils.h"
-
-namespace autopas {
-inline namespace options {
+namespace options {
 /**
  * Class representing the options of boundary types
  */
- class BoundaryTypeOption : public Option<BoundaryTypeOption> {
+ class BoundaryTypeOption : public autopas::Option<BoundaryTypeOption> {
   public:
    /**
     * Possible choices of boundary condition
@@ -31,6 +28,10 @@ inline namespace options {
       * Reflective.
       */
       reflective,
+     /**
+      * No Boundary.
+      */
+      none
    };
     BoundaryTypeOption() = default;
 
@@ -60,6 +61,7 @@ inline namespace options {
       return {
           {BoundaryTypeOption::periodic, "periodic"},
           {BoundaryTypeOption::reflective, "reflective"},
+          {BoundaryTypeOption::none, "none"}
       };
     }
 
@@ -67,5 +69,4 @@ inline namespace options {
    private:
     Value _value{Value(-1)};
  };
-}
 }

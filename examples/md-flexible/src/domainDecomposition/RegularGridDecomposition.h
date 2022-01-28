@@ -27,12 +27,11 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param subdivideDimension: Decides if a dimension will be subdivided.
    * @param cutoffWidth: The cutoff width for halo particles.
    * @param skinWidth: The skin width of an autopas container domain.
-   * @param reflWidth: The width of the reflective 'skin' in front of the boundary.
    * @param boundaryConditions: An array of boundary conditions in the x, y, and z directions.
    */
   RegularGridDecomposition(const std::array<double, 3> &globalBoxMin, const std::array<double, 3> &globalBoxMax,
-                           const std::array<bool, 3> &subdivideDimension, const double &cutoffWidth,
-                           const double &skinWidth, const double &reflWidth, const std::array<autopas::BoundaryTypeOption,3> &boundaryConditions);
+                           const std::array<bool, 3> &subdivideDimension, double cutoffWidth,
+                           double skinWidth, const std::array<options::BoundaryTypeOption,3> &boundaryConditions);
 
   /**
    * Destructor.
@@ -131,7 +130,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
   void exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer);
 
   /**
-   * Reflects particles within a reflective skin along a boundary.
+   * Reflects particles within a reflective skin along the inside of a boundary.
    * @param autoPasContainer: The container, where the migrating particles originate from.
    */
   void reflectParticlesAtBoundaries(SharedAutoPasContainer &autoPasContainer);
@@ -215,15 +214,10 @@ class RegularGridDecomposition final : public DomainDecomposition {
    */
   std::array<double, 3> _localBoxMax;
 
-  /**
-   * Width of the reflective skin in front of a reflective boundary.
-   */
-   double _reflWidth;
-
    /**
     * Boundary condition types.
     */
-   std::array<autopas::BoundaryTypeOption, 3> _boundaryType;
+   std::array<options::BoundaryTypeOption, 3> _boundaryType;
 
   /**
    * A temporary buffer used for MPI send requests.
@@ -270,15 +264,10 @@ class RegularGridDecomposition final : public DomainDecomposition {
    */
   void initializeNeighbourIds();
 
-  /**
-   * Initializes the reflective skin width.
-   */
-   void initializeReflWidth(const double &reflWidth);
-
    /**
     * Initializes the Boundary Condition types.
     */
-    void initializeBoundaryConditions(const std::array<autopas::BoundaryTypeOption,3> &boundaryConditions);
+    void initializeBoundaryConditions(const std::array<options::BoundaryTypeOption,3> &boundaryConditions);
 
   /**
    * Updates the local box.

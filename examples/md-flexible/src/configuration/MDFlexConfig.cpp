@@ -255,8 +255,6 @@ std::string MDFlexConfig::to_string() const {
   } else {
     os << setw(valueOffset) << left << iterations.name << ":  " << iterations.value << endl;
   }
-  os << setw(valueOffset) << left << boolalpha << periodic.name << ":  " << periodic.value << endl;
-  os << setw(valueOffset) << left << reflWidth.name << ": " << reflWidth.value << endl;
   os << setw(valueOffset) << left << boundaryOption.name << ": " << autopas::utils::ArrayUtils::to_string(boundaryOption.value) << endl;
 
   os << setw(valueOffset) << left << "Objects:" << endl;

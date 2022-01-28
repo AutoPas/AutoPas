@@ -25,8 +25,7 @@ int main(int argc, char **argv) {
 
   RegularGridDecomposition domainDecomposition(configuration.boxMin.value, configuration.boxMax.value,
                                                configuration.subdivideDimension.value, configuration.cutoff.value,
-                                               configuration.verletSkinRadius.value, configuration.reflWidth.value,
-                                               configuration.boundaryOption.value);
+                                               configuration.verletSkinRadius.value, configuration.boundaryOption.value);
 
   if (not configuration.checkpointfile.value.empty()) {
     configuration.flushParticles();

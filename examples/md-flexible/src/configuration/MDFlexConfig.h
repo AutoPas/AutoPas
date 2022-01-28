@@ -379,26 +379,17 @@ class MDFlexConfig {
   MDFlexOption<size_t, __LINE__> tuningPhases{
       0, "tuning-phases", true, "Number of tuning phases to simulate. This option overwrites --iterations."};
   /**
-   * Periodic boundaries.
-   * This starts with a "not" such that it can be used as a flag with a sane default.
-   */
-  MDFlexOption<bool, __LINE__> periodic{
-      true, "periodic-boundaries", true,
-      "(De)Activate periodic boundaries. Possible Values: (true false) Default: true."};
-  /**
    * Width of reflective 'skin'
    */
-  MDFlexOption<double, __LINE__> reflWidth{
-      0.1, "reflWidth", true, "Width of the 'skin' in which particles are reflected off a reflective boundary"
-  };
   /**
    * Boundary types.
-   *
    */
-  MDFlexOption<std::array<autopas::BoundaryTypeOption,3>, __LINE__> boundaryOption{
-      {autopas::BoundaryTypeOption::periodic,autopas::BoundaryTypeOption::periodic,autopas::BoundaryTypeOption::periodic},"boundary-type",
-      false, "Boundary condition types for each of the three dimensions"
-                 };
+  MDFlexOption<std::array<options::BoundaryTypeOption,3>, __LINE__> boundaryOption{
+      {options::BoundaryTypeOption::periodic,options::BoundaryTypeOption::periodic,options::BoundaryTypeOption::periodic}
+      ,"boundary-type",true,
+      "Boundary condition types for each of the three dimensions. Possible Values: "
+          + autopas::utils::ArrayUtils::to_string(options::BoundaryTypeOption::getAllOptions())
+          + " Default: [periodic, periodic, periodic]"};
   /**
    * dontMeasureFlops
    */

@@ -170,6 +170,11 @@ class Simulation {
     autopas::utils::Timer haloParticleExchange;
 
     /**
+     * Records the time required to reflect particles.
+     */
+     autopas::utils::Timer reflectParticlesAtBoundaries;
+
+    /**
      * Records the time required to exchange migrating particles.
      */
     autopas::utils::Timer migratingParticleExchange;
