@@ -159,7 +159,7 @@ class LiveInfo {
    * Returns a map of all infos.
    * @return A map of all infos.
    */
-  [[nodiscard]] const auto &get() { return infos; }
+  [[nodiscard]] const auto &get() const { return infos; }
 
   /**
    * Creates a string containing all live info gathered.
