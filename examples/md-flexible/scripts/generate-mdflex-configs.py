@@ -128,7 +128,7 @@ def isInteresting(domainSize, numParticles, distribution, cutoff, verletSkinToCu
 
     return not (uniformAvgParticlesPerCell > tooDenseThreshold
             or (numParticles == 'very-few' and functor == 'lj-avx')
-            or (distribution == 'closest-packed' and numParticles == 'huge')
+            or (numParticles == 'huge' and distribution != 'uniform-whole')
             #or (cellSizeFactor == 'big')
             #or (cutoff == 'big')
             #or (functor == 'lj-no-avx')
