@@ -4,6 +4,45 @@ import itertools
 import yaml
 from yaml.loader import SafeLoader
 
+template = """
+container                        :  [LinkedCells, LinkedCellsReferences, VarVerletListsAsBuild, VerletClusterLists, VerletLists, VerletListsCells, PairwiseVerletLists]
+verlet-rebuild-frequency         :  20
+verlet-skin-radius               :  0.15
+verlet-cluster-size              :  4
+selector-strategy                :  Fastest-Absolute-Value
+data-layout                      :  [AoS, SoA]
+traversal                        :  [lc_sliced, lc_sliced_balanced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c01_cuda, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18, vcc_cluster_iteration_cuda, vcl_cluster_iteration, vcl_c06, vcl_c01_balanced, vcl_sliced, vcl_sliced_balanced, vcl_sliced_c02, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced, vlc_sliced_balanced, vlc_sliced_c02, vvl_as_built, vlp_c01, vlp_c18, vlp_sliced, vlp_sliced_balanced, vlp_sliced_c02]
+tuning-strategy                  :  full-Search
+mpi-strategy                     :  no-mpi
+tuning-interval                  :  5000
+tuning-samples                   :  3
+tuning-max-evidence              :  10
+functor                          :  Lennard-Jones (12-6) AVX
+newton3                          :  [disabled, enabled]
+cutoff                           :  1
+box-min                          :  [-1.75, -1.75, -1.75]
+box-max                          :  [7.25, 7.25, 7.25]
+cell-size                        :  [1]
+deltaT                           :  0.0
+iterations                       :  10
+periodic-boundaries              :  true
+Objects:                         
+  CubeClosestPacked:
+    0:
+      box-length                 :  [40, 40, 40]
+      bottomLeftCorner           :  [0, 0, 0]
+      particle-spacing           :  0.4
+      velocity                   :  [0, 0, 0]
+      particle-type              :  0
+      particle-epsilon           :  1
+      particle-sigma             :  1
+      particle-mass              :  1
+log-level                        :  info
+no-flops                         :  true
+no-end-config                    :  true
+no-progress-bar                  :  true
+"""
+
 def make_object(domainSize, numParticles, distribution):
     if distribution[0] == 'uniform':
         objectSize = [dSize * distr for (dSize, distr) in zip(domainSize, distribution[1:4])]
@@ -18,12 +57,12 @@ def make_object(domainSize, numParticles, distribution):
         return cubeUniform
 
     elif distribution[0] == 'gauss':
-        distrMean = [size / distribution[1] for size in domainSize]
-        distrStddev = [size / distribution[2] for size in domainSize]
+        distrMean = [size * distribution[1] for size in domainSize]
+        distrStddev = [size * distribution[2] for size in domainSize]
         cubeGauss = {'CubeGauss': {0: {'distribution-mean': distrMean,
-                                               'distribution-stddeviation': [distrStddev],
+                                               'distribution-stddeviation': distrStddev,
                                                'numberOfParticles': numParticles,
-                                               'box-length': domainSize,
+                                               'box-length': domainSize.copy(),
                                                'bottomLeftCorner': [0, 0, 0],
                                                'velocity': [0, 0, 0],
                                                'particle-type': 0,
@@ -50,22 +89,21 @@ def make_object(domainSize, numParticles, distribution):
 
 def generate(domainSize, numParticles, distribution, cutoff, verletSkinToCutoffFactor, rebuildFrequencySkinFactorFactor,
              functor, cellSizeFactor):
-    with open('/home/tobias/tmp/tuning-data/template.yaml') as fileInput:
-        data = yaml.load(fileInput, Loader=SafeLoader)
-        data['box-max'] = domainSize
-        data['cutoff'] = cutoff
-        skin = cutoff * verletSkinToCutoffFactor
-        data['verlet-skin-radius'] = skin
-        data['verlet-rebuild-frequency'] = int(rebuildFrequencySkinFactorFactor * verletSkinToCutoffFactor)
-        data['functor'] = functor
-        data['cell-size'] = [cellSizeFactor]
-        data['Objects'] = make_object(domainSize, numParticles, distribution)
+    data = yaml.load(template, Loader=SafeLoader)
+    data['box-max'] = domainSize
+    data['cutoff'] = cutoff
+    skin = cutoff * verletSkinToCutoffFactor
+    data['verlet-skin-radius'] = skin
+    data['verlet-rebuild-frequency'] = int(rebuildFrequencySkinFactorFactor * verletSkinToCutoffFactor)
+    data['functor'] = functor
+    data['cell-size'] = [cellSizeFactor]
+    data['Objects'] = make_object(domainSize, numParticles, distribution)
 
-        outFilename = str(domainSize) + '-' + str(numParticles) + '-' + str(distribution) + '-' + str(cutoff) + '-' \
-                      + str(verletSkinToCutoffFactor) + '-' + str(rebuildFrequencySkinFactorFactor) + '-' \
-                      + functor + '-' + str(cellSizeFactor) + '.yaml'
-        with open(outFilename, 'w') as fileOutput:
-            yaml.dump(data, fileOutput, sort_keys=False)
+    outFilename = str(domainSize) + '-' + str(numParticles) + '-' + str(distribution) + '-' + str(cutoff) + '-' \
+                  + str(verletSkinToCutoffFactor) + '-' + str(rebuildFrequencySkinFactorFactor) + '-' \
+                  + functor + '-' + str(cellSizeFactor) + '.yaml'
+    with open(outFilename, 'w') as fileOutput:
+        yaml.dump(data, fileOutput, sort_keys=False)
 
 domainSizes = {'small': [5, 5, 5], 'middle': [25, 25, 25], 'big': [80, 80, 80], 'long': [10, 20, 60]}
 particleCounts = {'very-few': 534, 'few': 12193, 'low-normal': 71034, 'high-normal': 230909, 'many': 1092804,
