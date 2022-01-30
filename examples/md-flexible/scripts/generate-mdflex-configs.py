@@ -5,13 +5,13 @@ import yaml
 from yaml.loader import SafeLoader
 
 template = """
-container                        :  [LinkedCells, LinkedCellsReferences, VarVerletListsAsBuild, VerletClusterLists, VerletLists, VerletListsCells, PairwiseVerletLists]
+container                        :  [LinkedCells, LinkedCellsReferences, VarVerletListsAsBuild, VerletClusterLists, VerletLists, VerletListsCells, PairwiseVerletLists Octree]
 verlet-rebuild-frequency         :  20
 verlet-skin-radius               :  0.15
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [AoS, SoA]
-traversal                        :  [lc_sliced, lc_sliced_balanced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c01_cuda, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18, vcc_cluster_iteration_cuda, vcl_cluster_iteration, vcl_c06, vcl_c01_balanced, vcl_sliced, vcl_sliced_balanced, vcl_sliced_c02, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced, vlc_sliced_balanced, vlc_sliced_c02, vvl_as_built, vlp_c01, vlp_c18, vlp_sliced, vlp_sliced_balanced, vlp_sliced_c02]
+traversal                        :  [lc_sliced, lc_sliced_balanced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c01_cuda, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18, vcc_cluster_iteration_cuda, vcl_cluster_iteration, vcl_c06, vcl_c01_balanced, vcl_sliced, vcl_sliced_balanced, vcl_sliced_c02, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced, vlc_sliced_balanced, vlc_sliced_c02, vvl_as_built, vlp_c01, vlp_c18, vlp_sliced, vlp_sliced_balanced, vlp_sliced_c02, ot_c01, ot_c18]
 tuning-strategy                  :  full-Search
 mpi-strategy                     :  no-mpi
 tuning-interval                  :  5000
