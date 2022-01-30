@@ -107,7 +107,7 @@ def generate(domainSize, numParticles, distribution, cutoff, verletSkinToCutoffF
 
 domainSizes = {'small': [5, 5, 5], 'middle': [25, 25, 25], 'big': [80, 80, 80], 'long': [10, 20, 60]}
 particleCounts = {'very-few': 534, 'few': 12193, 'low-normal': 71034, 'high-normal': 230909, 'many': 1092804,
-                  'huge': 8923403}
+                  'huge': 4923403}
 distributions = {'uniform-whole': ('uniform', 1, 1, 1),
                  'uniform-strip': ('uniform', 0.4, 0.6, 1),
                  'concentrated-gauss': ('gauss', 0.75, 0.25),
@@ -128,6 +128,7 @@ def isInteresting(domainSize, numParticles, distribution, cutoff, verletSkinToCu
 
     return not (uniformAvgParticlesPerCell > tooDenseThreshold
             or (numParticles == 'very-few' and functor == 'lj-avx')
+            or (distribution == 'closest-packed' and numParticles == 'huge')
             #or (cellSizeFactor == 'big')
             #or (cutoff == 'big')
             #or (functor == 'lj-no-avx')
