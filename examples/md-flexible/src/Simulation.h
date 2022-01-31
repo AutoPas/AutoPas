@@ -114,16 +114,6 @@ class Simulation {
     autopas::utils::Timer forceUpdateTotal;
 
     /**
-     * Records the time used for the pairwise force update of all particles.
-     */
-    autopas::utils::Timer forceUpdatePairwise;
-
-    /**
-     * Records the time used for the update of the global forces of all particles.
-     */
-    autopas::utils::Timer forceUpdateGlobal;
-
-    /**
      * Records the time used for the force update of all particles during the tuning iterations.
      */
     autopas::utils::Timer forceUpdateTuning;
@@ -253,20 +243,6 @@ class Simulation {
   RegularGridDecomposition _domainDecomposition;
 
   /**
-   * Sends particles of type ParticleType to a specific receiver.
-   * @param particles: The particles to be sent to the receiver.
-   * @param receiver: The recipient of the particles.
-   */
-  void sendParticles(std::vector<ParticleType> &particles, int &receiver);
-
-  /**
-   * Receives particels of type ParticleType which have been send by a specific sender.
-   * @param receivedParticles: The container where the received particles will be stored.
-   * @param source: The sender of the particles.
-   */
-  void receiveParticles(std::vector<ParticleType> &receivedParticles, int &source);
-
-  /**
    * If MPI is enabled, accumulates the times of all ranks on rank 0.
    * Otherwise, this function does nothing.
    * @param time: the time to accumulate.
@@ -288,15 +264,9 @@ class Simulation {
 
   /**
    * Calculates the pairwise forces between particles in the autopas container.
-   * @param wasTuningIteration Tells the user if the current iteration of force calculations was a tuning iteration.
+   * @return Tells the user if the current iteration of force calculations was a tuning iteration.
    */
-  void calculatePairwiseForces(bool &wasTuningIteration);
-
-  /**
-   * Adds global forces to the particles in the container.
-   * @param globalForce The global force which will be applied to each particle in the container.
-   */
-  void calculateGlobalForces(const std::array<double, 3> &globalForce);
+  bool calculatePairwiseForces();
 
   /**
    * Indicates if enough iterations were completed yet.
