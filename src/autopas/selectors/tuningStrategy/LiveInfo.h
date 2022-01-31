@@ -57,11 +57,14 @@ class LiveInfo {
    * - maxParticlesPerCell: The maximum number of particles a cell in the domain contains.
    * - avgParticlesPerCell: The average number of particles per cell. (Cells are small so we don't expect outliers
    * that make the average useless).
+   * - estimatedNumNeighborInteractions: Rough estimation of number of neighbor interactions. Assumes that neighboring
+   * cells contain roughly the same number of particles. Estimation does not work well if this is not the case.
    * - percentParticlesPerCellStdDev: The standard deviation of the number of particles in each cell from the
    * average number of particles per cell, divided by the avgParticlesPerCell.
    * -percentParticlesPerBlurredCellStdDev: The standard deviation of the number of particles in each blurred cell,
    * divided by the average number of particles per blurred cell. A blurred cell is exactly 1/27th of the domain.
    * - threadCount: The number of threads that can be used.
+   * - rebuildFrequency: The current verlet-rebuild-frequency of the simulation.
    *
    * @tparam Particle The type of particle the container stores.
    * @tparam PairwiseFunctor The type of functor.
@@ -69,10 +72,12 @@ class LiveInfo {
    * @param functor The functor to gather the infos from.
    */
   template <class Particle, class PairwiseFunctor>
-  void gather(const autopas::ParticleContainerInterface<Particle> &container, const PairwiseFunctor &functor) {
+  void gather(const autopas::ParticleContainerInterface<Particle> &container, const PairwiseFunctor &functor,
+              unsigned int rebuildFrequency) {
     infos["numParticles"] = container.getNumParticles();
     infos["cutoff"] = container.getCutoff();
     infos["skin"] = container.getSkin();
+    infos["rebuildFrequency"] = rebuildFrequency;
     auto domainSize = utils::ArrayMath::sub(container.getBoxMax(), container.getBoxMin());
 
     infos["domainSizeX"] = domainSize[0];
@@ -111,6 +116,7 @@ class LiveInfo {
 
     auto avg = static_cast<double>(container.getNumParticles() - particleBins.back()) / static_cast<double>(numCells);
     auto avgBlurred = static_cast<double>(container.getNumParticles() - particleBins.back()) / 27;
+    double estimatedNumNeighborInteractions = 0;
     double maxDiff = 0;
     double sumStddev = 0;
     size_t numEmptyCells = 0;
@@ -120,6 +126,8 @@ class LiveInfo {
       size_t particlesInBin = particleBins[i];
       if (particlesInBin == 0) {
         numEmptyCells++;
+      } else {
+        estimatedNumNeighborInteractions += static_cast<double>(particlesInBin * (particlesInBin * 27 - 1)) * 0.155;
       }
       if (particlesInBin > maxParticlesPerCell) {
         maxParticlesPerCell = particlesInBin;
@@ -133,11 +141,14 @@ class LiveInfo {
       }
       sumStddev += diff * diff;
     }
+    estimatedNumNeighborInteractions /= 2;
+
     infos["numEmptyCells"] = numEmptyCells;
     infos["maxParticlesPerCell"] = maxParticlesPerCell;
     infos["minParticlesPerCell"] = minParticlesPerCell;
     infos["particlesPerCellStdDev"] = std::sqrt(sumStddev) / static_cast<double>(particleBins.size() - 1) / avg;
     infos["avgParticlesPerCell"] = avg;
+    infos["estimatedNumNeighborInteractions"] = static_cast<unsigned long>(estimatedNumNeighborInteractions);
 
     double sumStddevBlurred = 0;
     for (auto numParticlesInBin : particleBinsBlurred) {
