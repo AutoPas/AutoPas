@@ -181,6 +181,7 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
   }
 }
 
+
 void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer) {
   auto emigrants = autoPasContainer->updateContainer();
 

@@ -230,12 +230,6 @@ class RegularGridDecomposition final : public DomainDecomposition {
   std::vector<std::vector<char>> _sendBuffers;
 
   /**
-   * Initializes the decomposition of the domain.
-   * This needs to be called before initializeMPICommunicator.
-   */
-  void initializeDecomposition();
-
-  /**
    * Initializes the MPI communicator.
    * This needs to be called before initializeLocalDomain.
    */
@@ -248,11 +242,6 @@ class RegularGridDecomposition final : public DomainDecomposition {
   void initializeLocalDomain();
 
   /**
-   * Initializes the global domain coordinates.
-   */
-  void initializeGlobalBox(const std::array<double, 3> &globalBoxMin, const std::array<double, 3> &globalBoxMax);
-
-  /**
    * Initializes the local domain coordinates.
    * This needs to be called after initializeLocalDomain and initialzieGlobalDomain.
    */
@@ -263,11 +252,6 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * This needs to be called after initializeLocalDomain.
    */
   void initializeNeighbourIds();
-
-   /**
-    * Initializes the Boundary Condition types.
-    */
-    void initializeBoundaryConditions(const std::array<options::BoundaryTypeOption,3> &boundaryConditions);
 
   /**
    * Updates the local box.
