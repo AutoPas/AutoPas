@@ -121,7 +121,8 @@ class LogToSQLiteWriter {
             << toStr(d.at("particleSizeNeededByFunctor")) << ","
             << toStr(d.at("particlesPerBlurredCellStdDev")) << ","
             << toStr(d.at("particlesPerCellStdDev")) << ","
-            << toStr(d.at("skin")) << "," << toStr(d.at("threadCount"))
+            << toStr(d.at("skin")) << "," << toStr(d.at("threadCount")) << ","
+            << toStr(d.at("rebuildFrequency")) << "," << toStr(d.at("estimatedNumNeighborInteractions"))
             << ")";
         sepScenarios = ',';
       } else if (type == "reset" || in.eof()) {
@@ -174,7 +175,9 @@ CREATE TABLE ScenarioRaw (
   particlesPerBlurredCellStdDev FLOAT,
   particlesPerCellStdDev FLOAT,
   skin FLOAT,
-  threadCount INTEGER
+  threadCount INTEGER,
+  rebuildFrequency INTEGER,
+  estimatedNumNeighborInteractions INTEGER
 );
 CREATE TABLE MeasurementRaw (
   scenario VARCHAR(1024),
