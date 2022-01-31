@@ -251,15 +251,6 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         createZSHCompletionFile(relevantOptions);
         return MDFlexParser::exitCodes::completionsFlagFound;
       }
-      case decltype(boundaryGlobalType)::getoptChar: {
-        if (strArg.find("periodic") != string::npos) {
-          config.boundaryOption.value = { options::BoundaryTypeOption::periodic, options::BoundaryTypeOption::periodic, options::BoundaryTypeOption::periodic };
-        } else if (strArg.find("reflective") != string::npos) {
-          config.boundaryOption.value = { options::BoundaryTypeOption::reflective, options::BoundaryTypeOption::reflective, options::BoundaryTypeOption::reflective };
-        } else if (strArg.find("none") != string::npos) {
-          config.boundaryOption.value = { options::BoundaryTypeOption::none, options::BoundaryTypeOption::none, options::BoundaryTypeOption::none };
-        }
-      }
       case decltype(config.iterations)::getoptChar: {
         try {
           config.iterations.value = stoul(strArg);
@@ -544,6 +535,16 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           displayHelp = true;
         }
         break;
+      }
+      case decltype(boundaryGlobalType)::getoptChar: {
+        auto parsedOptions = options::BoundaryTypeOption::parseOptions((strArg));
+        if (parsedOptions.size() != 1) {
+          cerr << "Pass only one boundary condition. For mixed boundary conditions, use a .yaml file for configuration." << endl
+               << "Passed: " << strArg << endl
+               << "Parsed: " << autopas::utils::ArrayUtils::to_string(parsedOptions) << endl;
+          displayHelp = true;
+        }
+        config.boundaryOption.value = {*parsedOptions.begin(),*parsedOptions.begin(),*parsedOptions.begin()};
       }
 
       default: {
