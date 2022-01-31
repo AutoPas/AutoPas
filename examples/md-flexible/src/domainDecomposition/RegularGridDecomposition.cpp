@@ -19,7 +19,7 @@
 RegularGridDecomposition::RegularGridDecomposition(const std::array<double, 3> &globalBoxMin,
                                                    const std::array<double, 3> &globalBoxMax,
                                                    const std::array<bool, 3> &subdivideDimension,
-                                                   double cutoffWidth, const double skinWidth,
+                                                   double cutoffWidth, double skinWidth,
                                                    const std::array<options::BoundaryTypeOption,3> &boundaryConditions)
     : _cutoffWidth(cutoffWidth), _skinWidth(skinWidth), _globalBoxMin(globalBoxMin), _globalBoxMax(globalBoxMax),
       _boundaryType(boundaryConditions){

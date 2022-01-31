@@ -20,6 +20,10 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
   const static auto helpOption{MDFlexConfig::MDFlexOption<std::string, -2>("", "help", false, "Display this message.")};
   const static auto zshCompletionsOption{
       MDFlexConfig::MDFlexOption<std::string, -3>("", "zsh-completions", false, "Generate completions file for zsh.")};
+  const static auto boundaryGlobalType{
+      MDFlexConfig::MDFlexOption<options::BoundaryTypeOption, -4>(options::BoundaryTypeOption::periodic, "boundary-global-type", true, "Boundary condition type used for *all* boundaries. Possible Values: "
+                                                                                                                                           + autopas::utils::ArrayUtils::to_string(options::BoundaryTypeOption::getAllOptions())
+                                                                  + " Default: periodic")};
 
   // the following, shorter version does not work with icpc 2019.4.243. Error:
   // error: class template name must be a placeholder for the complete type being initialized
@@ -39,7 +43,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.verletSkinRadius, config.particleSpacing, config.tuningSamples, config.traversalOptions,
       config.tuningStrategyOption, config.mpiStrategyOption, config.useThermostat, config.verletRebuildFrequency,
       config.vtkFileName, config.vtkWriteFrequency, config.selectorStrategy, config.yamlFilename,
-      config.distributionStdDev, config.globalForce, zshCompletionsOption, helpOption)};
+      config.distributionStdDev, config.globalForce, boundaryGlobalType, zshCompletionsOption, helpOption)};
 
   constexpr auto relevantOptionsSize = std::tuple_size_v<decltype(relevantOptions)>;
 
@@ -246,6 +250,15 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         // generate the completions file and do nothing else
         createZSHCompletionFile(relevantOptions);
         return MDFlexParser::exitCodes::completionsFlagFound;
+      }
+      case decltype(boundaryGlobalType)::getoptChar: {
+        if (strArg.find("periodic") != string::npos) {
+          config.boundaryOption.value = { options::BoundaryTypeOption::periodic, options::BoundaryTypeOption::periodic, options::BoundaryTypeOption::periodic };
+        } else if (strArg.find("reflective") != string::npos) {
+          config.boundaryOption.value = { options::BoundaryTypeOption::reflective, options::BoundaryTypeOption::reflective, options::BoundaryTypeOption::reflective };
+        } else if (strArg.find("none") != string::npos) {
+          config.boundaryOption.value = { options::BoundaryTypeOption::none, options::BoundaryTypeOption::none, options::BoundaryTypeOption::none };
+        }
       }
       case decltype(config.iterations)::getoptChar: {
         try {
