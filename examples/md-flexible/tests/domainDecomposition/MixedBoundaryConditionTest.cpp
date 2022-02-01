@@ -51,25 +51,27 @@ void initializeAutoPasContainer(RegularGridDecomposition::SharedAutoPasContainer
  * - cases for both upper and lower boundaries
  */
 TEST_F(MixedBoundaryConditionTest, testSimpleReflection) {
-  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
-                                        std::string(YAMLDIRECTORY) + "reflectionTest.yaml"};
+  // initialise AutoPas container & domainDecomposition
+  const std::array<double,3> boxMin = {0.,0.,0.};
+  const std::array<double,3> boxMax = {5.,5.,5.};
+  const std::array<double,3> boxLength = {boxMax[0] - boxMin[0],boxMax[1] - boxMin[1],boxMax[2] - boxMin[2]};
+  const std::array<bool,3> subdivideDimension = {true,true,true};
+  const double cutoffWidth = 2.;
+  const double skinWidth = 0.2;
+  const std::array<options::BoundaryTypeOption,3> boundaryConditions =
+      {options::BoundaryTypeOption::periodic,options::BoundaryTypeOption::reflective,options::BoundaryTypeOption::reflective};
 
-  std::cout << std::string(YAMLDIRECTORY);
-
-  char *argv[3] = {arguments[0].data(), arguments[1].data(), arguments[2].data()};
-
-  MDFlexConfig configuration(3, argv);
-
-  std::array<double, 3> localBoxMin = configuration.boxMin.value;
-  std::array<double, 3> localBoxMax = configuration.boxMax.value;
-
-  RegularGridDecomposition domainDecomposition(configuration.boxMin.value, configuration.boxMax.value,
-                                               configuration.subdivideDimension.value, configuration.cutoff.value,
-                                               configuration.verletSkinRadius.value, configuration.boundaryOption.value);
+  RegularGridDecomposition domainDecomposition(boxMin, boxMax, subdivideDimension,
+                                               cutoffWidth, skinWidth,boundaryConditions);
 
   auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
 
-  initializeAutoPasContainer(autoPasContainer, configuration);
+  //initializeAutoPasContainer(autoPasContainer, configuration);
+  autoPasContainer->setBoxMin(boxMin);
+  autoPasContainer->setBoxMax(boxMax);
+  autoPasContainer->setCutoff(cutoffWidth);
+  autoPasContainer->setVerletSkin(skinWidth);
+  autoPasContainer->init();
 
   const std::vector<std::array<double, 3>> particlePositions = {
       {1.0,0.05,1.0}, {2.0,0.05,1.0}, {1.0,0.05,0.05}, {2.0,0.05,0.05}, {4.95,0.05,0.05},
@@ -127,27 +129,27 @@ TEST_F(MixedBoundaryConditionTest, testSimpleReflection) {
  * translated (as a result of the periodic boundary) and halo particles have the correct reflections.
  */
 TEST_F(MixedBoundaryConditionTest, testPeriodic) {
-  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
-                                        std::string(YAMLDIRECTORY) + "reflectionTest.yaml"};
+  // initialise AutoPas container & domainDecomposition
+  const std::array<double,3> boxMin = {0.,0.,0.};
+  const std::array<double,3> boxMax = {5.,5.,5.};
+  const std::array<double,3> boxLength = {boxMax[0] - boxMin[0],boxMax[1] - boxMin[1],boxMax[2] - boxMin[2]};
+  const std::array<bool,3> subdivideDimension = {true,true,true};
+  const double cutoffWidth = 2.;
+  const double skinWidth = 0.2;
+  const std::array<options::BoundaryTypeOption,3> boundaryConditions =
+      {options::BoundaryTypeOption::periodic,options::BoundaryTypeOption::reflective,options::BoundaryTypeOption::reflective};
 
-  char *argv[3] = {arguments[0].data(), arguments[1].data(), arguments[2].data()};
-
-  MDFlexConfig configuration(3, argv);
-
-  std::array<double, 3> localBoxMin = configuration.boxMin.value;
-  std::array<double, 3> localBoxMax = configuration.boxMax.value;
-
-  const std::array<double, 3> boxLength = {configuration.boxMax.value[0] - configuration.boxMin.value[0],
-                                            configuration.boxMax.value[1] - configuration.boxMin.value[1],
-                                            configuration.boxMax.value[2] - configuration.boxMin.value[2]};
-
-  RegularGridDecomposition domainDecomposition(configuration.boxMin.value, configuration.boxMax.value,
-                                               configuration.subdivideDimension.value, configuration.cutoff.value,
-                                               configuration.verletSkinRadius.value, configuration.boundaryOption.value);
+  RegularGridDecomposition domainDecomposition(boxMin, boxMax, subdivideDimension,
+                                               cutoffWidth, skinWidth,boundaryConditions);
 
   auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
 
-  initializeAutoPasContainer(autoPasContainer, configuration);
+  //initializeAutoPasContainer(autoPasContainer, configuration);
+  autoPasContainer->setBoxMin(boxMin);
+  autoPasContainer->setBoxMax(boxMax);
+  autoPasContainer->setCutoff(cutoffWidth);
+  autoPasContainer->setVerletSkin(skinWidth);
+  autoPasContainer->init();
 
   // the last position is purposfully nonsense - it is just to confirm periodic BCs aren't being applied to reflective boundaries
   const std::vector<std::array<double, 3>> particlePositions = {
@@ -248,19 +250,26 @@ TEST_F(MixedBoundaryConditionTest, testPeriodic) {
  * inside the boundary, the other just outside - and nothing should change.
  */
 TEST_F(MixedBoundaryConditionTest, testNoBoundary) {
-  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename", std::string(YAMLDIRECTORY) + "noBoundariesTest.yaml"};
+  // initialise AutoPas container & domainDecomposition
+  const std::array<double,3> boxMin = {0.,0.,0.};
+  const std::array<double,3> boxMax = {5.,5.,5.};
+  const std::array<bool,3> subdivideDimension = {true,true,true};
+  const double cutoffWidth = 2.;
+  const double skinWidth = 0.2;
+  const std::array<options::BoundaryTypeOption,3> boundaryConditions =
+      {options::BoundaryTypeOption::none,options::BoundaryTypeOption::none,options::BoundaryTypeOption::none};
 
-  char *argv[3] = {&arguments[0][0], &arguments[1][0], &arguments[2][0]};
-
-  MDFlexConfig configuration(3, argv);
-
-  RegularGridDecomposition domainDecomposition(configuration.boxMin.value, configuration.boxMax.value,
-                                               configuration.subdivideDimension.value, configuration.cutoff.value,
-                                               configuration.verletSkinRadius.value, configuration.boundaryOption.value);
+  RegularGridDecomposition domainDecomposition(boxMin, boxMax, subdivideDimension,
+                                               cutoffWidth, skinWidth,boundaryConditions);
 
   auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
 
-  initializeAutoPasContainer(autoPasContainer, configuration);
+  //initializeAutoPasContainer(autoPasContainer, configuration);
+  autoPasContainer->setBoxMin(boxMin);
+  autoPasContainer->setBoxMax(boxMax);
+  autoPasContainer->setCutoff(cutoffWidth);
+  autoPasContainer->setVerletSkin(skinWidth);
+  autoPasContainer->init();
 
   const std::vector<std::array<double, 3>> particlePositions = {
       {-0.05, 2.5, 2.5}, {0.05, 2.5, 2.5}, {4.95, 2.5, 2.5}, {5.05, 2.5, 2.5}

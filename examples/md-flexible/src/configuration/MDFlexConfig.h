@@ -379,9 +379,6 @@ class MDFlexConfig {
   MDFlexOption<size_t, __LINE__> tuningPhases{
       0, "tuning-phases", true, "Number of tuning phases to simulate. This option overwrites --iterations."};
   /**
-   * Width of reflective 'skin'
-   */
-  /**
    * Boundary types.
    */
   MDFlexOption<std::array<options::BoundaryTypeOption,3>, __LINE__> boundaryOption{
