@@ -54,6 +54,8 @@ TEST_F(MixedBoundaryConditionTest, testSimpleReflection) {
   std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
                                         std::string(YAMLDIRECTORY) + "reflectionTest.yaml"};
 
+  std::cout << std::string(YAMLDIRECTORY);
+
   char *argv[3] = {arguments[0].data(), arguments[1].data(), arguments[2].data()};
 
   MDFlexConfig configuration(3, argv);
@@ -246,10 +248,9 @@ TEST_F(MixedBoundaryConditionTest, testPeriodic) {
  * inside the boundary, the other just outside - and nothing should change.
  */
 TEST_F(MixedBoundaryConditionTest, testNoBoundary) {
-  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
-                                        std::string(YAMLDIRECTORY) + "noBoundariesTest.yaml"};
+  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename", std::string(YAMLDIRECTORY) + "noBoundariesTest.yaml"};
 
-  char *argv[3] = {arguments[0].data(), arguments[1].data(), arguments[2].data()};
+  char *argv[3] = {&arguments[0][0], &arguments[1][0], &arguments[2][0]};
 
   MDFlexConfig configuration(3, argv);
 

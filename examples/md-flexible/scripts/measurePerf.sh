@@ -143,7 +143,7 @@ do
                             --no-progress-bar \
                             --particle-generator uniform \
                             --particles-total ${Mols[$i]} \
-                            --boundary-global-type none \
+                            --boundary-type none \
                             --traversal ${!t} \
                             --tuning-interval $(( ${thisReps} + 1 )) \
                             --verlet-rebuild-frequency ${VLRebuild[$iVL]} \

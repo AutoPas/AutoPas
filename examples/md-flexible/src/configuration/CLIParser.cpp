@@ -20,10 +20,6 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
   const static auto helpOption{MDFlexConfig::MDFlexOption<std::string, -2>("", "help", false, "Display this message.")};
   const static auto zshCompletionsOption{
       MDFlexConfig::MDFlexOption<std::string, -3>("", "zsh-completions", false, "Generate completions file for zsh.")};
-  const static auto boundaryGlobalType{
-      MDFlexConfig::MDFlexOption<options::BoundaryTypeOption, -4>(options::BoundaryTypeOption::periodic, "boundary-global-type", true, "Boundary condition type used for *all* boundaries. Possible Values: "
-                                                                                                                                           + autopas::utils::ArrayUtils::to_string(options::BoundaryTypeOption::getAllOptions())
-                                                                  + " Default: periodic")};
 
   // the following, shorter version does not work with icpc 2019.4.243. Error:
   // error: class template name must be a placeholder for the complete type being initialized
@@ -43,7 +39,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.verletSkinRadius, config.particleSpacing, config.tuningSamples, config.traversalOptions,
       config.tuningStrategyOption, config.mpiStrategyOption, config.useThermostat, config.verletRebuildFrequency,
       config.vtkFileName, config.vtkWriteFrequency, config.selectorStrategy, config.yamlFilename,
-      config.distributionStdDev, config.globalForce, boundaryGlobalType, zshCompletionsOption, helpOption)};
+      config.distributionStdDev, config.globalForce, config.boundaryOption, zshCompletionsOption, helpOption)};
 
   constexpr auto relevantOptionsSize = std::tuple_size_v<decltype(relevantOptions)>;
 
@@ -536,15 +532,10 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case decltype(boundaryGlobalType)::getoptChar: {
-        auto parsedOptions = options::BoundaryTypeOption::parseOptions((strArg));
-        if (parsedOptions.size() != 1) {
-          cerr << "Pass only one boundary condition. For mixed boundary conditions, use a .yaml file for configuration." << endl
-               << "Passed: " << strArg << endl
-               << "Parsed: " << autopas::utils::ArrayUtils::to_string(parsedOptions) << endl;
-          displayHelp = true;
-        }
-        config.boundaryOption.value = {*parsedOptions.begin(),*parsedOptions.begin(),*parsedOptions.begin()};
+      case decltype(config.boundaryOption)::getoptChar: {
+        auto parsedOption = options::BoundaryTypeOption::parseOptionExact((strArg));
+        config.boundaryOption.value = {parsedOption,parsedOption,parsedOption};
+        break;
       }
 
       default: {
