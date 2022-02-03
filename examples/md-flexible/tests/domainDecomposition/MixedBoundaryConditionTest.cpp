@@ -9,36 +9,97 @@
 #include "src/domainDecomposition/DomainTools.h"
 #include "src/domainDecomposition/RegularGridDecomposition.h"
 
-namespace {
-void initializeAutoPasContainer(RegularGridDecomposition::SharedAutoPasContainer &autoPasContainer,
-                                MDFlexConfig &configuration) {
-  autoPasContainer->setAllowedCellSizeFactors(*configuration.cellSizeFactors.value);
-  autoPasContainer->setAllowedContainers(configuration.containerOptions.value);
-  autoPasContainer->setAllowedDataLayouts(configuration.dataLayoutOptions.value);
-  autoPasContainer->setAllowedNewton3Options(configuration.newton3Options.value);
-  autoPasContainer->setAllowedTraversals(configuration.traversalOptions.value);
-  autoPasContainer->setAllowedLoadEstimators(configuration.loadEstimatorOptions.value);
-  autoPasContainer->setBoxMin(configuration.boxMin.value);
-  autoPasContainer->setBoxMax(configuration.boxMax.value);
-  autoPasContainer->setCutoff(configuration.cutoff.value);
-  autoPasContainer->setRelativeOptimumRange(configuration.relativeOptimumRange.value);
-  autoPasContainer->setMaxTuningPhasesWithoutTest(configuration.maxTuningPhasesWithoutTest.value);
-  autoPasContainer->setRelativeBlacklistRange(configuration.relativeBlacklistRange.value);
-  autoPasContainer->setEvidenceFirstPrediction(configuration.evidenceFirstPrediction.value);
-  autoPasContainer->setExtrapolationMethodOption(configuration.extrapolationMethodOption.value);
-  autoPasContainer->setNumSamples(configuration.tuningSamples.value);
-  autoPasContainer->setMaxEvidence(configuration.tuningMaxEvidence.value);
-  autoPasContainer->setSelectorStrategy(configuration.selectorStrategy.value);
-  autoPasContainer->setTuningInterval(configuration.tuningInterval.value);
-  autoPasContainer->setTuningStrategyOption(configuration.tuningStrategyOption.value);
-  autoPasContainer->setMPIStrategy(configuration.mpiStrategyOption.value);
-  autoPasContainer->setVerletClusterSize(configuration.verletClusterSize.value);
-  autoPasContainer->setVerletRebuildFrequency(configuration.verletRebuildFrequency.value);
-  autoPasContainer->setVerletSkin(configuration.verletSkinRadius.value);
-  autoPasContainer->setAcquisitionFunction(configuration.acquisitionFunctionOption.value);
+/**
+ * Very simple test of reflective boundaries in all 3 dimension. Places 2 particles on every face, with one travelling
+ * towards the boundary and the other away.
+ */
+TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
+  // initialise AutoPas container & domainDecomposition
+  const std::array<double,3> boxMin = {0.,0.,0.};
+  const std::array<double,3> boxMax = {5.,5.,5.};
+  const std::array<double,3> boxLength = autopas::utils::ArrayMath::sub(boxMax, boxMin);
+  const std::array<bool,3> subdivideDimension = {true,true,true};
+  const double cutoffWidth = 2.;
+  const double skinWidth = 0.2;
+  const std::array<options::BoundaryTypeOption,3> boundaryConditions =
+      {options::BoundaryTypeOption::reflective,options::BoundaryTypeOption::reflective,options::BoundaryTypeOption::reflective};
+
+  RegularGridDecomposition domainDecomposition(boxMin, boxMax, subdivideDimension,
+                                               cutoffWidth, skinWidth,boundaryConditions);
+
+  auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
+
+  autoPasContainer->setBoxMin(boxMin);
+  autoPasContainer->setBoxMax(boxMax);
+  autoPasContainer->setCutoff(cutoffWidth);
+  autoPasContainer->setVerletSkin(skinWidth);
   autoPasContainer->init();
+
+  // get particle properties
+  const std::array<double, 3> particlePosition = std::get<0>(GetParam());
+  const std::array<double, 3> particleVelocity = std::get<1>(GetParam());
+
+  // derive expected position
+  auto reflect = [](const std::array<double, 3> velocities, const std::array<bool, 3> isReflected) {
+    auto reflVel = velocities;
+    for (int i = 0; i < 3; ++i) {
+      if (isReflected[i]) {
+        reflVel[i] *= -1;
+      }
+    }
+    return reflVel;
+  };
+
+  const std::array<double, 3> expectedPosition = particlePosition;
+  const std::array<double, 3> expectedVelocity = reflect(particleVelocity,std::get<2>(GetParam()));
+
+  // create particle and add to container
+  ParticleType particle;
+  particle.setID(0);
+  particle.setR(particlePosition);
+  particle.setV(particleVelocity);
+  autoPasContainer->addParticle(particle);
+
+  // apply reflective BCs (as periodic + domain exchange)
+  EXPECT_NO_THROW(domainDecomposition.exchangeMigratingParticles(autoPasContainer));
+  EXPECT_NO_THROW(domainDecomposition.reflectParticlesAtBoundaries(autoPasContainer));
+  EXPECT_NO_THROW(domainDecomposition.exchangeHaloParticles(autoPasContainer));
+
+  // check particles have been successfully reflected (and not translated)
+  const auto reflectedParticle = autoPasContainer->begin(autopas::IteratorBehavior::owned);
+  const auto reflectedPosition = reflectedParticle->getR();
+  const auto reflectedVelocity = reflectedParticle->getV();
+  EXPECT_NEAR(reflectedPosition[0], expectedPosition[0],1e-13);
+  EXPECT_NEAR(reflectedPosition[1], expectedPosition[1],1e-13);
+  EXPECT_NEAR(reflectedPosition[2], expectedPosition[2],1e-13);
+  EXPECT_NEAR(reflectedVelocity[0], expectedVelocity[0],1e-13);
+  EXPECT_NEAR(reflectedVelocity[1], expectedVelocity[1],1e-13);
+  EXPECT_NEAR(reflectedVelocity[2], expectedVelocity[2],1e-13);
+
+  // check that there are no halo particles
+  EXPECT_EQ(0, autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::halo));
 }
-}  // namespace
+
+INSTANTIATE_TEST_CASE_P(
+    TestSimpleReflections,
+    ReflectiveBoundaryConditionTest,
+    testing::Values(                /*position*/                         /*velocity*/                   /*is reflected*/
+                    std::make_tuple(std::array<double,3>{0.05,2.50,2.50},std::array<double,3>{ 1, 1,-1},std::array<bool,3>{false,false,false}),
+                    std::make_tuple(std::array<double,3>{0.05,2.50,2.50},std::array<double,3>{-1, 1,-1},std::array<bool,3>{true,false,false}),
+                    std::make_tuple(std::array<double,3>{4.95,2.50,2.50},std::array<double,3>{ 1, 1,-1},std::array<bool,3>{true,false,false}),
+                    std::make_tuple(std::array<double,3>{4.95,2.50,2.50},std::array<double,3>{-1, 1,-1},std::array<bool,3>{false,false,false}),
+
+                    std::make_tuple(std::array<double,3>{2.50,0.05,2.50},std::array<double,3>{ 1, 1,-1},std::array<bool,3>{false,false,false}),
+                    std::make_tuple(std::array<double,3>{2.50,0.05,2.50},std::array<double,3>{ 1,-1,-1},std::array<bool,3>{false,true,false}),
+                    std::make_tuple(std::array<double,3>{2.50,4.95,2.50},std::array<double,3>{ 1, 1,-1},std::array<bool,3>{false,true,false}),
+                    std::make_tuple(std::array<double,3>{2.50,4.95,2.50},std::array<double,3>{ 1,-1,-1},std::array<bool,3>{false,false,false}),
+
+                    std::make_tuple(std::array<double,3>{2.50,2.50,0.05},std::array<double,3>{ 1,-1, 1},std::array<bool,3>{false,false,false}),
+                    std::make_tuple(std::array<double,3>{2.50,2.50,0.05},std::array<double,3>{ 1,-1,-1},std::array<bool,3>{false,false,true}),
+                    std::make_tuple(std::array<double,3>{2.50,2.50,4.95},std::array<double,3>{ 1,-1, 1},std::array<bool,3>{false,false,true}),
+                    std::make_tuple(std::array<double,3>{2.50,2.50,4.95},std::array<double,3>{ 1,-1,-1},std::array<bool,3>{false,false,false})
+                    )
+    );
 
 /**
  * Simple test designed to show that reflection at a corner between 2 reflective faces works correctly.
@@ -50,7 +111,7 @@ void initializeAutoPasContainer(RegularGridDecomposition::SharedAutoPasContainer
  *   + reflective/reflective/periodic
  * - cases for both upper and lower boundaries
  */
-TEST_F(MixedBoundaryConditionTest, testSimpleReflection) {
+TEST_F(MixedBoundaryConditionTest, testMixedReflection) {
   // initialise AutoPas container & domainDecomposition
   const std::array<double,3> boxMin = {0.,0.,0.};
   const std::array<double,3> boxMax = {5.,5.,5.};
@@ -66,7 +127,6 @@ TEST_F(MixedBoundaryConditionTest, testSimpleReflection) {
 
   auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
 
-  //initializeAutoPasContainer(autoPasContainer, configuration);
   autoPasContainer->setBoxMin(boxMin);
   autoPasContainer->setBoxMax(boxMax);
   autoPasContainer->setCutoff(cutoffWidth);
@@ -114,9 +174,9 @@ TEST_F(MixedBoundaryConditionTest, testSimpleReflection) {
   for (auto particle = autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     const auto id = particle->getID();
     const auto &velocity = particle->getV();
-    EXPECT_NEAR(velocity[0], expectedVelocities[id][0],1e-13);
-    EXPECT_NEAR(velocity[1], expectedVelocities[id][1],1e-13);
-    EXPECT_NEAR(velocity[2], expectedVelocities[id][2],1e-13);
+    EXPECT_NEAR(velocity[0], expectedVelocities[id][0],1e-13) << "For particle " << id;
+    EXPECT_NEAR(velocity[1], expectedVelocities[id][1],1e-13) << "For particle " << id;
+    EXPECT_NEAR(velocity[2], expectedVelocities[id][2],1e-13) << "For particle " << id;
   }
 
 }
@@ -144,7 +204,6 @@ TEST_F(MixedBoundaryConditionTest, testPeriodic) {
 
   auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
 
-  //initializeAutoPasContainer(autoPasContainer, configuration);
   autoPasContainer->setBoxMin(boxMin);
   autoPasContainer->setBoxMax(boxMax);
   autoPasContainer->setCutoff(cutoffWidth);
@@ -219,24 +278,24 @@ TEST_F(MixedBoundaryConditionTest, testPeriodic) {
     const auto id = particle->getID();
     const auto position = particle->getR();
     const auto velocity = particle->getV();
-    EXPECT_NEAR(position[0], expectedPositions[id][0],1e-13);
-    EXPECT_NEAR(position[1], expectedPositions[id][1],1e-13);
-    EXPECT_NEAR(position[2], expectedPositions[id][2],1e-13);
-    EXPECT_NEAR(velocity[0], expectedVelocities[id][0],1e-13);
-    EXPECT_NEAR(velocity[1], expectedVelocities[id][1],1e-13);
-    EXPECT_NEAR(velocity[2], expectedVelocities[id][2],1e-13);
+    EXPECT_NEAR(position[0], expectedPositions[id][0],1e-13) << "For particle " << id;
+    EXPECT_NEAR(position[1], expectedPositions[id][1],1e-13) << "For particle " << id;
+    EXPECT_NEAR(position[2], expectedPositions[id][2],1e-13) << "For particle " << id;
+    EXPECT_NEAR(velocity[0], expectedVelocities[id][0],1e-13) << "For particle " << id;
+    EXPECT_NEAR(velocity[1], expectedVelocities[id][1],1e-13) << "For particle " << id;
+    EXPECT_NEAR(velocity[2], expectedVelocities[id][2],1e-13) << "For particle " << id;
   }
 
   for (auto particle = autoPasContainer->begin(autopas::IteratorBehavior::halo); particle.isValid(); ++particle) {
     const auto id = particle->getID();
     const auto position = particle->getR();
     const auto velocity = particle->getV();
-    EXPECT_NEAR(position[0], expectedHaloPositions[id][0],1e-13);
-    EXPECT_NEAR(position[1], expectedHaloPositions[id][1],1e-13);
-    EXPECT_NEAR(position[2], expectedHaloPositions[id][2],1e-13);
-    EXPECT_NEAR(velocity[0], expectedHaloVelocities[id][0],1e-13);
-    EXPECT_NEAR(velocity[1], expectedHaloVelocities[id][1],1e-13);
-    EXPECT_NEAR(velocity[2], expectedHaloVelocities[id][2],1e-13);
+    EXPECT_NEAR(position[0], expectedHaloPositions[id][0],1e-13) << "For particle " << id;
+    EXPECT_NEAR(position[1], expectedHaloPositions[id][1],1e-13) << "For particle " << id;
+    EXPECT_NEAR(position[2], expectedHaloPositions[id][2],1e-13) << "For particle " << id;
+    EXPECT_NEAR(velocity[0], expectedHaloVelocities[id][0],1e-13) << "For particle " << id;
+    EXPECT_NEAR(velocity[1], expectedHaloVelocities[id][1],1e-13) << "For particle " << id;
+    EXPECT_NEAR(velocity[2], expectedHaloVelocities[id][2],1e-13) << "For particle " << id;
   }
 }
 
@@ -264,7 +323,6 @@ TEST_F(MixedBoundaryConditionTest, testNoBoundary) {
 
   auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
 
-  //initializeAutoPasContainer(autoPasContainer, configuration);
   autoPasContainer->setBoxMin(boxMin);
   autoPasContainer->setBoxMax(boxMax);
   autoPasContainer->setCutoff(cutoffWidth);
@@ -302,12 +360,12 @@ TEST_F(MixedBoundaryConditionTest, testNoBoundary) {
     const auto id = particle->getID();
     const auto position = particle->getR();
     const auto velocity = particle->getV();
-    EXPECT_NEAR(position[0], particlePositions[id][0],1e-13);
-    EXPECT_NEAR(position[1], particlePositions[id][1],1e-13);
-    EXPECT_NEAR(position[2], particlePositions[id][2],1e-13);
-    EXPECT_NEAR(velocity[0], particleVelocities[id][0],1e-13);
-    EXPECT_NEAR(velocity[1], particleVelocities[id][1],1e-13);
-    EXPECT_NEAR(velocity[2], particleVelocities[id][2],1e-13);
+    EXPECT_NEAR(position[0], particlePositions[id][0],1e-13) << "For particle " << id;
+    EXPECT_NEAR(position[1], particlePositions[id][1],1e-13) << "For particle " << id;
+    EXPECT_NEAR(position[2], particlePositions[id][2],1e-13) << "For particle " << id;
+    EXPECT_NEAR(velocity[0], particleVelocities[id][0],1e-13) << "For particle " << id;
+    EXPECT_NEAR(velocity[1], particleVelocities[id][1],1e-13) << "For particle " << id;
+    EXPECT_NEAR(velocity[2], particleVelocities[id][2],1e-13) << "For particle " << id;
   }
 
   // check that there are no halo particles

@@ -6,6 +6,7 @@
 #pragma once
 
 #include <gtest/gtest.h>
+//#include <gmock/gmock-matchers.h>
 
 #include "AutoPasTestBase.h"
 
@@ -18,4 +19,19 @@ class MixedBoundaryConditionTest : public AutoPasTestBase {
    * Constructor.
    */
    MixedBoundaryConditionTest() = default;
+};
+
+/**
+ * Parameterized test case for reflective boundary conditions in RegularGridDecomposition
+ */
+class ReflectiveBoundaryConditionTest :
+    public AutoPasTestBase,
+    public ::testing::WithParamInterface<std::tuple</*position*/       std::array<double,3>,
+                                                    /*velocity*/       std::array<double,3>,
+                                                    /*isReflected*/    std::array<bool,3>>> {
+ public:
+  /**
+   * Constructor.
+   */
+  ReflectiveBoundaryConditionTest() = default;
 };
