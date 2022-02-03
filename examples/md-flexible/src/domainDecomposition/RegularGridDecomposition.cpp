@@ -265,7 +265,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(SharedAutoPasContain
       for (auto p = autoPasContainer->getRegionIterator(reflSkinMin, reflSkinMax, autopas::IteratorBehavior::owned); p.isValid(); ++p) {
         auto vel = p->getV();
         // reverse velocity in dimension if towards boundary
-        if (vel[dimensionIndex] < 0 xor isUpper) {
+        if ((vel[dimensionIndex] < 0) xor isUpper) {
           vel[dimensionIndex] *= -1;
         }
         p->setV(vel);
