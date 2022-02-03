@@ -251,29 +251,6 @@ class AutoTuner {
    */
   std::map<Configuration, std::vector<std::pair<size_t, long>>> _evidence;
 
-  /**
-    * Flag for whether we skip gathering additional samples in the case of a slow configuration being selected during
-    * training.
-   */
-  bool _skipSlowConfigFlag;
-
-  /**
-   * Best smoothed evidence. Kept track of for the purpose of skipping gathering additional samples during tuning for a
-   * configuration which performs far worse than the optimum during tuning.
-   */
-  long _bestEvidence;
-
-  /**
-   * Factor of best smoothed evidence above which we skip subsequent sample collection for a slow configuration during
-   * tuning.
-   */
-  double _skipSlowConfigFactor;
-
-  /**
-   * Flag for if current config is slow - and thus we skip the current config in tuning.
-   */
-  bool _isCurrentConfigSlow;
-
   IterationLogger _iterationLogger;
   TuningResultLogger _tuningResultLogger;
   TuningDataLogger _tuningDataLogger;
@@ -520,7 +497,7 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
   bool stillTuning = true;
 
   // need more samples; keep current config
-  if (_samples.size() < _maxSamples and not _isCurrentConfigSlow) {
+  if (_samples.size() < _maxSamples) {
     return stillTuning;
   }
   utils::Timer tuningTimer;
@@ -530,7 +507,6 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
     _tuningStrategy->reset(_iteration);
   } else {  // enough samples -> next config
     stillTuning = _tuningStrategy->tune();
-    _isCurrentConfigSlow = false; // reset flag for new config
   }
 
   // repeat as long as traversals are not applicable or we run out of configs
@@ -606,12 +582,6 @@ void AutoTuner<Particle>::addTimeMeasurement(long time) {
   if (_samples.size() < _maxSamples) {
     AutoPasLog(trace, "Adding sample.");
     _samples.push_back(time);
-    // if this was the first sample (and we are skipping subsequent samples when config is very slow on first sample)
-    if (_samples.size() == 1 and _skipSlowConfigFlag) {
-      if (_samples[0] > _bestEvidence * _skipSlowConfigFactor) {
-        _isCurrentConfigSlow = true;
-      }
-    }
     // if this was the last sample:
     if (_samples.size() == _maxSamples) {
       auto &evidenceCurrentConfig = _evidence[currentConfig];
@@ -621,11 +591,6 @@ void AutoTuner<Particle>::addTimeMeasurement(long time) {
 
       // smooth evidence to remove high outliers. If smoothing results in a higher value use the original value.
       const auto smoothedValue = std::min(reducedValue, smoothing::smoothLastPoint(evidenceCurrentConfig, 5));
-
-      // update best smoothed evidence if appropriate
-      if (_skipSlowConfigFlag and smoothedValue < _bestEvidence) {
-        _bestEvidence = smoothedValue;
-      }
 
       // replace collected evidence with smoothed value to improve next smoothing
       evidenceCurrentConfig.back().second = smoothedValue;
