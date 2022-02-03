@@ -54,7 +54,7 @@ TEST_F(MixedBoundaryConditionTest, testSimpleReflection) {
   // initialise AutoPas container & domainDecomposition
   const std::array<double,3> boxMin = {0.,0.,0.};
   const std::array<double,3> boxMax = {5.,5.,5.};
-  const std::array<double,3> boxLength = {boxMax[0] - boxMin[0],boxMax[1] - boxMin[1],boxMax[2] - boxMin[2]};
+  const std::array<double,3> boxLength = autopas::utils::ArrayMath::sub(boxMax, boxMin);
   const std::array<bool,3> subdivideDimension = {true,true,true};
   const double cutoffWidth = 2.;
   const double skinWidth = 0.2;
@@ -310,7 +310,7 @@ TEST_F(MixedBoundaryConditionTest, testNoBoundary) {
     EXPECT_NEAR(velocity[2], particleVelocities[id][2],1e-13);
   }
 
-  // check that there are no halo particles - todo: is there a cleaner way to check this?
-  EXPECT_EQ(false, autoPasContainer->begin(autopas::IteratorBehavior::halo).isValid());
+  // check that there are no halo particles
+  EXPECT_EQ(0, autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::halo));
 
 }

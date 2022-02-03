@@ -261,7 +261,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(SharedAutoPasContain
     // skip if boundary is not reflective
     if (_boundaryType[dimensionIndex] != options::BoundaryTypeOption::reflective) continue;
 
-    auto reflect = [&reflSkinMin, &reflSkinMax, &autoPasContainer, &dimensionIndex](bool isUpper) {
+    auto reflect = [&](bool isUpper) {
       for (auto p = autoPasContainer->getRegionIterator(reflSkinMin, reflSkinMax, autopas::IteratorBehavior::owned); p.isValid(); ++p) {
         auto vel = p->getV();
         // reverse velocity in dimension if towards boundary

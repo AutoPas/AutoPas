@@ -385,8 +385,8 @@ class MDFlexConfig {
       {options::BoundaryTypeOption::periodic,options::BoundaryTypeOption::periodic,options::BoundaryTypeOption::periodic}
       ,"boundary-type",true,
       "Boundary condition types for each of the three dimensions. Possible Values: "
-          + autopas::utils::ArrayUtils::to_string(options::BoundaryTypeOption::getAllOptions())
-          + " Default: [periodic, periodic, periodic]"};
+          + autopas::utils::ArrayUtils::to_string(options::BoundaryTypeOption::getAllOptions(), " ", {"(", ")"})
+          + " Default: {periodic, periodic, periodic}"};
   /**
    * dontMeasureFlops
    */
