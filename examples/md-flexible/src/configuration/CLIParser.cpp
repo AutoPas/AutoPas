@@ -534,7 +534,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.boundaryOption)::getoptChar: {
         auto parsedOption = options::BoundaryTypeOption::parseOptionExact((strArg));
-        config.boundaryOption.value = {parsedOption,parsedOption,parsedOption};
+        config.boundaryOption.value = {parsedOption, parsedOption, parsedOption};
         break;
       }
 

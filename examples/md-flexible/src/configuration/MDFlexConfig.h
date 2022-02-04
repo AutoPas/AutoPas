@@ -21,7 +21,6 @@
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/TuningStrategyOption.h"
-#include "src/options/BoundaryTypeOption.h"
 #include "autopas/utils/NumberSet.h"
 #include "src/TypeDefinitions.h"
 #include "src/configuration/objects/CubeClosestPacked.h"
@@ -29,6 +28,7 @@
 #include "src/configuration/objects/CubeGrid.h"
 #include "src/configuration/objects/CubeUniform.h"
 #include "src/configuration/objects/Sphere.h"
+#include "src/options/BoundaryTypeOption.h"
 
 /**
  * Class containing all necessary parameters for configuring a md-flexible simulation.
@@ -381,12 +381,14 @@ class MDFlexConfig {
   /**
    * Boundary types.
    */
-  MDFlexOption<std::array<options::BoundaryTypeOption,3>, __LINE__> boundaryOption{
-      {options::BoundaryTypeOption::periodic,options::BoundaryTypeOption::periodic,options::BoundaryTypeOption::periodic}
-      ,"boundary-type",true,
-      "Boundary condition types for each of the three dimensions. Possible Values: "
-          + autopas::utils::ArrayUtils::to_string(options::BoundaryTypeOption::getAllOptions(), " ", {"(", ")"})
-          + " Default: {periodic, periodic, periodic}"};
+  MDFlexOption<std::array<options::BoundaryTypeOption, 3>, __LINE__> boundaryOption{
+      {options::BoundaryTypeOption::periodic, options::BoundaryTypeOption::periodic,
+       options::BoundaryTypeOption::periodic},
+      "boundary-type",
+      true,
+      "Boundary condition types for each of the three dimensions. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(options::BoundaryTypeOption::getAllOptions(), " ", {"(", ")"}) +
+          " Default: {periodic, periodic, periodic}"};
   /**
    * dontMeasureFlops
    */

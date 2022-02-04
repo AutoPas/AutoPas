@@ -506,7 +506,8 @@ void Simulation::logMeasurements() {
                                maximumNumberOfDigits, simulate);
     std::cout << timerToString("      HaloParticleExchange        ", haloParticleExchange, maximumNumberOfDigits,
                                haloParticleExchange + reflectParticlesAtBoundaries + migratingParticleExchange);
-    std::cout << timerToString("      ReflectParticlesAtBoundaries", reflectParticlesAtBoundaries, maximumNumberOfDigits,
+    std::cout << timerToString("      ReflectParticlesAtBoundaries", reflectParticlesAtBoundaries,
+                               maximumNumberOfDigits,
                                haloParticleExchange + reflectParticlesAtBoundaries + migratingParticleExchange);
     std::cout << timerToString("      MigratingParticleExchange   ", migratingParticleExchange, maximumNumberOfDigits,
                                haloParticleExchange + reflectParticlesAtBoundaries + migratingParticleExchange);
@@ -518,7 +519,8 @@ void Simulation::logMeasurements() {
     std::cout << timerToString("    VelocityUpdate                ", velocityUpdate, maximumNumberOfDigits, simulate);
     std::cout << timerToString("    Thermostat                    ", thermostat, maximumNumberOfDigits, simulate);
     std::cout << timerToString("    Vtk                           ", vtk, maximumNumberOfDigits, simulate);
-    std::cout << timerToString("One iteration                     ", simulate / _iteration, maximumNumberOfDigits, total);
+    std::cout << timerToString("One iteration                     ", simulate / _iteration, maximumNumberOfDigits,
+                               total);
 
     const long wallClockTime = _timers.total.getTotalTime();
     std::cout << timerToString("Total wall-clock time          ", wallClockTime, std::to_string(wallClockTime).length(),

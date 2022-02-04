@@ -18,11 +18,14 @@
 
 RegularGridDecomposition::RegularGridDecomposition(const std::array<double, 3> &globalBoxMin,
                                                    const std::array<double, 3> &globalBoxMax,
-                                                   const std::array<bool, 3> &subdivideDimension,
-                                                   double cutoffWidth, double skinWidth,
-                                                   const std::array<options::BoundaryTypeOption,3> &boundaryConditions)
-    : _cutoffWidth(cutoffWidth), _skinWidth(skinWidth), _globalBoxMin(globalBoxMin), _globalBoxMax(globalBoxMax),
-      _boundaryType(boundaryConditions){
+                                                   const std::array<bool, 3> &subdivideDimension, double cutoffWidth,
+                                                   double skinWidth,
+                                                   const std::array<options::BoundaryTypeOption, 3> &boundaryConditions)
+    : _cutoffWidth(cutoffWidth),
+      _skinWidth(skinWidth),
+      _globalBoxMin(globalBoxMin),
+      _globalBoxMax(globalBoxMax),
+      _boundaryType(boundaryConditions) {
   autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &_subdomainCount);
 
   int rank;
@@ -47,7 +50,6 @@ RegularGridDecomposition::RegularGridDecomposition(const std::array<double, 3> &
   initializeLocalBox();
 
   initializeNeighbourIds();
-
 }
 
 RegularGridDecomposition::~RegularGridDecomposition() {}
@@ -118,10 +120,12 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
     for (int j = i; j < _dimensionCount; ++j) {
       const size_t dimensionIndex = j % _dimensionCount;
 
-      // completely bypass Halo particle exchange in this dimension if boundaries in this direction are not periodic *and*
-      // if both local boundaries are the global boundaries in this dimension
-      if (_boundaryType[dimensionIndex] != options::BoundaryTypeOption::periodic and _localBoxMin[dimensionIndex] == _globalBoxMin[dimensionIndex]
-          and _localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex]) continue;
+      // completely bypass Halo particle exchange in this dimension if boundaries in this direction are not periodic
+      // *and* if both local boundaries are the global boundaries in this dimension
+      if (_boundaryType[dimensionIndex] != options::BoundaryTypeOption::periodic and
+          _localBoxMin[dimensionIndex] == _globalBoxMin[dimensionIndex] and
+          _localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex])
+        continue;
 
       std::vector<ParticleType> particlesForLeftNeighbour{};
       std::vector<ParticleType> particlesForRightNeighbour{};
@@ -140,7 +144,8 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
         auto position = particle.getR();
 
         // check left boundary is a periodic (global) boundary
-        if (_boundaryType[dimensionIndex] == options::BoundaryTypeOption::periodic and _localBoxMin[dimensionIndex] == _globalBoxMin[dimensionIndex]) {
+        if (_boundaryType[dimensionIndex] == options::BoundaryTypeOption::periodic and
+            _localBoxMin[dimensionIndex] == _globalBoxMin[dimensionIndex]) {
           if (position[dimensionIndex] >= leftHaloMin and position[dimensionIndex] < leftHaloMax) {
             particlesForLeftNeighbour.push_back(particle);
 
@@ -154,7 +159,8 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
         }
 
         // check right boundary is a periodic (global) boundary
-        if (_boundaryType[dimensionIndex] == options::BoundaryTypeOption::periodic and _localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex]) {
+        if (_boundaryType[dimensionIndex] == options::BoundaryTypeOption::periodic and
+            _localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex]) {
           if (position[dimensionIndex] >= rightHaloMin and position[dimensionIndex] < rightHaloMax) {
             particlesForRightNeighbour.push_back(particle);
 
@@ -181,7 +187,6 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
   }
 }
 
-
 void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer) {
   auto emigrants = autoPasContainer->updateContainer();
 
@@ -193,8 +198,10 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
       const size_t dimensionIndex = j % _dimensionCount;
       // completely bypass particle exchange in this dimension if boundaries in this direction are not periodic *and*
       // if both local boundaries are the global boundaries in this dimension
-      if (_boundaryType[dimensionIndex] != options::BoundaryTypeOption::periodic and _localBoxMin[dimensionIndex] == _globalBoxMin[dimensionIndex]
-          and _localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex]) continue;
+      if (_boundaryType[dimensionIndex] != options::BoundaryTypeOption::periodic and
+          _localBoxMin[dimensionIndex] == _globalBoxMin[dimensionIndex] and
+          _localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex])
+        continue;
 
       std::vector<ParticleType> immigrants, remainingEmigrants;
       std::vector<ParticleType> particlesForLeftNeighbour;
@@ -207,7 +214,8 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
       for (const auto &particle : emigrants) {
         auto position = particle.getR();
         // check left boundary is a periodic (global) boundary
-        if (_boundaryType[dimensionIndex] == options::BoundaryTypeOption::periodic and _localBoxMin[dimensionIndex] == _globalBoxMin[dimensionIndex]) {
+        if (_boundaryType[dimensionIndex] == options::BoundaryTypeOption::periodic and
+            _localBoxMin[dimensionIndex] == _globalBoxMin[dimensionIndex]) {
           if (position[dimensionIndex] < _localBoxMin[dimensionIndex]) {
             particlesForLeftNeighbour.push_back(particle);
 
@@ -221,7 +229,8 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
           }
         }
         // check right boundary is a periodic (global) boundary
-        if (_boundaryType[dimensionIndex] == options::BoundaryTypeOption::periodic and _localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex]) {
+        if (_boundaryType[dimensionIndex] == options::BoundaryTypeOption::periodic and
+            _localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex]) {
           if (position[dimensionIndex] >= _localBoxMax[dimensionIndex]) {
             particlesForRightNeighbour.push_back(particle);
 
@@ -262,7 +271,8 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(SharedAutoPasContain
     if (_boundaryType[dimensionIndex] != options::BoundaryTypeOption::reflective) continue;
 
     auto reflect = [&](bool isUpper) {
-      for (auto p = autoPasContainer->getRegionIterator(reflSkinMin, reflSkinMax, autopas::IteratorBehavior::owned); p.isValid(); ++p) {
+      for (auto p = autoPasContainer->getRegionIterator(reflSkinMin, reflSkinMax, autopas::IteratorBehavior::owned);
+           p.isValid(); ++p) {
         auto vel = p->getV();
         // reverse velocity in dimension if towards boundary
         if ((vel[dimensionIndex] < 0) xor isUpper) {
@@ -274,15 +284,17 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(SharedAutoPasContain
 
     // apply if we are at a global boundary on lower end of the dimension
     if (_localBoxMin[dimensionIndex] == _globalBoxMin[dimensionIndex]) {
-      reflSkinMin = _globalBoxMin; reflSkinMax = _globalBoxMax;
-      reflSkinMax[dimensionIndex] = _globalBoxMin[dimensionIndex] + autoPasContainer->getVerletSkin()/2;
+      reflSkinMin = _globalBoxMin;
+      reflSkinMax = _globalBoxMax;
+      reflSkinMax[dimensionIndex] = _globalBoxMin[dimensionIndex] + autoPasContainer->getVerletSkin() / 2;
 
       reflect(false);
     }
     // apply if we are at a global boundary on upper end of the dimension
     if (_localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex]) {
-      reflSkinMin = _globalBoxMin; reflSkinMax = _globalBoxMax;
-      reflSkinMin[dimensionIndex] = _globalBoxMax[dimensionIndex] - autoPasContainer->getVerletSkin()/2;
+      reflSkinMin = _globalBoxMin;
+      reflSkinMax = _globalBoxMax;
+      reflSkinMin[dimensionIndex] = _globalBoxMax[dimensionIndex] - autoPasContainer->getVerletSkin() / 2;
 
       reflect(true);
     }

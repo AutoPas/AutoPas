@@ -30,8 +30,8 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param boundaryConditions: An array of boundary conditions in the x, y, and z directions.
    */
   RegularGridDecomposition(const std::array<double, 3> &globalBoxMin, const std::array<double, 3> &globalBoxMax,
-                           const std::array<bool, 3> &subdivideDimension, double cutoffWidth,
-                           double skinWidth, const std::array<options::BoundaryTypeOption,3> &boundaryConditions);
+                           const std::array<bool, 3> &subdivideDimension, double cutoffWidth, double skinWidth,
+                           const std::array<options::BoundaryTypeOption, 3> &boundaryConditions);
 
   /**
    * Destructor.
@@ -214,10 +214,10 @@ class RegularGridDecomposition final : public DomainDecomposition {
    */
   std::array<double, 3> _localBoxMax;
 
-   /**
-    * Boundary condition types.
-    */
-   std::array<options::BoundaryTypeOption, 3> _boundaryType;
+  /**
+   * Boundary condition types.
+   */
+  std::array<options::BoundaryTypeOption, 3> _boundaryType;
 
   /**
    * A temporary buffer used for MPI send requests.
