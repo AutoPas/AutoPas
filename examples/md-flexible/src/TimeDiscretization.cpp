@@ -39,7 +39,7 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
   using autopas::utils::ArrayMath::add;
   using autopas::utils::ArrayMath::mulScalar;
 
-  autoPasContainer.forEach(
+  autoPasContainer.forEachParallel(
       [&](auto &p) {
         auto m = particlePropertiesLibrary.getMass(p.getTypeId());
         auto force = p.getF();
