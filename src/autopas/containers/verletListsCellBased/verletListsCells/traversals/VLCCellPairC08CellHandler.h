@@ -56,16 +56,10 @@ class VLCCellPairC08CellHandler : public LCC08CellHandler<ParticleCell, Pairwise
     auto &globalToLocalIndex = neighborList.getGlobalToLocalMap();
 
     for (auto &offsets : this->_cellPairOffsets) {
-      auto offsetCell1 = cellIndex + std::get<0>(offsets);
-      auto offsetCell2 = cellIndex + std::get<1>(offsets);
-
-      // the lists are built with a c18 traversal and the interaction will always be saved in the smaller cell's
-      // neighbor list
-      if (offsetCell1 > offsetCell2) {
-        auto temp = offsetCell1;
-        offsetCell1 = offsetCell2;
-        offsetCell2 = temp;
-      }
+      // the lists are built with a c18 traversal
+      // the interaction will always be saved in the smaller cell's neighbor list
+      const auto [offsetCell1, offsetCell2] =
+          std::minmax(cellIndex + std::get<0>(offsets), cellIndex + std::get<1>(offsets));
 
       auto cell2Local = globalToLocalIndex[offsetCell1].find(offsetCell2);
 
@@ -98,10 +92,10 @@ class VLCCellPairC08CellHandler : public LCC08CellHandler<ParticleCell, Pairwise
 
       // if newton3 is off, find cell1 in cell2's neighbor list ("switch" the pair from above) and repeat the
       // interaction from above
-      if (useNewton3 == false) {
+      if (not useNewton3) {
         cell2Local = globalToLocalIndex[offsetCell2].find(offsetCell1);
         // exclude interaction within same cell - already handled in
-        if (cell2Local != globalToLocalIndex[offsetCell2].end() && offsetCell1 != offsetCell2) {
+        if (cell2Local != globalToLocalIndex[offsetCell2].end() and offsetCell1 != offsetCell2) {
           // if aos, send every pair of interacting particles to functor
           if (dataLayout == DataLayoutOption::aos) {
             // vector of pairs {particle, list}
