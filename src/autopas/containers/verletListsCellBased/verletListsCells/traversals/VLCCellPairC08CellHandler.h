@@ -59,7 +59,7 @@ class VLCCellPairC08CellHandler : public LCC08CellHandler<ParticleCell, Pairwise
       // the lists are built with a c18 traversal
       // the interaction will always be saved in the smaller cell's neighbor list
       const auto [offsetCell1, offsetCell2] =
-          std::minmax(cellIndex + std::get<0>(offsets), cellIndex + std::get<1>(offsets));
+          std::minmax({cellIndex + std::get<0>(offsets), cellIndex + std::get<1>(offsets)});
 
       auto cell2Local = globalToLocalIndex[offsetCell1].find(offsetCell2);
 
@@ -114,7 +114,7 @@ class VLCCellPairC08CellHandler : public LCC08CellHandler<ParticleCell, Pairwise
             // vector of pairs {particle, list}
             auto &currentList = soaNeighborList[offsetCell2][cell2Local->second];
             for (auto &[particle, particleList] : currentList) {
-              if (!particleList.empty()) {
+              if (not particleList.empty()) {
                 pairwiseFunctor->SoAFunctorVerlet(*_soa, particle, particleList, useNewton3);
               }
             }
