@@ -175,6 +175,10 @@ class AutoTuner {
   [[nodiscard]] const Configuration &getCurrentConfig() const;
 
  private:
+  /**
+   * Total number of collected samples. This is the sum of the sizes of all sample vectors.
+   * @return Sum of sizes of sample vectors.
+   */
   auto getCurrentNumSamples() const {
     return _samplesNotRebuildingNeighborLists.size() + _samplesRebuildingNeighborLists.size();
   }
@@ -288,7 +292,7 @@ class AutoTuner {
    * Raw time samples of the current configuration. Contains only the samples of iterations where the neighbor lists
    * have been rebuilt.
    */
-  std::vector<long> _samplesRebuildingNeighborLists;
+  std::vector<long> _samplesRebuildingNeighborLists{};
 
   /**
    * For each configuration the collection of all evidence (smoothed values) collected so far and in which iteration.
@@ -635,7 +639,7 @@ void AutoTuner<Particle>::addTimeMeasurement(long time, bool neighborListRebuilt
     if (getCurrentNumSamples() == _maxSamples) {
       auto &evidenceCurrentConfig = _evidence[currentConfig];
 
-      long reducedValue = estimateRuntimeFromSamples();
+      const long reducedValue = estimateRuntimeFromSamples();
 
       evidenceCurrentConfig.emplace_back(_iteration, reducedValue);
 

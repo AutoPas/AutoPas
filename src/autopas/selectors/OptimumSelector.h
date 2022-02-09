@@ -31,7 +31,7 @@ inline long minValue(const std::vector<long> &values) { return *std::min_element
  * @return Arithmetic mean of the vector.
  */
 inline long meanValue(const std::vector<long> &values) {
-  return std::accumulate(values.cbegin(), values.cend(), 0l) / values.size();
+  return std::accumulate(values.cbegin(), values.cend(), 0l) / static_cast<long>(values.size());
 }
 
 /**
