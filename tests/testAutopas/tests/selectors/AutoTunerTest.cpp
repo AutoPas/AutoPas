@@ -537,11 +537,11 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
 TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
   const double cellSizeFactor = 1.;
   autopas::Configuration confA(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
-                                autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                                autopas::Newton3Option::enabled);
-  autopas::Configuration confB(autopas::ContainerOption::linkedCells, cellSizeFactor,
-                                  autopas::TraversalOption::lc_c18, autopas::LoadEstimatorOption::none,
-                                  autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
+                               autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
+                               autopas::Newton3Option::enabled);
+  autopas::Configuration confB(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c18,
+                               autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
+                               autopas::Newton3Option::enabled);
 
   auto rebuildFrequency = 3;
 
