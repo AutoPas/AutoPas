@@ -201,8 +201,12 @@ class AutoTuner {
     // reduce samples for rebuild and non-rebuild iterations with the given selector strategy
     const auto reducedValueBuilding =
         autopas::OptimumSelector::optimumValue(_samplesRebuildingNeighborLists, _selectorStrategy);
+    // if there is no data for the non rebuild iterations we have to assume them taking the same time as rebuilding ones
+    // this might neither be a good estimate nor fair but the best we can do
     const auto reducedValueNotBuilding =
-        autopas::OptimumSelector::optimumValue(_samplesNotRebuildingNeighborLists, _selectorStrategy);
+        _samplesNotRebuildingNeighborLists.empty()
+            ? reducedValueBuilding
+            : autopas::OptimumSelector::optimumValue(_samplesNotRebuildingNeighborLists, _selectorStrategy);
 
     const auto numIterationsNotBuilding =
         std::max(0, static_cast<int>(_rebuildFrequency) - static_cast<int>(_samplesRebuildingNeighborLists.size()));
