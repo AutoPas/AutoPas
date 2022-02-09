@@ -529,20 +529,23 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
 }
 
 /**
- *
+ * Iterate with two configs.
+ * First has short rebuild and long non-rebuild iterations
+ * Second has long rebuild and short non-rebuild iterations
+ * Expect to choose the first because the second one is worse on average.
  */
 TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
-  double cellSizeFactor = 1.;
-  autopas::Configuration confN3(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
+  const double cellSizeFactor = 1.;
+  autopas::Configuration confA(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
                                 autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
                                 autopas::Newton3Option::enabled);
-  autopas::Configuration confNoN3(autopas::ContainerOption::linkedCells, cellSizeFactor,
+  autopas::Configuration confB(autopas::ContainerOption::linkedCells, cellSizeFactor,
                                   autopas::TraversalOption::lc_c18, autopas::LoadEstimatorOption::none,
                                   autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
 
   auto rebuildFrequency = 3;
 
-  auto configsList = {confN3, confNoN3};
+  auto configsList = {confA, confB};
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
   autopas::AutoTuner<Molecule> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
                                      autopas::SelectorStrategyOption::fastestAbs, 1000, 3, rebuildFrequency);
@@ -557,29 +560,29 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
   using namespace std::literals;
 
   bool doRebuild = true;
-  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(1000ms); }));
+  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(100ms); }));
   tuner.iteratePairwise(&functor, doRebuild, twoParticles, emptyVec);
 
   auto firstConfig = tuner.getCurrentConfig();
 
   doRebuild = false;
-  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(500ms); }));
+  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(50ms); }));
   tuner.iteratePairwise(&functor, doRebuild, twoParticles, emptyVec);
-  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(500ms); }));
+  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(50ms); }));
   tuner.iteratePairwise(&functor, doRebuild, twoParticles, emptyVec);
 
   // Here, second config will start to be tuned
 
   doRebuild = true;
-  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(2000ms); }));
+  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(200ms); }));
   tuner.iteratePairwise(&functor, doRebuild, twoParticles, emptyVec);
 
   auto secondConfig = tuner.getCurrentConfig();
 
   doRebuild = false;
-  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(250ms); }));
+  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(25ms); }));
   tuner.iteratePairwise(&functor, doRebuild, twoParticles, emptyVec);
-  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(250ms); }));
+  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(25ms); }));
   tuner.iteratePairwise(&functor, doRebuild, twoParticles, emptyVec);
 
   // Here, tuning should be finished and first should have been chosen (1000 + 2 * 500 = 2000 < 2500 = 2000 + 2 * 250)
