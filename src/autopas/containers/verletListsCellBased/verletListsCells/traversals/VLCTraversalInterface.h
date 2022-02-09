@@ -84,7 +84,8 @@ class VLCTraversalInterface {
   SoA<typename Particle::SoAArraysType> *_soa;
 
  private:
-  /** Processing of the VLCAllCellsNeighborList type of neighbor list (neighbor list for every cell).
+  /**
+   * Processing of the VLCAllCellsNeighborList type of neighbor list (neighbor list for every cell).
    * @tparam PairwiseFunctor
    * @tparam useNewton3
    * @param neighborList
@@ -109,12 +110,15 @@ class VLCTraversalInterface {
     else if (dataLayout == DataLayoutOption::soa) {
       auto &_soaList = neighborList.getSoANeighborList();
       for (auto &[particleIndex, neighbors] : _soaList[cellIndex]) {
-        pairwiseFunctor->SoAFunctorVerlet(*_soa, particleIndex, neighbors, useNewton3);
+        if (not neighbors.empty()) {
+          pairwiseFunctor->SoAFunctorVerlet(*_soa, particleIndex, neighbors, useNewton3);
+        }
       }
     }
   }
 
-  /** Processing of the pairwise Verlet type of neighbor list (neighbor list for every pair of neighboring cells).
+  /**
+   * Processing of the pairwise Verlet type of neighbor list (neighbor list for every pair of neighboring cells).
    * @tparam PairwiseFunctor
    * @tparam useNewton3
    * @param neighborList
@@ -143,7 +147,9 @@ class VLCTraversalInterface {
       // iterate over soa and call soaFunctorVerlet for each of the neighbor lists
       for (auto &cellPair : _soaList[cellIndex]) {
         for (auto &[particleIndex, neighbors] : cellPair) {
-          pairwiseFunctor->SoAFunctorVerlet(*_soa, particleIndex, neighbors, useNewton3);
+          if (not neighbors.empty()) {
+            pairwiseFunctor->SoAFunctorVerlet(*_soa, particleIndex, neighbors, useNewton3);
+          }
         }
       }
     }

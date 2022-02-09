@@ -18,6 +18,9 @@ namespace autopas {
  */
 template <class ParticleCell>
 class TraversalSelector;
+
+template <class Particle>
+class VLCCellPairTraversalInterface;
 /**
  * Neighbor list to be used with VerletListsCells container.
  * Pairwise verlet lists iterates through each pair of neighboring cells
@@ -69,6 +72,14 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
   }
 
   /**
+   * Returns a map of each cell's global index to its local index in another cell's neighbor list. More specifically,
+   * for each cell1: a mapping of the "absolute" index of cell2 (in the base linked cells structure) to its "relative"
+   * index in cell1's neighbors.
+   * @return a map of each cell's global index to its local index in another cell's neighbor list
+   */
+  auto &getGlobalToLocalMap() { return _globalToLocalIndex; }
+
+  /**
    * Returns the neighbor list in SoA layout.
    * @return Neighbor list in SoA layout.
    */
@@ -82,28 +93,29 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
                             typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType) override {
     this->_internalLinkedCells = &linkedCells;
     _aosNeighborList.clear();
+    _globalToLocalIndex.clear();
+    _particleToCellMap.clear();
     auto &cells = linkedCells.getCells();
-    auto cellsSize = cells.size();
+    const auto cellsSize = cells.size();
     _aosNeighborList.resize(cellsSize);
     _globalToLocalIndex.resize(cellsSize);
 
-    size_t result = 0;
-    auto cellLength = linkedCells.getCellBlock().getCellLength();
-    auto cellsPerDimension = linkedCells.getCellBlock().getCellsPerDimensionWithHalo();
-    auto interactionLengthSquare = linkedCells.getInteractionLength() * linkedCells.getInteractionLength();
-    std::array<long, 3> overlap;
-    size_t neighborCells = 0;
+    const auto cellLength = linkedCells.getCellBlock().getCellLength();
+    const auto interactionLengthSquare = linkedCells.getInteractionLength() * linkedCells.getInteractionLength();
 
+    std::array<long, 3> overlap{};
     for (unsigned int d = 0; d < 3; d++) {
       overlap[d] = std::ceil(linkedCells.getInteractionLength() / cellLength[d]);
     }
 
-    for (int x = -overlap[0]; x < overlap[0] + 1; x++) {
-      for (int y = -overlap[1]; y < overlap[1] + 1; y++) {
-        for (int z = -overlap[2]; z < overlap[2] + 1; z++) {
-          std::array<double, 3> pos = {};
-          pos[0] = std::max(0l, (std::abs(x) - 1l)) * cellLength[0];
-          pos[1] = std::max(0l, (std::abs(y) - 1l)) * cellLength[1];
+    // count number of neighbor cells
+    size_t neighborCells = 0;
+    for (int x = -static_cast<int>(overlap[0]); x < overlap[0] + 1; x++) {
+      std::array<double, 3> pos{};
+      pos[0] = std::max(0l, (std::abs(x) - 1l)) * cellLength[0];
+      for (int y = -static_cast<int>(overlap[1]); y < overlap[1] + 1; y++) {
+        pos[1] = std::max(0l, (std::abs(y) - 1l)) * cellLength[1];
+        for (int z = -static_cast<int>(overlap[2]); z < overlap[2] + 1; z++) {
           pos[2] = std::max(0l, (std::abs(z) - 1l)) * cellLength[2];
           const double distSquare = utils::ArrayMath::dot(pos, pos);
           if (distSquare <= interactionLengthSquare) {
@@ -113,6 +125,15 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
       }
     }
 
+    // when N3 is used we only need half of the cells (rounded up)
+    if (useNewton3) {
+      neighborCells /= 2;
+      if (neighborCells % 2 != 0) {
+        neighborCells++;
+      }
+    }
+
+    // initialize empty lists for every particle-cell pair
     for (size_t firstCellIndex = 0; firstCellIndex < cellsSize; ++firstCellIndex) {
       _aosNeighborList[firstCellIndex].resize(neighborCells);
       size_t numParticlesFirstCell = cells[firstCellIndex].numParticles();
@@ -124,7 +145,6 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
           // for each particle in cell1 make pair of particle and neighbor list
           Particle *currentParticle = &*particleIter;
           cellPair.emplace_back(std::make_pair(currentParticle, std::vector<Particle *>()));
-          // TODO reserve experiment - Tina
 
           // add pair of cell's index and particle's index in the cell
           _particleToCellMap[currentParticle] = std::make_pair(firstCellIndex, particleIndexCurrentCell);
@@ -133,6 +153,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
       }
     }
 
+    // fill the lists
     applyBuildFunctor(linkedCells, useNewton3, cutoff, skin, interactionLength, buildTraversalOption, buildType);
   }
 
@@ -181,6 +202,26 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
           // add newly constructed pair of particle index and SoA particle neighbor list to cell pair
           soaCellPair.emplace_back(std::make_pair(currentParticleGlobalIndex, currentSoANeighborList));
         }
+      }
+    }
+  }
+
+  /**
+   * @copydoc VLCNeighborListInterface::setUpTraversal()
+   */
+  void setUpTraversal(TraversalInterface *traversal) override {
+    auto vTraversal = dynamic_cast<VLCCellPairTraversalInterface<Particle> *>(traversal);
+
+    if (vTraversal) {
+      vTraversal->setVerletList(*this);
+    } else {
+      auto traversal2 = dynamic_cast<VLCTraversalInterface<Particle, VLCCellPairNeighborList<Particle>> *>(traversal);
+      if (traversal2) {
+        traversal2->setVerletList(*this);
+      } else {
+        autopas::utils::ExceptionHandler::exception(
+            "Trying to use a traversal of wrong type in VerletListCells.h. TraversalID: {}",
+            traversal->getTraversalType());
       }
     }
   }

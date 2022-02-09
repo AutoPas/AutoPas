@@ -45,19 +45,17 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
    * @param boxMax the upper corner of the domain
    * @param cutoff the cutoff radius of the interaction
    * @param skin the skin radius
-   * @param buildTraversal the traversal used to build the verletlists
    * @param cellSizeFactor cell size factor relative to cutoff
    * @param loadEstimator load estimation algorithm for balanced traversals
    * @param buildType data layout of the particles which are used to generate the neighbor lists
    */
   VerletListsCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-                   const TraversalOption buildTraversal, const double skin = 0, const double cellSizeFactor = 1.0,
+                   const double skin = 0, const double cellSizeFactor = 1.0,
                    const LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell,
                    typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType =
                        VerletListsCellsHelpers<Particle>::VLCBuildType::soaBuild)
       : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skin,
                                         compatibleTraversals::allVLCCompatibleTraversals(), cellSizeFactor),
-        _buildTraversalOption(buildTraversal),
         _loadEstimator(loadEstimator),
         _buildType(buildType) {}
 
@@ -99,17 +97,9 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
 
   void iteratePairwise(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
-    auto vTraversal = dynamic_cast<VLCTraversalInterface<Particle, NeighborList> *>(traversal);
+    _neighborList.setUpTraversal(traversal);
     if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
-    }
-
-    if (vTraversal) {
-      vTraversal->setVerletList(_neighborList);
-    } else {
-      autopas::utils::ExceptionHandler::exception(
-          "Trying to use a traversal of wrong type in VerletListCells.h. TraversalID: {}",
-          traversal->getTraversalType());
     }
 
     traversal->initTraversal();
@@ -128,7 +118,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
 
     _neighborList.buildAoSNeighborList(this->_linkedCells, this->_verletBuiltNewton3, this->getCutoff(),
-                                       this->getSkin(), this->getInteractionLength(), _buildTraversalOption,
+                                       this->getSkin(), this->getInteractionLength(), TraversalOption::lc_c18,
                                        _buildType);
 
     if (traversal->getDataLayout() == DataLayoutOption::soa) {
@@ -152,11 +142,6 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
    * Neighbor list abstraction for neighbor list used in the container.
    */
   NeighborList _neighborList;
-
-  /**
-   * The traversal used to build the verlet lists.
-   */
-  TraversalOption _buildTraversalOption;
 
   /**
    * Load estimation algorithm for balanced traversals.

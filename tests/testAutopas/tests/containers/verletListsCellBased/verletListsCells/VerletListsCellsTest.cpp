@@ -27,7 +27,7 @@ void applyFunctor(MockFunctor<Particle> &functor, const double cellSizefactor,
   double skin = 0.2;
   const autopas::LoadEstimatorOption loadEstimator = autopas::LoadEstimatorOption::none;
   autopas::VerletListsCells<Particle, autopas::VLCAllCellsNeighborList<Particle>> verletLists(
-      min, max, cutoff, autopas::TraversalOption::lc_c18, skin, cellSizefactor, loadEstimator, buildType);
+      min, max, cutoff, skin, cellSizefactor, loadEstimator, buildType);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
@@ -75,9 +75,9 @@ void soaTest(const double cellSizeFactor,
   }
 
   autopas::VerletListsCells<Molecule, autopas::VLCCellPairNeighborList<Molecule>> verletLists1(
-      min, max, cutoff, autopas::TraversalOption::lc_c18, 0.3, cellSizeFactor, loadEstimator, buildType);
+      min, max, cutoff, 0.3, cellSizeFactor, loadEstimator, buildType);
   autopas::VerletListsCells<Molecule, autopas::VLCCellPairNeighborList<Molecule>> verletLists2(
-      min, max, cutoff, autopas::TraversalOption::lc_c18, 0.3, cellSizeFactor, loadEstimator, buildType);
+      min, max, cutoff, 0.3, cellSizeFactor, loadEstimator, buildType);
 
   Molecule defaultParticle({0., 0., 0.}, {0., 0., 0.}, 0, 0);
   autopasTools::generators::RandomGenerator::fillWithParticles(verletLists1, defaultParticle, verletLists1.getBoxMin(),
