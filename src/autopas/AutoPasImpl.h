@@ -193,7 +193,7 @@ std::shared_ptr<autopas::ParticleContainerInterface<Particle>> AutoPas<Particle>
 }
 
 template <class Particle>
-const std::shared_ptr<autopas::ParticleContainerInterface<Particle>> AutoPas<Particle>::getContainer() const {
+std::shared_ptr<const autopas::ParticleContainerInterface<Particle>> AutoPas<Particle>::getContainer() const {
   return _autoTuner->getContainer();
 }
 
