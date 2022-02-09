@@ -96,9 +96,12 @@ static const std::set<TraversalOption> &allVarVLAsBuildCompatibleTraversals() {
  * @return set of all applicable traversal options.
  */
 static const std::set<TraversalOption> &allVLPCompatibleTraversals() {
-  static const std::set<TraversalOption> s{TraversalOption::vlp_sliced, TraversalOption::vlp_c18,
-                                           TraversalOption::vlp_c01, TraversalOption::vlp_sliced_c02,
-                                           TraversalOption::vlp_sliced_balanced};
+  static const std::set<TraversalOption> s{TraversalOption::vlp_sliced,
+                                           TraversalOption::vlp_c18,
+                                           TraversalOption::vlp_c01,
+                                           TraversalOption::vlp_sliced_c02,
+                                           TraversalOption::vlp_sliced_balanced,
+                                           TraversalOption::vlp_c08};
   return s;
 }
 

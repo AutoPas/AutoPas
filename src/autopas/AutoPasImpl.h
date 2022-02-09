@@ -149,6 +149,11 @@ void AutoPas<Particle>::deleteParticle(ParticleIteratorWrapper<Particle, true> &
 }
 
 template <class Particle>
+void AutoPas<Particle>::deleteParticle(Particle &particle) {
+  _logicHandler->deleteParticle(particle);
+}
+
+template <class Particle>
 typename AutoPas<Particle>::iterator_t AutoPas<Particle>::begin(IteratorBehavior behavior) {
   return _logicHandler->begin(behavior);
 }
