@@ -820,7 +820,7 @@ class AutoPas {
  private:
   std::shared_ptr<autopas::ParticleContainerInterface<Particle>> getContainer();
 
-  const std::shared_ptr<autopas::ParticleContainerInterface<Particle>> getContainer() const;
+  std::shared_ptr<const autopas::ParticleContainerInterface<Particle>> getContainer() const;
 
  private:
   /**
