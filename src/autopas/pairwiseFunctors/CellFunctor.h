@@ -14,7 +14,7 @@
 
 namespace autopas::internal {
 /**
- * A cell functor. This functor is build from the normal Functor of the template
+ * A cell functor. This functor is built from the normal Functor of the template
  * type ParticleFunctor. It is an internal object to handle interactions between
  * two cells of particles.
  * @tparam Particle
