@@ -310,6 +310,11 @@ class MulticenteredParticleBase : autopas::ParticleBase<floatType, idType> {
       return text.str();
     }
 
+    using SoAArraysType =
+        typename autopas::utils::SoAType<MulticenteredParticleBase<floatType,idType> *, idType /*id*/ , floatType /*x*/,
+          floatType /*y*/, floatType /*z*/, floatType /*fx*/, floatType /*fy*/, floatType /*fz*/,
+          autopas::OwnershipState /*ownershipState*/>::Type;
+
 
 };
 
