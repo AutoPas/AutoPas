@@ -59,6 +59,20 @@ static int callback(void*, int argc, char** argv, char** azColName) {
   return 0;
 }
 
+static std::string escapeSingleQuotesForSQL(const std::string& str) {
+  std::string result;
+  result.reserve(str.size() + 6);
+
+  for(char c : str) {
+    result.push_back(c);
+    if(c == '\'') {
+      result.push_back('\'');
+    }
+  }
+
+  return result;
+}
+
 class LogToSQLiteWriter {
  public:
   explicit LogToSQLiteWriter(const std::string& databaseName) : _db(nullptr) {
@@ -81,6 +95,7 @@ class LogToSQLiteWriter {
       exit(-1);
     }
 
+    auto escapedFilename = escapeSingleQuotesForSQL(filename);
     std::stringstream insertScenarios;
     std::stringstream insertMeasurements;
     insertScenarios << "INSERT INTO ScenarioRaw VALUES ";
@@ -97,7 +112,7 @@ class LogToSQLiteWriter {
 
       if (type == "evidence") {
         const auto &[time, iteration, config] = autopas::tuningLogEntry::readEvidence(stream);
-        insertMeasurements << sepMeasurements << "(\'" << filename << "\',\'"
+        insertMeasurements << sepMeasurements << "(\'" << escapedFilename << "\',\'"
             << config.container << "\'," << config.cellSizeFactor << ",\'" << config.traversal << "\',\'"
             << config.loadEstimator << "\',\'" << config.dataLayout << "\',\'" << config.newton3 << "\',"
             << iteration << "," << time << ")";
@@ -110,7 +125,7 @@ class LogToSQLiteWriter {
         auto toStr = [](const auto& variant) {
           return std::visit([](const auto &val) { return std::to_string(val); }, variant);
         };
-        insertScenarios << sepScenarios << "( \'" << filename << "\',"
+        insertScenarios << sepScenarios << "( \'" << escapedFilename << "\',"
             << toStr(d.at("avgParticlesPerCell")) << "," << toStr(d.at("cutoff")) << ","
             << toStr(d.at("domainSizeX")) << "," << toStr(d.at("domainSizeY")) << ","
             << toStr(d.at("domainSizeZ")) << ","
@@ -130,6 +145,8 @@ class LogToSQLiteWriter {
       }
     }
 
+    std::cout << insertScenarios.str() << std::endl;
+    std::cout << insertMeasurements.str() << std::endl;
     sendQuery(insertScenarios.str().c_str());
     sendQuery(insertMeasurements.str().c_str());
   }
