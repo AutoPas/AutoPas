@@ -155,7 +155,7 @@ inline std::vector<std::string> tokenize(const std::string &searchString, const 
  * Converts a string to std::array<double,3>.
  * Allowed delimiters can be found in autopas::utils::StringUtils::delimiters.
  *
- * String format: 3 doubles(or ints) separeted by delimiters (examples: 10.,10.,10.)
+ * String format: 3 doubles(or ints) separated by delimiters (examples: 10.,10.,10.)
  *
  * @param string String to parse.
  * @return

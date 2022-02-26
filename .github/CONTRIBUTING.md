@@ -147,8 +147,11 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 * Inherit from `src/autopas/options/Option.h`. This will also generate functions for conversion from and to strings.
 * Add new unit tests for your option, mainly in `tests/testAutopas/tests/options/OptionTest.cpp`.
 * Also add the new option to md-flexible! 
-  * The option needs to be added in `examples/md-flexible/src/parsing/MDFlexConfig.h`.
-  * Parsing for it in `examples/md-flexible/src/parsing/CLIParser.cpp` and `YamlParser.cpp`
+  * Add the option in `examples/md-flexible/src/parsing/MDFlexConfig.h`
+  * Add it to `MDFlexConfig::to_string`
+  * Parse it in `examples/md-flexible/src/parsing/CLIParser.cpp` (in `CLIParser::parseInput()`: Add it to `relevantOptions` and switch)
+  * Parse it in `examples/md-flexible/src/configuration/YamlParser.cpp`
+  * If applicable, pass the option value to AutoPas in `Simulation::Simulation()`
   * Make sure that the description is parsable by `CLIParser::createZSHCompletionFile()`
 
 ### Making an Option tunable

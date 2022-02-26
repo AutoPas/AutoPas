@@ -18,9 +18,11 @@ namespace TimeDiscretization {
  * @param autoPasContainer The container for which to update the positions.
  * @param particlePropertiesLibrary The particle properties library for the particles in the container.
  * @param deltaT The time step width.
+ * @param globalForce Base force value to which every particle is reset.
  */
 void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
-                        const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
+                        const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
+                        const std::array<double, 3> &globalForce);
 
 /**
  * Calculate and update the velocity for every particle using the the Störmer-Verlet Algorithm.

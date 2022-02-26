@@ -12,6 +12,7 @@
 #include "autopas/AutoPas.h"
 #include "autopas/utils/WrapMPI.h"
 #include "src/TypeDefinitions.h"
+#include "src/options/BoundaryTypeOption.h"
 
 /**
  * This class can be used as a domain decomposition which divides the domain in equal sized rectangular subdomains.
@@ -26,10 +27,11 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param subdivideDimension: Decides if a dimension will be subdivided.
    * @param cutoffWidth: The cutoff width for halo particles.
    * @param skinWidth: The skin width of an autopas container domain.
+   * @param boundaryConditions: An array of boundary conditions in the x, y, and z directions.
    */
   RegularGridDecomposition(const std::array<double, 3> &globalBoxMin, const std::array<double, 3> &globalBoxMax,
-                           const std::array<bool, 3> &subdivideDimension, const double &cutoffWidth,
-                           const double &skinWidth);
+                           const std::array<bool, 3> &subdivideDimension, double cutoffWidth, double skinWidth,
+                           const std::array<options::BoundaryTypeOption, 3> &boundaryConditions);
 
   /**
    * Destructor.
@@ -127,6 +129,12 @@ class RegularGridDecomposition final : public DomainDecomposition {
    */
   void exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer);
 
+  /**
+   * Reflects particles within a reflective skin along the inside of a boundary.
+   * @param autoPasContainer: The container, where the migrating particles originate from.
+   */
+  void reflectParticlesAtBoundaries(SharedAutoPasContainer &autoPasContainer);
+
  private:
   /**
    * The number of neighbours of a rectangular domain.
@@ -207,6 +215,11 @@ class RegularGridDecomposition final : public DomainDecomposition {
   std::array<double, 3> _localBoxMax;
 
   /**
+   * Boundary condition types.
+   */
+  std::array<options::BoundaryTypeOption, 3> _boundaryType;
+
+  /**
    * A temporary buffer used for MPI send requests.
    */
   std::vector<autopas::AutoPas_MPI_Request> _sendRequests;
@@ -215,12 +228,6 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * A temporary buffer for data which is sent by MPI_Send.
    */
   std::vector<std::vector<char>> _sendBuffers;
-
-  /**
-   * Initializes the decomposition of the domain.
-   * This needs to be called before initializeMPICommunicator.
-   */
-  void initializeDecomposition();
 
   /**
    * Initializes the MPI communicator.
@@ -233,11 +240,6 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * This needs to be called before initializeLocalBox.
    */
   void initializeLocalDomain();
-
-  /**
-   * Initializes the global domain coordinates.
-   */
-  void initializeGlobalBox(const std::array<double, 3> &globalBoxMin, const std::array<double, 3> &globalBoxMax);
 
   /**
    * Initializes the local domain coordinates.

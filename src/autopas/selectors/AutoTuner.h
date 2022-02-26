@@ -178,6 +178,10 @@ class AutoTuner {
   [[nodiscard]] const Configuration &getCurrentConfig() const;
 
  private:
+  /**
+   * Total number of collected samples. This is the sum of the sizes of all sample vectors.
+   * @return Sum of sizes of sample vectors.
+   */
   auto getCurrentNumSamples() const {
     return _samplesNotRebuildingNeighborLists.size() + _samplesRebuildingNeighborLists.size();
   }
@@ -195,21 +199,29 @@ class AutoTuner {
   void addTimeMeasurement(long time, bool neighborListRebuilt);
 
   /**
-   * @return the runtime from the current samples according to the SelectorStrategy and rebuild frequency.
+   * Estimate the runtime from the current samples according to the SelectorStrategy and rebuild frequency.
+   * Samples are weighted so that we normalize to the expected number of (non-)rebuild iterations and then divide by the
+   * rebuild frequency.
+   * @return estimate time for one iteration
    */
   [[nodiscard]] long estimateRuntimeFromSamples() const {
-    auto reducedValueBuilding =
-        autopas::OptimumSelector::optimumValue(this->_samplesRebuildingNeighborLists, this->_selectorStrategy);
-    auto reducedValueNotBuilding =
-        autopas::OptimumSelector::optimumValue(this->_samplesNotRebuildingNeighborLists, this->_selectorStrategy);
-    // Weight samples from iterations with rebuilding neighbor lists properly in according to the _rebuildFrequency
-    auto numIterationsNotBuilding = std::max(
-        0, static_cast<int>(this->_rebuildFrequency) - static_cast<int>(this->_samplesRebuildingNeighborLists.size()));
-    auto numIterationsBuilding = this->_rebuildFrequency - numIterationsNotBuilding;
-    const auto reducedValue =
-        (numIterationsBuilding * reducedValueBuilding + numIterationsNotBuilding * reducedValueNotBuilding) /
-        this->_rebuildFrequency;
-    return reducedValue;
+    // reduce samples for rebuild and non-rebuild iterations with the given selector strategy
+    const auto reducedValueBuilding =
+        autopas::OptimumSelector::optimumValue(_samplesRebuildingNeighborLists, _selectorStrategy);
+    // if there is no data for the non rebuild iterations we have to assume them taking the same time as rebuilding ones
+    // this might neither be a good estimate nor fair but the best we can do
+    const auto reducedValueNotBuilding =
+        _samplesNotRebuildingNeighborLists.empty()
+            ? reducedValueBuilding
+            : autopas::OptimumSelector::optimumValue(_samplesNotRebuildingNeighborLists, _selectorStrategy);
+
+    const auto numIterationsNotBuilding =
+        std::max(0, static_cast<int>(_rebuildFrequency) - static_cast<int>(_samplesRebuildingNeighborLists.size()));
+    const auto numIterationsBuilding = _rebuildFrequency - numIterationsNotBuilding;
+
+    // calculate weighted estimate for one iteration
+    return (numIterationsBuilding * reducedValueBuilding + numIterationsNotBuilding * reducedValueNotBuilding) /
+           _rebuildFrequency;
   }
 
   /**
@@ -283,7 +295,7 @@ class AutoTuner {
    * Raw time samples of the current configuration. Contains only the samples of iterations where the neighbor lists
    * have been rebuilt.
    */
-  std::vector<long> _samplesRebuildingNeighborLists;
+  std::vector<long> _samplesRebuildingNeighborLists{};
 
   /**
    * For each configuration the collection of all evidence (smoothed values) collected so far and in which iteration.
@@ -635,7 +647,7 @@ void AutoTuner<Particle>::addTimeMeasurement(long time, bool neighborListRebuilt
     if (getCurrentNumSamples() == _maxSamples) {
       auto &evidenceCurrentConfig = _evidence[currentConfig];
 
-      long reducedValue = estimateRuntimeFromSamples();
+      const long reducedValue = estimateRuntimeFromSamples();
 
       evidenceCurrentConfig.emplace_back(_iteration, reducedValue);
 

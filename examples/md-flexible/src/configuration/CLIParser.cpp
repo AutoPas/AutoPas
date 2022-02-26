@@ -35,11 +35,11 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.extrapolationMethodOption, config.evidenceFirstPrediction, config.functorOption, config.dontMeasureFlops,
       config.generatorOption, config.iterations, config.tuningInterval, config.logLevel, config.logFileName,
       config.distributionMean, config.maxTuningPhasesWithoutTest, config.particlesPerDim, config.particlesTotal,
-      config.relativeOptimumRange, config.relativeBlacklistRange, config.periodic, config.tuningPhases,
-      config.verletClusterSize, config.verletSkinRadius, config.particleSpacing, config.tuningSamples,
-      config.traversalOptions, config.tuningStrategyOption, config.mpiStrategyOption, config.useThermostat,
-      config.verletRebuildFrequency, config.vtkFileName, config.vtkWriteFrequency, config.selectorStrategy,
-      config.yamlFilename, config.distributionStdDev, config.globalForce, config.useTuningLogger, config.outputSuffix,
+      config.relativeOptimumRange, config.relativeBlacklistRange, config.tuningPhases, config.verletClusterSize,
+      config.verletSkinRadius, config.particleSpacing, config.tuningSamples, config.traversalOptions,
+      config.tuningStrategyOption, config.mpiStrategyOption, config.useThermostat, config.verletRebuildFrequency,
+      config.vtkFileName, config.vtkWriteFrequency, config.selectorStrategy, config.yamlFilename,
+      config.distributionStdDev, config.globalForce, config.boundaryOption, config.useTuningLogger, config.outputSuffix,
       zshCompletionsOption, helpOption)};
 
   constexpr auto relevantOptionsSize = std::tuple_size_v<decltype(relevantOptions)>;
@@ -392,15 +392,6 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case decltype(config.periodic)::getoptChar: {
-        try {
-          config.periodic.value = autopas::utils::StringUtils::parseBoolOption(strArg);
-        } catch (const exception &) {
-          cerr << "Error parsing whether there should be periodic boundary conditions: " << strArg << endl;
-          displayHelp = true;
-        }
-        break;
-      }
       case decltype(config.verletClusterSize)::getoptChar: {
         try {
           config.verletClusterSize.value = (unsigned int)stoul(strArg);
@@ -540,6 +531,11 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           cerr << "Expecting one double as force along the z-axis." << endl;
           displayHelp = true;
         }
+        break;
+      }
+      case decltype(config.boundaryOption)::getoptChar: {
+        auto parsedOption = options::BoundaryTypeOption::parseOptionExact((strArg));
+        config.boundaryOption.value = {parsedOption, parsedOption, parsedOption};
         break;
       }
       case decltype(config.useTuningLogger)::getoptChar: {

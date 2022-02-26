@@ -31,7 +31,7 @@ inline long minValue(const std::vector<long> &values) { return *std::min_element
  * @return Arithmetic mean of the vector.
  */
 inline long meanValue(const std::vector<long> &values) {
-  return std::accumulate(values.cbegin(), values.cend(), 0l) / values.size();
+  return std::accumulate(values.cbegin(), values.cend(), 0l) / static_cast<long>(values.size());
 }
 
 /**
@@ -51,11 +51,11 @@ inline long medianValue(std::vector<long> values) {
  * Optimal value according to passed strategy.
  * @param values
  * @param strategy For possible selector strategy choices see AutoPas::SelectorStrategy.
- * @return value
+ * @return value or 0 if values is empty.
  */
 inline long optimumValue(const std::vector<long> &values, SelectorStrategyOption strategy) {
   if (values.empty()) {
-    return std::numeric_limits<long>::max();
+    return 0l;
   }
 
   switch (strategy) {

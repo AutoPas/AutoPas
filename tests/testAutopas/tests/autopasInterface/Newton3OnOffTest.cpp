@@ -116,16 +116,8 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
     EXPECT_EQ(callsNewton3SC, callsNonNewton3SC) << "for containeroption: " << containerOption;
   }
 
-  if (dataLayout == autopas::DataLayoutOption::soa &&
-      (containerOption == autopas::ContainerOption::pairwiseVerletLists ||
-       containerOption == autopas::ContainerOption::verletListsCells)) {
-    // SoAFunctorVerlet gets called the same number of times, the difference is reflected in the content of the neighbor
-    // lists
-    EXPECT_EQ(callsNewton3Pair, callsNonNewton3Pair) << "for containeroption: " << containerOption;
-  } else {
-    // should be called exactly two times
-    EXPECT_EQ(callsNewton3Pair * 2, callsNonNewton3Pair) << "for containeroption: " << containerOption;
-  }
+  // should be called exactly two times
+  EXPECT_EQ(callsNewton3Pair * 2, callsNonNewton3Pair) << "for containeroption: " << containerOption;
 
   if (::testing::Test::HasFailure()) {
     std::cerr << "Failures for Container: " << containerOption.to_string()

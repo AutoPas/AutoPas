@@ -151,6 +151,12 @@ class AutoPas {
   void deleteParticle(ParticleIteratorWrapper<Particle, true> &iter);
 
   /**
+   * Deletes the given particle.
+   * @param particle Reference to the particle that should be deleted.
+   */
+  void deleteParticle(Particle &particle);
+
+  /**
    * Function to iterate over all pairs of particles in the container.
    * This function only handles short-range interactions.
    * @param f Functor that describes the pair-potential.
@@ -825,7 +831,7 @@ class AutoPas {
  private:
   std::shared_ptr<autopas::ParticleContainerInterface<Particle>> getContainer();
 
-  const std::shared_ptr<autopas::ParticleContainerInterface<Particle>> getContainer() const;
+  std::shared_ptr<const autopas::ParticleContainerInterface<Particle>> getContainer() const;
 
  private:
   /**
