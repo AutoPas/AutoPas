@@ -14,8 +14,6 @@ file(
 
 add_library(autopas STATIC ${MY_SRC})
 
-option(AUTOPAS_LINK_WITH_IRC "Links AutoPas with irc from Intel. This is necessary on some clusters." OFF)
-
 target_link_libraries(
     autopas
     PUBLIC
@@ -24,7 +22,6 @@ target_link_libraries(
         $<$<BOOL:${AUTOPAS_OPENMP}>:OpenMP::OpenMP_CXX>
         spdlog::spdlog
         $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:MPI::MPI_CXX>
-        $<$<BOOL:${AUTOPAS_LINK_WITH_IRC}>:irc>
         antlr4cpp
         $<$<OR:$<BOOL:${AUTOPAS_INTERNODE_TUNING}>,$<BOOL:${MD_FLEXIBLE_USE_MPI}>>:MPI::MPI_CXX>
     PRIVATE
@@ -47,4 +44,3 @@ target_compile_definitions(
 
 target_include_directories(autopas PUBLIC ${AUTOPAS_SOURCE_DIR}/src/)
 target_include_directories(autopas PUBLIC ${AUTOPAS_BINARY_DIR}/src/)
-#target_include_directories(autopas PUBLIC "/usr/include/antlr4-runtime/")
