@@ -6,8 +6,18 @@
 
 #pragma once
 
+#include "src/Particles/MulticenteredMolecule.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "autopas/pairwiseFunctors/Functor.h"
+#include "autopas/particles/OwnershipState.h"
+#include "autopas/utils/AlignedAllocator.h"
+#include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/SoA.h"
+#include "autopas/utils/StaticBoolSelector.h"
+#include "autopas/utils/WrapOpenMP.h"
+#include "autopas/utils/inBox.h"
+#include "autopas/utils/Quaternion.h"
 
 /**
 * A functor to handle Lennard-Jones interactions between two (potentially multicentered) Molecules.
@@ -21,20 +31,20 @@
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
 */
-template <class Particle, bool applyShift = false, bool useMixing = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
+template <class MulticenteredMolecule, bool applyShift = false, bool useMixing = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
           bool calculatedGlobals = false, bool relevantForTuning = true>
 class LJMulticenterFunctor
-    : public autopas::Functor<Particle,
-    LJMulticenterFunctor<Particle, applyShift, useMixing, useNewton3, calculatedGlobals, relevantForTuning>> {
+    : public autopas::Functor<MulticenteredMolecule,
+    LJMulticenterFunctor<MulticenteredMolecule, applyShift, useMixing, useNewton3, calculatedGlobals, relevantForTuning>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
-   using SoAArraysType = typename Particle::SoAArraysType;
+   using SoAArraysType = typename MulticenteredMolecule::SoAArraysType;
 
    /**
     * Precision of SoA entries
     */
-   using SoAFloatPrecision = typename Particle::ParticleSoAFloatPrecision;
+   using SoAFloatPrecision = typename MulticenteredMolecule::ParticleSoAFloatPrecision;
 
    /**
     * cutoff^2
@@ -42,7 +52,7 @@ class LJMulticenterFunctor
    const double _cutoffSquared;
 
    /**
-    * What is this? not constant as may be reset through PPL.
+    * epsilon x 24. Not constant as may be reset through PPL.
     */
    double _epsilon24;
 
@@ -71,6 +81,16 @@ class LJMulticenterFunctor
     */
    std::array<double,3> _virialSum;
 
+   /**
+    * Thread buffer for AoS
+    */
+   std::vector<AoSThreadData> _aosThreadData;
+
+   /**
+    * Defines whether or whether not the global values are already processed
+    */
+   bool _postProcessed;
+
    
 
   public:
@@ -93,9 +113,9 @@ class LJMulticenterFunctor
           _potentialEnergySum{0.},
           _virialSum{0.,0.,0.},
           _aosThreadData(),
-          _postProcessed{false}, {
-       if constexpr (calculateGlobals) {
-         _aosThreadData.resize(autopas_get_max_threads());
+          _postProcessed{false} {
+       if constexpr (calculatedGlobals) {
+         _aosThreadData.resize(autopas::autopas_get_max_threads());
        }
      }
 
@@ -135,15 +155,63 @@ class LJMulticenterFunctor
 
        /**
         * Functor for AoS. Simply loops over the sites of two particles/molecules to calculate force.
-        * @param p_i Particle i
-        * @param p_j Particle j
+        * @param particleA Particle i
+        * @param particleB Particle j
         * @param newton3 Flag for if newton3 is used.
         */
-        void AoSFunctor(Particle &p_i, Particle &p_j, bool newton3) final {
-          if (p_i.isDummy() or p_j.isDumm()) {
+        void AoSFunctor(MulticenteredMolecule &particleA, MulticenteredMolecule &particleB, bool newton3) final {
+          if (particleA.isDummy() or particleB.isDummy()) {
             return;
           }
-          auto sigmasquare = _sigma
+          auto sigmaSquared = _sigmaSquared;
+          auto epsilon24 = _epsilon24; // todo potentially rename
+          auto shift6 = _shift6;
+          if constexpr (useMixing) {
+            // todo add this functionality
+            autopas::utils::ExceptionHandler::exception("LJMulticenterFunctor: Mixing with multicentered molecules not yet implemented");
+          }
+
+          const auto displacementCoM = autopas::utils::ArrayMath::sub(particleA.get_R(), particleB.get_R());
+          const auto distanceSquaredCoM = autopas::utils::ArrayMath::dot(displacementCoM,displacementCoM);
+
+          // Don't calculate LJ if particleB outside cutoff of particleA
+          if (distanceSquaredCoM > _cutoffSquared) { return; }
+
+          //
+          const auto unrotatedSitePositionsA = particleA.getSitesLJ();
+          const auto unrotatedSitePositionsB = particleB.getSitesLJ();
+
+          const auto rotatedSitePositionsA = autopas::utils::quaternion::rotateVectorOfPositions(particleA.getQ(), unrotatedSitePositionsA);
+          const auto rotatedSitePositionsB = autopas::utils::quaternion::rotateVectorOfPositions(particleB.getQ(), unrotatedSitePositionsB);
+
+
+
+          std::array<double,3> forceTotal{0.,0.,0.};
+          double torqueTotal{0.};
+
+          for (int m=0; m<LJSitesParticleA.size(); m++) {
+            for (int n=0; n<LJSitesParticleB.size(); n++) {
+              const auto displacement = autopas::utils::ArrayMath::sub(
+                  autopas::utils::ArrayMath::add(displacementCoM,rotatedSitePositionsB[n]), rotatedSitePositionsA[m]);
+              const auto distanceSquared = autopas::utils::ArrayMath::dot(displacement,displacement);
+
+              // Calculate potential between sites and thus force
+              // Force = 24 * epsilon * (2*(sigma/distance)^12 - (sigma/distance)^6) * (1/distance)^2 * [x_displacement, y_displacement, z_displacement]
+              //         {                         scalarMultiple                                   } * {                displacement                  }
+              const auto invDistSquared = 1. / distanceSquared;
+              const auto lj2 = sigmaSquared * invDistSquared;
+              const auto lj6 = lj2 * lj2 * lj2;
+              const auto lj12 = lj6 * lj6;
+              const auto lj12m6 =  lj12 - lj6; // = LJ potential / (4x epsilon)
+              const auto scalarMultiple = epsilon24 * (lj12 + lj12m6) * invDistSquared;
+              const auto force = autopas::utils::ArrayMath::mulScalar(displacement,scalarMultiple);
+
+
+            }
+          }
+
+
+
         }
 
 

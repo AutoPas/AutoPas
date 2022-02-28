@@ -20,9 +20,9 @@
  * @tparam idType
  */
 template <typename floatType, typename idType>
-class MulticenteredParticleBase : autopas::ParticleBase<floatType, idType> {
+class MulticenteredMolecule : autopas::ParticleBase<floatType, idType> {
  public:
-  MulticenteredParticleBase() = default;
+  MulticenteredMolecule() = default;
 
   /**
    * Constructor of the MulticenteredParticle Class
@@ -33,7 +33,7 @@ class MulticenteredParticleBase : autopas::ParticleBase<floatType, idType> {
    * @param sites Vector of sites of the particle.
    * @param id Id of the particle.
    */
-   MulticenteredParticleBase(std::array<floatType, 3> r, std::array<floatType, 3> v, std::array<floatType, 4> q,
+   MulticenteredMolecule(std::array<floatType, 3> r, std::array<floatType, 3> v, std::array<floatType, 4> q,
                             std::array<floatType, 3> D, std::vector<std::array<floatType,3>> sitePosLJ,
                             std::vector<std::array<floatType,3>> sitePosC, std::vector<std::array<floatType,3>> sitePosD,
                             std::vector<std::array<floatType,3>> sitePosQ, idType id)
@@ -43,7 +43,7 @@ class MulticenteredParticleBase : autopas::ParticleBase<floatType, idType> {
    /**
     * Destructor of the MulticenteredParticle class.
     */
-    virtual ~MulticenteredParticleBase() = default;
+    virtual ~MulticenteredMolecule() = default;
 
    protected:
    /**
@@ -311,7 +311,7 @@ class MulticenteredParticleBase : autopas::ParticleBase<floatType, idType> {
     }
 
     using SoAArraysType =
-        typename autopas::utils::SoAType<MulticenteredParticleBase<floatType,idType> *, idType /*id*/ , floatType /*x*/,
+        typename autopas::utils::SoAType<MulticenteredMolecule<floatType,idType> *, idType /*id*/ , floatType /*x*/,
           floatType /*y*/, floatType /*z*/, floatType /*fx*/, floatType /*fy*/, floatType /*fz*/,
           autopas::OwnershipState /*ownershipState*/>::Type;
 
