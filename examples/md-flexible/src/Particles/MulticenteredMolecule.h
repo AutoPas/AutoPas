@@ -72,6 +72,16 @@ class MulticenteredMolecule : autopas::ParticleBase<floatType, idType> {
    std::array<floatType,3> _D;
 
    /**
+    * Angular momentum of the particle.
+    */
+
+
+   /**
+    * Net torque applied to particle. (+ve = counterclockwise)
+    */
+   floatType _t;
+
+   /**
     * Position of Lennard-Jones sites relative to CoM.
     */
    std::vector<std::array<floatType,3>> _sitePosLJ;

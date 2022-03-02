@@ -197,6 +197,11 @@ template <class T, std::size_t SIZE>
   return dotAux(a, b, std::make_index_sequence<SIZE>{});
 }
 
+template <class T>
+[[nodiscard]] constexpr T cross(const std::array<T, 3> &a, const std::array<T, 3> &b) {
+  return {a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]};
+}
+
 /**
  * Computes the L2Norm / Euclidean norm.
  * @tparam T floating point type

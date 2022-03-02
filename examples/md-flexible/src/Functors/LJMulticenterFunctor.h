@@ -133,6 +133,7 @@ class LJMulticenterFunctor
 
       /**
        * Constructor for Functor with particle mixing enabled.
+       * Calculating global attributes is done with CoM and overall forces applied
        * @param cutoff
        * @param particlePropertiesLibrary Library used to look up the properties of each type of particle e.g. sigma,
        * epsilon, shift.
@@ -171,26 +172,31 @@ class LJMulticenterFunctor
             autopas::utils::ExceptionHandler::exception("LJMulticenterFunctor: Mixing with multicentered molecules not yet implemented");
           }
 
+          double lj12m6Sum = 0;
+
           const auto displacementCoM = autopas::utils::ArrayMath::sub(particleA.get_R(), particleB.get_R());
           const auto distanceSquaredCoM = autopas::utils::ArrayMath::dot(displacementCoM,displacementCoM);
 
           // Don't calculate LJ if particleB outside cutoff of particleA
           if (distanceSquaredCoM > _cutoffSquared) { return; }
 
-          //
+          // get relative site positions
           const auto unrotatedSitePositionsA = particleA.getSitesLJ();
           const auto unrotatedSitePositionsB = particleB.getSitesLJ();
 
+          // calculate relative site positions (rotated correctly)
           const auto rotatedSitePositionsA = autopas::utils::quaternion::rotateVectorOfPositions(particleA.getQ(), unrotatedSitePositionsA);
           const auto rotatedSitePositionsB = autopas::utils::quaternion::rotateVectorOfPositions(particleB.getQ(), unrotatedSitePositionsB);
 
-
-
           std::array<double,3> forceTotal{0.,0.,0.};
-          double torqueTotal{0.};
+          std::array<double,3> torqueTotal{0.};
 
-          for (int m=0; m<LJSitesParticleA.size(); m++) {
-            for (int n=0; n<LJSitesParticleB.size(); n++) {
+          // calculate number of sites for each molecule
+          const size_t numSitesA = rotatedSitePositionsA.size();
+          const size_t numSitesB = rotatedSitePositionsB.size();
+
+          for (int m=0; m<numSitesA; m++) {
+            for (int n=0; n<numSitesB; n++) {
               const auto displacement = autopas::utils::ArrayMath::sub(
                   autopas::utils::ArrayMath::add(displacementCoM,rotatedSitePositionsB[n]), rotatedSitePositionsA[m]);
               const auto distanceSquared = autopas::utils::ArrayMath::dot(displacement,displacement);
@@ -206,12 +212,39 @@ class LJMulticenterFunctor
               const auto scalarMultiple = epsilon24 * (lj12 + lj12m6) * invDistSquared;
               const auto force = autopas::utils::ArrayMath::mulScalar(displacement,scalarMultiple);
 
+              // Add force on site to net force
+              particleA.addF(force);
+              if (newton3) {particleB.subF(force);}
 
+              // Add torque applied by force
+              particleA.addT(autopas::utils::ArrayMath::cross(rotatedSitePositionsA[m],force));
+              if (newton3) {particleB.subT(autopas::utils::ArrayMath::cross(rotatedSitePositionsB[n],force));}
+
+              if (calculatedGlobals) {
+                forceTotal = autopas::utils::ArrayMath::add(forceTotal,force);
+                lj12m6Sum += lj12m6;
+              }
             }
           }
 
+          // calculate globals
+          if (calculatedGlobals) {
+            const double newton3Multiplier = newton3 ? 0.5 : 1.0;
 
+            const auto virial = autopas::utils::ArrayMath::mulScalar(autopas::utils::ArrayMath::mul(displacementCoM,forceTotal),newton3Multiplier);
+            const auto potentialEnergy = (epsilon24 * lj12m6Sum + shift6 * numSitesA * numSitesB) * newton3Multiplier;
 
+            const int threadNum = autopas::autopas_get_thread_num();
+
+            if (particleA.isOwned()) {
+              _aosThreadData[threadNum].potentialSum += potentialEnergy;
+              _aosThreadData[threadNum].virialSum = autopas::utils::ArrayMath::add(_aosThreadData[threadNum].virialSum, virial);
+            }
+            if (newton3 and particleB.isOwned()) {
+              _aosThreadData[threadNum].potentialSum += potentialEnergy;
+              _aosThreadData[threadNum].virialSum = autopas::utils::ArrayMath::add(_aosThreadData[threadNum].virialSum, virial);
+            }
+          }
         }
 
 
