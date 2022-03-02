@@ -32,10 +32,10 @@
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
 */
 template <class MulticenteredMolecule, bool applyShift = false, bool useMixing = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
-          bool calculatedGlobals = false, bool relevantForTuning = true>
+          bool calculateGlobals = false, bool relevantForTuning = true>
 class LJMulticenterFunctor
     : public autopas::Functor<MulticenteredMolecule,
-    LJMulticenterFunctor<MulticenteredMolecule, applyShift, useMixing, useNewton3, calculatedGlobals, relevantForTuning>> {
+    LJMulticenterFunctor<MulticenteredMolecule, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -62,9 +62,14 @@ class LJMulticenterFunctor
   double _sigmaSquared;
 
   /**
-   * What is this? Not constant as may be reset through PPL.
+   * Not constant as may be reset through PPL.
    */
   double _shift6 = 0;
+
+  /**
+   * List of relative unrotated LJ Site Positions. This is to be used when there is no mixing of molecules.
+   */
+  const std::vector<std::array<double,3>> _sitePositionsLJ{};
 
   /**
    * Particle property library. Not used if all sites are of the same species.
@@ -80,11 +85,6 @@ class LJMulticenterFunctor
    * Sum of the virial. Only calculated if calculateGlobals is true.
    */
   std::array<double,3> _virialSum;
-
-  /**
-   * Thread buffer for AoS
-   */
-  std::vector<AoSThreadData> _aosThreadData;
 
   /**
    * Defines whether or whether not the global values are already processed
@@ -106,7 +106,7 @@ class LJMulticenterFunctor
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit LJMulticenterFunctor(SoAFloatPrecision cutoff, void * /*dummy*/)
-    : autopas::Functor <MulticenteredMolecule, LJMulticenterFunctor<MulticenteredMolecule, applyShift, useMixing, useNewton3, calculatedGlobals, relevantForTuning>>(
+    : autopas::Functor <MulticenteredMolecule, LJMulticenterFunctor<MulticenteredMolecule, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
               cutoff
               ),
           _cutoffSquared{cutoff*cutoff},
@@ -114,7 +114,7 @@ class LJMulticenterFunctor
           _virialSum{0.,0.,0.},
           _aosThreadData(),
           _postProcessed{false} {
-       if constexpr (calculatedGlobals) {
+       if constexpr (calculateGlobals) {
          _aosThreadData.resize(autopas::autopas_get_max_threads());
        }
   }
@@ -164,9 +164,15 @@ class LJMulticenterFunctor
     if (particleA.isDummy() or particleB.isDummy()) {
       return;
     }
+    // get site properties
     auto sigmaSquared = _sigmaSquared;
     auto epsilon24 = _epsilon24; // todo potentially rename
     auto shift6 = _shift6;
+
+    // get relative site positions
+    auto unrotatedSitePositionsA = _sitePositionsLJ;
+    auto unrotatedSitePositionsB = _sitePositionsLJ;
+
     if constexpr (useMixing) {
       // todo add this functionality
       autopas::utils::ExceptionHandler::exception("LJMulticenterFunctor: Mixing with multicentered molecules not yet implemented");
@@ -179,10 +185,6 @@ class LJMulticenterFunctor
 
     // Don't calculate LJ if particleB outside cutoff of particleA
     if (distanceSquaredCoM > _cutoffSquared) { return; }
-
-    // get relative site positions
-    const auto unrotatedSitePositionsA = particleA.getSitesLJ();
-    const auto unrotatedSitePositionsB = particleB.getSitesLJ();
 
     // calculate relative site positions (rotated correctly)
     const auto rotatedSitePositionsA = autopas::utils::quaternion::rotateVectorOfPositions(particleA.getQ(), unrotatedSitePositionsA);
@@ -220,7 +222,7 @@ class LJMulticenterFunctor
         particleA.addT(autopas::utils::ArrayMath::cross(rotatedSitePositionsA[m],force));
         if (newton3) {particleB.subT(autopas::utils::ArrayMath::cross(rotatedSitePositionsB[n],force));}
 
-        if (calculatedGlobals) {
+        if (calculateGlobals) {
           forceTotal = autopas::utils::ArrayMath::add(forceTotal,force);
           lj12m6Sum += lj12m6;
         }
@@ -228,7 +230,7 @@ class LJMulticenterFunctor
     }
 
     // calculate globals
-    if (calculatedGlobals) {
+    if (calculateGlobals) {
       const double newton3Multiplier = newton3 ? 0.5 : 1.0;
 
       const auto virial = autopas::utils::ArrayMath::mulScalar(autopas::utils::ArrayMath::mul(displacementCoM,forceTotal),newton3Multiplier);
@@ -247,7 +249,134 @@ class LJMulticenterFunctor
     }
   }
 
+  /**
+   * Sets the particle properties constants for this functor.
+   *
+   * This is only necessary if no particlePropertiesLibrary is used.
+   * @param epsilon24 epsilon * 24
+   * @param sigmaSquared sigma^2
+   */
+  void setParticleProperties(SoAFloatPrecision epsilon24, SoAFloatPrecision sigmaSquared) {
+    _epsilon24 = epsilon24;
+    _sigmaSquared = sigmaSquared;
+    if (applyShift) {
+      _shift6 = ParticlePropertiesLibrary<double,size_t>::calcShift6(_epsilon24,_sigmaSquared,_cutoffSquared);
+    } else {
+      _shift6 = 0;
+    }
+  }
 
+  /**
+   * @return useMixing
+   */
+  constexpr static bool getMixing() { return  useMixing; }
 
+  /**
+   * Get the number of flops used per kernel call - i.e. number of flops to calculate kernel *given* the two particles
+   * lie within the cutoff (i.e. distance^2 / cutoff has been already been calculated).
+   * @param numA number of sites in molecule A
+   * @param numB number of sites in molecule B
+   * @return #FLOPs
+   */
+  static unsigned long getNumFlopsPerKernelCall(bool newton3, size_t numA,size_t numB) {
+    const unsigned long newton3Flops = newton3 ? 0ul : 3ul;
+    return numA * numB * (15ul + newton3Flops);
+  }
 
+  /**
+   * Reset the global values.
+   * Will set the global values to zero to prepare for the next iteration.
+   */
+  void initTraversal() final {
+    _potentialEnergySum = 0;
+    _virialSum = {0., 0., 0.};
+    _postProcessed = false;
+    for (size_t i=0; i < _aosThreadData.size(); i++) {
+      _aosThreadData[i].setZero();
+    }
+  }
+
+  /**
+   * Postprocesses global values, e.g. potential energy & virial
+   * @param newton3
+   */
+  void endTraversal(bool newton3) final {
+    if (_postProcessed) {
+      throw autopas::utils::ExceptionHandler::AutoPasException(
+          "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal()."
+          );
+    }
+    if (calculateGlobals) {
+      for (size_t i = 0; i < _aosThreadData.size(); ++i) {
+        _potentialEnergySum += _aosThreadData[i].potentialEnergySum;
+        _virialSum = autopas::utils::ArrayMath::add(_virialSum, _aosThreadData[i].virialSum);
+      }
+      if (not newton3) {
+        // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
+        // here.
+        _potentialEnergySum *= 0.5;
+        _virialSum = autopas::utils::ArrayMath::mulScalar(_virialSum,0.5);
+      }
+      // we have always calculated 6*potential, so we divide by 6 here!
+      _potentialEnergySum /= 6.;
+      _postProcessed = true;
+    }
+  }
+
+  /**
+   * Get the potential energy.
+   * @return the potential energy sum
+   */
+  double getPotentialEnergy() {
+    if (not calculateGlobals) {
+      throw autopas::utils::ExceptionHandler::AutoPasException(
+          "Trying to get upot even though calculateGlobals is false. If you want this functor to calculate global "
+          "values, please specify calculateGlobals to be true.");
+    }
+    if (not _postProcessed) {
+      throw autopas::utils::ExceptionHandler::AutoPasException("Cannot get upot, because endTraversal was not called.");
+    }
+    return _potentialEnergySum;
+  }
+
+  /**
+   * Get the virial.
+   * @return the virial
+   */
+  double getVirial() {
+    if (not calculateGlobals) {
+      throw autopas::utils::ExceptionHandler::AutoPasException(
+          "Trying to get virial even though calculateGlobals is false. If you want this functor to calculate global "
+          "values, please specify calculateGlobals to be true.");
+    }
+    if (not _postProcessed) {
+      throw autopas::utils::ExceptionHandler::AutoPasException(
+          "Cannot get virial, because endTraversal was not called.");
+    }
+    return _virialSum[0] + _virialSum[1] + _virialSum[2];
+  }
+
+ private:
+  /**
+   * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
+   */
+  class AoSThreadData {
+   public:
+    AoSThreadData() : virialSum{0., 0., 0.}, potentialEnergySum{0.} {}
+
+    void setZero() {
+      virialSum = {0., 0., 0.};
+      potentialEnergySum = 0;
+    }
+
+    std::array<double, 3> virialSum;
+    double potentialEnergySum;
+  };
+
+  static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size (should be multiple of 64)");
+
+  /**
+   * Thread buffer for AoS
+   */
+  std::vector<AoSThreadData> _aosThreadData;
 };
