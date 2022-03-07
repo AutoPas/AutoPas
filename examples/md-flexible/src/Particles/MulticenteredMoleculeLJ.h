@@ -10,19 +10,20 @@
 #include "autopas/particles/OwnershipState.h"
 
 /**
- * Standard multi-centre particle type. Consists of 4 site types: Lennard-Jones, Coulomb, Dipole, Quadrupole
+ * Standard multi-centre LJ molecules/
  *
  * The molecule is treated as a single particle for the purposes of cutoffs and containers, with a quaternion for
  * angular direction, a 3D vector-array for angular velocity, and a vectors of site positions relative to the CoM and
  * angular direction.
  *
  * @tparam floatType
- * @tparam idType
  */
-template <typename floatType, typename idType>
-class MulticenteredMolecule : autopas::ParticleBase<floatType, idType> {
+template <typename floatType = double>
+class MulticenteredMoleculeLJ : public autopas::Particle {
+  using idType = size_t;
+
  public:
-  MulticenteredMolecule() = default;
+  MulticenteredMoleculeLJ() = default;
 
   /**
    * Constructor of the MulticenteredParticle Class
@@ -33,17 +34,14 @@ class MulticenteredMolecule : autopas::ParticleBase<floatType, idType> {
    * @param sites Vector of sites of the particle.
    * @param id Id of the particle.
    */
-   MulticenteredMolecule(std::array<floatType, 3> r, std::array<floatType, 3> v, std::array<floatType, 4> q,
-                            std::array<floatType, 3> D, std::vector<std::array<floatType,3>> sitePosLJ,
-                            std::vector<std::array<floatType,3>> sitePosC, std::vector<std::array<floatType,3>> sitePosD,
-                            std::vector<std::array<floatType,3>> sitePosQ, idType id)
-                            : _r(r), _v(v), _q(q), _D(D), _sitePosLJ(sitePosLJ), _sitePosC(sitePosC),
-                              _sitePosD(sitePosD), _sitePosQ(sitePosQ, _id) {}
+   MulticenteredMoleculeLJ(std::array<floatType, 3> r, std::array<floatType, 3> v, std::array<floatType, 4> q,
+                            std::array<floatType, 3> D, std::vector<std::array<floatType,3>> sitePosLJ, unsigned long id)
+                            : _r(r), _v(v), _q(q), _D(D), _sitePosLJ(sitePosLJ), _id(id) {}
 
    /**
     * Destructor of the MulticenteredParticle class.
     */
-    virtual ~MulticenteredMolecule() = default;
+    virtual ~MulticenteredMoleculeLJ() = default;
 
    protected:
    /**
@@ -85,21 +83,6 @@ class MulticenteredMolecule : autopas::ParticleBase<floatType, idType> {
     * Position of Lennard-Jones sites relative to CoM.
     */
    std::vector<std::array<floatType,3>> _sitePosLJ;
-
-   /**
-    * Position of Coulombic sites relative to CoM.
-    */
-   std::vector<std::array<floatType,3>> _sitePosC;
-
-   /**
-    * Position of Dipole sites relative to CoM.
-    */
-   std::vector<std::array<floatType,3>> _sitePosD;
-
-   /**
-    * Position of Quadrupole sites relative to CoM.
-    */
-   std::vector<std::array<floatType,3>> _sitePosQ;
 
    /**
     * Particle id.
@@ -226,59 +209,7 @@ class MulticenteredMolecule : autopas::ParticleBase<floatType, idType> {
      */
      [[nodiscard]] const std::vector<std::array<floatType,3>> &getSitesLJ() const { return _sitePosLJ; }
 
-    /**
-    * Add Coulombic site
-    * @param relative position of Coulombic site
-     */
-    void addSiteC(const std::array<floatType,3> &sitePos) {_sitePosC.push_back(sitePos); }
 
-    /**
-    * Set Coulombic sites
-    * @param sitePosC relative position of Coloumbic sites
-     */
-    void setSitesC(const std::vector<std::array<floatType,3>> &sitePosC) {_sitePosC = sitePosC; }
-
-    /**
-     * Get Coulombic site relative positions.
-     * @return Coulombic site relative positions
-     */
-    [[nodiscard]] const std::vector<std::array<floatType,3>> &getSitesC() const { return _sitePosC; }
-
-    /**
-    * Add Dipole site
-    * @param relative position of Dipole site
-     */
-    void addSiteD(const std::array<floatType,3> &sitePos) {_sitePosD.push_back(sitePos); }
-
-    /**
-    * Set Dipole sites
-    * @param sitePosD relative position of Dipole sites
-     */
-    void setSitesD(const std::vector<std::array<floatType,3>> &sitePosD) {_sitePosD = sitePosD; }
-
-    /**
-     * Get Dipole site relative positions.
-     * @return Dipole site relative positions
-     */
-    [[nodiscard]] const std::vector<std::array<floatType,3>> &getSitesD() const { return _sitePosD; }
-
-    /**
-    * Add Quadrupole site
-    * @param relative position of Quadrupole site
-     */
-    void addSiteQ(const std::array<floatType,3> &sitePos) {_sitePosQ.push_back(sitePos); }
-
-    /**
-    * Set Quadrupole sites
-    * @param sitePosQ relative position of Quadrupole sites
-     */
-    void setSitesQ(const std::vector<std::array<floatType,3>> &sitePosQ) {_sitePosQ = sitePosQ; }
-
-    /**
-     * Get Quadrupole site relative positions.
-     * @return Quadrupole site relative positions
-     */
-    [[nodiscard]] const std::vector<std::array<floatType,3>> &getSitesQ() const { return _sitePosQ; }
 
     /**
    * Creates a string containing all data of the particle.
@@ -286,18 +217,9 @@ class MulticenteredMolecule : autopas::ParticleBase<floatType, idType> {
      */
     [[nodiscard]] virtual std::string toString() const {
       std::ostringstream text;
-      std::ostringstream lj_str, c_str, d_str, q_str;
+      std::ostringstream lj_str;
       if (_sitePosLJ.empty) {lj_str << ""; } else {
         lj_str << "\n  Lennard-Jones: " << autopas::utils::ArrayUtils::to_string(_sitePosLJ);
-      }
-      if (_sitePosC.empty) {c_str << ""; } else {
-        c_str << "\n  Coulomb       : " << autopas::utils::ArrayUtils::to_string(_sitePosC);
-      }
-      if (_sitePosD.empty) {d_str << ""; } else {
-        d_str << "\n  Dipole        : " << autopas::utils::ArrayUtils::to_string(_sitePosD);
-      }
-      if (_sitePosLJ.empty) {lj_str << ""; } else {
-        q_str << "\n  Quadrupole    : " << autopas::utils::ArrayUtils::to_string(_sitePosQ);
       }
       // clang-format off
       text << "Particle"
@@ -313,7 +235,7 @@ class MulticenteredMolecule : autopas::ParticleBase<floatType, idType> {
          << "\nRotational Velocity: "
          << autopas::utils::ArrayUtils::to_string(_D)
          << "\nRelative Site Positions:"
-         << lj_str << c_str << d_str << q_str
+         << lj_str
          << "\nOwnershipState     : "
          << _ownershipState;
       // clang-format on
@@ -321,7 +243,7 @@ class MulticenteredMolecule : autopas::ParticleBase<floatType, idType> {
     }
 
     using SoAArraysType =
-        typename autopas::utils::SoAType<MulticenteredMolecule<floatType,idType> *, idType /*id*/ , floatType /*x*/,
+        typename autopas::utils::SoAType<MulticenteredMoleculeLJ<floatType> *, idType /*id*/ , floatType /*x*/,
           floatType /*y*/, floatType /*z*/, floatType /*fx*/, floatType /*fy*/, floatType /*fz*/,
           autopas::OwnershipState /*ownershipState*/>::Type;
 

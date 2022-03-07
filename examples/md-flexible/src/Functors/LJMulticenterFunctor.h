@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "src/Particles/MulticenteredMolecule.h"
+#include "src/Particles/MulticenteredMoleculeLJ.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/particles/OwnershipState.h"
@@ -362,7 +362,7 @@ class LJMulticenterFunctor
    */
   class AoSThreadData {
    public:
-    AoSThreadData() : virialSum{0., 0., 0.}, potentialEnergySum{0.} {}
+    AoSThreadData() : virialSum{0., 0., 0.}, potentialEnergySum{0.}, __remainingTo64{} {}
 
     void setZero() {
       virialSum = {0., 0., 0.};
@@ -371,6 +371,10 @@ class LJMulticenterFunctor
 
     std::array<double, 3> virialSum;
     double potentialEnergySum;
+
+   private:
+    // dummy parameter to get the right size (64 bytes)
+    double __remainingTo64[(64 - 4 * sizeof(double)) / sizeof(double)];
   };
 
   static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size (should be multiple of 64)");

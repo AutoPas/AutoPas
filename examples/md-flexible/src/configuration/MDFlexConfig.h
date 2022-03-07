@@ -155,7 +155,7 @@ class MDFlexConfig {
   /**
    * Choice of the functor
    */
-  enum class FunctorOption { lj12_6, lj12_6_AVX, lj12_6_Globals };
+  enum class FunctorOption { lj12_6, lj12_6_AVX, lj12_6_Globals, lj12_6_Multicentered };
 
   /**
    * Choice of the particle generators specified in the command line
@@ -368,7 +368,7 @@ class MDFlexConfig {
    */
   MDFlexOption<FunctorOption, __LINE__> functorOption{
       FunctorOption::lj12_6, "functor", true,
-      "Force functor to use. Possible Values: (lennard-jones lennard-jones-AVX2 lennard-jones-globals)"};
+      "Force functor to use. Possible Values: (lennard-jones lennard-jones-AVX2 lennard-jones-globals lennard-jones-multicentered)"};
   /**
    * iterations
    */
@@ -465,6 +465,10 @@ class MDFlexConfig {
   MDFlexOption<GeneratorOption, __LINE__> generatorOption{
       GeneratorOption::grid, "particle-generator", true,
       "Scenario generator. Possible Values: (grid uniform gaussian sphere closestPacking) Default: grid"};
+
+  MDFlexOption<bool, __LINE__> includeRotational{false, "include-rotational", true,
+                                                 "Flag for if rotation of particle is to be considered in simulation. (Requires appropriate Particle and Functor)"
+  };
 
   // Object Generation:
   /**

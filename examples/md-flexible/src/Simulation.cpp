@@ -9,6 +9,7 @@
 #include "autopas/AutoPasDecl.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
+#include "Functors/LJMulticenterFunctor.h"
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 
 // Declare the main AutoPas class and the iteratePairwise() methods with all used functors as extern template
@@ -164,6 +165,7 @@ void Simulation::run() {
 
     if (_configuration.deltaT.value != 0) {
       updatePositions();
+
 
       _timers.migratingParticleExchange.start();
       _domainDecomposition.exchangeMigratingParticles(_autoPasContainer);
@@ -375,6 +377,8 @@ void Simulation::updatePositions() {
   _timers.positionUpdate.stop();
 }
 
+void Simulation::update
+
 void Simulation::updateForces() {
   _timers.forceUpdateTotal.start();
 
@@ -443,6 +447,11 @@ bool Simulation::calculatePairwiseForces() {
     case MDFlexConfig::FunctorOption::lj12_6_AVX: {
       autopas::LJFunctorAVX<ParticleType, true, true> functor{_autoPasContainer->getCutoff(),
                                                               particlePropertiesLibrary};
+      wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
+      break;
+    }
+    case MDFlexConfig::FunctorOption::lj12_6_Multicentered: {
+      LJMulticenterFunctor<MulticenteredParticleType,  true, true> functor{_autoPasContainer->getCutoff(),particlePropertiesLibrary};
       wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
       break;
     }
