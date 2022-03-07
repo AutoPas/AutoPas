@@ -34,9 +34,9 @@ class MulticenteredMoleculeLJ : public autopas::Particle {
    * @param sites Vector of sites of the particle.
    * @param id Id of the particle.
    */
-   MulticenteredMoleculeLJ(std::array<floatType, 3> r, std::array<floatType, 3> v, std::array<floatType, 4> q,
+   MulticenteredMoleculeLJ(std::array<floatType, 3> r, std::array<floatType, 3> v, std::array<double, 9> rotMat,
                             std::array<floatType, 3> D, std::vector<std::array<floatType,3>> sitePosLJ, unsigned long id)
-                            : _r(r), _v(v), _q(q), _D(D), _sitePosLJ(sitePosLJ), _id(id) {}
+                            : _r(r), _v(v), _rotMat(rotMat), _D(D), _sitePosLJ(sitePosLJ), _id(id) {}
 
    /**
     * Destructor of the MulticenteredParticle class.
@@ -60,9 +60,9 @@ class MulticenteredMoleculeLJ : public autopas::Particle {
    std::array<floatType,3> _f;
 
    /**
-    * Rotational direction of particle as quaternion.
+    * Rotational matrix. Such that w_rot = R w
     */
-   std::array<floatType,4> _q;
+   std::array<floatType,9> _rotMat;
 
    /**
     * Rotational velocity of the particle
@@ -168,16 +168,16 @@ class MulticenteredMoleculeLJ : public autopas::Particle {
    void addV(const std::array<floatType, 3> &v) { _v = autopas::utils::ArrayMath::add(_v, v); }
 
    /**
-   * Get the quaternion defining rotation
-   * @return quaternion defining rotation
+   * Get the rotation matrix
+   * @return rotation matrix
     */
-   [[nodiscard]] const std::array<floatType, 4> &getQ() const { return _q; }
+   [[nodiscard]] const std::array<floatType, 4> &getRotMat() const { return _rotMat; }
 
    /**
-   * Set the quaternion defining rotation
-   * @param q quaternion defining rotation
+   * Set the rotation matrix
+   * @param rotMat Rotation Matrix.
     */
-   void setQ(const std::array<floatType, 4> &q) { _q = q; }
+   void setRotMat(const std::array<floatType, 4> &rotMat) { _rotMat = rotMat; }
 
    /**
    * Get the rotational velocity
@@ -230,8 +230,8 @@ class MulticenteredMoleculeLJ : public autopas::Particle {
          << autopas::utils::ArrayUtils::to_string(_v)
          << "\nForce              : "
          << autopas::utils::ArrayUtils::to_string(_f)
-         << "\nQuaternion         : "
-         << autopas::utils::ArrayUtils::to_string(_q)
+         << "\nRotation Matrix    : "
+         << autopas::utils::ArrayUtils::to_string(_rotMat) // todo adjust this to actually be a matrix
          << "\nRotational Velocity: "
          << autopas::utils::ArrayUtils::to_string(_D)
          << "\nRelative Site Positions:"
