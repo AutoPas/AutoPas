@@ -187,8 +187,8 @@ class LJMulticenterFunctor
     if (distanceSquaredCoM > _cutoffSquared) { return; }
 
     // calculate relative site positions (rotated correctly)
-    const auto rotatedSitePositionsA = rotateVectorOfPositions(particleA.getRotMat(), unrotatedSitePositionsA);
-    const auto rotatedSitePositionsB = rotateVectorOfPositions(particleB.getRotMat(), unrotatedSitePositionsB);
+    const auto rotatedSitePositionsA = autopas::utils::quaternion::rotateVectorOfPositions(particleA.getQ(), unrotatedSitePositionsA);
+    const auto rotatedSitePositionsB = autopas::utils::quaternion::rotateVectorOfPositions(particleB.getQ(), unrotatedSitePositionsB);
 
     std::array<double,3> forceTotal{0.,0.,0.};
     std::array<double,3> torqueTotal{0.};
@@ -383,23 +383,4 @@ class LJMulticenterFunctor
    * Thread buffer for AoS
    */
   std::vector<AoSThreadData> _aosThreadData;
-
-  /**
-   * Returns a rotated vector of positions
-   * @param R 3D rotational matrix - as 1D array
-   * @param positionVector vector of positions
-   * @return
-   */
-  std::vector<std::array<double,3>> rotateVectorOfPositions(const std::array<double,9> R, const std::vector<std::array<double,3>> positionVector) {
-    std::vector<std::array<double,3>> rotatedPositions(positionVector.size());
-
-    for (int i=0; i<positionVector.size(); ++i) {
-      rotatedPositions[i][0] = R[0] * positionVector[i][0] + R[1] * positionVector[i][1] + R[2] * positionVector[i][2];
-      rotatedPositions[i][1] = R[3] * positionVector[i][0] + R[4] * positionVector[i][1] + R[5] * positionVector[i][2];
-      rotatedPositions[i][2] = R[6] * positionVector[i][0] + R[7] * positionVector[i][1] + R[8] * positionVector[i][2];
-    }
-
-    return rotatedPositions;
-
-  }
 };
