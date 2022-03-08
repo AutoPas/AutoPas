@@ -35,8 +35,8 @@ class MulticenteredMoleculeLJ : public autopas::Particle {
    * @param id Id of the particle.
    */
    MulticenteredMoleculeLJ(std::array<floatType, 3> r, std::array<floatType, 3> v, std::array<floatType, 4> q,
-                            std::array<floatType, 3> D, std::vector<std::array<floatType,3>> sitePosLJ, unsigned long id)
-                            : _r(r), _v(v), _q(q), _D(D), _sitePosLJ(sitePosLJ), _id(id) {}
+                            std::array<floatType, 3> angularVel, std::vector<std::array<floatType,3>> sitePosLJ, unsigned long id)
+                            : _r(r), _v(v), _q(q), _angularVel(angularVel), _sitePosLJ(sitePosLJ), _id(id) {}
 
    /**
     * Destructor of the MulticenteredParticle class.
@@ -65,14 +65,9 @@ class MulticenteredMoleculeLJ : public autopas::Particle {
    std::array<floatType,4> _q;
 
    /**
-    * Rotational velocity of the particle
+    * Angular velocity of the particle
     */
-   std::array<floatType,3> _D;
-
-   /**
-    * Angular momentum of the particle.
-    */
-
+   std::array<floatType,3> _angularVel;
 
    /**
     * Net torque applied to particle. (+ve = counterclockwise)
@@ -180,16 +175,16 @@ class MulticenteredMoleculeLJ : public autopas::Particle {
    void setQ(const std::array<floatType, 4> &q) { _q = q; }
 
    /**
-   * Get the rotational velocity
-   * @return rotational velocity
+   * Get the angular velocity
+   * @return angular velocity
     */
-   [[nodiscard]] const std::array<floatType, 3> &getD() const { return _D; }
+   [[nodiscard]] const std::array<floatType, 3> &getAngularVel() const { return _angularVel; }
 
    /**
-   * Set the rotational velocity
-   * @param D rotational velocity
+   * Set the angular velocity
+   * @param angularVelocity
     */
-   void setD(const std::array<floatType, 3> &D) { _D = D; }
+   void setD(const std::array<floatType, 3> &angularVel) { _angularVel = angularVel; }
 
    /**
     * Add Lennard-Jones site
@@ -233,7 +228,7 @@ class MulticenteredMoleculeLJ : public autopas::Particle {
          << "\nQuaternion         : "
          << autopas::utils::ArrayUtils::to_string(_q)
          << "\nRotational Velocity: "
-         << autopas::utils::ArrayUtils::to_string(_D)
+         << autopas::utils::ArrayUtils::to_string(_angularVel)
          << "\nRelative Site Positions:"
          << lj_str
          << "\nOwnershipState     : "

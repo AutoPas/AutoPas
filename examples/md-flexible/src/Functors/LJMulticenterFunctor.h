@@ -31,20 +31,20 @@
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
 */
-template <class MulticenteredMolecule, bool applyShift = false, bool useMixing = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
+template <class MulticenteredMoleculeLJ, bool applyShift = false, bool useMixing = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
           bool calculateGlobals = false, bool relevantForTuning = true>
 class LJMulticenterFunctor
-    : public autopas::Functor<MulticenteredMolecule,
-    LJMulticenterFunctor<MulticenteredMolecule, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
+    : public autopas::Functor<MulticenteredMoleculeLJ,
+    LJMulticenterFunctor<MulticenteredMoleculeLJ, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
-  using SoAArraysType = typename MulticenteredMolecule::SoAArraysType;
+  using SoAArraysType = typename MulticenteredMoleculeLJ::SoAArraysType;
 
   /**
    * Precision of SoA entries
    */
-  using SoAFloatPrecision = typename MulticenteredMolecule::ParticleSoAFloatPrecision;
+  using SoAFloatPrecision = typename MulticenteredMoleculeLJ::ParticleSoAFloatPrecision;
 
   /**
    * cutoff^2
@@ -106,7 +106,7 @@ class LJMulticenterFunctor
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit LJMulticenterFunctor(SoAFloatPrecision cutoff, void * /*dummy*/)
-    : autopas::Functor <MulticenteredMolecule, LJMulticenterFunctor<MulticenteredMolecule, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
+    : autopas::Functor <MulticenteredMoleculeLJ, LJMulticenterFunctor<MulticenteredMoleculeLJ, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
               cutoff
               ),
           _cutoffSquared{cutoff*cutoff},
@@ -160,7 +160,7 @@ class LJMulticenterFunctor
    * @param particleB Particle j
    * @param newton3 Flag for if newton3 is used.
    */
-  void AoSFunctor(MulticenteredMolecule &particleA, MulticenteredMolecule &particleB, bool newton3) final {
+  void AoSFunctor(MulticenteredMoleculeLJ &particleA, MulticenteredMoleculeLJ &particleB, bool newton3) final {
     if (particleA.isDummy() or particleB.isDummy()) {
       return;
     }
