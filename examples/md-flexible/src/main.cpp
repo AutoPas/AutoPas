@@ -8,6 +8,7 @@
 
 #include "Simulation.h"
 #include "autopas/utils/WrapMPI.h"
+#include "TypeDefinitions.h"
 
 // Declare the main AutoPas class as extern template instantiation. It is instantiated in AutoPasClass.cpp.
 extern template class autopas::AutoPas<ParticleType>;
@@ -44,9 +45,15 @@ int main(int argc, char **argv) {
 #endif
   }
 
-  Simulation simulation(configuration, domainDecomposition);
-  simulation.run();
-  simulation.finalize();
+  Simulation<ParticleType> simulationSimple(configuration, domainDecomposition);
+  Simulation<MulticenteredParticleType> simulationComplex(configuration, domainDecomposition);
+  if (configuration.includeRotational.value) {
+    simulationComplex.run();
+    simulationComplex.finalize();
+  } else {
+    simulationSimple.run();
+    simulationComplex.finalize();
+  }
 
   // if desired, print the configuration as a file at the end of the simulation.
   if (domainDecomposition.getDomainIndex() == 0) {

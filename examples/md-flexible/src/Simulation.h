@@ -22,6 +22,7 @@
  * Handles minimal initialization requriements for MD-Flexible simulations.
  * Derivce this class to create custom simulations.
  */
+template <class ParticleClass>
 class Simulation {
  public:
   /**
@@ -58,7 +59,7 @@ class Simulation {
    * The the nodes' autopas container used for simulation.
    * This member will not be initialized by the constructor and therefore has to be initialized by the deriving class.
    */
-  std::shared_ptr<autopas::AutoPas<ParticleType>> _autoPasContainer;
+  std::shared_ptr<autopas::AutoPas<ParticleClass>> _autoPasContainer;
 
   /**
    * Shared pointer to the logfile.
