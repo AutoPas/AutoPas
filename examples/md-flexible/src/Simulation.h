@@ -37,7 +37,8 @@ class Simulation {
   ~Simulation() = default;
 
   /**
-   * Runs the simulation
+   * Runs the simulation, implementing velocity verlet. Rotational variant is an implementation of the the quaternion
+   * approach (A) as described in Rozmanov, 2010, Robust rotational-velocity-Verlet integration methods.
    */
   void run();
 
@@ -222,7 +223,12 @@ class Simulation {
   void updatePositions();
 
   /**
-   * Updates the forces of particles in the local AutoPas container.
+   * Update the quaternion orientation of the particles in the local AutoPas container.
+   */
+  void updateQuaternions();
+
+  /**
+   * Updates the forces of particles in the local AutoPas container. Includes torque updates (if an appropriate functor is used).
    */
   void updateForces();
 
@@ -230,6 +236,11 @@ class Simulation {
    * Updates the velocities of particles in the local AutoPas container.
    */
   void updateVelocities();
+
+  /**
+   * Updates the angular velocities of the particles in the local AutoPas container.
+   */
+  void updateAngularVelocities();
 
   /**
    * Updates the thermostat of for the local domain.

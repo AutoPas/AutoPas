@@ -165,7 +165,9 @@ void Simulation::run() {
 
     if (_configuration.deltaT.value != 0) {
       updatePositions();
-
+      if (_configuration.includeRotational.value) {
+        updateQuaternions();
+      }
 
       _timers.migratingParticleExchange.start();
       _domainDecomposition.exchangeMigratingParticles(_autoPasContainer);
@@ -185,6 +187,10 @@ void Simulation::run() {
     if (_configuration.deltaT.value != 0) {
       updateVelocities();
       updateThermostat();
+      if (_configuration.includeRotational.value) {
+        updateAngularVelocities();
+        // todo - rotational thermostat is needed here
+      }
     }
 
     ++_iteration;
@@ -377,7 +383,9 @@ void Simulation::updatePositions() {
   _timers.positionUpdate.stop();
 }
 
-void Simulation::update
+void Simulation::updateQuaternions() {
+
+}
 
 void Simulation::updateForces() {
   _timers.forceUpdateTotal.start();
@@ -410,6 +418,10 @@ void Simulation::updateVelocities() {
                                             deltaT);
     _timers.velocityUpdate.stop();
   }
+}
+
+void Simulation::updateAngularVelocities() {
+
 }
 
 void Simulation::updateThermostat() {
