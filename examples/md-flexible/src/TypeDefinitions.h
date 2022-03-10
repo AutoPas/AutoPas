@@ -9,6 +9,7 @@
 #include "autopas/molecularDynamics/MoleculeLJ.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "Particles/MulticenteredMoleculeLJ.h"
+#include "autopas/molecularDynamics/MoleculeInterface.h"
 
 /**
  * Precision used for particle representations. If you want to test other precisions change it here.
@@ -19,12 +20,12 @@ using FloatPrecision = double;
  * Type of the Particles used in md-flexible.
  * Use the molecule type provided by AutoPas.
  */
-using ParticleType = autopas::MoleculeLJ<FloatPrecision>;
+using ParticleType = MDLibrary::MoleculeInterface;
 
 /**
  * Type of Particle used in md-flexible for multi-centred interactions.
  */
-using MulticenteredParticleType = MulticenteredMoleculeLJ<FloatPrecision>;
+//using MulticenteredParticleType = MulticenteredMoleculeLJ<FloatPrecision>;
 
 /**
  * Type of the Particle Properties Library.

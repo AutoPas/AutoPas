@@ -45,15 +45,11 @@ int main(int argc, char **argv) {
 #endif
   }
 
-  Simulation<ParticleType> simulationSimple(configuration, domainDecomposition);
-  Simulation<MulticenteredParticleType> simulationComplex(configuration, domainDecomposition);
-  if (configuration.includeRotational.value) {
-    simulationComplex.run();
-    simulationComplex.finalize();
-  } else {
-    simulationSimple.run();
-    simulationComplex.finalize();
-  }
+  Simulation simulation(configuration, domainDecomposition);
+  //Simulation<MulticenteredParticleType> simulationComplex(configuration, domainDecomposition);
+  simulation.run();
+  simulation.finalize();
+
 
   // if desired, print the configuration as a file at the end of the simulation.
   if (domainDecomposition.getDomainIndex() == 0) {

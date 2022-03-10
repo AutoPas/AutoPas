@@ -8,6 +8,7 @@
 
 #include "autopas/particles/ParticleBase.h"
 #include "autopas/particles/OwnershipState.h"
+#include "autopas/molecularDynamics/MoleculeLJ.h"
 
 /**
  * Standard multi-centre LJ molecules/
@@ -16,10 +17,8 @@
  * angular direction, a 3D vector-array for angular velocity, and a vectors of site positions relative to the CoM and
  * angular direction.
  *
- * @tparam floatType
  */
-template <typename floatType = double>
-class MulticenteredMoleculeLJ : public autopas::Particle {
+class MulticenteredMoleculeLJ : public MDLibrary::MoleculeInterface {
   using idType = size_t;
 
  public:
@@ -34,8 +33,8 @@ class MulticenteredMoleculeLJ : public autopas::Particle {
    * @param sites Vector of sites of the particle.
    * @param id Id of the particle.
    */
-   MulticenteredMoleculeLJ(std::array<floatType, 3> r, std::array<floatType, 3> v, std::array<floatType, 4> q,
-                            std::array<floatType, 3> angularVel, std::vector<std::array<floatType,3>> sitePosLJ, unsigned long id)
+   MulticenteredMoleculeLJ(std::array<double, 3> r, std::array<double, 3> v, std::array<double, 4> q,
+                            std::array<double, 3> angularVel, std::vector<std::array<double,3>> sitePosLJ, unsigned long id)
                             : _r(r), _v(v), _q(q), _angularVel(angularVel), _sitePosLJ(sitePosLJ), _id(id) {}
 
    /**
@@ -47,42 +46,42 @@ class MulticenteredMoleculeLJ : public autopas::Particle {
    /**
     * (Centre of) Particle position as 3D coords
     */
-   std::array<floatType,3> _r;
+   std::array<double,3> _r;
 
    /**
     * Velocity of particle.
     */
-   std::array<floatType,3> _v;
+   std::array<double,3> _v;
 
    /**
     * Force experienced by particle.
     */
-   std::array<floatType,3> _f;
+   std::array<double,3> _f;
 
    /**
     * Rotational direction of particle as quaternion.
     */
-   std::array<floatType,4> _q;
+   std::array<double,4> _q;
 
    /**
     * Angular velocity of the particle
     */
-   std::array<floatType,3> _angularVel;
+   std::array<double,3> _angularVel;
 
    /**
     * Net torque applied to particle. (+ve = counterclockwise)
     */
-   floatType _t;
+   double _t;
 
    /**
     * Position of Lennard-Jones sites relative to CoM.
     */
-   std::vector<std::array<floatType,3>> _sitePosLJ;
+   std::vector<std::array<double,3>> _sitePosLJ;
 
    /**
     * Particle id.
     */
-   idType _id;
+   idType _id{};
 
    /**
    * Defines the state of the ownership of the particle.
@@ -94,115 +93,115 @@ class MulticenteredMoleculeLJ : public autopas::Particle {
    * get the force acting on the particle
    * @return force
     */
-   [[nodiscard]] const std::array<floatType, 3> &getF() const { return _f; }
+   //[[nodiscard]] const std::array<double, 3> &getF() const { return _f; }
 
    /**
    * Set the force acting on the particle
    * @param f force
     */
-   void setF(const std::array<floatType, 3> &f) { _f = f; }
+   //void setF(const std::array<double, 3> &f) { _f = f; }
 
    /**
    * Add a partial force to the force acting on the particle
    * @param f partial force to be added
     */
-   void addF(const std::array<floatType, 3> &f) { _f = autopas::utils::ArrayMath::add(_f, f); }
+   //void addF(const std::array<double, 3> &f) { _f = autopas::utils::ArrayMath::add(_f, f); }
 
    /**
    * Substract a partial force from the force acting on the particle
    * @param f partial force to be substracted
     */
-   void subF(const std::array<floatType, 3> &f) { _f = autopas::utils::ArrayMath::sub(_f, f); }
+   //void subF(const std::array<double, 3> &f) { _f = autopas::utils::ArrayMath::sub(_f, f); }
 
    /**
    * Get the id of the particle
    * @return id
     */
-   idType getID() const { return _id; }
+   //idType getID() const { return _id; }
 
    /**
    * Set the id of the particle
    * @param id id
     */
-   void setID(idType id) { _id = id; }
+   //void setID(idType id) { _id = id; }
 
    /**
    * Get the position of the particle
    * @return current position
     */
-   [[nodiscard]] const std::array<floatType, 3> &getR() const { return _r; }
+   //[[nodiscard]] const std::array<double, 3> &getR() const { return _r; }
 
    /**
    * Set the position of the particle
    * @param r new position
     */
-   void setR(const std::array<floatType, 3> &r) { _r = r; }
+   //void setR(const std::array<double, 3> &r) { _r = r; }
 
    /**
    * Add a distance vector to the position of the particle
    * @param r vector to be added
     */
-   void addR(const std::array<floatType, 3> &r) { _r = autopas::utils::ArrayMath::add(_r, r); }
+   //void addR(const std::array<double, 3> &r) { _r = autopas::utils::ArrayMath::add(_r, r); }
 
    /**
    * Get the velocity of the particle
    * @return current velocity
     */
-   [[nodiscard]] const std::array<floatType, 3> &getV() const { return _v; }
+   //[[nodiscard]] const std::array<double, 3> &getV() const { return _v; }
 
    /**
    * Set the velocity of the particle
    * @param v new velocity
     */
-   void setV(const std::array<floatType, 3> &v) { _v = v; }
+   //void setV(const std::array<double, 3> &v) { _v = v; }
 
    /**
    * Add a vector to the current velocity of the particle
    * @param v vector to be added
     */
-   void addV(const std::array<floatType, 3> &v) { _v = autopas::utils::ArrayMath::add(_v, v); }
+   //void addV(const std::array<double, 3> &v) { _v = autopas::utils::ArrayMath::add(_v, v); }
 
    /**
    * Get the quaternion defining rotation
    * @return quaternion defining rotation
     */
-   [[nodiscard]] const std::array<floatType, 4> &getQ() const { return _q; }
+   [[nodiscard]] const std::array<double, 4> &getQ() const { return _q; }
 
    /**
    * Set the quaternion defining rotation
    * @param q quaternion defining rotation
     */
-   void setQ(const std::array<floatType, 4> &q) { _q = q; }
+   void setQ(const std::array<double, 4> &q) { _q = q; }
 
    /**
    * Get the angular velocity
    * @return angular velocity
     */
-   [[nodiscard]] const std::array<floatType, 3> &getAngularVel() const { return _angularVel; }
+   [[nodiscard]] const std::array<double, 3> &getAngularVel() const { return _angularVel; }
 
    /**
    * Set the angular velocity
    * @param angularVelocity
     */
-   void setD(const std::array<floatType, 3> &angularVel) { _angularVel = angularVel; }
+   void setD(const std::array<double, 3> &angularVel) { _angularVel = angularVel; }
 
    /**
     * Add Lennard-Jones site
     * @param sitePos relative position of LJ site
     */
-    void addSiteLJ(const std::array<floatType,3> &sitePos) {_sitePosLJ.push_back(sitePos); }
+    void addSiteLJ(const std::array<double,3> &sitePos) {_sitePosLJ.push_back(sitePos); }
 
     /**
     * Set Lennard-Jones sites
     * @param sitePosLJ relative position of LJ sites
      */
-    void setSitesLJ(const std::vector<std::array<floatType,3>> &sitePosLJ) {_sitePosLJ = sitePosLJ; }
+    void setSitesLJ(const std::vector<std::array<double,3>> &sitePosLJ) {_sitePosLJ = sitePosLJ; }
 
     /**
      * Get Lennard-Jones site relative positions.
      * @return LJ site relative positions
      */
-     [[nodiscard]] const std::vector<std::array<floatType,3>> &getSitesLJ() const { return _sitePosLJ; }
+     [[nodiscard]] const std::vector<std::array<double,3>> &getSitesLJ() const { return _sitePosLJ; }
 
 
 
@@ -213,9 +212,6 @@ class MulticenteredMoleculeLJ : public autopas::Particle {
     [[nodiscard]] virtual std::string toString() const {
       std::ostringstream text;
       std::ostringstream lj_str;
-      if (_sitePosLJ.empty) {lj_str << ""; } else {
-        lj_str << "\n  Lennard-Jones: " << autopas::utils::ArrayUtils::to_string(_sitePosLJ);
-      }
       // clang-format off
       text << "Particle"
          << "\nID                 : " << _id
@@ -229,8 +225,6 @@ class MulticenteredMoleculeLJ : public autopas::Particle {
          << autopas::utils::ArrayUtils::to_string(_q)
          << "\nRotational Velocity: "
          << autopas::utils::ArrayUtils::to_string(_angularVel)
-         << "\nRelative Site Positions:"
-         << lj_str
          << "\nOwnershipState     : "
          << _ownershipState;
       // clang-format on
@@ -238,8 +232,8 @@ class MulticenteredMoleculeLJ : public autopas::Particle {
     }
 
     using SoAArraysType =
-        typename autopas::utils::SoAType<MulticenteredMoleculeLJ<floatType> *, idType /*id*/ , floatType /*x*/,
-          floatType /*y*/, floatType /*z*/, floatType /*fx*/, floatType /*fy*/, floatType /*fz*/,
+        typename autopas::utils::SoAType<MulticenteredMoleculeLJ *, idType /*id*/ , double /*x*/,
+          double /*y*/, double /*z*/, double /*fx*/, double /*fy*/, double /*fz*/,
           autopas::OwnershipState /*ownershipState*/>::Type;
 
 

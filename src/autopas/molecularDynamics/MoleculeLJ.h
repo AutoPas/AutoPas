@@ -9,15 +9,14 @@
 
 #include <vector>
 
-#include "autopas/particles/Particle.h"
+#include "MoleculeInterface.h"
 
 namespace autopas {
 
 /**
  * Molecule class for the LJFunctor.
  */
-template <typename floatType = double>
-class MoleculeLJ final : public Particle {
+class MoleculeLJ : public MDLibrary::MoleculeInterface {
  public:
   MoleculeLJ() = default;
 
@@ -28,11 +27,11 @@ class MoleculeLJ final : public Particle {
    * @param moleculeId Id of the molecule.
    * @param typeId TypeId of the molecule.
    */
-  explicit MoleculeLJ(std::array<floatType, 3> pos, std::array<floatType, 3> v, unsigned long moleculeId,
+  explicit MoleculeLJ(std::array<double, 3> pos, std::array<double, 3> v, unsigned long moleculeId,
                       unsigned long typeId = 0)
-      : Particle(pos, v, moleculeId), _typeId(typeId) {}
+      : MDLibrary::MoleculeInterface(pos, v, moleculeId, typeId) {}
 
-  ~MoleculeLJ() final = default;
+  ~MoleculeLJ() = default;
 
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
@@ -64,9 +63,9 @@ class MoleculeLJ final : public Particle {
    * The reason for this is the easier use of the value in calculations (See LJFunctor "energyFactor")
    */
   using SoAArraysType = typename autopas::utils::SoAType<
-      MoleculeLJ<floatType> *, size_t /*id*/, floatType /*x*/, floatType /*y*/, floatType /*z*/, floatType /*vx*/,
-      floatType /*vy*/, floatType /*vz*/, floatType /*fx*/, floatType /*fy*/, floatType /*fz*/, floatType /*oldFx*/,
-      floatType /*oldFy*/, floatType /*oldFz*/, size_t /*typeid*/, OwnershipState /*ownershipState*/>::Type;
+      MoleculeLJ *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/, double /*vx*/,
+      double /*vy*/, double /*vz*/, double /*fx*/, double /*fy*/, double /*fz*/, double /*oldFx*/,
+      double /*oldFy*/, double /*oldFz*/, size_t /*typeid*/, OwnershipState /*ownershipState*/>::Type;
 
   /**
    * Non-const getter for the pointer of this object.

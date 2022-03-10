@@ -7,6 +7,7 @@
 #pragma once
 
 #include "src/Particles/MulticenteredMoleculeLJ.h"
+#include "autopas/molecularDynamics/MoleculeLJ.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/particles/OwnershipState.h"
@@ -31,20 +32,20 @@
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
 */
-template <class MulticenteredMoleculeLJ, bool applyShift = false, bool useMixing = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
+template <class Particle, bool applyShift = false, bool useMixing = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
           bool calculateGlobals = false, bool relevantForTuning = true>
 class LJMulticenterFunctor
-    : public autopas::Functor<MulticenteredMoleculeLJ,
-    LJMulticenterFunctor<MulticenteredMoleculeLJ, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
+    : public autopas::Functor<Particle,
+    LJMulticenterFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
-  using SoAArraysType = typename MulticenteredMoleculeLJ::SoAArraysType;
+  using SoAArraysType = typename Particle::SoAArraysType;
 
   /**
    * Precision of SoA entries
    */
-  using SoAFloatPrecision = typename MulticenteredMoleculeLJ::ParticleSoAFloatPrecision;
+  using SoAFloatPrecision = typename Particle::ParticleSoAFloatPrecision;
 
   /**
    * cutoff^2
@@ -106,7 +107,7 @@ class LJMulticenterFunctor
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit LJMulticenterFunctor(SoAFloatPrecision cutoff, void * /*dummy*/)
-    : autopas::Functor <MulticenteredMoleculeLJ, LJMulticenterFunctor<MulticenteredMoleculeLJ, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
+    : autopas::Functor <Particle, LJMulticenterFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
               cutoff
               ),
           _cutoffSquared{cutoff*cutoff},
@@ -160,7 +161,7 @@ class LJMulticenterFunctor
    * @param particleB Particle j
    * @param newton3 Flag for if newton3 is used.
    */
-  void AoSFunctor(MulticenteredMoleculeLJ &particleA, MulticenteredMoleculeLJ &particleB, bool newton3) final {
+  void AoSFunctor(Particle &particleA, Particle &particleB, bool newton3) final {
     if (particleA.isDummy() or particleB.isDummy()) {
       return;
     }
@@ -180,7 +181,7 @@ class LJMulticenterFunctor
 
     double lj12m6Sum = 0;
 
-    const auto displacementCoM = autopas::utils::ArrayMath::sub(particleA.get_R(), particleB.get_R());
+    const auto displacementCoM = autopas::utils::ArrayMath::sub(particleA.getR(), particleB.getR());
     const auto distanceSquaredCoM = autopas::utils::ArrayMath::dot(displacementCoM,displacementCoM);
 
     // Don't calculate LJ if particleB outside cutoff of particleA
@@ -239,11 +240,11 @@ class LJMulticenterFunctor
       const int threadNum = autopas::autopas_get_thread_num();
 
       if (particleA.isOwned()) {
-        _aosThreadData[threadNum].potentialSum += potentialEnergy;
+        _aosThreadData[threadNum].potentialEnergySum += potentialEnergy;
         _aosThreadData[threadNum].virialSum = autopas::utils::ArrayMath::add(_aosThreadData[threadNum].virialSum, virial);
       }
       if (newton3 and particleB.isOwned()) {
-        _aosThreadData[threadNum].potentialSum += potentialEnergy;
+        _aosThreadData[threadNum].potentialEnergySum += potentialEnergy;
         _aosThreadData[threadNum].virialSum = autopas::utils::ArrayMath::add(_aosThreadData[threadNum].virialSum, virial);
       }
     }
