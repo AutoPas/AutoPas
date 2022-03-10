@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "MoleculeInterface.h"
+#include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas {
 
@@ -173,6 +174,40 @@ class MoleculeLJ : public MDLibrary::MoleculeInterface {
    * @param oldForce
    */
   void setOldF(const std::array<double, 3> &oldForce) { _oldF = oldForce; }
+
+  /**
+   * Get the quaternion defining rotation. Returns exception.
+   * @return N/A
+   */
+  [[nodiscard]] const std::array<double, 4> &getQ() override {
+      autopas::utils::ExceptionHandler::AutoPasException(
+          "MoleculeLJ has no quaternion! This function can only be called on rotational molecules."
+          );
+      return std::array<double,4> {0.,0.,0.,0.};
+  };
+
+  /**
+   * Set the quaternion defining rotation. (Used for rotation-dependant simulations)
+   * @param q quaternion defining rotation
+   */
+  void setQ(const std::array<double, 4> &q) {}
+
+  /**
+   * Get the angular velocity. (Used for rotation-dependant simulations)
+   * @return angular velocity
+   */
+  [[nodiscard]] const std::array<double, 3> &getAngularVel() {
+    autopas::utils::ExceptionHandler::AutoPasException(
+        "MoleculeLJ has no angular velocity! This function can only be called on rotational molecules."
+    );
+    return std::array<double,3> {0.,0.,0.};
+  };
+
+  /**
+   * Set the angular velocity. (Used for rotation-dependant simulations)
+   * @param angularVelocity
+   */
+  void setAngularVel(const std::array<double, 3> &angularVel) {}
 
   /**
    * Get TypeId.
