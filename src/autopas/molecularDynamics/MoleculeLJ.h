@@ -213,13 +213,13 @@ class MoleculeLJ : public MDLibrary::MoleculeInterface {
    * Get TypeId.
    * @return
    */
-  [[nodiscard]] size_t getTypeId() const { return _typeId; }
+  //[[nodiscard]] size_t getTypeId() const { return _typeId; }
 
   /**
    * Set the type id of the Molecule.
    * @param typeId
    */
-  void setTypeId(size_t typeId) { _typeId = typeId; }
+  //void setTypeId(size_t typeId) { _typeId = typeId; }
 
  private:
   /**

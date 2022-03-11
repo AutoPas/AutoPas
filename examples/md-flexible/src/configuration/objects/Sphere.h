@@ -11,7 +11,8 @@
 /**
  * Class describing a regular 3D spherical particle grid object.
  */
-class Sphere : public Object {
+template <class ParticleType>
+class Sphere : public Object<ParticleType> {
  public:
   /**
    * Constructor.
@@ -26,7 +27,7 @@ class Sphere : public Object {
    */
   Sphere(const std::array<double, 3> &velocity, unsigned long typeId, double epsilon, double sigma, double mass,
          const std::array<double, 3> &center, int radius, double particleSpacing)
-      : Object(velocity, typeId, epsilon, sigma, mass),
+      : Object<ParticleType>(velocity, typeId, epsilon, sigma, mass),
         _center(center),
         _radius(radius),
         _particleSpacing(particleSpacing) {}
@@ -127,13 +128,13 @@ class Sphere : public Object {
   [[nodiscard]] std::string to_string() const override {
     std::ostringstream output;
 
-    output << std::setw(_valueOffset) << std::left << "center"
+    output << std::setw(this->_valueOffset) << std::left << "center"
            << ":  " << autopas::utils::ArrayUtils::to_string(_center) << std::endl;
-    output << std::setw(_valueOffset) << std::left << "radius"
+    output << std::setw(this->_valueOffset) << std::left << "radius"
            << ":  " << _radius << std::endl;
-    output << std::setw(_valueOffset) << std::left << "particle-spacing"
+    output << std::setw(this->_valueOffset) << std::left << "particle-spacing"
            << ":  " << _particleSpacing << std::endl;
-    output << Object::to_string();
+    output << Object<ParticleType>::to_string();
     return output.str();
   }
 

@@ -11,7 +11,8 @@
 /**
  * Class describing an cuboid object filled with gaussian randomly distributed particles.
  */
-class CubeGauss : public Object {
+template <class ParticleType>
+class CubeGauss : public Object<ParticleType> {
  public:
   /**
    * Constructor.
@@ -29,7 +30,7 @@ class CubeGauss : public Object {
   CubeGauss(const std::array<double, 3> &velocity, unsigned long typeId, double epsilon, double sigma, double mass,
             size_t numParticles, const std::array<double, 3> &boxLength, const std::array<double, 3> &distributionMean,
             const std::array<double, 3> &distributionStdDev, const std::array<double, 3> &bottomLeftCorner)
-      : Object(velocity, typeId, epsilon, sigma, mass),
+      : Object<ParticleType>(velocity, typeId, epsilon, sigma, mass),
         _numParticles(numParticles),
         _boxLength(boxLength),
         _distributionMean(distributionMean),
@@ -75,17 +76,17 @@ class CubeGauss : public Object {
   [[nodiscard]] std::string to_string() const override {
     std::ostringstream output;
 
-    output << std::setw(_valueOffset) << std::left << "distribution-mean"
+    output << std::setw(this->_valueOffset) << std::left << "distribution-mean"
            << ":  " << autopas::utils::ArrayUtils::to_string(_distributionMean) << std::endl;
-    output << std::setw(_valueOffset) << std::left << "distribution-stddeviation"
+    output << std::setw(this->_valueOffset) << std::left << "distribution-stddeviation"
            << ":  " << autopas::utils::ArrayUtils::to_string(_distributionStdDev) << std::endl;
-    output << std::setw(_valueOffset) << std::left << "numberOfParticles"
+    output << std::setw(this->_valueOffset) << std::left << "numberOfParticles"
            << ":  " << _numParticles << std::endl;
-    output << std::setw(_valueOffset) << std::left << "box-length"
+    output << std::setw(this->_valueOffset) << std::left << "box-length"
            << ":  " << autopas::utils::ArrayUtils::to_string(_boxLength) << std::endl;
-    output << std::setw(_valueOffset) << std::left << "bottomLeftCorner"
+    output << std::setw(this->_valueOffset) << std::left << "bottomLeftCorner"
            << ":  " << autopas::utils::ArrayUtils::to_string(_bottomLeftCorner) << std::endl;
-    output << Object::to_string();
+    output << Object<ParticleType>::to_string();
     return output.str();
   }
 

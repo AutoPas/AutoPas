@@ -14,7 +14,8 @@
 /**
  * Class describing a regular 3D particle grid object.
  */
-class CubeGrid : public Object {
+template <class ParticleType>
+class CubeGrid : public Object<ParticleType> {
  public:
   /**
    * Constructor.
@@ -30,7 +31,7 @@ class CubeGrid : public Object {
   CubeGrid(const std::array<double, 3> &velocity, unsigned long typeId, double epsilon, double sigma, double mass,
            const std::array<size_t, 3> &particlesPerDim, double particleSpacing,
            const std::array<double, 3> &bottomLeftCorner)
-      : Object(velocity, typeId, epsilon, sigma, mass),
+      : Object<ParticleType>(velocity, typeId, epsilon, sigma, mass),
         _particlesPerDim(particlesPerDim),
         _particleSpacing(particleSpacing),
         _bottomLeftCorner(bottomLeftCorner) {}
@@ -82,13 +83,13 @@ class CubeGrid : public Object {
   [[nodiscard]] std::string to_string() const override {
     std::ostringstream output;
 
-    output << std::setw(_valueOffset) << std::left << "particles-per-dimension"
+    output << std::setw(this->_valueOffset) << std::left << "particles-per-dimension"
            << ":  " << autopas::utils::ArrayUtils::to_string(_particlesPerDim) << std::endl;
-    output << std::setw(_valueOffset) << std::left << "particle-spacing"
+    output << std::setw(this->_valueOffset) << std::left << "particle-spacing"
            << ":  " << _particleSpacing << std::endl;
-    output << std::setw(_valueOffset) << std::left << "bottomLeftCorner"
+    output << std::setw(this->_valueOffset) << std::left << "bottomLeftCorner"
            << ":  " << autopas::utils::ArrayUtils::to_string(_bottomLeftCorner) << std::endl;
-    output << Object::to_string();
+    output << Object<ParticleType>::to_string();
     return output.str();
   }
 

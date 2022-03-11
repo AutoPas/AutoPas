@@ -13,7 +13,8 @@
 /**
  * Class describing an cuboid object filled with uniformly randomly distributed particles.
  */
-class CubeUniform : public Object {
+template <class ParticleType>
+class CubeUniform : public Object<ParticleType> {
  public:
   /**
    * Constructor.
@@ -29,7 +30,7 @@ class CubeUniform : public Object {
   CubeUniform(const std::array<double, 3> &velocity, unsigned long typeId, double epsilon, double sigma, double mass,
               size_t numParticles, const std::array<double, 3> &boxLength,
               const std::array<double, 3> &bottomLeftCorner)
-      : Object(velocity, typeId, epsilon, sigma, mass),
+      : Object<ParticleType>(velocity, typeId, epsilon, sigma, mass),
         _numParticles(numParticles),
         _boxLength(boxLength),
         _bottomLeftCorner(bottomLeftCorner) {}
@@ -61,13 +62,13 @@ class CubeUniform : public Object {
   [[nodiscard]] std::string to_string() const override {
     std::ostringstream output;
 
-    output << std::setw(_valueOffset) << std::left << "numberOfParticles"
+    output << std::setw(this->_valueOffset) << std::left << "numberOfParticles"
            << ":  " << _numParticles << std::endl;
-    output << std::setw(_valueOffset) << std::left << "box-length"
+    output << std::setw(this->_valueOffset) << std::left << "box-length"
            << ":  " << autopas::utils::ArrayUtils::to_string(_boxLength) << std::endl;
-    output << std::setw(_valueOffset) << std::left << "_bottomLeftCorner"
+    output << std::setw(this->_valueOffset) << std::left << "_bottomLeftCorner"
            << ":  " << autopas::utils::ArrayUtils::to_string(_bottomLeftCorner) << std::endl;
-    output << Object::to_string();
+    output << Object<ParticleType>::to_string();
     return output.str();
   }
 
