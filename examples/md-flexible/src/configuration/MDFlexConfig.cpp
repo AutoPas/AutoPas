@@ -86,6 +86,7 @@ size_t getNumPiecesInCheckpoint(const std::string &filename) {
  * @param rank The rank which created the respective vtu file.
  * @param particles Container for the particles recorded in the respective vts file.
  */
+template <class ParticleType>
 void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, std::vector<ParticleType> &particles) {
   const size_t endOfPath = filename.find_last_of('/');
   const auto filePath = filename.substr(0ul, endOfPath);

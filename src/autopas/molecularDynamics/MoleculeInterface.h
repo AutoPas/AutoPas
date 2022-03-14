@@ -25,8 +25,8 @@ class MoleculeInterface : public autopas::Particle {
    * @param moleculeID Unique id of the molecule.
    * @param typeID Id of type of molecule (dictating any features e.g. lennard-jones parameters, site positions)
    */
-  MoleculeInterface(std::array<double,3> pos, std::array<double,3> vel, unsigned long moleculeID, unsigned long typeID = 0)
-      : autopas::Particle(pos, vel, moleculeID), _typeID(typeID) {}
+  MoleculeInterface(std::array<double,3> pos, std::array<double,3> vel, unsigned long moleculeId, unsigned long typeId = 0)
+      : autopas::Particle(pos, vel, moleculeId), _typeId(typeId) {}
 
   /**
    * Destructor of the Molecule Interface
@@ -71,11 +71,23 @@ class MoleculeInterface : public autopas::Particle {
     */
    virtual void setAngularVel(const std::array<double, 3> &angularVel) {}
 
+   /**
+    * Get TypeId. Used for differentiate between different types of molecules.
+    * @return typeId
+    */
+   [[nodiscard]] size_t getTypeId() const { return _typeId; }
+
+   /**
+   * Set the type id of the Molecule. Used for differentiate between different types of molecules.
+   * @param typeId
+    */
+   void setTypeId(size_t typeId) { _typeId = typeId; }
+
   private:
    /**
     * Particle type id.
     */
-   size_t _typeID = 0;
+   size_t _typeId = 0;
 
 };
 }
