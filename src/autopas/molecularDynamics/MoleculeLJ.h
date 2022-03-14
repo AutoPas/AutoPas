@@ -9,7 +9,6 @@
 
 #include <vector>
 
-#include "MoleculeInterface.h"
 #include "autopas/particles/Particle.h"
 #include "autopas/utils/ExceptionHandler.h"
 

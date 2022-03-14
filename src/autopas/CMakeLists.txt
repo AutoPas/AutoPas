@@ -12,7 +12,6 @@ file(
     "*.cuh"
 )
 
-add_library(autopas STATIC ${MY_SRC} molecularDynamics/MoleculeInterface.h)
 
 target_link_libraries(
     autopas

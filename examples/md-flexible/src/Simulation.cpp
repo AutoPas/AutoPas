@@ -11,7 +11,6 @@
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
 #include "Functors/LJMulticenterFunctor.h"
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
-#include "autopas/molecularDynamics/MoleculeInterface.h"
 #include "autopas/molecularDynamics/MoleculeLJ.h"
 #include "SimpleMDAutoPas.h"
 #include "autopas/particles/Particle.h"

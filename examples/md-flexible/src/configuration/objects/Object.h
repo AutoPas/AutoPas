@@ -17,13 +17,9 @@
 /**
  * Base class for describing objects made of particles.
  */
+template <class ParticleClass>
 class Object {
  public:
-  /**
-   * Type of all particles generated.
-   */
-  using ParticleType = ::ParticleType;
-
   /**
    * Constructor that should be used by inheriting types.
    * @param velocity
