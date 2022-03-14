@@ -76,8 +76,8 @@ class CubeUniform : public Object<ParticleClass> {
    * Generates the particles based on the configuration of the cube object defined in the yaml file.
    * @param particles The container where the generated particles will be stored.
    */
-  void generate(std::vector<ParticleType> &particles) const override {
-    ParticleType particle = getDummyParticle(particles.size());
+  void generate(std::vector<ParticleClass> &particles) const override {
+    ParticleClass particle = getDummyParticle(particles.size());
 
     // Set up random number generation
     std::random_device randomDevice;

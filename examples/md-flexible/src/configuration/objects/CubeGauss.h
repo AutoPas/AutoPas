@@ -94,8 +94,8 @@ class CubeGauss : public Object<ParticleClass> {
    * Generates the particles based on the configuration of the cube gauss object provided in the yaml file.
    * @param particles The container where the new particles will be stored.
    */
-  void generate(std::vector<ParticleType> &particles) const override {
-    ParticleType particle = getDummyParticle(particles.size());
+  void generate(std::vector<ParticleClass> &particles) const override {
+    ParticleClass particle = getDummyParticle(particles.size());
 
     std::default_random_engine generator(42);
     std::array<std::normal_distribution<double>, 3> distributions = {

@@ -97,8 +97,8 @@ class CubeGrid : public Object<ParticleClass> {
    * Generates the particles based on the configuration of the CubeGrid object provided in the yaml file.
    * @param particles The container in which the generated particles get stored.
    */
-  void generate(std::vector<ParticleType> &particles) const override {
-    ParticleType particle = getDummyParticle(particles.size());
+  void generate(std::vector<ParticleClass> &particles) const override {
+    ParticleClass particle = getDummyParticle(particles.size());
 
     for (unsigned long z = 0; z < _particlesPerDim[2]; ++z) {
       for (unsigned long y = 0; y < _particlesPerDim[1]; ++y) {
