@@ -8,7 +8,7 @@
 
 #include "autopas/AutoPas.h"
 #include "autopas/molecularDynamics/MoleculeLJ.h"
-#include "Particles/MulticenteredMoleculeLJ.h"
+#include "src/Particles/MulticenteredMoleculeLJ.h"
 
 class SimpleMDAutoPas : autopas::AutoPas<autopas::MoleculeLJ> {};
 

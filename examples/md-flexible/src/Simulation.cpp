@@ -12,7 +12,6 @@
 #include "Functors/LJMulticenterFunctor.h"
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 #include "autopas/molecularDynamics/MoleculeLJ.h"
-#include "SimpleMDAutoPas.h"
 #include "autopas/particles/Particle.h"
 
 // Declare the main AutoPas class and the iteratePairwise() methods with all used functors as extern template
@@ -130,6 +129,9 @@ Simulation<ParticleClass>::Simulation(const MDFlexConfig &configuration, Regular
   // @todo: the object generators should only generate particles relevant for the current rank's domain
   for (auto &particle : _configuration.getParticles()) {
     if (_domainDecomposition.isInsideLocalDomain(particle.getR())) {
+      if (not _configuration.includeRotational.value) {
+
+      }
       _autoPasContainer->addParticle(particle);
     }
   }

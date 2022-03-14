@@ -8,7 +8,7 @@
 
 #include "autopas/molecularDynamics/MoleculeLJ.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
-#include "Particles/MulticenteredMoleculeLJ.h"
+#include "src/Particles/MulticenteredMoleculeLJ.h"
 
 /**
  * Precision used for particle representations. If you want to test other precisions change it here.
