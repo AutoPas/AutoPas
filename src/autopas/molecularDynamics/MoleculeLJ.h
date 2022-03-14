@@ -10,13 +10,15 @@
 #include <vector>
 
 #include "MoleculeInterface.h"
+#include "autopas/particles/Particle.h"
+#include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas {
 
 /**
  * Molecule class for the LJFunctor.
  */
-class MoleculeLJ : public MDLibrary::MoleculeInterface {
+class MoleculeLJ : public autopas::Particle {
  public:
   MoleculeLJ() = default;
 
@@ -29,7 +31,7 @@ class MoleculeLJ : public MDLibrary::MoleculeInterface {
    */
   explicit MoleculeLJ(std::array<double, 3> pos, std::array<double, 3> v, unsigned long moleculeId,
                       unsigned long typeId = 0)
-      : MDLibrary::MoleculeInterface(pos, v, moleculeId, typeId) {}
+      : Particle(pos, v, moleculeId), _typeId(typeId) {}
 
   ~MoleculeLJ() = default;
 
@@ -185,6 +187,73 @@ class MoleculeLJ : public MDLibrary::MoleculeInterface {
    * @param typeId
    */
   void setTypeId(size_t typeId) { _typeId = typeId; }
+
+  /**
+   * Get the quaternion defining rotation. (Returns nothing of interest + throws exception)
+   * @return quaternion defining rotation
+   */
+  [[nodiscard]] virtual const std::array<double, 4> &getQ() const {
+    autopas::utils::ExceptionHandler::exception("Wrong molecule type! MoleculeLJ does not include quaternion");
+    return {0.,0.,0.,0.};
+  }
+
+  /**
+   * Set the quaternion defining rotation. (throws exception)
+   * @param q quaternion defining rotation
+   */
+  virtual void setQ(const std::array<double, 4> &q) {
+    autopas::utils::ExceptionHandler::exception("Wrong molecule type! MoleculeLJ does not include quaternion");
+  }
+
+  /**
+   * Get the angular velocity. (Returns nothing of interest + throws exception)
+   * @return angular velocity
+   */
+  [[nodiscard]] virtual const std::array<double, 3> &getAngularVel() const {
+    autopas::utils::ExceptionHandler::exception("Wrong molecule type! MoleculeLJ does not include angular velocity");
+    return {0.,0.,0.};
+  }
+
+  /**
+   * Set the angular velocity. (throws exception)
+   * @param angularVelocity
+   */
+  virtual void setAngularVel(const std::array<double, 3> &angularVel) {
+    autopas::utils::ExceptionHandler::exception("Wrong molecule type! MoleculeLJ does not include angular velocity");
+  }
+
+  /**
+   * Get the torque. (Returns nothing of interest + throws exception)
+   * @return torque
+   */
+  [[nodiscard]] virtual const std::array<double, 3> &getTorque() const {
+    autopas::utils::ExceptionHandler::exception("Wrong molecule type! MoleculeLJ does not include torque");
+    return {0.,0.,0.};
+  }
+
+  /**
+   * Set the torque. (throws exception)
+   * @param torque
+   */
+  virtual void setTorque(const std::array<double, 3> &torque) {
+    autopas::utils::ExceptionHandler::exception("Wrong molecule type! MoleculeLJ does not include torque");
+  }
+
+  /**
+    * Adds given torque to the particle's torque. (throws exception)
+    * @param torque torque to be added
+   */
+  void addTorque(const std::array<double, 3> &torque) {
+    autopas::utils::ExceptionHandler::exception("Wrong molecule type! MoleculeLJ does not include torque");
+  }
+
+  /**
+    * Subracts given torque to the particle's torque. (throws exception)
+    * @param torque torque to be subtracted
+   */
+  void subTorque(const std::array<double, 3> &torque) {
+    autopas::utils::ExceptionHandler::exception("Wrong molecule type! MoleculeLJ does not include torque");
+  }
 
  private:
   /**

@@ -197,8 +197,15 @@ template <class T, std::size_t SIZE>
   return dotAux(a, b, std::make_index_sequence<SIZE>{});
 }
 
+/**
+ * Generates the cross product of two arrays of 3 floats.
+ * @tparam T floating point type
+ * @param a 3D vector (denoted by array of 3 floats)
+ * @param b 3D vector (denoted by array of 3 floats)
+ * @return cross product a x b
+ */
 template <class T>
-[[nodiscard]] constexpr T cross(const std::array<T, 3> &a, const std::array<T, 3> &b) {
+[[nodiscard]] constexpr std::array<T, 3> cross(const std::array<T, 3> &a, const std::array<T, 3> &b) {
   return {a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]};
 }
 

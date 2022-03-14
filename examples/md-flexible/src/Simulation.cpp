@@ -12,16 +12,19 @@
 #include "Functors/LJMulticenterFunctor.h"
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 #include "autopas/molecularDynamics/MoleculeInterface.h"
+#include "autopas/molecularDynamics/MoleculeLJ.h"
+#include "SimpleMDAutoPas.h"
+#include "autopas/particles/Particle.h"
 
 // Declare the main AutoPas class and the iteratePairwise() methods with all used functors as extern template
 // instantiation. They are instantiated in the respective cpp file inside the templateInstantiations folder.
 //! @cond Doxygen_Suppress
-//extern template class autopas::AutoPas<ParticleType>;
-//extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctor<ParticleType, true, true> *);
-//extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(
-//    autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true> *);
-//extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctorAVX<ParticleType, true, true> *);
-//extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::FlopCounterFunctor<ParticleType> *);
+extern template class autopas::AutoPas<ParticleType>;
+extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctor<ParticleType, true, true> *);
+extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(
+    autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true> *);
+extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctorAVX<ParticleType, true, true> *);
+extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::FlopCounterFunctor<ParticleType> *);
 //! @endcond
 
 #include <sys/ioctl.h>
@@ -73,7 +76,8 @@ size_t getTerminalWidth() {
 }
 }  // namespace
 
-Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecomposition &domainDecomposition)
+template <class ParticleClass>
+Simulation<ParticleClass>::Simulation(const MDFlexConfig &configuration, RegularGridDecomposition &domainDecomposition)
     : _configuration(configuration),
       _domainDecomposition(domainDecomposition),
       _createVtkFiles(not configuration.vtkFileName.value.empty()),
@@ -96,7 +100,7 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
     _outputStream = &(*_logFile);
   }
 
-  _autoPasContainer = std::make_shared<autopas::AutoPas<MDLibrary::MoleculeInterface>>(*_outputStream);
+  _autoPasContainer = std::make_shared<autopas::AutoPas<ParticleClass>>(*_outputStream);
   _autoPasContainer->setAllowedCellSizeFactors(*_configuration.cellSizeFactors.value);
   _autoPasContainer->setAllowedContainers(_configuration.containerOptions.value);
   _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions.value);
@@ -145,7 +149,8 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
   _timers.initialization.stop();
 }
 
-void Simulation::finalize() {
+template <class ParticleClass>
+void Simulation<ParticleClass>::finalize() {
   _timers.total.stop();
 
   autopas::AutoPas_MPI_Barrier(AUTOPAS_MPI_COMM_WORLD);
@@ -154,7 +159,8 @@ void Simulation::finalize() {
   logMeasurements();
 }
 
-void Simulation::run() {
+template <class ParticleClass>
+void Simulation<ParticleClass>::run() {
   _homogeneity = calculateHomogeneity();
   _timers.simulate.start();
   while (needsMoreIterations()) {
@@ -216,7 +222,8 @@ void Simulation::run() {
   }
 }
 
-double Simulation::calculateHomogeneity() const {
+template <class ParticleClass>
+double Simulation<ParticleClass>::calculateHomogeneity() const {
   unsigned int numberOfParticles = static_cast<unsigned int>(_autoPasContainer->getNumberOfParticles());
   autopas::AutoPas_MPI_Allreduce(&numberOfParticles, &numberOfParticles, 1, AUTOPAS_MPI_UNSIGNED_INT, AUTOPAS_MPI_SUM,
                                  AUTOPAS_MPI_COMM_WORLD);
@@ -294,7 +301,8 @@ double Simulation::calculateHomogeneity() const {
   return sqrt(variance);
 }
 
-std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
+template <class ParticleClass>
+std::tuple<size_t, bool> Simulation<ParticleClass>::estimateNumberOfIterations() const {
   if (_configuration.tuningPhases.value > 0) {
     // @TODO: this can be improved by considering the tuning strategy
     // This is just a randomly guessed number but seems to fit roughly for default settings.
@@ -312,7 +320,8 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
   }
 }
 
-void Simulation::printProgress(size_t iterationProgress, size_t maxIterations, bool maxIsPrecise) {
+template <class ParticleClass>
+void Simulation<ParticleClass>::printProgress(size_t iterationProgress, size_t maxIterations, bool maxIsPrecise) {
   // percentage of iterations complete
   double fractionDone = static_cast<double>(iterationProgress) / maxIterations;
 
@@ -358,7 +367,8 @@ void Simulation::printProgress(size_t iterationProgress, size_t maxIterations, b
   std::cout << progressbar.str() << info.str() << std::flush;
 }
 
-std::string Simulation::timerToString(const std::string &name, long timeNS, size_t numberWidth, long maxTime) {
+template <class ParticleClass>
+std::string Simulation<ParticleClass>::timerToString(const std::string &name, long timeNS, size_t numberWidth, long maxTime) {
   // only print timers that were actually used
   if (timeNS == 0) {
     return "";
@@ -377,18 +387,21 @@ std::string Simulation::timerToString(const std::string &name, long timeNS, size
   return ss.str();
 }
 
-void Simulation::updatePositions() {
+template <class ParticleClass>
+void Simulation<ParticleClass>::updatePositions() {
   _timers.positionUpdate.start();
   TimeDiscretization::calculatePositions(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                                          _configuration.deltaT.value, _configuration.globalForce.value);
   _timers.positionUpdate.stop();
 }
 
-void Simulation::updateQuaternions() {
+template <class ParticleClass>
+void Simulation<ParticleClass>::updateQuaternions() {
 
 }
 
-void Simulation::updateForces() {
+template <class ParticleClass>
+void Simulation<ParticleClass>::updateForces() {
   _timers.forceUpdateTotal.start();
 
   const bool isTuningIteration = calculatePairwiseForces();
@@ -410,7 +423,8 @@ void Simulation::updateForces() {
   _previousIterationWasTuningIteration = isTuningIteration;
 }
 
-void Simulation::updateVelocities() {
+template <class ParticleClass>
+void Simulation<ParticleClass>::updateVelocities() {
   const double deltaT = _configuration.deltaT.value;
 
   if (deltaT != 0) {
@@ -421,11 +435,13 @@ void Simulation::updateVelocities() {
   }
 }
 
-void Simulation::updateAngularVelocities() {
+template <class ParticleClass>
+void Simulation<ParticleClass>::updateAngularVelocities() {
 
 }
 
-void Simulation::updateThermostat() {
+template <class ParticleClass>
+void Simulation<ParticleClass>::updateThermostat() {
   if (_configuration.useThermostat.value and (_iteration % _configuration.thermostatInterval.value) == 0) {
     _timers.thermostat.start();
     Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
@@ -434,37 +450,39 @@ void Simulation::updateThermostat() {
   }
 }
 
-long Simulation::accumulateTime(const long &time) {
+template <class ParticleClass>
+long Simulation<ParticleClass>::accumulateTime(const long &time) {
   long reducedTime{};
   autopas::AutoPas_MPI_Reduce(&time, &reducedTime, 1, AUTOPAS_MPI_LONG, AUTOPAS_MPI_SUM, 0, AUTOPAS_MPI_COMM_WORLD);
 
   return reducedTime;
 }
 
-bool Simulation::calculatePairwiseForces() {
+template <class ParticleClass>
+bool Simulation<ParticleClass>::calculatePairwiseForces() {
   bool wasTuningIteration = false;
   auto particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
 
   switch (_configuration.functorOption.value) {
     case MDFlexConfig::FunctorOption::lj12_6: {
-      autopas::LJFunctor<MDLibrary::MoleculeInterface, true, true> functor{_autoPasContainer->getCutoff(), particlePropertiesLibrary};
+      autopas::LJFunctor<ParticleClass, true, true> functor{_autoPasContainer->getCutoff(), particlePropertiesLibrary};
       wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
       break;
     }
     case MDFlexConfig::FunctorOption::lj12_6_Globals: {
-      autopas::LJFunctor<MDLibrary::MoleculeInterface, true, true, autopas::FunctorN3Modes::Both, true> functor{
+      autopas::LJFunctor<ParticleClass, true, true, autopas::FunctorN3Modes::Both, true> functor{
           _autoPasContainer->getCutoff(), particlePropertiesLibrary};
       wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
       break;
     }
     case MDFlexConfig::FunctorOption::lj12_6_AVX: {
-      autopas::LJFunctorAVX<MDLibrary::MoleculeInterface, true, true> functor{_autoPasContainer->getCutoff(),
+      autopas::LJFunctorAVX<ParticleClass, true, true> functor{_autoPasContainer->getCutoff(),
                                                               particlePropertiesLibrary};
       wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
       break;
     }
     case MDFlexConfig::FunctorOption::lj12_6_Multicentered: {
-      LJMulticenterFunctor<MDLibrary::MoleculeInterface,  true, true> functor{_autoPasContainer->getCutoff(),particlePropertiesLibrary};
+      LJMulticenterFunctor<ParticleClass,  true, true> functor{_autoPasContainer->getCutoff(),particlePropertiesLibrary};
       wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
       break;
     }
@@ -472,7 +490,8 @@ bool Simulation::calculatePairwiseForces() {
   return wasTuningIteration;
 }
 
-void Simulation::logSimulationState() {
+template <class ParticleClass>
+void Simulation<ParticleClass>::logSimulationState() {
   size_t totalNumberOfParticles{0ul}, ownedParticles{0ul}, haloParticles{0ul};
 
   size_t particleCount = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::ownedOrHalo);
@@ -502,7 +521,8 @@ void Simulation::logSimulationState() {
   }
 }
 
-void Simulation::logMeasurements() {
+template <class ParticleClass>
+void Simulation<ParticleClass>::logMeasurements() {
   long positionUpdate = accumulateTime(_timers.positionUpdate.getTotalTime());
   long forceUpdateTotal = accumulateTime(_timers.forceUpdateTotal.getTotalTime());
   long forceUpdateTuning = accumulateTime(_timers.forceUpdateTuning.getTotalTime());
@@ -557,22 +577,22 @@ void Simulation::logMeasurements() {
     std::cout << "MFUPs/sec                       : " << mfups << std::endl;
 
     if (_configuration.dontMeasureFlops.value) {
-      autopas::FlopCounterFunctor<MDLibrary::MoleculeInterface> flopCounterFunctor(_autoPasContainer->getCutoff());
+      autopas::FlopCounterFunctor<ParticleClass> flopCounterFunctor(_autoPasContainer->getCutoff());
       _autoPasContainer->iteratePairwise(&flopCounterFunctor);
 
       size_t flopsPerKernelCall;
       switch (_configuration.functorOption.value) {
         case MDFlexConfig::FunctorOption ::lj12_6: {
-          flopsPerKernelCall = autopas::LJFunctor<MDLibrary::MoleculeInterface, true, true>::getNumFlopsPerKernelCall();
+          flopsPerKernelCall = autopas::LJFunctor<ParticleClass, true, true>::getNumFlopsPerKernelCall();
           break;
         }
         case MDFlexConfig::FunctorOption ::lj12_6_Globals: {
-          flopsPerKernelCall = autopas::LJFunctor<MDLibrary::MoleculeInterface, true, true, autopas::FunctorN3Modes::Both,
+          flopsPerKernelCall = autopas::LJFunctor<ParticleClass, true, true, autopas::FunctorN3Modes::Both,
                                                   /* globals */ true>::getNumFlopsPerKernelCall();
           break;
         }
         case MDFlexConfig::FunctorOption ::lj12_6_AVX: {
-          flopsPerKernelCall = autopas::LJFunctorAVX<MDLibrary::MoleculeInterface, true, true>::getNumFlopsPerKernelCall();
+          flopsPerKernelCall = autopas::LJFunctorAVX<ParticleClass, true, true>::getNumFlopsPerKernelCall();
           break;
         }
         default:
@@ -592,6 +612,10 @@ void Simulation::logMeasurements() {
   }
 }
 
-bool Simulation::needsMoreIterations() const {
+template <class ParticleClass>
+bool Simulation<ParticleClass>::needsMoreIterations() const {
   return _iteration < _configuration.iterations.value or _numTuningPhasesCompleted < _configuration.tuningPhases.value;
 }
+
+template class Simulation<ParticleType>;
+template class Simulation<MulticenteredMoleculeLJ>;

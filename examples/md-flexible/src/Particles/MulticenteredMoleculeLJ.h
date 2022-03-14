@@ -18,7 +18,7 @@
  * angular direction.
  *
  */
-class MulticenteredMoleculeLJ : public MDLibrary::MoleculeInterface {
+class MulticenteredMoleculeLJ : public autopas::MoleculeLJ {
   using idType = size_t;
 
  public:
@@ -34,8 +34,8 @@ class MulticenteredMoleculeLJ : public MDLibrary::MoleculeInterface {
    * @param id Id of the particle.
    */
    MulticenteredMoleculeLJ(std::array<double, 3> r, std::array<double, 3> v, std::array<double, 4> q,
-                            std::array<double, 3> angularVel, std::vector<std::array<double,3>> sitePosLJ, unsigned long id)
-                            : _r(r), _v(v), _q(q), _angularVel(angularVel), _sitePosLJ(sitePosLJ), _id(id) {}
+                            std::array<double, 3> angularVel, unsigned long id)
+                            : _r(r), _v(v), _q(q), _angularVel(angularVel), _id(id) {}
 
    /**
     * Destructor of the MulticenteredParticle class.
@@ -69,14 +69,9 @@ class MulticenteredMoleculeLJ : public MDLibrary::MoleculeInterface {
    std::array<double,3> _angularVel;
 
    /**
-    * Net torque applied to particle. (+ve = counterclockwise)
+    * Torque applied to particle.
     */
-   double _t;
-
-   /**
-    * Position of Lennard-Jones sites relative to CoM.
-    */
-   std::vector<std::array<double,3>> _sitePosLJ;
+   std::array<double,3> _torque;
 
    /**
     * Particle id.
@@ -165,45 +160,53 @@ class MulticenteredMoleculeLJ : public MDLibrary::MoleculeInterface {
    * Get the quaternion defining rotation
    * @return quaternion defining rotation
     */
-   [[nodiscard]] const std::array<double, 4> &getQ() const { return _q; }
+   [[nodiscard]] const std::array<double, 4> &getQ() const override { return _q; }
 
    /**
    * Set the quaternion defining rotation
    * @param q quaternion defining rotation
     */
-   void setQ(const std::array<double, 4> &q) { _q = q; }
+   void setQ(const std::array<double, 4> &q) override { _q = q; }
 
    /**
    * Get the angular velocity
    * @return angular velocity
     */
-   [[nodiscard]] const std::array<double, 3> &getAngularVel() const { return _angularVel; }
+   [[nodiscard]] const std::array<double, 3> &getAngularVel() const override{ return _angularVel; }
 
    /**
    * Set the angular velocity
    * @param angularVelocity
     */
-   void setD(const std::array<double, 3> &angularVel) { _angularVel = angularVel; }
+   void setAngularVel(const std::array<double, 3> &angularVel) override { _angularVel = angularVel; }
 
    /**
-    * Add Lennard-Jones site
-    * @param sitePos relative position of LJ site
+   * Get the torque.
+   * @return torque
     */
-    void addSiteLJ(const std::array<double,3> &sitePos) {_sitePosLJ.push_back(sitePos); }
+   [[nodiscard]] const std::array<double, 3> &getTorque() const { return _torque; }
 
-    /**
-    * Set Lennard-Jones sites
-    * @param sitePosLJ relative position of LJ sites
-     */
-    void setSitesLJ(const std::vector<std::array<double,3>> &sitePosLJ) {_sitePosLJ = sitePosLJ; }
+   /**
+   * Set the torque.
+   * @param torque
+    */
+   void setTorque(const std::array<double, 3> &torque) { _torque = torque; }
 
-    /**
-     * Get Lennard-Jones site relative positions.
-     * @return LJ site relative positions
-     */
-     [[nodiscard]] const std::vector<std::array<double,3>> &getSitesLJ() const { return _sitePosLJ; }
+   /**
+    * Adds given torque to the particle's torque.
+    * @param torque torque to be added
+    */
+   void addTorque(const std::array<double, 3> &torque) {
+     _torque = autopas::utils::ArrayMath::add(_torque, torque);
+   }
 
-
+   /**
+    * Subracts given torque to the particle's torque.
+    * @param torque torque to be subtracted
+    */
+   void subTorque(const std::array<double, 3> &torque) {
+     _torque = autopas::utils::ArrayMath::sub(_torque, torque);
+   }
 
     /**
    * Creates a string containing all data of the particle.

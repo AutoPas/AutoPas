@@ -9,9 +9,11 @@
 #include "Simulation.h"
 #include "autopas/utils/WrapMPI.h"
 #include "TypeDefinitions.h"
+#include "Particles/MulticenteredMoleculeLJ.h"
 
 // Declare the main AutoPas class as extern template instantiation. It is instantiated in AutoPasClass.cpp.
 extern template class autopas::AutoPas<ParticleType>;
+
 
 /**
  * The main function for md-flexible.
@@ -45,10 +47,15 @@ int main(int argc, char **argv) {
 #endif
   }
 
-  Simulation simulation(configuration, domainDecomposition);
-  //Simulation<MulticenteredParticleType> simulationComplex(configuration, domainDecomposition);
-  simulation.run();
-  simulation.finalize();
+  //if (configuration.includeRotational.value) {
+  //  Simulation<MulticenteredMoleculeLJ> simulation(configuration, domainDecomposition);
+  //  simulation.run();
+  //  simulation.finalize();
+  //} else {
+    Simulation<autopas::MoleculeLJ> simulation(configuration, domainDecomposition);
+    simulation.run();
+    simulation.finalize();
+  //}
 
 
   // if desired, print the configuration as a file at the end of the simulation.
@@ -71,3 +78,5 @@ int main(int argc, char **argv) {
   autopas::AutoPas_MPI_Finalize();
   return EXIT_SUCCESS;
 }
+
+

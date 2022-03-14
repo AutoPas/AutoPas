@@ -220,8 +220,8 @@ class LJMulticenterFunctor
         if (newton3) {particleB.subF(force);}
 
         // Add torque applied by force
-        particleA.addT(autopas::utils::ArrayMath::cross(rotatedSitePositionsA[m],force));
-        if (newton3) {particleB.subT(autopas::utils::ArrayMath::cross(rotatedSitePositionsB[n],force));}
+        particleA.addTorque(autopas::utils::ArrayMath::cross(rotatedSitePositionsA[m],force));
+        if (newton3) {particleB.subTorque(autopas::utils::ArrayMath::cross(rotatedSitePositionsB[n],force));}
 
         if (calculateGlobals) {
           forceTotal = autopas::utils::ArrayMath::add(forceTotal,force);
