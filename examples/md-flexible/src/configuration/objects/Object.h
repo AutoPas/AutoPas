@@ -37,15 +37,15 @@ class Object {
    * Generate the object in the given AutoPas container.
    * @param particles The container to which the new particles will be appended to.
    */
-  virtual void generate(std::vector<ParticleType> &particles) const = 0;
+  virtual void generate(std::vector<ParticleClass> &particles) const = 0;
 
   /**
    * Create a particle that acts as blueprint for all particles to be created for the object.
    * @param particleId: Defines the id of the generated dummy particle.
    * @return a particle initialized with default values.
    */
-  [[nodiscard]] ParticleType getDummyParticle(const size_t &particleId) const {
-    ParticleType particle{};
+  [[nodiscard]] ParticleClass getDummyParticle(const size_t &particleId) const {
+    ParticleClass particle{};
     particle.setID(particleId);
     particle.setTypeId(_typeId);
     particle.setV(_velocity);

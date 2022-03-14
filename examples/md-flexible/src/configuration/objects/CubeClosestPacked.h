@@ -16,7 +16,8 @@
 /**
  * Class describing a cube of hexagonally closest packed particles.
  */
-class CubeClosestPacked : public Object {
+template <class ParticleClass>
+class CubeClosestPacked : public Object<ParticleClass> {
  public:
   /**
    * Constructor.
@@ -32,7 +33,7 @@ class CubeClosestPacked : public Object {
   CubeClosestPacked(const std::array<double, 3> &velocity, unsigned long typeId, double epsilon, double sigma,
                     double mass, double particleSpacing, const std::array<double, 3> &boxLength,
                     const std::array<double, 3> &bottomLeftCorner)
-      : Object(velocity, typeId, epsilon, sigma, mass),
+      : Object<ParticleClass>(velocity, typeId, epsilon, sigma, mass),
         _boxLength(boxLength),
         _particleSpacing(particleSpacing),
         _bottomLeftCorner(bottomLeftCorner),
@@ -53,13 +54,13 @@ class CubeClosestPacked : public Object {
   [[nodiscard]] std::string to_string() const override {
     std::ostringstream output;
 
-    output << std::setw(_valueOffset) << std::left << "particle-spacing"
+    output << std::setw(this->_valueOffset) << std::left << "particle-spacing"
            << ":  " << _particleSpacing << std::endl;
-    output << std::setw(_valueOffset) << std::left << "box-length"
+    output << std::setw(this->_valueOffset) << std::left << "box-length"
            << ":  " << autopas::utils::ArrayUtils::to_string(_boxLength) << std::endl;
-    output << std::setw(_valueOffset) << std::left << "bottomLeftCorner"
+    output << std::setw(this->_valueOffset) << std::left << "bottomLeftCorner"
            << ":  " << autopas::utils::ArrayUtils::to_string(_bottomLeftCorner) << std::endl;
-    output << Object::to_string();
+    output << Object<ParticleClass>::to_string();
     return output.str();
   }
 
