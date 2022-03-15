@@ -13,6 +13,7 @@
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 #include "autopas/molecularDynamics/MoleculeLJ.h"
 #include "autopas/particles/Particle.h"
+#include "Particles/MoleculeConversionHelper.h"
 
 // Declare the main AutoPas class and the iteratePairwise() methods with all used functors as extern template
 // instantiation. They are instantiated in the respective cpp file inside the templateInstantiations folder.
@@ -75,7 +76,7 @@ size_t getTerminalWidth() {
 }  // namespace
 
 template <class ParticleClass>
-Simulation<ParticleClass>::Simulation(const MDFlexConfig &configuration, RegularGridDecomposition &domainDecomposition)
+Simulation<ParticleClass>::Simulation(const MDFlexConfig &configuration, RegularGridDecomposition<ParticleClass> &domainDecomposition)
     : _configuration(configuration),
       _domainDecomposition(domainDecomposition),
       _createVtkFiles(not configuration.vtkFileName.value.empty()),
@@ -127,12 +128,14 @@ Simulation<ParticleClass>::Simulation(const MDFlexConfig &configuration, Regular
   _autoPasContainer->init();
 
   // @todo: the object generators should only generate particles relevant for the current rank's domain
+  // add appropiate particles to container, converting if needed
   for (auto &particle : _configuration.getParticles()) {
     if (_domainDecomposition.isInsideLocalDomain(particle.getR())) {
       if (not _configuration.includeRotational.value) {
-
+        _autoPasContainer->addParticle(returnSimpleMolecule(particle));
+      } else {
+        _autoPasContainer->addParticle(particle);
       }
-      _autoPasContainer->addParticle(particle);
     }
   }
 

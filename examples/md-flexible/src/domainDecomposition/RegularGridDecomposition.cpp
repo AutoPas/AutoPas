@@ -16,7 +16,8 @@
 #include "autopas/utils/ArrayUtils.h"
 #include "src/ParticleSerializationTools.h"
 
-RegularGridDecomposition::RegularGridDecomposition(const std::array<double, 3> &globalBoxMin,
+template <class ParticleClass>
+RegularGridDecomposition<ParticleClass>::RegularGridDecomposition(const std::array<double, 3> &globalBoxMin,
                                                    const std::array<double, 3> &globalBoxMax,
                                                    const std::array<bool, 3> &subdivideDimension, double cutoffWidth,
                                                    double skinWidth,
@@ -52,22 +53,27 @@ RegularGridDecomposition::RegularGridDecomposition(const std::array<double, 3> &
   initializeNeighbourIds();
 }
 
-RegularGridDecomposition::~RegularGridDecomposition() {}
+template <class ParticleClass>
+RegularGridDecomposition<ParticleClass>::~RegularGridDecomposition() {}
 
-int RegularGridDecomposition::getNumberOfSubdomains() const {
+template <class ParticleClass>
+int RegularGridDecomposition<ParticleClass>::getNumberOfSubdomains() const {
   return std::accumulate(_decomposition.begin(), _decomposition.end(), 1, std::multiplies<int>());
 }
 
-void RegularGridDecomposition::update() { updateLocalBox(); }
+template <class ParticleClass>
+void RegularGridDecomposition<ParticleClass>::update() { updateLocalBox(); }
 
-void RegularGridDecomposition::initializeMPICommunicator() {
+template <class ParticleClass>
+void RegularGridDecomposition<ParticleClass>::initializeMPICommunicator() {
   std::vector<int> periods(3, 1);
   autopas::AutoPas_MPI_Cart_create(AUTOPAS_MPI_COMM_WORLD, 3, _decomposition.data(), periods.data(), true,
                                    &_communicator);
   autopas::AutoPas_MPI_Comm_rank(_communicator, &_domainIndex);
 }
 
-void RegularGridDecomposition::initializeLocalDomain() {
+template <class ParticleClass>
+void RegularGridDecomposition<ParticleClass>::initializeLocalDomain() {
   _domainId = {0, 0, 0};
   autopas::AutoPas_MPI_Comm_rank(_communicator, &_domainIndex);
 
@@ -75,9 +81,11 @@ void RegularGridDecomposition::initializeLocalDomain() {
   autopas::AutoPas_MPI_Cart_get(_communicator, 3, _decomposition.data(), periods.data(), _domainId.data());
 }
 
-void RegularGridDecomposition::initializeLocalBox() { updateLocalBox(); }
+template <class ParticleClass>
+void RegularGridDecomposition<ParticleClass>::initializeLocalBox() { updateLocalBox(); }
 
-void RegularGridDecomposition::initializeNeighbourIds() {
+template <class ParticleClass>
+void RegularGridDecomposition<ParticleClass>::initializeNeighbourIds() {
   for (int i = 0; i < 3; ++i) {
     auto neighbourIndex = i * 2;
     auto preceedingNeighbourId = _domainId;
@@ -91,7 +99,8 @@ void RegularGridDecomposition::initializeNeighbourIds() {
   }
 }
 
-void RegularGridDecomposition::updateLocalBox() {
+template <class ParticleClass>
+void RegularGridDecomposition<ParticleClass>::updateLocalBox() {
   for (int i = 0; i < 3; ++i) {
     double localBoxWidth = (_globalBoxMax[i] - _globalBoxMin[i]) / static_cast<double>(_decomposition[i]);
 
@@ -106,17 +115,20 @@ void RegularGridDecomposition::updateLocalBox() {
   }
 }
 
-bool RegularGridDecomposition::isInsideLocalDomain(const std::array<double, 3> &coordinates) const {
+template <class ParticleClass>
+bool RegularGridDecomposition<ParticleClass>::isInsideLocalDomain(const std::array<double, 3> &coordinates) const {
   return DomainTools::isInsideDomain(coordinates, _localBoxMin, _localBoxMax);
 }
 
-std::array<int, 6> RegularGridDecomposition::getExtentOfSubdomain(const int subdomainIndex) const {
+template <class ParticleClass>
+std::array<int, 6> RegularGridDecomposition<ParticleClass>::getExtentOfSubdomain(const int subdomainIndex) const {
   return DomainTools::getExtentOfSubdomain(subdomainIndex, _decomposition);
 }
 
-void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer) {
+template <class ParticleClass>
+void RegularGridDecomposition<ParticleClass>::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer) {
   for (int i = 0; i < _dimensionCount; ++i) {
-    std::vector<ParticleType> haloParticles{};
+    std::vector<ParticleClass> haloParticles{};
     for (int j = i; j < _dimensionCount; ++j) {
       const size_t dimensionIndex = j % _dimensionCount;
 
@@ -127,8 +139,8 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
           _localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex])
         continue;
 
-      std::vector<ParticleType> particlesForLeftNeighbour{};
-      std::vector<ParticleType> particlesForRightNeighbour{};
+      std::vector<ParticleClass> particlesForLeftNeighbour{};
+      std::vector<ParticleClass> particlesForRightNeighbour{};
 
       if (j == i) {
         collectHaloParticlesForLeftNeighbour(autoPasContainer, dimensionIndex, particlesForLeftNeighbour);
@@ -187,7 +199,8 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
   }
 }
 
-void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer) {
+template <class ParticleClass>
+void RegularGridDecomposition<ParticleClass>::exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer) {
   auto emigrants = autoPasContainer->updateContainer();
 
   const std::array<double, _dimensionCount> globalBoxLength =
@@ -203,9 +216,9 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
           _localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex])
         continue;
 
-      std::vector<ParticleType> immigrants, remainingEmigrants;
-      std::vector<ParticleType> particlesForLeftNeighbour;
-      std::vector<ParticleType> particlesForRightNeighbour;
+      std::vector<ParticleClass> immigrants, remainingEmigrants;
+      std::vector<ParticleClass> particlesForLeftNeighbour;
+      std::vector<ParticleClass> particlesForRightNeighbour;
 
       // See documentation for _neighbourDomainIndices to explain the indexing
       int leftNeighbour = _neighbourDomainIndices[(dimensionIndex * 2) % _neighbourCount];
@@ -263,7 +276,8 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
   }
 }
 
-void RegularGridDecomposition::reflectParticlesAtBoundaries(SharedAutoPasContainer &autoPasContainer) {
+template <class ParticleClass>
+void RegularGridDecomposition<ParticleClass>::reflectParticlesAtBoundaries(SharedAutoPasContainer &autoPasContainer) {
   std::array<double, _dimensionCount> reflSkinMin{}, reflSkinMax{};
 
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
@@ -301,7 +315,8 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(SharedAutoPasContain
   }
 }
 
-void RegularGridDecomposition::sendParticles(const std::vector<ParticleType> &particles, const int &receiver) {
+template <class ParticleClass>
+void RegularGridDecomposition<ParticleClass>::sendParticles(const std::vector<ParticleClass> &particles, const int &receiver) {
   std::vector<char> buffer;
 
   for (const auto &particle : particles) {
@@ -311,7 +326,8 @@ void RegularGridDecomposition::sendParticles(const std::vector<ParticleType> &pa
   sendDataToNeighbour(buffer, receiver);
 }
 
-void RegularGridDecomposition::receiveParticles(std::vector<ParticleType> &receivedParticles, const int &source) {
+template <class ParticleClass>
+void RegularGridDecomposition<ParticleClass>::receiveParticles(std::vector<ParticleClass> &receivedParticles, const int &source) {
   std::vector<char> receiveBuffer;
 
   receiveDataFromNeighbour(source, receiveBuffer);
@@ -321,7 +337,8 @@ void RegularGridDecomposition::receiveParticles(std::vector<ParticleType> &recei
   }
 }
 
-void RegularGridDecomposition::sendDataToNeighbour(std::vector<char> sendBuffer, const int &neighbour) {
+template <class ParticleClass>
+void RegularGridDecomposition<ParticleClass>::sendDataToNeighbour(std::vector<char> sendBuffer, const int &neighbour) {
   _sendBuffers.push_back(sendBuffer);
 
   autopas::AutoPas_MPI_Request sendRequest;
@@ -331,7 +348,8 @@ void RegularGridDecomposition::sendDataToNeighbour(std::vector<char> sendBuffer,
                              _communicator, &_sendRequests.back());
 }
 
-void RegularGridDecomposition::receiveDataFromNeighbour(const int &neighbour, std::vector<char> &receiveBuffer) {
+template <class ParticleClass>
+void RegularGridDecomposition<ParticleClass>::receiveDataFromNeighbour(const int &neighbour, std::vector<char> &receiveBuffer) {
   autopas::AutoPas_MPI_Status status;
   autopas::AutoPas_MPI_Probe(neighbour, 0, _communicator, &status);
 
@@ -343,10 +361,11 @@ void RegularGridDecomposition::receiveDataFromNeighbour(const int &neighbour, st
                             AUTOPAS_MPI_STATUS_IGNORE);
 }
 
-void RegularGridDecomposition::sendAndReceiveParticlesLeftAndRight(std::vector<ParticleType> &particlesToLeft,
-                                                                   std::vector<ParticleType> &particlesToRight,
+template <class ParticleClass>
+void RegularGridDecomposition<ParticleClass>::sendAndReceiveParticlesLeftAndRight(std::vector<ParticleClass> &particlesToLeft,
+                                                                   std::vector<ParticleClass> &particlesToRight,
                                                                    const int &leftNeighbour, const int &rightNeighbour,
-                                                                   std::vector<ParticleType> &receivedParticles) {
+                                                                   std::vector<ParticleClass> &receivedParticles) {
   if (_mpiCommunicationNeeded and leftNeighbour != _domainIndex) {
     sendParticles(particlesToLeft, leftNeighbour);
     sendParticles(particlesToRight, rightNeighbour);
@@ -361,7 +380,8 @@ void RegularGridDecomposition::sendAndReceiveParticlesLeftAndRight(std::vector<P
   }
 }
 
-void RegularGridDecomposition::waitForSendRequests() {
+template <class ParticleClass>
+void RegularGridDecomposition<ParticleClass>::waitForSendRequests() {
   std::vector<autopas::AutoPas_MPI_Status> sendStates;
   sendStates.resize(_sendRequests.size());
   autopas::AutoPas_MPI_Waitall(_sendRequests.size(), _sendRequests.data(), sendStates.data());
@@ -369,9 +389,10 @@ void RegularGridDecomposition::waitForSendRequests() {
   _sendBuffers.clear();
 }
 
-void RegularGridDecomposition::collectHaloParticlesForLeftNeighbour(SharedAutoPasContainer &autoPasContainer,
+template <class ParticleClass>
+void RegularGridDecomposition<ParticleClass>::collectHaloParticlesForLeftNeighbour(SharedAutoPasContainer &autoPasContainer,
                                                                     const size_t &direction,
-                                                                    std::vector<ParticleType> &haloParticles) {
+                                                                    std::vector<ParticleClass> &haloParticles) {
   std::array<double, _dimensionCount> boxMin, boxMax;
 
   // Calculate halo box for left neighbour
@@ -395,9 +416,10 @@ void RegularGridDecomposition::collectHaloParticlesForLeftNeighbour(SharedAutoPa
   }
 }
 
-void RegularGridDecomposition::collectHaloParticlesForRightNeighbour(SharedAutoPasContainer &autoPasContainer,
+template <class ParticleClass>
+void RegularGridDecomposition<ParticleClass>::collectHaloParticlesForRightNeighbour(SharedAutoPasContainer &autoPasContainer,
                                                                      const size_t &direction,
-                                                                     std::vector<ParticleType> &haloParticles) {
+                                                                     std::vector<ParticleClass> &haloParticles) {
   std::array<double, _dimensionCount> boxMin, boxMax;
 
   // Calculate left halo box of right neighbour
@@ -421,10 +443,11 @@ void RegularGridDecomposition::collectHaloParticlesForRightNeighbour(SharedAutoP
   }
 }
 
-void RegularGridDecomposition::categorizeParticlesIntoLeftAndRightNeighbour(
-    const std::vector<ParticleType> &particles, const size_t &direction,
-    std::vector<ParticleType> &leftNeighbourParticles, std::vector<ParticleType> &rightNeighbourParticles,
-    std::vector<ParticleType> &uncategorizedParticles) {
+template <class ParticleClass>
+void RegularGridDecomposition<ParticleClass>::categorizeParticlesIntoLeftAndRightNeighbour(
+    const std::vector<ParticleClass> &particles, const size_t &direction,
+    std::vector<ParticleClass> &leftNeighbourParticles, std::vector<ParticleClass> &rightNeighbourParticles,
+    std::vector<ParticleClass> &uncategorizedParticles) {
   for (const auto &particle : particles) {
     std::array<double, _dimensionCount> position = particle.getR();
     if (position[direction] < _localBoxMin[direction]) {

@@ -18,6 +18,7 @@
  * This class can be used as a domain decomposition which divides the domain in equal sized rectangular subdomains.
  * The number of subdomains is equal to the number of MPI processes available.
  */
+template <class ParticleClass>
 class RegularGridDecomposition final : public DomainDecomposition {
  public:
   /**
@@ -41,7 +42,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
   /**
    * Type for the AutoPas container
    */
-  using SharedAutoPasContainer = std::shared_ptr<autopas::AutoPas<ParticleType>>;
+  using SharedAutoPasContainer = std::shared_ptr<autopas::AutoPas<ParticleClass>>;
 
   /**
    * Used to update the domain to the current topology.
@@ -259,18 +260,18 @@ class RegularGridDecomposition final : public DomainDecomposition {
   void updateLocalBox();
 
   /**
-   * Sends particles of type ParticleType to a receiver.
+   * Sends particles of type ParticleClass to a receiver.
    * @param particles The particles to be sent to the receiver.
    * @param receiver The recipient of the particels.
    */
-  void sendParticles(const std::vector<ParticleType> &particles, const int &receiver);
+  void sendParticles(const std::vector<ParticleClass> &particles, const int &receiver);
 
   /**
    * Received particles sent by a sender.
    * @param receivedParticles The container where the received particles will be stored.
    * @param source The sender id/rank.
    */
-  void receiveParticles(std::vector<ParticleType> &receivedParticles, const int &source);
+  void receiveParticles(std::vector<ParticleClass> &receivedParticles, const int &source);
 
   /**
    * Received data which has been sent by a specifig neighbour of this domain.
@@ -294,9 +295,9 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param rightNeighbour: The right neighbour's index / rank.
    * @param receivedParticles: Container for the particles received from either neighbour.
    */
-  void sendAndReceiveParticlesLeftAndRight(std::vector<ParticleType> &particlesToLeft,
-                                           std::vector<ParticleType> &particlesToRight, const int &leftNeighbour,
-                                           const int &rightNeighbour, std::vector<ParticleType> &receivedParticles);
+  void sendAndReceiveParticlesLeftAndRight(std::vector<ParticleClass> &particlesToLeft,
+                                           std::vector<ParticleClass> &particlesToRight, const int &leftNeighbour,
+                                           const int &rightNeighbour, std::vector<ParticleClass> &receivedParticles);
 
   /**
    * Waits for all send requests to be finished.
@@ -311,7 +312,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param haloParticles: The container the identified halo particles are gathered in to.
    */
   void collectHaloParticlesForLeftNeighbour(SharedAutoPasContainer &autoPasContainer, const size_t &direction,
-                                            std::vector<ParticleType> &haloParticles);
+                                            std::vector<ParticleClass> &haloParticles);
 
   /**
    * Collects the halo particles for the right neighbour.
@@ -321,7 +322,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param haloParticles: The container the identified halo particles are gathered in to.
    */
   void collectHaloParticlesForRightNeighbour(SharedAutoPasContainer &autoPasContainer, const size_t &direction,
-                                             std::vector<ParticleType> &haloParticles);
+                                             std::vector<ParticleClass> &haloParticles);
 
   /**
    * Categorizes the provided particles as particles for the left or the right neighbour and adds them to the respective
@@ -333,8 +334,8 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param uncategorizedParticles: Contains particles which could neither be assigned to the left nor the right
    * neighbour.
    */
-  void categorizeParticlesIntoLeftAndRightNeighbour(const std::vector<ParticleType> &particles, const size_t &direction,
-                                                    std::vector<ParticleType> &leftNeighbourParticles,
-                                                    std::vector<ParticleType> &rightNeighbourParticles,
-                                                    std::vector<ParticleType> &uncategorizedParticles);
+  void categorizeParticlesIntoLeftAndRightNeighbour(const std::vector<ParticleClass> &particles, const size_t &direction,
+                                                    std::vector<ParticleClass> &leftNeighbourParticles,
+                                                    std::vector<ParticleClass> &rightNeighbourParticles,
+                                                    std::vector<ParticleClass> &uncategorizedParticles);
 };

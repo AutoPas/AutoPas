@@ -30,7 +30,7 @@ class Simulation {
    * @param configuration: The configuration of this simulation.
    * @param domainDecomposition: The domain decomposition used for this simulation
    */
-  Simulation(const MDFlexConfig &configuration, RegularGridDecomposition &domainDecomposition);
+  Simulation(const MDFlexConfig &configuration, RegularGridDecomposition<ParticleClass> &domainDecomposition);
 
   /**
    * Destructor.
@@ -180,7 +180,7 @@ class Simulation {
   /**
    * Parallel VTK file writer.
    */
-  std::shared_ptr<ParallelVtkWriter> _vtkWriter;
+  std::shared_ptr<ParallelVtkWriter<ParticleClass>> _vtkWriter;
 
   /**
    * Defines, if vtk files should be created or not.
@@ -252,7 +252,7 @@ class Simulation {
   /**
    * This simulation's domain decomposition.
    */
-  RegularGridDecomposition _domainDecomposition;
+  RegularGridDecomposition<ParticleClass> _domainDecomposition;
 
   /**
    * If MPI is enabled, accumulates the times of all ranks on rank 0.
