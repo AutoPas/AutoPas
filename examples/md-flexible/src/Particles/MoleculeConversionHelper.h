@@ -9,11 +9,14 @@
 #include "MulticenteredMoleculeLJ.h"
 
 /**
- * Helper function to convert a rotational molecule to a simple molecule.
- * @param complexMolecule molecule with rotational components
- * @return molecule without rotational components
+ * Helper function to convert between types of molecules.
+ * Primary purpose of this function is to reduce rotational molecules to non-rotational during the initialisation of
+ * md-flexible.
+ * @param complexMolecule molecule with at least the components of MoleculeLJ
+ * @return molecule without additional components
  */
-autopas::MoleculeLJ returnSimpleMolecule(MulticenteredMoleculeLJ complexMolecule) {
+template <class ParticleClass>
+autopas::MoleculeLJ returnSimpleMolecule(ParticleClass complexMolecule) {
   autopas::MoleculeLJ simpleMolecule;
   simpleMolecule.setR(complexMolecule.getR());
   simpleMolecule.setV(complexMolecule.getV());

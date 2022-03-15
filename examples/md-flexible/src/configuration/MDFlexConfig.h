@@ -120,7 +120,7 @@ class MDFlexConfig {
    * Returns the particles generated based on the povided configuration file.
    * @return a vector containing the generated particles.
    */
-  std::vector<ParticleType> getParticles() { return _particles; }
+  std::vector<MulticenteredMoleculeLJ> getParticles() { return _particles; }
 
   /**
    * Returns the ParticlePropertiesLibrary containing the properties of the particle types used in this simulation.
@@ -616,7 +616,7 @@ class MDFlexConfig {
    * These particles can be added to the respective autopas container,
    * but have to be converted to the respective particle type, first.
    */
-  std::vector<ParticleType> _particles;
+  std::vector<MulticenteredMoleculeLJ> _particles;
 
   /**
    * Stores the physical properties of the particles used in the an MDFlexSimulation

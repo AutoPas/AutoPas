@@ -87,7 +87,7 @@ Simulation<ParticleClass>::Simulation(const MDFlexConfig &configuration, Regular
   // only create the writer if necessary since this also creates the output dir
   if (_createVtkFiles) {
     _vtkWriter =
-        std::make_shared<ParallelVtkWriter>(_configuration.vtkFileName.value, _configuration.vtkOutputFolder.value,
+        std::make_shared<ParallelVtkWriter<ParticleClass>>(_configuration.vtkFileName.value, _configuration.vtkOutputFolder.value,
                                             std::to_string(_configuration.iterations.value).size());
   }
 
@@ -128,11 +128,11 @@ Simulation<ParticleClass>::Simulation(const MDFlexConfig &configuration, Regular
   _autoPasContainer->init();
 
   // @todo: the object generators should only generate particles relevant for the current rank's domain
-  // add appropiate particles to container, converting if needed
+  // add appropriate particles to container, converting if needed
   for (auto &particle : _configuration.getParticles()) {
     if (_domainDecomposition.isInsideLocalDomain(particle.getR())) {
       if (not _configuration.includeRotational.value) {
-        _autoPasContainer->addParticle(returnSimpleMolecule(particle));
+        _autoPasContainer->addParticle(particle.template returnSimpleMolecule<ParticleClass>());
       } else {
         _autoPasContainer->addParticle(particle);
       }
@@ -394,7 +394,7 @@ std::string Simulation<ParticleClass>::timerToString(const std::string &name, lo
 template <class ParticleClass>
 void Simulation<ParticleClass>::updatePositions() {
   _timers.positionUpdate.start();
-  TimeDiscretization::calculatePositions(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+  TimeDiscretization::calculatePositions<ParticleClass>(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                                          _configuration.deltaT.value, _configuration.globalForce.value);
   _timers.positionUpdate.stop();
 }
@@ -433,7 +433,7 @@ void Simulation<ParticleClass>::updateVelocities() {
 
   if (deltaT != 0) {
     _timers.velocityUpdate.start();
-    TimeDiscretization::calculateVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+    TimeDiscretization::calculateVelocities<ParticleClass>(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                                             deltaT);
     _timers.velocityUpdate.stop();
   }

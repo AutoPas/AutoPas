@@ -13,7 +13,8 @@
  * Functions for updating velocities and positions as simulation time progresses.
  */
 namespace TimeDiscretization {
-void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
+template <class ParticleClass>
+void calculatePositions(autopas::AutoPas<ParticleClass> &autoPasContainer,
                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
                         const std::array<double, 3> &globalForce) {
   using autopas::utils::ArrayMath::add;
@@ -35,7 +36,8 @@ void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
   }
 }
 
-void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
+template <class ParticleClass>
+void calculateVelocities(autopas::AutoPas<ParticleClass> &autoPasContainer,
                          const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
   // helper declarations for operations with vector
   using autopas::utils::ArrayMath::add;

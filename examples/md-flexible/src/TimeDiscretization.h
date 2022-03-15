@@ -20,7 +20,8 @@ namespace TimeDiscretization {
  * @param deltaT The time step width.
  * @param globalForce Base force value to which every particle is reset.
  */
-void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
+template <class ParticleClass>
+void calculatePositions(autopas::AutoPas<ParticleClass> &autoPasContainer,
                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
                         const std::array<double, 3> &globalForce);
 
@@ -30,7 +31,8 @@ void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
  * @param particlePropertiesLibrary The particle properties library for the particles in the container.
  * @param deltaT The time step width.
  */
-void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
+template <class ParticleClass>
+void calculateVelocities(autopas::AutoPas<ParticleClass> &autoPasContainer,
                          const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
 
 }  // namespace TimeDiscretization

@@ -254,6 +254,23 @@ class MoleculeLJ : public autopas::Particle {
     autopas::utils::ExceptionHandler::exception("Wrong molecule type! MoleculeLJ does not include torque");
   }
 
+  /**
+   * Returns molecule of type MoleculeLJ, with the same position, velocity, Id, and type Id as this molecule.
+   * Throws exception when called (should be used to convert from molecules with more data members to moleculeLJ).
+   * @tparam returnedType type of returned
+   * @return
+   */
+  template <class returnedType>
+  returnedType returnSimpleMolecule() {
+    utils::ExceptionHandler::exception("Converting from MoleculeLJ to MoleculeLJ. This function should not be called.");
+    returnedType simpleMolecule;
+    simpleMolecule.setR(this->getR());
+    simpleMolecule.setV(this->getV());
+    simpleMolecule.setID(this->getID());
+    simpleMolecule.setTypeId(this->getTypeId());
+    return simpleMolecule;
+  }
+
  private:
   /**
    * Particle type id.

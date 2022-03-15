@@ -13,17 +13,13 @@
 #include "autopas/AutoPasDecl.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "src/TypeDefinitions.h"
+#include "src/Particles/MulticenteredMoleculeLJ.h"
 
 /**
  * Base class for describing objects made of particles.
  */
 class Object {
  public:
-  /**
-   * Type of all particles generated.
-   */
-  using ParticleType = ::ParticleType;
-
   /**
    * Constructor that should be used by inheriting types.
    * @param velocity
@@ -41,15 +37,15 @@ class Object {
    * Generate the object in the given AutoPas container.
    * @param particles The container to which the new particles will be appended to.
    */
-  virtual void generate(std::vector<ParticleType> &particles) const = 0;
+  virtual void generate(std::vector<MulticenteredMoleculeLJ> &particles) const = 0;
 
   /**
    * Create a particle that acts as blueprint for all particles to be created for the object.
    * @param particleId: Defines the id of the generated dummy particle.
    * @return a particle initialized with default values.
    */
-  [[nodiscard]] ParticleType getDummyParticle(const size_t &particleId) const {
-    ParticleType particle{};
+  [[nodiscard]] MulticenteredMoleculeLJ getDummyParticle(const size_t &particleId) const {
+    MulticenteredMoleculeLJ particle{};
     particle.setID(particleId);
     particle.setTypeId(_typeId);
     particle.setOwnershipState(autopas::OwnershipState::owned);
