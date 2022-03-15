@@ -250,6 +250,21 @@ class LJMulticenterFunctor
     }
   }
 
+  void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
+    if (soa.getNumParticles() == 0) return;
+
+    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+
+    SoAFloatPrecision *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
+    SoAFloatPrecision *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
+    SoAFloatPrecision *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+
+
+  }
+
   /**
    * Sets the particle properties constants for this functor.
    *
