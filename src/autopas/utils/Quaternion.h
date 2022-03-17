@@ -18,7 +18,7 @@ namespace autopas::utils::quaternion {
  * @param q Quaternion
  * @return rotational matrix
  */
-std::array<std::array<double,3>,3> calculateRotationalMatrix(const std::array<double,4> q) {
+std::array<double,9> calculateRotationalMatrix(const std::array<double,4> q) {
   const auto ww = q[0]*q[0];
   const auto wx = q[0]*q[1];
   const auto wy = q[0]*q[2];
@@ -30,16 +30,16 @@ std::array<std::array<double,3>,3> calculateRotationalMatrix(const std::array<do
   const auto yz = q[2]*q[3];
   const auto zz = q[3]*q[3];
 
-  std::array<std::array<double,3>,3> rotMatrix{};
-  rotMatrix[0][0] = ww+xx-yy-zz;
-  rotMatrix[0][1] = 2.*(xy-wz);
-  rotMatrix[0][2] = 2.*(xy-wz);
-  rotMatrix[1][0] = 2.*(xy+wz);
-  rotMatrix[1][1] = ww-xx+yy-zz;
-  rotMatrix[1][2] = 2.*(yz-wx);
-  rotMatrix[2][0] = 2.*(xz-wy);
-  rotMatrix[2][1] = 2.*(yz+wx);
-  rotMatrix[2][2] = ww-xx-yy+zz;
+  std::array<double,9> rotMatrix{};
+  rotMatrix[0] = ww+xx-yy-zz;
+  rotMatrix[1] = 2.*(xy-wz);
+  rotMatrix[2] = 2.*(xy-wz);
+  rotMatrix[3] = 2.*(xy+wz);
+  rotMatrix[4] = ww-xx+yy-zz;
+  rotMatrix[5] = 2.*(yz-wx);
+  rotMatrix[6] = 2.*(xz-wy);
+  rotMatrix[7] = 2.*(yz+wx);
+  rotMatrix[8] = ww-xx-yy+zz;
 
   return rotMatrix;
 }

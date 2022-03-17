@@ -19,6 +19,7 @@
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 #include "autopas/utils/Quaternion.h"
+#include "autopas/utils/AlignedAllocator.h"
 
 /**
 * A functor to handle Lennard-Jones interactions between two (potentially multicentered) Molecules.
@@ -258,11 +259,140 @@ class LJMulticenterFunctor
     const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
+    const auto *const __restrict q0ptr = soa.template begin<Particle::AttributeNames::quaternion0>();
+    const auto *const __restrict q1ptr = soa.template begin<Particle::AttributeNames::quaternion1>();
+    const auto *const __restrict q2ptr = soa.template begin<Particle::AttributeNames::quaternion2>();
+    const auto *const __restrict q3ptr = soa.template begin<Particle::AttributeNames::quaternion3>();
+
     SoAFloatPrecision *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
     SoAFloatPrecision *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     SoAFloatPrecision *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
+    [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
+    // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
+    const SoAFloatPrecision cutoffSquared = _cutoffSquared;
 
+    SoAFloatPrecision potentialEnergySum = 0.;
+    SoAFloatPrecision virialSumX = 0.;
+    SoAFloatPrecision virialSumY = 0.;
+    SoAFloatPrecision virialSumZ = 0.;
+
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> sigmaSquares;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> epsilon24s;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> shift6s;
+
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotatedSitePositionX;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotatedSitePositionY;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotatedSitePositionZ;
+
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotMat00;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotMat01;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotMat02;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotMat10;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotMat11;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotMat12;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotMat20;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotMat21;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotMat22;
+
+
+    // get site properties + unrotated site positions
+    const SoAFloatPrecision const_sigmaSquared = _sigmaSquared;
+    const SoAFloatPrecision const_epsilon24 = _epsilon24;
+    const SoAFloatPrecision const_shift6 = _shift6;
+
+
+    if constexpr (useMixing) {
+      // todo add this functionality
+      autopas::utils::ExceptionHandler::exception("LJMulticenterFunctor: Mixing with multicentered molecules not yet implemented");
+    }
+
+    if constexpr (useMixing) {
+      // todo add this
+    } else {
+      rotatedSitePositionX.resize(_sitePositionsLJ.size()*soa.getNumParticles());
+      rotatedSitePositionY.resize(_sitePositionsLJ.size()*soa.getNumParticles());
+      rotatedSitePositionZ.resize(_sitePositionsLJ.size()*soa.getNumParticles());
+
+      rotMat00.resize(_sitePositionsLJ.size()*soa.getNumParticles());
+      rotMat01.resize(_sitePositionsLJ.size()*soa.getNumParticles());
+      rotMat02.resize(_sitePositionsLJ.size()*soa.getNumParticles());
+      rotMat10.resize(_sitePositionsLJ.size()*soa.getNumParticles());
+      rotMat11.resize(_sitePositionsLJ.size()*soa.getNumParticles());
+      rotMat12.resize(_sitePositionsLJ.size()*soa.getNumParticles());
+      rotMat20.resize(_sitePositionsLJ.size()*soa.getNumParticles());
+      rotMat21.resize(_sitePositionsLJ.size()*soa.getNumParticles());
+      rotMat22.resize(_sitePositionsLJ.size()*soa.getNumParticles());
+
+      // ideally, if we had an efficient way of extending molecular arrays to full site arrays, we would do:
+      // SIMD for all mol
+      //    calculate rotational matrix
+      // rotMatPerSite = extend_mol_to_sites(rotMatPerMol)
+      // SIMD for all sites
+      //    calculate rotated relative site positions
+      //
+      // alas, we are limited by the technology of the time
+      // todo implement this
+      // we can use this to implement the vectorised CoM-CoM algorithm as described in Nikola's dissertation
+      for (size_t mol = 0; mol < soa.getNumParticles(); mol++) {
+        auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions({q0ptr[mol],q1ptr[mol],q})
+
+      }
+
+    }
+
+    // rotate sites
+
+
+    for (size_t molA = 0; molA < soa.getNumParticles(); ++molA) {
+      const auto ownedStateA = ownedStatePtr[molA];
+      if (ownedStateA == autopas::OwnershipState::dummy) {
+        continue;
+      }
+
+      SoAFloatPrecision forceX = 0.;
+      SoAFloatPrecision forceY = 0.;
+      SoAFloatPrecision forceZ = 0.;
+      SoAFloatPrecision torqueX = 0.;
+      SoAFloatPrecision torqueY = 0.;
+      SoAFloatPrecision torqueZ = 0.;
+
+      if constexpr (useMixing) {
+        // todo add this functionality
+        autopas::utils::ExceptionHandler::exception("LJMulticenterFunctor: Mixing with multicentered molecules not yet implemented");
+      }
+
+      // create mask over every site 'above' molA
+      std::vector<bool, autopas::AlignedAllocator<bool>> mask;
+      mask.resize()
+
+#pragma omp simd reduction(+ : forceX, forceY, forceZ, torqueX, torqueY, torqueZ, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
+      // mask sites of molecules with CoM outside cutoff
+      for (size_t molB = molA + 1; molB < soa.getNumParticles(); ++molB) {
+        if constexpr (useMixing) {
+          // todo add this functionality
+          autopas::utils::ExceptionHandler::exception("LJMulticenterFunctor: Mixing with multicentered molecules not yet implemented");
+        }
+
+        const auto ownedStateB = ownedStatePtr[molB];
+
+        const auto displacementCoMX = xptr[molA] - xptr[molB];
+        const auto displacementCoMY = yptr[molA] - yptr[molB];
+        const auto displacementCoMZ = zptr[molA] - zptr[molB];
+
+        const auto distanceSquaredCoMX = displacementCoMX * displacementCoMX;
+        const auto distanceSquaredCoMY = displacementCoMY * displacementCoMY;
+        const auto distanceSquaredCoMZ = displacementCoMZ * displacementCoMZ;
+
+        const auto distanceSquaredCoM = distanceSquaredCoMX + distanceSquaredCoMY + distanceSquaredCoMZ;
+
+        // mask sites of molecules beyond cutoff or if molecule is a dummy
+        const bool mask = distanceSquaredCoM <= cutoffSquared and ownedStateB != autopas::OwnershipState::dummy;
+
+
+      }
+
+    }
   }
 
   /**
