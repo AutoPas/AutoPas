@@ -201,6 +201,7 @@ class LJMulticenterFunctor
 
     for (int m=0; m<numSitesA; m++) {
       for (int n=0; n<numSitesB; n++) {
+        // todo check this
         const auto displacement = autopas::utils::ArrayMath::sub(
             autopas::utils::ArrayMath::add(displacementCoM,rotatedSitePositionsB[n]), rotatedSitePositionsA[m]);
         const auto distanceSquared = autopas::utils::ArrayMath::dot(displacement,displacement);
@@ -268,6 +269,10 @@ class LJMulticenterFunctor
     SoAFloatPrecision *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     SoAFloatPrecision *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
+    SoAFloatPrecision *const __restrict txptr = soa.template begin<Particle::AttributeNames::torqueX>();
+    SoAFloatPrecision *const __restrict typtr = soa.template begin<Particle::AttributeNames::torqueY>();
+    SoAFloatPrecision *const __restrict tzptr = soa.template begin<Particle::AttributeNames::torqueZ>();
+
     [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
     // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
     const SoAFloatPrecision cutoffSquared = _cutoffSquared;
@@ -307,22 +312,16 @@ class LJMulticenterFunctor
       autopas::utils::ExceptionHandler::exception("LJMulticenterFunctor: Mixing with multicentered molecules not yet implemented");
     }
 
+    auto unrotatedSitePositions = _sitePositionsLJ;
+
+    // calculate rotated site positions
     if constexpr (useMixing) {
       // todo add this
     } else {
-      rotatedSitePositionX.resize(_sitePositionsLJ.size()*soa.getNumParticles());
-      rotatedSitePositionY.resize(_sitePositionsLJ.size()*soa.getNumParticles());
-      rotatedSitePositionZ.resize(_sitePositionsLJ.size()*soa.getNumParticles());
+      rotatedSitePositionX.resize(_sitePositionsLJ.size() * soa.getNumParticles());
+      rotatedSitePositionY.resize(_sitePositionsLJ.size() * soa.getNumParticles());
+      rotatedSitePositionZ.resize(_sitePositionsLJ.size() * soa.getNumParticles());
 
-      rotMat00.resize(_sitePositionsLJ.size()*soa.getNumParticles());
-      rotMat01.resize(_sitePositionsLJ.size()*soa.getNumParticles());
-      rotMat02.resize(_sitePositionsLJ.size()*soa.getNumParticles());
-      rotMat10.resize(_sitePositionsLJ.size()*soa.getNumParticles());
-      rotMat11.resize(_sitePositionsLJ.size()*soa.getNumParticles());
-      rotMat12.resize(_sitePositionsLJ.size()*soa.getNumParticles());
-      rotMat20.resize(_sitePositionsLJ.size()*soa.getNumParticles());
-      rotMat21.resize(_sitePositionsLJ.size()*soa.getNumParticles());
-      rotMat22.resize(_sitePositionsLJ.size()*soa.getNumParticles());
 
       // ideally, if we had an efficient way of extending molecular arrays to full site arrays, we would do:
       // SIMD for all mol
@@ -335,13 +334,15 @@ class LJMulticenterFunctor
       // todo implement this
       // we can use this to implement the vectorised CoM-CoM algorithm as described in Nikola's dissertation
       for (size_t mol = 0; mol < soa.getNumParticles(); mol++) {
-        auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions({q0ptr[mol],q1ptr[mol],q})
-
+        auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
+            {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, unrotatedSitePositions);
+        for (size_t site = 0; site < unrotatedSitePositions.size(); ++site) {
+          rotatedSitePositionX[mol * unrotatedSitePositions.size() + site] = rotatedSitePositions[site][0];
+          rotatedSitePositionY[mol * unrotatedSitePositions.size() + site] = rotatedSitePositions[site][1];
+          rotatedSitePositionZ[mol * unrotatedSitePositions.size() + site] = rotatedSitePositions[site][2];
+        }
       }
-
     }
-
-    // rotate sites
 
 
     for (size_t molA = 0; molA < soa.getNumParticles(); ++molA) {
@@ -350,12 +351,24 @@ class LJMulticenterFunctor
         continue;
       }
 
-      SoAFloatPrecision forceX = 0.;
-      SoAFloatPrecision forceY = 0.;
-      SoAFloatPrecision forceZ = 0.;
-      SoAFloatPrecision torqueX = 0.;
-      SoAFloatPrecision torqueY = 0.;
-      SoAFloatPrecision torqueZ = 0.;
+      size_t noSitesA = 1; // Number of sites in molecule A
+      size_t noSitesB = 0; // Number of sites in molecules that A interacts with
+      size_t siteIndexA = 0; // Index at which the number of sites in A starts
+      if constexpr (useMixing) {
+
+      } else {
+        noSitesA = _sitePositionsLJ.size();
+        noSitesB = (soa.getNumParticles()-molA)*_sitePositionsLJ.size();
+        siteIndexA = molA*_sitePositionsLJ.size();
+      }
+
+      // sums used for molA
+      SoAFloatPrecision forceSumX = 0.;
+      SoAFloatPrecision forceSumY = 0.;
+      SoAFloatPrecision forceSumZ = 0.;
+      SoAFloatPrecision torqueSumX = 0.;
+      SoAFloatPrecision torqueSumY = 0.;
+      SoAFloatPrecision torqueSumZ = 0.;
 
       if constexpr (useMixing) {
         // todo add this functionality
@@ -364,34 +377,123 @@ class LJMulticenterFunctor
 
       // create mask over every site 'above' molA
       std::vector<bool, autopas::AlignedAllocator<bool>> mask;
-      mask.resize()
+      if constexpr (useMixing) {
 
-#pragma omp simd reduction(+ : forceX, forceY, forceZ, torqueX, torqueY, torqueZ, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
-      // mask sites of molecules with CoM outside cutoff
-      for (size_t molB = molA + 1; molB < soa.getNumParticles(); ++molB) {
-        if constexpr (useMixing) {
-          // todo add this functionality
-          autopas::utils::ExceptionHandler::exception("LJMulticenterFunctor: Mixing with multicentered molecules not yet implemented");
-        }
-
-        const auto ownedStateB = ownedStatePtr[molB];
-
-        const auto displacementCoMX = xptr[molA] - xptr[molB];
-        const auto displacementCoMY = yptr[molA] - yptr[molB];
-        const auto displacementCoMZ = zptr[molA] - zptr[molB];
-
-        const auto distanceSquaredCoMX = displacementCoMX * displacementCoMX;
-        const auto distanceSquaredCoMY = displacementCoMY * displacementCoMY;
-        const auto distanceSquaredCoMZ = displacementCoMZ * displacementCoMZ;
-
-        const auto distanceSquaredCoM = distanceSquaredCoMX + distanceSquaredCoMY + distanceSquaredCoMZ;
-
-        // mask sites of molecules beyond cutoff or if molecule is a dummy
-        const bool mask = distanceSquaredCoM <= cutoffSquared and ownedStateB != autopas::OwnershipState::dummy;
-
-
+      } else {
+        mask.resize(noSitesB);
       }
 
+      if constexpr (useMixing) {
+
+      } else {
+
+#pragma omp simd
+        // mask sites of molecules with CoM outside cutoff
+        for (size_t siteB = 0; siteB < noSitesB; ++siteB) {
+
+
+          size_t molB = siteB / unrotatedSitePositions.size() + molA;
+
+          const auto ownedStateB = ownedStatePtr[molB];
+
+          const auto displacementCoMX = xptr[molA] - xptr[molB];
+          const auto displacementCoMY = yptr[molA] - yptr[molB];
+          const auto displacementCoMZ = zptr[molA] - zptr[molB];
+
+          const auto distanceSquaredCoMX = displacementCoMX * displacementCoMX;
+          const auto distanceSquaredCoMY = displacementCoMY * displacementCoMY;
+          const auto distanceSquaredCoMZ = displacementCoMZ * displacementCoMZ;
+
+          const auto distanceSquaredCoM = distanceSquaredCoMX + distanceSquaredCoMY + distanceSquaredCoMZ;
+
+          // mask sites of molecules beyond cutoff or if molecule is a dummy
+          mask[siteB] = distanceSquaredCoM <= cutoffSquared and ownedStateB != autopas::OwnershipState::dummy;
+        }
+      }
+
+      // calculate LJ forces
+      SoAFloatPrecision shift6 = _shift6;
+      SoAFloatPrecision sigmaSquared = _sigmaSquared;
+      SoAFloatPrecision epsilon24 = _epsilon24;
+      for (int siteA = 0; siteA < noSitesA; ++siteA) {
+#pragma omp simd
+        for (int siteB = 0; siteB < noSitesB; ++siteB) {
+          size_t molB = siteB / unrotatedSitePositions.size() + molA;
+          size_t siteIndexB = 0;
+          if constexpr (useMixing) {
+
+          } else {
+            siteIndexB = molB * _sitePositionsLJ.size();
+          }
+
+          const auto displacementX = xptr[molA] - xptr[molB] + rotatedSitePositionX[siteIndexA+siteA] - rotatedSitePositionX[siteIndexB+siteB];
+          const auto displacementY = yptr[molA] - yptr[molB] + rotatedSitePositionY[siteIndexA+siteA] - rotatedSitePositionY[siteIndexB+siteB];
+          const auto displacementZ = zptr[molA] - zptr[molB] + rotatedSitePositionZ[siteIndexA+siteA] - rotatedSitePositionZ[siteIndexB+siteB];
+
+          const auto distanceSquaredX = displacementX * displacementX;
+          const auto distanceSquaredY = displacementY * displacementY;
+          const auto distanceSquaredZ = displacementZ * displacementZ;
+
+          const auto distanceSquared = distanceSquaredX + distanceSquaredY + distanceSquaredZ;
+
+          const auto invDistSquared = 1. / distanceSquared;
+          const auto lj2 = const_sigmaSquared * invDistSquared;
+          const auto lj6 = lj2 * lj2 * lj2;
+          const auto lj12 = lj6 * lj6;
+          const auto lj12m6 = lj12 - lj6;
+          const auto scalarMultiple = mask[siteB] ? const_epsilon24 * (lj12 + lj12m6) * invDistSquared : 0.;
+
+          // calculate forces
+          const auto forceX = scalarMultiple * displacementX;
+          const auto forceY = scalarMultiple * displacementY;
+          const auto forceZ = scalarMultiple * displacementZ;
+
+          forceSumX += forceX;
+          forceSumY += forceY;
+          forceSumZ += forceZ;
+
+          // newton's third law
+          fxptr[molB] -= forceX;
+          fyptr[molB] -= forceY;
+          fzptr[molB] -= forceZ;
+
+          // calculate torques on molA
+          const auto torqueAx = rotatedSitePositionY[siteIndexA+siteA] * forceZ - rotatedSitePositionZ[siteIndexA+siteA] * forceY;
+          const auto torqueAy = rotatedSitePositionZ[siteIndexA+siteA] * forceX - rotatedSitePositionX[siteIndexA+siteA] * forceZ;
+          const auto torqueAz = rotatedSitePositionX[siteIndexA+siteA] * forceY - rotatedSitePositionY[siteIndexA+siteA] * forceX;
+
+          torqueSumX += torqueAx;
+          torqueSumY += torqueAy;
+          torqueSumZ += torqueAz;
+
+          // N3L / calculate torques on molB
+          //const auto torqueBx = rotatedSitePositionZ[siteIndexB+siteB] * forceY - rotatedSitePositionY[siteIndexB+siteB] * forceZ;
+          //const auto torqueBy = rotatedSitePositionX[siteIndexB+siteB] * forceZ - rotatedSitePositionZ[siteIndexB+siteB] * forceX;
+          //const auto torqueBz = rotatedSitePositionY[siteIndexB+siteB] * forceX - rotatedSitePositionX[siteIndexB+siteB] * forceY;
+          const auto torqueBx = rotatedSitePositionY[siteIndexB+siteB] * forceZ - rotatedSitePositionZ[siteIndexB+siteB] * forceY;
+          const auto torqueBy = rotatedSitePositionZ[siteIndexB+siteB] * forceX - rotatedSitePositionX[siteIndexB+siteB] * forceZ;
+          const auto torqueBz = rotatedSitePositionX[siteIndexB+siteB] * forceY - rotatedSitePositionY[siteIndexB+siteB] * forceX;
+
+          txptr[molB] -= torqueBx;
+          typtr[molB] -= torqueBy;
+          tzptr[molB] -= torqueAz;
+
+          if (calculateGlobals) {
+            // todo this
+          }
+        }
+        // add all forces + torques for molA
+        fxptr[molA] += forceSumX;
+        fyptr[molA] += forceSumY;
+        fzptr[molA] += forceSumZ;
+
+        txptr[molA] += torqueSumX;
+        typtr[molA] += torqueSumY;
+        tzptr[molA] += torqueSumZ;
+      }
+      if (calculateGlobals) {
+        // todo this
+      }
     }
   }
 
