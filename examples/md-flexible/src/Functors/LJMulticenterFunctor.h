@@ -265,22 +265,23 @@ class LJMulticenterFunctor
     const auto *const __restrict q2ptr = soa.template begin<Particle::AttributeNames::quaternion2>();
     const auto *const __restrict q3ptr = soa.template begin<Particle::AttributeNames::quaternion3>();
 
-    SoAFloatPrecision *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-    SoAFloatPrecision *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-    SoAFloatPrecision *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+    const auto *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
+    const auto *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
+    const auto *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
-    SoAFloatPrecision *const __restrict txptr = soa.template begin<Particle::AttributeNames::torqueX>();
-    SoAFloatPrecision *const __restrict typtr = soa.template begin<Particle::AttributeNames::torqueY>();
-    SoAFloatPrecision *const __restrict tzptr = soa.template begin<Particle::AttributeNames::torqueZ>();
+    const auto *const __restrict txptr = soa.template begin<Particle::AttributeNames::torqueX>();
+    const auto *const __restrict typtr = soa.template begin<Particle::AttributeNames::torqueY>();
+    const auto *const __restrict tzptr = soa.template begin<Particle::AttributeNames::torqueZ>();
 
     [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
-    // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
-    const SoAFloatPrecision cutoffSquared = _cutoffSquared;
 
     SoAFloatPrecision potentialEnergySum = 0.;
     SoAFloatPrecision virialSumX = 0.;
     SoAFloatPrecision virialSumY = 0.;
     SoAFloatPrecision virialSumZ = 0.;
+
+    // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
+    const SoAFloatPrecision cutoffSquared = _cutoffSquared;
 
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> sigmaSquares;
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> epsilon24s;
@@ -290,22 +291,9 @@ class LJMulticenterFunctor
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotatedSitePositionY;
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotatedSitePositionZ;
 
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotMat00;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotMat01;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotMat02;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotMat10;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotMat11;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotMat12;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotMat20;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotMat21;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotMat22;
-
-
-    // get site properties + unrotated site positions
     const SoAFloatPrecision const_sigmaSquared = _sigmaSquared;
     const SoAFloatPrecision const_epsilon24 = _epsilon24;
     const SoAFloatPrecision const_shift6 = _shift6;
-
 
     if constexpr (useMixing) {
       // todo add this functionality
@@ -318,9 +306,9 @@ class LJMulticenterFunctor
     if constexpr (useMixing) {
       // todo add this
     } else {
-      rotatedSitePositionX.resize(_sitePositionsLJ.size() * soa.getNumParticles());
-      rotatedSitePositionY.resize(_sitePositionsLJ.size() * soa.getNumParticles());
-      rotatedSitePositionZ.resize(_sitePositionsLJ.size() * soa.getNumParticles());
+      rotatedSitePositionX.resize(unrotatedSitePositions.size() * soa.getNumParticles());
+      rotatedSitePositionY.resize(unrotatedSitePositions.size() * soa.getNumParticles());
+      rotatedSitePositionZ.resize(unrotatedSitePositions.size() * soa.getNumParticles());
 
 
       // ideally, if we had an efficient way of extending molecular arrays to full site arrays, we would do:
@@ -334,7 +322,7 @@ class LJMulticenterFunctor
       // todo implement this
       // we can use this to implement the vectorised CoM-CoM algorithm as described in Nikola's dissertation
       for (size_t mol = 0; mol < soa.getNumParticles(); mol++) {
-        auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
+        const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
             {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, unrotatedSitePositions);
         for (size_t site = 0; site < unrotatedSitePositions.size(); ++site) {
           rotatedSitePositionX[mol * unrotatedSitePositions.size() + site] = rotatedSitePositions[site][0];
@@ -344,22 +332,22 @@ class LJMulticenterFunctor
       }
     }
 
-
+    // main force calculation loop
     for (size_t molA = 0; molA < soa.getNumParticles(); ++molA) {
       const auto ownedStateA = ownedStatePtr[molA];
       if (ownedStateA == autopas::OwnershipState::dummy) {
         continue;
       }
 
-      size_t noSitesA = 1; // Number of sites in molecule A
+      size_t noSitesInMolA = 1; // Number of sites in molecule A
       size_t noSitesB = 0; // Number of sites in molecules that A interacts with
       size_t siteIndexA = 0; // Index at which the number of sites in A starts
       if constexpr (useMixing) {
 
       } else {
-        noSitesA = _sitePositionsLJ.size();
-        noSitesB = (soa.getNumParticles()-molA)*_sitePositionsLJ.size();
-        siteIndexA = molA*_sitePositionsLJ.size();
+        noSitesInMolA = unrotatedSitePositions.size();
+        noSitesB = (soa.getNumParticles()-molA)*unrotatedSitePositions.size();
+        siteIndexA = molA*unrotatedSitePositions.size();
       }
 
       // sums used for molA
@@ -370,6 +358,7 @@ class LJMulticenterFunctor
       SoAFloatPrecision torqueSumY = 0.;
       SoAFloatPrecision torqueSumZ = 0.;
 
+      // preload sigmas, epsilons, and shifts
       if constexpr (useMixing) {
         // todo add this functionality
         autopas::utils::ExceptionHandler::exception("LJMulticenterFunctor: Mixing with multicentered molecules not yet implemented");
@@ -381,18 +370,14 @@ class LJMulticenterFunctor
 
       } else {
         mask.resize(noSitesB);
-      }
-
-      if constexpr (useMixing) {
-
-      } else {
+        size_t noSitesMolB = unrotatedSitePositions.size(); // uniform #sites
 
 #pragma omp simd
         // mask sites of molecules with CoM outside cutoff
         for (size_t siteB = 0; siteB < noSitesB; ++siteB) {
 
 
-          size_t molB = siteB / unrotatedSitePositions.size() + molA;
+          size_t molB = siteB / noSitesMolB + molA;
 
           const auto ownedStateB = ownedStatePtr[molB];
 
@@ -415,8 +400,9 @@ class LJMulticenterFunctor
       SoAFloatPrecision shift6 = _shift6;
       SoAFloatPrecision sigmaSquared = _sigmaSquared;
       SoAFloatPrecision epsilon24 = _epsilon24;
-      for (int siteA = 0; siteA < noSitesA; ++siteA) {
-#pragma omp simd
+      // todo implement this for mixing
+      for (int siteA = 0; siteA < noSitesInMolA; ++siteA) {
+#pragma omp simd reduction (+ : forceSumX, forceSumY, forceSumZ, torqueSumX, torqueSumY, torqueSumZ, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
         for (int siteB = 0; siteB < noSitesB; ++siteB) {
           size_t molB = siteB / unrotatedSitePositions.size() + molA;
           size_t siteIndexB = 0;
@@ -482,18 +468,29 @@ class LJMulticenterFunctor
             // todo this
           }
         }
-        // add all forces + torques for molA
-        fxptr[molA] += forceSumX;
-        fyptr[molA] += forceSumY;
-        fzptr[molA] += forceSumZ;
+      }
+      // add all forces + torques for molA
+      fxptr[molA] += forceSumX;
+      fyptr[molA] += forceSumY;
+      fzptr[molA] += forceSumZ;
 
-        txptr[molA] += torqueSumX;
-        typtr[molA] += torqueSumY;
-        tzptr[molA] += torqueSumZ;
-      }
-      if (calculateGlobals) {
-        // todo this
-      }
+      txptr[molA] += torqueSumX;
+      typtr[molA] += torqueSumY;
+      tzptr[molA] += torqueSumZ;
+
+    }
+    if (calculateGlobals) {
+      // todo this
+    }
+  }
+  /**
+   * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
+   */
+  void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, const bool newton3) final {
+    if (newton3) {
+      SoAFunctorPairImpl<true>(soa1,soa2);
+    } else {
+      SoAFunctorPairImpl<false>(soa1,soa2);
     }
   }
 
@@ -605,6 +602,256 @@ class LJMulticenterFunctor
   }
 
  private:
+  /**
+   * Implementation function of SoAFunctorPair(soa1, soa2, newton3)
+   * @tparam newton3 flag for if newton's third law is used
+   * @param soaA structure of arrays A
+   * @param soaB structure of arrays B
+   */
+  template <bool newton3>
+  void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soaA, autopas::SoAView<SoAArraysType> soaB) {
+    if (soaA.getNumParticles() == 0 || soaB.getNumParticles() == 0) return;
+
+    const auto *const __restrict xAptr = soaA.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict yAptr = soaA.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict zAptr = soaA.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict xBptr = soaB.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict yBptr = soaB.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict zBptr = soaB.template begin<Particle::AttributeNames::posZ>();
+
+    const auto *const __restrict ownedStatePtrA = soaA.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtrB = soaB.template begin<Particle::AttributeNames::ownershipState>();
+
+    const auto *const __restrict q0Aptr = soaA.template begin<Particle::AttributeNames::quaternion0>();
+    const auto *const __restrict q1Aptr = soaA.template begin<Particle::AttributeNames::quaternion1>();
+    const auto *const __restrict q2Aptr = soaA.template begin<Particle::AttributeNames::quaternion2>();
+    const auto *const __restrict q3Aptr = soaA.template begin<Particle::AttributeNames::quaternion3>();
+    const auto *const __restrict q0Bptr = soaB.template begin<Particle::AttributeNames::quaternion0>();
+    const auto *const __restrict q1Bptr = soaB.template begin<Particle::AttributeNames::quaternion1>();
+    const auto *const __restrict q2Bptr = soaB.template begin<Particle::AttributeNames::quaternion2>();
+    const auto *const __restrict q3Bptr = soaB.template begin<Particle::AttributeNames::quaternion3>();
+
+    auto *const __restrict fxAptr = soaA.template begin<Particle::AttributeNames::forceX>();
+    auto *const __restrict fyAptr = soaA.template begin<Particle::AttributeNames::forceY>();
+    auto *const __restrict fzAptr = soaA.template begin<Particle::AttributeNames::forceZ>();
+    auto *const __restrict fxBptr = soaB.template begin<Particle::AttributeNames::forceX>();
+    auto *const __restrict fyBptr = soaB.template begin<Particle::AttributeNames::forceY>();
+    auto *const __restrict fzBptr = soaB.template begin<Particle::AttributeNames::forceZ>();
+
+    const auto *const __restrict txAptr = soaA.template begin<Particle::AttributeNames::torqueX>();
+    const auto *const __restrict tyAptr = soaA.template begin<Particle::AttributeNames::torqueY>();
+    const auto *const __restrict tzAptr = soaA.template begin<Particle::AttributeNames::torqueZ>();
+    const auto *const __restrict txBptr = soaB.template begin<Particle::AttributeNames::torqueX>();
+    const auto *const __restrict tyBptr = soaB.template begin<Particle::AttributeNames::torqueY>();
+    const auto *const __restrict tzBptr = soaB.template begin<Particle::AttributeNames::torqueZ>();
+
+    [[maybe_unused]] auto *const __restrict typeptrA = soaA.template begin<Particle::AttributeNames::typeId>();
+    [[maybe_unused]] auto *const __restrict typeptrB = soaB.template begin<Particle::AttributeNames::typeId>();
+
+    SoAFloatPrecision potentialEnergySum = 0.;
+    SoAFloatPrecision virialSumX = 0.;
+    SoAFloatPrecision virialSumY = 0.;
+    SoAFloatPrecision virialSumZ = 0.;
+
+    // local redeclarations to help compilers
+    const SoAFloatPrecision cutoffSquared = _cutoffSquared;
+
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> sigmaSquareds;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> epsilon24s;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> shift6s;
+
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotatedSitePositionAx;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotatedSitePositionAy;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotatedSitePositionAz;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotatedSitePositionBx;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotatedSitePositionBy;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotatedSitePositionBz;
+
+    const SoAFloatPrecision const_sigmaSquared = _sigmaSquared;
+    const SoAFloatPrecision const_epsilon24 = _epsilon24;
+    const SoAFloatPrecision const_shift6 = _shift6;
+
+    if constexpr (useMixing) {
+      // todo implement this
+      autopas::utils::ExceptionHandler::exception("LJMulticenterFunctor: Mixing with multicentered molecules not yet implemented");
+    }
+
+    // load unrotated site positions
+    auto unrotatedSitePositionsA = _sitePositionsLJ;
+    auto unrotatedSitePositionsB = _sitePositionsLJ;
+
+    // calculate rotated site positions
+    if constexpr (useMixing) {
+      // todo this
+    } else {
+      rotatedSitePositionAx.resize(unrotatedSitePositionsA.size() * soaA.getNumParticles());
+      rotatedSitePositionAy.resize(unrotatedSitePositionsA.size() * soaA.getNumParticles());
+      rotatedSitePositionAz.resize(unrotatedSitePositionsA.size() * soaA.getNumParticles());
+
+      for (size_t mol = 0; mol < soaA.getNumParticles(); mol++) {
+        const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
+            {q0Aptr[mol], q1Aptr[mol],q2Aptr[mol],q3Aptr[mol]}, unrotatedSitePositionsA);
+        for (size_t site = 0; site < unrotatedSitePositionsA.size(); ++site) {
+          rotatedSitePositionAx[mol * unrotatedSitePositionsA.size() + site] = rotatedSitePositions[site][0];
+          rotatedSitePositionAy[mol * unrotatedSitePositionsA.size() + site] = rotatedSitePositions[site][1];
+          rotatedSitePositionAz[mol * unrotatedSitePositionsA.size() + site] = rotatedSitePositions[site][2];
+        }
+      }
+
+      rotatedSitePositionBx.resize(unrotatedSitePositionsB.size() * soaB.getNumParticles());
+      rotatedSitePositionBy.resize(unrotatedSitePositionsB.size() * soaB.getNumParticles());
+      rotatedSitePositionBz.resize(unrotatedSitePositionsB.size() * soaB.getNumParticles());
+
+      for (size_t mol = 0; mol < soaB.getNumParticles(); mol++) {
+        const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
+            {q0Bptr[mol], q1Bptr[mol],q2Bptr[mol],q3Bptr[mol]}, unrotatedSitePositionsB);
+        for (size_t site = 0; site < unrotatedSitePositionsB.size(); ++site) {
+          rotatedSitePositionBx[mol * unrotatedSitePositionsB.size() + site] = rotatedSitePositions[site][0];
+          rotatedSitePositionBy[mol * unrotatedSitePositionsB.size() + site] = rotatedSitePositions[site][1];
+          rotatedSitePositionBz[mol * unrotatedSitePositionsB.size() + site] = rotatedSitePositions[site][2];
+        }
+      }
+
+    }
+
+    // main force calculation loop
+    for (size_t molA = 0; molA < soaA.getNumParticles(); ++molA) {
+      const auto ownedStateA = ownedStatePtrA[molA];
+      if (ownedStateA == autopas::OwnershipState::dummy) {
+        continue;
+      }
+
+      size_t noSitesMolA = 1; // Number of sites in molecule A
+      size_t noSitesB = 0; // Number of sites in cell B
+      size_t siteIndexA = 0; // Index at which the number of sites in A starts
+      if constexpr (useMixing) {
+        // todo this
+      } else {
+        noSitesMolA = unrotatedSitePositionsA.size();
+        noSitesB = unrotatedSitePositionsB.size();
+        siteIndexA = molA*noSitesMolA;
+      }
+
+      // sums used for molA
+      SoAFloatPrecision forceSumX = 0.;
+      SoAFloatPrecision forceSumY = 0.;
+      SoAFloatPrecision forceSumZ = 0.;
+      SoAFloatPrecision torqueSumX = 0.;
+      SoAFloatPrecision torqueSumY = 0.;
+      SoAFloatPrecision torqueSumZ = 0.;
+
+      // preload sigmas, epsilons, and shifts
+      if constexpr (useMixing) {
+        // todo this
+      }
+
+      // create mask over every site in SoA B
+      std::vector<bool, autopas::AlignedAllocator<bool>> mask;
+
+      if constexpr (useMixing) {
+
+      } else {
+        mask.resize(noSitesB);
+
+#pragma omp simd
+        // mask sites of molecules with CoM outside cutoff
+        for (size_t siteB = 0; siteB < noSitesB; ++siteB) {
+          size_t molB = siteB / unrotatedSitePositionsB.size();
+
+          const auto ownedStateB = ownedStatePtrB[molB];
+
+          const auto displacementCoMX = xAptr[molA] - xBptr[molB];
+          const auto displacementCoMY = yAptr[molA] - yBptr[molB];
+          const auto displacementCoMZ = zAptr[molA] - zBptr[molB];
+
+          const auto distanceSquaredCoMX = displacementCoMX * displacementCoMX;
+          const auto distanceSquaredCoMY = displacementCoMY * displacementCoMY;
+          const auto distanceSquaredCoMZ = displacementCoMZ * displacementCoMZ;
+
+          const auto distanceSquaredCoM = distanceSquaredCoMX + distanceSquaredCoMY + distanceSquaredCoMZ;
+
+          // mask sites of molecules beyond cutoff or if molecule is a dummy
+          mask[siteB] = distanceSquaredCoM <= cutoffSquared and ownedStateB != autopas::OwnershipState::dummy;
+        }
+      }
+
+      // calculate LJ potentials
+      for (int siteA = 0; siteA < noSitesMolA; ++siteA) {
+#pragma omp simd reduction (+ : forceSumX, forceSumY, forceSumZ, torqueSumX, torqueSumY, torqueSumZ, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
+        for (int siteB = 0; siteB < noSitesB; ++siteB) {
+          size_t molB = siteB / unrotatedSitePositionsB.size();
+
+          const auto displacementX = xAptr[molA] - xBptr[molB] + rotatedSitePositionAx[siteIndexA+siteA] - rotatedSitePositionBx[siteB];
+          const auto displacementY = yAptr[molA] - yBptr[molB] + rotatedSitePositionAy[siteIndexA+siteA] - rotatedSitePositionBy[siteB];
+          const auto displacementZ = zAptr[molA] - zBptr[molB] + rotatedSitePositionAz[siteIndexA+siteA] - rotatedSitePositionBz[siteB];
+
+          const auto distanceSquaredX = displacementX * displacementX;
+          const auto distanceSquaredY = displacementY * displacementY;
+          const auto distanceSquaredZ = displacementZ * displacementZ;
+
+          const auto distanceSquared = distanceSquaredX + distanceSquaredY + distanceSquaredZ;
+
+          const auto invDistSquared = 1. / distanceSquared;
+          const auto lj2 = const_sigmaSquared * invDistSquared;
+          const auto lj6 = lj2 * lj2 * lj2;
+          const auto lj12 = lj6 * lj6;
+          const auto lj12m6 = lj12 - lj6;
+          const auto scalarMultiple = mask[siteB] ? const_epsilon24 * (lj12 + lj12m6) * invDistSquared : 0.;
+
+          // calculate forces
+          const auto forceX = scalarMultiple * displacementX;
+          const auto forceY = scalarMultiple * displacementY;
+          const auto forceZ = scalarMultiple * displacementZ;
+
+          forceSumX += forceX;
+          forceSumY += forceY;
+          forceSumZ += forceZ;
+
+          if (newton3) {
+            fxBptr[molB] -= forceX;
+            fyBptr[molB] -= forceY;
+            fzBptr[molB] -= forceZ;
+          }
+
+          // calculate torques on molA
+          const auto torqueAx = rotatedSitePositionAy[siteIndexA+siteA] * forceZ - rotatedSitePositionAz[siteIndexA+siteA] * forceY;
+          const auto torqueAy = rotatedSitePositionAz[siteIndexA+siteA] * forceX - rotatedSitePositionAx[siteIndexA+siteA] * forceZ;
+          const auto torqueAz = rotatedSitePositionAx[siteIndexA+siteA] * forceY - rotatedSitePositionAy[siteIndexA+siteA] * forceX;
+
+          torqueSumX += torqueAx;
+          torqueSumY += torqueAy;
+          torqueSumZ += torqueAz;
+
+          if (newton3) {
+            const auto torqueBx = rotatedSitePositionBy[siteB] * forceZ - rotatedSitePositionBz[siteB] * forceY;
+            const auto torqueBy = rotatedSitePositionBz[siteB] * forceX - rotatedSitePositionBx[siteB] * forceZ;
+            const auto torqueBz = rotatedSitePositionBx[siteB] * forceY - rotatedSitePositionBy[siteB] * forceX;
+
+            txBptr[molB] -= torqueBx;
+            tyBptr[molB] -= torqueBy;
+            tzBptr[molB] -= torqueAz;
+          }
+
+          if (calculateGlobals) {
+            // todo this
+          }
+
+        }
+      }
+      // add all forces + torques for molA
+      fxAptr[molA] += forceSumX;
+      fyAptr[molA] += forceSumY;
+      fzAptr[molA] += forceSumZ;
+
+      txAptr[molA] += torqueSumX;
+      tyAptr[molA] += torqueSumY;
+      tzAptr[molA] += torqueSumZ;
+
+    }
+
+  }
+
+
   /**
    * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
    */
