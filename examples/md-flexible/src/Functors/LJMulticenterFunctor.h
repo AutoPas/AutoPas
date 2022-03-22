@@ -265,13 +265,13 @@ class LJMulticenterFunctor
     const auto *const __restrict q2ptr = soa.template begin<Particle::AttributeNames::quaternion2>();
     const auto *const __restrict q3ptr = soa.template begin<Particle::AttributeNames::quaternion3>();
 
-    const auto *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-    const auto *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-    const auto *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+    SoAFloatPrecision *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
+    SoAFloatPrecision *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
+    SoAFloatPrecision *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
-    const auto *const __restrict txptr = soa.template begin<Particle::AttributeNames::torqueX>();
-    const auto *const __restrict typtr = soa.template begin<Particle::AttributeNames::torqueY>();
-    const auto *const __restrict tzptr = soa.template begin<Particle::AttributeNames::torqueZ>();
+    SoAFloatPrecision *const __restrict txptr = soa.template begin<Particle::AttributeNames::torqueX>();
+    SoAFloatPrecision *const __restrict typtr = soa.template begin<Particle::AttributeNames::torqueY>();
+    SoAFloatPrecision *const __restrict tzptr = soa.template begin<Particle::AttributeNames::torqueZ>();
 
     [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
 
@@ -631,19 +631,19 @@ class LJMulticenterFunctor
     const auto *const __restrict q2Bptr = soaB.template begin<Particle::AttributeNames::quaternion2>();
     const auto *const __restrict q3Bptr = soaB.template begin<Particle::AttributeNames::quaternion3>();
 
-    auto *const __restrict fxAptr = soaA.template begin<Particle::AttributeNames::forceX>();
-    auto *const __restrict fyAptr = soaA.template begin<Particle::AttributeNames::forceY>();
-    auto *const __restrict fzAptr = soaA.template begin<Particle::AttributeNames::forceZ>();
-    auto *const __restrict fxBptr = soaB.template begin<Particle::AttributeNames::forceX>();
-    auto *const __restrict fyBptr = soaB.template begin<Particle::AttributeNames::forceY>();
-    auto *const __restrict fzBptr = soaB.template begin<Particle::AttributeNames::forceZ>();
+    SoAFloatPrecision *const __restrict fxAptr = soaA.template begin<Particle::AttributeNames::forceX>();
+    SoAFloatPrecision *const __restrict fyAptr = soaA.template begin<Particle::AttributeNames::forceY>();
+    SoAFloatPrecision *const __restrict fzAptr = soaA.template begin<Particle::AttributeNames::forceZ>();
+    SoAFloatPrecision *const __restrict fxBptr = soaB.template begin<Particle::AttributeNames::forceX>();
+    SoAFloatPrecision *const __restrict fyBptr = soaB.template begin<Particle::AttributeNames::forceY>();
+    SoAFloatPrecision *const __restrict fzBptr = soaB.template begin<Particle::AttributeNames::forceZ>();
 
-    const auto *const __restrict txAptr = soaA.template begin<Particle::AttributeNames::torqueX>();
-    const auto *const __restrict tyAptr = soaA.template begin<Particle::AttributeNames::torqueY>();
-    const auto *const __restrict tzAptr = soaA.template begin<Particle::AttributeNames::torqueZ>();
-    const auto *const __restrict txBptr = soaB.template begin<Particle::AttributeNames::torqueX>();
-    const auto *const __restrict tyBptr = soaB.template begin<Particle::AttributeNames::torqueY>();
-    const auto *const __restrict tzBptr = soaB.template begin<Particle::AttributeNames::torqueZ>();
+    SoAFloatPrecision *const __restrict txAptr = soaA.template begin<Particle::AttributeNames::torqueX>();
+    SoAFloatPrecision *const __restrict tyAptr = soaA.template begin<Particle::AttributeNames::torqueY>();
+    SoAFloatPrecision *const __restrict tzAptr = soaA.template begin<Particle::AttributeNames::torqueZ>();
+    SoAFloatPrecision *const __restrict txBptr = soaB.template begin<Particle::AttributeNames::torqueX>();
+    SoAFloatPrecision *const __restrict tyBptr = soaB.template begin<Particle::AttributeNames::torqueY>();
+    SoAFloatPrecision *const __restrict tzBptr = soaB.template begin<Particle::AttributeNames::torqueZ>();
 
     [[maybe_unused]] auto *const __restrict typeptrA = soaA.template begin<Particle::AttributeNames::typeId>();
     [[maybe_unused]] auto *const __restrict typeptrB = soaB.template begin<Particle::AttributeNames::typeId>();
