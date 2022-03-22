@@ -494,6 +494,23 @@ class LJMulticenterFunctor
     }
   }
 
+  // clang-format off
+  /**
+   * @copydoc Functor::SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
+   */
+  // clang-format on
+  void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
+                        const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
+                        bool newton3) final {
+//    if (soa.getNumParticles() == 0 or neighborList.empty()) return;
+//    if (newton3) {
+//      SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
+//    } else {
+//      SoAFunctorVerletImpl<false>(soa, indexFirst, neighborList);
+//    }
+    // todo this
+  }
+
   /**
    * Sets the particle properties constants for this functor.
    *
@@ -509,6 +526,35 @@ class LJMulticenterFunctor
     } else {
       _shift6 = 0;
     }
+  }
+
+  /**
+   * @copydoc Functor::getNeededAttr()
+   */
+  constexpr static auto getNeededAttr() {
+    return std::array<typename Particle::AttributeNames, 12>{
+        Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
+        Particle::AttributeNames::posZ,   Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
+        Particle::AttributeNames::forceZ, Particle::AttributeNames::torqueX,Particle::AttributeNames::torqueY,
+        Particle::AttributeNames::torqueZ,Particle::AttributeNames::typeId, Particle::AttributeNames::ownershipState};
+  }
+
+  /**
+   * @copydoc Functor::getNeededAttr(std::false_type)
+   */
+  constexpr static auto getNeededAttr(std::false_type) {
+    return std::array<typename Particle::AttributeNames, 6>{
+        Particle::AttributeNames::id,   Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
+        Particle::AttributeNames::posZ, Particle::AttributeNames::typeId, Particle::AttributeNames::ownershipState};
+  }
+
+  /**
+   * @copydoc Functor::getComputedAttr()
+   */
+  constexpr static auto getComputedAttr() {
+    return std::array<typename Particle::AttributeNames, 6>{
+        Particle::AttributeNames::forceX,  Particle::AttributeNames::forceY,  Particle::AttributeNames::forceZ,
+        Particle::AttributeNames::torqueX, Particle::AttributeNames::torqueY, Particle::AttributeNames::torqueZ};
   }
 
   /**
@@ -570,9 +616,10 @@ class LJMulticenterFunctor
 
   /**
    * Get the potential energy.
+   * todo replace this (and in LJFunctor.h) with the more intuitive potential energu
    * @return the potential energy sum
    */
-  double getPotentialEnergy() {
+  double getUpot() {
     if (not calculateGlobals) {
       throw autopas::utils::ExceptionHandler::AutoPasException(
           "Trying to get upot even though calculateGlobals is false. If you want this functor to calculate global "
@@ -852,6 +899,8 @@ class LJMulticenterFunctor
   }
 
 
+
+
   /**
    * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
    */
@@ -878,4 +927,102 @@ class LJMulticenterFunctor
    * Thread buffer for AoS
    */
   std::vector<AoSThreadData> _aosThreadData;
+};
+
+template <bool applyShift, bool useMixing, autopas::FunctorN3Modes useNewton3, bool calculateGlobals, bool relevantForTuning>
+class LJMulticenterFunctor<autopas::MoleculeLJ, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning> : public autopas::Functor<autopas::MoleculeLJ,
+                              LJMulticenterFunctor<autopas::MoleculeLJ, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
+
+ public:
+  /**
+   * Structure of the SoAs defined by the particle.
+   */
+  using SoAArraysType = typename autopas::MoleculeLJ::SoAArraysType;
+
+  using SoAFloatPrecision = typename autopas::MoleculeLJ::ParticleSoAFloatPrecision;
+
+  /**
+   * Delete Default constructor
+   */
+  LJMulticenterFunctor() = delete;
+
+ private:
+  /**
+   * Internal (actually used) constructor
+   * @param cutoff
+   * @note param dummy is unused, only there to make the signature different from the public constructor.
+   */
+  explicit LJMulticenterFunctor(SoAFloatPrecision cutoff, void * /*dummy*/)
+      : autopas::Functor <autopas::MoleculeLJ, LJMulticenterFunctor<autopas::MoleculeLJ, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(cutoff) {
+    autopas::utils::ExceptionHandler::exception("LJMulticenterFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
+  }
+
+ public:
+  /**
+   * Constructor for Functor with particle mixing disabled. setParticleProperties() must be called.
+   * @param cutoff
+   */
+  explicit LJMulticenterFunctor(double cutoff) : LJMulticenterFunctor(cutoff, nullptr) {
+    autopas::utils::ExceptionHandler::exception("LJMulticenterFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
+  }
+
+  /**
+   * Constructor for Functor with particle mixing enabled.
+   * @param cutoff
+   * @param particlePropertiesLibrary Library used to look up the properties of each type of particle e.g. sigma,
+   * epsilon, shift.
+   */
+  explicit LJMulticenterFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+      : LJMulticenterFunctor(cutoff, nullptr) {
+    autopas::utils::ExceptionHandler::exception("LJMulticenterFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
+  }
+
+  bool isRelevantForTuning() final {return relevantForTuning;}
+
+  bool allowsNewton3() final { return useNewton3 == autopas::FunctorN3Modes::Newton3Only or useNewton3 == autopas::FunctorN3Modes::Both; }
+
+  bool allowsNonNewton3() final {
+    return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
+  }
+
+  constexpr static bool getMixing() { return  useMixing; }
+
+  double getPotentialEnergy() { return 0;}
+
+  double getVirial() {return 0;}
+
+  /**
+   * Functor for AoS. Simply loops over the sites of two particles/molecules to calculate force.
+   * @param particleA Particle i
+   * @param particleB Particle j
+   * @param newton3 Flag for if newton3 is used.
+   */
+  void AoSFunctor(autopas::MoleculeLJ &particleA, autopas::MoleculeLJ &particleB, bool newton3) final {
+    autopas::utils::ExceptionHandler::exception("LJMulticenterFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
+  }
+
+  void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
+    autopas::utils::ExceptionHandler::exception("LJMulticenterFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
+  }
+
+  void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, const bool newton3) final {
+    autopas::utils::ExceptionHandler::exception("LJMulticenterFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
+  }
+
+  void setParticleProperties(SoAFloatPrecision epsilon24, SoAFloatPrecision sigmaSquared) {
+    autopas::utils::ExceptionHandler::exception("LJMulticenterFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
+  }
+
+  static unsigned long getNumFlopsPerKernelCall(bool newton3, size_t numA,size_t numB) {return 0ul;}
+
+  void initTraversal() final {
+    autopas::utils::ExceptionHandler::exception("LJMulticenterFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
+  }
+
+  void endTraversal(bool newton3) final {
+    autopas::utils::ExceptionHandler::exception("LJMulticenterFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
+  }
+
+
+
 };

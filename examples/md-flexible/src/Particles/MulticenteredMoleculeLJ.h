@@ -51,9 +51,9 @@ class MulticenteredMoleculeLJ : public autopas::MoleculeLJ {
      posX,
      posY,
      posZ,
-     velX,
-     velY,
-     velZ,
+     velocityX,
+     velocityY,
+     velocityZ,
      forceX,
      forceY,
      forceZ,
@@ -89,6 +89,16 @@ class MulticenteredMoleculeLJ : public autopas::MoleculeLJ {
          size_t /*typeid*/, autopas::OwnershipState /*ownrState*/>::Type;
 
    /**
+   * Non-const getter for the pointer of this object.
+   * @tparam attribute Attribute name.
+   * @return this.
+    */
+   template <AttributeNames attribute, std::enable_if_t<attribute == AttributeNames::ptr, bool> = true>
+   constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
+     return this;
+   }
+
+   /**
    * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).
    * @tparam attribute Attribute name.
    * @return Value of the requested attribute.
@@ -104,11 +114,11 @@ class MulticenteredMoleculeLJ : public autopas::MoleculeLJ {
        return getR()[1];
      } else if constexpr (attribute == AttributeNames::posZ) {
        return getR()[2];
-     } else if constexpr (attribute == AttributeNames::velX) {
+     } else if constexpr (attribute == AttributeNames::velocityX) {
        return getV()[0];
-     } else if constexpr (attribute == AttributeNames::velY) {
+     } else if constexpr (attribute == AttributeNames::velocityY) {
        return getV()[1];
-     } else if constexpr (attribute == AttributeNames::velZ) {
+     } else if constexpr (attribute == AttributeNames::velocityZ) {
        return getV()[2];
      } else if constexpr (attribute == AttributeNames::forceX) {
        return getF()[0];
@@ -167,11 +177,11 @@ class MulticenteredMoleculeLJ : public autopas::MoleculeLJ {
        _r[1] = value;
      } else if constexpr (attribute == AttributeNames::posZ) {
        _r[2] = value;
-     } else if constexpr (attribute == AttributeNames::velX) {
+     } else if constexpr (attribute == AttributeNames::velocityX) {
        _v[0] = value;
-     } else if constexpr (attribute == AttributeNames::velY) {
+     } else if constexpr (attribute == AttributeNames::velocityY) {
        _v[1] = value;
-     } else if constexpr (attribute == AttributeNames::velZ) {
+     } else if constexpr (attribute == AttributeNames::velocityZ) {
        _v[2] = value;
      } else if constexpr (attribute == AttributeNames::forceX) {
        _f[0] = value;
