@@ -111,6 +111,11 @@ class Simulation {
     autopas::utils::Timer positionUpdate;
 
     /**
+     * Records the time used for the quaternion updates of all particles.
+     */
+    autopas::utils::Timer quaternionUpdate;
+
+    /**
      * Records the time used for the total force update of all particles.
      */
     autopas::utils::Timer forceUpdateTotal;
@@ -129,6 +134,11 @@ class Simulation {
      * Records the time used for the velocity updates of all particles.
      */
     autopas::utils::Timer velocityUpdate;
+
+    /**
+     * Records the time used for the angular velocity updates of all particles.
+     */
+    autopas::utils::Timer angularVelocityUpdate;
 
     /**
      * Records the time used for actively simulating the provided scenario.

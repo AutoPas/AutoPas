@@ -363,6 +363,14 @@ class MulticenteredMoleculeLJ : public autopas::MoleculeLJ {
    void setAngularVel(const std::array<double, 3> &angularVel) override { _angularVel = angularVel; }
 
    /**
+    * Adds given angular velocity to the particle's angular velocity.
+    * @param angularVel angular velocity to be added
+    */
+   void addAngularVel(const std::array<double, 3> &angularVel) {
+     _angularVel = autopas::utils::ArrayMath::add(_angularVel, angularVel);
+   }
+
+   /**
    * Get the torque.
    * @return torque
     */

@@ -401,7 +401,10 @@ void Simulation<ParticleClass>::updatePositions() {
 
 template <class ParticleClass>
 void Simulation<ParticleClass>::updateQuaternions() {
-
+  _timers.quaternionUpdate.start();
+  TimeDiscretization::calculateQuaternions<ParticleClass>(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+                                           _configuration.deltaT.value, _configuration.globalForce.value);
+  _timers.quaternionUpdate.stop();
 }
 
 template <class ParticleClass>
@@ -441,7 +444,12 @@ void Simulation<ParticleClass>::updateVelocities() {
 
 template <class ParticleClass>
 void Simulation<ParticleClass>::updateAngularVelocities() {
+  const double deltaT = _configuration.deltaT.value;
 
+  _timers.angularVelocityUpdate.start();
+  TimeDiscretization::calculateAngularVelocities<ParticleClass>(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+                                                                deltaT);
+  _timers.angularVelocityUpdate.stop();
 }
 
 template <class ParticleClass>
