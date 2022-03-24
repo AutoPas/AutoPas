@@ -85,4 +85,43 @@ std::vector<std::array<double,3>> rotateVectorOfPositions(const std::array<doubl
 
 }
 
+/**
+ * Rotates a single 3D position
+ * @param q Quaternion defining rotation
+ * @param position array of 3 doubles, defining position
+ * @return rotated position
+ */
+std::array<double,3> rotatePosition(const std::array<double,4> q, const std::array<double,3> pos) {
+  const auto ww = q[0]*q[0];
+  const auto wx = q[0]*q[1];
+  const auto wy = q[0]*q[2];
+  const auto wz = q[0]*q[3];
+  const auto xx = q[1]*q[1];
+  const auto xy = q[1]*q[2];
+  const auto xz = q[1]*q[3];
+  const auto yy = q[2]*q[2];
+  const auto yz = q[2]*q[3];
+  const auto zz = q[3]*q[3];
+
+  const auto r00 = ww+xx-yy-zz;
+  const auto r01 = 2.*(xy-wz);
+  const auto r02 = 2.*(xy-wz);
+  const auto r10 = 2.*(xy+wz);
+  const auto r11 = ww-xx+yy-zz;
+  const auto r12 = 2.*(yz-wx);
+  const auto r20 = 2.*(xz-wy);
+  const auto r21 = 2.*(yz+wx);
+  const auto r22 = ww-xx-yy+zz;
+
+  std::array<double,3> rotatedPosition;
+
+  rotatedPosition[0] = r00 * pos[0] + r01 * pos[1] + r02 * pos[2];
+  rotatedPosition[1] = r10 * pos[0] + r11 * pos[1] + r12 * pos[2];
+  rotatedPosition[2] = r20 * pos[0] + r21 * pos[1] + r22 * pos[2];
+
+  return rotatedPosition;
+}
+
+std::
+
 }

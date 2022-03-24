@@ -401,9 +401,9 @@ class LJMulticenterFunctor
       SoAFloatPrecision sigmaSquared = _sigmaSquared;
       SoAFloatPrecision epsilon24 = _epsilon24;
       // todo implement this for mixing
-      for (int siteA = 0; siteA < noSitesInMolA; ++siteA) {
+      for (size_t siteA = 0; siteA < noSitesInMolA; ++siteA) {
 #pragma omp simd reduction (+ : forceSumX, forceSumY, forceSumZ, torqueSumX, torqueSumY, torqueSumZ, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
-        for (int siteB = 0; siteB < noSitesB; ++siteB) {
+        for (size_t siteB = 0; siteB < noSitesB; ++siteB) {
           size_t molB = siteB / unrotatedSitePositions.size() + molA;
           size_t siteIndexB = 0;
           if constexpr (useMixing) {

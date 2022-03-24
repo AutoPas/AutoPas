@@ -26,6 +26,19 @@ void calculatePositions(autopas::AutoPas<ParticleClass> &autoPasContainer,
                         const std::array<double, 3> &globalForce);
 
 /**
+ * Calculate and update the quaternion for every particle
+ * @tparam ParticleClass
+ * @param autoPasContainer
+ * @param particlePropertiesLibrary
+ * @param deltaT
+ * @param globalForce
+ */
+template <class ParticleClass>
+void calculateQuaternions(autopas::AutoPas<ParticleClass> &autoPasContainer,
+                          const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
+                          const std::array<double, 3> &globalForce);
+
+/**
  * Calculate and update the velocity for every particle using the the Störmer-Verlet Algorithm.
  * @param autoPasContainer The container for which to update the velocities.
  * @param particlePropertiesLibrary The particle properties library for the particles in the container.
