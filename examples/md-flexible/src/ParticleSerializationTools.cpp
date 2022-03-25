@@ -40,8 +40,8 @@ constexpr size_t AttributesSize = 120;
  * @param attributeVector: The container in which the serialized attribute will be stored.
  * @param startIndex: The startindex in the container where to store the serialized attribute.
  */
-template <size_t I>
-void serializeAttribute(const autopas::MoleculeLJ &particle, std::vector<char> &attributeVector, size_t &startIndex) {
+template <class ParticleClass, size_t I>
+void serializeAttribute(const ParticleClass &particle, std::vector<char> &attributeVector, size_t &startIndex) {
   const auto attribute = particle.get<Attributes[I]>();
   const auto sizeOfValue = sizeof(attribute);
   std::memcpy(&attributeVector[startIndex], &attribute, sizeOfValue);
@@ -54,8 +54,8 @@ void serializeAttribute(const autopas::MoleculeLJ &particle, std::vector<char> &
  * @param particle: The particle to which the serialized data will be applied.
  * @param startIndex: The start index in the attributeVector of the attribute which needs to be deserialized.
  */
-template <size_t I>
-void deserializeAttribute(char *&attributeVector, autopas::MoleculeLJ &particle, size_t &startIndex) {
+template <class ParticleClass, size_t I>
+void deserializeAttribute(char *&attributeVector, ParticleClass &particle, size_t &startIndex) {
   auto attribute = particle.get<Attributes[I]>();
   const auto sizeOfValue = sizeof(attribute);
   std::memcpy(&attribute, &attributeVector[startIndex], sizeOfValue);
@@ -68,13 +68,13 @@ void deserializeAttribute(char *&attributeVector, autopas::MoleculeLJ &particle,
  * @param particle: The particle which will be serialized.
  * @param serializedParticle: The char array of the particles serialized attributes.
  */
-template <size_t... I>
-void serializeParticleImpl(const autopas::MoleculeLJ &particle, std::vector<char> &serializedParticle,
+template <class ParticleClass, size_t... I>
+void serializeParticleImpl(const ParticleClass &particle, std::vector<char> &serializedParticle,
                            std::index_sequence<I...>) {
   // Serialize particle attributes
   size_t startIndex = 0;
   std::vector<char> attributesVector(AttributesSize);
-  (serializeAttribute<I>(particle, attributesVector, startIndex), ...);
+  (serializeAttribute<ParticleClass,I>(particle, attributesVector, startIndex), ...);
 
   // Add serialized attributes to serialized particle
   serializedParticle.insert(serializedParticle.end(), attributesVector.begin(), attributesVector.end());
@@ -85,28 +85,33 @@ void serializeParticleImpl(const autopas::MoleculeLJ &particle, std::vector<char
  * @param particleData: The particle data which will be deserialized.
  * @param particle: The particle to which the deserialized attributes will be applied.
  */
-template <size_t... I>
-void deserializeParticleImpl(char *particleData, autopas::MoleculeLJ &particle, std::index_sequence<I...>) {
+template <class ParticleClass, size_t... I>
+void deserializeParticleImpl(char *particleData, ParticleClass &particle, std::index_sequence<I...>) {
   size_t startIndex = 0;
-  (deserializeAttribute<I>(particleData, particle, startIndex), ...);
+  (deserializeAttribute<ParticleClass,I>(particleData, particle, startIndex), ...);
 }
 }  // namespace
 
 namespace ParticleSerializationTools {
-void serializeParticle(const autopas::MoleculeLJ &particle, std::vector<char> &serializedParticles) {
-  serializeParticleImpl(particle, serializedParticles, std::make_index_sequence<Attributes.size()>{});
+template <class ParticleClass>
+void serializeParticle(const ParticleClass &particle, std::vector<char> &serializedParticles) {
+  serializeParticleImpl<ParticleClass>(particle, serializedParticles, std::make_index_sequence<Attributes.size()>{});
 }
 
-void deserializeParticle(char *particleData, autopas::MoleculeLJ &particle) {
+template <class ParticleClass>
+void deserializeParticle(char *particleData, ParticleClass &particle) {
   deserializeParticleImpl(particleData, particle, std::make_index_sequence<Attributes.size()>{});
 }
 
-void deserializeParticles(std::vector<char> &particlesData, std::vector<autopas::MoleculeLJ> &particles) {
-  autopas::MoleculeLJ particle;
+template <class ParticleClass>
+void deserializeParticles(std::vector<char> &particlesData, std::vector<ParticleClass> &particles) {
+  ParticleClass particle;
   for (size_t i = 0; i < particlesData.size(); i += AttributesSize) {
-    deserializeParticle(&particlesData[i], particle);
+    deserializeParticle<ParticleClass>(&particlesData[i], particle);
     particles.push_back(particle);
   }
 }
 
 }  // namespace ParticleSerializationTools
+
+

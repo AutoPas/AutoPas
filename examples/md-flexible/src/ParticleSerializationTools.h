@@ -20,19 +20,22 @@ namespace ParticleSerializationTools {
  * @param particle The particle which will be serialized.
  * @param serializedParticles The container to wich the serialized particle will be appended.
  */
-void serializeParticle(const autopas::MoleculeLJ &particle, std::vector<char> &serializedParticles);
+template <class ParticleClass>
+void serializeParticle(const ParticleClass &particle, std::vector<char> &serializedParticles);
 
 /**
  * Deserializes a serialized particle.
  * @param particleData A pointer to the serialized particle data.
  * @param particle The particle to which the desierialized attributes will be applied.
  */
-void deserializeParticle(char *particleData, autopas::MoleculeLJ &particle);
+template <class ParticleClass>
+void deserializeParticle(char *particleData, ParticleClass &particle);
 
 /**
  * Deserializes a container of serialized particles.
  * @param particlesData A pointer to the serialized particle data.
  * @param particles The particle container to which to append the deserialized particles to.
  */
-void deserializeParticles(std::vector<char> &particlesData, std::vector<autopas::MoleculeLJ> &particles);
+template <class ParticleClass>
+void deserializeParticles(std::vector<char> &particlesData, std::vector<ParticleClass> &particles);
 }  // namespace ParticleSerializationTools
