@@ -147,10 +147,6 @@ void serializeParticle(const ParticleClass &particle, std::vector<char> &seriali
   autopas::utils::ExceptionHandler::exception("ParticleSerializationTools not implemented for particle");
 }
 
-template<> void serializeParticle<autopas::MoleculeLJ>(const autopas::MoleculeLJ &particle, std::vector<char> &serializedParticles) {
-  serializeSimpleParticleImpl(particle, serializedParticles, std::make_index_sequence<SimpleAttributes.size()>{});
-}
-
 /**
  * Deserializes a serialized particle.
  * @param particleData A pointer to the serialized particle data.
@@ -161,10 +157,6 @@ void deserializeParticle(char *particleData, ParticleClass &particle) {
   autopas::utils::ExceptionHandler::exception("ParticleSerializationTools not implemented for particle");
 }
 
-template<> void deserializeParticle<autopas::MoleculeLJ>(char *particleData, autopas::MoleculeLJ &particle) {
-  deserializeSimpleParticleImpl(particleData, particle, std::make_index_sequence<SimpleAttributes.size()>{});
-}
-
 /**
  * Deserializes a container of serialized particles.
  * @param particlesData A pointer to the serialized particle data.
@@ -173,13 +165,5 @@ template<> void deserializeParticle<autopas::MoleculeLJ>(char *particleData, aut
 template <class ParticleClass>
 void deserializeParticles(std::vector<char> &particlesData, std::vector<ParticleClass> &particles) {
   autopas::utils::ExceptionHandler::exception("ParticleSerializationTools not implemented for particle");
-}
-
-template<> void deserializeParticles<autopas::MoleculeLJ>(std::vector<char> &particlesData, std::vector<autopas::MoleculeLJ> &particles) {
-  autopas::MoleculeLJ particle;
-  for (size_t i = 0; i < particlesData.size(); i += simpleAttributesSize) {
-    deserializeParticle<autopas::MoleculeLJ>(&particlesData[i], particle);
-    particles.push_back(particle);
-  }
 }
 }  // namespace ParticleSerializationTools
