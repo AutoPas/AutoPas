@@ -55,6 +55,7 @@ class Option {
 
   /**
    * Converts an Option object to its respective string representation.
+   * @param fixedLength Whether result should be filled up with spaces to the length of the longest option.
    * @return The string representation or "Unknown Option (<IntValue>)".
    */
   [[nodiscard]] std::string to_string(bool fixedLength = false) const {
@@ -72,6 +73,10 @@ class Option {
     }
   }
 
+  /**
+   * Returns the number of characters in the string representation of the longest option. Useful for pretty output.
+   * @return the number of characters in the string representation of the longest option.
+   */
   [[nodiscard]] static size_t maxStringLength() {
     static size_t maxLength = 0;
     if(maxLength == 0) {

@@ -12,6 +12,7 @@
 
 namespace autopas {
 
+// Contains some helpers to write and read the tuning log entries.
 namespace tuningLogEntry {
 template <class T>
 void toStringHelper(std::ostream &in, const T &val) {
@@ -95,7 +96,7 @@ void TuningStrategyLoggerProxy::reset(size_t iteration) {
 
 bool TuningStrategyLoggerProxy::needsLiveInfo() const { return true; }
 
-void TuningStrategyLoggerProxy::receiveLiveInfo(LiveInfo info) {
+void TuningStrategyLoggerProxy::receiveLiveInfo(const LiveInfo& info) {
   _logOut << tuningLogEntry::writeLiveInfo(info) << std::endl;
 
   _actualTuningStrategy->receiveLiveInfo(info);

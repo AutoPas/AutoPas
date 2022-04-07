@@ -56,7 +56,7 @@ class Configuration {
   }
 
   /**
-   * Returns a short string representation of the configuration object.
+   * Returns a short string representation of the configuration object, suitable for tabular output.
    * @return A short string representation.
    */
   [[nodiscard]] std::string toShortString() const {

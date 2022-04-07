@@ -60,6 +60,7 @@ class AutoTuner {
    * @param maxSamples Number of samples that shall be collected for each combination.
    * @param rebuildFrequency The rebuild frequency this AutoPas instance uses.
    * @param outputSuffix Suffix for all output files produced by this class.
+   * @param useTuningStrategyLoggerProxy Whether to use the tuning strategy logger proxy to log tuning information.
    */
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
             unsigned int verletClusterSize, std::unique_ptr<TuningStrategyInterface> tuningStrategy,

@@ -43,9 +43,9 @@ class RuleBasedTuning : public FullSearch {
 
   bool needsLiveInfo() const override { return true; }
 
-  void receiveLiveInfo(LiveInfo info) override {
+  void receiveLiveInfo(const LiveInfo& info) override {
     _currentLiveInfo = info;
-    _lastApplicableConfigurationOrders = applyRules(std::move(info));
+    _lastApplicableConfigurationOrders = applyRules();
   }
 
   void addEvidence(long time, size_t iteration) override {
@@ -118,12 +118,12 @@ class RuleBasedTuning : public FullSearch {
     }
   }
 
-  std::vector<rule_syntax::ConfigurationOrder> applyRules(LiveInfo info) {
-    AutoPasLog(debug, info.toString());
+  std::vector<rule_syntax::ConfigurationOrder> applyRules() {
+    AutoPasLog(debug, _currentLiveInfo.toString());
 
     std::vector<RuleVM::MemoryCell> initialStack;
     std::vector<std::pair<std::string, rule_syntax::Define>> defines{};
-    for (const auto &[name, value] : info.get()) {
+    for (const auto &[name, value] : _currentLiveInfo.get()) {
       initialStack.emplace_back(value);
       defines.push_back({name, {name, std::make_shared<rule_syntax::Literal>(value)}});
     }

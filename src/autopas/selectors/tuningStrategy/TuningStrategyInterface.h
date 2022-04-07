@@ -58,8 +58,8 @@ class TuningStrategyInterface {
   virtual void reset(size_t iteration) = 0;
 
   /**
-   * Returns if this tuning strategy can make use of a LiveInfo object passed before a new tuning phase.
-   * @return True, if this tuning strategy can make use of a LiveInfo object passed before a new tuning phase via
+   * Returns whether this tuning strategy wants to get a LiveInfo object passed before a new tuning phase.
+   * @return True, if this tuning strategy wants a LiveInfo object passed before a new tuning phase via
    * receiveLiveInfo().
    */
   [[nodiscard]] virtual bool needsLiveInfo() const { return false; }
@@ -69,7 +69,7 @@ class TuningStrategyInterface {
    * true in needsLiveInfo().
    * @param info A new LiveInfo object that has already gathered its information.
    */
-  virtual void receiveLiveInfo(LiveInfo info){};
+  virtual void receiveLiveInfo(const LiveInfo& info){};
 
   /**
    * Returns all container options the strategy might choose.

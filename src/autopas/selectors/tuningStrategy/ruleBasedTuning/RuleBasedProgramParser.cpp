@@ -8,6 +8,9 @@
 namespace autopas::rule_syntax {
 using namespace autopas_generated_rule_syntax;
 
+/**
+ * The antlr visitor that produces the ASt.
+ */
 class TranslationVisitor : public RuleLanguageBaseVisitor {
   struct ParserContext {
     std::map<std::string, const Define *> definitions;

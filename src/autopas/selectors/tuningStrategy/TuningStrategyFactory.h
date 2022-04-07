@@ -30,6 +30,7 @@ namespace autopas::TuningStrategyFactory {
  * @param evidenceFirstPrediction
  * @param acquisitionFunctionOption
  * @param extrapolationMethodOption
+ * @param ruleFileName
  * @param outputSuffix
  * @param mpiStrategyOption
  * @param comm MPI communicator for MPI based strategies. (Default value only used for tests)
