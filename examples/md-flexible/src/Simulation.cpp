@@ -5,7 +5,6 @@
  */
 #include "Simulation.h"
 
-#include "TypeDefinitions.h"
 #include "autopas/AutoPasDecl.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
