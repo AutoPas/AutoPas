@@ -16,6 +16,7 @@ Alternatively you can build the documentation on your own:
 * CMake 3.14 or newer
 * make (build-essentials) or ninja
 * a C++17 compiler (gcc9, clang9, and ~~icpc 2019~~ are tested.)
+* For RuleBasedTuning: `pkg-config` and `uuid-dev` (`sudo apt install -y pkg-config uuid-dev`)
 
 ## Building AutoPas
 build instructions for make:
