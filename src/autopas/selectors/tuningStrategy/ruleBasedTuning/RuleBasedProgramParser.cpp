@@ -186,8 +186,9 @@ class TranslationVisitor : public RuleLanguageBaseVisitor {
         sameProperties.push_back(ConfigurationOrder::SameProperty::cellSizeFactor);
       }
     }
-    return std::make_shared<ConfigurationOrder>(visit(ctx->configuration_pattern(0)),
-                                                visit(ctx->configuration_pattern(1)), sameProperties);
+    return std::make_shared<ConfigurationOrder>(visit(ctx->configuration_pattern(0)).as<ConfigurationPattern>(),
+                                                visit(ctx->configuration_pattern(1)).as<ConfigurationPattern>(),
+                                                sameProperties);
   }
 
   antlrcpp::Any visitStatement(RuleLanguageParser::StatementContext *ctx) override {
