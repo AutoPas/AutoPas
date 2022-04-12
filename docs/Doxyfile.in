@@ -52,3 +52,5 @@ IMAGE_PATH             = @PROJECT_SOURCE_DIR@/docs/graphics
 TEMPLATE_RELATIONS     = YES
 HAVE_DOT               = YES
 GENERATE_XML           = YES
+
+EXCLUDE                = @PROJECT_SOURCE_DIR@/src/autopas/selectors/tuningStrategy/ruleBasedTuning/parser_generated/
