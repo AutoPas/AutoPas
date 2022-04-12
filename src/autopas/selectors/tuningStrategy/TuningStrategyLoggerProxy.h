@@ -83,8 +83,9 @@ class TuningStrategyLoggerProxy : public TuningStrategyInterface {
 
   /**
    * Hands over call to wrapped.
+   * @param option The N3Option to disallow.
    */
-  void removeN3Option(Newton3Option) override;
+  void removeN3Option(Newton3Option option) override;
 
   /**
    * Hands over call to wrapped.

@@ -19,14 +19,39 @@
 #include "autopas/utils/logging/Logger.h"
 
 namespace autopas {
-
+/**
+ * A tuning strategy that uses information collected live from the domain to exclude configurations that knowingly
+ * perform worse than other configurations in the current simulation state. The remaining configurations are tested
+ * using FullSearch.
+ *
+ * This "knowledge" is encoded as rules in a rule file. The rules are expected to be in their own little language,
+ * described in RuleLanguage.g4. The rules are dynamically loaded and executed in the beginning of each tuning phase.
+ *
+ * Additionally, the class supports a so called "verify mode" where full search is performed and the given rules are
+ * checked for correctness.
+ */
 class RuleBasedTuning : public FullSearch {
  public:
+  /**
+   * A function type used to print errors found in verify mode.
+   */
   using PrintTuningErrorFunType =
       std::function<void(const rule_syntax::ConfigurationOrder &order, const Configuration &actualBetterConfig,
                          unsigned long betterRuntime, const Configuration &shouldBeBetterConfig,
                          unsigned long shouldBeBetterRuntime, const LiveInfo &liveInfo)>;
 
+  /**
+   * Constructs are RuleBasedTuning strategy.
+   * @param allowedContainerOptions
+   * @param allowedCellSizeFactors
+   * @param allowedTraversalOptions
+   * @param allowedLoadEstimatorOptions
+   * @param allowedDataLayoutOptions
+   * @param allowedNewton3Options
+   * @param verifyModeEnabled If verify mode should be enabled. False by default.
+   * @param ruleFileName The name of the file where the rules are stored.
+   * @param tuningErrorPrinter
+   */
   RuleBasedTuning(const std::set<ContainerOption> &allowedContainerOptions,
                   const std::set<double> &allowedCellSizeFactors,
                   const std::set<TraversalOption> &allowedTraversalOptions,
@@ -78,8 +103,15 @@ class RuleBasedTuning : public FullSearch {
     wouldHaveSkippedTuningTime = 0;
   }
 
+  /**
+   * @returns in verify mode the summed up time that would have been skipped if verify mode was disabled and
+   * configurations would have been skipped due to the rules.
+   */
   [[nodiscard]] auto getLifetimeWouldHaveSkippedTuningTime() const { return wouldHaveSkippedTuningTimeLifetime; }
 
+  /**
+   * @returns the summed up time of all configurations that have been tested by this tuning strategy.
+   */
   [[nodiscard]] auto getLifetimeTuningTime() const { return tuningTimeLifetime; }
 
  private:

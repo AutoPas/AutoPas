@@ -447,9 +447,19 @@ struct DefineList : public Statement {
   }
 };
 
+/**
+ * A variable access in the rule language.
+ */
 struct Variable : public Expression {
+  /**
+   * The definition of the variable to access.
+   */
   const Define *definition;
 
+  /**
+   * Constructs a variable access in the rule language.
+   * @param definition The definition of the variable to access.
+   */
   explicit Variable(const Define *definition) : definition(definition) {}
 
   [[nodiscard]] Type getType() const override;
@@ -457,12 +467,29 @@ struct Variable : public Expression {
   void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override;
 };
 
+/**
+ * A unary operator in the rule language.
+ */
 struct UnaryOperator : public Expression {
+  /**
+   * Enum of all unary operators.
+   */
   enum Operator { NOT };
 
+  /**
+   * Subexpression of unary operator.
+   */
   std::shared_ptr<Expression> child;
+  /**
+   * Unary operator to apply.
+   */
   Operator op;
 
+  /**
+   * Constructs an UnaryOperator.
+   * @param op
+   * @param child
+   */
   UnaryOperator(Operator op, std::shared_ptr<Expression> child) : child(std::move(child)), op(op) {}
 
   [[nodiscard]] Type getType() const override { return Type::BOOL; }
@@ -470,13 +497,34 @@ struct UnaryOperator : public Expression {
   void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override;
 };
 
+/**
+ * A binary operator in the rule language.
+ */
 struct BinaryOperator : public Expression {
+  /**
+   * Enum of all binary operators.
+   */
   enum Operator { LESS, GREATER, AND, OR, ADD, SUB, MUL, DIV };
 
+  /**
+   * The left subexpression of the operator.
+   */
   std::shared_ptr<Expression> left;
+  /**
+   * The operator to apply.
+   */
   Operator op;
+  /**
+   * The right subexpression of the operator.
+   */
   std::shared_ptr<Expression> right;
 
+  /**
+   * Constructs a binary operator in the rule language.
+   * @param op
+   * @param left
+   * @param right
+   */
   BinaryOperator(Operator op, std::shared_ptr<Expression> left, std::shared_ptr<Expression> right)
       : left(std::move(left)), op(op), right(std::move(right)) {}
 
@@ -489,10 +537,24 @@ struct BinaryOperator : public Expression {
   void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override;
 };
 
+/**
+ * A variable definition in the rule language. Variables are always constant.
+ */
 struct Define : public Statement {
+  /**
+   * The name of the variable.
+   */
   std::string variable;
+  /**
+   * The value of the variable.
+   */
   std::shared_ptr<Expression> value;
 
+  /**
+   * Constructs a variable definition in the rule language.
+   * @param variable
+   * @param value
+   */
   Define(std::string variable, std::shared_ptr<Expression> value)
       : variable(std::move(variable)), value(std::move(value)) {}
 
@@ -505,10 +567,24 @@ struct Define : public Statement {
   }
 };
 
+/**
+ * An if statement in the rule language.
+ */
 struct If : public Statement {
+  /**
+   * The condition of the if statement.
+   */
   std::shared_ptr<Expression> condition;
+  /**
+   * The statements contained in the body of the if statement. (Executed if true).
+   */
   std::vector<std::shared_ptr<Statement>> consequences;
 
+  /**
+   * Constructs an if statement in the rule language.
+   * @param condition
+   * @param consequences
+   */
   If(std::shared_ptr<Expression> condition, std::vector<std::shared_ptr<Statement>> consequences)
       : condition(std::move(condition)), consequences(std::move(consequences)) {}
 

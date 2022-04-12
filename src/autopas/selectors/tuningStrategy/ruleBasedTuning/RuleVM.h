@@ -6,11 +6,22 @@
 #include "autopas/selectors/Configuration.h"
 
 namespace autopas {
+/**
+ * A VM that is capable of executing a program with simple instructions on a stack of MemoryCells. The result of the
+ * program is produced using a special output instruction CMD::OUTPUTC. A vector of numbers produced by executing these
+ * instructions is returned in the execute() method.
+ */
 class RuleVM {
  public:
+  /**
+   * The type of a memory cell in the stack the VM operates on.
+   */
   using MemoryCell = std::variant<bool, double, size_t, ContainerOption, TraversalOption, LoadEstimatorOption,
                                   DataLayoutOption, Newton3Option>;
 
+  /**
+   * An enum with all commands that this VM supports.
+   */
   enum CMD {
     LOADC,
     LOADA,
@@ -33,18 +44,48 @@ class RuleVM {
     NOT
   };
 
+  /**
+   * An instruction to execute in the VM. Consists out of a command and an argument (payload), e.g. LOADC 1.
+   */
   struct Instruction {
+    /**
+     * The command to execute.
+     */
     CMD cmd;
+    /**
+     * The payload the instruction can have.
+     */
     MemoryCell payload;
 
+    /**
+     * Constructs an Instruction.
+     * @param cmd The command.
+     * @param payload The payload.
+     */
     explicit Instruction(CMD cmd, MemoryCell payload = MemoryCell{0ul}) : cmd(cmd), payload(payload) {}
   };
 
+  /**
+   * A program that can be executed by this VM. Consists of a vector of instructions and the maximum stack size that is
+   * necessary to execute these instructions (without a stack overflow).
+   */
   struct Program {
+    /**
+     * The instructions the program consists of.
+     */
     std::vector<Instruction> instructions;
+    /**
+     * The maximum stack size needed to execute the instructions.
+     */
     size_t neededStackSize;
   };
 
+  /**
+   * Executes a program on a given initial stack.
+   * @param program The program to execute.
+   * @param initialStack The stack to use when executing the program. (Can already contain some data).
+   * @return A vector of output values produced by CMD::OUTPUTC instructions executed.
+   */
   std::vector<size_t> execute(const Program &program, const std::vector<MemoryCell> &initialStack) {
     _programCounter = 0;
     _removedPatterns.clear();

@@ -825,6 +825,7 @@ class AutoPas {
 
   /**
    * Set rule file name for the RuleBasedTuning.
+   * @param ruleFileName The name of the rule file to use during rule based tuning.
    */
   void setRuleFileName(const std::string &ruleFileName) { _ruleFileName = ruleFileName; }
 

@@ -70,6 +70,7 @@ class LiveInfo {
    * @tparam PairwiseFunctor The type of functor.
    * @param container The container to gather the infos from.
    * @param functor The functor to gather the infos from.
+   * @param rebuildFrequency The current verlet rebuild frequency that is used in the simulation.
    */
   template <class Particle, class PairwiseFunctor>
   void gather(const autopas::ParticleContainerInterface<Particle> &container, const PairwiseFunctor &functor,
