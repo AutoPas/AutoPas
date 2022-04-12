@@ -9,8 +9,8 @@
 #include <fstream>
 #include <iostream>
 #include <list>
-#include <variant>
 #include <unordered_set>
+#include <variant>
 
 #include "RuleBasedProgramParser.h"
 #include "RuleBasedProgramTree.h"
@@ -22,10 +22,10 @@ namespace autopas {
 
 class RuleBasedTuning : public FullSearch {
  public:
-  using PrintTuningErrorFunType = std::function<void(const rule_syntax::ConfigurationOrder& order,
-                                                     const Configuration& actualBetterConfig, unsigned long betterRuntime,
-                                                     const Configuration& shouldBeBetterConfig, unsigned long shouldBeBetterRuntime,
-                                                     const LiveInfo& liveInfo)>;
+  using PrintTuningErrorFunType =
+      std::function<void(const rule_syntax::ConfigurationOrder &order, const Configuration &actualBetterConfig,
+                         unsigned long betterRuntime, const Configuration &shouldBeBetterConfig,
+                         unsigned long shouldBeBetterRuntime, const LiveInfo &liveInfo)>;
 
   RuleBasedTuning(const std::set<ContainerOption> &allowedContainerOptions,
                   const std::set<double> &allowedCellSizeFactors,
@@ -33,17 +33,17 @@ class RuleBasedTuning : public FullSearch {
                   const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
                   const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                   const std::set<Newton3Option> &allowedNewton3Options, bool verifyModeEnabled = false,
-                  std::string ruleFileName = "tuningRules.rule",
-                  PrintTuningErrorFunType tuningErrorPrinter = {})
+                  std::string ruleFileName = "tuningRules.rule", PrintTuningErrorFunType tuningErrorPrinter = {})
       : FullSearch(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
                    allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options),
         _originalSearchSpace(this->_searchSpace.begin(), this->_searchSpace.end()),
         _verifyModeEnabled(verifyModeEnabled),
-        _ruleFileName(std::move(ruleFileName)), _tuningErrorPrinter(std::move(tuningErrorPrinter)) {}
+        _ruleFileName(std::move(ruleFileName)),
+        _tuningErrorPrinter(std::move(tuningErrorPrinter)) {}
 
   bool needsLiveInfo() const override { return true; }
 
-  void receiveLiveInfo(const LiveInfo& info) override {
+  void receiveLiveInfo(const LiveInfo &info) override {
     _currentLiveInfo = info;
     _lastApplicableConfigurationOrders = applyRules();
   }
@@ -54,7 +54,7 @@ class RuleBasedTuning : public FullSearch {
     tuningTimeLifetime += time;
     if (_verifyModeEnabled) {
       verifyCurrentConfigTime();
-      if(_removedConfigurations.find(this->getCurrentConfiguration()) != _removedConfigurations.end()) {
+      if (_removedConfigurations.find(this->getCurrentConfiguration()) != _removedConfigurations.end()) {
         wouldHaveSkippedTuningTime += time;
         wouldHaveSkippedTuningTimeLifetime += time;
       }
@@ -64,12 +64,13 @@ class RuleBasedTuning : public FullSearch {
   void reset(size_t iteration) override {
     FullSearch::reset(iteration);
 
-    if(_verifyModeEnabled) {
-      if(tuningTime > 0) {
+    if (_verifyModeEnabled) {
+      if (tuningTime > 0) {
         auto percent = static_cast<double>(wouldHaveSkippedTuningTime) / static_cast<double>(tuningTime) * 100;
         auto percentRounded = std::round(percent * 100) / 100;
         AutoPasLog(info, "Rules would have saved {} ns removing {}/{} configurations. ({}% of total tuning time)",
-                   wouldHaveSkippedTuningTime, _removedConfigurations.size(), _originalSearchSpace.size() ,percentRounded);
+                   wouldHaveSkippedTuningTime, _removedConfigurations.size(), _originalSearchSpace.size(),
+                   percentRounded);
       }
     }
 
@@ -77,13 +78,9 @@ class RuleBasedTuning : public FullSearch {
     wouldHaveSkippedTuningTime = 0;
   }
 
-  [[nodiscard]] auto getLifetimeWouldHaveSkippedTuningTime() const {
-    return wouldHaveSkippedTuningTimeLifetime;
-  }
+  [[nodiscard]] auto getLifetimeWouldHaveSkippedTuningTime() const { return wouldHaveSkippedTuningTimeLifetime; }
 
-  [[nodiscard]] auto getLifetimeTuningTime() const {
-    return tuningTimeLifetime;
-  }
+  [[nodiscard]] auto getLifetimeTuningTime() const { return tuningTimeLifetime; }
 
  private:
   void verifyCurrentConfigTime() const {
@@ -102,13 +99,12 @@ class RuleBasedTuning : public FullSearch {
       for (const auto &[otherConfig, time] : _traversalTimes) {
         bool error = false;
         if (comparePattern.matches(otherConfig) and order.haveEqualSameProperties(*_currentConfig, otherConfig)) {
-          if ((shouldBeBetter and time > currentConfigTime) or
-              (not shouldBeBetter and time < currentConfigTime)) {
+          if ((shouldBeBetter and time > currentConfigTime) or (not shouldBeBetter and time < currentConfigTime)) {
             error = true;
           }
         }
         if (error) {
-          if(shouldBeBetter) {
+          if (shouldBeBetter) {
             _tuningErrorPrinter(order, *_currentConfig, currentConfigTime, otherConfig, time, _currentLiveInfo);
           } else {
             _tuningErrorPrinter(order, otherConfig, time, *_currentConfig, currentConfigTime, _currentLiveInfo);
@@ -153,11 +149,11 @@ class RuleBasedTuning : public FullSearch {
 
     auto newSearchSpace = _originalSearchSpace;
     _removedConfigurations.clear();
-    auto& removedConfigsLocal = _removedConfigurations;
+    auto &removedConfigsLocal = _removedConfigurations;
     newSearchSpace.remove_if([&toRemovePatterns, &removedConfigsLocal](const Configuration &configuration) {
       bool remove = std::any_of(toRemovePatterns.begin(), toRemovePatterns.end(),
-                         [&configuration](const auto &pattern) { return pattern.matches(configuration); });
-      if(remove) {
+                                [&configuration](const auto &pattern) { return pattern.matches(configuration); });
+      if (remove) {
         removedConfigsLocal.insert(configuration);
       }
       return remove;

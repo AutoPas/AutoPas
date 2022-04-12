@@ -96,7 +96,7 @@ void TuningStrategyLoggerProxy::reset(size_t iteration) {
 
 bool TuningStrategyLoggerProxy::needsLiveInfo() const { return true; }
 
-void TuningStrategyLoggerProxy::receiveLiveInfo(const LiveInfo& info) {
+void TuningStrategyLoggerProxy::receiveLiveInfo(const LiveInfo &info) {
   _logOut << tuningLogEntry::writeLiveInfo(info) << std::endl;
 
   _actualTuningStrategy->receiveLiveInfo(info);
@@ -139,7 +139,7 @@ std::optional<Configuration> TuningStrategyLogReplayer::replay() {
     if (type == "evidence") {
       evidenceAdded = true;
       const auto &[time, iteration, config] = tuningLogEntry::readEvidence(stream);
-      //std::cout << "Add data for configuration " << config << std::endl;
+      // std::cout << "Add data for configuration " << config << std::endl;
       traversalTimes[config] = {time, iteration};
     } else if (type == "tune") {
       // Do nothing in former tune
@@ -155,12 +155,12 @@ std::optional<Configuration> TuningStrategyLogReplayer::replay() {
           const auto &[time, iteration] = traversalTimes.at(_tuningStrategy->getCurrentConfiguration());
           _tuningStrategy->addEvidence(time, iteration);
         } catch (std::out_of_range &e) {
-          //std::cerr << "Could not find data for configuration " << _tuningStrategy->getCurrentConfiguration() <<
-          //std::endl;
+          // std::cerr << "Could not find data for configuration " << _tuningStrategy->getCurrentConfiguration() <<
+          // std::endl;
         }
       }
 
-      if(evidenceAdded) {
+      if (evidenceAdded) {
         AutoPasLog(info, "Best Configuration found: {}", _tuningStrategy->getCurrentConfiguration().toShortString());
         bestConfiguration = _tuningStrategy->getCurrentConfiguration();
         evidenceAdded = false;

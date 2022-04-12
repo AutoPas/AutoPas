@@ -539,7 +539,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         break;
       }
       case decltype(config.useTuningLogger)::getoptChar: {
-        if(strArg == "true") {
+        if (strArg == "true") {
           config.useTuningLogger.value = true;
         } else if (strArg == "false") {
           config.useTuningLogger.value = false;

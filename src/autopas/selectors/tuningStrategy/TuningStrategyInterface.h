@@ -69,7 +69,7 @@ class TuningStrategyInterface {
    * true in needsLiveInfo().
    * @param info A new LiveInfo object that has already gathered its information.
    */
-  virtual void receiveLiveInfo(const LiveInfo& info){};
+  virtual void receiveLiveInfo(const LiveInfo &info){};
 
   /**
    * Returns all container options the strategy might choose.

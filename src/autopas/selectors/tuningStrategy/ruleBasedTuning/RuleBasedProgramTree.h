@@ -463,12 +463,9 @@ struct UnaryOperator : public Expression {
   std::shared_ptr<Expression> child;
   Operator op;
 
-  UnaryOperator(Operator op, std::shared_ptr<Expression> child)
-    : child(std::move(child)), op(op) {}
+  UnaryOperator(Operator op, std::shared_ptr<Expression> child) : child(std::move(child)), op(op) {}
 
-  [[nodiscard]] Type getType() const override {
-    return Type::BOOL;
-  }
+  [[nodiscard]] Type getType() const override { return Type::BOOL; }
 
   void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override;
 };

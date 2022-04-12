@@ -73,7 +73,7 @@ class TuningStrategyLoggerProxy : public TuningStrategyInterface {
    * Logs the live info and hands it over to wrapped.
    * @param info
    */
-  void receiveLiveInfo(const LiveInfo& info) override;
+  void receiveLiveInfo(const LiveInfo &info) override;
 
   /**
    * Hands call over to wrapped.

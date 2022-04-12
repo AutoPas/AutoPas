@@ -66,7 +66,7 @@ class Option {
       return "Unknown Option (" + std::to_string(actualThis) + ")";
     } else {
       std::string result = match->second;
-      if(fixedLength) {
+      if (fixedLength) {
         result.resize(maxStringLength(), ' ');
       }
       return result;
@@ -79,9 +79,9 @@ class Option {
    */
   [[nodiscard]] static size_t maxStringLength() {
     static size_t maxLength = 0;
-    if(maxLength == 0) {
-      for(const auto& pair : actualOption::getOptionNames()) {
-        auto& name = pair.second;
+    if (maxLength == 0) {
+      for (const auto &pair : actualOption::getOptionNames()) {
+        auto &name = pair.second;
         maxLength = std::max(maxLength, name.size());
       }
     }
