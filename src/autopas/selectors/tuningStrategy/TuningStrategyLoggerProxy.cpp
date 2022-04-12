@@ -43,7 +43,8 @@ auto toString(const Payload &... payload) {
  * @tparam Payload The types of the valuaes to read.
  * @param stream The stringstream to read from.
  * @return The read values as a tuple.
- */template <class... Payload>
+ */
+template <class... Payload>
 std::tuple<Payload...> fromString(std::stringstream &stream) {
   std::tuple<Payload...> tuple{};
   ((stream >> std::get<Payload>(tuple)), ...);
