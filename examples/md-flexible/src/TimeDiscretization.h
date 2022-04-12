@@ -101,13 +101,13 @@ template<> void calculateQuaternions<MulticenteredMoleculeLJ>(autopas::AutoPas<M
     const auto torqueW = iter->getTorque();
     const auto torqueM = rotatePositionBackwards(q,torqueW); // (18)
 
-    const auto I = particlePropertiesLibrary.getMomentOfInteria(iter->getTypeId()); // moment of inertia
+    const auto I = particlePropertiesLibrary.getMomentOfInertia(iter->getTypeId()); // moment of inertia
 
     const auto angMomentumM = mul(I,angVelM); // equivalent to (19)
     const auto derivativeAngMomentumM = sub(torqueM, cross(angVelM,angMomentumM)); // (20)
     const auto angMomentumMHalfStep = add(angMomentumM, mulScalar(derivativeAngMomentumM, halfDeltaT)); // (21)
 
-    const auto derivativeQHalfStep = mulScalar(qMul(q, div(angMomentumMHalfStep, I)), 0.5); // (22)
+    auto derivativeQHalfStep = mulScalar(qMul(q, div(angMomentumMHalfStep, I)), 0.5); // (22)
 
     auto qHalfStep = normalize(add(q, mulScalar(derivativeQHalfStep,halfDeltaT))); // (23)
 
@@ -129,11 +129,9 @@ template<> void calculateQuaternions<MulticenteredMoleculeLJ>(autopas::AutoPas<M
     const auto qFullStep = normalize(add(q, mulScalar(derivativeQHalfStep, deltaT)));
 
     iter->setQ(qFullStep);
-    iter->setAngularVel(angVelWHalfStep) // save angular velocity half step, to be used by calculateAngularVelocities
+    iter->setAngularVel(angVelWHalfStep); // save angular velocity half step, to be used by calculateAngularVelocities
   }
 }
-}
-
 
 /**
  * Calculate and update the velocity for every particle using the the Störmer-Verlet Algorithm.
@@ -195,7 +193,7 @@ template<> void calculateAngularVelocities<MulticenteredMoleculeLJ>(autopas::Aut
 #endif
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     const auto torque = iter->getTorque();
-    const auto I = particlePropertiesLibrary.getMomentOfInteria(iter->getTypeId()); // moment of inertia
+    const auto I = particlePropertiesLibrary.getMomentOfInertia(iter->getTypeId()); // moment of inertia
     iter->addAngularVel(mulScalar(div(torque, I), 0.5*deltaT)); // (28)
   }
 }

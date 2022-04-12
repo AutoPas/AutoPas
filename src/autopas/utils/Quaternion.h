@@ -4,6 +4,8 @@
  * @date 17/02/2022
 */
 
+#pragma once
+
 #include <array>
 #include <vector>
 #include "autopas/utils/ArrayMath.h"

@@ -15,7 +15,8 @@
 #include "autopas/utils/ExceptionHandler.h"
 
 /**
- * This class stores the (physical) properties of particle types.
+ * This class stores the (physical) properties of molecule types, and, in the case of multi-site molecules, the location
+ * of the sites relative to the the centre-of-mass.
  *
  * It also provides mixed values for (force) calculations between known types.
  */
@@ -23,18 +24,8 @@ template <typename floatType = double, typename intType = unsigned long>
 class ParticlePropertiesLibrary {
  public:
   /**
-   * Type for floating point numbers.
-   */
-  using ParticlePropertiesLibraryFloatType = floatType;
-
-  /**
-   * Type for integer numbers.
-   */
-  using ParticlePropertiesLibraryIntType = intType;
-
-  /**
    * Constructor
-   * @param cutoff Cutoff for the Lennard Jones Potential (needed for calculation of shift)
+   * @param cutoff Cutoff for the Potential
    */
   explicit ParticlePropertiesLibrary(const double cutoff) : _cutoff(cutoff) {}
 
@@ -52,16 +43,39 @@ class ParticlePropertiesLibrary {
   ParticlePropertiesLibrary &operator=(const ParticlePropertiesLibrary &particlePropertiesLibrary) = default;
 
   /**
-   * Adds the properties of a particle type to the library.
+   * Adds the properties of a type of a LJ single-site type to the library.
    *
    * This function also precomputes all possible mixed values with already known particle types.
    * If the type id already exists the values will be overwritten.
-   * @param typeID
+   * @param molId
    * @param epsilon
    * @param sigma
    * @param mass
    */
-  void addType(intType typeID, floatType epsilon, floatType sigma, floatType mass);
+  void addType(const intType molId, const floatType epsilon, const floatType sigma, const floatType mass);
+
+  /**
+   * Adds the properties of a type of a single LJ site type to the library.
+   *
+   * This function also precomputes all possible mixed values with already known particle types.
+   * If the type id already exists the values will be overwritten.
+   * @param siteId
+   * @param epsilon
+   * @param sigma
+   */
+  void addSiteType(const intType siteId, const floatType epsilon, const floatType sigma);
+
+  /**
+   * Adds the properties of a molecule type to the library including: position and type of all sites; and moment of
+   * inertia.
+   *
+   * If the type id already exists the values will be overwritten.
+   * @param molId
+   * @param siteIds vector of IDs of sites
+   * @param relPos vector of relative positions
+   * @param momentOfInertia
+   */
+  void addMolType(const intType molId, const std::vector<intType> siteIds, const std::vector<std::array<floatType,3>> relPos, const std::array<floatType,3> momentOfInertia);
 
   /**
    * Calculates the actual mixing coefficients.
@@ -74,10 +88,10 @@ class ParticlePropertiesLibrary {
    * Returns a set of all particle types stored.
    * @return
    */
-  std::set<intType> getTypes() const {
+  std::set<intType> getSiteTypes() const {
     std::set<intType> typeIDs;
 
-    for (size_t index = 0; index < _numRegisteredTypes; ++index) {
+    for (size_t index = 0; index < _numRegisteredSiteTypes; ++index) {
       typeIDs.emplace(index);
     }
 
@@ -85,80 +99,108 @@ class ParticlePropertiesLibrary {
   }
 
   /**
-   * Getter for the particle's epsilon*24.
-   * @param i typeId of the particle.
+   * Getter for the site's epsilon*24.
+   * @param i siteId of the site.
    * @return 24*epsilon_i
    */
   floatType get24Epsilon(intType i) const;
 
   /**
-   * Getter for the particle's squared sigma.
-   * @param i typeId of the particle.
+   * Getter for the site's squared sigma.
+   * @param i siteId of the site.
    * @return sigma_i²
    */
   floatType getSigmaSquare(intType i) const;
 
   /**
-   * Getter for the particle's mass.
-   * @param i typeId of the particle.
+   * Getter for the molecule's mass.
+   * @param i molId of molecule.
    * @return mass_i
    */
   floatType getMass(intType i) const;
 
   /**
+   * Getter for the molecule's MoI.
+   * @param i molId of molecule.
+   * @return moment of inertia
+   */
+  std::array<floatType,3> getMomentOfInertia(intType i) const;
+
+  /**
+   * Get relative site positions.
+   * @param i molId of the molecule.
+   * @return site positions
+   */
+  std::vector<std::array<floatType,3>> getSitePositions(intType i) const;
+
+  /**
+   * Get site types of the molecule.
+   * @param i typeId
+   * @return
+   */
+  std::vector<intType> getSiteTypes(intType i) const;
+
+  /**
    * Returns the precomputed mixed epsilon24.
-   * @param  i typeId of particle one.
-   * @param  j typeId of particle two.
+   * @param  i siteId of site one.
+   * @param  j siteId of site two.
    * @return 24*epsilon_ij
    */
   inline floatType mixing24Epsilon(intType i, intType j) const {
-    return _computedMixingData[i * _numRegisteredTypes + j].epsilon24;
+    return _computedMixingData[i * _numRegisteredSiteTypes + j].epsilon24;
   }
 
   /**
-   * Get Mixing Data as one thing.
-   * @param i
-   * @param j
+   * Get complete mixing data for one pair of site types.
+   * @param i siteId of site one.
+   * @param j siteId of site two.
    * @return
    */
-  inline auto getMixingData(intType i, intType j) const { return _computedMixingData[i * _numRegisteredTypes + j]; }
+  inline auto getMixingData(intType i, intType j) const { return _computedMixingData[i * _numRegisteredSiteTypes + j]; }
 
   /**
    * Returns precomputed mixed squared sigma.
-   * @param i typeId of particle one.
-   * @param j typeId of particle two.
+   * @param i siteId of site one.
+   * @param j siteId of site two.
    * @return sigma_ij²
    */
   inline floatType mixingSigmaSquare(intType i, intType j) const {
-    return _computedMixingData[i * _numRegisteredTypes + j].sigmaSquare;
+    return _computedMixingData[i * _numRegisteredSiteTypes + j].sigmaSquare;
   }
 
   /**
    * Returns precomputed mixed shift 6.
-   * @param i typeId of particle one.
-   * @param j typeId of particle two.
+   * @param i siteId of site one.
+   * @param j siteId of site two.
    * @return shift * 6
    */
   inline floatType mixingShift6(intType i, intType j) const {
-    return _computedMixingData[i * _numRegisteredTypes + j].shift6;
+    return _computedMixingData[i * _numRegisteredSiteTypes + j].shift6;
   }
 
   /**
    * Calculate the shift of the lennard jones potential from given cutoff, epsilon, sigma.
    * @param epsilon24
    * @param sigmaSquare
-   * @param cutoffSquare squared cutoff of the potential that should be shifted
+   * @param cutoffSquared squared cutoff of the potential that should be shifted
    * @return shift multiplied by 6
    */
-  static double calcShift6(double epsilon24, double sigmaSquare, double cutoffSquare);
+  static double calcShift6(double epsilon24, double sigmaSquare, double cutoffSquared);
 
  private:
-  intType _numRegisteredTypes{0};
+  intType _numRegisteredSiteTypes{0};
+  intType _numRegisteredMolTypes{0};
   const double _cutoff;
 
   std::vector<floatType> _epsilons;
   std::vector<floatType> _sigmas;
   std::vector<floatType> _masses;
+
+  // Note: this is a vector of site type Ids for the sites of a certain molecular Id
+  std::vector<std::vector<intType>> _siteIds;
+
+  std::vector<std::array<floatType,3>> _relativeSitePositions;
+  std::vector<std::array<floatType,3>> _momentOfInertias;
 
   struct PackedMixingData {
     floatType epsilon24;
@@ -172,27 +214,56 @@ class ParticlePropertiesLibrary {
 template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::addType(intType typeID, floatType epsilon, floatType sigma,
                                                             floatType mass) {
-  if (_numRegisteredTypes != typeID) {
+  if (_numRegisteredSiteTypes != typeID) {
     autopas::utils::ExceptionHandler::exception(
         "ParticlePropertiesLibrary::addType(): trying to register a type with id {}. Please register types "
         "consecutively, starting at id 0. Currently there are {} registered types.",
-        typeID, _numRegisteredTypes);
+        typeID, _numRegisteredSiteTypes);
   }
-  ++_numRegisteredTypes;
+  ++_numRegisteredSiteTypes;
   _epsilons.emplace_back(epsilon);
   _sigmas.emplace_back(sigma);
   _masses.emplace_back(mass);
 }
 
 template <typename floatType, typename intType>
+void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType typeID, floatType epsilon, floatType sigma) {
+  if (_numRegisteredSiteTypes != typeID) {
+    autopas::utils::ExceptionHandler::exception(
+        "ParticlePropertiesLibrary::addType(): trying to register a site type with id {}. Please register types "
+        "consecutively, starting at id 0. Currently there are {} registered types.",
+        typeID, _numRegisteredSiteTypes);
+  }
+  ++_numRegisteredSiteTypes;
+  _epsilons.emplace_back(epsilon);
+  _sigmas.emplace_back(sigma);
+}
+
+template <typename floatType, typename intType>
+void ParticlePropertiesLibrary<floatType, intType>::addMolType(const intType molId, const std::vector<intType> siteIds,
+                                                               const std::vector<std::array<floatType,3>> relPos,
+                                                               const std::array<floatType,3> momentOfInertia) {
+  if (_numRegisteredSiteTypes != molId) {
+    autopas::utils::ExceptionHandler::exception(
+        "ParticlePropertiesLibrary::addType(): trying to register a molecule type with id {}. Please register types "
+        "consecutively, starting at id 0. Currently there are {} registered types.",
+        molId, _numRegisteredSiteTypes);
+  }
+  ++_numRegisteredSiteTypes;
+  _siteIds.emplace_back(siteIds);
+  _relativeSitePositions.emplace_back(relPos);
+  _momentOfInertias.emplace_back(momentOfInertia);
+}
+
+template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients() {
-  _computedMixingData.resize(_numRegisteredTypes * _numRegisteredTypes);
+  _computedMixingData.resize(_numRegisteredSiteTypes * _numRegisteredSiteTypes);
 
   auto cutoffSquare = _cutoff * _cutoff;
 
-  for (size_t firstIndex = 0ul; firstIndex < _numRegisteredTypes; ++firstIndex) {
-    for (size_t secondIndex = 0ul; secondIndex < _numRegisteredTypes; ++secondIndex) {
-      auto globalIndex = _numRegisteredTypes * firstIndex + secondIndex;
+  for (size_t firstIndex = 0ul; firstIndex < _numRegisteredSiteTypes; ++firstIndex) {
+    for (size_t secondIndex = 0ul; secondIndex < _numRegisteredSiteTypes; ++secondIndex) {
+      auto globalIndex = _numRegisteredSiteTypes * firstIndex + secondIndex;
 
       // epsilon
       floatType epsilon24 = 24 * sqrt(_epsilons[firstIndex] * _epsilons[secondIndex]);
@@ -216,13 +287,18 @@ floatType ParticlePropertiesLibrary<floatType, intType>::getMass(intType i) cons
 }
 
 template <typename floatType, typename intType>
+std::array<floatType,3> ParticlePropertiesLibrary<floatType, intType>::getMomentOfInertia(intType i) const {
+  return _momentOfInertias[i];
+}
+
+template <typename floatType, typename intType>
 floatType ParticlePropertiesLibrary<floatType, intType>::get24Epsilon(intType i) const {
-  return _computedMixingData[i * _numRegisteredTypes + i].epsilon24;
+  return _computedMixingData[i * _numRegisteredSiteTypes + i].epsilon24;
 }
 
 template <typename floatType, typename intType>
 floatType ParticlePropertiesLibrary<floatType, intType>::getSigmaSquare(intType i) const {
-  return _computedMixingData[i * _numRegisteredTypes + i].sigmaSquare;
+  return _computedMixingData[i * _numRegisteredSiteTypes + i].sigmaSquare;
 }
 
 template <typename floatType, typename intType>

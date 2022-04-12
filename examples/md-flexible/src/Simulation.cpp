@@ -142,11 +142,11 @@ Simulation<ParticleClass>::Simulation(const MDFlexConfig &configuration, Regular
 
   if (_configuration.useThermostat.value and _configuration.deltaT.value != 0) {
     if (_configuration.addBrownianMotion.value) {
-      Thermostat::addBrownianMotion(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-                                    _configuration.initTemperature.value);
+      //Thermostat::addBrownianMotion(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+      //                              _configuration.initTemperature.value);
     }
-    Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-                      _configuration.initTemperature.value, std::numeric_limits<double>::max());
+    //Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+    //                  _configuration.initTemperature.value, std::numeric_limits<double>::max());
   }
 
   _timers.initialization.stop();
@@ -455,8 +455,8 @@ template <class ParticleClass>
 void Simulation<ParticleClass>::updateThermostat() {
   if (_configuration.useThermostat.value and (_iteration % _configuration.thermostatInterval.value) == 0) {
     _timers.thermostat.start();
-    Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-                      _configuration.targetTemperature.value, _configuration.deltaTemp.value);
+    //Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+    //                  _configuration.targetTemperature.value, _configuration.deltaTemp.value);
     _timers.thermostat.stop();
   }
 }
