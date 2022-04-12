@@ -135,10 +135,17 @@ class ParticlePropertiesLibrary {
 
   /**
    * Get site types of the molecule.
-   * @param i typeId
+   * @param i molId
    * @return
    */
   std::vector<intType> getSiteTypes(intType i) const;
+
+  /**
+   * Get number of sites in the molecule.
+   * @param i molId
+   * @return
+   */
+  intType getNumSites(intType i) const;
 
   /**
    * Returns the precomputed mixed epsilon24.
@@ -201,6 +208,7 @@ class ParticlePropertiesLibrary {
 
   std::vector<std::array<floatType,3>> _relativeSitePositions;
   std::vector<std::array<floatType,3>> _momentOfInertias;
+  std::vector<size_t> _numSites;
 
   struct PackedMixingData {
     floatType epsilon24;
@@ -253,6 +261,7 @@ void ParticlePropertiesLibrary<floatType, intType>::addMolType(const intType mol
   _siteIds.emplace_back(siteIds);
   _relativeSitePositions.emplace_back(relPos);
   _momentOfInertias.emplace_back(momentOfInertia);
+  _numSites.emplace_back(siteIds.size());
 }
 
 template <typename floatType, typename intType>
@@ -299,6 +308,11 @@ floatType ParticlePropertiesLibrary<floatType, intType>::get24Epsilon(intType i)
 template <typename floatType, typename intType>
 floatType ParticlePropertiesLibrary<floatType, intType>::getSigmaSquare(intType i) const {
   return _computedMixingData[i * _numRegisteredSiteTypes + i].sigmaSquare;
+}
+
+template<typename floatType, typename intType>
+intType ParticlePropertiesLibrary<floatType, intType>::getNumSites(intType i) const {
+  return _numSites[i];
 }
 
 template <typename floatType, typename intType>

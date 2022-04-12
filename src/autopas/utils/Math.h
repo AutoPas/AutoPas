@@ -197,6 +197,15 @@ T pow(const T &base) {
   return res;
 }
 
+template<class T>
+T factorial(const T &base) {
+  T res = 1;
+  for (size_t i = 2; i <= base; ++i) {
+    res = res * i;
+  }
+  return res;
+}
+
 /**
  * Probability density function PDF of the standard normal distribution.
  * @param x

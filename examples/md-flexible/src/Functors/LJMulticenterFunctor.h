@@ -14,6 +14,7 @@
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/Math.h"
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/StaticBoolSelector.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -93,6 +94,11 @@ class LJMulticenterFunctor
    */
   bool _postProcessed;
 
+  /**
+   * Number of unique pairs of site types.
+   */
+  const size_t _numSiteTypePairs;
+
    
 
  public:
@@ -166,18 +172,35 @@ class LJMulticenterFunctor
     if (particleA.isDummy() or particleB.isDummy()) {
       return;
     }
-    // get site properties
-    auto sigmaSquared = _sigmaSquared;
-    auto epsilon24 = _epsilon24; // todo potentially rename
-    auto shift6 = _shift6;
+    std::vector<std::array<double,3>> unrotatedSitePositionsA;
+    std::vector<std::array<double,3>> unrotatedSitePositionsB;
 
-    // get relative site positions
-    auto unrotatedSitePositionsA = _sitePositionsLJ;
-    auto unrotatedSitePositionsB = _sitePositionsLJ;
+    // get site properties and positions
+
+    // the following vectors contain mixed parameters in the order of a,b = 0,0; 0,1; ... ; 0,n; 1,0 ; ... ; n,m
+    std::vector<double> sigmaSquared;
+    std::vector<double> epsilon24;
+    std::vector<double> shift6;
+
+    sigmaSquared.reserve(_PPLibrary->getNumSites(particleA.getTypeId())*_PPLibrary->getNumSites(particleB.getTypeId()));
+    epsilon24.reserve(_PPLibrary->getNumSites(particleA.getTypeId())*_PPLibrary->getNumSites(particleB.getTypeId()));
+    shift6.reserve(_PPLibrary->getNumSites(particleA.getTypeId())*_PPLibrary->getNumSites(particleB.getTypeId()));
 
     if constexpr (useMixing) {
-      // todo add this functionality
-      autopas::utils::ExceptionHandler::exception("LJMulticenterFunctor: Mixing with multicentered molecules not yet implemented");
+      const std::vector<size_t> siteIdsA = _PPLibrary->getSiteTypes(particleA.getTypeId());
+      const std::vector<size_t> siteIdsB = _PPLibrary->getSiteTypes(particleB.getTypeId());
+      for (int i = 0; i < _PPLibrary->getNumSites(particleA.getTypeId()); ++i) {
+        for (int j = 0; j < _PPLibrary->getNumSites(particleB.getTypeId()); ++j) {
+          sigmaSquared.emplace_back(_PPLibrary->mixingSigmaSquare(siteIdsA[i],siteIdsB[j]));
+          epsilon24.emplace_back(_PPLibrary->mixing24Epsilon(siteIdsA[i],siteIdsB[j]));
+          if constexpr (applyShift) {shift6.emplace_back(_PPLibrary->mixingShift6(siteIdsA[i],siteIdsB[j]));}
+        }
+      }
+      unrotatedSitePositionsA = _PPLibrary->getSitePositions(particleA.getTypeId());
+      unrotatedSitePositionsB = _PPLibrary->getSitePositions(particleB.getTypeId());
+    } else {
+      unrotatedSitePositionsA = _sitePositionsLJ;
+      unrotatedSitePositionsB = _sitePositionsLJ;
     }
 
     double lj12m6Sum = 0;
@@ -201,9 +224,8 @@ class LJMulticenterFunctor
 
     for (int m=0; m<numSitesA; m++) {
       for (int n=0; n<numSitesB; n++) {
-        // todo check this
-        const auto displacement = autopas::utils::ArrayMath::sub(
-            autopas::utils::ArrayMath::add(displacementCoM,rotatedSitePositionsB[n]), rotatedSitePositionsA[m]);
+        const auto displacement = autopas::utils::ArrayMath::add(
+            autopas::utils::ArrayMath::sub(displacementCoM,rotatedSitePositionsB[n]), rotatedSitePositionsA[m]);
         const auto distanceSquared = autopas::utils::ArrayMath::dot(displacement,displacement);
 
         // Calculate potential between sites and thus force
@@ -234,10 +256,11 @@ class LJMulticenterFunctor
 
     // calculate globals
     if (calculateGlobals) {
+      // todo handle this for mixed
       const double newton3Multiplier = newton3 ? 0.5 : 1.0;
 
       const auto virial = autopas::utils::ArrayMath::mulScalar(autopas::utils::ArrayMath::mul(displacementCoM,forceTotal),newton3Multiplier);
-      const auto potentialEnergy = (epsilon24 * lj12m6Sum + shift6 * numSitesA * numSitesB) * newton3Multiplier;
+      const auto potentialEnergy = (_epsilon24 * lj12m6Sum + _shift6 * numSitesA * numSitesB) * newton3Multiplier;
 
       const int threadNum = autopas::autopas_get_thread_num();
 
