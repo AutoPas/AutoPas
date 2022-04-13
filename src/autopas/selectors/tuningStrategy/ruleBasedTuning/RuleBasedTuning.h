@@ -25,7 +25,38 @@ namespace autopas {
  * using FullSearch.
  *
  * This "knowledge" is encoded as rules in a rule file. The rules are expected to be in their own little language,
- * described in RuleLanguage.g4. The rules are dynamically loaded and executed in the beginning of each tuning phase.
+ * formally described in RuleLanguage.g4. The rules are dynamically loaded and executed in the beginning of each tuning
+ * phase.
+ *
+ * Here is a quick summary of this language:
+ * The heart of this language are so called configuration orders. Here is one example:
+ * ```[container="LinkedCells", dataLayout="SoA", newton3="enabled"] >= [container="LinkedCells", dataLayout="AoS",
+ * newton3="enabled"] with same traversal;```
+ * This is a rule that states that *all* configurations that match the pattern to the left of `>=` are better than *all*
+ * configurations that match the pattern to the right, provided they have the same `traversal`. The pattern to the left
+ * e.g. matches all configuration with container type `LinkedCells`, data layout `SoA` and newton3 enabled.
+ *
+ * If we want to have this same rule with another container type, e.g. `LinkedCellsReferences`, we can combine these two
+ * using a `define_list` statement and use that as container type in the rule:
+ *
+ * ```define_list LinkedCellsContainer = "LinkedCells", "LinkedCellsReferences";
+ * [container=LinkedCellsContainer, dataLayout="SoA", newton3="enabled"] >= [container="LinkedCells", dataLayout="AoS", newton3="enabled"] with same traversal;```
+ *
+ * Because always applying the same configuration orders would not be very interesting, we can apply them conditionally.
+ * For this, all live info collected in the LiveInfo class is available as a variable in the rule program. One example
+ * is `numParticles`. Now let us define a rule which disables all `SoA` configurations if there are only very few
+ * particles, because their `AoS` counterpart is better:
+ *
+ * ```
+ * define lowNumParticlesThreshold = 500;
+ * if numParticles < lowNumParticlesThreshold:
+ *    [dataLayout="AoS"] >= [dataLayout="SoA"] with same container, newton3, traversal, loadEstimator;
+ * endif
+ * ```
+ * At first, we define our threshold as a variable. Variables are always constant and have global visibility. Then, we
+ * check if the threshold is not surpassed, and if yes, we apply the configuration order.
+ *
+ * A larger example file is stored in /examples/md-flexible/input/tuningRules.rule.
  *
  * Additionally, the class supports a so called "verify mode" where full search is performed and the given rules are
  * checked for correctness.
@@ -41,7 +72,7 @@ class RuleBasedTuning : public FullSearch {
                          unsigned long shouldBeBetterRuntime, const LiveInfo &liveInfo)>;
 
   /**
-   * Constructs are RuleBasedTuning strategy.
+   * Constructs a RuleBasedTuning strategy.
    * @param allowedContainerOptions
    * @param allowedCellSizeFactors
    * @param allowedTraversalOptions
@@ -50,7 +81,7 @@ class RuleBasedTuning : public FullSearch {
    * @param allowedNewton3Options
    * @param verifyModeEnabled If verify mode should be enabled. False by default.
    * @param ruleFileName The name of the file where the rules are stored.
-   * @param tuningErrorPrinter
+   * @param tuningErrorPrinter The function to call in verify mode if errors are found.
    */
   RuleBasedTuning(const std::set<ContainerOption> &allowedContainerOptions,
                   const std::set<double> &allowedCellSizeFactors,
@@ -115,6 +146,11 @@ class RuleBasedTuning : public FullSearch {
   [[nodiscard]] auto getLifetimeTuningTime() const { return tuningTimeLifetime; }
 
  private:
+  /**
+   * Goes through all applicable configuration orders and checks if the result of the current configuration contradicts
+   * any rules when comparing with previously tested configurations in this tuning phase. If yes, calls
+   * tuningErrorPrinter.
+   */
   void verifyCurrentConfigTime() const {
     for (const auto &order : _lastApplicableConfigurationOrders) {
       bool shouldBeBetter;
@@ -146,6 +182,10 @@ class RuleBasedTuning : public FullSearch {
     }
   }
 
+  /**
+   * Executes the rule file for the current simulation state. Puts all known live info as defines in front of the
+   * program.
+   */
   std::vector<rule_syntax::ConfigurationOrder> applyRules() {
     AutoPasLog(debug, _currentLiveInfo.toString());
 
