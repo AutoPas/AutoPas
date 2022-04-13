@@ -30,7 +30,7 @@ namespace autopas {
  *
  * Here is a quick summary of this language:
  * The heart of this language are so called configuration orders. Here is one example:
-  * ```
+ * ```
  * [container="LinkedCells", dataLayout="SoA", newton3="enabled"] >= [container="LinkedCells", dataLayout="AoS",
  * newton3="enabled"] with same traversal;
  * ```
