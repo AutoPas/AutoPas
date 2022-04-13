@@ -30,8 +30,10 @@ namespace autopas {
  *
  * Here is a quick summary of this language:
  * The heart of this language are so called configuration orders. Here is one example:
- * ```[container="LinkedCells", dataLayout="SoA", newton3="enabled"] >= [container="LinkedCells", dataLayout="AoS",
- * newton3="enabled"] with same traversal;```
+  * ```
+ * [container="LinkedCells", dataLayout="SoA", newton3="enabled"] >= [container="LinkedCells", dataLayout="AoS",
+ * newton3="enabled"] with same traversal;
+ * ```
  * This is a rule that states that *all* configurations that match the pattern to the left of `>=` are better than *all*
  * configurations that match the pattern to the right, provided they have the same `traversal`. The pattern to the left
  * e.g. matches all configuration with container type `LinkedCells`, data layout `SoA` and newton3 enabled.
@@ -39,8 +41,11 @@ namespace autopas {
  * If we want to have this same rule with another container type, e.g. `LinkedCellsReferences`, we can combine these two
  * using a `define_list` statement and use that as container type in the rule:
  *
- * ```define_list LinkedCellsContainer = "LinkedCells", "LinkedCellsReferences";
- * [container=LinkedCellsContainer, dataLayout="SoA", newton3="enabled"] >= [container="LinkedCells", dataLayout="AoS", newton3="enabled"] with same traversal;```
+ * ```
+ * define_list LinkedCellsContainer = "LinkedCells", "LinkedCellsReferences";
+ * [container=LinkedCellsContainer, dataLayout="SoA", newton3="enabled"] >= [container="LinkedCells", dataLayout="AoS",
+ * newton3="enabled"] with same traversal;
+ * ```
  *
  * Because always applying the same configuration orders would not be very interesting, we can apply them conditionally.
  * For this, all live info collected in the LiveInfo class is available as a variable in the rule program. One example
