@@ -10,6 +10,10 @@ namespace autopas {
  * A VM that is capable of executing a program with simple instructions on a stack of MemoryCells. The result of the
  * program is produced using a special output instruction CMD::OUTPUTC. A vector of numbers produced by executing these
  * instructions is returned in the execute() method.
+ *
+ * The VM is used to execute generated code by RuleBasedProgramTree. In this generated code, each configuration order is
+ * assigned a number. If this number is output using OUTPUTC, the configuration order should be applied in the current
+ * tuning phase.
  */
 class RuleVM {
  public:
@@ -23,29 +27,88 @@ class RuleVM {
    * An enum with all commands that this VM supports.
    */
   enum CMD {
+    /**
+     * Load a constant on top of the stack (payload).
+     */
     LOADC,
+    /**
+     * Payload is absolute stack address. Loads the value of the stack at this address on top of the stack.
+     */
     LOADA,
+    /**
+     * Payload is absolute stack address. Stores the top of the stack into the stack at the given address. Pops top.
+     */
     STOREA,
+    /**
+     * Payload is number of stack cells to reserve. Increases stack pointer by this value.
+     */
     RESERVE,
+    /**
+     * Binary comparison. Consumes two stack cells and puts True on top if stack[SP-1] < stack[SP], False otherwise.
+     */
     LESS,
+    /**
+     * Binary comparison. Consumes two stack cells and puts True on top if stack[SP-1] > stack[SP], False otherwise.
+     */
     GREATER,
+    /**
+     * Binary comparison. Consumes two stack cells and puts True on top if stack[SP-1] == stack[SP], False otherwise.
+     */
     EQUAL,
+    /**
+     * Payload is program address. Jumps to this address if value of top of the stack is False. Consumes this value.
+     */
     JUMPZERO,
+    /**
+     * Outputs payload. All output values are returned as result from the program execution.
+     */
     OUTPUTC,
+    /**
+     * Executes OUTPUTC if top of the stack is True. Does not consume this condition value.
+     */
     CONDOUTPUTC,
+    /**
+     * Halts program execution.
+     */
     HALT,
+    /**
+     * Binary operator. Consumes two stack cells and puts True on top if stack[SP-1] && stack[SP], False otherwise.
+     */
     AND,
+    /**
+     * Binary operator. Consumes two stack cells and puts True on top if stack[SP-1] || stack[SP], False otherwise.
+     */
     OR,
+    /**
+     * Pops one value from the stack.
+     */
     POP,
+    /**
+     * Binary operator. Consumes two stack cells and puts stack[SP-1] * stack[SP] on top.
+     */
     MUL,
+    /**
+     * Binary operator. Consumes two stack cells and puts stack[SP-1] / stack[SP] on top.
+     */
     DIV,
+    /**
+     * Binary operator. Consumes two stack cells and puts stack[SP-1] + stack[SP] on top.
+     */
     ADD,
+    /**
+     * Binary operator. Consumes two stack cells and puts stack[SP-1] - stack[SP] on top.
+     */
     SUB,
+    /**
+     * Unary operator. Changes the value of top of the stack to !stack[SP].
+     */
     NOT
   };
 
   /**
    * An instruction to execute in the VM. Consists out of a command and an argument (payload), e.g. LOADC 1.
+   *
+   * Not all commands use the payload.
    */
   struct Instruction {
     /**
@@ -233,11 +296,26 @@ class RuleVM {
   }
 
  private:
+  /**
+   * The address of the next instruction to execute in the program.
+   */
   size_t _programCounter;
+  /**
+   * The address of the top occupied stack cell. (SP).
+   */
   size_t _stackPointer;
+  /**
+   * Whether execution should be halted next.
+   */
   bool _halt;
 
+  /**
+   * The stack of memory cells the program operates on.
+   */
   std::vector<MemoryCell> _stack;
+  /**
+   * The current results of OUTPUTC.
+   */
   std::vector<size_t> _removedPatterns;
 };
 }  // namespace autopas
