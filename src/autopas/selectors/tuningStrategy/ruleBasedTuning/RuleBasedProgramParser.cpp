@@ -49,7 +49,7 @@ class TranslationVisitor : public RuleLanguageBaseVisitor {
   /**
    * Helper function that returns a std::shared_ptr<Statement> from an antlrcpp::Any for multiple different statement
    * types.
-   * @param expr The antlrcpp::Any.
+   * @param statement The antlrcpp::Any.
    * @return The converted std::shared_ptr<Statement>.
    */
   static std::shared_ptr<Statement> getStatementType(const antlrcpp::Any &statement) {
