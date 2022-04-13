@@ -1,3 +1,8 @@
+// This file describes the grammar of the rule language used by rule based tuning. The parsing code is generated using
+// the ANTLR plugin for CLion. It is generated into parser_generated/ and committed to the repository. Changing this
+// file requires manual regeneration of the code into this directory, and also committing (and formatting) the generated
+// files.
+
 grammar RuleLanguage;
 
 program
