@@ -314,6 +314,13 @@ class LJMulticenterFunctor
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionY;
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionZ;
 
+    std::vector<size_t, autopas::AlignedAllocator<size_t>> siteTypes;
+
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> CoMPosX; // store pos of relevant CoM  // todo really don't like this approach
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> CoMPosY;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> CoMPosZ;
+    std::vector<autopas::OwnershipState, autopas::AlignedAllocator<autopas::OwnershipState>> siteOwnedState;
+
     const SoAFloatPrecision const_sigmaSquared = _sigmaSquared;
     const SoAFloatPrecision const_epsilon24 = _epsilon24;
     const SoAFloatPrecision const_shift6 = _shift6;
@@ -331,22 +338,37 @@ class LJMulticenterFunctor
     }
     const size_t siteCountTotal = siteCount;
 
-    exactSitePositionX.resize(siteCount);
-    exactSitePositionY.resize(siteCount);
-    exactSitePositionZ.resize(siteCount);
+    exactSitePositionX.reserve(siteCount);
+    exactSitePositionY.reserve(siteCount);
+    exactSitePositionZ.reserve(siteCount);
 
-    // calculate rotated site positions
-    // todo can we simd anything here?
+    CoMPosX.reserve(siteCount);
+    CoMPosY.reserve(siteCount);
+    CoMPosZ.reserve(siteCount);
+
+    if constexpr (useMixing) {
+      siteOwnedState.reserve(siteCount);
+      siteTypes.reserve(siteCount);
+    }
+
+    // Generate site-wise arrays for SIMD
+    // todo can we simd anything here? / can we do something 'nicer'?
     if constexpr (useMixing) {
       size_t siteIndex = 0;
       for (size_t mol = 0; mol < soa.getNumParticles(); ++mol) {
         const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
             {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, _PPLibrary->getSitePositions(typeptr[mol]));
+        const auto siteTypesOfMol = _PPLibrary->getSiteTypes(typeptr[mol]);
 
         for (size_t site = 0; site < _PPLibrary->getNumSites(typeptr[mol]); ++site) {
           exactSitePositionX[siteIndex + site] = rotatedSitePositions[site][0] + xptr[mol];
           exactSitePositionY[siteIndex + site] = rotatedSitePositions[site][1] + yptr[mol];
           exactSitePositionZ[siteIndex + site] = rotatedSitePositions[site][2] + zptr[mol];
+          siteTypes[siteIndex + site] = siteTypesOfMol[site];
+          CoMPosX[siteIndex + site] = xptr[mol];
+          CoMPosY[siteIndex + site] = yptr[mol];
+          CoMPosZ[siteIndex + site] = zptr[mol];
+          siteOwnedState[siteIndex + site] = ownedStatePtr[mol];
         }
         siteIndex += _PPLibrary->getNumSites(typeptr[mol]);
       }
@@ -369,6 +391,10 @@ class LJMulticenterFunctor
           exactSitePositionX[mol * const_unrotatedSitePositions.size() + site] = rotatedSitePositions[site][0] + xptr[mol];
           exactSitePositionY[mol * const_unrotatedSitePositions.size() + site] = rotatedSitePositions[site][1] + yptr[mol];
           exactSitePositionZ[mol * const_unrotatedSitePositions.size() + site] = rotatedSitePositions[site][2] + zptr[mol];
+          CoMPosX[mol * const_unrotatedSitePositions.size() + site] = xptr[mol];
+          CoMPosY[mol * const_unrotatedSitePositions.size() + site] = yptr[mol];
+          CoMPosZ[mol * const_unrotatedSitePositions.size() + site] = zptr[mol];
+          siteOwnedState[mol * const_unrotatedSitePositions.size() + site] = ownedStatePtr[mol];
         }
       }
     }
@@ -396,55 +422,49 @@ class LJMulticenterFunctor
       // create mask over every site 'above' molA
       std::vector<bool, autopas::AlignedAllocator<bool>> mask;
       mask.reserve(noSitesB);
-      if constexpr (useMixing) {
-        const size_t noSitesMolB =
-      } else {
-        size_t noSitesMolB = const_unrotatedSitePositions.size(); // uniform #sites
 
-#pragma omp simd
-        // mask sites of molecules with CoM outside cutoff
-        for (size_t siteB = 0; siteB < noSitesB; ++siteB) {
+      const auto CoMPosAx = xptr[molA];
+      const auto CoMPosAy = yptr[molA];
+      const auto CoMPosAz = zptr[molA];
 
+#pragma omp for simd
+      for (size_t siteB = siteIndexA+noSitesInMolA; siteB < siteCountTotal; ++siteB) {
+        const auto ownedStateB = siteOwnedState[siteB];
 
-          size_t molB = siteB / noSitesMolB + molA;
+        const auto displacementCoMX = CoMPosAx - CoMPosX[siteB];
+        const auto displacementCoMY = CoMPosAy - CoMPosY[siteB];
+        const auto displacementCoMZ = CoMPosAz - CoMPosZ[siteB];
 
-          const auto ownedStateB = ownedStatePtr[molB];
+        const auto distanceSquaredCoMX = displacementCoMX * displacementCoMX;
+        const auto distanceSquaredCoMY = displacementCoMY * displacementCoMY;
+        const auto distanceSquaredCoMZ = displacementCoMZ * displacementCoMZ;
 
-          const auto displacementCoMX = xptr[molA] - xptr[molB];
-          const auto displacementCoMY = yptr[molA] - yptr[molB];
-          const auto displacementCoMZ = zptr[molA] - zptr[molB];
+        const auto distanceSquaredCoM = distanceSquaredCoMX + distanceSquaredCoMY + distanceSquaredCoMZ;
 
-          const auto distanceSquaredCoMX = displacementCoMX * displacementCoMX;
-          const auto distanceSquaredCoMY = displacementCoMY * displacementCoMY;
-          const auto distanceSquaredCoMZ = displacementCoMZ * displacementCoMZ;
-
-          const auto distanceSquaredCoM = distanceSquaredCoMX + distanceSquaredCoMY + distanceSquaredCoMZ;
-
-          // mask sites of molecules beyond cutoff or if molecule is a dummy
-          mask[siteB] = distanceSquaredCoM <= cutoffSquared and ownedStateB != autopas::OwnershipState::dummy;
-        }
+        // mask sites of molecules beyond cutoff or if molecule is a dummy
+        mask[siteB] = distanceSquaredCoM <= cutoffSquared and ownedStateB != autopas::OwnershipState::dummy;
       }
 
       // calculate LJ forces
-      SoAFloatPrecision shift6 = _shift6;
-      SoAFloatPrecision sigmaSquared = _sigmaSquared;
-      SoAFloatPrecision epsilon24 = _epsilon24;
-      // todo implement this for mixing
+      SoAFloatPrecision shift6 = const_shift6;
+      SoAFloatPrecision sigmaSquared = const_sigmaSquared;
+      SoAFloatPrecision epsilon24 = const_epsilon24;
+
+      if constexpr(useMixing) {
       for (size_t siteA = 0; siteA < noSitesInMolA; ++siteA) {
         // preload sigmas, epsilons, and shifts
-        if constexpr (useMixing) {
-          sigmaSquareds.reserve(siteCountTotal-siteIndexA);
-          epsilon24s.reserve(siteCountTotal-siteIndexA);
-          if constexpr (applyShift) {
-            shift6s.reserve(siteCountTotal-siteIndexA);
-          }
-          for ()
-            for (size_t siteB = siteIndexA+noSitesInMolA; siteB < siteCountTotal; ++siteB) {
-              const auto mixingData = _PPLibrary->getMixingData(typeptr[siteIndexA],typeptr[molB]);
-              sigmaSquareds[molB] = mixingData.sigmaSquare;
-              epsilon24s[]
-            }
+        sigmaSquareds.reserve(siteCountTotal-siteIndexA);
+        epsilon24s.reserve(siteCountTotal-siteIndexA);
+        if constexpr (applyShift) {
+          shift6s.reserve(siteCountTotal-siteIndexA);
         }
+
+        for (size_t siteB = siteIndexA+noSitesInMolA; siteB < siteCountTotal; ++siteB) {
+          const auto mixingData = _PPLibrary->getMixingData(typeptr[siteIndexA],typeptr[molB]);
+          sigmaSquareds[molB] = mixingData.sigmaSquare;
+          epsilon24s[]
+        }
+      }
 
 #pragma omp simd reduction (+ : forceSumX, forceSumY, forceSumZ, torqueSumX, torqueSumY, torqueSumZ, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
         for (size_t siteB = 0; siteB < noSitesB; ++siteB) {
