@@ -7,6 +7,7 @@
 #pragma once
 
 #include "autopas/iterators/SingleCellIteratorWrapper.h"
+#include "autopas/utils/inBox.h"
 
 namespace autopas {
 
@@ -91,10 +92,10 @@ class ParticleCell {
   [[nodiscard]] virtual unsigned long numParticles() const = 0;
 
   /**
-   * Check if the cell is not empty.
-   * @return true if at least one particle is stored in this cell
+   * Check if the cell is empty.
+   * @return true if no particles are stored in this cell.
    */
-  [[nodiscard]] virtual bool isNotEmpty() const = 0;
+  [[nodiscard]] virtual bool isEmpty() const = 0;
 
   /**
    * Deletes all particles in this cell.

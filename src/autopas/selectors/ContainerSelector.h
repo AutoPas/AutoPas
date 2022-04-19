@@ -13,6 +13,7 @@
 #include "autopas/containers/directSum/DirectSum.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/LinkedCellsReferences.h"
+#include "autopas/containers/octree/Octree.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/VarVerletLists.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/neighborLists/asBuild/VerletNeighborListAsBuild.h"
@@ -121,7 +122,7 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
     }
     case ContainerOption::verletListsCells: {
       container = std::make_unique<VerletListsCells<Particle, VLCAllCellsNeighborList<Particle>>>(
-          _boxMin, _boxMax, _cutoff, TraversalOption::lc_c08, containerInfo.verletSkin, containerInfo.cellSizeFactor,
+          _boxMin, _boxMax, _cutoff, containerInfo.verletSkin, containerInfo.cellSizeFactor,
           containerInfo.loadEstimator, VerletListsCellsHelpers<Particle>::VLCBuildType::Value::soaBuild);
       break;
     }
@@ -133,14 +134,19 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
     }
     case ContainerOption::varVerletListsAsBuild: {
       container = std::make_unique<VarVerletLists<Particle, VerletNeighborListAsBuild<Particle>>>(
-          _boxMin, _boxMax, _cutoff, containerInfo.verletSkin);
+          _boxMin, _boxMax, _cutoff, containerInfo.verletSkin, containerInfo.cellSizeFactor);
       break;
     }
 
     case ContainerOption::pairwiseVerletLists: {
       container = std::make_unique<VerletListsCells<Particle, VLCCellPairNeighborList<Particle>>>(
-          _boxMin, _boxMax, _cutoff, TraversalOption::lc_c08, containerInfo.verletSkin, containerInfo.cellSizeFactor,
+          _boxMin, _boxMax, _cutoff, containerInfo.verletSkin, containerInfo.cellSizeFactor,
           containerInfo.loadEstimator, VerletListsCellsHelpers<Particle>::VLCBuildType::Value::soaBuild);
+      break;
+    }
+    case ContainerOption::octree: {
+      container = std::make_unique<Octree<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
+                                                     containerInfo.cellSizeFactor);
       break;
     }
     default: {

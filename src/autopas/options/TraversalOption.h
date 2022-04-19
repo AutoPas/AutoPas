@@ -77,6 +77,17 @@ class TraversalOption : public Option<TraversalOption> {
      */
     lc_sliced_c02,
 
+    // Octree Traversals:
+    /**
+     * OTC01Traversal : Simple DFS traversal without newton 3 optimization
+     */
+    ot_c01,
+    /**
+     * OTC18Traversal : DFS traversal with newton 3 optimization that checks whether a neighbor has already been
+     * processed via ID comparison
+     */
+    ot_c18,
+
     // VerletClusterLists Traversals:
     /**
      * VCLC01BalancedTraversal : Assign a fixed set of towers to each thread balanced by number of contained clusters.
@@ -164,6 +175,13 @@ class TraversalOption : public Option<TraversalOption> {
      */
     vlp_sliced_c02,
 
+    /**
+     * VLCCellPairC08Traversal : based on LCC08Traversal.
+     * The pairwise neighbor list allows access to the relevant pairs of interacting particles for each pair of cells,
+     * including the diagonal non-base pair of cells in the standard c08 step.
+     */
+    vlp_c08,
+
     // VarVerlet Traversals:
     /**
      * VVLAsBuildTraversal : Track which thread built what neighbor list and schedule them the same way for the pairwise
@@ -246,6 +264,11 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::vlp_c18, "vlp_c18"},
         {TraversalOption::vlp_c01, "vlp_c01"},
         {TraversalOption::vlp_sliced_balanced, "vlp_sliced_balanced"},
+        {TraversalOption::vlp_c08, "vlp_c08"},
+
+        // Octree Traversals:
+        {TraversalOption::ot_c18, "ot_c18"},
+        {TraversalOption::ot_c01, "ot_c01"},
     };
   };
 

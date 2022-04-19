@@ -1,0 +1,100 @@
+# Workflow for unit tests
+name: CI
+
+# Controls when the action will run.
+on:
+  push:
+    # pushes to master
+    branches: [ master ]
+  pull_request:
+    # PRs to master
+    # branches: [ master ]
+# abort old runs if a new one is started
+concurrency:
+  group: ${{ github.head_ref }}-tests
+  cancel-in-progress: true
+
+jobs:
+
+  # Check that everything is formatted correctly. This does not apply any changes!
+  StyleCheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: DoozyX/clang-format-lint-action@v0.12
+        with:
+          source: 'src tests examples'
+          # exclude: 'none'
+          extensions: 'h,cpp'
+          clangFormatVersion: 9
+          style: file
+
+  # Make sure contribution guidelines are followed. This does not apply any changes!
+  CustomChecks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Checks
+        # this exits immediately when any command returns != 0
+        run: |
+          # enable retursive globbing syntax
+          shopt -s globstar
+          # '!' at the beginnig of the line negates the exit code
+          # all headers should contain pragma once
+          ! grep --files-without-match '#pragma once' **/*.h
+          # all files should contain a file comment
+          ! grep --files-without-match '@file' **/*.{h,cpp}
+          # no file should contain 'NULL'
+          ! grep --word-regexp 'NULL' **/*.{h,cpp}
+          # no file should contain 'assert'
+          ! grep --word-regexp 'assert' **/*.{h,cpp}
+          # no file should include autopas with '<>'
+          ! grep '#include <autopas' **/*.{h,cpp}
+          # prohibit 'typedef' to force 'using'
+          ! grep --word-regexp 'typedef' **/*.{h,cpp}
+
+  MatrixJob:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [1, 2]
+        config: [
+            #    0              1       2       3       4           5       6   7
+            # container      , CC   , CXX    , builder, mode   , OpenMP , ASan, TSan
+        [autopas-build-clang , clang, clang++, Ninja  , Debug  , ON     , ON  , OFF  ],
+        [autopas-build-clang , clang, clang++, Ninja  , Release, OFF    , ON  , OFF  ],
+        [autopas-build-archer, clang, clang++, Ninja  , Release, ON     , OFF , ON   ],
+        [autopas-build-clang , clang, clang++, Ninja  , Release, ON     , ON  , OFF  ],
+        [autopas-build-gcc   , gcc, g++,"'Unix Makefiles'",Release, ON  , OFF , OFF  ],
+        ]
+    name: Matrix - ${{ matrix.config[1] }}|${{ matrix.config[4] }}|OpenMP=${{ matrix.config[5] }}|ASan=${{ matrix.config[6] }}|TSan=${{ matrix.config[7] }} (${{ matrix.part }}/2)
+    container: autopas/${{ matrix.config[0] }}
+    env:
+        TSAN_OPTIONS: "ignore_noninstrumented_modules=1"
+        LSAN_OPTIONS: "verbosity=1:log_threads=1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build everything
+        run: |
+          mkdir build && cd build
+          CXXFLAGS=-Wno-pass-failed CC=${{ matrix.config[1] }} CXX=${{ matrix.config[2] }} cmake \
+            -G ${{ matrix.config[3] }} \
+            -DCCACHE=ON \
+            -DCMAKE_BUILD_TYPE=${{ matrix.config[4] }} \
+            -DAUTOPAS_LOG_ALL=ON \
+            -DAUTOPAS_OPENMP=${{ matrix.config[5] }} \
+            -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=${{ matrix.config[6] }} \
+            -DAUTOPAS_ENABLE_THREAD_SANITIZER=${{ matrix.config[7] }} \
+            ..
+          entrypoint.sh cmake --build . --parallel 1 
+      - name: Run tests ${{ matrix.part }}/2
+        run: |
+          cd build
+          # Start with test 0 or 1 and do every second test
+          ctest --output-on-failure -I ${{ matrix.part }},,2 -j 2
+          cd examples
+          ctest -C checkExamples --output-on-failure -I ${{ matrix.part }},,2 -j 2

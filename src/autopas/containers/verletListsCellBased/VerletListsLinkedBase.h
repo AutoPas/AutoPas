@@ -6,7 +6,8 @@
 
 #pragma once
 
-#include "autopas/containers/CellBasedParticleContainer.h"
+#include "autopas/containers/LeavingParticleCollector.h"
+#include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ParticleCellHelpers.h"
@@ -95,10 +96,12 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    * @copydoc autopas::ParticleContainerInterface::updateContainer()
    * @note This function invalidates the neighbor lists.
    */
-  [[nodiscard]] std::vector<Particle> updateContainer() override {
-    AutoPasLog(debug, "updating container");
+  [[nodiscard]] std::vector<Particle> updateContainer(bool keepNeighborListsValid) override {
+    if (keepNeighborListsValid) {
+      return autopas::LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(_linkedCells);
+    }
     _neighborListIsValid = false;
-    return _linkedCells.updateContainer();
+    return _linkedCells.updateContainer(false);
   }
 
   /**
@@ -142,6 +145,22 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   }
 
   /**
+   * @copydoc autopas::LinkedCells::forEach()
+   */
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior) {
+    return _linkedCells.forEach(forEachLambda, behavior);
+  }
+
+  /**
+   * @copydoc autopas::LinkedCells::reduce()
+   */
+  template <typename Lambda, typename A>
+  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior) {
+    return _linkedCells.reduce(reduceLambda, result, behavior);
+  }
+
+  /**
    * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
    */
   [[nodiscard]] ParticleIteratorWrapper<Particle, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
@@ -157,6 +176,24 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
                                                                            const std::array<double, 3> &higherCorner,
                                                                            IteratorBehavior behavior) const override {
     return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior);
+  }
+
+  /**
+   * @copydoc autopas::LinkedCells::forEachInRegion()
+   */
+  template <typename Lambda>
+  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    _linkedCells.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+  }
+
+  /**
+   * @copydoc autopas::LinkedCells::reduceInRegion()
+   */
+  template <typename Lambda, typename A>
+  void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+                      const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    _linkedCells.reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
   }
 
   /**

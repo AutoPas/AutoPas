@@ -10,6 +10,7 @@
 #include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/CellBlock3D.h"
 #include "autopas/containers/CompatibleTraversals.h"
+#include "autopas/containers/LeavingParticleCollector.h"
 #include "autopas/containers/LoadEstimators.h"
 #include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
 #include "autopas/containers/linkedCells/ParticleVector.h"
@@ -192,7 +193,10 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     traversal->endTraversal();
   }
 
-  std::vector<ParticleType> updateContainer() override {
+  std::vector<ParticleType> updateContainer(bool keepNeighborListsValid) override {
+    if (keepNeighborListsValid) {
+      return autopas::LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);
+    }
     this->deleteHaloParticles();
 
     std::vector<ParticleType> invalidParticles;
@@ -210,7 +214,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
         this->getCells()[cellId].deleteDummyParticles();
 
         // if empty
-        if (not this->getCells()[cellId].isNotEmpty()) continue;
+        if (this->getCells()[cellId].isEmpty()) continue;
 
         auto [cellLowerCorner, cellUpperCorner] = this->getCellBlock().getCellBoundingBox(cellId);
 
@@ -270,6 +274,40 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
                                                                            nullptr));
   }
 
+  /**
+   * @copydoc LinkedCells::forEach()
+   */
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHaloOrDummy) {
+    if (behavior == IteratorBehavior::ownedOrHaloOrDummy) {
+      // iterate over all particles, so execute directly on particle vector
+      _particleList.forEach(forEachLambda);
+    } else {
+      for (size_t index = 0; index < getCells().size(); index++) {
+        if (!_cellBlock.ignoreCellForIteration(index, behavior)) {
+          getCells()[index].forEach(forEachLambda, behavior);
+        }
+      }
+    }
+  }
+
+  /**
+   * @copydoc LinkedCells::reduce()
+   */
+  template <typename Lambda, typename A>
+  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHaloOrDummy) {
+    if (behavior == IteratorBehavior::ownedOrHaloOrDummy) {
+      // iterate over all particles, so execute directly on particle vector
+      _particleList.reduce(reduceLambda, result);
+    } else {
+      for (size_t index = 0; index < getCells().size(); index++) {
+        if (!_cellBlock.ignoreCellForIteration(index, behavior)) {
+          getCells()[index].reduce(reduceLambda, result, behavior);
+        }
+      }
+    }
+  }
+
   ParticleIteratorWrapper<ParticleType, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
                                                                 const std::array<double, 3> &higherCorner,
                                                                 IteratorBehavior behavior) override {
@@ -324,6 +362,72 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     return ParticleIteratorWrapper<ParticleType, false>(
         new internal::RegionParticleIterator<ParticleType, ReferenceCell, false>(
             &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBlock, behavior, nullptr));
+  }
+
+  /**
+   * @copydoc LinkedCells::forEachInRegion()
+   */
+  template <typename Lambda>
+  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    // We increase the search region by skin, as particles can move over cell borders.
+    auto startIndex3D =
+        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::subScalar(lowerCorner, this->getSkin()));
+    auto stopIndex3D =
+        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::addScalar(higherCorner, this->getSkin()));
+
+    size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
+                                (stopIndex3D[2] - startIndex3D[2] + 1);
+    std::vector<size_t> cellsOfInterest(numCellsOfInterest);
+
+    int i = 0;
+    for (size_t z = startIndex3D[2]; z <= stopIndex3D[2]; ++z) {
+      for (size_t y = startIndex3D[1]; y <= stopIndex3D[1]; ++y) {
+        for (size_t x = startIndex3D[0]; x <= stopIndex3D[0]; ++x) {
+          cellsOfInterest[i++] =
+              utils::ThreeDimensionalMapping::threeToOneD({x, y, z}, this->_cellBlock.getCellsPerDimensionWithHalo());
+        }
+      }
+    }
+
+    for (size_t index : cellsOfInterest) {
+      if (!_cellBlock.ignoreCellForIteration(index, behavior)) {
+        getCells()[index].forEach(forEachLambda, lowerCorner, higherCorner, behavior);
+      }
+    }
+  }
+
+  /**
+   * @copydoc LinkedCells::reduceInRegion()
+   */
+  template <typename Lambda, typename A>
+  void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+                      const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    // We increase the search region by skin, as particles can move over cell borders.
+    auto startIndex3D =
+        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::subScalar(lowerCorner, this->getSkin()));
+    auto stopIndex3D =
+        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::addScalar(higherCorner, this->getSkin()));
+
+    size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
+                                (stopIndex3D[2] - startIndex3D[2] + 1);
+    std::vector<size_t> cellsOfInterest(numCellsOfInterest);
+
+    int i = 0;
+    for (size_t z = startIndex3D[2]; z <= stopIndex3D[2]; ++z) {
+      for (size_t y = startIndex3D[1]; y <= stopIndex3D[1]; ++y) {
+        for (size_t x = startIndex3D[0]; x <= stopIndex3D[0]; ++x) {
+          cellsOfInterest[i++] =
+              utils::ThreeDimensionalMapping::threeToOneD({x, y, z}, this->_cellBlock.getCellsPerDimensionWithHalo());
+        }
+      }
+    }
+
+    for (size_t index : cellsOfInterest) {
+      if (!_cellBlock.ignoreCellForIteration(index, behavior)) {
+        getCells()[index].reduce(reduceLambda, result, lowerCorner, higherCorner, behavior);
+      }
+    }
   }
 
   /**

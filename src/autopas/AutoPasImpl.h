@@ -67,15 +67,15 @@ void AutoPas<Particle>::init() {
   } else {
     _externalMPICommunicator = true;
   }
+  auto tuningStrategy = TuningStrategyFactory::generateTuningStrategy(
+      _tuningStrategyOption, _allowedContainers, *_allowedCellSizeFactors, _allowedTraversals, _allowedLoadEstimators,
+      _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _relativeOptimumRange, _maxTuningPhasesWithoutTest,
+      _relativeBlacklistRange, _evidenceFirstPrediction, _acquisitionFunctionOption, _extrapolationMethodOption,
+      _outputSuffix, _mpiStrategyOption, _autopasMPICommunicator);
   _autoTuner = std::make_unique<autopas::AutoTuner<Particle>>(
-      _boxMin, _boxMax, _cutoff, _verletSkin, _verletClusterSize,
-      std::move(TuningStrategyFactory::generateTuningStrategy(
-          _tuningStrategyOption, _allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
-          _allowedLoadEstimators, _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _relativeOptimumRange,
-          _maxTuningPhasesWithoutTest, _relativeBlacklistRange, _evidenceFirstPrediction, _acquisitionFunctionOption,
-          _extrapolationMethodOption, _outputSuffix, _mpiStrategyOption, _autopasMPICommunicator)),
+      _boxMin, _boxMax, _cutoff, _verletSkin, _verletClusterSize, std::move(tuningStrategy),
       _mpiTuningMaxDifferenceForBucket, _mpiTuningWeightForMaxDensity, _selectorStrategy, _tuningInterval, _numSamples,
-      _outputSuffix);
+      _verletRebuildFrequency, _outputSuffix);
   _logicHandler =
       std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(*(_autoTuner.get()), _verletRebuildFrequency);
 }
@@ -117,8 +117,8 @@ void AutoPas<Particle>::addParticle(const Particle &p) {
 }
 
 template <class Particle>
-std::pair<std::vector<Particle>, bool> AutoPas<Particle>::updateContainer(bool forced) {
-  return _logicHandler->updateContainer(forced);
+std::vector<Particle> AutoPas<Particle>::updateContainer() {
+  return _logicHandler->updateContainer();
 }
 
 template <class Particle>
@@ -135,8 +135,8 @@ void AutoPas<Particle>::forceRetune() {
 }
 
 template <class Particle>
-void AutoPas<Particle>::addOrUpdateHaloParticle(const Particle &haloParticle) {
-  _logicHandler->addOrUpdateHaloParticle(haloParticle);
+void AutoPas<Particle>::addHaloParticle(const Particle &haloParticle) {
+  _logicHandler->addHaloParticle(haloParticle);
 }
 
 template <class Particle>
@@ -147,6 +147,11 @@ void AutoPas<Particle>::deleteAllParticles() {
 template <class Particle>
 void AutoPas<Particle>::deleteParticle(ParticleIteratorWrapper<Particle, true> &iter) {
   _logicHandler->deleteParticle(iter);
+}
+
+template <class Particle>
+void AutoPas<Particle>::deleteParticle(Particle &particle) {
+  _logicHandler->deleteParticle(particle);
 }
 
 template <class Particle>
@@ -186,6 +191,16 @@ std::array<double, 3> AutoPas<Particle>::getBoxMin() const {
 template <class Particle>
 std::array<double, 3> AutoPas<Particle>::getBoxMax() const {
   return _autoTuner->getContainer()->getBoxMax();
+}
+
+template <class Particle>
+std::shared_ptr<autopas::ParticleContainerInterface<Particle>> AutoPas<Particle>::getContainer() {
+  return _autoTuner->getContainer();
+}
+
+template <class Particle>
+std::shared_ptr<const autopas::ParticleContainerInterface<Particle>> AutoPas<Particle>::getContainer() const {
+  return _autoTuner->getContainer();
 }
 
 }  // namespace autopas

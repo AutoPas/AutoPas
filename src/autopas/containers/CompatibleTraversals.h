@@ -96,9 +96,21 @@ static const std::set<TraversalOption> &allVarVLAsBuildCompatibleTraversals() {
  * @return set of all applicable traversal options.
  */
 static const std::set<TraversalOption> &allVLPCompatibleTraversals() {
-  static const std::set<TraversalOption> s{TraversalOption::vlp_sliced, TraversalOption::vlp_c18,
-                                           TraversalOption::vlp_c01, TraversalOption::vlp_sliced_c02,
-                                           TraversalOption::vlp_sliced_balanced};
+  static const std::set<TraversalOption> s{TraversalOption::vlp_sliced,
+                                           TraversalOption::vlp_c18,
+                                           TraversalOption::vlp_c01,
+                                           TraversalOption::vlp_sliced_c02,
+                                           TraversalOption::vlp_sliced_balanced,
+                                           TraversalOption::vlp_c08};
+  return s;
+}
+
+/**
+ * Lists all traversal options applicable for the Octree container.
+ * @return set of all applicable traversal options.
+ */
+static const std::set<TraversalOption> &allOTCompatibleTraversals() {
+  static const std::set<TraversalOption> s{TraversalOption::ot_c18, TraversalOption::ot_c01};
   return s;
 }
 
@@ -132,6 +144,9 @@ static inline const std::set<TraversalOption> &allCompatibleTraversals(Container
     }
     case ContainerOption::pairwiseVerletLists: {
       return allVLPCompatibleTraversals();
+    }
+    case ContainerOption::octree: {
+      return allOTCompatibleTraversals();
     }
   }
 

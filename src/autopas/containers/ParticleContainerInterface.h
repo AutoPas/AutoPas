@@ -285,9 +285,10 @@ class ParticleContainerInterface {
    * Updates the container.
    * This deletes halo particles, resorts particles into appropriate cells and might remove particles from the
    * container, if necessary.
+   * @param keepNeighborListsValid Defines whether the neighbor lists have to be kept valid.
    * @return A vector of invalid particles that do not belong into the container.
    */
-  [[nodiscard]] virtual std::vector<ParticleType> updateContainer() = 0;
+  [[nodiscard]] virtual std::vector<ParticleType> updateContainer(bool keepNeighborListsValid) = 0;
 
   /**
    * Generates a traversal selector info for this container.

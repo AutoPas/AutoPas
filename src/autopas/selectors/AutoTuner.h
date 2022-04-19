@@ -62,13 +62,14 @@ class AutoTuner {
    * @param selectorStrategy Strategy for the configuration selection.
    * @param tuningInterval Number of time steps after which the auto-tuner shall reevaluate all selections.
    * @param maxSamples Number of samples that shall be collected for each combination.
+   * @param rebuildFrequency The rebuild frequency this AutoPas instance uses.
    * @param outputSuffix Suffix for all output files produced by this class.
    */
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
             unsigned int verletClusterSize, std::unique_ptr<TuningStrategyInterface> tuningStrategy,
             double MPITuningMaxDifferenceForBucket, double MPITuningWeightForMaxDensity,
             SelectorStrategyOption selectorStrategy, unsigned int tuningInterval, unsigned int maxSamples,
-            const std::string &outputSuffix = "")
+            unsigned int rebuildFrequency, const std::string &outputSuffix = "")
       : _selectorStrategy(selectorStrategy),
         _tuningStrategy(std::move(tuningStrategy)),
         _tuningInterval(tuningInterval),
@@ -78,8 +79,9 @@ class AutoTuner {
         _verletClusterSize(verletClusterSize),
         _mpiTuningMaxDifferenceForBucket(MPITuningMaxDifferenceForBucket),
         _mpiTuningWeightForMaxDensity(MPITuningWeightForMaxDensity),
+        _rebuildFrequency(rebuildFrequency),
         _maxSamples(maxSamples),
-        _samples(maxSamples),
+        _samplesNotRebuildingNeighborLists(maxSamples),
         _iteration(0),
         _iterationLogger(outputSuffix),
         _tuningResultLogger(outputSuffix),
@@ -153,10 +155,13 @@ class AutoTuner {
    * @tparam PairwiseFunctor
    * @param f Functor that describes the pair-potential.
    * @param doListRebuild Indicates whether or not the verlet lists should be rebuild.
+   * @param particleBuffer A buffer of additional particles to consider.
+   * @param haloParticleBuffer A buffer of additional halo particles to consider.
    * @return true if this was a tuning iteration.
    */
   template <class PairwiseFunctor>
-  bool iteratePairwise(PairwiseFunctor *f, bool doListRebuild);
+  bool iteratePairwise(PairwiseFunctor *f, bool doListRebuild, std::vector<Particle> &particleBuffer,
+                       std::vector<Particle> &haloParticleBuffer);
 
   /**
    * Returns whether the configuration will be changed in the next iteration.
@@ -168,7 +173,7 @@ class AutoTuner {
     if (_tuningStrategy->searchSpaceIsTrivial()) {
       return false;
     }
-    return _iterationsSinceTuning >= _tuningInterval and _samples.size() >= _maxSamples;
+    return _iterationsSinceTuning >= _tuningInterval and getCurrentNumSamples() >= _maxSamples;
   }
 
   /**
@@ -179,6 +184,14 @@ class AutoTuner {
 
  private:
   /**
+   * Total number of collected samples. This is the sum of the sizes of all sample vectors.
+   * @return Sum of sizes of sample vectors.
+   */
+  auto getCurrentNumSamples() const {
+    return _samplesNotRebuildingNeighborLists.size() + _samplesRebuildingNeighborLists.size();
+  }
+
+  /**
    * Save the runtime of a given traversal.
    *
    * Samples are collected and reduced to one single value according to _selectorStrategy. Only then the value is passed
@@ -186,8 +199,35 @@ class AutoTuner {
    * The time argument is a long because std::chrono::duration::count returns a long.
    *
    * @param time
+   * @param neighborListRebuilt If the neighbor list as been rebuilt during the given time.
    */
-  void addTimeMeasurement(long time);
+  void addTimeMeasurement(long time, bool neighborListRebuilt);
+
+  /**
+   * Estimate the runtime from the current samples according to the SelectorStrategy and rebuild frequency.
+   * Samples are weighted so that we normalize to the expected number of (non-)rebuild iterations and then divide by the
+   * rebuild frequency.
+   * @return estimate time for one iteration
+   */
+  [[nodiscard]] long estimateRuntimeFromSamples() const {
+    // reduce samples for rebuild and non-rebuild iterations with the given selector strategy
+    const auto reducedValueBuilding =
+        autopas::OptimumSelector::optimumValue(_samplesRebuildingNeighborLists, _selectorStrategy);
+    // if there is no data for the non rebuild iterations we have to assume them taking the same time as rebuilding ones
+    // this might neither be a good estimate nor fair but the best we can do
+    const auto reducedValueNotBuilding =
+        _samplesNotRebuildingNeighborLists.empty()
+            ? reducedValueBuilding
+            : autopas::OptimumSelector::optimumValue(_samplesNotRebuildingNeighborLists, _selectorStrategy);
+
+    const auto numIterationsNotBuilding =
+        std::max(0, static_cast<int>(_rebuildFrequency) - static_cast<int>(_samplesRebuildingNeighborLists.size()));
+    const auto numIterationsBuilding = _rebuildFrequency - numIterationsNotBuilding;
+
+    // calculate weighted estimate for one iteration
+    return (numIterationsBuilding * reducedValueBuilding + numIterationsNotBuilding * reducedValueNotBuilding) /
+           _rebuildFrequency;
+  }
 
   /**
    * Initialize the container specified by the TuningStrategy.
@@ -195,7 +235,8 @@ class AutoTuner {
   void selectCurrentContainer();
 
   template <class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, bool inTuningPhase>
-  void iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool doListRebuild);
+  void iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool doListRebuild, std::vector<Particle> &particleBuffer,
+                                     std::vector<Particle> &haloParticleBuffer);
 
   /**
    * Tune available algorithm configurations.
@@ -238,6 +279,11 @@ class AutoTuner {
   unsigned int _verletClusterSize;
 
   /**
+   * The rebuild frequency this instance of AutoPas uses.
+   */
+  unsigned int _rebuildFrequency;
+
+  /**
    * How many times each configuration should be tested.
    */
   const size_t _maxSamples;
@@ -264,11 +310,18 @@ class AutoTuner {
   std::vector<double> _maxDensitiesOfLastTenIterations;
 
   /**
-   * Raw time samples of the current configuration from which one evidence will be produced.
+   * Raw time samples of the current configuration. Contains only the samples of iterations where the neighbor lists are
+   * not rebuilt.
    *
    * @note Initialized with size of _maxSamples to start tuning at start of simulation.
    */
-  std::vector<long> _samples;
+  std::vector<long> _samplesNotRebuildingNeighborLists;
+
+  /**
+   * Raw time samples of the current configuration. Contains only the samples of iterations where the neighbor lists
+   * have been rebuilt.
+   */
+  std::vector<long> _samplesRebuildingNeighborLists{};
 
   /**
    * For each configuration the collection of all evidence (smoothed values) collected so far and in which iteration.
@@ -297,12 +350,13 @@ void AutoTuner<Particle>::selectCurrentContainer() {
 template <class Particle>
 void AutoTuner<Particle>::forceRetune() {
   _iterationsSinceTuning = _tuningInterval;
-  _samples.resize(_maxSamples);
+  _samplesNotRebuildingNeighborLists.resize(_maxSamples);
 }
 
 template <class Particle>
 template <class PairwiseFunctor>
-bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild) {
+bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild, std::vector<Particle> &particleBuffer,
+                                          std::vector<Particle> &haloParticleBuffer) {
   bool isTuning = false;
   // tune if :
   // - more than one config exists
@@ -311,7 +365,9 @@ bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild
   if (_tuningStrategy->smoothedHomogeneityAndMaxDensityNeeded() and _iterationsSinceTuning >= _tuningInterval - 9 and
       _iterationsSinceTuning <= _tuningInterval) {
     _timerCalculateHomogeneity.start();
-    const auto [homogeneity, maxDensity] = autopas::utils::calculateHomogeneityAndMaxDensity(getContainer());
+    const auto &container = getContainer();
+    const auto [homogeneity, maxDensity] =
+        autopas::utils::calculateHomogeneityAndMaxDensity(container, container->getBoxMin(), container->getBoxMax());
     _homogeneitiesOfLastTenIterations.push_back(homogeneity);
     _maxDensitiesOfLastTenIterations.push_back(maxDensity);
     _timerCalculateHomogeneity.stop();
@@ -330,18 +386,18 @@ bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild
       if (_tuningStrategy->getCurrentConfiguration().newton3 == Newton3Option::enabled) {
         if (isTuning) {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::aos, /*Newton3*/ true,
-                                        /*tuning*/ true>(f, doListRebuild);
+                                        /*tuning*/ true>(f, doListRebuild, particleBuffer, haloParticleBuffer);
         } else {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::aos, /*Newton3*/ true,
-                                        /*tuning*/ false>(f, doListRebuild);
+                                        /*tuning*/ false>(f, doListRebuild, particleBuffer, haloParticleBuffer);
         }
       } else {
         if (isTuning) {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::aos, /*Newton3*/ false,
-                                        /*tuning*/ true>(f, doListRebuild);
+                                        /*tuning*/ true>(f, doListRebuild, particleBuffer, haloParticleBuffer);
         } else {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::aos, /*Newton3*/ false,
-                                        /*tuning*/ false>(f, doListRebuild);
+                                        /*tuning*/ false>(f, doListRebuild, particleBuffer, haloParticleBuffer);
         }
       }
       break;
@@ -350,18 +406,18 @@ bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild
       if (_tuningStrategy->getCurrentConfiguration().newton3 == Newton3Option::enabled) {
         if (isTuning) {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::soa, /*Newton3*/ true,
-                                        /*tuning*/ true>(f, doListRebuild);
+                                        /*tuning*/ true>(f, doListRebuild, particleBuffer, haloParticleBuffer);
         } else {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::soa, /*Newton3*/ true,
-                                        /*tuning*/ false>(f, doListRebuild);
+                                        /*tuning*/ false>(f, doListRebuild, particleBuffer, haloParticleBuffer);
         }
       } else {
         if (isTuning) {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::soa, /*Newton3*/ false,
-                                        /*tuning*/ true>(f, doListRebuild);
+                                        /*tuning*/ true>(f, doListRebuild, particleBuffer, haloParticleBuffer);
         } else {
           iteratePairwiseTemplateHelper<PairwiseFunctor, DataLayoutOption::soa, /*Newton3*/ false,
-                                        /*tuning*/ false>(f, doListRebuild);
+                                        /*tuning*/ false>(f, doListRebuild, particleBuffer, haloParticleBuffer);
         }
       }
       break;
@@ -378,9 +434,94 @@ bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild
   return isTuning;
 }
 
+/**
+ * Performs the remaining needed traversal for the additional particles.
+ * @tparam newton3
+ * @tparam Particle
+ * @tparam T
+ * @tparam PairwiseFunctor
+ * @param f
+ * @param containerPtr
+ * @param particleBuffer
+ * @param haloParticleBuffer
+ * @note If the buffers are replaced with actual cells, we could use the CellFunctor to simplify things and potentially
+ * even use SoA.
+ */
+template <bool newton3, class Particle, class T, class PairwiseFunctor>
+void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<Particle> &particleBuffer,
+                          std::vector<Particle> &haloParticleBuffer) {
+  // 1. particleBuffer with all close particles in container
+  for (auto &&p : particleBuffer) {
+    auto pos = p.getR();
+    auto min = autopas::utils::ArrayMath::subScalar(pos, containerPtr->getCutoff());
+    auto max = autopas::utils::ArrayMath::addScalar(pos, containerPtr->getCutoff());
+    for (auto iter2 = containerPtr->getRegionIterator(min, max, IteratorBehavior::ownedOrHalo); iter2.isValid();
+         ++iter2) {
+      if (newton3) {
+        f->AoSFunctor(p, *iter2, true);
+      } else {
+        f->AoSFunctor(p, *iter2, false);
+        f->AoSFunctor(*iter2, p, false);
+      }
+    }
+  }
+
+  // 2. haloParticleBuffer with owned, close particles in container
+  for (auto &&p : haloParticleBuffer) {
+    auto pos = p.getR();
+    auto min = autopas::utils::ArrayMath::subScalar(pos, containerPtr->getCutoff());
+    auto max = autopas::utils::ArrayMath::addScalar(pos, containerPtr->getCutoff());
+    for (auto iter2 = containerPtr->getRegionIterator(min, max, IteratorBehavior::owned); iter2.isValid(); ++iter2) {
+      if (newton3) {
+        f->AoSFunctor(p, *iter2, true);
+      } else {
+        // Here, we do not need to interact p with *iter2, because p is a halo particle and an AoSFunctor call with an
+        // halo particle as first argument has no effect if newton3 == false.
+        f->AoSFunctor(*iter2, p, false);
+      }
+    }
+  }
+
+  // 3. particleBuffer with itself
+  for (size_t i = 0; i < particleBuffer.size(); ++i) {
+    auto &&p1 = particleBuffer[i];
+    for (size_t j = i + 1; j < particleBuffer.size(); ++j) {
+      if (i == j) {
+        continue;
+      }
+      auto &&p2 = particleBuffer[j];
+      if (newton3) {
+        f->AoSFunctor(p1, p2, true);
+      } else {
+        f->AoSFunctor(p1, p2, false);
+        f->AoSFunctor(p2, p1, false);
+      }
+    }
+  }
+
+  // 4. particleBuffer with haloParticleBuffer
+  for (size_t i = 0; i < particleBuffer.size(); ++i) {
+    auto &&p1 = particleBuffer[i];
+    for (size_t j = 0; j < haloParticleBuffer.size(); ++j) {
+      auto &&p2 = haloParticleBuffer[j];
+      if (newton3) {
+        f->AoSFunctor(p1, p2, true);
+      } else {
+        // Here, we do not need to interact p2 with p1, because p2 is a halo particle and an AoSFunctor call with an
+        // halo particle as first argument has no effect if newton3 == false.
+        f->AoSFunctor(p1, p2, false);
+      }
+    }
+  }
+
+  // Note: haloParticleBuffer with itself is NOT needed, as interactions between halo particles are unneeded!
+}
+
 template <class Particle>
 template <class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, bool inTuningPhase>
-void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool doListRebuild) {
+void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool doListRebuild,
+                                                        std::vector<Particle> &particleBuffer,
+                                                        std::vector<Particle> &haloParticleBuffer) {
   auto containerPtr = getContainer();
   AutoPasLog(debug, "Iterating with configuration: {} tuning: {}",
              _tuningStrategy->getCurrentConfiguration().toString(), inTuningPhase ? "true" : "false");
@@ -416,6 +557,8 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
   }
   timerIteratePairwise.start();
   containerPtr->iteratePairwise(traversal.get());
+
+  doRemainderTraversal<useNewton3>(f, containerPtr, particleBuffer, haloParticleBuffer);
   timerIteratePairwise.stop();
   f->endTraversal(useNewton3);
 
@@ -435,7 +578,7 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
   // if tuning execute with time measurements
   if (inTuningPhase) {
     if (f->isRelevantForTuning()) {
-      addTimeMeasurement(timerTotal.getTotalTime());
+      addTimeMeasurement(timerTotal.getTotalTime(), doListRebuild);
     } else {
       AutoPasLog(trace, "Skipping adding of time measurement because functor is not marked relevant.");
     }
@@ -448,7 +591,7 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
   bool stillTuning = true;
 
   // need more samples; keep current config
-  if (_samples.size() < _maxSamples) {
+  if (getCurrentNumSamples() < _maxSamples) {
     return stillTuning;
   }
   utils::Timer tuningTimer;
@@ -505,7 +648,8 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
   // samples should only be cleared if we are still tuning, see `if (_samples.size() < _maxSamples)` from before.
   if (stillTuning) {
     // samples are no longer needed. Delete them here so willRebuild() works as expected.
-    _samples.clear();
+    _samplesNotRebuildingNeighborLists.clear();
+    _samplesRebuildingNeighborLists.clear();
   }
   tuningTimer.stop();
   // when a tuning result is found log it
@@ -549,17 +693,21 @@ const Configuration &AutoTuner<Particle>::getCurrentConfig() const {
 }
 
 template <class Particle>
-void AutoTuner<Particle>::addTimeMeasurement(long time) {
+void AutoTuner<Particle>::addTimeMeasurement(long time, bool neighborListRebuilt) {
   const auto &currentConfig = _tuningStrategy->getCurrentConfiguration();
-
-  if (_samples.size() < _maxSamples) {
+  if (getCurrentNumSamples() < _maxSamples) {
     AutoPasLog(trace, "Adding sample.");
-    _samples.push_back(time);
+    if (neighborListRebuilt) {
+      _samplesRebuildingNeighborLists.push_back(time);
+    } else {
+      _samplesNotRebuildingNeighborLists.push_back(time);
+    }
     // if this was the last sample:
-    if (_samples.size() == _maxSamples) {
+    if (getCurrentNumSamples() == _maxSamples) {
       auto &evidenceCurrentConfig = _evidence[currentConfig];
 
-      const auto reducedValue = OptimumSelector::optimumValue(_samples, _selectorStrategy);
+      const long reducedValue = estimateRuntimeFromSamples();
+
       evidenceCurrentConfig.emplace_back(_iteration, reducedValue);
 
       // smooth evidence to remove high outliers. If smoothing results in a higher value use the original value.
@@ -576,11 +724,15 @@ void AutoTuner<Particle>::addTimeMeasurement(long time) {
         // print config
         ss << currentConfig.toString() << " : ";
         // print all timings
-        ss << utils::ArrayUtils::to_string(_samples, " ", {"[ ", " ]"});
+        ss << utils::ArrayUtils::to_string(_samplesRebuildingNeighborLists, " ",
+                                           {"With rebuilding neighbor lists [ ", " ]"});
+        ss << utils::ArrayUtils::to_string(_samplesNotRebuildingNeighborLists, " ",
+                                           {"Without rebuilding neighbor lists [ ", " ]"});
         ss << " Smoothed value: " << smoothedValue;
         AutoPasLog(debug, "Collected times for  {}", ss.str());
       }
-      _tuningDataLogger.logTuningData(currentConfig, _samples, _iteration, reducedValue, smoothedValue);
+      _tuningDataLogger.logTuningData(currentConfig, _samplesRebuildingNeighborLists,
+                                      _samplesNotRebuildingNeighborLists, _iteration, reducedValue, smoothedValue);
     }
   }
 }

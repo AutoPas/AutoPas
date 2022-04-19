@@ -36,8 +36,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     }
     config.selectorStrategy.value = *parsedOptions.begin();
   }
-  if (node[config.periodic.name]) {
-    config.periodic.value = node[config.periodic.name].as<bool>();
+  if (node[config.boundaryOption.name]) {
+    auto tmpNode = node[config.boundaryOption.name];
+    config.boundaryOption.value = {options::BoundaryTypeOption::parseOptionExact(tmpNode[0].as<std::string>()),
+                                   options::BoundaryTypeOption::parseOptionExact(tmpNode[1].as<std::string>()),
+                                   options::BoundaryTypeOption::parseOptionExact(tmpNode[2].as<std::string>())};
   }
   if (node[config.cutoff.name]) {
     config.cutoff.value = node[config.cutoff.name].as<double>();
@@ -195,12 +198,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
   }
   if (node[config.checkpointfile.name]) {
     config.checkpointfile.value = node[config.checkpointfile.name].as<std::string>();
-  }
-  if (node[config.checkpointScenarioName.name]) {
-    config.checkpointScenarioName.value = node[config.checkpointScenarioName.name].as<std::string>();
-  }
-  if (node[config.checkpointIteration.name]) {
-    config.checkpointIteration.value = node[config.checkpointIteration.name].as<size_t>();
   }
   if (node[config.logFileName.name]) {
     config.logFileName.value = node[config.logFileName.name].as<std::string>();

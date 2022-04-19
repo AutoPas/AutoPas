@@ -425,7 +425,7 @@ inline int AutoPas_MPI_Isend(const void *buf, int count, AutoPas_MPI_Datatype da
  * @param source: Source rank (integer).
  * @param tag: Tag value (integer).
  * @param comm: Communicator (handle).
- * @param status: The status of the probed reqeust.
+ * @param status: The status of the probed request.
  * @return MPMI error value
  */
 inline int AutoPas_MPI_Probe(int source, int tag, AutoPas_MPI_Comm comm, AutoPas_MPI_Status *status);
@@ -465,7 +465,7 @@ inline int AutoPas_MPI_Allgather(void *buffer_send, int count_send, AutoPas_MPI_
                                  AutoPas_MPI_Comm comm);
 
 /**
- * Wrapper for MPI_Request_free
+ * Wrapper for MPI_Comm_split
  * @param old_communicator: old communicator (handle)
  * @param color: determines which ranks ar in the same bucket
  * @param key: determines rank order in new communicator
@@ -546,6 +546,44 @@ inline int AutoPas_MPI_Wait(AutoPas_MPI_Request *request, AutoPas_MPI_Status *st
 }
 
 inline int AutoPas_MPI_Request_free(AutoPas_MPI_Request *request) { return MPI_Request_free(request); }
+
+inline int AutoPas_MPI_Cart_create(AutoPas_MPI_Comm comm, int nDims, const int *dims, const int *periods, int reorder,
+                                   AutoPas_MPI_Comm *comm_cart) {
+  return MPI_Cart_create(comm, nDims, dims, periods, reorder, comm_cart);
+}
+
+inline int AutoPas_MPI_Cart_get(AutoPas_MPI_Comm comm, int maxdims, int dims[], int periods[], int coords[]) {
+  return MPI_Cart_get(comm, maxdims, dims, periods, coords);
+}
+
+inline int AutoPas_MPI_Isend(const void *buf, int count, AutoPas_MPI_Datatype datatype, int dest, int tag,
+                             AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request) {
+  return MPI_Isend(buf, count, datatype, dest, tag, comm, request);
+}
+
+inline int AutoPas_MPI_Probe(int source, int tag, AutoPas_MPI_Comm comm, AutoPas_MPI_Status *status) {
+  return MPI_Probe(source, tag, comm, status);
+}
+
+inline int AutoPas_MPI_Get_count(const AutoPas_MPI_Status *status, AutoPas_MPI_Datatype datatype, int *count) {
+  return MPI_Get_count(status, datatype, count);
+}
+
+inline int AutoPas_MPI_Waitall(int count, AutoPas_MPI_Request array_of_requests[],
+                               AutoPas_MPI_Status *array_of_statuses) {
+  return MPI_Waitall(count, array_of_requests, array_of_statuses);
+}
+
+inline int AutoPas_MPI_Allgather(void *buffer_send, int count_send, AutoPas_MPI_Datatype datatype_send,
+                                 void *buffer_recv, int count_recv, AutoPas_MPI_Datatype datatype_recv,
+                                 AutoPas_MPI_Comm comm) {
+  return MPI_Allgather(buffer_send, count_send, datatype_send, buffer_recv, count_recv, datatype_recv, comm);
+}
+
+inline int AutoPas_MPI_Comm_split(AutoPas_MPI_Comm old_communicator, int color, int key,
+                                  AutoPas_MPI_Comm *new_communicator) {
+  return MPI_Comm_split(old_communicator, color, key, new_communicator);
+}
 
 #else
 
@@ -672,6 +710,21 @@ inline int AutoPas_MPI_Request_free(AutoPas_MPI_Request *request) {
     *request = REQUEST_NULL;
     return AUTOPAS_MPI_SUCCESS;
   }
+}
+
+inline int AutoPas_MPI_Allgather(void *buffer_send, int count_send, AutoPas_MPI_Datatype datatype_send,
+                                 void *buffer_recv, int count_recv, AutoPas_MPI_Datatype datatype_recv,
+                                 AutoPas_MPI_Comm comm) {
+  for (int i = 0; i < (count_recv / count_send); i++)
+    memcpy(static_cast<char *>(buffer_recv) + (i * count_send * sizeof(datatype_send)), buffer_send,
+           count_send * sizeof(datatype_send));
+  return AUTOPAS_MPI_SUCCESS;
+}
+
+inline int AutoPas_MPI_Comm_split(AutoPas_MPI_Comm old_communicator, int color, int key,
+                                  AutoPas_MPI_Comm *new_communicator) {
+  new_communicator = &old_communicator;
+  return AUTOPAS_MPI_SUCCESS;
 }
 
 inline int AutoPas_MPI_Cart_create(AutoPas_MPI_Comm comm, int nDims, const int *dims, const int *periods, int reorder,
