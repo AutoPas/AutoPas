@@ -82,7 +82,7 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   EXPECT_EQ(0, autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::halo));
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     TestSimpleReflections, ReflectiveBoundaryConditionTest,
     testing::Values(/*position*/ /*velocity*/ /*is reflected*/
                     std::make_tuple(std::array<double, 3>{0.05, 2.50, 2.50}, std::array<double, 3>{1, 1, -1},
