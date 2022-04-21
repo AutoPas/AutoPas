@@ -156,9 +156,8 @@ void Simulation::finalize() {
 }
 
 void Simulation::run() {
-  _homogeneity = autopas::utils::calculateHomogeneityAndMaxDensity<autopas::AutoPas<ParticleType> *>(
-                     reinterpret_cast<autopas::AutoPas<ParticleType> *const>(&_autoPasContainer),
-                     _domainDecomposition.getGlobalBoxMin(), _domainDecomposition.getGlobalBoxMax())
+  _homogeneity = autopas::utils::calculateHomogeneityAndMaxDensity(
+                     *_autoPasContainer, _domainDecomposition.getGlobalBoxMin(), _domainDecomposition.getGlobalBoxMax())
                      .first;
   _timers.simulate.start();
   while (needsMoreIterations()) {

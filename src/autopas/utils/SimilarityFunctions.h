@@ -26,7 +26,7 @@ template <class Container>
 std::pair<double, double> calculateHomogeneityAndMaxDensity(const Container &container,
                                                             const std::array<double, 3> startCorner,
                                                             const std::array<double, 3> endCorner) {
-  unsigned int numberOfParticles = static_cast<unsigned int>(container->getNumberOfParticles());
+  unsigned int numberOfParticles = static_cast<unsigned int>(container.getNumberOfParticles());
   autopas::AutoPas_MPI_Allreduce(&numberOfParticles, &numberOfParticles, 1, AUTOPAS_MPI_UNSIGNED_INT, AUTOPAS_MPI_SUM,
                                  AUTOPAS_MPI_COMM_WORLD);
   // approximately the resolution we want to get.
@@ -57,7 +57,7 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const Container &con
   std::vector<double> allVolumes(numberOfCells, 0);
 
   // add particles accordingly to their cell to get the amount of particles in each cell
-  for (auto particleItr = container->begin(autopas::IteratorBehavior::owned); particleItr.isValid(); ++particleItr) {
+  for (auto particleItr = container.begin(autopas::IteratorBehavior::owned); particleItr.isValid(); ++particleItr) {
     const std::array<double, 3> particleLocation = particleItr->getR();
     std::array<size_t, 3> index = {};
     for (size_t i = 0; i < particleLocation.size(); i++) {

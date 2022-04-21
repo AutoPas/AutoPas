@@ -367,7 +367,7 @@ bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild
     _timerCalculateHomogeneity.start();
     const auto &container = getContainer();
     const auto [homogeneity, maxDensity] =
-        autopas::utils::calculateHomogeneityAndMaxDensity(container, container->getBoxMin(), container->getBoxMax());
+        autopas::utils::calculateHomogeneityAndMaxDensity(*container, container->getBoxMin(), container->getBoxMax());
     _homogeneitiesOfLastTenIterations.push_back(homogeneity);
     _maxDensitiesOfLastTenIterations.push_back(maxDensity);
     _timerCalculateHomogeneity.stop();
