@@ -640,14 +640,14 @@ void MDFlexParser::CLIParser::inputFilesPresent(int argc, char **argv, MDFlexCon
   // suppress error messages since we only want to look if the yaml option is there
   auto opterrBefore = opterr;
   opterr = 0;
-  static struct option longOptions[] = {config.checkpointfile.toGetoptOption(),
-                                        config.yamlFilename.toGetoptOption(),
-                                        {nullptr, 0, nullptr, 0}};  // needed to signal the end of the array
+  std::vector<struct option> longOptions = {config.checkpointfile.toGetoptOption(),
+                                            config.yamlFilename.toGetoptOption(),
+                                            {nullptr, 0, nullptr, 0}};  // needed to signal the end of the array
   optind = 1;
 
   // search all cli parameters for input file options
   for (int cliOption = 0, cliOptionIndex = 0;
-       (cliOption = getopt_long(argc, argv, "", longOptions, &cliOptionIndex)) != -1;) {
+       (cliOption = getopt_long(argc, argv, "", longOptions.data(), &cliOptionIndex)) != -1;) {
     std::string strArg;
     switch (cliOption) {
       case decltype(config.checkpointfile)::getoptChar:
