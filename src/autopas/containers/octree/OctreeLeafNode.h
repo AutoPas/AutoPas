@@ -65,7 +65,7 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
     splitLeafDimensions = utils::ArrayMath::mulScalar(splitLeafDimensions, 0.5);
     bool anyNewDimSmallerThanMinSize = false;
     for (auto d = 0; d < 3; ++d) {
-      auto cellSizeFactor = 1.0;
+      // auto cellSizeFactor = 1.0;
       // @todo The condition below should actually be
       //   splitLeafDimensions[d] < (this->_cellSizeFactor * this->_interactionLength)
       //   But with this condition, the TraversalComparison test fails for cell size factor 0.5. Find out why the octree
