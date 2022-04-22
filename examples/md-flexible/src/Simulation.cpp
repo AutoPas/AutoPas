@@ -133,6 +133,8 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
   }
 
   _configuration.flushParticles();
+  std::cout << "Total number of particles at the initialization: "
+            << _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned) << "\n";
 
   if (_configuration.useThermostat.value and _configuration.deltaT.value != 0) {
     if (_configuration.addBrownianMotion.value) {
@@ -276,7 +278,7 @@ void Simulation::printProgress(size_t iterationProgress, size_t maxIterations, b
   std::cout << progressbar.str() << info.str() << std::flush;
 }
 
-std::string Simulation::timerToString(const std::string &name, long timeNS, size_t numberWidth, long maxTime) {
+std::string Simulation::timerToString(const std::string &name, long timeNS, int numberWidth, long maxTime) {
   // only print timers that were actually used
   if (timeNS == 0) {
     return "";
@@ -287,7 +289,7 @@ std::string Simulation::timerToString(const std::string &name, long timeNS, size
      << timeNS
      << " ns ("
      // min width of the representation of seconds is numberWidth - 9 (from conversion) + 4 (for dot and digits after)
-     << std::setw(numberWidth - 5ul) << ((double)timeNS * 1e-9) << "s)";
+     << std::setw(numberWidth - 5) << ((double)timeNS * 1e-9) << "s)";
   if (maxTime != 0) {
     ss << " =" << std::setw(7) << std::right << ((double)timeNS / (double)maxTime * 100) << "%";
   }
@@ -402,7 +404,7 @@ void Simulation::logSimulationState() {
     std::cout << "\n\n"
               << "Total number of particles at the end of Simulation: " << totalNumberOfParticles << "\n"
               << "Owned: " << ownedParticles << "\n"
-              << "Halo: " << haloParticles << "\n"
+              << "Halo : " << haloParticles << "\n"
               << "Standard Deviation of Homogeneity: " << standardDeviationOfHomogeneity << std::endl;
   }
 }
@@ -450,16 +452,17 @@ void Simulation::logMeasurements() {
                                total);
 
     const long wallClockTime = _timers.total.getTotalTime();
-    std::cout << timerToString("Total wall-clock time          ", wallClockTime, std::to_string(wallClockTime).length(),
-                               total);
+    std::cout << timerToString("Total wall-clock time             ", wallClockTime,
+                               std::to_string(wallClockTime).length(), total);
     std::cout << std::endl;
 
-    std::cout << "Tuning iterations               : " << _numTuningIterations << " / " << _iteration << " = "
+    std::cout << "Tuning iterations                  : " << _numTuningIterations << " / " << _iteration << " = "
               << ((double)_numTuningIterations / _iteration * 100) << "%" << std::endl;
 
-    auto mfups = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned) * _iteration * 1e-6 /
-                 (forceUpdateTotal * 1e-9);  // 1e-9 for ns to s, 1e-6 for M in MFUP
-    std::cout << "MFUPs/sec                       : " << mfups << std::endl;
+    auto mfups =
+        static_cast<double>(_autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned) * _iteration) *
+        1e-6 / (static_cast<double>(forceUpdateTotal) * 1e-9);  // 1e-9 for ns to s, 1e-6 for M in MFUP
+    std::cout << "MFUPs/sec                          : " << mfups << std::endl;
 
     if (_configuration.dontMeasureFlops.value) {
       autopas::FlopCounterFunctor<ParticleType> flopCounterFunctor(_autoPasContainer->getCutoff());
@@ -490,9 +493,9 @@ void Simulation::logMeasurements() {
                  decltype(flopCounterFunctor)::numFlopsPerDistanceCalculation *
                  floor(_iteration / _configuration.verletRebuildFrequency.value);
 
-      std::cout << "GFLOPs                          : " << flops * 1e-9 << std::endl;
-      std::cout << "GFLOPs/sec                      : " << flops * 1e-9 / (simulate * 1e-9) << std::endl;
-      std::cout << "Hit rate                        : " << flopCounterFunctor.getHitRate() << std::endl;
+      std::cout << "GFLOPs                             : " << flops * 1e-9 << std::endl;
+      std::cout << "GFLOPs/sec                         : " << flops * 1e-9 / (simulate * 1e-9) << std::endl;
+      std::cout << "Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl;
     }
   }
 }

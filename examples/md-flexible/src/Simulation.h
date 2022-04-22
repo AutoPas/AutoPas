@@ -204,11 +204,11 @@ class Simulation {
    * Turns the timers into a human readable string.
    * @param name: The timer's name.
    * @param timeNS: The time in nano seconds.
-   * @param numberWidth: The precision of the printed number.
+   * @param numberWidth: The minimal field width of the printed number.
    * @param maxTime: The simulation's total execution time.
    * @return All information of the timer in a human readable string.
    */
-  std::string timerToString(const std::string &name, long timeNS, size_t numberWidth = 0ul, long maxTime = 0ul);
+  std::string timerToString(const std::string &name, long timeNS, int numberWidth = 0, long maxTime = 0ul);
 
   /**
    * Calculate the homogeneity of the scenario by using the standard deviation.
