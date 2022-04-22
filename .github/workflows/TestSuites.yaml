@@ -61,7 +61,7 @@ jobs:
       matrix:
         part: [1, 2]
         config: [
-            #    0              1       2       3       4           5       6   7
+            #    0              1       2       3                   4        5       6     7
             # container      , CC   , CXX    , builder          , mode   , OpenMP , ASan, TSan
         [autopas-build-clang , clang, clang++, Ninja            , Debug  , ON     , ON  , OFF ],
         [autopas-build-clang , clang, clang++, Ninja            , Release, OFF    , ON  , OFF ],
