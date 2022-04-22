@@ -113,7 +113,7 @@ class AutoTuner {
   }
 
   /**
-   * @copydoc AutoPas::forceRetune()
+   * @copydoc autopas::AutoPas::forceRetune()
    */
   void forceRetune();
 

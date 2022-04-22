@@ -66,27 +66,15 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor),
         _loadEstimator(loadEstimator) {}
 
-  /**
-   * @copydoc ParticleContainerInterface::getContainerType()
-   */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::linkedCells; }
 
-  /**
-   * @copydoc ParticleContainerInterface::getParticleCellTypeEnum()
-   */
   [[nodiscard]] CellType getParticleCellTypeEnum() override { return CellType::FullParticleCell; }
 
-  /**
-   * @copydoc ParticleContainerInterface::addParticleImpl()
-   */
   void addParticleImpl(const ParticleType &p) override {
     ParticleCell &cell = _cellBlock.getContainingCell(p.getR());
     cell.addParticle(p);
   }
 
-  /**
-   * @copydoc ParticleContainerInterface::addHaloParticleImpl()
-   */
   void addHaloParticleImpl(const ParticleType &haloParticle) override {
     ParticleType pCopy = haloParticle;
     pCopy.setOwnershipState(OwnershipState::halo);
@@ -94,9 +82,6 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     cell.addParticle(pCopy);
   }
 
-  /**
-   * @copydoc ParticleContainerInterface::updateHaloParticle()
-   */
   bool updateHaloParticle(const ParticleType &haloParticle) override {
     ParticleType pCopy = haloParticle;
     pCopy.setOwnershipState(OwnershipState::halo);
@@ -217,9 +202,6 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     return invalidParticles;
   }
 
-  /**
-   * @copydoc ParticleContainerInterface::getTraversalSelectorInfo()
-   */
   [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
     return TraversalSelectorInfo(this->getCellBlock().getCellsPerDimensionWithHalo(), this->getInteractionLength(),
                                  this->getCellBlock().getCellLength(), 0);

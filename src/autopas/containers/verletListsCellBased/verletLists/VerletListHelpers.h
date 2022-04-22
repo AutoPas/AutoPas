@@ -161,7 +161,7 @@ class VerletListHelpers {
     }
 
     /**
-     * @copydoc Functor::getNeededAttr()
+     * @copydoc autopas::Functor::getNeededAttr()
      */
     constexpr static std::array<typename Particle::AttributeNames, 4> getNeededAttr() {
       return std::array<typename Particle::AttributeNames, 4>{
@@ -170,7 +170,7 @@ class VerletListHelpers {
     }
 
     /**
-     * @copydoc Functor::getComputedAttr()
+     * @copydoc autopas::Functor::getComputedAttr()
      */
     constexpr static std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
       return std::array<typename Particle::AttributeNames, 0>{/*Nothing*/};

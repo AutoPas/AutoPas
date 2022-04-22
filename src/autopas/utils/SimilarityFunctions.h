@@ -20,6 +20,8 @@ namespace autopas::utils {
  *
  * @tparam Particle
  * @param container container of current simulation
+ * @param startCorner lower left front corner of the box where the homogeneity shall be calculated.
+ * @param endCorner upper right back corner of the box where the homogeneity shall be calculated.
  * @return {homogeneity, maxDensity}
  */
 template <class Container>
