@@ -99,10 +99,18 @@ jobs:
       - name: Run tests ${{ matrix.part }}/2
         run: |
           # derive whether or not to run with MPI.
-          # Create a wrapper function that either invokes MPI with a fix number of ranks or only forwards everything.
-          [ "${{ matrix.config[1] }}" = 'mpicc' ] && MPIWrap() { mpirun -n 3 --oversubscribe $@ ; } || MPIWrap() { $@ ; }
-          cd build
-          # Start with test 0 or 1 and do every second test
-          MPIWrap ctest --output-on-failure -I ${{ matrix.part }},,2 -j 2
-          cd examples
-          MPIWrap ctest -C checkExamples --output-on-failure -I ${{ matrix.part }},,2 -j 2
+          if [ "${{ matrix.config[1] }}" = 'mpicc' ]
+          then
+            cd build
+            # Start with test 0 or 1 and do every second test
+            # only run MPI tests. Apparently mpi in the container doesn't need `--oversubscribe`
+            mpirun -n 3 -prepend-rank ctest --output-on-failure -I ${{ matrix.part }},,2 -R MPIParallelAutoPasTests
+            cd examples
+            mpirun -n 3 -prepend-rank ctest -C checkExamples --output-on-failure -I ${{ matrix.part }},,2
+          else
+            cd build
+            # Start with test 0 or 1 and do every second test
+            ctest --output-on-failure -I ${{ matrix.part }},,2 -j 2
+            cd examples
+            ctest -C checkExamples --output-on-failure -I ${{ matrix.part }},,2 -j 2
+          fi
