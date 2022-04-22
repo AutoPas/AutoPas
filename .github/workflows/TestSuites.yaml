@@ -82,7 +82,7 @@ jobs:
       - name: Build everything
         run: |
           # derive whether or not to compile with MPI options ON.
-          [[ ${{ matrix.config[1] }} == 'mpicc' ]] && UseMPI=ON || UseMPI=OFF
+          [ "${{ matrix.config[1] }}" = 'mpicc' ] && UseMPI=ON || UseMPI=OFF
           mkdir build && cd build
           CXXFLAGS=-Wno-pass-failed CC=${{ matrix.config[1] }} CXX=${{ matrix.config[2] }} cmake \
             -G ${{ matrix.config[3] }} \
@@ -100,7 +100,7 @@ jobs:
         run: |
           # derive whether or not to run with MPI.
           # Create a wrapper function that either invokes MPI with a fix number of ranks or only forwards everything.
-          [[ ${{ matrix.config[1] }} == 'mpicc' ]] && MPIWrap(){mpirun -n 3 --oversubscribe $@} || MPIWrap(){$@}
+          [ "${{ matrix.config[1] }}" = 'mpicc' ] && MPIWrap() { mpirun -n 3 --oversubscribe $@ ; } || MPIWrap() { $@ ; }
           cd build
           # Start with test 0 or 1 and do every second test
           MPIWrap ctest --output-on-failure -I ${{ matrix.part }},,2 -j 2
