@@ -39,11 +39,6 @@ jobs:
           # arg2 path to root of AutoPas directory.
           args: doc_doxygen${{ matrix.config }} .
 
-      - name: Print warnings
-        # Print all warnings collected previously (except those from README). Exit code depends on number of warnings.
-        run: cat warnings.out | grep -v README && exit $(wc -l warnings.out | cut -d ' ' -f1)
-        working-directory: ${{ env.BUILD_DIR }}
-
       - name: Deploy documentation (only on master)
         uses: peaceiris/actions-gh-pages@v3.7.2
         if: github.ref == 'refs/heads/master'
