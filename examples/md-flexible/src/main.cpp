@@ -72,9 +72,9 @@ int main(int argc, char **argv) {
 
   // switch between particle types
   if (configuration.includeRotational.value) {
-    mainHelper<MulticenteredMoleculeLJ>(configuration, &argc, &argv);
+    mainHelper<MulticenteredParticleType>(configuration, &argc, &argv);
   } else {
-    mainHelper<autopas::MoleculeLJ>(configuration, &argc, &argv);
+    mainHelper<ParticleType>(configuration, &argc, &argv);
   }
 
   autopas::AutoPas_MPI_Finalize();

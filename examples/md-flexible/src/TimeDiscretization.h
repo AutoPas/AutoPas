@@ -70,7 +70,7 @@ void calculateQuaternions(autopas::AutoPas<ParticleClass> &autoPasContainer,
  * @param deltaT
  * @param globalForce
  */
-template<> void calculateQuaternions<MulticenteredMoleculeLJ>(autopas::AutoPas<MulticenteredMoleculeLJ> &autoPasContainer,
+template<> void calculateQuaternions<autopas::MulticenteredMoleculeLJ>(autopas::AutoPas<autopas::MulticenteredMoleculeLJ> &autoPasContainer,
                                                    const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
                                                    const std::array<double, 3> &globalForce) {
   using autopas::utils::ArrayMath::add;
@@ -183,7 +183,7 @@ void calculateAngularVelocities(autopas::AutoPas<ParticleClass> &autoPasContaine
  * @param deltaT
  * @param globalForce
  */
-template<> void calculateAngularVelocities<MulticenteredMoleculeLJ>(autopas::AutoPas<MulticenteredMoleculeLJ> &autoPasContainer,
+template<> void calculateAngularVelocities<autopas::MulticenteredMoleculeLJ>(autopas::AutoPas<autopas::MulticenteredMoleculeLJ> &autoPasContainer,
                                                          const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
   using autopas::utils::ArrayMath::mulScalar;
   using autopas::utils::ArrayMath::div;

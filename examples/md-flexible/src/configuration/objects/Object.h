@@ -13,7 +13,7 @@
 #include "autopas/AutoPasDecl.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "src/TypeDefinitions.h"
-#include "src/Particles/MulticenteredMoleculeLJ.h"
+#include "autopas/molecularDynamics/MulticenteredMoleculeLJ.h"
 
 /**
  * Base class for describing objects made of particles.
