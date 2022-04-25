@@ -314,6 +314,10 @@ class LJMulticenterFunctor
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionY;
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionZ;
 
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceX; // we require arrays for forces for sites to maintain SIMD in site-site calculations
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceY;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceZ;
+
     std::vector<size_t, autopas::AlignedAllocator<size_t>> siteTypes;
 
     const SoAFloatPrecision const_sigmaSquared = _sigmaSquared;
@@ -337,6 +341,10 @@ class LJMulticenterFunctor
     exactSitePositionY.reserve(siteCount);
     exactSitePositionZ.reserve(siteCount);
 
+    siteForceX.reserve((siteCount));
+    siteForceY.reserve((siteCount));
+    siteForceZ.reserve((siteCount));
+
     if constexpr (useMixing) {
       siteTypes.reserve(siteCount);
     }
@@ -355,10 +363,12 @@ class LJMulticenterFunctor
           exactSitePositionY[siteIndex + site] = rotatedSitePositions[site][1] + yptr[mol];
           exactSitePositionZ[siteIndex + site] = rotatedSitePositions[site][2] + zptr[mol];
           siteTypes[siteIndex + site] = siteTypesOfMol[site];
+          siteForceX[siteIndex + site] = 0.;
+          siteForceY[siteIndex + site] = 0.;
+          siteForceZ[siteIndex + site] = 0.;
         }
         siteIndex += _PPLibrary->getNumSites(typeptr[mol]);
       }
-
     } else {
       for (size_t mol = 0; mol < soa.getNumParticles(); mol++) {
         const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
@@ -367,6 +377,9 @@ class LJMulticenterFunctor
           exactSitePositionX[mol * const_unrotatedSitePositions.size() + site] = rotatedSitePositions[site][0] + xptr[mol];
           exactSitePositionY[mol * const_unrotatedSitePositions.size() + site] = rotatedSitePositions[site][1] + yptr[mol];
           exactSitePositionZ[mol * const_unrotatedSitePositions.size() + site] = rotatedSitePositions[site][2] + zptr[mol];
+          siteForceX[mol * const_unrotatedSitePositions.size() + site] = 0.;
+          siteForceY[mol * const_unrotatedSitePositions.size() + site] = 0.;
+          siteForceZ[mol * const_unrotatedSitePositions.size() + site] = 0.;
         }
       }
     }
@@ -382,14 +395,6 @@ class LJMulticenterFunctor
       const size_t noSitesInMolA = useMixing ? _PPLibrary->getNumSites(molA) : const_unrotatedSitePositions.size(); // Number of sites in molecule A
       const size_t noSitesB = (siteCountTotal-siteIndexA); // Number of sites in molecules that A interacts with
       const size_t siteIndexB = siteIndexA + noSitesInMolA;
-
-      // sums used for molA
-      SoAFloatPrecision forceSumX = 0.;
-      SoAFloatPrecision forceSumY = 0.;
-      SoAFloatPrecision forceSumZ = 0.;
-      SoAFloatPrecision torqueSumX = 0.;
-      SoAFloatPrecision torqueSumY = 0.;
-      SoAFloatPrecision torqueSumZ = 0.;
 
       // create mask over every mol 'above' molA
       std::vector<bool, autopas::AlignedAllocator<bool>> molMask;
@@ -416,11 +421,11 @@ class LJMulticenterFunctor
       // generate mask for each site in the mols 'above' molA from molecular mask
       // todo investigate if a SIMD implementation is possible
       std::vector<bool, autopas::AlignedAllocator<bool>> siteMask;
-      molMask.reserve(noSitesB);
+      siteMask.reserve(noSitesB);
 
       for (size_t molB = molA + 1; molB < soa.getNumParticles(); ++molB) {
         for (size_t siteB = 0; siteB < _PPLibrary->getNumSites(typeptr[molB]); ++siteB) {
-          molMask.template emplace_back(molMask[molB-molA]);
+          siteMask.template emplace_back(molMask[molB-molA]);
         }
       }
 
@@ -448,17 +453,26 @@ class LJMulticenterFunctor
             }
           }
         }
+        // sums used for siteA
+        SoAFloatPrecision forceSumX = 0.;
+        SoAFloatPrecision forceSumY = 0.;
+        SoAFloatPrecision forceSumZ = 0.;
+        SoAFloatPrecision torqueSumX = 0.;
+        SoAFloatPrecision torqueSumY = 0.;
+        SoAFloatPrecision torqueSumZ = 0.;
 
 #pragma omp simd reduction (+ : forceSumX, forceSumY, forceSumZ, torqueSumX, torqueSumY, torqueSumZ, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
         for (size_t siteB = 0; siteB < noSitesB; ++siteB) {
+          const size_t globalSiteBIndex = siteB + siteIndexB;
+
           const SoAFloatPrecision sigmaSquared = useMixing ? sigmaSquareds[siteB] : const_sigmaSquared;
           const SoAFloatPrecision epsilon24 = useMixing ? epsilon24s[siteB] : const_epsilon24;
           const SoAFloatPrecision shift6 = useMixing ? shift6s[siteB] : const_shift6;
 
           // todo change below code
-          const auto displacementX = exactSitePositionX[siteA];
-          const auto displacementY = yptr[molA] - yptr[molB] + rotatedSitePositionY[siteIndexA+siteA] - rotatedSitePositionY[siteIndexB+siteB];
-          const auto displacementZ = zptr[molA] - zptr[molB] + rotatedSitePositionZ[siteIndexA+siteA] - rotatedSitePositionZ[siteIndexB+siteB];
+          const auto displacementX = exactSitePositionX[siteA] - exactSitePositionX[globalSiteBIndex];
+          const auto displacementY = exactSitePositionY[siteA] - exactSitePositionY[globalSiteBIndex];
+          const auto displacementZ = exactSitePositionZ[siteA] - exactSitePositionZ[globalSiteBIndex];
 
           const auto distanceSquaredX = displacementX * displacementX;
           const auto distanceSquaredY = displacementY * displacementY;
@@ -471,7 +485,7 @@ class LJMulticenterFunctor
           const auto lj6 = lj2 * lj2 * lj2;
           const auto lj12 = lj6 * lj6;
           const auto lj12m6 = lj12 - lj6;
-          const auto scalarMultiple = mask[siteB] ? const_epsilon24 * (lj12 + lj12m6) * invDistSquared : 0.;
+          const auto scalarMultiple = siteMask[siteB] ? const_epsilon24 * (lj12 + lj12m6) * invDistSquared : 0.;
 
           // calculate forces
           const auto forceX = scalarMultiple * displacementX;
@@ -483,46 +497,55 @@ class LJMulticenterFunctor
           forceSumZ += forceZ;
 
           // newton's third law
-          fxptr[molB] -= forceX;
-          fyptr[molB] -= forceY;
-          fzptr[molB] -= forceZ;
-
-          // calculate torques on molA
-          const auto torqueAx = rotatedSitePositionY[siteIndexA+siteA] * forceZ - rotatedSitePositionZ[siteIndexA+siteA] * forceY;
-          const auto torqueAy = rotatedSitePositionZ[siteIndexA+siteA] * forceX - rotatedSitePositionX[siteIndexA+siteA] * forceZ;
-          const auto torqueAz = rotatedSitePositionX[siteIndexA+siteA] * forceY - rotatedSitePositionY[siteIndexA+siteA] * forceX;
-
-          torqueSumX += torqueAx;
-          torqueSumY += torqueAy;
-          torqueSumZ += torqueAz;
-
-          // N3L / calculate torques on molB
-          //const auto torqueBx = rotatedSitePositionZ[siteIndexB+siteB] * forceY - rotatedSitePositionY[siteIndexB+siteB] * forceZ;
-          //const auto torqueBy = rotatedSitePositionX[siteIndexB+siteB] * forceZ - rotatedSitePositionZ[siteIndexB+siteB] * forceX;
-          //const auto torqueBz = rotatedSitePositionY[siteIndexB+siteB] * forceX - rotatedSitePositionX[siteIndexB+siteB] * forceY;
-          const auto torqueBx = rotatedSitePositionY[siteIndexB+siteB] * forceZ - rotatedSitePositionZ[siteIndexB+siteB] * forceY;
-          const auto torqueBy = rotatedSitePositionZ[siteIndexB+siteB] * forceX - rotatedSitePositionX[siteIndexB+siteB] * forceZ;
-          const auto torqueBz = rotatedSitePositionX[siteIndexB+siteB] * forceY - rotatedSitePositionY[siteIndexB+siteB] * forceX;
-
-          txptr[molB] -= torqueBx;
-          typtr[molB] -= torqueBy;
-          tzptr[molB] -= torqueAz;
+          siteForceX[siteB] -= forceX;
+          siteForceY[siteB] -= forceY;
+          siteForceZ[siteB] -= forceZ;
 
           if (calculateGlobals) {
             // todo this
           }
         }
+        // sum forces on single site in mol A
+        siteForceX[siteA] += forceSumX;
+        siteForceY[siteA] += forceSumY;
+        siteForceZ[siteA] += forceSumZ;
       }
-      // add all forces + torques for molA
-      fxptr[molA] += forceSumX;
-      fyptr[molA] += forceSumY;
-      fzptr[molA] += forceSumZ;
-
-      txptr[molA] += torqueSumX;
-      typtr[molA] += torqueSumY;
-      tzptr[molA] += torqueSumZ;
 
     }
+
+    // reduce the forces on individual sites to forces & torques on whole molecules.
+    if constexpr (useMixing) {
+      size_t siteIndex = 0;
+      for (size_t mol = 0; mol < soa.getNumParticles(); ++mol) {
+        const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
+            {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, const_unrotatedSitePositions);
+        for (size_t site = 0; site < _PPLibrary->getNumSites(typeptr[mol]); ++site) {
+          fxptr[mol] += siteForceX[siteIndex];
+          fyptr[mol] += siteForceY[siteIndex];
+          fzptr[mol] += siteForceZ[siteIndex];
+          txptr[mol] += rotatedSitePositions[site][1] * siteForceZ[siteIndex] - rotatedSitePositions[site][2] * siteForceY[siteIndex];
+          typtr[mol] += rotatedSitePositions[site][2] * siteForceX[siteIndex] - rotatedSitePositions[site][0] * siteForceZ[siteIndex];
+          txptr[mol] += rotatedSitePositions[site][0] * siteForceY[siteIndex] - rotatedSitePositions[site][1] * siteForceX[siteIndex];
+          ++siteIndex;
+        }
+      }
+    } else {
+      size_t siteIndex = 0;
+      for (size_t mol = 0; mol < soa.getNumParticles(); mol++) {
+        const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
+            {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, const_unrotatedSitePositions);
+        for (size_t site = 0; site < const_unrotatedSitePositions.size(); ++site) {
+          fxptr[mol] += siteForceX[siteIndex];
+          fyptr[mol] += siteForceY[siteIndex];
+          fzptr[mol] += siteForceZ[siteIndex];
+          txptr[mol] += rotatedSitePositions[site][1] * siteForceZ[siteIndex] - rotatedSitePositions[site][2] * siteForceY[siteIndex];
+          typtr[mol] += rotatedSitePositions[site][2] * siteForceX[siteIndex] - rotatedSitePositions[site][0] * siteForceZ[siteIndex];
+          txptr[mol] += rotatedSitePositions[site][0] * siteForceY[siteIndex] - rotatedSitePositions[site][1] * siteForceX[siteIndex];
+          ++siteIndex;
+        }
+      }
+    }
+
     if (calculateGlobals) {
       // todo this
     }
