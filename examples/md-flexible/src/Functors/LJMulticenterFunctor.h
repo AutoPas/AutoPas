@@ -335,7 +335,6 @@ class LJMulticenterFunctor
     } else {
       siteCount = const_unrotatedSitePositions.size() * soa.getNumParticles();
     }
-    const size_t siteCountTotal = siteCount;
 
     exactSitePositionX.reserve(siteCount);
     exactSitePositionY.reserve(siteCount);
@@ -359,33 +358,35 @@ class LJMulticenterFunctor
         const auto siteTypesOfMol = _PPLibrary->getSiteTypes(typeptr[mol]);
 
         for (size_t site = 0; site < _PPLibrary->getNumSites(typeptr[mol]); ++site) {
-          exactSitePositionX[siteIndex + site] = rotatedSitePositions[site][0] + xptr[mol];
-          exactSitePositionY[siteIndex + site] = rotatedSitePositions[site][1] + yptr[mol];
-          exactSitePositionZ[siteIndex + site] = rotatedSitePositions[site][2] + zptr[mol];
-          siteTypes[siteIndex + site] = siteTypesOfMol[site];
-          siteForceX[siteIndex + site] = 0.;
-          siteForceY[siteIndex + site] = 0.;
-          siteForceZ[siteIndex + site] = 0.;
+          exactSitePositionX[siteIndex] = rotatedSitePositions[site][0] + xptr[mol];
+          exactSitePositionY[siteIndex] = rotatedSitePositions[site][1] + yptr[mol];
+          exactSitePositionZ[siteIndex] = rotatedSitePositions[site][2] + zptr[mol];
+          siteTypes[siteIndex] = siteTypesOfMol[site];
+          siteForceX[siteIndex] = 0.;
+          siteForceY[siteIndex] = 0.;
+          siteForceZ[siteIndex] = 0.;
+          ++siteIndex;
         }
-        siteIndex += _PPLibrary->getNumSites(typeptr[mol]);
       }
     } else {
+      size_t siteIndex = 0;
       for (size_t mol = 0; mol < soa.getNumParticles(); mol++) {
         const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
             {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, const_unrotatedSitePositions);
         for (size_t site = 0; site < const_unrotatedSitePositions.size(); ++site) {
-          exactSitePositionX[mol * const_unrotatedSitePositions.size() + site] = rotatedSitePositions[site][0] + xptr[mol];
-          exactSitePositionY[mol * const_unrotatedSitePositions.size() + site] = rotatedSitePositions[site][1] + yptr[mol];
-          exactSitePositionZ[mol * const_unrotatedSitePositions.size() + site] = rotatedSitePositions[site][2] + zptr[mol];
-          siteForceX[mol * const_unrotatedSitePositions.size() + site] = 0.;
-          siteForceY[mol * const_unrotatedSitePositions.size() + site] = 0.;
-          siteForceZ[mol * const_unrotatedSitePositions.size() + site] = 0.;
+          exactSitePositionX[siteIndex] = rotatedSitePositions[site][0] + xptr[mol];
+          exactSitePositionY[siteIndex] = rotatedSitePositions[site][1] + yptr[mol];
+          exactSitePositionZ[siteIndex] = rotatedSitePositions[site][2] + zptr[mol];
+          siteForceX[siteIndex] = 0.;
+          siteForceY[siteIndex] = 0.;
+          siteForceZ[siteIndex] = 0.;
+          ++siteIndex;
         }
       }
     }
 
     // main force calculation loop
-    size_t siteIndexA = 0;
+    size_t siteIndexMolA = 0; // index of first site in molA
     for (size_t molA = 0; molA < soa.getNumParticles(); ++molA) {
       const auto ownedStateA = ownedStatePtr[molA];
       if (ownedStateA == autopas::OwnershipState::dummy) {
@@ -393,8 +394,8 @@ class LJMulticenterFunctor
       }
 
       const size_t noSitesInMolA = useMixing ? _PPLibrary->getNumSites(molA) : const_unrotatedSitePositions.size(); // Number of sites in molecule A
-      const size_t noSitesB = (siteCountTotal-siteIndexA); // Number of sites in molecules that A interacts with
-      const size_t siteIndexB = siteIndexA + noSitesInMolA;
+      const size_t noSitesB = (siteCount-siteIndexMolA); // Number of sites in molecules that A interacts with
+      const size_t siteIndexMolB = siteIndexMolA + noSitesInMolA;
 
       // create mask over every mol 'above' molA
       std::vector<bool, autopas::AlignedAllocator<bool>> molMask;
@@ -435,17 +436,17 @@ class LJMulticenterFunctor
       SoAFloatPrecision sigmaSquared = const_sigmaSquared;
       SoAFloatPrecision epsilon24 = const_epsilon24;
 
-      for (size_t siteA = siteIndexA; siteA < siteIndexB; ++siteA) {
+      for (size_t siteA = siteIndexMolA; siteA < siteIndexMolB; ++siteA) {
         if (useMixing) {
           // preload sigmas, epsilons, and shifts
-          sigmaSquareds.reserve(siteCountTotal-siteIndexA);
-          epsilon24s.reserve(siteCountTotal-siteIndexA);
+          sigmaSquareds.reserve(noSitesB);
+          epsilon24s.reserve(noSitesB);
           if constexpr (applyShift) {
-            shift6s.reserve(siteCountTotal-siteIndexA);
+            shift6s.reserve(noSitesB);
           }
 
-          for (size_t siteB = 0; siteB < siteCountTotal-(siteIndexB); ++siteB) {
-            const auto mixingData = _PPLibrary->getMixingData(siteTypes[siteIndexA+siteA],siteTypes[siteIndexB+siteB]);
+          for (size_t siteB = 0; siteB < siteCount-(siteIndexMolB); ++siteB) {
+            const auto mixingData = _PPLibrary->getMixingData(siteTypes[siteIndexMolA+siteA],siteTypes[siteIndexMolB+siteB]);
             sigmaSquareds[siteB] = mixingData.sigmaSquare;
             epsilon24s[siteB] = mixingData.epsilon24;
             if (applyShift) {
@@ -463,7 +464,7 @@ class LJMulticenterFunctor
 
 #pragma omp simd reduction (+ : forceSumX, forceSumY, forceSumZ, torqueSumX, torqueSumY, torqueSumZ, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
         for (size_t siteB = 0; siteB < noSitesB; ++siteB) {
-          const size_t globalSiteBIndex = siteB + siteIndexB;
+          const size_t globalSiteBIndex = siteB + siteIndexMolB;
 
           const SoAFloatPrecision sigmaSquared = useMixing ? sigmaSquareds[siteB] : const_sigmaSquared;
           const SoAFloatPrecision epsilon24 = useMixing ? epsilon24s[siteB] : const_epsilon24;
