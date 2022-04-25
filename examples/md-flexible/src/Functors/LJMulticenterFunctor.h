@@ -172,9 +172,6 @@ class LJMulticenterFunctor
     if (particleA.isDummy() or particleB.isDummy()) {
       return;
     }
-    std::vector<std::array<double,3>> unrotatedSitePositionsA;
-    std::vector<std::array<double,3>> unrotatedSitePositionsB;
-
     // get site properties and positions
 
     // the following vectors contain mixed parameters in the order of a,b = 0,0; 0,1; ... ; 0,n; 1,0 ; ... ; n,m
@@ -182,26 +179,27 @@ class LJMulticenterFunctor
     std::vector<double> epsilon24;
     std::vector<double> shift6;
 
-    sigmaSquared.reserve(_PPLibrary->getNumSites(particleA.getTypeId())*_PPLibrary->getNumSites(particleB.getTypeId()));
-    epsilon24.reserve(_PPLibrary->getNumSites(particleA.getTypeId())*_PPLibrary->getNumSites(particleB.getTypeId()));
-    shift6.reserve(_PPLibrary->getNumSites(particleA.getTypeId())*_PPLibrary->getNumSites(particleB.getTypeId()));
+    const size_t numSitesA = useMixing ? _PPLibrary->getNumSites(particleA.getTypeId()) : _sitePositionsLJ.size();
+    const size_t numSitesB = useMixing ? _PPLibrary->getNumSites(particleB.getTypeId()) : _sitePositionsLJ.size();
+
+    sigmaSquared.reserve(numSitesA*numSitesB);
+    epsilon24.reserve(numSitesA*numSitesB);
+    shift6.reserve(numSitesA*numSitesB);
 
     if constexpr (useMixing) {
       const std::vector<size_t> siteIdsA = _PPLibrary->getSiteTypes(particleA.getTypeId());
       const std::vector<size_t> siteIdsB = _PPLibrary->getSiteTypes(particleB.getTypeId());
-      for (int i = 0; i < _PPLibrary->getNumSites(particleA.getTypeId()); ++i) {
-        for (int j = 0; j < _PPLibrary->getNumSites(particleB.getTypeId()); ++j) {
+      for (int i = 0; i < numSitesA; ++i) {
+        for (int j = 0; j < numSitesB; ++j) {
           sigmaSquared.emplace_back(_PPLibrary->mixingSigmaSquare(siteIdsA[i],siteIdsB[j]));
           epsilon24.emplace_back(_PPLibrary->mixing24Epsilon(siteIdsA[i],siteIdsB[j]));
           if constexpr (applyShift) {shift6.emplace_back(_PPLibrary->mixingShift6(siteIdsA[i],siteIdsB[j]));}
         }
       }
-      unrotatedSitePositionsA = _PPLibrary->getSitePositions(particleA.getTypeId());
-      unrotatedSitePositionsB = _PPLibrary->getSitePositions(particleB.getTypeId());
-    } else {
-      unrotatedSitePositionsA = _sitePositionsLJ;
-      unrotatedSitePositionsB = _sitePositionsLJ;
     }
+
+    const std::vector<std::array<double,3>> unrotatedSitePositionsA = useMixing ? _PPLibrary->getSitePositions(particleA.getTypeId()) : _sitePositionsLJ;
+    const std::vector<std::array<double,3>> unrotatedSitePositionsB = useMixing ? _PPLibrary->getSitePositions(particleB.getTypeId()) : _sitePositionsLJ;
 
     double lj12m6Sum = 0;
 
@@ -214,13 +212,6 @@ class LJMulticenterFunctor
     // calculate relative site positions (rotated correctly)
     const auto rotatedSitePositionsA = autopas::utils::quaternion::rotateVectorOfPositions(particleA.getQ(), unrotatedSitePositionsA);
     const auto rotatedSitePositionsB = autopas::utils::quaternion::rotateVectorOfPositions(particleB.getQ(), unrotatedSitePositionsB);
-
-    std::array<double,3> forceTotal{0.,0.,0.};
-    std::array<double,3> torqueTotal{0.};
-
-    // calculate number of sites for each molecule
-    const size_t numSitesA = rotatedSitePositionsA.size();
-    const size_t numSitesB = rotatedSitePositionsB.size();
 
     for (int m=0; m<numSitesA; m++) {
       for (int n=0; n<numSitesB; n++) {
@@ -248,30 +239,15 @@ class LJMulticenterFunctor
         if (newton3) {particleB.subTorque(autopas::utils::ArrayMath::cross(rotatedSitePositionsB[n],force));}
 
         if (calculateGlobals) {
-          forceTotal = autopas::utils::ArrayMath::add(forceTotal,force);
-          lj12m6Sum += lj12m6;
+          // todo
         }
       }
     }
 
     // calculate globals
     if (calculateGlobals) {
-      // todo handle this for mixed
-      const double newton3Multiplier = newton3 ? 0.5 : 1.0;
+      // todo sort this out - needs to work for mixing + factor differences for multi-centre case
 
-      const auto virial = autopas::utils::ArrayMath::mulScalar(autopas::utils::ArrayMath::mul(displacementCoM,forceTotal),newton3Multiplier);
-      const auto potentialEnergy = (_epsilon24 * lj12m6Sum + _shift6 * numSitesA * numSitesB) * newton3Multiplier;
-
-      const int threadNum = autopas::autopas_get_thread_num();
-
-      if (particleA.isOwned()) {
-        _aosThreadData[threadNum].potentialEnergySum += potentialEnergy;
-        _aosThreadData[threadNum].virialSum = autopas::utils::ArrayMath::add(_aosThreadData[threadNum].virialSum, virial);
-      }
-      if (newton3 and particleB.isOwned()) {
-        _aosThreadData[threadNum].potentialEnergySum += potentialEnergy;
-        _aosThreadData[threadNum].virialSum = autopas::utils::ArrayMath::add(_aosThreadData[threadNum].virialSum, virial);
-      }
     }
   }
 
