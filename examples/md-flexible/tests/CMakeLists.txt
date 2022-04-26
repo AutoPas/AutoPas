@@ -41,6 +41,11 @@ target_link_libraries(
     $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>
 )
 
+if (MD_FLEXIBLE_USE_MPI)
+    # use the same number of ranks as in AutoPas tests
+    set_property(TARGET mdFlexTests PROPERTY CROSSCOMPILING_EMULATOR '${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${AUTOPAS_TESTS_NUM_MPI_RANKS}')
+endif ()
+
 # this cmake module was only introduced in 3.10
 include(GoogleTest)
 # more robust, queries the compiled executable
