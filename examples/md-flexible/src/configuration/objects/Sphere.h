@@ -141,8 +141,8 @@ class Sphere : public Object {
    * Generates the particles based on the configuration of the sphere object provided in the yaml file.
    * @param particles The container where the generated particles will be stored.
    */
-  void generate(std::vector<MulticenteredMoleculeLJ> &particles) const override {
-    MulticenteredMoleculeLJ particle = getDummyParticle(particles.size());
+  void generate(std::vector<MulticenteredParticleType> &particles) const override {
+    MulticenteredParticleType particle = getDummyParticle(particles.size());
     iteratePositions([&](const auto &pos) {
       particle.setR(pos);
       particles.push_back(particle);

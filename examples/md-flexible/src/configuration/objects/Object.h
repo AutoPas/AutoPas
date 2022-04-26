@@ -37,15 +37,15 @@ class Object {
    * Generate the object in the given AutoPas container.
    * @param particles The container to which the new particles will be appended to.
    */
-  virtual void generate(std::vector<MulticenteredMoleculeLJ> &particles) const = 0;
+  virtual void generate(std::vector<MulticenteredParticleType> &particles) const = 0;
 
   /**
    * Create a particle that acts as blueprint for all particles to be created for the object.
    * @param particleId: Defines the id of the generated dummy particle.
    * @return a particle initialized with default values.
    */
-  [[nodiscard]] MulticenteredMoleculeLJ getDummyParticle(const size_t &particleId) const {
-    MulticenteredMoleculeLJ particle{};
+  [[nodiscard]] MulticenteredParticleType getDummyParticle(const size_t &particleId) const {
+    MulticenteredParticleType particle{};
     particle.setID(particleId);
     particle.setTypeId(_typeId);
     particle.setOwnershipState(autopas::OwnershipState::owned);
