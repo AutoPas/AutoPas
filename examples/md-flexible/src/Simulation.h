@@ -211,12 +211,6 @@ class Simulation {
   std::string timerToString(const std::string &name, long timeNS, int numberWidth = 0, long maxTime = 0ul);
 
   /**
-   * Calculate the homogeneity of the scenario by using the standard deviation.
-   * @return homogeneity
-   */
-  double calculateHomogeneity() const;
-
-  /**
    * Updates the position of particles in the local AutoPas container.
    */
   void updatePositions();
