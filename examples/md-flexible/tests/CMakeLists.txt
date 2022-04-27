@@ -2,6 +2,7 @@ if (NOT AUTOPAS_BUILD_TESTS)
     message(STATUS "AUTOPAS_BUILD_TESTS is disabled. Not building MDFlex tests!")
     return()
 endif ()
+message(STATUS "mdflexTests - adding tests.")
 
 file(
     GLOB_RECURSE
@@ -43,7 +44,7 @@ target_link_libraries(
 
 if (MD_FLEXIBLE_USE_MPI)
     # use the same number of ranks as in AutoPas tests
-    set_property(TARGET mdFlexTests PROPERTY CROSSCOMPILING_EMULATOR '${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${AUTOPAS_TESTS_NUM_MPI_RANKS} ${MPIEXEC_PREFLAGS}')
+    set_property(TARGET mdFlexTests PROPERTY CROSSCOMPILING_EMULATOR '${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${AUTOPAS_TESTS_NUM_MPI_RANKS}')
 endif ()
 
 # this cmake module was only introduced in 3.10
