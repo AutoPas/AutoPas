@@ -43,7 +43,7 @@ target_link_libraries(
 
 if (MD_FLEXIBLE_USE_MPI)
     # use the same number of ranks as in AutoPas tests
-    set_property(TARGET mdFlexTests PROPERTY CROSSCOMPILING_EMULATOR '${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${AUTOPAS_TESTS_NUM_MPI_RANKS}')
+    set_property(TARGET mdFlexTests PROPERTY CROSSCOMPILING_EMULATOR '${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${AUTOPAS_TESTS_NUM_MPI_RANKS} ${MPIEXEC_PREFLAGS}')
 endif ()
 
 # this cmake module was only introduced in 3.10
