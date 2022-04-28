@@ -80,7 +80,7 @@ TEST_F(RegularGridDecompositionTest, testGetLocalDomain) {
 TEST_F(RegularGridDecompositionTest, testExchangeHaloParticles) {
   int numberOfRanks;
   autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &numberOfRanks);
-
+  // FIXME: THIS TEST SEEMS TO DEADLOCK
   std::cout << "NumberOfRanks: " << numberOfRanks << std::endl;
 
   if (numberOfRanks != 1) {
