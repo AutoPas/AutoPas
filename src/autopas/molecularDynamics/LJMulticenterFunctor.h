@@ -97,11 +97,6 @@ class LJMulticenterFunctor
    */
   bool _postProcessed;
 
-  /**
-   * Number of unique pairs of site types.
-   */
-  const size_t _numSiteTypePairs;
-
  public:
   /**
    * Delete Default constructor
@@ -177,26 +172,26 @@ class LJMulticenterFunctor
     // get site properties and positions
 
     // the following vectors contain mixed parameters in the order of a,b = 0,0; 0,1; ... ; 0,n; 1,0 ; ... ; n,m
-    std::vector<double> sigmaSquared;
-    std::vector<double> epsilon24;
-    std::vector<double> shift6;
+    std::vector<double> sigmaSquareds;
+    std::vector<double> epsilon24s;
+    std::vector<double> shift6s;
 
     const size_t numSitesA = useMixing ? _PPLibrary->getNumSites(particleA.getTypeId()) : _sitePositionsLJ.size();
     const size_t numSitesB = useMixing ? _PPLibrary->getNumSites(particleB.getTypeId()) : _sitePositionsLJ.size();
 
-    sigmaSquared.reserve(numSitesA * numSitesB);
-    epsilon24.reserve(numSitesA * numSitesB);
-    shift6.reserve(numSitesA * numSitesB);
-
     if constexpr (useMixing) {
+      sigmaSquareds.reserve(numSitesA * numSitesB);
+      epsilon24s.reserve(numSitesA * numSitesB);
+      shift6s.reserve(numSitesA * numSitesB);
+
       const std::vector<size_t> siteIdsA = _PPLibrary->getSiteTypes(particleA.getTypeId());
       const std::vector<size_t> siteIdsB = _PPLibrary->getSiteTypes(particleB.getTypeId());
       for (int i = 0; i < numSitesA; ++i) {
         for (int j = 0; j < numSitesB; ++j) {
-          sigmaSquared.emplace_back(_PPLibrary->mixingSigmaSquare(siteIdsA[i], siteIdsB[j]));
-          epsilon24.emplace_back(_PPLibrary->mixing24Epsilon(siteIdsA[i], siteIdsB[j]));
+          sigmaSquareds.emplace_back(_PPLibrary->mixingSigmaSquare(siteIdsA[i], siteIdsB[j]));
+          epsilon24s.emplace_back(_PPLibrary->mixing24Epsilon(siteIdsA[i], siteIdsB[j]));
           if constexpr (applyShift) {
-            shift6.emplace_back(_PPLibrary->mixingShift6(siteIdsA[i], siteIdsB[j]));
+            shift6s.emplace_back(_PPLibrary->mixingShift6(siteIdsA[i], siteIdsB[j]));
           }
         }
       }
@@ -223,16 +218,21 @@ class LJMulticenterFunctor
     const auto rotatedSitePositionsB =
         autopas::utils::quaternion::rotateVectorOfPositions(particleB.getQ(), unrotatedSitePositionsB);
 
+    size_t ppl_index = 0;
+
     for (int m = 0; m < numSitesA; m++) {
       for (int n = 0; n < numSitesB; n++) {
         const auto displacement = autopas::utils::ArrayMath::add(
             autopas::utils::ArrayMath::sub(displacementCoM, rotatedSitePositionsB[n]), rotatedSitePositionsA[m]);
         const auto distanceSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
 
+        const auto sigmaSquared = useMixing ? sigmaSquareds[ppl_index] : _sigmaSquared;
+        const auto epsilon24 = useMixing ? epsilon24s[ppl_index] : _epsilon24;
+        const auto shift6 = useMixing ? shift6s[ppl_index] : _shift6;
+
         // Calculate potential between sites and thus force
-        // Force = 24 * epsilon * (2*(sigma/distance)^12 - (sigma/distance)^6) * (1/distance)^2 * [x_displacement,
-        // y_displacement, z_displacement]
-        //         {                         scalarMultiple                                   } * { displacement }
+        // Force = 24 * epsilon * (2*(sigma/distance)^12 - (sigma/distance)^6) * (1/distance)^2 * [x_displacement, y_displacement, z_displacement]
+        //         {                         scalarMultiple                                   } * {                     displacement             }
         const auto invDistSquared = 1. / distanceSquared;
         const auto lj2 = sigmaSquared * invDistSquared;
         const auto lj6 = lj2 * lj2 * lj2;
