@@ -205,8 +205,8 @@ class ParticlePropertiesLibrary {
 
   // Note: this is a vector of site type Ids for the sites of a certain molecular Id
   std::vector<std::vector<intType>> _siteIds;
-
-  std::vector<std::array<floatType,3>> _relativeSitePositions;
+  // This is a vector (indexed by mol ID) of vectors of site positions (which are 3D arrays)
+  std::vector<std::vector<std::array<floatType,3>>> _relativeSitePositions;
   std::vector<std::array<floatType,3>> _momentOfInertias;
   std::vector<size_t> _numSites;
 
@@ -298,6 +298,16 @@ floatType ParticlePropertiesLibrary<floatType, intType>::getMass(intType i) cons
 template <typename floatType, typename intType>
 std::array<floatType,3> ParticlePropertiesLibrary<floatType, intType>::getMomentOfInertia(intType i) const {
   return _momentOfInertias[i];
+}
+
+template <typename floatType, typename intType>
+std::vector<std::array<floatType,3>> ParticlePropertiesLibrary<floatType, intType>::getSitePositions(intType i) const {
+  return _relativeSitePositions[i];
+}
+
+template <typename floatType, typename intType>
+std::vector<intType> ParticlePropertiesLibrary<floatType, intType>::getSiteTypes(intType i) const {
+  return _siteIds[i];
 }
 
 template <typename floatType, typename intType>
