@@ -12,7 +12,6 @@
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 #include "autopas/molecularDynamics/MoleculeLJ.h"
 #include "autopas/particles/Particle.h"
-#include "Particles/MoleculeConversionHelper.h"
 
 // Declare the main AutoPas class and the iteratePairwise() methods with all used functors as extern template
 // instantiation. They are instantiated in the respective cpp file inside the templateInstantiations folder.
