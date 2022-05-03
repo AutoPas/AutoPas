@@ -22,9 +22,10 @@ target_link_libraries(
         $<$<BOOL:${AUTOPAS_OPENMP}>:OpenMP::OpenMP_CXX>
         spdlog::spdlog
         $<$<OR:$<BOOL:${AUTOPAS_INTERNODE_TUNING}>,$<BOOL:${MD_FLEXIBLE_USE_MPI}>>:MPI::MPI_CXX>
+        Eigen3
     PRIVATE
         # harmony and Eigen3 are only needed privately when building AutoPas.
-        harmony Eigen3
+        harmony
 )
 
 # Ompstuff needs to be here because autopas_OpenMP.cmake needs to run before this file to create to OpenMP
