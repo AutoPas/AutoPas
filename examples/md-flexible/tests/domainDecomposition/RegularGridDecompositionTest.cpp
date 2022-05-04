@@ -113,7 +113,7 @@ TEST_F(RegularGridDecompositionTest, testExchangeHaloParticles) {
   // Setup 27 particles of which 26 will be relevant during halo update. Imagine a rubik's cube where each cell
   // contains a single particle. This layout contains 8 particles with 3 adjacent cell which is outside the cube,
   // 12 particles with two adjacent cells which are outside the cube and 6 particles with a single adjacent cell
-  // outside the cube.
+  // outside the cube. The 'first cell' is the leftmost in all dimensions.
   const auto particlePositions = [&]() {
     std::vector<std::array<double, 3>> positions{};
     positions.reserve(27);

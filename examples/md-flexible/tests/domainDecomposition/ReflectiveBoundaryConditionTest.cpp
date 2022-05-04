@@ -72,7 +72,7 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
 #endif
   }
 
-  // apply reflective BCs (as periodic + domain exchange)
+  // apply BCs + domain exchange
   domainDecomposition.exchangeMigratingParticles(autoPasContainer);
   domainDecomposition.reflectParticlesAtBoundaries(autoPasContainer);
   domainDecomposition.exchangeHaloParticles(autoPasContainer);
