@@ -342,25 +342,25 @@ class MulticenteredMoleculeLJ : public autopas::MoleculeLJ {
    * Get the quaternion defining rotation
    * @return quaternion defining rotation
    */
-  [[nodiscard]] const std::array<double, 4> &getQ() const override { return _q; }
+  [[nodiscard]] const std::array<double, 4> &getQ() const  { return _q; }
 
   /**
    * Set the quaternion defining rotation
    * @param q quaternion defining rotation
    */
-  void setQ(const std::array<double, 4> &q) override { _q = q; }
+  void setQ(const std::array<double, 4> &q)  { _q = q; }
 
   /**
    * Get the angular velocity
    * @return angular velocity
    */
-  [[nodiscard]] const std::array<double, 3> &getAngularVel() const override { return _angularVel; }
+  [[nodiscard]] const std::array<double, 3> &getAngularVel() const  { return _angularVel; }
 
   /**
    * Set the angular velocity
    * @param angularVelocity
    */
-  void setAngularVel(const std::array<double, 3> &angularVel) override { _angularVel = angularVel; }
+  void setAngularVel(const std::array<double, 3> &angularVel)  { _angularVel = angularVel; }
 
   /**
    * Adds given angular velocity to the particle's angular velocity.
