@@ -32,11 +32,17 @@ auto MixedBoundaryConditionTest::setUpExpectations(
           } else if (particlePositions[id][dim] < boxMin[dim]) {
             expectedPositions[id][dim] += boxLength[dim];
           }
-          // if near a periodic boundary create a halo particle
-          if (particlePositions[id][dim] > (boxMax[dim] - interactionLength)) {
-            expectedHaloPositions[id][dim] -= boxLength[dim];
-          } else if (particlePositions[id][dim] < (boxMin[dim] + interactionLength)) {
-            expectedHaloPositions[id][dim] += boxLength[dim];
+          // if particles are outside the domain, they will be shifted to the other side,
+          // but a halo particle will spawn where they were
+          if (particlePositions[id][dim] > (boxMax[dim]) or particlePositions[id][dim] < (boxMin[dim])) {
+            expectedHaloPositions[id][dim] = particlePositions[id][dim];
+          } else {
+            // if near a periodic boundary create a halo particle
+            if (particlePositions[id][dim] > (boxMax[dim] - interactionLength)) {
+              expectedHaloPositions[id][dim] -= boxLength[dim];
+            } else if (particlePositions[id][dim] < (boxMin[dim] + interactionLength)) {
+              expectedHaloPositions[id][dim] += boxLength[dim];
+            }
           }
           break;
         case ::options::BoundaryTypeOption::reflective:
@@ -214,12 +220,12 @@ TEST_F(MixedBoundaryConditionTest, testPeriodic) {
                                                                          options::BoundaryTypeOption::reflective,
                                                                          options::BoundaryTypeOption::reflective};
   // TODO Sam: leave a comment about the intent of every particle
-  const std::vector<std::array<double, 3>> particlePositions = {{0.05, 0.05, 1.0},  {0.05, 0.05, 2.0},
-                                                                {0.05, 0.05, 3.0},  {4.95, 4.95, 4.95},
-                                                                {4.95, 4.95, 4.95}, {4.95, 4.95, 4.95}};
-  const std::vector<std::array<double, 3>> particleVelocities = {{-0.1, 0., 0.}, {-0.1, 0., 0.}, {-0.1, 0., 0.},
-                                                                 {0., 0., 0.},   {+0.1, 0., 0.}, {+0.1, 0.1, 0.}};
-
+  const std::vector<std::array<double, 3>> particlePositions = {
+      {-0.05, 0.05, 1.0}, {-0.05, 0.05, 2.0}, {-0.05, 0.05, 3.0}, {4.95, 4.95, 4.95}, {5.05, 4.95, 4.95},
+  };
+  const std::vector<std::array<double, 3>> particleVelocities = {
+      {-1.0, -1.0, 0.0}, {-1.0, 1.0, 0.0}, {1.0, -1.0, 0.0}, {1.0, 1.0, 1.0}, {1.0, 1.0, 1.0},
+  };
   testFunction(particlePositions, particleVelocities, boundaryConditions);
 }
 
