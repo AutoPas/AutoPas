@@ -185,13 +185,19 @@ TEST_F(MixedBoundaryConditionTest, testMixedReflection) {
   const std::array<options::BoundaryTypeOption, 3> boundaryConditions = {options::BoundaryTypeOption::periodic,
                                                                          options::BoundaryTypeOption::reflective,
                                                                          options::BoundaryTypeOption::reflective};
-  // TODO Sam: leave a comment about the intent of every particle
   const std::vector<std::array<double, 3>> particlePositions = {
       {1.0, 0.05, 1.0}, {2.0, 0.05, 1.0}, {1.0, 0.05, 0.05}, {2.0, 0.05, 0.05}, {4.95, 0.05, 0.05},
       {4.0, 4.95, 4.0}, {3.0, 4.95, 4.0}, {4.0, 4.95, 4.95}, {3.0, 4.95, 4.95}, {0.05, 4.95, 4.95}};
   const std::vector<std::array<double, 3>> particleVelocities = {
       {0.0, -1.0, 1.0}, {0.0, 1.0, 1.0},   {0.0, -1.0, -0.5}, {0.0, -1.0, 0.5}, {1.0, -0.5, -0.2},
       {0.0, 1.0, -1.0}, {0.0, -1.0, -1.0}, {0.0, 1.0, 0.5},   {0.0, 1.0, -0.5}, {-1.0, 0.5, 0.2}};
+  // particle 0 tests for reflection along a reflective boundary
+  // particle 1 tests for no reflection along a reflective boundary when the direction is into the domain
+  // particle 2 tests for reflection in the edge between two reflective boundaries
+  // particle 3 tests for reflection in a single direction along a reflective/reflective edge when in one dimension the
+  //    particle is travelling towards the boundary and the other away
+  // particle 4 tests for reflection only in the directions with reflective boundaries in a periodic/refl/refl corner
+  // particles 5-9 do the same as 0-4 respectively, except in the rightmost boundaries
 
   testFunction(particlePositions, particleVelocities, boundaryConditions);
 }
