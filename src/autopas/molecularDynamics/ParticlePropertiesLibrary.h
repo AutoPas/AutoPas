@@ -52,7 +52,7 @@ class ParticlePropertiesLibrary {
    * @param sigma
    * @param mass
    */
-  void addType(const intType molId, const floatType epsilon, const floatType sigma, const floatType mass);
+  void addSimpleType(const intType molId, const floatType epsilon, const floatType sigma, const floatType mass);
 
   /**
    * Adds the properties of a type of a single LJ site type to the library.
@@ -220,13 +220,12 @@ class ParticlePropertiesLibrary {
 };
 
 template <typename floatType, typename intType>
-void ParticlePropertiesLibrary<floatType, intType>::addType(intType typeID, floatType epsilon, floatType sigma,
-                                                            floatType mass) {
-  if (_numRegisteredSiteTypes != typeID) {
+void ParticlePropertiesLibrary<floatType, intType>::addSimpleType(const intType molId, const floatType epsilon, const floatType sigma, const floatType mass) {
+  if (_numRegisteredSiteTypes != molId) {
     autopas::utils::ExceptionHandler::exception(
         "ParticlePropertiesLibrary::addType(): trying to register a type with id {}. Please register types "
         "consecutively, starting at id 0. Currently there are {} registered types.",
-        typeID, _numRegisteredSiteTypes);
+        molId, _numRegisteredSiteTypes);
   }
   ++_numRegisteredSiteTypes;
   _epsilons.emplace_back(epsilon);

@@ -127,14 +127,23 @@ class MDFlexConfig {
    * @return the ParticlePropertiesLibrary
    */
   std::shared_ptr<ParticlePropertiesLibraryType> getParticlePropertiesLibrary() { return _particlePropertiesLibrary; }
+
   /**
-   * Adds parameters to all relevant particle property attributes and checks if the type already exists.
-   * @param typeId
+   * Adds parameters of a LJ site and checks if the siteId already exists.
+   * @param siteId unique site type id
    * @param epsilon
    * @param sigma
    * @param mass
    */
-  void addParticleType(unsigned long typeId, double epsilon, double sigma, double mass);
+  void addSiteType(unsigned long siteId, double epsilon, double sigma, double mass);
+
+  /**
+   * Adds site positions and types for a given molecule type and checks if the molId already exists
+   * @param molId unique mol type id
+   * @param siteIds vector of ids of site types
+   * @param relSitePos vector of relative site positions
+   */
+  void addMolType(unsigned long molId, std::vector<unsigned long> siteIds, std::vector<std::array<double, 3>> relSitePos);
 
   /**
    * Flushes the particles.

@@ -350,20 +350,37 @@ void MDFlexConfig::calcSimulationBox() {
   }
 }
 
-void MDFlexConfig::addParticleType(unsigned long typeId, double epsilon, double sigma, double mass) {
-  // check if type id is already existing and if there no error in input
-  if (epsilonMap.value.count(typeId) == 1) {
+void MDFlexConfig::addSiteType(unsigned long siteId, double epsilon, double sigma, double mass) {
+  // check if siteId is already existing and if there no error in input
+  if (epsilonMap.value.count(siteId) == 1) {
     // check if type is already added
-    if (epsilonMap.value.at(typeId) == epsilon and sigmaMap.value.at(typeId) == sigma and
-        massMap.value.at(typeId) == mass) {
+    if (epsilonMap.value.at(siteId) == epsilon and sigmaMap.value.at(siteId) == sigma and
+        massMap.value.at(siteId) == mass) {
       return;
     } else {  // wrong initialization:
       throw std::runtime_error("Wrong Particle initialization: using same typeId for different properties");
     }
   } else {
-    epsilonMap.value.emplace(typeId, epsilon);
-    sigmaMap.value.emplace(typeId, sigma);
-    massMap.value.emplace(typeId, mass);
+    epsilonMap.value.emplace(siteId, epsilon);
+    sigmaMap.value.emplace(siteId, sigma);
+    massMap.value.emplace(siteId, mass);
+  }
+}
+
+void MDFlexConfig::addMolType(unsigned long molId, std::vector<unsigned long> siteIds, std::vector<std::array<double, 3>> relSitePos) {
+  // check if siteId is already existing and if there no error in input
+  if (molToSiteIdsMap.value.count(siteId) == 1) {
+    // check if type is already added
+    if (epsilonMap.value.at(siteId) == epsilon and sigmaMap.value.at(siteId) == sigma and
+        massMap.value.at(siteId) == mass) {
+      return;
+    } else {  // wrong initialization:
+      throw std::runtime_error("Wrong Particle initialization: using same typeId for different properties");
+    }
+  } else {
+    epsilonMap.value.emplace(siteId, epsilon);
+    sigmaMap.value.emplace(siteId, sigma);
+    massMap.value.emplace(siteId, mass);
   }
 }
 
