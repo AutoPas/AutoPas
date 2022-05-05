@@ -219,13 +219,21 @@ TEST_F(MixedBoundaryConditionTest, testPeriodic) {
   const std::array<options::BoundaryTypeOption, 3> boundaryConditions = {options::BoundaryTypeOption::periodic,
                                                                          options::BoundaryTypeOption::reflective,
                                                                          options::BoundaryTypeOption::reflective};
-  // TODO Sam: leave a comment about the intent of every particle
+
   const std::vector<std::array<double, 3>> particlePositions = {
-      {-0.05, 0.05, 1.0}, {-0.05, 0.05, 2.0}, {-0.05, 0.05, 3.0}, {4.95, 4.95, 4.95}, {5.05, 4.95, 4.95},
-  };
+      {-0.05, 0.05, 1.0}, {-0.05, 0.05, 2.0}, {-0.05, 0.05, 3.0}, {4.95, 4.95, 4.95}, {5.05, 4.95, 4.95}};
   const std::vector<std::array<double, 3>> particleVelocities = {
-      {-1.0, -1.0, 0.0}, {-1.0, 1.0, 0.0}, {1.0, -1.0, 0.0}, {1.0, 1.0, 1.0}, {1.0, 1.0, 1.0},
-  };
+      {-1.0, -1.0, 0.0}, {-1.0, 1.0, 0.0}, {1.0, -1.0, 0.0}, {1.0, 1.0, 1.0}, {1.0, 1.0, 1.0}};
+
+  // particle 0 tests that a particle that needs to be periodic translated in x, is also reflected correctly in y
+  // particle 1 tests that a particle that needs to be periodic translated in x, whilst within the reflective skin of
+  //    a y-boundary but moving away, is not reflected
+  // particle 2 tests that a particle that needs to be periodic translated in x, but is moving towards the domain, is
+  //    also correctly translated in x + reflected in y
+  // particle 3 tests that a particle in a periodic/reflective/reflective corner produces a correctly reflected halo
+  //    particle
+  // particle 4 tests that a particle that needs is beyond the right x-boundary is also correctly reflected in y and z
+
   testFunction(particlePositions, particleVelocities, boundaryConditions);
 }
 
