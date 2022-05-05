@@ -249,11 +249,16 @@ TEST_F(MixedBoundaryConditionTest, testPeriodic) {
 TEST_F(MixedBoundaryConditionTest, testNoBoundary) {
   const std::array<options::BoundaryTypeOption, 3> boundaryConditions = {
       options::BoundaryTypeOption::none, options::BoundaryTypeOption::none, options::BoundaryTypeOption::none};
-  // TODO Sam: leave a comment about the intent of every particle
+
   const std::vector<std::array<double, 3>> particlePositions = {
       {-0.05, 2.5, 2.5}, {0.05, 2.5, 2.5}, {4.95, 2.5, 2.5}, {5.05, 2.5, 2.5}};
   const std::vector<std::array<double, 3>> particleVelocities = {
       {-1.0, 1.0, 1.0}, {-1.0, 1.0, 1.0}, {1.0, 1.0, 1.0}, {1.0, 1.0, 1.0}};
+
+  // particle 0 tests the lack of periodic translation in the left x-boundary
+  // particle 1 tests the lack of reflection in the left x-boundary
+  // particle 2 tests the lack of reflection in the right x-boundary
+  // particle 3 tests the lack of periodic translation in the right x-boundary
 
   testFunction(particlePositions, particleVelocities, boundaryConditions);
 }
