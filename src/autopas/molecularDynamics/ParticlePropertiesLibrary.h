@@ -10,9 +10,12 @@
 #include <map>
 #include <set>
 #include <vector>
+#include <Eigen/Core>
+#include <Eigen/Eigenvalues>
 
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/Quaternion.h"
 
 /**
  * This class stores the (physical) properties of molecule types, and, in the case of multi-site molecules, the location
@@ -81,6 +84,12 @@ class ParticlePropertiesLibrary {
    * Calculates the actual mixing coefficients.
    */
   void calculateMixingCoefficients();
+
+  /**
+   * Calculates the moment of inertia from the masses and positions of the site, then calculates a rotation such that
+   * the moment of inertia in the rotated axes is diagonal, and applies the rotation to the sites.
+   */
+  void calculateMomentOfInertiaAndAdjustAxes();
 
   ~ParticlePropertiesLibrary() = default;
 
@@ -283,6 +292,56 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
       // shift6
       floatType shift6 = calcShift6(epsilon24, sigmaSquare, cutoffSquare);
       _computedMixingData[globalIndex].shift6 = shift6;
+    }
+  }
+}
+
+template <typename floatType, typename intType>
+void ParticlePropertiesLibrary<floatType, intType>::calculateMomentOfInertiaAndAdjustAxes() {
+  _momentOfInertias.resize(_numRegisteredMolTypes);
+
+  for (intType molId = 0; molId < _numRegisteredMolTypes; ++molId) {
+    // 1. Calculate Moment of Inertia as 3x3 array
+    Eigen::Matrix<floatType,3,3> MoI =  Eigen::MatrixXd::Zero(3);
+    for (intType site = 0; site < _numSites[molId]; ++site) {
+      MoI[0][0] += (_relativeSitePositions[molId][site][1]*_relativeSitePositions[molId][site][1] +
+                    _relativeSitePositions[molId][site][2]*_relativeSitePositions[molId][site][2])
+                   * _masses[_siteIds[molId][site]];
+      MoI[1][1] += (_relativeSitePositions[molId][site][0]*_relativeSitePositions[molId][site][0] +
+                    _relativeSitePositions[molId][site][2]*_relativeSitePositions[molId][site][2])
+                   * _masses[_siteIds[molId][site]];
+      MoI[2][2] += (_relativeSitePositions[molId][site][0]*_relativeSitePositions[molId][site][0] +
+                    _relativeSitePositions[molId][site][1]*_relativeSitePositions[molId][site][1])
+                   * _masses[_siteIds[molId][site]];
+      MoI[0][1] -= _relativeSitePositions[molId][site][0] * _relativeSitePositions[molId][site][1] *
+                   _masses[_siteIds[molId][site]];
+      MoI[1][0] -= _relativeSitePositions[molId][site][1] * _relativeSitePositions[molId][site][0] *
+                   _masses[_siteIds[molId][site]];
+      MoI[0][2] -= _relativeSitePositions[molId][site][0] * _relativeSitePositions[molId][site][2] *
+                   _masses[_siteIds[molId][site]];
+      MoI[2][0] -= _relativeSitePositions[molId][site][2] * _relativeSitePositions[molId][site][0] *
+                   _masses[_siteIds[molId][site]];
+      MoI[1][2] -= _relativeSitePositions[molId][site][1] * _relativeSitePositions[molId][site][2] *
+                   _masses[_siteIds[molId][site]];
+      MoI[2][1] -= _relativeSitePositions[molId][site][2] * _relativeSitePositions[molId][site][1] *
+                   _masses[_siteIds[molId][site]];
+    }
+    // 2. Get eigenvalues & -vectors of MoI
+    Eigen::EigenSolver<Eigen::MatrixXd> eigenSolver(MoI);
+    const auto eigenvalues = eigenSolver.eigenvalues();
+    const auto eigenvectors = eigenSolver.eigenvectors();
+
+    // 3. Construct diagonal MoI matrix as array of length 3
+    const std::array<floatType,3> MoI_diag = {eigenvalues.template cast<floatType>()[0],
+        eigenvalues.template cast<floatType>()[1], eigenvalues.template cast<floatType>()[2]};
+
+    _momentOfInertias.emplace(MoI_diag);
+
+    // 4. Rotate sites of mol using rotation matrix formed from eigenvectors to fit new orientation
+    for (intType site = 0; site < _numSites[molId]; ++site) {
+      const Eigen::Vector3d oldSitePos = _relativeSitePositions[molId][site];
+      const Eigen::Vector3d newSitePos = eigenvectors * oldSitePos; // todo check
+      _relativeSitePositions[molId][site] = newSitePos;
     }
   }
 }
