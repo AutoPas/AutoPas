@@ -62,8 +62,9 @@ class ParticlePropertiesLibrary {
    * @param siteId
    * @param epsilon
    * @param sigma
+   * @param mass
    */
-  void addSiteType(const intType siteId, const floatType epsilon, const floatType sigma);
+  void addSiteType(const intType siteId, const floatType epsilon, const floatType sigma, const floatType mass);
 
   /**
    * Adds the properties of a molecule type to the library including: position and type of all sites; and moment of
@@ -73,9 +74,8 @@ class ParticlePropertiesLibrary {
    * @param molId
    * @param siteIds vector of IDs of sites
    * @param relPos vector of relative positions
-   * @param momentOfInertia
    */
-  void addMolType(const intType molId, const std::vector<intType> siteIds, const std::vector<std::array<floatType,3>> relPos, const std::array<floatType,3> momentOfInertia);
+  void addMolType(const intType molId, const std::vector<intType> siteIds, const std::vector<std::array<floatType,3>> relPos);
 
   /**
    * Calculates the actual mixing coefficients.
@@ -234,7 +234,7 @@ void ParticlePropertiesLibrary<floatType, intType>::addSimpleType(const intType 
 }
 
 template <typename floatType, typename intType>
-void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType typeID, floatType epsilon, floatType sigma) {
+void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType typeID, floatType epsilon, floatType sigma, floatType mass) {
   if (_numRegisteredSiteTypes != typeID) {
     autopas::utils::ExceptionHandler::exception(
         "ParticlePropertiesLibrary::addType(): trying to register a site type with id {}. Please register types "
@@ -248,8 +248,7 @@ void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType typeID, 
 
 template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::addMolType(const intType molId, const std::vector<intType> siteIds,
-                                                               const std::vector<std::array<floatType,3>> relPos,
-                                                               const std::array<floatType,3> momentOfInertia) {
+                                                               const std::vector<std::array<floatType,3>> relPos) {
   if (_numRegisteredSiteTypes != molId) {
     autopas::utils::ExceptionHandler::exception(
         "ParticlePropertiesLibrary::addType(): trying to register a molecule type with id {}. Please register types "
@@ -259,7 +258,6 @@ void ParticlePropertiesLibrary<floatType, intType>::addMolType(const intType mol
   ++_numRegisteredSiteTypes;
   _siteIds.emplace_back(siteIds);
   _relativeSitePositions.emplace_back(relPos);
-  _momentOfInertias.emplace_back(momentOfInertia);
   _numSites.emplace_back(siteIds.size());
 }
 

@@ -15,6 +15,7 @@
 
 #include "MDFlexParser.h"
 #include "autopas/utils/WrapMPI.h"
+#include "autopas/utils/ArrayUtils.h"
 #include "src/ParticleSerializationTools.h"
 #include "src/Thermostat.h"
 
@@ -369,36 +370,59 @@ void MDFlexConfig::addSiteType(unsigned long siteId, double epsilon, double sigm
 
 void MDFlexConfig::addMolType(unsigned long molId, std::vector<unsigned long> siteIds, std::vector<std::array<double, 3>> relSitePos) {
   // check if siteId is already existing and if there no error in input
-  if (molToSiteIdsMap.value.count(siteId) == 1) {
+  if (molToSiteIdMap.value.count(molId) == 1) {
     // check if type is already added
-    if (epsilonMap.value.at(siteId) == epsilon and sigmaMap.value.at(siteId) == sigma and
-        massMap.value.at(siteId) == mass) {
+    if (autopas::utils::ArrayUtils::equals(molToSiteIdMap.value.at(molId),siteIds) and
+        autopas::utils::ArrayUtils::equals(molToSitePosMap.value.at(molId),relSitePos)) {
       return;
     } else {  // wrong initialization:
       throw std::runtime_error("Wrong Particle initialization: using same typeId for different properties");
     }
   } else {
-    epsilonMap.value.emplace(siteId, epsilon);
-    sigmaMap.value.emplace(siteId, sigma);
-    massMap.value.emplace(siteId, mass);
+    molToSiteIdMap.value.emplace(molId,siteIds);
+    molToSitePosMap.value.emplace(molId,relSitePos);
   }
 }
 
 void MDFlexConfig::flushParticles() { _particles.clear(); }
 
 void MDFlexConfig::initializeParticlePropertiesLibrary() {
-  if (epsilonMap.value.empty()) {
+  if (molToSiteIdMap.value.empty()) {
     throw std::runtime_error("No properties found in particle properties library!");
-  }
-
-  if (epsilonMap.value.size() != sigmaMap.value.size() or epsilonMap.value.size() != massMap.value.size()) {
-    throw std::runtime_error("Number of particle properties differ!");
   }
 
   _particlePropertiesLibrary = std::make_shared<ParticlePropertiesLibraryType>(cutoff.value);
 
-  for (auto [type, epsilon] : epsilonMap.value) {
-    _particlePropertiesLibrary->addType(type, epsilon, sigmaMap.value.at(type), massMap.value.at(type));
+  if (includeRotational.value) {
+    // check size of molecular level vectors match
+    if (molToSiteIdMap.value.size() != molToSitePosMap.value.size()) {
+      throw std::runtime_error("Number of molecular-level properties differ!");
+    }
+
+    // initialize at molecular level
+    for (auto [molTypeId, siteTypeIds] : molToSiteIdMap.value) {
+      _particlePropertiesLibrary->addMolType(molTypeId,siteTypeIds,molToSitePosMap.value.at(molTypeId));
+    }
+
+    // check size of site level vectors match
+    if (epsilonMap.value.size() != sigmaMap.value.size() or epsilonMap.value.size() != massMap.value.size()) {
+      throw std::runtime_error("Number of site-level properties differ!");
+    }
+
+    // initialize at site level
+    for (auto [siteTypeId, epsilon] : epsilonMap.value) {
+      _particlePropertiesLibrary->addSiteType(siteTypeId, epsilon, sigmaMap.value.at(siteTypeId), massMap.value.at(siteTypeId));
+    }
+
+  } else {
+    // check size of single-site molecule property vectors match
+    if (epsilonMap.value.size() != sigmaMap.value.size() or epsilonMap.value.size() != massMap.value.size()) {
+      throw std::runtime_error("Number of particle properties differ!");
+    }
+
+    for (auto [type, epsilon] : epsilonMap.value) {
+      _particlePropertiesLibrary->addSimpleType(type, epsilon, sigmaMap.value.at(type), massMap.value.at(type));
+    }
   }
   _particlePropertiesLibrary->calculateMixingCoefficients();
 }

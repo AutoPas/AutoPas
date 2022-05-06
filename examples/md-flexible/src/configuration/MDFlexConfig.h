@@ -1,6 +1,7 @@
 /**
  * @file MDFlexConfig.h
- * @author F. Gratl * @date 18.10.2019
+ * @author F. Gratl
+ * @date 18.10.2019
  */
 
 #pragma once
@@ -29,6 +30,7 @@
 #include "src/configuration/objects/CubeUniform.h"
 #include "src/configuration/objects/Sphere.h"
 #include "src/options/BoundaryTypeOption.h"
+#include "../TypeDefinitions.h"
 
 /**
  * Class containing all necessary parameters for configuring a md-flexible simulation.
@@ -419,20 +421,32 @@ class MDFlexConfig {
   MDFlexOption<double, __LINE__> deltaT{0.001, "deltaT", true,
                                         "Length of a timestep. Set to 0 to deactivate time integration."};
   /**
+   * molToSiteIdMap
+   */
+  MDFlexOption<std::map<unsigned long, std::vector<unsigned long>>, __LINE__> molToSiteIdMap{
+      {{0ul,{0ul}}}, "site-types-in-mol", true, "Mapping of molecule type to site type."
+  };
+  /**
+   * molToSitePosMap
+   */
+  MDFlexOption<std::map<unsigned long, std::vector<std::array<double, 3>>>, __LINE__> molToSitePosMap{
+      {{0ul,{{0.,0.,0.}}}}, "site-pos-in-mol", false, "Mapping of molecule type to relative site position."
+  };
+  /**
    * epsilonMap
    */
   MDFlexOption<std::map<unsigned long, double>, 0> epsilonMap{
-      {{0ul, 1.}}, "particle-epsilon", true, "Mapping from particle type to an epsilon value."};
+      {{0ul, 1.}}, "site-epsilon", true, "Mapping from site type to an epsilon value."};
   /**
    * sigmaMap
    */
   MDFlexOption<std::map<unsigned long, double>, 0> sigmaMap{
-      {{0ul, 1.}}, "particle-sigma", true, "Mapping from particle type to a sigma value."};
+      {{0ul, 1.}}, "site-sigma", true, "Mapping from site type to a sigma value."};
   /**
    * massMap
    */
   MDFlexOption<std::map<unsigned long, double>, 0> massMap{
-      {{0ul, 1.}}, "particle-mass", true, "Mapping from particle type to a mass value."};
+      {{0ul, 1.}}, "site-mass", true, "Mapping from site type to a mass value."};
 
   // Options for additional Object Generation on command line
   /**
