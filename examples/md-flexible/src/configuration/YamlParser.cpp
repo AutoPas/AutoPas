@@ -10,6 +10,9 @@
 bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
   YAML::Node node = YAML::LoadFile(config.yamlFilename.value);
 
+  if (node[config.includeRotational.name]) {
+    config.includeRotational.value = node[config.containerOptions.name].as<bool>();
+  }
   if (node[config.containerOptions.name]) {
     config.containerOptions.value = autopas::ContainerOption::parseOptions(
         autopas::utils::ArrayUtils::to_string(node[config.containerOptions.name], ", ", {"", ""}));
@@ -223,6 +226,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     config.cubeUniformObjects.clear();
     config.sphereObjects.clear();
     config.cubeClosestPackedObjects.clear();
+    config.molToSiteIdMap.value.clear();
+    config.molToSitePosMap.value.clear();
     config.epsilonMap.value.clear();
     config.sigmaMap.value.clear();
     config.massMap.value.clear();
