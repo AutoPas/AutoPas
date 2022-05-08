@@ -435,7 +435,7 @@ inline int AutoPas_MPI_Isend(const void *buf, int count, AutoPas_MPI_Datatype da
  * @param source: Source rank (integer).
  * @param tag: Tag value (integer).
  * @param comm: Communicator (handle).
- * @param status: The status of the probed reqeust.
+ * @param status: The status of the probed request.
  * @return MPMI error value
  */
 inline int AutoPas_MPI_Probe(int source, int tag, AutoPas_MPI_Comm comm, AutoPas_MPI_Status *status);
@@ -458,6 +458,32 @@ inline int AutoPas_MPI_Get_count(const AutoPas_MPI_Status *status, AutoPas_MPI_D
  */
 inline int AutoPas_MPI_Waitall(int count, AutoPas_MPI_Request array_of_requests[],
                                AutoPas_MPI_Status *array_of_statuses);
+
+/**
+ * Wrapper for MPI_Allgather
+ * @param buffer_send: send buffer
+ * @param count_send: number of elements in send buffer
+ * @param datatype_send: type of elements in send buffer
+ * @param buffer_recv: receive buffer
+ * @param count_recv: number of elements received from each rank
+ * @param datatype_recv: type of elements in receive buffer
+ * @param comm: communicator (handle)
+ * @return
+ */
+inline int AutoPas_MPI_Allgather(void *buffer_send, int count_send, AutoPas_MPI_Datatype datatype_send,
+                                 void *buffer_recv, int count_recv, AutoPas_MPI_Datatype datatype_recv,
+                                 AutoPas_MPI_Comm comm);
+
+/**
+ * Wrapper for MPI_Comm_split
+ * @param old_communicator: old communicator (handle)
+ * @param color: determines which ranks ar in the same bucket
+ * @param key: determines rank order in new communicator
+ * @param new_communicator: pointer to new communicator
+ * @return
+ */
+inline int AutoPas_MPI_Comm_split(AutoPas_MPI_Comm old_communicator, int color, int key,
+                                  AutoPas_MPI_Comm *new_communicator);
 
 #if defined(AUTOPAS_INCLUDE_MPI)
 
@@ -562,6 +588,12 @@ inline int AutoPas_MPI_Waitall(int count, AutoPas_MPI_Request array_of_requests[
   return MPI_Waitall(count, array_of_requests, array_of_statuses);
 }
 
+inline int AutoPas_MPI_Allgather(void *buffer_send, int count_send, AutoPas_MPI_Datatype datatype_send,
+                                 void *buffer_recv, int count_recv, AutoPas_MPI_Datatype datatype_recv,
+                                 AutoPas_MPI_Comm comm) {
+  return MPI_Allgather(buffer_send, count_send, datatype_send, buffer_recv, count_recv, datatype_recv, comm);
+}
+
 #else
 
 inline int AutoPas_MPI_Init(int *argc, char ***argv) { return AUTOPAS_MPI_SUCCESS; }
@@ -610,11 +642,6 @@ inline int AutoPas_MPI_Comm_dup(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *newComm
 
 inline int AutoPas_MPI_Comm_free(AutoPas_MPI_Comm *comm) {
   *comm = AUTOPAS_MPI_COMM_NULL;
-  return AUTOPAS_MPI_SUCCESS;
-}
-
-inline int AutoPas_MPI_Comm_split(AutoPas_MPI_Comm comm, int color, int key, AutoPas_MPI_Comm *newcomm) {
-  *newcomm = AUTOPAS_MPI_COMM_WORLD;
   return AUTOPAS_MPI_SUCCESS;
 }
 
@@ -694,6 +721,22 @@ inline int AutoPas_MPI_Request_free(AutoPas_MPI_Request *request) {
   }
 }
 
+inline int AutoPas_MPI_Allgather(void *buffer_send, int count_send, AutoPas_MPI_Datatype datatype_send,
+                                 void *buffer_recv, int count_recv, AutoPas_MPI_Datatype datatype_recv,
+                                 AutoPas_MPI_Comm comm) {
+  for (long i = 0; i < (count_recv / count_send); i++)
+    // offsets from pointers are of type ptrdiff_t which is an alias for long. Hence, i should be long.
+    memcpy(static_cast<char *>(buffer_recv) + (i * count_send * sizeof(datatype_send)), buffer_send,
+           count_send * sizeof(datatype_send));
+  return AUTOPAS_MPI_SUCCESS;
+}
+
+inline int AutoPas_MPI_Comm_split(AutoPas_MPI_Comm old_communicator, int color, int key,
+                                  AutoPas_MPI_Comm *new_communicator) {
+  new_communicator = &old_communicator;
+  return AUTOPAS_MPI_SUCCESS;
+}
+
 inline int AutoPas_MPI_Cart_create(AutoPas_MPI_Comm comm, int nDims, const int *dims, const int *periods, int reorder,
                                    AutoPas_MPI_Comm *comm_cart) {
   *comm_cart = AUTOPAS_MPI_COMM_WORLD;
@@ -722,6 +765,5 @@ inline int AutoPas_MPI_Waitall(int count, AutoPas_MPI_Request array_of_requests[
                                AutoPas_MPI_Status *array_of_statuses) {
   return AUTOPAS_MPI_SUCCESS;
 }
-
 #endif
 }  // namespace autopas

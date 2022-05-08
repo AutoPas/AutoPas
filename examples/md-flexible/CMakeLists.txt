@@ -55,7 +55,7 @@ add_test(
         --traversal c08,sliced
         --verlet-rebuild-frequency 5
         --verlet-skin-radius 0
-        --periodic false
+        --boundary-type none
         --deltaT 0.
         --no-end-config
         --no-progress-bar
@@ -77,7 +77,7 @@ add_test(
         --particle-spacing 1.1225
         --verlet-rebuild-frequency 4
         --verlet-skin-radius 0.2
-        --periodic true
+        --boundary-type periodic
         --deltaT 0.005
         --no-end-config
         --no-flops

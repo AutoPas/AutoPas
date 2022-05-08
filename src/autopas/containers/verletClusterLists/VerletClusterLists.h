@@ -86,14 +86,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     _towers.push_back(internal::ClusterTower<Particle>(_clusterSize));
   }
 
-  /**
-   * @copydoc ParticleContainerInterface::getParticleCellTypeEnum()
-   */
   CellType getParticleCellTypeEnum() override { return CellType::ClusterTower; };
 
-  /**
-   * @copydoc ParticleContainerInterface::getContainerType()
-   */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletClusterLists; }
 
   /**
@@ -130,9 +124,6 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
   }
 
-  /**
-   * @copydoc ParticleContainerInterface::iteratePairwise()
-   */
   void iteratePairwise(TraversalInterface *traversal) override {
     if (_isValid == ValidityState::cellsAndListsValid) {
       autopas::utils::ExceptionHandler::exception(
@@ -166,9 +157,6 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     _particlesToAdd[autopas_get_thread_num()].push_back(p);
   }
 
-  /**
-   * @copydoc VerletLists::addHaloParticle()
-   */
   void addHaloParticleImpl(const Particle &haloParticle) override {
     _isValid = ValidityState::invalid;
     Particle copy = haloParticle;
@@ -176,9 +164,6 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     _particlesToAdd[autopas_get_thread_num()].push_back(copy);
   }
 
-  /**
-   * @copydoc autopas::ParticleContainerInterface::updateHaloParticle()
-   */
   bool updateHaloParticle(const Particle &haloParticle) override {
     Particle pCopy = haloParticle;
     pCopy.setOwnershipState(OwnershipState::halo);
@@ -196,9 +181,6 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     return false;
   }
 
-  /**
-   * @copydoc VerletLists::deleteHaloParticles
-   */
   void deleteHaloParticles() override {
     bool deletedSth = false;
 #ifdef AUTOPAS_OPENMP
@@ -215,9 +197,6 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
   }
 
-  /**
-   * @copydoc VerletLists::updateContainer()
-   */
   [[nodiscard]] std::vector<Particle> updateContainer(bool keepNeighborListsValid) override {
     if (keepNeighborListsValid) {
       return autopas::LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);
@@ -255,13 +234,10 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     return invalidParticles;
   }
 
-  /**
-   * @copydoc ParticleContainerInterface::getTraversalSelectorInfo()
-   */
   [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
     auto boxSizeWithHalo = utils::ArrayMath::sub(this->getHaloBoxMax(), this->getHaloBoxMin());
     auto towerSideLength = internal::VerletClusterListsRebuilder<Particle>::estimateOptimalGridSideLength(
-        this->getNumParticles(), boxSizeWithHalo, _clusterSize);
+        this->getNumberOfParticles(), boxSizeWithHalo, _clusterSize);
     auto towersPerDim =
         internal::VerletClusterListsRebuilder<Particle>::calculateTowersPerDim(boxSizeWithHalo, 1.0 / towerSideLength);
     std::array<double, 3> towerSize = {towerSideLength, towerSideLength,
@@ -272,7 +248,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
-   * @copydoc ParticleContainerInterface::begin()
+   * @copydoc autopas::ParticleContainerInterface::begin()
    * @note This function additionally rebuilds the towers if the tower-structure isn't valid.
    */
   [[nodiscard]] ParticleIteratorWrapper<Particle, true> begin(
@@ -285,7 +261,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
-   * @copydoc ParticleContainerInterface::begin()
+   * @copydoc autopas::ParticleContainerInterface::begin()
    * @note const version.
    * @note This function additionally iterates over the _particlesToAdd vector if the tower-structure isn't valid.
    */
@@ -310,7 +286,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
-   * @copydoc LinkedCells::forEach()
+   * @copydoc autopas::LinkedCells::forEach()
    * @note This function additionally rebuilds the towers if the tower-structure isn't valid.
    */
   template <typename Lambda>
@@ -323,7 +299,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
-   * @copydoc LinkedCells::forEach()
+   * @copydoc autopas::LinkedCells::forEach()
    * @note const version.
    * @note This function additionally iterates over the _particlesToAdd vector if the tower-structure isn't valid.
    */
@@ -354,7 +330,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
-   * @copydoc LinkedCells::reduce()
+   * @copydoc autopas::LinkedCells::reduce()
    * @note This function additionally rebuilds the towers if the tower-structure isn't valid.
    */
   template <typename Lambda, typename A>
@@ -367,7 +343,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
-   * @copydoc LinkedCells::reduce()
+   * @copydoc autopas::LinkedCells::reduce()
    * @note const version.
    * @note This function additionally iterates over the _particlesToAdd vector if the tower-structure isn't valid.
    */
@@ -399,7 +375,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
-   * @copydoc ParticleContainerInterface::getRegionIterator()
+   * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
    * @note This function additionally rebuilds the towers if the tower-structure isn't valid.
    */
   [[nodiscard]] ParticleIteratorWrapper<Particle, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
@@ -417,7 +393,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
-   * @copydoc ParticleContainerInterface::getRegionIterator()
+   * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
    * @note const version.
    * @note This function additionally iterates over _particlesToAdd if the container structure isn't valid.
    */
@@ -440,7 +416,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
-   * @copydoc LinkedCells::forEachInRegion()
+   * @copydoc autopas::LinkedCells::forEachInRegion()
    * @note This function additionally rebuilds the towers if the tower-structure isn't valid.
    */
   template <typename Lambda>
@@ -455,7 +431,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
-   * @copydoc LinkedCells::forEachInRegion()
+   * @copydoc autopas::LinkedCells::forEachInRegion()
    * @note const version.
    * @note This function additionally iterates over the _particlesToAdd vector if the tower-structure isn't valid.
    */
@@ -490,7 +466,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
-   * @copydoc LinkedCells::reduceInRegion()
+   * @copydoc autopas::LinkedCells::reduceInRegion()
    * @note This function additionally rebuilds the towers if the tower-structure isn't valid.
    */
   template <typename Lambda, typename A>
@@ -505,7 +481,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
-   * @copydoc LinkedCells::reduceInRegion()
+   * @copydoc autopas::LinkedCells::reduceInRegion()
    * @note const version.
    * @note This function additionally iterates over the _particlesToAdd vector if the tower-structure isn't valid.
    */
@@ -538,9 +514,6 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
   }
 
-  /**
-   * @copydoc ParticleContainerInterface::rebuildNeighborLists()
-   */
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     if (_isValid == ValidityState::invalid) {
       rebuildTowersAndClusters();
@@ -575,10 +548,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
   }
 
-  /**
-   * @copydoc ParticleContainerInterface::getNumParticles()
-   */
-  [[nodiscard]] unsigned long getNumParticles() const override {
+  [[nodiscard]] unsigned long getNumberOfParticles() const override {
     size_t sum = std::accumulate(_towers.begin(), _towers.end(), 0,
                                  [](size_t acc, const auto &tower) { return acc + tower.getNumActualParticles(); });
     sum = std::accumulate(_particlesToAdd.begin(), _particlesToAdd.end(), sum,
@@ -693,14 +663,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     return towerIndex2DTo1D(x, y, _towersPerDim);
   }
 
-  /**
-   * @copydoc ParticleContainerInterface::getBoxMax()
-   */
   [[nodiscard]] const std::array<double, 3> &getBoxMax() const override { return _boxMax; }
 
-  /**
-   * @copydoc ParticleContainerInterface::setBoxMax()
-   */
   void setBoxMax(const std::array<double, 3> &boxMax) override { _boxMax = boxMax; }
 
   /**
@@ -709,14 +673,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    */
   [[nodiscard]] const std::array<double, 3> &getHaloBoxMax() const { return _haloBoxMax; }
 
-  /**
-   * @copydoc ParticleContainerInterface::getBoxMin()
-   */
   [[nodiscard]] const std::array<double, 3> &getBoxMin() const override { return _boxMin; }
 
-  /**
-   * @copydoc ParticleContainerInterface::setBoxMin()
-   */
   void setBoxMin(const std::array<double, 3> &boxMin) override { _boxMin = boxMin; }
 
   /**
@@ -725,34 +683,16 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    */
   [[nodiscard]] const std::array<double, 3> &getHaloBoxMin() const { return _haloBoxMin; }
 
-  /**
-   * @copydoc ParticleContainerInterface::getCutoff()
-   */
   [[nodiscard]] double getCutoff() const override { return _cutoff; }
 
-  /**
-   * @copydoc ParticleContainerInterface::setCutoff()
-   */
   void setCutoff(double cutoff) override { _cutoff = cutoff; }
 
-  /**
-   * @copydoc ParticleContainerInterface::getSkin()
-   */
   [[nodiscard]] double getSkin() const override { return _skin; }
 
-  /**
-   * @copydoc ParticleContainerInterface::setSkin()
-   */
   void setSkin(double skin) override { _skin = skin; }
 
-  /**
-   * @copydoc ParticleContainerInterface::getInteractionLength()
-   */
   [[nodiscard]] double getInteractionLength() const override { return _cutoff + _skin; }
 
-  /**
-   * @copydoc ParticleContainerInterface::deleteAllParticles()
-   */
   void deleteAllParticles() override {
     _isValid = ValidityState::invalid;
     std::for_each(_particlesToAdd.begin(), _particlesToAdd.end(), [](auto &buffer) { buffer.clear(); });

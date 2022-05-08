@@ -172,6 +172,11 @@ class Simulation {
     autopas::utils::Timer haloParticleExchange;
 
     /**
+     * Records the time required to reflect particles.
+     */
+    autopas::utils::Timer reflectParticlesAtBoundaries;
+
+    /**
      * Records the time required to exchange migrating particles.
      */
     autopas::utils::Timer migratingParticleExchange;
@@ -226,18 +231,12 @@ class Simulation {
    * Turns the timers into a human readable string.
    * @param name: The timer's name.
    * @param timeNS: The time in nano seconds.
-   * @param numberWidth: The precision of the printed number.
+   * @param numberWidth: The minimal field width of the printed number.
    * @param maxTime: The simulation's total execution time.
    * @return All information of the timer in a human readable string.
    */
-  [[nodiscard]] std::string timerToString(const std::string &name, long timeNS, size_t numberWidth = 0ul,
+  [[nodiscard]] std::string timerToString(const std::string &name, long timeNS, int numberWidth = 0,
                                           long maxTime = 0ul);
-
-  /**
-   * Calculate the homogeneity of the scenario by using the standard deviation.
-   * @return homogeneity
-   */
-  [[nodiscard]] double calculateHomogeneity() const;
 
   /**
    * Updates the position of particles in the local AutoPas container.
@@ -264,7 +263,6 @@ class Simulation {
    * This simulation's domain decomposition.
    */
   std::shared_ptr<RegularGridDecomposition> _domainDecomposition;
-
   /**
    * If MPI is enabled, accumulates the times of all ranks on rank 0.
    * Otherwise, this function does nothing.
@@ -287,9 +285,9 @@ class Simulation {
 
   /**
    * Calculates the pairwise forces between particles in the autopas container.
-   * @param wasTuningIteration Tells the user if the current iteration of force calculations was a tuning iteration.
+   * @return Tells the user if the current iteration of force calculations was a tuning iteration.
    */
-  void calculatePairwiseForces(bool &wasTuningIteration);
+  bool calculatePairwiseForces();
 
   /**
    * Adds global forces to the particles in the container.

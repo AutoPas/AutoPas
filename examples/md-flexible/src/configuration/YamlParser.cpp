@@ -39,8 +39,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     }
     config.selectorStrategy.value = *parsedOptions.begin();
   }
-  if (node[config.periodic.name]) {
-    config.periodic.value = node[config.periodic.name].as<bool>();
+  if (node[config.boundaryOption.name]) {
+    auto tmpNode = node[config.boundaryOption.name];
+    config.boundaryOption.value = {options::BoundaryTypeOption::parseOptionExact(tmpNode[0].as<std::string>()),
+                                   options::BoundaryTypeOption::parseOptionExact(tmpNode[1].as<std::string>()),
+                                   options::BoundaryTypeOption::parseOptionExact(tmpNode[2].as<std::string>())};
   }
   if (node[config.cutoff.name]) {
     config.cutoff.value = node[config.cutoff.name].as<double>();
@@ -146,6 +149,12 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           "AutoPas cannot switch between several.");
     }
     config.mpiStrategyOption.value = *parsedOptions.begin();
+  }
+  if (node[config.MPITuningMaxDifferenceForBucket.name]) {
+    config.MPITuningMaxDifferenceForBucket.value = node[config.MPITuningMaxDifferenceForBucket.name].as<double>();
+  }
+  if (node[config.MPITuningWeightForMaxDensity.name]) {
+    config.MPITuningWeightForMaxDensity.value = node[config.MPITuningWeightForMaxDensity.name].as<double>();
   }
   if (node[config.acquisitionFunctionOption.name]) {
     auto parsedOptions =

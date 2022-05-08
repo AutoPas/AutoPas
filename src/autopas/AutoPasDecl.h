@@ -151,6 +151,12 @@ class AutoPas {
   void deleteParticle(ParticleIteratorWrapper<Particle, true> &iter);
 
   /**
+   * Deletes the given particle.
+   * @param particle Reference to the particle that should be deleted.
+   */
+  void deleteParticle(Particle &particle);
+
+  /**
    * Function to iterate over all pairs of particles in the container.
    * This function only handles short-range interactions.
    * @param f Functor that describes the pair-potential.
@@ -787,6 +793,22 @@ class AutoPas {
    */
   void setMPIStrategy(MPIStrategyOption mpiStrategyOption) { _mpiStrategyOption = mpiStrategyOption; }
 
+  /**
+   * Setter for the maximal Difference for the bucket distribution
+   * @param MPITuningMaxDifferenceForBucket
+   */
+  void setMPITuningMaxDifferenceForBucket(double MPITuningMaxDifferenceForBucket) {
+    _mpiTuningMaxDifferenceForBucket = MPITuningMaxDifferenceForBucket;
+  }
+
+  /**
+   * Setter for the maxDensity-Weight in calculation for bucket distribution
+   * @param MPITuningWeightForMaxDensity
+   */
+  void setMPITuningWeightForMaxDensity(double MPITuningWeightForMaxDensity) {
+    _mpiTuningWeightForMaxDensity = MPITuningWeightForMaxDensity;
+  }
+
 // Only define the interface for the MPI communicator if AUTOPAS_INCLUDE_MPI=ON
 // The internal implementation will use _autopasMPICommunicator with WrapMPI regardless of AUTOPAS_INCLUDE_MPI
 #if defined(AUTOPAS_INCLUDE_MPI)
@@ -814,7 +836,7 @@ class AutoPas {
  private:
   std::shared_ptr<autopas::ParticleContainerInterface<Particle>> getContainer();
 
-  const std::shared_ptr<autopas::ParticleContainerInterface<Particle>> getContainer() const;
+  std::shared_ptr<const autopas::ParticleContainerInterface<Particle>> getContainer() const;
 
  private:
   /**
@@ -922,6 +944,17 @@ class AutoPas {
    * Whether the chosen tuning strategy will be parallelized by MPI
    */
   MPIStrategyOption _mpiStrategyOption{MPIStrategyOption::noMPI};
+
+  /**
+   * For MPI-tuning: Maximum of the relative difference in the comparison metric for two ranks which exchange their
+   * tuning information.
+   */
+  double _mpiTuningMaxDifferenceForBucket{0.3};
+
+  /**
+   * For MPI-tuning: Weight for maxDensity in the calculation for bucket distribution.
+   */
+  double _mpiTuningWeightForMaxDensity{0.0};
 
   /**
    * Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and VerletListsCells).

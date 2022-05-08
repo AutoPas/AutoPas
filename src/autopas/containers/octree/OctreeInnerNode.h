@@ -8,6 +8,7 @@
 #pragma once
 
 #include "autopas/containers/octree/OctreeNodeInterface.h"
+#include "autopas/containers/octree/OctreeStaticNodeSelector.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/inBox.h"
 
@@ -138,12 +139,12 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
   }
 
   /**
-   * @copydoc OctreeNodeInterface::getNumParticles()
+   * @copydoc OctreeNodeInterface::getNumberOfParticles()
    */
-  unsigned int getNumParticles() override {
+  unsigned int getNumberOfParticles() override {
     unsigned int result = 0;
     for (auto &child : _children) {
-      result += child->getNumParticles();
+      result += child->getNumberOfParticles();
     }
     return result;
   }
@@ -198,6 +199,70 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
       }
     }
     return result;
+  }
+
+  /**
+   * @copydoc OctreeNodeWrapper::forEach()
+   */
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda) {
+    for (auto &child : _children) {
+      withStaticNodeType(child, [&](auto nodePtr) { nodePtr->forEach(forEachLambda); });
+    }
+  }
+
+  /**
+   * @copydoc OctreeNodeWrapper::reduce()
+   */
+  template <typename Lambda, typename A>
+  void reduce(Lambda reduceLambda, A &result) {
+    for (auto &child : _children) {
+      withStaticNodeType(child, [&](auto nodePtr) { nodePtr->reduce(reduceLambda, result); });
+    }
+  }
+
+  /**
+   * Apply the forEach lambda to each particle in the region.
+   *
+   * @tparam Lambda Function type
+   * @param forEachLambda Function to apply
+   * @param lowerCorner Lower corner of region
+   * @param higherCorner Higher corner of region
+   * @param behavior Parameter is only there to reuse functionality already implemented in FullParticleCell, should be
+   * set to ownedOrHalo
+   */
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+               const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    for (auto &child : _children) {
+      double vol = child->getEnclosedVolumeWith(lowerCorner, higherCorner);
+      if (vol > 0.0)
+        withStaticNodeType(child,
+                           [&](auto nodePtr) { nodePtr->forEach(forEachLambda, lowerCorner, higherCorner, behavior); });
+    }
+  }
+
+  /**
+   * Apply the reduce lambda to each particle in the region.
+   *
+   * @tparam Lambda Function type
+   * @tparam A Initial value type
+   * @param reduceLambda Function to apply
+   * @param result Initial value
+   * @param lowerCorner Lower corner of region
+   * @param higherCorner Higher corner of region
+   * @param behavior Parameter is only there to reuse functionality already implemented in FullParticleCell, should be
+   * set to ownedOrHalo
+   */
+  template <typename Lambda, typename A>
+  void reduce(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+              const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    for (auto &child : _children) {
+      double vol = child->getEnclosedVolumeWith(lowerCorner, higherCorner);
+      if (vol > 0.0)
+        withStaticNodeType(
+            child, [&](auto nodePtr) { nodePtr->reduce(reduceLambda, result, lowerCorner, higherCorner, behavior); });
+    }
   }
 
  private:

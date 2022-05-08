@@ -210,6 +210,12 @@ std::string MDFlexConfig::to_string() const {
        << endl;
   }
   os << setw(valueOffset) << left << mpiStrategyOption.name << ":  " << mpiStrategyOption.value << endl;
+  if (mpiStrategyOption.value == autopas::MPIStrategyOption::divideAndConquer) {
+    os << setw(valueOffset) << left << MPITuningMaxDifferenceForBucket.name << ":  "
+       << MPITuningMaxDifferenceForBucket.value << endl;
+    os << setw(valueOffset) << left << MPITuningWeightForMaxDensity.name << ":  " << MPITuningWeightForMaxDensity.value
+       << endl;
+  }
   os << setw(valueOffset) << left << tuningInterval.name << ":  " << tuningInterval.value << endl;
   os << setw(valueOffset) << left << tuningSamples.name << ":  " << tuningSamples.value << endl;
   os << setw(valueOffset) << left << tuningMaxEvidence.name << ":  " << tuningMaxEvidence.value << endl;
@@ -253,7 +259,8 @@ std::string MDFlexConfig::to_string() const {
   } else {
     os << setw(valueOffset) << left << iterations.name << ":  " << iterations.value << endl;
   }
-  os << setw(valueOffset) << left << boolalpha << periodic.name << ":  " << periodic.value << endl;
+  os << setw(valueOffset) << left << boundaryOption.name << ": "
+     << autopas::utils::ArrayUtils::to_string(boundaryOption.value) << endl;
 
   os << setw(valueOffset) << left << "Objects:" << endl;
 

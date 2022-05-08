@@ -20,6 +20,9 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
     : _cutoffWidth(configuration.cutoff.value), _skinWidth(configuration.verletSkinRadius.value) {
   autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &_subdomainCount);
 
+  int rank;
+  autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
+
 #if defined(AUTOPAS_INCLUDE_MPI)
   _mpiCommunicationNeeded = true;
 #else
@@ -155,6 +158,14 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
   std::vector<ParticleType> haloParticles{};
 
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
+
+    // completely bypass Halo particle exchange in this dimension if boundaries in this direction are not periodic
+    // *and* if both local boundaries are the global boundaries in this dimension
+    if (_boundaryType[dimensionIndex] != options::BoundaryTypeOption::periodic and
+        _localBoxMin[dimensionIndex] == _globalBoxMin[dimensionIndex] and
+        _localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex])
+      continue;
+
     std::vector<ParticleType> particlesForLeftNeighbor{};
     std::vector<ParticleType> particlesForRightNeighbor{};
 
@@ -202,6 +213,11 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
 void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer,
                                                           std::vector<ParticleType> &emigrants) {
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
+    if (_boundaryType[dimensionIndex] != options::BoundaryTypeOption::periodic and
+        _localBoxMin[dimensionIndex] == _globalBoxMin[dimensionIndex] and
+        _localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex])
+      continue;
+
     // If the ALL load balancer is used, it may happen that particles migrate to a non adjacent domain.
     // Therefore we need to migrate particles as many times as there are grid cells along the dimension.
     int maximumSendSteps = _loadBalancerOption == LoadBalancerOption::all ? _decomposition[dimensionIndex] : 1;
@@ -235,6 +251,44 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
   // Add remaining emigrants to current container
   for (const auto &particle : emigrants) {
     autoPasContainer->addParticle(particle);
+  }
+}
+
+void RegularGridDecomposition::reflectParticlesAtBoundaries(SharedAutoPasContainer &autoPasContainer) {
+  std::array<double, _dimensionCount> reflSkinMin{}, reflSkinMax{};
+
+  for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
+    // skip if boundary is not reflective
+    if (_boundaryType[dimensionIndex] != options::BoundaryTypeOption::reflective) continue;
+
+    auto reflect = [&](bool isUpper) {
+      for (auto p = autoPasContainer->getRegionIterator(reflSkinMin, reflSkinMax, autopas::IteratorBehavior::owned);
+           p.isValid(); ++p) {
+        auto vel = p->getV();
+        // reverse velocity in dimension if towards boundary
+        if ((vel[dimensionIndex] < 0) xor isUpper) {
+          vel[dimensionIndex] *= -1;
+        }
+        p->setV(vel);
+      }
+    };
+
+    // apply if we are at a global boundary on lower end of the dimension
+    if (_localBoxMin[dimensionIndex] == _globalBoxMin[dimensionIndex]) {
+      reflSkinMin = _globalBoxMin;
+      reflSkinMax = _globalBoxMax;
+      reflSkinMax[dimensionIndex] = _globalBoxMin[dimensionIndex] + autoPasContainer->getVerletSkin() / 2;
+
+      reflect(false);
+    }
+    // apply if we are at a global boundary on upper end of the dimension
+    if (_localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex]) {
+      reflSkinMin = _globalBoxMin;
+      reflSkinMax = _globalBoxMax;
+      reflSkinMin[dimensionIndex] = _globalBoxMax[dimensionIndex] - autoPasContainer->getVerletSkin() / 2;
+
+      reflect(true);
+    }
   }
 }
 

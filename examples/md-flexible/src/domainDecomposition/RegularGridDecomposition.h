@@ -13,6 +13,7 @@
 #include "DomainDecomposition.h"
 #include "autopas/utils/WrapMPI.h"
 #include "src/TypeDefinitions.h"
+#include "src/options/BoundaryTypeOption.h"
 #include "src/configuration/MDFlexConfig.h"
 
 /**
@@ -123,6 +124,12 @@ class RegularGridDecomposition final : public DomainDecomposition {
    */
   void exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer, std::vector<ParticleType> &emigrants);
 
+  /**
+   * Reflects particles within a reflective skin along the inside of a boundary.
+   * @param autoPasContainer: The container, where the migrating particles originate from.
+   */
+  void reflectParticlesAtBoundaries(SharedAutoPasContainer &autoPasContainer);
+
  private:
   /**
    * The number of neighbors of a rectangular domain.
@@ -209,6 +216,11 @@ class RegularGridDecomposition final : public DomainDecomposition {
   std::array<double, 3> _localBoxMax;
 
   /**
+   * Boundary condition types.
+   */
+  std::array<options::BoundaryTypeOption, 3> _boundaryType;
+
+  /**
    * A temporary buffer used for MPI send requests.
    */
   std::vector<autopas::AutoPas_MPI_Request> _sendRequests;
@@ -271,6 +283,34 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Updates the local box.
    */
   void updateLocalBox();
+
+  /**
+   * Sends particles of type ParticleType to a receiver.
+   * @param particles The particles to be sent to the receiver.
+   * @param receiver The recipient of the particels.
+   */
+  void sendParticles(const std::vector<ParticleType> &particles, const int &receiver);
+
+  /**
+   * Received particles sent by a sender.
+   * @param receivedParticles The container where the received particles will be stored.
+   * @param source The sender id/rank.
+   */
+  void receiveParticles(std::vector<ParticleType> &receivedParticles, const int &source);
+
+  /**
+   * Received data which has been sent by a specifig neighbour of this domain.
+   * @param neighbour The neighbour where the data originates from.
+   * @param dataBuffer The buffer where the received data will be stored.
+   */
+  void receiveDataFromNeighbour(const int &neighbour, std::vector<char> &dataBuffer);
+
+  /**
+   * Sends data to a specific neighbour of this domain.
+   * @param sendBuffer The buffer which will be sent to the neighbour.
+   * @param neighbour The neighbour to which the data will be sent.
+   */
+  void sendDataToNeighbour(std::vector<char> sendBuffer, const int &neighbour);
 
   /**
    * Sends and also receives particles to and from the left and right neighbours.

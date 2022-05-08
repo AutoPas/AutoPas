@@ -29,6 +29,7 @@
 #include "src/configuration/objects/CubeUniform.h"
 #include "src/configuration/objects/Sphere.h"
 #include "src/domainDecomposition/LoadBalancerOption.h"
+#include "src/options/BoundaryTypeOption.h"
 
 /**
  * Class containing all necessary parameters for configuring a md-flexible simulation.
@@ -245,6 +246,22 @@ class MDFlexConfig {
       autopas::MPIStrategyOption::noMPI, "mpi-strategy", true,
       "Whether to tune using with MPI or not. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::MPIStrategyOption::getAllOptions(), " ", {"(", ")"})};
+
+  /**
+   * MPITuningMaxDifferenceForBucket
+   */
+  MDFlexOption<double, __LINE__> MPITuningMaxDifferenceForBucket{
+      0.2, "mpi-tuning-max-difference-for-bucket", true,
+      "For MPI-tuning: Maximum of the relative difference in the comparison metric for two ranks which exchange their "
+      "tuning information."};
+
+  /**
+   * MPITuningWeightForMaxDensity
+   */
+  MDFlexOption<double, __LINE__> MPITuningWeightForMaxDensity{
+      0.1, "mpi-tuning-weight-for-max-density", true,
+      "For MPI-tuning: Weight for maxDensity in the calculation for bucket distribution."};
+
   /**
    * tuningInterval
    */
@@ -385,12 +402,16 @@ class MDFlexConfig {
   MDFlexOption<size_t, __LINE__> tuningPhases{
       0, "tuning-phases", true, "Number of tuning phases to simulate. This option overwrites --iterations."};
   /**
-   * Periodic boundaries.
-   * This starts with a "not" such that it can be used as a flag with a sane default.
+   * Boundary types.
    */
-  MDFlexOption<bool, __LINE__> periodic{
-      true, "periodic-boundaries", true,
-      "(De)Activate periodic boundaries. Possible Values: (true false) Default: true."};
+  MDFlexOption<std::array<options::BoundaryTypeOption, 3>, __LINE__> boundaryOption{
+      {options::BoundaryTypeOption::periodic, options::BoundaryTypeOption::periodic,
+       options::BoundaryTypeOption::periodic},
+      "boundary-type",
+      true,
+      "Boundary condition types for each of the three dimensions. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(options::BoundaryTypeOption::getAllOptions(), " ", {"(", ")"}) +
+          " Default: {periodic, periodic, periodic}"};
   /**
    * dontMeasureFlops
    */

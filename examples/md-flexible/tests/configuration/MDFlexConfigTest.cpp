@@ -102,16 +102,12 @@ TEST_F(MDFlexConfigTest, addType) {
 }
 
 TEST_F(MDFlexConfigTest, wrongTypeParsingInput) {
-#if defined(AUTOPAS_INCLUDE_MPI)
-  EXPECT_EQ(true, true);
-#else
   std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
                                         std::string(YAMLDIRECTORY) + "incorrectParsingFile.yaml"};
 
   char *argv[3] = {&arguments[0][0], &arguments[1][0], &arguments[2][0]};
 
   ASSERT_ANY_THROW(MDFlexConfig(3, argv));
-#endif
 }
 
 TEST_F(MDFlexConfigTest, multipleSameObjectParsing) {
