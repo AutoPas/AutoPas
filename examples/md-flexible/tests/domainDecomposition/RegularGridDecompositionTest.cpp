@@ -182,7 +182,7 @@ TEST_F(RegularGridDecompositionTest, testExchangeHaloParticles) {
   ASSERT_EQ(leavingParticles.size(), 0) << "All particles should have been created inside the container!";
 
   // halos are generated here, so this is what we actually test
-  domainDecomposition.exchangeHaloParticles(autoPasContainer);
+  domainDecomposition.exchangeHaloParticles(*autoPasContainer);
 
   EXPECT_EQ(autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned), 27)
       << "Owned particles missing after halo exchange!";
@@ -224,7 +224,7 @@ TEST_F(RegularGridDecompositionTest, testExchangeMigratingParticles) {
   // test
   auto emigrants = autoPasContainer->updateContainer();
   ASSERT_THAT(emigrants, ::testing::SizeIs(positionsOutsideSubdomain.size()));
-  domainDecomposition.exchangeMigratingParticles(autoPasContainer, emigrants);
+  domainDecomposition.exchangeMigratingParticles(*autoPasContainer, emigrants);
 
   // derive expectations
   const auto expectedPositions = generatePositionsInsideDomain(*autoPasContainer, configuration);

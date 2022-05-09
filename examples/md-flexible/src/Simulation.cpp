@@ -195,11 +195,11 @@ void Simulation::run() {
       // FIXME: do we have to call _domainDecomposition->exchangeMigratingParticles() here?
 
       _timers.reflectParticlesAtBoundaries.start();
-      _domainDecomposition->reflectParticlesAtBoundaries(_autoPasContainer);
+      _domainDecomposition->reflectParticlesAtBoundaries(*_autoPasContainer);
       _timers.reflectParticlesAtBoundaries.stop();
 
       _timers.haloParticleExchange.start();
-      _domainDecomposition->exchangeHaloParticles(_autoPasContainer);
+      _domainDecomposition->exchangeHaloParticles(*_autoPasContainer);
       _timers.haloParticleExchange.stop();
 
       _timers.work.start();

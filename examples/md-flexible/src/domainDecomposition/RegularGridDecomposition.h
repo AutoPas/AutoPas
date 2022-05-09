@@ -116,20 +116,20 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param autoPasContainer: The container, where the halo particles originate from.
    * FIXME: these functions should not take a shared ptr! Just a reference
    */
-  void exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer);
+  void exchangeHaloParticles(AutoPasType &autoPasContainer);
 
   /**
    * Exchanges migrating particles with all neighbors of the provided AutoPasContainer.
    * @param autoPasContainer: The container, where the migrating particles originate from.
    * @param emigrants: The emigrating particles send to neighbors.
    */
-  void exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer, std::vector<ParticleType> &emigrants);
+  void exchangeMigratingParticles(AutoPasType &autoPasContainer, std::vector<ParticleType> &emigrants);
 
   /**
    * Reflects particles within a reflective skin along the inside of a boundary.
    * @param autoPasContainer: The container, where the migrating particles originate from.
    */
-  void reflectParticlesAtBoundaries(SharedAutoPasContainer &autoPasContainer);
+  void reflectParticlesAtBoundaries(AutoPasType &autoPasContainer);
 
  private:
   /**
@@ -284,7 +284,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param direction: The direction along which the neighbor is located.
    * @param haloParticles: The container the identified halo particles are gathered in to.
    */
-  void collectHaloParticlesForLeftNeighbor(SharedAutoPasContainer &autoPasContainer, const size_t &direction,
+  void collectHaloParticlesForLeftNeighbor(AutoPasType &autoPasContainer, const size_t &direction,
                                            std::vector<ParticleType> &haloParticles);
 
   /**
@@ -294,7 +294,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param direction: The direction along which the neighbor is located.
    * @param haloParticles: The container the identified halo particles are gathered in to.
    */
-  void collectHaloParticlesForRightNeighbor(SharedAutoPasContainer &autoPasContainer, const size_t &direction,
+  void collectHaloParticlesForRightNeighbor(AutoPasType &autoPasContainer, const size_t &direction,
                                             std::vector<ParticleType> &haloParticles);
 
   /**

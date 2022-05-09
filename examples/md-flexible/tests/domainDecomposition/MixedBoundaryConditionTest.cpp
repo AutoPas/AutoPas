@@ -146,9 +146,9 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
   auto emigrants = autoPasContainer->updateContainer();
 
   // Apply boundary conditions
-  domainDecomposition.exchangeMigratingParticles(autoPasContainer, emigrants);
-  domainDecomposition.reflectParticlesAtBoundaries(autoPasContainer);
-  domainDecomposition.exchangeHaloParticles(autoPasContainer);
+  domainDecomposition.exchangeMigratingParticles(*autoPasContainer, emigrants);
+  domainDecomposition.reflectParticlesAtBoundaries(*autoPasContainer);
+  domainDecomposition.exchangeHaloParticles(*autoPasContainer);
 
 #if not defined(AUTOPAS_INCLUDE_MPI)
   // if there are no "none" boundaries the number of owned particles should stay constant

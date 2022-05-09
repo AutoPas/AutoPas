@@ -75,9 +75,9 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   auto emigrants = autoPasContainer->updateContainer();
 
   // apply BCs + domain exchange
-  domainDecomposition.exchangeMigratingParticles(autoPasContainer, emigrants);
-  domainDecomposition.reflectParticlesAtBoundaries(autoPasContainer);
-  domainDecomposition.exchangeHaloParticles(autoPasContainer);
+  domainDecomposition.exchangeMigratingParticles(*autoPasContainer, emigrants);
+  domainDecomposition.reflectParticlesAtBoundaries(*autoPasContainer);
+  domainDecomposition.exchangeHaloParticles(*autoPasContainer);
 
   if (domainDecomposition.isInsideLocalDomain(expectedPosition)) {
     EXPECT_EQ(1, autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned));

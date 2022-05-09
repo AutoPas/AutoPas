@@ -145,7 +145,7 @@ std::array<int, 6> RegularGridDecomposition::getExtentOfSubdomain(const int subd
   return DomainTools::getExtentOfSubdomain(subdomainIndex, _decomposition);
 }
 
-void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer) {
+void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContainer) {
   std::vector<ParticleType> haloParticles{};
 
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
@@ -196,11 +196,11 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
                                         rightNeighbor, haloParticles);
   }
   for (const auto &particle : haloParticles) {
-    autoPasContainer->addHaloParticle(particle);
+    autoPasContainer.addHaloParticle(particle);
   }
 }
 
-void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer,
+void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasContainer,
                                                           std::vector<ParticleType> &emigrants) {
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
     // if this rank spans the whole dimension but it is not periodic -> skip.
@@ -231,7 +231,7 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
 
       for (const auto &particle : immigrants) {
         if (isInsideLocalDomain(particle.getR())) {
-          autoPasContainer->addParticle(particle);
+          autoPasContainer.addParticle(particle);
         } else {
           emigrants.push_back(particle);
         }
@@ -240,7 +240,7 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
   }
 }
 
-void RegularGridDecomposition::reflectParticlesAtBoundaries(SharedAutoPasContainer &autoPasContainer) {
+void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPasContainer) {
   std::array<double, _dimensionCount> reflSkinMin{}, reflSkinMax{};
 
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
@@ -248,7 +248,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(SharedAutoPasContain
     if (_boundaryType[dimensionIndex] != options::BoundaryTypeOption::reflective) continue;
 
     auto reflect = [&](bool isUpper) {
-      for (auto p = autoPasContainer->getRegionIterator(reflSkinMin, reflSkinMax, autopas::IteratorBehavior::owned);
+      for (auto p = autoPasContainer.getRegionIterator(reflSkinMin, reflSkinMax, autopas::IteratorBehavior::owned);
            p.isValid(); ++p) {
         auto vel = p->getV();
         // reverse velocity in dimension if towards boundary
@@ -263,7 +263,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(SharedAutoPasContain
     if (_localBoxMin[dimensionIndex] == _globalBoxMin[dimensionIndex]) {
       reflSkinMin = _globalBoxMin;
       reflSkinMax = _globalBoxMax;
-      reflSkinMax[dimensionIndex] = _globalBoxMin[dimensionIndex] + autoPasContainer->getVerletSkin() / 2;
+      reflSkinMax[dimensionIndex] = _globalBoxMin[dimensionIndex] + autoPasContainer.getVerletSkin() / 2;
 
       reflect(false);
     }
@@ -271,7 +271,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(SharedAutoPasContain
     if (_localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex]) {
       reflSkinMin = _globalBoxMin;
       reflSkinMax = _globalBoxMax;
-      reflSkinMin[dimensionIndex] = _globalBoxMax[dimensionIndex] - autoPasContainer->getVerletSkin() / 2;
+      reflSkinMin[dimensionIndex] = _globalBoxMax[dimensionIndex] - autoPasContainer.getVerletSkin() / 2;
 
       reflect(true);
     }
@@ -298,20 +298,19 @@ void RegularGridDecomposition::sendAndReceiveParticlesLeftAndRight(std::vector<P
   }
 }
 
-void RegularGridDecomposition::collectHaloParticlesForLeftNeighbor(SharedAutoPasContainer &autoPasContainer,
+void RegularGridDecomposition::collectHaloParticlesForLeftNeighbor(AutoPasType &autoPasContainer,
                                                                    const size_t &direction,
                                                                    std::vector<ParticleType> &haloParticles) {
-  std::array<double, _dimensionCount> boxMin, boxMax;
-
   // Calculate halo box for left neighbor
-  for (int i = 0; i < _dimensionCount; ++i) {
-    boxMin[i] = _localBoxMin[i] - _skinWidth;
-    boxMax[i] = _skinWidth + _localBoxMax[i];
-  }
-  boxMax[direction] = _localBoxMin[direction] + _cutoffWidth + _skinWidth;
+  const std::array<double, _dimensionCount> boxMin = autopas::utils::ArrayMath::subScalar(_localBoxMin, _skinWidth);
+  const std::array<double, _dimensionCount> boxMax = [&]() {
+    auto boxMax = autopas::utils::ArrayMath::addScalar(_localBoxMax, _skinWidth);
+    boxMax[direction] = _localBoxMin[direction] + _cutoffWidth + _skinWidth;
+    return boxMax;
+  }();
 
   // Collect the halo particles for the left neighbor
-  for (auto particle = autoPasContainer->getRegionIterator(boxMin, boxMax, autopas::IteratorBehavior::owned);
+  for (auto particle = autoPasContainer.getRegionIterator(boxMin, boxMax, autopas::IteratorBehavior::owned);
        particle.isValid(); ++particle) {
     std::array<double, _dimensionCount> position = particle->getR();
     haloParticles.push_back(*particle);
@@ -324,20 +323,19 @@ void RegularGridDecomposition::collectHaloParticlesForLeftNeighbor(SharedAutoPas
   }
 }
 
-void RegularGridDecomposition::collectHaloParticlesForRightNeighbor(SharedAutoPasContainer &autoPasContainer,
+void RegularGridDecomposition::collectHaloParticlesForRightNeighbor(AutoPasType &autoPasContainer,
                                                                     const size_t &direction,
                                                                     std::vector<ParticleType> &haloParticles) {
-  std::array<double, _dimensionCount> boxMin, boxMax;
-
   // Calculate left halo box of right neighbor
-  for (int i = 0; i < _dimensionCount; ++i) {
-    boxMin[i] = _localBoxMin[i] - _skinWidth;
-    boxMax[i] = _localBoxMax[i] + _skinWidth;
-  }
-  boxMin[direction] = _localBoxMax[direction] - _cutoffWidth - _skinWidth;
+  const std::array<double, _dimensionCount> boxMax = autopas::utils::ArrayMath::addScalar(_localBoxMax, _skinWidth);
+  const std::array<double, _dimensionCount> boxMin = [&]() {
+    auto boxMin = autopas::utils::ArrayMath::subScalar(_localBoxMin, _skinWidth);
+    boxMin[direction] = _localBoxMax[direction] - _cutoffWidth - _skinWidth;
+    return boxMax;
+  }();
 
   // Collect the halo particles for the right neighbor
-  for (auto particle = autoPasContainer->getRegionIterator(boxMin, boxMax, autopas::IteratorBehavior::owned);
+  for (auto particle = autoPasContainer.getRegionIterator(boxMin, boxMax, autopas::IteratorBehavior::owned);
        particle.isValid(); ++particle) {
     std::array<double, _dimensionCount> position = particle->getR();
     haloParticles.push_back(*particle);
