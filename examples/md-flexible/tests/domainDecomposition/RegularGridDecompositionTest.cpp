@@ -53,7 +53,7 @@ TEST_F(RegularGridDecompositionTest, testGetLocalDomain) {
   configuration.boxMax.value = {10.0, 10.0, 10.0};
   configuration.subdivideDimension.value = {true, true, true};
   configuration.verletSkinRadius.value = 0;
-  configuration.cutoff.value = 0;
+  configuration.cutoff.value = 2.0;
   configuration.boundaryOption.value = {options::BoundaryTypeOption::periodic, options::BoundaryTypeOption::periodic,
                                         options::BoundaryTypeOption::periodic};
 
@@ -73,6 +73,8 @@ TEST_F(RegularGridDecompositionTest, testGetLocalDomain) {
 
   const std::array<double, 3> expectedLocalBoxExtend = autopas::utils::ArrayMath::div(
       globalBoxExtend, autopas::utils::ArrayUtils::static_cast_array<double>(decomposition));
+  // make sure expectations make sense
+  ASSERT_THAT(expectedLocalBoxExtend, ::testing::Each(::testing::Gt(1e-10)));
 
   const std::array<double, 3> resultingLocalBoxExtend =
       autopas::utils::ArrayMath::sub(domainDecomposition.getLocalBoxMax(), domainDecomposition.getLocalBoxMin());
