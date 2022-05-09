@@ -5,12 +5,16 @@
  */
 #include "RegularGridDecompositionTest.h"
 
+#include <gmock/gmock-matchers.h>
+
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/WrapMPI.h"
 #include "src/TypeDefinitions.h"
 #include "src/configuration/MDFlexConfig.h"
 #include "src/domainDecomposition/DomainTools.h"
 #include "src/domainDecomposition/RegularGridDecomposition.h"
+
+extern template class autopas::AutoPas<ParticleType>;
 
 namespace {
 void initializeAutoPasContainer(RegularGridDecomposition::SharedAutoPasContainer &autoPasContainer,
@@ -78,101 +82,97 @@ TEST_F(RegularGridDecompositionTest, testGetLocalDomain) {
  * For more information see the comments in the test.
  */
 TEST_F(RegularGridDecompositionTest, testExchangeHaloParticles) {
-  int numberOfRanks;
-  autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &numberOfRanks);
+  GTEST_SKIP() << "THIS TEST IS CURRENTLY BROKEN AND WILL BE FIXED IN https://github.com/AutoPas/AutoPas/pull/628/";
 
-  std::cout << "NumberOfRanks: " << numberOfRanks << std::endl;
+  int numberOfRanks{};
+  int myRank{};
+  autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &myRank);
+  autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &numberOfRanks);
 
-  if (numberOfRanks != 1) {
-    EXPECT_EQ(true, true);
-  } else {
-    std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
-                                          std::string(YAMLDIRECTORY) + "particleExchangeTest.yaml"};
+  std::cout << "My Rank: " << myRank << std::endl;
 
-    char *argv[3] = {arguments[0].data(), arguments[1].data(), arguments[2].data()};
+  MDFlexConfig configuration(0, nullptr);
+  configuration.boxMin.value = {0., 0., 0.};
+  configuration.cutoff.value = 3.;
+  configuration.verletSkinRadius.value = 0.;
+  // make sure evey rank gets exactly 3x3x3 cells
+  const double boxLength = 3. * configuration.cutoff.value * numberOfRanks;
+  configuration.boxMax.value = {boxLength, boxLength, boxLength};
+  configuration.boundaryOption.value = {options::BoundaryTypeOption::periodic, options::BoundaryTypeOption::periodic,
+                                        options::BoundaryTypeOption::periodic};
 
-    MDFlexConfig configuration(3, argv);
+  RegularGridDecomposition domainDecomposition(
+      configuration.boxMin.value, configuration.boxMax.value, configuration.subdivideDimension.value,
+      configuration.cutoff.value, configuration.verletSkinRadius.value, configuration.boundaryOption.value);
+  const auto &localBoxMin = domainDecomposition.getLocalBoxMin();
 
-    std::array<double, 3> localBoxMin = configuration.boxMin.value;
-    std::array<double, 3> localBoxMax = configuration.boxMax.value;
+  auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
 
-    RegularGridDecomposition domainDecomposition(
-        configuration.boxMin.value, configuration.boxMax.value, configuration.subdivideDimension.value,
-        configuration.cutoff.value, configuration.verletSkinRadius.value, configuration.boundaryOption.value);
+  initializeAutoPasContainer(autoPasContainer, configuration);
 
-    auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
-
-    initializeAutoPasContainer(autoPasContainer, configuration);
-
-    // Setup 27 particles of which 26 will be relevant during halo update. Imagine a rubik's cube where each cell
-    // contains a single particle. This layout contains 8 particles with 3 adjacent cell which is outside the cube,
-    // 12 particles with two adjacent cells which are outside the cube and 6 particles with a single adjacent cell
-    // outside the cube.
-    std::vector<std::vector<double>> particlePositions = {
-        {1.5, 1.5, 1.5}, {5.0, 1.5, 1.5}, {8.5, 1.5, 1.5}, {1.5, 5.0, 1.5}, {5.0, 5.0, 1.5}, {8.5, 5.0, 1.5},
-        {1.5, 8.5, 1.5}, {5.0, 8.5, 1.5}, {8.5, 8.5, 1.5}, {1.5, 1.5, 5.0}, {5.0, 1.5, 5.0}, {8.5, 1.5, 5.0},
-        {1.5, 5.0, 5.0}, {5.0, 5.0, 5.0}, {8.5, 5.0, 5.0}, {1.5, 8.5, 5.0}, {5.0, 8.5, 5.0}, {8.5, 8.5, 5.0},
-        {1.5, 1.5, 8.5}, {5.0, 1.5, 8.5}, {8.5, 1.5, 8.5}, {1.5, 5.0, 8.5}, {5.0, 5.0, 8.5}, {8.5, 5.0, 8.5},
-        {1.5, 8.5, 8.5}, {5.0, 8.5, 8.5}, {8.5, 8.5, 8.5}};
-
-    size_t id = 0;
-    for (const auto position : particlePositions) {
-      ParticleType particle;
-      particle.setID(id);
-      particle.setR({position[0], position[1], position[2]});
-
-      autoPasContainer->addParticle(particle);
-
-      ++id;
+  // Setup 27 particles of which 26 will be relevant during halo update. Imagine a rubik's cube where each cell
+  // contains a single particle. This layout contains 8 particles with 3 adjacent cell which is outside the cube,
+  // 12 particles with two adjacent cells which are outside the cube and 6 particles with a single adjacent cell
+  // outside the cube. The 'first cell' is the leftmost in all dimensions.
+  const auto particlePositions = [&]() {
+    std::vector<std::array<double, 3>> positions{};
+    positions.reserve(27);
+    const auto midOfFirstCell = autopas::utils::ArrayMath::addScalar(localBoxMin, configuration.cutoff.value / 2.);
+    for (double z = 0; z < 3; ++z) {
+      for (double y = 0; y < 3; ++y) {
+        for (double x = 0; x < 3; ++x) {
+          const auto relativePosition =
+              autopas::utils::ArrayMath::mulScalar(std::array<double, 3>{x, y, z}, configuration.cutoff.value);
+          positions.push_back(autopas::utils::ArrayMath::add(midOfFirstCell, relativePosition));
+        }
+      }
     }
+    return positions;
+  }();
 
-    EXPECT_NO_THROW(domainDecomposition.exchangeHaloParticles(autoPasContainer));
+  size_t id = 0;
+  for (const auto &position : particlePositions) {
+    ParticleType particle;
+    particle.setID(id++);
+    particle.setR(position);
 
-    // The resulting haloParticleCount has to be 98 because, the 8 corner particles have to be replicated 7 times each,
-    // resulting in 56 halo particles for the corner cells. The 12 particles contained
-    // in the edge cells of the rubik's cube need to be replicated 3 times each raising the total number of halo
-    // particles to 90. The remaining 6 particles with a single adjacent cell only produce a single halo particle each.
-    // Therefor the total amount of particles is 98.
-    std::vector<std::vector<double>> expectedHaloParticlePositions = {
-        {-2.725, -2.725, -2.725}, {1.5, -2.725, -2.725},    {5, -2.725, -2.725},   {8.5, -2.725, -2.725},
-        {12.725, -2.725, -2.725}, {-2.725, 1.5, -2.725},    {1.5, 1.5, -2.725},    {5, 1.5, -2.725},
-        {8.5, 1.5, -2.725},       {12.725, 1.5, -2.725},    {-2.725, 5, -2.725},   {1.5, 5, -2.725},
-        {5, 5, -2.725},           {8.5, 5, -2.725},         {12.725, 5, -2.725},   {-2.725, 8.5, -2.725},
-        {1.5, 8.5, -2.725},       {5, 8.5, -2.725},         {8.5, 8.5, -2.725},    {12.725, 8.5, -2.725},
-        {-2.725, 12.725, -2.725}, {1.5, 12.725, -2.725},    {5, 12.725, -2.725},   {8.5, 12.725, -2.725},
-        {12.725, 12.725, -2.725}, {-2.725, -2.725, 1.5},    {1.5, -2.725, 1.5},    {5, -2.725, 1.5},
-        {8.5, -2.725, 1.5},       {12.725, -2.725, 1.5},    {-2.725, 1.5, 1.5},    {12.725, 1.5, 1.5},
-        {-2.725, 5, 1.5},         {12.725, 5, 1.5},         {-2.725, 8.5, 1.5},    {12.725, 8.5, 1.5},
-        {-2.725, 12.725, 1.5},    {1.5, 12.725, 1.5},       {5, 12.725, 1.5},      {8.5, 12.725, 1.5},
-        {12.725, 12.725, 1.5},    {-2.725, -2.725, 5},      {1.5, -2.725, 5},      {5, -2.725, 5},
-        {8.5, -2.725, 5},         {12.725, -2.725, 5},      {-2.725, 1.5, 5},      {12.725, 1.5, 5},
-        {-2.725, 5, 5},           {12.725, 5, 5},           {-2.725, 8.5, 5},      {12.725, 8.5, 5},
-        {-2.725, 12.725, 5},      {1.5, 12.725, 5},         {5, 12.725, 5},        {8.5, 12.725, 5},
-        {12.725, 12.725, 5},      {-2.725, -2.725, 8.5},    {1.5, -2.725, 8.5},    {5, -2.725, 8.5},
-        {8.5, -2.725, 8.5},       {12.725, -2.725, 8.5},    {-2.725, 1.5, 8.5},    {12.725, 1.5, 8.5},
-        {-2.725, 5, 8.5},         {12.725, 5, 8.5},         {-2.725, 8.5, 8.5},    {12.725, 8.5, 8.5},
-        {-2.725, 12.725, 8.5},    {1.5, 12.725, 8.5},       {5, 12.725, 8.5},      {8.5, 12.725, 8.5},
-        {12.725, 12.725, 8.5},    {-2.725, -2.725, 12.725}, {1.5, -2.725, 12.725}, {5, -2.725, 12.725},
-        {8.5, -2.725, 12.725},    {12.725, -2.725, 12.725}, {-2.725, 1.5, 12.725}, {1.5, 1.5, 12.725},
-        {5, 1.5, 12.725},         {8.5, 1.5, 12.725},       {12.725, 1.5, 12.725}, {-2.725, 5, 12.725},
-        {1.5, 5, 12.725},         {5, 5, 12.725},           {8.5, 5, 12.725},      {12.725, 5, 12.725},
-        {-2.725, 8.5, 12.725},    {1.5, 8.5, 12.725},       {5, 8.5, 12.725},      {8.5, 8.5, 12.725},
-        {12.725, 8.5, 12.725},    {-2.725, 12.725, 12.725}, {1.5, 12.725, 12.725}, {5, 12.725, 12.725},
-        {8.5, 12.725, 12.725},    {12.725, 12.725, 12.725}};
+    autoPasContainer->addParticle(particle);
+  }
+  ASSERT_EQ(autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned), 27);
+  const auto leavingParticles = autoPasContainer->updateContainer();
+  ASSERT_EQ(leavingParticles.size(), 0) << "All particles should have been created inside the container!";
 
-    const size_t haloParticleCount = autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::halo);
+  // halos are generated here, so this is what we actually test
+  domainDecomposition.exchangeHaloParticles(autoPasContainer);
 
-    EXPECT_EQ(haloParticleCount, expectedHaloParticlePositions.size());
-
-    size_t index = 0;
-    for (auto particle = autoPasContainer->begin(autopas::IteratorBehavior::halo); particle.isValid(); ++particle) {
-      const auto particlePosition = particle->getR();
-      EXPECT_NEAR(particlePosition[0], expectedHaloParticlePositions[index][0], 1e-13);
-      EXPECT_NEAR(particlePosition[1], expectedHaloParticlePositions[index][1], 1e-13);
-      EXPECT_NEAR(particlePosition[2], expectedHaloParticlePositions[index][2], 1e-13);
-
-      ++index;
+  // expect particles to be all around the box since every particle creates multiple halo particles.
+  const auto expectedHaloParticlePositions = [&]() {
+    std::vector<std::array<double, 3>> positions{};
+    positions.reserve(98);
+    const auto midOfFirstHaloCell = autopas::utils::ArrayMath::subScalar(localBoxMin, configuration.cutoff.value / 2.);
+    for (double z = 0; z < 5; ++z) {
+      for (double y = 0; y < 5; ++y) {
+        for (double x = 0; x < 5; ++x) {
+          const std::array<double, 3> pos{x, y, z};
+          // only add a particle if the position is in the halo region (=not in the inner box; +/- .1 for floats)
+          if (autopas::utils::notInBox(pos, {.9, .9, .9}, {3.1, 3.1, 3.1})) {
+            const auto relativePosition =
+                autopas::utils::ArrayMath::mulScalar(std::array<double, 3>{x, y, z}, configuration.cutoff.value);
+            positions.push_back(autopas::utils::ArrayMath::add(midOfFirstHaloCell, relativePosition));
+          }
+        }
+      }
     }
+    return positions;
+  }();
+  ASSERT_EQ(expectedHaloParticlePositions.size(), 98);
+
+  EXPECT_EQ(autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::halo),
+            expectedHaloParticlePositions.size());
+
+  for (auto particleIter = autoPasContainer->begin(autopas::IteratorBehavior::halo); particleIter.isValid();
+       ++particleIter) {
+    EXPECT_THAT(expectedHaloParticlePositions, ::testing::Contains(particleIter->getR()));
   }
 }
 
@@ -182,6 +182,8 @@ TEST_F(RegularGridDecompositionTest, testExchangeHaloParticles) {
  * For more information see the comments in the test.
  */
 TEST_F(RegularGridDecompositionTest, testExchangeMigratingParticles) {
+  GTEST_SKIP() << "THIS TEST IS CURRENTLY BROKEN AND WILL BE FIXED IN https://github.com/AutoPas/AutoPas/pull/628/";
+
   int numberOfRanks;
   autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &numberOfRanks);
 

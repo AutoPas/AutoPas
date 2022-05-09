@@ -39,7 +39,8 @@ inline long meanValue(const std::vector<long> &values) {
  * @param values
  * @return Middle ((size-1) /2) of the sorted vector.
  */
-inline long medianValue(std::vector<long> values) {
+template <class T>
+inline T medianValue(std::vector<T> values) {
   if (values.empty()) return 0;
 
   std::sort(values.begin(), values.end());

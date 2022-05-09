@@ -73,7 +73,7 @@ class SoA {
    * @param other Other buffer.
    */
   void append(const SoA<SoAArraysType> &other) {
-    if (other.getNumParticles() > 0) {
+    if (other.getNumberOfParticles() > 0) {
       append_impl(other.soaStorage, std::make_index_sequence<std::tuple_size<SoAArraysType>::value>{});
     }
   }
@@ -83,7 +83,7 @@ class SoA {
    * @param other Other buffer.
    */
   void append(const SoAView<SoAArraysType> &other) {
-    if (other.getNumParticles() > 0) {
+    if (other.getNumberOfParticles() > 0) {
       append_impl(other, std::make_index_sequence<std::tuple_size<SoAArraysType>::value>{});
     }
   }
@@ -95,8 +95,8 @@ class SoA {
    */
   template <int... attributes>
   void append(const SoA<SoAArraysType> &other) {
-    if (other.getNumParticles() > 0) {
-      const auto newSize = getNumParticles() + other.getNumParticles();
+    if (other.getNumberOfParticles() > 0) {
+      const auto newSize = getNumberOfParticles() + other.getNumberOfParticles();
       append_impl(other.soaStorage, std::index_sequence<attributes...>{});
       resizeArrays(newSize);
     }
@@ -137,10 +137,10 @@ class SoA {
   template <int... attributes>
   std::array<double, sizeof...(attributes)> readMultiple(size_t particleId) const {
     std::array<double, sizeof...(attributes)> retArray;
-    if (particleId >= getNumParticles()) {
+    if (particleId >= getNumberOfParticles()) {
       autopas::utils::ExceptionHandler::exception(
           "SoA::read: requested particle id ({}) is bigger than number of particles ({})", particleId,
-          getNumParticles());
+          getNumberOfParticles());
       return retArray;
     }
     read_impl<attributes...>(particleId, retArray);
@@ -176,7 +176,7 @@ class SoA {
    *
    * @return Number of particles.
    */
-  inline size_t getNumParticles() const {
+  inline size_t getNumberOfParticles() const {
     size_t maxLength = 0;
     utils::TupleUtils::for_each(soaStorage.getTuple(), [&](auto &v) { maxLength = std::max(maxLength, v.size()); });
     return maxLength;
@@ -209,12 +209,12 @@ class SoA {
    * Constructs a SoAView for the whole SoA and returns it.
    * @return the constructed SoAView on the whole SoA.
    */
-  SoAView<SoAArraysType> constructView() { return {this, 0, getNumParticles()}; }
+  SoAView<SoAArraysType> constructView() { return {this, 0, getNumberOfParticles()}; }
 
   /**
    * Constructs a view that starts at \p startIndex (inclusive) and ends at \p endIndex (exclusive).
    *
-   * \p startIndex and \p endIndex have to be between 0 (inclusive) and `this->getNumParticles()` (inclusive). \p
+   * \p startIndex and \p endIndex have to be between 0 (inclusive) and `this->getNumberOfParticles()` (inclusive). \p
    * endIndex has to be greater or equal to \p startIndex.
    * @param startIndex The index of the first entry to view.
    * @param endIndex The index of the entry after the last entry to view.
@@ -259,7 +259,8 @@ class SoA {
   void appendSingleArray(const SoAView<SoAArraysType> &valArrays) {
     auto &currentVector = soaStorage.template get<attribute>();
     auto otherVectorIterator = valArrays.template begin<attribute>();
-    currentVector.insert(currentVector.end(), otherVectorIterator, otherVectorIterator + valArrays.getNumParticles());
+    currentVector.insert(currentVector.end(), otherVectorIterator,
+                         otherVectorIterator + valArrays.getNumberOfParticles());
   }
 
   // actual implementation of append

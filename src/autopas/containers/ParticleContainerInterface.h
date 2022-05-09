@@ -166,7 +166,7 @@ class ParticleContainerInterface {
    * Get the total number of particles saved in the container (owned and halo but not dummies).
    * @return Number of particles in the container.
    */
-  [[nodiscard]] virtual unsigned long getNumParticles() const = 0;
+  [[nodiscard]] virtual unsigned long getNumberOfParticles() const = 0;
 
   /**
    * Iterate over all particles using

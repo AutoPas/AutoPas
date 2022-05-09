@@ -222,7 +222,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    *
    * @return The integer # of particles in the container
    */
-  [[nodiscard]] unsigned long getNumParticles() const override {
+  [[nodiscard]] unsigned long getNumberOfParticles() const override {
     return this->_cells[CellTypes::OWNED].numParticles() + this->_cells[CellTypes::HALO].numParticles();
   }
 

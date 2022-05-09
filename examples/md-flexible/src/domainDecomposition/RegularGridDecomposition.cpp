@@ -181,7 +181,7 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
                                           rightNeighbour, haloParticles);
     }
 
-    for (auto &particle : haloParticles) {
+    for (const auto &particle : haloParticles) {
       autoPasContainer->addHaloParticle(particle);
     }
   }
