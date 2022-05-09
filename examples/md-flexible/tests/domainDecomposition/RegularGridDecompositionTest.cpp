@@ -48,6 +48,8 @@ auto initDomain() {
   autoPasContainer->setBoxMax(localBoxMax);
   autoPasContainer->setCutoff(configuration.cutoff.value);
   autoPasContainer->setVerletSkin(configuration.verletSkinRadius.value);
+  autoPasContainer->setAllowedContainers({autopas::ContainerOption::directSum});
+  autoPasContainer->setAllowedTraversals({autopas::TraversalOption::ds_sequential});
   autoPasContainer->init();
 
   return std::make_tuple(autoPasContainer, domainDecomposition, configuration);
@@ -204,91 +206,29 @@ TEST_F(RegularGridDecompositionTest, testExchangeHaloParticles) {
  * For more information see the comments in the test.
  */
 TEST_F(RegularGridDecompositionTest, testExchangeMigratingParticles) {
-  GTEST_SKIP() << "THIS TEST IS CURRENTLY BROKEN AND WILL BE FIXED IN https://github.com/AutoPas/AutoPas/pull/628/";
+  auto [autoPasContainer, domainDecomposition, configuration] = initDomain();
 
-  int numberOfRanks;
-  autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &numberOfRanks);
-
-  if (numberOfRanks != 1) {
-    EXPECT_EQ(true, true);
-  } else {
-    std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
-                                          std::string(YAMLDIRECTORY) + "particleExchangeTest.yaml"};
-    char *argv[3] = {arguments[0].data(), arguments[1].data(), arguments[2].data()};
-
-    MDFlexConfig configuration(3, argv);
-
-    std::array<double, 3> localBoxMin = configuration.boxMin.value;
-    std::array<double, 3> localBoxMax = configuration.boxMax.value;
-
-    RegularGridDecomposition domainDecomposition(configuration);
-
-    auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
-
-    //    initializeAutoPasContainer(autoPasContainer, configuration);
-
-    // Setup 27 particles. Imagine a rubik's cube where each cell contains a single particle.
-    std::vector<std::vector<double>> particlePositions = {
-        {1.5, 1.5, 1.5}, {5.0, 1.5, 1.5}, {8.5, 1.5, 1.5}, {1.5, 5.0, 1.5}, {5.0, 5.0, 1.5}, {8.5, 5.0, 1.5},
-        {1.5, 8.5, 1.5}, {5.0, 8.5, 1.5}, {8.5, 8.5, 1.5}, {1.5, 1.5, 5.0}, {5.0, 1.5, 5.0}, {8.5, 1.5, 5.0},
-        {1.5, 5.0, 5.0}, {5.0, 5.0, 5.0}, {8.5, 5.0, 5.0}, {1.5, 8.5, 5.0}, {5.0, 8.5, 5.0}, {8.5, 8.5, 5.0},
-        {1.5, 1.5, 8.5}, {5.0, 1.5, 8.5}, {8.5, 1.5, 8.5}, {1.5, 5.0, 8.5}, {5.0, 5.0, 8.5}, {8.5, 5.0, 8.5},
-        {1.5, 8.5, 8.5}, {5.0, 8.5, 8.5}, {8.5, 8.5, 8.5}};
-
+  const auto positionsOutsideSubdomain = generatePositionsOutsideDomain(*autoPasContainer, configuration);
+  ASSERT_THAT(positionsOutsideSubdomain, ::testing::SizeIs(98));
+  // generate 98 particles at positions inside the subdomain. Otherwise, we cannot add them.
+  // Then move them to the positions slightly outside the domain.
+  {
     size_t id = 0;
-    for (const auto position : particlePositions) {
-      ParticleType particle;
-      particle.setID(id);
-      particle.setR({position[0], position[1], position[2]});
-
-      autoPasContainer->addParticle(particle);
-
-      ++id;
+    for (const auto &_ : positionsOutsideSubdomain) {
+      ParticleType p(domainDecomposition.getLocalBoxMin(), {0., 0., 0.}, id++);
+      autoPasContainer->addParticle(p);
     }
-
-    // Move particles outside the simulation box to make them migrate.
-    // Particles in corner cells (of the rubik's cube) will be moved diagonally in all dimensions.
-    // Particles in edge cells will be sifted diagonally in two dimiensions.
-    // Particles in surface cells which are neither a corner nor a edge will be moved along a single dimension.
-    // Particles which are not in a surface cell will not be moved at all.
-    for (auto particle = autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-      auto position = particle->getR();
-      if (position[0] < 2.5) {
-        position[0] -= 3.0;
-      } else if (position[0] > 7.5) {
-        position[0] += 3.0;
-      }
-      if (position[1] < 2.5) {
-        position[1] -= 3.0;
-      } else if (position[1] > 7.5) {
-        position[1] += 3.0;
-      }
-      if (position[2] < 2.5) {
-        position[2] -= 3.0;
-      } else if (position[2] > 7.5) {
-        position[2] += 3.0;
-      }
-      particle->setR(position);
-    }
-
-    auto emigrants = autoPasContainer->updateContainer();
-    EXPECT_NO_THROW(domainDecomposition.exchangeMigratingParticles(autoPasContainer, emigrants));
-
-    std::vector<std::array<double, 3>> expectedPositionsAfterMigration = {
-        {9.725, 9.725, 9.725}, {5, 9.725, 9.725}, {0.275, 9.725, 9.725}, {9.725, 5, 9.725},
-        {5, 5, 9.725},         {0.275, 5, 9.725}, {9.725, 0.275, 9.725}, {5, 0.275, 9.725},
-        {0.275, 0.275, 9.725}, {9.725, 9.725, 5}, {5, 9.725, 5},         {0.275, 9.725, 5},
-        {9.725, 5, 5},         {5, 5, 5},         {0.275, 5, 5},         {9.725, 0.275, 5},
-        {5, 0.275, 5},         {0.275, 0.275, 5}, {9.725, 9.725, 0.275}, {5, 9.725, 0.275},
-        {0.275, 9.725, 0.275}, {9.725, 5, 0.275}, {5, 5, 0.275},         {0.275, 5, 0.275},
-        {9.725, 0.275, 0.275}, {5, 0.275, 0.275}, {0.275, 0.275, 0.275}};
-
-    for (auto particle = autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-      const auto id = particle->getID();
-      const auto position = particle->getR();
-      EXPECT_NEAR(position[0], expectedPositionsAfterMigration[id][0], 1e-13);
-      EXPECT_NEAR(position[1], expectedPositionsAfterMigration[id][1], 1e-13);
-      EXPECT_NEAR(position[2], expectedPositionsAfterMigration[id][2], 1e-13);
-    }
+    autoPasContainer->forEach([&](auto &p) { p.setR(positionsOutsideSubdomain[p.getID()]); });
   }
+
+  // test
+  auto emigrants = autoPasContainer->updateContainer();
+  ASSERT_THAT(emigrants, ::testing::SizeIs(positionsOutsideSubdomain.size()));
+  domainDecomposition.exchangeMigratingParticles(autoPasContainer, emigrants);
+
+  // derive expectations
+  const auto expectedPositions = generatePositionsInsideDomain(*autoPasContainer, configuration);
+  // check expectations
+  EXPECT_EQ(autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned), positionsOutsideSubdomain.size());
+  autoPasContainer->forEach([&](const auto &p) { EXPECT_THAT(expectedPositions, ::testing::Contains(p.getR())); });
 }
