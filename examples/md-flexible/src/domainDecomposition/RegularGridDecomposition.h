@@ -114,6 +114,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
   /**
    * Exchanges halo particles with all neighbors of the provided AutoPasContainer.
    * @param autoPasContainer: The container, where the halo particles originate from.
+   * FIXME: these functions should not take a shared ptr! Just a reference
    */
   void exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer);
 

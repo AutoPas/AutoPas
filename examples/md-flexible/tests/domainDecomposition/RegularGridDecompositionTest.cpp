@@ -16,37 +16,6 @@
 
 extern template class autopas::AutoPas<ParticleType>;
 
-namespace {
-void initializeAutoPasContainer(RegularGridDecomposition::SharedAutoPasContainer &autoPasContainer,
-                                MDFlexConfig &configuration) {
-  autoPasContainer->setAllowedCellSizeFactors(*configuration.cellSizeFactors.value);
-  autoPasContainer->setAllowedContainers(configuration.containerOptions.value);
-  autoPasContainer->setAllowedDataLayouts(configuration.dataLayoutOptions.value);
-  autoPasContainer->setAllowedNewton3Options(configuration.newton3Options.value);
-  autoPasContainer->setAllowedTraversals(configuration.traversalOptions.value);
-  autoPasContainer->setAllowedLoadEstimators(configuration.loadEstimatorOptions.value);
-  autoPasContainer->setBoxMin(configuration.boxMin.value);
-  autoPasContainer->setBoxMax(configuration.boxMax.value);
-  autoPasContainer->setCutoff(configuration.cutoff.value);
-  autoPasContainer->setRelativeOptimumRange(configuration.relativeOptimumRange.value);
-  autoPasContainer->setMaxTuningPhasesWithoutTest(configuration.maxTuningPhasesWithoutTest.value);
-  autoPasContainer->setRelativeBlacklistRange(configuration.relativeBlacklistRange.value);
-  autoPasContainer->setEvidenceFirstPrediction(configuration.evidenceFirstPrediction.value);
-  autoPasContainer->setExtrapolationMethodOption(configuration.extrapolationMethodOption.value);
-  autoPasContainer->setNumSamples(configuration.tuningSamples.value);
-  autoPasContainer->setMaxEvidence(configuration.tuningMaxEvidence.value);
-  autoPasContainer->setSelectorStrategy(configuration.selectorStrategy.value);
-  autoPasContainer->setTuningInterval(configuration.tuningInterval.value);
-  autoPasContainer->setTuningStrategyOption(configuration.tuningStrategyOption.value);
-  autoPasContainer->setMPIStrategy(configuration.mpiStrategyOption.value);
-  autoPasContainer->setVerletClusterSize(configuration.verletClusterSize.value);
-  autoPasContainer->setVerletRebuildFrequency(configuration.verletRebuildFrequency.value);
-  autoPasContainer->setVerletSkin(configuration.verletSkinRadius.value);
-  autoPasContainer->setAcquisitionFunction(configuration.acquisitionFunctionOption.value);
-  autoPasContainer->init();
-}
-}  // namespace
-
 TEST_F(RegularGridDecompositionTest, testGetLocalDomain) {
   MDFlexConfig configuration(0, nullptr);
   configuration.boxMin.value = {1.0, 1.0, 1.0};
@@ -90,8 +59,6 @@ TEST_F(RegularGridDecompositionTest, testGetLocalDomain) {
  * For more information see the comments in the test.
  */
 TEST_F(RegularGridDecompositionTest, testExchangeHaloParticles) {
-  GTEST_SKIP() << "THIS TEST IS CURRENTLY BROKEN AND WILL BE FIXED IN https://github.com/AutoPas/AutoPas/pull/628/";
-
   int numberOfRanks{};
   int myRank{};
   autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &myRank);
@@ -101,77 +68,101 @@ TEST_F(RegularGridDecompositionTest, testExchangeHaloParticles) {
 
   MDFlexConfig configuration(0, nullptr);
   configuration.boxMin.value = {0., 0., 0.};
-  configuration.cutoff.value = 3.;
-  configuration.verletSkinRadius.value = 0.;
+  configuration.cutoff.value = 2.5;
+  configuration.verletSkinRadius.value = 0.5;
+  const double interactionLength = configuration.cutoff.value + configuration.verletSkinRadius.value;
   // make sure evey rank gets exactly 3x3x3 cells
-  const double boxLength = 3. * configuration.cutoff.value * numberOfRanks;
-  configuration.boxMax.value = {boxLength, boxLength, boxLength};
+  const double localBoxLength = 3. * interactionLength;
+  const double globalBoxLength = localBoxLength * numberOfRanks;
+  configuration.boxMax.value = {globalBoxLength, globalBoxLength, globalBoxLength};
   configuration.boundaryOption.value = {options::BoundaryTypeOption::periodic, options::BoundaryTypeOption::periodic,
                                         options::BoundaryTypeOption::periodic};
 
   RegularGridDecomposition domainDecomposition(configuration);
   const auto &localBoxMin = domainDecomposition.getLocalBoxMin();
+  const auto &localBoxMax = domainDecomposition.getLocalBoxMax();
 
-  auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
-
-  initializeAutoPasContainer(autoPasContainer, configuration);
+  auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>();
+  autoPasContainer->setBoxMin(localBoxMin);
+  autoPasContainer->setBoxMax(localBoxMax);
+  autoPasContainer->setCutoff(configuration.cutoff.value);
+  autoPasContainer->setVerletSkin(configuration.verletSkinRadius.value);
+  autoPasContainer->init();
 
   // Setup 27 particles of which 26 will be relevant during halo update. Imagine a rubik's cube where each cell
   // contains a single particle. This layout contains 8 particles with 3 adjacent cell which is outside the cube,
   // 12 particles with two adjacent cells which are outside the cube and 6 particles with a single adjacent cell
   // outside the cube. The 'first cell' is the leftmost in all dimensions.
   const auto particlePositions = [&]() {
+    using autopas::utils::ArrayMath::mulScalar;
+    using autopas::utils::ArrayMath::add;
     std::vector<std::array<double, 3>> positions{};
     positions.reserve(27);
-    const auto midOfFirstCell = autopas::utils::ArrayMath::addScalar(localBoxMin, configuration.cutoff.value / 2.);
-    for (double z = 0; z < 3; ++z) {
-      for (double y = 0; y < 3; ++y) {
-        for (double x = 0; x < 3; ++x) {
-          const auto relativePosition =
-              autopas::utils::ArrayMath::mulScalar(std::array<double, 3>{x, y, z}, configuration.cutoff.value);
-          positions.push_back(autopas::utils::ArrayMath::add(midOfFirstCell, relativePosition));
+    const auto midOfLocalBox = mulScalar(localBoxMax, 0.5);
+    // halo particles should be placed cutoff/2 inside from the box border
+    const auto midToParitcle1D = (localBoxLength - configuration.cutoff.value) / 2.;
+    size_t id = 0;
+    for (double z = -1; z <= 1; ++z) {
+      for (double y = -1; y <= 1; ++y) {
+        for (double x = -1; x <= 1; ++x) {
+          const auto relativePosition = mulScalar(std::array<double, 3>{x, y, z}, midToParitcle1D);
+          const auto absolutePosition = add(midOfLocalBox, relativePosition);
+          positions.push_back(absolutePosition);
+
+          ParticleType particle;
+          particle.setID(id++);
+          particle.setR(absolutePosition);
+          autoPasContainer->addParticle(particle);
         }
       }
     }
     return positions;
   }();
+  ASSERT_THAT(particlePositions, ::testing::SizeIs(27)) << "Test setup faulty!";
+  ASSERT_EQ(autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned), 27)
+      << "Not all setup particles added to the container!";
 
-  size_t id = 0;
-  for (const auto &position : particlePositions) {
-    ParticleType particle;
-    particle.setID(id++);
-    particle.setR(position);
-
-    autoPasContainer->addParticle(particle);
-  }
-  ASSERT_EQ(autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned), 27);
   const auto leavingParticles = autoPasContainer->updateContainer();
   ASSERT_EQ(leavingParticles.size(), 0) << "All particles should have been created inside the container!";
 
   // halos are generated here, so this is what we actually test
   domainDecomposition.exchangeHaloParticles(autoPasContainer);
 
+  EXPECT_EQ(autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned), 27)
+      << "Owned particles missing after halo exchange!";
+
   // expect particles to be all around the box since every particle creates multiple halo particles.
   const auto expectedHaloParticlePositions = [&]() {
+    using autopas::utils::ArrayMath::mulScalar;
+    using autopas::utils::ArrayMath::add;
+    using autopas::utils::ArrayMath::addScalar;
+
     std::vector<std::array<double, 3>> positions{};
     positions.reserve(98);
-    const auto midOfFirstHaloCell = autopas::utils::ArrayMath::subScalar(localBoxMin, configuration.cutoff.value / 2.);
-    for (double z = 0; z < 5; ++z) {
-      for (double y = 0; y < 5; ++y) {
-        for (double x = 0; x < 5; ++x) {
-          const std::array<double, 3> pos{x, y, z};
-          // only add a particle if the position is in the halo region (=not in the inner box; +/- .1 for floats)
-          if (autopas::utils::notInBox(pos, {.9, .9, .9}, {3.1, 3.1, 3.1})) {
-            const auto relativePosition =
-                autopas::utils::ArrayMath::mulScalar(std::array<double, 3>{x, y, z}, configuration.cutoff.value);
-            positions.push_back(autopas::utils::ArrayMath::add(midOfFirstHaloCell, relativePosition));
+    const auto midOfLocalBox = mulScalar(localBoxMax, 0.5);
+    const auto midToParitcle1DNear = (localBoxLength - configuration.cutoff.value) / 2.;
+    const auto midToParitcle1DFar = (localBoxLength + configuration.cutoff.value) / 2.;
+
+    const std::vector<double> distances{-midToParitcle1DFar, -midToParitcle1DNear, 0., midToParitcle1DNear,
+                                        midToParitcle1DFar};
+    const auto relLocalBoxMin = mulScalar<double, 3>({1., 1., 1.}, -localBoxLength / 2.);
+    const auto relLocalBoxMax = addScalar(relLocalBoxMin, localBoxLength);
+    for (double z : distances) {
+      for (double y : distances) {
+        for (double x : distances) {
+          const std::array<double, 3> relativePosition{x, y, z};
+          // only add a particle if the position is in the halo region (=not in the inner box).
+          // This is equivalent to at least one of x/y/z has to be ==abs(midToParticle1DFar)
+          if (autopas::utils::notInBox(relativePosition, relLocalBoxMin, relLocalBoxMax)) {
+            const auto absolutePosition = add(midOfLocalBox, relativePosition);
+            positions.push_back(absolutePosition);
           }
         }
       }
     }
     return positions;
   }();
-  ASSERT_EQ(expectedHaloParticlePositions.size(), 98);
+  ASSERT_EQ(expectedHaloParticlePositions.size(), 98) << "Expectation setup faulty!";
 
   EXPECT_EQ(autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::halo),
             expectedHaloParticlePositions.size());
@@ -209,7 +200,7 @@ TEST_F(RegularGridDecompositionTest, testExchangeMigratingParticles) {
 
     auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
 
-    initializeAutoPasContainer(autoPasContainer, configuration);
+    //    initializeAutoPasContainer(autoPasContainer, configuration);
 
     // Setup 27 particles. Imagine a rubik's cube where each cell contains a single particle.
     std::vector<std::vector<double>> particlePositions = {
