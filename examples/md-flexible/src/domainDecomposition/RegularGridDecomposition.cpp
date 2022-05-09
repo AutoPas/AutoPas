@@ -158,7 +158,6 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
   std::vector<ParticleType> haloParticles{};
 
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
-
     // completely bypass Halo particle exchange in this dimension if boundaries in this direction are not periodic
     // *and* if both local boundaries are the global boundaries in this dimension
     if (_boundaryType[dimensionIndex] != options::BoundaryTypeOption::periodic and

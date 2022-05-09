@@ -253,16 +253,6 @@ inline int AutoPas_MPI_Comm_dup(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *newComm
 inline int AutoPas_MPI_Comm_free(AutoPas_MPI_Comm *comm);
 
 /**
- * Wrapper for MPI_Comm_split.
- * @param comm: Communicator (handle).
- * @param color: Control of subset assignment (nonnegative integer).
- * @param key: Control of rank assignment (integer).
- * @param newcomm: The newly created communicator.
- * @return MPI error value
- */
-inline int AutoPas_MPI_Comm_split(AutoPas_MPI_Comm comm, int color, int key, AutoPas_MPI_Comm *newcomm);
-
-/**
  * Wrapper for MPI_Send
  * @param buf: send buffer
  * @param count: number of elements in send buffer
@@ -400,7 +390,7 @@ inline int AutoPas_MPI_Request_free(AutoPas_MPI_Request *request);
  * @param periods: An array defining for each dimension if it has periodic boundaries.
  * @param reorder: Defines if ranking may be reordered (true) or not (false).
  * @param comm_cart: The resulting MPI communicator.
- * @return MPMI error value
+ * @return MPI error value
  */
 inline int AutoPas_MPI_Cart_create(AutoPas_MPI_Comm comm, int nDims, const int *dims, const int *periods, int reorder,
                                    AutoPas_MPI_Comm *comm_cart);
@@ -412,7 +402,7 @@ inline int AutoPas_MPI_Cart_create(AutoPas_MPI_Comm comm, int nDims, const int *
  * @param dims: Number of processes for each Cartesian dimension (array of integers).
  * @param periods: Periodicity (true/false) for each Cartesian dimension (array of logicals).
  * @param coords: Coordinates of calling process in Cartesian structure (array of integers).
- * @return MPMI error value
+ * @return MPI error value
  */
 inline int AutoPas_MPI_Cart_get(AutoPas_MPI_Comm comm, int maxdims, int dims[], int periods[], int coords[]);
 
@@ -425,7 +415,7 @@ inline int AutoPas_MPI_Cart_get(AutoPas_MPI_Comm comm, int maxdims, int dims[], 
  * @param tag: Message tag (integer).
  * @param comm: Communicator (handle).
  * @param request: A pointer to the created send request.
- * @return MPMI error value
+ * @return MPI error value
  */
 inline int AutoPas_MPI_Isend(const void *buf, int count, AutoPas_MPI_Datatype datatype, int dest, int tag,
                              AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request);
@@ -436,7 +426,7 @@ inline int AutoPas_MPI_Isend(const void *buf, int count, AutoPas_MPI_Datatype da
  * @param tag: Tag value (integer).
  * @param comm: Communicator (handle).
  * @param status: The status of the probed request.
- * @return MPMI error value
+ * @return MPI error value
  */
 inline int AutoPas_MPI_Probe(int source, int tag, AutoPas_MPI_Comm comm, AutoPas_MPI_Status *status);
 
@@ -445,7 +435,7 @@ inline int AutoPas_MPI_Probe(int source, int tag, AutoPas_MPI_Comm comm, AutoPas
  * @param status: Return status of receive operation (status).
  * @param datatype: Datatype of each receive buffer element (handle).
  * @param count: Number of received elements (integer).
- * @return MPMI error value
+ * @return MPI error value
  */
 inline int AutoPas_MPI_Get_count(const AutoPas_MPI_Status *status, AutoPas_MPI_Datatype datatype, int *count);
 
@@ -454,7 +444,7 @@ inline int AutoPas_MPI_Get_count(const AutoPas_MPI_Status *status, AutoPas_MPI_D
  * @param count: Lists length (integer).
  * @param array_of_requests: Array of requests (array of handles).
  * @param array_of_statuses: Array of status objects (array of status).
- * @return MPMI error value
+ * @return MPI error value
  */
 inline int AutoPas_MPI_Waitall(int count, AutoPas_MPI_Request array_of_requests[],
                                AutoPas_MPI_Status *array_of_statuses);

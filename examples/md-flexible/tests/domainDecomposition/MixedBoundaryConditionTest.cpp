@@ -101,10 +101,12 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
                      // if a position is outside the (global) domain shift it inside
                      if (pos[i] > domainDecomposition.getGlobalBoxMax()[i]) {
                        // next float inside the domain
-                       safePos[i] = std::nextafter(domainDecomposition.getGlobalBoxMax()[i], domainDecomposition.getGlobalBoxMax()[i] - 1);
+                       safePos[i] = std::nextafter(domainDecomposition.getGlobalBoxMax()[i],
+                                                   domainDecomposition.getGlobalBoxMax()[i] - 1);
                      } else if (pos[i] < domainDecomposition.getGlobalBoxMin()[i]) {
                        // next float inside the domain
-                       safePos[i] = std::nextafter(domainDecomposition.getGlobalBoxMin()[i], domainDecomposition.getGlobalBoxMin()[i] + 1);
+                       safePos[i] = std::nextafter(domainDecomposition.getGlobalBoxMin()[i],
+                                                   domainDecomposition.getGlobalBoxMin()[i] + 1);
                      }
                    }
                    return safePos;

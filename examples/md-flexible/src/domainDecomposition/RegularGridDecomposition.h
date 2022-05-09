@@ -13,8 +13,8 @@
 #include "DomainDecomposition.h"
 #include "autopas/utils/WrapMPI.h"
 #include "src/TypeDefinitions.h"
-#include "src/options/BoundaryTypeOption.h"
 #include "src/configuration/MDFlexConfig.h"
+#include "src/options/BoundaryTypeOption.h"
 
 /**
  * This class can be used as a domain decomposition which divides the domain in equal sized rectangular subdomains.

@@ -40,7 +40,8 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.tuningStrategyOption, config.mpiStrategyOption, config.MPITuningMaxDifferenceForBucket,
       config.MPITuningWeightForMaxDensity, config.useThermostat, config.verletRebuildFrequency, config.vtkFileName,
       config.vtkWriteFrequency, config.selectorStrategy, config.yamlFilename, config.distributionStdDev,
-      config.globalForce, config.boundaryOption, config.loadBalancer, config.loadBalancingInterval, zshCompletionsOption, helpOption)};
+      config.globalForce, config.boundaryOption, config.loadBalancer, config.loadBalancingInterval,
+      zshCompletionsOption, helpOption)};
 
   constexpr auto relevantOptionsSize = std::tuple_size_v<decltype(relevantOptions)>;
 

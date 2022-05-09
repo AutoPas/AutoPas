@@ -161,9 +161,10 @@ void Simulation::finalize() {
 }
 
 void Simulation::run() {
-  _homogeneity = autopas::utils::calculateHomogeneityAndMaxDensity(
-                     *_autoPasContainer, _domainDecomposition->getGlobalBoxMin(), _domainDecomposition->getGlobalBoxMax())
-                     .first;
+  _homogeneity =
+      autopas::utils::calculateHomogeneityAndMaxDensity(*_autoPasContainer, _domainDecomposition->getGlobalBoxMin(),
+                                                        _domainDecomposition->getGlobalBoxMax())
+          .first;
   _timers.simulate.start();
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
