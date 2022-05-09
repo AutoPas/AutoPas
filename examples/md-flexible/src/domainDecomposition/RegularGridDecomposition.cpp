@@ -17,35 +17,35 @@
 #include "src/ParticleCommunicator.h"
 
 RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configuration)
-    : _cutoffWidth(configuration.cutoff.value), _skinWidth(configuration.verletSkinRadius.value) {
-  autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &_subdomainCount);
-
-  int rank;
-  autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
-
+    : _loadBalancerOption(configuration.loadBalancer.value),
+      _cutoffWidth(configuration.cutoff.value),
+      _skinWidth(configuration.verletSkinRadius.value),
+      _globalBoxMin(configuration.boxMin.value),
+      _globalBoxMax(configuration.boxMax.value),
+      _boundaryType(configuration.boundaryOption.value),
+      _mpiCommunicationNeeded(
 #if defined(AUTOPAS_INCLUDE_MPI)
-  _mpiCommunicationNeeded = true;
+          true
 #else
-  _mpiCommunicationNeeded = false;
+          false
 #endif
-
+      ) {
+  autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &_subdomainCount);
+  // if there is only one rank but we are running with MPI we actually do not need it.
   if (_subdomainCount == 1) {
     _mpiCommunicationNeeded = false;
   }
 
-  DomainTools::generateDecomposition(_subdomainCount, configuration.subdivideDimension.value, _decomposition);
+  _decomposition = DomainTools::generateDecomposition(_subdomainCount, configuration.subdivideDimension.value);
 
+  // initialize _communicator and _domainIndex
   initializeMPICommunicator();
-
+  // initialize _planarCommunicators and domainID
   initializeLocalDomain();
-
-  initializeGlobalBox(configuration.boxMin.value, configuration.boxMax.value);
-
+  // initialize _localBoxMin/Max
   initializeLocalBox();
-
-  initializeNeighborIds();
-
-  _loadBalancerOption = configuration.loadBalancer.value;
+  // initialize _neighborDomainIndices
+  initializeNeighborIndices();
 
 #if defined(AUTOPAS_ENABLE_ALLLBL)
   if (_loadBalancerOption == LoadBalancerOption::all) {
@@ -91,23 +91,22 @@ int RegularGridDecomposition::getNumberOfSubdomains() const {
 }
 
 void RegularGridDecomposition::initializeMPICommunicator() {
-  std::vector<int> periods(3, 1);
-  autopas::AutoPas_MPI_Cart_create(AUTOPAS_MPI_COMM_WORLD, 3, _decomposition.data(), periods.data(), true,
-                                   &_communicator);
+  // have to cast away const because MPI requires it
+  autopas::AutoPas_MPI_Cart_create(AUTOPAS_MPI_COMM_WORLD, _dimensionCount, _decomposition.data(),
+                                   const_cast<int *>(_periods.data()), true, &_communicator);
   autopas::AutoPas_MPI_Comm_rank(_communicator, &_domainIndex);
 }
 
 void RegularGridDecomposition::initializeLocalDomain() {
-  _domainId = {0, 0, 0};
-
-  std::vector<int> periods(3, 1);
-  autopas::AutoPas_MPI_Cart_get(_communicator, 3, _decomposition.data(), periods.data(), _domainId.data());
+  // have to cast away const because MPI requires it
+  autopas::AutoPas_MPI_Cart_get(_communicator, _dimensionCount, _decomposition.data(),
+                                const_cast<int *>(_periods.data()), _domainId.data());
 
   // Create planar communicators used for diffuse load balancing.
   for (int i = 0; i < _dimensionCount; ++i) {
     if (_mpiCommunicationNeeded) {
-      const size_t key = _decomposition[(i + 1) % _dimensionCount] * _domainId[(i + 2) % _dimensionCount] +
-                         _domainId[(i + 1) % _dimensionCount];
+      const int key = _decomposition[(i + 1) % _dimensionCount] * _domainId[(i + 2) % _dimensionCount] +
+                      _domainId[(i + 1) % _dimensionCount];
       autopas::AutoPas_MPI_Comm_split(_communicator, _domainId[i], key, &_planarCommunicators[i]);
     } else {
       _planarCommunicators[i] = AUTOPAS_MPI_COMM_WORLD;
@@ -124,7 +123,7 @@ void RegularGridDecomposition::initializeLocalBox() {
   }
 }
 
-void RegularGridDecomposition::initializeNeighborIds() {
+void RegularGridDecomposition::initializeNeighborIndices() {
   for (int i = 0; i < 3; ++i) {
     auto neighborIndex = i * 2;
     auto preceedingNeighborId = _domainId;
@@ -135,14 +134,6 @@ void RegularGridDecomposition::initializeNeighborIds() {
     auto succeedingNeighborId = _domainId;
     succeedingNeighborId[i] = (++succeedingNeighborId[i] + _decomposition[i]) % _decomposition[i];
     _neighborDomainIndices[neighborIndex] = DomainTools::convertIdToIndex(succeedingNeighborId, _decomposition);
-  }
-}
-
-void RegularGridDecomposition::initializeGlobalBox(const std::array<double, 3> &globalBoxMin,
-                                                   const std::array<double, 3> &globalBoxMax) {
-  for (int i = 0; i < 3; ++i) {
-    _globalBoxMin[i] = globalBoxMin[i];
-    _globalBoxMax[i] = globalBoxMax[i];
   }
 }
 
@@ -212,6 +203,7 @@ void RegularGridDecomposition::exchangeHaloParticles(SharedAutoPasContainer &aut
 void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer,
                                                           std::vector<ParticleType> &emigrants) {
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
+    // if this rank spans the whole dimension but it is not periodic -> skip.
     if (_boundaryType[dimensionIndex] != options::BoundaryTypeOption::periodic and
         _localBoxMin[dimensionIndex] == _globalBoxMin[dimensionIndex] and
         _localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex])
@@ -245,11 +237,6 @@ void RegularGridDecomposition::exchangeMigratingParticles(SharedAutoPasContainer
         }
       }
     }
-  }
-
-  // Add remaining emigrants to current container
-  for (const auto &particle : emigrants) {
-    autoPasContainer->addParticle(particle);
   }
 }
 

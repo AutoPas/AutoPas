@@ -23,8 +23,8 @@ bool isInsideDomain(const std::array<double, 3> &coordinates, const std::array<d
   return isInsideLocalDomain;
 }
 
-void generateDecomposition(unsigned int subdomainCount, const std::array<bool, 3> &subdivideDimension,
-                           std::array<int, 3> &decomposition) {
+std::array<int, 3> generateDecomposition(unsigned int subdomainCount, const std::array<bool, 3> &subdivideDimension) {
+  std::array<int, 3> decomposition{};
   std::list<int> primeFactors;
   // Add 2 to prime factorization as many times as subdomainCount is dividable by 2.
   while (subdomainCount % 2 == 0) {
@@ -67,6 +67,7 @@ void generateDecomposition(unsigned int subdomainCount, const std::array<bool, 3
       decomposition[i] = 1;
     }
   }
+  return decomposition;
 }
 
 double balanceAdjacentDomains(const double &leftDomainsWork, const double &rightDomainsWork,

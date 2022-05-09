@@ -48,11 +48,7 @@ void initializeAutoPasContainer(RegularGridDecomposition::SharedAutoPasContainer
 }  // namespace
 
 TEST_F(RegularGridDecompositionTest, testGetLocalDomain) {
-  std::vector<std::string> arguments = {""};
-
-  char *argv[3] = {arguments[0].data()};
-
-  MDFlexConfig configuration(0, argv);
+  MDFlexConfig configuration(0, nullptr);
   configuration.boxMin.value = {1.0, 1.0, 1.0};
   configuration.boxMax.value = {10.0, 10.0, 10.0};
   configuration.subdivideDimension.value = {true, true, true};
@@ -63,19 +59,22 @@ TEST_F(RegularGridDecompositionTest, testGetLocalDomain) {
 
   RegularGridDecomposition domainDecomposition(configuration);
 
-  std::array<double, 3> globalBoxExtend =
+  const std::array<double, 3> globalBoxExtend =
       autopas::utils::ArrayMath::sub(configuration.boxMax.value, configuration.boxMin.value);
 
-  int numberOfProcesses;
-  autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &numberOfProcesses);
+  const int numberOfProcesses = []() {
+    int result;
+    autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &result);
+    return result;
+  }();
 
-  std::array<int, 3> decomposition;
-  DomainTools::generateDecomposition(numberOfProcesses, configuration.subdivideDimension.value, decomposition);
+  const std::array<int, 3> decomposition =
+      DomainTools::generateDecomposition(numberOfProcesses, configuration.subdivideDimension.value);
 
-  std::array<double, 3> expectedLocalBoxExtend = autopas::utils::ArrayMath::div(
-      globalBoxExtend, {(double)decomposition[0], (double)decomposition[1], (double)decomposition[2]});
+  const std::array<double, 3> expectedLocalBoxExtend = autopas::utils::ArrayMath::div(
+      globalBoxExtend, autopas::utils::ArrayUtils::static_cast_array<double>(decomposition));
 
-  std::array<double, 3> resultingLocalBoxExtend =
+  const std::array<double, 3> resultingLocalBoxExtend =
       autopas::utils::ArrayMath::sub(domainDecomposition.getLocalBoxMax(), domainDecomposition.getLocalBoxMin());
 
   EXPECT_NEAR(expectedLocalBoxExtend[0], resultingLocalBoxExtend[0], 1e-10);
