@@ -493,6 +493,24 @@ class MDFlexConfig {
                                                  "Flag for if rotation of particle is to be considered in simulation. (Requires appropriate Particle and Functor)"
   };
 
+  // Molecule Type Generation
+  /**
+   * moleculesStr
+   */
+  static inline const char *moleculesStr{"Molecules"};
+  /**
+   * moleculeToSiteIdStr
+   */
+  static inline const char *moleculeToSiteIdStr{"molecule-to-site-id"};
+  /**
+   * moleculeToSitePosStr
+   */
+  static inline const char *moleculeToSitePosStr{"molecule-to-site-pos"};
+  // Site Type Generation
+  /**
+   * siteStr
+   */
+  static inline const char *siteStr{"Sites"};
   // Object Generation:
   /**
    * objectsStr
@@ -507,9 +525,13 @@ class MDFlexConfig {
    */
   static inline const char *const velocityStr{"velocity"};
   /**
-   * particleTypeStr
+   * molTypeStr
    */
-  static inline const char *const particleTypeStr{"particle-type"};
+  static inline const char *const molTypeStr{"molecule-type"};
+  /**
+   * siteTypeStr
+   */
+  static inline const char *const siteTypeStr{"site-type"};
   /**
    * particlesPerObjectStr
    */
