@@ -29,7 +29,6 @@ bool isInsideDomain(const std::array<double, 3> &coordinates, const std::array<d
  * By preventing subdivision in a dimension one can achieve different grid layouts (e. g. collumn layout)
  * @param subdomainCount: The number of subdomains in the resulting decomposition.
  * @param subdivideDimension: Decides if a dimension will be subdivided.
- * @param decomposition: Array containing the number of subdomains per dimension.
  * @return Number of subdomains per dimension.
  */
 std::array<int, 3> generateDecomposition(unsigned int subdomainCount, const std::array<bool, 3> &subdivideDimension);
