@@ -183,6 +183,7 @@ void Simulation::run() {
 
       const auto work = static_cast<double>(_timers.work.stop());
 
+      // periodically resize box for MPI load balancing
       if (_iteration % _configuration.loadBalancingInterval.value == 0) {
         _timers.loadBalancing.start();
         _domainDecomposition->update(work);
@@ -192,7 +193,9 @@ void Simulation::run() {
         _timers.loadBalancing.stop();
       }
 
-      // FIXME: do we have to call _domainDecomposition->exchangeMigratingParticles() here?
+      _timers.migratingParticleExchange.start();
+      _domainDecomposition->exchangeMigratingParticles(*_autoPasContainer, emigrants);
+      _timers.migratingParticleExchange.stop();
 
       _timers.reflectParticlesAtBoundaries.start();
       _domainDecomposition->reflectParticlesAtBoundaries(*_autoPasContainer);
