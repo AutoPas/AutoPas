@@ -19,8 +19,8 @@
 #include "src/domainDecomposition/RegularGridDecomposition.h"
 
 /**
- * Handles minimal initialization requriements for MD-Flexible simulations.
- * Derivce this class to create custom simulations.
+ * Handles minimal initialization requirements for MD-Flexible simulations.
+ * Derive this class to create custom simulations.
  */
 class Simulation {
  public:
@@ -56,7 +56,7 @@ class Simulation {
   MDFlexConfig _configuration;
 
   /**
-   * The the nodes' autopas container used for simulation.
+   * The the nodes' AutoPas container used for simulation.
    * This member will not be initialized by the constructor and therefore has to be initialized by the deriving class.
    */
   std::shared_ptr<autopas::AutoPas<ParticleType>> _autoPasContainer;
@@ -255,7 +255,7 @@ class Simulation {
 
   /**
    * Updates the thermostat of for the local domain.
-   * @todo The thermostat shoud act globally and therefore needs to be communicated to all processes.
+   * @todo The thermostat should act globally and therefore needs to be communicated to all processes.
    */
   void updateThermostat();
 

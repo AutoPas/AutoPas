@@ -26,16 +26,13 @@ extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::Fl
 #include <sys/ioctl.h>
 #include <unistd.h>
 
-#include <fstream>
 #include <iostream>
 
-#include "BoundaryConditions.h"
 #include "Thermostat.h"
 #include "TimeDiscretization.h"
 #include "autopas/utils/MemoryProfiler.h"
 #include "autopas/utils/WrapMPI.h"
 #include "configuration/MDFlexConfig.h"
-#include "src/ParticleSerializationTools.h"
 
 namespace {
 /**
