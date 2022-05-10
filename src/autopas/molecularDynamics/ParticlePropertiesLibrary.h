@@ -15,7 +15,6 @@
 
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ExceptionHandler.h"
-#include "autopas/utils/Quaternion.h"
 
 /**
  * This class stores the (physical) properties of molecule types, and, in the case of multi-site molecules, the location

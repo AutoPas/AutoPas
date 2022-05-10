@@ -870,7 +870,8 @@ class LJMulticenterFunctor
       const size_t noSitesInMolA = useMixing ? _PPLibrary->getNumSites(molA)
                                              : const_unrotatedSitePositions.size();
 
-      const std::vector<size_t> siteTypesInMolA = useMixing ? _PPLibrary->getSiteTypes(typeptrA[molA]) : 0;
+      const auto rotatedSitePositionsA = autopas::utils::quaternion::rotateVectorOfPositions(
+          {q0Aptr[molA], q1Aptr[molA], q2Aptr[molA], q3Aptr[molA]}, _PPLibrary->getSitePositions(typeptrA[molA]));
 
       // create mask over every mol in cell B
       std::vector<bool, autopas::AlignedAllocator<bool>> molMask;
@@ -921,24 +922,22 @@ class LJMulticenterFunctor
         if (useMixing) {
           // preload sigmas, epsilons, and shifts
           for (size_t siteB = 0; siteB < siteCountB; ++siteB) {
-            const auto mixingData = _PPLibrary->getMixingData(siteTypesInMolA[siteA], siteTypesB[siteB]);
+            const auto mixingData = _PPLibrary->getMixingData(_PPLibrary->getSiteTypes(typeptrA[molA])[siteA], siteTypesB[siteB]);
             sigmaSquareds[siteB] = mixingData.sigmaSquare;
             epsilon24s[siteB] = mixingData.epsilon24;
             if (applyShift) {
-              shift6[siteB] = mixingData.shift6;
+              shift6s[siteB] = mixingData.shift6;
             }
           }
         }
-        const auto rotatedSitePositionsA = autopas::utils::quaternion::rotateVectorOfPositions(
-            {q0Aptr[molA], q1Aptr[molA], q2Aptr[molA], q3Aptr[molA]}, _PPLibrary->getSitePositions(typeptrA[mol]));
 
-        const auto rotatedSitePositionAx = rotatedSitePositionsA[0];
-        const auto rotatedSitePositionAy = rotatedSitePositionsA[1];
-        const auto rotatedSitePositionAz = rotatedSitePositionsA[2];
+        const auto rotatedSitePositionAx = rotatedSitePositionsA[siteA][0];
+        const auto rotatedSitePositionAy = rotatedSitePositionsA[siteA][1];
+        const auto rotatedSitePositionAz = rotatedSitePositionsA[siteA][2];
 
-        const auto exactSitePositionAx = rotatedSitePositionsA[0] + xAptr[molA];
-        const auto exactSitePositionAy = rotatedSitePositionsA[1] + yAptr[molA];
-        const auto exactSitePositionAz = rotatedSitePositionsA[2] + zAptr[molA];
+        const auto exactSitePositionAx = rotatedSitePositionAx + xAptr[molA];
+        const auto exactSitePositionAy = rotatedSitePositionAy + yAptr[molA];
+        const auto exactSitePositionAz = rotatedSitePositionAz + zAptr[molA];
 
 #pragma omp simd reduction (+ : forceSumX, forceSumY, forceSumZ, torqueSumX, torqueSumY, torqueSumZ, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
         for (size_t siteB = 0; siteB < siteCountB; ++siteB) {

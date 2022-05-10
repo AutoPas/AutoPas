@@ -30,7 +30,6 @@
 #include "src/configuration/objects/CubeUniform.h"
 #include "src/configuration/objects/Sphere.h"
 #include "src/options/BoundaryTypeOption.h"
-#include "../TypeDefinitions.h"
 
 /**
  * Class containing all necessary parameters for configuring a md-flexible simulation.
