@@ -331,7 +331,7 @@ void RegularGridDecomposition::collectHaloParticlesForRightNeighbor(AutoPasType 
   const std::array<double, _dimensionCount> boxMin = [&]() {
     auto boxMin = autopas::utils::ArrayMath::subScalar(_localBoxMin, _skinWidth);
     boxMin[direction] = _localBoxMax[direction] - _cutoffWidth - _skinWidth;
-    return boxMax;
+    return boxMin;
   }();
 
   // Collect the halo particles for the right neighbor
