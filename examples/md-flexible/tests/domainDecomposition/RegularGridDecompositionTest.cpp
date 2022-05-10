@@ -67,21 +67,23 @@ auto initDomain() {
 auto generatePositionsInsideDomain(const autopas::AutoPas<ParticleType> &autoPasContainer,
                                    const MDFlexConfig &configuration) {
   using autopas::utils::ArrayMath::add;
+  using autopas::utils::ArrayMath::mul;
   using autopas::utils::ArrayMath::mulScalar;
+  using autopas::utils::ArrayMath::sub;
+  using autopas::utils::ArrayMath::subScalar;
   const auto &localBoxMin = autoPasContainer.getBoxMin();
   const auto &localBoxMax = autoPasContainer.getBoxMax();
-  // we assume a cube subdomain
-  const auto localBoxLength = localBoxMax[0] - localBoxMin[0];
+  const auto localBoxLength = sub(localBoxMax, localBoxMin);
 
   std::vector<std::array<double, 3>> positions{};
   positions.reserve(27);
-  const auto midOfLocalBox = mulScalar(localBoxMax, 0.5);
+  const auto midOfLocalBox = add(localBoxMin, mulScalar(localBoxLength, 0.5));
   // particles should be placed cutoff/2 inside from the box border
-  const auto midToParticle1D = (localBoxLength - configuration.cutoff.value) / 2.;
+  const auto midToParticle1D = mulScalar(subScalar(localBoxLength, configuration.cutoff.value), 0.5);
   for (double z = -1; z <= 1; ++z) {
     for (double y = -1; y <= 1; ++y) {
       for (double x = -1; x <= 1; ++x) {
-        const auto relativePosition = mulScalar(std::array<double, 3>{x, y, z}, midToParticle1D);
+        const auto relativePosition = mul({x, y, z}, midToParticle1D);
         const auto absolutePosition = add(midOfLocalBox, relativePosition);
         positions.push_back(absolutePosition);
       }
@@ -104,25 +106,30 @@ auto generatePositionsOutsideDomain(const autopas::AutoPas<ParticleType> &autoPa
                                     const MDFlexConfig &configuration) {
   using autopas::utils::ArrayMath::add;
   using autopas::utils::ArrayMath::addScalar;
+  using autopas::utils::ArrayMath::mul;
   using autopas::utils::ArrayMath::mulScalar;
+  using autopas::utils::ArrayMath::sub;
+  using autopas::utils::ArrayMath::subScalar;
   const auto &localBoxMin = autoPasContainer.getBoxMin();
   const auto &localBoxMax = autoPasContainer.getBoxMax();
-  // we assume a cube subdomain
-  const auto localBoxLength = localBoxMax[0] - localBoxMin[0];
+  const auto localBoxLength = sub(localBoxMax, localBoxMin);
 
   std::vector<std::array<double, 3>> positions{};
   positions.reserve(98);
-  const auto midOfLocalBox = mulScalar(localBoxMax, 0.5);
-  const auto midToParitcle1DNear = (localBoxLength - configuration.cutoff.value) / 2.;
-  const auto midToParitcle1DFar = (localBoxLength + configuration.cutoff.value) / 2.;
+  const auto midOfLocalBox = add(localBoxMin, mulScalar(localBoxLength, 0.5));
+  const auto midToParticle1DNear = mulScalar(subScalar(localBoxLength, configuration.cutoff.value), 0.5);
+  const auto midToParticle1DFar = mulScalar(addScalar(localBoxLength, configuration.cutoff.value), 0.5);
 
-  const std::vector<double> distances{-midToParitcle1DFar, -midToParitcle1DNear, 0., midToParitcle1DNear,
-                                      midToParitcle1DFar};
-  const auto relLocalBoxMin = mulScalar<double, 3>({1., 1., 1.}, -localBoxLength / 2.);
-  const auto relLocalBoxMax = addScalar(relLocalBoxMin, localBoxLength);
-  for (double z : distances) {
-    for (double y : distances) {
-      for (double x : distances) {
+  const std::array<std::vector<double>, 3> distances = {{
+      {-midToParticle1DFar[0], -midToParticle1DNear[0], 0., midToParticle1DNear[0], midToParticle1DFar[0]},
+      {-midToParticle1DFar[1], -midToParticle1DNear[1], 0., midToParticle1DNear[1], midToParticle1DFar[1]},
+      {-midToParticle1DFar[2], -midToParticle1DNear[2], 0., midToParticle1DNear[2], midToParticle1DFar[2]},
+  }};
+  const auto relLocalBoxMin = mul({1., 1., 1.}, mulScalar(localBoxLength, -.5));
+  const auto relLocalBoxMax = add(relLocalBoxMin, localBoxLength);
+  for (double z : distances[2]) {
+    for (double y : distances[1]) {
+      for (double x : distances[0]) {
         const std::array<double, 3> relativePosition{x, y, z};
         // only add a particle if the position is in the halo region (=not in the inner box).
         // This is equivalent to at least one of x/y/z has to be ==abs(midToParticle1DFar)
