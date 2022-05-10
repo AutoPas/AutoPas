@@ -460,9 +460,8 @@ class LJMulticenterFunctor
 
           const SoAFloatPrecision sigmaSquared = useMixing ? sigmaSquareds[siteB] : const_sigmaSquared;
           const SoAFloatPrecision epsilon24 = useMixing ? epsilon24s[siteB] : const_epsilon24;
-          const SoAFloatPrecision shift6 = useMixing ? shift6s[siteB] : const_shift6;
+          const SoAFloatPrecision shift6 = applyShift ? (useMixing ? shift6s[siteB] : const_shift6) : 0;
 
-          // todo change below code
           const auto displacementX = exactSitePositionX[siteA] - exactSitePositionX[globalSiteBIndex];
           const auto displacementY = exactSitePositionY[siteA] - exactSitePositionY[globalSiteBIndex];
           const auto displacementZ = exactSitePositionZ[siteA] - exactSitePositionZ[globalSiteBIndex];
@@ -474,11 +473,11 @@ class LJMulticenterFunctor
           const auto distanceSquared = distanceSquaredX + distanceSquaredY + distanceSquaredZ;
 
           const auto invDistSquared = 1. / distanceSquared;
-          const auto lj2 = const_sigmaSquared * invDistSquared;
+          const auto lj2 = sigmaSquared * invDistSquared;
           const auto lj6 = lj2 * lj2 * lj2;
           const auto lj12 = lj6 * lj6;
           const auto lj12m6 = lj12 - lj6;
-          const auto scalarMultiple = siteMask[siteB] ? const_epsilon24 * (lj12 + lj12m6) * invDistSquared : 0.;
+          const auto scalarMultiple = siteMask[siteB] ? epsilon24 * (lj12 + lj12m6) * invDistSquared : 0.;
 
           // calculate forces
           const auto forceX = scalarMultiple * displacementX;
@@ -816,7 +815,12 @@ class LJMulticenterFunctor
     exactSitePositionBz.reserve(siteCountB);
 
     if constexpr (useMixing) {
-      siteTypesA.reserve(siteCountA);
+      siteTypesB.reserve(siteCountB);
+      sigmaSquareds.reserve(siteCountB);
+      epsilon24s.reserve(siteCountB);
+      if constexpr (applyShift) {
+        shift6s.reserve(siteCountB);
+      }
     }
 
     // Generate site-wise arrays for SIMD
@@ -865,6 +869,8 @@ class LJMulticenterFunctor
       const size_t noSitesInMolA = useMixing ? _PPLibrary->getNumSites(molA)
                                              : const_unrotatedSitePositions.size();
 
+      const std::vector<size_t> siteTypesInMolA = useMixing ? _PPLibrary->getSiteTypes(typeptrA[molA]) : 0;
+
       // create mask over every mol in cell B
       std::vector<bool, autopas::AlignedAllocator<bool>> molMask;
       molMask.reserve(soaB.getNumParticles());
@@ -901,8 +907,53 @@ class LJMulticenterFunctor
       SoAFloatPrecision sigmaSquared = const_sigmaSquared;
       SoAFloatPrecision epsilon24 = const_epsilon24;
 
-      siteCountA = useMixing ? _PPLibrary->getNumSites()
-      for (size_t siteA = 0; siteA < _)
+      // sums used for molA
+      SoAFloatPrecision forceSumX = 0.;
+      SoAFloatPrecision forceSumY = 0.;
+      SoAFloatPrecision forceSumZ = 0.;
+      SoAFloatPrecision torqueSumX = 0.;
+      SoAFloatPrecision torqueSumY = 0.;
+      SoAFloatPrecision torqueSumZ = 0.;
+
+      for (size_t siteA = 0; siteA < siteCountA; ++siteA) {
+        // todo compare performance between preloading parameters and just calculating them
+        if (useMixing) {
+          // preload sigmas, epsilons, and shifts
+          for (size_t siteB = 0; siteB < siteCountB; ++siteB) {
+            const auto mixingData = _PPLibrary->getMixingData(siteTypesInMolA[siteA], siteTypesB[siteB]);
+            sigmaSquareds[siteB] = mixingData.sigmaSquare;
+            epsilon24s[siteB] = mixingData.epsilon24;
+            if (applyShift) {
+              shift6[siteB] = mixingData.shift6;
+            }
+          }
+        }
+#pragma omp simd reduction (+ : forceSumX, forceSumY, forceSumZ, torqueSumX, torqueSumY, torqueSumZ, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
+        for (size_t siteB = 0; siteB < siteCountB; ++siteB) {
+          const SoAFloatPrecision sigmaSquared = useMixing ? sigmaSquareds[siteB] : const_sigmaSquared;
+          const SoAFloatPrecision epsilon24 = useMixing ? epsilon24s[siteB] : const_epsilon24;
+          const SoAFloatPrecision shift6 = applyShift ? (useMixing ? shift6s[siteB] : const_shift6) : 0;
+
+          const auto displacementX = exactSitePositionAx[siteA] - exactSitePositionX[globalSiteBIndex];
+          const auto displacementY = exactSitePositionY[siteA] - exactSitePositionY[globalSiteBIndex];
+          const auto displacementZ = exactSitePositionZ[siteA] - exactSitePositionZ[globalSiteBIndex];
+
+          const auto distanceSquaredX = displacementX * displacementX;
+          const auto distanceSquaredY = displacementY * displacementY;
+          const auto distanceSquaredZ = displacementZ * displacementZ;
+
+          const auto distanceSquared = distanceSquaredX + distanceSquaredY + distanceSquaredZ;
+
+          const auto invDistSquared = 1. / distanceSquared;
+          const auto lj2 = sigmaSquared * invDistSquared;
+          const auto lj6 = lj2 * lj2 * lj2;
+          const auto lj12 = lj6 * lj6;
+          const auto lj12m6 = lj12 - lj6;
+          const auto scalarMultiple = siteMask[siteB] ? epsilon24 * (lj12 + lj12m6) * invDistSquared : 0.;
+
+        }
+
+      }
     }
 
   }
