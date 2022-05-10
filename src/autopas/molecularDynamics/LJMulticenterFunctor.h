@@ -330,6 +330,10 @@ class LJMulticenterFunctor
     exactSitePositionY.reserve(siteCount);
     exactSitePositionZ.reserve(siteCount);
 
+    if constexpr (useMixing) {
+      siteTypes.reserve(siteCount);
+    }
+
     siteForceX.reserve((siteCount));
     siteForceY.reserve((siteCount));
     siteForceZ.reserve((siteCount));
@@ -509,7 +513,7 @@ class LJMulticenterFunctor
       size_t siteIndex = 0;
       for (size_t mol = 0; mol < soa.getNumParticles(); ++mol) {
         const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
-            {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, const_unrotatedSitePositions);
+            {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, _PPLibrary->getSitePositions(typeptr[mol]));
         for (size_t site = 0; site < _PPLibrary->getNumSites(typeptr[mol]); ++site) {
           fxptr[mol] += siteForceX[siteIndex];
           fyptr[mol] += siteForceY[siteIndex];
@@ -771,9 +775,6 @@ class LJMulticenterFunctor
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> epsilon24s;
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> shift6s;
 
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionAx;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionAy;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionAz;
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionBx;
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionBy;
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionBz;
@@ -861,7 +862,7 @@ class LJMulticenterFunctor
 
     // main force calculation loop
     for (size_t molA = 0; molA < soaA.getNumParticles(); ++molA) {
-      const auto ownedStateA = ownedStatePtr[molA];
+      const auto ownedStateA = ownedStatePtrA[molA];
       if (ownedStateA == autopas::OwnershipState::dummy) {
         continue;
       }
@@ -928,15 +929,26 @@ class LJMulticenterFunctor
             }
           }
         }
+        const auto rotatedSitePositionsA = autopas::utils::quaternion::rotateVectorOfPositions(
+            {q0Aptr[molA], q1Aptr[molA], q2Aptr[molA], q3Aptr[molA]}, _PPLibrary->getSitePositions(typeptrA[mol]));
+
+        const auto rotatedSitePositionAx = rotatedSitePositionsA[0];
+        const auto rotatedSitePositionAy = rotatedSitePositionsA[1];
+        const auto rotatedSitePositionAz = rotatedSitePositionsA[2];
+
+        const auto exactSitePositionAx = rotatedSitePositionsA[0] + xAptr[molA];
+        const auto exactSitePositionAy = rotatedSitePositionsA[1] + yAptr[molA];
+        const auto exactSitePositionAz = rotatedSitePositionsA[2] + zAptr[molA];
+
 #pragma omp simd reduction (+ : forceSumX, forceSumY, forceSumZ, torqueSumX, torqueSumY, torqueSumZ, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
         for (size_t siteB = 0; siteB < siteCountB; ++siteB) {
           const SoAFloatPrecision sigmaSquared = useMixing ? sigmaSquareds[siteB] : const_sigmaSquared;
           const SoAFloatPrecision epsilon24 = useMixing ? epsilon24s[siteB] : const_epsilon24;
           const SoAFloatPrecision shift6 = applyShift ? (useMixing ? shift6s[siteB] : const_shift6) : 0;
 
-          const auto displacementX = exactSitePositionAx[siteA] - exactSitePositionX[globalSiteBIndex];
-          const auto displacementY = exactSitePositionY[siteA] - exactSitePositionY[globalSiteBIndex];
-          const auto displacementZ = exactSitePositionZ[siteA] - exactSitePositionZ[globalSiteBIndex];
+          const auto displacementX = exactSitePositionAx - exactSitePositionBx[siteB];
+          const auto displacementY = exactSitePositionAy - exactSitePositionBy[siteB];
+          const auto displacementZ = exactSitePositionAz - exactSitePositionBz[siteB];
 
           const auto distanceSquaredX = displacementX * displacementX;
           const auto distanceSquaredY = displacementY * displacementY;
@@ -951,8 +963,54 @@ class LJMulticenterFunctor
           const auto lj12m6 = lj12 - lj6;
           const auto scalarMultiple = siteMask[siteB] ? epsilon24 * (lj12 + lj12m6) * invDistSquared : 0.;
 
+          // calculate forces
+          const auto forceX = scalarMultiple * displacementX;
+          const auto forceY = scalarMultiple * displacementY;
+          const auto forceZ = scalarMultiple * displacementZ;
+
+          forceSumX += forceX;
+          forceSumY += forceY;
+          forceSumZ += forceZ;
+
+          torqueSumX += rotatedSitePositionAy * forceZ - rotatedSitePositionAz * forceY;
+          torqueSumY += rotatedSitePositionAz * forceX - rotatedSitePositionAx * forceZ;
+          torqueSumZ += rotatedSitePositionAx * forceY - rotatedSitePositionAy * forceX;
+
+          // N3L ( total molecular forces + torques to be determined later )
+          if (newton3) {
+            siteForceBx[siteB] -= forceX;
+            siteForceBy[siteB] -= forceY;
+            siteForceBz[siteB] -= forceZ;
+          }
         }
 
+      }
+      fxAptr[molA] += forceSumX;
+      fyAptr[molA] += forceSumY;
+      fzAptr[molA] += forceSumZ;
+      txAptr[molA] += torqueSumX;
+      tyAptr[molA] += torqueSumY;
+      tzAptr[molA] += torqueSumZ;
+    }
+
+    // reduce the forces on individual sites in cell B to total forces & torques on whole molecules
+    if constexpr (useMixing) {
+      size_t siteIndex = 0;
+      for (size_t mol = 0; mol < soaB.getNumParticles(); ++mol) {
+        const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
+            {q0Bptr[mol], q1Bptr[mol], q2Bptr[mol], q3Bptr[mol]}, const_unrotatedSitePositions);
+        for (size_t site = 0; site < _PPLibrary->getNumSites(typeptrB[mol]); ++site) {
+          fxBptr[mol] += siteForceBx[siteIndex];
+          fyBptr[mol] += siteForceBy[siteIndex];
+          fzBptr[mol] += siteForceBz[siteIndex];
+          txBptr[mol] += rotatedSitePositions[site][1] * siteForceBz[siteIndex] -
+                        rotatedSitePositions[site][2] * siteForceBy[siteIndex];
+          tyBptr[mol] += rotatedSitePositions[site][2] * siteForceBx[siteIndex] -
+                        rotatedSitePositions[site][0] * siteForceBz[siteIndex];
+          txBptr[mol] += rotatedSitePositions[site][0] * siteForceBy[siteIndex] -
+                        rotatedSitePositions[site][1] * siteForceBx[siteIndex];
+          ++siteIndex;
+        }
       }
     }
 
