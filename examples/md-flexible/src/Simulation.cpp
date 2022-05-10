@@ -347,14 +347,12 @@ void Simulation::updateForces() {
   }
   _previousIterationWasTuningIteration = isTuningIteration;
 
-  _timers.forceUpdateTotal.start();
   _timers.forceUpdateGlobal.start();
-
-  if (!_configuration.globalForceIsZero()) {
+  if (not _configuration.globalForceIsZero()) {
     calculateGlobalForces(_configuration.globalForce.value);
   }
-
   _timers.forceUpdateGlobal.stop();
+
   _timers.forceUpdateTotal.stop();
 }
 
