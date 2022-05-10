@@ -11,7 +11,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
   YAML::Node node = YAML::LoadFile(config.yamlFilename.value);
 
   if (node[config.includeRotational.name]) {
-    config.includeRotational.value = node[config.containerOptions.name].as<bool>();
+    config.includeRotational.value = node[config.includeRotational.name].as<bool>();
   }
   if (node[config.containerOptions.name]) {
     config.containerOptions.value = autopas::ContainerOption::parseOptions(
@@ -226,34 +226,32 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     config.massMap.value.clear();
 
     if (config.includeRotational.value) {
-      for (auto siteIterator = node[MDFlexConfig::siteStr].begin();
-           siteIterator != node[MDFlexConfig::siteStr].end(); ++siteIterator) {
-        for (auto it = siteIterator->second.begin(); it != siteIterator->second.end(); ++it) {
-          config.addSiteType(it->second[MDFlexConfig::siteTypeStr].as<unsigned long>(),
-                            it->second[config.epsilonMap.name].as<double>(),
-                             it->second[config.sigmaMap.name].as<double>(),
-                             it->second[config.massMap.name].as<double>());
-        }
+//      for (auto siteIterator = node[MDFlexConfig::siteStr].begin();
+// siteIterator != node[MDFlexConfig::siteStr].end(); ++siteIterator) {
+      for (auto siteIterator : node[MDFlexConfig::siteStr]) {
+        config.addSiteType(siteIterator.second[MDFlexConfig::siteTypeStr].as<unsigned long>(),
+                     siteIterator.second[config.epsilonMap.name].as<double>(),
+                     siteIterator.second[config.sigmaMap.name].as<double>(),
+                     siteIterator.second[config.massMap.name].as<double>());
       }
     }
-
   }
-  if (node[MDFlexConfig::moleculesStr]) {
-    // remove default objects
-    config.molToSiteIdMap.value.clear();
-    config.molToSitePosMap.value.clear();
-
-    if (config.includeRotational.value) {
-      for (auto moleculeInterator = node[MDFlexConfig::moleculesStr].begin();
-           moleculeInterator != node[MDFlexConfig::moleculesStr].end(); ++moleculeInterator) {
-        for (auto it = moleculeInterator->second.begin(); it != moleculeInterator->second.end(); ++it) {
-          auto molToSiteIdMap = it->second[MDFlexConfig::moleculeToSiteIdStr].as<std::vector<unsigned long>>(); // todo add testing that site Id matches existing site
-          auto molToSitePosMap = it->second[MDFlexConfig::moleculeToSitePosStr].as<std::vector<std::array<double,3>>>();
-          config.addMolType(it->second[MDFlexConfig::molTypeStr].as<unsigned long>(), molToSiteIdMap, molToSitePosMap);
-        }
-      }
-    } // todo add single site functionality
-  }
+//  if (node[MDFlexConfig::moleculesStr]) {
+//    // remove default objects
+//    config.molToSiteIdMap.value.clear();
+//    config.molToSitePosMap.value.clear();
+//
+//    if (config.includeRotational.value) {
+//      for (auto moleculeInterator = node[MDFlexConfig::moleculesStr].begin();
+//           moleculeInterator != node[MDFlexConfig::moleculesStr].end(); ++moleculeInterator) {
+//        for (auto it = moleculeInterator->second.begin(); it != moleculeInterator->second.end(); ++it) {
+//          auto molToSiteIdMap = it->second[MDFlexConfig::moleculeToSiteIdStr].as<std::vector<unsigned long>>(); // todo add testing that site Id matches existing site
+//          auto molToSitePosMap = it->second[MDFlexConfig::moleculeToSitePosStr].as<std::vector<std::array<double,3>>>();
+//          config.addMolType(it->second[MDFlexConfig::molTypeStr].as<unsigned long>(), molToSiteIdMap, molToSitePosMap);
+//        }
+//      }
+//    } // todo add single site functionality
+//  }
   if (node[MDFlexConfig::objectsStr]) {
     // remove default objects
     config.cubeGridObjects.clear();
