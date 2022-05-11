@@ -1,15 +1,15 @@
-# container                        :  [LinkedCells, VarVerletListsAsBuild, VerletClusterLists, VerletLists, VerletListsCells, PairwiseVerletLists]
-# traversal                        :  [lc_sliced, lc_sliced_balanced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18, vcl_c06, vcl_c01_balanced, vcl_sliced, vcl_sliced_balanced, vcl_sliced_c02, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced, vlc_sliced_balanced, vlc_sliced_c02, vvl_as_built, vlp_c01, vlp_c18, vlp_sliced, vlp_sliced_balanced, vlp_sliced_c02]
-# data-layout                      :  [AoS, SoA]
-# newton3                          :  [disabled, enabled]
+container                        :  [LinkedCells]
+traversal                        :  [lc_c01]
+data-layout                      :  [AoS]
+newton3                          :  [disabled]
 verlet-rebuild-frequency         :  10
 verlet-skin-radius               :  0.2
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Mean-Value
-tuning-strategy                  :  predictive-tuning
+tuning-strategy                  :  full-search
 tuning-interval                  :  6000
 tuning-samples                   :  10
-functor                          :  Lennard-Jones Multicentered
+functor                          :  Multi
 cutoff                           :  2
 box-min                          :  [0, 0, 0]
 box-max                          :  [15, 60, 15]
@@ -43,13 +43,13 @@ Molecules:
     molecule-to-site-id          : [0,1,1]
     molecule-to-site-pos         : [[0,0,0],[-0.1,0.2,0],[0.1,0.2,0]]
 Objects:
-  CubGridObjectsStr:
+  CubeGrid:
     0:
-      particles-per-dimension    :  [10, 10, 10]
-      particle-spacing           :  0.5
+      particles-per-dimension    :  [1, 1, 2]
+      particle-spacing           :  0.2
       bottomLeftCorner           :  [0, 0, 0]
       velocity                   :  [0, 0, 0]
-      moelcule-type              :  0
+      molecule-type              :  1
       site-epsilon               :  1
       site-sigma                 :  1
       site-mass                  :  1

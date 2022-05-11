@@ -63,7 +63,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
       config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX;
     } else if (strArg.find("glob") != std::string::npos) {
       config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_Globals;
-    } else if (strArg.find("Multi") != std::string::npos) {
+    } else if (strArg.find("multi") != std::string::npos) {
       config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_Multicentered;
     } else if (strArg.find("lj") != std::string::npos || strArg.find("lennard-jones") != std::string::npos) {
       config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
@@ -271,7 +271,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           CubeGrid cubeGrid({it->second[MDFlexConfig::velocityStr][0].as<double>(),
                              it->second[MDFlexConfig::velocityStr][1].as<double>(),
                              it->second[MDFlexConfig::velocityStr][2].as<double>()},
-                            it->second[MDFlexConfig::siteTypeStr].as<unsigned long>(),
+                            it->second[MDFlexConfig::molTypeStr].as<unsigned long>(),
                             it->second[config.epsilonMap.name].as<double>(),
                             it->second[config.sigmaMap.name].as<double>(), it->second[config.massMap.name].as<double>(),
                             {it->second[config.particlesPerDim.name][0].as<unsigned long>(),
@@ -292,7 +292,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
               {it->second[MDFlexConfig::velocityStr][0].as<double>(),
                it->second[MDFlexConfig::velocityStr][1].as<double>(),
                it->second[MDFlexConfig::velocityStr][2].as<double>()},
-              it->second[MDFlexConfig::siteTypeStr].as<unsigned long>(),
+              it->second[MDFlexConfig::molTypeStr].as<unsigned long>(),
               it->second[config.epsilonMap.name].as<double>(), it->second[config.sigmaMap.name].as<double>(),
               it->second[config.massMap.name].as<double>(),
               it->second[MDFlexConfig::particlesPerObjectStr].as<size_t>(),
@@ -335,7 +335,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           Sphere sphere({it->second[MDFlexConfig::velocityStr][0].as<double>(),
                          it->second[MDFlexConfig::velocityStr][1].as<double>(),
                          it->second[MDFlexConfig::velocityStr][2].as<double>()},
-                        it->second[MDFlexConfig::siteTypeStr].as<unsigned long>(),
+                        it->second[MDFlexConfig::molTypeStr].as<unsigned long>(),
                         it->second[config.epsilonMap.name].as<double>(), it->second[config.sigmaMap.name].as<double>(),
                         it->second[config.massMap.name].as<double>(),
                         {it->second[MDFlexConfig::sphereCenterStr][0].as<double>(),
@@ -353,7 +353,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
               {it->second[MDFlexConfig::velocityStr][0].as<double>(),
                it->second[MDFlexConfig::velocityStr][1].as<double>(),
                it->second[MDFlexConfig::velocityStr][2].as<double>()},
-              it->second[MDFlexConfig::siteTypeStr].as<unsigned long>(),
+              it->second[MDFlexConfig::molTypeStr].as<unsigned long>(),
               it->second[config.epsilonMap.name].as<double>(), it->second[config.sigmaMap.name].as<double>(),
               it->second[config.massMap.name].as<double>(), it->second[config.particleSpacing.name].as<double>(),
               {it->second[config.boxLength.name][0].as<double>(), it->second[config.boxLength.name][1].as<double>(),
