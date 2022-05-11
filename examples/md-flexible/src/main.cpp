@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
   if (configuration.includeRotational.value) {
     mainHelper<MulticenteredParticleType>(configuration, &argc, &argv);
   } else {
-    mainHelper<ParticleType>(configuration, &argc, &argv);
+//    mainHelper<ParticleType>(configuration, &argc, &argv);
   }
 
   autopas::AutoPas_MPI_Finalize();

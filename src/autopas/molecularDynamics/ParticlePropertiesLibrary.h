@@ -231,7 +231,7 @@ template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::addSimpleType(const intType molId, const floatType epsilon, const floatType sigma, const floatType mass) {
   if (_numRegisteredSiteTypes != molId) {
     autopas::utils::ExceptionHandler::exception(
-        "ParticlePropertiesLibrary::addType(): trying to register a type with id {}. Please register types "
+        "ParticlePropertiesLibrary::addSimpleType(): trying to register a type with id {}. Please register types "
         "consecutively, starting at id 0. Currently there are {} registered types.",
         molId, _numRegisteredSiteTypes);
   }
@@ -242,12 +242,12 @@ void ParticlePropertiesLibrary<floatType, intType>::addSimpleType(const intType 
 }
 
 template <typename floatType, typename intType>
-void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType typeID, floatType epsilon, floatType sigma, floatType mass) {
-  if (_numRegisteredSiteTypes != typeID) {
+void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, floatType epsilon, floatType sigma, floatType mass) {
+  if (_numRegisteredSiteTypes != siteID) {
     autopas::utils::ExceptionHandler::exception(
-        "ParticlePropertiesLibrary::addType(): trying to register a site type with id {}. Please register types "
+        "ParticlePropertiesLibrary::addSiteType(): trying to register a site type with id {}. Please register types "
         "consecutively, starting at id 0. Currently there are {} registered types.",
-        typeID, _numRegisteredSiteTypes);
+        siteID, _numRegisteredSiteTypes);
   }
   ++_numRegisteredSiteTypes;
   _epsilons.emplace_back(epsilon);
@@ -257,13 +257,13 @@ void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType typeID, 
 template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::addMolType(const intType molId, const std::vector<intType> siteIds,
                                                                const std::vector<std::array<floatType,3>> relPos) {
-  if (_numRegisteredSiteTypes != molId) {
+  if (_numRegisteredMolTypes != molId) {
     autopas::utils::ExceptionHandler::exception(
-        "ParticlePropertiesLibrary::addType(): trying to register a molecule type with id {}. Please register types "
+        "ParticlePropertiesLibrary::addMolType(): trying to register a molecule type with id {}. Please register types "
         "consecutively, starting at id 0. Currently there are {} registered types.",
         molId, _numRegisteredSiteTypes);
   }
-  ++_numRegisteredSiteTypes;
+  ++_numRegisteredMolTypes;
   _siteIds.emplace_back(siteIds);
   _relativeSitePositions.emplace_back(relPos);
   _numSites.emplace_back(siteIds.size());
