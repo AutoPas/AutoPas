@@ -108,9 +108,10 @@ jobs:
           then
             cd build
             # only run MPI tests. Apparently mpi in the container doesn't need `--oversubscribe`
-            ctest --output-on-failure -I ${{ matrix.part }},,2 -R MPIParallelAutoPasTests
+            ctest --output-on-failure -R MPIParallelAutoPasTests
             cd examples
-            ctest -C checkExamples --output-on-failure -I ${{ matrix.part }},,2
+            # exclude examples that do not support MPI 
+            ctest --output-on-failure -C checkExamples -E 'sph-((main)|(diagram))'
           else
             cd build
             # Start with test 0 or 1 and do every second test
