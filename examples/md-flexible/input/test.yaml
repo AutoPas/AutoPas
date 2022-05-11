@@ -31,14 +31,17 @@ Sites:
     site-mass                    : 2
 Molecules:
   0:
-    site-types-in-mol            : 0
-    site-pos-in-mol              : [[0,0,0]]
+    molecule-type                : 0
+    molecule-to-site-id          : [0]
+    molecule-to-site-pos         : [[0,0,0]]
   1:
-    site-types-in-mol            : [1, 1]
-    site-pos-in-mol              : [[-0.2,0,0],[0.2,0,0]]
+    molecule-type                : 1
+    molecule-to-site-id          : [1, 1]
+    molecule-to-site-pos         : [[-0.2,0,0],[0.2,0,0]]
   2:
-    site-types-in-mol            : [0,1,1]
-    site-pos-in-mol              : [[0,0,0],[-0.1,0.2,0],[0.1,0.2,0]]
+    molecule-type                : 2
+    molecule-to-site-id          : [0,1,1]
+    molecule-to-site-pos         : [[0,0,0],[-0.1,0.2,0],[0.1,0.2,0]]
 
 Objects:
   CubeClosestPacked:

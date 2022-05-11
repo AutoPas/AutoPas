@@ -236,22 +236,23 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
       }
     }
   }
-//  if (node[MDFlexConfig::moleculesStr]) {
-//    // remove default objects
-//    config.molToSiteIdMap.value.clear();
-//    config.molToSitePosMap.value.clear();
-//
-//    if (config.includeRotational.value) {
-//      for (auto moleculeInterator = node[MDFlexConfig::moleculesStr].begin();
-//           moleculeInterator != node[MDFlexConfig::moleculesStr].end(); ++moleculeInterator) {
-//        for (auto it = moleculeInterator->second.begin(); it != moleculeInterator->second.end(); ++it) {
-//          auto molToSiteIdMap = it->second[MDFlexConfig::moleculeToSiteIdStr].as<std::vector<unsigned long>>(); // todo add testing that site Id matches existing site
-//          auto molToSitePosMap = it->second[MDFlexConfig::moleculeToSitePosStr].as<std::vector<std::array<double,3>>>();
-//          config.addMolType(it->second[MDFlexConfig::molTypeStr].as<unsigned long>(), molToSiteIdMap, molToSitePosMap);
-//        }
-//      }
-//    } // todo add single site functionality
-//  }
+  if (node[MDFlexConfig::moleculesStr]) {
+    // remove default objects
+    config.molToSiteIdMap.value.clear();
+    config.molToSitePosMap.value.clear();
+
+    if (config.includeRotational.value) {
+      for (auto moleculeInterator : node[MDFlexConfig::moleculesStr]) {
+        auto molToSiteIdMap =
+            moleculeInterator.second[MDFlexConfig::moleculeToSiteIdStr]
+                .as<std::vector<unsigned long>>();  // todo add testing that site Id matches existing site
+        auto molToSitePosMap =
+            moleculeInterator.second[MDFlexConfig::moleculeToSitePosStr].as<std::vector<std::array<double, 3>>>();
+        config.addMolType(moleculeInterator.second[MDFlexConfig::molTypeStr].as<unsigned long>(), molToSiteIdMap,
+                          molToSitePosMap);
+      }
+    } // todo add single site functionality
+  }
   if (node[MDFlexConfig::objectsStr]) {
     // remove default objects
     config.cubeGridObjects.clear();
