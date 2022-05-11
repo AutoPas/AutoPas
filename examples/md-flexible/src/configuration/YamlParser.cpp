@@ -317,7 +317,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
               {it->second[MDFlexConfig::velocityStr][0].as<double>(),
                it->second[MDFlexConfig::velocityStr][1].as<double>(),
                it->second[MDFlexConfig::velocityStr][2].as<double>()},
-              it->second[MDFlexConfig::siteTypeStr].as<unsigned long>(),
+              it->second[MDFlexConfig::molTypeStr].as<unsigned long>(),
               it->second[config.epsilonMap.name].as<double>(), it->second[config.sigmaMap.name].as<double>(),
               it->second[config.massMap.name].as<double>(),
               it->second[MDFlexConfig::particlesPerObjectStr].as<size_t>(),
