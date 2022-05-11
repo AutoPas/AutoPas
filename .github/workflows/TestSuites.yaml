@@ -98,7 +98,7 @@ jobs:
             -DAUTOPAS_ENABLE_THREAD_SANITIZER=${{ matrix.config[7] }} \
             -DAUTOPAS_INTERNODE_TUNING=${UseMPI} \
             -DMD_FLEXIBLE_USE_MPI=${UseMPI} \
-            -DMPIEXEC_PREFLAGS=-prepend-rank \
+            -DAUTOPAS_ENABLE_ALLLBL=${UseMPI} \
             ..
           entrypoint.sh cmake --build . --parallel 1 
       - name: Run tests ${{ matrix.part }}/2
