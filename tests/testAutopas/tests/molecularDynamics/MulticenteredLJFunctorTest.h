@@ -1,8 +1,11 @@
-//
-// Created by ge86vax on 12.05.22.
-//
+/**
+* @file MulticenteredLJFunctorTest.h
+* @author S. Newcome
+* @date 12/05/2022
+*/
 
-#ifndef AUTOPAS_MULTICENTEREDLJFUNCTORTEST_H
-#define AUTOPAS_MULTICENTEREDLJFUNCTORTEST_H
+#pragma once
 
-#endif  // AUTOPAS_MULTICENTEREDLJFUNCTORTEST_H
+#include <gtest/gtest.h>
+
+#include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"

@@ -25,7 +25,7 @@ using FPCell = autopas::FullParticleCell<autopas::Particle>;
 /**
  * Short for the AutoPas single center Lennard-Jones molecule
  */
-using Molecule = autopas::MoleculeLJ<>;
+using Molecule = autopas::MoleculeLJ;
 /**
  * Short for the Full Particle Cell with the single center Lennard-Jones molecule
  */
