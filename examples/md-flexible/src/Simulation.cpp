@@ -16,12 +16,12 @@
 // Declare the main AutoPas class and the iteratePairwise() methods with all used functors as extern template
 // instantiation. They are instantiated in the respective cpp file inside the templateInstantiations folder.
 //! @cond Doxygen_Suppress
-extern template class autopas::AutoPas<ParticleType>;
-extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctor<ParticleType, true, true> *);
-extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(
-    autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true> *);
-extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctorAVX<ParticleType, true, true> *);
-extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::FlopCounterFunctor<ParticleType> *);
+//extern template class autopas::AutoPas<ParticleType>;
+//extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctor<ParticleType, true, true> *);
+//extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(
+//    autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true> *);
+//extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctorAVX<ParticleType, true, true> *);
+//extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::FlopCounterFunctor<ParticleType> *);
 //! @endcond
 
 #include <sys/ioctl.h>
@@ -605,6 +605,10 @@ void Simulation<ParticleClass>::logMeasurements() {
           flopsPerKernelCall = autopas::LJFunctorAVX<ParticleClass, true, true>::getNumFlopsPerKernelCall();
           break;
         }
+        case MDFlexConfig::FunctorOption ::lj12_6_Multicentered: {
+          flopsPerKernelCall = 0; // todo fix
+          break;
+        }
         default:
           throw std::runtime_error("Invalid Functor choice");
       }
@@ -627,5 +631,5 @@ bool Simulation<ParticleClass>::needsMoreIterations() const {
   return _iteration < _configuration.iterations.value or _numTuningPhasesCompleted < _configuration.tuningPhases.value;
 }
 
-template class Simulation<ParticleType>;
+//template class Simulation<ParticleType>;
 template class Simulation<MulticenteredParticleType>;
