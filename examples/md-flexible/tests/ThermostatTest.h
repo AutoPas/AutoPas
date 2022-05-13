@@ -15,8 +15,8 @@ class ThermostatTest : public AutoPasTestBase,
   using AutoPasType = autopas::AutoPas<Molecule>;
 
   ThermostatTest() : AutoPasTestBase(), _particlePropertiesLibrary(ParticlePropertiesLibrary<double, size_t>(1.)) {
-    _particlePropertiesLibrary.addType(0, 1., 1., 1.);
-    _particlePropertiesLibrary.addType(1, 1., 1., 2.);
+    _particlePropertiesLibrary.addSimpleType(0, 1., 1., 1.);
+    _particlePropertiesLibrary.addSimpleType(1, 1., 1., 2.);
     _particlePropertiesLibrary.calculateMixingCoefficients();
   }
 

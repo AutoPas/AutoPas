@@ -16,7 +16,7 @@ TYPED_TEST_P(LJFunctorTestVs, testSetPropertiesVSPPLSoA) {
   funNoPPL.setParticleProperties(24 * this->epsilon, this->sigma);
 
   ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(this->cutoff);
-  particlePropertiesLibrary.addType(0, this->epsilon, this->sigma, 1);
+  particlePropertiesLibrary.addSimpleType(0, this->epsilon, this->sigma, 1);
   particlePropertiesLibrary.calculateMixingCoefficients();
   FunPPL funPPL(this->cutoff, particlePropertiesLibrary);
 
@@ -63,7 +63,7 @@ TYPED_TEST_P(LJFunctorTestVs, testSetPropertiesVSPPLAoS) {
   funNoPPL.setParticleProperties(24 * this->epsilon, this->sigma);
 
   ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(this->cutoff);
-  particlePropertiesLibrary.addType(0, this->epsilon, this->sigma, 1);
+  particlePropertiesLibrary.addSimpleType(0, this->epsilon, this->sigma, 1);
   particlePropertiesLibrary.calculateMixingCoefficients();
   FunPPL funPPL(this->cutoff, particlePropertiesLibrary);
 

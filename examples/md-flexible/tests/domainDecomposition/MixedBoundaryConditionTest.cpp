@@ -26,7 +26,7 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
                                                                          options::BoundaryTypeOption::reflective,
                                                                          options::BoundaryTypeOption::reflective};
 
-  RegularGridDecomposition domainDecomposition(boxMin, boxMax, subdivideDimension, cutoffWidth, skinWidth,
+  RegularGridDecomposition<autopas::MoleculeLJ> domainDecomposition(boxMin, boxMax, subdivideDimension, cutoffWidth, skinWidth,
                                                boundaryConditions);
 
   auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
@@ -134,7 +134,7 @@ TEST_F(MixedBoundaryConditionTest, testMixedReflection) {
                                                                          options::BoundaryTypeOption::reflective,
                                                                          options::BoundaryTypeOption::reflective};
 
-  RegularGridDecomposition domainDecomposition(boxMin, boxMax, subdivideDimension, cutoffWidth, skinWidth,
+  RegularGridDecomposition<autopas::MoleculeLJ> domainDecomposition(boxMin, boxMax, subdivideDimension, cutoffWidth, skinWidth,
                                                boundaryConditions);
 
   auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
@@ -211,7 +211,7 @@ TEST_F(MixedBoundaryConditionTest, testPeriodic) {
                                                                          options::BoundaryTypeOption::reflective,
                                                                          options::BoundaryTypeOption::reflective};
 
-  RegularGridDecomposition domainDecomposition(boxMin, boxMax, subdivideDimension, cutoffWidth, skinWidth,
+  RegularGridDecomposition<autopas::MoleculeLJ> domainDecomposition(boxMin, boxMax, subdivideDimension, cutoffWidth, skinWidth,
                                                boundaryConditions);
 
   auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
@@ -330,7 +330,7 @@ TEST_F(MixedBoundaryConditionTest, testNoBoundary) {
   const std::array<options::BoundaryTypeOption, 3> boundaryConditions = {
       options::BoundaryTypeOption::none, options::BoundaryTypeOption::none, options::BoundaryTypeOption::none};
 
-  RegularGridDecomposition domainDecomposition(boxMin, boxMax, subdivideDimension, cutoffWidth, skinWidth,
+  RegularGridDecomposition<ParticleType> domainDecomposition(boxMin, boxMax, subdivideDimension, cutoffWidth, skinWidth,
                                                boundaryConditions);
 
   auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);

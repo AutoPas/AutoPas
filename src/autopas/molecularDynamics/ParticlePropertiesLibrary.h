@@ -94,6 +94,7 @@ class ParticlePropertiesLibrary {
 
   /**
    * Returns a set of all particle types stored.
+   * todo this is super ugly code
    * @return
    */
   std::set<intType> getSiteTypes() const {
@@ -105,6 +106,21 @@ class ParticlePropertiesLibrary {
 
     return typeIDs;
   }
+
+  std::set<intType> getMolTypes() const {
+    std::set<intType> typeIDs;
+
+    for (size_t index = 0; index < _numRegisteredMolTypes; ++index) {
+      typeIDs.emplace(index);
+    }
+
+    return typeIDs;
+  }
+
+  std::set<intType> getTypes() const {
+    return getSiteTypes();
+  }
+
 
   /**
    * Getter for the site's epsilon*24.

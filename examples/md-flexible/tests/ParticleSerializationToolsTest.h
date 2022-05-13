@@ -25,5 +25,5 @@ class ParticleSerializationToolsTest : public AutoPasTestBase {
   /**
    * Molecule used for testing.
    */
-  autopas::MoleculeLJ<double> _molecule;
+  autopas::MoleculeLJ _molecule;
 };

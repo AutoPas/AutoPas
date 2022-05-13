@@ -14,8 +14,8 @@
 class ParticlePropertiesLibraryTest : public AutoPasTestBase {
  public:
   ParticlePropertiesLibraryTest() : AutoPasTestBase(), PPL(cutoff) {
-    PPL.addType(0, epsilons[0], sigmas[0], masses[0]);
-    PPL.addType(1, epsilons[1], sigmas[1], masses[1]);
+    PPL.addSimpleType(0, epsilons[0], sigmas[0], masses[0]);
+    PPL.addSimpleType(1, epsilons[1], sigmas[1], masses[1]);
     PPL.calculateMixingCoefficients();
   }
 

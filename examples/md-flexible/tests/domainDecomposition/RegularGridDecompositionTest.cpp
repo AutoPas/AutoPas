@@ -13,7 +13,8 @@
 #include "src/domainDecomposition/RegularGridDecomposition.h"
 
 namespace {
-void initializeAutoPasContainer(RegularGridDecomposition::SharedAutoPasContainer &autoPasContainer,
+template<class ParticleClass>
+void initializeAutoPasContainer(typename RegularGridDecomposition<ParticleClass>::SharedAutoPasContainer &autoPasContainer,
                                 MDFlexConfig &configuration) {
   autoPasContainer->setAllowedCellSizeFactors(*configuration.cellSizeFactors.value);
   autoPasContainer->setAllowedContainers(configuration.containerOptions.value);
@@ -48,7 +49,7 @@ TEST_F(RegularGridDecompositionTest, testGetLocalDomain) {
   std::array<double, 3> globalBoxMax = {10.0, 10.0, 10.0};
   std::array<bool, 3> subdivideDimension = {true, true, true};
 
-  RegularGridDecomposition domainDecomposition(
+  RegularGridDecomposition<autopas::MoleculeLJ> domainDecomposition(
       globalBoxMin, globalBoxMax, subdivideDimension, 0, 0,
       {options::BoundaryTypeOption::periodic, options::BoundaryTypeOption::periodic,
        options::BoundaryTypeOption::periodic});
@@ -96,13 +97,13 @@ TEST_F(RegularGridDecompositionTest, testExchangeHaloParticles) {
     std::array<double, 3> localBoxMin = configuration.boxMin.value;
     std::array<double, 3> localBoxMax = configuration.boxMax.value;
 
-    RegularGridDecomposition domainDecomposition(
+    RegularGridDecomposition<autopas::MoleculeLJ> domainDecomposition(
         configuration.boxMin.value, configuration.boxMax.value, configuration.subdivideDimension.value,
         configuration.cutoff.value, configuration.verletSkinRadius.value, configuration.boundaryOption.value);
 
     auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
 
-    initializeAutoPasContainer(autoPasContainer, configuration);
+    initializeAutoPasContainer<autopas::MoleculeLJ>(autoPasContainer, configuration);
 
     // Setup 27 particles of which 26 will be relevant during halo update. Imagine a rubik's cube where each cell
     // contains a single particle. This layout contains 8 particles with 3 adjacent cell which is outside the cube,
@@ -197,13 +198,13 @@ TEST_F(RegularGridDecompositionTest, testExchangeMigratingParticles) {
     std::array<double, 3> localBoxMin = configuration.boxMin.value;
     std::array<double, 3> localBoxMax = configuration.boxMax.value;
 
-    RegularGridDecomposition domainDecomposition(
+    RegularGridDecomposition<autopas::MoleculeLJ> domainDecomposition(
         configuration.boxMin.value, configuration.boxMax.value, configuration.subdivideDimension.value,
         configuration.cutoff.value, configuration.verletSkinRadius.value, configuration.boundaryOption.value);
 
     auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
 
-    initializeAutoPasContainer(autoPasContainer, configuration);
+    initializeAutoPasContainer<autopas::MoleculeLJ>(autoPasContainer, configuration);
 
     // Setup 27 particles. Imagine a rubik's cube where each cell contains a single particle.
     std::vector<std::vector<double>> particlePositions = {
