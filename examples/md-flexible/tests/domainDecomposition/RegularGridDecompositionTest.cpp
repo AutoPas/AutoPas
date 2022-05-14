@@ -52,7 +52,7 @@ auto initDomain() {
   autoPasContainer->setAllowedTraversals({autopas::TraversalOption::ds_sequential});
   autoPasContainer->init();
 
-  return std::make_tuple(autoPasContainer, domainDecomposition, configuration);
+  return std::make_tuple(autoPasContainer, domainDecomposition);
 }
 
 /**
@@ -61,11 +61,9 @@ auto initDomain() {
  * Particles are placed in each corner (8), in the middle of every edge (12), and face (6),
  * as well as the center of the domain. The positions are cutoff/2 away from the borders.
  * @param autoPasContainer
- * @param configuration
  * @return Vector of generated positions.
  */
-auto generatePositionsInsideDomain(const autopas::AutoPas<ParticleType> &autoPasContainer,
-                                   const MDFlexConfig &configuration) {
+auto generatePositionsInsideDomain(const autopas::AutoPas<ParticleType> &autoPasContainer) {
   using autopas::utils::ArrayMath::add;
   using autopas::utils::ArrayMath::mul;
   using autopas::utils::ArrayMath::mulScalar;
@@ -79,7 +77,7 @@ auto generatePositionsInsideDomain(const autopas::AutoPas<ParticleType> &autoPas
   positions.reserve(27);
   const auto midOfLocalBox = add(localBoxMin, mulScalar(localBoxLength, 0.5));
   // particles should be placed cutoff/2 inside from the box border
-  const auto midToParticle1D = mulScalar(subScalar(localBoxLength, configuration.cutoff.value), 0.5);
+  const auto midToParticle1D = mulScalar(subScalar(localBoxLength, autoPasContainer.getCutoff()), 0.5);
   for (double z = -1; z <= 1; ++z) {
     for (double y = -1; y <= 1; ++y) {
       for (double x = -1; x <= 1; ++x) {
@@ -99,11 +97,9 @@ auto generatePositionsInsideDomain(const autopas::AutoPas<ParticleType> &autoPas
  * The positions are cutoff/2 away from the borders.
  *
  * @param autoPasContainer
- * @param configuration
  * @return Vector of generated positions.
  */
-auto generatePositionsOutsideDomain(const autopas::AutoPas<ParticleType> &autoPasContainer,
-                                    const MDFlexConfig &configuration) {
+auto generatePositionsOutsideDomain(const autopas::AutoPas<ParticleType> &autoPasContainer) {
   using autopas::utils::ArrayMath::add;
   using autopas::utils::ArrayMath::addScalar;
   using autopas::utils::ArrayMath::mul;
@@ -117,8 +113,8 @@ auto generatePositionsOutsideDomain(const autopas::AutoPas<ParticleType> &autoPa
   std::vector<std::array<double, 3>> positions{};
   positions.reserve(98);
   const auto midOfLocalBox = add(localBoxMin, mulScalar(localBoxLength, 0.5));
-  const auto midToParticle1DNear = mulScalar(subScalar(localBoxLength, configuration.cutoff.value), 0.5);
-  const auto midToParticle1DFar = mulScalar(addScalar(localBoxLength, configuration.cutoff.value), 0.5);
+  const auto midToParticle1DNear = mulScalar(subScalar(localBoxLength, autoPasContainer.getCutoff()), 0.5);
+  const auto midToParticle1DFar = mulScalar(addScalar(localBoxLength, autoPasContainer.getCutoff()), 0.5);
 
   const std::array<std::vector<double>, 3> distances = {{
       {-midToParticle1DFar[0], -midToParticle1DNear[0], 0., midToParticle1DNear[0], midToParticle1DFar[0]},
@@ -144,7 +140,7 @@ auto generatePositionsOutsideDomain(const autopas::AutoPas<ParticleType> &autoPa
 }
 
 TEST_F(RegularGridDecompositionTest, testGetLocalDomain) {
-  auto [autoPasContainer, domainDecomposition, configuration] = initDomain();
+  auto [autoPasContainer, domainDecomposition] = initDomain();
 
   const auto globalBoxExtend =
       autopas::utils::ArrayMath::sub(domainDecomposition.getGlobalBoxMax(), domainDecomposition.getGlobalBoxMin());
@@ -169,11 +165,11 @@ TEST_F(RegularGridDecompositionTest, testGetLocalDomain) {
  * and nowhere else.
  */
 TEST_F(RegularGridDecompositionTest, testExchangeHaloParticles) {
-  auto [autoPasContainer, domainDecomposition, configuration] = initDomain();
+  auto [autoPasContainer, domainDecomposition] = initDomain();
   const auto &localBoxMin = autoPasContainer->getBoxMin();
   const auto &localBoxMax = autoPasContainer->getBoxMax();
 
-  const auto particlePositions = generatePositionsInsideDomain(*autoPasContainer, configuration);
+  const auto particlePositions = generatePositionsInsideDomain(*autoPasContainer);
   ASSERT_THAT(particlePositions, ::testing::SizeIs(27)) << "Test setup faulty!";
   {
     size_t id = 0;
@@ -195,7 +191,7 @@ TEST_F(RegularGridDecompositionTest, testExchangeHaloParticles) {
       << "Owned particles missing after halo exchange!";
 
   // expect particles to be all around the box since every particle creates multiple halo particles.
-  const auto expectedHaloParticlePositions = generatePositionsOutsideDomain(*autoPasContainer, configuration);
+  const auto expectedHaloParticlePositions = generatePositionsOutsideDomain(*autoPasContainer);
   ASSERT_EQ(expectedHaloParticlePositions.size(), 98) << "Expectation setup faulty!";
 
   EXPECT_EQ(autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::halo),
@@ -213,9 +209,9 @@ TEST_F(RegularGridDecompositionTest, testExchangeHaloParticles) {
  * For more information see the comments in the test.
  */
 TEST_F(RegularGridDecompositionTest, testExchangeMigratingParticles) {
-  auto [autoPasContainer, domainDecomposition, configuration] = initDomain();
+  auto [autoPasContainer, domainDecomposition] = initDomain();
 
-  const auto positionsOutsideSubdomain = generatePositionsOutsideDomain(*autoPasContainer, configuration);
+  const auto positionsOutsideSubdomain = generatePositionsOutsideDomain(*autoPasContainer);
   ASSERT_THAT(positionsOutsideSubdomain, ::testing::SizeIs(98));
   // generate 98 particles at positions inside the subdomain. Otherwise, we cannot add them.
   // Then move them to the positions slightly outside the domain.
@@ -234,7 +230,7 @@ TEST_F(RegularGridDecompositionTest, testExchangeMigratingParticles) {
   domainDecomposition.exchangeMigratingParticles(*autoPasContainer, emigrants);
 
   // derive expectations
-  const auto expectedPositions = generatePositionsInsideDomain(*autoPasContainer, configuration);
+  const auto expectedPositions = generatePositionsInsideDomain(*autoPasContainer);
   // check expectations
   EXPECT_EQ(autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned), positionsOutsideSubdomain.size());
   autoPasContainer->forEach([&](const auto &p) { EXPECT_THAT(expectedPositions, ::testing::Contains(p.getR())); });
