@@ -13,13 +13,14 @@ file(
     "./*.h"
 )
 
-# remove main
-foreach (FILE_PATH ${MDFlexTest_SRC})
-    string(FIND ${FILE_PATH} "main.cpp" EXCLUDE_FILE)
-    if (NOT ${EXCLUDE_FILE} EQUAL -1)
-        list(REMOVE_ITEM MDFlexTest_SRC ${FILE_PATH})
-    endif ()
-endforeach ()
+# remove main to avoid duplicate two main functions
+list(FILTER MDFlexTest_SRC EXCLUDE REGEX ".*main.cpp")
+# remove files which are not needed for tests and expensive to compile
+list(FILTER MDFlexTest_SRC EXCLUDE REGEX ".*templateInstantiations/iteratePairwiseLJFunctorAVX.cpp")
+list(FILTER MDFlexTest_SRC EXCLUDE REGEX ".*templateInstantiations/iteratePairwiseLJFunctor.cpp")
+list(FILTER MDFlexTest_SRC EXCLUDE REGEX ".*templateInstantiations/iteratePairwiseLJFunctorGlobals.cpp")
+list(FILTER MDFlexTest_SRC EXCLUDE REGEX ".*templateInstantiations/iteratePairwiseFlopCounterFunctor.cpp")
+list(FILTER MDFlexTest_SRC EXCLUDE REGEX ".*Simulation.((cpp)|h)")
 
 add_executable(mdFlexTests ${MDFlexTest_SRC})
 
