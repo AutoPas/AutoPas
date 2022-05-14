@@ -18,7 +18,7 @@ extern template class autopas::AutoPas<ParticleType>;
 
 /**
  * Generate a simulation setup depending on the number of MPI ranks available.
- * @return tuple(autoPasContainer, domainDecomposition, configuration)
+ * @return tuple(autoPasContainer, domainDecomposition)
  */
 auto initDomain() {
   const int numberOfProcesses = []() {
@@ -39,9 +39,9 @@ auto initDomain() {
   configuration.boundaryOption.value = {options::BoundaryTypeOption::periodic, options::BoundaryTypeOption::periodic,
                                         options::BoundaryTypeOption::periodic};
 
-  RegularGridDecomposition domainDecomposition(configuration);
-  const auto &localBoxMin = domainDecomposition.getLocalBoxMin();
-  const auto &localBoxMax = domainDecomposition.getLocalBoxMax();
+  auto domainDecomposition = std::make_shared<RegularGridDecomposition>(configuration);
+  const auto &localBoxMin = domainDecomposition->getLocalBoxMin();
+  const auto &localBoxMax = domainDecomposition->getLocalBoxMax();
 
   auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>();
   autoPasContainer->setBoxMin(localBoxMin);
@@ -143,8 +143,8 @@ TEST_F(RegularGridDecompositionTest, testGetLocalDomain) {
   auto [autoPasContainer, domainDecomposition] = initDomain();
 
   const auto globalBoxExtend =
-      autopas::utils::ArrayMath::sub(domainDecomposition.getGlobalBoxMax(), domainDecomposition.getGlobalBoxMin());
-  const auto decomposition = domainDecomposition.getDecomposition();
+      autopas::utils::ArrayMath::sub(domainDecomposition->getGlobalBoxMax(), domainDecomposition->getGlobalBoxMin());
+  const auto decomposition = domainDecomposition->getDecomposition();
 
   const std::array<double, 3> expectedLocalBoxExtend = autopas::utils::ArrayMath::div(
       globalBoxExtend, autopas::utils::ArrayUtils::static_cast_array<double>(decomposition));
@@ -152,7 +152,7 @@ TEST_F(RegularGridDecompositionTest, testGetLocalDomain) {
   ASSERT_THAT(expectedLocalBoxExtend, ::testing::Each(::testing::Gt(1e-10)));
 
   const std::array<double, 3> resultingLocalBoxExtend =
-      autopas::utils::ArrayMath::sub(domainDecomposition.getLocalBoxMax(), domainDecomposition.getLocalBoxMin());
+      autopas::utils::ArrayMath::sub(domainDecomposition->getLocalBoxMax(), domainDecomposition->getLocalBoxMin());
 
   EXPECT_NEAR(expectedLocalBoxExtend[0], resultingLocalBoxExtend[0], 1e-10);
   EXPECT_NEAR(expectedLocalBoxExtend[1], resultingLocalBoxExtend[1], 1e-10);
@@ -185,7 +185,7 @@ TEST_F(RegularGridDecompositionTest, testExchangeHaloParticles) {
   ASSERT_EQ(leavingParticles.size(), 0) << "All particles should have been created inside the container!";
 
   // halos are generated here, so this is what we actually test
-  domainDecomposition.exchangeHaloParticles(*autoPasContainer);
+  domainDecomposition->exchangeHaloParticles(*autoPasContainer);
 
   EXPECT_EQ(autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned), 27)
       << "Owned particles missing after halo exchange!";
@@ -218,7 +218,7 @@ TEST_F(RegularGridDecompositionTest, testExchangeMigratingParticles) {
   {
     size_t id = 0;
     for (const auto &_ : positionsOutsideSubdomain) {
-      ParticleType p(domainDecomposition.getLocalBoxMin(), {0., 0., 0.}, id++);
+      ParticleType p(domainDecomposition->getLocalBoxMin(), {0., 0., 0.}, id++);
       autoPasContainer->addParticle(p);
     }
     autoPasContainer->forEach([&](auto &p) { p.setR(positionsOutsideSubdomain[p.getID()]); });
@@ -227,7 +227,7 @@ TEST_F(RegularGridDecompositionTest, testExchangeMigratingParticles) {
   // test
   auto emigrants = autoPasContainer->updateContainer();
   ASSERT_THAT(emigrants, ::testing::SizeIs(positionsOutsideSubdomain.size()));
-  domainDecomposition.exchangeMigratingParticles(*autoPasContainer, emigrants);
+  domainDecomposition->exchangeMigratingParticles(*autoPasContainer, emigrants);
 
   // derive expectations
   const auto expectedPositions = generatePositionsInsideDomain(*autoPasContainer);
