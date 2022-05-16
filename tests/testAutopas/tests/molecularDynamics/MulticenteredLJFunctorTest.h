@@ -9,8 +9,12 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
+#include "autopas/AutoPasDecl.h"
+#include "autopas/molecularDynamics/LJMulticenterFunctor.h"
 #include "autopas/molecularDynamics/MulticenteredMoleculeLJ.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
+#include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/Quaternion.h"
 
 struct multisiteMolecule {
   std::array<double,3> CoMPosition;
@@ -32,7 +36,8 @@ class MulticenteredLJFunctorTest : public AutoPasTestBase {
    */
   MulticenteredLJFunctorTest() = default;
 
-  void testForceCalculation(multisiteMolecule molA, multisiteMolecule molB, double cutoff);
+  template <bool newton3>
+  void testAoSForceCalculation(multisiteMolecule molA, multisiteMolecule molB, double cutoff);
 };
 
 
