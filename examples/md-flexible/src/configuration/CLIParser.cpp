@@ -37,9 +37,10 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.distributionMean, config.maxTuningPhasesWithoutTest, config.particlesPerDim, config.particlesTotal,
       config.relativeOptimumRange, config.relativeBlacklistRange, config.tuningPhases, config.verletClusterSize,
       config.verletSkinRadius, config.particleSpacing, config.tuningSamples, config.traversalOptions,
-      config.tuningStrategyOption, config.mpiStrategyOption, config.useThermostat, config.verletRebuildFrequency,
-      config.vtkFileName, config.vtkWriteFrequency, config.selectorStrategy, config.yamlFilename,
-      config.distributionStdDev, config.globalForce, config.boundaryOption, zshCompletionsOption, helpOption)};
+      config.tuningStrategyOption, config.mpiStrategyOption, config.MPITuningMaxDifferenceForBucket,
+      config.MPITuningWeightForMaxDensity, config.useThermostat, config.verletRebuildFrequency, config.vtkFileName,
+      config.vtkWriteFrequency, config.selectorStrategy, config.yamlFilename, config.distributionStdDev,
+      config.globalForce, config.boundaryOption, zshCompletionsOption, helpOption)};
 
   constexpr auto relevantOptionsSize = std::tuple_size_v<decltype(relevantOptions)>;
 
@@ -469,6 +470,24 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         config.mpiStrategyOption.value = *parsedOptions.begin();
         break;
       }
+      case decltype(config.MPITuningMaxDifferenceForBucket)::getoptChar: {
+        try {
+          config.MPITuningMaxDifferenceForBucket.value = stod(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing MPITuningMaxDifferenceForBucket value: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.MPITuningWeightForMaxDensity)::getoptChar: {
+        try {
+          config.MPITuningWeightForMaxDensity.value = stod(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing MPITuningWeightForMaxDensity value: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
       case decltype(config.useThermostat)::getoptChar: {
         config.useThermostat.value = autopas::utils::StringUtils::parseBoolOption(strArg);
         break;
@@ -621,14 +640,14 @@ void MDFlexParser::CLIParser::inputFilesPresent(int argc, char **argv, MDFlexCon
   // suppress error messages since we only want to look if the yaml option is there
   auto opterrBefore = opterr;
   opterr = 0;
-  static struct option longOptions[] = {config.checkpointfile.toGetoptOption(),
-                                        config.yamlFilename.toGetoptOption(),
-                                        {nullptr, 0, nullptr, 0}};  // needed to signal the end of the array
+  std::vector<struct option> longOptions = {config.checkpointfile.toGetoptOption(),
+                                            config.yamlFilename.toGetoptOption(),
+                                            {nullptr, 0, nullptr, 0}};  // needed to signal the end of the array
   optind = 1;
 
   // search all cli parameters for input file options
   for (int cliOption = 0, cliOptionIndex = 0;
-       (cliOption = getopt_long(argc, argv, "", longOptions, &cliOptionIndex)) != -1;) {
+       (cliOption = getopt_long(argc, argv, "", longOptions.data(), &cliOptionIndex)) != -1;) {
     std::string strArg;
     switch (cliOption) {
       case decltype(config.checkpointfile)::getoptChar:

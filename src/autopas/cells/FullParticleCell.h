@@ -44,9 +44,6 @@ class FullParticleCell : public ParticleCell<Particle> {
    */
   explicit FullParticleCell(const std::array<double, 3> &cellLength) : _cellLength(cellLength) {}
 
-  /**
-   * @copydoc ParticleCell::addParticle()
-   */
   void addParticle(const Particle &p) override {
     particlesLock.lock();
     _particles.push_back(p);
@@ -164,9 +161,6 @@ class FullParticleCell : public ParticleCell<Particle> {
    */
   Particle &at(size_t index) { return _particles.at(index); }
 
-  /**
-   * @copydoc ParticleCell::getParticleCellTypeAsEnum()
-   */
   CellType getParticleCellTypeAsEnum() override { return CellType::FullParticleCell; }
 
   /**

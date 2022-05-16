@@ -6,9 +6,9 @@
 #pragma once
 
 #include <gtest/gtest.h>
-//#include <gmock/gmock-matchers.h>
 
 #include "AutoPasTestBase.h"
+#include "src/options/BoundaryTypeOption.h"
 
 /**
  * Test class for the addition of mixed boundary conditions to RegularGridDecomposition
@@ -19,19 +19,14 @@ class MixedBoundaryConditionTest : public AutoPasTestBase {
    * Constructor.
    */
   MixedBoundaryConditionTest() = default;
-};
 
-/**
- * Parameterized test case for reflective boundary conditions in RegularGridDecomposition
- */
-class ReflectiveBoundaryConditionTest
-    : public AutoPasTestBase,
-      public ::testing::WithParamInterface<std::tuple</*position*/ std::array<double, 3>,
-                                                      /*velocity*/ std::array<double, 3>,
-                                                      /*isReflected*/ std::array<bool, 3>>> {
- public:
-  /**
-   * Constructor.
-   */
-  ReflectiveBoundaryConditionTest() = default;
+  static auto setUpExpectations(const std::vector<std::array<double, 3>> &particlePositions,
+                                const std::vector<std::array<double, 3>> &particleVelocities,
+                                const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
+                                const double reflectionSkin, const double interactionLength,
+                                const std::array<options::BoundaryTypeOption, 3> &boundaryConditions);
+
+  void testFunction(const std::vector<std::array<double, 3>> &particlePositions,
+                    const std::vector<std::array<double, 3>> &particleVelocities,
+                    const std::array<options::BoundaryTypeOption, 3> &boundaryConditions);
 };

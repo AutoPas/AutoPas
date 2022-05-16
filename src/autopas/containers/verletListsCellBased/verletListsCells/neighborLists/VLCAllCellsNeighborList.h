@@ -114,7 +114,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
 
     // particle pointer to global index of particle
     std::unordered_map<Particle *, size_t> particleToIndex;
-    particleToIndex.reserve(linkedCells.getNumParticles());
+    particleToIndex.reserve(linkedCells.getNumberOfParticles());
     size_t i = 0;
     for (auto iter = linkedCells.begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++i) {
       particleToIndex[&(*iter)] = i;
@@ -148,9 +148,6 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
     }
   }
 
-  /**
-   * @copydoc VLCNeighborListInterface::setUpTraversal()
-   */
   void setUpTraversal(TraversalInterface *traversal) override {
     auto vTraversal = dynamic_cast<VLCTraversalInterface<Particle, VLCAllCellsNeighborList<Particle>> *>(traversal);
 

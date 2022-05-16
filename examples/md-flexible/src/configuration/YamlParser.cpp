@@ -152,6 +152,12 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     }
     config.mpiStrategyOption.value = *parsedOptions.begin();
   }
+  if (node[config.MPITuningMaxDifferenceForBucket.name]) {
+    config.MPITuningMaxDifferenceForBucket.value = node[config.MPITuningMaxDifferenceForBucket.name].as<double>();
+  }
+  if (node[config.MPITuningWeightForMaxDensity.name]) {
+    config.MPITuningWeightForMaxDensity.value = node[config.MPITuningWeightForMaxDensity.name].as<double>();
+  }
   if (node[config.acquisitionFunctionOption.name]) {
     auto parsedOptions =
         autopas::AcquisitionFunctionOption::parseOptions(node[config.acquisitionFunctionOption.name].as<std::string>());

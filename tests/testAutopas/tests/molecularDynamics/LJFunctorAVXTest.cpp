@@ -16,8 +16,8 @@
 
 template <class SoAType>
 bool LJFunctorAVXTest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::SoA<SoAType> &soa2) {
-  EXPECT_GT(soa1.getNumParticles(), 0);
-  EXPECT_EQ(soa1.getNumParticles(), soa2.getNumParticles());
+  EXPECT_GT(soa1.getNumberOfParticles(), 0);
+  EXPECT_EQ(soa1.getNumberOfParticles(), soa2.getNumberOfParticles());
 
   unsigned long *const __restrict idptr1 = soa1.template begin<Particle::AttributeNames::id>();
   unsigned long *const __restrict idptr2 = soa2.template begin<Particle::AttributeNames::id>();
@@ -36,7 +36,7 @@ bool LJFunctorAVXTest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::S
   double *const __restrict fyptr2 = soa2.template begin<Particle::AttributeNames::forceY>();
   double *const __restrict fzptr2 = soa2.template begin<Particle::AttributeNames::forceZ>();
 
-  for (size_t i = 0; i < soa1.getNumParticles(); ++i) {
+  for (size_t i = 0; i < soa1.getNumberOfParticles(); ++i) {
     EXPECT_EQ(idptr1[i], idptr2[i]);
 
     double tolerance = 1e-8;

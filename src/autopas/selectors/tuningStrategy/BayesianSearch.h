@@ -137,6 +137,8 @@ class BayesianSearch : public TuningStrategyInterface {
 
   inline bool searchSpaceIsEmpty() const override;
 
+  inline bool smoothedHomogeneityAndMaxDensityNeeded() const override { return false; }
+
  private:
   /**
    * Generate n samples and sort them depending on
