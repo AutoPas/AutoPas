@@ -101,7 +101,7 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
     }
     // parallel iterators
     for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-      auto vel = iter->getV();
+      const auto &vel = iter->getV();
       kineticEnergyMul2MapThread.at(iter->getTypeId()) +=
           particlePropertiesLibrary.getMass(iter->getTypeId()) * autopas::utils::ArrayMath::dot(vel, vel);
       numParticleMapThread.at(iter->getTypeId())++;
@@ -184,11 +184,11 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particlePropertiesLibrary,
            const double targetTemperature, const double deltaTemperature) {
-  auto currentTemperatureMap = calcTemperatureComponent(autopas, particlePropertiesLibrary);
+  const auto currentTemperatureMap = calcTemperatureComponent(autopas, particlePropertiesLibrary);
 
   // make sure we work with a positive delta
   const double deltaTemperaturePositive = std::abs(deltaTemperature);
-  decltype(currentTemperatureMap) scalingMap;
+  std::remove_const_t<decltype(currentTemperatureMap)> scalingMap;
 
   for (const auto &[particleTypeID, currentTemperature] : currentTemperatureMap) {
     double nextTargetTemperature;

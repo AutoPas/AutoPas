@@ -106,8 +106,7 @@ TEST_P(ThermostatTest, testApplyAndCalcTemperature) {
   Thermostat::apply(_autopas, _particlePropertiesLibrary, initialTemperature, std::numeric_limits<double>::max());
   EXPECT_NEAR(Thermostat::calcTemperature(_autopas, _particlePropertiesLibrary), initialTemperature, 1e-12);
 
-  //  for (int i = 1; std::abs(initialTemperature + i * deltaTemperature) < std::abs(targetTemperature); ++i) {
-  auto expectedIterations = std::ceil(std::abs((targetTemperature - initialTemperature) / deltaTemperature));
+  const auto expectedIterations = std::ceil(std::abs((targetTemperature - initialTemperature) / deltaTemperature));
   for (int i = 1; i <= expectedIterations; ++i) {
     Thermostat::apply(_autopas, _particlePropertiesLibrary, targetTemperature, deltaTemperature);
     if (i != expectedIterations) {
