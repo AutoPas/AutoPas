@@ -8,4 +8,15 @@
 
 #include <gtest/gtest.h>
 
-#include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
+#include "AutoPasTestBase.h"
+
+/**
+ * Test class for MulticenteredLJFunctor
+ */
+class MulticenteredLJFunctorTest : public AutoPasTestBase {
+ public:
+  /**
+   * Constructor
+   */
+  MulticenteredLJFunctorTest() = default;
+};
