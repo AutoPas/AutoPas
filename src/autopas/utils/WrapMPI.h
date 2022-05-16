@@ -62,6 +62,10 @@ namespace autopas {
 /** Wrapper for MPI_SUM */
 #define AUTOPAS_MPI_SUM MPI_SUM
 
+// MPI Constants
+/** Wrapper for MPI_IN_PLACE  */
+#define AUTOPAS_MPI_IN_PLACE MPI_IN_PLACE
+
 // MPI_Status
 /** Wrapper for MPI_STATUS IGNORE */
 #define AUTOPAS_MPI_STATUS_IGNORE MPI_STATUS_IGNORE
@@ -186,6 +190,8 @@ enum AutoPas_MPI_Error {
 };
 /** Dummy for MPI_MAX_ERROR_STRING */
 #define AUTOPAS_MPI_MAX_ERROR_STRING 256
+/** Indicator for Collectives to happe in-place */
+#define AUTOPAS_MPI_IN_PLACE ((void *)1)
 
 #endif
 

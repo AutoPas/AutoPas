@@ -122,15 +122,11 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
 
   for (const auto &typeID : particlePropertiesLibrary.getTypes()) {
     // workaround for MPICH: send and receive buffer must not be the same.
-    double res{};
-    autopas::AutoPas_MPI_Allreduce(&kineticEnergyMul2Map[typeID], &res, 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM,
-                                   AUTOPAS_MPI_COMM_WORLD);
-    kineticEnergyMul2Map[typeID] = res;
-
-    size_t numParticles{};
-    autopas::AutoPas_MPI_Allreduce(&numParticleMap[typeID], &numParticles, 1, AUTOPAS_MPI_UNSIGNED_LONG,
+    autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &kineticEnergyMul2Map[typeID], 1, AUTOPAS_MPI_DOUBLE,
                                    AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
-    numParticleMap[typeID] = numParticles;
+
+    autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &numParticleMap[typeID], 1, AUTOPAS_MPI_UNSIGNED_LONG,
+                                   AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
   }
 
   auto kineticEnergyAndParticleMaps = std::make_tuple(kineticEnergyMul2Map.begin(), numParticleMap.begin());

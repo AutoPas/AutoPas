@@ -403,8 +403,8 @@ void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(const dou
     // Calculate the average work in the process grid plane
     averageWorkInPlane[i] = work;
     if (domainCountInPlane > 1) {
-      autopas::AutoPas_MPI_Allreduce(&work, &averageWorkInPlane[i], 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM,
-                                     _planarCommunicators[i]);
+      autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &averageWorkInPlane[i], 1, AUTOPAS_MPI_DOUBLE,
+                                     AUTOPAS_MPI_SUM, _planarCommunicators[i]);
       averageWorkInPlane[i] = averageWorkInPlane[i] / domainCountInPlane;
     }
 
