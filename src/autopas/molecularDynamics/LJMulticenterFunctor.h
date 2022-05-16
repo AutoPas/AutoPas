@@ -266,7 +266,7 @@ class LJMulticenterFunctor
   }
 
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
-    if (soa.getNumParticles() == 0) return;
+    if (soa.getNumberOfParticles() == 0) return;
 
     const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
@@ -319,11 +319,11 @@ class LJMulticenterFunctor
 
     size_t siteCount = 0;
     if constexpr (useMixing) {
-      for (size_t mol = 0; mol < soa.getNumParticles(); ++mol) {
+      for (size_t mol = 0; mol < soa.getNumberOfParticles(); ++mol) {
         siteCount += _PPLibrary->getNumSites(typeptr[mol]);
       }
     } else {
-      siteCount = const_unrotatedSitePositions.size() * soa.getNumParticles();
+      siteCount = const_unrotatedSitePositions.size() * soa.getNumberOfParticles();
     }
 
     exactSitePositionX.reserve(siteCount);
@@ -346,7 +346,7 @@ class LJMulticenterFunctor
     // todo can we simd anything here? / can we do something 'nicer'?
     if constexpr (useMixing) {
       size_t siteIndex = 0;
-      for (size_t mol = 0; mol < soa.getNumParticles(); ++mol) {
+      for (size_t mol = 0; mol < soa.getNumberOfParticles(); ++mol) {
         const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
             {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, _PPLibrary->getSitePositions(typeptr[mol]));
         const auto siteTypesOfMol = _PPLibrary->getSiteTypes(typeptr[mol]);
@@ -364,7 +364,7 @@ class LJMulticenterFunctor
       }
     } else {
       size_t siteIndex = 0;
-      for (size_t mol = 0; mol < soa.getNumParticles(); mol++) {
+      for (size_t mol = 0; mol < soa.getNumberOfParticles(); mol++) {
         const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
             {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, const_unrotatedSitePositions);
         for (size_t site = 0; site < const_unrotatedSitePositions.size(); ++site) {
@@ -381,7 +381,7 @@ class LJMulticenterFunctor
 
     // main force calculation loop
     size_t siteIndexMolA = 0;  // index of first site in molA
-    for (size_t molA = 0; molA < soa.getNumParticles(); ++molA) {
+    for (size_t molA = 0; molA < soa.getNumberOfParticles(); ++molA) {
       const auto ownedStateA = ownedStatePtr[molA];
       if (ownedStateA == autopas::OwnershipState::dummy) {
         continue;
@@ -394,10 +394,10 @@ class LJMulticenterFunctor
 
       // create mask over every mol 'above' molA
       std::vector<bool, autopas::AlignedAllocator<bool>> molMask;
-      molMask.reserve(soa.getNumParticles() - molA);
+      molMask.reserve(soa.getNumberOfParticles() - molA);
 
 #pragma omp for simd
-      for (size_t molB = molA + 1; molB < soa.getNumParticles(); ++molB) {
+      for (size_t molB = molA + 1; molB < soa.getNumberOfParticles(); ++molB) {
         const auto ownedStateB = ownedStatePtr[molB];
 
         const auto displacementCoMX = xptr[molA] - xptr[molB];
@@ -419,7 +419,7 @@ class LJMulticenterFunctor
       std::vector<bool, autopas::AlignedAllocator<bool>> siteMask;
       siteMask.reserve(noSitesB);
 
-      for (size_t molB = molA + 1; molB < soa.getNumParticles(); ++molB) {
+      for (size_t molB = molA + 1; molB < soa.getNumberOfParticles(); ++molB) {
         for (size_t siteB = 0; siteB < _PPLibrary->getNumSites(typeptr[molB]); ++siteB) {
           siteMask.template emplace_back(molMask[molB - molA]);
         }
@@ -511,7 +511,7 @@ class LJMulticenterFunctor
     // reduce the forces on individual sites to forces & torques on whole molecules.
     if constexpr (useMixing) {
       size_t siteIndex = 0;
-      for (size_t mol = 0; mol < soa.getNumParticles(); ++mol) {
+      for (size_t mol = 0; mol < soa.getNumberOfParticles(); ++mol) {
         const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
             {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, _PPLibrary->getSitePositions(typeptr[mol]));
         for (size_t site = 0; site < _PPLibrary->getNumSites(typeptr[mol]); ++site) {
@@ -529,7 +529,7 @@ class LJMulticenterFunctor
       }
     } else {
       size_t siteIndex = 0;
-      for (size_t mol = 0; mol < soa.getNumParticles(); mol++) {
+      for (size_t mol = 0; mol < soa.getNumberOfParticles(); mol++) {
         const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
             {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, const_unrotatedSitePositions);
         for (size_t site = 0; site < const_unrotatedSitePositions.size(); ++site) {
@@ -571,7 +571,7 @@ class LJMulticenterFunctor
   void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                         bool newton3) final {
-    //    if (soa.getNumParticles() == 0 or neighborList.empty()) return;
+    //    if (soa.getNumberOfParticles() == 0 or neighborList.empty()) return;
     //    if (newton3) {
     //      SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
     //    } else {
@@ -725,7 +725,7 @@ class LJMulticenterFunctor
    */
   template <bool newton3>
   void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soaA, autopas::SoAView<SoAArraysType> soaB) {
-    if (soaA.getNumParticles() == 0 || soaB.getNumParticles() == 0) return;
+    if (soaA.getNumberOfParticles() == 0 || soaB.getNumberOfParticles() == 0) return;
 
     const auto *const __restrict xAptr = soaA.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict yAptr = soaA.template begin<Particle::AttributeNames::posY>();
@@ -800,15 +800,15 @@ class LJMulticenterFunctor
     size_t siteCountA = 0;
     size_t siteCountB = 0;
     if constexpr (useMixing) {
-      for (size_t mol = 0; mol < soaA.getNumParticles(); ++mol) {
+      for (size_t mol = 0; mol < soaA.getNumberOfParticles(); ++mol) {
         siteCountA += _PPLibrary->getNumSites(typeptrA[mol]);
       }
-      for (size_t mol = 0; mol < soaB.getNumParticles(); ++mol) {
+      for (size_t mol = 0; mol < soaB.getNumberOfParticles(); ++mol) {
         siteCountB += _PPLibrary->getNumSites(typeptrB[mol]);
       }
     } else {
-      siteCountA = const_unrotatedSitePositions.size() * soaA.getNumParticles();
-      siteCountB = const_unrotatedSitePositions.size() * soaB.getNumParticles();
+      siteCountA = const_unrotatedSitePositions.size() * soaA.getNumberOfParticles();
+      siteCountB = const_unrotatedSitePositions.size() * soaB.getNumberOfParticles();
     }
 
     exactSitePositionBx.reserve(siteCountB);
@@ -827,7 +827,7 @@ class LJMulticenterFunctor
     // Generate site-wise arrays for SIMD
     if constexpr (useMixing) {
       size_t siteIndex = 0;
-      for (size_t mol = 0; mol < soaB.getNumParticles(); ++mol) {
+      for (size_t mol = 0; mol < soaB.getNumberOfParticles(); ++mol) {
         const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
             {q0Bptr[mol], q1Bptr[mol], q2Bptr[mol], q3Bptr[mol]}, _PPLibrary->getSitePositions(typeptrB[mol]));
         const auto siteTypesOfMol = _PPLibrary->getSiteTypes(typeptrB[mol]);
@@ -845,7 +845,7 @@ class LJMulticenterFunctor
       }
     } else {
       size_t siteIndex = 0;
-      for (size_t mol = 0; mol < soaB.getNumParticles(); mol++) {
+      for (size_t mol = 0; mol < soaB.getNumberOfParticles(); mol++) {
         const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
             {q0Bptr[mol], q1Bptr[mol], q2Bptr[mol], q3Bptr[mol]}, const_unrotatedSitePositions);
         for (size_t site = 0; site < const_unrotatedSitePositions.size(); ++site) {
@@ -861,7 +861,7 @@ class LJMulticenterFunctor
     }
 
     // main force calculation loop
-    for (size_t molA = 0; molA < soaA.getNumParticles(); ++molA) {
+    for (size_t molA = 0; molA < soaA.getNumberOfParticles(); ++molA) {
       const auto ownedStateA = ownedStatePtrA[molA];
       if (ownedStateA == autopas::OwnershipState::dummy) {
         continue;
@@ -875,10 +875,10 @@ class LJMulticenterFunctor
 
       // create mask over every mol in cell B
       std::vector<bool, autopas::AlignedAllocator<bool>> molMask;
-      molMask.reserve(soaB.getNumParticles());
+      molMask.reserve(soaB.getNumberOfParticles());
 
 #pragma omp for simd
-      for (size_t molB = 0; molB < soaB.getNumParticles(); ++molB) {
+      for (size_t molB = 0; molB < soaB.getNumberOfParticles(); ++molB) {
         const auto ownedStateB = ownedStatePtrB[molB];
 
         const auto displacementCoMX = xAptr[molA] - xBptr[molB];
@@ -899,7 +899,7 @@ class LJMulticenterFunctor
       std::vector<bool, autopas::AlignedAllocator<bool>> siteMask;
       siteMask.reserve(siteCountB);
 
-      for (size_t molB = 0; molB < soaB.getNumParticles(); ++molB) {
+      for (size_t molB = 0; molB < soaB.getNumberOfParticles(); ++molB) {
         for (size_t siteB = 0; siteB < _PPLibrary->getNumSites(typeptrB[molB]); ++siteB) {
           siteMask.emplace_back(molMask[molB]);
         }
@@ -995,7 +995,7 @@ class LJMulticenterFunctor
     // reduce the forces on individual sites in cell B to total forces & torques on whole molecules
     if constexpr (useMixing) {
       size_t siteIndex = 0;
-      for (size_t mol = 0; mol < soaB.getNumParticles(); ++mol) {
+      for (size_t mol = 0; mol < soaB.getNumberOfParticles(); ++mol) {
         const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
             {q0Bptr[mol], q1Bptr[mol], q2Bptr[mol], q3Bptr[mol]}, const_unrotatedSitePositions);
         for (size_t site = 0; site < _PPLibrary->getNumSites(typeptrB[mol]); ++site) {

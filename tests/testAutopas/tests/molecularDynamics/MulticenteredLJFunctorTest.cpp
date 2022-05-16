@@ -4,8 +4,6 @@
  * @date 16/05/2022
  */
 
-#pragma once
-
 #include <gtest/gtest.h>
 
 #include "MulticenteredLJFunctorTest.h"
@@ -121,20 +119,10 @@ void MulticenteredLJFunctorTest::testAoSForceCalculation(multisiteMolecule molA,
   molBParticle.setID(1);
 
   // create autopass container, functor, and add particles
-  auto autoPasContainer = std::make_shared<autopas::AutoPas<autopas::MulticenteredMoleculeLJ>>(std::cout);
   // todo add options for applyShift, useMixing, calculateGlobals
-  autopas::LJMulticenterFunctor<autopas::MulticenteredMoleculeLJ, false, true, autopas::FunctorN3Modes::Both, false, true> functor(cutoff);
+  autopas::LJMulticenterFunctor<autopas::MulticenteredMoleculeLJ, false, true, autopas::FunctorN3Modes::Both, false, true> functor(cutoff, PPL);
 
-  autoPasContainer->setBoxMin({0.,0.,0.});
-  autoPasContainer->setBoxMax({5.,5.,5.});
-  autoPasContainer->setCutoff(cutoff);
-  autoPasContainer->setVerletSkin(0.2);
-  autoPasContainer->init();
-
-  autoPasContainer->addParticle(molAParticle);
-  autoPasContainer->addParticle(molBParticle);
-
-  autoPasContainer->iteratePairwise(&functor);
+  functor.AoSFunctor(molAParticle,molBParticle,newton3);
 
   for (size_t i = 0; i < 3; ++i) {
     EXPECT_NEAR(molAParticle.getF()[i], expectedForceA[i], 1e-13) << "molA: Unexpected force[" << i << "] = "
@@ -156,4 +144,60 @@ void MulticenteredLJFunctorTest::testAoSForceCalculation(multisiteMolecule molA,
                                                                         << molBParticle.getTorque()[i] << " != "
                                                                         << expectedTorqueB[i] << " as expected.";
   }
+}
+
+TEST_F(MulticenteredLJFunctorTest, AoSTest) {
+  std::vector<multisiteMolecule> mols;
+
+  mols[0].CoMPosition = {0.,0.,0.};
+  mols[0].quaternion = {0.,1.,0.,0.};
+  mols[0].sitePositions = {{0.,0.,0.}};
+  mols[0].siteEpsilons = {1.};
+  mols[0].siteSigmas = {1.};
+
+  mols[1].CoMPosition = {0.1,0.,0.};
+  mols[1].quaternion = {0.,1.,0.,0.};
+  mols[1].sitePositions = {{0.,0.01,0.},{0.,-0.01,0.}};
+  mols[1].siteEpsilons = {1.,1.};
+  mols[1].siteSigmas = {1.,1.};
+
+  mols[2].CoMPosition = {0.,0.1,0.};
+  mols[2].quaternion = {0.,1.,0.,0.};
+  mols[2].sitePositions = {{0.,0.01,0.},{0.,-0.01,0.}};
+  mols[2].siteEpsilons = {1.,1.};
+  mols[2].siteSigmas = {1.,1.};
+
+  mols[3].CoMPosition = {0.,0.,0.};
+  mols[3].quaternion = {0.,1.,0.,0.};
+  mols[3].sitePositions = {{-0.05,-0.05,0.},{0.,0.1,0.},{0.05,-0.05,0.}};
+  mols[3].siteEpsilons = {1.,1.,1.};
+  mols[3].siteSigmas = {1.,1.,1.};
+
+  mols[4].CoMPosition = {0.,0.,0.1};
+  mols[4].quaternion = {0.5,0.25, sqrt(3)/2,0.};
+  mols[4].sitePositions = {{-0.05,-0.05,0.},{0.,0.1,0.},{0.05,-0.05,0.}};
+  mols[4].siteEpsilons = {1.,1.,1.};
+  mols[4].siteSigmas = {1.,1.,1.};
+
+  // tests: 1 site <-> 2 site interaction
+  testAoSForceCalculation<true>(mols[0],mols[1],1.);
+
+  // tests: 1 site <-> 2 site interaction, where sites are aligned such that all 3 sites are along the same line
+  testAoSForceCalculation<true>(mols[0],mols[2],1.);
+
+  // tests: 2 site <-> 3 site interaction
+  testAoSForceCalculation<true>(mols[1],mols[3],1.);
+
+  // tests: 3 site <-> 3 site interaction, where one has a nontrivial (needs rotating) quaternion
+  testAoSForceCalculation<true>(mols[3],mols[4],1.);
+
+  // tests: 2 site <-> 2 site, where molecules are beyond cutoff
+  testAoSForceCalculation<true>(mols[1],mols[2],0.001);
+
+  // tests: 1 site <-> 2 site, where one site is beyond cutoff, the other within; and CoM beyond cutoff
+  testAoSForceCalculation<true>(mols[0],mols[2],0.999);
+
+  // tests: 1 site <-> 2 site, where one site is beyond cutoff, the other within; and CoM within cutoff
+  testAoSForceCalculation<true>(mols[0],mols[2],1.001);
+
 }
