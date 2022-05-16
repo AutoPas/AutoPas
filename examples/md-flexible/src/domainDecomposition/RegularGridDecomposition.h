@@ -227,7 +227,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
                                             rightNeighbour, haloParticles);
       }
 
-      for (auto &particle : haloParticles) {
+      for (const auto &particle : haloParticles) {
         autoPasContainer->addHaloParticle(particle);
       }
     }
