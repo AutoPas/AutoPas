@@ -55,4 +55,8 @@ endif ()
 # this cmake module was only introduced in 3.10
 include(GoogleTest)
 # more robust, queries the compiled executable
-gtest_discover_tests(mdFlexTests TEST_PREFIX "mdFlexTests/")
+gtest_discover_tests(
+        mdFlexTests TEST_PREFIX "mdFlexTests/"
+        PROPERTIES
+            ENVIRONMENT "${LSAN_OPTIONS_STR}"
+)
