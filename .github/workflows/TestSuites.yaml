@@ -111,7 +111,7 @@ jobs:
             ctest --output-on-failure -R MPIParallelAutoPasTests
             cd examples
             # exclude examples that do not support MPI 
-            ctest --output-on-failure -C checkExamples -E 'sph-((main)|(diagram))'
+            ctest --output-on-failure -C checkExamples -E 'sph-((main.test)|(diagram.*))'
           else
             cd build
             # Start with test 0 or 1 and do every second test
