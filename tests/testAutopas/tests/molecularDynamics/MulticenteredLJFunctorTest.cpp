@@ -9,26 +9,26 @@
 #include "MulticenteredLJFunctorTest.h"
 
 template<bool newton3>
-void MulticenteredLJFunctorTest::testAoSForceCalculation(multisiteMolecule molA, multisiteMolecule molB, double cutoff) {
+void MulticenteredLJFunctorTest::testAoSForceCalculation(autopas::MulticenteredMoleculeLJ molA, autopas::MulticenteredMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
   using autopas::utils::ArrayMath::add;
   using autopas::utils::ArrayMath::sub;
+  using autopas::utils::ArrayMath::dot;
   using autopas::utils::ArrayMath::cross;
-  using autopas::utils::ArrayMath::L2Norm;
   using autopas::utils::quaternion::rotateVectorOfPositions;
 
-  const size_t numberOfSitesA = molA.sitePositions.size();
-  const size_t numberOfSitesB = molB.sitePositions.size();
-  // check size of site property vectors match
-  EXPECT_EQ(numberOfSitesA,molA.siteEpsilons.size()) << "molA: Number of epsilons does not match number of sites";
-  EXPECT_EQ(numberOfSitesA,molA.siteSigmas.size()) << "molA: Number of sigmas does not match number of sites";
-  EXPECT_EQ(numberOfSitesB,molB.siteEpsilons.size()) << "molB: Number of epsilons does not match number of sites";
-  EXPECT_EQ(numberOfSitesB,molB.siteSigmas.size()) << "molB: Number of sigmas does not match number of sites";
+  const auto molTypeA = molA.getTypeId();
+  const auto molTypeB = molB.getTypeId();
+  const auto numberOfSitesA = PPL.getNumSites(molTypeA);
+  const auto numberOfSitesB = PPL.getNumSites(molTypeB);
+  const auto siteTypesA = PPL.getSiteTypes(molTypeA);
+  const auto siteTypesB = PPL.getSiteTypes(molTypeB);
+
 
   // determine expected forces + torques
-  std::array<double,3> expectedForceA;
-  std::array<double,3> expectedTorqueA;
-  std::array<double,3> expectedForceB;
-  std::array<double,3> expectedTorqueB;
+  std::array<double,3> expectedForceA{};
+  std::array<double,3> expectedTorqueA{};
+  std::array<double,3> expectedForceB{};
+  std::array<double,3> expectedTorqueB{};
 
   if constexpr (not newton3) {
     expectedForceB = {0.,0.,0.};
@@ -36,22 +36,21 @@ void MulticenteredLJFunctorTest::testAoSForceCalculation(multisiteMolecule molA,
   }
 
   // determine if within cutoff
-  if (L2Norm(sub(molA.CoMPosition,molB.CoMPosition)) < cutoff * cutoff) {
+  if (dot(sub(molA.getR(),molB.getR()),sub(molA.getR(),molB.getR())) < cutoff * cutoff) {
     // calculate exact site positions
-    const auto rotatedSitePositionsA = rotateVectorOfPositions(molA.quaternion, molA.sitePositions);
-    const auto rotatedSitePositionsB = rotateVectorOfPositions(molB.quaternion, molB.sitePositions);
+    const auto rotatedSitePositionsA = rotateVectorOfPositions(molA.getQ(), PPL.getSitePositions(molTypeA));
+    const auto rotatedSitePositionsB = rotateVectorOfPositions(molB.getQ(), PPL.getSitePositions(molTypeB));
 
     for (size_t siteA = 0; siteA < numberOfSitesA; ++siteA) {
-      const auto exactSitePositionA = add(rotatedSitePositionsA[siteA],molA.CoMPosition);
+      const auto exactSitePositionA = add(rotatedSitePositionsA[siteA],molA.getR());
       for (size_t siteB = 0; siteB < numberOfSitesB; ++siteB) {
-        const auto exactSitePositionB = add(rotatedSitePositionsB[siteB],molB.CoMPosition);
+        const auto exactSitePositionB = add(rotatedSitePositionsB[siteB],molB.getR());
 
         const auto displacement = sub(exactSitePositionA,exactSitePositionB);
-        const auto distanceSquared = L2Norm(displacement);
+        const auto distanceSquared = dot(displacement,displacement);
 
-        const auto sigma = (molA.siteSigmas[siteA] + molB.siteSigmas[siteB]) / 2.0;
-        const auto sigmaSquared = sigma * sigma;
-        const auto epsilon24 = 24 * sqrt(molA.siteEpsilons[siteA] * molB.siteEpsilons[siteB]);
+        const auto sigmaSquared = PPL.getMixingData(siteTypesA[siteA],siteTypesB[siteB]).sigmaSquare;
+        const auto epsilon24 = PPL.getMixingData(siteTypesA[siteA],siteTypesB[siteB]).epsilon24;
 
         // todo shift6
 
@@ -85,119 +84,180 @@ void MulticenteredLJFunctorTest::testAoSForceCalculation(multisiteMolecule molA,
 
   // calculate forces and torques using AoS functor
 
-  // create + fill PPL
-  ParticlePropertiesLibrary PPL(cutoff);
-  std::vector<size_t> molASiteIds;
-  for (int i = 0; i < molA.sitePositions.size(); ++i) {
-    PPL.addSiteType(i,molA.siteEpsilons[i],molA.siteSigmas[i],1);
-    molASiteIds[i] = i;
-  }
-  PPL.addMolType(0, molASiteIds, molA.sitePositions);
-
-  std::vector<size_t> molBSiteIds;
-  for (int i = 0; i < molB.sitePositions.size(); ++i) {
-    PPL.addSiteType(i+molA.sitePositions.size(),molB.siteEpsilons[i],molB.siteSigmas[i],1);
-    molBSiteIds[i] = i+molA.sitePositions.size();
-  }
-  PPL.addMolType(1, molBSiteIds, molB.sitePositions);
-
-  // create molecules
-  autopas::MulticenteredMoleculeLJ molAParticle, molBParticle;
-
-  molAParticle.setR(molA.CoMPosition);
-  molAParticle.setQ(molA.quaternion);
-  molAParticle.setF({0,0,0});
-  molAParticle.setTorque({0,0,0});
-  molAParticle.setTypeId(0);
-  molAParticle.setID(0);
-
-  molBParticle.setR(molB.CoMPosition);
-  molBParticle.setQ(molB.quaternion);
-  molBParticle.setF({0,0,0});
-  molBParticle.setTorque({0,0,0});
-  molBParticle.setTypeId(0);
-  molBParticle.setID(1);
-
-  // create autopass container, functor, and add particles
+  // create functor
   // todo add options for applyShift, useMixing, calculateGlobals
   autopas::LJMulticenterFunctor<autopas::MulticenteredMoleculeLJ, false, true, autopas::FunctorN3Modes::Both, false, true> functor(cutoff, PPL);
 
-  functor.AoSFunctor(molAParticle,molBParticle,newton3);
+  functor.AoSFunctor(molA,molB,newton3);
 
   for (size_t i = 0; i < 3; ++i) {
-    EXPECT_NEAR(molAParticle.getF()[i], expectedForceA[i], 1e-13) << "molA: Unexpected force[" << i << "] = "
-                                                                  << molAParticle.getF()[i] << " != "
+    EXPECT_NEAR(molA.getF()[i], expectedForceA[i], 1e-13) << "molA: Unexpected force[" << i << "] = "
+                                                                  << molA.getF()[i] << " != "
                                                                   << expectedForceA[i] << " as expected.";
   }
   for (size_t i = 0; i < 3; ++i) {
-    EXPECT_NEAR(molAParticle.getTorque()[i], expectedTorqueA[i], 1e-13) << "molA: Unexpected force[" << i << "] = "
-                                                                  << molAParticle.getTorque()[i] << " != "
+    EXPECT_NEAR(molA.getTorque()[i], expectedTorqueA[i], 1e-13) << "molA: Unexpected force[" << i << "] = "
+                                                                  << molA.getTorque()[i] << " != "
                                                                   << expectedTorqueA[i] << " as expected.";
   }
   for (size_t i = 0; i < 3; ++i) {
-    EXPECT_NEAR(molBParticle.getF()[i], expectedForceB[i], 1e-13) << "molB: Unexpected force[" << i << "] = "
-                                                                  << molBParticle.getF()[i] << " != "
+    EXPECT_NEAR(molB.getF()[i], expectedForceB[i], 1e-13) << "molB: Unexpected force[" << i << "] = "
+                                                                  << molB.getF()[i] << " != "
                                                                   << expectedForceB[i] << " as expected.";
   }
   for (size_t i = 0; i < 3; ++i) {
-    EXPECT_NEAR(molBParticle.getTorque()[i], expectedTorqueB[i], 1e-13) << "molB: Unexpected force[" << i << "] = "
-                                                                        << molBParticle.getTorque()[i] << " != "
+    EXPECT_NEAR(molB.getTorque()[i], expectedTorqueB[i], 1e-13) << "molB: Unexpected force[" << i << "] = "
+                                                                        << molB.getTorque()[i] << " != "
                                                                         << expectedTorqueB[i] << " as expected.";
   }
 }
 
+/**
+ * Tests for the correctness of the AoS functor by applying to molecules designed to test all its functionality.
+ */
 TEST_F(MulticenteredLJFunctorTest, AoSTest) {
-  std::vector<multisiteMolecule> mols;
+  using autopas::MulticenteredMoleculeLJ;
 
-  mols[0].CoMPosition = {0.,0.,0.};
-  mols[0].quaternion = {0.,1.,0.,0.};
-  mols[0].sitePositions = {{0.,0.,0.}};
-  mols[0].siteEpsilons = {1.};
-  mols[0].siteSigmas = {1.};
+  ParticlePropertiesLibrary PPL(1.);
+  PPL.addSiteType(0,1.,1.,1.);
+  PPL.addSiteType(1,0.5,0.5,0.5);
 
-  mols[1].CoMPosition = {0.1,0.,0.};
-  mols[1].quaternion = {0.,1.,0.,0.};
-  mols[1].sitePositions = {{0.,0.01,0.},{0.,-0.01,0.}};
-  mols[1].siteEpsilons = {1.,1.};
-  mols[1].siteSigmas = {1.,1.};
+  // Molecules to be used in the tests (explanation of choices documented when tests are run).
+  // For ease of readability, each molecule has its own molType, even when duplicated.
+  MulticenteredMoleculeLJ mol0;
+  mol0.setR({0.,0.,0.});
+  mol0.setQ({0.,1.,0.,0.});
+  mol0.setF({0.,0.,0.});
+  mol0.setTorque({0.,0.,0.});
+  mol0.setTypeId(0);
+  PPL.addMolType(0,{0},{{0.,0.,0.}});
 
-  mols[2].CoMPosition = {0.,0.1,0.};
-  mols[2].quaternion = {0.,1.,0.,0.};
-  mols[2].sitePositions = {{0.,0.01,0.},{0.,-0.01,0.}};
-  mols[2].siteEpsilons = {1.,1.};
-  mols[2].siteSigmas = {1.,1.};
+  MulticenteredMoleculeLJ mol1;
+  mol1.setR({0.1,0.,0.});
+  mol1.setQ({0.,1.,0.,0.});
+  mol1.setF({0.,0.,0.});
+  mol1.setTorque({0.,0.,0.});
+  mol1.setTypeId(1);
+  PPL.addMolType(1,{0,0},{{0.,0.01,0.},{0.,-0.01,0.}});
 
-  mols[3].CoMPosition = {0.,0.,0.};
-  mols[3].quaternion = {0.,1.,0.,0.};
-  mols[3].sitePositions = {{-0.05,-0.05,0.},{0.,0.1,0.},{0.05,-0.05,0.}};
-  mols[3].siteEpsilons = {1.,1.,1.};
-  mols[3].siteSigmas = {1.,1.,1.};
+  MulticenteredMoleculeLJ mol2;
+  mol2.setR({0.,0.1,0.});
+  mol2.setQ({0.,1.,0.,0.});
+  mol2.setF({0.,0.,0.});
+  mol2.setTorque({0.,0.,0.});
+  mol2.setTypeId(2);
+  PPL.addMolType(2,{0,0},{{0.,0.01,0.},{0.,-0.01,0.}});
 
-  mols[4].CoMPosition = {0.,0.,0.1};
-  mols[4].quaternion = {0.5,0.25, sqrt(3)/2,0.};
-  mols[4].sitePositions = {{-0.05,-0.05,0.},{0.,0.1,0.},{0.05,-0.05,0.}};
-  mols[4].siteEpsilons = {1.,1.,1.};
-  mols[4].siteSigmas = {1.,1.,1.};
+  MulticenteredMoleculeLJ mol3;
+  mol3.setR({0.,0.,0.});
+  mol3.setQ({0.,1.,0.,0.});
+  mol3.setF({0.,0.,0.});
+  mol3.setTorque({0.,0.,0.});
+  mol3.setTypeId(3);
+  PPL.addMolType(3,{0,0,0},{{-0.05,-0.05,0.},{0.,0.1,0.},{0.05,-0.05,0.}});
+
+  MulticenteredMoleculeLJ mol4;
+  mol4.setR({0.,0.,0.1});
+  mol4.setQ({0.5,0.25, sqrt(3)/2,0.});
+  mol4.setF({0.,0.,0.});
+  mol4.setTorque({0.,0.,0.});
+  mol4.setTypeId(4);
+  PPL.addMolType(4,{0,0,0},{{-0.05,-0.05,0.},{0.,0.1,0.},{0.05,-0.05,0.}});
+
+  MulticenteredMoleculeLJ mol5;
+  mol5.setR({2.,2.,2.});
+  mol5.setQ({0.,1.,0.,0.});
+  mol5.setF({0.,0.,0.});
+  mol5.setTorque({0.,0.,0.});
+  mol5.setTypeId(5);
+  PPL.addMolType(5,{0,0},{{0.,0.01,0.},{0.,-0.01,0.}});
+
+  MulticenteredMoleculeLJ mol6;
+  mol6.setR({0.,1.05,0.});
+  mol6.setQ({0.,1.,0.,0.});
+  mol6.setF({0.,0.,0.});
+  mol6.setTorque({0.,0.,0.});
+  mol6.setTypeId(6);
+  PPL.addMolType(6,{0,0},{{0.,0.1,0.},{0.,-0.1,0.}});
+
+  MulticenteredMoleculeLJ mol7;
+  mol7.setR({0.,0.95,0.});
+  mol7.setQ({0.,1.,0.,0.});
+  mol7.setF({0.,0.,0.});
+  mol7.setTorque({0.,0.,0.});
+  mol7.setTypeId(7);
+  PPL.addMolType(7,{0,0},{{0.,0.1,0.},{0.,-0.1,0.}});
+
+  MulticenteredMoleculeLJ mol8;
+  mol8.setR({0.,0.,0.});
+  mol8.setQ({0.,1.,0.,0.});
+  mol8.setF({0.,0.,0.});
+  mol8.setTorque({0.,0.,0.});
+  mol8.setTypeId(8);
+  PPL.addMolType(8,{1,1,0},{{-0.05,-0.05,0.},{0.,0.1,0.},{0.05,-0.05,0.}});
+
+  PPL.calculateMixingCoefficients();
+
+
+  // ----------  newton3 = true   ----------
 
   // tests: 1 site <-> 2 site interaction
-  testAoSForceCalculation<true>(mols[0],mols[1],1.);
+  testAoSForceCalculation<true>(mol0, mol1,PPL,1.);
 
   // tests: 1 site <-> 2 site interaction, where sites are aligned such that all 3 sites are along the same line
-  testAoSForceCalculation<true>(mols[0],mols[2],1.);
+  testAoSForceCalculation<true>(mol0, mol2,PPL,1.);
 
   // tests: 2 site <-> 3 site interaction
-  testAoSForceCalculation<true>(mols[1],mols[3],1.);
+  testAoSForceCalculation<true>(mol1, mol3,PPL,1.);
 
   // tests: 3 site <-> 3 site interaction, where one has a nontrivial (needs rotating) quaternion
-  testAoSForceCalculation<true>(mols[3],mols[4],1.);
+  testAoSForceCalculation<true>(mol3, mol4,PPL,1.);
 
   // tests: 2 site <-> 2 site, where molecules are beyond cutoff
-  testAoSForceCalculation<true>(mols[1],mols[2],0.001);
+  testAoSForceCalculation<true>(mol1, mol5,PPL,1.);
 
   // tests: 1 site <-> 2 site, where one site is beyond cutoff, the other within; and CoM beyond cutoff
-  testAoSForceCalculation<true>(mols[0],mols[2],0.999);
+  testAoSForceCalculation<true>(mol0, mol6,PPL,1.);
 
   // tests: 1 site <-> 2 site, where one site is beyond cutoff, the other within; and CoM within cutoff
-  testAoSForceCalculation<true>(mols[0],mols[2],1.001);
+  testAoSForceCalculation<true>(mol0, mol7,PPL,1.);
+
+  // tests: 3 site <-> 3 site, with some different site types
+  testAoSForceCalculation<true>(mol4, mol8,PPL,1.);
+
+
+  // ----------  newton3 = false  ----------
+
+  // tests: 1 site <-> 2 site interaction
+  testAoSForceCalculation<false>(mol0, mol1,PPL,1.);
+  testAoSForceCalculation<false>(mol1, mol0,PPL,1.);
+
+  // tests: 1 site <-> 2 site interaction, where sites are aligned such that all 3 sites are along the same line
+  testAoSForceCalculation<false>(mol0, mol2,PPL,1.);
+  testAoSForceCalculation<false>(mol2, mol0,PPL,1.);
+
+  // tests: 2 site <-> 3 site interaction
+  testAoSForceCalculation<false>(mol1, mol3,PPL,1.);
+  testAoSForceCalculation<false>(mol3, mol1,PPL,1.);
+
+  // tests: 3 site <-> 3 site interaction, where one has a nontrivial (needs rotating) quaternion
+  testAoSForceCalculation<false>(mol3, mol4,PPL,1.);
+  testAoSForceCalculation<false>(mol4, mol3,PPL,1.);
+
+  // tests: 2 site <-> 2 site, where molecules are beyond cutoff
+  testAoSForceCalculation<false>(mol1, mol5,PPL,1.);
+  testAoSForceCalculation<false>(mol5, mol1,PPL,1.);
+
+  // tests: 1 site <-> 2 site, where one site is beyond cutoff, the other within; and CoM beyond cutoff
+  testAoSForceCalculation<false>(mol0, mol6,PPL,1.);
+  testAoSForceCalculation<false>(mol6, mol0,PPL,1.);
+
+  // tests: 1 site <-> 2 site, where one site is beyond cutoff, the other within; and CoM within cutoff
+  testAoSForceCalculation<false>(mol0, mol7,PPL,1.);
+  testAoSForceCalculation<false>(mol7, mol0,PPL,1.);
+
+  // tests: 3 site <-> 3 site, with some different site types
+  testAoSForceCalculation<false>(mol4, mol8,PPL,1.);
+  testAoSForceCalculation<false>(mol8, mol4,PPL,1.);
 
 }

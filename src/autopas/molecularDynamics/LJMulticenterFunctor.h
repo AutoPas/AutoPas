@@ -256,6 +256,8 @@ class LJMulticenterFunctor
         if (calculateGlobals) {
           // todo
         }
+
+        ++ppl_index;
       }
     }
 

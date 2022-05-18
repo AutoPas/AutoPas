@@ -16,14 +16,6 @@
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/Quaternion.h"
 
-struct multisiteMolecule {
-  std::array<double,3> CoMPosition;
-  std::array<double,4> quaternion;
-  std::vector<std::array<double,3>> sitePositions;
-  std::vector<double> siteEpsilons;
-  std::vector<double> siteSigmas;
-};
-
 /**
  * Test class for MulticenteredLJFunctor
  */
@@ -35,14 +27,14 @@ class MulticenteredLJFunctorTest : public AutoPasTestBase {
   MulticenteredLJFunctorTest() = default;
 
   /**
-   * Tests the correctness of the AoS functor for a given molA, molB, and cutoff.
+   * Tests the correctness of the AoS functor for a given molA, molB, PPL, and cutoff.
    * @tparam newton3
    * @param molA
    * @param molB
    * @param cutoff
    */
   template <bool newton3>
-  void testAoSForceCalculation(multisiteMolecule molA, multisiteMolecule molB, double cutoff);
+  void testAoSForceCalculation(autopas::MulticenteredMoleculeLJ molA, autopas::MulticenteredMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 };
 
 
