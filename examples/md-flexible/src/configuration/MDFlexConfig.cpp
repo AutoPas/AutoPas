@@ -374,12 +374,13 @@ void MDFlexConfig::addSiteType(unsigned long siteId, double epsilon, double sigm
   }
 }
 
-void MDFlexConfig::addMolType(unsigned long molId, std::vector<unsigned long> siteIds, std::vector<std::array<double, 3>> relSitePos) {
+void MDFlexConfig::addMolType(unsigned long molId, std::vector<unsigned long> siteIds, std::vector<std::array<double, 3>> relSitePos, std::array<double, 3> momentOfInertia) {
   // check if siteId is already existing and if there no error in input
   if (molToSiteIdMap.value.count(molId) == 1) {
     // check if type is already added
     if (autopas::utils::ArrayUtils::equals(molToSiteIdMap.value.at(molId),siteIds) and
-        autopas::utils::ArrayUtils::equals(molToSitePosMap.value.at(molId),relSitePos)) {
+        autopas::utils::ArrayUtils::equals(molToSitePosMap.value.at(molId),relSitePos) and
+        (momentOfInertiaMap.value.at(molId) == momentOfInertia)) {
       return;
     } else {  // wrong initialization:
       throw std::runtime_error("Wrong Particle initialization: using same typeId for different properties");
@@ -387,6 +388,7 @@ void MDFlexConfig::addMolType(unsigned long molId, std::vector<unsigned long> si
   } else {
     molToSiteIdMap.value.emplace(molId,siteIds);
     molToSitePosMap.value.emplace(molId,relSitePos);
+    momentOfInertiaMap.value.emplace(molId,momentOfInertia);
   }
 }
 
@@ -400,6 +402,16 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
   _particlePropertiesLibrary = std::make_shared<ParticlePropertiesLibraryType>(cutoff.value);
 
   if (includeRotational.value) {
+    // check size of site level vectors match
+        if (epsilonMap.value.size() != sigmaMap.value.size() or epsilonMap.value.size() != massMap.value.size()) {
+      throw std::runtime_error("Number of site-level properties differ!");
+    }
+
+    // initialize at site level
+    for (auto [siteTypeId, epsilon] : epsilonMap.value) {
+      _particlePropertiesLibrary->addSiteType(siteTypeId, epsilon, sigmaMap.value.at(siteTypeId), massMap.value.at(siteTypeId));
+    }
+
     // check size of molecular level vectors match
     if (molToSiteIdMap.value.size() != molToSitePosMap.value.size()) {
       throw std::runtime_error("Number of molecular-level properties differ!");
@@ -407,17 +419,7 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
 
     // initialize at molecular level
     for (auto [molTypeId, siteTypeIds] : molToSiteIdMap.value) {
-      _particlePropertiesLibrary->addMolType(molTypeId,siteTypeIds,molToSitePosMap.value.at(molTypeId));
-    }
-
-    // check size of site level vectors match
-    if (epsilonMap.value.size() != sigmaMap.value.size() or epsilonMap.value.size() != massMap.value.size()) {
-      throw std::runtime_error("Number of site-level properties differ!");
-    }
-
-    // initialize at site level
-    for (auto [siteTypeId, epsilon] : epsilonMap.value) {
-      _particlePropertiesLibrary->addSiteType(siteTypeId, epsilon, sigmaMap.value.at(siteTypeId), massMap.value.at(siteTypeId));
+      _particlePropertiesLibrary->addMolType(molTypeId,siteTypeIds,molToSitePosMap.value.at(molTypeId), momentOfInertiaMap.value.at(molTypeId));
     }
 
   } else {
@@ -431,6 +433,7 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
     }
   }
   _particlePropertiesLibrary->calculateMixingCoefficients();
+  //_particlePropertiesLibrary->calculateMomentOfInertiaAndAdjustAxes();
 }
 
 void MDFlexConfig::initializeObjects() {

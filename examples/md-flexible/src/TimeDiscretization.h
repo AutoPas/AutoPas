@@ -33,7 +33,7 @@ void calculatePositions(autopas::AutoPas<ParticleClass> &autoPasContainer,
 #endif
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     auto v = iter->getV();
-    auto m = particlePropertiesLibrary.getMass(iter->getTypeId());
+    auto m = particlePropertiesLibrary.getMolMass(iter->getTypeId());
     auto f = iter->getF();
     iter->setOldF(f);
     iter->setF(globalForce);
@@ -150,7 +150,7 @@ void calculateVelocities(autopas::AutoPas<ParticleClass> &autoPasContainer,
 #pragma omp parallel
 #endif
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    auto m = particlePropertiesLibrary.getMass(iter->getTypeId());
+    auto m = particlePropertiesLibrary.getMolMass(iter->getTypeId());
     auto force = iter->getF();
     auto oldForce = iter->getOldF();
     auto newV = mulScalar((add(force, oldForce)), deltaT / (2 * m));

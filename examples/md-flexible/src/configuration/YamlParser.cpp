@@ -248,6 +248,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     // remove default objects
     config.molToSiteIdMap.value.clear();
     config.molToSitePosMap.value.clear();
+    config.momentOfInertiaMap.value.clear();
 
     if (config.includeRotational.value) {
       for (auto moleculeInterator : node[MDFlexConfig::moleculesStr]) {
@@ -257,7 +258,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         auto molToSitePosMap =
             moleculeInterator.second[MDFlexConfig::moleculeToSitePosStr].as<std::vector<std::array<double, 3>>>();
         config.addMolType(moleculeInterator.second[MDFlexConfig::molTypeStr].as<unsigned long>(), molToSiteIdMap,
-                          molToSitePosMap);
+                          molToSitePosMap, moleculeInterator.second[MDFlexConfig::momentOfInertiaStr].as<std::array<double,3>>());
       }
     } // todo add single site functionality
   }

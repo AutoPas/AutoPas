@@ -14,7 +14,7 @@ cutoff                           :  2
 box-min                          :  [0, 0, 0]
 box-max                          :  [15, 60, 15]
 cell-size                        :  [1]
-deltaT                           :  0
+deltaT                           :  0.1
 iterations                       :  1000
 periodic-boundaries              :  true
 include-rotational               :  true
@@ -34,18 +34,22 @@ Molecules:
     molecule-type                : 0
     molecule-to-site-id          : [0]
     molecule-to-site-pos         : [[0,0,0]]
+    molecule-moment-of-inertia   : [1,1,1]
   1:
     molecule-type                : 1
     molecule-to-site-id          : [1, 1]
     molecule-to-site-pos         : [[-0.2,0,0],[0.2,0,0]]
+    molecule-moment-of-inertia   : [1,1,1]
   2:
     molecule-type                : 2
     molecule-to-site-id          : [0,1,1]
     molecule-to-site-pos         : [[0,0,0],[-0.1,0.2,0],[0.1,0.2,0]]
+    molecule-moment-of-inertia   : [1,1,1]
   3:
-    molecule-type: 3
-    molecule-to-site-id: [ 0,0,0,0,0,0,0,0,0,0 ]
-    molecule-to-site-pos: [ [ 0,0,0 ],[ 0,0,0 ],[ 0,0,0 ],[ 0,0,0 ],[ 0,0,0 ],[ 0,0,0 ],[ 0,0,0 ],[ 0,0,0 ],[ 0,0,0 ],[ 0,0,0 ] ]
+    molecule-type                : 3
+    molecule-to-site-id          : [ 0,0,0,0,0,0,0,0,0,0 ]
+    molecule-to-site-pos         : [ [ 0,0,0 ],[ 0,0,0 ],[ 0,0,0 ],[ 0,0,0 ],[ 0,0,0 ],[ 0,0,0 ],[ 0,0,0 ],[ 0,0,0 ],[ 0,0,0 ],[ 0,0,0 ] ]
+    molecule-moment-of-inertia   : [1,1,1]
 Objects:
   CubeGrid:
     0:

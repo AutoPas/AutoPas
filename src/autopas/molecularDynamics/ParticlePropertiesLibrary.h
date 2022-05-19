@@ -76,8 +76,9 @@ class ParticlePropertiesLibrary {
    * @param molId
    * @param siteIds vector of IDs of sites
    * @param relPos vector of relative positions
+   * @param momentOfInertia diagonalised moment of inertia as a array of 3 floats
    */
-  void addMolType(const intType molId, const std::vector<intType> siteIds, const std::vector<std::array<floatType,3>> relPos);
+  void addMolType(const intType molId, const std::vector<intType> siteIds, const std::vector<std::array<floatType,3>> relPos, const std::array<floatType, 3> momentOfInertia);
 
   /**
    * Calculates the actual mixing coefficients.
@@ -137,11 +138,18 @@ class ParticlePropertiesLibrary {
   floatType getSigmaSquare(intType i) const;
 
   /**
-   * Getter for the molecule's mass.
+   * Getter for the site's mass.
+   * @param i siteId of molecule.
+   * @return mass_i
+   */
+  floatType getSiteMass(intType i) const;
+
+  /**
+   * Getter for the mol's mass.
    * @param i molId of molecule.
    * @return mass_i
    */
-  floatType getMass(intType i) const;
+  floatType getMolMass(intType i) const;
 
   /**
    * Getter for the molecule's MoI.
@@ -225,12 +233,13 @@ class ParticlePropertiesLibrary {
 
   std::vector<floatType> _epsilons;
   std::vector<floatType> _sigmas;
-  std::vector<floatType> _masses;
+  std::vector<floatType> _siteMasses;
 
   // Note: this is a vector of site type Ids for the sites of a certain molecular Id
   std::vector<std::vector<intType>> _siteIds;
   // This is a vector (indexed by mol ID) of vectors of site positions (which are 3D arrays)
   std::vector<std::vector<std::array<floatType,3>>> _relativeSitePositions;
+  std::vector<floatType> _molMasses;
   std::vector<std::array<floatType,3>> _momentOfInertias;
   std::vector<size_t> _numSites;
 
@@ -254,7 +263,7 @@ void ParticlePropertiesLibrary<floatType, intType>::addSimpleType(const intType 
   ++_numRegisteredSiteTypes;
   _epsilons.emplace_back(epsilon);
   _sigmas.emplace_back(sigma);
-  _masses.emplace_back(mass);
+  _siteMasses.emplace_back(mass);
 }
 
 template <typename floatType, typename intType>
@@ -268,11 +277,13 @@ void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, 
   ++_numRegisteredSiteTypes;
   _epsilons.emplace_back(epsilon);
   _sigmas.emplace_back(sigma);
+  _siteMasses.emplace_back(mass);
 }
 
 template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::addMolType(const intType molId, const std::vector<intType> siteIds,
-                                                               const std::vector<std::array<floatType,3>> relPos) {
+                                                               const std::vector<std::array<floatType,3>> relPos,
+                                                               const std::array<floatType, 3> momentOfInertia) {
   if (_numRegisteredMolTypes != molId) {
     autopas::utils::ExceptionHandler::exception(
         "ParticlePropertiesLibrary::addMolType(): trying to register a molecule type with id {}. Please register types "
@@ -283,6 +294,12 @@ void ParticlePropertiesLibrary<floatType, intType>::addMolType(const intType mol
   _siteIds.emplace_back(siteIds);
   _relativeSitePositions.emplace_back(relPos);
   _numSites.emplace_back(siteIds.size());
+  floatType molMass{0.};
+  for (intType site = 0; site < siteIds.size(); ++site) {
+    molMass += _siteMasses[siteIds[site]];
+  }
+  _molMasses.emplace_back(molMass);
+  _momentOfInertias.emplace_back(momentOfInertia);
 }
 
 template <typename floatType, typename intType>
@@ -313,34 +330,32 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
 
 template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::calculateMomentOfInertiaAndAdjustAxes() {
-  _momentOfInertias.resize(_numRegisteredMolTypes);
+  // todo fix this
+  _momentOfInertias.reserve(_numRegisteredMolTypes);
 
   for (intType molId = 0; molId < _numRegisteredMolTypes; ++molId) {
     // 1. Calculate Moment of Inertia as 3x3 array
-    Eigen::Matrix<floatType,3,3> MoI =  Eigen::MatrixXd::Zero(3);
+    Eigen::MatrixXd MoI =  Eigen::MatrixXd::Zero(3);
     for (intType site = 0; site < _numSites[molId]; ++site) {
-      MoI[0][0] += (_relativeSitePositions[molId][site][1]*_relativeSitePositions[molId][site][1] +
+      MoI(0,0) += (_relativeSitePositions[molId][site][1]*_relativeSitePositions[molId][site][1] +
                     _relativeSitePositions[molId][site][2]*_relativeSitePositions[molId][site][2])
-                   * _masses[_siteIds[molId][site]];
-      MoI[1][1] += (_relativeSitePositions[molId][site][0]*_relativeSitePositions[molId][site][0] +
+                   * _siteMasses[_siteIds[molId][site]];
+      MoI(1,1) += (_relativeSitePositions[molId][site][0]*_relativeSitePositions[molId][site][0] +
                     _relativeSitePositions[molId][site][2]*_relativeSitePositions[molId][site][2])
-                   * _masses[_siteIds[molId][site]];
-      MoI[2][2] += (_relativeSitePositions[molId][site][0]*_relativeSitePositions[molId][site][0] +
+                   * _siteMasses[_siteIds[molId][site]];
+      MoI(2,2) += (_relativeSitePositions[molId][site][0]*_relativeSitePositions[molId][site][0] +
                     _relativeSitePositions[molId][site][1]*_relativeSitePositions[molId][site][1])
-                   * _masses[_siteIds[molId][site]];
-      MoI[0][1] -= _relativeSitePositions[molId][site][0] * _relativeSitePositions[molId][site][1] *
-                   _masses[_siteIds[molId][site]];
-      MoI[1][0] -= _relativeSitePositions[molId][site][1] * _relativeSitePositions[molId][site][0] *
-                   _masses[_siteIds[molId][site]];
-      MoI[0][2] -= _relativeSitePositions[molId][site][0] * _relativeSitePositions[molId][site][2] *
-                   _masses[_siteIds[molId][site]];
-      MoI[2][0] -= _relativeSitePositions[molId][site][2] * _relativeSitePositions[molId][site][0] *
-                   _masses[_siteIds[molId][site]];
-      MoI[1][2] -= _relativeSitePositions[molId][site][1] * _relativeSitePositions[molId][site][2] *
-                   _masses[_siteIds[molId][site]];
-      MoI[2][1] -= _relativeSitePositions[molId][site][2] * _relativeSitePositions[molId][site][1] *
-                   _masses[_siteIds[molId][site]];
+                   * _siteMasses[_siteIds[molId][site]];
+      MoI(0,1) -= _relativeSitePositions[molId][site][0] * _relativeSitePositions[molId][site][1] *
+                   _siteMasses[_siteIds[molId][site]];
+      MoI(0,2) -= _relativeSitePositions[molId][site][0] * _relativeSitePositions[molId][site][2] *
+                   _siteMasses[_siteIds[molId][site]];
+      MoI(1,2) -= _relativeSitePositions[molId][site][1] * _relativeSitePositions[molId][site][2] *
+                   _siteMasses[_siteIds[molId][site]];
     }
+    MoI(1,0) = MoI(0,1);
+    MoI(2,0) = MoI(0,2);
+    MoI(2,1) = MoI(1,2);
     // 2. Get eigenvalues & -vectors of MoI
     Eigen::EigenSolver<Eigen::MatrixXd> eigenSolver(MoI);
     const auto eigenvalues = eigenSolver.eigenvalues();
@@ -350,20 +365,27 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMomentOfInertiaAndA
     const std::array<floatType,3> MoI_diag = {eigenvalues.template cast<floatType>()[0],
         eigenvalues.template cast<floatType>()[1], eigenvalues.template cast<floatType>()[2]};
 
-    _momentOfInertias.emplace(MoI_diag);
+    _momentOfInertias.push_back(MoI_diag);
 
     // 4. Rotate sites of mol using rotation matrix formed from eigenvectors to fit new orientation
     for (intType site = 0; site < _numSites[molId]; ++site) {
-      const Eigen::Vector3d oldSitePos = _relativeSitePositions[molId][site];
+      const Eigen::Vector3d oldSitePos(_relativeSitePositions[molId][site].data());
       const Eigen::Vector3d newSitePos = eigenvectors * oldSitePos; // todo check
-      _relativeSitePositions[molId][site] = newSitePos;
+      _relativeSitePositions[molId][site][0] = newSitePos(0);
+      _relativeSitePositions[molId][site][1] = newSitePos(1);
+      _relativeSitePositions[molId][site][2] = newSitePos(2);
     }
   }
 }
 
 template <typename floatType, typename intType>
-floatType ParticlePropertiesLibrary<floatType, intType>::getMass(intType i) const {
-  return _masses[i];
+floatType ParticlePropertiesLibrary<floatType, intType>::getSiteMass(intType i) const {
+  return _siteMasses[i];
+}
+
+template <typename floatType, typename intType>
+floatType ParticlePropertiesLibrary<floatType, intType>::getMolMass(intType i) const {
+  return _molMasses[i];
 }
 
 template <typename floatType, typename intType>

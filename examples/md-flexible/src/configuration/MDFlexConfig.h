@@ -143,8 +143,9 @@ class MDFlexConfig {
    * @param molId unique mol type id
    * @param siteIds vector of ids of site types
    * @param relSitePos vector of relative site positions
+   * @param momentOfInertia diagonalized moment of inertia as a length 3 array of double representing diagonal elements
    */
-  void addMolType(unsigned long molId, std::vector<unsigned long> siteIds, std::vector<std::array<double, 3>> relSitePos);
+  void addMolType(unsigned long molId, std::vector<unsigned long> siteIds, std::vector<std::array<double, 3>> relSitePos, std::array<double, 3> momentOfInertia);
 
   /**
    * Flushes the particles.
@@ -448,6 +449,12 @@ class MDFlexConfig {
       {{0ul,{{0.,0.,0.}}}}, "site-pos-in-mol", false, "Mapping of molecule type to relative site position."
   };
   /**
+   * momentOfInertiaMap
+   */
+  MDFlexOption<std::map<unsigned long, std::array<double, 3>>, __LINE__> momentOfInertiaMap {
+      {{0ul, {0., 0., 0.}}}, "molecule-moment-of-inertia", false, "Mapping of molecule type to diagonalized moment of inertia."
+  };
+  /**
    * epsilonMap
    */
   MDFlexOption<std::map<unsigned long, double>, 0> epsilonMap{
@@ -514,6 +521,10 @@ class MDFlexConfig {
    */
   static inline const char *moleculesStr{"Molecules"};
   /**
+   * molTypeStr
+   */
+  static inline const char *const molTypeStr{"molecule-type"};
+  /**
    * moleculeToSiteIdStr
    */
   static inline const char *moleculeToSiteIdStr{"molecule-to-site-id"};
@@ -521,11 +532,19 @@ class MDFlexConfig {
    * moleculeToSitePosStr
    */
   static inline const char *moleculeToSitePosStr{"molecule-to-site-pos"};
+  /**
+   * momentOfInertiaStr
+   */
+  static inline const char *momentOfInertiaStr{"molecule-moment-of-inertia"};
   // Site Type Generation
   /**
    * siteStr
    */
   static inline const char *siteStr{"Sites"};
+  /**
+   * siteTypeStr
+   */
+  static inline const char *const siteTypeStr{"site-type"};
   // Object Generation:
   /**
    * objectsStr
@@ -539,14 +558,6 @@ class MDFlexConfig {
    * velocityStr
    */
   static inline const char *const velocityStr{"velocity"};
-  /**
-   * molTypeStr
-   */
-  static inline const char *const molTypeStr{"molecule-type"};
-  /**
-   * siteTypeStr
-   */
-  static inline const char *const siteTypeStr{"site-type"};
   /**
    * particlesPerObjectStr
    */
