@@ -112,6 +112,33 @@ void MulticenteredLJFunctorTest::testAoSForceCalculation(autopas::MulticenteredM
   }
 }
 
+template<bool newton3>
+void MulticenteredLJFunctorTest::singleSiteSanityCheck(autopas::MulticenteredMoleculeLJ molA, autopas::MulticenteredMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPLComplex, double cutoff) {
+  using autopas::MulticenteredMoleculeLJ;
+  using autopas::MoleculeLJ;
+
+  // create functors
+  autopas::LJMulticenterFunctor<autopas::MulticenteredMoleculeLJ, false, true, autopas::FunctorN3Modes::Both, false, true> multicenterFunctor(cutoff, PPLComplex);
+  autopas::LJFunctor<autopas::MoleculeLJ, false, true, autopas::FunctorN3Modes::Both, false, true> singlecenterFunctor(cutoff, PPLComplex);
+
+  // create copies of simple functors
+  auto molASimple = molA.returnSimpleMolecule<MulticenteredMoleculeLJ>();
+  auto molBSimple = molB.returnSimpleMolecule<MulticenteredMoleculeLJ>();
+
+  // apply multisite functor
+  multicenterFunctor.AoSFunctor(molA, molB, newton3);
+
+  // apply singlesite functor
+  singlecenterFunctor.AoSFunctor(molASimple, molBSimple, newton3);
+
+  for (size_t i = 0; i < 3; ++i) {
+    EXPECT_NEAR(molA.getF()[i],molASimple.getF()[i], 1e-13);
+  }
+  for (size_t i = 0; i < 3; ++i) {
+    EXPECT_NEAR(molB.getF()[i],molBSimple.getF()[i], 1e-13);
+  }
+}
+
 /**
  * Tests for the correctness of the AoS functor by applying to molecules designed to test all its functionality.
  */
@@ -130,7 +157,7 @@ TEST_F(MulticenteredLJFunctorTest, AoSTest) {
   mol0.setF({0.,0.,0.});
   mol0.setTorque({0.,0.,0.});
   mol0.setTypeId(0);
-  PPL.addMolType(0,{0},{{0.,0.,0.}});
+  PPL.addMolType(0,{0},{{0.,0.,0.}},{1.,1.,1.});
 
   MulticenteredMoleculeLJ mol1;
   mol1.setR({0.1,0.,0.});
@@ -138,7 +165,7 @@ TEST_F(MulticenteredLJFunctorTest, AoSTest) {
   mol1.setF({0.,0.,0.});
   mol1.setTorque({0.,0.,0.});
   mol1.setTypeId(1);
-  PPL.addMolType(1,{0,0},{{0.,0.01,0.},{0.,-0.01,0.}});
+  PPL.addMolType(1,{0,0},{{0.,0.01,0.},{0.,-0.01,0.}},{1.,1.,1.});
 
   MulticenteredMoleculeLJ mol2;
   mol2.setR({0.,0.1,0.});
@@ -146,7 +173,7 @@ TEST_F(MulticenteredLJFunctorTest, AoSTest) {
   mol2.setF({0.,0.,0.});
   mol2.setTorque({0.,0.,0.});
   mol2.setTypeId(2);
-  PPL.addMolType(2,{0,0},{{0.,0.01,0.},{0.,-0.01,0.}});
+  PPL.addMolType(2,{0,0},{{0.,0.01,0.},{0.,-0.01,0.}},{1.,1.,1.});
 
   MulticenteredMoleculeLJ mol3;
   mol3.setR({0.,0.,0.});
@@ -154,7 +181,7 @@ TEST_F(MulticenteredLJFunctorTest, AoSTest) {
   mol3.setF({0.,0.,0.});
   mol3.setTorque({0.,0.,0.});
   mol3.setTypeId(3);
-  PPL.addMolType(3,{0,0,0},{{-0.05,-0.05,0.},{0.,0.1,0.},{0.05,-0.05,0.}});
+  PPL.addMolType(3,{0,0,0},{{-0.05,-0.05,0.},{0.,0.1,0.},{0.05,-0.05,0.}},{1.,1.,1.});
 
   MulticenteredMoleculeLJ mol4;
   mol4.setR({0.,0.,0.1});
@@ -162,7 +189,7 @@ TEST_F(MulticenteredLJFunctorTest, AoSTest) {
   mol4.setF({0.,0.,0.});
   mol4.setTorque({0.,0.,0.});
   mol4.setTypeId(4);
-  PPL.addMolType(4,{0,0,0},{{-0.05,-0.05,0.},{0.,0.1,0.},{0.05,-0.05,0.}});
+  PPL.addMolType(4,{0,0,0},{{-0.05,-0.05,0.},{0.,0.1,0.},{0.05,-0.05,0.}},{1.,1.,1.});
 
   MulticenteredMoleculeLJ mol5;
   mol5.setR({2.,2.,2.});
@@ -170,7 +197,7 @@ TEST_F(MulticenteredLJFunctorTest, AoSTest) {
   mol5.setF({0.,0.,0.});
   mol5.setTorque({0.,0.,0.});
   mol5.setTypeId(5);
-  PPL.addMolType(5,{0,0},{{0.,0.01,0.},{0.,-0.01,0.}});
+  PPL.addMolType(5,{0,0},{{0.,0.01,0.},{0.,-0.01,0.}},{1.,1.,1.});
 
   MulticenteredMoleculeLJ mol6;
   mol6.setR({0.,1.05,0.});
@@ -178,7 +205,7 @@ TEST_F(MulticenteredLJFunctorTest, AoSTest) {
   mol6.setF({0.,0.,0.});
   mol6.setTorque({0.,0.,0.});
   mol6.setTypeId(6);
-  PPL.addMolType(6,{0,0},{{0.,0.1,0.},{0.,-0.1,0.}});
+  PPL.addMolType(6,{0,0},{{0.,0.1,0.},{0.,-0.1,0.}},{1.,1.,1.});
 
   MulticenteredMoleculeLJ mol7;
   mol7.setR({0.,0.95,0.});
@@ -186,7 +213,7 @@ TEST_F(MulticenteredLJFunctorTest, AoSTest) {
   mol7.setF({0.,0.,0.});
   mol7.setTorque({0.,0.,0.});
   mol7.setTypeId(7);
-  PPL.addMolType(7,{0,0},{{0.,0.1,0.},{0.,-0.1,0.}});
+  PPL.addMolType(7,{0,0},{{0.,0.1,0.},{0.,-0.1,0.}},{1.,1.,1.});
 
   MulticenteredMoleculeLJ mol8;
   mol8.setR({0.,0.,0.});
@@ -194,7 +221,7 @@ TEST_F(MulticenteredLJFunctorTest, AoSTest) {
   mol8.setF({0.,0.,0.});
   mol8.setTorque({0.,0.,0.});
   mol8.setTypeId(8);
-  PPL.addMolType(8,{1,1,0},{{-0.05,-0.05,0.},{0.,0.1,0.},{0.05,-0.05,0.}});
+  PPL.addMolType(8,{1,1,0},{{-0.05,-0.05,0.},{0.,0.1,0.},{0.05,-0.05,0.}},{1.,1.,1.});
 
   PPL.calculateMixingCoefficients();
 
@@ -260,4 +287,33 @@ TEST_F(MulticenteredLJFunctorTest, AoSTest) {
   testAoSForceCalculation<false>(mol4, mol8,PPL,1.);
   testAoSForceCalculation<false>(mol8, mol4,PPL,1.);
 
+}
+
+TEST_F(MulticenteredLJFunctorTest, singleSiteSanityCheck) {
+  using autopas::MulticenteredMoleculeLJ;
+
+  ParticlePropertiesLibrary PPL(1.);
+  PPL.addSiteType(0,1.,1.,1.);
+  PPL.addSiteType(1,0.5,0.5,0.5);
+
+  MulticenteredMoleculeLJ mol0;
+  mol0.setR({0.,0.,0.});
+  mol0.setQ({1.,1.,0.,0.});
+  mol0.setF({0.,0.,0.});
+  mol0.setTorque({0.,0.,0.});
+  mol0.setTypeId(0);
+  PPL.addMolType(0,{0},{{0.,0.,0.}},{1.,1.,1.});
+
+  MulticenteredMoleculeLJ mol1;
+  mol1.setR({0.5,0.,0.});
+  mol1.setQ({1.,1.,0.,0.});
+  mol1.setF({0.,0.,0.});
+  mol1.setTorque({0.,0.,0.});
+  mol1.setTypeId(1);
+  PPL.addMolType(1,{1},{{0.,0.,0.}},{1.,1.,1.});
+
+  PPL.calculateMixingCoefficients();
+
+  singleSiteSanityCheck<true>(mol0,mol1,PPL,1.);
+  singleSiteSanityCheck<false>(mol0,mol1,PPL,1.);
 }

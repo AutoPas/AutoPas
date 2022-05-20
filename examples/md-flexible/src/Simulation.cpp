@@ -132,6 +132,7 @@ Simulation<ParticleClass>::Simulation(const MDFlexConfig &configuration, Regular
       if (not _configuration.includeRotational.value) {
         _autoPasContainer->addParticle(particle.template returnSimpleMolecule<ParticleClass>());
       } else {
+        particle.setQ({1.,1.,0.,0.}); // todo not have this hard coded
         _autoPasContainer->addParticle(particle);
       }
     }

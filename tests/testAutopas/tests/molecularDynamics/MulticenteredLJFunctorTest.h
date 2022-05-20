@@ -10,6 +10,7 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPasDecl.h"
+#include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/molecularDynamics/LJMulticenterFunctor.h"
 #include "autopas/molecularDynamics/MulticenteredMoleculeLJ.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
@@ -31,10 +32,22 @@ class MulticenteredLJFunctorTest : public AutoPasTestBase {
    * @tparam newton3
    * @param molA
    * @param molB
+   * @param PPL
    * @param cutoff
    */
   template <bool newton3>
   void testAoSForceCalculation(autopas::MulticenteredMoleculeLJ molA, autopas::MulticenteredMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
+
+  /**
+   * Compares the forces produced by the single-site functor and the multi-site functor applied to single-site molecules.
+   * @tparam newton3
+   * @param molA
+   * @param molB
+   * @param PPL
+   * @param cutoff
+   */
+  template <bool newton3>
+  void singleSiteSanityCheck(autopas::MulticenteredMoleculeLJ molA, autopas::MulticenteredMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 };
 
 
