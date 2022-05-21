@@ -11,6 +11,7 @@
 #include "AutoPasTestBase.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
+#include "autopas/molecularDynamics/LJFunctorSVE.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -49,6 +50,8 @@ template <bool shift, bool mixing, bool globals>
 using LJFunMol = autopas::LJFunctor<Molecule, shift, mixing, autopas::FunctorN3Modes::Both, globals>;
 template <bool shift, bool mixing, bool globals>
 using LJFunAVXMol = autopas::LJFunctorAVX<Molecule, shift, mixing, autopas::FunctorN3Modes::Both, globals>;
+template <bool shift, bool mixing, bool globals>
+using LJFunSVEMol = autopas::LJFunctorSVE<Molecule, shift, mixing, autopas::FunctorN3Modes::Both, globals>;
 
 // struct aliasing for readable names
 struct LJFunShiftMixNoGlob : public LJFunMol<true, true, false> {
@@ -74,4 +77,16 @@ struct LJFunAVXShiftMixGlob : public LJFunAVXMol<true, true, true> {
 };
 struct LJFunAVXShiftNoMixGlob : public LJFunAVXMol<true, false, true> {
   using LJFunAVXMol<true, false, true>::LJFunctorAVX;
+};
+struct LJFunSVEShiftMixGlob : public LJFunSVEMol<true, true, true> {
+  using LJFunSVEMol<true, true, true>::LJFunctorSVE;
+};
+struct LJFunSVEShiftNoMixNoGlob : public LJFunSVEMol<true, false, false> {
+  using LJFunSVEMol<true, false, false>::LJFunctorSVE;
+};
+struct LJFunSVEShiftNoMixGlob : public LJFunSVEMol<true, false, true> {
+  using LJFunSVEMol<true, false, true>::LJFunctorSVE;
+};
+struct LJFunSVEShiftMixNoGlob : public LJFunSVEMol<true, true, false> {
+  using LJFunSVEMol<true, true, false>::LJFunctorSVE;
 };

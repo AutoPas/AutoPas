@@ -9,6 +9,7 @@
 #include "autopas/AutoPasDecl.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
+#include "autopas/molecularDynamics/LJFunctorSVE.h"
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 #include "autopas/utils/SimilarityFunctions.h"
 
@@ -20,6 +21,7 @@ extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJ
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(
     autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true> *);
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctorAVX<ParticleType, true, true> *);
+extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctorSVE<ParticleType, true, true> *);
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::FlopCounterFunctor<ParticleType> *);
 //! @endcond
 
@@ -375,6 +377,12 @@ bool Simulation::calculatePairwiseForces() {
       wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
       break;
     }
+    case MDFlexConfig::FunctorOption::lj12_6_SVE: {
+      autopas::LJFunctorSVE<ParticleType, true, true> functor{_autoPasContainer->getCutoff(),
+                                                              particlePropertiesLibrary};
+      wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
+      break;
+    }
   }
   return wasTuningIteration;
 }
@@ -481,6 +489,10 @@ void Simulation::logMeasurements() {
         }
         case MDFlexConfig::FunctorOption ::lj12_6_AVX: {
           flopsPerKernelCall = autopas::LJFunctorAVX<ParticleType, true, true>::getNumFlopsPerKernelCall();
+          break;
+        }
+        case MDFlexConfig::FunctorOption ::lj12_6_SVE: {
+          flopsPerKernelCall = autopas::LJFunctorSVE<ParticleType, true, true>::getNumFlopsPerKernelCall();
           break;
         }
         default:

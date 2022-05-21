@@ -7,6 +7,7 @@
 
 #include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
+#include "autopas/molecularDynamics/LJFunctorSVE.h"
 #include "autopas/utils/ArrayMath.h"
 
 /**
