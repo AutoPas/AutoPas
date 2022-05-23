@@ -381,6 +381,11 @@ class LJMulticenterFunctor
       }
     }
 
+    // create mask over every mol 'above' molA
+    // note: this appears to break when inside force calculation loop
+    std::vector<bool, autopas::AlignedAllocator<bool>> molMask;
+    molMask.reserve(soa.getNumberOfParticles());
+
     // main force calculation loop
     size_t siteIndexMolA = 0;  // index of first site in molA
     for (size_t molA = 0; molA < soa.getNumberOfParticles(); ++molA) {
@@ -389,14 +394,12 @@ class LJMulticenterFunctor
         continue;
       }
 
-      const size_t noSitesInMolA = useMixing ? _PPLibrary->getNumSites(molA)
+      const size_t noSitesInMolA = useMixing ? _PPLibrary->getNumSites(typeptr[molA])
                                              : const_unrotatedSitePositions.size();  // Number of sites in molecule A
       const size_t noSitesB = (siteCount - siteIndexMolA);  // Number of sites in molecules that A interacts with
       const size_t siteIndexMolB = siteIndexMolA + noSitesInMolA;
 
-      // create mask over every mol 'above' molA
-      std::vector<bool, autopas::AlignedAllocator<bool>> molMask;
-      molMask.reserve(soa.getNumberOfParticles() - molA);
+
 
 #pragma omp for simd
       for (size_t molB = molA + 1; molB < soa.getNumberOfParticles(); ++molB) {
@@ -444,7 +447,7 @@ class LJMulticenterFunctor
 
           for (size_t siteB = 0; siteB < siteCount - (siteIndexMolB); ++siteB) {
             const auto mixingData =
-                _PPLibrary->getMixingData(siteTypes[siteIndexMolA + siteA], siteTypes[siteIndexMolB + siteB]);
+                _PPLibrary->getMixingData(siteTypes[siteA], siteTypes[siteIndexMolB + siteB]);
             sigmaSquareds[siteB] = mixingData.sigmaSquare;
             epsilon24s[siteB] = mixingData.epsilon24;
             if (applyShift) {
@@ -508,6 +511,7 @@ class LJMulticenterFunctor
         siteForceY[siteA] += forceSumY;
         siteForceZ[siteA] += forceSumZ;
       }
+      siteIndexMolA += noSitesInMolA;
     }
 
     // reduce the forces on individual sites to forces & torques on whole molecules.
@@ -782,14 +786,10 @@ class LJMulticenterFunctor
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionBz;
 
     // we require arrays for forces for sites to maintain SIMD in site-site calculations
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceAx;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceAy;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceAz;
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceBx;
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceBy;
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceBz;
 
-    std::vector<size_t, autopas::AlignedAllocator<size_t>> siteTypesA;
     std::vector<size_t, autopas::AlignedAllocator<size_t>> siteTypesB;
 
     const SoAFloatPrecision const_sigmaSquared = _sigmaSquared;
@@ -816,6 +816,14 @@ class LJMulticenterFunctor
     exactSitePositionBx.reserve(siteCountB);
     exactSitePositionBy.reserve(siteCountB);
     exactSitePositionBz.reserve(siteCountB);
+
+    if constexpr (useMixing) {
+      siteTypesB.reserve(siteCountB);
+    }
+
+    siteForceBx.reserve(siteCountB);
+    siteForceBy.reserve(siteCountB);
+    siteForceBz.reserve(siteCountB);
 
     if constexpr (useMixing) {
       siteTypesB.reserve(siteCountB);
@@ -869,17 +877,18 @@ class LJMulticenterFunctor
         continue;
       }
 
-      const size_t noSitesInMolA = useMixing ? _PPLibrary->getNumSites(molA)
+      const auto noSitesInMolA = useMixing ? _PPLibrary->getNumSites(typeptrA[molA])
                                              : const_unrotatedSitePositions.size();
+      const auto unrotatedSitePositionsA = useMixing ? _PPLibrary->getSitePositions(typeptrA[molA]) : const_unrotatedSitePositions;
 
       const auto rotatedSitePositionsA = autopas::utils::quaternion::rotateVectorOfPositions(
-          {q0Aptr[molA], q1Aptr[molA], q2Aptr[molA], q3Aptr[molA]}, _PPLibrary->getSitePositions(typeptrA[molA]));
+          {q0Aptr[molA], q1Aptr[molA], q2Aptr[molA], q3Aptr[molA]},unrotatedSitePositionsA);
 
       // create mask over every mol in cell B
       std::vector<bool, autopas::AlignedAllocator<bool>> molMask;
       molMask.reserve(soaB.getNumberOfParticles());
 
-#pragma omp for simd
+//#pragma omp for simd
       for (size_t molB = 0; molB < soaB.getNumberOfParticles(); ++molB) {
         const auto ownedStateB = ownedStatePtrB[molB];
 
@@ -919,7 +928,7 @@ class LJMulticenterFunctor
       SoAFloatPrecision torqueSumY = 0.;
       SoAFloatPrecision torqueSumZ = 0.;
 
-      for (size_t siteA = 0; siteA < siteCountA; ++siteA) {
+      for (size_t siteA = 0; siteA < noSitesInMolA; ++siteA) {
         // todo compare performance between preloading parameters and just calculating them
         if (useMixing) {
           // preload sigmas, epsilons, and shifts
@@ -999,7 +1008,7 @@ class LJMulticenterFunctor
       size_t siteIndex = 0;
       for (size_t mol = 0; mol < soaB.getNumberOfParticles(); ++mol) {
         const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
-            {q0Bptr[mol], q1Bptr[mol], q2Bptr[mol], q3Bptr[mol]}, const_unrotatedSitePositions);
+            {q0Bptr[mol], q1Bptr[mol], q2Bptr[mol], q3Bptr[mol]}, _PPLibrary->getSitePositions(typeptrB[mol]) );
         for (size_t site = 0; site < _PPLibrary->getNumSites(typeptrB[mol]); ++site) {
           fxBptr[mol] += siteForceBx[siteIndex];
           fyBptr[mol] += siteForceBy[siteIndex];
@@ -1013,6 +1022,8 @@ class LJMulticenterFunctor
           ++siteIndex;
         }
       }
+    } else {
+      // to do
     }
 
   }

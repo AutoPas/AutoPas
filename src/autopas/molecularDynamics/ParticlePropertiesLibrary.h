@@ -93,34 +93,34 @@ class ParticlePropertiesLibrary {
 
   ~ParticlePropertiesLibrary() = default;
 
-  /**
-   * Returns a set of all particle types stored.
-   * todo this is super ugly code
-   * @return
-   */
-  std::set<intType> getSiteTypes() const {
-    std::set<intType> typeIDs;
-
-    for (size_t index = 0; index < _numRegisteredSiteTypes; ++index) {
-      typeIDs.emplace(index);
-    }
-
-    return typeIDs;
-  }
-
-  std::set<intType> getMolTypes() const {
-    std::set<intType> typeIDs;
-
-    for (size_t index = 0; index < _numRegisteredMolTypes; ++index) {
-      typeIDs.emplace(index);
-    }
-
-    return typeIDs;
-  }
-
-  std::set<intType> getTypes() const {
-    return getSiteTypes();
-  }
+//  /**
+//   * Returns a set of all particle types stored.
+//   * todo this is super ugly code
+//   * @return
+//   */
+//  std::set<intType> getSiteTypes() const {
+//    std::set<intType> typeIDs;
+//
+//    for (size_t index = 0; index < _numRegisteredSiteTypes; ++index) {
+//      typeIDs.emplace(index);
+//    }
+//
+//    return typeIDs;
+//  }
+//
+//  std::set<intType> getMolTypes() const {
+//    std::set<intType> typeIDs;
+//
+//    for (size_t index = 0; index < _numRegisteredMolTypes; ++index) {
+//      typeIDs.emplace(index);
+//    }
+//
+//    return typeIDs;
+//  }
+//
+//  std::set<intType> getTypes() const {
+//    return getSiteTypes();
+//  }
 
 
   /**

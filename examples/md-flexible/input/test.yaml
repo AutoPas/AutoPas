@@ -1,6 +1,6 @@
 container                        :  [LinkedCells]
 traversal                        :  [lc_c01]
-data-layout                      :  [AoS]
+data-layout                      :  [SoA]
 newton3                          :  [disabled]
 verlet-rebuild-frequency         :  10
 verlet-skin-radius               :  0.2
@@ -53,7 +53,7 @@ Molecules:
 Objects:
   CubeGrid:
     0:
-      particles-per-dimension    :  [10,10,10]
+      particles-per-dimension    :  [1,2,1]
       particle-spacing           :  1.5
       bottomLeftCorner           :  [0., 0., 0.]
       velocity                   :  [0, 0, 0]
