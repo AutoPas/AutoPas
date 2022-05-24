@@ -422,6 +422,18 @@ inline int AutoPas_MPI_Cart_get(AutoPas_MPI_Comm comm, int maxdims, int dims[], 
  * @return MPI error value
  */
 inline int AutoPas_MPI_Cart_coords(MPI_Comm comm, int rank, int maxdims, int coords[]);
+
+/**
+ * Wrapper for MPI_Cart_rank
+ * Determines process rank in communicator given Cartesian location.
+ * @param comm Communicator with cartesian structure (handle).
+ * @param coords Integer array (of size ndims, the number of dimensions of the Cartesian topology associated with comm)
+ * specifying the cartesian coordinates of a process.
+ * @param rank Rank of specified process (integer).
+ * @return MPI error value
+ */
+inline int AutoPas_MPI_Cart_rank(MPI_Comm comm, const int coords[], int *rank);
+
 /**
  * Wrapper for MPI_Dims_create.
  * Creates a division of processors in a cartesian grid. Typically this is a factorization of nnodes in ndims factors.
@@ -588,6 +600,10 @@ inline int AutoPas_MPI_Cart_get(AutoPas_MPI_Comm comm, int maxdims, int dims[], 
 
 inline int AutoPas_MPI_Cart_coords(MPI_Comm comm, int rank, int maxdims, int coords[]) {
   return MPI_Cart_coords(comm, rank, maxdims, coords);
+}
+
+inline int AutoPas_MPI_Cart_rank(MPI_Comm comm, const int coords[], int *rank) {
+  return MPI_Cart_rank(comm, coords, rank);
 }
 
 inline int AutoPas_MPI_Dims_create(int nnodes, int ndims, int dims[]) { return MPI_Dims_create(nnodes, ndims, dims); }
@@ -776,6 +792,11 @@ inline int AutoPas_MPI_Cart_coords(MPI_Comm comm, int rank, int maxdims, int coo
   for (int i = 0; i < maxdims; ++i) {
     coords[i] = 0;
   }
+  return AUTOPAS_MPI_SUCCESS;
+}
+
+inline int AutoPas_MPI_Cart_rank(MPI_Comm comm, const int coords[], int *rank) {
+  *rank = 0;
   return AUTOPAS_MPI_SUCCESS;
 }
 
