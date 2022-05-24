@@ -413,8 +413,18 @@ inline int AutoPas_MPI_Cart_create(AutoPas_MPI_Comm comm, int nDims, const int *
 inline int AutoPas_MPI_Cart_get(AutoPas_MPI_Comm comm, int maxdims, int dims[], int periods[], int coords[]);
 
 /**
+ * Wrapper for MPI_Cart_coords
+ * Determines process coords in cartesian topology given rank in group.
+ * @param comm Communicator with cartesian structure (handle).
+ * @param rank Rank of a process within group of comm (integer).
+ * @param maxdims Length of vector coords in the calling program (integer).
+ * @param coords Integer array (of size ndims) containing the Cartesian coordinates of specified process (integer).
+ * @return MPI error value
+ */
+inline int AutoPas_MPI_Cart_coords(MPI_Comm comm, int rank, int maxdims, int coords[]);
+/**
  * Wrapper for MPI_Dims_create.
- * Creats a division of processors in a cartesian grid. Typically this is a factorization of nnodes in ndims factors.
+ * Creates a division of processors in a cartesian grid. Typically this is a factorization of nnodes in ndims factors.
  * @param nnodes Number of ranks to divide.
  * @param ndims Number of dimension over which to spread the ranks.
  * @param dims Output parameter. Should be an array of size ndims.
@@ -576,9 +586,11 @@ inline int AutoPas_MPI_Cart_get(AutoPas_MPI_Comm comm, int maxdims, int dims[], 
   return MPI_Cart_get(comm, maxdims, dims, periods, coords);
 }
 
-inline int AutoPas_MPI_Dims_create(int nnodes, int ndims, int dims[]) {
-  return MPI_Dims_create(nnodes, ndims, dims);
+inline int AutoPas_MPI_Cart_coords(MPI_Comm comm, int rank, int maxdims, int coords[]) {
+  return MPI_Cart_coords(comm, rank, maxdims, coords);
 }
+
+inline int AutoPas_MPI_Dims_create(int nnodes, int ndims, int dims[]) { return MPI_Dims_create(nnodes, ndims, dims); }
 
 inline int AutoPas_MPI_Isend(const void *buf, int count, AutoPas_MPI_Datatype datatype, int dest, int tag,
                              AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request) {
@@ -757,6 +769,13 @@ inline int AutoPas_MPI_Cart_create(AutoPas_MPI_Comm comm, int nDims, const int *
 }
 
 inline int AutoPas_MPI_Cart_get(AutoPas_MPI_Comm comm, int maxdims, int dims[], int periods[], int coords[]) {
+  return AUTOPAS_MPI_SUCCESS;
+}
+
+inline int AutoPas_MPI_Cart_coords(MPI_Comm comm, int rank, int maxdims, int coords[]) {
+  for (int i = 0; i < maxdims; ++i) {
+    coords[i] = 0;
+  }
   return AUTOPAS_MPI_SUCCESS;
 }
 
