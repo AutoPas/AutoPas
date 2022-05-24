@@ -413,6 +413,16 @@ inline int AutoPas_MPI_Cart_create(AutoPas_MPI_Comm comm, int nDims, const int *
 inline int AutoPas_MPI_Cart_get(AutoPas_MPI_Comm comm, int maxdims, int dims[], int periods[], int coords[]);
 
 /**
+ * Wrapper for MPI_Dims_create.
+ * Creats a division of processors in a cartesian grid. Typically this is a factorization of nnodes in ndims factors.
+ * @param nnodes Number of ranks to divide.
+ * @param ndims Number of dimension over which to spread the ranks.
+ * @param dims Output parameter. Should be an array of size ndims.
+ * @return MPI error value
+ */
+inline int AutoPas_MPI_Dims_create(int nnodes, int ndims, int dims[]);
+
+/**
  * Wrapper for MPI_Isend.
  * @param buf: Initial address of send buffer (choice).
  * @param count: Number of elements in send buffer (integer).
@@ -564,6 +574,10 @@ inline int AutoPas_MPI_Cart_create(AutoPas_MPI_Comm comm, int nDims, const int *
 
 inline int AutoPas_MPI_Cart_get(AutoPas_MPI_Comm comm, int maxdims, int dims[], int periods[], int coords[]) {
   return MPI_Cart_get(comm, maxdims, dims, periods, coords);
+}
+
+inline int AutoPas_MPI_Dims_create(int nnodes, int ndims, int dims[]) {
+  return MPI_Dims_create(nnodes, ndims, dims);
 }
 
 inline int AutoPas_MPI_Isend(const void *buf, int count, AutoPas_MPI_Datatype datatype, int dest, int tag,
@@ -743,6 +757,12 @@ inline int AutoPas_MPI_Cart_create(AutoPas_MPI_Comm comm, int nDims, const int *
 }
 
 inline int AutoPas_MPI_Cart_get(AutoPas_MPI_Comm comm, int maxdims, int dims[], int periods[], int coords[]) {
+  return AUTOPAS_MPI_SUCCESS;
+}
+
+inline int AutoPas_MPI_Dims_create(int nnodes, int ndims, int dims[]) {
+  // in non-MPI case nnodes should always be 1
+  dims[0] = 1;
   return AUTOPAS_MPI_SUCCESS;
 }
 
