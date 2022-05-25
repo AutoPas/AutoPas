@@ -273,6 +273,7 @@ class LJMulticenterFunctor
     const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
     const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
     const auto *const __restrict q0ptr = soa.template begin<Particle::AttributeNames::quaternion0>();
@@ -381,10 +382,7 @@ class LJMulticenterFunctor
       }
     }
 
-    // create mask over every mol 'above' molA
-    // note: this appears to break when inside force calculation loop
-    std::vector<bool, autopas::AlignedAllocator<bool>> molMask;
-    molMask.reserve(soa.getNumberOfParticles());
+
 
     // main force calculation loop
     size_t siteIndexMolA = 0;  // index of first site in molA
@@ -396,10 +394,13 @@ class LJMulticenterFunctor
 
       const size_t noSitesInMolA = useMixing ? _PPLibrary->getNumSites(typeptr[molA])
                                              : const_unrotatedSitePositions.size();  // Number of sites in molecule A
-      const size_t noSitesB = (siteCount - siteIndexMolA);  // Number of sites in molecules that A interacts with
       const size_t siteIndexMolB = siteIndexMolA + noSitesInMolA;
+      const size_t noSitesB = (siteCount - siteIndexMolB);  // Number of sites in molecules that A interacts with
 
-
+      // create mask over every mol 'above' molA
+      // note: this appears to break when inside force calculation loop
+      std::vector<bool, autopas::AlignedAllocator<bool>> molMask;
+      molMask.reserve(soa.getNumberOfParticles() - (molA+1));
 
 #pragma omp for simd
       for (size_t molB = molA + 1; molB < soa.getNumberOfParticles(); ++molB) {
@@ -416,7 +417,7 @@ class LJMulticenterFunctor
         const auto distanceSquaredCoM = distanceSquaredCoMX + distanceSquaredCoMY + distanceSquaredCoMZ;
 
         // mask sites of molecules beyond cutoff or if molecule is a dummy
-        molMask[molB] = distanceSquaredCoM <= cutoffSquared and ownedStateB != autopas::OwnershipState::dummy;
+        molMask[molB - (molA + 1)] = distanceSquaredCoM <= cutoffSquared and ownedStateB != autopas::OwnershipState::dummy;
       }
 
       // generate mask for each site in the mols 'above' molA from molecular mask
@@ -426,7 +427,7 @@ class LJMulticenterFunctor
 
       for (size_t molB = molA + 1; molB < soa.getNumberOfParticles(); ++molB) {
         for (size_t siteB = 0; siteB < _PPLibrary->getNumSites(typeptr[molB]); ++siteB) {
-          siteMask.template emplace_back(molMask[molB - molA]);
+          siteMask.template emplace_back(molMask[molB - (molA + 1)]);
         }
       }
 
