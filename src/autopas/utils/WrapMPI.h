@@ -53,14 +53,34 @@ namespace autopas {
 #define AUTOPAS_MPI_DOUBLE MPI_DOUBLE
 
 // MPI_Op
-/** Wrapper for MPI_LAND */
-#define AUTOPAS_MPI_LAND MPI_LAND
+/** Wrapper for MPI_MAX */
+#define AUTOPAS_MPI_MAX MPI_MAX
 /** Wrapper for MPI_MIN */
 #define AUTOPAS_MPI_MIN MPI_MIN
-/** Wrapper for MPI_MINLOC */
-#define AUTOPAS_MPI_MINLOC MPI_MINLOC
 /** Wrapper for MPI_SUM */
 #define AUTOPAS_MPI_SUM MPI_SUM
+/** Wrapper for MPI_PROD */
+#define AUTOPAS_MPI_PROD MPI_PROD
+/** Wrapper for MPI_LAND */
+#define AUTOPAS_MPI_LAND MPI_LAND
+/** Wrapper for MPI_BAND */
+#define AUTOPAS_MPI_BAND MPI_BAND
+/** Wrapper for MPI_LOR */
+#define AUTOPAS_MPI_LOR MPI_LOR
+/** Wrapper for MPI_BOR */
+#define AUTOPAS_MPI_BOR MPI_BOR
+/** Wrapper for MPI_LXOR */
+#define AUTOPAS_MPI_LXOR MPI_LXOR
+/** Wrapper for MPI_BXOR */
+#define AUTOPAS_MPI_BXOR MPI_BXOR
+/** Wrapper for MPI_MINLOC */
+#define AUTOPAS_MPI_MINLOC MPI_MINLOC
+/** Wrapper for MPI_MAXLOC */
+#define AUTOPAS_MPI_MAXLOC MPI_MAXLOC
+/** Wrapper for MPI_REPLACE */
+#define AUTOPAS_MPI_REPLACE MPI_REPLACE
+/** Wrapper for MPI_NO_OP */
+#define AUTOPAS_MPI_NO_OP MPI_NO_OP
 
 // MPI Constants
 /** Wrapper for MPI_IN_PLACE  */
@@ -135,16 +155,36 @@ enum AutoPas_MPI_Datatype {
 /**
  * Dummy for MPI_Op.
  */
-enum AutoPas_MPI_Op { LAND, MIN, MINLOC, SUM };
+enum AutoPas_MPI_Op { MIN, SUM, PROD, LAND, BAND, LOR, BOR, LXOR, BXOR, MINLOC, MAXLOC, REPLACE, NO_OP };
 // MPI_Op
-/** Wrapper for MPI_LAND */
-#define AUTOPAS_MPI_LAND autopas::AutoPas_MPI_Op::LAND
+/** Wrapper for MPI_MAX */
+#define AUTOPAS_MPI_MAX autopas::AutoPas_MPI_Op::MAX
 /** Wrapper for MPI_MIN */
 #define AUTOPAS_MPI_MIN autopas::AutoPas_MPI_Op::MIN
-/** Wrapper for MPI_MINLOC */
-#define AUTOPAS_MPI_MINLOC autopas::AutoPas_MPI_Op::MINLOC
 /** Wrapper for MPI_SUM */
 #define AUTOPAS_MPI_SUM autopas::AutoPas_MPI_Op::SUM
+/** Wrapper for MPI_PROD */
+#define AUTOPAS_MPI_PROD autopas::AutoPas_MPI_Op::PROD
+/** Wrapper for MPI_LAND */
+#define AUTOPAS_MPI_LAND autopas::AutoPas_MPI_Op::LAND
+/** Wrapper for MPI_BAND */
+#define AUTOPAS_MPI_BAND autopas::AutoPas_MPI_Op::BAND
+/** Wrapper for MPI_LOR */
+#define AUTOPAS_MPI_LOR autopas::AutoPas_MPI_Op::LOR
+/** Wrapper for MPI_BOR */
+#define AUTOPAS_MPI_BOR autopas::AutoPas_MPI_Op::BOR
+/** Wrapper for MPI_LXOR */
+#define AUTOPAS_MPI_LXOR autopas::AutoPas_MPI_Op::LXOR
+/** Wrapper for MPI_BXOR */
+#define AUTOPAS_MPI_BXOR autopas::AutoPas_MPI_Op::BXOR
+/** Wrapper for MPI_MINLOC */
+#define AUTOPAS_MPI_MINLOC autopas::AutoPas_MPI_Op::MINLOC
+/** Wrapper for MPI_MAXLOC */
+#define AUTOPAS_MPI_MAXLOC autopas::AutoPas_MPI_Op::MAXLOC
+/** Wrapper for MPI_REPLACE */
+#define AUTOPAS_MPI_REPLACE autopas::AutoPas_MPI_Op::REPLACE
+/** Wrapper for MPI_NO_OP */
+#define AUTOPAS_MPI_NO_OP autopas::AutoPas_MPI_Op::NO_OP
 
 /**
  * @struct AutoPas_MPI_Status
