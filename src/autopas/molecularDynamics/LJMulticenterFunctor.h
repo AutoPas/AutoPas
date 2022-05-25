@@ -397,12 +397,11 @@ class LJMulticenterFunctor
       const size_t siteIndexMolB = siteIndexMolA + noSitesInMolA;
       const size_t noSitesB = (siteCount - siteIndexMolB);  // Number of sites in molecules that A interacts with
 
-      // create mask over every mol 'above' molA
-      // note: this appears to break when inside force calculation loop
-      std::vector<bool, autopas::AlignedAllocator<bool>> molMask;
+      // create mask over every mol 'above' molA  (char to keep arrays aligned)
+      std::vector<char, autopas::AlignedAllocator<char>> molMask;
       molMask.reserve(soa.getNumberOfParticles() - (molA+1));
 
-#pragma omp for simd
+#pragma omp simd
       for (size_t molB = molA + 1; molB < soa.getNumberOfParticles(); ++molB) {
         const auto ownedStateB = ownedStatePtr[molB];
 
@@ -422,7 +421,7 @@ class LJMulticenterFunctor
 
       // generate mask for each site in the mols 'above' molA from molecular mask
       // todo investigate if a SIMD implementation is possible
-      std::vector<bool, autopas::AlignedAllocator<bool>> siteMask;
+      std::vector<char, autopas::AlignedAllocator<char>> siteMask;
       siteMask.reserve(noSitesB);
 
       for (size_t molB = molA + 1; molB < soa.getNumberOfParticles(); ++molB) {
@@ -885,11 +884,11 @@ class LJMulticenterFunctor
       const auto rotatedSitePositionsA = autopas::utils::quaternion::rotateVectorOfPositions(
           {q0Aptr[molA], q1Aptr[molA], q2Aptr[molA], q3Aptr[molA]},unrotatedSitePositionsA);
 
-      // create mask over every mol in cell B
-      std::vector<bool, autopas::AlignedAllocator<bool>> molMask;
+      // create mask over every mol in cell B (char to keep arrays aligned)
+      std::vector<char, autopas::AlignedAllocator<char>> molMask;
       molMask.reserve(soaB.getNumberOfParticles());
 
-//#pragma omp for simd
+#pragma omp simd
       for (size_t molB = 0; molB < soaB.getNumberOfParticles(); ++molB) {
         const auto ownedStateB = ownedStatePtrB[molB];
 
@@ -908,7 +907,7 @@ class LJMulticenterFunctor
       }
 
       // generate mask for each site in cell B from molecular mask
-      std::vector<bool, autopas::AlignedAllocator<bool>> siteMask;
+      std::vector<char, autopas::AlignedAllocator<char>> siteMask;
       siteMask.reserve(siteCountB);
 
       for (size_t molB = 0; molB < soaB.getNumberOfParticles(); ++molB) {
