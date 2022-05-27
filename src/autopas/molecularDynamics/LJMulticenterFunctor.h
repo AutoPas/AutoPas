@@ -341,10 +341,6 @@ class LJMulticenterFunctor
     siteForceY.reserve((siteCount));
     siteForceZ.reserve((siteCount));
 
-    if constexpr (useMixing) {
-      siteTypes.reserve(siteCount);
-    }
-
     // Generate site-wise arrays for SIMD
     // todo can we simd anything here? / can we do something 'nicer'?
     if constexpr (useMixing) {
@@ -577,13 +573,12 @@ class LJMulticenterFunctor
   void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                         bool newton3) final {
-    //    if (soa.getNumberOfParticles() == 0 or neighborList.empty()) return;
-    //    if (newton3) {
-    //      SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
-    //    } else {
-    //      SoAFunctorVerletImpl<false>(soa, indexFirst, neighborList);
-    //    }
-    // todo this
+        if (soa.getNumberOfParticles() == 0 or neighborList.empty()) return;
+        if (newton3) {
+          SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
+        } else {
+          SoAFunctorVerletImpl<false>(soa, indexFirst, neighborList);
+        }
   }
 
   /**
@@ -1025,6 +1020,183 @@ class LJMulticenterFunctor
     } else {
       // to do
     }
+
+  }
+
+  template <bool newton3>
+  void SoAFunctorVerletImpl(SoAView<SoAArraysType> soa, const size_t indexFirst,
+                            const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+
+    // Skip if initial particle is dummy
+    const auto ownedStateInit = ownedStatePtr[indexFirst];
+    if (ownedStateInit == OwnershipState::dummy) { return; }
+
+    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+
+    const auto *const __restrict q0ptr = soa.template begin<Particle::AttributeNames::quaternion0>();
+    const auto *const __restrict q1ptr = soa.template begin<Particle::AttributeNames::quaternion1>();
+    const auto *const __restrict q2ptr = soa.template begin<Particle::AttributeNames::quaternion2>();
+    const auto *const __restrict q3ptr = soa.template begin<Particle::AttributeNames::quaternion3>();
+
+    SoAFloatPrecision *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
+    SoAFloatPrecision *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
+    SoAFloatPrecision *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+
+    SoAFloatPrecision *const __restrict txptr = soa.template begin<Particle::AttributeNames::torqueX>();
+    SoAFloatPrecision *const __restrict typtr = soa.template begin<Particle::AttributeNames::torqueY>();
+    SoAFloatPrecision *const __restrict tzptr = soa.template begin<Particle::AttributeNames::torqueZ>();
+
+    [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
+
+    // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
+    const SoAFloatPrecision cutoffSquared = _cutoffSquared;
+    const auto const_unrotatedSitePositions = _sitePositionsLJ;
+
+    const size_t neighborListSize = neighborList.size();
+    const size_t *const __restrict neighborListPtr = neighborList.data();
+
+    constexpr size_t vecSize = 12; // This is a magic number: see LJFunctor for details
+    // todo add vecSize = 16 for __AVX512F__ or autotune over this
+
+    // Count sites
+    const size_t siteCountMolI = useMixing ? _PPLibrary->getNumSites(typeptr[indexFirst]) : const_unrotatedSitePositions.size();
+
+    size_t siteCountNeighbors = 0; // site count of neighbours of mol I (which we refer to as mols J)
+    if constexpr (useMixing) {
+      for (size_t molJ = 0; molJ < neighborListSize; ++molJ) {
+        siteCountNeighbors += _PPLibrary->getNumSites(typeptr[neighborListPtr[molJ]]);
+      }
+    } else {
+      siteCountNeighbors = const_unrotatedSitePositions.size() * neighborListSize;
+    }
+
+    // initalise site-wise arrays for neighbors
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionX;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionY;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionZ;
+
+    std::vector<size_t, autopas::AlignedAllocator<size_t>> siteTypes;
+
+    // we require arrays for forces for sites to maintain SIMD in site-site calculations
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceX;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceY;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceZ;
+
+    exactSitePositionX.reserve(siteCountNeighbors);
+    exactSitePositionY.reserve(siteCountNeighbors);
+    exactSitePositionZ.reserve(siteCountNeighbors);
+
+    if constexpr (useMixing) {
+      siteTypes.reserve(siteCountNeighbors);
+    }
+
+    siteForceX.reserve(siteCountNeighbors);
+    siteForceY.reserve(siteCountNeighbors);
+    siteForceZ.reserve(siteCountNeighbors);
+
+
+    // generate site-wise arrays
+    if constexpr (useMixing) {
+      size_t siteIndex = 0;
+      for (size_t mol = indexFirst + 1; mol < soa.getNumberOfParticles(); ++mol) {
+        const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
+            {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, _PPLibrary->getSitePositions(typeptr[mol]));
+        const auto siteTypesOfMol = _PPLibrary->getSiteTypes(typeptr[mol]);
+
+        for (size_t site = 0; site < _PPLibrary->getNumSites(typeptr[mol]); ++site) {
+          exactSitePositionX[siteIndex] = rotatedSitePositions[site][0] + xptr[mol];
+          exactSitePositionY[siteIndex] = rotatedSitePositions[site][1] + yptr[mol];
+          exactSitePositionZ[siteIndex] = rotatedSitePositions[site][2] + zptr[mol];
+          siteTypes[siteIndex] = siteTypesOfMol[site];
+          siteForceX[siteIndex] = 0.;
+          siteForceY[siteIndex] = 0.;
+          siteForceZ[siteIndex] = 0.;
+          ++siteIndex;
+        }
+      }
+    } else {
+      size_t siteIndex = 0;
+      for (size_t mol = 0; mol < soa.getNumberOfParticles(); mol++) {
+        const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
+            {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, const_unrotatedSitePositions);
+        for (size_t site = 0; site < const_unrotatedSitePositions.size(); ++site) {
+          exactSitePositionX[siteIndex] = rotatedSitePositions[site][0] + xptr[mol];
+          exactSitePositionY[siteIndex] = rotatedSitePositions[site][1] + yptr[mol];
+          exactSitePositionZ[siteIndex] = rotatedSitePositions[site][2] + zptr[mol];
+          siteForceX[siteIndex] = 0.;
+          siteForceY[siteIndex] = 0.;
+          siteForceZ[siteIndex] = 0.;
+          ++siteIndex;
+        }
+      }
+    }
+
+
+    // -- main force calculation --
+    // we use an optimised calculation for vectors up to index n * vecSize
+    //    where n is the largest int s.t. n * vecSize < totalVecLength
+    // we use a regular calculation for the rest
+
+    size_t indexJOffset = 0; // Offset for starting index of vectorised section being processed
+
+    // - mask calculation -
+    std::vector<char, autopas::AlignedAllocator<char>> molMask;
+    molMask.reserve(soa.getNumberOfParticles() - (indexFirst - 1));
+
+    if (neighborListSize >= vecSize) {
+      alignas(64) std::array<SoAFloatPrecision, vecSize> xInitPtr, yInitPtr, zInitPtr, xNeighborsPtr, yNeighborsPtr, zNeighborsPtr, molMaskTmp;
+      alignas(64) std::array<OwnershipState, vecSize> ownedStateNeighborsPtr{};
+
+      // broadcast CoM position of init molecule
+      for (size_t mol = 0; mol < vecSize; ++mol) {
+        xInitPtr[mol] = xptr[indexFirst];
+        yInitPtr[mol] = yptr[indexFirst];
+        zInitPtr[mol] = zptr[indexFirst];
+      }
+
+      // loop over the verlet list from 0 to n*vecSize
+      for (; indexJOffset < neighborListSize - vecSize + 1; indexJOffset += vecSize) {
+        // calculate CoM distance between init molecule and vecSize molecules in neighbor list of init molecule
+
+        // gather CoM positions of other particles j
+#pragma omp simd safelen(vecSize)
+        for (size_t mol = 0; mol < vecSize; ++mol) {
+          xNeighborsPtr[mol] = xptr[neighborListPtr[indexJOffset + mol]];
+          yNeighborsPtr[mol] = yptr[neighborListPtr[indexJOffset + mol]];
+          zNeighborsPtr[mol] = zptr[neighborListPtr[indexJOffset + mol]];
+          ownedStateNeighborsPtr[mol] = ownedStatePtr[neighborListPtr[indexJOffset + mol]];
+        }
+
+        // calculate mol mask
+#pragma omp simd safelen(vecSize)
+        for (size_t mol = 0; mol < vecSize; ++mol) {
+          const auto ownedStateJ = ownedStateNeighborsPtr[mol];
+
+          const auto displacementCoMX = xInitPtr[mol] - xNeighborsPtr[mol];
+          const auto displacementCoMY = yInitPtr[mol] - yNeighborsPtr[mol];
+          const auto displacementCoMZ = zInitPtr[mol] - zNeighborsPtr[mol];
+
+          const auto distanceSquaredCoMX = displacementCoMX * displacementCoMX;
+          const auto distanceSquaredCoMY = displacementCoMY * displacementCoMY;
+          const auto distanceSquaredCoMZ = displacementCoMZ * displacementCoMZ;
+
+          const auto distanceSquaredCoM = distanceSquaredCoMX + distanceSquaredCoMY + distanceSquaredCoMZ;
+
+          molMask[mol+indexJOffset+indexFirst+1] = distanceSquaredCoM <= cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy;
+        }
+      }
+    }
+
+    // mask calculation for mols between n*vecSize + 1 and #mols
+    for (; indexJOffset < neighborListSize; ++indexJOffset) {
+
+    }
+
+
+
 
   }
 
