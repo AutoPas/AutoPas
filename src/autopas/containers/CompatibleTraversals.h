@@ -115,6 +115,15 @@ static const std::set<TraversalOption> &allOTCompatibleTraversals() {
 }
 
 /**
+ * Lists all traversal options applicable for the PseudoVerletLists container.
+ * @return set of all applicable traversal options.
+ */
+static const std::set<TraversalOption> &allPVLCompatibleTraversals() {
+  static const std::set<TraversalOption> s{TraversalOption::pvl_c08};
+  return s;
+}
+
+/**
  * Lists all traversal options applicable for the given container.
  * @param containerOption ContainerOption
  * @return set of all applicable traversal options.
@@ -148,6 +157,10 @@ static inline const std::set<TraversalOption> &allCompatibleTraversals(Container
     case ContainerOption::octree: {
       return allOTCompatibleTraversals();
     }
+    case ContainerOption::pseudoVerletLists: {
+      return allPVLCompatibleTraversals();
+    }
+
   }
 
   autopas::utils::ExceptionHandler::exception("CompatibleTraversals: Unknown container option {}!",

@@ -68,6 +68,10 @@ class ContainerOption : public Option<ContainerOption> {
      * distributed since it is space adaptive
      */
     octree,
+    /**
+     * PseudoVerletLists : Similar to VerletListsCells but Pseudo VerletLists are used as the neighbor lists
+     */
+    pseudoVerletLists,
   };
 
   /**
@@ -110,6 +114,7 @@ class ContainerOption : public Option<ContainerOption> {
         {ContainerOption::varVerletListsAsBuild, "VarVerletListsAsBuild"},
         {ContainerOption::pairwiseVerletLists, "PairwiseVerletLists"},
         {ContainerOption::octree, "Octree"},
+        {ContainerOption::pseudoVerletLists, "PseudoVerletLists"}
     };
   };
 

@@ -20,6 +20,9 @@
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/PseudoVerletLists.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/PseudoVerletListHelpers.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/PVLCellPairNeighborList.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/selectors/ContainerSelectorInfo.h"
 #include "autopas/utils/StringUtils.h"
@@ -147,6 +150,12 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
     case ContainerOption::octree: {
       container = std::make_unique<Octree<Particle>>(_boxMin, _boxMax, _cutoff, containerInfo.verletSkin,
                                                      containerInfo.cellSizeFactor);
+      break;
+    }
+    case ContainerOption::pseudoVerletLists: {
+      container = std::make_unique<PseudoVerletLists<Particle, PVLCellPairNeighborList<Particle>>>(
+          _boxMin, _boxMax, _cutoff, containerInfo.verletSkin, containerInfo.cellSizeFactor,
+          containerInfo.loadEstimator, PseudoVerletListHelpers<Particle>::PVLBuildType::Value::soaBuild);
       break;
     }
     default: {

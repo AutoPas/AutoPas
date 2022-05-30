@@ -16,6 +16,7 @@
 #include "autopas/containers/verletListsCellBased/varVerletLists/VarVerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/PseudoVerletLists.h"
 
 namespace autopas {
 /**
@@ -55,6 +56,8 @@ decltype(auto) withStaticContainerType(const std::shared_ptr<ParticleContainerIn
           dynamic_cast<autopas::VarVerletLists<Particle, VerletNeighborListAsBuild<Particle>> *>(containerPtr));
     case ContainerOption::octree:
       return function(dynamic_cast<autopas::Octree<Particle> *>(containerPtr));
+    case ContainerOption::pseudoVerletLists:
+      return function(dynamic_cast<autopas::PseudoVerletLists<Particle, PVLCellPairNeighborList<Particle>> *>(containerPtr));
   }
   autopas::utils::ExceptionHandler::exception("Unknown type of container in StaticContainerSelector.h. Type: {}",
                                               container->getContainerType());

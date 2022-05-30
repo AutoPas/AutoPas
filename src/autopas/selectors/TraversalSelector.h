@@ -24,6 +24,7 @@
 #include "autopas/containers/linkedCells/traversals/LCSlicedTraversal.h"
 #include "autopas/containers/octree/traversals/OTC01Traversal.h"
 #include "autopas/containers/octree/traversals/OTC18Traversal.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/PVLCellPairC08Traversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLC01BalancedTraversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLC06Traversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLClusterIterationTraversal.h"
@@ -258,6 +259,11 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
       using ParticleType = typename ParticleCell::ParticleType;
       return std::make_unique<OTC01Traversal<ParticleType, PairwiseFunctor, dataLayout, useNewton3>>(
           &pairwiseFunctor, info.interactionLength, info.interactionLength);
+    }
+    // Pseudo Verlet Lists
+    case TraversalOption::pvl_c08: {
+      return std::make_unique<PVLCellPairC08Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
+          info.dims, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
   }
   autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known type!", traversalType.to_string());

@@ -27,6 +27,9 @@ enum class FunctorN3Modes {
 template <class Particle>
 class VerletListHelpers;
 
+/*template <class Particle>
+class PseudoVerletListHelpers;
+*/
 /**
  * Functor class. This class describes the pairwise interactions between
  * particles.

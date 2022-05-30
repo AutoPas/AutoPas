@@ -102,7 +102,7 @@ class CellFunctor {
    * Min. number of particles to start sorting.
    * @todo Currently, this is disabled because of https://github.com/AutoPas/AutoPas/issues/418
    */
-  constexpr static unsigned long _startSorting = std::numeric_limits<unsigned long>::max();
+  constexpr static unsigned long _startSorting = 0;//std::numeric_limits<unsigned long>::max();
 };
 
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,

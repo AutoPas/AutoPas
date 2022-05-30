@@ -189,6 +189,12 @@ class TraversalOption : public Option<TraversalOption> {
      * fluctuations.
      */
     vvl_as_built,
+
+    /**
+     * PVLCellPairC08Traversal : based on LCC08Traversal.
+     * Similar to VLCCellPairC08Traversal, but with Pseudo Verlet Lists as the neighbor lists
+     */
+    pvl_c08,
   };
 
   /**
@@ -269,6 +275,9 @@ class TraversalOption : public Option<TraversalOption> {
         // Octree Traversals:
         {TraversalOption::ot_c18, "ot_c18"},
         {TraversalOption::ot_c01, "ot_c01"},
+
+        //PseudoVerletLists Traversals:
+        {TraversalOption::pvl_c08, "pvl_c08"}
     };
   };
 
