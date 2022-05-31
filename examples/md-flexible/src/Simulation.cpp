@@ -169,6 +169,8 @@ void Simulation<ParticleClass>::run() {
   _homogeneity = autopas::utils::calculateHomogeneityAndMaxDensity(
                      *_autoPasContainer, _domainDecomposition.getGlobalBoxMin(), _domainDecomposition.getGlobalBoxMax())
                      .first;
+  std::ofstream timingsFile;
+  timingsFile.open("test.csv");
   _timers.simulate.start();
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
@@ -220,8 +222,13 @@ void Simulation<ParticleClass>::run() {
         printProgress(_iteration, maxIterationsEstimate, maxIterationsIsPrecise);
       }
     }
+
+    _timers.simulate.stop();
+    timingsFile << _timers.simulate.getTotalTime();
+    _timers.simulate.start();
   }
   _timers.simulate.stop();
+  timingsFile.close();
 
   // Record last state of simulation.
   if (_createVtkFiles) {
