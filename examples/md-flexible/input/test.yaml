@@ -1,6 +1,6 @@
 container                        :  [DirectSum, LinkedCells, LinkedCellsReferences, VarVerletListsAsBuild, VerletClusterLists, VerletLists, VerletListsCells, PairwiseVerletLists]
-traversal                        :  [lc_c01]
-data-layout                      :  [AoS]
+traversal                        :  [vl_list_iteration]
+data-layout                      :  [SoA]
 newton3                          :  [disabled]
 verlet-rebuild-frequency         :  10
 verlet-skin-radius               :  1.0

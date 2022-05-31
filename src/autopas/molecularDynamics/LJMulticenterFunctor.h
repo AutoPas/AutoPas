@@ -1201,7 +1201,7 @@ class LJMulticenterFunctor
     for (size_t neighborMol = 0; neighborMol < neighborListSize; ++neighborMol) {
       const auto neighborMolIndex = neighborList[neighborMol]; // index of neighbor mol in soa
       for (size_t siteB = 0; siteB < _PPLibrary->getNumSites(typeptr[neighborMolIndex]); ++siteB) {
-        siteMask.emplace_back(molMask[neighborMolIndex]);
+        siteMask.emplace_back(molMask[neighborMol]);
       }
     }
 
