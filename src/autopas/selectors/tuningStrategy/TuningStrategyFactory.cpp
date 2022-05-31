@@ -13,6 +13,7 @@
 #include "MPIParallelizedStrategy.h"
 #include "PredictiveTuning.h"
 #include "RandomSearch.h"
+#include "ReinforcementLearning.h"
 #include "autopas/options/MPIStrategyOption.h"
 #include "autopas/utils/AutoPasConfigurationCommunicator.h"
 
@@ -134,6 +135,13 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
           allowedContainers, allowedCellSizeFactors.getAll(), allowedTraversals, allowedLoadEstimators,
           allowedDataLayouts, allowedNewton3Options, relativeOptimum, maxTuningPhasesWithoutTest,
           relativeBlacklistRange, evidenceFirstPrediction, extrapolationMethodOption, outputSuffix);
+      break;
+    }
+
+    case TuningStrategyOption::reinforcementLearning: {
+      tuningStrategy =
+          std::make_unique<ReinforcementLearning>(allowedContainers, allowedCellSizeFactors.getAll(), allowedTraversals,
+                                                  allowedLoadEstimators, allowedDataLayouts, allowedNewton3Options);
       break;
     }
 

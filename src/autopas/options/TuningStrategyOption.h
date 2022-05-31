@@ -49,6 +49,11 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
      * range, and selects the best.
      */
     predictiveTuning,
+    /**
+     * Selects a collection of the best next Strategies based on a Temporal Difference Reinforcement Learning Algorithm
+     *
+     */
+    reinforcementLearning,
   };
 
   /**
@@ -86,6 +91,7 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
         {TuningStrategyOption::randomSearch, "random-Search"},
         {TuningStrategyOption::activeHarmony, "active-harmony"},
         {TuningStrategyOption::predictiveTuning, "predictive-tuning"},
+        {TuningStrategyOption::reinforcementLearning, "reinforcement-learning"},
     };
   }
 
