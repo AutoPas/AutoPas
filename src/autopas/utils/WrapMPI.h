@@ -499,6 +499,19 @@ inline int AutoPas_MPI_Isend(const void *buf, int count, AutoPas_MPI_Datatype da
                              AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request);
 
 /**
+ * Wrapper for MPI_Irecv.
+ * Begins a nonblocking receive
+ * @param buf initial address of receive buffer (choice).
+ * @param count number of elements in receive buffer (integer).
+ * @param datatype datatype of each receive buffer element (handle).
+ * @param source rank of source (integer).
+ * @param tag message tag (integer).
+ * @param comm communicator (handle).
+ * @return MPI error value
+ */
+inline int AutoPas_MPI_Irecv(void *buf, int count, AutoPas_MPI_Datatype datatype, int source, int tag,
+                             AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request);
+/**
  * Wrapper for MPI_Probe.
  * @param source: Source rank (integer).
  * @param tag: Tag value (integer).
@@ -651,6 +664,11 @@ inline int AutoPas_MPI_Dims_create(int nnodes, int ndims, int dims[]) { return M
 inline int AutoPas_MPI_Isend(const void *buf, int count, AutoPas_MPI_Datatype datatype, int dest, int tag,
                              AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request) {
   return MPI_Isend(buf, count, datatype, dest, tag, comm, request);
+}
+
+inline int AutoPas_MPI_Irecv(void *buf, int count, AutoPas_MPI_Datatype datatype, int source, int tag,
+                             AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request) {
+  return MPI_Irecv(buf, count, datatype, source, tag, comm, request);
 }
 
 inline int AutoPas_MPI_Probe(int source, int tag, AutoPas_MPI_Comm comm, AutoPas_MPI_Status *status) {
@@ -847,6 +865,11 @@ inline int AutoPas_MPI_Dims_create(int nnodes, int ndims, int dims[]) {
 }
 
 inline int AutoPas_MPI_Isend(const void *buf, int count, AutoPas_MPI_Datatype datatype, int dest, int tag,
+                             AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request) {
+  return AUTOPAS_MPI_SUCCESS;
+}
+
+inline int AutoPas_MPI_Irecv(void *buf, int count, AutoPas_MPI_Datatype datatype, int source, int tag,
                              AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request) {
   return AUTOPAS_MPI_SUCCESS;
 }
