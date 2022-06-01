@@ -461,7 +461,7 @@ inline int AutoPas_MPI_Cart_get(AutoPas_MPI_Comm comm, int maxdims, int dims[], 
  * @param coords Integer array (of size ndims) containing the Cartesian coordinates of specified process (integer).
  * @return MPI error value
  */
-inline int AutoPas_MPI_Cart_coords(MPI_Comm comm, int rank, int maxdims, int coords[]);
+inline int AutoPas_MPI_Cart_coords(AutoPas_MPI_Comm comm, int rank, int maxdims, int coords[]);
 
 /**
  * Wrapper for MPI_Cart_rank
@@ -472,7 +472,7 @@ inline int AutoPas_MPI_Cart_coords(MPI_Comm comm, int rank, int maxdims, int coo
  * @param rank Rank of specified process (integer).
  * @return MPI error value
  */
-inline int AutoPas_MPI_Cart_rank(MPI_Comm comm, const int coords[], int *rank);
+inline int AutoPas_MPI_Cart_rank(AutoPas_MPI_Comm comm, const int coords[], int *rank);
 
 /**
  * Wrapper for MPI_Dims_create.
@@ -638,11 +638,11 @@ inline int AutoPas_MPI_Cart_get(AutoPas_MPI_Comm comm, int maxdims, int dims[], 
   return MPI_Cart_get(comm, maxdims, dims, periods, coords);
 }
 
-inline int AutoPas_MPI_Cart_coords(MPI_Comm comm, int rank, int maxdims, int coords[]) {
+inline int AutoPas_MPI_Cart_coords(AutoPas_MPI_Comm comm, int rank, int maxdims, int coords[]) {
   return MPI_Cart_coords(comm, rank, maxdims, coords);
 }
 
-inline int AutoPas_MPI_Cart_rank(MPI_Comm comm, const int coords[], int *rank) {
+inline int AutoPas_MPI_Cart_rank(AutoPas_MPI_Comm comm, const int coords[], int *rank) {
   return MPI_Cart_rank(comm, coords, rank);
 }
 
@@ -828,14 +828,14 @@ inline int AutoPas_MPI_Cart_get(AutoPas_MPI_Comm comm, int maxdims, int dims[], 
   return AUTOPAS_MPI_SUCCESS;
 }
 
-inline int AutoPas_MPI_Cart_coords(MPI_Comm comm, int rank, int maxdims, int coords[]) {
+inline int AutoPas_MPI_Cart_coords(AutoPas_MPI_Comm comm, int rank, int maxdims, int coords[]) {
   for (int i = 0; i < maxdims; ++i) {
     coords[i] = 0;
   }
   return AUTOPAS_MPI_SUCCESS;
 }
 
-inline int AutoPas_MPI_Cart_rank(MPI_Comm comm, const int coords[], int *rank) {
+inline int AutoPas_MPI_Cart_rank(AutoPas_MPI_Comm comm, const int coords[], int *rank) {
   *rank = 0;
   return AUTOPAS_MPI_SUCCESS;
 }
