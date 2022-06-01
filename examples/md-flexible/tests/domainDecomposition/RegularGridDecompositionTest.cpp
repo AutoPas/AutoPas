@@ -77,11 +77,11 @@ auto generatePositionsInsideDomain(const autopas::AutoPas<ParticleType> &autoPas
   positions.reserve(27);
   const auto midOfLocalBox = add(localBoxMin, mulScalar(localBoxLength, 0.5));
   // particles should be placed cutoff/2 inside from the box border
-  const auto midToParticle1D = mulScalar(subScalar(localBoxLength, autoPasContainer.getCutoff()), 0.5);
+  const auto midToParticle = mulScalar(subScalar(localBoxLength, autoPasContainer.getCutoff()), 0.5);
   for (double z = -1; z <= 1; ++z) {
     for (double y = -1; y <= 1; ++y) {
       for (double x = -1; x <= 1; ++x) {
-        const auto relativePosition = mul({x, y, z}, midToParticle1D);
+        const auto relativePosition = mul({x, y, z}, midToParticle);
         const auto absolutePosition = add(midOfLocalBox, relativePosition);
         positions.push_back(absolutePosition);
       }
@@ -113,13 +113,13 @@ auto generatePositionsOutsideDomain(const autopas::AutoPas<ParticleType> &autoPa
   std::vector<std::array<double, 3>> positions{};
   positions.reserve(98);
   const auto midOfLocalBox = add(localBoxMin, mulScalar(localBoxLength, 0.5));
-  const auto midToParticle1DNear = mulScalar(subScalar(localBoxLength, autoPasContainer.getCutoff()), 0.5);
-  const auto midToParticle1DFar = mulScalar(addScalar(localBoxLength, autoPasContainer.getCutoff()), 0.5);
+  const auto midToParticleNear = mulScalar(subScalar(localBoxLength, autoPasContainer.getCutoff()), 0.5);
+  const auto midToParticleFar = mulScalar(addScalar(localBoxLength, autoPasContainer.getCutoff()), 0.5);
 
   const std::array<std::vector<double>, 3> distances = {{
-      {-midToParticle1DFar[0], -midToParticle1DNear[0], 0., midToParticle1DNear[0], midToParticle1DFar[0]},
-      {-midToParticle1DFar[1], -midToParticle1DNear[1], 0., midToParticle1DNear[1], midToParticle1DFar[1]},
-      {-midToParticle1DFar[2], -midToParticle1DNear[2], 0., midToParticle1DNear[2], midToParticle1DFar[2]},
+      {-midToParticleFar[0], -midToParticleNear[0], 0., midToParticleNear[0], midToParticleFar[0]},
+      {-midToParticleFar[1], -midToParticleNear[1], 0., midToParticleNear[1], midToParticleFar[1]},
+      {-midToParticleFar[2], -midToParticleNear[2], 0., midToParticleNear[2], midToParticleFar[2]},
   }};
   const auto relLocalBoxMin = mulScalar(localBoxLength, -.5);
   const auto relLocalBoxMax = add(relLocalBoxMin, localBoxLength);
