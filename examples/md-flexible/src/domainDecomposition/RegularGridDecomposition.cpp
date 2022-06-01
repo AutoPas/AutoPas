@@ -203,7 +203,7 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
 void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasContainer,
                                                           std::vector<ParticleType> &emigrants) {
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
-    // if this rank spans the whole dimension but it is not periodic -> skip.
+    // if this rank spans the whole dimension but is not periodic -> skip.
     if (_boundaryType[dimensionIndex] != options::BoundaryTypeOption::periodic and
         _localBoxMin[dimensionIndex] == _globalBoxMin[dimensionIndex] and
         _localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex])
