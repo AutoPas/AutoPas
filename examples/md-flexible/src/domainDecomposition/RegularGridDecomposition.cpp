@@ -153,8 +153,9 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
     // *and* if both local boundaries are the global boundaries in this dimension
     if (_boundaryType[dimensionIndex] != options::BoundaryTypeOption::periodic and
         _localBoxMin[dimensionIndex] == _globalBoxMin[dimensionIndex] and
-        _localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex])
+        _localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex]) {
       continue;
+    }
 
     std::vector<ParticleType> particlesForLeftNeighbor{};
     std::vector<ParticleType> particlesForRightNeighbor{};
