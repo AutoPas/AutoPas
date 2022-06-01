@@ -121,7 +121,7 @@ auto generatePositionsOutsideDomain(const autopas::AutoPas<ParticleType> &autoPa
       {-midToParticle1DFar[1], -midToParticle1DNear[1], 0., midToParticle1DNear[1], midToParticle1DFar[1]},
       {-midToParticle1DFar[2], -midToParticle1DNear[2], 0., midToParticle1DNear[2], midToParticle1DFar[2]},
   }};
-  const auto relLocalBoxMin = mul({1., 1., 1.}, mulScalar(localBoxLength, -.5));
+  const auto relLocalBoxMin = mulScalar(localBoxLength, -.5);
   const auto relLocalBoxMax = add(relLocalBoxMin, localBoxLength);
   for (double z : distances[2]) {
     for (double y : distances[1]) {
