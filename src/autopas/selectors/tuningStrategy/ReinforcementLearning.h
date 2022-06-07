@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <random>
 #include <set>
 #include <sstream>
 #include <utility>
@@ -90,6 +91,7 @@ class ReinforcementLearning : public SetSearchSpaceBasedTuningStrategy {
   bool _firstRun = true;
   double _alpha = 0.9;
   double _gamma = 1;
+  size_t _randomExplorations = 5;
 };
 
 bool ReinforcementLearning::tune(bool) {
@@ -108,10 +110,43 @@ bool ReinforcementLearning::tune(bool) {
     std::set<Configuration> _selectedConfigs{};
     _selectedConfigs = _getCollectionOfConfigurations();
     _currentConfig = _selectedConfigs.begin();
+    ++_currentConfig;
+
+    if (_currentConfig == _selectedConfigs.end()) {
+      selectOptimalConfiguration();
+      _firstRun = false;
+      return false;
+    }
+    return true;
   }
 }
 
-std::set<Configuration> ReinforcementLearning::_getCollectionOfConfigurations() { return _searchSpace; }
+std::set<Configuration> ReinforcementLearning::_getCollectionOfConfigurations() {
+  std::set<Configuration> _collection;
+  selectOptimalConfiguration();
+  _collection.insert(*_currentConfig);
+
+  if (_randomExplorations >= _searchSpace.size()) {
+    return _searchSpace;
+  }
+  int _random = _randomExplorations;
+  while (_random > 0) {
+    size_t _size = _searchSpace.size();
+
+    std::random_device rd;                            // obtain a random number from hardware
+    std::mt19937 gen(rd());                           // seed the generator
+    std::uniform_int_distribution<> distr(0, _size);  // define the range
+    int _place = distr(gen);                          // generate numbers
+
+    auto _selectedConfig = _searchSpace.begin();
+    std::advance(_selectedConfig, _place);
+    auto res = _collection.insert(*_selectedConfig);
+    if (res.second) {
+      _random--;
+    }
+  }
+  return _collection;
+}
 
 void ReinforcementLearning::selectOptimalConfiguration() {
   if (_searchSpace.size() == 1) {
