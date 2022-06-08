@@ -81,7 +81,7 @@ double balanceAdjacentDomains(const double &leftDomainsWork, const double &right
    * pressureOfDomainA / volumeOfDomainA = pressureOfDomainB / volumeOfDomainB
    * In our case we want the domain with larger pressure (work) to shrink. So instead of dividing work by volume
    * we divide volume by work. The volume is based on the box coordinates. Now if we solve the resulting equation for
-   * the parameter wich represents the domain boundary we want to shift, we get the formula used here.
+   * the parameter which represents the domain boundary we want to shift, we get the formula used here.
    */
   double balancedPosition =
       (leftDomainsWork * leftDomainsMinBoundaryPosition + rightDomainsWork * rightDomainsMaxBoundaryPosition) /

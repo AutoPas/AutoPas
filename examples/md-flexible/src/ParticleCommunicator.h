@@ -29,12 +29,12 @@ class ParticleCommunicator {
   /**
    * Sends particles of type ParticleType to a receiver.
    * @param particles The particles to be sent to the receiver.
-   * @param receiver The recipient of the particels.
+   * @param receiver The recipient of the particles.
    */
   void sendParticles(const std::vector<ParticleType> &particles, const int &receiver);
 
   /**
-   * Received particles sent by a sender.
+   * Receives particles sent by a sender.
    * @param receivedParticles The container where the received particles will be stored.
    * @param source The sender id/rank.
    */
@@ -69,7 +69,7 @@ class ParticleCommunicator {
   void sendDataToNeighbour(const std::vector<char> &sendBuffer, const int &neighbour);
 
   /**
-   * Received data which has been sent by a specifig neighbour of this domain.
+   * Receives data that has been sent by a specific neighbour of this domain.
    * @param neighbour The neighbour where the data originates from.
    * @param dataBuffer The buffer where the received data will be stored.
    */
