@@ -56,19 +56,33 @@ class ReinforcementLearning : public SetSearchSpaceBasedTuningStrategy {
   inline void addEvidence(long time, size_t iteration) override {
     //  use time as a reward would require to look for smallest reward
     _traversalTimes[*_currentConfig] = time;
-    auto _Entry = _traversalTimes.find(*_currentConfig);
+
     double _oldState = 0;
-    //    maybe change to pre initialize states to reduce places were error can occure
-    if (_Entry != _traversalTimes.end()) {
+
+    auto _Entry = _states.find(*_currentConfig);
+    //        maybe change to pre initialize states to reduce places were error can occur
+    if (_Entry != _states.end()) {
       _oldState = _Entry->second;
     }
+
+    //    if(iteration>0){
+    //      _oldState = _states.at(*_currentConfig);
+    //    }
+
     //    gamma determines the importance of future rewards
     //    without gamma : gamma = 1
     //    sets a lot of importance on the first run/initializing
     //    double _newState = _oldState + alpha * (time-_oldState);
 
     //    with gamma
-    double _newState = _oldState + _alpha * (time + (_gamma * _oldState - _oldState));
+    //    double _newState = _oldState + _alpha * (- time + (_gamma * _oldState - _oldState));
+
+    double _newState = 0;
+    if (_firstRun) {
+      _newState = -time;
+    } else {
+      _newState = _oldState + _alpha * (-time - _oldState);
+    }
 
     _states[*_currentConfig] = _newState;
   }
@@ -81,6 +95,12 @@ class ReinforcementLearning : public SetSearchSpaceBasedTuningStrategy {
 
   inline bool tune(bool = false) override;
 
+  inline long getState(Configuration configuration) const { return _states.at(configuration); }
+
+  inline bool get_firstRun() const { return _firstRun; }
+
+  inline bool get_firstTune() const { return _firstTune; }
+
  private:
   inline void selectOptimalConfiguration();
 
@@ -89,9 +109,11 @@ class ReinforcementLearning : public SetSearchSpaceBasedTuningStrategy {
   std::unordered_map<Configuration, size_t, ConfigHash> _traversalTimes;
   std::unordered_map<Configuration, double, ConfigHash> _states;
   bool _firstRun = true;
+  bool _firstTune = true;
   double _alpha = 0.9;
   double _gamma = 1;
   size_t _randomExplorations = 5;
+  std::set<Configuration> _selectedConfigs{};
 };
 
 bool ReinforcementLearning::tune(bool) {
@@ -107,14 +129,17 @@ bool ReinforcementLearning::tune(bool) {
 
     return true;
   } else {
-    std::set<Configuration> _selectedConfigs{};
-    _selectedConfigs = _getCollectionOfConfigurations();
-    _currentConfig = _selectedConfigs.begin();
+    if (_firstTune) {
+      _selectedConfigs = _getCollectionOfConfigurations();
+      _currentConfig = _selectedConfigs.begin();
+      _firstTune = false;
+    }
+
     ++_currentConfig;
 
     if (_currentConfig == _selectedConfigs.end()) {
       selectOptimalConfiguration();
-      _firstRun = false;
+      _firstTune = true;
       return false;
     }
     return true;
@@ -122,13 +147,14 @@ bool ReinforcementLearning::tune(bool) {
 }
 
 std::set<Configuration> ReinforcementLearning::_getCollectionOfConfigurations() {
+  if (_randomExplorations >= _searchSpace.size()) {
+    return _searchSpace;
+  }
+
   std::set<Configuration> _collection;
   selectOptimalConfiguration();
   _collection.insert(*_currentConfig);
 
-  if (_randomExplorations >= _searchSpace.size()) {
-    return _searchSpace;
-  }
   int _random = _randomExplorations;
   while (_random > 0) {
     size_t _size = _searchSpace.size();
@@ -161,7 +187,7 @@ void ReinforcementLearning::selectOptimalConfiguration() {
         "Either selectOptimalConfiguration was called too early or no applicable configurations were found");
   }
 
-  const auto optimum = std::min_element(_states.begin(), _states.end(),
+  const auto optimum = std::max_element(_states.begin(), _states.end(),
                                         [](std::pair<Configuration, double> a,
                                            std::pair<Configuration, double> b) -> bool { return a.second < b.second; });
 
