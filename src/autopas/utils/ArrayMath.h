@@ -231,7 +231,7 @@ template <class T, std::size_t SIZE>
 [[nodiscard]] constexpr std::array<T, SIZE> abs(const std::array<T, SIZE> &a) {
   std::array<T, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
-    result[d] = std::abs(a);
+    result[d] = std::abs(a[d]);
   }
   return result;
 }
