@@ -74,6 +74,10 @@ class ParticleBase {
   OwnershipState _ownershipState{OwnershipState::owned};
 
  public:
+
+  template <typename T, typename P>
+  friend std::ostream & operator<<(std::ostream &os, const autopas::ParticleBase<T,P> &D) ;
+  
   /**
    * Equality operator for ParticleBase class.
    * @param rhs
@@ -182,7 +186,6 @@ class ParticleBase {
     // clang-format on
     return text.str();
   }
-
   /**
    * Defines whether the particle is owned by the current AutoPas object (aka (MPI-)process)
    * @return true if the particle is owned by the current AutoPas object, false otherwise
@@ -325,4 +328,11 @@ class ParticleBase {
   friend void internal::markParticleAsDeleted(T &);
 };
 
+
+template <typename floatType, typename idType>
+std::ostream& operator<<(std::ostream &os, const ParticleBase<floatType,idType> &D) {
+  os <<D.toString();
+  return os;}
+
 }  // namespace autopas
+
