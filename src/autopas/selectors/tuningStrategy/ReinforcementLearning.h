@@ -78,7 +78,7 @@ class ReinforcementLearning : public SetSearchSpaceBasedTuningStrategy {
     //    double _newState = _oldState + _alpha * (- time + (_gamma * _oldState - _oldState));
 
     double _newState = 0;
-    if (_firstRun) {
+    if (_firstTuningPhase) {
       _newState = -time;
     } else {
       _newState = _oldState + _alpha * (-time - _oldState);
@@ -91,15 +91,27 @@ class ReinforcementLearning : public SetSearchSpaceBasedTuningStrategy {
 
   inline const Configuration &getCurrentConfiguration() const override { return *_currentConfig; }
 
-  inline void reset(size_t iteration) override { _traversalTimes.clear(); }
+  inline void reset(size_t iteration) override {
+    _traversalTimes.clear();
+    if (_firstTuningPhase) {
+      _currentConfig = _searchSpace.begin();
+    } else {
+      _selectedConfigs = _getCollectionOfConfigurations();
+      _currentConfig = _selectedConfigs.begin();
+    }
+  }
 
   inline bool tune(bool = false) override;
 
   inline long getState(Configuration configuration) const { return _states.at(configuration); }
 
-  inline bool get_firstRun() const { return _firstRun; }
+  inline bool getFirstTuningPhase() const { return _firstTuningPhase; }
 
-  inline bool get_firstTune() const { return _firstTune; }
+  inline bool getStartTuningPhase() const { return _startTuningPhase; }
+
+  inline std::set<Configuration> getSearchSpace() const { return _searchSpace; }
+
+  std::unordered_map<Configuration, double, ConfigHash> _states;
 
  private:
   inline void selectOptimalConfiguration();
@@ -107,9 +119,9 @@ class ReinforcementLearning : public SetSearchSpaceBasedTuningStrategy {
   inline std::set<Configuration> _getCollectionOfConfigurations();
 
   std::unordered_map<Configuration, size_t, ConfigHash> _traversalTimes;
-  std::unordered_map<Configuration, double, ConfigHash> _states;
-  bool _firstRun = true;
-  bool _firstTune = true;
+
+  bool _firstTuningPhase = true;
+  bool _startTuningPhase = true;
   double _alpha = 0.9;
   double _gamma = 1;
   size_t _randomExplorations = 5;
@@ -117,29 +129,29 @@ class ReinforcementLearning : public SetSearchSpaceBasedTuningStrategy {
 };
 
 bool ReinforcementLearning::tune(bool) {
+  //  TODO REMOVE IF AND SET CURRENT CONFIG IN CONSTRUCTOR
   // repeat as long as traversals are not applicable or we run out of configs
-  if (_firstRun) {
+  if (_firstTuningPhase) {
     // run everything once
     ++_currentConfig;
     if (_currentConfig == _searchSpace.end()) {
       selectOptimalConfiguration();
-      _firstRun = false;
+      _firstTuningPhase = false;
       return false;
     }
 
     return true;
   } else {
-    if (_firstTune) {
-      _selectedConfigs = _getCollectionOfConfigurations();
-      _currentConfig = _selectedConfigs.begin();
-      _firstTune = false;
+    //    TODO REMOVE
+    if (_startTuningPhase) {
+      _startTuningPhase = false;
     }
 
     ++_currentConfig;
 
     if (_currentConfig == _selectedConfigs.end()) {
       selectOptimalConfiguration();
-      _firstTune = true;
+      _startTuningPhase = true;
       return false;
     }
     return true;
@@ -171,6 +183,10 @@ std::set<Configuration> ReinforcementLearning::_getCollectionOfConfigurations() 
       _random--;
     }
   }
+  if (_collection.size() <= 0) {
+    autopas::utils::ExceptionHandler::exception("Reinforcement Learning: Collection is empty!");
+  }
+
   return _collection;
 }
 
