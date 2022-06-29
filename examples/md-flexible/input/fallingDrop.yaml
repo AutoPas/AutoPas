@@ -1,10 +1,10 @@
-container                        :  [LinkedCells, VerletLists, VerletClusterLists]
+container                        :  [LinkedCells, VerletLists, VerletListsCells, VerletClusterLists]
 verlet-rebuild-frequency         :  10
 verlet-skin-radius               :  0.5
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [AoS, SoA]
-traversal                        :  [ lc_c01, lc_c18, lc_c08, lc_sliced_c02, vl_list_iteration, vcl_c01_balanced, vcl_c06 ] # Please see AllOptions.yaml for a comprehensive list of traversals
+traversal                        :  [ lc_c01, lc_c18, lc_c08, lc_sliced_c02, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced_c02, vcl_cluster_iteration, vcl_c01_balanced, vcl_c06 ] # Please see AllOptions.yaml for a comprehensive list of traversals
 tuning-strategy                  :  full-Search
 tuning-interval                  :  2500
 tuning-samples                   :  3
