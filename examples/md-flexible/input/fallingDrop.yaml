@@ -1,6 +1,6 @@
 container                        :  [LinkedCells, VerletLists, VerletListsCells, VerletClusterLists]
 verlet-rebuild-frequency         :  10
-verlet-skin-radius               :  0.5
+verlet-skin-radius               :  1.0
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [AoS, SoA]
