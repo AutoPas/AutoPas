@@ -328,7 +328,11 @@ class ParticleBase {
   friend void internal::markParticleAsDeleted(T &);
 };
 
-
+/**
+   * Stream operator for instances of ParticleBase class.
+   * This function enables passing ParticleBase objects to an ostream via `<<`
+   * @tparam ParticleBase object
+   */
 template <typename floatType, typename idType>
 std::ostream& operator<<(std::ostream &os, const ParticleBase<floatType,idType> &D) {
   os <<D.toString();
