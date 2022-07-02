@@ -74,10 +74,9 @@ class ParticleBase {
   OwnershipState _ownershipState{OwnershipState::owned};
 
  public:
-
   template <typename T, typename P>
-  friend std::ostream & operator<<(std::ostream &os, const autopas::ParticleBase<T,P> &D) ;
-  
+  friend std::ostream &operator<<(std::ostream &os, const autopas::ParticleBase<T, P> &D);
+
   /**
    * Equality operator for ParticleBase class.
    * @param rhs
@@ -329,14 +328,14 @@ class ParticleBase {
 };
 
 /**
-   * Stream operator for instances of ParticleBase class.
-   * This function enables passing ParticleBase objects to an ostream via `<<`
-   * @tparam ParticleBase object
-   */
+ * Stream operator for instances of ParticleBase class.
+ * This function enables passing ParticleBase objects to an ostream via `<<`
+ * @tparam ParticleBase object
+ */
 template <typename floatType, typename idType>
-std::ostream& operator<<(std::ostream &os, const ParticleBase<floatType,idType> &D) {
-  os <<D.toString();
-  return os;}
+std::ostream &operator<<(std::ostream &os, const ParticleBase<floatType, idType> &D) {
+  os << D.toString();
+  return os;
+}
 
 }  // namespace autopas
-

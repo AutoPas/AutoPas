@@ -8,48 +8,48 @@
 #pragma once
 
 #include <array>
+#include <iomanip>
 #include <sstream>
-#include <iomanip>  
 #include <vector>
 
 namespace autopas::utils::ArrayUtils {
 
-  // specialize a type for containers of type array and vector for use with templated overloaded stream operator.
+// specialize a type for containers of type array and vector for use with templated overloaded stream operator.
 /**
- * Collection of structs that define what we consider a container. 
+ * Collection of structs that define what we consider a container.
  */
 
-  namespace is_container_impl {
-  /**
-   * Default case: T is not a container.
-   * @tparam T
-   */
-  template <typename T> struct is_container : std::false_type {};
-  /**
-   * Specialization to allow std::array.
-   * @tparam T
-   * @tparam N
-   */
-  template <typename T, std::size_t N>
-  struct is_container<std::array<T, N>> : std::true_type {};
+namespace is_container_impl {
+/**
+ * Default case: T is not a container.
+ * @tparam T
+ */
+template <typename T>
+struct is_container : std::false_type {};
+/**
+ * Specialization to allow std::array.
+ * @tparam T
+ * @tparam N
+ */
+template <typename T, std::size_t N>
+struct is_container<std::array<T, N>> : std::true_type {};
 
-  /**
+/**
  * Specialization to allow std::vector.
  * @tparam Args
  */
 template <typename... Args>
 struct is_container<std::vector<Args...>> : std::true_type {};
 
-
-  } // namespace is_container_impl
+}  // namespace is_container_impl
 
 /**
  * Type trait to check if a given type  is a container for use with overloaded stream operator.
  * @tparam T Type to check.
  */
-template <typename T> struct is_container {
-  static constexpr bool const value =
-      is_container_impl::is_container<std::decay_t<T>>::value;
+template <typename T>
+struct is_container {
+  static constexpr bool const value = is_container_impl::is_container<std::decay_t<T>>::value;
 };
 /**
  * Creates a new array by performing an element-wise static_cast<>.
@@ -78,42 +78,40 @@ template <class output_t, class input_t, std::size_t SIZE>
  * @return String representation of container.
  */
 template <class Container>
-[[nodiscard]] std::string
-to_string(const Container &container, const std::string &delimiter = ", ", const std::array<std::string, 2> &surround = {"[", "]"}) {
+[[nodiscard]] std::string to_string(const Container &container, const std::string &delimiter = ", ",
+                                    const std::array<std::string, 2> &surround = {"[", "]"}) {
   auto it = std::cbegin(container);
   const auto end = std::cend(container);
   if (it == end) {
-  return surround[0] + surround[1];
+    return surround[0] + surround[1];
   }
-   std::ostringstream strStream;
+  std::ostringstream strStream;
   strStream << std::boolalpha << surround[0] << *it;
   for (++it; it != end; ++it) {
-  strStream << delimiter<<*it;
+    strStream << delimiter << *it;
   }
   strStream << surround[1];
-  
 
   return strStream.str();
 }
-
-
 
 }  // namespace autopas::utils::ArrayUtils
 
 /**
  * Stream operator for containers (array and vector types).
  *
- * This function actually checks if the given Template parameter satisfies is_container. 
- * Then Generates a string representation of a container which fulfills the Container requirement (provide cbegin and cend)
+ * This function actually checks if the given Template parameter satisfies is_container.
+ * Then Generates a string representation of a container which fulfills the Container requirement (provide cbegin and
+ * cend)
  * @note std::boolalpha is always enabled.
  * @tparam Container
- * @param os string stream 
+ * @param os string stream
  * @param container
  * @return string representation of a container
  */
 template <class Container>
-std::enable_if_t<autopas::utils::ArrayUtils::is_container<Container>::value, std::ostream &>
-operator<<(std::ostream &os, const Container &container) {
+std::enable_if_t<autopas::utils::ArrayUtils::is_container<Container>::value, std::ostream &> operator<<(
+    std::ostream &os, const Container &container) {
   const std::string &delimiter = ", ";
   const std::array<std::string, 2> &surround = {"[", "]"};
 
@@ -121,18 +119,14 @@ operator<<(std::ostream &os, const Container &container) {
   const auto end = std::cend(container);
 
   if (it == end) {
-  os<< surround[0] + surround[1];
-  return os;
+    os << surround[0] + surround[1];
+    return os;
   }
-
-  os << std::boolalpha <<surround[0] <<*it;
+  os << std::boolalpha << surround[0] << *it;
   for (++it; it != end; ++it) {
-    os<< delimiter<<*it;
+    os << delimiter << *it;
   }
   os << surround[1];
 
-  
   return os;
 }
-
-
