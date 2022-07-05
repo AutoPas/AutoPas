@@ -44,10 +44,11 @@ struct is_container<std::vector<Args...>> : std::true_type {};
 }  // namespace is_container_impl
 
 /**
- * Type trait to check if a given type  is a container for use with overloaded stream operator.
- * @struct AutoPas_MPI_Status
  * @tparam T Type to check.
+ * Type trait to check if a given type  is a container for use with overloaded stream operator.
+ * @struct is_container
  * @var is_container::value
+ * bool value true if given type is a container false if not
  */
 template <typename T>
 struct is_container {
