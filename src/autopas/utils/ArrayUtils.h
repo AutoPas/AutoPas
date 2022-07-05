@@ -110,7 +110,6 @@ template <class Container>
  * @return string representation of a container
  */
 
-
 template <class Container>
 std::enable_if_t<autopas::utils::ArrayUtils::is_container<Container>::value, std::ostream &> operator<<(
     std::ostream &os, const Container &container) {
