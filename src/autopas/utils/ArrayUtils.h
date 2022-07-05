@@ -46,7 +46,7 @@ struct is_container<std::vector<Args...>> : std::true_type {};
 /**
  * Type trait to check if a given type  is a container for use with overloaded stream operator.
  * @tparam T Type to check.
- * @param value
+ * @var is_container::value
  */
 template <typename T>
 struct is_container {
