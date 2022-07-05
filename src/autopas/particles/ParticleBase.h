@@ -336,7 +336,7 @@ class ParticleBase {
  * This function enables passing ParticleBase objects to an ostream via `<<`
  * @tparam Floating point type to be used for the SoAs.
  * @param os
- * @param ParticleBase
+ * @param D
  * @return String representation.
  */
 template <typename floatType, typename idType>

@@ -46,6 +46,7 @@ struct is_container<std::vector<Args...>> : std::true_type {};
 /**
  * Type trait to check if a given type  is a container for use with overloaded stream operator.
  * @tparam T Type to check.
+ * @param value
  */
 template <typename T>
 struct is_container {
@@ -72,7 +73,7 @@ template <class output_t, class input_t, std::size_t SIZE>
  * Generates a string representation of a container which fulfills the Container requirement (provide cbegin and cend).
  * @note std::boolalpha is always enabled.
  * @tparam T Type of Container.
- * @param a Container.
+ * @param container
  * @param delimiter String that is put between items.
  * @param surround Strings to be put before and after the listing (e.g. brackets).
  * @return String representation of container.
