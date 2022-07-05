@@ -104,11 +104,13 @@ template <class Container>
  * Then Generates a string representation of a container which fulfills the Container requirement (provide cbegin and
  * cend)
  * @note std::boolalpha is always enabled.
- * @tparam Container
+ * @tparam array or vector of arbitrary types and sizes
  * @param os string stream
  * @param container
  * @return string representation of a container
  */
+
+
 template <class Container>
 std::enable_if_t<autopas::utils::ArrayUtils::is_container<Container>::value, std::ostream &> operator<<(
     std::ostream &os, const Container &container) {

@@ -74,6 +74,10 @@ class ParticleBase {
   OwnershipState _ownershipState{OwnershipState::owned};
 
  public:
+ /**
+   * Stream operator for instances of ParticleBase class.
+   * @return String representation.
+   */
   template <typename T, typename P>
   friend std::ostream &operator<<(std::ostream &os, const autopas::ParticleBase<T, P> &D);
 
@@ -327,11 +331,15 @@ class ParticleBase {
   friend void internal::markParticleAsDeleted(T &);
 };
 
+
 /**
- * Stream operator for instances of ParticleBase class.
- * This function enables passing ParticleBase objects to an ostream via `<<`
- * @tparam ParticleBase object
- */
+   * Stream operator for instances of ParticleBase class.
+   * This function enables passing ParticleBase objects to an ostream via `<<`
+   * @tparam Floating point type to be used for the SoAs.
+   * @param os
+   * @param ParticleBase
+   * @return String representation.
+   */
 template <typename floatType, typename idType>
 std::ostream &operator<<(std::ostream &os, const ParticleBase<floatType, idType> &D) {
   os << D.toString();
