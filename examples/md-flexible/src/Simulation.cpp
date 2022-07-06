@@ -173,7 +173,7 @@ void Simulation::run() {
       _timers.vtk.stop();
     }
 
-    _timers.work.start();
+    _timers.compuationalLoad.start();
     if (_configuration.deltaT.value != 0) {
       updatePositions();
 
@@ -181,12 +181,12 @@ void Simulation::run() {
       auto emigrants = _autoPasContainer->updateContainer();
       _timers.updateContainer.stop();
 
-      const auto work = static_cast<double>(_timers.work.stop());
+      const auto compuationalLoad = static_cast<double>(_timers.compuationalLoad.stop());
 
       // periodically resize box for MPI load balancing
       if (_iteration % _configuration.loadBalancingInterval.value == 0) {
         _timers.loadBalancing.start();
-        _domainDecomposition->update(work);
+        _domainDecomposition->update(compuationalLoad);
         auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(),
                                                                 _domainDecomposition->getLocalBoxMax());
         emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
@@ -205,7 +205,7 @@ void Simulation::run() {
       _domainDecomposition->exchangeHaloParticles(*_autoPasContainer);
       _timers.haloParticleExchange.stop();
 
-      _timers.work.start();
+      _timers.compuationalLoad.start();
     }
 
     updateForces();
@@ -214,7 +214,7 @@ void Simulation::run() {
       updateVelocities();
       updateThermostat();
     }
-    _timers.work.stop();
+    _timers.compuationalLoad.stop();
 
     ++_iteration;
 
