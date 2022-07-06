@@ -252,7 +252,7 @@ TEST_F(ReinforcementLearningTest, testFindState) {
   reinforcementLearning.tune();
   auto config = reinforcementLearning.getCurrentConfiguration();
   double test = reinforcementLearning.getState(reinforcementLearning.getCurrentConfiguration());
-  EXPECT_THAT(-5.5, reinforcementLearning.getState(reinforcementLearning.getCurrentConfiguration()));
+  EXPECT_THAT(-5.5, reinforcementLearning.getState(config));
 }
 
 /*
