@@ -336,12 +336,22 @@ class ParticleBase {
  * This function enables passing ParticleBase objects to an ostream via `<<`
  * @tparam Floating point type to be used for the SoAs.
  * @param os
- * @param D
+ * @param particle
  * @return String representation.
  */
 template <typename floatType, typename idType>
-std::ostream &operator<<(std::ostream &os, const ParticleBase<floatType, idType> &D) {
-  os << D.toString();
+std::ostream &operator<<(std::ostream &os, const ParticleBase<floatType, idType> &particle) {
+  os << "Particle"
+         << "\nID      : " << particle._id
+         << "\nPosition: "
+         << utils::ArrayUtils::to_string(particle._r)
+         << "\nVelocity: "
+         << utils::ArrayUtils::to_string(particle._v)
+         << "\nForce   : "
+         << utils::ArrayUtils::to_string(particle._f)
+         << "\nOwnershipState : "
+         << particle._ownershipState;
+    // clang-format on
   return os;
 }
 

@@ -18,8 +18,7 @@ namespace autopas::utils::ArrayUtils {
 /**
  * Collection of structs that define what we consider a container.
  */
-
-namespace is_container_impl {
+namespace {
 /**
  * Default case: T is not a container.
  * @tparam T
@@ -41,19 +40,8 @@ struct is_container<std::array<T, N>> : std::true_type {};
 template <typename... Args>
 struct is_container<std::vector<Args...>> : std::true_type {};
 
-}  // namespace is_container_impl
+}  // namespace 
 
-/**
- * @tparam T Type to check.
- * Type trait to check if a given type  is a container for use with overloaded stream operator.
- * @struct is_container
- * @var is_container::value
- * bool value true if given type is a container false if not
- */
-template <typename T>
-struct is_container {
-  static constexpr bool const value = is_container_impl::is_container<std::decay_t<T>>::value;
-};
 /**
  * Creates a new array by performing an element-wise static_cast<>.
  * @tparam output_t Output type.
@@ -100,13 +88,25 @@ template <class Container>
 
 }  // namespace autopas::utils::ArrayUtils
 
+
+/**
+ * @tparam T Type to check.
+ * Type trait to check if a given type  is a container for use with overloaded stream operator.
+ * @struct is_container
+ * @var is_container::value
+ * bool value true if given type is a container false if not
+ */
+template <typename T>
+struct is_container {
+  static constexpr bool const value = autopas::utils::ArrayUtils::is_container<std::decay_t<T>>::value;
+};
+
 /**
  * Stream operator for containers (array and vector types).
  *
  * This function actually checks if the given Template parameter satisfies is_container.
  * Then Generates a string representation of a container which fulfills the Container requirement (provide cbegin and
  * cend)
- * @note std::boolalpha is always enabled.
  * @tparam array or vector of arbitrary types and sizes
  * @param os string stream
  * @param container
@@ -126,7 +126,7 @@ std::enable_if_t<autopas::utils::ArrayUtils::is_container<Container>::value, std
     os << surround[0] + surround[1];
     return os;
   }
-  os << std::boolalpha << surround[0] << *it;
+  os << surround[0] << *it;
   for (++it; it != end; ++it) {
     os << delimiter << *it;
   }
