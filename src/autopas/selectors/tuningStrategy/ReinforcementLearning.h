@@ -103,7 +103,7 @@ class ReinforcementLearning : public SetSearchSpaceBasedTuningStrategy {
 
   inline bool tune(bool = false) override;
 
-  inline long getState(Configuration configuration) const { return _states.at(configuration); }
+  inline double getState(Configuration configuration) const { return _states.at(configuration); }
 
   inline bool getFirstTuningPhase() const { return _firstTuningPhase; }
 
@@ -129,7 +129,6 @@ class ReinforcementLearning : public SetSearchSpaceBasedTuningStrategy {
 };
 
 bool ReinforcementLearning::tune(bool) {
-  //  TODO REMOVE IF AND SET CURRENT CONFIG IN CONSTRUCTOR
   // repeat as long as traversals are not applicable or we run out of configs
   if (_firstTuningPhase) {
     // run everything once
@@ -142,7 +141,6 @@ bool ReinforcementLearning::tune(bool) {
 
     return true;
   } else {
-    //    TODO REMOVE
     if (_startTuningPhase) {
       _startTuningPhase = false;
     }
@@ -164,18 +162,20 @@ std::set<Configuration> ReinforcementLearning::_getCollectionOfConfigurations() 
   }
 
   std::set<Configuration> _collection;
-  selectOptimalConfiguration();
   _collection.insert(*_currentConfig);
 
   int _random = _randomExplorations;
   while (_random > 0) {
-    size_t _size = _searchSpace.size();
+    size_t _size = _searchSpace.size() - 1;
 
     std::random_device rd;                            // obtain a random number from hardware
     std::mt19937 gen(rd());                           // seed the generator
     std::uniform_int_distribution<> distr(0, _size);  // define the range
-    int _place = distr(gen);                          // generate numbers
+    size_t _place = distr(gen);                       // generate numbers
 
+    if (_place >= _searchSpace.size()) {
+      autopas::utils::ExceptionHandler::exception("Reinforcement Learning: Selected Number too high!");
+    }
     auto _selectedConfig = _searchSpace.begin();
     std::advance(_selectedConfig, _place);
     auto res = _collection.insert(*_selectedConfig);
@@ -201,6 +201,10 @@ void ReinforcementLearning::selectOptimalConfiguration() {
     utils::ExceptionHandler::exception(
         "Reinforcement Learning: Trying to determine the best configuration without any measurements! "
         "Either selectOptimalConfiguration was called too early or no applicable configurations were found");
+  }
+
+  if (_searchSpace.empty()) {
+    utils::ExceptionHandler::exception("Reinforcement Learning: Search Space is empty");
   }
 
   const auto optimum = std::max_element(_states.begin(), _states.end(),
