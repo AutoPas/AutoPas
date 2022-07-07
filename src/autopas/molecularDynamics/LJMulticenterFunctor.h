@@ -303,6 +303,7 @@ class LJMulticenterFunctor
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceZ;
 
     std::vector<size_t, autopas::AlignedAllocator<size_t>> siteTypes;
+    std::vector<char, autopas::AlignedAllocator<char>> isSiteOwned;
 
     const SoAFloatPrecision const_sigmaSquared = _sigmaSquared;
     const SoAFloatPrecision const_epsilon24 = _epsilon24;
@@ -331,6 +332,10 @@ class LJMulticenterFunctor
     siteForceY.reserve((siteCount));
     siteForceZ.reserve((siteCount));
 
+    if constexpr (calculateGlobals) {
+      isSiteOwned.reserve(siteCount);
+    }
+
     // Generate site-wise arrays for SIMD
     // todo can we simd anything here? / can we do something 'nicer'?
     if constexpr (useMixing) {
@@ -348,6 +353,7 @@ class LJMulticenterFunctor
           siteForceX[siteIndex] = 0.;
           siteForceY[siteIndex] = 0.;
           siteForceZ[siteIndex] = 0.;
+          isSiteOwned[siteIndex] = ownedStatePtr[mol] == OwnershipState::owned;
           ++siteIndex;
         }
       }
@@ -417,11 +423,6 @@ class LJMulticenterFunctor
       }
 
       // calculate LJ forces
-
-      SoAFloatPrecision shift6 = const_shift6;
-      SoAFloatPrecision sigmaSquared = const_sigmaSquared;
-      SoAFloatPrecision epsilon24 = const_epsilon24;
-
       for (size_t siteA = siteIndexMolA; siteA < siteIndexMolB; ++siteA) {
         if (useMixing) {
           // preload sigmas, epsilons, and shifts
@@ -457,6 +458,8 @@ class LJMulticenterFunctor
           const SoAFloatPrecision epsilon24 = useMixing ? epsilon24s[siteB] : const_epsilon24;
           const SoAFloatPrecision shift6 = applyShift ? (useMixing ? shift6s[siteB] : const_shift6) : 0;
 
+          const auto isSiteBOwned = isSiteOwned[globalSiteBIndex];
+
           const auto displacementX = exactSitePositionX[siteA] - exactSitePositionX[globalSiteBIndex];
           const auto displacementY = exactSitePositionY[siteA] - exactSitePositionY[globalSiteBIndex];
           const auto displacementZ = exactSitePositionZ[siteA] - exactSitePositionZ[globalSiteBIndex];
@@ -489,7 +492,17 @@ class LJMulticenterFunctor
           siteForceZ[siteB] -= forceZ;
 
           if (calculateGlobals) {
-            // todo this
+            const auto virialX = displacementX * forceX;
+            const auto virialY = displacementY * forceY;
+            const auto virialZ = displacementZ * forceZ;
+            const auto potentialEnergy = siteMask[siteB] ? (epsilon24 * lj12m6 + shift6) : 0.;
+
+            // SoAFunctorSingle uses newton3 optimisation, with which globals are divided by two later
+            const auto ownershipMask = (ownedStateA == OwnershipState::owned ? 1. : 0.) + (isSiteBOwned ? 1. : 0.);
+            potentialEnergySum += potentialEnergy * ownershipMask;
+            virialSumX += virialX * ownershipMask;
+            virialSumY += virialY * ownershipMask;
+            virialSumZ += virialZ * ownershipMask;
           }
         }
         // sum forces on single site in mol A
@@ -540,7 +553,13 @@ class LJMulticenterFunctor
     }
 
     if (calculateGlobals) {
-      // todo this
+      const auto threadNum = autopas_get_thread_num();
+      const auto newton3Factor = newton3 ? .5 : 1.; // todo: add reasoning once original reasoning in LJFunctor.h is corrected
+
+      _aosThreadData[threadNum].potentialEnergySum += potentialEnergySum * newton3Factor;
+      _aosThreadData[threadNum].virialSum[0] += virialSumX * newton3Factor;
+      _aosThreadData[threadNum].virialSum[1] += virialSumY * newton3Factor;
+      _aosThreadData[threadNum].virialSum[2] += virialSumZ * newton3Factor;
     }
   }
   /**

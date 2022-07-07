@@ -307,6 +307,7 @@ class LJFunctor
     if (calculateGlobals) {
       const int threadnum = autopas_get_thread_num();
       double factor = 1.;
+      // todo: This comment is heavily out-of-date (multiply-by-2 changed to divide-by-2 without comment changing)
       // we assume newton3 to be enabled in this function call, thus we multiply by two if the value of newton3 is
       // false, since for newton3 disabled we divide by two later on.
       factor *= newton3 ? .5 : 1.;
