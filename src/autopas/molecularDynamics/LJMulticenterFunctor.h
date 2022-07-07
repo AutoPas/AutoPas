@@ -179,23 +179,8 @@ class LJMulticenterFunctor
     const size_t numSitesA = useMixing ? _PPLibrary->getNumSites(particleA.getTypeId()) : _sitePositionsLJ.size();
     const size_t numSitesB = useMixing ? _PPLibrary->getNumSites(particleB.getTypeId()) : _sitePositionsLJ.size();
 
-    if constexpr (useMixing) {
-      sigmaSquareds.reserve(numSitesA * numSitesB);
-      epsilon24s.reserve(numSitesA * numSitesB);
-      shift6s.reserve(numSitesA * numSitesB);
-
-      const std::vector<size_t> siteIdsA = _PPLibrary->getSiteTypes(particleA.getTypeId());
-      const std::vector<size_t> siteIdsB = _PPLibrary->getSiteTypes(particleB.getTypeId());
-      for (int i = 0; i < numSitesA; ++i) {
-        for (int j = 0; j < numSitesB; ++j) {
-          sigmaSquareds.emplace_back(_PPLibrary->mixingSigmaSquare(siteIdsA[i], siteIdsB[j]));
-          epsilon24s.emplace_back(_PPLibrary->mixing24Epsilon(siteIdsA[i], siteIdsB[j]));
-          if constexpr (applyShift) {
-            shift6s.emplace_back(_PPLibrary->mixingShift6(siteIdsA[i], siteIdsB[j]));
-          }
-        }
-      }
-    }
+    const std::vector<size_t> siteIdsA = useMixing ? _PPLibrary->getSiteTypes(particleA.getTypeId()) : 0;
+    const std::vector<size_t> siteIdsB = useMixing ? _PPLibrary->getSiteTypes(particleB.getTypeId()) : 0;
 
     const std::vector<std::array<double, 3>> unrotatedSitePositionsA =
         useMixing ? _PPLibrary->getSitePositions(particleA.getTypeId()) : _sitePositionsLJ;
@@ -218,17 +203,15 @@ class LJMulticenterFunctor
     const auto rotatedSitePositionsB =
         autopas::utils::quaternion::rotateVectorOfPositions(particleB.getQ(), unrotatedSitePositionsB);
 
-    size_t ppl_index = 0;
-
     for (int m = 0; m < numSitesA; m++) {
       for (int n = 0; n < numSitesB; n++) {
         const auto displacement = autopas::utils::ArrayMath::add(
             autopas::utils::ArrayMath::sub(displacementCoM, rotatedSitePositionsB[n]), rotatedSitePositionsA[m]);
         const auto distanceSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
 
-        const auto sigmaSquared = useMixing ? sigmaSquareds[ppl_index] : _sigmaSquared;
-        const auto epsilon24 = useMixing ? epsilon24s[ppl_index] : _epsilon24;
-        const auto shift6 = useMixing ? shift6s[ppl_index] : _shift6;
+        const auto sigmaSquared = useMixing ? _PPLibrary->mixingSigmaSquare(siteIdsA[m], siteIdsB[n]) : _sigmaSquared;
+        const auto epsilon24 = useMixing ? _PPLibrary->mixing24Epsilon(siteIdsA[m], siteIdsB[n]) : _epsilon24;
+        const auto shift6 = useMixing ? _PPLibrary->mixingShift6(siteIdsA[m], siteIdsB[n]) : _shift6;
 
         // Calculate potential between sites and thus force
         // Force = 24 * epsilon * (2*(sigma/distance)^12 - (sigma/distance)^6) * (1/distance)^2 * [x_displacement, y_displacement, z_displacement]
@@ -270,14 +253,7 @@ class LJMulticenterFunctor
           }
 
         }
-
-        ++ppl_index;
       }
-    }
-
-    // calculate globals
-    if (calculateGlobals) {
-      // todo sort this out - needs to work for mixing + factor differences for multi-centre case
     }
   }
 
