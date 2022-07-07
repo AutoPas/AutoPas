@@ -254,7 +254,21 @@ class LJMulticenterFunctor
         }
 
         if (calculateGlobals) {
-          // todo
+          // in newton3-case, division by 2 is handled here; in non-newton3-case, division is handled in post-processing
+          const auto potentialEnergy = newton3 ? 0.5 * (epsilon24 * lj12m6 + shift6) : (epsilon24 * lj12m6 + shift6);
+          const auto virial = newton3 ? utils::ArrayMath::mulScalar(utils::ArrayMath::mul(displacement, force),0.5) : utils::ArrayMath::mul(displacement, force);
+
+          const auto threadNum = autopas_get_thread_num();
+
+          if (particleA.isOwned()) {
+            _aosThreadData[threadNum].potentialEnergySum += potentialEnergy;
+            _aosThreadData[threadNum].virialSum = utils::ArrayMath::add(_aosThreadData[threadNum].virialSum,virial);
+          }
+          if (newton3 and particleB.isOwned()) {
+            _aosThreadData[threadNum].potentialEnergySum += potentialEnergy;
+            _aosThreadData[threadNum].virialSum = utils::ArrayMath::add(_aosThreadData[threadNum].virialSum,virial);
+          }
+
         }
 
         ++ppl_index;
