@@ -40,7 +40,20 @@ struct is_container<std::array<T, N>> : std::true_type {};
 template <typename... Args>
 struct is_container<std::vector<Args...>> : std::true_type {};
 
-}  // namespace
+}  // namespace is_container_impl
+
+/**
+ * @tparam T Type to check.
+ * Type trait to check if a given type  is a container for use with overloaded stream operator.
+ * @struct is_container
+ * @var is_container::value
+ * bool value true if given type is a container false if not
+ */
+template <typename T>
+struct is_container {
+  static constexpr bool const value =
+      autopas::utils::ArrayUtils::is_container_impl::is_container<std::decay_t<T>>::value;
+};
 
 /**
  * Creates a new array by performing an element-wise static_cast<>.
@@ -85,18 +98,6 @@ template <class Container>
 
   return strStream.str();
 }
-
-/**
- * @tparam T Type to check.
- * Type trait to check if a given type  is a container for use with overloaded stream operator.
- * @struct is_container
- * @var is_container::value
- * bool value true if given type is a container false if not
- */
-template <typename T>
-struct is_container {
-  static constexpr bool const value = autopas::utils::ArrayUtils::is_container_impl::is_container<std::decay_t<T>>::value;
-};
 
 /**
  * Stream operator for containers (array and vector types).
