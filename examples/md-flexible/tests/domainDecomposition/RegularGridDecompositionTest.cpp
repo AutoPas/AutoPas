@@ -58,8 +58,9 @@ auto initDomain() {
 /**
  * Setup 27 particle positions INSIDE the given container.
  *
- * Particles are placed near each corner (8), the middle of each edge (12), and the center of each face (6) such that   
- * they are cutoff/2 away from the nearby borders. In addition, a further particle is placed in the center of the domain.
+ * Particles are placed near each corner (8), the middle of each edge (12), and the center of each face (6) such that
+ * they are cutoff/2 away from the nearby borders. In addition, a further particle is placed in the center of the
+ * domain.
  * @param autoPasContainer
  * @return Vector of generated positions.
  */
