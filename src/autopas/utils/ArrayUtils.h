@@ -73,6 +73,30 @@ template <class output_t, class input_t, std::size_t SIZE>
 }
 
 /**
+ * Generates a string representation of a container which fulfills the Container requirement (provide cbegin and cend)
+ * and appends it to a stream.
+ * @tparam Container
+ * @param os
+ * @param container
+ * @param delimiter
+ * @param surround
+ */
+template <class Container>
+void to_string(std::ostream &os, const Container &container, const std::string &delimiter = ", ",
+               const std::array<std::string, 2> &surround = {"[", "]"}) {
+  auto it = std::cbegin(container);
+  const auto end = std::cend(container);
+  if (it == end) {
+    os << surround[0] << surround[1];
+  }
+  os << surround[0] << *it;
+  for (++it; it != end; ++it) {
+    os << delimiter << *it;
+  }
+  os << surround[1];
+}
+
+/**
  * Generates a string representation of a container which fulfills the Container requirement (provide cbegin and cend).
  * @note std::boolalpha is always enabled.
  * @tparam T Type of Container.
@@ -84,17 +108,9 @@ template <class output_t, class input_t, std::size_t SIZE>
 template <class Container>
 [[nodiscard]] std::string to_string(const Container &container, const std::string &delimiter = ", ",
                                     const std::array<std::string, 2> &surround = {"[", "]"}) {
-  auto it = std::cbegin(container);
-  const auto end = std::cend(container);
-  if (it == end) {
-    return surround[0] + surround[1];
-  }
   std::ostringstream strStream;
-  strStream << std::boolalpha << surround[0] << *it;
-  for (++it; it != end; ++it) {
-    strStream << delimiter << *it;
-  }
-  strStream << surround[1];
+  strStream << std::boolalpha;
+  to_string(strStream, container, delimiter, surround);
 
   return strStream.str();
 }
@@ -117,18 +133,7 @@ std::enable_if_t<autopas::utils::ArrayUtils::is_container<Container>::value, std
   const std::string &delimiter = ", ";
   const std::array<std::string, 2> &surround = {"[", "]"};
 
-  auto it = std::cbegin(container);
-  const auto end = std::cend(container);
-
-  if (it == end) {
-    os << surround[0] + surround[1];
-    return os;
-  }
-  os << surround[0] << *it;
-  for (++it; it != end; ++it) {
-    os << delimiter << *it;
-  }
-  os << surround[1];
+  to_string(os, container, delimiter, surround);
 
   return os;
 }
