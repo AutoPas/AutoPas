@@ -179,11 +179,11 @@ class ParticleBase {
     text << "Particle"
          << "\nID      : " << _id
          << "\nPosition: "
-         << utils::ArrayUtils::to_string(_r)
+         << autopas::utils::ArrayUtils::to_string(_r)
          << "\nVelocity: "
-         << utils::ArrayUtils::to_string(_v)
+         << autopas::utils::ArrayUtils::to_string(_v)
          << "\nForce   : "
-         << utils::ArrayUtils::to_string(_f)
+         << autopas::utils::ArrayUtils::to_string(_f)
          << "\nOwnershipState : "
          << _ownershipState;
     // clang-format on
@@ -341,17 +341,11 @@ class ParticleBase {
  */
 template <typename floatType, typename idType>
 std::ostream &operator<<(std::ostream &os, const ParticleBase<floatType, idType> &particle) {
+  using utils::ArrayUtils::operator<<;
   os << "Particle"
-         << "\nID      : " << particle._id
-         << "\nPosition: "
-         << utils::ArrayUtils::to_string(particle._r)
-         << "\nVelocity: "
-         << utils::ArrayUtils::to_string(particle._v)
-         << "\nForce   : "
-         << utils::ArrayUtils::to_string(particle._f)
-         << "\nOwnershipState : "
-         << particle._ownershipState;
-    // clang-format on
+     << "\nID      : " << particle._id << "\nPosition: " << particle._r << "\nVelocity: " << particle._v
+     << "\nForce   : " << particle._f << "\nOwnershipState : " << particle._ownershipState;
+  // clang-format on
   return os;
 }
 

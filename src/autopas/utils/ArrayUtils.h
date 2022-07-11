@@ -18,7 +18,7 @@ namespace autopas::utils::ArrayUtils {
 /**
  * Collection of structs that define what we consider a container.
  */
-namespace {
+namespace is_container_impl {
 /**
  * Default case: T is not a container.
  * @tparam T
@@ -40,7 +40,7 @@ struct is_container<std::array<T, N>> : std::true_type {};
 template <typename... Args>
 struct is_container<std::vector<Args...>> : std::true_type {};
 
-}  // namespace 
+}  // namespace
 
 /**
  * Creates a new array by performing an element-wise static_cast<>.
@@ -86,9 +86,6 @@ template <class Container>
   return strStream.str();
 }
 
-}  // namespace autopas::utils::ArrayUtils
-
-
 /**
  * @tparam T Type to check.
  * Type trait to check if a given type  is a container for use with overloaded stream operator.
@@ -98,7 +95,7 @@ template <class Container>
  */
 template <typename T>
 struct is_container {
-  static constexpr bool const value = autopas::utils::ArrayUtils::is_container<std::decay_t<T>>::value;
+  static constexpr bool const value = autopas::utils::ArrayUtils::is_container_impl::is_container<std::decay_t<T>>::value;
 };
 
 /**
@@ -134,3 +131,4 @@ std::enable_if_t<autopas::utils::ArrayUtils::is_container<Container>::value, std
 
   return os;
 }
+}  // namespace autopas::utils::ArrayUtils
