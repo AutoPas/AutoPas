@@ -528,7 +528,7 @@ class LJMulticenterFunctor
                         rotatedSitePositions[site][2] * siteForceY[siteIndex];
           typtr[mol] += rotatedSitePositions[site][2] * siteForceX[siteIndex] -
                         rotatedSitePositions[site][0] * siteForceZ[siteIndex];
-          txptr[mol] += rotatedSitePositions[site][0] * siteForceY[siteIndex] -
+          tzptr[mol] += rotatedSitePositions[site][0] * siteForceY[siteIndex] -
                         rotatedSitePositions[site][1] * siteForceX[siteIndex];
           ++siteIndex;
         }
@@ -546,14 +546,14 @@ class LJMulticenterFunctor
                         rotatedSitePositions[site][2] * siteForceY[siteIndex];
           typtr[mol] += rotatedSitePositions[site][2] * siteForceX[siteIndex] -
                         rotatedSitePositions[site][0] * siteForceZ[siteIndex];
-          txptr[mol] += rotatedSitePositions[site][0] * siteForceY[siteIndex] -
+          tzptr[mol] += rotatedSitePositions[site][0] * siteForceY[siteIndex] -
                         rotatedSitePositions[site][1] * siteForceX[siteIndex];
           ++siteIndex;
         }
       }
     }
 
-    if (calculateGlobals) {
+    if constexpr (calculateGlobals) {
       const auto threadNum = autopas_get_thread_num();
       const auto newton3Factor = newton3 ? .5 : 1.; // todo: add reasoning once original reasoning in LJFunctor.h is corrected
 
@@ -1057,7 +1057,32 @@ class LJMulticenterFunctor
         }
       }
     } else {
-      // to do
+      size_t siteIndex = 0;
+      for (size_t mol = 0; mol < soaB.getNumberOfParticles(); ++mol) {
+        const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
+            {q0Bptr[mol],q1Bptr[mol],q2Bptr[mol],q3Bptr[mol]}, const_unrotatedSitePositions );
+        for (size_t site = 0; site < const_unrotatedSitePositions.size(); ++site) {
+          fxBptr[mol] += siteForceBx[siteIndex];
+          fyBptr[mol] += siteForceBy[siteIndex];
+          fzBptr[mol] += siteForceBz[siteIndex];
+          txBptr[mol] += rotatedSitePositions[site][1] * siteForceBz[siteIndex] -
+                         rotatedSitePositions[site][2] * siteForceBy[siteIndex];
+          tyBptr[mol] += rotatedSitePositions[site][2] * siteForceBx[siteIndex] -
+                         rotatedSitePositions[site][0] * siteForceBz[siteIndex];
+          txBptr[mol] += rotatedSitePositions[site][0] * siteForceBy[siteIndex] -
+                         rotatedSitePositions[site][1] * siteForceBx[siteIndex];
+          ++siteIndex;
+        }
+      }
+    }
+    if constexpr (calculateGlobals) {
+      const auto threadNum = autopas_get_thread_num();
+      const auto newton3Factor = newton3 ? .5 : 1.; // todo: add reasoning once original reasoning in LJFunctor.h is corrected
+
+      _aosThreadData[threadNum].potentialEnergySum += potentialEnergySum * newton3Factor;
+      _aosThreadData[threadNum].virialSum[0] += virialSumX * newton3Factor;
+      _aosThreadData[threadNum].virialSum[1] += virialSumY * newton3Factor;
+      _aosThreadData[threadNum].virialSum[2] += virialSumZ * newton3Factor;
     }
 
   }
