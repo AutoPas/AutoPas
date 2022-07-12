@@ -507,6 +507,7 @@ inline int AutoPas_MPI_Isend(const void *buf, int count, AutoPas_MPI_Datatype da
  * @param source rank of source (integer).
  * @param tag message tag (integer).
  * @param comm communicator (handle).
+ * @param request communication request (handle).
  * @return MPI error value
  */
 inline int AutoPas_MPI_Irecv(void *buf, int count, AutoPas_MPI_Datatype datatype, int source, int tag,
