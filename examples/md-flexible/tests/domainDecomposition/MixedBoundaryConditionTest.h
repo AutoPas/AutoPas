@@ -20,6 +20,17 @@ class MixedBoundaryConditionTest : public AutoPasTestBase {
    */
   MixedBoundaryConditionTest() = default;
 
+  /**
+   * Derive expected positions and velocities according to the setup.
+   * @param particlePositions
+   * @param particleVelocities
+   * @param boxMin global box min
+   * @param boxMax global box max
+   * @param reflectionSkin
+   * @param interactionLength
+   * @param boundaryConditions
+   * @return
+   */
   static auto setUpExpectations(const std::vector<std::array<double, 3>> &particlePositions,
                                 const std::vector<std::array<double, 3>> &particleVelocities,
                                 const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,

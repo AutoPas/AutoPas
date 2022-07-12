@@ -12,7 +12,7 @@ if (MD_FLEXIBLE_USE_MPI)
 endif ()
 
 # actual action
-if (AUTOPAS_INTERNODE_TUNING OR MD_FLEXIBLE_USE_MPI)
+if (AUTOPAS_INCLUDE_MPI OR AUTOPAS_INTERNODE_TUNING OR MD_FLEXIBLE_USE_MPI)
     find_package(MPI REQUIRED)
     # set flag that will be used to include the macro with the same name
     set(AUTOPAS_INCLUDE_MPI true)
