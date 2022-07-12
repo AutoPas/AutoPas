@@ -45,22 +45,46 @@ namespace autopas {
 #define AUTOPAS_MPI_INT MPI_INT
 /** Wrapper for MPI_UNSIGNED */
 #define AUTOPAS_MPI_UNSIGNED_INT MPI_UNSIGNED
-/** Wrapper for MPI_UNSIGNED_LONG */
-#define AUTOPAS_MPI_UNSIGNED_LONG MPI_UNSIGNED_LONG
 /** Wrapper for MPI_LONG */
 #define AUTOPAS_MPI_LONG MPI_LONG
+/** Wrapper for MPI_UNSIGNED_LONG */
+#define AUTOPAS_MPI_UNSIGNED_LONG MPI_UNSIGNED_LONG
 /** Wrapper for MPI_DOUBLE */
 #define AUTOPAS_MPI_DOUBLE MPI_DOUBLE
 
 // MPI_Op
-/** Wrapper for MPI_LAND */
-#define AUTOPAS_MPI_LAND MPI_LAND
+/** Wrapper for MPI_MAX */
+#define AUTOPAS_MPI_MAX MPI_MAX
 /** Wrapper for MPI_MIN */
 #define AUTOPAS_MPI_MIN MPI_MIN
-/** Wrapper for MPI_MINLOC */
-#define AUTOPAS_MPI_MINLOC MPI_MINLOC
 /** Wrapper for MPI_SUM */
 #define AUTOPAS_MPI_SUM MPI_SUM
+/** Wrapper for MPI_PROD */
+#define AUTOPAS_MPI_PROD MPI_PROD
+/** Wrapper for MPI_LAND */
+#define AUTOPAS_MPI_LAND MPI_LAND
+/** Wrapper for MPI_BAND */
+#define AUTOPAS_MPI_BAND MPI_BAND
+/** Wrapper for MPI_LOR */
+#define AUTOPAS_MPI_LOR MPI_LOR
+/** Wrapper for MPI_BOR */
+#define AUTOPAS_MPI_BOR MPI_BOR
+/** Wrapper for MPI_LXOR */
+#define AUTOPAS_MPI_LXOR MPI_LXOR
+/** Wrapper for MPI_BXOR */
+#define AUTOPAS_MPI_BXOR MPI_BXOR
+/** Wrapper for MPI_MINLOC */
+#define AUTOPAS_MPI_MINLOC MPI_MINLOC
+/** Wrapper for MPI_MAXLOC */
+#define AUTOPAS_MPI_MAXLOC MPI_MAXLOC
+/** Wrapper for MPI_REPLACE */
+#define AUTOPAS_MPI_REPLACE MPI_REPLACE
+/** Wrapper for MPI_NO_OP */
+#define AUTOPAS_MPI_NO_OP MPI_NO_OP
+
+// MPI Constants
+/** Wrapper for MPI_IN_PLACE  */
+#define AUTOPAS_MPI_IN_PLACE MPI_IN_PLACE
 
 // MPI_Status
 /** Wrapper for MPI_STATUS IGNORE */
@@ -121,26 +145,46 @@ enum AutoPas_MPI_Datatype {
 #define AUTOPAS_MPI_INT autopas::AutoPas_MPI_Datatype::INT
 /** Wrapper for MPI_UNSIGNED */
 #define AUTOPAS_MPI_UNSIGNED_INT autopas::AutoPas_MPI_Datatype::UNSIGNED_INT
-/** Wrapper for MPI_UNSIGNED LONG */
-#define AUTOPAS_MPI_UNSIGNED_LONG autopas::AutoPas_MPI_Datatype::UNSIGNED_LONG
 /** Wrapper for MPI_LONG */
 #define AUTOPAS_MPI_LONG autopas::AutoPas_MPI_Datatype::LONG
+/** Wrapper for MPI_UNSIGNED LONG */
+#define AUTOPAS_MPI_UNSIGNED_LONG autopas::AutoPas_MPI_Datatype::UNSIGNED_LONG
 /** Wrapper for MPI_DOUBLE */
 #define AUTOPAS_MPI_DOUBLE autopas::AutoPas_MPI_Datatype::DOUBLE
 
 /**
  * Dummy for MPI_Op.
  */
-enum AutoPas_MPI_Op { LAND, MIN, MINLOC, SUM };
+enum AutoPas_MPI_Op { MIN, SUM, PROD, LAND, BAND, LOR, BOR, LXOR, BXOR, MINLOC, MAXLOC, REPLACE, NO_OP };
 // MPI_Op
-/** Wrapper for MPI_LAND */
-#define AUTOPAS_MPI_LAND autopas::AutoPas_MPI_Op::LAND
+/** Wrapper for MPI_MAX */
+#define AUTOPAS_MPI_MAX autopas::AutoPas_MPI_Op::MAX
 /** Wrapper for MPI_MIN */
 #define AUTOPAS_MPI_MIN autopas::AutoPas_MPI_Op::MIN
-/** Wrapper for MPI_MINLOC */
-#define AUTOPAS_MPI_MINLOC autopas::AutoPas_MPI_Op::MINLOC
 /** Wrapper for MPI_SUM */
 #define AUTOPAS_MPI_SUM autopas::AutoPas_MPI_Op::SUM
+/** Wrapper for MPI_PROD */
+#define AUTOPAS_MPI_PROD autopas::AutoPas_MPI_Op::PROD
+/** Wrapper for MPI_LAND */
+#define AUTOPAS_MPI_LAND autopas::AutoPas_MPI_Op::LAND
+/** Wrapper for MPI_BAND */
+#define AUTOPAS_MPI_BAND autopas::AutoPas_MPI_Op::BAND
+/** Wrapper for MPI_LOR */
+#define AUTOPAS_MPI_LOR autopas::AutoPas_MPI_Op::LOR
+/** Wrapper for MPI_BOR */
+#define AUTOPAS_MPI_BOR autopas::AutoPas_MPI_Op::BOR
+/** Wrapper for MPI_LXOR */
+#define AUTOPAS_MPI_LXOR autopas::AutoPas_MPI_Op::LXOR
+/** Wrapper for MPI_BXOR */
+#define AUTOPAS_MPI_BXOR autopas::AutoPas_MPI_Op::BXOR
+/** Wrapper for MPI_MINLOC */
+#define AUTOPAS_MPI_MINLOC autopas::AutoPas_MPI_Op::MINLOC
+/** Wrapper for MPI_MAXLOC */
+#define AUTOPAS_MPI_MAXLOC autopas::AutoPas_MPI_Op::MAXLOC
+/** Wrapper for MPI_REPLACE */
+#define AUTOPAS_MPI_REPLACE autopas::AutoPas_MPI_Op::REPLACE
+/** Wrapper for MPI_NO_OP */
+#define AUTOPAS_MPI_NO_OP autopas::AutoPas_MPI_Op::NO_OP
 
 /**
  * @struct AutoPas_MPI_Status
@@ -186,6 +230,8 @@ enum AutoPas_MPI_Error {
 };
 /** Dummy for MPI_MAX_ERROR_STRING */
 #define AUTOPAS_MPI_MAX_ERROR_STRING 256
+/** Indicator for Collectives to happe in-place */
+#define AUTOPAS_MPI_IN_PLACE ((void *)1)
 
 #endif
 
@@ -390,7 +436,7 @@ inline int AutoPas_MPI_Request_free(AutoPas_MPI_Request *request);
  * @param periods: An array defining for each dimension if it has periodic boundaries.
  * @param reorder: Defines if ranking may be reordered (true) or not (false).
  * @param comm_cart: The resulting MPI communicator.
- * @return MPMI error value
+ * @return MPI error value
  */
 inline int AutoPas_MPI_Cart_create(AutoPas_MPI_Comm comm, int nDims, const int *dims, const int *periods, int reorder,
                                    AutoPas_MPI_Comm *comm_cart);
@@ -402,9 +448,41 @@ inline int AutoPas_MPI_Cart_create(AutoPas_MPI_Comm comm, int nDims, const int *
  * @param dims: Number of processes for each Cartesian dimension (array of integers).
  * @param periods: Periodicity (true/false) for each Cartesian dimension (array of logicals).
  * @param coords: Coordinates of calling process in Cartesian structure (array of integers).
- * @return MPMI error value
+ * @return MPI error value
  */
 inline int AutoPas_MPI_Cart_get(AutoPas_MPI_Comm comm, int maxdims, int dims[], int periods[], int coords[]);
+
+/**
+ * Wrapper for MPI_Cart_coords
+ * Determines process coords in cartesian topology given rank in group.
+ * @param comm Communicator with cartesian structure (handle).
+ * @param rank Rank of a process within group of comm (integer).
+ * @param maxdims Length of vector coords in the calling program (integer).
+ * @param coords Integer array (of size ndims) containing the Cartesian coordinates of specified process (integer).
+ * @return MPI error value
+ */
+inline int AutoPas_MPI_Cart_coords(AutoPas_MPI_Comm comm, int rank, int maxdims, int coords[]);
+
+/**
+ * Wrapper for MPI_Cart_rank
+ * Determines process rank in communicator given Cartesian location.
+ * @param comm Communicator with cartesian structure (handle).
+ * @param coords Integer array (of size ndims, the number of dimensions of the Cartesian topology associated with comm)
+ * specifying the cartesian coordinates of a process.
+ * @param rank Rank of specified process (integer).
+ * @return MPI error value
+ */
+inline int AutoPas_MPI_Cart_rank(AutoPas_MPI_Comm comm, const int coords[], int *rank);
+
+/**
+ * Wrapper for MPI_Dims_create.
+ * Creates a division of processors in a cartesian grid. Typically this is a factorization of nnodes in ndims factors.
+ * @param nnodes Number of ranks to divide.
+ * @param ndims Number of dimension over which to spread the ranks.
+ * @param dims Output parameter. Should be an array of size ndims.
+ * @return MPI error value
+ */
+inline int AutoPas_MPI_Dims_create(int nnodes, int ndims, int dims[]);
 
 /**
  * Wrapper for MPI_Isend.
@@ -415,18 +493,32 @@ inline int AutoPas_MPI_Cart_get(AutoPas_MPI_Comm comm, int maxdims, int dims[], 
  * @param tag: Message tag (integer).
  * @param comm: Communicator (handle).
  * @param request: A pointer to the created send request.
- * @return MPMI error value
+ * @return MPI error value
  */
 inline int AutoPas_MPI_Isend(const void *buf, int count, AutoPas_MPI_Datatype datatype, int dest, int tag,
                              AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request);
 
+/**
+ * Wrapper for MPI_Irecv.
+ * Begins a nonblocking receive
+ * @param buf initial address of receive buffer (choice).
+ * @param count number of elements in receive buffer (integer).
+ * @param datatype datatype of each receive buffer element (handle).
+ * @param source rank of source (integer).
+ * @param tag message tag (integer).
+ * @param comm communicator (handle).
+ * @param request communication request (handle).
+ * @return MPI error value
+ */
+inline int AutoPas_MPI_Irecv(void *buf, int count, AutoPas_MPI_Datatype datatype, int source, int tag,
+                             AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request);
 /**
  * Wrapper for MPI_Probe.
  * @param source: Source rank (integer).
  * @param tag: Tag value (integer).
  * @param comm: Communicator (handle).
  * @param status: The status of the probed request.
- * @return MPMI error value
+ * @return MPI error value
  */
 inline int AutoPas_MPI_Probe(int source, int tag, AutoPas_MPI_Comm comm, AutoPas_MPI_Status *status);
 
@@ -435,7 +527,7 @@ inline int AutoPas_MPI_Probe(int source, int tag, AutoPas_MPI_Comm comm, AutoPas
  * @param status: Return status of receive operation (status).
  * @param datatype: Datatype of each receive buffer element (handle).
  * @param count: Number of received elements (integer).
- * @return MPMI error value
+ * @return MPI error value
  */
 inline int AutoPas_MPI_Get_count(const AutoPas_MPI_Status *status, AutoPas_MPI_Datatype datatype, int *count);
 
@@ -444,7 +536,7 @@ inline int AutoPas_MPI_Get_count(const AutoPas_MPI_Status *status, AutoPas_MPI_D
  * @param count: Lists length (integer).
  * @param array_of_requests: Array of requests (array of handles).
  * @param array_of_statuses: Array of status objects (array of status).
- * @return MPMI error value
+ * @return MPI error value
  */
 inline int AutoPas_MPI_Waitall(int count, AutoPas_MPI_Request array_of_requests[],
                                AutoPas_MPI_Status *array_of_statuses);
@@ -496,6 +588,10 @@ inline int AutoPas_MPI_Comm_dup(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *newComm
 }
 
 inline int AutoPas_MPI_Comm_free(AutoPas_MPI_Comm *comm) { return MPI_Comm_free(comm); }
+
+inline int AutoPas_MPI_Comm_split(AutoPas_MPI_Comm comm, int color, int key, AutoPas_MPI_Comm *newcomm) {
+  return MPI_Comm_split(comm, color, key, newcomm);
+}
 
 inline int AutoPas_MPI_Send(const void *buf, int count, AutoPas_MPI_Datatype datatype, int dest, int tag,
                             AutoPas_MPI_Comm comm) {
@@ -556,9 +652,24 @@ inline int AutoPas_MPI_Cart_get(AutoPas_MPI_Comm comm, int maxdims, int dims[], 
   return MPI_Cart_get(comm, maxdims, dims, periods, coords);
 }
 
+inline int AutoPas_MPI_Cart_coords(AutoPas_MPI_Comm comm, int rank, int maxdims, int coords[]) {
+  return MPI_Cart_coords(comm, rank, maxdims, coords);
+}
+
+inline int AutoPas_MPI_Cart_rank(AutoPas_MPI_Comm comm, const int coords[], int *rank) {
+  return MPI_Cart_rank(comm, coords, rank);
+}
+
+inline int AutoPas_MPI_Dims_create(int nnodes, int ndims, int dims[]) { return MPI_Dims_create(nnodes, ndims, dims); }
+
 inline int AutoPas_MPI_Isend(const void *buf, int count, AutoPas_MPI_Datatype datatype, int dest, int tag,
                              AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request) {
   return MPI_Isend(buf, count, datatype, dest, tag, comm, request);
+}
+
+inline int AutoPas_MPI_Irecv(void *buf, int count, AutoPas_MPI_Datatype datatype, int source, int tag,
+                             AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request) {
+  return MPI_Irecv(buf, count, datatype, source, tag, comm, request);
 }
 
 inline int AutoPas_MPI_Probe(int source, int tag, AutoPas_MPI_Comm comm, AutoPas_MPI_Status *status) {
@@ -578,11 +689,6 @@ inline int AutoPas_MPI_Allgather(void *buffer_send, int count_send, AutoPas_MPI_
                                  void *buffer_recv, int count_recv, AutoPas_MPI_Datatype datatype_recv,
                                  AutoPas_MPI_Comm comm) {
   return MPI_Allgather(buffer_send, count_send, datatype_send, buffer_recv, count_recv, datatype_recv, comm);
-}
-
-inline int AutoPas_MPI_Comm_split(AutoPas_MPI_Comm old_communicator, int color, int key,
-                                  AutoPas_MPI_Comm *new_communicator) {
-  return MPI_Comm_split(old_communicator, color, key, new_communicator);
 }
 
 #else
@@ -669,14 +775,15 @@ inline int AutoPas_MPI_Ibcast(void *buffer, int count, AutoPas_MPI_Datatype data
 
 inline int AutoPas_MPI_Reduce(const void *sendbuf, void *recvbuf, int count, AutoPas_MPI_Datatype datatype,
                               AutoPas_MPI_Op op, int root, AutoPas_MPI_Comm comm) {
-  memcpy(recvbuf, sendbuf, datatype * static_cast<size_t>(count));
+  if (sendbuf != AUTOPAS_MPI_IN_PLACE) {
+    memcpy(recvbuf, sendbuf, datatype * static_cast<size_t>(count));
+  }
   return AUTOPAS_MPI_SUCCESS;
 }
 
 inline int AutoPas_MPI_Allreduce(const void *sendbuf, void *recvbuf, int count, AutoPas_MPI_Datatype datatype,
                                  AutoPas_MPI_Op op, AutoPas_MPI_Comm comm) {
-  memcpy(recvbuf, sendbuf, datatype * static_cast<size_t>(count));
-  return AUTOPAS_MPI_SUCCESS;
+  return AutoPas_MPI_Reduce(sendbuf, recvbuf, count, datatype, op, 0, comm);
 }
 
 inline int AutoPas_MPI_Iallreduce(const void *sendbuf, void *recvbuf, int count, AutoPas_MPI_Datatype datatype,
@@ -715,10 +822,12 @@ inline int AutoPas_MPI_Request_free(AutoPas_MPI_Request *request) {
 inline int AutoPas_MPI_Allgather(void *buffer_send, int count_send, AutoPas_MPI_Datatype datatype_send,
                                  void *buffer_recv, int count_recv, AutoPas_MPI_Datatype datatype_recv,
                                  AutoPas_MPI_Comm comm) {
-  for (long i = 0; i < (count_recv / count_send); i++)
-    // offsets from pointers are of type ptrdiff_t which is an alias for long. Hence, i should be long.
-    memcpy(static_cast<char *>(buffer_recv) + (i * count_send * sizeof(datatype_send)), buffer_send,
-           count_send * sizeof(datatype_send));
+  if (buffer_send != AUTOPAS_MPI_IN_PLACE) {
+    for (long i = 0; i < (count_recv / count_send); i++)
+      // offsets from pointers are of type ptrdiff_t which is an alias for long. Hence, i should be long.
+      memcpy(static_cast<char *>(buffer_recv) + (i * count_send * sizeof(datatype_send)), buffer_send,
+             count_send * sizeof(datatype_send));
+  }
   return AUTOPAS_MPI_SUCCESS;
 }
 
@@ -738,7 +847,30 @@ inline int AutoPas_MPI_Cart_get(AutoPas_MPI_Comm comm, int maxdims, int dims[], 
   return AUTOPAS_MPI_SUCCESS;
 }
 
+inline int AutoPas_MPI_Cart_coords(AutoPas_MPI_Comm comm, int rank, int maxdims, int coords[]) {
+  for (int i = 0; i < maxdims; ++i) {
+    coords[i] = 0;
+  }
+  return AUTOPAS_MPI_SUCCESS;
+}
+
+inline int AutoPas_MPI_Cart_rank(AutoPas_MPI_Comm comm, const int coords[], int *rank) {
+  *rank = 0;
+  return AUTOPAS_MPI_SUCCESS;
+}
+
+inline int AutoPas_MPI_Dims_create(int nnodes, int ndims, int dims[]) {
+  // in non-MPI case nnodes should always be 1
+  dims[0] = 1;
+  return AUTOPAS_MPI_SUCCESS;
+}
+
 inline int AutoPas_MPI_Isend(const void *buf, int count, AutoPas_MPI_Datatype datatype, int dest, int tag,
+                             AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request) {
+  return AUTOPAS_MPI_SUCCESS;
+}
+
+inline int AutoPas_MPI_Irecv(void *buf, int count, AutoPas_MPI_Datatype datatype, int source, int tag,
                              AutoPas_MPI_Comm comm, AutoPas_MPI_Request *request) {
   return AUTOPAS_MPI_SUCCESS;
 }

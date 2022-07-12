@@ -10,6 +10,7 @@
 #include "TypeDefinitions.h"
 #include "autopas/AutoPasDecl.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 /**
@@ -100,7 +101,7 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
     }
     // parallel iterators
     for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-      auto vel = iter->getV();
+      const auto &vel = iter->getV();
       kineticEnergyMul2MapThread.at(iter->getTypeId()) +=
           particlePropertiesLibrary.getMass(iter->getTypeId()) * autopas::utils::ArrayMath::dot(vel, vel);
       numParticleMapThread.at(iter->getTypeId())++;
@@ -118,6 +119,15 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
   }
   // AutoPas works always on 3 dimensions
   constexpr unsigned int dimensions{3};
+
+  for (const auto &typeID : particlePropertiesLibrary.getTypes()) {
+    // workaround for MPICH: send and receive buffer must not be the same.
+    autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &kineticEnergyMul2Map[typeID], 1, AUTOPAS_MPI_DOUBLE,
+                                   AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
+
+    autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &numParticleMap[typeID], 1, AUTOPAS_MPI_UNSIGNED_LONG,
+                                   AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
+  }
 
   auto kineticEnergyAndParticleMaps = std::make_tuple(kineticEnergyMul2Map.begin(), numParticleMap.begin());
 
@@ -165,7 +175,7 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
 }
 
 /**
- * Scales velocity of particles towards a gived temperature.
+ * Scales velocity of particles towards a given temperature.
  * @tparam AutoPasTemplate Type of AutoPas Object (no pointer)
  * @tparam ParticlePropertiesLibraryTemplate Type of ParticlePropertiesLibrary Object (no pointer)
  * @param autopas
@@ -176,10 +186,11 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particlePropertiesLibrary,
            const double targetTemperature, const double deltaTemperature) {
-  auto currentTemperatureMap = calcTemperatureComponent(autopas, particlePropertiesLibrary);
+  const auto currentTemperatureMap = calcTemperatureComponent(autopas, particlePropertiesLibrary);
+
   // make sure we work with a positive delta
   const double deltaTemperaturePositive = std::abs(deltaTemperature);
-  decltype(currentTemperatureMap) scalingMap;
+  std::remove_const_t<decltype(currentTemperatureMap)> scalingMap;
 
   for (const auto &[particleTypeID, currentTemperature] : currentTemperatureMap) {
     double nextTargetTemperature;

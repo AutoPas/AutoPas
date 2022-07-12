@@ -68,27 +68,29 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
                                               const std::vector<std::array<double, 3>> &particleVelocities,
                                               const std::array<options::BoundaryTypeOption, 3> &boundaryConditions) {
   // initialise AutoPas container & domainDecomposition
-  const std::array<double, 3> boxMin = {0., 0., 0.};
-  const std::array<double, 3> boxMax = {5., 5., 5.};
-  const std::array<double, 3> boxLength = autopas::utils::ArrayMath::sub(boxMax, boxMin);
-  const std::array<bool, 3> subdivideDimension = {true, true, true};
-  const double cutoffWidth = 0.3;
-  const double skinWidth = 0.2;
+  MDFlexConfig config(0, nullptr);
+  config.boxMin.value = {0., 0., 0.};
+  config.boxMax.value = {5., 5., 5.};
+  config.cutoff.value = 0.3;
+  config.verletSkinRadius.value = 0.2;
+  config.subdivideDimension.value = {true, true, true};
+  config.boundaryOption.value = boundaryConditions;
 
-  RegularGridDecomposition domainDecomposition(boxMin, boxMax, subdivideDimension, cutoffWidth, skinWidth,
-                                               boundaryConditions);
+  const std::array<double, 3> boxLength = autopas::utils::ArrayMath::sub(config.boxMax.value, config.boxMin.value);
+  RegularGridDecomposition domainDecomposition(config);
 
   auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
 
   autoPasContainer->setBoxMin(domainDecomposition.getLocalBoxMin());
   autoPasContainer->setBoxMax(domainDecomposition.getLocalBoxMax());
-  autoPasContainer->setCutoff(cutoffWidth);
-  autoPasContainer->setVerletSkin(skinWidth);
+  autoPasContainer->setCutoff(config.cutoff.value);
+  autoPasContainer->setVerletSkin(config.verletSkinRadius.value);
   autoPasContainer->init();
 
   const auto &[expectedPositions, expectedHaloPositions, expectedVelocities] =
-      setUpExpectations(particlePositions, particleVelocities, boxMin, boxMax, skinWidth / 2, cutoffWidth + skinWidth,
-                        boundaryConditions);
+      setUpExpectations(particlePositions, particleVelocities, config.boxMin.value, config.boxMax.value,
+                        config.verletSkinRadius.value / 2., config.cutoff.value + config.verletSkinRadius.value,
+                        config.boundaryOption.value);
 
   // particles need to be added at positions inside the domain
   // but also close to their designated positions so they end up in the correct MPI rank
@@ -98,12 +100,14 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
                    auto safePos = pos;
                    for (size_t i = 0; i < pos.size(); ++i) {
                      // if a position is outside the (global) domain shift it inside
-                     if (pos[i] > boxMax[i]) {
+                     if (pos[i] > domainDecomposition.getGlobalBoxMax()[i]) {
                        // next float inside the domain
-                       safePos[i] = std::nextafter(boxMax[i], boxMax[i] - 1);
-                     } else if (pos[i] < boxMin[i]) {
+                       safePos[i] = std::nextafter(domainDecomposition.getGlobalBoxMax()[i],
+                                                   domainDecomposition.getGlobalBoxMax()[i] - 1);
+                     } else if (pos[i] < domainDecomposition.getGlobalBoxMin()[i]) {
                        // next float inside the domain
-                       safePos[i] = std::nextafter(boxMin[i], boxMin[i] + 1);
+                       safePos[i] = std::nextafter(domainDecomposition.getGlobalBoxMin()[i],
+                                                   domainDecomposition.getGlobalBoxMin()[i] + 1);
                      }
                    }
                    return safePos;
@@ -139,10 +143,12 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
   EXPECT_EQ(expectedPositions.size(), autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned));
 #endif
 
+  auto emigrants = autoPasContainer->updateContainer();
+
   // Apply boundary conditions
-  domainDecomposition.exchangeMigratingParticles(autoPasContainer);
-  domainDecomposition.reflectParticlesAtBoundaries(autoPasContainer);
-  domainDecomposition.exchangeHaloParticles(autoPasContainer);
+  domainDecomposition.exchangeMigratingParticles(*autoPasContainer, emigrants);
+  domainDecomposition.reflectParticlesAtBoundaries(*autoPasContainer);
+  domainDecomposition.exchangeHaloParticles(*autoPasContainer);
 
 #if not defined(AUTOPAS_INCLUDE_MPI)
   // if there are no "none" boundaries the number of owned particles should stay constant
