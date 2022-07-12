@@ -88,6 +88,7 @@ void to_string(std::ostream &os, const Container &container, const std::string &
   const auto end = std::cend(container);
   if (it == end) {
     os << surround[0] << surround[1];
+    return;
   }
   os << surround[0] << *it;
   for (++it; it != end; ++it) {
