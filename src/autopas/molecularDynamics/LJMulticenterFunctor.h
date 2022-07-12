@@ -796,7 +796,7 @@ class LJMulticenterFunctor
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceBz;
 
     std::vector<size_t, autopas::AlignedAllocator<size_t>> siteTypesB;
-    std::vector<size_t, autopas::AlignedAllocator<size_t>> isSiteOwnedB;
+    std::vector<size_t, autopas::AlignedAllocator<size_t>> isSiteOwnedBArr;
 
     const SoAFloatPrecision const_sigmaSquared = _sigmaSquared;
     const SoAFloatPrecision const_epsilon24 = _epsilon24;
@@ -832,7 +832,7 @@ class LJMulticenterFunctor
     siteForceBz.reserve(siteCountB);
 
     if constexpr(calculateGlobals) {
-      isSiteOwnedB.reserve(siteCountB);
+      isSiteOwnedBArr.reserve(siteCountB);
     }
 
     if constexpr (useMixing) {
@@ -860,7 +860,7 @@ class LJMulticenterFunctor
           siteForceBx[siteIndex] = 0.;
           siteForceBy[siteIndex] = 0.;
           siteForceBz[siteIndex] = 0.;
-          isSiteOwnedB[siteIndex] = ownedStatePtrB[mol] == OwnershipState::owned;
+          isSiteOwnedBArr[siteIndex] = ownedStatePtrB[mol] == OwnershipState::owned;
           ++siteIndex;
         }
       }
@@ -876,7 +876,7 @@ class LJMulticenterFunctor
           siteForceBx[siteIndex] = 0.;
           siteForceBy[siteIndex] = 0.;
           siteForceBz[siteIndex] = 0.;
-          isSiteOwnedB[siteIndex] = ownedStatePtrB[mol] == OwnershipState::owned;
+          isSiteOwnedBArr[siteIndex] = ownedStatePtrB[mol] == OwnershipState::owned;
           ++siteIndex;
         }
       }
@@ -968,7 +968,7 @@ class LJMulticenterFunctor
           const SoAFloatPrecision epsilon24 = useMixing ? epsilon24s[siteB] : const_epsilon24;
           const SoAFloatPrecision shift6 = applyShift ? (useMixing ? shift6s[siteB] : const_shift6) : 0;
 
-          const auto isSiteOwned = isSiteOwnedB[siteB];
+          const auto isSiteOwnedB = isSiteOwnedBArr[siteB];
 
           const auto displacementX = exactSitePositionAx - exactSitePositionBx[siteB];
           const auto displacementY = exactSitePositionAy - exactSitePositionBy[siteB];
@@ -1001,14 +1001,14 @@ class LJMulticenterFunctor
           torqueSumZ += rotatedSitePositionAx * forceY - rotatedSitePositionAy * forceX;
 
           // N3L ( total molecular forces + torques to be determined later )
-          if (newton3) {
+          if constexpr (newton3) {
             siteForceBx[siteB] -= forceX;
             siteForceBy[siteB] -= forceY;
             siteForceBz[siteB] -= forceZ;
           }
 
           // globals
-          if (calculateGlobals) {
+          if constexpr (calculateGlobals) {
             const auto potentialEnergy = siteMask[siteB] ? (epsilon24 * lj12m6 + shift6) : 0.;
             const auto virialX = displacementX * forceX;
             const auto virialY = displacementY * forceY;
@@ -1016,7 +1016,7 @@ class LJMulticenterFunctor
 
             const auto ownershipFactor = newton3 ?
                                                  (ownedStateA==OwnershipState::owned ? 1. : 0.) +
-                                                     (isSiteOwned ? 1. : 0.) :
+                                                     (isSiteOwnedB ? 1. : 0.) :
                                                  (ownedStateA==OwnershipState::owned ? 1. : 0.);
 
             // if newton3 is enabled, we multiply by 0.5 at the end of this function call when adding up the values to
