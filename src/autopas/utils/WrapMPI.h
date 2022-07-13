@@ -155,7 +155,7 @@ enum AutoPas_MPI_Datatype {
 /**
  * Dummy for MPI_Op.
  */
-enum AutoPas_MPI_Op { MIN, SUM, PROD, LAND, BAND, LOR, BOR, LXOR, BXOR, MINLOC, MAXLOC, REPLACE, NO_OP };
+enum AutoPas_MPI_Op { MAX, MIN, SUM, PROD, LAND, BAND, LOR, BOR, LXOR, BXOR, MINLOC, MAXLOC, REPLACE, NO_OP };
 // MPI_Op
 /** Wrapper for MPI_MAX */
 #define AUTOPAS_MPI_MAX autopas::AutoPas_MPI_Op::MAX
