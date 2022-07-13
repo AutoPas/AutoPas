@@ -81,7 +81,11 @@ class ReinforcementLearning : public SetSearchSpaceBasedTuningStrategy {
     if (_firstTuningPhase) {
       _newState = -time;
     } else {
-      _newState = _oldState + _alpha * (-time - _oldState);
+
+//      gamma
+      _newState = _oldState + _alpha * (-time - _gamma * _oldState);
+//        no gamma
+//      _newState = _oldState + _alpha * (-time - _oldState);
     }
 
     _states[*_currentConfig] = _newState;
@@ -122,8 +126,8 @@ class ReinforcementLearning : public SetSearchSpaceBasedTuningStrategy {
 
   bool _firstTuningPhase = true;
   bool _startTuningPhase = true;
-  double _alpha = 0.9;
-  double _gamma = 1;
+  double _alpha = 1;
+  double _gamma = 0.5;
   size_t _randomExplorations = 5;
   std::set<Configuration> _selectedConfigs{};
 };
