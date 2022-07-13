@@ -28,6 +28,7 @@
 #include "src/configuration/objects/CubeGrid.h"
 #include "src/configuration/objects/CubeUniform.h"
 #include "src/configuration/objects/Sphere.h"
+#include "src/domainDecomposition/LoadBalancerOption.h"
 #include "src/options/BoundaryTypeOption.h"
 
 /**
@@ -357,6 +358,12 @@ class MDFlexConfig {
       {1, 1, 1}, "box-max", true, "Upper back right corner of the simulation box."};
 
   /**
+   * loadBalancingInterval
+   */
+  MDFlexOption<unsigned int, __LINE__> loadBalancingInterval{
+      100, "load-balancing-interval", true, "Defines the iteration interval at which load balancing should occur."};
+
+  /**
    * subdivideDimension
    */
   MDFlexOption<std::array<bool, 3>, 0> subdivideDimension{
@@ -616,6 +623,15 @@ class MDFlexConfig {
    */
   MDFlexOption<std::string, __LINE__> checkpointfile{"", "checkpoint", true,
                                                      "Path to a .pvtu File to load as a checkpoint."};
+
+  /**
+   * loadBalancer
+   */
+  MDFlexOption<LoadBalancerOption, __LINE__> loadBalancer{
+      LoadBalancerOption::invertedPressure, "load-balancer", true,
+      "Defines which load balancing approach will be used with the adaptive grid decomposition. If ALL is chosen as "
+      "load balancer, MD-Flexible uses ALL's TENSOR method. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(LoadBalancerOption::getAllOptions(), " ", {"(", ")"})};
 
   /**
    * valueOffset used for cli-output alignment

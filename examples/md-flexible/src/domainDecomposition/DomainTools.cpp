@@ -23,8 +23,8 @@ bool isInsideDomain(const std::array<double, 3> &coordinates, const std::array<d
   return isInsideLocalDomain;
 }
 
-void generateDecomposition(unsigned int subdomainCount, const std::array<bool, 3> &subdivideDimension,
-                           std::array<int, 3> &decomposition) {
+std::array<int, 3> generateDecomposition(unsigned int subdomainCount, const std::array<bool, 3> &subdivideDimension) {
+  std::array<int, 3> decomposition{};
   std::list<int> primeFactors;
   // Add 2 to prime factorization as many times as subdomainCount is dividable by 2.
   while (subdomainCount % 2 == 0) {
@@ -67,6 +67,33 @@ void generateDecomposition(unsigned int subdomainCount, const std::array<bool, 3
       decomposition[i] = 1;
     }
   }
+  return decomposition;
+}
+
+double balanceAdjacentDomains(const double &leftDomainsWork, const double &rightDomainsWork,
+                              const double &leftDomainsMinBoundaryPosition,
+                              const double &rightDomainsMaxBoundaryPosition, const double &minWidth) {
+  /**
+   * This formular is based on the idea, that the work / volume relation of the two adjacent domain should be the same.
+   * In the context of pressure the domain with large pressure (work) would press against the wall adjacent to
+   * the domain with low pressure trying to even the pressure out between the domains.
+   * This is represented by the following formula:
+   * pressureOfDomainA / volumeOfDomainA = pressureOfDomainB / volumeOfDomainB
+   * In our case we want the domain with larger pressure (work) to shrink. So instead of dividing work by volume
+   * we divide volume by work. The volume is based on the box coordinates. Now if we solve the resulting equation for
+   * the parameter which represents the domain boundary we want to shift, we get the formula used here.
+   */
+  double balancedPosition =
+      (leftDomainsWork * leftDomainsMinBoundaryPosition + rightDomainsWork * rightDomainsMaxBoundaryPosition) /
+      (leftDomainsWork + rightDomainsWork);
+
+  if (balancedPosition - leftDomainsMinBoundaryPosition < minWidth) {
+    return leftDomainsMinBoundaryPosition + minWidth;
+  }
+  if (rightDomainsMaxBoundaryPosition - balancedPosition < minWidth) {
+    return rightDomainsMaxBoundaryPosition - minWidth;
+  }
+  return balancedPosition;
 }
 
 int convertIdToIndex(const std::array<int, 3> &domainId, const std::array<int, 3> decomposition) {

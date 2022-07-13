@@ -47,6 +47,12 @@ inline int autopas_get_num_threads() { return omp_get_num_threads(); }
 inline int autopas_get_max_threads() { return omp_get_max_threads(); }
 
 /**
+ * Wrapper for omp_set_num_threads().
+ * @param n New max number of threads.
+ */
+inline void autopas_set_num_threads(int n) { omp_set_num_threads(n); }
+
+/**
  * AutoPasLock for the openmp case, this wraps a omp_lock_t object. To make it copyable, etc.
  */
 class AutoPasLock {
@@ -117,6 +123,12 @@ inline int autopas_get_num_threads() { return 1; }
  * @return Always 1.
  */
 inline int autopas_get_max_threads() { return 1; }
+
+/**
+ * Wrapper for omp_set_num_threads().
+ * Does nothing when OpenMP is disabled.
+ */
+inline void autopas_set_num_threads(int /* n */) {}
 
 /**
  * AutoPasLock for the sequential case.

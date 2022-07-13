@@ -34,4 +34,6 @@ gtest_discover_tests(
     runMPITests TEST_PREFIX "MPIParallelAutoPasTests/"
     # increase the discovery timeout for `runTests --gtest_list_tests`
     DISCOVERY_TIMEOUT 60
+    PROPERTIES
+        ENVIRONMENT "${LSAN_OPTIONS_STR}"
 )

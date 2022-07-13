@@ -576,15 +576,15 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
   auto firstConfig = tuner.getCurrentConfig();
 
   doRebuild = false;
-  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(50ms); }));
+  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(30ms); }));
   tuner.iteratePairwise(&functor, doRebuild, twoParticles, emptyVec);
-  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(50ms); }));
+  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(30ms); }));
   tuner.iteratePairwise(&functor, doRebuild, twoParticles, emptyVec);
 
   // Here, second config will start to be tuned
 
   doRebuild = true;
-  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(200ms); }));
+  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(300ms); }));
   tuner.iteratePairwise(&functor, doRebuild, twoParticles, emptyVec);
 
   auto secondConfig = tuner.getCurrentConfig();
@@ -595,7 +595,7 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
   EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(25ms); }));
   tuner.iteratePairwise(&functor, doRebuild, twoParticles, emptyVec);
 
-  // Here, tuning should be finished and first should have been chosen (1000 + 2 * 500 = 2000 < 2500 = 2000 + 2 * 250)
+  // Here, tuning should be finished and first should have been chosen (100 + 2 * 30 = 160 < 350 = 300 + 2 * 25)
   tuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);
 
   EXPECT_EQ(tuner.getCurrentConfig(), firstConfig);
