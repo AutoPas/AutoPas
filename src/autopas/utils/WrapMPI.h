@@ -860,8 +860,10 @@ inline int AutoPas_MPI_Cart_rank(AutoPas_MPI_Comm comm, const int coords[], int 
 }
 
 inline int AutoPas_MPI_Dims_create(int nnodes, int ndims, int dims[]) {
-  // in non-MPI case nnodes should always be 1
-  dims[0] = 1;
+  // in non-MPI case nnodes should always be 1. Therefore there is one rank in every dim.
+  for (int i = 0; i < ndims; ++i) {
+    dims[i] = 1;
+  }
   return AUTOPAS_MPI_SUCCESS;
 }
 
