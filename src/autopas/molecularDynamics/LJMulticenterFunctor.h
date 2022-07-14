@@ -796,7 +796,7 @@ class LJMulticenterFunctor
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceBz;
 
     std::vector<size_t, autopas::AlignedAllocator<size_t>> siteTypesB;
-    std::vector<size_t, autopas::AlignedAllocator<size_t>> isSiteOwnedBArr;
+    std::vector<char, autopas::AlignedAllocator<char>> isSiteOwnedBArr;
 
     const SoAFloatPrecision const_sigmaSquared = _sigmaSquared;
     const SoAFloatPrecision const_epsilon24 = _epsilon24;
@@ -1115,6 +1115,12 @@ class LJMulticenterFunctor
 
     [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
 
+    SoAFloatPrecision potentialEnergySum = 0.;
+    SoAFloatPrecision virialSumX = 0.;
+    SoAFloatPrecision virialSumY = 0.;
+    SoAFloatPrecision virialSumZ = 0.;
+
+
     // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
     const SoAFloatPrecision cutoffSquared = _cutoffSquared;
     const auto const_unrotatedSitePositions = _sitePositionsLJ;
@@ -1149,6 +1155,7 @@ class LJMulticenterFunctor
 
     std::vector<size_t, autopas::AlignedAllocator<size_t>> siteTypesI;
     std::vector<size_t, autopas::AlignedAllocator<size_t>> siteTypesNeighbors;
+    std::vector<char, autopas::AlignedAllocator<char>> isNeighborSiteOwnedArr;
 
     // we require arrays for forces for sites to maintain SIMD in site-site calculations
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceX;
@@ -1168,6 +1175,10 @@ class LJMulticenterFunctor
     siteForceX.reserve(siteCountNeighbors);
     siteForceY.reserve(siteCountNeighbors);
     siteForceZ.reserve(siteCountNeighbors);
+
+    if constexpr (calculateGlobals) {
+      isNeighborSiteOwnedArr.reserve(siteCountNeighbors);
+    }
 
     if constexpr (useMixing) {
       sigmaSquareds.reserve(siteCountNeighbors);
@@ -1208,6 +1219,7 @@ class LJMulticenterFunctor
           siteForceX[siteIndex] = 0.;
           siteForceY[siteIndex] = 0.;
           siteForceZ[siteIndex] = 0.;
+          isNeighborSiteOwnedArr[siteIndex] = ownedStatePtr[neighborMolIndex] == OwnershipState::owned;
           ++siteIndex;
         }
       }
@@ -1224,6 +1236,7 @@ class LJMulticenterFunctor
           siteForceX[siteIndex] = 0.;
           siteForceY[siteIndex] = 0.;
           siteForceZ[siteIndex] = 0.;
+          isNeighborSiteOwnedArr[siteIndex] = ownedStatePtr[neighborMolIndex] == OwnershipState::owned;
           ++siteIndex;
         }
       }
@@ -1294,6 +1307,8 @@ class LJMulticenterFunctor
         const SoAFloatPrecision epsilon24 = useMixing ? epsilon24s[neighborSite] : const_epsilon24;
         const SoAFloatPrecision shift6 = applyShift ? (useMixing ? shift6s[neighborSite] : const_shift6) : 0;
 
+        const bool isNeighborSiteOwned = isNeighborSiteOwnedArr[neighborSite];
+
         const auto displacementX = exactPrimeSitePositionX - exactNeighborSitePositionX[neighborSite];
         const auto displacementY = exactPrimeSitePositionY - exactNeighborSitePositionY[neighborSite];
         const auto displacementZ = exactPrimeSitePositionZ - exactNeighborSitePositionZ[neighborSite];
@@ -1330,6 +1345,26 @@ class LJMulticenterFunctor
           siteForceY[neighborSite] -= forceY;
           siteForceZ[neighborSite] -= forceZ;
         }
+
+        // calculate globals
+        if constexpr (calculateGlobals) {
+          const auto potentialEnergy = siteMask[neighborSite] ? (epsilon24 * lj12m6 + shift6) : 0.;
+          const auto virialX = displacementX * forceX;
+          const auto virialY = displacementY * forceY;
+          const auto virialZ = displacementZ * forceZ;
+
+          const auto ownershipFactor = newton3 ?
+                                               (ownedStateInit==OwnershipState::owned ? 1. : 0.) +
+                                                   (isNeighborSiteOwned ? 1. : 0.) :
+                                               (ownedStateInit==OwnershipState::owned ? 1. : 0.);
+
+          // if newton3 is enabled, we multiply by 0.5 at the end of this function call when adding up the values to
+          // the threadData
+          potentialEnergySum += potentialEnergy * ownershipFactor;
+          virialSumX += virialX * ownershipFactor;
+          virialSumY += virialY * ownershipFactor;
+          virialSumZ += virialZ * ownershipFactor;
+        }
       }
     }
     // Add forces to prime mol
@@ -1363,7 +1398,34 @@ class LJMulticenterFunctor
 
       }
     } else {
-      // todo
+      size_t siteIndex = 0;
+      for (size_t neighborMol = 0; neighborMol < neighborListSize; ++neighborMol) {
+        const auto neighborMolIndex = neighborList[neighborMol];
+        const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
+            {q0ptr[neighborMolIndex], q1ptr[neighborMolIndex], q2ptr[neighborMolIndex], q3ptr[neighborMolIndex]},
+            const_unrotatedSitePositions );
+        for (size_t site = 0; site < const_unrotatedSitePositions.size(); ++site) {
+          fxptr[neighborMolIndex] += siteForceX[siteIndex];
+          fyptr[neighborMolIndex] += siteForceY[siteIndex];
+          fzptr[neighborMolIndex] += siteForceZ[siteIndex];
+          txptr[neighborMolIndex] += rotatedSitePositions[site][1] * siteForceZ[siteIndex] -
+                                     rotatedSitePositions[site][2] * siteForceY[siteIndex];
+          typtr[neighborMolIndex] += rotatedSitePositions[site][2] * siteForceX[siteIndex] -
+                                     rotatedSitePositions[site][0] * siteForceZ[siteIndex];
+          txptr[neighborMolIndex] += rotatedSitePositions[site][0] * siteForceY[siteIndex] -
+                                     rotatedSitePositions[site][1] * siteForceX[siteIndex];
+          ++siteIndex;
+        }
+      }
+    }
+    if constexpr (calculateGlobals) {
+      const auto threadNum = autopas_get_thread_num();
+      const auto newton3Factor = newton3 ? .5 : 1.; // todo: add reasoning once original reasoning in LJFunctor.h is corrected
+
+      _aosThreadData[threadNum].potentialEnergySum += potentialEnergySum * newton3Factor;
+      _aosThreadData[threadNum].virialSum[0] += virialSumX * newton3Factor;
+      _aosThreadData[threadNum].virialSum[1] += virialSumY * newton3Factor;
+      _aosThreadData[threadNum].virialSum[2] += virialSumZ * newton3Factor;
     }
   }
 
