@@ -139,6 +139,45 @@ void MulticenteredLJFunctorTest::singleSiteSanityCheck(autopas::MulticenteredMol
   }
 }
 
+template <bool newton3>
+void testSoACellAgainstAoS(std::vector<autopas::MulticenteredMoleculeLJ> molecules, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
+  using autopas::MulticenteredMoleculeLJ;
+
+  autopas::LJMulticenterFunctor<MulticenteredMoleculeLJ, false, true, autopas::FunctorN3Modes::Both, false, true> functor(cutoff, PPL);
+
+  auto moleculesAoS = molecules;
+  auto moleculesSoA = molecules;
+  const auto numberMolecules = molecules.size();
+
+  // Apply AoSFunctor to molecules
+  for (size_t i = 0; i < numberMolecules; ++i) {
+    for (size_t j = i+1; j < numberMolecules; ++j) {
+      functor.AoSFunctor(moleculesAoS[i],moleculesAoS[j],newton3);
+    }
+  }
+
+  autopas::FullParticleCell<MulticenteredMoleculeLJ> cellSoA;
+  for (auto &&mol : moleculesSoA) {
+    cellSoA.addParticle(mol);
+  }
+
+  functor.SoALoader(cellSoA, cellSoA._particleSoABuffer, 0);
+  functor.SoAFunctorSingle(cellSoA._particleSoABuffer, true);
+
+  // copy back to original particle array
+  moleculesSoA.clear();
+
+  functor.SoAExtractor(cellSoA, cellSoA._particleSoABuffer, 0);
+
+  ASSERT_EQ(moleculesAoS.size(), cellSoA.numParticles());
+
+  for (size_t i = 0; i < numberMolecules; ++i) {
+    ASSERT_NEAR(moleculesAoS[i].getF()[0], cellSoA._particles[i].getF()[0], 1e-13);
+    ASSERT_NEAR(moleculesAoS[i].getF()[1], cellSoA._particles[i].getF()[1], 1e-13);
+    ASSERT_NEAR(moleculesAoS[i].getF()[2], cellSoA._particles[i].getF()[2], 1e-13);
+  }
+}
+
 /**
  * Tests for the correctness of the AoS functor by applying to molecules designed to test all its functionality.
  */

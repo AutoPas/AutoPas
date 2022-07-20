@@ -48,6 +48,27 @@ class MulticenteredLJFunctorTest : public AutoPasTestBase {
    */
   template <bool newton3>
   void singleSiteSanityCheck(autopas::MulticenteredMoleculeLJ molA, autopas::MulticenteredMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
+
+  /**
+   * Compares the correctness of the SoACellFunctor against that of the AoSFunctor.
+   * @tparam newton3
+   * @param molecules vector of multi-site molecules
+   * @param PPL Particle Properties Library
+   * @param cutoff
+   */
+  template <bool newton3>
+  void testSoACellAgainstAoS(std::vector<autopas::MulticenteredMoleculeLJ> molecules, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
+
+  /**
+   * Compares the correctness of the SoACellPairFunctor against that of the AoSFunctor.
+   * @tparam newton3
+   * @param moleculesA
+   * @param moleculesB
+   * @param PPL
+   * @param cutoff
+   */
+  template <bool newton3>
+  void testSoACellPairAgainstAoS(std::vector<autopas::MulticenteredMoleculeLJ> moleculesA, std::vector<autopas::MulticenteredMoleculeLJ> moleculesB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 };
 
 
