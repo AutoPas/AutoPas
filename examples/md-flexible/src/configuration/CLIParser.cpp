@@ -40,7 +40,8 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.tuningStrategyOption, config.mpiStrategyOption, config.MPITuningMaxDifferenceForBucket,
       config.MPITuningWeightForMaxDensity, config.useThermostat, config.verletRebuildFrequency, config.vtkFileName,
       config.vtkWriteFrequency, config.selectorStrategy, config.yamlFilename, config.distributionStdDev,
-      config.globalForce, config.boundaryOption, zshCompletionsOption, helpOption)};
+      config.globalForce, config.boundaryOption, config.loadBalancer, config.loadBalancingInterval,
+      zshCompletionsOption, helpOption)};
 
   constexpr auto relevantOptionsSize = std::tuple_size_v<decltype(relevantOptions)>;
 
@@ -210,7 +211,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
         } else if (strArg.find("glob") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_Globals;
-        } else if (strArg.find("lj") != string::npos || strArg.find("lennard-jones") != string::npos) {
+        } else if (strArg.find("lj") != string::npos or strArg.find("lennard-jones") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
         } else {
           cerr << "Unknown functor: " << strArg << endl;
@@ -376,7 +377,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       case decltype(config.relativeBlacklistRange)::getoptChar: {
         try {
           config.relativeBlacklistRange.value = stod(strArg);
-          if (config.relativeBlacklistRange.value < 1 && config.relativeBlacklistRange.value != 0) {
+          if (config.relativeBlacklistRange.value < 1 and config.relativeBlacklistRange.value != 0) {
             cerr << "Relative range for blacklist range has to be greater or equal one or has to be zero!" << endl;
             displayHelp = true;
           }
@@ -557,6 +558,24 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       case decltype(config.boundaryOption)::getoptChar: {
         auto parsedOption = options::BoundaryTypeOption::parseOptionExact((strArg));
         config.boundaryOption.value = {parsedOption, parsedOption, parsedOption};
+        break;
+      }
+      case decltype(config.loadBalancer)::getoptChar: {
+        auto parsedOptions = LoadBalancerOption::parseOptions(strArg);
+
+        if (parsedOptions.size() != 1) {
+          cerr << "Pass exactly one load balancer option." << endl
+               << "Passed: " << strArg << endl
+               << "Parsed: " << autopas::utils::ArrayUtils::to_string(parsedOptions) << endl;
+
+          displayHelp = true;
+        }
+
+        config.loadBalancer.value = *parsedOptions.begin();
+        break;
+      }
+      case decltype(config.loadBalancingInterval)::getoptChar: {
+        config.loadBalancingInterval.value = (unsigned int)stoul(strArg);
         break;
       }
 

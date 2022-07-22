@@ -5,13 +5,15 @@
  */
 #pragma once
 
-#include <list>
+#if defined(AUTOPAS_ENABLE_ALLLBL)
+#include <ALL.hpp>
+#endif
 #include <memory>
 
 #include "DomainDecomposition.h"
-#include "autopas/AutoPas.h"
 #include "autopas/utils/WrapMPI.h"
 #include "src/TypeDefinitions.h"
+#include "src/configuration/MDFlexConfig.h"
 #include "src/options/BoundaryTypeOption.h"
 
 /**
@@ -22,125 +24,118 @@ class RegularGridDecomposition final : public DomainDecomposition {
  public:
   /**
    * Constructor.
-   * @param globalBoxMin: The minimum coordinates of the global domain.
-   * @param globalBoxMax: The maximum coordinates of the global domain.
-   * @param subdivideDimension: Decides if a dimension will be subdivided.
-   * @param cutoffWidth: The cutoff width for halo particles.
-   * @param skinWidth: The skin width of an autopas container domain.
-   * @param boundaryConditions: An array of boundary conditions in the x, y, and z directions.
+   * @param configuration: The configuration for definig the decomposition properties
    */
-  RegularGridDecomposition(const std::array<double, 3> &globalBoxMin, const std::array<double, 3> &globalBoxMax,
-                           const std::array<bool, 3> &subdivideDimension, double cutoffWidth, double skinWidth,
-                           const std::array<options::BoundaryTypeOption, 3> &boundaryConditions);
+  explicit RegularGridDecomposition(const MDFlexConfig &configuration);
 
   /**
    * Destructor.
    */
-  virtual ~RegularGridDecomposition();
-
-  /**
-   * Type for the AutoPas container
-   */
-  using SharedAutoPasContainer = std::shared_ptr<autopas::AutoPas<ParticleType>>;
+  ~RegularGridDecomposition() override;
 
   /**
    * Used to update the domain to the current topology.
-   * Currently does nothing
+   * Handles the diffuse load balancing by resizing the domains according to their work done.
+   * Currently the metric used as work is the timings created by the simulation timer. Although they are of type 'long'
+   * the update function use type 'double' because the work will be implicitly converted to 'double' during load
+   * balancing anyway.
+   * @param work: The work performed in the AutoPas container.
    */
-  void update() override;
+  void update(const double &work) override;
 
   /**
    * Returns the index of the local domain in the global domain context.
    * @return domain index.
    */
-  int getDomainIndex() const override { return _domainIndex; }
+  [[nodiscard]] int getDomainIndex() const override { return _domainIndex; }
 
   /**
    * Returns the minimum coordinates of global domain.
    * @return bottom left front corner of the global domain.
    */
-  std::array<double, 3> getGlobalBoxMin() const override { return _globalBoxMin; }
+  [[nodiscard]] std::array<double, 3> getGlobalBoxMin() const override { return _globalBoxMin; }
 
   /**
    * Returns the maximum coordinates of global domain.
    * @return top right back corner of the global domain.
    */
-  std::array<double, 3> getGlobalBoxMax() const override { return _globalBoxMax; }
+  [[nodiscard]] std::array<double, 3> getGlobalBoxMax() const override { return _globalBoxMax; }
 
   /**
    * Returns the minimum coordinates of local domain.
    * @return bottom left front corner of the local domain.
    */
-  std::array<double, 3> getLocalBoxMin() const override { return _localBoxMin; }
+  [[nodiscard]] std::array<double, 3> getLocalBoxMin() const override { return _localBoxMin; }
 
   /**
    * Returns the maximum coordinates of local domain.
    * @return top right back corner of the local domain.
    */
-  std::array<double, 3> getLocalBoxMax() const override { return _localBoxMax; }
+  [[nodiscard]] std::array<double, 3> getLocalBoxMax() const override { return _localBoxMax; }
 
   /**
    * Returns the number of domains in each dimension
    * @return vector containing the number of subdomains along each dimension
    */
-  std::array<int, 3> getDecomposition() const { return _decomposition; }
+  [[nodiscard]] std::array<int, 3> getDecomposition() const { return _decomposition; }
 
   /**
    * Returns the numnber of subdomains in the decomposition.
    * @return numner of subdomains in the decomposition.
    */
-  int getSubdomainCount() const { return _subdomainCount; }
+  [[nodiscard]] int getSubdomainCount() const { return _subdomainCount; }
 
   /**
    * Returns the current processes domain id.
    * @return domain id of the current processor
    */
-  const std::array<int, 3> getDomainId() const { return _domainId; }
+  [[nodiscard]] const std::array<int, 3> getDomainId() const { return _domainId; }
 
   /**
    * Returns the number of subdomains in the simulation.
    * @return number of subdomains
    */
-  int getNumberOfSubdomains() const;
+  [[nodiscard]] int getNumberOfSubdomains() const;
 
   /**
    * Checks if the provided coordinates are located in the local domain.
    * @param coordinates: The coordinates in question.
    * @return true if the coordinates lie inside the local domain, false otherwise.
    */
-  bool isInsideLocalDomain(const std::array<double, 3> &coordinates) const override;
+  [[nodiscard]] bool isInsideLocalDomain(const std::array<double, 3> &coordinates) const override;
 
   /**
    * Calculates and returns the extent of the subdomain with inde subdomainIndex.
    * @param subdomainIndex: The index of the subdomain for which to calculate the extent.
    * @return extent of the subdomain with index subdomainIndex.
    */
-  std::array<int, 6> getExtentOfSubdomain(const int subdomainIndex) const;
+  [[nodiscard]] std::array<int, 6> getExtentOfSubdomain(const int subdomainIndex) const;
 
   /**
-   * Exchanges halo particles with all neighbours of the provided AutoPasContainer.
+   * Exchanges halo particles with all neighbors of the provided AutoPasContainer.
    * @param autoPasContainer: The container, where the halo particles originate from.
    */
-  void exchangeHaloParticles(SharedAutoPasContainer &autoPasContainer);
+  void exchangeHaloParticles(AutoPasType &autoPasContainer);
 
   /**
-   * Exchanges migrating particles with all neighbours of the provided AutoPasContainer.
+   * Exchanges migrating particles with all neighbors of the provided AutoPasContainer.
    * @param autoPasContainer: The container, where the migrating particles originate from.
+   * @param emigrants: The emigrating particles to send to neighbors.
    */
-  void exchangeMigratingParticles(SharedAutoPasContainer &autoPasContainer);
+  void exchangeMigratingParticles(AutoPasType &autoPasContainer, std::vector<ParticleType> &emigrants);
 
   /**
    * Reflects particles within a reflective skin along the inside of a boundary.
    * @param autoPasContainer: The container, where the migrating particles originate from.
    */
-  void reflectParticlesAtBoundaries(SharedAutoPasContainer &autoPasContainer);
+  void reflectParticlesAtBoundaries(AutoPasType &autoPasContainer);
 
  private:
   /**
-   * The number of neighbours of a rectangular domain.
-   * This number does not include diagonal neighbours.
+   * The number of neighbors of a rectangular domain.
+   * This number does not include diagonal neighbors.
    */
-  static constexpr int _neighbourCount = 6;
+  static constexpr int _neighborCount = 6;
 
   /**
    * The number of dimensions in the simulation domain.
@@ -148,35 +143,9 @@ class RegularGridDecomposition final : public DomainDecomposition {
   static constexpr int _dimensionCount = 3;
 
   /**
-   * Indicates if MPI is enabled and if it will be used.
-   * In the case that MPI is enabled, but only one process is being used, this variable will be false.
+   * Defines which load balancer will be used.
    */
-  bool _mpiCommunicationNeeded;
-
-  /**
-   * The number of subdomains in this decomposition.
-   */
-  int _subdomainCount;
-
-  /**
-   * The minimum coordinates of the global domain.
-   */
-  std::array<double, 3> _globalBoxMin;
-
-  /**
-   * The maximum coordinates of the global domain.
-   */
-  std::array<double, 3> _globalBoxMax;
-
-  /**
-   * The decomposition computed depending on the number of subdomains.
-   */
-  std::array<int, 3> _decomposition;
-
-  /**
-   * The MPI communicator containing all processes which own a subdomain in this decomposition.
-   */
-  autopas::AutoPas_MPI_Comm _communicator;
+  LoadBalancerOption _loadBalancerOption;
 
   /**
    * Stores the domain cutoff width.
@@ -187,47 +156,89 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Stores the domain skin width.
    */
   double _skinWidth;
+  /**
+   * The minimum coordinates of the global domain.
+   */
+  const std::array<double, _dimensionCount> _globalBoxMin;
 
   /**
-   * The index of the current processor's domain.
+   * The maximum coordinates of the global domain.
+   */
+  const std::array<double, _dimensionCount> _globalBoxMax;
+
+  /**
+   * Boundary condition types of all dimensions.
+   */
+  std::array<options::BoundaryTypeOption, _dimensionCount> _boundaryType;
+
+  /**
+   * Indicates if MPI is enabled and if it will be used.
+   * In the case that MPI is enabled, but only one process is being used, this variable will be false.
+   */
+  bool _mpiCommunicationNeeded;
+
+  /**
+   * The number of subdomains in this decomposition.
+   */
+  int _subdomainCount{};
+
+  /**
+   * The decomposition computed depending on the number of subdomains.
+   * Number of ranks per dimension.
+   */
+  std::array<int, 3> _decomposition{};
+
+  /**
+   * Indicator to MPI to view all communication dimensions as periodic.
+   * @note For usage in MPI functions, the const needs to be casted away.
+   */
+  const std::vector<int> _periods{_dimensionCount, 1};
+
+  /**
+   * The MPI communicator containing all processes which own a subdomain in this decomposition.
+   */
+  autopas::AutoPas_MPI_Comm _communicator{};
+
+  /**
+   * The index of the current processor's domain in _communicator.
    * This also is the rank of the current processor.
    */
-  int _domainIndex;
+  int _domainIndex{};
 
   /**
-   * The ID of the current processor's domain.
+   * The 3D ID of the current processor's domain.
    */
-  std::array<int, 3> _domainId;
+  std::array<int, 3> _domainId{};
 
   /**
-   * The indices of the local domain's neighbours.
-   * These correspond to the ranks of the processors which own the neigbour domain.  */
-  std::array<int, 6> _neighbourDomainIndices;
-
-  /**
-   * The minimum cooridnates of the local domain.
+   * Contains the planar communicators along each dimension where the current process is a part of.
+   * A planar communicator contains all processes with the same coordinate in a single dimension.
    */
-  std::array<double, 3> _localBoxMin;
+  std::array<autopas::AutoPas_MPI_Comm, _dimensionCount> _planarCommunicators{};
 
   /**
-   * The maximum cooridnates of the local domain.
-   */
-  std::array<double, 3> _localBoxMax;
+   * The indices of the local domain's neighbors.
+   * These correspond to the ranks of the processors which own the neighbor domain.  */
+  std::array<int, _neighborCount> _neighborDomainIndices{};
 
   /**
-   * Boundary condition types.
+   * The minimum coordinates of the local domain.
    */
-  std::array<options::BoundaryTypeOption, 3> _boundaryType;
+  std::array<double, _dimensionCount> _localBoxMin{};
 
   /**
-   * A temporary buffer used for MPI send requests.
+   * The maximum coordinates of the local domain.
    */
-  std::vector<autopas::AutoPas_MPI_Request> _sendRequests;
+  std::array<double, _dimensionCount> _localBoxMax{};
 
+#if defined(AUTOPAS_ENABLE_ALLLBL)
   /**
-   * A temporary buffer for data which is sent by MPI_Send.
+   * The ALL load balancer used for diffuse load balancing
+   * We cannot use a shared pointer here, because whenn the load balancer is deleted, it calls MPI_Comm_free after
+   * we call MPI_Finalize().
    */
-  std::vector<std::vector<char>> _sendBuffers;
+  std::unique_ptr<ALL::ALL<double, double>> _allLoadBalancer;
+#endif
 
   /**
    * Initializes the MPI communicator.
@@ -236,105 +247,81 @@ class RegularGridDecomposition final : public DomainDecomposition {
   void initializeMPICommunicator();
 
   /**
-   * Initializes the local domain.
+   * Initialize _planarCommunicators and domainID.
    * This needs to be called before initializeLocalBox.
    */
   void initializeLocalDomain();
 
   /**
-   * Initializes the local domain coordinates.
-   * This needs to be called after initializeLocalDomain and initialzieGlobalDomain.
+   * Initializes the local domain coordinates, aka _localBoxMin and _localBoxMax.
+   * This needs to be called after initializeLocalDomain.
    */
   void initializeLocalBox();
 
   /**
-   * Initializes the neighbour ids.
+   * Initializes _neighborDomainIndices.
    * This needs to be called after initializeLocalDomain.
    */
-  void initializeNeighbourIds();
-
-  /**
-   * Updates the local box.
-   */
-  void updateLocalBox();
-
-  /**
-   * Sends particles of type ParticleType to a receiver.
-   * @param particles The particles to be sent to the receiver.
-   * @param receiver The recipient of the particels.
-   */
-  void sendParticles(const std::vector<ParticleType> &particles, const int &receiver);
-
-  /**
-   * Received particles sent by a sender.
-   * @param receivedParticles The container where the received particles will be stored.
-   * @param source The sender id/rank.
-   */
-  void receiveParticles(std::vector<ParticleType> &receivedParticles, const int &source);
-
-  /**
-   * Received data which has been sent by a specifig neighbour of this domain.
-   * @param neighbour The neighbour where the data originates from.
-   * @param dataBuffer The buffer where the received data will be stored.
-   */
-  void receiveDataFromNeighbour(const int &neighbour, std::vector<char> &dataBuffer);
-
-  /**
-   * Sends data to a specific neighbour of this domain.
-   * @param sendBuffer The buffer which will be sent to the neighbour.
-   * @param neighbour The neighbour to which the data will be sent.
-   */
-  void sendDataToNeighbour(std::vector<char> sendBuffer, const int &neighbour);
+  void initializeNeighborIndices();
 
   /**
    * Sends and also receives particles to and from the left and right neighbours.
    * @param particlesToLeft: Particles which get send to the left neighbour.
    * @param particlesToRight: Particles which get send to the right neighbor.
-   * @param leftNeighbour: The left neighbour's index / rank.
-   * @param rightNeighbour: The right neighbour's index / rank.
-   * @param receivedParticles: Container for the particles received from either neighbour.
+   * @param leftNeighbor: The left neighbor's index / rank.
+   * @param rightNeighbor: The right neighbor's index / rank.
+   * @param receivedParticles: Container for the particles received from either neighbor.
    */
   void sendAndReceiveParticlesLeftAndRight(std::vector<ParticleType> &particlesToLeft,
-                                           std::vector<ParticleType> &particlesToRight, const int &leftNeighbour,
-                                           const int &rightNeighbour, std::vector<ParticleType> &receivedParticles);
-
-  /**
-   * Waits for all send requests to be finished.
-   */
-  void waitForSendRequests();
+                                           std::vector<ParticleType> &particlesToRight, const int &leftNeighbor,
+                                           const int &rightNeighbor, std::vector<ParticleType> &receivedParticles);
 
   /**
    * Collects the halo particles for the left neighbour.
    * Halo particle positions will be wrapped around the global domain boundary if necessary.
    * @param autoPasContainer: The autopas container which owns the potential halo particles.
-   * @param direction: The direction along which the neighbour is located.
+   * @param direction: The direction along which the neighbor is located.
    * @param haloParticles: The container the identified halo particles are gathered in to.
    */
-  void collectHaloParticlesForLeftNeighbour(SharedAutoPasContainer &autoPasContainer, const size_t &direction,
+  void collectHaloParticlesForLeftNeighbor(AutoPasType &autoPasContainer, const size_t &direction,
+                                           std::vector<ParticleType> &haloParticles);
+
+  /**
+   * Collects the halo particles for the right neighbor.
+   * Halo particle positions will be wrapped around the global domain boundary if necessary.
+   * @param autoPasContainer: The autopas container which owns the potential halo particles.
+   * @param direction: The direction along which the neighbor is located.
+   * @param haloParticles: The container the identified halo particles are gathered in to.
+   */
+  void collectHaloParticlesForRightNeighbor(AutoPasType &autoPasContainer, const size_t &direction,
                                             std::vector<ParticleType> &haloParticles);
 
   /**
-   * Collects the halo particles for the right neighbour.
-   * Halo particle positions will be wrapped around the global domain boundary if necessary.
-   * @param autoPasContainer: The autopas container which owns the potential halo particles.
-   * @param direction: The direction along which the neighbour is located.
-   * @param haloParticles: The container the identified halo particles are gathered in to.
-   */
-  void collectHaloParticlesForRightNeighbour(SharedAutoPasContainer &autoPasContainer, const size_t &direction,
-                                             std::vector<ParticleType> &haloParticles);
-
-  /**
-   * Categorizes the provided particles as particles for the left or the right neighbour and adds them to the respective
+   * Categorizes the provided particles as particles for the left or the right neighbor and adds them to the respective
    * output vector. Particle positions will be wrapped around the global domain boundary if necessary.
    * @param particles: The particles which need to be categorized.
-   * @param direction: The index of the dimension along which the left and right neighbour lie.
-   * @param leftNeighbourParticles: Contains the particles for the left neighbour after function execution.
-   * @param rightNeighbourParticles: Contains the particles for the right neighbour after function execution.
+   * @param direction: The index of the dimension along which the left and right neighbor lie.
+   * @param leftNeighborParticles: Contains the particles for the left neighbor after function execution.
+   * @param rightNeighborParticles: Contains the particles for the right neighbor after function execution.
    * @param uncategorizedParticles: Contains particles which could neither be assigned to the left nor the right
-   * neighbour.
+   * neighbor.
    */
-  void categorizeParticlesIntoLeftAndRightNeighbour(const std::vector<ParticleType> &particles, const size_t &direction,
-                                                    std::vector<ParticleType> &leftNeighbourParticles,
-                                                    std::vector<ParticleType> &rightNeighbourParticles,
-                                                    std::vector<ParticleType> &uncategorizedParticles);
+  void categorizeParticlesIntoLeftAndRightNeighbor(const std::vector<ParticleType> &particles, const size_t &direction,
+                                                   std::vector<ParticleType> &leftNeighborParticles,
+                                                   std::vector<ParticleType> &rightNeighborParticles,
+                                                   std::vector<ParticleType> &uncategorizedParticles);
+
+  /**
+   * Balances the subdomains of the grid decomposition using the inverted pressure balancing algorithm.
+   * @param work: The work performed by the process owning this sudomain.
+   */
+  void balanceWithInvertedPressureLoadBalancer(const double &work);
+
+#if defined(AUTOPAS_ENABLE_ALLLBL)
+  /**
+   * Balances the subdomains of the grid decomposition using the ALL load balancer.
+   * @param work: The work performed by the process owning this sudomain.
+   */
+  void balanceWithAllLoadBalancer(const double &work);
+#endif
 };

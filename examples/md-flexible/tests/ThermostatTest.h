@@ -5,9 +5,11 @@
  */
 #pragma once
 #include "AutoPasTestBase.h"
-#include "autopas/AutoPas.h"
+#include "autopas/AutoPasDecl.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "testingHelpers/commonTypedefs.h"
+
+extern template class autopas::AutoPas<Molecule>;
 
 class ThermostatTest : public AutoPasTestBase,
                        public ::testing::WithParamInterface<std::tuple<double, double, double>> {

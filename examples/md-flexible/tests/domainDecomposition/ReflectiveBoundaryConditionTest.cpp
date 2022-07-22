@@ -19,25 +19,25 @@ extern template class autopas::AutoPas<ParticleType>;
  */
 TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   // initialise AutoPas container & domainDecomposition
-  const std::array<double, 3> boxMin = {0., 0., 0.};
-  const std::array<double, 3> boxMax = {5., 5., 5.};
-  const std::array<double, 3> boxLength = autopas::utils::ArrayMath::sub(boxMax, boxMin);
-  const std::array<bool, 3> subdivideDimension = {true, true, true};
-  const double cutoffWidth = 0.3;
-  const double skinWidth = 0.2;
-  const std::array<options::BoundaryTypeOption, 3> boundaryConditions = {options::BoundaryTypeOption::reflective,
-                                                                         options::BoundaryTypeOption::reflective,
-                                                                         options::BoundaryTypeOption::reflective};
+  MDFlexConfig config(0, nullptr);
 
-  RegularGridDecomposition domainDecomposition(boxMin, boxMax, subdivideDimension, cutoffWidth, skinWidth,
-                                               boundaryConditions);
+  config.boxMin.value = {0., 0., 0.};
+  config.boxMax.value = {5., 5., 5.};
+  const std::array<double, 3> boxLength = autopas::utils::ArrayMath::sub(config.boxMax.value, config.boxMin.value);
+  config.subdivideDimension.value = {true, true, true};
+  config.cutoff.value = 0.3;
+  config.verletSkinRadius.value = 0.2;
+  config.boundaryOption.value = {options::BoundaryTypeOption::reflective, options::BoundaryTypeOption::reflective,
+                                 options::BoundaryTypeOption::reflective};
+
+  RegularGridDecomposition domainDecomposition(config);
 
   auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
 
   autoPasContainer->setBoxMin(domainDecomposition.getLocalBoxMin());
   autoPasContainer->setBoxMax(domainDecomposition.getLocalBoxMax());
-  autoPasContainer->setCutoff(cutoffWidth);
-  autoPasContainer->setVerletSkin(skinWidth);
+  autoPasContainer->setCutoff(config.cutoff.value);
+  autoPasContainer->setVerletSkin(config.verletSkinRadius.value);
   autoPasContainer->init();
 
   // get particle properties
@@ -72,10 +72,12 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
 #endif
   }
 
+  auto emigrants = autoPasContainer->updateContainer();
+
   // apply BCs + domain exchange
-  domainDecomposition.exchangeMigratingParticles(autoPasContainer);
-  domainDecomposition.reflectParticlesAtBoundaries(autoPasContainer);
-  domainDecomposition.exchangeHaloParticles(autoPasContainer);
+  domainDecomposition.exchangeMigratingParticles(*autoPasContainer, emigrants);
+  domainDecomposition.reflectParticlesAtBoundaries(*autoPasContainer);
+  domainDecomposition.exchangeHaloParticles(*autoPasContainer);
 
   if (domainDecomposition.isInsideLocalDomain(expectedPosition)) {
     EXPECT_EQ(1, autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned));
