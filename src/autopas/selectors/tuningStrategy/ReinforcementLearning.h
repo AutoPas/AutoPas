@@ -10,6 +10,7 @@
 #include <set>
 #include <sstream>
 #include <utility>
+#include <cstdlib>
 
 #include "SetSearchSpaceBasedTuningStrategy.h"
 #include "TuningStrategyInterface.h"
@@ -126,8 +127,10 @@ class ReinforcementLearning : public SetSearchSpaceBasedTuningStrategy {
 
   bool _firstTuningPhase = true;
   bool _startTuningPhase = true;
-  double _alpha = 1;
-  double _gamma = 0.5;
+  const char * _alpha_tmp  = std::getenv("ALPHA");
+  double _alpha = (_alpha_tmp== nullptr) ? 1 : atof(_alpha_tmp);
+  const char * _gamma_tmp = std::getenv("GAMMA");
+  double _gamma = (_gamma_tmp==nullptr) ? 1 : atof(_gamma_tmp);
   size_t _randomExplorations = 5;
   std::set<Configuration> _selectedConfigs{};
 };
