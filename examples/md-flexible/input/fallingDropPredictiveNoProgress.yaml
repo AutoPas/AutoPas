@@ -9,7 +9,7 @@ tuning-strategy                  :  predicitive-Search
 tuning-interval                  :  1000
 tuning-samples                   :  3
 tuning-max-evidence              :  10
-functor                          :  Lennard-Jones
+functor                          :  Lennard-Jones-AVX2
 newton3                          :  [disabled, enabled]
 cutoff                           :  3
 box-min                          :  [0, 0, 0]

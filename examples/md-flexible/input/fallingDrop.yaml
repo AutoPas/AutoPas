@@ -5,8 +5,8 @@ verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 # data-layout                      :  [AoS, SoA]
 # Traversals for Release paper:
-# traversal                        :  [ lc_c01, lc_c01_combined_soa, lc_c18, lc_c08, lc_c04_combined_SoA, lc_c04, lc_c04_HCP, lc_sliced, vl_list_iteration, vvl_as_built, vlc_c01, vlc_c18, vlc_sliced, vcl_cluster_iteration, vcl_c01_balanced, vcl_c06 ]
-tuning-strategy                  :  full-Search
+traversal                        :  [lc_c01, lc_c18, lc_c08, lc_sliced, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced]
+tuning-strategy                  :  reinforcement-learning
 tuning-interval                  :  1000
 tuning-samples                   :  3
 tuning-max-evidence              :  10
@@ -24,7 +24,7 @@ Objects:
   # since md-flex currently has no reflecting boundaries we use walls of particles with infinite (or max double) mass.
   # bottom wall
   CubeGrid:
-    0:  
+    0:
       particles-per-dimension    :  [51, 31, 1]
       particle-spacing           :  1
       bottomLeftCorner           :  [0, 0, 0]
@@ -46,7 +46,7 @@ Objects:
 #      particle-mass              :  1.79769e+308
   # "water"
   CubeClosestPacked:
-    0:  
+    0:
       particle-spacing           :  1.122462048
       bottomLeftCorner           :  [1, 1, 1]
       box-length                 :  [48, 28, 10]
@@ -56,7 +56,7 @@ Objects:
       particle-sigma             :  1
       particle-mass              :  1
   Sphere:
-    0:  
+    0:
       center                     :  [18, 15, 30]
       radius                     :  6
       particle-spacing           :  1.122462048
@@ -75,4 +75,4 @@ vtk-filename                     :  fallingDrop
 vtk-write-frequency              :  50
 no-flops                         :  false
 no-end-config                    :  true
-log-level                        :  debug
+log-level                        :  info
