@@ -245,18 +245,16 @@ class LJFunctorSVE
       const svfloat64_t y1 = svdup_f64(yptr[i]);
       const svfloat64_t z1 = svdup_f64(zptr[i]);
 
-      svbool_t pg_1, pg_2, pg_3, pg_4, pg_5;
+      svbool_t pg_1, pg_2, pg_3, pg_4;
       size_t j = 0;
       for (; j < i; j += vecLength * 4) {
         const size_t j_2 = j + vecLength;
         const size_t j_3 = j_2 + vecLength;
         const size_t j_4 = j_3 + vecLength;
-        const size_t j_5 = j_4 + vecLength;
         pg_1 = svwhilelt_b64(j, i);
         pg_2 = svwhilelt_b64(j_2, i);
         pg_3 = svwhilelt_b64(j_3, i);
         pg_4 = svwhilelt_b64(j_4, i);
-        pg_5 = svwhilelt_b64(j_4, i);
 
         SoAKernel<newton3, false>(j, ownedStatePtr[i] == OwnershipState::owned,
                                   reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr, zptr, fxptr,
@@ -334,18 +332,16 @@ class LJFunctorSVE
       const svfloat64_t y1 = svdup_f64(y1ptr[i]);
       const svfloat64_t z1 = svdup_f64(z1ptr[i]);
 
-      svbool_t pg_1, pg_2, pg_3, pg_4, pg_5;
+      svbool_t pg_1, pg_2, pg_3, pg_4;
       unsigned int j = 0;
       for (; j < soa2.getNumberOfParticles(); j += vecLength * 4) {
         const unsigned int j_2 = j + vecLength;
         const unsigned int j_3 = j_2 + vecLength;
         const unsigned int j_4 = j_3 + vecLength;
-        const unsigned int j_5 = j_4 + vecLength;
         pg_1 = svwhilelt_b64(j, (unsigned int)soa2.getNumberOfParticles());
         pg_2 = svwhilelt_b64(j_2, (unsigned int)soa2.getNumberOfParticles());
         pg_3 = svwhilelt_b64(j_3, (unsigned int)soa2.getNumberOfParticles());
         pg_4 = svwhilelt_b64(j_4, (unsigned int)soa2.getNumberOfParticles());
-        pg_5 = svwhilelt_b64(j_4, (unsigned int)soa2.getNumberOfParticles());
 
         SoAKernel<newton3, false>(j, ownedStatePtr1[i] == OwnershipState::owned,
                                   reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr, y2ptr, z2ptr,
@@ -368,10 +364,10 @@ class LJFunctorSVE
         energyfactor *= 0.5;  // we count the energies partly to one of the two cells!
       }
 
-      _aosThreadData[threadnum].upotSum += svaddv(svptrue_b64(), upotSum) * energyfactor;
-      _aosThreadData[threadnum].virialSum[0] += svaddv(svptrue_b64(), virialSumX) * energyfactor;
-      _aosThreadData[threadnum].virialSum[1] += svaddv(svptrue_b64(), virialSumY) * energyfactor;
-      _aosThreadData[threadnum].virialSum[2] += svaddv(svptrue_b64(), virialSumZ) * energyfactor;
+      _aosThreadData[threadnum].upotSum += svaddv_f64(svptrue_b64(), upotSum) * energyfactor;
+      _aosThreadData[threadnum].virialSum[0] += svaddv_f64(svptrue_b64(), virialSumX) * energyfactor;
+      _aosThreadData[threadnum].virialSum[1] += svaddv_f64(svptrue_b64(), virialSumY) * energyfactor;
+      _aosThreadData[threadnum].virialSum[2] += svaddv_f64(svptrue_b64(), virialSumZ) * energyfactor;
     }
 #endif
   }
@@ -679,9 +675,9 @@ class LJFunctorSVE
                                    fac_1);
     }
 
-    fxptr[indexFirst] += svaddv(svptrue_b64(), fxacc);
-    fyptr[indexFirst] += svaddv(svptrue_b64(), fyacc);
-    fzptr[indexFirst] += svaddv(svptrue_b64(), fzacc);
+    fxptr[indexFirst] += svaddv_f64(svptrue_b64(), fxacc);
+    fyptr[indexFirst] += svaddv_f64(svptrue_b64(), fyacc);
+    fzptr[indexFirst] += svaddv_f64(svptrue_b64(), fzacc);
 
     if constexpr (calculateGlobals) {
       const int threadnum = autopas_get_thread_num();
@@ -692,10 +688,10 @@ class LJFunctorSVE
         energyfactor *= 0.5;  // we count the energies partly to one of the two cells!
       }
 
-      _aosThreadData[threadnum].upotSum += svaddv(svptrue_b64(), upotSum) * energyfactor;
-      _aosThreadData[threadnum].virialSum[0] += svaddv(svptrue_b64(), virialSumX) * energyfactor;
-      _aosThreadData[threadnum].virialSum[1] += svaddv(svptrue_b64(), virialSumY) * energyfactor;
-      _aosThreadData[threadnum].virialSum[2] += svaddv(svptrue_b64(), virialSumZ) * energyfactor;
+      _aosThreadData[threadnum].upotSum += svaddv_f64(svptrue_b64(), upotSum) * energyfactor;
+      _aosThreadData[threadnum].virialSum[0] += svaddv_f64(svptrue_b64(), virialSumX) * energyfactor;
+      _aosThreadData[threadnum].virialSum[1] += svaddv_f64(svptrue_b64(), virialSumY) * energyfactor;
+      _aosThreadData[threadnum].virialSum[2] += svaddv_f64(svptrue_b64(), virialSumZ) * energyfactor;
     }
 #endif
   }
@@ -864,33 +860,33 @@ class LJFunctorSVE
 
    private:
     // dummy parameter to get the right size (64 bytes)
-    double __remainingTo64[4];
+    [[maybe_unused]] double _remainingTo64[4]{};
   };
   // make sure of the size of AoSThreadData
   static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
 #ifdef __ARM_FEATURE_SVE
-  const double _cutoffsquare{};
-  double _shift6 = 0;
-  double _epsilon24{};
-  double _sigmaSquare{};
+  const double _cutoffsquare;
+  double _shift6{0.};
+  double _epsilon24{0.};
+  double _sigmaSquare{0.};
 #endif
 
-  const double _cutoffsquareAoS = 0;
-  double _epsilon24AoS, _sigmaSquareAoS, _shift6AoS = 0;
+  const double _cutoffsquareAoS;
+  double _epsilon24AoS{0.}, _sigmaSquareAoS{0.}, _shift6AoS{0.};
 
   ParticlePropertiesLibrary<double, size_t> *_PPLibrary = nullptr;
 
   // sum of the potential energy, only calculated if calculateGlobals is true
-  double _upotSum;
+  double _upotSum{0.};
 
   // sum of the virial, only calculated if calculateGlobals is true
-  std::array<double, 3> _virialSum;
+  std::array<double, 3> _virialSum{0., 0., 0.};
 
   // thread buffer for aos
-  std::vector<AoSThreadData> _aosThreadData;
+  std::vector<AoSThreadData> _aosThreadData{};
 
   // defines whether or whether not the global values are already preprocessed
-  bool _postProcessed;
+  bool _postProcessed{false};
 };
 }  // namespace autopas
