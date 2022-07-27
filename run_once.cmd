@@ -5,6 +5,7 @@
 #SBATCH -D .
 #SBATCH --clusters=serial
 #SBATCH --partition=serial_std
+#SBATCH --get-user-env
 
 a='0'
 g='0'
