@@ -18,7 +18,8 @@ do
             export "ALPHA=${a}"
             export "GAMMA=${g}"
             strategy="ReinforcementLearning"
-            yaml-file="fallingDropReinforcementLearningNoProgress.yaml"
+            simulation="fallingDrop"
+            yaml-file="${simulation}ReinforcementLearningNoProgress.yaml"
             txt_file="alpha_${a}_gamma_${g}.txt"
             cd build/examples/md-flexible || exit
             ./md-flexible "--yaml-filename" ${yaml_file} | tee ${txt_file}
