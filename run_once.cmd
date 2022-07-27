@@ -6,6 +6,7 @@
 #SBATCH --clusters=serial
 #SBATCH --partition=serial_std
 #SBATCH --get-user-env
+#SBATCH --export=ALPHA,Gamma
 
 a='0'
 g='0'
