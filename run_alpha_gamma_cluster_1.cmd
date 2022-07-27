@@ -18,9 +18,11 @@ do
             export "ALPHA=${a}"
             export "GAMMA=${g}"
             strategy="ReinforcementLearning"
-            yaml-file="echo './examples/md-flexible/input/fallingDropReinforcementLearningNoProgress.yaml'"
+            yaml-file="fallingDropReinforcementLearningNoProgress.yaml"
             txt_file="alpha_${a}_gamma_${g}.txt"
-            ./build/examples/md-flexible/md-flexible "--yaml-filename" ${yaml_file} | tee ${txt_file}
+            cd build/examples/md-flexible || exit
+            ./md-flexible "--yaml-filename" ${yaml_file} | tee ${txt_file}
+            cd ../../../
             unset "ALPHA"
             unset "GAMMA"
         )
