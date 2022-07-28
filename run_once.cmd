@@ -2,6 +2,7 @@
 
 #SBATCH -J Alpha_Gamma
 #SBATCH -o ./%x%j.%N.out
+#SBATCH -e ./%x%j.%N_error.out
 #SBATCH -D .
 #SBATCH --clusters=serial
 #SBATCH --partition=serial_std
