@@ -9,7 +9,9 @@
 #include "autopas/AutoPasDecl.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
+#ifdef __ARM_FEATURE_SVE
 #include "autopas/molecularDynamics/LJFunctorSVE.h"
+#endif
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 #include "autopas/utils/SimilarityFunctions.h"
 
@@ -410,12 +412,14 @@ bool Simulation::calculatePairwiseForces() {
       wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
       break;
     }
+#ifdef __ARM_FEATURE_SVE
     case MDFlexConfig::FunctorOption::lj12_6_SVE: {
       autopas::LJFunctorSVE<ParticleType, true, true> functor{_autoPasContainer->getCutoff(),
                                                               particlePropertiesLibrary};
       wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
       break;
     }
+#endif
   }
   return wasTuningIteration;
 }
@@ -543,10 +547,12 @@ void Simulation::logMeasurements() {
           flopsPerKernelCall = autopas::LJFunctorAVX<ParticleType, true, true>::getNumFlopsPerKernelCall();
           break;
         }
+#ifdef __ARM_FEATURE_SVE
         case MDFlexConfig::FunctorOption ::lj12_6_SVE: {
           flopsPerKernelCall = autopas::LJFunctorSVE<ParticleType, true, true>::getNumFlopsPerKernelCall();
           break;
         }
+#endif
         default:
           throw std::runtime_error("Invalid Functor choice");
       }

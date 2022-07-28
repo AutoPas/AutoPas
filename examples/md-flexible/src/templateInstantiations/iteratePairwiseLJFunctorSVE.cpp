@@ -6,6 +6,7 @@
  * other compilation units to only declare, but not instantiate this template.
  */
 
+#ifdef __ARM_FEATURE_SVE
 #include "autopas/AutoPasImpl.h"
 #include "autopas/molecularDynamics/LJFunctorSVE.h"
 #include "src/TypeDefinitions.h"
@@ -13,3 +14,4 @@
 //! @cond Doxygen_Suppress
 template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctorSVE<ParticleType, true, true> *);
 //! @endcond
+#endif
