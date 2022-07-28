@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH -J Alpha_Gamma
+#SBATCH -J Alpha_Gamma_6
 #SBATCH -o ./%x%j.%N.out
 #SBATCH -D .
 #SBATCH --clusters=serial
