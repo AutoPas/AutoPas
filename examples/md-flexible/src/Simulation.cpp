@@ -23,7 +23,9 @@ extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJ
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(
     autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true> *);
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctorAVX<ParticleType, true, true> *);
+#ifdef __ARM_FEATURE_SVE
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctorSVE<ParticleType, true, true> *);
+#endif
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::FlopCounterFunctor<ParticleType> *);
 //! @endcond
 
