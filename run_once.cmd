@@ -7,12 +7,13 @@
 #SBATCH --clusters=serial
 #SBATCH --partition=serial_std
 #SBATCH --get-user-env
-#SBATCH --export=ALPHA,Gamma
+#SBATCH --export=ALPHA,Gamma, OMP_NUM_THREADS
 
 a='0'
 g='0'
-export "ALPHA=${a}"
-export "GAMMA=${g}"
+export OMP_NUM_THREADS=1
+export ALPHA=${a}
+export GAMMA=${g}
 strategy="ReinforcementLearning"
 simulation="fallingDrop"
 yaml_file="./build/examples/md-flexible/${simulation}ReinforcementLearning.yaml"
