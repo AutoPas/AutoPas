@@ -7,7 +7,7 @@
 #SBATCH --clusters=serial
 #SBATCH --partition=serial_std
 #SBATCH --get-user-env
-#SBATCH --export=ALPHA,Gamma, OMP_NUM_THREADS
+#SBATCH --export=ALPHA,Gamma,OMP_NUM_THREADS
 
 a='0'
 g='0'
