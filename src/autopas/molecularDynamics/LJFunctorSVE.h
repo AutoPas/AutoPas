@@ -866,7 +866,7 @@ class LJFunctorSVE
   static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
 #ifdef __ARM_FEATURE_SVE
-  const double _cutoffsquare;
+  const double _cutoffsquare{};
   double _shift6{0.};
   double _epsilon24{0.};
   double _sigmaSquare{0.};
