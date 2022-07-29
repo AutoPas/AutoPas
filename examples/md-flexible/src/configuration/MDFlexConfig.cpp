@@ -238,6 +238,10 @@ std::string MDFlexConfig::to_string() const {
       os << "Lennard-Jones (12-6) AVX intrinsics" << endl;
       break;
     }
+    case FunctorOption::lj12_6_SVE: {
+      os << "Lennard-Jones (12-6) SVE intrinsics" << endl;
+      break;
+    }
     case FunctorOption::lj12_6_Globals: {
       os << "Lennard-Jones (12-6) with globals" << endl;
       break;

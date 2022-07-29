@@ -6,7 +6,6 @@
 #include "ParallelVtkWriter.h"
 
 #include <cstddef>
-#include <filesystem>
 #include <fstream>
 #include <ios>
 #include <iostream>
@@ -218,7 +217,7 @@ void ParallelVtkWriter::tryCreateSessionAndDataFolders(const std::string &name, 
   strftime(buffer, sizeof(buffer), "%d%m%Y_%H%M%S", &timeInformation);
   std::string timeString(buffer);
 
-  if (not std::filesystem::exists(location)) {
+  if (not checkFileExists(location)) {
     tryCreateFolder(location, "./");
   }
 
@@ -330,10 +329,14 @@ void ParallelVtkWriter::createPvtsFile(const int &currentIteration, const Regula
 
 void ParallelVtkWriter::tryCreateFolder(const std::string &name, const std::string &location) {
   try {
-    std::filesystem::path newDirectoryPath(location + "/" + name);
-    std::filesystem::create_directory(newDirectoryPath);
-  } catch (std::filesystem::filesystem_error const &ex) {
-    throw std::runtime_error("The output location " + location + " passed to ParallelVtkWriter is invalid");
+    // filesystem library unfortunately not available on all target systems e.g. Fugaku
+    // std::filesystem::path newDirectoryPath(location + "/" + name);
+    // std::filesystem::create_directory(newDirectoryPath);
+    const auto newDirectoryPath{location + "/" + name};
+    mkdir(newDirectoryPath.c_str(), 0777);
+  } catch (const std::exception &ex) {
+    throw std::runtime_error("The output location " + location +
+                             " passed to ParallelVtkWriter is invalid: " + ex.what());
   }
 }
 

@@ -9,6 +9,9 @@
 #include "autopas/AutoPasDecl.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
+#ifdef __ARM_FEATURE_SVE
+#include "autopas/molecularDynamics/LJFunctorSVE.h"
+#endif
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 #include "autopas/utils/SimilarityFunctions.h"
 
@@ -20,6 +23,9 @@ extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJ
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(
     autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true> *);
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctorAVX<ParticleType, true, true> *);
+#ifdef __ARM_FEATURE_SVE
+extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctorSVE<ParticleType, true, true> *);
+#endif
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::FlopCounterFunctor<ParticleType> *);
 //! @endcond
 
@@ -54,8 +60,8 @@ size_t getTerminalWidth() {
 
   // if width is still zero try the environment variable COLUMNS
   if (terminalWidth == 0) {
-    if (auto *teminalWidthCharArr = std::getenv("COLUMNS")) {
-      terminalWidth = atoi(teminalWidthCharArr);
+    if (auto *terminalWidthCharArr = std::getenv("COLUMNS")) {
+      terminalWidth = atoi(terminalWidthCharArr);
     }
   }
 
@@ -342,7 +348,7 @@ void Simulation::updateForces() {
     ++_numTuningIterations;
   } else {
     _timers.forceUpdateNonTuning.addTime(timeIteration);
-    // if the previous iteration was a tuning iteration an the current one is not
+    // if the previous iteration was a tuning iteration and the current one is not
     // we have reached the end of a tuning phase
     if (_previousIterationWasTuningIteration) {
       ++_numTuningPhasesCompleted;
@@ -408,6 +414,14 @@ bool Simulation::calculatePairwiseForces() {
       wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
       break;
     }
+#ifdef __ARM_FEATURE_SVE
+    case MDFlexConfig::FunctorOption::lj12_6_SVE: {
+      autopas::LJFunctorSVE<ParticleType, true, true> functor{_autoPasContainer->getCutoff(),
+                                                              particlePropertiesLibrary};
+      wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
+      break;
+    }
+#endif
   }
   return wasTuningIteration;
 }
@@ -490,11 +504,11 @@ void Simulation::logMeasurements() {
     std::cout << timerToString("    ForceUpdateTotal              ", forceUpdateTotal, maximumNumberOfDigits, simulate);
     std::cout << timerToString("      Tuning                      ", forceUpdateTuning, maximumNumberOfDigits,
                                forceUpdateTotal);
-    std::cout << timerToString("      ForceUdpateGlobalForces     ", forceUpdateGlobalForces, maximumNumberOfDigits,
+    std::cout << timerToString("      ForceUpdateGlobalForces     ", forceUpdateGlobalForces, maximumNumberOfDigits,
                                forceUpdateTotal);
     std::cout << timerToString("      ForceUpdateTuning           ", forceUpdateTuning, maximumNumberOfDigits,
                                forceUpdateTotal);
-    std::cout << timerToString("      ForceUpdateNonTuninng       ", forceUpdateNonTuning, maximumNumberOfDigits,
+    std::cout << timerToString("      ForceUpdateNonTuning       ", forceUpdateNonTuning, maximumNumberOfDigits,
                                forceUpdateTotal);
     std::cout << timerToString("    VelocityUpdate                ", velocityUpdate, maximumNumberOfDigits, simulate);
     std::cout << timerToString("    Thermostat                    ", thermostat, maximumNumberOfDigits, simulate);
@@ -513,7 +527,7 @@ void Simulation::logMeasurements() {
 
     auto mfups =
         static_cast<double>(_autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned) * _iteration) *
-        1e-6 / (static_cast<double>(forceUpdateTotal) * 1e-9);  // 1e-9 for ns to s, 1e-6 for M in MFUP
+        1e-6 / (static_cast<double>(forceUpdateTotal) * 1e-9);  // 1e-9 for ns to s, 1e-6 for M in MFUPs
     std::cout << "MFUPs/sec                          : " << mfups << std::endl;
 
     if (_configuration.dontMeasureFlops.value) {
@@ -535,6 +549,12 @@ void Simulation::logMeasurements() {
           flopsPerKernelCall = autopas::LJFunctorAVX<ParticleType, true, true>::getNumFlopsPerKernelCall();
           break;
         }
+#ifdef __ARM_FEATURE_SVE
+        case MDFlexConfig::FunctorOption ::lj12_6_SVE: {
+          flopsPerKernelCall = autopas::LJFunctorSVE<ParticleType, true, true>::getNumFlopsPerKernelCall();
+          break;
+        }
+#endif
         default:
           throw std::runtime_error("Invalid Functor choice");
       }

@@ -10,5 +10,6 @@
 
 #include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
+#include "autopas/molecularDynamics/LJFunctorSVE.h"
 #include "autopas/molecularDynamics/MoleculeLJ.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
