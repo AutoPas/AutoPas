@@ -153,7 +153,7 @@ class AutoTuner {
    *  - Instantiation of the traversal to be used.
    *  - Actual pairwise iteration for application of the functor.
    *  - Management of tuning phases and calls to tune() if necessary.
-   *  - Measurement of timings and calls to addTimeMeasurement() if necessary.
+   *  - Measurement of timings/energies and calls to addMeasurement() if necessary.
    *  - Calls to _iterationLogger if necessary.
    *
    * @tparam PairwiseFunctor
@@ -205,7 +205,7 @@ class AutoTuner {
    * @param sample
    * @param neighborListRebuilt If the neighbor list as been rebuilt during the given time.
    */
-  void addTimeMeasurement(long sample, bool neighborListRebuilt);
+  void addMeasurement(long sample, bool neighborListRebuilt);
 
   /**
    * Estimate the runtime from the current samples according to the SelectorStrategy and rebuild frequency.
@@ -232,7 +232,6 @@ class AutoTuner {
     return (numIterationsBuilding * reducedValueBuilding + numIterationsNotBuilding * reducedValueNotBuilding) /
            _rebuildFrequency;
   }
->>>>>>> master
 
   /**
    * Initialize the container specified by the TuningStrategy.
@@ -598,7 +597,7 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
           addMeasurement(timerTotal.getTotalTime(), doListRebuild);
           break;
         case TuningMetricOption::energy:
-          addMeasurement(raplMeter.get_total_energy()), doListRebuild;
+          addMeasurement(raplMeter.get_total_energy(), doListRebuild);
           break;
       }
     } else {

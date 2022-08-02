@@ -315,7 +315,7 @@ TEST_F(AutoTunerTest, testForceRetuneBetweenPhases) {
   autopas::AutoTuner<Molecule> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, verletClusterSize,
                                          std::move(tuningStrategy), mpiTuningMaxDifferenceForBucket,
                                          mpiTuningWeightForMaxDensity, autopas::SelectorStrategyOption::fastestAbs,
-                                         autpas::TuningMetricOption::time, 100, maxSamples, 20);
+                                         autopas::TuningMetricOption::time, 100, maxSamples, 20);
 
   size_t numExpectedTuningIterations = configsList.size() * maxSamples;
   MockFunctor<Molecule> functor;
@@ -438,7 +438,7 @@ TEST_F(AutoTunerTest, testNoConfig) {
     auto tuningStrategy = std::make_unique<autopas::FullSearch>(co, csf, tr, le, dl, n3);
     autopas::AutoTuner<Molecule> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy), 0.3, 0.0,
                                            autopas::SelectorStrategyOption::fastestAbs,
-                                           autopas::tuningMetricOption::time, 1000, 3, 20);
+                                           autopas::TuningMetricOption::time, 1000, 3, 20);
   };
 
   EXPECT_THROW(exp2(), autopas::utils::ExceptionHandler::AutoPasException) << "Constructor which generates configs";
@@ -566,7 +566,8 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
   auto configsList = {confA, confB};
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
   autopas::AutoTuner<Molecule> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy), 0.3, 0.0,
-                                     autopas::SelectorStrategyOption::fastestAbs, 1000, 3, rebuildFrequency);
+                                     autopas::SelectorStrategyOption::fastestAbs, autopas::TuningMetricOption::time,
+                                     1000, 3, rebuildFrequency);
 
   MockFunctor<Molecule> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
