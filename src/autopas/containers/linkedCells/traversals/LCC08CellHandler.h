@@ -57,7 +57,13 @@ class LCC08CellHandler {
    */
   void processBaseCell(std::vector<ParticleCell> &cells, unsigned long baseIndex);
 
- private:
+ protected:
+  /**
+   * Pair sets for processBaseCell().
+   * Values are: offset of first cell, offset of second cell, sorting direction.
+   */
+  std::vector<std::tuple<unsigned long, unsigned long, std::array<double, 3>>> _cellPairOffsets;
+
   /**
    * Computes pairs for the block used in processBaseCell().
    * The algorithm used to generate the cell pairs can be visualized with a python script, which can be found in
@@ -67,16 +73,16 @@ class LCC08CellHandler {
   void computeOffsets(std::array<unsigned long, 3> cellsPerDimension);
 
   /**
+   * Overlap of interacting cells. Array allows asymmetric cell sizes.
+   */
+  const std::array<unsigned long, 3> _overlap;
+
+ private:
+  /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
   internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout, useNewton3>
       _cellFunctor;
-
-  /**
-   * Pair sets for processBaseCell().
-   * Values are: offset of first cell, offset of second cell, sorting direction.
-   */
-  std::vector<std::tuple<unsigned long, unsigned long, std::array<double, 3>>> _cellPairOffsets;
 
   /**
    * Interaction length (cutoff + skin).
@@ -87,11 +93,6 @@ class LCC08CellHandler {
    * Cell length in CellBlock3D.
    */
   const std::array<double, 3> _cellLength;
-
-  /**
-   * Overlap of interacting cells. Array allows asymmetric cell sizes.
-   */
-  const std::array<unsigned long, 3> _overlap;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>

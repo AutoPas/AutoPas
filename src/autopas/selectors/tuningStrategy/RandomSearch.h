@@ -104,6 +104,8 @@ class RandomSearch : public TuningStrategyInterface {
 
   inline bool searchSpaceIsEmpty() const override;
 
+  inline bool smoothedHomogeneityAndMaxDensityNeeded() const override { return false; }
+
  private:
   inline void selectOptimalConfiguration();
 

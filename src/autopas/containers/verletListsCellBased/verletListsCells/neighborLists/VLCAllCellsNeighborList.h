@@ -25,6 +25,10 @@ namespace autopas {
  */
 template <class ParticleCell>
 class TraversalSelector;
+
+template <class Particle, class NeighborList>
+class VLCTraversalInterface;
+
 /**
  * Neighbor list to be used with VerletListsCells container. Classic implementation of verlet lists based on linked
  * cells.
@@ -110,7 +114,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
 
     // particle pointer to global index of particle
     std::unordered_map<Particle *, size_t> particleToIndex;
-    particleToIndex.reserve(linkedCells.getNumParticles());
+    particleToIndex.reserve(linkedCells.getNumberOfParticles());
     size_t i = 0;
     for (auto iter = linkedCells.begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++i) {
       particleToIndex[&(*iter)] = i;
@@ -141,6 +145,18 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
         // add newly constructed pair of particle index and SoA neighbor list to cell
         soaCurrentCell.emplace_back(std::make_pair(currentParticleGlobalIndex, currentSoANeighborList));
       }
+    }
+  }
+
+  void setUpTraversal(TraversalInterface *traversal) override {
+    auto vTraversal = dynamic_cast<VLCTraversalInterface<Particle, VLCAllCellsNeighborList<Particle>> *>(traversal);
+
+    if (vTraversal) {
+      vTraversal->setVerletList(*this);
+    } else {
+      autopas::utils::ExceptionHandler::exception(
+          "Trying to use a traversal of wrong type in VerletListCells.h. TraversalID: {}",
+          traversal->getTraversalType());
     }
   }
 

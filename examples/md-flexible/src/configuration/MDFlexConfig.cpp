@@ -52,7 +52,7 @@ std::vector<dataType> readPayload(std::ifstream &file, size_t numberOfParticles)
 void findWord(std::ifstream &file, const std::string &word) {
   std::vector<char> separators{' ', '/', '.', ',', '?', '!', '"', '\'', '<', '>', '=', ':', ';', '\n', '\t', '\r'};
   std::string currentWord;
-  while (not file.eof() && currentWord != word) {
+  while (not file.eof() and currentWord != word) {
     char currentChar = file.get();
     if (std::find(separators.begin(), separators.end(), currentChar) != separators.end()) {
       currentWord = "";
@@ -210,6 +210,12 @@ std::string MDFlexConfig::to_string() const {
        << endl;
   }
   os << setw(valueOffset) << left << mpiStrategyOption.name << ":  " << mpiStrategyOption.value << endl;
+  if (mpiStrategyOption.value == autopas::MPIStrategyOption::divideAndConquer) {
+    os << setw(valueOffset) << left << MPITuningMaxDifferenceForBucket.name << ":  "
+       << MPITuningMaxDifferenceForBucket.value << endl;
+    os << setw(valueOffset) << left << MPITuningWeightForMaxDensity.name << ":  " << MPITuningWeightForMaxDensity.value
+       << endl;
+  }
   os << setw(valueOffset) << left << tuningInterval.name << ":  " << tuningInterval.value << endl;
   os << setw(valueOffset) << left << tuningSamples.name << ":  " << tuningSamples.value << endl;
   os << setw(valueOffset) << left << tuningMaxEvidence.name << ":  " << tuningMaxEvidence.value << endl;
@@ -232,6 +238,10 @@ std::string MDFlexConfig::to_string() const {
       os << "Lennard-Jones (12-6) AVX intrinsics" << endl;
       break;
     }
+    case FunctorOption::lj12_6_SVE: {
+      os << "Lennard-Jones (12-6) SVE intrinsics" << endl;
+      break;
+    }
     case FunctorOption::lj12_6_Globals: {
       os << "Lennard-Jones (12-6) with globals" << endl;
       break;
@@ -245,8 +255,6 @@ std::string MDFlexConfig::to_string() const {
      << endl;
   os << setw(valueOffset) << left << boxMax.name << ":  " << autopas::utils::ArrayUtils::to_string(boxMax.value)
      << endl;
-  os << setw(valueOffset) << left << subdivideDimension.name << ":  "
-     << autopas::utils::ArrayUtils::to_string(subdivideDimension.value) << endl;
   os << setw(valueOffset) << left << cellSizeFactors.name << ":  " << *cellSizeFactors.value << endl;
   os << setw(valueOffset) << left << deltaT.name << ":  " << deltaT.value << endl;
   // simulation length is either dictated by tuning phases or iterations
@@ -255,7 +263,8 @@ std::string MDFlexConfig::to_string() const {
   } else {
     os << setw(valueOffset) << left << iterations.name << ":  " << iterations.value << endl;
   }
-  os << setw(valueOffset) << left << boolalpha << periodic.name << ":  " << periodic.value << endl;
+  os << setw(valueOffset) << left << boundaryOption.name << ": "
+     << autopas::utils::ArrayUtils::to_string(boundaryOption.value) << endl;
 
   os << setw(valueOffset) << left << "Objects:" << endl;
 
@@ -304,6 +313,10 @@ std::string MDFlexConfig::to_string() const {
   os << setw(valueOffset) << dontMeasureFlops.name << ":  " << (not dontMeasureFlops.value) << endl;
   os << setw(valueOffset) << dontCreateEndConfig.name << ":  " << (not dontCreateEndConfig.value) << endl;
   os << setw(valueOffset) << dontShowProgressBar.name << ":  " << (dontShowProgressBar.value) << endl;
+  os << setw(valueOffset) << loadBalancer.name << ":  " << loadBalancer.value << endl;
+  os << setw(valueOffset) << left << loadBalancingInterval.name << ":  " << loadBalancingInterval.value << endl;
+  os << setw(valueOffset) << left << subdivideDimension.name << ":  "
+     << autopas::utils::ArrayUtils::to_string(subdivideDimension.value) << endl;
   return os.str();
 }
 

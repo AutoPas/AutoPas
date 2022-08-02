@@ -67,14 +67,15 @@ void AutoPas<Particle>::init() {
   } else {
     _externalMPICommunicator = true;
   }
+  auto tuningStrategy = TuningStrategyFactory::generateTuningStrategy(
+      _tuningStrategyOption, _allowedContainers, *_allowedCellSizeFactors, _allowedTraversals, _allowedLoadEstimators,
+      _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _relativeOptimumRange, _maxTuningPhasesWithoutTest,
+      _relativeBlacklistRange, _evidenceFirstPrediction, _acquisitionFunctionOption, _extrapolationMethodOption,
+      _outputSuffix, _mpiStrategyOption, _autopasMPICommunicator);
   _autoTuner = std::make_unique<autopas::AutoTuner<Particle>>(
-      _boxMin, _boxMax, _cutoff, _verletSkin, _verletClusterSize,
-      std::move(TuningStrategyFactory::generateTuningStrategy(
-          _tuningStrategyOption, _allowedContainers, *_allowedCellSizeFactors, _allowedTraversals,
-          _allowedLoadEstimators, _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _relativeOptimumRange,
-          _maxTuningPhasesWithoutTest, _relativeBlacklistRange, _evidenceFirstPrediction, _acquisitionFunctionOption,
-          _extrapolationMethodOption, _outputSuffix, _mpiStrategyOption, _autopasMPICommunicator)),
-      _selectorStrategy, _tuningMetricOption, _tuningInterval, _numSamples, _outputSuffix);
+      _boxMin, _boxMax, _cutoff, _verletSkin, _verletClusterSize, std::move(tuningStrategy), _tuningMetricOption,
+      _mpiTuningMaxDifferenceForBucket, _mpiTuningWeightForMaxDensity, _selectorStrategy, _tuningInterval, _numSamples,
+      _verletRebuildFrequency, _outputSuffix);
   _logicHandler =
       std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(*(_autoTuner.get()), _verletRebuildFrequency);
 }
@@ -149,6 +150,11 @@ void AutoPas<Particle>::deleteParticle(ParticleIteratorWrapper<Particle, true> &
 }
 
 template <class Particle>
+void AutoPas<Particle>::deleteParticle(Particle &particle) {
+  _logicHandler->deleteParticle(particle);
+}
+
+template <class Particle>
 typename AutoPas<Particle>::iterator_t AutoPas<Particle>::begin(IteratorBehavior behavior) {
   return _logicHandler->begin(behavior);
 }
@@ -193,7 +199,7 @@ std::shared_ptr<autopas::ParticleContainerInterface<Particle>> AutoPas<Particle>
 }
 
 template <class Particle>
-const std::shared_ptr<autopas::ParticleContainerInterface<Particle>> AutoPas<Particle>::getContainer() const {
+std::shared_ptr<const autopas::ParticleContainerInterface<Particle>> AutoPas<Particle>::getContainer() const {
   return _autoTuner->getContainer();
 }
 

@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: DoozyX/clang-format-lint-action@v0.12
         with:
-          source: 'src tests'
+          source: 'src tests examples'
           # exclude: 'none'
           extensions: 'h,cpp'
           clangFormatVersion: 9
@@ -61,14 +61,19 @@ jobs:
       matrix:
         part: [1, 2]
         config: [
-            #    0              1       2       3       4           5       6   7
-            # container      , CC   , CXX    , builder, mode   , OpenMP , ASan, TSan
-        [autopas-build-clang , clang, clang++, Ninja  , Debug  , ON     , ON  , OFF  ],
-        [autopas-build-clang , clang, clang++, Ninja  , Release, OFF    , ON  , OFF  ],
-        [autopas-build-archer, clang, clang++, Ninja  , Release, ON     , OFF , ON   ],
-        [autopas-build-clang , clang, clang++, Ninja  , Release, ON     , ON  , OFF  ],
-        [autopas-build-gcc   , gcc, g++,"'Unix Makefiles'",Release, ON  , OFF , OFF  ],
+            #    0              1       2       3                   4        5       6     7
+            # container      , CC   , CXX    , builder          , mode   , OpenMP , ASan, TSan
+        [autopas-build-clang , clang, clang++, Ninja            , Debug  , ON     , ON  , OFF ],
+        [autopas-build-clang , clang, clang++, Ninja            , Release, OFF    , ON  , OFF ],
+        [autopas-build-archer, clang, clang++, Ninja            , Release, ON     , OFF , ON  ],
+        [autopas-build-clang , clang, clang++, Ninja            , Release, ON     , ON  , OFF ],
+        [autopas-build-gcc   , gcc  , g++    ,"'Unix Makefiles'", Release, ON     , OFF , OFF ],
+        [autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF ],
         ]
+        exclude:
+          # MPI has few tests so only one part is needed
+          - config: [autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF ]
+            part: 2
     name: Matrix - ${{ matrix.config[1] }}|${{ matrix.config[4] }}|OpenMP=${{ matrix.config[5] }}|ASan=${{ matrix.config[6] }}|TSan=${{ matrix.config[7] }} (${{ matrix.part }}/2)
     container: autopas/${{ matrix.config[0] }}
     env:
@@ -80,6 +85,8 @@ jobs:
 
       - name: Build everything
         run: |
+          # derive whether or not to compile with MPI options ON.
+          [ "${{ matrix.config[1] }}" = 'mpicc' ] && UseMPI=ON || UseMPI=OFF
           mkdir build && cd build
           CXXFLAGS=-Wno-pass-failed CC=${{ matrix.config[1] }} CXX=${{ matrix.config[2] }} cmake \
             -G ${{ matrix.config[3] }} \
@@ -89,12 +96,26 @@ jobs:
             -DAUTOPAS_OPENMP=${{ matrix.config[5] }} \
             -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=${{ matrix.config[6] }} \
             -DAUTOPAS_ENABLE_THREAD_SANITIZER=${{ matrix.config[7] }} \
+            -DAUTOPAS_INTERNODE_TUNING=${UseMPI} \
+            -DMD_FLEXIBLE_USE_MPI=${UseMPI} \
+            -DAUTOPAS_ENABLE_ALLLBL=${UseMPI} \
             ..
           entrypoint.sh cmake --build . --parallel 1 
       - name: Run tests ${{ matrix.part }}/2
         run: |
-          cd build
-          # Start with test 0 or 1 and do every second test
-          ctest --output-on-failure -I ${{ matrix.part }},,2 -j 2
-          cd examples
-          ctest -C checkExamples --output-on-failure -I ${{ matrix.part }},,2 -j 2
+          # derive whether or not to run with MPI.
+          if [ "${{ matrix.config[1] }}" = 'mpicc' ]
+          then
+            cd build
+            # only run MPI tests. Apparently mpi in the container doesn't need `--oversubscribe`
+            ctest --output-on-failure -R MPIParallelAutoPasTests
+            cd examples
+            # exclude examples that do not support MPI 
+            ctest --output-on-failure -C checkExamples -E 'sph-((main.test)|(diagram.*))'
+          else
+            cd build
+            # Start with test 0 or 1 and do every second test
+            ctest --output-on-failure -I ${{ matrix.part }},,2 -j 2
+            cd examples
+            ctest -C checkExamples --output-on-failure -I ${{ matrix.part }},,2 -j 2
+          fi

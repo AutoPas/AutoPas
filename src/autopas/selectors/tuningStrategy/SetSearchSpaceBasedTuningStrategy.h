@@ -62,6 +62,8 @@ class SetSearchSpaceBasedTuningStrategy : public TuningStrategyInterface {
 
   [[nodiscard]] inline bool searchSpaceIsEmpty() const override { return _searchSpace.empty(); }
 
+  [[nodiscard]] inline bool smoothedHomogeneityAndMaxDensityNeeded() const override { return false; }
+
   inline void removeN3Option(Newton3Option badNewton3Option) override;
 
  protected:

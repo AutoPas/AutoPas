@@ -148,7 +148,7 @@ Particles saved in an AutoPas container can be one of two possible states:
   These normally are ghost particles arising from either periodic boundary conditions or particles of a neighboring AutoPas object
   (if you split the entire domain over multiple AutoPas objects, i.e., you use a domain decomposition algorithm).
   The halo particles are needed for the correct calculation of the pairwise forces.
-  On update of the AutoPas container, halo particles are deleted (see [Simulation Loop](#simulation-loop)).
+  On update of the AutoPas container, halo particles are deleted (see <a href="#simulation-loop">Simulation Loop</a>).
 * dummy: Particles that are deleted or that act as filler for certain algorithms. These particles do not affect the force calculation.
 
 ### Iterating Through Particles
@@ -275,5 +275,6 @@ This work was financially supported by:
 * the Federal Ministry of Education and Research, Germany, project “Task-based load balancing and auto-tuning in particle simulations” (TaLPas) 8 , grant numbers 01IH16008A and 01IH16008B.
 
 ## Papers to cite
+* F. A. Gratl, S. Seckler, H.-J. Bungartz and P. Neumann: [N Ways to Simulate Short-Range Particle Systems: Automated Algorithm Selection with the Node-Level Library AutoPas](https://www.sciencedirect.com/science/article/abs/pii/S001046552100374X), In Computer Physics Communications, Volume 273, 2022. ([BibTeX](https://mediatum.ub.tum.de/export/1638766/bibtex), [MediaTUM](https://mediatum.ub.tum.de/1638766))
 * F. A. Gratl, S. Seckler, N. Tchipev, H.-J. Bungartz and P. Neumann: [AutoPas: Auto-Tuning for Particle Simulations](https://ieeexplore.ieee.org/document/8778280), In 2019 IEEE International Parallel and Distributed Processing Symposium Workshops (IPDPSW), Rio de Janeiro, May 2019. ([BibTeX](https://mediatum.ub.tum.de/export/1535848/bibtex), [MediaTUM](https://mediatum.ub.tum.de/1535848))
 * S. Seckler, F. Gratl, M. Heinen, J. Vrabec, H.-J. Bungartz, P. Neumann: [AutoPas in ls1 mardyn: Massively parallel particle simulations with node-level auto-tuning](https://www.sciencedirect.com/science/article/abs/pii/S1877750320305901), In Journal of Computational Science, Volume 50, 2021. ([BibTeX](https://mediatum.ub.tum.de/export/1595680/bibtex), [MediaTUM](https://mediatum.ub.tum.de/1595680))

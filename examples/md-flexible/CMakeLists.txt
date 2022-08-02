@@ -4,15 +4,17 @@ file(
         "src/*.cpp"
         "src/*.h"
 )
+
 add_executable(md-flexible ${MDFlex_SRC})
 
 target_include_directories(md-flexible PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 include(autopas_yaml-cpp)
+include(autopas_all)
 
 option(MD_FLEXIBLE_USE_MPI "Enable MPI parallelism for md-flexible." OFF)
 
-target_link_libraries(md-flexible PUBLIC autopas autopasTools yaml-cpp $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
+target_link_libraries(md-flexible PUBLIC autopas autopasTools yaml-cpp  ${ALL_LIB} $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
 
 # --- copy script files to build dir ---
 file(
@@ -53,7 +55,7 @@ add_test(
         --traversal c08,sliced
         --verlet-rebuild-frequency 5
         --verlet-skin-radius 0
-        --periodic false
+        --boundary-type none
         --deltaT 0.
         --no-end-config
         --no-progress-bar
@@ -75,7 +77,7 @@ add_test(
         --particle-spacing 1.1225
         --verlet-rebuild-frequency 4
         --verlet-skin-radius 0.2
-        --periodic true
+        --boundary-type periodic
         --deltaT 0.005
         --no-end-config
         --no-flops

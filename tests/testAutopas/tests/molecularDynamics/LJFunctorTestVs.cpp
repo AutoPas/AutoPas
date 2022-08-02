@@ -105,6 +105,15 @@ using MyTypes = ::testing::Types<
     // LJFunctorAVX<mixing> VS LJFunctor<not mixing>
     std::tuple<LJFunAVXShiftMixGlob, LJFunShiftNoMixGlob>
 #endif
+#ifdef __ARM_FEATURE_SVE
+    ,
+    // LJFunctorSVE<mixing> VS LJFunctorSVE<not mixing>
+    std::tuple<LJFunSVEShiftMixGlob, LJFunSVEShiftNoMixGlob>,
+    // LJFunctor<mixing> VS LJFunctorSVE<not mixing>
+    std::tuple<LJFunShiftMixGlob, LJFunSVEShiftNoMixGlob>,
+    // LJFunctorSVE<mixing> VS LJFunctor<not mixing>
+    std::tuple<LJFunSVEShiftMixGlob, LJFunShiftNoMixGlob>
+#endif
     >;
 
 INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, LJFunctorTestVs, MyTypes);

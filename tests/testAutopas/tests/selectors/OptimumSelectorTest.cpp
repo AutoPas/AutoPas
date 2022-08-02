@@ -31,3 +31,16 @@ TEST(OptimumSelectorTest, median) {
 
   EXPECT_EQ(5, median);
 }
+
+/**
+ * Make sure no selector crashes on empty vectors
+ */
+TEST(OptimumSelectorTest, empty) {
+  std::vector<long> vals{};
+
+  for (const auto option : autopas::SelectorStrategyOption::getAllOptions()) {
+    long value = 42;
+    EXPECT_NO_THROW(value = autopas::OptimumSelector::optimumValue(vals, option)) << "Failed for option " << option;
+    EXPECT_EQ(0, value) << "Failed for option " << option;
+  }
+}

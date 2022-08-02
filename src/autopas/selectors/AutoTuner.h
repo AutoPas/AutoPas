@@ -19,6 +19,7 @@
 #include "autopas/selectors/ContainerSelector.h"
 #include "autopas/selectors/OptimumSelector.h"
 #include "autopas/selectors/TraversalSelector.h"
+#include "autopas/selectors/tuningStrategy/MPIParallelizedStrategy.h"
 #include "autopas/selectors/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/RaplMeter.h"
@@ -56,16 +57,22 @@ class AutoTuner {
    * @param verletSkin Length added to the cutoff for the Verlet lists' skin.
    * @param verletClusterSize Number of particles in a cluster to use in verlet list.
    * @param tuningStrategy Object implementing the modelling and exploration of a search space.
+   * @param MPITuningMaxDifferenceForBucket For MPI-tuning: Maximum of the relative difference in the comparison metric
+   * for two ranks which exchange their tuning information.
+   * @param MPITuningWeightForMaxDensity For MPI-tuning: Weight for maxDensity in the calculation for bucket
+   * distribution.
    * @param selectorStrategy Strategy for the configuration selection.
    * @param tuningInterval Number of time steps after which the auto-tuner shall reevaluate all selections.
    * @param tuningMetric Metric used to rate configurations (time or energy).
    * @param maxSamples Number of samples that shall be collected for each combination.
+   * @param rebuildFrequency The rebuild frequency this AutoPas instance uses.
    * @param outputSuffix Suffix for all output files produced by this class.
    */
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
             unsigned int verletClusterSize, std::unique_ptr<TuningStrategyInterface> tuningStrategy,
+            double MPITuningMaxDifferenceForBucket, double MPITuningWeightForMaxDensity,
             SelectorStrategyOption selectorStrategy, TuningMetricOption tuningMetric, unsigned int tuningInterval,
-            unsigned int maxSamples, const std::string &outputSuffix = "")
+            unsigned int maxSamples, unsigned int rebuildFrequency, const std::string &outputSuffix = "")
       : _selectorStrategy(selectorStrategy),
         _tuningMetric(tuningMetric),
         _tuningStrategy(std::move(tuningStrategy)),
@@ -74,8 +81,11 @@ class AutoTuner {
         _containerSelector(boxMin, boxMax, cutoff),
         _verletSkin(verletSkin),
         _verletClusterSize(verletClusterSize),
+        _mpiTuningMaxDifferenceForBucket(MPITuningMaxDifferenceForBucket),
+        _mpiTuningWeightForMaxDensity(MPITuningWeightForMaxDensity),
+        _rebuildFrequency(rebuildFrequency),
         _maxSamples(maxSamples),
-        _samples(maxSamples),
+        _samplesNotRebuildingNeighborLists(maxSamples),
         _iteration(0),
         _iterationLogger(outputSuffix),
         _tuningResultLogger(outputSuffix),
@@ -107,7 +117,7 @@ class AutoTuner {
   }
 
   /**
-   * @copydoc AutoPas::forceRetune()
+   * @copydoc autopas::AutoPas::forceRetune()
    */
   void forceRetune();
 
@@ -167,7 +177,7 @@ class AutoTuner {
     if (_tuningStrategy->searchSpaceIsTrivial()) {
       return false;
     }
-    return _iterationsSinceTuning >= _tuningInterval and _samples.size() >= _maxSamples;
+    return _iterationsSinceTuning >= _tuningInterval and getCurrentNumSamples() >= _maxSamples;
   }
 
   /**
@@ -178,15 +188,51 @@ class AutoTuner {
 
  private:
   /**
-   * Save a sample of the selected tuning metric of a given traversal.
+   * Total number of collected samples. This is the sum of the sizes of all sample vectors.
+   * @return Sum of sizes of sample vectors.
+   */
+  auto getCurrentNumSamples() const {
+    return _samplesNotRebuildingNeighborLists.size() + _samplesRebuildingNeighborLists.size();
+  }
+
+  /**
+   * Save the runtime of a given traversal.
    *
    * Samples are collected and reduced to one single value according to _selectorStrategy. Only then the value is passed
    * on to the tuning strategy. This function expects that samples of the same configuration are taken consecutively.
    * The sample argument is a long because std::chrono::duration::count returns a long.
    *
    * @param sample
+   * @param neighborListRebuilt If the neighbor list as been rebuilt during the given time.
    */
-  void addMeasurement(long sample);
+  void addTimeMeasurement(long sample, bool neighborListRebuilt);
+
+  /**
+   * Estimate the runtime from the current samples according to the SelectorStrategy and rebuild frequency.
+   * Samples are weighted so that we normalize to the expected number of (non-)rebuild iterations and then divide by the
+   * rebuild frequency.
+   * @return estimate time for one iteration
+   */
+  [[nodiscard]] long estimateRuntimeFromSamples() const {
+    // reduce samples for rebuild and non-rebuild iterations with the given selector strategy
+    const auto reducedValueBuilding =
+        autopas::OptimumSelector::optimumValue(_samplesRebuildingNeighborLists, _selectorStrategy);
+    // if there is no data for the non rebuild iterations we have to assume them taking the same time as rebuilding ones
+    // this might neither be a good estimate nor fair but the best we can do
+    const auto reducedValueNotBuilding =
+        _samplesNotRebuildingNeighborLists.empty()
+            ? reducedValueBuilding
+            : autopas::OptimumSelector::optimumValue(_samplesNotRebuildingNeighborLists, _selectorStrategy);
+
+    const auto numIterationsNotBuilding =
+        std::max(0, static_cast<int>(_rebuildFrequency) - static_cast<int>(_samplesRebuildingNeighborLists.size()));
+    const auto numIterationsBuilding = _rebuildFrequency - numIterationsNotBuilding;
+
+    // calculate weighted estimate for one iteration
+    return (numIterationsBuilding * reducedValueBuilding + numIterationsNotBuilding * reducedValueNotBuilding) /
+           _rebuildFrequency;
+  }
+>>>>>>> master
 
   /**
    * Initialize the container specified by the TuningStrategy.
@@ -243,22 +289,61 @@ class AutoTuner {
   unsigned int _verletClusterSize;
 
   /**
+   * The rebuild frequency this instance of AutoPas uses.
+   */
+  unsigned int _rebuildFrequency;
+
+  /**
    * How many times each configuration should be tested.
    */
   const size_t _maxSamples;
 
   /**
-   * Raw time samples of the current configuration from which one evidence will be produced.
+   * Parameter used For MPI-tuning: Maximum of the relative difference in the comparison metric for two ranks which
+   * exchange their tuning information.
+   */
+  double _mpiTuningMaxDifferenceForBucket;
+
+  /**
+   * Parameter used For MPI-tuning: Weight for maxDensity in the calculation for bucket distribution.
+   */
+  double _mpiTuningWeightForMaxDensity;
+
+  /**
+   * Buffer for the homogeneities of the last ten Iterations
+   */
+  std::vector<double> _homogeneitiesOfLastTenIterations;
+
+  /**
+   * Buffer for the homogeneities of the last ten Iterations
+   */
+  std::vector<double> _maxDensitiesOfLastTenIterations;
+
+  /**
+   * Raw time samples of the current configuration. Contains only the samples of iterations where the neighbor lists are
+   * not rebuilt.
    *
    * @note Initialized with size of _maxSamples to start tuning at start of simulation.
    */
-  std::vector<long> _samples;
+  std::vector<long> _samplesNotRebuildingNeighborLists;
+
+  /**
+   * Raw time samples of the current configuration. Contains only the samples of iterations where the neighbor lists
+   * have been rebuilt.
+   */
+  std::vector<long> _samplesRebuildingNeighborLists{};
 
   /**
    * For each configuration the collection of all evidence (smoothed values) collected so far and in which iteration.
    * Configuration -> vector< iteration, time >
    */
   std::map<Configuration, std::vector<std::pair<size_t, long>>> _evidence;
+
+  /**
+   * Timer used to determine how much time is wasted by calculating multiple homogeneities for smoothing
+   * Only used temporarily
+   */
+  autopas::utils::Timer _timerCalculateHomogeneity;
 
   IterationLogger _iterationLogger;
   TuningResultLogger _tuningResultLogger;
@@ -275,7 +360,7 @@ void AutoTuner<Particle>::selectCurrentContainer() {
 template <class Particle>
 void AutoTuner<Particle>::forceRetune() {
   _iterationsSinceTuning = _tuningInterval;
-  _samples.resize(_maxSamples);
+  _samplesNotRebuildingNeighborLists.resize(_maxSamples);
 }
 
 template <class Particle>
@@ -287,6 +372,16 @@ bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild
   // - more than one config exists
   // - currently in tuning phase
   // - functor is relevant
+  if (_tuningStrategy->smoothedHomogeneityAndMaxDensityNeeded() and _iterationsSinceTuning >= _tuningInterval - 9 and
+      _iterationsSinceTuning <= _tuningInterval) {
+    _timerCalculateHomogeneity.start();
+    const auto &container = getContainer();
+    const auto [homogeneity, maxDensity] =
+        autopas::utils::calculateHomogeneityAndMaxDensity(*container, container->getBoxMin(), container->getBoxMax());
+    _homogeneitiesOfLastTenIterations.push_back(homogeneity);
+    _maxDensitiesOfLastTenIterations.push_back(maxDensity);
+    _timerCalculateHomogeneity.stop();
+  }
   if ((not _tuningStrategy->searchSpaceIsTrivial()) and _iterationsSinceTuning >= _tuningInterval and
       f->isRelevantForTuning()) {
     isTuning = tune<PairwiseFunctor>(*f);
@@ -500,10 +595,10 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
     if (f->isRelevantForTuning()) {
       switch (this->_tuningMetric) {
         case TuningMetricOption::time:
-          addMeasurement(timerTotal.getTotalTime());
+          addMeasurement(timerTotal.getTotalTime(), doListRebuild);
           break;
         case TuningMetricOption::energy:
-          addMeasurement(raplMeter.get_total_energy());
+          addMeasurement(raplMeter.get_total_energy()), doListRebuild;
           break;
       }
     } else {
@@ -518,14 +613,36 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
   bool stillTuning = true;
 
   // need more samples; keep current config
-  if (_samples.size() < _maxSamples) {
+  if (getCurrentNumSamples() < _maxSamples) {
     return stillTuning;
   }
   utils::Timer tuningTimer;
   tuningTimer.start();
+
   // first tuning iteration -> reset to first config
   if (_iterationsSinceTuning == _tuningInterval) {
-    _tuningStrategy->reset(_iteration);
+    if (auto *mpiStrategy = dynamic_cast<MPIParallelizedStrategy *>(_tuningStrategy.get())) {
+      const std::pair<double, double> smoothedHomogeneityAndMaxDensity{
+          autopas::OptimumSelector::medianValue(_homogeneitiesOfLastTenIterations),
+          autopas::OptimumSelector::medianValue(_maxDensitiesOfLastTenIterations)};
+      mpiStrategy->reset<Particle>(_iteration, getContainer(), smoothedHomogeneityAndMaxDensity,
+                                   _mpiTuningMaxDifferenceForBucket, _mpiTuningWeightForMaxDensity);
+    } else {
+      _tuningStrategy->reset(_iteration);
+    }
+    // only used temporarily of evaluation of smoothing
+    if (_tuningStrategy->smoothedHomogeneityAndMaxDensityNeeded()) {
+      int rank{0};
+#ifdef AUTOPAS_INTERNODE_TUNING
+      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+      AutoPasLog(debug, "Calculating homogeneities took added up {} ns on rank {}.",
+                 _timerCalculateHomogeneity.getTotalTime(), rank);
+      _homogeneitiesOfLastTenIterations.erase(_homogeneitiesOfLastTenIterations.begin(),
+                                              _homogeneitiesOfLastTenIterations.end());
+      _maxDensitiesOfLastTenIterations.erase(_maxDensitiesOfLastTenIterations.begin(),
+                                             _maxDensitiesOfLastTenIterations.end());
+    }
   } else {  // enough samples -> next config
     stillTuning = _tuningStrategy->tune();
   }
@@ -553,7 +670,8 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
   // samples should only be cleared if we are still tuning, see `if (_samples.size() < _maxSamples)` from before.
   if (stillTuning) {
     // samples are no longer needed. Delete them here so willRebuild() works as expected.
-    _samples.clear();
+    _samplesNotRebuildingNeighborLists.clear();
+    _samplesRebuildingNeighborLists.clear();
   }
   tuningTimer.stop();
   // when a tuning result is found log it
@@ -597,17 +715,21 @@ const Configuration &AutoTuner<Particle>::getCurrentConfig() const {
 }
 
 template <class Particle>
-void AutoTuner<Particle>::addMeasurement(long sample) {
+void AutoTuner<Particle>::addMeasurement(long sample, bool neighborListRebuilt) {
   const auto &currentConfig = _tuningStrategy->getCurrentConfiguration();
-
-  if (_samples.size() < _maxSamples) {
+  if (getCurrentNumSamples() < _maxSamples) {
     AutoPasLog(trace, "Adding sample.");
-    _samples.push_back(sample);
+    if (neighborListRebuilt) {
+      _samplesRebuildingNeighborLists.push_back(sample);
+    } else {
+      _samplesNotRebuildingNeighborLists.push_back(sample);
+    }
     // if this was the last sample:
-    if (_samples.size() == _maxSamples) {
+    if (getCurrentNumSamples() == _maxSamples) {
       auto &evidenceCurrentConfig = _evidence[currentConfig];
 
-      const auto reducedValue = OptimumSelector::optimumValue(_samples, _selectorStrategy);
+      const long reducedValue = estimateRuntimeFromSamples();
+
       evidenceCurrentConfig.emplace_back(_iteration, reducedValue);
 
       // smooth evidence to remove high outliers. If smoothing results in a higher value use the original value.
@@ -624,7 +746,10 @@ void AutoTuner<Particle>::addMeasurement(long sample) {
         // print config
         ss << currentConfig.toString() << " : ";
         // print all timings
-        ss << utils::ArrayUtils::to_string(_samples, " ", {"[ ", " ]"});
+        ss << utils::ArrayUtils::to_string(_samplesRebuildingNeighborLists, " ",
+                                           {"With rebuilding neighbor lists [ ", " ]"});
+        ss << utils::ArrayUtils::to_string(_samplesNotRebuildingNeighborLists, " ",
+                                           {"Without rebuilding neighbor lists [ ", " ]"});
         ss << " Smoothed value: " << smoothedValue;
         switch (this->_tuningMetric) {
           case TuningMetricOption::time:
@@ -635,7 +760,8 @@ void AutoTuner<Particle>::addMeasurement(long sample) {
             break;
         }
       }
-      _tuningDataLogger.logTuningData(currentConfig, _samples, _iteration, reducedValue, smoothedValue);
+      _tuningDataLogger.logTuningData(currentConfig, _samplesRebuildingNeighborLists,
+                                      _samplesNotRebuildingNeighborLists, _iteration, reducedValue, smoothedValue);
     }
   }
 }
