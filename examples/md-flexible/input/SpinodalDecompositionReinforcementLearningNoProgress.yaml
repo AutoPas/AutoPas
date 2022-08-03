@@ -26,6 +26,7 @@ thermostat:
   addBrownianMotion              :  false
 #vtk-filename                     :  SpinodalDecomposition
 #vtk-write-frequency              :  1000
+checkpoint                       :  SpinodalDecomposition_equilibration_100000.vtk
 no-flops                         :  false
 no-end-config                    :  true
 log-level                        :  info
