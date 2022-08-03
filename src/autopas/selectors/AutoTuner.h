@@ -103,7 +103,7 @@ class AutoTuner {
       raplMeter.init();
       raplMeter.reset();
       raplMeter.sample();
-    } catch (utils::ExceptionHandler::AutoPasException e) {
+    } catch (const utils::ExceptionHandler::AutoPasException &e) {
       if (tuningMetric == TuningMetricOption::energy) {
         throw e;
       } else {
