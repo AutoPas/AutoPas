@@ -6,4 +6,4 @@
 #SBATCH --clusters=serial
 #SBATCH --partition=serial_std
 
-./build/examples/md-flexible/md-flexible --yaml-filename SpinodalDecomposition_equilibration.yaml
+./build/examples/md-flexible/md-flexible --yaml-filename ./build/examples/md-flexible/SpinodalDecomposition_equilibration.yaml
