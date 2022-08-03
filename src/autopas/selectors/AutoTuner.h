@@ -22,10 +22,12 @@
 #include "autopas/selectors/tuningStrategy/MPIParallelizedStrategy.h"
 #include "autopas/selectors/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/utils/ArrayUtils.h"
+#include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/RaplMeter.h"
 #include "autopas/utils/StaticCellSelector.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/logging/IterationLogger.h"
+#include "autopas/utils/logging/Logger.h"
 #include "autopas/utils/logging/TuningDataLogger.h"
 #include "autopas/utils/logging/TuningResultLogger.h"
 
@@ -92,6 +94,22 @@ class AutoTuner {
         _tuningDataLogger(maxSamples, outputSuffix) {
     if (_tuningStrategy->searchSpaceIsEmpty()) {
       autopas::utils::ExceptionHandler::exception("AutoTuner: Passed tuning strategy has an empty search space.");
+    }
+
+    // Check if energy measurement is possible
+    _energy_measurement_available = true;
+    try {
+      utils::RaplMeter raplMeter;
+      raplMeter.init();
+      raplMeter.reset();
+      raplMeter.sample();
+    } catch (utils::ExceptionHandler::AutoPasException e) {
+      if (tuningMetric == TuningMetricOption::energy) {
+        throw e;
+      } else {
+        AutoPasLog(warn, "Energy Measurement not possible:\n\t{}", e.what());
+        _energy_measurement_available = false;
+      }
     }
 
     selectCurrentContainer();
@@ -283,6 +301,11 @@ class AutoTuner {
    * Metric to use for tuning.
    */
   TuningMetricOption _tuningMetric;
+
+  /**
+   * Is energy measurement possible
+   */
+  bool _energy_measurement_available;
 
   double _verletSkin;
   unsigned int _verletClusterSize;
@@ -557,7 +580,10 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
   autopas::utils::Timer timerRebuild;
   autopas::utils::Timer timerIteratePairwise;
   utils::RaplMeter raplMeter;
-  raplMeter.reset();
+  if (_energy_measurement_available) {
+    raplMeter.init();
+    raplMeter.reset();
+  }
   timerTotal.start();
 
   f->initTraversal();
@@ -573,7 +599,9 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
   timerIteratePairwise.stop();
   f->endTraversal(useNewton3);
 
-  raplMeter.sample();
+  if (_energy_measurement_available) {
+    raplMeter.sample();
+  }
   timerTotal.stop();
 
   if (doListRebuild) {
@@ -583,8 +611,10 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
   // actually this is the time for iteratePairwise + init/endTraversal + rebuildNeighborLists
   // this containing all of this has legacy reasons so that old plot scripts work
   AutoPasLog(debug, "IteratePairwise took {} nanoseconds", timerTotal.getTotalTime());
-  AutoPasLog(debug, "Energy Consumption: Psys: {} Joules Pkg: {} Joules Ram: {} Joules", raplMeter.get_psys_energy(),
-             raplMeter.get_pkg_energy(), raplMeter.get_ram_energy());
+  if (_energy_measurement_available) {
+    AutoPasLog(debug, "Energy Consumption: Psys: {} Joules Pkg: {} Joules Ram: {} Joules", raplMeter.get_psys_energy(),
+               raplMeter.get_pkg_energy(), raplMeter.get_ram_energy());
+  }
 
   _iterationLogger.logIteration(getCurrentConfig(), _iteration, inTuningPhase, timerIteratePairwise.getTotalTime(),
                                 timerRebuild.getTotalTime(), timerTotal.getTotalTime());

@@ -39,7 +39,7 @@ int RaplMeter::open_perf_event(int type, int config) {
   return fd;
 }
 
-RaplMeter::RaplMeter() {
+void RaplMeter::init() {
   FILE *fff = fopen("/sys/bus/event_source/devices/power/type", "r");
   if (fff == NULL) {
     throw ExceptionHandler::AutoPasException("No support for energy measurements detected.");

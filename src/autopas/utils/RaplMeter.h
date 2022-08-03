@@ -30,8 +30,9 @@ class RaplMeter {
   long read_perf_event(int fd);
 
  public:
-  RaplMeter();
   ~RaplMeter();
+  /** initialisation may fail, so moved out of constructor */
+  void init();
   /** reset perf file descriptors to start new measurement */
   void reset();
   /** measure power consumption since last call of reset
