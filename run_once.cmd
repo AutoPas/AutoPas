@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH -J Alpha_Gamma
+#SBATCH -J Alpha_Gamma_once
 #SBATCH -o ./%x%j.%N.out
 #SBATCH -e ./%x%j.%N_error.out
 #SBATCH -D .
