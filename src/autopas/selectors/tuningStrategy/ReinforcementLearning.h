@@ -6,11 +6,11 @@
 
 #pragma once
 
+#include <cstdlib>
 #include <random>
 #include <set>
 #include <sstream>
 #include <utility>
-#include <cstdlib>
 
 #include "SetSearchSpaceBasedTuningStrategy.h"
 #include "TuningStrategyInterface.h"
@@ -82,11 +82,10 @@ class ReinforcementLearning : public SetSearchSpaceBasedTuningStrategy {
     if (_firstTuningPhase) {
       _newState = -time;
     } else {
-
-//      gamma
+      //      gamma
       _newState = _oldState + _alpha * (-time - _gamma * _oldState);
-//        no gamma
-//      _newState = _oldState + _alpha * (-time - _oldState);
+      //        no gamma
+      //      _newState = _oldState + _alpha * (-time - _oldState);
     }
 
     _states[*_currentConfig] = _newState;
@@ -127,10 +126,10 @@ class ReinforcementLearning : public SetSearchSpaceBasedTuningStrategy {
 
   bool _firstTuningPhase = true;
   bool _startTuningPhase = true;
-  const char * _alpha_tmp  = std::getenv("ALPHA");
-  double _alpha = (_alpha_tmp== nullptr) ? 1 : atof(_alpha_tmp);
-  const char * _gamma_tmp = std::getenv("GAMMA");
-  double _gamma = (_gamma_tmp==nullptr) ? 1 : atof(_gamma_tmp);
+  const char *_alpha_tmp = std::getenv("ALPHA");
+  double _alpha = (_alpha_tmp == nullptr) ? 1 : atof(_alpha_tmp);
+  const char *_gamma_tmp = std::getenv("GAMMA");
+  double _gamma = (_gamma_tmp == nullptr) ? 1 : atof(_gamma_tmp);
   size_t _randomExplorations = 5;
   std::set<Configuration> _selectedConfigs{};
 };
