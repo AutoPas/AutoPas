@@ -21,7 +21,7 @@ do
             export GAMMA=${g}
             strategy=$STRATEGY
             simulation=$SIMULATION
-            yaml_file="./build/examples/md-flexible/${simulation}ReinforcementLearningNoProgressNoProgress.yaml"
+            yaml_file="./build/examples/md-flexible/${simulation}ReinforcementLearningNoProgress.yaml"
             txt_file="results/alpha_${a}_gamma_${g}.txt"
             ./build/examples/md-flexible/md-flexible "--yaml-filename" ${yaml_file} | tee ${txt_file}
             unset ALPHA
