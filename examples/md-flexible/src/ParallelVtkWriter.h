@@ -5,6 +5,8 @@
  */
 #pragma once
 
+#include <sys/stat.h>
+
 #include <array>
 #include <string>
 
@@ -42,6 +44,16 @@ class ParallelVtkWriter {
                       const RegularGridDecomposition &decomposition);
 
  private:
+  /**
+   * Checks if a file with the given path exists.
+   * @param filename
+   * @return True iff the file exists.
+   */
+  bool checkFileExists(const std::string &filename) {
+    struct stat buffer;
+    return (stat(filename.c_str(), &buffer) == 0);
+  }
+
   /**
    * Stores the number of ranks used in the simulation.
    * This information is required when creating the .pvtu file.

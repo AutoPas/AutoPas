@@ -95,19 +95,19 @@ TEST_P(ThermostatTest, testApplyAndCalcTemperature) {
   const double deltaTemperature = std::get<2>(GetParam());
   Molecule m;
   initContainer(_autopas, m, {2, 2, 2});
-  // initially there are no velocities -> temperature should be exactly 0
-  EXPECT_EQ(Thermostat::calcTemperature(_autopas, _particlePropertiesLibrary), 0);
+  EXPECT_EQ(Thermostat::calcTemperature(_autopas, _particlePropertiesLibrary), 0)
+      << "initially there are no velocities -> temperature should be exactly 0";
   // add random velocities so that we do not scale zero vectors
   Thermostat::addBrownianMotion(_autopas, _particlePropertiesLibrary, initialTemperature);
-  // expect temperature to have changed from zero
   EXPECT_THAT(Thermostat::calcTemperature(_autopas, _particlePropertiesLibrary),
-              ::testing::Not(::testing::DoubleNear(0, 1e-12)));
+              ::testing::Not(::testing::DoubleNear(0, 1e-12)))
+      << "After Brownian motion expect temperature to have changed from zero";
   // set system to initial temperature
   Thermostat::apply(_autopas, _particlePropertiesLibrary, initialTemperature, std::numeric_limits<double>::max());
-  EXPECT_NEAR(Thermostat::calcTemperature(_autopas, _particlePropertiesLibrary), initialTemperature, 1e-12);
+  EXPECT_NEAR(Thermostat::calcTemperature(_autopas, _particlePropertiesLibrary), initialTemperature, 1e-12)
+      << "Thermostat failed to set initial temperature correctly!";
 
-  //  for (int i = 1; std::abs(initialTemperature + i * deltaTemperature) < std::abs(targetTemperature); ++i) {
-  auto expectedIterations = std::ceil(std::abs((targetTemperature - initialTemperature) / deltaTemperature));
+  const auto expectedIterations = std::ceil(std::abs((targetTemperature - initialTemperature) / deltaTemperature));
   for (int i = 1; i <= expectedIterations; ++i) {
     Thermostat::apply(_autopas, _particlePropertiesLibrary, targetTemperature, deltaTemperature);
     if (i != expectedIterations) {
@@ -120,7 +120,8 @@ TEST_P(ThermostatTest, testApplyAndCalcTemperature) {
 
   // apply once more to check that temperature stays the same
   Thermostat::apply(_autopas, _particlePropertiesLibrary, targetTemperature, deltaTemperature);
-  EXPECT_NEAR(Thermostat::calcTemperature(_autopas, _particlePropertiesLibrary), targetTemperature, 1e-12);
+  EXPECT_NEAR(Thermostat::calcTemperature(_autopas, _particlePropertiesLibrary), targetTemperature, 1e-12)
+      << "Thermostat changed the temperature when current temperature was already on target!";
 }
 
 /**

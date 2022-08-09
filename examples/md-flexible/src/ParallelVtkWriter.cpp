@@ -6,7 +6,6 @@
 #include "ParallelVtkWriter.h"
 
 #include <cstddef>
-#include <filesystem>
 #include <fstream>
 #include <ios>
 #include <iostream>
@@ -97,14 +96,14 @@ void ParallelVtkWriter::recordParticleStates(const int &currentIteration,
   timestepFile << "        </DataArray>\n";
 
   // print type ids
-  timestepFile << "        <DataArray Name=\"typeIds\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float32\">\n";
+  timestepFile << "        <DataArray Name=\"typeIds\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\">\n";
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     timestepFile << "        " << particle->getTypeId() << "\n";
   }
   timestepFile << "        </DataArray>\n";
 
   // print ids
-  timestepFile << "        <DataArray Name=\"ids\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float32\">\n";
+  timestepFile << "        <DataArray Name=\"ids\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\">\n";
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     timestepFile << "        " << particle->getID() << "\n";
     ;
@@ -218,7 +217,7 @@ void ParallelVtkWriter::tryCreateSessionAndDataFolders(const std::string &name, 
   strftime(buffer, sizeof(buffer), "%d%m%Y_%H%M%S", &timeInformation);
   std::string timeString(buffer);
 
-  if (not std::filesystem::exists(location)) {
+  if (not checkFileExists(location)) {
     tryCreateFolder(location, "./");
   }
 
@@ -247,9 +246,9 @@ void ParallelVtkWriter::createPvtuFile(const int &currentIteration) {
   timestepFile << "    <PPointData>\n";
   timestepFile
       << "      <PDataArray Name=\"velocities\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>\n";
-  timestepFile << "      <PDataArray Name=\"forces\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Int32\"/>\n";
-  timestepFile << "      <PDataArray Name=\"typeIds\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float32\"/>\n";
-  timestepFile << "      <PDataArray Name=\"ids\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float32\"/>\n";
+  timestepFile << "      <PDataArray Name=\"forces\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>\n";
+  timestepFile << "      <PDataArray Name=\"typeIds\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\"/>\n";
+  timestepFile << "      <PDataArray Name=\"ids\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\"/>\n";
   timestepFile << "    </PPointData>\n";
   timestepFile << "    <PCellData/>\n";
   timestepFile << "    <PPoints>\n";
@@ -330,10 +329,14 @@ void ParallelVtkWriter::createPvtsFile(const int &currentIteration, const Regula
 
 void ParallelVtkWriter::tryCreateFolder(const std::string &name, const std::string &location) {
   try {
-    std::filesystem::path newDirectoryPath(location + "/" + name);
-    std::filesystem::create_directory(newDirectoryPath);
-  } catch (std::filesystem::filesystem_error const &ex) {
-    throw std::runtime_error("The output location " + location + " passed to ParallelVtkWriter is invalid");
+    // filesystem library unfortunately not available on all target systems e.g. Fugaku
+    // std::filesystem::path newDirectoryPath(location + "/" + name);
+    // std::filesystem::create_directory(newDirectoryPath);
+    const auto newDirectoryPath{location + "/" + name};
+    mkdir(newDirectoryPath.c_str(), 0777);
+  } catch (const std::exception &ex) {
+    throw std::runtime_error("The output location " + location +
+                             " passed to ParallelVtkWriter is invalid: " + ex.what());
   }
 }
 
