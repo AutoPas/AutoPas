@@ -10,23 +10,25 @@
 
 #define PARTICLES_PER_DIM 16
 
-/**
- * Generates a reproducible set of multicentered molecules of a range of sizes
- * Stolen from F. Gratl AoSvsSoATest
- * @param molecules Vector where molecules will be stored.
- */
-void MulticenteredLJFunctorTest::generateMolecules(std::vector<autopas::MulticenteredMoleculeLJ> *molecules) {
+void MulticenteredLJFunctorTest::generateMoleculesAndPPL(std::vector<autopas::MulticenteredMoleculeLJ> *molecules, ParticlePropertiesLibrary<double, size_t> *PPL) {
   molecules->reserve(PARTICLES_PER_DIM * PARTICLES_PER_DIM);
 
+  PPL->addSiteType(0,1,1,1);
+  PPL->addMolType(0,{0},{{0,0,0}},{1,1,1});
+  PPL->addMolType(1,{0,0},{{-0.05,0,0},{0.05,0,0}},{1,1,1});
+  PPL->addMolType(2,{0,0,0,0},{{-0.025,0,-0.025},{-0.025,0,0.025},{0.025,0,-0.025},{0.025,0,0.025}},{1,1,1});
+
+  size_t index = 0;
   for (unsigned int i = 0; i < PARTICLES_PER_DIM; ++i) {
     for (unsigned int j = 0; j < PARTICLES_PER_DIM; ++j) {
       molecules->at(i * PARTICLES_PER_DIM + j).setID(i * PARTICLES_PER_DIM + j);
       molecules->at(i * PARTICLES_PER_DIM + j).setR({(double)i, (double)j, 0});
-      molecules->at(i * PARTICLES_PER_DIM + j).setQ({1,1,0,0});
+      molecules->at(i * PARTICLES_PER_DIM + j).setQ({1,1,0,0}); // todo: perhaps different quaternions
       molecules->at(i * PARTICLES_PER_DIM + j).setF({0, 0, 0});
       molecules->at(i * PARTICLES_PER_DIM + j).setTorque({0, 0, 0});
       molecules->at(i * PARTICLES_PER_DIM + j).setV({0, 0, 0});
       molecules->at(i * PARTICLES_PER_DIM + j).setAngularVel({0, 0, 0});
+      molecules->at(i * PARTICLES_PER_DIM + j).setTypeId(index % 3);
     }
   }
 }
