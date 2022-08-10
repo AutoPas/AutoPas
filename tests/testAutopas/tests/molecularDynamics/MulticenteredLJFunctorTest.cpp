@@ -8,6 +8,30 @@
 
 #include "MulticenteredLJFunctorTest.h"
 
+#define PARTICLES_PER_DIM 16
+
+/**
+ * Generates a reproducible set of multicentered molecules of a range of sizes
+ * Stolen from F. Gratl AoSvsSoATest
+ * @param molecules Vector where molecules will be stored.
+ */
+void MulticenteredLJFunctorTest::generateMolecules(std::vector<autopas::MulticenteredMoleculeLJ> *molecules) {
+  molecules->reserve(PARTICLES_PER_DIM * PARTICLES_PER_DIM);
+
+  for (unsigned int i = 0; i < PARTICLES_PER_DIM; ++i) {
+    for (unsigned int j = 0; j < PARTICLES_PER_DIM; ++j) {
+      molecules->at(i * PARTICLES_PER_DIM + j).setID(i * PARTICLES_PER_DIM + j);
+      molecules->at(i * PARTICLES_PER_DIM + j).setR({(double)i, (double)j, 0});
+      molecules->at(i * PARTICLES_PER_DIM + j).setQ({1,1,0,0});
+      molecules->at(i * PARTICLES_PER_DIM + j).setF({0, 0, 0});
+      molecules->at(i * PARTICLES_PER_DIM + j).setTorque({0, 0, 0});
+      molecules->at(i * PARTICLES_PER_DIM + j).setV({0, 0, 0});
+      molecules->at(i * PARTICLES_PER_DIM + j).setAngularVel({0, 0, 0});
+    }
+  }
+}
+
+
 template<bool newton3>
 void MulticenteredLJFunctorTest::testAoSForceCalculation(autopas::MulticenteredMoleculeLJ molA, autopas::MulticenteredMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
   using autopas::utils::ArrayMath::add;
@@ -503,4 +527,8 @@ TEST_F(MulticenteredLJFunctorTest, singleSiteSanityCheck) {
 
   singleSiteSanityCheck<true>(mol0,mol1,PPL,1.);
   singleSiteSanityCheck<false>(mol0,mol1,PPL,1.);
+}
+
+TEST_F(MulticenteredLJFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACell){
+
 }
