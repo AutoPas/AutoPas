@@ -27,3 +27,4 @@ thermostat:
   addBrownianMotion              :  true
 vtk-write-frequency              :  100000
 vtk-filename                     :  SpinodalDecomposition_equilibration
+no-progress-bar                  :  True
