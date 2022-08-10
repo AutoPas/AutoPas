@@ -541,9 +541,9 @@ TEST_F(MulticenteredLJFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACell){
 
   generateMoleculesAndPPL(&molecules, &PPL);
 
-  testSoACellAgainstAoS<false>(molecules, PPL, cutoff);
+  ::testSoACellAgainstAoS<false>(molecules, PPL, cutoff);
 
-  testSoACellAgainstAoS<true>(molecules, PPL, cutoff);
+  ::testSoACellAgainstAoS<true>(molecules, PPL, cutoff);
 }
 
 TEST_F(MulticenteredLJFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACellPair){
@@ -558,9 +558,9 @@ TEST_F(MulticenteredLJFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACellPair){
   generateMoleculesAndPPL(&moleculesA, &PPL, {0,0,0});
   generateMoleculesAndPPL(&moleculesA, &PPL, {0,0,1});
 
-  testSoACellPairAgainstAoS<false>(moleculesA, moleculesB, PPL, cutoff);
+  ::testSoACellPairAgainstAoS<false>(moleculesA, moleculesB, PPL, cutoff);
 
-  testSoACellPairAgainstAoS<true>(moleculesA, moleculesB, PPL, cutoff);
+  ::testSoACellPairAgainstAoS<true>(moleculesA, moleculesB, PPL, cutoff);
 }
 
 TEST_F(MulticenteredLJFunctorTest, MulticenteredLJFunctorTest_AoSVsSoAVerlet){
@@ -573,7 +573,7 @@ TEST_F(MulticenteredLJFunctorTest, MulticenteredLJFunctorTest_AoSVsSoAVerlet){
 
   generateMoleculesAndPPL(&molecules, &PPL);
 
-  testSoAVerletAgainstAoS<false>(molecules, PPL, cutoff);
+  ::testSoAVerletAgainstAoS<false>(molecules, PPL, cutoff);
 
-  testSoAVerletAgainstAoS<true>(molecules, PPL, cutoff);
+  ::testSoAVerletAgainstAoS<true>(molecules, PPL, cutoff);
 }
