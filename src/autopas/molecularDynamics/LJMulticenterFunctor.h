@@ -333,6 +333,7 @@ class LJMulticenterFunctor
     siteForceZ.reserve((siteCount));
 
     if constexpr (calculateGlobals) {
+      // this is only needed for vectorisation when calculating globals
       isSiteOwned.reserve(siteCount);
     }
 
@@ -353,7 +354,9 @@ class LJMulticenterFunctor
           siteForceX[siteIndex] = 0.;
           siteForceY[siteIndex] = 0.;
           siteForceZ[siteIndex] = 0.;
-          isSiteOwned[siteIndex] = ownedStatePtr[mol] == OwnershipState::owned;
+          if (calculateGlobals) {
+            isSiteOwned[siteIndex] = ownedStatePtr[mol] == OwnershipState::owned;
+          }
           ++siteIndex;
         }
       }
@@ -459,7 +462,7 @@ class LJMulticenterFunctor
           const SoAFloatPrecision epsilon24 = useMixing ? epsilon24s[siteB] : const_epsilon24;
           const SoAFloatPrecision shift6 = applyShift ? (useMixing ? shift6s[siteB] : const_shift6) : 0;
 
-          const auto isSiteBOwned = isSiteOwned[globalSiteBIndex];
+          const auto isSiteBOwned = calculateGlobals ? isSiteOwned[globalSiteBIndex] : true;
 
           const auto displacementX = exactSitePositionX[siteA] - exactSitePositionX[globalSiteBIndex];
           const auto displacementY = exactSitePositionY[siteA] - exactSitePositionY[globalSiteBIndex];
