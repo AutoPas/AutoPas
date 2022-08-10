@@ -31,8 +31,9 @@ class MulticenteredLJFunctorTest : public AutoPasTestBase {
    * Generates a reproducible set of molecules of varying numbers of molecules and a particle property library.
    * @param molecules
    * @param PPL
+   * @param offset position offset
    */
-  void generateMoleculesAndPPL(std::vector<autopas::MulticenteredMoleculeLJ> *molecules, ParticlePropertiesLibrary<double, size_t> *PPL);
+  void generateMoleculesAndPPL(std::vector<autopas::MulticenteredMoleculeLJ> *molecules, ParticlePropertiesLibrary<double, size_t> *PPL, std::array<double, 3> offset);
 
   /**
    * Tests the correctness of the AoS functor for a given molA, molB, PPL, and cutoff.

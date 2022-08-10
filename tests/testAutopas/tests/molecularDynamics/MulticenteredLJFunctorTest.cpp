@@ -10,7 +10,7 @@
 
 #define PARTICLES_PER_DIM 16
 
-void MulticenteredLJFunctorTest::generateMoleculesAndPPL(std::vector<autopas::MulticenteredMoleculeLJ> *molecules, ParticlePropertiesLibrary<double, size_t> *PPL) {
+void MulticenteredLJFunctorTest::generateMoleculesAndPPL(std::vector<autopas::MulticenteredMoleculeLJ> *molecules, ParticlePropertiesLibrary<double, size_t> *PPL, std::array<double, 3> offset = {0,0,0}) {
   molecules->reserve(PARTICLES_PER_DIM * PARTICLES_PER_DIM);
 
   PPL->addSiteType(0,1,1,1);
@@ -22,7 +22,7 @@ void MulticenteredLJFunctorTest::generateMoleculesAndPPL(std::vector<autopas::Mu
   for (unsigned int i = 0; i < PARTICLES_PER_DIM; ++i) {
     for (unsigned int j = 0; j < PARTICLES_PER_DIM; ++j) {
       molecules->at(i * PARTICLES_PER_DIM + j).setID(i * PARTICLES_PER_DIM + j);
-      molecules->at(i * PARTICLES_PER_DIM + j).setR({(double)i, (double)j, 0});
+      molecules->at(i * PARTICLES_PER_DIM + j).setR({(double)i + offset[0], (double)j + offset[1], offset[2]});
       molecules->at(i * PARTICLES_PER_DIM + j).setQ({1,1,0,0}); // todo: perhaps different quaternions
       molecules->at(i * PARTICLES_PER_DIM + j).setF({0, 0, 0});
       molecules->at(i * PARTICLES_PER_DIM + j).setTorque({0, 0, 0});
@@ -532,5 +532,48 @@ TEST_F(MulticenteredLJFunctorTest, singleSiteSanityCheck) {
 }
 
 TEST_F(MulticenteredLJFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACell){
+  using autopas::MulticenteredMoleculeLJ;
 
+  const double cutoff = 3.;
+
+  std::vector<autopas::MulticenteredMoleculeLJ> molecules;
+  ParticlePropertiesLibrary<double, size_t> PPL(cutoff);
+
+  generateMoleculesAndPPL(&molecules, &PPL);
+
+  testSoACellAgainstAoS<false>(molecules, PPL, cutoff);
+
+  testSoACellAgainstAoS<true>(molecules, PPL, cutoff);
+}
+
+TEST_F(MulticenteredLJFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACellPair){
+  using autopas::MulticenteredMoleculeLJ;
+
+  const double cutoff = 3.;
+
+  std::vector<autopas::MulticenteredMoleculeLJ> moleculesA;
+  std::vector<autopas::MulticenteredMoleculeLJ> moleculesB;
+  ParticlePropertiesLibrary<double, size_t> PPL(cutoff);
+
+  generateMoleculesAndPPL(&moleculesA, &PPL, {0,0,0});
+  generateMoleculesAndPPL(&moleculesA, &PPL, {0,0,1});
+
+  testSoACellPairAgainstAoS<false>(moleculesA, moleculesB, PPL, cutoff);
+
+  testSoACellPairAgainstAoS<true>(moleculesA, moleculesB, PPL, cutoff);
+}
+
+TEST_F(MulticenteredLJFunctorTest, MulticenteredLJFunctorTest_AoSVsSoAVerlet){
+  using autopas::MulticenteredMoleculeLJ;
+
+  const double cutoff = 3.;
+
+  std::vector<autopas::MulticenteredMoleculeLJ> molecules;
+  ParticlePropertiesLibrary<double, size_t> PPL(cutoff);
+
+  generateMoleculesAndPPL(&molecules, &PPL);
+
+  testSoAVerletAgainstAoS<false>(molecules, PPL, cutoff);
+
+  testSoAVerletAgainstAoS<true>(molecules, PPL, cutoff);
 }
