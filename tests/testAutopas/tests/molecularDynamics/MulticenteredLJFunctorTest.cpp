@@ -11,12 +11,14 @@
 #define PARTICLES_PER_DIM 16
 
 void MulticenteredLJFunctorTest::generateMoleculesAndPPL(std::vector<autopas::MulticenteredMoleculeLJ> *molecules, ParticlePropertiesLibrary<double, size_t> *PPL, std::array<double, 3> offset = {0,0,0}) {
-  molecules->reserve(PARTICLES_PER_DIM * PARTICLES_PER_DIM);
+  molecules->resize(PARTICLES_PER_DIM * PARTICLES_PER_DIM);
 
   PPL->addSiteType(0,1,1,1);
   PPL->addMolType(0,{0},{{0,0,0}},{1,1,1});
   PPL->addMolType(1,{0,0},{{-0.05,0,0},{0.05,0,0}},{1,1,1});
   PPL->addMolType(2,{0,0,0,0},{{-0.025,0,-0.025},{-0.025,0,0.025},{0.025,0,-0.025},{0.025,0,0.025}},{1,1,1});
+
+  PPL->calculateMixingCoefficients();
 
   size_t index = 0;
   for (unsigned int i = 0; i < PARTICLES_PER_DIM; ++i) {
@@ -29,6 +31,7 @@ void MulticenteredLJFunctorTest::generateMoleculesAndPPL(std::vector<autopas::Mu
       molecules->at(i * PARTICLES_PER_DIM + j).setV({0, 0, 0});
       molecules->at(i * PARTICLES_PER_DIM + j).setAngularVel({0, 0, 0});
       molecules->at(i * PARTICLES_PER_DIM + j).setTypeId(index % 3);
+      ++index;
     }
   }
 }
