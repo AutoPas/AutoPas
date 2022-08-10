@@ -156,12 +156,15 @@ void testSoACellAgainstAoS(std::vector<autopas::MulticenteredMoleculeLJ> molecul
     }
   }
 
+  // generate SoA Cell
   autopas::FullParticleCell<MulticenteredMoleculeLJ> cellSoA;
   for (auto &&mol : moleculesSoA) {
     cellSoA.addParticle(mol);
   }
 
   functor.SoALoader(cellSoA, cellSoA._particleSoABuffer, 0);
+
+  // apply functor
   functor.SoAFunctorSingle(cellSoA._particleSoABuffer, true);
 
   // copy back to original particle array
@@ -169,12 +172,157 @@ void testSoACellAgainstAoS(std::vector<autopas::MulticenteredMoleculeLJ> molecul
 
   functor.SoAExtractor(cellSoA, cellSoA._particleSoABuffer, 0);
 
+  // compare for consistency
   ASSERT_EQ(moleculesAoS.size(), cellSoA.numParticles());
 
   for (size_t i = 0; i < numberMolecules; ++i) {
     ASSERT_NEAR(moleculesAoS[i].getF()[0], cellSoA._particles[i].getF()[0], 1e-13);
     ASSERT_NEAR(moleculesAoS[i].getF()[1], cellSoA._particles[i].getF()[1], 1e-13);
     ASSERT_NEAR(moleculesAoS[i].getF()[2], cellSoA._particles[i].getF()[2], 1e-13);
+  }
+
+  for (size_t i = 0; i < numberMolecules; ++i) {
+    ASSERT_NEAR(moleculesAoS[i].getTorque()[0], cellSoA._particles[i].getTorque()[0], 1e-13);
+    ASSERT_NEAR(moleculesAoS[i].getTorque()[1], cellSoA._particles[i].getTorque()[1], 1e-13);
+    ASSERT_NEAR(moleculesAoS[i].getTorque()[2], cellSoA._particles[i].getTorque()[2], 1e-13);
+  }
+}
+
+template <bool newton3>
+void testSoACellPairAgainstAoS(std::vector<autopas::MulticenteredMoleculeLJ> moleculesA, std::vector<autopas::MulticenteredMoleculeLJ> moleculesB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
+  using autopas::MulticenteredMoleculeLJ;
+
+  autopas::LJMulticenterFunctor<MulticenteredMoleculeLJ, false, true, autopas::FunctorN3Modes::Both, false, true> functor(cutoff, PPL);
+
+  auto moleculesAoSA = moleculesA;
+  auto moleculesSoAA = moleculesA;
+  const auto numberMoleculesA = moleculesA.size();
+
+  auto moleculesAoSB = moleculesB;
+  auto moleculesSoAB = moleculesB;
+  const auto numberMoleculesB = moleculesB.size();
+
+  // Apply AoSFunctor to molecules
+  for (size_t i = 0; i < numberMoleculesA; ++i) {
+    for (size_t j = 0; j < numberMoleculesB; ++j) {
+      functor.AoSFunctor(moleculesAoSA[i],moleculesAoSB[j],newton3);
+    }
+  }
+
+  // generate SoA Cells
+  autopas::FullParticleCell<MulticenteredMoleculeLJ> cellSoAA;
+  for (auto &&mol : moleculesSoAA) {
+    cellSoAA.addParticle(mol);
+  }
+  autopas::FullParticleCell<MulticenteredMoleculeLJ> cellSoAB;
+  for (auto &&mol : moleculesSoAB) {
+    cellSoAB.addParticle(mol);
+  }
+
+  functor.SoALoader(cellSoAA, cellSoAA._particleSoABuffer, 0);
+  functor.SoALoader(cellSoAB, cellSoAB._particleSoABuffer, 0);
+
+  // apply functor
+  functor.SoAFunctorSingle(cellSoAA._particleSoABuffer, true);
+
+  // copy back to original particle array
+  moleculesSoAA.clear();
+  moleculesSoAB.clear();
+
+  functor.SoAExtractor(cellSoAA, cellSoAA._particleSoABuffer, 0);
+  functor.SoAExtractor(cellSoAB, cellSoAB._particleSoABuffer, 0);
+
+  // compare for consistency
+  ASSERT_EQ(moleculesAoSA.size(), cellSoAA.numParticles());
+  ASSERT_EQ(moleculesAoSB.size(), cellSoAB.numParticles());
+
+  for (size_t i = 0; i < numberMoleculesA; ++i) {
+    ASSERT_NEAR(moleculesAoSA[i].getF()[0], cellSoAA._particles[i].getF()[0], 1e-13);
+    ASSERT_NEAR(moleculesAoSA[i].getF()[1], cellSoAA._particles[i].getF()[1], 1e-13);
+    ASSERT_NEAR(moleculesAoSA[i].getF()[2], cellSoAA._particles[i].getF()[2], 1e-13);
+  }
+  for (size_t i = 0; i < numberMoleculesA; ++i) {
+    ASSERT_NEAR(moleculesAoSA[i].getTorque()[0], cellSoAA._particles[i].getTorque()[0], 1e-13);
+    ASSERT_NEAR(moleculesAoSA[i].getTorque()[1], cellSoAA._particles[i].getTorque()[1], 1e-13);
+    ASSERT_NEAR(moleculesAoSA[i].getTorque()[2], cellSoAA._particles[i].getTorque()[2], 1e-13);
+  }
+
+  for (size_t i = 0; i < numberMoleculesB; ++i) {
+    ASSERT_NEAR(moleculesAoSB[i].getF()[0], cellSoAB._particles[i].getF()[0], 1e-13);
+    ASSERT_NEAR(moleculesAoSB[i].getF()[1], cellSoAB._particles[i].getF()[1], 1e-13);
+    ASSERT_NEAR(moleculesAoSB[i].getF()[2], cellSoAB._particles[i].getF()[2], 1e-13);
+  }
+  for (size_t i = 0; i < numberMoleculesB; ++i) {
+    ASSERT_NEAR(moleculesAoSB[i].getTorque()[0], cellSoAB._particles[i].getTorque()[0], 1e-13);
+    ASSERT_NEAR(moleculesAoSB[i].getTorque()[1], cellSoAB._particles[i].getTorque()[1], 1e-13);
+    ASSERT_NEAR(moleculesAoSB[i].getTorque()[2], cellSoAB._particles[i].getTorque()[2], 1e-13);
+  }
+}
+
+template <bool newton3>
+void testSoAVerletAgainstAoS(std::vector<autopas::MulticenteredMoleculeLJ> molecules, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
+  using autopas::MulticenteredMoleculeLJ;
+
+  autopas::LJMulticenterFunctor<MulticenteredMoleculeLJ, false, true, autopas::FunctorN3Modes::Both, false, true> functor(cutoff, PPL);
+
+  auto moleculesAoS = molecules;
+  auto moleculesSoA = molecules;
+  const auto numberMolecules = molecules.size();
+
+  // Apply AoSFunctor to molecules
+  for (size_t i = 0; i < numberMolecules; ++i) {
+    for (size_t j = i+1; j < numberMolecules; ++j) {
+      functor.AoSFunctor(moleculesAoS[i],moleculesAoS[j],newton3);
+    }
+  }
+
+  // generate neighbor lists
+  std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> neighborLists;
+  neighborLists.reserve(numberMolecules);
+  for (size_t i = 0; i < numberMolecules; ++i) {
+    for (size_t j = newton3 ? i + 1 : 0; j < numberMolecules; ++j) {
+      if (i == j) {
+        continue;
+      }
+      auto displacement = autopas::utils::ArrayMath::sub(moleculesSoA[i].getR(), moleculesSoA[j].getR());
+      double distanceSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
+      if (distanceSquared < cutoff) {
+        neighborLists[i].push_back(j);
+      }
+    }
+  }
+
+  // generate SoA Cell
+  autopas::FullParticleCell<MulticenteredMoleculeLJ> cellSoA;
+  for (auto &&mol : moleculesSoA) {
+    cellSoA.addParticle(mol);
+  }
+
+  functor.SoALoader(cellSoA, cellSoA._particleSoABuffer, 0);
+
+  // apply functor
+  for (size_t i = 0; i < numberMolecules; ++i) {
+    functor.SoAFunctorVerlet(cellSoA._particleSoABuffer, i, neighborLists[i], newton3);
+  }
+
+  // copy back to original particle array
+  moleculesSoA.clear();
+
+  functor.SoAExtractor(cellSoA, cellSoA._particleSoABuffer, 0);
+
+  // compare for consistency
+  ASSERT_EQ(moleculesAoS.size(), cellSoA.numParticles());
+
+  for (size_t i = 0; i < numberMolecules; ++i) {
+    ASSERT_NEAR(moleculesAoS[i].getF()[0], cellSoA._particles[i].getF()[0], 1e-13);
+    ASSERT_NEAR(moleculesAoS[i].getF()[1], cellSoA._particles[i].getF()[1], 1e-13);
+    ASSERT_NEAR(moleculesAoS[i].getF()[2], cellSoA._particles[i].getF()[2], 1e-13);
+  }
+
+  for (size_t i = 0; i < numberMolecules; ++i) {
+    ASSERT_NEAR(moleculesAoS[i].getTorque()[0], cellSoA._particles[i].getTorque()[0], 1e-13);
+    ASSERT_NEAR(moleculesAoS[i].getTorque()[1], cellSoA._particles[i].getTorque()[1], 1e-13);
+    ASSERT_NEAR(moleculesAoS[i].getTorque()[2], cellSoA._particles[i].getTorque()[2], 1e-13);
   }
 }
 
