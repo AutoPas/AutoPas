@@ -205,15 +205,15 @@ void testSoACellAgainstAoS(std::vector<autopas::MulticenteredMoleculeLJ> molecul
   ASSERT_EQ(moleculesAoS.size(), cellSoA.numParticles());
 
   for (size_t i = 0; i < numberMolecules; ++i) {
-    ASSERT_NEAR(moleculesAoS[i].getF()[0], cellSoA._particles[i].getF()[0], 1e-13);
-    ASSERT_NEAR(moleculesAoS[i].getF()[1], cellSoA._particles[i].getF()[1], 1e-13);
-    ASSERT_NEAR(moleculesAoS[i].getF()[2], cellSoA._particles[i].getF()[2], 1e-13);
+    ASSERT_NEAR(moleculesAoS[i].getF()[0], cellSoA._particles[i].getF()[0], 1e-13) << "Incorrect x-force for molecule " << i;
+    ASSERT_NEAR(moleculesAoS[i].getF()[1], cellSoA._particles[i].getF()[1], 1e-13) << "Incorrect y-force for molecule " << i;
+    ASSERT_NEAR(moleculesAoS[i].getF()[2], cellSoA._particles[i].getF()[2], 1e-13) << "Incorrect z-force for molecule " << i;
   }
 
   for (size_t i = 0; i < numberMolecules; ++i) {
-    ASSERT_NEAR(moleculesAoS[i].getTorque()[0], cellSoA._particles[i].getTorque()[0], 1e-13);
-    ASSERT_NEAR(moleculesAoS[i].getTorque()[1], cellSoA._particles[i].getTorque()[1], 1e-13);
-    ASSERT_NEAR(moleculesAoS[i].getTorque()[2], cellSoA._particles[i].getTorque()[2], 1e-13);
+    ASSERT_NEAR(moleculesAoS[i].getTorque()[0], cellSoA._particles[i].getTorque()[0], 1e-13) << "Incorrect x-torque for molecule " << i;
+    ASSERT_NEAR(moleculesAoS[i].getTorque()[1], cellSoA._particles[i].getTorque()[1], 1e-13) << "Incorrect y-torque for molecule " << i;
+    ASSERT_NEAR(moleculesAoS[i].getTorque()[2], cellSoA._particles[i].getTorque()[2], 1e-13) << "Incorrect z-torque for molecule " << i;
   }
 }
 
@@ -266,25 +266,25 @@ void testSoACellPairAgainstAoS(std::vector<autopas::MulticenteredMoleculeLJ> mol
   ASSERT_EQ(moleculesAoSB.size(), cellSoAB.numParticles());
 
   for (size_t i = 0; i < numberMoleculesA; ++i) {
-    ASSERT_NEAR(moleculesAoSA[i].getF()[0], cellSoAA._particles[i].getF()[0], 1e-13);
-    ASSERT_NEAR(moleculesAoSA[i].getF()[1], cellSoAA._particles[i].getF()[1], 1e-13);
-    ASSERT_NEAR(moleculesAoSA[i].getF()[2], cellSoAA._particles[i].getF()[2], 1e-13);
+    ASSERT_NEAR(moleculesAoSA[i].getF()[0], cellSoAA._particles[i].getF()[0], 1e-13) << "Incorrect x-force for molecule " << i;
+    ASSERT_NEAR(moleculesAoSA[i].getF()[1], cellSoAA._particles[i].getF()[1], 1e-13) << "Incorrect y-force for molecule " << i;
+    ASSERT_NEAR(moleculesAoSA[i].getF()[2], cellSoAA._particles[i].getF()[2], 1e-13) << "Incorrect z-force for molecule " << i;
   }
   for (size_t i = 0; i < numberMoleculesA; ++i) {
-    ASSERT_NEAR(moleculesAoSA[i].getTorque()[0], cellSoAA._particles[i].getTorque()[0], 1e-13);
-    ASSERT_NEAR(moleculesAoSA[i].getTorque()[1], cellSoAA._particles[i].getTorque()[1], 1e-13);
-    ASSERT_NEAR(moleculesAoSA[i].getTorque()[2], cellSoAA._particles[i].getTorque()[2], 1e-13);
+    ASSERT_NEAR(moleculesAoSA[i].getTorque()[0], cellSoAA._particles[i].getTorque()[0], 1e-13) << "Incorrect x-torque for molecule " << i;
+    ASSERT_NEAR(moleculesAoSA[i].getTorque()[1], cellSoAA._particles[i].getTorque()[1], 1e-13) << "Incorrect y-torque for molecule " << i;
+    ASSERT_NEAR(moleculesAoSA[i].getTorque()[2], cellSoAA._particles[i].getTorque()[2], 1e-13) << "Incorrect z-torque for molecule " << i;
   }
 
   for (size_t i = 0; i < numberMoleculesB; ++i) {
-    ASSERT_NEAR(moleculesAoSB[i].getF()[0], cellSoAB._particles[i].getF()[0], 1e-13);
-    ASSERT_NEAR(moleculesAoSB[i].getF()[1], cellSoAB._particles[i].getF()[1], 1e-13);
-    ASSERT_NEAR(moleculesAoSB[i].getF()[2], cellSoAB._particles[i].getF()[2], 1e-13);
+    ASSERT_NEAR(moleculesAoSB[i].getF()[0], cellSoAB._particles[i].getF()[0], 1e-13) << "Incorrect x-force for molecule " << i;
+    ASSERT_NEAR(moleculesAoSB[i].getF()[1], cellSoAB._particles[i].getF()[1], 1e-13) << "Incorrect y-force for molecule " << i;
+    ASSERT_NEAR(moleculesAoSB[i].getF()[2], cellSoAB._particles[i].getF()[2], 1e-13) << "Incorrect z-force for molecule " << i;
   }
   for (size_t i = 0; i < numberMoleculesB; ++i) {
-    ASSERT_NEAR(moleculesAoSB[i].getTorque()[0], cellSoAB._particles[i].getTorque()[0], 1e-13);
-    ASSERT_NEAR(moleculesAoSB[i].getTorque()[1], cellSoAB._particles[i].getTorque()[1], 1e-13);
-    ASSERT_NEAR(moleculesAoSB[i].getTorque()[2], cellSoAB._particles[i].getTorque()[2], 1e-13);
+    ASSERT_NEAR(moleculesAoSB[i].getTorque()[0], cellSoAB._particles[i].getTorque()[0], 1e-13) << "Incorrect x-torque for molecule " << i;
+    ASSERT_NEAR(moleculesAoSB[i].getTorque()[1], cellSoAB._particles[i].getTorque()[1], 1e-13) << "Incorrect y-torque for molecule " << i;
+    ASSERT_NEAR(moleculesAoSB[i].getTorque()[2], cellSoAB._particles[i].getTorque()[2], 1e-13) << "Incorrect z-torque for molecule " << i;
   }
 }
 
@@ -343,15 +343,15 @@ void testSoAVerletAgainstAoS(std::vector<autopas::MulticenteredMoleculeLJ> molec
   ASSERT_EQ(moleculesAoS.size(), cellSoA.numParticles());
 
   for (size_t i = 0; i < numberMolecules; ++i) {
-    ASSERT_NEAR(moleculesAoS[i].getF()[0], cellSoA._particles[i].getF()[0], 1e-13);
-    ASSERT_NEAR(moleculesAoS[i].getF()[1], cellSoA._particles[i].getF()[1], 1e-13);
-    ASSERT_NEAR(moleculesAoS[i].getF()[2], cellSoA._particles[i].getF()[2], 1e-13);
+    ASSERT_NEAR(moleculesAoS[i].getF()[0], cellSoA._particles[i].getF()[0], 1e-13) << "Incorrect x-force for molecule " << i;
+    ASSERT_NEAR(moleculesAoS[i].getF()[1], cellSoA._particles[i].getF()[1], 1e-13) << "Incorrect y-force for molecule " << i;
+    ASSERT_NEAR(moleculesAoS[i].getF()[2], cellSoA._particles[i].getF()[2], 1e-13) << "Incorrect z-force for molecule " << i;
   }
 
   for (size_t i = 0; i < numberMolecules; ++i) {
-    ASSERT_NEAR(moleculesAoS[i].getTorque()[0], cellSoA._particles[i].getTorque()[0], 1e-13);
-    ASSERT_NEAR(moleculesAoS[i].getTorque()[1], cellSoA._particles[i].getTorque()[1], 1e-13);
-    ASSERT_NEAR(moleculesAoS[i].getTorque()[2], cellSoA._particles[i].getTorque()[2], 1e-13);
+    ASSERT_NEAR(moleculesAoS[i].getTorque()[0], cellSoA._particles[i].getTorque()[0], 1e-13) << "Incorrect x-torque for molecule " << i;
+    ASSERT_NEAR(moleculesAoS[i].getTorque()[1], cellSoA._particles[i].getTorque()[1], 1e-13) << "Incorrect y-torque for molecule " << i;
+    ASSERT_NEAR(moleculesAoS[i].getTorque()[2], cellSoA._particles[i].getTorque()[2], 1e-13) << "Incorrect z-torque for molecule " << i;
   }
 }
 
