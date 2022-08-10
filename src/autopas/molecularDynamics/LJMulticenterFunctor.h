@@ -179,8 +179,8 @@ class LJMulticenterFunctor
     const size_t numSitesA = useMixing ? _PPLibrary->getNumSites(particleA.getTypeId()) : _sitePositionsLJ.size();
     const size_t numSitesB = useMixing ? _PPLibrary->getNumSites(particleB.getTypeId()) : _sitePositionsLJ.size();
 
-    const std::vector<size_t> siteIdsA = useMixing ? _PPLibrary->getSiteTypes(particleA.getTypeId()) : 0;
-    const std::vector<size_t> siteIdsB = useMixing ? _PPLibrary->getSiteTypes(particleB.getTypeId()) : 0;
+    const std::vector<size_t> siteIdsA = useMixing ? _PPLibrary->getSiteTypes(particleA.getTypeId()) : std::vector<unsigned long>();
+    const std::vector<size_t> siteIdsB = useMixing ? _PPLibrary->getSiteTypes(particleB.getTypeId()) : std::vector<unsigned long>();
 
     const std::vector<std::array<double, 3>> unrotatedSitePositionsA =
         useMixing ? _PPLibrary->getSitePositions(particleA.getTypeId()) : _sitePositionsLJ;
