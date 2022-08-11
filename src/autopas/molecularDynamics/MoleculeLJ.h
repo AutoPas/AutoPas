@@ -176,6 +176,13 @@ class MoleculeLJ : public autopas::Particle {
   void setOldF(const std::array<double, 3> &oldForce) { _oldF = oldForce; }
 
   /**
+   * Set old force.
+   * @param oldForce
+   * @param i index of oldForce being set
+   */
+  void setOldF(const double &oldForce, size_t i) { _oldF[i] = oldForce; }
+
+  /**
    * Get TypeId.
    * @return
    */

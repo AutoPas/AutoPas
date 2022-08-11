@@ -35,8 +35,8 @@ class MulticenteredMoleculeLJ : public autopas::MoleculeLJ {
    * @param id Id of the particle.
    */
   MulticenteredMoleculeLJ(std::array<double, 3> r, std::array<double, 3> v, std::array<double, 4> q,
-                          std::array<double, 3> angularVel, unsigned long id)
-      : _r(r), _v(v), _q(q), _angularVel(angularVel), _id(id) {}
+                          std::array<double, 3> angularVel, unsigned long moleculeId, unsigned long typeId = 0)
+      : autopas::MoleculeLJ(r, v, id, typeId), _q(q), _angularVel(angularVel) {}
 
   /**
    * Destructor of the MulticenteredParticle class.
@@ -190,11 +190,11 @@ class MulticenteredMoleculeLJ : public autopas::MoleculeLJ {
     } else if constexpr (attribute == AttributeNames::forceZ) {
       _f[2] = value;
     } else if constexpr (attribute == AttributeNames::oldForceX) {
-      _oldF[0] = value;
+      setOldF(value, 0);
     } else if constexpr (attribute == AttributeNames::oldForceY) {
-      _oldF[1] = value;
+      setOldF(value, 1);
     } else if constexpr (attribute == AttributeNames::oldForceZ) {
-      _oldF[2] = value;
+      setOldF(value, 2);
     } else if constexpr (attribute == AttributeNames::quaternion0) {
       _q[0] = value;
     } else if constexpr (attribute == AttributeNames::quaternion1) {
@@ -226,21 +226,6 @@ class MulticenteredMoleculeLJ : public autopas::MoleculeLJ {
 
  protected:
   /**
-   * (Centre of) Particle position as 3D coords
-   */
-  std::array<double, 3> _r;
-
-  /**
-   * Velocity of particle.
-   */
-  std::array<double, 3> _v;
-
-  /**
-   * Force experienced by particle.
-   */
-  std::array<double, 3> _f;
-
-  /**
    * Rotational direction of particle as quaternion.
    */
   std::array<double, 4> _q;
@@ -255,89 +240,7 @@ class MulticenteredMoleculeLJ : public autopas::MoleculeLJ {
    */
   std::array<double, 3> _torque;
 
-  /**
-   * Particle id.
-   */
-  idType _id{};
-
-  /**
-   * Defines the state of the ownership of the particle.
-   */
-  autopas::OwnershipState _ownershipState{autopas::OwnershipState::owned};
-
  public:
-  /**
-   * get the force acting on the particle
-   * @return force
-   */
-  //[[nodiscard]] const std::array<double, 3> &getF() const { return _f; }
-
-  /**
-   * Set the force acting on the particle
-   * @param f force
-   */
-  // void setF(const std::array<double, 3> &f) { _f = f; }
-
-  /**
-   * Add a partial force to the force acting on the particle
-   * @param f partial force to be added
-   */
-  // void addF(const std::array<double, 3> &f) { _f = autopas::utils::ArrayMath::add(_f, f); }
-
-  /**
-   * Substract a partial force from the force acting on the particle
-   * @param f partial force to be substracted
-   */
-  // void subF(const std::array<double, 3> &f) { _f = autopas::utils::ArrayMath::sub(_f, f); }
-
-  /**
-   * Get the id of the particle
-   * @return id
-   */
-  // idType getID() const { return _id; }
-
-  /**
-   * Set the id of the particle
-   * @param id id
-   */
-  // void setID(idType id) { _id = id; }
-
-  /**
-   * Get the position of the particle
-   * @return current position
-   */
-  //[[nodiscard]] const std::array<double, 3> &getR() const { return _r; }
-
-  /**
-   * Set the position of the particle
-   * @param r new position
-   */
-  // void setR(const std::array<double, 3> &r) { _r = r; }
-
-  /**
-   * Add a distance vector to the position of the particle
-   * @param r vector to be added
-   */
-  // void addR(const std::array<double, 3> &r) { _r = autopas::utils::ArrayMath::add(_r, r); }
-
-  /**
-   * Get the velocity of the particle
-   * @return current velocity
-   */
-  //[[nodiscard]] const std::array<double, 3> &getV() const { return _v; }
-
-  /**
-   * Set the velocity of the particle
-   * @param v new velocity
-   */
-  // void setV(const std::array<double, 3> &v) { _v = v; }
-
-  /**
-   * Add a vector to the current velocity of the particle
-   * @param v vector to be added
-   */
-  // void addV(const std::array<double, 3> &v) { _v = autopas::utils::ArrayMath::add(_v, v); }
-
   /**
    * Get the quaternion defining rotation
    * @return quaternion defining rotation
@@ -434,17 +337,6 @@ class MulticenteredMoleculeLJ : public autopas::MoleculeLJ {
     simpleMolecule.setTypeId(this->getTypeId());
     return simpleMolecule;
   }
-
- private:
-  /**
-   * Particle type id.
-   */
-  size_t _typeId = 0;
-
-  /**
-   * Old Force of the particle experiences as 3D vector.
-   */
-  std::array<double, 3> _oldF = {0., 0., 0.};
 };
 
 }  // namespace autopas
