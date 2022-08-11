@@ -491,9 +491,9 @@ class LJMulticenterFunctor
           forceSumZ += forceZ;
 
           // newton's third law
-          siteForceX[siteB] -= forceX;
-          siteForceY[siteB] -= forceY;
-          siteForceZ[siteB] -= forceZ;
+          siteForceX[globalSiteBIndex] -= forceX;
+          siteForceY[globalSiteBIndex] -= forceY;
+          siteForceZ[globalSiteBIndex] -= forceZ;
 
           if (calculateGlobals) {
             const auto virialX = displacementX * forceX;
@@ -615,22 +615,26 @@ class LJMulticenterFunctor
    * @copydoc Functor::getNeededAttr()
    */
   constexpr static auto getNeededAttr() {
-    return std::array<typename Particle::AttributeNames, 12>{
-        Particle::AttributeNames::id,      Particle::AttributeNames::posX,    Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ,    Particle::AttributeNames::forceX,  Particle::AttributeNames::forceY,
-        Particle::AttributeNames::forceZ,  Particle::AttributeNames::torqueX, Particle::AttributeNames::torqueY,
-        Particle::AttributeNames::torqueZ, Particle::AttributeNames::typeId,  Particle::AttributeNames::ownershipState};
+    return std::array<typename Particle::AttributeNames, 16>{
+        Particle::AttributeNames::id,          Particle::AttributeNames::posX,        Particle::AttributeNames::posY,
+        Particle::AttributeNames::posZ,        Particle::AttributeNames::forceX,      Particle::AttributeNames::forceY,
+        Particle::AttributeNames::forceZ,      Particle::AttributeNames::quaternion0, Particle::AttributeNames::quaternion1,
+        Particle::AttributeNames::quaternion2, Particle::AttributeNames::quaternion3, Particle::AttributeNames::torqueX,
+        Particle::AttributeNames::torqueY,     Particle::AttributeNames::torqueZ,     Particle::AttributeNames::typeId,
+        Particle::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc Functor::getNeededAttr(std::false_type)
    */
   constexpr static auto getNeededAttr(std::false_type) {
-    return std::array<typename Particle::AttributeNames, 12>{
-        Particle::AttributeNames::id,      Particle::AttributeNames::posX,    Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ,    Particle::AttributeNames::forceX,  Particle::AttributeNames::forceY,
-        Particle::AttributeNames::forceZ,  Particle::AttributeNames::torqueX, Particle::AttributeNames::torqueY,
-        Particle::AttributeNames::torqueZ, Particle::AttributeNames::typeId,  Particle::AttributeNames::ownershipState};
+    return std::array<typename Particle::AttributeNames, 16>{
+        Particle::AttributeNames::id,          Particle::AttributeNames::posX,        Particle::AttributeNames::posY,
+        Particle::AttributeNames::posZ,        Particle::AttributeNames::forceX,      Particle::AttributeNames::forceY,
+        Particle::AttributeNames::forceZ,      Particle::AttributeNames::quaternion0, Particle::AttributeNames::quaternion1,
+        Particle::AttributeNames::quaternion2, Particle::AttributeNames::quaternion3, Particle::AttributeNames::torqueX,
+        Particle::AttributeNames::torqueY,     Particle::AttributeNames::torqueZ,     Particle::AttributeNames::typeId,
+        Particle::AttributeNames::ownershipState};
   }
 
   /**
