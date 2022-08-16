@@ -5,7 +5,7 @@ file(
     "*.h"
 )
 
-add_executable(runTests ${MY_SRC} tests/utils/QuaternionTest.cpp)
+add_executable(runTests ${MY_SRC})
 
 target_compile_definitions(runTests PRIVATE)
 
