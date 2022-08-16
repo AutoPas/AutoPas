@@ -372,9 +372,7 @@ class LJMulticenterFunctor
           siteForceX[siteIndex] = 0.;
           siteForceY[siteIndex] = 0.;
           siteForceZ[siteIndex] = 0.;
-          if (calculateGlobals) {
-            isSiteOwned[siteIndex] = ownedStatePtr[mol] == OwnershipState::owned;
-          }
+          isSiteOwned[siteIndex] = ownedStatePtr[mol] == OwnershipState::owned;
           ++siteIndex;
         }
       }
@@ -871,9 +869,7 @@ class LJMulticenterFunctor
           siteForceBx[siteIndex] = 0.;
           siteForceBy[siteIndex] = 0.;
           siteForceBz[siteIndex] = 0.;
-          if (calculateGlobals) {
-            isSiteOwnedBArr[siteIndex] = ownedStatePtrB[mol] == OwnershipState::owned;
-          }
+          isSiteOwnedBArr[siteIndex] = ownedStatePtrB[mol] == OwnershipState::owned;
           ++siteIndex;
         }
       }
@@ -889,9 +885,7 @@ class LJMulticenterFunctor
           siteForceBx[siteIndex] = 0.;
           siteForceBy[siteIndex] = 0.;
           siteForceBz[siteIndex] = 0.;
-          if (calculateGlobals) {
-            isSiteOwnedBArr[siteIndex] = ownedStatePtrB[mol] == OwnershipState::owned;
-          }
+          isSiteOwnedBArr[siteIndex] = ownedStatePtrB[mol] == OwnershipState::owned;
           ++siteIndex;
         }
       }
@@ -983,7 +977,7 @@ class LJMulticenterFunctor
           const SoAFloatPrecision epsilon24 = useMixing ? epsilon24s[siteB] : const_epsilon24;
           const SoAFloatPrecision shift6 = applyShift ? (useMixing ? shift6s[siteB] : const_shift6) : 0;
 
-          const auto isSiteOwnedB = calculateGlobals ? isSiteOwnedBArr[siteB] : true;
+          const auto isSiteOwnedB = isSiteOwnedBArr[siteB];
 
           const auto displacementX = exactSitePositionAx - exactSitePositionBx[siteB];
           const auto displacementY = exactSitePositionAy - exactSitePositionBy[siteB];
@@ -1234,9 +1228,7 @@ class LJMulticenterFunctor
           siteForceX[siteIndex] = 0.;
           siteForceY[siteIndex] = 0.;
           siteForceZ[siteIndex] = 0.;
-          if (calculateGlobals) {
-            isNeighborSiteOwnedArr[siteIndex] = ownedStatePtr[neighborMolIndex] == OwnershipState::owned;
-          }
+          isNeighborSiteOwnedArr[siteIndex] = ownedStatePtr[neighborMolIndex] == OwnershipState::owned;
           ++siteIndex;
         }
       }
@@ -1253,9 +1245,7 @@ class LJMulticenterFunctor
           siteForceX[siteIndex] = 0.;
           siteForceY[siteIndex] = 0.;
           siteForceZ[siteIndex] = 0.;
-          if (calculateGlobals) {
-            isNeighborSiteOwnedArr[siteIndex] = ownedStatePtr[neighborMolIndex] == OwnershipState::owned;
-          }
+          isNeighborSiteOwnedArr[siteIndex] = ownedStatePtr[neighborMolIndex] == OwnershipState::owned;
           ++siteIndex;
         }
       }
@@ -1326,7 +1316,7 @@ class LJMulticenterFunctor
         const SoAFloatPrecision epsilon24 = useMixing ? epsilon24s[neighborSite] : const_epsilon24;
         const SoAFloatPrecision shift6 = applyShift ? (useMixing ? shift6s[neighborSite] : const_shift6) : 0;
 
-        const bool isNeighborSiteOwned = calculateGlobals ? isNeighborSiteOwnedArr[neighborSite] : true;
+        const bool isNeighborSiteOwned = isNeighborSiteOwnedArr[neighborSite];
 
         const auto displacementX = exactPrimeSitePositionX - exactNeighborSitePositionX[neighborSite];
         const auto displacementY = exactPrimeSitePositionY - exactNeighborSitePositionY[neighborSite];

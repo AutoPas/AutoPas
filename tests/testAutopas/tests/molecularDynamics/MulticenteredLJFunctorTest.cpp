@@ -8,36 +8,30 @@
 
 #include "MulticenteredLJFunctorTest.h"
 
-#define PARTICLES_PER_DIM 8
-#define AOS_VS_SOA_ACCURACY 1e-8
+#define PARTICLES_PER_DIM 16
 
-void MulticenteredLJFunctorTest::generatePPL(ParticlePropertiesLibrary<double, size_t> *PPL) {
+void MulticenteredLJFunctorTest::generateMoleculesAndPPL(std::vector<autopas::MulticenteredMoleculeLJ> *molecules, ParticlePropertiesLibrary<double, size_t> *PPL, std::array<double, 3> offset = {0,0,0}) {
+  molecules->resize(PARTICLES_PER_DIM * PARTICLES_PER_DIM);
+
   PPL->addSiteType(0,1,1,1);
-  PPL->addSiteType(1,0.5,2,0.7);
   PPL->addMolType(0,{0},{{0,0,0}},{1,1,1});
-  PPL->addMolType(1,{1,0},{{-0.05,0,0},{0.05,0,0}},{1,1,1});
-  PPL->addMolType(2,{1,0,1,0},{{-0.025,0,-0.025},{-0.025,0,0.025},{0.025,0,-0.025},{0.025,0,0.025}},{1,1,1});
+  PPL->addMolType(1,{0,0},{{-0.05,0,0},{0.05,0,0}},{1,1,1});
+  PPL->addMolType(2,{0,0,0,0},{{-0.025,0,-0.025},{-0.025,0,0.025},{0.025,0,-0.025},{0.025,0,0.025}},{1,1,1});
 
   PPL->calculateMixingCoefficients();
-}
 
-
-void MulticenteredLJFunctorTest::generateMolecules(std::vector<autopas::MulticenteredMoleculeLJ> *molecules, std::array<double, 3> offset = {0,0,0}) {
-  molecules->resize(PARTICLES_PER_DIM * PARTICLES_PER_DIM * PARTICLES_PER_DIM);
-
+  size_t index = 0;
   for (unsigned int i = 0; i < PARTICLES_PER_DIM; ++i) {
     for (unsigned int j = 0; j < PARTICLES_PER_DIM; ++j) {
-      for (unsigned int k = 0; k < PARTICLES_PER_DIM; ++k) {
-        const auto index = i * PARTICLES_PER_DIM * PARTICLES_PER_DIM + j * PARTICLES_PER_DIM + k;
-        molecules->at(index).setID(index);
-        molecules->at(index).setR({(double)i + offset[0], (double)j + offset[1], (double)k + offset[2]});
-        molecules->at(index).setQ({1,1,0,0}); // todo: perhaps different quaternions
-        molecules->at(index).setF({0, 0, 0});
-        molecules->at(index).setTorque({0, 0, 0});
-        molecules->at(index).setV({0, 0, 0});
-        molecules->at(index).setAngularVel({0, 0, 0});
-        molecules->at(index).setTypeId(index % 3);
-      }
+      molecules->at(i * PARTICLES_PER_DIM + j).setID(i * PARTICLES_PER_DIM + j);
+      molecules->at(i * PARTICLES_PER_DIM + j).setR({(double)i + offset[0], (double)j + offset[1], offset[2]});
+      molecules->at(i * PARTICLES_PER_DIM + j).setQ({1,1,0,0}); // todo: perhaps different quaternions
+      molecules->at(i * PARTICLES_PER_DIM + j).setF({0, 0, 0});
+      molecules->at(i * PARTICLES_PER_DIM + j).setTorque({0, 0, 0});
+      molecules->at(i * PARTICLES_PER_DIM + j).setV({0, 0, 0});
+      molecules->at(i * PARTICLES_PER_DIM + j).setAngularVel({0, 0, 0});
+      molecules->at(i * PARTICLES_PER_DIM + j).setTypeId(index % 3);
+      ++index;
     }
   }
 }
@@ -200,7 +194,7 @@ void testSoACellAgainstAoS(std::vector<autopas::MulticenteredMoleculeLJ> molecul
   functor.SoALoader(cellSoA, cellSoA._particleSoABuffer, 0);
 
   // apply functor
-  functor.SoAFunctorSingle(cellSoA._particleSoABuffer, newton3);
+  functor.SoAFunctorSingle(cellSoA._particleSoABuffer, true);
 
   // copy back to original particle array
   moleculesSoA.clear();
@@ -211,15 +205,15 @@ void testSoACellAgainstAoS(std::vector<autopas::MulticenteredMoleculeLJ> molecul
   ASSERT_EQ(moleculesAoS.size(), cellSoA.numParticles());
 
   for (size_t i = 0; i < numberMolecules; ++i) {
-    ASSERT_NEAR(moleculesAoS[i].getF()[0], cellSoA._particles[i].getF()[0], AOS_VS_SOA_ACCURACY) << "Incorrect x-force for molecule " << i << " with newton3 = " << newton3;
-    ASSERT_NEAR(moleculesAoS[i].getF()[1], cellSoA._particles[i].getF()[1], AOS_VS_SOA_ACCURACY) << "Incorrect y-force for molecule " << i << " with newton3 = " << newton3;
-    ASSERT_NEAR(moleculesAoS[i].getF()[2], cellSoA._particles[i].getF()[2], AOS_VS_SOA_ACCURACY) << "Incorrect z-force for molecule " << i << " with newton3 = " << newton3;
+    ASSERT_NEAR(moleculesAoS[i].getF()[0], cellSoA._particles[i].getF()[0], 1e-10) << "Incorrect x-force for molecule " << i;
+    ASSERT_NEAR(moleculesAoS[i].getF()[1], cellSoA._particles[i].getF()[1], 1e-10) << "Incorrect y-force for molecule " << i;
+    ASSERT_NEAR(moleculesAoS[i].getF()[2], cellSoA._particles[i].getF()[2], 1e-10) << "Incorrect z-force for molecule " << i;
   }
 
   for (size_t i = 0; i < numberMolecules; ++i) {
-    ASSERT_NEAR(moleculesAoS[i].getTorque()[0], cellSoA._particles[i].getTorque()[0], AOS_VS_SOA_ACCURACY) << "Incorrect x-torque for molecule " << i << " with newton3 = " << newton3;
-    ASSERT_NEAR(moleculesAoS[i].getTorque()[1], cellSoA._particles[i].getTorque()[1], AOS_VS_SOA_ACCURACY) << "Incorrect y-torque for molecule " << i << " with newton3 = " << newton3;
-    ASSERT_NEAR(moleculesAoS[i].getTorque()[2], cellSoA._particles[i].getTorque()[2], AOS_VS_SOA_ACCURACY) << "Incorrect z-torque for molecule " << i << " with newton3 = " << newton3;
+    ASSERT_NEAR(moleculesAoS[i].getTorque()[0], cellSoA._particles[i].getTorque()[0], 1e-10) << "Incorrect x-torque for molecule " << i;
+    ASSERT_NEAR(moleculesAoS[i].getTorque()[1], cellSoA._particles[i].getTorque()[1], 1e-10) << "Incorrect y-torque for molecule " << i;
+    ASSERT_NEAR(moleculesAoS[i].getTorque()[2], cellSoA._particles[i].getTorque()[2], 1e-10) << "Incorrect z-torque for molecule " << i;
   }
 }
 
@@ -258,7 +252,7 @@ void testSoACellPairAgainstAoS(std::vector<autopas::MulticenteredMoleculeLJ> mol
   functor.SoALoader(cellSoAB, cellSoAB._particleSoABuffer, 0);
 
   // apply functor
-  functor.SoAFunctorPair(cellSoAA._particleSoABuffer, cellSoAB._particleSoABuffer, newton3);
+  functor.SoAFunctorSingle(cellSoAA._particleSoABuffer, true);
 
   // copy back to original particle array
   moleculesSoAA.clear();
@@ -272,25 +266,25 @@ void testSoACellPairAgainstAoS(std::vector<autopas::MulticenteredMoleculeLJ> mol
   ASSERT_EQ(moleculesAoSB.size(), cellSoAB.numParticles());
 
   for (size_t i = 0; i < numberMoleculesA; ++i) {
-    ASSERT_NEAR(moleculesAoSA[i].getF()[0], cellSoAA._particles[i].getF()[0], AOS_VS_SOA_ACCURACY) << "Incorrect x-force for molecule " << i << " with newton3 = " << newton3;
-    ASSERT_NEAR(moleculesAoSA[i].getF()[1], cellSoAA._particles[i].getF()[1], AOS_VS_SOA_ACCURACY) << "Incorrect y-force for molecule " << i << " with newton3 = " << newton3;
-    ASSERT_NEAR(moleculesAoSA[i].getF()[2], cellSoAA._particles[i].getF()[2], AOS_VS_SOA_ACCURACY) << "Incorrect z-force for molecule " << i << " with newton3 = " << newton3;
+    ASSERT_NEAR(moleculesAoSA[i].getF()[0], cellSoAA._particles[i].getF()[0], 1e-10) << "Incorrect x-force for molecule " << i;
+    ASSERT_NEAR(moleculesAoSA[i].getF()[1], cellSoAA._particles[i].getF()[1], 1e-10) << "Incorrect y-force for molecule " << i;
+    ASSERT_NEAR(moleculesAoSA[i].getF()[2], cellSoAA._particles[i].getF()[2], 1e-10) << "Incorrect z-force for molecule " << i;
   }
   for (size_t i = 0; i < numberMoleculesA; ++i) {
-    ASSERT_NEAR(moleculesAoSA[i].getTorque()[0], cellSoAA._particles[i].getTorque()[0], AOS_VS_SOA_ACCURACY) << "Incorrect x-torque for molecule " << i << " with newton3 = " << newton3;
-    ASSERT_NEAR(moleculesAoSA[i].getTorque()[1], cellSoAA._particles[i].getTorque()[1], AOS_VS_SOA_ACCURACY) << "Incorrect y-torque for molecule " << i << " with newton3 = " << newton3;
-    ASSERT_NEAR(moleculesAoSA[i].getTorque()[2], cellSoAA._particles[i].getTorque()[2], AOS_VS_SOA_ACCURACY) << "Incorrect z-torque for molecule " << i << " with newton3 = " << newton3;
+    ASSERT_NEAR(moleculesAoSA[i].getTorque()[0], cellSoAA._particles[i].getTorque()[0], 1e-10) << "Incorrect x-torque for molecule " << i;
+    ASSERT_NEAR(moleculesAoSA[i].getTorque()[1], cellSoAA._particles[i].getTorque()[1], 1e-10) << "Incorrect y-torque for molecule " << i;
+    ASSERT_NEAR(moleculesAoSA[i].getTorque()[2], cellSoAA._particles[i].getTorque()[2], 1e-10) << "Incorrect z-torque for molecule " << i;
   }
 
   for (size_t i = 0; i < numberMoleculesB; ++i) {
-    ASSERT_NEAR(moleculesAoSB[i].getF()[0], cellSoAB._particles[i].getF()[0], AOS_VS_SOA_ACCURACY) << "Incorrect x-force for molecule " << i << " with newton3 = " << newton3;
-    ASSERT_NEAR(moleculesAoSB[i].getF()[1], cellSoAB._particles[i].getF()[1], AOS_VS_SOA_ACCURACY) << "Incorrect y-force for molecule " << i << " with newton3 = " << newton3;
-    ASSERT_NEAR(moleculesAoSB[i].getF()[2], cellSoAB._particles[i].getF()[2], AOS_VS_SOA_ACCURACY) << "Incorrect z-force for molecule " << i << " with newton3 = " << newton3;
+    ASSERT_NEAR(moleculesAoSB[i].getF()[0], cellSoAB._particles[i].getF()[0], 1e-10) << "Incorrect x-force for molecule " << i;
+    ASSERT_NEAR(moleculesAoSB[i].getF()[1], cellSoAB._particles[i].getF()[1], 1e-10) << "Incorrect y-force for molecule " << i;
+    ASSERT_NEAR(moleculesAoSB[i].getF()[2], cellSoAB._particles[i].getF()[2], 1e-10) << "Incorrect z-force for molecule " << i;
   }
   for (size_t i = 0; i < numberMoleculesB; ++i) {
-    ASSERT_NEAR(moleculesAoSB[i].getTorque()[0], cellSoAB._particles[i].getTorque()[0], AOS_VS_SOA_ACCURACY) << "Incorrect x-torque for molecule " << i << " with newton3 = " << newton3;
-    ASSERT_NEAR(moleculesAoSB[i].getTorque()[1], cellSoAB._particles[i].getTorque()[1], AOS_VS_SOA_ACCURACY) << "Incorrect y-torque for molecule " << i << " with newton3 = " << newton3;
-    ASSERT_NEAR(moleculesAoSB[i].getTorque()[2], cellSoAB._particles[i].getTorque()[2], AOS_VS_SOA_ACCURACY) << "Incorrect z-torque for molecule " << i << " with newton3 = " << newton3;
+    ASSERT_NEAR(moleculesAoSB[i].getTorque()[0], cellSoAB._particles[i].getTorque()[0], 1e-10) << "Incorrect x-torque for molecule " << i;
+    ASSERT_NEAR(moleculesAoSB[i].getTorque()[1], cellSoAB._particles[i].getTorque()[1], 1e-10) << "Incorrect y-torque for molecule " << i;
+    ASSERT_NEAR(moleculesAoSB[i].getTorque()[2], cellSoAB._particles[i].getTorque()[2], 1e-10) << "Incorrect z-torque for molecule " << i;
   }
 }
 
@@ -349,15 +343,15 @@ void testSoAVerletAgainstAoS(std::vector<autopas::MulticenteredMoleculeLJ> molec
   ASSERT_EQ(moleculesAoS.size(), cellSoA.numParticles());
 
   for (size_t i = 0; i < numberMolecules; ++i) {
-    ASSERT_NEAR(moleculesAoS[i].getF()[0], cellSoA._particles[i].getF()[0], AOS_VS_SOA_ACCURACY) << "Incorrect x-force for molecule " << i << " with newton3 = " << newton3;
-    ASSERT_NEAR(moleculesAoS[i].getF()[1], cellSoA._particles[i].getF()[1], AOS_VS_SOA_ACCURACY) << "Incorrect y-force for molecule " << i << " with newton3 = " << newton3;
-    ASSERT_NEAR(moleculesAoS[i].getF()[2], cellSoA._particles[i].getF()[2], AOS_VS_SOA_ACCURACY) << "Incorrect z-force for molecule " << i << " with newton3 = " << newton3;
+    ASSERT_NEAR(moleculesAoS[i].getF()[0], cellSoA._particles[i].getF()[0], 1e-10) << "Incorrect x-force for molecule " << i;
+    ASSERT_NEAR(moleculesAoS[i].getF()[1], cellSoA._particles[i].getF()[1], 1e-10) << "Incorrect y-force for molecule " << i;
+    ASSERT_NEAR(moleculesAoS[i].getF()[2], cellSoA._particles[i].getF()[2], 1e-10) << "Incorrect z-force for molecule " << i;
   }
 
   for (size_t i = 0; i < numberMolecules; ++i) {
-    ASSERT_NEAR(moleculesAoS[i].getTorque()[0], cellSoA._particles[i].getTorque()[0], AOS_VS_SOA_ACCURACY) << "Incorrect x-torque for molecule " << i << " with newton3 = " << newton3;
-    ASSERT_NEAR(moleculesAoS[i].getTorque()[1], cellSoA._particles[i].getTorque()[1], AOS_VS_SOA_ACCURACY) << "Incorrect y-torque for molecule " << i << " with newton3 = " << newton3;
-    ASSERT_NEAR(moleculesAoS[i].getTorque()[2], cellSoA._particles[i].getTorque()[2], AOS_VS_SOA_ACCURACY) << "Incorrect z-torque for molecule " << i << " with newton3 = " << newton3;
+    ASSERT_NEAR(moleculesAoS[i].getTorque()[0], cellSoA._particles[i].getTorque()[0], 1e-10) << "Incorrect x-torque for molecule " << i;
+    ASSERT_NEAR(moleculesAoS[i].getTorque()[1], cellSoA._particles[i].getTorque()[1], 1e-10) << "Incorrect y-torque for molecule " << i;
+    ASSERT_NEAR(moleculesAoS[i].getTorque()[2], cellSoA._particles[i].getTorque()[2], 1e-10) << "Incorrect z-torque for molecule " << i;
   }
 }
 
@@ -551,8 +545,9 @@ TEST_F(MulticenteredLJFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACell){
   std::vector<autopas::MulticenteredMoleculeLJ> molecules;
   ParticlePropertiesLibrary<double, size_t> PPL(cutoff);
 
-  generatePPL(&PPL);
-  generateMolecules(&molecules);
+  generateMoleculesAndPPL(&molecules, &PPL);
+
+  //::testSoACellAgainstAoS<false>(molecules, PPL, cutoff);
 
   ::testSoACellAgainstAoS<true>(molecules, PPL, cutoff);
 }
@@ -560,15 +555,14 @@ TEST_F(MulticenteredLJFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACell){
 TEST_F(MulticenteredLJFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACellPair){
   using autopas::MulticenteredMoleculeLJ;
 
-  const double cutoff = 5.;
+  const double cutoff = 3.;
 
   std::vector<autopas::MulticenteredMoleculeLJ> moleculesA;
   std::vector<autopas::MulticenteredMoleculeLJ> moleculesB;
   ParticlePropertiesLibrary<double, size_t> PPL(cutoff);
 
-  generatePPL(&PPL);
-  generateMolecules(&moleculesA, {0,0,0});
-  generateMolecules(&moleculesB, {0,0,9});
+  generateMoleculesAndPPL(&moleculesA, &PPL, {0,0,0});
+  generateMoleculesAndPPL(&moleculesA, &PPL, {0,0,1});
 
   ::testSoACellPairAgainstAoS<false>(moleculesA, moleculesB, PPL, cutoff);
 
@@ -583,8 +577,7 @@ TEST_F(MulticenteredLJFunctorTest, MulticenteredLJFunctorTest_AoSVsSoAVerlet){
   std::vector<autopas::MulticenteredMoleculeLJ> molecules;
   ParticlePropertiesLibrary<double, size_t> PPL(cutoff);
 
-  generatePPL(&PPL);
-  generateMolecules(&molecules);
+  generateMoleculesAndPPL(&molecules, &PPL);
 
   ::testSoAVerletAgainstAoS<false>(molecules, PPL, cutoff);
 
