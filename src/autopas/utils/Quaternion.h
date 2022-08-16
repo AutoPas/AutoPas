@@ -95,6 +95,8 @@ std::vector<std::array<double,3>> rotateVectorOfPositions(const std::array<doubl
  * @return rotated position
  */
 std::array<double,3> rotatePosition(const std::array<double,4> q, const std::array<double,3> pos) {
+  // todo investigate the more efficient version discussed in wikipedia page https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation
+  // Alan Watt and Mark Watt (1992) Advanced Animation and Rendering Techniques: Theory and Practice
   const auto ww = q[0]*q[0];
   const auto wx = q[0]*q[1];
   const auto wy = q[0]*q[2];
