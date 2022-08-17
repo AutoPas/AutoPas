@@ -60,7 +60,7 @@ std::vector<std::array<double,3>> rotateVectorOfPositions(const std::array<doubl
 
   const auto r00 = ww+xx-yy-zz;
   const auto r01 = 2.*(xy-wz);
-  const auto r02 = 2.*(xy-wz);
+  const auto r02 = 2.*(xz+wy);
   const auto r10 = 2.*(xy+wz);
   const auto r11 = ww-xx+yy-zz;
   const auto r12 = 2.*(yz-wx);
@@ -102,7 +102,7 @@ std::array<double,3> rotatePosition(const std::array<double,4> q, const std::arr
 
   const auto r00 = ww+xx-yy-zz;
   const auto r01 = 2.*(xy-wz);
-  const auto r02 = 2.*(xy-wz);
+  const auto r02 = 2.*(xz+wy);
   const auto r10 = 2.*(xy+wz);
   const auto r11 = ww-xx+yy-zz;
   const auto r12 = 2.*(yz-wx);

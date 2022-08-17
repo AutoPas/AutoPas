@@ -12,6 +12,8 @@ using namespace autopas;
 
 #define PI 3.14159265359
 
+const std::array<char,3> axes{'x','y','z'};
+
 /**
  * Returns normalized quaternion from direction r and angle theta.
  * @param r
@@ -36,15 +38,15 @@ std::array<double, 3> returnRotationInAxes(std::array<double,3> pos, int unrotat
     axisA = 1;
     axisB = 2;
   } else if (unrotatedAxis == 1) {
-    axisA = 0;
-    axisB = 2;
+    axisA = 2;
+    axisB = 0;
   } else {
     axisA = 0;
     axisB = 1;
   }
   std::array<double, 3> newPos;
-  newPos[axisA] =  pos[axisA] * std::cos(theta) + pos[axisB] * std::sin(theta);
-  newPos[axisB] = -pos[axisA] * std::sin(theta) + pos[axisB] * std::cos(theta);
+  newPos[axisA] =  pos[axisA] * std::cos(theta) - pos[axisB] * std::sin(theta);
+  newPos[axisB] =  pos[axisA] * std::sin(theta) + pos[axisB] * std::cos(theta);
   newPos[unrotatedAxis] = pos[unrotatedAxis];
 
   return newPos;
@@ -71,7 +73,9 @@ TEST(QuaternionTest, testRotatePosition) {
         const auto rotatedPos = utils::quaternion::rotatePosition(q, pos);
 
         for (int i = 0; i < 3; ++i) {
-          ASSERT_NEAR(expectedRotatedPos[i], rotatedPos[i], 1e-13);
+          ASSERT_NEAR(expectedRotatedPos[i], rotatedPos[i], 1e-13)
+              << "pos = {" << pos[0] << ", " << pos[1] << ", " << pos[2] << "}: Error in " << axes[i]
+              << "-axis for rotation with axis " << axes[axis] << " fixed and theta = " << theta;
         }
       }
     }
