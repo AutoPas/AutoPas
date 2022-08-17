@@ -4,7 +4,7 @@
  * @date 16/08/2022
  */
 
-//#include <gtest/gtest.h>
+#include <gtest/gtest.h>
 
 #include "QuaternionTest.h"
 

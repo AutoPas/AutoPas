@@ -7,8 +7,6 @@
 
 #pragma once
 
-#include <array>
-
 #include "ParticlePropertiesLibrary.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/particles/OwnershipState.h"

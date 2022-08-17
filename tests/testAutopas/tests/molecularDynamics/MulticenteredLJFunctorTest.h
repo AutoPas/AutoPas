@@ -14,8 +14,6 @@
 #include "autopas/molecularDynamics/LJMulticenterFunctor.h"
 #include "autopas/molecularDynamics/MulticenteredMoleculeLJ.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
-#include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/Quaternion.h"
 
 /**
  * Test class for MulticenteredLJFunctor
