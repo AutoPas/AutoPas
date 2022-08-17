@@ -70,7 +70,7 @@ std::vector<std::array<double,3>> rotateVectorOfPositions(const std::array<doubl
 
   std::vector<std::array<double,3>> rotatedPositions(positionVector.size());
 
-  for (int i=0; i<positionVector.size(); ++i) {
+  for (size_t i=0; i < positionVector.size(); ++i) {
     rotatedPositions[i][0] = r00 * positionVector[i][0] + r01 * positionVector[i][1] + r02 * positionVector[i][2];
     rotatedPositions[i][1] = r10 * positionVector[i][0] + r11 * positionVector[i][1] + r12 * positionVector[i][2];
     rotatedPositions[i][2] = r20 * positionVector[i][0] + r21 * positionVector[i][1] + r22 * positionVector[i][2];

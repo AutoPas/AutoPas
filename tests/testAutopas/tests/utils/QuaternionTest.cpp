@@ -53,10 +53,9 @@ std::array<double, 3> returnRotationInAxes(std::array<double,3> pos, int unrotat
 }
 
 /**
- * Tests rotation by defining directionvector to be rotated about and angle of rotation.
- * From this a quaternion is definined and used to rotate vector.
+ * Tests rotation by comparing against a position rotated using a simple mathematical rotation about an axis.
  *
- * For a given vector of positions, the rotation is tested in all axes plus a direction with compenents in mujltiple axes
+ * For a given vector of positions, the rotation is tested in all axes.
  * In each case, no, quarter, half, three quarter rotations are tested
  */
 TEST(QuaternionTest, testRotatePosition) {
@@ -80,4 +79,40 @@ TEST(QuaternionTest, testRotatePosition) {
       }
     }
   }
+}
+
+TEST(QuaternionTest, testRotateVectorOfPositions) {
+  const std::vector<std::array<double, 3>> dirVec = {{1.,0.,0.}, {0.,1.,0.}, {0.,0.,1.}, {-1.5,1.,0.5}};
+  const std::vector<double> thetaVec = {0., PI / 2, PI, 3 * PI/2};
+
+  const std::vector<std::array<double, 3>> posVec = {{0.,0.,0.},{1.,0.,0.},{0.5,1.,1.}, {-4,-1,0}};
+
+  for (auto dir : dirVec) {
+    for (auto theta : thetaVec) {
+      const auto q = returnNormalizedQuaternion(dir, theta);
+
+      // generate expectedPosVec using single pos function
+      std::vector<std::array<double, 3>> expectedPosVec;
+      expectedPosVec.reserve(posVec.size());
+      for (auto pos : posVec) {
+        expectedPosVec.emplace_back(utils::quaternion::rotatePosition(q, pos));
+      }
+
+      // generate rotatedPosVec using vector of pos function
+      const auto rotatedPosVec = utils::quaternion::rotateVectorOfPositions(q, posVec);
+
+      ASSERT_EQ(expectedPosVec.size(), rotatedPosVec.size());
+
+      for (int i = 0; i < posVec.size(); ++i) {
+        for (int j = 0; j < 3; ++j) {
+          ASSERT_NEAR(expectedPosVec[i][j], rotatedPosVec[i][j],1e-13)
+              << "Error: Axis rotated about = {" << dir[0] << ", " << dir[1] << ", " << dir[2] << "}; theta = " << theta
+              << ";\n Incorrect " << axes[j] << "-axis for pos = {" << posVec[i][0] << ", " << posVec[i][1] << ", "
+              << posVec[i][2] << "}";
+        }
+      }
+    }
+  }
+
+
 }
