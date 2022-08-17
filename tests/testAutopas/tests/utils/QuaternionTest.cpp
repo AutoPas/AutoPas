@@ -113,6 +113,34 @@ TEST(QuaternionTest, testRotateVectorOfPositions) {
       }
     }
   }
+}
+
+TEST(QuaternionTest, testRotateBackwards) {
+  const std::array<double, 3> dir = {1.1, -0.5, 0.1};
+  const double theta = PI / 2;
+
+  const std::array<double, 3> pos = {-0.5, 1., 2.};
+
+  const auto qExpected = returnNormalizedQuaternion(dir, -theta);
+  const auto expectedPos = utils::quaternion::rotatePosition(qExpected, pos);
+
+  const auto q = returnNormalizedQuaternion(dir, theta);
+  const auto rotatedPos = utils::quaternion::rotatePosition(q, pos);
+
+  ASSERT_NEAR(expectedPos[0], rotatedPos[0], 1e-13);
+  ASSERT_NEAR(expectedPos[1], rotatedPos[1], 1e-13);
+  ASSERT_NEAR(expectedPos[2], rotatedPos[2], 1e-13);
+}
+
+TEST(QuaternionTest, qMulSimpleTest) {
+  const auto q1 = returnNormalizedQuaternion({1., 0., 0.}, 1.);
+  const auto q2 = returnNormalizedQuaternion({0.5,0.5,-1}, 1.);
+
+  const std::array<double, 4> expectedRes =
+      {q1[0]*q2[0] - q1[1]*q2[1] - q1[2]*q2[2] - q1[3]*q2[3],
+       q1[0]*q2[1] + q1[1]*q2[0] + q1[2]*q2[3] - q1[3]*q2[2],
+       q1[0]*q2[2] - q1[1]*q2[3] + q1[2]*q2[0] + q1[3]*q2[1],
+       q1[0]*q2[3] + q1[1]*q2[2] - q1[2]*q2[1] + q1[3]*q2[0]};
 
 
 }
