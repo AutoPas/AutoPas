@@ -139,7 +139,7 @@ std::array<double,3> rotatePositionBackwards(const std::array<double,4> q, const
 
   const auto r00 = ww+xx-yy-zz;
   const auto r01 = 2.*(xy-wz);
-  const auto r02 = 2.*(xy-wz);
+  const auto r02 = 2.*(xz+wy);
   const auto r10 = 2.*(xy+wz);
   const auto r11 = ww-xx+yy-zz;
   const auto r12 = 2.*(yz-wx);

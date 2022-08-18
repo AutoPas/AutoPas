@@ -125,22 +125,55 @@ TEST(QuaternionTest, testRotateBackwards) {
   const auto expectedPos = utils::quaternion::rotatePosition(qExpected, pos);
 
   const auto q = returnNormalizedQuaternion(dir, theta);
-  const auto rotatedPos = utils::quaternion::rotatePosition(q, pos);
+  const auto rotatedPos = utils::quaternion::rotatePositionBackwards(q, pos);
 
   ASSERT_NEAR(expectedPos[0], rotatedPos[0], 1e-13);
   ASSERT_NEAR(expectedPos[1], rotatedPos[1], 1e-13);
   ASSERT_NEAR(expectedPos[2], rotatedPos[2], 1e-13);
 }
 
-TEST(QuaternionTest, qMulSimpleTest) {
+TEST(QuaternionTest, qMulqTest) {
   const auto q1 = returnNormalizedQuaternion({1., 0., 0.}, 1.);
   const auto q2 = returnNormalizedQuaternion({0.5,0.5,-1}, 1.);
 
+  // Derive expected q1 * q2 multiplication
   const std::array<double, 4> expectedRes =
       {q1[0]*q2[0] - q1[1]*q2[1] - q1[2]*q2[2] - q1[3]*q2[3],
        q1[0]*q2[1] + q1[1]*q2[0] + q1[2]*q2[3] - q1[3]*q2[2],
        q1[0]*q2[2] - q1[1]*q2[3] + q1[2]*q2[0] + q1[3]*q2[1],
        q1[0]*q2[3] + q1[1]*q2[2] - q1[2]*q2[1] + q1[3]*q2[0]};
 
+  // Obtain qMul q1 * q2
+  const auto obtainedRes = utils::quaternion::qMul(q1, q2);
 
+  // compare
+  ASSERT_NEAR(obtainedRes[0], expectedRes[0], 1e-13);
+  ASSERT_NEAR(obtainedRes[1], expectedRes[1], 1e-13);
+  ASSERT_NEAR(obtainedRes[2], expectedRes[2], 1e-13);
+  ASSERT_NEAR(obtainedRes[3], expectedRes[3], 1e-13);
+}
+
+TEST(QuaternionTest, qMulvTest) {
+  const auto q = returnNormalizedQuaternion({0.5,0.5,-1}, 1.);
+  const std::array<double, 3> v =  {2., -0.1, 1.};
+
+  // derive expected q * v & v * q
+  const std::array<double, 4> vQuaternion = {0, v[0], v[1], v[2]};
+  const auto qMulvExpected = utils::quaternion::qMul(q, vQuaternion);
+  const auto vMulqExpected = utils::quaternion::qMul(vQuaternion, q);
+
+  // obtain q * v and v * q using variants of qMul that take 3D-vec
+  const auto qMulv = utils::quaternion::qMul(q, v);
+  const auto vMulq = utils::quaternion::qMul(v, q);
+
+  // compare
+  ASSERT_NEAR(qMulv[0], qMulvExpected[0], 1e-13);
+  ASSERT_NEAR(qMulv[1], qMulvExpected[1], 1e-13);
+  ASSERT_NEAR(qMulv[2], qMulvExpected[2], 1e-13);
+  ASSERT_NEAR(qMulv[3], qMulvExpected[3], 1e-13);
+
+  ASSERT_NEAR(vMulq[0], vMulqExpected[0], 1e-13);
+  ASSERT_NEAR(vMulq[1], vMulqExpected[1], 1e-13);
+  ASSERT_NEAR(vMulq[2], vMulqExpected[2], 1e-13);
+  ASSERT_NEAR(vMulq[3], vMulqExpected[3], 1e-13);
 }
