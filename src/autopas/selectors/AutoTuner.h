@@ -182,6 +182,12 @@ class AutoTuner {
    */
   [[nodiscard]] const Configuration &getCurrentConfig() const;
 
+  /**
+   * Initialize the container specified by the TuningStrategy.
+   */
+  bool searchSpaceIsTrivial();
+
+
  private:
   /**
    * Total number of collected samples. This is the sum of the sizes of all sample vectors.
@@ -233,6 +239,7 @@ class AutoTuner {
    * Initialize the container specified by the TuningStrategy.
    */
   void selectCurrentContainer();
+
 
   template <class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, bool inTuningPhase>
   void iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool doListRebuild, std::vector<Particle> &particleBuffer,
@@ -345,6 +352,12 @@ void AutoTuner<Particle>::selectCurrentContainer() {
   auto conf = _tuningStrategy->getCurrentConfiguration();
   _containerSelector.selectContainer(
       conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin, _verletClusterSize, conf.loadEstimator));
+}
+
+
+template <class Particle>
+bool AutoTuner<Particle>::searchSpaceIsTrivial() {
+  return _tuningStrategy->searchSpaceIsTrivial();
 }
 
 template <class Particle>

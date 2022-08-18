@@ -459,6 +459,12 @@ class AutoPas {
   [[nodiscard]] std::array<double, 3> getBoxMax() const;
 
   /**
+   * get the bool value indicating if the search space is 1
+   * @return bool indicating if search space is trivial.
+   */
+  [[nodiscard]] bool getsearchspaceistrivial();
+
+  /**
    * Set coordinates of the lower corner of the domain.
    * @param boxMin
    */
@@ -766,6 +772,19 @@ class AutoPas {
     AutoPas::_allowedNewton3Options = allowedNewton3Options;
   }
 
+
+//bool getsearchspaceistrivial() const {
+//return _autoTuner->getContainer();
+//return AutoTune::searchSpaceIsTrivial();
+//}
+
+
+
+
+
+
+
+
   /**
    * Getter for the currently selected configuration.
    * @return Configuration object currently used.
@@ -993,6 +1012,7 @@ class AutoPas {
    * This is useful when multiple instances of AutoPas exist, especially in an MPI context.
    */
   std::string _outputSuffix{""};
+
 
 };  // class AutoPas
 }  // namespace autopas
