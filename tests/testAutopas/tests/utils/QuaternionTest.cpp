@@ -53,9 +53,9 @@ std::array<double, 3> returnRotationInAxes(std::array<double,3> pos, int unrotat
 }
 
 /**
- * Tests rotation by comparing against a position rotated using a simple mathematical rotation about an axis.
+ * Tests quaternion rotation by comparing against a position rotated using a simple mathematical rotation about an axis.
  *
- * For a given vector of positions, the rotation is tested in all axes.
+ * For a given std::vector of positions, the rotation is tested in all axes.
  * In each case, no, quarter, half, three quarter rotations are tested
  */
 TEST(QuaternionTest, testRotatePosition) {
@@ -81,6 +81,10 @@ TEST(QuaternionTest, testRotatePosition) {
   }
 }
 
+/**
+ * Compares rotateVectorOfPositions for a std::vector of positions against rotatePosition applied to each position
+ * individually.
+ */
 TEST(QuaternionTest, testRotateVectorOfPositions) {
   const std::vector<std::array<double, 3>> dirVec = {{1.,0.,0.}, {0.,1.,0.}, {0.,0.,1.}, {-1.5,1.,0.5}};
   const std::vector<double> thetaVec = {0., PI / 2, PI, 3 * PI/2};
@@ -115,6 +119,9 @@ TEST(QuaternionTest, testRotateVectorOfPositions) {
   }
 }
 
+/**
+ * Compares rotatePositionBackwards with theta > 0 against rotatePosition with -theta.
+ */
 TEST(QuaternionTest, testRotateBackwards) {
   const std::array<double, 3> dir = {1.1, -0.5, 0.1};
   const double theta = PI / 2;
@@ -132,6 +139,11 @@ TEST(QuaternionTest, testRotateBackwards) {
   ASSERT_NEAR(expectedPos[2], rotatedPos[2], 1e-13);
 }
 
+/**
+ * Tests qMul(q,q).
+ *
+ * @note: expectedRes is calculated the same way as qMul, but written independently @fabio is this good enough?
+ */
 TEST(QuaternionTest, qMulqTest) {
   const auto q1 = returnNormalizedQuaternion({1., 0., 0.}, 1.);
   const auto q2 = returnNormalizedQuaternion({0.5,0.5,-1}, 1.);
@@ -153,6 +165,10 @@ TEST(QuaternionTest, qMulqTest) {
   ASSERT_NEAR(obtainedRes[3], expectedRes[3], 1e-13);
 }
 
+/**
+ * Tests variants of qMul (qMul(q, v) & qMul(v, q)) which convert a 3D-vec v to a quaternion (0, v) by comparing against
+ * qMul(q1, q2) with q1 = q & q2 = (0, v).
+ */
 TEST(QuaternionTest, qMulvTest) {
   const auto q = returnNormalizedQuaternion({0.5,0.5,-1}, 1.);
   const std::array<double, 3> v =  {2., -0.1, 1.};
@@ -177,3 +193,5 @@ TEST(QuaternionTest, qMulvTest) {
   ASSERT_NEAR(vMulq[2], vMulqExpected[2], 1e-13);
   ASSERT_NEAR(vMulq[3], vMulqExpected[3], 1e-13);
 }
+
+// todo: tests for calculateRotationalMatrix and qConjugate (or removal of unused functions)
