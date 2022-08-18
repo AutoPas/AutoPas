@@ -12,17 +12,38 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPas.h"
+#include "autopas/molecularDynamics/MulticenteredMoleculeLJ.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
-#include "testingHelpers/commonTypedefs.h"
+
+using Molecule = autopas::MoleculeLJ;
+using MultisiteMolecule = autopas::MulticenteredMoleculeLJ;
+
+namespace {
+template <class MoleculeType>
+void fillWithParticlesAndInit(autopas::AutoPas<MoleculeType> &autopasContainer);
+
+template<> void fillWithParticlesAndInit<MultisiteMolecule>(autopas::AutoPas<MultisiteMolecule> &autopasContainer);
+
+/**
+ * Initialise particle properties library.
+ * This function should have a valid molecule type.
+ * @tparam MoleculeType
+ * @param PPL
+ */
+template <class MoleculeType>
+void initPPL(ParticlePropertiesLibrary<> &PPL);
+
+/**
+ * Shared implementation of testCalculateVelocities for both molecules types to reduce code duplication.
+ * @tparam MoleculeType Either Molecule or MultisiteMolecule.
+ */
+template <class MoleculeType> void testCalculateVelocitiesImpl();
+}
 
 class TimeDiscretizationTest : public AutoPasTestBase {
  public:
-  TimeDiscretizationTest() : AutoPasTestBase(), _particlePropertiesLibrary(1) {
-    _particlePropertiesLibrary.addSimpleType(0, 1, 1, 1);
-    _particlePropertiesLibrary.calculateMixingCoefficients();
-  }
-  static void fillWithParticlesAndInit(autopas::AutoPas<Molecule> &autopas);
-
- protected:
-  ParticlePropertiesLibrary<double, size_t> _particlePropertiesLibrary;
+  /**
+   * Constructor.
+   */
+  TimeDiscretizationTest() = default;
 };

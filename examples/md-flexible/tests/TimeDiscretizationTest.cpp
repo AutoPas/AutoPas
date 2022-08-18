@@ -13,14 +13,73 @@
 #include "src/TimeDiscretization.h"
 #include "src/configuration/MDFlexConfig.h"
 
-void TimeDiscretizationTest::fillWithParticlesAndInit(autopas::AutoPas<Molecule> &autopas) {
-  autopas.setBoxMin({0., 0., 0.});
-  autopas.setBoxMax({5., 5., 5.});
-  autopas.init();
-  Molecule dummy;
+namespace {
+template <class MoleculeType>
+void fillWithParticlesAndInit(autopas::AutoPas<MoleculeType> &autopasContainer) {
+  // Init autopas
+  autopasContainer.setBoxMin({0., 0., 0.});
+  autopasContainer.setBoxMax({5., 5., 5.});
+  autopasContainer.init();
+
+  // Define dummy particle
+  MoleculeType dummy;
   dummy.setF({0., 0., 1.});
   dummy.setV({0., 0., 1.});
-  autopasTools::generators::GridGenerator::fillWithParticles(autopas, {2, 2, 2}, dummy, {1, 1, 1}, {0., 0., 0.});
+
+  // Use dummy to fill container
+  autopasTools::generators::GridGenerator::fillWithParticles(autopasContainer, {2, 2, 2}, dummy, {1, 1, 1}, {0., 0., 0.});
+}
+
+template<> void fillWithParticlesAndInit<MultisiteMolecule>(autopas::AutoPas<MultisiteMolecule> &autopasContainer) {
+  // Init autopas
+  autopasContainer.setBoxMin({0., 0., 0.});
+  autopasContainer.setBoxMax({5., 5., 5.});
+  autopasContainer.init();
+
+  // Define dummy particle
+  MultisiteMolecule dummy;
+  dummy.setF({0., 0., 1.});
+  dummy.setV({0., 0., 1.});
+  dummy.setTorque({1., 0., 0.});
+  dummy.setAngularVel({1., 0., 0.});
+  dummy.setQ({0.7071067811865475, 0.7071067811865475, 0., 0.});
+
+  // Use dummy to fill container
+  autopasTools::generators::GridGenerator::fillWithParticles(autopasContainer, {2, 2, 2}, dummy, {1, 1, 1}, {0., 0., 0.});
+}
+
+/**
+ * Initialise particle properties library.
+ * This function should have a valid molecule type.
+ * @tparam MoleculeType
+ * @param PPL
+ */
+template <class MoleculeType>
+void initPPL(ParticlePropertiesLibrary<> &PPL) {
+  autopas::utils::ExceptionHandler::exception("initPPL should not be called with this molecule type!");
+}
+
+template<> void initPPL<Molecule>(ParticlePropertiesLibrary<> &PPL) {
+  PPL.addSimpleType(0, 1, 1, 1);
+  PPL.calculateMixingCoefficients();
+}
+
+template<> void initPPL<MultisiteMolecule>(ParticlePropertiesLibrary<> &PPL) {
+  PPL.addSiteType(0, 0.5, 1, 1);
+  PPL.addMolType(0, {0, 0}, {{-0.05, 0, 0}, {0.05, 0, 0}}, {1., 1., 1.});
+  PPL.calculateMixingCoefficients();
+}
+
+template<class MoleculeType> void testCalculateVelocitiesImpl() {
+  auto autoPas = std::make_shared<autopas::AutoPas<MoleculeType>>();
+  ParticlePropertiesLibrary<double, size_t> PPL();
+
+  fillWithParticlesAndInit(*autoPas);
+  initPPL<MoleculeType>(PPL);
+
+
+}
+
 }
 
 TEST_F(TimeDiscretizationTest, testCalculateVelocities) {
