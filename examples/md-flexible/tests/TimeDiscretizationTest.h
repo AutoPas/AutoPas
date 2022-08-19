@@ -14,6 +14,7 @@
 #include "autopas/AutoPas.h"
 #include "autopas/molecularDynamics/MulticenteredMoleculeLJ.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
+#include "autopas/utils/ArrayMath.h"
 
 using Molecule = autopas::MoleculeLJ;
 using MultisiteMolecule = autopas::MulticenteredMoleculeLJ;

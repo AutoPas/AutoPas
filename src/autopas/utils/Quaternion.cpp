@@ -5,6 +5,7 @@
 */
 
 #include "Quaternion.h"
+#include "ExceptionHandler.h"
 
 namespace autopas::utils::quaternion {
 
@@ -202,6 +203,13 @@ std::array<double,4> qMul(const std::array<double,3> v, const std::array<double,
  */
 std::array<double,4> qConjugate(const std::array<double,4> q) {
   return {q[0],-q[1],-q[2],-q[3]};
+}
+
+std::array<double, 3> convertQuaternionTo3DVec(const std::array<double, 4> q) {
+  if (q[0] > 1e-13 or q[0] < -1e-13) {
+    autopas::utils::ExceptionHandler::exception("Calling convertQuaternionTo3DVec on a quaternion with non-zero scalar part!");
+  }
+  return {q[1], q[2], q[3]};
 }
 
 }

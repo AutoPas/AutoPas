@@ -103,6 +103,7 @@ template<class MoleculeType> void testCalculateVelocitiesImpl() {
 }
 }
 
+// todo this really should be extended to include non-zero global force calculations
 template<class MoleculeType> void testCalculatePositionsImpl() {
   auto autoPas = std::make_shared<autopas::AutoPas<Molecule>>();
   auto PPL = std::make_shared<ParticlePropertiesLibrary<>>(1.0);
@@ -152,6 +153,97 @@ template<class MoleculeType> void testCalculatePositionsImpl() {
     EXPECT_NEAR(iter->getR()[2], referencePositions2[index][2] + 0.06, 1e-13);
     ++index;
   }
+}
+
+template<class MoleculeType> void testCalculateQuaternionsImpl() {
+  // todo
+}
+
+// todo extend to include non-zero global force calculations once handling for these have been added
+template<> void testCalculateQuaternionsImpl<MultisiteMolecule>() {
+  using autopas::utils::ArrayMath::add;
+  using autopas::utils::ArrayMath::sub;
+  using autopas::utils::ArrayMath::mul;
+  using autopas::utils::ArrayMath::div;
+  using autopas::utils::ArrayMath::mulScalar;
+  using autopas::utils::ArrayMath::cross;
+  using autopas::utils::quaternion::qMul;
+  using autopas::utils::quaternion::qConjugate;
+  using autopas::utils::quaternion::convertQuaternionTo3DVec;
+
+  auto autopasContainer = std::make_shared<autopas::AutoPas<MultisiteMolecule>>();
+  auto PPL = std::make_shared<ParticlePropertiesLibrary<>>(1.0);
+
+  const double deltaT = 0.1;
+
+  // Init autopas
+  autopasContainer->setBoxMin({0., 0., 0.});
+  autopasContainer->setBoxMax({4., 4., 4.});
+  autopasContainer->init();
+
+  // Init PPL
+  PPL->addSiteType(0, 1, 1, 0.5);
+  PPL->addMolType(0, {0, 0, 0}, {{0.74349607, 1.20300191, 0.}, {0.3249197, -1.37638192, 0.},
+                                 {-1.37638192, -0.3249197, 0.}}, {5.23606798, 0.76393202, 6.});
+  // comment on seemingly random site positions + MoI:
+  // this molecule looks like
+  //
+  //             x
+  //             |
+  //     sqrt(2) |
+  //            CoM
+  //   sqrt(2)/     \ sqrt(2)
+  //        /         \
+  //      x             x
+  //
+  // Site positions have been chosen such the momentOfInertia is diagonal (and thus represented only by 3 doubles)
+  PPL->calculateMixingCoefficients();
+
+  // add particle
+  MultisiteMolecule mol;
+  mol.setR({2., 2., 2.});
+  mol.setQ({0.7071067811865475, 0.7071067811865475, 0., 0.});
+  mol.setF({0., 0., 1.});
+  mol.setV({0., 0., 1.});
+  mol.setTorque({1., 0., 0.});
+  mol.setAngularVel({1., 0., 0.});
+  mol.setTypeId(0);
+  autopasContainer->addParticle(mol);
+
+  // derive expected new quaternion by working through algorithm from Rozmanov, 2010, Robust rotational-velocity-Verlet
+  // integration methods (method A) step-by-step. To ensure no mistakes, we strictly follow algorithm in paper (as
+  // opposed to variation in function)
+
+  const auto momentOfInertiaM = PPL->getMomentOfInertia(mol.getTypeId());
+
+  const auto angularMomentumW0 = mul(mol.getAngularVel(), momentOfInertiaM);
+
+  // (17)
+  const auto angularMomentumM0 = convertQuaternionTo3DVec(qMul(qConjugate(mol.getQ()),qMul(angularMomentumW0, mol.getQ())));
+
+  // (18)
+  const auto torqueM0 = convertQuaternionTo3DVec(qMul(qConjugate(mol.getQ()),qMul(mol.getTorque(), mol.getQ())));
+
+  // (19)
+  const auto angularVelM0 = div(angularMomentumM0, momentOfInertiaM);
+
+  // (20)
+  const auto derivAngularMomentumM0 = sub(torqueM0, cross(angularVelM0, angularMomentumM0));
+
+  // (21)
+  const auto angularMomentumMHalf = add(angularMomentumM0, mulScalar(derivAngularMomentumM0, 0.5 * deltaT));
+
+  // (22)
+  const auto derivQHalf0 = mulScalar(qMul(mol.getQ(), div(angularMomentumMHalf, momentOfInertiaM) ), 0.5);
+
+  // (23)
+  const auto qHalf0 = add(mol.getQ(), mulScalar(derivQHalf0, 0.5 * deltaT));
+
+  // (24)
+  const auto angularMomentumWHalf = add(angularMomentumW0, mulScalar(mol.getTorque(), 0.5 * deltaT));
+
+  // (25)
+  const auto
 }
 
 

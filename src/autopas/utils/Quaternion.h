@@ -78,4 +78,10 @@ std::array<double,4> qMul(const std::array<double,3> v, const std::array<double,
  */
 std::array<double,4> qConjugate(const std::array<double,4> q);
 
+/**
+ * Convert quaternion to 3d-vec
+ * @param q quaternion
+ * @return Quaternion without scalar part (i.e. 0th element)
+ */
+std::array<double, 3> convertQuaternionTo3DVec(const std::array<double, 4> q);
 }
