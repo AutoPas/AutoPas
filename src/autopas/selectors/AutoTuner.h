@@ -96,13 +96,12 @@ class AutoTuner {
       autopas::utils::ExceptionHandler::exception("AutoTuner: Passed tuning strategy has an empty search space.");
     }
 
-    // Check if energy measurement is possible
+    // Check if energy measurement is possible,
     _energy_measurement_available = true;
     try {
-      utils::RaplMeter raplMeter;
-      raplMeter.init();
-      raplMeter.reset();
-      raplMeter.sample();
+      _raplMeter.init();
+      _raplMeter.reset();
+      _raplMeter.sample();
     } catch (const utils::ExceptionHandler::AutoPasException &e) {
       if (tuningMetric == TuningMetricOption::energy) {
         throw e;
@@ -205,6 +204,11 @@ class AutoTuner {
   [[nodiscard]] const Configuration &getCurrentConfig() const;
 
  private:
+  /**
+   * Measures consumed energy for tuning
+   */
+  utils::RaplMeter _raplMeter;
+
   /**
    * Total number of collected samples. This is the sum of the sizes of all sample vectors.
    * @return Sum of sizes of sample vectors.
@@ -579,10 +583,20 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
   autopas::utils::Timer timerTotal;
   autopas::utils::Timer timerRebuild;
   autopas::utils::Timer timerIteratePairwise;
-  utils::RaplMeter raplMeter;
   if (_energy_measurement_available) {
-    raplMeter.init();
-    raplMeter.reset();
+    try {
+      _raplMeter.reset();
+    } catch (const utils::ExceptionHandler::AutoPasException &e) {
+      /**
+       * very unlikely to happen, as check was performed at initialisation of autotuner
+       * but may occur if permissions are changed during runtime.
+       */
+      AutoPasLog(warn, "Energy Measurement no longer possible:\n\t{}", e.what());
+      _energy_measurement_available = false;
+      if (_tuningMetric == TuningMetricOption::energy) {
+        throw e;
+      }
+    }
   }
   timerTotal.start();
 
@@ -600,8 +614,17 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
   f->endTraversal(useNewton3);
 
   if (_energy_measurement_available) {
-    raplMeter.sample();
+    try {
+      _raplMeter.sample();
+    } catch (const utils::ExceptionHandler::AutoPasException &e) {
+      AutoPasLog(warn, "Energy Measurement no longer possible:\n\t{}", e.what());
+      _energy_measurement_available = false;
+      if (_tuningMetric == TuningMetricOption::energy) {
+        throw e;
+      }
+    }
   }
+
   timerTotal.stop();
 
   if (doListRebuild) {
@@ -612,8 +635,8 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
   // this containing all of this has legacy reasons so that old plot scripts work
   AutoPasLog(debug, "IteratePairwise took {} nanoseconds", timerTotal.getTotalTime());
   if (_energy_measurement_available) {
-    AutoPasLog(debug, "Energy Consumption: Psys: {} Joules Pkg: {} Joules Ram: {} Joules", raplMeter.get_psys_energy(),
-               raplMeter.get_pkg_energy(), raplMeter.get_ram_energy());
+    AutoPasLog(debug, "Energy Consumption: Psys: {} Joules Pkg: {} Joules Ram: {} Joules", _raplMeter.get_psys_energy(),
+               _raplMeter.get_pkg_energy(), _raplMeter.get_ram_energy());
   }
 
   _iterationLogger.logIteration(getCurrentConfig(), _iteration, inTuningPhase, timerIteratePairwise.getTotalTime(),
@@ -627,7 +650,7 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
           addMeasurement(timerTotal.getTotalTime(), doListRebuild);
           break;
         case TuningMetricOption::energy:
-          addMeasurement(raplMeter.get_total_energy(), doListRebuild);
+          addMeasurement(_raplMeter.get_total_energy(), doListRebuild);
           break;
       }
     } else {
