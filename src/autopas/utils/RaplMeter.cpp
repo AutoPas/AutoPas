@@ -39,13 +39,13 @@ int RaplMeter::open_perf_event(int type, int config) {
 }
 
 void RaplMeter::init() {
-  if (FILE *fff = fopen("/sys/bus/event_source/devices/power/type", "r"); not fff) {
-    throw ExceptionHandler::AutoPasException("No support for energy measurements detected.");
-  } else {
+  if (FILE *fff = fopen("/sys/bus/event_source/devices/power/type", "r")) {
     if (fscanf(fff, "%d", &this->_type) != 1) {
       throw ExceptionHandler::AutoPasException("Failed to parse /sys/bus/event_source/devices/power/type");
     }
     fclose(fff);
+  } else {
+    throw ExceptionHandler::AutoPasException("No support for energy measurements detected.");
   }
 
   int psys_config;
