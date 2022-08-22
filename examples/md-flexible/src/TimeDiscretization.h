@@ -83,6 +83,7 @@ template<> void calculateQuaternions<autopas::MulticenteredMoleculeLJ>(autopas::
   using autopas::utils::ArrayMath::L2Norm;
   using autopas::utils::ArrayMath::normalize;
   using autopas::utils::quaternion::qMul;
+  using autopas::utils::quaternion::rotatePosition;
   using autopas::utils::quaternion::rotatePositionBackwards;
 
   const auto halfDeltaT = 0.5 * deltaT;
@@ -111,7 +112,7 @@ template<> void calculateQuaternions<autopas::MulticenteredMoleculeLJ>(autopas::
 
     auto qHalfStep = normalize(add(q, mulScalar(derivativeQHalfStep,halfDeltaT))); // (23)
 
-    const auto angVelWHalfStep = add(angVelW, mulScalar(div(torqueW, I), halfDeltaT)); // equivalent to (24)
+    const auto angVelWHalfStep = add(angVelW, mulScalar(rotatePosition(q,div(torqueM, I)), halfDeltaT)); // equivalent to (24)
 
     // (25) start
     // initialise qHalfStepOld to be outside tolerable distance from qHalfStep to satisfy while statement
