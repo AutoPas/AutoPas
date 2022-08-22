@@ -188,14 +188,27 @@ template<> void calculateAngularVelocities<autopas::MulticenteredMoleculeLJ>(aut
                                                          const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
   using autopas::utils::ArrayMath::mulScalar;
   using autopas::utils::ArrayMath::div;
+  using autopas::utils::quaternion::rotatePosition;
+  using autopas::utils::quaternion::rotatePositionBackwards;
 
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    const auto torque = iter->getTorque();
+    const auto torqueW = iter->getTorque();
+    const auto q = iter->getQ();
     const auto I = particlePropertiesLibrary.getMomentOfInertia(iter->getTypeId()); // moment of inertia
-    iter->addAngularVel(mulScalar(div(torque, I), 0.5*deltaT)); // (28)
+
+    // convert torque to molecular-frame
+    const auto torqueM = rotatePositionBackwards(q, torqueW);
+
+    // get I^-1 T in molecular-frame
+    const auto torqueDivMoIM = div(torqueM, I);
+
+    // convert to world-frame
+    const auto torqueDivMoIW = rotatePosition(q, torqueDivMoIM);
+
+    iter->addAngularVel(mulScalar(torqueDivMoIW, 0.5*deltaT)); // (28)
   }
 }
 
