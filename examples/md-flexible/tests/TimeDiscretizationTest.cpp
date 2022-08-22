@@ -284,6 +284,124 @@ template<> void testCalculateQuaternionsImpl<MultisiteMolecule>() {
   ASSERT_FALSE(resultantMol.isValid());
 }
 
+template<class MoleculeType> void testCalculateAngularVelocitiesImpl() {
+  // todo
+}
+
+template<> void testCalculateAngularVelocitiesImpl<MultisiteMolecule>() {
+  using autopas::utils::ArrayMath::mulScalar;
+  using autopas::utils::ArrayMath::add;
+  using autopas::utils::ArrayMath::mul;
+  using autopas::utils::ArrayMath::div;
+  using autopas::utils::quaternion::rotatePosition;
+  using autopas::utils::quaternion::rotatePositionBackwards;
+  using autopas::utils::quaternion::qMul;
+  using autopas::utils::quaternion::qConjugate;
+  using autopas::utils::quaternion::convertQuaternionTo3DVec;
+
+  auto autopasContainer = std::make_shared<autopas::AutoPas<MultisiteMolecule>>();
+  auto PPL = std::make_shared<ParticlePropertiesLibrary<>>(1.0);
+
+  const double deltaT = 0.1;
+
+  // Init autopas
+  autopasContainer->setBoxMin({0., 0., 0.});
+  autopasContainer->setBoxMax({4., 4., 4.});
+  autopasContainer->init();
+
+  // Init PPL
+  PPL->addSiteType(0, 1, 1, 0.5);
+  const std::array<double, 3> momentOfInertiaM = {5.23606798, 0.76393202, 6.};
+  PPL->addMolType(0, {0, 0, 0}, {{0.74349607, 1.20300191, 0.}, {0.3249197, -1.37638192, 0.},
+                                 {-1.37638192, -0.3249197, 0.}}, momentOfInertiaM);
+  // comment on seemingly random site positions + MoI:
+  // this molecule looks like
+  //
+  //             x
+  //             |
+  //     sqrt(2) |
+  //            CoM
+  //   sqrt(2)/     \ sqrt(2)
+  //        /         \
+  //      x             x
+  //
+  // Site positions have been chosen such the momentOfInertia is diagonal (and thus represented only by 3 doubles)
+  PPL->calculateMixingCoefficients();
+
+  // add particles
+  MultisiteMolecule mol1;
+  mol1.setR({2., 2., 2.});
+  mol1.setQ({0.7071067811865475, 0.7071067811865475, 0., 0.});
+  mol1.setF({0., 0., 1.});
+  mol1.setV({0., 0., 1.});
+  mol1.setTorque({1., 0., 0.});
+  mol1.setAngularVel({1., 0., 0.});
+  mol1.setTypeId(0);
+
+  MultisiteMolecule mol2;
+  mol2.setR({3., 3., 3.});
+  mol2.setQ({-0.7071067811865475, 0.7071067811865475, 0., 0.});
+  mol2.setF({0., 0., 1.});
+  mol2.setV({0., 0., 1.});
+  mol2.setTorque({0., 1., 0.});
+  mol2.setAngularVel({1., 0., 0.});
+  mol2.setTypeId(0);
+  autopasContainer->addParticle(mol2);
+
+  // Derive expected Angular Velocities
+  // mol 1
+  // convert angular velocity to angular momentum (requiring some awkward rotations)
+  const auto angVelWHalf1 = mol1.getAngularVel();
+  const auto angVelMHalf1 = rotatePositionBackwards(mol1.getQ(), angVelWHalf1);
+  const auto angMomMHalf1 = mul(angVelMHalf1, momentOfInertiaM);
+  const auto angMomWHalf1 = rotatePosition(mol1.getQ(), angMomMHalf1);
+
+  // half step with angular momentum
+  const auto angMomWFullStep1 = add(angMomWHalf1, mulScalar(mol1.getTorque(), 0.5*deltaT));
+
+  // convert angular momentum back to angular velocity
+  const auto angMomMFullStep1 = rotatePositionBackwards(mol1.getQ(), angMomWFullStep1);
+  const auto angVelMFullStep1 = div(angVelMHalf1, momentOfInertiaM);
+  const auto angVelWFullStep1 = rotatePositionBackwards(mol1.getQ(), angVelMFullStep1);
+
+  // mol 2
+  // convert angular velocity to angular momentum (requiring some awkward rotations)
+  const auto angVelWHalf2 = mol2.getAngularVel();
+  const auto angVelMHalf2 = rotatePositionBackwards(mol2.getQ(), angVelWHalf2);
+  const auto angMomMHalf2 = mul(angVelMHalf2, momentOfInertiaM);
+  const auto angMomWHalf2 = rotatePosition(mol2.getQ(), angMomMHalf2);
+
+  // half step with angular momentum
+  const auto angMomWFullStep2 = add(angMomWHalf2, mulScalar(mol2.getTorque(), 0.5*deltaT));
+
+  // convert angular momentum back to angular velocity
+  const auto angMomMFullStep2 = rotatePositionBackwards(mol2.getQ(), angMomWFullStep2);
+  const auto angVelMFullStep2 = div(angVelMHalf2, momentOfInertiaM);
+  const auto angVelWFullStep2 = rotatePositionBackwards(mol2.getQ(), angVelMFullStep2);
+
+
+  // obtain angular velocities as determined by TimeDiscretization::calculateAngularVelocities
+  TimeDiscretization::calculateAngularVelocities<MultisiteMolecule>(*autopasContainer, *PPL, deltaT);
+
+
+  // compare
+  auto mol = autopasContainer->begin(autopas::IteratorBehavior::owned);
+
+  ASSERT_NEAR(mol->getAngularVel()[0], angVelWFullStep1[0], 1e-13);
+  ASSERT_NEAR(mol->getAngularVel()[1], angVelWFullStep1[1], 1e-13);
+  ASSERT_NEAR(mol->getAngularVel()[2], angVelWFullStep1[2], 1e-13);
+
+  ++mol;
+
+  ASSERT_NEAR(mol->getAngularVel()[0], angVelWFullStep2[0], 1e-13);
+  ASSERT_NEAR(mol->getAngularVel()[1], angVelWFullStep2[1], 1e-13);
+  ASSERT_NEAR(mol->getAngularVel()[2], angVelWFullStep2[2], 1e-13);
+
+  // Check no additional molecules were created
+  ++mol;
+  ASSERT_FALSE(mol.isValid());
+}
+
 
 TEST_F(TimeDiscretizationTest, testCalculateVelocitiesSimple) {
     testCalculateVelocitiesImpl<Molecule>();
