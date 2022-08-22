@@ -167,6 +167,7 @@ template<> void testCalculateQuaternionsImpl<MultisiteMolecule>() {
   using autopas::utils::ArrayMath::div;
   using autopas::utils::ArrayMath::mulScalar;
   using autopas::utils::ArrayMath::cross;
+  using autopas::utils::ArrayMath::L2Norm;
   using autopas::utils::quaternion::qMul;
   using autopas::utils::quaternion::qConjugate;
   using autopas::utils::quaternion::convertQuaternionTo3DVec;
@@ -216,10 +217,11 @@ template<> void testCalculateQuaternionsImpl<MultisiteMolecule>() {
 
   const auto momentOfInertiaM = PPL->getMomentOfInertia(mol.getTypeId());
 
-  const auto angularMomentumW0 = mul(mol.getAngularVel(), momentOfInertiaM);
-
   // (17)
-  const auto angularMomentumM0 = convertQuaternionTo3DVec(qMul(qConjugate(mol.getQ()),qMul(angularMomentumW0, mol.getQ())));
+  const auto angularVelocityM0 = convertQuaternionTo3DVec(qMul(qConjugate(mol.getQ()),qMul(mol.getAngularVel(), mol.getQ())));
+  const auto angularMomentumM0 = mul(angularVelocityM0, momentOfInertiaM);
+
+  const auto angularMomentumW0 = convertQuaternionTo3DVec(qMul(mol.getQ(),qMul(mol.getAngularVel(), qConjugate(mol.getQ())))); // this is used later
 
   // (18)
   const auto torqueM0 = convertQuaternionTo3DVec(qMul(qConjugate(mol.getQ()),qMul(mol.getTorque(), mol.getQ())));
@@ -243,7 +245,43 @@ template<> void testCalculateQuaternionsImpl<MultisiteMolecule>() {
   const auto angularMomentumWHalf = add(angularMomentumW0, mulScalar(mol.getTorque(), 0.5 * deltaT));
 
   // (25)
-  const auto
+  auto qHalfK = qHalf0;
+  auto qHalfKp1 = qHalf0;
+  std::array<double, 4> derivQHalfKp1;
+  qHalfKp1[0] = 1e10 * qHalfK[0]; // ensuring while loop runs at least once
+  while (L2Norm(sub(qHalfKp1, qHalfK)) < 1e-13) {
+    qHalfK = qHalfKp1;
+    const auto angularMomentumMHalfKp1 = convertQuaternionTo3DVec(qMul(qConjugate(qHalfK), qMul(angularMomentumWHalf, qHalfK)));
+    const auto angularVelocityHalfKp1 = div(angularMomentumMHalfKp1,momentOfInertiaM);
+    derivQHalfKp1 = mulScalar(qMul(qHalfK, angularVelocityHalfKp1), 0.5);
+    qHalfKp1 = add(qHalf0, mulScalar(derivQHalfKp1, 0.5 * deltaT));
+  }
+
+  // (26)
+  const auto qExpected = add(mol.getQ(), mulScalar(derivQHalfKp1, deltaT));
+
+  // Obtaining angularVelocityWHalf (Not part of original algorithm but needed for implementation in md-flexible)
+  const auto angularVelocityMHalf = div(angularMomentumMHalf, momentOfInertiaM);
+  const auto angularVelocityWHalfExpected = convertQuaternionTo3DVec(qMul(mol.getQ(),qMul(angularVelocityMHalf, qConjugate(mol.getQ()))));
+
+  // Run TimeDiscretization::calculateQuaternions
+  TimeDiscretization::calculateQuaternions<MultisiteMolecule>(*autopasContainer, *PPL, deltaT, {0, 0, 0});
+
+  auto resultantMol = autopasContainer->begin(autopas::IteratorBehavior::owned);
+
+  // Compare values
+  ASSERT_NEAR(qExpected[0], resultantMol->getQ()[0], 1e-13);
+  ASSERT_NEAR(qExpected[1], resultantMol->getQ()[1], 1e-13);
+  ASSERT_NEAR(qExpected[2], resultantMol->getQ()[2], 1e-13);
+  ASSERT_NEAR(qExpected[3], resultantMol->getQ()[3], 1e-13);
+
+  ASSERT_NEAR(angularVelocityWHalfExpected[0], resultantMol->getAngularVel()[0], 1e-13);
+  ASSERT_NEAR(angularVelocityWHalfExpected[1], resultantMol->getAngularVel()[1], 1e-13);
+  ASSERT_NEAR(angularVelocityWHalfExpected[2], resultantMol->getAngularVel()[2], 1e-13);
+
+  // Confirm no extra molecules were created
+  ++resultantMol;
+  ASSERT_FALSE(resultantMol.isValid());
 }
 
 

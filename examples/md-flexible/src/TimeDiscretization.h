@@ -126,7 +126,7 @@ template<> void calculateQuaternions<autopas::MulticenteredMoleculeLJ>(autopas::
     }
     // (25) end
 
-    const auto qFullStep = normalize(add(q, mulScalar(derivativeQHalfStep, deltaT)));
+    const auto qFullStep = normalize(add(q, mulScalar(derivativeQHalfStep, deltaT))); // (26)
 
     iter->setQ(qFullStep);
     iter->setAngularVel(angVelWHalfStep); // save angular velocity half step, to be used by calculateAngularVelocities
