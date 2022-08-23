@@ -419,6 +419,22 @@ TEST_F(TimeDiscretizationTest, testCalculatePositionsMultisite) {
   testCalculatePositionsImpl<MultisiteMolecule>();
 }
 
+TEST_F(TimeDiscretizationTest, testCalculateAngularVelocitiesSimple) {
+  testCalculateAngularVelocitiesImpl<Molecule>();
+}
+
+TEST_F(TimeDiscretizationTest, testCalculateAngularVelocitiesMultisite) {
+  testCalculateAngularVelocitiesImpl<MultisiteMolecule>();
+}
+
+TEST_F(TimeDiscretizationTest, testCalculateQuaternionSimple) {
+  testCalculateQuaternionsImpl<Molecule>();
+}
+
+TEST_F(TimeDiscretizationTest, testCalculateQuaternionMultisite) {
+  testCalculateQuaternionsImpl<MultisiteMolecule>();
+}
+
 // @todo: move tests to new class SimulationTest.cpp -> Issue #641
 // https://github.com/AutoPas/AutoPas/issues/641
 // @note: since this issue was made, these tests have been converted to templates for either Molecule or MultisiteMolecule
