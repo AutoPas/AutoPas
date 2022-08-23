@@ -75,7 +75,7 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
   const double cutoffWidth = 0.3;
   const double skinWidth = 0.2;
 
-  RegularGridDecomposition domainDecomposition(boxMin, boxMax, subdivideDimension, cutoffWidth, skinWidth,
+  RegularGridDecomposition<autopas::MoleculeLJ> domainDecomposition(boxMin, boxMax, subdivideDimension, cutoffWidth, skinWidth,
                                                boundaryConditions);
 
   auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);

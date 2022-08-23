@@ -29,7 +29,7 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
                                                                          options::BoundaryTypeOption::reflective,
                                                                          options::BoundaryTypeOption::reflective};
 
-  RegularGridDecomposition domainDecomposition(boxMin, boxMax, subdivideDimension, cutoffWidth, skinWidth,
+  RegularGridDecomposition<autopas::MoleculeLJ> domainDecomposition(boxMin, boxMax, subdivideDimension, cutoffWidth, skinWidth,
                                                boundaryConditions);
 
   auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);

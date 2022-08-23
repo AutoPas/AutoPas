@@ -17,7 +17,7 @@
 extern template class autopas::AutoPas<ParticleType>;
 
 namespace {
-void initializeAutoPasContainer(RegularGridDecomposition::SharedAutoPasContainer &autoPasContainer,
+void initializeAutoPasContainer(RegularGridDecomposition<autopas::MoleculeLJ>::SharedAutoPasContainer &autoPasContainer,
                                 MDFlexConfig &configuration) {
   autoPasContainer->setAllowedCellSizeFactors(*configuration.cellSizeFactors.value);
   autoPasContainer->setAllowedContainers(configuration.containerOptions.value);
@@ -52,7 +52,7 @@ TEST_F(RegularGridDecompositionTest, testGetLocalDomain) {
   std::array<double, 3> globalBoxMax = {10.0, 10.0, 10.0};
   std::array<bool, 3> subdivideDimension = {true, true, true};
 
-  RegularGridDecomposition domainDecomposition(
+  RegularGridDecomposition<autopas::MoleculeLJ> domainDecomposition(
       globalBoxMin, globalBoxMax, subdivideDimension, 0, 0,
       {options::BoundaryTypeOption::periodic, options::BoundaryTypeOption::periodic,
        options::BoundaryTypeOption::periodic});
@@ -101,7 +101,7 @@ TEST_F(RegularGridDecompositionTest, testExchangeHaloParticles) {
   configuration.boundaryOption.value = {options::BoundaryTypeOption::periodic, options::BoundaryTypeOption::periodic,
                                         options::BoundaryTypeOption::periodic};
 
-  RegularGridDecomposition domainDecomposition(
+  RegularGridDecomposition<autopas::MoleculeLJ> domainDecomposition(
       configuration.boxMin.value, configuration.boxMax.value, configuration.subdivideDimension.value,
       configuration.cutoff.value, configuration.verletSkinRadius.value, configuration.boundaryOption.value);
   const auto &localBoxMin = domainDecomposition.getLocalBoxMin();
@@ -199,7 +199,7 @@ TEST_F(RegularGridDecompositionTest, testExchangeMigratingParticles) {
     std::array<double, 3> localBoxMin = configuration.boxMin.value;
     std::array<double, 3> localBoxMax = configuration.boxMax.value;
 
-    RegularGridDecomposition domainDecomposition(
+    RegularGridDecomposition<autopas::MoleculeLJ> domainDecomposition(
         configuration.boxMin.value, configuration.boxMax.value, configuration.subdivideDimension.value,
         configuration.cutoff.value, configuration.verletSkinRadius.value, configuration.boundaryOption.value);
 
