@@ -12,9 +12,12 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPas.h"
+#include "src/TimeDiscretization.h"
 #include "autopas/molecularDynamics/MulticenteredMoleculeLJ.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopasTools/generators/GridGenerator.h"
+#include "src/configuration/MDFlexConfig.h"
 
 using Molecule = autopas::MoleculeLJ;
 using MultisiteMolecule = autopas::MulticenteredMoleculeLJ;

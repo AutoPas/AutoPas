@@ -31,7 +31,6 @@
 
 #include "BoundaryConditions.h"
 #include "Thermostat.h"
-#include "TimeDiscretization.h"
 #include "autopas/utils/MemoryProfiler.h"
 #include "autopas/utils/WrapMPI.h"
 #include "configuration/MDFlexConfig.h"

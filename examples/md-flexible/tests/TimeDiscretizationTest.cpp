@@ -8,11 +8,6 @@
 
 #include <memory>
 
-#include "autopas/utils/ArrayMath.h"
-#include "autopasTools/generators/GridGenerator.h"
-#include "src/TimeDiscretization.h"
-#include "src/configuration/MDFlexConfig.h"
-
 namespace {
 template <class MoleculeType>
 void fillWithParticlesAndInit(autopas::AutoPas<MoleculeType> &autopasContainer) {

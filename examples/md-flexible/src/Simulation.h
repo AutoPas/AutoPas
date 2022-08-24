@@ -14,6 +14,7 @@
 #include "autopas/AutoPasDecl.h"
 #include "src/ParallelVtkWriter.h"
 #include "src/TypeDefinitions.h"
+#include "TimeDiscretization.h"
 #include "src/configuration/MDFlexConfig.h"
 #include "src/domainDecomposition/DomainDecomposition.h"
 #include "src/domainDecomposition/RegularGridDecomposition.h"
