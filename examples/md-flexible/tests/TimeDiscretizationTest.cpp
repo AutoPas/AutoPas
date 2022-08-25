@@ -60,7 +60,7 @@ template<> void initPPL<Molecule>(ParticlePropertiesLibrary<> &PPL) {
 }
 
 template<> void initPPL<MultisiteMolecule>(ParticlePropertiesLibrary<> &PPL) {
-  PPL.addSiteType(0, 0.5, 1, 1);
+  PPL.addSiteType(0, 0.5, 1, 0.5);
   PPL.addMolType(0, {0, 0}, {{-0.05, 0, 0}, {0.05, 0, 0}}, {1., 1., 1.});
   PPL.calculateMixingCoefficients();
 }
@@ -332,6 +332,8 @@ template<> void testCalculateAngularVelocitiesImpl<MultisiteMolecule>() {
   mol1.setTorque({1., 0., 0.});
   mol1.setAngularVel({1., 0., 0.});
   mol1.setTypeId(0);
+  mol1.setID(0);
+  autopasContainer->addParticle(mol1);
 
   MultisiteMolecule mol2;
   mol2.setR({3., 3., 3.});
@@ -341,6 +343,7 @@ template<> void testCalculateAngularVelocitiesImpl<MultisiteMolecule>() {
   mol2.setTorque({0., 1., 0.});
   mol2.setAngularVel({1., 0., 0.});
   mol2.setTypeId(0);
+  mol2.setID(1);
   autopasContainer->addParticle(mol2);
 
   // Derive expected Angular Velocities
@@ -356,8 +359,8 @@ template<> void testCalculateAngularVelocitiesImpl<MultisiteMolecule>() {
 
   // convert angular momentum back to angular velocity
   const auto angMomMFullStep1 = rotatePositionBackwards(mol1.getQ(), angMomWFullStep1);
-  const auto angVelMFullStep1 = div(angVelMHalf1, momentOfInertiaM);
-  const auto angVelWFullStep1 = rotatePositionBackwards(mol1.getQ(), angVelMFullStep1);
+  const auto angVelMFullStep1 = div(angMomMFullStep1, momentOfInertiaM);
+  const auto angVelWFullStep1 = rotatePosition(mol1.getQ(), angVelMFullStep1);
 
   // mol 2
   // convert angular velocity to angular momentum (requiring some awkward rotations)
@@ -371,8 +374,8 @@ template<> void testCalculateAngularVelocitiesImpl<MultisiteMolecule>() {
 
   // convert angular momentum back to angular velocity
   const auto angMomMFullStep2 = rotatePositionBackwards(mol2.getQ(), angMomWFullStep2);
-  const auto angVelMFullStep2 = div(angVelMHalf2, momentOfInertiaM);
-  const auto angVelWFullStep2 = rotatePositionBackwards(mol2.getQ(), angVelMFullStep2);
+  const auto angVelMFullStep2 = div(angMomMFullStep2, momentOfInertiaM);
+  const auto angVelWFullStep2 = rotatePosition(mol2.getQ(), angVelMFullStep2);
 
 
   // obtain angular velocities as determined by TimeDiscretization::calculateAngularVelocities
