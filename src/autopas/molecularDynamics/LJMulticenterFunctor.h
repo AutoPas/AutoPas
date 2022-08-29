@@ -1168,7 +1168,6 @@ class LJMulticenterFunctor
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactNeighborSitePositionY;
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactNeighborSitePositionZ;
 
-    std::vector<size_t, autopas::AlignedAllocator<size_t>> siteTypesI;
     std::vector<size_t, autopas::AlignedAllocator<size_t>> siteTypesNeighbors;
     std::vector<char, autopas::AlignedAllocator<char>> isNeighborSiteOwnedArr;
 
@@ -1183,7 +1182,6 @@ class LJMulticenterFunctor
     exactNeighborSitePositionZ.reserve(siteCountNeighbors);
 
     if constexpr (useMixing) {
-      siteTypesI.reserve(siteCountMolI);
       siteTypesNeighbors.reserve(siteCountNeighbors);
     }
 
@@ -1211,6 +1209,8 @@ class LJMulticenterFunctor
                                                      {q0ptr[indexFirst], q1ptr[indexFirst], q2ptr[indexFirst], q3ptr[indexFirst]},
                                                      const_unrotatedSitePositions);
 
+    const auto siteTypesI = _PPLibrary->getSiteTypes(typeptr[indexFirst]); // todo make this work for no mixing
+
     // generate site-wise arrays for neighbours of mol I
     if constexpr (useMixing) {
       size_t siteIndex = 0;
@@ -1225,12 +1225,6 @@ class LJMulticenterFunctor
           exactNeighborSitePositionY[siteIndex] = rotatedSitePositions[site][1] + yptr[neighborMolIndex];
           exactNeighborSitePositionZ[siteIndex] = rotatedSitePositions[site][2] + zptr[neighborMolIndex];
           siteTypesNeighbors[siteIndex] = siteTypesOfMol[site];
-          const auto mixingData = _PPLibrary->getMixingData(typeptr[indexFirst],typeptr[neighborMolIndex]);
-          sigmaSquareds[siteIndex] = mixingData.sigmaSquare;
-          epsilon24s[siteIndex] = mixingData.epsilon24;
-          if constexpr (applyShift) {
-            shift6s[siteIndex] = mixingData.shift6;
-          }
           siteForceX[siteIndex] = 0.;
           siteForceY[siteIndex] = 0.;
           siteForceZ[siteIndex] = 0.;
@@ -1316,9 +1310,30 @@ class LJMulticenterFunctor
       const auto rotatedPrimeSitePositionY = rotatedSitePositionsI[primeSite][1];
       const auto rotatedPrimeSitePositionZ = rotatedSitePositionsI[primeSite][2];
 
-      const auto exactPrimeSitePositionX = rotatedPrimeSitePositionX + xptr[primeSite];
-      const auto exactPrimeSitePositionY = rotatedPrimeSitePositionY + yptr[primeSite];
-      const auto exactPrimeSitePositionZ = rotatedPrimeSitePositionZ + zptr[primeSite];
+      const auto exactPrimeSitePositionX = rotatedPrimeSitePositionX + xptr[indexFirst];
+      const auto exactPrimeSitePositionY = rotatedPrimeSitePositionY + yptr[indexFirst];
+      const auto exactPrimeSitePositionZ = rotatedPrimeSitePositionZ + zptr[indexFirst];
+
+      // generate parameter data for chosen site
+      if constexpr (useMixing) {
+        const auto primeSiteType = siteTypesI[primeSite];
+
+        size_t siteIndex = 0;
+        for (size_t neighborMol = 0; neighborMol < neighborListSize; ++neighborMol) {
+          const auto neighborMolIndex = neighborList[neighborMol];
+          const auto siteTypesOfNeighborMol = _PPLibrary->getSiteTypes(typeptr[neighborMolIndex]);
+
+          for (size_t site = 0; site < _PPLibrary->getNumSites(typeptr[neighborMolIndex]); ++site) {
+            const auto mixingData = _PPLibrary->getMixingData(primeSiteType,siteTypesOfNeighborMol[site]);
+            sigmaSquareds[siteIndex] = mixingData.sigmaSquare;
+            epsilon24s[siteIndex] = mixingData.epsilon24;
+            if constexpr (applyShift) {
+              shift6s[siteIndex] = mixingData.shift6;
+            }
+            ++siteIndex;
+          }
+        }
+      }
 
 #pragma omp simd reduction (+ : forceSumX, forceSumY, forceSumZ, torqueSumX, torqueSumY, torqueSumZ)
       for (size_t neighborSite = 0; neighborSite < siteCountNeighbors; ++neighborSite) {
@@ -1394,49 +1409,52 @@ class LJMulticenterFunctor
     typtr[indexFirst] += torqueSumY;
     tzptr[indexFirst] += torqueSumZ;
 
-    // Reduce forces on individual neighbor sites to molecular forces & torques
-    if constexpr (useMixing) {
-      size_t siteIndex = 0;
-      for (size_t neighborMol = 0; neighborMol < neighborListSize; ++neighborMol) {
-        const auto neighborMolIndex = neighborList[neighborMol];
-        const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
-            {q0ptr[neighborMolIndex], q1ptr[neighborMolIndex], q2ptr[neighborMolIndex], q3ptr[neighborMolIndex]},
-            _PPLibrary->getSitePositions(typeptr[neighborMolIndex]) );
-        for (size_t site = 0; site < _PPLibrary->getNumSites(typeptr[neighborMolIndex]); ++site) {
-          fxptr[neighborMolIndex] += siteForceX[siteIndex];
-          fyptr[neighborMolIndex] += siteForceY[siteIndex];
-          fzptr[neighborMolIndex] += siteForceZ[siteIndex];
-          txptr[neighborMolIndex] += rotatedSitePositions[site][1] * siteForceZ[siteIndex] -
-                                     rotatedSitePositions[site][2] * siteForceY[siteIndex];
-          typtr[neighborMolIndex] += rotatedSitePositions[site][2] * siteForceX[siteIndex] -
-                                     rotatedSitePositions[site][0] * siteForceZ[siteIndex];
-          txptr[neighborMolIndex] += rotatedSitePositions[site][0] * siteForceY[siteIndex] -
-                                     rotatedSitePositions[site][1] * siteForceX[siteIndex];
-          ++siteIndex;
-        }
+    // Reduce forces on individual neighbor sites to molecular forces & torques if newton3=true
+    if constexpr (newton3) {
+      if constexpr (useMixing) {
+        size_t siteIndex = 0;
+        for (size_t neighborMol = 0; neighborMol < neighborListSize; ++neighborMol) {
+          const auto neighborMolIndex = neighborList[neighborMol];
+          const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
+              {q0ptr[neighborMolIndex], q1ptr[neighborMolIndex], q2ptr[neighborMolIndex], q3ptr[neighborMolIndex]},
+              _PPLibrary->getSitePositions(typeptr[neighborMolIndex]) );
+          for (size_t site = 0; site < _PPLibrary->getNumSites(typeptr[neighborMolIndex]); ++site) {
+            fxptr[neighborMolIndex] += siteForceX[siteIndex];
+            fyptr[neighborMolIndex] += siteForceY[siteIndex];
+            fzptr[neighborMolIndex] += siteForceZ[siteIndex];
+            txptr[neighborMolIndex] += rotatedSitePositions[site][1] * siteForceZ[siteIndex] -
+                                       rotatedSitePositions[site][2] * siteForceY[siteIndex];
+            typtr[neighborMolIndex] += rotatedSitePositions[site][2] * siteForceX[siteIndex] -
+                                       rotatedSitePositions[site][0] * siteForceZ[siteIndex];
+            tzptr[neighborMolIndex] += rotatedSitePositions[site][0] * siteForceY[siteIndex] -
+                                       rotatedSitePositions[site][1] * siteForceX[siteIndex];
+            ++siteIndex;
+          }
 
-      }
-    } else {
-      size_t siteIndex = 0;
-      for (size_t neighborMol = 0; neighborMol < neighborListSize; ++neighborMol) {
-        const auto neighborMolIndex = neighborList[neighborMol];
-        const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
-            {q0ptr[neighborMolIndex], q1ptr[neighborMolIndex], q2ptr[neighborMolIndex], q3ptr[neighborMolIndex]},
-            const_unrotatedSitePositions );
-        for (size_t site = 0; site < const_unrotatedSitePositions.size(); ++site) {
-          fxptr[neighborMolIndex] += siteForceX[siteIndex];
-          fyptr[neighborMolIndex] += siteForceY[siteIndex];
-          fzptr[neighborMolIndex] += siteForceZ[siteIndex];
-          txptr[neighborMolIndex] += rotatedSitePositions[site][1] * siteForceZ[siteIndex] -
-                                     rotatedSitePositions[site][2] * siteForceY[siteIndex];
-          typtr[neighborMolIndex] += rotatedSitePositions[site][2] * siteForceX[siteIndex] -
-                                     rotatedSitePositions[site][0] * siteForceZ[siteIndex];
-          txptr[neighborMolIndex] += rotatedSitePositions[site][0] * siteForceY[siteIndex] -
-                                     rotatedSitePositions[site][1] * siteForceX[siteIndex];
-          ++siteIndex;
+        }
+      } else {
+        size_t siteIndex = 0;
+        for (size_t neighborMol = 0; neighborMol < neighborListSize; ++neighborMol) {
+          const auto neighborMolIndex = neighborList[neighborMol];
+          const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
+              {q0ptr[neighborMolIndex], q1ptr[neighborMolIndex], q2ptr[neighborMolIndex], q3ptr[neighborMolIndex]},
+              const_unrotatedSitePositions );
+          for (size_t site = 0; site < const_unrotatedSitePositions.size(); ++site) {
+            fxptr[neighborMolIndex] += siteForceX[siteIndex];
+            fyptr[neighborMolIndex] += siteForceY[siteIndex];
+            fzptr[neighborMolIndex] += siteForceZ[siteIndex];
+            txptr[neighborMolIndex] += rotatedSitePositions[site][1] * siteForceZ[siteIndex] -
+                                       rotatedSitePositions[site][2] * siteForceY[siteIndex];
+            typtr[neighborMolIndex] += rotatedSitePositions[site][2] * siteForceX[siteIndex] -
+                                       rotatedSitePositions[site][0] * siteForceZ[siteIndex];
+            txptr[neighborMolIndex] += rotatedSitePositions[site][0] * siteForceY[siteIndex] -
+                                       rotatedSitePositions[site][1] * siteForceX[siteIndex];
+            ++siteIndex;
+          }
         }
       }
     }
+
     if constexpr (calculateGlobals) {
       const auto threadNum = autopas_get_thread_num();
       const auto newton3Factor = newton3 ? .5 : 1.; // todo: add reasoning once original reasoning in LJFunctor.h is corrected

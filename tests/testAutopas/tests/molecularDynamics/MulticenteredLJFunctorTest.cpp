@@ -13,7 +13,7 @@
 
 void MulticenteredLJFunctorTest::generatePPL(ParticlePropertiesLibrary<double, size_t> *PPL) {
   PPL->addSiteType(0,1,1,1);
-  PPL->addSiteType(1,0.5,2,0.7);
+  PPL->addSiteType(1,0.5,0.5,0.7);
   PPL->addMolType(0,{0},{{0,0,0}},{1,1,1});
   PPL->addMolType(1,{1,0},{{-0.05,0,0},{0.05,0,0}},{1,1,1});
   PPL->addMolType(2,{1,0,1,0},{{-0.025,0,-0.025},{-0.025,0,0.025},{0.025,0,-0.025},{0.025,0,0.025}},{1,1,1});
@@ -306,23 +306,27 @@ void testSoAVerletAgainstAoS(std::vector<autopas::MulticenteredMoleculeLJ> molec
 
   // Apply AoSFunctor to molecules
   for (size_t i = 0; i < numberMolecules; ++i) {
-    for (size_t j = i+1; j < numberMolecules; ++j) {
-      functor.AoSFunctor(moleculesAoS[i],moleculesAoS[j],newton3);
+    for (size_t j = newton3 ? i+1 : 0; j < numberMolecules; ++j) {
+      if (i != j) {
+        functor.AoSFunctor(moleculesAoS[i],moleculesAoS[j],newton3);
+      }
     }
   }
 
   // generate neighbor lists
-  std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> neighborLists;
-  neighborLists.reserve(numberMolecules);
+  std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> neighborLists(numberMolecules);
   for (size_t i = 0; i < numberMolecules; ++i) {
-    for (size_t j = newton3 ? i + 1 : 0; j < numberMolecules; ++j) {
+    for (size_t j = i + 1; j < numberMolecules; ++j) {
       if (i == j) {
         continue;
       }
       auto displacement = autopas::utils::ArrayMath::sub(moleculesSoA[i].getR(), moleculesSoA[j].getR());
       double distanceSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
-      if (distanceSquared < cutoff) {
+      if (distanceSquared < cutoff * cutoff) {
         neighborLists[i].push_back(j);
+        if constexpr (not newton3) {
+          neighborLists[j].push_back(i);
+        }
       }
     }
   }
@@ -578,7 +582,7 @@ TEST_F(MulticenteredLJFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACellPair){
 TEST_F(MulticenteredLJFunctorTest, MulticenteredLJFunctorTest_AoSVsSoAVerlet){
   using autopas::MulticenteredMoleculeLJ;
 
-  const double cutoff = 3.;
+  const double cutoff = 3.1;
 
   std::vector<autopas::MulticenteredMoleculeLJ> molecules;
   ParticlePropertiesLibrary<double, size_t> PPL(cutoff);
