@@ -76,7 +76,7 @@ template<> void calculateQuaternions<autopas::MulticenteredMoleculeLJ>(autopas::
    while (L2Norm(sub(qHalfStep,qHalfStepOld))>tol) {
      qHalfStepOld = qHalfStep;
      auto angVelMHalfStep = rotatePositionBackwards(qHalfStepOld,angVelWHalfStep); // equivalent to first two lines of (25)
-     derivativeQHalfStep = mulScalar(qMul(qHalfStepOld,angVelWHalfStep),0.5);
+     derivativeQHalfStep = mulScalar(qMul(qHalfStepOld,angVelMHalfStep),0.5);
      qHalfStep = normalize(add(q, mulScalar(derivativeQHalfStep, halfDeltaT)));
    }
    // (25) end

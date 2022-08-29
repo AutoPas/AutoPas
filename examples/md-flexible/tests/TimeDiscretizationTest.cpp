@@ -163,6 +163,7 @@ template<> void testCalculateQuaternionsImpl<MultisiteMolecule>() {
   using autopas::utils::ArrayMath::mulScalar;
   using autopas::utils::ArrayMath::cross;
   using autopas::utils::ArrayMath::L2Norm;
+  using autopas::utils::ArrayMath::normalize;
   using autopas::utils::quaternion::qMul;
   using autopas::utils::quaternion::qConjugate;
   using autopas::utils::quaternion::convertQuaternionTo3DVec;
@@ -216,7 +217,7 @@ template<> void testCalculateQuaternionsImpl<MultisiteMolecule>() {
   const auto angularVelocityM0 = convertQuaternionTo3DVec(qMul(qConjugate(mol.getQ()),qMul(mol.getAngularVel(), mol.getQ())));
   const auto angularMomentumM0 = mul(angularVelocityM0, momentOfInertiaM);
 
-  const auto angularMomentumW0 = convertQuaternionTo3DVec(qMul(mol.getQ(),qMul(mol.getAngularVel(), qConjugate(mol.getQ())))); // this is used later
+  const auto angularMomentumW0 = convertQuaternionTo3DVec(qMul(mol.getQ(),qMul(angularMomentumM0, qConjugate(mol.getQ())))); // this is used later
 
   // (18)
   const auto torqueM0 = convertQuaternionTo3DVec(qMul(qConjugate(mol.getQ()),qMul(mol.getTorque(), mol.getQ())));
@@ -242,18 +243,18 @@ template<> void testCalculateQuaternionsImpl<MultisiteMolecule>() {
   // (25)
   auto qHalfK = qHalf0;
   auto qHalfKp1 = qHalf0;
-  std::array<double, 4> derivQHalfKp1;
-  qHalfKp1[0] = 1e10 * qHalfK[0]; // ensuring while loop runs at least once
-  while (L2Norm(sub(qHalfKp1, qHalfK)) < 1e-13) {
+  auto derivQHalfKp1 = derivQHalf0;
+  qHalfK[0] = 1e10 * qHalfKp1[0]; // ensuring while loop runs at least once
+  while (L2Norm(sub(qHalfKp1, qHalfK)) > 1e-13) {
     qHalfK = qHalfKp1;
     const auto angularMomentumMHalfKp1 = convertQuaternionTo3DVec(qMul(qConjugate(qHalfK), qMul(angularMomentumWHalf, qHalfK)));
     const auto angularVelocityHalfKp1 = div(angularMomentumMHalfKp1,momentOfInertiaM);
     derivQHalfKp1 = mulScalar(qMul(qHalfK, angularVelocityHalfKp1), 0.5);
-    qHalfKp1 = add(qHalf0, mulScalar(derivQHalfKp1, 0.5 * deltaT));
+    qHalfKp1 = normalize(add(mol.getQ(), mulScalar(derivQHalfKp1, 0.5 * deltaT)));
   }
 
   // (26)
-  const auto qExpected = add(mol.getQ(), mulScalar(derivQHalfKp1, deltaT));
+  const auto qExpected = normalize(add(mol.getQ(), mulScalar(derivQHalfKp1, deltaT)));
 
   // Obtaining angularVelocityWHalf (Not part of original algorithm but needed for implementation in md-flexible)
   const auto angularVelocityMHalf = div(angularMomentumMHalf, momentOfInertiaM);
