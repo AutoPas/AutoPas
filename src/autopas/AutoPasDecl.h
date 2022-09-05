@@ -459,7 +459,7 @@ class AutoPas {
   [[nodiscard]] std::array<double, 3> getBoxMax() const;
 
   /**
-   * get the bool value indicating if the search space is 1
+   * get the bool value indicating if the search space is trivial (not more than one configuration to test).
    * @return bool indicating if search space is trivial.
    */
   [[nodiscard]] bool getsearchspaceistrivial();
@@ -771,20 +771,6 @@ class AutoPas {
   void setAllowedNewton3Options(const std::set<Newton3Option> &allowedNewton3Options) {
     AutoPas::_allowedNewton3Options = allowedNewton3Options;
   }
-
-
-//bool getsearchspaceistrivial() const {
-//return _autoTuner->getContainer();
-//return AutoTune::searchSpaceIsTrivial();
-//}
-
-
-
-
-
-
-
-
   /**
    * Getter for the currently selected configuration.
    * @return Configuration object currently used.

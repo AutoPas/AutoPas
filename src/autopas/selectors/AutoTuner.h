@@ -354,7 +354,6 @@ void AutoTuner<Particle>::selectCurrentContainer() {
       conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin, _verletClusterSize, conf.loadEstimator));
 }
 
-
 template <class Particle>
 bool AutoTuner<Particle>::searchSpaceIsTrivial() {
   return _tuningStrategy->searchSpaceIsTrivial();
