@@ -134,7 +134,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
 
   // Throw an error if there is not more than one configuration to test in the search space but more than one tuning
   // phase is requested
-  if (_autoPasContainer->getsearchspaceistrivial() && _configuration.tuningPhases.value > 0) {
+  if (_autoPasContainer->getsearchSpaceIsTrivial() && _configuration.tuningPhases.value > 0) {
     throw std::runtime_error("Search space must not be empty if multiple tuning phases are requested");
   }
 
