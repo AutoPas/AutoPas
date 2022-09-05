@@ -353,9 +353,9 @@ void AutoTuner<Particle>::selectCurrentContainer() {
 }
 
 /**
-   * Access to the searchSpaceIsTrivial bool variable (true if search space size  is 1 or less).
-   * @return Smart pointer to the searchSpaceIsTrivial variable.
-   */
+ * Access to the searchSpaceIsTrivial bool variable (true if search space size  is 1 or less).
+ * @return Smart pointer to the searchSpaceIsTrivial variable.
+ */
 template <class Particle>
 bool AutoTuner<Particle>::searchSpaceIsTrivial() {
   return _tuningStrategy->searchSpaceIsTrivial();
