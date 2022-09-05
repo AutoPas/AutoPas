@@ -999,6 +999,5 @@ class AutoPas {
    */
   std::string _outputSuffix{""};
 
-
 };  // class AutoPas
 }  // namespace autopas

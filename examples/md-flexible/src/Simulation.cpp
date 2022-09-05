@@ -132,9 +132,10 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   autopas::Logger::get()->set_level(_configuration.logLevel.value);
   _autoPasContainer->init();
 
-  // Throw an error if there is not more than one configuration to test in the search space but more than one tuning phase is requested 
-  if (_autoPasContainer->getsearchspaceistrivial() && _configuration.tuningPhases.value > 0){
-   throw std::runtime_error("Search space must not be empty if multiple tuning phases are requested");
+  // Throw an error if there is not more than one configuration to test in the search space but more than one tuning
+  // phase is requested
+  if (_autoPasContainer->getsearchspaceistrivial() && _configuration.tuningPhases.value > 0) {
+    throw std::runtime_error("Search space must not be empty if multiple tuning phases are requested");
   }
 
   // @todo: the object generators should only generate particles relevant for the current rank's domain
