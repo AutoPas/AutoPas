@@ -352,6 +352,10 @@ void AutoTuner<Particle>::selectCurrentContainer() {
       conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin, _verletClusterSize, conf.loadEstimator));
 }
 
+/**
+   * Access to the searchSpaceIsTrivial bool variable (true if search space size  is 1 or less).
+   * @return Smart pointer to the searchSpaceIsTrivial variable.
+   */
 template <class Particle>
 bool AutoTuner<Particle>::searchSpaceIsTrivial() {
   return _tuningStrategy->searchSpaceIsTrivial();
