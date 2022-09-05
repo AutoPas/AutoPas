@@ -462,7 +462,7 @@ class AutoPas {
    * get the bool value indicating if the search space is trivial (not more than one configuration to test).
    * @return bool indicating if search space is trivial.
    */
-  [[nodiscard]] bool getsearchSpaceIsTrivial();
+  [[nodiscard]] bool searchSpaceIsTrivial();
 
   /**
    * Set coordinates of the lower corner of the domain.
