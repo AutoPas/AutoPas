@@ -120,7 +120,7 @@ Simulation::Simulation(const MDFlexConfig &configuration, RegularGridDecompositi
   _autoPasContainer->setMPITuningWeightForMaxDensity(_configuration.MPITuningWeightForMaxDensity.value);
   _autoPasContainer->setVerletClusterSize(_configuration.verletClusterSize.value);
   _autoPasContainer->setVerletRebuildFrequency(_configuration.verletRebuildFrequency.value);
-  _autoPasContainer->setVerletSkin(_configuration.verletSkinRadius.value);
+  _autoPasContainer->setVerletSkinPerTimestep(_configuration.verletSkinRadiusPerTimestep.value);
   _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
   autopas::Logger::get()->set_level(_configuration.logLevel.value);
   _autoPasContainer->init();

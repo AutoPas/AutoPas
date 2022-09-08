@@ -41,7 +41,7 @@ void initializeAutoPasContainer(RegularGridDecomposition::SharedAutoPasContainer
   autoPasContainer->setMPIStrategy(configuration.mpiStrategyOption.value);
   autoPasContainer->setVerletClusterSize(configuration.verletClusterSize.value);
   autoPasContainer->setVerletRebuildFrequency(configuration.verletRebuildFrequency.value);
-  autoPasContainer->setVerletSkin(configuration.verletSkinRadius.value);
+  autoPasContainer->setVerletSkinPerTimestep(configuration.verletSkinRadiusPerTimestep.value);
   autoPasContainer->setAcquisitionFunction(configuration.acquisitionFunctionOption.value);
   autoPasContainer->init();
 }
@@ -53,7 +53,7 @@ TEST_F(RegularGridDecompositionTest, testGetLocalDomain) {
   std::array<bool, 3> subdivideDimension = {true, true, true};
 
   RegularGridDecomposition domainDecomposition(
-      globalBoxMin, globalBoxMax, subdivideDimension, 0, 0,
+      globalBoxMin, globalBoxMax, subdivideDimension, 0, 0, 0,
       {options::BoundaryTypeOption::periodic, options::BoundaryTypeOption::periodic,
        options::BoundaryTypeOption::periodic});
 
@@ -94,7 +94,7 @@ TEST_F(RegularGridDecompositionTest, testExchangeHaloParticles) {
   MDFlexConfig configuration(0, nullptr);
   configuration.boxMin.value = {0., 0., 0.};
   configuration.cutoff.value = 3.;
-  configuration.verletSkinRadius.value = 0.;
+  configuration.verletSkinRadiusPerTimestep.value = 0.;
   // make sure evey rank gets exactly 3x3x3 cells
   const double boxLength = 3. * configuration.cutoff.value * numberOfRanks;
   configuration.boxMax.value = {boxLength, boxLength, boxLength};
@@ -103,7 +103,8 @@ TEST_F(RegularGridDecompositionTest, testExchangeHaloParticles) {
 
   RegularGridDecomposition domainDecomposition(
       configuration.boxMin.value, configuration.boxMax.value, configuration.subdivideDimension.value,
-      configuration.cutoff.value, configuration.verletSkinRadius.value, configuration.boundaryOption.value);
+      configuration.cutoff.value, configuration.verletSkinRadiusPerTimestep.value,configuration.verletRebuildFrequency.value, 
+      configuration.boundaryOption.value);
   const auto &localBoxMin = domainDecomposition.getLocalBoxMin();
 
   auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
@@ -201,7 +202,8 @@ TEST_F(RegularGridDecompositionTest, testExchangeMigratingParticles) {
 
     RegularGridDecomposition domainDecomposition(
         configuration.boxMin.value, configuration.boxMax.value, configuration.subdivideDimension.value,
-        configuration.cutoff.value, configuration.verletSkinRadius.value, configuration.boundaryOption.value);
+        configuration.cutoff.value, configuration.verletSkinRadiusPerTimestep.value, configuration.verletRebuildFrequency.value,
+        configuration.boundaryOption.value);
 
     auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
 

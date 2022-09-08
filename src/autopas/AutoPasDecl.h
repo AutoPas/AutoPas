@@ -432,6 +432,17 @@ class AutoPas {
       containerPtr->reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
     });
   }
+  /**
+   * Function to iterate over all pairs of particles in the container.
+   * This function only handles short-range interactions.
+   * @param _verletSkinPerTimestep 
+   * @param 
+   * @return _vereltSkin which is the length of the verlet skin at the time of rebuild
+   */
+  double verletSkin(){
+    double _verletSkin=AutoPas::_verletSkinPerTimestep*AutoPas::_verletRebuildFrequency;
+    return _verletSkin;
+  };
 
   /**
    * Returns the number of particles in this container.
@@ -522,13 +533,20 @@ class AutoPas {
    * Get length added to the cutoff for the Verlet lists' skin.
    * @return
    */
-  [[nodiscard]] double getVerletSkin() const { return _verletSkin; }
+ // [[nodiscard]] double getVerletSkin() const { return _verletSkin; }
+
+  
+  /**
+   * Get length added to the cutoff for the Verlet lists' skin per timestep.
+   * @return
+   */
+  [[nodiscard]] double getVerletSkinPerTimestep() const { return _verletSkinPerTimestep; }
 
   /**
-   * Set length added to the cutoff for the Verlet lists' skin.
-   * @param verletSkin
+   * Set length added to the cutoff for the Verlet lists' skin per timestep.
+   * @param verletSkinPerTimeStep
    */
-  void setVerletSkin(double verletSkin) { AutoPas::_verletSkin = verletSkin; }
+  void setVerletSkinPerTimestep(double verletSkinPerTimestep) { AutoPas::_verletSkinPerTimestep = verletSkinPerTimestep; }
 
   /**
    * Get Verlet rebuild frequency.
@@ -543,7 +561,6 @@ class AutoPas {
   void setVerletRebuildFrequency(unsigned int verletRebuildFrequency) {
     AutoPas::_verletRebuildFrequency = verletRebuildFrequency;
   }
-
   /**
    * Get Verlet cluster size.
    * @return
@@ -851,13 +868,21 @@ class AutoPas {
    * Cutoff radius to be used in this container.
    */
   double _cutoff{1.0};
+   /**
+   * Length added to the cutoff for the Verlet lists' skin per Timestep.
+   */
+  double _verletSkinPerTimestep{0.01};
+
+
   /**
    * Length added to the cutoff for the Verlet lists' skin.
    */
-  double _verletSkin{0.2};
+  //double _verletSkin{0};
   /**
    * Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
    */
+
+  
   unsigned int _verletRebuildFrequency{20};
   /**
    * Specifies the size of clusters for Verlet lists.

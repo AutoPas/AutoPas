@@ -52,16 +52,16 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * @param boxMin
    * @param boxMax
    * @param cutoff
-   * @param skin
+   * @param skinPerTimestep
    * @param cellSizeFactor cell size factor relative to cutoff
    * @param loadEstimator the load estimation algorithm for balanced traversals.
    * By default all applicable traversals are allowed.
    */
   LinkedCellsReferences(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-                        const double skin, const double cellSizeFactor = 1.0,
+                        const double skinPerTimestep, const double rebuildFrequency, const double cellSizeFactor = 1.0,
                         LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
-      : CellBasedParticleContainer<ReferenceCell>(boxMin, boxMax, cutoff, skin),
-        _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor),
+      : CellBasedParticleContainer<ReferenceCell>(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency),
+        _cellBlock(this->_cells, boxMin, boxMax, cutoff + skinPerTimestep*rebuildFrequency, cellSizeFactor),
         _loadEstimator(loadEstimator) {}
 
   /**

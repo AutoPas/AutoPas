@@ -73,9 +73,11 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
   const std::array<double, 3> boxLength = autopas::utils::ArrayMath::sub(boxMax, boxMin);
   const std::array<bool, 3> subdivideDimension = {true, true, true};
   const double cutoffWidth = 0.3;
-  const double skinWidth = 0.2;
+  const double rebuildFrequency= 20;
+  const double skinWidthPerTimestep = 0.01;
+  //const double skinWidth = rebuildFrequency*skinWidthPerTimestep;
 
-  RegularGridDecomposition domainDecomposition(boxMin, boxMax, subdivideDimension, cutoffWidth, skinWidth,
+  RegularGridDecomposition domainDecomposition(boxMin, boxMax, subdivideDimension, cutoffWidth, skinWidthPerTimestep, rebuildFrequency,
                                                boundaryConditions);
 
   auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
@@ -83,11 +85,11 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
   autoPasContainer->setBoxMin(domainDecomposition.getLocalBoxMin());
   autoPasContainer->setBoxMax(domainDecomposition.getLocalBoxMax());
   autoPasContainer->setCutoff(cutoffWidth);
-  autoPasContainer->setVerletSkin(skinWidth);
+  autoPasContainer->setVerletSkinPerTimestep(skinWidthPerTimestep);
   autoPasContainer->init();
 
   const auto &[expectedPositions, expectedHaloPositions, expectedVelocities] =
-      setUpExpectations(particlePositions, particleVelocities, boxMin, boxMax, skinWidth / 2, cutoffWidth + skinWidth,
+      setUpExpectations(particlePositions, particleVelocities, boxMin, boxMax, autoPasContainer->verletSkin() / 2, cutoffWidth + autoPasContainer->verletSkin(),
                         boundaryConditions);
 
   // particles need to be added at positions inside the domain

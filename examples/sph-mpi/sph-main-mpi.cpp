@@ -270,7 +270,7 @@ void updateHaloParticles(AutoPasContainer &sphSystem, MPI_Comm &comm, const std:
   std::array<int, 3> diff{0, 0, 0};
   std::array<double, 3> shift{0, 0, 0};
   double cutoff = sphSystem.getCutoff();
-  double skin = sphSystem.getVerletSkin();
+  double skin= sphSystem.verletSkin();
   std::vector<double> buffer;
   for (diff[0] = -1; diff[0] < 2; diff[0]++) {
     for (diff[1] = -1; diff[1] < 2; diff[1]++) {
@@ -475,7 +475,7 @@ int main(int argc, char *argv[]) {
   globalBoxMax[1] = globalBoxMax[2] = globalBoxMax[0] / 8.0;
   double cutoff = 0.03;               // 0.012*2.5=0.03; where 2.5 = kernel support radius
   unsigned int rebuildFrequency = 6;  // has to be multiple of 2
-  double skinToCutoffRatio = 0.1;
+  double skinToCutoffRatioPerTimestep = 0.1;
 
   std::array<double, 3> localBoxMin{}, localBoxMax{};
 
@@ -489,7 +489,7 @@ int main(int argc, char *argv[]) {
   sphSystem.setBoxMin(localBoxMin);
   sphSystem.setBoxMax(localBoxMax);
   sphSystem.setCutoff(cutoff);
-  sphSystem.setVerletSkin(skinToCutoffRatio * cutoff);
+  sphSystem.setVerletSkinPerTimestep(skinToCutoffRatioPerTimestep * cutoff);
   sphSystem.setVerletRebuildFrequency(rebuildFrequency);
 
   std::set<autopas::ContainerOption> allowedContainers{autopas::ContainerOption::linkedCells,
