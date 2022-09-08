@@ -30,15 +30,15 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    * @param boxMin the lower corner of the domain
    * @param boxMax the upper corner of the domain
    * @param cutoff the cutoff radius of the interaction
-   * @param skin the skin radius
+   * @param skinPerTimestep the skin radius per timestep
    * @param applicableTraversals all applicable traversals
    * @param cellSizeFactor cell size factor relative to cutoff. Verlet lists are only implemented for values >= 1.0
    * (smaller values are set to 1.0).
    */
   VerletListsLinkedBase(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-                        const double skin, const std::set<TraversalOption> &applicableTraversals,
+                        const double skinPerTimestep,const double rebuildFrequency, const std::set<TraversalOption> &applicableTraversals,
                         const double cellSizeFactor)
-      : _linkedCells(boxMin, boxMax, cutoff, skin, std::max(1.0, cellSizeFactor)) {
+      : _linkedCells(boxMin, boxMax, cutoff, skinPerTimestep,rebuildFrequency, std::max(1.0, cellSizeFactor)) {
     if (cellSizeFactor < 1.0) {
       AutoPasLog(debug, "VerletListsLinkedBase: CellSizeFactor smaller 1 detected. Set to 1.");
     }
