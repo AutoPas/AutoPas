@@ -28,7 +28,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param globalBoxMax: The maximum coordinates of the global domain.
    * @param subdivideDimension: Decides if a dimension will be subdivided.
    * @param cutoffWidth: The cutoff width for halo particles.
-   * @param skinWidthperTimestep: The skin width of an autopas container domain.
+   * @param skinWidthperTimestepperTimestep: The skin width of an autopas container domain.
    * @param boundaryConditions: An array of boundary conditions in the x, y, and z directions.
    */
   RegularGridDecomposition(const std::array<double, 3> &globalBoxMin, const std::array<double, 3> &globalBoxMax,

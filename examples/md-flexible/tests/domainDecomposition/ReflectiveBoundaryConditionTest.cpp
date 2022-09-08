@@ -37,7 +37,7 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   autoPasContainer->setBoxMin(domainDecomposition.getLocalBoxMin());
   autoPasContainer->setBoxMax(domainDecomposition.getLocalBoxMax());
   autoPasContainer->setCutoff(cutoffWidth);
-  autoPasContainer->setVerletSkinPerTimestep(skinWidthPerTimestep);
+  autoPasContainer->setVerletSkinPerTimestepPerTimestep(skinWidthPerTimestepPerTimestep);
   autoPasContainer->init();
 
   // get particle properties
