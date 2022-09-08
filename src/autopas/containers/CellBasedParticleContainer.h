@@ -32,11 +32,12 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    * @param boxMin
    * @param boxMax
    * @param cutoff
-   * @param skin
+   * @param skinPerTimestep
    */
   CellBasedParticleContainer(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax,
-                             const double cutoff, const double skin)
-      : _cells(), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff), _skin(skin) {}
+                             const double cutoff, const double skinPerTimestep, const double rebuildFrequency)
+      : _cells(), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff), _skinPerTimestep(skinPerTimestep), 
+      _rebuildFrequency(rebuildFrequency){}
 
   /**
    * Destructor of CellBasedParticleContainer.
@@ -89,19 +90,29 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
   void setCutoff(double cutoff) override final { _cutoff = cutoff; }
 
   /**
-   * @copydoc autopas::ParticleContainerInterface::getSkin()
+   * @copydoc autopas::ParticleContainerInterface::getSkinPerTimestep()
    */
-  [[nodiscard]] double getSkin() const override final { return _skin; }
-
+  [[nodiscard]] double getSkinPerTimestep() const override final { return _skinPerTimestep; }
   /**
-   * @copydoc autopas::ParticleContainerInterface::setSkin()
+   * @copydoc autopas::ParticleContainerInterface::setSkinPerTimestep()
    */
-  void setSkin(double skin) override final { _skin = skin; }
-
+  void setSkinPerTimestep(double skinPerTimestep) override final { _skinPerTimestep = skinPerTimestep; }
+  /**
+   * @copydoc autopas::ParticleContainerInterface::setRebuildFrequency()
+   */
+  void setRebuildFrequency(double rebuildFrequency) override final { _rebuildFrequency = rebuildFrequency; }
+   /**
+   * @copydoc autopas::ParticleContainerInterface::getRebuildFrequency()
+   */
+  [[nodiscard]] double getRebuildFrequency() const override final { return _rebuildFrequency; }
   /**
    * @copydoc autopas::ParticleContainerInterface::getInteractionLength()
    */
-  [[nodiscard]] double getInteractionLength() const override final { return _cutoff + _skin; }
+  [[nodiscard]] double getInteractionLength() const override final { return _cutoff + _skinPerTimestep*_rebuildFrequency; }
+  /**
+   * @copydoc autopas::ParticleContainerInterface::getSkin()
+   */
+  [[nodiscard]] double getSkin() const override final { return _skinPerTimestep*_rebuildFrequency; }
 
   /**
    * Deletes all particles from the container.
@@ -156,7 +167,9 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
   std::array<double, 3> _boxMin;
   std::array<double, 3> _boxMax;
   double _cutoff;
-  double _skin;
+  double _skinPerTimestep;
+  double _rebuildFrequency;
+  
 };
 
 }  // namespace autopas

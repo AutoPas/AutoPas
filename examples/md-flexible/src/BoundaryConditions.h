@@ -84,17 +84,17 @@ std::vector<Particle> identifyNewHaloParticles(autopas::AutoPas<Particle> &autoP
           // The search domain has to be enlarged by the skin as the position of the particles is not certain.
           if (direction[dim] == -1) {
             // just inside of boxMin
-            min[dim] = boxMin[dim] - autoPas.getVerletSkin();
-            max[dim] = boxMin[dim] + autoPas.getCutoff() + autoPas.getVerletSkin();
+            min[dim] = boxMin[dim] - autoPas.verletSkin();
+            max[dim] = boxMin[dim] + autoPas.getCutoff() + autoPas.verletSkin();
             needsShift = true;
           } else if (direction[dim] == 1) {
             // just inside of boxMax
-            min[dim] = boxMax[dim] - autoPas.getCutoff() - autoPas.getVerletSkin();
-            max[dim] = boxMax[dim] + autoPas.getVerletSkin();
+            min[dim] = boxMax[dim] - autoPas.getCutoff() - autoPas.verletSkin();
+            max[dim] = boxMax[dim] + autoPas.verletSkin();
             needsShift = true;
           } else {  // direction[dim] == 0
-            min[dim] = boxMin[dim] - autoPas.getVerletSkin();
-            max[dim] = boxMax[dim] + autoPas.getVerletSkin();
+            min[dim] = boxMin[dim] - autoPas.verletSkin();
+            max[dim] = boxMax[dim] + autoPas.verletSkin();
           }
           if (needsShift) {
             // particles left of min (direction == -1) need a shift by +boxLength. For right of max the opposite.

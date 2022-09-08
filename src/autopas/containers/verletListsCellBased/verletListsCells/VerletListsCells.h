@@ -44,13 +44,13 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
    * @param boxMin the lower corner of the domain
    * @param boxMax the upper corner of the domain
    * @param cutoff the cutoff radius of the interaction
-   * @param skin the skin radius
+   * @param skinPerTimestep the skin radius
    * @param cellSizeFactor cell size factor relative to cutoff
    * @param loadEstimator load estimation algorithm for balanced traversals
    * @param buildType data layout of the particles which are used to generate the neighbor lists
    */
   VerletListsCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-                   const double skin = 0, const double cellSizeFactor = 1.0,
+                   const double skinPerTimestep = 0, const double rebuildFrequency, const double cellSizeFactor = 1.0,
                    const LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell,
                    typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType =
                        VerletListsCellsHelpers<Particle>::VLCBuildType::soaBuild)

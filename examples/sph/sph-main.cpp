@@ -294,7 +294,7 @@ int main() {
   boxMax[1] = boxMax[2] = boxMax[0] / 8.0;
   double cutoff = 0.03;               // 0.012*2.5=0.03; where 2.5 = kernel support radius
   unsigned int rebuildFrequency = 6;  // has to be multiple of two, as there are two functor calls per iteration.
-  double skinToCutoffRatio = 0.15;
+  double skinToCutoffRatioPerTimestep = 0.15;
 
   AutoPasContainer sphSystem;
   sphSystem.setNumSamples(
@@ -302,7 +302,7 @@ int main() {
   sphSystem.setBoxMin(boxMin);
   sphSystem.setBoxMax(boxMax);
   sphSystem.setCutoff(cutoff);
-  sphSystem.setVerletSkin(skinToCutoffRatio * cutoff);
+  sphSystem.setVerletSkinPerTimestep(skinToCutoffRatioPerTimestep * cutoff);
   sphSystem.setVerletRebuildFrequency(rebuildFrequency);
 
   // In case you want to use another tuning strategy, you can do that using:

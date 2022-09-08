@@ -16,14 +16,22 @@
 #include "autopas/utils/ArrayUtils.h"
 #include "src/ParticleCommunicator.h"
 
-RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configuration)
-    : _loadBalancerOption(configuration.loadBalancer.value),
-      _cutoffWidth(configuration.cutoff.value),
-      _skinWidth(configuration.verletSkinRadius.value),
-      _globalBoxMin(configuration.boxMin.value),
-      _globalBoxMax(configuration.boxMax.value),
-      _boundaryType(configuration.boundaryOption.value),
-      _mpiCommunicationNeeded(
+RegularGridDecomposition::RegularGridDecomposition(const std::array<double, 3> &globalBoxMin,
+                                                   const std::array<double, 3> &globalBoxMax,
+                                                   const std::array<bool, 3> &subdivideDimension, double cutoffWidth,
+                                                   double skinWidthPerTimestep, double rebuildFrequency,
+                                                   const std::array<options::BoundaryTypeOption, 3> &boundaryConditions)
+    : _cutoffWidth(cutoffWidth),
+      _skinWidthPerTimestep(skinWidthPerTimestep),
+      _skinWidth(_skinWidthPerTimestep*rebuildFrequency), 
+      _globalBoxMin(globalBoxMin),
+      _globalBoxMax(globalBoxMax),
+      _boundaryType(boundaryConditions) {
+  autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &_subdomainCount);
+
+  int rank;
+  autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
+
 #if defined(AUTOPAS_INCLUDE_MPI)
           true
 #else
@@ -264,7 +272,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
     if (_localBoxMin[dimensionIndex] == _globalBoxMin[dimensionIndex]) {
       reflSkinMin = _globalBoxMin;
       reflSkinMax = _globalBoxMax;
-      reflSkinMax[dimensionIndex] = _globalBoxMin[dimensionIndex] + autoPasContainer.getVerletSkin() / 2;
+      reflSkinMax[dimensionIndex] = _globalBoxMin[dimensionIndex] + autoPasContainer->verletSkin() / 2;
 
       reflect(false);
     }
@@ -272,7 +280,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
     if (_localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex]) {
       reflSkinMin = _globalBoxMin;
       reflSkinMax = _globalBoxMax;
-      reflSkinMin[dimensionIndex] = _globalBoxMax[dimensionIndex] - autoPasContainer.getVerletSkin() / 2;
+      reflSkinMin[dimensionIndex] = _globalBoxMax[dimensionIndex] - autoPasContainer->verletSkin() / 2;
 
       reflect(true);
     }
