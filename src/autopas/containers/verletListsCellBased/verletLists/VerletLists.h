@@ -50,7 +50,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
 
   /**
    * Constructor of the VerletLists class.
-   * The neighbor lists are build using a search radius of cutoff + skin.
+   * The neighbor lists are build using a search radius of cutoff + skinPerTimestep*rebuildFrequency.
    * @param boxMin The lower corner of the domain.
    * @param boxMax The upper corner of the domain.
    * @param cutoff The cutoff radius of the interaction.
@@ -59,7 +59,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
    * @param cellSizeFactor cell size factor ralative to cutoff
    */
   VerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-              const double skinPerTimestep, const double rebuildFrequency, const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
+              const double skinPerTimestep, const unsigned int rebuildFrequency, const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
               const double cellSizeFactor = 1.0)
       : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skinPerTimestep,rebuildFrequency, compatibleTraversals::allVLCompatibleTraversals(),
                                         cellSizeFactor),

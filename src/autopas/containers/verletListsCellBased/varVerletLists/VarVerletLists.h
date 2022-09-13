@@ -23,16 +23,16 @@ class VarVerletLists : public VerletListsLinkedBase<Particle> {
  public:
   /**
    * Constructor of the Variable VerletLists class.
-   * The neighbor lists are build using a search radius of cutoff + skin.
+   * The neighbor lists are build using a search radius of cutoff + skin*rebuildfrequency.
    * @param boxMin The lower corner of the domain.
    * @param boxMax The upper corner of the domain.
    * @param cutoff The cutoff radius of the interaction.
-   * @param skin The skin radius.
+   * @param skinPertimestep The skin radius per Timestep.
    * @param cellSizeFactor cell size factor relative to cutoff
    */
   VarVerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-                 const double skin, const double cellSizeFactor = 1.0)
-      : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skin,
+                 const double skinPerTimestep, const unsigned int rebuildFrequency, const double cellSizeFactor = 1.0)
+      : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency,
                                         compatibleTraversals::allVarVLAsBuildCompatibleTraversals(), cellSizeFactor),
         _neighborList{} {}
 

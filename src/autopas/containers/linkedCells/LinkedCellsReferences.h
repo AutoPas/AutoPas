@@ -58,7 +58,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * By default all applicable traversals are allowed.
    */
   LinkedCellsReferences(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-                        const double skinPerTimestep, const double rebuildFrequency, const double cellSizeFactor = 1.0,
+                        const double skinPerTimestep, const unsigned int rebuildFrequency, const double cellSizeFactor = 1.0,
                         LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
       : CellBasedParticleContainer<ReferenceCell>(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skinPerTimestep*rebuildFrequency, cellSizeFactor),
