@@ -88,7 +88,7 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
   autoPasContainer->init();
 
   const auto &[expectedPositions, expectedHaloPositions, expectedVelocities] =
-      setUpExpectations(particlePositions, particleVelocities, boxMin, boxMax, autoPasContainer->verletSkin() / 2, cutoffWidth + autoPasContainer->verletSkin(),
+      setUpExpectations(particlePositions, particleVelocities, boxMin, boxMax, autoPasContainer->getVerletSkin() / 2, cutoffWidth + autoPasContainer->getVerletSkin(),
                         boundaryConditions);
 
   // particles need to be added at positions inside the domain

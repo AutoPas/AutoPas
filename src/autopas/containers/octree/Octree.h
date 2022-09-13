@@ -162,7 +162,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
   bool updateHaloParticle(const ParticleType &haloParticle) override {
     ParticleType pCopy = haloParticle;
     pCopy.setOwnershipState(OwnershipState::halo);
-    return internal::checkParticleInCellAndUpdateByIDAndPosition(this->_cells[CellTypes::HALO], pCopy, this->getSkin());
+    return internal::checkParticleInCellAndUpdateByIDAndPosition(this->_cells[CellTypes::HALO], pCopy, this->getVerletSkin());
   }
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {}

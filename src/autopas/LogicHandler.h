@@ -376,11 +376,11 @@ class LogicHandler {
     auto container = _autoTuner.getContainer();
     // check boxSize at least cutoff + skin
     for (unsigned int dim = 0; dim < 3; ++dim) {
-      if (container->getBoxMax()[dim] - container->getBoxMin()[dim] < container->getCutoff() + container->getSkin()) {
+      if (container->getBoxMax()[dim] - container->getBoxMin()[dim] < container->getCutoff() + container->getVerletSkin()) {
         autopas::utils::ExceptionHandler::exception(
             "Box (boxMin[{}]={} and boxMax[{}]={}) is too small.\nHas to be at least cutoff({}) + skin({}) = {}.", dim,
-            container->getBoxMin()[dim], dim, container->getBoxMax()[dim], container->getCutoff(), container->getSkin(),
-            container->getCutoff() + container->getSkin());
+            container->getBoxMin()[dim], dim, container->getBoxMax()[dim], container->getCutoff(), container->getVerletSkin(),
+            container->getCutoff() + container->getVerletSkin());
       }
     }
   }

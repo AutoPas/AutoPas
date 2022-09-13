@@ -267,7 +267,7 @@ class ParticleContainerInterface {
    * Return the skin of the container.
    * @return skin radius.
    */
-  [[nodiscard]] virtual double getSkin() const = 0;
+  [[nodiscard]] virtual double getVerletSkin() const = 0;
 
   /**
    * Set the skin of the container.

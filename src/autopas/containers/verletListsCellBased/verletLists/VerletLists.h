@@ -54,14 +54,14 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
    * @param boxMin The lower corner of the domain.
    * @param boxMax The upper corner of the domain.
    * @param cutoff The cutoff radius of the interaction.
-   * @param skin The skin radius.
+   * @param skinPerTimestep The skin radius.
    * @param buildVerletListType Specifies how the verlet list should be build, see BuildVerletListType
    * @param cellSizeFactor cell size factor ralative to cutoff
    */
   VerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-              const double skin, const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
+              const double skinPerTimestep, const double rebuildFrequency, const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
               const double cellSizeFactor = 1.0)
-      : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skin, compatibleTraversals::allVLCompatibleTraversals(),
+      : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skinPerTimestep,rebuildFrequency, compatibleTraversals::allVLCompatibleTraversals(),
                                         cellSizeFactor),
         _soaListIsValid(false),
         _buildVerletListType(buildVerletListType) {}

@@ -103,7 +103,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   bool updateHaloParticle(const ParticleType &haloParticle) override {
     ParticleType pCopy = haloParticle;
     pCopy.setOwnershipState(OwnershipState::halo);
-    auto cells = _cellBlock.getNearbyHaloCells(pCopy.getR(), this->getSkin());
+    auto cells = _cellBlock.getNearbyHaloCells(pCopy.getR(), this->getVerletSkin());
     for (auto cellptr : cells) {
       bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, pCopy);
       if (updated) {
@@ -313,9 +313,9 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
                                                                 IteratorBehavior behavior) override {
     // We increase the search region by skin, as particles can move over cell borders.
     auto startIndex3D =
-        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::subScalar(lowerCorner, this->getSkin()));
+        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::subScalar(lowerCorner, this->getVerletSkin()));
     auto stopIndex3D =
-        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::addScalar(higherCorner, this->getSkin()));
+        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::addScalar(higherCorner, this->getVerletSkin()));
 
     size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
                                 (stopIndex3D[2] - startIndex3D[2] + 1);
@@ -341,9 +341,9 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
                                                                  IteratorBehavior behavior) const override {
     // We increase the search region by skin, as particles can move over cell borders.
     auto startIndex3D =
-        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::subScalar(lowerCorner, this->getSkin()));
+        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::subScalar(lowerCorner, this->getVerletSkin()));
     auto stopIndex3D =
-        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::addScalar(higherCorner, this->getSkin()));
+        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::addScalar(higherCorner, this->getVerletSkin()));
 
     size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
                                 (stopIndex3D[2] - startIndex3D[2] + 1);
@@ -372,9 +372,9 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
                        const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
     // We increase the search region by skin, as particles can move over cell borders.
     auto startIndex3D =
-        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::subScalar(lowerCorner, this->getSkin()));
+        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::subScalar(lowerCorner, this->getVerletSkin()));
     auto stopIndex3D =
-        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::addScalar(higherCorner, this->getSkin()));
+        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::addScalar(higherCorner, this->getVerletSkin()));
 
     size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
                                 (stopIndex3D[2] - startIndex3D[2] + 1);
@@ -405,9 +405,9 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
     // We increase the search region by skin, as particles can move over cell borders.
     auto startIndex3D =
-        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::subScalar(lowerCorner, this->getSkin()));
+        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::subScalar(lowerCorner, this->getVerletSkin()));
     auto stopIndex3D =
-        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::addScalar(higherCorner, this->getSkin()));
+        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::addScalar(higherCorner, this->getVerletSkin()));
 
     size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
                                 (stopIndex3D[2] - startIndex3D[2] + 1);

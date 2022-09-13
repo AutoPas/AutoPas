@@ -270,7 +270,7 @@ void updateHaloParticles(AutoPasContainer &sphSystem, MPI_Comm &comm, const std:
   std::array<int, 3> diff{0, 0, 0};
   std::array<double, 3> shift{0, 0, 0};
   double cutoff = sphSystem.getCutoff();
-  double skin= sphSystem.verletSkin();
+  double skin= sphSystem.getVerletSkin();
   std::vector<double> buffer;
   for (diff[0] = -1; diff[0] < 2; diff[0]++) {
     for (diff[1] = -1; diff[1] < 2; diff[1]++) {

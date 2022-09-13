@@ -110,9 +110,9 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    */
   [[nodiscard]] double getInteractionLength() const override final { return _cutoff + _skinPerTimestep*_rebuildFrequency; }
   /**
-   * @copydoc autopas::ParticleContainerInterface::getSkin()
+   * @copydoc autopas::ParticleContainerInterface::getVerletSkin()
    */
-  [[nodiscard]] double getSkin() const override final { return _skinPerTimestep*_rebuildFrequency; }
+  [[nodiscard]] double getVerletSkin() const override final { return _skinPerTimestep*_rebuildFrequency; }
 
   /**
    * Deletes all particles from the container.
@@ -168,7 +168,7 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
   std::array<double, 3> _boxMax;
   double _cutoff;
   double _skinPerTimestep;
-  double _rebuildFrequency;
+  unsigned int _rebuildFrequency;
   
 };
 

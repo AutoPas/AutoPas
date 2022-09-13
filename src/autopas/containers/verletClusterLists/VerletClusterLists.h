@@ -169,8 +169,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     pCopy.setOwnershipState(OwnershipState::halo);
 
     // this might be called from a parallel region so force this iterator to be sequential
-    for (auto it = getRegionIterator(utils::ArrayMath::subScalar(pCopy.getR(), this->getSkin() / 2),
-                                     utils::ArrayMath::addScalar(pCopy.getR(), this->getSkin() / 2),
+    for (auto it = getRegionIterator(utils::ArrayMath::subScalar(pCopy.getR(), this->getVerletSkin() / 2),
+                                     utils::ArrayMath::addScalar(pCopy.getR(), this->getVerletSkin() / 2),
                                      IteratorBehavior::halo | IteratorBehavior::forceSequential);
          it.isValid(); ++it) {
       if (pCopy.getID() == it->getID()) {
@@ -687,7 +687,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
   void setCutoff(double cutoff) override { _cutoff = cutoff; }
 
-  [[nodiscard]] double getSkin() const override { return _skin; }
+  [[nodiscard]] double getVerletSkin() const override { return _skin; }
 
   void setSkin(double skin) override { _skin = skin; }
 

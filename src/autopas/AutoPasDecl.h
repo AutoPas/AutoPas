@@ -439,7 +439,7 @@ class AutoPas {
    * @param 
    * @return _vereltSkin which is the length of the verlet skin at the time of rebuild
    */
-  double verletSkin(){
+  double getVerletSkin(){
     double _verletSkin=AutoPas::_verletSkinPerTimestep*AutoPas::_verletRebuildFrequency;
     return _verletSkin;
   };
@@ -534,13 +534,6 @@ class AutoPas {
     }
     AutoPas::_allowedCellSizeFactors = std::make_unique<NumberSetFinite<double>>(std::set<double>{cellSizeFactor});
   }
-
-  /**
-   * Get length added to the cutoff for the Verlet lists' skin.
-   * @return
-   */
- // [[nodiscard]] double getVerletSkin() const { return _verletSkin; }
-
   
   /**
    * Get length added to the cutoff for the Verlet lists' skin per timestep.

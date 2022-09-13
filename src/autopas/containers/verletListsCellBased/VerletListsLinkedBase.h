@@ -114,7 +114,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   bool updateHaloParticle(const Particle &particle) override {
     Particle pCopy = particle;
     pCopy.setOwnershipState(OwnershipState::halo);
-    auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(pCopy.getR(), this->getSkin());
+    auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(pCopy.getR(), this->getVerletSkin());
     for (auto cellptr : cells) {
       bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, pCopy);
       if (updated) {
@@ -244,9 +244,9 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   void setCutoff(double cutoff) override final { _linkedCells.setCutoff(cutoff); }
 
   /**
-   * @copydoc autopas::ParticleContainerInterface::getSkin()
+   * @copydoc autopas::ParticleContainerInterface::getVerletSkin()
    */
-  [[nodiscard]] double getSkin() const override final { return _linkedCells.getSkin(); }
+  [[nodiscard]] double getVerletSkin() const override final { return _linkedCells.getVerletSkin(); }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::setSkin()
