@@ -100,11 +100,11 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
   /**
    * @copydoc autopas::ParticleContainerInterface::setRebuildFrequency()
    */
-  void setRebuildFrequency(double rebuildFrequency) override final { _rebuildFrequency = rebuildFrequency; }
+  void setRebuildFrequency(unsigned int rebuildFrequency) override final { _rebuildFrequency = rebuildFrequency; }
    /**
    * @copydoc autopas::ParticleContainerInterface::getRebuildFrequency()
    */
-  [[nodiscard]] double getRebuildFrequency() const override final { return _rebuildFrequency; }
+  [[nodiscard]] unsigned int getRebuildFrequency() const override final { return _rebuildFrequency; }
   /**
    * @copydoc autopas::ParticleContainerInterface::getInteractionLength()
    */
