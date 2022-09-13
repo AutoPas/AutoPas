@@ -26,11 +26,12 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
  public:
   /**
    * Constructor of the VerletListsLinkedBase class.
-   * The neighbor lists are build using a search radius of cutoff + skin.LinkedParticleCell::ParticleType
+   * The neighbor lists are build using a search radius of cutoff + skin.LinkedParticleCell::ParticleType *rebuildFrequency
    * @param boxMin the lower corner of the domain
    * @param boxMax the upper corner of the domain
    * @param cutoff the cutoff radius of the interaction
    * @param skinPerTimestep the skin radius per timestep
+   * @param rebuildFrequency
    * @param applicableTraversals all applicable traversals
    * @param cellSizeFactor cell size factor relative to cutoff. Verlet lists are only implemented for values >= 1.0
    * (smaller values are set to 1.0).
@@ -249,9 +250,9 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   [[nodiscard]] double getVerletSkin() const override final { return _linkedCells.getVerletSkin(); }
 
   /**
-   * @copydoc autopas::ParticleContainerInterface::setSkin()
+   * @copydoc autopas::ParticleContainerInterface::setSkinPerTimestep()
    */
-  void setSkin(double skin) override final { _linkedCells.setSkin(skin); }
+  void setSkinPerTimestep(double skinPerTimestep) override final { _linkedCells.setSkinPerTimestep(skinPerTimestep); }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getInteractionLength()

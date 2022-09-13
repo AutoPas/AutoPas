@@ -27,6 +27,7 @@ class ContainerSelectorInfo {
    * @param cellSizeFactor Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and
    * VerletListsCells).
    * @param verletSkinPerTimestep Length added to the cutoff for the verlet lists' skin per timestep.
+   * @param verletRebuildFrequency rebuild frequency.
    * @param verletClusterSize Size of verlet Clusters
    * @param loadEstimator load estimation algorithm for balanced traversals.
    */
@@ -44,7 +45,7 @@ class ContainerSelectorInfo {
    * @return True iff all member equal
    */
   bool operator==(const ContainerSelectorInfo &other) const {
-    return cellSizeFactor == other.cellSizeFactor and verletSkinPerTimestep == other.verletSkinperTimestep and
+    return cellSizeFactor == other.cellSizeFactor and verletSkinPerTimestep == other.verletSkinPerTimestep and
            verletClusterSize == other.verletClusterSize and loadEstimator == other.loadEstimator;
   }
 
@@ -73,7 +74,7 @@ class ContainerSelectorInfo {
    */
   double cellSizeFactor;
   /**
-   * Length added to the cutoff for the verlet lists' skin.
+   * Length added to the cutoff for the verlet lists' skin per timestep.
    */
   double verletSkinPerTimestep;
   /**

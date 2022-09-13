@@ -26,7 +26,7 @@ void defaultInit(AutoPasT &autoPas) {
   autoPas.setBoxMin(boxMin);
   autoPas.setBoxMax(boxMax);
   autoPas.setCutoff(cutoff);
-  autoPas.setVerletSkinPerTimestepPerTimestep(skinPerTimestepPerTimestep);
+  autoPas.setVerletSkinPerTimestep(skinPerTimestep);
   autoPas.setVerletRebuildFrequency(3);
   autoPas.setNumSamples(3);
 
@@ -47,7 +47,7 @@ void defaultInit(AutoPasT &autoPas1, AutoPasT &autoPas2, size_t direction) {
 
   for (auto &aP : {&autoPas1, &autoPas2}) {
     aP->setCutoff(cutoff);
-    aP->setVerletSkinPerTimestepPerTimestep(skinPerTimestepPerTimestep);
+    aP->setVerletSkinPerTimestep(skinPerTimestep);
     aP->setVerletRebuildFrequency(2);
     aP->setNumSamples(2);
     // init autopas

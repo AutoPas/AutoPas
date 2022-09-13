@@ -267,13 +267,13 @@ class ParticleContainerInterface {
    * Return the skin of the container.
    * @return skin radius.
    */
-  [[nodiscard]] virtual double getVerletSkin() const = 0;
+  [[nodiscard]] virtual double getVerletSkinPerTimestep() const = 0;
 
   /**
-   * Set the skin of the container.
-   * @param skin
+   * Set the skin of the container per Timestep.
+   * @param skinPerTimestep
    */
-  virtual void setSkin(double skin) = 0;
+  virtual void setVerletSkinPerTimestep(double skinPerTimestep) = 0;
 
   /**
    * Return the interaction length (cutoff+skin) of the container.
