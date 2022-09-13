@@ -35,9 +35,9 @@ auto ParticleIteratorInterfaceTest::defaultInit(AutoPasT &autoPas, autopas::Cont
   autoPas.init();
 
   auto haloBoxMin =
-      autopas::utils::ArrayMath::subScalar(autoPas.getBoxMin(), autoPas.getVerletSkin() + autoPas.getCutoff());
+      autopas::utils::ArrayMath::subScalar(autoPas.getBoxMin(), autoPas.verletSkin() + autoPas.getCutoff());
   auto haloBoxMax =
-      autopas::utils::ArrayMath::addScalar(autoPas.getBoxMax(), autoPas.getVerletSkin() + autoPas.getCutoff());
+      autopas::utils::ArrayMath::addScalar(autoPas.getBoxMax(), autoPas.verletSkin() + autoPas.getCutoff());
 
   return std::make_tuple(haloBoxMin, haloBoxMax);
 }

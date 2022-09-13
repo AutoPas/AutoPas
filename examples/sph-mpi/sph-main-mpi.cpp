@@ -475,7 +475,7 @@ int main(int argc, char *argv[]) {
   globalBoxMax[1] = globalBoxMax[2] = globalBoxMax[0] / 8.0;
   double cutoff = 0.03;               // 0.012*2.5=0.03; where 2.5 = kernel support radius
   unsigned int rebuildFrequency = 6;  // has to be multiple of 2
-  double skinToCutoffRatioPerTimestep = 0.1;
+  double skinToCutoffRatioPerTimestepPerTimestep = 0.1;
 
   std::array<double, 3> localBoxMin{}, localBoxMax{};
 
@@ -489,7 +489,7 @@ int main(int argc, char *argv[]) {
   sphSystem.setBoxMin(localBoxMin);
   sphSystem.setBoxMax(localBoxMax);
   sphSystem.setCutoff(cutoff);
-  sphSystem.setVerletSkinPerTimestep(skinToCutoffRatioPerTimestep * cutoff);
+  sphSystem.setVerletSkinPerTimestepPerTimestep(skinToCutoffRatioPerTimestepPerTimestep * cutoff);
   sphSystem.setVerletRebuildFrequency(rebuildFrequency);
 
   std::set<autopas::ContainerOption> allowedContainers{autopas::ContainerOption::linkedCells,

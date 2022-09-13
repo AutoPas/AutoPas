@@ -206,6 +206,14 @@ class RegularGridDecomposition final : public DomainDecomposition {
   double _skinWidthPerTimestep;
 
   /**
+<<<<<<< HEAD
+   * Stores the domain skin width per timestep.
+   */
+  double _skinWidthPerTimestep;
+
+  /**
+=======
+>>>>>>> 72799a1a6012f6fb6787f3d177b24f6f3c1feb2c
    * Indicator to MPI to view all communication dimensions as periodic.
    * @note For usage in MPI functions, the const needs to be casted away.
    */
