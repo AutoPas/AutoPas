@@ -489,7 +489,7 @@ int main(int argc, char *argv[]) {
   sphSystem.setBoxMin(localBoxMin);
   sphSystem.setBoxMax(localBoxMax);
   sphSystem.setCutoff(cutoff);
-  sphSystem.setVerletSkinPerTimestepPerTimestep(skinToCutoffRatioPerTimestepPerTimestep * cutoff);
+  sphSystem.setVerletSkinPerTimestep(skinToCutoffRatioPerTimestepPerTimestep * cutoff);
   sphSystem.setVerletRebuildFrequency(rebuildFrequency);
 
   std::set<autopas::ContainerOption> allowedContainers{autopas::ContainerOption::linkedCells,

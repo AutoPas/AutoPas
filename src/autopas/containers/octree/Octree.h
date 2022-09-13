@@ -57,12 +57,12 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    * @param boxMin The minimum coordinate of the enclosing box
    * @param boxMax The maximum coordinate of the enclosing box
    * @param cutoff The cutoff radius
-   * @param skin The skin radius
+   * @param skinPerTimestep The skin radius per timestep
    * @param cellSizeFactor The cell size factor
    */
-  Octree(std::array<double, 3> boxMin, std::array<double, 3> boxMax, const double cutoff, const double skin,
-         const double cellSizeFactor)
-      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skin) {
+  Octree(std::array<double, 3> boxMin, std::array<double, 3> boxMax, const double cutoff, const double skinPerTimestep,
+         const unsigned int rebuildFrequency, const double cellSizeFactor)
+      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency) {
     // @todo Obtain this from a configuration, reported in https://github.com/AutoPas/AutoPas/issues/624
     int unsigned treeSplitThreshold = 16;
 

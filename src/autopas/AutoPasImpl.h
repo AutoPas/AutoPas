@@ -73,7 +73,7 @@ void AutoPas<Particle>::init() {
       _relativeBlacklistRange, _evidenceFirstPrediction, _acquisitionFunctionOption, _extrapolationMethodOption,
       _outputSuffix, _mpiStrategyOption, _autopasMPICommunicator);
   _autoTuner = std::make_unique<autopas::AutoTuner<Particle>>(
-      _boxMin, _boxMax, _cutoff, _verletSkin, _verletClusterSize, std::move(tuningStrategy),
+      _boxMin, _boxMax, _cutoff, _verletSkinPerTimestep, _verletRebuildFrequency,_verletClusterSize, std::move(tuningStrategy),
       _mpiTuningMaxDifferenceForBucket, _mpiTuningWeightForMaxDensity, _selectorStrategy, _tuningInterval, _numSamples,
       _verletRebuildFrequency, _outputSuffix);
   _logicHandler =

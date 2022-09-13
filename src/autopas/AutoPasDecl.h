@@ -870,17 +870,9 @@ class AutoPas {
    * Length added to the cutoff for the Verlet lists' skin per Timestep.
    */
   double _verletSkinPerTimestep{0.01};
-
-
-  /**
-   * Length added to the cutoff for the Verlet lists' skin.
-   */
-  //double _verletSkin{0};
   /**
    * Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
    */
-
-  
   unsigned int _verletRebuildFrequency{20};
   /**
    * Specifies the size of clusters for Verlet lists.
