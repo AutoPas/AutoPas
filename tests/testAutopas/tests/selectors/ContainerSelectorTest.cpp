@@ -8,7 +8,7 @@
 
 TEST_F(ContainerSelectorTest, testSelectAndGetCurrentContainer) {
   autopas::ContainerSelector<Particle> containerSelector(bBoxMin, bBoxMax, cutoff);
-  autopas::ContainerSelectorInfo containerInfo(cellSizeFactor, verletSkin, 64, autopas::LoadEstimatorOption::none);
+  autopas::ContainerSelectorInfo containerInfo(cellSizeFactor, verletSkinPerTimestep,verletRebuildFrequency, 64, autopas::LoadEstimatorOption::none);
 
   // expect an exception if nothing is selected yet
   EXPECT_THROW((containerSelector.getCurrentContainer()), autopas::utils::ExceptionHandler::AutoPasException);
