@@ -409,7 +409,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         try {
           config.verletSkinRadiusPerTimestep.value = stod(strArg);
         } catch (const exception &) {
-          cerr << "Error parsing verlet-skin-radius per timestep: " << optarg << endl;
+          cerr << "Error parsing verlet-skin-radius-per-timestep: " << optarg << endl;
           displayHelp = true;
         }
         break;
