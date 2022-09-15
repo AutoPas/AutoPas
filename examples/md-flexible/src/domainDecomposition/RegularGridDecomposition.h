@@ -34,7 +34,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    */
   RegularGridDecomposition(const std::array<double, 3> &globalBoxMin, const std::array<double, 3> &globalBoxMax,
                            const std::array<bool, 3> &subdivideDimension, double cutoffWidth, double skinWidthPerTimestep, 
-                           double rebuildFrequency, const std::array<options::BoundaryTypeOption, 3> &boundaryConditions);
+                           unsigned int rebuildFrequency, const std::array<options::BoundaryTypeOption, 3> &boundaryConditions);
 
   /**
    * Destructor.

@@ -50,11 +50,11 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
    * @param buildType data layout of the particles which are used to generate the neighbor lists
    */
   VerletListsCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-                   const double skinPerTimestep = 0, const unsigned int rebuildFrequency, const double cellSizeFactor = 1.0,
+                   const double skinPerTimestep = 0, const unsigned int rebuildFrequency = 2, const double cellSizeFactor = 1.0,
                    const LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell,
                    typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType =
                        VerletListsCellsHelpers<Particle>::VLCBuildType::soaBuild)
-      : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skinPerTimestep,rebuildFrequency
+      : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skinPerTimestep,rebuildFrequency,
                                         compatibleTraversals::allVLCCompatibleTraversals(), cellSizeFactor),
         _loadEstimator(loadEstimator),
         _buildType(buildType) {}

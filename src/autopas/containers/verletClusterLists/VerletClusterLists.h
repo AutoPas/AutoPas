@@ -81,7 +81,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
         _haloBoxMax{utils::ArrayMath::addScalar(boxMax, cutoff + skinPerTimestep*rebuildFrequency)},
         _cutoff{cutoff},
         _skinPerTimestep{skinPerTimestep},
-        _rebuildFrequency{rebuildFrequency}
+        _rebuildFrequency{rebuildFrequency},
         _loadEstimator(loadEstimator) {
     // always have at least one tower.
     _towers.push_back(internal::ClusterTower<Particle>(_clusterSize));
@@ -1053,7 +1053,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   /**
    * rebuidFrequency.
    */
-  double _rebuildFrequency{};
+  unsigned int _rebuildFrequency{};
   /**
    * Enum to specify the validity of this container.
    */
