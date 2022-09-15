@@ -72,8 +72,7 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
   config.boxMin.value = {0., 0., 0.};
   config.boxMax.value = {5., 5., 5.};
   config.cutoff.value = 0.3;
-  config.verletSkinRadiusPerTimestep.value = 0.1;
-  config.verletRebuildFrequency.value=2;
+  config.verletSkinRadius.value = 0.2;
   config.subdivideDimension.value = {true, true, true};
   config.boundaryOption.value = boundaryConditions;
 
