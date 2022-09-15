@@ -55,6 +55,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
    * @param boxMax The upper corner of the domain.
    * @param cutoff The cutoff radius of the interaction.
    * @param skinPerTimestep The skin radius.
+   * @param rebuildFrequency rebuild fequency.
    * @param buildVerletListType Specifies how the verlet list should be build, see BuildVerletListType
    * @param cellSizeFactor cell size factor ralative to cutoff
    */
@@ -118,7 +119,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
   virtual void updateVerletListsAoS(bool useNewton3) {
     generateAoSNeighborLists();
     typename VerletListHelpers<Particle>::VerletListGeneratorFunctor f(_aosNeighborLists,
-                                                                       this->getCutoff() + this->getSkin());
+                                                                       this->getCutoff() + this->getVerletSkin());
 
     /// @todo autotune traversal
     switch (_buildVerletListType) {

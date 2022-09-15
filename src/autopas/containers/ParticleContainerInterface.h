@@ -264,16 +264,33 @@ class ParticleContainerInterface {
   virtual void setCutoff(double cutoff) = 0;
 
   /**
-   * Return the skin of the container.
-   * @return skin radius.
+   * Return the skin per timestep of the container.
+   * @return skin radius per Timestep.
    */
-  [[nodiscard]] virtual double getVerletSkinPerTimestep() const = 0;
+  [[nodiscard]] virtual double getSkinPerTimestep() const = 0;
 
   /**
    * Set the skin of the container per Timestep.
    * @param skinPerTimestep
    */
-  virtual void setVerletSkinPerTimestep(double skinPerTimestep) = 0;
+  virtual void setSkinPerTimestep(double skinPerTimestep) = 0;
+
+  /**
+   * Return the rebulild frequency of the container.
+   * @return rebuild Frequency.
+   */
+  [[nodiscard]] virtual unsigned int getRebuildFrequency() const = 0;
+
+  /**
+   * Set the skin of the container per Timestep.
+   * @param rebuildFrequency
+   */
+  virtual void setRebuildFrequency(unsigned int rebuildFrequency) = 0;
+  
+  /**
+   * @copydoc autopas::ParticleContainerInterface::getVerletSkin()
+   */
+  [[nodiscard]] virtual double getVerletSkin() const =0;
 
   /**
    * Return the interaction length (cutoff+skin) of the container.

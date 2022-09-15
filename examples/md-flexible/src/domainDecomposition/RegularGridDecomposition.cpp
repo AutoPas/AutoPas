@@ -21,7 +21,7 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
       _cutoffWidth(configuration.cutoff.value),
       _skinWidthPerTimestep(configuration.verletSkinRadiusPerTimestep.value),
       _rebuildFrequency(configuration.verletRebuildFrequency.value),
-      _skinWidth(configuration.verletSkinRadiusPerTimestep.value*configuation.verletRebuildFrequency.value),
+      _skinWidth(configuration.verletSkinRadiusPerTimestep.value*configuration.verletRebuildFrequency.value),
       _globalBoxMin(configuration.boxMin.value),
       _globalBoxMax(configuration.boxMax.value),
       _boundaryType(configuration.boundaryOption.value),

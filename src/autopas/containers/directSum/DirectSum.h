@@ -83,7 +83,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
   bool updateHaloParticle(const ParticleType &haloParticle) override {
     ParticleType pCopy = haloParticle;
     pCopy.setOwnershipState(OwnershipState::halo);
-    return internal::checkParticleInCellAndUpdateByIDAndPosition(getHaloCell(), pCopy, this->getSkin());
+    return internal::checkParticleInCellAndUpdateByIDAndPosition(getHaloCell(), pCopy, this->getVerletSkin());
   }
 
   void deleteHaloParticles() override { getHaloCell().clear(); }

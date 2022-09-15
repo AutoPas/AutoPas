@@ -24,17 +24,9 @@ class RegularGridDecomposition final : public DomainDecomposition {
  public:
   /**
    * Constructor.
-   * @param globalBoxMin: The minimum coordinates of the global domain.
-   * @param globalBoxMax: The maximum coordinates of the global domain.
-   * @param subdivideDimension: Decides if a dimension will be subdivided.
-   * @param cutoffWidth: The cutoff width for halo particles.
-   * @param skinWidthperTimestep: The skin width of an autopas container domain.
-   * @param RebuildFrequency: the rebuild frequency. 
-   * @param boundaryConditions: An array of boundary conditions in the x, y, and z directions.
+   * @param configuration: The configuration for definig the decomposition properties
    */
-  RegularGridDecomposition(const std::array<double, 3> &globalBoxMin, const std::array<double, 3> &globalBoxMax,
-                           const std::array<bool, 3> &subdivideDimension, double cutoffWidth, double skinWidthPerTimestep, 
-                           unsigned int rebuildFrequency, const std::array<options::BoundaryTypeOption, 3> &boundaryConditions);
+  explicit RegularGridDecomposition(const MDFlexConfig &configuration);
 
   /**
    * Destructor.
@@ -163,8 +155,15 @@ class RegularGridDecomposition final : public DomainDecomposition {
   /**
    * Stores the domain skin width.
    */
+  double _skinWidthPerTimestep;
+  /**
+   * Stores the domain skin width.
+   */
+  double _rebuildFrequency;
+  /**
+   * Stores the domain skin width.
+   */
   double _skinWidth;
-  
   /**
    * The minimum coordinates of the global domain.
    */
@@ -198,11 +197,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
   std::array<int, 3> _decomposition{};
 
   /**
-   * Stores the domain skin width per timestep.
-   */
-  double _skinWidthPerTimestep;
-
-  /** Indicator to MPI to view all communication dimensions as periodic.
+   * Indicator to MPI to view all communication dimensions as periodic.
    * @note For usage in MPI functions, the const needs to be casted away.
    */
   const std::vector<int> _periods{_dimensionCount, 1};
