@@ -694,6 +694,10 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
   void setSkinPerTimestep(double skinPerTimestep) override { _skinPerTimestep = skinPerTimestep; }
 
+  [[nodiscard]] unsigned int getRebuildFrequency() const override { return _rebuildFrequency; }
+
+  void setRebuildFrequency(unsigned int rebuildFrequency) override { _rebuildFrequency = rebuildFrequency; }
+
   [[nodiscard]] double getInteractionLength() const override { return _cutoff + _skinPerTimestep*_rebuildFrequency; }
 
   void deleteAllParticles() override {
