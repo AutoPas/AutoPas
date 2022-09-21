@@ -4,27 +4,44 @@
 * @date 13/05/19
 */
 
-#include "TimeDiscretization.h"
+//#include "TimeDiscretization.h"
+
+#pragma once
 
 namespace TimeDiscretization {
 
-template <> void calculatePositions<autopas::MoleculeLJ>(autopas::AutoPas<autopas::MoleculeLJ> &autoPasContainer,
+template <class ParticleClass>
+void calculatePositions(autopas::AutoPas<ParticleClass> &autoPasContainer,
                        const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
-                       const std::array<double, 3> &globalForce);
+                       const std::array<double, 3> &globalForce) {
+  using autopas::utils::ArrayMath::add;
+  using autopas::utils::ArrayMath::mulScalar;
 
-template <> void calculatePositions<autopas::MulticenteredMoleculeLJ>(autopas::AutoPas<autopas::MulticenteredMoleculeLJ> &autoPasContainer,
-                                             const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
-                                             const std::array<double, 3> &globalForce);
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel
+#endif
+  for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    auto v = iter->getV();
+    auto m = particlePropertiesLibrary.getMolMass(iter->getTypeId());
+    auto f = iter->getF();
+    iter->setOldF(f);
+    iter->setF(globalForce);
+    v = mulScalar(v, deltaT);
+    f = mulScalar(f, (deltaT * deltaT / (2 * m)));
+    auto newR = add(v, f);
+    iter->addR(newR);
+  }
+}
 
 template <class ParticleClass>
-void calculateQuaternions(autopas::AutoPas<ParticleClass> &autoPasContainer,
+inline void calculateQuaternions(autopas::AutoPas<ParticleClass> &autoPasContainer,
                          const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
                          const std::array<double, 3> &globalForce) {
  autopas::utils::ExceptionHandler::exception("calculateQuaternion should not be run with a non-rotational molecule type!");
 }
 
 
-template<> void calculateQuaternions<autopas::MulticenteredMoleculeLJ>(autopas::AutoPas<autopas::MulticenteredMoleculeLJ> &autoPasContainer,
+template<> inline void calculateQuaternions<autopas::MulticenteredMoleculeLJ>(autopas::AutoPas<autopas::MulticenteredMoleculeLJ> &autoPasContainer,
                                                            const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
                                                            const std::array<double, 3> &globalForce) {
  using autopas::utils::ArrayMath::add;
@@ -88,20 +105,32 @@ template<> void calculateQuaternions<autopas::MulticenteredMoleculeLJ>(autopas::
  }
 }
 
-template <> void calculateVelocities<autopas::MoleculeLJ>(autopas::AutoPas<autopas::MoleculeLJ> &autoPasContainer,
-                        const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
+template <class ParticleClass>
+void calculateVelocities(autopas::AutoPas<ParticleClass> &autoPasContainer,
+                        const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
+  // helper declarations for operations with vector
+  using autopas::utils::ArrayMath::add;
+  using autopas::utils::ArrayMath::mulScalar;
 
-template <> void calculateVelocities<autopas::MulticenteredMoleculeLJ>(autopas::AutoPas<autopas::MulticenteredMoleculeLJ> &autoPasContainer,
-                                              const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
-
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel
+#endif
+  for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    auto m = particlePropertiesLibrary.getMolMass(iter->getTypeId());
+    auto force = iter->getF();
+    auto oldForce = iter->getOldF();
+    auto newV = mulScalar((add(force, oldForce)), deltaT / (2 * m));
+    iter->addV(newV);
+  }
+}
 
 template <class ParticleClass>
-void calculateAngularVelocities(autopas::AutoPas<ParticleClass> &autoPasContainer,
+inline void calculateAngularVelocities(autopas::AutoPas<ParticleClass> &autoPasContainer,
                                const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
  autopas::utils::ExceptionHandler::exception("calculateAngularVelocities should not be run with a non-rotational molecule type!");
 }
 
-template<> void calculateAngularVelocities<autopas::MulticenteredMoleculeLJ>(autopas::AutoPas<autopas::MulticenteredMoleculeLJ> &autoPasContainer,
+template<> inline void calculateAngularVelocities<autopas::MulticenteredMoleculeLJ>(autopas::AutoPas<autopas::MulticenteredMoleculeLJ> &autoPasContainer,
                                                                  const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
  using autopas::utils::ArrayMath::mulScalar;
  using autopas::utils::ArrayMath::div;

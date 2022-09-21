@@ -10,6 +10,8 @@
 #include "src/configuration/MDFlexConfig.h"
 #include "autopas/utils/Quaternion.h"
 
+#include "TimeDiscretizationImpl.h"
+
 /**
  * Functions for updating velocities and positions as simulation time progresses.
  */
@@ -24,25 +26,7 @@ namespace TimeDiscretization {
 template <class ParticleClass>
 void calculatePositions(autopas::AutoPas<ParticleClass> &autoPasContainer,
                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
-                        const std::array<double, 3> &globalForce) {
-  using autopas::utils::ArrayMath::add;
-  using autopas::utils::ArrayMath::mulScalar;
-
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
-  for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    auto v = iter->getV();
-    auto m = particlePropertiesLibrary.getMolMass(iter->getTypeId());
-    auto f = iter->getF();
-    iter->setOldF(f);
-    iter->setF(globalForce);
-    v = mulScalar(v, deltaT);
-    f = mulScalar(f, (deltaT * deltaT / (2 * m)));
-    auto newR = add(v, f);
-    iter->addR(newR);
-  }
-}
+                        const std::array<double, 3> &globalForce);
 
 /**
  * Calculate and update the quaternion for every particle. Uses the rotational velocity-verlet algorithm as described by
@@ -56,10 +40,10 @@ void calculatePositions(autopas::AutoPas<ParticleClass> &autoPasContainer,
  * @param deltaT
  * @param globalForce
  */
-template <class ParticleClass>
-void calculateQuaternions(autopas::AutoPas<ParticleClass> &autoPasContainer,
-                          const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
-                          const std::array<double, 3> &globalForce);
+//template <class ParticleClass>
+//void calculateQuaternions(autopas::AutoPas<ParticleClass> &autoPasContainer,
+//                          const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
+//                          const std::array<double, 3> &globalForce);
 
 /**
  * Calculate and update the velocity for every particle using the the Störmer-Verlet Algorithm.
@@ -69,22 +53,7 @@ void calculateQuaternions(autopas::AutoPas<ParticleClass> &autoPasContainer,
  */
 template <class ParticleClass>
 void calculateVelocities(autopas::AutoPas<ParticleClass> &autoPasContainer,
-                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT){
-  // helper declarations for operations with vector
-  using autopas::utils::ArrayMath::add;
-  using autopas::utils::ArrayMath::mulScalar;
-
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
-  for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    auto m = particlePropertiesLibrary.getMolMass(iter->getTypeId());
-    auto force = iter->getF();
-    auto oldForce = iter->getOldF();
-    auto newV = mulScalar((add(force, oldForce)), deltaT / (2 * m));
-    iter->addV(newV);
-  }
-}
+                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
 
 /**
  * Calculate and update the angular velocity for every particle. Throws error unless ParticleClass is specialised to a
