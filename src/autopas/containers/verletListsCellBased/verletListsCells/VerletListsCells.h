@@ -44,6 +44,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
    * @param boxMin the lower corner of the domain
    * @param boxMax the upper corner of the domain
    * @param cutoff the cutoff radius of the interaction
+   * @param rebuildFrequency the rebuild Frequency
    * @param skinPerTimestep the skin radius per Timestep
    * @param cellSizeFactor cell size factor relative to cutoff
    * @param loadEstimator load estimation algorithm for balanced traversals

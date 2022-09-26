@@ -58,6 +58,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    * @param boxMax The maximum coordinate of the enclosing box
    * @param cutoff The cutoff radius
    * @param skinPerTimestep The skin radius per timestep
+   * @param rebuildFrequency The Rebuild Frequency 
    * @param cellSizeFactor The cell size factor
    */
   Octree(std::array<double, 3> boxMin, std::array<double, 3> boxMax, const double cutoff, const double skinPerTimestep,

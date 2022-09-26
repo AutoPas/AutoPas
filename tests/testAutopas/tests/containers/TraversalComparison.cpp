@@ -101,9 +101,10 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
     DeletionPosition particleDeletionPosition) {
   // Construct container
   autopas::ContainerSelector<Molecule> selector{_boxMin, boxMax, _cutoff};
-  constexpr double skin = _cutoff * 0.1;
+  constexpr double skinPerTimestep = _cutoff * 0.01;
+  constexpr unsigned int rebuildFrequency= 10;
   selector.selectContainer(
-      containerOption, autopas::ContainerSelectorInfo{cellSizeFactor, skin, 32, autopas::LoadEstimatorOption::none});
+      containerOption, autopas::ContainerSelectorInfo{cellSizeFactor, skinPerTimestep,rebuildFrequency, 32, autopas::LoadEstimatorOption::none});
   auto container = selector.getCurrentContainer();
   autopas::LJFunctor<Molecule, true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both,
                      globals /*calculateGlobals*/>
@@ -135,7 +136,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   container->rebuildNeighborLists(traversal.get());
 
   if (doSlightShift) {
-    executeShift(container, skin / 2, numMolecules + numHaloMolecules);
+    executeShift(container, skinPerTimestep*rebuildFrequency / 2, numMolecules + numHaloMolecules);
   }
 
   if (particleDeletionPosition & DeletionPosition::afterLists) {

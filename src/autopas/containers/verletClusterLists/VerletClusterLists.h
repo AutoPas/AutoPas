@@ -65,6 +65,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @param boxMax The upper corner of the domain.
    * @param cutoff The cutoff radius of the interaction.
    * @param skinPerTimestep The skin radius per Timestep.
+   * @param rebuildFrequency The rebuild Frequency.
    * @param clusterSize Number of particles per cluster.
    * @param loadEstimator load estimation algorithm for balanced traversals.
    */

@@ -31,7 +31,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    * @param boxMax the upper corner of the domain
    * @param cutoff the cutoff radius of the interaction
    * @param skinPerTimestep the skin radius per timestep
-   * @param rebuildFrequency
+   * @param rebuildFrequency the rebuild frequency.
    * @param applicableTraversals all applicable traversals
    * @param cellSizeFactor cell size factor relative to cutoff. Verlet lists are only implemented for values >= 1.0
    * (smaller values are set to 1.0).

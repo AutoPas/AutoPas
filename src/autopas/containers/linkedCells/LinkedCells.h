@@ -55,6 +55,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
    * @param boxMax
    * @param cutoff
    * @param skinPerTimestep
+   * @param rebuildFrequency
    * @param cellSizeFactor cell size factor relative to cutoff
    * @param loadEstimator the load estimation algorithm for balanced traversals.
    * By default all applicable traversals are allowed.

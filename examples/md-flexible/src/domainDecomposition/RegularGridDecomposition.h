@@ -153,13 +153,13 @@ class RegularGridDecomposition final : public DomainDecomposition {
   double _cutoffWidth;
 
   /**
-   * Stores the domain skin width.
+   * Stores the domain skin width per Timestep.
    */
   double _skinWidthPerTimestep;
   /**
-   * Stores the domain skin width.
+   * Stores the rebuild Frequency.
    */
-  double _rebuildFrequency;
+  unsigned int _rebuildFrequency;
   /**
    * Stores the domain skin width.
    */

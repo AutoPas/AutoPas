@@ -54,7 +54,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
    * @param boxMin The lower corner of the domain.
    * @param boxMax The upper corner of the domain.
    * @param cutoff The cutoff radius of the interaction.
-   * @param skinPerTimestep The skin radius.
+   * @param skinPerTimestep The skin radius per timestep.
    * @param rebuildFrequency rebuild fequency.
    * @param buildVerletListType Specifies how the verlet list should be build, see BuildVerletListType
    * @param cellSizeFactor cell size factor ralative to cutoff

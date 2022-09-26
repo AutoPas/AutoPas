@@ -18,11 +18,12 @@ class AllContainersTestsBase : public AutoPasTestBase {
   template <class ParticleType = autopas::Particle>
   auto getInitializedContainer(autopas::ContainerOption containerOptionToTest) {
     double cutoff = 1;
-    double skin = 0.2;
+    double skinPerTimestep = 0.01;
+    unsigned int rebuildFrequency=20;
     double cellSizeFactor = 1;
 
     autopas::ContainerSelector<Particle> selector{boxMin, boxMax, cutoff};
-    autopas::ContainerSelectorInfo selectorInfo{cellSizeFactor, skin, 32, autopas::LoadEstimatorOption::none};
+    autopas::ContainerSelectorInfo selectorInfo{cellSizeFactor, skinPerTimestep,rebuildFrequency, 32, autopas::LoadEstimatorOption::none};
     selector.selectContainer(containerOptionToTest, selectorInfo);
     return selector.getCurrentContainer();
   }

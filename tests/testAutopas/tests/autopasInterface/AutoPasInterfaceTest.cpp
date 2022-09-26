@@ -15,7 +15,7 @@ extern template class autopas::AutoPas<Molecule>;
 extern template bool autopas::AutoPas<Molecule>::iteratePairwise(autopas::LJFunctor<Molecule, true, false> *);
 
 constexpr double cutoff = 1.1;
-//constexpr double skin = 0.2;
+//constexpr double skinPerTimestep = 0.2;
 constexpr std::array<double, 3> boxMin{0., 0., 0.};
 constexpr std::array<double, 3> boxMax{10., 10., 10.};
 

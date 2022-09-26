@@ -24,10 +24,11 @@ void applyFunctor(MockFunctor<Particle> &functor, const double cellSizefactor,
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
-  double skin = 0.2;
+  double skinPerTimestep = 0.01;
+  unsigned int rebuildFrequency =20;
   const autopas::LoadEstimatorOption loadEstimator = autopas::LoadEstimatorOption::none;
   autopas::VerletListsCells<Particle, autopas::VLCAllCellsNeighborList<Particle>> verletLists(
-      min, max, cutoff, skin, cellSizefactor, loadEstimator, buildType);
+      min, max, cutoff, skinPerTimestep, rebuildFrequency, cellSizefactor, loadEstimator, buildType);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);

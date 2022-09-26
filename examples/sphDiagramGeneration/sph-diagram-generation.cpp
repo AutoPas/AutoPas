@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
   enum FunctorType { densityFunctor, hydroForceFunctor } functorType = densityFunctor;
 
   double skinPerTimestep = 0.;
-  int rebuildFrequency = 10;
+  unsigned int rebuildFrequency = 10;
   bool useNewton3 = true;
   try {
     if (argc >= 9) {

@@ -32,7 +32,7 @@ class OctreeTest : public AutoPasTestBase, public ::testing::WithParamInterface<
       autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
       autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, size_t numParticles,
       size_t numHaloParticles, std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cellSizeFactor,
-      double cutoff, double skin, double interactionLength, Vector3DList particlePositions,
+      double cutoff, double skinPerTimestep, unsigned int rebuildFrequency, double interactionLength, Vector3DList particlePositions,
       Vector3DList haloParticlePositions);
 
   MockFunctor<Molecule> mockFunctor;
