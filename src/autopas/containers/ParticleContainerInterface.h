@@ -277,7 +277,7 @@ class ParticleContainerInterface {
 
   /**
    * Return the rebulild frequency of the container.
-   * @return rebuild Frequency.
+   * @return rebuildFrequency.
    */
   [[nodiscard]] virtual unsigned int getRebuildFrequency() const = 0;
 

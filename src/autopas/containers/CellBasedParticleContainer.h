@@ -116,7 +116,8 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
     return _cutoff + _skinPerTimestep * _rebuildFrequency;
   }
   /**
-   * @copydoc autopas::ParticleContainerInterface::getVerletSkin()
+   * Returns the total verlet Skin length
+   * @return _skinPerTimestep * _rebuildFrequency
    */
   [[nodiscard]] double getVerletSkin() const override final { return _skinPerTimestep * _rebuildFrequency; }
 
