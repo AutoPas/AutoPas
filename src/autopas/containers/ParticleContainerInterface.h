@@ -288,7 +288,8 @@ class ParticleContainerInterface {
   virtual void setRebuildFrequency(unsigned int rebuildFrequency) = 0;
 
   /**
-   * @copydoc autopas::ParticleContainerInterface::getVerletSkin()
+   * Return the verletSkin of the container verletSkinPerTimestep*rebuildFrequency
+   * @return verletSkin 
    */
   [[nodiscard]] virtual double getVerletSkin() const = 0;
 

@@ -265,8 +265,8 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    */
   [[nodiscard]] unsigned int getRebuildFrequency() const override final { return _linkedCells.getRebuildFrequency(); }
 
-  /**SkinPer
-   * @copydoc autopas::ParticleContainerInterface::setSkinPerTimestep()
+  /**
+   * @copydoc autopas::ParticleContainerInterface::setRebuildFrequency()
    */
   void setRebuildFrequency(unsigned int rebuildFrequency) override final {
     _linkedCells.setRebuildFrequency(rebuildFrequency);
