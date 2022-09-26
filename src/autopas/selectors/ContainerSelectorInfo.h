@@ -20,7 +20,11 @@ class ContainerSelectorInfo {
    * Default Constructor.
    */
   ContainerSelectorInfo()
-      : cellSizeFactor(1.), verletSkinPerTimestep(0.),verletRebuildFrequency(0.), verletClusterSize(64), loadEstimator(autopas::LoadEstimatorOption::none) {}
+      : cellSizeFactor(1.),
+        verletSkinPerTimestep(0.),
+        verletRebuildFrequency(0.),
+        verletClusterSize(64),
+        loadEstimator(autopas::LoadEstimatorOption::none) {}
 
   /**
    * Constructor.
@@ -31,7 +35,8 @@ class ContainerSelectorInfo {
    * @param verletClusterSize Size of verlet Clusters
    * @param loadEstimator load estimation algorithm for balanced traversals.
    */
-  explicit ContainerSelectorInfo(double cellSizeFactor, double verletSkinPerTimestep, unsigned int verletRebuildFrequency, unsigned int verletClusterSize,
+  explicit ContainerSelectorInfo(double cellSizeFactor, double verletSkinPerTimestep,
+                                 unsigned int verletRebuildFrequency, unsigned int verletClusterSize,
                                  autopas::LoadEstimatorOption loadEstimator)
       : cellSizeFactor(cellSizeFactor),
         verletSkinPerTimestep(verletSkinPerTimestep),
@@ -58,15 +63,16 @@ class ContainerSelectorInfo {
 
   /**
    * Comparison operator for ContainerSelectorInfo objects.
-   * Configurations are compared member wise in the order: _cellSizeFactor, _verletSkinPerTimestep, _verlerRebuildFrequency,
-   * loadEstimator
+   * Configurations are compared member wise in the order: _cellSizeFactor, _verletSkinPerTimestep,
+   * _verlerRebuildFrequency, loadEstimator
    *
    * @param other
    * @return
    */
   bool operator<(const ContainerSelectorInfo &other) {
-    return std::tie(cellSizeFactor, verletSkinPerTimestep, verletRebuildFrequency,verletClusterSize, loadEstimator) <
-           std::tie(other.cellSizeFactor, other.verletSkinPerTimestep,other.verletRebuildFrequency, other.verletClusterSize, other.loadEstimator);
+    return std::tie(cellSizeFactor, verletSkinPerTimestep, verletRebuildFrequency, verletClusterSize, loadEstimator) <
+           std::tie(other.cellSizeFactor, other.verletSkinPerTimestep, other.verletRebuildFrequency,
+                    other.verletClusterSize, other.loadEstimator);
   }
 
   /**

@@ -60,10 +60,11 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
    * @param cellSizeFactor cell size factor ralative to cutoff
    */
   VerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-              const double skinPerTimestep, const unsigned int rebuildFrequency, const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
+              const double skinPerTimestep, const unsigned int rebuildFrequency,
+              const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
               const double cellSizeFactor = 1.0)
-      : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skinPerTimestep,rebuildFrequency, compatibleTraversals::allVLCompatibleTraversals(),
-                                        cellSizeFactor),
+      : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency,
+                                        compatibleTraversals::allVLCompatibleTraversals(), cellSizeFactor),
         _soaListIsValid(false),
         _buildVerletListType(buildVerletListType) {}
 

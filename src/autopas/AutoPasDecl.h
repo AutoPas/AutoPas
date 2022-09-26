@@ -435,12 +435,12 @@ class AutoPas {
   /**
    * Function to iterate over all pairs of particles in the container.
    * This function only handles short-range interactions.
-   * @param _verletSkinPerTimestep 
-   * @param 
+   * @param _verletSkinPerTimestep
+   * @param
    * @return _vereltSkin which is the length of the verlet skin at the time of rebuild
    */
-  double getVerletSkin(){
-    double _verletSkin=AutoPas::_verletSkinPerTimestep*AutoPas::_verletRebuildFrequency;
+  double getVerletSkin() {
+    double _verletSkin = AutoPas::_verletSkinPerTimestep * AutoPas::_verletRebuildFrequency;
     return _verletSkin;
   };
 
@@ -534,7 +534,7 @@ class AutoPas {
     }
     AutoPas::_allowedCellSizeFactors = std::make_unique<NumberSetFinite<double>>(std::set<double>{cellSizeFactor});
   }
-  
+
   /**
    * Get length added to the cutoff for the Verlet lists' skin per timestep.
    * @return
@@ -545,7 +545,9 @@ class AutoPas {
    * Set length added to the cutoff for the Verlet lists' skin per timestep.
    * @param verletSkinPerTimeStep
    */
-  void setVerletSkinPerTimestep(double verletSkinPerTimestep) { AutoPas::_verletSkinPerTimestep = verletSkinPerTimestep; }
+  void setVerletSkinPerTimestep(double verletSkinPerTimestep) {
+    AutoPas::_verletSkinPerTimestep = verletSkinPerTimestep;
+  }
 
   /**
    * Get Verlet rebuild frequency.
@@ -866,7 +868,7 @@ class AutoPas {
    * Cutoff radius to be used in this container.
    */
   double _cutoff{1.0};
-   /**
+  /**
    * Length added to the cutoff for the Verlet lists' skin per Timestep.
    */
   double _verletSkinPerTimestep{0.01};

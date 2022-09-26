@@ -344,8 +344,9 @@ class MDFlexConfig {
   /**
    * verletSkinRadiusPerTimeStep
    */
-  MDFlexOption<double, __LINE__> verletSkinRadiusPerTimestep{.2, "verlet-skin-radius-per-timestep", true,
-                                                  "Skin added to the cutoff to form the interaction length per time step."};
+  MDFlexOption<double, __LINE__> verletSkinRadiusPerTimestep{
+      .2, "verlet-skin-radius-per-timestep", true,
+      "Skin added to the cutoff to form the interaction length per time step."};
   /**
    * boxMin
    */

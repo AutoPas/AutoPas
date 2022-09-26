@@ -36,8 +36,12 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    */
   CellBasedParticleContainer(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax,
                              const double cutoff, const double skinPerTimestep, const unsigned int rebuildFrequency)
-      : _cells(), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff), _skinPerTimestep(skinPerTimestep), 
-      _rebuildFrequency(rebuildFrequency){}
+      : _cells(),
+        _boxMin(boxMin),
+        _boxMax(boxMax),
+        _cutoff(cutoff),
+        _skinPerTimestep(skinPerTimestep),
+        _rebuildFrequency(rebuildFrequency) {}
 
   /**
    * Destructor of CellBasedParticleContainer.
@@ -101,18 +105,20 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    * @copydoc autopas::ParticleContainerInterface::setRebuildFrequency()
    */
   void setRebuildFrequency(unsigned int rebuildFrequency) override final { _rebuildFrequency = rebuildFrequency; }
-   /**
+  /**
    * @copydoc autopas::ParticleContainerInterface::getRebuildFrequency()
    */
   [[nodiscard]] unsigned int getRebuildFrequency() const override final { return _rebuildFrequency; }
   /**
    * @copydoc autopas::ParticleContainerInterface::getInteractionLength()
    */
-  [[nodiscard]] double getInteractionLength() const override final { return _cutoff + _skinPerTimestep*_rebuildFrequency; }
+  [[nodiscard]] double getInteractionLength() const override final {
+    return _cutoff + _skinPerTimestep * _rebuildFrequency;
+  }
   /**
    * @copydoc autopas::ParticleContainerInterface::getVerletSkin()
    */
-  [[nodiscard]] double getVerletSkin() const override final { return _skinPerTimestep*_rebuildFrequency; }
+  [[nodiscard]] double getVerletSkin() const override final { return _skinPerTimestep * _rebuildFrequency; }
 
   /**
    * Deletes all particles from the container.
@@ -169,7 +175,6 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
   double _cutoff;
   double _skinPerTimestep;
   unsigned int _rebuildFrequency;
-  
 };
 
 }  // namespace autopas

@@ -26,7 +26,8 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
  public:
   /**
    * Constructor of the VerletListsLinkedBase class.
-   * The neighbor lists are build using a search radius of cutoff + skin.LinkedParticleCell::ParticleType *rebuildFrequency
+   * The neighbor lists are build using a search radius of cutoff + skin.LinkedParticleCell::ParticleType
+   * *rebuildFrequency
    * @param boxMin the lower corner of the domain
    * @param boxMax the upper corner of the domain
    * @param cutoff the cutoff radius of the interaction
@@ -37,9 +38,9 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    * (smaller values are set to 1.0).
    */
   VerletListsLinkedBase(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-                        const double skinPerTimestep,const unsigned int rebuildFrequency, const std::set<TraversalOption> &applicableTraversals,
-                        const double cellSizeFactor)
-      : _linkedCells(boxMin, boxMax, cutoff, skinPerTimestep,rebuildFrequency, std::max(1.0, cellSizeFactor)) {
+                        const double skinPerTimestep, const unsigned int rebuildFrequency,
+                        const std::set<TraversalOption> &applicableTraversals, const double cellSizeFactor)
+      : _linkedCells(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency, std::max(1.0, cellSizeFactor)) {
     if (cellSizeFactor < 1.0) {
       AutoPasLog(debug, "VerletListsLinkedBase: CellSizeFactor smaller 1 detected. Set to 1.");
     }
@@ -249,7 +250,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    */
   [[nodiscard]] double getVerletSkin() const override final { return _linkedCells.getVerletSkin(); }
 
-    /**
+  /**
    * @copydoc autopas::ParticleContainerInterface::getSkinPerTimestep()
    */
   [[nodiscard]] double getSkinPerTimestep() const override final { return _linkedCells.getSkinPerTimestep(); }
@@ -267,7 +268,9 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   /**SkinPer
    * @copydoc autopas::ParticleContainerInterface::setSkinPerTimestep()
    */
-  void setRebuildFrequency(unsigned int rebuildFrequency) override final { _linkedCells.setRebuildFrequency(rebuildFrequency);} 
+  void setRebuildFrequency(unsigned int rebuildFrequency) override final {
+    _linkedCells.setRebuildFrequency(rebuildFrequency);
+  }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getInteractionLength()

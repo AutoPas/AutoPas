@@ -69,8 +69,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @param clusterSize Number of particles per cluster.
    * @param loadEstimator load estimation algorithm for balanced traversals.
    */
-  VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff, double skinPerTimestep,
-                     unsigned int rebuildFrequency, size_t clusterSize, LoadEstimatorOption loadEstimator = LoadEstimatorOption::none)
+  VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
+                     double skinPerTimestep, unsigned int rebuildFrequency, size_t clusterSize,
+                     LoadEstimatorOption loadEstimator = LoadEstimatorOption::none)
       : ParticleContainerInterface<Particle>(),
         _clusterSize{clusterSize},
         _numClusters{0},
@@ -78,8 +79,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
         _particlesToAdd(autopas_get_max_threads()),
         _boxMin{boxMin},
         _boxMax{boxMax},
-        _haloBoxMin{utils::ArrayMath::subScalar(boxMin, cutoff + skinPerTimestep*rebuildFrequency)},
-        _haloBoxMax{utils::ArrayMath::addScalar(boxMax, cutoff + skinPerTimestep*rebuildFrequency)},
+        _haloBoxMin{utils::ArrayMath::subScalar(boxMin, cutoff + skinPerTimestep * rebuildFrequency)},
+        _haloBoxMax{utils::ArrayMath::addScalar(boxMax, cutoff + skinPerTimestep * rebuildFrequency)},
         _cutoff{cutoff},
         _skinPerTimestep{skinPerTimestep},
         _rebuildFrequency{rebuildFrequency},
@@ -689,9 +690,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
   void setCutoff(double cutoff) override { _cutoff = cutoff; }
 
-  [[nodiscard]] double getVerletSkin() const override { return _skinPerTimestep*_rebuildFrequency; }
+  [[nodiscard]] double getVerletSkin() const override { return _skinPerTimestep * _rebuildFrequency; }
 
-  [[nodiscard]] double getSkinPerTimestep() const override { return _skinPerTimestep*_rebuildFrequency; }
+  [[nodiscard]] double getSkinPerTimestep() const override { return _skinPerTimestep * _rebuildFrequency; }
 
   void setSkinPerTimestep(double skinPerTimestep) override { _skinPerTimestep = skinPerTimestep; }
 
@@ -699,7 +700,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
   void setRebuildFrequency(unsigned int rebuildFrequency) override { _rebuildFrequency = rebuildFrequency; }
 
-  [[nodiscard]] double getInteractionLength() const override { return _cutoff + _skinPerTimestep*_rebuildFrequency; }
+  [[nodiscard]] double getInteractionLength() const override { return _cutoff + _skinPerTimestep * _rebuildFrequency; }
 
   void deleteAllParticles() override {
     _isValid = ValidityState::invalid;
