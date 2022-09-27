@@ -289,7 +289,7 @@ class ParticleContainerInterface {
 
   /**
    * Return the verletSkin of the container verletSkinPerTimestep*rebuildFrequency
-   * @return verletSkin 
+   * @return verletSkin
    */
   [[nodiscard]] virtual double getVerletSkin() const = 0;
 
