@@ -31,8 +31,9 @@ auto initDomain() {
   configuration.boxMin.value = {0., 0., 0.};
   configuration.cutoff.value = 2.5;
   configuration.verletSkinRadiusPerTimestep.value = 0.5;
-  configuration.verletRebuildFrequency.value=2;
-  const double interactionLength = configuration.cutoff.value + configuration.verletSkinRadiusPerTimestep.value*configuration.verletRebuildFrequency.value;
+  configuration.verletRebuildFrequency.value = 2;
+  const double interactionLength = configuration.cutoff.value + configuration.verletSkinRadiusPerTimestep.value *
+                                                                    configuration.verletRebuildFrequency.value;
   // make sure evey rank gets exactly 3x3x3 cells
   const double localBoxLength = 3. * interactionLength;
   const double globalBoxLength = localBoxLength * numberOfProcesses;
