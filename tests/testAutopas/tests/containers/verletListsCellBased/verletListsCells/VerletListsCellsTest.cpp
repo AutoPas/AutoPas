@@ -76,9 +76,9 @@ void soaTest(const double cellSizeFactor,
   }
 
   autopas::VerletListsCells<Molecule, autopas::VLCCellPairNeighborList<Molecule>> verletLists1(
-      min, max, cutoff, 0.3, cellSizeFactor, loadEstimator, buildType);
+      min, max, cutoff, 0.01,30, cellSizeFactor, loadEstimator, buildType);
   autopas::VerletListsCells<Molecule, autopas::VLCCellPairNeighborList<Molecule>> verletLists2(
-      min, max, cutoff, 0.3, cellSizeFactor, loadEstimator, buildType);
+      min, max, cutoff, 0.01,30, cellSizeFactor, loadEstimator, buildType);
 
   Molecule defaultParticle({0., 0., 0.}, {0., 0., 0.}, 0, 0);
   autopasTools::generators::RandomGenerator::fillWithParticles(verletLists1, defaultParticle, verletLists1.getBoxMin(),

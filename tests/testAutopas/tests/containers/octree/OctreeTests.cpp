@@ -27,7 +27,7 @@ TEST_F(OctreeTest, testDummy) {
   using namespace autopas;
 
   std::array<double, 3> min = {0, 0, 0}, max = {2, 2, 2};
-  Octree<ParticleFP64> tree(min, max, 0.001f, 0.1f, 1.0f);
+  Octree<ParticleFP64> tree(min, max, 0.001f, 0.01f, 10, 1.0f);
 }
 
 /**

@@ -214,7 +214,7 @@ bool moveUpdateAndExpectEqual(Container &container, Particle &particle, std::arr
 
 TEST_P(VerletListsTest, testUpdateHaloParticle) {
   const double cellSizeFactor = GetParam();
-  autopas::VerletLists<Particle> verletLists({0., 0., 0.}, {10., 10., 10.}, 2., 0.3,
+  autopas::VerletLists<Particle> verletLists({0., 0., 0.}, {10., 10., 10.}, 2., 0.01, 30,
                                              autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA,
                                              cellSizeFactor);
 
@@ -295,7 +295,7 @@ TEST_P(VerletListsTest, LoadExtractSoA) {
 TEST_P(VerletListsTest, LoadExtractSoALJ) {
   const double cutoff = 2.;
   const double cellSizeFactor = GetParam();
-  autopas::VerletLists<Molecule> verletLists({0., 0., 0.}, {10., 10., 10.}, cutoff, 0.01 /*skin*/, 30 /*rebuildFrequency*/
+  autopas::VerletLists<Molecule> verletLists({0., 0., 0.}, {10., 10., 10.}, cutoff, 0.01 /*skin*/, 30 /*rebuildFrequency*/,
                                              autopas::VerletLists<Molecule>::BuildVerletListType::VerletSoA,
                                              cellSizeFactor);
 
@@ -313,11 +313,11 @@ TEST_P(VerletListsTest, LoadExtractSoALJ) {
 TEST_P(VerletListsTest, SoAvsAoSLJ) {
   const double cutoff = 2.;
   const double cellSizeFactor = GetParam();
-  autopas::VerletLists<Molecule> verletLists1({0., 0., 0.}, {10., 10., 10.}, cutoff, 0.3,
+  autopas::VerletLists<Molecule> verletLists1({0., 0., 0.}, {10., 10., 10.}, cutoff, 0.01, 30,
                                               autopas::VerletLists<Molecule>::BuildVerletListType::VerletSoA,
                                               cellSizeFactor);
 
-  autopas::VerletLists<Molecule> verletLists2({0., 0., 0.}, {10., 10., 10.}, cutoff, 0.3,
+  autopas::VerletLists<Molecule> verletLists2({0., 0., 0.}, {10., 10., 10.}, cutoff, 0.01, 30,
                                               autopas::VerletLists<Molecule>::BuildVerletListType::VerletSoA,
                                               cellSizeFactor);
 
