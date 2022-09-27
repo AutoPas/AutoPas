@@ -83,14 +83,15 @@ int main(int argc, char *argv[]) {
       throw std::runtime_error("too few arguments");
     }
   } catch (const std::exception &e) {
-    std::cerr
-        << "ERROR parsing the input arguments: " << e.what() << std::endl
-        << "sph-diagram-generation requires the following arguments:" << std::endl
-        << "numParticles numIterations containerType [functorType [skinPerTimestep rebuildFrequency [useNewton3 [boxSize]]]]:"
-        << std::endl
-        << std::endl
-        << "containerType should be either linked-cells, direct sum, verlet lists or verlet lists cells" << std::endl
-        << "functorType should be either 0 (density functor) or 1 (hydro force functor)" << std::endl;
+    std::cerr << "ERROR parsing the input arguments: " << e.what() << std::endl
+              << "sph-diagram-generation requires the following arguments:" << std::endl
+              << "numParticles numIterations containerType [functorType [skinPerTimestep rebuildFrequency [useNewton3 "
+                 "[boxSize]]]]:"
+              << std::endl
+              << std::endl
+              << "containerType should be either linked-cells, direct sum, verlet lists or verlet lists cells"
+              << std::endl
+              << "functorType should be either 0 (density functor) or 1 (hydro force functor)" << std::endl;
     exit(1);
   }
 
