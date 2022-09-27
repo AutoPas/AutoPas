@@ -15,7 +15,8 @@ extern template class autopas::AutoPas<Molecule>;
 extern template bool autopas::AutoPas<Molecule>::iteratePairwise(autopas::LJFunctor<Molecule, true, false> *);
 
 constexpr double cutoff = 1.1;
-//constexpr double skinPerTimestep = 0.2;
+constexpr double skinPerTimestep = 0.2;
+constexpr unsigned int rebuildFrequency = 3;
 constexpr std::array<double, 3> boxMin{0., 0., 0.};
 constexpr std::array<double, 3> boxMax{10., 10., 10.};
 
@@ -27,7 +28,7 @@ void defaultInit(AutoPasT &autoPas) {
   autoPas.setBoxMax(boxMax);
   autoPas.setCutoff(cutoff);
   autoPas.setVerletSkinPerTimestep(skinPerTimestep);
-  autoPas.setVerletRebuildFrequency(3);
+  autoPas.setVerletRebuildFrequency(rebuildFrequency);
   autoPas.setNumSamples(3);
 
   // init autopas
@@ -584,7 +585,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
 
   // update positions a bit (outside of domain!) + reset F
   {
-    std::array<double, 3> moveVec{autoPas.getVerletSkin() / 3., 0., 0.};
+    std::array<double, 3> moveVec{skinPerTimestep*rebuildFrequency / 3., 0., 0.};
     for (auto *aP : {&autoPas1, &autoPas2}) {
       for (auto iter = aP->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
         iter->setR(autopas::utils::ArrayMath::add(iter->getR(), moveVec));
@@ -600,7 +601,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
 
   // update positions a bit (outside of domain!) + reset F
   {
-    std::array<double, 3> moveVec{-autoPas.getVerletSkin() / 3., 0., 0.};
+    std::array<double, 3> moveVec{-skinPerTimestep*rebuildFrequency / 3., 0., 0.};
     for (auto *aP : {&autoPas1, &autoPas2}) {
       for (auto iter = aP->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
         iter->setR(autopas::utils::ArrayMath::add(iter->getR(), moveVec));
@@ -616,7 +617,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
 
   // update positions a bit (outside of domain!) + reset F
   {
-    std::array<double, 3> moveVec{autoPas.getVerletSkin() / 3., 0., 0.};
+    std::array<double, 3> moveVec{skinPerTimestep*rebuildFrequency / 3., 0., 0.};
     for (auto *aP : {&autoPas1, &autoPas2}) {
       for (auto iter = aP->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
         iter->setR(autopas::utils::ArrayMath::add(iter->getR(), moveVec));

@@ -84,9 +84,9 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
 
   autoPasContainer->setBoxMin(domainDecomposition.getLocalBoxMin());
   autoPasContainer->setBoxMax(domainDecomposition.getLocalBoxMax());
-  autoPasContainer->setCutoff(cutoffWidth);
-  autoPasContainer->setVerletSkinPerTimestep(skinWidthPerTimestep);
-  autoPasContainer->setVerletRebuildFrequency(rebuildFrequency);
+  autoPasContainer->setCutoff(config.cutoff.value);
+  autoPasContainer->setVerletSkinPerTimestep(config.verletSkinRadiusPerTimestep.value);
+  autoPasContainer->setVerletRebuildFrequency(config.verletRebuildFrequency.value);
   autoPasContainer->init();
 
   const auto &[expectedPositions, expectedHaloPositions, expectedVelocities] =
