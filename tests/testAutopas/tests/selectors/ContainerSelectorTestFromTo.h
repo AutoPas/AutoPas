@@ -33,5 +33,5 @@ class ContainerSelectorTestFromTo
   const double cutoff = 1;
   const double cellSizeFactor = 1;
   const double verletSkinPerTimestep = 0.2;
-  const unsigned int verletRebuildFrequency =2;
+  const unsigned int verletRebuildFrequency = 2;
 };

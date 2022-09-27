@@ -25,7 +25,7 @@ void applyFunctor(MockFunctor<Particle> &functor, const double cellSizefactor,
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
   double skinPerTimestep = 0.01;
-  unsigned int rebuildFrequency =20;
+  unsigned int rebuildFrequency = 20;
   const autopas::LoadEstimatorOption loadEstimator = autopas::LoadEstimatorOption::none;
   autopas::VerletListsCells<Particle, autopas::VLCAllCellsNeighborList<Particle>> verletLists(
       min, max, cutoff, skinPerTimestep, rebuildFrequency, cellSizefactor, loadEstimator, buildType);
@@ -76,9 +76,9 @@ void soaTest(const double cellSizeFactor,
   }
 
   autopas::VerletListsCells<Molecule, autopas::VLCCellPairNeighborList<Molecule>> verletLists1(
-      min, max, cutoff, 0.01,30, cellSizeFactor, loadEstimator, buildType);
+      min, max, cutoff, 0.01, 30, cellSizeFactor, loadEstimator, buildType);
   autopas::VerletListsCells<Molecule, autopas::VLCCellPairNeighborList<Molecule>> verletLists2(
-      min, max, cutoff, 0.01,30, cellSizeFactor, loadEstimator, buildType);
+      min, max, cutoff, 0.01, 30, cellSizeFactor, loadEstimator, buildType);
 
   Molecule defaultParticle({0., 0., 0.}, {0., 0., 0.}, 0, 0);
   autopasTools::generators::RandomGenerator::fillWithParticles(verletLists1, defaultParticle, verletLists1.getBoxMin(),

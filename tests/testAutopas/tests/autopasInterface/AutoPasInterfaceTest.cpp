@@ -585,7 +585,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
 
   // update positions a bit (outside of domain!) + reset F
   {
-    std::array<double, 3> moveVec{skinPerTimestep*rebuildFrequency / 3., 0., 0.};
+    std::array<double, 3> moveVec{skinPerTimestep * rebuildFrequency / 3., 0., 0.};
     for (auto *aP : {&autoPas1, &autoPas2}) {
       for (auto iter = aP->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
         iter->setR(autopas::utils::ArrayMath::add(iter->getR(), moveVec));
@@ -601,7 +601,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
 
   // update positions a bit (outside of domain!) + reset F
   {
-    std::array<double, 3> moveVec{-skinPerTimestep*rebuildFrequency / 3., 0., 0.};
+    std::array<double, 3> moveVec{-skinPerTimestep * rebuildFrequency / 3., 0., 0.};
     for (auto *aP : {&autoPas1, &autoPas2}) {
       for (auto iter = aP->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
         iter->setR(autopas::utils::ArrayMath::add(iter->getR(), moveVec));
@@ -617,7 +617,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
 
   // update positions a bit (outside of domain!) + reset F
   {
-    std::array<double, 3> moveVec{skinPerTimestep*rebuildFrequency / 3., 0., 0.};
+    std::array<double, 3> moveVec{skinPerTimestep * rebuildFrequency / 3., 0., 0.};
     for (auto *aP : {&autoPas1, &autoPas2}) {
       for (auto iter = aP->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
         iter->setR(autopas::utils::ArrayMath::add(iter->getR(), moveVec));
