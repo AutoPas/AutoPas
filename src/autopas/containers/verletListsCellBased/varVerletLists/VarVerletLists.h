@@ -27,8 +27,8 @@ class VarVerletLists : public VerletListsLinkedBase<Particle> {
    * @param boxMin The lower corner of the domain.
    * @param boxMax The upper corner of the domain.
    * @param cutoff The cutoff radius of the interaction.
-   * @param skinPertimestep The skin radius per Timestep.
-   * @param rebuildFrquency The rebuild Frequency.
+   * @param skinPerTimestep The skin radius per Timestep.
+   * @param rebuildFrequency The rebuild Frequency.
    * @param cellSizeFactor cell size factor relative to cutoff
    */
   VarVerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,

@@ -542,7 +542,7 @@ class AutoPas {
 
   /**
    * Set length added to the cutoff for the Verlet lists' skin per timestep.
-   * @param verletSkinPerTimeStep
+   * @param verletSkinPerTimestep
    */
   void setVerletSkinPerTimestep(double verletSkinPerTimestep) {
     AutoPas::_verletSkinPerTimestep = verletSkinPerTimestep;

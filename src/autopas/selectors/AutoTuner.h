@@ -53,6 +53,7 @@ class AutoTuner {
    * @param boxMax Upper corner of the container.
    * @param cutoff Cutoff radius to be used in this container.
    * @param verletSkinPerTimestep Length added to the cutoff for the Verlet lists' skin per Timestep.
+   * @param verletRebuildFrequency The Rebuild Frequency of the verlet lists. 
    * @param verletClusterSize Number of particles in a cluster to use in verlet list.
    * @param tuningStrategy Object implementing the modelling and exploration of a search space.
    * @param MPITuningMaxDifferenceForBucket For MPI-tuning: Maximum of the relative difference in the comparison metric
