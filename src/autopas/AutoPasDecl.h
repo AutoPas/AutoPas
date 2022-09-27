@@ -536,7 +536,7 @@ class AutoPas {
 
   /**
    * Get length added to the cutoff for the Verlet lists' skin per timestep.
-   * @return
+   * @return _verletSkinPerTimestep
    */
   [[nodiscard]] double getVerletSkinPerTimestep() const { return _verletSkinPerTimestep; }
 
@@ -550,7 +550,7 @@ class AutoPas {
 
   /**
    * Get Verlet rebuild frequency.
-   * @return
+   * @return _verletRebuildFrequency
    */
   [[nodiscard]] unsigned int getVerletRebuildFrequency() const { return _verletRebuildFrequency; }
 
