@@ -53,7 +53,7 @@ class AutoTuner {
    * @param boxMax Upper corner of the container.
    * @param cutoff Cutoff radius to be used in this container.
    * @param verletSkinPerTimestep Length added to the cutoff for the Verlet lists' skin per Timestep.
-   * @param verletRebuildFrequency The Rebuild Frequency of the verlet lists. 
+   * @param rebuildFrequency The Rebuild Frequency of the verlet lists. 
    * @param verletClusterSize Number of particles in a cluster to use in verlet list.
    * @param tuningStrategy Object implementing the modelling and exploration of a search space.
    * @param MPITuningMaxDifferenceForBucket For MPI-tuning: Maximum of the relative difference in the comparison metric
@@ -63,14 +63,13 @@ class AutoTuner {
    * @param selectorStrategy Strategy for the configuration selection.
    * @param tuningInterval Number of time steps after which the auto-tuner shall reevaluate all selections.
    * @param maxSamples Number of samples that shall be collected for each combination.
-   * @param rebuildFrequency The rebuild frequency this AutoPas instance uses.
    * @param outputSuffix Suffix for all output files produced by this class.
    */
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkinPerTimestep,
-            unsigned int verletRebuildFrequency, unsigned int verletClusterSize,
+            unsigned int rebuildFrequency, unsigned int verletClusterSize,
             std::unique_ptr<TuningStrategyInterface> tuningStrategy, double MPITuningMaxDifferenceForBucket,
             double MPITuningWeightForMaxDensity, SelectorStrategyOption selectorStrategy, unsigned int tuningInterval,
-            unsigned int maxSamples, unsigned int rebuildFrequency, const std::string &outputSuffix = "")
+            unsigned int maxSamples, const std::string &outputSuffix = "")
       : _selectorStrategy(selectorStrategy),
         _tuningStrategy(std::move(tuningStrategy)),
         _tuningInterval(tuningInterval),
