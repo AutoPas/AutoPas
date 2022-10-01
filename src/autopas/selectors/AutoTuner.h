@@ -52,8 +52,7 @@ class AutoTuner {
    * @param boxMin Lower corner of the container.
    * @param boxMax Upper corner of the container.
    * @param cutoff Cutoff radius to be used in this container.
-   * @param verletSkinPerTimestep Length added to the cutoff for the Verlet lists' skin per Timestep.
-   * @param rebuildFrequency The Rebuild Frequency of the verlet lists.
+   * @param verletSkin Length added to the cutoff for the Verlet lists' skin.
    * @param verletClusterSize Number of particles in a cluster to use in verlet list.
    * @param tuningStrategy Object implementing the modelling and exploration of a search space.
    * @param MPITuningMaxDifferenceForBucket For MPI-tuning: Maximum of the relative difference in the comparison metric
@@ -63,23 +62,24 @@ class AutoTuner {
    * @param selectorStrategy Strategy for the configuration selection.
    * @param tuningInterval Number of time steps after which the auto-tuner shall reevaluate all selections.
    * @param maxSamples Number of samples that shall be collected for each combination.
+   * @param rebuildFrequency The rebuild frequency this AutoPas instance uses.
    * @param outputSuffix Suffix for all output files produced by this class.
    */
-  AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkinPerTimestep,
-            unsigned int rebuildFrequency, unsigned int verletClusterSize,
-            std::unique_ptr<TuningStrategyInterface> tuningStrategy, double MPITuningMaxDifferenceForBucket,
-            double MPITuningWeightForMaxDensity, SelectorStrategyOption selectorStrategy, unsigned int tuningInterval,
-            unsigned int maxSamples, const std::string &outputSuffix = "")
+  AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkin,
+            unsigned int verletClusterSize, std::unique_ptr<TuningStrategyInterface> tuningStrategy,
+            double MPITuningMaxDifferenceForBucket, double MPITuningWeightForMaxDensity,
+            SelectorStrategyOption selectorStrategy, unsigned int tuningInterval, unsigned int maxSamples,
+            unsigned int rebuildFrequency, const std::string &outputSuffix = "")
       : _selectorStrategy(selectorStrategy),
         _tuningStrategy(std::move(tuningStrategy)),
         _tuningInterval(tuningInterval),
         _iterationsSinceTuning(tuningInterval),  // init to max so that tuning happens in first iteration
         _containerSelector(boxMin, boxMax, cutoff),
-        _verletSkinPerTimestep(verletSkinPerTimestep),
-        _rebuildFrequency(rebuildFrequency),
+        _verletSkin(verletSkin),
         _verletClusterSize(verletClusterSize),
         _mpiTuningMaxDifferenceForBucket(MPITuningMaxDifferenceForBucket),
         _mpiTuningWeightForMaxDensity(MPITuningWeightForMaxDensity),
+        _rebuildFrequency(rebuildFrequency),
         _maxSamples(maxSamples),
         _samplesNotRebuildingNeighborLists(maxSamples),
         _iteration(0),
@@ -280,14 +280,7 @@ class AutoTuner {
    */
   ContainerSelector<Particle> _containerSelector;
 
-  /**
-   * The skin length per timestep this instance of AutoPas uses.
-   */
-  double _verletSkinPerTimestep;
-
-  /**
-   * The cluster size this instance of AutoPas uses.
-   */
+  double _verletSkin;
   unsigned int _verletClusterSize;
 
   /**
@@ -356,8 +349,7 @@ template <class Particle>
 void AutoTuner<Particle>::selectCurrentContainer() {
   auto conf = _tuningStrategy->getCurrentConfiguration();
   _containerSelector.selectContainer(
-      conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkinPerTimestep, _rebuildFrequency,
-                                            _verletClusterSize, conf.loadEstimator));
+      conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin, _verletClusterSize, conf.loadEstimator));
 }
 
 /**
@@ -696,8 +688,7 @@ bool AutoTuner<Particle>::configApplicable(const Configuration &conf, PairwiseFu
   }
 
   _containerSelector.selectContainer(
-      conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkinPerTimestep, _rebuildFrequency,
-                                            _verletClusterSize, conf.loadEstimator));
+      conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin, _verletClusterSize, conf.loadEstimator));
   auto traversalInfo = _containerSelector.getCurrentContainer()->getTraversalSelectorInfo();
 
   auto containerPtr = getContainer();
