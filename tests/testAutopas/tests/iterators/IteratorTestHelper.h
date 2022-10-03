@@ -190,9 +190,8 @@ void provideIterator(AutoPasT &autoPas, autopas::IteratorBehavior behavior, bool
       };
       fun(autoPasRef, getIter);
     } else {
-      auto getIter = [&]() -> typename AutoPasT::iterator_t {
-        return autoPas.getRegionIterator(haloBoxMin, haloBoxMax, behavior);
-      };
+      auto getIter = [&]() ->
+          typename AutoPasT::iterator_t { return autoPas.getRegionIterator(haloBoxMin, haloBoxMax, behavior); };
       fun(autoPas, getIter);
     }
   } else {
@@ -243,14 +242,12 @@ void provideRegionIterator(AutoPasT &autoPas, autopas::IteratorBehavior behavior
                            const std::array<double, 3> &boxMax, F fun) {
   if constexpr (useConstIterator) {
     const auto &autoPasRef = autoPas;
-    auto getIter = [&]() -> typename AutoPasT::const_iterator_t {
-      return autoPasRef.getRegionIterator(boxMin, boxMax, behavior);
-    };
+    auto getIter = [&]() ->
+        typename AutoPasT::const_iterator_t { return autoPasRef.getRegionIterator(boxMin, boxMax, behavior); };
     fun(autoPasRef, getIter);
   } else {
-    auto getIter = [&]() -> typename AutoPasT::iterator_t {
-      return autoPas.getRegionIterator(boxMin, boxMax, behavior);
-    };
+    auto getIter = [&]() ->
+        typename AutoPasT::iterator_t { return autoPas.getRegionIterator(boxMin, boxMax, behavior); };
     fun(autoPas, getIter);
   }
 }
