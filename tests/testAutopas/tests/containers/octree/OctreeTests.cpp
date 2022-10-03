@@ -591,8 +591,8 @@ TEST_P(OctreeTest, testCustomParticleDistribution) {
 
   std::array<double, 3> _boxMin{0, 0, 0};
   double _cutoff{1.};
-  double skinPerTimestep = _cutoff * 0.01;
-  unsigned int rebuildFrequency = 10;
+  double skinPerTimestep = _cutoff * 0.1;
+  unsigned int rebuildFrequency = 1;
   double interactionLength = _cutoff + skinPerTimestep * rebuildFrequency;
 
   // Obtain a starting configuration

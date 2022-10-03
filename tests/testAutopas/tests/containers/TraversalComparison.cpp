@@ -101,8 +101,8 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
     DeletionPosition particleDeletionPosition) {
   // Construct container
   autopas::ContainerSelector<Molecule> selector{_boxMin, boxMax, _cutoff};
-  constexpr double skinPerTimestep = _cutoff * 0.01;
-  constexpr unsigned int rebuildFrequency = 10;
+  constexpr double skinPerTimestep = _cutoff * 0.1;
+  constexpr unsigned int rebuildFrequency = 1;
   selector.selectContainer(containerOption,
                            autopas::ContainerSelectorInfo{cellSizeFactor, skinPerTimestep, rebuildFrequency, 32,
                                                           autopas::LoadEstimatorOption::none});
