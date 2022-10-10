@@ -492,6 +492,8 @@ class LJFunctorSVE
   }
 
   template <bool newton3, bool indexed>
+  // FCC needs to be forced to inline this function. Otherwise a dramatic loss in performance can be observed.
+  __attribute__((always_inline))
   inline void SoAKernel(const size_t j, const bool ownedStateIisOwned, const int64_t *const __restrict ownedStatePtr2,
                         const svfloat64_t &x1, const svfloat64_t &y1, const svfloat64_t &z1,
                         const double *const __restrict x2ptr, const double *const __restrict y2ptr,
