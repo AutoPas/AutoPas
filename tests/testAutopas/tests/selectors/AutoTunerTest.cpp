@@ -26,6 +26,8 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   const double cellSizeFactor = 1;
   const double verletSkin = 0;
   const unsigned int verletClusterSize = 64;
+  const double mpiTuningMaxDifferenceForBucket = 0.3;
+  const double mpiTuningWeightForMaxDensity = 0.0;
   const unsigned int maxSamples = 2;
   // the NiceMock wrapper suppresses warnings from uninteresting function calls
   testing::NiceMock<MockFunctor<Molecule>> functor;
@@ -46,7 +48,8 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
       autopas::TraversalOption::getAllOptions(), autopas::LoadEstimatorOption::getAllOptions(),
       autopas::DataLayoutOption::getAllOptions(), autopas::Newton3Option::getAllOptions());
   autopas::AutoTuner<Molecule> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, verletClusterSize,
-                                         std::move(tuningStrategy), autopas::SelectorStrategyOption::fastestAbs, 100,
+                                         std::move(tuningStrategy), mpiTuningMaxDifferenceForBucket,
+                                         mpiTuningWeightForMaxDensity, autopas::SelectorStrategyOption::fastestAbs, 100,
                                          maxSamples, 20);
 
   autopas::Logger::get()->set_level(autopas::Logger::LogLevel::off);
@@ -163,7 +166,7 @@ TEST_F(AutoTunerTest, testWillRebuildDDL) {
                   autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
 
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configs);
-  autopas::AutoTuner<Molecule> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
+  autopas::AutoTuner<Molecule> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy), 0.3, 0.0,
                                          autopas::SelectorStrategyOption::fastestAbs, 1000, 2, 20);
 
   EXPECT_EQ(*(configs.begin()), autoTuner.getCurrentConfig());
@@ -217,7 +220,7 @@ TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
                   autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
 
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configs);
-  autopas::AutoTuner<Molecule> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
+  autopas::AutoTuner<Molecule> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy), 0.3, 0.0,
                                          autopas::SelectorStrategyOption::fastestAbs, 1000, 2, 20);
 
   EXPECT_EQ(*(configs.begin()), autoTuner.getCurrentConfig());
@@ -259,7 +262,7 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
                   autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
 
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configs);
-  autopas::AutoTuner<Molecule> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
+  autopas::AutoTuner<Molecule> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy), 0.3, 0.0,
                                          autopas::SelectorStrategyOption::fastestAbs, 1000, 2, 20);
 
   EXPECT_EQ(*(configs.begin()), autoTuner.getCurrentConfig());
@@ -299,13 +302,16 @@ TEST_F(AutoTunerTest, testForceRetuneBetweenPhases) {
   const double cutoff = 1;
   const double verletSkin = 0;
   const unsigned int verletClusterSize = 4;
+  const double mpiTuningMaxDifferenceForBucket = 0.3;
+  const double mpiTuningWeightForMaxDensity = 0.0;
   const unsigned int maxSamples = 3;
 
   auto configsList = {_confLc_c01, _confLc_c04, _confLc_c08};
 
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
   autopas::AutoTuner<Molecule> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, verletClusterSize,
-                                         std::move(tuningStrategy), autopas::SelectorStrategyOption::fastestAbs, 100,
+                                         std::move(tuningStrategy), mpiTuningMaxDifferenceForBucket,
+                                         mpiTuningWeightForMaxDensity, autopas::SelectorStrategyOption::fastestAbs, 100,
                                          maxSamples, 20);
 
   size_t numExpectedTuningIterations = configsList.size() * maxSamples;
@@ -344,6 +350,8 @@ TEST_F(AutoTunerTest, testForceRetuneInPhase) {
   const double cellSizeFactor = 1;
   const double verletSkin = 0;
   const unsigned int verletClusterSize = 4;
+  const double mpiTuningMaxDifferenceForBucket = 0.3;
+  const double mpiTuningWeightForMaxDensity = 0.0;
   const unsigned int maxSamples = 3;
 
   autopas::Configuration confLc_c01(autopas::ContainerOption::linkedCells, cellSizeFactor,
@@ -360,7 +368,8 @@ TEST_F(AutoTunerTest, testForceRetuneInPhase) {
 
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
   autopas::AutoTuner<Molecule> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, verletClusterSize,
-                                         std::move(tuningStrategy), autopas::SelectorStrategyOption::fastestAbs, 100,
+                                         std::move(tuningStrategy), mpiTuningMaxDifferenceForBucket,
+                                         mpiTuningWeightForMaxDensity, autopas::SelectorStrategyOption::fastestAbs, 100,
                                          maxSamples, 20);
 
   size_t numExpectedTuningIterations = configsList.size() * maxSamples;
@@ -408,7 +417,7 @@ TEST_F(AutoTunerTest, testNoConfig) {
   auto exp1 = []() {
     std::set<autopas::Configuration> configsList = {};
     auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
-    autopas::AutoTuner<Molecule> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
+    autopas::AutoTuner<Molecule> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy), 0.3, 0.0,
                                            autopas::SelectorStrategyOption::fastestAbs, 1000, 3, 20);
   };
 
@@ -423,7 +432,7 @@ TEST_F(AutoTunerTest, testNoConfig) {
     std::set<autopas::DataLayoutOption> dl = {};
     std::set<autopas::Newton3Option> n3 = {};
     auto tuningStrategy = std::make_unique<autopas::FullSearch>(co, csf, tr, le, dl, n3);
-    autopas::AutoTuner<Molecule> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
+    autopas::AutoTuner<Molecule> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy), 0.3, 0.0,
                                            autopas::SelectorStrategyOption::fastestAbs, 1000, 3, 20);
   };
 
@@ -437,7 +446,7 @@ TEST_F(AutoTunerTest, testOneConfig) {
   auto configsList = {_confLc_c08};
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
   size_t maxSamples = 3;
-  autopas::AutoTuner<Molecule> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
+  autopas::AutoTuner<Molecule> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy), 0.3, 0.0,
                                      autopas::SelectorStrategyOption::fastestAbs, 1000, maxSamples, 20);
 
   EXPECT_EQ(_confLc_c08, tuner.getCurrentConfig());
@@ -476,7 +485,7 @@ TEST_F(AutoTunerTest, testConfigSecondInvalid) {
 
   auto configsList = {confNoN3, confN3};
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
-  autopas::AutoTuner<Molecule> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
+  autopas::AutoTuner<Molecule> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy), 0.3, 0.0,
                                      autopas::SelectorStrategyOption::fastestAbs, 1000, 3, 20);
 
   EXPECT_EQ(confNoN3, tuner.getCurrentConfig());
@@ -512,7 +521,7 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
 
   auto configsList = {confN3, confNoN3};
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
-  autopas::AutoTuner<Molecule> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
+  autopas::AutoTuner<Molecule> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy), 0.3, 0.0,
                                      autopas::SelectorStrategyOption::fastestAbs, 1000, 3, 20);
 
   EXPECT_EQ(confN3, tuner.getCurrentConfig());
@@ -548,7 +557,7 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
 
   auto configsList = {confA, confB};
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
-  autopas::AutoTuner<Molecule> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy),
+  autopas::AutoTuner<Molecule> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy), 0.3, 0.0,
                                      autopas::SelectorStrategyOption::fastestAbs, 1000, 3, rebuildFrequency);
 
   MockFunctor<Molecule> functor;
@@ -567,15 +576,15 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
   auto firstConfig = tuner.getCurrentConfig();
 
   doRebuild = false;
-  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(50ms); }));
+  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(30ms); }));
   tuner.iteratePairwise(&functor, doRebuild, twoParticles, emptyVec);
-  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(50ms); }));
+  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(30ms); }));
   tuner.iteratePairwise(&functor, doRebuild, twoParticles, emptyVec);
 
   // Here, second config will start to be tuned
 
   doRebuild = true;
-  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(200ms); }));
+  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(300ms); }));
   tuner.iteratePairwise(&functor, doRebuild, twoParticles, emptyVec);
 
   auto secondConfig = tuner.getCurrentConfig();
@@ -586,7 +595,7 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
   EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(25ms); }));
   tuner.iteratePairwise(&functor, doRebuild, twoParticles, emptyVec);
 
-  // Here, tuning should be finished and first should have been chosen (1000 + 2 * 500 = 2000 < 2500 = 2000 + 2 * 250)
+  // Here, tuning should be finished and first should have been chosen (100 + 2 * 30 = 160 < 350 = 300 + 2 * 25)
   tuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);
 
   EXPECT_EQ(tuner.getCurrentConfig(), firstConfig);

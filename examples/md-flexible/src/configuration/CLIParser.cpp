@@ -29,18 +29,60 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
   //
   // therefore workaround with make_tuple and auto
   static const auto relevantOptions{std::make_tuple(
-      config.newton3Options, config.checkpointfile, config.acquisitionFunctionOption, config.cellSizeFactors,
-      config.boxLength, config.containerOptions, config.cutoff, config.dataLayoutOptions, config.deltaT,
-      config.dontCreateEndConfig, config.dontShowProgressBar, config.tuningMaxEvidence,
-      config.extrapolationMethodOption, config.evidenceFirstPrediction, config.functorOption, config.dontMeasureFlops,
-      config.generatorOption, config.iterations, config.tuningInterval, config.logLevel, config.logFileName,
-      config.distributionMean, config.maxTuningPhasesWithoutTest, config.particlesPerDim, config.particlesTotal,
-      config.relativeOptimumRange, config.relativeBlacklistRange, config.tuningPhases, config.verletClusterSize,
-      config.verletSkinRadius, config.particleSpacing, config.tuningSamples, config.traversalOptions,
-      config.tuningStrategyOption, config.mpiStrategyOption, config.useThermostat, config.verletRebuildFrequency,
-      config.vtkFileName, config.vtkWriteFrequency, config.selectorStrategy, config.yamlFilename,
-      config.distributionStdDev, config.globalForce, config.boundaryOption, config.useTuningLogger, config.outputSuffix,
-      zshCompletionsOption, helpOption)};
+      // clang-format off
+      config.acquisitionFunctionOption,
+      config.boundaryOption,
+      config.boxLength,
+      config.cellSizeFactors,
+      config.checkpointfile,
+      config.containerOptions,
+      config.cutoff,
+      config.dataLayoutOptions,
+      config.deltaT,
+      config.distributionMean,
+      config.distributionStdDev,
+      config.dontCreateEndConfig,
+      config.dontMeasureFlops,
+      config.dontShowProgressBar,
+      config.evidenceFirstPrediction,
+      config.extrapolationMethodOption,
+      config.functorOption,
+      config.generatorOption,
+      config.globalForce,
+      config.iterations,
+      config.loadBalancer,
+      config.loadBalancingInterval,
+      config.logFileName,
+      config.logLevel,
+      config.maxTuningPhasesWithoutTest,
+      config.mpiStrategyOption,
+      config.MPITuningMaxDifferenceForBucket,
+      config.MPITuningWeightForMaxDensity,
+      config.newton3Options,
+      config.outputSuffix,
+      config.particleSpacing,
+      config.particlesPerDim,
+      config.particlesTotal,
+      config.relativeBlacklistRange,
+      config.relativeOptimumRange,
+      config.selectorStrategy,
+      config.traversalOptions,
+      config.tuningInterval,
+      config.tuningMaxEvidence,
+      config.tuningPhases,
+      config.tuningSamples,
+      config.tuningStrategyOption,
+      config.useThermostat,
+      config.useTuningLogger,
+      config.verletClusterSize,
+      config.verletRebuildFrequency,
+      config.verletSkinRadius,
+      config.vtkFileName,
+      config.vtkWriteFrequency,
+      config.yamlFilename,
+      zshCompletionsOption,
+      helpOption)};
+  // clang-format on
 
   constexpr auto relevantOptionsSize = std::tuple_size_v<decltype(relevantOptions)>;
 
@@ -206,13 +248,16 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       case decltype(config.functorOption)::getoptChar: {
         if (strArg.find("avx") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX;
+        } else if (strArg.find("sve") != string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
         } else if (strArg.find("glob") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_Globals;
-        } else if (strArg.find("lj") != string::npos || strArg.find("lennard-jones") != string::npos) {
+        } else if (strArg.find("lj") != string::npos or strArg.find("lennard-jones") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
         } else {
           cerr << "Unknown functor: " << strArg << endl;
-          cerr << "Please use 'Lennard-Jones', 'Lennard-Jones-With-Globals' or 'Lennard-Jones-AVX'" << endl;
+          cerr << "Please use 'Lennard-Jones', 'Lennard-Jones-With-Globals', 'Lennard-Jones-AVX' or 'Lennard-Jones-SVE'"
+               << endl;
           displayHelp = true;
         }
         break;
@@ -373,7 +418,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       case decltype(config.relativeBlacklistRange)::getoptChar: {
         try {
           config.relativeBlacklistRange.value = stod(strArg);
-          if (config.relativeBlacklistRange.value < 1 && config.relativeBlacklistRange.value != 0) {
+          if (config.relativeBlacklistRange.value < 1 and config.relativeBlacklistRange.value != 0) {
             cerr << "Relative range for blacklist range has to be greater or equal one or has to be zero!" << endl;
             displayHelp = true;
           }
@@ -470,6 +515,24 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         config.mpiStrategyOption.value = *parsedOptions.begin();
         break;
       }
+      case decltype(config.MPITuningMaxDifferenceForBucket)::getoptChar: {
+        try {
+          config.MPITuningMaxDifferenceForBucket.value = stod(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing MPITuningMaxDifferenceForBucket value: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.MPITuningWeightForMaxDensity)::getoptChar: {
+        try {
+          config.MPITuningWeightForMaxDensity.value = stod(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing MPITuningWeightForMaxDensity value: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
       case decltype(config.useThermostat)::getoptChar: {
         config.useThermostat.value = autopas::utils::StringUtils::parseBoolOption(strArg);
         break;
@@ -554,6 +617,25 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         config.outputSuffix.value = strArg;
         break;
       }
+      case decltype(config.loadBalancer)::getoptChar: {
+        auto parsedOptions = LoadBalancerOption::parseOptions(strArg);
+
+        if (parsedOptions.size() != 1) {
+          cerr << "Pass exactly one load balancer option." << endl
+               << "Passed: " << strArg << endl
+               << "Parsed: " << autopas::utils::ArrayUtils::to_string(parsedOptions) << endl;
+
+          displayHelp = true;
+        }
+
+        config.loadBalancer.value = *parsedOptions.begin();
+        break;
+      }
+      case decltype(config.loadBalancingInterval)::getoptChar: {
+        config.loadBalancingInterval.value = (unsigned int)stoul(strArg);
+        break;
+      }
+
       default: {
         // error message handled by getopt
         displayHelp = true;
@@ -637,14 +719,14 @@ void MDFlexParser::CLIParser::inputFilesPresent(int argc, char **argv, MDFlexCon
   // suppress error messages since we only want to look if the yaml option is there
   auto opterrBefore = opterr;
   opterr = 0;
-  static struct option longOptions[] = {config.checkpointfile.toGetoptOption(),
-                                        config.yamlFilename.toGetoptOption(),
-                                        {nullptr, 0, nullptr, 0}};  // needed to signal the end of the array
+  std::vector<struct option> longOptions = {config.checkpointfile.toGetoptOption(),
+                                            config.yamlFilename.toGetoptOption(),
+                                            {nullptr, 0, nullptr, 0}};  // needed to signal the end of the array
   optind = 1;
 
   // search all cli parameters for input file options
   for (int cliOption = 0, cliOptionIndex = 0;
-       (cliOption = getopt_long(argc, argv, "", longOptions, &cliOptionIndex)) != -1;) {
+       (cliOption = getopt_long(argc, argv, "", longOptions.data(), &cliOptionIndex)) != -1;) {
     std::string strArg;
     switch (cliOption) {
       case decltype(config.checkpointfile)::getoptChar:

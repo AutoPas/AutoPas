@@ -459,6 +459,12 @@ class AutoPas {
   [[nodiscard]] std::array<double, 3> getBoxMax() const;
 
   /**
+   * get the bool value indicating if the search space is trivial (not more than one configuration to test).
+   * @return bool indicating if search space is trivial.
+   */
+  [[nodiscard]] bool searchSpaceIsTrivial();
+
+  /**
    * Set coordinates of the lower corner of the domain.
    * @param boxMin
    */
@@ -765,7 +771,6 @@ class AutoPas {
   void setAllowedNewton3Options(const std::set<Newton3Option> &allowedNewton3Options) {
     AutoPas::_allowedNewton3Options = allowedNewton3Options;
   }
-
   /**
    * Getter for the currently selected configuration.
    * @return Configuration object currently used.
@@ -792,6 +797,22 @@ class AutoPas {
    * @param mpiStrategyOption
    */
   void setMPIStrategy(MPIStrategyOption mpiStrategyOption) { _mpiStrategyOption = mpiStrategyOption; }
+
+  /**
+   * Setter for the maximal Difference for the bucket distribution
+   * @param MPITuningMaxDifferenceForBucket
+   */
+  void setMPITuningMaxDifferenceForBucket(double MPITuningMaxDifferenceForBucket) {
+    _mpiTuningMaxDifferenceForBucket = MPITuningMaxDifferenceForBucket;
+  }
+
+  /**
+   * Setter for the maxDensity-Weight in calculation for bucket distribution
+   * @param MPITuningWeightForMaxDensity
+   */
+  void setMPITuningWeightForMaxDensity(double MPITuningWeightForMaxDensity) {
+    _mpiTuningWeightForMaxDensity = MPITuningWeightForMaxDensity;
+  }
 
 // Only define the interface for the MPI communicator if AUTOPAS_INCLUDE_MPI=ON
 // The internal implementation will use _autopasMPICommunicator with WrapMPI regardless of AUTOPAS_INCLUDE_MPI
@@ -940,6 +961,17 @@ class AutoPas {
    * Whether the chosen tuning strategy will be parallelized by MPI
    */
   MPIStrategyOption _mpiStrategyOption{MPIStrategyOption::noMPI};
+
+  /**
+   * For MPI-tuning: Maximum of the relative difference in the comparison metric for two ranks which exchange their
+   * tuning information.
+   */
+  double _mpiTuningMaxDifferenceForBucket{0.3};
+
+  /**
+   * For MPI-tuning: Weight for maxDensity in the calculation for bucket distribution.
+   */
+  double _mpiTuningWeightForMaxDensity{0.0};
 
   /**
    * Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and VerletListsCells).

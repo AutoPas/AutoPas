@@ -201,7 +201,7 @@ void AutoPasTest::expectedParticles(size_t expectedOwned, size_t expectedHalo) {
   EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::halo), expectedHalo);
 }
 
-TEST_F(AutoPasTest, getNumParticlesTest) {
+TEST_F(AutoPasTest, getNumberOfParticlesTest) {
   // there should be no particles in an empty container
   expectedParticles(0, 0);
 
@@ -229,7 +229,7 @@ TEST_F(AutoPasTest, getNumParticlesTest) {
   expectedParticles(0, 0);
 }
 
-TEST_F(AutoPasTest, getNumParticlesIteratorTest) {
+TEST_F(AutoPasTest, getNumberOfParticlesIteratorTest) {
   // there should be no particles in an empty container
   expectedParticles(0, 0);
 

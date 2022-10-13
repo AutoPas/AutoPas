@@ -75,7 +75,7 @@ class LiveInfo {
   template <class Particle, class PairwiseFunctor>
   void gather(const autopas::ParticleContainerInterface<Particle> &container, const PairwiseFunctor &functor,
               unsigned int rebuildFrequency) {
-    infos["numParticles"] = container.getNumParticles();
+    infos["numParticles"] = container.getNumberOfParticles();
     infos["cutoff"] = container.getCutoff();
     infos["skin"] = container.getSkin();
     infos["rebuildFrequency"] = static_cast<size_t>(rebuildFrequency);
@@ -115,8 +115,9 @@ class LiveInfo {
 
     infos["numHaloParticles"] = particleBins.back();
 
-    auto avg = static_cast<double>(container.getNumParticles() - particleBins.back()) / static_cast<double>(numCells);
-    auto avgBlurred = static_cast<double>(container.getNumParticles() - particleBins.back()) / 27;
+    auto avg =
+        static_cast<double>(container.getNumberOfParticles() - particleBins.back()) / static_cast<double>(numCells);
+    auto avgBlurred = static_cast<double>(container.getNumberOfParticles() - particleBins.back()) / 27;
     double estimatedNumNeighborInteractions = 0;
     double maxDiff = 0;
     double sumStddev = 0;

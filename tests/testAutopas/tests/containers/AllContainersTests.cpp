@@ -20,19 +20,19 @@ INSTANTIATE_TEST_SUITE_P(Generated, AllContainersTestsBothUpdates,
 /**
  * Checks if ParticleContainerInterface::getNumParticle() returns the correct number of particles.
  */
-TEST_P(AllContainersTests, testGetNumParticles) {
+TEST_P(AllContainersTests, testgetNumberOfParticles) {
   auto container = getInitializedContainer(std::get<0>(GetParam()));
-  EXPECT_EQ(container->getNumParticles(), 0);
+  EXPECT_EQ(container->getNumberOfParticles(), 0);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
   container->addParticle(p);
-  EXPECT_EQ(container->getNumParticles(), 1);
+  EXPECT_EQ(container->getNumberOfParticles(), 1);
 
   std::array<double, 3> r2 = {1.5, 2, 2};
   Particle p2(r2, {0., 0., 0.}, 1);
   container->addParticle(p2);
-  EXPECT_EQ(container->getNumParticles(), 2);
+  EXPECT_EQ(container->getNumberOfParticles(), 2);
 }
 
 /**
@@ -40,7 +40,7 @@ TEST_P(AllContainersTests, testGetNumParticles) {
  */
 TEST_P(AllContainersTests, testDeleteAllParticles) {
   auto container = this->getInitializedContainer(std::get<0>(GetParam()));
-  EXPECT_EQ(container->getNumParticles(), 0);
+  EXPECT_EQ(container->getNumberOfParticles(), 0);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
@@ -49,10 +49,10 @@ TEST_P(AllContainersTests, testDeleteAllParticles) {
   std::array<double, 3> r2 = {1.5, 2, 2};
   Particle p2(r2, {0., 0., 0.}, 1);
   container->addParticle(p2);
-  EXPECT_EQ(container->getNumParticles(), 2);
+  EXPECT_EQ(container->getNumberOfParticles(), 2);
 
   container->deleteAllParticles();
-  EXPECT_EQ(container->getNumParticles(), 0);
+  EXPECT_EQ(container->getNumberOfParticles(), 0);
 }
 
 /**
@@ -126,11 +126,11 @@ TEST_P(AllContainersTests, testDeleteHaloParticles) {
   }
   // sanity checks
   ASSERT_GT(numParticles, 0);
-  ASSERT_EQ(container->getNumParticles(), numParticles);
+  ASSERT_EQ(container->getNumberOfParticles(), numParticles);
 
   // actual test:
   container->deleteHaloParticles();
-  ASSERT_EQ(container->getNumParticles(), 0);
+  ASSERT_EQ(container->getNumberOfParticles(), 0);
 }
 
 /**
@@ -141,7 +141,7 @@ TEST_P(AllContainersTestsBothUpdates, testUpdateContainerHalo) {
   autopas::Particle p({boxMin[0] - 0.5, boxMin[1] - 0.5, boxMin[2] - 0.5}, {0, 0, 0}, 42);
   container->addHaloParticle(p);
 
-  EXPECT_EQ(container->getNumParticles(), 1);
+  EXPECT_EQ(container->getNumberOfParticles(), 1);
   EXPECT_EQ(container->begin()->getID(), 42);
 
   auto invalidParticles = container->updateContainer(std::get<1>(GetParam()));

@@ -139,12 +139,12 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
   }
 
   /**
-   * @copydoc OctreeNodeInterface::getNumParticles()
+   * @copydoc OctreeNodeInterface::getNumberOfParticles()
    */
-  unsigned int getNumParticles() override {
+  unsigned int getNumberOfParticles() override {
     unsigned int result = 0;
     for (auto &child : _children) {
-      result += child->getNumParticles();
+      result += child->getNumberOfParticles();
     }
     return result;
   }

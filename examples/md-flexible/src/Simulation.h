@@ -19,8 +19,8 @@
 #include "src/domainDecomposition/RegularGridDecomposition.h"
 
 /**
- * Handles minimal initialization requriements for MD-Flexible simulations.
- * Derivce this class to create custom simulations.
+ * Handles minimal initialization requirements for MD-Flexible simulations.
+ * Derive this class to create custom simulations.
  */
 class Simulation {
  public:
@@ -29,7 +29,7 @@ class Simulation {
    * @param configuration: The configuration of this simulation.
    * @param domainDecomposition: The domain decomposition used for this simulation
    */
-  Simulation(const MDFlexConfig &configuration, RegularGridDecomposition &domainDecomposition);
+  Simulation(const MDFlexConfig &configuration, std::shared_ptr<RegularGridDecomposition> &domainDecomposition);
 
   /**
    * Destructor.
@@ -42,7 +42,9 @@ class Simulation {
   void run();
 
   /**
+   * Finalizes the simulation.
    * Stops remaining timers and logs the result of all the timers.
+   * This needs to be called before MPI_Finalize if MPI is enabled.
    */
   void finalize();
 
@@ -54,7 +56,7 @@ class Simulation {
   MDFlexConfig _configuration;
 
   /**
-   * The the nodes' autopas container used for simulation.
+   * The the nodes' AutoPas container used for simulation.
    * This member will not be initialized by the constructor and therefore has to be initialized by the deriving class.
    */
   std::shared_ptr<autopas::AutoPas<ParticleType>> _autoPasContainer;
@@ -114,6 +116,16 @@ class Simulation {
     autopas::utils::Timer forceUpdateTotal;
 
     /**
+     * Records the time used for the pairwise force update of all particles.
+     */
+    autopas::utils::Timer forceUpdatePairwise;
+
+    /**
+     * Records the time used for the update of the global forces of all particles.
+     */
+    autopas::utils::Timer forceUpdateGlobal;
+
+    /**
      * Records the time used for the force update of all particles during the tuning iterations.
      */
     autopas::utils::Timer forceUpdateTuning;
@@ -168,6 +180,21 @@ class Simulation {
      * Records the time required to exchange migrating particles.
      */
     autopas::utils::Timer migratingParticleExchange;
+
+    /**
+     * Records the time required for load balancing.
+     */
+    autopas::utils::Timer loadBalancing;
+
+    /**
+     * Used for the diffuse load balancing as the metric to determine the imbalance.
+     */
+    autopas::utils::Timer computationalLoad;
+
+    /**
+     * Records the time required for the update of the AutoPas container.
+     */
+    autopas::utils::Timer updateContainer;
   };
 
   /**
@@ -190,7 +217,7 @@ class Simulation {
    * Estimates the number of tuning iterations which ocurred during the simulation so far.
    * @return an estimation of the number of tuning iterations which occured so far.
    */
-  std::tuple<size_t, bool> estimateNumberOfIterations() const;
+  [[nodiscard]] std::tuple<size_t, bool> estimateNumberOfIterations() const;
 
   /**
    * Prints a progress bar to the terminal.
@@ -204,17 +231,12 @@ class Simulation {
    * Turns the timers into a human readable string.
    * @param name: The timer's name.
    * @param timeNS: The time in nano seconds.
-   * @param numberWidth: The precision of the printed number.
+   * @param numberWidth: The minimal field width of the printed number.
    * @param maxTime: The simulation's total execution time.
    * @return All information of the timer in a human readable string.
    */
-  std::string timerToString(const std::string &name, long timeNS, size_t numberWidth = 0ul, long maxTime = 0ul);
-
-  /**
-   * Calculate the homogeneity of the scenario by using the standard deviation.
-   * @return homogeneity
-   */
-  double calculateHomogeneity() const;
+  [[nodiscard]] std::string timerToString(const std::string &name, long timeNS, int numberWidth = 0,
+                                          long maxTime = 0ul);
 
   /**
    * Updates the position of particles in the local AutoPas container.
@@ -233,22 +255,21 @@ class Simulation {
 
   /**
    * Updates the thermostat of for the local domain.
-   * @todo The thermostat shoud act globally and therefore needs to be communicated to all processes.
+   * @todo The thermostat should act globally and therefore needs to be communicated to all processes.
    */
   void updateThermostat();
 
   /**
    * This simulation's domain decomposition.
    */
-  RegularGridDecomposition _domainDecomposition;
-
+  std::shared_ptr<RegularGridDecomposition> _domainDecomposition;
   /**
    * If MPI is enabled, accumulates the times of all ranks on rank 0.
    * Otherwise, this function does nothing.
    * @param time: the time to accumulate.
    * @return the accumulated time of all ranks.
    */
-  long accumulateTime(const long &time);
+  [[nodiscard]] long accumulateTime(const long &time);
 
   /**
    * Logs the number of total/owned/halo particles in the simulation, aswell as the standard deviation of Homogeneity.
@@ -267,6 +288,12 @@ class Simulation {
    * @return Tells the user if the current iteration of force calculations was a tuning iteration.
    */
   bool calculatePairwiseForces();
+
+  /**
+   * Adds global forces to the particles in the container.
+   * @param globalForce The global force which will be applied to each particle in the container.
+   */
+  void calculateGlobalForces(const std::array<double, 3> &globalForce);
 
   /**
    * Indicates if enough iterations were completed yet.

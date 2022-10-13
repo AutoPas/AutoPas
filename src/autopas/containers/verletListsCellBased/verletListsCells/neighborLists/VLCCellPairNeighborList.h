@@ -46,14 +46,8 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
    */
   using SoAListType = typename std::vector<std::vector<std::vector<SoAPairOfParticleAndList>>>;
 
-  /**
-   * @copydoc VLCNeighborListInterface::getContainerType()
-   */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::pairwiseVerletLists; }
 
-  /**
-   * @copydoc VLCNeighborListInterface::getNumberOfPartners()
-   */
   size_t getNumberOfPartners(const Particle *particle) const override {
     size_t listSize = 0;
     const auto &[firstCellIndex, particleInCellIndex] = _particleToCellMap.at(const_cast<Particle *>(particle));
@@ -85,9 +79,6 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
    */
   auto &getSoANeighborList() { return _soaNeighborList; }
 
-  /**
-   * @copydoc VLCNeighborListInterface::buildAoSNeighborList()
-   */
   void buildAoSNeighborList(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
                             double interactionLength, const TraversalOption buildTraversalOption,
                             typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType) override {
@@ -157,15 +148,12 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
     applyBuildFunctor(linkedCells, useNewton3, cutoff, skin, interactionLength, buildTraversalOption, buildType);
   }
 
-  /**
-   * @copydoc VLCNeighborListInterface::generateSoAFromAoS()
-   */
   void generateSoAFromAoS(LinkedCells<Particle> &linkedCells) override {
     _soaNeighborList.clear();
 
     // particle pointer to global index of particle
     std::unordered_map<Particle *, size_t> particleToIndex;
-    particleToIndex.reserve(linkedCells.getNumParticles());
+    particleToIndex.reserve(linkedCells.getNumberOfParticles());
     size_t i = 0;
     for (auto iter = linkedCells.begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++i) {
       particleToIndex[&(*iter)] = i;
@@ -206,9 +194,6 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
     }
   }
 
-  /**
-   * @copydoc VLCNeighborListInterface::setUpTraversal()
-   */
   void setUpTraversal(TraversalInterface *traversal) override {
     auto vTraversal = dynamic_cast<VLCCellPairTraversalInterface<Particle> *>(traversal);
 
@@ -227,9 +212,6 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
   }
 
  private:
-  /**
-   * @copydoc VLCNeighborListInterface::applyBuildFunctor()
-   */
   void applyBuildFunctor(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
                          double interactionLength, const TraversalOption buildTraversalOption,
                          typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType) override {

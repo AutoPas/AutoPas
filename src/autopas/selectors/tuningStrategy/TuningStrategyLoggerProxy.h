@@ -99,6 +99,12 @@ class TuningStrategyLoggerProxy : public TuningStrategyInterface {
    */
   [[nodiscard]] bool searchSpaceIsEmpty() const override;
 
+  /**
+   * Hands over call to wrapped
+   * @return
+   */
+  bool smoothedHomogeneityAndMaxDensityNeeded() const override;
+
  private:
   /**
    * The wrapped real tuning strategy that is used to in almost all method implementations.

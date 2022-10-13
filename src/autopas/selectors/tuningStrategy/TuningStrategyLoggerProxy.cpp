@@ -171,6 +171,10 @@ bool TuningStrategyLoggerProxy::searchSpaceIsTrivial() const { return _actualTun
 
 bool TuningStrategyLoggerProxy::searchSpaceIsEmpty() const { return _actualTuningStrategy->searchSpaceIsEmpty(); }
 
+bool TuningStrategyLoggerProxy::smoothedHomogeneityAndMaxDensityNeeded() const {
+  return _actualTuningStrategy->smoothedHomogeneityAndMaxDensityNeeded();
+}
+
 TuningStrategyLogReplayer::TuningStrategyLogReplayer(std::string filename,
                                                      std::shared_ptr<TuningStrategyInterface> tuningStrategy)
     : _filename(std::move(filename)), _tuningStrategy(std::move(tuningStrategy)) {}

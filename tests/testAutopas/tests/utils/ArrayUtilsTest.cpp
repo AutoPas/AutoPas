@@ -25,7 +25,7 @@ TEST(ArrayUtilsTest, teststatic_cast_array) {
 }
 
 TEST(ArrayUtilsTest, testto_string) {
-  std::array<size_t, 0> emptyContainer;
+  std::array<size_t, 0> emptyContainer{};
   EXPECT_EQ("[]", utils::ArrayUtils::to_string(emptyContainer));
 
   std::array<size_t, 3> arrayContainer{1, 2, 3};

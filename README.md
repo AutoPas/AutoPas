@@ -150,7 +150,7 @@ Particles saved in an AutoPas container can be one of two possible states:
   These normally are ghost particles arising from either periodic boundary conditions or particles of a neighboring AutoPas object
   (if you split the entire domain over multiple AutoPas objects, i.e., you use a domain decomposition algorithm).
   The halo particles are needed for the correct calculation of the pairwise forces.
-  On update of the AutoPas container, halo particles are deleted (see [Simulation Loop](#simulation-loop)).
+  On update of the AutoPas container, halo particles are deleted (see <a href="#simulation-loop">Simulation Loop</a>).
 * dummy: Particles that are deleted or that act as filler for certain algorithms. These particles do not affect the force calculation.
 
 ### Iterating Through Particles

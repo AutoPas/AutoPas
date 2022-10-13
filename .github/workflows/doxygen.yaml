@@ -31,17 +31,13 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Build documentation
+        # writes all warnings to warnings.out
         uses: docker://autopas/autopas-build-doxygen
         with:
           entrypoint: buildDocumentation.sh
           # arg1 make target
           # arg2 path to root of AutoPas directory.
           args: doc_doxygen${{ matrix.config }} .
-
-      - name: Print warnings
-        # Print all warnings collected previously. Exit code depends on number of warnings.
-        run: cat warnings.out && exit $(wc -l warnings.out | cut -d ' ' -f1)
-        working-directory: ${{ env.BUILD_DIR }}
 
       - name: Deploy documentation (only on master)
         uses: peaceiris/actions-gh-pages@v3.7.2
