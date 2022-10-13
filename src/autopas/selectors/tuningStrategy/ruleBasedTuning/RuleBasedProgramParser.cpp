@@ -205,7 +205,7 @@ class TranslationVisitor : public RuleLanguageBaseVisitor {
     ConfigurationPattern pattern;
     for (size_t i = 0; i < ctx->Configuration_property().size(); i++) {
       auto property = ctx->Configuration_property(i)->getText();
-      auto val = ctx->property_value(i);
+      auto *val = ctx->property_value(i);
       std::vector<Literal> value;
       if (val->literal()) {
         value.push_back(*(visit(val->literal()).as<std::shared_ptr<Literal>>().get()));
@@ -217,13 +217,12 @@ class TranslationVisitor : public RuleLanguageBaseVisitor {
         pattern.add(literal.value);
       }
 
-      // TODO: Somehow check that type is correct. Maybe already in .g4 file during parsing
-      if (property == "container") {
-      } else if (property == "traversal") {
-      } else if (property == "dataLayout") {
-      } else if (property == "newton3") {
-      } else if (property == "loadEstimator") {
-      } else if (property == "cellSizeFactor") {
+      // sanity check
+      const auto knownProperties = {
+          "container", "traversal", "dataLayout", "newton3", "loadEstimator", "cellSizeFactor",
+      };
+      if (std::find(knownProperties.begin(), knownProperties.end(), property) == knownProperties.end()) {
+        utils::ExceptionHandler::exception("RuleBasedProgramParser: Encountered unknown property! (" + property + ")");
       }
     }
     return pattern;
