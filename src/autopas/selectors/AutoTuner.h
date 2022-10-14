@@ -203,6 +203,11 @@ class AutoTuner {
    */
   [[nodiscard]] const Configuration &getCurrentConfig() const;
 
+  /**
+   * Initialize the container specified by the TuningStrategy.
+   */
+  bool searchSpaceIsTrivial();
+
  private:
   /**
    * Measures consumed energy for tuning
@@ -381,6 +386,15 @@ void AutoTuner<Particle>::selectCurrentContainer() {
   auto conf = _tuningStrategy->getCurrentConfiguration();
   _containerSelector.selectContainer(
       conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkin, _verletClusterSize, conf.loadEstimator));
+}
+
+/**
+ * Access to the searchSpaceIsTrivial bool variable (true if search space size  is 1 or less).
+ * @return Smart pointer to the searchSpaceIsTrivial variable.
+ */
+template <class Particle>
+bool AutoTuner<Particle>::searchSpaceIsTrivial() {
+  return _tuningStrategy->searchSpaceIsTrivial();
 }
 
 template <class Particle>
