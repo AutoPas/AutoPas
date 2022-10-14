@@ -4,6 +4,8 @@ import itertools
 import yaml
 from yaml.loader import SafeLoader
 
+# Script to generate a wide range of yaml input files intended to be used as benchmarks to judge the adaptability of tuning strategies. 
+
 template = """
 container                        :  [LinkedCells, LinkedCellsReferences, VarVerletListsAsBuild, VerletClusterLists, VerletLists, VerletListsCells, PairwiseVerletLists Octree]
 verlet-rebuild-frequency         :  20
