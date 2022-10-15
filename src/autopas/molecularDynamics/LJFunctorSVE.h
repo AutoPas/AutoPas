@@ -492,18 +492,17 @@ class LJFunctorSVE
   }
 
   template <bool newton3, bool indexed>
-  inline void SoAKernel(const size_t j, const bool ownedStateIisOwned, const int64_t *const __restrict ownedStatePtr2,
-                        const svfloat64_t &x1, const svfloat64_t &y1, const svfloat64_t &z1,
-                        const double *const __restrict x2ptr, const double *const __restrict y2ptr,
-                        const double *const __restrict z2ptr, double *const __restrict fx2ptr,
-                        double *const __restrict fy2ptr, double *const __restrict fz2ptr,
-                        const size_t *const typeID1ptr, const size_t *const typeID2ptr, svfloat64_t &fxacc,
-                        svfloat64_t &fyacc, svfloat64_t &fzacc, svfloat64_t &virialSumX, svfloat64_t &virialSumY,
-                        svfloat64_t &virialSumZ, svfloat64_t &upotSum,
+  // FCC needs to be forced to inline this function. Otherwise a dramatic loss in performance can be observed.
+  __attribute__((always_inline)) inline void SoAKernel(
+      const size_t j, const bool ownedStateIisOwned, const int64_t *const __restrict ownedStatePtr2,
+      const svfloat64_t &x1, const svfloat64_t &y1, const svfloat64_t &z1, const double *const __restrict x2ptr,
+      const double *const __restrict y2ptr, const double *const __restrict z2ptr, double *const __restrict fx2ptr,
+      double *const __restrict fy2ptr, double *const __restrict fz2ptr, const size_t *const typeID1ptr,
+      const size_t *const typeID2ptr, svfloat64_t &fxacc, svfloat64_t &fyacc, svfloat64_t &fzacc,
+      svfloat64_t &virialSumX, svfloat64_t &virialSumY, svfloat64_t &virialSumZ, svfloat64_t &upotSum,
 
-                        const svbool_t &pg_1, const svuint64_t &index_1, const svbool_t &pg_2,
-                        const svuint64_t &index_2, const svbool_t &pg_3, const svuint64_t &index_3,
-                        const svbool_t &pg_4, const svuint64_t &index_4
+      const svbool_t &pg_1, const svuint64_t &index_1, const svbool_t &pg_2, const svuint64_t &index_2,
+      const svbool_t &pg_3, const svuint64_t &index_3, const svbool_t &pg_4, const svuint64_t &index_4
 
   ) {
     svfloat64_t drx_1;

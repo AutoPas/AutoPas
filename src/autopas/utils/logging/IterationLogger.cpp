@@ -50,7 +50,7 @@ void autopas::IterationLogger::logIteration(const autopas::Configuration &config
                                             double energyRam) {
 #ifdef AUTOPAS_LOG_ITERATIONS
   spdlog::get(_loggerName)
-      ->info("{},{},{},{},{},{},{}", iteration, inTuningPhase ? "true" : "false", configuration.getCSVLine(),
+      ->info("{},{},{},{},{},{},{},{},{},{}", iteration, inTuningPhase ? "true" : "false", configuration.getCSVLine(),
              timeIteratePairwise, timeRebuildNeighborLists, timeWholeIteration, _bufferTimeTuning, energyPsys,
              energyPkg, energyRam);
 

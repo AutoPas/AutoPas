@@ -203,4 +203,9 @@ std::shared_ptr<const autopas::ParticleContainerInterface<Particle>> AutoPas<Par
   return _autoTuner->getContainer();
 }
 
+template <class Particle>
+bool AutoPas<Particle>::searchSpaceIsTrivial() {
+  return _autoTuner->searchSpaceIsTrivial();
+}
+
 }  // namespace autopas
