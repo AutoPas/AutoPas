@@ -7,6 +7,7 @@
 #pragma once
 
 #include <array>
+#include <cmath>
 #include <memory>
 #include <set>
 
@@ -637,11 +638,13 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
   if (_energy_measurement_available) {
     AutoPasLog(debug, "Energy Consumption: Psys: {} Joules Pkg: {} Joules Ram: {} Joules", _raplMeter.get_psys_energy(),
                _raplMeter.get_pkg_energy(), _raplMeter.get_ram_energy());
+    _iterationLogger.logIteration(getCurrentConfig(), _iteration, inTuningPhase, timerIteratePairwise.getTotalTime(),
+                                  timerRebuild.getTotalTime(), timerTotal.getTotalTime(), _raplMeter.get_psys_energy(),
+                                  _raplMeter.get_pkg_energy(), _raplMeter.get_ram_energy());
+  } else {
+    _iterationLogger.logIteration(getCurrentConfig(), _iteration, inTuningPhase, timerIteratePairwise.getTotalTime(),
+                                  timerRebuild.getTotalTime(), timerTotal.getTotalTime(), nan(""), nan(""), nan(""));
   }
-
-  _iterationLogger.logIteration(getCurrentConfig(), _iteration, inTuningPhase, timerIteratePairwise.getTotalTime(),
-                                timerRebuild.getTotalTime(), timerTotal.getTotalTime());
-
   // if tuning execute with time measurements
   if (inTuningPhase) {
     if (f->isRelevantForTuning()) {

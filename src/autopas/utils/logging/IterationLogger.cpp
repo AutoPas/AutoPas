@@ -20,7 +20,7 @@ autopas::IterationLogger::IterationLogger(const std::string &outputSuffix)
   headerLogger->set_pattern("%v");
   // print csv header
   headerLogger->info(
-      "Date,Iteration,inTuningPhase,{},iteratePairwise[ns],rebuildNeighborLists[ns],wholeIteration[ns],tuning[ns]",
+      "Date,Iteration,inTuningPhase,{},iteratePairwise[ns],rebuildNeighborLists[ns],wholeIteration[ns],tuning[ns],energyPsys,energyPkg,energyRam",
       Configuration().getCSVHeader());
   spdlog::drop(headerLoggerName);
   // End of workaround
@@ -46,11 +46,13 @@ void autopas::IterationLogger::logTimeTuning(long timeTuning) {
 
 void autopas::IterationLogger::logIteration(const autopas::Configuration &configuration, size_t iteration,
                                             bool inTuningPhase, long timeIteratePairwise, long timeRebuildNeighborLists,
-                                            long timeWholeIteration) {
+                                            long timeWholeIteration, double energyPsys, double energyPkg,
+                                            double energyRam) {
 #ifdef AUTOPAS_LOG_ITERATIONS
   spdlog::get(_loggerName)
       ->info("{},{},{},{},{},{},{}", iteration, inTuningPhase ? "true" : "false", configuration.getCSVLine(),
-             timeIteratePairwise, timeRebuildNeighborLists, timeWholeIteration, _bufferTimeTuning);
+             timeIteratePairwise, timeRebuildNeighborLists, timeWholeIteration, _bufferTimeTuning, energyPsys,
+             energyPkg, energyRam);
 
   // reset buffer
   _bufferTimeTuning = 0;

@@ -49,7 +49,8 @@ class IterationLogger {
    * @param timeWholeIteration
    */
   void logIteration(const Configuration &configuration, size_t iteration, bool inTuningPhase, long timeIteratePairwise,
-                    long timeRebuildNeighborLists, long timeWholeIteration);
+                    long timeRebuildNeighborLists, long timeWholeIteration, double energyPsys, double energyPkg,
+                    double energyRam);
 
  private:
   std::string _loggerName;
