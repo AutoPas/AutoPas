@@ -1,7 +1,7 @@
 #include "autopas/selectors/tuningStrategy/TuningStrategyLoggerProxy.h"
 #include "autopas/selectors/tuningStrategy/ruleBasedTuning/RuleBasedTuning.h"
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   autopas::Logger::create();
 
   if (argc <= 2) {
@@ -14,7 +14,7 @@ int main(int argc, char** argv) {
     exit(-1);
   }
 
-  if(not getenv("DISABLE_DEBUG_LOG")) {
+  if (not getenv("DISABLE_DEBUG_LOG")) {
     autopas::Logger::get()->set_level(spdlog::level::info);
   }
   auto containers = autopas::ContainerOption::getAllOptions();
@@ -29,20 +29,21 @@ int main(int argc, char** argv) {
   int numErrors = 0;
   constexpr double bigErrorThreshold = 1.15;
   int numBigErrors = 0;
-  auto errorHandler = [&](const autopas::rule_syntax::ConfigurationOrder& order,
-                          const autopas::Configuration& actualBetterConfig, unsigned long betterRuntime,
-                          const autopas::Configuration& shouldBeBetterConfig, unsigned long shouldBeBetterRuntime,
-                          const autopas::LiveInfo& liveInfo) {
+  auto errorHandler = [&](const autopas::rule_syntax::ConfigurationOrder &order,
+                          const autopas::Configuration &actualBetterConfig, unsigned long betterRuntime,
+                          const autopas::Configuration &shouldBeBetterConfig, unsigned long shouldBeBetterRuntime,
+                          const autopas::LiveInfo &liveInfo) {
     numErrors++;
 
     auto factorDifference = static_cast<double>(shouldBeBetterRuntime) / static_cast<double>(betterRuntime);
     auto factorDifferenceRounded = std::round(factorDifference * 100) / 100;
 
-    if(factorDifference >= bigErrorThreshold) {
+    if (factorDifference >= bigErrorThreshold) {
       numBigErrors++;
     }
 
-    AutoPasLog(error, "\n"
+    AutoPasLog(error,
+               "\n"
                "\tError in ConfigurationOrder {}:\n"
                "\t\t{}ns for config\t{}\n"
                "\t\t{}ns for config\t{}\n"
@@ -64,7 +65,7 @@ int main(int argc, char** argv) {
     auto optBestConfig = logReplayer.replay();
     AutoPasLog(info, "");
 
-    if(optBestConfig.has_value()) {
+    if (optBestConfig.has_value()) {
       bestConfigs[optBestConfig.value()].push_back(i);
     }
     tuningTimeSum += strategy->getLifetimeTuningTime();
@@ -72,9 +73,10 @@ int main(int argc, char** argv) {
   }
 
   std::stringstream str;
-  for(const auto& [config, filenames] : bestConfigs) {
-    str << "\t" << "Best in " << filenames.size() << " scenarios:\t" << config.toShortString() << " (file numbers: ";
-    for(const auto& file : filenames) {
+  for (const auto &[config, filenames] : bestConfigs) {
+    str << "\t"
+        << "Best in " << filenames.size() << " scenarios:\t" << config.toShortString() << " (file numbers: ";
+    for (const auto &file : filenames) {
       str << file << ", ";
     }
     str << ")" << std::endl;
@@ -85,7 +87,8 @@ int main(int argc, char** argv) {
   AutoPasLog(info, "In sum, found {} errors! Of these, {} errors where greater than {}", numErrors, numBigErrors,
              bigErrorThreshold);
 
-  auto savedTuningTimeRatio = static_cast<double>(wouldHaveSkippedTuningTimeSum) / static_cast<double>(tuningTimeSum) * 100;
+  auto savedTuningTimeRatio =
+      static_cast<double>(wouldHaveSkippedTuningTimeSum) / static_cast<double>(tuningTimeSum) * 100;
   auto savedTuningTimeRatioRounded = std::round(savedTuningTimeRatio * 100) / 100;
   AutoPasLog(info, "Overall, {}% of the tuning time would have been saved.", savedTuningTimeRatioRounded);
 
