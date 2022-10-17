@@ -1,6 +1,17 @@
 #include "autopas/selectors/tuningStrategy/TuningStrategyLoggerProxy.h"
 #include "autopas/selectors/tuningStrategy/ruleBasedTuning/RuleBasedTuning.h"
 
+/**
+ * The program analyzes the log of a tuning phase with respect to a given rule file. The following aspects are checked:
+ *   - if the given log contradicts any rules from the file.
+ *   - how many configs would have been thrown out by rules.
+ *   - how much time could have been saved.
+ *   - what the actual best configuration was.
+ *
+ * @param argc >=2
+ * @param argv tuningRules.rule tuningLog.txt...
+ * @return 0 on success
+ */
 int main(int argc, char **argv) {
   autopas::Logger::create();
 
