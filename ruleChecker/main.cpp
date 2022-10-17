@@ -82,7 +82,8 @@ int main(int argc, char **argv) {
     str << ")" << std::endl;
   }
 
-  AutoPasLog(info, "Finished replaying {} scenarios!", argc - 1);
+  // -2 because 0 is exe 1 is rules.
+  AutoPasLog(info, "Finished replaying {} scenarios!", argc - 2);
   AutoPasLog(info, "\nSummary of best configurations:\n{}", str.str());
   AutoPasLog(info, "In sum, found {} errors! Of these, {} errors where greater than {}", numErrors, numBigErrors,
              bigErrorThreshold);
