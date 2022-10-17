@@ -4,8 +4,13 @@
 int main(int argc, char** argv) {
   autopas::Logger::create();
 
-  if(argc <= 1) {
-    std::cerr << "Please provide the data files as arguments" << std::endl;
+  if (argc <= 2) {
+    std::cerr
+        << "Usage: ruleChecker tuningRules.rule tuningLog.txt...\n"
+           "Where:\n"
+           " - tuningRules.rule is a file containing rules for the rule based tuning.\n"
+           " - tuningLog.txt is one or many log files created via the `--use-tuning-log true` option to md-flexible."
+        << std::endl;
     exit(-1);
   }
 
@@ -48,13 +53,14 @@ int main(int argc, char** argv) {
 
   unsigned long tuningTimeSum = 0;
   unsigned long wouldHaveSkippedTuningTimeSum = 0;
-  for(int i = 1; i < argc; i++) {
-    auto filename = argv[i];
+  std::string rulesfile{argv[1]};
+  for (int i = 2; i < argc; i++) {
+    std::string filename{argv[i]};
     AutoPasLog(info, "Checking file {}: {}", i, filename);
-    auto strategy = std::make_shared<autopas::RuleBasedTuning>(
-        containers, std::set<double>({1., 2.}), traversals, loadEstimators, dataLayouts, newton3Options,
-        true, "tuningRules.rule", errorHandler);
-    autopas::TuningStrategyLogReplayer logReplayer{argv[i], strategy};
+    auto strategy =
+        std::make_shared<autopas::RuleBasedTuning>(containers, std::set<double>({1., 2.}), traversals, loadEstimators,
+                                                   dataLayouts, newton3Options, true, rulesfile, errorHandler);
+    autopas::TuningStrategyLogReplayer logReplayer{filename, strategy};
     auto optBestConfig = logReplayer.replay();
     AutoPasLog(info, "");
 
