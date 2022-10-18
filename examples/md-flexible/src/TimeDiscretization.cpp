@@ -15,21 +15,35 @@ void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
                         const std::array<double, 3> &globalForce) {
   using autopas::utils::ArrayMath::add;
+  using autopas::utils::ArrayMath::dot;
   using autopas::utils::ArrayMath::mulScalar;
+
+  const auto maxAllowedDisplacement = autoPasContainer.getVerletSkin() / autoPasContainer.getVerletRebuildFrequency();
+  const auto maxAllowedDisplacementSquared = maxAllowedDisplacement * maxAllowedDisplacement;
 
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    const auto m = particlePropertiesLibrary.getMass(iter->getTypeId());
     auto v = iter->getV();
-    auto m = particlePropertiesLibrary.getMass(iter->getTypeId());
     auto f = iter->getF();
     iter->setOldF(f);
     iter->setF(globalForce);
     v = mulScalar(v, deltaT);
     f = mulScalar(f, (deltaT * deltaT / (2 * m)));
-    auto newR = add(v, f);
-    iter->addR(newR);
+    const auto displacement = add(v, f);
+    // sanity check that particles are not too fast for the Verlet skin technique.
+    // If this condition is violated once this is not necessarily an error. Only if the total displacement over
+    // the whole rebuild frequency is farther than the skin we lose interactions.
+    const auto displacementDistSquared = dot(displacement, displacement);
+    if (displacementDistSquared > maxAllowedDisplacementSquared) {
+      std::cerr << "A particle moved farther than skin/rebuildFrequency: " << std::sqrt(displacementDistSquared)
+                << " > " << autoPasContainer.getVerletSkin() << "/" << autoPasContainer.getVerletRebuildFrequency()
+                << "\n"
+                << *iter << std::endl;
+    }
+    iter->addR(displacement);
   }
 }
 

@@ -340,7 +340,7 @@ class MDFlexConfig {
    * verletRebuildFrequency
    */
   MDFlexOption<unsigned int, __LINE__> verletRebuildFrequency{
-      20, "verlet-rebuild-frequency", true, "Number of iterations after which containers are rebuilt."};
+      15, "verlet-rebuild-frequency", true, "Number of iterations after which containers are rebuilt."};
   /**
    * verletSkinRadius
    */
