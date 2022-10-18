@@ -5,6 +5,7 @@
  */
 
 #include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/WrapMPI.h"
 
 std::mutex autopas::utils::ExceptionHandler::exceptionMutex;
 autopas::utils::ExceptionBehavior autopas::utils::ExceptionHandler::_behavior = ExceptionBehavior::throwException;
@@ -13,7 +14,9 @@ std::function<void()> autopas::utils::ExceptionHandler::_customAbortFunction = a
 template <>
 void autopas::utils::ExceptionHandler::exception(const std::string e) {  // NOLINT
   // no lock here, as a different public function is called!!!
-  AutoPasException autoPasException(e);
+  int myRank{};
+  autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &myRank);
+  AutoPasException autoPasException("Rank " + std::to_string(myRank) + " : " + e);
   exception(autoPasException);
 }
 
