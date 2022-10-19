@@ -5,6 +5,7 @@
  */
 
 #include "ExceptionHandlerTest.h"
+#include "autopas/utils/WrapMPI.h"
 
 using autopas::utils::ExceptionBehavior;
 using autopas::utils::ExceptionHandler;
@@ -47,12 +48,13 @@ TEST_F(ExceptionHandlerTest, TestThrow) {
 
 TEST_F(ExceptionHandlerTest, TestVariadicExceptionMessages) {
   ExceptionHandler::setBehavior(ExceptionBehavior::throwException);
-
+  int myRank{};
+  autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &myRank);
   try {
     ExceptionHandler::exception("testexception {}", 1);
     FAIL() << "Expected ExceptionHandler::AutoPasException";
   } catch (ExceptionHandler::AutoPasException &err) {
-    EXPECT_EQ(err.what(), std::string("testexception 1"));
+    EXPECT_EQ(err.what(), std::string("Rank " + std::to_string(myRank) + " : testexception 1"));
   } catch (...) {
     FAIL() << "Expected std::out_of_range";
   }
@@ -61,7 +63,7 @@ TEST_F(ExceptionHandlerTest, TestVariadicExceptionMessages) {
     ExceptionHandler::exception("testexception {} {} {}", 1, "hallo", true);
     FAIL() << "Expected ExceptionHandler::AutoPasException";
   } catch (ExceptionHandler::AutoPasException &err) {
-    EXPECT_EQ(err.what(), std::string("testexception 1 hallo true"));
+    EXPECT_EQ(err.what(), std::string("Rank " + std::to_string(myRank) + " : testexception 1 hallo true"));
   } catch (...) {
     FAIL() << "Expected std::out_of_range";
   }
