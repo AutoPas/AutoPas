@@ -337,7 +337,8 @@ std::string Simulation::timerToString(const std::string &name, long timeNS, int 
 void Simulation::updatePositions() {
   _timers.positionUpdate.start();
   TimeDiscretization::calculatePositions(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-                                         _configuration.deltaT.value, _configuration.globalForce.value);
+                                         _configuration.deltaT.value, _configuration.globalForce.value,
+                                         _configuration.fastParticlesThrow.value);
   _timers.positionUpdate.stop();
 }
 

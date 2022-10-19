@@ -14,7 +14,7 @@
 namespace TimeDiscretization {
 void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
-                        const std::array<double, 3> &globalForce) {
+                        const std::array<double, 3> &globalForce, bool fastParticlesThrow) {
   using autopas::utils::ArrayUtils::operator<<;
   using autopas::utils::ArrayMath::add;
   using autopas::utils::ArrayMath::dot;
@@ -24,8 +24,10 @@ void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
       autoPasContainer.getVerletSkin() / (2 * autoPasContainer.getVerletRebuildFrequency());
   const auto maxAllowedDisplacementSquared = maxAllowedDisplacement * maxAllowedDisplacement;
 
+  bool throwException = false;
+
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel
+#pragma omp parallel reduction(|| : throwException)
 #endif
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     const auto m = particlePropertiesLibrary.getMass(iter->getTypeId());
@@ -46,8 +48,15 @@ void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
                 << " > " << autoPasContainer.getVerletSkin() << "/2/" << autoPasContainer.getVerletRebuildFrequency()
                 << " = " << maxAllowedDisplacement << "\n"
                 << *iter << "\nNew Position: " << add(iter->getR(), displacement) << std::endl;
+      if (fastParticlesThrow) {
+        throwException = true;
+      }
     }
     iter->addR(displacement);
+  }
+
+  if (throwException) {
+    throw std::runtime_error("At least one particle was too fast!");
   }
 }
 

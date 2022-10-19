@@ -213,6 +213,9 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
   if (node[config.verletSkinRadius.name]) {
     config.verletSkinRadius.value = node[config.verletSkinRadius.name].as<double>();
   }
+  if (node[config.fastParticlesThrow.name]) {
+    config.fastParticlesThrow.value = node[config.fastParticlesThrow.name].as<bool>();
+  }
   if (node[config.verletClusterSize.name]) {
     config.verletClusterSize.value = node[config.verletClusterSize.name].as<unsigned int>();
   }

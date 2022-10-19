@@ -346,6 +346,11 @@ class MDFlexConfig {
    */
   MDFlexOption<double, __LINE__> verletSkinRadius{.2, "verlet-skin-radius", true,
                                                   "Skin added to the cutoff to form the interaction length."};
+
+  MDFlexOption<bool, __LINE__> fastParticlesThrow{false, "fastParticlesThrow", false,
+                                                  "Decide if particles that move farther than skin/2/rebuildFrequency "
+                                                  "will throw an exception during the position update or not."};
+
   /**
    * boxMin
    */

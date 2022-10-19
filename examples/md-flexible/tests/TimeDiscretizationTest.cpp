@@ -60,7 +60,7 @@ TEST_F(TimeDiscretizationTest, testCalculatePositions) {
                                                            {0, 0, 1}, {1, 0, 1}, {0, 1, 1}, {1, 1, 1}};
 
   size_t index = 0;
-  TimeDiscretization::calculatePositions(*autoPas, _particlePropertiesLibrary, 0.1, {0., 0., 0.});
+  TimeDiscretization::calculatePositions(*autoPas, _particlePropertiesLibrary, 0.1, {0., 0., 0.}, false);
   for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
     // only change in one direction is expected
     EXPECT_EQ(iter->getR()[0], referencePositions[index][0]);
@@ -83,7 +83,7 @@ TEST_F(TimeDiscretizationTest, testCalculatePositions) {
   referencePositions = {{0, 0, 0.105}, {1, 0, 0.105}, {0, 1, 0.105}, {1, 1, 0.105},
                         {0, 0, 1.105}, {1, 0, 1.105}, {0, 1, 1.105}, {1, 1, 1.105}};
 
-  TimeDiscretization::calculatePositions(*autoPas, _particlePropertiesLibrary, 0.1, {0., 0., 0.});
+  TimeDiscretization::calculatePositions(*autoPas, _particlePropertiesLibrary, 0.1, {0., 0., 0.}, false);
   index = 0;
 
   for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
