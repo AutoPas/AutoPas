@@ -5,6 +5,7 @@
  */
 
 #include "ExceptionHandlerTest.h"
+
 #include "autopas/utils/WrapMPI.h"
 
 using autopas::utils::ExceptionBehavior;

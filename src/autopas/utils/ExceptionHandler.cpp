@@ -5,6 +5,7 @@
  */
 
 #include "autopas/utils/ExceptionHandler.h"
+
 #include "autopas/utils/WrapMPI.h"
 
 std::mutex autopas::utils::ExceptionHandler::exceptionMutex;
