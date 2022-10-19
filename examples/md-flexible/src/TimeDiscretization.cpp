@@ -6,6 +6,7 @@
 #include "TimeDiscretization.h"
 
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ArrayUtils.h"
 
 /**
  * Functions for updating velocities and positions as simulation time progresses.
@@ -14,11 +15,13 @@ namespace TimeDiscretization {
 void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
                         const std::array<double, 3> &globalForce) {
+  using autopas::utils::ArrayUtils::operator<<;
   using autopas::utils::ArrayMath::add;
   using autopas::utils::ArrayMath::dot;
   using autopas::utils::ArrayMath::mulScalar;
 
-  const auto maxAllowedDisplacement = autoPasContainer.getVerletSkin() / autoPasContainer.getVerletRebuildFrequency();
+  const auto maxAllowedDisplacement =
+      autoPasContainer.getVerletSkin() / (2 * autoPasContainer.getVerletRebuildFrequency());
   const auto maxAllowedDisplacementSquared = maxAllowedDisplacement * maxAllowedDisplacement;
 
 #ifdef AUTOPAS_OPENMP
@@ -38,10 +41,11 @@ void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
     // the whole rebuild frequency is farther than the skin we lose interactions.
     const auto displacementDistSquared = dot(displacement, displacement);
     if (displacementDistSquared > maxAllowedDisplacementSquared) {
-      std::cerr << "A particle moved farther than skin/rebuildFrequency: " << std::sqrt(displacementDistSquared)
-                << " > " << autoPasContainer.getVerletSkin() << "/" << autoPasContainer.getVerletRebuildFrequency()
-                << "\n"
-                << *iter << std::endl;
+#pragma omp critical
+      std::cerr << "A particle moved farther than skin/2/rebuildFrequency: " << std::sqrt(displacementDistSquared)
+                << " > " << autoPasContainer.getVerletSkin() << "/2/" << autoPasContainer.getVerletRebuildFrequency()
+                << " = " << maxAllowedDisplacement << "\n"
+                << *iter << "\nNew Position: " << add(iter->getR(), displacement) << std::endl;
     }
     iter->addR(displacement);
   }
