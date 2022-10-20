@@ -422,14 +422,16 @@ bool Simulation::calculatePairwiseForces() {
       wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
       break;
     }
-#ifdef __ARM_FEATURE_SVE
     case MDFlexConfig::FunctorOption::lj12_6_SVE: {
+#ifdef __ARM_FEATURE_SVE
       autopas::LJFunctorSVE<ParticleType, true, true> functor{_autoPasContainer->getCutoff(),
                                                               particlePropertiesLibrary};
       wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
+#else
+      throw std::runtime_error("MD-Flexible was not compiled with support for ARM SVE.");
+#endif
       break;
     }
-#endif
   }
   return wasTuningIteration;
 }
