@@ -179,14 +179,14 @@ class ParticleContainerInterface {
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) = 0;
 
   /**
-   * @copydoc begin()
+   * @copydoc autopas::ParticleContainerInterface::begin()
    * @note const version
    */
   [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, false> begin(
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) const = 0;
 
   /**
-   * @copydoc begin()
+   * @copydoc autopas::ParticleContainerInterface::begin()
    * @note cbegin will guarantee to return a const_iterator.
    */
   [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, false> cbegin(
@@ -207,7 +207,7 @@ class ParticleContainerInterface {
       IteratorBehavior behavior) = 0;
 
   /**
-   * @copydoc getRegionIterator()
+   * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
    * @note const version
    */
   [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, false> getRegionIterator(
