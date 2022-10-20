@@ -406,7 +406,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
   internal::CellBlock3D<ParticleCell> &getCellBlock() { return _cellBlock; }
 
   /**
-   * @copydoc getCellBlock()
+   * @copydoc autopas::LinkedCells::getCellBlock()
    * @note const version
    */
   const internal::CellBlock3D<ParticleCell> &getCellBlock() const { return _cellBlock; }
