@@ -193,26 +193,20 @@ class LogicHandler {
    * @copydoc AutoPas::addHaloParticle()
    */
   void addHaloParticle(const Particle &haloParticle) {
-    if (utils::inBox(haloParticle.getR(), _autoTuner.getContainer()->getBoxMin(),
-                     _autoTuner.getContainer()->getBoxMax())) {
-      utils::ExceptionHandler::exception("Trying to add a halo particle that is not OUTSIDE of the bounding box.\n" +
-                                         haloParticle.toString());
-    }
-
     auto container = _autoTuner.getContainer();
+    const auto &boxMin = container->getBoxMin();
+    const auto &boxMax = container->getBoxMax();
+    if (utils::inBox(haloParticle.getR(), boxMin, boxMax)) {
+      autopas::utils::ExceptionHandler::exception(
+          "Trying to add a halo particle, which is not outside the box of the container ({}, {}).\nThe particle: {}",
+          utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), haloParticle.toString());
+    }
     if (not neighborListsAreValid()) {
       // If the neighbor lists are not valid, we can add the particle.
       container->template addHaloParticle</* checkInBox */ false>(haloParticle);
     } else {
-      const auto &boxMin = _autoTuner.getContainer()->getBoxMin();
-      const auto &boxMax = _autoTuner.getContainer()->getBoxMax();
-      if (utils::inBox(haloParticle.getR(), boxMin, boxMax)) {
-        autopas::utils::ExceptionHandler::exception(
-            "Trying to add a halo particle, which is inside the box of the container ({}, {}).\nThe particle: {}",
-            utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), haloParticle.toString());
-      }
       // Check if we can update an existing halo(dummy) particle.
-      bool updated = _autoTuner.getContainer()->updateHaloParticle(haloParticle);
+      bool updated = container->updateHaloParticle(haloParticle);
       if (not updated) {
         // If we couldn't find an existing particle, add it to the halo particle buffer.
         _haloParticleBuffer.push_back(haloParticle);
