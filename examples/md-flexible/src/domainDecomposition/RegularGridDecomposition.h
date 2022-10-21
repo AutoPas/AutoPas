@@ -161,10 +161,6 @@ class RegularGridDecomposition final : public DomainDecomposition {
    */
   unsigned int _rebuildFrequency;
   /**
-   * Stores the domain skin width.
-   */
-  double _skinWidth;
-  /**
    * The minimum coordinates of the global domain.
    */
   const std::array<double, _dimensionCount> _globalBoxMin;
