@@ -268,9 +268,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   /**
    * @copydoc autopas::ParticleContainerInterface::setRebuildFrequency()
    */
-  void setRebuildFrequency(unsigned int rebuildFrequency) {
-    _linkedCells.setRebuildFrequency(rebuildFrequency);
-  }
+  void setRebuildFrequency(unsigned int rebuildFrequency) { _linkedCells.setRebuildFrequency(rebuildFrequency); }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getInteractionLength()

@@ -62,8 +62,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
                         const double skinPerTimestep, const unsigned int rebuildFrequency,
                         const double cellSizeFactor = 1.0,
                         LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
-      : CellBasedParticleContainer<ReferenceCell>(boxMin, boxMax, cutoff, skinPerTimestep*rebuildFrequency),
-        _cellBlock(this->_cells, boxMin, boxMax, cutoff + skinPerTimestep*rebuildFrequency, cellSizeFactor),
+      : CellBasedParticleContainer<ReferenceCell>(boxMin, boxMax, cutoff, skinPerTimestep * rebuildFrequency),
+        _cellBlock(this->_cells, boxMin, boxMax, cutoff + skinPerTimestep * rebuildFrequency, cellSizeFactor),
         _loadEstimator(loadEstimator) {}
 
   /**
@@ -473,7 +473,6 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * Workaround for adding particles in parallel -> https://github.com/AutoPas/AutoPas/issues/555
    */
   AutoPasLock addParticleLock;
-  
 };
 
 }  // namespace autopas

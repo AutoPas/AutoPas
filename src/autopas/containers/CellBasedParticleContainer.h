@@ -36,11 +36,7 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    */
   CellBasedParticleContainer(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax,
                              const double cutoff, const double skin)
-      : _cells(),
-        _boxMin(boxMin),
-        _boxMax(boxMax),
-        _cutoff(cutoff),
-        _skin(skin) {}
+      : _cells(), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff), _skin(skin) {}
 
   /**
    * Destructor of CellBasedParticleContainer.
@@ -95,9 +91,7 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
   /**
    * @copydoc autopas::ParticleContainerInterface::getInteractionLength()
    */
-  [[nodiscard]] double getInteractionLength() const override final {
-    return _cutoff + _skin;
-  }
+  [[nodiscard]] double getInteractionLength() const override final { return _cutoff + _skin; }
   /**
    * Returns the total verlet Skin length
    * @return _skinPerTimestep * _rebuildFrequency

@@ -92,7 +92,8 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
   const auto &[expectedPositions, expectedHaloPositions, expectedVelocities] =
       setUpExpectations(particlePositions, particleVelocities, config.boxMin.value, config.boxMax.value,
                         config.verletSkinRadiusPerTimestep.value * config.verletRebuildFrequency.value / 2.,
-                        config.cutoff.value + config.verletSkinRadiusPerTimestep.value * config.verletRebuildFrequency, config.boundaryOption.value);
+                        config.cutoff.value + config.verletSkinRadiusPerTimestep.value * config.verletRebuildFrequency,
+                        config.boundaryOption.value);
 
   // particles need to be added at positions inside the domain
   // but also close to their designated positions so they end up in the correct MPI rank
