@@ -80,7 +80,7 @@ class ContainerSelectorInfo {
    */
   double cellSizeFactor;
   /**
-   * Length added to the cutoff for the verlet lists' skin per timestep.
+   * Length added to the cutoff for the verlet lists' skin per timestep inbetween rebuilding lists.
    */
   double verletSkinPerTimestep;
   /**
