@@ -30,7 +30,7 @@ class ContainerSelectorInfo {
    * Constructor.
    * @param cellSizeFactor Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and
    * VerletListsCells).
-   * @param verletSkinPerTimestep Length added to the cutoff for the verlet lists' skin per timestep.
+   * @param verletSkinPerTimestep Length added to the cutoff for the verlet lists' skin per timestep inbetween rebuilding lists.
    * @param verletRebuildFrequency rebuild frequency.
    * @param verletClusterSize Size of verlet Clusters
    * @param loadEstimator load estimation algorithm for balanced traversals.
