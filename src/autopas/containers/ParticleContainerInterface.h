@@ -264,30 +264,6 @@ class ParticleContainerInterface {
   virtual void setCutoff(double cutoff) = 0;
 
   /**
-   * Return the skin per timestep of the container.
-   * @return skin radius per Timestep.
-   */
-  [[nodiscard]] virtual double getSkinPerTimestep() const = 0;
-
-  /**
-   * Set the skin of the container per Timestep.
-   * @param skinPerTimestep
-   */
-  virtual void setSkinPerTimestep(double skinPerTimestep) = 0;
-
-  /**
-   * Return the rebulild frequency of the container.
-   * @return rebuildFrequency.
-   */
-  [[nodiscard]] virtual unsigned int getRebuildFrequency() const = 0;
-
-  /**
-   * Set the skin of the container per Timestep.
-   * @param rebuildFrequency
-   */
-  virtual void setRebuildFrequency(unsigned int rebuildFrequency) = 0;
-
-  /**
    * Return the verletSkin of the container verletSkinPerTimestep*rebuildFrequency
    * @return verletSkin
    */

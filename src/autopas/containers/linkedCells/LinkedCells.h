@@ -63,8 +63,8 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
   LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
               const double skinPerTimestep, const unsigned int rebuildFrequency, const double cellSizeFactor = 1.0,
               LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
-      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency),
-        _cellBlock(this->_cells, boxMin, boxMax, cutoff + skinPerTimestep * rebuildFrequency, cellSizeFactor),
+      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skinPerTimestep*rebuildFrequency),
+        _cellBlock(this->_cells, boxMin, boxMax, cutoff + skinPerTimestep*rebuildFrequency, cellSizeFactor),
         _loadEstimator(loadEstimator) {}
 
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::linkedCells; }
@@ -428,6 +428,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
    */
   autopas::LoadEstimatorOption _loadEstimator;
   // ThreeDimensionalCellHandler
+
 };
 
 }  // namespace autopas

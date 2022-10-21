@@ -253,22 +253,22 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   /**
    * @copydoc autopas::ParticleContainerInterface::getSkinPerTimestep()
    */
-  [[nodiscard]] double getSkinPerTimestep() const override final { return _linkedCells.getSkinPerTimestep(); }
+  [[nodiscard]] double getSkinPerTimestep() { return _linkedCells.getSkinPerTimestep(); }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::setSkinPerTimestep()
    */
-  void setSkinPerTimestep(double skinPerTimestep) override final { _linkedCells.setSkinPerTimestep(skinPerTimestep); }
+  void setSkinPerTimestep(double skinPerTimestep) { _linkedCells.setSkinPerTimestep(skinPerTimestep); }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getSkinPerTimestep()
    */
-  [[nodiscard]] unsigned int getRebuildFrequency() const override final { return _linkedCells.getRebuildFrequency(); }
+  [[nodiscard]] unsigned int getRebuildFrequency() { return _linkedCells.getRebuildFrequency(); }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::setRebuildFrequency()
    */
-  void setRebuildFrequency(unsigned int rebuildFrequency) override final {
+  void setRebuildFrequency(unsigned int rebuildFrequency) {
     _linkedCells.setRebuildFrequency(rebuildFrequency);
   }
 
