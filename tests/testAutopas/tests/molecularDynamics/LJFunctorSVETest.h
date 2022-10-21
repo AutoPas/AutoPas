@@ -92,7 +92,7 @@ class LJFunctorSVETest : public AutoPasTestBase, public ::testing::WithParamInte
   constexpr static double _cutoff{6.};
   constexpr static double _skinPerTimestep{0.1};
   constexpr static unsigned int _rebuildFrequency{20.};
-  constexpr static double _interactionLengthSquare{(_cutoff + _skin) * (_cutoff + _skinPerTimestep)};
+  constexpr static double _interactionLengthSquare{(_cutoff + _skinPerTimestep * _rebuildFrequency) * (_cutoff + _skinPerTimestep * _rebuildFrequency)};
   constexpr static double _epsilon{1.};
   constexpr static double _sigma{1.};
   const std::array<double, 3> _lowCorner{0., 0., 0.};
