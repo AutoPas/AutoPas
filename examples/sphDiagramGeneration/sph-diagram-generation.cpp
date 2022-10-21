@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
   autoPas.setBoxMin(boxMin);
   autoPas.setBoxMax(boxMax);
   autoPas.setCutoff(cutoff);
-  autoPas.setVerletSkinPerTimestep(skinPerTimestep * cutoff);
+  autoPas.setVerletSkinPerTimestep(skinPerTimestep * cutoff / rebuildFrequency);
   autoPas.setVerletRebuildFrequency(rebuildFrequency);
   autoPas.setAllowedContainers(containerOptions);
   autoPas.setAllowedNewton3Options({useNewton3 ? autopas::Newton3Option::enabled : autopas::Newton3Option::disabled});
