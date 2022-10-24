@@ -180,7 +180,10 @@ class LogicHandler {
       const auto &boxMax = _autoTuner.getContainer()->getBoxMax();
       if (utils::notInBox(p.getR(), boxMin, boxMax)) {
         autopas::utils::ExceptionHandler::exception(
-            "Trying to add a particle, which is not inside the box of the container ({}, {}).\nThe particle: {}",
+            "LogicHandler: Trying to add a particle that is not in the bounding box.\n"
+            "Box Min {}\n"
+            "Box Max {}\n"
+            "{}",
             utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), p.toString());
       }
       // If the container is valid, we add it to the particle buffer.
@@ -198,7 +201,10 @@ class LogicHandler {
     const auto &boxMax = container->getBoxMax();
     if (utils::inBox(haloParticle.getR(), boxMin, boxMax)) {
       autopas::utils::ExceptionHandler::exception(
-          "Trying to add a halo particle, which is not outside the box of the container ({}, {}).\nThe particle: {}",
+          "LogicHandler: Trying to add a halo particle that is not outside the box of the container.\n"
+          "Box Min {}\n"
+          "Box Max {}\n"
+          "{}",
           utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), haloParticle.toString());
     }
     if (not neighborListsAreValid()) {

@@ -89,9 +89,10 @@ class ParticleContainerInterface {
         addParticleImpl(p);
       } else {
         utils::ExceptionHandler::exception(
-            "Trying to add a particle that is not in the bounding box.\n"
+            "ParticleContainerInterface: Trying to add a particle that is not in the bounding box.\n"
             "Box Min {}\n"
-            "Box Max {}\n",
+            "Box Max {}\n"
+            "{}",
             this->getBoxMin(), this->getBoxMax(), p.toString());
       }
     }
