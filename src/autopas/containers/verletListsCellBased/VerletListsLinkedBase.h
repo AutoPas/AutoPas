@@ -249,7 +249,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    * @copydoc autopas::ParticleContainerInterface::getVerletSkin()
    */
   [[nodiscard]] double getVerletSkin() const override final { return _linkedCells.getVerletSkin(); }
-  
+
   /**
    * @copydoc autopas::ParticleContainerInterface::getInteractionLength()
    */
