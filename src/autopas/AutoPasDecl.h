@@ -435,7 +435,6 @@ class AutoPas {
   /**
    * Function to iterate over all pairs of particles in the container.
    * This function only handles short-range interactions.
-   * @param _verletSkinPerTimestep
    * @return _verletSkin
    */
   double getVerletSkin() {
