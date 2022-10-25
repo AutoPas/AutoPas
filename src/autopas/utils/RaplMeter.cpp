@@ -19,7 +19,7 @@
 
 namespace autopas::utils {
 
-int RaplMeter::open_perf_event(int type, int config) {
+int RaplMeter::open_perf_event(int type, int config, int cpu) {
   struct perf_event_attr attr;
   memset(&attr, 0, sizeof(attr));
   attr.type = type;
@@ -28,7 +28,7 @@ int RaplMeter::open_perf_event(int type, int config) {
     return -1;
   }
 
-  int fd = syscall(__NR_perf_event_open, &attr, -1 /*PID*/, 0 /*CPU*/, -1 /*GROUP FD*/, 0 /*FLAGS*/);
+  int fd = syscall(__NR_perf_event_open, &attr, -1 /*PID*/, cpu, -1 /*GROUP FD*/, 0 /*FLAGS*/);
   if (fd < 0) {
     if (errno == EACCES) {
       throw ExceptionHandler::AutoPasException("Failed to open perf event: Permission denied");
@@ -39,6 +39,29 @@ int RaplMeter::open_perf_event(int type, int config) {
 }
 
 void RaplMeter::init() {
+  {
+    FILE *fd;
+    int i = 0;
+    int package;
+    int last_package = 0;
+    do {
+      char filename[64];
+      snprintf(filename, 63, "/sys/devices/system/cpu/cpu%d/topology/physical_package_id", i);
+      fd = fopen(filename, "r");
+      if (!fd) {
+        break;
+      }
+      if (fscanf(fd, "%d", &package) == 0) {
+        throw ExceptionHandler::AutoPasException("failed to read cpu topology");
+      }
+      fclose(fd);
+      if (this->_cpus.size() == 0 or last_package < package) {
+        _cpus.push_back(i);
+        last_package = package;
+      }
+      i++;
+    } while (fd);
+  }
   if (FILE *fff = fopen("/sys/bus/event_source/devices/power/type", "r")) {
     if (fscanf(fff, "%d", &this->_type) != 1) {
       throw ExceptionHandler::AutoPasException("Failed to parse /sys/bus/event_source/devices/power/type");
@@ -55,8 +78,6 @@ void RaplMeter::init() {
       _psys_config = 0;
     }
     fclose(fff);
-  } else {
-    _psys_fd = -1;
   }
   if (FILE *fff = fopen("/sys/bus/event_source/devices/power/events/energy-psys.scale", "r")) {
     if (fscanf(fff, "%lf", &this->_psys_unit) != 1) {
@@ -75,8 +96,6 @@ void RaplMeter::init() {
       _pkg_config = 0;
     }
     fclose(fff);
-  } else {
-    _pkg_fd = -1;
   }
   if (FILE *fff = fopen("/sys/bus/event_source/devices/power/events/energy-pkg.scale", "r")) {
     if (fscanf(fff, "%lf", &this->_pkg_unit) != 1) {
@@ -95,8 +114,6 @@ void RaplMeter::init() {
       _cores_config = 0;
     }
     fclose(fff);
-  } else {
-    _cores_fd = -1;
   }
   if (FILE *fff = fopen("/sys/bus/event_source/devices/power/events/energy-cores.scale", "r")) {
     if (fscanf(fff, "%lf", &this->_cores_unit) != 1) {
@@ -115,8 +132,6 @@ void RaplMeter::init() {
       _ram_config = 0;
     }
     fclose(fff);
-  } else {
-    _ram_fd = -1;
   }
   if (FILE *fff = fopen("/sys/bus/event_source/devices/power/events/energy-ram.scale", "r")) {
     if (fscanf(fff, "%lf", &this->_ram_unit) != 1) {
@@ -130,17 +145,25 @@ void RaplMeter::init() {
 }
 
 RaplMeter::~RaplMeter() {
-  if (_psys_fd != -1) {
-    close(_psys_fd);
+  for (int f : _psys_fd) {
+    if (f != -1) {
+      close(f);
+    }
   }
-  if (_pkg_fd != -1) {
-    close(_pkg_fd);
+  for (int f : _pkg_fd) {
+    if (f != -1) {
+      close(f);
+    }
   }
-  if (_cores_fd != -1) {
-    close(_cores_fd);
+  for (int f : _cores_fd) {
+    if (f != -1) {
+      close(f);
+    }
   }
-  if (_ram_fd != -1) {
-    close(_ram_fd);
+  for (int f : _ram_fd) {
+    if (f != -1) {
+      close(f);
+    }
   }
 }
 
@@ -157,30 +180,68 @@ long RaplMeter::read_perf_event(int fd) {
 }
 
 void RaplMeter::reset() {
-  if (_psys_fd != -1) {
-    close(_psys_fd);
+  for (int f : this->_psys_fd) {
+    if (f != -1) {
+      close(f);
+    }
   }
-  if (_pkg_fd != -1) {
-    close(_pkg_fd);
+  for (int f : this->_pkg_fd) {
+    if (f != -1) {
+      close(f);
+    }
   }
-  if (_cores_fd != -1) {
-    close(_cores_fd);
+  for (int f : this->_cores_fd) {
+    if (f != -1) {
+      close(f);
+    }
   }
-  if (_ram_fd != -1) {
-    close(_ram_fd);
+  for (int f : this->_ram_fd) {
+    if (f != -1) {
+      close(f);
+    }
   }
 
-  this->_psys_fd = open_perf_event(this->_type, this->_psys_config);
-  this->_pkg_fd = open_perf_event(this->_type, this->_pkg_config);
-  this->_cores_fd = open_perf_event(this->_type, this->_cores_config);
-  this->_ram_fd = open_perf_event(this->_type, this->_ram_config);
+  this->_psys_fd.clear();
+  this->_pkg_fd.clear();
+  this->_cores_fd.clear();
+  this->_ram_fd.clear();
+
+  for (int i : this->_cpus) {
+    this->_psys_fd.push_back(open_perf_event(this->_type, this->_psys_config, i));
+    this->_pkg_fd.push_back(open_perf_event(this->_type, this->_pkg_config, i));
+    this->_cores_fd.push_back(open_perf_event(this->_type, this->_cores_config, i));
+    this->_ram_fd.push_back(open_perf_event(this->_type, this->_ram_config, i));
+  }
 }
 
 void RaplMeter::sample() {
-  this->_pkg_raw = read_perf_event(this->_pkg_fd);
-  this->_cores_raw = read_perf_event(this->_cores_fd);
-  this->_ram_raw = read_perf_event(this->_ram_fd);
-  this->_psys_raw = read_perf_event(this->_psys_fd);
+  this->_psys_raw = 0;
+  for (int f : this->_psys_fd) {
+    if (f != -1) {
+      this->_psys_raw += read_perf_event(f);
+    }
+  }
+
+  this->_pkg_raw = 0;
+  for (int f : this->_pkg_fd) {
+    if (f != -1) {
+      this->_pkg_raw += read_perf_event(f);
+    }
+  }
+
+  this->_cores_raw = 0;
+  for (int f : this->_cores_fd) {
+    if (f != -1) {
+      this->_cores_raw += read_perf_event(f);
+    }
+  }
+
+  this->_ram_raw = 0;
+  for (int f : this->_ram_fd) {
+    if (f != -1) {
+      this->_ram_raw += read_perf_event(f);
+    }
+  }
 }
 
 double RaplMeter::get_psys_energy() { return this->_psys_unit * this->_psys_raw; }
@@ -189,14 +250,10 @@ double RaplMeter::get_cores_energy() { return this->_cores_unit * this->_cores_r
 double RaplMeter::get_ram_energy() { return this->_ram_unit * this->_ram_raw; }
 
 long RaplMeter::get_total_energy() {
-  if (this->_psys_fd != -1) {
+  if (this->_psys_raw > 0) {
     return this->_psys_raw;
   }
-  long value = this->_pkg_raw;
-  if (this->_ram_fd != -1) {
-    value += this->_ram_raw;
-  }
-  return value;
+  return this->_pkg_raw + this->_ram_raw;
 }
 
 }  // namespace autopas::utils

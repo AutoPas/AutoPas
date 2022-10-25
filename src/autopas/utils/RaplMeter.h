@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <fstream>
+#include <vector>
 
 namespace autopas::utils {
 
@@ -18,15 +19,14 @@ namespace autopas::utils {
  */
 class RaplMeter {
  private:
+  std::vector<int> _cpus;
   int _type;
   long _psys_raw, _pkg_raw, _cores_raw, _ram_raw;
   double _psys_unit, _pkg_unit, _cores_unit, _ram_unit;
   int _psys_config, _pkg_config, _cores_config, _ram_config;
-  int _psys_fd, _pkg_fd, _cores_fd, _ram_fd;
+  std::vector<int> _psys_fd, _pkg_fd, _cores_fd, _ram_fd;
 
-  void open_msr();
-  uint64_t read_msr(int msr_offset);
-  int open_perf_event(int type, int config);
+  int open_perf_event(int type, int config, int cpu);
   long read_perf_event(int fd);
 
  public:
