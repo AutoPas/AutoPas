@@ -33,7 +33,7 @@ int RaplMeter::open_perf_event(int type, int config, int cpu) {
     if (errno == EACCES) {
       throw ExceptionHandler::AutoPasException("Failed to open perf event: Permission denied");
     }
-    throw ExceptionHandler::AutoPasException("Failed to open perf event");
+    throw ExceptionHandler::AutoPasException(std::string("Failed to open perf event: ") + std::string(strerror(errno)));
   }
   return fd;
 }
