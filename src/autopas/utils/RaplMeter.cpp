@@ -33,7 +33,10 @@ int RaplMeter::open_perf_event(int type, int config, int cpu) {
     if (errno == EACCES) {
       throw ExceptionHandler::AutoPasException("Failed to open perf event: Permission denied");
     }
-    throw ExceptionHandler::AutoPasException(std::string("Failed to open perf event: ") + std::string(strerror(errno)));
+    std::stringstream err_msg;
+    err_msg << "Failed to open perf event " << strerror(errno) << " (type=" << type << ", config=" << config
+            << "cpu=" << cpu << ")";
+    throw ExceptionHandler::AutoPasException(err_msg.str());
   }
   return fd;
 }
@@ -56,6 +59,8 @@ void RaplMeter::init() {
       }
       fclose(fd);
       if (this->_cpus.size() == 0 or last_package < package) {
+      AutoPasLog(debug,
+                 "Found CPU with ID {} in package {}", i, package);
         _cpus.push_back(i);
         last_package = package;
       }
