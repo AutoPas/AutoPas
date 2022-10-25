@@ -35,7 +35,7 @@ int RaplMeter::open_perf_event(int type, int config, int cpu) {
     }
     std::stringstream err_msg;
     err_msg << "Failed to open perf event " << strerror(errno) << " (type=" << type << ", config=" << config
-            << "cpu=" << cpu << ")";
+            << ", cpu=" << cpu << ")";
     throw ExceptionHandler::AutoPasException(err_msg.str());
   }
   return fd;
@@ -59,8 +59,7 @@ void RaplMeter::init() {
       }
       fclose(fd);
       if (this->_cpus.size() == 0 or last_package < package) {
-      AutoPasLog(debug,
-                 "Found CPU with ID {} in package {}", i, package);
+        AutoPasLog(debug, "Found CPU with ID {} in package {}", i, package);
         _cpus.push_back(i);
         last_package = package;
       }
@@ -76,7 +75,7 @@ void RaplMeter::init() {
     throw ExceptionHandler::AutoPasException("No support for energy measurements detected.");
   }
 
-  int psys_config;
+  this->_psys_config = 0;
   if (FILE *fff = fopen("/sys/bus/event_source/devices/power/events/energy-psys", "r")) {
     if (fscanf(fff, "event=%x", &this->_psys_config) != 1) {
       AutoPasLog(warn, "psys measurement support detected, but failed to parse config file");
@@ -94,7 +93,7 @@ void RaplMeter::init() {
     fclose(fff);
   }
 
-  int pkg_config;
+  this->_pkg_config = 0;
   if (FILE *fff = fopen("/sys/bus/event_source/devices/power/events/energy-pkg", "r")) {
     if (fscanf(fff, "event=%x", &this->_pkg_config) != 1) {
       AutoPasLog(warn, "pkg energy measurement support detected, but failed to parse config file");
@@ -112,7 +111,7 @@ void RaplMeter::init() {
     fclose(fff);
   }
 
-  int cores_config;
+  this->_cores_config = 0;
   if (FILE *fff = fopen("/sys/bus/event_source/devices/power/events/energy-cores", "r")) {
     if (fscanf(fff, "event=%x", &this->_cores_config) != 1) {
       AutoPasLog(warn, "cores energy measurement support detected, but failed to parse config file");
@@ -130,7 +129,7 @@ void RaplMeter::init() {
     fclose(fff);
   }
 
-  int ram_config;
+  this->_ram_config = 0;
   if (FILE *fff = fopen("/sys/bus/event_source/devices/power/events/energy-ram", "r")) {
     if (fscanf(fff, "event=%x", &this->_ram_config) != 1) {
       AutoPasLog(warn, "ram energy measurement support detected, but failed to parse config file");
@@ -212,10 +211,18 @@ void RaplMeter::reset() {
   this->_ram_fd.clear();
 
   for (int i : this->_cpus) {
-    this->_psys_fd.push_back(open_perf_event(this->_type, this->_psys_config, i));
-    this->_pkg_fd.push_back(open_perf_event(this->_type, this->_pkg_config, i));
-    this->_cores_fd.push_back(open_perf_event(this->_type, this->_cores_config, i));
-    this->_ram_fd.push_back(open_perf_event(this->_type, this->_ram_config, i));
+    if (this->_psys_config > 0) {
+      this->_psys_fd.push_back(open_perf_event(this->_type, this->_psys_config, i));
+    }
+    if (this->_pkg_config > 0) {
+      this->_pkg_fd.push_back(open_perf_event(this->_type, this->_pkg_config, i));
+    }
+    if (this->_cores_config > 0) {
+      this->_cores_fd.push_back(open_perf_event(this->_type, this->_cores_config, i));
+    }
+    if (this->_ram_config > 0) {
+      this->_ram_fd.push_back(open_perf_event(this->_type, this->_ram_config, i));
+    }
   }
 }
 
