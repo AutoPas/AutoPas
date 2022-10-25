@@ -695,7 +695,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   /**
    * Set the verlet skin length per timestep for the container.
    * @param skinPerTimestep
-   */  
+   */
   void setSkinPerTimestep(double skinPerTimestep) { _skinPerTimestep = skinPerTimestep; }
 
   /**
@@ -707,7 +707,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   /**
    * Set the rebuild Frequency value for the container.
    * @param rebuildFrequency
-   */  
+   */
   void setRebuildFrequency(unsigned int rebuildFrequency) { _rebuildFrequency = rebuildFrequency; }
 
   [[nodiscard]] double getInteractionLength() const override { return _cutoff + _skinPerTimestep * _rebuildFrequency; }
