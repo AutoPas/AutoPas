@@ -27,7 +27,7 @@ do
     --particle-spacing                  .5 \
     --traversal                         sliced \
     --verlet-rebuild-frequency          20 \
-    --verlet-skin-radius                .2 \
+    --verlet-skin-radius-per-timestep   .01 \
     )
 
     if [ "${configPrinted}" = false ] ; then

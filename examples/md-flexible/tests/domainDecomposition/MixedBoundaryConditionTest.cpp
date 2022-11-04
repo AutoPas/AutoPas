@@ -72,7 +72,8 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
   config.boxMin.value = {0., 0., 0.};
   config.boxMax.value = {5., 5., 5.};
   config.cutoff.value = 0.3;
-  config.verletSkinRadius.value = 0.2;
+  config.verletSkinRadiusPerTimestep.value = 0.01;
+  config.verletRebuildFrequency.value = 20;
   config.subdivideDimension.value = {true, true, true};
   config.boundaryOption.value = boundaryConditions;
 
@@ -84,13 +85,15 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
   autoPasContainer->setBoxMin(domainDecomposition.getLocalBoxMin());
   autoPasContainer->setBoxMax(domainDecomposition.getLocalBoxMax());
   autoPasContainer->setCutoff(config.cutoff.value);
-  autoPasContainer->setVerletSkin(config.verletSkinRadius.value);
+  autoPasContainer->setVerletSkinPerTimestep(config.verletSkinRadiusPerTimestep.value);
+  autoPasContainer->setVerletRebuildFrequency(config.verletRebuildFrequency.value);
   autoPasContainer->init();
 
-  const auto &[expectedPositions, expectedHaloPositions, expectedVelocities] =
-      setUpExpectations(particlePositions, particleVelocities, config.boxMin.value, config.boxMax.value,
-                        config.verletSkinRadius.value / 2., config.cutoff.value + config.verletSkinRadius.value,
-                        config.boundaryOption.value);
+  const auto &[expectedPositions, expectedHaloPositions, expectedVelocities] = setUpExpectations(
+      particlePositions, particleVelocities, config.boxMin.value, config.boxMax.value,
+      config.verletSkinRadiusPerTimestep.value * config.verletRebuildFrequency.value / 2.,
+      config.cutoff.value + config.verletSkinRadiusPerTimestep.value * config.verletRebuildFrequency.value,
+      config.boundaryOption.value);
 
   // particles need to be added at positions inside the domain
   // but also close to their designated positions so they end up in the correct MPI rank

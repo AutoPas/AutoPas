@@ -36,7 +36,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.generatorOption, config.iterations, config.tuningInterval, config.logLevel, config.logFileName,
       config.distributionMean, config.maxTuningPhasesWithoutTest, config.particlesPerDim, config.particlesTotal,
       config.relativeOptimumRange, config.relativeBlacklistRange, config.tuningPhases, config.verletClusterSize,
-      config.verletSkinRadius, config.particleSpacing, config.tuningSamples, config.traversalOptions,
+      config.verletSkinRadiusPerTimestep, config.particleSpacing, config.tuningSamples, config.traversalOptions,
       config.tuningStrategyOption, config.mpiStrategyOption, config.MPITuningMaxDifferenceForBucket,
       config.MPITuningWeightForMaxDensity, config.useThermostat, config.verletRebuildFrequency, config.vtkFileName,
       config.vtkWriteFrequency, config.selectorStrategy, config.yamlFilename, config.distributionStdDev,
@@ -405,11 +405,11 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case decltype(config.verletSkinRadius)::getoptChar: {
+      case decltype(config.verletSkinRadiusPerTimestep)::getoptChar: {
         try {
-          config.verletSkinRadius.value = stod(strArg);
+          config.verletSkinRadiusPerTimestep.value = stod(strArg);
         } catch (const exception &) {
-          cerr << "Error parsing verlet-skin-radius: " << optarg << endl;
+          cerr << "Error parsing verlet-skin-radius-per-timestep: " << optarg << endl;
           displayHelp = true;
         }
         break;

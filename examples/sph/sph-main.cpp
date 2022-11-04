@@ -302,7 +302,7 @@ int main() {
   sphSystem.setBoxMin(boxMin);
   sphSystem.setBoxMax(boxMax);
   sphSystem.setCutoff(cutoff);
-  sphSystem.setVerletSkin(skinToCutoffRatio * cutoff);
+  sphSystem.setVerletSkinPerTimestep(skinToCutoffRatio * cutoff / rebuildFrequency);
   sphSystem.setVerletRebuildFrequency(rebuildFrequency);
 
   // In case you want to use another tuning strategy, you can do that using:

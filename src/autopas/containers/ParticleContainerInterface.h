@@ -179,14 +179,14 @@ class ParticleContainerInterface {
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) = 0;
 
   /**
-   * @copydoc begin()
+   * @copydoc autopas::ParticleContainerInterface::begin()
    * @note const version
    */
   [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, false> begin(
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) const = 0;
 
   /**
-   * @copydoc begin()
+   * @copydoc autopas::ParticleContainerInterface::begin()
    * @note cbegin will guarantee to return a const_iterator.
    */
   [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, false> cbegin(
@@ -207,7 +207,7 @@ class ParticleContainerInterface {
       IteratorBehavior behavior) = 0;
 
   /**
-   * @copydoc getRegionIterator()
+   * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
    * @note const version
    */
   [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, false> getRegionIterator(
@@ -264,16 +264,10 @@ class ParticleContainerInterface {
   virtual void setCutoff(double cutoff) = 0;
 
   /**
-   * Return the skin of the container.
-   * @return skin radius.
+   * Return the verletSkin of the container verletSkinPerTimestep*rebuildFrequency
+   * @return verletSkin
    */
-  [[nodiscard]] virtual double getSkin() const = 0;
-
-  /**
-   * Set the skin of the container.
-   * @param skin
-   */
-  virtual void setSkin(double skin) = 0;
+  [[nodiscard]] virtual double getVerletSkin() const = 0;
 
   /**
    * Return the interaction length (cutoff+skin) of the container.
