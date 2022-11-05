@@ -18,7 +18,8 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
                           const std::set<TraversalOption> &traversalOptions,
                           const std::set<LoadEstimatorOption> &loadEstimatorOptions,
                           const std::set<DataLayoutOption> &dataLayoutOptions,
-                          const std::set<Newton3Option> &newton3Options) {
+                          const std::set<Newton3Option> &newton3Options,
+                          const NumberSet<int> &verletRebuildFrequencies) {
   size_t numConfigs = 0;
   // only take into account finite sets of cellSizeFactors.
   size_t cellSizeFactorArraySize;
@@ -134,9 +135,9 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
                               std::set<TraversalOption> &traversalOptions,
                               std::set<LoadEstimatorOption> &loadEstimatorOptions,
                               std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options,
-                              const int rank, const int commSize) {
+                              const int rank, const int commSize, NumberSet<int> &verletRebuildFrequencies) {
   int numConfigs = getSearchSpaceSize(containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions,
-                                      dataLayoutOptions, newton3Options);
+                                      dataLayoutOptions, newton3Options, verletRebuildFrequencies);
 
   if (numConfigs == 0) {
     utils::ExceptionHandler::exception("Could not generate valid configurations, aborting");
@@ -192,16 +193,20 @@ SerializedConfiguration serializeConfiguration(Configuration configuration) {
   config[3] = castToByte(configuration.dataLayout);
   config[4] = castToByte(configuration.newton3);
   std::memcpy(&config[5], &configuration.cellSizeFactor, sizeof(double));
+  std::memcpy(&config[6], &configuration.cellSizeFactor, sizeof(int));
   return config;
 }
 
 Configuration deserializeConfiguration(SerializedConfiguration config) {
   double cellSizeFactor;
+  int verletRebuildFrequency;
   std::memcpy(&cellSizeFactor, &config[5], sizeof(double));
+  std::memcpy(&verletRebuildFrequency, &config[6], sizeof(int));
   return Configuration(static_cast<ContainerOption::Value>(config[0]), cellSizeFactor,
                        static_cast<TraversalOption::Value>(config[1]),
                        static_cast<LoadEstimatorOption::Value>(config[2]),
-                       static_cast<DataLayoutOption::Value>(config[3]), static_cast<Newton3Option::Value>(config[4]));
+                       static_cast<DataLayoutOption::Value>(config[3]), static_cast<Newton3Option::Value>(config[4]),
+                       verletRebuildFrequency);
 }
 
 }  // namespace autopas::utils::AutoPasConfigurationCommunicator

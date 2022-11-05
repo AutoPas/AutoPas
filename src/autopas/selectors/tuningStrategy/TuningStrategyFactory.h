@@ -19,6 +19,7 @@ namespace autopas::TuningStrategyFactory {
  * @param tuningStrategyOption
  * @param allowedContainers
  * @param allowedCellSizeFactors
+ * @param allowedVerletRebuildFrequencies
  * @param allowedTraversals
  * @param allowedLoadEstimators
  * @param allowedDataLayouts
@@ -45,4 +46,14 @@ std::unique_ptr<autopas::TuningStrategyInterface> generateTuningStrategy(
     AcquisitionFunctionOption acquisitionFunctionOption, ExtrapolationMethodOption extrapolationMethodOption,
     const std::string &outputSuffix = "", MPIStrategyOption mpiStrategyOption = MPIStrategyOption::noMPI,
     AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD);
+std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(
+    TuningStrategyOption tuningStrategyOption, std::set<autopas::ContainerOption> &allowedContainers,
+    NumberSet<double> &allowedCellSizeFactors, std::set<autopas::TraversalOption> &allowedTraversals,
+    std::set<autopas::LoadEstimatorOption> &allowedLoadEstimators,
+    std::set<autopas::DataLayoutOption> &allowedDataLayouts, std::set<autopas::Newton3Option> &allowedNewton3Options,
+    unsigned int maxEvidence, double relativeOptimum, unsigned int maxTuningPhasesWithoutTest,
+    double relativeBlacklistRange, unsigned int evidenceFirstPrediction,
+    AcquisitionFunctionOption acquisitionFunctionOption, ExtrapolationMethodOption extrapolationMethodOption,
+    const std::string &outputSuffix, MPIStrategyOption mpiStrategyOption, AutoPas_MPI_Comm comm,
+    NumberSet<int> &allowedVerletRebuildFrequencies);
 }  // namespace autopas::TuningStrategyFactory

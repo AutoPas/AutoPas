@@ -30,20 +30,22 @@ class Configuration {
    * @param _dataLayout
    * @param _newton3
    * @param _cellSizeFactor
+   * @param _verletRebuildFrequency
    */
   constexpr Configuration(ContainerOption _container, double _cellSizeFactor, TraversalOption _traversal,
-                          LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout, Newton3Option _newton3)
+                          LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout, Newton3Option _newton3, int _verletRebuildFrequency)
       : container(_container),
         traversal(_traversal),
         loadEstimator(_loadEstimator),
         dataLayout(_dataLayout),
         newton3(_newton3),
-        cellSizeFactor(_cellSizeFactor) {}
+        cellSizeFactor(_cellSizeFactor),
+        verletRebuildFrequency(_verletRebuildFrequency) {}
 
   /**
    * Constructor taking no arguments. Initializes all properties to an invalid choice or false.
    */
-  constexpr Configuration() : container(), traversal(), loadEstimator(), dataLayout(), newton3(), cellSizeFactor(-1.) {}
+  constexpr Configuration() : container(), traversal(), loadEstimator(), dataLayout(), newton3(), cellSizeFactor(-1.), verletRebuildFrequency(-1) {}
 
   /**
    * Returns string representation in JSON style of the configuration object.
@@ -52,7 +54,8 @@ class Configuration {
   [[nodiscard]] std::string toString() const {
     return "{Container: " + container.to_string() + " , CellSizeFactor: " + std::to_string(cellSizeFactor) +
            " , Traversal: " + traversal.to_string() + " , Load Estimator: " + loadEstimator.to_string() +
-           " , Data Layout: " + dataLayout.to_string() + " , Newton 3: " + newton3.to_string() + "}";
+           " , Data Layout: " + dataLayout.to_string() + " , Newton 3: " + newton3.to_string() +
+           " , VerletRebuildFrequency: " + std::to_string(verletRebuildFrequency) + "}";
   }
 
   /**
@@ -75,7 +78,8 @@ class Configuration {
    */
   [[nodiscard]] bool hasValidValues() const {
     return container != ContainerOption() and cellSizeFactor != -1 and traversal != TraversalOption() and
-           loadEstimator != LoadEstimatorOption() and dataLayout != DataLayoutOption() and newton3 != Newton3Option();
+           loadEstimator != LoadEstimatorOption() and dataLayout != DataLayoutOption() and newton3 != Newton3Option() and
+           verletRebuildFrequency != -1;
   }
 
   /**
@@ -102,6 +106,10 @@ class Configuration {
    * CellSizeFactor
    */
   double cellSizeFactor;
+  /**
+   * VerletRebuildFrequency
+   */
+  int verletRebuildFrequency;
 
  private:
   /**
@@ -131,6 +139,7 @@ class Configuration {
     retString.pop_back();
     return retString;
   }
+
 };
 
 /**
@@ -155,7 +164,8 @@ inline std::ostream &operator<<(std::ostream &os, const Configuration &configura
 inline bool operator==(const Configuration &lhs, const Configuration &rhs) {
   return lhs.container == rhs.container and lhs.cellSizeFactor == rhs.cellSizeFactor and
          lhs.traversal == rhs.traversal and lhs.loadEstimator == rhs.loadEstimator and
-         lhs.dataLayout == rhs.dataLayout and lhs.newton3 == rhs.newton3;
+         lhs.dataLayout == rhs.dataLayout and lhs.newton3 == rhs.newton3 and
+         lhs.verletRebuildFrequency == rhs.verletRebuildFrequency;
 }
 
 /**
@@ -181,8 +191,8 @@ inline bool operator!=(const Configuration &lhs, const Configuration &rhs) { ret
  * @return
  */
 inline bool operator<(const Configuration &lhs, const Configuration &rhs) {
-  return std::tie(lhs.container, lhs.cellSizeFactor, lhs.traversal, lhs.loadEstimator, lhs.dataLayout, lhs.newton3) <
-         std::tie(rhs.container, rhs.cellSizeFactor, rhs.traversal, rhs.loadEstimator, rhs.dataLayout, rhs.newton3);
+  return std::tie(lhs.container, lhs.cellSizeFactor, lhs.traversal, lhs.loadEstimator, lhs.dataLayout, lhs.newton3, lhs.verletRebuildFrequency) <
+         std::tie(rhs.container, rhs.cellSizeFactor, rhs.traversal, rhs.loadEstimator, rhs.dataLayout, rhs.newton3, rhs.verletRebuildFrequency);
 }
 
 /**
@@ -201,8 +211,9 @@ struct ConfigHash {
                            static_cast<std::size_t>(configuration.traversal) * 1000 +
                            static_cast<std::size_t>(configuration.container) * 10000;
     std::size_t doubleHash = std::hash<double>{}(configuration.cellSizeFactor);
+    std::size_t intHash = std::hash<int>{}(configuration.verletRebuildFrequency);
 
-    return enumHash ^ doubleHash;
+    return enumHash ^ doubleHash ^ intHash;
   }
 };
 

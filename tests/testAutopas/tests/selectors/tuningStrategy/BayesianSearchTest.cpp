@@ -14,7 +14,7 @@ TEST_F(BayesianSearchTest, testMaxEvidence) {
   autopas::BayesianSearch bayesSearch(
       {autopas::ContainerOption::linkedCells}, autopas::NumberSetFinite<double>({1}),
       {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
-      {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled},
+      {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, autopas::NumberSetFinite<int>({5}), {autopas::Newton3Option::disabled},
       maxEvidence);
 
   // while #evidence < maxEvidence. tuning -> True

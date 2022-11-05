@@ -24,7 +24,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     unsigned int maxEvidence, double relativeOptimum, unsigned int maxTuningPhasesWithoutTest,
     double relativeBlacklistRange, unsigned int evidenceFirstPrediction,
     AcquisitionFunctionOption acquisitionFunctionOption, ExtrapolationMethodOption extrapolationMethodOption,
-    const std::string &outputSuffix, MPIStrategyOption mpiStrategyOption, AutoPas_MPI_Comm comm) {
+    const std::string &outputSuffix, MPIStrategyOption mpiStrategyOption, AutoPas_MPI_Comm comm, NumberSet<int> &allowedVerletRebuildFrequencies) {
   // ======== prepare MPI =====================================================
 
   // only needed in the MPI case, but need to be declared here.
@@ -67,7 +67,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
 
       utils::AutoPasConfigurationCommunicator::distributeConfigurations(
           allowedContainers, allowedCellSizeFactors, allowedTraversals, allowedLoadEstimators, allowedDataLayouts,
-          allowedNewton3Options, rank, commSize);
+          allowedNewton3Options, rank, commSize, allowedVerletRebuildFrequencies);
       break;
     }
 
@@ -103,7 +103,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
 
     case TuningStrategyOption::bayesianSearch: {
       tuningStrategy = std::make_unique<BayesianSearch>(allowedContainers, allowedCellSizeFactors, allowedTraversals,
-                                                        allowedLoadEstimators, allowedDataLayouts,
+                                                        allowedLoadEstimators, allowedDataLayouts, allowedVerletRebuildFrequencies,
                                                         allowedNewton3Options, maxEvidence, acquisitionFunctionOption);
       break;
     }

@@ -46,6 +46,7 @@ class BayesianSearch : public TuningStrategyInterface {
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
    * @param allowedCellSizeFactors
+   * @param allowedVerletRebuildFrequency
    * @param predAcqFunction acquisition function used for prediction while tuning.
    * @param predNumLHSamples number of samples used for prediction while tuning.
    * @param maxEvidence stop tuning after given number of evidence provided.
@@ -57,6 +58,7 @@ class BayesianSearch : public TuningStrategyInterface {
       const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
       const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions = LoadEstimatorOption::getAllOptions(),
       const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
+      const NumberSet<int>  &allowedVerletRebuildFrequency = NumberInterval<int>(1, 30),
       const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(), size_t maxEvidence = 10,
       AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::upperConfidenceBound,
       size_t predNumLHSamples = 1000, unsigned long seed = std::random_device()())
@@ -64,6 +66,7 @@ class BayesianSearch : public TuningStrategyInterface {
         _dataLayoutOptions(allowedDataLayoutOptions.begin(), allowedDataLayoutOptions.end()),
         _newton3Options(allowedNewton3Options.begin(), allowedNewton3Options.end()),
         _cellSizeFactors(allowedCellSizeFactors.clone()),
+        _verletRebuildFrequencies(allowedVerletRebuildFrequency.clone()),
         _encoder(),
         _currentConfig(),
         _invalidConfigs(),
@@ -102,7 +105,7 @@ class BayesianSearch : public TuningStrategyInterface {
     }
 
     _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options,
-                               *_cellSizeFactors);
+                               *_cellSizeFactors, *_verletRebuildFrequencies);
     _gaussianProcess.setDimension(_encoder.getOneHotDims());
 
     tune();
@@ -153,6 +156,7 @@ class BayesianSearch : public TuningStrategyInterface {
   std::vector<DataLayoutOption> _dataLayoutOptions;
   std::vector<Newton3Option> _newton3Options;
   std::unique_ptr<NumberSet<double>> _cellSizeFactors;
+  std::unique_ptr<NumberSet<int>> _verletRebuildFrequencies;
   FeatureVectorEncoder _encoder;
 
   FeatureVector _currentConfig;
@@ -254,7 +258,7 @@ void BayesianSearch::removeN3Option(Newton3Option badNewton3Option) {
   _newton3Options.erase(std::remove(_newton3Options.begin(), _newton3Options.end(), badNewton3Option),
                         _newton3Options.end());
   _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options,
-                             *_cellSizeFactors);
+                             *_cellSizeFactors, *_verletRebuildFrequencies);
 
   _gaussianProcess.setDimension(_encoder.getOneHotDims());
   _currentSamples.clear();

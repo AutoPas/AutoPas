@@ -224,6 +224,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
   std::vector<DataLayoutOption> _dataLayoutOptions;
   std::vector<Newton3Option> _newton3Options;
   std::unique_ptr<NumberSet<double>> _cellSizeFactors;
+  std::unique_ptr<NumberSet<int>> _verletRebuildFrequencies;
   FeatureVectorEncoder _encoder;
 
   FeatureVector _currentConfig;
@@ -391,7 +392,7 @@ void BayesianClusterSearch::removeN3Option(Newton3Option badNewton3Option) {
 
 void BayesianClusterSearch::updateOptions() {
   _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options,
-                             *_cellSizeFactors);
+                             *_cellSizeFactors, *_verletRebuildFrequencies);
 
   auto newRestrictions = _encoder.getDiscreteRestrictions();
   _gaussianCluster.setDimensions(std::vector<int>(newRestrictions.begin(), newRestrictions.end()));

@@ -55,11 +55,11 @@ AutoPas<Particle> &AutoPas<Particle>::operator=(AutoPas &&other) noexcept {
 template <class Particle>
 void AutoPas<Particle>::init() {
   AutoPasLog(info, "AutoPas Version: {}", AutoPas_VERSION);
-  if (_numSamples % _verletRebuildFrequency != 0) {
+  if (_numSamples % getVerletRebuildFrequency() != 0) {
     AutoPasLog(warn,
                "Number of samples ({}) is not a multiple of the rebuild frequency ({}). This can lead to problems "
                "when multiple AutoPas instances interact (e.g. via MPI).",
-               _numSamples, _verletRebuildFrequency);
+               _numSamples, getVerletRebuildFrequency());
   }
 
   if (_autopasMPICommunicator == AUTOPAS_MPI_COMM_NULL) {
@@ -71,13 +71,13 @@ void AutoPas<Particle>::init() {
       _tuningStrategyOption, _allowedContainers, *_allowedCellSizeFactors, _allowedTraversals, _allowedLoadEstimators,
       _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _relativeOptimumRange, _maxTuningPhasesWithoutTest,
       _relativeBlacklistRange, _evidenceFirstPrediction, _acquisitionFunctionOption, _extrapolationMethodOption,
-      _outputSuffix, _mpiStrategyOption, _autopasMPICommunicator);
+      _outputSuffix, _mpiStrategyOption, _autopasMPICommunicator, *_allowedVerletRebuildFrequencies);
   _autoTuner = std::make_unique<autopas::AutoTuner<Particle>>(
       _boxMin, _boxMax, _cutoff, _verletSkinPerTimestep, _verletClusterSize, std::move(tuningStrategy),
       _mpiTuningMaxDifferenceForBucket, _mpiTuningWeightForMaxDensity, _selectorStrategy, _tuningInterval, _numSamples,
-      _verletRebuildFrequency, _outputSuffix);
+      _outputSuffix);
   _logicHandler =
-      std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(*(_autoTuner.get()), _verletRebuildFrequency);
+      std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(*(_autoTuner.get()), getVerletRebuildFrequency());
 }
 
 template <class Particle>

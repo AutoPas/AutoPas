@@ -438,7 +438,7 @@ class AutoPas {
    * @return _verletSkin
    */
   double getVerletSkin() {
-    double _verletSkin = AutoPas::_verletSkinPerTimestep * AutoPas::_verletRebuildFrequency;
+    double _verletSkin = AutoPas::_verletSkinPerTimestep * getCurrentConfig().verletRebuildFrequency;
     return _verletSkin;
   };
 
@@ -551,14 +551,14 @@ class AutoPas {
    * Get Verlet rebuild frequency.
    * @return _verletRebuildFrequency
    */
-  [[nodiscard]] unsigned int getVerletRebuildFrequency() const { return _verletRebuildFrequency; }
+  [[nodiscard]] unsigned int getVerletRebuildFrequency() const { return getCurrentConfig().verletRebuildFrequency; }
 
   /**
    * Set Verlet rebuild frequency.
    * @param verletRebuildFrequency
    */
   void setVerletRebuildFrequency(unsigned int verletRebuildFrequency) {
-    AutoPas::_verletRebuildFrequency = verletRebuildFrequency;
+    getCurrentConfig().verletRebuildFrequency = verletRebuildFrequency;
   }
   /**
    * Get Verlet cluster size.
@@ -871,10 +871,6 @@ class AutoPas {
    */
   double _verletSkinPerTimestep{0.01};
   /**
-   * Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
-   */
-  unsigned int _verletRebuildFrequency{20};
-  /**
    * Specifies the size of clusters for Verlet lists.
    */
   unsigned int _verletClusterSize{4};
@@ -976,6 +972,9 @@ class AutoPas {
    */
   std::unique_ptr<NumberSet<double>> _allowedCellSizeFactors{
       std::make_unique<NumberSetFinite<double>>(std::set<double>({1.}))};
+
+  std::unique_ptr<NumberInterval<int>> _allowedVerletRebuildFrequencies{
+      std::make_unique<NumberInterval<int>>(1,30)};
 
   /***
    * Load estimation algorithm to be used for efficient parallelisation (only relevant for LCSlicedBalancedTraversal and
