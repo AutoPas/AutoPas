@@ -6,7 +6,7 @@ tuning-samples                   :  3
 tuning-max-evidence              :  40
 functor                          :  Lennard-Jones (12-6)
 cutoff                           :  2
-verlet-skin-radius               :  0.2
+verlet-skin-radius-per-timestep  :  0.02
 verlet-rebuild-frequency         :  10
 deltaT                           :  0
 cell-size                        :  [1.0,1.5,2.0]

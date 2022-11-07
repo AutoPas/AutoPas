@@ -15,7 +15,8 @@ extern template class autopas::AutoPas<Molecule>;
 extern template bool autopas::AutoPas<Molecule>::iteratePairwise(autopas::LJFunctor<Molecule, true, false> *);
 
 constexpr double cutoff = 1.1;
-constexpr double skin = 0.2;
+constexpr double skinPerTimestep = 0.2;
+constexpr unsigned int rebuildFrequency = 3;
 constexpr std::array<double, 3> boxMin{0., 0., 0.};
 constexpr std::array<double, 3> boxMax{10., 10., 10.};
 
@@ -26,9 +27,10 @@ void defaultInit(AutoPasT &autoPas) {
   autoPas.setBoxMin(boxMin);
   autoPas.setBoxMax(boxMax);
   autoPas.setCutoff(cutoff);
-  autoPas.setVerletSkin(skin);
-  autoPas.setVerletRebuildFrequency(3);
+  autoPas.setVerletSkinPerTimestep(skinPerTimestep);
+  autoPas.setVerletRebuildFrequency(rebuildFrequency);
   autoPas.setNumSamples(3);
+
   // init autopas
   autoPas.init();
 }
@@ -46,7 +48,7 @@ void defaultInit(AutoPasT &autoPas1, AutoPasT &autoPas2, size_t direction) {
 
   for (auto &aP : {&autoPas1, &autoPas2}) {
     aP->setCutoff(cutoff);
-    aP->setVerletSkin(skin);
+    aP->setVerletSkinPerTimestep(skinPerTimestep);
     aP->setVerletRebuildFrequency(2);
     aP->setNumSamples(2);
     // init autopas
@@ -335,7 +337,7 @@ void testSimulationLoop(testingTuple options) {
 
   doAssertions(autoPas, &functor, numParticles, __LINE__);
 
-  moveParticlesAndResetF({skin / 6, 0., 0.});
+  moveParticlesAndResetF({autoPas.getVerletSkin() / 6, 0., 0.});
   addParticlePair({9.99, 1., 5.});
 
   // do second simulation loop
@@ -343,7 +345,7 @@ void testSimulationLoop(testingTuple options) {
 
   doAssertions(autoPas, &functor, numParticles, __LINE__);
 
-  moveParticlesAndResetF({-skin / 6, 0., 0.});
+  moveParticlesAndResetF({-autoPas.getVerletSkin() / 6, 0., 0.});
   addParticlePair({9.99, 7., 5.});
   deleteIDs({2, 3});
 
@@ -353,7 +355,7 @@ void testSimulationLoop(testingTuple options) {
   doAssertions(autoPas, &functor, numParticles, __LINE__);
 
   // update positions a bit (outside of domain!) + reset F
-  moveParticlesAndResetF({skin / 6, 0., 0.});
+  moveParticlesAndResetF({autoPas.getVerletSkin() / 6, 0., 0.});
 
   // do fourth simulation loop, tests rebuilding of container.
   doSimulationLoop(autoPas, &functor);
@@ -488,7 +490,7 @@ TEST_P(AutoPasInterface1ContainersTest, testResize) {
   autoPas.setBoxMin({0, 0, 0});
   autoPas.setBoxMax({10, 10, 10});
   autoPas.setCutoff(1);
-  autoPas.setVerletSkin(0.1);
+  autoPas.setVerletSkinPerTimestep(0.1);
 
   const auto &containerOp = GetParam();
   autoPas.setAllowedContainers({containerOp});
@@ -583,7 +585,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
 
   // update positions a bit (outside of domain!) + reset F
   {
-    std::array<double, 3> moveVec{skin / 3., 0., 0.};
+    std::array<double, 3> moveVec{skinPerTimestep * rebuildFrequency / 3., 0., 0.};
     for (auto *aP : {&autoPas1, &autoPas2}) {
       for (auto iter = aP->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
         iter->setR(autopas::utils::ArrayMath::add(iter->getR(), moveVec));
@@ -599,7 +601,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
 
   // update positions a bit (outside of domain!) + reset F
   {
-    std::array<double, 3> moveVec{-skin / 3., 0., 0.};
+    std::array<double, 3> moveVec{-skinPerTimestep * rebuildFrequency / 3., 0., 0.};
     for (auto *aP : {&autoPas1, &autoPas2}) {
       for (auto iter = aP->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
         iter->setR(autopas::utils::ArrayMath::add(iter->getR(), moveVec));
@@ -615,7 +617,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
 
   // update positions a bit (outside of domain!) + reset F
   {
-    std::array<double, 3> moveVec{skin / 3., 0., 0.};
+    std::array<double, 3> moveVec{skinPerTimestep * rebuildFrequency / 3., 0., 0.};
     for (auto *aP : {&autoPas1, &autoPas2}) {
       for (auto iter = aP->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
         iter->setR(autopas::utils::ArrayMath::add(iter->getR(), moveVec));

@@ -124,7 +124,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setMPITuningWeightForMaxDensity(_configuration.MPITuningWeightForMaxDensity.value);
   _autoPasContainer->setVerletClusterSize(_configuration.verletClusterSize.value);
   _autoPasContainer->setVerletRebuildFrequency(_configuration.verletRebuildFrequency.value);
-  _autoPasContainer->setVerletSkin(_configuration.verletSkinRadius.value);
+  _autoPasContainer->setVerletSkinPerTimestep(_configuration.verletSkinRadiusPerTimestep.value);
   _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
   int rank{};
   autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);

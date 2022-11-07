@@ -75,7 +75,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.useThermostat,
       config.verletClusterSize,
       config.verletRebuildFrequency,
-      config.verletSkinRadius,
+      config.verletSkinRadiusPerTimestep,
       config.vtkFileName,
       config.vtkWriteFrequency,
       config.yamlFilename,
@@ -445,11 +445,11 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case decltype(config.verletSkinRadius)::getoptChar: {
+      case decltype(config.verletSkinRadiusPerTimestep)::getoptChar: {
         try {
-          config.verletSkinRadius.value = stod(strArg);
+          config.verletSkinRadiusPerTimestep.value = stod(strArg);
         } catch (const exception &) {
-          cerr << "Error parsing verlet-skin-radius: " << optarg << endl;
+          cerr << "Error parsing verlet-skin-radius-per-timestep: " << optarg << endl;
           displayHelp = true;
         }
         break;

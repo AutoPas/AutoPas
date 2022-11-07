@@ -9,7 +9,7 @@
 INSTANTIATE_TEST_SUITE_P(Generated, DirectSumContainerTest, testing::Bool());
 
 TEST_P(DirectSumContainerTest, testUpdateContainerCloseToBoundary) {
-  autopas::DirectSum<autopas::Particle> directSum({0., 0., 0.}, {10., 10., 10.}, 1., 0.);
+  autopas::DirectSum<autopas::Particle> directSum({0., 0., 0.}, {10., 10., 10.}, 1., 0., 0);
   int id = 1;
   for (double x : {0., 5., 9.999}) {
     for (double y : {0., 5., 9.999}) {

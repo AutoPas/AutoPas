@@ -432,6 +432,15 @@ class AutoPas {
       containerPtr->reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
     });
   }
+  /**
+   * Function to iterate over all pairs of particles in the container.
+   * This function only handles short-range interactions.
+   * @return _verletSkin
+   */
+  double getVerletSkin() {
+    double _verletSkin = AutoPas::_verletSkinPerTimestep * AutoPas::_verletRebuildFrequency;
+    return _verletSkin;
+  };
 
   /**
    * Returns the number of particles in this container.
@@ -525,20 +534,22 @@ class AutoPas {
   }
 
   /**
-   * Get length added to the cutoff for the Verlet lists' skin.
-   * @return
+   * Get length added to the cutoff for the Verlet lists' skin per timestep.
+   * @return _verletSkinPerTimestep
    */
-  [[nodiscard]] double getVerletSkin() const { return _verletSkin; }
+  [[nodiscard]] double getVerletSkinPerTimestep() const { return _verletSkinPerTimestep; }
 
   /**
-   * Set length added to the cutoff for the Verlet lists' skin.
-   * @param verletSkin
+   * Set length added to the cutoff for the Verlet lists' skin per timestep.
+   * @param verletSkinPerTimestep
    */
-  void setVerletSkin(double verletSkin) { AutoPas::_verletSkin = verletSkin; }
+  void setVerletSkinPerTimestep(double verletSkinPerTimestep) {
+    AutoPas::_verletSkinPerTimestep = verletSkinPerTimestep;
+  }
 
   /**
    * Get Verlet rebuild frequency.
-   * @return
+   * @return _verletRebuildFrequency
    */
   [[nodiscard]] unsigned int getVerletRebuildFrequency() const { return _verletRebuildFrequency; }
 
@@ -549,7 +560,6 @@ class AutoPas {
   void setVerletRebuildFrequency(unsigned int verletRebuildFrequency) {
     AutoPas::_verletRebuildFrequency = verletRebuildFrequency;
   }
-
   /**
    * Get Verlet cluster size.
    * @return
@@ -857,9 +867,9 @@ class AutoPas {
    */
   double _cutoff{1.0};
   /**
-   * Length added to the cutoff for the Verlet lists' skin.
+   * Length added to the cutoff for the Verlet lists' skin per Timestep.
    */
-  double _verletSkin{0.2};
+  double _verletSkinPerTimestep{0.01};
   /**
    * Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
    */

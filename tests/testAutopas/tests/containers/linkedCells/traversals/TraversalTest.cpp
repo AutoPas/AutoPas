@@ -26,7 +26,7 @@ void testTraversal(autopas::TraversalOption traversalOption, autopas::LoadEstima
   const std::array<double, 3> linkedCellsBoxMin = {0., 0., 0.};
 
   TraversalTest::CountFunctor functor(cutoff);
-  autopas::LinkedCells<Particle> linkedCells(linkedCellsBoxMin, linkedCellsBoxMax, cutoff, 0.0, 1.0 / cutoff,
+  autopas::LinkedCells<Particle> linkedCells(linkedCellsBoxMin, linkedCellsBoxMax, cutoff, 0.0, 1, 1.0 / cutoff,
                                              loadEstimatorOption);
 
   autopasTools::generators::GridGenerator::fillWithParticles(linkedCells, edgeLength);

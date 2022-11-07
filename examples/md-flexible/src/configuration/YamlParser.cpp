@@ -210,8 +210,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
   if (node[config.verletRebuildFrequency.name]) {
     config.verletRebuildFrequency.value = node[config.verletRebuildFrequency.name].as<unsigned int>();
   }
-  if (node[config.verletSkinRadius.name]) {
-    config.verletSkinRadius.value = node[config.verletSkinRadius.name].as<double>();
+  if (node[config.verletSkinRadiusPerTimestep.name]) {
+    config.verletSkinRadiusPerTimestep.value = node[config.verletSkinRadiusPerTimestep.name].as<double>();
   }
   if (node[config.fastParticlesThrow.name]) {
     config.fastParticlesThrow.value = node[config.fastParticlesThrow.name].as<bool>();
