@@ -102,7 +102,7 @@ TEST_F(TimeDiscretizationTest, testFastParticlesCheck) {
   auto autoPas = std::make_shared<autopas::AutoPas<Molecule>>();
   autoPas->setBoxMin({0., 0., 0.});
   autoPas->setBoxMax({10., 10., 10.});
-  autoPas->setVerletSkin(.2);
+  autoPas->setVerletSkinPerTimestep(.02);
   autoPas->setVerletRebuildFrequency(10);
   autoPas->init();
 
