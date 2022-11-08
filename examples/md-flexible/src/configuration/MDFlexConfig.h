@@ -645,7 +645,7 @@ class MDFlexConfig {
   /**
    * valueOffset used for cli-output alignment
    */
-  static constexpr size_t valueOffset{33};
+  static constexpr int valueOffset{33};
 
  private:
   /**

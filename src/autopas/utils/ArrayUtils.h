@@ -9,6 +9,7 @@
 
 #include <array>
 #include <iomanip>
+#include <set>
 #include <sstream>
 #include <vector>
 
@@ -39,6 +40,13 @@ struct is_container<std::array<T, N>> : std::true_type {};
  */
 template <typename... Args>
 struct is_container<std::vector<Args...>> : std::true_type {};
+
+/**
+ * Specialization to allow std::vector.
+ * @tparam Args
+ */
+template <typename... Args>
+struct is_container<std::set<Args...>> : std::true_type {};
 
 }  // namespace is_container_impl
 
