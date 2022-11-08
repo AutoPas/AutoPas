@@ -192,6 +192,7 @@ std::string MDFlexConfig::to_string() const {
   os << setw(valueOffset) << left << verletRebuildFrequency.name << ":  " << verletRebuildFrequency.value << endl;
   os << setw(valueOffset) << left << verletSkinRadiusPerTimestep.name << ":  " << verletSkinRadiusPerTimestep.value
      << endl;
+  os << setw(valueOffset) << left << fastParticlesThrow.name << ":  " << fastParticlesThrow.value << endl;
   if (passedContainerOptionsStr.find("luster") != std::string::npos) {
     os << setw(valueOffset) << left << verletClusterSize.name << ":  " << verletClusterSize.value << endl;
   }
