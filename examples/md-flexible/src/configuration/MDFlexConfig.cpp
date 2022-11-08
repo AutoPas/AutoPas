@@ -184,6 +184,7 @@ MDFlexConfig::MDFlexConfig(int argc, char **argv) {
 std::string MDFlexConfig::to_string() const {
   using namespace std;
   ostringstream os;
+  os << boolalpha;
 
   auto passedContainerOptionsStr = autopas::utils::ArrayUtils::to_string(containerOptions.value);
   os << setw(valueOffset) << left << containerOptions.name << ":  " << passedContainerOptionsStr << endl;
@@ -265,7 +266,7 @@ std::string MDFlexConfig::to_string() const {
   } else {
     os << setw(valueOffset) << left << iterations.name << ":  " << iterations.value << endl;
   }
-  os << setw(valueOffset) << left << boundaryOption.name << ": "
+  os << setw(valueOffset) << left << boundaryOption.name << ":  "
      << autopas::utils::ArrayUtils::to_string(boundaryOption.value) << endl;
 
   os << setw(valueOffset) << left << "Objects:" << endl;
