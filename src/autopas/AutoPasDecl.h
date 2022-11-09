@@ -557,8 +557,8 @@ class AutoPas {
    * Set Verlet rebuild frequency.
    * @param verletRebuildFrequency
    */
-  void setVerletRebuildFrequency(unsigned int verletRebuildFrequency) {
-    getCurrentConfig().verletRebuildFrequency = verletRebuildFrequency;
+  void setVerletRebuildFrequency(int verletRebuildFrequency){
+    AutoPas::_allowedVerletRebuildFrequencies = std::make_unique<NumberInterval<int>>(NumberInterval<int> (verletRebuildFrequency, verletRebuildFrequency));
   }
   /**
    * Get Verlet cluster size.

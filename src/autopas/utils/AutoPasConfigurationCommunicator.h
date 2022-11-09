@@ -57,7 +57,8 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
                           const std::set<TraversalOption> &traversalOptions,
                           const std::set<LoadEstimatorOption> &loadEstimatorOptions,
                           const std::set<DataLayoutOption> &dataLayoutOptions,
-                          const std::set<Newton3Option> &newton3Options);
+                          const std::set<Newton3Option> &newton3Options,
+                          const NumberSet<int> &verletRebuildFrequenzies);
 
 /**
  * Distributes the provided configurations globally for equal work loads.
@@ -76,7 +77,7 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
                               std::set<TraversalOption> &traversalOptions,
                               std::set<LoadEstimatorOption> &loadEstimatorOptions,
                               std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options,
-                              int rank, int commSize, NumberSet<int> &allowedVerletRebuildFrequencies);
+                              int rank, int commSize, NumberSet<int> &verletRebuildFrequencies);
 
 /**
  * Distribute ranks in buckets, which contain only ranks with similar scenarios.

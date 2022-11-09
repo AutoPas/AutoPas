@@ -38,14 +38,17 @@ class ConfigurationAndRankIteratorHandler {
                                       const std::set<TraversalOption> &traversalOptions,
                                       const std::set<LoadEstimatorOption> &loadEstimatorOptions,
                                       const std::set<DataLayoutOption> &dataLayoutOptions,
-                                      const std::set<Newton3Option> &newton3Options, const int numConfigs,
+                                      const std::set<Newton3Option> &newton3Options,
+                                      const std::set<int> &verletRebuildFrequenzies,
+                                      const int numConfigs,
                                       const int commSize)
       : _containers(containerOptions),
         _cellSizeFactors(cellSizeFactors),
         _allowedTraversalOptions(traversalOptions),
         _allowedLoadEstimatorOptions(loadEstimatorOptions),
         _dataLayoutOptions(dataLayoutOptions),
-        _newton3Options(newton3Options) {
+        _newton3Options(newton3Options),
+        _verletRebuildFrequenzies(verletRebuildFrequenzies) {
     reset(numConfigs, commSize);
   }
 
@@ -78,13 +81,15 @@ class ConfigurationAndRankIteratorHandler {
                                  std::set<TraversalOption>::iterator &traversalIt,
                                  std::set<LoadEstimatorOption>::iterator &loadEstimatorIt,
                                  std::set<DataLayoutOption>::iterator &dataLayoutIt,
-                                 std::set<Newton3Option>::iterator &newton3It) {
+                                 std::set<Newton3Option>::iterator &newton3It,
+                                 std::set<int>::iterator &verletRebuildFrequenzyIt) {
     containerIt = _containerIt;
     cellSizeFactorIt = _cellSizeFactorIt;
     traversalIt = _traversalIt;
     loadEstimatorIt = _loadEstimatorIt;
     dataLayoutIt = _dataLayoutIt;
     newton3It = _newton3It;
+    verletRebuildFrequenzyIt = _verletRebuildFrequenzyIt;
   }
 
   /**
@@ -120,6 +125,12 @@ class ConfigurationAndRankIteratorHandler {
    * @return
    */
   [[nodiscard]] inline std::set<double>::iterator getCellSizeFactorIterator() const { return _cellSizeFactorIt; }
+
+  /**
+   * Getter for the VerletRebuildFrequenzyIterator.
+   * @return
+   */
+  [[nodiscard]] inline std::set<int>::iterator getVerletRebuildFrequenzyIterator() const { return _verletRebuildFrequenzyIt; }
 
   /**
    * Getter for the TraversalIterator.
@@ -166,6 +177,7 @@ class ConfigurationAndRankIteratorHandler {
 
   const std::set<ContainerOption> &_containers;
   const std::set<double> &_cellSizeFactors;
+  const std::set<int> &_verletRebuildFrequenzies;
   const std::set<TraversalOption> &_allowedTraversalOptions;
   const std::set<LoadEstimatorOption> &_allowedLoadEstimatorOptions;
   const std::set<DataLayoutOption> &_dataLayoutOptions;
@@ -174,6 +186,7 @@ class ConfigurationAndRankIteratorHandler {
   std::set<LoadEstimatorOption> _allowedAndApplicableLoadEstimatorOptions;
   std::set<ContainerOption>::iterator _containerIt;
   std::set<double>::iterator _cellSizeFactorIt;
+  std::set<int>::iterator _verletRebuildFrequenzyIt;
   std::set<TraversalOption>::iterator _traversalIt;
   std::set<LoadEstimatorOption>::iterator _loadEstimatorIt;
   std::set<DataLayoutOption>::iterator _dataLayoutIt;

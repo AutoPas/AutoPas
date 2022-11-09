@@ -69,16 +69,16 @@ void MPIParallelizedStrategy::setupFallbackOptions() {
   if (_numFallbackConfigs == -1) {
     _numFallbackConfigs = utils::AutoPasConfigurationCommunicator::getSearchSpaceSize(
         _fallbackContainers, _fallbackCellSizeFactor, _fallbackTraversalOptions, _fallbackLoadEstimators,
-        _fallbackDataLayouts, _fallbackNewton3s);
+        _fallbackDataLayouts, _fallbackNewton3s, _fallbackVerletRebuildFrequenzy);
   }
   auto numbersSet = _fallbackCellSizeFactor.getAll();
   _configIterator = std::make_unique<utils::ConfigurationAndRankIteratorHandler>(
       _fallbackContainers, numbersSet, _fallbackTraversalOptions, _fallbackLoadEstimators, _fallbackDataLayouts,
-      _fallbackNewton3s, _numFallbackConfigs, 1);
+      _fallbackNewton3s, _fallbackVerletRebuildFrequenzy.getAll(), _numFallbackConfigs, 1);
   _optimalConfiguration =
       Configuration(*_configIterator->getContainerIterator(), *_configIterator->getCellSizeFactorIterator(),
                     *_configIterator->getTraversalIterator(), *_configIterator->getLoadEstimatorIterator(),
-                    *_configIterator->getDataLayoutIterator(), *_configIterator->getNewton3Iterator());
+                    *_configIterator->getDataLayoutIterator(), *_configIterator->getNewton3Iterator(), *_configIterator->getVerletRebuildFrequenzyIterator());
 }
 
 void MPIParallelizedStrategy::nextFallbackConfig() {
@@ -91,7 +91,8 @@ void MPIParallelizedStrategy::nextFallbackConfig() {
   _optimalConfiguration =
       Configuration(*_configIterator->getContainerIterator(), *_configIterator->getCellSizeFactorIterator(),
                     *_configIterator->getTraversalIterator(), *_configIterator->getLoadEstimatorIterator(),
-                    *_configIterator->getDataLayoutIterator(), *_configIterator->getNewton3Iterator());
+                    *_configIterator->getDataLayoutIterator(), *_configIterator->getNewton3Iterator(),
+                    *_configIterator->getVerletRebuildFrequenzyIterator());
 }
 
 }  // namespace autopas
