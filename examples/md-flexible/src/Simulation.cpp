@@ -531,7 +531,7 @@ void Simulation::logMeasurements() {
 
     const long wallClockTime = _timers.total.getTotalTime();
     std::cout << timerToString("Total wall-clock time             ", wallClockTime,
-                               static_cast<int>(std::to_string(wallClockTime).length(), total));
+                               static_cast<int>(std::to_string(wallClockTime).length()), total);
     std::cout << std::endl;
 
     std::cout << "Tuning iterations                  : " << _numTuningIterations << " / " << _iteration << " = "
