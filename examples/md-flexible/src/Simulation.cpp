@@ -61,7 +61,10 @@ size_t getTerminalWidth() {
   // if width is still zero try the environment variable COLUMNS
   if (terminalWidth == 0) {
     if (auto *terminalWidthCharArr = std::getenv("COLUMNS")) {
-      terminalWidth = atoi(terminalWidthCharArr);
+      // this pointer could be used to detect parsing errors via terminalWidthCharArr == end
+      // but since we have a fallback further down we are ok if this fails silently.
+      char *end{};
+      terminalWidth = std::strtol(terminalWidthCharArr, &end, 10);
     }
   }
 
