@@ -217,8 +217,8 @@ void ParallelVtkWriter::tryCreateSessionAndDataFolders(const std::string &name, 
     tryCreateFolder(location, "./");
   }
 
-  _sessionFolderPath = location + "/" + name + "_" + timeString + "/";
-  tryCreateFolder(name + "_" + timeString, location);
+  _sessionFolderPath = location + "/" + name + "/";
+  tryCreateFolder(name, location);
 
   _dataFolderPath = _sessionFolderPath + "data/";
   tryCreateFolder("data", _sessionFolderPath);
