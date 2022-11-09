@@ -15,8 +15,7 @@
 
 ParallelVtkWriter::ParallelVtkWriter(std::string sessionName, const std::string &outputFolder,
                                      const int &maximumNumberOfDigitsInIteration)
-    : _sessionName(std::move(sessionName)),
-      _maximumNumberOfDigitsInIteration(maximumNumberOfDigitsInIteration) {
+    : _sessionName(std::move(sessionName)), _maximumNumberOfDigitsInIteration(maximumNumberOfDigitsInIteration) {
   autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &_numberOfRanks);
   autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &_mpiRank);
 
@@ -150,7 +149,7 @@ void ParallelVtkWriter::recordDomainSubdivision(size_t currentIteration,
   const std::array<double, 3> localBoxMin = decomposition.getLocalBoxMin();
   const std::array<double, 3> localBoxMax = decomposition.getLocalBoxMax();
 
-  auto printDataArray = [&](const auto &data, const std::string &type, const std::string& name) {
+  auto printDataArray = [&](const auto &data, const std::string &type, const std::string &name) {
     timestepFile << "        <DataArray type=\"" << type << "\" Name=\"" << name << "\" format=\"ascii\">\n";
     timestepFile << "          " << data << "\n";
     timestepFile << "        </DataArray>\n";
@@ -202,17 +201,7 @@ std::array<int, 6> ParallelVtkWriter::calculateWholeExtent(const RegularGridDeco
   return wholeExtent;
 }
 
-void ParallelVtkWriter::tryCreateSessionAndDataFolders(const std::string &name, std::string location) {
-  time_t rawTime;
-  time(&rawTime);
-
-  struct tm timeInformation;
-  gmtime_r(&rawTime, &timeInformation);
-
-  char buffer[80];
-  strftime(buffer, sizeof(buffer), "%d%m%Y_%H%M%S", &timeInformation);
-  std::string timeString(buffer);
-
+void ParallelVtkWriter::tryCreateSessionAndDataFolders(const std::string &name, const std::string &location) {
   if (not checkFileExists(location)) {
     tryCreateFolder(location, "./");
   }

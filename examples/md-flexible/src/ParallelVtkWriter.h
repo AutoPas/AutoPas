@@ -50,7 +50,7 @@ class ParallelVtkWriter {
    * @return True iff the file exists.
    */
   static bool checkFileExists(const std::string &filename) {
-    struct stat buffer{};
+    struct stat buffer {};
     return (stat(filename.c_str(), &buffer) == 0);
   }
 
@@ -122,7 +122,7 @@ class ParallelVtkWriter {
   /**
    * Tries to create a folder for the current writer session and stores it in _sessionFolderPath.
    */
-  void tryCreateSessionAndDataFolders(const std::string &name, const std::string& location);
+  void tryCreateSessionAndDataFolders(const std::string &name, const std::string &location);
 
   /**
    * Creates the .pvtu file required to load unstructured grid data from multiple ranks into ParaView.
