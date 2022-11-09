@@ -37,11 +37,17 @@
 class MDFlexConfig {
  public:
   /**
-   * Constructor.
+   * Constructor that initializes the configuration from the CLI arguments (incl. yaml file argument).
    * @param argc: the argument count of the arguments passed to the main function.
    * @param argv: the argument vector passed to the main function.
    */
   MDFlexConfig(int argc, char **argv);
+
+  /**
+   * Constructor using only default values.
+   * Useful for testing but might require setting some values before this is valid.
+   */
+  MDFlexConfig() = default;
 
   /**
    * Struct to bundle information for options.
