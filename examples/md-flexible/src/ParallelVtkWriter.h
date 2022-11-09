@@ -49,8 +49,8 @@ class ParallelVtkWriter {
    * @param filename
    * @return True iff the file exists.
    */
-  bool checkFileExists(const std::string &filename) {
-    struct stat buffer;
+  static bool checkFileExists(const std::string &filename) {
+    struct stat buffer{};
     return (stat(filename.c_str(), &buffer) == 0);
   }
 
@@ -58,14 +58,14 @@ class ParallelVtkWriter {
    * Stores the number of ranks used in the simulation.
    * This information is required when creating the .pvtu file.
    */
-  int _numberOfRanks;
+  int _numberOfRanks{};
 
   /**
    * Stores the MPI rank of the current process.
    * Every process will write into it's own .vtu file, while the process with rank 0 will
    * create the parallel .pvtu file.
    */
-  int _mpiRank;
+  int _mpiRank{};
 
   /**
    * Stores the session name.
@@ -117,12 +117,12 @@ class ParallelVtkWriter {
    * @param domainDecomposition: The simulations domain decomposition.
    * @return the whole extent of the local domain.
    */
-  std::array<int, 6> calculateWholeExtent(const RegularGridDecomposition &domainDecomposition);
+  static std::array<int, 6> calculateWholeExtent(const RegularGridDecomposition &domainDecomposition);
 
   /**
    * Tries to create a folder for the current writer session and stores it in _sessionFolderPath.
    */
-  void tryCreateSessionAndDataFolders(const std::string &name, const std::string location);
+  void tryCreateSessionAndDataFolders(const std::string &name, const std::string& location);
 
   /**
    * Creates the .pvtu file required to load unstructured grid data from multiple ranks into ParaView.
@@ -143,7 +143,7 @@ class ParallelVtkWriter {
    * @param name The name of the new folder.
    * @param location The location where the new folder will be created.
    */
-  void tryCreateFolder(const std::string &name, const std::string &location);
+  static void tryCreateFolder(const std::string &name, const std::string &location);
 
   /**
    * Generates the file name for a given vtk file type.
