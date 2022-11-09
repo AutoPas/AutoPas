@@ -235,7 +235,7 @@ class Simulation {
    * @param maxTime: The simulation's total execution time.
    * @return All information of the timer in a human readable string.
    */
-  [[nodiscard]] std::string timerToString(const std::string &name, long timeNS, int numberWidth = 0,
+  [[nodiscard]] static std::string timerToString(const std::string &name, long timeNS, int numberWidth = 0,
                                           long maxTime = 0ul);
 
   /**
@@ -269,7 +269,7 @@ class Simulation {
    * @param time: the time to accumulate.
    * @return the accumulated time of all ranks.
    */
-  [[nodiscard]] long accumulateTime(const long &time);
+  [[nodiscard]] static long accumulateTime(const long &time);
 
   /**
    * Logs the number of total/owned/halo particles in the simulation, aswell as the standard deviation of Homogeneity.
