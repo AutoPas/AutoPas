@@ -40,7 +40,7 @@ class ParallelVtkWriter {
    * @param autoPasContainer The AutoPas container whose owned particles will be logged.
    * @param decomposition: The decomposition of the global domain.
    */
-  void recordTimestep(const int &currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer,
+  void recordTimestep(size_t currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer,
                       const RegularGridDecomposition &decomposition);
 
  private:
@@ -98,7 +98,7 @@ class ParallelVtkWriter {
    * @param currentIteration: The simulations current iteration.
    * @param autoPasContainer The AutoPas container whose owned particles will be logged.
    */
-  void recordParticleStates(const int &currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer);
+  void recordParticleStates(size_t currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer);
 
   /**
    * Writes the current domain subdivision into vtk files.
@@ -106,7 +106,7 @@ class ParallelVtkWriter {
    * @param autoPasConfiguration: The configuration of an autoPasContainer.
    * @param decomposition: The simulations domain decomposition.
    */
-  void recordDomainSubdivision(const int &currentIteration, const autopas::Configuration &autoPasConfiguration,
+  void recordDomainSubdivision(size_t currentIteration, const autopas::Configuration &autoPasConfiguration,
                                const RegularGridDecomposition &decomposition);
 
   /**
@@ -128,14 +128,14 @@ class ParallelVtkWriter {
    * Creates the .pvtu file required to load unstructured grid data from multiple ranks into ParaView.
    * @param currentIteration: The simulation's current iteration.
    */
-  void createPvtuFile(const int &currentIteration);
+  void createPvtuFile(size_t currentIteration);
 
   /**
    * Creates the .pvts file required to load structured grid data from multiple ranks into ParaView.
    * @param currentIteration: The simulation's current iteration.
    * @param decomposition: The decomposition of the domain.
    */
-  void createPvtsFile(const int &currentIteration, const RegularGridDecomposition &decomposition);
+  void createPvtsFile(size_t currentIteration, const RegularGridDecomposition &decomposition);
 
   /**
    * Tries to create a folder at a location.
@@ -151,5 +151,5 @@ class ParallelVtkWriter {
    * @param filetype: The vtk file type extension. Pass the extension without the '.'.
    * @param filenameStream: The output string string for the filename.
    */
-  void generateFilename(const std::string &filetype, const int &currentIteration, std::ostringstream &filenameStream);
+  void generateFilename(const std::string &filetype, size_t currentIteration, std::ostringstream &filenameStream);
 };

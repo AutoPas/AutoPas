@@ -42,7 +42,7 @@ ParallelVtkWriter::ParallelVtkWriter(std::string sessionName, const std::string 
   autopas::AutoPas_MPI_Bcast(&_dataFolderPath[0], dataFolderPathLength, AUTOPAS_MPI_CHAR, 0, AUTOPAS_MPI_COMM_WORLD);
 }
 
-void ParallelVtkWriter::recordTimestep(const int &currentIteration,
+void ParallelVtkWriter::recordTimestep(size_t currentIteration,
                                        const autopas::AutoPas<ParticleType> &autoPasContainer,
                                        const RegularGridDecomposition &decomposition) {
   recordParticleStates(currentIteration, autoPasContainer);
@@ -54,7 +54,7 @@ void ParallelVtkWriter::recordTimestep(const int &currentIteration,
  * This can be improved by using multiple string streams (one for each property).
  * The streams can be combined to a single output stream after iterating over the particles, once.
  */
-void ParallelVtkWriter::recordParticleStates(const int &currentIteration,
+void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
                                              const autopas::AutoPas<ParticleType> &autoPasContainer) {
   if (_mpiRank == 0) {
     createPvtuFile(currentIteration);
@@ -133,7 +133,7 @@ void ParallelVtkWriter::recordParticleStates(const int &currentIteration,
   timestepFile.close();
 }
 
-void ParallelVtkWriter::recordDomainSubdivision(const int &currentIteration,
+void ParallelVtkWriter::recordDomainSubdivision(size_t currentIteration,
                                                 const autopas::Configuration &autoPasConfiguration,
                                                 const RegularGridDecomposition &decomposition) {
   if (_mpiRank == 0) {
@@ -228,7 +228,7 @@ void ParallelVtkWriter::tryCreateSessionAndDataFolders(const std::string &name, 
   tryCreateFolder("data", _sessionFolderPath);
 }
 
-void ParallelVtkWriter::createPvtuFile(const int &currentIteration) {
+void ParallelVtkWriter::createPvtuFile(size_t currentIteration) {
   std::ostringstream filename;
   filename << _sessionFolderPath << _sessionName << "_" << std::setfill('0')
            << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".pvtu";
@@ -269,7 +269,7 @@ void ParallelVtkWriter::createPvtuFile(const int &currentIteration) {
   timestepFile.close();
 }
 
-void ParallelVtkWriter::createPvtsFile(const int &currentIteration, const RegularGridDecomposition &decomposition) {
+void ParallelVtkWriter::createPvtsFile(size_t currentIteration, const RegularGridDecomposition &decomposition) {
   std::ostringstream filename;
   filename << _sessionFolderPath << _sessionName << "_" << std::setfill('0')
            << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".pvts";
@@ -340,7 +340,7 @@ void ParallelVtkWriter::tryCreateFolder(const std::string &name, const std::stri
   }
 }
 
-void ParallelVtkWriter::generateFilename(const std::string &filetype, const int &currentIteration,
+void ParallelVtkWriter::generateFilename(const std::string &filetype, size_t currentIteration,
                                          std::ostringstream &filenameStream) {
   filenameStream << _dataFolderPath << _sessionName << "_" << _mpiRank << "_" << std::setfill('0')
                  << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << "." << filetype;
