@@ -88,7 +88,7 @@ void RegularGridDecomposition::update(const double &work) {
 }
 
 int RegularGridDecomposition::getNumberOfSubdomains() const {
-  return std::accumulate(_decomposition.begin(), _decomposition.end(), 1, std::multiplies<int>());
+  return std::accumulate(_decomposition.begin(), _decomposition.end(), 1, std::multiplies<>());
 }
 
 void RegularGridDecomposition::initializeMPICommunicator() {
@@ -393,14 +393,14 @@ void RegularGridDecomposition::categorizeParticlesIntoLeftAndRightNeighbor(
 
 void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(const double &work) {
   // This is a dummy variable which is not being used. It is required by the non-blocking MPI_Send calls.
-  autopas::AutoPas_MPI_Request dummyRequest;
+  autopas::AutoPas_MPI_Request dummyRequest{};
 
   auto oldLocalBoxMin = _localBoxMin;
   auto oldLocalBoxMax = _localBoxMax;
 
   std::array<double, 3> averageWorkInPlane{};
 
-  for (int i = 0; i < _dimensionCount; ++i) {
+  for (size_t i = 0; i < _dimensionCount; ++i) {
     const int domainCountInPlane =
         _decomposition[(i + 1) % _dimensionCount] * _decomposition[(i + 2) % _dimensionCount];
 
@@ -432,12 +432,12 @@ void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(const dou
     }
   }
 
-  for (int i = 0; i < _dimensionCount; ++i) {
+  for (size_t i = 0; i < _dimensionCount; ++i) {
     // Get neighbour indices
     const int leftNeighbor = _neighborDomainIndices[i * 2];
     const int rightNeighbor = _neighborDomainIndices[i * 2 + 1];
 
-    double neighborPlaneWork, neighborBoundary, balancedPosition;
+    double neighborPlaneWork{}, neighborBoundary{}, balancedPosition{};
     if (_localBoxMin[i] != _globalBoxMin[i]) {
       // Receive average work from neighbour planes.
       autopas::AutoPas_MPI_Recv(&neighborPlaneWork, 1, AUTOPAS_MPI_DOUBLE, leftNeighbor, 0, _communicator,
