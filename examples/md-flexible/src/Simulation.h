@@ -236,7 +236,7 @@ class Simulation {
    * @return All information of the timer in a human readable string.
    */
   [[nodiscard]] static std::string timerToString(const std::string &name, long timeNS, int numberWidth = 0,
-                                          long maxTime = 0ul);
+                                                 long maxTime = 0ul);
 
   /**
    * Updates the position of particles in the local AutoPas container.
