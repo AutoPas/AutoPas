@@ -32,7 +32,7 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
 #endif
       ) {
   autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &_subdomainCount);
-  // if there is only one rank but we are running with MPI we actually do not need it.
+  // if there is only one rank, but we are running with MPI we actually do not need it.
   if (_subdomainCount == 1) {
     _mpiCommunicationNeeded = false;
   }
@@ -59,7 +59,7 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
   }
 #else
   if (_domainIndex == 0 and _loadBalancerOption == LoadBalancerOption::all) {
-    std::cout << "ALL loadbalancer has been disabled during compile time. Load balancing will be turned off."
+    std::cout << "ALL load balancer has been disabled during compile time. Load balancing will be turned off."
               << std::endl;
   }
 #endif
@@ -127,9 +127,9 @@ void RegularGridDecomposition::initializeLocalBox() {
 void RegularGridDecomposition::initializeNeighborIndices() {
   for (int i = 0; i < 3; ++i) {
     auto neighborIndex = i * 2;
-    auto preceedingNeighborId = _domainId;
-    preceedingNeighborId[i] = (--preceedingNeighborId[i] + _decomposition[i]) % _decomposition[i];
-    _neighborDomainIndices[neighborIndex] = DomainTools::convertIdToIndex(preceedingNeighborId, _decomposition);
+    auto precedingNeighborId = _domainId;
+    precedingNeighborId[i] = (--precedingNeighborId[i] + _decomposition[i]) % _decomposition[i];
+    _neighborDomainIndices[neighborIndex] = DomainTools::convertIdToIndex(precedingNeighborId, _decomposition);
 
     ++neighborIndex;
     auto succeedingNeighborId = _domainId;
@@ -211,8 +211,8 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
         _localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex])
       continue;
 
-    // If the ALL load balancer is used, it may happen that particles migrate to a non adjacent domain.
-    // Therefore we need to migrate particles as many times as there are grid cells along the dimension.
+    // If the ALL load balancer is used, it may happen that particles migrate to a non-adjacent domain.
+    // Therefore, we need to migrate particles as many times as there are grid cells along the dimension.
     int maximumSendSteps = _loadBalancerOption == LoadBalancerOption::all ? _decomposition[dimensionIndex] : 1;
 
     for (int gridIndex = 0; gridIndex < maximumSendSteps; ++gridIndex) {
