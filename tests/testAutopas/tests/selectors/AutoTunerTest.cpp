@@ -25,7 +25,7 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   const double cutoff = 1;
   const double cellSizeFactor = 1;
   const double verletSkinPerTimestep = 0;
-  const unsigned verletRebuildFrequency = 20;
+  const int verletRebuildFrequency = 20;
   const unsigned int verletClusterSize = 64;
   const double mpiTuningMaxDifferenceForBucket = 0.3;
   const double mpiTuningWeightForMaxDensity = 0.0;
