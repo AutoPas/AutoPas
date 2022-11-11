@@ -206,6 +206,19 @@ void Simulation::run() {
         _domainDecomposition->update(computationalLoad);
         auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(),
                                                                 _domainDecomposition->getLocalBoxMax());
+        // because boundaries shifted, particles that were thrown out by the updateContainer previously might now be in
+        // the container again
+        for (auto particleIter = emigrants.cbegin(); particleIter != emigrants.cend();) {
+          const auto &boxMin = _autoPasContainer->getBoxMin();
+          const auto &boxMax = _autoPasContainer->getBoxMax();
+          if (autopas::utils::inBox(particleIter->getR(), boxMin, boxMax)) {
+            _autoPasContainer->addParticle(*particleIter);
+            emigrants.erase(particleIter);
+          } else {
+            ++particleIter;
+          }
+        }
+
         emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
         _timers.loadBalancing.stop();
       }
