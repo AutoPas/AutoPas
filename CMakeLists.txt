@@ -5,6 +5,7 @@ project(AutoPas)
 cmake_policy(SET CMP0054 NEW)
 cmake_policy(SET CMP0057 NEW)
 cmake_policy(SET CMP0079 NEW)
+cmake_policy(SET CMP0135 NEW)
 
 # Always use AUTOPAS_[SOURCE/BINARY]_DIR instead of CMAKE_[SOURCE/BINARY]_DIR or use
 # CMAKE_CURRENT_[SOURCE/BINARY]_DIR directly for relative paths to allow including AutoPas via
