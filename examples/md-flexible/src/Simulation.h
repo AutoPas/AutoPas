@@ -301,4 +301,15 @@ class Simulation {
    * @return
    */
   [[nodiscard]] bool needsMoreIterations() const;
+
+  /**
+   * Checks if the global number of particles is the expected value. If not an exception is thrown.
+   * @note This function is primarily for debugging purposes as it triggers global communication.
+   * @param expectedNumParticlesGlobal Expected global value.
+   * @param numParticlesCurrentlyMigratingLocal Number of particles that are currently not inserted but should be
+   * re-inserted. E.g. migrants.
+   * @param lineNumber Will be shown in the Exception so that it is easier to find the offending call. Pass __LINE__.
+   */
+  [[maybe_unused]] void checkNumParticles(size_t expectedNumParticlesGlobal, size_t numParticlesCurrentlyMigratingLocal,
+                                          int lineNumber);
 };

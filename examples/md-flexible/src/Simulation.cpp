@@ -14,6 +14,7 @@
 #endif
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 #include "autopas/utils/SimilarityFunctions.h"
+#include "autopas/utils/WrapMPI.h"
 
 // Declare the main AutoPas class and the iteratePairwise() methods with all used functors as extern template
 // instantiation. They are instantiated in the respective cpp file inside the templateInstantiations folder.
@@ -587,4 +588,31 @@ void Simulation::logMeasurements() {
 
 bool Simulation::needsMoreIterations() const {
   return _iteration < _configuration.iterations.value or _numTuningPhasesCompleted < _configuration.tuningPhases.value;
+}
+
+void Simulation::checkNumParticles(size_t expectedNumParticlesGlobal, size_t numParticlesCurrentlyMigratingLocal,
+                                   int lineNumber) {
+  if (std::all_of(_configuration.boundaryOption.value.begin(), _configuration.boundaryOption.value.end(),
+                  [](const auto &boundary) { return boundary == options::BoundaryTypeOption::periodic; })) {
+    const auto numParticlesNowLocal = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned);
+    std::array<size_t, 2> sendBuffer{numParticlesNowLocal, numParticlesCurrentlyMigratingLocal};
+    std::array<size_t, sendBuffer.size()> receiveBuffer{};
+    autopas::AutoPas_MPI_Reduce(sendBuffer.data(), receiveBuffer.data(), receiveBuffer.size(),
+                                AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM, 0, AUTOPAS_MPI_COMM_WORLD);
+    const auto &[numParticlesNowTotal, numParticlesMigratingTotal] = receiveBuffer;
+    if (expectedNumParticlesGlobal != numParticlesNowTotal + numParticlesMigratingTotal) {
+      const auto myRank = _domainDecomposition->getDomainIndex();
+      std::stringstream ss;
+      // clang-format off
+      ss << "Rank " << myRank << " Line " << lineNumber
+         << ": Particles Lost! All Boundaries are periodic but the number of particles changed:"
+         << "Expected        : " << expectedNumParticlesGlobal
+         << "Actual          : " << (numParticlesNowTotal + numParticlesMigratingTotal)
+         << "  in containers : " << numParticlesNowTotal
+         << "  migrating     : " << numParticlesMigratingTotal
+         << std::endl;
+      // clang-format on
+      throw std::runtime_error(ss.str());
+    }
+  }
 }
