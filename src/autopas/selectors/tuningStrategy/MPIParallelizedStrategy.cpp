@@ -78,7 +78,8 @@ void MPIParallelizedStrategy::setupFallbackOptions() {
   _optimalConfiguration =
       Configuration(*_configIterator->getContainerIterator(), *_configIterator->getCellSizeFactorIterator(),
                     *_configIterator->getTraversalIterator(), *_configIterator->getLoadEstimatorIterator(),
-                    *_configIterator->getDataLayoutIterator(), *_configIterator->getNewton3Iterator(), *_configIterator->getVerletRebuildFrequenzyIterator());
+                    *_configIterator->getDataLayoutIterator(), *_configIterator->getNewton3Iterator(),
+                    *_configIterator->getVerletRebuildFrequenzyIterator());
 }
 
 void MPIParallelizedStrategy::nextFallbackConfig() {
