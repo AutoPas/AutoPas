@@ -77,7 +77,8 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
                               std::set<TraversalOption> &traversalOptions,
                               std::set<LoadEstimatorOption> &loadEstimatorOptions,
                               std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options,
-                              int rank, int commSize, NumberSet<int> &verletRebuildFrequencies);
+                              NumberSet<int> &verletRebuildFrequencies,
+                              int rank, int commSize);
 
 /**
  * Distribute ranks in buckets, which contain only ranks with similar scenarios.

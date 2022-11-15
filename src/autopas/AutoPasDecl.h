@@ -438,7 +438,7 @@ class AutoPas {
    * @return _verletSkin
    */
   double getVerletSkin() {
-    double _verletSkin = AutoPas::_verletSkinPerTimestep * double(getCurrentConfig().verletRebuildFrequency);
+    double _verletSkin = AutoPas::_verletSkinPerTimestep * double(getAllowedVerletRebuildFrequencies().getMin());
     return _verletSkin;
   };
 
@@ -533,6 +533,32 @@ class AutoPas {
     AutoPas::_allowedCellSizeFactors = std::make_unique<NumberSetFinite<double>>(std::set<double>{cellSizeFactor});
   }
 
+  [[nodiscard]] const NumberSet<int> &getAllowedVerletRebuildFrequencies() const { return *_allowedVerletRebuildFrequencies; }
+
+  /**
+   * Set allowed cell size factors (only relevant for LinkedCells, VerletLists and VerletListsCells).
+   * @param allowedCellSizeFactors
+   */
+  void setAllowedVerletRebuildFrequencies(const NumberSet<int> &allowedVerletRebuildFrequencies) {
+    if (allowedVerletRebuildFrequencies.getMin() < 1) {
+      AutoPasLog(error, "rebuildFrequenzy < 1");
+      utils::ExceptionHandler::exception("Error: rebuildFrequenzy < 1!");
+    }
+    AutoPas::_allowedVerletRebuildFrequencies = std::move(allowedVerletRebuildFrequencies.clone());
+  }
+
+  /**
+   * Set allowed cell size factors to one element (only relevant for LinkedCells, VerletLists and VerletListsCells).
+   * @param cellSizeFactor
+   */
+  void setVerletRebuildFrequency(double verletRebuildFrequency) {
+    if (verletRebuildFrequency < 1) {
+      AutoPasLog(error, "rebuildFrequenzy < 1");
+      utils::ExceptionHandler::exception("Error: rebuildFrequenzy < 1!");
+    }
+    AutoPas::_allowedCellSizeFactors = std::make_unique<NumberSetFinite<double>>(std::set<double>{verletRebuildFrequency});
+  }
+
   /**
    * Get length added to the cutoff for the Verlet lists' skin per timestep.
    * @return _verletSkinPerTimestep
@@ -547,19 +573,6 @@ class AutoPas {
     AutoPas::_verletSkinPerTimestep = verletSkinPerTimestep;
   }
 
-  /**
-   * Get Verlet rebuild frequency.
-   * @return _verletRebuildFrequency
-   */
-  [[nodiscard]] const NumberSet<int> &getVerletRebuildFrequency() const { return *_allowedVerletRebuildFrequencies; }
-
-  /**
-   * Set Verlet rebuild frequency.
-   * @param verletRebuildFrequency
-   */
-  void setVerletRebuildFrequency(int verletRebuildFrequency){
-    AutoPas::_allowedVerletRebuildFrequencies = std::make_unique<NumberSetFinite<int>>(std::set<int>{verletRebuildFrequency});
-  }
   /**
    * Get Verlet cluster size.
    * @return

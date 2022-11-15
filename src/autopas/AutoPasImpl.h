@@ -55,6 +55,7 @@ AutoPas<Particle> &AutoPas<Particle>::operator=(AutoPas &&other) noexcept {
 template <class Particle>
 void AutoPas<Particle>::init() {
   AutoPasLog(info, "AutoPas Version: {}", AutoPas_VERSION);
+  //TODO: implement getVerletRebuildFrequenzy
   if (_numSamples % getVerletRebuildFrequency() != 0) {
     AutoPasLog(warn,
                "Number of samples ({}) is not a multiple of the rebuild frequency ({}). This can lead to problems "

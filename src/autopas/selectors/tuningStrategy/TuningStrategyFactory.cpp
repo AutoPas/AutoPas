@@ -67,7 +67,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
 
       utils::AutoPasConfigurationCommunicator::distributeConfigurations(
           allowedContainers, allowedCellSizeFactors, allowedTraversals, allowedLoadEstimators, allowedDataLayouts,
-          allowedNewton3Options, rank, commSize, allowedVerletRebuildFrequencies);
+          allowedNewton3Options, allowedVerletRebuildFrequencies, rank, commSize);
       break;
     }
 
@@ -125,6 +125,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
       }
       tuningStrategy = std::make_unique<ActiveHarmony>(allowedContainers, allowedCellSizeFactors, allowedTraversals,
                                                        allowedLoadEstimators, allowedDataLayouts, allowedNewton3Options,
+                                                       allowedVerletRebuildFrequencies,
                                                        mpiStrategyOption, comm);
       break;
     }

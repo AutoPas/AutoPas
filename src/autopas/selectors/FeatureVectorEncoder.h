@@ -397,7 +397,7 @@ class FeatureVectorEncoder {
 
     ContinuousDimensionType continuousValues;
     continuousValues[static_cast<size_t>(ContinuousIndices::cellSizeFactor)] = vec.cellSizeFactor;
-    continuousValues[static_cast<size_t>(ContinuousIndices::verletRebuildFrequency)] = vec.verletRebuildFrequency;
+    discreteValues[static_cast<size_t>(DiscreteIndices::verletRebuildFrequency)] = vec.verletRebuildFrequency;
 
     return std::make_pair(discreteValues, continuousValues);
   }
@@ -418,7 +418,7 @@ class FeatureVectorEncoder {
     auto newton3 = _newton3Options[discreteValues[static_cast<size_t>(DiscreteIndices::newton3)]];
 
     auto cellSizeFactor = continuousValues[static_cast<size_t>(ContinuousIndices::cellSizeFactor)];
-    auto verletRebuildFrequency = continuousValues[static_cast<size_t>(ContinuousIndices::verletRebuildFrequency)];
+    auto verletRebuildFrequency = discreteValues[static_cast<size_t>(DiscreteIndices::verletRebuildFrequency)];
 
     return FeatureVector(container, cellSizeFactor, traversal, estimator, dataLayout, newton3, verletRebuildFrequency);
   }

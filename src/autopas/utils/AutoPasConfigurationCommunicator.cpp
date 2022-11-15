@@ -148,7 +148,8 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
                               std::set<TraversalOption> &traversalOptions,
                               std::set<LoadEstimatorOption> &loadEstimatorOptions,
                               std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options,
-                              const int rank, const int commSize, NumberSet<int> &verletRebuildFrequencies) {
+                              NumberSet<int> &verletRebuildFrequencies,
+                              const int rank, const int commSize) {
   int numConfigs = getSearchSpaceSize(containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions,
                                       dataLayoutOptions, newton3Options, verletRebuildFrequencies);
 
