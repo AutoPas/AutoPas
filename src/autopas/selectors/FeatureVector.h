@@ -24,7 +24,7 @@ class FeatureVector : public Configuration {
    * Number of tune-able dimensions.
    * container-traversal-estimator + dataLayout + newton3 + cellSizeFactor
    */
-  static constexpr size_t featureSpaceDims = 4;
+  static constexpr size_t featureSpaceDims = 5;
 
   /**
    * Consider Container, Traversal and LoadEstimator options as one dimension.
