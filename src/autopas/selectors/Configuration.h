@@ -140,6 +140,18 @@ class Configuration {
     return retString;
   }
 
+
+
+ public:
+
+  void setVerletRebuildFrequenzy(int verletRebuildFreq){
+    verletRebuildFrequency = verletRebuildFreq;
+  }
+
+  [[nodiscard]] int getVerletRebuildFrequenzy() const{
+    return verletRebuildFrequency;
+  }
+
 };
 
 /**
@@ -216,5 +228,7 @@ struct ConfigHash {
     return enumHash ^ doubleHash ^ intHash;
   }
 };
+
+
 
 }  // namespace autopas

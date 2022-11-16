@@ -438,7 +438,7 @@ class AutoPas {
    * @return _verletSkin
    */
   double getVerletSkin() {
-    double _verletSkin = AutoPas::_verletSkinPerTimestep * double(getAllowedVerletRebuildFrequencies().getMin());
+    double _verletSkin = AutoPas::_verletSkinPerTimestep * double(getVerletRebuildFrequency());
     return _verletSkin;
   };
 
@@ -533,6 +533,8 @@ class AutoPas {
     AutoPas::_allowedCellSizeFactors = std::make_unique<NumberSetFinite<double>>(std::set<double>{cellSizeFactor});
   }
 
+  int getVerletRebuildFrequency() {return getCurrentConfig().getVerletRebuildFrequenzy();}
+
   [[nodiscard]] const NumberSet<int> &getAllowedVerletRebuildFrequencies() const { return *_allowedVerletRebuildFrequencies; }
 
   /**
@@ -551,12 +553,12 @@ class AutoPas {
    * Set allowed cell size factors to one element (only relevant for LinkedCells, VerletLists and VerletListsCells).
    * @param cellSizeFactor
    */
-  void setVerletRebuildFrequency(double verletRebuildFrequency) {
+  void setVerletRebuildFrequency(int verletRebuildFrequency) {
     if (verletRebuildFrequency < 1) {
       AutoPasLog(error, "rebuildFrequenzy < 1");
       utils::ExceptionHandler::exception("Error: rebuildFrequenzy < 1!");
     }
-    AutoPas::_allowedCellSizeFactors = std::make_unique<NumberSetFinite<double>>(std::set<double>{verletRebuildFrequency});
+    getCurrentConfig().setVerletRebuildFrequenzy(verletRebuildFrequency);
   }
 
   /**

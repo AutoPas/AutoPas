@@ -131,9 +131,9 @@ void SetSearchSpaceBasedTuningStrategy::populateSearchSpace(
         for (const auto &loadEstimatorOption : allowedAndApplicableLoadEstimators) {
           for (const auto &dataLayoutOption : allowedDataLayoutOptions) {
             for (const auto &newton3Option : allowedNewton3Options) {
-              for (const auto &verletRebuildFrquency : allowedVerletRebuildFrequencies) {
+              for (const auto &verletRebuildFrequency : allowedVerletRebuildFrequencies) {
                 _searchSpace.emplace(containerOption, cellSizeFactor, traversalOption, loadEstimatorOption,
-                                     dataLayoutOption, newton3Option, verletRebuildFrquency);
+                                     dataLayoutOption, newton3Option, verletRebuildFrequency);
               }
             }
           }
