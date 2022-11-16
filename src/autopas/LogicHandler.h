@@ -29,8 +29,9 @@ class LogicHandler {
    * @param rebuildFrequency
    */
   LogicHandler(autopas::AutoTuner<Particle> &autoTuner, unsigned int rebuildFrequency)
-      : _neighborListRebuildFrequency{rebuildFrequency}, _autoTuner(autoTuner) {
+      : _autoTuner(autoTuner) {
     checkMinimalSize();
+    autoTuner.getCurrentConfig().setVerletRebuildFrquenzy(rebuildFrequency);
   }
 
   /**
@@ -387,16 +388,11 @@ class LogicHandler {
   }
 
   bool neighborListsAreValid() {
-    if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or _autoTuner.willRebuild()) {
+    if (_stepsSinceLastListRebuild >= _autoTuner.getCurrentConfig().getVerletRebuildFrequenzy() or _autoTuner.willRebuild()) {
       _neighborListsAreValid = false;
     }
     return _neighborListsAreValid;
   }
-
-  /**
-   * Specifies after how many pair-wise traversals the neighbor lists (if they exist) are to be rebuild.
-   */
-  const unsigned int _neighborListRebuildFrequency;
 
   /**
    * Reference to the AutoTuner that owns the container, ...
