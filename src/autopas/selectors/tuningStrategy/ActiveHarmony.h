@@ -125,7 +125,7 @@ class ActiveHarmony : public TuningStrategyInterface {
    * @param options Set of possible values of the tuning parameter.
    */
   template <class OptionClass>
-  void configureTuningParameter(hdef_t *hdef, const char *name, const std::set<OptionClass> options);
+  void configureTuningParameter(hdef_t *hdef, const char *name, const std::set<OptionClass> &options);
 
   /**
    * Fetch value for enum-type tuning parameter.
@@ -135,7 +135,7 @@ class ActiveHarmony : public TuningStrategyInterface {
    * @return Value for tuning parameter.
    */
   template <class OptionClass>
-  OptionClass fetchTuningParameter(const char *name, const std::set<OptionClass> options);
+  OptionClass fetchTuningParameter(const char *name, const std::set<OptionClass> &options);
 
   void setupTuningParameters(int commSize, hdef_t *hdef);
 

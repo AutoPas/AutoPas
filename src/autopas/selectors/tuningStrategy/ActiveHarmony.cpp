@@ -69,7 +69,7 @@ void autopas::ActiveHarmony::addEvidence(long time, size_t iteration) {
 }
 
 template <class OptionClass>
-OptionClass autopas::ActiveHarmony::fetchTuningParameter(const char *name, const std::set<OptionClass> options) {
+OptionClass autopas::ActiveHarmony::fetchTuningParameter(const char *name, const std::set<OptionClass> &options) {
   OptionClass option;
   if (options.size() > 1) {
     option = decltype(option)::parseOptionExact(ah_get_enum(htask, name));
@@ -136,7 +136,7 @@ bool autopas::ActiveHarmony::tune(bool currentInvalid) {
     fetchConfiguration();
     if (_traversalTimes.find(_currentConfig) != _traversalTimes.end()) {
       // we already know the performance for this config
-      addEvidence(_traversalTimes[_currentConfig], 0);
+      addEvidence(static_cast<long>(_traversalTimes[_currentConfig]), 0);
       skipConfig = true;
     }
 
@@ -177,7 +177,7 @@ const autopas::Configuration &autopas::ActiveHarmony::getCurrentConfiguration() 
 
 template <class OptionClass>
 void autopas::ActiveHarmony::configureTuningParameter(hdef_t *hdef, const char *name,
-                                                      const std::set<OptionClass> options) {
+                                                      const std::set<OptionClass> &options) {
   if (options.size() > 1) {                       // only parameters with more than 1 possible options should be tuned
     if (ah_def_enum(hdef, name, nullptr) != 0) {  // define parameter
       utils::ExceptionHandler::exception("ActiveHarmony::configureTuningParameter: Error defining enum \"{}\"", name);
