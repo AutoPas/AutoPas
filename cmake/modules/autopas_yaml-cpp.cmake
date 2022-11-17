@@ -1,7 +1,7 @@
 option(yaml-cpp_ForceBundled "Do not look for an installed version, always use bundled." ON)
 
 if (NOT ${yaml-cpp_ForceBundled})
-    set(expectedVersion 0.5.2)
+    set(expectedVersion 0.7.0)
     # first try: check if we find any installed version
     find_package(yaml-cpp ${expectedVersion} QUIET)
     if (yaml-cpp_FOUND)
@@ -20,7 +20,7 @@ if (NOT ${yaml-cpp_ForceBundled})
 endif ()
 
 # system version not found -> install bundled version
-message(STATUS "yaml-cpp - using bundled version 0.6.3 (commit 72f699f)")
+message(STATUS "yaml-cpp - using bundled version 0.7.0 (release)")
 
 # Enable FetchContent CMake module
 include(FetchContent)
@@ -32,8 +32,8 @@ FetchContent_Declare(
         # yaml-cpp-master:
         # https://github.com/jbeder/yaml-cpp/archive/master.zip
         # commit 72f699f:
-        ${AUTOPAS_SOURCE_DIR}/libs/yaml-cpp-master.zip
-    URL_HASH MD5=1beaff71d0f24ff2b4b56ead1f3b58c4
+        ${AUTOPAS_SOURCE_DIR}/libs/yaml-cpp-0.7.0.zip
+    URL_HASH MD5=1e8ca0d6ccf99f3ed9506c1f6937d0ec
     # needed to compile with ninja
 )
 
