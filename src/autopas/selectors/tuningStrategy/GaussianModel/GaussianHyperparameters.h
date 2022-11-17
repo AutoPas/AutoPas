@@ -48,6 +48,14 @@ class GaussianHyperparameters {
    */
   GaussianHyperparameters(double mean, double theta, Eigen::VectorXd dimScales);
 
+  GaussianHyperparameters(const GaussianHyperparameters &gaussianHyperparameters);
+
+  GaussianHyperparameters(GaussianHyperparameters &&gaussianHyperparameters) noexcept;
+
+  GaussianHyperparameters &operator=(const GaussianHyperparameters &gaussianHyperparameters);
+
+  GaussianHyperparameters &operator=(GaussianHyperparameters &&gaussianHyperparameters) noexcept;
+
   ~GaussianHyperparameters();
 
   /**
