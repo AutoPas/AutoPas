@@ -48,6 +48,8 @@ struct GaussianHyperparameters {
   GaussianHyperparameters(double mean, double theta, Eigen::VectorXd dimScales)
       : score(0), mean(mean), theta(theta), dimScales(std::move(dimScales)) {}
 
+  ~GaussianHyperparameters() = default;
+
   /**
    * Precalculate matrices needed for predictions
    * @param sigma assumed noise
