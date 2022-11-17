@@ -43,3 +43,38 @@ void autopas::utils::ExceptionHandler::rethrow() {
       }
   }
 }
+
+void autopas::utils::ExceptionHandler::setBehavior(autopas::utils::ExceptionBehavior behavior) {
+  std::lock_guard<std::mutex> guard(exceptionMutex);
+  _behavior = behavior;
+}
+
+void autopas::utils::ExceptionHandler::setCustomAbortFunction(std::function<void()> function) {
+  std::lock_guard<std::mutex> guard(exceptionMutex);
+  _customAbortFunction = std::move(function);
+}
+
+void autopas::utils::ExceptionHandler::nonThrowException(const std::exception &e) {
+  switch (_behavior) {
+    case ignore:
+      // do nothing
+      break;
+    case printAbort:
+      AutoPasLog(error, "{}\naborting", e.what());
+      std::abort();
+    case printCustomAbortFunction:
+      spdlog::get("AutoPasLog");
+      AutoPasLog(error, "{}\nusing custom abort function", e.what());
+      _customAbortFunction();
+      break;
+    default:
+      break;
+  }
+}
+
+autopas::utils::ExceptionHandler::AutoPasException::AutoPasException(std::string description)
+    : _description(std::move(description)) {}
+
+autopas::utils::ExceptionHandler::AutoPasException::~AutoPasException() = default;
+
+const char *autopas::utils::ExceptionHandler::AutoPasException::what() const noexcept { return _description.c_str(); }

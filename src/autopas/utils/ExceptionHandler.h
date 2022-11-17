@@ -48,10 +48,7 @@ class ExceptionHandler {
    * Set the behavior of the handler
    * @param behavior the behavior
    */
-  static void setBehavior(ExceptionBehavior behavior) {
-    std::lock_guard<std::mutex> guard(exceptionMutex);
-    _behavior = behavior;
-  }
+  static void setBehavior(ExceptionBehavior behavior);
 
   /**
    * Handle an exception derived by std::exception.
@@ -101,33 +98,14 @@ class ExceptionHandler {
    * Set a custom abort function
    * @param function the custom abort function
    */
-  static void setCustomAbortFunction(std::function<void()> function) {
-    std::lock_guard<std::mutex> guard(exceptionMutex);
-    _customAbortFunction = std::move(function);
-  }
+  static void setCustomAbortFunction(std::function<void()> function);
 
  private:
   static std::mutex exceptionMutex;
   static ExceptionBehavior _behavior;
   static std::function<void()> _customAbortFunction;
 
-  static void nonThrowException(const std::exception &e) {
-    switch (_behavior) {
-      case ignore:
-        // do nothing
-        break;
-      case printAbort:
-        AutoPasLog(error, "{}\naborting", e.what());
-        std::abort();
-      case printCustomAbortFunction:
-        spdlog::get("AutoPasLog");
-        AutoPasLog(error, "{}\nusing custom abort function", e.what());
-        _customAbortFunction();
-        break;
-      default:
-        break;
-    }
-  }
+  static void nonThrowException(const std::exception &e);
 
  public:
   /**
@@ -140,13 +118,16 @@ class ExceptionHandler {
      * constructor
      * @param description a descriptive string
      */
-    explicit AutoPasException(std::string description) : _description(std::move(description)){};
+    explicit AutoPasException(std::string description);
+    ;
+
+    ~AutoPasException() override;
 
     /**
      * returns the description
      * @return
      */
-    const char *what() const noexcept override { return _description.c_str(); }
+    [[nodiscard]] const char *what() const noexcept override;
 
    private:
     std::string _description;
