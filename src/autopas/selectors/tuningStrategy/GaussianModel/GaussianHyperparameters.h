@@ -12,7 +12,8 @@ namespace autopas {
 /**
  * Hyperparameters of Gaussian models and derived matrices used for prediction
  */
-struct GaussianHyperparameters {
+class GaussianHyperparameters {
+ public:
   /**
    * score used to weight hyperparameters
    */
@@ -45,10 +46,9 @@ struct GaussianHyperparameters {
    * @param theta prior variance
    * @param dimScales scale for each input dimension
    */
-  GaussianHyperparameters(double mean, double theta, Eigen::VectorXd dimScales)
-      : score(0), mean(mean), theta(theta), dimScales(std::move(dimScales)) {}
+  GaussianHyperparameters(double mean, double theta, Eigen::VectorXd dimScales);
 
-  ~GaussianHyperparameters() = default;
+  ~GaussianHyperparameters();
 
   /**
    * Precalculate matrices needed for predictions

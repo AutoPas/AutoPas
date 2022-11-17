@@ -10,6 +10,11 @@
 
 #include "GaussianProcess.h"
 
+autopas::GaussianHyperparameters::GaussianHyperparameters(double mean, double theta, Eigen::VectorXd dimScales)
+    : score(0), mean(mean), theta(theta), dimScales(std::move(dimScales)) {}
+
+autopas::GaussianHyperparameters::~GaussianHyperparameters() = default;
+
 void autopas::GaussianHyperparameters::precalculate(double sigma, const std::vector<Eigen::VectorXd> &inputs,
                                                     const Eigen::VectorXd &outputs) {
   size_t size = outputs.size();
