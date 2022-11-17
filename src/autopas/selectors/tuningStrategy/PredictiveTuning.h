@@ -91,12 +91,12 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
   explicit PredictiveTuning(std::set<Configuration> allowedConfigurations)
       : SetSearchSpaceBasedTuningStrategy(std::move(allowedConfigurations)) {}
 
-  inline void addEvidence(long time, size_t iteration) override {
+  void addEvidence(long time, size_t iteration) override {
     _traversalTimesStorage[*_currentConfig].emplace_back(iteration, time);
     _lastTest[*_currentConfig] = _tuningPhaseCounter;
   }
 
-  [[nodiscard]] inline long getEvidence(Configuration configuration) const override {
+  [[nodiscard]] long getEvidence(Configuration configuration) const override {
     // compute the average of times for this configuration
     auto times = _traversalTimesStorage.at(configuration);
     long result = 0;
@@ -106,9 +106,9 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
     return result / times.size();
   }
 
-  [[nodiscard]] inline const Configuration &getCurrentConfiguration() const override { return *_currentConfig; }
+  [[nodiscard]] const Configuration &getCurrentConfiguration() const override { return *_currentConfig; }
 
-  inline void reset(size_t iteration) override {
+  void reset(size_t iteration) override {
     _configurationPredictions.clear();
     _optimalSearchSpace.clear();
     _tooLongNotTestedSearchSpace.clear();
@@ -119,7 +119,7 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
     selectOptimalSearchSpace();
   }
 
-  inline bool tune(bool currentInvalid = false) override;
+  bool tune(bool currentInvalid = false) override;
 
   /**
    * Getter for predicted runtimes.
@@ -135,41 +135,41 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
   /**
    * Selects the optimal (=fastest) configuration
    */
-  inline void selectOptimalConfiguration();
+  void selectOptimalConfiguration();
   /**
    * Selects the configurations that are going to be tested.
    */
-  inline void selectOptimalSearchSpace();
+  void selectOptimalSearchSpace();
   /**
    * Provides different extrapolation methods for the prediction of the traversal time.
    */
-  inline void calculatePredictions();
+  void calculatePredictions();
   /**
    * Predicts the traversal time by placing a line through the last two traversal points and calculating the prediction
    * for the current time.
    */
-  inline void linePrediction();
+  void linePrediction();
   /**
    * Predicts the traversal time by creating a function that places a line through the data points and calculating the
    * prediction for the current time.
    */
-  inline void linearRegression();
+  void linearRegression();
   /**
    * Creates a polynomial function using Newton's method of finite differences and with this function the prediction is
    * calculated.
    */
-  inline void newtonPolynomial();
+  void newtonPolynomial();
   /**
    * Selects a new search space based on previous observations.
    * This method needs only to be called if everything in the previous _optimalSearchSpace was invalid.
    * Invalid configurations are discarded and
    * Creates a new optimalSearchSpace if every configuration in the previous one was invalid.
    */
-  inline void reselectOptimalSearchSpace();
+  void reselectOptimalSearchSpace();
   /**
    * Purge configurations from the search space based on their performance in this tuning phase compared to the optimum.
    */
-  inline void blacklistBadConfigurations();
+  void blacklistBadConfigurations();
 
   /**
    * Error value used as a placeholder for the predictions of configurations that are not predicted.
