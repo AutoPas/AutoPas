@@ -533,7 +533,7 @@ class AutoPas {
     AutoPas::_allowedCellSizeFactors = std::make_unique<NumberSetFinite<double>>(std::set<double>{cellSizeFactor});
   }
 
-  int getVerletRebuildFrequency() {return getCurrentConfig().getVerletRebuildFrequenzy();}
+  int getVerletRebuildFrequency() {return _verletRebuildFrequency;}
 
   [[nodiscard]] const NumberSet<int> &getAllowedVerletRebuildFrequencies() const { return *_allowedVerletRebuildFrequencies; }
 
@@ -558,7 +558,7 @@ class AutoPas {
       AutoPasLog(error, "rebuildFrequenzy < 1");
       utils::ExceptionHandler::exception("Error: rebuildFrequenzy < 1!");
     }
-    getCurrentConfig().setVerletRebuildFrequenzy(verletRebuildFrequency);
+    _verletRebuildFrequency = verletRebuildFrequency;
   }
 
   /**
@@ -989,7 +989,9 @@ class AutoPas {
       std::make_unique<NumberSetFinite<double>>(std::set<double>({1.}))};
 
   std::unique_ptr<NumberSet<int>> _allowedVerletRebuildFrequencies{
-      std::make_unique<NumberSet<int>>(5)};
+      std::make_unique<NumberSetFinite<int>>(std::set<int>({5}))};
+
+  int _verletRebuildFrequency = 5;
 
   /***
    * Load estimation algorithm to be used for efficient parallelisation (only relevant for LCSlicedBalancedTraversal and

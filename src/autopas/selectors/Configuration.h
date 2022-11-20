@@ -143,7 +143,6 @@ class Configuration {
 
 
  public:
-
   void setVerletRebuildFrequenzy(int verletRebuildFreq){
     verletRebuildFrequency = verletRebuildFreq;
   }

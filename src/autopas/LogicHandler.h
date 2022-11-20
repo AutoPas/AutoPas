@@ -31,7 +31,7 @@ class LogicHandler {
   LogicHandler(autopas::AutoTuner<Particle> &autoTuner, unsigned int rebuildFrequency)
       : _autoTuner(autoTuner) {
     checkMinimalSize();
-    autoTuner.getCurrentConfig().setVerletRebuildFrquenzy(rebuildFrequency);
+    autoTuner->setVerletRebuildFrquenzy(rebuildFrequency);
   }
 
   /**
@@ -388,7 +388,7 @@ class LogicHandler {
   }
 
   bool neighborListsAreValid() {
-    if (_stepsSinceLastListRebuild >= _autoTuner.getCurrentConfig().getVerletRebuildFrequenzy() or _autoTuner.willRebuild()) {
+    if (_stepsSinceLastListRebuild >= _autoTuner->getVerletRebuildFrequency() or _autoTuner.willRebuild()) {
       _neighborListsAreValid = false;
     }
     return _neighborListsAreValid;

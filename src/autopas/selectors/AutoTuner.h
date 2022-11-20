@@ -117,6 +117,8 @@ class AutoTuner {
    */
   void forceRetune();
 
+
+
   /**
    * Getter for the current container.
    * @return Smart pointer to the current container.
@@ -286,8 +288,9 @@ class AutoTuner {
   /**
    * The rebuild frequency this instance of AutoPas uses.
    */
-  unsigned int _rebuildFrequency;
-
+ public:
+  int _rebuildFrequency;
+ private:
   /**
    * How many times each configuration should be tested.
    */
@@ -343,6 +346,15 @@ class AutoTuner {
   IterationLogger _iterationLogger;
   TuningResultLogger _tuningResultLogger;
   TuningDataLogger _tuningDataLogger;
+
+ public:
+  int getVerletRebuildFrequency(){
+    return _rebuildFrequency;
+  }
+
+  void setVerletRebuildFrequency(int verletRebuildFrequency){
+    _rebuildFrequency = verletRebuildFrequency;
+  }
 };
 
 template <class Particle>
