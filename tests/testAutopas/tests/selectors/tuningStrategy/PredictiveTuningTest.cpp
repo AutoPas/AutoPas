@@ -13,7 +13,7 @@ autopas::PredictiveTuning PredictiveTuningTest::getPredictiveTuning(
     double blacklistRange, const std::set<autopas::TraversalOption> &allowedLCTraversalOptions) {
   return autopas::PredictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.}, allowedLCTraversalOptions, {autopas::LoadEstimatorOption::none},
-      {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled}, _relativeOptimumRange,
+      {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled}, {5,15,30}, _relativeOptimumRange,
       _maxTuningIterationsWithoutTest, blacklistRange, testsUntilFirstPrediction, extrapolationMethodOption);
 }
 

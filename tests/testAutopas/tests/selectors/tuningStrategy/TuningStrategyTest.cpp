@@ -22,7 +22,7 @@ TEST_P(TuningStrategyTest, testSearchSpaceEmpty) {
   auto noNewton3Options = std::set<autopas::Newton3Option>({});
   EXPECT_THROW(autopas::TuningStrategyFactory::generateTuningStrategy(
                    tuningStrategy, noContainers, noInterval, noTraversals, noLoadEstimators, noDataLayouts,
-                   noNewton3Options, 42, 1.2, 5, 0, 3, autopas::AcquisitionFunctionOption::expectedImprovement,
+                   noNewton3Options, autopas::NumberSetFinite<int>({}), 42, 1.2, 5, 0, 3, autopas::AcquisitionFunctionOption::expectedImprovement,
                    autopas::ExtrapolationMethodOption::linePrediction),
                autopas::utils::ExceptionHandler::AutoPasException);
 }
