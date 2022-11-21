@@ -41,7 +41,7 @@ TEST_F(FeatureVectorTest, lhsSampleFeature) {
   size_t n = 100;
 
   FeatureVectorEncoder encoder(allCompatibleContainerTraversalEstimators, allDataLayouts, allNewton3,
-                               autopas::NumberInterval<double>(1., 2.));
+                               autopas::NumberInterval<double>(1., 2.), autopas::NumberSetFinite<int>(std::set<int>({5,15,30})));
   auto vecList = encoder.lhsSampleFeatures(n, rand);
 
   EXPECT_EQ(vecList.size(), n);
@@ -56,7 +56,7 @@ TEST_F(FeatureVectorTest, lhsSampleFeatureCluster) {
   double iteration = 0;
 
   FeatureVectorEncoder encoder(allCompatibleContainerTraversalEstimators, allDataLayouts, allNewton3,
-                               autopas::NumberInterval<double>(1., 2.));
+                               autopas::NumberInterval<double>(1., 2.), autopas::NumberSetFinite<int>(std::set<int>({5,15,30})));
   auto vecList = encoder.lhsSampleFeatureCluster(n, rand, iteration);
 
   EXPECT_EQ(vecList.size(), n);
@@ -64,13 +64,13 @@ TEST_F(FeatureVectorTest, lhsSampleFeatureCluster) {
 
 TEST_F(FeatureVectorTest, distanceTest) {
   autopas::FeatureVector f1(ContainerOption::linkedCells, 1., TraversalOption::lc_c01, LoadEstimatorOption::none,
-                            DataLayoutOption::aos, Newton3Option::enabled);
+                            DataLayoutOption::aos, Newton3Option::enabled, 5);
   autopas::FeatureVector f2(ContainerOption::linkedCells, 1., TraversalOption::lc_c08, LoadEstimatorOption::none,
-                            DataLayoutOption::aos, Newton3Option::enabled);
+                            DataLayoutOption::aos, Newton3Option::enabled, 5);
   autopas::FeatureVector f3(ContainerOption::linkedCells, 1., TraversalOption::lc_c08, LoadEstimatorOption::none,
-                            DataLayoutOption::soa, Newton3Option::enabled);
+                            DataLayoutOption::soa, Newton3Option::enabled, 5);
   autopas::FeatureVector f4(ContainerOption::linkedCells, 1., TraversalOption::lc_c08, LoadEstimatorOption::none,
-                            DataLayoutOption::soa, Newton3Option::disabled);
+                            DataLayoutOption::soa, Newton3Option::disabled, 5);
 
   EXPECT_EQ(static_cast<Eigen::VectorXd>(f1 - f1).squaredNorm(), 0);
   EXPECT_EQ(static_cast<Eigen::VectorXd>(f2 - f2).squaredNorm(), 0);
@@ -99,7 +99,7 @@ TEST_F(FeatureVectorTest, distanceTest) {
 TEST_F(FeatureVectorTest, onehot) {
   autopas::Random rand;
   FeatureVectorEncoder encoder(allCompatibleContainerTraversalEstimators, allDataLayouts, allNewton3,
-                               NumberInterval<double>(0., 1.));
+                               NumberInterval<double>(0., 1.), autopas::NumberSetFinite<int>(std::set<int>({5,15,30})));
   auto vecList = encoder.lhsSampleFeatures(100, rand);
 
   for (auto fv : vecList) {
@@ -128,14 +128,14 @@ TEST_F(FeatureVectorTest, clusterEncode) {
   std::vector<Newton3Option> newtonsVec(newtons.begin(), newtons.end());
 
   FeatureVectorEncoder encoder(allCompatibleContainerTraversalEstimators, dataLayoutsVec, newtonsVec,
-                               NumberSetFinite<double>({cellSizeFactor}));
+                               NumberSetFinite<double>({cellSizeFactor}), autopas::NumberSetFinite<int>(std::set<int>({5,15,30})));
 
   // generate all possible combinations
   std::vector<FeatureVector> vecList;
   for (const auto &[container, traversal, estimator] : allCompatibleContainerTraversalEstimators) {
     for (const auto &dataLayout : dataLayouts) {
       for (const auto &newton3 : newtons) {
-        vecList.emplace_back(container, cellSizeFactor, traversal, estimator, dataLayout, newton3);
+        vecList.emplace_back(container, cellSizeFactor, traversal, estimator, dataLayout, newton3, 5);
       }
     }
   }
@@ -167,7 +167,7 @@ TEST_F(FeatureVectorTest, clusterNeighboursManhattan1) {
   std::vector<Newton3Option> newtonsVec(newtons.begin(), newtons.end());
 
   FeatureVectorEncoder encoder(allCompatibleContainerTraversalEstimators, dataLayoutsVec, newtonsVec,
-                               NumberSetFinite<double>({cellSizeFactor}));
+                               NumberSetFinite<double>({cellSizeFactor}), NumberSetFinite<int>({5, 15, 30}));
 
   std::vector<int> dimRestriction = {static_cast<int>(allCompatibleContainerTraversalEstimators.size()),
                                      static_cast<int>(dataLayouts.size()), static_cast<int>(newtons.size())};
@@ -177,7 +177,7 @@ TEST_F(FeatureVectorTest, clusterNeighboursManhattan1) {
   for (auto [container, traversal, estimator] : allCompatibleContainerTraversalEstimators) {
     for (auto dataLayout : dataLayouts) {
       for (auto newton3 : newtons) {
-        vecList.emplace_back(container, cellSizeFactor, traversal, estimator, dataLayout, newton3);
+        vecList.emplace_back(container, cellSizeFactor, traversal, estimator, dataLayout, newton3, 5);
       }
     }
   }
@@ -214,7 +214,7 @@ TEST_F(FeatureVectorTest, clusterNeighboursManhattan1Container) {
   std::vector<Newton3Option> newtonsVec(newtons.begin(), newtons.end());
 
   FeatureVectorEncoder encoder(allCompatibleContainerTraversalEstimators, dataLayoutsVec, newtonsVec,
-                               NumberSetFinite<double>({cellSizeFactor}));
+                               NumberSetFinite<double>({cellSizeFactor}), NumberSetFinite<int>({5,15,30}));
 
   std::vector<int> dimRestriction = {static_cast<int>(allCompatibleContainerTraversalEstimators.size()),
                                      static_cast<int>(dataLayouts.size()), static_cast<int>(newtons.size())};
@@ -224,7 +224,7 @@ TEST_F(FeatureVectorTest, clusterNeighboursManhattan1Container) {
   for (auto [container, traversal, estimator] : allCompatibleContainerTraversalEstimators) {
     for (auto dataLayout : dataLayouts) {
       for (auto newton3 : newtons) {
-        vecList.emplace_back(container, cellSizeFactor, traversal, estimator, dataLayout, newton3);
+        vecList.emplace_back(container, cellSizeFactor, traversal, estimator, dataLayout, newton3, 5);
       }
     }
   }

@@ -97,7 +97,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
 
       tuningStrategy =
           std::make_unique<FullSearch>(allowedContainers, allowedCellSizeFactors.getAll(), allowedTraversals,
-                                       allowedLoadEstimators, allowedDataLayouts, allowedNewton3Options);
+                                       allowedLoadEstimators, allowedDataLayouts, allowedNewton3Options, allowedVerletRebuildFrequencies.getAll());
       break;
     }
 
@@ -111,7 +111,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     case TuningStrategyOption::bayesianClusterSearch: {
       tuningStrategy = std::make_unique<BayesianClusterSearch>(
           allowedContainers, allowedCellSizeFactors, allowedTraversals, allowedLoadEstimators, allowedDataLayouts,
-          allowedNewton3Options, maxEvidence, acquisitionFunctionOption, outputSuffix);
+          allowedNewton3Options, allowedVerletRebuildFrequencies.getAll(), maxEvidence, acquisitionFunctionOption, outputSuffix);
       break;
     }
 
@@ -133,7 +133,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     case TuningStrategyOption::predictiveTuning: {
       tuningStrategy = std::make_unique<PredictiveTuning>(
           allowedContainers, allowedCellSizeFactors.getAll(), allowedTraversals, allowedLoadEstimators,
-          allowedDataLayouts, allowedNewton3Options, relativeOptimum, maxTuningPhasesWithoutTest,
+          allowedDataLayouts, allowedNewton3Options, allowedVerletRebuildFrequencies.getAll(), relativeOptimum, maxTuningPhasesWithoutTest,
           relativeBlacklistRange, evidenceFirstPrediction, extrapolationMethodOption, outputSuffix);
       break;
     }

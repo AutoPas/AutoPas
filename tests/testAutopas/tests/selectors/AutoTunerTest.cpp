@@ -359,13 +359,13 @@ TEST_F(AutoTunerTest, testForceRetuneInPhase) {
 
   autopas::Configuration confLc_c01(autopas::ContainerOption::linkedCells, cellSizeFactor,
                                     autopas::TraversalOption::lc_c01, autopas::LoadEstimatorOption::none,
-                                    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
+                                    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, 5);
   autopas::Configuration confLc_c04(autopas::ContainerOption::linkedCells, cellSizeFactor,
                                     autopas::TraversalOption::lc_c04, autopas::LoadEstimatorOption::none,
-                                    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
+                                    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, 5);
   autopas::Configuration confLc_c08(autopas::ContainerOption::linkedCells, cellSizeFactor,
                                     autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
-                                    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
+                                    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, 5);
 
   auto configsList = {confLc_c01, confLc_c04, confLc_c08};
 

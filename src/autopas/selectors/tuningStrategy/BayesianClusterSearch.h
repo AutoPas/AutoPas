@@ -80,7 +80,8 @@ class BayesianClusterSearch : public TuningStrategyInterface {
       const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
       const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions = LoadEstimatorOption::getAllOptions(),
       const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
-      const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(), size_t maxEvidence = 10,
+      const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(),
+      const std::set<int> &allowedVerletRebuilFrequencies = std::set<int>({5,15,30}), size_t maxEvidence = 10,
       AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::upperConfidenceBound,
       const std::string &outputSuffix = "", size_t predNumLHSamples = 50, unsigned long seed = std::random_device()())
       : _containerOptionsSet(allowedContainerOptions),
@@ -106,7 +107,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
         _currentNumEvidence(0),
         _currentOptimalTime(std::numeric_limits<long>::max()),
         _fullSearch(allowedContainerOptions, {allowedCellSizeFactors.getMedian()}, allowedTraversalOptions,
-                    allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options, allowedVerletRebuilFrquency) {
+                    allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options, allowedVerletRebuilFrequencies) {
     //TODO: implement Frequency
     if (predNumLHSamples <= 0) {
       utils::ExceptionHandler::exception(

@@ -20,19 +20,19 @@ TEST_F(FullSearchTest, testTune) {
   autopas::FullSearch fullSearch(
       {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
-      {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled});
+      {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled}, {5});
 
   std::vector<autopas::Configuration> testedConfigs;
   std::vector<autopas::Configuration> allConfigs{
       autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_sliced,
                              autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
-                             autopas::Newton3Option::disabled),
+                             autopas::Newton3Option::disabled, 5),
       autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c01,
                              autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
-                             autopas::Newton3Option::disabled),
+                             autopas::Newton3Option::disabled, 5),
       autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08,
                              autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
-                             autopas::Newton3Option::disabled)};
+                             autopas::Newton3Option::disabled, 5)};
 
   testedConfigs.emplace_back(fullSearch.getCurrentConfiguration());
   fullSearch.addEvidence(10, 0);
