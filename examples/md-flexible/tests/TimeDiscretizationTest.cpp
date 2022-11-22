@@ -107,7 +107,7 @@ TEST_F(TimeDiscretizationTest, testFastParticlesCheck) {
   autoPas->init();
 
   // slow particle -> no exception
-  autoPas->addParticle(autopas::MoleculeLJ({0., 0., 0.}, {0., 0., 0.}, 0));
+  autoPas->addParticle(autopas::MoleculeLJ({0., 0., 0.}, {0.1, 0., 0.}, 0));
   EXPECT_NO_THROW(
       TimeDiscretization::calculatePositions(*autoPas, _particlePropertiesLibrary, 0.1, {0., 0., 0.}, true));
   // fast particle -> exception
