@@ -191,9 +191,9 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
     // See documentation for _neighborDomainIndices to explain the indexing
     const int leftNeighbor = _neighborDomainIndices[(dimensionIndex * 2) % _neighborCount];
     const int rightNeighbor = _neighborDomainIndices[(dimensionIndex * 2 + 1) % _neighborCount];
-    const auto haloParticlesThisDirection = sendAndReceiveParticlesLeftAndRight(
+    const auto receivedHaloParticles = sendAndReceiveParticlesLeftAndRight(
         particlesForLeftNeighbor, particlesForRightNeighbor, leftNeighbor, rightNeighbor);
-    haloParticles.insert(haloParticles.end(), haloParticlesThisDirection.begin(), haloParticlesThisDirection.end());
+    haloParticles.insert(haloParticles.end(), receivedHaloParticles.begin(), receivedHaloParticles.end());
   }
   for (const auto &particle : haloParticles) {
     autoPasContainer.addHaloParticle(particle);
