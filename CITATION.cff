@@ -30,7 +30,7 @@ preferred-citation:
   doi: "https://doi.org/10.1016/j.cpc.2021.1082620"
   journal: "Computer Physics Communications"
   month: 4
-  start: 108262 # First page number
+  start: 108262 # ID of the article
   title: "N ways to simulate short-range particle systems: Automated algorithm selection with the node-level library AutoPas"
   volume: 273
   year: 2022
