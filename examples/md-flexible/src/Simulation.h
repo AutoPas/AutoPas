@@ -304,6 +304,7 @@ class Simulation {
 
   /**
    * Checks if the global number of particles is the expected value. If not an exception is thrown.
+   * If the simulation contains e.g. outflow boundaries this function does nothing!
    * @note This function is primarily for debugging purposes as it triggers global communication.
    * @param expectedNumParticlesGlobal Expected global value.
    * @param numParticlesCurrentlyMigratingLocal Number of particles that are currently not inserted but should be
