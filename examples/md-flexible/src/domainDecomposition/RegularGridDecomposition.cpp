@@ -236,11 +236,14 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
   }
   // sanity check: if the simulation is a closed system there should be no emigrants left at this point.
   if (std::all_of(_boundaryType.begin(), _boundaryType.end(),
-                  [](const auto &boundary) { return boundary == options::BoundaryTypeOption::periodic; }) and
+                  [](const auto &boundary) {
+                    return boundary == options::BoundaryTypeOption::periodic or
+                           boundary == options::BoundaryTypeOption::reflective;
+                  }) and
       not emigrants.empty()) {
     using autopas::utils::ArrayUtils::operator<<;
     std::stringstream ss;
-    ss << "Rank " << _domainIndex << ": All boundaries are periodic but " << emigrants.size()
+    ss << "Rank " << _domainIndex << ": All boundaries are periodic or reflective but " << emigrants.size()
        << " migrants could not be re-inserted:\n"
        << autopas::utils::ArrayUtils::to_string(emigrants, "\n", {"", ""}) << "\n\n"
        << "Local box min: " << _localBoxMin << "\n"
