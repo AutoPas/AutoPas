@@ -308,7 +308,7 @@ class Simulation {
    * @note This function is primarily for debugging purposes as it triggers global communication.
    * @param expectedNumParticlesGlobal Expected global value.
    * @param numParticlesCurrentlyMigratingLocal Number of particles that are currently not inserted but should be
-   * re-inserted. E.g. migrants.
+   * re-inserted. E.g. immigrants and / or emigrants.
    * @param lineNumber Will be shown in the Exception so that it is easier to find the offending call. Pass __LINE__.
    */
   [[maybe_unused]] void checkNumParticles(size_t expectedNumParticlesGlobal, size_t numParticlesCurrentlyMigratingLocal,
