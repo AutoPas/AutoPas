@@ -606,7 +606,10 @@ bool Simulation::needsMoreIterations() const {
 void Simulation::checkNumParticles(size_t expectedNumParticlesGlobal, size_t numParticlesCurrentlyMigratingLocal,
                                    int lineNumber) {
   if (std::all_of(_configuration.boundaryOption.value.begin(), _configuration.boundaryOption.value.end(),
-                  [](const auto &boundary) { return boundary == options::BoundaryTypeOption::periodic; })) {
+                  [](const auto &boundary) {
+                    return boundary == options::BoundaryTypeOption::periodic or
+                           boundary == options::BoundaryTypeOption::reflective;
+                  })) {
     const auto numParticlesNowLocal = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned);
     std::array<size_t, 2> sendBuffer{numParticlesNowLocal, numParticlesCurrentlyMigratingLocal};
     std::array<size_t, sendBuffer.size()> receiveBuffer{};
