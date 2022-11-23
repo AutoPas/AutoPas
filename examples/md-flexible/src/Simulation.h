@@ -235,8 +235,8 @@ class Simulation {
    * @param maxTime: The simulation's total execution time.
    * @return All information of the timer in a human readable string.
    */
-  [[nodiscard]] std::string timerToString(const std::string &name, long timeNS, int numberWidth = 0,
-                                          long maxTime = 0ul);
+  [[nodiscard]] static std::string timerToString(const std::string &name, long timeNS, int numberWidth = 0,
+                                                 long maxTime = 0ul);
 
   /**
    * Updates the position of particles in the local AutoPas container.
@@ -269,7 +269,7 @@ class Simulation {
    * @param time: the time to accumulate.
    * @return the accumulated time of all ranks.
    */
-  [[nodiscard]] long accumulateTime(const long &time);
+  [[nodiscard]] static long accumulateTime(const long &time);
 
   /**
    * Logs the number of total/owned/halo particles in the simulation, aswell as the standard deviation of Homogeneity.
@@ -301,4 +301,16 @@ class Simulation {
    * @return
    */
   [[nodiscard]] bool needsMoreIterations() const;
+
+  /**
+   * Checks if the global number of particles is the expected value. If not an exception is thrown.
+   * If the simulation contains e.g. outflow boundaries this function does nothing!
+   * @note This function is primarily for debugging purposes as it triggers global communication.
+   * @param expectedNumParticlesGlobal Expected global value.
+   * @param numParticlesCurrentlyMigratingLocal Number of particles that are currently not inserted but should be
+   * re-inserted. E.g. immigrants and / or emigrants.
+   * @param lineNumber Will be shown in the Exception so that it is easier to find the offending call. Pass __LINE__.
+   */
+  [[maybe_unused]] void checkNumParticles(size_t expectedNumParticlesGlobal, size_t numParticlesCurrentlyMigratingLocal,
+                                          int lineNumber);
 };
