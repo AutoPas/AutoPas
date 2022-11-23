@@ -37,11 +37,17 @@
 class MDFlexConfig {
  public:
   /**
-   * Constructor.
+   * Constructor that initializes the configuration from the CLI arguments (incl. yaml file argument).
    * @param argc: the argument count of the arguments passed to the main function.
    * @param argv: the argument vector passed to the main function.
    */
   MDFlexConfig(int argc, char **argv);
+
+  /**
+   * Constructor using only default values.
+   * Useful for testing but might require setting some values before this is valid.
+   */
+  MDFlexConfig() = default;
 
   /**
    * Struct to bundle information for options.
@@ -340,7 +346,7 @@ class MDFlexConfig {
    * verletRebuildFrequency
    */
   MDFlexOption<unsigned int, __LINE__> verletRebuildFrequency{
-      20, "verlet-rebuild-frequency", true, "Number of iterations after which containers are rebuilt."};
+      15, "verlet-rebuild-frequency", true, "Number of iterations after which containers are rebuilt."};
   /**
    * verletSkinRadiusPerTimeStep
    */
@@ -348,6 +354,13 @@ class MDFlexConfig {
       .2, "verlet-skin-radius-per-timestep", true,
       "Skin added to the cutoff to form the interaction length. The total skin width is this number times "
       "verletRebuildFrequency."};
+
+  /**
+   * fastParticlesThrow
+   */
+  MDFlexOption<bool, __LINE__> fastParticlesThrow{false, "fastParticlesThrow", false,
+                                                  "Decide if particles that move farther than skin/2/rebuildFrequency "
+                                                  "will throw an exception during the position update or not."};
   /**
    * boxMin
    */
@@ -638,7 +651,7 @@ class MDFlexConfig {
   /**
    * valueOffset used for cli-output alignment
    */
-  static constexpr size_t valueOffset{33};
+  static constexpr int valueOffset{33};
 
  private:
   /**

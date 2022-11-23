@@ -14,6 +14,7 @@
 #endif
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 #include "autopas/utils/SimilarityFunctions.h"
+#include "autopas/utils/WrapMPI.h"
 
 // Declare the main AutoPas class and the iteratePairwise() methods with all used functors as extern template
 // instantiation. They are instantiated in the respective cpp file inside the templateInstantiations folder.
@@ -61,7 +62,10 @@ size_t getTerminalWidth() {
   // if width is still zero try the environment variable COLUMNS
   if (terminalWidth == 0) {
     if (auto *terminalWidthCharArr = std::getenv("COLUMNS")) {
-      terminalWidth = atoi(terminalWidthCharArr);
+      // this pointer could be used to detect parsing errors via terminalWidthCharArr == end
+      // but since we have a fallback further down we are ok if this fails silently.
+      char *end{};
+      terminalWidth = std::strtol(terminalWidthCharArr, &end, 10);
     }
   }
 
@@ -202,6 +206,19 @@ void Simulation::run() {
         _domainDecomposition->update(computationalLoad);
         auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(),
                                                                 _domainDecomposition->getLocalBoxMax());
+        // because boundaries shifted, particles that were thrown out by the updateContainer previously might now be in
+        // the container again
+        for (auto particleIter = emigrants.cbegin(); particleIter != emigrants.cend();) {
+          const auto &boxMin = _autoPasContainer->getBoxMin();
+          const auto &boxMax = _autoPasContainer->getBoxMax();
+          if (autopas::utils::inBox(particleIter->getR(), boxMin, boxMax)) {
+            _autoPasContainer->addParticle(*particleIter);
+            emigrants.erase(particleIter);
+          } else {
+            ++particleIter;
+          }
+        }
+
         emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
         _timers.loadBalancing.stop();
       }
@@ -271,10 +288,10 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
 
 void Simulation::printProgress(size_t iterationProgress, size_t maxIterations, bool maxIsPrecise) {
   // percentage of iterations complete
-  double fractionDone = static_cast<double>(iterationProgress) / maxIterations;
+  const double fractionDone = static_cast<double>(iterationProgress) / static_cast<double>(maxIterations);
 
   // length of the number of maxIterations
-  size_t numCharsOfMaxIterations = std::to_string(maxIterations).size();
+  const auto numCharsOfMaxIterations = static_cast<int>(std::to_string(maxIterations).size());
 
   // trailing information string
   std::stringstream info;
@@ -289,10 +306,10 @@ void Simulation::printProgress(size_t iterationProgress, size_t maxIterations, b
   std::stringstream progressbar;
   progressbar << "[";
   // get current terminal width
-  size_t terminalWidth = getTerminalWidth();
+  const auto terminalWidth = getTerminalWidth();
 
   // the bar should fill the terminal window so subtract everything else (-2 for "] ")
-  size_t maxBarWidth = terminalWidth - info.str().size() - progressbar.str().size() - 2;
+  const int maxBarWidth = static_cast<int>(terminalWidth - info.str().size() - progressbar.str().size() - 2ul);
   // sanity check for underflow
   if (maxBarWidth > terminalWidth) {
     std::cerr << "Warning! Terminal width appears to be too small or could not be read. Disabling progress bar."
@@ -300,8 +317,8 @@ void Simulation::printProgress(size_t iterationProgress, size_t maxIterations, b
     _configuration.dontShowProgressBar.value = true;
     return;
   }
-  auto barWidth =
-      std::max(std::min(static_cast<decltype(maxBarWidth)>(maxBarWidth * (fractionDone)), maxBarWidth), 1ul);
+  const auto barWidth =
+      std::max(std::min(static_cast<decltype(maxBarWidth)>(maxBarWidth * (fractionDone)), maxBarWidth), 1);
   // don't print arrow tip if >= 100%
   if (iterationProgress >= maxIterations) {
     progressbar << std::string(barWidth, '=');
@@ -337,7 +354,8 @@ std::string Simulation::timerToString(const std::string &name, long timeNS, int 
 void Simulation::updatePositions() {
   _timers.positionUpdate.start();
   TimeDiscretization::calculatePositions(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-                                         _configuration.deltaT.value, _configuration.globalForce.value);
+                                         _configuration.deltaT.value, _configuration.globalForce.value,
+                                         _configuration.fastParticlesThrow.value);
   _timers.positionUpdate.stop();
 }
 
@@ -421,14 +439,15 @@ bool Simulation::calculatePairwiseForces() {
       wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
       break;
     }
-#ifdef __ARM_FEATURE_SVE
     case MDFlexConfig::FunctorOption::lj12_6_SVE: {
+#ifdef __ARM_FEATURE_SVE
       autopas::LJFunctorSVE<ParticleType, true, true> functor{_autoPasContainer->getCutoff(),
                                                               particlePropertiesLibrary};
       wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
-      break;
-    }
+#else
+      throw std::runtime_error("MD-Flexible was not compiled with support for ARM SVE.");
 #endif
+    }
   }
   return wasTuningIteration;
 }
@@ -473,26 +492,26 @@ void Simulation::logSimulationState() {
 }
 
 void Simulation::logMeasurements() {
-  long positionUpdate = accumulateTime(_timers.positionUpdate.getTotalTime());
-  long updateContainer = accumulateTime(_timers.updateContainer.getTotalTime());
-  long forceUpdateTotal = accumulateTime(_timers.forceUpdateTotal.getTotalTime());
-  long forceUpdatePairwise = accumulateTime(_timers.forceUpdatePairwise.getTotalTime());
-  long forceUpdateGlobalForces = accumulateTime(_timers.forceUpdateGlobal.getTotalTime());
-  long forceUpdateTuning = accumulateTime(_timers.forceUpdateTuning.getTotalTime());
-  long forceUpdateNonTuning = accumulateTime(_timers.forceUpdateNonTuning.getTotalTime());
-  long velocityUpdate = accumulateTime(_timers.velocityUpdate.getTotalTime());
-  long simulate = accumulateTime(_timers.simulate.getTotalTime());
-  long vtk = accumulateTime(_timers.vtk.getTotalTime());
-  long initialization = accumulateTime(_timers.initialization.getTotalTime());
-  long total = accumulateTime(_timers.total.getTotalTime());
-  long thermostat = accumulateTime(_timers.thermostat.getTotalTime());
-  long haloParticleExchange = accumulateTime(_timers.haloParticleExchange.getTotalTime());
-  long reflectParticlesAtBoundaries = accumulateTime(_timers.reflectParticlesAtBoundaries.getTotalTime());
-  long migratingParticleExchange = accumulateTime(_timers.migratingParticleExchange.getTotalTime());
-  long loadBalancing = accumulateTime(_timers.loadBalancing.getTotalTime());
+  const long positionUpdate = accumulateTime(_timers.positionUpdate.getTotalTime());
+  const long updateContainer = accumulateTime(_timers.updateContainer.getTotalTime());
+  const long forceUpdateTotal = accumulateTime(_timers.forceUpdateTotal.getTotalTime());
+  const long forceUpdatePairwise = accumulateTime(_timers.forceUpdatePairwise.getTotalTime());
+  const long forceUpdateGlobalForces = accumulateTime(_timers.forceUpdateGlobal.getTotalTime());
+  const long forceUpdateTuning = accumulateTime(_timers.forceUpdateTuning.getTotalTime());
+  const long forceUpdateNonTuning = accumulateTime(_timers.forceUpdateNonTuning.getTotalTime());
+  const long velocityUpdate = accumulateTime(_timers.velocityUpdate.getTotalTime());
+  const long simulate = accumulateTime(_timers.simulate.getTotalTime());
+  const long vtk = accumulateTime(_timers.vtk.getTotalTime());
+  const long initialization = accumulateTime(_timers.initialization.getTotalTime());
+  const long total = accumulateTime(_timers.total.getTotalTime());
+  const long thermostat = accumulateTime(_timers.thermostat.getTotalTime());
+  const long haloParticleExchange = accumulateTime(_timers.haloParticleExchange.getTotalTime());
+  const long reflectParticlesAtBoundaries = accumulateTime(_timers.reflectParticlesAtBoundaries.getTotalTime());
+  const long migratingParticleExchange = accumulateTime(_timers.migratingParticleExchange.getTotalTime());
+  const long loadBalancing = accumulateTime(_timers.loadBalancing.getTotalTime());
 
   if (_domainDecomposition->getDomainIndex() == 0) {
-    auto maximumNumberOfDigits = std::to_string(total).length();
+    const auto maximumNumberOfDigits = static_cast<int>(std::to_string(total).length());
     std::cout << "Measurements:" << std::endl;
     std::cout << timerToString("Total accumulated                 ", total, maximumNumberOfDigits);
     std::cout << timerToString("  Initialization                  ", initialization, maximumNumberOfDigits, total);
@@ -521,16 +540,17 @@ void Simulation::logMeasurements() {
     std::cout << timerToString("    Thermostat                    ", thermostat, maximumNumberOfDigits, simulate);
     std::cout << timerToString("    Vtk                           ", vtk, maximumNumberOfDigits, simulate);
     std::cout << timerToString("    LoadBalancing                 ", loadBalancing, maximumNumberOfDigits, simulate);
-    std::cout << timerToString("One iteration                     ", simulate / _iteration, maximumNumberOfDigits,
-                               total);
+    std::cout << timerToString("One iteration                     ", simulate / static_cast<long>(_iteration),
+                               maximumNumberOfDigits, total);
 
     const long wallClockTime = _timers.total.getTotalTime();
     std::cout << timerToString("Total wall-clock time             ", wallClockTime,
-                               std::to_string(wallClockTime).length(), total);
+                               static_cast<int>(std::to_string(wallClockTime).length()), total);
     std::cout << std::endl;
 
     std::cout << "Tuning iterations                  : " << _numTuningIterations << " / " << _iteration << " = "
-              << ((double)_numTuningIterations / _iteration * 100) << "%" << std::endl;
+              << (static_cast<double>(_numTuningIterations) / static_cast<double>(_iteration) * 100.) << "%"
+              << std::endl;
 
     auto mfups =
         static_cast<double>(_autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned) * _iteration) *
@@ -541,39 +561,39 @@ void Simulation::logMeasurements() {
       autopas::FlopCounterFunctor<ParticleType> flopCounterFunctor(_autoPasContainer->getCutoff());
       _autoPasContainer->iteratePairwise(&flopCounterFunctor);
 
-      size_t flopsPerKernelCall;
-      switch (_configuration.functorOption.value) {
-        case MDFlexConfig::FunctorOption ::lj12_6: {
-          flopsPerKernelCall = autopas::LJFunctor<ParticleType, true, true>::getNumFlopsPerKernelCall();
-          break;
-        }
-        case MDFlexConfig::FunctorOption ::lj12_6_Globals: {
-          flopsPerKernelCall = autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
-                                                  /* globals */ true>::getNumFlopsPerKernelCall();
-          break;
-        }
-        case MDFlexConfig::FunctorOption ::lj12_6_AVX: {
-          flopsPerKernelCall = autopas::LJFunctorAVX<ParticleType, true, true>::getNumFlopsPerKernelCall();
-          break;
-        }
+      const size_t flopsPerKernelCall = [&]() {
+        switch (_configuration.functorOption.value) {
+          case MDFlexConfig::FunctorOption ::lj12_6: {
+            return autopas::LJFunctor<ParticleType, true, true>::getNumFlopsPerKernelCall();
+          }
+          case MDFlexConfig::FunctorOption ::lj12_6_Globals: {
+            return autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
+                                      /* globals */ true>::getNumFlopsPerKernelCall();
+          }
+          case MDFlexConfig::FunctorOption ::lj12_6_AVX: {
+            return autopas::LJFunctorAVX<ParticleType, true, true>::getNumFlopsPerKernelCall();
+          }
 #ifdef __ARM_FEATURE_SVE
-        case MDFlexConfig::FunctorOption ::lj12_6_SVE: {
-          flopsPerKernelCall = autopas::LJFunctorSVE<ParticleType, true, true>::getNumFlopsPerKernelCall();
-          break;
-        }
+          case MDFlexConfig::FunctorOption ::lj12_6_SVE: {
+            return autopas::LJFunctorSVE<ParticleType, true, true>::getNumFlopsPerKernelCall();
+          }
 #endif
-        default:
-          throw std::runtime_error("Invalid Functor choice");
-      }
+          default:
+            throw std::runtime_error("Invalid Functor choice");
+        }
+      }();
       auto flops = flopCounterFunctor.getFlops(flopsPerKernelCall) * _iteration;
       // approximation for flops of verlet list generation
-      if (_autoPasContainer->getContainerType() == autopas::ContainerOption::verletLists)
+      if (_autoPasContainer->getContainerType() == autopas::ContainerOption::verletLists) {
+        const auto approxNumberOfRebuilds =
+            static_cast<size_t>(floor(_iteration / _configuration.verletRebuildFrequency.value));
         flops += flopCounterFunctor.getDistanceCalculations() *
-                 decltype(flopCounterFunctor)::numFlopsPerDistanceCalculation *
-                 floor(_iteration / _configuration.verletRebuildFrequency.value);
+                 decltype(flopCounterFunctor)::numFlopsPerDistanceCalculation * approxNumberOfRebuilds;
+      }
 
-      std::cout << "GFLOPs                             : " << flops * 1e-9 << std::endl;
-      std::cout << "GFLOPs/sec                         : " << flops * 1e-9 / (simulate * 1e-9) << std::endl;
+      std::cout << "GFLOPs                             : " << static_cast<double>(flops) * 1e-9 << std::endl;
+      std::cout << "GFLOPs/sec                         : "
+                << static_cast<double>(flops) * 1e-9 / (static_cast<double>(simulate) * 1e-9) << std::endl;
       std::cout << "Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl;
     }
   }
@@ -581,4 +601,34 @@ void Simulation::logMeasurements() {
 
 bool Simulation::needsMoreIterations() const {
   return _iteration < _configuration.iterations.value or _numTuningPhasesCompleted < _configuration.tuningPhases.value;
+}
+
+void Simulation::checkNumParticles(size_t expectedNumParticlesGlobal, size_t numParticlesCurrentlyMigratingLocal,
+                                   int lineNumber) {
+  if (std::all_of(_configuration.boundaryOption.value.begin(), _configuration.boundaryOption.value.end(),
+                  [](const auto &boundary) {
+                    return boundary == options::BoundaryTypeOption::periodic or
+                           boundary == options::BoundaryTypeOption::reflective;
+                  })) {
+    const auto numParticlesNowLocal = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned);
+    std::array<size_t, 2> sendBuffer{numParticlesNowLocal, numParticlesCurrentlyMigratingLocal};
+    std::array<size_t, sendBuffer.size()> receiveBuffer{};
+    autopas::AutoPas_MPI_Reduce(sendBuffer.data(), receiveBuffer.data(), receiveBuffer.size(),
+                                AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM, 0, AUTOPAS_MPI_COMM_WORLD);
+    const auto &[numParticlesNowTotal, numParticlesMigratingTotal] = receiveBuffer;
+    if (expectedNumParticlesGlobal != numParticlesNowTotal + numParticlesMigratingTotal) {
+      const auto myRank = _domainDecomposition->getDomainIndex();
+      std::stringstream ss;
+      // clang-format off
+      ss << "Rank " << myRank << " Line " << lineNumber
+         << ": Particles Lost! All Boundaries are periodic but the number of particles changed:"
+         << "Expected        : " << expectedNumParticlesGlobal
+         << "Actual          : " << (numParticlesNowTotal + numParticlesMigratingTotal)
+         << "  in containers : " << numParticlesNowTotal
+         << "  migrating     : " << numParticlesMigratingTotal
+         << std::endl;
+      // clang-format on
+      throw std::runtime_error(ss.str());
+    }
+  }
 }

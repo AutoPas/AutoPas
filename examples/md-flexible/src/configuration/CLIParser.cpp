@@ -29,19 +29,59 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
   //
   // therefore workaround with make_tuple and auto
   static const auto relevantOptions{std::make_tuple(
-      config.newton3Options, config.checkpointfile, config.acquisitionFunctionOption, config.cellSizeFactors,
-      config.boxLength, config.containerOptions, config.cutoff, config.dataLayoutOptions, config.deltaT,
-      config.dontCreateEndConfig, config.dontShowProgressBar, config.tuningMaxEvidence,
-      config.extrapolationMethodOption, config.evidenceFirstPrediction, config.functorOption, config.dontMeasureFlops,
-      config.generatorOption, config.iterations, config.tuningInterval, config.logLevel, config.logFileName,
-      config.distributionMean, config.maxTuningPhasesWithoutTest, config.particlesPerDim, config.particlesTotal,
-      config.relativeOptimumRange, config.relativeBlacklistRange, config.tuningPhases, config.verletClusterSize,
-      config.verletSkinRadiusPerTimestep, config.particleSpacing, config.tuningSamples, config.traversalOptions,
-      config.tuningStrategyOption, config.mpiStrategyOption, config.MPITuningMaxDifferenceForBucket,
-      config.MPITuningWeightForMaxDensity, config.useThermostat, config.verletRebuildFrequency, config.vtkFileName,
-      config.vtkWriteFrequency, config.selectorStrategy, config.yamlFilename, config.distributionStdDev,
-      config.globalForce, config.boundaryOption, config.loadBalancer, config.loadBalancingInterval,
-      zshCompletionsOption, helpOption)};
+      // clang-format off
+      config.acquisitionFunctionOption,
+      config.boundaryOption,
+      config.boxLength,
+      config.cellSizeFactors,
+      config.fastParticlesThrow,
+      config.checkpointfile,
+      config.containerOptions,
+      config.cutoff,
+      config.dataLayoutOptions,
+      config.deltaT,
+      config.distributionMean,
+      config.distributionStdDev,
+      config.dontCreateEndConfig,
+      config.dontMeasureFlops,
+      config.dontShowProgressBar,
+      config.evidenceFirstPrediction,
+      config.extrapolationMethodOption,
+      config.functorOption,
+      config.generatorOption,
+      config.globalForce,
+      config.iterations,
+      config.loadBalancer,
+      config.loadBalancingInterval,
+      config.logFileName,
+      config.logLevel,
+      config.maxTuningPhasesWithoutTest,
+      config.mpiStrategyOption,
+      config.MPITuningMaxDifferenceForBucket,
+      config.MPITuningWeightForMaxDensity,
+      config.newton3Options,
+      config.particleSpacing,
+      config.particlesPerDim,
+      config.particlesTotal,
+      config.relativeBlacklistRange,
+      config.relativeOptimumRange,
+      config.selectorStrategy,
+      config.traversalOptions,
+      config.tuningInterval,
+      config.tuningMaxEvidence,
+      config.tuningPhases,
+      config.tuningSamples,
+      config.tuningStrategyOption,
+      config.useThermostat,
+      config.verletClusterSize,
+      config.verletRebuildFrequency,
+      config.verletSkinRadiusPerTimestep,
+      config.vtkFileName,
+      config.vtkWriteFrequency,
+      config.yamlFilename,
+      zshCompletionsOption,
+      helpOption)};
+  // clang-format on
 
   constexpr auto relevantOptionsSize = std::tuple_size_v<decltype(relevantOptions)>;
 
@@ -412,6 +452,10 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           cerr << "Error parsing verlet-skin-radius-per-timestep: " << optarg << endl;
           displayHelp = true;
         }
+        break;
+      }
+      case decltype(config.fastParticlesThrow)::getoptChar: {
+        config.fastParticlesThrow.value = true;
         break;
       }
       case decltype(config.tuningSamples)::getoptChar: {
