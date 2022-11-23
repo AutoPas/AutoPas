@@ -68,10 +68,10 @@ void AutoPas<Particle>::init() {
     _externalMPICommunicator = true;
   }
   auto tuningStrategy = TuningStrategyFactory::generateTuningStrategy(
-      _tuningStrategyOption, _allowedContainers, *_allowedCellSizeFactors, *_allowedVerletRebuildFrequencies, _allowedTraversals, _allowedLoadEstimators,
-      _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _relativeOptimumRange, _maxTuningPhasesWithoutTest,
-      _relativeBlacklistRange, _evidenceFirstPrediction, _acquisitionFunctionOption, _extrapolationMethodOption,
-      _outputSuffix, _mpiStrategyOption, _autopasMPICommunicator);
+      _tuningStrategyOption, _allowedContainers, *_allowedCellSizeFactors, _allowedTraversals, _allowedLoadEstimators,
+      _allowedDataLayouts, _allowedNewton3Options, *_allowedVerletRebuildFrequencies, _maxEvidence, _relativeOptimumRange,
+      _maxTuningPhasesWithoutTest, _relativeBlacklistRange, _evidenceFirstPrediction, _acquisitionFunctionOption,
+      _extrapolationMethodOption, _outputSuffix, _mpiStrategyOption, _autopasMPICommunicator);
   _autoTuner = std::make_unique<autopas::AutoTuner<Particle>>(
       _boxMin, _boxMax, _cutoff, _verletSkinPerTimestep, _verletClusterSize, std::move(tuningStrategy),
       _mpiTuningMaxDifferenceForBucket, _mpiTuningWeightForMaxDensity, _selectorStrategy, _tuningInterval, _numSamples, 5,
