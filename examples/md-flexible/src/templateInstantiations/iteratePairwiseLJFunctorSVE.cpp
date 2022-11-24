@@ -6,7 +6,7 @@
  * other compilation units to only declare, but not instantiate this template.
  */
 
-#ifdef __ARM_FEATURE_SVE
+#if defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
 #include "autopas/AutoPasImpl.h"
 #include "autopas/molecularDynamics/LJFunctorSVE.h"
 #include "src/TypeDefinitions.h"
