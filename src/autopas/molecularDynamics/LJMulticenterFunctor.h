@@ -169,49 +169,44 @@ class LJMulticenterFunctor
     if (particleA.isDummy() or particleB.isDummy()) {
       return;
     }
-    // get site properties and positions
 
-    // the following vectors contain mixed parameters in the order of a,b = 0,0; 0,1; ... ; 0,n; 1,0 ; ... ; n,m
-    std::vector<double> sigmaSquareds;
-    std::vector<double> epsilon24s;
-    std::vector<double> shift6s;
+    // Don't calculate force if particleB outside cutoff of particleA
+    const auto displacementCoM = autopas::utils::ArrayMath::sub(particleA.getR(), particleB.getR());
+    const auto distanceSquaredCoM = autopas::utils::ArrayMath::dot(displacementCoM, displacementCoM);
 
+    if (distanceSquaredCoM > _cutoffSquared) {
+      return;
+    }
+
+    // get number of sites
     const size_t numSitesA = useMixing ? _PPLibrary->getNumSites(particleA.getTypeId()) : _sitePositionsLJ.size();
     const size_t numSitesB = useMixing ? _PPLibrary->getNumSites(particleB.getTypeId()) : _sitePositionsLJ.size();
 
+    // get siteIds
     const std::vector<size_t> siteIdsA = useMixing ? _PPLibrary->getSiteTypes(particleA.getTypeId()) : std::vector<unsigned long>();
     const std::vector<size_t> siteIdsB = useMixing ? _PPLibrary->getSiteTypes(particleB.getTypeId()) : std::vector<unsigned long>();
 
+    // get unrotated relative site positions
     const std::vector<std::array<double, 3>> unrotatedSitePositionsA =
         useMixing ? _PPLibrary->getSitePositions(particleA.getTypeId()) : _sitePositionsLJ;
     const std::vector<std::array<double, 3>> unrotatedSitePositionsB =
         useMixing ? _PPLibrary->getSitePositions(particleB.getTypeId()) : _sitePositionsLJ;
 
-    double lj12m6Sum = 0;
-
-    const auto displacementCoM = autopas::utils::ArrayMath::sub(particleA.getR(), particleB.getR());
-    const auto distanceSquaredCoM = autopas::utils::ArrayMath::dot(displacementCoM, displacementCoM);
-
-    // Don't calculate LJ if particleB outside cutoff of particleA
-    if (distanceSquaredCoM > _cutoffSquared) {
-      return;
-    }
-
-    // calculate relative site positions (rotated correctly)
+    // calculate correctly rotated relative site positions (rotated correctly)
     const auto rotatedSitePositionsA =
         autopas::utils::quaternion::rotateVectorOfPositions(particleA.getQ(), unrotatedSitePositionsA);
     const auto rotatedSitePositionsB =
         autopas::utils::quaternion::rotateVectorOfPositions(particleB.getQ(), unrotatedSitePositionsB);
 
-    for (int m = 0; m < numSitesA; m++) {
-      for (int n = 0; n < numSitesB; n++) {
+    for (int i = 0; i < numSitesA; i++) {
+      for (int j = 0; j < numSitesB; j++) {
         const auto displacement = autopas::utils::ArrayMath::add(
-            autopas::utils::ArrayMath::sub(displacementCoM, rotatedSitePositionsB[n]), rotatedSitePositionsA[m]);
+            autopas::utils::ArrayMath::sub(displacementCoM, rotatedSitePositionsB[j]), rotatedSitePositionsA[i]);
         const auto distanceSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
 
-        const auto sigmaSquared = useMixing ? _PPLibrary->mixingSigmaSquare(siteIdsA[m], siteIdsB[n]) : _sigmaSquared;
-        const auto epsilon24 = useMixing ? _PPLibrary->mixing24Epsilon(siteIdsA[m], siteIdsB[n]) : _epsilon24;
-        const auto shift6 = useMixing ? _PPLibrary->mixingShift6(siteIdsA[m], siteIdsB[n]) : _shift6;
+        const auto sigmaSquared = useMixing ? _PPLibrary->mixingSigmaSquare(siteIdsA[i], siteIdsB[j]) : _sigmaSquared;
+        const auto epsilon24 = useMixing ? _PPLibrary->mixing24Epsilon(siteIdsA[i], siteIdsB[j]) : _epsilon24;
+        const auto shift6 = useMixing ? _PPLibrary->mixingShift6(siteIdsA[i], siteIdsB[j]) : _shift6;
 
         // Calculate potential between sites and thus force
         // Force = 24 * epsilon * (2*(sigma/distance)^12 - (sigma/distance)^6) * (1/distance)^2 * [x_displacement, y_displacement, z_displacement]
@@ -231,9 +226,9 @@ class LJMulticenterFunctor
         }
 
         // Add torque applied by force
-        particleA.addTorque(autopas::utils::ArrayMath::cross(rotatedSitePositionsA[m], force));
+        particleA.addTorque(autopas::utils::ArrayMath::cross(rotatedSitePositionsA[i], force));
         if (newton3) {
-          particleB.subTorque(autopas::utils::ArrayMath::cross(rotatedSitePositionsB[n], force));
+          particleB.subTorque(autopas::utils::ArrayMath::cross(rotatedSitePositionsB[j], force));
         }
 
         if (calculateGlobals) {
