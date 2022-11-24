@@ -306,6 +306,7 @@ class LJMulticenterFunctor
 
     const auto const_unrotatedSitePositions = _sitePositionsLJ;
 
+    // count number of sites in SoA
     size_t siteCount = 0;
     if constexpr (useMixing) {
       for (size_t mol = 0; mol < soa.getNumberOfParticles(); ++mol) {
@@ -315,6 +316,7 @@ class LJMulticenterFunctor
       siteCount = const_unrotatedSitePositions.size() * soa.getNumberOfParticles();
     }
 
+    // pre-reserve site std::vectors
     exactSitePositionX.reserve(siteCount);
     exactSitePositionY.reserve(siteCount);
     exactSitePositionZ.reserve(siteCount);
@@ -328,12 +330,11 @@ class LJMulticenterFunctor
     siteForceZ.reserve((siteCount));
 
     if constexpr (calculateGlobals) {
-      // this is only needed for vectorisation when calculating globals
+      // this is only needed for vectorization when calculating globals
       isSiteOwned.reserve(siteCount);
     }
 
-    // Generate site-wise arrays for SIMD
-    // todo can we simd anything here? / can we do something 'nicer'?
+    // Generate site-wise std::vectors for SIMD
     if constexpr (useMixing) {
       size_t siteIndex = 0;
       for (size_t mol = 0; mol < soa.getNumberOfParticles(); ++mol) {
@@ -387,7 +388,7 @@ class LJMulticenterFunctor
 
       const size_t noSitesInMolA = useMixing ? _PPLibrary->getNumSites(typeptr[molA])
                                              : const_unrotatedSitePositions.size();  // Number of sites in molecule A
-      const size_t siteIndexMolB = siteIndexMolA + noSitesInMolA;
+      const size_t siteIndexMolB = siteIndexMolA + noSitesInMolA; // index of first site in molB
       const size_t noSitesB = (siteCount - siteIndexMolB);  // Number of sites in molecules that A interacts with
 
       // create mask over every mol 'above' molA  (char to keep arrays aligned)
@@ -413,13 +414,12 @@ class LJMulticenterFunctor
       }
 
       // generate mask for each site in the mols 'above' molA from molecular mask
-      // todo investigate if a SIMD implementation is possible
       std::vector<char, autopas::AlignedAllocator<char>> siteMask;
       siteMask.reserve(noSitesB);
 
       for (size_t molB = molA + 1; molB < soa.getNumberOfParticles(); ++molB) {
         for (size_t siteB = 0; siteB < _PPLibrary->getNumSites(typeptr[molB]); ++siteB) {
-          siteMask.template emplace_back(molMask[molB - (molA + 1)]);
+          siteMask.emplace_back(molMask[molB - (molA + 1)]);
         }
       }
 
@@ -459,7 +459,7 @@ class LJMulticenterFunctor
           const SoAFloatPrecision epsilon24 = useMixing ? epsilon24s[siteB] : const_epsilon24;
           const SoAFloatPrecision shift6 = applyShift ? (useMixing ? shift6s[siteB] : const_shift6) : 0;
 
-          const auto isSiteBOwned = calculateGlobals ? isSiteOwned[globalSiteBIndex] : true;
+          const auto isSiteBOwned = !calculateGlobals || isSiteOwned[globalSiteBIndex];
 
           const auto displacementX = exactSitePositionX[siteA] - exactSitePositionX[globalSiteBIndex];
           const auto displacementY = exactSitePositionY[siteA] - exactSitePositionY[globalSiteBIndex];
@@ -492,13 +492,13 @@ class LJMulticenterFunctor
           siteForceY[globalSiteBIndex] -= forceY;
           siteForceZ[globalSiteBIndex] -= forceZ;
 
-          if (calculateGlobals) {
+          if constexpr (calculateGlobals) {
             const auto virialX = displacementX * forceX;
             const auto virialY = displacementY * forceY;
             const auto virialZ = displacementZ * forceZ;
             const auto potentialEnergy = siteMask[siteB] ? (epsilon24 * lj12m6 + shift6) : 0.;
 
-            // SoAFunctorSingle uses newton3 optimisation, with which globals are divided by two later
+            // SoAFunctorSingle uses newton3 optimization, with which globals are divided by two later
             const auto ownershipMask = (ownedStateA == OwnershipState::owned ? 1. : 0.) + (isSiteBOwned ? 1. : 0.);
             potentialEnergySum += potentialEnergy * ownershipMask;
             virialSumX += virialX * ownershipMask;
@@ -555,7 +555,8 @@ class LJMulticenterFunctor
 
     if constexpr (calculateGlobals) {
       const auto threadNum = autopas_get_thread_num();
-      const auto newton3Factor = newton3 ? .5 : 1.; // todo: add reasoning once original reasoning in LJFunctor.h is corrected
+      // in newton3-case, division by 2 is handled here; in non-newton3-case, division is handled in post-processing
+      const auto newton3Factor = newton3 ? .5 : 1.;
 
       _aosThreadData[threadNum].potentialEnergySum += potentialEnergySum * newton3Factor;
       _aosThreadData[threadNum].virialSum[0] += virialSumX * newton3Factor;
