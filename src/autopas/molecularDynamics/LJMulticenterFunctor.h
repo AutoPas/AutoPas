@@ -208,9 +208,11 @@ class LJMulticenterFunctor
         const auto epsilon24 = useMixing ? _PPLibrary->mixing24Epsilon(siteIdsA[i], siteIdsB[j]) : _epsilon24;
         const auto shift6 = useMixing ? _PPLibrary->mixingShift6(siteIdsA[i], siteIdsB[j]) : _shift6;
 
+        // clang-format off
         // Calculate potential between sites and thus force
         // Force = 24 * epsilon * (2*(sigma/distance)^12 - (sigma/distance)^6) * (1/distance)^2 * [x_displacement, y_displacement, z_displacement]
         //         {                         scalarMultiple                                   } * {                     displacement             }
+        // clang-format on
         const auto invDistSquared = 1. / distanceSquared;
         const auto lj2 = sigmaSquared * invDistSquared;
         const auto lj6 = lj2 * lj2 * lj2;
@@ -334,7 +336,7 @@ class LJMulticenterFunctor
       isSiteOwned.reserve(siteCount);
     }
 
-    // Generate site-wise std::vectors for SIMD
+    // Fill site-wise std::vectors for SIMD
     if constexpr (useMixing) {
       size_t siteIndex = 0;
       for (size_t mol = 0; mol < soa.getNumberOfParticles(); ++mol) {
@@ -702,7 +704,7 @@ class LJMulticenterFunctor
 
   /**
    * Get the potential energy.
-   * todo replace this (and in LJFunctor.h) with the more intuitive potential energu
+   * todo replace this (and in LJFunctor.h) with the more intuitive function name
    * @return the potential energy sum
    */
   double getUpot() {
@@ -809,23 +811,19 @@ class LJMulticenterFunctor
     const SoAFloatPrecision const_epsilon24 = _epsilon24;
     const SoAFloatPrecision const_shift6 = _shift6;
 
-    // load unrotated site positions
     const auto const_unrotatedSitePositions = _sitePositionsLJ;
 
-    size_t siteCountA = 0;
+    // count number of sites in both SoAs
     size_t siteCountB = 0;
     if constexpr (useMixing) {
-      for (size_t mol = 0; mol < soaA.getNumberOfParticles(); ++mol) {
-        siteCountA += _PPLibrary->getNumSites(typeptrA[mol]);
-      }
       for (size_t mol = 0; mol < soaB.getNumberOfParticles(); ++mol) {
         siteCountB += _PPLibrary->getNumSites(typeptrB[mol]);
       }
     } else {
-      siteCountA = const_unrotatedSitePositions.size() * soaA.getNumberOfParticles();
       siteCountB = const_unrotatedSitePositions.size() * soaB.getNumberOfParticles();
     }
 
+    // pre-reserve std::vectors
     exactSitePositionBx.reserve(siteCountB);
     exactSitePositionBy.reserve(siteCountB);
     exactSitePositionBz.reserve(siteCountB);
@@ -839,6 +837,7 @@ class LJMulticenterFunctor
     siteForceBz.reserve(siteCountB);
 
     if constexpr(calculateGlobals) {
+      // this is only needed for vectorization when calculating globals
       isSiteOwnedBArr.reserve(siteCountB);
     }
 
@@ -851,7 +850,7 @@ class LJMulticenterFunctor
       }
     }
 
-    // Generate site-wise arrays for SIMD
+    // Fill site-wise std::vectors for SIMD
     if constexpr (useMixing) {
       size_t siteIndex = 0;
       for (size_t mol = 0; mol < soaB.getNumberOfParticles(); ++mol) {
@@ -939,10 +938,6 @@ class LJMulticenterFunctor
         }
       }
 
-      SoAFloatPrecision shift6 = const_shift6;
-      SoAFloatPrecision sigmaSquared = const_sigmaSquared;
-      SoAFloatPrecision epsilon24 = const_epsilon24;
-
       // sums used for molA
       SoAFloatPrecision forceSumX = 0.;
       SoAFloatPrecision forceSumY = 0.;
@@ -952,7 +947,6 @@ class LJMulticenterFunctor
       SoAFloatPrecision torqueSumZ = 0.;
 
       for (size_t siteA = 0; siteA < noSitesInMolA; ++siteA) {
-        // todo compare performance between preloading parameters and just calculating them
         if (useMixing) {
           // preload sigmas, epsilons, and shifts
           for (size_t siteB = 0; siteB < siteCountB; ++siteB) {
@@ -979,7 +973,7 @@ class LJMulticenterFunctor
           const SoAFloatPrecision epsilon24 = useMixing ? epsilon24s[siteB] : const_epsilon24;
           const SoAFloatPrecision shift6 = applyShift ? (useMixing ? shift6s[siteB] : const_shift6) : 0;
 
-          const auto isSiteOwnedB = calculateGlobals ? isSiteOwnedBArr[siteB] : true;
+          const auto isSiteOwnedB = !calculateGlobals || isSiteOwnedBArr[siteB];
 
           const auto displacementX = exactSitePositionAx - exactSitePositionBx[siteB];
           const auto displacementY = exactSitePositionAy - exactSitePositionBy[siteB];
@@ -1048,7 +1042,7 @@ class LJMulticenterFunctor
       tzAptr[molA] += torqueSumZ;
     }
 
-    // reduce the forces on individual sites in cell B to total forces & torques on whole molecules
+    // reduce the forces on individual sites in SoA B to total forces & torques on whole molecules
     if constexpr (useMixing) {
       size_t siteIndex = 0;
       for (size_t mol = 0; mol < soaB.getNumberOfParticles(); ++mol) {
@@ -1088,7 +1082,8 @@ class LJMulticenterFunctor
     }
     if constexpr (calculateGlobals) {
       const auto threadNum = autopas_get_thread_num();
-      const auto newton3Factor = newton3 ? .5 : 1.; // todo: add reasoning once original reasoning in LJFunctor.h is corrected
+      // in newton3-case, division by 2 is handled here; in non-newton3-case, division is handled in post-processing
+      const auto newton3Factor = newton3 ? .5 : 1.;
 
       _aosThreadData[threadNum].potentialEnergySum += potentialEnergySum * newton3Factor;
       _aosThreadData[threadNum].virialSum[0] += virialSumX * newton3Factor;
@@ -1103,9 +1098,9 @@ class LJMulticenterFunctor
                             const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
-    // Skip if initial particle is dummy
-    const auto ownedStateInit = ownedStatePtr[indexFirst];
-    if (ownedStateInit == OwnershipState::dummy) { return; }
+    // Skip if primary particle is dummy
+    const auto ownedStatePrime = ownedStatePtr[indexFirst];
+    if (ownedStatePrime == OwnershipState::dummy) { return; }
 
     const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
@@ -1148,18 +1143,18 @@ class LJMulticenterFunctor
     const size_t *const __restrict neighborListPtr = neighborList.data();
 
     // Count sites
-    const size_t siteCountMolI = useMixing ? _PPLibrary->getNumSites(typeptr[indexFirst]) : const_unrotatedSitePositions.size();
+    const size_t siteCountMolPrime = useMixing ? _PPLibrary->getNumSites(typeptr[indexFirst]) : const_unrotatedSitePositions.size();
 
-    size_t siteCountNeighbors = 0; // site count of neighbours of mol I (which we refer to as mols J)
+    size_t siteCountNeighbors = 0; // site count of neighbours of primary molecule
     if constexpr (useMixing) {
-      for (size_t molJ = 0; molJ < neighborListSize; ++molJ) {
-        siteCountNeighbors += _PPLibrary->getNumSites(typeptr[neighborList[molJ]]);
+      for (size_t neighborMol = 0; neighborMol < neighborListSize; ++neighborMol) {
+        siteCountNeighbors += _PPLibrary->getNumSites(typeptr[neighborList[neighborMol]]);
       }
     } else {
       siteCountNeighbors = const_unrotatedSitePositions.size() * neighborListSize;
     }
 
-    // initalise site-wise arrays for neighbors
+    // initialize site-wise arrays for neighbors
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactNeighborSitePositionX;
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactNeighborSitePositionY;
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactNeighborSitePositionZ;
@@ -1197,7 +1192,7 @@ class LJMulticenterFunctor
       }
     }
 
-    const auto rotatedSitePositionsI = useMixing ?
+    const auto rotatedSitePositionsPrime = useMixing ?
                                                  autopas::utils::quaternion::rotateVectorOfPositions(
                                                        {q0ptr[indexFirst], q1ptr[indexFirst], q2ptr[indexFirst], q3ptr[indexFirst]},
                                                      _PPLibrary->getSitePositions(typeptr[indexFirst])) :
@@ -1205,9 +1200,9 @@ class LJMulticenterFunctor
                                                      {q0ptr[indexFirst], q1ptr[indexFirst], q2ptr[indexFirst], q3ptr[indexFirst]},
                                                      const_unrotatedSitePositions);
 
-    const auto siteTypesI = _PPLibrary->getSiteTypes(typeptr[indexFirst]); // todo make this work for no mixing
+    const auto siteTypesPrime = _PPLibrary->getSiteTypes(typeptr[indexFirst]); // todo make this work for no mixing
 
-    // generate site-wise arrays for neighbours of mol I
+    // generate site-wise arrays for neighbors of primary mol
     if constexpr (useMixing) {
       size_t siteIndex = 0;
       for (size_t neighborMol = 0; neighborMol < neighborListSize; ++neighborMol) {
@@ -1258,8 +1253,6 @@ class LJMulticenterFunctor
     std::vector<char, autopas::AlignedAllocator<char>> molMask;
     molMask.reserve(neighborListSize);
 
-    // @note I'm not sure this will get any SIMD benefit due to xptr not accessed consecutively
-    // todo try this, using a temp array to store CoM positions consecutively
 #pragma omp simd
     for (size_t neighborMol = 0; neighborMol < neighborListSize; ++neighborMol) {
       const auto neighborMolIndex = neighborList[neighborMol]; // index of neighbor mol in soa
@@ -1301,10 +1294,10 @@ class LJMulticenterFunctor
 
     // - actual LJ calculation -
 
-    for (size_t primeSite = 0; primeSite < siteCountMolI; ++primeSite) {
-      const auto rotatedPrimeSitePositionX = rotatedSitePositionsI[primeSite][0];
-      const auto rotatedPrimeSitePositionY = rotatedSitePositionsI[primeSite][1];
-      const auto rotatedPrimeSitePositionZ = rotatedSitePositionsI[primeSite][2];
+    for (size_t primeSite = 0; primeSite < siteCountMolPrime; ++primeSite) {
+      const auto rotatedPrimeSitePositionX = rotatedSitePositionsPrime[primeSite][0];
+      const auto rotatedPrimeSitePositionY = rotatedSitePositionsPrime[primeSite][1];
+      const auto rotatedPrimeSitePositionZ = rotatedSitePositionsPrime[primeSite][2];
 
       const auto exactPrimeSitePositionX = rotatedPrimeSitePositionX + xptr[indexFirst];
       const auto exactPrimeSitePositionY = rotatedPrimeSitePositionY + yptr[indexFirst];
@@ -1312,7 +1305,7 @@ class LJMulticenterFunctor
 
       // generate parameter data for chosen site
       if constexpr (useMixing) {
-        const auto primeSiteType = siteTypesI[primeSite];
+        const auto primeSiteType = siteTypesPrime[primeSite];
 
         size_t siteIndex = 0;
         for (size_t neighborMol = 0; neighborMol < neighborListSize; ++neighborMol) {
@@ -1337,7 +1330,7 @@ class LJMulticenterFunctor
         const SoAFloatPrecision epsilon24 = useMixing ? epsilon24s[neighborSite] : const_epsilon24;
         const SoAFloatPrecision shift6 = applyShift ? (useMixing ? shift6s[neighborSite] : const_shift6) : 0;
 
-        const bool isNeighborSiteOwned = calculateGlobals ? isNeighborSiteOwnedArr[neighborSite] : true;
+        const bool isNeighborSiteOwned = !calculateGlobals || isNeighborSiteOwnedArr[neighborSite];
 
         const auto displacementX = exactPrimeSitePositionX - exactNeighborSitePositionX[neighborSite];
         const auto displacementY = exactPrimeSitePositionY - exactNeighborSitePositionY[neighborSite];
@@ -1384,9 +1377,9 @@ class LJMulticenterFunctor
           const auto virialZ = displacementZ * forceZ;
 
           const auto ownershipFactor = newton3 ?
-                                               (ownedStateInit==OwnershipState::owned ? 1. : 0.) +
+                                               (ownedStatePrime==OwnershipState::owned ? 1. : 0.) +
                                                    (isNeighborSiteOwned ? 1. : 0.) :
-                                               (ownedStateInit==OwnershipState::owned ? 1. : 0.);
+                                               (ownedStatePrime==OwnershipState::owned ? 1. : 0.);
 
           // if newton3 is enabled, we multiply by 0.5 at the end of this function call when adding up the values to
           // the threadData
@@ -1453,7 +1446,8 @@ class LJMulticenterFunctor
 
     if constexpr (calculateGlobals) {
       const auto threadNum = autopas_get_thread_num();
-      const auto newton3Factor = newton3 ? .5 : 1.; // todo: add reasoning once original reasoning in LJFunctor.h is corrected
+      // in newton3-case, division by 2 is handled here; in non-newton3-case, division is handled in post-processing
+      const auto newton3Factor = newton3 ? .5 : 1.;
 
       _aosThreadData[threadNum].potentialEnergySum += potentialEnergySum * newton3Factor;
       _aosThreadData[threadNum].virialSum[0] += virialSumX * newton3Factor;
