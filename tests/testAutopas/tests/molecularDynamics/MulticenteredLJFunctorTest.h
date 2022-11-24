@@ -1,5 +1,5 @@
 /**
-* @file MulticenteredLJFunctorTest.h
+* @file MultisiteLJFunctorTest.h
 * @author S. Newcome
 * @date 12/05/2022
 */
@@ -18,12 +18,12 @@
 /**
  * Test class for MulticenteredLJFunctor
  */
-class MulticenteredLJFunctorTest : public AutoPasTestBase {
+class MultisiteLJFunctorTest : public AutoPasTestBase {
  public:
   /**
    * Constructor
    */
-  MulticenteredLJFunctorTest() = default;
+  MultisiteLJFunctorTest() = default;
 
   /**
    * Generates a particle properties library for use with ::generateMolecules

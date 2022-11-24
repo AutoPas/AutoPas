@@ -1,5 +1,5 @@
 /**
- * @file MulticenteredLJFunctorTest.cpp
+ * @file MultisiteLJFunctorTest.cpp
  * @author S. Newcome
  * @date 16/05/2022
  */
@@ -11,7 +11,7 @@
 #define PARTICLES_PER_DIM 8
 #define AOS_VS_SOA_ACCURACY 1e-8
 
-void MulticenteredLJFunctorTest::generatePPL(ParticlePropertiesLibrary<double, size_t> *PPL) {
+void MultisiteLJFunctorTest::generatePPL(ParticlePropertiesLibrary<double, size_t> *PPL) {
   PPL->addSiteType(0,1,1,1);
   PPL->addSiteType(1,0.5,0.5,0.7);
   PPL->addMolType(0,{0},{{0,0,0}},{1,1,1});
@@ -22,7 +22,7 @@ void MulticenteredLJFunctorTest::generatePPL(ParticlePropertiesLibrary<double, s
 }
 
 
-void MulticenteredLJFunctorTest::generateMolecules(std::vector<autopas::MulticenteredMoleculeLJ> *molecules, std::array<double, 3> offset = {0,0,0}) {
+void MultisiteLJFunctorTest::generateMolecules(std::vector<autopas::MulticenteredMoleculeLJ> *molecules, std::array<double, 3> offset = {0,0,0}) {
   molecules->resize(PARTICLES_PER_DIM * PARTICLES_PER_DIM * PARTICLES_PER_DIM);
 
   for (unsigned int i = 0; i < PARTICLES_PER_DIM; ++i) {
@@ -44,7 +44,7 @@ void MulticenteredLJFunctorTest::generateMolecules(std::vector<autopas::Multicen
 
 
 template<bool newton3>
-void MulticenteredLJFunctorTest::testAoSForceCalculation(autopas::MulticenteredMoleculeLJ molA, autopas::MulticenteredMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
+void MultisiteLJFunctorTest::testAoSForceCalculation(autopas::MulticenteredMoleculeLJ molA, autopas::MulticenteredMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
   using autopas::utils::ArrayMath::add;
   using autopas::utils::ArrayMath::sub;
   using autopas::utils::ArrayMath::dot;
@@ -148,7 +148,7 @@ void MulticenteredLJFunctorTest::testAoSForceCalculation(autopas::MulticenteredM
 }
 
 template<bool newton3>
-void MulticenteredLJFunctorTest::singleSiteSanityCheck(autopas::MulticenteredMoleculeLJ molA, autopas::MulticenteredMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPLComplex, double cutoff) {
+void MultisiteLJFunctorTest::singleSiteSanityCheck(autopas::MulticenteredMoleculeLJ molA, autopas::MulticenteredMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPLComplex, double cutoff) {
   using autopas::MulticenteredMoleculeLJ;
   using autopas::MoleculeLJ;
 
@@ -368,7 +368,7 @@ void testSoAVerletAgainstAoS(std::vector<autopas::MulticenteredMoleculeLJ> molec
 /**
  * Tests for the correctness of the AoS functor by applying to molecules designed to test all its functionality.
  */
-TEST_F(MulticenteredLJFunctorTest, AoSTest) {
+TEST_F(MultisiteLJFunctorTest, AoSTest) {
   using autopas::MulticenteredMoleculeLJ;
 
   ParticlePropertiesLibrary PPL(1.);
@@ -515,7 +515,7 @@ TEST_F(MulticenteredLJFunctorTest, AoSTest) {
 
 }
 
-TEST_F(MulticenteredLJFunctorTest, singleSiteSanityCheck) {
+TEST_F(MultisiteLJFunctorTest, singleSiteSanityCheck) {
   using autopas::MulticenteredMoleculeLJ;
 
   ParticlePropertiesLibrary PPL(1.);
@@ -547,7 +547,7 @@ TEST_F(MulticenteredLJFunctorTest, singleSiteSanityCheck) {
 /*
  * @note No newton3 disabled as SoACell always uses newton3 optimisation
  */
-TEST_F(MulticenteredLJFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACell){
+TEST_F(MultisiteLJFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACell){
   using autopas::MulticenteredMoleculeLJ;
 
   const double cutoff = 3.;
@@ -561,7 +561,7 @@ TEST_F(MulticenteredLJFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACell){
   ::testSoACellAgainstAoS<true>(molecules, PPL, cutoff);
 }
 
-TEST_F(MulticenteredLJFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACellPair){
+TEST_F(MultisiteLJFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACellPair){
   using autopas::MulticenteredMoleculeLJ;
 
   const double cutoff = 5.;
@@ -579,7 +579,7 @@ TEST_F(MulticenteredLJFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACellPair){
   ::testSoACellPairAgainstAoS<true>(moleculesA, moleculesB, PPL, cutoff);
 }
 
-TEST_F(MulticenteredLJFunctorTest, MulticenteredLJFunctorTest_AoSVsSoAVerlet){
+TEST_F(MultisiteLJFunctorTest, MulticenteredLJFunctorTest_AoSVsSoAVerlet){
   using autopas::MulticenteredMoleculeLJ;
 
   const double cutoff = 3.1;
