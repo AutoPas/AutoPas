@@ -121,7 +121,7 @@ void MulticenteredLJFunctorTest::testAoSForceCalculation(autopas::MulticenteredM
 
   // create functor
   // todo add options for applyShift, useMixing, calculateGlobals
-  autopas::LJMulticenterFunctor<autopas::MulticenteredMoleculeLJ, false, true, autopas::FunctorN3Modes::Both, false, true> functor(cutoff, PPL);
+  autopas::LJMultisiteFunctor<autopas::MulticenteredMoleculeLJ, false, true, autopas::FunctorN3Modes::Both, false, true> functor(cutoff, PPL);
 
   functor.AoSFunctor(molA,molB,newton3);
 
@@ -153,7 +153,7 @@ void MulticenteredLJFunctorTest::singleSiteSanityCheck(autopas::MulticenteredMol
   using autopas::MoleculeLJ;
 
   // create functors
-  autopas::LJMulticenterFunctor<autopas::MulticenteredMoleculeLJ, false, true, autopas::FunctorN3Modes::Both, false, true> multicenterFunctor(cutoff, PPLComplex);
+  autopas::LJMultisiteFunctor<autopas::MulticenteredMoleculeLJ, false, true, autopas::FunctorN3Modes::Both, false, true> multicenterFunctor(cutoff, PPLComplex);
   autopas::LJFunctor<autopas::MoleculeLJ, false, true, autopas::FunctorN3Modes::Both, false, true> singlecenterFunctor(cutoff, PPLComplex);
 
   // create copies of simple functors
@@ -178,7 +178,7 @@ template <bool newton3>
 void testSoACellAgainstAoS(std::vector<autopas::MulticenteredMoleculeLJ> molecules, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
   using autopas::MulticenteredMoleculeLJ;
 
-  autopas::LJMulticenterFunctor<MulticenteredMoleculeLJ, false, true, autopas::FunctorN3Modes::Both, false, true> functor(cutoff, PPL);
+  autopas::LJMultisiteFunctor<MulticenteredMoleculeLJ, false, true, autopas::FunctorN3Modes::Both, false, true> functor(cutoff, PPL);
 
   auto moleculesAoS = molecules;
   auto moleculesSoA = molecules;
@@ -227,7 +227,7 @@ template <bool newton3>
 void testSoACellPairAgainstAoS(std::vector<autopas::MulticenteredMoleculeLJ> moleculesA, std::vector<autopas::MulticenteredMoleculeLJ> moleculesB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
   using autopas::MulticenteredMoleculeLJ;
 
-  autopas::LJMulticenterFunctor<MulticenteredMoleculeLJ, false, true, autopas::FunctorN3Modes::Both, false, true> functor(cutoff, PPL);
+  autopas::LJMultisiteFunctor<MulticenteredMoleculeLJ, false, true, autopas::FunctorN3Modes::Both, false, true> functor(cutoff, PPL);
 
   auto moleculesAoSA = moleculesA;
   auto moleculesSoAA = moleculesA;
@@ -298,7 +298,7 @@ template <bool newton3>
 void testSoAVerletAgainstAoS(std::vector<autopas::MulticenteredMoleculeLJ> molecules, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
   using autopas::MulticenteredMoleculeLJ;
 
-  autopas::LJMulticenterFunctor<MulticenteredMoleculeLJ, false, true, autopas::FunctorN3Modes::Both, false, true> functor(cutoff, PPL);
+  autopas::LJMultisiteFunctor<MulticenteredMoleculeLJ, false, true, autopas::FunctorN3Modes::Both, false, true> functor(cutoff, PPL);
 
   auto moleculesAoS = molecules;
   auto moleculesSoA = molecules;

@@ -8,7 +8,7 @@
 #include "autopas/AutoPasDecl.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
-#include "autopas/molecularDynamics/LJMulticenterFunctor.h"
+#include "autopas/molecularDynamics/LJMultisiteFunctor.h"
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 #include "autopas/utils/SimilarityFunctions.h"
 
@@ -424,7 +424,7 @@ bool Simulation<ParticleClass>::calculatePairwiseForces() {
       break;
     }
     case MDFlexConfig::FunctorOption::lj12_6_Multicentered: {
-      autopas::LJMulticenterFunctor<ParticleClass,  true, true> functor{_autoPasContainer->getCutoff(),particlePropertiesLibrary};
+      autopas::LJMultisiteFunctor<ParticleClass,  true, true> functor{_autoPasContainer->getCutoff(),particlePropertiesLibrary};
       wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
       break;
     }

@@ -11,7 +11,7 @@
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPasDecl.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
-#include "autopas/molecularDynamics/LJMulticenterFunctor.h"
+#include "autopas/molecularDynamics/LJMultisiteFunctor.h"
 #include "autopas/molecularDynamics/MulticenteredMoleculeLJ.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 

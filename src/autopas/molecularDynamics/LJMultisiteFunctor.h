@@ -1,5 +1,5 @@
 /**
- * @file LJMulticenterFunctor.h
+ * @file LJMultisiteFunctor.h
  * @date 21/02/2022
  * @author S. Newcome
 */
@@ -25,7 +25,7 @@
 namespace autopas {
 
 /**
- * A functor to handle Lennard-Jones interactions between two (potentially multicentered) Molecules.
+ * A functor to handle Lennard-Jones interactions between two Multisite Molecules.
  *
  * @tparam Particle The type of particle.
  * @tparam applyShift Flag for the LJ potential to have a truncated shift.
@@ -39,8 +39,8 @@ namespace autopas {
 template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool relevantForTuning = true>
-class LJMulticenterFunctor
-    : public autopas::Functor<Particle, LJMulticenterFunctor<Particle, applyShift, useMixing, useNewton3,
+class LJMultisiteFunctor
+    : public autopas::Functor<Particle, LJMultisiteFunctor<Particle, applyShift, useMixing, useNewton3,
                                                              calculateGlobals, relevantForTuning>> {
   /**
    * Structure of the SoAs defined by the particle.
@@ -101,7 +101,7 @@ class LJMulticenterFunctor
   /**
    * Delete Default constructor
    */
-  LJMulticenterFunctor() = delete;
+  LJMultisiteFunctor() = delete;
 
  private:
   /**
@@ -109,8 +109,8 @@ class LJMulticenterFunctor
    * @param cutoff
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
-  explicit LJMulticenterFunctor(SoAFloatPrecision cutoff, void * /*dummy*/)
-      : autopas::Functor<Particle, LJMulticenterFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
+  explicit LJMultisiteFunctor(SoAFloatPrecision cutoff, void * /*dummy*/)
+      : autopas::Functor<Particle, LJMultisiteFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
                                                         relevantForTuning>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
@@ -128,7 +128,7 @@ class LJMulticenterFunctor
    * @note Only to be used with mixing == false
    * @param cutoff
    */
-  explicit LJMulticenterFunctor(double cutoff) : LJMulticenterFunctor(cutoff, nullptr) {
+  explicit LJMultisiteFunctor(double cutoff) : LJMultisiteFunctor(cutoff, nullptr) {
     static_assert(not useMixing,
                   "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                   "mixing to false.");
@@ -141,8 +141,8 @@ class LJMulticenterFunctor
    * @param particlePropertiesLibrary Library used to look up the properties of each type of particle e.g. sigma,
    * epsilon, shift.
    */
-  explicit LJMulticenterFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : LJMulticenterFunctor(cutoff, nullptr) {
+  explicit LJMultisiteFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+      : LJMultisiteFunctor(cutoff, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
@@ -1486,9 +1486,9 @@ class LJMulticenterFunctor
 
 template <bool applyShift, bool useMixing, autopas::FunctorN3Modes useNewton3, bool calculateGlobals,
           bool relevantForTuning>
-class LJMulticenterFunctor<autopas::MoleculeLJ, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>
+class LJMultisiteFunctor<autopas::MoleculeLJ, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>
     : public autopas::Functor<autopas::MoleculeLJ,
-                              LJMulticenterFunctor<autopas::MoleculeLJ, applyShift, useMixing, useNewton3,
+                              LJMultisiteFunctor<autopas::MoleculeLJ, applyShift, useMixing, useNewton3,
                                                    calculateGlobals, relevantForTuning>> {
  public:
   /**
@@ -1501,7 +1501,7 @@ class LJMulticenterFunctor<autopas::MoleculeLJ, applyShift, useMixing, useNewton
   /**
    * Delete Default constructor
    */
-  LJMulticenterFunctor() = delete;
+  LJMultisiteFunctor() = delete;
 
  private:
   /**
@@ -1509,12 +1509,12 @@ class LJMulticenterFunctor<autopas::MoleculeLJ, applyShift, useMixing, useNewton
    * @param cutoff
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
-  explicit LJMulticenterFunctor(SoAFloatPrecision cutoff, void * /*dummy*/)
-      : autopas::Functor<autopas::MoleculeLJ, LJMulticenterFunctor<autopas::MoleculeLJ, applyShift, useMixing,
+  explicit LJMultisiteFunctor(SoAFloatPrecision cutoff, void * /*dummy*/)
+      : autopas::Functor<autopas::MoleculeLJ, LJMultisiteFunctor<autopas::MoleculeLJ, applyShift, useMixing,
                                                                    useNewton3, calculateGlobals, relevantForTuning>>(
             cutoff) {
     autopas::utils::ExceptionHandler::exception(
-        "LJMulticenterFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
+        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
   }
 
  public:
@@ -1522,9 +1522,9 @@ class LJMulticenterFunctor<autopas::MoleculeLJ, applyShift, useMixing, useNewton
    * Constructor for Functor with particle mixing disabled. setParticleProperties() must be called.
    * @param cutoff
    */
-  explicit LJMulticenterFunctor(double cutoff) : LJMulticenterFunctor(cutoff, nullptr) {
+  explicit LJMultisiteFunctor(double cutoff) : LJMultisiteFunctor(cutoff, nullptr) {
     autopas::utils::ExceptionHandler::exception(
-        "LJMulticenterFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
+        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
   }
 
   /**
@@ -1533,10 +1533,10 @@ class LJMulticenterFunctor<autopas::MoleculeLJ, applyShift, useMixing, useNewton
    * @param particlePropertiesLibrary Library used to look up the properties of each type of particle e.g. sigma,
    * epsilon, shift.
    */
-  explicit LJMulticenterFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : LJMulticenterFunctor(cutoff, nullptr) {
+  explicit LJMultisiteFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+      : LJMultisiteFunctor(cutoff, nullptr) {
     autopas::utils::ExceptionHandler::exception(
-        "LJMulticenterFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
+        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
   }
 
   bool isRelevantForTuning() final { return relevantForTuning; }
@@ -1563,35 +1563,35 @@ class LJMulticenterFunctor<autopas::MoleculeLJ, applyShift, useMixing, useNewton
    */
   void AoSFunctor(autopas::MoleculeLJ &particleA, autopas::MoleculeLJ &particleB, bool newton3) final {
     autopas::utils::ExceptionHandler::exception(
-        "LJMulticenterFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
+        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
   }
 
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
     autopas::utils::ExceptionHandler::exception(
-        "LJMulticenterFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
+        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
   }
 
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                       const bool newton3) final {
     autopas::utils::ExceptionHandler::exception(
-        "LJMulticenterFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
+        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
   }
 
   void setParticleProperties(SoAFloatPrecision epsilon24, SoAFloatPrecision sigmaSquared) {
     autopas::utils::ExceptionHandler::exception(
-        "LJMulticenterFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
+        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
   }
 
   static unsigned long getNumFlopsPerKernelCall(bool newton3, size_t numA, size_t numB) { return 0ul; }
 
   void initTraversal() final {
     autopas::utils::ExceptionHandler::exception(
-        "LJMulticenterFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
+        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
   }
 
   void endTraversal(bool newton3) final {
     autopas::utils::ExceptionHandler::exception(
-        "LJMulticenterFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
+        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
   }
 };
 }  // namespace autopas
