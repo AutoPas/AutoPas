@@ -103,7 +103,7 @@ class LogicHandler {
     // Substract the amount of leaving particles from the number of owned particles.
     _numParticlesOwned.fetch_sub(leavingParticles.size(), std::memory_order_relaxed);
     // updateContainer deletes all halo particles.
-    _haloParticleBuffer.clear();
+    std::for_each(_haloParticleBuffer.begin(), _haloParticleBuffer.end(), [](auto &buffer) { buffer.clear(); });
     _numParticlesHalo.exchange(0, std::memory_order_relaxed);
     return leavingParticles;
   }
