@@ -256,7 +256,7 @@ void doAssertions(autopas::AutoPas<Molecule> &autoPas1, autopas::AutoPas<Molecul
   ASSERT_EQ(numParticles, 2) << "There should be exactly two owned particles!" << std::endl
                              << "Called from line: " << line;
 
-  for (auto &mol : molecules) {
+  for (const auto &mol : molecules) {
     EXPECT_DOUBLE_EQ(autopas::utils::ArrayMath::dot(mol.getF(), mol.getF()), 390144. * 390144)
         << "wrong force calculated.";
   }
