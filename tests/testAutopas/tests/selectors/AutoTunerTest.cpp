@@ -7,8 +7,8 @@
 #include "AutoTunerTest.h"
 
 #include "autopas/selectors/AutoTuner.h"
-#include "autopas/utils/WrapOpenMP.h"
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
+#include "autopas/utils/WrapOpenMP.h"
 #include "autopasTools/generators/GridGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
