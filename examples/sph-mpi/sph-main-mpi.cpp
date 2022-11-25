@@ -424,11 +424,11 @@ void printConservativeVariables(AutoPasContainer &sphSystem, MPI_Comm &comm) {
     MPI_Reduce(MPI_IN_PLACE, momSum.data(), 3, MPI_DOUBLE, MPI_SUM, 0, comm);
     printf("Energy     : %.16e\n", energySum);
     for (int i = 0; i < 3; ++i) {
-      printf("Momentum[%d]: %.16e\n",i, momSum[i]);
+      printf("Momentum[%d]: %.16e\n", i, momSum[i]);
       if (std::abs(momSum[i]) > 1.e-15) {
         std::stringstream ss;
-        ss << std::setprecision(15) << "ERROR: The total momentum should cancel out (should be <1e-15 but is " << std::abs(momSum[i])
-           << ")!";
+        ss << std::setprecision(15) << "ERROR: The total momentum should cancel out (should be <1e-15 but is "
+           << std::abs(momSum[i]) << ")!";
         throw std::runtime_error(ss.str());
       }
     }
