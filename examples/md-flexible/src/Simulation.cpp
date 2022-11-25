@@ -7,10 +7,8 @@
 
 #include "TypeDefinitions.h"
 #include "autopas/AutoPasDecl.h"
+#if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC) || defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
 #include "autopas/molecularDynamics/LJFunctor.h"
-#include "autopas/molecularDynamics/LJFunctorAVX.h"
-#ifdef __ARM_FEATURE_SVE
-#include "autopas/molecularDynamics/LJFunctorSVE.h"
 #endif
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 #include "autopas/utils/SimilarityFunctions.h"
@@ -20,11 +18,19 @@
 // instantiation. They are instantiated in the respective cpp file inside the templateInstantiations folder.
 //! @cond Doxygen_Suppress
 extern template class autopas::AutoPas<ParticleType>;
+#if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctor<ParticleType, true, true> *);
+#endif
+#if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(
     autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true> *);
+#endif
+#if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
+#include "autopas/molecularDynamics/LJFunctorAVX.h"
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctorAVX<ParticleType, true, true> *);
-#ifdef __ARM_FEATURE_SVE
+#endif
+#if defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
+#include "autopas/molecularDynamics/LJFunctorSVE.h"
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctorSVE<ParticleType, true, true> *);
 #endif
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::FlopCounterFunctor<ParticleType> *);
@@ -418,37 +424,8 @@ long Simulation::accumulateTime(const long &time) {
 }
 
 bool Simulation::calculatePairwiseForces() {
-  bool wasTuningIteration = false;
-  auto particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
-
-  switch (_configuration.functorOption.value) {
-    case MDFlexConfig::FunctorOption::lj12_6: {
-      autopas::LJFunctor<ParticleType, true, true> functor{_autoPasContainer->getCutoff(), particlePropertiesLibrary};
-      wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
-      break;
-    }
-    case MDFlexConfig::FunctorOption::lj12_6_Globals: {
-      autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true> functor{
-          _autoPasContainer->getCutoff(), particlePropertiesLibrary};
-      wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
-      break;
-    }
-    case MDFlexConfig::FunctorOption::lj12_6_AVX: {
-      autopas::LJFunctorAVX<ParticleType, true, true> functor{_autoPasContainer->getCutoff(),
-                                                              particlePropertiesLibrary};
-      wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
-      break;
-    }
-    case MDFlexConfig::FunctorOption::lj12_6_SVE: {
-#ifdef __ARM_FEATURE_SVE
-      autopas::LJFunctorSVE<ParticleType, true, true> functor{_autoPasContainer->getCutoff(),
-                                                              particlePropertiesLibrary};
-      wasTuningIteration = _autoPasContainer->iteratePairwise(&functor);
-#else
-      throw std::runtime_error("MD-Flexible was not compiled with support for ARM SVE.");
-#endif
-    }
-  }
+  const auto wasTuningIteration =
+      applyWithChosenFunctor<bool>([&](auto functor) { return _autoPasContainer->template iteratePairwise(&functor); });
   return wasTuningIteration;
 }
 
@@ -561,27 +538,8 @@ void Simulation::logMeasurements() {
       autopas::FlopCounterFunctor<ParticleType> flopCounterFunctor(_autoPasContainer->getCutoff());
       _autoPasContainer->iteratePairwise(&flopCounterFunctor);
 
-      const size_t flopsPerKernelCall = [&]() {
-        switch (_configuration.functorOption.value) {
-          case MDFlexConfig::FunctorOption ::lj12_6: {
-            return autopas::LJFunctor<ParticleType, true, true>::getNumFlopsPerKernelCall();
-          }
-          case MDFlexConfig::FunctorOption ::lj12_6_Globals: {
-            return autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
-                                      /* globals */ true>::getNumFlopsPerKernelCall();
-          }
-          case MDFlexConfig::FunctorOption ::lj12_6_AVX: {
-            return autopas::LJFunctorAVX<ParticleType, true, true>::getNumFlopsPerKernelCall();
-          }
-#ifdef __ARM_FEATURE_SVE
-          case MDFlexConfig::FunctorOption ::lj12_6_SVE: {
-            return autopas::LJFunctorSVE<ParticleType, true, true>::getNumFlopsPerKernelCall();
-          }
-#endif
-          default:
-            throw std::runtime_error("Invalid Functor choice");
-        }
-      }();
+      const auto flopsPerKernelCall =
+          applyWithChosenFunctor<size_t>([](auto functor) { return decltype(functor)::getNumFlopsPerKernelCall(); });
       auto flops = flopCounterFunctor.getFlops(flopsPerKernelCall) * _iteration;
       // approximation for flops of verlet list generation
       if (_autoPasContainer->getContainerType() == autopas::ContainerOption::verletLists) {
@@ -631,4 +589,51 @@ void Simulation::checkNumParticles(size_t expectedNumParticlesGlobal, size_t num
       throw std::runtime_error(ss.str());
     }
   }
+}
+
+template <class T, class F>
+T Simulation::applyWithChosenFunctor(F f) {
+  const double cutoff = _configuration.cutoff.value;
+  auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
+  switch (_configuration.functorOption.value) {
+    case MDFlexConfig::FunctorOption::lj12_6: {
+#if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
+      return f(autopas::LJFunctor<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
+#else
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for LJFunctor AutoVec. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_AUTOVEC=ON`.");
+#endif
+    }
+    case MDFlexConfig::FunctorOption::lj12_6_Globals: {
+#if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
+      return f(autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>{
+          cutoff, particlePropertiesLibrary});
+#else
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for LJFunctor AutoVec Globals. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS=ON`.");
+#endif
+    }
+    case MDFlexConfig::FunctorOption::lj12_6_AVX: {
+#if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
+      return f(autopas::LJFunctorAVX<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
+#else
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for LJFunctor AVX. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_AVX=ON`.");
+#endif
+    }
+    case MDFlexConfig::FunctorOption::lj12_6_SVE: {
+#if defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
+      return f(autopas::LJFunctorSVE<ParticleType, true, true> functor{cutoff, particlePropertiesLibrary});
+#else
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for LJFunctor SVE. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_SVE=ON`.");
+#endif
+    }
+  }
+  throw std::runtime_error("Unknown functor choice" +
+                           std::to_string(static_cast<int>(_configuration.functorOption.value)));
 }
