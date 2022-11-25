@@ -468,9 +468,9 @@ template <bool newton3, class Particle, class T, class PairwiseFunctor>
 void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<std::vector<Particle>> &particleBuffers,
                           std::vector<std::vector<Particle>> &haloParticleBuffers) {
   const double cutoff = containerPtr->getCutoff();
-  for (int threadId = 0; threadId < autopas_get_max_threads(); ++threadId) {
-    auto &particleBuffer = particleBuffers[threadId];
-    auto &haloParticleBuffer = haloParticleBuffers[threadId];
+  for (int bufferId = 0; bufferId < particleBuffers.size(); ++bufferId) {
+    auto &particleBuffer = particleBuffers[bufferId];
+    auto &haloParticleBuffer = haloParticleBuffers[bufferId];
     // 1. particleBuffer with all close particles in container
     for (auto &&p : particleBuffer) {
       auto pos = p.getR();
