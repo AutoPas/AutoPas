@@ -21,6 +21,9 @@
  * of the sites relative to the the centre-of-mass.
  *
  * It also provides mixed values for (force) calculations between known types.
+ *
+ * ToDo: Add a function that computes the diagonalized Moment of Inertia and adjusts the rotation of the positions of
+ * the sites such that they correctly match the new axes.
  */
 template <typename floatType = double, typename intType = unsigned long>
 class ParticlePropertiesLibrary {
@@ -43,18 +46,6 @@ class ParticlePropertiesLibrary {
    * @return
    */
   ParticlePropertiesLibrary &operator=(const ParticlePropertiesLibrary &particlePropertiesLibrary) = default;
-
-  /**
-   * Adds the properties of a type of a LJ single-site type to the library.
-   *
-   * This function also precomputes all possible mixed values with already known particle types.
-   * If the type id already exists the values will be overwritten.
-   * @param molId
-   * @param epsilon
-   * @param sigma
-   * @param mass
-   */
-  void addSimpleType(const intType molId, const floatType epsilon, const floatType sigma, const floatType mass);
 
   /**
    * Adds the properties of a type of a single LJ site type to the library.
@@ -93,34 +84,21 @@ class ParticlePropertiesLibrary {
 
   ~ParticlePropertiesLibrary() = default;
 
-//  /**
-//   * Returns a set of all particle types stored.
-//   * todo this is super ugly code
-//   * @return
-//   */
-//  std::set<intType> getSiteTypes() const {
-//    std::set<intType> typeIDs;
-//
-//    for (size_t index = 0; index < _numRegisteredSiteTypes; ++index) {
-//      typeIDs.emplace(index);
-//    }
-//
-//    return typeIDs;
-//  }
-//
-//  std::set<intType> getMolTypes() const {
-//    std::set<intType> typeIDs;
-//
-//    for (size_t index = 0; index < _numRegisteredMolTypes; ++index) {
-//      typeIDs.emplace(index);
-//    }
-//
-//    return typeIDs;
-//  }
-//
-//  std::set<intType> getTypes() const {
-//    return getSiteTypes();
-//  }
+  /**
+   * Returns the number of registered site types.
+   * @return Number of registered site types.
+   */
+  [[nodiscard]] int getNumberRegisteredSiteTypes() const {
+    return _numRegisteredSiteTypes;
+  }
+
+  /**
+   * Returns the number of registered mol types.
+   * @return Number of registered mol types.
+   */
+  [[nodiscard]] int getNumberRegisteredMolTypes() const {
+    return _numRegisteredSiteTypes;
+  }
 
 
   /**
@@ -253,20 +231,6 @@ class ParticlePropertiesLibrary {
 };
 
 template <typename floatType, typename intType>
-void ParticlePropertiesLibrary<floatType, intType>::addSimpleType(const intType molId, const floatType epsilon, const floatType sigma, const floatType mass) {
-  if (_numRegisteredSiteTypes != molId) {
-    autopas::utils::ExceptionHandler::exception(
-        "ParticlePropertiesLibrary::addSimpleType(): trying to register a type with id {}. Please register types "
-        "consecutively, starting at id 0. Currently there are {} registered types.",
-        molId, _numRegisteredSiteTypes);
-  }
-  ++_numRegisteredSiteTypes;
-  _epsilons.emplace_back(epsilon);
-  _sigmas.emplace_back(sigma);
-  _siteMasses.emplace_back(mass);
-}
-
-template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, floatType epsilon, floatType sigma, floatType mass) {
   if (_numRegisteredSiteTypes != siteID) {
     autopas::utils::ExceptionHandler::exception(
@@ -324,56 +288,6 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
       // shift6
       floatType shift6 = calcShift6(epsilon24, sigmaSquare, cutoffSquare);
       _computedMixingData[globalIndex].shift6 = shift6;
-    }
-  }
-}
-
-template <typename floatType, typename intType>
-void ParticlePropertiesLibrary<floatType, intType>::calculateMomentOfInertiaAndAdjustAxes() {
-  // todo fix this
-  _momentOfInertias.reserve(_numRegisteredMolTypes);
-
-  for (intType molId = 0; molId < _numRegisteredMolTypes; ++molId) {
-    // 1. Calculate Moment of Inertia as 3x3 array
-    Eigen::MatrixXd MoI =  Eigen::MatrixXd::Zero(3);
-    for (intType site = 0; site < _numSites[molId]; ++site) {
-      MoI(0,0) += (_relativeSitePositions[molId][site][1]*_relativeSitePositions[molId][site][1] +
-                    _relativeSitePositions[molId][site][2]*_relativeSitePositions[molId][site][2])
-                   * _siteMasses[_siteIds[molId][site]];
-      MoI(1,1) += (_relativeSitePositions[molId][site][0]*_relativeSitePositions[molId][site][0] +
-                    _relativeSitePositions[molId][site][2]*_relativeSitePositions[molId][site][2])
-                   * _siteMasses[_siteIds[molId][site]];
-      MoI(2,2) += (_relativeSitePositions[molId][site][0]*_relativeSitePositions[molId][site][0] +
-                    _relativeSitePositions[molId][site][1]*_relativeSitePositions[molId][site][1])
-                   * _siteMasses[_siteIds[molId][site]];
-      MoI(0,1) -= _relativeSitePositions[molId][site][0] * _relativeSitePositions[molId][site][1] *
-                   _siteMasses[_siteIds[molId][site]];
-      MoI(0,2) -= _relativeSitePositions[molId][site][0] * _relativeSitePositions[molId][site][2] *
-                   _siteMasses[_siteIds[molId][site]];
-      MoI(1,2) -= _relativeSitePositions[molId][site][1] * _relativeSitePositions[molId][site][2] *
-                   _siteMasses[_siteIds[molId][site]];
-    }
-    MoI(1,0) = MoI(0,1);
-    MoI(2,0) = MoI(0,2);
-    MoI(2,1) = MoI(1,2);
-    // 2. Get eigenvalues & -vectors of MoI
-    Eigen::EigenSolver<Eigen::MatrixXd> eigenSolver(MoI);
-    const auto eigenvalues = eigenSolver.eigenvalues();
-    const auto eigenvectors = eigenSolver.eigenvectors();
-
-    // 3. Construct diagonal MoI matrix as array of length 3
-    const std::array<floatType,3> MoI_diag = {eigenvalues.template cast<floatType>()[0],
-        eigenvalues.template cast<floatType>()[1], eigenvalues.template cast<floatType>()[2]};
-
-    _momentOfInertias.push_back(MoI_diag);
-
-    // 4. Rotate sites of mol using rotation matrix formed from eigenvectors to fit new orientation
-    for (intType site = 0; site < _numSites[molId]; ++site) {
-      const Eigen::Vector3d oldSitePos(_relativeSitePositions[molId][site].data());
-      const Eigen::Vector3d newSitePos = eigenvectors * oldSitePos; // todo check
-      _relativeSitePositions[molId][site][0] = newSitePos(0);
-      _relativeSitePositions[molId][site][1] = newSitePos(1);
-      _relativeSitePositions[molId][site][2] = newSitePos(2);
     }
   }
 }
