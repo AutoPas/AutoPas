@@ -38,32 +38,32 @@ constexpr std::array<typename autopas::MoleculeLJ::AttributeNames, 15> SimpleAtt
 /**
  * Stores the AttributeNames of the attributes of ParticleType which have to be communicated using MPI.
  */
-constexpr std::array<typename autopas::MulticenteredMoleculeLJ::AttributeNames, 25> RotationalAttributes = {
-    autopas::MulticenteredMoleculeLJ::AttributeNames::id,
-    autopas::MulticenteredMoleculeLJ::AttributeNames::posX,
-    autopas::MulticenteredMoleculeLJ::AttributeNames::posY,
-    autopas::MulticenteredMoleculeLJ::AttributeNames::posZ,
-    autopas::MulticenteredMoleculeLJ::AttributeNames::velocityX,
-    autopas::MulticenteredMoleculeLJ::AttributeNames::velocityY,
-    autopas::MulticenteredMoleculeLJ::AttributeNames::velocityZ,
-    autopas::MulticenteredMoleculeLJ::AttributeNames::forceX,
-    autopas::MulticenteredMoleculeLJ::AttributeNames::forceY,
-    autopas::MulticenteredMoleculeLJ::AttributeNames::forceZ,
-    autopas::MulticenteredMoleculeLJ::AttributeNames::oldForceX,
-    autopas::MulticenteredMoleculeLJ::AttributeNames::oldForceY,
-    autopas::MulticenteredMoleculeLJ::AttributeNames::oldForceZ,
-    autopas::MulticenteredMoleculeLJ::AttributeNames::quaternion0,
-    autopas::MulticenteredMoleculeLJ::AttributeNames::quaternion1,
-    autopas::MulticenteredMoleculeLJ::AttributeNames::quaternion2,
-    autopas::MulticenteredMoleculeLJ::AttributeNames::quaternion3,
-    autopas::MulticenteredMoleculeLJ::AttributeNames::angularVelX,
-    autopas::MulticenteredMoleculeLJ::AttributeNames::angularVelY,
-    autopas::MulticenteredMoleculeLJ::AttributeNames::angularVelZ,
-    autopas::MulticenteredMoleculeLJ::AttributeNames::torqueX,
-    autopas::MulticenteredMoleculeLJ::AttributeNames::torqueY,
-    autopas::MulticenteredMoleculeLJ::AttributeNames::torqueZ,
-    autopas::MulticenteredMoleculeLJ::AttributeNames::typeId,
-    autopas::MulticenteredMoleculeLJ::AttributeNames::ownershipState};
+constexpr std::array<typename autopas::MultisiteMoleculeLJ::AttributeNames, 25> RotationalAttributes = {
+    autopas::MultisiteMoleculeLJ::AttributeNames::id,
+    autopas::MultisiteMoleculeLJ::AttributeNames::posX,
+    autopas::MultisiteMoleculeLJ::AttributeNames::posY,
+    autopas::MultisiteMoleculeLJ::AttributeNames::posZ,
+    autopas::MultisiteMoleculeLJ::AttributeNames::velocityX,
+    autopas::MultisiteMoleculeLJ::AttributeNames::velocityY,
+    autopas::MultisiteMoleculeLJ::AttributeNames::velocityZ,
+    autopas::MultisiteMoleculeLJ::AttributeNames::forceX,
+    autopas::MultisiteMoleculeLJ::AttributeNames::forceY,
+    autopas::MultisiteMoleculeLJ::AttributeNames::forceZ,
+    autopas::MultisiteMoleculeLJ::AttributeNames::oldForceX,
+    autopas::MultisiteMoleculeLJ::AttributeNames::oldForceY,
+    autopas::MultisiteMoleculeLJ::AttributeNames::oldForceZ,
+    autopas::MultisiteMoleculeLJ::AttributeNames::quaternion0,
+    autopas::MultisiteMoleculeLJ::AttributeNames::quaternion1,
+    autopas::MultisiteMoleculeLJ::AttributeNames::quaternion2,
+    autopas::MultisiteMoleculeLJ::AttributeNames::quaternion3,
+    autopas::MultisiteMoleculeLJ::AttributeNames::angularVelX,
+    autopas::MultisiteMoleculeLJ::AttributeNames::angularVelY,
+    autopas::MultisiteMoleculeLJ::AttributeNames::angularVelZ,
+    autopas::MultisiteMoleculeLJ::AttributeNames::torqueX,
+    autopas::MultisiteMoleculeLJ::AttributeNames::torqueY,
+    autopas::MultisiteMoleculeLJ::AttributeNames::torqueZ,
+    autopas::MultisiteMoleculeLJ::AttributeNames::typeId,
+    autopas::MultisiteMoleculeLJ::AttributeNames::ownershipState};
 
 /**
  * The combined size in byte of the simple attributes which need to be communicated using MPI.

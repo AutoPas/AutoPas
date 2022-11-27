@@ -11,9 +11,9 @@
 #include <vector>
 
 #include "autopas/AutoPasDecl.h"
+#include "autopas/molecularDynamics/MultisiteMoleculeLJ.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "src/TypeDefinitions.h"
-#include "autopas/molecularDynamics/MulticenteredMoleculeLJ.h"
 
 /**
  * Base class for describing objects made of particles.

@@ -32,32 +32,32 @@
 ///**
 // * Stores the AttributeNames of the attributes of ParticleType which have to be communicated using MPI.
 // */
-//constexpr std::array<typename MulticenteredMoleculeLJ::AttributeNames, 25> RotationalAttributes = {
-//    MulticenteredMoleculeLJ::AttributeNames::id,
-//    MulticenteredMoleculeLJ::AttributeNames::posX,
-//    MulticenteredMoleculeLJ::AttributeNames::posY,
-//    MulticenteredMoleculeLJ::AttributeNames::posZ,
-//    MulticenteredMoleculeLJ::AttributeNames::velocityX,
-//    MulticenteredMoleculeLJ::AttributeNames::velocityY,
-//    MulticenteredMoleculeLJ::AttributeNames::velocityZ,
-//    MulticenteredMoleculeLJ::AttributeNames::forceX,
-//    MulticenteredMoleculeLJ::AttributeNames::forceY,
-//    MulticenteredMoleculeLJ::AttributeNames::forceZ,
-//    MulticenteredMoleculeLJ::AttributeNames::oldForceX,
-//    MulticenteredMoleculeLJ::AttributeNames::oldForceY,
-//    MulticenteredMoleculeLJ::AttributeNames::oldForceZ,
-//    MulticenteredMoleculeLJ::AttributeNames::quaternion0,
-//    MulticenteredMoleculeLJ::AttributeNames::quaternion1,
-//    MulticenteredMoleculeLJ::AttributeNames::quaternion2,
-//    MulticenteredMoleculeLJ::AttributeNames::quaternion3,
-//    MulticenteredMoleculeLJ::AttributeNames::angularVelX,
-//    MulticenteredMoleculeLJ::AttributeNames::angularVelY,
-//    MulticenteredMoleculeLJ::AttributeNames::angularVelZ,
-//    MulticenteredMoleculeLJ::AttributeNames::torqueX,
-//    MulticenteredMoleculeLJ::AttributeNames::torqueY,
-//    MulticenteredMoleculeLJ::AttributeNames::torqueZ,
-//    MulticenteredMoleculeLJ::AttributeNames::typeId,
-//    MulticenteredMoleculeLJ::AttributeNames::ownershipState};
+//constexpr std::array<typename MultisiteMoleculeLJ::AttributeNames, 25> RotationalAttributes = {
+//    MultisiteMoleculeLJ::AttributeNames::id,
+//    MultisiteMoleculeLJ::AttributeNames::posX,
+//    MultisiteMoleculeLJ::AttributeNames::posY,
+//    MultisiteMoleculeLJ::AttributeNames::posZ,
+//    MultisiteMoleculeLJ::AttributeNames::velocityX,
+//    MultisiteMoleculeLJ::AttributeNames::velocityY,
+//    MultisiteMoleculeLJ::AttributeNames::velocityZ,
+//    MultisiteMoleculeLJ::AttributeNames::forceX,
+//    MultisiteMoleculeLJ::AttributeNames::forceY,
+//    MultisiteMoleculeLJ::AttributeNames::forceZ,
+//    MultisiteMoleculeLJ::AttributeNames::oldForceX,
+//    MultisiteMoleculeLJ::AttributeNames::oldForceY,
+//    MultisiteMoleculeLJ::AttributeNames::oldForceZ,
+//    MultisiteMoleculeLJ::AttributeNames::quaternion0,
+//    MultisiteMoleculeLJ::AttributeNames::quaternion1,
+//    MultisiteMoleculeLJ::AttributeNames::quaternion2,
+//    MultisiteMoleculeLJ::AttributeNames::quaternion3,
+//    MultisiteMoleculeLJ::AttributeNames::angularVelX,
+//    MultisiteMoleculeLJ::AttributeNames::angularVelY,
+//    MultisiteMoleculeLJ::AttributeNames::angularVelZ,
+//    MultisiteMoleculeLJ::AttributeNames::torqueX,
+//    MultisiteMoleculeLJ::AttributeNames::torqueY,
+//    MultisiteMoleculeLJ::AttributeNames::torqueZ,
+//    MultisiteMoleculeLJ::AttributeNames::typeId,
+//    MultisiteMoleculeLJ::AttributeNames::ownershipState};
 //
 ///**
 // * The combined size in byte of the simple attributes which need to be communicated using MPI.

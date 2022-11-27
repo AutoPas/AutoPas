@@ -12,18 +12,18 @@
 
 namespace autopas {
 /**
- * Standard multi-centre LJ molecules/
+ * Standard multi-site LJ molecules.
  *
  * The molecule is treated as a single particle for the purposes of cutoffs and containers, with a quaternion for
  * angular direction, a 3D vector-array for angular velocity, and a vectors of site positions relative to the CoM and
  * angular direction.
  *
  */
-class MulticenteredMoleculeLJ : public autopas::MoleculeLJ {
+class MultisiteMoleculeLJ : public autopas::MoleculeLJ {
   using idType = size_t;
 
  public:
-  MulticenteredMoleculeLJ() = default;
+  MultisiteMoleculeLJ() = default;
 
   /**
    * Constructor of the MulticenteredParticle Class
@@ -34,14 +34,14 @@ class MulticenteredMoleculeLJ : public autopas::MoleculeLJ {
    * @param sites Vector of sites of the particle.
    * @param id Id of the particle.
    */
-  MulticenteredMoleculeLJ(std::array<double, 3> r, std::array<double, 3> v, std::array<double, 4> q,
+  MultisiteMoleculeLJ(std::array<double, 3> r, std::array<double, 3> v, std::array<double, 4> q,
                           std::array<double, 3> angularVel, unsigned long moleculeId, unsigned long typeId = 0)
       : autopas::MoleculeLJ(r, v, id, typeId), _q(q), _angularVel(angularVel) {}
 
   /**
    * Destructor of the MulticenteredParticle class.
    */
-  virtual ~MulticenteredMoleculeLJ() = default;
+  virtual ~MultisiteMoleculeLJ() = default;
 
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
@@ -83,7 +83,7 @@ class MulticenteredMoleculeLJ : public autopas::MoleculeLJ {
    * The reason for this is the easier use of the value in calculations (See LJFunctor "energyFactor")
    */
   using SoAArraysType = typename autopas::utils::SoAType<
-      MulticenteredMoleculeLJ *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/, double /*vx*/, double /*vy*/,
+      MultisiteMoleculeLJ *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/, double /*vx*/, double /*vy*/,
       double /*vz*/, double /*fx*/, double /*fy*/, double /*fz*/, double /*oldFx*/, double /*oldFy*/, double /*oldFz*/,
       double /*q0*/, double /*q1*/, double /*q2*/, double /*q3*/, double /*angVx*/, double /*angVy*/, double /*angVz*/,
       double /*tx*/, double /*ty*/, double /*tz*/, size_t /*typeid*/, autopas::OwnershipState /*ownrState*/>::Type;
@@ -157,7 +157,7 @@ class MulticenteredMoleculeLJ : public autopas::MoleculeLJ {
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       return this->_ownershipState;
     } else {
-      autopas::utils::ExceptionHandler::exception("MulticenteredMoleculeLJ::get() unknown attribute {}", attribute);
+      autopas::utils::ExceptionHandler::exception("MultisiteMoleculeLJ::get() unknown attribute {}", attribute);
     }
   }
 
@@ -220,7 +220,7 @@ class MulticenteredMoleculeLJ : public autopas::MoleculeLJ {
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       this->_ownershipState = value;
     } else {
-      autopas::utils::ExceptionHandler::exception("MulticenteredMoleculeLJ::set() unknown attribute {}", attribute);
+      autopas::utils::ExceptionHandler::exception("MultisiteMoleculeLJ::set() unknown attribute {}", attribute);
     }
   }
 

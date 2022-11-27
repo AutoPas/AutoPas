@@ -12,7 +12,7 @@
 #include "autopas/AutoPasDecl.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/molecularDynamics/LJMultisiteFunctor.h"
-#include "autopas/molecularDynamics/MulticenteredMoleculeLJ.h"
+#include "autopas/molecularDynamics/MultisiteMoleculeLJ.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 
 /**
@@ -35,7 +35,7 @@ class MultisiteLJFunctorTest : public AutoPasTestBase {
    * @param molecules
    * @param offset position offset
    */
-  void generateMolecules(std::vector<autopas::MulticenteredMoleculeLJ> *molecules, std::array<double, 3> offset);
+  void generateMolecules(std::vector<autopas::MultisiteMoleculeLJ> *molecules, std::array<double, 3> offset);
 
   /**
    * Tests the correctness of the AoS functor for a given molA, molB, PPL, and cutoff.
@@ -46,7 +46,7 @@ class MultisiteLJFunctorTest : public AutoPasTestBase {
    * @param cutoff
    */
   template <bool newton3>
-  void testAoSForceCalculation(autopas::MulticenteredMoleculeLJ molA, autopas::MulticenteredMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
+  void testAoSForceCalculation(autopas::MultisiteMoleculeLJ molA, autopas::MultisiteMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 
   /**
    * Compares the forces produced by the single-site functor and the multi-site functor applied to single-site molecules.
@@ -57,7 +57,7 @@ class MultisiteLJFunctorTest : public AutoPasTestBase {
    * @param cutoff
    */
   template <bool newton3>
-  void singleSiteSanityCheck(autopas::MulticenteredMoleculeLJ molA, autopas::MulticenteredMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
+  void singleSiteSanityCheck(autopas::MultisiteMoleculeLJ molA, autopas::MultisiteMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 
   /**
    * Compares the correctness of the SoACellFunctor against that of the AoSFunctor.
@@ -67,7 +67,7 @@ class MultisiteLJFunctorTest : public AutoPasTestBase {
    * @param cutoff
    */
   template <bool newton3>
-  void testSoACellAgainstAoS(std::vector<autopas::MulticenteredMoleculeLJ> molecules, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
+  void testSoACellAgainstAoS(std::vector<autopas::MultisiteMoleculeLJ> molecules, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 
   /**
    * Compares the correctness of the SoACellPairFunctor against that of the AoSFunctor.
@@ -78,7 +78,7 @@ class MultisiteLJFunctorTest : public AutoPasTestBase {
    * @param cutoff
    */
   template <bool newton3>
-  void testSoACellPairAgainstAoS(std::vector<autopas::MulticenteredMoleculeLJ> moleculesA, std::vector<autopas::MulticenteredMoleculeLJ> moleculesB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
+  void testSoACellPairAgainstAoS(std::vector<autopas::MultisiteMoleculeLJ> moleculesA, std::vector<autopas::MultisiteMoleculeLJ> moleculesB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 
   /**
    * Compares the correctness of the SoAVerletFunctor against that of the AoSFunctor.
@@ -88,7 +88,7 @@ class MultisiteLJFunctorTest : public AutoPasTestBase {
    * @param cutoff
    */
   template <bool newton3>
-  void testSoAVerletAgainstAoS(std::vector<autopas::MulticenteredMoleculeLJ> molecules, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
+  void testSoAVerletAgainstAoS(std::vector<autopas::MultisiteMoleculeLJ> molecules, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 };
 
 

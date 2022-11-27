@@ -9,7 +9,7 @@
 #include "Simulation.h"
 #include "autopas/utils/WrapMPI.h"
 #include "TypeDefinitions.h"
-//#include "src/Particles/MulticenteredMoleculeLJ.h"
+//#include "src/Particles/MultisiteMoleculeLJ.h"
 
 // Declare the main AutoPas class as extern template instantiation. It is instantiated in AutoPasClass.cpp.
 extern template class autopas::AutoPas<ParticleType>;

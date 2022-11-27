@@ -33,7 +33,7 @@ void calculatePositions(autopas::AutoPas<ParticleClass> &autoPasContainer,
  * Rozmanov, 2010, Robust rotational-velocity-Verlet integration methods (method A); with slight adaptations to account
  * for md-flexible primarily using (angular) velocities rather than (angular) momentums. Code lines are commented with
  * references to corresponding equations within the paper. Throws error unless ParticleClass is specialised to a
-* rotational molecule, i.e. MulticenteredMoleculeLJ.
+* rotational molecule, i.e. MultisiteMoleculeLJ.
  * @tparam ParticleClass
  * @param autoPasContainer
  * @param particlePropertiesLibrary
@@ -57,7 +57,7 @@ void calculateVelocities(autopas::AutoPas<ParticleClass> &autoPasContainer,
 
 /**
  * Calculate and update the angular velocity for every particle. Throws error unless ParticleClass is specialised to a
- * rotational molecule, i.e. MulticenteredMoleculeLJ.
+ * rotational molecule, i.e. MultisiteMoleculeLJ.
  * @tparam ParticleClass
  * @param autoPasContainer
  * @param particlePropertiesLibrary

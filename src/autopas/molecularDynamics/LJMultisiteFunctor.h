@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "MulticenteredMoleculeLJ.h"
+#include "MultisiteMoleculeLJ.h"
 #include "autopas/molecularDynamics/MoleculeLJ.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "autopas/pairwiseFunctors/Functor.h"
@@ -15,12 +15,11 @@
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/Math.h"
+#include "autopas/utils/Quaternion.h"
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/StaticBoolSelector.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
-#include "autopas/utils/Quaternion.h"
-#include "autopas/utils/AlignedAllocator.h"
 
 namespace autopas {
 
@@ -1514,7 +1513,7 @@ class LJMultisiteFunctor<autopas::MoleculeLJ, applyShift, useMixing, useNewton3,
                                                                    useNewton3, calculateGlobals, relevantForTuning>>(
             cutoff) {
     autopas::utils::ExceptionHandler::exception(
-        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
+        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
   }
 
  public:
@@ -1524,7 +1523,7 @@ class LJMultisiteFunctor<autopas::MoleculeLJ, applyShift, useMixing, useNewton3,
    */
   explicit LJMultisiteFunctor(double cutoff) : LJMultisiteFunctor(cutoff, nullptr) {
     autopas::utils::ExceptionHandler::exception(
-        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
+        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
   }
 
   /**
@@ -1536,7 +1535,7 @@ class LJMultisiteFunctor<autopas::MoleculeLJ, applyShift, useMixing, useNewton3,
   explicit LJMultisiteFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
       : LJMultisiteFunctor(cutoff, nullptr) {
     autopas::utils::ExceptionHandler::exception(
-        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
+        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
   }
 
   bool isRelevantForTuning() final { return relevantForTuning; }
@@ -1563,35 +1562,35 @@ class LJMultisiteFunctor<autopas::MoleculeLJ, applyShift, useMixing, useNewton3,
    */
   void AoSFunctor(autopas::MoleculeLJ &particleA, autopas::MoleculeLJ &particleB, bool newton3) final {
     autopas::utils::ExceptionHandler::exception(
-        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
+        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
   }
 
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
     autopas::utils::ExceptionHandler::exception(
-        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
+        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
   }
 
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                       const bool newton3) final {
     autopas::utils::ExceptionHandler::exception(
-        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
+        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
   }
 
   void setParticleProperties(SoAFloatPrecision epsilon24, SoAFloatPrecision sigmaSquared) {
     autopas::utils::ExceptionHandler::exception(
-        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
+        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
   }
 
   static unsigned long getNumFlopsPerKernelCall(bool newton3, size_t numA, size_t numB) { return 0ul; }
 
   void initTraversal() final {
     autopas::utils::ExceptionHandler::exception(
-        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
+        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
   }
 
   void endTraversal(bool newton3) final {
     autopas::utils::ExceptionHandler::exception(
-        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MulticenteredMoleculeLJ instead.");
+        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
   }
 };
 }  // namespace autopas

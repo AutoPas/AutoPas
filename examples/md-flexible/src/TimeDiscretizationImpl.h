@@ -41,7 +41,7 @@ inline void calculateQuaternions(autopas::AutoPas<ParticleClass> &autoPasContain
 }
 
 
-template<> inline void calculateQuaternions<autopas::MulticenteredMoleculeLJ>(autopas::AutoPas<autopas::MulticenteredMoleculeLJ> &autoPasContainer,
+template<> inline void calculateQuaternions<autopas::MultisiteMoleculeLJ>(autopas::AutoPas<autopas::MultisiteMoleculeLJ> &autoPasContainer,
                                                            const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
                                                            const std::array<double, 3> &globalForce) {
  using autopas::utils::ArrayMath::add;
@@ -150,7 +150,7 @@ inline void calculateAngularVelocities(autopas::AutoPas<ParticleClass> &autoPasC
  autopas::utils::ExceptionHandler::exception("calculateAngularVelocities should not be run with a non-rotational molecule type!");
 }
 
-template<> inline void calculateAngularVelocities<autopas::MulticenteredMoleculeLJ>(autopas::AutoPas<autopas::MulticenteredMoleculeLJ> &autoPasContainer,
+template<> inline void calculateAngularVelocities<autopas::MultisiteMoleculeLJ>(autopas::AutoPas<autopas::MultisiteMoleculeLJ> &autoPasContainer,
                                                                  const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
  using autopas::utils::ArrayMath::mulScalar;
  using autopas::utils::ArrayMath::div;
