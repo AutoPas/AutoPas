@@ -1,5 +1,5 @@
 /**
- * @file MulticenteredParticleBase.h
+ * @file MultisiteMoleculeLJ.h
  * @date 14/02/2022
  * @author S. Newcome
  */
@@ -26,7 +26,7 @@ class MultisiteMoleculeLJ : public autopas::MoleculeLJ {
   MultisiteMoleculeLJ() = default;
 
   /**
-   * Constructor of the MulticenteredParticle Class
+   * Constructor of the MultisiteMoleculeLJ Class
    * @param r Position of the particle.
    * @param v Velocity of the particle.
    * @param q Quaternion defining rotation of particle.
@@ -36,12 +36,12 @@ class MultisiteMoleculeLJ : public autopas::MoleculeLJ {
    */
   MultisiteMoleculeLJ(std::array<double, 3> r, std::array<double, 3> v, std::array<double, 4> q,
                           std::array<double, 3> angularVel, unsigned long moleculeId, unsigned long typeId = 0)
-      : autopas::MoleculeLJ(r, v, id, typeId), _q(q), _angularVel(angularVel) {}
+      : autopas::MoleculeLJ(r, v, moleculeId, typeId), _q(q), _angularVel(angularVel), _torque({0., 0., 0.}) {}
 
   /**
    * Destructor of the MulticenteredParticle class.
    */
-  virtual ~MultisiteMoleculeLJ() = default;
+  ~MultisiteMoleculeLJ() override = default;
 
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
@@ -228,17 +228,17 @@ class MultisiteMoleculeLJ : public autopas::MoleculeLJ {
   /**
    * Rotational direction of particle as quaternion.
    */
-  std::array<double, 4> _q;
+  std::array<double, 4> _q{};
 
   /**
    * Angular velocity of the particle
    */
-  std::array<double, 3> _angularVel;
+  std::array<double, 3> _angularVel{};
 
   /**
    * Torque applied to particle.
    */
-  std::array<double, 3> _torque;
+  std::array<double, 3> _torque{};
 
  public:
   /**
@@ -301,7 +301,7 @@ class MultisiteMoleculeLJ : public autopas::MoleculeLJ {
    * Creates a string containing all data of the particle.
    * @return String representation.
    */
-  [[nodiscard]] virtual std::string toString() const {
+  [[nodiscard]] std::string toString() const override {
     std::ostringstream text;
     std::ostringstream lj_str;
     // clang-format off
