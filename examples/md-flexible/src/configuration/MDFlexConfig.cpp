@@ -401,17 +401,18 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
 
   _particlePropertiesLibrary = std::make_shared<ParticlePropertiesLibraryType>(cutoff.value);
 
+  // check size of site level vectors match
+  if (epsilonMap.value.size() != sigmaMap.value.size() or epsilonMap.value.size() != massMap.value.size()) {
+    throw std::runtime_error("Number of site-level properties differ!");
+  }
+
+  // initialize at site level
+  for (auto [siteTypeId, epsilon] : epsilonMap.value) {
+    _particlePropertiesLibrary->addSiteType(siteTypeId, epsilon, sigmaMap.value.at(siteTypeId), massMap.value.at(siteTypeId));
+  }
+
+  // if doing Multi-site MD simulation, also check molecule level vectors match and initialize at molecular level
   if (includeRotational.value) {
-    // check size of site level vectors match
-        if (epsilonMap.value.size() != sigmaMap.value.size() or epsilonMap.value.size() != massMap.value.size()) {
-      throw std::runtime_error("Number of site-level properties differ!");
-    }
-
-    // initialize at site level
-    for (auto [siteTypeId, epsilon] : epsilonMap.value) {
-      _particlePropertiesLibrary->addSiteType(siteTypeId, epsilon, sigmaMap.value.at(siteTypeId), massMap.value.at(siteTypeId));
-    }
-
     // check size of molecular level vectors match
     if (molToSiteIdMap.value.size() != molToSitePosMap.value.size()) {
       throw std::runtime_error("Number of molecular-level properties differ!");
@@ -421,19 +422,9 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
     for (auto [molTypeId, siteTypeIds] : molToSiteIdMap.value) {
       _particlePropertiesLibrary->addMolType(molTypeId,siteTypeIds,molToSitePosMap.value.at(molTypeId), momentOfInertiaMap.value.at(molTypeId));
     }
-
-  } else {
-    // check size of single-site molecule property vectors match
-    if (epsilonMap.value.size() != sigmaMap.value.size() or epsilonMap.value.size() != massMap.value.size()) {
-      throw std::runtime_error("Number of particle properties differ!");
-    }
-
-    for (auto [type, epsilon] : epsilonMap.value) {
-      _particlePropertiesLibrary->addSimpleType(type, epsilon, sigmaMap.value.at(type), massMap.value.at(type));
-    }
   }
+
   _particlePropertiesLibrary->calculateMixingCoefficients();
-  //_particlePropertiesLibrary->calculateMomentOfInertiaAndAdjustAxes();
 }
 
 void MDFlexConfig::initializeObjects() {
