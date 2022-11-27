@@ -17,14 +17,21 @@
  */
 namespace TimeDiscretization {
 /**
- * Calculate and update the position for every particle using the Störmer-Verlet Algorithm.
+ * Calculate and update the position for every particle using the Velocity-Verlet Algorithm.
+ * In addition, pushes the force stored in the force vector to the old force vector and sets the force vector to the
+ * global force in preparation for the calculate forces stage.
+ *
+ * Specifically, the formula for this is
+ *      x_{n+1} = x_n + delta_t * v_n + delta_t^2 / ( 2 * mass) * f_n
+ *                      {   velTerm }   {        forceTerm          }
+ *
  * @param autoPasContainer The container for which to update the positions.
  * @param particlePropertiesLibrary The particle properties library for the particles in the container.
  * @param deltaT The time step width.
  * @param globalForce Base force value to which every particle is reset.
  */
 template <class ParticleClass>
-void calculatePositions(autopas::AutoPas<ParticleClass> &autoPasContainer,
+void calculatePositionsAndUpdateForces(autopas::AutoPas<ParticleClass> &autoPasContainer,
                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
                         const std::array<double, 3> &globalForce);
 
@@ -47,6 +54,10 @@ void calculatePositions(autopas::AutoPas<ParticleClass> &autoPasContainer,
 
 /**
  * Calculate and update the velocity for every particle using the the Störmer-Verlet Algorithm.
+ *
+ * Specifically
+ *      v_{n+1} = v_n + delta_t / (2 * mass) * (F_n + F_{n-1})
+ *
  * @param autoPasContainer The container for which to update the velocities.
  * @param particlePropertiesLibrary The particle properties library for the particles in the container.
  * @param deltaT The time step width.

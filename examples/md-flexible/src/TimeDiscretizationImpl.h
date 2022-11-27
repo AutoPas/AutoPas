@@ -11,7 +11,7 @@
 namespace TimeDiscretization {
 
 template <class ParticleClass>
-void calculatePositions(autopas::AutoPas<ParticleClass> &autoPasContainer,
+void calculatePositionsAndUpdateForces(autopas::AutoPas<ParticleClass> &autoPasContainer,
                        const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
                        const std::array<double, 3> &globalForce) {
   using autopas::utils::ArrayMath::add;
@@ -21,15 +21,20 @@ void calculatePositions(autopas::AutoPas<ParticleClass> &autoPasContainer,
 #pragma omp parallel
 #endif
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    auto v = iter->getV();
-    auto m = particlePropertiesLibrary.getMolMass(iter->getTypeId());
-    auto f = iter->getF();
-    iter->setOldF(f);
+    // get variables
+    const auto velocity = iter->getV();
+    const auto molecularMass = particlePropertiesLibrary.getMolMass(iter->getTypeId());
+    const auto force = iter->getF();
+
+    // update position
+    const auto velTerm = mulScalar(velocity, deltaT);
+    const auto forceTerm = mulScalar(force, (deltaT * deltaT / (2 * molecularMass)));
+    const auto displacement = add(velTerm, forceTerm);
+    iter->addR(displacement);
+
+    // update force
+    iter->setOldF(force);
     iter->setF(globalForce);
-    v = mulScalar(v, deltaT);
-    f = mulScalar(f, (deltaT * deltaT / (2 * m)));
-    auto newR = add(v, f);
-    iter->addR(newR);
   }
 }
 
@@ -136,11 +141,11 @@ void calculateVelocities(autopas::AutoPas<ParticleClass> &autoPasContainer,
 #pragma omp parallel
 #endif
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    auto m = particlePropertiesLibrary.getMolMass(iter->getTypeId());
-    auto force = iter->getF();
-    auto oldForce = iter->getOldF();
-    auto newV = mulScalar((add(force, oldForce)), deltaT / (2 * m));
-    iter->addV(newV);
+    const auto molecularMass = particlePropertiesLibrary.getMolMass(iter->getTypeId());
+    const auto force = iter->getF();
+    const auto oldForce = iter->getOldF();
+    const auto changeInVel = mulScalar((add(force, oldForce)), deltaT / (2 * molecularMass));
+    iter->addV(changeInVel);
   }
 }
 
