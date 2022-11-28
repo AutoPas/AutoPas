@@ -13,28 +13,49 @@ namespace TimeDiscretization {
 template <class ParticleClass>
 void calculatePositionsAndUpdateForces(autopas::AutoPas<ParticleClass> &autoPasContainer,
                        const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
-                       const std::array<double, 3> &globalForce) {
+                       const std::array<double, 3> &globalForce, bool fastParticlesThrow) {
+  using autopas::utils::ArrayUtils::operator<<;
   using autopas::utils::ArrayMath::add;
+  using autopas::utils::ArrayMath::dot;
   using autopas::utils::ArrayMath::mulScalar;
 
+  const auto maxAllowedDistanceMoved =
+      autoPasContainer.getVerletSkin() / (2 * autoPasContainer.getVerletRebuildFrequency());
+  const auto maxAllowedDistanceMovedSquared = maxAllowedDistanceMoved * maxAllowedDistanceMoved;
+
+  bool throwException = false;
+
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel
+#pragma omp parallel reduction(|| : throwException)
 #endif
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    // get variables
-    const auto velocity = iter->getV();
-    const auto molecularMass = particlePropertiesLibrary.getMolMass(iter->getTypeId());
-    const auto force = iter->getF();
-
-    // update position
-    const auto velTerm = mulScalar(velocity, deltaT);
-    const auto forceTerm = mulScalar(force, (deltaT * deltaT / (2 * molecularMass)));
-    const auto displacement = add(velTerm, forceTerm);
-    iter->addR(displacement);
-
-    // update force
-    iter->setOldF(force);
+    const auto m = particlePropertiesLibrary.getMolMass(iter->getTypeId());
+    auto v = iter->getV();
+    auto f = iter->getF();
+    iter->setOldF(f);
     iter->setF(globalForce);
+    v = mulScalar(v, deltaT);
+    f = mulScalar(f, (deltaT * deltaT / (2 * m)));
+    const auto displacement = add(v, f);
+    // sanity check that particles are not too fast for the Verlet skin technique.
+    // If this condition is violated once this is not necessarily an error. Only if the total distance traveled over
+    // the whole rebuild frequency is farther than the skin we lose interactions.
+    const auto distanceMovedSquared = dot(displacement, displacement);
+    if (distanceMovedSquared > maxAllowedDistanceMoved) {
+#pragma omp critical
+      std::cerr << "A particle moved farther than skin/2/rebuildFrequency: " << std::sqrt(distanceMovedSquared) << " > "
+                << autoPasContainer.getVerletSkin() << "/2/" << autoPasContainer.getVerletRebuildFrequency() << " = "
+                << maxAllowedDistanceMoved << "\n"
+                << *iter << "\nNew Position: " << add(iter->getR(), displacement) << std::endl;
+      if (fastParticlesThrow) {
+        throwException = true;
+      }
+    }
+    iter->addR(displacement);
+  }
+
+  if (throwException) {
+    throw std::runtime_error("At least one particle was too fast!");
   }
 }
 
