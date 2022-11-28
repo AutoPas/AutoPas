@@ -21,11 +21,6 @@ class DomainDecomposition {
   virtual ~DomainDecomposition() = default;
 
   /**
-   * Type for the AutoPas container
-   */
-  using AutoPasType = autopas::AutoPas<ParticleType>;
-
-  /**
    * Used to update the domain to the current topology.
    * Handles the diffuse load balancing by resizing the domains according to their work done.
    * @param work: The work performed in the AutoPas container.
