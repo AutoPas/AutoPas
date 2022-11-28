@@ -303,7 +303,7 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
    * number of flops for one distance calculation.
    * 3 sub + 3 square + 2 add
    */
-  static constexpr double numFlopsPerDistanceCalculation = 8.0;
+  static constexpr size_t numFlopsPerDistanceCalculation = 8ul;
 
  private:
   double _cutoffSquare;

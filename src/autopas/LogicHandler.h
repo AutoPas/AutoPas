@@ -180,7 +180,10 @@ class LogicHandler {
       const auto &boxMax = _autoTuner.getContainer()->getBoxMax();
       if (utils::notInBox(p.getR(), boxMin, boxMax)) {
         autopas::utils::ExceptionHandler::exception(
-            "Trying to add a particle, which is not inside the box of the container ({}, {}).\nThe particle: {}",
+            "LogicHandler: Trying to add a particle that is not in the bounding box.\n"
+            "Box Min {}\n"
+            "Box Max {}\n"
+            "{}",
             utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), p.toString());
       }
       // If the container is valid, we add it to the particle buffer.
@@ -193,26 +196,23 @@ class LogicHandler {
    * @copydoc AutoPas::addHaloParticle()
    */
   void addHaloParticle(const Particle &haloParticle) {
-    if (utils::inBox(haloParticle.getR(), _autoTuner.getContainer()->getBoxMin(),
-                     _autoTuner.getContainer()->getBoxMax())) {
-      utils::ExceptionHandler::exception("Trying to add a halo particle that is not OUTSIDE of the bounding box.\n" +
-                                         haloParticle.toString());
-    }
-
     auto container = _autoTuner.getContainer();
+    const auto &boxMin = container->getBoxMin();
+    const auto &boxMax = container->getBoxMax();
+    if (utils::inBox(haloParticle.getR(), boxMin, boxMax)) {
+      autopas::utils::ExceptionHandler::exception(
+          "LogicHandler: Trying to add a halo particle that is not outside the box of the container.\n"
+          "Box Min {}\n"
+          "Box Max {}\n"
+          "{}",
+          utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), haloParticle.toString());
+    }
     if (not neighborListsAreValid()) {
       // If the neighbor lists are not valid, we can add the particle.
       container->template addHaloParticle</* checkInBox */ false>(haloParticle);
     } else {
-      const auto &boxMin = _autoTuner.getContainer()->getBoxMin();
-      const auto &boxMax = _autoTuner.getContainer()->getBoxMax();
-      if (utils::inBox(haloParticle.getR(), boxMin, boxMax)) {
-        autopas::utils::ExceptionHandler::exception(
-            "Trying to add a halo particle, which is inside the box of the container ({}, {}).\nThe particle: {}",
-            utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), haloParticle.toString());
-      }
       // Check if we can update an existing halo(dummy) particle.
-      bool updated = _autoTuner.getContainer()->updateHaloParticle(haloParticle);
+      bool updated = container->updateHaloParticle(haloParticle);
       if (not updated) {
         // If we couldn't find an existing particle, add it to the halo particle buffer.
         _haloParticleBuffer.push_back(haloParticle);
@@ -376,11 +376,12 @@ class LogicHandler {
     auto container = _autoTuner.getContainer();
     // check boxSize at least cutoff + skin
     for (unsigned int dim = 0; dim < 3; ++dim) {
-      if (container->getBoxMax()[dim] - container->getBoxMin()[dim] < container->getCutoff() + container->getSkin()) {
+      if (container->getBoxMax()[dim] - container->getBoxMin()[dim] <
+          container->getCutoff() + container->getVerletSkin()) {
         autopas::utils::ExceptionHandler::exception(
             "Box (boxMin[{}]={} and boxMax[{}]={}) is too small.\nHas to be at least cutoff({}) + skin({}) = {}.", dim,
-            container->getBoxMin()[dim], dim, container->getBoxMax()[dim], container->getCutoff(), container->getSkin(),
-            container->getCutoff() + container->getSkin());
+            container->getBoxMin()[dim], dim, container->getBoxMax()[dim], container->getCutoff(),
+            container->getVerletSkin(), container->getCutoff() + container->getVerletSkin());
       }
     }
   }

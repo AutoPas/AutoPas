@@ -176,6 +176,16 @@ class ParticlePropertiesLibrary {
   inline auto getMixingData(intType i, intType j) const { return _computedMixingData[i * _numRegisteredSiteTypes + j]; }
 
   /**
+   * Get a pointer to Mixing Data.
+   * @param i
+   * @param j
+   * @return
+   */
+  inline const double *getMixingDataPtr(intType i, intType j) {
+    return reinterpret_cast<const double *>(&_computedMixingData[i * _numRegisteredTypes + j]);
+  }
+
+  /**
    * Returns precomputed mixed squared sigma.
    * @param i siteId of site one.
    * @param j siteId of site two.

@@ -29,6 +29,9 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     auto tmpNode = node[config.subdivideDimension.name];
     config.subdivideDimension.value = {tmpNode[0].as<bool>(), tmpNode[1].as<bool>(), tmpNode[2].as<bool>()};
   }
+  if (node[config.loadBalancingInterval.name]) {
+    config.loadBalancingInterval.value = node[config.loadBalancingInterval.name].as<unsigned int>();
+  }
   if (node[config.selectorStrategy.name]) {
     auto parsedOptions =
         autopas::SelectorStrategyOption::parseOptions(node[config.selectorStrategy.name].as<std::string>());
@@ -61,11 +64,13 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
     if (strArg.find("avx") != std::string::npos) {
       config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX;
+    } else if (strArg.find("sve") != std::string::npos) {
+      config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
     } else if (strArg.find("glob") != std::string::npos) {
       config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_Globals;
     } else if (strArg.find("multi") != std::string::npos) {
       config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_Multicentered;
-    } else if (strArg.find("lj") != std::string::npos || strArg.find("lennard-jones") != std::string::npos) {
+    } else if (strArg.find("lj") != std::string::npos or strArg.find("lennard-jones") != std::string::npos) {
       config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
     }
   }
@@ -210,8 +215,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
   if (node[config.verletRebuildFrequency.name]) {
     config.verletRebuildFrequency.value = node[config.verletRebuildFrequency.name].as<unsigned int>();
   }
-  if (node[config.verletSkinRadius.name]) {
-    config.verletSkinRadius.value = node[config.verletSkinRadius.name].as<double>();
+  if (node[config.verletSkinRadiusPerTimestep.name]) {
+    config.verletSkinRadiusPerTimestep.value = node[config.verletSkinRadiusPerTimestep.name].as<double>();
+  }
+  if (node[config.fastParticlesThrow.name]) {
+    config.fastParticlesThrow.value = node[config.fastParticlesThrow.name].as<bool>();
   }
   if (node[config.verletClusterSize.name]) {
     config.verletClusterSize.value = node[config.verletClusterSize.name].as<unsigned int>();
@@ -382,6 +390,15 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     config.targetTemperature.value = node[config.useThermostat.name][config.targetTemperature.name].as<double>();
     config.deltaTemp.value = node[config.useThermostat.name][config.deltaTemp.name].as<double>();
     config.addBrownianMotion.value = node[config.useThermostat.name][config.addBrownianMotion.name].as<bool>();
+  }
+  if (node[config.loadBalancer.name]) {
+    auto parsedOptions = LoadBalancerOption::parseOptions(node[config.loadBalancer.name].as<std::string>());
+    if (parsedOptions.size() != 1) {
+      throw std::runtime_error(
+          "YamlParser::parseYamlFile: Pass exactly one load balancer option! Possible values:\n" +
+          autopas::utils::ArrayUtils::to_string(LoadBalancerOption::getAllOptions(), "", {"(", ")"}));
+    }
+    config.loadBalancer.value = *parsedOptions.begin();
   }
   return true;
 }

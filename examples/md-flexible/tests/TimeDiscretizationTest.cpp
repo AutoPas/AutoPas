@@ -112,7 +112,7 @@ template<class MoleculeType> void testCalculatePositionsImpl() {
                                                                 {0, 0, 1}, {1, 0, 1}, {0, 1, 1}, {1, 1, 1}};
 
   size_t index = 0;
-  TimeDiscretization::calculatePositions(*autoPas, *PPL, 0.1, {0., 0., 0.});
+  TimeDiscretization::calculatePositions(*autoPas, *PPL, 0.1, {0., 0., 0.}, false);
   for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
     // only change in one direction is expected
     EXPECT_EQ(iter->getR()[0], referencePositions1[index][0]);
@@ -138,7 +138,7 @@ template<class MoleculeType> void testCalculatePositionsImpl() {
   const std::vector<std::array<double, 3>> referencePositions2 = {{0, 0, 0.105}, {1, 0, 0.105}, {0, 1, 0.105}, {1, 1, 0.105},
                         {0, 0, 1.105}, {1, 0, 1.105}, {0, 1, 1.105}, {1, 1, 1.105}};
 
-  TimeDiscretization::calculatePositions(*autoPas, *PPL, 0.1, {0., 0., 0.});
+  TimeDiscretization::calculatePositions(*autoPas, *PPL, 0.1, {0., 0., 0.}, false);
   index = 0;
 
   for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
@@ -432,6 +432,27 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternionSimple) {
 
 TEST_F(TimeDiscretizationTest, testCalculateQuaternionMultisite) {
   testCalculateQuaternionsImpl<MultisiteMolecule>();
+}
+
+/**
+ * Test the mechanism that throws an exception when particles travel faster than skin/2/rebuildFreq
+ */
+TEST_F(TimeDiscretizationTest, testFastParticlesCheck) {
+  auto autoPas = std::make_shared<autopas::AutoPas<Molecule>>();
+  autoPas->setBoxMin({0., 0., 0.});
+  autoPas->setBoxMax({10., 10., 10.});
+  autoPas->setVerletSkinPerTimestep(.02);
+  autoPas->setVerletRebuildFrequency(10);
+  autoPas->init();
+
+  // slow particle -> no exception
+  autoPas->addParticle(autopas::MoleculeLJ({0., 0., 0.}, {0.1, 0., 0.}, 0));
+  EXPECT_NO_THROW(
+      TimeDiscretization::calculatePositions(*autoPas, _particlePropertiesLibrary, 0.1, {0., 0., 0.}, true));
+  // fast particle -> exception
+  autoPas->begin()->setV({1., 0., 0.});
+  EXPECT_THROW(TimeDiscretization::calculatePositions(*autoPas, _particlePropertiesLibrary, 0.1, {0., 0., 0.}, true),
+               std::runtime_error);
 }
 
 // @todo: move tests to new class SimulationTest.cpp -> Issue #641

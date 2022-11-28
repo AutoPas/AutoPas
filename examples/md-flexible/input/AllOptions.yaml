@@ -1,6 +1,6 @@
 container                        :  [DirectSum, LinkedCells, LinkedCellsReferences, VarVerletListsAsBuild, VerletClusterLists, VerletLists, VerletListsCells, PairwiseVerletLists]
 verlet-rebuild-frequency         :  20
-verlet-skin-radius               :  0.2
+verlet-skin-radius-per-timestep  :  0.01
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [AoS, SoA]

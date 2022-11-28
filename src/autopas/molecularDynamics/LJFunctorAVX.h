@@ -5,8 +5,9 @@
  * @author F. Gratl
  */
 #pragma once
-
-#ifdef __AVX__
+#ifndef __AVX__
+#pragma message "Requested to compile LJFunctorAVX but AVX is not available!"
+#else
 #include <immintrin.h>
 #endif
 
@@ -15,6 +16,7 @@
 #include "ParticlePropertiesLibrary.h"
 #include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/pairwiseFunctors/Functor.h"
+#include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/StaticBoolSelector.h"

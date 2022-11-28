@@ -16,6 +16,7 @@
 #include "MDFlexParser.h"
 #include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/ArrayUtils.h"
+#include "autopas/utils/isSmartPointer.h"
 #include "src/ParticleSerializationTools.h"
 #include "src/Thermostat.h"
 
@@ -53,7 +54,7 @@ std::vector<dataType> readPayload(std::ifstream &file, size_t numberOfParticles)
 void findWord(std::ifstream &file, const std::string &word) {
   std::vector<char> separators{' ', '/', '.', ',', '?', '!', '"', '\'', '<', '>', '=', ':', ';', '\n', '\t', '\r'};
   std::string currentWord;
-  while (not file.eof() && currentWord != word) {
+  while (not file.eof() and currentWord != word) {
     char currentChar = file.get();
     if (std::find(separators.begin(), separators.end(), currentChar) != separators.end()) {
       currentWord = "";
@@ -185,50 +186,56 @@ MDFlexConfig::MDFlexConfig(int argc, char **argv) {
 
 std::string MDFlexConfig::to_string() const {
   using namespace std;
+  using autopas::utils::ArrayUtils::operator<<;
   ostringstream os;
+  os << boolalpha;
 
-  auto passedContainerOptionsStr = autopas::utils::ArrayUtils::to_string(containerOptions.value);
-  os << setw(valueOffset) << left << containerOptions.name << ":  " << passedContainerOptionsStr << endl;
+  auto printOption = [&](const auto &option, int offsetFromOffset = 0) {
+    os << setw(valueOffset + offsetFromOffset) << left << option.name << ":  ";
+    // depending on whether option.value is a smart-pointer or not dereference it
+    if constexpr (autopas::utils::is_smart_ptr<decltype(option.value)>::value) {
+      os << *option.value;
+    } else {
+      os << option.value;
+    }
+    os << endl;
+  };
+  printOption(containerOptions);
 
   // since all containers are rebuilt only periodically print Verlet config always.
-  os << setw(valueOffset) << left << verletRebuildFrequency.name << ":  " << verletRebuildFrequency.value << endl;
-  os << setw(valueOffset) << left << verletSkinRadius.name << ":  " << verletSkinRadius.value << endl;
+  printOption(verletRebuildFrequency);
+  printOption(verletSkinRadiusPerTimestep);
+  printOption(fastParticlesThrow);
+  const auto passedContainerOptionsStr = autopas::utils::ArrayUtils::to_string(containerOptions.value);
   if (passedContainerOptionsStr.find("luster") != std::string::npos) {
-    os << setw(valueOffset) << left << verletClusterSize.name << ":  " << verletClusterSize.value << endl;
+    printOption(verletClusterSize);
   }
 
   if (containerOptions.value.size() > 1 or traversalOptions.value.size() > 1 or dataLayoutOptions.value.size() > 1) {
-    os << setw(valueOffset) << left << selectorStrategy.name << ":  " << selectorStrategy.value << endl;
+    printOption(selectorStrategy);
   }
 
-  os << setw(valueOffset) << left << dataLayoutOptions.name << ":  "
-     << autopas::utils::ArrayUtils::to_string(dataLayoutOptions.value) << endl;
-  os << setw(valueOffset) << left << traversalOptions.name << ":  "
-     << autopas::utils::ArrayUtils::to_string(traversalOptions.value) << endl;
-  os << setw(valueOffset) << left << tuningStrategyOption.name << ":  " << tuningStrategyOption.value << endl;
+  printOption(dataLayoutOptions);
+  printOption(traversalOptions);
+  printOption(tuningStrategyOption);
   if (tuningStrategyOption.value == autopas::TuningStrategyOption::bayesianSearch or
       tuningStrategyOption.value == autopas::TuningStrategyOption::bayesianClusterSearch) {
-    os << setw(valueOffset) << left << acquisitionFunctionOption.name << ":  " << acquisitionFunctionOption.value
-       << endl;
+    printOption(acquisitionFunctionOption);
   }
-  os << setw(valueOffset) << left << mpiStrategyOption.name << ":  " << mpiStrategyOption.value << endl;
+  printOption(mpiStrategyOption);
   if (mpiStrategyOption.value == autopas::MPIStrategyOption::divideAndConquer) {
-    os << setw(valueOffset) << left << MPITuningMaxDifferenceForBucket.name << ":  "
-       << MPITuningMaxDifferenceForBucket.value << endl;
-    os << setw(valueOffset) << left << MPITuningWeightForMaxDensity.name << ":  " << MPITuningWeightForMaxDensity.value
-       << endl;
+    printOption(MPITuningMaxDifferenceForBucket);
+    printOption(MPITuningWeightForMaxDensity);
   }
-  os << setw(valueOffset) << left << tuningInterval.name << ":  " << tuningInterval.value << endl;
-  os << setw(valueOffset) << left << tuningSamples.name << ":  " << tuningSamples.value << endl;
-  os << setw(valueOffset) << left << tuningMaxEvidence.name << ":  " << tuningMaxEvidence.value << endl;
+  printOption(tuningInterval);
+  printOption(tuningSamples);
+  printOption(tuningMaxEvidence);
   if (tuningStrategyOption.value == autopas::TuningStrategyOption::predictiveTuning) {
-    os << setw(valueOffset) << left << relativeOptimumRange.name << ":  " << relativeOptimumRange.value << endl;
-    os << setw(valueOffset) << left << maxTuningPhasesWithoutTest.name << ":  " << maxTuningPhasesWithoutTest.value
-       << endl;
-    os << setw(valueOffset) << left << relativeBlacklistRange.name << ":  " << relativeBlacklistRange.value << endl;
-    os << setw(valueOffset) << left << evidenceFirstPrediction.name << ":  " << evidenceFirstPrediction.value << endl;
-    os << setw(valueOffset) << left << extrapolationMethodOption.name << ":  " << extrapolationMethodOption.value
-       << endl;
+    printOption(relativeOptimumRange);
+    printOption(maxTuningPhasesWithoutTest);
+    printOption(relativeBlacklistRange);
+    printOption(evidenceFirstPrediction);
+    printOption(extrapolationMethodOption);
   }
   os << setw(valueOffset) << left << functorOption.name << ":  ";
   switch (functorOption.value) {
@@ -240,6 +247,10 @@ std::string MDFlexConfig::to_string() const {
       os << "Lennard-Jones (12-6) AVX intrinsics" << endl;
       break;
     }
+    case FunctorOption::lj12_6_SVE: {
+      os << "Lennard-Jones (12-6) SVE intrinsics" << endl;
+      break;
+    }
     case FunctorOption::lj12_6_Globals: {
       os << "Lennard-Jones (12-6) with globals" << endl;
       break;
@@ -248,26 +259,19 @@ std::string MDFlexConfig::to_string() const {
       os << "Lennard-Jones (12-6) Multicentered" << endl;
     }
   }
-  os << setw(valueOffset) << left << newton3Options.name << ":  "
-     << autopas::utils::ArrayUtils::to_string(newton3Options.value) << endl;
-
-  os << setw(valueOffset) << left << cutoff.name << ":  " << cutoff.value << endl;
-  os << setw(valueOffset) << left << boxMin.name << ":  " << autopas::utils::ArrayUtils::to_string(boxMin.value)
-     << endl;
-  os << setw(valueOffset) << left << boxMax.name << ":  " << autopas::utils::ArrayUtils::to_string(boxMax.value)
-     << endl;
-  os << setw(valueOffset) << left << subdivideDimension.name << ":  "
-     << autopas::utils::ArrayUtils::to_string(subdivideDimension.value) << endl;
-  os << setw(valueOffset) << left << cellSizeFactors.name << ":  " << *cellSizeFactors.value << endl;
-  os << setw(valueOffset) << left << deltaT.name << ":  " << deltaT.value << endl;
+  printOption(newton3Options);
+  printOption(cutoff);
+  printOption(boxMin);
+  printOption(boxMax);
+  printOption(cellSizeFactors);
+  printOption(deltaT);
   // simulation length is either dictated by tuning phases or iterations
   if (tuningPhases.value > 0) {
-    os << setw(valueOffset) << left << tuningPhases.name << ":  " << tuningPhases.value << endl;
+    printOption(tuningPhases);
   } else {
-    os << setw(valueOffset) << left << iterations.name << ":  " << iterations.value << endl;
+    printOption(iterations);
   }
-  os << setw(valueOffset) << left << boundaryOption.name << ": "
-     << autopas::utils::ArrayUtils::to_string(boundaryOption.value) << endl;
+  printOption(boundaryOption);
 
   os << setw(valueOffset) << left << "Objects:" << endl;
 
@@ -290,37 +294,47 @@ std::string MDFlexConfig::to_string() const {
   printObjectCollection(sphereObjects, sphereObjectsStr, os);
 
   if (not globalForceIsZero()) {
-    os << setw(valueOffset) << left << globalForce.name << ":  "
-       << autopas::utils::ArrayUtils::to_string(globalForce.value) << endl;
+    printOption(globalForce);
   }
 
   if (useThermostat.value) {
     os << useThermostat.name << ":" << endl;
-    os << "  " << setw(valueOffset - 2) << left << initTemperature.name << ":  " << initTemperature.value << endl;
-    os << "  " << setw(valueOffset - 2) << left << targetTemperature.name << ":  " << targetTemperature.value << endl;
-    os << "  " << setw(valueOffset - 2) << left << deltaTemp.name << ":  " << deltaTemp.value << endl;
-    os << "  " << setw(valueOffset - 2) << left << thermostatInterval.name << ":  " << thermostatInterval.value << endl;
-    os << "  " << setw(valueOffset - 2) << left << addBrownianMotion.name << ":  " << addBrownianMotion.value << endl;
+    // since these parameters are
+    constexpr int indentWidth = 2;
+    const auto indent = std::string(indentWidth, ' ');
+    os << indent;
+    printOption(initTemperature, -indentWidth);
+    os << indent;
+    printOption(targetTemperature, -indentWidth);
+    os << indent;
+    printOption(deltaTemp, -indentWidth);
+    os << indent;
+    printOption(thermostatInterval, -indentWidth);
+    os << indent;
+    printOption(addBrownianMotion, -indentWidth);
   }
 
   if (not vtkFileName.value.empty()) {
-    os << setw(valueOffset) << left << vtkFileName.name << ":  " << vtkFileName.value << endl;
-    os << setw(valueOffset) << left << vtkWriteFrequency.name << ":  " << vtkWriteFrequency.value << endl;
+    printOption(vtkFileName);
+    printOption(vtkWriteFrequency);
   }
   if (not checkpointfile.value.empty()) {
-    os << setw(valueOffset) << left << checkpointfile.name << ":  " << checkpointfile.value << endl;
+    printOption(checkpointfile);
   }
 
-  os << setw(valueOffset) << logLevel.name << ":  " << (logLevel.value) << endl;
+  printOption(logLevel);
 
-  os << setw(valueOffset) << dontMeasureFlops.name << ":  " << (not dontMeasureFlops.value) << endl;
-  os << setw(valueOffset) << dontCreateEndConfig.name << ":  " << (not dontCreateEndConfig.value) << endl;
-  os << setw(valueOffset) << dontShowProgressBar.name << ":  " << (dontShowProgressBar.value) << endl;
+  os << setw(valueOffset) << left << dontMeasureFlops.name << ":  " << (not dontMeasureFlops.value) << endl;
+  os << setw(valueOffset) << left << dontCreateEndConfig.name << ":  " << (not dontCreateEndConfig.value) << endl;
+  printOption(dontShowProgressBar);
+  printOption(loadBalancer);
+  printOption(loadBalancingInterval);
+  printOption(subdivideDimension);
   return os.str();
 }
 
 void MDFlexConfig::calcSimulationBox() {
-  const double interactionLength = cutoff.value + verletSkinRadius.value;
+  const double interactionLength = cutoff.value + verletSkinRadiusPerTimestep.value * verletRebuildFrequency.value;
 
   // helper function so that we can do the same for every object collection
   // resizes the domain to the maximal extents of all objects

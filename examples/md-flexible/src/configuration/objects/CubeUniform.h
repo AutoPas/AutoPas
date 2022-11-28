@@ -65,7 +65,7 @@ class CubeUniform : public Object {
            << ":  " << _numParticles << std::endl;
     output << std::setw(_valueOffset) << std::left << "box-length"
            << ":  " << autopas::utils::ArrayUtils::to_string(_boxLength) << std::endl;
-    output << std::setw(_valueOffset) << std::left << "_bottomLeftCorner"
+    output << std::setw(_valueOffset) << std::left << "bottomLeftCorner"
            << ":  " << autopas::utils::ArrayUtils::to_string(_bottomLeftCorner) << std::endl;
     output << Object::to_string();
     return output.str();

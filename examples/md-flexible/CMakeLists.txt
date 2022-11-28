@@ -4,15 +4,31 @@ file(
         "src/*.cpp"
         "src/*.h"
 )
+
 add_executable(md-flexible ${MDFlex_SRC})
 
 target_include_directories(md-flexible PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 include(autopas_yaml-cpp)
+include(autopas_all)
 
 option(MD_FLEXIBLE_USE_MPI "Enable MPI parallelism for md-flexible." OFF)
 
-target_link_libraries(md-flexible PUBLIC autopas autopasTools yaml-cpp $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
+target_link_libraries(md-flexible PUBLIC autopas autopasTools yaml-cpp  ${ALL_LIB} $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
+
+option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor without calculation of global values." OFF)
+option(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS "Compile AutoVec Functor with calculation of global values." OFF)
+option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor without calculation of global values." ON)
+option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor without calculation of global values." ON)
+
+target_compile_definitions(
+        md-flexible
+        PUBLIC
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AUTOVEC}>:MD_FLEXIBLE_FUNCTOR_AUTOVEC>
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS}>:MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS>
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AVX}>:MD_FLEXIBLE_FUNCTOR_AVX>
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SVE}>:MD_FLEXIBLE_FUNCTOR_SVE>
+)
 
 # --- copy script files to build dir ---
 file(
@@ -52,7 +68,7 @@ add_test(
         --particles-total 10
         --traversal c08,sliced
         --verlet-rebuild-frequency 5
-        --verlet-skin-radius 0
+        --verlet-skin-radius-per-timestep 0
         --boundary-type none
         --deltaT 0.
         --no-end-config
@@ -74,7 +90,7 @@ add_test(
         --particles-per-dimension 10
         --particle-spacing 1.1225
         --verlet-rebuild-frequency 4
-        --verlet-skin-radius 0.2
+        --verlet-skin-radius-per-timestep 0.05
         --boundary-type periodic
         --deltaT 0.005
         --no-end-config

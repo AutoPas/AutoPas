@@ -76,6 +76,13 @@ class ParticleBase {
 
  public:
   /**
+   * Stream operator for instances of ParticleBase class.
+   * @return String representation.
+   */
+  template <typename T, typename P>
+  friend std::ostream &operator<<(std::ostream &os, const autopas::ParticleBase<T, P> &D);
+
+  /**
    * Equality operator for ParticleBase class.
    * @param rhs
    * @return
@@ -173,17 +180,16 @@ class ParticleBase {
     text << "Particle"
          << "\nID      : " << _id
          << "\nPosition: "
-         << utils::ArrayUtils::to_string(_r)
+         << autopas::utils::ArrayUtils::to_string(_r)
          << "\nVelocity: "
-         << utils::ArrayUtils::to_string(_v)
+         << autopas::utils::ArrayUtils::to_string(_v)
          << "\nForce   : "
-         << utils::ArrayUtils::to_string(_f)
+         << autopas::utils::ArrayUtils::to_string(_f)
          << "\nOwnershipState : "
          << _ownershipState;
     // clang-format on
     return text.str();
   }
-
   /**
    * Defines whether the particle is owned by the current AutoPas object (aka (MPI-)process)
    * @return true if the particle is owned by the current AutoPas object, false otherwise
@@ -325,5 +331,23 @@ class ParticleBase {
   template <class T>
   friend void internal::markParticleAsDeleted(T &);
 };
+
+/**
+ * Stream operator for instances of ParticleBase class.
+ * This function enables passing ParticleBase objects to an ostream via `<<`
+ * @tparam Floating point type to be used for the SoAs.
+ * @param os
+ * @param particle
+ * @return String representation.
+ */
+template <typename floatType, typename idType>
+std::ostream &operator<<(std::ostream &os, const ParticleBase<floatType, idType> &particle) {
+  using utils::ArrayUtils::operator<<;
+  os << "Particle"
+     << "\nID      : " << particle._id << "\nPosition: " << particle._r << "\nVelocity: " << particle._v
+     << "\nForce   : " << particle._f << "\nOwnershipState : " << particle._ownershipState;
+  // clang-format on
+  return os;
+}
 
 }  // namespace autopas

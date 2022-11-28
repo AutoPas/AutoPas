@@ -29,6 +29,7 @@
 #include "src/configuration/objects/CubeGrid.h"
 #include "src/configuration/objects/CubeUniform.h"
 #include "src/configuration/objects/Sphere.h"
+#include "src/domainDecomposition/LoadBalancerOption.h"
 #include "src/options/BoundaryTypeOption.h"
 
 /**
@@ -37,11 +38,17 @@
 class MDFlexConfig {
  public:
   /**
-   * Constructor.
+   * Constructor that initializes the configuration from the CLI arguments (incl. yaml file argument).
    * @param argc: the argument count of the arguments passed to the main function.
    * @param argv: the argument vector passed to the main function.
    */
   MDFlexConfig(int argc, char **argv);
+
+  /**
+   * Constructor using only default values.
+   * Useful for testing but might require setting some values before this is valid.
+   */
+  MDFlexConfig() = default;
 
   /**
    * Struct to bundle information for options.
@@ -166,7 +173,7 @@ class MDFlexConfig {
   /**
    * Choice of the functor
    */
-  enum class FunctorOption { lj12_6, lj12_6_AVX, lj12_6_Globals, lj12_6_Multicentered };
+  enum class FunctorOption { lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_Globals, lj12_6_Multicentered };
 
   /**
    * Choice of the particle generators specified in the command line
@@ -350,12 +357,21 @@ class MDFlexConfig {
    * verletRebuildFrequency
    */
   MDFlexOption<unsigned int, __LINE__> verletRebuildFrequency{
-      20, "verlet-rebuild-frequency", true, "Number of iterations after which containers are rebuilt."};
+      15, "verlet-rebuild-frequency", true, "Number of iterations after which containers are rebuilt."};
   /**
-   * verletSkinRadius
+   * verletSkinRadiusPerTimeStep
    */
-  MDFlexOption<double, __LINE__> verletSkinRadius{.2, "verlet-skin-radius", true,
-                                                  "Skin added to the cutoff to form the interaction length."};
+  MDFlexOption<double, __LINE__> verletSkinRadiusPerTimestep{
+      .2, "verlet-skin-radius-per-timestep", true,
+      "Skin added to the cutoff to form the interaction length. The total skin width is this number times "
+      "verletRebuildFrequency."};
+
+  /**
+   * fastParticlesThrow
+   */
+  MDFlexOption<bool, __LINE__> fastParticlesThrow{false, "fastParticlesThrow", false,
+                                                  "Decide if particles that move farther than skin/2/rebuildFrequency "
+                                                  "will throw an exception during the position update or not."};
   /**
    * boxMin
    */
@@ -366,6 +382,12 @@ class MDFlexConfig {
    */
   MDFlexOption<std::array<double, 3>, 0> boxMax{
       {1, 1, 1}, "box-max", true, "Upper back right corner of the simulation box."};
+
+  /**
+   * loadBalancingInterval
+   */
+  MDFlexOption<unsigned int, __LINE__> loadBalancingInterval{
+      100, "load-balancing-interval", true, "Defines the iteration interval at which load balancing should occur."};
 
   /**
    * subdivideDimension
@@ -393,9 +415,10 @@ class MDFlexConfig {
   /**
    * functorOption
    */
-  MDFlexOption<FunctorOption, __LINE__> functorOption{
-      FunctorOption::lj12_6, "functor", true,
-      "Force functor to use. Possible Values: (lennard-jones lennard-jones-AVX2 lennard-jones-globals lennard-jones-multicentered)"};
+  MDFlexOption<FunctorOption, __LINE__> functorOption{FunctorOption::lj12_6, "functor", true,
+                                                      "Force functor to use. Possible Values: (lennard-jones "
+                                                      "lennard-jones-AVX2 lennard-jones-SVE lennard-jones-globals"
+                                                      "lennard-jones-multicentered)"};
   /**
    * iterations
    */
@@ -677,9 +700,18 @@ class MDFlexConfig {
                                                      "Path to a .pvtu File to load as a checkpoint."};
 
   /**
+   * loadBalancer
+   */
+  MDFlexOption<LoadBalancerOption, __LINE__> loadBalancer{
+      LoadBalancerOption::invertedPressure, "load-balancer", true,
+      "Defines which load balancing approach will be used with the adaptive grid decomposition. If ALL is chosen as "
+      "load balancer, MD-Flexible uses ALL's TENSOR method. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(LoadBalancerOption::getAllOptions(), " ", {"(", ")"})};
+
+  /**
    * valueOffset used for cli-output alignment
    */
-  static constexpr size_t valueOffset{33};
+  static constexpr int valueOffset{33};
 
  private:
   /**

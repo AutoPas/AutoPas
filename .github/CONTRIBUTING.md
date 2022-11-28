@@ -134,7 +134,7 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 * Go to `src/autopas/options/TuningStrategyOption.h`.
   * Add a new enum in `TuningStrategyOption::Value`.
   * Add a new string representation in the `map` of `TuningStrategyOption::getOptionNames()`.
-* In `src/autopas/AutoPas.h::generateTuningStrategy()`:
+* In `src/autopas/selectors/tuningStrategy/TuningStrategyFactory.cpp::generateTuningStrategy()`:
   * Add a `case` for the new strategy.
   * If the new strategy handles communication between processes itself, make sure to not wrap it in the lower `mpiStrategyOption`-switch.
 * Check that the new option is working in the md-flexible example.

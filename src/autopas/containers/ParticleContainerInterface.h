@@ -88,12 +88,12 @@ class ParticleContainerInterface {
       if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
         addParticleImpl(p);
       } else {
-        std::stringstream error;
-        error << "Trying to add a particle that is not in the bounding box.\n"
-              << "Box Min " << autopas::utils::ArrayUtils::to_string(this->getBoxMin()) << "\n"
-              << "Box Max " << autopas::utils::ArrayUtils::to_string(this->getBoxMax()) << "\n"
-              << p.toString();
-        utils::ExceptionHandler::exception(error.str());
+        utils::ExceptionHandler::exception(
+            "ParticleContainerInterface: Trying to add a particle that is not in the bounding box.\n"
+            "Box Min {}\n"
+            "Box Max {}\n"
+            "{}",
+            this->getBoxMin(), this->getBoxMax(), p.toString());
       }
     }
   };
@@ -121,8 +121,13 @@ class ParticleContainerInterface {
     } else {
       /// @todo do we want a check of the particle not being too far away in here as well?
       if (utils::inBox(haloParticle.getR(), this->getBoxMin(), this->getBoxMax())) {
-        utils::ExceptionHandler::exception("Trying to add a halo particle that is inside of the bounding box.\n" +
-                                           haloParticle.toString());
+        std::stringstream error;
+        utils::ExceptionHandler::exception(
+            "Trying to add a halo particle that is not outside of in the bounding box.\n"
+            "Box Min {}\n"
+            "Box Max {}\n",
+            utils::ArrayUtils::to_string(this->getBoxMin()), utils::ArrayUtils::to_string(this->getBoxMax()),
+            haloParticle.toString());
       } else {
         addHaloParticleImpl(haloParticle);
       }
@@ -179,14 +184,14 @@ class ParticleContainerInterface {
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) = 0;
 
   /**
-   * @copydoc begin()
+   * @copydoc autopas::ParticleContainerInterface::begin()
    * @note const version
    */
   [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, false> begin(
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) const = 0;
 
   /**
-   * @copydoc begin()
+   * @copydoc autopas::ParticleContainerInterface::begin()
    * @note cbegin will guarantee to return a const_iterator.
    */
   [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, false> cbegin(
@@ -207,7 +212,7 @@ class ParticleContainerInterface {
       IteratorBehavior behavior) = 0;
 
   /**
-   * @copydoc getRegionIterator()
+   * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
    * @note const version
    */
   [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, false> getRegionIterator(
@@ -264,16 +269,10 @@ class ParticleContainerInterface {
   virtual void setCutoff(double cutoff) = 0;
 
   /**
-   * Return the skin of the container.
-   * @return skin radius.
+   * Return the verletSkin of the container verletSkinPerTimestep*rebuildFrequency
+   * @return verletSkin
    */
-  [[nodiscard]] virtual double getSkin() const = 0;
-
-  /**
-   * Set the skin of the container.
-   * @param skin
-   */
-  virtual void setSkin(double skin) = 0;
+  [[nodiscard]] virtual double getVerletSkin() const = 0;
 
   /**
    * Return the interaction length (cutoff+skin) of the container.

@@ -2,9 +2,12 @@ cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 project(AutoPas)
 
 # CMAKE policies, etc.
-cmake_policy(SET CMP0054 NEW)
-cmake_policy(SET CMP0057 NEW)
-cmake_policy(SET CMP0079 NEW)
+cmake_policy(SET CMP0054 NEW) # from version 3.1
+cmake_policy(SET CMP0057 NEW) # from version 3.3
+cmake_policy(SET CMP0079 NEW) # from version 3.13
+if (${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.24)
+    cmake_policy(SET CMP0135 NEW)
+endif()
 
 # Always use AUTOPAS_[SOURCE/BINARY]_DIR instead of CMAKE_[SOURCE/BINARY]_DIR or use
 # CMAKE_CURRENT_[SOURCE/BINARY]_DIR directly for relative paths to allow including AutoPas via
