@@ -10,7 +10,7 @@
 #include <gmock/gmock-more-matchers.h>
 
 TEST_F(BayesianSearchTest, testMaxEvidence) {
-  size_t maxEvidence = 5;
+  size_t maxEvidence = 4;
   autopas::BayesianSearch bayesSearch(
       {autopas::ContainerOption::linkedCells}, autopas::NumberSetFinite<double>({1}),
       {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},

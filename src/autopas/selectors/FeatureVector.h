@@ -64,7 +64,7 @@ class FeatureVector : public Configuration {
    */
   Eigen::VectorXd operator-(const FeatureVector &other) const {
     Eigen::VectorXd result(featureSpaceDims);
-    result << cellSizeFactor - other.cellSizeFactor,
+    result << cellSizeFactor - other.cellSizeFactor, verletRebuildFrequency- other.verletRebuildFrequency,
         (container == other.container and traversal == other.traversal and loadEstimator == other.loadEstimator) ? 0.
                                                                                                                  : 1.,
         dataLayout == other.dataLayout ? 0. : 1., newton3 == other.newton3 ? 0. : 1.;

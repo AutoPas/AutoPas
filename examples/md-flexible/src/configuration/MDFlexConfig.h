@@ -337,10 +337,12 @@ class MDFlexConfig {
   MDFlexOption<unsigned int, __LINE__> verletClusterSize{4, "verlet-cluster-size", true,
                                                          "Number of particles in Verlet clusters."};
   /**
-   * verletRebuildFrequency
+   * verletRebuildFrequencies
    */
-  MDFlexOption<int, __LINE__> verletRebuildFrequency{
-      20, "verlet-rebuild-frequency", true, "Number of iterations after which containers are rebuilt."};
+  MDFlexOption<std::shared_ptr<autopas::NumberSet<int>>, __LINE__> verletRebuildFrequencies{
+      std::make_shared<autopas::NumberSetFinite<int>>(std::set<int>{5}), "verlet-rebuild-frequency",
+      true, "Number of iterations after which containers are rebuilt."};
+
   /**
    * verletSkinRadiusPerTimeStep
    */
