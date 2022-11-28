@@ -55,11 +55,11 @@ AutoPas<Particle> &AutoPas<Particle>::operator=(AutoPas &&other) noexcept {
 template <class Particle>
 void AutoPas<Particle>::init() {
   AutoPasLog(info, "AutoPas Version: {}", AutoPas_VERSION);
-  if (_numSamples % getVerletRebuildFrequency() != 0) {
+  if (_numSamples % getAllowedVerletRebuildFrequencies().getMin() != 0) {
     AutoPasLog(warn,
                "Number of samples ({}) is not a multiple of the rebuild frequency ({}). This can lead to problems "
                "when multiple AutoPas instances interact (e.g. via MPI).",
-               _numSamples, getVerletRebuildFrequency());
+               _numSamples, getAllowedVerletRebuildFrequencies().getMin());
   }
 
   if (_autopasMPICommunicator == AUTOPAS_MPI_COMM_NULL) {
@@ -77,7 +77,7 @@ void AutoPas<Particle>::init() {
       _mpiTuningMaxDifferenceForBucket, _mpiTuningWeightForMaxDensity, _selectorStrategy, _tuningInterval, _numSamples, 5,
       _outputSuffix);
   _logicHandler =
-      std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(*(_autoTuner.get()), getVerletRebuildFrequency());
+      std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(*(_autoTuner.get()), getAllowedVerletRebuildFrequencies().getMin());
 }
 
 template <class Particle>
