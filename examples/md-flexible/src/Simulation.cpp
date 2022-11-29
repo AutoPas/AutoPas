@@ -19,23 +19,28 @@
 // Declare the main AutoPas class and the iteratePairwise() methods with all used functors as extern template
 // instantiation. They are instantiated in the respective cpp file inside the templateInstantiations folder.
 //! @cond Doxygen_Suppress
-extern template class autopas::AutoPas<ParticleType>;
+extern template class autopas::AutoPas<SingleSiteMolecule>;
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
-extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctor<ParticleType, true, true> *);
+extern template bool autopas::AutoPas<SingleSiteMolecule>::iteratePairwise(autopas::LJFunctor<SingleSiteMolecule, true, true> *);
 #endif
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
-extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(
-    autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true> *);
+extern template bool autopas::AutoPas<SingleSiteMolecule>::iteratePairwise(
+    autopas::LJFunctor<SingleSiteMolecule, true, true, autopas::FunctorN3Modes::Both, true> *);
 #endif
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
-extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctorAVX<ParticleType, true, true> *);
+extern template bool autopas::AutoPas<SingleSiteMolecule>::iteratePairwise(autopas::LJFunctorAVX<SingleSiteMolecule, true, true> *);
 #endif
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
 #include "autopas/molecularDynamics/LJFunctorSVE.h"
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctorSVE<ParticleType, true, true> *);
 #endif
-extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::FlopCounterFunctor<ParticleType> *);
+// todo: Add this to the #if CMake stuff
+extern template bool autopas::AutoPas<MultiSiteMolecule>::iteratePairwise(autopas::LJMultisiteFunctor<MultiSiteMolecule, true, true> *);
+extern template bool autopas::AutoPas<MultiSiteMolecule>::iteratePairwise(autopas::LJMultisiteFunctor<MultiSiteMolecule, true, true, autopas::FunctorN3Modes::Both, true, true> *);
+
+extern template bool autopas::AutoPas<SingleSiteMolecule>::iteratePairwise(autopas::FlopCounterFunctor<SingleSiteMolecule> *);
+extern template bool autopas::AutoPas<MultiSiteMolecule>::iteratePairwise(autopas::FlopCounterFunctor<MultiSiteMolecule> *);
 //! @endcond
 
 #include <sys/ioctl.h>
