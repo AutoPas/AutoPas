@@ -531,7 +531,7 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<std::v
     auto &particleBufferOuter = particleBuffers[bufferIdOuter];
     for (size_t i = 0; i < particleBufferOuter.size(); ++i) {
       auto &&p1 = particleBufferOuter[i];
-      for (size_t bufferIdInner = bufferIdOuter; bufferIdInner < haloParticleBuffers.size(); ++bufferIdInner) {
+      for (size_t bufferIdInner = 0; bufferIdInner < haloParticleBuffers.size(); ++bufferIdInner) {
         auto &haloBufferInner = haloParticleBuffers[bufferIdInner];
         for (size_t j = 0; j < haloBufferInner.size(); ++j) {
           auto &&p2 = haloBufferInner[j];
