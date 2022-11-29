@@ -13,6 +13,7 @@
 /**
  * Provides tools to communicate particles between MPI ranks.
  */
+template <class ParticleClass>
 class ParticleCommunicator {
  public:
   /**
@@ -31,14 +32,14 @@ class ParticleCommunicator {
    * @param particles The particles to be sent to the receiver.
    * @param receiver The recipient of the particles.
    */
-  void sendParticles(const std::vector<ParticleType> &particles, const int &receiver);
+  void sendParticles(const std::vector<ParticleClass> &particles, const int &receiver);
 
   /**
    * Receives particles sent by a sender.
    * @param receivedParticles The container where the received particles will be stored.
    * @param source The sender id/rank.
    */
-  void receiveParticles(std::vector<ParticleType> &receivedParticles, const int &source);
+  void receiveParticles(std::vector<ParticleClass> &receivedParticles, const int &source);
 
   /**
    * Waits for all send requests to be finished.
@@ -62,16 +63,16 @@ class ParticleCommunicator {
   std::vector<std::vector<char>> _sendBuffers;
 
   /**
-   * Sends data to a specific neighbour of this domain.
-   * @param sendBuffer The buffer which will be sent to the neighbour.
-   * @param neighbour The neighbour to which the data will be sent.
+   * Sends data to a specific neighbor of this domain.
+   * @param sendBuffer The buffer which will be sent to the neighbor.
+   * @param neighbor The neighbor to which the data will be sent.
    */
-  void sendDataToNeighbour(const std::vector<char> &sendBuffer, const int &neighbour);
+  void sendDataToNeighbor(const std::vector<char> &sendBuffer, const int &neighbor);
 
   /**
-   * Receives data that has been sent by a specific neighbour of this domain.
-   * @param neighbour The neighbour where the data originates from.
+   * Receives data that has been sent by a specific neighbor of this domain.
+   * @param neighbor The neighbor where the data originates from.
    * @param dataBuffer The buffer where the received data will be stored.
    */
-  void receiveDataFromNeighbour(const int &neighbour, std::vector<char> &dataBuffer);
+  void receiveDataFromNeighbor(const int &neighbor, std::vector<char> &dataBuffer);
 };

@@ -1,5 +1,5 @@
 /**
- * @file ParticleCommunicator.h
+ * @file ParticleCommunicatorImpl.h
  * @author J. Körner
  * @date 28.07.2021
  */
@@ -9,30 +9,34 @@
 
 #include "ParticleSerializationTools.h"
 
-ParticleCommunicator::ParticleCommunicator(const autopas::AutoPas_MPI_Comm &communicator)
+template <class ParticleClass>
+ParticleCommunicator<ParticleClass>::ParticleCommunicator(const autopas::AutoPas_MPI_Comm &communicator)
     : _communicator(communicator) {}
 
-void ParticleCommunicator::sendParticles(const std::vector<ParticleType> &particles, const int &receiver) {
+template <class ParticleClass>
+void ParticleCommunicator<ParticleClass>::sendParticles(const std::vector<ParticleClass> &particles, const int &receiver) {
   std::vector<char> buffer;
 
   for (const auto &particle : particles) {
     ParticleSerializationTools::serializeParticle(particle, buffer);
   }
 
-  sendDataToNeighbour(buffer, receiver);
+  sendDataToNeighbor(buffer, receiver);
 }
 
-void ParticleCommunicator::receiveParticles(std::vector<ParticleType> &receivedParticles, const int &source) {
+template <class ParticleClass>
+void ParticleCommunicator<ParticleClass>::receiveParticles(std::vector<ParticleClass> &receivedParticles, const int &source) {
   std::vector<char> receiveBuffer;
 
-  receiveDataFromNeighbour(source, receiveBuffer);
+  receiveDataFromNeighbor(source, receiveBuffer);
 
   if (!receiveBuffer.empty()) {
     ParticleSerializationTools::deserializeParticles(receiveBuffer, receivedParticles);
   }
 }
 
-void ParticleCommunicator::waitForSendRequests() {
+template <class ParticleClass>
+void ParticleCommunicator<ParticleClass>::waitForSendRequests() {
   std::vector<autopas::AutoPas_MPI_Status> sendStates;
   sendStates.resize(_sendRequests.size());
   autopas::AutoPas_MPI_Waitall(static_cast<int>(_sendRequests.size()), _sendRequests.data(), sendStates.data());
@@ -40,7 +44,8 @@ void ParticleCommunicator::waitForSendRequests() {
   _sendBuffers.clear();
 }
 
-void ParticleCommunicator::sendDataToNeighbour(const std::vector<char> &sendBuffer, const int &neighbour) {
+template <class ParticleClass>
+void ParticleCommunicator<ParticleClass>::sendDataToNeighbor(const std::vector<char> &sendBuffer, const int &neighbour) {
   _sendBuffers.push_back(sendBuffer);
 
   autopas::AutoPas_MPI_Request sendRequest{};
@@ -50,7 +55,8 @@ void ParticleCommunicator::sendDataToNeighbour(const std::vector<char> &sendBuff
                              _communicator, &_sendRequests.back());
 }
 
-void ParticleCommunicator::receiveDataFromNeighbour(const int &neighbour, std::vector<char> &receiveBuffer) {
+template <class ParticleClass>
+void ParticleCommunicator<ParticleClass>::receiveDataFromNeighbor(const int &neighbour, std::vector<char> &receiveBuffer) {
   autopas::AutoPas_MPI_Status status;
   autopas::AutoPas_MPI_Probe(neighbour, 0, _communicator, &status);
 
