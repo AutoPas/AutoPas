@@ -18,6 +18,7 @@
 /**
  * The ParallelVtkWriter can be used to create vtk-files for MPI parallel processes.
  */
+template <class ParticleClass>
 class ParallelVtkWriter {
  public:
   /**
@@ -40,8 +41,8 @@ class ParallelVtkWriter {
    * @param autoPasContainer The AutoPas container whose owned particles will be logged.
    * @param decomposition: The decomposition of the global domain.
    */
-  void recordTimestep(size_t currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer,
-                      const RegularGridDecomposition &decomposition);
+  void recordTimestep(size_t currentIteration, const autopas::AutoPas<ParticleClass> &autoPasContainer,
+                      const RegularGridDecomposition<ParticleClass> &decomposition);
 
  private:
   /**
@@ -98,7 +99,7 @@ class ParallelVtkWriter {
    * @param currentIteration: The simulations current iteration.
    * @param autoPasContainer The AutoPas container whose owned particles will be logged.
    */
-  void recordParticleStates(size_t currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer);
+  void recordParticleStates(size_t currentIteration, const autopas::AutoPas<ParticleClass> &autoPasContainer);
 
   /**
    * Writes the current domain subdivision into vtk files.
@@ -107,7 +108,7 @@ class ParallelVtkWriter {
    * @param decomposition: The simulations domain decomposition.
    */
   void recordDomainSubdivision(size_t currentIteration, const autopas::Configuration &autoPasConfiguration,
-                               const RegularGridDecomposition &decomposition);
+                               const RegularGridDecomposition<ParticleClass> &decomposition);
 
   /**
    * Calculates the whole extent of the decompositions local domain.
@@ -117,7 +118,7 @@ class ParallelVtkWriter {
    * @param domainDecomposition: The simulations domain decomposition.
    * @return the whole extent of the local domain.
    */
-  static std::array<int, 6> calculateWholeExtent(const RegularGridDecomposition &domainDecomposition);
+  static std::array<int, 6> calculateWholeExtent(const RegularGridDecomposition<ParticleClass> &domainDecomposition);
 
   /**
    * Tries to create a folder for the current writer session and stores it in _sessionFolderPath.
@@ -135,7 +136,7 @@ class ParallelVtkWriter {
    * @param currentIteration: The simulation's current iteration.
    * @param decomposition: The decomposition of the domain.
    */
-  void createPvtsFile(size_t currentIteration, const RegularGridDecomposition &decomposition);
+  void createPvtsFile(size_t currentIteration, const RegularGridDecomposition<ParticleClass> &decomposition);
 
   /**
    * Tries to create a folder at a location.
