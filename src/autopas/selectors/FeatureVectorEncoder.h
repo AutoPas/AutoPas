@@ -91,7 +91,7 @@ class FeatureVectorEncoder {
     _newton3Options = newton3Options;
 
     _oneHotDims = _containerTraversalEstimatorOptions.size() + _dataLayoutOptions.size() + _newton3Options.size() +
-                  tunableContinuousDims;
+                  verletRebuildFrequencies.size() + tunableContinuousDims;
 
     _discreteRestrictions[static_cast<size_t>(DiscreteIndices::containerTraversalEstimator)] =
         _containerTraversalEstimatorOptions.size();
