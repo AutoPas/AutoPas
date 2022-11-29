@@ -66,7 +66,7 @@ class ActiveHarmony : public TuningStrategyInterface {
         _nonLocalServer(getenv("HARMONY_HOST") != nullptr and
                         mpiStrategyOption == MPIStrategyOption::divideAndConquer) {
     auto cellSizeDummy = NumberSetFinite<double>{-1};
-    auto rebuildFreqDummy = NumberSetFinite<int>{5,15};
+    auto rebuildFreqDummy = NumberSetFinite<int>{-1};
     utils::AutoPasConfigurationCommunicator::distributeConfigurations(
         _allowedContainerOptions, cellSizeDummy, _allowedTraversalOptions, _allowedLoadEstimatorOptions,
         _allowedDataLayoutOptions, _allowedNewton3Options, rebuildFreqDummy, 0, 1);
@@ -238,7 +238,7 @@ void ActiveHarmony::fetchConfiguration() {
     cellSizeFactor = ah_get_real(htask, cellSizeFactorsName);
   }
 
-  int verletRebuildFrequency = 1;
+  int verletRebuildFrequency = 5;
   //TODO: copy cellSizeFactor
 
   _currentConfig = Configuration(containerOption, cellSizeFactor, traversalOption, loadEstimatorOption,
