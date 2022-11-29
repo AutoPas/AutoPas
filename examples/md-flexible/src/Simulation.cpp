@@ -93,7 +93,7 @@ size_t getTerminalWidth() {
 
 template <class ParticleClass>
 Simulation<ParticleClass>::Simulation(const MDFlexConfig &configuration,
-                       std::shared_ptr<RegularGridDecomposition> &domainDecomposition)
+                       std::shared_ptr<RegularGridDecomposition<ParticleClass>> &domainDecomposition)
     : _configuration(configuration),
       _domainDecomposition(domainDecomposition),
       _createVtkFiles(not configuration.vtkFileName.value.empty()),
@@ -484,7 +484,7 @@ bool Simulation<ParticleClass>::calculatePairwiseForces() {
 }
 
 template <class ParticleClass>
-bool Simulation<ParticleClass>::calculateGlobalForces(const std::array<double, 3> &globalForce) {
+void Simulation<ParticleClass>::calculateGlobalForces(const std::array<double, 3> &globalForce) {
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel shared(_autoPasContainer)
 #endif
@@ -620,7 +620,7 @@ bool Simulation<ParticleClass>::needsMoreIterations() const {
 }
 
 template <class ParticleClass>
-bool Simulation<ParticleClass>::checkNumParticles(size_t expectedNumParticlesGlobal, size_t numParticlesCurrentlyMigratingLocal,
+void Simulation<ParticleClass>::checkNumParticles(size_t expectedNumParticlesGlobal, size_t numParticlesCurrentlyMigratingLocal,
                                    int lineNumber) {
   if (std::all_of(_configuration.boundaryOption.value.begin(), _configuration.boundaryOption.value.end(),
                   [](const auto &boundary) {
@@ -650,14 +650,15 @@ bool Simulation<ParticleClass>::checkNumParticles(size_t expectedNumParticlesGlo
   }
 }
 
-template <class T, class F, class ParticleClass>
+template <class ParticleClass>
+template <class T, class F>
 T Simulation<ParticleClass>::applyWithChosenFunctor(F f) {
   const double cutoff = _configuration.cutoff.value;
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
   switch (_configuration.functorOption.value) {
     case MDFlexConfig::FunctorOption::lj12_6: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
-      return f(autopas::LJFunctor<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
+      return f(autopas::LJFunctor<ParticleClass, true, true>{cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor AutoVec. Activate it via `cmake "
@@ -666,7 +667,7 @@ T Simulation<ParticleClass>::applyWithChosenFunctor(F f) {
     }
     case MDFlexConfig::FunctorOption::lj12_6_Globals: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
-      return f(autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>{
+      return f(autopas::LJFunctor<ParticleClass, true, true, autopas::FunctorN3Modes::Both, true>{
           cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
@@ -676,7 +677,7 @@ T Simulation<ParticleClass>::applyWithChosenFunctor(F f) {
     }
     case MDFlexConfig::FunctorOption::lj12_6_AVX: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
-      return f(autopas::LJFunctorAVX<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
+      return f(autopas::LJFunctorAVX<ParticleClass, true, true>{cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor AVX. Activate it via `cmake "
@@ -685,7 +686,7 @@ T Simulation<ParticleClass>::applyWithChosenFunctor(F f) {
     }
     case MDFlexConfig::FunctorOption::lj12_6_SVE: {
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
-      return f(autopas::LJFunctorSVE<ParticleType, true, true> functor{cutoff, particlePropertiesLibrary});
+      return f(autopas::LJFunctorSVE<ParticleClass, true, true> functor{cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor SVE. Activate it via `cmake "
