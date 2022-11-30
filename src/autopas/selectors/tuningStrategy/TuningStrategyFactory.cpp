@@ -35,6 +35,8 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
   std::set<autopas::LoadEstimatorOption> fallbackLoadEstimators;
   std::set<autopas::DataLayoutOption> fallbackDataLayouts;
   std::set<autopas::Newton3Option> fallbackNewton3;
+  std::set<autopas::NumberSet<int>> fallbackVerletRebuildFrequenzies;
+
   // if an mpi-strategy is used, the local search space is set up here, as well as the fallback options.
   switch (static_cast<autopas::MPIStrategyOption>(mpiStrategyOption)) {
     case MPIStrategyOption::noMPI: {
@@ -61,6 +63,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
         fallbackCellSizeFactors = std::make_unique<autopas::NumberInterval<double>>(allowedCellSizeFactors.getMin(),
                                                                                     allowedCellSizeFactors.getMax());
       }
+      fallbackVerletRebuildFrquencies = std::make_unique<autopas::NumberSetFinite<int>>(allowedVerletRebuildFrequencies.getAll());
       fallbackTraversals = std::set<autopas::TraversalOption>(allowedTraversals);
       fallbackLoadEstimators = std::set<autopas::LoadEstimatorOption>(allowedLoadEstimators);
       fallbackDataLayouts = std::set<autopas::DataLayoutOption>(allowedDataLayouts);
