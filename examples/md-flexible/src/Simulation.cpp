@@ -390,7 +390,7 @@ std::string Simulation<ParticleClass>::timerToString(const std::string &name, lo
 template <class ParticleClass>
 void Simulation<ParticleClass>::updatePositions() {
   _timers.positionUpdate.start();
-  TimeDiscretization::calculatePositions<ParticleClass>(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+  TimeDiscretization::calculatePositionsAndUpdateForces<ParticleClass>(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                                          _configuration.deltaT.value, _configuration.globalForce.value,
                                          _configuration.fastParticlesThrow.value);
   _timers.positionUpdate.stop();
