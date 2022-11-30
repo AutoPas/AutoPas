@@ -182,7 +182,7 @@ class ParticlePropertiesLibrary {
    * @return
    */
   inline const double *getMixingDataPtr(intType i, intType j) {
-    return reinterpret_cast<const double *>(&_computedMixingData[i * _numRegisteredTypes + j]);
+    return reinterpret_cast<const double *>(&_computedMixingData[i * _numRegisteredSiteTypes + j]);
   }
 
   /**

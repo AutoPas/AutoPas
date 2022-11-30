@@ -11,5 +11,6 @@
 #include "src/TypeDefinitions.h"
 
 //! @cond Doxygen_Suppress
-template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::FlopCounterFunctor<ParticleType> *);
+template bool autopas::AutoPas<SingleSiteMolecule>::iteratePairwise(autopas::FlopCounterFunctor<SingleSiteMolecule> *);
+template bool autopas::AutoPas<MultiSiteMolecule>::iteratePairwise(autopas::FlopCounterFunctor<MultiSiteMolecule> *);
 //! @endcond
