@@ -310,7 +310,7 @@ std::vector<ParticleClass> RegularGridDecomposition<ParticleClass>::sendAndRecei
   std::vector<ParticleClass> receivedParticles{};
   // only actually send / receive if we are not sending / receiving to ourselves
   if (_mpiCommunicationNeeded and leftNeighbor != _domainIndex) {
-    ParticleCommunicator particleCommunicator(_communicator);
+    ParticleCommunicator<ParticleClass> particleCommunicator(_communicator);
 
     particleCommunicator.sendParticles(particlesToLeft, leftNeighbor);
     particleCommunicator.sendParticles(particlesToRight, rightNeighbor);

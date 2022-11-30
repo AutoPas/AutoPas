@@ -13,6 +13,8 @@
 // Declare the main AutoPas class as extern template instantiation. It is instantiated in AutoPasClass.cpp.
 extern template class autopas::AutoPas<SingleSiteMolecule>;
 extern template class autopas::AutoPas<MultiSiteMolecule>;
+extern template class Simulation<SingleSiteMolecule>;
+extern template class Simulation<MultiSiteMolecule>;
 
 template <class ParticleClass>
 void mainHelper(MDFlexConfig &configuration, const int argc, char ***argv) {

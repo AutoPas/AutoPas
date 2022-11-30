@@ -20,6 +20,7 @@
 // instantiation. They are instantiated in the respective cpp file inside the templateInstantiations folder.
 //! @cond Doxygen_Suppress
 extern template class autopas::AutoPas<SingleSiteMolecule>;
+extern template class autopas::AutoPas<MultiSiteMolecule>;
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
 extern template bool autopas::AutoPas<SingleSiteMolecule>::iteratePairwise(autopas::LJFunctor<SingleSiteMolecule, true, true> *);
 #endif

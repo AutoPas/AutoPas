@@ -15,7 +15,7 @@
 
 /**
  * Thermostat to adjust the Temperature of the Simulation.
- * Todo
+ * Todo Update for rotation
  */
 namespace Thermostat {
 
@@ -23,12 +23,14 @@ namespace {
 /**
  * Add a random velocity according to the Maxwell-Boltzmann distribution to the particle.
  *
+ * @tparam ParticleClass Particle Class.
  * @param p The particle to initialize.
  * @param averageVelocity Average velocity per dimension to be added.
  * @param randomEngine Random engine used for the generation of the velocity.
  * @param normalDistribution Distribution used for constructing the maxwell boltzmann distribution.
  */
-void addMaxwellBoltzmannDistributedVelocity(ParticleType &p, const double averageVelocity,
+template <class ParticleClass>
+void addMaxwellBoltzmannDistributedVelocity(ParticleClass &p, const double averageVelocity,
                                             std::default_random_engine &randomEngine,
                                             std::normal_distribution<double> &normalDistribution) {
   // when adding independent normally distributed values to all velocity components
