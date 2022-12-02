@@ -29,24 +29,23 @@ TEST_F(BayesianSearchTest, testMaxEvidence) {
 }
 
 TEST_F(BayesianSearchTest, testFindBest) {
-  size_t maxEvidence = 7;
+  size_t maxEvidence = 8;
   unsigned long seed = 21;
   autopas::BayesianSearch bayesSearch({autopas::ContainerOption::linkedCells}, autopas::NumberSetFinite<double>({1, 2}),
                                       {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01},
                                       {autopas::LoadEstimatorOption::none},
                                       {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos},
-                                      autopas::NumberSetFinite<int>({5, 10}),
+                                      autopas::NumberSetFinite<int>({5, 20}),
                                       {autopas::Newton3Option::disabled, autopas::Newton3Option::enabled}, maxEvidence,
                                       autopas::AcquisitionFunctionOption::upperConfidenceBound, 50, seed);
 
   // configuration to find
   autopas::FeatureVector best(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08,
                               autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
-                              autopas::Newton3Option::enabled, 5);
+                              autopas::Newton3Option::enabled, 20);
 
   while (bayesSearch.tune()) {
     autopas::FeatureVector current(bayesSearch.getCurrentConfiguration());
-    std::cout<<bayesSearch.getCurrentConfiguration().getCSVLine()<<std::endl;
 
     Eigen::VectorXd diff = best - current;
     double distanceSquared = diff.array().square().sum();

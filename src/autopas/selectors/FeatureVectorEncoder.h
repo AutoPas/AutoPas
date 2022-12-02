@@ -89,9 +89,11 @@ class FeatureVectorEncoder {
     _containerTraversalEstimatorOptions = containerTraversalEstimatorOptions;
     _dataLayoutOptions = dataLayoutOptions;
     _newton3Options = newton3Options;
+    auto verletRebuildFrequenciestmp = verletRebuildFrequencies.getAll();
+    _verletRebuildFrequencies = std::vector<int>(verletRebuildFrequenciestmp.begin(), verletRebuildFrequenciestmp.end());
 
     _oneHotDims = _containerTraversalEstimatorOptions.size() + _dataLayoutOptions.size() + _newton3Options.size() +
-                  verletRebuildFrequencies.size() + tunableContinuousDims;
+                  _verletRebuildFrequencies.size() + tunableContinuousDims;
 
     _discreteRestrictions[static_cast<size_t>(DiscreteIndices::containerTraversalEstimator)] =
         _containerTraversalEstimatorOptions.size();
@@ -397,7 +399,7 @@ class FeatureVectorEncoder {
 
     ContinuousDimensionType continuousValues;
     continuousValues[static_cast<size_t>(ContinuousIndices::cellSizeFactor)] = vec.cellSizeFactor;
-    discreteValues[static_cast<size_t>(DiscreteIndices::verletRebuildFrequency)] = vec.verletRebuildFrequency;
+    discreteValues[static_cast<size_t>(DiscreteIndices::verletRebuildFrequency)] = getIndex(_verletRebuildFrequencies, vec.verletRebuildFrequency);
 
     return std::make_pair(discreteValues, continuousValues);
   }
@@ -418,7 +420,7 @@ class FeatureVectorEncoder {
     auto newton3 = _newton3Options[discreteValues[static_cast<size_t>(DiscreteIndices::newton3)]];
 
     auto cellSizeFactor = continuousValues[static_cast<size_t>(ContinuousIndices::cellSizeFactor)];
-    auto verletRebuildFrequency = discreteValues[static_cast<size_t>(DiscreteIndices::verletRebuildFrequency)];
+    auto verletRebuildFrequency = _verletRebuildFrequencies[discreteValues[static_cast<size_t>(DiscreteIndices::verletRebuildFrequency)]];
 
     return FeatureVector(container, cellSizeFactor, traversal, estimator, dataLayout, newton3, verletRebuildFrequency);
   }
@@ -442,6 +444,7 @@ class FeatureVectorEncoder {
   std::vector<FeatureVector::ContainerTraversalEstimatorOption> _containerTraversalEstimatorOptions{};
   std::vector<DataLayoutOption> _dataLayoutOptions{};
   std::vector<Newton3Option> _newton3Options{};
+  std::vector<int> _verletRebuildFrequencies{};
 
   /**
    * Number of allowed options of each discrete dimension.
