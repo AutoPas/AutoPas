@@ -22,7 +22,6 @@ using ::testing::_;
 TEST_F(AutoTunerTest, testAllConfigurations) {
   std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {2, 4, 2};
   // adaptive domain size so sliced is always applicable.
-  // bBoxMax[1] = autopas::autopas::autopas_get_max_threads() * 2;
   const double cutoff = 1;
   const double cellSizeFactor = 1;
   const double verletSkinPerTimestep = 0;
