@@ -20,9 +20,9 @@ void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
   using autopas::utils::ArrayMath::dot;
   using autopas::utils::ArrayMath::mulScalar;
 
-  const auto maxAllowedDisplacement =
+  const auto maxAllowedDistanceMoved =
       autoPasContainer.getVerletSkin() / (2 * autoPasContainer.getVerletRebuildFrequency());
-  const auto maxAllowedDisplacementSquared = maxAllowedDisplacement * maxAllowedDisplacement;
+  const auto maxAllowedDistanceMovedSquared = maxAllowedDistanceMoved * maxAllowedDistanceMoved;
 
   bool throwException = false;
 
@@ -39,14 +39,14 @@ void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
     f = mulScalar(f, (deltaT * deltaT / (2 * m)));
     const auto displacement = add(v, f);
     // sanity check that particles are not too fast for the Verlet skin technique.
-    // If this condition is violated once this is not necessarily an error. Only if the total displacement over
+    // If this condition is violated once this is not necessarily an error. Only if the total distance traveled over
     // the whole rebuild frequency is farther than the skin we lose interactions.
-    const auto displacementDistSquared = dot(displacement, displacement);
-    if (displacementDistSquared > maxAllowedDisplacementSquared) {
+    const auto distanceMovedSquared = dot(displacement, displacement);
+    if (distanceMovedSquared > maxAllowedDistanceMoved) {
 #pragma omp critical
-      std::cerr << "A particle moved farther than skin/2/rebuildFrequency: " << std::sqrt(displacementDistSquared)
-                << " > " << autoPasContainer.getVerletSkin() << "/2/" << autoPasContainer.getVerletRebuildFrequency()
-                << " = " << maxAllowedDisplacement << "\n"
+      std::cerr << "A particle moved farther than skin/2/rebuildFrequency: " << std::sqrt(distanceMovedSquared) << " > "
+                << autoPasContainer.getVerletSkin() << "/2/" << autoPasContainer.getVerletRebuildFrequency() << " = "
+                << maxAllowedDistanceMoved << "\n"
                 << *iter << "\nNew Position: " << add(iter->getR(), displacement) << std::endl;
       if (fastParticlesThrow) {
         throwException = true;

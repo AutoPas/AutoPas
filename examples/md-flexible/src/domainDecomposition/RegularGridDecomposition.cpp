@@ -191,9 +191,9 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
     // See documentation for _neighborDomainIndices to explain the indexing
     const int leftNeighbor = _neighborDomainIndices[(dimensionIndex * 2) % _neighborCount];
     const int rightNeighbor = _neighborDomainIndices[(dimensionIndex * 2 + 1) % _neighborCount];
-    const auto haloParticlesThisDirection = sendAndReceiveParticlesLeftAndRight(
+    const auto receivedHaloParticles = sendAndReceiveParticlesLeftAndRight(
         particlesForLeftNeighbor, particlesForRightNeighbor, leftNeighbor, rightNeighbor);
-    haloParticles.insert(haloParticles.end(), haloParticlesThisDirection.begin(), haloParticlesThisDirection.end());
+    haloParticles.insert(haloParticles.end(), receivedHaloParticles.begin(), receivedHaloParticles.end());
   }
   for (const auto &particle : haloParticles) {
     autoPasContainer.addHaloParticle(particle);
@@ -236,11 +236,14 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
   }
   // sanity check: if the simulation is a closed system there should be no emigrants left at this point.
   if (std::all_of(_boundaryType.begin(), _boundaryType.end(),
-                  [](const auto &boundary) { return boundary == options::BoundaryTypeOption::periodic; }) and
+                  [](const auto &boundary) {
+                    return boundary == options::BoundaryTypeOption::periodic or
+                           boundary == options::BoundaryTypeOption::reflective;
+                  }) and
       not emigrants.empty()) {
     using autopas::utils::ArrayUtils::operator<<;
     std::stringstream ss;
-    ss << "Rank " << _domainIndex << ": All boundaries are periodic but " << emigrants.size()
+    ss << "Rank " << _domainIndex << ": All boundaries are periodic or reflective but " << emigrants.size()
        << " migrants could not be re-inserted:\n"
        << autopas::utils::ArrayUtils::to_string(emigrants, "\n", {"", ""}) << "\n\n"
        << "Local box min: " << _localBoxMin << "\n"
@@ -291,7 +294,7 @@ std::vector<ParticleType> RegularGridDecomposition::sendAndReceiveParticlesLeftA
     const std::vector<ParticleType> &particlesToLeft, const std::vector<ParticleType> &particlesToRight,
     int leftNeighbor, int rightNeighbor) {
   std::vector<ParticleType> receivedParticles{};
-  // only actually send / receive if we are not talking to ourselves
+  // only actually send / receive if we are not sending / receiving to ourselves
   if (_mpiCommunicationNeeded and leftNeighbor != _domainIndex) {
     ParticleCommunicator particleCommunicator(_communicator);
 
