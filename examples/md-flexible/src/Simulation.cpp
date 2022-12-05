@@ -495,7 +495,7 @@ void Simulation::logMeasurements() {
     std::cout << timerToString("  Simulate                        ", simulate, maximumNumberOfDigits, total);
     std::cout << timerToString("    PositionUpdate                ", positionUpdate, maximumNumberOfDigits, simulate);
     std::cout << timerToString("    UpdateContainer               ", updateContainer, maximumNumberOfDigits, simulate);
-    std::cout << timerToString("    Boundaries:                   ", haloParticleExchange + migratingParticleExchange,
+    std::cout << timerToString("    Boundaries                    ", haloParticleExchange + migratingParticleExchange,
                                maximumNumberOfDigits, simulate);
     std::cout << timerToString("      HaloParticleExchange        ", haloParticleExchange, maximumNumberOfDigits,
                                haloParticleExchange + reflectParticlesAtBoundaries + migratingParticleExchange);
@@ -511,7 +511,7 @@ void Simulation::logMeasurements() {
                                forceUpdateTotal);
     std::cout << timerToString("      ForceUpdateTuning           ", forceUpdateTuning, maximumNumberOfDigits,
                                forceUpdateTotal);
-    std::cout << timerToString("      ForceUpdateNonTuning       ", forceUpdateNonTuning, maximumNumberOfDigits,
+    std::cout << timerToString("      ForceUpdateNonTuning        ", forceUpdateNonTuning, maximumNumberOfDigits,
                                forceUpdateTotal);
     std::cout << timerToString("    VelocityUpdate                ", velocityUpdate, maximumNumberOfDigits, simulate);
     std::cout << timerToString("    Thermostat                    ", thermostat, maximumNumberOfDigits, simulate);
