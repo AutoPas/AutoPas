@@ -16,6 +16,7 @@ option(MD_FLEXIBLE_USE_MPI "Enable MPI parallelism for md-flexible." OFF)
 
 target_link_libraries(md-flexible PUBLIC autopas autopasTools yaml-cpp  ${ALL_LIB} $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
 
+option(MD_FLEXIBLE_USE_MULTI_SITE "Enable use of multi-site molecule types, rotational integration, and compile multi-site variants of functors." OFF)
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor without calculation of global values." OFF)
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS "Compile AutoVec Functor with calculation of global values." OFF)
 option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor without calculation of global values." ON)
@@ -24,11 +25,22 @@ option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Fun
 target_compile_definitions(
         md-flexible
         PUBLIC
+        $<$<BOOL:${MD_FLEXIBLE_USE_MULTI_SITE}>:MD_FLEXIBLE_USE_MULTI_SITE>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AUTOVEC}>:MD_FLEXIBLE_FUNCTOR_AUTOVEC>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS}>:MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AVX}>:MD_FLEXIBLE_FUNCTOR_AVX>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SVE}>:MD_FLEXIBLE_FUNCTOR_SVE>
 )
+
+# --- display warnings if single-/multi-site mode is used with a functor type that has not been implemented ---
+if (MD_FLEXIBLE_USE_MULTI_SITE)
+    if (MD_FLEXIBLE_FUNCTOR_AVX)
+        message(STATUS "AVX Lennard-Jones functor has not been implemented for Multi-Site Molecules")
+    endif()
+    if (MD_FLEXIBLE_FUNCTOR_SVE)
+        message(STATUS "SVE Lennard-Jones functor has not been implemented for Multi-Site Molecules")
+    endif()
+endif()
 
 # --- copy script files to build dir ---
 file(
