@@ -452,15 +452,22 @@ bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild
 }
 
 /**
- * Performs the remaining needed traversal for the additional particles.
+ * Performs the interactions ParticleContainer::iteratePairwise() did not cover.
+ *
+ * These interactions are:
+ *  - particleBuffer    <-> container
+ *  - haloParticleBuffer -> container
+ *  - particleBuffer    <-> particleBuffer
+ *  - haloParticleBuffer -> particleBuffer
+ *
  * @tparam newton3
  * @tparam Particle
- * @tparam T
+ * @tparam T (Smart) pointer Type of the particle container.
  * @tparam PairwiseFunctor
  * @param f
- * @param containerPtr
- * @param particleBuffers
- * @param haloParticleBuffers
+ * @param containerPtr (Smart) Pointer to the container
+ * @param particleBuffers vector of particle buffers. These particles' force vectors will be updated.
+ * @param haloParticleBuffers vector of halo particle buffers. These particles' force vectors will not necessarily be updated.
  * @note If the buffers are replaced with actual cells, we could use the CellFunctor to simplify things and potentially
  * even use SoA.
  */
