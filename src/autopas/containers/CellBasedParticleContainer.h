@@ -61,42 +61,42 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
   /**
    * @copydoc autopas::ParticleContainerInterface::getBoxMax()
    */
-  [[nodiscard]] const std::array<double, 3> &getBoxMax() const override final { return _boxMax; }
+  [[nodiscard]] const std::array<double, 3> &getBoxMax() const final { return _boxMax; }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::setBoxMax()
    */
-  void setBoxMax(const std::array<double, 3> &boxMax) override final { _boxMax = boxMax; }
+  void setBoxMax(const std::array<double, 3> &boxMax) final { _boxMax = boxMax; }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getBoxMin()
    */
-  [[nodiscard]] const std::array<double, 3> &getBoxMin() const override final { return _boxMin; }
+  [[nodiscard]] const std::array<double, 3> &getBoxMin() const final { return _boxMin; }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::setBoxMin()
    */
-  void setBoxMin(const std::array<double, 3> &boxMin) override final { _boxMin = boxMin; }
+  void setBoxMin(const std::array<double, 3> &boxMin) final { _boxMin = boxMin; }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getCutoff()
    */
-  [[nodiscard]] double getCutoff() const override final { return _cutoff; }
+  [[nodiscard]] double getCutoff() const final { return _cutoff; }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::setCutoff()
    */
-  void setCutoff(double cutoff) override final { _cutoff = cutoff; }
+  void setCutoff(double cutoff) final { _cutoff = cutoff; }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getInteractionLength()
    */
-  [[nodiscard]] double getInteractionLength() const override final { return _cutoff + _skin; }
+  [[nodiscard]] double getInteractionLength() const final { return _cutoff + _skin; }
   /**
    * Returns the total verlet Skin length
    * @return _skinPerTimestep * _rebuildFrequency
    */
-  [[nodiscard]] double getVerletSkin() const override final { return _skin; }
+  [[nodiscard]] double getVerletSkin() const final { return _skin; }
 
   /**
    * Deletes all particles from the container.

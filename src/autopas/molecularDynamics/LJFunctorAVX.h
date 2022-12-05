@@ -617,8 +617,8 @@ class LJFunctorAVX
    */
   // clang-format on
   inline void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
-                        const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
-                        bool newton3) final {
+                               const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
+                               bool newton3) final {
     if (soa.getNumberOfParticles() == 0 or neighborList.empty()) return;
     if (newton3) {
       SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
@@ -630,7 +630,7 @@ class LJFunctorAVX
  private:
   template <bool newton3>
   inline void SoAFunctorVerletImpl(SoAView<SoAArraysType> soa, const size_t indexFirst,
-                            const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
+                                   const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
 #ifdef __AVX__
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
     if (ownedStatePtr[indexFirst] == OwnershipState::dummy) {

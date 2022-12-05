@@ -59,20 +59,20 @@ class SingleCellIteratorWrapper : public SingleCellIteratorInterface<Particle, m
     return *this;
   }
 
-  inline SingleCellIteratorWrapper<Particle, modifiable> &operator++() override final {
+  inline SingleCellIteratorWrapper<Particle, modifiable> &operator++() final {
     _particleIterator->operator++();
     return *this;
   }
 
-  inline ParticleType &operator*() const override final { return _particleIterator->operator*(); }
+  inline ParticleType &operator*() const final { return _particleIterator->operator*(); }
 
-  inline bool isValid() const override final { return _particleIterator->isValid(); }
+  inline bool isValid() const final { return _particleIterator->isValid(); }
 
-  inline bool operator==(const SingleCellIteratorInterface<Particle, modifiable> &rhs) const override final {
+  inline bool operator==(const SingleCellIteratorInterface<Particle, modifiable> &rhs) const final {
     return _particleIterator->operator==(rhs);
   }
 
-  inline bool operator!=(const SingleCellIteratorInterface<Particle, modifiable> &rhs) const override final {
+  inline bool operator!=(const SingleCellIteratorInterface<Particle, modifiable> &rhs) const final {
     return _particleIterator->operator!=(rhs);
   }
 
@@ -92,7 +92,7 @@ class SingleCellIteratorWrapper : public SingleCellIteratorInterface<Particle, m
    */
   bool operator!=(const bool &input) const { return not(*this == input); }
 
-  inline size_t getIndex() const override final { return _particleIterator->getIndex(); }
+  inline size_t getIndex() const final { return _particleIterator->getIndex(); }
 
   /**
    * Returns the stored single cell iterator.
@@ -101,7 +101,7 @@ class SingleCellIteratorWrapper : public SingleCellIteratorInterface<Particle, m
   inline SingleCellIteratorInterface<Particle, modifiable> *get() const { return _particleIterator.get(); }
 
  protected:
-  inline void deleteCurrentParticleImpl() override final {
+  inline void deleteCurrentParticleImpl() final {
     if constexpr (modifiable) {
       internal::deleteParticle(*_particleIterator);
     } else {

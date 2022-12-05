@@ -63,14 +63,14 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle, modif
     return *this;
   }
 
-  inline ParticleIteratorWrapper<Particle, modifiable> &operator++() override final {
+  inline ParticleIteratorWrapper<Particle, modifiable> &operator++() final {
     _particleIterator->operator++();
     return *this;
   }
 
-  inline ParticleType &operator*() const override final { return _particleIterator->operator*(); }
+  inline ParticleType &operator*() const final { return _particleIterator->operator*(); }
 
-  inline bool isValid() const override final {
+  inline bool isValid() const final {
     if (_particleIterator) {
       return _particleIterator->isValid();
     } else {
@@ -104,7 +104,7 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle, modif
   }
 
  protected:
-  inline void deleteCurrentParticleImpl() override final {
+  inline void deleteCurrentParticleImpl() final {
     if constexpr (modifiable) {
       internal::deleteParticle(*_particleIterator);
     } else {

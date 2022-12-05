@@ -218,42 +218,42 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   /**
    * @copydoc autopas::ParticleContainerInterface::getBoxMax()
    */
-  [[nodiscard]] const std::array<double, 3> &getBoxMax() const override final { return _linkedCells.getBoxMax(); }
+  [[nodiscard]] const std::array<double, 3> &getBoxMax() const final { return _linkedCells.getBoxMax(); }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::setBoxMax()
    */
-  void setBoxMax(const std::array<double, 3> &boxMax) override final { _linkedCells.setBoxMax(boxMax); }
+  void setBoxMax(const std::array<double, 3> &boxMax) final { _linkedCells.setBoxMax(boxMax); }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getBoxMin()
    */
-  [[nodiscard]] const std::array<double, 3> &getBoxMin() const override final { return _linkedCells.getBoxMin(); }
+  [[nodiscard]] const std::array<double, 3> &getBoxMin() const final { return _linkedCells.getBoxMin(); }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::setBoxMin()
    */
-  void setBoxMin(const std::array<double, 3> &boxMin) override final { _linkedCells.setBoxMin(boxMin); }
+  void setBoxMin(const std::array<double, 3> &boxMin) final { _linkedCells.setBoxMin(boxMin); }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getCutoff()
    */
-  [[nodiscard]] double getCutoff() const override final { return _linkedCells.getCutoff(); }
+  [[nodiscard]] double getCutoff() const final { return _linkedCells.getCutoff(); }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::setCutoff()
    */
-  void setCutoff(double cutoff) override final { _linkedCells.setCutoff(cutoff); }
+  void setCutoff(double cutoff) final { _linkedCells.setCutoff(cutoff); }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getVerletSkin()
    */
-  [[nodiscard]] double getVerletSkin() const override final { return _linkedCells.getVerletSkin(); }
+  [[nodiscard]] double getVerletSkin() const final { return _linkedCells.getVerletSkin(); }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getInteractionLength()
    */
-  [[nodiscard]] double getInteractionLength() const override final { return _linkedCells.getInteractionLength(); }
+  [[nodiscard]] double getInteractionLength() const final { return _linkedCells.getInteractionLength(); }
 
  protected:
   /// internal linked cells storage, handles Particle storage and used to build verlet lists
