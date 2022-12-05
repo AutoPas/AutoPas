@@ -23,7 +23,6 @@
  * Handles minimal initialization requirements for MD-Flexible simulations.
  * Derive this class to create custom simulations.
  */
-template <class ParticleClass>
 class Simulation {
  public:
   /**
@@ -31,7 +30,7 @@ class Simulation {
    * @param configuration: The configuration of this simulation.
    * @param domainDecomposition: The domain decomposition used for this simulation
    */
-  Simulation(const MDFlexConfig &configuration, std::shared_ptr<RegularGridDecomposition<ParticleClass>> &domainDecomposition);
+  Simulation(const MDFlexConfig &configuration, std::shared_ptr<RegularGridDecomposition> &domainDecomposition);
 
   /**
    * Destructor.
@@ -39,7 +38,9 @@ class Simulation {
   ~Simulation() = default;
 
   /**
-   * Runs the simulation, implementing velocity verlet. Rotational variant is an implementation of the the quaternion
+   * Runs the simulation, implementing velocity verlet.
+   *
+   * If md-flexible is compiled for multi-site molecules, rotational integration is done with an implementation of the the quaternion
    * approach (A) as described in Rozmanov, 2010, Robust rotational-velocity-Verlet integration methods.
    */
   void run();
@@ -62,7 +63,7 @@ class Simulation {
    * The the nodes' AutoPas container used for simulation.
    * This member will not be initialized by the constructor and therefore has to be initialized by the deriving class.
    */
-  std::shared_ptr<autopas::AutoPas<ParticleClass>> _autoPasContainer;
+  std::shared_ptr<autopas::AutoPas<ParticleType>> _autoPasContainer;
 
   /**
    * Shared pointer to the logfile.
@@ -218,7 +219,7 @@ class Simulation {
   /**
    * Parallel VTK file writer.
    */
-  std::shared_ptr<ParallelVtkWriter<ParticleClass>> _vtkWriter;
+  std::shared_ptr<ParallelVtkWriter> _vtkWriter;
 
   /**
    * Defines, if vtk files should be created or not.
@@ -285,8 +286,7 @@ class Simulation {
   /**
    * This simulation's domain decomposition.
    */
-  std::shared_ptr<RegularGridDecomposition<ParticleClass>> _domainDecomposition;
-
+  std::shared_ptr<RegularGridDecomposition> _domainDecomposition;
   /**
    * If MPI is enabled, accumulates the times of all ranks on rank 0.
    * Otherwise, this function does nothing.

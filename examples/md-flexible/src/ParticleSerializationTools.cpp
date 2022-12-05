@@ -76,31 +76,26 @@ constexpr size_t multiSitelAttributesSize = 200;
  * @param attributeVector: The container in which the serialized attribute will be stored.
  * @param startIndex: The startindex in the container where to store the serialized attribute.
  */
-template <bool isMultiSite, size_t I>
-void serializeAttribute(const autopas::MoleculeLJ &particle, std::vector<char> &attributeVector, size_t &startIndex) {
-  const auto attribute = isMultiSite ? particle.get<MultiSiteAttributes[I]>() : particle.get<SingleSiteAttributes[I]>();
+template <size_t I>
+void serializeAttribute(const ParticleType &particle, std::vector<char> &attributeVector, size_t &startIndex) {
+  const auto attribute = particle.get<Attributes[I]>();
   const auto sizeOfValue = sizeof(attribute);
   std::memcpy(&attributeVector[startIndex], &attribute, sizeOfValue);
   startIndex += sizeOfValue;
 }
 
 /**
- * Deserializes the attribute of simple molecule defined by I.
- * @tparam isMultiSite: Flag for if simulation is multi-site.
+ * Deserializes the attribute defined by I.
  * @param attributeVector: The vector containing the data which needs to be deserialized.
  * @param particle: The particle to which the serialized data will be applied.
  * @param startIndex: The start index in the attributeVector of the attribute which needs to be deserialized.
  */
-template <bool isMultiSite, size_t I>
-void deserializeAttribute(char *&attributeVector, autopas::MoleculeLJ &particle, size_t &startIndex) {
-  const auto attribute = isMultiSite ? particle.get<MultiSiteAttributes[I]>() : particle.get<SingleSiteAttributes[I]>();
+template <size_t I>
+void deserializeAttribute(char *&attributeVector, ParticleType &particle, size_t &startIndex) {
+  auto attribute = particle.get<Attributes[I]>();
   const auto sizeOfValue = sizeof(attribute);
   std::memcpy(&attribute, &attributeVector[startIndex], sizeOfValue);
-  if constexpr (isMultiSite) {
-    particle.set<MultiSiteAttributes[I]>(attribute);
-  } else {
-    particle.set<SingleSiteAttributes[I]>(attribute);
-  }
+  particle.set<Attributes[I]>(attribute);
   startIndex += sizeOfValue;
 }
 
@@ -109,13 +104,13 @@ void deserializeAttribute(char *&attributeVector, autopas::MoleculeLJ &particle,
  * @param particle: The particle which will be serialized.
  * @param serializedParticle: The char array of the particles serialized attributes.
  */
-template <size_t... I, class ParticleClass, bool isMultiSite>
-void serializeParticleImpl(const ParticleClass &particle, std::vector<char> &serializedParticle,
+template <size_t... I>
+void serializeParticleImpl(const ParticleType &particle, std::vector<char> &serializedParticle,
                            std::index_sequence<I...>) {
   // Serialize particle attributes
   size_t startIndex = 0;
-  std::vector<char> attributesVector(isMultiSite ? multiSitelAttributesSize : singleSiteAttributesSize);
-  (serializeAttribute<I, isMultiSite>(particle, attributesVector, startIndex), ...);
+  std::vector<char> attributesVector(AttributesSize);
+  (serializeAttribute<I>(particle, attributesVector, startIndex), ...);
 
   // Add serialized attributes to serialized particle
   serializedParticle.insert(serializedParticle.end(), attributesVector.begin(), attributesVector.end());
@@ -126,38 +121,26 @@ void serializeParticleImpl(const ParticleClass &particle, std::vector<char> &ser
  * @param particleData: The particle data which will be deserialized.
  * @param particle: The particle to which the deserialized attributes will be applied.
  */
-template <size_t... I, class ParticleClass, bool isMultiSite>
-void deserializeParticleImpl(char *particleData, ParticleClass &particle, std::index_sequence<I...>) {
+template <size_t... I>
+void deserializeParticleImpl(char *particleData, ParticleType &particle, std::index_sequence<I...>) {
   size_t startIndex = 0;
-  (deserializeAttribute<I, isMultiSite>(particleData, particle, startIndex), ...);
+  (deserializeAttribute<I>(particleData, particle, startIndex), ...);
 }
 }  // namespace
 
 namespace ParticleSerializationTools {
-template <bool isMultiSite, class ParticleClass>
-void serializeParticle(const ParticleClass &particle, std::vector<char> &serializedParticles) {
-  if constexpr (isMultiSite) {
-    serializeParticleImpl<ParticleClass, isMultiSite>(particle, serializedParticles, std::make_index_sequence<MultiSiteAttributes.size()>{});
-  } else {
-    serializeParticleImpl<ParticleClass, isMultiSite>(particle, serializedParticles, std::make_index_sequence<SingleSiteAttributes.size()>{});
-  }
+void serializeParticle(const ParticleType &particle, std::vector<char> &serializedParticles) {
+  serializeParticleImpl(particle, serializedParticles, std::make_index_sequence<Attributes.size()>{});
 }
 
-template <bool isMultiSite, class ParticleClass>
-void deserializeParticle(char *particleData, ParticleClass &particle) {
-  if constexpr (isMultiSite) {
-    deserializeParticleImpl<ParticleClass, isMultiSite>(particleData, particle, std::make_index_sequence<MultiSiteAttributes.size()>{});
-  } else {
-    deserializeParticleImpl<ParticleClass, isMultiSite>(particleData, particle, std::make_index_sequence<SingleSiteAttributes.size()>{});
-  }
-
+void deserializeParticle(char *particleData, ParticleType &particle) {
+  deserializeParticleImpl(particleData, particle, std::make_index_sequence<Attributes.size()>{});
 }
 
-template <bool isMultiSite, class ParticleClass>
-void deserializeParticles(std::vector<char> &particlesData, std::vector<ParticleClass> &particles) {
-  ParticleClass particle;
-  for (size_t i = 0; i < particlesData.size(); i += isMultiSite ? multiSitelAttributesSize : singleSiteAttributesSize) {
-    deserializeParticle<ParticleClass, isMultiSite>(&particlesData[i], particle);
+void deserializeParticles(std::vector<char> &particlesData, std::vector<ParticleType> &particles) {
+  ParticleType particle;
+  for (size_t i = 0; i < particlesData.size(); i += AttributesSize) {
+    deserializeParticle(&particlesData[i], particle);
     particles.push_back(particle);
   }
 }

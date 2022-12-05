@@ -13,8 +13,7 @@
 
 #include "autopas/utils/WrapMPI.h"
 
-template <class ParticleClass>
-ParallelVtkWriter<ParticleClass>::ParallelVtkWriter(std::string sessionName, const std::string &outputFolder,
+ParallelVtkWriter::ParallelVtkWriter(std::string sessionName, const std::string &outputFolder,
                                      const int &maximumNumberOfDigitsInIteration)
     : _sessionName(std::move(sessionName)), _maximumNumberOfDigitsInIteration(maximumNumberOfDigitsInIteration) {
   autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &_numberOfRanks);
@@ -40,9 +39,8 @@ ParallelVtkWriter<ParticleClass>::ParallelVtkWriter(std::string sessionName, con
   autopas::AutoPas_MPI_Bcast(_dataFolderPath.data(), dataFolderPathLength, AUTOPAS_MPI_CHAR, 0, AUTOPAS_MPI_COMM_WORLD);
 }
 
-template <class ParticleClass>
-void ParallelVtkWriter<ParticleClass>::recordTimestep(size_t currentIteration, const autopas::AutoPas<ParticleClass> &autoPasContainer,
-                                       const RegularGridDecomposition<ParticleClass> &decomposition) {
+void ParallelVtkWriter::recordTimestep(size_t currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer,
+                                       const RegularGridDecomposition &decomposition) {
   recordParticleStates(currentIteration, autoPasContainer);
   recordDomainSubdivision(currentIteration, autoPasContainer.getCurrentConfig(), decomposition);
 }
@@ -53,9 +51,8 @@ void ParallelVtkWriter<ParticleClass>::recordTimestep(size_t currentIteration, c
  * The streams can be combined to a single output stream after iterating over the particles, once.
  *  * ToDo: This file does not output any rotational qualities e.g. quaternion, angVel, torque
  */
-template <class ParticleClass>
-void ParallelVtkWriter<ParticleClass>::recordParticleStates(size_t currentIteration,
-                                             const autopas::AutoPas<ParticleClass> &autoPasContainer) {
+void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
+                                             const autopas::AutoPas<ParticleType> &autoPasContainer) {
   if (_mpiRank == 0) {
     createPvtuFile(currentIteration);
   }
@@ -132,10 +129,9 @@ void ParallelVtkWriter<ParticleClass>::recordParticleStates(size_t currentIterat
   timestepFile.close();
 }
 
-template <class ParticleClass>
-void ParallelVtkWriter<ParticleClass>::recordDomainSubdivision(size_t currentIteration,
+void ParallelVtkWriter::recordDomainSubdivision(size_t currentIteration,
                                                 const autopas::Configuration &autoPasConfiguration,
-                                                const RegularGridDecomposition<ParticleClass> &decomposition) {
+                                                const RegularGridDecomposition &decomposition) {
   if (_mpiRank == 0) {
     createPvtsFile(currentIteration, decomposition);
   }
@@ -195,8 +191,7 @@ void ParallelVtkWriter<ParticleClass>::recordDomainSubdivision(size_t currentIte
   timestepFile.close();
 }
 
-template <class ParticleClass>
-std::array<int, 6> ParallelVtkWriter<ParticleClass>::calculateWholeExtent(const RegularGridDecomposition<ParticleClass> &domainDecomposition) {
+std::array<int, 6> ParallelVtkWriter::calculateWholeExtent(const RegularGridDecomposition &domainDecomposition) {
   std::array<int, 6> wholeExtent{};
   std::array<int, 3> domainId = domainDecomposition.getDomainId();
   std::array<int, 3> decomposition = domainDecomposition.getDecomposition();
@@ -207,8 +202,7 @@ std::array<int, 6> ParallelVtkWriter<ParticleClass>::calculateWholeExtent(const 
   return wholeExtent;
 }
 
-template <class ParticleClass>
-void ParallelVtkWriter<ParticleClass>::tryCreateSessionAndDataFolders(const std::string &name, const std::string &location) {
+void ParallelVtkWriter::tryCreateSessionAndDataFolders(const std::string &name, const std::string &location) {
   if (not checkFileExists(location)) {
     tryCreateFolder(location, "./");
   }
@@ -220,8 +214,7 @@ void ParallelVtkWriter<ParticleClass>::tryCreateSessionAndDataFolders(const std:
   tryCreateFolder("data", _sessionFolderPath);
 }
 
-template <class ParticleClass>
-void ParallelVtkWriter<ParticleClass>::createPvtuFile(size_t currentIteration) {
+void ParallelVtkWriter::createPvtuFile(size_t currentIteration) {
   std::ostringstream filename;
   filename << _sessionFolderPath << _sessionName << "_" << std::setfill('0')
            << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".pvtu";
@@ -262,8 +255,7 @@ void ParallelVtkWriter<ParticleClass>::createPvtuFile(size_t currentIteration) {
   timestepFile.close();
 }
 
-template <class ParticleClass>
-void ParallelVtkWriter<ParticleClass>::createPvtsFile(size_t currentIteration, const RegularGridDecomposition<ParticleClass> &decomposition) {
+void ParallelVtkWriter::createPvtsFile(size_t currentIteration, const RegularGridDecomposition &decomposition) {
   std::ostringstream filename;
   filename << _sessionFolderPath << _sessionName << "_" << std::setfill('0')
            << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".pvts";
@@ -320,8 +312,7 @@ void ParallelVtkWriter<ParticleClass>::createPvtsFile(size_t currentIteration, c
   timestepFile.close();
 }
 
-template <class ParticleClass>
-void ParallelVtkWriter<ParticleClass>::tryCreateFolder(const std::string &name, const std::string &location) {
+void ParallelVtkWriter::tryCreateFolder(const std::string &name, const std::string &location) {
   try {
     // filesystem library unfortunately not available on all target systems e.g. Fugaku
     // std::filesystem::path newDirectoryPath(location + "/" + name);
@@ -334,8 +325,7 @@ void ParallelVtkWriter<ParticleClass>::tryCreateFolder(const std::string &name, 
   }
 }
 
-template <class ParticleClass>
-void ParallelVtkWriter<ParticleClass>::generateFilename(const std::string &filetype, size_t currentIteration,
+void ParallelVtkWriter::generateFilename(const std::string &filetype, size_t currentIteration,
                                          std::ostringstream &filenameStream) {
   filenameStream << _dataFolderPath << _sessionName << "_" << _mpiRank << "_" << std::setfill('0')
                  << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << "." << filetype;

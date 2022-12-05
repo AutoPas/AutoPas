@@ -20,7 +20,6 @@
  * This class can be used as a domain decomposition which divides the domain in equal sized rectangular subdomains.
  * The number of subdomains is equal to the number of MPI processes available.
  */
-template <class ParticleClass>
 class RegularGridDecomposition final : public DomainDecomposition {
  public:
   /**
@@ -116,20 +115,20 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Exchanges halo particles with all neighbors of the provided AutoPasContainer.
    * @param autoPasContainer: The container, where the halo particles originate from.
    */
-  void exchangeHaloParticles(autopas::AutoPas<ParticleClass> &autoPasContainer);
+  void exchangeHaloParticles(AutoPasType &autoPasContainer);
 
   /**
    * Exchanges migrating particles with all neighbors of the provided AutoPasContainer.
    * @param autoPasContainer: The container, where the migrating particles originate from.
    * @param emigrants: The emigrating particles to send to neighbors.
    */
-  void exchangeMigratingParticles(autopas::AutoPas<ParticleClass> &autoPasContainer, std::vector<ParticleClass> &emigrants);
+  void exchangeMigratingParticles(AutoPasType &autoPasContainer, std::vector<ParticleType> &emigrants);
 
   /**
    * Reflects particles within a reflective skin along the inside of a boundary.
    * @param autoPasContainer: The container, where the migrating particles originate from.
    */
-  void reflectParticlesAtBoundaries(autopas::AutoPas<ParticleClass> &autoPasContainer);
+  void reflectParticlesAtBoundaries(AutoPasType &autoPasContainer);
 
  private:
   /**
@@ -278,8 +277,8 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param rightNeighbor: The right neighbor's index / rank.
    * @return receivedParticles: Container for the particles received from either neighbor.
    */
-  std::vector<ParticleClass> sendAndReceiveParticlesLeftAndRight(const std::vector<ParticleClass> &particlesToLeft,
-                                                                const std::vector<ParticleClass> &particlesToRight,
+  std::vector<ParticleType> sendAndReceiveParticlesLeftAndRight(const std::vector<ParticleType> &particlesToLeft,
+                                                                const std::vector<ParticleType> &particlesToRight,
                                                                 int leftNeighbor, int rightNeighbor);
 
   /**
@@ -289,7 +288,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param direction: The direction along which the neighbor is located.
    * @return haloParticles: A vector of particles
    */
-  std::vector<ParticleClass> collectHaloParticlesForLeftNeighbor(autopas::AutoPas<ParticleClass> &autoPasContainer, size_t direction);
+  std::vector<ParticleType> collectHaloParticlesForLeftNeighbor(AutoPasType &autoPasContainer, size_t direction);
 
   /**
    * Collects the halo particles for the right neighbor.
@@ -298,7 +297,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param direction: The direction along which the neighbor is located.
    * @return haloParticles: The container the identified halo particles are gathered in to.
    */
-  std::vector<ParticleClass> collectHaloParticlesForRightNeighbor(autopas::AutoPas<ParticleClass> &autoPasContainer, size_t direction);
+  std::vector<ParticleType> collectHaloParticlesForRightNeighbor(AutoPasType &autoPasContainer, size_t direction);
 
   /**
    * Categorizes the provided particles as particles for the left or the right neighbor and adds them to the respective
@@ -310,8 +309,8 @@ class RegularGridDecomposition final : public DomainDecomposition {
    *    rightNeighborParticles: Contains the particles for the right neighbor after function execution.
    *    uncategorizedParticles: Contains particles which could neither be assigned to the left nor the right neighbor.
    */
-  std::tuple<std::vector<ParticleClass>, std::vector<ParticleClass>, std::vector<ParticleClass>>
-  categorizeParticlesIntoLeftAndRightNeighbor(const std::vector<ParticleClass> &particles, size_t direction);
+  std::tuple<std::vector<ParticleType>, std::vector<ParticleType>, std::vector<ParticleType>>
+  categorizeParticlesIntoLeftAndRightNeighbor(const std::vector<ParticleType> &particles, size_t direction);
 
   /**
    * Balances the subdomains of the grid decomposition using the inverted pressure balancing algorithm.

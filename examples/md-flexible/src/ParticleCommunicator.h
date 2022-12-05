@@ -13,7 +13,6 @@
 /**
  * Provides tools to communicate particles between MPI ranks.
  */
-template <class ParticleClass>
 class ParticleCommunicator {
  public:
   /**
@@ -32,14 +31,14 @@ class ParticleCommunicator {
    * @param particles The particles to be sent to the receiver.
    * @param receiver The recipient of the particles.
    */
-  void sendParticles(const std::vector<ParticleClass> &particles, const int &receiver);
+  void sendParticles(const std::vector<ParticleType> &particles, const int &receiver);
 
   /**
    * Receives particles sent by a sender.
    * @param receivedParticles The container where the received particles will be stored.
    * @param source The sender id/rank.
    */
-  void receiveParticles(std::vector<ParticleClass> &receivedParticles, const int &source);
+  void receiveParticles(std::vector<ParticleType> &receivedParticles, const int &source);
 
   /**
    * Waits for all send requests to be finished.
