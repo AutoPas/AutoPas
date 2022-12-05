@@ -467,7 +467,8 @@ bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild
  * @param f
  * @param containerPtr (Smart) Pointer to the container
  * @param particleBuffers vector of particle buffers. These particles' force vectors will be updated.
- * @param haloParticleBuffers vector of halo particle buffers. These particles' force vectors will not necessarily be updated.
+ * @param haloParticleBuffers vector of halo particle buffers. These particles' force vectors will not necessarily be
+ * updated.
  * @note If the buffers are replaced with actual cells, we could use the CellFunctor to simplify things and potentially
  * even use SoA.
  */
