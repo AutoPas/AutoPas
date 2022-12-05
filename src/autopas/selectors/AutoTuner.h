@@ -467,13 +467,13 @@ template <bool newton3, class Particle, class T, class PairwiseFunctor>
 void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<Particle> &particleBuffer,
                           std::vector<Particle> &haloParticleBuffer) {
   const auto cutoff = containerPtr->getCutoff();
-  // 1. particleBuffer with all close particles in container
-  for (auto &&p1 : particleBuffer) {
-    auto pos = p1.getR();
-    auto min = autopas::utils::ArrayMath::subScalar(pos, cutoff);
-    auto max = autopas::utils::ArrayMath::addScalar(pos, cutoff);
-    withStaticContainerType(containerPtr, [&](auto leContainer) {
-      leContainer->forEachInRegion(
+  withStaticContainerType(containerPtr, [&](auto staticTypedContainer) {
+    // 1. particleBuffer with all close particles in container
+    for (auto &&p1 : particleBuffer) {
+      auto pos = p1.getR();
+      auto min = autopas::utils::ArrayMath::subScalar(pos, cutoff);
+      auto max = autopas::utils::ArrayMath::addScalar(pos, cutoff);
+      staticTypedContainer->forEachInRegion(
           [&](auto &p2) {
             if (newton3) {
               f->AoSFunctor(p1, p2, true);
@@ -483,28 +483,26 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<Partic
             }
           },
           min, max, IteratorBehavior::ownedOrHalo);
-    });
-  }
+    }
 
-  // 2. haloParticleBuffer with owned, close particles in container
-  for (auto &&p1 : haloParticleBuffer) {
-    auto pos = p1.getR();
-    auto min = autopas::utils::ArrayMath::subScalar(pos, cutoff);
-    auto max = autopas::utils::ArrayMath::addScalar(pos, cutoff);
-    withStaticContainerType(containerPtr, [&](auto leContainer) {
-      leContainer->forEachInRegion(
+    // 2. haloParticleBuffer with owned, close particles in container
+    for (auto &&p1 : haloParticleBuffer) {
+      auto pos = p1.getR();
+      auto min = autopas::utils::ArrayMath::subScalar(pos, cutoff);
+      auto max = autopas::utils::ArrayMath::addScalar(pos, cutoff);
+      staticTypedContainer->forEachInRegion(
           [&](auto &p2) {
             if (newton3) {
               f->AoSFunctor(p1, p2, true);
             } else {
               // Here, we do not need to interact p1 with p2, because p is a halo particle and an AoSFunctor call with
-              // an halo particle as first argument has no effect if newton3 == false.
+              // a halo particle as first argument has no effect if newton3 == false.
               f->AoSFunctor(p2, p1, false);
             }
           },
           min, max, IteratorBehavior::owned);
-    });
-  }
+    }
+  });
 
   // 3. particleBuffer with itself
   for (size_t i = 0; i < particleBuffer.size(); ++i) {
