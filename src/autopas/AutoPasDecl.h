@@ -853,7 +853,6 @@ class AutoPas {
 
   std::shared_ptr<const autopas::ParticleContainerInterface<Particle>> getContainer() const;
 
- private:
   /**
    * Lower corner of the container.
    */
