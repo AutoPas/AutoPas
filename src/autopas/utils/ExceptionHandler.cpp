@@ -75,6 +75,9 @@ void autopas::utils::ExceptionHandler::nonThrowException(const std::exception &e
 autopas::utils::ExceptionHandler::AutoPasException::AutoPasException(std::string description)
     : _description(std::move(description)) {}
 
+autopas::utils::ExceptionHandler::AutoPasException::AutoPasException(
+    const autopas::utils::ExceptionHandler::AutoPasException &exception) = default;
+
 autopas::utils::ExceptionHandler::AutoPasException::~AutoPasException() = default;
 
 const char *autopas::utils::ExceptionHandler::AutoPasException::what() const noexcept { return _description.c_str(); }

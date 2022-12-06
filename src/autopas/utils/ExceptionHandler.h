@@ -119,7 +119,8 @@ class ExceptionHandler {
      * @param description a descriptive string
      */
     explicit AutoPasException(std::string description);
-    ;
+
+    AutoPasException(const AutoPasException & exception);
 
     ~AutoPasException() override;
 
