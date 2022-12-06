@@ -120,7 +120,7 @@ class ExceptionHandler {
      */
     explicit AutoPasException(std::string description);
 
-    AutoPasException(const AutoPasException & exception);
+    AutoPasException(const AutoPasException &exception);
 
     ~AutoPasException() override;
 
