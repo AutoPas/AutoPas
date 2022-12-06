@@ -19,12 +19,11 @@ using FloatPrecision = double;
  * Type of the Particles used in md-flexible.
  * Use the molecule type provided by AutoPas.
  */
-using SingleSiteMolecule = autopas::MoleculeLJ;
-
-/**
- * Type of Particle used in md-flexible for multi-centred interactions.
- */
-using MultiSiteMolecule = autopas::MultisiteMoleculeLJ;
+#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+  using ParticleType = autopas::MultisiteMoleculeLJ;
+#else
+  using ParticleType = autopas::MoleculeLJ;
+#endif
 
 /**
  * Type of the Particle Properties Library.

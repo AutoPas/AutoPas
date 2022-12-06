@@ -255,9 +255,6 @@ std::string MDFlexConfig::to_string() const {
       os << "Lennard-Jones (12-6) with globals" << endl;
       break;
     }
-    case FunctorOption::lj12_6_Multicentered: {
-      os << "Lennard-Jones (12-6) Multicentered" << endl;
-    }
   }
   printOption(newton3Options);
   printOption(cutoff);
@@ -272,6 +269,8 @@ std::string MDFlexConfig::to_string() const {
     printOption(iterations);
   }
   printOption(boundaryOption);
+
+  // todo: see if we should be ouputing info about sites & mols
 
   os << setw(valueOffset) << left << "Objects:" << endl;
 
@@ -388,7 +387,10 @@ void MDFlexConfig::addSiteType(unsigned long siteId, double epsilon, double sigm
   }
 }
 
-void MDFlexConfig::addMolType(unsigned long molId, std::vector<unsigned long> siteIds, std::vector<std::array<double, 3>> relSitePos, std::array<double, 3> momentOfInertia) {
+void MDFlexConfig::addMolType(unsigned long molId, const std::vector<unsigned long>& siteIds, const std::vector<std::array<double, 3>>& relSitePos, std::array<double, 3> momentOfInertia) {
+#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+  throw std::runtime_error("MDFlexConfig::addMolType was used without support for multi-site simulations being compiled");
+#endif
   // check if siteId is already existing and if there no error in input
   if (molToSiteIdMap.value.count(molId) == 1) {
     // check if type is already added
@@ -426,7 +428,7 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
   }
 
   // if doing Multi-site MD simulation, also check molecule level vectors match and initialize at molecular level
-  if (includeRotational.value) {
+#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
     // check size of molecular level vectors match
     if (molToSiteIdMap.value.size() != molToSitePosMap.value.size()) {
       throw std::runtime_error("Number of molecular-level properties differ!");
@@ -436,7 +438,7 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
     for (auto [molTypeId, siteTypeIds] : molToSiteIdMap.value) {
       _particlePropertiesLibrary->addMolType(molTypeId,siteTypeIds,molToSitePosMap.value.at(molTypeId), momentOfInertiaMap.value.at(molTypeId));
     }
-  }
+#endif
 
   _particlePropertiesLibrary->calculateMixingCoefficients();
 }

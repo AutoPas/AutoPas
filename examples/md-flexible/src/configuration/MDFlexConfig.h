@@ -125,11 +125,10 @@ class MDFlexConfig {
   void calcSimulationBox();
 
   /**
-   * Returns the particles generated based on the povided configuration file.
+   * Returns the particles generated based on the provided configuration file.
    * @return a vector containing the generated particles.
    */
-  // ToDo: Add handling for only compiling SingleSiteMolecules
-  std::vector<MultiSiteMolecule> getParticles() { return _particles; }
+  std::vector<ParticleType> getParticles() { return _particles; }
 
   /**
    * Returns the ParticlePropertiesLibrary containing the properties of the particle types used in this simulation.
@@ -139,6 +138,9 @@ class MDFlexConfig {
 
   /**
    * Adds parameters of a LJ site and checks if the siteId already exists.
+   *
+   * For single site simulations, the molecule's molId is used to look up the site with siteId = molId.
+   *
    * @param siteId unique site type id
    * @param epsilon
    * @param sigma
@@ -148,12 +150,16 @@ class MDFlexConfig {
 
   /**
    * Adds site positions and types for a given molecule type and checks if the molId already exists
+   *
+   * @note When md-flexible is compiled for only single-site molecules, calls to this function return errors.
+   *
    * @param molId unique mol type id
    * @param siteIds vector of ids of site types
    * @param relSitePos vector of relative site positions
    * @param momentOfInertia diagonalized moment of inertia as a length 3 array of double representing diagonal elements
    */
-  void addMolType(unsigned long molId, std::vector<unsigned long> siteIds, std::vector<std::array<double, 3>> relSitePos, std::array<double, 3> momentOfInertia);
+  void addMolType(unsigned long molId, const std::vector<unsigned long>& siteIds, const std::vector<std::array<double, 3>>& relSitePos, std::array<double, 3> momentOfInertia);
+
 
   /**
    * Flushes the particles.
@@ -174,7 +180,7 @@ class MDFlexConfig {
   /**
    * Choice of the functor
    */
-  enum class FunctorOption { lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_Globals, lj12_6_Multicentered };
+  enum class FunctorOption { lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_Globals};
 
   /**
    * Choice of the particle generators specified in the command line
@@ -428,7 +434,6 @@ class MDFlexConfig {
         "functor", true,
         "Force functor to use. Possible Values: (lennard-jones "
         "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals)"
-        "lennard-jones-multicentered)"
   };
   /**
    * iterations
@@ -545,10 +550,6 @@ class MDFlexConfig {
       GeneratorOption::grid, "particle-generator", true,
       "Scenario generator. Possible Values: (grid uniform gaussian sphere closestPacking) Default: grid"};
 
-  MDFlexOption<bool, __LINE__> includeRotational{false, "include-rotational", true,
-                                                 "Flag for if rotation of particle is to be considered in simulation. (Requires appropriate Particle and Functor)"
-  };
-
   // Molecule Type Generation
   /**
    * moleculesStr
@@ -557,7 +558,7 @@ class MDFlexConfig {
   /**
    * molTypeStr
    */
-  static inline const char *const molTypeStr{"molecule-type"};
+  static inline const char *const molTypeStr{"molecule-id"};
   /**
    * moleculeToSiteIdStr
    */
@@ -578,7 +579,7 @@ class MDFlexConfig {
   /**
    * siteTypeStr
    */
-  static inline const char *const siteTypeStr{"site-type"};
+  static inline const char *const siteTypeStr{"site-id"};
   // Object Generation:
   /**
    * objectsStr
@@ -727,10 +728,8 @@ class MDFlexConfig {
  private:
   /**
    * Stores the particles generated based on the provided configuration file
-   * These particles can be added to the respective autopas container,
-   * but have to be converted to the respective particle type, first.
    */
-  std::vector<MultiSiteMolecule> _particles;
+  std::vector<ParticleType> _particles;
 
   /**
    * Stores the physical properties of the particles used in the an MDFlexSimulation
