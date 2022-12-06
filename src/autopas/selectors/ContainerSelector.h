@@ -70,13 +70,13 @@ class ContainerSelector {
    * Getter for the optimal container. If no container is chosen yet the first allowed is selected.
    * @return Smartpointer to the optimal container.
    */
-  std::shared_ptr<autopas::ParticleContainerInterface<Particle>> getCurrentContainer();
+  inline std::shared_ptr<autopas::ParticleContainerInterface<Particle>> getCurrentContainer();
 
   /**
    * Getter for the optimal container. If no container is chosen yet the first allowed is selected.
    * @return Smartpointer to the optimal container.
    */
-  std::shared_ptr<const autopas::ParticleContainerInterface<Particle>> getCurrentContainer() const;
+  inline std::shared_ptr<const autopas::ParticleContainerInterface<Particle>> getCurrentContainer() const;
 
  private:
   /**
