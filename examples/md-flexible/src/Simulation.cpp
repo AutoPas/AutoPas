@@ -145,12 +145,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   // @todo: the object generators should only generate particles relevant for the current rank's domain
   for (auto &particle : _configuration.getParticles()) {
     if (_domainDecomposition->isInsideLocalDomain(particle.getR())) {
-      if (not _configuration.includeRotational.value) {
-        _autoPasContainer->addParticle(particle.template returnSimpleMolecule<ParticleClass>());
-      } else {
-        particle.setQ({1.,1.,0.,0.}); // todo not have this hard coded
-        _autoPasContainer->addParticle(particle);
-      }
+      _autoPasContainer->addParticle(particle);
     }
   }
 
@@ -197,9 +192,10 @@ void Simulation::run() {
     _timers.computationalLoad.start();
     if (_configuration.deltaT.value != 0) {
       updatePositions();
-      if (_configuration.includeRotational.value) {
-        updateQuaternions();
-      }
+#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+      updateQuaternions();
+#endif
+    }
 
       _timers.updateContainer.start();
       auto emigrants = _autoPasContainer->updateContainer();
