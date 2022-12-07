@@ -8,11 +8,20 @@
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
 #include "autopas/AutoPasImpl.h"
-#include "autopas/molecularDynamics/LJFunctor.h"
 #include "src/TypeDefinitions.h"
 
+#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+#include "autopas/molecularDynamics/LJMultisiteFunctor.h"
+//! @cond Doxygen_Suppress
+template bool autopas::AutoPas<ParticleType>::iteratePairwise(
+    autopas::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true> *);
+//! @endcond
+#else
+#include "autopas/molecularDynamics/LJFunctor.h"
 //! @cond Doxygen_Suppress
 template bool autopas::AutoPas<ParticleType>::iteratePairwise(
     autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true> *);
 //! @endcond
+#endif
+
 #endif

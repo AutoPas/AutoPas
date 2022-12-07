@@ -7,10 +7,15 @@
  */
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
 #include "autopas/AutoPasImpl.h"
-#include "autopas/molecularDynamics/LJFunctorAVX.h"
 #include "src/TypeDefinitions.h"
 
+#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+// ToDo: Implement this
+#else
+#include "autopas/molecularDynamics/LJFunctorAVX.h"
 //! @cond Doxygen_Suppress
-template bool autopas::AutoPas<SingleSiteMolecule>::iteratePairwise(autopas::LJFunctorAVX<SingleSiteMolecule, true, true> *);
+template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctorAVX<ParticleType, true, true> *);
 //! @endcond
+#endif
+
 #endif
