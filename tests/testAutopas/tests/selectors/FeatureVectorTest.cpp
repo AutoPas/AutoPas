@@ -167,7 +167,7 @@ TEST_F(FeatureVectorTest, clusterNeighboursManhattan1) {
   std::vector<Newton3Option> newtonsVec(newtons.begin(), newtons.end());
 
   FeatureVectorEncoder encoder(allCompatibleContainerTraversalEstimators, dataLayoutsVec, newtonsVec,
-                               NumberSetFinite<double>({cellSizeFactor}), NumberSetFinite<int>({5, 15, 30}));
+                               NumberSetFinite<double>({cellSizeFactor}), NumberSetFinite<int>({5}));
 
   std::vector<int> dimRestriction = {static_cast<int>(allCompatibleContainerTraversalEstimators.size()),
                                      static_cast<int>(dataLayouts.size()), static_cast<int>(newtons.size())};
@@ -214,7 +214,7 @@ TEST_F(FeatureVectorTest, clusterNeighboursManhattan1Container) {
   std::vector<Newton3Option> newtonsVec(newtons.begin(), newtons.end());
 
   FeatureVectorEncoder encoder(allCompatibleContainerTraversalEstimators, dataLayoutsVec, newtonsVec,
-                               NumberSetFinite<double>({cellSizeFactor}), NumberSetFinite<int>({5,15,30}));
+                               NumberSetFinite<double>({cellSizeFactor}), NumberSetFinite<int>({5}));
 
   std::vector<int> dimRestriction = {static_cast<int>(allCompatibleContainerTraversalEstimators.size()),
                                      static_cast<int>(dataLayouts.size()), static_cast<int>(newtons.size())};
