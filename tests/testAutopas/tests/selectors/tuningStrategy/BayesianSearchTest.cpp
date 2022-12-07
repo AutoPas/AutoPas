@@ -59,7 +59,7 @@ TEST_F(BayesianSearchTest, testFindBest) {
 }
 
 
-TEST_F(BayesianSearchTest, testFindBest2) {
+TEST_F(BayesianSearchTest, testFindBestRebuildFrequency) {
   size_t maxEvidence = 2;
   unsigned long seed = 78;
   autopas::BayesianSearch bayesSearch({autopas::ContainerOption::linkedCells}, autopas::NumberSetFinite<double>({1}),
