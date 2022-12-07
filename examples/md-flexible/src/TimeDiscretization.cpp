@@ -57,15 +57,7 @@ void calculatePositionsAndUpdateForces(autopas::AutoPas<ParticleType> &autoPasCo
   }
 }
 
-template <class ParticleClass>
-inline void calculateQuaternions(autopas::AutoPas<ParticleClass> &autoPasContainer,
-                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
-                         const std::array<double, 3> &globalForce) {
- autopas::utils::ExceptionHandler::exception("calculateQuaternion should not be run with a non-rotational molecule type!");
-}
-
-
-template<> inline void calculateQuaternions<autopas::MultisiteMoleculeLJ>(autopas::AutoPas<autopas::MultisiteMoleculeLJ> &autoPasContainer,
+void calculateQuaternions(autopas::AutoPas<ParticleType> &autoPasContainer,
                                                            const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
                                                            const std::array<double, 3> &globalForce) {
  using autopas::utils::ArrayMath::add;
@@ -80,6 +72,8 @@ template<> inline void calculateQuaternions<autopas::MultisiteMoleculeLJ>(autopa
  using autopas::utils::quaternion::qMul;
  using autopas::utils::quaternion::rotatePosition;
  using autopas::utils::quaternion::rotatePositionBackwards;
+
+#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
 
 // const auto halfDeltaT = 0.5 * deltaT;
 //
@@ -147,10 +141,14 @@ template<> inline void calculateQuaternions<autopas::MultisiteMoleculeLJ>(autopa
 //
 //   flag = false;
 // }
+
+#else
+  autopas::utils::ExceptionHandler::exception("Attempting to perform rotational integrations when md-flexible has not been compiled with multi-site support!");
+#endif
 }
 
-template <class ParticleClass>
-void calculateVelocities(autopas::AutoPas<ParticleClass> &autoPasContainer,
+
+void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
   // helper declarations for operations with vector
   using autopas::utils::ArrayMath::add;
@@ -168,18 +166,15 @@ void calculateVelocities(autopas::AutoPas<ParticleClass> &autoPasContainer,
   }
 }
 
-template <class ParticleClass>
-inline void calculateAngularVelocities(autopas::AutoPas<ParticleClass> &autoPasContainer,
-                               const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
- autopas::utils::ExceptionHandler::exception("calculateAngularVelocities should not be run with a non-rotational molecule type!");
-}
 
-template<> inline void calculateAngularVelocities<autopas::MultisiteMoleculeLJ>(autopas::AutoPas<autopas::MultisiteMoleculeLJ> &autoPasContainer,
+void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
                                                                  const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
  using autopas::utils::ArrayMath::mulScalar;
  using autopas::utils::ArrayMath::div;
  using autopas::utils::quaternion::rotatePosition;
  using autopas::utils::quaternion::rotatePositionBackwards;
+
+#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
 
 //#ifdef AUTOPAS_OPENMP
 //#pragma omp parallel
@@ -200,6 +195,10 @@ template<> inline void calculateAngularVelocities<autopas::MultisiteMoleculeLJ>(
 //
 //   iter->addAngularVel(mulScalar(torqueDivMoIW, 0.5*deltaT)); // (28)
 // }
+
+#else
+ autopas::utils::ExceptionHandler::exception("Attempting to perform rotational integrations when md-flexible has not been compiled with multi-site support!");
+#endif
 }
 
 }  // namespace TimeDiscretization

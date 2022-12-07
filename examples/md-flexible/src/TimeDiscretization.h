@@ -34,7 +34,7 @@ namespace TimeDiscretization {
  */
 void calculatePositionsAndUpdateForces(autopas::AutoPas<ParticleType> &autoPasContainer,
                                        const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
-                                       const std::array<double, 3> &globalForce, bool fastParticlesThrow)
+                                       const std::array<double, 3> &globalForce, bool fastParticlesThrow);
 
 /**
  * Calculate and update the quaternion for every particle. Uses the rotational velocity-verlet algorithm as described by
@@ -49,9 +49,9 @@ void calculatePositionsAndUpdateForces(autopas::AutoPas<ParticleType> &autoPasCo
  * @param deltaT
  * @param globalForce
  */
-inline void calculateQuaternions(autopas::AutoPas<ParticleType> &autoPasContainer,
+void calculateQuaternions(autopas::AutoPas<ParticleType> &autoPasContainer,
                           const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
-                          const std::array<double, 3> &globalForce) {}
+                          const std::array<double, 3> &globalForce);
 
 /**
  * Calculate and update the velocity for every particle using the the Störmer-Verlet Algorithm.
@@ -63,67 +63,21 @@ inline void calculateQuaternions(autopas::AutoPas<ParticleType> &autoPasContaine
  * @param particlePropertiesLibrary The particle properties library for the particles in the container.
  * @param deltaT The time step width.
  */
-template <class ParticleClass>
-void calculateVelocities(autopas::AutoPas<ParticleClass> &autoPasContainer,
-                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
-  // helper declarations for operations with vector
-  using autopas::utils::ArrayMath::add;
-  using autopas::utils::ArrayMath::mulScalar;
-
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
-  for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    const auto molecularMass = particlePropertiesLibrary.getMolMass(iter->getTypeId());
-    const auto force = iter->getF();
-    const auto oldForce = iter->getOldF();
-    const auto changeInVel = mulScalar((add(force, oldForce)), deltaT / (2 * molecularMass));
-    iter->addV(changeInVel);
-  }
-}
+void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
+                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
 
 /**
- * Calculate and update the angular velocity for every particle. Throws error unless ParticleClass is specialised to a
- * rotational molecule, i.e. MultisiteMoleculeLJ.
- * @tparam ParticleClass
+ * Calculate and update the angular velocity for every particle.
+ *
+ * @note Throws error if md-flexible is compiled without multi-site support.
+ *
  * @param autoPasContainer
  * @param particlePropertiesLibrary
  * @param deltaT
  * @param globalForce
  */
-template <class ParticleClass>
-inline void calculateAngularVelocities(autopas::AutoPas<ParticleClass> &autoPasContainer,
-                                       const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
-  autopas::utils::ExceptionHandler::exception("calculateAngularVelocities should not be run with a non-rotational molecule type!");
-}
-
-template<> inline void calculateAngularVelocities<autopas::MultisiteMoleculeLJ>(autopas::AutoPas<autopas::MultisiteMoleculeLJ> &autoPasContainer,
-                                                                     const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
-  using autopas::utils::ArrayMath::mulScalar;
-  using autopas::utils::ArrayMath::div;
-  using autopas::utils::quaternion::rotatePosition;
-  using autopas::utils::quaternion::rotatePositionBackwards;
-
-  //#ifdef AUTOPAS_OPENMP
-  //#pragma omp parallel
-  //#endif
-  // for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-  //   const auto torqueW = iter->getTorque();
-  //   const auto q = iter->getQ();
-  //   const auto I = particlePropertiesLibrary.getMomentOfInertia(iter->getTypeId()); // moment of inertia
-  //
-  //   // convert torque to molecular-frame
-  //   const auto torqueM = rotatePositionBackwards(q, torqueW);
-  //
-  //   // get I^-1 T in molecular-frame
-  //   const auto torqueDivMoIM = div(torqueM, I);
-  //
-  //   // convert to world-frame
-  //   const auto torqueDivMoIW = rotatePosition(q, torqueDivMoIM);
-  //
-  //   iter->addAngularVel(mulScalar(torqueDivMoIW, 0.5*deltaT)); // (28)
-  // }
-}
+void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
+                                       const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
 
 
 }  // namespace TimeDiscretization
