@@ -10,9 +10,6 @@
 bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
   YAML::Node node = YAML::LoadFile(config.yamlFilename.value);
 
-  if (node[config.includeRotational.name]) {
-    config.includeRotational.value = node[config.includeRotational.name].as<bool>();
-  }
   if (node[config.containerOptions.name]) {
     config.containerOptions.value = autopas::ContainerOption::parseOptions(
         autopas::utils::ArrayUtils::to_string(node[config.containerOptions.name], ", ", {"", ""}));
@@ -68,8 +65,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
       config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
     } else if (strArg.find("glob") != std::string::npos) {
       config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_Globals;
-    } else if (strArg.find("multi") != std::string::npos) {
-      config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_Multicentered;
     } else if (strArg.find("lj") != std::string::npos or strArg.find("lennard-jones") != std::string::npos) {
       config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
     }
@@ -241,15 +236,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     config.sigmaMap.value.clear();
     config.massMap.value.clear();
 
-    if (config.includeRotational.value) {
-//      for (auto siteIterator = node[MDFlexConfig::siteStr].begin();
-// siteIterator != node[MDFlexConfig::siteStr].end(); ++siteIterator) {
-      for (auto siteIterator : node[MDFlexConfig::siteStr]) {
-        config.addSiteType(siteIterator.second[MDFlexConfig::siteTypeStr].as<unsigned long>(),
-                     siteIterator.second[config.epsilonMap.name].as<double>(),
-                     siteIterator.second[config.sigmaMap.name].as<double>(),
-                     siteIterator.second[config.massMap.name].as<double>());
-      }
+    for (auto siteIterator : node[MDFlexConfig::siteStr]) {
+      config.addSiteType(siteIterator.second[MDFlexConfig::siteTypeStr].as<unsigned long>(),
+                   siteIterator.second[config.epsilonMap.name].as<double>(),
+                   siteIterator.second[config.sigmaMap.name].as<double>(),
+                   siteIterator.second[config.massMap.name].as<double>());
     }
   }
   if (node[MDFlexConfig::moleculesStr]) {
@@ -258,17 +249,19 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     config.molToSitePosMap.value.clear();
     config.momentOfInertiaMap.value.clear();
 
-    if (config.includeRotational.value) {
-      for (auto moleculeInterator : node[MDFlexConfig::moleculesStr]) {
-        auto molToSiteIdMap =
-            moleculeInterator.second[MDFlexConfig::moleculeToSiteIdStr]
-                .as<std::vector<unsigned long>>();  // todo add testing that site Id matches existing site
-        auto molToSitePosMap =
-            moleculeInterator.second[MDFlexConfig::moleculeToSitePosStr].as<std::vector<std::array<double, 3>>>();
-        config.addMolType(moleculeInterator.second[MDFlexConfig::molTypeStr].as<unsigned long>(), molToSiteIdMap,
-                          molToSitePosMap, moleculeInterator.second[MDFlexConfig::momentOfInertiaStr].as<std::array<double,3>>());
-      }
-    } // todo add single site functionality
+#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+    for (auto moleculeInterator : node[MDFlexConfig::moleculesStr]) {
+      auto molToSiteIdMap =
+          moleculeInterator.second[MDFlexConfig::moleculeToSiteIdStr]
+              .as<std::vector<unsigned long>>();  // todo add testing that site Id matches existing site
+      auto molToSitePosMap =
+          moleculeInterator.second[MDFlexConfig::moleculeToSitePosStr].as<std::vector<std::array<double, 3>>>();
+      config.addMolType(moleculeInterator.second[MDFlexConfig::molTypeStr].as<unsigned long>(), molToSiteIdMap,
+                        molToSitePosMap, moleculeInterator.second[MDFlexConfig::momentOfInertiaStr].as<std::array<double,3>>());
+    }
+#else
+    std::cout << "Multi-Site Molecule information has been provided, however md-flexible has been compiled without Multi-Site support.";
+#endif
   }
   if (node[MDFlexConfig::objectsStr]) {
     // remove default objects
@@ -287,8 +280,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
                              it->second[MDFlexConfig::velocityStr][1].as<double>(),
                              it->second[MDFlexConfig::velocityStr][2].as<double>()},
                             it->second[MDFlexConfig::molTypeStr].as<unsigned long>(),
-                            it->second[config.epsilonMap.name].as<double>(),
-                            it->second[config.sigmaMap.name].as<double>(), it->second[config.massMap.name].as<double>(),
                             {it->second[config.particlesPerDim.name][0].as<unsigned long>(),
                              it->second[config.particlesPerDim.name][1].as<unsigned long>(),
                              it->second[config.particlesPerDim.name][2].as<unsigned long>()},
@@ -308,8 +299,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
                it->second[MDFlexConfig::velocityStr][1].as<double>(),
                it->second[MDFlexConfig::velocityStr][2].as<double>()},
               it->second[MDFlexConfig::molTypeStr].as<unsigned long>(),
-              it->second[config.epsilonMap.name].as<double>(), it->second[config.sigmaMap.name].as<double>(),
-              it->second[config.massMap.name].as<double>(),
               it->second[MDFlexConfig::particlesPerObjectStr].as<size_t>(),
               {it->second[config.boxLength.name][0].as<double>(), it->second[config.boxLength.name][1].as<double>(),
                it->second[config.boxLength.name][2].as<double>()},
@@ -333,8 +322,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
                it->second[MDFlexConfig::velocityStr][1].as<double>(),
                it->second[MDFlexConfig::velocityStr][2].as<double>()},
               it->second[MDFlexConfig::molTypeStr].as<unsigned long>(),
-              it->second[config.epsilonMap.name].as<double>(), it->second[config.sigmaMap.name].as<double>(),
-              it->second[config.massMap.name].as<double>(),
               it->second[MDFlexConfig::particlesPerObjectStr].as<size_t>(),
               {it->second[config.boxLength.name][0].as<double>(), it->second[config.boxLength.name][1].as<double>(),
                it->second[config.boxLength.name][2].as<double>()},
@@ -351,8 +338,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
                          it->second[MDFlexConfig::velocityStr][1].as<double>(),
                          it->second[MDFlexConfig::velocityStr][2].as<double>()},
                         it->second[MDFlexConfig::molTypeStr].as<unsigned long>(),
-                        it->second[config.epsilonMap.name].as<double>(), it->second[config.sigmaMap.name].as<double>(),
-                        it->second[config.massMap.name].as<double>(),
                         {it->second[MDFlexConfig::sphereCenterStr][0].as<double>(),
                          it->second[MDFlexConfig::sphereCenterStr][1].as<double>(),
                          it->second[MDFlexConfig::sphereCenterStr][2].as<double>()},
@@ -369,8 +354,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
                it->second[MDFlexConfig::velocityStr][1].as<double>(),
                it->second[MDFlexConfig::velocityStr][2].as<double>()},
               it->second[MDFlexConfig::molTypeStr].as<unsigned long>(),
-              it->second[config.epsilonMap.name].as<double>(), it->second[config.sigmaMap.name].as<double>(),
-              it->second[config.massMap.name].as<double>(), it->second[config.particleSpacing.name].as<double>(),
+  it->second[config.particleSpacing.name].as<double>(),
               {it->second[config.boxLength.name][0].as<double>(), it->second[config.boxLength.name][1].as<double>(),
                it->second[config.boxLength.name][2].as<double>()},
               {it->second[MDFlexConfig::bottomLeftBackCornerStr][0].as<double>(),
