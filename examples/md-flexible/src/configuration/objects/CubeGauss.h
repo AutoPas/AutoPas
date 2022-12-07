@@ -26,10 +26,10 @@ class CubeGauss : public Object {
    * @param distributionStdDev
    * @param bottomLeftCorner
    */
-  CubeGauss(const std::array<double, 3> &velocity, unsigned long typeId, double epsilon, double sigma, double mass,
-            size_t numParticles, const std::array<double, 3> &boxLength, const std::array<double, 3> &distributionMean,
+  CubeGauss(const std::array<double, 3> &velocity, unsigned long typeId, size_t numParticles,
+            const std::array<double, 3> &boxLength, const std::array<double, 3> &distributionMean,
             const std::array<double, 3> &distributionStdDev, const std::array<double, 3> &bottomLeftCorner)
-      : Object(velocity, typeId, epsilon, sigma, mass),
+      : Object(velocity, typeId),
         _numParticles(numParticles),
         _boxLength(boxLength),
         _distributionMean(distributionMean),

@@ -635,43 +635,39 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.cubeUniformObjects.empty() and config.sphereObjects.empty() and config.cubeClosestPackedObjects.empty()) {
     // common settings for any object type:
     unsigned int typeID = 0;
-    double epsilon = 1.;
-    double sigma = 1.;
-    double mass = 1.;
     std::array<double, 3> bottomLeftCorner = {0, 0, 0};
     std::array<double, 3> velocity = {0, 0, 0};
 
     switch (config.generatorOption.value) {
       case MDFlexConfig::GeneratorOption::grid: {
-        CubeGrid grid(velocity, typeID, epsilon, sigma, mass,
-                      {config.particlesPerDim.value, config.particlesPerDim.value, config.particlesPerDim.value},
-                      config.particleSpacing.value, bottomLeftCorner);
+        CubeGrid grid(velocity, typeID, {config.particlesPerDim.value, config.particlesPerDim.value,
+                                         config.particlesPerDim.value}, config.particleSpacing.value, bottomLeftCorner);
         config.cubeGridObjects.push_back(grid);
         break;
       }
       case MDFlexConfig::GeneratorOption::gaussian: {
-        CubeGauss cubeGauss(velocity, typeID, epsilon, sigma, mass, config.particlesTotal.value,
+        CubeGauss cubeGauss(velocity, typeID, config.particlesTotal.value,
                             {config.boxLength.value, config.boxLength.value, config.boxLength.value},
                             config.distributionMean.value, config.distributionStdDev.value, bottomLeftCorner);
         config.cubeGaussObjects.push_back(cubeGauss);
         break;
       }
       case MDFlexConfig::GeneratorOption::uniform: {
-        CubeUniform cubeUniform(velocity, typeID, epsilon, sigma, mass, config.particlesTotal.value,
+        CubeUniform cubeUniform(velocity, typeID, config.particlesTotal.value,
                                 {config.boxLength.value, config.boxLength.value, config.boxLength.value},
                                 bottomLeftCorner);
         config.cubeUniformObjects.push_back(cubeUniform);
         break;
       }
       case MDFlexConfig::GeneratorOption::sphere: {
-        auto centerOfBox = config.particlesPerDim.value / 2.;
-        Sphere sphere(velocity, typeID, epsilon, sigma, mass, {centerOfBox, centerOfBox, centerOfBox}, centerOfBox,
+        auto centerOfBox = config.particlesPerDim.value / 2;
+        Sphere sphere(velocity, typeID, {(double)centerOfBox, (double)centerOfBox, (double)centerOfBox}, (int)centerOfBox,
                       config.particleSpacing.value);
         config.sphereObjects.push_back(sphere);
         break;
       }
       case MDFlexConfig::GeneratorOption::closestPacked: {
-        CubeClosestPacked cubeClosestPacked(velocity, typeID, epsilon, sigma, mass, config.particleSpacing.value,
+        CubeClosestPacked cubeClosestPacked(velocity, typeID, config.particleSpacing.value,
                                             {config.boxLength.value, config.boxLength.value, config.boxLength.value},
                                             bottomLeftCorner);
         config.cubeClosestPackedObjects.push_back(cubeClosestPacked);
@@ -696,7 +692,7 @@ namespace {
  * @return True iff the file exists.
  */
 bool checkFileExists(const std::string &filename) {
-  struct stat buffer;
+  struct stat buffer{};
   return (stat(filename.c_str(), &buffer) == 0);
 }
 
