@@ -155,13 +155,13 @@ Simulation::Simulation(const MDFlexConfig &configuration,
 
   if (_configuration.useThermostat.value and _configuration.deltaT.value != 0) {
     if (_configuration.addBrownianMotion.value) {
-      Thermostat::addBrownianMotion(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-                                    _configuration.initTemperature.value);
+//      Thermostat::addBrownianMotion(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+//                                    _configuration.initTemperature.value);
     }
 
     // Set the simulation directly to the desired initial temperature.
-    Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-                      _configuration.initTemperature.value, std::numeric_limits<double>::max());
+//    Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+//                      _configuration.initTemperature.value, std::numeric_limits<double>::max());
   }
 
   _timers.initialization.stop();
@@ -197,59 +197,58 @@ void Simulation::run() {
 #endif
     }
 
-      _timers.updateContainer.start();
-      auto emigrants = _autoPasContainer->updateContainer();
-      _timers.updateContainer.stop();
+    _timers.updateContainer.start();
+    auto emigrants = _autoPasContainer->updateContainer();
+    _timers.updateContainer.stop();
 
-      const auto computationalLoad = static_cast<double>(_timers.computationalLoad.stop());
+    const auto computationalLoad = static_cast<double>(_timers.computationalLoad.stop());
 
-      // periodically resize box for MPI load balancing
-      if (_iteration % _configuration.loadBalancingInterval.value == 0) {
-        _timers.loadBalancing.start();
-        _domainDecomposition->update(computationalLoad);
-        auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(),
-                                                                _domainDecomposition->getLocalBoxMax());
-        // because boundaries shifted, particles that were thrown out by the updateContainer previously might now be in
-        // the container again
-        for (auto particleIter = emigrants.cbegin(); particleIter != emigrants.cend();) {
-          const auto &boxMin = _autoPasContainer->getBoxMin();
-          const auto &boxMax = _autoPasContainer->getBoxMax();
-          if (autopas::utils::inBox(particleIter->getR(), boxMin, boxMax)) {
-            _autoPasContainer->addParticle(*particleIter);
-            emigrants.erase(particleIter);
-          } else {
-            ++particleIter;
-          }
+    // periodically resize box for MPI load balancing
+    if (_iteration % _configuration.loadBalancingInterval.value == 0) {
+      _timers.loadBalancing.start();
+      _domainDecomposition->update(computationalLoad);
+      auto additionalEmigrants =
+          _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(), _domainDecomposition->getLocalBoxMax());
+      // because boundaries shifted, particles that were thrown out by the updateContainer previously might now be in
+      // the container again
+      for (auto particleIter = emigrants.cbegin(); particleIter != emigrants.cend();) {
+        const auto &boxMin = _autoPasContainer->getBoxMin();
+        const auto &boxMax = _autoPasContainer->getBoxMax();
+        if (autopas::utils::inBox(particleIter->getR(), boxMin, boxMax)) {
+          _autoPasContainer->addParticle(*particleIter);
+          emigrants.erase(particleIter);
+        } else {
+          ++particleIter;
         }
-
-        emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
-        _timers.loadBalancing.stop();
       }
 
-      _timers.migratingParticleExchange.start();
-      _domainDecomposition->exchangeMigratingParticles(*_autoPasContainer, emigrants);
-      _timers.migratingParticleExchange.stop();
-
-      _timers.reflectParticlesAtBoundaries.start();
-      _domainDecomposition->reflectParticlesAtBoundaries(*_autoPasContainer);
-      _timers.reflectParticlesAtBoundaries.stop();
-
-      _timers.haloParticleExchange.start();
-      _domainDecomposition->exchangeHaloParticles(*_autoPasContainer);
-      _timers.haloParticleExchange.stop();
-
-      _timers.computationalLoad.start();
+      emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
+      _timers.loadBalancing.stop();
     }
+
+    _timers.migratingParticleExchange.start();
+    _domainDecomposition->exchangeMigratingParticles(*_autoPasContainer, emigrants);
+    _timers.migratingParticleExchange.stop();
+
+    _timers.reflectParticlesAtBoundaries.start();
+    _domainDecomposition->reflectParticlesAtBoundaries(*_autoPasContainer);
+    _timers.reflectParticlesAtBoundaries.stop();
+
+    _timers.haloParticleExchange.start();
+    _domainDecomposition->exchangeHaloParticles(*_autoPasContainer);
+    _timers.haloParticleExchange.stop();
+
+    _timers.computationalLoad.start();
 
     updateForces();
 
     if (_configuration.deltaT.value != 0) {
       updateVelocities();
       updateThermostat();
-      if (_configuration.includeRotational.value) {
-        updateAngularVelocities();
-        // todo - rotational thermostat is needed here
-      }
+#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+      updateAngularVelocities();
+      // todo - rotational thermostat is needed here
+#endif
     }
     _timers.computationalLoad.stop();
 
@@ -360,16 +359,15 @@ std::string Simulation::timerToString(const std::string &name, long timeNS, int 
 
 void Simulation::updatePositions() {
   _timers.positionUpdate.start();
-  TimeDiscretization::calculatePositions(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+  TimeDiscretization::calculatePositionsAndUpdateForces(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                                          _configuration.deltaT.value, _configuration.globalForce.value,
                                          _configuration.fastParticlesThrow.value);
   _timers.positionUpdate.stop();
 }
 
-template <class ParticleClass>
-void Simulation<ParticleClass>::updateQuaternions() {
+void Simulation::updateQuaternions() {
   _timers.quaternionUpdate.start();
-  TimeDiscretization::calculateQuaternions<ParticleClass>(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+  TimeDiscretization::calculateQuaternions(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                                            _configuration.deltaT.value, _configuration.globalForce.value);
   _timers.quaternionUpdate.stop();
 }
@@ -410,18 +408,17 @@ void Simulation::updateVelocities() {
 
   if (deltaT != 0) {
     _timers.velocityUpdate.start();
-    TimeDiscretization::calculateVelocities<ParticleClass>(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+    TimeDiscretization::calculateVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                                             deltaT);
     _timers.velocityUpdate.stop();
   }
 }
 
-template <class ParticleClass>
-void Simulation<ParticleClass>::updateAngularVelocities() {
+void Simulation::updateAngularVelocities() {
   const double deltaT = _configuration.deltaT.value;
 
   _timers.angularVelocityUpdate.start();
-  TimeDiscretization::calculateAngularVelocities<ParticleClass>(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+  TimeDiscretization::calculateAngularVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                                                                 deltaT);
   _timers.angularVelocityUpdate.stop();
 }
@@ -429,8 +426,8 @@ void Simulation<ParticleClass>::updateAngularVelocities() {
 void Simulation::updateThermostat() {
   if (_configuration.useThermostat.value and (_iteration % _configuration.thermostatInterval.value) == 0) {
     _timers.thermostat.start();
-    Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-                      _configuration.targetTemperature.value, _configuration.deltaTemp.value);
+//    Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+//                      _configuration.targetTemperature.value, _configuration.deltaTemp.value);
     _timers.thermostat.stop();
   }
 }
