@@ -550,25 +550,27 @@ void Simulation::logMeasurements() {
         1e-6 / (static_cast<double>(forceUpdateTotal) * 1e-9);  // 1e-9 for ns to s, 1e-6 for M in MFUPs
     std::cout << "MFUPs/sec                          : " << mfups << std::endl;
 
+    // ToDo: Fix this. See issue #707.
     if (_configuration.dontMeasureFlops.value) {
-      autopas::FlopCounterFunctor<ParticleType> flopCounterFunctor(_autoPasContainer->getCutoff());
-      _autoPasContainer->iteratePairwise(&flopCounterFunctor);
-
-      const auto flopsPerKernelCall =
-          applyWithChosenFunctor<size_t>([](auto functor) { return decltype(functor)::getNumFlopsPerKernelCall(); });
-      auto flops = flopCounterFunctor.getFlops(flopsPerKernelCall) * _iteration;
-      // approximation for flops of verlet list generation
-      if (_autoPasContainer->getContainerType() == autopas::ContainerOption::verletLists) {
-        const auto approxNumberOfRebuilds =
-            static_cast<size_t>(floor(_iteration / _configuration.verletRebuildFrequency.value));
-        flops += flopCounterFunctor.getDistanceCalculations() *
-                 decltype(flopCounterFunctor)::numFlopsPerDistanceCalculation * approxNumberOfRebuilds;
-      }
-
-      std::cout << "GFLOPs                             : " << static_cast<double>(flops) * 1e-9 << std::endl;
-      std::cout << "GFLOPs/sec                         : "
-                << static_cast<double>(flops) * 1e-9 / (static_cast<double>(simulate) * 1e-9) << std::endl;
-      std::cout << "Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl;
+      // This entire logic makes very little sense
+//      autopas::FlopCounterFunctor<ParticleType> flopCounterFunctor(_autoPasContainer->getCutoff());
+//      _autoPasContainer->iteratePairwise(&flopCounterFunctor);
+//
+//      const auto flopsPerKernelCall =
+//          applyWithChosenFunctor<size_t>([](auto functor) { return decltype(functor)::getNumFlopsPerKernelCall(); });
+//      auto flops = flopCounterFunctor.getFlops(flopsPerKernelCall) * _iteration;
+//      // approximation for flops of verlet list generation
+//      if (_autoPasContainer->getContainerType() == autopas::ContainerOption::verletLists) {
+//        const auto approxNumberOfRebuilds =
+//            static_cast<size_t>(floor(_iteration / _configuration.verletRebuildFrequency.value));
+//        flops += flopCounterFunctor.getDistanceCalculations() *
+//                 decltype(flopCounterFunctor)::numFlopsPerDistanceCalculation * approxNumberOfRebuilds;
+//      }
+//
+//      std::cout << "GFLOPs                             : " << static_cast<double>(flops) * 1e-9 << std::endl;
+//      std::cout << "GFLOPs/sec                         : "
+//                << static_cast<double>(flops) * 1e-9 / (static_cast<double>(simulate) * 1e-9) << std::endl;
+//      std::cout << "Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl;
     }
   }
 }
@@ -614,7 +616,7 @@ T Simulation::applyWithChosenFunctor(F f) {
   switch (_configuration.functorOption.value) {
     case MDFlexConfig::FunctorOption::lj12_6: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
-      return f(autopas::LJFunctor<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
+      return f(LJFunctorTypeAutovec{cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor AutoVec. Activate it via `cmake "
@@ -623,8 +625,7 @@ T Simulation::applyWithChosenFunctor(F f) {
     }
     case MDFlexConfig::FunctorOption::lj12_6_Globals: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
-      return f(autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>{
-          cutoff, particlePropertiesLibrary});
+      return f(LJFunctorTypeAutovecGlobals{cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor AutoVec Globals. Activate it via `cmake "
@@ -633,7 +634,7 @@ T Simulation::applyWithChosenFunctor(F f) {
     }
     case MDFlexConfig::FunctorOption::lj12_6_AVX: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
-      return f(autopas::LJFunctorAVX<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
+      return f(autopas::LJFunctorTypeAVX{cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor AVX. Activate it via `cmake "
@@ -642,7 +643,7 @@ T Simulation::applyWithChosenFunctor(F f) {
     }
     case MDFlexConfig::FunctorOption::lj12_6_SVE: {
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
-      return f(autopas::LJFunctorSVE<ParticleType, true, true> functor{cutoff, particlePropertiesLibrary});
+      return f(autopas::LJFunctorTypeSVE<ParticleType, true, true> functor{cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor SVE. Activate it via `cmake "
