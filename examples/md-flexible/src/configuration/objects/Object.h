@@ -49,11 +49,11 @@ class Object {
     particle.setV(_velocity);
     particle.setF({0.0, 0.0, 0.0});
     particle.setOldF({0.0, 0.0, 0.0});
-//#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
     particle.setQ({1.0, 1.0, 0.0, 0.0});
     particle.setAngularVel({0.0, 0.0, 0.0});
     particle.setTorque({0.0, 0.0, 0.0});
-//#endif
+#endif
 
     return particle;
   }
@@ -106,7 +106,7 @@ class Object {
 #if defined(MD_FLEXIBLE_USE_MULTI_SITE)
     const auto typeName = "molecule-type";
 #else
-    const auto typename = "site-type";
+    const auto typeName = "site-type";
 #endif
     output << std::setw(_valueOffset) << std::left << "velocity"
            << ":  " << autopas::utils::ArrayUtils::to_string(_velocity) << std::endl;
