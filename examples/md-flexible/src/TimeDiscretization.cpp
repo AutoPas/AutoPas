@@ -4,9 +4,7 @@
 * @date 13/05/19
 */
 
-//#include "TimeDiscretization.h"
-
-#pragma once
+#include "TimeDiscretization.h"
 
 namespace TimeDiscretization {
 

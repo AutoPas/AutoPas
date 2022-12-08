@@ -12,27 +12,8 @@ namespace {
 /**
  * Stores the AttributeNames of the attributes of ParticleType which have to be communicated using MPI.
  */
-constexpr std::array<typename autopas::MoleculeLJ::AttributeNames, 15> SingleSiteAttributes = {
-    autopas::MoleculeLJ::AttributeNames::id,
-    autopas::MoleculeLJ::AttributeNames::posX,
-    autopas::MoleculeLJ::AttributeNames::posY,
-    autopas::MoleculeLJ::AttributeNames::posZ,
-    autopas::MoleculeLJ::AttributeNames::velocityX,
-    autopas::MoleculeLJ::AttributeNames::velocityY,
-    autopas::MoleculeLJ::AttributeNames::velocityZ,
-    autopas::MoleculeLJ::AttributeNames::forceX,
-    autopas::MoleculeLJ::AttributeNames::forceY,
-    autopas::MoleculeLJ::AttributeNames::forceZ,
-    autopas::MoleculeLJ::AttributeNames::oldForceX,
-    autopas::MoleculeLJ::AttributeNames::oldForceY,
-    autopas::MoleculeLJ::AttributeNames::oldForceZ,
-    autopas::MoleculeLJ::AttributeNames::typeId,
-    autopas::MoleculeLJ::AttributeNames::ownershipState};
-
-/**
- * Stores the AttributeNames of the attributes of ParticleType which have to be communicated using MPI.
- */
-constexpr std::array<typename autopas::MultisiteMoleculeLJ::AttributeNames, 25> MultiSiteAttributes = {
+#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+constexpr std::array<typename ParticleType::AttributeNames, 25> Attributes = {
     autopas::MultisiteMoleculeLJ::AttributeNames::id,
     autopas::MultisiteMoleculeLJ::AttributeNames::posX,
     autopas::MultisiteMoleculeLJ::AttributeNames::posY,
@@ -58,20 +39,36 @@ constexpr std::array<typename autopas::MultisiteMoleculeLJ::AttributeNames, 25> 
     autopas::MultisiteMoleculeLJ::AttributeNames::torqueZ,
     autopas::MultisiteMoleculeLJ::AttributeNames::typeId,
     autopas::MultisiteMoleculeLJ::AttributeNames::ownershipState};
+#else
+constexpr std::array<typename ParticleType::AttributeNames, 15> Attributes = {
+    autopas::MoleculeLJ::AttributeNames::id,
+    autopas::MoleculeLJ::AttributeNames::posX,
+    autopas::MoleculeLJ::AttributeNames::posY,
+    autopas::MoleculeLJ::AttributeNames::posZ,
+    autopas::MoleculeLJ::AttributeNames::velocityX,
+    autopas::MoleculeLJ::AttributeNames::velocityY,
+    autopas::MoleculeLJ::AttributeNames::velocityZ,
+    autopas::MoleculeLJ::AttributeNames::forceX,
+    autopas::MoleculeLJ::AttributeNames::forceY,
+    autopas::MoleculeLJ::AttributeNames::forceZ,
+    autopas::MoleculeLJ::AttributeNames::oldForceX,
+    autopas::MoleculeLJ::AttributeNames::oldForceY,
+    autopas::MoleculeLJ::AttributeNames::oldForceZ,
+    autopas::MoleculeLJ::AttributeNames::typeId,
+    autopas::MoleculeLJ::AttributeNames::ownershipState};
+#endif
 
 /**
  * The combined size in byte of the simple attributes which need to be communicated using MPI.
  */
-constexpr size_t singleSiteAttributesSize = 120;
-
-/**
- * The combined size in byte of the rotational attributes which need to be communicated using MPI.
- */
-constexpr size_t multiSitelAttributesSize = 200;
+#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+constexpr size_t AttributesSize = 200;
+#else
+constexpr size_t AttributesSize = 120;
+#endif
 
 /**
  * Serializes the attribute of a molecule defined by I.
- * @tparam isMultiSite: Flag for if simulation is multi-site.
  * @param particle: The particle who's attribute needs to be serialized.
  * @param attributeVector: The container in which the serialized attribute will be stored.
  * @param startIndex: The startindex in the container where to store the serialized attribute.

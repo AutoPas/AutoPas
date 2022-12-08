@@ -10,8 +10,6 @@
 #include "src/configuration/MDFlexConfig.h"
 #include "autopas/utils/Quaternion.h"
 
-#include "TimeDiscretization.cpp"
-
 /**
  * Functions for updating velocities and positions as simulation time progresses.
  */
