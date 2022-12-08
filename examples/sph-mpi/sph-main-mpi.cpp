@@ -422,11 +422,14 @@ void printConservativeVariables(AutoPasContainer &sphSystem, MPI_Comm &comm) {
   if (myrank == 0) {
     MPI_Reduce(MPI_IN_PLACE, &energySum, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
     MPI_Reduce(MPI_IN_PLACE, momSum.data(), 3, MPI_DOUBLE, MPI_SUM, 0, comm);
-    printf("%.16e\n", energySum);
+    printf("Energy     : %.16e\n", energySum);
     for (int i = 0; i < 3; ++i) {
-      printf("%.16e\n", momSum[i]);
+      printf("Momentum[%d]: %.16e\n", i, momSum[i]);
       if (std::abs(momSum[i]) > 1.e-15) {
-        throw std::runtime_error("ERROR: bad moment sum detected (should be small, but isn't!");
+        std::stringstream ss;
+        ss << std::setprecision(15) << "ERROR: The total momentum should cancel out (should be <1e-15 but is "
+           << std::abs(momSum[i]) << ")!";
+        throw std::runtime_error(ss.str());
       }
     }
   } else {

@@ -103,7 +103,7 @@ class NumberInterval : public NumberSet<Number> {
     for (size_t i = 0; i < (n - 1); ++i) {
       result.push_back(_min + distance * i);
     }
-    // add max separatly, avoiding possible rounding errors
+    // add max separately, avoiding possible rounding errors
     result.push_back(_max);
 
     // randomize the sample
@@ -129,7 +129,7 @@ class NumberInterval : public NumberSet<Number> {
     for (size_t i = 0; i < (n - 1); ++i) {
       result.insert(_min + distance * i);
     }
-    // add max separatly, avoiding possible rounding errors
+    // add max separately, avoiding possible rounding errors
     result.insert(_max);
 
     return result;

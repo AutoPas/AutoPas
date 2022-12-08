@@ -29,7 +29,10 @@ class LogicHandler {
    * @param rebuildFrequency
    */
   LogicHandler(autopas::AutoTuner<Particle> &autoTuner, unsigned int rebuildFrequency)
-      : _autoTuner(autoTuner) {
+      : _neighborListRebuildFrequency{rebuildFrequency},
+        _autoTuner(autoTuner),
+        _particleBuffer(autopas_get_max_threads()),
+        _haloParticleBuffer(autopas_get_max_threads()) {
     checkMinimalSize();
     autoTuner.setVerletRebuildFrequency(rebuildFrequency);
   }
@@ -40,38 +43,42 @@ class LogicHandler {
    * @return Leaving particles.
    */
   [[nodiscard]] std::vector<Particle> collectLeavingParticlesFromBuffer(bool insertOwnedParticlesToContainer) {
-    std::vector<Particle> leavingBufferParticles;
-    if (insertOwnedParticlesToContainer) {
-      for (const auto &p : _particleBuffer) {
-        if (p.isDummy()) {
-          continue;
+    const auto &boxMin = _autoTuner.getContainer()->getBoxMin();
+    const auto &boxMax = _autoTuner.getContainer()->getBoxMax();
+    std::vector<Particle> leavingBufferParticles{};
+    for (auto &buffer : _particleBuffer) {
+      if (insertOwnedParticlesToContainer) {
+        for (const auto &p : buffer) {
+          if (p.isDummy()) {
+            continue;
+          }
+          if (utils::inBox(p.getR(), boxMin, boxMax)) {
+            _autoTuner.getContainer()->template addParticle(p);
+          } else {
+            leavingBufferParticles.push_back(p);
+          }
         }
-        if (utils::inBox(p.getR(), _autoTuner.getContainer()->getBoxMin(), _autoTuner.getContainer()->getBoxMax())) {
-          _autoTuner.getContainer()->template addParticle(p);
-        } else {
-          leavingBufferParticles.push_back(p);
-        }
-      }
-      _particleBuffer.clear();
-    } else {
-      for (auto iter = _particleBuffer.begin(); iter != _particleBuffer.end();) {
-        auto &p = *iter;
+        buffer.clear();
+      } else {
+        for (auto iter = buffer.begin(); iter != buffer.end();) {
+          auto &p = *iter;
 
-        auto fastRemoveP = [&]() {
-          // Fast remove of particle, i.e., swap with last entry && pop.
-          std::swap(p, _particleBuffer.back());
-          _particleBuffer.pop_back();
-          // Do not increment the iter afterwards!
-        };
-        if (p.isDummy()) {
-          // We remove dummies!
-          fastRemoveP();
-        }
-        if (utils::notInBox(p.getR(), _autoTuner.getContainer()->getBoxMin(), _autoTuner.getContainer()->getBoxMax())) {
-          leavingBufferParticles.push_back(p);
-          fastRemoveP();
-        } else {
-          ++iter;
+          auto fastRemoveP = [&]() {
+            // Fast remove of particle, i.e., swap with last entry && pop.
+            std::swap(p, buffer.back());
+            buffer.pop_back();
+            // Do not increment the iter afterwards!
+          };
+          if (p.isDummy()) {
+            // We remove dummies!
+            fastRemoveP();
+          }
+          if (utils::notInBox(p.getR(), boxMin, boxMax)) {
+            leavingBufferParticles.push_back(p);
+            fastRemoveP();
+          } else {
+            ++iter;
+          }
         }
       }
     }
@@ -97,7 +104,7 @@ class LogicHandler {
     // Substract the amount of leaving particles from the number of owned particles.
     _numParticlesOwned.fetch_sub(leavingParticles.size(), std::memory_order_relaxed);
     // updateContainer deletes all halo particles.
-    _haloParticleBuffer.clear();
+    std::for_each(_haloParticleBuffer.begin(), _haloParticleBuffer.end(), [](auto &buffer) { buffer.clear(); });
     _numParticlesHalo.exchange(0, std::memory_order_relaxed);
     return leavingParticles;
   }
@@ -188,7 +195,7 @@ class LogicHandler {
             utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), p.toString());
       }
       // If the container is valid, we add it to the particle buffer.
-      _particleBuffer.push_back(p);
+      _particleBuffer[autopas_get_thread_num()].push_back(p);
     }
     _numParticlesOwned.fetch_add(1, std::memory_order_relaxed);
   }
@@ -216,8 +223,8 @@ class LogicHandler {
       bool updated = container->updateHaloParticle(haloParticle);
       if (not updated) {
         // If we couldn't find an existing particle, add it to the halo particle buffer.
-        _haloParticleBuffer.push_back(haloParticle);
-        _haloParticleBuffer.back().setOwnershipState(OwnershipState::halo);
+        _haloParticleBuffer[autopas_get_thread_num()].push_back(haloParticle);
+        _haloParticleBuffer[autopas_get_thread_num()].back().setOwnershipState(OwnershipState::halo);
       }
     }
     _numParticlesHalo.fetch_add(1, std::memory_order_relaxed);
@@ -229,8 +236,8 @@ class LogicHandler {
   void deleteAllParticles() {
     _neighborListsAreValid = false;
     _autoTuner.getContainer()->deleteAllParticles();
-    _particleBuffer.clear();
-    _haloParticleBuffer.clear();
+    std::for_each(_particleBuffer.begin(), _particleBuffer.end(), [](auto &buffer) { buffer.clear(); });
+    std::for_each(_haloParticleBuffer.begin(), _haloParticleBuffer.end(), [](auto &buffer) { buffer.clear(); });
     // all particles are gone -> reset counters.
     _numParticlesOwned.exchange(0, std::memory_order_relaxed);
     _numParticlesHalo.exchange(0, std::memory_order_relaxed);
@@ -280,11 +287,13 @@ class LogicHandler {
   autopas::ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior) {
     /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
     auto iter = _autoTuner.getContainer()->begin(behavior);
-    if (behavior & IteratorBehavior::owned) {
-      iter.addAdditionalVector(_particleBuffer);
-    }
-    if (behavior & IteratorBehavior::halo) {
-      iter.addAdditionalVector(_haloParticleBuffer);
+    for (int i = 0; i < autopas_get_max_threads(); ++i) {
+      if (behavior & IteratorBehavior::owned) {
+        iter.addAdditionalVector(_particleBuffer[i]);
+      }
+      if (behavior & IteratorBehavior::halo) {
+        iter.addAdditionalVector(_haloParticleBuffer[i]);
+      }
     }
     return iter;
   }
@@ -295,11 +304,13 @@ class LogicHandler {
   autopas::ParticleIteratorWrapper<Particle, false> begin(IteratorBehavior behavior) const {
     /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
     auto iter = std::as_const(_autoTuner).getContainer()->begin(behavior);
-    if (behavior & IteratorBehavior::owned) {
-      iter.addAdditionalVector(_particleBuffer);
-    }
-    if (behavior & IteratorBehavior::halo) {
-      iter.addAdditionalVector(_haloParticleBuffer);
+    for (int i = 0; i < autopas_get_max_threads(); ++i) {
+      if (behavior & IteratorBehavior::owned) {
+        iter.addAdditionalVector(_particleBuffer[i]);
+      }
+      if (behavior & IteratorBehavior::halo) {
+        iter.addAdditionalVector(_haloParticleBuffer[i]);
+      }
     }
     return iter;
   }
@@ -323,11 +334,13 @@ class LogicHandler {
 
     /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
     auto iter = _autoTuner.getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior);
-    if (behavior & IteratorBehavior::owned) {
-      iter.addAdditionalVector(_particleBuffer);
-    }
-    if (behavior & IteratorBehavior::halo) {
-      iter.addAdditionalVector(_haloParticleBuffer);
+    for (int i = 0; i < autopas_get_max_threads(); ++i) {
+      if (behavior & IteratorBehavior::owned) {
+        iter.addAdditionalVector(_particleBuffer[i]);
+      }
+      if (behavior & IteratorBehavior::halo) {
+        iter.addAdditionalVector(_haloParticleBuffer[i]);
+      }
     }
     return iter;
   }
@@ -351,11 +364,13 @@ class LogicHandler {
 
     /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
     auto iter = std::as_const(_autoTuner).getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior);
-    if (behavior & IteratorBehavior::owned) {
-      iter.addAdditionalVector(_particleBuffer);
-    }
-    if (behavior & IteratorBehavior::halo) {
-      iter.addAdditionalVector(_haloParticleBuffer);
+    for (int i = 0; i < autopas_get_max_threads(); ++i) {
+      if (behavior & IteratorBehavior::owned) {
+        iter.addAdditionalVector(_particleBuffer[i]);
+      }
+      if (behavior & IteratorBehavior::halo) {
+        iter.addAdditionalVector(_haloParticleBuffer[i]);
+      }
     }
     return iter;
   }
@@ -420,15 +435,15 @@ class LogicHandler {
   std::atomic<size_t> _numParticlesHalo{0ul};
 
   /**
-   * Buffer to store particles that should not yet be added to the container.
+   * Buffer to store particles that should not yet be added to the container. There is one buffer per thread.
    * @note This buffer could potentially be replaced by a ParticleCell.
    */
-  std::vector<Particle> _particleBuffer;
+  std::vector<std::vector<Particle>> _particleBuffer;
 
   /**
-   * Buffer to store halo particles that should not yet be added to the container.
+   * Buffer to store halo particles that should not yet be added to the container. There is one buffer per thread.
    * @note This buffer could potentially be replaced by a ParticleCell.
    */
-  std::vector<Particle> _haloParticleBuffer;
+  std::vector<std::vector<Particle>> _haloParticleBuffer;
 };
 }  // namespace autopas
