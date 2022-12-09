@@ -117,6 +117,15 @@ class ParticleIteratorInterfaceImpl : public ParticleIteratorInterface<Particle,
    */
   virtual void addAdditionalVector(
       std::conditional_t<modifiable, std::vector<Particle> &, const std::vector<Particle> &> additionalVector) = 0;
+
+  /**
+   * Adds multiple additional particle vectors to the iterator. More efficient as there is only one reallocation of
+   * _additionalVectors.
+   * @param additionalVector The additional particle vector that should also be iterated over.
+   */
+  virtual void addAdditionalVectors(
+      std::conditional_t<modifiable, std::vector<std::vector<Particle>> &, const std::vector<std::vector<Particle>> &>
+          additionalVector) = 0;
 };
 
 }  // namespace internal

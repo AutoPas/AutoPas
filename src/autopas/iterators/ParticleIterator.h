@@ -73,6 +73,8 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
         _additionalVectorIndex((behavior & IteratorBehavior::forceSequential) ? 0 : autopas_get_thread_num()),
         _additionalVectorPosition(0) {
     if (additionalVectorsToIterate) {
+      // heuristic: Owned and Halo vectors for each currently active thread
+      _additionalVectors.reserve(autopas_get_num_threads() * 2);
       for (auto &&vec : *additionalVectorsToIterate) {
         _additionalVectors.push_back(&vec);
       }
@@ -213,6 +215,24 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
     return new ParticleIterator<Particle, ParticleCell, modifiable>(*this);
   }
 
+  void addAdditionalVectors(
+      std::conditional_t<modifiable, std::vector<std::vector<Particle>> &, const std::vector<std::vector<Particle>> &>
+          additionalVectors) override {
+    _additionalVectors.reserve(_additionalVectors.size() + additionalVectors.size());
+    for (auto &vec : additionalVectors) {
+      if (not vec.empty()) {
+        _additionalVectors.push_back(&vec);
+      }
+    }
+    if (_additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::ignore) {
+      _additionalParticleVectorToIterateState = AdditionalParticleVectorToIterateState::notStarted;
+    }
+    if (not isValid()) {
+      // In case the iterator wasn't valid before, it might be now with the new data. Hence, increment it to find out.
+      operator++();
+    }
+  }
+
   void addAdditionalVector(std::conditional_t<modifiable, std::vector<Particle> &, const std::vector<Particle> &>
                                additionalVector) override {
     _additionalVectors.push_back(&additionalVector);
@@ -220,7 +240,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
       _additionalParticleVectorToIterateState = AdditionalParticleVectorToIterateState::notStarted;
     }
     if (not isValid()) {
-      // In case the iterator isn't valid, we have to perform operator++
+      // In case the iterator wasn't valid before, it might be now with the new data. Hence, increment it to find out.
       operator++();
     }
   }

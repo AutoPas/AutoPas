@@ -95,12 +95,20 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle, modif
   bool operator!=(const bool &input) const { return not(*this == input); }
 
   /**
-   * Adds an additional particle vector to the iterator.
-   * @param additionalVector The additional particle vector that should also be iterated over.
+   * @copydoc autopas::internal::ParticleIteratorInterfaceImpl::addAdditionalVector()
    */
   void addAdditionalVector(
       std::conditional_t<modifiable, std::vector<Particle> &, const std::vector<Particle> &> additionalVector) {
     _particleIterator->addAdditionalVector(additionalVector);
+  }
+
+  /**
+   * @copydoc autopas::internal::ParticleIteratorInterfaceImpl::addAdditionalVectors()
+   */
+  void addAdditionalVectors(
+      std::conditional_t<modifiable, std::vector<std::vector<Particle>> &, const std::vector<std::vector<Particle>> &>
+          additionalVector) {
+    _particleIterator->addAdditionalVectors(additionalVector);
   }
 
  protected:

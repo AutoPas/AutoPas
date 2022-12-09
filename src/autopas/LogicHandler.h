@@ -286,13 +286,11 @@ class LogicHandler {
   autopas::ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior) {
     /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
     auto iter = _autoTuner.getContainer()->begin(behavior);
-    for (int i = 0; i < autopas_get_max_threads(); ++i) {
-      if (behavior & IteratorBehavior::owned) {
-        iter.addAdditionalVector(_particleBuffer[i]);
-      }
-      if (behavior & IteratorBehavior::halo) {
-        iter.addAdditionalVector(_haloParticleBuffer[i]);
-      }
+    if (behavior & IteratorBehavior::owned) {
+      iter.addAdditionalVectors(_particleBuffer);
+    }
+    if (behavior & IteratorBehavior::halo) {
+      iter.addAdditionalVectors(_haloParticleBuffer);
     }
     return iter;
   }
@@ -303,13 +301,11 @@ class LogicHandler {
   autopas::ParticleIteratorWrapper<Particle, false> begin(IteratorBehavior behavior) const {
     /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
     auto iter = std::as_const(_autoTuner).getContainer()->begin(behavior);
-    for (int i = 0; i < autopas_get_max_threads(); ++i) {
-      if (behavior & IteratorBehavior::owned) {
-        iter.addAdditionalVector(_particleBuffer[i]);
-      }
-      if (behavior & IteratorBehavior::halo) {
-        iter.addAdditionalVector(_haloParticleBuffer[i]);
-      }
+    if (behavior & IteratorBehavior::owned) {
+      iter.addAdditionalVectors(_particleBuffer);
+    }
+    if (behavior & IteratorBehavior::halo) {
+      iter.addAdditionalVectors(_haloParticleBuffer);
     }
     return iter;
   }
@@ -333,13 +329,11 @@ class LogicHandler {
 
     /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
     auto iter = _autoTuner.getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior);
-    for (int i = 0; i < autopas_get_max_threads(); ++i) {
-      if (behavior & IteratorBehavior::owned) {
-        iter.addAdditionalVector(_particleBuffer[i]);
-      }
-      if (behavior & IteratorBehavior::halo) {
-        iter.addAdditionalVector(_haloParticleBuffer[i]);
-      }
+    if (behavior & IteratorBehavior::owned) {
+      iter.addAdditionalVectors(_particleBuffer);
+    }
+    if (behavior & IteratorBehavior::halo) {
+      iter.addAdditionalVectors(_haloParticleBuffer);
     }
     return iter;
   }
@@ -363,13 +357,11 @@ class LogicHandler {
 
     /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
     auto iter = std::as_const(_autoTuner).getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior);
-    for (int i = 0; i < autopas_get_max_threads(); ++i) {
-      if (behavior & IteratorBehavior::owned) {
-        iter.addAdditionalVector(_particleBuffer[i]);
-      }
-      if (behavior & IteratorBehavior::halo) {
-        iter.addAdditionalVector(_haloParticleBuffer[i]);
-      }
+    if (behavior & IteratorBehavior::owned) {
+      iter.addAdditionalVectors(_particleBuffer);
+    }
+    if (behavior & IteratorBehavior::halo) {
+      iter.addAdditionalVectors(_haloParticleBuffer);
     }
     return iter;
   }
