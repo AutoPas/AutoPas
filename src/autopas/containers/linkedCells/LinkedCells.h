@@ -276,14 +276,14 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
 
     size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
                                 (stopIndex3D[2] - startIndex3D[2] + 1);
-    std::vector<size_t> cellsOfInterest(numCellsOfInterest);
+    std::vector<size_t> cellsOfInterest;
+    cellsOfInterest.reserve(numCellsOfInterest);
 
-    int i = 0;
+    const auto &cellsPerDimensionWithHalo = this->_cellBlock.getCellsPerDimensionWithHalo();
     for (size_t z = startIndex3D[2]; z <= stopIndex3D[2]; ++z) {
       for (size_t y = startIndex3D[1]; y <= stopIndex3D[1]; ++y) {
         for (size_t x = startIndex3D[0]; x <= stopIndex3D[0]; ++x) {
-          cellsOfInterest[i++] =
-              utils::ThreeDimensionalMapping::threeToOneD({x, y, z}, this->_cellBlock.getCellsPerDimensionWithHalo());
+          cellsOfInterest.push_back(utils::ThreeDimensionalMapping::threeToOneD({x, y, z}, cellsPerDimensionWithHalo));
         }
       }
     }
@@ -304,14 +304,14 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
 
     size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
                                 (stopIndex3D[2] - startIndex3D[2] + 1);
-    std::vector<size_t> cellsOfInterest(numCellsOfInterest);
+    std::vector<size_t> cellsOfInterest;
+    cellsOfInterest.reserve(numCellsOfInterest);
 
-    int i = 0;
+    const auto &cellsPerDimensionWithHalo = this->_cellBlock.getCellsPerDimensionWithHalo();
     for (size_t z = startIndex3D[2]; z <= stopIndex3D[2]; ++z) {
       for (size_t y = startIndex3D[1]; y <= stopIndex3D[1]; ++y) {
         for (size_t x = startIndex3D[0]; x <= stopIndex3D[0]; ++x) {
-          cellsOfInterest[i++] =
-              utils::ThreeDimensionalMapping::threeToOneD({x, y, z}, this->_cellBlock.getCellsPerDimensionWithHalo());
+          cellsOfInterest.push_back(utils::ThreeDimensionalMapping::threeToOneD({x, y, z}, cellsPerDimensionWithHalo));
         }
       }
     }
@@ -339,15 +339,15 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
 
     size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
                                 (stopIndex3D[2] - startIndex3D[2] + 1);
-    std::vector<size_t> cellsOfInterest(numCellsOfInterest);
+    std::vector<size_t> cellsOfInterest;
+    cellsOfInterest.reserve(numCellsOfInterest);
 
-    const auto cellsPerDimensionWithHalo = this->_cellBlock.getCellsPerDimensionWithHalo();
+    const auto &cellsPerDimensionWithHalo = this->_cellBlock.getCellsPerDimensionWithHalo();
 
-    size_t i = 0;
     for (size_t z = startIndex3D[2]; z <= stopIndex3D[2]; ++z) {
       for (size_t y = startIndex3D[1]; y <= stopIndex3D[1]; ++y) {
         for (size_t x = startIndex3D[0]; x <= stopIndex3D[0]; ++x) {
-          cellsOfInterest[i++] = utils::ThreeDimensionalMapping::threeToOneD({x, y, z}, cellsPerDimensionWithHalo);
+          cellsOfInterest.push_back(utils::ThreeDimensionalMapping::threeToOneD({x, y, z}, cellsPerDimensionWithHalo));
         }
       }
     }
@@ -379,15 +379,15 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
 
     size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
                                 (stopIndex3D[2] - startIndex3D[2] + 1);
-    std::vector<size_t> cellsOfInterest(numCellsOfInterest);
+    std::vector<size_t> cellsOfInterest;
+    cellsOfInterest.reserve(numCellsOfInterest);
 
-    auto cellsPerDimensionWithHalo = this->_cellBlock.getCellsPerDimensionWithHalo();
+    const auto &cellsPerDimensionWithHalo = this->_cellBlock.getCellsPerDimensionWithHalo();
 
-    int i = 0;
     for (size_t z = startIndex3D[2]; z <= stopIndex3D[2]; ++z) {
       for (size_t y = startIndex3D[1]; y <= stopIndex3D[1]; ++y) {
         for (size_t x = startIndex3D[0]; x <= stopIndex3D[0]; ++x) {
-          cellsOfInterest[i++] = utils::ThreeDimensionalMapping::threeToOneD({x, y, z}, cellsPerDimensionWithHalo);
+          cellsOfInterest.push_back(utils::ThreeDimensionalMapping::threeToOneD({x, y, z}, cellsPerDimensionWithHalo));
         }
       }
     }
