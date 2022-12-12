@@ -44,8 +44,8 @@ class RegionParticleIterator final : public ParticleIterator<Particle, ParticleC
    * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated through.
    * @param additionalParticleVectorToIterate Additional Particle Vector to iterate over.
    */
-  explicit RegionParticleIterator(CellVecType *cont, std::array<double, 3> startRegion, std::array<double, 3> endRegion,
-                                  std::vector<size_t> &indicesInRegion,
+  explicit RegionParticleIterator(CellVecType *cont, const std::array<double, 3> &startRegion,
+                                  const std::array<double, 3> &endRegion, const std::vector<size_t> &indicesInRegion,
                                   const CellBorderAndFlagManagerType *flagManager = nullptr,
                                   IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
                                   ParticleVecTypeInput *additionalParticleVectorToIterate = nullptr)
@@ -53,8 +53,8 @@ class RegionParticleIterator final : public ParticleIterator<Particle, ParticleC
         _startRegion(startRegion),
         _endRegion(endRegion),
         _indicesInRegion(indicesInRegion) {
-    bool forceSequential = this->_behavior & IteratorBehavior::forceSequential;
-    size_t offset = forceSequential ? 0ul : autopas_get_thread_num();
+    const bool forceSequential = this->_behavior & IteratorBehavior::forceSequential;
+    const size_t offset = forceSequential ? 0ul : autopas_get_thread_num();
     _currentRegionIndex = offset;
     if (additionalParticleVectorToIterate and
         (forceSequential or autopas_get_thread_num() == autopas_get_num_threads() - 1)) {
