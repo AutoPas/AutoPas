@@ -24,7 +24,7 @@ namespace autopas {
  * Particle.
  */
 template <class Particle, bool modifiable>
-class SingleCellIteratorWrapper : public SingleCellIteratorInterface<Particle, modifiable> {
+class SingleCellIteratorWrapper final : public SingleCellIteratorInterface<Particle, modifiable> {
   using ParticleType = std::conditional_t<modifiable, Particle, const Particle>;
 
  public:

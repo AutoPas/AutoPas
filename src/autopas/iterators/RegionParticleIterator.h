@@ -22,7 +22,7 @@ namespace autopas::internal {
  * Particle.
  */
 template <class Particle, class ParticleCell, bool modifiable>
-class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, modifiable> {
+class RegionParticleIterator final : public ParticleIterator<Particle, ParticleCell, modifiable> {
   using CellVecType = std::conditional_t<modifiable, std::vector<ParticleCell>, const std::vector<ParticleCell>>;
   using ParticleType = std::conditional_t<modifiable, Particle, const Particle>;
   using CellBorderAndFlagManagerType =

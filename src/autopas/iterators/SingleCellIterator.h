@@ -21,7 +21,7 @@ namespace autopas::internal {
  * Particle.
  */
 template <class Particle, class ParticleCell, bool modifiable>
-class SingleCellIterator : public SingleCellIteratorInterfaceImpl<Particle, modifiable> {
+class SingleCellIterator final : public SingleCellIteratorInterfaceImpl<Particle, modifiable> {
   using CellType = std::conditional_t<modifiable, ParticleCell, const ParticleCell>;
   using ParticleType = std::conditional_t<modifiable, Particle, const Particle>;
 
