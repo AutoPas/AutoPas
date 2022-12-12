@@ -49,13 +49,22 @@ class SingleCellIteratorWrapper : public SingleCellIteratorInterface<Particle, m
   }
 
   /**
-   * copy assignment constructor
+   * copy assignment operator
    * @param otherParticleIteratorWrapper the other ParticleIteratorWrapper
    * @return the modified SingleCellIteratorWrapper
    */
   SingleCellIteratorWrapper &operator=(const SingleCellIteratorWrapper &otherParticleIteratorWrapper) {
     _particleIterator = std::unique_ptr<internal::SingleCellIteratorInterfaceImpl<Particle, modifiable>>(
         otherParticleIteratorWrapper._particleIterator->clone());
+    return *this;
+  }
+
+  /**
+   * move assignment operator
+   * @return
+   */
+  SingleCellIteratorWrapper &operator=(SingleCellIteratorWrapper &&otherParticleIteratorWrapper) {
+    _particleIterator = std::move(otherParticleIteratorWrapper._particleIterator);
     return *this;
   }
 

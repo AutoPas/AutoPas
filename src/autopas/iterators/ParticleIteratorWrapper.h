@@ -62,6 +62,15 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle, modif
         otherParticleIteratorWrapper._particleIterator->clone());
     return *this;
   }
+  /**
+   * move assignment operator
+   * @param otherParticleIteratorWrapper
+   * @return
+   */
+  inline ParticleIteratorWrapper &operator=(ParticleIteratorWrapper &&otherParticleIteratorWrapper) {
+    _particleIterator = std::move(otherParticleIteratorWrapper._particleIterator);
+    return *this;
+  }
 
   inline ParticleIteratorWrapper<Particle, modifiable> &operator++() final {
     _particleIterator->operator++();

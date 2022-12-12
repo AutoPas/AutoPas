@@ -100,6 +100,35 @@ class RegionParticleIterator : public ParticleIterator<Particle, ParticleCell, m
     }
   }
 
+  /**
+   * Copy Constructor.
+   * @param iterator
+   */
+  RegionParticleIterator<Particle, ParticleCell, modifiable>(
+      const RegionParticleIterator<Particle, ParticleCell, modifiable> &iterator) = default;
+  /**
+   * Move Constructor.
+   * @param iterator
+   */
+  RegionParticleIterator<Particle, ParticleCell, modifiable>(
+      RegionParticleIterator<Particle, ParticleCell, modifiable> &&iterator) = default;
+
+  /**
+   * Copy assignment.
+   * @param iterator
+   * @return
+   */
+  RegionParticleIterator<Particle, ParticleCell, modifiable> &operator=(
+      const RegionParticleIterator<Particle, ParticleCell, modifiable> &iterator) = default;
+
+  /**
+   * Move assignment.
+   * @param iterator
+   * @return
+   */
+  RegionParticleIterator<Particle, ParticleCell, modifiable> &operator=(
+      RegionParticleIterator<Particle, ParticleCell, modifiable> &&iterator) = default;
+
   inline RegionParticleIterator<Particle, ParticleCell, modifiable> &operator++() override {
     do {
       ParticleIteratorType::operator++();
