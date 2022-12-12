@@ -389,8 +389,6 @@ void MDFlexConfig::addSiteType(unsigned long siteId, double epsilon, double sigm
 
 void MDFlexConfig::addMolType(unsigned long molId, const std::vector<unsigned long>& siteIds, const std::vector<std::array<double, 3>>& relSitePos, std::array<double, 3> momentOfInertia) {
 #if defined(MD_FLEXIBLE_USE_MULTI_SITE)
-  throw std::runtime_error("MDFlexConfig::addMolType was used without support for multi-site simulations being compiled");
-#endif
   // check if siteId is already existing and if there no error in input
   if (molToSiteIdMap.value.count(molId) == 1) {
     // check if type is already added
@@ -406,6 +404,9 @@ void MDFlexConfig::addMolType(unsigned long molId, const std::vector<unsigned lo
     molToSitePosMap.value.emplace(molId,relSitePos);
     momentOfInertiaMap.value.emplace(molId,momentOfInertia);
   }
+#else
+  throw std::runtime_error("MDFlexConfig::addMolType was used without support for multi-site simulations being compiled");
+#endif
 }
 
 void MDFlexConfig::flushParticles() { _particles.clear(); }

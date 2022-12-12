@@ -73,72 +73,72 @@ void calculateQuaternions(autopas::AutoPas<ParticleType> &autoPasContainer,
 
 #if defined(MD_FLEXIBLE_USE_MULTI_SITE)
 
-// const auto halfDeltaT = 0.5 * deltaT;
-//
-// const double tol = 1e-13; // tolerance given in paper
-//
-// // todo sort out how to handle global forces.
-//
-// std::cout << "here0";
-// bool flag = true;
-//
-//#ifdef AUTOPAS_OPENMP
-//#pragma omp parallel
-//#endif
-// for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-//   if (flag == true) {
-//     std::cout << "here1";
-//   }
-//   const auto q = iter->getQ();
-//   const auto angVelW = iter->getAngularVel(); // angular velocity in world frame
-//   const auto angVelM = rotatePositionBackwards(q,angVelW); // angular velocity in molecular frame  (equivalent to (17))
-//   const auto torqueW = iter->getTorque();
-//   const auto torqueM = rotatePositionBackwards(q,torqueW); // (18)
-//
-//   const auto I = particlePropertiesLibrary.getMomentOfInertia(iter->getTypeId()); // moment of inertia
-//
-//   const auto angMomentumM = mul(I,angVelM); // equivalent to (19)
-//   const auto derivativeAngMomentumM = sub(torqueM, cross(angVelM,angMomentumM)); // (20)
-//   const auto angMomentumMHalfStep = add(angMomentumM, mulScalar(derivativeAngMomentumM, halfDeltaT)); // (21)
-//
-//   auto derivativeQHalfStep = mulScalar(qMul(q, div(angMomentumMHalfStep, I)), 0.5); // (22)
-//
-//   auto qHalfStep = normalize(add(q, mulScalar(derivativeQHalfStep,halfDeltaT))); // (23)
-//
-//   const auto angVelWHalfStep = add(angVelW, mulScalar(rotatePosition(q,div(torqueM, I)), halfDeltaT)); // equivalent to (24)
-//
-//   // (25) start
-//   // initialise qHalfStepOld to be outside tolerable distance from qHalfStep to satisfy while statement
-//   auto qHalfStepOld = qHalfStep;
-//   qHalfStepOld[0] += 2 * tol;
-//
-//   if (flag == true) {
-//     std::cout << "here3";
-//   }
-//
-//   int i = 0;
-//   while (L2Norm(sub(qHalfStep,qHalfStepOld))>tol) {
-//     qHalfStepOld = qHalfStep;
-//     auto angVelMHalfStep = rotatePositionBackwards(qHalfStepOld,angVelWHalfStep); // equivalent to first two lines of (25)
-//     derivativeQHalfStep = mulScalar(qMul(qHalfStepOld,angVelMHalfStep),0.5);
-//     qHalfStep = normalize(add(q, mulScalar(derivativeQHalfStep, halfDeltaT)));
-//     if (i > 30) {
-//       std::cout << i << ":";
-//     }
-//   }
-//   // (25) end
-//
-//   const auto qFullStep = normalize(add(q, mulScalar(derivativeQHalfStep, deltaT))); // (26)
-//
-//   if (flag == true) {
-//     std::cout << "here4";
-//   }
-//
-//   iter->setQ(qFullStep);
-//   iter->setAngularVel(angVelWHalfStep); // save angular velocity half step, to be used by calculateAngularVelocities
-//
-//   flag = false;
-// }
+ const auto halfDeltaT = 0.5 * deltaT;
+
+ const double tol = 1e-13; // tolerance given in paper
+
+ // todo sort out how to handle global forces.
+
+ std::cout << "here0";
+ bool flag = true;
+
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel
+#endif
+ for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+   if (flag == true) {
+     std::cout << "here1";
+   }
+   const auto q = iter->getQ();
+   const auto angVelW = iter->getAngularVel(); // angular velocity in world frame
+   const auto angVelM = rotatePositionBackwards(q,angVelW); // angular velocity in molecular frame  (equivalent to (17))
+   const auto torqueW = iter->getTorque();
+   const auto torqueM = rotatePositionBackwards(q,torqueW); // (18)
+
+   const auto I = particlePropertiesLibrary.getMomentOfInertia(iter->getTypeId()); // moment of inertia
+
+   const auto angMomentumM = mul(I,angVelM); // equivalent to (19)
+   const auto derivativeAngMomentumM = sub(torqueM, cross(angVelM,angMomentumM)); // (20)
+   const auto angMomentumMHalfStep = add(angMomentumM, mulScalar(derivativeAngMomentumM, halfDeltaT)); // (21)
+
+   auto derivativeQHalfStep = mulScalar(qMul(q, div(angMomentumMHalfStep, I)), 0.5); // (22)
+
+   auto qHalfStep = normalize(add(q, mulScalar(derivativeQHalfStep,halfDeltaT))); // (23)
+
+   const auto angVelWHalfStep = add(angVelW, mulScalar(rotatePosition(q,div(torqueM, I)), halfDeltaT)); // equivalent to (24)
+
+   // (25) start
+   // initialise qHalfStepOld to be outside tolerable distance from qHalfStep to satisfy while statement
+   auto qHalfStepOld = qHalfStep;
+   qHalfStepOld[0] += 2 * tol;
+
+   if (flag == true) {
+     std::cout << "here3";
+   }
+
+   int i = 0;
+   while (L2Norm(sub(qHalfStep,qHalfStepOld))>tol) {
+     qHalfStepOld = qHalfStep;
+     auto angVelMHalfStep = rotatePositionBackwards(qHalfStepOld,angVelWHalfStep); // equivalent to first two lines of (25)
+     derivativeQHalfStep = mulScalar(qMul(qHalfStepOld,angVelMHalfStep),0.5);
+     qHalfStep = normalize(add(q, mulScalar(derivativeQHalfStep, halfDeltaT)));
+     if (i > 30) {
+       std::cout << i << ":";
+     }
+   }
+   // (25) end
+
+   const auto qFullStep = normalize(add(q, mulScalar(derivativeQHalfStep, deltaT))); // (26)
+
+   if (flag == true) {
+     std::cout << "here4";
+   }
+
+   iter->setQ(qFullStep);
+   iter->setAngularVel(angVelWHalfStep); // save angular velocity half step, to be used by calculateAngularVelocities
+
+   flag = false;
+ }
 
 #else
   autopas::utils::ExceptionHandler::exception("Attempting to perform rotational integrations when md-flexible has not been compiled with multi-site support!");
@@ -174,25 +174,25 @@ void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer
 
 #if defined(MD_FLEXIBLE_USE_MULTI_SITE)
 
-//#ifdef AUTOPAS_OPENMP
-//#pragma omp parallel
-//#endif
-// for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-//   const auto torqueW = iter->getTorque();
-//   const auto q = iter->getQ();
-//   const auto I = particlePropertiesLibrary.getMomentOfInertia(iter->getTypeId()); // moment of inertia
-//
-//   // convert torque to molecular-frame
-//   const auto torqueM = rotatePositionBackwards(q, torqueW);
-//
-//   // get I^-1 T in molecular-frame
-//   const auto torqueDivMoIM = div(torqueM, I);
-//
-//   // convert to world-frame
-//   const auto torqueDivMoIW = rotatePosition(q, torqueDivMoIM);
-//
-//   iter->addAngularVel(mulScalar(torqueDivMoIW, 0.5*deltaT)); // (28)
-// }
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel
+#endif
+ for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+   const auto torqueW = iter->getTorque();
+   const auto q = iter->getQ();
+   const auto I = particlePropertiesLibrary.getMomentOfInertia(iter->getTypeId()); // moment of inertia
+
+   // convert torque to molecular-frame
+   const auto torqueM = rotatePositionBackwards(q, torqueW);
+
+   // get I^-1 T in molecular-frame
+   const auto torqueDivMoIM = div(torqueM, I);
+
+   // convert to world-frame
+   const auto torqueDivMoIW = rotatePosition(q, torqueDivMoIM);
+
+   iter->addAngularVel(mulScalar(torqueDivMoIW, 0.5*deltaT)); // (28)
+ }
 
 #else
  autopas::utils::ExceptionHandler::exception("Attempting to perform rotational integrations when md-flexible has not been compiled with multi-site support!");
