@@ -52,6 +52,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     config.cellSizeFactors.value = autopas::utils::StringUtils::parseNumberSet(
         autopas::utils::ArrayUtils::to_string(node[config.cellSizeFactors.name], ", ", {"", ""}));
   }
+  if (node[config.verletRebuildFrequencies.name]) {
+    config.verletRebuildFrequencies.value = autopas::utils::StringUtils::parseNumberSet(
+        autopas::utils::ArrayUtils::to_string(node[config.verletRebuildFrequencies.name], ", ", {"", ""}));
+  }
+
   if (node[config.dataLayoutOptions.name]) {
     config.dataLayoutOptions.value = autopas::DataLayoutOption::parseOptions(
         autopas::utils::ArrayUtils::to_string(node[config.dataLayoutOptions.name], ", ", {"", ""}));
@@ -207,9 +212,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
   if (node[config.logFileName.name]) {
     config.logFileName.value = node[config.logFileName.name].as<std::string>();
   }
-  if (node[config.verletRebuildFrequency.name]) {
-    config.verletRebuildFrequency.value = node[config.verletRebuildFrequency.name].as<unsigned int>();
-  }
+
+
   if (node[config.verletSkinRadiusPerTimestep.name]) {
     config.verletSkinRadiusPerTimestep.value = node[config.verletSkinRadiusPerTimestep.name].as<double>();
   }

@@ -438,7 +438,7 @@ class AutoPas {
    * @return _verletSkin
    */
   double getVerletSkin() {
-    double _verletSkin = AutoPas::_verletSkinPerTimestep * double(getAllowedVerletRebuildFrequencies().getMin());
+    double _verletSkin = AutoPas::_verletSkinPerTimestep * _verletRebuildFrequency);
     return _verletSkin;
   };
 
@@ -546,6 +546,9 @@ class AutoPas {
     AutoPas::_allowedVerletRebuildFrequencies = std::move(allowedVerletRebuildFrequencies.clone());
   }
 
+  int getVerletRebuildFrequency(){
+    return _verletRebuildFrequency;
+  }
   /**
    */
   void setVerletRebuildFrequency(int verletRebuildFrequency) {
@@ -553,7 +556,8 @@ class AutoPas {
       AutoPasLog(error, "rebuildFrequenzy < 1");
       utils::ExceptionHandler::exception("Error: rebuildFrequenzy < 1!");
     }
-    setAllowedVerletRebuildFrequencies(NumberSetFinite<int>({verletRebuildFrequency}));
+    _verletRebuildFrequency = verletRebuildFrequency;
+    //_allowedVerletRebuildFrequencies = std::make_unique<NumberSetFinite<int>>(std::set<int>{verletRebuildFrequency});
   }
 
   /**

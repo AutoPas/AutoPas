@@ -133,7 +133,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setMPITuningMaxDifferenceForBucket(_configuration.MPITuningMaxDifferenceForBucket.value);
   _autoPasContainer->setMPITuningWeightForMaxDensity(_configuration.MPITuningWeightForMaxDensity.value);
   _autoPasContainer->setVerletClusterSize(_configuration.verletClusterSize.value);
-  _autoPasContainer->setAllowedVerletRebuildFrequencies(*_configuration.verletRebuildFrequencies.value);
+  _autoPasContainer->setAllowedVerletRebuildFrequencies(_configuration.verletRebuildFrequencies.value);
   _autoPasContainer->setVerletSkinPerTimestep(_configuration.verletSkinRadiusPerTimestep.value);
   _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
   int rank{};
@@ -544,7 +544,7 @@ void Simulation::logMeasurements() {
       // approximation for flops of verlet list generation
       if (_autoPasContainer->getContainerType() == autopas::ContainerOption::verletLists) {
         const auto approxNumberOfRebuilds =
-            static_cast<size_t>(floor(_iteration / _configuration.verletRebuildFrequency.value));
+            static_cast<size_t>(floor(_iteration / _configuration.verletRebuildFrequencies.value.getMedian()));
         flops += flopCounterFunctor.getDistanceCalculations() *
                  decltype(flopCounterFunctor)::numFlopsPerDistanceCalculation * approxNumberOfRebuilds;
       }

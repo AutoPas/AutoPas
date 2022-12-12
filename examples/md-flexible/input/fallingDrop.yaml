@@ -1,5 +1,5 @@
 container                        :  [LinkedCells, VerletLists, VerletListsCells, VerletClusterLists]
-verlet-rebuild-frequency         :  10
+verlet-rebuild-frequencies       :  [10]
 verlet-skin-radius-per-timestep  :  0.1
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
