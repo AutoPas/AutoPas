@@ -48,12 +48,30 @@ class GaussianHyperparameters {
    */
   GaussianHyperparameters(double mean, double theta, Eigen::VectorXd dimScales);
 
+  /**
+   * Copy constructor
+   * @param gaussianHyperparameters
+   */
   GaussianHyperparameters(const GaussianHyperparameters &gaussianHyperparameters);
 
+  /**
+   * Move Constructor
+   * @param gaussianHyperparameters
+   */
   GaussianHyperparameters(GaussianHyperparameters &&gaussianHyperparameters) noexcept;
 
+  /**
+   * Copy assignment operator
+   * @param gaussianHyperparameters
+   * @return
+   */
   GaussianHyperparameters &operator=(const GaussianHyperparameters &gaussianHyperparameters);
 
+  /**
+   * Move assignment operator
+   * @param gaussianHyperparameters
+   * @return
+   */
   GaussianHyperparameters &operator=(GaussianHyperparameters &&gaussianHyperparameters) noexcept;
 
   ~GaussianHyperparameters();

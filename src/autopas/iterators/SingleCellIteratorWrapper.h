@@ -61,6 +61,7 @@ class SingleCellIteratorWrapper final : public SingleCellIteratorInterface<Parti
 
   /**
    * move assignment operator
+   * @param otherParticleIteratorWrapper
    * @return
    */
   SingleCellIteratorWrapper &operator=(SingleCellIteratorWrapper &&otherParticleIteratorWrapper) {
