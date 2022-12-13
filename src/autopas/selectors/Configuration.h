@@ -29,14 +29,23 @@ class Configuration {
    * @param _dataLayout
    * @param _newton3
    * @param _cellSizeFactor
+   *
+   * @note needs constexpr (hence inline) constructor to be a literal.
    */
-  Configuration(ContainerOption _container, double _cellSizeFactor, TraversalOption _traversal,
-                LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout, Newton3Option _newton3);
+  constexpr Configuration(ContainerOption _container, double _cellSizeFactor, TraversalOption _traversal,
+                          LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout, Newton3Option _newton3)
+      : container(_container),
+        traversal(_traversal),
+        loadEstimator(_loadEstimator),
+        dataLayout(_dataLayout),
+        newton3(_newton3),
+        cellSizeFactor(_cellSizeFactor) {}
 
   /**
    * Constructor taking no arguments. Initializes all properties to an invalid choice or false.
+   * @note needs constexpr (hence inline) constructor to be a literal.
    */
-  Configuration();
+  constexpr Configuration() : container(), traversal(), loadEstimator(), dataLayout(), newton3(), cellSizeFactor(-1.) {}
 
   /**
    * Returns string representation in JSON style of the configuration object.

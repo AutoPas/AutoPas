@@ -8,19 +8,6 @@
 
 #include "autopas/utils/StringUtils.h"
 
-autopas::Configuration::Configuration(ContainerOption _container, double _cellSizeFactor, TraversalOption _traversal,
-                                      LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout,
-                                      Newton3Option _newton3)
-    : container(_container),
-      traversal(_traversal),
-      loadEstimator(_loadEstimator),
-      dataLayout(_dataLayout),
-      newton3(_newton3),
-      cellSizeFactor(_cellSizeFactor) {}
-
-autopas::Configuration::Configuration()
-    : container(), traversal(), loadEstimator(), dataLayout(), newton3(), cellSizeFactor(-1.) {}
-
 std::string autopas::Configuration::toString() const {
   return "{Container: " + container.to_string() + " , CellSizeFactor: " + std::to_string(cellSizeFactor) +
          " , Traversal: " + traversal.to_string() + " , Load Estimator: " + loadEstimator.to_string() +
