@@ -120,6 +120,10 @@ class ExceptionHandler {
      */
     explicit AutoPasException(std::string description);
 
+    /**
+     * Copy constructor.
+     * @param exception
+     */
     AutoPasException(const AutoPasException &exception);
 
     ~AutoPasException() override;
