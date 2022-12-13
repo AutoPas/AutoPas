@@ -202,11 +202,14 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
    * @return returns whether the iterator is valid
    */
   [[nodiscard]] bool isValid() const override {
+    // case: currently iterating extra vectors
     if (_additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::iterating) {
+      // true if: pointing at a valid particle within any of the vectors
       return _additionalVectorIndex < _additionalVectors.size() and
              _additionalVectorPosition < _additionalVectors[_additionalVectorIndex]->size() and
              particleHasCorrectOwnershipState();
     }
+    // true if: iterator across and within cells are good
     return _vectorOfCells != nullptr and _iteratorAcrossCells < _vectorOfCells->end() and
            _iteratorWithinOneCell.isValid() and particleHasCorrectOwnershipState();
   }
@@ -370,12 +373,12 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
   /**
    * Manager providing info if cell is in halo.
    */
-  const CellBorderAndFlagManagerType *_flagManager;
+  CellBorderAndFlagManagerType *_flagManager;
 
   /**
    * The behavior of the iterator.
    */
-  const IteratorBehavior _behavior;
+  IteratorBehavior _behavior;
 
   /**
    * Enum class that specifies the iterating state of the additional particle vector.

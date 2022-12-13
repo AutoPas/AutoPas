@@ -18,8 +18,8 @@ namespace autopas::utils {
  *
  * @tparam T the type of floating point check
  * @param position the position that should be checked
- * @param low the lower corner of the box
- * @param high the upper corner of the box
+ * @param low the lower corner of the box (inclusive)
+ * @param high the upper corner of the box (exclusive)
  * @return true if position is inside the box, false otherwise
  */
 template <typename T>
@@ -42,8 +42,8 @@ bool inBox(const std::array<T, 3> &position, const std::array<T, 3> &low, const 
  *
  * @tparam T the type of floating point check
  * @param position the position that should be checked
- * @param low the lower corner of the box
- * @param high the upper corner of the box
+ * @param low the lower corner of the box (inclusive)
+ * @param high the upper corner of the box (exclusive)
  * @return true if position is not inside the box, false otherwise
  */
 template <typename T>

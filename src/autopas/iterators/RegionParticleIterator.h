@@ -130,7 +130,9 @@ class RegionParticleIterator final : public ParticleIterator<Particle, ParticleC
       RegionParticleIterator<Particle, ParticleCell, modifiable> &&iterator) = default;
 
   inline RegionParticleIterator<Particle, ParticleCell, modifiable> &operator++() override {
+    // increment the iterator until a particle in the region is found or nothing is left
     do {
+      // parent ++ operator
       ParticleIteratorType::operator++();
     } while (ParticleIteratorType::isValid() and utils::notInBox(this->operator*().getR(), _startRegion, _endRegion) and
              this->getCurrentCellId() <= *(_indicesInRegion.end() - 1));
@@ -138,7 +140,7 @@ class RegionParticleIterator final : public ParticleIterator<Particle, ParticleC
   }
 
   [[nodiscard]] bool isValid() const override {
-    return ParticleIteratorType::isValid() && utils::inBox(this->operator*().getR(), _startRegion, _endRegion);
+    return ParticleIteratorType::isValid() and utils::inBox(this->operator*().getR(), _startRegion, _endRegion);
   }
 
   inline ParticleIteratorInterfaceImpl<Particle, modifiable> *clone() const override {
@@ -178,9 +180,21 @@ class RegionParticleIterator final : public ParticleIterator<Particle, ParticleC
     }
   }
 
-  const std::array<double, 3> _startRegion;
-  const std::array<double, 3> _endRegion;
-  const std::vector<size_t> _indicesInRegion;
+  /**
+   * 3d coordinates of the start point of the region (inclusive)
+   */
+  std::array<double, 3> _startRegion;
+  /*
+   * 3d coordinates of the end point of the region (exclusive)
+   */
+  std::array<double, 3> _endRegion;
+  /*
+   * vector of indices to iterate
+   */
+  std::vector<size_t> _indicesInRegion;
+  /*
+   * 1d index of the cell that is currently iterated
+   */
   size_t _currentRegionIndex;
 };
 }  // namespace autopas::internal
