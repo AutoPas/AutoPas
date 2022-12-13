@@ -191,7 +191,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     }
     return ParticleIteratorWrapper<ParticleType, true>(
         new internal::RegionParticleIterator<ParticleType, ParticleCell, true>(&this->_cells, lowerCorner, higherCorner,
-                                                                               cellsOfInterest, this, behavior));
+                                                                               std::move(cellsOfInterest), this, behavior));
   }
 
   [[nodiscard]] ParticleIteratorWrapper<ParticleType, false> getRegionIterator(
@@ -206,7 +206,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     }
     return ParticleIteratorWrapper<ParticleType, false>(
         new internal::RegionParticleIterator<ParticleType, ParticleCell, false>(
-            &this->_cells, lowerCorner, higherCorner, cellsOfInterest, this, behavior));
+            &this->_cells, lowerCorner, higherCorner, std::move(cellsOfInterest), this, behavior));
   }
 
   /**

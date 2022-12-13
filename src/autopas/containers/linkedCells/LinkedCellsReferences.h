@@ -335,7 +335,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
 
     return ParticleIteratorWrapper<ParticleType, true>(
         new internal::RegionParticleIterator<ParticleType, ReferenceCell, true>(
-            &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBlock, behavior, nullptr));
+            &this->_cells, lowerCorner, higherCorner, std::move(cellsOfInterest), &_cellBlock, behavior, nullptr));
   }
 
   ParticleIteratorWrapper<ParticleType, false> getRegionIterator(const std::array<double, 3> &lowerCorner,
@@ -363,7 +363,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
 
     return ParticleIteratorWrapper<ParticleType, false>(
         new internal::RegionParticleIterator<ParticleType, ReferenceCell, false>(
-            &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBlock, behavior, nullptr));
+            &this->_cells, lowerCorner, higherCorner, std::move(cellsOfInterest), &_cellBlock, behavior, nullptr));
   }
 
   /**

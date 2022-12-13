@@ -38,21 +38,21 @@ class RegionParticleIterator final : public ParticleIterator<Particle, ParticleC
    * @param cont Container of particle cells.
    * @param startRegion Lower corner of the region to iterate over.
    * @param endRegion Top corner of the region to iterate over.
-   * @param indicesInRegion List of indices all threads will iterate over.
+   * @param indicesInRegion List of indices all threads will iterate over. Argument is moved.
    * @param flagManager The CellBorderAndFlagManager that shall be used to query the cell types.
    * Can be nullptr if the behavior is ownedOrHalo.
    * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated through.
    * @param additionalParticleVectorToIterate Additional Particle Vector to iterate over.
    */
   explicit RegionParticleIterator(CellVecType *cont, const std::array<double, 3> &startRegion,
-                                  const std::array<double, 3> &endRegion, const std::vector<size_t> &indicesInRegion,
+                                  const std::array<double, 3> &endRegion, std::vector<size_t> indicesInRegion,
                                   const CellBorderAndFlagManagerType *flagManager = nullptr,
                                   IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
                                   ParticleVecTypeInput *additionalParticleVectorToIterate = nullptr)
       : ParticleIteratorType(cont, flagManager, behavior, additionalParticleVectorToIterate),
         _startRegion(startRegion),
         _endRegion(endRegion),
-        _indicesInRegion(indicesInRegion) {
+        _indicesInRegion(std::move(indicesInRegion)) {
     const bool forceSequential = this->_behavior & IteratorBehavior::forceSequential;
     const size_t offset = forceSequential ? 0ul : autopas_get_thread_num();
     _currentRegionIndex = offset;
