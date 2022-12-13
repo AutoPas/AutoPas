@@ -160,6 +160,8 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Stores the rebuild Frequency.
    */
   autopas::NumberSetFinite<int> _rebuildFrequencies;
+
+  int _rebuildFrequency;
   /**
    * The minimum coordinates of the global domain.
    */

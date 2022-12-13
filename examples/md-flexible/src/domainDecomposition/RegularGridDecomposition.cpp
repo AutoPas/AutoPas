@@ -475,7 +475,7 @@ void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(double wo
       // than localBoxMax.
       balancedPosition = DomainTools::balanceAdjacentDomains(
           neighborPlaneWork, averageWorkInPlane[i], neighborBoundary, oldLocalBoxMax[i],
-          2 * (_cutoffWidth + _skinWidthPerTimestep * _rebuildFrequencies));
+          2 * (_cutoffWidth + _skinWidthPerTimestep * _rebuildFrequency));
       _localBoxMin[i] += (balancedPosition - _localBoxMin[i]) / 2;
     }
 
@@ -490,7 +490,7 @@ void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(double wo
       // than localBoxMax.
       balancedPosition = DomainTools::balanceAdjacentDomains(
           averageWorkInPlane[i], neighborPlaneWork, oldLocalBoxMin[i], neighborBoundary,
-          2 * (_cutoffWidth + _skinWidthPerTimestep * _rebuildFrequencies));
+          2 * (_cutoffWidth + _skinWidthPerTimestep * _rebuildFrequency));
       _localBoxMax[i] += (balancedPosition - _localBoxMax[i]) / 2;
     }
   }

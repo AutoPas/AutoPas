@@ -73,7 +73,7 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
   config.boxMax.value = {5., 5., 5.};
   config.cutoff.value = 0.3;
   config.verletSkinRadiusPerTimestep.value = 0.01;
-  config.verletRebuildFrequency.value = 20;
+  config.verletRebuildFrequencies.value = std::make_shared<autopas::NumberSetFinite<int>>(std::set<int>{20});
   config.subdivideDimension.value = {true, true, true};
   config.boundaryOption.value = boundaryConditions;
 
