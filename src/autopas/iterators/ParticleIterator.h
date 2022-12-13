@@ -319,32 +319,15 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
   [[nodiscard]] bool particleHasCorrectOwnershipState() const {
     // IMPORTANT: `this->` is necessary here! Without it clang 7, 8 and 9 fail due to an compiler bug:
     // https://stackoverflow.com/questions/55359614/clang-complains-about-constexpr-function-in-case-for-switch-statement
-    switch (this->_behavior & ~IteratorBehavior::forceSequential) {
-      case IteratorBehavior::ownedOrHaloOrDummy:
-        return true;
-      case IteratorBehavior::ownedOrHalo:
-        if (_additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::iterating) {
-          return not(*_additionalVectors[_additionalVectorIndex])[_additionalVectorPosition].isDummy();
-        } else {
-          return not _iteratorWithinOneCell->isDummy();
-        }
-      case IteratorBehavior::halo:
-        if (_additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::iterating) {
-          return (*_additionalVectors[_additionalVectorIndex])[_additionalVectorPosition].isHalo();
-        } else {
-          return _iteratorWithinOneCell->isHalo();
-        }
-      case IteratorBehavior::owned:
-        if (_additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::iterating) {
-          return (*_additionalVectors[_additionalVectorIndex])[_additionalVectorPosition].isOwned();
-        } else {
-          return _iteratorWithinOneCell->isOwned();
-        }
-      default:
-        utils::ExceptionHandler::exception(
-            "ParticleIterator::particleHasCorrectOwnershipState() encountered unknown iterator behavior: {}",
-            this->_behavior);
-        return false;
+    if (this->_behavior == IteratorBehavior::ownedOrHaloOrDummy) {
+      return true;
+    } else if (_additionalParticleVectorToIterateState == AdditionalParticleVectorToIterateState::iterating) {
+      return static_cast<unsigned int>(
+                 (*_additionalVectors[_additionalVectorIndex])[_additionalVectorPosition].getOwnershipState()) &
+             static_cast<unsigned int>(this->_behavior);
+    } else {
+      return static_cast<unsigned int>(_iteratorWithinOneCell->getOwnershipState()) &
+             static_cast<unsigned int>(this->_behavior);
     }
   }
 
