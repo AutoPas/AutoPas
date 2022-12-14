@@ -100,9 +100,8 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
                             IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
                             ParticleVecTypeInput *additionalVectorsToIterate = nullptr)
       : ParticleIterator(cont, flagManager, behavior, additionalVectorsToIterate) {
-    auto myThreadId = autopas_get_thread_num();
     if (not(_behavior & IteratorBehavior::forceSequential)) {
-      offset += myThreadId;
+      offset += autopas_get_thread_num();
     }
 
     if (offset < cont->size()) {
@@ -112,7 +111,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
       _additionalParticleVectorToIterateState = AdditionalParticleVectorToIterateState::iterating;
     } else {
       _iteratorAcrossCells = cont->end();
-      AutoPasLog(trace, "More threads than cells. No work left for thread {}!", myThreadId);
+      AutoPasLog(trace, "More threads than cells. No work left for thread {}!", autopas_get_thread_num());
       return;
     }
 
