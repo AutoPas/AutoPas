@@ -183,7 +183,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    */
   Particle &at(size_t index) {
     std::lock_guard<AutoPasLock> lock(_lock);
-    return *_ps[index];
+    return _ps.at(index);
   }
 
   /**
@@ -193,6 +193,28 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @return A const ref to a particle
    */
   const Particle &at(size_t index) const {
+    std::lock_guard<AutoPasLock> lock(_lock);
+    return _ps.at(index);
+  }
+
+  /**
+   * Get a particle from the iterator
+   *
+   * @param index The index of the particle
+   * @return A ref to a particle
+   */
+  Particle &operator[](size_t index) {
+    std::lock_guard<AutoPasLock> lock(_lock);
+    return *_ps[index];
+  }
+
+  /**
+   * Get a particle from the iterator
+   *
+   * @param index The index of the particle
+   * @return A ref to a particle
+   */
+  const Particle &operator[](size_t index) const {
     std::lock_guard<AutoPasLock> lock(_lock);
     return *_ps[index];
   }

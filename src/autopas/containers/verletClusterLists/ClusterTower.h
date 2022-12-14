@@ -278,6 +278,20 @@ class ClusterTower : public ParticleCell<Particle> {
    */
   const Particle &at(size_t index) const { return _particlesStorage._particles.at(index); }
 
+  /**
+   * Returns the particle at position index. Needed by SingleCellIterator.
+   * @param index the position of the particle to return.
+   * @return the particle at position index.
+   */
+  Particle &operator[](size_t index) { return _particlesStorage._particles[index]; }
+
+  /**
+   * Returns the particle at position index. Needed by SingleCellIterator.
+   * @param index the position of the particle to return.
+   * @return the particle at position index.
+   */
+  const Particle &operator[](size_t index) const { return _particlesStorage._particles[index]; }
+
   // Methods from here on: Only to comply with ParticleCell interface. SingleCellIterators work on ParticleCells, and
   // while those methods would not be needed, still complying to the whole interface should be helpful, if
   // maybe someday new necessary pure virtual methods are introduced there.
