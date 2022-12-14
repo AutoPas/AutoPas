@@ -43,7 +43,7 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle, modif
             static_cast<internal::ParticleIteratorInterfaceImpl<Particle, modifiable> *>(particleIteratorInterface)) {}
 
   /**
-   * copy operator
+   * copy constructor
    * @param otherParticleIteratorWrapper the other ParticleIteratorWrapper
    */
   ParticleIteratorWrapper(const ParticleIteratorWrapper &otherParticleIteratorWrapper) : _particleIterator(nullptr) {
@@ -51,6 +51,13 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle, modif
       _particleIterator.reset(otherParticleIteratorWrapper._particleIterator->clone());
     }
   }
+
+  /**
+   * move constructor
+   * @param otherParticleIteratorWrapper the other ParticleIteratorWrapper
+   */
+  ParticleIteratorWrapper(ParticleIteratorWrapper &&otherParticleIteratorWrapper)
+      : _particleIterator(std::move(otherParticleIteratorWrapper._particleIterator)) {}
 
   /**
    * copy assignment operator to assign contents of otherParticleIteratorWrapper to this ParticleIteratorWrapper
