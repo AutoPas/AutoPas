@@ -301,9 +301,9 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
       case IteratorBehavior::ownedOrHalo:
         return true;
       case IteratorBehavior::halo:
-        return _flagManager->cellCanContainHaloParticles(_iteratorAcrossCells - _vectorOfCells->begin());
+        return _flagManager->cellCanContainHaloParticles(getCurrentCellId());
       case IteratorBehavior::owned:
-        return _flagManager->cellCanContainOwnedParticles(_iteratorAcrossCells - _vectorOfCells->begin());
+        return _flagManager->cellCanContainOwnedParticles(getCurrentCellId());
       default:
         utils::ExceptionHandler::exception(
             "ParticleIterator::isCellTypeBehaviorCorrect() encountered unknown iterator behavior: {}", this->_behavior);
