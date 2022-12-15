@@ -194,7 +194,7 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
 }
 
 /**
- * Scales velocity of particles towards a given temperature.
+ * Scales velocity of particles towards a given temperature. For Multi-site simulations, angular velocity is also scaled.
  * @tparam AutoPasTemplate Type of AutoPas Object (no pointer)
  * @tparam ParticlePropertiesLibraryTemplate Type of ParticlePropertiesLibrary Object (no pointer)
  * @param autopas
@@ -208,26 +208,32 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
   const auto currentTemperatureMap = calcTemperatureComponent(autopas, particlePropertiesLibrary);
 
   // make sure we work with a positive delta
-  const double deltaTemperaturePositive = std::abs(deltaTemperature);
+  const double absoluteDeltaTemperature = std::abs(deltaTemperature);
+
   std::remove_const_t<decltype(currentTemperatureMap)> scalingMap;
 
   for (const auto &[particleTypeID, currentTemperature] : currentTemperatureMap) {
-    double nextTargetTemperature{};
-    // check if we are already in the vicinity of our target or if we still need full steps
-    if (std::abs(currentTemperature - targetTemperature) < std::abs(deltaTemperature)) {
-      nextTargetTemperature = targetTemperature;
-    } else {
-      // make sure we scale in the right direction
-      nextTargetTemperature = currentTemperature < targetTemperature ? currentTemperature + deltaTemperaturePositive
-                                                                     : currentTemperature - deltaTemperaturePositive;
-    }
-    scalingMap[particleTypeID] = std::sqrt(nextTargetTemperature / currentTemperature);
+    // If the current temperature is within absoluteDeltaTemperature of target temperature,
+    //      set immediate target temperature to target temperature.
+    //
+    // Else, set immediate target temperature to absoluteDeltaTemperature towards the target temperature from the
+    // current temperature.
+
+    const auto immediateTargetTemperature = currentTemperature < targetTemperature ? std::min(currentTemperature + absoluteDeltaTemperature, targetTemperature) :
+                                                                                   std::max(currentTemperature - absoluteDeltaTemperature, targetTemperature);
+    // Determine a scaling factor for each particle type.
+    scalingMap[particleTypeID] = std::sqrt(immediateTargetTemperature / currentTemperature);
   }
+
+  // Scale velocities (and angular velocities) with the scaling map
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel default(none) shared(autopas, scalingMap)
 #endif
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     iter->setV(autopas::utils::ArrayMath::mulScalar(iter->getV(), scalingMap[iter->getTypeId()]));
+#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+    iter->setAngularVel(autopas::utils::ArrayMath::mulScalar(iter->getAngularVel(), scalingMap[iter->getTypeId()]));
+#endif
   }
 }
 }  // namespace Thermostat

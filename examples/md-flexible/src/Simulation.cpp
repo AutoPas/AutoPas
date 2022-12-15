@@ -244,11 +244,10 @@ void Simulation::run() {
 
     if (_configuration.deltaT.value != 0) {
       updateVelocities();
-      updateThermostat();
 #if defined(MD_FLEXIBLE_USE_MULTI_SITE)
       updateAngularVelocities();
-      // todo - rotational thermostat is needed here
 #endif
+      updateThermostat();
     }
     _timers.computationalLoad.stop();
 
