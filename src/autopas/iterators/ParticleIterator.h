@@ -334,7 +334,7 @@ class ParticleIterator : public ParticleIteratorInterfaceImpl<Particle, modifiab
    * Get the 1D index of the cell the iterator currently is in.
    * @return Index of current cell.
    */
-  size_t getCurrentCellId() { return _iteratorAcrossCells - _vectorOfCells->begin(); }
+  [[nodiscard]] size_t getCurrentCellId() const { return _iteratorAcrossCells - _vectorOfCells->begin(); }
 
   /**
    * Pointer to the cell vector.
