@@ -69,7 +69,15 @@ double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibrary
 
 /**
  * Calculates temperature of system, for each component separately.
+ *
+ * Kinetic Energy for each molecule is
+ *      1/2 * mass * dot(vel, vel) + 1/2 \Sum_{0 \leq i < 3} MoI_i * angVel_i^2
+ * where MoI is the diagonal Moment of Inertia. This formula comes from Rapport, The Art of MD, equation (8.2.34).
+ *
+ * The second term is only applied for Multi-Site MD.
+ *
  * Assuming dimension-less units and Boltzmann constant = 1.
+ *
  * @tparam AutoPasTemplate Type of AutoPas Object (no pointer)
  * @tparam ParticlePropertiesLibraryTemplate Type of ParticlePropertiesLibrary Object (no pointer)
  * @param autopas
@@ -79,6 +87,9 @@ double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibrary
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 auto calcTemperatureComponent(const AutoPasTemplate &autopas,
                               ParticlePropertiesLibraryTemplate &particlePropertiesLibrary) {
+  using autopas::utils::ArrayMath::dot;
+  using autopas::utils::ArrayMath::mul;
+
   // map of: particle typeID -> kinetic energy times 2 for this type
   std::map<size_t, double> kineticEnergyMul2Map;
   // map of: particle typeID -> number of particles of this type
@@ -90,7 +101,7 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
   }
 
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel
+//#pragma omp parallel
 #endif
   {
     // create aggregators for each thread
@@ -103,8 +114,15 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
     // parallel iterators
     for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
       const auto &vel = iter->getV();
+#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+      const auto &angVel = iter->getAngularVel();
+#endif
       kineticEnergyMul2MapThread.at(iter->getTypeId()) +=
-          particlePropertiesLibrary.getMass(iter->getTypeId()) * autopas::utils::ArrayMath::dot(vel, vel);
+          particlePropertiesLibrary.getMass(iter->getTypeId()) * dot(vel, vel);
+#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+      kineticEnergyMul2MapThread.at(iter->getTypeId()) += dot(particlePropertiesLibrary.getgetMomentOfInertia(),
+                                                              mul(angVel, angVel));
+#endif
       numParticleMapThread.at(iter->getTypeId())++;
     }
     // manual reduction
@@ -132,9 +150,9 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
 
   auto kineticEnergyAndParticleMaps = std::make_tuple(kineticEnergyMul2Map.begin(), numParticleMap.begin());
 
-  for (auto [kinEIter, numParIter] = kineticEnergyAndParticleMaps; kinEIter != kineticEnergyMul2Map.end();
-       ++kinEIter, ++numParIter) {
-    kinEIter->second /= static_cast<double>(numParIter->second) * dimensions;
+  for (auto [kineticEnergyMapIter, numParticleMapIter] = kineticEnergyAndParticleMaps;
+       kineticEnergyMapIter != kineticEnergyMul2Map.end(); ++kineticEnergyMapIter, ++numParticleMapIter) {
+    kineticEnergyMapIter->second /= static_cast<double>(numParticleMapIter->second) * dimensions;
   }
   return kineticEnergyMul2Map;
 }
