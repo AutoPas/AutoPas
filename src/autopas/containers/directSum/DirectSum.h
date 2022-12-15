@@ -219,7 +219,8 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
 
     return ParticleIteratorWrapper<ParticleType, true>(
         new internal::RegionParticleIterator<ParticleType, ParticleCell, true>(
-            &this->_cells, lowerCorner, higherCorner, std::move(cellsOfInterest), &_cellBorderFlagManager, behavior, nullptr));
+            &this->_cells, lowerCorner, higherCorner, std::move(cellsOfInterest), &_cellBorderFlagManager, behavior,
+            nullptr));
   }
 
   [[nodiscard]] ParticleIteratorWrapper<ParticleType, false> getRegionIterator(
@@ -240,7 +241,8 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
 
     return ParticleIteratorWrapper<ParticleType, false>(
         new internal::RegionParticleIterator<ParticleType, ParticleCell, false>(
-            &this->_cells, lowerCorner, higherCorner, std::move(cellsOfInterest), &_cellBorderFlagManager, behavior, nullptr));
+            &this->_cells, lowerCorner, higherCorner, std::move(cellsOfInterest), &_cellBorderFlagManager, behavior,
+            nullptr));
   }
 
   /**
