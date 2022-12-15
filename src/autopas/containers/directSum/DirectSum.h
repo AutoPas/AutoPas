@@ -293,9 +293,9 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
 
   } _cellBorderFlagManager;
 
-  ParticleCell &getCell() { return this->_cells.at(0); };
+  ParticleCell &getCell() { return this->_cells[0]; };
 
-  ParticleCell &getHaloCell() { return this->_cells.at(1); };
+  ParticleCell &getHaloCell() { return this->_cells[1]; };
 };
 
 }  // namespace autopas
