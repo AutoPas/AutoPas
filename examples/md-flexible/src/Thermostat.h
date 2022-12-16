@@ -15,32 +15,8 @@
 
 /**
  * Thermostat to adjust the Temperature of the Simulation.
- * Todo Update for rotation
  */
 namespace Thermostat {
-
-namespace {
-/**
- * Add a random velocity according to the Maxwell-Boltzmann distribution to the particle.
- *
- * @param p The particle to initialize.
- * @param averageVelocity Average velocity per dimension to be added.
- * @param randomEngine Random engine used for the generation of the velocity.
- * @param normalDistribution Distribution used for constructing the maxwell boltzmann distribution.
- */
-void addMaxwellBoltzmannDistributedVelocity(ParticleType &p, const double averageVelocity,
-                                            std::default_random_engine &randomEngine,
-                                            std::normal_distribution<double> &normalDistribution) {
-  // when adding independent normally distributed values to all velocity components
-  // the velocity change is maxwell boltzmann distributed
-  std::array<double, 3> randomVelocity{};
-  for (double &v : randomVelocity) {
-    v = averageVelocity * normalDistribution(randomEngine);
-  }
-  p.setV(autopas::utils::ArrayMath::add(p.getV(), randomVelocity));
-}
-}  // namespace
-
 /**
  * Calculates temperature of system.
  * Assuming dimension-less units and Boltzmann constant = 1.
@@ -152,6 +128,7 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
 
   for (auto [kineticEnergyMapIter, numParticleMapIter] = kineticEnergyAndParticleMaps;
        kineticEnergyMapIter != kineticEnergyMul2Map.end(); ++kineticEnergyMapIter, ++numParticleMapIter) {
+    // ToDo: Allow Boltzmann constant to be set to non-1 by multiplying by it below.
     kineticEnergyMapIter->second /= static_cast<double>(numParticleMapIter->second) * dimensions;
   }
   return kineticEnergyMul2Map;
@@ -160,9 +137,19 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
 /**
  * Adds brownian motion to the given system.
  *
- * If useCurrentTemp is set to true the factor of the brownian motion is calculated per particle based on its mass and
- * the system's temperature. Otherwise a constant factor of 0.1 is used.
- * Set this to false if the system is initialized without velocities.
+ * This is achieved by each degree-of-freedom for the Kinetic Energy being sampled via the normal distribution and scaled
+ * appropriately, as determined by the equipartition theorem.
+ *
+ * For multi-site MD we assume that the kinetic energy of the system can be split equally into translational and rotational
+ * kinetic energies.
+ *
+ * For translational velocity, each degree-of-freedom is sampled via the normal distribution and scaled equally, dependant
+ * on the temperature and mass.
+ *
+ * For angular velocity, each degree-of-freedom is sampled via the normal distribution and scaled dependent on the temperature
+ * and the corresponding component of the diagonalized Moment-Of-Inertia.
+ *
+ * In all cases, we assume a Boltzmann constant of 1.
  *
  * @tparam AutoPasTemplate Type of AutoPas Object (no pointer)
  * @tparam ParticlePropertiesLibraryTemplate Type of ParticlePropertiesLibrary Object (no pointer)
@@ -173,22 +160,46 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particlePropertiesLibrary,
                        const double targetTemperature) {
-  // factors for the brownian motion per particle type.
-  std::map<size_t, double> factors;
-  // brownian motion with disturbance depending on current temperature and mass
+  // Generate map(s) of molecule type Id to scaling factors
+  std::map<size_t, double> translationalVelocityScale;
+#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+  std::map<size_t, std::array<double,3>> rotationalVelocityScale;
+#endif
+
   for (auto typeID : particlePropertiesLibrary.getTypes()) {
-    factors.emplace(typeID, std::sqrt(targetTemperature / particlePropertiesLibrary.getMass(typeID)));
+    translationalVelocityScale.emplace(typeID, std::sqrt(targetTemperature / particlePropertiesLibrary.getMass(typeID)));
+#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+    const auto momentOfInertia = particlePropertiesLibrary.getMomentOfInertia(typeID);
+    const std::array<double, 3> scale =
+    rotationalVelocityScale.emplace(typeID, {std::sqrt(targetTemperature / momentOfInertia[0]), std::sqrt(targetTemperature / momentOfInertia[1]),
+                                                    std::sqrt(targetTemperature / momentOfInertia[2])});
+#endif
   }
+
+
+#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel default(none) shared(autopas, factors)
+#pragma omp parallel default(none) shared(autopas, translationalVelocityScale, rotationalVelocityScale)
+#endif
+#else
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel default(none) shared(autopas, translationalVelocityScale)
+#endif
 #endif
   {
     // we use a constant seed for repeatability.
     // we need one random engine and distribution per thread
     std::default_random_engine randomEngine(42 + autopas::autopas_get_thread_num());
     std::normal_distribution<double> normalDistribution{0, 1};
+    const std::array<double, 3> generateNormal3DVec = [&normalDistribution, &randomEngine]{
+      const std::array<double, 3> normal3DVec{normalDistribution(randomEngine), normalDistribution(randomEngine), normalDistribution(randomEngine)};
+      return normal3DVec;
+    };
     for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-      addMaxwellBoltzmannDistributedVelocity(*iter, factors[iter->getTypeId()], randomEngine, normalDistribution);
+      iter->addV(autopas::utils::ArrayMath::mulScalar(generateNormal3DVec, translationalVelocityScale[iter->getTypeId()]));
+#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+      iter->addAngularVel(autopas::utils::ArrayMath::mul(generateNormal3DVec, rotationalVelocityScale[iter->getTypeId()]));
+#endif
     }
   }
 }

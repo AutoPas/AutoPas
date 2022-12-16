@@ -144,7 +144,7 @@ class ParticlePropertiesLibrary {
   std::vector<std::array<floatType,3>> getSitePositions(intType i) const;
 
   /**
-   * Get site types of the molecule.
+   * Get site types of the molecule.F
    * @param i molId
    * @return
    */
