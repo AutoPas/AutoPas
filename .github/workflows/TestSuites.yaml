@@ -59,7 +59,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        part: [1, 2]
+        part: [1, 2, 3]
+        # Part 1: Tests requiring with and without MPI
+        # Part 2: Tests that don't require MPI
+        # Part 3: Md-flexible tests. These should be tested for both single-site and multi-site molecules.
+        is-multi-site: [ON, OFF]
         config: [
             #    0              1       2       3                   4        5       6     7
             # container      , CC   , CXX    , builder          , mode   , OpenMP , ASan, TSan
@@ -71,8 +75,14 @@ jobs:
         [autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF ],
         ]
         exclude:
-          # MPI has few tests so only one part is needed
-          - config: [autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF ]
+          # Exclude multi-site for non-md-flexible tests.
+          - is-multi-site: ON
+            part: 1
+          # Exclude MPI configuration from part 2, where tests are not affected by use of MPI.
+          - config: [autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF ,   OFF   ]
+            part: 2
+          # Also exclude md-flexible tests.
+          - is-multi-site: ON
             part: 2
     name: Matrix - ${{ matrix.config[1] }}|${{ matrix.config[4] }}|OpenMP=${{ matrix.config[5] }}|ASan=${{ matrix.config[6] }}|TSan=${{ matrix.config[7] }} (${{ matrix.part }}/2)
     container: autopas/${{ matrix.config[0] }}
@@ -98,6 +108,7 @@ jobs:
             -DAUTOPAS_ENABLE_THREAD_SANITIZER=${{ matrix.config[7] }} \
             -DAUTOPAS_INTERNODE_TUNING=${UseMPI} \
             -DMD_FLEXIBLE_USE_MPI=${UseMPI} \
+            -DMD_FLEXIBLE_USE_MULTI_SITE=${{is-multi-site}} \
             -DMD_FLEXIBLE_FUNCTOR_AUTOVEC=ON \
             -DMD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS=OFF \
             -DMD_FLEXIBLE_FUNCTOR_AUTOVEC_AVX=ON \
@@ -107,19 +118,33 @@ jobs:
           entrypoint.sh cmake --build . --parallel 1 
       - name: Run tests ${{ matrix.part }}/2
         run: |
-          # derive whether or not to run with MPI.
-          if [ "${{ matrix.config[1] }}" = 'mpicc' ]
-          then
-            cd build
-            # only run MPI tests. Apparently mpi in the container doesn't need `--oversubscribe`
-            ctest --output-on-failure -R MPIParallelAutoPasTests
-            cd examples
-            # exclude examples that do not support MPI 
-            ctest --output-on-failure -C checkExamples -E 'sph-((main.test)|(diagram.*))'
+          # Only run md-flexible tests if multi-site MD is enabled.
+          if [ "${{ is-multi-site }}" = OFF ]
+            then
+            # derive whether or not to run with MPI.
+            if [ "${{ matrix.config[1] }}" = 'mpicc' ]
+            then
+              cd build
+              # Only run MPI tests.
+              # No `--oversubscribe`, as MPI in container doesn't need it.
+              ctest --output-on-failure -R MPIParallelAutoPasTests
+              cd examples
+              # exclude examples that do not support MPI 
+              ctest --output-on-failure -C checkExamples -E 'sph-((main.test)|(diagram.*))'
+            else
+              cd build
+              # Start with test 0 or 1 and do every second test
+              ctest --output-on-failure -I ${{ matrix.part }},,2 -j 2
+              cd examples
+              ctest -C checkExamples --output-on-failure -I ${{ matrix.part }},,2 -j 2
+            fi
           else
-            cd build
-            # Start with test 0 or 1 and do every second test
-            ctest --output-on-failure -I ${{ matrix.part }},,2 -j 2
-            cd examples
-            ctest -C checkExamples --output-on-failure -I ${{ matrix.part }},,2 -j 2
+            cd build/examples/md-flexible
+            if [ "${{ matrix.config[1] }}" = 'mpicc' ]
+            then
+              ctest -C mdFlexTests --output-on-failure
+            else
+              ctest -C mdFlexTests --output-on-failure -I ${{ matrix.part }},,2 -j 2
+            fi
           fi
+              
