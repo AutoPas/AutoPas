@@ -275,7 +275,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
     if (_localBoxMin[dimensionIndex] == _globalBoxMin[dimensionIndex]) {
       reflSkinMin = _globalBoxMin;
       reflSkinMax = _globalBoxMax;
-      reflSkinMax[dimensionIndex] = _globalBoxMin[dimensionIndex] + autoPasContainer.getVerletSkin() / 2;
+      reflSkinMax[dimensionIndex] = _globalBoxMin[dimensionIndex] + autoPasContainer.getVerletSkinPerTimestep() / 2;
 
       reflect(false);
     }
@@ -283,7 +283,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
     if (_localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex]) {
       reflSkinMin = _globalBoxMin;
       reflSkinMax = _globalBoxMax;
-      reflSkinMin[dimensionIndex] = _globalBoxMax[dimensionIndex] - autoPasContainer.getVerletSkin() / 2;
+      reflSkinMin[dimensionIndex] = _globalBoxMax[dimensionIndex] - autoPasContainer.getVerletSkinPerTimestep() / 2;
 
       reflect(true);
     }
