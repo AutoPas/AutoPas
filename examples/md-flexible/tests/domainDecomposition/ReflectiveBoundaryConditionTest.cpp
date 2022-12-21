@@ -26,8 +26,7 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   const std::array<double, 3> boxLength = autopas::utils::ArrayMath::sub(config.boxMax.value, config.boxMin.value);
   config.subdivideDimension.value = {true, true, true};
   config.cutoff.value = 0.3;
-  config.verletSkinRadiusPerTimestep.value = 0.01;
-  config.verletRebuildFrequency.value = 20;
+  config.verletSkinRadiusPerTimestep.value = 0.2;
   config.boundaryOption.value = {options::BoundaryTypeOption::reflective, options::BoundaryTypeOption::reflective,
                                  options::BoundaryTypeOption::reflective};
 
@@ -39,7 +38,6 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   autoPasContainer->setBoxMax(domainDecomposition.getLocalBoxMax());
   autoPasContainer->setCutoff(config.cutoff.value);
   autoPasContainer->setVerletSkinPerTimestep(config.verletSkinRadiusPerTimestep.value);
-  autoPasContainer->setVerletRebuildFrequency(config.verletRebuildFrequency.value);
   autoPasContainer->init();
 
   // get particle properties
