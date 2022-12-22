@@ -18,7 +18,7 @@
 
 /**
  * This class stores the (physical) properties of molecule types, and, in the case of multi-site molecules, the location
- * of the sites relative to the the centre-of-mass.
+ * of the sites relative to the the center-of-mass.
  *
  * It also provides mixed values for (force) calculations between known types.
  *
@@ -60,14 +60,16 @@ class ParticlePropertiesLibrary {
   void addSiteType(const intType siteId, const floatType epsilon, const floatType sigma, const floatType mass);
 
   /**
-   * Adds the properties of a molecule type to the library including: position and type of all sites; and moment of
+   * Adds the properties of a molecule type to the library including: position and type of all sites, as well as the diagonalized moment of
    * inertia.
    *
+   * If md-flexible has been compiled for single-site molecules, calls to this function result in an error.
    * If the type id already exists the values will be overwritten.
+   *
    * @param molId
    * @param siteIds vector of IDs of sites
    * @param relPos vector of relative positions
-   * @param momentOfInertia diagonalised moment of inertia as a array of 3 floats
+   * @param momentOfInertia diagonalized moment of inertia as a array of 3 floats
    */
   void addMolType(const intType molId, const std::vector<intType> siteIds, const std::vector<std::array<floatType,3>> relPos, const std::array<floatType, 3> momentOfInertia);
 
@@ -76,16 +78,10 @@ class ParticlePropertiesLibrary {
    */
   void calculateMixingCoefficients();
 
-  /**
-   * Calculates the moment of inertia from the masses and positions of the site, then calculates a rotation such that
-   * the moment of inertia in the rotated axes is diagonal, and applies the rotation to the sites.
-   */
-  void calculateMomentOfInertiaAndAdjustAxes();
-
   ~ParticlePropertiesLibrary() = default;
 
   /**
-   * Returns the number of registered site types.
+   * Returns the number of registered site / single-site molecule types.
    * @return Number of registered site types.
    */
   [[nodiscard]] int getNumberRegisteredSiteTypes() const {
@@ -93,74 +89,101 @@ class ParticlePropertiesLibrary {
   }
 
   /**
-   * Returns the number of registered mol types.
-   * @return Number of registered mol types.
+   * Returns the number of registered multi-site molecule types.
+   *
+   * Throws an error if support for multi-site molecules has not been compiled.
+   *
+   * @return Number of registered multi-site molecule types.
    */
   [[nodiscard]] int getNumberRegisteredMolTypes() const {
-    return _numRegisteredSiteTypes;
+#if not defined(MD_FLEXIBLE_USE_MULTI_SITE)
+    autopas::utils::ExceptionHandler::exception(
+        "ParticlePropertiesLibrary::getNumberRegisteredMolTypes(): trying to get the number of registered multi-site"
+        "molecule types when md-flexible has been compiled without support for multi-site molecules. Please compile with"
+        " the CMake argument '-D MD_FLEXIBLE_USE_MULTI_SITE=ON'."
+        )
+#endif
+    return _numRegisteredMolTypes;
   }
 
 
   /**
    * Getter for the site's epsilon*24.
-   * @param i siteId of the site.
+   * @param i Type Id of the site or single-site molecule.
    * @return 24*epsilon_i
    */
   floatType get24Epsilon(intType i) const;
 
   /**
    * Getter for the site's squared sigma.
-   * @param i siteId of the site.
+   * @param i Type Id of the site or single-site molecule.
    * @return sigma_i²
    */
-  floatType getSigmaSquare(intType i) const;
+  floatType getSigmaSquared(intType i) const;
 
   /**
    * Getter for the site's mass.
-   * @param i siteId of molecule.
+   * @param i Type Id of the site or single-site molecule.
    * @return mass_i
    */
   floatType getSiteMass(intType i) const;
 
   /**
-   * Getter for the mol's mass.
-   * @param i molId of molecule.
+   * Getter for the multi-site molecules' mass.
+   *
+   * Throws an error if support for multi-site molecules has not been compiled.
+   *
+   * @param i Type Id of a multi-site molecule.
    * @return mass_i
    */
   floatType getMolMass(intType i) const;
 
   /**
-   * Getter for the molecule's MoI.
-   * @param i molId of molecule.
-   * @return moment of inertia
+   * Getter for the multi-site molecule's diagonalized Moment of Inertia.
+   *
+   * Throws an error if support for multi-site molecules has not been compiled.
+   *
+   * @param i Type Id of a multi-site molecule.
+   * @return diagonalized moment of inertia, with each element of the returned array corresponding to a diagonal element
+   * of the MoI matrix/tensor.
    */
   std::array<floatType,3> getMomentOfInertia(intType i) const;
 
   /**
-   * Get relative site positions.
-   * @param i molId of the molecule.
-   * @return site positions
+   * Get relative site positions to a multi-site molecule's center-of-mass. These site positions must be appropriately
+   * translated and rotated to be used.
+   *
+   * Throws an error if support for multi-site molecules has not been compiled.
+   *
+   * @param i Type Id of a multi-site molecule.
+   * @return untranslated, non-rotated site positions
    */
   std::vector<std::array<floatType,3>> getSitePositions(intType i) const;
 
   /**
-   * Get site types of the molecule.F
-   * @param i molId
-   * @return
+   * Get site types of a multi-site molecule.
+   *
+   * Throws an error if support for multi-site molecules has not been compiled.
+   *
+   * @param i Type Id of a multi-site molecule.
+   * @return site type Ids.
    */
   std::vector<intType> getSiteTypes(intType i) const;
 
   /**
-   * Get number of sites in the molecule.
-   * @param i molId
-   * @return
+   * Get number of sites of a multi-site molecule.
+   *
+   * Throws an error if support for multi-site molecules has not been compiled.
+   *
+   * @param i Type Id of a multi-site molecule.
+   * @return number of sites in molecule's of type Id
    */
   intType getNumSites(intType i) const;
 
   /**
-   * Returns the precomputed mixed epsilon24.
-   * @param  i siteId of site one.
-   * @param  j siteId of site two.
+   * Returns the precomputed mixed epsilon * 24.
+   * @param  i Id of site one.
+   * @param  j Id of site two.
    * @return 24*epsilon_ij
    */
   inline floatType mixing24Epsilon(intType i, intType j) const {
@@ -169,16 +192,16 @@ class ParticlePropertiesLibrary {
 
   /**
    * Get complete mixing data for one pair of site types.
-   * @param i siteId of site one.
-   * @param j siteId of site two.
+   * @param i Id of site one.
+   * @param j Id of site two.
    * @return
    */
   inline auto getMixingData(intType i, intType j) const { return _computedMixingData[i * _numRegisteredSiteTypes + j]; }
 
   /**
-   * Get a pointer to Mixing Data.
-   * @param i
-   * @param j
+   * Get a pointer to Mixing Data for one pair of site types.
+   * @param i Id of site one.
+   * @param j Id of site two.
    * @return
    */
   inline const double *getMixingDataPtr(intType i, intType j) {
@@ -186,17 +209,17 @@ class ParticlePropertiesLibrary {
   }
 
   /**
-   * Returns precomputed mixed squared sigma.
-   * @param i siteId of site one.
-   * @param j siteId of site two.
+   * Returns precomputed mixed squared sigma for one pair of site types.
+   * @param i Id of site one.
+   * @param j Id of site two.
    * @return sigma_ij²
    */
-  inline floatType mixingSigmaSquare(intType i, intType j) const {
-    return _computedMixingData[i * _numRegisteredSiteTypes + j].sigmaSquare;
+  inline floatType mixingSigmaSquared(intType i, intType j) const {
+    return _computedMixingData[i * _numRegisteredSiteTypes + j].sigmaSquared;
   }
 
   /**
-   * Returns precomputed mixed shift 6.
+   * Returns precomputed mixed shift * 6 for one pair of site types.
    * @param i siteId of site one.
    * @param j siteId of site two.
    * @return shift * 6
@@ -206,13 +229,14 @@ class ParticlePropertiesLibrary {
   }
 
   /**
-   * Calculate the shift of the lennard jones potential from given cutoff, epsilon, sigma.
-   * @param epsilon24
-   * @param sigmaSquare
-   * @param cutoffSquared squared cutoff of the potential that should be shifted
+   * Calculate the shift multiplied 6 of the lennard jones potential from given cutoff, epsilon, sigma.
+   * The shift * 6 is then added to the total potential energy for every pairwise interaction within the cutoff.
+   * @param epsilon24 epsilon * 24
+   * @param sigmaSquared sigma squared
+   * @param cutoffSquared squared cutoff of the lennard-jones potential
    * @return shift multiplied by 6
    */
-  static double calcShift6(double epsilon24, double sigmaSquare, double cutoffSquared);
+  static double calcShift6(double epsilon24, double sigmaSquared, double cutoffSquared);
 
  private:
   intType _numRegisteredSiteTypes{0};
@@ -233,7 +257,7 @@ class ParticlePropertiesLibrary {
 
   struct PackedMixingData {
     floatType epsilon24;
-    floatType sigmaSquare;
+    floatType sigmaSquared;
     floatType shift6;
   };
 
@@ -258,6 +282,13 @@ template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::addMolType(const intType molId, const std::vector<intType> siteIds,
                                                                const std::vector<std::array<floatType,3>> relPos,
                                                                const std::array<floatType, 3> momentOfInertia) {
+#if not defined(MD_FLEXIBLE_USE_MULTI_SITE)
+  autopas::utils::ExceptionHandler::exception(
+      "ParticlePropertiesLibrary::addMolType(): trying to register a multi-site molecule type when md-flexible has been "
+      "compiled without support for multi-site molecules. Please compile with the CMake argument '-D "
+      "MD_FLEXIBLE_USE_MULTI_SITE=ON'."
+      )
+#endif
   if (_numRegisteredMolTypes != molId) {
     autopas::utils::ExceptionHandler::exception(
         "ParticlePropertiesLibrary::addMolType(): trying to register a molecule type with id {}. Please register types "
@@ -280,7 +311,7 @@ template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients() {
   _computedMixingData.resize(_numRegisteredSiteTypes * _numRegisteredSiteTypes);
 
-  auto cutoffSquare = _cutoff * _cutoff;
+  auto cutoffSquared = _cutoff * _cutoff;
 
   for (size_t firstIndex = 0ul; firstIndex < _numRegisteredSiteTypes; ++firstIndex) {
     for (size_t secondIndex = 0ul; secondIndex < _numRegisteredSiteTypes; ++secondIndex) {
@@ -292,11 +323,11 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
 
       // sigma
       floatType sigma = (_sigmas[firstIndex] + _sigmas[secondIndex]) / 2.0;
-      floatType sigmaSquare = sigma * sigma;
-      _computedMixingData[globalIndex].sigmaSquare = sigmaSquare;
+      floatType sigmaSquared = sigma * sigma;
+      _computedMixingData[globalIndex].sigmaSquared = sigmaSquared;
 
       // shift6
-      floatType shift6 = calcShift6(epsilon24, sigmaSquare, cutoffSquare);
+      floatType shift6 = calcShift6(epsilon24, sigmaSquared, cutoffSquared);
       _computedMixingData[globalIndex].shift6 = shift6;
     }
   }
@@ -309,21 +340,49 @@ floatType ParticlePropertiesLibrary<floatType, intType>::getSiteMass(intType i) 
 
 template <typename floatType, typename intType>
 floatType ParticlePropertiesLibrary<floatType, intType>::getMolMass(intType i) const {
+#if not defined(MD_FLEXIBLE_USE_MULTI_SITE)
+  autopas::utils::ExceptionHandler::exception(
+      "ParticlePropertiesLibrary::getMolMass(): trying to get the mass of a multi-site molecule type when md-flexible has been "
+      "compiled without support for multi-site molecules. Please compile with the CMake argument '-D "
+      "MD_FLEXIBLE_USE_MULTI_SITE=ON'."
+      )
+#endif
   return _molMasses[i];
 }
 
 template <typename floatType, typename intType>
 std::array<floatType,3> ParticlePropertiesLibrary<floatType, intType>::getMomentOfInertia(intType i) const {
+#if not defined(MD_FLEXIBLE_USE_MULTI_SITE)
+  autopas::utils::ExceptionHandler::exception(
+      "ParticlePropertiesLibrary::getMomentOfInertia(): trying to get the Moment of Inertia of a multi-site molecule type"
+      " when md-flexible has been compiled without support for multi-site molecules. Please compile with the CMake argument '-D "
+      "MD_FLEXIBLE_USE_MULTI_SITE=ON'."
+      )
+#endif
   return _momentOfInertias[i];
 }
 
 template <typename floatType, typename intType>
 std::vector<std::array<floatType,3>> ParticlePropertiesLibrary<floatType, intType>::getSitePositions(intType i) const {
+#if not defined(MD_FLEXIBLE_USE_MULTI_SITE)
+  autopas::utils::ExceptionHandler::exception(
+      "ParticlePropertiesLibrary::getSitePositions(): trying to get the site positions of a multi-site molecule type"
+      " when md-flexible has been compiled without support for multi-site molecules. Please compile with the CMake argument '-D "
+      "MD_FLEXIBLE_USE_MULTI_SITE=ON'."
+      )
+#endif
   return _relativeSitePositions[i];
 }
 
 template <typename floatType, typename intType>
 std::vector<intType> ParticlePropertiesLibrary<floatType, intType>::getSiteTypes(intType i) const {
+#if not defined(MD_FLEXIBLE_USE_MULTI_SITE)
+  autopas::utils::ExceptionHandler::exception(
+      "ParticlePropertiesLibrary::getSiteTypes(): trying to get the site types of a multi-site molecule type"
+      " when md-flexible has been compiled without support for multi-site molecules. Please compile with the CMake argument '-D "
+      "MD_FLEXIBLE_USE_MULTI_SITE=ON'."
+      )
+#endif
   return _siteIds[i];
 }
 
@@ -333,8 +392,8 @@ floatType ParticlePropertiesLibrary<floatType, intType>::get24Epsilon(intType i)
 }
 
 template <typename floatType, typename intType>
-floatType ParticlePropertiesLibrary<floatType, intType>::getSigmaSquare(intType i) const {
-  return _computedMixingData[i * _numRegisteredSiteTypes + i].sigmaSquare;
+floatType ParticlePropertiesLibrary<floatType, intType>::getSigmaSquared(intType i) const {
+  return _computedMixingData[i * _numRegisteredSiteTypes + i].sigmaSquared;
 }
 
 template<typename floatType, typename intType>
@@ -343,9 +402,9 @@ intType ParticlePropertiesLibrary<floatType, intType>::getNumSites(intType i) co
 }
 
 template <typename floatType, typename intType>
-double ParticlePropertiesLibrary<floatType, intType>::calcShift6(double epsilon24, double sigmaSquare,
+double ParticlePropertiesLibrary<floatType, intType>::calcShift6(double epsilon24, double sigmaSquared,
                                                                  double cutoffSquare) {
-  auto sigmaPow2DivCutoff = sigmaSquare / (cutoffSquare);
+  auto sigmaPow2DivCutoff = sigmaSquared / (cutoffSquare);
   auto sigmaPow6DivCutoff = sigmaPow2DivCutoff * sigmaPow2DivCutoff * sigmaPow2DivCutoff;
   auto shift6 = epsilon24 * (sigmaPow6DivCutoff - sigmaPow6DivCutoff * sigmaPow6DivCutoff);
   return shift6;
