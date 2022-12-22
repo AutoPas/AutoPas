@@ -99,7 +99,7 @@ TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitialization) {
  * Initializes a ParticleProperties Library, adds two sites, and tests that the getters for site values return correct
  * site information. Then tests that an error is thrown if a site with a non-consecutive site Id is added.
  */
-TEST_F(ParticlePropertiesLibraryTest, SitePropertiesSettingAndGettingTest) {
+TEST_F(ParticlePropertiesLibraryTest, SitePropertiesAddingAndGettingTest) {
   const double cutoff = 0.1;
   std::shared_ptr<ParticlePropertiesLibrary<double, unsigned int>> PPL =
       std::make_shared<ParticlePropertiesLibrary<double, unsigned int>>(cutoff);
@@ -137,4 +137,66 @@ TEST_F(ParticlePropertiesLibraryTest, SitePropertiesSettingAndGettingTest) {
   // Check addSiteType with an inappropriate siteId throws an error.
   EXPECT_ANY_THROW(PPL->addSiteType(1, 1., 1., 1.));
   EXPECT_ANY_THROW(PPL->addSiteType(5, 1., 1., 1.));
+
+  // Check that getting site information for site IDs that don't exist throws errors.
+  EXPECT_ANY_THROW(PPL->get24Epsilon(4));
+  EXPECT_ANY_THROW(PPL->getSigmaSquared(4));
+  EXPECT_ANY_THROW(PPL->getSiteMass(4));
+}
+
+/**
+ * Tests adding multi-site molecule types and getting this information.
+ *
+ * Initializes a ParticleProperties Library and adds two sites. Then adds two molecule types, testing that the getters
+ * return correct information.
+ *
+ * When md-flexible is compiled without support for multi-site molecules, this test checks that attempting to add multi-site molecule
+ * types or get multi-site molecule information results in an exception being thrown.
+ *
+ * @note This molecular information is not intended to be mathematical sound.
+ */
+TEST_F(ParticlePropertiesLibraryTest, MolPropertiesAddingAndGettingTest) {
+  const double cutoff = 0.1;
+  std::shared_ptr<ParticlePropertiesLibrary<double, unsigned int>> PPL =
+      std::make_shared<ParticlePropertiesLibrary<double, unsigned int>>(cutoff);
+
+  // add two site types
+  PPL->addSiteType(0, 1., 1., 1.);
+  PPL->addSiteType(1, 0.2, 0.7, 1.2);
+
+  // Check that PPL is empty of molecule types
+  EXPECT_EQ(PPL->getNumberRegisteredMolTypes(), 0);
+
+  // Add Molecule Type 0
+  const std::vector<unsigned int> siteIds0 = {0};
+  const std::vector<std::array<double,3>> sitePositions0 = {{0.,0.,0.}};
+  const std::array<double,3> MoI0 = {1., 1., 1.};
+  PPL->addMolType(0, siteIds0, sitePositions0, MoI0);
+
+  // Check getters
+  EXPECT_THAT(PPL->getSiteTypes(0), ::testing::ElementsAreArray(siteIds0));
+  EXPECT_THAT(PPL->getSitePositions(0), ::testing::ElementsAreArray(sitePositions0));
+  EXPECT_THAT(PPL->getMomentOfInertia(0), ::testing::ElementsAreArray(MoI0));
+
+  // Add Molecule Type 1
+  const std::vector<unsigned int> siteIds1 = {0, 1, 1};
+  const std::vector<std::array<double,3>> sitePositions1 = {{1.,0.,0.}, {-0.5, 0., 0.}, {0.5, 0., 0.}};
+  const std::array<double,3> MoI1 = {1., -1., 0.5};
+  PPL->addMolType(1, siteIds1, sitePositions1, MoI1);
+
+  // Check getters
+  EXPECT_THAT(PPL->getSiteTypes(0), ::testing::ElementsAreArray(siteIds0));
+  EXPECT_THAT(PPL->getSitePositions(0), ::testing::ElementsAreArray(sitePositions0));
+  EXPECT_THAT(PPL->getMomentOfInertia(0), ::testing::ElementsAreArray(MoI0));
+  EXPECT_THAT(PPL->getSiteTypes(1), ::testing::ElementsAreArray(siteIds1));
+  EXPECT_THAT(PPL->getSitePositions(1), ::testing::ElementsAreArray(sitePositions1));
+  EXPECT_THAT(PPL->getMomentOfInertia(1), ::testing::ElementsAreArray(MoI1));
+
+  // Try adding molecules with inappropriate IDs.
+  EXPECT_ANY_THROW(PPL->addMolType(1, {0}, {{0., 0., 0.}}, {1., 1., 1.}););
+  EXPECT_ANY_THROW(PPL->addSiteType(5, 1., 1., 1.));
+#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+  PPL.
+#else
+#endif
 }
