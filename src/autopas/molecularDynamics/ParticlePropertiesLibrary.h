@@ -101,7 +101,7 @@ class ParticlePropertiesLibrary {
         "ParticlePropertiesLibrary::getNumberRegisteredMolTypes(): trying to get the number of registered multi-site"
         "molecule types when md-flexible has been compiled without support for multi-site molecules. Please compile with"
         " the CMake argument '-D MD_FLEXIBLE_USE_MULTI_SITE=ON'."
-        )
+        );
 #endif
     return _numRegisteredMolTypes;
   }
@@ -287,7 +287,7 @@ void ParticlePropertiesLibrary<floatType, intType>::addMolType(const intType mol
       "ParticlePropertiesLibrary::addMolType(): trying to register a multi-site molecule type when md-flexible has been "
       "compiled without support for multi-site molecules. Please compile with the CMake argument '-D "
       "MD_FLEXIBLE_USE_MULTI_SITE=ON'."
-      )
+      );
 #endif
   if (_numRegisteredMolTypes != molId) {
     autopas::utils::ExceptionHandler::exception(
@@ -345,7 +345,7 @@ floatType ParticlePropertiesLibrary<floatType, intType>::getMolMass(intType i) c
       "ParticlePropertiesLibrary::getMolMass(): trying to get the mass of a multi-site molecule type when md-flexible has been "
       "compiled without support for multi-site molecules. Please compile with the CMake argument '-D "
       "MD_FLEXIBLE_USE_MULTI_SITE=ON'."
-      )
+      );
 #endif
   return _molMasses[i];
 }
@@ -357,7 +357,7 @@ std::array<floatType,3> ParticlePropertiesLibrary<floatType, intType>::getMoment
       "ParticlePropertiesLibrary::getMomentOfInertia(): trying to get the Moment of Inertia of a multi-site molecule type"
       " when md-flexible has been compiled without support for multi-site molecules. Please compile with the CMake argument '-D "
       "MD_FLEXIBLE_USE_MULTI_SITE=ON'."
-      )
+      );
 #endif
   return _momentOfInertias[i];
 }
@@ -369,7 +369,7 @@ std::vector<std::array<floatType,3>> ParticlePropertiesLibrary<floatType, intTyp
       "ParticlePropertiesLibrary::getSitePositions(): trying to get the site positions of a multi-site molecule type"
       " when md-flexible has been compiled without support for multi-site molecules. Please compile with the CMake argument '-D "
       "MD_FLEXIBLE_USE_MULTI_SITE=ON'."
-      )
+      );
 #endif
   return _relativeSitePositions[i];
 }
@@ -381,7 +381,7 @@ std::vector<intType> ParticlePropertiesLibrary<floatType, intType>::getSiteTypes
       "ParticlePropertiesLibrary::getSiteTypes(): trying to get the site types of a multi-site molecule type"
       " when md-flexible has been compiled without support for multi-site molecules. Please compile with the CMake argument '-D "
       "MD_FLEXIBLE_USE_MULTI_SITE=ON'."
-      )
+      );
 #endif
   return _siteIds[i];
 }
