@@ -78,7 +78,7 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
   config.boundaryOption.value = boundaryConditions;
 
   const std::array<double, 3> boxLength = autopas::utils::ArrayMath::sub(config.boxMax.value, config.boxMin.value);
-  RegularGridDecomposition<autopas::MoleculeLJ> domainDecomposition(config);
+  RegularGridDecomposition domainDecomposition(config);
 
   auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
 
