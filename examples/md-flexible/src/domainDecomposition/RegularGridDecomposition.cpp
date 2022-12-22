@@ -397,20 +397,20 @@ RegularGridDecomposition::categorizeParticlesIntoLeftAndRightNeighbor(const std:
         leftNeighborParticles.back().setR(position);
       }
     } else  // if the particle is right of the box
-        if (position[direction] >= _localBoxMax[direction]) {
-      rightNeighborParticles.push_back(particle);
+      if (position[direction] >= _localBoxMax[direction]) {
+        rightNeighborParticles.push_back(particle);
 
-      // if the particle is outside the global box move it to the other side (periodic boundary)
-      if (_localBoxMax[direction] == _globalBoxMax[direction]) {
-        // TODO: check if this failsafe is really reasonable.
-        //  It should only trigger if a particle's position was already inside the box?
-        const auto periodicPosition = position[direction] - globalBoxLength[direction];
-        position[direction] = std::max(_globalBoxMin[direction], periodicPosition);
-        rightNeighborParticles.back().setR(position);
+        // if the particle is outside the global box move it to the other side (periodic boundary)
+        if (_localBoxMax[direction] == _globalBoxMax[direction]) {
+          // TODO: check if this failsafe is really reasonable.
+          //  It should only trigger if a particle's position was already inside the box?
+          const auto periodicPosition = position[direction] - globalBoxLength[direction];
+          position[direction] = std::max(_globalBoxMin[direction], periodicPosition);
+          rightNeighborParticles.back().setR(position);
+        }
+      } else {
+        uncategorizedParticles.push_back(particle);
       }
-    } else {
-      uncategorizedParticles.push_back(particle);
-    }
   }
   return {leftNeighborParticles, rightNeighborParticles, uncategorizedParticles};
 }
