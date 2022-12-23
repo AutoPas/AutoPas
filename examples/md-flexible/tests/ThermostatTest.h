@@ -8,8 +8,9 @@
 #include "autopas/AutoPasDecl.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "testingHelpers/commonTypedefs.h"
+#include "src/TypeDefinitions.h"
 
-extern template class autopas::AutoPas<Molecule>;
+extern template class autopas::AutoPas<ParticleType>;
 
 class ThermostatTest : public AutoPasTestBase,
                        public ::testing::WithParamInterface<std::tuple<double, double, double>> {
@@ -17,8 +18,8 @@ class ThermostatTest : public AutoPasTestBase,
   using AutoPasType = autopas::AutoPas<Molecule>;
 
   ThermostatTest() : AutoPasTestBase(), _particlePropertiesLibrary(ParticlePropertiesLibrary<double, size_t>(1.)) {
-    _particlePropertiesLibrary.addType(0, 1., 1., 1.);
-    _particlePropertiesLibrary.addType(1, 1., 1., 2.);
+    _particlePropertiesLibrary.addSiteType(0, 1., 1., 1.);
+    _particlePropertiesLibrary.addSiteType(1, 1., 1., 2.);
     _particlePropertiesLibrary.calculateMixingCoefficients();
   }
 

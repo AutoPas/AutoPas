@@ -8,7 +8,6 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
-#include "autopas/molecularDynamics/MoleculeLJ.h"
 #include "src/ParticleSerializationTools.h"
 #include "src/TypeDefinitions.h"
 

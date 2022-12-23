@@ -14,10 +14,10 @@ void ThermostatTest::initContainer(AutoPasType &autopas, const Molecule &dummy, 
   constexpr double cutoff = 1.;
 
   double minimalBoxLength = cutoff + autopas.getVerletSkin();
-  std::array<double, 3> boxmax = {std::max(particlesPerDim[0] * particleSpacing, minimalBoxLength),
-                                  std::max(particlesPerDim[1] * particleSpacing, minimalBoxLength),
-                                  std::max(particlesPerDim[2] * particleSpacing, minimalBoxLength)};
-  autopas.setBoxMax(boxmax);
+  std::array<double, 3> boxMax = {std::max((double)particlesPerDim[0] * particleSpacing, minimalBoxLength),
+                                  std::max((double)particlesPerDim[1] * particleSpacing, minimalBoxLength),
+                                  std::max((double)particlesPerDim[2] * particleSpacing, minimalBoxLength)};
+  autopas.setBoxMax(boxMax);
   autopas.setBoxMin({0., 0., 0.});
   autopas.setCutoff(cutoff);
   autopas.init();
@@ -28,7 +28,7 @@ void ThermostatTest::initContainer(AutoPasType &autopas, const Molecule &dummy, 
 }
 
 void ThermostatTest::testBrownianMotion(const Molecule &dummyMolecule, const double targetTemperature) {
-  // here we need a not too small amount of molecules to be able to make statistic deductions
+  // generate a significant number of molecules so that we can make statistical deductions
   initContainer(_autopas, dummyMolecule, {30, 30, 30});
 
   auto initTemperature = Thermostat::calcTemperature(_autopas, _particlePropertiesLibrary);
