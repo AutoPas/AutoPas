@@ -404,8 +404,8 @@ intType ParticlePropertiesLibrary<floatType, intType>::getNumSites(intType i) co
 template <typename floatType, typename intType>
 double ParticlePropertiesLibrary<floatType, intType>::calcShift6(double epsilon24, double sigmaSquared,
                                                                  double cutoffSquare) {
-  auto sigmaPow2DivCutoff = sigmaSquared / (cutoffSquare);
-  auto sigmaPow6DivCutoff = sigmaPow2DivCutoff * sigmaPow2DivCutoff * sigmaPow2DivCutoff;
-  auto shift6 = epsilon24 * (sigmaPow6DivCutoff - sigmaPow6DivCutoff * sigmaPow6DivCutoff);
+  const auto sigmaDivCutoffPow2 = sigmaSquared / (cutoffSquare);
+  const auto sigmaDivCutoffPow6 = sigmaDivCutoffPow2 * sigmaDivCutoffPow2 * sigmaDivCutoffPow2;
+  const auto shift6 = epsilon24 * (sigmaDivCutoffPow6 - sigmaDivCutoffPow6 * sigmaDivCutoffPow2);
   return shift6;
 }
