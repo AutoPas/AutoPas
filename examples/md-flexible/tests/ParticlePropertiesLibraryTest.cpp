@@ -206,7 +206,10 @@ TEST_F(ParticlePropertiesLibraryTest, MolPropertiesAddingAndGettingTest) {
   // Try adding molecules with non-existant site Ids
   EXPECT_ANY_THROW(PPL->addMolType(2, {2}, {{0.,0.,0.}}, {1., 1., 1.}););
 
-
+  // Try getting molecular information for molecular types that don't exist.
+  EXPECT_ANY_THROW(PPL->getSiteTypes(3););
+  EXPECT_ANY_THROW(PPL->getSitePositions(3););
+  EXPECT_ANY_THROW(PPL->getMomentOfInertia((3)););
 #else
   // Add Molecule Type
   EXPECT_ANY_THROW(PPL->addMolType(0, {0}, {{0., 0., 0.}}, {1.,1.,1.}));
