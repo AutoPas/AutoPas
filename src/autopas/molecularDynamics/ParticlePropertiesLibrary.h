@@ -398,6 +398,12 @@ floatType ParticlePropertiesLibrary<floatType, intType>::getSigmaSquared(intType
 
 template<typename floatType, typename intType>
 intType ParticlePropertiesLibrary<floatType, intType>::getNumSites(intType i) const {
+#if not defined(MD_FLEXIBLE_USE_MULTI_SITE)
+  autopas::utils::ExceptionHandler::exception(
+      "ParticlePropertiesLibrary::getNumSites(): trying to get the number of sites of a multi-site molecule type when md-flexible has been compiled without support for multi-site molecules. Please compile with the CMake argument '-D "
+      "MD_FLEXIBLE_USE_MULTI_SITE=ON'."
+  );
+#endif
   return _numSites[i];
 }
 
