@@ -282,6 +282,7 @@ template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::addMolType(const intType molId, const std::vector<intType> siteIds,
                                                                const std::vector<std::array<floatType,3>> relPos,
                                                                const std::array<floatType, 3> momentOfInertia) {
+  // Error handling
 #if not defined(MD_FLEXIBLE_USE_MULTI_SITE)
   autopas::utils::ExceptionHandler::exception(
       "ParticlePropertiesLibrary::addMolType(): trying to register a multi-site molecule type when md-flexible has been "
@@ -295,6 +296,17 @@ void ParticlePropertiesLibrary<floatType, intType>::addMolType(const intType mol
         "consecutively, starting at id 0. Currently there are {} registered types.",
         molId, _numRegisteredSiteTypes);
   }
+  if (std::any_of(siteIds.begin(), siteIds.end(), [this](intType i){i > this->_numRegisteredSiteTypes;})) {
+    autopas::utils::ExceptionHandler::exception(
+        "ParticlePropertiesLibrary::addMolType(): trying to register a molecule type with an unregistered site type Id.");
+  }
+  if (siteIds.size() != relPos.size()) {
+    autopas::utils::ExceptionHandler::exception(
+        "ParticlePropertiesLibrary::addMolType(): trying to register a molecule type with vectors of site IDs and site"
+        "positions that do not match in size.");
+  }
+
+  // Add molecule type if there are no errors.
   ++_numRegisteredMolTypes;
   _siteIds.emplace_back(siteIds);
   _relativeSitePositions.emplace_back(relPos);

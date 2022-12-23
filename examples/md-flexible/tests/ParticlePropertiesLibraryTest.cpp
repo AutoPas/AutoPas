@@ -137,11 +137,6 @@ TEST_F(ParticlePropertiesLibraryTest, SitePropertiesAddingAndGettingTest) {
   // Check addSiteType with an inappropriate siteId throws an error.
   EXPECT_ANY_THROW(PPL->addSiteType(1, 1., 1., 1.));
   EXPECT_ANY_THROW(PPL->addSiteType(5, 1., 1., 1.));
-
-  // Check that getting site information for site IDs that don't exist throws errors.
-  EXPECT_ANY_THROW(PPL->get24Epsilon(4));
-  EXPECT_ANY_THROW(PPL->getSigmaSquared(4));
-  EXPECT_ANY_THROW(PPL->getSiteMass(4));
 }
 
 /**
@@ -208,11 +203,6 @@ TEST_F(ParticlePropertiesLibraryTest, MolPropertiesAddingAndGettingTest) {
 
   // Try adding molecules with non-existant site Ids
   EXPECT_ANY_THROW(PPL->addMolType(2, {2}, {{0.,0.,0.}}, {1., 1., 1.}););
-
-  // Try getting molecular information for molecular types that don't exist.
-  EXPECT_ANY_THROW(PPL->getSiteTypes(3););
-  EXPECT_ANY_THROW(PPL->getSitePositions(3););
-  EXPECT_ANY_THROW(PPL->getMomentOfInertia((3)););
 #else
   // Add Molecule Type
   EXPECT_ANY_THROW(PPL->addMolType(0, {0}, {{0., 0., 0.}}, {1.,1.,1.}));
