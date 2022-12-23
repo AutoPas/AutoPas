@@ -186,7 +186,7 @@ class ParticlePropertiesLibrary {
    * @param  j Id of site two.
    * @return 24*epsilon_ij
    */
-  inline floatType mixing24Epsilon(intType i, intType j) const {
+  inline floatType getMixing24Epsilon(intType i, intType j) const {
     return _computedMixingData[i * _numRegisteredSiteTypes + j].epsilon24;
   }
 
@@ -214,7 +214,7 @@ class ParticlePropertiesLibrary {
    * @param j Id of site two.
    * @return sigma_ij²
    */
-  inline floatType mixingSigmaSquared(intType i, intType j) const {
+  inline floatType getMixingSigmaSquared(intType i, intType j) const {
     return _computedMixingData[i * _numRegisteredSiteTypes + j].sigmaSquared;
   }
 
@@ -224,7 +224,7 @@ class ParticlePropertiesLibrary {
    * @param j siteId of site two.
    * @return shift * 6
    */
-  inline floatType mixingShift6(intType i, intType j) const {
+  inline floatType getMixingShift6(intType i, intType j) const {
     return _computedMixingData[i * _numRegisteredSiteTypes + j].shift6;
   }
 
@@ -323,23 +323,23 @@ template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients() {
   _computedMixingData.resize(_numRegisteredSiteTypes * _numRegisteredSiteTypes);
 
-  auto cutoffSquared = _cutoff * _cutoff;
+  const auto cutoffSquared = _cutoff * _cutoff;
 
   for (size_t firstIndex = 0ul; firstIndex < _numRegisteredSiteTypes; ++firstIndex) {
     for (size_t secondIndex = 0ul; secondIndex < _numRegisteredSiteTypes; ++secondIndex) {
       auto globalIndex = _numRegisteredSiteTypes * firstIndex + secondIndex;
 
       // epsilon
-      floatType epsilon24 = 24 * sqrt(_epsilons[firstIndex] * _epsilons[secondIndex]);
+      const floatType epsilon24 = 24 * sqrt(_epsilons[firstIndex] * _epsilons[secondIndex]);
       _computedMixingData[globalIndex].epsilon24 = epsilon24;
 
       // sigma
-      floatType sigma = (_sigmas[firstIndex] + _sigmas[secondIndex]) / 2.0;
-      floatType sigmaSquared = sigma * sigma;
+      const floatType sigma = (_sigmas[firstIndex] + _sigmas[secondIndex]) / 2.0;
+      const floatType sigmaSquared = sigma * sigma;
       _computedMixingData[globalIndex].sigmaSquared = sigmaSquared;
 
       // shift6
-      floatType shift6 = calcShift6(epsilon24, sigmaSquared, cutoffSquared);
+      const floatType shift6 = calcShift6(epsilon24, sigmaSquared, cutoffSquared);
       _computedMixingData[globalIndex].shift6 = shift6;
     }
   }

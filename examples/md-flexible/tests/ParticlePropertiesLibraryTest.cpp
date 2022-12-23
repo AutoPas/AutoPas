@@ -208,3 +208,89 @@ TEST_F(ParticlePropertiesLibraryTest, MolPropertiesAddingAndGettingTest) {
   EXPECT_ANY_THROW(PPL->addMolType(0, {0}, {{0., 0., 0.}}, {1.,1.,1.}));
 #endif
 }
+
+/**
+ * Tests that getting the Lennard-Jones mixing data works correctly and that the mixing rules applied in PPL are correct.
+ * In addition, tests that all of the mixing data getters are consistent with each other.
+ */
+TEST_F(ParticlePropertiesLibraryTest, LennardJonesMixingTest) {
+  const double cutoff = 1.1;
+  const double cutoffSquared = cutoff * cutoff;
+  std::shared_ptr<ParticlePropertiesLibrary<double, unsigned int>> PPL =
+      std::make_shared<ParticlePropertiesLibrary<double, unsigned int>>(cutoff);
+
+  // Add three sites
+  const double epsilon0 = 0.6;
+  const double sigma0   = 1.2;
+  const double epsilon1 = 0.7;
+  const double sigma1   = 1.4;
+  const double epsilon2 = 1.;
+  const double sigma2   = 1.;
+  PPL->addSiteType(0, epsilon0, sigma0, 1.);
+  PPL->addSiteType(1, epsilon1, sigma1, 1.);
+  PPL->addSiteType(2, epsilon2, sigma2, 1.);
+
+  // Calculate mixing coefficients
+  PPL->calculateMixingCoefficients();
+
+  // Calculate expected values. Mixing rules are commutative so only half are calculated.
+  const auto epsilon01 = std::sqrt(epsilon0 * epsilon1);
+  const auto epsilon02 = std::sqrt(epsilon0 * epsilon2);
+  const auto epsilon12 = std::sqrt(epsilon1 * epsilon2);
+
+  const auto sigma01 = (sigma0 + sigma1) / 2.;
+  const auto sigma02 = (sigma0 + sigma2) / 2.;
+  const auto sigma12 = (sigma1 + sigma2) / 2.;
+
+  const auto shift6_00 = PPL->calcShift6(24. * epsilon0, sigma0 * sigma0, cutoffSquared);
+  const auto shift6_01 = PPL->calcShift6(24. * epsilon01, sigma01 * sigma01, cutoffSquared);
+  const auto shift6_02 = PPL->calcShift6(24. * epsilon02, sigma02 * sigma02, cutoffSquared);
+  const auto shift6_11 = PPL->calcShift6(24. * epsilon1, sigma1 * sigma1, cutoffSquared);
+  const auto shift6_12 = PPL->calcShift6(24. * epsilon12, sigma12 * sigma12, cutoffSquared);
+  const auto shift6_22 = PPL->calcShift6(24. * epsilon2, sigma2 * sigma2, cutoffSquared);
+
+  // Compare PPL's calculated mixing coefficients against the expected values
+  EXPECT_DOUBLE_EQ(PPL->getMixing24Epsilon(0,0), 24. * epsilon0 );
+  EXPECT_DOUBLE_EQ(PPL->getMixing24Epsilon(0,1), 24. * epsilon01);
+  EXPECT_DOUBLE_EQ(PPL->getMixing24Epsilon(0,2), 24. * epsilon02);
+  EXPECT_DOUBLE_EQ(PPL->getMixing24Epsilon(1,0), 24. * epsilon01);
+  EXPECT_DOUBLE_EQ(PPL->getMixing24Epsilon(1,1), 24. * epsilon1 );
+  EXPECT_DOUBLE_EQ(PPL->getMixing24Epsilon(1,2), 24. * epsilon12);
+  EXPECT_DOUBLE_EQ(PPL->getMixing24Epsilon(2,0), 24. * epsilon02);
+  EXPECT_DOUBLE_EQ(PPL->getMixing24Epsilon(2,1), 24. * epsilon12);
+  EXPECT_DOUBLE_EQ(PPL->getMixing24Epsilon(2,2), 24. * epsilon2 );
+
+  EXPECT_DOUBLE_EQ(PPL->getMixingSigmaSquared(0,0), sigma0  * sigma0 );
+  EXPECT_DOUBLE_EQ(PPL->getMixingSigmaSquared(0,1), sigma01 * sigma01);
+  EXPECT_DOUBLE_EQ(PPL->getMixingSigmaSquared(0,2), sigma02 * sigma02);
+  EXPECT_DOUBLE_EQ(PPL->getMixingSigmaSquared(1,0), sigma01 * sigma01);
+  EXPECT_DOUBLE_EQ(PPL->getMixingSigmaSquared(1,1), sigma1  * sigma1 );
+  EXPECT_DOUBLE_EQ(PPL->getMixingSigmaSquared(1,2), sigma12 * sigma12);
+  EXPECT_DOUBLE_EQ(PPL->getMixingSigmaSquared(2,0), sigma02 * sigma02);
+  EXPECT_DOUBLE_EQ(PPL->getMixingSigmaSquared(2,1), sigma12 * sigma12);
+  EXPECT_DOUBLE_EQ(PPL->getMixingSigmaSquared(2,2), sigma2  * sigma2 );
+
+  EXPECT_DOUBLE_EQ(PPL->getMixingShift6(0,0), shift6_00 );
+  EXPECT_DOUBLE_EQ(PPL->getMixingShift6(0,1), shift6_01 );
+  EXPECT_DOUBLE_EQ(PPL->getMixingShift6(0,2), shift6_02 );
+  EXPECT_DOUBLE_EQ(PPL->getMixingShift6(1,0), shift6_01 );
+  EXPECT_DOUBLE_EQ(PPL->getMixingShift6(1,1), shift6_11 );
+  EXPECT_DOUBLE_EQ(PPL->getMixingShift6(1,2), shift6_12 );
+  EXPECT_DOUBLE_EQ(PPL->getMixingShift6(2,0), shift6_02 );
+  EXPECT_DOUBLE_EQ(PPL->getMixingShift6(2,1), shift6_12 );
+  EXPECT_DOUBLE_EQ(PPL->getMixingShift6(2,2), shift6_22 );
+
+  // Confirm that PPL's individual get sime mixing data functions match PPL's get all mixing data for a site-type pair.
+  for (unsigned int i = 0; i < PPL->getNumberRegisteredSiteTypes(); i++) {
+    for (unsigned int j = 0; j < PPL->getNumberRegisteredSiteTypes(); j++) {
+      const auto allMixingData = PPL->getMixingData(i, j);
+      const auto epsilon24 = PPL->getMixing24Epsilon(i, j);
+      const auto sigmaSquared = PPL->getMixingSigmaSquared(i, j);
+      const auto shift6 = PPL->getMixingShift6(i, j);
+
+      EXPECT_DOUBLE_EQ(allMixingData.epsilon24, epsilon24);
+      EXPECT_DOUBLE_EQ(allMixingData.sigmaSquared, sigmaSquared);
+      EXPECT_DOUBLE_EQ(allMixingData.shift6, shift6);
+    }
+  }
+}
