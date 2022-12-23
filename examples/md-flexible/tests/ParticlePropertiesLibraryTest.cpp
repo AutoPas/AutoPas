@@ -151,15 +151,16 @@ TEST_F(ParticlePropertiesLibraryTest, SitePropertiesAddingAndGettingTest) {
  * return correct information.
  *
  * When md-flexible is compiled without support for multi-site molecules, this test checks that attempting to add multi-site molecule
- * types or get multi-site molecule information results in an exception being thrown.
+ * types results in an exception being thrown.
  *
- * @note This molecular information is not intended to be mathematical sound.
+ * @note This molecular information is not intended to be mathematically sound.
  */
 TEST_F(ParticlePropertiesLibraryTest, MolPropertiesAddingAndGettingTest) {
   const double cutoff = 0.1;
   std::shared_ptr<ParticlePropertiesLibrary<double, unsigned int>> PPL =
       std::make_shared<ParticlePropertiesLibrary<double, unsigned int>>(cutoff);
 
+#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
   // add two site types
   PPL->addSiteType(0, 1., 1., 1.);
   PPL->addSiteType(1, 0.2, 0.7, 1.2);
@@ -174,6 +175,7 @@ TEST_F(ParticlePropertiesLibraryTest, MolPropertiesAddingAndGettingTest) {
   PPL->addMolType(0, siteIds0, sitePositions0, MoI0);
 
   // Check getters
+  EXPECT_EQ(PPL->getNumberRegisteredMolTypes(), 1);
   EXPECT_THAT(PPL->getSiteTypes(0), ::testing::ElementsAreArray(siteIds0));
   EXPECT_THAT(PPL->getSitePositions(0), ::testing::ElementsAreArray(sitePositions0));
   EXPECT_THAT(PPL->getMomentOfInertia(0), ::testing::ElementsAreArray(MoI0));
@@ -185,6 +187,7 @@ TEST_F(ParticlePropertiesLibraryTest, MolPropertiesAddingAndGettingTest) {
   PPL->addMolType(1, siteIds1, sitePositions1, MoI1);
 
   // Check getters
+  EXPECT_EQ(PPL->getNumberRegisteredMolTypes(), 2);
   EXPECT_THAT(PPL->getSiteTypes(0), ::testing::ElementsAreArray(siteIds0));
   EXPECT_THAT(PPL->getSitePositions(0), ::testing::ElementsAreArray(sitePositions0));
   EXPECT_THAT(PPL->getMomentOfInertia(0), ::testing::ElementsAreArray(MoI0));
@@ -194,9 +197,18 @@ TEST_F(ParticlePropertiesLibraryTest, MolPropertiesAddingAndGettingTest) {
 
   // Try adding molecules with inappropriate IDs.
   EXPECT_ANY_THROW(PPL->addMolType(1, {0}, {{0., 0., 0.}}, {1., 1., 1.}););
-  EXPECT_ANY_THROW(PPL->addSiteType(5, 1., 1., 1.));
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
-  PPL.
+  EXPECT_ANY_THROW(PPL->addMolType(5, {0}, {{0., 0., 0.}}, {1., 1., 1.}););
+
+  // Try adding molecules with non-matching sizes of site type Ids and site position vectors
+  EXPECT_ANY_THROW(PPL->addMolType(2, {0}, {{0.,0.,0.}, {0.,0.,0.}}, {1., 1., 1.}););
+  EXPECT_ANY_THROW(PPL->addMolType(2, {0, 0}, {{0.,0.,0.}}, {1., 1., 1.}););
+
+  // Try adding molecules with non-existant site Ids
+  EXPECT_ANY_THROW(PPL->addMolType(2, {2}, {{0.,0.,0.}}, {1., 1., 1.}););
+
+
 #else
+  // Add Molecule Type
+  EXPECT_ANY_THROW(PPL->addMolType(0, {0}, {{0., 0., 0.}}, {1.,1.,1.}));
 #endif
 }

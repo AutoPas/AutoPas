@@ -27,9 +27,12 @@ add_executable(mdFlexTests ${MDFlexTest_SRC})
 target_compile_definitions(
     mdFlexTests PRIVATE
     YAMLDIRECTORY=\"${PROJECT_SOURCE_DIR}/examples/md-flexible/tests/yamlTestFiles/\"
+    $<$<BOOL:${MD_FLEXIBLE_USE_MULTI_SITE}>:MD_FLEXIBLE_USE_MULTI_SITE>
 )
 
 include(autopas_all)
+
+option(MD_FLEXIBLE_USE_MULTI_SITE "Enable use of multi-site molecule types, rotational integration, and compile multi-site variants of functors." OFF)
 
 target_include_directories(
     mdFlexTests
