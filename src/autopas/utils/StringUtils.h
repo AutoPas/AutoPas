@@ -233,10 +233,10 @@ inline std::set<int> parseInts(const std::string &intString) {
   for (auto number = std::sregex_iterator(intString.begin(), intString.end(), regexInt);
        number != std::sregex_iterator(); ++number) {
     try {
-      int value = stod(number->str());
+      int value = stoi(number->str());
       ints.insert(value);
     } catch (const std::exception &) {
-      autopas::utils::ExceptionHandler::exception("Failed to parse a double from: {}", number->str());
+      autopas::utils::ExceptionHandler::exception("Failed to parse a int from: {}", number->str());
     }
   }
 
