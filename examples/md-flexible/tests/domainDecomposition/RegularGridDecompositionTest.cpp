@@ -31,9 +31,9 @@ auto initDomain() {
   configuration.boxMin.value = {0., 0., 0.};
   configuration.cutoff.value = 2.5;
   configuration.verletSkinRadiusPerTimestep.value = 0.5;
-  configuration.verletRebuildFrequency.value = 2;
+  configuration.verletRebuildFrequencies.value = std::make_shared<autopas::NumberSetFinite<int>>(std::set<int>{2});
   const double interactionLength = configuration.cutoff.value + configuration.verletSkinRadiusPerTimestep.value *
-                                                                    configuration.verletRebuildFrequency.value;
+                                                                    configuration.verletRebuildFrequencies.value->getMin();
   // make sure evey rank gets exactly 3x3x3 cells
   const double localBoxLength = 3. * interactionLength;
   const double globalBoxLength = localBoxLength * numberOfProcesses;
@@ -50,7 +50,7 @@ auto initDomain() {
   autoPasContainer->setBoxMax(localBoxMax);
   autoPasContainer->setCutoff(configuration.cutoff.value);
   autoPasContainer->setVerletSkinPerTimestep(configuration.verletSkinRadiusPerTimestep.value);
-  autoPasContainer->setVerletRebuildFrequency(configuration.verletRebuildFrequency.value);
+  autoPasContainer->setVerletRebuildFrequency(configuration.verletRebuildFrequencies.value->getMin());
   autoPasContainer->setAllowedContainers({autopas::ContainerOption::directSum});
   autoPasContainer->setAllowedTraversals({autopas::TraversalOption::ds_sequential});
   autoPasContainer->init();

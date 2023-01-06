@@ -158,9 +158,6 @@ class RegularGridDecomposition final : public DomainDecomposition {
   double _skinWidthPerTimestep;
   /**
    * Stores the rebuild Frequency.
-   */
-  autopas::NumberSetFinite<int> _rebuildFrequencies;
-
   int _rebuildFrequency;
   /**
    * The minimum coordinates of the global domain.
@@ -187,6 +184,9 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * The number of subdomains in this decomposition.
    */
   int _subdomainCount{};
+
+
+  int _verletRebuildFrequency;
 
   /**
    * The decomposition computed depending on the number of subdomains.

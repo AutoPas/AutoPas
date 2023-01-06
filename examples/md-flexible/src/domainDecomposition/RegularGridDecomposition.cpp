@@ -20,8 +20,7 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
     : _loadBalancerOption(configuration.loadBalancer.value),
       _cutoffWidth(configuration.cutoff.value),
       _skinWidthPerTimestep(configuration.verletSkinRadiusPerTimestep.value),
-      _rebuildFrequencies(*configuration.verletRebuildFrequencies.value),
-      //Problem
+      _verletRebuildFrequency(configuration.verletRebuildFrequencies.value->getMin()),
       _globalBoxMin(configuration.boxMin.value),
       _globalBoxMax(configuration.boxMax.value),
       _boundaryType(configuration.boundaryOption.value),
@@ -475,7 +474,7 @@ void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(double wo
       // than localBoxMax.
       balancedPosition = DomainTools::balanceAdjacentDomains(
           neighborPlaneWork, averageWorkInPlane[i], neighborBoundary, oldLocalBoxMax[i],
-          2 * (_cutoffWidth + _skinWidthPerTimestep * _rebuildFrequency));
+          2 * (_cutoffWidth + _skinWidthPerTimestep * _verletRebuildFrequency));
       _localBoxMin[i] += (balancedPosition - _localBoxMin[i]) / 2;
     }
 
@@ -490,7 +489,7 @@ void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(double wo
       // than localBoxMax.
       balancedPosition = DomainTools::balanceAdjacentDomains(
           averageWorkInPlane[i], neighborPlaneWork, oldLocalBoxMin[i], neighborBoundary,
-          2 * (_cutoffWidth + _skinWidthPerTimestep * _rebuildFrequency));
+          2 * (_cutoffWidth + _skinWidthPerTimestep * _verletRebuildFrequency));
       _localBoxMax[i] += (balancedPosition - _localBoxMax[i]) / 2;
     }
   }

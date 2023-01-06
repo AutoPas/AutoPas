@@ -86,13 +86,13 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
   autoPasContainer->setBoxMax(domainDecomposition.getLocalBoxMax());
   autoPasContainer->setCutoff(config.cutoff.value);
   autoPasContainer->setVerletSkinPerTimestep(config.verletSkinRadiusPerTimestep.value);
-  autoPasContainer->setVerletRebuildFrequency(config.verletRebuildFrequency.value);
+  autoPasContainer->setAllowedVerletRebuildFrequencies(*config.verletRebuildFrequencies.value);
   autoPasContainer->init();
 
   const auto &[expectedPositions, expectedHaloPositions, expectedVelocities] = setUpExpectations(
       particlePositions, particleVelocities, config.boxMin.value, config.boxMax.value,
-      config.verletSkinRadiusPerTimestep.value * config.verletRebuildFrequency.value / 2.,
-      config.cutoff.value + config.verletSkinRadiusPerTimestep.value * config.verletRebuildFrequency.value,
+      config.verletSkinRadiusPerTimestep.value * config.verletRebuildFrequencies.value->getMin() / 2.,
+      config.cutoff.value + config.verletSkinRadiusPerTimestep.value * config.verletRebuildFrequencies.value->getMin(),
       config.boundaryOption.value);
 
   // particles need to be added at positions inside the domain

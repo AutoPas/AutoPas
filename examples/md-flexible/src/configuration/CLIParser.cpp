@@ -145,7 +145,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         break;
       }
       case decltype(config.cellSizeFactors)::getoptChar: {
-        config.cellSizeFactors.value = autopas::utils::StringUtils::parseNumberSetDoubles<double>(strArg);
+        config.cellSizeFactors.value = autopas::utils::StringUtils::parseNumberSetDoubles(strArg);
         if (config.cellSizeFactors.value->isEmpty()) {
           cerr << "Error parsing cell size factors: " << optarg << endl;
           displayHelp = true;
