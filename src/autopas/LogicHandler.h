@@ -33,7 +33,7 @@ class LogicHandler {
         _particleBuffer(autopas_get_max_threads()),
         _haloParticleBuffer(autopas_get_max_threads()) {
     checkMinimalSize();
-    autoTuner.setVerletRebuildFrequency(rebuildFrequency);
+    //autoTuner.setVerletRebuildFrequency(rebuildFrequency);
   }
 
   /**
@@ -402,7 +402,7 @@ class LogicHandler {
   }
 
   bool neighborListsAreValid() {
-    if (_stepsSinceLastListRebuild >= _autoTuner.getVerletRebuildFrequency() or _autoTuner.willRebuild()) {
+    if (_stepsSinceLastListRebuild >= _autoTuner.getCurrentConfig().verletRebuildFrequency or _autoTuner.willRebuild()) {
       _neighborListsAreValid = false;
     }
     return _neighborListsAreValid;

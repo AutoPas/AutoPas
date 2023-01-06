@@ -438,7 +438,7 @@ class AutoPas {
    * @return _verletSkin
    */
   double getVerletSkin() {
-    double _verletSkin = AutoPas::_verletSkinPerTimestep * _verletRebuildFrequency;
+    double _verletSkin = AutoPas::_verletSkinPerTimestep * _allowedVerletRebuildFrequencies->getMedian();
     return _verletSkin;
   };
 
