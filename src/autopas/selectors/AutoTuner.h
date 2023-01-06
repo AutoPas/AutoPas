@@ -69,7 +69,7 @@ class AutoTuner {
             unsigned int verletClusterSize, std::unique_ptr<TuningStrategyInterface> tuningStrategy,
             double MPITuningMaxDifferenceForBucket, double MPITuningWeightForMaxDensity,
             SelectorStrategyOption selectorStrategy, unsigned int tuningInterval, unsigned int maxSamples,
-            int rebuildFrequency, const std::string &outputSuffix = "")
+            const std::string &outputSuffix = "")
       : _selectorStrategy(selectorStrategy),
         _tuningStrategy(std::move(tuningStrategy)),
         _tuningInterval(tuningInterval),
@@ -79,7 +79,6 @@ class AutoTuner {
         _verletClusterSize(verletClusterSize),
         _mpiTuningMaxDifferenceForBucket(MPITuningMaxDifferenceForBucket),
         _mpiTuningWeightForMaxDensity(MPITuningWeightForMaxDensity),
-        _rebuildFrequency(rebuildFrequency),
         _maxSamples(maxSamples),
         _samplesNotRebuildingNeighborLists(maxSamples),
         _iteration(0),
@@ -228,12 +227,12 @@ class AutoTuner {
             : autopas::OptimumSelector::optimumValue(_samplesNotRebuildingNeighborLists, _selectorStrategy);
 
     const auto numIterationsNotBuilding =
-        std::max(0, static_cast<int>(_rebuildFrequency) - static_cast<int>(_samplesRebuildingNeighborLists.size()));
-    const auto numIterationsBuilding = _rebuildFrequency - numIterationsNotBuilding;
+        std::max(0, static_cast<int>(_tuningStrategy->getCurrentConfiguration().getVerletRebuildFrequenzy()) - static_cast<int>(_samplesRebuildingNeighborLists.size()));
+    const auto numIterationsBuilding = _tuningStrategy->getCurrentConfiguration().getVerletRebuildFrequenzy() - numIterationsNotBuilding;
 
     // calculate weighted estimate for one iteration
     return (numIterationsBuilding * reducedValueBuilding + numIterationsNotBuilding * reducedValueNotBuilding) /
-           _rebuildFrequency;
+           _tuningStrategy->getCurrentConfiguration().getVerletRebuildFrequenzy();
   }
 
   /**
@@ -286,12 +285,6 @@ class AutoTuner {
   double _verletSkinPerTimestep;
   unsigned int _verletClusterSize;
 
-  /**
-   * The rebuild frequency this instance of AutoPas uses.
-   */
- public:
-  int _rebuildFrequency;
- private:
   /**
    * How many times each configuration should be tested.
    */
