@@ -341,21 +341,11 @@ class AutoTuner {
   TuningResultLogger _tuningResultLogger;
   TuningDataLogger _tuningDataLogger;
 
- public:
-  int getVerletRebuildFrequency(){
-    return _rebuildFrequency;
-  }
-
-  void setVerletRebuildFrequency(int verletRebuildFrequency){
-    _rebuildFrequency = verletRebuildFrequency;
-  }
-};
-
 template <class Particle>
 void AutoTuner<Particle>::selectCurrentContainer() {
   auto conf = _tuningStrategy->getCurrentConfiguration();
   _containerSelector.selectContainer(
-      conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkinPerTimestep, _rebuildFrequency,
+      conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkinPerTimestep, conf.getVerletRebuildFrequency,
                                             _verletClusterSize, conf.loadEstimator));
 }
 
