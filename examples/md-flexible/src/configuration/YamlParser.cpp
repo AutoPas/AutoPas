@@ -49,11 +49,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     config.cutoff.value = node[config.cutoff.name].as<double>();
   }
   if (node[config.cellSizeFactors.name]) {
-    config.cellSizeFactors.value = autopas::utils::StringUtils::parseNumberSet(
+    config.cellSizeFactors.value = autopas::utils::StringUtils::parseNumberSetDoubles<double>(
         autopas::utils::ArrayUtils::to_string(node[config.cellSizeFactors.name], ", ", {"", ""}));
   }
   if (node[config.verletRebuildFrequencies.name]) {
-    config.verletRebuildFrequencies.value = autopas::utils::StringUtils::parseNumberSet(
+    config.verletRebuildFrequencies.value = autopas::utils::StringUtils::parseNumberSetInts<int>(
         autopas::utils::ArrayUtils::to_string(node[config.verletRebuildFrequencies.name], ", ", {"", ""}));
   }
 

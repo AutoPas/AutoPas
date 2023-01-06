@@ -226,6 +226,14 @@ class MDFlexConfig {
   MDFlexOption<std::shared_ptr<autopas::NumberSet<double>>, __LINE__> cellSizeFactors{
       std::make_shared<autopas::NumberSetFinite<double>>(std::set<double>{1.}), "cell-size", true,
       "Factor for the interaction length to determine the cell size."};
+
+  /**
+   * verletRebuildFrequencies
+   */
+  MDFlexOption<std::shared_ptr<autopas::NumberSet<int>>, __LINE__> verletRebuildFrequencies{
+      std::make_shared<autopas::NumberSetFinite<int>>(std::set<int>{5}), "verlet-rebuild-frequency",
+      true, "Number of iterations after which containers are rebuilt."};
+
   /**
    * logFileName
    */
@@ -342,12 +350,7 @@ class MDFlexConfig {
    */
   MDFlexOption<unsigned int, __LINE__> verletClusterSize{4, "verlet-cluster-size", true,
                                                          "Number of particles in Verlet clusters."};
-  /**
-   * verletRebuildFrequencies
-   */
-  MDFlexOption<std::shared_ptr<autopas::NumberSetFinite<int>>, __LINE__> verletRebuildFrequencies{
-      std::make_shared<autopas::NumberSetFinite<int>>(std::set<int>{5}), "verlet-rebuild-frequency",
-      true, "Number of iterations after which containers are rebuilt."};
+
 
   /**
    * verletSkinRadiusPerTimeStep
