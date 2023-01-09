@@ -396,7 +396,8 @@ RegularGridDecomposition::categorizeParticlesIntoLeftAndRightNeighbor(const std:
         position[direction] = std::min(justInsideOfBox, periodicPosition);
         leftNeighborParticles.back().setR(position);
       }
-    } else  // if the particle is right of the box
+    } else {
+      // if the particle is right of the box
       if (position[direction] >= _localBoxMax[direction]) {
         rightNeighborParticles.push_back(particle);
 
@@ -411,6 +412,7 @@ RegularGridDecomposition::categorizeParticlesIntoLeftAndRightNeighbor(const std:
       } else {
         uncategorizedParticles.push_back(particle);
       }
+    }
   }
   return {leftNeighborParticles, rightNeighborParticles, uncategorizedParticles};
 }
