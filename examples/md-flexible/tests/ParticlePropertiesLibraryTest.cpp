@@ -210,6 +210,71 @@ TEST_F(ParticlePropertiesLibraryTest, MolPropertiesAddingAndGettingTest) {
 }
 
 /**
+ * Simple unit test for PPL's calculation of shift6. Compares that the calculation is the exact same as the calculation
+ * in this unit test.
+ */
+TEST_F(ParticlePropertiesLibraryTest, LennardJonesCalculateShift6Simple) {
+  const double cutoff = 1.1;
+  const double sigma = 0.5;
+  const double epsilon = 1.3;
+  std::shared_ptr<ParticlePropertiesLibrary<double, unsigned int>> PPL =
+      std::make_shared<ParticlePropertiesLibrary<double, unsigned int>>(cutoff);
+
+  const auto cutoffSquared = cutoff * cutoff;
+  const auto sigmaSquared = sigma * sigma;
+  const auto epsilon24 = 24. * epsilon;
+
+  // Calculate expected shift6
+  const auto sigmaDivCutoffPow2 = sigmaSquared / cutoffSquared;
+  const auto sigmaDivCutoffPow6 = sigmaDivCutoffPow2 * sigmaDivCutoffPow2 * sigmaDivCutoffPow2;
+  const auto expectedShift6 = epsilon24 * (sigmaDivCutoffPow6 - sigmaDivCutoffPow6 * sigmaDivCutoffPow2);
+
+  // Calculate shift6
+  const double shift6 = PPL->calcShift6(epsilon24, sigmaSquared, cutoffSquared);
+
+  // Compare
+  EXPECT_DOUBLE_EQ(expectedShift6, shift6);
+}
+
+/**
+ * Tests correctness of calculated shift6 by testing that the potential energy at the cutoff, plus the shift, is zero.
+ */
+TEST_F(ParticlePropertiesLibraryTest, LennardJonesTestShiftGivesCorrectEnergyAtCutoff) {
+  const double cutoff = 1.1;
+  const double sigma = 0.5;
+  const double epsilon = 1.3;
+  std::shared_ptr<ParticlePropertiesLibrary<double, size_t>> PPL =
+      std::make_shared<ParticlePropertiesLibrary<double, size_t>>(cutoff);
+
+  PPL->addSiteType(0, epsilon, sigma, 1.);
+
+  const auto cutoffSquared = cutoff * cutoff;
+  const auto sigmaSquared = sigma * sigma;
+  const auto epsilon24 = 24. * epsilon;
+
+  // Calculate shift6
+  const double shift6 = PPL->calcShift6(epsilon24, sigmaSquared, cutoffSquared);
+
+  // Create two LJ Molecules that are cutoff apart
+  Molecule molA({0.,0.,0.}, {0.,0.,0.}, 0, 0);
+  Molecule molB({cutoff,0.,0.}, {0.,0.,0.}, 1, 0);
+
+  // Create LJ Functor class and use it to calculate the potential energy between the two
+  autopas::LJFunctor<Molecule, /* shifting */ false, /*mixing*/ true, autopas::FunctorN3Modes::Both,
+                       /*globals*/ true> ljFunctor(cutoff, *PPL);
+
+  ljFunctor.initTraversal();
+  ljFunctor.AoSFunctor(molA, molB, true);
+  ljFunctor.endTraversal(true);
+
+  // @note: The potential energy returned by LJ Functor appears to be the potential energy times 6.
+  // This is not used by md-flexible, but is used by ls1 MarDyn, so this has not been changed until the reasoning for
+  // this is understood.
+  // For now, compare 6 * (Potential_energy_LJ + shift) with 0, as multiplication by 6 does not matter.
+  EXPECT_DOUBLE_EQ(ljFunctor.getUpot() + shift6, 0.);
+}
+
+/**
  * Tests that getting the Lennard-Jones mixing data works correctly and that the mixing rules applied in PPL are correct.
  * In addition, tests that all of the mixing data getters are consistent with each other.
  */

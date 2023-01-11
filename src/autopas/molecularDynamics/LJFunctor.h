@@ -609,7 +609,13 @@ class LJFunctor
 
   /**
    * Get the potential Energy.
-   * @return the potential Energy
+   *
+   * @note: The potential energy returned by LJ Functor appears to be the potential energy times 6.
+   *
+   * This is not used by md-flexible, but is used by ls1 MarDyn, so this has not been changed until the reasoning for
+   * the multiplication by 6 is understood.
+   *
+   * @return the potential Energy (see comment)
    */
   double getUpot() {
     if (not calculateGlobals) {

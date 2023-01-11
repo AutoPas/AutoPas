@@ -704,7 +704,13 @@ class LJMultisiteFunctor
   /**
    * Get the potential energy.
    * todo replace this (and in LJFunctor.h) with the more intuitive function name
-   * @return the potential energy sum
+   *
+   * @note: The potential energy returned by LJ Functor appears to be the potential energy times 6.
+   *
+   * This is not used by md-flexible, but is used by ls1 MarDyn, so this has not been changed until the reasoning for
+   * the multiplication by 6 is understood.
+   *
+   * @return the potential energy sum (see comment)
    */
   double getUpot() {
     if (not calculateGlobals) {
@@ -1549,8 +1555,6 @@ class LJMultisiteFunctor<autopas::MoleculeLJ, applyShift, useMixing, useNewton3,
   }
 
   constexpr static bool getMixing() { return useMixing; }
-
-  double getPotentialEnergy() { return 0; }
 
   double getVirial() { return 0; }
 
