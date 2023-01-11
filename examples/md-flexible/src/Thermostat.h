@@ -71,7 +71,7 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
   // map of: particle typeID -> number of particles of this type
   std::map<size_t, size_t> numParticleMap;
 
-  for (const auto &typeID : particlePropertiesLibrary.getTypes()) {
+  for (int typeID = 0; typeID < particlePropertiesLibrary.getNumberRegisteredSiteTypes(); typeID++) {
     kineticEnergyMul2Map[typeID] = 0.;
     numParticleMap[typeID] = 0ul;
   }
@@ -83,7 +83,7 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
     // create aggregators for each thread
     std::map<size_t, double> kineticEnergyMul2MapThread;
     std::map<size_t, size_t> numParticleMapThread;
-    for (const auto &typeID : particlePropertiesLibrary.getTypes()) {
+    for (int typeID = 0; typeID < particlePropertiesLibrary.getNumberRegisteredSiteTypes(); typeID++) {
       kineticEnergyMul2MapThread[typeID] = 0.;
       numParticleMapThread[typeID] = 0ul;
     }
@@ -94,9 +94,9 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
       const auto &angVel = iter->getAngularVel();
 #endif
       kineticEnergyMul2MapThread.at(iter->getTypeId()) +=
-          particlePropertiesLibrary.getMass(iter->getTypeId()) * dot(vel, vel);
+          particlePropertiesLibrary.getMolMass(iter->getTypeId()) * dot(vel, vel);
 #if defined(MD_FLEXIBLE_USE_MULTI_SITE)
-      kineticEnergyMul2MapThread.at(iter->getTypeId()) += dot(particlePropertiesLibrary.getgetMomentOfInertia(),
+      kineticEnergyMul2MapThread.at(iter->getTypeId()) += dot(particlePropertiesLibrary.getMomentOfInertia(iter->getTypeId()),
                                                               mul(angVel, angVel));
 #endif
       numParticleMapThread.at(iter->getTypeId())++;
@@ -106,7 +106,7 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
 #pragma omp critical
 #endif
     {
-      for (const auto &typeID : particlePropertiesLibrary.getTypes()) {
+      for (int typeID = 0; typeID < particlePropertiesLibrary.getNumberRegisteredSiteTypes(); typeID++) {
         kineticEnergyMul2Map[typeID] += kineticEnergyMul2MapThread[typeID];
         numParticleMap[typeID] += numParticleMapThread[typeID];
       }
@@ -115,7 +115,7 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
   // AutoPas works always on 3 dimensions
   constexpr unsigned int dimensions{3};
 
-  for (const auto &typeID : particlePropertiesLibrary.getTypes()) {
+  for (int typeID = 0; typeID < particlePropertiesLibrary.getNumberRegisteredSiteTypes(); typeID++) {
     // workaround for MPICH: send and receive buffer must not be the same.
     autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &kineticEnergyMul2Map[typeID], 1, AUTOPAS_MPI_DOUBLE,
                                    AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);

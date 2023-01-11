@@ -425,8 +425,8 @@ void Simulation::updateAngularVelocities() {
 void Simulation::updateThermostat() {
   if (_configuration.useThermostat.value and (_iteration % _configuration.thermostatInterval.value) == 0) {
     _timers.thermostat.start();
-//    Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-//                      _configuration.targetTemperature.value, _configuration.deltaTemp.value);
+    Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+                      _configuration.targetTemperature.value, _configuration.deltaTemp.value);
     _timers.thermostat.stop();
   }
 }

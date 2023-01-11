@@ -296,7 +296,7 @@ void ParticlePropertiesLibrary<floatType, intType>::addMolType(const intType mol
         "consecutively, starting at id 0. Currently there are {} registered types.",
         molId, _numRegisteredSiteTypes);
   }
-  if (std::any_of(siteIds.begin(), siteIds.end(), [this](intType i){i > this->_numRegisteredSiteTypes;})) {
+  if (std::any_of(siteIds.cbegin(), siteIds.cend(), [this](intType i){return i > this->_numRegisteredSiteTypes;})) {
     autopas::utils::ExceptionHandler::exception(
         "ParticlePropertiesLibrary::addMolType(): trying to register a molecule type with an unregistered site type Id.");
   }

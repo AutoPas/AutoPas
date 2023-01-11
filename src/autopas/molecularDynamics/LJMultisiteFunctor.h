@@ -203,9 +203,9 @@ class LJMultisiteFunctor
             autopas::utils::ArrayMath::sub(displacementCoM, rotatedSitePositionsB[j]), rotatedSitePositionsA[i]);
         const auto distanceSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
 
-        const auto sigmaSquared = useMixing ? _PPLibrary->mixingSigmaSquare(siteIdsA[i], siteIdsB[j]) : _sigmaSquared;
-        const auto epsilon24 = useMixing ? _PPLibrary->mixing24Epsilon(siteIdsA[i], siteIdsB[j]) : _epsilon24;
-        const auto shift6 = useMixing ? _PPLibrary->mixingShift6(siteIdsA[i], siteIdsB[j]) : _shift6;
+        const auto sigmaSquared = useMixing ? _PPLibrary->getMixingSigmaSquared(siteIdsA[i], siteIdsB[j]) : _sigmaSquared;
+        const auto epsilon24 = useMixing ? _PPLibrary->getMixing24Epsilon(siteIdsA[i], siteIdsB[j]) : _epsilon24;
+        const auto shift6 = useMixing ? _PPLibrary->getMixingShift6(siteIdsA[i], siteIdsB[j]) : _shift6;
 
         // clang-format off
         // Calculate potential between sites and thus force
@@ -437,7 +437,7 @@ class LJMultisiteFunctor
           for (size_t siteB = 0; siteB < siteCount - (siteIndexMolB); ++siteB) {
             const auto mixingData =
                 _PPLibrary->getMixingData(siteTypes[siteA], siteTypes[siteIndexMolB + siteB]);
-            sigmaSquareds[siteB] = mixingData.sigmaSquare;
+            sigmaSquareds[siteB] = mixingData.sigmaSquared;
             epsilon24s[siteB] = mixingData.epsilon24;
             if (applyShift) {
               shift6s[siteB] = mixingData.shift6;
@@ -956,7 +956,7 @@ class LJMultisiteFunctor
           // preload sigmas, epsilons, and shifts
           for (size_t siteB = 0; siteB < siteCountB; ++siteB) {
             const auto mixingData = _PPLibrary->getMixingData(_PPLibrary->getSiteTypes(typeptrA[molA])[siteA], siteTypesB[siteB]);
-            sigmaSquareds[siteB] = mixingData.sigmaSquare;
+            sigmaSquareds[siteB] = mixingData.sigmaSquared;
             epsilon24s[siteB] = mixingData.epsilon24;
             if (applyShift) {
               shift6s[siteB] = mixingData.shift6;
@@ -1319,7 +1319,7 @@ class LJMultisiteFunctor
 
           for (size_t site = 0; site < _PPLibrary->getNumSites(typeptr[neighborMolIndex]); ++site) {
             const auto mixingData = _PPLibrary->getMixingData(primeSiteType,siteTypesOfNeighborMol[site]);
-            sigmaSquareds[siteIndex] = mixingData.sigmaSquare;
+            sigmaSquareds[siteIndex] = mixingData.sigmaSquared;
             epsilon24s[siteIndex] = mixingData.epsilon24;
             if constexpr (applyShift) {
               shift6s[siteIndex] = mixingData.shift6;
