@@ -166,7 +166,7 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
   std::map<size_t, std::array<double,3>> rotationalVelocityScale;
 #endif
 
-  for (auto typeID : particlePropertiesLibrary.getTypes()) {
+  for (int typeID = 0; typeID < particlePropertiesLibrary.getNumberRegisteredSiteTypes(); typeID++) {
     translationalVelocityScale.emplace(typeID, std::sqrt(targetTemperature / particlePropertiesLibrary.getMass(typeID)));
 #if defined(MD_FLEXIBLE_USE_MULTI_SITE)
     const auto momentOfInertia = particlePropertiesLibrary.getMomentOfInertia(typeID);

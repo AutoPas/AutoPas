@@ -15,7 +15,7 @@ extern template class autopas::AutoPas<ParticleType>;
 class ThermostatTest : public AutoPasTestBase,
                        public ::testing::WithParamInterface<std::tuple<double, double, double>> {
  public:
-  using AutoPasType = autopas::AutoPas<Molecule>;
+  using AutoPasType = autopas::AutoPas<ParticleType>;
 
   ThermostatTest() : AutoPasTestBase(), _particlePropertiesLibrary(ParticlePropertiesLibrary<double, size_t>(1.)) {
     _particlePropertiesLibrary.addSiteType(0, 1., 1., 1.);
@@ -30,14 +30,14 @@ class ThermostatTest : public AutoPasTestBase,
    * @param dummy
    * @param particlesPerDim
    */
-  void initContainer(AutoPasType &autopas, const Molecule &dummy, std::array<size_t, 3> particlesPerDim);
+  void initContainer(AutoPasType &autopas, const ParticleType &dummy, std::array<size_t, 3> particlesPerDim);
 
   /**
    * Applies brownian motion to a system and checks that all velocities have changed.
    * @param dummyMolecule
    * @param useCurrentTemp
    */
-  void testBrownianMotion(const Molecule &dummyMolecule, double targetTemperature);
+  void testBrownianMotion(const ParticleType &dummyMolecule, double targetTemperature);
 
   ParticlePropertiesLibrary<double, size_t> _particlePropertiesLibrary;
   AutoPasType _autopas;
