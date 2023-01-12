@@ -36,7 +36,7 @@ double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibrary
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     auto vel = iter->getV();
     kineticEnergyMul2 +=
-        particlePropertiesLibrary.getMass(iter->getTypeId()) * autopas::utils::ArrayMath::dot(vel, vel);
+        particlePropertiesLibrary.getMolMass(iter->getTypeId()) * autopas::utils::ArrayMath::dot(vel, vel);
   }
   // AutoPas works always on 3 dimensions
   constexpr unsigned int dimensions{3};
