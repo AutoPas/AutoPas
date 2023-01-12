@@ -72,8 +72,8 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
   config.boxMin.value = {0., 0., 0.};
   config.boxMax.value = {5., 5., 5.};
   config.cutoff.value = 0.3;
-  config.verletSkinRadiusPerTimestep.value = 0.01;
-  config.verletRebuildFrequency.value = 20;
+  config.verletSkinRadiusPerTimestep.value = 0.02;
+  config.verletRebuildFrequency.value = 10;
   config.subdivideDimension.value = {true, true, true};
   config.boundaryOption.value = boundaryConditions;
 
@@ -201,8 +201,8 @@ TEST_F(MixedBoundaryConditionTest, testMixedReflection) {
                                                                          options::BoundaryTypeOption::reflective,
                                                                          options::BoundaryTypeOption::reflective};
   const std::vector<std::array<double, 3>> particlePositions = {
-      {1.0, 0.05, 1.0}, {2.0, 0.05, 1.0}, {1.0, 0.05, 0.05}, {2.0, 0.05, 0.05}, {4.95, 0.05, 0.05},
-      {4.0, 4.95, 4.0}, {3.0, 4.95, 4.0}, {4.0, 4.95, 4.95}, {3.0, 4.95, 4.95}, {0.05, 4.95, 4.95}};
+      {1.0, 0.005, 1.0}, {2.0, 0.005, 1.0}, {1.0, 0.005, 0.005}, {2.0, 0.005, 0.005}, {4.995, 0.005, 0.005},
+      {4.0, 4.995, 4.0}, {3.0, 4.995, 4.0}, {4.0, 4.995, 4.995}, {3.0, 4.995, 4.995}, {0.005, 4.995, 4.995}};
   const std::vector<std::array<double, 3>> particleVelocities = {
       {0.0, -1.0, 1.0}, {0.0, 1.0, 1.0},   {0.0, -1.0, -0.5}, {0.0, -1.0, 0.5}, {1.0, -0.5, -0.2},
       {0.0, 1.0, -1.0}, {0.0, -1.0, -1.0}, {0.0, 1.0, 0.5},   {0.0, 1.0, -0.5}, {-1.0, 0.5, 0.2}};
@@ -230,7 +230,7 @@ TEST_F(MixedBoundaryConditionTest, testPeriodic) {
                                                                          options::BoundaryTypeOption::reflective};
 
   const std::vector<std::array<double, 3>> particlePositions = {
-      {-0.05, 0.05, 1.0}, {-0.05, 0.05, 2.0}, {-0.05, 0.05, 3.0}, {4.95, 4.95, 4.95}, {5.05, 4.95, 4.95}};
+      {-0.005, 0.005, 1.0}, {-0.005, 0.005, 2.0}, {-0.005, 0.005, 3.0}, {4.995, 4.995, 4.995}, {5.005, 4.995, 4.995}};
   const std::vector<std::array<double, 3>> particleVelocities = {
       {-1.0, -1.0, 0.0}, {-1.0, 1.0, 0.0}, {1.0, -1.0, 0.0}, {1.0, 1.0, 1.0}, {1.0, 1.0, 1.0}};
 
@@ -260,7 +260,7 @@ TEST_F(MixedBoundaryConditionTest, testNoBoundary) {
       options::BoundaryTypeOption::none, options::BoundaryTypeOption::none, options::BoundaryTypeOption::none};
 
   const std::vector<std::array<double, 3>> particlePositions = {
-      {-0.05, 2.5, 2.5}, {0.05, 2.5, 2.5}, {4.95, 2.5, 2.5}, {5.05, 2.5, 2.5}};
+      {-0.005, 2.5, 2.5}, {0.005, 2.5, 2.5}, {4.995, 2.5, 2.5}, {5.005, 2.5, 2.5}};
   const std::vector<std::array<double, 3>> particleVelocities = {
       {-1.0, 1.0, 1.0}, {-1.0, 1.0, 1.0}, {1.0, 1.0, 1.0}, {1.0, 1.0, 1.0}};
 
