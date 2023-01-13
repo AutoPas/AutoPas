@@ -75,15 +75,16 @@ jobs:
         [autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF ],
         ]
         exclude:
-          # Exclude multi-site for non-md-flexible tests.
           - is-multi-site: ON
-            part: 1
           # Exclude MPI configuration from part 2, where tests are not affected by use of MPI.
           - config: [autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF ,   OFF   ]
             part: 2
-          # Also exclude md-flexible tests.
-          - is-multi-site: ON
-            part: 2
+        # For two configurations, compile with Multi-Site Molecule support for md-flexible.
+        include:
+          - config: [autopas-build-archer, clang, clang++, Ninja            , Release, ON     , OFF , ON  ]
+            is-multi-site: ON
+          - config: [autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF ]
+            is-multi-site: ON
     name: Matrix - ${{ matrix.config[1] }}|${{ matrix.config[4] }}|OpenMP=${{ matrix.config[5] }}|ASan=${{ matrix.config[6] }}|TSan=${{ matrix.config[7] }} (${{ matrix.part }}/2)
     container: autopas/${{ matrix.config[0] }}
     env:
@@ -118,7 +119,7 @@ jobs:
           entrypoint.sh cmake --build . --parallel 1 
       - name: Run tests ${{ matrix.part }}/2
         run: |
-          # Only run md-flexible tests if multi-site MD is enabled.
+          # For Multi-Site Molecule Md-flexible builds, only run tests for md-flexible.
           if [ "${{ is-multi-site }}" = OFF ]
             then
             # derive whether or not to run with MPI.

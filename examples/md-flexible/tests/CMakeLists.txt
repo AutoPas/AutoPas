@@ -32,8 +32,6 @@ target_compile_definitions(
 
 include(autopas_all)
 
-option(MD_FLEXIBLE_USE_MULTI_SITE "Enable use of multi-site molecule types, rotational integration, and compile multi-site variants of functors." OFF)
-
 target_include_directories(
     mdFlexTests
     PUBLIC ${PROJECT_SOURCE_DIR}/tests/testAutopas ${PROJECT_SOURCE_DIR}/examples/md-flexible
