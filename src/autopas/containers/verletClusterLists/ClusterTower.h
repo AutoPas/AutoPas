@@ -43,6 +43,11 @@ template <class Particle>
 class ClusterTower : public ParticleCell<Particle> {
  public:
   /**
+   * Type that holds or refers to the actual particles.
+   */
+  using StorageType = typename FullParticleCell<Particle>::StorageType;
+
+  /**
    * Constructor
    * @param clusterSize of all clusters in this tower.
    */
@@ -213,21 +218,29 @@ class ClusterTower : public ParticleCell<Particle> {
   [[nodiscard]] unsigned long numParticles() const override { return getNumActualParticles(); }
 
   /**
-   * Returns an iterator over all non-dummy particles contained in this tower.
-   * @return an iterator over all non-dummy particles contained in this tower.
+   * @copydoc autopas::FullParticleCell::begin()
    */
-  [[nodiscard]] SingleCellIteratorWrapper<Particle, true> begin() override {
-    return SingleCellIteratorWrapper<Particle, true>{
-        new SingleCellIterator<Particle, ClusterTower<Particle>, true>(this)};
+  [[nodiscard]] CellIterator<StorageType, true> begin() { return _particlesStorage.begin(); }
+
+  /**
+   * @copydoc autopas::FullParticleCell::begin()
+   * @note const version
+   */
+  [[nodiscard]] CellIterator<StorageType, false> begin() const { return _particlesStorage.begin(); }
+
+  /**
+   * @copydoc autopas::FullParticleCell::end()
+   */
+  [[nodiscard]] CellIterator<StorageType, true> end() {
+    return CellIterator<StorageType, true>(_particlesStorage.end());
   }
 
   /**
-   * Returns an iterator over all non-dummy particles contained in this tower.
-   * @return an iterator over all non-dummy particles contained in this tower.
+   * @copydoc autopas::FullParticleCell::end()
+   * @note const version
    */
-  [[nodiscard]] SingleCellIteratorWrapper<Particle, false> begin() const override {
-    return SingleCellIteratorWrapper<Particle, false>{
-        new SingleCellIterator<Particle, ClusterTower<Particle>, false>(this)};
+  [[nodiscard]] CellIterator<StorageType, false> end() const {
+    return CellIterator<StorageType, false>(_particlesStorage.end());
   }
 
   /**
@@ -359,6 +372,7 @@ class ClusterTower : public ParticleCell<Particle> {
    * The particle cell to store the particles and SoA for this tower.
    */
   FullParticleCell<Particle> _particlesStorage;
+
   /**
    * The number of dummy particles in this tower.
    */

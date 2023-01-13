@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "autopas/cells/ParticleCell.h"
-#include "autopas/iterators/SingleCellIterator.h"
+#include "autopas/iterators/CellIterator.h"
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -32,6 +32,11 @@ class FullParticleCell : public ParticleCell<Particle> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
   /**
+   * Type that holds or refers to the actual particles.
+   */
+  using StorageType = std::vector<Particle>;
+
+  /**
    * Constructs a new FullParticleCell.
    */
   FullParticleCell()
@@ -50,12 +55,36 @@ class FullParticleCell : public ParticleCell<Particle> {
     particlesLock.unlock();
   }
 
-  SingleCellIteratorWrapper<Particle, true> begin() override {
-    return SingleCellIteratorWrapper<Particle, true>(new iterator_t(this));
+  /**
+   * Get an iterator to the start of a ParticleCell.
+   * normal use:
+   * for(auto iter = cell.begin(); iter.isValid; ++iter){...}
+   * @return the iterator
+   */
+  [[nodiscard]] CellIterator<StorageType, true> begin() { return CellIterator<StorageType, true>(_particles.begin()); }
+
+  /**
+   * @copydoc autopas::FullParticleCell::begin()
+   * @note const version
+   */
+  [[nodiscard]] CellIterator<StorageType, false> begin() const {
+    return CellIterator<StorageType, false>(_particles.cbegin());
   }
 
-  SingleCellIteratorWrapper<Particle, false> begin() const override {
-    return SingleCellIteratorWrapper<Particle, false>(new const_iterator_t(this));
+  /**
+   * Get an iterator to the end of a ParticleCell.
+   * normal use:
+   * for(auto &p : cell){...}
+   * @return the iterator
+   */
+  [[nodiscard]] CellIterator<StorageType, true> end() { return CellIterator<StorageType, true>(_particles.end()); }
+
+  /**
+   * @copydoc autopas::FullParticleCell::end()
+   * @note const version
+   */
+  [[nodiscard]] CellIterator<StorageType, false> end() const {
+    return CellIterator<StorageType, false>(_particles.cend());
   }
 
   /**
@@ -221,22 +250,12 @@ class FullParticleCell : public ParticleCell<Particle> {
   /**
    * Storage of the molecules of the cell.
    */
-  std::vector<Particle> _particles;
+  StorageType _particles;
 
   /**
    * SoA buffer of this cell.
    */
   SoA<SoAArraysType> _particleSoABuffer;
-
-  /**
-   * Type of the internal iterator.
-   */
-  using iterator_t = internal::SingleCellIterator<Particle, FullParticleCell<Particle>, true>;
-
-  /**
-   * Type of the internal const iterator.
-   */
-  using const_iterator_t = internal::SingleCellIterator<Particle, FullParticleCell<Particle>, false>;
 
  private:
   AutoPasLock particlesLock;
