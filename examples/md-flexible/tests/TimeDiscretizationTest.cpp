@@ -402,8 +402,150 @@ TEST_F(TimeDiscretizationTest, testCalculateAngularVelocitiesMultisite) {
   testCalculateAngularVelocitiesImpl<MultisiteMolecule>();
 }
 
-TEST_F(TimeDiscretizationTest, testCalculateQuaternionSimple) {
-  testCalculateQuaternionsImpl<Molecule>();
+TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
+  using autopas::utils::ArrayMath::add;
+  using autopas::utils::ArrayMath::sub;
+  using autopas::utils::ArrayMath::mul;
+  using autopas::utils::ArrayMath::div;
+  using autopas::utils::ArrayMath::mulScalar;
+  using autopas::utils::ArrayMath::cross;
+  using autopas::utils::ArrayMath::L2Norm;
+  using autopas::utils::ArrayMath::normalize;
+  using autopas::utils::quaternion::qMul;
+  using autopas::utils::quaternion::qConjugate;
+  using autopas::utils::quaternion::convertQuaternionTo3DVec;
+
+  auto autopasContainer = std::make_shared<autopas::AutoPas<ParticleType>>();
+  auto PPL = std::make_shared<ParticlePropertiesLibrary<>>(1.0);
+
+  const double deltaT = 0.1;
+
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+
+  // Init autopas
+  autopasContainer->setBoxMin({0., 0., 0.});
+  autopasContainer->setBoxMax({4., 4., 4.});
+  autopasContainer->init();
+
+  // Init PPL
+  PPL->addSiteType(0, 1, 1, 0.5);
+  PPL->addMolType(0, {0, 0, 0}, {{0.74349607, 1.20300191, 0.}, {0.3249197, -1.37638192, 0.},
+                                 {-1.37638192, -0.3249197, 0.}}, {5.23606798, 0.76393202, 6.});
+  // comment on seemingly random site positions + MoI:
+  // this molecule looks like
+  //
+  //             x
+  //             |
+  //     sqrt(2) |
+  //            CoM
+  //   sqrt(2)/     \ sqrt(2)
+  //        /         \
+  //      x             x
+  //
+  // Site positions have been chosen such the momentOfInertia is diagonal (and thus represented only by 3 doubles)
+  PPL->calculateMixingCoefficients();
+
+  // add particle
+  MultisiteMolecule mol;
+  mol.setR({2., 2., 2.});
+  mol.setQ({0.7071067811865475, 0.7071067811865475, 0., 0.});
+  mol.setF({0., 0., 1.});
+  mol.setV({0., 0., 1.});
+  mol.setTorque({1., 0., 0.});
+  mol.setAngularVel({1., 0., 0.});
+  mol.setTypeId(0);
+  autopasContainer->addParticle(mol);
+
+  // derive expected new quaternion by working through algorithm from Rozmanov, 2010, Robust rotational-velocity-Verlet
+  // integration methods (method A) step-by-step. To ensure no mistakes, we strictly follow algorithm in paper (as
+  // opposed to variation in function)
+
+  const auto momentOfInertiaM = PPL->getMomentOfInertia(mol.getTypeId());
+
+  // (17)
+  const auto angularVelocityM0 = convertQuaternionTo3DVec(qMul(qConjugate(mol.getQ()),qMul(mol.getAngularVel(), mol.getQ())));
+  const auto angularMomentumM0 = mul(angularVelocityM0, momentOfInertiaM);
+
+  const auto angularMomentumW0 = convertQuaternionTo3DVec(qMul(mol.getQ(),qMul(angularMomentumM0, qConjugate(mol.getQ())))); // this is used later
+
+  // (18)
+  const auto torqueM0 = convertQuaternionTo3DVec(qMul(qConjugate(mol.getQ()),qMul(mol.getTorque(), mol.getQ())));
+
+  // (19)
+  const auto angularVelM0 = div(angularMomentumM0, momentOfInertiaM);
+
+  // (20)
+  const auto derivAngularMomentumM0 = sub(torqueM0, cross(angularVelM0, angularMomentumM0));
+
+  // (21)
+  const auto angularMomentumMHalf = add(angularMomentumM0, mulScalar(derivAngularMomentumM0, 0.5 * deltaT));
+
+  // (22)
+  const auto derivQHalf0 = mulScalar(qMul(mol.getQ(), div(angularMomentumMHalf, momentOfInertiaM) ), 0.5);
+
+  // (23)
+  const auto qHalf0 = add(mol.getQ(), mulScalar(derivQHalf0, 0.5 * deltaT));
+
+  // (24)
+  const auto angularMomentumWHalf = add(angularMomentumW0, mulScalar(mol.getTorque(), 0.5 * deltaT));
+
+  // (25)
+  auto qHalfK = qHalf0;
+  auto qHalfKp1 = qHalf0;
+  auto derivQHalfKp1 = derivQHalf0;
+  qHalfK[0] = 1e10 * qHalfKp1[0]; // ensuring while loop runs at least once
+  while (L2Norm(sub(qHalfKp1, qHalfK)) > 1e-13) {
+    qHalfK = qHalfKp1;
+    const auto angularMomentumMHalfKp1 = convertQuaternionTo3DVec(qMul(qConjugate(qHalfK), qMul(angularMomentumWHalf, qHalfK)));
+    const auto angularVelocityHalfKp1 = div(angularMomentumMHalfKp1,momentOfInertiaM);
+    derivQHalfKp1 = mulScalar(qMul(qHalfK, angularVelocityHalfKp1), 0.5);
+    qHalfKp1 = normalize(add(mol.getQ(), mulScalar(derivQHalfKp1, 0.5 * deltaT)));
+  }
+
+  // (26)
+  const auto qExpected = normalize(add(mol.getQ(), mulScalar(derivQHalfKp1, deltaT)));
+
+  // Obtaining angularVelocityWHalf (Not part of original algorithm but needed for implementation in md-flexible)
+  const auto angularVelocityMHalf = div(angularMomentumMHalf, momentOfInertiaM);
+  const auto angularVelocityWHalfExpected = convertQuaternionTo3DVec(qMul(mol.getQ(),qMul(angularVelocityMHalf, qConjugate(mol.getQ()))));
+
+  // Run TimeDiscretization::calculateQuaternions
+  TimeDiscretization::calculateQuaternions(*autopasContainer, *PPL, deltaT, {0, 0, 0});
+
+  auto resultantMol = autopasContainer->begin(autopas::IteratorBehavior::owned);
+
+  // Compare values
+  ASSERT_NEAR(qExpected[0], resultantMol->getQ()[0], 1e-13);
+  ASSERT_NEAR(qExpected[1], resultantMol->getQ()[1], 1e-13);
+  ASSERT_NEAR(qExpected[2], resultantMol->getQ()[2], 1e-13);
+  ASSERT_NEAR(qExpected[3], resultantMol->getQ()[3], 1e-13);
+
+  ASSERT_NEAR(angularVelocityWHalfExpected[0], resultantMol->getAngularVel()[0], 1e-13);
+  ASSERT_NEAR(angularVelocityWHalfExpected[1], resultantMol->getAngularVel()[1], 1e-13);
+  ASSERT_NEAR(angularVelocityWHalfExpected[2], resultantMol->getAngularVel()[2], 1e-13);
+
+  // Confirm no extra molecules were created
+  ++resultantMol;
+  ASSERT_FALSE(resultantMol.isValid());
+
+#elif
+  // Init autopas
+  autopasContainer->setBoxMin({0., 0., 0.});
+  autopasContainer->setBoxMax({4., 4., 4.});
+  autopasContainer->init();
+
+  // Init PPL
+  PPL->addSiteType(0, 1, 1, 0.5);
+  PPL->calculateMixingCoefficients();
+
+  // add particle
+  ParticleType mol;
+  mol.setR({2., 2., 2.});
+  mol.setF({0., 0., 1.});
+  mol.setV({0., 0., 1.});
+  mol.setTypeId(0);
+  autopasContainer->addParticle(mol);
+#endif
 }
 
 TEST_F(TimeDiscretizationTest, testCalculateQuaternionMultisite) {
