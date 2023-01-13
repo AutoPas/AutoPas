@@ -9,145 +9,33 @@
 #include <memory>
 
 namespace {
-template <class MoleculeType>
-void fillWithParticlesAndInit(autopas::AutoPas<MoleculeType> &autopasContainer) {
+void fillWithParticlesAndInit(autopas::AutoPas<ParticleType> &autopasContainer) {
   // Init autopas
   autopasContainer.setBoxMin({0., 0., 0.});
   autopasContainer.setBoxMax({5., 5., 5.});
   autopasContainer.init();
 
   // Define dummy particle
-  MoleculeType dummy;
+  ParticleType dummy;
   dummy.setF({0., 0., 1.});
   dummy.setV({0., 0., 1.});
-
-  // Use dummy to fill container
-  autopasTools::generators::GridGenerator::fillWithParticles(autopasContainer, {2, 2, 2}, dummy, {1, 1, 1}, {0., 0., 0.});
-}
-
-template<> void fillWithParticlesAndInit<MultisiteMolecule>(autopas::AutoPas<MultisiteMolecule> &autopasContainer) {
-  // Init autopas
-  autopasContainer.setBoxMin({0., 0., 0.});
-  autopasContainer.setBoxMax({5., 5., 5.});
-  autopasContainer.init();
-
-  // Define dummy particle
-  MultisiteMolecule dummy;
-  dummy.setF({0., 0., 1.});
-  dummy.setV({0., 0., 1.});
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
   dummy.setTorque({1., 0., 0.});
   dummy.setAngularVel({1., 0., 0.});
   dummy.setQ({0.7071067811865475, 0.7071067811865475, 0., 0.});
+#endif
 
   // Use dummy to fill container
   autopasTools::generators::GridGenerator::fillWithParticles(autopasContainer, {2, 2, 2}, dummy, {1, 1, 1}, {0., 0., 0.});
 }
 
-/**
- * Initialise particle properties library.
- * This function should have a valid molecule type.
- * @tparam MoleculeType
- * @param PPL
- */
-template <class MoleculeType>
 void initPPL(ParticlePropertiesLibrary<> &PPL) {
-  autopas::utils::ExceptionHandler::exception("initPPL should not be called with this molecule type!");
-}
-
-template<> void initPPL<Molecule>(ParticlePropertiesLibrary<> &PPL) {
-  PPL.addSimpleType(0, 1, 1, 1);
-  PPL.calculateMixingCoefficients();
-}
-
-template<> void initPPL<MultisiteMolecule>(ParticlePropertiesLibrary<> &PPL) {
-  PPL.addSiteType(0, 0.5, 1, 0.5);
+  PPL.addSiteType(0, 1., 1., 1.);
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
   PPL.addMolType(0, {0, 0}, {{-0.05, 0, 0}, {0.05, 0, 0}}, {1., 1., 1.});
+#endif
   PPL.calculateMixingCoefficients();
 }
-
-template<class MoleculeType> void testCalculateVelocitiesImpl() {
-  auto autoPas = std::make_shared<autopas::AutoPas<MoleculeType>>();
-  auto PPL = std::make_shared<ParticlePropertiesLibrary<>>(1.0);
-
-  fillWithParticlesAndInit(*autoPas);
-  initPPL<MoleculeType>(*PPL);
-
-  // First timestep
-  TimeDiscretization::calculateVelocities(*autoPas, *PPL, 0.1);
-  for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
-    // only velocity in one direction is expected, as the force is initialized to point only in z-direction.
-    EXPECT_EQ(iter->getV()[0], 0);
-    EXPECT_EQ(iter->getV()[1], 0);
-    // Störmer-Verlet: 1 + (0+1)/2 * 0.1 = 1.05
-    EXPECT_NEAR(iter->getV()[2], 1.05, 1e-13);
-
-    // set force for next iteration
-    iter->setOldF(iter->getF());
-    iter->setF({0, 0, 2});
-  }
-
-  // Second timestep
-  TimeDiscretization::calculateVelocities(*autoPas, *PPL, 0.1);
-  for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
-    // only velocity in one direction is expected
-    EXPECT_EQ(iter->getV()[0], 0);
-    EXPECT_EQ(iter->getV()[1], 0);
-    // Störmer-Verlet: 1.05 + (1+2)/2 * 0.1 = 1.2
-    EXPECT_NEAR(iter->getV()[2], 1.2, 1e-13);
-  }
-}
-}
-
-// todo this really should be extended to include non-zero global force calculations
-template<class MoleculeType> void testCalculatePositionsImpl() {
-  auto autoPas = std::make_shared<autopas::AutoPas<Molecule>>();
-  auto PPL = std::make_shared<ParticlePropertiesLibrary<>>(1.0);
-
-  fillWithParticlesAndInit(*autoPas);
-  initPPL<MoleculeType>(*PPL);
-
-  // The reference positions are the position of the particles in the AutoPas container before
-  // calling calculatePositions.
-  const std::vector<std::array<double, 3>> referencePositions1 = {{0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {1, 1, 0},
-                                                                {0, 0, 1}, {1, 0, 1}, {0, 1, 1}, {1, 1, 1}};
-
-  size_t index = 0;
-  TimeDiscretization::calculatePositions(*autoPas, *PPL, 0.1, {0., 0., 0.}, false);
-  for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
-    // only change in one direction is expected
-    EXPECT_EQ(iter->getR()[0], referencePositions1[index][0]);
-    EXPECT_EQ(iter->getR()[1], referencePositions1[index][1]);
-    // Störmer-Verlet: 0.1 * 1 + 0.1^2 * (1 / 2) = 0.105
-    EXPECT_NEAR(iter->getR()[2], referencePositions1[index][2] + 0.105, 1e-13);
-
-    // expect force to be reset
-    const std::array<double, 3> expectedF = {0., 0., 0.};
-    EXPECT_EQ(iter->getF()[0], expectedF[0]);
-    EXPECT_EQ(iter->getF()[1], expectedF[1]);
-    EXPECT_EQ(iter->getF()[2], expectedF[2]);
-
-    // set force and velocity for next iteration
-    iter->setF({0, 0, 2});
-    iter->setV({0, 0, .5});
-
-    ++index;
-  }
-
-  // The reference positions are the position of the particles in the AutoPas container before
-  // calling calculatePositions.
-  const std::vector<std::array<double, 3>> referencePositions2 = {{0, 0, 0.105}, {1, 0, 0.105}, {0, 1, 0.105}, {1, 1, 0.105},
-                        {0, 0, 1.105}, {1, 0, 1.105}, {0, 1, 1.105}, {1, 1, 1.105}};
-
-  TimeDiscretization::calculatePositions(*autoPas, *PPL, 0.1, {0., 0., 0.}, false);
-  index = 0;
-
-  for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
-    EXPECT_EQ(iter->getR()[0], referencePositions2[index][0]);
-    EXPECT_EQ(iter->getR()[1], referencePositions2[index][1]);
-    // Störmer-Verlet: 0.1 * .5 + 0.1^2 * (2 / 2) = 0.06
-    EXPECT_NEAR(iter->getR()[2], referencePositions2[index][2] + 0.06, 1e-13);
-    ++index;
-  }
 }
 
 template<class MoleculeType> void testCalculateQuaternionsImpl() {
@@ -402,20 +290,108 @@ template<> void testCalculateAngularVelocitiesImpl<MultisiteMolecule>() {
 }
 
 
-TEST_F(TimeDiscretizationTest, testCalculateVelocitiesSimple) {
-    testCalculateVelocitiesImpl<Molecule>();
+TEST_F(TimeDiscretizationTest, testCalculateVelocities) {
+  auto autoPas = std::make_shared<autopas::AutoPas<ParticleType>>();
+  auto PPL = std::make_shared<ParticlePropertiesLibrary<>>(1.0);
+
+  fillWithParticlesAndInit(*autoPas);
+  initPPL(*PPL);
+
+  // First timestep
+  TimeDiscretization::calculateVelocities(*autoPas, *PPL, 0.1);
+  for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
+    // only velocity in one direction is expected, as the force is initialized to point only in z-direction.
+    EXPECT_EQ(iter->getV()[0], 0);
+    EXPECT_EQ(iter->getV()[1], 0);
+    // Störmer-Verlet: 1 + (0+1)/2 * 0.1 = 1.05
+    EXPECT_NEAR(iter->getV()[2], 1.05, 1e-13);
+
+    // set force for next iteration
+    iter->setOldF(iter->getF());
+    iter->setF({0, 0, 2});
+  }
+
+  // Second timestep
+  TimeDiscretization::calculateVelocities(*autoPas, *PPL, 0.1);
+  for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
+    // only velocity in one direction is expected
+    EXPECT_EQ(iter->getV()[0], 0);
+    EXPECT_EQ(iter->getV()[1], 0);
+    // Störmer-Verlet: 1.05 + (1+2)/2 * 0.1 = 1.2
+    EXPECT_NEAR(iter->getV()[2], 1.2, 1e-13);
+  }
 }
 
-TEST_F(TimeDiscretizationTest, testCalculateVelocitiesMultisite) {
-  testCalculateVelocitiesImpl<MultisiteMolecule>();
-}
+// todo this really should be extended to include non-zero global force calculations
+TEST_F(TimeDiscretizationTest, testCalculatePositions) {
+  auto autoPas = std::make_shared<autopas::AutoPas<ParticleType>>();
+  auto PPL = std::make_shared<ParticlePropertiesLibrary<>>(1.0);
 
-TEST_F(TimeDiscretizationTest, testCalculatePositionsSimple) {
-  testCalculatePositionsImpl<Molecule>();
-}
+  fillWithParticlesAndInit(*autoPas);
+  initPPL(*PPL);
 
-TEST_F(TimeDiscretizationTest, testCalculatePositionsMultisite) {
-  testCalculatePositionsImpl<MultisiteMolecule>();
+  // The reference positions are the position of the particles in the AutoPas container before
+  // calling calculatePositions.
+  const std::vector<std::array<double, 3>> referencePositions1 = {{0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {1, 1, 0},
+                                                                  {0, 0, 1}, {1, 0, 1}, {0, 1, 1}, {1, 1, 1}};
+
+  // Create vector of the forces the particles were initialized with
+  std::vector<std::array<double, 3>> referenceForces{};
+  referenceForces.reserve(8);
+  for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
+    referenceForces.push_back(iter->getF());
+  }
+
+  size_t index = 0;
+  TimeDiscretization::calculatePositionsAndUpdateForces(*autoPas, *PPL, 0.1, {0., 0., 0.}, false);
+  for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
+    // only change in one direction is expected
+    EXPECT_EQ(iter->getR()[0], referencePositions1[index][0]);
+    EXPECT_EQ(iter->getR()[1], referencePositions1[index][1]);
+    // Störmer-Verlet: 0.1 * 1 + 0.1^2 * (1 / 2) = 0.105
+    EXPECT_NEAR(iter->getR()[2], referencePositions1[index][2] + 0.105, 1e-13);
+
+    // expect force to be reset
+    const std::array<double, 3> expectedF = {0., 0., 0.};
+    EXPECT_EQ(iter->getF()[0], expectedF[0]);
+    EXPECT_EQ(iter->getF()[1], expectedF[1]);
+    EXPECT_EQ(iter->getF()[2], expectedF[2]);
+
+    // expect old force to be the force the particles were initialized with
+    EXPECT_DOUBLE_EQ(iter->getOldF()[0], referenceForces[index][0]);
+    EXPECT_DOUBLE_EQ(iter->getOldF()[1], referenceForces[index][1]);
+    EXPECT_DOUBLE_EQ(iter->getOldF()[2], referenceForces[index][2]);
+
+    // set force and velocity for next iteration
+    iter->setF({0, 0, 2});
+    iter->setV({0, 0, .5});
+
+    ++index;
+  }
+
+  // The reference positions are the position of the particles in the AutoPas container before
+  // calling calculatePositions.
+  const std::vector<std::array<double, 3>> referencePositions2 = {{0, 0, 0.105}, {1, 0, 0.105}, {0, 1, 0.105}, {1, 1, 0.105},
+                                                                  {0, 0, 1.105}, {1, 0, 1.105}, {0, 1, 1.105}, {1, 1, 1.105}};
+
+  TimeDiscretization::calculatePositionsAndUpdateForces(*autoPas, *PPL, 0.1, {0., 0., 0.}, false);
+  index = 0;
+
+  for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
+    EXPECT_EQ(iter->getR()[0], referencePositions2[index][0]);
+    EXPECT_EQ(iter->getR()[1], referencePositions2[index][1]);
+    // Störmer-Verlet: 0.1 * .5 + 0.1^2 * (2 / 2) = 0.06
+    EXPECT_NEAR(iter->getR()[2], referencePositions2[index][2] + 0.06, 1e-13);
+    ++index;
+  }
+
+  // Check that force is reset correctly to some non-zero global force.
+  TimeDiscretization::calculatePositionsAndUpdateForces(*autoPas, *PPL, 0.1, {-4.5, 2.3, 0.01}, false);
+  for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
+    EXPECT_DOUBLE_EQ(iter->getF()[0], -4.5);
+    EXPECT_DOUBLE_EQ(iter->getF()[0], 2.3);
+    EXPECT_DOUBLE_EQ(iter->getF()[0], 0.01);
+  }
 }
 
 TEST_F(TimeDiscretizationTest, testCalculateAngularVelocitiesSimple) {

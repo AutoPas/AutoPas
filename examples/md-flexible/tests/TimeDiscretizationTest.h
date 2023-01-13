@@ -23,18 +23,16 @@ using Molecule = autopas::MoleculeLJ;
 using MultisiteMolecule = autopas::MultisiteMoleculeLJ;
 
 namespace {
-template <class MoleculeType>
-void fillWithParticlesAndInit(autopas::AutoPas<MoleculeType> &autopasContainer);
-
-template<> void fillWithParticlesAndInit<MultisiteMolecule>(autopas::AutoPas<MultisiteMolecule> &autopasContainer);
+/**
+ * Initializes an AutoPas container for a simple 5x5x5 domain, and fills it with particles.
+ * @param autopasContainer
+ */
+void fillWithParticlesAndInit(autopas::AutoPas<ParticleType> &autopasContainer);
 
 /**
- * Initialise particle properties library.
- * This function should have a valid molecule type.
- * @tparam MoleculeType
+ * Initialise particle properties library with a single site type (and multi-site molecule type, if needed)
  * @param PPL
  */
-template <class MoleculeType>
 void initPPL(ParticlePropertiesLibrary<> &PPL);
 
 /**
