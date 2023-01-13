@@ -19,8 +19,7 @@
 #include "autopas/containers/octree/OctreeNodeInterface.h"
 #include "autopas/containers/octree/OctreeNodeWrapper.h"
 #include "autopas/containers/octree/traversals/OTTraversalInterface.h"
-#include "autopas/iterators/ParticleIterator.h"
-#include "autopas/iterators/RegionParticleIterator.h"
+#include "autopas/iterators/ContainerIterator.h"
 #include "autopas/utils/ParticleCellHelpers.h"
 #include "autopas/utils/logging/OctreeLogger.h"
 
@@ -169,14 +168,19 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {}
 
-  [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> begin(IteratorBehavior behavior) override {
-    return ParticleIteratorWrapper<ParticleType, true>(
-        new internal::ParticleIterator<ParticleType, ParticleCell, true>(&this->_cells, 0, this, behavior));
+  std::tuple<const ParticleType *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                               IteratorBehavior iteratorBehavior,
+                                                               const std::array<double, 3> &boxMin,
+                                                               const std::array<double, 3> &boxMax) const override {
+    // FIXME implement me
+    throw "NOT IMPLEMENTED YET";
+    return std::tuple<ParticleType *, size_t, size_t>();
   }
 
-  [[nodiscard]] ParticleIteratorWrapper<ParticleType, false> begin(IteratorBehavior behavior) const override {
-    return ParticleIteratorWrapper<ParticleType, false>(
-        new internal::ParticleIterator<ParticleType, ParticleCell, false>(&this->_cells, 0, this, behavior));
+  [[nodiscard]] ContainerIterator<ParticleType, true> begin(
+      IteratorBehavior behavior,
+      typename ContainerIterator<ParticleType, true>::ParticleVecType *additionalVectors = nullptr) override {
+    return ContainerIterator<ParticleType, true>(*this, behavior, additionalVectors);
   }
 
   [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> getRegionIterator(const std::array<double, 3> &lowerCorner,

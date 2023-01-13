@@ -9,7 +9,6 @@
 #include <set>
 
 #include "autopas/containers/ParticleContainerInterface.h"
-#include "autopas/iterators/ParticleIteratorWrapper.h"
 #include "autopas/options//ExtrapolationMethodOption.h"
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ContainerOption.h"
@@ -54,13 +53,13 @@ class AutoPas {
    * Define the iterator_t for simple use, also from the outside.
    * Helps to, e.g., wrap the AutoPas iterators
    */
-  using iterator_t = typename autopas::IteratorTraits<Particle>::iterator_t;
+  using iterator_t = autopas::ContainerIterator<Particle, true>;
 
   /**
    * Define the const_iterator_t for simple use, also from the outside.
    * Helps to, e.g., wrap the AutoPas iterators
    */
-  using const_iterator_t = typename autopas::IteratorTraits<Particle>::const_iterator_t;
+  using const_iterator_t = autopas::ContainerIterator<Particle, false>;
 
   /**
    * Constructor for the autopas class.
@@ -148,7 +147,7 @@ class AutoPas {
    * Deletes the particle behind the current iterator position.
    * @param iter Needs to be a modify-able iterator.
    */
-  void deleteParticle(ParticleIteratorWrapper<Particle, true> &iter);
+  void deleteParticle(iterator_t &iter);
 
   /**
    * Deletes the given particle.
@@ -281,8 +280,9 @@ class AutoPas {
   const_iterator_t cbegin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const { return begin(behavior); }
 
   /**
-   * End of the iterator.
-   * This returns a bool, which is false to allow range-based for loops.
+   * Helper to enable range-based for loops for the AutoPas object.
+   * ParticleIterator::operator==() compares its own validity state against this value. Hence, as soon as the iterator
+   * is invalid the loop ends.
    * @return false
    */
   [[nodiscard]] constexpr bool end() const { return false; }

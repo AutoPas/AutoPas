@@ -18,8 +18,7 @@
 #include "autopas/containers/verletClusterLists/ClusterTower.h"
 #include "autopas/containers/verletClusterLists/VerletClusterListsRebuilder.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLTraversalInterface.h"
-#include "autopas/iterators/ParticleIterator.h"
-#include "autopas/iterators/RegionParticleIterator.h"
+#include "autopas/iterators/ContainerIterator.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
@@ -200,6 +199,15 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
   }
 
+  std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                           IteratorBehavior iteratorBehavior,
+                                                           const std::array<double, 3> &boxMin,
+                                                           const std::array<double, 3> &boxMax) const override {
+    // FIXME implement me
+    throw "NOT IMPLEMENTED YET";
+    return std::tuple<Particle *, size_t, size_t>();
+  }
+
   [[nodiscard]] std::vector<Particle> updateContainer(bool keepNeighborListsValid) override {
     if (keepNeighborListsValid) {
       return autopas::LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);
@@ -254,13 +262,11 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @copydoc autopas::ParticleContainerInterface::begin()
    * @note This function additionally rebuilds the towers if the tower-structure isn't valid.
    */
-  [[nodiscard]] ParticleIteratorWrapper<Particle, true> begin(
-      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) override {
+  [[nodiscard]] ContainerIterator<Particle, true> begin(
+      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
+      typename ContainerIterator<Particle, true>::ParticleVecType *additionalVectors = nullptr) override {
     prepareContainerForIteration(behavior);
-
-    return ParticleIteratorWrapper<Particle, true>(
-        new internal::ParticleIterator<Particle, internal::ClusterTower<Particle>, true>(
-            &(this->_towers), 0, &unknowingCellBorderAndFlagManager, behavior, nullptr));
+    return ContainerIterator<Particle, true>(*this, behavior, additionalVectors);
   }
 
   /**
@@ -268,23 +274,30 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @note const version.
    * @note This function additionally iterates over the _particlesToAdd vector if the tower-structure isn't valid.
    */
-  [[nodiscard]] ParticleIteratorWrapper<Particle, false> begin(
-      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) const override {
-    /// @todo use proper cellBorderAndFlagManager instead of the unknowing.
+  [[nodiscard]] ContainerIterator<Particle, false> begin(
+      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
+      typename ContainerIterator<Particle, false>::ParticleVecType *additionalVectors = nullptr) const override {
     if (_isValid != ValidityState::invalid) {
       if (not particlesToAddEmpty()) {
         autopas::utils::ExceptionHandler::exception(
             "VerletClusterLists::begin() const: Error: particle container is valid, but _particlesToAdd isn't empty!");
       }
       // If the particles are sorted into the towers, we can simply use the iteration over towers.
-      return ParticleIteratorWrapper<Particle, false>{
-          new internal::ParticleIterator<Particle, internal::ClusterTower<Particle>, false>(
-              &(this->_towers), 0, &unknowingCellBorderAndFlagManager, behavior, nullptr)};
+      return ContainerIterator<Particle, false>(*this, behavior, additionalVectors);
     } else {
       // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
-      return ParticleIteratorWrapper<Particle, false>{
-          new internal::ParticleIterator<Particle, internal::ClusterTower<Particle>, false>(
-              &(this->_towers), 0, &unknowingCellBorderAndFlagManager, behavior, &_particlesToAdd)};
+      // store all pointers in a temporary which is passed to the ParticleIterator constructor.
+      typename ContainerIterator<Particle, false>::ParticleVecType additionalVectorsTmp;
+      if (not additionalVectors) {
+        additionalVectorsTmp.reserve(_particlesToAdd.size() + additionalVectors->size());
+        additionalVectorsTmp.insert(additionalVectorsTmp.end(), additionalVectors->begin(), additionalVectors->end());
+      } else {
+        additionalVectorsTmp.reserve(_particlesToAdd.size());
+      }
+      for (auto vec : _particlesToAdd) {
+        additionalVectorsTmp.push_back(&vec);
+      }
+      return ContainerIterator<Particle, false>(*this, behavior, &additionalVectorsTmp);
     }
   }
 

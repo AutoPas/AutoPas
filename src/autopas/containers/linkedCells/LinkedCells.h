@@ -15,8 +15,7 @@
 #include "autopas/containers/LoadEstimators.h"
 #include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCTraversalInterface.h"
-#include "autopas/iterators/ParticleIterator.h"
-#include "autopas/iterators/RegionParticleIterator.h"
+#include "autopas/iterators/ContainerIterator.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/particles/OwnershipState.h"
@@ -208,17 +207,25 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
                                  this->getCellBlock().getCellLength(), 0);
   }
 
-  [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> begin(
-      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) override {
-    return ParticleIteratorWrapper<ParticleType, true>(new internal::ParticleIterator<ParticleType, ParticleCell, true>(
-        &this->_cells, 0, &_cellBlock, behavior, nullptr));
+  std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                           IteratorBehavior iteratorBehavior,
+                                                           const std::array<double, 3> &boxMin,
+                                                           const std::array<double, 3> &boxMax) const override {
+    // FIXME implement me
+    throw "NOT IMPLEMENTED YET";
+    return std::tuple<Particle *, size_t, size_t>();
   }
 
-  [[nodiscard]] ParticleIteratorWrapper<ParticleType, false> begin(
-      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) const override {
-    return ParticleIteratorWrapper<ParticleType, false>(
-        new internal::ParticleIterator<ParticleType, ParticleCell, false>(&this->_cells, 0, &_cellBlock, behavior,
-                                                                          nullptr));
+  [[nodiscard]] ContainerIterator<ParticleType, true> begin(
+      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
+      typename ContainerIterator<ParticleType, true>::ParticleVecType *additionalVectors = nullptr) override {
+    return ContainerIterator<ParticleType, true>(*this, behavior, additionalVectors);
+  }
+
+  [[nodiscard]] ContainerIterator<ParticleType, false> begin(
+      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
+      typename ContainerIterator<ParticleType, false>::ParticleVecType *additionalVectors = nullptr) const override {
+    return ContainerIterator<ParticleType, false>(*this, behavior, additionalVectors);
   }
 
   /**

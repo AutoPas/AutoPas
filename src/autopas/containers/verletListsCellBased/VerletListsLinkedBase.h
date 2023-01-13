@@ -94,6 +94,12 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
     _linkedCells.deleteAllParticles();
   }
 
+  std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                           IteratorBehavior iteratorBehavior,
+                                                           const std::array<double, 3> &boxMin,
+                                                           const std::array<double, 3> &boxMax) const override {
+    return _linkedCells.getParticle(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
+  }
   /**
    * @copydoc autopas::ParticleContainerInterface::updateContainer()
    * @note This function invalidates the neighbor lists.
@@ -133,17 +139,19 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   /**
    * @copydoc autopas::ParticleContainerInterface::begin()
    */
-  [[nodiscard]] ParticleIteratorWrapper<Particle, true> begin(
-      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) override {
-    return _linkedCells.begin(behavior);
+  [[nodiscard]] ContainerIterator<Particle, true> begin(
+      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
+      typename ContainerIterator<Particle, true>::ParticleVecType *additionalVectors = nullptr) override {
+    return _linkedCells.begin(behavior, additionalVectors);
   }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::begin()
    */
-  [[nodiscard]] ParticleIteratorWrapper<Particle, false> begin(
-      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const override {
-    return _linkedCells.begin(behavior);
+  [[nodiscard]] ContainerIterator<Particle, false> begin(
+      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
+      typename ContainerIterator<Particle, false>::ParticleVecType *additionalVectors = nullptr) const override {
+    return _linkedCells.begin(behavior, additionalVectors);
   }
 
   /**

@@ -132,13 +132,12 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
         // reserve vector of neighbor lists for every particle in cell1
         cellPair.reserve(numParticlesFirstCell);
         size_t particleIndexCurrentCell = 0;
-        for (auto particleIter = cells[firstCellIndex].begin(); particleIter.isValid(); ++particleIter) {
-          // for each particle in cell1 make pair of particle and neighbor list
-          Particle *currentParticle = &*particleIter;
-          cellPair.emplace_back(std::make_pair(currentParticle, std::vector<Particle *>()));
+        for (auto &particle : cells[firstCellIndex]) {
+          // for each particle in cell1 make a pair of particle and neighbor list
+          cellPair.emplace_back(std::make_pair(&particle, std::vector<Particle *>()));
 
-          // add pair of cell's index and particle's index in the cell
-          _particleToCellMap[currentParticle] = std::make_pair(firstCellIndex, particleIndexCurrentCell);
+          // add a pair of cell's index and particle's index in the cell
+          _particleToCellMap[&particle] = std::make_pair(firstCellIndex, particleIndexCurrentCell);
           particleIndexCurrentCell++;
         }
       }

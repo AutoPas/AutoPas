@@ -13,7 +13,7 @@
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/TraversalInterface.h"
-#include "autopas/iterators/ParticleIteratorWrapper.h"
+#include "autopas/iterators/ContainerIterator.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/options/TraversalOption.h"
@@ -180,22 +180,25 @@ class ParticleContainerInterface {
    * @note Default argument necessary to enable range based for loops.
    * @return Iterator to the first particle.
    */
-  [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, true> begin(
-      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) = 0;
+  [[nodiscard]] virtual ContainerIterator<ParticleType, true> begin(
+      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
+      typename ContainerIterator<ParticleType, true>::ParticleVecType *additionalVectors = nullptr) = 0;
 
   /**
    * @copydoc autopas::ParticleContainerInterface::begin()
    * @note const version
    */
-  [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, false> begin(
-      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) const = 0;
+  [[nodiscard]] virtual ContainerIterator<ParticleType, false> begin(
+      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
+      typename ContainerIterator<ParticleType, false>::ParticleVecType *additionalVectors = nullptr) const = 0;
 
   /**
    * @copydoc autopas::ParticleContainerInterface::begin()
    * @note cbegin will guarantee to return a const_iterator.
    */
-  [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, false> cbegin(
-      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) const final {
+  [[nodiscard]] virtual ContainerIterator<ParticleType, false> cbegin(
+      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
+      typename ContainerIterator<ParticleType, false>::ParticleVecType *additionalVectors = nullptr) const final {
     return begin(behavior);
   };
 

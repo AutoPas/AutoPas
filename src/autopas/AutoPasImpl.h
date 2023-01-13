@@ -155,12 +155,12 @@ void AutoPas<Particle>::deleteParticle(Particle &particle) {
 }
 
 template <class Particle>
-typename AutoPas<Particle>::iterator_t AutoPas<Particle>::begin(IteratorBehavior behavior) {
+ContainerIterator<Particle, true> AutoPas<Particle>::begin(IteratorBehavior behavior) {
   return _logicHandler->begin(behavior);
 }
 
 template <class Particle>
-typename AutoPas<Particle>::const_iterator_t AutoPas<Particle>::begin(IteratorBehavior behavior) const {
+ContainerIterator<Particle, false> AutoPas<Particle>::begin(IteratorBehavior behavior) const {
   return std::as_const(*_logicHandler).begin(behavior);
 }
 

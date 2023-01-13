@@ -14,8 +14,7 @@
 #include "autopas/containers/LeavingParticleCollector.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/containers/directSum/traversals/DSTraversalInterface.h"
-#include "autopas/iterators/ParticleIterator.h"
-#include "autopas/iterators/RegionParticleIterator.h"
+#include "autopas/iterators/ContainerIterator.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AutoPasMacros.h"
@@ -142,17 +141,16 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
         utils::ArrayMath::sub(this->getBoxMax(), this->getBoxMin()), 0);
   }
 
-  [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> begin(
-      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) override {
-    return ParticleIteratorWrapper<ParticleType, true>(new internal::ParticleIterator<ParticleType, ParticleCell, true>(
-        &this->_cells, 0, &_cellBorderFlagManager, behavior, nullptr));
+  [[nodiscard]] ContainerIterator<ParticleType, true> begin(
+      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
+      typename ContainerIterator<ParticleType, true>::ParticleVecType *additionalVectors = nullptr) override {
+    return ContainerIterator<ParticleType, true>(*this, behavior, additionalVectors);
   }
 
-  [[nodiscard]] ParticleIteratorWrapper<ParticleType, false> begin(
-      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) const override {
-    return ParticleIteratorWrapper<ParticleType, false>(
-        new internal::ParticleIterator<ParticleType, ParticleCell, false>(&this->_cells, 0, &_cellBorderFlagManager,
-                                                                          behavior, nullptr));
+  [[nodiscard]] ContainerIterator<ParticleType, false> begin(
+      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
+      typename ContainerIterator<ParticleType, false>::ParticleVecType *additionalVectors = nullptr) const override {
+    return ContainerIterator<ParticleType, false>(*this, behavior, additionalVectors);
   }
 
   /**
@@ -278,6 +276,45 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
       utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
     }
   }
+
+  std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                           IteratorBehavior iteratorBehavior,
+                                                           const std::array<double, 3> &boxMin,
+                                                           const std::array<double, 3> &boxMax) const override {
+    // shortcut if the given index doesn't exist
+    if (cellIndex >= this->_cells.size() or particleIndex >= this->_cells[cellIndex].numParticles()) {
+      return {nullptr, 0, 0};
+    }
+    const Particle *retPtr = &this->_cells[cellIndex][particleIndex];
+
+    // Finding the indices for the next particle
+    const size_t stride = (iteratorBehavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads();
+    // If we only look at halo particles and are in sequential mode, directly jump to the halo cell.
+    // If there is more than one thread this will already be covered by the second directly.
+    if ((iteratorBehavior & IteratorBehavior::halo) and
+        ((iteratorBehavior & IteratorBehavior::forceSequential) or autopas_get_num_threads() == 1)) {
+      cellIndex = 1;
+    }
+    do {
+      // Increment the particle index. If this breaches the end of a cell, go to the next one and reset particleIndex.
+      if (++particleIndex >= this->_cells[cellIndex].numParticles()) {
+        cellIndex += stride;
+        particleIndex = 0;
+      }
+      // If we notice that there is nothing else to look at set invalid values, so we get a nullptr next time and break.
+      if (cellIndex > (iteratorBehavior & IteratorBehavior::owned) ? 0 : this->_cells.size() - 1) {
+        cellIndex = std::numeric_limits<size_t>::max();
+        break;
+      }
+      // Repeat this as long as the current particle is not interesting.
+      //  - coordinates are in region of interest
+      //  - ownership fits to the iterator behavior
+    } while (not utils::inBox(this->_cells[cellIndex][particleIndex].getR(), boxMin, boxMax) or
+             not(static_cast<unsigned int>(this->_cells[cellIndex][particleIndex].getOwnershipState()) &
+                 static_cast<unsigned int>(iteratorBehavior)));
+
+    return {retPtr, cellIndex, particleIndex};
+  };
 
  private:
   class DirectSumCellBorderAndFlagManager : public internal::CellBorderAndFlagManager {
