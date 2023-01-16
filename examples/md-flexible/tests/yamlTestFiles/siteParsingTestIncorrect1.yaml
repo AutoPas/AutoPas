@@ -1,4 +1,4 @@
-# Yaml input for MDFlexConfigTests.siteParsing
+# Yaml input for MDFlexConfigTests.incorrectSiteParsing
 # Used to test case that site information is not correctly given. Specifically, the case that site-ids are not consecutive.
 Sites:
   1:

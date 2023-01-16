@@ -1,4 +1,4 @@
-# Yaml input for MDFlexConfigTests.siteParsing
+# Yaml input for MDFlexConfigTests.correctSiteParsing
 # Used to test correct parsing of site information, in the case that the site information is correctly given.
 Sites:
   1:

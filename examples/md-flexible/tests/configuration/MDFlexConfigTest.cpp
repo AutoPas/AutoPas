@@ -120,14 +120,9 @@ TEST_F(MDFlexConfigTest, multipleSimilarObjectParsing) {
 // todo: add test for parsing site and molecule information
 
 /**
- * Test for the correct passing of site types from a .yaml file.
- *
- * Loads a file with two types of sites, checks for correct parsing of site information.
- *
- * Loads two incorrect files and checks that errors are thrown. In the first, a non-consecutive site number is given.
- * In the second, incomplete site information is given.
+ * Test for the correct parsing of site types from a .yaml file.
  */
-TEST_F(MDFlexConfigTest, siteParsing) {
+TEST_F(MDFlexConfigTest, correctSiteParsing) {
   // Configure md-flexible using correct yaml file and expect no throw in doing so.
   std::vector<std::string> argumentsTest = {"md-flexible", "--yaml-filename",
                                         std::string(YAMLDIRECTORY) + "siteParsingTestCorrect.yaml"};
@@ -146,7 +141,7 @@ TEST_F(MDFlexConfigTest, siteParsing) {
 }
 
 /**
- * Test for the correct passing of site types from a .yaml file.
+ * Test for the correct parsing of site types from a .yaml file.
  *
  * Loads two incorrect files and checks that errors are thrown. In the first, a non-consecutive site number is given.
  * In the second, incomplete site information is given.
@@ -159,7 +154,7 @@ TEST_F(MDFlexConfigTest, incorrectSiteParsing) {
   char *argv1[3] = {&argumentsTest1[0][0], &argumentsTest1[1][0], &argumentsTest1[2][0]};
 
   // Test error thrown.
-  EXPECT_ANY_THROW(MDFlexConfig configuration(3, argv1);)
+  EXPECT_ANY_THROW(MDFlexConfig configuration(3, argv1););
 
   // Test for incomplete site information.
   std::vector<std::string> argumentsTest2 = {"md-flexible", "--yaml-filename",
@@ -168,5 +163,32 @@ TEST_F(MDFlexConfigTest, incorrectSiteParsing) {
   char *argv2[3] = {&argumentsTest2[0][0], &argumentsTest2[1][0], &argumentsTest2[2][0]};
 
   // Test error thrown.
-  EXPECT_ANY_THROW(MDFlexConfig configuration(3, argv2);)
+  EXPECT_ANY_THROW(MDFlexConfig configuration(3, argv2););
+}
+
+/**
+ * Test for the correct parsing of molecule type from a .yaml file.
+ */
+TEST_F(MDFlexConfigTest, correctMolParsing) {
+  // Configure md-flexible using correct yaml file and expect no throw in doing so.
+  std::vector<std::string> argumentsTest = {"md-flexible", "--yaml-filename",
+                                            std::string(YAMLDIRECTORY) + "molParsingTestCorrect.yaml"};
+
+  char *argv[3] = {&argumentsTest[0][0], &argumentsTest[1][0], &argumentsTest[2][0]};
+
+  MDFlexConfig configuration(3, argv);
+
+  // Expected molecular information
+  const std::vector<int> expectedSiteIds0 = {0};
+  const std::vector<std::array<double, 3>> expectedSitePositions0 = {{0., 0., 0.}};
+  const std::array<double, 3> expectedMoI0 = {1., 1., 1.};
+  const std::vector<int> expectedSiteIds1 = {0, 0, 1};
+  const std::vector<std::array<double, 3>> expectedSitePositions1 = {{0., -0.5, 0.}, {1., 0.1, 0.01}, {-0.2, -0.3, 0.4}};
+  const std::array<double, 3> expectedMoI1 = {1., 0.5, 0.25};
+
+  const auto siteIds0 = configuration.molToSiteIdMap.value.at(0);
+  for (int i = 0; i < expectedSiteIds0.size(), i++) {
+    EXPECT_EQ(expectedSiteIds0[i], siteIds0) << "Molecule 0's site IDs do not match expected value. Expected:
+  }
+
 }

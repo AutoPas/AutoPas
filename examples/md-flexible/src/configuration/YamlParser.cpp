@@ -253,7 +253,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     for (auto moleculeInterator : node[MDFlexConfig::moleculesStr]) {
       auto molToSiteIdMap =
           moleculeInterator.second[MDFlexConfig::moleculeToSiteIdStr]
-              .as<std::vector<unsigned long>>();  // todo add testing that site Id matches existing site
+              .as<std::vector<unsigned long>>();
       auto molToSitePosMap =
           moleculeInterator.second[MDFlexConfig::moleculeToSitePosStr].as<std::vector<std::array<double, 3>>>();
       config.addMolType(moleculeInterator.second[MDFlexConfig::molTypeStr].as<unsigned long>(), molToSiteIdMap,
