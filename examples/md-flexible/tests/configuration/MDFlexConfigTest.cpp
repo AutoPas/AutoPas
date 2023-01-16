@@ -170,6 +170,11 @@ TEST_F(MDFlexConfigTest, incorrectSiteParsing) {
  * Test for the correct parsing of molecule type from a .yaml file.
  */
 TEST_F(MDFlexConfigTest, correctMolParsing) {
+  // Skip test if not compiled for multi-site molecules.
+#if not defined(MD_FLEXIBLE_USE_MULTI_SITE)
+  GTEST_SKIP();
+#endif
+
   // Configure md-flexible using correct yaml file and expect no throw in doing so.
   std::vector<std::string> argumentsTest = {"md-flexible", "--yaml-filename",
                                             std::string(YAMLDIRECTORY) + "molParsingTestCorrect.yaml"};
@@ -187,8 +192,40 @@ TEST_F(MDFlexConfigTest, correctMolParsing) {
   const std::array<double, 3> expectedMoI1 = {1., 0.5, 0.25};
 
   const auto siteIds0 = configuration.molToSiteIdMap.value.at(0);
-  for (int i = 0; i < expectedSiteIds0.size(), i++) {
-    EXPECT_EQ(expectedSiteIds0[i], siteIds0) << "Molecule 0's site IDs do not match expected value. Expected:
+  for (int i = 0; i < expectedSiteIds0.size(); i++) {
+    EXPECT_EQ(expectedSiteIds0[i], siteIds0) << "Molecule 0's site IDs do not match expected value. Expected: " << expectedSiteIds0
+    << "; Actual: " << siteIds0 << ".";
+  }
+  const auto sitePositions0 = configuration.molToSitePosMap.value.at(0);
+  for (int i = 0; i < expectedSitePositions0.size(); i++) {
+    for (int j = 0; j < 3; j++) {
+      EXPECT_EQ(expectedSitePositions0[i][j], sitePositions0[i][j]) << "Molecule 0's site positions do not match expected"
+                                                                       " value. Expected: " << expectedSitePositions0 <<
+          "; Actual: " << sitePositions0 << ".";
+    }
+  }
+  const auto momentOfInertia0 = configuration.molToSitePosMap.value.at(0);
+  for (int i = 0; i < 3; i++) {
+    EXPECT_EQ(expectedMoI0[i], momentOfInertia0) << "Molecule 0's Moment of Inertia does not match expected value. Expected: "
+                                                 << expectedMoI0 << "; Actual: " << momentOfInertia0 << ".";
   }
 
+  const auto siteIds1 = configuration.molToSiteIdMap.value.at(0);
+  for (int i = 0; i < expectedSiteIds1.size(); i++) {
+    EXPECT_EQ(expectedSiteIds1[i], siteIds1) << "Molecule 1's site IDs do not match expected value. Expected: " << expectedSiteIds1
+                                             << "; Actual: " << siteIds1 << ".";
+  }
+  const auto sitePositions1 = configuration.molToSitePosMap.value.at(0);
+  for (int i = 0; i < expectedSitePositions1.size(); i++) {
+    for (int j = 0; j < 3; j++) {
+      EXPECT_EQ(expectedSitePositions1[i][j], sitePositions1[i][j]) << "Molecule 1's site positions do not match expected"
+                                                                       " value. Expected: " << expectedSitePositions1 <<
+          "; Actual: " << sitePositions1 << ".";
+    }
+  }
+  const auto momentOfInertia1 = configuration.molToSitePosMap.value.at(0);
+  for (int i = 0; i < 3; i++) {
+    EXPECT_EQ(expectedMoI1[i], momentOfInertia1) << "Molecule 1's Moment of Inertia does not match expected value. Expected: "
+                                                 << expectedMoI1 << "; Actual: " << momentOfInertia1 << ".";
+  }
 }
