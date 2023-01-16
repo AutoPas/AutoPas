@@ -12,12 +12,12 @@
 #include "testingHelpers/commonTypedefs.h"
 
 TEST_F(GeneratorsTest, GridFillwithBoxMin) {
-  auto autoPas = autopas::AutoPas<Molecule>(std::cout);
+  auto autoPas = autopas::AutoPas<ParticleType>(std::cout);
   std::array<double, 3> boxmin = {5., 5., 5.};
   std::array<double, 3> boxmax = {10., 10., 10.};
   autoPas.setBoxMax(boxmax);
   autoPas.setBoxMin(boxmin);
-  Molecule dummy;
+  ParticleType dummy;
 
   autoPas.init();
   autopasTools::generators::GridGenerator::fillWithParticles(autoPas, {5, 5, 5}, dummy, {1, 1, 1}, boxmin);
@@ -84,7 +84,7 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   // check if during initialization, not 2 Particles were initialized with same id
   std::set<size_t> ids;
   for (auto &particle : configuration.getParticles()) {
-    int particleId = particle.getID();
+    const auto particleId = particle.getID();
     ASSERT_EQ(ids.count(particleId), 0) << "Two particles have the same ID " << particleId;
     ids.insert(particleId);
   }
