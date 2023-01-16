@@ -5,7 +5,7 @@
 Objects:
   Sphere:
     0:
-      molecule-type: 0
+      molecule-id: 0
       center: [5.,-10.,0.]
       radius: 10
       particle-spacing: 1.5
