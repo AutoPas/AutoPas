@@ -178,7 +178,11 @@ TEST_F(RegularGridDecompositionTest, testExchangeHaloParticles) {
   {
     size_t id = 0;
     for (const auto &pos : particlePositions) {
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+      ParticleType particle(pos, {0., 0., 0.}, {0.7071067811865475, 0.7071067811865475, 0., 0.}, {0., 0., 0.}, id++);
+#else
       ParticleType particle(pos, {0., 0., 0.}, id++);
+#endif
       autoPasContainer->addParticle(particle);
     }
   }
@@ -222,7 +226,11 @@ TEST_F(RegularGridDecompositionTest, testExchangeMigratingParticles) {
   {
     size_t id = 0;
     for (const auto &_ : positionsOutsideSubdomain) {
-      ParticleType p(domainDecomposition->getLocalBoxMin(), {0., 0., 0.}, id++);
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+      ParticleType p(domainDecomposition->getLocalBoxMin(), {0., 0., 0.}, {0.7071067811865475, 0.7071067811865475, 0., 0.}, {0., 0., 0.}, id++);
+#else
+      ParticleType particle(domainDecomposition->getLocalBoxMin(), {0., 0., 0.}, id++);
+#endif
       autoPasContainer->addParticle(p);
     }
     autoPasContainer->forEach([&](auto &p) { p.setR(positionsOutsideSubdomain[p.getID()]); });
