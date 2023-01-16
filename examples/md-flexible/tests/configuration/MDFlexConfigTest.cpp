@@ -82,9 +82,10 @@ TEST_F(MDFlexConfigTest, calcAutoPasBox) {
   EXPECT_EQ(configuration.boxMax.value, expectedBoxMax);
 }
 
-TEST_F(MDFlexConfigTest, addType) {
-  GTEST_SKIP_("This test needs adapting to multi-site molecules");
-//
+///**
+// * Test that MDFlexConfig correctly adds site types.
+// */
+//TEST_F(MDFlexConfigTest, addSiteType) {
 //  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
 //                                        std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml"};
 //
@@ -92,16 +93,28 @@ TEST_F(MDFlexConfigTest, addType) {
 //
 //  MDFlexConfig configuration(3, argv);
 //
-//  configuration.addParticleType(0, 1.0, 1.0, 1.0);
-//  EXPECT_NO_THROW(configuration.addParticleType(0, 1.0, 1.0, 1.0));
-//  EXPECT_ANY_THROW(configuration.addParticleType(0, 1.5, 1.0, 1.0));
-//  EXPECT_ANY_THROW(configuration.addParticleType(0, 1.5, 1.1, 1.0));
-//  EXPECT_ANY_THROW(configuration.addParticleType(0, 1.1, 1.1, 1.1));
-//  EXPECT_NO_THROW(configuration.addParticleType(1, 2.0, 2.0, 2.0));
-//  EXPECT_EQ(configuration.massMap.value.at(0), 1.0);
-//  EXPECT_EQ(configuration.massMap.value.at(1), 2.0);
-//  EXPECT_EQ(configuration.epsilonMap.value.at(1), 2.0);
-}
+//  const double epsilon0 = 1.0;
+//  const double sigma0 = 1.0;
+//  const double mass0 = 1.0;
+//  const double epsilon1 = 2.0;
+//  const double sigma1 = 2.0;
+//  const double mass1 = 2.0;
+//
+//  // Add site types to configuration, and test that attempting to add rewrite types results in an error.
+//  EXPECT_NO_THROW(configuration.addSiteType(0, epsilon0, sigma0, mass0));
+//  EXPECT_ANY_THROW(configuration.addSiteType(0, 1.5, 1.0, 1.0));
+//  EXPECT_ANY_THROW(configuration.addSiteType(0, 1.5, 1.1, 1.0));
+//  EXPECT_ANY_THROW(configuration.addSiteType(0, 1.1, 1.1, 1.1));
+//  EXPECT_NO_THROW(configuration.addSiteType(1, epsilon1, sigma1, mass1));
+//
+//  // Check added site types are correct
+//  EXPECT_EQ(configuration.epsilonMap.value.at(0), epsilon0);
+//  EXPECT_EQ(configuration.sigmaMap.value.at(0), sigma0);
+//  EXPECT_EQ(configuration.massMap.value.at(0), mass0);
+//  EXPECT_EQ(configuration.epsilonMap.value.at(1), epsilon1);
+//  EXPECT_EQ(configuration.sigmaMap.value.at(1), sigma1);
+//  EXPECT_EQ(configuration.massMap.value.at(1), mass1);
+//}
 
 TEST_F(MDFlexConfigTest, multipleSimilarObjectParsing) {
   std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
@@ -180,17 +193,17 @@ TEST_F(MDFlexConfigTest, correctMolParsing) {
     EXPECT_EQ(expectedMoI0[i], momentOfInertia0[i]);
   }
 
-  const auto siteIds1 = configuration.molToSiteIdMap.value.at(0);
+  const auto siteIds1 = configuration.molToSiteIdMap.value.at(1);
   for (int i = 0; i < expectedSiteIds1.size(); i++) {
     EXPECT_EQ(expectedSiteIds1[i], siteIds1[i]);
   }
-  const auto sitePositions1 = configuration.molToSitePosMap.value.at(0);
+  const auto sitePositions1 = configuration.molToSitePosMap.value.at(1);
   for (int i = 0; i < expectedSitePositions1.size(); i++) {
     for (int j = 0; j < 3; j++) {
       EXPECT_EQ(expectedSitePositions1[i][j], sitePositions1[i][j]);
     }
   }
-  const auto momentOfInertia1 = configuration.momentOfInertiaMap.value.at(0);
+  const auto momentOfInertia1 = configuration.momentOfInertiaMap.value.at(1);
   for (int i = 0; i < 3; i++) {
     EXPECT_EQ(expectedMoI1[i], momentOfInertia1[i]);
   }

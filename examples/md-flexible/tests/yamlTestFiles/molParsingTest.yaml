@@ -2,10 +2,12 @@
 # Used to test correct parsing of site information, in the case that the site information is correctly given.
 Molecules:
   0:
+    molecule-id:                0
     molecule-to-site-id:        [0]
     molecule-to-site-pos:       [[0., 0., 0.]]
     molecule-moment-of-inertia: [1., 1., 1.]
   1:
-    molecule-to-site-id: [0, 0, 1 ]
-    molecule-to-site-pos: [[ 0., -0.5, 0.], [1., 0.1, 0.01], [-0.2, -0.3, 0.4]]
+    molecule-id:                1
+    molecule-to-site-id:        [0, 0, 1 ]
+    molecule-to-site-pos:       [[ 0., -0.5, 0.], [1., 0.1, 0.01], [-0.2, -0.3, 0.4]]
     molecule-moment-of-inertia: [ 1., 0.5, 0.25 ]
