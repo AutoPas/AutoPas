@@ -79,7 +79,6 @@ TEST_F(TimeDiscretizationTest, testCalculateVelocities) {
   }
 }
 
-// todo this really should be extended to include non-zero global force calculations
 TEST_F(TimeDiscretizationTest, testCalculatePositions) {
   auto autoPas = std::make_shared<autopas::AutoPas<ParticleType>>();
   auto PPL = std::make_shared<ParticlePropertiesLibrary<>>(1.0);
