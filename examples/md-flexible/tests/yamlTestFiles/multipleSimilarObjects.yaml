@@ -2,19 +2,13 @@
 Objects:
   CubeGrid:
     0:
-     particle-type: 0
-     particle-epsilon: 1.
-     particle-sigma: 1.
-     particle-mass: 1.
+     molecule-type: 0
      particles-per-dimension: [10,10,10]
      particle-spacing: 0.5
      velocity: [0.,0.,0.]
      bottomLeftCorner: [5.,5.,5.]
     1:
-     particle-type: 1
-     particle-epsilon: 1.1
-     particle-sigma: 1.1
-     particle-mass: 1.1
+     molecule-type: 1
      particles-per-dimension: [10,10,10]
      particle-spacing: 0.5
      velocity: [0.,0.,0.]

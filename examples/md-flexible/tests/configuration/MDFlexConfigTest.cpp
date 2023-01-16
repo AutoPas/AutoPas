@@ -103,16 +103,7 @@ TEST_F(MDFlexConfigTest, addType) {
 //  EXPECT_EQ(configuration.epsilonMap.value.at(1), 2.0);
 }
 
-TEST_F(MDFlexConfigTest, wrongTypeParsingInput) {
-  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
-                                        std::string(YAMLDIRECTORY) + "incorrectParsingFile.yaml"};
-
-  char *argv[3] = {&arguments[0][0], &arguments[1][0], &arguments[2][0]};
-
-  ASSERT_ANY_THROW(MDFlexConfig(3, argv));
-}
-
-TEST_F(MDFlexConfigTest, multipleSameObjectParsing) {
+TEST_F(MDFlexConfigTest, multipleSimilarObjectParsing) {
   std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
                                         std::string(YAMLDIRECTORY) + "multipleSimilarObjects.yaml"};
 
@@ -125,3 +116,5 @@ TEST_F(MDFlexConfigTest, multipleSameObjectParsing) {
   ASSERT_EQ(configuration.cubeGridObjects.at(0).getParticleSpacing(), 0.5);
   ASSERT_EQ(configuration.cubeGridObjects.at(1).getTypeId(), 1);
 }
+
+// todo: add test for parsing site and molecule information

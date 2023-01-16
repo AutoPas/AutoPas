@@ -7,10 +7,7 @@ log-level: debug
 Objects:
   CubeGrid:
     0:
-      particle-type: 0
-      particle-epsilon: 1.
-      particle-sigma: 1.
-      particle-mass: 1.
+      molecule-type: 0
       particles-per-dimension: [10,10,10]
       particle-spacing: 0.5
       velocity: [0.,0.,0.]

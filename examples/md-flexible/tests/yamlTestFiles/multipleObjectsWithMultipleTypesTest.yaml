@@ -6,20 +6,14 @@
 Objects:
   CubeGrid:
     0:
-      particle-type: 0
-      particle-epsilon: 1.
-      particle-sigma: 1.
-      particle-mass: 1.
+      molecule-type: 0
       particles-per-dimension: [10,10,10]
       particle-spacing: 0.5
       velocity: [0.,0.,0.]
       bottomLeftCorner: [5.,5.,5.]
   CubeGauss:
     0:
-      particle-type: 1
-      particle-epsilon: 2.
-      particle-sigma: 2.
-      particle-mass: 2.
+      molecule-type: 1
       numberOfParticles: 100
       box-length: [8.,8.,8.]
       distribution-mean: [17.0, 3.0, 6]
@@ -28,20 +22,14 @@ Objects:
       bottomLeftCorner: [15.,0.,5.]
   CubeUniform:
     0:
-      particle-type: 2
-      particle-epsilon: 3.
-      particle-sigma: 3.
-      particle-mass: 3.
+      molecule-type: 2
       numberOfParticles: 100
       box-length: [10.,10.,10.]
       velocity: [0.,0.,0.]
       bottomLeftCorner: [0.,0.,-15.]
   Sphere:
     0:
-      particle-type: 3
-      particle-epsilon: 4.
-      particle-sigma: 4.
-      particle-mass: 4.
+      molecule-type: 3
       center: [5.,-10.,0.]
       radius: 10
       particle-spacing: 1.5

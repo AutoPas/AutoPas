@@ -5,10 +5,7 @@
 Objects:
   CubeGauss:
     0:
-      particle-type: 0
-      particle-epsilon: 2.
-      particle-sigma: 2.
-      particle-mass: 2.
+      molecule-type: 0
       numberOfParticles: 100
       box-length: [8.,8.,8.]
       distribution-mean: [17.0, 3.0, 6]
