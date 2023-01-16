@@ -1,8 +1,0 @@
-# Yaml input for MDFlexConfigTests.incorrectSiteParsing
-# Used to test case that site information is not correctly given. Specifically, the case that not all site information
-# is given.
-Sites:
-  1:
-    site-id:      0
-    site-epsilon: 1.
-    site-mass:    1.

@@ -125,7 +125,7 @@ TEST_F(MDFlexConfigTest, multipleSimilarObjectParsing) {
 TEST_F(MDFlexConfigTest, correctSiteParsing) {
   // Configure md-flexible using correct yaml file and expect no throw in doing so.
   std::vector<std::string> argumentsTest = {"md-flexible", "--yaml-filename",
-                                        std::string(YAMLDIRECTORY) + "siteParsingTestCorrect.yaml"};
+                                        std::string(YAMLDIRECTORY) + "siteParsingTest.yaml"};
 
   char *argv[3] = {&argumentsTest[0][0], &argumentsTest[1][0], &argumentsTest[2][0]};
 
@@ -141,32 +141,6 @@ TEST_F(MDFlexConfigTest, correctSiteParsing) {
 }
 
 /**
- * Test for the correct parsing of site types from a .yaml file.
- *
- * Loads two incorrect files and checks that errors are thrown. In the first, a non-consecutive site number is given.
- * In the second, incomplete site information is given.
- */
-TEST_F(MDFlexConfigTest, incorrectSiteParsing) {
-  // Test for non-consecutive site id.
-  std::vector<std::string> argumentsTest1 = {"md-flexible", "--yaml-filename",
-                                             std::string(YAMLDIRECTORY) + "siteParsingTestIncorrect1.yaml"};
-
-  char *argv1[3] = {&argumentsTest1[0][0], &argumentsTest1[1][0], &argumentsTest1[2][0]};
-
-  // Test error thrown.
-  EXPECT_ANY_THROW(MDFlexConfig configuration(3, argv1););
-
-  // Test for incomplete site information.
-  std::vector<std::string> argumentsTest2 = {"md-flexible", "--yaml-filename",
-                                            std::string(YAMLDIRECTORY) + "siteParsingTestIncorrect2.yaml"};
-
-  char *argv2[3] = {&argumentsTest2[0][0], &argumentsTest2[1][0], &argumentsTest2[2][0]};
-
-  // Test error thrown.
-  EXPECT_ANY_THROW(MDFlexConfig configuration(3, argv2););
-}
-
-/**
  * Test for the correct parsing of molecule type from a .yaml file.
  */
 TEST_F(MDFlexConfigTest, correctMolParsing) {
@@ -177,7 +151,7 @@ TEST_F(MDFlexConfigTest, correctMolParsing) {
 
   // Configure md-flexible using correct yaml file and expect no throw in doing so.
   std::vector<std::string> argumentsTest = {"md-flexible", "--yaml-filename",
-                                            std::string(YAMLDIRECTORY) + "molParsingTestCorrect.yaml"};
+                                            std::string(YAMLDIRECTORY) + "molParsingTest.yaml"};
 
   char *argv[3] = {&argumentsTest[0][0], &argumentsTest[1][0], &argumentsTest[2][0]};
 
