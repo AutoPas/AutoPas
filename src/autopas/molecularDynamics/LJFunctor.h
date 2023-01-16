@@ -222,7 +222,7 @@ class LJFunctor
       if constexpr (useMixing) {
         for (unsigned int j = 0; j < soa.getNumberOfParticles(); ++j) {
           auto mixingData = _PPLibrary->getMixingData(typeptr[i], typeptr[j]);
-          sigmaSquareds[j] = mixingData.sigmaSquare;
+          sigmaSquareds[j] = mixingData.sigmaSquared;
           epsilon24s[j] = mixingData.epsilon24;
           if constexpr (applyShift) {
             shift6s[j] = mixingData.shift6;

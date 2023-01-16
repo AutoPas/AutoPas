@@ -167,12 +167,12 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
 #endif
 
   for (int typeID = 0; typeID < particlePropertiesLibrary.getNumberRegisteredSiteTypes(); typeID++) {
-    translationalVelocityScale.emplace(typeID, std::sqrt(targetTemperature / particlePropertiesLibrary.getMass(typeID)));
+    translationalVelocityScale.emplace(typeID, std::sqrt(targetTemperature / particlePropertiesLibrary.getMolMass(typeID)));
 #if defined(MD_FLEXIBLE_USE_MULTI_SITE)
     const auto momentOfInertia = particlePropertiesLibrary.getMomentOfInertia(typeID);
-    const std::array<double, 3> scale =
-    rotationalVelocityScale.emplace(typeID, {std::sqrt(targetTemperature / momentOfInertia[0]), std::sqrt(targetTemperature / momentOfInertia[1]),
-                                                    std::sqrt(targetTemperature / momentOfInertia[2])});
+    const std::array<double, 3> scale{std::sqrt(targetTemperature / momentOfInertia[0]), std::sqrt(targetTemperature / momentOfInertia[1]),
+                                      std::sqrt(targetTemperature / momentOfInertia[2])};
+    rotationalVelocityScale.emplace(typeID, scale);
 #endif
   }
 
@@ -191,14 +191,12 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
     // we need one random engine and distribution per thread
     std::default_random_engine randomEngine(42 + autopas::autopas_get_thread_num());
     std::normal_distribution<double> normalDistribution{0, 1};
-    const std::array<double, 3> generateNormal3DVec = [&normalDistribution, &randomEngine]{
-      const std::array<double, 3> normal3DVec{normalDistribution(randomEngine), normalDistribution(randomEngine), normalDistribution(randomEngine)};
-      return normal3DVec;
-    };
     for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-      iter->addV(autopas::utils::ArrayMath::mulScalar(generateNormal3DVec, translationalVelocityScale[iter->getTypeId()]));
+      const std::array<double, 3> normal3DVecTranslational = {normalDistribution(randomEngine), normalDistribution(randomEngine), normalDistribution(randomEngine)};
+      iter->addV(autopas::utils::ArrayMath::mulScalar(normal3DVecTranslational, translationalVelocityScale[iter->getTypeId()]));
 #if defined(MD_FLEXIBLE_USE_MULTI_SITE)
-      iter->addAngularVel(autopas::utils::ArrayMath::mul(generateNormal3DVec, rotationalVelocityScale[iter->getTypeId()]));
+      const std::array<double, 3> normal3DVecRotational = {normalDistribution(randomEngine), normalDistribution(randomEngine), normalDistribution(randomEngine)};
+      iter->addAngularVel(autopas::utils::ArrayMath::mul(normal3DVecRotational, rotationalVelocityScale[iter->getTypeId()]));
 #endif
     }
   }

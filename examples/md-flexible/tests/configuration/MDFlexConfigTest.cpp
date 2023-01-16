@@ -167,7 +167,7 @@ TEST_F(MDFlexConfigTest, correctMolParsing) {
 
   const auto siteIds0 = configuration.molToSiteIdMap.value.at(0);
   for (int i = 0; i < expectedSiteIds0.size(); i++) {
-    EXPECT_EQ(expectedSiteIds0[i], siteIds0);
+    EXPECT_EQ(expectedSiteIds0[i], siteIds0[i]);
   }
   const auto sitePositions0 = configuration.molToSitePosMap.value.at(0);
   for (int i = 0; i < expectedSitePositions0.size(); i++) {
@@ -175,14 +175,14 @@ TEST_F(MDFlexConfigTest, correctMolParsing) {
       EXPECT_EQ(expectedSitePositions0[i][j], sitePositions0[i][j]);
     }
   }
-  const auto momentOfInertia0 = configuration.molToSitePosMap.value.at(0);
+  const auto momentOfInertia0 = configuration.momentOfInertiaMap.value.at(0);
   for (int i = 0; i < 3; i++) {
-    EXPECT_EQ(expectedMoI0[i], momentOfInertia0);
+    EXPECT_EQ(expectedMoI0[i], momentOfInertia0[i]);
   }
 
   const auto siteIds1 = configuration.molToSiteIdMap.value.at(0);
   for (int i = 0; i < expectedSiteIds1.size(); i++) {
-    EXPECT_EQ(expectedSiteIds1[i], siteIds1);
+    EXPECT_EQ(expectedSiteIds1[i], siteIds1[i]);
   }
   const auto sitePositions1 = configuration.molToSitePosMap.value.at(0);
   for (int i = 0; i < expectedSitePositions1.size(); i++) {
@@ -190,8 +190,8 @@ TEST_F(MDFlexConfigTest, correctMolParsing) {
       EXPECT_EQ(expectedSitePositions1[i][j], sitePositions1[i][j]);
     }
   }
-  const auto momentOfInertia1 = configuration.molToSitePosMap.value.at(0);
+  const auto momentOfInertia1 = configuration.momentOfInertiaMap.value.at(0);
   for (int i = 0; i < 3; i++) {
-    EXPECT_EQ(expectedMoI1[i], momentOfInertia1);
+    EXPECT_EQ(expectedMoI1[i], momentOfInertia1[i]);
   }
 }
