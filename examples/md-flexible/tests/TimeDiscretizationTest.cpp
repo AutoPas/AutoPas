@@ -448,12 +448,16 @@ TEST_F(TimeDiscretizationTest, testFastParticlesCheck) {
   initPPL(*PPL);
 
   // slow particle -> no exception
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+  ParticleType p({0., 0., 0.}, {0.1, 0., 0.}, {0.7071067811865475, 0.7071067811865475, 0., 0.}, {0., 0., 0.}, 0);
+#else
   autoPas->addParticle(ParticleType({0., 0., 0.}, {0.1, 0., 0.}, 0));
+#endif
   EXPECT_NO_THROW(
-      TimeDiscretization::calculatePositionsAndUpdateForces(*autoPas, PPL, 0.1, {0., 0., 0.}, true));
+      TimeDiscretization::calculatePositionsAndUpdateForces(*autoPas, *PPL, 0.1, {0., 0., 0.}, true));
   // fast particle -> exception
   autoPas->begin()->setV({1., 0., 0.});
-  EXPECT_THROW(TimeDiscretization::calculatePositionsAndUpdateForces(*autoPas, PPL, 0.1, {0., 0., 0.}, true),
+  EXPECT_THROW(TimeDiscretization::calculatePositionsAndUpdateForces(*autoPas, *PPL, 0.1, {0., 0., 0.}, true),
                std::runtime_error);
 }
 
