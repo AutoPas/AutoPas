@@ -27,7 +27,7 @@ TEST_F(ParticlePropertiesLibraryTest, SitePropertiesAddingAndGettingTest) {
   PPL->addSiteType(0, epsilon0, sigma0, mass0);
 
   // Check successfully getting of information
-  EXPECT_EQ(PPL->getNumberRegisteredMolTypes(), 1);
+  EXPECT_EQ(PPL->getNumberRegisteredSiteTypes(), 1);
   EXPECT_EQ(PPL->get24Epsilon(0), 24.*epsilon0);
   EXPECT_EQ(PPL->getSigmaSquared(0), sigma0*sigma0);
   EXPECT_EQ(PPL->getSiteMass(0), mass0);
@@ -39,7 +39,7 @@ TEST_F(ParticlePropertiesLibraryTest, SitePropertiesAddingAndGettingTest) {
   PPL->addSiteType(1, epsilon1, sigma1, mass1);
 
   // Check successfully getting of information
-  EXPECT_EQ(PPL->getNumberRegisteredMolTypes(), 2);
+  EXPECT_EQ(PPL->getNumberRegisteredSiteTypes(), 2);
   EXPECT_EQ(PPL->get24Epsilon(0), 24.*epsilon0);
   EXPECT_EQ(PPL->getSigmaSquared(0), sigma0*sigma0);
   EXPECT_EQ(PPL->getSiteMass(0), mass0);
