@@ -104,7 +104,7 @@ TEST_F(ParticlePropertiesLibraryTest, MolPropertiesAddingAndGettingTest) {
   EXPECT_THAT(PPL->getSiteTypes(1), ::testing::ElementsAreArray(siteIds1));
   EXPECT_THAT(PPL->getSitePositions(1), ::testing::ElementsAreArray(sitePositions1));
   EXPECT_THAT(PPL->getMomentOfInertia(1), ::testing::ElementsAreArray(MoI1));
-  EXPECT_EQ(PPL->getNumSites(0), 3);
+  EXPECT_EQ(PPL->getNumSites(1), 3);
 
   // Try adding molecules with inappropriate IDs.
   EXPECT_ANY_THROW(PPL->addMolType(1, {0}, {{0., 0., 0.}}, {1., 1., 1.}););
@@ -160,6 +160,7 @@ TEST_F(ParticlePropertiesLibraryTest, LennardJonesTestShiftGivesCorrectEnergyAtC
       std::make_shared<ParticlePropertiesLibrary<double, size_t>>(cutoff);
 
   PPL->addSiteType(0, epsilon, sigma, 1.);
+  PPL->calculateMixingCoefficients();
 
   const auto cutoffSquared = cutoff * cutoff;
   const auto sigmaSquared = sigma * sigma;
