@@ -28,8 +28,8 @@ TEST_F(ParticlePropertiesLibraryTest, SitePropertiesAddingAndGettingTest) {
 
   // Check successfully getting of information
   EXPECT_EQ(PPL->getNumberRegisteredSiteTypes(), 1);
-  EXPECT_EQ(PPL->get24Epsilon(0), 24.*epsilon0);
-  EXPECT_EQ(PPL->getSigmaSquared(0), sigma0*sigma0);
+  EXPECT_EQ(PPL->getEpsilon(0), epsilon0);
+  EXPECT_EQ(PPL->getSigma(0), sigma0);
   EXPECT_EQ(PPL->getSiteMass(0), mass0);
 
   // Add site 1
@@ -40,11 +40,11 @@ TEST_F(ParticlePropertiesLibraryTest, SitePropertiesAddingAndGettingTest) {
 
   // Check successfully getting of information
   EXPECT_EQ(PPL->getNumberRegisteredSiteTypes(), 2);
-  EXPECT_EQ(PPL->get24Epsilon(0), 24.*epsilon0);
-  EXPECT_EQ(PPL->getSigmaSquared(0), sigma0*sigma0);
+  EXPECT_EQ(PPL->getEpsilon(0), epsilon0);
+  EXPECT_EQ(PPL->getSigma(0), sigma0);
   EXPECT_EQ(PPL->getSiteMass(0), mass0);
-  EXPECT_EQ(PPL->get24Epsilon(1), 24.*epsilon1);
-  EXPECT_EQ(PPL->getSigmaSquared(1), sigma1*sigma1);
+  EXPECT_EQ(PPL->getEpsilon(1), epsilon1);
+  EXPECT_EQ(PPL->getSigma(1), sigma1);
   EXPECT_EQ(PPL->getSiteMass(1), mass1);
 
   // Check addSiteType with an inappropriate siteId throws an error.

@@ -108,18 +108,18 @@ class ParticlePropertiesLibrary {
 
 
   /**
-   * Getter for the site's epsilon*24.
+   * Getter for the site's epsilon.
    * @param i Type Id of the site or single-site molecule.
-   * @return 24*epsilon_i
+   * @return epsilon_i
    */
-  floatType get24Epsilon(intType i) const;
+  floatType getEpsilon(intType i) const;
 
   /**
-   * Getter for the site's squared sigma.
+   * Getter for the site's sigma.
    * @param i Type Id of the site or single-site molecule.
-   * @return sigma_i²
+   * @return sigma_i
    */
-  floatType getSigmaSquared(intType i) const;
+  floatType getSigma(intType i) const;
 
   /**
    * Getter for the site's mass.
@@ -399,13 +399,13 @@ std::vector<intType> ParticlePropertiesLibrary<floatType, intType>::getSiteTypes
 }
 
 template <typename floatType, typename intType>
-floatType ParticlePropertiesLibrary<floatType, intType>::get24Epsilon(intType i) const {
-  return _computedMixingData[i * _numRegisteredSiteTypes + i].epsilon24;
+floatType ParticlePropertiesLibrary<floatType, intType>::getEpsilon(intType i) const {
+  return _epsilons[i];
 }
 
 template <typename floatType, typename intType>
-floatType ParticlePropertiesLibrary<floatType, intType>::getSigmaSquared(intType i) const {
-  return _computedMixingData[i * _numRegisteredSiteTypes + i].sigmaSquared;
+floatType ParticlePropertiesLibrary<floatType, intType>::getSigma(intType i) const {
+  return _sigmas[i];
 }
 
 template<typename floatType, typename intType>
