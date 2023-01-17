@@ -181,11 +181,7 @@ TEST_F(ParticlePropertiesLibraryTest, LennardJonesTestShiftGivesCorrectEnergyAtC
   ljFunctor.AoSFunctor(molA, molB, true);
   ljFunctor.endTraversal(true);
 
-  // @note: The potential energy returned by LJ Functor appears to be the potential energy times 6.
-  // This is not used by md-flexible, but is used by ls1 MarDyn, so this has not been changed until the reasoning for
-  // this is understood.
-  // For now, compare 6 * (Potential_energy_LJ + shift) with 0, as multiplication by 6 does not matter.
-  EXPECT_DOUBLE_EQ(ljFunctor.getUpot() + shift6, 0.);
+  EXPECT_DOUBLE_EQ(ljFunctor.getUpot() + shift6 / 6., 0.);
 }
 
 /**

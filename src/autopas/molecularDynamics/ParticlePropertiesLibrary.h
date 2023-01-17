@@ -424,6 +424,6 @@ double ParticlePropertiesLibrary<floatType, intType>::calcShift6(double epsilon2
                                                                  double cutoffSquared) {
   const auto sigmaDivCutoffPow2 = sigmaSquared / cutoffSquared;
   const auto sigmaDivCutoffPow6 = sigmaDivCutoffPow2 * sigmaDivCutoffPow2 * sigmaDivCutoffPow2;
-  const auto shift6 = epsilon24 * (sigmaDivCutoffPow6 - sigmaDivCutoffPow6 * sigmaDivCutoffPow2);
+  const auto shift6 = epsilon24 * (sigmaDivCutoffPow6 - sigmaDivCutoffPow6 * sigmaDivCutoffPow6);
   return shift6;
 }
