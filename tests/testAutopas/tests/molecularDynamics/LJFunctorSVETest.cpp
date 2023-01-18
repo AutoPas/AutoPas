@@ -156,7 +156,7 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVETwoCells(bool newton3, bool do
   ljFunctorNoSVE.endTraversal(newton3);
 
   double tolerance = 1e-8;
-  EXPECT_NEAR(ljFunctorSVE.getUpot(), ljFunctorNoSVE.getUpot(), tolerance) << "global uPot";
+  EXPECT_NEAR(ljFunctorSVE.getPotentialEnergy(), ljFunctorNoSVE.getPotentialEnergy(), tolerance) << "global uPot";
   EXPECT_NEAR(ljFunctorSVE.getVirial(), ljFunctorNoSVE.getVirial(), tolerance) << "global virial";
 }
 
@@ -215,7 +215,7 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVEOneCell(bool newton3, bool doD
   ljFunctorNoSVE.endTraversal(newton3);
 
   double tolerance = 1e-8;
-  EXPECT_NEAR(ljFunctorSVE.getUpot(), ljFunctorNoSVE.getUpot(), tolerance) << "global uPot";
+  EXPECT_NEAR(ljFunctorSVE.getPotentialEnergy(), ljFunctorNoSVE.getPotentialEnergy(), tolerance) << "global uPot";
   EXPECT_NEAR(ljFunctorSVE.getVirial(), ljFunctorNoSVE.getVirial(), tolerance) << "global virial";
 }
 
@@ -290,7 +290,7 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVEVerlet(bool newton3, bool doDe
   ljFunctorNoSVE.endTraversal(newton3);
 
   double tolerance = 1e-8;
-  EXPECT_NEAR(ljFunctorSVE.getUpot(), ljFunctorNoSVE.getUpot(), tolerance) << "global uPot";
+  EXPECT_NEAR(ljFunctorSVE.getPotentialEnergy(), ljFunctorNoSVE.getPotentialEnergy(), tolerance) << "global uPot";
   EXPECT_NEAR(ljFunctorSVE.getVirial(), ljFunctorNoSVE.getVirial(), tolerance) << "global virial";
 }
 
@@ -340,7 +340,7 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVEAoS(bool newton3, bool doDelet
   ljFunctorNoSVE.endTraversal(newton3);
 
   double tolerance = 1e-8;
-  EXPECT_NEAR(ljFunctorSVE.getUpot(), ljFunctorNoSVE.getUpot(), tolerance) << "global uPot";
+  EXPECT_NEAR(ljFunctorSVE.getPotentialEnergy(), ljFunctorNoSVE.getPotentialEnergy(), tolerance) << "global uPot";
   EXPECT_NEAR(ljFunctorSVE.getVirial(), ljFunctorNoSVE.getVirial(), tolerance) << "global virial";
 }
 * /

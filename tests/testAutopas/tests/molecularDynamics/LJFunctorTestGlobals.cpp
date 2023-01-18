@@ -57,7 +57,7 @@ void LJFunctorTestGlobals<FuncType>::testAoSGlobals(LJFunctorTestGlobals<FuncTyp
   }
   functor.endTraversal(newton3);
 
-  double upot = functor.getUpot();
+  double upot = functor.getPotentialEnergy();
   double virial = functor.getVirial();
 
   EXPECT_NEAR(upot, whereFactor * expectedEnergy, absDelta) << "where: " << where_str << ", newton3: " << newton3;
@@ -200,7 +200,7 @@ void LJFunctorTestGlobals<FuncType>::testSoAGlobals(LJFunctorTestGlobals<FuncTyp
 
   functor.endTraversal(newton3);
 
-  double upot = functor.getUpot();
+  double upot = functor.getPotentialEnergy();
   double virial = functor.getVirial();
 
   EXPECT_NEAR(upot, whereFactor * expectedEnergy, absDelta)
@@ -313,7 +313,7 @@ TYPED_TEST_P(LJFunctorTestGlobals, testAoSFunctorGlobalsOpenMPParallel) {
 
   functor.endTraversal(newton3);
 
-  double upot = functor.getUpot();
+  double upot = functor.getPotentialEnergy();
   double virial = functor.getVirial();
 
   EXPECT_NEAR(upot, whereFactor * multiParticleFactor * this->expectedEnergy, this->absDelta)
@@ -328,8 +328,8 @@ TYPED_TEST_P(LJFunctorTestGlobals, testFunctorGlobalsThrowBad) {
   using FuncType = TypeParam;
   FuncType functor(this->cutoff);
 
-  // getupot without postprocessing is not allowed
-  EXPECT_THROW(functor.getUpot(), exception_type);
+  // getPotentialEnergy without postprocessing is not allowed
+  EXPECT_THROW(functor.getPotentialEnergy(), exception_type);
   EXPECT_THROW(functor.getVirial(), exception_type);
 
   EXPECT_NO_THROW(functor.initTraversal());

@@ -155,7 +155,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   }
 
   if (globals) {
-    return {forces, {functor.getUpot(), functor.getVirial()}};
+    return {forces, {functor.getPotentialEnergy(), functor.getVirial()}};
   } else {
     return {forces, {0., 0.}};
   }

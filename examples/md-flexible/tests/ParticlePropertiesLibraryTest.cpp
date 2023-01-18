@@ -182,7 +182,7 @@ TEST_F(ParticlePropertiesLibraryTest, LennardJonesTestShiftGivesCorrectEnergyAtC
   ljFunctor.AoSFunctor(molA, molB, true);
   ljFunctor.endTraversal(true);
 
-  EXPECT_DOUBLE_EQ(ljFunctor.getUpot() + shift, 0.);
+  EXPECT_DOUBLE_EQ(ljFunctor.getPotentialEnergy() + shift, 0.);
 }
 
 /**
