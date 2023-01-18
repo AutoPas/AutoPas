@@ -233,18 +233,21 @@ class LJMultisiteFunctor
         }
 
         if (calculateGlobals) {
-          // in newton3-case, division by 2 is handled here; in non-newton3-case, division is handled in post-processing
-          const auto potentialEnergy = newton3 ? 0.5 * (epsilon24 * lj12m6 + shift6) : (epsilon24 * lj12m6 + shift6);
-          const auto virial = newton3 ? utils::ArrayMath::mulScalar(utils::ArrayMath::mul(displacement, force),0.5) : utils::ArrayMath::mul(displacement, force);
+          // Here we calculate either the potential energy * 6 or the potential energy * 12.
+          // For newton3, this potential energy contribution is distributed evenly to the two molecules.
+          // For non-newton3, the full potential energy is added to the one molecule.
+          // The division by 6 is handled in endTraversal, as well as the division by two needed if newton3 is not used.
+          const auto potentialEnergy6 = newton3 ? (epsilon24 * lj12m6 + shift6) : 0.5 * (epsilon24 * lj12m6 + shift6);
+          const auto virial = newton3 ? utils::ArrayMath::mul(displacement, force) : utils::ArrayMath::mulScalar(utils::ArrayMath::mul(displacement, force),0.5);
 
           const auto threadNum = autopas_get_thread_num();
 
           if (particleA.isOwned()) {
-            _aosThreadData[threadNum].potentialEnergySum += potentialEnergy;
+            _aosThreadData[threadNum].potentialEnergySum += potentialEnergy6;
             _aosThreadData[threadNum].virialSum = utils::ArrayMath::add(_aosThreadData[threadNum].virialSum,virial);
           }
           if (newton3 and particleB.isOwned()) {
-            _aosThreadData[threadNum].potentialEnergySum += potentialEnergy;
+            _aosThreadData[threadNum].potentialEnergySum += potentialEnergy6;
             _aosThreadData[threadNum].virialSum = utils::ArrayMath::add(_aosThreadData[threadNum].virialSum,virial);
           }
 
@@ -497,11 +500,12 @@ class LJMultisiteFunctor
             const auto virialX = displacementX * forceX;
             const auto virialY = displacementY * forceY;
             const auto virialZ = displacementZ * forceZ;
-            const auto potentialEnergy = siteMask[siteB] ? (epsilon24 * lj12m6 + shift6) : 0.;
+            const auto potentialEnergy6 = siteMask[siteB] ? (epsilon24 * lj12m6 + shift6) : 0.;
 
-            // SoAFunctorSingle uses newton3 optimization, with which globals are divided by two later
+            // Add to the potential energy sum for each particle which is owned.
+            // This results in obtaining 12 * the potential energy for the SoA.
             const auto ownershipMask = (ownedStateA == OwnershipState::owned ? 1. : 0.) + (isSiteBOwned ? 1. : 0.);
-            potentialEnergySum += potentialEnergy * ownershipMask;
+            potentialEnergySum += potentialEnergy6 * ownershipMask;
             virialSumX += virialX * ownershipMask;
             virialSumY += virialY * ownershipMask;
             virialSumZ += virialZ * ownershipMask;
@@ -556,7 +560,8 @@ class LJMultisiteFunctor
 
     if constexpr (calculateGlobals) {
       const auto threadNum = autopas_get_thread_num();
-      // in newton3-case, division by 2 is handled here; in non-newton3-case, division is handled in post-processing
+      // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in post-processing.
+      // For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       const auto newton3Factor = newton3 ? .5 : 1.;
 
       _aosThreadData[threadNum].potentialEnergySum += potentialEnergySum * newton3Factor;
