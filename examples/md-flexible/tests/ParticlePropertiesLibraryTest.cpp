@@ -168,6 +168,7 @@ TEST_F(ParticlePropertiesLibraryTest, LennardJonesTestShiftGivesCorrectEnergyAtC
 
   // Calculate shift6
   const double shift6 = PPL->calcShift6(epsilon24, sigmaSquared, cutoffSquared);
+  const auto shift = shift6 / 6.;
 
   // Create two LJ Molecules that are cutoff apart
   Molecule molA({0.,0.,0.}, {0.,0.,0.}, 0, 0);
@@ -181,7 +182,7 @@ TEST_F(ParticlePropertiesLibraryTest, LennardJonesTestShiftGivesCorrectEnergyAtC
   ljFunctor.AoSFunctor(molA, molB, true);
   ljFunctor.endTraversal(true);
 
-  EXPECT_DOUBLE_EQ(ljFunctor.getUpot() + shift6 / 6., 0.);
+  EXPECT_DOUBLE_EQ(ljFunctor.getUpot() + shift, 0.);
 }
 
 /**
