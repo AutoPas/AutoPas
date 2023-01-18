@@ -64,9 +64,9 @@ class LJFunctorSVE
 #ifdef __ARM_FEATURE_SVE
       : Functor<Particle,
                 LJFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(cutoff),
-        _cutoffsquare{cutoff * cutoff},
-        _cutoffsquareAoS(cutoff * cutoff),
-        _upotSum{0.},
+        _cutoffSquared{cutoff * cutoff},
+        _cutoffSquaredAoS(cutoff * cutoff),
+        _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
         _aosThreadData(),
         _postProcessed{false} {
@@ -122,25 +122,25 @@ class LJFunctorSVE
     if (i.isDummy() or j.isDummy()) {
       return;
     }
-    auto sigmasquare = _sigmaSquareAoS;
+    auto sigmaSquared = _sigmaSquaredAoS;
     auto epsilon24 = _epsilon24AoS;
     auto shift6 = _shift6AoS;
     if constexpr (useMixing) {
-      sigmasquare = _PPLibrary->mixingSigmaSquare(i.getTypeId(), j.getTypeId());
-      epsilon24 = _PPLibrary->mixing24Epsilon(i.getTypeId(), j.getTypeId());
+      sigmaSquared = _PPLibrary->getMixingSigmaSquared(i.getTypeId(), j.getTypeId());
+      epsilon24 = _PPLibrary->getMixing24Epsilon(i.getTypeId(), j.getTypeId());
       if constexpr (applyShift) {
-        shift6 = _PPLibrary->mixingShift6(i.getTypeId(), j.getTypeId());
+        shift6 = _PPLibrary->getMixingShift6(i.getTypeId(), j.getTypeId());
       }
     }
     auto dr = utils::ArrayMath::sub(i.getR(), j.getR());
     double dr2 = utils::ArrayMath::dot(dr, dr);
 
-    if (dr2 > _cutoffsquareAoS) {
+    if (dr2 > _cutoffSquaredAoS) {
       return;
     }
 
     double invdr2 = 1. / dr2;
-    double lj6 = sigmasquare * invdr2;
+    double lj6 = sigmaSquared * invdr2;
     lj6 = lj6 * lj6 * lj6;
     double lj12 = lj6 * lj6;
     double lj12m6 = lj12 - lj6;
@@ -153,21 +153,21 @@ class LJFunctorSVE
     }
     if (calculateGlobals) {
       auto virial = utils::ArrayMath::mul(dr, f);
-      double upot = epsilon24 * lj12m6 + shift6;
+      double potentialEnergy6 = epsilon24 * lj12m6 + shift6;
 
       const int threadnum = autopas_get_thread_num();
       // for non-newton3 the division is in the post-processing step.
       if (newton3) {
-        upot *= 0.5;
+        potentialEnergy6 *= 0.5;
         virial = utils::ArrayMath::mulScalar(virial, (double)0.5);
       }
       if (i.isOwned()) {
-        _aosThreadData[threadnum].upotSum += upot;
+        _aosThreadData[threadnum].potentialEnergySum += potentialEnergy6;
         _aosThreadData[threadnum].virialSum = utils::ArrayMath::add(_aosThreadData[threadnum].virialSum, virial);
       }
       // for non-newton3 the second particle will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
-        _aosThreadData[threadnum].upotSum += upot;
+        _aosThreadData[threadnum].potentialEnergySum += potentialEnergy6;
         _aosThreadData[threadnum].virialSum = utils::ArrayMath::add(_aosThreadData[threadnum].virialSum, virial);
       }
     }
@@ -224,9 +224,9 @@ class LJFunctorSVE
     svfloat64_t virialSumX = svdup_f64(0.0);
     svfloat64_t virialSumY = svdup_f64(0.0);
     svfloat64_t virialSumZ = svdup_f64(0.0);
-    svfloat64_t upotSum = svdup_f64(0.0);
+    svfloat64_t potentialEnergySum = svdup_f64(0.0);
 
-    const auto vecLength = (size_t)svlen_f64(upotSum);
+    const auto vecLength = (size_t)svlen_f64(potentialEnergySum);
 
     // reverse outer loop s.th. inner loop always beginns at aligned array start
     // typecast to detect underflow
@@ -261,7 +261,7 @@ class LJFunctorSVE
         SoAKernel<newton3, false>(j, ownedStatePtr[i] == OwnershipState::owned,
                                   reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr, zptr, fxptr,
                                   fyptr, fzptr, &typeIDptr[i], typeIDptr, fxacc, fyacc, fzacc, virialSumX, virialSumY,
-                                  virialSumZ, upotSum, pg_1, svundef_u64(), pg_2, svundef_u64(), pg_3, svundef_u64(),
+                                  virialSumZ, potentialEnergySum, pg_1, svundef_u64(), pg_2, svundef_u64(), pg_3, svundef_u64(),
                                   pg_4, svundef_u64());
       }
 
@@ -277,7 +277,7 @@ class LJFunctorSVE
       // false, since for newton3 disabled we divide by two later on.
       factor *= newton3 ? .5 : 1.;
       // In case we have a non-cell-wise owned state, we have multiplied everything by two, so we divide it by 2 again.
-      _aosThreadData[threadnum].upotSum += svaddv_f64(svptrue_b64(), upotSum) * factor;
+      _aosThreadData[threadnum].potentialEnergySum += svaddv_f64(svptrue_b64(), potentialEnergySum) * factor;
       _aosThreadData[threadnum].virialSum[0] += svaddv_f64(svptrue_b64(), virialSumX) * factor;
       _aosThreadData[threadnum].virialSum[1] += svaddv_f64(svptrue_b64(), virialSumY) * factor;
       _aosThreadData[threadnum].virialSum[2] += svaddv_f64(svptrue_b64(), virialSumZ) * factor;
@@ -313,9 +313,9 @@ class LJFunctorSVE
     svfloat64_t virialSumX = svdup_f64(0.0);
     svfloat64_t virialSumY = svdup_f64(0.0);
     svfloat64_t virialSumZ = svdup_f64(0.0);
-    svfloat64_t upotSum = svdup_f64(0.0);
+    svfloat64_t potentialEnergySum = svdup_f64(0.0);
 
-    const auto vecLength = (unsigned int)svlen_f64(upotSum);
+    const auto vecLength = (unsigned int)svlen_f64(potentialEnergySum);
 
     for (unsigned int i = 0; i < soa1.getNumberOfParticles(); ++i) {
       if (ownedStatePtr1[i] == OwnershipState::dummy) {
@@ -348,7 +348,7 @@ class LJFunctorSVE
         SoAKernel<newton3, false>(j, ownedStatePtr1[i] == OwnershipState::owned,
                                   reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr, y2ptr, z2ptr,
                                   fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc, fyacc, fzacc, virialSumX,
-                                  virialSumY, virialSumZ, upotSum, pg_1, svundef_u64(), pg_2, svundef_u64(), pg_3,
+                                  virialSumY, virialSumZ, potentialEnergySum, pg_1, svundef_u64(), pg_2, svundef_u64(), pg_3,
                                   svundef_u64(), pg_4, svundef_u64());
       }
 
@@ -366,7 +366,7 @@ class LJFunctorSVE
         energyfactor *= 0.5;  // we count the energies partly to one of the two cells!
       }
 
-      _aosThreadData[threadnum].upotSum += svaddv_f64(svptrue_b64(), upotSum) * energyfactor;
+      _aosThreadData[threadnum].potentialEnergySum += svaddv_f64(svptrue_b64(), potentialEnergySum) * energyfactor;
       _aosThreadData[threadnum].virialSum[0] += svaddv_f64(svptrue_b64(), virialSumX) * energyfactor;
       _aosThreadData[threadnum].virialSum[1] += svaddv_f64(svptrue_b64(), virialSumY) * energyfactor;
       _aosThreadData[threadnum].virialSum[2] += svaddv_f64(svptrue_b64(), virialSumZ) * energyfactor;
@@ -393,7 +393,7 @@ class LJFunctorSVE
     const svfloat64_t dr2_2 = svmla_x(pg, dr2_1, dry, dry);
     dr2 = svmla_x(pg, dr2_2, drz, drz);
 
-    const svbool_t cutoffMask = svcmple(pg, dr2, _cutoffsquare);
+    const svbool_t cutoffMask = svcmple(pg, dr2, _cutoffSquared);
 
     ownedStateJ = (indexed) ? svld1_gather_index(pg, ownedStatePtr2, index) : svld1(pg, &ownedStatePtr2[j]);
     const svbool_t dummyMask = svcmpne(pg, ownedStateJ, (int64_t)OwnershipState::dummy);
@@ -409,8 +409,8 @@ class LJFunctorSVE
                   : svundef_u64();
     const auto mixingDataPtr = useMixing ? _PPLibrary->getMixingDataPtr(*typeID1ptr, 0) : nullptr;
 
-    const svfloat64_t sigmaSquares =
-        useMixing ? svld1_gather_index(pgC, mixingDataPtr + 1, typeIds) : svdup_f64(_sigmaSquare);
+    const svfloat64_t sigmaSquareds =
+        useMixing ? svld1_gather_index(pgC, mixingDataPtr + 1, typeIds) : svdup_f64(_sigmaSquared);
     epsilon24s = useMixing ? svld1_gather_index(pgC, mixingDataPtr, typeIds) : svdup_f64(_epsilon24);
     shift6s = (useMixing && applyShift) ? svld1_gather_index(pgC, mixingDataPtr + 2, typeIds) : svdup_f64(_shift6);
 
@@ -419,7 +419,7 @@ class LJFunctorSVE
     invdr2 = svmul_x(pgC, invdr2, svrecps(dr2, invdr2));
     invdr2 = svmul_x(pgC, invdr2, svrecps(dr2, invdr2));
     invdr2 = svmul_x(pgC, invdr2, svrecps(dr2, invdr2));
-    const svfloat64_t lj2 = svmul_x(pgC, sigmaSquares, invdr2);
+    const svfloat64_t lj2 = svmul_x(pgC, sigmaSquareds, invdr2);
 
     const svfloat64_t lj4 = svmul_x(pgC, lj2, lj2);
     lj6 = svmul_x(pgC, lj2, lj4);
@@ -438,7 +438,7 @@ class LJFunctorSVE
                           double *const __restrict fx2ptr, double *const __restrict fy2ptr,
                           double *const __restrict fz2ptr, svfloat64_t &fxacc, svfloat64_t &fyacc, svfloat64_t &fzacc,
                           svfloat64_t &virialSumX, svfloat64_t &virialSumY, svfloat64_t &virialSumZ,
-                          svfloat64_t &upotSum, const svfloat64_t &drx, const svfloat64_t &dry, const svfloat64_t &drz,
+                          svfloat64_t &potentialEnergySum, const svfloat64_t &drx, const svfloat64_t &dry, const svfloat64_t &drz,
                           const double *const __restrict x2ptr, const double *const __restrict y2ptr,
                           const double *const __restrict z2ptr, const svint64_t &ownedStateJ, const svbool_t &pgC,
                           const svfloat64_t &epsilon24s, const svfloat64_t &shift6s, const svfloat64_t &lj6,
@@ -479,14 +479,14 @@ class LJFunctorSVE
 
       // Global Potential
       const svfloat64_t lj12m6 = svnmls_x(pgC, lj6, lj6, lj6);
-      const svfloat64_t upot = svmad_x(pgC, epsilon24s, lj12m6, shift6s);
+      const svfloat64_t potentialEnergy6 = svmad_x(pgC, epsilon24s, lj12m6, shift6s);
       svfloat64_t energyFactor = svdup_f64(ownedStateIisOwned ? 1.0 : 0.0);
 
       if constexpr (newton3) {
         svbool_t ownedMaskJ = svcmpeq(pgC, ownedStateJ, (int64_t)OwnershipState::owned);
         energyFactor = svadd_m(ownedMaskJ, energyFactor, 1.0);
       }
-      upotSum = svmla_m(pgC, upotSum, energyFactor, upot);
+      potentialEnergySum = svmla_m(pgC, potentialEnergySum, energyFactor, potentialEnergy6);
       virialSumX = svmla_m(pgC, virialSumX, energyFactor, virialX);
       virialSumY = svmla_m(pgC, virialSumY, energyFactor, virialY);
       virialSumZ = svmla_m(pgC, virialSumZ, energyFactor, virialZ);
@@ -501,7 +501,7 @@ class LJFunctorSVE
       const double *const __restrict y2ptr, const double *const __restrict z2ptr, double *const __restrict fx2ptr,
       double *const __restrict fy2ptr, double *const __restrict fz2ptr, const size_t *const typeID1ptr,
       const size_t *const typeID2ptr, svfloat64_t &fxacc, svfloat64_t &fyacc, svfloat64_t &fzacc,
-      svfloat64_t &virialSumX, svfloat64_t &virialSumY, svfloat64_t &virialSumZ, svfloat64_t &upotSum,
+      svfloat64_t &virialSumX, svfloat64_t &virialSumY, svfloat64_t &virialSumZ, svfloat64_t &potentialEnergySum,
 
       const svbool_t &pg_1, const svuint64_t &index_1, const svbool_t &pg_2, const svuint64_t &index_2,
       const svbool_t &pg_3, const svuint64_t &index_3, const svbool_t &pg_4, const svuint64_t &index_4
@@ -574,21 +574,21 @@ class LJFunctorSVE
 
     if (continue_1)
       applyForces<newton3, indexed>(j, index_1, ownedStateIisOwned, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc,
-                                    virialSumX, virialSumY, virialSumZ, upotSum, drx_1, dry_1, drz_1, x2ptr, y2ptr,
+                                    virialSumX, virialSumY, virialSumZ, potentialEnergySum, drx_1, dry_1, drz_1, x2ptr, y2ptr,
                                     z2ptr, ownedStateJ_1, pgC_1, epsilon24s_1, shift6s_1, lj6_1, fac_1);
     if (continue_2)
       applyForces<newton3, indexed>(j + svlen(x1), index_2, ownedStateIisOwned, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc,
-                                    fzacc, virialSumX, virialSumY, virialSumZ, upotSum, drx_2, dry_2, drz_2, x2ptr,
+                                    fzacc, virialSumX, virialSumY, virialSumZ, potentialEnergySum, drx_2, dry_2, drz_2, x2ptr,
                                     y2ptr, z2ptr, ownedStateJ_2, pgC_2, epsilon24s_2, shift6s_2, lj6_2, fac_2);
 
     if (continue_3)
       applyForces<newton3, indexed>(j + svlen(x1) * 2, index_3, ownedStateIisOwned, fx2ptr, fy2ptr, fz2ptr, fxacc,
-                                    fyacc, fzacc, virialSumX, virialSumY, virialSumZ, upotSum, drx_3, dry_3, drz_3,
+                                    fyacc, fzacc, virialSumX, virialSumY, virialSumZ, potentialEnergySum, drx_3, dry_3, drz_3,
                                     x2ptr, y2ptr, z2ptr, ownedStateJ_3, pgC_3, epsilon24s_3, shift6s_3, lj6_3, fac_3);
 
     if (continue_4)
       applyForces<newton3, indexed>(j + svlen(x1) * 3, index_4, ownedStateIisOwned, fx2ptr, fy2ptr, fz2ptr, fxacc,
-                                    fyacc, fzacc, virialSumX, virialSumY, virialSumZ, upotSum, drx_4, dry_4, drz_4,
+                                    fyacc, fzacc, virialSumX, virialSumY, virialSumZ, potentialEnergySum, drx_4, dry_4, drz_4,
                                     x2ptr, y2ptr, z2ptr, ownedStateJ_4, pgC_4, epsilon24s_4, shift6s_4, lj6_4, fac_4);
   }
 #endif
@@ -635,7 +635,7 @@ class LJFunctorSVE
     svfloat64_t virialSumX = svdup_f64(0.0);
     svfloat64_t virialSumY = svdup_f64(0.0);
     svfloat64_t virialSumZ = svdup_f64(0.0);
-    svfloat64_t upotSum = svdup_f64(0.0);
+    svfloat64_t potentialEnergySum = svdup_f64(0.0);
 
     svfloat64_t fxacc = svdup_f64(0.0);
     svfloat64_t fyacc = svdup_f64(0.0);
@@ -671,7 +671,7 @@ class LJFunctorSVE
 
       if (continue_1)
         applyForces<newton3, true>(0, index_1, ownedStatePtr[indexFirst] == OwnershipState::owned, fxptr, fyptr, fzptr,
-                                   fxacc, fyacc, fzacc, virialSumX, virialSumY, virialSumZ, upotSum, drx_1, dry_1,
+                                   fxacc, fyacc, fzacc, virialSumX, virialSumY, virialSumZ, potentialEnergySum, drx_1, dry_1,
                                    drz_1, xptr, yptr, zptr, ownedStateJ_1, pgC_1, epsilon24s_1, shift6s_1, lj6_1,
                                    fac_1);
     }
@@ -689,7 +689,7 @@ class LJFunctorSVE
         energyfactor *= 0.5;  // we count the energies partly to one of the two cells!
       }
 
-      _aosThreadData[threadnum].upotSum += svaddv_f64(svptrue_b64(), upotSum) * energyfactor;
+      _aosThreadData[threadnum].potentialEnergySum += svaddv_f64(svptrue_b64(), potentialEnergySum) * energyfactor;
       _aosThreadData[threadnum].virialSum[0] += svaddv_f64(svptrue_b64(), virialSumX) * energyfactor;
       _aosThreadData[threadnum].virialSum[1] += svaddv_f64(svptrue_b64(), virialSumY) * energyfactor;
       _aosThreadData[threadnum].virialSum[2] += svaddv_f64(svptrue_b64(), virialSumZ) * energyfactor;
@@ -748,7 +748,7 @@ class LJFunctorSVE
    * Will set the global values to zero to prepare for the next iteration.
    */
   void initTraversal() final {
-    _upotSum = 0.;
+    _potentialEnergySum = 0.;
     _virialSum = {0., 0., 0.};
     _postProcessed = false;
     for (size_t i = 0; i < _aosThreadData.size(); ++i) {
@@ -757,7 +757,7 @@ class LJFunctorSVE
   }
 
   /**
-   * Accumulates global values, e.g. upot and virial.
+   * Accumulates global values, e.g. potentialEnergy and virial.
    * @param newton3
    */
   void endTraversal(bool newton3) final {
@@ -768,17 +768,17 @@ class LJFunctorSVE
 
     if (calculateGlobals) {
       for (size_t i = 0; i < _aosThreadData.size(); ++i) {
-        _upotSum += _aosThreadData[i].upotSum;
+        _potentialEnergySum += _aosThreadData[i].potentialEnergySum;
         _virialSum = utils::ArrayMath::add(_virialSum, _aosThreadData[i].virialSum);
       }
       if (not newton3) {
         // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
         // here.
-        _upotSum *= 0.5;
+        _potentialEnergySum *= 0.5;
         _virialSum = utils::ArrayMath::mulScalar(_virialSum, 0.5);
       }
-      // we have always calculated 6*upot, so we divide by 6 here!
-      _upotSum /= 6.;
+      // we have always calculated 6*potentialEnergy, so we divide by 6 here!
+      _potentialEnergySum /= 6.;
       _postProcessed = true;
     }
   }
@@ -787,16 +787,16 @@ class LJFunctorSVE
    * Get the potential Energy
    * @return the potential Energy
    */
-  double getUpot() {
+  double getPotentialEnergy() {
     if (not calculateGlobals) {
       throw utils::ExceptionHandler::AutoPasException(
-          "Trying to get upot even though calculateGlobals is false. If you want this functor to calculate global "
+          "Trying to get potential energy even though calculateGlobals is false. If you want this functor to calculate global "
           "values, please specify calculateGlobals to be true.");
     }
     if (not _postProcessed) {
-      throw utils::ExceptionHandler::AutoPasException("Cannot get upot, because endTraversal was not called.");
+      throw utils::ExceptionHandler::AutoPasException("Cannot get potential energy, because endTraversal was not called.");
     }
-    return _upotSum;
+    return _potentialEnergySum;
   }
 
   /**
@@ -821,23 +821,23 @@ class LJFunctorSVE
    * This is only necessary if no particlePropertiesLibrary is used.
    *
    * @param epsilon24
-   * @param sigmaSquare
+   * @param sigmaSquared
    */
-  void setParticleProperties(double epsilon24, double sigmaSquare) {
+  void setParticleProperties(double epsilon24, double sigmaSquared) {
 #ifdef __ARM_FEATURE_SVE
     _epsilon24 = epsilon24;
-    _sigmaSquare = sigmaSquare;
+    _sigmaSquared = sigmaSquared;
     if constexpr (applyShift) {
-      _shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquare, _cutoffsquare);
+      _shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
     } else {
       _shift6 = 0.0;
     }
 #endif
 
     _epsilon24AoS = epsilon24;
-    _sigmaSquareAoS = sigmaSquare;
+    _sigmaSquaredAoS = sigmaSquared;
     if constexpr (applyShift) {
-      _shift6AoS = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquare, _cutoffsquareAoS);
+      _shift6AoS = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquaredAoS);
     } else {
       _shift6AoS = 0.;
     }
@@ -849,15 +849,15 @@ class LJFunctorSVE
    */
   class AoSThreadData {
    public:
-    AoSThreadData() : virialSum{0., 0., 0.}, upotSum{0.} {}
+    AoSThreadData() : virialSum{0., 0., 0.}, potentialEnergySum{0.} {}
     void setZero() {
       virialSum = {0., 0., 0.};
-      upotSum = 0.;
+      potentialEnergySum = 0.;
     }
 
     // variables
     std::array<double, 3> virialSum;
-    double upotSum;
+    double potentialEnergySum;
 
    private:
     // dummy parameter to get the right size (64 bytes)
@@ -867,19 +867,19 @@ class LJFunctorSVE
   static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
 #ifdef __ARM_FEATURE_SVE
-  const double _cutoffsquare{};
+  const double _cutoffSquared{};
   double _shift6{0.};
   double _epsilon24{0.};
-  double _sigmaSquare{0.};
+  double _sigmaSquared{0.};
 #endif
 
-  const double _cutoffsquareAoS;
-  double _epsilon24AoS{0.}, _sigmaSquareAoS{0.}, _shift6AoS{0.};
+  const double _cutoffSquaredAoS;
+  double _epsilon24AoS{0.}, _sigmaSquaredAoS{0.}, _shift6AoS{0.};
 
   ParticlePropertiesLibrary<double, size_t> *_PPLibrary = nullptr;
 
   // sum of the potential energy, only calculated if calculateGlobals is true
-  double _upotSum{0.};
+  double _potentialEnergySum{0.};
 
   // sum of the virial, only calculated if calculateGlobals is true
   std::array<double, 3> _virialSum{0., 0., 0.};
