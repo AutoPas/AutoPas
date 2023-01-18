@@ -65,7 +65,7 @@ class LJFunctorAVX
                 LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(cutoff),
         _cutoffsquare{_mm256_set1_pd(cutoff * cutoff)},
         _cutoffsquareAoS(cutoff * cutoff),
-        _upotSum{0.},
+        _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
         _aosThreadData(),
         _postProcessed{false} {
@@ -121,14 +121,14 @@ class LJFunctorAVX
     if (i.isDummy() or j.isDummy()) {
       return;
     }
-    auto sigmasquare = _sigmaSquareAoS;
+    auto sigmaSquared = _sigmaSquaredAoS;
     auto epsilon24 = _epsilon24AoS;
     auto shift6 = _shift6AoS;
     if constexpr (useMixing) {
-      sigmasquare = _PPLibrary->mixingSigmaSquare(i.getTypeId(), j.getTypeId());
-      epsilon24 = _PPLibrary->mixing24Epsilon(i.getTypeId(), j.getTypeId());
+      sigmaSquared = _PPLibrary->getMixingSigmaSquared(i.getTypeId(), j.getTypeId());
+      epsilon24 = _PPLibrary->getMixing24Epsilon(i.getTypeId(), j.getTypeId());
       if constexpr (applyShift) {
-        shift6 = _PPLibrary->mixingShift6(i.getTypeId(), j.getTypeId());
+        shift6 = _PPLibrary->getMixingShift6(i.getTypeId(), j.getTypeId());
       }
     }
     auto dr = utils::ArrayMath::sub(i.getR(), j.getR());
@@ -139,7 +139,7 @@ class LJFunctorAVX
     }
 
     double invdr2 = 1. / dr2;
-    double lj6 = sigmasquare * invdr2;
+    double lj6 = sigmaSquared * invdr2;
     lj6 = lj6 * lj6 * lj6;
     double lj12 = lj6 * lj6;
     double lj12m6 = lj12 - lj6;
@@ -152,21 +152,25 @@ class LJFunctorAVX
     }
     if (calculateGlobals) {
       auto virial = utils::ArrayMath::mul(dr, f);
-      double upot = epsilon24 * lj12m6 + shift6;
+      // Here we calculate either the potential energy * 6 or the potential energy * 12.
+      // For newton3, this potential energy contribution is distributed evenly to the two molecules.
+      // For non-newton3, the full potential energy is added to the one molecule.
+      // The division by 6 is handled in endTraversal, as well as the division by two needed if newton3 is not used.
+      double potentialEnergy6 = epsilon24 * lj12m6 + shift6;
 
       const int threadnum = autopas_get_thread_num();
       // for non-newton3 the division is in the post-processing step.
       if (newton3) {
-        upot *= 0.5;
+        potentialEnergy6 *= 0.5;
         virial = utils::ArrayMath::mulScalar(virial, (double)0.5);
       }
       if (i.isOwned()) {
-        _aosThreadData[threadnum].upotSum += upot;
+        _aosThreadData[threadnum].potentialEnergySum += potentialEnergy6;
         _aosThreadData[threadnum].virialSum = utils::ArrayMath::add(_aosThreadData[threadnum].virialSum, virial);
       }
       // for non-newton3 the second particle will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
-        _aosThreadData[threadnum].upotSum += upot;
+        _aosThreadData[threadnum].potentialEnergySum += potentialEnergy6;
         _aosThreadData[threadnum].virialSum = utils::ArrayMath::add(_aosThreadData[threadnum].virialSum, virial);
       }
     }
@@ -223,7 +227,7 @@ class LJFunctorAVX
     __m256d virialSumX = _mm256_setzero_pd();
     __m256d virialSumY = _mm256_setzero_pd();
     __m256d virialSumZ = _mm256_setzero_pd();
-    __m256d upotSum = _mm256_setzero_pd();
+    __m256d potentialEnergySum = _mm256_setzero_pd();
 
     // reverse outer loop s.th. inner loop always beginns at aligned array start
     // typecast to detect underflow
@@ -254,7 +258,7 @@ class LJFunctorAVX
       for (; j < (i & ~(vecLength - 1)); j += 4) {
         SoAKernel<true, false>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr,
                                zptr, fxptr, fyptr, fzptr, &typeIDptr[i], typeIDptr, fxacc, fyacc, fzacc, &virialSumX,
-                               &virialSumY, &virialSumZ, &upotSum, 0);
+                               &virialSumY, &virialSumZ, &potentialEnergySum, 0);
       }
       // If b is a power of 2 the following holds:
       // a & (b -1) == a mod b
@@ -262,7 +266,7 @@ class LJFunctorAVX
       if (rest > 0) {
         SoAKernel<true, true>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr,
                               zptr, fxptr, fyptr, fzptr, &typeIDptr[i], typeIDptr, fxacc, fyacc, fzacc, &virialSumX,
-                              &virialSumY, &virialSumZ, &upotSum, rest);
+                              &virialSumY, &virialSumZ, &potentialEnergySum, rest);
       }
 
       // horizontally reduce fDacc to sumfD
@@ -296,16 +300,16 @@ class LJFunctorAVX
       const __m128d hSumVirialxyHigh = _mm256_extractf128_pd(hSumVirialxy, 1);
       const __m128d hSumVirialxyVec = _mm_add_pd(hSumVirialxyHigh, hSumVirialxyLow);
 
-      // horizontally reduce virialSumZ and upotSum
-      const __m256d hSumVirialzUpot = _mm256_hadd_pd(virialSumZ, upotSum);
-      const __m128d hSumVirialzUpotLow = _mm256_extractf128_pd(hSumVirialzUpot, 0);
-      const __m128d hSumVirialzUpotHigh = _mm256_extractf128_pd(hSumVirialzUpot, 1);
-      const __m128d hSumVirialzUpotVec = _mm_add_pd(hSumVirialzUpotHigh, hSumVirialzUpotLow);
+      // horizontally reduce virialSumZ and potentialEnergySum
+      const __m256d hSumVirialzPotentialEnergy = _mm256_hadd_pd(virialSumZ, potentialEnergySum);
+      const __m128d hSumVirialzPotentialEnergyLow = _mm256_extractf128_pd(hSumVirialzPotentialEnergy, 0);
+      const __m128d hSumVirialzPotentialEnergyHigh = _mm256_extractf128_pd(hSumVirialzPotentialEnergy, 1);
+      const __m128d hSumVirialzPotentialEnergyVec = _mm_add_pd(hSumVirialzPotentialEnergyHigh, hSumVirialzPotentialEnergyLow);
 
-      // globals = {virialX, virialY, virialZ, uPot}
+      // globals = {virialX, virialY, virialZ, potentialEnergy}
       double globals[4];
       _mm_store_pd(&globals[0], hSumVirialxyVec);
-      _mm_store_pd(&globals[2], hSumVirialzUpotVec);
+      _mm_store_pd(&globals[2], hSumVirialzPotentialEnergyVec);
 
       double factor = 1.;
       // we assume newton3 to be enabled in this function call, thus we multiply by two if the value of newton3 is
@@ -315,7 +319,7 @@ class LJFunctorAVX
       _aosThreadData[threadnum].virialSum[0] += globals[0] * factor;
       _aosThreadData[threadnum].virialSum[1] += globals[1] * factor;
       _aosThreadData[threadnum].virialSum[2] += globals[2] * factor;
-      _aosThreadData[threadnum].upotSum += globals[3] * factor;
+      _aosThreadData[threadnum].potentialEnergySum += globals[3] * factor;
     }
 #endif
   }
@@ -348,7 +352,7 @@ class LJFunctorAVX
     __m256d virialSumX = _mm256_setzero_pd();
     __m256d virialSumY = _mm256_setzero_pd();
     __m256d virialSumZ = _mm256_setzero_pd();
-    __m256d upotSum = _mm256_setzero_pd();
+    __m256d potentialEnergySum = _mm256_setzero_pd();
 
     for (unsigned int i = 0; i < soa1.getNumberOfParticles(); ++i) {
       if (ownedStatePtr1[i] == OwnershipState::dummy) {
@@ -375,13 +379,13 @@ class LJFunctorAVX
       for (; j < (soa2.getNumberOfParticles() & ~(vecLength - 1)); j += 4) {
         SoAKernel<newton3, false>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr,
                                   y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc, fyacc, fzacc,
-                                  &virialSumX, &virialSumY, &virialSumZ, &upotSum, 0);
+                                  &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, 0);
       }
       const int rest = (int)(soa2.getNumberOfParticles() & (vecLength - 1));
       if (rest > 0)
         SoAKernel<newton3, true>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr,
                                  y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc, fyacc, fzacc,
-                                 &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
+                                 &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, rest);
 
       // horizontally reduce fDacc to sumfD
       const __m256d hSumfxfy = _mm256_hadd_pd(fxacc, fyacc);
@@ -414,16 +418,16 @@ class LJFunctorAVX
       const __m128d hSumVirialxyHigh = _mm256_extractf128_pd(hSumVirialxy, 1);
       const __m128d hSumVirialxyVec = _mm_add_pd(hSumVirialxyHigh, hSumVirialxyLow);
 
-      // horizontally reduce virialSumZ and upotSum
-      const __m256d hSumVirialzUpot = _mm256_hadd_pd(virialSumZ, upotSum);
-      const __m128d hSumVirialzUpotLow = _mm256_extractf128_pd(hSumVirialzUpot, 0);
-      const __m128d hSumVirialzUpotHigh = _mm256_extractf128_pd(hSumVirialzUpot, 1);
-      const __m128d hSumVirialzUpotVec = _mm_add_pd(hSumVirialzUpotHigh, hSumVirialzUpotLow);
+      // horizontally reduce virialSumZ and potentialEnergySum
+      const __m256d hSumVirialzPotentialEnergy = _mm256_hadd_pd(virialSumZ, potentialEnergySum);
+      const __m128d hSumVirialzPotentialEnergyLow = _mm256_extractf128_pd(hSumVirialzPotentialEnergy, 0);
+      const __m128d hSumVirialzPotentialEnergyHigh = _mm256_extractf128_pd(hSumVirialzPotentialEnergy, 1);
+      const __m128d hSumVirialzPotentialEnergyVec = _mm_add_pd(hSumVirialzPotentialEnergyHigh, hSumVirialzPotentialEnergyLow);
 
-      // globals = {virialX, virialY, virialZ, uPot}
+      // globals = {virialX, virialY, virialZ, potentialEnergy}
       double globals[4];
       _mm_store_pd(&globals[0], hSumVirialxyVec);
-      _mm_store_pd(&globals[2], hSumVirialzUpotVec);
+      _mm_store_pd(&globals[2], hSumVirialzPotentialEnergyVec);
 
       // we have duplicated calculations, i.e., we calculate interactions multiple times, so we have to take care
       // that we do not add the energy multiple times!
@@ -435,7 +439,7 @@ class LJFunctorAVX
       _aosThreadData[threadnum].virialSum[0] += globals[0] * energyfactor;
       _aosThreadData[threadnum].virialSum[1] += globals[1] * energyfactor;
       _aosThreadData[threadnum].virialSum[2] += globals[2] * energyfactor;
-      _aosThreadData[threadnum].upotSum += globals[3] * energyfactor;
+      _aosThreadData[threadnum].potentialEnergySum += globals[3] * energyfactor;
     }
 #endif
   }
@@ -467,7 +471,7 @@ class LJFunctorAVX
    * @param virialSumX
    * @param virialSumY
    * @param virialSumZ
-   * @param upotSum
+   * @param potentialEnergySum
    * @param rest
    */
   template <bool newton3, bool remainderIsMasked>
@@ -477,28 +481,28 @@ class LJFunctorAVX
                         double *const __restrict fx2ptr, double *const __restrict fy2ptr,
                         double *const __restrict fz2ptr, const size_t *const typeID1ptr, const size_t *const typeID2ptr,
                         __m256d &fxacc, __m256d &fyacc, __m256d &fzacc, __m256d *virialSumX, __m256d *virialSumY,
-                        __m256d *virialSumZ, __m256d *upotSum, const unsigned int rest = 0) {
+                        __m256d *virialSumZ, __m256d *potentialEnergySum, const unsigned int rest = 0) {
     __m256d epsilon24s = _epsilon24;
-    __m256d sigmaSquares = _sigmaSquare;
+    __m256d sigmaSquareds = _sigmaSquared;
     __m256d shift6s = _shift6;
     if (useMixing) {
       // the first argument for set lands in the last bits of the register
       epsilon24s = _mm256_set_pd(
-          not remainderIsMasked or rest > 3 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 3)) : 0,
-          not remainderIsMasked or rest > 2 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-          not remainderIsMasked or rest > 1 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 1)) : 0,
-          _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 0)));
-      sigmaSquares = _mm256_set_pd(
-          not remainderIsMasked or rest > 3 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 3)) : 0,
-          not remainderIsMasked or rest > 2 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-          not remainderIsMasked or rest > 1 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 1)) : 0,
-          _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 0)));
+          not remainderIsMasked or rest > 3 ? _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + 3)) : 0,
+          not remainderIsMasked or rest > 2 ? _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+          not remainderIsMasked or rest > 1 ? _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+          _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + 0)));
+      sigmaSquareds = _mm256_set_pd(
+          not remainderIsMasked or rest > 3 ? _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 3)) : 0,
+          not remainderIsMasked or rest > 2 ? _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+          not remainderIsMasked or rest > 1 ? _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+          _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 0)));
       if constexpr (applyShift) {
         shift6s = _mm256_set_pd(
-            (not remainderIsMasked or rest > 3) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 3)) : 0,
-            (not remainderIsMasked or rest > 2) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-            (not remainderIsMasked or rest > 1) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 1)) : 0,
-            _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 0)));
+            (not remainderIsMasked or rest > 3) ? _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + 3)) : 0,
+            (not remainderIsMasked or rest > 2) ? _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+            (not remainderIsMasked or rest > 1) ? _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+            _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + 0)));
       }
     }
 
@@ -537,7 +541,7 @@ class LJFunctorAVX
     }
 
     const __m256d invdr2 = _mm256_div_pd(_one, dr2);
-    const __m256d lj2 = _mm256_mul_pd(sigmaSquares, invdr2);
+    const __m256d lj2 = _mm256_mul_pd(sigmaSquareds, invdr2);
     const __m256d lj4 = _mm256_mul_pd(lj2, lj2);
     const __m256d lj6 = _mm256_mul_pd(lj2, lj4);
     const __m256d lj12 = _mm256_mul_pd(lj6, lj6);
@@ -586,11 +590,11 @@ class LJFunctorAVX
       const __m256d virialZ = _mm256_mul_pd(fz, drz);
 
       // Global Potential
-      const __m256d upot = wrapperFMA(epsilon24s, lj12m6, shift6s);
+      const __m256d potentialEnergy = wrapperFMA(epsilon24s, lj12m6, shift6s);
 
-      const __m256d upotMasked =
-          remainderIsMasked ? _mm256_and_pd(upot, _mm256_and_pd(cutoffDummyMask, _mm256_castsi256_pd(_masks[rest - 1])))
-                            : _mm256_and_pd(upot, cutoffDummyMask);
+      const __m256d potentialEnergyMasked =
+          remainderIsMasked ? _mm256_and_pd(potentialEnergy, _mm256_and_pd(cutoffDummyMask, _mm256_castsi256_pd(_masks[rest - 1])))
+                            : _mm256_and_pd(potentialEnergy, cutoffDummyMask);
 
       __m256d ownedMaskI =
           _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateI), _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
@@ -600,7 +604,7 @@ class LJFunctorAVX
             _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateJ), _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
         energyFactor = _mm256_add_pd(energyFactor, _mm256_blendv_pd(_zero, _one, ownedMaskJ));
       }
-      *upotSum = wrapperFMA(energyFactor, upotMasked, *upotSum);
+      *potentialEnergySum = wrapperFMA(energyFactor, potentialEnergyMasked, *potentialEnergySum);
       *virialSumX = wrapperFMA(energyFactor, virialX, *virialSumX);
       *virialSumY = wrapperFMA(energyFactor, virialY, *virialSumY);
       *virialSumZ = wrapperFMA(energyFactor, virialZ, *virialSumZ);
@@ -651,7 +655,7 @@ class LJFunctorAVX
     __m256d virialSumX = _mm256_setzero_pd();
     __m256d virialSumY = _mm256_setzero_pd();
     __m256d virialSumZ = _mm256_setzero_pd();
-    __m256d upotSum = _mm256_setzero_pd();
+    __m256d potentialEnergySum = _mm256_setzero_pd();
     __m256d fxacc = _mm256_setzero_pd();
     __m256d fyacc = _mm256_setzero_pd();
     __m256d fzacc = _mm256_setzero_pd();
@@ -703,7 +707,7 @@ class LJFunctorAVX
       SoAKernel<newton3, false>(0, ownedStateI, reinterpret_cast<const int64_t *>(ownedStates2tmp.data()), x1, y1, z1,
                                 x2tmp.data(), y2tmp.data(), z2tmp.data(), fx2tmp.data(), fy2tmp.data(), fz2tmp.data(),
                                 &typeIDptr[indexFirst], typeID2tmp.data(), fxacc, fyacc, fzacc, &virialSumX,
-                                &virialSumY, &virialSumZ, &upotSum, 0);
+                                &virialSumY, &virialSumZ, &potentialEnergySum, 0);
 
       if (newton3) {
         for (size_t vecIndex = 0; vecIndex < vecLength; ++vecIndex) {
@@ -743,7 +747,7 @@ class LJFunctorAVX
       SoAKernel<newton3, true>(0, ownedStateI, reinterpret_cast<const int64_t *>(ownedStates2tmp.data()), x1, y1, z1,
                                x2tmp.data(), y2tmp.data(), z2tmp.data(), fx2tmp.data(), fy2tmp.data(), fz2tmp.data(),
                                &typeIDptr[indexFirst], typeID2tmp.data(), fxacc, fyacc, fzacc, &virialSumX, &virialSumY,
-                               &virialSumZ, &upotSum, rest);
+                               &virialSumZ, &potentialEnergySum, rest);
 
       if (newton3) {
         for (size_t vecIndex = 0; vecIndex < rest; ++vecIndex) {
@@ -784,16 +788,16 @@ class LJFunctorAVX
       const __m128d hSumVirialxyHigh = _mm256_extractf128_pd(hSumVirialxy, 1);
       const __m128d hSumVirialxyVec = _mm_add_pd(hSumVirialxyHigh, hSumVirialxyLow);
 
-      // horizontally reduce virialSumZ and upotSum
-      const __m256d hSumVirialzUpot = _mm256_hadd_pd(virialSumZ, upotSum);
-      const __m128d hSumVirialzUpotLow = _mm256_extractf128_pd(hSumVirialzUpot, 0);
-      const __m128d hSumVirialzUpotHigh = _mm256_extractf128_pd(hSumVirialzUpot, 1);
-      const __m128d hSumVirialzUpotVec = _mm_add_pd(hSumVirialzUpotHigh, hSumVirialzUpotLow);
+      // horizontally reduce virialSumZ and potentialEnergySum
+      const __m256d hSumVirialzPotentialEnergy = _mm256_hadd_pd(virialSumZ, potentialEnergySum);
+      const __m128d hSumVirialzPotentialEnergyLow = _mm256_extractf128_pd(hSumVirialzPotentialEnergy, 0);
+      const __m128d hSumVirialzPotentialEnergyHigh = _mm256_extractf128_pd(hSumVirialzPotentialEnergy, 1);
+      const __m128d hSumVirialzPotentialEnergyVec = _mm_add_pd(hSumVirialzPotentialEnergyHigh, hSumVirialzPotentialEnergyLow);
 
-      // globals = {virialX, virialY, virialZ, uPot}
+      // globals = {virialX, virialY, virialZ, potentialEnergy}
       double globals[4];
       _mm_store_pd(&globals[0], hSumVirialxyVec);
-      _mm_store_pd(&globals[2], hSumVirialzUpotVec);
+      _mm_store_pd(&globals[2], hSumVirialzPotentialEnergyVec);
 
       double factor = 1.;
       // we assume newton3 to be enabled in this function call, thus we multiply by two if the value of newton3 is
@@ -803,7 +807,7 @@ class LJFunctorAVX
       _aosThreadData[threadnum].virialSum[0] += globals[0] * factor;
       _aosThreadData[threadnum].virialSum[1] += globals[1] * factor;
       _aosThreadData[threadnum].virialSum[2] += globals[2] * factor;
-      _aosThreadData[threadnum].upotSum += globals[3] * factor;
+      _aosThreadData[threadnum].potentialEnergySum += globals[3] * factor;
     }
     // interact with i with 4 neighbors
 #endif  // __AVX__
@@ -860,7 +864,7 @@ class LJFunctorAVX
    * Will set the global values to zero to prepare for the next iteration.
    */
   void initTraversal() final {
-    _upotSum = 0.;
+    _potentialEnergySum = 0.;
     _virialSum = {0., 0., 0.};
     _postProcessed = false;
     for (size_t i = 0; i < _aosThreadData.size(); ++i) {
@@ -869,7 +873,7 @@ class LJFunctorAVX
   }
 
   /**
-   * Accumulates global values, e.g. upot and virial.
+   * Accumulates global values, e.g. potential energy and virial.
    * @param newton3
    */
   void endTraversal(bool newton3) final {
@@ -880,17 +884,17 @@ class LJFunctorAVX
 
     if (calculateGlobals) {
       for (size_t i = 0; i < _aosThreadData.size(); ++i) {
-        _upotSum += _aosThreadData[i].upotSum;
+        _potentialEnergySum += _aosThreadData[i].potentialEnergySum;
         _virialSum = utils::ArrayMath::add(_virialSum, _aosThreadData[i].virialSum);
       }
       if (not newton3) {
         // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
         // here.
-        _upotSum *= 0.5;
+        _potentialEnergySum *= 0.5;
         _virialSum = utils::ArrayMath::mulScalar(_virialSum, 0.5);
       }
-      // we have always calculated 6*upot, so we divide by 6 here!
-      _upotSum /= 6.;
+      // we have always calculated 6*potentialEnergy, so we divide by 6 here!
+      _potentialEnergySum /= 6.;
       _postProcessed = true;
     }
   }
@@ -899,16 +903,16 @@ class LJFunctorAVX
    * Get the potential Energy
    * @return the potential Energy
    */
-  double getUpot() {
+  double getPotentialEnergy() {
     if (not calculateGlobals) {
       throw utils::ExceptionHandler::AutoPasException(
-          "Trying to get upot even though calculateGlobals is false. If you want this functor to calculate global "
+          "Trying to get potential energy even though calculateGlobals is false. If you want this functor to calculate global "
           "values, please specify calculateGlobals to be true.");
     }
     if (not _postProcessed) {
-      throw utils::ExceptionHandler::AutoPasException("Cannot get upot, because endTraversal was not called.");
+      throw utils::ExceptionHandler::AutoPasException("Cannot get potential energy, because endTraversal was not called.");
     }
-    return _upotSum;
+    return _potentialEnergySum;
   }
 
   /**
@@ -933,24 +937,24 @@ class LJFunctorAVX
    * This is only necessary if no particlePropertiesLibrary is used.
    *
    * @param epsilon24
-   * @param sigmaSquare
+   * @param sigmaSquared
    */
-  void setParticleProperties(double epsilon24, double sigmaSquare) {
+  void setParticleProperties(double epsilon24, double sigmaSquared) {
 #ifdef __AVX__
     _epsilon24 = _mm256_set1_pd(epsilon24);
-    _sigmaSquare = _mm256_set1_pd(sigmaSquare);
+    _sigmaSquared = _mm256_set1_pd(sigmaSquared);
     if constexpr (applyShift) {
       _shift6 = _mm256_set1_pd(
-          ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquare, _cutoffsquare[0]));
+          ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffsquare[0]));
     } else {
       _shift6 = _mm256_setzero_pd();
     }
 #endif
 
     _epsilon24AoS = epsilon24;
-    _sigmaSquareAoS = sigmaSquare;
+    _sigmaSquaredAoS = sigmaSquared;
     if constexpr (applyShift) {
-      _shift6AoS = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquare, _cutoffsquareAoS);
+      _shift6AoS = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffsquareAoS);
     } else {
       _shift6AoS = 0.;
     }
@@ -983,15 +987,15 @@ class LJFunctorAVX
    */
   class AoSThreadData {
    public:
-    AoSThreadData() : virialSum{0., 0., 0.}, upotSum{0.} {}
+    AoSThreadData() : virialSum{0., 0., 0.}, potentialEnergySum{0.} {}
     void setZero() {
       virialSum = {0., 0., 0.};
-      upotSum = 0.;
+      potentialEnergySum = 0.;
     }
 
     // variables
     std::array<double, 3> virialSum;
-    double upotSum;
+    double potentialEnergySum;
 
    private:
     // dummy parameter to get the right size (64 bytes)
@@ -1014,16 +1018,16 @@ class LJFunctorAVX
   const __m256d _cutoffsquare{};
   __m256d _shift6 = _mm256_setzero_pd();
   __m256d _epsilon24{};
-  __m256d _sigmaSquare{};
+  __m256d _sigmaSquared{};
 #endif
 
   const double _cutoffsquareAoS = 0;
-  double _epsilon24AoS, _sigmaSquareAoS, _shift6AoS = 0;
+  double _epsilon24AoS, _sigmaSquaredAoS, _shift6AoS = 0;
 
   ParticlePropertiesLibrary<double, size_t> *_PPLibrary = nullptr;
 
   // sum of the potential energy, only calculated if calculateGlobals is true
-  double _upotSum;
+  double _potentialEnergySum;
 
   // sum of the virial, only calculated if calculateGlobals is true
   std::array<double, 3> _virialSum;
