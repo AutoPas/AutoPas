@@ -64,7 +64,7 @@ class LJFunctor
       : Functor<Particle, LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
             cutoff),
         _cutoffSquared{cutoff * cutoff},
-        _upotSum{0.},
+        _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
         _aosThreadData(),
         _postProcessed{false} {
@@ -149,20 +149,20 @@ class LJFunctor
       // For newton3, this potential energy contribution is distributed evenly to the two molecules.
       // For non-newton3, the full potential energy is added to the one molecule.
       // The division by 6 is handled in endTraversal, as well as the division by two needed if newton3 is not used.
-      double upot6 = epsilon24 * lj12m6 + shift6;
+      double potentialEnergy6 = epsilon24 * lj12m6 + shift6;
 
       const int threadnum = autopas_get_thread_num();
       if (newton3) {
-        upot6 *= 0.5;
+        potentialEnergy6 *= 0.5;
         virial = utils::ArrayMath::mulScalar(virial, (double)0.5);
       }
       if (i.isOwned()) {
-        _aosThreadData[threadnum].upotSum += upot6;
+        _aosThreadData[threadnum].potentialEnergySum += potentialEnergy6;
         _aosThreadData[threadnum].virialSum = utils::ArrayMath::add(_aosThreadData[threadnum].virialSum, virial);
       }
       // for non-newton3 the second particle will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
-        _aosThreadData[threadnum].upotSum += upot6;
+        _aosThreadData[threadnum].potentialEnergySum += potentialEnergy6;
         _aosThreadData[threadnum].virialSum = utils::ArrayMath::add(_aosThreadData[threadnum].virialSum, virial);
       }
     }
@@ -189,7 +189,7 @@ class LJFunctor
     // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
     const SoAFloatPrecision cutoffSquared = _cutoffSquared;
 
-    SoAFloatPrecision upotSum = 0.;
+    SoAFloatPrecision potentialEnergySum = 0.; // Note: this is not the potential energy, but some fixed multiple of it.
     SoAFloatPrecision virialSumX = 0.;
     SoAFloatPrecision virialSumY = 0.;
     SoAFloatPrecision virialSumZ = 0.;
@@ -235,7 +235,7 @@ class LJFunctor
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
       for (unsigned int j = i + 1; j < soa.getNumberOfParticles(); ++j) {
         SoAFloatPrecision shift6 = const_shift6;
         SoAFloatPrecision sigmaSquared = const_sigmaSquared;
@@ -288,13 +288,13 @@ class LJFunctor
           const SoAFloatPrecision virialx = drx * fx;
           const SoAFloatPrecision virialy = dry * fy;
           const SoAFloatPrecision virialz = drz * fz;
-          const SoAFloatPrecision upot6 = mask ? (epsilon24 * lj12m6 + shift6) : 0.;
+          const SoAFloatPrecision potentialEnergy6 = mask ? (epsilon24 * lj12m6 + shift6) : 0.;
 
           // Add to the potential energy sum for each particle which is owned.
           // This results in obtaining 12 * the potential energy for the SoA.
           SoAFloatPrecision energyFactor =
               (ownedStateI == OwnershipState::owned ? 1. : 0.) + (ownedStateJ == OwnershipState::owned ? 1. : 0.);
-          upotSum += upot6 * energyFactor;
+          potentialEnergySum += potentialEnergy6 * energyFactor;
 
           virialSumX += virialx * energyFactor;
           virialSumY += virialy * energyFactor;
@@ -311,7 +311,7 @@ class LJFunctor
       // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in post-processing.
       // For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       const double factor = newton3 ? .5 : 1.;
-      _aosThreadData[threadnum].upotSum += upotSum * factor;
+      _aosThreadData[threadnum].potentialEnergySum += potentialEnergySum * factor;
       _aosThreadData[threadnum].virialSum[0] += virialSumX * factor;
       _aosThreadData[threadnum].virialSum[1] += virialSumY * factor;
       _aosThreadData[threadnum].virialSum[2] += virialSumZ * factor;
@@ -360,7 +360,7 @@ class LJFunctor
     [[maybe_unused]] auto *const __restrict typeptr2 = soa2.template begin<Particle::AttributeNames::typeId>();
 
     // Checks whether the cells are halo cells.
-    SoAFloatPrecision upotSum = 0.;
+    SoAFloatPrecision potentialEnergySum = 0.;
     SoAFloatPrecision virialSumX = 0.;
     SoAFloatPrecision virialSumY = 0.;
     SoAFloatPrecision virialSumZ = 0.;
@@ -406,7 +406,7 @@ class LJFunctor
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ)
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
       for (unsigned int j = 0; j < soa2.getNumberOfParticles(); ++j) {
         if constexpr (useMixing) {
           sigmaSquared = sigmaSquareds[j];
@@ -456,13 +456,13 @@ class LJFunctor
           SoAFloatPrecision virialx = drx * fx;
           SoAFloatPrecision virialy = dry * fy;
           SoAFloatPrecision virialz = drz * fz;
-          SoAFloatPrecision upot6 = (epsilon24 * lj12m6 + shift6) * mask;
+          SoAFloatPrecision potentialEnergy6 = (epsilon24 * lj12m6 + shift6) * mask;
 
           // Add to the potential energy sum for each particle which is owned.
           // This results in obtaining 12 * the potential energy for the SoA.
           SoAFloatPrecision energyFactor =
               (ownedStateI == OwnershipState::owned ? 1. : 0.) + (ownedStateJ == OwnershipState::owned ? 1. : 0.);
-          upotSum += upot6 * energyFactor;
+          potentialEnergySum += potentialEnergy6 * energyFactor;
 
           virialSumX += virialx * energyFactor;
           virialSumY += virialy * energyFactor;
@@ -478,7 +478,7 @@ class LJFunctor
       // SoAFunctorPairImpl obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in post-processing.
       // For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       const double factor = newton3 ? .5 : 1.;
-      _aosThreadData[threadnum].upotSum += upotSum * factor;
+      _aosThreadData[threadnum].potentialEnergySum += potentialEnergySum * factor;
       _aosThreadData[threadnum].virialSum[0] += virialSumX * factor;
       _aosThreadData[threadnum].virialSum[1] += virialSumY * factor;
       _aosThreadData[threadnum].virialSum[2] += virialSumZ * factor;
@@ -572,7 +572,7 @@ class LJFunctor
    * Will set the global values to zero to prepare for the next iteration.
    */
   void initTraversal() final {
-    _upotSum = 0.;
+    _potentialEnergySum = 0.;
     _virialSum = {0., 0., 0.};
     _postProcessed = false;
     for (size_t i = 0; i < _aosThreadData.size(); ++i) {
@@ -581,7 +581,7 @@ class LJFunctor
   }
 
   /**
-   * Postprocesses global values, e.g. upot and virial
+   * Postprocesses global values, e.g. potential energy and virial
    * @param newton3
    */
   void endTraversal(bool newton3) final {
@@ -591,17 +591,17 @@ class LJFunctor
     }
     if (calculateGlobals) {
       for (size_t i = 0; i < _aosThreadData.size(); ++i) {
-        _upotSum += _aosThreadData[i].upotSum;
+        _potentialEnergySum += _aosThreadData[i].potentialEnergySum;
         _virialSum = utils::ArrayMath::add(_virialSum, _aosThreadData[i].virialSum);
       }
       if (not newton3) {
         // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
         // here.
-        _upotSum *= 0.5;
+        _potentialEnergySum *= 0.5;
         _virialSum = utils::ArrayMath::mulScalar(_virialSum, 0.5);
       }
-      // we have always calculated 6*upot, so we divide by 6 here!
-      _upotSum /= 6.;
+      // we have always calculated 6*potentialEnergy, so we divide by 6 here!
+      _potentialEnergySum /= 6.;
       _postProcessed = true;
     }
   }
@@ -609,23 +609,18 @@ class LJFunctor
   /**
    * Get the potential Energy.
    *
-   * @note: The potential energy returned by LJ Functor appears to be the potential energy times 6.
-   *
-   * This is not used by md-flexible, but is used by ls1 MarDyn, so this has not been changed until the reasoning for
-   * the multiplication by 6 is understood.
-   *
-   * @return the potential Energy (see comment)
+   * @return the potential Energy
    */
-  double getUpot() {
+  double getPotentialEnergy() {
     if (not calculateGlobals) {
       throw utils::ExceptionHandler::AutoPasException(
-          "Trying to get upot even though calculateGlobals is false. If you want this functor to calculate global "
+          "Trying to get potential energy even though calculateGlobals is false. If you want this functor to calculate global "
           "values, please specify calculateGlobals to be true.");
     }
     if (not _postProcessed) {
-      throw utils::ExceptionHandler::AutoPasException("Cannot get upot, because endTraversal was not called.");
+      throw utils::ExceptionHandler::AutoPasException("Cannot get potential energy, because endTraversal was not called.");
     }
-    return _upotSum;
+    return _potentialEnergySum;
   }
 
   /**
@@ -644,17 +639,6 @@ class LJFunctor
     return _virialSum[0] + _virialSum[1] + _virialSum[2];
   }
 
-  /**
-   * Getter for 24*epsilon.
-   * @return 24*epsilon
-   */
-  SoAFloatPrecision getEpsilon24() const { return _epsilon24; }
-
-  /**
-   * Getter for the squared sigma.
-   * @return squared sigma.
-   */
-  SoAFloatPrecision getSigmaSquared() const { return _sigmaSquared; }
 
  private:
   template <bool newton3>
@@ -677,7 +661,7 @@ class LJFunctor
     SoAFloatPrecision sigmaSquared = _sigmaSquared;
     SoAFloatPrecision epsilon24 = _epsilon24;
 
-    SoAFloatPrecision upotSum = 0.;
+    SoAFloatPrecision potentialEnergySum = 0.;
     SoAFloatPrecision virialSumX = 0.;
     SoAFloatPrecision virialSumY = 0.;
     SoAFloatPrecision virialSumZ = 0.;
@@ -749,7 +733,7 @@ class LJFunctor
           ownedStateArr[tmpj] = ownedStatePtr[neighborListPtr[joff + tmpj]];
         }
         // do omp simd with reduction of the interaction
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, upotSum, virialSumX, virialSumY, virialSumZ) safelen(vecsize)
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ) safelen(vecsize)
         for (size_t j = 0; j < vecsize; j++) {
           if constexpr (useMixing) {
             sigmaSquared = sigmaSquareds[j];
@@ -799,13 +783,13 @@ class LJFunctor
             SoAFloatPrecision virialx = drx * fx;
             SoAFloatPrecision virialy = dry * fy;
             SoAFloatPrecision virialz = drz * fz;
-            SoAFloatPrecision upot = mask ? (epsilon24 * lj12m6 + shift6) : 0.;
+            SoAFloatPrecision potentialEnergy6 = mask ? (epsilon24 * lj12m6 + shift6) : 0.;
 
             SoAFloatPrecision energyFactor = (ownedStateI == OwnershipState::owned ? 1. : 0.);
             if constexpr (newton3) {
               energyFactor += (ownedStateJ == OwnershipState::owned ? 1. : 0.);
             }
-            upotSum += upot * energyFactor;
+            potentialEnergySum += potentialEnergy6 * energyFactor;
             virialSumX += virialx * energyFactor;
             virialSumY += virialy * energyFactor;
             virialSumZ += virialz * energyFactor;
@@ -877,13 +861,13 @@ class LJFunctor
         SoAFloatPrecision virialx = drx * fx;
         SoAFloatPrecision virialy = dry * fy;
         SoAFloatPrecision virialz = drz * fz;
-        SoAFloatPrecision upot = (epsilon24 * lj12m6 + shift6);
+        SoAFloatPrecision potentialEnergy6 = (epsilon24 * lj12m6 + shift6);
 
         // Add to the potential energy sum for each particle which is owned.
         // This results in obtaining 12 * the potential energy for the SoA.
         SoAFloatPrecision energyFactor =
             (ownedStateI == OwnershipState::owned ? 1. : 0.) + (ownedStateJ == OwnershipState::owned ? 1. : 0.);
-        upotSum += upot * energyFactor;
+        potentialEnergySum += potentialEnergy6 * energyFactor;
         virialSumX += virialx * energyFactor;
         virialSumY += virialy * energyFactor;
         virialSumZ += virialz * energyFactor;
@@ -901,7 +885,7 @@ class LJFunctor
       // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in post-processing.
       // For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       const double factor = newton3 ? .5 : 1.;
-      _aosThreadData[threadnum].upotSum += upotSum * factor;
+      _aosThreadData[threadnum].potentialEnergySum += potentialEnergySum * factor;
       _aosThreadData[threadnum].virialSum[0] += virialSumX * factor;
       _aosThreadData[threadnum].virialSum[1] += virialSumY * factor;
       _aosThreadData[threadnum].virialSum[2] += virialSumZ * factor;
@@ -913,15 +897,15 @@ class LJFunctor
    */
   class AoSThreadData {
    public:
-    AoSThreadData() : virialSum{0., 0., 0.}, upotSum{0.}, __remainingTo64{} {}
+    AoSThreadData() : virialSum{0., 0., 0.}, potentialEnergySum{0.}, __remainingTo64{} {}
     void setZero() {
       virialSum = {0., 0., 0.};
-      upotSum = 0.;
+      potentialEnergySum = 0.;
     }
 
     // variables
     std::array<double, 3> virialSum;
-    double upotSum;
+    double potentialEnergySum;
 
    private:
     // dummy parameter to get the right size (64 bytes)
@@ -937,7 +921,7 @@ class LJFunctor
   ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
 
   // sum of the potential energy, only calculated if calculateGlobals is true
-  double _upotSum;
+  double _potentialEnergySum;
 
   // sum of the virial, only calculated if calculateGlobals is true
   std::array<double, 3> _virialSum;

@@ -708,23 +708,17 @@ class LJMultisiteFunctor
 
   /**
    * Get the potential energy.
-   * todo replace this (and in LJFunctor.h) with the more intuitive function name
    *
-   * @note: The potential energy returned by LJ Functor appears to be the potential energy times 6.
-   *
-   * This is not used by md-flexible, but is used by ls1 MarDyn, so this has not been changed until the reasoning for
-   * the multiplication by 6 is understood.
-   *
-   * @return the potential energy sum (see comment)
+   * @return the potential energy
    */
-  double getUpot() {
+  double getPotentialEnergy() {
     if (not calculateGlobals) {
       throw autopas::utils::ExceptionHandler::AutoPasException(
-          "Trying to get upot even though calculateGlobals is false. If you want this functor to calculate global "
+          "Trying to get potential energy even though calculateGlobals is false. If you want this functor to calculate global "
           "values, please specify calculateGlobals to be true.");
     }
     if (not _postProcessed) {
-      throw autopas::utils::ExceptionHandler::AutoPasException("Cannot get upot, because endTraversal was not called.");
+      throw autopas::utils::ExceptionHandler::AutoPasException("Cannot get potential energy, because endTraversal was not called.");
     }
     return _potentialEnergySum;
   }
