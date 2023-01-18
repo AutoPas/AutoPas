@@ -475,7 +475,7 @@ class LJFunctor
     }
     if (calculateGlobals) {
       const int threadnum = autopas_get_thread_num();
-      // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in post-processing.
+      // SoAFunctorPairImpl obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in post-processing.
       // For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       const double factor = newton3 ? .5 : 1.;
       _aosThreadData[threadnum].upotSum += upotSum * factor;
@@ -901,10 +901,10 @@ class LJFunctor
       // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in post-processing.
       // For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       const double factor = newton3 ? .5 : 1.;
-      _aosThreadData[threadnum].upotSum += upotSum * newton3;
-      _aosThreadData[threadnum].virialSum[0] += virialSumX * newton3;
-      _aosThreadData[threadnum].virialSum[1] += virialSumY * newton3;
-      _aosThreadData[threadnum].virialSum[2] += virialSumZ * newton3;
+      _aosThreadData[threadnum].upotSum += upotSum * factor;
+      _aosThreadData[threadnum].virialSum[0] += virialSumX * factor;
+      _aosThreadData[threadnum].virialSum[1] += virialSumY * factor;
+      _aosThreadData[threadnum].virialSum[2] += virialSumZ * factor;
     }
   }
 

@@ -1024,19 +1024,18 @@ class LJMultisiteFunctor
 
           // globals
           if constexpr (calculateGlobals) {
-            const auto potentialEnergy = siteMask[siteB] ? (epsilon24 * lj12m6 + shift6) : 0.;
+            const auto potentialEnergy6 = siteMask[siteB] ? (epsilon24 * lj12m6 + shift6) : 0.;
             const auto virialX = displacementX * forceX;
             const auto virialY = displacementY * forceY;
             const auto virialZ = displacementZ * forceZ;
 
+            // Add to the potential energy sum for each particle which is owned.
+            // This results in obtaining 12 * the potential energy for the SoA.
             const auto ownershipFactor = newton3 ?
                                                  (ownedStateA==OwnershipState::owned ? 1. : 0.) +
                                                      (isSiteOwnedB ? 1. : 0.) :
                                                  (ownedStateA==OwnershipState::owned ? 1. : 0.);
-
-            // if newton3 is enabled, we multiply by 0.5 at the end of this function call when adding up the values to
-            // the threadData
-            potentialEnergySum += potentialEnergy * ownershipFactor;
+            potentialEnergySum += potentialEnergy6 * ownershipFactor;
             virialSumX += virialX * ownershipFactor;
             virialSumY += virialY * ownershipFactor;
             virialSumZ += virialZ * ownershipFactor;
@@ -1092,7 +1091,8 @@ class LJMultisiteFunctor
     }
     if constexpr (calculateGlobals) {
       const auto threadNum = autopas_get_thread_num();
-      // in newton3-case, division by 2 is handled here; in non-newton3-case, division is handled in post-processing
+      // SoAFunctorPairImpl obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in post-processing.
+      // For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       const auto newton3Factor = newton3 ? .5 : 1.;
 
       _aosThreadData[threadNum].potentialEnergySum += potentialEnergySum * newton3Factor;
@@ -1381,19 +1381,18 @@ class LJMultisiteFunctor
 
         // calculate globals
         if constexpr (calculateGlobals) {
-          const auto potentialEnergy = siteMask[neighborSite] ? (epsilon24 * lj12m6 + shift6) : 0.;
+          const auto potentialEnergy6 = siteMask[neighborSite] ? (epsilon24 * lj12m6 + shift6) : 0.;
           const auto virialX = displacementX * forceX;
           const auto virialY = displacementY * forceY;
           const auto virialZ = displacementZ * forceZ;
 
+          // Add to the potential energy sum for each particle which is owned.
+          // This results in obtaining 12 * the potential energy for the SoA.
           const auto ownershipFactor = newton3 ?
                                                (ownedStatePrime==OwnershipState::owned ? 1. : 0.) +
                                                    (isNeighborSiteOwned ? 1. : 0.) :
                                                (ownedStatePrime==OwnershipState::owned ? 1. : 0.);
-
-          // if newton3 is enabled, we multiply by 0.5 at the end of this function call when adding up the values to
-          // the threadData
-          potentialEnergySum += potentialEnergy * ownershipFactor;
+          potentialEnergySum += potentialEnergy6 * ownershipFactor;
           virialSumX += virialX * ownershipFactor;
           virialSumY += virialY * ownershipFactor;
           virialSumZ += virialZ * ownershipFactor;
@@ -1456,7 +1455,8 @@ class LJMultisiteFunctor
 
     if constexpr (calculateGlobals) {
       const auto threadNum = autopas_get_thread_num();
-      // in newton3-case, division by 2 is handled here; in non-newton3-case, division is handled in post-processing
+      // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in post-processing.
+      // For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       const auto newton3Factor = newton3 ? .5 : 1.;
 
       _aosThreadData[threadNum].potentialEnergySum += potentialEnergySum * newton3Factor;
