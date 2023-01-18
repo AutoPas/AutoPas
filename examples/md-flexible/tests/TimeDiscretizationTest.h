@@ -35,11 +35,6 @@ void fillWithParticlesAndInit(autopas::AutoPas<ParticleType> &autopasContainer);
  */
 void initPPL(ParticlePropertiesLibrary<> &PPL);
 
-/**
- * Shared implementation of testCalculateVelocities for both molecules types to reduce code duplication.
- * @tparam MoleculeType Either Molecule or MultisiteMolecule.
- */
-template <class MoleculeType> void testCalculateVelocitiesImpl();
 }
 
 class TimeDiscretizationTest : public AutoPasTestBase {

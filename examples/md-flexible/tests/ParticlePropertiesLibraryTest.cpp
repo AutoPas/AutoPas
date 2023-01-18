@@ -140,7 +140,7 @@ TEST_F(ParticlePropertiesLibraryTest, LennardJonesCalculateShift6Simple) {
   // Calculate expected shift6
   const auto sigmaDivCutoffPow2 = sigmaSquared / cutoffSquared;
   const auto sigmaDivCutoffPow6 = sigmaDivCutoffPow2 * sigmaDivCutoffPow2 * sigmaDivCutoffPow2;
-  const auto expectedShift6 = epsilon24 * (sigmaDivCutoffPow6 - sigmaDivCutoffPow6 * sigmaDivCutoffPow2);
+  const auto expectedShift6 = epsilon24 * (sigmaDivCutoffPow6 - sigmaDivCutoffPow6 * sigmaDivCutoffPow6);
 
   // Calculate shift6
   const double shift6 = PPL->calcShift6(epsilon24, sigmaSquared, cutoffSquared);

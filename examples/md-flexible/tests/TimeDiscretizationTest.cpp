@@ -30,20 +30,14 @@ void fillWithParticlesAndInit(autopas::AutoPas<ParticleType> &autopasContainer) 
 }
 
 void initPPL(ParticlePropertiesLibrary<> &PPL) {
-  PPL.addSiteType(0, 1., 1., 1.);
 #ifdef MD_FLEXIBLE_USE_MULTI_SITE
+  PPL.addSiteType(0, 1., 1., 0.5);
   PPL.addMolType(0, {0, 0}, {{-0.05, 0, 0}, {0.05, 0, 0}}, {1., 1., 1.});
+#else
+  PPL.addSiteType(0, 1., 1., 1.);
 #endif
   PPL.calculateMixingCoefficients();
 }
-}
-
-template<class MoleculeType> void testCalculateAngularVelocitiesImpl() {
-  // todo
-}
-
-template<> void testCalculateAngularVelocitiesImpl<MultisiteMolecule>() {
-
 }
 
 
@@ -61,7 +55,7 @@ TEST_F(TimeDiscretizationTest, testCalculateVelocities) {
     EXPECT_EQ(iter->getV()[0], 0);
     EXPECT_EQ(iter->getV()[1], 0);
     // Störmer-Verlet: 1 + (0+1)/2 * 0.1 = 1.05
-    EXPECT_NEAR(iter->getV()[2], 1.05, 1e-13);
+    EXPECT_DOUBLE_EQ(iter->getV()[2], 1.05);
 
     // set force for next iteration
     iter->setOldF(iter->getF());
@@ -75,7 +69,7 @@ TEST_F(TimeDiscretizationTest, testCalculateVelocities) {
     EXPECT_EQ(iter->getV()[0], 0);
     EXPECT_EQ(iter->getV()[1], 0);
     // Störmer-Verlet: 1.05 + (1+2)/2 * 0.1 = 1.2
-    EXPECT_NEAR(iter->getV()[2], 1.2, 1e-13);
+    EXPECT_DOUBLE_EQ(iter->getV()[2], 1.2);
   }
 }
 
@@ -105,7 +99,7 @@ TEST_F(TimeDiscretizationTest, testCalculatePositions) {
     EXPECT_EQ(iter->getR()[0], referencePositions1[index][0]);
     EXPECT_EQ(iter->getR()[1], referencePositions1[index][1]);
     // Störmer-Verlet: 0.1 * 1 + 0.1^2 * (1 / 2) = 0.105
-    EXPECT_NEAR(iter->getR()[2], referencePositions1[index][2] + 0.105, 1e-13);
+    EXPECT_DOUBLE_EQ(iter->getR()[2], referencePositions1[index][2] + 0.105);
 
     // expect force to be reset
     const std::array<double, 3> expectedF = {0., 0., 0.};
@@ -137,7 +131,7 @@ TEST_F(TimeDiscretizationTest, testCalculatePositions) {
     EXPECT_EQ(iter->getR()[0], referencePositions2[index][0]);
     EXPECT_EQ(iter->getR()[1], referencePositions2[index][1]);
     // Störmer-Verlet: 0.1 * .5 + 0.1^2 * (2 / 2) = 0.06
-    EXPECT_NEAR(iter->getR()[2], referencePositions2[index][2] + 0.06, 1e-13);
+    EXPECT_DOUBLE_EQ(iter->getR()[2], referencePositions2[index][2] + 0.06);
     ++index;
   }
 
@@ -252,19 +246,19 @@ TEST_F(TimeDiscretizationTest, testCalculateAngularVelocities) {
   // compare
   auto mol = autopasContainer->begin(autopas::IteratorBehavior::owned);
 
-  ASSERT_NEAR(mol->getAngularVel()[0], angVelWFullStep1[0], 1e-13);
-  ASSERT_NEAR(mol->getAngularVel()[1], angVelWFullStep1[1], 1e-13);
-  ASSERT_NEAR(mol->getAngularVel()[2], angVelWFullStep1[2], 1e-13);
+  EXPECT_DOUBLE_EQ(mol->getAngularVel()[0], angVelWFullStep1[0]);
+  EXPECT_DOUBLE_EQ(mol->getAngularVel()[1], angVelWFullStep1[1]);
+  EXPECT_DOUBLE_EQ(mol->getAngularVel()[2], angVelWFullStep1[2]);
 
   ++mol;
 
-  ASSERT_NEAR(mol->getAngularVel()[0], angVelWFullStep2[0], 1e-13);
-  ASSERT_NEAR(mol->getAngularVel()[1], angVelWFullStep2[1], 1e-13);
-  ASSERT_NEAR(mol->getAngularVel()[2], angVelWFullStep2[2], 1e-13);
+  EXPECT_DOUBLE_EQ(mol->getAngularVel()[0], angVelWFullStep2[0]);
+  EXPECT_DOUBLE_EQ(mol->getAngularVel()[1], angVelWFullStep2[1]);
+  EXPECT_DOUBLE_EQ(mol->getAngularVel()[2], angVelWFullStep2[2]);
 
   // Check no additional molecules were created
   ++mol;
-  ASSERT_FALSE(mol.isValid());
+  EXPECT_FALSE(mol.isValid());
 
 #else
   PPL->calculateMixingCoefficients();
@@ -396,18 +390,18 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
   auto resultantMol = autopasContainer->begin(autopas::IteratorBehavior::owned);
 
   // Compare values
-  ASSERT_NEAR(qExpected[0], resultantMol->getQ()[0], 1e-13);
-  ASSERT_NEAR(qExpected[1], resultantMol->getQ()[1], 1e-13);
-  ASSERT_NEAR(qExpected[2], resultantMol->getQ()[2], 1e-13);
-  ASSERT_NEAR(qExpected[3], resultantMol->getQ()[3], 1e-13);
+  EXPECT_DOUBLE_EQ(qExpected[0], resultantMol->getQ()[0]);
+  EXPECT_DOUBLE_EQ(qExpected[1], resultantMol->getQ()[1]);
+  EXPECT_DOUBLE_EQ(qExpected[2], resultantMol->getQ()[2]);
+  EXPECT_DOUBLE_EQ(qExpected[3], resultantMol->getQ()[3]);
 
-  ASSERT_NEAR(angularVelocityWHalfExpected[0], resultantMol->getAngularVel()[0], 1e-13);
-  ASSERT_NEAR(angularVelocityWHalfExpected[1], resultantMol->getAngularVel()[1], 1e-13);
-  ASSERT_NEAR(angularVelocityWHalfExpected[2], resultantMol->getAngularVel()[2], 1e-13);
+  EXPECT_DOUBLE_EQ(angularVelocityWHalfExpected[0], resultantMol->getAngularVel()[0]);
+  EXPECT_DOUBLE_EQ(angularVelocityWHalfExpected[1], resultantMol->getAngularVel()[1]);
+  EXPECT_DOUBLE_EQ(angularVelocityWHalfExpected[2], resultantMol->getAngularVel()[2]);
 
   // Confirm no extra molecules were created
   ++resultantMol;
-  ASSERT_FALSE(resultantMol.isValid());
+  EXPECT_FALSE(resultantMol.isValid());
 
 #else
   // Init autopas
