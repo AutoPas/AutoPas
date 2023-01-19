@@ -19,9 +19,6 @@
 #include "src/TimeDiscretization.h"
 #include "src/configuration/MDFlexConfig.h"
 
-using Molecule = autopas::MoleculeLJ;
-using MultisiteMolecule = autopas::MultisiteMoleculeLJ;
-
 namespace {
 /**
  * Initializes an AutoPas container for a simple 5x5x5 domain, and fills it with particles.

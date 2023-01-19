@@ -80,6 +80,9 @@ TEST_F(TimeDiscretizationTest, testCalculatePositions) {
   fillWithParticlesAndInit(*autoPas);
   initPPL(*PPL);
 
+// Set verlet skin per timestep to something large so no error messages are displayed
+  autoPas->setVerletSkinPerTimestep(1.);
+
   // The reference positions are the position of the particles in the AutoPas container before
   // calling calculatePositions.
   const std::vector<std::array<double, 3>> referencePositions1 = {{0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {1, 1, 0},
@@ -139,8 +142,8 @@ TEST_F(TimeDiscretizationTest, testCalculatePositions) {
   TimeDiscretization::calculatePositionsAndUpdateForces(*autoPas, *PPL, 0.1, {-4.5, 2.3, 0.01}, false);
   for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
     EXPECT_DOUBLE_EQ(iter->getF()[0], -4.5);
-    EXPECT_DOUBLE_EQ(iter->getF()[0], 2.3);
-    EXPECT_DOUBLE_EQ(iter->getF()[0], 0.01);
+    EXPECT_DOUBLE_EQ(iter->getF()[1], 2.3);
+    EXPECT_DOUBLE_EQ(iter->getF()[2], 0.01);
   }
 }
 
