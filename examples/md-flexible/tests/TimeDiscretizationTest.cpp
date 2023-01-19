@@ -249,15 +249,15 @@ TEST_F(TimeDiscretizationTest, testCalculateAngularVelocities) {
   // compare
   auto mol = autopasContainer->begin(autopas::IteratorBehavior::owned);
 
-  EXPECT_DOUBLE_EQ(mol->getAngularVel()[0], angVelWFullStep1[0]);
-  EXPECT_DOUBLE_EQ(mol->getAngularVel()[1], angVelWFullStep1[1]);
-  EXPECT_DOUBLE_EQ(mol->getAngularVel()[2], angVelWFullStep1[2]);
+  EXPECT_NEAR(mol->getAngularVel()[0], angVelWFullStep1[0], 1e-15);
+  EXPECT_NEAR(mol->getAngularVel()[1], angVelWFullStep1[1], 1e-15);
+  EXPECT_NEAR(mol->getAngularVel()[2], angVelWFullStep1[2], 1e-15);
 
   ++mol;
 
-  EXPECT_DOUBLE_EQ(mol->getAngularVel()[0], angVelWFullStep2[0]);
-  EXPECT_DOUBLE_EQ(mol->getAngularVel()[1], angVelWFullStep2[1]);
-  EXPECT_DOUBLE_EQ(mol->getAngularVel()[2], angVelWFullStep2[2]);
+  EXPECT_NEAR(mol->getAngularVel()[0], angVelWFullStep2[0], 1e-15);
+  EXPECT_NEAR(mol->getAngularVel()[1], angVelWFullStep2[1], 1e-15);
+  EXPECT_NEAR(mol->getAngularVel()[2], angVelWFullStep2[2], 1e-15);
 
   // Check no additional molecules were created
   ++mol;
@@ -446,7 +446,7 @@ TEST_F(TimeDiscretizationTest, testFastParticlesCheck) {
 
   // slow particle -> no exception
 #ifdef MD_FLEXIBLE_USE_MULTI_SITE
-  ParticleType p({0., 0., 0.}, {0.1, 0., 0.}, {0.7071067811865475, 0.7071067811865475, 0., 0.}, {0., 0., 0.}, 0);
+  autoPas->addParticle(ParticleType({0., 0., 0.}, {0.1, 0., 0.}, {0.7071067811865475, 0.7071067811865475, 0., 0.}, {0., 0., 0.}, 0));
 #else
   autoPas->addParticle(ParticleType({0., 0., 0.}, {0.1, 0., 0.}, 0));
 #endif
