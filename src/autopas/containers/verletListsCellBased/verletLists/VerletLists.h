@@ -27,7 +27,6 @@ namespace autopas {
  * the interaction.
  * Cells are created using a cell size of at least cutoff + skin radius.
  * @tparam Particle
- * @todo deleting particles should also invalidate the verlet lists - should be implemented somehow
  */
 template <class Particle>
 class VerletLists : public VerletListsLinkedBase<Particle> {

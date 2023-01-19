@@ -307,7 +307,16 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
                  static_cast<unsigned int>(iteratorBehavior)));
 
     return {retPtr, cellIndex, particleIndex};
-  };
+  }
+
+  bool deleteParticle(Particle &particle) override {
+    // deduce into which vector the reference points
+    auto &particleVec = particle.isOwned() ? getCell()._particles : getHaloCell()._particles;
+    // swap-delete
+    particle = particleVec.back();
+    particleVec.pop_back();
+    return not particleVec.empty();
+  }
 
  private:
   class DirectSumCellBorderAndFlagManager : public internal::CellBorderAndFlagManager {

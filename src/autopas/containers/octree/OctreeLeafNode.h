@@ -94,6 +94,13 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
     }
   }
 
+  bool deleteParticle(Particle &particle) override {
+    // WARNING no runtime check that this particle is actually within the node!
+    particle = this->_particles.back();
+    this->_particles.pop_back();
+    return not this->_particles.empty();
+  }
+
   /**
    * @copydoc OctreeNodeInterface::collectAllParticles()
    */

@@ -250,6 +250,15 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     return {retPtr, cellIndex, particleIndex};
   }
 
+  bool deleteParticle(Particle &particle) override {
+    // deduce into which vector the reference points
+    auto &particleVec = _cellBlock.getContainingCell(particle.getR())._particles;
+    // swap-delete
+    particle = particleVec.back();
+    particleVec.pop_back();
+    return not particleVec.empty();
+  }
+
   [[nodiscard]] ContainerIterator<ParticleType, true> begin(
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
       typename ContainerIterator<ParticleType, true>::ParticleVecType *additionalVectors = nullptr) override {

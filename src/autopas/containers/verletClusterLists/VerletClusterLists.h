@@ -190,7 +190,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 #endif
     {
       for (auto iter = this->begin(IteratorBehavior::halo); iter.isValid(); ++iter) {
-        internal::deleteParticle(iter);
+        internal::markParticleAsDeleted(*iter);
         deletedSth = true;
       }
     }
@@ -234,6 +234,12 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
                  static_cast<unsigned int>(iteratorBehavior)));
 
     return {retPtr, cellIndex, particleIndex};
+  }
+
+  bool deleteParticle(Particle &particle) override {
+    // This function doesn't actually delete anything as it would mess up the clusters' references.
+    internal::markParticleAsDeleted(particle);
+    return false;
   }
 
   [[nodiscard]] std::vector<Particle> updateContainer(bool keepNeighborListsValid) override {

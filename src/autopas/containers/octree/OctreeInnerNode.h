@@ -105,6 +105,22 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
     return nullptr;
   }
 
+  bool deleteParticle(Particle &particle) override {
+    for (auto &child : _children) {
+      if (child->isInside(particle.getR())) {
+        return child->deleteParticle(particle);
+      }
+    }
+    // clang-format off
+    utils::ExceptionHandler::exception(
+        "Particle not found in this node!"
+        "\nBoxMin: " + utils::ArrayUtils::to_string(this->_boxMin) +
+        "\nBoxMax: " + utils::ArrayUtils::to_string(this->_boxMax) +
+        "\n" + particle.toString());
+    // clang-format on
+    return false;
+  }
+
   /**
    * @copydoc OctreeNodeInterface::collectAllParticles()
    */

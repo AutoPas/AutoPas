@@ -144,13 +144,23 @@ class AutoPas {
   void deleteAllParticles();
 
   /**
-   * Deletes the particle behind the current iterator position.
+   * Deletes the particle behind the current iterator position and leaves the container in a valid state.
+   *
+   * Internally, depending on the container, this might just mark the particle as deleted without actually removing it.
+   * If this can not be done without compromising e.g. a VerletList reference structure the particle is only marked.
+   *
    * @param iter Needs to be a modify-able iterator.
    */
   void deleteParticle(iterator_t &iter);
 
   /**
-   * Deletes the given particle.
+   * Deletes the given particle and leaves the container in a valid state.
+   *
+   * Internally, depending on the container, this might just mark the particle as deleted without actually removing it.
+   * If this can not be done without compromising e.g. a VerletList reference structure the particle is only marked.
+   *
+   * @note This function might invalidate iterators.
+   *
    * @param particle Reference to the particle that should be deleted.
    */
   void deleteParticle(Particle &particle);

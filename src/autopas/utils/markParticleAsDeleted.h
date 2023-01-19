@@ -12,7 +12,7 @@ namespace autopas::internal {
  * Marks a particle as deleted.
  * @tparam Particle
  * @param p
- * @note: This function should not be used from outside of AutoPas. Instead, use AutoPas::deleteParticle(iterator).
+ * @note: This function should not be used from outside of AutoPas. Instead, use AutoPas::markAsDeleted(iterator).
  */
 template <typename Particle>
 void markParticleAsDeleted(Particle &p) {

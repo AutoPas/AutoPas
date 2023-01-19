@@ -243,6 +243,17 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     return {retPtr, cellIndex, particleIndex};
   }
 
+  bool deleteParticle(ParticleType &particle) override {
+    if (particle.isOwned()) {
+      return this->_cells[CellTypes::OWNED].deleteParticle(particle);
+    } else if (particle.isHalo()) {
+      return this->_cells[CellTypes::HALO].deleteParticle(particle);
+    } else {
+      utils::ExceptionHandler::exception("Particle to be deleted is neither owned nor halo!\n" + particle.toString());
+      return false;
+    }
+  }
+
   [[nodiscard]] ContainerIterator<ParticleType, true> begin(
       IteratorBehavior behavior,
       typename ContainerIterator<ParticleType, true>::ParticleVecType *additionalVectors = nullptr) override {

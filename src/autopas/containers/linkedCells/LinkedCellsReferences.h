@@ -23,6 +23,7 @@
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
+#include "autopas/utils/markParticleAsDeleted.h"
 
 namespace autopas {
 
@@ -233,8 +234,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     return {retPtr, cellIndex, particleIndex};
   }
   bool deleteParticle(Particle &particle) override {
-    // FIXME implement me
-    throw "NOT IMPLEMENTED YET";
+    // This function doesn't actually delete anything as it would mess up the reference structure.
+    internal::markParticleAsDeleted(particle);
     return false;
   }
 

@@ -347,6 +347,15 @@ class ParticleContainerInterface {
                                                                                     iteratorBehavior, boxMin, boxMax);
     return {const_cast<Particle *>(ptr), nextCellIndex, nextParticleIndex};
   }
+
+  /**
+   * Deletes the given particle if this does not compromise the validity of the container.
+   * Is this not possible the particle is just marked as deleted.
+   * @note This function might be implemented via swap-delete and is thus not completely thread safe.
+   * @param particle Reference to the particle that is to be deleted.
+   * @return True if the given pointer still points to a new, valid particle.
+   */
+  virtual bool deleteParticle(Particle &particle) = 0;
 };
 
 }  // namespace autopas

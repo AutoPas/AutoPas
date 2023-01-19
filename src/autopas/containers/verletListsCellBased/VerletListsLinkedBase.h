@@ -100,6 +100,12 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
                                                            const std::array<double, 3> &boxMax) const override {
     return _linkedCells.getParticle(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
   }
+
+  bool deleteParticle(Particle &particle) override {
+    // This function doesn't actually delete anything as it would mess up the references in the lists.
+    internal::markParticleAsDeleted(particle);
+    return false;
+  }
   /**
    * @copydoc autopas::ParticleContainerInterface::updateContainer()
    * @note This function invalidates the neighbor lists.

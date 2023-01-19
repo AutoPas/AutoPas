@@ -65,6 +65,9 @@ class CellBlock3D : public CellBorderAndFlagManager {
   CellBlock3D &operator=(const CellBlock3D) = delete;
 
   [[nodiscard]] bool cellCanContainHaloParticles(index_t index1d) const override {
+    if (index1d < _firstOwnedCellIndex or index1d > _lastOwnedCellIndex) {
+      return true;
+    }
     auto index3d = index3D(index1d);
     bool isHaloCell = false;
     for (size_t i = 0; i < 3; i++) {
@@ -262,13 +265,37 @@ class CellBlock3D : public CellBorderAndFlagManager {
    */
   [[nodiscard]] const std::array<double, 3> &getCellLength() const { return _cellLength; }
 
+  /**
+   * Get the number of cells in this block.
+   * @return
+   */
+  index_t getNumCells() const;
+
+  /**
+   * 1D id of the first cell that is not in the halo.
+   * @return
+   */
+  index_t getFirstOwnedCellIndex() const;
+
+  /**
+   * 1D id of the last cell before there are only halo cells left.
+   * @return
+   */
+  index_t getLastOwnedCellIndex() const;
+
  private:
   [[nodiscard]] std::array<index_t, 3> index3D(index_t index1d) const;
 
   [[nodiscard]] index_t index1D(const std::array<index_t, 3> &index3d) const;
 
+  /**
+   * Number of cells to be checked in each direction where we can find valid interaction partners.
+   * This is also the number of Halo cells per direction (always symmetric in each dimension).
+   */
   std::array<index_t, 3> _cellsPerDimensionWithHalo;
   index_t _numCells;
+  index_t _firstOwnedCellIndex;
+  index_t _lastOwnedCellIndex;
   std::vector<ParticleCell> *_cells;
 
   std::array<double, 3> _boxMin, _boxMax;
@@ -364,10 +391,27 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, c
   AutoPasLog(trace, "Interaction Length   : {}", interactionLength);
   AutoPasLog(trace, "Cell Size Factor     : {}", cellSizeFactor);
 
-  _cells->resize(_numCells);
+  _firstOwnedCellIndex = _cellsPerDimensionWithHalo[0] * _cellsPerDimensionWithHalo[1] * _cellsPerInteractionLength +
+                         _cellsPerDimensionWithHalo[0] * _cellsPerInteractionLength + _cellsPerInteractionLength;
+  _lastOwnedCellIndex = _numCells - 1 - _firstOwnedCellIndex;
   for (auto &cell : *_cells) {
     cell.setCellLength(_cellLength);
   }
+}
+
+template <class ParticleCell>
+typename CellBlock3D<ParticleCell>::index_t CellBlock3D<ParticleCell>::getNumCells() const {
+  return _numCells;
+}
+
+template <class ParticleCell>
+typename CellBlock3D<ParticleCell>::index_t CellBlock3D<ParticleCell>::getFirstOwnedCellIndex() const {
+  return _firstOwnedCellIndex;
+}
+
+template <class ParticleCell>
+typename CellBlock3D<ParticleCell>::index_t CellBlock3D<ParticleCell>::getLastOwnedCellIndex() const {
+  return _lastOwnedCellIndex;
 }
 
 template <class ParticleCell>

@@ -163,7 +163,8 @@ class LogicHandler {
       // owned particles that are now outside are removed from the container and returned
       if (not utils::inBox(pIter->getR(), boxMin, boxMax)) {
         particlesNowOutside.push_back(*pIter);
-        deleteParticle(pIter);
+        decreaseParticleCounter(*pIter);
+        internal::markParticleAsDeleted(*pIter);
       }
     }
 
@@ -243,22 +244,37 @@ class LogicHandler {
   }
 
   /**
-   * Deletes a single particle and updates internal particle counters.
-   * @param iter
+   * Takes a particle, checks if it is in any of the particle buffers, and deletes it from them if found.
+   * @param particle Particle to delete. If something was deleted this reference might point to a different particle or
+   * invalid memory.
+   * @return True iff the particle was found and deleted.
    */
-  void deleteParticle(ParticleIteratorWrapper<Particle, true> &iter) { deleteParticle(*iter); }
+  bool deleteParticleFromBuffers(Particle &particle) {
+    // find the buffer the particle belongs to
+    auto &bufferCollection = particle.isOwned() ? _particleBuffer : _haloParticleBuffer;
+    for (auto &buffer : bufferCollection) {
+      // if the address of the particle is between start and end of the buffer it is in this buffer
+      if (&(buffer.front()) <= &particle and &particle <= &(buffer.back())) {
+        // swap-delete
+        particle = buffer.back();
+        buffer.pop_back();
+        return true;
+      }
+    }
+    return false;
+  }
 
   /**
-   * Deletes a single particle and updates internal particle counters.
+   * Decrease the correct internal particle counters.
+   * This function should always be called if individual particles are deleted.
    * @param particle reference to particles that should be deleted
    */
-  void deleteParticle(Particle &particle) {
+  void decreaseParticleCounter(Particle &particle) {
     if (particle.isOwned()) {
       _numParticlesOwned.fetch_sub(1, std::memory_order_relaxed);
     } else {
       _numParticlesHalo.fetch_sub(1, std::memory_order_relaxed);
     }
-    internal::markParticleAsDeleted(particle);
   }
 
   /**
