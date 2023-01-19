@@ -229,7 +229,7 @@ TEST_F(RegularGridDecompositionTest, testExchangeMigratingParticles) {
 #ifdef MD_FLEXIBLE_USE_MULTI_SITE
       ParticleType p(domainDecomposition->getLocalBoxMin(), {0., 0., 0.}, {0.7071067811865475, 0.7071067811865475, 0., 0.}, {0., 0., 0.}, id++);
 #else
-      ParticleType particle(domainDecomposition->getLocalBoxMin(), {0., 0., 0.}, id++);
+      ParticleType p(domainDecomposition->getLocalBoxMin(), {0., 0., 0.}, id++);
 #endif
       autoPasContainer->addParticle(p);
     }
