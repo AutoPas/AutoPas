@@ -1,17 +1,17 @@
 /**
- * @file MultisiteLJFunctorTest.cpp
+ * @file LJMultisiteFunctorTest.cpp
  * @author S. Newcome
  * @date 16/05/2022
  */
 
 #include <gtest/gtest.h>
 
-#include "MulticenteredLJFunctorTest.h"
+#include "LJMultisiteFunctorTest.h"
 
 #define PARTICLES_PER_DIM 8
 #define AOS_VS_SOA_ACCURACY 1e-8
 
-void MultisiteLJFunctorTest::generatePPL(ParticlePropertiesLibrary<double, size_t> *PPL) {
+void LJMultisiteFunctorTest::generatePPL(ParticlePropertiesLibrary<double, size_t> *PPL) {
   PPL->addSiteType(0,1,1,1);
   PPL->addSiteType(1,0.5,0.5,0.7);
   PPL->addMolType(0,{0},{{0,0,0}},{1,1,1});
@@ -22,7 +22,7 @@ void MultisiteLJFunctorTest::generatePPL(ParticlePropertiesLibrary<double, size_
 }
 
 
-void MultisiteLJFunctorTest::generateMolecules(std::vector<autopas::MultisiteMoleculeLJ> *molecules, std::array<double, 3> offset = {0,0,0}) {
+void LJMultisiteFunctorTest::generateMolecules(std::vector<autopas::MultisiteMoleculeLJ> *molecules, std::array<double, 3> offset = {0,0,0}) {
   molecules->resize(PARTICLES_PER_DIM * PARTICLES_PER_DIM * PARTICLES_PER_DIM);
 
   for (unsigned int i = 0; i < PARTICLES_PER_DIM; ++i) {
@@ -44,7 +44,7 @@ void MultisiteLJFunctorTest::generateMolecules(std::vector<autopas::MultisiteMol
 
 
 template<bool newton3>
-void MultisiteLJFunctorTest::testAoSForceCalculation(autopas::MultisiteMoleculeLJ molA, autopas::MultisiteMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
+void LJMultisiteFunctorTest::testAoSForceCalculation(autopas::MultisiteMoleculeLJ molA, autopas::MultisiteMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
   using autopas::utils::ArrayMath::add;
   using autopas::utils::ArrayMath::sub;
   using autopas::utils::ArrayMath::dot;
@@ -84,7 +84,7 @@ void MultisiteLJFunctorTest::testAoSForceCalculation(autopas::MultisiteMoleculeL
         const auto displacement = sub(exactSitePositionA,exactSitePositionB);
         const auto distanceSquared = dot(displacement,displacement);
 
-        const auto sigmaSquared = PPL.getMixingData(siteTypesA[siteA],siteTypesB[siteB]).sigmaSquare;
+        const auto sigmaSquared = PPL.getMixingData(siteTypesA[siteA],siteTypesB[siteB]).sigmaSquared;
         const auto epsilon24 = PPL.getMixingData(siteTypesA[siteA],siteTypesB[siteB]).epsilon24;
 
         // todo shift6
@@ -148,23 +148,37 @@ void MultisiteLJFunctorTest::testAoSForceCalculation(autopas::MultisiteMoleculeL
 }
 
 template<bool newton3>
-void MultisiteLJFunctorTest::singleSiteSanityCheck(autopas::MultisiteMoleculeLJ molA, autopas::MultisiteMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPLComplex, double cutoff) {
+void LJMultisiteFunctorTest::singleSiteSanityCheck(autopas::MultisiteMoleculeLJ molA, autopas::MultisiteMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
   using autopas::MoleculeLJ;
   using autopas::MoleculeLJ;
 
   // create functors
-  autopas::LJMultisiteFunctor<autopas::MultisiteMoleculeLJ, false, true, autopas::FunctorN3Modes::Both, false, true> multicenterFunctor(cutoff, PPLComplex);
-  autopas::LJFunctor<autopas::MoleculeLJ, false, true, autopas::FunctorN3Modes::Both, false, true> singlecenterFunctor(cutoff, PPLComplex);
+  autopas::LJMultisiteFunctor<autopas::MultisiteMoleculeLJ, false, true, autopas::FunctorN3Modes::Both, false, true> multiSiteFunctor(cutoff, PPL);
+  autopas::LJFunctor<autopas::MoleculeLJ, false, true, autopas::FunctorN3Modes::Both, false, true> singleSiteFunctor(cutoff, PPL);
 
-  // create copies of simple functors
-  auto molASimple = molA.MultisiteMoleculeLJ<MultisiteMoleculeLJ>();
-  auto molBSimple = molB.MultisiteMoleculeLJ<MultisiteMoleculeLJ>();
+  // create single site versions of the molecules
+  autopas::MoleculeLJ molASimple;
+  molASimple.setTypeId(PPL.getSiteTypes(molA.getTypeId())[0]);
+  molASimple.setR(molA.getR());
+  molASimple.setV(molA.getV());
+  molASimple.setF(molA.getF());
+  molASimple.setOldF(molA.getOldF());
+  molASimple.setID(molA.getID());
+  molASimple.setOwnershipState(molA.getOwnershipState());
+  autopas::MoleculeLJ molBSimple;
+  molBSimple.setTypeId(PPL.getSiteTypes(molB.getTypeId())[0]);
+  molBSimple.setR(molB.getR());
+  molBSimple.setV(molB.getV());
+  molBSimple.setF(molB.getF());
+  molBSimple.setOldF(molB.getOldF());
+  molBSimple.setID(molB.getID());
+  molBSimple.setOwnershipState(molB.getOwnershipState());
 
   // apply multisite functor
-  multicenterFunctor.AoSFunctor(molA, molB, newton3);
+  multiSiteFunctor.AoSFunctor(molA, molB, newton3);
 
   // apply singlesite functor
-  singlecenterFunctor.AoSFunctor(molASimple, molBSimple, newton3);
+  singleSiteFunctor.AoSFunctor(molASimple, molBSimple, newton3);
 
   for (size_t i = 0; i < 3; ++i) {
     EXPECT_NEAR(molA.getF()[i],molASimple.getF()[i], 1e-13);
@@ -368,7 +382,7 @@ void testSoAVerletAgainstAoS(std::vector<autopas::MultisiteMoleculeLJ> molecules
 /**
  * Tests for the correctness of the AoS functor by applying to molecules designed to test all its functionality.
  */
-TEST_F(MultisiteLJFunctorTest, AoSTest) {
+TEST_F(LJMultisiteFunctorTest, AoSTest) {
   using autopas::MultisiteMoleculeLJ;
 
   ParticlePropertiesLibrary PPL(1.);
@@ -515,7 +529,7 @@ TEST_F(MultisiteLJFunctorTest, AoSTest) {
 
 }
 
-TEST_F(MultisiteLJFunctorTest, singleSiteSanityCheck) {
+TEST_F(LJMultisiteFunctorTest, singleSiteSanityCheck) {
   using autopas::MultisiteMoleculeLJ;
 
   ParticlePropertiesLibrary PPL(1.);
@@ -547,7 +561,7 @@ TEST_F(MultisiteLJFunctorTest, singleSiteSanityCheck) {
 /*
  * @note No newton3 disabled as SoACell always uses newton3 optimisation
  */
-TEST_F(MultisiteLJFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACell){
+TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACell){
   using autopas::MultisiteMoleculeLJ;
 
   const double cutoff = 3.;
@@ -561,7 +575,7 @@ TEST_F(MultisiteLJFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACell){
   ::testSoACellAgainstAoS<true>(molecules, PPL, cutoff);
 }
 
-TEST_F(MultisiteLJFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACellPair){
+TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACellPair){
   using autopas::MultisiteMoleculeLJ;
 
   const double cutoff = 5.;
@@ -579,7 +593,7 @@ TEST_F(MultisiteLJFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACellPair){
   ::testSoACellPairAgainstAoS<true>(moleculesA, moleculesB, PPL, cutoff);
 }
 
-TEST_F(MultisiteLJFunctorTest, MulticenteredLJFunctorTest_AoSVsSoAVerlet){
+TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoAVerlet){
   using autopas::MultisiteMoleculeLJ;
 
   const double cutoff = 3.1;

@@ -1,5 +1,5 @@
 /**
-* @file MultisiteLJFunctorTest.h
+* @file LJMultisiteFunctorTest.h
 * @author S. Newcome
 * @date 12/05/2022
 */
@@ -16,14 +16,14 @@
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 
 /**
- * Test class for MulticenteredLJFunctor
+ * Test class for LJMultisiteFunctor
  */
-class MultisiteLJFunctorTest : public AutoPasTestBase {
+class LJMultisiteFunctorTest : public AutoPasTestBase {
  public:
   /**
    * Constructor
    */
-  MultisiteLJFunctorTest() = default;
+  LJMultisiteFunctorTest() = default;
 
   /**
    * Generates a particle properties library for use with ::generateMolecules
@@ -50,9 +50,13 @@ class MultisiteLJFunctorTest : public AutoPasTestBase {
 
   /**
    * Compares the forces produced by the single-site functor and the multi-site functor applied to single-site molecules.
+   *
+   * Inputted molecules are objects of multi-site molecule class, but are expected to have molecule types which consist
+   * of a single site at the center-of-mass with site type ID equal to molecule type ID.
+   *
    * @tparam newton3
-   * @param molA
-   * @param molB
+   * @param molA single-site molecule represented by multi-site molecule class
+   * @param molB single-site molecule represented by multi-site molecule class
    * @param PPL
    * @param cutoff
    */
