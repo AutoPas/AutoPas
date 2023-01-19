@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "autopas/particles/Particle.h"
+#include <jlcxx/jlcxx.hpp>
 
 namespace autopas {
 
@@ -33,6 +34,38 @@ class MoleculeLJ final : public Particle {
       : Particle(pos, v, moleculeId), _typeId(typeId) {}
 
   ~MoleculeLJ() final = default;
+
+  /**
+   * Constructor of lennard jones molecule from julia
+   * @param pos Position of the molecule.
+   * @param v Velocitiy of the molecule.
+   * @param moleculeId Id of the molecule.
+   * @param typeId TypeId of the molecule.
+   */
+  MoleculeLJ(jlcxx::ArrayRef<double,1> pos, jlcxx::ArrayRef<double,1> v, int moleculeId,
+                      int typeId = 0) {
+                        std::array<double,3> pos_;
+                        std::array<double,3> v_;
+
+                        for(auto i = 0; i < pos.size(); i++) {
+                          pos_.at(i) = pos[i];
+                        }
+
+                        for(auto i = 0; i < v.size(); i++) {
+                          v_.at(i) = v[i];
+                        }
+
+                        Particle(pos_, v_, moleculeId);
+                        _typeId = typeId;
+                    }
+
+  void setPos(jlcxx::ArrayRef<double,1> pos_) {
+    ParticleBase::setR({pos_[0], pos_[1], pos_[2]});
+  }
+
+  void setV(jlcxx::ArrayRef<double,1> v_) {
+    ParticleBase::setV({v_[0], v_[1], v_[2]});
+  }
 
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.

@@ -60,7 +60,7 @@ class AutoPas {
    * Define the const_iterator_t for simple use, also from the outside.
    * Helps to, e.g., wrap the AutoPas iterators
    */
-  using const_iterator_t = typename autopas::IteratorTraits<Particle>::const_iterator_t;
+  // using const_iterator_t = typename autopas::IteratorTraits<Particle>::const_iterator_t;
 
   /**
    * Constructor for the autopas class.
@@ -172,13 +172,13 @@ class AutoPas {
    * particles, or both.
    * @return iterator to the first particle.
    */
-  iterator_t begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo);
+  iterator_t begin();
 
   /**
    * @copydoc begin()
    * @note const version
    */
-  const_iterator_t begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
+  // const_iterator_t begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
 
   /**
    * execute code on all particles in parallel as defined by a lambda function
@@ -278,7 +278,7 @@ class AutoPas {
    * @copydoc begin()
    * @note cbegin will guarantee to return a const_iterator.
    */
-  const_iterator_t cbegin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const { return begin(behavior); }
+  // const_iterator_t cbegin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const { return begin(behavior); }
 
   /**
    * End of the iterator.
@@ -303,8 +303,8 @@ class AutoPas {
    * @copydoc getRegionIterator()
    * @note const version
    */
-  const_iterator_t getRegionIterator(std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-                                     IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
+  // const_iterator_t getRegionIterator(std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+  //                                    IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
 
   /**
    * Execute code on all particles in a certain region in parallel as defined by a lambda function.
@@ -432,6 +432,9 @@ class AutoPas {
       containerPtr->reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
     });
   }
+
+  // only getters and setters are follwoing from here
+
   /**
    * Function to iterate over all pairs of particles in the container.
    * This function only handles short-range interactions.
@@ -467,6 +470,13 @@ class AutoPas {
    */
   [[nodiscard]] std::array<double, 3> getBoxMax() const;
 
+
+  void printBoxSize() {
+    
+    std::cout << "decl_min: " << _boxMin.at(0) << ", " << _boxMin.at(1) << ", " << _boxMin.at(2) << "\n";
+    std::cout << "decl_ max: " << _boxMax.at(0) << ", " << _boxMax.at(1) << ", " << _boxMax.at(2) << "\n";
+  }
+
   /**
    * get the bool value indicating if the search space is trivial (not more than one configuration to test).
    * @return bool indicating if search space is trivial.
@@ -477,7 +487,10 @@ class AutoPas {
    * Set coordinates of the lower corner of the domain.
    * @param boxMin
    */
-  void setBoxMin(const std::array<double, 3> &boxMin) { _boxMin = boxMin; }
+  void setBoxMin(const std::array<double, 3> &boxMin) { 
+    std::cout << "in setBoxMin\n";
+    _boxMin = boxMin; 
+  }
 
   /**
    * Set coordinates of the upper corner of the domain.

@@ -54,6 +54,9 @@ AutoPas<Particle> &AutoPas<Particle>::operator=(AutoPas &&other) noexcept {
 
 template <class Particle>
 void AutoPas<Particle>::init() {
+  std::cout << "min: " <<_boxMin.at(0) << ", " << _boxMin.at(1) << ", " << _boxMin.at(2) << "\n";
+  std::cout << "max: " <<_boxMax.at(0) << ", " << _boxMax.at(1) << ", " << _boxMax.at(2) << "\n";
+
   AutoPasLog(info, "AutoPas Version: {}", AutoPas_VERSION);
   if (_numSamples % _verletRebuildFrequency != 0) {
     AutoPasLog(warn,
@@ -155,14 +158,16 @@ void AutoPas<Particle>::deleteParticle(Particle &particle) {
 }
 
 template <class Particle>
-typename AutoPas<Particle>::iterator_t AutoPas<Particle>::begin(IteratorBehavior behavior) {
-  return _logicHandler->begin(behavior);
+typename AutoPas<Particle>::iterator_t AutoPas<Particle>::begin() {
+  return _logicHandler->begin(IteratorBehavior::ownedOrHalo);
 }
 
+/*
 template <class Particle>
 typename AutoPas<Particle>::const_iterator_t AutoPas<Particle>::begin(IteratorBehavior behavior) const {
   return std::as_const(*_logicHandler).begin(behavior);
 }
+*/
 
 template <class Particle>
 typename AutoPas<Particle>::iterator_t AutoPas<Particle>::getRegionIterator(std::array<double, 3> lowerCorner,
@@ -171,12 +176,14 @@ typename AutoPas<Particle>::iterator_t AutoPas<Particle>::getRegionIterator(std:
   return _logicHandler->getRegionIterator(lowerCorner, higherCorner, behavior);
 }
 
+/*
 template <class Particle>
 typename AutoPas<Particle>::const_iterator_t AutoPas<Particle>::getRegionIterator(std::array<double, 3> lowerCorner,
                                                                                   std::array<double, 3> higherCorner,
                                                                                   IteratorBehavior behavior) const {
   return std::as_const(*_logicHandler).getRegionIterator(lowerCorner, higherCorner, behavior);
 }
+*/
 
 template <class Particle>
 unsigned long AutoPas<Particle>::getContainerType() const {
@@ -185,6 +192,7 @@ unsigned long AutoPas<Particle>::getContainerType() const {
 
 template <class Particle>
 std::array<double, 3> AutoPas<Particle>::getBoxMin() const {
+  std::cout << "before return\n"; 
   return _autoTuner->getContainer()->getBoxMin();
 }
 

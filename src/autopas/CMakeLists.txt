@@ -11,8 +11,13 @@ file(
     "*.cu"
     "*.cuh"
 )
+list(APPEND CMAKE_PREFIX_PATH "/mnt/c/Users/laura/Documents/test_ordner/libcxxwrap-julia/build/")
 
 add_library(autopas STATIC ${MY_SRC})
+
+target_include_directories(autopas PUBLIC "/mnt/c/Users/laura/Documents/test_ordner/libcxxwrap-julia/build/" JlCxx::JlCxx)
+
+find_package(JlCxx REQUIRED)
 
 target_link_libraries(
     autopas
@@ -21,6 +26,7 @@ target_link_libraries(
         ${CMAKE_THREAD_LIBS_INIT} # required for Logger and ExceptionHandler
         $<$<BOOL:${AUTOPAS_OPENMP}>:OpenMP::OpenMP_CXX>
         spdlog::spdlog
+        JlCxx::cxxwrap_julia
         $<$<OR:$<BOOL:${AUTOPAS_INTERNODE_TUNING}>,$<BOOL:${MD_FLEXIBLE_USE_MPI}>>:MPI::MPI_CXX>
         $<$<BOOL:${AUTOPAS_INCLUDE_MPI}>:MPI::MPI_CXX>
     PRIVATE

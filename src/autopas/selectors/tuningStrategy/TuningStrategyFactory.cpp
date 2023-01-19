@@ -6,7 +6,6 @@
 
 #include "TuningStrategyFactory.h"
 
-#include "ActiveHarmony.h"
 #include "BayesianClusterSearch.h"
 #include "BayesianSearch.h"
 #include "FullSearch.h"
@@ -46,10 +45,12 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
           "Cannot use the divideAndConquer search-strategy without AUTOPAS_INTERNODE_TUNING=ON."
           "aborting.");
 #endif
+      /*
       if (tuningStrategyOption == TuningStrategyOption::activeHarmony and getenv("HARMONY_HOST") != nullptr) {
         // rank 0 will solely set up the entire search, so we cannot divide the search space.
         break;
       }
+      */
       int rank, commSize;
       AutoPas_MPI_Comm_rank(comm, &rank);
       AutoPas_MPI_Comm_size(comm, &commSize);
@@ -114,7 +115,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
           allowedNewton3Options, maxEvidence, acquisitionFunctionOption, outputSuffix);
       break;
     }
-
+    /*
     case TuningStrategyOption::activeHarmony: {
       // If a AH-server is provided, but MPI is disallowed, we have to ignore the server.
       if (std::getenv("HARMONY_HOST") != nullptr and mpiStrategyOption == MPIStrategyOption::noMPI) {
@@ -128,6 +129,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
                                                        mpiStrategyOption, comm);
       break;
     }
+    */
 
     case TuningStrategyOption::predictiveTuning: {
       tuningStrategy = std::make_unique<PredictiveTuning>(
@@ -152,12 +154,14 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     }
 
     case MPIStrategyOption::divideAndConquer: {
+      /*
       if (tuningStrategyOption == TuningStrategyOption::activeHarmony) {
         if (getenv("HARMONY_HOST") != nullptr) {
           // A server has been specified, so no need to handle communication via MPI as well.
           return tuningStrategy;
         }
       }
+      */
       return std::make_unique<MPIParallelizedStrategy>(std::move(tuningStrategy), comm, fallbackContainers,
                                                        fallbackTraversals, fallbackLoadEstimators, fallbackDataLayouts,
                                                        fallbackNewton3);

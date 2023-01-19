@@ -833,7 +833,7 @@ inline int AutoPas_MPI_Allgather(void *buffer_send, int count_send, AutoPas_MPI_
 
 inline int AutoPas_MPI_Comm_split(AutoPas_MPI_Comm old_communicator, int color, int key,
                                   AutoPas_MPI_Comm *new_communicator) {
-  *new_communicator = old_communicator;
+  new_communicator = &old_communicator;
   return AUTOPAS_MPI_SUCCESS;
 }
 

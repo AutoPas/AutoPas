@@ -43,14 +43,19 @@ class CellBlock3D : public CellBorderAndFlagManager {
    */
   CellBlock3D(std::vector<ParticleCell> &vec, const std::array<double, 3> bMin, const std::array<double, 3> bMax,
               double interactionLength, double cellSizeFactor = 1.0) {
-    rebuild(vec, bMin, bMax, interactionLength, cellSizeFactor);
-
+    std::array<double, 3> min_{0,0,0};
+    std::array<double, 3> max_{7.25, 7.25, 7.25};
+    // bMin = min_;
+    // bMax = max_;
+    rebuild(vec, min_, max_, interactionLength, cellSizeFactor);
+    /*
     for (int i = 0; i < 3; ++i) {
       if (bMax[i] < bMin[i] + interactionLength) {
         AutoPasLog(error, "Interaction length too large is {}, bmin {}, bmax {}", interactionLength, bMin[i], bMax[i]);
         utils::ExceptionHandler::exception("Error in CellBlock3D: interaction Length too large!");
       }
     }
+    */
   }
 
   /**
@@ -110,7 +115,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
   /**
    * get the ParticleCell of a specified 3d index
    * @param index3d the index of the cell
-   * @return the specified cell
+   *d @return the specified cell
    */
   ParticleCell &getCell(const std::array<index_t, 3> &index3d) const;
 

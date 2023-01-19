@@ -1,0 +1,66 @@
+using init-method 100%:
+[100%] Linking CXX shared library libjulia_bindings.so
+/usr/bin/ld: ../../libs/harmony/include/lib/libharmony.a(hcfg.o): warning: relocation against `stdout@@GLIBC_2.2.5' in read-only section `.text'
+/usr/bin/ld: ../../libs/harmony/include/lib/libharmony.a(hclient.o): relocation R_X86_64_PC32 against symbol `stdin@@GLIBC_2.2.5' can not be used when making a shared object; recompile with -fPIC
+/usr/bin/ld: final link failed: bad value
+collect2: error: ld returned 1 exit status
+make[2]: *** [examples/md-julia/CMakeFiles/julia_bindings.dir/build.make:104: examples/md-julia/libjulia_bindings.so] Error 1
+make[1]: *** [CMakeFiles/Makefile2:422: examples/md-julia/CMakeFiles/julia_bindings.dir/all] Error 2
+make: *** [Makefile:101: all] Error 2
+
+same applies with -fPIC in CMAKE
+
+
+
+required from here
+/mnt/c/Users/laura/Documents/BA_SH/AutoPas/src/autopas/iterators/ParticleIteratorWrapper.h:69:92: error: cannot declare parameter ‘_iter’ to be of abstract type ‘autopas::internal::ParticleIteratorInterfaceImpl<autopas::MoleculeLJ<double>, true>’
+   69 |   void setInterator(autopas::internal::ParticleIteratorInterfaceImpl<Particle, modifiable> _iter) {
+
+
+
+signal (11): Segmentation fault
+in expression starting at /mnt/c/Users/laura/Documents/BA_SH/AutoPas/examples/md-julia/src/test.jl:3
+_ZN5jlcxx10apply_typeEP11_jl_value_tPS1_m at /home/lala/.julia/artifacts/b9c99d2b2538a54bc5b916d41c98a1668c141ac0/lib/libcxxwrap_julia.so (unknown line)
+_ZN5jlcxx10apply_typeEP11_jl_value_tP9jl_svec_t at /home/lala/.julia/artifacts/b9c99d2b2538a54bc5b916d41c98a1668c141ac0/lib/libcxxwrap_julia.so (unknown line)
+_ZN5jlcxx6Module17add_type_internalINS_10ParametricIJNS_7TypeVarILi1EEENS3_ILi2EEEEEENS_13ParameterListIJEEEFP14_jl_datatype_tvEEENS_11TypeWrapperIT_EERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPT1_ at /mnt/c/Users/laura/Documents/BA_SH/AutoPas/build/examples/md-julia/libjulia_bindings.so (unknown line)
+define_julia_module at /mnt/c/Users/laura/Documents/BA_SH/AutoPas/build/examples/md-julia/libjulia_bindings.so (unknown line)
+register_julia_module at /home/lala/.julia/artifacts/b9c99d2b2538a54bc5b916d41c98a1668c141ac0/lib/libcxxwrap_julia.so (unknown line)
+register_julia_module at /home/lala/.julia/packages/CxxWrap/IdOJa/src/CxxWrap.jl:405 [inlined]
+readmodule at /home/lala/.julia/packages/CxxWrap/IdOJa/src/CxxWrap.jl:734
+wrapmodule at /home/lala/.julia/packages/CxxWrap/IdOJa/src/CxxWrap.jl:738
+_jl_invoke at /cache/build/default-aws-shared0-3/julialang/julia-release-1-dot-8/src/gf.c:2377 [inlined]
+ijl_apply_generic at /cache/build/default-aws-shared0-3/julialang/julia-release-1-dot-8/src/gf.c:2559
+jl_apply at /cache/build/default-aws-shared0-3/julialang/julia-release-1-dot-8/src/julia.h:1843 [inlined]
+do_call at /cache/build/default-aws-shared0-3/julialang/julia-release-1-dot-8/src/interpreter.c:126
+eval_value at /cache/build/default-aws-shared0-3/julialang/julia-release-1-dot-8/src/interpreter.c:215
+eval_stmt_value at /cache/build/default-aws-shared0-3/julialang/julia-release-1-dot-8/src/interpreter.c:166 [inlined]
+eval_body at /cache/build/default-aws-shared0-3/julialang/julia-release-1-dot-8/src/interpreter.c:612
+jl_interpret_toplevel_thunk at /cache/build/default-aws-shared0-3/julialang/julia-release-1-dot-8/src/interpreter.c:750
+jl_toplevel_eval_flex at /cache/build/default-aws-shared0-3/julialang/julia-release-1-dot-8/src/toplevel.c:906
+jl_eval_module_expr at /cache/build/default-aws-shared0-3/julialang/julia-release-1-dot-8/src/toplevel.c:203 [inlined]
+jl_toplevel_eval_flex at /cache/build/default-aws-shared0-3/julialang/julia-release-1-dot-8/src/toplevel.c:709
+jl_toplevel_eval_flex at /cache/build/default-aws-shared0-3/julialang/julia-release-1-dot-8/src/toplevel.c:850
+ijl_toplevel_eval_in at /cache/build/default-aws-shared0-3/julialang/julia-release-1-dot-8/src/toplevel.c:965
+eval at ./boot.jl:368 [inlined]
+include_string at ./loading.jl:1428
+_jl_invoke at /cache/build/default-aws-shared0-3/julialang/julia-release-1-dot-8/src/gf.c:2377 [inlined]
+ijl_apply_generic at /cache/build/default-aws-shared0-3/julialang/julia-release-1-dot-8/src/gf.c:2559
+_include at ./loading.jl:1488
+include at ./Base.jl:419
+jfptr_include_47457.clone_1 at /mnt/c/Users/laura/Documents/test_ordner/julia-1.8.4/lib/julia/sys.so (unknown line)
+_jl_invoke at /cache/build/default-aws-shared0-3/julialang/julia-release-1-dot-8/src/gf.c:2377 [inlined]
+ijl_apply_generic at /cache/build/default-aws-shared0-3/julialang/julia-release-1-dot-8/src/gf.c:2559
+exec_options at ./client.jl:303
+_start at ./client.jl:522
+jfptr__start_58474.clone_1 at /mnt/c/Users/laura/Documents/test_ordner/julia-1.8.4/lib/julia/sys.so (unknown line)
+_jl_invoke at /cache/build/default-aws-shared0-3/julialang/julia-release-1-dot-8/src/gf.c:2377 [inlined]
+ijl_apply_generic at /cache/build/default-aws-shared0-3/julialang/julia-release-1-dot-8/src/gf.c:2559
+jl_apply at /cache/build/default-aws-shared0-3/julialang/julia-release-1-dot-8/src/julia.h:1843 [inlined]
+true_main at /cache/build/default-aws-shared0-3/julialang/julia-release-1-dot-8/src/jlapi.c:575
+jl_repl_entrypoint at /cache/build/default-aws-shared0-3/julialang/julia-release-1-dot-8/src/jlapi.c:719
+main at julia (unknown line)
+unknown function (ip: 0x7fcd85263d8f)
+__libc_start_main at /lib/x86_64-linux-gnu/libc.so.6 (unknown line)
+unknown function (ip: 0x401098)
+Allocations: 1602937 (Pool: 1602594; Big: 343); GC: 1
+Segmentation fault

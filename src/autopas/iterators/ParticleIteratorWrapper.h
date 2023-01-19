@@ -63,6 +63,15 @@ class ParticleIteratorWrapper : public ParticleIteratorInterface<Particle, modif
     return *this;
   }
 
+  /**
+   * set unique pointer to IteratorImplementation, if not done already
+   */
+  /*
+  void setInterator(autopas::internal::ParticleIteratorInterfaceImpl<Particle, modifiable> _iter) {
+    _particleIterator = std::make_unique<autopas::internal::ParticleIteratorInterfaceImpl<Particle, true>>(_iter);
+  }
+  */
+
   inline ParticleIteratorWrapper<Particle, modifiable> &operator++() override final {
     _particleIterator->operator++();
     return *this;

@@ -34,7 +34,8 @@ class ParticlePropertiesLibrary {
 
   /**
    * Constructor
-   * @param cutoff Cutoff for the Lennard Jones Potential (needed for calculation of shift)
+   * @param cutoff Cutoff 
+    the Lennard Jones Potential (needed for calculation of shift)
    */
   explicit ParticlePropertiesLibrary(const double cutoff) : _cutoff(cutoff) {}
 
