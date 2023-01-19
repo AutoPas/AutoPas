@@ -163,12 +163,6 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
    */
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior) {
-    auto forEach = [&](ParticleCell &cell) {
-      for (Particle &p : cell._particles) {
-        forEachLambda(p);
-      }
-    };
-
     if (behavior & IteratorBehavior::owned) {
       getCell().forEach(forEachLambda);
     }
@@ -186,12 +180,6 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
    */
   template <typename Lambda, typename A>
   void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior) {
-    auto forEach = [&](ParticleCell &cell) {
-      for (Particle &p : cell._particles) {
-        reduceLambda(p, result);
-      }
-    };
-
     if (behavior & IteratorBehavior::owned) {
       getCell().reduce(reduceLambda, result);
     }

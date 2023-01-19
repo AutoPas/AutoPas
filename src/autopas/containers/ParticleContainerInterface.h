@@ -121,7 +121,6 @@ class ParticleContainerInterface {
     } else {
       /// @todo do we want a check of the particle not being too far away in here as well?
       if (utils::inBox(haloParticle.getR(), this->getBoxMin(), this->getBoxMax())) {
-        std::stringstream error;
         utils::ExceptionHandler::exception(
             "Trying to add a halo particle that is not outside of in the bounding box.\n"
             "Box Min {}\n"

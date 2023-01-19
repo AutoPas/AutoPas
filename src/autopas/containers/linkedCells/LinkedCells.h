@@ -468,7 +468,6 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
    * load estimation algorithm for balanced traversals.
    */
   autopas::LoadEstimatorOption _loadEstimator;
-  // ThreeDimensionalCellHandler
 };
 
 }  // namespace autopas
