@@ -189,7 +189,7 @@ void LJMultisiteFunctorTest::singleSiteSanityCheck(autopas::MultisiteMoleculeLJ 
 }
 
 template <bool newton3>
-void testSoACellAgainstAoS(std::vector<autopas::MultisiteMoleculeLJ> molecules, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
+void LJMultisiteFunctorTest::testSoACellAgainstAoS(std::vector<autopas::MultisiteMoleculeLJ> molecules, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
   using autopas::MultisiteMoleculeLJ;
 
   autopas::LJMultisiteFunctor<MultisiteMoleculeLJ, false, true, autopas::FunctorN3Modes::Both, false, true> functor(cutoff, PPL);
@@ -238,7 +238,7 @@ void testSoACellAgainstAoS(std::vector<autopas::MultisiteMoleculeLJ> molecules, 
 }
 
 template <bool newton3>
-void testSoACellPairAgainstAoS(std::vector<autopas::MultisiteMoleculeLJ> moleculesA, std::vector<autopas::MultisiteMoleculeLJ> moleculesB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
+void LJMultisiteFunctorTest::testSoACellPairAgainstAoS(std::vector<autopas::MultisiteMoleculeLJ> moleculesA, std::vector<autopas::MultisiteMoleculeLJ> moleculesB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
   using autopas::MultisiteMoleculeLJ;
 
   autopas::LJMultisiteFunctor<MultisiteMoleculeLJ, false, true, autopas::FunctorN3Modes::Both, false, true> functor(cutoff, PPL);
@@ -309,7 +309,7 @@ void testSoACellPairAgainstAoS(std::vector<autopas::MultisiteMoleculeLJ> molecul
 }
 
 template <bool newton3>
-void testSoAVerletAgainstAoS(std::vector<autopas::MultisiteMoleculeLJ> molecules, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
+void LJMultisiteFunctorTest::testSoAVerletAgainstAoS(std::vector<autopas::MultisiteMoleculeLJ> molecules, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
   using autopas::MultisiteMoleculeLJ;
 
   autopas::LJMultisiteFunctor<MultisiteMoleculeLJ, false, true, autopas::FunctorN3Modes::Both, false, true> functor(cutoff, PPL);
@@ -572,7 +572,7 @@ TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACell){
   generatePPL(&PPL);
   generateMolecules(&molecules);
 
-  ::testSoACellAgainstAoS<true>(molecules, PPL, cutoff);
+  testSoACellAgainstAoS<true>(molecules, PPL, cutoff);
 }
 
 TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACellPair){
@@ -588,9 +588,9 @@ TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACellPair){
   generateMolecules(&moleculesA, {0,0,0});
   generateMolecules(&moleculesB, {0,0,9});
 
-  ::testSoACellPairAgainstAoS<false>(moleculesA, moleculesB, PPL, cutoff);
+  testSoACellPairAgainstAoS<false>(moleculesA, moleculesB, PPL, cutoff);
 
-  ::testSoACellPairAgainstAoS<true>(moleculesA, moleculesB, PPL, cutoff);
+  testSoACellPairAgainstAoS<true>(moleculesA, moleculesB, PPL, cutoff);
 }
 
 TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoAVerlet){
@@ -604,7 +604,7 @@ TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoAVerlet){
   generatePPL(&PPL);
   generateMolecules(&molecules);
 
-  ::testSoAVerletAgainstAoS<false>(molecules, PPL, cutoff);
+  testSoAVerletAgainstAoS<false>(molecules, PPL, cutoff);
 
-  ::testSoAVerletAgainstAoS<true>(molecules, PPL, cutoff);
+  testSoAVerletAgainstAoS<true>(molecules, PPL, cutoff);
 }
