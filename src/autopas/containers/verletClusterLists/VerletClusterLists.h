@@ -106,7 +106,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
           for (unsigned long x = lowerCorner[0]; x <= upperCorner[0]; x++) {
             for (unsigned long y = lowerCorner[1]; y <= upperCorner[1]; y++) {
               unsigned long cellLoad = 0;
-              auto &tower = getTowerAtCoordinates(x, y);
+              auto &tower = getTowerByIndex(x, y);
               for (auto &cluster : tower.getClusters()) {
                 cellLoad += cluster.getNeighbors().size();
               }
@@ -677,12 +677,24 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
+   * Return a reference to the tower at a given position in the simulation coordinate system (e.g. particle position).
+   * @param pos
+   * @return
+   */
+  internal::ClusterTower<Particle> &getTowerAtPosition(const std::array<double, 3> &pos) {
+    return getTowerByIndex(static_cast<size_t>(pos[0] * _towerSideLengthReciprocal),
+                           static_cast<size_t>(pos[1] * _towerSideLengthReciprocal));
+  }
+
+  /**
    * Returns a reference to the tower for the given tower grid coordinates.
    * @param x The x-th tower in x direction.
    * @param y The y-th tower in y direction.
    * @return a reference to the tower for the given tower grid coordinates.
    */
-  auto &getTowerAtCoordinates(const size_t x, const size_t y) { return _towers[towerIndex2DTo1D(x, y)]; }
+  internal::ClusterTower<Particle> &getTowerByIndex(const size_t x, const size_t y) {
+    return _towers[towerIndex2DTo1D(x, y)];
+  }
 
   /**
    * Returns the 1D index for the given tower grid coordinates of a tower.
@@ -692,7 +704,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @param towersPerDim The number of towers in each dimension.
    * @return the 1D index for the given tower grid coordinates of a tower.
    */
-  static auto towerIndex2DTo1D(const size_t x, const size_t y, const std::array<size_t, 2> towersPerDim) {
+  static size_t towerIndex2DTo1D(const size_t x, const size_t y, const std::array<size_t, 2> towersPerDim) {
     return x + y * towersPerDim[0];
   }
 
@@ -797,7 +809,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   void traverseClustersSequential(LoopBody &&loopBody) {
     for (size_t x = 0; x < _towersPerDim[0]; x++) {
       for (size_t y = 0; y < _towersPerDim[1]; y++) {
-        auto &tower = getTowerAtCoordinates(x, y);
+        auto &tower = getTowerByIndex(x, y);
         for (auto &cluster : tower.getClusters()) {
           loopBody(cluster);
         }
@@ -824,7 +836,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 #endif
     for (size_t x = 0; x < towersPerDimX; x++) {
       for (size_t y = 0; y < towersPerDimY; y++) {
-        auto &tower = getTowerAtCoordinates(x, y);
+        auto &tower = getTowerByIndex(x, y);
 
         for (auto &cluster : tower.getClusters()) {
           loopBody(cluster);
@@ -1040,9 +1052,13 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   std::array<size_t, 2> _towersPerDim{};
 
   /**
-   * Side length of xy-grid.
+   * Side length of xy-grid cells.
    */
   double _towerSideLength{0.};
+
+  /**
+   * 1/side length of xy-grid cells.
+   */
   double _towerSideLengthReciprocal{0.};
 
   /**

@@ -358,6 +358,12 @@ class ClusterTower : public ParticleCell<Particle> {
    */
   void reserve(size_t n) { _particlesStorage.reserve(n); }
 
+  /**
+   * Get reference to internal particle vector.
+   * @return
+   */
+  StorageType &particleVector() { return _particlesStorage._particles; }
+
  private:
   /**
    * The number of particles in a full cluster.
