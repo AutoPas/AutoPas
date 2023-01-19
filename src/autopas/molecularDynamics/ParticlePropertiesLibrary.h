@@ -129,9 +129,10 @@ class ParticlePropertiesLibrary {
   floatType getSiteMass(intType i) const;
 
   /**
-   * Getter for the multi-site molecules' mass.
+   * Getter for a molecules' mass.
    *
-   * Throws an error if support for multi-site molecules has not been compiled.
+   * For single site molecules, this automatically gets the mass of the site with the given ID.
+   * For multi site molecules, this gets the total mass of the molecule.
    *
    * @param i Type Id of a multi-site molecule.
    * @return mass_i
@@ -352,14 +353,11 @@ floatType ParticlePropertiesLibrary<floatType, intType>::getSiteMass(intType i) 
 
 template <typename floatType, typename intType>
 floatType ParticlePropertiesLibrary<floatType, intType>::getMolMass(intType i) const {
-#if not defined(MD_FLEXIBLE_USE_MULTI_SITE)
-  autopas::utils::ExceptionHandler::exception(
-      "ParticlePropertiesLibrary::getMolMass(): trying to get the mass of a multi-site molecule type when md-flexible has been "
-      "compiled without support for multi-site molecules. Please compile with the CMake argument '-D "
-      "MD_FLEXIBLE_USE_MULTI_SITE=ON'."
-      );
-#endif
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
   return _molMasses[i];
+#else
+  return _siteMasses[i];
+#endif
 }
 
 template <typename floatType, typename intType>
