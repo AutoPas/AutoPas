@@ -263,11 +263,15 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
 
         auto [cellLowerCorner, cellUpperCorner] = this->getCellBlock().getCellBoundingBox(cellId);
 
-        for (auto &&pIter = this->getCells()[cellId].begin(); pIter.isValid(); ++pIter) {
-          // if not in cell
-          if (utils::notInBox(pIter->getR(), cellLowerCorner, cellUpperCorner)) {
-            myInvalidParticles.push_back(*pIter);
-            internal::deleteParticle(pIter);
+        auto &particleVec = this->getCells()[cellId]._particles;
+        for (auto pIter = particleVec.begin(); pIter != particleVec.end();) {
+          if (utils::notInBox((*pIter)->getR(), cellLowerCorner, cellUpperCorner)) {
+            myInvalidParticles.push_back(**pIter);
+            // swap-delete
+            **pIter = *particleVec.back();
+            particleVec.pop_back();
+          } else {
+            ++pIter;
           }
         }
       }

@@ -121,10 +121,15 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     getCell().deleteDummyParticles();
 
     std::vector<ParticleType> invalidParticles{};
-    for (auto iter = getCell().begin(); iter.isValid(); ++iter) {
+    auto &particleVec = getCell()._particles;
+    for (auto iter = particleVec.begin(); iter != particleVec.end();) {
       if (utils::notInBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
         invalidParticles.push_back(*iter);
-        internal::deleteParticle(iter);
+        // swap-delete
+        *iter = particleVec.back();
+        particleVec.pop_back();
+      } else {
+        ++iter;
       }
     }
     return invalidParticles;

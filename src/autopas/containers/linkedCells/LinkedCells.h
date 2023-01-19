@@ -170,11 +170,16 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
 
         auto [cellLowerCorner, cellUpperCorner] = this->getCellBlock().getCellBoundingBox(cellId);
 
-        for (auto &&pIter = this->getCells()[cellId].begin(); pIter.isValid(); ++pIter) {
+        auto &particleVec = this->getCells()[cellId]._particles;
+        for (auto pIter = particleVec.begin(); pIter != particleVec.end(); ++pIter) {
           // if not in cell
           if (utils::notInBox(pIter->getR(), cellLowerCorner, cellUpperCorner)) {
             myInvalidParticles.push_back(*pIter);
-            internal::deleteParticle(pIter);
+            // swap-delete
+            *pIter = particleVec.back();
+            particleVec.pop_back();
+          } else {
+            ++pIter;
           }
         }
       }

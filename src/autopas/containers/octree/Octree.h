@@ -103,7 +103,10 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
       particles.reserve(particleRefs.size());
 
       for (auto *p : particleRefs) {
-        if (utils::inBox(p->getR(), this->getBoxMin(), this->getBoxMax())) {
+        if (p->isDummy()) {
+          // don't do anything with dummies. They will just be dropped when the container is rebuilt.
+          continue;
+        } else if (utils::inBox(p->getR(), this->getBoxMin(), this->getBoxMax())) {
           particles.push_back(*p);
         } else {
           invalidParticles.push_back(*p);
