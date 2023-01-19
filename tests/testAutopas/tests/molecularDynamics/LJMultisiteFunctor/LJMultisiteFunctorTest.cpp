@@ -31,7 +31,9 @@ void LJMultisiteFunctorTest::generateMolecules(std::vector<autopas::MultisiteMol
         const auto index = i * PARTICLES_PER_DIM * PARTICLES_PER_DIM + j * PARTICLES_PER_DIM + k;
         molecules->at(index).setID(index);
         molecules->at(index).setR({(double)i + offset[0], (double)j + offset[1], (double)k + offset[2]});
-        molecules->at(index).setQ({1,1,0,0}); // todo: perhaps different quaternions
+        // Generate quaternion deterministically but arbitrarily with fair variation
+        const std::array<double, 4> qNonNormalized{1. , (double)i + offset[0], (double)j + offset[1], (double)k + offset[2]};
+        molecules->at(index).setQ(autopas::utils::ArrayMath::normalize(qNonNormalized));
         molecules->at(index).setF({0, 0, 0});
         molecules->at(index).setTorque({0, 0, 0});
         molecules->at(index).setV({0, 0, 0});
