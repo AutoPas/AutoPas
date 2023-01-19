@@ -34,13 +34,24 @@ double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibrary
 #pragma omp parallel reduction(+ : kineticEnergyMul2) default(none) shared(autopas, particlePropertiesLibrary)
 #endif
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-    auto vel = iter->getV();
+    const auto vel = iter->getV();
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+    const auto angVel = iter->getAngularVel();
+#endif
     kineticEnergyMul2 +=
         particlePropertiesLibrary.getMolMass(iter->getTypeId()) * autopas::utils::ArrayMath::dot(vel, vel);
+#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+    kineticEnergyMul2 += autopas::utils::ArrayMath::dot(particlePropertiesLibrary.getMomentOfInertia(iter->getTypeId()),
+                                                            autopas::utils::ArrayMath::mul(angVel, angVel));
+#endif
   }
-  // AutoPas works always on 3 dimensions
-  constexpr unsigned int dimensions{3};
-  return kineticEnergyMul2 / (autopas.getNumberOfParticles() * dimensions);
+// md-flexible's molecules have 3 DoF for translational velocity and optionally 3 additional rotational DoF
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+constexpr unsigned int degreesOfFreedom{6};
+#else
+constexpr unsigned int degreesOfFreedom{3};
+#endif
+  return kineticEnergyMul2 / (autopas.getNumberOfParticles() * degreesOfFreedom);
 }
 
 /**
@@ -112,8 +123,12 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
       }
     }
   }
-  // AutoPas works always on 3 dimensions
-  constexpr unsigned int dimensions{3};
+  // md-flexible's molecules have 3 DoF for translational velocity and optionally 3 additional rotational DoF
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+  constexpr unsigned int degreesOfFreedom{6};
+#else
+  constexpr unsigned int degreesOfFreedom{3};
+#endif
 
   for (int typeID = 0; typeID < particlePropertiesLibrary.getNumberRegisteredSiteTypes(); typeID++) {
     // workaround for MPICH: send and receive buffer must not be the same.
@@ -129,7 +144,7 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
   for (auto [kineticEnergyMapIter, numParticleMapIter] = kineticEnergyAndParticleMaps;
        kineticEnergyMapIter != kineticEnergyMul2Map.end(); ++kineticEnergyMapIter, ++numParticleMapIter) {
     // ToDo: Allow Boltzmann constant to be set to non-1 by multiplying by it below.
-    kineticEnergyMapIter->second /= static_cast<double>(numParticleMapIter->second) * dimensions;
+    kineticEnergyMapIter->second /= static_cast<double>(numParticleMapIter->second) * degreesOfFreedom;
   }
   return kineticEnergyMul2Map;
 }
