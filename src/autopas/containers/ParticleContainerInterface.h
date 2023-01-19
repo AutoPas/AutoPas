@@ -308,6 +308,46 @@ class ParticleContainerInterface {
   [[nodiscard]] std::set<TraversalOption> getAllTraversals() const {
     return compatibleTraversals::allCompatibleTraversals(this->getContainerType());
   }
+
+  /**
+   * Retrieve the pointer to a particle, identified via a cell and particle index.
+   * These indices are only meaningful in the context of the current container at its current state.
+   * The same indices might (and probably will) yield a different particle for a different container type or might not
+   * even exist.
+   * The only guarantee is that the first particle in the container is at index (0,0).
+   *
+   * @note This function should handle any offsets if used in a parallel iterator.
+   *
+   * @param cellIndex Index of the cell the particle is located in.
+   * @param particleIndex Particle index within the cell.
+   * @param iteratorBehavior Which ownership states should be considered for the next particle.
+   * @param boxMin start of region in which the next particle should be.
+   * @param boxMax end of region in which the next particle should be.
+   * @return Pointer to the particle and indices of the next particle that satisfies the iterator requirements.
+   * If the requested particle does not exist {nullptr, 0, 0} is returned.
+   * If there is no next particle for both indices 0 is returned as this can never be a next particle's indices.
+   * tuple<Particle &, nextCellIndex, nextParticleIndex>
+   */
+  virtual std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                                   IteratorBehavior iteratorBehavior,
+                                                                   const std::array<double, 3> &boxMin,
+                                                                   const std::array<double, 3> &boxMax) const = 0;
+
+  /**
+   * @copydoc getParticle
+   * @note non-const version
+   */
+  std::tuple<Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                     IteratorBehavior iteratorBehavior,
+                                                     const std::array<double, 3> &boxMin,
+                                                     const std::array<double, 3> &boxMax) {
+    const Particle *ptr;
+    size_t nextCellIndex, nextParticleIndex;
+    std::tie(ptr, nextCellIndex, nextParticleIndex) =
+        const_cast<const ParticleContainerInterface<Particle> *>(this)->getParticle(cellIndex, particleIndex,
+                                                                                    iteratorBehavior, boxMin, boxMax);
+    return {const_cast<Particle *>(ptr), nextCellIndex, nextParticleIndex};
+  }
 };
 
 }  // namespace autopas

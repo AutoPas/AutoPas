@@ -198,9 +198,39 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
                                                            IteratorBehavior iteratorBehavior,
                                                            const std::array<double, 3> &boxMin,
                                                            const std::array<double, 3> &boxMax) const override {
-    // FIXME implement me
-    throw "NOT IMPLEMENTED YET";
-    return std::tuple<Particle *, size_t, size_t>();
+    // shortcut if the given index doesn't exist
+    if (cellIndex >= this->_cells.size() or particleIndex >= this->_cells[cellIndex].numParticles()) {
+      return {nullptr, 0, 0};
+    }
+    const Particle *retPtr = &this->_cells[cellIndex][particleIndex];
+
+    // Finding the indices for the next particle
+    const size_t stride = (iteratorBehavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads();
+
+    // FIXME: Region iter: infer start and stop cell index
+    do {
+      // If cell has wrong type, or there are no more particles in this cell jump to the next
+      if ((iteratorBehavior == IteratorBehavior::owned and not _cellBlock.cellCanContainOwnedParticles(cellIndex)) or
+          (iteratorBehavior == IteratorBehavior::halo and not _cellBlock.cellCanContainHaloParticles(cellIndex)) or
+          ++particleIndex >= this->_cells[cellIndex].numParticles()) {
+        // TODO: can this jump be done more efficient if behavior is only halo or owned?
+        cellIndex += stride;
+        particleIndex = 0;
+      }
+      // If we notice that there is nothing else to look at set invalid values, so we get a nullptr next time and break.
+      if (cellIndex > (iteratorBehavior & IteratorBehavior::owned) ? _cellBlock.getLastOwnedCellIndex()
+                                                                   : (this->_cells.size() - 1)) {
+        cellIndex = std::numeric_limits<size_t>::max();
+        break;
+      }
+      // Repeat this as long as the current particle is not interesting.
+      //  - coordinates are in region of interest
+      //  - ownership fits to the iterator behavior
+    } while (not utils::inBox(this->_cells[cellIndex][particleIndex].getR(), boxMin, boxMax) or
+             not(static_cast<unsigned int>(this->_cells[cellIndex][particleIndex].getOwnershipState()) &
+                 static_cast<unsigned int>(iteratorBehavior)));
+
+    return {retPtr, cellIndex, particleIndex};
   }
   bool deleteParticle(Particle &particle) override {
     // FIXME implement me

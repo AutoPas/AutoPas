@@ -203,9 +203,37 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
                                                            IteratorBehavior iteratorBehavior,
                                                            const std::array<double, 3> &boxMin,
                                                            const std::array<double, 3> &boxMax) const override {
-    // FIXME implement me
-    throw "NOT IMPLEMENTED YET";
-    return std::tuple<Particle *, size_t, size_t>();
+    // in this context cell == tower
+
+    // shortcut if the given index doesn't exist
+    if (cellIndex >= this->_towers.size() or particleIndex >= this->_towers[cellIndex].numParticles()) {
+      return {nullptr, 0, 0};
+    }
+    const Particle *retPtr = &this->_towers[cellIndex][particleIndex];
+
+    // Finding the indices for the next particle
+    const size_t stride = (iteratorBehavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads();
+
+    // FIXME: Region iter: infer start and stop cell index
+    do {
+      // TODO: can could be done more efficient if we could decide if a tower contains exclusively halo/owned particles.
+      if (++particleIndex >= this->_towers[cellIndex].numParticles()) {
+        cellIndex += stride;
+        particleIndex = 0;
+      }
+      // If we notice that there is nothing else to look at set invalid values, so we get a nullptr next time and break.
+      if (cellIndex >= this->_towers.size()) {
+        cellIndex = std::numeric_limits<size_t>::max();
+        break;
+      }
+      // Repeat this as long as the current particle is not interesting.
+      //  - coordinates are in region of interest
+      //  - ownership fits to the iterator behavior
+    } while (not utils::inBox(this->_towers[cellIndex][particleIndex].getR(), boxMin, boxMax) or
+             not(static_cast<unsigned int>(this->_towers[cellIndex][particleIndex].getOwnershipState()) &
+                 static_cast<unsigned int>(iteratorBehavior)));
+
+    return {retPtr, cellIndex, particleIndex};
   }
 
   [[nodiscard]] std::vector<Particle> updateContainer(bool keepNeighborListsValid) override {

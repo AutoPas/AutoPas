@@ -26,7 +26,10 @@
 namespace autopas {
 
 /**
- * The octree is a CellBasedParticleContainer that is comprised of two cells:
+ * The octree is a CellBasedParticleContainer that consists internally of two octrees. One for owned and one for halo
+ * particles. It abuses the CellBasedParticleContainer::_cell vector to hold the root nodes for each.
+ *
+ * The tree consists of OctreeNodeWrapper objects, which
  *
  * @tparam Particle
  */
@@ -172,9 +175,69 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
                                                                IteratorBehavior iteratorBehavior,
                                                                const std::array<double, 3> &boxMin,
                                                                const std::array<double, 3> &boxMax) const override {
-    // FIXME implement me
-    throw "NOT IMPLEMENTED YET";
-    return std::tuple<ParticleType *, size_t, size_t>();
+    // in this context cell == leaf cell
+    // The index encodes the location in the octree. Each digit signifies which child of the node to enter. The right
+    // most digit selects the tree, the next the child of the root, and so on.
+
+    // shortcut if the given index doesn't exist
+    if (cellIndex % 10 > 7) {
+      return {nullptr, 0, 0};
+    }
+
+    // FIXME think about parallelism. This if currently disables it.
+    if (autopas_get_thread_num() > 0 and not(iteratorBehavior & IteratorBehavior::forceSequential)) {
+      return {nullptr, 0, 0};
+    }
+
+    // get referenced particle
+    std::vector<size_t> currentCellIndex;
+    // constant heuristic
+    currentCellIndex.reserve(10);
+    currentCellIndex.push_back(cellIndex % 10);
+    cellIndex /= 10;
+    OctreeNodeInterface<Particle> *currentCell = this->_cells[currentCellIndex.back()].getRaw();
+    while (currentCell->hasChildren()) {
+      currentCellIndex.push_back(cellIndex % 10);
+      cellIndex /= 10;
+      currentCell = currentCell->getChild(currentCellIndex.back());
+    }
+    const Particle *retPtr = &(dynamic_cast<OctreeLeafNode<Particle> *>(currentCell)->operator[](particleIndex));
+
+    // Finding the indices for the next particle
+    const size_t stride = (iteratorBehavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads();
+
+    // FIXME: Region iter
+    do {
+      // If cell has wrong type, or there are no more particles in this cell jump to the next
+      if (++particleIndex >= currentCell->getNumberOfParticles()) {
+        // Move up until there are siblings left
+        while (currentCellIndex.back() == 7) {
+          currentCell = currentCell->getParent();
+          currentCellIndex.pop_back();
+        }
+        // Go to the next child of the same parent
+        ++currentCellIndex.back();
+        // If we notice that there is nothing else to look at set invalid values, so we get a nullptr next time and
+        // break.
+        if (currentCellIndex[0] > (iteratorBehavior & IteratorBehavior::owned) ? CellTypes::OWNED : CellTypes::HALO) {
+          cellIndex = 8;
+          break;
+        }
+        currentCell = currentCell->getParent()->getChild(currentCellIndex.back());
+        particleIndex = 0;
+      }
+
+      // Repeat this as long as the current particle is not interesting.
+      //  - coordinates are in region of interest
+      //  - ownership fits to the iterator behavior
+    } while (
+        not utils::inBox((dynamic_cast<OctreeLeafNode<Particle> *>(currentCell)->operator[](particleIndex)).getR(),
+                         boxMin, boxMax) or
+        not(static_cast<unsigned int>((dynamic_cast<OctreeLeafNode<Particle> *>(currentCell)->operator[](particleIndex))
+                                          .getOwnershipState()) &
+            static_cast<unsigned int>(iteratorBehavior)));
+
+    return {retPtr, cellIndex, particleIndex};
   }
 
   [[nodiscard]] ContainerIterator<ParticleType, true> begin(
