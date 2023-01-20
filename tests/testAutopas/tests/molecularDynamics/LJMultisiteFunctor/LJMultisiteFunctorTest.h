@@ -71,13 +71,15 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
    * Inputted molecules are objects of multi-site molecule class, but are expected to have molecule types which consist
    * of a single site at the center-of-mass with site type ID equal to molecule type ID.
    *
-   * @tparam newton3
+   * @tparam newton3 applies Newton's 3rd Law optimization to both functors.
+   * @tparam calculateGlobals both functors calculate global attributes such as potential energy and virial.
+   * @tparam applyShift both functors add a shift to the potential energy.
    * @param molA single-site molecule represented by multi-site molecule class
    * @param molB single-site molecule represented by multi-site molecule class
    * @param PPL
    * @param cutoff
    */
-  template <bool newton3>
+  template <bool newton3, bool calculateGobals, bool applyShift>
   void singleSiteSanityCheck(autopas::MultisiteMoleculeLJ molA, autopas::MultisiteMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 
   /**

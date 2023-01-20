@@ -193,14 +193,14 @@ void LJMultisiteFunctorTest::testSuiteAoSForceCalculation(autopas::MultisiteMole
   testAoSForceCalculation<true, true, true>(molA, molB, PPL, cutoff);
 }
 
-template<bool newton3>
+template<bool newton3, bool calculateGobals, bool applyShift>
 void LJMultisiteFunctorTest::singleSiteSanityCheck(autopas::MultisiteMoleculeLJ molA, autopas::MultisiteMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
   using autopas::MoleculeLJ;
   using autopas::MoleculeLJ;
 
   // create functors
-  autopas::LJMultisiteFunctor<autopas::MultisiteMoleculeLJ, false, true, autopas::FunctorN3Modes::Both, false, true> multiSiteFunctor(cutoff, PPL);
-  autopas::LJFunctor<autopas::MoleculeLJ, false, true, autopas::FunctorN3Modes::Both, false, true> singleSiteFunctor(cutoff, PPL);
+  autopas::LJMultisiteFunctor<autopas::MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGobals, true> multiSiteFunctor(cutoff, PPL);
+  autopas::LJFunctor<autopas::MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGobals, true> singleSiteFunctor(cutoff, PPL);
 
   // create single site versions of the molecules
   autopas::MoleculeLJ molASimple;
@@ -211,6 +211,7 @@ void LJMultisiteFunctorTest::singleSiteSanityCheck(autopas::MultisiteMoleculeLJ 
   molASimple.setOldF(molA.getOldF());
   molASimple.setID(molA.getID());
   molASimple.setOwnershipState(molA.getOwnershipState());
+
   autopas::MoleculeLJ molBSimple;
   molBSimple.setTypeId(PPL.getSiteTypes(molB.getTypeId())[0]);
   molBSimple.setR(molB.getR());
@@ -563,8 +564,23 @@ TEST_F(LJMultisiteFunctorTest, singleSiteSanityCheck) {
 
   PPL.calculateMixingCoefficients();
 
-  singleSiteSanityCheck<true>(mol0,mol1,PPL,1.);
-  singleSiteSanityCheck<false>(mol0,mol1,PPL,1.);
+  // N3L optimization disabled, global calculation disabled.
+  singleSiteSanityCheck<false, false, false>(mol0,mol1,PPL,1.);
+
+  // N3L optimization enabled, global calculation disabled.
+  singleSiteSanityCheck<true, false, false>(mol0,mol1,PPL,1.);
+
+  // N3L optimization disabled, global calculation enabled, apply shift disabled.
+  singleSiteSanityCheck<false, true, false>(mol0,mol1,PPL,1.);
+
+  // N3L optimization enabled, global calculation enabled, apply shift disabled.
+  singleSiteSanityCheck<true, true, false>(mol0,mol1,PPL,1.);
+
+  // N3L optimization disabled, global calculation enabled, apply shift enabled.
+  singleSiteSanityCheck<false, true, true>(mol0,mol1,PPL,1.);
+
+  // N3L optimization enabled, global calculation enabled, apply shift enabled.
+  singleSiteSanityCheck<true, true, true>(mol0,mol1,PPL,1.);
 }
 
 /*
