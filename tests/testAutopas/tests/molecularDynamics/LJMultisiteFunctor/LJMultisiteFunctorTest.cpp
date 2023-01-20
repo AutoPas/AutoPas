@@ -45,7 +45,7 @@ void LJMultisiteFunctorTest::generateMolecules(std::vector<autopas::MultisiteMol
 }
 
 
-template<bool newton3>
+template<bool newton3, bool calculateGlobals, bool applyShift>
 void LJMultisiteFunctorTest::testAoSForceCalculation(autopas::MultisiteMoleculeLJ molA, autopas::MultisiteMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
   using autopas::utils::ArrayMath::add;
   using autopas::utils::ArrayMath::sub;
@@ -61,7 +61,7 @@ void LJMultisiteFunctorTest::testAoSForceCalculation(autopas::MultisiteMoleculeL
   const auto siteTypesB = PPL.getSiteTypes(molTypeB);
 
 
-  // determine expected forces + torques
+  // determine expected forces + torques (+ globals)
   std::array<double,3> expectedForceA{};
   std::array<double,3> expectedTorqueA{};
   std::array<double,3> expectedForceB{};
@@ -71,6 +71,9 @@ void LJMultisiteFunctorTest::testAoSForceCalculation(autopas::MultisiteMoleculeL
     expectedForceB = {0.,0.,0.};
     expectedTorqueB = {0.,0.,0.};
   }
+
+  double expectedPotentialEnergySum{0.};
+  std::array<double, 3> expectedVirialSum{0., 0., 0.};
 
   // determine if within cutoff
   if (dot(sub(molA.getR(),molB.getR()),sub(molA.getR(),molB.getR())) < cutoff * cutoff) {
@@ -88,8 +91,6 @@ void LJMultisiteFunctorTest::testAoSForceCalculation(autopas::MultisiteMoleculeL
 
         const auto sigmaSquared = PPL.getMixingData(siteTypesA[siteA],siteTypesB[siteB]).sigmaSquared;
         const auto epsilon24 = PPL.getMixingData(siteTypesA[siteA],siteTypesB[siteB]).epsilon24;
-
-        // todo shift6
 
         const auto invDistSquared = 1. / distanceSquared;
         const auto lj2 = sigmaSquared * invDistSquared;
@@ -110,6 +111,19 @@ void LJMultisiteFunctorTest::testAoSForceCalculation(autopas::MultisiteMoleculeL
           const auto torqueOnB = cross(rotatedSitePositionsB[siteB], force);
           expectedTorqueB = sub(expectedTorqueB,torqueOnB);
         }
+
+        if constexpr (calculateGlobals) {
+          const auto shift6 = applyShift ? PPL.getMixingData(siteTypesA[siteA],siteTypesB[siteB]).shift6 : 0;
+          const auto shift = shift6 / 6.;
+          const auto epsilon4 = epsilon24 / 6.;
+
+          const auto potentialEnergy = epsilon4 * lj12m6 + shift;
+          const auto virial = newton3 ? autopas::utils::ArrayMath::mul(displacement, force) :
+                                      autopas::utils::ArrayMath::mulScalar(autopas::utils::ArrayMath::mul(displacement, force),0.5);
+
+          expectedPotentialEnergySum += potentialEnergy;
+          expectedVirialSum = autopas::utils::ArrayMath::add(expectedVirialSum, virial);
+        }
       }
     }
   } else {
@@ -122,10 +136,11 @@ void LJMultisiteFunctorTest::testAoSForceCalculation(autopas::MultisiteMoleculeL
   // calculate forces and torques using AoS functor
 
   // create functor
-  // todo add options for applyShift, useMixing, calculateGlobals
-  autopas::LJMultisiteFunctor<autopas::MultisiteMoleculeLJ, false, true, autopas::FunctorN3Modes::Both, false, true> functor(cutoff, PPL);
+  autopas::LJMultisiteFunctor<autopas::MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true> functor(cutoff, PPL);
 
+  functor.initTraversal();
   functor.AoSFunctor(molA,molB,newton3);
+  functor.endTraversal(newton3);
 
   for (size_t i = 0; i < 3; ++i) {
     EXPECT_NEAR(molA.getF()[i], expectedForceA[i], 1e-13) << "molA: Unexpected force[" << i << "] = "
@@ -146,6 +161,15 @@ void LJMultisiteFunctorTest::testAoSForceCalculation(autopas::MultisiteMoleculeL
     EXPECT_NEAR(molB.getTorque()[i], expectedTorqueB[i], 1e-13) << "molB: Unexpected force[" << i << "] = "
                                                                         << molB.getTorque()[i] << " != "
                                                                         << expectedTorqueB[i] << " as expected.";
+  }
+  if constexpr (calculateGlobals) {
+    EXPECT_NEAR(functor.getPotentialEnergy(), expectedPotentialEnergySum, 1e-13) << "Unexpected potential energy = "
+    << functor.getPotentialEnergy() << " != " << expectedPotentialEnergySum << " as expected.";
+    for (size_t i = 0; i < 3; ++i) {
+      EXPECT_NEAR(functor.getVirial()[i], expectedVirialSum[i], 1e-13) << "Unexpected virial[" << i << "] = "
+                                                                  << functor.getVirial()[i] << " != "
+                                                                  << expectedVirialSum[i] << " as expected.";
+    }
   }
 }
 
