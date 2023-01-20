@@ -169,10 +169,16 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     Particle pCopy = haloParticle;
     pCopy.setOwnershipState(OwnershipState::halo);
 
+    typename ContainerIterator<Particle, true, true>::ParticleVecType additionalVectors;
+    additionalVectors.reserve(_particlesToAdd.size());
+    for (auto &v : _particlesToAdd) {
+      additionalVectors.push_back(&v);
+    }
+
     // this might be called from a parallel region so force this iterator to be sequential
     for (auto it = getRegionIterator(utils::ArrayMath::subScalar(pCopy.getR(), this->getVerletSkin() / 2),
                                      utils::ArrayMath::addScalar(pCopy.getR(), this->getVerletSkin() / 2),
-                                     IteratorBehavior::halo | IteratorBehavior::forceSequential);
+                                     IteratorBehavior::halo | IteratorBehavior::forceSequential, &additionalVectors);
          it.isValid(); ++it) {
       if (pCopy.getID() == it->getID()) {
         *it = pCopy;
