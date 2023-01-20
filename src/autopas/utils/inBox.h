@@ -30,7 +30,7 @@ bool inBox(const std::array<T, 3> &position, const std::array<T, 3> &low, const 
   for (int d = 0; d < 3; ++d) {
     const bool isLargerThanLower = position[d] >= low[d];
     const bool isSmallerThanHigher = position[d] < high[d];
-    inBox &= isLargerThanLower and isSmallerThanHigher;
+    inBox = inBox and isLargerThanLower and isSmallerThanHigher;
   }
   return inBox;
 }
