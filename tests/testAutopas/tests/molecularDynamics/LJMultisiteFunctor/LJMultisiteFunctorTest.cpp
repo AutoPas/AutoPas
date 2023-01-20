@@ -73,7 +73,7 @@ void LJMultisiteFunctorTest::testAoSForceCalculation(autopas::MultisiteMoleculeL
   }
 
   double expectedPotentialEnergySum{0.};
-  std::array<double, 3> expectedVirialSum{0., 0., 0.};
+  double expectedVirialSum{0.};
 
   // determine if within cutoff
   if (dot(sub(molA.getR(),molB.getR()),sub(molA.getR(),molB.getR())) < cutoff * cutoff) {
@@ -118,11 +118,12 @@ void LJMultisiteFunctorTest::testAoSForceCalculation(autopas::MultisiteMoleculeL
           const auto epsilon4 = epsilon24 / 6.;
 
           const auto potentialEnergy = epsilon4 * lj12m6 + shift;
-          const auto virial = newton3 ? autopas::utils::ArrayMath::mul(displacement, force) :
+          const auto virialDimensionwiseContributions = newton3 ? autopas::utils::ArrayMath::mul(displacement, force) :
                                       autopas::utils::ArrayMath::mulScalar(autopas::utils::ArrayMath::mul(displacement, force),0.5);
 
           expectedPotentialEnergySum += potentialEnergy;
-          expectedVirialSum = autopas::utils::ArrayMath::add(expectedVirialSum, virial);
+          expectedVirialSum += virialDimensionwiseContributions[0] + virialDimensionwiseContributions[1]
+                               + virialDimensionwiseContributions[2];
         }
       }
     }
@@ -165,12 +166,31 @@ void LJMultisiteFunctorTest::testAoSForceCalculation(autopas::MultisiteMoleculeL
   if constexpr (calculateGlobals) {
     EXPECT_NEAR(functor.getPotentialEnergy(), expectedPotentialEnergySum, 1e-13) << "Unexpected potential energy = "
     << functor.getPotentialEnergy() << " != " << expectedPotentialEnergySum << " as expected.";
-    for (size_t i = 0; i < 3; ++i) {
-      EXPECT_NEAR(functor.getVirial()[i], expectedVirialSum[i], 1e-13) << "Unexpected virial[" << i << "] = "
-                                                                  << functor.getVirial()[i] << " != "
-                                                                  << expectedVirialSum[i] << " as expected.";
-    }
+
+    EXPECT_NEAR(functor.getVirial(), expectedVirialSum, 1e-13) << "Unexpected virial = "
+                                                                << functor.getVirial() << " != "
+                                                                << expectedVirialSum << " as expected.";
   }
+}
+
+void LJMultisiteFunctorTest::testSuiteAoSForceCalculation(autopas::MultisiteMoleculeLJ molA, autopas::MultisiteMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
+  // N3L Disabled, No Calculating Globals
+  testAoSForceCalculation<false, false, false>(molA, molB, PPL, cutoff);
+
+  // N3L Enabled, No Calculating Globals
+  testAoSForceCalculation<true, false, false>(molA, molB, PPL, cutoff);
+
+  // N3L Disabled, Calculating Globals, no shift applied
+  testAoSForceCalculation<false, true, false>(molA, molB, PPL, cutoff);
+
+  // N3L Disabled, Calculating Globals, shift applied
+  testAoSForceCalculation<false, true, true>(molA, molB, PPL, cutoff);
+
+  // N3L Enabled, Calculating Globals, no shift applied
+  testAoSForceCalculation<true, true, false>(molA, molB, PPL, cutoff);
+
+  // N3L Enabled, Calculating Globals, shift applied
+  testAoSForceCalculation<true, true, true>(molA, molB, PPL, cutoff);
 }
 
 template<bool newton3>
@@ -492,66 +512,29 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
   PPL.calculateMixingCoefficients();
 
 
-  // ----------  newton3 = true   ----------
-
   // tests: 1 site <-> 2 site interaction
-  testAoSForceCalculation<true>(mol0, mol1,PPL,1.);
+  testSuiteAoSForceCalculation(mol0, mol1,PPL,1.);
 
   // tests: 1 site <-> 2 site interaction, where sites are aligned such that all 3 sites are along the same line
-  testAoSForceCalculation<true>(mol0, mol2,PPL,1.);
+  testSuiteAoSForceCalculation(mol0, mol2,PPL,1.);
 
   // tests: 2 site <-> 3 site interaction
-  testAoSForceCalculation<true>(mol1, mol3,PPL,1.);
+  testSuiteAoSForceCalculation(mol1, mol3,PPL,1.);
 
   // tests: 3 site <-> 3 site interaction, where one has a nontrivial (needs rotating) quaternion
-  testAoSForceCalculation<true>(mol3, mol4,PPL,1.);
+  testSuiteAoSForceCalculation(mol3, mol4,PPL,1.);
 
   // tests: 2 site <-> 2 site, where molecules are beyond cutoff
-  testAoSForceCalculation<true>(mol1, mol5,PPL,1.);
+  testSuiteAoSForceCalculation(mol1, mol5,PPL,1.);
 
   // tests: 1 site <-> 2 site, where one site is beyond cutoff, the other within; and CoM beyond cutoff
-  testAoSForceCalculation<true>(mol0, mol6,PPL,1.);
+  testSuiteAoSForceCalculation(mol0, mol6,PPL,1.);
 
   // tests: 1 site <-> 2 site, where one site is beyond cutoff, the other within; and CoM within cutoff
-  testAoSForceCalculation<true>(mol0, mol7,PPL,1.);
+  testSuiteAoSForceCalculation(mol0, mol7,PPL,1.);
 
   // tests: 3 site <-> 3 site, with some different site types
-  testAoSForceCalculation<true>(mol4, mol8,PPL,1.);
-
-
-  // ----------  newton3 = false  ----------
-
-  // tests: 1 site <-> 2 site interaction
-  testAoSForceCalculation<false>(mol0, mol1,PPL,1.);
-  testAoSForceCalculation<false>(mol1, mol0,PPL,1.);
-
-  // tests: 1 site <-> 2 site interaction, where sites are aligned such that all 3 sites are along the same line
-  testAoSForceCalculation<false>(mol0, mol2,PPL,1.);
-  testAoSForceCalculation<false>(mol2, mol0,PPL,1.);
-
-  // tests: 2 site <-> 3 site interaction
-  testAoSForceCalculation<false>(mol1, mol3,PPL,1.);
-  testAoSForceCalculation<false>(mol3, mol1,PPL,1.);
-
-  // tests: 3 site <-> 3 site interaction, where one has a nontrivial (needs rotating) quaternion
-  testAoSForceCalculation<false>(mol3, mol4,PPL,1.);
-  testAoSForceCalculation<false>(mol4, mol3,PPL,1.);
-
-  // tests: 2 site <-> 2 site, where molecules are beyond cutoff
-  testAoSForceCalculation<false>(mol1, mol5,PPL,1.);
-  testAoSForceCalculation<false>(mol5, mol1,PPL,1.);
-
-  // tests: 1 site <-> 2 site, where one site is beyond cutoff, the other within; and CoM beyond cutoff
-  testAoSForceCalculation<false>(mol0, mol6,PPL,1.);
-  testAoSForceCalculation<false>(mol6, mol0,PPL,1.);
-
-  // tests: 1 site <-> 2 site, where one site is beyond cutoff, the other within; and CoM within cutoff
-  testAoSForceCalculation<false>(mol0, mol7,PPL,1.);
-  testAoSForceCalculation<false>(mol7, mol0,PPL,1.);
-
-  // tests: 3 site <-> 3 site, with some different site types
-  testAoSForceCalculation<false>(mol4, mol8,PPL,1.);
-  testAoSForceCalculation<false>(mol8, mol4,PPL,1.);
+  testSuiteAoSForceCalculation(mol4, mol8,PPL,1.);
 
 }
 

@@ -39,7 +39,11 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
 
   /**
    * Tests the correctness of the AoS functor for a given molA, molB, PPL, and cutoff.
-   * @tparam newton3
+   * @tparam newton3 Applies N3L optimization to the AoS Functor.
+   * @tparam calculateGlobals The AoS Functor calculates the potential energy and virial of the system of two molecules
+   * and the results are tested against expected values.
+   * @tparam applyShift The AoS Functor applies a shift to the potential energy such that it becomes continuous (and the
+   * expected value is adjusted accordingly).
    * @param molA
    * @param molB
    * @param PPL
@@ -47,6 +51,19 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
    */
   template <bool newton3, bool calculateGlobals, bool applyShift>
   void testAoSForceCalculation(autopas::MultisiteMoleculeLJ molA, autopas::MultisiteMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
+
+  /**
+   * Runs a suite of testAoSForceCalculation functions such that the AoS Functor is tested for the given arguments with
+   * all combinations of
+   * * with and without Newton's 3rd law optimization.
+   * * with and without the calculation of global attributes i.e. potential energy and virial
+   * * if calculating global attributes, with and without applying a shift to the potential energy.
+   * @param molA
+   * @param molB
+   * @param PPL
+   * @param cutoff
+   */
+  void testSuiteAoSForceCalculation(autopas::MultisiteMoleculeLJ molA, autopas::MultisiteMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 
   /**
    * Compares the forces produced by the single-site functor and the multi-site functor applied to single-site molecules.
