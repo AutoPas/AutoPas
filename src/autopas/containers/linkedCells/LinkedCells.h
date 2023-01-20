@@ -259,16 +259,17 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     return not particleVec.empty();
   }
 
-  [[nodiscard]] ContainerIterator<ParticleType, true> begin(
+  [[nodiscard]] ContainerIterator<ParticleType, true, false> begin(
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<ParticleType, true>::ParticleVecType *additionalVectors = nullptr) override {
-    return ContainerIterator<ParticleType, true>(*this, behavior, additionalVectors);
+      typename ContainerIterator<ParticleType, true, false>::ParticleVecType *additionalVectors = nullptr) override {
+    return ContainerIterator<ParticleType, true, false>(*this, behavior, additionalVectors);
   }
 
-  [[nodiscard]] ContainerIterator<ParticleType, false> begin(
+  [[nodiscard]] ContainerIterator<ParticleType, false, false> begin(
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<ParticleType, false>::ParticleVecType *additionalVectors = nullptr) const override {
-    return ContainerIterator<ParticleType, false>(*this, behavior, additionalVectors);
+      typename ContainerIterator<ParticleType, false, false>::ParticleVecType *additionalVectors =
+          nullptr) const override {
+    return ContainerIterator<ParticleType, false, false>(*this, behavior, additionalVectors);
   }
 
   /**
@@ -315,60 +316,24 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     }
   }
 
-  [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
-                                                                              const std::array<double, 3> &higherCorner,
-                                                                              IteratorBehavior behavior) override {
+  [[nodiscard]] ContainerIterator<ParticleType, true, true> getRegionIterator(
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
+      typename ContainerIterator<ParticleType, true, true>::ParticleVecType *additionalVectors) override {
     // We increase the search region by skin, as particles can move over cell borders.
-    const auto startIndex3D =
-        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::subScalar(lowerCorner, this->getVerletSkin()));
-    const auto stopIndex3D =
-        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::addScalar(higherCorner, this->getVerletSkin()));
+    const auto boxMin = utils::ArrayMath::subScalar(lowerCorner, this->getVerletSkin());
+    const auto boxMax = utils::ArrayMath::addScalar(higherCorner, this->getVerletSkin());
 
-    const size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
-                                      (stopIndex3D[2] - startIndex3D[2] + 1);
-    std::vector<size_t> cellsOfInterest;
-    cellsOfInterest.reserve(numCellsOfInterest);
-
-    const auto &cellsPerDimensionWithHalo = this->_cellBlock.getCellsPerDimensionWithHalo();
-    for (size_t z = startIndex3D[2]; z <= stopIndex3D[2]; ++z) {
-      for (size_t y = startIndex3D[1]; y <= stopIndex3D[1]; ++y) {
-        for (size_t x = startIndex3D[0]; x <= stopIndex3D[0]; ++x) {
-          cellsOfInterest.push_back(utils::ThreeDimensionalMapping::threeToOneD({x, y, z}, cellsPerDimensionWithHalo));
-        }
-      }
-    }
-
-    return ParticleIteratorWrapper<ParticleType, true>(
-        new internal::RegionParticleIterator<ParticleType, ParticleCell, true>(
-            &this->_cells, lowerCorner, higherCorner, std::move(cellsOfInterest), &_cellBlock, behavior, nullptr));
+    return ContainerIterator<ParticleType, true, true>(*this, behavior, additionalVectors, boxMin, boxMax);
   }
 
-  [[nodiscard]] ParticleIteratorWrapper<ParticleType, false> getRegionIterator(
-      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
-      IteratorBehavior behavior) const override {
+  [[nodiscard]] ContainerIterator<ParticleType, false, true> getRegionIterator(
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
+      typename ContainerIterator<ParticleType, false, true>::ParticleVecType *additionalVectors) const override {
     // We increase the search region by skin, as particles can move over cell borders.
-    const auto startIndex3D =
-        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::subScalar(lowerCorner, this->getVerletSkin()));
-    const auto stopIndex3D =
-        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::addScalar(higherCorner, this->getVerletSkin()));
+    const auto boxMin = utils::ArrayMath::subScalar(lowerCorner, this->getVerletSkin());
+    const auto boxMax = utils::ArrayMath::addScalar(higherCorner, this->getVerletSkin());
 
-    const size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
-                                      (stopIndex3D[2] - startIndex3D[2] + 1);
-    std::vector<size_t> cellsOfInterest;
-    cellsOfInterest.reserve(numCellsOfInterest);
-
-    const auto &cellsPerDimensionWithHalo = this->_cellBlock.getCellsPerDimensionWithHalo();
-    for (size_t z = startIndex3D[2]; z <= stopIndex3D[2]; ++z) {
-      for (size_t y = startIndex3D[1]; y <= stopIndex3D[1]; ++y) {
-        for (size_t x = startIndex3D[0]; x <= stopIndex3D[0]; ++x) {
-          cellsOfInterest.push_back(utils::ThreeDimensionalMapping::threeToOneD({x, y, z}, cellsPerDimensionWithHalo));
-        }
-      }
-    }
-
-    return ParticleIteratorWrapper<ParticleType, false>(
-        new internal::RegionParticleIterator<ParticleType, ParticleCell, false>(
-            &this->_cells, lowerCorner, higherCorner, std::move(cellsOfInterest), &_cellBlock, behavior, nullptr));
+    return ContainerIterator<ParticleType, false, true>(*this, behavior, additionalVectors, boxMin, boxMax);
   }
 
   /**

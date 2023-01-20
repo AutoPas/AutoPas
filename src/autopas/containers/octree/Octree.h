@@ -254,40 +254,29 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     }
   }
 
-  [[nodiscard]] ContainerIterator<ParticleType, true> begin(
+  [[nodiscard]] ContainerIterator<ParticleType, true, false> begin(
       IteratorBehavior behavior,
-      typename ContainerIterator<ParticleType, true>::ParticleVecType *additionalVectors = nullptr) override {
-    return ContainerIterator<ParticleType, true>(*this, behavior, additionalVectors);
+      typename ContainerIterator<ParticleType, true, false>::ParticleVecType *additionalVectors = nullptr) override {
+    return ContainerIterator<ParticleType, true, false>(*this, behavior, additionalVectors);
   }
 
-  [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
-                                                                              const std::array<double, 3> &higherCorner,
-                                                                              IteratorBehavior behavior) override {
-    std::vector<size_t> cellsOfInterest;
-    if (behavior & IteratorBehavior::owned) {
-      cellsOfInterest.push_back(CellTypes::OWNED);
-    }
-    if (behavior & IteratorBehavior::halo) {
-      cellsOfInterest.push_back(CellTypes::HALO);
-    }
-    return ParticleIteratorWrapper<ParticleType, true>(
-        new internal::RegionParticleIterator<ParticleType, ParticleCell, true>(&this->_cells, lowerCorner, higherCorner,
-                                                                               std::move(cellsOfInterest), this, behavior));
+  [[nodiscard]] ContainerIterator<ParticleType, false, false> begin(
+      IteratorBehavior behavior,
+      typename ContainerIterator<ParticleType, false, false>::ParticleVecType *additionalVectors =
+          nullptr) const override {
+    return ContainerIterator<ParticleType, false, false>(*this, behavior, additionalVectors);
   }
 
-  [[nodiscard]] ParticleIteratorWrapper<ParticleType, false> getRegionIterator(
-      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
-      IteratorBehavior behavior) const override {
-    std::vector<size_t> cellsOfInterest;
-    if (behavior & IteratorBehavior::owned) {
-      cellsOfInterest.push_back(CellTypes::OWNED);
-    }
-    if (behavior & IteratorBehavior::halo) {
-      cellsOfInterest.push_back(CellTypes::HALO);
-    }
-    return ParticleIteratorWrapper<ParticleType, false>(
-        new internal::RegionParticleIterator<ParticleType, ParticleCell, false>(
-            &this->_cells, lowerCorner, higherCorner, std::move(cellsOfInterest), this, behavior));
+  [[nodiscard]] ContainerIterator<ParticleType, true, true> getRegionIterator(
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
+      typename ContainerIterator<Particle, true, true>::ParticleVecType *additionalVectors) override {
+    return ContainerIterator<ParticleType, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
+  }
+
+  [[nodiscard]] ContainerIterator<ParticleType, false, true> getRegionIterator(
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
+      typename ContainerIterator<Particle, false, true>::ParticleVecType *additionalVectors) const override {
+    return ContainerIterator<ParticleType, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
   /**

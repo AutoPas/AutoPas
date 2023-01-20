@@ -53,13 +53,25 @@ class AutoPas {
    * Define the iterator_t for simple use, also from the outside.
    * Helps to, e.g., wrap the AutoPas iterators
    */
-  using iterator_t = autopas::ContainerIterator<Particle, true>;
+  using IteratorT = autopas::ContainerIterator<Particle, true, false>;
 
   /**
    * Define the const_iterator_t for simple use, also from the outside.
    * Helps to, e.g., wrap the AutoPas iterators
    */
-  using const_iterator_t = autopas::ContainerIterator<Particle, false>;
+  using ConstIteratorT = autopas::ContainerIterator<Particle, false, false>;
+
+  /**
+   * Define the iterator_t for simple use, also from the outside.
+   * Helps to, e.g., wrap the AutoPas iterators
+   */
+  using RegionIteratorT = autopas::ContainerIterator<Particle, true, true>;
+
+  /**
+   * Define the const_iterator_t for simple use, also from the outside.
+   * Helps to, e.g., wrap the AutoPas iterators
+   */
+  using RegionConstIteratorT = autopas::ContainerIterator<Particle, false, true>;
 
   /**
    * Constructor for the autopas class.
@@ -151,7 +163,14 @@ class AutoPas {
    *
    * @param iter Needs to be a modify-able iterator.
    */
-  void deleteParticle(iterator_t &iter);
+  void deleteParticle(IteratorT &iter);
+
+  /**
+   * @copydoc deleteParticle(IteratorT &iter)
+   *
+   * Region Iterator version.
+   */
+  void deleteParticle(RegionIteratorT &iter);
 
   /**
    * Deletes the given particle and leaves the container in a valid state.
@@ -181,13 +200,13 @@ class AutoPas {
    * particles, or both.
    * @return iterator to the first particle.
    */
-  iterator_t begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo);
+  IteratorT begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo);
 
   /**
    * @copydoc begin()
    * @note const version
    */
-  const_iterator_t begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
+  ConstIteratorT begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
 
   /**
    * execute code on all particles in parallel as defined by a lambda function
@@ -287,7 +306,7 @@ class AutoPas {
    * @copydoc begin()
    * @note cbegin will guarantee to return a const_iterator.
    */
-  const_iterator_t cbegin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const { return begin(behavior); }
+  ConstIteratorT cbegin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const { return begin(behavior); }
 
   /**
    * Helper to enable range-based for loops for the AutoPas object.
@@ -307,14 +326,15 @@ class AutoPas {
    * particles, or both.
    * @return iterator to iterate over all particles in a specific region
    */
-  iterator_t getRegionIterator(std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-                               IteratorBehavior behavior = IteratorBehavior::ownedOrHalo);
+  RegionIteratorT getRegionIterator(const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
+                                    IteratorBehavior behavior = IteratorBehavior::ownedOrHalo);
   /**
    * @copydoc getRegionIterator()
    * @note const version
    */
-  const_iterator_t getRegionIterator(std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-                                     IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
+  RegionConstIteratorT getRegionIterator(const std::array<double, 3> &lowerCorner,
+                                         const std::array<double, 3> &higherCorner,
+                                         IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
 
   /**
    * Execute code on all particles in a certain region in parallel as defined by a lambda function.

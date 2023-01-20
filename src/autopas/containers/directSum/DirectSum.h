@@ -146,16 +146,17 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
         utils::ArrayMath::sub(this->getBoxMax(), this->getBoxMin()), 0);
   }
 
-  [[nodiscard]] ContainerIterator<ParticleType, true> begin(
+  [[nodiscard]] ContainerIterator<ParticleType, true, false> begin(
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<ParticleType, true>::ParticleVecType *additionalVectors = nullptr) override {
-    return ContainerIterator<ParticleType, true>(*this, behavior, additionalVectors);
+      typename ContainerIterator<ParticleType, true, false>::ParticleVecType *additionalVectors = nullptr) override {
+    return ContainerIterator<ParticleType, true, false>(*this, behavior, additionalVectors);
   }
 
-  [[nodiscard]] ContainerIterator<ParticleType, false> begin(
+  [[nodiscard]] ContainerIterator<ParticleType, false, false> begin(
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<ParticleType, false>::ParticleVecType *additionalVectors = nullptr) const override {
-    return ContainerIterator<ParticleType, false>(*this, behavior, additionalVectors);
+      typename ContainerIterator<ParticleType, false, false>::ParticleVecType *additionalVectors =
+          nullptr) const override {
+    return ContainerIterator<ParticleType, false, false>(*this, behavior, additionalVectors);
   }
 
   /**
@@ -192,46 +193,16 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     }
   }
 
-  [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
-                                                                              const std::array<double, 3> &higherCorner,
-                                                                              IteratorBehavior behavior) override {
-    std::vector<size_t> cellsOfInterest;
-
-    if (behavior & IteratorBehavior::owned) {
-      cellsOfInterest.push_back(0);
-    }
-    if (behavior & IteratorBehavior::halo) {
-      cellsOfInterest.push_back(1);
-    }
-    // sanity check
-    if (cellsOfInterest.empty()) {
-      utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
-    }
-
-    return ParticleIteratorWrapper<ParticleType, true>(
-        new internal::RegionParticleIterator<ParticleType, ParticleCell, true>(
-            &this->_cells, lowerCorner, higherCorner, std::move(cellsOfInterest), &_cellBorderFlagManager, behavior, nullptr));
+  [[nodiscard]] ContainerIterator<ParticleType, true, true> getRegionIterator(
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
+      typename ContainerIterator<ParticleType, true, true>::ParticleVecType *additionalVectors) override {
+    return ContainerIterator<ParticleType, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
-  [[nodiscard]] ParticleIteratorWrapper<ParticleType, false> getRegionIterator(
-      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
-      IteratorBehavior behavior) const override {
-    std::vector<size_t> cellsOfInterest;
-
-    if (behavior & IteratorBehavior::owned) {
-      cellsOfInterest.push_back(0);
-    }
-    if (behavior & IteratorBehavior::halo) {
-      cellsOfInterest.push_back(1);
-    }
-    // sanity check
-    if (cellsOfInterest.empty()) {
-      utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
-    }
-
-    return ParticleIteratorWrapper<ParticleType, false>(
-        new internal::RegionParticleIterator<ParticleType, ParticleCell, false>(
-            &this->_cells, lowerCorner, higherCorner, std::move(cellsOfInterest), &_cellBorderFlagManager, behavior, nullptr));
+  [[nodiscard]] ContainerIterator<ParticleType, false, true> getRegionIterator(
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
+      typename ContainerIterator<ParticleType, false, true>::ParticleVecType *additionalVectors) const override {
+    return ContainerIterator<ParticleType, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
   /**

@@ -7,7 +7,7 @@
 #pragma once
 #include <limits>
 
-#include "autopas/iterators/ParticleIteratorWrapper.h"
+#include "autopas/iterators/ContainerIterator.h"
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/utils/logging/Logger.h"
@@ -297,40 +297,52 @@ class LogicHandler {
   }
 
   /**
-   * @copydoc AutoPas::begin()
+   * Create the additional vectors vector for a given iterator behavior.
+   * @tparam Iterator
+   * @param behavior
+   * @return Vector of pointers to buffer vectors.
    */
-  autopas::ParticleIteratorWrapper<Particle, true> begin(IteratorBehavior behavior) {
-    /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
-    auto iter = _autoTuner.getContainer()->begin(behavior);
+  template <class Iterator>
+  typename Iterator::ParticleVecType gatherAdditionalVectors(IteratorBehavior behavior) {
+    typename Iterator::ParticleVecType additionalVectors;
+    additionalVectors.reserve(static_cast<bool>(behavior & IteratorBehavior::owned) * _particleBuffer.size() +
+                              static_cast<bool>(behavior & IteratorBehavior::halo) * _haloParticleBuffer.size());
     if (behavior & IteratorBehavior::owned) {
-      iter.addAdditionalVectors(_particleBuffer);
+      for (auto &buffer : _particleBuffer) {
+        additionalVectors.push_back(&buffer);
+      }
     }
     if (behavior & IteratorBehavior::halo) {
-      iter.addAdditionalVectors(_haloParticleBuffer);
+      for (auto &buffer : _haloParticleBuffer) {
+        additionalVectors.push_back(&buffer);
+      }
     }
-    return iter;
+    return additionalVectors;
   }
 
   /**
    * @copydoc AutoPas::begin()
    */
-  autopas::ParticleIteratorWrapper<Particle, false> begin(IteratorBehavior behavior) const {
-    /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
-    auto iter = std::as_const(_autoTuner).getContainer()->begin(behavior);
-    if (behavior & IteratorBehavior::owned) {
-      iter.addAdditionalVectors(_particleBuffer);
-    }
-    if (behavior & IteratorBehavior::halo) {
-      iter.addAdditionalVectors(_haloParticleBuffer);
-    }
-    return iter;
+  autopas::ContainerIterator<Particle, true, false> begin(IteratorBehavior behavior) {
+    typename ContainerIterator<Particle, true, false>::ParticleVecType additionalVectors =
+        gatherAdditionalVectors(behavior);
+    return _autoTuner.getContainer()->begin(behavior, &additionalVectors);
+  }
+
+  /**
+   * @copydoc AutoPas::begin()
+   */
+  autopas::ContainerIterator<Particle, false, false> begin(IteratorBehavior behavior) const {
+    typename ContainerIterator<Particle, false, false>::ParticleVecType additionalVectors =
+        gatherAdditionalVectors(behavior);
+    return std::as_const(_autoTuner).getContainer()->begin(behavior, &additionalVectors);
   }
 
   /**
    * @copydoc AutoPas::getRegionIterator()
    */
-  autopas::ParticleIteratorWrapper<Particle, true> getRegionIterator(std::array<double, 3> lowerCorner,
-                                                                     std::array<double, 3> higherCorner,
+  autopas::ContainerIterator<Particle, true, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
+                                                                     const std::array<double, 3> &higherCorner,
                                                                      IteratorBehavior behavior) {
     // sanity check: Most of our stuff depends on `inBox` which does not handle lowerCorner > higherCorner well.
     for (size_t d = 0; d < 3; ++d) {
@@ -343,22 +355,16 @@ class LogicHandler {
       }
     }
 
-    /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
-    auto iter = _autoTuner.getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior);
-    if (behavior & IteratorBehavior::owned) {
-      iter.addAdditionalVectors(_particleBuffer);
-    }
-    if (behavior & IteratorBehavior::halo) {
-      iter.addAdditionalVectors(_haloParticleBuffer);
-    }
-    return iter;
+    typename ContainerIterator<Particle, true, true>::ParticleVecType additionalVectors =
+        gatherAdditionalVectors(behavior);
+    return _autoTuner.getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior, &additionalVectors);
   }
 
   /**
    * @copydoc AutoPas::getRegionIterator()
    */
-  autopas::ParticleIteratorWrapper<Particle, false> getRegionIterator(std::array<double, 3> lowerCorner,
-                                                                      std::array<double, 3> higherCorner,
+  autopas::ContainerIterator<Particle, false, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
+                                                                      const std::array<double, 3> &higherCorner,
                                                                       IteratorBehavior behavior) const {
     // sanity check: Most of our stuff depends on `inBox` which does not handle lowerCorner > higherCorner well.
     for (size_t d = 0; d < 3; ++d) {
@@ -371,15 +377,11 @@ class LogicHandler {
       }
     }
 
-    /// @todo: we might have to add a rebuild here, if the verlet cluster lists are used.
-    auto iter = std::as_const(_autoTuner).getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior);
-    if (behavior & IteratorBehavior::owned) {
-      iter.addAdditionalVectors(_particleBuffer);
-    }
-    if (behavior & IteratorBehavior::halo) {
-      iter.addAdditionalVectors(_haloParticleBuffer);
-    }
-    return iter;
+    typename ContainerIterator<Particle, false, true>::ParticleVecType additionalVectors =
+        gatherAdditionalVectors(behavior);
+    return std::as_const(_autoTuner)
+        .getContainer()
+        ->getRegionIterator(lowerCorner, higherCorner, behavior, &additionalVectors);
   }
 
   /**

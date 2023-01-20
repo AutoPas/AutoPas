@@ -179,25 +179,26 @@ class ParticleContainerInterface {
    * @note Default argument necessary to enable range based for loops.
    * @return Iterator to the first particle.
    */
-  [[nodiscard]] virtual ContainerIterator<ParticleType, true> begin(
+  [[nodiscard]] virtual ContainerIterator<ParticleType, true, false> begin(
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<ParticleType, true>::ParticleVecType *additionalVectors = nullptr) = 0;
+      typename ContainerIterator<ParticleType, true, false>::ParticleVecType *additionalVectors = nullptr) = 0;
 
   /**
    * @copydoc autopas::ParticleContainerInterface::begin()
    * @note const version
    */
-  [[nodiscard]] virtual ContainerIterator<ParticleType, false> begin(
+  [[nodiscard]] virtual ContainerIterator<ParticleType, false, false> begin(
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<ParticleType, false>::ParticleVecType *additionalVectors = nullptr) const = 0;
+      typename ContainerIterator<ParticleType, false, false>::ParticleVecType *additionalVectors = nullptr) const = 0;
 
   /**
    * @copydoc autopas::ParticleContainerInterface::begin()
    * @note cbegin will guarantee to return a const_iterator.
    */
-  [[nodiscard]] virtual ContainerIterator<ParticleType, false> cbegin(
+  [[nodiscard]] virtual ContainerIterator<ParticleType, false, false> cbegin(
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<ParticleType, false>::ParticleVecType *additionalVectors = nullptr) const final {
+      typename ContainerIterator<ParticleType, false, false>::ParticleVecType *additionalVectors =
+          nullptr) const final {
     return begin(behavior);
   };
 
@@ -209,17 +210,17 @@ class ParticleContainerInterface {
    * @param behavior The behavior of the iterator (shall it iterate over halo particles as well?).
    * @return Iterator to iterate over all particles in a specific region.
    */
-  [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, true> getRegionIterator(
-      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
-      IteratorBehavior behavior) = 0;
+  [[nodiscard]] virtual ContainerIterator<ParticleType, true, true> getRegionIterator(
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
+      typename ContainerIterator<ParticleType, true, true>::ParticleVecType *additionalVectors = nullptr) = 0;
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
    * @note const version
    */
-  [[nodiscard]] virtual ParticleIteratorWrapper<ParticleType, false> getRegionIterator(
-      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
-      IteratorBehavior behavior) const = 0;
+  [[nodiscard]] virtual ContainerIterator<ParticleType, false, true> getRegionIterator(
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
+      typename ContainerIterator<ParticleType, false, true>::ParticleVecType *additionalVectors = nullptr) const = 0;
 
   /**
    * End expression for all containers, this simply returns false.

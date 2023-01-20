@@ -145,18 +145,18 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   /**
    * @copydoc autopas::ParticleContainerInterface::begin()
    */
-  [[nodiscard]] ContainerIterator<Particle, true> begin(
+  [[nodiscard]] ContainerIterator<Particle, true, false> begin(
       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<Particle, true>::ParticleVecType *additionalVectors = nullptr) override {
+      typename ContainerIterator<Particle, true, false>::ParticleVecType *additionalVectors = nullptr) override {
     return _linkedCells.begin(behavior, additionalVectors);
   }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::begin()
    */
-  [[nodiscard]] ContainerIterator<Particle, false> begin(
+  [[nodiscard]] ContainerIterator<Particle, false, false> begin(
       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<Particle, false>::ParticleVecType *additionalVectors = nullptr) const override {
+      typename ContainerIterator<Particle, false, false>::ParticleVecType *additionalVectors = nullptr) const override {
     return _linkedCells.begin(behavior, additionalVectors);
   }
 
@@ -179,19 +179,19 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   /**
    * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
    */
-  [[nodiscard]] ParticleIteratorWrapper<Particle, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
-                                                                          const std::array<double, 3> &higherCorner,
-                                                                          IteratorBehavior behavior) override {
-    return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior);
+  [[nodiscard]] ContainerIterator<Particle, true, true> getRegionIterator(
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
+      typename ContainerIterator<Particle, true, true>::ParticleVecType *additionalVectors) override {
+    return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior, additionalVectors);
   }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
    */
-  [[nodiscard]] ParticleIteratorWrapper<Particle, false> getRegionIterator(const std::array<double, 3> &lowerCorner,
-                                                                           const std::array<double, 3> &higherCorner,
-                                                                           IteratorBehavior behavior) const override {
-    return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior);
+  [[nodiscard]] ContainerIterator<Particle, false, true> getRegionIterator(
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
+      typename ContainerIterator<Particle, false, true>::ParticleVecType *additionalVectors) const override {
+    return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior, additionalVectors);
   }
 
   /**
