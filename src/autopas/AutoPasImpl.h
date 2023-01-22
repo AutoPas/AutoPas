@@ -158,16 +158,14 @@ void AutoPas<Particle>::deleteParticle(Particle &particle) {
 }
 
 template <class Particle>
-typename AutoPas<Particle>::iterator_t AutoPas<Particle>::begin() {
-  return _logicHandler->begin(IteratorBehavior::ownedOrHalo);
+typename AutoPas<Particle>::iterator_t AutoPas<Particle>::begin(IteratorBehavior behavior) {
+  return _logicHandler->begin(behavior);
 }
 
-/*
 template <class Particle>
 typename AutoPas<Particle>::const_iterator_t AutoPas<Particle>::begin(IteratorBehavior behavior) const {
   return std::as_const(*_logicHandler).begin(behavior);
 }
-*/
 
 template <class Particle>
 typename AutoPas<Particle>::iterator_t AutoPas<Particle>::getRegionIterator(std::array<double, 3> lowerCorner,
@@ -176,14 +174,12 @@ typename AutoPas<Particle>::iterator_t AutoPas<Particle>::getRegionIterator(std:
   return _logicHandler->getRegionIterator(lowerCorner, higherCorner, behavior);
 }
 
-/*
 template <class Particle>
 typename AutoPas<Particle>::const_iterator_t AutoPas<Particle>::getRegionIterator(std::array<double, 3> lowerCorner,
                                                                                   std::array<double, 3> higherCorner,
                                                                                   IteratorBehavior behavior) const {
   return std::as_const(*_logicHandler).getRegionIterator(lowerCorner, higherCorner, behavior);
 }
-*/
 
 template <class Particle>
 unsigned long AutoPas<Particle>::getContainerType() const {

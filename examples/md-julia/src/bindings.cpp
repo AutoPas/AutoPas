@@ -9,20 +9,41 @@
 #include "autopas/AutoPas.h"
 #include "Hydrogen.h"
 #include <iostream>
+#include "IteratorBehaviorJulia.h"
 
 // extern template class autopas::AutoPas<ParticleType>;
 // template class autopas::AutoPas<ParticleType>;
-
 
 struct WrapMoleculeLJ {
     template<typename floatType>
     void operator()(floatType&& wrapped) {
         // typedef typename T::type WrappedT;
         using WrappedT = typename floatType::type;
+
+        // constructors for MoleculeLJ
         wrapped.template constructor<>();
         wrapped.template constructor<jlcxx::ArrayRef<double,1>, jlcxx::ArrayRef<double,1>, int, int>();
+
+        // setters of MoleculeLJ attributes (adjusted for the Julia Wrapper)
         wrapped.method("setPos", &WrappedT::setPos);
         wrapped.method("setV", &WrappedT::setV);
+        wrapped.method("setF", &WrappedT::setF);
+        wrapped.method("setOldF", static_cast<void (WrappedT::*)(jlcxx::ArrayRef<double,1>)> (&WrappedT::setOldF));
+
+        // getters of MoleculeLJ attributes (adjusted for the Julia Wrapper)
+        wrapped.method("getPos", &WrappedT::getPos);
+        wrapped.method("getV", &WrappedT::getV);
+        wrapped.method("getF", &WrappedT::getF);
+        wrapped.method("getOldF", static_cast<jlcxx::ArrayRef<double,1> (WrappedT::*)()> (&WrappedT::getOldF));
+//         //   t0.method("set_x_pos", static_cast<void (WrapClass::*)(int) >(&WrapClass::set_x_pos));
+
+        // add methods of MoleculeLJ attributes (adjusted for the Julia Wrapper)
+        wrapped.method("addPos", &WrappedT::addPos);
+        wrapped.method("addV", &WrappedT::addV);
+        wrapped.method("addF", &WrappedT::addF);
+
+        // 
+        wrapped.method("getID", &WrappedT::getID);
         wrapped.method("toString", &WrappedT::toString);
         // wrapped.method("print_particle", &WrappedT::print_particle);
     }
@@ -110,7 +131,7 @@ namespace jlcxx
 }
 
 struct WrapAutoPas {
-    // using iterator_t = typename autopas::IteratorTraits<autopas::MoleculeLJ<double>>::iterator_t;
+    using iterator_t = typename autopas::IteratorTraits<autopas::MoleculeLJ<double>>::iterator_t;
     template<typename Particle>
     void operator()(Particle&& wrapped) {
         // typedef typename T::type WrappedT;
@@ -129,7 +150,8 @@ struct WrapAutoPas {
         //   t0.method("set_x_pos", static_cast<void (WrapClass::*)(int) >(&WrapClass::set_x_pos));
         // wrapped.method("begin", static_cast<iterator_t (WrappedT::*)(autopas::IteratorBehavior) > (&WrappedT::begin));
         // wrapped.method("begin", static_cast<autopas::ParticleIteratorWrapper<Particle, bool> (WrappedT::*)() > (&WrappedT::begin));
-        wrapped.method("begin", &WrappedT::begin);
+        // wrapped.method("begin", &WrappedT::begin);
+        // wrapped.method("begin", static_cast<iterator_t (WrappedT::*)()> (&WrappedT::begin));
         // wrapped.method("begin", static_cast<autopas::ParticleIteratorWrapper<autopas::MoleculeLJ<double>, true> (WrappedT::*)() >(&WrappedT::begin));
         // wrapped.method("deleteParticle", &Wrapped::deleteParticle); may not be wrapped
         wrapped.method("printBoxSize", &WrappedT::printBoxSize);
@@ -144,7 +166,6 @@ struct WrapOptions {
     }
 };
 */
-
 
 std::vector<double> get_vec(double x1, double x2, double x3) {
     return {x1, x2, x3};
@@ -170,6 +191,13 @@ void getBox(autopas::AutoPas<autopas::MoleculeLJ<double>>& ap) {
     auto m2 = ap.getBoxMax();
     std::cout << "get_min: " << m1.at(0) << ", " << m1.at(1) << ", " << m1.at(2) << "\n";
     std::cout << "get_min: " << m2.at(0) << ", " << m2.at(1) << ", " << m2.at(2) << "\n";
+}
+
+autopas::ParticleIteratorWrapper<autopas::MoleculeLJ<double>, true> begin_new(autopas::AutoPas<autopas::MoleculeLJ<double>>& autopasContianer, IteratorBehaviorJulia iteratorBehaviorJulia) {
+    autopas::options::IteratorBehavior b = iteratorBehaviorJulia;
+    std::cout << "in begin_new iterator function\n";
+    return autopasContianer.begin(b);
+    // return autopasContianer.begin();
 }
 
 JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
@@ -220,6 +248,19 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     
     mod.add_type<Parametric<TypeVar<1>>>("AutoPas")
             .apply<autopas::AutoPas<autopas::MoleculeLJ<double>>>(WrapAutoPas());
+
+    /*
+    mod.add_bits<ParticleType>("ParticleType", jlcxx::julia_type("CppEnum"));
+    mod.set_const("owned", owned);
+    */
+
+    mod.add_bits<IteratorBehaviorJulia>("IteratorBehavior", jlcxx::julia_type("CppEnum"));
+    mod.set_const("owned", owned);
+    mod.set_const("halo", halo);
+    mod.set_const("ownedOrHalo", ownedOrHalo);
+    mod.set_const("dummy", dummy);
+
+    mod.method("begin", &begin_new);
 
     // mod.add_type<Parametric<TypeVar<1>>>("AutoPas")
     //         .apply<autopas::AutoPas<Hydrogen>, autopas::AutoPas<ParticleType>>(WrapAutoPas());

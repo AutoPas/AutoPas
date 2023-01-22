@@ -1,11 +1,14 @@
 module alib
   using CxxWrap
-  @wrapmodule(joinpath("/mnt/c/Users/laura/Documents/BA_SH/AutoPas/build/examples/md-julia/","libjulia_bindings.so"))
+  # @wrapmodule(joinpath("/mnt/c/Users/laura/Documents/BA_SH/autopas_/AutoPas/build/examples/md-julia/","libjulia_bindings.so"))
+  @wrapmodule(joinpath("../../../build/examples/md-julia/","libjulia_bindings.so"))
 
   function __init__()
     @initcxx
   end
 end
+
+# AutoPas/example/md-julia/src
 
 # reason is maybe that some lib is loaded after the oder one?
 
@@ -54,6 +57,81 @@ function printParticles(particles)
   end
 end
 
+# update the velocity of each particle in autoPasContainer
+# TODO: where to set iterator behavior and adjust signature (where is deltaT and mass set?)
+function updateVelocities(autoPasContainer, deltaT, mass)
+  iter = alib.begin(autoPasContainer, alib.owned)
+  while alib.isValid(iter)
+    force = alib.getF(alib.deref(iter))
+    oldForce = alib.getOldF(alib.deref(iter))
+    newV = broadcast(*, broadcast(+, oldForce, force), (deltaT / (2*mass)))
+    alib.addV(alib.deref(iter), newV)
+    alib.inc(iter)
+
+  end
+end
+
+# update the positions of each particle in autoPasContainer
+# TODO: where to set iterator behavior and adjust signature (where does deltaT, mass and globalForce is set?)
+function updatePositions(autoPasContainer, deltaT, mass, globalForce)
+  iter = alib.begin(autoPasContainer, alib.owned)
+  while alib.isValid(iter)
+    particle = alib.deref(iter)
+    velocity = alib.getV(particle)
+    force = alib.getF(particle)
+    alib.setOldF(particle, force)
+    alib.setF(particle, [globalForce, globalForce, globalForce])
+    v = broadcast(*, velocity, deltaT)
+    f = broadcast(*, force, (deltaT * deltaT / (2*mass)))
+    vf = broadcast(+, v, f)
+    # TODO: add verlet skin technique and check if particles are too fast
+    alib.addPos(particle, vf)
+    alib.inc(iter)
+  end
+end
+
+# update the forces between all particles; iterate over all particles and check the id
+function updateForces(autoPasContainer, globalForce, epsilon, sigma)
+
+# calculate pairwise forces: dummy version
+  iterOuter = alib.begin(autoPasContainer, alib.owned)
+  while alib.isValid(iterOuter)
+    iterInner = alib.begin(autoPasContainer, alib.owned)
+    particleOuter = alib.deref(iterOuter)
+    while alib.isValid(iterInner)
+      particleInner = alib.deref(iterInner)
+      if alib.getID(particleInner) != alib.getID(particleOuter)
+        # -24epsilon * 1/||xi-xj||^2 
+        # (sigma/||xi-xj||)^6
+        # -2*(sigma / |xi-xj||)^12
+        # xj-xi
+        diff = broadcast(-, alib.getPos(particleOuter), alib.getPos(particleInner)) # xi - xj
+        pos_diff = broadcast(*, diff, -1)
+        diff = boradcast(*, diff, diff) # y:= norm^2 = xik * xjk
+        norm = sum(diff) # y0 + y1 + y2
+        first = (-24 * epsilon) / norm
+        sig6 = (sigma * sigma * sigma * sigma * sigma * sigma)
+        norm3 = norm * norm * norm
+        second =  sig6 / norm3
+        third = -2 * (sig6 * sig6) / (norm3 * norm3)
+        scalars = first * second * third
+        force = broadcast(*, particleOuter, constants)
+        alib.addF(particleOuter, force)
+        alib.addF(particleInner, broadcast(*, force, -1))
+      end
+      alib.inc(iterInner)
+    end
+    alib.inc(iterOuter)
+  end
+
+# add global force
+  iter = alib.begin(autoPasContainer, alib.owned)
+  while alib.isValid(iter)
+    gf = [globalForce, globalForce, globalForce]
+    alib.addF(alib.deref(iter), gf)
+    alib.inc(iter)
+  end
+end
 println("START")
 
 println("START generating particles")
@@ -122,8 +200,9 @@ println("updated container")
 # {autopas.MoleculeLJ{Float32}}
 # a = alib.AutoPas{alib.MoleculeLJ{Float64}}()
 # autopas = autopas.AutoPas{autopas.MoleculeLJ{Float32}}(1)
+
 println("create iterator")
-iter = alib.begin(b)
+iter = alib.begin(b, alib.owned)
 println("done created iterator")
 #=
 is_valid = alib.isValid(iter)
@@ -138,6 +217,14 @@ while alib.isValid(iter)
   println(alib.toString(alib.deref(iter)))
   alib.inc(iter)
 end
+
+println("start updating velocities")
+# container, deltaT, mass
+updateVelocities(b, 0.0018, 1.0)
+println("end updating velocities")
+
+updatePositions(b, 0.0018, 1.0, 0.0012)
+updateForces(b, 0.0018, 1, 1)
 
 #=
 for it_ = alib.begin(b), alib.isValid(it_), alib.inc(it_)
