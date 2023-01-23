@@ -10,6 +10,12 @@
 #include "Hydrogen.h"
 #include <iostream>
 #include "IteratorBehaviorJulia.h"
+#include "options/ContainerOptionJulia.h"
+#include "options/DataLayoutOptionJulia.h"
+#include "options/Newton3OptionJulia.h"
+#include "options/LoadEstimatorOptionJulia.h"
+#include "options/TraversalOptionJulia.h"
+
 
 // extern template class autopas::AutoPas<ParticleType>;
 // template class autopas::AutoPas<ParticleType>;
@@ -130,6 +136,45 @@ namespace jlcxx
 
 }
 
+/*
+  numberset _autoPasContainer->setAllowedCellSizeFactors(*_configuration.cellSizeFactors.value);
+  DONE set:_autoPasContainer->setAllowedContainers(_configuration.containerOptions.value);
+  set _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions.value);
+  set _autoPasContainer->setAllowedNewton3Options(_configuration.newton3Options.value);
+  set _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions.value);
+  set _autoPasContainer->setAllowedLoadEstimators(_configuration.loadEstimatorOptions.value);
+  array  _autoPasContainer->setBoxMin(_domainDecomposition->getLocalBoxMin());
+  array _autoPasContainer->setBoxMax(_domainDecomposition->getLocalBoxMax());
+  DONE O:_autoPasContainer->setCutoff(_configuration.cutoff.value);
+  DONE O:_autoPasContainer->setRelativeOptimumRange(_configuration.relativeOptimumRange.value);
+  DONE O:_autoPasContainer->setMaxTuningPhasesWithoutTest(_configuration.maxTuningPhasesWithoutTest.value);
+  DONE O:_autoPasContainer->setRelativeBlacklistRange(_configuration.relativeBlacklistRange.value);
+  DONE O:_autoPasContainer->setEvidenceFirstPrediction(_configuration.evidenceFirstPrediction.value);
+  x _autoPasContainer->setExtrapolationMethodOption(_configuration.extrapolationMethodOption.value);
+  DONE O:_autoPasContainer->setNumSamples(_configuration.tuningSamples.value);
+  DONE O:_autoPasContainer->setMaxEvidence(_configuration.tuningMaxEvidence.value);
+  x _autoPasContainer->setSelectorStrategy(_configuration.selectorStrategy.value);
+  DONE O:_autoPasContainer->setTuningInterval(_configuration.tuningInterval.value);
+  x _autoPasContainer->setTuningStrategyOption(_configuration.tuningStrategyOption.value);
+  x _autoPasContainer->setMPIStrategy(_configuration.mpiStrategyOption.value);
+  x _autoPasContainer->setMPITuningMaxDifferenceForBucket(_configuration.MPITuningMaxDifferenceForBucket.value);
+  x _autoPasContainer->setMPITuningWeightForMaxDensity(_configuration.MPITuningWeightForMaxDensity.value);
+  DONE O:_autoPasContainer->setVerletClusterSize(_configuration.verletClusterSize.value);
+  DONE O:_autoPasContainer->setVerletRebuildFrequency(_configuration.verletRebuildFrequency.value);
+  DONE O:_autoPasContainer->setVerletSkinPerTimestep(_configuration.verletSkinRadiusPerTimestep.value);
+  x _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
+  int rank{};
+  autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
+  DONE O:_autoPasContainer->setOutputSuffix("Rank" + std::to_string(rank) + "_");
+  autopas::Logger::get()->set_level(_configuration.logLevel.value);
+   _autoPasContainer->init();
+   12/27 total 27 setters
+   /1 autopas_mpi_comm_rank
+   /1 logger_ set_level
+   1/1 init
+
+*/
+
 struct WrapAutoPas {
     using iterator_t = typename autopas::IteratorTraits<autopas::MoleculeLJ<double>>::iterator_t;
     template<typename Particle>
@@ -155,8 +200,79 @@ struct WrapAutoPas {
         // wrapped.method("begin", static_cast<autopas::ParticleIteratorWrapper<autopas::MoleculeLJ<double>, true> (WrappedT::*)() >(&WrappedT::begin));
         // wrapped.method("deleteParticle", &Wrapped::deleteParticle); may not be wrapped
         wrapped.method("printBoxSize", &WrappedT::printBoxSize);
+
+        // setters for AutoPas variables (direct)
+        wrapped.method("setVerletSkinPerTimestep", &WrappedT::setVerletSkinPerTimestep);
+        wrapped.method("setVerletRebuildFrequency", &WrappedT::setVerletRebuildFrequency);
+        wrapped.method("setVerletClusterSize", &WrappedT::setVerletClusterSize);
+        wrapped.method("setTuningInterval", &WrappedT::setTuningInterval);
+        wrapped.method("setMaxEvidence", &WrappedT::setMaxEvidence);
+        wrapped.method("setNumSamples", &WrappedT::setNumSamples);
+        wrapped.method("setEvidenceFirstPrediction", &WrappedT::setEvidenceFirstPrediction);
+        wrapped.method("setRelativeBlacklistRange", &WrappedT::setRelativeBlacklistRange);
+        wrapped.method("setMaxTuningPhasesWithoutTest", &WrappedT::setMaxTuningPhasesWithoutTest);
+        wrapped.method("setRelativeOptimumRange", &WrappedT::setRelativeOptimumRange);
+        wrapped.method("setCutoff", &WrappedT::setCutoff);
+        wrapped.method("setOutputSuffix", &WrappedT::setOutputSuffix);
     }
 };
+
+/*
+ * further setters of the AutoPas class which can not be wraped directly
+ */
+
+/*
+ * setter for ContainerOption
+ */
+void setAllowedContainers(autopas::AutoPas<autopas::MoleculeLJ<double>>& autoPasContainer, ContainerOptionJulia op) {// jlcxx::ArrayRef<ContainerOptionJulia,1> option) {
+    /*std::set<autopas::options::ContainerOption> tmp;
+    for(auto it = option.begin(); it != option.end(); it++) {
+        ContainerOptionJulia c = *it;
+        // autopas::options::ContainerOption op = it;
+        // autopas::options::ContainerOption x = static_cast<autopas::options::ContainerOption>(c);
+        tmp.insert(static_cast<autopas::options::ContainerOption>(1));
+    }
+    */
+    std::set<autopas::options::ContainerOption> tmp;
+    // autopas::options::ContainerOption oo = static_cast<int>(op);
+    // tmp.insert(static_cast<autopas::options::ContainerOption>(op));
+    autoPasContainer.setAllowedContainers(tmp);
+}
+
+/*
+ * setter for DataLayout
+ */
+ /*
+void setAllowedDataLayouts(autopas::AutoPas<autopas::MoleculeLJ<double>>& autoPasContainer, jlcxx::ArrayRef<DataLayoutOptionJulia,1> option) {
+    autoPasContainer.setAllowedDataLayouts({option.begin(), option.end()});
+}
+*/
+/*
+ * setter for Newton3Options
+ */
+ /*
+void setAllowedNewton3Options(autopas::AutoPas<autopas::MoleculeLJ<double>>& autoPasContainer, jlcxx::ArrayRef<Newton3OptionJulia,1> option) {
+    autoPasContainer.setAllowedNewton3Options({option.begin(), option.end()});
+}
+*/
+
+/*
+ * setter for TraversalsOption
+ */
+/*
+void setAllowedTraversals(autopas::AutoPas<autopas::MoleculeLJ<double>>& autoPasContainer, jlcxx::ArrayRef<TraversalOptionJulia,1> option) {
+    autoPasContainer.setAllowedTraversals({option.begin(), option.end()});
+}
+*/
+
+/*
+ * setter for LoadEstimatorsOption
+ */
+/*
+void setAllowedLoadEstimators(autopas::AutoPas<autopas::MoleculeLJ<double>>& autoPasContainer, jlcxx::ArrayRef<LoadEstimatorOptionJulia,1> option) {
+    autoPasContainer.setAllowedLoadEstimators({option.begin(), option.end()});
+}
+*/
 
 /*
 struct WrapOptions {
@@ -254,12 +370,96 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.set_const("owned", owned);
     */
 
+    /*
+     * adding all enums of the Optiontypes from AutoPas/options
+     */
+    
+    /*
+     * add enum IteratorBehavior
+     */
     mod.add_bits<IteratorBehaviorJulia>("IteratorBehavior", jlcxx::julia_type("CppEnum"));
     mod.set_const("owned", owned);
     mod.set_const("halo", halo);
     mod.set_const("ownedOrHalo", ownedOrHalo);
     mod.set_const("dummy", dummy);
 
+    /*
+     * add enum ContainerOptionJulia
+     */
+    mod.add_bits<ContainerOptionJulia>("ContainerOption", jlcxx::julia_type("CppEnum"));
+    mod.set_const("directSum", directSum);
+    mod.set_const("linkedCells", linkedCells);
+    mod.set_const("linkedCellsReferences", linkedCellsReferences);
+    mod.set_const("varVerletListsAsBuild", varVerletListsAsBuild);
+    mod.set_const("verletClusterLists", verletClusterLists);
+    mod.set_const("verletLists", verletLists);
+    mod.set_const("verletListsCells", verletListsCells);
+    mod.set_const("pairwiseVerletLists", pairwiseVerletLists);
+    mod.set_const("octree", octree);
+
+    /*
+     * add enum DataLayoutOptionJulia
+     */
+    mod.add_bits<DataLayoutOptionJulia>("DataLayout", jlcxx::julia_type("CppEnum"));
+    mod.set_const("aos", aos);
+    mod.set_const("soa", soa);
+
+    /*
+     * add enum Newton3OptionJulia
+     */
+    
+    mod.add_bits<Newton3OptionJulia>("Newton3Option", jlcxx::julia_type("CppEnum"));
+    mod.set_const("disabled", disabled);
+    mod.set_const("enabled", enabled);
+
+    /*
+     * add enum LoadEstimatorOptionJulia
+     */
+    mod.add_bits<LoadEstimatorOptionJulia>("LoadEstimatorOption", jlcxx::julia_type("CppEnum"));
+    mod.set_const("none", none);
+    mod.set_const("squaredParticlesPerCell", squaredParticlesPerCell);
+    mod.set_const("neighborListLength", neighborListLength);
+
+    /*
+     * add enum TraversalOptionJulia
+     */
+    mod.add_bits<TraversalOptionJulia>("TraversalOption", jlcxx::julia_type("CppEnum"));
+    mod.set_const("ds_sequential", ds_sequential);
+    mod.set_const("lc_c01", lc_c01);
+    mod.set_const("lc_c01_combined_SoA", lc_c01_combined_SoA);
+
+    /*
+     * add setters of AutoPas attributes which cannot directly be wrapped
+     */
+    
+    /*
+     * add setAllowedContainers
+     */
+    // mod.method("setAllowedContainers", &setAllowedContainers);
+
+    /*
+     * add setAllowedDataLayouts
+     */
+    // mod.method("setAllowedDataLayouts", setAllowedDataLayouts);
+
+    /*
+     * add setAllowedNewton3Options
+     */
+    // mod.method("setAllowedNewton3Options", setAllowedNewton3Options);
+
+    /*
+     * add setAllowedTraversals
+     */
+    // mod.method("setAllowedTraversals", setAllowedTraversals);
+
+    /*
+     * add setAllowedLoadEstimators
+     */
+    // mod.method("setAllowedLoadEstimators", setAllowedLoadEstimators);
+
+    /*
+     * add bein function of AutoPas
+     */
     mod.method("begin", &begin_new);
 
     // mod.add_type<Parametric<TypeVar<1>>>("AutoPas")
@@ -270,4 +470,4 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.method("getBox", &getBox);
 }
 
-// cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DAUTOPAS_BUILD_TESTS ..
+// cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DAUTOPAS_BUILD_TESTS=OFF ..

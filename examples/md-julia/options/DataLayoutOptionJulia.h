@@ -1,0 +1,4 @@
+enum DataLayoutOptionJulia {
+    aos,
+    soa
+};
