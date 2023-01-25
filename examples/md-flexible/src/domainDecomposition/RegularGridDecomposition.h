@@ -126,6 +126,11 @@ class RegularGridDecomposition final : public DomainDecomposition {
 
   /**
    * Reflects particles within a reflective skin along the inside of a boundary.
+   *
+   * Particle reflection occurs by interacting the particle with particle mirrored onto the other side of the boundary.
+   * Iteraction occurs using the AoS variant of the chosen functor. Particle reflection only occurs if the particle
+   * would experience a repulsive effect (i.e. is within the 6th root of sigma from the border).
+   *
    * @param autoPasContainer: The container, where the migrating particles originate from.
    */
   void reflectParticlesAtBoundaries(AutoPasType &autoPasContainer);
@@ -160,6 +165,10 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Stores the rebuild Frequency.
    */
   unsigned int _rebuildFrequency;
+  /**
+   * The greatest distance from a reflective boundary at which a particle might experience reflection.
+   */
+  double _maxReflectiveSkin;
   /**
    * The minimum coordinates of the global domain.
    */

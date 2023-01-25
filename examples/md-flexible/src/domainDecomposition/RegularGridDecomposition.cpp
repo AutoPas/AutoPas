@@ -39,6 +39,12 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
 
   _decomposition = DomainTools::generateDecomposition(_subdomainCount, configuration.subdivideDimension.value);
 
+  double maxSigma{0};
+  for (auto sigmaMapElement : configuration.sigmaMap.value) {
+    maxSigma = std::max(maxSigma, sigmaMapElement.second);
+  }
+  _maxReflectiveSkin = std::pow(maxSigma, 1/6.);
+
   // initialize _communicator and _domainIndex
   initializeMPICommunicator();
   // initialize _planarCommunicators and domainID
