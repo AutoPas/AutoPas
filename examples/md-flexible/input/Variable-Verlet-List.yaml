@@ -1,30 +1,30 @@
-container                        :  [VerletLists, VerletListsCells, PairwiseVerletLists]
-traversal                        :  [lc_sliced, lc_sliced_balanced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18, vcl_c06, vcl_c01_balanced, vcl_sliced, vcl_sliced_balanced, vcl_sliced_c02, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced, vlc_sliced_balanced, vlc_sliced_c02, vvl_as_built, vlp_c01, vlp_c18, vlp_sliced, vlp_sliced_balanced, vlp_sliced_c02]
+container                        :  [VerletLists]
+traversal                        :  [ds_sequential, lc_sliced, lc_sliced_balanced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18, vcl_cluster_iteration, vcl_c06, vcl_c01_balanced, vcl_sliced, vcl_sliced_balanced, vcl_sliced_c02, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced, vlc_sliced_balanced, vlc_sliced_c02, vvl_as_built, vlp_c01, vlp_c18, vlp_sliced, vlp_sliced_balanced, vlp_sliced_c02]
 data-layout                      :  [AoS]
-newton3                          :  [disabled]
-verlet-rebuild-frequencies       :  [20]
-verlet-skin-radius-per-timestep  :  0.03
-verlet-cluster-size              :  4
+newton3                          :  [disabled, enabled]
+verlet-rebuild-frequencies       :  [10, 210, 410, 610, 810]
+verlet-skin-radius-per-timestep  :  0.01
 selector-strategy                :  Fastest-Absolute-Value
 tuning-strategy                  :  Full-Search
 mpi-strategy                     :  no-mpi
 tuning-interval                  :  1000
-tuning-samples                   :  10
+tuning-samples                   :  1000
 functor                          :  Lennard-Jones-AVX2
 cutoff                           :  2
 box-min                          :  [0, 0, 0]
-box-max                          :  [10, 10, 10]
+box-max                          :  [50, 50, 25]
 cell-size                        :  [1]
-deltaT                           :  0.000
-iterations                       :  2000
-periodic-boundaries              :  true
+deltaT                           :  0.005
+
+iterations                       :  5000
+boundary-type                    :  [reflective, reflective, reflective]
 Objects:
-  CubeGrid:
+  CubeClosestPacked:
     0:
-      particles-per-dimension    : [ 10, 10, 10 ]
-      particle-spacing           : 2
-      bottomLeftCorner           : [ 0, 0, 0 ]
-      velocity                   : [ 0, 0, 0 ]
+      box-length                 : [25, 20, 15]
+      bottomLeftCorner           : [0, 0, 0]
+      particle-spacing           : 1
+      velocity                   : [0, 1, 0]
       particle-type              : 0
       particle-epsilon           : 1
       particle-sigma             : 1
