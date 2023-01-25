@@ -43,7 +43,7 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
   for (auto sigmaMapElement : configuration.sigmaMap.value) {
     maxSigma = std::max(maxSigma, sigmaMapElement.second);
   }
-  _maxReflectiveSkin = std::pow(maxSigma, 1/6.);
+  _maxReflectiveSkin = sixthRootOfTwo * maxSigma;
 
   // initialize _communicator and _domainIndex
   initializeMPICommunicator();

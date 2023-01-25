@@ -16,6 +16,10 @@
 #include "src/configuration/MDFlexConfig.h"
 #include "src/options/BoundaryTypeOption.h"
 
+namespace {
+const double sixthRootOfTwo = std::pow(2., 1./6.);
+}
+
 /**
  * This class can be used as a domain decomposition which divides the domain in equal sized rectangular subdomains.
  * The number of subdomains is equal to the number of MPI processes available.
