@@ -17,6 +17,7 @@
 #include "options/TraversalOptionJulia.h"
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/options/ContainerOption.h"
+#include "autopas/options/AcquisitionFunctionOption.h"
 
 
 // extern template class autopas::AutoPas<ParticleType>;
@@ -198,7 +199,7 @@ struct WrapAutoPas {
         // wrapped.method("begin", static_cast<iterator_t (WrappedT::*)(autopas::IteratorBehavior) > (&WrappedT::begin));
         // wrapped.method("begin", static_cast<autopas::ParticleIteratorWrapper<Particle, bool> (WrappedT::*)() > (&WrappedT::begin));
         // wrapped.method("begin", &WrappedT::begin);
-        wrapped.method("begin2", static_cast<iterator_t (WrappedT::*)()> (&WrappedT::begin));
+        // wrapped.method("begin2", static_cast<iterator_t (WrappedT::*)()> (&WrappedT::begin));
         // wrapped.method("begin", static_cast<autopas::ParticleIteratorWrapper<autopas::MoleculeLJ<double>, true> (WrappedT::*)() >(&WrappedT::begin));
         // wrapped.method("deleteParticle", &Wrapped::deleteParticle); may not be wrapped
         wrapped.method("printBoxSize", &WrappedT::printBoxSize);
@@ -216,6 +217,7 @@ struct WrapAutoPas {
         wrapped.method("setRelativeOptimumRange", &WrappedT::setRelativeOptimumRange);
         wrapped.method("setCutoff", &WrappedT::setCutoff);
         wrapped.method("setOutputSuffix", &WrappedT::setOutputSuffix);
+        wrapped.method("setAcquisitionFunction", &WrappedT::setAcquisitionFunction);
     }
 };
 
@@ -463,6 +465,12 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.set_const("lc_c01_combined_SoA", lc_c01_combined_SoA);
 
     mod.method("setAllowedContainers", &setAllowedContainers);
+
+    mod.add_bits<autopas::options::AcquisitionFunctionOption::Value>("AcquisitionFunctionOptionValue", jlcxx::julia_type("CppEnum"));
+    mod.set_const("mean", autopas::options::AcquisitionFunctionOption::Value::mean);
+
+    mod.add_type<autopas::options::AcquisitionFunctionOption>("AcquisitionFunctionOption")
+            .constructor<autopas::options::AcquisitionFunctionOption::Value>();
 
     /*
      * add setters of AutoPas attributes which cannot directly be wrapped
