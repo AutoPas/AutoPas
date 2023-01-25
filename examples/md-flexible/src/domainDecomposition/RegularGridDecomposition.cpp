@@ -268,12 +268,10 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
     auto reflect = [&](bool isUpper) {
       for (auto p = autoPasContainer.getRegionIterator(reflSkinMin, reflSkinMax, autopas::IteratorBehavior::owned);
            p.isValid(); ++p) {
-        auto vel = p->getV();
-        // reverse velocity in dimension if towards boundary
-        if ((vel[dimensionIndex] < 0) xor isUpper) {
-          vel[dimensionIndex] *= -1;
-        }
-        p->setV(vel);
+        auto mirrorParticle = p;
+        auto mirrorPos = mirrorParticle->getR();
+        mirrorPos[dimensionIndex]
+        mirrorParticle->setR()
       }
     };
 
@@ -281,7 +279,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
     if (_localBoxMin[dimensionIndex] == _globalBoxMin[dimensionIndex]) {
       reflSkinMin = _globalBoxMin;
       reflSkinMax = _globalBoxMax;
-      reflSkinMax[dimensionIndex] = _globalBoxMin[dimensionIndex] + autoPasContainer.getVerletSkinPerTimestep() / 2;
+      reflSkinMax[dimensionIndex] = _globalBoxMin[dimensionIndex] + _maxReflectiveSkin;
 
       reflect(false);
     }
@@ -289,7 +287,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
     if (_localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex]) {
       reflSkinMin = _globalBoxMin;
       reflSkinMax = _globalBoxMax;
-      reflSkinMin[dimensionIndex] = _globalBoxMax[dimensionIndex] - autoPasContainer.getVerletSkinPerTimestep() / 2;
+      reflSkinMin[dimensionIndex] = _globalBoxMax[dimensionIndex] - _maxReflectiveSkin;
 
       reflect(true);
     }
