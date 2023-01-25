@@ -10,11 +10,13 @@
 #include "Hydrogen.h"
 #include <iostream>
 #include "IteratorBehaviorJulia.h"
-#include "options/ContainerOptionJulia.h"
+// #include "options/ContainerOptionJulia.h"
 #include "options/DataLayoutOptionJulia.h"
 #include "options/Newton3OptionJulia.h"
 #include "options/LoadEstimatorOptionJulia.h"
 #include "options/TraversalOptionJulia.h"
+#include "autopas/options/IteratorBehavior.h"
+#include "autopas/options/ContainerOption.h"
 
 
 // extern template class autopas::AutoPas<ParticleType>;
@@ -196,7 +198,7 @@ struct WrapAutoPas {
         // wrapped.method("begin", static_cast<iterator_t (WrappedT::*)(autopas::IteratorBehavior) > (&WrappedT::begin));
         // wrapped.method("begin", static_cast<autopas::ParticleIteratorWrapper<Particle, bool> (WrappedT::*)() > (&WrappedT::begin));
         // wrapped.method("begin", &WrappedT::begin);
-        // wrapped.method("begin", static_cast<iterator_t (WrappedT::*)()> (&WrappedT::begin));
+        wrapped.method("begin2", static_cast<iterator_t (WrappedT::*)()> (&WrappedT::begin));
         // wrapped.method("begin", static_cast<autopas::ParticleIteratorWrapper<autopas::MoleculeLJ<double>, true> (WrappedT::*)() >(&WrappedT::begin));
         // wrapped.method("deleteParticle", &Wrapped::deleteParticle); may not be wrapped
         wrapped.method("printBoxSize", &WrappedT::printBoxSize);
@@ -224,7 +226,7 @@ struct WrapAutoPas {
 /*
  * setter for ContainerOption
  */
-void setAllowedContainers(autopas::AutoPas<autopas::MoleculeLJ<double>>& autoPasContainer, ContainerOptionJulia op) {// jlcxx::ArrayRef<ContainerOptionJulia,1> option) {
+// void setAllowedContainers(autopas::AutoPas<autopas::MoleculeLJ<double>>& autoPasContainer, ContainerOptionJulia op) {// jlcxx::ArrayRef<ContainerOptionJulia,1> option) {
     /*std::set<autopas::options::ContainerOption> tmp;
     for(auto it = option.begin(); it != option.end(); it++) {
         ContainerOptionJulia c = *it;
@@ -233,11 +235,11 @@ void setAllowedContainers(autopas::AutoPas<autopas::MoleculeLJ<double>>& autoPas
         tmp.insert(static_cast<autopas::options::ContainerOption>(1));
     }
     */
-    std::set<autopas::options::ContainerOption> tmp;
+   // std::set<autopas::options::ContainerOption> tmp;
     // autopas::options::ContainerOption oo = static_cast<int>(op);
     // tmp.insert(static_cast<autopas::options::ContainerOption>(op));
-    autoPasContainer.setAllowedContainers(tmp);
-}
+    // autoPasContainer.setAllowedContainers(tmp);
+// }
 
 /*
  * setter for DataLayout
@@ -282,6 +284,25 @@ struct WrapOptions {
     }
 };
 */
+
+// void setAllowedContainers(autopas::AutoPas<autopas::MoleculeLJ<double>>& autoPasContainer, jlcxx::ArrayRef<autopas::options::ContainerOption,1> options) {
+void setAllowedContainers(autopas::AutoPas<autopas::MoleculeLJ<double>>& autoPasContainer, jlcxx::ArrayRef<autopas::options::ContainerOption::Value,1> option) {
+    /*std::set<autopas::options::ContainerOption> tmp;
+    for(auto it = options.begin(); it != options.end(); it++) {
+        tmp.insert(*it);
+    }
+
+    for(auto it = tmp.begin(); it != tmp.end(); it++) {
+        std::cout << "option: " << *it << ", ";
+    }
+    std::cout << std::endl;
+    autoPasContainer.setAllowedContainers(tmp);
+    */
+    for(auto it = option.begin(); it != option.end(); it++) {
+        std::cout << "option: " << *it << ", ";
+    }
+    std::cout << "in set allowed container\n";
+}
 
 std::vector<double> get_vec(double x1, double x2, double x3) {
     return {x1, x2, x3};
@@ -377,25 +398,38 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     /*
      * add enum IteratorBehavior
      */
-    mod.add_bits<IteratorBehaviorJulia>("IteratorBehavior", jlcxx::julia_type("CppEnum"));
-    mod.set_const("owned", owned);
-    mod.set_const("halo", halo);
-    mod.set_const("ownedOrHalo", ownedOrHalo);
-    mod.set_const("dummy", dummy);
+    
+    mod.add_bits<IteratorBehaviorJulia>("IteratorBehaviorBla", jlcxx::julia_type("CppEnum"));
+    mod.set_const("owned1", owned1);
+    mod.set_const("halo1", halo1);
+    mod.set_const("ownedOrHalo1", ownedOrHalo1);
+    mod.set_const("dummy1", dummy1);
+
+    mod.add_bits<autopas::options::IteratorBehavior::Value>("IteratorBehaviorValue", jlcxx::julia_type("CppEnum"));
+    mod.set_const("owned", autopas::options::IteratorBehavior::Value::owned);
+    mod.set_const("halo", autopas::options::IteratorBehavior::Value::halo);
+    mod.set_const("ownedOrHalo", autopas::options::IteratorBehavior::Value::ownedOrHalo);
+    mod.set_const("dummy", autopas::options::IteratorBehavior::Value::dummy);
+
+    mod.add_type<autopas::options::IteratorBehavior>("IteratorBehavior")
+            .constructor<autopas::options::IteratorBehavior::Value>();
 
     /*
      * add enum ContainerOptionJulia
      */
-    mod.add_bits<ContainerOptionJulia>("ContainerOption", jlcxx::julia_type("CppEnum"));
-    mod.set_const("directSum", directSum);
-    mod.set_const("linkedCells", linkedCells);
-    mod.set_const("linkedCellsReferences", linkedCellsReferences);
-    mod.set_const("varVerletListsAsBuild", varVerletListsAsBuild);
-    mod.set_const("verletClusterLists", verletClusterLists);
-    mod.set_const("verletLists", verletLists);
-    mod.set_const("verletListsCells", verletListsCells);
-    mod.set_const("pairwiseVerletLists", pairwiseVerletLists);
-    mod.set_const("octree", octree);
+    mod.add_bits<autopas::options::ContainerOption::Value>("ContainerOptionValue", jlcxx::julia_type("CppEnum"));
+    mod.set_const("directSum", autopas::options::ContainerOption::Value::directSum);
+    mod.set_const("linkedCells", autopas::options::ContainerOption::Value::linkedCells);
+    mod.set_const("linkedCellsReferences", autopas::options::ContainerOption::Value::linkedCellsReferences);
+    mod.set_const("varVerletListsAsBuild", autopas::options::ContainerOption::Value::varVerletListsAsBuild);
+    mod.set_const("verletClusterLists", autopas::options::ContainerOption::Value::verletClusterLists);
+    mod.set_const("verletLists", autopas::options::ContainerOption::Value::verletLists);
+    mod.set_const("verletListsCells", autopas::options::ContainerOption::Value::verletListsCells);
+    mod.set_const("pairwiseVerletLists", autopas::options::ContainerOption::Value::pairwiseVerletLists);
+    mod.set_const("octree", autopas::options::ContainerOption::Value::octree);
+
+    mod.add_type<autopas::options::ContainerOption>("ContainerOption")
+            .constructor<autopas::options::ContainerOption::Value>();
 
     /*
      * add enum DataLayoutOptionJulia
@@ -427,6 +461,8 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.set_const("ds_sequential", ds_sequential);
     mod.set_const("lc_c01", lc_c01);
     mod.set_const("lc_c01_combined_SoA", lc_c01_combined_SoA);
+
+    mod.method("setAllowedContainers", &setAllowedContainers);
 
     /*
      * add setters of AutoPas attributes which cannot directly be wrapped

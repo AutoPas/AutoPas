@@ -60,7 +60,7 @@ end
 # update the velocity of each particle in autoPasContainer
 # TODO: where to set iterator behavior and adjust signature (where is deltaT and mass set?)
 function updateVelocities(autoPasContainer, deltaT, mass)
-  iter = alib.begin(autoPasContainer, alib.owned)
+  iter = alib.begin(autoPasContainer, alib.owned1)
   while alib.isValid(iter)
     force = alib.getF(alib.deref(iter))
     oldForce = alib.getOldF(alib.deref(iter))
@@ -74,7 +74,7 @@ end
 # update the positions of each particle in autoPasContainer
 # TODO: where to set iterator behavior and adjust signature (where does deltaT, mass and globalForce is set?)
 function updatePositions(autoPasContainer, deltaT, mass, globalForce)
-  iter = alib.begin(autoPasContainer, alib.owned)
+  iter = alib.begin(autoPasContainer, alib.owned1)
   while alib.isValid(iter)
     particle = alib.deref(iter)
     velocity = alib.getV(particle)
@@ -94,9 +94,9 @@ end
 function updateForces(autoPasContainer, globalForce, epsilon, sigma)
 
 # calculate pairwise forces: dummy version
-  iterOuter = alib.begin(autoPasContainer, alib.owned)
+  iterOuter = alib.begin(autoPasContainer, alib.owned1)
   while alib.isValid(iterOuter)
-    iterInner = alib.begin(autoPasContainer, alib.owned)
+    iterInner = alib.begin(autoPasContainer, alib.owned1)
     particleOuter = alib.deref(iterOuter)
     while alib.isValid(iterInner)
       particleInner = alib.deref(iterInner)
@@ -125,7 +125,7 @@ function updateForces(autoPasContainer, globalForce, epsilon, sigma)
   end
 
 # add global force
-  iter = alib.begin(autoPasContainer, alib.owned)
+  iter = alib.begin(autoPasContainer, alib.owned1)
   while alib.isValid(iter)
     gf = [globalForce, globalForce, globalForce]
     alib.addF(alib.deref(iter), gf)
@@ -202,7 +202,7 @@ println("updated container")
 # autopas = autopas.AutoPas{autopas.MoleculeLJ{Float32}}(1)
 
 println("create iterator")
-iter = alib.begin(b, alib.owned)
+iter = alib.begin(b, alib.owned1)
 println("done created iterator")
 #=
 is_valid = alib.isValid(iter)
@@ -230,6 +230,27 @@ updateForces(b, 0.0018, 1, 1)
 for it_ = alib.begin(b), alib.isValid(it_), alib.inc(it_)
   println(alib.toString(alib.deref(it_)))
 end
+=#
+
+v1 = alib.ContainerOption(alib.directSum)
+v2 = alib.ContainerOption(alib.linkedCells)
+
+println("type of v1: " * string(typeof(v1)))
+println("type of enum: " * string(typeof(alib.directSum)))
+
+vec0 = Vector{alib.ContainerOptionValue}([alib.directSum, alib.linkedCells, alib.octree, alib.directSum])
+
+alib.setAllowedContainers(b, [v1])
+
+#=
+
+ERROR: LoadError: MethodError: no method matching setAllowedContainers(::Main.alib.AutoPasAllocated{Main.alib.MoleculeLJ{Float64}}, ::Vector{Main.alib.ContainerOptionAllocated})
+Closest candidates are:
+  setAllowedContainers(::Union{CxxWrap.CxxWrapCore.CxxRef{<:Main.alib.AutoPas{Main.alib.MoleculeLJ{Float64}}}, Union{CxxWrap.CxxWrapCore.SmartPointer{T2}, T2} where T2<:Main.alib.AutoPas{Main.alib.MoleculeLJ{Float64}}}, ::Vector{CxxWrap.CxxWrapCore.CxxRef{Main.alib.ContainerOption}}) at ~/.julia/packages/CxxWrap/IdOJa/src/CxxWrap.jl:618
+Stacktrace:
+ [1] top-level scope
+   @ /mnt/c/Users/laura/Documents/BA_SH/AutoPasJulia/AutoPas/examples/md-julia/src/test.jl:240
+
 =#
 
 println("END")
