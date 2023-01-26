@@ -271,14 +271,14 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
            p.isValid(); ++p) {
         // Check that particle is within 6th root of 2 * sigma
         const auto position = p->getR();
-        const auto distanceToBoundary = isUpper ? position[dimensionIndex] - reflSkinMin[dimensionIndex] : reflSkinMax[dimensionIndex] - position[dimensionIndex];
-        if (distanceToBoundary < sixthRootOfTwo * PPL.getSigma(p->getTypeId())) {
+        const auto distanceToBoundary = isUpper ? reflSkinMax[dimensionIndex] - position[dimensionIndex] : position[dimensionIndex] - reflSkinMin[dimensionIndex];
+        if (distanceToBoundary < sixthRootOfTwo * PPL.getSigma(p->getTypeId()) / 2.) {
           // Create mirror particle and shift it to other side of reflective boundary
           auto mirrorParticle = p;
           auto mirrorPos = mirrorParticle->getR();
           mirrorPos[dimensionIndex] =
-              isUpper ? reflSkinMin[dimensionIndex] - mirrorPos[dimensionIndex]
-                      : reflSkinMax[dimensionIndex] + (reflSkinMax[dimensionIndex] - mirrorPos[dimensionIndex]);
+              isUpper ? reflSkinMax[dimensionIndex] + (reflSkinMax[dimensionIndex] - mirrorPos[dimensionIndex])
+                      : reflSkinMin[dimensionIndex] - mirrorPos[dimensionIndex];
           mirrorParticle->setR(mirrorPos);
 
           // Interact original particle with its mirror
