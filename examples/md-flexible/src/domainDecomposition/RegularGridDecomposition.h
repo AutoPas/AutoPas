@@ -15,6 +15,7 @@
 #include "src/TypeDefinitions.h"
 #include "src/configuration/MDFlexConfig.h"
 #include "src/options/BoundaryTypeOption.h"
+#include "autopas/molecularDynamics/LJFunctor.h"
 
 namespace {
 const double sixthRootOfTwo = std::pow(2., 1./6.);
@@ -136,8 +137,9 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * would experience a repulsive effect (i.e. is within the 6th root of sigma from the border).
    *
    * @param autoPasContainer: The container, where the migrating particles originate from.
+   * @param PPL: Particle Properties Library (needed to get particle's sigma)
    */
-  void reflectParticlesAtBoundaries(AutoPasType &autoPasContainer);
+  void reflectParticlesAtBoundaries(AutoPasType &autoPasContainer, ParticlePropertiesLibraryType &PPL);
 
  private:
   /**

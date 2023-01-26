@@ -258,8 +258,9 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
   }
 }
 
-void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPasContainer) {
+void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPasContainer, ParticlePropertiesLibraryType &PPL) {
   std::array<double, _dimensionCount> reflSkinMin{}, reflSkinMax{};
+  auto functorLJ = autopas::LJFunctor<ParticleType, false, true, autopas::FunctorN3Modes::Newton3Off, false, false>(_maxReflectiveSkin, PPL);
 
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
     // skip if boundary is not reflective
@@ -268,10 +269,21 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
     auto reflect = [&](bool isUpper) {
       for (auto p = autoPasContainer.getRegionIterator(reflSkinMin, reflSkinMax, autopas::IteratorBehavior::owned);
            p.isValid(); ++p) {
-        auto mirrorParticle = p;
-        auto mirrorPos = mirrorParticle->getR();
-        mirrorPos[dimensionIndex]
-        mirrorParticle->setR()
+        // Check that particle is within 6th root of 2 * sigma
+        const auto position = p->getR();
+        const auto distanceToBoundary = isUpper ? position[dimensionIndex] - reflSkinMin[dimensionIndex] : reflSkinMax[dimensionIndex] - position[dimensionIndex];
+        if (distanceToBoundary < sixthRootOfTwo * PPL.getSigma(p->getTypeId())) {
+          // Create mirror particle and shift it to other side of reflective boundary
+          auto mirrorParticle = p;
+          auto mirrorPos = mirrorParticle->getR();
+          mirrorPos[dimensionIndex] =
+              isUpper ? reflSkinMin[dimensionIndex] - mirrorPos[dimensionIndex]
+                      : reflSkinMax[dimensionIndex] + (reflSkinMax[dimensionIndex] - mirrorPos[dimensionIndex]);
+          mirrorParticle->setR(mirrorPos);
+
+          // Interact original particle with its mirror
+          functorLJ.AoSFunctor(*p, *mirrorParticle, false);
+        }
       }
     };
 
