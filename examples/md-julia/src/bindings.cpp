@@ -10,14 +10,10 @@
 #include "Hydrogen.h"
 #include <iostream>
 #include "IteratorBehaviorJulia.h"
-// #include "options/ContainerOptionJulia.h"
-#include "options/DataLayoutOptionJulia.h"
-#include "options/Newton3OptionJulia.h"
-#include "options/LoadEstimatorOptionJulia.h"
-#include "options/TraversalOptionJulia.h"
-#include "autopas/options/IteratorBehavior.h"
-#include "autopas/options/ContainerOption.h"
-#include "autopas/options/AcquisitionFunctionOption.h"
+#include "Options.h"
+#include "MoleculeJ.h"
+#include "./bindings/MoleculeBinding.h"
+#include "./bindings/AutoPasBindings.h"
 
 
 // extern template class autopas::AutoPas<ParticleType>;
@@ -124,19 +120,15 @@ namespace jlcxx
     };
     
     // adding inheritance for types
-    // template<typename Particle, bool modifiable> struct SuperType<autopas::internal::ParticleIteratorInterfaceImpl<Particle, modifiable>> {typedef autopas::ParticleIteratorInterface<Particle, modifiable> type;};
     template<typename Particle, bool modifiable> struct SuperType<autopas::ParticleIteratorWrapper<Particle, modifiable>> {typedef autopas::ParticleIteratorInterface<Particle, modifiable> type;};
-    // template<> struct SuperType<autopas::options::IteratorBehavior> {typedef autopas::options::Option<autopas::options::IteratorBehavior> type;};
 
     // adding templates for types
     template<typename floatType> struct IsMirroredType<autopas::MoleculeLJ<floatType>> : std::false_type { };
+    template<typename floatType> struct IsMirroredType<MoleculeJ<floatType>> : std::false_type { };
     template<typename Particle> struct IsMirroredType<autopas::AutoPas<Particle>> : std::false_type { };
     template<typename T, typename V> struct IsMirroredType<autopas::ParticleBase<T, V>> : std::false_type { };
     template<typename Particle, bool modifiable> struct IsMirroredType<autopas::ParticleIteratorInterface<Particle, modifiable>> : std::false_type { };
-    // template<typename Particle, bool modifiable> struct IsMirroredType<autopas::internal::ParticleIteratorInterfaceImpl<Particle, modifiable>> : std::false_type{ };
     template<typename Particle, bool modifiable> struct IsMirroredType<autopas::ParticleIteratorWrapper<Particle, modifiable>> : std::false_type { };
-    // template<typename actualOption> struct IsMirroredType<autopas::options::Option<actualOption>> : std::false_type { };
-
 }
 
 /*
@@ -147,25 +139,25 @@ namespace jlcxx
   set _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions.value);
   set _autoPasContainer->setAllowedLoadEstimators(_configuration.loadEstimatorOptions.value);
   array  _autoPasContainer->setBoxMin(_domainDecomposition->getLocalBoxMin());
-  array _autoPasContainer->setBoxMax(_domainDecomposition->getLocalBoxMax());
+  array  _autoPasContainer->setBoxMax(_domainDecomposition->getLocalBoxMax());
   DONE O:_autoPasContainer->setCutoff(_configuration.cutoff.value);
   DONE O:_autoPasContainer->setRelativeOptimumRange(_configuration.relativeOptimumRange.value);
   DONE O:_autoPasContainer->setMaxTuningPhasesWithoutTest(_configuration.maxTuningPhasesWithoutTest.value);
   DONE O:_autoPasContainer->setRelativeBlacklistRange(_configuration.relativeBlacklistRange.value);
   DONE O:_autoPasContainer->setEvidenceFirstPrediction(_configuration.evidenceFirstPrediction.value);
-  x _autoPasContainer->setExtrapolationMethodOption(_configuration.extrapolationMethodOption.value);
+  DONE x: _autoPasContainer->setExtrapolationMethodOption(_configuration.extrapolationMethodOption.value);
   DONE O:_autoPasContainer->setNumSamples(_configuration.tuningSamples.value);
   DONE O:_autoPasContainer->setMaxEvidence(_configuration.tuningMaxEvidence.value);
-  x _autoPasContainer->setSelectorStrategy(_configuration.selectorStrategy.value);
+  DONE x: _autoPasContainer->setSelectorStrategy(_configuration.selectorStrategy.value);
   DONE O:_autoPasContainer->setTuningInterval(_configuration.tuningInterval.value);
-  x _autoPasContainer->setTuningStrategyOption(_configuration.tuningStrategyOption.value);
-  x _autoPasContainer->setMPIStrategy(_configuration.mpiStrategyOption.value);
-  x _autoPasContainer->setMPITuningMaxDifferenceForBucket(_configuration.MPITuningMaxDifferenceForBucket.value);
-  x _autoPasContainer->setMPITuningWeightForMaxDensity(_configuration.MPITuningWeightForMaxDensity.value);
+  DONE x: _autoPasContainer->setTuningStrategyOption(_configuration.tuningStrategyOption.value);
+  DONE x: _autoPasContainer->setMPIStrategy(_configuration.mpiStrategyOption.value);
+  DONE x: _autoPasContainer->setMPITuningMaxDifferenceForBucket(_configuration.MPITuningMaxDifferenceForBucket.value);
+  DONE x: _autoPasContainer->setMPITuningWeightForMaxDensity(_configuration.MPITuningWeightForMaxDensity.value);
   DONE O:_autoPasContainer->setVerletClusterSize(_configuration.verletClusterSize.value);
   DONE O:_autoPasContainer->setVerletRebuildFrequency(_configuration.verletRebuildFrequency.value);
   DONE O:_autoPasContainer->setVerletSkinPerTimestep(_configuration.verletSkinRadiusPerTimestep.value);
-  x _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
+  DONE x:_autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
   int rank{};
   autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
   DONE O:_autoPasContainer->setOutputSuffix("Rank" + std::to_string(rank) + "_");
@@ -178,6 +170,7 @@ namespace jlcxx
 
 */
 
+/*
 struct WrapAutoPas {
     using iterator_t = typename autopas::IteratorTraits<autopas::MoleculeLJ<double>>::iterator_t;
     template<typename Particle>
@@ -199,7 +192,7 @@ struct WrapAutoPas {
         // wrapped.method("begin", static_cast<iterator_t (WrappedT::*)(autopas::IteratorBehavior) > (&WrappedT::begin));
         // wrapped.method("begin", static_cast<autopas::ParticleIteratorWrapper<Particle, bool> (WrappedT::*)() > (&WrappedT::begin));
         // wrapped.method("begin", &WrappedT::begin);
-        // wrapped.method("begin2", static_cast<iterator_t (WrappedT::*)()> (&WrappedT::begin));
+        wrapped.method("begin2", static_cast<iterator_t (WrappedT::*)(autopas::options::IteratorBehavior)> (&WrappedT::begin));
         // wrapped.method("begin", static_cast<autopas::ParticleIteratorWrapper<autopas::MoleculeLJ<double>, true> (WrappedT::*)() >(&WrappedT::begin));
         // wrapped.method("deleteParticle", &Wrapped::deleteParticle); may not be wrapped
         wrapped.method("printBoxSize", &WrappedT::printBoxSize);
@@ -217,9 +210,17 @@ struct WrapAutoPas {
         wrapped.method("setRelativeOptimumRange", &WrappedT::setRelativeOptimumRange);
         wrapped.method("setCutoff", &WrappedT::setCutoff);
         wrapped.method("setOutputSuffix", &WrappedT::setOutputSuffix);
+        wrapped.method("setMPITuningWeightForMaxDensity", &WrappedT::setMPITuningWeightForMaxDensity);
+        wrapped.method("setMPITuningMaxDifferenceForBucket", &WrappedT::setMPITuningMaxDifferenceForBucket);
+
         wrapped.method("setAcquisitionFunction", &WrappedT::setAcquisitionFunction);
+        wrapped.method("setMPIStrategy", &WrappedT::setMPIStrategy);
+        wrapped.method("setTuningStrategyOption", &WrappedT::setTuningStrategyOption);
+        wrapped.method("setSelectorStrategy", &WrappedT::setSelectorStrategy);
+        wrapped.method("setExtrapolationMethodOption", &WrappedT::setExtrapolationMethodOption);
     }
 };
+*/
 
 /*
  * further setters of the AutoPas class which can not be wraped directly
@@ -288,7 +289,7 @@ struct WrapOptions {
 */
 
 // void setAllowedContainers(autopas::AutoPas<autopas::MoleculeLJ<double>>& autoPasContainer, jlcxx::ArrayRef<autopas::options::ContainerOption,1> options) {
-void setAllowedContainers(autopas::AutoPas<autopas::MoleculeLJ<double>>& autoPasContainer, jlcxx::ArrayRef<autopas::options::ContainerOption::Value,1> option) {
+void setAllowedContainers(autopas::AutoPas<autopas::MoleculeLJ<double>>& autoPasContainer, jlcxx::ArrayRef<autopas::options::ContainerOption,1> option) {// jlcxx::ArrayRef<autopas::options::ContainerOption,1> option) {
     /*std::set<autopas::options::ContainerOption> tmp;
     for(auto it = options.begin(); it != options.end(); it++) {
         tmp.insert(*it);
@@ -300,10 +301,17 @@ void setAllowedContainers(autopas::AutoPas<autopas::MoleculeLJ<double>>& autoPas
     std::cout << std::endl;
     autoPasContainer.setAllowedContainers(tmp);
     */
+    /*
     for(auto it = option.begin(); it != option.end(); it++) {
         std::cout << "option: " << *it << ", ";
     }
+    */
     std::cout << "in set allowed container\n";
+}
+
+autopas::options::ContainerOption getContainerOption() {
+    autopas::options::ContainerOption option{autopas::options::ContainerOption::directSum};
+    return option;
 }
 
 std::vector<double> get_vec(double x1, double x2, double x3) {
@@ -343,6 +351,59 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 {
     using jlcxx::Parametric;
     using jlcxx::TypeVar;
+
+    mod.add_bits<autopas::options::AcquisitionFunctionOption::Value>("AcquisitionFunctionOptionValue", jlcxx::julia_type("CppEnum"));
+    mod.set_const("upperConfidenceBound", autopas::options::AcquisitionFunctionOption::Value::upperConfidenceBound);
+    mod.set_const("mean", autopas::options::AcquisitionFunctionOption::Value::mean);
+    mod.set_const("variance", autopas::options::AcquisitionFunctionOption::Value::variance);
+    mod.set_const("probabilityOfImprovement", autopas::options::AcquisitionFunctionOption::Value::probabilityOfImprovement);
+    mod.set_const("expectedImprovement", autopas::options::AcquisitionFunctionOption::Value::expectedImprovement);
+
+    mod.add_type<autopas::options::AcquisitionFunctionOption>("AcquisitionFunctionOption")
+            .constructor<autopas::options::AcquisitionFunctionOption::Value>();
+
+    mod.add_bits<autopas::options::MPIStrategyOption::Value>("MPIStrategyOptionValue", jlcxx::julia_type("CppEnum"));
+    mod.set_const("noMPI", autopas::options::MPIStrategyOption::Value::noMPI);
+    mod.set_const("divideAndConquer", autopas::options::MPIStrategyOption::Value::divideAndConquer);
+
+    mod.add_type<autopas::options::MPIStrategyOption>("MPIStrategyOption")
+            .constructor<autopas::options::MPIStrategyOption::Value>();
+
+    mod.add_bits<autopas::options::TuningStrategyOption::Value>("TuningStrategyOptionValue", jlcxx::julia_type("CppEnum"));
+    mod.set_const("randomSearch", autopas::options::TuningStrategyOption::Value::randomSearch);
+    mod.set_const("fullSearch", autopas::options::TuningStrategyOption::Value::fullSearch);
+    mod.set_const("bayesianSearch", autopas::options::TuningStrategyOption::Value::bayesianSearch);
+    mod.set_const("bayesianClusterSearch", autopas::options::TuningStrategyOption::Value::bayesianClusterSearch);
+    mod.set_const("activeHarmony", autopas::options::TuningStrategyOption::Value::activeHarmony);
+    mod.set_const("predictiveTuning", autopas::options::TuningStrategyOption::Value::predictiveTuning);
+
+    mod.add_type<autopas::options::TuningStrategyOption>("TuningStrategyOption")
+            .constructor<autopas::options::TuningStrategyOption::Value>();
+
+    mod.add_bits<autopas::options::SelectorStrategyOption::Value>("SelectorStrategyOptionValue", jlcxx::julia_type("CppEnum"));
+    mod.set_const("fastestAbs", autopas::options::SelectorStrategyOption::Value::fastestAbs);
+    mod.set_const("fastestMean", autopas::options::SelectorStrategyOption::Value::fastestMean);
+    mod.set_const("fastestMedian", autopas::options::SelectorStrategyOption::Value::fastestMedian);
+
+    mod.add_type<autopas::options::SelectorStrategyOption>("SelectorStrategyOption")
+            .constructor<autopas::options::SelectorStrategyOption::Value>();
+
+    mod.add_bits<autopas::options::ExtrapolationMethodOption::Value>("ExtrapolationMethodOptionValue", jlcxx::julia_type("CppEnum"));
+    mod.set_const("linePrediction", autopas::options::ExtrapolationMethodOption::Value::linePrediction);
+    mod.set_const("linearRegression", autopas::options::ExtrapolationMethodOption::Value::linearRegression);
+    mod.set_const("newton", autopas::options::ExtrapolationMethodOption::Value::newton);
+
+    mod.add_type<autopas::options::ExtrapolationMethodOption>("ExtrapolationMethodOption")
+            .constructor<autopas::options::ExtrapolationMethodOption::Value>();
+
+    mod.add_bits<autopas::options::IteratorBehavior::Value>("IteratorBehaviorValue", jlcxx::julia_type("CppEnum"));
+    mod.set_const("owned", autopas::options::IteratorBehavior::Value::owned);
+    mod.set_const("halo", autopas::options::IteratorBehavior::Value::halo);
+    mod.set_const("ownedOrHalo", autopas::options::IteratorBehavior::Value::ownedOrHalo);
+    mod.set_const("dummy", autopas::options::IteratorBehavior::Value::dummy);
+
+    mod.add_type<autopas::options::IteratorBehavior>("IteratorBehavior")
+            .constructor<autopas::options::IteratorBehavior::Value>();
     
     // add type MoleculeLJ
     mod.add_type<Parametric<TypeVar<1>>>("MoleculeLJ")
@@ -356,6 +417,9 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
             .constructor<int, std::vector<double>, std::vector<double>>()
             .method("update_x", &Hydrogen::update_x)
             .method("update_v", &Hydrogen::update_v);
+
+    mod.add_type<Parametric<TypeVar<1>>>("MoleculeJ")
+            .apply<MoleculeJ<double>, MoleculeJ<float>>(WrapMoleculeJ()); 
 
     /*
     mod.add_type<autopas::options::IteratorBehavior>("IteratorBehavior", jlcxx::julia_base_type<autopas::options::Option<autopas::options::IteratorBehavior>>())
@@ -407,15 +471,6 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.set_const("ownedOrHalo1", ownedOrHalo1);
     mod.set_const("dummy1", dummy1);
 
-    mod.add_bits<autopas::options::IteratorBehavior::Value>("IteratorBehaviorValue", jlcxx::julia_type("CppEnum"));
-    mod.set_const("owned", autopas::options::IteratorBehavior::Value::owned);
-    mod.set_const("halo", autopas::options::IteratorBehavior::Value::halo);
-    mod.set_const("ownedOrHalo", autopas::options::IteratorBehavior::Value::ownedOrHalo);
-    mod.set_const("dummy", autopas::options::IteratorBehavior::Value::dummy);
-
-    mod.add_type<autopas::options::IteratorBehavior>("IteratorBehavior")
-            .constructor<autopas::options::IteratorBehavior::Value>();
-
     /*
      * add enum ContainerOptionJulia
      */
@@ -436,41 +491,36 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     /*
      * add enum DataLayoutOptionJulia
      */
-    mod.add_bits<DataLayoutOptionJulia>("DataLayout", jlcxx::julia_type("CppEnum"));
-    mod.set_const("aos", aos);
-    mod.set_const("soa", soa);
+    mod.add_bits<autopas::options::DataLayoutOption::Value>("DataLayoutOptionValue", jlcxx::julia_type("CppEnum"));
+    mod.set_const("aos", autopas::options::DataLayoutOption::aos);
+    mod.set_const("soa", autopas::options::DataLayoutOption::soa);
 
     /*
      * add enum Newton3OptionJulia
      */
     
-    mod.add_bits<Newton3OptionJulia>("Newton3Option", jlcxx::julia_type("CppEnum"));
-    mod.set_const("disabled", disabled);
-    mod.set_const("enabled", enabled);
+    mod.add_bits<autopas::options::Newton3Option::Value>("Newton3OptionValue", jlcxx::julia_type("CppEnum"));
+    mod.set_const("disabled", autopas::options::Newton3Option::disabled);
+    mod.set_const("enabled", autopas::options::Newton3Option::enabled);
 
     /*
      * add enum LoadEstimatorOptionJulia
      */
-    mod.add_bits<LoadEstimatorOptionJulia>("LoadEstimatorOption", jlcxx::julia_type("CppEnum"));
-    mod.set_const("none", none);
-    mod.set_const("squaredParticlesPerCell", squaredParticlesPerCell);
-    mod.set_const("neighborListLength", neighborListLength);
+    mod.add_bits<autopas::LoadEstimatorOption::Value>("LoadEstimatorOptionValue", jlcxx::julia_type("CppEnum"));
+    mod.set_const("none", autopas::LoadEstimatorOption::none);
+    mod.set_const("squaredParticlesPerCell", autopas::LoadEstimatorOption::squaredParticlesPerCell);
+    mod.set_const("neighborListLength", autopas::LoadEstimatorOption::neighborListLength);
 
     /*
      * add enum TraversalOptionJulia
      */
-    mod.add_bits<TraversalOptionJulia>("TraversalOption", jlcxx::julia_type("CppEnum"));
-    mod.set_const("ds_sequential", ds_sequential);
-    mod.set_const("lc_c01", lc_c01);
-    mod.set_const("lc_c01_combined_SoA", lc_c01_combined_SoA);
+    mod.add_bits<autopas::options::TraversalOption::Value>("TraversalOptionValue", jlcxx::julia_type("CppEnum"));
+    mod.set_const("ds_sequential", autopas::options::TraversalOption::ds_sequential);
+    mod.set_const("lc_c01", autopas::options::TraversalOption::lc_c01);
+    mod.set_const("lc_c01_combined_SoA", autopas::options::TraversalOption::lc_c01_combined_SoA);
 
     mod.method("setAllowedContainers", &setAllowedContainers);
 
-    mod.add_bits<autopas::options::AcquisitionFunctionOption::Value>("AcquisitionFunctionOptionValue", jlcxx::julia_type("CppEnum"));
-    mod.set_const("mean", autopas::options::AcquisitionFunctionOption::Value::mean);
-
-    mod.add_type<autopas::options::AcquisitionFunctionOption>("AcquisitionFunctionOption")
-            .constructor<autopas::options::AcquisitionFunctionOption::Value>();
 
     /*
      * add setters of AutoPas attributes which cannot directly be wrapped
@@ -512,6 +562,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.method("get_vec", &get_vec);
     mod.method("setBox", &setBox);
     mod.method("getBox", &getBox);
+    mod.method("getContainerOption", &getContainerOption);
 }
 
 // cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DAUTOPAS_BUILD_TESTS=OFF ..

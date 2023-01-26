@@ -238,10 +238,16 @@ v2 = alib.ContainerOption(alib.linkedCells)
 println("type of v1: " * string(typeof(v1)))
 println("type of enum: " * string(typeof(alib.directSum)))
 
-vec0 = Vector{alib.ContainerOptionValue}([alib.directSum, alib.linkedCells, alib.octree, alib.directSum])
+# vec0 = Vector{alib.ContainerOptionValue}([alib.directSum, alib.linkedCells, alib.octree, alib.directSum])
+vec0 = Vector{alib.ContainerOption}([v1, v2])
 
-alib.setAllowedContainers(b, [v1])
+println("type of vector: " * string(typeof(vec0)))
+# alib.setAllowedContainers(b, [alib.directSum])
+println(typeof(alib.getContainerOption()))
+alib.setAllowedContainers(b, vec0)
 
+
+# alib.setAcquisitionFunction(b, alib.AcquisitionFunctionOption(alib.mean))
 #=
 
 ERROR: LoadError: MethodError: no method matching setAllowedContainers(::Main.alib.AutoPasAllocated{Main.alib.MoleculeLJ{Float64}}, ::Vector{Main.alib.ContainerOptionAllocated})
@@ -252,5 +258,8 @@ Stacktrace:
    @ /mnt/c/Users/laura/Documents/BA_SH/AutoPasJulia/AutoPas/examples/md-julia/src/test.jl:240
 
 =#
-
+pi = alib.IteratorBehavior(alib.owned)
+iter22 = alib.begin2(b, pi)
+res22 = alib.isValid(iter22)
+println("is valud: " * string(res22))
 println("END")

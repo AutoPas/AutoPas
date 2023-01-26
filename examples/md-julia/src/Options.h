@@ -1,0 +1,13 @@
+#pragma once
+#include "autopas/options//ExtrapolationMethodOption.h"
+#include "autopas/options/AcquisitionFunctionOption.h"
+#include "autopas/options/ContainerOption.h"
+#include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/IteratorBehavior.h"
+#include "autopas/options/LoadEstimatorOption.h"
+#include "autopas/options/MPIStrategyOption.h"
+#include "autopas/options/Newton3Option.h"
+#include "autopas/options/SelectorStrategyOption.h"
+#include "autopas/options/TraversalOption.h"
+#include "autopas/options/TuningStrategyOption.h"
+#include "autopas/options/AcquisitionFunctionOption.h"
