@@ -274,15 +274,15 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
         const auto distanceToBoundary = isUpper ? reflSkinMax[dimensionIndex] - position[dimensionIndex] : position[dimensionIndex] - reflSkinMin[dimensionIndex];
         if (distanceToBoundary < sixthRootOfTwo * PPL.getSigma(p->getTypeId()) / 2.) {
           // Create mirror particle and shift it to other side of reflective boundary
-          auto mirrorParticle = p;
-          auto mirrorPos = mirrorParticle->getR();
-          mirrorPos[dimensionIndex] =
-              isUpper ? reflSkinMax[dimensionIndex] + (reflSkinMax[dimensionIndex] - mirrorPos[dimensionIndex])
-                      : reflSkinMin[dimensionIndex] - mirrorPos[dimensionIndex];
-          mirrorParticle->setR(mirrorPos);
+          ParticleType mirrorParticle;
+          auto position = p->getR();
+          position[dimensionIndex] =
+              isUpper ? reflSkinMax[dimensionIndex] + (reflSkinMax[dimensionIndex] - position[dimensionIndex])
+                      : reflSkinMin[dimensionIndex] - position[dimensionIndex];
+          mirrorParticle.setR(position);
 
           // Interact original particle with its mirror
-          functorLJ.AoSFunctor(*p, *mirrorParticle, false);
+          functorLJ.AoSFunctor(*p, mirrorParticle, false);
         }
       }
     };
