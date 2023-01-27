@@ -6,6 +6,8 @@
 
 #include "ReflectiveBoundaryConditionTest.h"
 
+#include <gmock/gmock-matchers.h>
+
 #include "autopas/AutoPasDecl.h"
 #include "autopas/utils/ArrayMath.h"
 #include "src/domainDecomposition/RegularGridDecomposition.h"
@@ -20,6 +22,9 @@ extern template class autopas::AutoPas<ParticleType>;
 TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   // initialise AutoPas container & domainDecomposition
   MDFlexConfig config(0, nullptr);
+  config.epsilonMap.value.clear();
+  config.sigmaMap.value.clear();
+  config.massMap.value.clear();
 
   const std::array<double, 3> boxMin = {0., 0., 0.};
   const std::array<double, 3> boxMax = {5., 5., 5.};
@@ -157,3 +162,120 @@ INSTANTIATE_TEST_SUITE_P(
                                     std::array<bool, 3>{false, false, false}))
     //    ,ReflectiveBoundaryConditionTest::PrintToStringParamName());
 );
+
+/**
+ * Implements the reflective boundary zoning test.
+ * @param particlePosition
+ * @param particleType Must be either 0 or 1. 0 corresponds to a sigma of 0.5, 1 corresponds to a sigma of 1.0.
+ */
+void testReflectiveBoundaryZoning(const std::array<double, 3> particlePosition, int particleTypeID) {
+  if (particleTypeID != 0 and particleTypeID != 1) {
+    std::cerr << "testReflectiveBoundaryZoning only takes particle types of 0 or 1 only!";
+  }
+  MDFlexConfig config(0, nullptr);
+  config.epsilonMap.value.clear();
+  config.sigmaMap.value.clear();
+  config.massMap.value.clear();
+
+
+  const std::array<double, 3> boxMin = {0., 0., 0.};
+  const std::array<double, 3> boxMax = {5., 5., 5.};
+  const std::array<double, 2> sigmas = {1., 2.};
+  const double cutoff = 2.5;
+
+  config.boxMin.value = boxMin;
+  config.boxMax.value = boxMax;
+  const std::array<double, 3> boxLength = autopas::utils::ArrayMath::sub(boxMax, boxMin);
+  config.subdivideDimension.value = {true, true, true};
+  config.cutoff.value = cutoff;
+  config.addParticleType(0, 1., sigmas[0], 1.);
+  config.addParticleType(1, 1., sigmas[1], 1.);
+  config.boundaryOption.value = {options::BoundaryTypeOption::reflective, options::BoundaryTypeOption::reflective,
+                                 options::BoundaryTypeOption::reflective};
+
+  RegularGridDecomposition domainDecomposition(config);
+
+  auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
+  auto particlePropertiesLibrary = std::make_shared<ParticlePropertiesLibraryType>(cutoff);
+
+  autoPasContainer->setBoxMin(boxMin);
+  autoPasContainer->setBoxMax(boxMax);
+  autoPasContainer->setCutoff(cutoff);
+  autoPasContainer->init();
+
+  particlePropertiesLibrary->addType(0, 1., sigmas[0], 1.);
+  particlePropertiesLibrary->addType(1, 1., sigmas[1], 1.);
+  particlePropertiesLibrary->calculateMixingCoefficients();
+
+  std::array<bool,3> expectReflection = {false, false, false};
+  for (int dim = 0; dim < 3; dim++) {
+    if (particlePosition[dim] < boxMin[dim] + sixthRootOfTwo * sigmas[particleTypeID] / 2.) {
+      expectReflection[dim] = true;
+    } else if (particlePosition[dim] > boxMax[dim] - sixthRootOfTwo * sigmas[particleTypeID] /2.) {
+      expectReflection[dim] = true;
+    }
+  }
+
+  ParticleType particle;
+  particle.setR(particlePosition);
+  particle.setF({0., 0., 0.});
+  particle.setTypeId(particleTypeID);
+
+  autoPasContainer->addParticle(particle);
+
+  domainDecomposition.reflectParticlesAtBoundaries(*autoPasContainer, *particlePropertiesLibrary);
+
+  auto returnedParticle = autoPasContainer->begin();
+
+  const auto reflectedForce = returnedParticle->getF();
+
+  for (int dim = 0; dim < 3; dim++) {
+    if (expectReflection[dim]) {
+      EXPECT_NE(reflectedForce[dim], 0.);
+    } else {
+      EXPECT_DOUBLE_EQ(reflectedForce[dim], 0.);
+    }
+  }
+}
+
+/**
+ * Tests that reflective boundaries are applied only to particles near enough to the boundary that a repulsive force is
+ * applied.
+ *
+ * Four particles are created, with two different sigmas, as follows
+ * * One, with a small sigma, is placed close to the boundary and is expected to be reflected.
+ * * One, with a large sigma, is placed further from the boundary, but such that it is still expected to be reflected.
+ * * One, with a small sigma, is placed at the same distance as the previous, but is not expected to be reflected.
+ * * One, with a large sigma, is placed such that it is not expected to be reflected.
+ *
+ * This is repeated for all boundaries.
+ */
+TEST_F(ReflectiveBoundaryConditionTest, reflectiveZoningTest) {
+  testReflectiveBoundaryZoning({0.5, 2.5, 2.5}, 0);
+  testReflectiveBoundaryZoning({2.5, 0.5, 2.5}, 0);
+  testReflectiveBoundaryZoning({2.5, 2.5, 0.5}, 0);
+  testReflectiveBoundaryZoning({4.5, 2.5, 2.5}, 0);
+  testReflectiveBoundaryZoning({2.5, 4.5, 2.5}, 0);
+  testReflectiveBoundaryZoning({2.5, 2.5, 4.5}, 0);
+
+  testReflectiveBoundaryZoning({1.0, 2.5, 2.5}, 1);
+  testReflectiveBoundaryZoning({2.5, 1.0, 2.5}, 1);
+  testReflectiveBoundaryZoning({2.5, 2.5, 1.0}, 1);
+  testReflectiveBoundaryZoning({4.0, 2.5, 2.5}, 1);
+  testReflectiveBoundaryZoning({2.5, 4.0, 2.5}, 1);
+  testReflectiveBoundaryZoning({2.5, 2.5, 4.0}, 1);
+
+  testReflectiveBoundaryZoning({1.0, 2.5, 2.5}, 0);
+  testReflectiveBoundaryZoning({2.5, 1.0, 2.5}, 0);
+  testReflectiveBoundaryZoning({2.5, 2.5, 1.0}, 0);
+  testReflectiveBoundaryZoning({4.0, 2.5, 2.5}, 0);
+  testReflectiveBoundaryZoning({2.5, 4.0, 2.5}, 0);
+  testReflectiveBoundaryZoning({2.5, 2.5, 4.0}, 0);
+
+  testReflectiveBoundaryZoning({1.5, 2.5, 2.5}, 1);
+  testReflectiveBoundaryZoning({2.5, 1.5, 2.5}, 1);
+  testReflectiveBoundaryZoning({2.5, 2.5, 1.5}, 1);
+  testReflectiveBoundaryZoning({3.5, 2.5, 2.5}, 1);
+  testReflectiveBoundaryZoning({2.5, 3.5, 2.5}, 1);
+  testReflectiveBoundaryZoning({2.5, 2.5, 3.5}, 1);
+}

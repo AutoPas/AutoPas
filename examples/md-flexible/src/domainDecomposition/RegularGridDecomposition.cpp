@@ -260,7 +260,7 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
 
 void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPasContainer, ParticlePropertiesLibraryType &PPL) {
   std::array<double, _dimensionCount> reflSkinMin{}, reflSkinMax{};
-  auto functorLJ = autopas::LJFunctor<ParticleType, false, true, autopas::FunctorN3Modes::Newton3Off, false, false>(_maxReflectiveSkin, PPL);
+  auto functorLJ = autopas::LJFunctor<ParticleType, false, true, autopas::FunctorN3Modes::Newton3Off, false, false>(_maxReflectiveSkin * 2., PPL);
 
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
     // skip if boundary is not reflective
