@@ -14,13 +14,30 @@ extern template class autopas::AutoPas<ParticleType>;
 
 auto MixedBoundaryConditionTest::setUpExpectations(
     const std::vector<std::array<double, 3>> &particlePositions,
-    const std::vector<std::array<double, 3>> &particleVelocities, const std::array<double, 3> &boxMin,
-    const std::array<double, 3> &boxMax, const double reflectionSkin, const double interactionLength,
+    const std::vector<std::array<double, 3>> &particleForces, const std::array<double, 3> &boxMin,
+    const std::array<double, 3> &boxMax, const double sigma, const double interactionLength,
     const std::array<options::BoundaryTypeOption, 3> &boundaryConditions) {
   const auto boxLength = autopas::utils::ArrayMath::sub(boxMax, boxMin);
   auto expectedPositions = particlePositions;
   auto expectedHaloPositions = particlePositions;
-  auto expectedVelocities = particleVelocities;
+  auto expectedForces = particleForces;
+
+  auto forceFromReflection = [&](const std::array<double, 3> position, const int dimensionOfBoundary, const bool isUpper) {
+    const auto distanceToBoundary = isUpper ? boxMax[dimensionOfBoundary] - position[dimensionOfBoundary]:
+                                            position[dimensionOfBoundary] - boxMin[dimensionOfBoundary];
+    const auto distanceToMirrorParticle = distanceToBoundary * 2.;
+    const auto distanceSquared = distanceToMirrorParticle * distanceToMirrorParticle;
+
+    const auto inverseDistanceSquared = 1. / distanceSquared;
+    const auto lj2 = sigma * sigma * inverseDistanceSquared;
+    const auto lj6 = lj2 * lj2 * lj2;
+    const auto lj12 = lj6 * lj6;
+    const auto lj12m6 = lj12 - lj6;
+    const auto ljForceFactor = 24 * (lj12 + lj12m6) * inverseDistanceSquared;
+    const auto force = ljForceFactor * distanceToMirrorParticle * (isUpper ? -1. : 1.);
+
+    return force;
+  };
 
   for (size_t id = 0; id < particlePositions.size(); ++id) {
     for (size_t dim = 0; dim < boundaryConditions.size(); ++dim) {
@@ -47,9 +64,10 @@ auto MixedBoundaryConditionTest::setUpExpectations(
           break;
         case ::options::BoundaryTypeOption::reflective:
           // if near a reflective boundary and flying towards it the velocity sign is flipped
-          if ((particlePositions[id][dim] > (boxMax[dim] - reflectionSkin) and particleVelocities[id][dim] > 0) or
-              (particlePositions[id][dim] < (boxMin[dim] + reflectionSkin) and particleVelocities[id][dim] < 0)) {
-            expectedVelocities[id][dim] *= -1;
+          if (particlePositions[id][dim] < boxMin[dim] + sixthRootOfTwo * sigma) {
+            expectedForces[id][dim] = forceFromReflection(particlePositions[id], dim, false);
+          } else {
+            expectedForces[id][dim] = forceFromReflection(particlePositions[id], dim, true);
           }
           break;
         case ::options::BoundaryTypeOption::none:
@@ -61,26 +79,33 @@ auto MixedBoundaryConditionTest::setUpExpectations(
       }
     }
   }
-  return std::make_tuple(expectedPositions, expectedHaloPositions, expectedVelocities);
+  return std::make_tuple(expectedPositions, expectedHaloPositions, expectedForces);
 }
 
 void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<double, 3>> &particlePositions,
-                                              const std::vector<std::array<double, 3>> &particleVelocities,
                                               const std::array<options::BoundaryTypeOption, 3> &boundaryConditions) {
+  const double cutoff = 0.3;
+  const double sigma = 1.;
+
   // initialise AutoPas container & domainDecomposition
   MDFlexConfig config(0, nullptr);
+  config.epsilonMap.value.clear();
+  config.sigmaMap.value.clear();
+  config.massMap.value.clear();
   config.boxMin.value = {0., 0., 0.};
   config.boxMax.value = {5., 5., 5.};
-  config.cutoff.value = 0.3;
+  config.cutoff.value = cutoff;
   config.verletSkinRadiusPerTimestep.value = 0.02;
   config.verletRebuildFrequency.value = 10;
   config.subdivideDimension.value = {true, true, true};
   config.boundaryOption.value = boundaryConditions;
+  config.addParticleType(0, 1., sigma, 1.);
 
   const std::array<double, 3> boxLength = autopas::utils::ArrayMath::sub(config.boxMax.value, config.boxMin.value);
   RegularGridDecomposition domainDecomposition(config);
 
   auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
+  auto particlePropertiesLibrary = std::make_shared<ParticlePropertiesLibraryType>(cutoff);
 
   autoPasContainer->setBoxMin(domainDecomposition.getLocalBoxMin());
   autoPasContainer->setBoxMax(domainDecomposition.getLocalBoxMax());
@@ -90,7 +115,7 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
   autoPasContainer->init();
 
   const auto &[expectedPositions, expectedHaloPositions, expectedVelocities] = setUpExpectations(
-      particlePositions, particleVelocities, config.boxMin.value, config.boxMax.value,
+      particlePositions, config.boxMin.value, config.boxMax.value,
       config.verletSkinRadiusPerTimestep.value * config.verletRebuildFrequency.value / 2.,
       config.cutoff.value + config.verletSkinRadiusPerTimestep.value * config.verletRebuildFrequency.value,
       config.boundaryOption.value);
@@ -116,8 +141,6 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
                    return safePos;
                  });
 
-  ASSERT_EQ(particlePositions.size(), particleVelocities.size()) << "Need the same number of positions and velocities!";
-
   // add particles in safe positions so they can be added to the correct MPI rank.
   for (size_t i = 0; i < particlePositions.size(); ++i) {
     if (not domainDecomposition.isInsideLocalDomain(particlePositionsSafe[i])) {
@@ -126,7 +149,7 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
     ParticleType particle;
     particle.setID(i);
     particle.setR(particlePositionsSafe[i]);
-    particle.setV(particleVelocities[i]);
+    particle.setF({0., 0., 0.});
     autoPasContainer->addParticle(particle);
   }
 
@@ -150,7 +173,7 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
 
   // Apply boundary conditions
   domainDecomposition.exchangeMigratingParticles(*autoPasContainer, emigrants);
-  domainDecomposition.reflectParticlesAtBoundaries(*autoPasContainer);
+  domainDecomposition.reflectParticlesAtBoundaries(*autoPasContainer, *particlePropertiesLibrary);
   domainDecomposition.exchangeHaloParticles(*autoPasContainer);
 
 #if not defined(AUTOPAS_INCLUDE_MPI)
