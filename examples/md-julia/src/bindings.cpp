@@ -3,116 +3,26 @@
 #include <type_traits>
 #include "jlcxx/functions.hpp"
 #include "autopas/molecularDynamics/MoleculeLJ.h"
-// #include "autopas/AutoPas.h"
 #include "TypeDef.h"
-// #include "Simulation.h"
 #include "autopas/AutoPas.h"
 #include "Hydrogen.h"
 #include <iostream>
 #include "IteratorBehaviorJulia.h"
 #include "Options.h"
 #include "MoleculeJ.h"
-#include "./bindings/MoleculeBinding.h"
+#include "./bindings/ParticleBinding.h"
 #include "./bindings/AutoPasBindings.h"
-
-
-// extern template class autopas::AutoPas<ParticleType>;
-// template class autopas::AutoPas<ParticleType>;
-
-struct WrapMoleculeLJ {
-    template<typename floatType>
-    void operator()(floatType&& wrapped) {
-        // typedef typename T::type WrappedT;
-        using WrappedT = typename floatType::type;
-
-        // constructors for MoleculeLJ
-        wrapped.template constructor<>();
-        wrapped.template constructor<jlcxx::ArrayRef<double,1>, jlcxx::ArrayRef<double,1>, int, int>();
-
-        // setters of MoleculeLJ attributes (adjusted for the Julia Wrapper)
-        wrapped.method("setPos", &WrappedT::setPos);
-        wrapped.method("setV", &WrappedT::setV);
-        wrapped.method("setF", &WrappedT::setF);
-        wrapped.method("setOldF", static_cast<void (WrappedT::*)(jlcxx::ArrayRef<double,1>)> (&WrappedT::setOldF));
-
-        // getters of MoleculeLJ attributes (adjusted for the Julia Wrapper)
-        wrapped.method("getPos", &WrappedT::getPos);
-        wrapped.method("getV", &WrappedT::getV);
-        wrapped.method("getF", &WrappedT::getF);
-        wrapped.method("getOldF", static_cast<jlcxx::ArrayRef<double,1> (WrappedT::*)()> (&WrappedT::getOldF));
-//         //   t0.method("set_x_pos", static_cast<void (WrapClass::*)(int) >(&WrapClass::set_x_pos));
-
-        // add methods of MoleculeLJ attributes (adjusted for the Julia Wrapper)
-        wrapped.method("addPos", &WrappedT::addPos);
-        wrapped.method("addV", &WrappedT::addV);
-        wrapped.method("addF", &WrappedT::addF);
-
-        // 
-        wrapped.method("getID", &WrappedT::getID);
-        wrapped.method("toString", &WrappedT::toString);
-        // wrapped.method("print_particle", &WrappedT::print_particle);
-    }
-};
-
-struct WrapParticleBase {
-    template<typename T>
-    void operator()(T&& wrapped) {
-        using WrapedT = typename T::type;
-        wrapped.template constructor<>();
-        // wrapped.method("print_particle", &WrapedT::print_particle);
-    }
-};
-
-struct WrapIteratorInterface {
-    template<typename T>
-    void operator()(T&& wrapped) {
-        using WrapedT = typename T::type;
-        // wrapped.template constructor<>();
-        
-    }
-};
-
-/*
-struct WrapIteratorInterfaceImpl {
-    template<typename T>
-    void operator()(T&& wrapped) {
-        using WrappedT = typename T::type;
-        // wrapped.template constructor<>();
-    }
-
-};
-*/
-
-struct WrapIteratorWrapper {
-    template<typename T>
-    void operator()(T&& wrapped) {
-        using WrappedT = typename T::type;
-        // wrapped.template constructor<>();
-        // wrapped.method("setIterator", &WrappedT::setInterator);
-        wrapped.method("isValid", &WrappedT::isValid);
-        wrapped.method("inc", &WrappedT::operator++);
-        wrapped.method("deref", &WrappedT::operator*);
-        // TODO: wrap operator
-    }
-};
+#include "./bindings/IteratorBindings.h"
 
 namespace jlcxx
 {
     using jlcxx::Parametric;
+    
     // specifying BuildParameterList
-    
-    
     template<typename Particle, bool modifiable>
     struct BuildParameterList<autopas::ParticleIteratorInterface<Particle, modifiable>> {
         typedef ParameterList<Particle, bool> type;
     };
-
-    /*
-    template<typename Particle, bool modifiable>
-    struct BuildParameterList<autopas::internal::ParticleIteratorInterfaceImpl<Particle, modifiable>> {
-        typedef ParameterList<Particle, bool> type;
-    };
-    */
 
     template<typename Particle, bool modifiable>
     struct BuildParameterList<autopas::ParticleIteratorWrapper<Particle, modifiable>> {
@@ -133,7 +43,7 @@ namespace jlcxx
 
 /*
   numberset _autoPasContainer->setAllowedCellSizeFactors(*_configuration.cellSizeFactors.value);
-  DONE set:_autoPasContainer->setAllowedContainers(_configuration.containerOptions.value);
+  set:_autoPasContainer->setAllowedContainers(_configuration.containerOptions.value);
   set _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions.value);
   set _autoPasContainer->setAllowedNewton3Options(_configuration.newton3Options.value);
   set _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions.value);
@@ -169,183 +79,6 @@ namespace jlcxx
    1/1 init
 
 */
-
-/*
-struct WrapAutoPas {
-    using iterator_t = typename autopas::IteratorTraits<autopas::MoleculeLJ<double>>::iterator_t;
-    template<typename Particle>
-    void operator()(Particle&& wrapped) {
-        // typedef typename T::type WrappedT;
-        using WrappedT = typename Particle::type;
-        wrapped.template constructor<>();
-        wrapped.method("init", &WrappedT::init);
-        // resizeBox
-        // force retune
-        wrapped.method("finalize", &WrappedT::finalize);
-        wrapped.method("updateContainer", &WrappedT::updateContainer);
-        wrapped.method("addParticle", &WrappedT::addParticle);
-        // addhaloParticle
-        wrapped.method("deleteAllParticles", &WrappedT::deleteAllParticles);
-        // .method("open", static_cast<void (IO::LCReader::*)(const std::string&)>(&IO::LCReader::open));
-        //  t0.method("get_x_pos", static_cast<int (WrapClass::*)() >(&WrapClass::get_x_pos));
-        //   t0.method("set_x_pos", static_cast<void (WrapClass::*)(int) >(&WrapClass::set_x_pos));
-        // wrapped.method("begin", static_cast<iterator_t (WrappedT::*)(autopas::IteratorBehavior) > (&WrappedT::begin));
-        // wrapped.method("begin", static_cast<autopas::ParticleIteratorWrapper<Particle, bool> (WrappedT::*)() > (&WrappedT::begin));
-        // wrapped.method("begin", &WrappedT::begin);
-        wrapped.method("begin2", static_cast<iterator_t (WrappedT::*)(autopas::options::IteratorBehavior)> (&WrappedT::begin));
-        // wrapped.method("begin", static_cast<autopas::ParticleIteratorWrapper<autopas::MoleculeLJ<double>, true> (WrappedT::*)() >(&WrappedT::begin));
-        // wrapped.method("deleteParticle", &Wrapped::deleteParticle); may not be wrapped
-        wrapped.method("printBoxSize", &WrappedT::printBoxSize);
-
-        // setters for AutoPas variables (direct)
-        wrapped.method("setVerletSkinPerTimestep", &WrappedT::setVerletSkinPerTimestep);
-        wrapped.method("setVerletRebuildFrequency", &WrappedT::setVerletRebuildFrequency);
-        wrapped.method("setVerletClusterSize", &WrappedT::setVerletClusterSize);
-        wrapped.method("setTuningInterval", &WrappedT::setTuningInterval);
-        wrapped.method("setMaxEvidence", &WrappedT::setMaxEvidence);
-        wrapped.method("setNumSamples", &WrappedT::setNumSamples);
-        wrapped.method("setEvidenceFirstPrediction", &WrappedT::setEvidenceFirstPrediction);
-        wrapped.method("setRelativeBlacklistRange", &WrappedT::setRelativeBlacklistRange);
-        wrapped.method("setMaxTuningPhasesWithoutTest", &WrappedT::setMaxTuningPhasesWithoutTest);
-        wrapped.method("setRelativeOptimumRange", &WrappedT::setRelativeOptimumRange);
-        wrapped.method("setCutoff", &WrappedT::setCutoff);
-        wrapped.method("setOutputSuffix", &WrappedT::setOutputSuffix);
-        wrapped.method("setMPITuningWeightForMaxDensity", &WrappedT::setMPITuningWeightForMaxDensity);
-        wrapped.method("setMPITuningMaxDifferenceForBucket", &WrappedT::setMPITuningMaxDifferenceForBucket);
-
-        wrapped.method("setAcquisitionFunction", &WrappedT::setAcquisitionFunction);
-        wrapped.method("setMPIStrategy", &WrappedT::setMPIStrategy);
-        wrapped.method("setTuningStrategyOption", &WrappedT::setTuningStrategyOption);
-        wrapped.method("setSelectorStrategy", &WrappedT::setSelectorStrategy);
-        wrapped.method("setExtrapolationMethodOption", &WrappedT::setExtrapolationMethodOption);
-    }
-};
-*/
-
-/*
- * further setters of the AutoPas class which can not be wraped directly
- */
-
-/*
- * setter for ContainerOption
- */
-// void setAllowedContainers(autopas::AutoPas<autopas::MoleculeLJ<double>>& autoPasContainer, ContainerOptionJulia op) {// jlcxx::ArrayRef<ContainerOptionJulia,1> option) {
-    /*std::set<autopas::options::ContainerOption> tmp;
-    for(auto it = option.begin(); it != option.end(); it++) {
-        ContainerOptionJulia c = *it;
-        // autopas::options::ContainerOption op = it;
-        // autopas::options::ContainerOption x = static_cast<autopas::options::ContainerOption>(c);
-        tmp.insert(static_cast<autopas::options::ContainerOption>(1));
-    }
-    */
-   // std::set<autopas::options::ContainerOption> tmp;
-    // autopas::options::ContainerOption oo = static_cast<int>(op);
-    // tmp.insert(static_cast<autopas::options::ContainerOption>(op));
-    // autoPasContainer.setAllowedContainers(tmp);
-// }
-
-/*
- * setter for DataLayout
- */
- /*
-void setAllowedDataLayouts(autopas::AutoPas<autopas::MoleculeLJ<double>>& autoPasContainer, jlcxx::ArrayRef<DataLayoutOptionJulia,1> option) {
-    autoPasContainer.setAllowedDataLayouts({option.begin(), option.end()});
-}
-*/
-/*
- * setter for Newton3Options
- */
- /*
-void setAllowedNewton3Options(autopas::AutoPas<autopas::MoleculeLJ<double>>& autoPasContainer, jlcxx::ArrayRef<Newton3OptionJulia,1> option) {
-    autoPasContainer.setAllowedNewton3Options({option.begin(), option.end()});
-}
-*/
-
-/*
- * setter for TraversalsOption
- */
-/*
-void setAllowedTraversals(autopas::AutoPas<autopas::MoleculeLJ<double>>& autoPasContainer, jlcxx::ArrayRef<TraversalOptionJulia,1> option) {
-    autoPasContainer.setAllowedTraversals({option.begin(), option.end()});
-}
-*/
-
-/*
- * setter for LoadEstimatorsOption
- */
-/*
-void setAllowedLoadEstimators(autopas::AutoPas<autopas::MoleculeLJ<double>>& autoPasContainer, jlcxx::ArrayRef<LoadEstimatorOptionJulia,1> option) {
-    autoPasContainer.setAllowedLoadEstimators({option.begin(), option.end()});
-}
-*/
-
-/*
-struct WrapOptions {
-    template<typename actualOption>
-    void operator()(actualOption&& wrapped) {
-        using WrappedT = typename actualOption::type;
-    }
-};
-*/
-
-// void setAllowedContainers(autopas::AutoPas<autopas::MoleculeLJ<double>>& autoPasContainer, jlcxx::ArrayRef<autopas::options::ContainerOption,1> options) {
-void setAllowedContainers(autopas::AutoPas<autopas::MoleculeLJ<double>>& autoPasContainer, jlcxx::ArrayRef<autopas::options::ContainerOption,1> option) {// jlcxx::ArrayRef<autopas::options::ContainerOption,1> option) {
-    /*std::set<autopas::options::ContainerOption> tmp;
-    for(auto it = options.begin(); it != options.end(); it++) {
-        tmp.insert(*it);
-    }
-
-    for(auto it = tmp.begin(); it != tmp.end(); it++) {
-        std::cout << "option: " << *it << ", ";
-    }
-    std::cout << std::endl;
-    autoPasContainer.setAllowedContainers(tmp);
-    */
-    /*
-    for(auto it = option.begin(); it != option.end(); it++) {
-        std::cout << "option: " << *it << ", ";
-    }
-    */
-    std::cout << "in set allowed container\n";
-}
-
-autopas::options::ContainerOption getContainerOption() {
-    autopas::options::ContainerOption option{autopas::options::ContainerOption::directSum};
-    return option;
-}
-
-std::vector<double> get_vec(double x1, double x2, double x3) {
-    return {x1, x2, x3};
-}
-
-
-void setBox(autopas::AutoPas<autopas::MoleculeLJ<double>>& ap) {
-    const std::array<double, 3> min_{0,0,0};
-    const std::array<double, 3> max_{7.5,7.5,7.5};
-    
-    ap.setBoxMin(min_);
-    ap.setBoxMax(max_);
-    /*
-    auto m1 = ap.getBoxMin();
-    auto m2 = ap.getBoxMax();
-    std::cout << "min: " << m1.at(0) << ", " << m1.at(1) << ", " << m1.at(2) << "\n";
-    std::cout << "min: " << m2.at(0) << ", " << m2.at(1) << ", " << m2.at(2) << "\n";
-    */
-}
-
-void getBox(autopas::AutoPas<autopas::MoleculeLJ<double>>& ap) {
-    auto m1 = ap.getBoxMin();
-    auto m2 = ap.getBoxMax();
-    std::cout << "get_min: " << m1.at(0) << ", " << m1.at(1) << ", " << m1.at(2) << "\n";
-    std::cout << "get_min: " << m2.at(0) << ", " << m2.at(1) << ", " << m2.at(2) << "\n";
-}
-
-autopas::ParticleIteratorWrapper<autopas::MoleculeLJ<double>, true> begin_new(autopas::AutoPas<autopas::MoleculeLJ<double>>& autopasContianer, IteratorBehaviorJulia iteratorBehaviorJulia) {
-    autopas::options::IteratorBehavior b = iteratorBehaviorJulia;
-    std::cout << "in begin_new iterator function\n";
-    return autopasContianer.begin(b);
-    // return autopasContianer.begin();
-}
 
 JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 {
@@ -405,10 +138,6 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.add_type<autopas::options::IteratorBehavior>("IteratorBehavior")
             .constructor<autopas::options::IteratorBehavior::Value>();
     
-    // add type MoleculeLJ
-    mod.add_type<Parametric<TypeVar<1>>>("MoleculeLJ")
-            .apply<autopas::MoleculeLJ<float>, autopas::MoleculeLJ<double>>(WrapMoleculeLJ());
-
     mod.add_type<Parametric<TypeVar<1>>>("ParticleBase")
             .apply<autopas::ParticleBase<float, int>, autopas::ParticleBase<double, long>>(WrapParticleBase());
 
@@ -421,18 +150,10 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.add_type<Parametric<TypeVar<1>>>("MoleculeJ")
             .apply<MoleculeJ<double>, MoleculeJ<float>>(WrapMoleculeJ()); 
 
-    /*
-    mod.add_type<autopas::options::IteratorBehavior>("IteratorBehavior", jlcxx::julia_base_type<autopas::options::Option<autopas::options::IteratorBehavior>>())
-            .constructor<>();
-
-    mod.add_type<Parametric<TypeVar<1>>>("Option")
-            .apply<autopas::options::Option<autopas::options::IteratorBehavior>>(WrapOptions());
-
-    */
     // add iterator types necessary to iterate over the AutoPasContainer
     // add type ParticleIteratorInterface
     mod.add_type<Parametric<TypeVar<1>, TypeVar<2>>>("ParticleIteratorInterface")
-            .apply<autopas::ParticleIteratorInterface<autopas::MoleculeLJ<double>, true>>(WrapIteratorInterface());
+            .apply<autopas::ParticleIteratorInterface<autopas::MoleculeLJ<double>, true>, autopas::ParticleIteratorInterface<MoleculeJ<double>, true>>(WrapIteratorInterface());
 
     
     /*
@@ -443,14 +164,14 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 
     // add type ParticleIteratorWrapper which is used to iterate over the AutoPasContainer
     mod.add_type<Parametric<TypeVar<1>, TypeVar<2>>>("ParticleIteratorWrapper", jlcxx::julia_base_type<autopas::ParticleIteratorInterface<autopas::MoleculeLJ<double>, true>>())
-            .apply<autopas::ParticleIteratorWrapper<autopas::MoleculeLJ<double>, true>>(WrapIteratorWrapper());
+            .apply<autopas::ParticleIteratorWrapper<autopas::MoleculeLJ<double>, true>, autopas::ParticleIteratorWrapper<MoleculeJ<double>, true>>(WrapIteratorWrapper());
     
     // add type AutoPas
     // mod.add_type<Parametric<TypeVar<1>>>("AutoPas")
     //         .apply<autopas::AutoPas<autopas::ParticleBase<float, int>>, autopas::AutoPas<autopas::MoleculeLJ<double>>>(WrapAutoPas());
     
     mod.add_type<Parametric<TypeVar<1>>>("AutoPas")
-            .apply<autopas::AutoPas<autopas::MoleculeLJ<double>>>(WrapAutoPas());
+            .apply<autopas::AutoPas<autopas::MoleculeLJ<double>>, autopas::AutoPas<MoleculeJ<double>>>(WrapAutoPas());
 
     /*
     mod.add_bits<ParticleType>("ParticleType", jlcxx::julia_type("CppEnum"));
@@ -472,7 +193,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.set_const("dummy1", dummy1);
 
     /*
-     * add enum ContainerOptionJulia
+     * add enum ContainerOption
      */
     mod.add_bits<autopas::options::ContainerOption::Value>("ContainerOptionValue", jlcxx::julia_type("CppEnum"));
     mod.set_const("directSum", autopas::options::ContainerOption::Value::directSum);
@@ -489,14 +210,14 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
             .constructor<autopas::options::ContainerOption::Value>();
 
     /*
-     * add enum DataLayoutOptionJulia
+     * add enum DataLayoutOption
      */
     mod.add_bits<autopas::options::DataLayoutOption::Value>("DataLayoutOptionValue", jlcxx::julia_type("CppEnum"));
     mod.set_const("aos", autopas::options::DataLayoutOption::aos);
     mod.set_const("soa", autopas::options::DataLayoutOption::soa);
 
     /*
-     * add enum Newton3OptionJulia
+     * add enum Newton3Option
      */
     
     mod.add_bits<autopas::options::Newton3Option::Value>("Newton3OptionValue", jlcxx::julia_type("CppEnum"));
@@ -504,7 +225,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.set_const("enabled", autopas::options::Newton3Option::enabled);
 
     /*
-     * add enum LoadEstimatorOptionJulia
+     * add enum LoadEstimatorOption
      */
     mod.add_bits<autopas::LoadEstimatorOption::Value>("LoadEstimatorOptionValue", jlcxx::julia_type("CppEnum"));
     mod.set_const("none", autopas::LoadEstimatorOption::none);
@@ -512,7 +233,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.set_const("neighborListLength", autopas::LoadEstimatorOption::neighborListLength);
 
     /*
-     * add enum TraversalOptionJulia
+     * add enum TraversalOption
      */
     mod.add_bits<autopas::options::TraversalOption::Value>("TraversalOptionValue", jlcxx::julia_type("CppEnum"));
     mod.set_const("ds_sequential", autopas::options::TraversalOption::ds_sequential);
@@ -529,40 +250,37 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     /*
      * add setAllowedContainers
      */
-    // mod.method("setAllowedContainers", &setAllowedContainers);
+    mod.method("setAllowedContainers", &setAllowedContainers);
 
     /*
      * add setAllowedDataLayouts
      */
-    // mod.method("setAllowedDataLayouts", setAllowedDataLayouts);
+    mod.method("setAllowedDataLayouts", setAllowedDataLayouts);
 
     /*
      * add setAllowedNewton3Options
      */
-    // mod.method("setAllowedNewton3Options", setAllowedNewton3Options);
+    mod.method("setAllowedNewton3Options", setAllowedNewton3Options);
 
     /*
      * add setAllowedTraversals
      */
-    // mod.method("setAllowedTraversals", setAllowedTraversals);
+    mod.method("setAllowedTraversals", setAllowedTraversals);
 
     /*
      * add setAllowedLoadEstimators
      */
-    // mod.method("setAllowedLoadEstimators", setAllowedLoadEstimators);
+    mod.method("setAllowedLoadEstimators", setAllowedLoadEstimators);
 
-    /*
-     * add bein function of AutoPas
+    /**
+     * add setBoxMin
      */
-    mod.method("begin", &begin_new);
+    mod.method("setBoxMin", &setBoxMin);
 
-    // mod.add_type<Parametric<TypeVar<1>>>("AutoPas")
-    //         .apply<autopas::AutoPas<Hydrogen>, autopas::AutoPas<ParticleType>>(WrapAutoPas());
-
-    mod.method("get_vec", &get_vec);
-    mod.method("setBox", &setBox);
-    mod.method("getBox", &getBox);
-    mod.method("getContainerOption", &getContainerOption);
+    /**
+     * add setBoxMax
+     */
+    mod.method("setBoxMax", &setBoxMax);
 }
 
 // cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DAUTOPAS_BUILD_TESTS=OFF ..

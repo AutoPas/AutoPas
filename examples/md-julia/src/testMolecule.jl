@@ -21,4 +21,16 @@ autopas.setOldF(molecule, oldF_set)
 println("type of oldF: " *string(typeof(autopas.getOldF(molecule))))
 println("type of pos: " * string(typeof(get_pos)))
 println(string(autopas.toString(molecule)))
+
+data_layout = Vector{autopas.DataLayoutOptionValue}([autopas.aos, autopas.soa])
+autoPasContainer = autopas.AutoPas{autopas.MoleculeJ{Float64}}()
+
+autopas.setBoxMin(autoPasContainer, [0.0, 0.0, 0.0])
+autopas.setBoxMax(autoPasContainer, [7.5, 7.5, 7.5])
+autopas.init(autoPasContainer)
+println("created container")
+autopas.setAllowedDataLayouts(autoPasContainer, data_layout)
+it = autopas.IteratorBehavior(autopas.owned)
+iter = autopas.begin(autoPasContainer, it)
+
 println("END")

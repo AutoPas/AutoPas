@@ -64,7 +64,7 @@ function updateVelocities(autoPasContainer, deltaT, mass)
   while alib.isValid(iter)
     force = alib.getF(alib.deref(iter))
     oldForce = alib.getOldF(alib.deref(iter))
-    newV = broadcast(*, broadcast(+, oldForce, force), (deltaT / (2*mass)))
+    newV = (oldForce + force) * (deltaT / (2*mass))
     alib.addV(alib.deref(iter), newV)
     alib.inc(iter)
 
@@ -81,9 +81,9 @@ function updatePositions(autoPasContainer, deltaT, mass, globalForce)
     force = alib.getF(particle)
     alib.setOldF(particle, force)
     alib.setF(particle, [globalForce, globalForce, globalForce])
-    v = broadcast(*, velocity, deltaT)
-    f = broadcast(*, force, (deltaT * deltaT / (2*mass)))
-    vf = broadcast(+, v, f)
+    v = velocity * deltaT
+    f = force * (deltaT * deltaT / (2*mass))
+    vf = v + f
     # TODO: add verlet skin technique and check if particles are too fast
     alib.addPos(particle, vf)
     alib.inc(iter)
@@ -105,9 +105,11 @@ function updateForces(autoPasContainer, globalForce, epsilon, sigma)
         # (sigma/||xi-xj||)^6
         # -2*(sigma / |xi-xj||)^12
         # xj-xi
-        diff = broadcast(-, alib.getPos(particleOuter), alib.getPos(particleInner)) # xi - xj
-        pos_diff = broadcast(*, diff, -1)
-        diff = boradcast(*, diff, diff) # y:= norm^2 = xik * xjk
+        # diff = broadcast(-, alib.getPos(particleOuter), alib.getPos(particleInner))
+        diff = alib.getPos(particleOuter) - alib.getPos(particleInner)  # xi - xj
+        pos_diff = (-1) * diff
+        # diff = boradcast(*, diff, diff) 
+        diff = diff * diff # y:= norm^2 = xik * xjk
         norm = sum(diff) # y0 + y1 + y2
         first = (-24 * epsilon) / norm
         sig6 = (sigma * sigma * sigma * sigma * sigma * sigma)
@@ -115,9 +117,11 @@ function updateForces(autoPasContainer, globalForce, epsilon, sigma)
         second =  sig6 / norm3
         third = -2 * (sig6 * sig6) / (norm3 * norm3)
         scalars = first * second * third
-        force = broadcast(*, particleOuter, constants)
+        # force = broadcast(*, particleOuter, constants)
+        force = pos_diff * constants
         alib.addF(particleOuter, force)
-        alib.addF(particleInner, broadcast(*, force, -1))
+        # alib.addF(particleInner, broadcast(*, force, -1))
+        alib.addF(particleInner, ((-1) * force))
       end
       alib.inc(iterInner)
     end
@@ -158,7 +162,7 @@ pb = alib.ParticleBase{Float64}()
 println("created particlebase")
 
 
-h1 = alib.Hydrogen()
+h1Hydrogen = alib.()
 
 # x_ = Vector{Float64}([1.0, 1.0, 1.0])
 # v_ = Vector{Float64}([5.0, 5.0, 5.0])

@@ -470,13 +470,6 @@ class AutoPas {
    */
   [[nodiscard]] std::array<double, 3> getBoxMax() const;
 
-
-  void printBoxSize() {
-    
-    std::cout << "decl_min: " << _boxMin.at(0) << ", " << _boxMin.at(1) << ", " << _boxMin.at(2) << "\n";
-    std::cout << "decl_ max: " << _boxMax.at(0) << ", " << _boxMax.at(1) << ", " << _boxMax.at(2) << "\n";
-  }
-
   /**
    * get the bool value indicating if the search space is trivial (not more than one configuration to test).
    * @return bool indicating if search space is trivial.
@@ -488,7 +481,6 @@ class AutoPas {
    * @param boxMin
    */
   void setBoxMin(const std::array<double, 3> &boxMin) { 
-    std::cout << "in setBoxMin\n";
     _boxMin = boxMin; 
   }
 

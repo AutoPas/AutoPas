@@ -34,3 +34,12 @@ struct WrapMoleculeJ {
         wrapped.method("toString", &WrappedT::toString);
     }
 };
+
+struct WrapParticleBase {
+    template<typename T>
+    void operator()(T&& wrapped) {
+        using WrapedT = typename T::type;
+        wrapped.template constructor<>();
+        // wrapped.method("print_particle", &WrapedT::print_particle);
+    }
+};
