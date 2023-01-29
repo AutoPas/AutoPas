@@ -13,8 +13,8 @@
 extern template class autopas::AutoPas<ParticleType>;
 
 auto MixedBoundaryConditionTest::setUpExpectations(
-    const std::vector<std::array<double, 3>> &particlePositions,
-    const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double sigma, const double interactionLength,
+    const std::vector<std::array<double, 3>> &particlePositions, const std::array<double, 3> &boxMin,
+    const std::array<double, 3> &boxMax, const double sigma, const double interactionLength,
     const std::array<options::BoundaryTypeOption, 3> &boundaryConditions) {
   const auto boxLength = autopas::utils::ArrayMath::sub(boxMax, boxMin);
   auto expectedPositions = particlePositions;
@@ -22,9 +22,10 @@ auto MixedBoundaryConditionTest::setUpExpectations(
   std::vector<std::array<double, 3>> expectedForces;
   expectedForces.resize(particlePositions.size());
 
-  auto forceFromReflection = [&](const std::array<double, 3> position, const int dimensionOfBoundary, const bool isUpper) {
-    const auto distanceToBoundary = isUpper ? boxMax[dimensionOfBoundary] - position[dimensionOfBoundary]:
-                                            position[dimensionOfBoundary] - boxMin[dimensionOfBoundary];
+  auto forceFromReflection = [&](const std::array<double, 3> position, const int dimensionOfBoundary,
+                                 const bool isUpper) {
+    const auto distanceToBoundary = isUpper ? boxMax[dimensionOfBoundary] - position[dimensionOfBoundary]
+                                            : position[dimensionOfBoundary] - boxMin[dimensionOfBoundary];
     const auto distanceToMirrorParticle = distanceToBoundary * 2.;
     const auto distanceSquared = distanceToMirrorParticle * distanceToMirrorParticle;
 
@@ -221,9 +222,9 @@ TEST_F(MixedBoundaryConditionTest, testMixedReflection) {
   const std::array<options::BoundaryTypeOption, 3> boundaryConditions = {options::BoundaryTypeOption::periodic,
                                                                          options::BoundaryTypeOption::reflective,
                                                                          options::BoundaryTypeOption::reflective};
-  const std::vector<std::array<double, 3>> particlePositions = {
-      {1.0, 0.005, 1.0}, {1.0, 0.005, 0.005}, {4.995, 0.005, 0.005},
-      {4.0, 4.995, 4.0}, {4.0, 4.995, 4.995}, {0.005, 4.995, 4.995}};
+  const std::vector<std::array<double, 3>> particlePositions = {{1.0, 0.005, 1.0},     {1.0, 0.005, 0.005},
+                                                                {4.995, 0.005, 0.005}, {4.0, 4.995, 4.0},
+                                                                {4.0, 4.995, 4.995},   {0.005, 4.995, 4.995}};
   // particle 0 tests for reflection along a reflective boundary
   // particle 1 tests for reflection in the edge between two reflective boundaries
   // particle 2 tests for reflection only in the directions with reflective boundaries in a periodic/refl/refl corner
@@ -236,8 +237,8 @@ TEST_F(MixedBoundaryConditionTest, testMixedReflection) {
  * Designed to test that exchangeMigratingParticles and exchangeHaloParticles in the mixed boundary case
  * Note: this is not designed to replace the more extensive tests in RegularGridDecompositionTest, but to test the
  * periodic BC in the mixed case.
- * Places particles in within range of reflection and such that it is either periodically translated or halo particles are
- * created to test that particles these particles have the correct reflections.
+ * Places particles in within range of reflection and such that it is either periodically translated or halo particles
+ * are created to test that particles these particles have the correct reflections.
  */
 TEST_F(MixedBoundaryConditionTest, testPeriodic) {
   const std::array<options::BoundaryTypeOption, 3> boundaryConditions = {options::BoundaryTypeOption::periodic,
@@ -247,9 +248,10 @@ TEST_F(MixedBoundaryConditionTest, testPeriodic) {
   const std::vector<std::array<double, 3>> particlePositions = {
       {-0.005, 0.005, 0.005}, {0.005, 0.005, 0.005}, {5.005, 4.995, 4.995}, {4.995, 4.995, 4.995}};
 
-  // particle 0 tests that a particle that needs to be periodically translated in x, is also reflected correctly in y and z
-  // particle 1 tests that a particle in a periodic/reflective/reflective corner produces a correctly reflected halo
-  //    particle
+  // particle 0 tests that a particle that needs to be periodically translated in x, is also reflected correctly in y
+  // and z
+  // particle 1 tests that a particle in a periodic/reflective/reflective corner produces a correctly reflected
+  // halo particle
   // particles 2 & 3 do the same, but for the rightmost boundary.
 
   testFunction(particlePositions, boundaryConditions);
@@ -269,8 +271,9 @@ TEST_F(MixedBoundaryConditionTest, testNoBoundary) {
       options::BoundaryTypeOption::none, options::BoundaryTypeOption::none, options::BoundaryTypeOption::none};
 
   const std::vector<std::array<double, 3>> particlePositions = {
-      {-0.005, 2.5, 2.5}, {0.005, 2.5, 2.5}, {4.995, 2.5, 2.5}, {5.005, 2.5, 2.5}, {2.5, -0.005, 2.5}, {2.5, 0.005, 2.5},
-      {2.5, 4.995, 2.5}, {2.5, 5.005, 2.5}, {2.5, 2.5, -0.005}, {2.5, 2.5, 0.005}, {2.5, 2.5, 4.995}, {2.5, 2.5, 5.005}};
+      {-0.005, 2.5, 2.5}, {0.005, 2.5, 2.5}, {4.995, 2.5, 2.5}, {5.005, 2.5, 2.5},
+      {2.5, -0.005, 2.5}, {2.5, 0.005, 2.5}, {2.5, 4.995, 2.5}, {2.5, 5.005, 2.5},
+      {2.5, 2.5, -0.005}, {2.5, 2.5, 0.005}, {2.5, 2.5, 4.995}, {2.5, 2.5, 5.005}};
 
   // particle 0 tests the lack of periodic translation in the left x-boundary
   // particle 1 tests the lack of reflection in the left x-boundary

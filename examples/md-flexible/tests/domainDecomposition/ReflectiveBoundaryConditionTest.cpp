@@ -16,8 +16,8 @@
 extern template class autopas::AutoPas<ParticleType>;
 
 /**
- * Very simple test of reflective boundaries in all 3 dimension. Places identical particles on every face and tests that the particle
- * receives the correct force.
+ * Very simple test of reflective boundaries in all 3 dimension. Places identical particles on every face and tests that
+ * the particle receives the correct force.
  */
 TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   // initialise AutoPas container & domainDecomposition
@@ -58,9 +58,10 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   const std::array<double, 3> particleVelocity = std::get<1>(GetParam());
 
   // derive expected position
-  auto forceFromReflection = [&](const std::array<double, 3> position, const int dimensionOfBoundary, const bool isUpper) {
-    const auto distanceToBoundary = isUpper ? boxMax[dimensionOfBoundary] - position[dimensionOfBoundary]:
-                                            position[dimensionOfBoundary] - boxMin[dimensionOfBoundary];
+  auto forceFromReflection = [&](const std::array<double, 3> position, const int dimensionOfBoundary,
+                                 const bool isUpper) {
+    const auto distanceToBoundary = isUpper ? boxMax[dimensionOfBoundary] - position[dimensionOfBoundary]
+                                            : position[dimensionOfBoundary] - boxMin[dimensionOfBoundary];
     const auto distanceToMirrorParticle = distanceToBoundary * 2.;
     const auto distanceSquared = distanceToMirrorParticle * distanceToMirrorParticle;
 
@@ -177,7 +178,6 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> particlePosition, 
   config.sigmaMap.value.clear();
   config.massMap.value.clear();
 
-
   const std::array<double, 3> boxMin = {0., 0., 0.};
   const std::array<double, 3> boxMax = {5., 5., 5.};
   const std::array<double, 2> sigmas = {1., 2.};
@@ -207,11 +207,11 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> particlePosition, 
   particlePropertiesLibrary->addType(1, 1., sigmas[1], 1.);
   particlePropertiesLibrary->calculateMixingCoefficients();
 
-  std::array<bool,3> expectReflection = {false, false, false};
+  std::array<bool, 3> expectReflection = {false, false, false};
   for (int dim = 0; dim < 3; dim++) {
     if (particlePosition[dim] < boxMin[dim] + sixthRootOfTwo * sigmas[particleTypeID] / 2.) {
       expectReflection[dim] = true;
-    } else if (particlePosition[dim] > boxMax[dim] - sixthRootOfTwo * sigmas[particleTypeID] /2.) {
+    } else if (particlePosition[dim] > boxMax[dim] - sixthRootOfTwo * sigmas[particleTypeID] / 2.) {
       expectReflection[dim] = true;
     }
   }

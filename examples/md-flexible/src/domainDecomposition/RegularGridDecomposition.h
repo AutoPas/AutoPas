@@ -11,14 +11,14 @@
 #include <memory>
 
 #include "DomainDecomposition.h"
+#include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/utils/WrapMPI.h"
 #include "src/TypeDefinitions.h"
 #include "src/configuration/MDFlexConfig.h"
 #include "src/options/BoundaryTypeOption.h"
-#include "autopas/molecularDynamics/LJFunctor.h"
 
 namespace {
-const double sixthRootOfTwo = std::pow(2., 1./6.);
+const double sixthRootOfTwo = std::pow(2., 1. / 6.);
 }
 
 /**
