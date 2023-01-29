@@ -32,12 +32,10 @@ class MixedBoundaryConditionTest : public AutoPasTestBase {
    * @return
    */
   static auto setUpExpectations(const std::vector<std::array<double, 3>> &particlePositions,
-                                const std::vector<std::array<double, 3>> &particleForces,
                                 const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                                const double sigma, const double interactionLength,
+                                double sigma, double interactionLength,
                                 const std::array<options::BoundaryTypeOption, 3> &boundaryConditions);
 
   void testFunction(const std::vector<std::array<double, 3>> &particlePositions,
-                    const std::vector<std::array<double, 3>> &particleVelocities,
                     const std::array<options::BoundaryTypeOption, 3> &boundaryConditions);
 };
