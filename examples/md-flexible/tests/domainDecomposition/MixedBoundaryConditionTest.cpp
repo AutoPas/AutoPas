@@ -64,9 +64,9 @@ auto MixedBoundaryConditionTest::setUpExpectations(
           break;
         case ::options::BoundaryTypeOption::reflective:
           // if near a reflective boundary and flying towards it the velocity sign is flipped
-          if (particlePositions[id][dim] < boxMin[dim] + sixthRootOfTwo * sigma) {
+          if (particlePositions[id][dim] < boxMin[dim] + sixthRootOfTwo * sigma / 2.) {
             expectedForces[id][dim] = forceFromReflection(particlePositions[id], (int)dim, false);
-          } else {
+          } else if (particlePositions[id][dim] > boxMax[dim] - sixthRootOfTwo * sigma / 2.) {
             expectedForces[id][dim] = forceFromReflection(particlePositions[id], (int)dim, true);
           }
           break;
