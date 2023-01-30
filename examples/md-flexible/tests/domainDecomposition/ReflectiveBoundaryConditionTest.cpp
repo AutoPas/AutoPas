@@ -239,9 +239,11 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> particlePosition, 
 
   for (int dim = 0; dim < 3; dim++) {
     if (expectReflection[dim]) {
-      EXPECT_NE(reflectedForce[dim], 0.);
+      EXPECT_NE(reflectedForce[dim], 0.) << "Particle does not experience reflective force in the " << dim << " dimension when it should.\n"
+          << "Position = " << autopas::utils::ArrayUtils::to_string(particlePosition) << "; Actual Force = " << autopas::utils::ArrayUtils::to_string(reflectedForce) << ";";
     } else {
-      EXPECT_DOUBLE_EQ(reflectedForce[dim], 0.);
+      EXPECT_DOUBLE_EQ(reflectedForce[dim], 0.) << "Particle experiences reflective force in the " << dim << " dimension when it shouldn't.\n"
+                                                << "Position = " << autopas::utils::ArrayUtils::to_string(particlePosition) << "; Actual Force = " << autopas::utils::ArrayUtils::to_string(reflectedForce) << ";";
     }
   }
 }
