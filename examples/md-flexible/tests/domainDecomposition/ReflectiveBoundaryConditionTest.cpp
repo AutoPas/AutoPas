@@ -35,6 +35,8 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   config.subdivideDimension.value = {true, true, true};
   const double cutoff = 0.3;
   config.cutoff.value = cutoff;
+  config.verletSkinRadiusPerTimestep.value = 0.02;
+  config.verletRebuildFrequency.value = 10;
   const double sigma = 1.;
   config.addParticleType(0, 1., sigma, 1.);
   config.boundaryOption.value = {options::BoundaryTypeOption::reflective, options::BoundaryTypeOption::reflective,
@@ -48,6 +50,8 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   autoPasContainer->setBoxMin(boxMin);
   autoPasContainer->setBoxMax(boxMax);
   autoPasContainer->setCutoff(cutoff);
+  autoPasContainer->setVerletSkinPerTimestep(config.verletSkinRadiusPerTimestep.value);
+  autoPasContainer->setVerletRebuildFrequency(config.verletRebuildFrequency.value);
   autoPasContainer->init();
 
   particlePropertiesLibrary->addType(0, 1., sigma, 1.);
@@ -180,14 +184,16 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> particlePosition, 
 
   const std::array<double, 3> boxMin = {0., 0., 0.};
   const std::array<double, 3> boxMax = {5., 5., 5.};
-  const std::array<double, 2> sigmas = {1., 2.};
-  const double cutoff = 2.5;
+  const std::array<double, 2> sigmas = {0.1, 0.2};
+  const double cutoff = 0.3;
 
   config.boxMin.value = boxMin;
   config.boxMax.value = boxMax;
   const std::array<double, 3> boxLength = autopas::utils::ArrayMath::sub(boxMax, boxMin);
   config.subdivideDimension.value = {true, true, true};
   config.cutoff.value = cutoff;
+  config.verletSkinRadiusPerTimestep.value = 0.01;
+  config.verletRebuildFrequency.value = 10;
   config.addParticleType(0, 1., sigmas[0], 1.);
   config.addParticleType(1, 1., sigmas[1], 1.);
   config.boundaryOption.value = {options::BoundaryTypeOption::reflective, options::BoundaryTypeOption::reflective,
@@ -201,6 +207,8 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> particlePosition, 
   autoPasContainer->setBoxMin(boxMin);
   autoPasContainer->setBoxMax(boxMax);
   autoPasContainer->setCutoff(cutoff);
+  autoPasContainer->setVerletSkinPerTimestep(config.verletSkinRadiusPerTimestep.value);
+  autoPasContainer->setVerletRebuildFrequency(config.verletRebuildFrequency.value);
   autoPasContainer->init();
 
   particlePropertiesLibrary->addType(0, 1., sigmas[0], 1.);
@@ -251,31 +259,31 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> particlePosition, 
  * This is repeated for all boundaries.
  */
 TEST_F(ReflectiveBoundaryConditionTest, reflectiveZoningTest) {
-  testReflectiveBoundaryZoning({0.5, 2.5, 2.5}, 0);
-  testReflectiveBoundaryZoning({2.5, 0.5, 2.5}, 0);
-  testReflectiveBoundaryZoning({2.5, 2.5, 0.5}, 0);
-  testReflectiveBoundaryZoning({4.5, 2.5, 2.5}, 0);
-  testReflectiveBoundaryZoning({2.5, 4.5, 2.5}, 0);
-  testReflectiveBoundaryZoning({2.5, 2.5, 4.5}, 0);
+  testReflectiveBoundaryZoning({0.05, 2.5,  2.5},  0);
+  testReflectiveBoundaryZoning({2.5,  0.05, 2.5},  0);
+  testReflectiveBoundaryZoning({2.5,  2.5,  0.05}, 0);
+  testReflectiveBoundaryZoning({4.95, 2.5,  2.5},  0);
+  testReflectiveBoundaryZoning({2.5,  4.95, 2.5},  0);
+  testReflectiveBoundaryZoning({2.5,  2.5,  4.95}, 0);
 
-  testReflectiveBoundaryZoning({1.0, 2.5, 2.5}, 1);
-  testReflectiveBoundaryZoning({2.5, 1.0, 2.5}, 1);
-  testReflectiveBoundaryZoning({2.5, 2.5, 1.0}, 1);
-  testReflectiveBoundaryZoning({4.0, 2.5, 2.5}, 1);
-  testReflectiveBoundaryZoning({2.5, 4.0, 2.5}, 1);
-  testReflectiveBoundaryZoning({2.5, 2.5, 4.0}, 1);
+  testReflectiveBoundaryZoning({0.1, 2.5, 2.5}, 1);
+  testReflectiveBoundaryZoning({2.5, 0.1, 2.5}, 1);
+  testReflectiveBoundaryZoning({2.5, 2.5, 0.1}, 1);
+  testReflectiveBoundaryZoning({4.9, 2.5, 2.5}, 1);
+  testReflectiveBoundaryZoning({2.5, 4.9, 2.5}, 1);
+  testReflectiveBoundaryZoning({2.5, 2.5, 4.9}, 1);
 
-  testReflectiveBoundaryZoning({1.0, 2.5, 2.5}, 0);
-  testReflectiveBoundaryZoning({2.5, 1.0, 2.5}, 0);
-  testReflectiveBoundaryZoning({2.5, 2.5, 1.0}, 0);
-  testReflectiveBoundaryZoning({4.0, 2.5, 2.5}, 0);
-  testReflectiveBoundaryZoning({2.5, 4.0, 2.5}, 0);
-  testReflectiveBoundaryZoning({2.5, 2.5, 4.0}, 0);
+  testReflectiveBoundaryZoning({0.1, 2.5, 2.5}, 0);
+  testReflectiveBoundaryZoning({2.5, 0.1, 2.5}, 0);
+  testReflectiveBoundaryZoning({2.5, 2.5, 0.1}, 0);
+  testReflectiveBoundaryZoning({4.9, 2.5, 2.5}, 0);
+  testReflectiveBoundaryZoning({2.5, 4.9, 2.5}, 0);
+  testReflectiveBoundaryZoning({2.5, 2.5, 4.9}, 0);
 
-  testReflectiveBoundaryZoning({1.5, 2.5, 2.5}, 1);
-  testReflectiveBoundaryZoning({2.5, 1.5, 2.5}, 1);
-  testReflectiveBoundaryZoning({2.5, 2.5, 1.5}, 1);
-  testReflectiveBoundaryZoning({3.5, 2.5, 2.5}, 1);
-  testReflectiveBoundaryZoning({2.5, 3.5, 2.5}, 1);
-  testReflectiveBoundaryZoning({2.5, 2.5, 3.5}, 1);
+  testReflectiveBoundaryZoning({0.15, 2.5,  2.5}, 1);
+  testReflectiveBoundaryZoning({2.5,  0.15, 2.5}, 1);
+  testReflectiveBoundaryZoning({2.5,  2.5,  0.15}, 1);
+  testReflectiveBoundaryZoning({4.85, 2.5,  2.5}, 1);
+  testReflectiveBoundaryZoning({2.5,  4.85, 2.5}, 1);
+  testReflectiveBoundaryZoning({2.5,  2.5,  4.85}, 1);
 }
