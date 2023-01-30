@@ -40,8 +40,8 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
   _decomposition = DomainTools::generateDecomposition(_subdomainCount, configuration.subdivideDimension.value);
 
   double maxSigma{0};
-  for (auto sigmaMapElement : configuration.sigmaMap.value) {
-    maxSigma = std::max(maxSigma, sigmaMapElement.second);
+  for (const auto &[_, sigma] : leMap) {
+    maxSigma = std::max(maxSigma, sigma);
   }
   _maxReflectiveSkin = sixthRootOfTwo * maxSigma / 2.;
 
@@ -259,9 +259,9 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
 }
 
 void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPasContainer,
-                                                            ParticlePropertiesLibraryType &PPL) {
+                                                            ParticlePropertiesLibraryType &particlePropertiesLib) {
   std::array<double, _dimensionCount> reflSkinMin{}, reflSkinMax{};
-  auto functorLJ = autopas::LJFunctor<ParticleType, false, true, autopas::FunctorN3Modes::Newton3Off, false, false>(
+  auto functorLJ = autopas::LJFunctor<ParticleType, false, true, autopas::FunctorN3Modes::Both, false, false>(
       _maxReflectiveSkin * 2., PPL);
 
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
@@ -273,8 +273,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
            p.isValid(); ++p) {
         // Check that particle is within 6th root of 2 * sigma
         const auto position = p->getR();
-        const auto distanceToBoundary = isUpper ? reflSkinMax[dimensionIndex] - position[dimensionIndex]
-                                                : position[dimensionIndex] - reflSkinMin[dimensionIndex];
+        const auto distanceToBoundary = std::abs(reflSkinMax[dimensionIndex] - position[dimensionIndex]);
         if (distanceToBoundary < sixthRootOfTwo * PPL.getSigma(p->getTypeId()) / 2.) {
           // Create mirror particle and shift it to other side of reflective boundary
           ParticleType mirrorParticle;
