@@ -44,7 +44,7 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
   // particles, we iterate once over particles within the largest possible range where a particle might experience a
   // repulsion, i.e. sixthRootOfTwo * maxSigma / 2.0.
   double maxSigma{0};
-  for (const auto &[_, sigma] : leMap) {
+  for (const auto &[_, sigma] : configuration.sigmaMap.value) {
     maxSigma = std::max(maxSigma, sigma);
   }
   _maxReflectiveSkin = sixthRootOfTwo * maxSigma / 2.;
@@ -266,7 +266,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
                                                             ParticlePropertiesLibraryType &particlePropertiesLib) {
   std::array<double, _dimensionCount> reflSkinMin{}, reflSkinMax{};
   auto functorLJ = autopas::LJFunctor<ParticleType, false, true, autopas::FunctorN3Modes::Both, false, false>(
-      _maxReflectiveSkin * 2., PPL);
+      _maxReflectiveSkin * 2., particlePropertiesLib);
 
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
     // skip if boundary is not reflective
@@ -278,7 +278,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
         // Check that particle is within 6th root of 2 * sigma
         const auto position = p->getR();
         const auto distanceToBoundary = std::abs(reflSkinMax[dimensionIndex] - position[dimensionIndex]);
-        if (distanceToBoundary < sixthRootOfTwo * PPL.getSigma(p->getTypeId()) / 2.) {
+        if (distanceToBoundary < sixthRootOfTwo * particlePropertiesLib.getSigma(p->getTypeId()) / 2.) {
           // Create mirror particle and shift it to other side of reflective boundary
           ParticleType mirrorParticle;
           auto position = p->getR();
