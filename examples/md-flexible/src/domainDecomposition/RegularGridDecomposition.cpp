@@ -39,6 +39,10 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
 
   _decomposition = DomainTools::generateDecomposition(_subdomainCount, configuration.subdivideDimension.value);
 
+  // For reflection, we interact particles with their 'mirror' only if it would cause a repulsive force. This occurs
+  // only for particles within sixthRootOfTwo * sigma / 2.0 of the boundary. For minimal redundant iterating over
+  // particles, we iterate once over particles within the largest possible range where a particle might experience a
+  // repulsion, i.e. sixthRootOfTwo * maxSigma / 2.0.
   double maxSigma{0};
   for (const auto &[_, sigma] : leMap) {
     maxSigma = std::max(maxSigma, sigma);
