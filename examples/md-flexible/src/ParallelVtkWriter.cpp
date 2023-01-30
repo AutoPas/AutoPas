@@ -49,7 +49,6 @@ void ParallelVtkWriter::recordTimestep(size_t currentIteration, const autopas::A
  * @todo: Currently this function runs over all the particles for each property separately.
  * This can be improved by using multiple string streams (one for each property).
  * The streams can be combined to a single output stream after iterating over the particles, once.
- *  * ToDo: This file does not output any rotational qualities e.g. quaternion, angVel, torque
  */
 void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
                                              const autopas::AutoPas<ParticleType> &autoPasContainer) {
@@ -91,6 +90,32 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
     timestepFile << "        " << f[0] << " " << f[1] << " " << f[2] << "\n";
   }
   timestepFile << "        </DataArray>\n";
+
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+  // print quaternions
+  timestepFile << "        <DataArray Name=\"quaternions\" NumberOfComponents=\"4\" format=\"ascii\" type=\"Float32\">\n";
+  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    auto q = particle->getQ();
+    timestepFile << "        " << q[0] << " " << q[1] << " " << q[2] << " " << q[3] << "\n";
+  }
+  timestepFile << "        </DataArray>\n";
+
+  // print angular velocities
+  timestepFile << "        <DataArray Name=\"angularVelocities\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
+  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    auto angVel = particle->getAngularVel();
+    timestepFile << "        " << angVel[0] << " " << angVel[1] << " " << angVel[2] << "\n";
+  }
+  timestepFile << "        </DataArray>\n";
+
+  // print torques
+  timestepFile << "        <DataArray Name=\"torques\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
+  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    auto torque = particle->getTorque();
+    timestepFile << "        " << torque[0] << " " << torque[1] << " " << torque[2] << "\n";
+  }
+  timestepFile << "        </DataArray>\n";
+#endif
 
   // print type ids
   timestepFile << "        <DataArray Name=\"typeIds\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\">\n";
@@ -233,6 +258,11 @@ void ParallelVtkWriter::createPvtuFile(size_t currentIteration) {
   timestepFile
       << "      <PDataArray Name=\"velocities\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>\n";
   timestepFile << "      <PDataArray Name=\"forces\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>\n";
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+  timestepFile << "      <PDataArray Name=\"quaternions\" NumberOfComponents=\"4\" format=\"ascii\" type=\"Float32\"/>\n";
+  timestepFile << "      <PDataArray Name=\"angularVelocities\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>\n";
+  timestepFile << "      <PDataArray Name=\"torques\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>\n";
+#endif
   timestepFile << "      <PDataArray Name=\"typeIds\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\"/>\n";
   timestepFile << "      <PDataArray Name=\"ids\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\"/>\n";
   timestepFile << "    </PPointData>\n";
