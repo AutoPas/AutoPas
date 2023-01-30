@@ -224,26 +224,36 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> particlePosition, 
     }
   }
 
-  ParticleType particle;
-  particle.setR(particlePosition);
-  particle.setF({0., 0., 0.});
-  particle.setTypeId(particleTypeID);
-
-  autoPasContainer->addParticle(particle);
+  // create particle and add to container
+  // in the MPI case this is expected to be wrong for all but one rank
+  if (domainDecomposition.isInsideLocalDomain(particlePosition)) {
+    ParticleType particle;
+    particle.setID(0);
+    particle.setR(particlePosition);
+    particle.setF({0., 0., 0.});
+    particle.setTypeId(particleTypeID);
+    autoPasContainer->addParticle(particle);
+#if not defined(AUTOPAS_INCLUDE_MPI)
+  } else {
+    GTEST_FAIL() << "Test Particle is not in the box -> setup is wrong!";
+#endif
+  }
 
   domainDecomposition.reflectParticlesAtBoundaries(*autoPasContainer, *particlePropertiesLibrary);
 
-  auto returnedParticle = autoPasContainer->begin();
+  if (domainDecomposition.isInsideLocalDomain(particlePosition)) {  
+    auto returnedParticle = autoPasContainer->begin();
 
-  const auto reflectedForce = returnedParticle->getF();
+    const auto reflectedForce = returnedParticle->getF();
 
-  for (int dim = 0; dim < 3; dim++) {
-    if (expectReflection[dim]) {
-      EXPECT_NE(reflectedForce[dim], 0.) << "Particle does not experience reflective force in the " << dim << " dimension when it should.\n"
-          << "Position = " << autopas::utils::ArrayUtils::to_string(particlePosition) << "; Actual Force = " << autopas::utils::ArrayUtils::to_string(reflectedForce) << ";";
-    } else {
-      EXPECT_DOUBLE_EQ(reflectedForce[dim], 0.) << "Particle experiences reflective force in the " << dim << " dimension when it shouldn't.\n"
-                                                << "Position = " << autopas::utils::ArrayUtils::to_string(particlePosition) << "; Actual Force = " << autopas::utils::ArrayUtils::to_string(reflectedForce) << ";";
+    for (int dim = 0; dim < 3; dim++) {
+      if (expectReflection[dim]) {
+	EXPECT_NE(reflectedForce[dim], 0.) << "Particle does not experience reflective force in the " << dim << " dimension when it should.\n"
+					   << "Position = " << autopas::utils::ArrayUtils::to_string(particlePosition) << "; Actual Force = " << autopas::utils::ArrayUtils::to_string(reflectedForce) << ";";
+      } else {
+	EXPECT_DOUBLE_EQ(reflectedForce[dim], 0.) << "Particle experiences reflective force in the " << dim << " dimension when it shouldn't.\n"
+						  << "Position = " << autopas::utils::ArrayUtils::to_string(particlePosition) << "; Actual Force = " << autopas::utils::ArrayUtils::to_string(reflectedForce) << ";";
+      }
     }
   }
 }
