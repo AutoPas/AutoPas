@@ -241,18 +241,22 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> particlePosition, 
 
   domainDecomposition.reflectParticlesAtBoundaries(*autoPasContainer, *particlePropertiesLibrary);
 
-  if (domainDecomposition.isInsideLocalDomain(particlePosition)) {  
+  if (domainDecomposition.isInsideLocalDomain(particlePosition)) {
     auto returnedParticle = autoPasContainer->begin();
 
     const auto reflectedForce = returnedParticle->getF();
 
     for (int dim = 0; dim < 3; dim++) {
       if (expectReflection[dim]) {
-	EXPECT_NE(reflectedForce[dim], 0.) << "Particle does not experience reflective force in the " << dim << " dimension when it should.\n"
-					   << "Position = " << autopas::utils::ArrayUtils::to_string(particlePosition) << "; Actual Force = " << autopas::utils::ArrayUtils::to_string(reflectedForce) << ";";
+        EXPECT_NE(reflectedForce[dim], 0.)
+            << "Particle does not experience reflective force in the " << dim << " dimension when it should.\n"
+            << "Position = " << autopas::utils::ArrayUtils::to_string(particlePosition)
+            << "; Actual Force = " << autopas::utils::ArrayUtils::to_string(reflectedForce) << ";";
       } else {
-	EXPECT_DOUBLE_EQ(reflectedForce[dim], 0.) << "Particle experiences reflective force in the " << dim << " dimension when it shouldn't.\n"
-						  << "Position = " << autopas::utils::ArrayUtils::to_string(particlePosition) << "; Actual Force = " << autopas::utils::ArrayUtils::to_string(reflectedForce) << ";";
+        EXPECT_DOUBLE_EQ(reflectedForce[dim], 0.)
+            << "Particle experiences reflective force in the " << dim << " dimension when it shouldn't.\n"
+            << "Position = " << autopas::utils::ArrayUtils::to_string(particlePosition)
+            << "; Actual Force = " << autopas::utils::ArrayUtils::to_string(reflectedForce) << ";";
       }
     }
   }
@@ -271,12 +275,12 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> particlePosition, 
  * This is repeated for all boundaries.
  */
 TEST_F(ReflectiveBoundaryConditionTest, reflectiveZoningTest) {
-  testReflectiveBoundaryZoning({0.05, 2.5,  2.5},  0);
-  testReflectiveBoundaryZoning({2.5,  0.05, 2.5},  0);
-  testReflectiveBoundaryZoning({2.5,  2.5,  0.05}, 0);
-  testReflectiveBoundaryZoning({4.95, 2.5,  2.5},  0);
-  testReflectiveBoundaryZoning({2.5,  4.95, 2.5},  0);
-  testReflectiveBoundaryZoning({2.5,  2.5,  4.95}, 0);
+  testReflectiveBoundaryZoning({0.05, 2.5, 2.5}, 0);
+  testReflectiveBoundaryZoning({2.5, 0.05, 2.5}, 0);
+  testReflectiveBoundaryZoning({2.5, 2.5, 0.05}, 0);
+  testReflectiveBoundaryZoning({4.95, 2.5, 2.5}, 0);
+  testReflectiveBoundaryZoning({2.5, 4.95, 2.5}, 0);
+  testReflectiveBoundaryZoning({2.5, 2.5, 4.95}, 0);
 
   testReflectiveBoundaryZoning({0.1, 2.5, 2.5}, 1);
   testReflectiveBoundaryZoning({2.5, 0.1, 2.5}, 1);
@@ -292,10 +296,10 @@ TEST_F(ReflectiveBoundaryConditionTest, reflectiveZoningTest) {
   testReflectiveBoundaryZoning({2.5, 4.9, 2.5}, 0);
   testReflectiveBoundaryZoning({2.5, 2.5, 4.9}, 0);
 
-  testReflectiveBoundaryZoning({0.15, 2.5,  2.5}, 1);
-  testReflectiveBoundaryZoning({2.5,  0.15, 2.5}, 1);
-  testReflectiveBoundaryZoning({2.5,  2.5,  0.15}, 1);
-  testReflectiveBoundaryZoning({4.85, 2.5,  2.5}, 1);
-  testReflectiveBoundaryZoning({2.5,  4.85, 2.5}, 1);
-  testReflectiveBoundaryZoning({2.5,  2.5,  4.85}, 1);
+  testReflectiveBoundaryZoning({0.15, 2.5, 2.5}, 1);
+  testReflectiveBoundaryZoning({2.5, 0.15, 2.5}, 1);
+  testReflectiveBoundaryZoning({2.5, 2.5, 0.15}, 1);
+  testReflectiveBoundaryZoning({4.85, 2.5, 2.5}, 1);
+  testReflectiveBoundaryZoning({2.5, 4.85, 2.5}, 1);
+  testReflectiveBoundaryZoning({2.5, 2.5, 4.85}, 1);
 }

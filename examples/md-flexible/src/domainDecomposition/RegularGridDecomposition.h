@@ -22,7 +22,7 @@ namespace {
  * Sixth Root of Two precomputed here, as it is used a lot in reflecting boundaries.
  */
 const double sixthRootOfTwo = std::pow(2., 1. / 6.);
-}
+}  // namespace
 
 /**
  * This class can be used as a domain decomposition which divides the domain in equal sized rectangular subdomains.
