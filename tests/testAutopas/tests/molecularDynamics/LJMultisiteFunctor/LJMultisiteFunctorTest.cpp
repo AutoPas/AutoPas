@@ -509,7 +509,7 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
   // For ease of readability, each molecule has its own molType, even when duplicated.
   MultisiteMoleculeLJ mol0;
   mol0.setR({0.,0.,0.});
-  mol0.setQ({1.,1.,0.,0.});
+  mol0.setQ({0., 0., 0., 1.});
   mol0.setF({0.,0.,0.});
   mol0.setTorque({0.,0.,0.});
   mol0.setTypeId(0);
@@ -517,7 +517,7 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
 
   MultisiteMoleculeLJ mol1;
   mol1.setR({0.1,0.,0.});
-  mol1.setQ({1.,1.,0.,0.});
+  mol1.setQ({0., 0., 0., 1.});
   mol1.setF({0.,0.,0.});
   mol1.setTorque({0.,0.,0.});
   mol1.setTypeId(1);
@@ -525,7 +525,7 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
 
   MultisiteMoleculeLJ mol2;
   mol2.setR({0.,0.1,0.});
-  mol2.setQ({1.,1.,0.,0.});
+  mol2.setQ({0., 0., 0., 1.});
   mol2.setF({0.,0.,0.});
   mol2.setTorque({0.,0.,0.});
   mol2.setTypeId(2);
@@ -533,7 +533,7 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
 
   MultisiteMoleculeLJ mol3;
   mol3.setR({0.,0.,0.});
-  mol3.setQ({1.,1.,0.,0.});
+  mol3.setQ({0., 0., 0., 1.});
   mol3.setF({0.,0.,0.});
   mol3.setTorque({0.,0.,0.});
   mol3.setTypeId(3);
@@ -541,7 +541,7 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
 
   MultisiteMoleculeLJ mol4;
   mol4.setR({0.,0.,0.1});
-  mol4.setQ({0.5,0.25, sqrt(3)/2,0.});
+  mol4.setQ({0.7071067811865475, 0.7071067811865475, 0., 0.});
   mol4.setF({0.,0.,0.});
   mol4.setTorque({0.,0.,0.});
   mol4.setTypeId(4);
@@ -549,7 +549,7 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
 
   MultisiteMoleculeLJ mol5;
   mol5.setR({2.,2.,2.});
-  mol5.setQ({1.,1.,0.,0.});
+  mol5.setQ({0., 0., 0., 1.});
   mol5.setF({0.,0.,0.});
   mol5.setTorque({0.,0.,0.});
   mol5.setTypeId(5);
@@ -557,7 +557,7 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
 
   MultisiteMoleculeLJ mol6;
   mol6.setR({0.,1.05,0.});
-  mol6.setQ({1.,1.,0.,0.});
+  mol6.setQ({0., 0., 0., 1.});
   mol6.setF({0.,0.,0.});
   mol6.setTorque({0.,0.,0.});
   mol6.setTypeId(6);
@@ -565,7 +565,7 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
 
   MultisiteMoleculeLJ mol7;
   mol7.setR({0.,0.95,0.});
-  mol7.setQ({1.,1.,0.,0.});
+  mol7.setQ({0., 0., 0., 1.});
   mol7.setF({0.,0.,0.});
   mol7.setTorque({0.,0.,0.});
   mol7.setTypeId(7);
@@ -573,7 +573,7 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
 
   MultisiteMoleculeLJ mol8;
   mol8.setR({0.,0.,0.});
-  mol8.setQ({1.,1.,0.,0.});
+  mol8.setQ({0., 0., 0., 1.});
   mol8.setF({0.,0.,0.});
   mol8.setTorque({0.,0.,0.});
   mol8.setTypeId(8);
@@ -617,7 +617,7 @@ TEST_F(LJMultisiteFunctorTest, singleSiteSanityCheck) {
 
   MultisiteMoleculeLJ mol0;
   mol0.setR({0.,0.,0.});
-  mol0.setQ({1.,1.,0.,0.});
+  mol0.setQ({0., 0., 0., 1.});
   mol0.setF({0.,0.,0.});
   mol0.setTorque({0.,0.,0.});
   mol0.setTypeId(0);
@@ -625,7 +625,7 @@ TEST_F(LJMultisiteFunctorTest, singleSiteSanityCheck) {
 
   MultisiteMoleculeLJ mol1;
   mol1.setR({0.5,0.,0.});
-  mol1.setQ({1.,1.,0.,0.});
+  mol1.setQ({0., 0., 0., 1.});
   mol1.setF({0.,0.,0.});
   mol1.setTorque({0.,0.,0.});
   mol1.setTypeId(1);

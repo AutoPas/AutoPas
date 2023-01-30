@@ -50,7 +50,7 @@ class Object {
     particle.setF({0.0, 0.0, 0.0});
     particle.setOldF({0.0, 0.0, 0.0});
 #if defined(MD_FLEXIBLE_USE_MULTI_SITE)
-    particle.setQ({1.0, 1.0, 0.0, 0.0});
+    particle.setQ({0.0, 0.0, 0.0, 1.0}); // todo: add option for this to be set randomly
     particle.setAngularVel({0.0, 0.0, 0.0});
     particle.setTorque({0.0, 0.0, 0.0});
 #endif
