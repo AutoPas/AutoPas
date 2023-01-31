@@ -136,18 +136,6 @@ void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, 
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
   auto forces = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
 
-  findWord(inputStream, "typeIds");
-  inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-  auto typeIds = readPayload<size_t, 1>(inputStream, numParticles);
-
-  findWord(inputStream, "ids");
-  inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-  auto ids = readPayload<size_t, 1>(inputStream, numParticles);
-
-  findWord(inputStream, "positions");
-  inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-  auto positions = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
-
 #ifdef MD_FLEXIBLE_USE_MULTI_SITE
   findWord(inputStream, "quaternions");
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
@@ -161,6 +149,18 @@ void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, 
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
   auto torques = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
 #endif
+
+  findWord(inputStream, "typeIds");
+  inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  auto typeIds = readPayload<size_t, 1>(inputStream, numParticles);
+
+  findWord(inputStream, "ids");
+  inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  auto ids = readPayload<size_t, 1>(inputStream, numParticles);
+
+  findWord(inputStream, "positions");
+  inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  auto positions = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
 
   // creating Particles from checkpoint:
   for (auto i = 0ul; i < numParticles; ++i) {
