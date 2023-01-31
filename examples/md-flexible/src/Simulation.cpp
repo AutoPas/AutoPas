@@ -485,6 +485,7 @@ void Simulation::logSimulationState() {
 
 void Simulation::logMeasurements() {
   const long positionUpdate = accumulateTime(_timers.positionUpdate.getTotalTime());
+  const long quaternionUpdate = accumulateTime(_timers.quaternionUpdate.getTotalTime());
   const long updateContainer = accumulateTime(_timers.updateContainer.getTotalTime());
   const long forceUpdateTotal = accumulateTime(_timers.forceUpdateTotal.getTotalTime());
   const long forceUpdatePairwise = accumulateTime(_timers.forceUpdatePairwise.getTotalTime());
@@ -492,6 +493,7 @@ void Simulation::logMeasurements() {
   const long forceUpdateTuning = accumulateTime(_timers.forceUpdateTuning.getTotalTime());
   const long forceUpdateNonTuning = accumulateTime(_timers.forceUpdateNonTuning.getTotalTime());
   const long velocityUpdate = accumulateTime(_timers.velocityUpdate.getTotalTime());
+  const long angularVelocityUpdate = accumulateTime(_timers.angularVelocityUpdate.getTotalTime());
   const long simulate = accumulateTime(_timers.simulate.getTotalTime());
   const long vtk = accumulateTime(_timers.vtk.getTotalTime());
   const long initialization = accumulateTime(_timers.initialization.getTotalTime());
@@ -509,6 +511,9 @@ void Simulation::logMeasurements() {
     std::cout << timerToString("  Initialization                  ", initialization, maximumNumberOfDigits, total);
     std::cout << timerToString("  Simulate                        ", simulate, maximumNumberOfDigits, total);
     std::cout << timerToString("    PositionUpdate                ", positionUpdate, maximumNumberOfDigits, simulate);
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+    std::cout << timerToString("    QuaternionUpdate              ", quaternionUpdate, maximumNumberOfDigits, simulate);
+#endif
     std::cout << timerToString("    UpdateContainer               ", updateContainer, maximumNumberOfDigits, simulate);
     std::cout << timerToString("    Boundaries:                   ", haloParticleExchange + migratingParticleExchange,
                                maximumNumberOfDigits, simulate);
@@ -529,6 +534,9 @@ void Simulation::logMeasurements() {
     std::cout << timerToString("      ForceUpdateNonTuning       ", forceUpdateNonTuning, maximumNumberOfDigits,
                                forceUpdateTotal);
     std::cout << timerToString("    VelocityUpdate                ", velocityUpdate, maximumNumberOfDigits, simulate);
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+    std::cout << timerToString("    AngularVelocityUpdate         ", angularVelocityUpdate, maximumNumberOfDigits, simulate);
+#endif
     std::cout << timerToString("    Thermostat                    ", thermostat, maximumNumberOfDigits, simulate);
     std::cout << timerToString("    Vtk                           ", vtk, maximumNumberOfDigits, simulate);
     std::cout << timerToString("    LoadBalancing                 ", loadBalancing, maximumNumberOfDigits, simulate);
