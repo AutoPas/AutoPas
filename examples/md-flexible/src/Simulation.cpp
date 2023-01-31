@@ -559,25 +559,26 @@ void Simulation::logMeasurements() {
 
     // ToDo: Fix this. See issue #707.
     if (_configuration.dontMeasureFlops.value) {
-      // This entire logic makes very little sense
-//      autopas::FlopCounterFunctor<ParticleType> flopCounterFunctor(_autoPasContainer->getCutoff());
-//      _autoPasContainer->iteratePairwise(&flopCounterFunctor);
-//
-//      const auto flopsPerKernelCall =
-//          applyWithChosenFunctor<size_t>([](auto functor) { return decltype(functor)::getNumFlopsPerKernelCall(); });
-//      auto flops = flopCounterFunctor.getFlops(flopsPerKernelCall) * _iteration;
-//      // approximation for flops of verlet list generation
-//      if (_autoPasContainer->getContainerType() == autopas::ContainerOption::verletLists) {
-//        const auto approxNumberOfRebuilds =
-//            static_cast<size_t>(floor(_iteration / _configuration.verletRebuildFrequency.value));
-//        flops += flopCounterFunctor.getDistanceCalculations() *
-//                 decltype(flopCounterFunctor)::numFlopsPerDistanceCalculation * approxNumberOfRebuilds;
-//      }
-//
-//      std::cout << "GFLOPs                             : " << static_cast<double>(flops) * 1e-9 << std::endl;
-//      std::cout << "GFLOPs/sec                         : "
-//                << static_cast<double>(flops) * 1e-9 / (static_cast<double>(simulate) * 1e-9) << std::endl;
-//      std::cout << "Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl;
+      LJFunctorTypeAbstract ljFunctor(_configuration.cutoff.value);
+      autopas::FlopCounterFunctor<ParticleType, LJFunctorTypeAbstract> flopCounterFunctor(ljFunctor, _autoPasContainer->getCutoff());
+      _autoPasContainer->setAllowedDataLayouts(autopas::Option::)
+      _autoPasContainer->iteratePairwise(&flopCounterFunctor);
+
+      const auto flopsPerKernelCall =
+          applyWithChosenFunctor<size_t>([](auto functor) { return decltype(functor)::getNumFlopsPerKernelCall(); });
+      auto flops =
+      // approximation for flops of verlet list generation
+      if (_autoPasContainer->getContainerType() == autopas::ContainerOption::verletLists) {
+        const auto approxNumberOfRebuilds =
+            static_cast<size_t>(floor(_iteration / _configuration.verletRebuildFrequency.value));
+        flops += flopCounterFunctor.getDistanceCalculations() *
+                 decltype(flopCounterFunctor)::numFlopsPerDistanceCalculation * approxNumberOfRebuilds;
+      }
+
+      std::cout << "GFLOPs                             : " << static_cast<double>(flops) * 1e-9 << std::endl;
+      std::cout << "GFLOPs/sec                         : "
+                << static_cast<double>(flops) * 1e-9 / (static_cast<double>(simulate) * 1e-9) << std::endl;
+      std::cout << "Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl;
     }
   }
 }

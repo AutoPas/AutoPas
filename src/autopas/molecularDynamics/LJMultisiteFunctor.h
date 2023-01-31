@@ -658,13 +658,24 @@ class LJMultisiteFunctor
   /**
    * Get the number of flops used per kernel call - i.e. number of flops to calculate kernel *given* the two particles
    * lie within the cutoff (i.e. distance^2 / cutoff has been already been calculated).
-   * @param numA number of sites in molecule A
+   * Note: there is currently a large difference between AoS & SoA number of flops. This function returns the AoS
+   * number of flops.
+   * @param i molecule i
+   * @param j molecule j
    * @param numB number of sites in molecule B
    * @return #FLOPs
    */
-  static unsigned long getNumFlopsPerKernelCall(bool newton3, size_t numA, size_t numB) {
-    const unsigned long newton3Flops = newton3 ? 0ul : 3ul;
-    return numA * numB * (15ul + newton3Flops);
+  unsigned long getNumFlopsPerKernelCall(Particle &i, Particle &j, bool newton3) {
+    // Site-to-site displacement: 6 (3 in the SoA case, but this requires O(N) precomputing site positions)
+    // Site-to-site distance squared: 4
+    // Compute scale: 9
+    // Apply scale to force: With newton3: 6, Without: 3
+    // Apply scale to torque: With newton3 18, Without: 9 (0 in SoA case, with O(N) post computing)
+    // Site-to-site total: With newton3: 33, Without: 26
+    // (SoA total: With N3L: 19)
+    // Above multiplied by number sites of i * number sites of j
+    const unsigned long siteToSiteFlops = newton3 ? 33ul : 26ul;
+    return _PPLibrary->getNumSites(i.getTypeId()) * _PPLibrary->getNumSites(i.getTypeId()) * siteToSiteFlops;
   }
 
   /**
