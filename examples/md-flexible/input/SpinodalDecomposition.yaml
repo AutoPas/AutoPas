@@ -1,4 +1,5 @@
-functor                          :  Lennard-Jones (12-6)
+# This yaml file is for single-site molecular simulation
+functor                          :  Lennard-Jones (12-6) AVX
 cutoff                           :  2.5
 # these are the box size values for a equilibration with 160x160x160 and spacing 1.5
 box-min                          :  [-0.75, -0.75, -0.75]
@@ -6,6 +7,12 @@ box-max                          :  [239.25, 239.25, 239.25]
 deltaT                           :  0.00182367
 iterations                       :  30000
 periodic-boundaries              :  true
+Sites:
+  0:
+    site-id                      : 0
+    site-epsilon                 : 1.
+    site-sigma                   : 1.
+    site-mass                    : 1.
 thermostat:
   initialTemperature             :  0.7
   targetTemperature              :  0.7

@@ -1,3 +1,4 @@
+# This yaml file is for single-site molecular simulation
 container                        :  [LinkedCells, VerletLists, VerletListsCells, VerletClusterLists]
 verlet-rebuild-frequency         :  10
 verlet-skin-radius-per-timestep  :  0.1
