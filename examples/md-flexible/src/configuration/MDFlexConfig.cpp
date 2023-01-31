@@ -220,6 +220,13 @@ std::string MDFlexConfig::to_string() const {
     }
     os << endl;
   };
+
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+  os << "Running multi-site MD simulation.\n" << endl;
+#else
+  os << "Running single-site MD simulation.\n" << endl;
+#endif
+
   printOption(containerOptions);
 
   // since all containers are rebuilt only periodically print Verlet config always.
@@ -290,7 +297,23 @@ std::string MDFlexConfig::to_string() const {
   }
   printOption(boundaryOption);
 
-  // todo: see if we should be ouputing info about sites & mols
+  os << setw(valueOffset) << left << "Sites:" << endl;
+  for (auto [siteId, epsilon] : epsilonMap.value) {
+    os << "  " << siteId << ":" << endl;
+    os << "    " << setw(valueOffset - 4) << left << epsilonMap.name << ":  " << epsilon << endl;
+    os << "    " << setw(valueOffset - 4) << left << sigmaMap.name   << ":  " << sigmaMap.value.at(siteId) << endl;
+    os << "    " << setw(valueOffset - 4) << left << massMap.name    << ":  " << massMap.value.at(siteId) << endl;
+  }
+
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+  os << setw(valueOffset) << left << "Molecules:" << endl;
+  for (auto [molId, molToSiteId] : molToSiteIdMap.value) {
+    os << "  " << molId << ":" << endl;
+    os << "    " << setw(valueOffset - 4) << left << molToSiteIdMap.name     << ":  " << molToSiteId << endl;
+    os << "    " << setw(valueOffset - 4) << left << molToSitePosMap.name    << ":  " << molToSitePosMap.value.at(molId) << endl;
+    os << "    " << setw(valueOffset - 4) << left << momentOfInertiaMap.name << ":  " << massMap.value.at(molId) << endl;
+  }
+#endif
 
   os << setw(valueOffset) << left << "Objects:" << endl;
 
