@@ -22,7 +22,7 @@ void fillWithParticlesAndInit(autopas::AutoPas<ParticleType> &autopasContainer) 
 #ifdef MD_FLEXIBLE_USE_MULTI_SITE
   dummy.setTorque({1., 0., 0.});
   dummy.setAngularVel({1., 0., 0.});
-  dummy.setQ({0.7071067811865475, 0.7071067811865475, 0., 0.});
+  dummy.setQ({0., 0., 0., 1.});
 #endif
 
   // Use dummy to fill container
@@ -326,7 +326,7 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
   // add particle
   ParticleType mol;
   mol.setR({2., 2., 2.});
-  mol.setQ({0.7071067811865475, 0.7071067811865475, 0., 0.});
+  mol.setQ({0., 0., 0., 1.);
   mol.setF({0., 0., 1.});
   mol.setV({0., 0., 1.});
   mol.setTorque({1., 0., 0.});

@@ -148,6 +148,20 @@ void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, 
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
   auto positions = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
 
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+  findWord(inputStream, "quaternions");
+  inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  auto quaternions = readPayload<std::array<double, 4>, 4>(inputStream, numParticles);
+
+  findWord(inputStream, "angularVelocities");
+  inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  auto angularVelocities = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
+
+  findWord(inputStream, "torques");
+  inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  auto torques = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
+#endif
+
   // creating Particles from checkpoint:
   for (auto i = 0ul; i < numParticles; ++i) {
     ParticleType particle;
@@ -157,6 +171,12 @@ void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, 
     particle.setF(forces[i]);
     particle.setID(ids[i]);
     particle.setTypeId(typeIds[i]);
+
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+    particle.setQ(quaternions[i]);
+    particle.setAngularVel(angularVelocities[i]);
+    particle.setTorque(torques[i]);
+#endif
 
     particles.push_back(particle);
   }
