@@ -277,7 +277,8 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
            p.isValid(); ++p) {
         // Check that particle is within 6th root of 2 * sigma
         const auto position = p->getR();
-        const auto distanceToBoundary = std::abs(reflSkinMax[dimensionIndex] - position[dimensionIndex]);
+        const auto distanceToBoundary = isUpper ? reflSkinMax[dimensionIndex] - position[dimensionIndex]
+                                                : position[dimensionIndex] - reflSkinMin[dimensionIndex];
         if (distanceToBoundary < sixthRootOfTwo * particlePropertiesLib.getSigma(p->getTypeId()) / 2.) {
           // Create mirror particle and shift it to other side of reflective boundary
           ParticleType mirrorParticle;
