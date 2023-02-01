@@ -10,8 +10,6 @@
 #include <map>
 #include <set>
 #include <vector>
-#include <Eigen/Core>
-#include <Eigen/Eigenvalues>
 
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ExceptionHandler.h"

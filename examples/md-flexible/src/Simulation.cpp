@@ -155,13 +155,13 @@ Simulation::Simulation(const MDFlexConfig &configuration,
 
   if (_configuration.useThermostat.value and _configuration.deltaT.value != 0) {
     if (_configuration.addBrownianMotion.value) {
-//      Thermostat::addBrownianMotion(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-//                                    _configuration.initTemperature.value);
+      Thermostat::addBrownianMotion(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+                                    _configuration.initTemperature.value);
     }
 
     // Set the simulation directly to the desired initial temperature.
-//    Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-//                      _configuration.initTemperature.value, std::numeric_limits<double>::max());
+    Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+                      _configuration.initTemperature.value, std::numeric_limits<double>::max());
   }
 
   _timers.initialization.stop();
@@ -231,7 +231,7 @@ void Simulation::run() {
     _timers.migratingParticleExchange.stop();
 
     _timers.reflectParticlesAtBoundaries.start();
-    _domainDecomposition->reflectParticlesAtBoundaries(*_autoPasContainer);
+    _domainDecomposition->reflectParticlesAtBoundaries(*_autoPasContainer, *_configuration.getParticlePropertiesLibrary());
     _timers.reflectParticlesAtBoundaries.stop();
 
     _timers.haloParticleExchange.start();
@@ -557,7 +557,6 @@ void Simulation::logMeasurements() {
         1e-6 / (static_cast<double>(forceUpdateTotal) * 1e-9);  // 1e-9 for ns to s, 1e-6 for M in MFUPs
     std::cout << "MFUPs/sec                          : " << mfups << std::endl;
 
-    // ToDo: Fix this. See issue #707.
     if (_configuration.dontMeasureFlops.value) {
       LJFunctorTypeAbstract ljFunctor(_configuration.cutoff.value);
       autopas::FlopCounterFunctor<ParticleType, LJFunctorTypeAbstract> flopCounterFunctor(ljFunctor, _autoPasContainer->getCutoff());
