@@ -159,9 +159,10 @@ class LJMultisiteFunctor
   }
 
   /**
-   * Functor for AoS. Simply loops over the sites of two particles/molecules to calculate force.
-   * @param particleA Particle i
-   * @param particleB Particle j
+   * Functor for arrays of structures (AoS).
+   *
+   * @param particleA Particle A
+   * @param particleB Particle B
    * @param newton3 Flag for if newton3 is used.
    */
   void AoSFunctor(Particle &particleA, Particle &particleB, bool newton3) final {
@@ -256,6 +257,11 @@ class LJMultisiteFunctor
     }
   }
 
+  /**
+   * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3)
+   * This functor will always use a newton3 like traversing of the soa, however, it still needs to know about newton3
+   * to use it correctly for the global values.
+   */
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
     if (soa.getNumberOfParticles() == 0) return;
 
