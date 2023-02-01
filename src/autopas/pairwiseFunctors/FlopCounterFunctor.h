@@ -207,10 +207,9 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle,
 
   /**
    * get the total number of flops
-   * @param numFlopsPerKernelCall
    * @return
    */
-  [[nodiscard]] size_t getFlops(size_t numFlopsPerKernelCall) const {
+  [[nodiscard]] size_t getFlops() const {
     const auto distFlops = numFlopsPerDistanceCalculation * _distanceCalculations;
     return distFlops + _kernelFlops;
   }
