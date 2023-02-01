@@ -276,7 +276,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
     if (_localBoxMin[dimensionIndex] == _globalBoxMin[dimensionIndex]) {
       reflSkinMin = _globalBoxMin;
       reflSkinMax = _globalBoxMax;
-      reflSkinMax[dimensionIndex] = _globalBoxMin[dimensionIndex] + autoPasContainer.getVerletSkin() / 2;
+      reflSkinMax[dimensionIndex] = _globalBoxMin[dimensionIndex] + autoPasContainer.getVerletSkinPerTimestep() / 2;
 
       reflect(false);
     }
@@ -284,7 +284,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
     if (_localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex]) {
       reflSkinMin = _globalBoxMin;
       reflSkinMax = _globalBoxMax;
-      reflSkinMin[dimensionIndex] = _globalBoxMax[dimensionIndex] - autoPasContainer.getVerletSkin() / 2;
+      reflSkinMin[dimensionIndex] = _globalBoxMax[dimensionIndex] - autoPasContainer.getVerletSkinPerTimestep() / 2;
 
       reflect(true);
     }
@@ -397,20 +397,22 @@ RegularGridDecomposition::categorizeParticlesIntoLeftAndRightNeighbor(const std:
         position[direction] = std::min(justInsideOfBox, periodicPosition);
         leftNeighborParticles.back().setR(position);
       }
-    } else  // if the particle is right of the box
-        if (position[direction] >= _localBoxMax[direction]) {
-      rightNeighborParticles.push_back(particle);
-
-      // if the particle is outside the global box move it to the other side (periodic boundary)
-      if (_localBoxMax[direction] == _globalBoxMax[direction]) {
-        // TODO: check if this failsafe is really reasonable.
-        //  It should only trigger if a particle's position was already inside the box?
-        const auto periodicPosition = position[direction] - globalBoxLength[direction];
-        position[direction] = std::max(_globalBoxMin[direction], periodicPosition);
-        rightNeighborParticles.back().setR(position);
-      }
     } else {
-      uncategorizedParticles.push_back(particle);
+      // if the particle is right of the box
+      if (position[direction] >= _localBoxMax[direction]) {
+        rightNeighborParticles.push_back(particle);
+
+        // if the particle is outside the global box move it to the other side (periodic boundary)
+        if (_localBoxMax[direction] == _globalBoxMax[direction]) {
+          // TODO: check if this failsafe is really reasonable.
+          //  It should only trigger if a particle's position was already inside the box?
+          const auto periodicPosition = position[direction] - globalBoxLength[direction];
+          position[direction] = std::max(_globalBoxMin[direction], periodicPosition);
+          rightNeighborParticles.back().setR(position);
+        }
+      } else {
+        uncategorizedParticles.push_back(particle);
+      }
     }
   }
   return {leftNeighborParticles, rightNeighborParticles, uncategorizedParticles};
