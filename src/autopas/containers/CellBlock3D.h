@@ -394,6 +394,10 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, c
   _firstOwnedCellIndex = _cellsPerDimensionWithHalo[0] * _cellsPerDimensionWithHalo[1] * _cellsPerInteractionLength +
                          _cellsPerDimensionWithHalo[0] * _cellsPerInteractionLength + _cellsPerInteractionLength;
   _lastOwnedCellIndex = _numCells - 1 - _firstOwnedCellIndex;
+
+  // initialize cells
+  _cells->resize(_numCells);
+
   for (auto &cell : *_cells) {
     cell.setCellLength(_cellLength);
   }
