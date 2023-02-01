@@ -225,7 +225,7 @@ class MDFlexConfig {
       "List of traversal options to use. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::TraversalOption::getAllOptions(), " ", {"(", ")"})};
   /**
-   * traversalOptions
+   * loadEstimatorOptions
    */
   MDFlexOption<std::set<autopas::LoadEstimatorOption>, __LINE__> loadEstimatorOptions{
       autopas::LoadEstimatorOption::getMostOptions(), "load-estimator", true,

@@ -17,7 +17,7 @@ box-max                          :  [15, 60, 15]
 cell-size                        :  [1]
 deltaT                           :  0.00182367
 iterations                       :  12000
-periodic-boundaries              :  true
+boundary-type                    : [periodic, periodic, periodic]
 Sites:
   0:
     site-id                      :  0
