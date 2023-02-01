@@ -103,8 +103,8 @@ class Sphere : public Object {
   }
 
   /**
-   * Returns the coordinates of box's the bottom left corner.
-   * @return the bottom left corner of the sphere's box domain.
+   * Returns the coordinates of box's the bottom left front corner.
+   * @return the bottom left front corner of the sphere's box domain.
    */
   [[nodiscard]] std::array<double, 3> getBoxMin() const override {
     return {_center[0] - ((double)_radius) * _particleSpacing, _center[1] - ((double)_radius) * _particleSpacing,
@@ -112,8 +112,8 @@ class Sphere : public Object {
   }
 
   /**
-   * Returns the coordinates of box's the top right corner.
-   * @return the top right corner of the sphere's box domain.
+   * Returns the coordinates of box's the top right back corner.
+   * @return the top right back corner of the sphere's box domain.
    */
   [[nodiscard]] std::array<double, 3> getBoxMax() const override {
     return {_center[0] + ((double)_radius) * _particleSpacing, _center[1] + ((double)_radius) * _particleSpacing,

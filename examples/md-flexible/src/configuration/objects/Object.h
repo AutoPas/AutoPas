@@ -11,7 +11,6 @@
 #include <vector>
 
 #include "autopas/AutoPasDecl.h"
-#include "autopas/molecularDynamics/MultisiteMoleculeLJ.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "src/TypeDefinitions.h"
 

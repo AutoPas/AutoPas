@@ -55,14 +55,14 @@ class CubeGauss : public Object {
   [[nodiscard]] size_t getParticlesTotal() const override { return _numParticles; }
 
   /**
-   * Returns the bottom left corner of the cube.
-   * @return bottom left corner.
+   * Returns the bottom left front corner of the cube.
+   * @return bottom left front corner.
    */
   [[nodiscard]] std::array<double, 3> getBoxMin() const override { return _bottomLeftCorner; }
 
   /**
-   * Returns the top right corner of the cube.
-   * @return top right corner.
+   * Returns the top right back corner of the cube.
+   * @return top right back corner.
    */
   [[nodiscard]] std::array<double, 3> getBoxMax() const override {
     return autopas::utils::ArrayMath::add(_bottomLeftCorner, _boxLength);
@@ -103,11 +103,9 @@ class CubeGauss : public Object {
         std::normal_distribution<double>{_distributionMean[2], _distributionStdDev[2]}};
 
     for (int i = 0; i < _numParticles; ++i) {
-      particle.setR({
-        _bottomLeftCorner[0] + distributions[0](generator),
-        _bottomLeftCorner[1] + distributions[1](generator),
-        _bottomLeftCorner[2] + distributions[2](generator)
-      });
+      particle.setR({_bottomLeftCorner[0] + distributions[0](generator),
+                     _bottomLeftCorner[1] + distributions[1](generator),
+                     _bottomLeftCorner[2] + distributions[2](generator)});
 
       particles.push_back(particle);
       particle.setID(particle.getID() + 1);
@@ -136,7 +134,7 @@ class CubeGauss : public Object {
   std::array<double, 3> _distributionStdDev;
 
   /**
-   * The coordinates of the bottom left corner of the cube object.
+   * The coordinates of the bottom left front corner of the cube object.
    */
   std::array<double, 3> _bottomLeftCorner;
 };
