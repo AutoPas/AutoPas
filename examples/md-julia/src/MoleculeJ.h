@@ -28,15 +28,15 @@ class MoleculeJ : public autopas::Particle {
         std::array<floatType, 3> v_{v[0], v[1], v[2]};
         autopas::Particle(pos_, v_, moleculeId);
     }
-
+    
     MoleculeJ(std::array<floatType, 3> pos, std::array<floatType, 3> v, unsigned long moleculeId,
                       unsigned long typeId = 0)
       : autopas::Particle(pos, v, moleculeId), _typeId(typeId) {}
 
 
-    /**
-   * Enums used as ids for accessing and creating a dynamically sized SoA.
-   */
+  /**
+    * Enums used as ids for accessing and creating a dynamically sized SoA.
+    */
   enum AttributeNames : int {
     ptr,
     id,
@@ -63,11 +63,11 @@ class MoleculeJ : public autopas::Particle {
    * This means it shall always only take values 0.0 (=false) or 1.0 (=true).
    * The reason for this is the easier use of the value in calculations (See LJFunctor "energyFactor")
    */
+  
   using SoAArraysType = typename autopas::utils::SoAType<
       MoleculeJ<floatType> *, size_t /*id*/, floatType /*x*/, floatType /*y*/, floatType /*z*/, floatType /*vx*/,
       floatType /*vy*/, floatType /*vz*/, floatType /*fx*/, floatType /*fy*/, floatType /*fz*/, floatType /*oldFx*/,
       floatType /*oldFy*/, floatType /*oldFz*/, size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
-
   /**
    * Non-const getter for the pointer of this object.
    * @tparam attribute Attribute name.
@@ -77,6 +77,7 @@ class MoleculeJ : public autopas::Particle {
   constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
     return this;
   }
+
   /**
    * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).
    * @tparam attribute Attribute name.
@@ -162,7 +163,7 @@ class MoleculeJ : public autopas::Particle {
       autopas::utils::ExceptionHandler::exception("MoleculeLJ::set() unknown attribute {}", attribute);
     }
   }
-    
+
     /**
      * set position of the molecule
      */

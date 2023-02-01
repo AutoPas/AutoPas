@@ -16,7 +16,6 @@ function generate_dimension(dim)
 
 end
 
-
 # defining an easy generator for 1D 
 function generateParticlesEasy()
   particles = []

@@ -53,7 +53,7 @@ struct WrapAutoPas {
 /*
  * setter for ContainerOption
  */
-void setAllowedContainers(autopas::AutoPas<autopas::MoleculeLJ<double>>& autoPasContainer, jlcxx::ArrayRef<autopas::options::ContainerOption::Value,1> options) {// jlcxx::ArrayRef<ContainerOptionJulia,1> options) {
+void setAllowedContainers(autopas::AutoPas<MoleculeJ<double>>& autoPasContainer, jlcxx::ArrayRef<autopas::options::ContainerOption::Value,1> options) {// jlcxx::ArrayRef<ContainerOptionJulia,1> options) {
     std::set<autopas::options::ContainerOption> tmp;
     for(auto it = options.begin(); it != options.end(); it++) {
         tmp.insert(*it);
@@ -97,7 +97,7 @@ void setAllowedNewton3Options(autopas::AutoPas<MoleculeJ<double>>& autoPasContai
 /*
  * setter for TraversalsOption
  */
-void setAllowedTraversals(autopas::AutoPas<autopas::MoleculeLJ<double>>& autoPasContainer, jlcxx::ArrayRef<autopas::options::TraversalOption::Value,1> options) {
+void setAllowedTraversals(autopas::AutoPas<MoleculeJ<double>>& autoPasContainer, jlcxx::ArrayRef<autopas::options::TraversalOption::Value,1> options) {
     std::set<autopas::options::TraversalOption> tmp;
     for(auto it = options.begin(); it != options.end(); it++) {
         tmp.insert(*it);
@@ -112,7 +112,7 @@ void setAllowedTraversals(autopas::AutoPas<autopas::MoleculeLJ<double>>& autoPas
 /*
  * setter for LoadEstimatorsOption
  */
-void setAllowedLoadEstimators(autopas::AutoPas<autopas::MoleculeLJ<double>>& autoPasContainer, jlcxx::ArrayRef<autopas::LoadEstimatorOption::Value,1> options) {
+void setAllowedLoadEstimators(autopas::AutoPas<MoleculeJ<double>>& autoPasContainer, jlcxx::ArrayRef<autopas::LoadEstimatorOption::Value,1> options) {
     std::set<autopas::LoadEstimatorOption> tmp;
     for(auto it = options.begin(); it != options.end(); it++) {
         tmp.insert(*it);
@@ -127,13 +127,13 @@ void setAllowedLoadEstimators(autopas::AutoPas<autopas::MoleculeLJ<double>>& aut
 /**
  * setter for boxMin
  */
-void setBoxMin(autopas::AutoPas<autopas::MoleculeLJ<double>>& autoPasContainer, jlcxx::ArrayRef<double,1> boxMin) {
+void setBoxMin(autopas::AutoPas<MoleculeJ<double>>& autoPasContainer, jlcxx::ArrayRef<double,1> boxMin) {
     autoPasContainer.setBoxMin({boxMin[0], boxMin[1], boxMin[1]});
 }
 
 /**
  * setter for boxMax
  */
-void setBoxMax(autopas::AutoPas<autopas::MoleculeLJ<double>>& autoPasContainer, jlcxx::ArrayRef<double,1> boxMax) {
+void setBoxMax(autopas::AutoPas<MoleculeJ<double>>& autoPasContainer, jlcxx::ArrayRef<double,1> boxMax) {
     autoPasContainer.setBoxMax({boxMax[0], boxMax[1], boxMax[1]});
 }
