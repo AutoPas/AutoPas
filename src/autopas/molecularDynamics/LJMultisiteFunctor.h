@@ -660,12 +660,12 @@ class LJMultisiteFunctor
    * lie within the cutoff (i.e. distance^2 / cutoff has been already been calculated).
    * Note: there is currently a large difference between AoS & SoA number of flops. This function returns the AoS
    * number of flops.
-   * @param i molecule i
-   * @param j molecule j
+   * @param molAType molecule A's type id
+   * @param molBType molecule B's type id
    * @param numB number of sites in molecule B
    * @return #FLOPs
    */
-  unsigned long getNumFlopsPerKernelCall(Particle &i, Particle &j, bool newton3) {
+  unsigned long getNumFlopsPerKernelCall(size_t molAType, size_t molBType, bool newton3) {
     // Site-to-site displacement: 6 (3 in the SoA case, but this requires O(N) precomputing site positions)
     // Site-to-site distance squared: 4
     // Compute scale: 9
@@ -675,7 +675,7 @@ class LJMultisiteFunctor
     // (SoA total: With N3L: 19)
     // Above multiplied by number sites of i * number sites of j
     const unsigned long siteToSiteFlops = newton3 ? 33ul : 26ul;
-    return _PPLibrary->getNumSites(i.getTypeId()) * _PPLibrary->getNumSites(i.getTypeId()) * siteToSiteFlops;
+    return _PPLibrary->getNumSites(molAType) * _PPLibrary->getNumSites(molBType) * siteToSiteFlops;
   }
 
   /**

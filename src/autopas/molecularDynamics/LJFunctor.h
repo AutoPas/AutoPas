@@ -170,7 +170,7 @@ class LJFunctor
 
   /**
    * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3)
-   * This functor ignores will use a newton3 like traversing of the soa, however, it still needs to know about newton3
+   * This functor will always use a newton3 like traversing of the soa, however, it still needs to know about newton3
    * to use it correctly for the global values.
    */
   void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) final {
@@ -558,13 +558,14 @@ class LJFunctor
   /**
    * Get the number of flops used per kernel call for a given particle pair. This should count the
    * floating point operations needed for two particles that lie within a cutoff radius, having already calculated the distance.
-   * @param i particle i
-   * @param j particle j
+   * @param molAType molecule A's type id
+   * @param molBType molecule B's type id
    * @param newton3 is newton3 applied.
-   * @note i and j make no difference for LJFunctor, but are kept to have a consistent interface
+   * @note molAType and molBType make no difference for LJFunctor, but are kept to have a consistent interface for other functors
+   * where they may.
    * @return the number of floating point operations
    */
-  static unsigned long getNumFlopsPerKernelCall(Particle &i, Particle &j, bool newton3) {
+  static unsigned long getNumFlopsPerKernelCall(size_t molAType, size_t molBType, bool newton3) {
     // Kernel: 12 = 1 (inverse R squared) + 8 (compute scale) + 3 (apply scale) sum
     // Adding to particle forces: 6 or 3 depending newton3
     // Total = 12 + (6 or 3) = 18 or 15

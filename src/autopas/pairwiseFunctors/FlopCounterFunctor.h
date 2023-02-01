@@ -54,35 +54,126 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle,
 
     if (distanceSquared <= _cutoffSquare) {
       _kernelCalls.fetch_add(1, std::memory_order_relaxed);
-      _kernelFlops.fetch_add(_forceFunctor.getNumFlopsPerKernelCall(i, j, newton3), std::memory_order_relaxed);
+      _kernelFlops.fetch_add(_forceFunctor.getNumFlopsPerKernelCall(i.getTypeId(), j.getTypeId(), newton3), std::memory_order_relaxed);
     }
   }
 
   /**
-   * See Functor::SoAFunctorSingle()
-   * @note: SoA variant of FlopCounterFunctor should not be used.
+   * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3)
+   * This SoA Functor does not use any vectorization.
    */
-  void SoAFunctorSingle(SoAView<typename Particle::SoAArraysType> soa, bool newton3) final {
-    autopas::utils::ExceptionHandler::exception("Use FlopCounterFunctor only with the AoS variant!");
+  void SoAFunctorSingle(SoAView<typename Particle::SoAArraysType> soa, bool newton3) override {
+    if (soa.getNumberOfParticles() == 0) return;
+
+    double *const __restrict xPtr = soa.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict yPtr = soa.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict zPtr = soa.template begin<Particle::AttributeNames::posZ>();
+
+    double *const __restrict typePtr = soa.template begin<Particle::AttributeNames::typeId>();
+
+    for (size_t i = 0; i < soa.getNumberOfParticles(); ++i) {
+      for (size_t j = i + 1; j < soa.getNumberOfParticles(); ++j) {
+        ++_distanceCalculations;
+
+        const double drx = xPtr[i] - xPtr[j];
+        const double dry = yPtr[i] - yPtr[j];
+        const double drz = zPtr[i] - zPtr[j];
+
+        const double drx2 = drx * drx;
+        const double dry2 = dry * dry;
+        const double drz2 = drz * drz;
+
+        const double dr2 = drx2 + dry2 + drz2;
+
+        if (dr2 <= _cutoffSquare) {
+          ++_kernelCalls;
+          _kernelFlops += _forceFunctor.getNumFlopsPerKernelCall(typePtr[i], typePtr[j], true); // SoAFunctorSingle always uses newton3.
+        }
+      }
+    }
   }
 
   /**
-   * See Functor::SoAFunctorPair()
-   * @note: SoA variant of FlopCounterFunctor should not be used.
+   * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
    */
   void SoAFunctorPair(SoAView<typename Particle::SoAArraysType> soa1, SoAView<typename Particle::SoAArraysType> soa2,
-                      bool newton3) final {
-    autopas::utils::ExceptionHandler::exception("Use FlopCounterFunctor only with the AoS variant!");
+                      bool newton3) override {
+    double *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
+    double *const __restrict x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
+
+    double *const __restrict type1Ptr = soa1.template begin<Particle::AttributeNames::typeId>();
+    double *const __restrict type2Ptr = soa2.template begin<Particle::AttributeNames::typeId>();
+
+    for (size_t i = 0; i < soa1.getNumberOfParticles(); ++i) {
+      for (size_t j = 0; j < soa2.getNumberOfParticles(); ++j) {
+        ++_distanceCalculations;
+
+        const double drx = x1ptr[i] - x2ptr[j];
+        const double dry = y1ptr[i] - y2ptr[j];
+        const double drz = z1ptr[i] - z2ptr[j];
+
+        const double drx2 = drx * drx;
+        const double dry2 = dry * dry;
+        const double drz2 = drz * drz;
+
+        const double dr2 = drx2 + dry2 + drz2;
+
+        if (dr2 <= _cutoffSquare) {
+          ++_kernelCalls;
+          _kernelFlops += _forceFunctor.getNumFlopsPerKernelCall(type1Ptr[i], type2Ptr[j], newton3);
+        }
+      }
+    }
   }
 
+  // clang-format off
   /**
-   * See Functor::SoAFunctorVerlet()
-   * @note: SoA variant of FlopCounterFunctor should not be used.
+   * @copydoc Functor::SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
+   * @note If you want to parallelize this by openmp, please ensure that there
+   * are no dependencies, i.e. introduce colors!
    */
+  // clang-format on
   void SoAFunctorVerlet(SoAView<typename Particle::SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
-                        bool newton3) final {
-    autopas::utils::ExceptionHandler::exception("Use FlopCounterFunctor only with the AoS variant!");
+                        bool newton3) override {
+    const auto numParticles = soa.getNumberOfParticles();
+
+    if (numParticles == 0) return;
+
+    double *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+
+    double *const __restrict typePtr = soa.template begin<Particle::AttributeNames::typeId>();
+
+    const size_t neighborListSize = neighborList.size();
+    const size_t *const __restrict currentList = neighborList.data();
+
+    for (size_t jNeighIndex = 0; jNeighIndex < neighborListSize; ++jNeighIndex) {
+      size_t j = neighborList[jNeighIndex];
+      if (indexFirst == j) continue;
+
+      ++_distanceCalculations;
+
+      const double drx = xptr[indexFirst] - xptr[j];
+      const double dry = yptr[indexFirst] - yptr[j];
+      const double drz = zptr[indexFirst] - zptr[j];
+
+      const double drx2 = drx * drx;
+      const double dry2 = dry * dry;
+      const double drz2 = drz * drz;
+
+      const double dr2 = drx2 + dry2 + drz2;
+
+      if (dr2 <= _cutoffSquare) {
+        ++_kernelCalls;
+        _kernelFlops += _forceFunctor.getNumFlopsPerKernelCall(typePtr[indexFirst], typePtr[j], newton3);
+      }
+    }
   }
 
   /**
@@ -136,6 +227,12 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle,
    * @return
    */
   [[nodiscard]] size_t getKernelCalls() const { return _kernelCalls; }
+
+  /**
+   * Get the number of kernel flops, i.e. the flops done after the distance calculation and cutoff comparison.
+   * @return
+   */
+  [[nodiscard]] size_t getKernelFlops() const { return _kernelFlops; }
 
   /**
    * number of flops for one distance calculation.
