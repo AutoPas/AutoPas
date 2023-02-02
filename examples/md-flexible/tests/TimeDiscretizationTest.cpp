@@ -292,6 +292,7 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
   using autopas::utils::quaternion::qMul;
   using autopas::utils::quaternion::qConjugate;
   using autopas::utils::quaternion::convertQuaternionTo3DVec;
+  using autopas::utils::quaternion::rotateVectorOfPositions;
 
   auto autopasContainer = std::make_shared<autopas::AutoPas<ParticleType>>();
   auto PPL = std::make_shared<ParticlePropertiesLibrary<>>(1.0);
@@ -388,7 +389,7 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
   const auto angularVelocityWHalfExpected = convertQuaternionTo3DVec(qMul(mol.getQ(),qMul(angularVelocityMHalf, qConjugate(mol.getQ()))));
 
   // Run TimeDiscretization::calculateQuaternions
-  TimeDiscretization::calculateQuaternions(*autopasContainer, *PPL, deltaT, {0, 0, 0});
+  TimeDiscretization::calculateQuaternionsAndResetTorques(*autopasContainer, *PPL, deltaT, {0, 0, 0});
 
   auto resultantMol = autopasContainer->begin(autopas::IteratorBehavior::owned);
 
@@ -402,9 +403,30 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
   EXPECT_DOUBLE_EQ(angularVelocityWHalfExpected[1], resultantMol->getAngularVel()[1]);
   EXPECT_DOUBLE_EQ(angularVelocityWHalfExpected[2], resultantMol->getAngularVel()[2]);
 
+  EXPECT_DOUBLE_EQ(0., resultantMol->getTorque()[0]);
+  EXPECT_DOUBLE_EQ(0., resultantMol->getTorque()[1]);
+  EXPECT_DOUBLE_EQ(0., resultantMol->getTorque()[2]);
+
   // Confirm no extra molecules were created
   ++resultantMol;
   EXPECT_FALSE(resultantMol.isValid());
+
+  // Reset torques using a non-zero global force
+  TimeDiscretization::calculateQuaternionsAndResetTorques(*autopasContainer, *PPL, deltaT, {0.1, -10, 1.});
+
+  auto resultantMolWithGlobalForce = autopasContainer->begin(autopas::IteratorBehavior::owned);
+
+  // From the current quaternion, calculate the expected torque
+  std::array<double, 3> expectedTorque{0., 0., 0.};
+  const auto unrotatedSitePositions = PPL->getSitePositions(0);
+  const auto rotatedSitePosition = rotateVectorOfPositions(resultantMolWithGlobalForce->getQ(), unrotatedSitePositions);
+  for (size_t site = 0; site < PPL->getNumSites(0); site++) {
+    expectedTorque = add(expectedTorque, cross(rotatedSitePosition[site], {0.1, -10., 1.}));
+  }
+
+  EXPECT_DOUBLE_EQ(expectedTorque[0], resultantMolWithGlobalForce->getTorque()[0]);
+  EXPECT_DOUBLE_EQ(expectedTorque[1], resultantMolWithGlobalForce->getTorque()[1]);
+  EXPECT_DOUBLE_EQ(expectedTorque[2], resultantMolWithGlobalForce->getTorque()[2]);
 
 #else
   // Init autopas

@@ -367,7 +367,7 @@ void Simulation::updatePositions() {
 
 void Simulation::updateQuaternions() {
   _timers.quaternionUpdate.start();
-  TimeDiscretization::calculateQuaternions(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+  TimeDiscretization::calculateQuaternionsAndResetTorques(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                                            _configuration.deltaT.value, _configuration.globalForce.value);
   _timers.quaternionUpdate.stop();
 }
