@@ -43,6 +43,8 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
  * for md-flexible primarily using (angular) velocities rather than (angular) momentums. Code lines are commented with
  * references to corresponding equations within the paper.
  *
+ * In addition, resets the torques to that determined by the global force only.
+ *
  * @note Throws error if md-flexible is compiled without multi-site support.
  *
  * @param autoPasContainer
@@ -50,7 +52,7 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
  * @param deltaT
  * @param globalForce
  */
-void calculateQuaternions(autopas::AutoPas<ParticleType> &autoPasContainer,
+void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPasContainer,
                           const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
                           const std::array<double, 3> &globalForce);
 

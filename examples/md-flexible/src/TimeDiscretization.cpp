@@ -54,7 +54,7 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
   }
 }
 
-void calculateQuaternions(autopas::AutoPas<ParticleType> &autoPasContainer,
+void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPasContainer,
                                                            const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
                                                            const std::array<double, 3> &globalForce) {
  using autopas::utils::ArrayMath::add;
@@ -68,6 +68,7 @@ void calculateQuaternions(autopas::AutoPas<ParticleType> &autoPasContainer,
  using autopas::utils::ArrayMath::normalize;
  using autopas::utils::quaternion::qMul;
  using autopas::utils::quaternion::rotatePosition;
+ using autopas::utils::quaternion::rotateVectorOfPositions;
  using autopas::utils::quaternion::rotatePositionBackwards;
 
 #if defined(MD_FLEXIBLE_USE_MULTI_SITE)
@@ -80,6 +81,7 @@ void calculateQuaternions(autopas::AutoPas<ParticleType> &autoPasContainer,
 #pragma omp parallel
 #endif
  for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+   // Calculate Quaternions
    const auto q = iter->getQ();
    const auto angVelW = iter->getAngularVel(); // angular velocity in world frame
    const auto angVelM = rotatePositionBackwards(q,angVelW); // angular velocity in molecular frame  (equivalent to (17))
@@ -115,6 +117,15 @@ void calculateQuaternions(autopas::AutoPas<ParticleType> &autoPasContainer,
 
    iter->setQ(qFullStep);
    iter->setAngularVel(angVelWHalfStep); // save angular velocity half step, to be used by calculateAngularVelocities
+
+   // Reset torque
+   iter->setTorque({0., 0., 0.});
+   // Get torque from global force
+   const auto unrotatedSitePositions = particlePropertiesLibrary.getSitePositions(iter->getTypeId());
+   const auto rotatedSitePositions = rotateVectorOfPositions(qFullStep, unrotatedSitePositions);
+   for (size_t site = 0; site < particlePropertiesLibrary.getNumSites(iter->getTypeId()); site++) {
+     iter->addTorque(cross(rotatedSitePositions[site], globalForce));
+   }
  }
 
 #else
