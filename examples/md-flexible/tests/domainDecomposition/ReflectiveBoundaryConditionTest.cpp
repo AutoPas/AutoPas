@@ -38,7 +38,7 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   config.verletSkinRadiusPerTimestep.value = 0.02;
   config.verletRebuildFrequency.value = 10;
   const double sigma = 1.;
-  config.addParticleType(0, 1., sigma, 1.);
+  config.addSiteType(0, 1., sigma, 1.);
   config.boundaryOption.value = {options::BoundaryTypeOption::reflective, options::BoundaryTypeOption::reflective,
                                  options::BoundaryTypeOption::reflective};
 
@@ -54,7 +54,7 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   autoPasContainer->setVerletRebuildFrequency(config.verletRebuildFrequency.value);
   autoPasContainer->init();
 
-  particlePropertiesLibrary->addType(0, 1., sigma, 1.);
+  particlePropertiesLibrary->addSiteType(0, 1., sigma, 1.);
   particlePropertiesLibrary->calculateMixingCoefficients();
 
   // get particle properties
@@ -194,8 +194,8 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> particlePosition, 
   config.cutoff.value = cutoff;
   config.verletSkinRadiusPerTimestep.value = 0.01;
   config.verletRebuildFrequency.value = 10;
-  config.addParticleType(0, 1., sigmas[0], 1.);
-  config.addParticleType(1, 1., sigmas[1], 1.);
+  config.addSiteType(0, 1., sigmas[0], 1.);
+  config.addSiteType(1, 1., sigmas[1], 1.);
   config.boundaryOption.value = {options::BoundaryTypeOption::reflective, options::BoundaryTypeOption::reflective,
                                  options::BoundaryTypeOption::reflective};
 
@@ -211,8 +211,8 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> particlePosition, 
   autoPasContainer->setVerletRebuildFrequency(config.verletRebuildFrequency.value);
   autoPasContainer->init();
 
-  particlePropertiesLibrary->addType(0, 1., sigmas[0], 1.);
-  particlePropertiesLibrary->addType(1, 1., sigmas[1], 1.);
+  particlePropertiesLibrary->addSiteType(0, 1., sigmas[0], 1.);
+  particlePropertiesLibrary->addSiteType(1, 1., sigmas[1], 1.);
   particlePropertiesLibrary->calculateMixingCoefficients();
 
   std::array<bool, 3> expectReflection = {false, false, false};

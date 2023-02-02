@@ -69,7 +69,7 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle,
     double *const __restrict yPtr = soa.template begin<Particle::AttributeNames::posY>();
     double *const __restrict zPtr = soa.template begin<Particle::AttributeNames::posZ>();
 
-    double *const __restrict typePtr = soa.template begin<Particle::AttributeNames::typeId>();
+    unsigned long *const __restrict typePtr = soa.template begin<Particle::AttributeNames::typeId>();
 
     for (size_t i = 0; i < soa.getNumberOfParticles(); ++i) {
       for (size_t j = i + 1; j < soa.getNumberOfParticles(); ++j) {
@@ -105,8 +105,8 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle,
     double *const __restrict y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
     double *const __restrict z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
 
-    double *const __restrict type1Ptr = soa1.template begin<Particle::AttributeNames::typeId>();
-    double *const __restrict type2Ptr = soa2.template begin<Particle::AttributeNames::typeId>();
+    unsigned long *const __restrict type1Ptr = soa1.template begin<Particle::AttributeNames::typeId>();
+    unsigned long *const __restrict type2Ptr = soa2.template begin<Particle::AttributeNames::typeId>();
 
     for (size_t i = 0; i < soa1.getNumberOfParticles(); ++i) {
       for (size_t j = 0; j < soa2.getNumberOfParticles(); ++j) {
@@ -148,7 +148,7 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle,
     double *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
     double *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
 
-    double *const __restrict typePtr = soa.template begin<Particle::AttributeNames::typeId>();
+    unsigned long *const __restrict typePtr = soa.template begin<Particle::AttributeNames::typeId>();
 
     const size_t neighborListSize = neighborList.size();
     const size_t *const __restrict currentList = neighborList.data();

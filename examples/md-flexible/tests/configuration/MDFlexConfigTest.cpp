@@ -178,32 +178,32 @@ TEST_F(MDFlexConfigTest, correctMolParsing) {
   const std::vector<std::array<double, 3>> expectedSitePositions1 = {{0., -0.5, 0.}, {1., 0.1, 0.01}, {-0.2, -0.3, 0.4}};
   const std::array<double, 3> expectedMoI1 = {1., 0.5, 0.25};
 
-  const auto siteIds0 = configuration.molToSiteIdMap.value.at(0);
+  const auto siteIds0 = configuration.molToSiteIdMap.at(0);
   for (int i = 0; i < expectedSiteIds0.size(); i++) {
     EXPECT_EQ(expectedSiteIds0[i], siteIds0[i]);
   }
-  const auto sitePositions0 = configuration.molToSitePosMap.value.at(0);
+  const auto sitePositions0 = configuration.molToSitePosMap.at(0);
   for (int i = 0; i < expectedSitePositions0.size(); i++) {
     for (int j = 0; j < 3; j++) {
       EXPECT_EQ(expectedSitePositions0[i][j], sitePositions0[i][j]);
     }
   }
-  const auto momentOfInertia0 = configuration.momentOfInertiaMap.value.at(0);
+  const auto momentOfInertia0 = configuration.momentOfInertiaMap.at(0);
   for (int i = 0; i < 3; i++) {
     EXPECT_EQ(expectedMoI0[i], momentOfInertia0[i]);
   }
 
-  const auto siteIds1 = configuration.molToSiteIdMap.value.at(1);
+  const auto siteIds1 = configuration.molToSiteIdMap.at(1);
   for (int i = 0; i < expectedSiteIds1.size(); i++) {
     EXPECT_EQ(expectedSiteIds1[i], siteIds1[i]);
   }
-  const auto sitePositions1 = configuration.molToSitePosMap.value.at(1);
+  const auto sitePositions1 = configuration.molToSitePosMap.at(1);
   for (int i = 0; i < expectedSitePositions1.size(); i++) {
     for (int j = 0; j < 3; j++) {
       EXPECT_EQ(expectedSitePositions1[i][j], sitePositions1[i][j]);
     }
   }
-  const auto momentOfInertia1 = configuration.momentOfInertiaMap.value.at(1);
+  const auto momentOfInertia1 = configuration.momentOfInertiaMap.at(1);
   for (int i = 0; i < 3; i++) {
     EXPECT_EQ(expectedMoI1[i], momentOfInertia1[i]);
   }

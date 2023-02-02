@@ -326,7 +326,7 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
   // add particle
   ParticleType mol;
   mol.setR({2., 2., 2.});
-  mol.setQ({0., 0., 0., 1.);
+  mol.setQ({0., 0., 0., 1.});
   mol.setF({0., 0., 1.});
   mol.setV({0., 0., 1.});
   mol.setTorque({1., 0., 0.});

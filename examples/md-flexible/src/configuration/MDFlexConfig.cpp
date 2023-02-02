@@ -307,11 +307,11 @@ std::string MDFlexConfig::to_string() const {
 
 #ifdef MD_FLEXIBLE_USE_MULTI_SITE
   os << setw(valueOffset) << left << "Molecules:" << endl;
-  for (auto [molId, molToSiteId] : molToSiteIdMap.value) {
+  for (auto [molId, molToSiteId] : molToSiteIdMap) {
     os << "  " << molId << ":" << endl;
-    os << "    " << setw(valueOffset - 4) << left << molToSiteIdMap.name     << ":  " << molToSiteId << endl;
-    os << "    " << setw(valueOffset - 4) << left << molToSitePosMap.name    << ":  " << molToSitePosMap.value.at(molId) << endl;
-    os << "    " << setw(valueOffset - 4) << left << momentOfInertiaMap.name << ":  " << massMap.value.at(molId) << endl;
+    os << "    " << setw(valueOffset - 4) << left << moleculeToSiteIdStr     << ":  " << molToSiteId << endl;
+    os << "    " << setw(valueOffset - 4) << left << moleculeToSitePosStr    << ":  " << molToSitePosMap.at(molId) << endl;
+    os << "    " << setw(valueOffset - 4) << left << momentOfInertiaStr << ":  " << massMap.value.at(molId) << endl;
   }
 #endif
 
@@ -433,19 +433,19 @@ void MDFlexConfig::addSiteType(unsigned long siteId, double epsilon, double sigm
 void MDFlexConfig::addMolType(unsigned long molId, const std::vector<unsigned long>& siteIds, const std::vector<std::array<double, 3>>& relSitePos, std::array<double, 3> momentOfInertia) {
 #if defined(MD_FLEXIBLE_USE_MULTI_SITE)
   // check if siteId is already existing and if there no error in input
-  if (molToSiteIdMap.value.count(molId) == 1) {
+  if (molToSiteIdMap.count(molId) == 1) {
     // check if type is already added
-    if (autopas::utils::ArrayUtils::equals(molToSiteIdMap.value.at(molId),siteIds) and
-        autopas::utils::ArrayUtils::equals(molToSitePosMap.value.at(molId),relSitePos) and
-        (momentOfInertiaMap.value.at(molId) == momentOfInertia)) {
+    if (autopas::utils::ArrayUtils::equals(molToSiteIdMap.at(molId),siteIds) and
+        autopas::utils::ArrayUtils::equals(molToSitePosMap.at(molId),relSitePos) and
+        (momentOfInertiaMap.at(molId) == momentOfInertia)) {
       return;
     } else {  // wrong initialization:
       throw std::runtime_error("Wrong Particle initialization: using same typeId for different properties");
     }
   } else {
-    molToSiteIdMap.value.emplace(molId,siteIds);
-    molToSitePosMap.value.emplace(molId,relSitePos);
-    momentOfInertiaMap.value.emplace(molId,momentOfInertia);
+    molToSiteIdMap.emplace(molId,siteIds);
+    molToSitePosMap.emplace(molId,relSitePos);
+    momentOfInertiaMap.emplace(molId,momentOfInertia);
   }
 #else
   throw std::runtime_error("MDFlexConfig::addMolType was used without support for multi-site simulations being compiled");
@@ -455,7 +455,7 @@ void MDFlexConfig::addMolType(unsigned long molId, const std::vector<unsigned lo
 void MDFlexConfig::flushParticles() { _particles.clear(); }
 
 void MDFlexConfig::initializeParticlePropertiesLibrary() {
-  if (molToSiteIdMap.value.empty()) {
+  if (molToSiteIdMap.empty()) {
     throw std::runtime_error("No properties found in particle properties library!");
   }
 
@@ -474,13 +474,13 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
   // if doing Multi-site MD simulation, also check molecule level vectors match and initialize at molecular level
 #if defined(MD_FLEXIBLE_USE_MULTI_SITE)
     // check size of molecular level vectors match
-    if (molToSiteIdMap.value.size() != molToSitePosMap.value.size()) {
+    if (molToSiteIdMap.size() != molToSitePosMap.size()) {
       throw std::runtime_error("Number of molecular-level properties differ!");
     }
 
     // initialize at molecular level
-    for (auto [molTypeId, siteTypeIds] : molToSiteIdMap.value) {
-      _particlePropertiesLibrary->addMolType(molTypeId,siteTypeIds,molToSitePosMap.value.at(molTypeId), momentOfInertiaMap.value.at(molTypeId));
+    for (auto [molTypeId, siteTypeIds] : molToSiteIdMap) {
+      _particlePropertiesLibrary->addMolType(molTypeId,siteTypeIds,molToSitePosMap.at(molTypeId), momentOfInertiaMap.at(molTypeId));
     }
 #endif
 

@@ -98,7 +98,7 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
   config.cutoff.value = cutoff;
   config.subdivideDimension.value = {true, true, true};
   config.boundaryOption.value = boundaryConditions;
-  config.addParticleType(0, 1., sigma, 1.);
+  config.addSiteType(0, 1., sigma, 1.);
 
   const std::array<double, 3> boxLength = autopas::utils::ArrayMath::sub(config.boxMax.value, config.boxMin.value);
   RegularGridDecomposition domainDecomposition(config);
@@ -111,7 +111,7 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
   autoPasContainer->setCutoff(config.cutoff.value);
   autoPasContainer->init();
 
-  particlePropertiesLibrary->addType(0, 1., sigma, 1.);
+  particlePropertiesLibrary->addSiteType(0, 1., sigma, 1.);
   particlePropertiesLibrary->calculateMixingCoefficients();
 
   const auto &[expectedPositions, expectedHaloPositions, expectedForces] = setUpExpectations(

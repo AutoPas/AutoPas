@@ -245,9 +245,9 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
   }
   if (node[MDFlexConfig::moleculesStr]) {
     // remove default objects
-    config.molToSiteIdMap.value.clear();
-    config.molToSitePosMap.value.clear();
-    config.momentOfInertiaMap.value.clear();
+    config.molToSiteIdMap.clear();
+    config.molToSitePosMap.clear();
+    config.momentOfInertiaMap.clear();
 
 #if defined(MD_FLEXIBLE_USE_MULTI_SITE)
     for (auto moleculeInterator : node[MDFlexConfig::moleculesStr]) {

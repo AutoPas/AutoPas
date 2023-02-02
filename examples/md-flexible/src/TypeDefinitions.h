@@ -1,5 +1,5 @@
 /**
- * @file Simulation.cpp
+ * @file TypeDefinitions.h
  * @author F. Gratl
  * @date 01.03.2021
  */
@@ -109,31 +109,3 @@ using FloatPrecision = double;
  * Set to the same precision as ParticleType.
  */
 using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<FloatPrecision, size_t>;
-
-/**
- * We require access to a version of the force functor for non-simulation purposes, e.g. calculating FLOPs.
- * This is abstracted from whichever SoA implementation is used, so we pick any functor that is compiled.
- */
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
-#ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
-using LJFunctorTypeAbstract = autopas::LJMultisiteFunctor<ParticleType, true, true>;
-#elif MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS
-using LJFunctorTypeAbstract = autopas::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
-#else
-#error "No Pairwise Force Functor has been compiled!"
-#endif
-
-#else
-#ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
-using LJFunctorTypeAbstract = autopas::LJFunctor<ParticleType, true, true>;
-#elif MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS
-using LJFunctorTypeAbstract = autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
-#elif MD_FLEXIBLE_FUNCTOR_AVX
-using LJFunctorTypeAbstract = autopas::LJFunctorAVX<ParticleType, true, true>;
-#elif MD_FLEXIBLE_FUNCTOR_SVE
-using LJFunctorTypeAbstract = autopas::LJFunctorSVE<ParticleType, true, true>;
-#else
-#error "No Pairwise Force Functor has been compiled!"
-#endif
-
-#endif

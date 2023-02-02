@@ -660,7 +660,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         break;
       }
       case MDFlexConfig::GeneratorOption::sphere: {
-        auto centerOfBox = config.particlesPerDim.value / 2;
+        auto centerOfBox = config.particlesPerDim.value / 2.;
         Sphere sphere(velocity, typeID, {(double)centerOfBox, (double)centerOfBox, (double)centerOfBox}, (int)centerOfBox,
                       config.particleSpacing.value);
         config.sphereObjects.push_back(sphere);

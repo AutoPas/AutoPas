@@ -180,7 +180,7 @@ class MDFlexConfig {
   /**
    * Choice of the functor
    */
-  enum class FunctorOption { lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_Globals};
+  enum class FunctorOption { lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_Globals };
 
   /**
    * Choice of the particle generators specified in the command line
@@ -475,39 +475,6 @@ class MDFlexConfig {
    */
   MDFlexOption<double, __LINE__> deltaT{0.001, "deltaT", true,
                                         "Length of a timestep. Set to 0 to deactivate time integration."};
-  /**
-   * molToSiteIdMap
-   */
-  MDFlexOption<std::map<unsigned long, std::vector<unsigned long>>, __LINE__> molToSiteIdMap{
-      {{0ul,{0ul}}}, "site-types-in-mol", true, "Mapping of molecule type to site type."
-  };
-  /**
-   * molToSitePosMap
-   */
-  MDFlexOption<std::map<unsigned long, std::vector<std::array<double, 3>>>, __LINE__> molToSitePosMap{
-      {{0ul,{{0.,0.,0.}}}}, "site-pos-in-mol", false, "Mapping of molecule type to relative site position."
-  };
-  /**
-   * momentOfInertiaMap
-   */
-  MDFlexOption<std::map<unsigned long, std::array<double, 3>>, __LINE__> momentOfInertiaMap {
-      {{0ul, {0., 0., 0.}}}, "molecule-moment-of-inertia", false, "Mapping of molecule type to diagonalized moment of inertia."
-  };
-  /**
-   * epsilonMap
-   */
-  MDFlexOption<std::map<unsigned long, double>, 0> epsilonMap{
-      {{0ul, 1.}}, "site-epsilon", true, "Mapping from site type to an epsilon value."};
-  /**
-   * sigmaMap
-   */
-  MDFlexOption<std::map<unsigned long, double>, 0> sigmaMap{
-      {{0ul, 1.}}, "site-sigma", true, "Mapping from site type to a sigma value."};
-  /**
-   * massMap
-   */
-  MDFlexOption<std::map<unsigned long, double>, 0> massMap{
-      {{0ul, 1.}}, "site-mass", true, "Mapping from site type to a mass value."};
 
   // Options for additional Object Generation on command line
   /**
@@ -550,7 +517,32 @@ class MDFlexConfig {
       GeneratorOption::grid, "particle-generator", true,
       "Scenario generator. Possible Values: (grid uniform gaussian sphere closestPacking) Default: grid"};
 
+  // Site Type Generation
+  /**
+   * siteStr
+   */
+  static inline const char *siteStr{"Sites"};
+  /**
+   * siteTypeStr
+   */
+  static inline const char *const siteTypeStr{"site-id"};
+  /**
+   * epsilonMap
+   */
+  MDFlexOption<std::map<unsigned long, double>, 0> epsilonMap{
+      {{0ul, 1.}}, "site-epsilon", true, "Mapping from site type to an epsilon value."};
+  /**
+   * sigmaMap
+   */
+  MDFlexOption<std::map<unsigned long, double>, 0> sigmaMap{
+      {{0ul, 1.}}, "site-sigma", true, "Mapping from site type to a sigma value."};
+  /**
+   * massMap
+   */
+  MDFlexOption<std::map<unsigned long, double>, 0> massMap{
+      {{0ul, 1.}}, "site-mass", true, "Mapping from site type to a mass value."};
   // Molecule Type Generation
+  // Strings for parsing yaml files.
   /**
    * moleculesStr
    */
@@ -571,15 +563,19 @@ class MDFlexConfig {
    * momentOfInertiaStr
    */
   static inline const char *momentOfInertiaStr{"molecule-moment-of-inertia"};
-  // Site Type Generation
+  // Maps where the molecule type information is actually stored
   /**
-   * siteStr
+   * molToSiteIdMap
    */
-  static inline const char *siteStr{"Sites"};
+  std::map<unsigned long, std::vector<unsigned long>> molToSiteIdMap{};
   /**
-   * siteTypeStr
+   * molToSitePosMap
    */
-  static inline const char *const siteTypeStr{"site-id"};
+  std::map<unsigned long, std::vector<std::array<double, 3>>>molToSitePosMap{};
+  /**
+   * momentOfInertiaMap
+   */
+  std::map<unsigned long, std::array<double, 3>> momentOfInertiaMap{};
   // Object Generation:
   /**
    * objectsStr
@@ -728,6 +724,8 @@ class MDFlexConfig {
  private:
   /**
    * Stores the particles generated based on the provided configuration file
+   * These particles can be added to the respective autopas container,
+   * but have to be converted to the respective particle type, first.
    */
   std::vector<ParticleType> _particles;
 
