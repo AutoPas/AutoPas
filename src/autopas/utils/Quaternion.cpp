@@ -212,4 +212,16 @@ std::array<double, 3> convertQuaternionTo3DVec(const std::array<double, 4> q) {
   return {q[1], q[2], q[3]};
 }
 
+std::array<double, 4> qMirror(const std::array<double, 4> q, int dimensionNormalToMirror) {
+  if (dimensionNormalToMirror == 0) {
+    return {q[0], q[1], -q[2], -q[3]};
+  } else if (dimensionNormalToMirror == 1) {
+    return {q[0], -q[1], q[2], -q[3]};
+  } else if (dimensionNormalToMirror == 2) {
+    return {q[0], -q[1], -q[2], q[3]};
+  } else {
+    autopas::utils::ExceptionHandler::exception("Calling qMirror with dimensionNormalToMirror not 0, 1, or 2!");
+  }
+}
+
 }

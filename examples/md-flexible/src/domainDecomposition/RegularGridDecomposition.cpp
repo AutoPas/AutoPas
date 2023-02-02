@@ -14,6 +14,7 @@
 #include "DomainTools.h"
 #include "autopas/AutoPas.h"
 #include "autopas/utils/ArrayUtils.h"
+#include "autopas/utils/Quaternion.h"
 #include "src/ParticleCommunicator.h"
 
 RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configuration)
@@ -265,8 +266,7 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
 void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPasContainer,
                                                             ParticlePropertiesLibraryType &particlePropertiesLib) {
   std::array<double, _dimensionCount> reflSkinMin{}, reflSkinMax{};
-  auto functorLJ = autopas::LJFunctor<ParticleType, false, true, autopas::FunctorN3Modes::Both, false, false>(
-      _maxReflectiveSkin * 2., particlePropertiesLib);
+  auto functorLJ = LJFunctorTypeAutovec(_maxReflectiveSkin * 2., particlePropertiesLib);
 
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
     // skip if boundary is not reflective
@@ -279,17 +279,47 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
         const auto position = p->getR();
         const auto distanceToBoundary = isUpper ? reflSkinMax[dimensionIndex] - position[dimensionIndex]
                                                 : position[dimensionIndex] - reflSkinMin[dimensionIndex];
-        if (distanceToBoundary < sixthRootOfTwo * particlePropertiesLib.getSigma(p->getTypeId()) / 2.) {
+
+        // For single-site molecules, we discard molecules further than sixthRootOfTwo * sigma, and are left only with
+        // molecules who will experience repulsion from the boundary.
+        // For multi-site molecules, we discard molecules further than sixthRootOfTwo * the largest sigma of any site of
+        // that molecule. Some molecules may experience attraction, and this is only stopped after calculation of force
+        // with mirror particle.
+        const bool reflectMoleculeFlag =
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+            distanceToBoundary < sixthRootOfTwo * particlePropertiesLib.getMoleculesLargestSigma(p->getTypeId()) / 2.;
+#else
+            distanceToBoundary < sixthRootOfTwo * particlePropertiesLib.getSigma(p->getTypeId()) / 2.;
+#endif
+        if (reflectMoleculeFlag) {
           // Create mirror particle and shift it to other side of reflective boundary
           ParticleType mirrorParticle;
-          auto position = p->getR();
-          position[dimensionIndex] =
-              isUpper ? reflSkinMax[dimensionIndex] + (reflSkinMax[dimensionIndex] - position[dimensionIndex])
-                      : reflSkinMin[dimensionIndex] - position[dimensionIndex];
-          mirrorParticle.setR(position);
+          auto mirrorPosition = position;
+          mirrorPosition[dimensionIndex] =
+              isUpper ? reflSkinMax[dimensionIndex] + (reflSkinMax[dimensionIndex] - mirrorPosition[dimensionIndex])
+                      : reflSkinMin[dimensionIndex] - mirrorPosition[dimensionIndex];
+          mirrorParticle.setR(mirrorPosition);
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+          // Keep track of current force and torque to see if molecule is repulsed, and, if not, reset the force.
+          const auto currentForce = p->getF();
+          const auto currentTorque = p->getTorque();
 
+          // Mirror quaternion
+          mirrorParticle.setQ(autopas::utils::quaternion::qMirror(p->getQ(), dimensionIndex));
+#endif
           // Interact original particle with its mirror
           functorLJ.AoSFunctor(*p, mirrorParticle, false);
+
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+          // test if attraction has occurred
+          const bool reflectionIsAttractive = isUpper ? p->getF()[dimensionIndex] - currentForce[dimensionIndex] > 0 :
+                                                      p->getF()[dimensionIndex] - currentForce[dimensionIndex] < 0;
+          // reset force if no attraction has occurred
+          if (reflectionIsAttractive) {
+            p->setF(currentForce);
+            p->setTorque(currentTorque);
+          }
+#endif
         }
       }
     };
