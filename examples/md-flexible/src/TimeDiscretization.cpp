@@ -120,11 +120,13 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
 
    // Reset torque
    iter->setTorque({0., 0., 0.});
-   // Get torque from global force
-   const auto unrotatedSitePositions = particlePropertiesLibrary.getSitePositions(iter->getTypeId());
-   const auto rotatedSitePositions = rotateVectorOfPositions(qFullStep, unrotatedSitePositions);
-   for (size_t site = 0; site < particlePropertiesLibrary.getNumSites(iter->getTypeId()); site++) {
-     iter->addTorque(cross(rotatedSitePositions[site], globalForce));
+   if (std::any_of(globalForce.begin(), globalForce.end(), [](double i){ return std::abs(i) < std::numeric_limits<double>::epsilon(); })) {
+     // Get torque from global force
+     const auto unrotatedSitePositions = particlePropertiesLibrary.getSitePositions(iter->getTypeId());
+     const auto rotatedSitePositions = rotateVectorOfPositions(qFullStep, unrotatedSitePositions);
+     for (size_t site = 0; site < particlePropertiesLibrary.getNumSites(iter->getTypeId()); site++) {
+       iter->addTorque(cross(rotatedSitePositions[site], globalForce));
+     }
    }
  }
 
