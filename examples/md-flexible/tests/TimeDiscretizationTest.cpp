@@ -363,7 +363,7 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
   const auto derivQHalf0 = mulScalar(qMul(mol.getQ(), div(angularMomentumMHalf, momentOfInertiaM) ), 0.5);
 
   // (23)
-  const auto qHalf0 = add(mol.getQ(), mulScalar(derivQHalf0, 0.5 * deltaT));
+  const auto qHalf0 = normalize(add(mol.getQ(), mulScalar(derivQHalf0, 0.5 * deltaT)));
 
   // (24)
   const auto angularMomentumWHalf = add(angularMomentumW0, mulScalar(mol.getTorque(), 0.5 * deltaT));
@@ -372,7 +372,7 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
   auto qHalfK = qHalf0;
   auto qHalfKp1 = qHalf0;
   auto derivQHalfKp1 = derivQHalf0;
-  qHalfK[0] = 1e10 * qHalfKp1[0]; // ensuring while loop runs at least once
+  qHalfK[0] += 2e-13; // ensuring while loop runs at least once
   while (L2Norm(sub(qHalfKp1, qHalfK)) > 1e-13) {
     qHalfK = qHalfKp1;
     const auto angularMomentumMHalfKp1 = convertQuaternionTo3DVec(qMul(qConjugate(qHalfK), qMul(angularMomentumWHalf, qHalfK)));
