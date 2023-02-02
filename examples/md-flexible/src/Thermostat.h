@@ -88,7 +88,7 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
   }
 
 #ifdef AUTOPAS_OPENMP
-//#pragma omp parallel
+#pragma omp parallel
 #endif
   {
     // create aggregators for each thread
@@ -143,7 +143,7 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
 
   for (auto [kineticEnergyMapIter, numParticleMapIter] = kineticEnergyAndParticleMaps;
        kineticEnergyMapIter != kineticEnergyMul2Map.end(); ++kineticEnergyMapIter, ++numParticleMapIter) {
-    // ToDo: Allow Boltzmann constant to be set to non-1 by multiplying by it below.
+    // The calculation below assumes that the Boltzmann constant is 1.
     kineticEnergyMapIter->second /= static_cast<double>(numParticleMapIter->second) * degreesOfFreedom;
   }
   return kineticEnergyMul2Map;

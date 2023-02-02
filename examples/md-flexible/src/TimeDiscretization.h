@@ -1,6 +1,6 @@
 /**
  * @file TimeDiscretization.h
- * @author N. Fottner & S. Newcome
+ * @author N. Fottner
  * @date 13/05/19
  */
 #pragma once
@@ -16,12 +16,15 @@
 namespace TimeDiscretization {
 /**
  * Calculate and update the position for every particle using the Störmer-Verlet Algorithm.
- * In addition, pushes the force stored in the force vector to the old force vector and sets the force vector to the
- * global force in preparation for the calculate forces stage.
  *
+ * clang-format off
  * Specifically, the formula for this is
  *      x_{n+1} = x_n + delta_t * v_n + delta_t^2 / ( 2 * mass) * f_n
  *                      {   velTerm }   {        forceTerm          }
+ * clang-format on
+ *
+ * In addition, pushes the force stored in the force vector to the old force vector and sets the force vector to the
+ * global force in preparation for the calculate forces stage.
  *
  * @param autoPasContainer The container for which to update the positions.
  * @param particlePropertiesLibrary The particle properties library for the particles in the container.
@@ -30,7 +33,7 @@ namespace TimeDiscretization {
  * @param fastParticlesThrow When true throws an exception if particles moved too far for verlet technique
  * (>skin/2/rebuildFrequency).
  */
-void calculatePositionsAndUpdateForces(autopas::AutoPas<ParticleType> &autoPasContainer,
+void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasContainer,
                                        const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
                                        const std::array<double, 3> &globalForce, bool fastParticlesThrow);
 

@@ -1,14 +1,13 @@
 /**
-* @file TimeDiscretization.cpp
-* @author N. Fottner & S. Newcome
-* @date 13/05/19
-*/
-
+ * @file TimeDiscretization.cpp
+ * @author N. Fottner
+ * @date 13/05/19
+ */
 #include "TimeDiscretization.h"
 
 namespace TimeDiscretization {
 
-void calculatePositionsAndUpdateForces(autopas::AutoPas<ParticleType> &autoPasContainer,
+void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasContainer,
                        const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
                        const std::array<double, 3> &globalForce, bool fastParticlesThrow) {
   using autopas::utils::ArrayUtils::operator<<;
@@ -18,6 +17,7 @@ void calculatePositionsAndUpdateForces(autopas::AutoPas<ParticleType> &autoPasCo
 
   const auto maxAllowedDistanceMoved =
       autoPasContainer.getVerletSkin() / (2 * autoPasContainer.getVerletRebuildFrequency());
+  const auto maxAllowedDistanceMovedSquared = maxAllowedDistanceMoved * maxAllowedDistanceMoved;
 
   bool throwException = false;
 
@@ -37,7 +37,7 @@ void calculatePositionsAndUpdateForces(autopas::AutoPas<ParticleType> &autoPasCo
     // If this condition is violated once this is not necessarily an error. Only if the total distance traveled over
     // the whole rebuild frequency is farther than the skin we lose interactions.
     const auto distanceMovedSquared = dot(displacement, displacement);
-    if (distanceMovedSquared > maxAllowedDistanceMoved) {
+    if (distanceMovedSquared > maxAllowedDistanceMovedSquared) {
 #pragma omp critical
       std::cerr << "A particle moved farther than verletSkinPerTimestep/2: " << std::sqrt(distanceMovedSquared) << " > "
                 << autoPasContainer.getVerletSkinPerTimestep() << "/2 = " << maxAllowedDistanceMoved << "\n"
@@ -76,18 +76,10 @@ void calculateQuaternions(autopas::AutoPas<ParticleType> &autoPasContainer,
 
  const double tol = 1e-13; // tolerance given in paper
 
- // todo sort out how to handle global forces.
-
- std::cout << "here0";
- bool flag = true;
-
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif
  for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-   if (flag == true) {
-     std::cout << "here1";
-   }
    const auto q = iter->getQ();
    const auto angVelW = iter->getAngularVel(); // angular velocity in world frame
    const auto angVelM = rotatePositionBackwards(q,angVelW); // angular velocity in molecular frame  (equivalent to (17))
@@ -111,32 +103,18 @@ void calculateQuaternions(autopas::AutoPas<ParticleType> &autoPasContainer,
    auto qHalfStepOld = qHalfStep;
    qHalfStepOld[0] += 2 * tol;
 
-   if (flag == true) {
-     std::cout << "here3";
-   }
-
-   int i = 0;
    while (L2Norm(sub(qHalfStep,qHalfStepOld))>tol) {
      qHalfStepOld = qHalfStep;
      auto angVelMHalfStep = rotatePositionBackwards(qHalfStepOld,angVelWHalfStep); // equivalent to first two lines of (25)
      derivativeQHalfStep = mulScalar(qMul(qHalfStepOld,angVelMHalfStep),0.5);
      qHalfStep = normalize(add(q, mulScalar(derivativeQHalfStep, halfDeltaT)));
-     if (i > 30) {
-       std::cout << i << ":";
-     }
    }
    // (25) end
 
    const auto qFullStep = normalize(add(q, mulScalar(derivativeQHalfStep, deltaT))); // (26)
 
-   if (flag == true) {
-     std::cout << "here4";
-   }
-
    iter->setQ(qFullStep);
    iter->setAngularVel(angVelWHalfStep); // save angular velocity half step, to be used by calculateAngularVelocities
-
-   flag = false;
  }
 
 #else
