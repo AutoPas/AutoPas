@@ -180,6 +180,16 @@ class ParticlePropertiesLibrary {
   intType getNumSites(intType i) const;
 
   /**
+   * Get the largest sigma of any site of a multi-site molecule.
+   *
+   * Throws an error if support for multi-site molecules has not been compiled.
+   *
+   * @param i Type Id of a multi-site molecule.
+   * @return largest sigma of that molecule's sites
+   */
+  floatType getMoleculesLargestSigma(intType i) const;
+
+  /**
    * Returns the precomputed mixed epsilon * 24.
    * @param  i Id of site one.
    * @param  j Id of site two.
@@ -253,6 +263,7 @@ class ParticlePropertiesLibrary {
   std::vector<floatType> _molMasses;
   std::vector<std::array<floatType,3>> _momentOfInertias;
   std::vector<size_t> _numSites;
+  std::vector<floatType> _moleculesLargestSigma;
 
   struct PackedMixingData {
     floatType epsilon24;
@@ -316,6 +327,12 @@ void ParticlePropertiesLibrary<floatType, intType>::addMolType(const intType mol
   }
   _molMasses.emplace_back(molMass);
   _momentOfInertias.emplace_back(momentOfInertia);
+
+  floatType molLargestSigma{0.};
+  for (size_t site = 0; site < siteIds.size(); site++) {
+    molLargestSigma = std::max(molLargestSigma, _sigmas[siteIds[site]]);
+  }
+  _moleculesLargestSigma.emplace_back(molLargestSigma);
 }
 
 template <typename floatType, typename intType>
@@ -413,6 +430,17 @@ intType ParticlePropertiesLibrary<floatType, intType>::getNumSites(intType i) co
   );
 #endif
   return _numSites[i];
+}
+
+template<typename floatType, typename intType>
+floatType ParticlePropertiesLibrary<floatType, intType>::getMoleculesLargestSigma(intType i) const {
+#if not defined(MD_FLEXIBLE_USE_MULTI_SITE)
+  autopas::utils::ExceptionHandler::exception(
+      "ParticlePropertiesLibrary::getNumSites(): trying to get the number of sites of a multi-site molecule type when md-flexible has been compiled without support for multi-site molecules. Please compile with the CMake argument '-D "
+      "MD_FLEXIBLE_USE_MULTI_SITE=ON'."
+  );
+#endif
+  return _moleculesLargestSigma[i];
 }
 
 template <typename floatType, typename intType>
