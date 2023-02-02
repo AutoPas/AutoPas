@@ -109,3 +109,34 @@ using FloatPrecision = double;
  * Set to the same precision as ParticleType.
  */
 using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<FloatPrecision, size_t>;
+
+/**
+ * We require access to a version of the force functor for non-iteratePairwise purposes, e.g. calculating FLOPs or AoS functor
+ * calls. This is abstracted from whichever SoA implementation is used, so we pick any functor that is chosen to be used in
+ * the CMake.
+ * If no (valid) implementation is chosen, this is set to some arbitrary valid implementation, e.g. AutoVec.
+ */
+using LJFunctorTypeAbstract =
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
+    autopas::LJMultisiteFunctor<ParticleType, true, true>;
+#elif MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS
+    autopas::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
+#else
+    autopas::LJMultisiteFunctor<ParticleType, true, true>;
+#endif
+
+#else
+#ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
+    autopas::LJFunctor<ParticleType, true, true>;
+#elif MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS
+    autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
+#elif MD_FLEXIBLE_FUNCTOR_AVX
+    autopas::LJFunctorAVX<ParticleType, true, true>;
+#elif MD_FLEXIBLE_FUNCTOR_SVE
+    autopas::LJFunctorSVE<ParticleType, true, true>;
+#else
+    autopas::LJFunctor<ParticleType, true, true>;
+#endif
+
+#endif

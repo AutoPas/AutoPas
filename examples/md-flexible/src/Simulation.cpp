@@ -6,7 +6,6 @@
 #include "Simulation.h"
 
 #include "TypeDefinitions.h"
-#include "AbstractLJFunctorTypeDefinition.h"
 #include "autopas/AutoPasDecl.h"
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 #include "autopas/utils/SimilarityFunctions.h"
