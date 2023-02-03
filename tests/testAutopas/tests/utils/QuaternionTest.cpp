@@ -195,10 +195,8 @@ TEST(QuaternionTest, qMulvTest) {
 }
 
 /**
- * Tests qMirror. Places a rigid body, made from a set of points about a center-of-mass and a non-identity quaternion dictating
- * the relative rotation of the points, a distance from an axes-locked mirror plane. The quaternion is mirrored, and a second
- * rigid body is placed on the other side of the mirror plane with the same set of points and the mirrored quaternion (i.e.
- * is a mirror reflection of the original).
+ * Tests qMirror. Begins with a rigid body, made from a set of points about a center-of-mass and a non-identity quaternion dictating
+ * the relative rotation of the points. The quaternion is mirrored, resulting in a mirrored rigid body.
  *
  * If the quaternion is manipulated correctly, each point in the mirrored rigid body should have two coordinates equal to
  * those of the point's non-mirrored original and one coordinate which is equal in distance to the mirror plane as the original.
@@ -210,9 +208,10 @@ TEST(QuaternionTest, qMulvTest) {
  */
 TEST(QuaternionTest, qMirrorTest) {
   const std::vector<std::array<double, 3>> unrotatedUntranslatedPointPositions{{0., 0., 1.}, {-0.2, 0.3, 0.4}, {-0.5, -0.6, 0.7}};
-  const std::array<double, 4> quaternion{0.7071067811865475, 0.7071067811865475, 0., 0.};
+  const std::array<double, 4> unnormalizedQuaternion{1., -0.5, 0.25, -0.125};
+  const std::array<double, 4> quaternion{autopas::utils::ArrayMath::normalize(unnormalizedQuaternion)};
 
-  void testMirroring = [&](int dimensionNormalToBoundary) {
+  auto testMirroring = [&](int dimensionNormalToBoundary) {
     const auto mirroredQuaternion = utils::quaternion::qMirror(quaternion, dimensionNormalToBoundary);
 
     const auto originalRotatedPointPositions = utils::quaternion::rotateVectorOfPositions(quaternion, unrotatedUntranslatedPointPositions);
@@ -236,7 +235,8 @@ TEST(QuaternionTest, qMirrorTest) {
   // Mirror in xy
   testMirroring(2);
 
-
+  // Test error thrown for dimensionNormalToBoundary != 1, 2, or 3
+  EXPECT_ANY_THROW(testMirroring(3));
 
 }
 
