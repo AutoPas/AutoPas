@@ -39,6 +39,16 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
 
   _decomposition = DomainTools::generateDecomposition(_subdomainCount, configuration.subdivideDimension.value);
 
+  // For reflection, we interact particles with their 'mirror' only if it would cause a repulsive force. This occurs
+  // only for particles within sixthRootOfTwo * sigma / 2.0 of the boundary. For minimal redundant iterating over
+  // particles, we iterate once over particles within the largest possible range where a particle might experience a
+  // repulsion, i.e. sixthRootOfTwo * maxSigma / 2.0.
+  double maxSigma{0};
+  for (const auto &[_, sigma] : configuration.sigmaMap.value) {
+    maxSigma = std::max(maxSigma, sigma);
+  }
+  _maxReflectiveSkin = sixthRootOfTwo * maxSigma / 2.;
+
   // initialize _communicator and _domainIndex
   initializeMPICommunicator();
   // initialize _planarCommunicators and domainID
@@ -253,8 +263,11 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
   }
 }
 
-void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPasContainer) {
+void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPasContainer,
+                                                            ParticlePropertiesLibraryType &particlePropertiesLib) {
   std::array<double, _dimensionCount> reflSkinMin{}, reflSkinMax{};
+  auto functorLJ = autopas::LJFunctor<ParticleType, false, true, autopas::FunctorN3Modes::Both, false, false>(
+      _maxReflectiveSkin * 2., particlePropertiesLib);
 
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
     // skip if boundary is not reflective
@@ -263,12 +276,22 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
     auto reflect = [&](bool isUpper) {
       for (auto p = autoPasContainer.getRegionIterator(reflSkinMin, reflSkinMax, autopas::IteratorBehavior::owned);
            p.isValid(); ++p) {
-        auto vel = p->getV();
-        // reverse velocity in dimension if towards boundary
-        if ((vel[dimensionIndex] < 0) xor isUpper) {
-          vel[dimensionIndex] *= -1;
+        // Check that particle is within 6th root of 2 * sigma
+        const auto position = p->getR();
+        const auto distanceToBoundary = isUpper ? reflSkinMax[dimensionIndex] - position[dimensionIndex]
+                                                : position[dimensionIndex] - reflSkinMin[dimensionIndex];
+        if (distanceToBoundary < sixthRootOfTwo * particlePropertiesLib.getSigma(p->getTypeId()) / 2.) {
+          // Create mirror particle and shift it to other side of reflective boundary
+          ParticleType mirrorParticle;
+          auto position = p->getR();
+          position[dimensionIndex] =
+              isUpper ? reflSkinMax[dimensionIndex] + (reflSkinMax[dimensionIndex] - position[dimensionIndex])
+                      : reflSkinMin[dimensionIndex] - position[dimensionIndex];
+          mirrorParticle.setR(position);
+
+          // Interact original particle with its mirror
+          functorLJ.AoSFunctor(*p, mirrorParticle, false);
         }
-        p->setV(vel);
       }
     };
 
@@ -276,7 +299,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
     if (_localBoxMin[dimensionIndex] == _globalBoxMin[dimensionIndex]) {
       reflSkinMin = _globalBoxMin;
       reflSkinMax = _globalBoxMax;
-      reflSkinMax[dimensionIndex] = _globalBoxMin[dimensionIndex] + autoPasContainer.getVerletSkinPerTimestep() / 2;
+      reflSkinMax[dimensionIndex] = _globalBoxMin[dimensionIndex] + _maxReflectiveSkin;
 
       reflect(false);
     }
@@ -284,7 +307,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
     if (_localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex]) {
       reflSkinMin = _globalBoxMin;
       reflSkinMax = _globalBoxMax;
-      reflSkinMin[dimensionIndex] = _globalBoxMax[dimensionIndex] - autoPasContainer.getVerletSkinPerTimestep() / 2;
+      reflSkinMin[dimensionIndex] = _globalBoxMax[dimensionIndex] - _maxReflectiveSkin;
 
       reflect(true);
     }

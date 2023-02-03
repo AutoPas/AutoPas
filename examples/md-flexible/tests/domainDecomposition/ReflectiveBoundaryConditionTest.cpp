@@ -105,31 +105,31 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
 INSTANTIATE_TEST_SUITE_P(
     TestSimpleReflections, ReflectiveBoundaryConditionTest,
     testing::Values(/*position*/ /*velocity*/ /*is reflected*/
-                    std::make_tuple(std::array<double, 3>{0.05, 2.50, 2.50}, std::array<double, 3>{1, 1, -1},
+                    std::make_tuple(std::array<double, 3>{0.005, 2.50, 2.50}, std::array<double, 3>{1, 1, -1},
                                     std::array<bool, 3>{false, false, false}),
-                    std::make_tuple(std::array<double, 3>{0.05, 2.50, 2.50}, std::array<double, 3>{-1, 1, -1},
+                    std::make_tuple(std::array<double, 3>{0.005, 2.50, 2.50}, std::array<double, 3>{-1, 1, -1},
                                     std::array<bool, 3>{true, false, false}),
-                    std::make_tuple(std::array<double, 3>{4.95, 2.50, 2.50}, std::array<double, 3>{1, 1, -1},
+                    std::make_tuple(std::array<double, 3>{4.995, 2.50, 2.50}, std::array<double, 3>{1, 1, -1},
                                     std::array<bool, 3>{true, false, false}),
-                    std::make_tuple(std::array<double, 3>{4.95, 2.50, 2.50}, std::array<double, 3>{-1, 1, -1},
+                    std::make_tuple(std::array<double, 3>{4.995, 2.50, 2.50}, std::array<double, 3>{-1, 1, -1},
                                     std::array<bool, 3>{false, false, false}),
 
-                    std::make_tuple(std::array<double, 3>{2.50, 0.05, 2.50}, std::array<double, 3>{1, 1, -1},
+                    std::make_tuple(std::array<double, 3>{2.50, 0.005, 2.50}, std::array<double, 3>{1, 1, -1},
                                     std::array<bool, 3>{false, false, false}),
-                    std::make_tuple(std::array<double, 3>{2.50, 0.05, 2.50}, std::array<double, 3>{1, -1, -1},
+                    std::make_tuple(std::array<double, 3>{2.50, 0.005, 2.50}, std::array<double, 3>{1, -1, -1},
                                     std::array<bool, 3>{false, true, false}),
-                    std::make_tuple(std::array<double, 3>{2.50, 4.95, 2.50}, std::array<double, 3>{1, 1, -1},
+                    std::make_tuple(std::array<double, 3>{2.50, 4.995, 2.50}, std::array<double, 3>{1, 1, -1},
                                     std::array<bool, 3>{false, true, false}),
-                    std::make_tuple(std::array<double, 3>{2.50, 4.95, 2.50}, std::array<double, 3>{1, -1, -1},
+                    std::make_tuple(std::array<double, 3>{2.50, 4.995, 2.50}, std::array<double, 3>{1, -1, -1},
                                     std::array<bool, 3>{false, false, false}),
 
-                    std::make_tuple(std::array<double, 3>{2.50, 2.50, 0.05}, std::array<double, 3>{1, -1, 1},
+                    std::make_tuple(std::array<double, 3>{2.50, 2.50, 0.005}, std::array<double, 3>{1, -1, 1},
                                     std::array<bool, 3>{false, false, false}),
-                    std::make_tuple(std::array<double, 3>{2.50, 2.50, 0.05}, std::array<double, 3>{1, -1, -1},
+                    std::make_tuple(std::array<double, 3>{2.50, 2.50, 0.005}, std::array<double, 3>{1, -1, -1},
                                     std::array<bool, 3>{false, false, true}),
-                    std::make_tuple(std::array<double, 3>{2.50, 2.50, 4.95}, std::array<double, 3>{1, -1, 1},
+                    std::make_tuple(std::array<double, 3>{2.50, 2.50, 4.995}, std::array<double, 3>{1, -1, 1},
                                     std::array<bool, 3>{false, false, true}),
-                    std::make_tuple(std::array<double, 3>{2.50, 2.50, 4.95}, std::array<double, 3>{1, -1, -1},
+                    std::make_tuple(std::array<double, 3>{2.50, 2.50, 4.995}, std::array<double, 3>{1, -1, -1},
                                     std::array<bool, 3>{false, false, false}))
     //    ,ReflectiveBoundaryConditionTest::PrintToStringParamName());
 );
