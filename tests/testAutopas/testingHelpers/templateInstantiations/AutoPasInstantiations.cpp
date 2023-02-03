@@ -24,7 +24,7 @@ template bool autopas::AutoPas<Molecule>::iteratePairwise(
     autopas::LJFunctor<Molecule, /* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
                        /*globals*/ false> *);
 template bool autopas::AutoPas<Molecule>::iteratePairwise(EmptyFunctor<Molecule> *);
-template bool autopas::AutoPas<Molecule>::iteratePairwise(autopas::FlopCounterFunctor<Molecule> *);
+template bool autopas::AutoPas<Molecule>::iteratePairwise(autopas::FlopCounterFunctor<Molecule, autopas::LJFunctor<Molecule>> *);
 template bool autopas::AutoPas<NonConstructibleParticle>::iteratePairwise(MockFunctor<NonConstructibleParticle> *);
 
 //! @endcond
