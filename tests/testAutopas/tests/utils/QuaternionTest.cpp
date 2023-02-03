@@ -194,4 +194,50 @@ TEST(QuaternionTest, qMulvTest) {
   ASSERT_NEAR(vMulq[3], vMulqExpected[3], 1e-13);
 }
 
+/**
+ * Tests qMirror. Places a rigid body, made from a set of points about a center-of-mass and a non-identity quaternion dictating
+ * the relative rotation of the points, a distance from an axes-locked mirror plane. The quaternion is mirrored, and a second
+ * rigid body is placed on the other side of the mirror plane with the same set of points and the mirrored quaternion (i.e.
+ * is a mirror reflection of the original).
+ *
+ * If the quaternion is manipulated correctly, each point in the mirrored rigid body should have two coordinates equal to
+ * those of the point's non-mirrored original and one coordinate which is equal in distance to the mirror plane as the original.
+ * The two equal coordinates correspond to the two dimensions the mirror plane is in.
+ *
+ * This is repeated for all three dimension combinations.
+ *
+ * The test also checks that, if a dimensionNormalToMirror that is not 0, 1, or 2 is provided, an error is thrown.
+ */
+TEST(QuaternionTest, qMirrorTest) {
+  const std::vector<std::array<double, 3>> unrotatedUntranslatedPointPositions{{0., 0., 1.}, {-0.2, 0.3, 0.4}, {-0.5, -0.6, 0.7}};
+  const std::array<double, 4> quaternion{0.7071067811865475, 0.7071067811865475, 0., 0.};
+
+  void testMirroring = [&](int dimensionNormalToBoundary) {
+    const auto mirroredQuaternion = utils::quaternion::qMirror(quaternion, dimensionNormalToBoundary);
+
+    const auto originalRotatedPointPositions = utils::quaternion::rotateVectorOfPositions(quaternion, unrotatedUntranslatedPointPositions);
+    const auto mirroredRotatedPointPositions = utils::quaternion::rotateVectorOfPositions(mirroredQuaternion, unrotatedUntranslatedPointPositions);
+
+    for (int point = 0; point < unrotatedUntranslatedPointPositions.size(); point++) {
+      for (int dim = 0; dim < 3; dim++) {
+        if (dim == dimensionNormalToBoundary) {
+          EXPECT_DOUBLE_EQ(originalRotatedPointPositions[point][dim], -1 * mirroredRotatedPointPositions[point][dim]);
+        } else {
+          EXPECT_DOUBLE_EQ(originalRotatedPointPositions[point][dim], mirroredRotatedPointPositions[point][dim]);
+        }
+      }
+    }
+  };
+
+  // Mirror in yz
+  testMirroring(0);
+  // Mirror in xz
+  testMirroring(1);
+  // Mirror in xy
+  testMirroring(2);
+
+
+
+}
+
 // todo: tests for calculateRotationalMatrix and qConjugate (or removal of unused functions)
