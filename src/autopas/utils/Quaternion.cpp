@@ -221,6 +221,7 @@ std::array<double, 4> qMirror(const std::array<double, 4> q, int dimensionNormal
     return {q[0], -q[1], -q[2], q[3]};
   } else {
     autopas::utils::ExceptionHandler::exception("Calling qMirror with dimensionNormalToMirror not 0, 1, or 2!");
+    return q;
   }
 }
 

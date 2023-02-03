@@ -116,27 +116,28 @@ using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<FloatPrecision, 
  * the CMake.
  * If no (valid) implementation is chosen, this is set to some arbitrary valid implementation, e.g. AutoVec.
  */
-using LJFunctorTypeAbstract =
 #ifdef MD_FLEXIBLE_USE_MULTI_SITE
 #ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
-    autopas::LJMultisiteFunctor<ParticleType, true, true>;
+using LJFunctorTypeAbstract = autopas::LJMultisiteFunctor<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS
-    autopas::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
+using LJFunctorTypeAbstract = autopas::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
 #else
-    autopas::LJMultisiteFunctor<ParticleType, true, true>;
+#include "autopas/molecularDynamics/LJMultisiteFunctor.h"
+using LJFunctorTypeAbstract = autopas::LJMultisiteFunctor<ParticleType, true, true>;
 #endif
 
 #else
 #ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
-    autopas::LJFunctor<ParticleType, true, true>;
+using LJFunctorTypeAbstract = autopas::LJFunctor<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS
-    autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
+using LJFunctorTypeAbstract = autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
 #elif MD_FLEXIBLE_FUNCTOR_AVX
-    autopas::LJFunctorAVX<ParticleType, true, true>;
+using LJFunctorTypeAbstract = autopas::LJFunctorAVX<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_SVE
-    autopas::LJFunctorSVE<ParticleType, true, true>;
+using LJFunctorTypeAbstract = autopas::LJFunctorSVE<ParticleType, true, true>;
 #else
-    autopas::LJFunctor<ParticleType, true, true>;
+#include "autopas/molecularDynamics/LJFunctor.h"
+using LJFunctorTypeAbstract = autopas::LJFunctor<ParticleType, true, true>;
 #endif
 
 #endif

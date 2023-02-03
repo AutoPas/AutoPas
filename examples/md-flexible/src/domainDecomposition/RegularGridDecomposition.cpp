@@ -16,6 +16,7 @@
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/Quaternion.h"
 #include "src/ParticleCommunicator.h"
+#include "src/TypeDefinitions.h"
 
 RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configuration)
     : _loadBalancerOption(configuration.loadBalancer.value),
@@ -266,7 +267,7 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
 void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPasContainer,
                                                             ParticlePropertiesLibraryType &particlePropertiesLib) {
   std::array<double, _dimensionCount> reflSkinMin{}, reflSkinMax{};
-  auto functorLJ = LJFunctorTypeAutovec(_maxReflectiveSkin * 2., particlePropertiesLib);
+  auto functorLJ = LJFunctorTypeAbstract(_maxReflectiveSkin * 2., particlePropertiesLib);
 
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
     // skip if boundary is not reflective
