@@ -11,6 +11,7 @@
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ParticleCellHelpers.h"
+#include "autopas/utils/markParticleAsDeleted.h"
 
 namespace autopas {
 
@@ -98,6 +99,24 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
                                                            IteratorBehavior iteratorBehavior,
                                                            const std::array<double, 3> &boxMin,
                                                            const std::array<double, 3> &boxMax) const override {
+    return getParticleImpl<true>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
+  }
+  std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                           IteratorBehavior iteratorBehavior) const override {
+    // this is not a region iter hence we stretch the bounding box to the numeric max
+    constexpr std::array<double, 3> boxMin{std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(),
+                                           std::numeric_limits<double>::lowest()};
+
+    constexpr std::array<double, 3> boxMax{std::numeric_limits<double>::max(), std::numeric_limits<double>::max(),
+                                           std::numeric_limits<double>::max()};
+    return getParticleImpl<false>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
+  }
+
+  template <bool regionIter>
+  std::tuple<const Particle *, size_t, size_t> getParticleImpl(size_t cellIndex, size_t particleIndex,
+                                                               IteratorBehavior iteratorBehavior,
+                                                               const std::array<double, 3> &boxMin,
+                                                               const std::array<double, 3> &boxMax) const {
     return _linkedCells.getParticle(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
   }
 

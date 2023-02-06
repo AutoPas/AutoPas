@@ -236,25 +236,25 @@ class ParticleContainerInterface {
   virtual void iteratePairwise(TraversalInterface *traversal) = 0;
 
   /**
-   * Get the upper corner of the container.
+   * Get the upper corner of the container without halo.
    * @return Upper corner of the container.
    */
   [[nodiscard]] virtual const std::array<double, 3> &getBoxMax() const = 0;
 
   /**
-   * Set the upper corner of the container.
+   * Set the upper corner of the container without halo.
    * @param boxMax Upper corner to be set.
    */
   virtual void setBoxMax(const std::array<double, 3> &boxMax) = 0;
 
   /**
-   * Get the lower corner of the container.
+   * Get the lower corner of the container without halo.
    * @return Lower corner of the container.
    */
   [[nodiscard]] virtual const std::array<double, 3> &getBoxMin() const = 0;
 
   /**
-   * Set the lower corner of the container.
+   * Set the lower corner of the container without halo.
    * @param boxMin Lower corner to be set.
    */
   virtual void setBoxMin(const std::array<double, 3> &boxMin) = 0;
@@ -314,15 +314,17 @@ class ParticleContainerInterface {
    * These indices are only meaningful in the context of the current container at its current state.
    * The same indices might (and probably will) yield a different particle for a different container type or might not
    * even exist.
-   * The only guarantee is that the first particle in the container is at index (0,0).
+   * The only guarantee is that the indices {0,0} yield the first particle in the container or region.
    *
    * @note This function should handle any offsets if used in a parallel iterator.
    *
    * @param cellIndex Index of the cell the particle is located in.
    * @param particleIndex Particle index within the cell.
    * @param iteratorBehavior Which ownership states should be considered for the next particle.
-   * @param boxMin start of region in which the next particle should be.
-   * @param boxMax end of region in which the next particle should be.
+   * @param boxMin start of region in which the next particle should be. The coordinates are expected to be within the
+   * domain.
+   * @param boxMax end of region in which the next particle should be. The coordinates are expected to be within the
+   * domain.
    * @return Pointer to the particle and indices of the next particle that satisfies the iterator requirements.
    * If the requested particle does not exist {nullptr, 0, 0} is returned.
    * If there is no next particle for both indices 0 is returned as this can never be a next particle's indices.
@@ -334,8 +336,17 @@ class ParticleContainerInterface {
                                                                    const std::array<double, 3> &boxMax) const = 0;
 
   /**
-   * @copydoc getParticle
-   * @note non-const version
+   * @copydoc getParticle()
+   *
+   * Non-Region iterator variant
+   */
+  virtual std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                                   IteratorBehavior iteratorBehavior) const = 0;
+
+  /**
+   * @copydoc getParticle()
+   *
+   * @note non-const region iter version
    */
   std::tuple<Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
                                                      IteratorBehavior iteratorBehavior,

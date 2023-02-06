@@ -142,7 +142,7 @@ Particles saved in an AutoPas container can be one of two possible states:
 * owned: Particles that belong to this AutoPas instance. 
   These particles are typically inside the boundary of the AutoPas instance.
   If a particle is added via `addParticle()`, it is automatically added as an owned particle.
-  An owned particle can explicitly be removed by deleting the particle using an iterator (`autoPas.deleteParticle(iterator)`).
+  An owned particle can explicitly be removed by deleting the particle using an iterator (`autoPas.markAsDeleted(iterator)`).
   On an update of the AutoPas container (using `updateContainer()`) owned particles that moved outside the boundary of its parent AutoPas container are returned.
 * halo: Particles that do not belong to the current AutoPas instance.
   These normally are ghost particles arising from either periodic boundary conditions or particles of a neighboring AutoPas object
@@ -188,7 +188,8 @@ The default parameter is `ownedOrHalo`, which is also used for range-based for l
 Analogously to `begin()`, `cbegin()` is also defined, which guarantees to return a `const_iterator`.
 
 Iterators are not guaranteed to be valid after particle insertion. 
-However, particle deletion while iterating is supported via `autoPas.deleteParticle(iterator)`.
+However, particle deletion while iterating is supported via `autoPas.markAsDeleted(iterator)`.
+# TODO SHOW LOOP WITH EXAMPLE!
 
 ### Simulation Loop
 One simulation loop should always consist of the following phases:

@@ -129,7 +129,7 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
   /**
    * @copydoc OctreeNodeInterface::getNumberOfParticles()
    */
-  unsigned int getNumberOfParticles() override { return this->_particles.size(); }
+  unsigned int getNumberOfParticles() const override { return this->_particles.size(); }
 
   /**
    * @copydoc OctreeNodeInterface::hasChildren()

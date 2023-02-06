@@ -157,9 +157,9 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
   /**
    * @copydoc OctreeNodeInterface::getNumberOfParticles()
    */
-  unsigned int getNumberOfParticles() override {
+  unsigned int getNumberOfParticles() const override {
     unsigned int result = 0;
-    for (auto &child : _children) {
+    for (const auto &child : _children) {
       result += child->getNumberOfParticles();
     }
     return result;

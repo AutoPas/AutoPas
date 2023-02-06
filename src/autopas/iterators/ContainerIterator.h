@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "autopas/options/IteratorBehavior.h"
+#include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 
@@ -38,6 +39,43 @@ void deleteParticle(ParticleIterator &iterator) {
   iterator.deleteCurrentParticle();
 }
 }  // namespace internal
+
+namespace containerIteratorUtils {
+/**
+ * Indicates whether the particle has the correct ownership state and if this is a region iterator is in the region.
+ *
+ * @tparam regionIter
+ * @tparam Particle
+ * @tparam Arr Template because if this is a region iterator ContainerIterator will pass an empty struct
+ * @param p
+ * @param behavior
+ * @param regionMin If regionIter is true this should be a std::array<double, 3>
+ * @param regionMax If regionIter is true this should be a std::array<double, 3>
+ * @return True iff the given particle's ownership state is compatible with the iterator behavior.
+ */
+template <bool regionIter, class Particle, class Arr>
+[[nodiscard]] bool particleFulfillsIteratorRequirements(const Particle &p, IteratorBehavior behavior,
+                                                        const Arr &regionMin, const Arr &regionMax) {
+  bool particleOk = false;
+  // Check ownership
+  // Dummy is not in sync with iterator behavior because it needs to be 0.
+  // `a & b == b` idiom is to check a == b disregarding any bits beyond b. This is needed due to e.g. forceSequential.
+  if (((behavior & IteratorBehavior::ownedOrHaloOrDummy) == IteratorBehavior::ownedOrHaloOrDummy) or
+      (behavior & IteratorBehavior::dummy and p.isDummy())) {
+    particleOk = true;
+  } else {
+    // relies on both enums having the same encoding. This should be guaranteed statically in IteratorBehaviorTest!
+    particleOk = static_cast<unsigned int>(p.getOwnershipState()) & static_cast<unsigned int>(behavior);
+  }
+  if constexpr (regionIter) {
+    // If this is a region iterator check if the particle is in the box.
+    if (particleOk and not utils::inBox(p.getR(), regionMin, regionMax)) {
+      particleOk = false;
+    }
+  }
+  return particleOk;
+}
+}  // namespace containerIteratorUtils
 
 /**
  * Public iterator class that iterates over a particle container and additional vectors (which are typically stored in
@@ -82,10 +120,8 @@ class ContainerIterator {
    */
   ContainerIterator(ContainerType &container, IteratorBehavior behavior, ParticleVecType *additionalVectorsToIterate,
                     const std::array<double, 3> &regionMin, const std::array<double, 3> &regionMax)
-      : ContainerIterator(nullptr, container, behavior, additionalVectorsToIterate) {
-    // can't directly initialize because this can't be combined with the delegate constructor.
-    _regionMin = regionMin;
-    _regionMax = regionMax;
+      : ContainerIterator(nullptr, container, behavior, additionalVectorsToIterate, regionMin, regionMax) {
+    // sanity check
     static_assert(regionIter == true,
                   "Constructor for Region iterator called but template argument regionIter is false");
   }
@@ -98,7 +134,7 @@ class ContainerIterator {
    * @param additionalVectorsToIterate Thread buffers of additional Particle vector to iterate over.
    */
   ContainerIterator(ContainerType &container, IteratorBehavior behavior, ParticleVecType *additionalVectorsToIterate)
-      : ContainerIterator(nullptr, container, behavior, additionalVectorsToIterate) {
+      : ContainerIterator(nullptr, container, behavior, additionalVectorsToIterate, {}, {}) {
     static_assert(regionIter == false,
                   "Constructor for non-Region iterator called but template argument regionIter is true");
   }
@@ -114,16 +150,30 @@ class ContainerIterator {
    * @param additionalVectorsToIterate Thread buffers of additional Particle vector to iterate over.
    */
   ContainerIterator(void * /*dummy*/, ContainerType &container, IteratorBehavior behavior,
-                    ParticleVecType *additionalVectorsToIterate)
+                    ParticleVecType *additionalVectorsToIterate, const std::array<double, 3> &regionMin,
+                    const std::array<double, 3> &regionMax)
       : _container(container),
         _behavior(behavior),
-        _nextVectorIndex((behavior & IteratorBehavior::forceSequential) ? 0 : autopas_get_thread_num()),
+        _nextVectorIndex(0),
         _vectorIndexOffset((behavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads()) {
     if (additionalVectorsToIterate) {
       // store pointers to all additional vectors
       _additionalVectors.insert(_additionalVectors.end(), additionalVectorsToIterate->begin(),
                                 additionalVectorsToIterate->end());
     }
+
+    if constexpr (regionIter) {
+      // clamp region to the container, either with or without halo
+      const auto boxMax = (_behavior & IteratorBehavior::halo)
+                              ? utils::ArrayMath::addScalar(container.getBoxMax(), container.getInteractionLength())
+                              : container.getBoxMax();
+      const auto boxMin = (_behavior & IteratorBehavior::halo)
+                              ? utils::ArrayMath::subScalar(container.getBoxMin(), container.getInteractionLength())
+                              : container.getBoxMin();
+      _regionMax = utils::ArrayMath::min(regionMax, boxMax);
+      _regionMin = utils::ArrayMath::max(regionMin, boxMin);
+    }
+
     // fetches the next (=first) valid particle or sets _currentParticle = nullptr which marks the iterator as invalid.
     this->operator++();
   }
@@ -143,16 +193,9 @@ class ContainerIterator {
         std::tie(_currentParticle, _nextVectorIndex, _nextParticleIndex) =
             _container.getParticle(_nextVectorIndex, _nextParticleIndex, _behavior, _regionMin, _regionMax);
       } else {
-        // this is not a region iter hence we stretch the bounding box to the numeric max
-        constexpr std::array<double, 3> minBox{std::numeric_limits<double>::lowest(),
-                                               std::numeric_limits<double>::lowest(),
-                                               std::numeric_limits<double>::lowest()};
-
-        constexpr std::array<double, 3> maxBox{std::numeric_limits<double>::max(), std::numeric_limits<double>::max(),
-                                               std::numeric_limits<double>::max()};
         // this either gives us a particle with the desired properties or a nullptr
         std::tie(_currentParticle, _nextVectorIndex, _nextParticleIndex) =
-            _container.getParticle(_nextVectorIndex, _nextParticleIndex, _behavior, minBox, maxBox);
+            _container.getParticle(_nextVectorIndex, _nextParticleIndex, _behavior);
       }
       // if getParticle told us that the container doesn't have a particle in the first vector for our thread...
       if (_currentParticle == nullptr and not _additionalVectors.empty()) {
@@ -177,7 +220,8 @@ class ContainerIterator {
           _currentParticle = &(_additionalVectors[_nextVectorIndex]->operator[](_nextParticleIndex));
           ++_nextParticleIndex;
           // ... until we find a particle that satisfies our requirements.
-          if (particleFulfillsIteratorRequirements(*_currentParticle)) {
+          if (containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(*_currentParticle, _behavior,
+                                                                                       _regionMin, _regionMax)) {
             // if the particle is at the end of the current vector bump _nextVectorIndex and reset _nextParticleIndex.
             if (_nextParticleIndex >= _additionalVectors[_nextVectorIndex]->size()) {
               _nextVectorIndex += _vectorIndexOffset;
@@ -229,30 +273,6 @@ class ContainerIterator {
 
  private:
   /**
-   * Indicates whether the particle has the correct ownership state and if this is a region iterator is in the region.
-   * @return True iff the given particle's ownership state is compatible with the iterator behavior.
-   */
-  [[nodiscard]] bool particleFulfillsIteratorRequirements(const Particle &p) const {
-    bool particleOk = false;
-    // Check ownership
-    // Dummy is not in sync with iterator behavior because it needs to be 0.
-    if (_behavior & IteratorBehavior::ownedOrHaloOrDummy or (_behavior == IteratorBehavior::dummy and p.isDummy())) {
-      particleOk = true;
-    } else {
-      // relies on both enums having the same encoding. This should be guaranteed statically in IteratorBehaviorTest!
-      particleOk = static_cast<unsigned int>(p.getOwnershipState()) & static_cast<unsigned int>(_behavior);
-    }
-    // If this is a region iterator check if the particle is in the box.
-    if constexpr (regionIter) {
-      if (particleOk and not utils::inBox(p.getR(), _regionMin, _regionMax)) {
-        particleOk = false;
-      }
-    }
-
-    return particleOk;
-  }
-
-  /**
    * Deletes the particle the particle currently pointed to. This function uses swap-delete and thus will change
    * the order of elements in the container. After deletion _currentParticle points to the next particle,
    * which is the particle that was swapped here. So when used in a loop do not increment the iterator after deletion.
@@ -270,12 +290,14 @@ class ContainerIterator {
       *_currentParticle = currentVector.back();
       currentVector.pop_back();
       // make sure _currentParticle always points to a valid particle if there is one.
-      if (currentVector.empty() or not particleFulfillsIteratorRequirements(*_currentParticle)) {
+      if (currentVector.empty() or not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
+                                       *_currentParticle, _behavior, _regionMin, _regionMax)) {
         this->operator++();
       }
     } else {
       const auto pointerValid = _container.deleteParticle(*_currentParticle);
-      if (not pointerValid or not particleFulfillsIteratorRequirements(*_currentParticle)) {
+      if (not pointerValid or not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
+                                  *_currentParticle, _behavior, _regionMin, _regionMax)) {
         this->operator++();
       }
     }

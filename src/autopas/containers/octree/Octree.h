@@ -21,6 +21,7 @@
 #include "autopas/containers/octree/traversals/OTTraversalInterface.h"
 #include "autopas/iterators/ContainerIterator.h"
 #include "autopas/utils/ParticleCellHelpers.h"
+#include "autopas/utils/inBox.h"
 #include "autopas/utils/logging/OctreeLogger.h"
 
 namespace autopas {
@@ -52,7 +53,9 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    * - this->_cells[CellTypes::OWNED] yields the octree that contains all owned particles
    * - this->_cells[CellTypes::HALO] yields the octree that contains all halo particles
    */
-  enum CellTypes { OWNED = 0, HALO = 1 };
+  enum CellTypes : int { OWNED = 0, HALO = 1 };
+
+  constexpr static size_t invalidCellIndex = 9;
 
   /**
    * Construct a new octree with two sub-octrees: One for the owned particles and one for the halo particles.
@@ -174,73 +177,121 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {}
 
-  std::tuple<const ParticleType *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
-                                                               IteratorBehavior iteratorBehavior,
-                                                               const std::array<double, 3> &boxMin,
-                                                               const std::array<double, 3> &boxMax) const override {
+  std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                           IteratorBehavior iteratorBehavior,
+                                                           const std::array<double, 3> &boxMin,
+                                                           const std::array<double, 3> &boxMax) const override {
+    return getParticleImpl<true>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
+  }
+  std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                           IteratorBehavior iteratorBehavior) const override {
+    // this is not a region iter hence we stretch the bounding box to the numeric max
+    constexpr std::array<double, 3> boxMin{std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(),
+                                           std::numeric_limits<double>::lowest()};
+
+    constexpr std::array<double, 3> boxMax{std::numeric_limits<double>::max(), std::numeric_limits<double>::max(),
+                                           std::numeric_limits<double>::max()};
+    return getParticleImpl<false>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
+  }
+
+  template <bool regionIter>
+  std::tuple<const ParticleType *, size_t, size_t> getParticleImpl(size_t cellIndex, size_t particleIndex,
+                                                                   IteratorBehavior iteratorBehavior,
+                                                                   const std::array<double, 3> &boxMin,
+                                                                   const std::array<double, 3> &boxMax) const {
     // in this context cell == leaf cell
-    // The index encodes the location in the octree. Each digit signifies which child of the node to enter. The right
-    // most digit selects the tree, the next the child of the root, and so on.
+    // The index encodes the location in the octree.
+    // Each digit signifies which child of the node to enter.
+    // The right most digit selects the tree, the next the child of the root, and so on.
 
     // shortcut if the given index doesn't exist
-    if (cellIndex % 10 > 7) {
+    if (cellIndex % 10 > 7 or (cellIndex < 10 and cellIndex > HALO)) {
       return {nullptr, 0, 0};
     }
 
-    // FIXME think about parallelism. This if currently disables it.
+    // FIXME think about parallelism. This `if` currently disables it.
     if (autopas_get_thread_num() > 0 and not(iteratorBehavior & IteratorBehavior::forceSequential)) {
       return {nullptr, 0, 0};
     }
 
-    // get referenced particle
+    std::vector<size_t> currentCellIndex{};
+    OctreeLeafNode<Particle> *currentCellPtr = nullptr;
+
+    // if we are at the start of an iteration ...
+    if (cellIndex == 0 and particleIndex == 0) {
+      // FIXME: with num threads > 1 the start cell IDs will have to be set to more complicated values here
+
+      // abort if the start index is already out of bounds
+      if (cellIndex % 10 > 7) {
+        return {nullptr, 0, 0};
+      }
+      // if owned particles are not interesting jump directly to the halo tree
+      if (not(iteratorBehavior & IteratorBehavior::owned)) {
+        cellIndex = HALO;
+      }
+      std::tie(currentCellIndex, currentCellPtr) = getCellByIndex(cellIndex);
+      // check the data behind the start indices
+      if (currentCellPtr->getNumberOfParticles() == 0 or
+          not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
+              (*currentCellPtr)[particleIndex], iteratorBehavior, boxMin, boxMax)) {
+        // either advance them to something interesting or out of bounds.
+        std::tie(currentCellPtr, particleIndex) = advanceIteratorIndices<regionIter>(
+            currentCellIndex, currentCellPtr, particleIndex, iteratorBehavior, boxMin, boxMax);
+      }
+    } else {
+      std::tie(currentCellIndex, currentCellPtr) = getCellByIndex(cellIndex);
+    }
+
+    // shortcut if the given index doesn't exist
+    if (currentCellPtr == nullptr or particleIndex >= currentCellPtr->getNumberOfParticles()) {
+      return {nullptr, 0, 0};
+    }
+    // parse cellIndex and get referenced cell and particle
+    const Particle *retPtr = &((*currentCellPtr)[particleIndex]);
+
+    // find the indices for the next particle
+    std::tie(currentCellPtr, particleIndex) = advanceIteratorIndices<regionIter>(
+        currentCellIndex, currentCellPtr, particleIndex, iteratorBehavior, boxMin, boxMax);
+
+    // if no err value was set, convert cell index from vec to integer
+    if (currentCellIndex.empty()) {
+      cellIndex = invalidCellIndex;
+    } else {
+      cellIndex = 0;
+      // needs signed int to prevent underflow
+      for (int i = static_cast<int>(currentCellIndex.size()) - 1; i >= 0; --i) {
+        cellIndex *= 10;
+        cellIndex += currentCellIndex[i];
+      }
+    }
+
+    return {retPtr, cellIndex, particleIndex};
+  }
+
+  /**
+   * Helper function to retrieve the pointer to a leaf cell as well as properly parse the cell index.
+   *
+   * @note This function assumes the given index is valid. If it is not some exceptions might be thrown or operator[]
+   * might access invalid memory
+   *
+   * @param cellIndex Index in the tree as integer
+   * @return tuple<index as vector, pointer to cell>
+   */
+  std::tuple<std::vector<size_t>, OctreeLeafNode<Particle> *> getCellByIndex(size_t cellIndex) const {
+    // parse cellIndex and get referenced cell and particle
     std::vector<size_t> currentCellIndex;
-    // constant heuristic
+    // constant heuristic for the tree depth
     currentCellIndex.reserve(10);
     currentCellIndex.push_back(cellIndex % 10);
     cellIndex /= 10;
     OctreeNodeInterface<Particle> *currentCell = this->_cells[currentCellIndex.back()].getRaw();
+    // don't restrict loop via cellIndex because it might have "hidden" leading 0
     while (currentCell->hasChildren()) {
       currentCellIndex.push_back(cellIndex % 10);
       cellIndex /= 10;
       currentCell = currentCell->getChild(currentCellIndex.back());
     }
-    const Particle *retPtr = &(dynamic_cast<OctreeLeafNode<Particle> *>(currentCell)->operator[](particleIndex));
-
-    // Finding the indices for the next particle
-    const size_t stride = (iteratorBehavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads();
-
-    // FIXME: Region iter
-    do {
-      // If cell has wrong type, or there are no more particles in this cell jump to the next
-      if (++particleIndex >= currentCell->getNumberOfParticles()) {
-        // Move up until there are siblings left
-        while (currentCellIndex.back() == 7) {
-          currentCell = currentCell->getParent();
-          currentCellIndex.pop_back();
-        }
-        // Go to the next child of the same parent
-        ++currentCellIndex.back();
-        // If we notice that there is nothing else to look at set invalid values, so we get a nullptr next time and
-        // break.
-        if (currentCellIndex[0] > (iteratorBehavior & IteratorBehavior::owned) ? CellTypes::OWNED : CellTypes::HALO) {
-          cellIndex = 8;
-          break;
-        }
-        currentCell = currentCell->getParent()->getChild(currentCellIndex.back());
-        particleIndex = 0;
-      }
-
-      // Repeat this as long as the current particle is not interesting.
-      //  - coordinates are in region of interest
-      //  - ownership fits to the iterator behavior
-    } while (
-        not utils::inBox((dynamic_cast<OctreeLeafNode<Particle> *>(currentCell)->operator[](particleIndex)).getR(),
-                         boxMin, boxMax) or
-        not(static_cast<unsigned int>((dynamic_cast<OctreeLeafNode<Particle> *>(currentCell)->operator[](particleIndex))
-                                          .getOwnershipState()) &
-            static_cast<unsigned int>(iteratorBehavior)));
-
-    return {retPtr, cellIndex, particleIndex};
+    return {currentCellIndex, dynamic_cast<OctreeLeafNode<Particle> *>(currentCell)};
   }
 
   bool deleteParticle(ParticleType &particle) override {
@@ -372,6 +423,120 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
   }
 
  private:
+  /**
+   * Given a pair of cell-/particleIndex and iterator restrictions either returns the next indices that match these
+   * restrictions or indices that are out of bounds.
+   *
+   * @tparam regionIter
+   * @param currentCellIndex In/Out parameter
+   * @param particleIndex
+   * @param iteratorBehavior
+   * @param boxMin
+   * @param boxMax
+   * @return tuple<nextLeafCell, nextParticleIndex>
+   */
+  template <bool regionIter>
+  std::tuple<OctreeLeafNode<Particle> *, size_t> advanceIteratorIndices(
+      std::vector<size_t> &currentCellIndex, OctreeNodeInterface<Particle> *const currentCellPtr, size_t particleIndex,
+      IteratorBehavior iteratorBehavior, const std::array<double, 3> &boxMin,
+      const std::array<double, 3> &boxMax) const {
+    // TODO: parallelize at the higher tree levels. Choose tree level to parallelize via log_8(numThreads)
+    const size_t minLevel = 0;
+    //        (iteratorBehavior & IteratorBehavior::forceSequential) or autopas_get_num_threads() == 1
+    //            ? 0
+    //            : static_cast<size_t>(std::ceil(std::log(static_cast<double>(autopas_get_num_threads())) /
+    //            std::log(8.)));
+    OctreeNodeInterface<Particle> *currentCellInterfacePtr = currentCellPtr;
+    OctreeLeafNode<Particle> *currentLeafCellPtr = nullptr;
+
+    // helper function:
+    auto cellIsRelevant = [&](const OctreeNodeInterface<Particle> *const cellPtr) {
+      bool isRelevant = cellPtr->getNumberOfParticles() > 0;
+      if constexpr (regionIter) {
+        isRelevant = isRelevant and utils::boxesOverlap(cellPtr->getBoxMin(), cellPtr->getBoxMax(), boxMin, boxMax);
+      }
+      return isRelevant;
+    };
+
+    // find the next particle of interest which might be in a different cell
+    do {
+      // advance to the next particle
+      ++particleIndex;
+
+      // this loop finds the next relevant leaf cell or triggers a return
+      // flag for weird corner cases. See further down.
+      bool forceJumpToNextCell = false;
+      // If this breaches the end of a cell, find the next non-empty cell and reset particleIndex.
+      while (particleIndex >= currentCellInterfacePtr->getNumberOfParticles() or forceJumpToNextCell) {
+        // CASE: we are at the end of a branch
+        // => Move up until there are siblings that were not touched yet
+        while (currentCellIndex.back() == 7) {
+          currentCellInterfacePtr = currentCellInterfacePtr->getParent();
+          currentCellIndex.pop_back();
+          // If there are no more cells in the branch that we are responsible for set invalid parameters and return.
+          if (currentCellIndex.size() < minLevel or currentCellIndex.empty()) {
+            currentCellIndex.clear();
+            return {nullptr, std::numeric_limits<size_t>::max()};
+          }
+        }
+
+        // Switch to the next child of the same parent
+        ++currentCellIndex.back();
+        // Identify the next (inner) cell pointer
+        if (currentCellIndex.size() == 1) {
+          // special case: the current thread should ALSO iterate halo particles
+          if ((iteratorBehavior & IteratorBehavior::halo)
+              /* FIXME: for prallelization: and ((iteratorBehavior & IteratorBehavior::forceSequential) or autopas_get_num_threads() == 1) */) {
+            currentCellInterfacePtr = this->_cells[HALO].getRaw();
+          } else {
+            // don't jump to halo tree -> set invalid parameters and return
+            currentCellIndex.clear();
+            return {nullptr, std::numeric_limits<size_t>::max()};
+          }
+        } else {
+          currentCellInterfacePtr = currentCellInterfacePtr->getParent()->getChild(currentCellIndex.back());
+        }
+        // check that the inner cell is actually interesting, otherwise skip it.
+        if (not cellIsRelevant(currentCellInterfacePtr)) {
+          forceJumpToNextCell = true;
+          continue;
+        }
+        // The inner cell is relevant so descend to its first relevant leaf
+        forceJumpToNextCell = false;
+        while (currentCellInterfacePtr->hasChildren() and not forceJumpToNextCell) {
+          // find the first child in the relevant region
+          size_t firstRelevantChild = 0;
+          // if the child is irrelevant (empty or outside the region) skip it
+          const auto *childToCheck = currentCellInterfacePtr->getChild(firstRelevantChild);
+          while (not cellIsRelevant(childToCheck)) {
+            ++firstRelevantChild;
+            childToCheck = currentCellInterfacePtr->getChild(firstRelevantChild);
+            if (firstRelevantChild >= 7) {
+              // weird corner case: we descended into this branch because it overlaps with the region and has particles
+              // BUT the particles are not inside the children which are in the region,
+              // hence no child fulfills both requirements and all are irrelevant.
+              forceJumpToNextCell = true;
+              break;
+            }
+          }
+          currentCellIndex.push_back(firstRelevantChild);
+          currentCellInterfacePtr = currentCellInterfacePtr->getChild(firstRelevantChild);
+        }
+        particleIndex = 0;
+      }
+
+      // at this point we should point to a leaf. All other cases should have hit a return earlier.
+      currentLeafCellPtr = dynamic_cast<OctreeLeafNode<Particle> *>(currentCellInterfacePtr);
+      // sanity check
+      if (currentLeafCellPtr == nullptr) {
+        utils::ExceptionHandler::exception("Expected a leaf node but didn't get one!");
+      }
+
+    } while (not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
+        (*currentLeafCellPtr)[particleIndex], iteratorBehavior, boxMin, boxMax));
+    return {currentLeafCellPtr, particleIndex};
+  }
+
   /**
    * A logger that can be called to log the octree data structure.
    */

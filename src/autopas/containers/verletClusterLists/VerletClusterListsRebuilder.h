@@ -19,6 +19,9 @@ namespace internal {
 
 /**
  * Helper class for rebuilding the VerletClusterLists container.
+ *
+ * @note Towers are always built on the xy plane towering into the z dimension.
+ *
  * @tparam Particle The type of the particle the container contains.
  */
 template <class Particle>
@@ -119,7 +122,7 @@ class VerletClusterListsRebuilder {
 
   /**
    * Rebuilds the neighbor lists and fills Clusters with dummies as described in
-   * ClusterTower::fillUpWithDummyParticles.
+   * ClusterTower::setDummyValues.
    * @param useNewton3 Specifies, whether neighbor lists should use newton3. This changes the way what the lists
    * contain. If an cluster A interacts with cluster B, then this interaction will either show up only once in the
    * interaction lists of the custers (for newton3 == true) or show up in the interaction lists of both (for newton3 ==
@@ -132,7 +135,7 @@ class VerletClusterListsRebuilder {
     double dummyParticleDistance = _interactionLength * 2;
     double startDummiesX = 1000 * _haloBoxMax[0];
     for (size_t index = 0; index < _towers.size(); index++) {
-      _towers[index].fillUpWithDummyParticles(startDummiesX + index * dummyParticleDistance, dummyParticleDistance);
+      _towers[index].setDummyValues(startDummiesX + index * dummyParticleDistance, dummyParticleDistance);
     }
   }
   /**

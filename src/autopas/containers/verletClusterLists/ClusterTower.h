@@ -29,7 +29,7 @@ namespace autopas::internal {
  *  2. Then call generateClusters(). This copies the last particle as often as it is necessary to fill up the last
  * cluster. (maximum clusterSize-1 times).
  *  3. Generate your neighbor lists somehow.
- *  4. Call fillUpWithDummyParticles() to replace the copies of the last particle made in generateClusters() with
+ *  4. Call setDummyValues() to replace the copies of the last particle made in generateClusters() with
  * dummies.
  *
  * If you want to add more particles after calling generateClusters(), definitely make sure to call clear() before
@@ -108,23 +108,25 @@ class ClusterTower : public ParticleCell<Particle> {
   }
 
   /**
-   * Replaces the copies of the last particle made in generateClusters() with dummies. Dummy particles have ID 0.
+   * Replaces the copies of the last particle made in generateClusters() with dummies.
+   * Dummy particles have ID std::numeric_limits<size_t>::max().
    *
    * @param dummyStartX The x-coordinate for all dummies.
    * @param dummyDistZ The distance in z-direction that all generated dummies will have from each other.
    */
-  void fillUpWithDummyParticles(double dummyStartX, double dummyDistZ) {
+  void setDummyValues(double dummyStartX, double dummyDistZ) {
     auto &lastCluster = getCluster(getNumClusters() - 1);
     for (size_t index = 1; index <= _numDummyParticles; index++) {
-      lastCluster[_clusterSize - index] = lastCluster[0];  // use first Particle in last cluster as dummy particle!
-      lastCluster[_clusterSize - index].setOwnershipState(OwnershipState::dummy);
-      lastCluster[_clusterSize - index].setR({dummyStartX, 0, dummyDistZ * index});
-      lastCluster[_clusterSize - index].setID(std::numeric_limits<size_t>::max());
+      auto &dummy = lastCluster[_clusterSize - index];
+      dummy = lastCluster[0];  // use first Particle in last cluster as dummy particle!
+      dummy.setOwnershipState(OwnershipState::dummy);
+      dummy.setR({dummyStartX, 0, dummyDistZ * static_cast<double>(index)});
+      dummy.setID(std::numeric_limits<size_t>::max());
     }
   }
 
   /**
-   * More or less inverse operation of fillUpWithDummyParticles().
+   * More or less inverse operation of setDummyValues().
    * It sets the positions of the dummy particles to the position of the last actual particle in the tower.
    */
   void setDummyParticlesToLastActualParticle() {
@@ -186,7 +188,13 @@ class ClusterTower : public ParticleCell<Particle> {
    * Returns the number of particles in the tower that are not dummies.
    * @return the number of particles in the tower that are not dummies.
    */
-  [[nodiscard]] size_t getNumActualParticles() const { return _particlesStorage.numParticles() - _numDummyParticles; }
+  [[nodiscard]] size_t getNumActualParticles() const { return getNumParticles() - getNumDummyParticles(); }
+
+  /**
+   * Returns the size of the internal particle storage aka. the total number of particles incl. dummies.
+   * @return
+   */
+  [[nodiscard]] size_t getNumParticles() const { return _particlesStorage.numParticles(); }
 
   /**
    * Returns the number of clusters in the tower.

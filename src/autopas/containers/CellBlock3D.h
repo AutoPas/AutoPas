@@ -153,7 +153,9 @@ class CellBlock3D : public CellBorderAndFlagManager {
       const std::array<index_t, 3> &index3d) const;
 
   /**
-   * get the 3d index of the cellblock for a given position
+   * Get the 3d index of the cellblock for a given position
+   * @note If pos is outside the domain the returned 3d index is also outside the domain.
+   *
    * @param pos the position
    * @return the 3d index
    */
@@ -324,31 +326,29 @@ inline std::array<typename CellBlock3D<ParticleCell>::index_t, 3> CellBlock3D<Pa
   std::array<typename CellBlock3D<ParticleCell>::index_t, 3> cellIndex{};
 
   for (size_t dim = 0; dim < 3; dim++) {
+    // 0 <= cellIndex < cellsPerDimWithHalo
     const long int value = (static_cast<long int>(std::floor((pos[dim] - _boxMin[dim]) * _cellLengthReciprocal[dim]))) +
                            _cellsPerInteractionLength;
     const index_t nonNegativeValue = static_cast<index_t>(std::max(value, 0l));
     const index_t nonLargerValue = std::min(nonNegativeValue, _cellsPerDimensionWithHalo[dim] - 1);
     cellIndex[dim] = nonLargerValue;
 
-    // this is a sanity check to prevent doubling of particles
+    // sanity checks and precautions for numerical instabilities around the edge of the container box,
+    // which would lead to doubling of particles
     if (pos[dim] >= _boxMax[dim]) {
-      // pos[dim] is located outside of the box. Make sure that cellIndex also references cell outside of the box.
+      // pos is located outside the box. Make sure that cellIndex is at least in the positive halo range.
       cellIndex[dim] = std::max(cellIndex[dim], _cellsPerDimensionWithHalo[dim] - _cellsPerInteractionLength);
-    } else if (pos[dim] < _boxMin[dim] && cellIndex[dim] == _cellsPerInteractionLength) {
-      // pos[dim] is located below the box (outside), but cellIndex references cell inside of the box. Correct cellIndex
-      // by subtracting 1.
+    } else if (pos[dim] < _boxMin[dim] and cellIndex[dim] == _cellsPerInteractionLength) {
+      // pos is located outside but the index resolved to be the last IN the box. Fix by decrementing the index.
       --cellIndex[dim];
-    } else if (pos[dim] < _boxMax[dim] &&
+    } else if (pos[dim] < _boxMax[dim] and
                cellIndex[dim] == _cellsPerDimensionWithHalo[dim] - _cellsPerInteractionLength) {
-      // pos[dim] is located inside of the box, but cellIndex references cell outside of the box. Correct cellIndex to
-      // last cell inside of the box.
-      cellIndex[dim] = _cellsPerDimensionWithHalo[dim] - _cellsPerInteractionLength - 1;
+      // pos is located inside the box, but cellIndex resolves to be the first halo cell. Fix by decrementing the index.
+      --cellIndex[dim];
     }
   }
 
   return cellIndex;
-  // in very rare cases rounding is stupid, thus we need a check...
-  /// @todo when the border and flag manager is there
 }
 
 template <class ParticleCell>

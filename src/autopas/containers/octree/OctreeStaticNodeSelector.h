@@ -28,6 +28,7 @@ class OctreeInnerNode;
 template <typename Particle, typename FunctionType>
 decltype(auto) withStaticNodeType(const std::unique_ptr<OctreeNodeInterface<Particle>> &root, FunctionType &&function) {
   OctreeNodeInterface<Particle> *nodePtr = root.get();
+  // TODO: These should be static casts because we already do the runtime check via hasChildren()
   if (nodePtr->hasChildren()) {
     return function(dynamic_cast<OctreeInnerNode<Particle> *>(nodePtr));
   } else {

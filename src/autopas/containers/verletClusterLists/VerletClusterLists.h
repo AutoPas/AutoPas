@@ -22,15 +22,17 @@
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/Timer.h"
+#include "autopas/utils/inBox.h"
 
 namespace autopas {
 
 /**
  * Particles are divided into clusters.
- * The VerletClusterLists class uses neighborhood lists for each cluster
- * to calculate pairwise interactions of particles.
- * It is optimized for a constant, i.e. particle independent, cutoff radius of
- * the interaction.
+ * The VerletClusterLists class uses neighborhood lists for each cluster to calculate pairwise interactions of
+ * particles. It is optimized for a constant, i.e. particle independent, cutoff radius of the interaction.
+ *
+ * @note See VerletClusterListsRebuilder for the layout of the towers and clusters.
+ *
  * @tparam Particle
  */
 template <class Particle>
@@ -208,35 +210,67 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
                                                            IteratorBehavior iteratorBehavior,
                                                            const std::array<double, 3> &boxMin,
                                                            const std::array<double, 3> &boxMax) const override {
+    return getParticleImpl<true>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
+  }
+  std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                           IteratorBehavior iteratorBehavior) const override {
+    // this is not a region iter hence we stretch the bounding box to the numeric max
+    constexpr std::array<double, 3> boxMin{std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(),
+                                           std::numeric_limits<double>::lowest()};
+
+    constexpr std::array<double, 3> boxMax{std::numeric_limits<double>::max(), std::numeric_limits<double>::max(),
+                                           std::numeric_limits<double>::max()};
+    return getParticleImpl<false>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
+  }
+
+  template <bool regionIter>
+  std::tuple<const Particle *, size_t, size_t> getParticleImpl(size_t cellIndex, size_t particleIndex,
+                                                               IteratorBehavior iteratorBehavior,
+                                                               const std::array<double, 3> &boxMin,
+                                                               const std::array<double, 3> &boxMax) const {
     // in this context cell == tower
 
+    // first and last relevant cell index
+    const auto [startCellIndex, endCellIndex] = [&]() -> std::tuple<size_t, size_t> {
+      if constexpr (regionIter) {
+        return {getTowerIndex1DAtPosition(boxMin), getTowerIndex1DAtPosition(boxMax)};
+      } else {
+        // whole range of cells
+        return {0, this->_towers.size() - 1};
+      }
+    }();
+
+    // if we are at the start of an iteration ...
+    if (cellIndex == 0 and particleIndex == 0) {
+      // catching the edge case that towers are not yet built -> Iterator jumps to additional vectors
+      if (_towers.empty()) {
+        return {nullptr, 0, 0};
+      }
+      cellIndex =
+          startCellIndex + ((iteratorBehavior & IteratorBehavior::forceSequential) ? 0 : autopas_get_thread_num());
+      // abort if the start index is already out of bounds
+      if (cellIndex >= this->_towers.size()) {
+        return {nullptr, 0, 0};
+      }
+      // check the data behind the start indices
+      if (this->_towers[cellIndex].isEmpty() or
+          not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
+              this->_towers[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax)) {
+        // either advance them to something interesting or out of bounds.
+        std::tie(cellIndex, particleIndex) = advanceIteratorIndices<regionIter>(
+            cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax, endCellIndex);
+      }
+    }
+
     // shortcut if the given index doesn't exist
-    if (cellIndex >= this->_towers.size() or particleIndex >= this->_towers[cellIndex].numParticles()) {
+    if (cellIndex > endCellIndex or particleIndex >= this->_towers[cellIndex].getNumParticles()) {
       return {nullptr, 0, 0};
     }
     const Particle *retPtr = &this->_towers[cellIndex][particleIndex];
 
-    // Finding the indices for the next particle
-    const size_t stride = (iteratorBehavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads();
-
-    // FIXME: Region iter: infer start and stop cell index
-    do {
-      // TODO: can could be done more efficient if we could decide if a tower contains exclusively halo/owned particles.
-      if (++particleIndex >= this->_towers[cellIndex].numParticles()) {
-        cellIndex += stride;
-        particleIndex = 0;
-      }
-      // If we notice that there is nothing else to look at set invalid values, so we get a nullptr next time and break.
-      if (cellIndex >= this->_towers.size()) {
-        cellIndex = std::numeric_limits<size_t>::max();
-        break;
-      }
-      // Repeat this as long as the current particle is not interesting.
-      //  - coordinates are in region of interest
-      //  - ownership fits to the iterator behavior
-    } while (not utils::inBox(this->_towers[cellIndex][particleIndex].getR(), boxMin, boxMax) or
-             not(static_cast<unsigned int>(this->_towers[cellIndex][particleIndex].getOwnershipState()) &
-                 static_cast<unsigned int>(iteratorBehavior)));
+    // find the indices for the next particle
+    std::tie(cellIndex, particleIndex) =
+        advanceIteratorIndices<regionIter>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax, endCellIndex);
 
     return {retPtr, cellIndex, particleIndex};
   }
@@ -683,13 +717,76 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
+   * Calculates the low and high corner of a tower given by its index.
+   *
+   * @note If towers are not built yet the corners of the full container are returned.
+   *
+   * @param index1D The tower's index in _towers.
+   * @return tuple<lowCorner, highCorner>
+   */
+  [[nodiscard]] std::tuple<std::array<double, 3>, std::array<double, 3>> getTowerBoundingBox(size_t index1D) const {
+    // case: towers are not built yet.
+    if (_towersPerDim[0] == 0) {
+      return {_boxMin, _boxMax};
+    }
+    return getTowerBoundingBox(towerIndex1DTo2D(index1D));
+  }
+
+  /**
+   * Calculates the low and high corner of a tower given by its 2D grid index.
+   *
+   * @note If towers are not built yet the corners of the full container are returned.
+   *
+   * @param index2D The tower's 2D index in the grid.
+   * @return tuple<lowCorner, highCorner>
+   */
+  [[nodiscard]] std::tuple<std::array<double, 3>, std::array<double, 3>> getTowerBoundingBox(
+      const std::array<size_t, 2> &index2D) const {
+    // case: towers are not built yet.
+    if (_towersPerDim[0] == 0) {
+      return {_boxMin, _boxMax};
+    }
+    std::array<double, 3> boxMin{
+        _towerSideLength * static_cast<double>(index2D[0]),
+        _towerSideLength * static_cast<double>(index2D[1]),
+        _haloBoxMin[2],
+    };
+    std::array<double, 3> boxMax{
+        boxMin[0] + _towerSideLength,
+        boxMin[1] + _towerSideLength,
+        _haloBoxMax[2],
+    };
+    return {boxMin, boxMax};
+  }
+
+  /**
+   * Return the 2D index of the tower at a given position
+   * @param pos
+   * @return array<X, Y>
+   */
+  [[nodiscard]] std::array<size_t, 2> getTowerIndex2DAtPosition(const std::array<double, 3> &pos) const {
+    return {static_cast<size_t>(pos[0] * _towerSideLengthReciprocal),
+            static_cast<size_t>(pos[1] * _towerSideLengthReciprocal)};
+  }
+
+  /**
+   * Return the 1D index of the tower at a given position
+   * @param pos
+   * @return
+   */
+  [[nodiscard]] size_t getTowerIndex1DAtPosition(const std::array<double, 3> &pos) const {
+    const auto [x, y] = getTowerIndex2DAtPosition(pos);
+    return towerIndex2DTo1D(x, y);
+  }
+
+  /**
    * Return a reference to the tower at a given position in the simulation coordinate system (e.g. particle position).
    * @param pos
    * @return
    */
   internal::ClusterTower<Particle> &getTowerAtPosition(const std::array<double, 3> &pos) {
-    return getTowerByIndex(static_cast<size_t>(pos[0] * _towerSideLengthReciprocal),
-                           static_cast<size_t>(pos[1] * _towerSideLengthReciprocal));
+    const auto [x, y] = getTowerIndex2DAtPosition(pos);
+    return getTowerByIndex(x, y);
   }
 
   /**
@@ -723,6 +820,20 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    */
   [[nodiscard]] size_t towerIndex2DTo1D(const size_t x, const size_t y) const {
     return towerIndex2DTo1D(x, y, _towersPerDim);
+  }
+
+  /**
+   * Returns the 2D index for the given 1D index of a tower.
+   *
+   * @param index1D
+   * @return the 2D index for the given 1D index of a tower.
+   */
+  [[nodiscard]] std::array<size_t, 2> towerIndex1DTo2D(size_t index) const {
+    if (_towersPerDim[0] == 0) {
+      return {0, 0};
+    } else {
+      return {index % _towersPerDim[0], index / _towersPerDim[0]};
+    }
   }
 
   [[nodiscard]] const std::array<double, 3> &getBoxMax() const override { return _boxMax; }
@@ -955,6 +1066,62 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
  private:
   /**
+   * Given a pair of cell-/particleIndex and iterator restrictions either returns the next indices that match these
+   * restrictions or indices that are out of bounds (e.g. cellIndex >= cells.size())
+   * @tparam regionIter
+   * @param cellIndex
+   * @param particleIndex
+   * @param iteratorBehavior
+   * @param boxMin
+   * @param boxMax
+   * @return tuple<cellIndex, particleIndex>
+   */
+  template <bool regionIter>
+  std::tuple<size_t, size_t> advanceIteratorIndices(size_t cellIndex, size_t particleIndex,
+                                                    IteratorBehavior iteratorBehavior,
+                                                    const std::array<double, 3> &boxMin,
+                                                    const std::array<double, 3> &boxMax, size_t endCellIndex) const {
+    // Finding the indices for the next particle
+    const size_t stride = (iteratorBehavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads();
+
+    // helper function to determine if the cell can even contain particles of interest to the iterator
+    auto towerIsRelevant = [&]() -> bool {
+      // TODO: can we decide whether some towers can't contain owned/halo particles and short-circuit here?
+      bool isRelevant = true;
+      if constexpr (regionIter) {
+        // is the cell in the region?
+        const auto [towerLowCorner, towerHighCorner] = getTowerBoundingBox(cellIndex);
+        isRelevant = utils::boxesOverlap(towerLowCorner, towerHighCorner, boxMin, boxMax);
+      }
+      return isRelevant;
+    };
+
+    do {
+      // advance to the next particle
+      ++particleIndex;
+      // If this breaches the end of a cell, find the next non-empty cell and reset particleIndex.
+
+      // If cell has wrong type, or there are no more particles in this cell jump to the next
+      while (not towerIsRelevant() or particleIndex >= this->_towers[cellIndex].numParticles()) {
+        // TODO: can this jump be done more efficient if behavior is only halo or owned?
+        // TODO: can this jump be done more efficient for region iters if the cell is outside the region?
+        cellIndex += stride;
+        particleIndex = 0;
+
+        // If we notice that there is nothing else to look at set invalid values, so we get a nullptr next time and
+        // break.
+        if (cellIndex > endCellIndex) {
+          return {std::numeric_limits<size_t>::max(), particleIndex};
+        }
+      }
+    } while (not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
+        this->_towers[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax));
+
+    // the indices returned at this point should always be valid
+    return {cellIndex, particleIndex};
+  }
+
+  /**
    * load estimation algorithm for balanced traversals.
    */
   autopas::LoadEstimatorOption _loadEstimator;
@@ -1013,22 +1180,24 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
 
     // Find towers intersecting the search region
-    auto firstTowerCoords = _builder->getTowerCoordinates(lowerCornerInBounds);
-    auto firstTowerIndex = _builder->towerIndex2DTo1D(firstTowerCoords[0], firstTowerCoords[1]);
-    auto lastTowerCoords = _builder->getTowerCoordinates(upperCornerInBounds);
-    auto lastTowerIndex = _builder->towerIndex2DTo1D(lastTowerCoords[0], lastTowerCoords[1]);
+    const auto firstTowerCoords = _builder->getTowerCoordinates(lowerCornerInBounds);
+    const auto firstTowerIndex = _builder->towerIndex2DTo1D(firstTowerCoords[0], firstTowerCoords[1]);
+    const auto lastTowerCoords = _builder->getTowerCoordinates(upperCornerInBounds);
+    const auto lastTowerIndex = _builder->towerIndex2DTo1D(lastTowerCoords[0], lastTowerCoords[1]);
 
-    std::array<size_t, 2> towersOfInterstPerDim;
-    for (size_t dim = 0; dim < towersOfInterstPerDim.size(); ++dim) {
-      // use ternary operators instead of abs because these are unsigned values
-      towersOfInterstPerDim[dim] = firstTowerCoords[dim] > lastTowerCoords[dim]
-                                       ? firstTowerCoords[dim] - lastTowerCoords[dim]
-                                       : lastTowerCoords[dim] - firstTowerCoords[dim];
-      // +1 because we want to include first AND last
-      towersOfInterstPerDim[dim] += 1;
-      // sanity check
-      towersOfInterstPerDim[dim] = std::max(towersOfInterstPerDim[dim], static_cast<size_t>(1));
-    }
+    const std::array<size_t, 2> towersOfInterstPerDim = [&]() {
+      std::array<size_t, 2> ret{};
+      for (size_t dim = 0; dim < ret.size(); ++dim) {
+        // use ternary operators instead of abs because these are unsigned values
+        ret[dim] = firstTowerCoords[dim] > lastTowerCoords[dim] ? firstTowerCoords[dim] - lastTowerCoords[dim]
+                                                                : lastTowerCoords[dim] - firstTowerCoords[dim];
+        // +1 because we want to include first AND last
+        ret[dim] += 1;
+        // sanity check
+        ret[dim] = std::max(ret[dim], static_cast<size_t>(1));
+      }
+      return ret;
+    };
 
     std::vector<size_t> towersOfInterest(towersOfInterstPerDim[0] * towersOfInterstPerDim[1]);
 
