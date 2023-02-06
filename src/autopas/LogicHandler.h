@@ -254,7 +254,7 @@ class LogicHandler {
     auto &bufferCollection = particle.isOwned() ? _particleBuffer : _haloParticleBuffer;
     for (auto &buffer : bufferCollection) {
       // if the address of the particle is between start and end of the buffer it is in this buffer
-      if (&(buffer.front()) <= &particle and &particle <= &(buffer.back())) {
+      if (not buffer.empty() and &(buffer.front()) <= &particle and &particle <= &(buffer.back())) {
         // swap-delete
         particle = buffer.back();
         buffer.pop_back();
@@ -309,12 +309,16 @@ class LogicHandler {
                               static_cast<bool>(behavior & IteratorBehavior::halo) * _haloParticleBuffer.size());
     if (behavior & IteratorBehavior::owned) {
       for (auto &buffer : _particleBuffer) {
-        additionalVectors.push_back(&buffer);
+        if (not buffer.empty()) {
+          additionalVectors.push_back(&buffer);
+        }
       }
     }
     if (behavior & IteratorBehavior::halo) {
       for (auto &buffer : _haloParticleBuffer) {
-        additionalVectors.push_back(&buffer);
+        if (not buffer.empty()) {
+          additionalVectors.push_back(&buffer);
+        }
       }
     }
     return additionalVectors;
@@ -324,8 +328,7 @@ class LogicHandler {
    * @copydoc AutoPas::begin()
    */
   autopas::ContainerIterator<Particle, true, false> begin(IteratorBehavior behavior) {
-    typename ContainerIterator<Particle, true, false>::ParticleVecType additionalVectors =
-        gatherAdditionalVectors(behavior);
+    auto additionalVectors = gatherAdditionalVectors<ContainerIterator<Particle, true, false>>(behavior);
     return _autoTuner.getContainer()->begin(behavior, &additionalVectors);
   }
 
@@ -333,8 +336,8 @@ class LogicHandler {
    * @copydoc AutoPas::begin()
    */
   autopas::ContainerIterator<Particle, false, false> begin(IteratorBehavior behavior) const {
-    typename ContainerIterator<Particle, false, false>::ParticleVecType additionalVectors =
-        gatherAdditionalVectors(behavior);
+    auto additionalVectors =
+        const_cast<LogicHandler *>(this)->gatherAdditionalVectors<ContainerIterator<Particle, false, false>>(behavior);
     return std::as_const(_autoTuner).getContainer()->begin(behavior, &additionalVectors);
   }
 
@@ -355,8 +358,7 @@ class LogicHandler {
       }
     }
 
-    typename ContainerIterator<Particle, true, true>::ParticleVecType additionalVectors =
-        gatherAdditionalVectors(behavior);
+    auto additionalVectors = gatherAdditionalVectors<ContainerIterator<Particle, true, true>>(behavior);
     return _autoTuner.getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior, &additionalVectors);
   }
 
@@ -377,8 +379,8 @@ class LogicHandler {
       }
     }
 
-    typename ContainerIterator<Particle, false, true>::ParticleVecType additionalVectors =
-        gatherAdditionalVectors(behavior);
+    auto additionalVectors =
+        const_cast<LogicHandler *>(this)->gatherAdditionalVectors<ContainerIterator<Particle, false, true>>(behavior);
     return std::as_const(_autoTuner)
         .getContainer()
         ->getRegionIterator(lowerCorner, higherCorner, behavior, &additionalVectors);
