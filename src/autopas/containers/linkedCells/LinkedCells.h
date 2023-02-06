@@ -157,7 +157,10 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
 #endif  // AUTOPAS_OPENMP
     {
       // private for each thread!
-      std::vector<ParticleType> myInvalidParticles, myInvalidNotOwnedParticles;
+      std::vector<ParticleType> myInvalidParticles{}, myInvalidNotOwnedParticles{};
+      // TODO: needs smarter heuristic than this.
+      myInvalidParticles.reserve(128);
+      myInvalidNotOwnedParticles.reserve(128);
 #ifdef AUTOPAS_OPENMP
 #pragma omp for
 #endif  // AUTOPAS_OPENMP
