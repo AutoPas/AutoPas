@@ -66,6 +66,23 @@ template <class T, std::size_t SIZE>
 }
 
 /**
+ * True iff for all d the following holds: a[d] < b[d]
+ * @tparam T floating point type
+ * @tparam SIZE size of the arrays
+ * @param a first parameter
+ * @param b second parameter
+ * @return a < b
+ */
+template <class T, std::size_t SIZE>
+[[nodiscard]] constexpr bool less(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+  bool result = true;
+  for (std::size_t d = 0; d < SIZE; ++d) {
+    result = result and (a[d] < b[d]);
+  }
+  return result;
+}
+
+/**
  * Takes elementwise maximum and returns the result.
  * @tparam T floating point type
  * @tparam SIZE size of the arrays
