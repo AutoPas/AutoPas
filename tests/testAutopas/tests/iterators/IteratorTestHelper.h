@@ -297,9 +297,6 @@ void findParticles(AutoPasT &autopas, FgetIter getIter, const std::vector<size_t
     for (auto iterator = getIter(); iterator.isValid(); ++iterator) {
       auto id = iterator->getID();
       particleIDsFound.push_back(id);
-      if (id == 0) {
-        std::cout << "Thread: " << std::endl;
-      }
     }
   }
 
