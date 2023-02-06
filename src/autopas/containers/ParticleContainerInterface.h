@@ -361,6 +361,21 @@ class ParticleContainerInterface {
   }
 
   /**
+   * @copydoc getParticle()
+   *
+   * @note non-const non-region iter version
+   */
+  std::tuple<Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                     IteratorBehavior iteratorBehavior) {
+    const Particle *ptr;
+    size_t nextCellIndex, nextParticleIndex;
+    std::tie(ptr, nextCellIndex, nextParticleIndex) =
+        const_cast<const ParticleContainerInterface<Particle> *>(this)->getParticle(cellIndex, particleIndex,
+                                                                                    iteratorBehavior);
+    return {const_cast<Particle *>(ptr), nextCellIndex, nextParticleIndex};
+  }
+
+  /**
    * Deletes the given particle if this does not compromise the validity of the container.
    * Is this not possible the particle is just marked as deleted.
    * @note This function might be implemented via swap-delete and is thus not completely thread safe.
