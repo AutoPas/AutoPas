@@ -460,8 +460,8 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
   const internal::CellBlock3D<ParticleCell> &getCellBlock() const { return _cellBlock; }
 
   /**
-   * Returns reference to the data of LinkedCells
-   * @return the data
+   * Returns a non-const reference to the cell data structure.
+   * @return Non-const reference.
    */
   std::vector<ParticleCell> &getCells() { return this->_cells; }
 
