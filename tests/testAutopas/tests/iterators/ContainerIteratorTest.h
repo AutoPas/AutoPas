@@ -1,7 +1,7 @@
 /**
- * @file ParticleIteratorInterfaceTest.h
- * @author seckler
- * @date 22.07.19
+ * @file ContainerIteratorTest.h
+ * @author F.Gratl
+ * @date 13.01.23
  */
 
 #pragma once

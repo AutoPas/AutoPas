@@ -58,7 +58,7 @@ static void testClusterGenerationAndDummies(size_t clusterSize) {
 
     // Check if dummy particles are filled in correctly. (Dummy particles always have ID
     // std::numeric_limits<size_t>::max(), filled up particles have ID>0.
-    tower.fillUpWithDummyParticles(0, 0);
+    tower.setDummyValues(0, 0);
     const auto &lastCluster = tower.getCluster(tower.getNumClusters() - 1);
     for (size_t i = 1; i <= tower.getNumDummyParticles(); i++) {
       EXPECT_EQ(lastCluster[clusterSize - i].getID(), std::numeric_limits<size_t>::max());
@@ -81,7 +81,7 @@ TEST_F(VerletClusterTowerTest, testCollectAllActualParticles) {
     tower.addParticle({{}, {}, i + 1});
   }
   tower.generateClusters();
-  tower.fillUpWithDummyParticles(0, 0);
+  tower.setDummyValues(0, 0);
 
   const auto &actualParticles = tower.collectAllActualParticles();
   EXPECT_EQ(actualParticles.size(), numParticles);
@@ -93,21 +93,28 @@ TEST_F(VerletClusterTowerTest, testCollectAllActualParticles) {
 }
 
 TEST_F(VerletClusterTowerTest, testIterator) {
-  ClusterTower<Particle> tower(4);
+  constexpr size_t clusterSize = 4;
+  ClusterTower<Particle> tower(clusterSize);
   constexpr size_t numParticles = 21;
+  constexpr size_t numDummies = clusterSize - (numParticles % clusterSize);
+  static_assert(numDummies != 0, "Without dummies this test is boring. Adapt parameters!");
 
   for (size_t i = 0; i < numParticles; i++) {
     tower.addParticle({{}, {}, i + 1});
   }
   tower.generateClusters();
-  tower.fillUpWithDummyParticles(0, 0);
+  tower.setDummyValues(0, 0);
 
   // Check that iterator iterates over all these particles and not over dummies. Dummies would have ID 0.
   std::vector<size_t> IDs;
   IDs.reserve(numParticles);
+  size_t numDummiesFound = 0;
   for (const auto &particle : tower) {
-    EXPECT_NE(particle.getID(), 0);
-    EXPECT_TRUE(std::find(IDs.begin(), IDs.end(), particle.getID()) == IDs.end());
-    IDs.push_back(particle.getID());
+    if (particle.getID(), std::numeric_limits<size_t>::max()) {
+      ++numDummiesFound;
+    } else {
+      EXPECT_TRUE(std::find(IDs.begin(), IDs.end(), particle.getID()) == IDs.end());
+      IDs.push_back(particle.getID());
+    }
   }
 }

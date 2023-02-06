@@ -19,14 +19,14 @@ class LinkedCellsTest : public AutoPasTestBase {
  public:
   /// @todo c++20 replace with:
   /// using LinkedCellsType = std::tuple_element_t<0, TestingType>;
-  //  using keepListsValid = std::tuple_element_t<1, TestingType>;
+  /// using keepListsValid = std::tuple_element_t<1, TestingType>;
   using LinkedCellsType = typename TestingType::first_t;
-  using keepListsValid = typename TestingType::second_t;
+  using KeepListsValid = typename TestingType::second_t;
   LinkedCellsTest() : _linkedCells({0., 0., 0.}, {10., 10., 10.}, 1., 0., 1.) {}
 
  protected:
   LinkedCellsType _linkedCells;
-  bool _keepListsValid{keepListsValid()};
+  bool _keepListsValid{KeepListsValid()};
 
   void checkParticleIDsInCells(
       LinkedCellsType &linkedCells,
@@ -49,7 +49,6 @@ void LinkedCellsTest<TestingType>::checkParticleIDsInCells(
       {
         auto pIter = linkedCells.getCells()[i].begin();
         for (int j = 0; j < expectedNumParticles; ++j, ++pIter) {
-          ASSERT_TRUE(pIter.isValid()) << "called from line: " << line;
           foundIDs.push_back(pIter->getID());
         }
       }
@@ -62,9 +61,9 @@ void LinkedCellsTest<TestingType>::checkParticleIDsInCells(
       bool isEmpty = linkedCells.getCells()[i].isEmpty();
       if (not isEmpty) {
         // If the cell isn't empty, all particles should be dummy particles!
-        for (auto pIter = linkedCells.getCells()[i].begin(); pIter.isValid(); ++pIter) {
-          EXPECT_TRUE(pIter->isDummy()) << "Cell: " << i << " Particle ID: " << pIter->getID() << std::endl
-                                        << "called from line: " << line;
+        for (auto &p : linkedCells.getCells()[i]) {
+          EXPECT_TRUE(p.isDummy()) << "Cell: " << i << " Particle ID: " << p.getID() << std::endl
+                                   << "called from line: " << line;
         }
       }
     }

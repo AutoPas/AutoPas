@@ -1,7 +1,7 @@
 /**
- * @file ParticleIteratorInterfaceTest.cpp
- * @author seckler
- * @date 22.07.19
+ * @file ContainerIteratorTest.cpp
+ * @author F.Gratl
+ * @date 13.01.23
  */
 
 #include "ContainerIteratorTest.h"

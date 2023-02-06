@@ -11,6 +11,11 @@
 #include "AutoPasTestBase.h"
 #include "testingHelpers/commonTypedefs.h"
 
+/**
+ * There used to be a dedicated CellIterator.
+ * In https://github.com/AutoPas/AutoPas/pull/712 this was removed so this test now only
+ * tests if FullParticleCell provides good interfaces to std::vector::iterator.
+ */
 class CellIteratorTest : public AutoPasTestBase {
  public:
   CellIteratorTest() = default;

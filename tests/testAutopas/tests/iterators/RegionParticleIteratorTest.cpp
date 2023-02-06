@@ -35,6 +35,12 @@ auto RegionParticleIteratorTest::defaultInit(AutoPasT &autoPas, autopas::Contain
   return std::make_tuple(haloBoxMin, haloBoxMax);
 }
 
+/**
+ * 1. Create an AutoPas container with 1000 particles that are placed around its 8 corners.
+ * 2. Create a region iterator well around the lower corner of the container
+ * 3. Run the region iterator for its full range and track the IDs it encounters
+ * 4. Compare the found IDs to the expectations from the initialization.
+ */
 TEST_P(RegionParticleIteratorTest, testRegionAroundCorner) {
   auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc, behavior] = GetParam();
 
@@ -45,13 +51,14 @@ TEST_P(RegionParticleIteratorTest, testRegionAroundCorner) {
   using ::autopas::utils::ArrayMath::add;
   using ::autopas::utils::ArrayMath::mulScalar;
   using ::autopas::utils::ArrayMath::sub;
-  auto domainLength = sub(autoPas.getBoxMax(), autoPas.getBoxMin());
+  const auto domainLength = sub(autoPas.getBoxMax(), autoPas.getBoxMin());
   // draw a box around the lower corner of the domain
-  auto searchBoxLengthHalf = mulScalar(domainLength, 0.3);
-  std::array<double, 3> searchBoxMin = sub(autoPas.getBoxMin(), searchBoxLengthHalf);
-  std::array<double, 3> searchBoxMax = add(autoPas.getBoxMin(), searchBoxLengthHalf);
+  const auto searchBoxLengthHalf = mulScalar(domainLength, 0.3);
+  const auto searchBoxMin = sub(autoPas.getBoxMin(), searchBoxLengthHalf);
+  const auto searchBoxMax = add(autoPas.getBoxMin(), searchBoxLengthHalf);
 
-  auto [particleIDsOwned, particleIDsHalo, particleIDsInBoxOwned, particleIDsInBoxHalo] =
+  // initialize particles and remember which IDs are in the search box
+  const auto [particleIDsOwned, particleIDsHalo, particleIDsInBoxOwned, particleIDsInBoxHalo] =
       IteratorTestHelper::fillContainerAroundBoundary(autoPas, searchBoxMin, searchBoxMax);
 
   if (priorForceCalc) {
@@ -60,6 +67,8 @@ TEST_P(RegionParticleIteratorTest, testRegionAroundCorner) {
     autoPas.iteratePairwise(&eFunctor);
   }
 
+  // set up expectations
+  // can't trivially convert this to const + lambda initialization bc behavior is a structured binding
   std::vector<size_t> expectedIDs;
   switch (behavior) {
     case autopas::IteratorBehavior::owned: {
@@ -106,47 +115,48 @@ INSTANTIATE_TEST_SUITE_P(Generated, RegionParticleIteratorTest,
                                  ValuesIn(autopas::IteratorBehavior::getMostOptions())),
                          RegionParticleIteratorTest::PrintToStringParamName());
 
-/**
- * Generates an iterator in a parallel region but iterates with only one and expects to find everything.
- * @note This behavior is needed by VerletClusterLists::updateHaloParticle().
- */
-TEST_F(RegionParticleIteratorTest, testForceSequential) {
-  constexpr size_t particlesPerCell = 1;
-  auto cells = IteratorTestHelper::generateCellsWithPattern(10, {1ul, 2ul, 4ul, 7ul, 8ul, 9ul}, particlesPerCell);
-
-  // min (inclusive) and max (exclusive) along the line of particles
-  size_t interestMin = 2;
-  size_t interestMax = 8;
-  const auto interestMinD = static_cast<double>(interestMin);
-  const auto interestMaxD = static_cast<double>(interestMax);
-  std::array<double, 3> searchBoxMin{interestMinD, interestMinD, interestMinD};
-  std::array<double, 3> searchBoxMax{interestMaxD, interestMaxD, interestMaxD};
-  std::vector<size_t> searchBoxCellIndices(interestMax - interestMin);
-  std::iota(searchBoxCellIndices.begin(), searchBoxCellIndices.end(), interestMin);
-
-  // IDs of particles in cells 2, 4, 7
-  std::vector<size_t> expectedIndices = {1, 2, 3};
-
-  constexpr size_t numAdditionalVectors = 3;
-  std::vector<std::vector<Molecule>> additionalVectors(numAdditionalVectors);
-
-  size_t particleId = cells.size() + 100;
-  for (auto &vector : additionalVectors) {
-    vector.emplace_back(Molecule({interestMinD, interestMinD, interestMinD}, {0., 0., 0.}, particleId));
-    expectedIndices.push_back(particleId);
-    ++particleId;
-  }
-
-#pragma omp parallel
-  {
-    std::vector<size_t> foundParticles;
-    constexpr bool modifyable = true;
-    autopas::internal::RegionParticleIterator<Molecule, FMCell, modifyable> iter(
-        &cells, searchBoxMin, searchBoxMax, searchBoxCellIndices, nullptr,
-        autopas::IteratorBehavior::ownedOrHalo | autopas::IteratorBehavior::forceSequential, &additionalVectors);
-    for (; iter.isValid(); ++iter) {
-      foundParticles.push_back(iter->getID());
-    }
-    EXPECT_THAT(foundParticles, ::testing::UnorderedElementsAreArray(expectedIndices));
-  }
-}
+///**
+// TODO: Is this worthwhile to reimplement? If yes how?
+// * Generates an iterator in a parallel region but iterates with only one and expects to find everything.
+// * @note This behavior is needed by VerletClusterLists::updateHaloParticle().
+// */
+// TEST_F(RegionParticleIteratorTest, testForceSequential) {
+//  constexpr size_t particlesPerCell = 1;
+//  auto cells = IteratorTestHelper::generateCellsWithPattern(10, {1ul, 2ul, 4ul, 7ul, 8ul, 9ul}, particlesPerCell);
+//
+//  // min (inclusive) and max (exclusive) along the line of particles
+//  size_t interestMin = 2;
+//  size_t interestMax = 8;
+//  const auto interestMinD = static_cast<double>(interestMin);
+//  const auto interestMaxD = static_cast<double>(interestMax);
+//  std::array<double, 3> searchBoxMin{interestMinD, interestMinD, interestMinD};
+//  std::array<double, 3> searchBoxMax{interestMaxD, interestMaxD, interestMaxD};
+//  std::vector<size_t> searchBoxCellIndices(interestMax - interestMin);
+//  std::iota(searchBoxCellIndices.begin(), searchBoxCellIndices.end(), interestMin);
+//
+//  // IDs of particles in cells 2, 4, 7
+//  std::vector<size_t> expectedIndices = {1, 2, 3};
+//
+//  constexpr size_t numAdditionalVectors = 3;
+//  std::vector<std::vector<Molecule>> additionalVectors(numAdditionalVectors);
+//
+//  size_t particleId = cells.size() + 100;
+//  for (auto &vector : additionalVectors) {
+//    vector.emplace_back(Molecule({interestMinD, interestMinD, interestMinD}, {0., 0., 0.}, particleId));
+//    expectedIndices.push_back(particleId);
+//    ++particleId;
+//  }
+//
+//#pragma omp parallel
+//  {
+//    std::vector<size_t> foundParticles;
+//    constexpr bool modifyable = true;
+//    autopas::internal::RegionParticleIterator<Molecule, FMCell, modifyable> iter(
+//        &cells, searchBoxMin, searchBoxMax, searchBoxCellIndices, nullptr,
+//        autopas::IteratorBehavior::ownedOrHalo | autopas::IteratorBehavior::forceSequential, &additionalVectors);
+//    for (; iter.isValid(); ++iter) {
+//      foundParticles.push_back(iter->getID());
+//    }
+//    EXPECT_THAT(foundParticles, ::testing::UnorderedElementsAreArray(expectedIndices));
+//  }
+//}
