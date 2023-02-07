@@ -6,6 +6,7 @@ function startSimulation(autoPasContainer, particlePropertiesLibrary, inputParam
     end
 
     for iteration = 1 : inputParameters.iterations
+        println(iteration)
         # println("in loop")
         updatePositions(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
         # println("after updatePosition")
@@ -13,7 +14,9 @@ function startSimulation(autoPasContainer, particlePropertiesLibrary, inputParam
         # handle boundary particles
         handleBoundaries(autoPasContainer, inputParameters.boxMin, inputParameters.boxMax)
         # for outflow maybe only use updateContainer which has same effekt
-
+        
+        AutoPasM.updateContainer(autoPasContainer)
+        println("updated contianer")
         # updateForces()
 
         updateVelocities(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary)
