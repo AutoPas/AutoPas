@@ -3,6 +3,7 @@
 #include <type_traits>
 #include <jlcxx/functions.hpp>
 #include "autopas/molecularDynamics/MoleculeLJ.h"
+#include "autopas/molecularDynamics/LJFunctorAVX.h"
 #include "TypeDef.h"
 #include "autopas/AutoPas.h"
 #include "Options.h"
@@ -76,8 +77,12 @@ struct WrapAutoPas {
         wrapped.method("init", &WrappedT::init);
         // resizeBox
         // force retune
+
+        // delete particle form container
+        wrapped.method("deleteParticle", static_cast<void (WrappedT::*)(typename WrappedT::Particle_t&)> (&WrappedT::deleteParticle));
         
         wrapped.method("finalize", &WrappedT::finalize);
+
         wrapped.method("updateContainer", &WrappedT::updateContainer);
         
         // add particle to AutoPas container
@@ -109,16 +114,38 @@ struct WrapAutoPas {
         wrapped.method("setTuningStrategyOption", &WrappedT::setTuningStrategyOption);
         wrapped.method("setSelectorStrategy", &WrappedT::setSelectorStrategy);
         wrapped.method("setExtrapolationMethodOption", &WrappedT::setExtrapolationMethodOption);
+
+        // getters of AutoPas variables
+        wrapped.method("getCutoff", &WrappedT::getCutoff);    
     }
 };
 
 /**
  * wrapper method for iteratePairwise
  */
+/*
 template<class Functor>
 bool iteratePairwise(autopas::AutoPas<MoleculeJ<double>>& autoPasContainer, Functor *f) {
     return autoPasContainer.iteratePairwise(f);
 }
+*/
+/**
+ * wrapper method for iteratePairwise with constant functor LJFunctorAVX
+ 
+bool iteratePairwise(autopas::AutoPas<MoleculeJ<double>>& autoPasContainer, autopas::LJFunctorAVX<MoleculeJ<double>>* functor) {
+    return autoPasContainer.iteratePairwise(functor);
+}
+*/
+
+/**
+ * create functor LJFunctorAVX and return it
+ */
+/*
+autopas::LJFunctorAVX<MoleculeJ<double>> getLJFunctorAVX(autopas::AutoPas<MoleculeJ<double>>& autoPasContainer, ParticlePropertiesLibrary<double, size_t>& particlePropertiesLibrary) {
+    autopas::LJFunctorAVX<MoleculeJ<double>, true, true> functor{autoPasContainer.getCutoff(), particlePropertiesLibrary};
+    return functor;
+}
+*/
 
 /**
  * wrapper methods for setters which can not be defined directly
@@ -209,9 +236,14 @@ JLCXX_MODULE define_module_autopas(jlcxx::Module& mod)
             .apply<autopas::AutoPas<autopas::MoleculeLJ<double>>, autopas::AutoPas<MoleculeJ<double>>>(WrapAutoPas());
 
     /**
-     * add wrapper method for iteratePairwise´of AutoPas
+     * add wrapper method for iteratePairwise of AutoPas
      */
-    // mod.method("iteratePairwise", iteratePairwise<autopas::>);
+    // mod.method("iteratePairwise", &iteratePairwise);
+
+    /**
+     * add wrapper method for getLJFunctorAVX to Julia
+     */
+    // mod.method("getLJFunctorAVX", &getLJFunctorAVX);
     
     /*
      * add wrapper methods for setters of AutoPas attributes which cannot be wrapped directly

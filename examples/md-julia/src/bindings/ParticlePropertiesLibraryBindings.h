@@ -51,5 +51,5 @@ JLCXX_MODULE define_module_properties(jlcxx::Module& mod) {
      * add ParticlePropertiesLibrary type to Julia (with template parameters floatType = double and intType = int)
      */
     mod.add_type<Parametric<TypeVar<1>, TypeVar<2>>>("ParticlePropertiesLibrary")
-            .apply<ParticlePropertiesLibrary<double, int>>(WrapParticlePropertiesLibrary());
+            .apply<ParticlePropertiesLibrary<double, size_t>>(WrapParticlePropertiesLibrary());
 }

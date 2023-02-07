@@ -9,6 +9,9 @@
 template<typename floatType>
 class MoleculeJ : public autopas::Particle {
     public:
+
+    typedef floatType ft;
+
     /**
      * default constructor
      */
@@ -26,7 +29,10 @@ class MoleculeJ : public autopas::Particle {
         // : Particle(pos, v, moleculeId),
         std::array<floatType, 3> pos_{pos[0], pos[1], pos[2]};
         std::array<floatType, 3> v_{v[0], v[1], v[2]};
-        autopas::Particle(pos_, v_, moleculeId);
+        setPos(pos);
+        setV(v);
+        setID(moleculeId);
+        // autopas::Particle(pos_, v_, moleculeId);
     }
     
     MoleculeJ(std::array<floatType, 3> pos, std::array<floatType, 3> v, unsigned long moleculeId,

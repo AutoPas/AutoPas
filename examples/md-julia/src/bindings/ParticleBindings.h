@@ -24,9 +24,10 @@ struct WrapMoleculeJ {
 
         // default constructor for MoleculeJ
         wrapped.template constructor<>();
-        
+        // typename WrappedT::value_type*
+        using ft = typename WrappedT::ft;
         // constructor for MoleculeJ with arguments for pos, v, moleculeId, typeId
-        // wrapped.template constructor<jlcxx::ArrayRef<double, 1>, jlcxx::ArrayRef<double,1>, unsigned long, unsigned long>();
+        wrapped.template constructor<jlcxx::ArrayRef<ft, 1>, jlcxx::ArrayRef<ft,1>, unsigned long, unsigned long>();
 
         // setters of MoleculeJ attributes
         wrapped.method("setPos", &WrappedT::setPos);
@@ -78,14 +79,14 @@ JLCXX_MODULE define_module_particles(jlcxx::Module& mod) {
      * float, int and double, long
      */
     mod.add_type<Parametric<TypeVar<1>, TypeVar<2>>>("ParticleBase")
-            .apply<autopas::ParticleBase<float, int>, autopas::ParticleBase<double, long>>(WrapParticleBase());
+            .apply<autopas::ParticleBase<float, int>, autopas::ParticleBase<double, unsigned long>>(WrapParticleBase());
 
     /**
      * add MoleculeJ type to Julia with template parameters
      * double and float
      */
     mod.add_type<Parametric<TypeVar<1>>>("MoleculeJ")
-            .apply<MoleculeJ<double>, MoleculeJ<float>>(WrapMoleculeJ());
+            .apply<MoleculeJ<double>>(WrapMoleculeJ());
 
     /**
      * add MoleculeLJ type to Julia with template parameter

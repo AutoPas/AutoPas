@@ -18,9 +18,9 @@ struct WrapIteratorWrapper {
         // check if iterator is still valid/next element exists
         wrapped.method("isValid", &WrappedT::isValid);
         // increase iterator / ++ operator
-        wrapped.method("inc", &WrappedT::operator++);
+        wrapped.method("++", &WrappedT::operator++);
         // dereference iterator / * operator
-        wrapped.method("deref", &WrappedT::operator*);
+        wrapped.method("*", &WrappedT::operator*);
     }
 };
 

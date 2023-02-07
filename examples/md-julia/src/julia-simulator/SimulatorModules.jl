@@ -1,3 +1,5 @@
+module Simulator
+
 module Particles
   using CxxWrap
   @wrapmodule(joinpath("../../../../build/examples/md-julia/","libjulia_bindings.so"), :define_module_particles)
@@ -5,6 +7,8 @@ module Particles
   function __init__()
     @initcxx
   end
+  export
+    MoleculeJ
 end
 
 module Options
@@ -41,5 +45,33 @@ module AutoPasM
   function __init__()
     @initcxx
   end
+end
+
+include("Configuration.jl")
+export
+  parseInput
+
+include("ForceCalculation.jl")
+export
+  updateForces
+
+include("Generator.jl")
+export
+  generateObject
+  generateCubeGrid
+
+include("InputConfiguration.jl")
+export
+  CubeGridInput
+  InputParameters
+
+include("Simulator.jl")
+export
+  startSimulation
+
+include("TimeDiscretization.jl")
+export
+  updatePositions
+  updateVelocities
 
 end
