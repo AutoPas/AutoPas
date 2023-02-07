@@ -39,6 +39,10 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   config.verletRebuildFrequency.value = 10;
   const double sigma = 1.;
   config.addSiteType(0, 1., sigma, 1.);
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+  config.addMolType(0, {0, 0, 0},
+{{0.74349607, 1.20300191, 0.}, {0.3249197, -1.37638192, 0.}, {-1.37638192, -0.3249197, 0.}}, {5.23606798, 0.76393202, 6.});
+#endif
   config.boundaryOption.value = {options::BoundaryTypeOption::reflective, options::BoundaryTypeOption::reflective,
                                  options::BoundaryTypeOption::reflective};
 
@@ -55,15 +59,63 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   autoPasContainer->init();
 
   particlePropertiesLibrary->addSiteType(0, 1., sigma, 1.);
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+  particlePropertiesLibrary->addMolType(0, {0, 0, 0},
+                                        {{0.74349607, 1.20300191, 0.}, {0.3249197, -1.37638192, 0.}, {-1.37638192, -0.3249197, 0.}}, {5.23606798, 0.76393202, 6.});
+#endif
   particlePropertiesLibrary->calculateMixingCoefficients();
 
   // get particle properties
   const std::array<double, 3> particlePosition = std::get<0>(GetParam());
   const std::array<double, 3> particleVelocity = std::get<1>(GetParam());
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+  const std::array<double, 4> particleQuaternion = std::get<2>(GetParam());
+#endif
 
   // derive expected position
-  auto forceFromReflection = [&](const std::array<double, 3> position, const int dimensionOfBoundary,
-                                 const bool isUpper) {
+  auto forceFromReflection = [&](const int dimensionOfBoundary, const bool isUpper) {
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+    std::array<double, 3> force{0., 0., 0.};
+
+    // get properties of mirror particle
+    const auto getMirroredPosition = [&] () {
+      const auto distanceCenterOfMassToBoundary = isUpper ? boxMax[dimensionOfBoundary] - particlePosition[dimensionOfBoundary]
+                                                          : particlePosition[dimensionOfBoundary] - boxMin[dimensionOfBoundary];
+      auto mirroredPositionTmp = particlePosition;
+      mirroredPositionTmp[dimensionOfBoundary] = isUpper ? boxMax[dimensionOfBoundary] + distanceCenterOfMassToBoundary
+                                                         : boxMin[dimensionOfBoundary] - distanceCenterOfMassToBoundary;
+      return mirroredPositionTmp;
+    };
+    const auto mirroredPosition = getMirroredPosition();
+    const auto mirroredQuaternion = autopas::utils::quaternion::qMirror(particleQuaternion, dimensionOfBoundary);
+
+    // get rotated site positions
+    const auto unrotatedUntranslatedSitePositions = particlePropertiesLibrary->getSitePositions(0);
+    const auto rotatedUntranslatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(particleQuaternion, unrotatedUntranslatedSitePositions);
+    const auto rotatedUntranslatedMirroredSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(mirroredQuaternion, unrotatedUntranslatedSitePositions);
+
+
+    for (int siteOriginal = 0; siteOriginal < particlePropertiesLibrary->getNumSites(0); siteOriginal++) {
+      for (int siteMirror = 0; siteMirror < particlePropertiesLibrary->getNumSites(0); siteMirror++) {
+        const auto exactSitePosition =
+            autopas::utils::ArrayMath::add(particlePosition, rotatedUntranslatedSitePositions[siteOriginal]);
+        const auto exactMirrorSitePosition =
+            autopas::utils::ArrayMath::add(mirroredPosition, rotatedUntranslatedMirroredSitePositions[siteMirror]);
+
+        const auto displacementToMirrorParticle = autopas::utils::ArrayMath::sub(exactSitePosition, exactMirrorSitePosition);
+        const auto distanceSquared = autopas::utils::ArrayMath::dot(displacementToMirrorParticle, displacementToMirrorParticle);
+
+        const auto inverseDistanceSquared = 1. / distanceSquared;
+        const auto lj2 = sigma * sigma * inverseDistanceSquared;
+        const auto lj6 = lj2 * lj2 * lj2;
+        const auto lj12 = lj6 * lj6;
+        const auto lj12m6 = lj12 - lj6;
+        const auto ljForceFactor = 24 * (lj12 + lj12m6) * inverseDistanceSquared;
+        const auto forceContribution = autopas::utils::ArrayMath::mulScalar(displacementToMirrorParticle, ljForceFactor);
+        force = autopas::utils::ArrayMath::add(force, forceContribution);
+      }
+    }
+#else
     const auto distanceToBoundary = isUpper ? boxMax[dimensionOfBoundary] - position[dimensionOfBoundary]
                                             : position[dimensionOfBoundary] - boxMin[dimensionOfBoundary];
     const auto distanceToMirrorParticle = distanceToBoundary * 2.;
@@ -76,6 +128,7 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
     const auto lj12m6 = lj12 - lj6;
     const auto ljForceFactor = 24 * (lj12 + lj12m6) * inverseDistanceSquared;
     const auto force = ljForceFactor * distanceToMirrorParticle * (isUpper ? -1. : 1.);
+#endif
 
     return force;
   };
@@ -85,9 +138,9 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   std::array<double, 3> expectedForce = {0., 0., 0.};
   for (int dimension = 0; dimension < 3; ++dimension) {
     if (particlePosition[dimension] < boxMin[dimension] + sixthRootOfTwo * sigma) {
-      expectedForce[dimension] = forceFromReflection(particlePosition, dimension, false);
+      expectedForce = autopas::utils::ArrayMath::add(expectedForce, forceFromReflection(dimension, false));
     } else if (particlePosition[dimension] > boxMax[dimension] - sixthRootOfTwo * sigma) {
-      expectedForce[dimension] = forceFromReflection(particlePosition, dimension, true);
+      expectedForce = autopas::utils::ArrayMath::add(expectedForce, forceFromReflection(dimension, true));
     }
   }
 
@@ -99,6 +152,11 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
     particle.setR(particlePosition);
     particle.setV(particleVelocity);
     particle.setF({0., 0., 0.});
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+    particle.setQ(particleQuaternion);
+    particle.setAngularVel({0., 0., 0.});
+    particle.setTorque({0., 0., 0.});
+#endif
     autoPasContainer->addParticle(particle);
 #if not defined(AUTOPAS_INCLUDE_MPI)
   } else {
@@ -136,6 +194,39 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
 #endif
 }
 
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+INSTANTIATE_TEST_SUITE_P(
+    TestSimpleReflections, ReflectiveBoundaryConditionTest,
+    testing::Values(/*position*/ /*velocity*/ /*is reflected*/
+                    std::make_tuple(std::array<double, 3>{0.005, 2.50, 2.50}, std::array<double, 3>{1, 1, -1},
+                                    std::array<double, 4>{false, false, false}),
+                    std::make_tuple(std::array<double, 3>{0.005, 2.50, 2.50}, std::array<double, 3>{-1, 1, -1},
+                                    std::array<bool, 3>{true, false, false}),
+                    std::make_tuple(std::array<double, 3>{4.995, 2.50, 2.50}, std::array<double, 3>{1, 1, -1},
+                                    std::array<bool, 3>{true, false, false}),
+                    std::make_tuple(std::array<double, 3>{4.995, 2.50, 2.50}, std::array<double, 3>{-1, 1, -1},
+                                    std::array<bool, 3>{false, false, false}),
+
+                    std::make_tuple(std::array<double, 3>{2.50, 0.005, 2.50}, std::array<double, 3>{1, 1, -1},
+                                    std::array<bool, 3>{false, false, false}),
+                    std::make_tuple(std::array<double, 3>{2.50, 0.005, 2.50}, std::array<double, 3>{1, -1, -1},
+                                    std::array<bool, 3>{false, true, false}),
+                    std::make_tuple(std::array<double, 3>{2.50, 4.995, 2.50}, std::array<double, 3>{1, 1, -1},
+                                    std::array<bool, 3>{false, true, false}),
+                    std::make_tuple(std::array<double, 3>{2.50, 4.995, 2.50}, std::array<double, 3>{1, -1, -1},
+                                    std::array<bool, 3>{false, false, false}),
+
+                    std::make_tuple(std::array<double, 3>{2.50, 2.50, 0.005}, std::array<double, 3>{1, -1, 1},
+                                    std::array<bool, 3>{false, false, false}),
+                    std::make_tuple(std::array<double, 3>{2.50, 2.50, 0.005}, std::array<double, 3>{1, -1, -1},
+                                    std::array<bool, 3>{false, false, true}),
+                    std::make_tuple(std::array<double, 3>{2.50, 2.50, 4.995}, std::array<double, 3>{1, -1, 1},
+                                    std::array<bool, 3>{false, false, true}),
+                    std::make_tuple(std::array<double, 3>{2.50, 2.50, 4.995}, std::array<double, 3>{1, -1, -1},
+                                    std::array<bool, 3>{false, false, false}))
+    //    ,ReflectiveBoundaryConditionTest::PrintToStringParamName());
+);
+#else
 INSTANTIATE_TEST_SUITE_P(
     TestSimpleReflections, ReflectiveBoundaryConditionTest,
     testing::Values(/*position*/ /*velocity*/ /*is reflected*/
@@ -167,6 +258,7 @@ INSTANTIATE_TEST_SUITE_P(
                                     std::array<bool, 3>{false, false, false}))
     //    ,ReflectiveBoundaryConditionTest::PrintToStringParamName());
 );
+#endif
 
 /**
  * Implements the reflective boundary zoning test.
