@@ -31,6 +31,8 @@ namespace autopas {
  * The VerletClusterLists class uses neighborhood lists for each cluster to calculate pairwise interactions of
  * particles. It is optimized for a constant, i.e. particle independent, cutoff radius of the interaction.
  *
+ * This Container does (currently?) not make use of the cellSizeFactor.
+ *
  * @note See VerletClusterListsRebuilder for the layout of the towers and clusters.
  *
  * @tparam Particle
@@ -361,13 +363,13 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
       // store all pointers in a temporary which is passed to the ParticleIterator constructor.
       typename ContainerIterator<Particle, false, false>::ParticleVecType additionalVectorsTmp;
-      if (not additionalVectors) {
+      if (additionalVectors) {
         additionalVectorsTmp.reserve(_particlesToAdd.size() + additionalVectors->size());
         additionalVectorsTmp.insert(additionalVectorsTmp.end(), additionalVectors->begin(), additionalVectors->end());
       } else {
         additionalVectorsTmp.reserve(_particlesToAdd.size());
       }
-      for (auto vec : _particlesToAdd) {
+      for (auto &vec : _particlesToAdd) {
         additionalVectorsTmp.push_back(&vec);
       }
       return ContainerIterator<Particle, false, false>(*this, behavior, &additionalVectorsTmp);
@@ -747,8 +749,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       return {_boxMin, _boxMax};
     }
     std::array<double, 3> boxMin{
-        _towerSideLength * static_cast<double>(index2D[0]),
-        _towerSideLength * static_cast<double>(index2D[1]),
+        _haloBoxMin[0] + _towerSideLength * static_cast<double>(index2D[0]),
+        _haloBoxMin[1] + _towerSideLength * static_cast<double>(index2D[1]),
         _haloBoxMin[2],
     };
     std::array<double, 3> boxMax{
@@ -760,13 +762,36 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
-   * Return the 2D index of the tower at a given position
+   * Return the 2D index of the tower at a given position in the global domain.
    * @param pos
    * @return array<X, Y>
    */
   [[nodiscard]] std::array<size_t, 2> getTowerIndex2DAtPosition(const std::array<double, 3> &pos) const {
-    return {static_cast<size_t>(pos[0] * _towerSideLengthReciprocal),
-            static_cast<size_t>(pos[1] * _towerSideLengthReciprocal)};
+    // special case: Towers are not yet built, then everything is in this one tower.
+    if (_towers.size() == 1) {
+      return {0, 0};
+    }
+
+    // FIXME: this is a copy of VerletClusterListsRebuilder::getTowerCoordinates(). See Issue 716
+    // https://github.com/AutoPas/AutoPas/issues/716
+    std::array<size_t, 2> towerIndex2D{};
+
+    for (int dim = 0; dim < 2; dim++) {
+      const auto towerDimIndex =
+          static_cast<long int>(floor((pos[dim] - _haloBoxMin[dim]) * _towerSideLengthReciprocal));
+      const auto towerDimIndexNonNegative = static_cast<size_t>(std::max(towerDimIndex, 0l));
+      const auto towerDimIndexNonLargerValue = std::min(towerDimIndexNonNegative, _towersPerDim[dim] - 1);
+      towerIndex2D[dim] = towerDimIndexNonLargerValue;
+      /// @todo this is a sanity check to prevent doubling of particles, but could be done better! e.g. by border and
+      // flag manager
+      if (pos[dim] >= _boxMax[dim]) {
+        towerIndex2D[dim] = _towersPerDim[dim] - 1;
+      } else if (pos[dim] < _boxMin[dim]) {
+        towerIndex2D[dim] = 0;
+      }
+    }
+
+    return towerIndex2D;
   }
 
   /**
@@ -894,7 +919,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * This function sets the container structure to valid.
    */
   void rebuildTowersAndClusters() {
-    // collect all particles to add from accross the thread buffers
+    // collect all particles to add from across the thread buffers
     typename decltype(_particlesToAdd)::value_type particlesToAdd;
     size_t numParticlesToAdd = std::accumulate(_particlesToAdd.begin(), _particlesToAdd.end(), 0,
                                                [](size_t acc, const auto &buffer) { return acc + buffer.size(); });
@@ -1077,16 +1102,20 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @return tuple<cellIndex, particleIndex>
    */
   template <bool regionIter>
-  std::tuple<size_t, size_t> advanceIteratorIndices(size_t cellIndex, size_t particleIndex,
-                                                    IteratorBehavior iteratorBehavior,
-                                                    const std::array<double, 3> &boxMin,
-                                                    const std::array<double, 3> &boxMax, size_t endCellIndex) const {
+  [[nodiscard]] std::tuple<size_t, size_t> advanceIteratorIndices(size_t cellIndex, size_t particleIndex,
+                                                                  IteratorBehavior iteratorBehavior,
+                                                                  const std::array<double, 3> &boxMin,
+                                                                  const std::array<double, 3> &boxMax,
+                                                                  size_t endCellIndex) const {
     // Finding the indices for the next particle
     const size_t stride = (iteratorBehavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads();
 
     // helper function to determine if the cell can even contain particles of interest to the iterator
     auto towerIsRelevant = [&]() -> bool {
-      // TODO: can we decide whether some towers can't contain owned/halo particles and short-circuit here?
+      // special case: Towers are not yet built, then the tower acting as buffer is always relevant.
+      if (_towers.size() == 1) {
+        return true;
+      }
       bool isRelevant = true;
       if constexpr (regionIter) {
         // is the cell in the region?
@@ -1103,8 +1132,6 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
       // If cell has wrong type, or there are no more particles in this cell jump to the next
       while (not towerIsRelevant() or particleIndex >= this->_towers[cellIndex].numParticles()) {
-        // TODO: can this jump be done more efficient if behavior is only halo or owned?
-        // TODO: can this jump be done more efficient for region iters if the cell is outside the region?
         cellIndex += stride;
         particleIndex = 0;
 
