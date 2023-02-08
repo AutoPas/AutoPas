@@ -31,7 +31,7 @@ namespace autopas {
 template <typename floatType, typename idType>
 class ParticleBase {
  public:
-  ParticleBase() : _r({0.0, 0.0, 0.0}), _v({0., 0., 0.}), _f({0.0, 0.0, 0.0}), _id(0) {std::cout << "in ParticleBase()" << std::endl;}
+  ParticleBase() : _r({0.0, 0.0, 0.0}), _v({0., 0., 0.}), _f({0.0, 0.0, 0.0}), _id(0) {}
 
   /**
    * Constructor of the Particle class.
@@ -40,7 +40,7 @@ class ParticleBase {
    * @param id Id of the particle.
    */
   ParticleBase(std::array<double, 3> r, std::array<double, 3> v, idType id)
-      : _r(r), _v(v), _f({0.0, 0.0, 0.0}), _id(id) {std::cout << "in ParticleBase(r,v,id)" << std::endl;}
+      : _r(r), _v(v), _f({0.0, 0.0, 0.0}), _id(id) {}
 
   /**
    * Destructor of ParticleBase class

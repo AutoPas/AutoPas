@@ -1,20 +1,20 @@
 function startSimulation(autoPasContainer, particlePropertiesLibrary, inputParameters)
     iter = AutoPasM.begin(autoPasContainer, Options.IteratorBehavior(Options.owned))
-    while Iterators.isValid(iter)
-        println(Particles.toString(Iterators.:*(iter)))
-        Iterators.:++(iter)
+    while AIterators.isValid(iter)
+        println(Particles.toString(AIterators.:*(iter)))
+        AIterators.:++(iter)
     end
 
     for iteration = 1 : inputParameters.iterations
-        # println("in loop")
+        println(iteration)
         updatePositions(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
-        # println("after updatePosition")
         
         # handle boundary particles
         # handleBoundaries(autoPasContainer, inputParameters.boxMin, inputParameters.boxMax)
         # for outflow maybe only use updateContainer which has same effekt
         updateContainer(autoPasContainer)
-        # updateForces()
+        
+        ff.updateForces(autoPasContainer, inputParameters.globalForce, particlePropertiesLibrary)
 
         updateVelocities(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary)
         # println("after updateVelocities")
@@ -22,9 +22,9 @@ function startSimulation(autoPasContainer, particlePropertiesLibrary, inputParam
     println()
     println("print remaining particles")
     iter = AutoPasM.begin(autoPasContainer, Options.IteratorBehavior(Options.owned))
-    while Iterators.isValid(iter)
-        println(Particles.toString(Iterators.:*(iter)))
-        Iterators.:++(iter)
+    while AIterators.isValid(iter)
+        println(Particles.toString(AIterators.:*(iter)))
+        AIterators.:++(iter)
     end
     println("done")
 end

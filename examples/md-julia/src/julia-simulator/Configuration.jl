@@ -1,4 +1,4 @@
-using ..Properties, ..AutoPasM, ..Iterators
+using ..Properties, ..AutoPasM, ..AIterators
 
 function parseInput(inputParameters)
 
@@ -15,11 +15,6 @@ function parseInput(inputParameters)
         AutoPasM.addParticle(autoPasContainer, particle)
     end
 
-    iter = AutoPasM.begin(autoPasContainer, Options.IteratorBehavior(Options.owned))
-    while Iterators.isValid(iter)
-        println(Particles.toString(Iterators.:*(iter)))
-        Iterators.:++(iter)
-    end
     return autoPasContainer, particlePropertiesLibrary
 end
 
@@ -59,7 +54,7 @@ function initAutoPasContainer(inputParameters)
     # AutoPasM.setMaxEvidence(_configuration.tuningMaxEvidence.value)
     AutoPasM.setSelectorStrategy(apc, inputParameters.selectorStrategy)
     AutoPasM.setTuningInterval(apc, inputParameters.tuningInterval)
-    AutoPasM.setTuningStrategyOption(apc, inputParameters.tuningStrategy)
+    # AutoPasM.setTuningStrategyOption(apc, inputParameters.tuningStrategy)
     AutoPasM.setMPIStrategy(apc, inputParameters.mpiStrategy)
     # AutoPasM.setMPITuningMaxDifferenceForBucket(_configuration.MPITuningMaxDifferenceForBucket.value);
     # AutoPasM.setMPITuningWeightForMaxDensity(_configuration.MPITuningWeightForMaxDensity.value);

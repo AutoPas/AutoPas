@@ -29,8 +29,8 @@ class MoleculeJ : public autopas::Particle {
         // : Particle(pos, v, moleculeId),
         std::array<floatType, 3> pos_{pos[0], pos[1], pos[2]};
         std::array<floatType, 3> v_{v[0], v[1], v[2]};
-        setPos(pos);
-        setV(v);
+        setPosition(pos);
+        setVelocity(v);
         setID(moleculeId);
         // autopas::Particle(pos_, v_, moleculeId);
     }
@@ -173,21 +173,21 @@ class MoleculeJ : public autopas::Particle {
     /**
      * set position of the molecule
      */
-    void setPos(jlcxx::ArrayRef<floatType,1> pos) {
+    void setPosition(jlcxx::ArrayRef<floatType,1> pos) {
         ParticleBase::setR({pos[0], pos[1], pos[2]});
     }
 
     /**
      * set velocity of the molecule
      */
-    void setV(jlcxx::ArrayRef<floatType,1> v) {
+    void setVelocity(jlcxx::ArrayRef<floatType,1> v) {
         ParticleBase::setV({v[0], v[1], v[2]});
     }
 
     /**
      * set force of the molecule
      */
-    void setF(jlcxx::ArrayRef<floatType,1> f) {
+    void setForce(jlcxx::ArrayRef<floatType,1> f) {
         ParticleBase::setF({f[0], f[1], f[2]});
     }
 
@@ -201,21 +201,21 @@ class MoleculeJ : public autopas::Particle {
     /**
      * get position of the molecule
      */
-    jlcxx::ArrayRef<double,1> getPos() {
+    jlcxx::ArrayRef<double,1> getPosition() {
         return {_r.data(), _r.size()};
     }
 
     /**
      * get velocity of the molecule
      */
-    jlcxx::ArrayRef<double,1> getV() {
+    jlcxx::ArrayRef<double,1> getVelocity() {
         return {_v.data(), _v.size()};
     }
 
     /**
      * get force of the molecule
      */
-    jlcxx::ArrayRef<double,1> getF() {
+    jlcxx::ArrayRef<double,1> getForce() {
         return {_f.data(), _f.size()};
     }
 
@@ -231,28 +231,28 @@ class MoleculeJ : public autopas::Particle {
     /**
      * add position to current position of the molecule
      */
-    void addPos(jlcxx::ArrayRef<floatType,1> pos) {
+    void addPosition(jlcxx::ArrayRef<floatType,1> pos) {
         ParticleBase::addR({pos[0], pos[1], pos[2]});
     }
 
     /**
      * add velocity to current velocity of the molecule
      */
-    void addV(jlcxx::ArrayRef<floatType,1> v) {
+    void addVelocity(jlcxx::ArrayRef<floatType,1> v) {
         ParticleBase::addV({v[0], v[1], v[2]});
     }
 
     /**
      * add force to current force of the molecule
      */
-    void addF(jlcxx::ArrayRef<floatType,1> f) {
+    void addForce(jlcxx::ArrayRef<floatType,1> f) {
         ParticleBase::addF({f[0], f[1], f[2]});
     }
 
     /**
      * substract force from current force of the molecule
      */
-    void subF(jlcxx::ArrayRef<floatType,1> f) {
+    void subForce(jlcxx::ArrayRef<floatType,1> f) {
         ParticleBase::subF({f[0], f[1], f[2]});
     }
 

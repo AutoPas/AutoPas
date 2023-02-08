@@ -30,24 +30,24 @@ struct WrapMoleculeJ {
         wrapped.template constructor<jlcxx::ArrayRef<ft, 1>, jlcxx::ArrayRef<ft,1>, unsigned long, unsigned long>();
 
         // setters of MoleculeJ attributes
-        wrapped.method("setPos", &WrappedT::setPos);
-        wrapped.method("setV", &WrappedT::setV);
-        wrapped.method("setF", &WrappedT::setF);
+        wrapped.method("setPosition", &WrappedT::setPosition);
+        wrapped.method("setVelocity", &WrappedT::setVelocity);
+        wrapped.method("setForce", &WrappedT::setForce);
         wrapped.method("setOldF", &WrappedT::setOldF);
         wrapped.method("setID", &WrappedT::setID);
 
         // getters of MoleculeJ attributes
-        wrapped.method("getPos", &WrappedT::getPos);
-        wrapped.method("getV", &WrappedT::getV);
-        wrapped.method("getF", &WrappedT::getF);
+        wrapped.method("getPosition", &WrappedT::getPosition);
+        wrapped.method("getVelocity", &WrappedT::getVelocity);
+        wrapped.method("getForce", &WrappedT::getForce);
         wrapped.method("getOldF", &WrappedT::getOldF);
         wrapped.method("getID", &WrappedT::getID);
 
         // add and sub methods of MoleculeJ attributes
-        wrapped.method("addPos", &WrappedT::addPos);
-        wrapped.method("addV", &WrappedT::addV);
-        wrapped.method("addF", &WrappedT::addF);
-        wrapped.method("subF", &WrappedT::subF);
+        wrapped.method("addPosition", &WrappedT::addPosition);
+        wrapped.method("addVelocity", &WrappedT::addVelocity);
+        wrapped.method("addForce", &WrappedT::addForce);
+        wrapped.method("subForce", &WrappedT::subForce);
 
         // get string representation of MoleculeJ object
         wrapped.method("toString", &WrappedT::toString);

@@ -4,6 +4,7 @@
 #include <jlcxx/functions.hpp>
 #include "autopas/molecularDynamics/MoleculeLJ.h"
 #include "autopas/molecularDynamics/LJFunctorAVX.h"
+#include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "TypeDef.h"
 #include "autopas/AutoPas.h"
 #include "Options.h"
@@ -131,11 +132,11 @@ bool iteratePairwise(autopas::AutoPas<MoleculeJ<double>>& autoPasContainer, Func
 */
 /**
  * wrapper method for iteratePairwise with constant functor LJFunctorAVX
- 
-bool iteratePairwise(autopas::AutoPas<MoleculeJ<double>>& autoPasContainer, autopas::LJFunctorAVX<MoleculeJ<double>>* functor) {
-    return autoPasContainer.iteratePairwise(functor);
+ */
+bool iteratePairwise(autopas::AutoPas<MoleculeJ<double>>& autoPasContainer, ParticlePropertiesLibrary<> particlePropertiesLibrary) {
+    autopas::LJFunctorAVX<MoleculeJ<double>, true, true> functor{autoPasContainer.getCutoff(), particlePropertiesLibrary};
+    return autoPasContainer.iteratePairwise(&functor);
 }
-*/
 
 /**
  * create functor LJFunctorAVX and return it
@@ -238,7 +239,7 @@ JLCXX_MODULE define_module_autopas(jlcxx::Module& mod)
     /**
      * add wrapper method for iteratePairwise of AutoPas
      */
-    // mod.method("iteratePairwise", &iteratePairwise);
+    mod.method("iteratePairwise", &iteratePairwise);
 
     /**
      * add wrapper method for getLJFunctorAVX to Julia

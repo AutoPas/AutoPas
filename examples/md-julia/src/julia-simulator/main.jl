@@ -2,7 +2,7 @@
 # using .Simulator, .Simulator.Properties, .Simulator.Options, .Simulator.Particles, .Simulator.AutoPasM, .Simulator.Iterators
 
 include("SimulatorModules.jl")
-using .ff, .AutoPasM, .Properties, .Iterators, .Options, .Particles 
+using .ff, .AutoPasM, .Properties, .AIterators, .Options, .Particles
 
 # create/get InputParameters
 
@@ -51,6 +51,7 @@ inputParameters.noProgressBar = true# what does this mean
 inputParameters.vtkFilename = "strategy"
 inputParameters.vtkWriteFrequency = "strategy"
 
+println("starting simulator")
 # parse input, create AutoPasContainer and ParticlePropertiesLibrary
 autoPasContainer, particlePropertiesLibrary = parseInput(inputParameters)
 

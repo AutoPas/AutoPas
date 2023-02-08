@@ -7,21 +7,21 @@ function updatePositions(autoPasContainer, deltaT, particlePropertiesLibrary, gl
 
     iter = AutoPasM.begin(autoPasContainer, Options.IteratorBehavior(Options.owned))
 
-    while Iterators.isValid(iter)
-        particle = Iterators.:*(iter)
-        velocity = Particles.getV(particle)
-        force = Particles.getF(particle)
+    while AIterators.isValid(iter)
+        particle = AIterators.:*(iter)
+        velocity = Particles.getVelocity(particle)
+        force = Particles.getForce(particle)
         Particles.setOldF(particle, force)
-        Particles.setF(particle, globalForce)
+        Particles.setForce(particle, globalForce)
         v = velocity * deltaT
         f = force * (deltaT * deltaT / (2*Properties.getMass(particlePropertiesLibrary, 0)))
         # f = force * (deltaT * deltaT / (2*Properties.getMass(particlePropertiesLibrary, Particles.getTypeId(particle))))
         # TODO: change back
-        if Particles.getID(particle) > 3
-            Particles.addPos(particle, [100.0, 100.0, 100.0])
-        end
-        # Particles.addPos(particle, v + f)
-        Iterators.:++(iter)
+        # if Particles.getID(particle) > 3
+        #     Particles.addPos(particle, [100.0, 100.0, 100.0])
+        # end
+        Particles.addPosition(particle, v + f)
+        AIterators.:++(iter)
     end
 
 end
@@ -30,14 +30,14 @@ function updateVelocities(autoPasContainer, deltaT, particlePropertiesLibrary)
 
     iter = AutoPasM.begin(autoPasContainer, Options.IteratorBehavior(Options.owned))
 
-    while Iterators.isValid(iter)
-        particle = Iterators.:*(iter)
-        force = Particles.getF(particle)
+    while AIterators.isValid(iter)
+        particle = AIterators.:*(iter)
+        force = Particles.getForce(particle)
         oldForce = Particles.getOldF(particle)
         newV = (oldForce + force) * (deltaT / 2 * Properties.getMass(particlePropertiesLibrary, 0))
         # newV = (oldForce + force) * (deltaT / 2 * Properties.getMass(particlePropertiesLibrary, Particles.getTypeId(particle)))
-        Particles.addV(particle, newV)
-        Iterators.:++(iter)
+        Particles.addVeloctiy(particle, newV)
+        AIterators.:++(iter)
     end
 
 end
@@ -46,9 +46,9 @@ function handleBoundaries(autoPasContainer, minBorder, maxBorder)
 
     iter = AutoPasM.begin(autoPasContainer, Options.IteratorBehavior(Options.owned))
     
-    while Iterators.isValid(iter)
-        particle = Iterators.:*(iter)
-        pos = Particles.getPos(particle)
+    while AIterators.isValid(iter)
+        particle = AIterators.:*(iter)
+        pos = Particles.getPosition(particle)
         for dIndex = 1:3
             # if pos[dIndex] < minBorder[dIndex] || pos[dIndex] > maxBorder
             if pos[dIndex] > 2
@@ -58,7 +58,7 @@ function handleBoundaries(autoPasContainer, minBorder, maxBorder)
                 break
             end
         end
-        Iterators.:++(iter)
+        AIterators.:++(iter)
     end
 
 end
@@ -67,8 +67,8 @@ function executeUpdates()
 
     particle = Particles.MoleculeJ{Float64}()
 
-    Particles.setPos(particle, [1.0, 2.0, 3.0])
-    Particles.setV(particle, [1.0, 1.0, 1.0])
+    Particles.setPosition(particle, [1.0, 2.0, 3.0])
+    Particles.setVelocity(particle, [1.0, 1.0, 1.0])
 
     aP = AutoPasM.AutoPas{Particles.MoleculeJ{Float64}}()
     AutoPasM.setBoxMin(aP, [0.0, 0.0, 0.0])
@@ -80,10 +80,10 @@ function executeUpdates()
     iTer = AutoPasM.begin(aP, iO)
     println("##############")
     println("init configuration")
-    while Iterators.isValid(iTer)
-        particle = Iterators.:*(iTer)
+    while AIterators.isValid(iTer)
+        particle = AIterators.:*(iTer)
         println(Particles.toString(particle))
-        Iterators.:++(iTer)
+        AIterators.:++(iTer)
     end
     println("##############")
     println("init configuration")
@@ -100,10 +100,10 @@ function executeUpdates()
     iTer = AutoPasM.begin(aP, iO)
     println("##############")
     println("end configuration")
-    while Iterators.isValid(iTer)
-        particle = Iterators.:*(iTer)
+    while AIterators.isValid(iTer)
+        particle = AIterators.:*(iTer)
         println(Particles.toString(particle))
-        Iterators.:++(iTer)
+        AIterators.:++(iTer)
     end
 end
 

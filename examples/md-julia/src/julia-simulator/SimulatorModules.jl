@@ -19,7 +19,7 @@ module Options
   end
 end
 
-module Iterators
+module AIterators
   using CxxWrap
   @wrapmodule(joinpath("../../../../build/examples/md-julia/","libjulia_bindings.so"), :define_module_iterators)
 
