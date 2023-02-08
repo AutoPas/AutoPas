@@ -1,4 +1,3 @@
-module Simulator
 
 module Particles
   using CxxWrap
@@ -45,7 +44,11 @@ module AutoPasM
   function __init__()
     @initcxx
   end
+  export updateContainer
 end
+
+
+module ff
 
 include("Configuration.jl")
 export
@@ -63,6 +66,7 @@ export
 include("InputConfiguration.jl")
 export
   CubeGridInput
+  Thermostat
   InputParameters
 
 include("Simulator.jl")

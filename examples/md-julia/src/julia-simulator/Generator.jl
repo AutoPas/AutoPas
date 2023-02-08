@@ -1,4 +1,5 @@
 using Random, Distributions
+using ..Particles
 
 function generateCubeGrid(cubeGrid, mId)
     particles = Vector{Particles.MoleculeJ{Float64}}([])

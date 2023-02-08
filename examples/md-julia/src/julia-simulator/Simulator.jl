@@ -13,7 +13,7 @@ function startSimulation(autoPasContainer, particlePropertiesLibrary, inputParam
         # handle boundary particles
         # handleBoundaries(autoPasContainer, inputParameters.boxMin, inputParameters.boxMax)
         # for outflow maybe only use updateContainer which has same effekt
-        AutoPasM.updateContainer(autoPasContainer)
+        updateContainer(autoPasContainer)
         # updateForces()
 
         updateVelocities(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary)

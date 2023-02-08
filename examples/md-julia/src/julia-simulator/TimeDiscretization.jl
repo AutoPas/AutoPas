@@ -16,6 +16,7 @@ function updatePositions(autoPasContainer, deltaT, particlePropertiesLibrary, gl
         v = velocity * deltaT
         f = force * (deltaT * deltaT / (2*Properties.getMass(particlePropertiesLibrary, 0)))
         # f = force * (deltaT * deltaT / (2*Properties.getMass(particlePropertiesLibrary, Particles.getTypeId(particle))))
+        # TODO: change back
         if Particles.getID(particle) > 3
             Particles.addPos(particle, [100.0, 100.0, 100.0])
         end

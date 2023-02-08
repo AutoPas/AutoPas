@@ -1,19 +1,16 @@
+using ..Properties, ..AutoPasM, ..Iterators
+
 function parseInput(inputParameters)
 
     # create ParticlePropertiesLibrary and generate particles
     particlePropertiesLibrary = Properties.ParticlePropertiesLibrary{Float64, UInt}(inputParameters.cutoff)
     particles = initPplAndParticles(particlePropertiesLibrary, inputParameters.objects)
-    
-    for particle in particles
-        # println(string(Particles.toString(particle)))
-    end
 
     # create AutoPas container and initialize all values
     autoPasContainer = initAutoPasContainer(inputParameters)
     Properties.calculateMixingCoefficients(particlePropertiesLibrary)
 
     # add particles to AutoPas container
-    println("hi")
     for particle in particles
         AutoPasM.addParticle(autoPasContainer, particle)
     end

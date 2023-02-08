@@ -1,5 +1,8 @@
+# include("SimulatorModules.jl")
+# using .Simulator, .Simulator.Properties, .Simulator.Options, .Simulator.Particles, .Simulator.AutoPasM, .Simulator.Iterators
+
 include("SimulatorModules.jl")
-using .Simulator, .Simulator.Properties, .Simulator.Options, .Simulator.Particles, .Simulator.AutoPasM, .Simulator.Iterators
+using .ff, .AutoPasM, .Properties, .Iterators, .Options, .Particles 
 
 # create/get InputParameters
 
@@ -15,7 +18,7 @@ grid.particleSigma = 1.2
 grid.particleMass = 1.0
 grid.factorBrownianMotion = 0.1
 
-inputParameters = Simulator.InputParameters()
+inputParameters = ff.InputParameters()
 
 inputParameters.container = [Options.directSum] # vector of contianer options -> parsing needed 1
 inputParameters.verletRebuildFrequency = 3
@@ -40,7 +43,7 @@ inputParameters.iterations = 100
 inputParameters.globalForce = [0.0, 0.0, 1.3]
 inputParameters.periodicBoundaries = true
 inputParameters.objects = [grid]
-inputParameters.thermostat = Simulator.Thermostat()
+inputParameters.thermostat = ff.Thermostat()
 inputParameters.logLevel = "strategy" # log level maybe string # 9
 inputParameters.noFlops = true
 inputParameters.noEndConfig = true # what does this mean?
@@ -49,7 +52,7 @@ inputParameters.vtkFilename = "strategy"
 inputParameters.vtkWriteFrequency = "strategy"
 
 # parse input, create AutoPasContainer and ParticlePropertiesLibrary
-autoPasContainer, particlePropertiesLibrary = Simulator.parseInput(inputParameters)
+autoPasContainer, particlePropertiesLibrary = parseInput(inputParameters)
 
 # start simulation: calculate new positions, forces and velocities
 startSimulation(autoPasContainer, particlePropertiesLibrary, inputParameters)

@@ -1,3 +1,4 @@
+using ..Options
 """
 abstract type for all shapes of particle clusters
 """
