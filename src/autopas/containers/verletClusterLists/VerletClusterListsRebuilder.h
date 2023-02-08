@@ -103,7 +103,7 @@ class VerletClusterListsRebuilder {
 
     // create towers and make an estimate for how many particles memory needs to be allocated
     // 2.7 seems high but gave the best performance when testing
-    const size_t sizeEstimation = (static_cast<double>(numParticles) / numTowers) * 2.7;
+    const auto sizeEstimation = static_cast<size_t>((static_cast<double>(numParticles) / numTowers) * 2.7);
     for (int i = 0; i < numTowers; ++i) {
       _towers.emplace_back(ClusterTower<Particle>(_clusterSize));
       _towers[i].reserve(sizeEstimation);
@@ -145,7 +145,7 @@ class VerletClusterListsRebuilder {
    * @param clusterSize the number of particles per cluster.
    * @return an estimated optimal grid side length.
    */
-  [[nodiscard]] static double estimateOptimalGridSideLength(size_t numParticles, std::array<double, 3> boxSize,
+  [[nodiscard]] static double estimateOptimalGridSideLength(size_t numParticles, const std::array<double, 3> &boxSize,
                                                             size_t clusterSize) {
     double volume = boxSize[0] * boxSize[1] * boxSize[2];
     if (numParticles > 0) {
@@ -164,7 +164,7 @@ class VerletClusterListsRebuilder {
    * @param towerSideLengthReciprocal 1.0 / towerSidelength.
    * @return the cells per dimension in the container.
    */
-  [[nodiscard]] static std::array<size_t, 2> calculateTowersPerDim(std::array<double, 3> boxSize,
+  [[nodiscard]] static std::array<size_t, 2> calculateTowersPerDim(const std::array<double, 3> &boxSize,
                                                                    double towerSideLengthReciprocal) {
     std::array<size_t, 2> towersPerDim{};
     for (int d = 0; d < 2; d++) {
@@ -223,7 +223,7 @@ class VerletClusterListsRebuilder {
           auto &tower = getTower(particle.getR());
           tower.addParticle(particle);
         } else {
-          AutoPasLog(trace, "Not adding particle to VerletClusterLists container, because it is far outside:\n{}",
+          AutoPasLog(trace, "Not adding particle to VerletClusterLists container, because it is outside the halo:\n{}",
                      particle.toString());
         }
       }
@@ -423,7 +423,7 @@ class VerletClusterListsRebuilder {
    * @param location The 3D coordinates.
    * @return Tower reference.
    */
-  auto &getTower(std::array<double, 3> location) {
+  auto &getTower(const std::array<double, 3> &location) {
     auto [towerIndexX, towerIndexY] = getTowerCoordinates(location);
     return getTower(towerIndexX, towerIndexY);
   }
@@ -435,7 +435,7 @@ class VerletClusterListsRebuilder {
    * @param location The 3D coordinates.
    * @return Tower reference.
    */
-  std::array<size_t, 2> getTowerCoordinates(std::array<double, 3> location) {
+  [[nodiscard]] std::array<size_t, 2> getTowerCoordinates(const std::array<double, 3> &location) const {
     std::array<size_t, 2> towerIndex2D{};
 
     for (int dim = 0; dim < 2; dim++) {
@@ -446,9 +446,9 @@ class VerletClusterListsRebuilder {
       towerIndex2D[dim] = towerDimIndexNonLargerValue;
       /// @todo this is a sanity check to prevent doubling of particles, but could be done better! e.g. by border and
       // flag manager
-      if (location[dim] >= _haloBoxMax[dim]) {
+      if (location[dim] >= _boxMax[dim]) {
         towerIndex2D[dim] = _towersPerDim[dim] - 1;
-      } else if (location[dim] < _haloBoxMin[dim]) {
+      } else if (location[dim] < _boxMin[dim]) {
         towerIndex2D[dim] = 0;
       }
     }
@@ -463,7 +463,7 @@ class VerletClusterListsRebuilder {
    * @param y The y-index of the tower.
    * @return 1D index for _towers vector.
    */
-  size_t towerIndex2DTo1D(const size_t x, const size_t y) {
+  [[nodiscard]] size_t towerIndex2DTo1D(const size_t x, const size_t y) const {
     // It is necessary to use the static method in VerletClusterLists here instead of the member method, because
     // _towersPerDim does not have the new value yet in the container.
     return VerletClusterLists<Particle>::towerIndex2DTo1D(x, y, _towersPerDim);
