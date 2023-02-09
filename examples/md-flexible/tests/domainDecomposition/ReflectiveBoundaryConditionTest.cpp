@@ -18,6 +18,8 @@ extern template class autopas::AutoPas<ParticleType>;
 /**
  * Very simple test of reflective boundaries in all 3 dimension. Places identical particles on every face and tests that
  * the particle receives the correct force.
+ *
+ * Note, this test is not designed to deal with multiple particle types - see reflectiveZoningTest for this.
  */
 TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   // initialise AutoPas container & domainDecomposition
@@ -182,10 +184,16 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
     const auto &reflectedPosition = reflectedParticle->getR();
     const auto &reflectedVelocity = reflectedParticle->getV();
     const auto &reflectedForce = reflectedParticle->getF();
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+    const auto &reflectedTorque = reflectedParticle->getTorque();
+#endif
     for (size_t i = 0; i < 3; ++i) {
       EXPECT_NEAR(reflectedPosition[i], expectedPosition[i], 1e-13) << "Unexpected position[" << i << "]";
       EXPECT_NEAR(reflectedVelocity[i], expectedVelocity[i], 1e-13) << "Unexpected velocity[" << i << "]";
       EXPECT_NEAR(reflectedForce[i], expectedForce[i], 1e-13) << "Unexpected force[" << i << "]";
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+      EXPECT_NEAR(reflectedTorque[i], expectedTorque[i], 1e-13) << "Unexpected torque[" << i << "]";
+#endif
     }
 #if not defined(AUTOPAS_INCLUDE_MPI)
   } else {
