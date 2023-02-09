@@ -511,7 +511,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
           while (not cellIsRelevant(childToCheck)) {
             ++firstRelevantChild;
             childToCheck = currentCellInterfacePtr->getChild(firstRelevantChild);
-            if (firstRelevantChild >= 7) {
+            if (firstRelevantChild > 7) {
               // weird corner case: we descended into this branch because it overlaps with the region and has particles
               // BUT the particles are not inside the children which are in the region,
               // hence no child fulfills both requirements and all are irrelevant.
