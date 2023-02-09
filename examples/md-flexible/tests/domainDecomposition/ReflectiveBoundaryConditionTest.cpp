@@ -72,11 +72,16 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   const std::array<double, 4> particleQuaternion = std::get<2>(GetParam());
 #endif
 
-  // derive expected position
-  auto forceFromReflection = [&](const int dimensionOfBoundary, const bool isUpper) {
+  const auto expectedPosition = particlePosition;
+  const auto expectedVelocity = particleVelocity;
+  std::array<double, 3> expectedForce{0., 0., 0.};
 #ifdef MD_FLEXIBLE_USE_MULTI_SITE
-    std::array<double, 3> force{0., 0., 0.};
+  std::array<double, 3> expectedTorque{0., 0., 0.};
+#endif
 
+  // derive expected position
+  auto addForceFromReflection = [&](const int dimensionOfBoundary, const bool isUpper) {
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
     // get properties of mirror particle
     const auto getMirroredPosition = [&] () {
       const auto distanceCenterOfMassToBoundary = isUpper ? boxMax[dimensionOfBoundary] - particlePosition[dimensionOfBoundary]
@@ -112,12 +117,14 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
         const auto lj12m6 = lj12 - lj6;
         const auto ljForceFactor = 24 * (lj12 + lj12m6) * inverseDistanceSquared;
         const auto forceContribution = autopas::utils::ArrayMath::mulScalar(displacementToMirrorParticle, ljForceFactor);
-        force = autopas::utils::ArrayMath::add(force, forceContribution);
+        const auto torqueContribution = autopas::utils::ArrayMath::cross(rotatedUntranslatedSitePositions[siteOriginal], forceContribution);
+        expectedForce = autopas::utils::ArrayMath::add(expectedForce, forceContribution);
+        expectedTorque = autopas::utils::ArrayMath::add(expectedTorque, torqueContribution);
       }
     }
 #else
-    const auto distanceToBoundary = isUpper ? boxMax[dimensionOfBoundary] - position[dimensionOfBoundary]
-                                            : position[dimensionOfBoundary] - boxMin[dimensionOfBoundary];
+    const auto distanceToBoundary = isUpper ? boxMax[dimensionOfBoundary] - particlePosition[dimensionOfBoundary]
+                                            : particlePosition[dimensionOfBoundary] - boxMin[dimensionOfBoundary];
     const auto distanceToMirrorParticle = distanceToBoundary * 2.;
     const auto distanceSquared = distanceToMirrorParticle * distanceToMirrorParticle;
 
@@ -128,19 +135,16 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
     const auto lj12m6 = lj12 - lj6;
     const auto ljForceFactor = 24 * (lj12 + lj12m6) * inverseDistanceSquared;
     const auto force = ljForceFactor * distanceToMirrorParticle * (isUpper ? -1. : 1.);
-#endif
 
-    return force;
+    expectedForce[dimensionOfBoundary] += force;
+#endif
   };
 
-  const auto expectedPosition = particlePosition;
-  const auto expectedVelocity = particleVelocity;
-  std::array<double, 3> expectedForce = {0., 0., 0.};
   for (int dimension = 0; dimension < 3; ++dimension) {
     if (particlePosition[dimension] < boxMin[dimension] + sixthRootOfTwo * sigma) {
-      expectedForce = autopas::utils::ArrayMath::add(expectedForce, forceFromReflection(dimension, false));
+      addForceFromReflection(dimension, false);
     } else if (particlePosition[dimension] > boxMax[dimension] - sixthRootOfTwo * sigma) {
-      expectedForce = autopas::utils::ArrayMath::add(expectedForce, forceFromReflection(dimension, true));
+      addForceFromReflection(dimension, true);
     }
   }
 
