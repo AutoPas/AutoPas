@@ -285,6 +285,11 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> particlePosition, 
   config.epsilonMap.value.clear();
   config.sigmaMap.value.clear();
   config.massMap.value.clear();
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+  config.molToSiteIdMap.clear();
+  config.molToSitePosMap.clear();
+  config.momentOfInertiaMap.clear();
+#endif
 
   const std::array<double, 3> boxMin = {0., 0., 0.};
   const std::array<double, 3> boxMax = {5., 5., 5.};
@@ -317,6 +322,10 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> particlePosition, 
 
   particlePropertiesLibrary->addSiteType(0, 1., sigmas[0], 1.);
   particlePropertiesLibrary->addSiteType(1, 1., sigmas[1], 1.);
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+  particlePropertiesLibrary->addMolType(0, {0}, {{0., 0., 0.}}, {1., 1., 1.});
+  particlePropertiesLibrary->addMolType(1, {1}, {{0., 0., 0.}}, {1., 1., 1.});
+#endif
   particlePropertiesLibrary->calculateMixingCoefficients();
 
   std::array<bool, 3> expectReflection = {false, false, false};
@@ -335,6 +344,10 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> particlePosition, 
     particle.setID(0);
     particle.setR(particlePosition);
     particle.setF({0., 0., 0.});
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+    particle.setQ({0., 0., 0., 1.});
+    particle.setTorque({0., 0., 0.});
+#endif
     particle.setTypeId(particleTypeID);
     autoPasContainer->addParticle(particle);
 #if not defined(AUTOPAS_INCLUDE_MPI)
@@ -349,6 +362,7 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> particlePosition, 
     auto returnedParticle = autoPasContainer->begin();
 
     const auto reflectedForce = returnedParticle->getF();
+    // torque is irrelevant for single-site molecules.
 
     for (int dim = 0; dim < 3; dim++) {
       if (expectReflection[dim]) {
@@ -367,8 +381,8 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> particlePosition, 
 }
 
 /**
- * Tests that reflective boundaries are applied only to particles near enough to the boundary that a repulsive force is
- * applied.
+ * Tests that reflective boundaries are applied only to single-site particles near enough to the boundary that a repulsive
+ * force is applied. For multi-site compilations, molecules consist solely of single sites.
  *
  * Four particles are created, with two different sigmas, as follows
  * * One, with a small sigma, is placed close to the boundary and is expected to be reflected.
@@ -378,7 +392,7 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> particlePosition, 
  *
  * This is repeated for all boundaries.
  */
-TEST_F(ReflectiveBoundaryConditionTest, reflectiveZoningTest) {
+TEST_F(ReflectiveBoundaryConditionTest, reflectiveSingleSiteZoningTest) {
   testReflectiveBoundaryZoning({0.05, 2.5, 2.5}, 0);
   testReflectiveBoundaryZoning({2.5, 0.05, 2.5}, 0);
   testReflectiveBoundaryZoning({2.5, 2.5, 0.05}, 0);
@@ -406,4 +420,61 @@ TEST_F(ReflectiveBoundaryConditionTest, reflectiveZoningTest) {
   testReflectiveBoundaryZoning({4.85, 2.5, 2.5}, 1);
   testReflectiveBoundaryZoning({2.5, 4.85, 2.5}, 1);
   testReflectiveBoundaryZoning({2.5, 2.5, 4.85}, 1);
+}
+
+/**
+ * Places 4 molecules near a boundary:
+ * * One where all sites are near enough that to experience repulsion. Expects repulsion.
+ * * One where a site will be attracted to the boundary, but that the molecule overall experiences repulsion. Expects repulsion.
+ * * One where a site will be repulsed from the boundary, but that the molecule overall experiences attraction. Expects no change in force on molecule.
+ * * One with all sites far enough that the would all experience attraction. Expects no change in force on molecule.
+ */
+TEST_F(ReflectiveBoundaryConditionTest, reflectiveMultiSiteZoningTest) {
+#ifndef MD_FLEXIBLE_USE_MULTI_SITE
+  GTEST_SKIP() << "reflectiveMultiSiteZoningTest: Skipping as multi-site not compiled";
+#else
+  MDFlexConfig config(0, nullptr);
+  config.epsilonMap.value.clear();
+  config.sigmaMap.value.clear();
+  config.massMap.value.clear();
+  config.molToSiteIdMap.clear();
+  config.molToSitePosMap.clear();
+  config.momentOfInertiaMap.clear();
+
+  const std::array<double, 3> boxMin = {0., 0., 0.};
+  const std::array<double, 3> boxMax = {5., 5., 5.};
+  const double cutoff = 0.3;
+
+  config.boxMin.value = boxMin;
+  config.boxMax.value = boxMax;
+  const std::array<double, 3> boxLength = autopas::utils::ArrayMath::sub(boxMax, boxMin);
+  config.subdivideDimension.value = {true, true, true};
+  config.cutoff.value = cutoff;
+  config.verletSkinRadiusPerTimestep.value = 0.01;
+  config.verletRebuildFrequency.value = 10;
+  config.addSiteType(0, 0.1, 0.1, 1.);
+  config.addSiteType(1, 1., 0.2, 1.);
+  config.boundaryOption.value = {options::BoundaryTypeOption::reflective, options::BoundaryTypeOption::reflective,
+                                 options::BoundaryTypeOption::reflective};
+
+  RegularGridDecomposition domainDecomposition(config);
+
+  auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
+  auto particlePropertiesLibrary = std::make_shared<ParticlePropertiesLibraryType>(cutoff);
+
+  autoPasContainer->setBoxMin(boxMin);
+  autoPasContainer->setBoxMax(boxMax);
+  autoPasContainer->setCutoff(cutoff);
+  autoPasContainer->setVerletSkinPerTimestep(config.verletSkinRadiusPerTimestep.value);
+  autoPasContainer->setVerletRebuildFrequency(config.verletRebuildFrequency.value);
+  autoPasContainer->init();
+
+  particlePropertiesLibrary->addSiteType(0, 0.1, 0.1, 1.);
+  particlePropertiesLibrary->addSiteType(1, 1., 0.2, 1.);
+  particlePropertiesLibrary->addMolType(0, {0}, {{0., 0., 0.}}, {1., 1., 1.});
+  particlePropertiesLibrary->calculateMixingCoefficients();
+
+#endif
+
+
 }
