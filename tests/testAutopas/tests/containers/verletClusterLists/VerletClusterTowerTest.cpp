@@ -39,9 +39,9 @@ static void testClusterGenerationAndDummies(size_t clusterSize) {
 
     auto numParticlesLastCluster = numParticles % clusterSize;
     if (numParticlesLastCluster == 0) numParticlesLastCluster = clusterSize;
-    EXPECT_EQ(tower.getNumDummyParticles(), clusterSize - numParticlesLastCluster);
+    EXPECT_EQ(tower.getNumTailDummyParticles(), clusterSize - numParticlesLastCluster);
 
-    EXPECT_EQ(tower.getNumClusters(), (numParticles + tower.getNumDummyParticles()) / clusterSize);
+    EXPECT_EQ(tower.getNumClusters(), (numParticles + tower.getNumTailDummyParticles()) / clusterSize);
 
     // Check if the right particles are within each cluster
     for (size_t clusterIndex = 0; clusterIndex < tower.getNumClusters(); clusterIndex++) {
@@ -60,7 +60,7 @@ static void testClusterGenerationAndDummies(size_t clusterSize) {
     // std::numeric_limits<size_t>::max(), filled up particles have ID>0.
     tower.setDummyValues(0, 0);
     const auto &lastCluster = tower.getCluster(tower.getNumClusters() - 1);
-    for (size_t i = 1; i <= tower.getNumDummyParticles(); i++) {
+    for (size_t i = 1; i <= tower.getNumTailDummyParticles(); i++) {
       EXPECT_EQ(lastCluster[clusterSize - i].getID(), std::numeric_limits<size_t>::max());
     }
   }
