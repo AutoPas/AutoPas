@@ -247,21 +247,22 @@ class LogicHandler {
    * Takes a particle, checks if it is in any of the particle buffers, and deletes it from them if found.
    * @param particle Particle to delete. If something was deleted this reference might point to a different particle or
    * invalid memory.
-   * @return True iff the particle was found and deleted.
+   * @return Tuple: <True iff the particle was found and deleted, True iff the reference is not invalid>
    */
-  bool deleteParticleFromBuffers(Particle &particle) {
+  std::tuple<bool, bool> deleteParticleFromBuffers(Particle &particle) {
     // find the buffer the particle belongs to
     auto &bufferCollection = particle.isOwned() ? _particleBuffer : _haloParticleBuffer;
     for (auto &buffer : bufferCollection) {
       // if the address of the particle is between start and end of the buffer it is in this buffer
       if (not buffer.empty() and &(buffer.front()) <= &particle and &particle <= &(buffer.back())) {
+        const bool isRearParticle = &particle == &buffer.back();
         // swap-delete
         particle = buffer.back();
         buffer.pop_back();
-        return true;
+        return {true, not isRearParticle};
       }
     }
-    return false;
+    return {false, true};
   }
 
   /**
