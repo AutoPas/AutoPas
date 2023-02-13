@@ -236,29 +236,25 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     if (cellIndex == 0 and particleIndex == 0) {
       cellIndex =
           startCellIndex + ((iteratorBehavior & IteratorBehavior::forceSequential) ? 0 : autopas_get_thread_num());
-      // abort if the start index is already out of bounds
-      if (cellIndex >= this->_cells.size()) {
-        return {nullptr, 0, 0};
-      }
-      // check the data behind the start indices
-      if (this->_cells[cellIndex].isEmpty() or
-          not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
-              this->_cells[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax)) {
-        // either advance them to something interesting or out of bounds.
-        std::tie(cellIndex, particleIndex) = advanceIteratorIndices<regionIter>(
-            cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax, endCellIndex);
-      }
+    }
+    // abort if the start index is already out of bounds
+    if (cellIndex >= this->_cells.size()) {
+      return {nullptr, 0, 0};
+    }
+    // check the data behind the indices
+    if (particleIndex >= this->_cells[cellIndex].numParticles() or
+        not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
+            this->_cells[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax)) {
+      // either advance them to something interesting or invalidate them.
+      std::tie(cellIndex, particleIndex) =
+          advanceIteratorIndices<regionIter>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax, endCellIndex);
     }
 
     // shortcut if the given index doesn't exist
-    if (cellIndex > endCellIndex or particleIndex >= this->_cells[cellIndex].numParticles()) {
+    if (cellIndex > endCellIndex) {
       return {nullptr, 0, 0};
     }
     const Particle *retPtr = &this->_cells[cellIndex][particleIndex];
-
-    // find the indices for the next particle
-    std::tie(cellIndex, particleIndex) =
-        advanceIteratorIndices<regionIter>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax, endCellIndex);
 
     return {retPtr, cellIndex, particleIndex};
   }
@@ -266,6 +262,12 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   bool deleteParticle(Particle &particle) override {
     // This function doesn't actually delete anything as it would mess up the reference structure.
     internal::markParticleAsDeleted(particle);
+    return false;
+  }
+
+  bool deleteParticle(size_t cellIndex, size_t particleIndex) override {
+    // This function doesn't actually delete anything as it would mess up the reference structure.
+    internal::markParticleAsDeleted(this->_cells[cellIndex][particleIndex]);
     return false;
   }
 
@@ -542,7 +544,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
         // If we notice that there is nothing else to look at set invalid values, so we get a nullptr next time and
         // break.
         if (cellIndex > endCellIndex) {
-          return {std::numeric_limits<size_t>::max(), particleIndex};
+          return {std::numeric_limits<decltype(cellIndex)>::max(), std::numeric_limits<decltype(particleIndex)>::max()};
         }
       }
     } while (not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(

@@ -204,54 +204,41 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     // Each digit signifies which child of the node to enter.
     // The right most digit selects the tree, the next the child of the root, and so on.
 
-    // shortcut if the given index doesn't exist
-    if (cellIndex % 10 > 7 or (cellIndex < 10 and cellIndex > HALO)) {
+    // FIXME think about parallelism.
+    // This `if` currently disables it but should be replaced with logic that determines the start index.
+    if (autopas_get_thread_num() > 0 and not(iteratorBehavior & IteratorBehavior::forceSequential)) {
       return {nullptr, 0, 0};
     }
+    // if owned particles are not interesting jump directly to the halo tree
+    // FIXME: with num threads > 1 the start cell IDs will have to be set to more complicated values here
+    if (cellIndex == 0 and not(iteratorBehavior & IteratorBehavior::owned)) {
+      cellIndex = HALO;
+    }
 
-    // FIXME think about parallelism. This `if` currently disables it.
-    if (autopas_get_thread_num() > 0 and not(iteratorBehavior & IteratorBehavior::forceSequential)) {
+    // shortcut if the given index doesn't exist
+    if (cellIndex < 10 and cellIndex > HALO) {
       return {nullptr, 0, 0};
     }
 
     std::vector<size_t> currentCellIndex{};
     OctreeLeafNode<Particle> *currentCellPtr = nullptr;
 
-    // if we are at the start of an iteration ...
-    if (cellIndex == 0 and particleIndex == 0) {
-      // FIXME: with num threads > 1 the start cell IDs will have to be set to more complicated values here
-
-      // abort if the start index is already out of bounds
-      if (cellIndex < 10 and cellIndex % 10 > 7) {
-        return {nullptr, 0, 0};
-      }
-      // if owned particles are not interesting jump directly to the halo tree
-      if (cellIndex == 0 and not(iteratorBehavior & IteratorBehavior::owned)) {
-        cellIndex = HALO;
-      }
-      std::tie(currentCellIndex, currentCellPtr) = getCellByIndex(cellIndex);
-      // check the data behind the start indices
-      if (particleIndex >= currentCellPtr->getNumberOfParticles() or
-          not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
-              (*currentCellPtr)[particleIndex], iteratorBehavior, boxMin, boxMax)) {
-        // either advance them to something interesting or out of bounds.
-        std::tie(currentCellPtr, particleIndex) = advanceIteratorIndices<regionIter>(
-            currentCellIndex, currentCellPtr, particleIndex, iteratorBehavior, boxMin, boxMax);
-      }
-    } else {
-      std::tie(currentCellIndex, currentCellPtr) = getCellByIndex(cellIndex);
+    std::tie(currentCellIndex, currentCellPtr) = getLeafCellByIndex(cellIndex);
+    // check the data behind the indices
+    if (particleIndex >= currentCellPtr->getNumberOfParticles() or
+        not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
+            (*currentCellPtr)[particleIndex], iteratorBehavior, boxMin, boxMax)) {
+      // either advance them to something interesting or invalidate them.
+      std::tie(currentCellPtr, particleIndex) = advanceIteratorIndices<regionIter>(
+          currentCellIndex, currentCellPtr, particleIndex, iteratorBehavior, boxMin, boxMax);
     }
 
     // shortcut if the given index doesn't exist
-    if (currentCellPtr == nullptr or particleIndex >= currentCellPtr->getNumberOfParticles()) {
+    if (currentCellPtr == nullptr) {
       return {nullptr, 0, 0};
     }
     // parse cellIndex and get referenced cell and particle
     const Particle *retPtr = &((*currentCellPtr)[particleIndex]);
-
-    // find the indices for the next particle
-    std::tie(currentCellPtr, particleIndex) = advanceIteratorIndices<regionIter>(
-        currentCellIndex, currentCellPtr, particleIndex, iteratorBehavior, boxMin, boxMax);
 
     // if no err value was set, convert cell index from vec to integer
     if (currentCellIndex.empty()) {
@@ -277,7 +264,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    * @param cellIndex Index in the tree as integer
    * @return tuple<index as vector, pointer to cell>
    */
-  std::tuple<std::vector<size_t>, OctreeLeafNode<Particle> *> getCellByIndex(size_t cellIndex) const {
+  std::tuple<std::vector<size_t>, OctreeLeafNode<Particle> *> getLeafCellByIndex(size_t cellIndex) const {
     // parse cellIndex and get referenced cell and particle
     std::vector<size_t> currentCellIndex;
     // constant heuristic for the tree depth
@@ -303,6 +290,16 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
       utils::ExceptionHandler::exception("Particle to be deleted is neither owned nor halo!\n" + particle.toString());
       return false;
     }
+  }
+
+  bool deleteParticle(size_t cellIndex, size_t particleIndex) override {
+    auto [cellIndexVector, cell] = getLeafCellByIndex(cellIndex);
+    auto &particleVec = cell->_particles;
+    auto &particle = particleVec[particleIndex];
+    // swap-delete
+    particle = particleVec.back();
+    particleVec.pop_back();
+    return particleIndex < particleVec.size();
   }
 
   [[nodiscard]] ContainerIterator<ParticleType, true, false> begin(
@@ -476,7 +473,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
           // If there are no more cells in the branch that we are responsible for set invalid parameters and return.
           if (currentCellIndex.size() < minLevel or currentCellIndex.empty()) {
             currentCellIndex.clear();
-            return {nullptr, std::numeric_limits<size_t>::max()};
+            return {nullptr, std::numeric_limits<decltype(particleIndex)>::max()};
           }
         }
 
@@ -484,14 +481,18 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
         ++currentCellIndex.back();
         // Identify the next (inner) cell pointer
         if (currentCellIndex.size() == 1) {
+          // if we are already beyond everything
+          if (currentCellIndex.back() > HALO) {
+            return {nullptr, std::numeric_limits<decltype(particleIndex)>::max()};
+          }
           // special case: the current thread should ALSO iterate halo particles
           if ((iteratorBehavior & IteratorBehavior::halo)
-              /* FIXME: for prallelization: and ((iteratorBehavior & IteratorBehavior::forceSequential) or autopas_get_num_threads() == 1) */) {
+              /* FIXME: for parallelization: and ((iteratorBehavior & IteratorBehavior::forceSequential) or autopas_get_num_threads() == 1) */) {
             currentCellInterfacePtr = this->_cells[HALO].getRaw();
           } else {
-            // don't jump to halo tree -> set invalid parameters and return
+            // don't jump to the halo tree -> set invalid parameters and return
             currentCellIndex.clear();
-            return {nullptr, std::numeric_limits<size_t>::max()};
+            return {nullptr, std::numeric_limits<decltype(particleIndex)>::max()};
           }
         } else {
           currentCellInterfacePtr = currentCellInterfacePtr->getParent()->getChild(currentCellIndex.back());

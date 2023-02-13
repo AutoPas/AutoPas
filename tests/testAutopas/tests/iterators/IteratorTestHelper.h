@@ -295,13 +295,15 @@ void findParticles(AutoPasT &autopas, FgetIter getIter, const std::vector<size_t
 #endif
   {
     for (auto iterator = getIter(); iterator.isValid(); ++iterator) {
-      auto id = iterator->getID();
+      const auto id = iterator->getID();
       particleIDsFound.push_back(id);
     }
   }
 
   // check that everything was found
-  EXPECT_THAT(particleIDsFound, ::testing::UnorderedElementsAreArray(particleIDsExpected));
+  EXPECT_THAT(particleIDsFound, ::testing::UnorderedElementsAreArray(particleIDsExpected))
+      << "Expected: " << autopas::utils::ArrayUtils::to_string(particleIDsExpected) << "\n\n"
+      << "Found   : " << autopas::utils::ArrayUtils::to_string(particleIDsFound);
 }
 
 /**

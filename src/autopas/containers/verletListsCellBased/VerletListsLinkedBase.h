@@ -125,6 +125,13 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
     internal::markParticleAsDeleted(particle);
     return false;
   }
+
+  bool deleteParticle(size_t cellIndex, size_t particleIndex) override {
+    // This function doesn't actually delete anything as it would mess up the references in the lists.
+    internal::markParticleAsDeleted(this->_linkedCells.getCells()[cellIndex][particleIndex]);
+    return false;
+  }
+
   /**
    * @copydoc autopas::ParticleContainerInterface::updateContainer()
    * @note This function invalidates the neighbor lists.

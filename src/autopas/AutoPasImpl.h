@@ -146,21 +146,23 @@ void AutoPas<Particle>::deleteAllParticles() {
 
 template <class Particle>
 void AutoPas<Particle>::deleteParticle(ContainerIterator<Particle, true, false> &iter) {
-  deleteParticle(*iter);
+  internal::deleteParticle(iter);
 }
 
 template <class Particle>
 void AutoPas<Particle>::deleteParticle(ContainerIterator<Particle, true, true> &iter) {
-  deleteParticle(*iter);
+  internal::deleteParticle(iter);
 }
 
 template <class Particle>
-void AutoPas<Particle>::deleteParticle(Particle &particle) {
+bool AutoPas<Particle>::deleteParticle(Particle &particle) {
   _logicHandler->decreaseParticleCounter(particle);
   // if the particle was not found in the logic handler's buffers it must be in the container
-  if (not _logicHandler->deleteParticleFromBuffers(particle)) {
-    _autoTuner->getContainer()->deleteParticle(particle);
+  auto [particleDeleted, refStillValid] = _logicHandler->deleteParticleFromBuffers(particle);
+  if (not particleDeleted) {
+    refStillValid = _autoTuner->getContainer()->deleteParticle(particle);
   }
+  return refStillValid;
 }
 
 template <class Particle>

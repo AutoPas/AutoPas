@@ -181,8 +181,10 @@ class AutoPas {
    * @note This function might invalidate iterators.
    *
    * @param particle Reference to the particle that should be deleted.
+   *
+   * @return True iff the reference still points to a valid particle.
    */
-  void deleteParticle(Particle &particle);
+  bool deleteParticle(Particle &particle);
 
   /**
    * Function to iterate over all pairs of particles in the container.

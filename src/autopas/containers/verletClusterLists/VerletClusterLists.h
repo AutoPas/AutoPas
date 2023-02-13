@@ -231,6 +231,10 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
                                                                const std::array<double, 3> &boxMin,
                                                                const std::array<double, 3> &boxMax) const {
     // in this context cell == tower
+    // catching the edge case that towers are not yet built -> Iterator jumps to additional vectors
+    if (_towers.empty()) {
+      return {nullptr, 0, 0};
+    }
 
     // first and last relevant cell index
     const auto [startCellIndex, endCellIndex] = [&]() -> std::tuple<size_t, size_t> {
@@ -244,35 +248,27 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
     // if we are at the start of an iteration ...
     if (cellIndex == 0 and particleIndex == 0) {
-      // catching the edge case that towers are not yet built -> Iterator jumps to additional vectors
-      if (_towers.empty()) {
-        return {nullptr, 0, 0};
-      }
       cellIndex =
           startCellIndex + ((iteratorBehavior & IteratorBehavior::forceSequential) ? 0 : autopas_get_thread_num());
-      // abort if the start index is already out of bounds
-      if (cellIndex >= this->_towers.size()) {
-        return {nullptr, 0, 0};
-      }
-      // check the data behind the start indices
-      if (this->_towers[cellIndex].isEmpty() or
-          not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
-              this->_towers[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax)) {
-        // either advance them to something interesting or out of bounds.
-        std::tie(cellIndex, particleIndex) = advanceIteratorIndices<regionIter>(
-            cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax, endCellIndex);
-      }
+    }
+    // abort if the start index is already out of bounds
+    if (cellIndex >= this->_towers.size()) {
+      return {nullptr, 0, 0};
+    }
+    // check the data behind the indices
+    if (particleIndex >= this->_towers[cellIndex].numParticles() or
+        not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
+            this->_towers[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax)) {
+      // either advance them to something interesting or invalidate them.
+      std::tie(cellIndex, particleIndex) =
+          advanceIteratorIndices<regionIter>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax, endCellIndex);
     }
 
     // shortcut if the given index doesn't exist
-    if (cellIndex > endCellIndex or particleIndex >= this->_towers[cellIndex].getNumParticles()) {
+    if (cellIndex > endCellIndex) {
       return {nullptr, 0, 0};
     }
     const Particle *retPtr = &this->_towers[cellIndex][particleIndex];
-
-    // find the indices for the next particle
-    std::tie(cellIndex, particleIndex) =
-        advanceIteratorIndices<regionIter>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax, endCellIndex);
 
     return {retPtr, cellIndex, particleIndex};
   }
@@ -280,6 +276,12 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   bool deleteParticle(Particle &particle) override {
     // This function doesn't actually delete anything as it would mess up the clusters' references.
     internal::markParticleAsDeleted(particle);
+    return false;
+  }
+
+  bool deleteParticle(size_t cellIndex, size_t particleIndex) override {
+    // This function doesn't actually delete anything as it would mess up the clusters' references.
+    internal::markParticleAsDeleted(_towers[cellIndex][particleIndex]);
     return false;
   }
 

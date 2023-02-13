@@ -310,11 +310,13 @@ class ParticleContainerInterface {
   }
 
   /**
-   * Retrieve the pointer to a particle, identified via a cell and particle index.
+   * Fetch the pointer to a particle, identified via a cell and particle index.
    * These indices are only meaningful in the context of the current container at its current state.
-   * The same indices might (and probably will) yield a different particle for a different container type or might not
+   * The same indices might (and probably will) yield different particles for different container types or might not
    * even exist.
-   * The only guarantee is that the indices {0,0} yield the first particle in the container or region.
+   * The only guarantee is that the indices {0,0} yield the first particle in the container that satisfies the iterator
+   * requirements.
+
    *
    * @note This function should handle any offsets if used in a parallel iterator.
    *
@@ -325,10 +327,11 @@ class ParticleContainerInterface {
    * domain.
    * @param boxMax end of region in which the next particle should be. The coordinates are expected to be within the
    * domain.
-   * @return Pointer to the particle and indices of the next particle that satisfies the iterator requirements.
-   * If the requested particle does not exist {nullptr, 0, 0} is returned.
-   * If there is no next particle for both indices 0 is returned as this can never be a next particle's indices.
-   * tuple<Particle &, nextCellIndex, nextParticleIndex>
+   * @return Pointer to the particle and its indices.
+   * If a index pair is given that does not exist but is also not beyond the last cell, the next fitting particle shall
+   * be returned. Example: If [4,2] does not exist, [5,1] shall be returned (or whatever is the next particle that
+   * fulfills the iterator requirements).
+   * If there is no next fitting particle {nullptr, 0, 0} is returned.
    */
   virtual std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
                                                                    IteratorBehavior iteratorBehavior,
@@ -376,13 +379,23 @@ class ParticleContainerInterface {
   }
 
   /**
-   * Deletes the given particle if this does not compromise the validity of the container.
-   * Is this not possible the particle is just marked as deleted.
+   * Deletes the given particle as long as this does not compromise the validity of the container.
+   * If this is not possible the particle is just marked as deleted.
    * @note This function might be implemented via swap-delete and is thus not completely thread safe.
    * @param particle Reference to the particle that is to be deleted.
-   * @return True if the given pointer still points to a new, valid particle.
+   * @return True if the given pointer still points to a new particle.
    */
   virtual bool deleteParticle(Particle &particle) = 0;
+
+  /**
+   * Deletes the particle at the given index positions as long as this does not compromise the validity of the
+   * container. If this is not possible the particle is just marked as deleted. If the positions do not exist the
+   * behavior is undefined.
+   * @param cellIndex
+   * @param particleIndex
+   * @return True if the given indices still point to a new particle.
+   */
+  virtual bool deleteParticle(size_t cellIndex, size_t particleIndex) = 0;
 };
 
 }  // namespace autopas

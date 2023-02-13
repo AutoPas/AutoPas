@@ -51,9 +51,12 @@ auto ContainerIteratorTest::deleteParticles(AutoPasT &autopas, F predicate, bool
 #pragma omp parallel
 #endif
       {
-        for (auto iter = getIter(); iter.isValid(); ++iter) {
-          if (predicate(iter->getID())) {
+        for (auto iter = getIter(); iter.isValid();) {
+          const auto leID = iter->getID();
+          if (predicate(leID)) {
             autopas.deleteParticle(iter);
+          } else {
+            ++iter;
           }
         }
       }

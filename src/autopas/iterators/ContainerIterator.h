@@ -154,7 +154,7 @@ class ContainerIterator {
                     const std::array<double, 3> &regionMax)
       : _container(container),
         _behavior(behavior),
-        _nextVectorIndex(0),
+        _currentVectorIndex(0),
         _vectorIndexOffset((behavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads()) {
     if (additionalVectorsToIterate) {
       // store pointers to all additional vectors
@@ -173,69 +173,23 @@ class ContainerIterator {
       _regionMax = utils::ArrayMath::min(regionMax, boxMax);
       _regionMin = utils::ArrayMath::max(regionMin, boxMin);
     }
-
     // fetches the next (=first) valid particle or sets _currentParticle = nullptr which marks the iterator as invalid.
-    this->operator++();
+    fetchParticleAtCurrentIndex();
   }
 
  public:
   /**
    * Increments the iterator.
    *
-   * The idea is that this operator either queries the container with the "next" indices it got previously (or 0,0
-   * initially), or if there is nothing left in the container it handles the iteration through the additional vectors.
+   * The idea is that this operator either queries the container with the current indices, or, if there is nothing left
+   * in the container, it handles the iteration through the additional vectors.
    *
    * @return *this
    */
   inline ContainerIterator<Particle, modifiable, regionIter> &operator++() {
-    if (not _iteratingAdditionalVectors) {
-      if constexpr (regionIter) {
-        std::tie(_currentParticle, _nextVectorIndex, _nextParticleIndex) =
-            _container.getParticle(_nextVectorIndex, _nextParticleIndex, _behavior, _regionMin, _regionMax);
-      } else {
-        // this either gives us a particle with the desired properties or a nullptr
-        std::tie(_currentParticle, _nextVectorIndex, _nextParticleIndex) =
-            _container.getParticle(_nextVectorIndex, _nextParticleIndex, _behavior);
-      }
-      // if getParticle told us that the container doesn't have a particle in the first vector for our thread...
-      if (_currentParticle == nullptr and not _additionalVectors.empty()) {
-        // determine which additional vector this thread should start to iterate
-        // we invert the assignment of threads to additional vectors because if there are more threads than cells
-        // these surplus threads can then directly start with the additional vectors
-        _nextVectorIndex = (_behavior & IteratorBehavior::forceSequential)
-                               ? 0
-                               : autopas_get_num_threads() - 1 - autopas_get_thread_num();
-        _nextParticleIndex = 0;
-        _iteratingAdditionalVectors = true;
-      } else {
-        return *this;
-      }
-    }
-    // no "else" here because the first case might trigger the second if we run to the end of the container
-    if (_iteratingAdditionalVectors) {
-      // check all vectors ...
-      while (_nextVectorIndex < _additionalVectors.size()) {
-        // ... and all particles within the vector ...
-        while (_nextParticleIndex < _additionalVectors[_nextVectorIndex]->size()) {
-          _currentParticle = &(_additionalVectors[_nextVectorIndex]->operator[](_nextParticleIndex));
-          ++_nextParticleIndex;
-          // ... until we find a particle that satisfies our requirements.
-          if (containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(*_currentParticle, _behavior,
-                                                                                       _regionMin, _regionMax)) {
-            // if the particle is at the end of the current vector bump _nextVectorIndex and reset _nextParticleIndex.
-            if (_nextParticleIndex >= _additionalVectors[_nextVectorIndex]->size()) {
-              _nextVectorIndex += _vectorIndexOffset;
-              _nextParticleIndex = 0;
-            }
-            return *this;
-          }
-        }
-        _nextVectorIndex += _vectorIndexOffset;
-        _nextParticleIndex = 0;
-      }
-    }
-    // if we reach this point there is no satisfying particle left neither in the container nor the additional vectors.
-    _currentParticle = nullptr;
+    // bump the index. If it is invalid now, the container will give us the proper one.
+    ++_currentParticleIndex;
+    fetchParticleAtCurrentIndex();
     return *this;
   }
 
@@ -273,6 +227,57 @@ class ContainerIterator {
 
  private:
   /**
+   * This function queries the container with the current iterator indices and updates them as well as the particle
+   * pointer according to the container's response.
+   */
+  void fetchParticleAtCurrentIndex() {
+    if (not _iteratingAdditionalVectors) {
+      // getParticle either gives us a particle with the desired properties or a nullptr
+      if constexpr (regionIter) {
+        std::tie(_currentParticle, _currentVectorIndex, _currentParticleIndex) =
+            _container.getParticle(_currentVectorIndex, _currentParticleIndex, _behavior, _regionMin, _regionMax);
+      } else {
+        std::tie(_currentParticle, _currentVectorIndex, _currentParticleIndex) =
+            _container.getParticle(_currentVectorIndex, _currentParticleIndex, _behavior);
+      }
+      // if getParticle told us that the container doesn't have a particle in the first vector for our thread...
+      if (_currentParticle == nullptr and not _additionalVectors.empty()) {
+        // determine which additional vector this thread should start to iterate
+        // we invert the assignment of threads to additional vectors because if there are more threads than cells
+        // these surplus threads can then directly start with the additional vectors
+        _currentVectorIndex = (_behavior & IteratorBehavior::forceSequential)
+                                  ? 0
+                                  : autopas_get_num_threads() - 1 - autopas_get_thread_num();
+        _currentParticleIndex = 0;
+        _iteratingAdditionalVectors = true;
+      } else {
+        // Case: nothing left in the container and no additional vectors to iterate
+        return;
+      }
+    }
+    // no "else" here because the first case might trigger the second if we reached the end of the container
+    if (_iteratingAdditionalVectors) {
+      // check all vectors ...
+      for (; _currentVectorIndex < _additionalVectors.size(); _currentVectorIndex += _vectorIndexOffset) {
+        // ... and all particles within the vector ...
+        for (; _currentParticleIndex < _additionalVectors[_currentVectorIndex]->size(); ++_currentParticleIndex) {
+          _currentParticle = &(_additionalVectors[_currentVectorIndex]->operator[](_currentParticleIndex));
+          // ... until we find a particle that satisfies our requirements.
+          if (containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(*_currentParticle, _behavior,
+                                                                                       _regionMin, _regionMax)) {
+            return;
+          }
+        }
+        _currentParticleIndex = 0;
+      }
+    }
+    // if we reach this point there is no satisfying particle left neither in the container nor the additional vectors.
+    _currentParticle = nullptr;
+    _currentParticleIndex = std::numeric_limits<decltype(_currentParticleIndex)>::max();
+    _currentVectorIndex = std::numeric_limits<decltype(_currentVectorIndex)>::max();
+  }
+
+  /**
    * Deletes the particle the particle currently pointed to. This function uses swap-delete and thus will change
    * the order of elements in the container. After deletion _currentParticle points to the next particle,
    * which is the particle that was swapped here. So when used in a loop do not increment the iterator after deletion.
@@ -281,11 +286,7 @@ class ContainerIterator {
     if (_iteratingAdditionalVectors) {
       // the current particle address needs to be between start and end of the current vector
       // otherwise it is from the previous vector
-      const auto currentVectorIndex = (_currentParticle >= &_additionalVectors[_nextVectorIndex]->front() and
-                                       _currentParticle <= &_additionalVectors[_nextVectorIndex]->back())
-                                          ? _nextVectorIndex
-                                          : _nextVectorIndex - _vectorIndexOffset;
-      auto &currentVector = *_additionalVectors[currentVectorIndex];
+      auto &currentVector = *_additionalVectors[_currentVectorIndex];
       // swap-delete
       *_currentParticle = currentVector.back();
       currentVector.pop_back();
@@ -295,9 +296,14 @@ class ContainerIterator {
         this->operator++();
       }
     } else {
-      const auto pointerValid = _container.deleteParticle(*_currentParticle);
-      if (not pointerValid or not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
-                                  *_currentParticle, _behavior, _regionMin, _regionMax)) {
+      const auto indicesValid = _container.deleteParticle(_currentVectorIndex, _currentParticleIndex);
+      // Edge cases:
+      if (not indicesValid) {
+        // CASE: the indices and thus the pointer are invalid now
+        this->operator++();
+      } else if (not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
+                     *_currentParticle, _behavior, _regionMin, _regionMax)) {
+        // CASE: the particle was swapped and now the pointer points at something uninteresting
         this->operator++();
       }
     }
@@ -331,10 +337,10 @@ class ContainerIterator {
   ParticleType *_currentParticle = nullptr;
 
   /**
-   * Index of the Vector where the next particle is found. This might be the same index as the current one.
+   * Index of the Vector where the current particle is found.
    * "Vector" typically refers to either a cell in the particle container or one of the additional vectors.
    */
-  size_t _nextVectorIndex;
+  size_t _currentVectorIndex;
 
   /**
    * Offset which which to iterate over vectors. Determined through number of threads used for iterating.
@@ -342,12 +348,12 @@ class ContainerIterator {
   size_t _vectorIndexOffset;
 
   /**
-   * Index within the next vector
+   * Index within the current vector.
    */
-  size_t _nextParticleIndex{0};
+  size_t _currentParticleIndex{0};
 
   /**
-   * Dummy type for a data type of size zero
+   * Dummy type for a data type of size zero.
    */
   struct empty {};
   /**
