@@ -222,16 +222,16 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
       // FIXME: with num threads > 1 the start cell IDs will have to be set to more complicated values here
 
       // abort if the start index is already out of bounds
-      if (cellIndex % 10 > 7) {
+      if (cellIndex < 10 and cellIndex % 10 > 7) {
         return {nullptr, 0, 0};
       }
       // if owned particles are not interesting jump directly to the halo tree
-      if (not(iteratorBehavior & IteratorBehavior::owned)) {
+      if (cellIndex == 0 and not(iteratorBehavior & IteratorBehavior::owned)) {
         cellIndex = HALO;
       }
       std::tie(currentCellIndex, currentCellPtr) = getCellByIndex(cellIndex);
       // check the data behind the start indices
-      if (currentCellPtr->getNumberOfParticles() == 0 or
+      if (particleIndex >= currentCellPtr->getNumberOfParticles() or
           not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
               (*currentCellPtr)[particleIndex], iteratorBehavior, boxMin, boxMax)) {
         // either advance them to something interesting or out of bounds.
