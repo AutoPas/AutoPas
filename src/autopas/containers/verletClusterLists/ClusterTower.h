@@ -179,22 +179,28 @@ class ClusterTower : public ParticleCell<Particle> {
   }
 
   /**
-   * Returns the number of dummy particles in the tower (that all are in the last cluster).
-   * @return the number of dummy particles in the tower.
+   * Returns the number of dummy particles in the tower that were inserted in the tower to fill the last cluster.
+   * @return.
    */
-  [[nodiscard]] size_t getNumDummyParticles() const { return _numDummyParticles; }
+  [[nodiscard]] size_t getNumTailDummyParticles() const { return _numDummyParticles; }
 
   /**
-   * Returns the number of particles in the tower that are not dummies.
-   * @return the number of particles in the tower that are not dummies.
+   * @copydoc getNumActualParticles()
    */
-  [[nodiscard]] size_t getNumActualParticles() const { return getNumParticles() - getNumDummyParticles(); }
+  [[nodiscard]] unsigned long numParticles() const override { return getNumActualParticles(); }
+
+  /**
+   * Returns the number of particles in the tower before the filler dummies.
+   * There might still be particles that were marked as dummies due to deletion.
+   * @return
+   */
+  [[nodiscard]] size_t getNumActualParticles() const { return getNumAllParticles() - getNumTailDummyParticles(); }
 
   /**
    * Returns the size of the internal particle storage aka. the total number of particles incl. dummies.
    * @return
    */
-  [[nodiscard]] size_t getNumParticles() const { return _particlesStorage.numParticles(); }
+  [[nodiscard]] size_t getNumAllParticles() const { return _particlesStorage.numParticles(); }
 
   /**
    * Returns the number of clusters in the tower.
@@ -219,11 +225,6 @@ class ClusterTower : public ParticleCell<Particle> {
    * @copydoc getCluster(size_t)
    */
   [[nodiscard]] auto &getCluster(size_t index) const { return _clusters[index]; }
-
-  /**
-   * @copydoc getNumActualParticles()
-   */
-  [[nodiscard]] unsigned long numParticles() const override { return getNumActualParticles(); }
 
   /**
    * @copydoc autopas::FullParticleCell::begin()
@@ -331,7 +332,7 @@ class ClusterTower : public ParticleCell<Particle> {
 
     // swap particle that should be deleted to end of actual particles.
     std::swap(_particlesStorage._particles[index], _particlesStorage._particles[getNumActualParticles() - 1]);
-    if (getNumDummyParticles() != 0) {
+    if (getNumTailDummyParticles() != 0) {
       // swap particle that should be deleted (now at end of actual particles) with last dummy particle.
       std::swap(_particlesStorage._particles[getNumActualParticles() - 1],
                 _particlesStorage._particles[_particlesStorage._particles.size() - 1]);
