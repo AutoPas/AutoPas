@@ -73,7 +73,7 @@ class ParticleCell {
   virtual SingleCellIteratorWrapper<Particle, true> begin() = 0;
 
   /**
-   * @copydoc begin()
+   * @copydoc autopas::ParticleCell::begin()
    * @note const version
    */
   virtual SingleCellIteratorWrapper<Particle, false> begin() const = 0;

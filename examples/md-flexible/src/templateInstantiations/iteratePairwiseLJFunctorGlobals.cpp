@@ -6,6 +6,7 @@
  * other compilation units to only declare, but not instantiate this template.
  */
 
+#if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
 #include "autopas/AutoPasImpl.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
 #include "src/TypeDefinitions.h"
@@ -14,3 +15,4 @@
 template bool autopas::AutoPas<ParticleType>::iteratePairwise(
     autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true> *);
 //! @endcond
+#endif

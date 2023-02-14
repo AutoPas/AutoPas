@@ -3,7 +3,7 @@
 #TestRegularGridDecomposition.testExchangeHaloParticles
 #TestRegularGridDecomposition.testExchangeMigratingParticles
 #YamlParser
-cutoff                    : 3
-verlet-skin-radius        : 0
-box-min                   : [0,0,0]
-box-max                   : [9,9,9]
+cutoff                          : 3
+verlet-skin-radius-per-timestep : 0
+box-min                         : [0,0,0]
+box-max                         : [9,9,9]

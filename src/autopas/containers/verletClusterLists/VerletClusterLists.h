@@ -64,12 +64,14 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @param boxMin The lower corner of the domain.
    * @param boxMax The upper corner of the domain.
    * @param cutoff The cutoff radius of the interaction.
-   * @param skin The skin radius.
+   * @param skinPerTimestep The skin radius per Timestep.
+   * @param rebuildFrequency The rebuild Frequency.
    * @param clusterSize Number of particles per cluster.
    * @param loadEstimator load estimation algorithm for balanced traversals.
    */
-  VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff, double skin,
-                     size_t clusterSize, LoadEstimatorOption loadEstimator = LoadEstimatorOption::none)
+  VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
+                     double skinPerTimestep, unsigned int rebuildFrequency, size_t clusterSize,
+                     LoadEstimatorOption loadEstimator = LoadEstimatorOption::none)
       : ParticleContainerInterface<Particle>(),
         _clusterSize{clusterSize},
         _numClusters{0},
@@ -77,10 +79,11 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
         _particlesToAdd(autopas_get_max_threads()),
         _boxMin{boxMin},
         _boxMax{boxMax},
-        _haloBoxMin{utils::ArrayMath::subScalar(boxMin, cutoff + skin)},
-        _haloBoxMax{utils::ArrayMath::addScalar(boxMax, cutoff + skin)},
+        _haloBoxMin{utils::ArrayMath::subScalar(boxMin, cutoff + skinPerTimestep * rebuildFrequency)},
+        _haloBoxMax{utils::ArrayMath::addScalar(boxMax, cutoff + skinPerTimestep * rebuildFrequency)},
         _cutoff{cutoff},
-        _skin{skin},
+        _skinPerTimestep{skinPerTimestep},
+        _rebuildFrequency{rebuildFrequency},
         _loadEstimator(loadEstimator) {
     // always have at least one tower.
     _towers.push_back(internal::ClusterTower<Particle>(_clusterSize));
@@ -169,8 +172,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     pCopy.setOwnershipState(OwnershipState::halo);
 
     // this might be called from a parallel region so force this iterator to be sequential
-    for (auto it = getRegionIterator(utils::ArrayMath::subScalar(pCopy.getR(), this->getSkin() / 2),
-                                     utils::ArrayMath::addScalar(pCopy.getR(), this->getSkin() / 2),
+    for (auto it = getRegionIterator(utils::ArrayMath::subScalar(pCopy.getR(), this->getVerletSkin() / 2),
+                                     utils::ArrayMath::addScalar(pCopy.getR(), this->getVerletSkin() / 2),
                                      IteratorBehavior::halo | IteratorBehavior::forceSequential);
          it.isValid(); ++it) {
       if (pCopy.getID() == it->getID()) {
@@ -687,11 +690,27 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
   void setCutoff(double cutoff) override { _cutoff = cutoff; }
 
-  [[nodiscard]] double getSkin() const override { return _skin; }
+  [[nodiscard]] double getVerletSkin() const override { return _skinPerTimestep * _rebuildFrequency; }
 
-  void setSkin(double skin) override { _skin = skin; }
+  /**
+   * Set the verlet skin length per timestep for the container.
+   * @param skinPerTimestep
+   */
+  void setSkinPerTimestep(double skinPerTimestep) { _skinPerTimestep = skinPerTimestep; }
 
-  [[nodiscard]] double getInteractionLength() const override { return _cutoff + _skin; }
+  /**
+   * Get the rebuild Frequency value for the container.
+   * @return rebuildFrequency
+   */
+  [[nodiscard]] unsigned int getRebuildFrequency() { return _rebuildFrequency; }
+
+  /**
+   * Set the rebuild Frequency value for the container.
+   * @param rebuildFrequency
+   */
+  void setRebuildFrequency(unsigned int rebuildFrequency) { _rebuildFrequency = rebuildFrequency; }
+
+  [[nodiscard]] double getInteractionLength() const override { return _cutoff + _skinPerTimestep * _rebuildFrequency; }
 
   void deleteAllParticles() override {
     _isValid = ValidityState::invalid;
@@ -1046,10 +1065,13 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   double _cutoff{};
 
   /**
-   * Skin.
+   * SkinPerTimestep.
    */
-  double _skin{};
-
+  double _skinPerTimestep{};
+  /**
+   * rebuidFrequency.
+   */
+  unsigned int _rebuildFrequency{};
   /**
    * Enum to specify the validity of this container.
    */

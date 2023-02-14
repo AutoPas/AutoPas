@@ -23,7 +23,7 @@ if (NOT ${Eigen3_ForceBundled})
 endif ()
 
 # system version not found -> install bundled version
-message(STATUS "Eigen3 - using bundled version 3.3.90 (commit 66be6c7)")
+message(STATUS "Eigen3 - using bundled version 3.4.0 (Release)")
 
 # Enable FetchContent CMake module
 include(FetchContent)
@@ -35,8 +35,8 @@ FetchContent_Declare(
         # eigen-master:
         # https://bitbucket.org/eigen/eigen/get/default.zip
         # eigen-3.3.90:
-        ${AUTOPAS_SOURCE_DIR}/libs/eigen-eigen-66be6c76fc01.zip
-    URL_HASH MD5=faaf36185ad92b039f7b3f641340dc28
+        ${AUTOPAS_SOURCE_DIR}/libs/eigen-3.4.0.zip
+    URL_HASH MD5=994092410ba29875184f7725e0371596
 )
 
 # Check if population has already been performed

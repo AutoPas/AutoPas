@@ -11,10 +11,18 @@
 #include <memory>
 
 #include "DomainDecomposition.h"
+#include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/utils/WrapMPI.h"
 #include "src/TypeDefinitions.h"
 #include "src/configuration/MDFlexConfig.h"
 #include "src/options/BoundaryTypeOption.h"
+
+namespace {
+/**
+ * Sixth Root of Two precomputed here, as it is used a lot in reflecting boundaries.
+ */
+const double sixthRootOfTwo = std::pow(2., 1. / 6.);
+}  // namespace
 
 /**
  * This class can be used as a domain decomposition which divides the domain in equal sized rectangular subdomains.
@@ -126,9 +134,15 @@ class RegularGridDecomposition final : public DomainDecomposition {
 
   /**
    * Reflects particles within a reflective skin along the inside of a boundary.
+   *
+   * Particle reflection occurs by interacting the particle with particle mirrored onto the other side of the boundary.
+   * Iteraction occurs using the AoS variant of the chosen functor. Particle reflection only occurs if the particle
+   * would experience a repulsive effect (i.e. is within the 6th root of sigma from the border).
+   *
    * @param autoPasContainer: The container, where the migrating particles originate from.
+   * @param PPL: Particle Properties Library (needed to get particle's sigma)
    */
-  void reflectParticlesAtBoundaries(AutoPasType &autoPasContainer);
+  void reflectParticlesAtBoundaries(AutoPasType &autoPasContainer, ParticlePropertiesLibraryType &PPL);
 
  private:
   /**
@@ -153,9 +167,17 @@ class RegularGridDecomposition final : public DomainDecomposition {
   double _cutoffWidth;
 
   /**
-   * Stores the domain skin width.
+   * Stores the domain skin width per Timestep.
    */
-  double _skinWidth;
+  double _skinWidthPerTimestep;
+  /**
+   * Stores the rebuild Frequency.
+   */
+  unsigned int _rebuildFrequency;
+  /**
+   * The greatest distance from a reflective boundary at which a particle might experience reflection.
+   */
+  double _maxReflectiveSkin;
   /**
    * The minimum coordinates of the global domain.
    */
@@ -218,7 +240,8 @@ class RegularGridDecomposition final : public DomainDecomposition {
 
   /**
    * The indices of the local domain's neighbors.
-   * These correspond to the ranks of the processors which own the neighbor domain.  */
+   * These correspond to the ranks of the processors which own the neighbor domain.
+   */
   std::array<int, _neighborCount> _neighborDomainIndices{};
 
   /**
@@ -270,52 +293,48 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param particlesToRight: Particles which get send to the right neighbor.
    * @param leftNeighbor: The left neighbor's index / rank.
    * @param rightNeighbor: The right neighbor's index / rank.
-   * @param receivedParticles: Container for the particles received from either neighbor.
+   * @return receivedParticles: Container for the particles received from either neighbor.
    */
-  void sendAndReceiveParticlesLeftAndRight(std::vector<ParticleType> &particlesToLeft,
-                                           std::vector<ParticleType> &particlesToRight, const int &leftNeighbor,
-                                           const int &rightNeighbor, std::vector<ParticleType> &receivedParticles);
+  std::vector<ParticleType> sendAndReceiveParticlesLeftAndRight(const std::vector<ParticleType> &particlesToLeft,
+                                                                const std::vector<ParticleType> &particlesToRight,
+                                                                int leftNeighbor, int rightNeighbor);
 
   /**
    * Collects the halo particles for the left neighbour.
    * Halo particle positions will be wrapped around the global domain boundary if necessary.
    * @param autoPasContainer: The autopas container which owns the potential halo particles.
    * @param direction: The direction along which the neighbor is located.
-   * @param haloParticles: The container the identified halo particles are gathered in to.
+   * @return haloParticles: A vector of particles
    */
-  void collectHaloParticlesForLeftNeighbor(AutoPasType &autoPasContainer, const size_t &direction,
-                                           std::vector<ParticleType> &haloParticles);
+  std::vector<ParticleType> collectHaloParticlesForLeftNeighbor(AutoPasType &autoPasContainer, size_t direction);
 
   /**
    * Collects the halo particles for the right neighbor.
    * Halo particle positions will be wrapped around the global domain boundary if necessary.
    * @param autoPasContainer: The autopas container which owns the potential halo particles.
    * @param direction: The direction along which the neighbor is located.
-   * @param haloParticles: The container the identified halo particles are gathered in to.
+   * @return haloParticles: The container the identified halo particles are gathered in to.
    */
-  void collectHaloParticlesForRightNeighbor(AutoPasType &autoPasContainer, const size_t &direction,
-                                            std::vector<ParticleType> &haloParticles);
+  std::vector<ParticleType> collectHaloParticlesForRightNeighbor(AutoPasType &autoPasContainer, size_t direction);
 
   /**
    * Categorizes the provided particles as particles for the left or the right neighbor and adds them to the respective
    * output vector. Particle positions will be wrapped around the global domain boundary if necessary.
    * @param particles: The particles which need to be categorized.
    * @param direction: The index of the dimension along which the left and right neighbor lie.
-   * @param leftNeighborParticles: Contains the particles for the left neighbor after function execution.
-   * @param rightNeighborParticles: Contains the particles for the right neighbor after function execution.
-   * @param uncategorizedParticles: Contains particles which could neither be assigned to the left nor the right
-   * neighbor.
+   * @return a tuple consisting of:
+   *    leftNeighborParticles: Contains the particles for the left neighbor after function execution.
+   *    rightNeighborParticles: Contains the particles for the right neighbor after function execution.
+   *    uncategorizedParticles: Contains particles which could neither be assigned to the left nor the right neighbor.
    */
-  void categorizeParticlesIntoLeftAndRightNeighbor(const std::vector<ParticleType> &particles, const size_t &direction,
-                                                   std::vector<ParticleType> &leftNeighborParticles,
-                                                   std::vector<ParticleType> &rightNeighborParticles,
-                                                   std::vector<ParticleType> &uncategorizedParticles);
+  std::tuple<std::vector<ParticleType>, std::vector<ParticleType>, std::vector<ParticleType>>
+  categorizeParticlesIntoLeftAndRightNeighbor(const std::vector<ParticleType> &particles, size_t direction);
 
   /**
    * Balances the subdomains of the grid decomposition using the inverted pressure balancing algorithm.
    * @param work: The work performed by the process owning this sudomain.
    */
-  void balanceWithInvertedPressureLoadBalancer(const double &work);
+  void balanceWithInvertedPressureLoadBalancer(double work);
 
 #if defined(AUTOPAS_ENABLE_ALLLBL)
   /**

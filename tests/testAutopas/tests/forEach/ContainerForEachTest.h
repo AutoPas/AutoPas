@@ -41,5 +41,5 @@ class ContainerForEachTest : public AutoPasTestBase, public ::testing::WithParam
    * @return tuple {haloBoxMin, haloBoxMax}
    */
   template <class AutoPasT>
-  auto defaultInit(AutoPasT &autoPas, autopas::ContainerOption &containerOption, double cellSizeFactor);
+  auto defaultInit(AutoPasT &autoPas, const autopas::ContainerOption &containerOption, double cellSizeFactor);
 };

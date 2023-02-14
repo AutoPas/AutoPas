@@ -133,7 +133,7 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
 
   for (auto [kinEIter, numParIter] = kineticEnergyAndParticleMaps; kinEIter != kineticEnergyMul2Map.end();
        ++kinEIter, ++numParIter) {
-    kinEIter->second /= numParIter->second * dimensions;
+    kinEIter->second /= static_cast<double>(numParIter->second) * dimensions;
   }
   return kineticEnergyMul2Map;
 }
@@ -193,7 +193,7 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
   std::remove_const_t<decltype(currentTemperatureMap)> scalingMap;
 
   for (const auto &[particleTypeID, currentTemperature] : currentTemperatureMap) {
-    double nextTargetTemperature;
+    double nextTargetTemperature{};
     // check if we are already in the vicinity of our target or if we still need full steps
     if (std::abs(currentTemperature - targetTemperature) < std::abs(deltaTemperature)) {
       nextTargetTemperature = targetTemperature;

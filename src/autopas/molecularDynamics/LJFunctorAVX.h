@@ -5,8 +5,9 @@
  * @author F. Gratl
  */
 #pragma once
-
-#ifdef __AVX__
+#ifndef __AVX__
+#pragma message "Requested to compile LJFunctorAVX but AVX is not available!"
+#else
 #include <immintrin.h>
 #endif
 

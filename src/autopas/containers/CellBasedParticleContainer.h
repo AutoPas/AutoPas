@@ -89,19 +89,14 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
   void setCutoff(double cutoff) override final { _cutoff = cutoff; }
 
   /**
-   * @copydoc autopas::ParticleContainerInterface::getSkin()
-   */
-  [[nodiscard]] double getSkin() const override final { return _skin; }
-
-  /**
-   * @copydoc autopas::ParticleContainerInterface::setSkin()
-   */
-  void setSkin(double skin) override final { _skin = skin; }
-
-  /**
    * @copydoc autopas::ParticleContainerInterface::getInteractionLength()
    */
   [[nodiscard]] double getInteractionLength() const override final { return _cutoff + _skin; }
+  /**
+   * Returns the total verlet Skin length
+   * @return _skinPerTimestep * _rebuildFrequency
+   */
+  [[nodiscard]] double getVerletSkin() const override final { return _skin; }
 
   /**
    * Deletes all particles from the container.

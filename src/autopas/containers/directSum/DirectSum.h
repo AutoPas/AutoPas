@@ -51,10 +51,13 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
    * @param boxMin
    * @param boxMax
    * @param cutoff
-   * @param skin
+   * @param skinPerTimestep
+   * @param verletRebuildFrequency
    */
-  DirectSum(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff, double skin)
-      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skin), _cellBorderFlagManager() {
+  DirectSum(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
+            double skinPerTimestep, unsigned int verletRebuildFrequency)
+      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skinPerTimestep * verletRebuildFrequency),
+        _cellBorderFlagManager() {
     this->_cells.resize(2);
   }
 
@@ -83,7 +86,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
   bool updateHaloParticle(const ParticleType &haloParticle) override {
     ParticleType pCopy = haloParticle;
     pCopy.setOwnershipState(OwnershipState::halo);
-    return internal::checkParticleInCellAndUpdateByIDAndPosition(getHaloCell(), pCopy, this->getSkin());
+    return internal::checkParticleInCellAndUpdateByIDAndPosition(getHaloCell(), pCopy, this->getVerletSkin());
   }
 
   void deleteHaloParticles() override { getHaloCell().clear(); }

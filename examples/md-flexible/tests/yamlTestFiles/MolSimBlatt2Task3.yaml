@@ -10,7 +10,7 @@ log-level: debug
 #tuning-samples:                    #int option
 #tuning-max-evidence:               #int option
 #verlet-rebuild-frequency:          #int option
-#verlet-skin-radius                 #double option
+#verlet-skin-radius-per-timestep    #double option
 #no-flops:                          #boolean option
 #log-file:                          #string option
 vtk-filename:  MolSimBlatt2Task3

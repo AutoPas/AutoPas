@@ -6,7 +6,6 @@
 #include "ParallelVtkWriter.h"
 
 #include <cstddef>
-#include <fstream>
 #include <ios>
 #include <iostream>
 #include <string>
@@ -16,9 +15,7 @@
 
 ParallelVtkWriter::ParallelVtkWriter(std::string sessionName, const std::string &outputFolder,
                                      const int &maximumNumberOfDigitsInIteration)
-    : _sessionName(std::move(sessionName)),
-      _mpiRank(0),
-      _maximumNumberOfDigitsInIteration(maximumNumberOfDigitsInIteration) {
+    : _sessionName(std::move(sessionName)), _maximumNumberOfDigitsInIteration(maximumNumberOfDigitsInIteration) {
   autopas::AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &_numberOfRanks);
   autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &_mpiRank);
 
@@ -26,10 +23,10 @@ ParallelVtkWriter::ParallelVtkWriter(std::string sessionName, const std::string 
     tryCreateSessionAndDataFolders(_sessionName, outputFolder);
   }
 
-  size_t sessionFolderPathLength = _sessionFolderPath.size();
+  int sessionFolderPathLength = static_cast<int>(_sessionFolderPath.size());
   autopas::AutoPas_MPI_Bcast(&sessionFolderPathLength, 1, AUTOPAS_MPI_INT, 0, AUTOPAS_MPI_COMM_WORLD);
 
-  size_t dataFolderPathLength = _dataFolderPath.size();
+  int dataFolderPathLength = static_cast<int>(_dataFolderPath.size());
   autopas::AutoPas_MPI_Bcast(&dataFolderPathLength, 1, AUTOPAS_MPI_INT, 0, AUTOPAS_MPI_COMM_WORLD);
 
   if (_mpiRank != 0) {
@@ -37,13 +34,12 @@ ParallelVtkWriter::ParallelVtkWriter(std::string sessionName, const std::string 
     _dataFolderPath.resize(dataFolderPathLength);
   }
 
-  autopas::AutoPas_MPI_Bcast(&_sessionFolderPath[0], sessionFolderPathLength, AUTOPAS_MPI_CHAR, 0,
+  autopas::AutoPas_MPI_Bcast(_sessionFolderPath.data(), sessionFolderPathLength, AUTOPAS_MPI_CHAR, 0,
                              AUTOPAS_MPI_COMM_WORLD);
-  autopas::AutoPas_MPI_Bcast(&_dataFolderPath[0], dataFolderPathLength, AUTOPAS_MPI_CHAR, 0, AUTOPAS_MPI_COMM_WORLD);
+  autopas::AutoPas_MPI_Bcast(_dataFolderPath.data(), dataFolderPathLength, AUTOPAS_MPI_CHAR, 0, AUTOPAS_MPI_COMM_WORLD);
 }
 
-void ParallelVtkWriter::recordTimestep(const int &currentIteration,
-                                       const autopas::AutoPas<ParticleType> &autoPasContainer,
+void ParallelVtkWriter::recordTimestep(size_t currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer,
                                        const RegularGridDecomposition &decomposition) {
   recordParticleStates(currentIteration, autoPasContainer);
   recordDomainSubdivision(currentIteration, autoPasContainer.getCurrentConfig(), decomposition);
@@ -54,7 +50,7 @@ void ParallelVtkWriter::recordTimestep(const int &currentIteration,
  * This can be improved by using multiple string streams (one for each property).
  * The streams can be combined to a single output stream after iterating over the particles, once.
  */
-void ParallelVtkWriter::recordParticleStates(const int &currentIteration,
+void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
                                              const autopas::AutoPas<ParticleType> &autoPasContainer) {
   if (_mpiRank == 0) {
     createPvtuFile(currentIteration);
@@ -106,7 +102,6 @@ void ParallelVtkWriter::recordParticleStates(const int &currentIteration,
   timestepFile << "        <DataArray Name=\"ids\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\">\n";
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     timestepFile << "        " << particle->getID() << "\n";
-    ;
   }
   timestepFile << "        </DataArray>\n";
 
@@ -133,7 +128,7 @@ void ParallelVtkWriter::recordParticleStates(const int &currentIteration,
   timestepFile.close();
 }
 
-void ParallelVtkWriter::recordDomainSubdivision(const int &currentIteration,
+void ParallelVtkWriter::recordDomainSubdivision(size_t currentIteration,
                                                 const autopas::Configuration &autoPasConfiguration,
                                                 const RegularGridDecomposition &decomposition) {
   if (_mpiRank == 0) {
@@ -154,7 +149,7 @@ void ParallelVtkWriter::recordDomainSubdivision(const int &currentIteration,
   const std::array<double, 3> localBoxMin = decomposition.getLocalBoxMin();
   const std::array<double, 3> localBoxMax = decomposition.getLocalBoxMax();
 
-  auto printDataArray = [&](const auto &data, const std::string &type, const std::string name) {
+  auto printDataArray = [&](const auto &data, const std::string &type, const std::string &name) {
     timestepFile << "        <DataArray type=\"" << type << "\" Name=\"" << name << "\" format=\"ascii\">\n";
     timestepFile << "          " << data << "\n";
     timestepFile << "        </DataArray>\n";
@@ -196,39 +191,29 @@ void ParallelVtkWriter::recordDomainSubdivision(const int &currentIteration,
 }
 
 std::array<int, 6> ParallelVtkWriter::calculateWholeExtent(const RegularGridDecomposition &domainDecomposition) {
-  std::array<int, 6> wholeExtent;
+  std::array<int, 6> wholeExtent{};
   std::array<int, 3> domainId = domainDecomposition.getDomainId();
   std::array<int, 3> decomposition = domainDecomposition.getDecomposition();
-  for (int i = 0; i < 3; ++i) {
+  for (size_t i = 0; i < domainId.size(); ++i) {
     wholeExtent[2 * i] = domainId[i];
     wholeExtent[2 * i + 1] = std::min(domainId[i] + 1, decomposition[i]);
   }
   return wholeExtent;
 }
 
-void ParallelVtkWriter::tryCreateSessionAndDataFolders(const std::string &name, std::string location) {
-  time_t rawTime;
-  time(&rawTime);
-
-  struct tm timeInformation;
-  gmtime_r(&rawTime, &timeInformation);
-
-  char buffer[80];
-  strftime(buffer, sizeof(buffer), "%d%m%Y_%H%M%S", &timeInformation);
-  std::string timeString(buffer);
-
+void ParallelVtkWriter::tryCreateSessionAndDataFolders(const std::string &name, const std::string &location) {
   if (not checkFileExists(location)) {
     tryCreateFolder(location, "./");
   }
 
-  _sessionFolderPath = location + "/" + name + "_" + timeString + "/";
-  tryCreateFolder(name + "_" + timeString, location);
+  _sessionFolderPath = location + "/" + name + "/";
+  tryCreateFolder(name, location);
 
   _dataFolderPath = _sessionFolderPath + "data/";
   tryCreateFolder("data", _sessionFolderPath);
 }
 
-void ParallelVtkWriter::createPvtuFile(const int &currentIteration) {
+void ParallelVtkWriter::createPvtuFile(size_t currentIteration) {
   std::ostringstream filename;
   filename << _sessionFolderPath << _sessionName << "_" << std::setfill('0')
            << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".pvtu";
@@ -269,7 +254,7 @@ void ParallelVtkWriter::createPvtuFile(const int &currentIteration) {
   timestepFile.close();
 }
 
-void ParallelVtkWriter::createPvtsFile(const int &currentIteration, const RegularGridDecomposition &decomposition) {
+void ParallelVtkWriter::createPvtsFile(size_t currentIteration, const RegularGridDecomposition &decomposition) {
   std::ostringstream filename;
   filename << _sessionFolderPath << _sessionName << "_" << std::setfill('0')
            << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".pvts";
@@ -293,7 +278,6 @@ void ParallelVtkWriter::createPvtsFile(const int &currentIteration, const Regula
   timestepFile << "      <PDataArray type=\"Float32\" Name=\"CellSizeFactor\" />\n";
   timestepFile << "      <PDataArray type=\"Int32\" Name=\"Container\" />\n";
   timestepFile << "      <PDataArray type=\"Int32\" Name=\"DataLayout\" />\n";
-  timestepFile << "      <PDataArray type=\"Int32\" Name=\"FullConfiguration\" />\n";
   timestepFile << "      <PDataArray type=\"Int32\" Name=\"LoadEstimator\" />\n";
   timestepFile << "      <PDataArray type=\"Int32\" Name=\"Traversal\" />\n";
   timestepFile << "      <PDataArray type=\"Int32\" Name=\"Newton3\" />\n";
@@ -340,7 +324,7 @@ void ParallelVtkWriter::tryCreateFolder(const std::string &name, const std::stri
   }
 }
 
-void ParallelVtkWriter::generateFilename(const std::string &filetype, const int &currentIteration,
+void ParallelVtkWriter::generateFilename(const std::string &filetype, size_t currentIteration,
                                          std::ostringstream &filenameStream) {
   filenameStream << _dataFolderPath << _sessionName << "_" << _mpiRank << "_" << std::setfill('0')
                  << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << "." << filetype;

@@ -147,7 +147,7 @@ do
                             --traversal ${!t} \
                             --tuning-interval $(( ${thisReps} + 1 )) \
                             --verlet-rebuild-frequency ${VLRebuild[$iVL]} \
-                            --verlet-skin-radius ${VLSkin[$iVL]} \
+                            --verlet-skin-radius-per-timestep ${VLSkin[$iVL]} \
 
                         )
 

@@ -1,0 +1,37 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Gratl"
+  given-names: "Fabio Alexander"
+  orcid: "https://orcid.org/0000-0001-5195-7919"
+- family-names: "Newcome"
+  given-names: "Samuel James"
+  orcid: "https://orcid.org/0000-0003-3044-6057"
+title: "AutoPas"
+version: 1.0.0
+# doi: No doi included
+date-released: 2020-11-10
+url: "https://github.com/AutoPas/AutoPas"
+preferred-citation:
+  type: article
+  authors:
+  - family-names: "Gratl"
+    given-names: "Fabio Alexander"
+    orcid: "https://orcid.org/0000-0001-5195-79190"
+  - family-names: "Seckler"
+    given-names: "Steffan"
+    orcid: "https://orcid.org/0000-0003-1143-6283"
+  - family-names: "Bungartz"
+    given-names: "Han-Joachim"
+    orcid: "https://orcid.org/0000-0002-0171-0712"
+  - family-names: "Neumann"
+    given-names: "Philipp"
+    orcid: "https://orcid.org/0000-0001-8604-8846"
+  doi: "https://doi.org/10.1016/j.cpc.2021.1082620"
+  journal: "Computer Physics Communications"
+  month: 4
+  start: 108262 # ID of the article
+  title: "N ways to simulate short-range particle systems: Automated algorithm selection with the node-level library AutoPas"
+  volume: 273
+  year: 2022
+

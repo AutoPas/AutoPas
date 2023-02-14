@@ -6,7 +6,9 @@
  */
 #pragma once
 
-#ifdef __ARM_FEATURE_SVE
+#ifndef __ARM_FEATURE_SVE
+#pragma message "Requested to compile LJFunctorSVE but SVE is not available!"
+#else
 #include <arm_sve.h>
 #endif
 

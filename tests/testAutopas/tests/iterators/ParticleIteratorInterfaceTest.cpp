@@ -25,7 +25,7 @@ auto ParticleIteratorInterfaceTest::defaultInit(AutoPasT &autoPas, autopas::Cont
   autoPas.setBoxMin({0., 0., 0.});
   autoPas.setBoxMax({10., 10., 10.});
   autoPas.setCutoff(1);
-  autoPas.setVerletSkin(0.2);
+  autoPas.setVerletSkinPerTimestep(0.2);
   autoPas.setVerletRebuildFrequency(2);
   autoPas.setNumSamples(2);
   autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});

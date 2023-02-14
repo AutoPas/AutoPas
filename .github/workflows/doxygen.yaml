@@ -48,5 +48,6 @@ jobs:
           publish_dir: ./${{ env.BUILD_DIR }}/doc_doxygen${{ matrix.config }}/html/ # from dir
           destination_dir: doxygen_documentation${{ matrix.config }}/git-master/ # to dir
           external_repository: AutoPas/AutoPas.github.io
+          publish_branch: main
           user_name: github-actions[bot]
           user_email: github-actions[bot]@users.noreply.github.com
