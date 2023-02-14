@@ -3,62 +3,85 @@ calculate the new position for all particles in the particle container
 @param 
 """
 
+# using ..Simulator.AutoPasInterface, ..Simulator.Iterators
+
+
 function updatePositions(autoPasContainer, deltaT, particlePropertiesLibrary, globalForce)
 
-    iter = AutoPasM.begin(autoPasContainer, Options.IteratorBehavior(Options.owned))
+    iter = AutoPasInterface.begin(autoPasContainer, Options.IteratorBehavior(Options.ownedOrHalo))
 
-    while AIterators.isValid(iter)
-        particle = AIterators.:*(iter)
-        velocity = Particles.getVelocity(particle)
-        force = Particles.getForce(particle)
-        Particles.setOldF(particle, force)
-        Particles.setForce(particle, globalForce)
+    while isValid(iter)
+        particle = Simulator.Iterators.:*(iter)
+        velocity = getVelocity(particle)
+        force = getForce(particle)
+        setOldF(particle, force)
+        setForce(particle, globalForce)
         v = velocity * deltaT
-        f = force * (deltaT * deltaT / (2*Properties.getMass(particlePropertiesLibrary, 0)))
-        # f = force * (deltaT * deltaT / (2*Properties.getMass(particlePropertiesLibrary, Particles.getTypeId(particle))))
+        # f = force * (deltaT * deltaT / (2*Properties.getMass(particlePropertiesLibrary, 0)))
+        f = force * (deltaT * deltaT / (2*getMass(particlePropertiesLibrary, Particles.getTypeId(particle))))
         # TODO: change back
         # if Particles.getID(particle) > 3
         #     Particles.addPos(particle, [100.0, 100.0, 100.0])
         # end
-        Particles.addPosition(particle, v + f)
-        AIterators.:++(iter)
+        addPosition(particle, v + f)
+        Simulator.Iterators.:++(iter)
     end
 
 end
 
 function updateVelocities(autoPasContainer, deltaT, particlePropertiesLibrary)
 
-    iter = AutoPasM.begin(autoPasContainer, Options.IteratorBehavior(Options.owned))
+    iter = AutoPasInterface.begin(autoPasContainer, Options.IteratorBehavior(Options.ownedOrHalo))
 
-    while AIterators.isValid(iter)
-        particle = AIterators.:*(iter)
+    while isValid(iter)
+        particle = Simulator.Iterators.:*(iter)
         force = Particles.getForce(particle)
         oldForce = Particles.getOldF(particle)
-        newV = (oldForce + force) * (deltaT / 2 * Properties.getMass(particlePropertiesLibrary, 0))
-        # newV = (oldForce + force) * (deltaT / 2 * Properties.getMass(particlePropertiesLibrary, Particles.getTypeId(particle)))
-        Particles.addVeloctiy(particle, newV)
-        AIterators.:++(iter)
+        # newV = (oldForce + force) * (deltaT / 2 * getMass(particlePropertiesLibrary, 0))
+        newV = (oldForce + force) * (deltaT / 2 * getMass(particlePropertiesLibrary, Particles.getTypeId(particle)))
+        addVelocity(particle, newV)
+        Simulator.Iterators.:++(iter)
     end
 
 end
 
 function handleBoundaries(autoPasContainer, minBorder, maxBorder)
 
-    iter = AutoPasM.begin(autoPasContainer, Options.IteratorBehavior(Options.owned))
+    iter = AutoPasInterface.begin(autoPasContainer, Options.IteratorBehavior(Options.owned))
     
-    while AIterators.isValid(iter)
-        particle = AIterators.:*(iter)
+    while isValid(iter)
+        particle = Simulator.Iterators.:*(iter)
         pos = Particles.getPosition(particle)
         for dIndex = 1:3
             # if pos[dIndex] < minBorder[dIndex] || pos[dIndex] > maxBorder
             if pos[dIndex] > 2
                 println("delete: " * Particles.toString(particle))
-                AutoPasM.deleteParticle(autoPasContainer, particle)
+                deleteParticle(autoPasContainer, particle)
                 
                 break
             end
         end
-        AIterators.:++(iter)
+        Simulator.Iterators.:++(iter)
+    end
+end
+
+function handlePeriodic(autoPasContainer, minBorder, maxBorder)
+
+    iter = AutoPasInterface.begin(autoPasContainer, Options.IteratorBehavior(Options.ownedOrHalo))
+    
+    while isValid(iter)
+        particle = Simulator.Iterators.:*(iter)
+        pos = getPosition(particle)
+
+        for dIndex = 1:3
+            if pos[dIndex] < minBorder[dIndex]
+                pos[dIndex] = maxBorder[dIndex]
+            elseif pos[dIndex] > maxBorder[dIndex]
+                pos[dIndex] = minBorder[dIndex]
+            end
+            setPosition(particle, pos)
+        end
+        Simulator.Iterators.:++(iter)
     end
 
 end
@@ -70,20 +93,20 @@ function executeUpdates()
     Particles.setPosition(particle, [1.0, 2.0, 3.0])
     Particles.setVelocity(particle, [1.0, 1.0, 1.0])
 
-    aP = AutoPasM.AutoPas{Particles.MoleculeJ{Float64}}()
-    AutoPasM.setBoxMin(aP, [0.0, 0.0, 0.0])
-    AutoPasM.setBoxMax(aP, [7.0, 7.0, 7.0])
-    AutoPasM.init(aP)
+    aP = AutoPas{Particles.MoleculeJ{Float64}}()
+    setBoxMin(aP, [0.0, 0.0, 0.0])
+    setBoxMax(aP, [7.0, 7.0, 7.0])
+    init(aP)
 
-    AutoPasM.addParticle(aP, particle)
+    addParticle(aP, particle)
     iO = Options.IteratorBehavior(Options.owned)
-    iTer = AutoPasM.begin(aP, iO)
+    iTer = AutoPasInterface.begin(aP, iO)
     println("##############")
     println("init configuration")
-    while AIterators.isValid(iTer)
-        particle = AIterators.:*(iTer)
+    while isValid(iTer)
+        particle = Simulator.Iterators.:*(iTer)
         println(Particles.toString(particle))
-        AIterators.:++(iTer)
+        Simulator.Iterators.:++(iTer)
     end
     println("##############")
     println("init configuration")
@@ -97,13 +120,13 @@ function executeUpdates()
 
     updateVelocities(aP, 0.01, ppL)
 
-    iTer = AutoPasM.begin(aP, iO)
+    iTer = AutoPasInterface.begin(aP, iO)
     println("##############")
     println("end configuration")
-    while AIterators.isValid(iTer)
-        particle = AIterators.:*(iTer)
+    while isValid(iTer)
+        particle = Simulator.Iterators.:*(iTer)
         println(Particles.toString(particle))
-        AIterators.:++(iTer)
+        Simulator.Iterators.:++(iTer)
     end
 end
 

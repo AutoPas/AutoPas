@@ -36,7 +36,6 @@ JLCXX_MODULE define_module_iterators(jlcxx::Module& mod) {
      * add ParticleIteratorInterface type to Julia with template parameters:
      * 1) autopas::MoleculeLJ<double>, true
      * 2) MoleculeJ<double>, true
-     *
      */
     mod.add_type<Parametric<TypeVar<1>, TypeVar<2>>>("ParticleIteratorInterface")
             .apply<autopas::ParticleIteratorInterface<autopas::MoleculeLJ<double>, true>, autopas::ParticleIteratorInterface<MoleculeJ<double>, true>>(WrapIteratorInterface());

@@ -1,0 +1,212 @@
+ 9╎326 @Base/threadingconstructs.jl:258; (::var"#18#19"{Main.Simulator.AutoPasInterface.AutoPasAllocated{M...
+ 1╎ 1   @CxxWrap/src/CxxWrap.jl:618; getForce(arg1::CxxWrap.CxxWrapCore.CxxRef{MoleculeJ{Float64}})
+  ╎ 1   ...ulia/src/julia-simulator/parallelUpdate.jl:223; parallelUpdatePosition2(aPC::Main.Simulator.AutoPasInterface.Aut...
+ 1╎  1   @CxxWrap/src/CxxWrap.jl:618; isValid
+  ╎ 1   ...ulia/src/julia-simulator/parallelUpdate.jl:224; parallelUpdatePosition2(aPC::Main.Simulator.AutoPasInterface.Aut...
+ 1╎  1   @CxxWrap/src/CxxWrap.jl:618; *
+  ╎ 75  ...ulia/src/julia-simulator/parallelUpdate.jl:225; parallelUpdatePosition2(aPC::Main.Simulator.AutoPasInterface.Aut...
+75╎  75  @CxxWrap/src/CxxWrap.jl:618; getVelocity(arg1::CxxWrap.CxxWrapCore.CxxRef{MoleculeJ{Float64}})
+  ╎ 79  ...ulia/src/julia-simulator/parallelUpdate.jl:226; parallelUpdatePosition2(aPC::Main.Simulator.AutoPasInterface.Aut...
+78╎  79  @CxxWrap/src/CxxWrap.jl:618; getForce(arg1::CxxWrap.CxxWrapCore.CxxRef{MoleculeJ{Float64}})
+  ╎ 3   ...ulia/src/julia-simulator/parallelUpdate.jl:227; parallelUpdatePosition2(aPC::Main.Simulator.AutoPasInterface.Aut...
+ 3╎  3   @CxxWrap/src/CxxWrap.jl:618; setOldF
+  ╎ 2   ...ulia/src/julia-simulator/parallelUpdate.jl:228; parallelUpdatePosition2(aPC::Main.Simulator.AutoPasInterface.Aut...
+ 2╎  2   @CxxWrap/src/CxxWrap.jl:618; setForce
+  ╎ 44  ...ulia/src/julia-simulator/parallelUpdate.jl:229; parallelUpdatePosition2(aPC::Main.Simulator.AutoPasInterface.Aut...
+  ╎  44  @Base/broadcast.jl:860; materialize
+  ╎   44  @Base/broadcast.jl:885; copy
+  ╎    44  @Base/broadcast.jl:211; similar
+  ╎     44  @Base/broadcast.jl:212; similar
+  ╎    ╎ 44  @Base/abstractarray.jl:840; similar
+  ╎    ╎  44  @Base/abstractarray.jl:841; similar
+  ╎    ╎   44  @Base/boot.jl:476; Array
+  ╎    ╎    44  @Base/boot.jl:468; Array
+44╎    ╎     44  @Base/boot.jl:459; Array
+17╎ 59  ...ulia/src/julia-simulator/parallelUpdate.jl:230; parallelUpdatePosition2(aPC::Main.Simulator.AutoPasInterface.Aut...
+  ╎  37  @Base/broadcast.jl:860; materialize
+  ╎   37  @Base/broadcast.jl:885; copy
+  ╎    37  @Base/broadcast.jl:211; similar
+  ╎     37  @Base/broadcast.jl:212; similar
+  ╎    ╎ 37  @Base/abstractarray.jl:840; similar
+  ╎    ╎  37  @Base/abstractarray.jl:841; similar
+  ╎    ╎   37  @Base/boot.jl:476; Array
+  ╎    ╎    37  @Base/boot.jl:468; Array
+37╎    ╎     37  @Base/boot.jl:459; Array
+ 5╎  5   @CxxWrap/src/CxxWrap.jl:618; getMass(arg1::Main.Simulator.Properties.ParticlePropertiesLibrar...
+  ╎ 46  ...ulia/src/julia-simulator/parallelUpdate.jl:231; parallelUpdatePosition2(aPC::Main.Simulator.AutoPasInterface.Aut...
+  ╎  45  @Base/broadcast.jl:860; materialize
+  ╎   45  @Base/broadcast.jl:885; copy
+  ╎    45  @Base/broadcast.jl:211; similar
+  ╎     45  @Base/broadcast.jl:212; similar
+  ╎    ╎ 45  @Base/abstractarray.jl:840; similar
+  ╎    ╎  45  @Base/abstractarray.jl:841; similar
+  ╎    ╎   45  @Base/boot.jl:476; Array
+  ╎    ╎    45  @Base/boot.jl:468; Array
+45╎    ╎     45  @Base/boot.jl:459; Array
+  ╎  1   @CxxWrap/src/CxxWrap.jl:618; addPosition
+ 1╎   1   @Base/array.jl:924; getindex
+  ╎ 6   ...ulia/src/julia-simulator/parallelUpdate.jl:234; parallelUpdatePosition2(aPC::Main.Simulator.AutoPasInterface.Aut...
+ 6╎  6   @CxxWrap/src/CxxWrap.jl:618; ++
+Total snapshots: 331. Utilization: 100% across all threads and tasks. Use the `groupby` kwarg to break down by thread and/or task
+
+
+75 / 326 = 23% getVelocity
+79 / 326 = 24% getForce
+
+44 / 326 = 13% calculate velocity
+59 / 326 = 18% calculate force
+46 / 326 = 14% add v and f
+
+ 6╎272 @Base/threadingconstructs.jl:258; (::var"#18#19"{Main.Simulator.AutoPasInterface.AutoPasAllocated{M...
+  ╎ 5   ...ulia/src/julia-simulator/parallelUpdate.jl:223; parallelUpdatePosition2(aPC::Main.Simulator.AutoPasInterface.Aut...
+ 5╎  5   @CxxWrap/src/CxxWrap.jl:618; isValid
+  ╎ 3   ...ulia/src/julia-simulator/parallelUpdate.jl:224; parallelUpdatePosition2(aPC::Main.Simulator.AutoPasInterface.Aut...
+ 3╎  3   @CxxWrap/src/CxxWrap.jl:618; *
+  ╎ 92  ...ulia/src/julia-simulator/parallelUpdate.jl:225; parallelUpdatePosition2(aPC::Main.Simulator.AutoPasInterface.Aut...
+92╎  92  @CxxWrap/src/CxxWrap.jl:618; getVelocity(arg1::CxxWrap.CxxWrapCore.CxxRef{MoleculeJ{Float64}})
+  ╎ 90  ...ulia/src/julia-simulator/parallelUpdate.jl:226; parallelUpdatePosition2(aPC::Main.Simulator.AutoPasInterface.Aut...
+89╎  90  @CxxWrap/src/CxxWrap.jl:618; getForce(arg1::CxxWrap.CxxWrapCore.CxxRef{MoleculeJ{Float64}})
+  ╎ 2   ...ulia/src/julia-simulator/parallelUpdate.jl:227; parallelUpdatePosition2(aPC::Main.Simulator.AutoPasInterface.Aut...
+ 2╎  2   @CxxWrap/src/CxxWrap.jl:618; setOldF
+  ╎ 3   ...ulia/src/julia-simulator/parallelUpdate.jl:228; parallelUpdatePosition2(aPC::Main.Simulator.AutoPasInterface.Aut...
+ 3╎  3   @CxxWrap/src/CxxWrap.jl:618; setForce
+  ╎ 12  ...ulia/src/julia-simulator/parallelUpdate.jl:229; parallelUpdatePosition2(aPC::Main.Simulator.AutoPasInterface.Aut...
+  ╎  12  @Base/broadcast.jl:860; materialize
+  ╎   12  @Base/broadcast.jl:885; copy
+  ╎    1   @Base/broadcast.jl:913; copyto!
+  ╎     1   @Base/broadcast.jl:957; copyto!
+  ╎    ╎ 1   @Base/broadcast.jl:940; preprocess
+  ╎    ╎  1   @Base/broadcast.jl:943; preprocess_args
+  ╎    ╎   1   @Base/broadcast.jl:941; preprocess
+  ╎    ╎    1   @Base/broadcast.jl:637; extrude
+  ╎    ╎     1   @Base/broadcast.jl:586; newindexer
+  ╎    ╎    ╎ 1   @Base/broadcast.jl:587; shapeindexer
+  ╎    ╎    ╎  1   @Base/broadcast.jl:592; _newindexer
+  ╎    ╎    ╎   1   @Base/operators.jl:282; !=
+ 1╎    ╎    ╎    1   @Base/promotion.jl:477; ==
+  ╎    11  @Base/broadcast.jl:211; similar
+  ╎     11  @Base/broadcast.jl:212; similar
+  ╎    ╎ 11  @Base/abstractarray.jl:840; similar
+  ╎    ╎  11  @Base/abstractarray.jl:841; similar
+  ╎    ╎   11  @Base/boot.jl:476; Array
+  ╎    ╎    11  @Base/boot.jl:468; Array
+11╎    ╎     11  @Base/boot.jl:459; Array
+13╎ 30  ...ulia/src/julia-simulator/parallelUpdate.jl:230; parallelUpdatePosition2(aPC::Main.Simulator.AutoPasInterface.Aut...
+  ╎  14  @Base/broadcast.jl:860; materialize
+  ╎   14  @Base/broadcast.jl:885; copy
+  ╎    1   @Base/broadcast.jl:913; copyto!
+  ╎     1   @Base/broadcast.jl:960; copyto!
+  ╎    ╎ 1   @Base/simdloop.jl:77; macro expansion
+  ╎    ╎  1   @Base/broadcast.jl:961; macro expansion
+ 1╎    ╎   1   @Base/array.jl:966; setindex!
+  ╎    13  @Base/broadcast.jl:211; similar
+  ╎     13  @Base/broadcast.jl:212; similar
+  ╎    ╎ 13  @Base/abstractarray.jl:840; similar
+  ╎    ╎  13  @Base/abstractarray.jl:841; similar
+  ╎    ╎   13  @Base/boot.jl:476; Array
+  ╎    ╎    13  @Base/boot.jl:468; Array
+13╎    ╎     13  @Base/boot.jl:459; Array
+ 3╎  3   @CxxWrap/src/CxxWrap.jl:618; getMass(arg1::Main.Simulator.Properties.ParticlePropertiesLibrar...
+  ╎ 19  ...ulia/src/julia-simulator/parallelUpdate.jl:231; parallelUpdatePosition2(aPC::Main.Simulator.AutoPasInterface.Aut...
+  ╎  16  @Base/broadcast.jl:860; materialize
+  ╎   16  @Base/broadcast.jl:885; copy
+  ╎    16  @Base/broadcast.jl:211; similar
+  ╎     16  @Base/broadcast.jl:212; similar
+  ╎    ╎ 16  @Base/abstractarray.jl:840; similar
+  ╎    ╎  16  @Base/abstractarray.jl:841; similar
+  ╎    ╎   16  @Base/boot.jl:476; Array
+  ╎    ╎    16  @Base/boot.jl:468; Array
+16╎    ╎     16  @Base/boot.jl:459; Array
+ 3╎  3   @CxxWrap/src/CxxWrap.jl:618; addPosition
+  ╎ 10  ...ulia/src/julia-simulator/parallelUpdate.jl:234; parallelUpdatePosition2(aPC::Main.Simulator.AutoPasInterface.Aut...
+10╎  10  @CxxWrap/src/CxxWrap.jl:618; ++
+Total snapshots: 277. Utilization: 100% across all threads and tasks. Use the `groupby` kwarg to break down by thread and/or task
+
+appx. 65% for getVelocity and getForce
+
+Overhead ╎ [+additional indent] Count File:Line; Function
+=========================================================
+   ╎1   @Base/client.jl:522; _start()
+   ╎ 1   @Base/client.jl:303; exec_options(opts::Base.JLOptions)
+   ╎  1   @Base/Base.jl:419; include(mod::Module, _path::String)
+   ╎   1   @Base/loading.jl:1488; _include(mapexpr::Function, mod::Module, _path::String)
+   ╎    1   @Base/loading.jl:1428; include_string(mapexpr::typeof(identity), mod::Module, code::...
+   ╎     1   @Base/boot.jl:368; eval
+   ╎    ╎ 1   ...a/src/julia-simulator/parallelUpdate.jl:303; spawnTest(i::Int64)
+   ╎    ╎  1   @Base/compiler/typeinfer.jl:996; typeinf_ext_toplevel(mi::Core.MethodInstance, world::UInt64)
+   ╎    ╎   1   @Base/compiler/typeinfer.jl:1000; typeinf_ext_toplevel(interp::Core.Compiler.NativeInterprete...
+   ╎    ╎    1   @Base/compiler/typeinfer.jl:967; typeinf_ext(interp::Core.Compiler.NativeInterpreter, mi::Co...
+   ╎    ╎     1   @Base/compiler/typeinfer.jl:213; typeinf(interp::Core.Compiler.NativeInterpreter, frame::Co...
+   ╎    ╎    ╎ 1   @Base/compiler/typeinfer.jl:230; _typeinf(interp::Core.Compiler.NativeInterpreter, frame::C...
+   ╎    ╎    ╎  1   @Base/compiler/abstractinterpretation.jl:2482; typeinf_nocycle(interp::Core.Compiler.NativeInterpreter, ...
+   ╎    ╎    ╎   1   ...e/compiler/abstractinterpretation.jl:2386; typeinf_local(interp::Core.Compiler.NativeInterpreter, f...
+   ╎    ╎    ╎    1   ...e/compiler/abstractinterpretation.jl:1910; abstract_eval_statement(interp::Core.Compiler.NativeInt...
+   ╎    ╎    ╎     1   .../compiler/abstractinterpretation.jl:1753; abstract_call(interp::Core.Compiler.NativeInterpreter, ...
+   ╎    ╎    ╎    ╎ 1   .../compiler/abstractinterpretation.jl:1786; abstract_call(interp::Core.Compiler.NativeInterpreter,...
+   ╎    ╎    ╎    ╎  1   .../compiler/abstractinterpretation.jl:1716; abstract_call_known(interp::Core.Compiler.NativeInterp...
+   ╎    ╎    ╎    ╎   1   .../compiler/abstractinterpretation.jl:148; abstract_call_gf_by_type(interp::Core.Compiler.NativeI...
+   ╎    ╎    ╎    ╎    1   ...compiler/abstractinterpretation.jl:835; abstract_call_method_with_const_args(interp::Core.Com...
+   ╎    ╎    ╎    ╎     1   ...compiler/abstractinterpretation.jl:868; abstract_call_method_with_const_args(interp::Core.Co...
+   ╎    ╎    ╎    ╎    ╎ 1   @Base/compiler/typeinfer.jl:213; typeinf(interp::Core.Compiler.NativeInterpreter, fra...
+   ╎    ╎    ╎    ╎    ╎  1   @Base/compiler/typeinfer.jl:230; _typeinf(interp::Core.Compiler.NativeInterpreter, f...
+   ╎    ╎    ╎    ╎    ╎   1   ...mpiler/abstractinterpretation.jl:2482; typeinf_nocycle(interp::Core.Compiler.NativeInterp...
+   ╎    ╎    ╎    ╎    ╎    1   ...mpiler/abstractinterpretation.jl:2360; typeinf_local(interp::Core.Compiler.NativeInterpr...
+   ╎    ╎    ╎    ╎    ╎     1   ...piler/abstractinterpretation.jl:2023; abstract_eval_statement(interp::Core.Compiler.Nat...
+  4╎251 @Base/threadingconstructs.jl:258; (::var"#18#19"{Main.Simulator.AutoPasInterface.AutoPasAllocated{...
+   ╎ 1   ...lia/src/julia-simulator/parallelUpdate.jl:223; parallelUpdatePosition2(aPC::Main.Simulator.AutoPasInterface.Aut...
+  1╎  1   @CxxWrap/src/CxxWrap.jl:618; isValid
+   ╎ 4   ...lia/src/julia-simulator/parallelUpdate.jl:224; parallelUpdatePosition2(aPC::Main.Simulator.AutoPasInterface.Aut...
+  3╎  4   @CxxWrap/src/CxxWrap.jl:618; *
+  1╎   1   @Base/array.jl:924; getindex
+   ╎ 105 ...lia/src/julia-simulator/parallelUpdate.jl:225; parallelUpdatePosition2(aPC::Main.Simulator.AutoPasInterface.Aut...
+105╎  105 @CxxWrap/src/CxxWrap.jl:618; getVelocity(arg1::CxxWrap.CxxWrapCore.CxxRef{MoleculeJ{Float64}})
+   ╎ 79  ...lia/src/julia-simulator/parallelUpdate.jl:226; parallelUpdatePosition2(aPC::Main.Simulator.AutoPasInterface.Aut...
+ 79╎  79  @CxxWrap/src/CxxWrap.jl:618; getForce(arg1::CxxWrap.CxxWrapCore.CxxRef{MoleculeJ{Float64}})
+   ╎ 1   ...lia/src/julia-simulator/parallelUpdate.jl:227; parallelUpdatePosition2(aPC::Main.Simulator.AutoPasInterface.Aut...
+  1╎  1   @CxxWrap/src/CxxWrap.jl:618; setOldF
+   ╎ 3   ...lia/src/julia-simulator/parallelUpdate.jl:228; parallelUpdatePosition2(aPC::Main.Simulator.AutoPasInterface.Aut...
+  3╎  3   @CxxWrap/src/CxxWrap.jl:618; setForce
+   ╎ 22  ...lia/src/julia-simulator/parallelUpdate.jl:229; parallelUpdatePosition2(aPC::Main.Simulator.AutoPasInterface.Aut...
+   ╎  22  @Base/broadcast.jl:860; materialize
+   ╎   22  @Base/broadcast.jl:885; copy
+   ╎    22  @Base/broadcast.jl:211; similar
+   ╎     22  @Base/broadcast.jl:212; similar
+   ╎    ╎ 22  @Base/abstractarray.jl:840; similar
+   ╎    ╎  22  @Base/abstractarray.jl:841; similar
+   ╎    ╎   22  @Base/boot.jl:476; Array
+   ╎    ╎    22  @Base/boot.jl:468; Array
+ 22╎    ╎     22  @Base/boot.jl:459; Array
+  5╎ 15  ...lia/src/julia-simulator/parallelUpdate.jl:230; parallelUpdatePosition2(aPC::Main.Simulator.AutoPasInterface.Aut...
+   ╎  9   @Base/broadcast.jl:860; materialize
+   ╎   9   @Base/broadcast.jl:885; copy
+   ╎    2   @Base/broadcast.jl:913; copyto!
+   ╎     2   @Base/broadcast.jl:960; copyto!
+   ╎    ╎ 1   @Base/simdloop.jl:77; macro expansion
+   ╎    ╎  1   @Base/broadcast.jl:961; macro expansion
+  1╎    ╎   1   @Base/array.jl:966; setindex!
+   ╎    ╎ 1   @Base/simdloop.jl:78; macro expansion
+  1╎    ╎  1   @Base/int.jl:87; +
+   ╎    7   @Base/broadcast.jl:211; similar
+   ╎     7   @Base/broadcast.jl:212; similar
+   ╎    ╎ 7   @Base/abstractarray.jl:840; similar
+   ╎    ╎  7   @Base/abstractarray.jl:841; similar
+   ╎    ╎   7   @Base/boot.jl:476; Array
+   ╎    ╎    7   @Base/boot.jl:468; Array
+  7╎    ╎     7   @Base/boot.jl:459; Array
+  1╎  1   @CxxWrap/src/CxxWrap.jl:618; getMass(arg1::Main.Simulator.Properties.ParticlePropertiesLibra...
+   ╎ 11  ...lia/src/julia-simulator/parallelUpdate.jl:231; parallelUpdatePosition2(aPC::Main.Simulator.AutoPasInterface.Aut...
+   ╎  6   @Base/broadcast.jl:860; materialize
+   ╎   6   @Base/broadcast.jl:885; copy
+   ╎    6   @Base/broadcast.jl:211; similar
+   ╎     6   @Base/broadcast.jl:212; similar
+   ╎    ╎ 6   @Base/abstractarray.jl:840; similar
+   ╎    ╎  6   @Base/abstractarray.jl:841; similar
+   ╎    ╎   6   @Base/boot.jl:476; Array
+   ╎    ╎    6   @Base/boot.jl:468; Array
+  6╎    ╎     6   @Base/boot.jl:459; Array
+  5╎  5   @CxxWrap/src/CxxWrap.jl:618; addPosition
+   ╎ 6   ...lia/src/julia-simulator/parallelUpdate.jl:234; parallelUpdatePosition2(aPC::Main.Simulator.AutoPasInterface.Aut...
+  6╎  6   @CxxWrap/src/CxxWrap.jl:618; ++
+Total snapshots: 263. Utilization: 100% across all threads and tasks. Use the `groupby` kwarg to break down by thread and/or task
+
+appx. 70% for getVelocity and getForce

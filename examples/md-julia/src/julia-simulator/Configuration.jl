@@ -1,4 +1,17 @@
-using ..Properties, ..AutoPasM, ..AIterators
+# using ..Properties, ..AutoPasM, ..AIterators
+# using ..Simulator.AutoPasInterface, ..Simulator.Iterators
+
+
+function getNp(apc)
+    np0 = 0
+    iter = AutoPasInterface.begin(apc, IteratorBehavior(ownedOrHalo))
+    while isValid(iter)
+        np0 += 1
+        Simulator.Iterators.:++(iter)
+    end
+    return np0
+end
+
 
 function parseInput(inputParameters)
 
@@ -11,9 +24,14 @@ function parseInput(inputParameters)
     Properties.calculateMixingCoefficients(particlePropertiesLibrary)
 
     # add particles to AutoPas container
+    index = 0
     for particle in particles
-        AutoPasM.addParticle(autoPasContainer, particle)
+        addParticle(autoPasContainer, particle)
+        index += 1
     end
+    println("added " * string(index) * " particles")
+
+    # println("particles in container: ", getNp(autoPasContainer))
 
     return autoPasContainer, particlePropertiesLibrary
 end
@@ -33,18 +51,18 @@ end
 
 function initAutoPasContainer(inputParameters)
 
-    apc = AutoPasM.AutoPas{Particles.MoleculeJ{Float64}}()
+    apc = AutoPas{Particles.MoleculeJ{Float64}}()
 
     # add setter with new type
     # setCellS
-    AutoPasM.setAllowedContainers(apc, inputParameters.container)
-    AutoPasM.setAllowedDataLayouts(apc, inputParameters.dataLayout)
-    AutoPasM.setAllowedNewton3Options(apc, inputParameters.newton3)
-    AutoPasM.setAllowedTraversals(apc, inputParameters.traversal)
+    setAllowedContainers(apc, inputParameters.container)
+    setAllowedDataLayouts(apc, inputParameters.dataLayout)
+    setAllowedNewton3Options(apc, inputParameters.newton3)
+    setAllowedTraversals(apc, inputParameters.traversal)
     # AutoPasM.setAllowedLoadEstimators(apc, inputparameters._configuration.loadEstimatorOptions.value);
-    AutoPasM.setBoxMin(apc, inputParameters.boxMin)
-    AutoPasM.setBoxMax(apc, inputParameters.boxMax)
-    AutoPasM.setCutoff(apc, inputParameters.cutoff)
+    setBoxMin(apc, inputParameters.boxMin)
+    setBoxMax(apc, inputParameters.boxMax)
+    setCutoff(apc, inputParameters.cutoff)
     # AutoPasM.setRelativeOptimumRange(_configuration.relativeOptimumRange.value);
     # AutoPasM.setMaxTuningPhasesWithoutTest(_configuration.maxTuningPhasesWithoutTest.value);
     # AutoPasM.setRelativeBlacklistRange(_configuration.relativeBlacklistRange.value);
@@ -52,16 +70,16 @@ function initAutoPasContainer(inputParameters)
     # AutoPasM.setExtrapolationMethodOption(_configuration.extrapolationMethodOption.value);
     # AutoPasM.setNumSamples(_configuration.tuningSamples.value)
     # AutoPasM.setMaxEvidence(_configuration.tuningMaxEvidence.value)
-    AutoPasM.setSelectorStrategy(apc, inputParameters.selectorStrategy)
-    AutoPasM.setTuningInterval(apc, inputParameters.tuningInterval)
-    # AutoPasM.setTuningStrategyOption(apc, inputParameters.tuningStrategy)
-    AutoPasM.setMPIStrategy(apc, inputParameters.mpiStrategy)
+    setSelectorStrategy(apc, inputParameters.selectorStrategy)
+    setTuningInterval(apc, inputParameters.tuningInterval)
+    setTuningStrategyOption(apc, inputParameters.tuningStrategy)
+    setMPIStrategy(apc, inputParameters.mpiStrategy)
     # AutoPasM.setMPITuningMaxDifferenceForBucket(_configuration.MPITuningMaxDifferenceForBucket.value);
     # AutoPasM.setMPITuningWeightForMaxDensity(_configuration.MPITuningWeightForMaxDensity.value);
-    AutoPasM.setVerletClusterSize(apc, inputParameters.verletClusterSize)
-    AutoPasM.setVerletRebuildFrequency(apc, inputParameters.verletRebuildFrequency)
-    AutoPasM.setVerletSkinPerTimestep(apc, inputParameters.verletSkinRadiusPerTimestep)
+    # AutoPasM.setVerletClusterSize(apc, inputParameters.verletClusterSize)
+    # AutoPasM.setVerletRebuildFrequency(apc, inputParameters.verletRebuildFrequency)
+    # AutoPasM.setVerletSkinPerTimestep(apc, inputParameters.verletSkinRadiusPerTimestep)
     # AutoPasM.setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
-    AutoPasM.init(apc)
+    init(apc)
     return apc
 end

@@ -1,4 +1,6 @@
 
+module Simulator
+
 module Particles
   using CxxWrap
   @wrapmodule(joinpath("../../../../build/examples/md-julia/","libjulia_bindings.so"), :define_module_particles)
@@ -6,8 +8,27 @@ module Particles
   function __init__()
     @initcxx
   end
+
   export
-    MoleculeJ
+    MoleculeJ,
+    setPosition,
+    setVelocity,
+    setForce,
+    setOldF,
+    setID,
+    setTypeId,
+    getPosition,
+    getVelocity,
+    getForce,
+    getOldF,
+    getID,
+    getTypeId,
+    addPosition,
+    addVelocity,
+    addForce,
+    subForce,
+    toString
+
 end
 
 module Options
@@ -17,15 +38,37 @@ module Options
   function __init__()
     @initcxx
   end
+export
+  ContainerOption,
+  DataLayoutOption,
+  Newton3Option,
+  TraversalOption,
+  SelectorStrategyOption,
+  TuningStrategyOption,
+  MPIStrategyOption,
+  IteratorBehavior
+export
+  linkedCells,
+  fastestAbs,
+  aos,
+  lc_c01,
+  fullSearch,
+  noMPI,
+  disabled,
+  enabled,
+  owned,
+  ownedOrHalo
 end
 
-module AIterators
+module Iterators
   using CxxWrap
   @wrapmodule(joinpath("../../../../build/examples/md-julia/","libjulia_bindings.so"), :define_module_iterators)
 
   function __init__()
     @initcxx
   end
+export
+  isValid
 end
 
 module Properties
@@ -35,47 +78,70 @@ module Properties
   function __init__()
     @initcxx
   end
+
+export
+  getMass
 end
 
-module AutoPasM
+module AutoPasInterface
   using CxxWrap
   @wrapmodule(joinpath("../../../../build/examples/md-julia/","libjulia_bindings.so"), :define_module_autopas)
 
   function __init__()
     @initcxx
   end
-  export updateContainer
+  export
+    updateContainer,
+    AutoPas,
+    init,
+    setAllowedContainers,
+    setAllowedDataLayouts,
+    setAllowedNewton3Options,
+    setAllowedTraversals,
+    setBoxMin,
+    setBoxMax,
+    setCutoff,
+    setSelectorStrategy,
+    setTuningInterval,
+    setTuningStrategyOption,
+    setMPIStrategy,
+    addParticle,
+    iteratePairwise,
+    getNumberOfParticles,
+    updateContainer,
+    getCutoff,
+    deleteParticle
 end
 
-
-module ff
-
-include("Configuration.jl")
+using .Particles, .Options, .Iterators, .Properties, .AutoPasInterface
+include("./Configuration.jl")
 export
-  parseInput
+  parseInput,
+  getNp
 
-include("ForceCalculation.jl")
+include("./Generator.jl")
+export
+  generateObject,
+  generateCubeGrid
+
+include("./ForceCalculation.jl")
 export
   updateForces
 
-include("Generator.jl")
+include("./InputConfiguration.jl")
 export
-  generateObject
-  generateCubeGrid
-
-include("InputConfiguration.jl")
-export
-  CubeGridInput
+  InputParameters,
+  CubeGridInput,
   Thermostat
-  InputParameters
 
-include("Simulator.jl")
+include("./Simulator.jl")
 export
-  startSimulation
+  startSimulation,
+  printSimulation
 
-include("TimeDiscretization.jl")
+include("./TimeDiscretization.jl")
 export
-  updatePositions
+  updatePositions,
   updateVelocities
 
 end

@@ -198,6 +198,10 @@ class MoleculeJ : public autopas::Particle {
         _oldF = {oldF[0], oldF[1], oldF[2]};
     }
 
+    void setTypeId(size_t typeId) {
+      this->_typeId = typeId;
+    }
+
     /**
      * get position of the molecule
      */

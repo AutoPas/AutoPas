@@ -1,8 +1,8 @@
 using Random, Distributions
-using ..Particles
+# using ..Simulator.Particles
 
 function generateCubeGrid(cubeGrid, mId)
-    particles = Vector{Particles.MoleculeJ{Float64}}([])
+    particles = Vector{MoleculeJ{Float64}}([])
     id_ = 0
     generator = createRandomGenerator()
     for x in 1 : cubeGrid.particlesPerDimension[1]
@@ -10,7 +10,7 @@ function generateCubeGrid(cubeGrid, mId)
             for z in 1 : cubeGrid.particlesPerDimension[3]
                 pos = [(x-1) * cubeGrid.particleSpacing, (y-1) * cubeGrid.particleSpacing, (z-1) * cubeGrid.particleSpacing] + cubeGrid.bottomLeftCorner
                 v = cubeGrid.velocity + addBrownianMotion(cubeGrid.factorBrownianMotion, generator)
-                particle = Particles.MoleculeJ{Float64}(pos, v, mId, cubeGrid.particleType)
+                particle = MoleculeJ{Float64}(pos, v, mId, cubeGrid.particleType)
                 push!(particles, particle)
                 mId = mId + 1
             end

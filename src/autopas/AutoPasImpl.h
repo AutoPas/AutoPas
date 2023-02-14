@@ -54,9 +54,7 @@ AutoPas<Particle> &AutoPas<Particle>::operator=(AutoPas &&other) noexcept {
 
 template <class Particle>
 void AutoPas<Particle>::init() {
-  std::cout << "min: " <<_boxMin.at(0) << ", " << _boxMin.at(1) << ", " << _boxMin.at(2) << "\n";
-  std::cout << "max: " <<_boxMax.at(0) << ", " << _boxMax.at(1) << ", " << _boxMax.at(2) << "\n";
-
+  
   AutoPasLog(info, "AutoPas Version: {}", AutoPas_VERSION);
   if (_numSamples % _verletRebuildFrequency != 0) {
     AutoPasLog(warn,

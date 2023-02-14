@@ -95,6 +95,9 @@ struct WrapAutoPas {
         // return iterator to first element of container
         wrapped.method("begin", static_cast<iterator_t (WrappedT::*)(autopas::options::IteratorBehavior)> (&WrappedT::begin));
 
+        // retrun number of particles in the container
+        wrapped.method("getNumberOfParticles", &WrappedT::getNumberOfParticles);
+
         // setters for AutoPas variables (further setters are defined below)
         wrapped.method("setVerletSkinPerTimestep", &WrappedT::setVerletSkinPerTimestep);
         wrapped.method("setVerletRebuildFrequency", &WrappedT::setVerletRebuildFrequency);
@@ -117,7 +120,7 @@ struct WrapAutoPas {
         wrapped.method("setExtrapolationMethodOption", &WrappedT::setExtrapolationMethodOption);
 
         // getters of AutoPas variables
-        wrapped.method("getCutoff", &WrappedT::getCutoff);    
+        wrapped.method("getCutoff", &WrappedT::getCutoff);
     }
 };
 
@@ -286,4 +289,4 @@ JLCXX_MODULE define_module_autopas(jlcxx::Module& mod)
     mod.method("setBoxMax", &setBoxMax);
 }
 
-// cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DAUTOPAS_BUILD_TESTS=OFF ..
+// cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DAUTOPAS_BUILD_TESTS=OFF -DAUTOPAS_OPENMP=ON ..

@@ -1,30 +1,42 @@
 function startSimulation(autoPasContainer, particlePropertiesLibrary, inputParameters)
+    #=
     iter = AutoPasM.begin(autoPasContainer, Options.IteratorBehavior(Options.owned))
     while AIterators.isValid(iter)
         println(Particles.toString(AIterators.:*(iter)))
         AIterators.:++(iter)
     end
-
+    =#
+    tmp = inputParameters.objects[1].particlesPerDimension
+    maxParticles = tmp[1] * tmp[2] * tmp[3]
+    tmpParticles = maxParticles
     for iteration = 1 : inputParameters.iterations
-        println(iteration)
+        
         updatePositions(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
         
         # handle boundary particles
         # handleBoundaries(autoPasContainer, inputParameters.boxMin, inputParameters.boxMax)
         # for outflow maybe only use updateContainer which has same effekt
-        updateContainer(autoPasContainer)
+        # deleted_items = updateContainer(autoPasContainer)
+        # ff.handlePeriodic(autoPasContainer, inputParameters.boxMin, inputParameters.boxMax)
+        updateForces(autoPasContainer, inputParameters.globalForce, particlePropertiesLibrary)
         
-        ff.updateForces(autoPasContainer, inputParameters.globalForce, particlePropertiesLibrary)
-
         updateVelocities(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary)
         # println("after updateVelocities")
+        
     end
+    #= 
     println()
-    println("print remaining particles")
-    iter = AutoPasM.begin(autoPasContainer, Options.IteratorBehavior(Options.owned))
+    np = 0
+    iter = AutoPasM.begin(autoPasContainer, Options.IteratorBehavior(Options.ownedOrHalo))
     while AIterators.isValid(iter)
-        println(Particles.toString(AIterators.:*(iter)))
+        np += 1
         AIterators.:++(iter)
     end
-    println("done")
+    println("remaining particles ", np)
+    # println("done")
+    =#
+end
+
+function printSimulation()
+    println("in simulation")
 end

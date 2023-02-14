@@ -24,8 +24,10 @@ struct WrapMoleculeJ {
 
         // default constructor for MoleculeJ
         wrapped.template constructor<>();
+
         // typename WrappedT::value_type*
         using ft = typename WrappedT::ft;
+        
         // constructor for MoleculeJ with arguments for pos, v, moleculeId, typeId
         wrapped.template constructor<jlcxx::ArrayRef<ft, 1>, jlcxx::ArrayRef<ft,1>, unsigned long, unsigned long>();
 
@@ -35,6 +37,7 @@ struct WrapMoleculeJ {
         wrapped.method("setForce", &WrappedT::setForce);
         wrapped.method("setOldF", &WrappedT::setOldF);
         wrapped.method("setID", &WrappedT::setID);
+        wrapped.method("setTypeId", &WrappedT::setTypeId);
 
         // getters of MoleculeJ attributes
         wrapped.method("getPosition", &WrappedT::getPosition);
@@ -42,6 +45,7 @@ struct WrapMoleculeJ {
         wrapped.method("getForce", &WrappedT::getForce);
         wrapped.method("getOldF", &WrappedT::getOldF);
         wrapped.method("getID", &WrappedT::getID);
+        wrapped.method("getTypeId", &WrappedT::getTypeId);
 
         // add and sub methods of MoleculeJ attributes
         wrapped.method("addPosition", &WrappedT::addPosition);

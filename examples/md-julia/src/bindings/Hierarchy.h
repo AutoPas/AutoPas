@@ -51,7 +51,7 @@ namespace jlcxx
     template<typename floatType> struct IsMirroredType<autopas::MoleculeLJ<floatType>> : std::false_type { };
     template<typename floatType> struct IsMirroredType<MoleculeJ<floatType>> : std::false_type { };
     template<typename Particle> struct IsMirroredType<autopas::AutoPas<Particle>> : std::false_type { };
-    template<typename T, typename V> struct IsMirroredType<autopas::ParticleBase<T, V>> : std::false_type { };
+    template<typename floatType, typename idType> struct IsMirroredType<autopas::ParticleBase<floatType, idType>> : std::false_type { };
     template<typename Particle, bool modifiable> struct IsMirroredType<autopas::ParticleIteratorInterface<Particle, modifiable>> : std::false_type { };
     template<typename Particle, bool modifiable> struct IsMirroredType<autopas::ParticleIteratorWrapper<Particle, modifiable>> : std::false_type { };
     template<typename floatType, typename intType> struct IsMirroredType<ParticlePropertiesLibrary<floatType, intType>> : std::false_type { };
