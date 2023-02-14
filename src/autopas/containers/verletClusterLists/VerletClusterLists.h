@@ -213,11 +213,13 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       auto &tower = _towers[i];
       const auto towerSize = tower.getNumAllParticles();
       auto numTailDummies = _towers[i].getNumTailDummyParticles();
-      for (size_t j = 0; j < towerSize; ++j) {
+      for (size_t j = 0; j < towerSize;) {
         if (tower[j].isHalo()) {
           tower[j] = tower[towerSize - 1 - numTailDummies];
           ++numTailDummies;
           deletedSth = true;
+        } else {
+          ++j;
         }
       }
       if (deletedSth) {
