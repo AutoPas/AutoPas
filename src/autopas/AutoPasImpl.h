@@ -146,11 +146,13 @@ void AutoPas<Particle>::deleteAllParticles() {
 
 template <class Particle>
 void AutoPas<Particle>::deleteParticle(ContainerIterator<Particle, true, false> &iter) {
+  _logicHandler->decreaseParticleCounter(*iter);
   internal::deleteParticle(iter);
 }
 
 template <class Particle>
 void AutoPas<Particle>::deleteParticle(ContainerIterator<Particle, true, true> &iter) {
+  _logicHandler->decreaseParticleCounter(*iter);
   internal::deleteParticle(iter);
 }
 
