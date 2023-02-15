@@ -1,5 +1,5 @@
 /**
- * @file ParticleIterator.h
+ * @file ContainerIterator.h
  *
  * @authors F. Gratl
  * @date 15.12.2022
