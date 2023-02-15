@@ -13,7 +13,6 @@
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/TraversalInterface.h"
-#include "autopas/iterators/ContainerIterator.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/options/TraversalOption.h"
@@ -22,6 +21,11 @@
 #include "autopas/utils/inBox.h"
 
 namespace autopas {
+
+// forward declaration
+template <class Particle, bool modifiable, bool regionIter>
+class ContainerIterator;
+
 /**
  * The ParticleContainerInterface class provides a basic interface for all Containers within AutoPas.
  * It defines method interfaces for addition and deletion of particles, accessing general container
