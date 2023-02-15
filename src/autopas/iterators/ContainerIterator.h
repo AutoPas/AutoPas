@@ -13,11 +13,11 @@
 #include <type_traits>
 #include <vector>
 
+#include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
-#include "autopas/containers/ParticleContainerInterface.h"
 
 namespace autopas {
 
@@ -109,7 +109,7 @@ class ContainerIterator {
   /**
    * Default constructor that guarantees an invalid iterator.
    */
-  ContainerIterator() : _currentParticle(nullptr) {};
+  ContainerIterator() : _currentParticle(nullptr){};
 
   /**
    * Region Iterator constructor meant to be called from the logic handler.

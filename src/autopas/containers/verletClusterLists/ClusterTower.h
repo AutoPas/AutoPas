@@ -87,9 +87,11 @@ class ClusterTower : public ParticleCell<Particle> {
     if (getNumActualParticles() > 0) {
       _particlesStorage.sortByDim(2);
 
-      auto sizeLastCluster = (_particlesStorage.numParticles() % _clusterSize);
-      _numDummyParticles = sizeLastCluster != 0 ? _clusterSize - sizeLastCluster : 0;
+      // if the number of particles is divisible by the cluster size this is 0
+      const auto sizeLastCluster = _particlesStorage.numParticles() % _clusterSize;
+      _numDummyParticles = sizeLastCluster == 0 ? 0 : _clusterSize - sizeLastCluster;
 
+      // fill the last cluster with dummy copies of the last particle
       auto lastParticle = _particlesStorage[_particlesStorage.numParticles() - 1];
       markParticleAsDeleted(lastParticle);
       for (size_t i = 0; i < _numDummyParticles; i++) {

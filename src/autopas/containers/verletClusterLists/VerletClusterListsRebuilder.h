@@ -147,12 +147,12 @@ class VerletClusterListsRebuilder {
    */
   [[nodiscard]] static double estimateOptimalGridSideLength(size_t numParticles, const std::array<double, 3> &boxSize,
                                                             size_t clusterSize) {
-    double volume = boxSize[0] * boxSize[1] * boxSize[2];
+    const double volume = boxSize[0] * boxSize[1] * boxSize[2];
     if (numParticles > 0) {
       // estimate particle density
-      double density = numParticles / volume;
+      const double density = static_cast<double>(numParticles) / volume;
 
-      return std::cbrt(clusterSize / density);
+      return std::cbrt(static_cast<double>(clusterSize) / density);
     } else {
       return std::max(boxSize[0], boxSize[1]);
     }
