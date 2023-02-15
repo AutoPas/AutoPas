@@ -446,9 +446,9 @@ class VerletClusterListsRebuilder {
       towerIndex2D[dim] = towerDimIndexNonLargerValue;
       /// @todo this is a sanity check to prevent doubling of particles, but could be done better! e.g. by border and
       // flag manager
-      if (location[dim] >= _boxMax[dim]) {
+      if (location[dim] >= _haloBoxMax[dim]) {
         towerIndex2D[dim] = _towersPerDim[dim] - 1;
-      } else if (location[dim] < _boxMin[dim]) {
+      } else if (location[dim] < _haloBoxMin[dim]) {
         towerIndex2D[dim] = 0;
       }
     }
