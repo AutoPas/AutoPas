@@ -203,7 +203,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
       }
     }
 
-    AutoPasLog(debug,
+    AutoPasLog(DEBUG,
                "VerletLists::generateSoAListFromAoSVerletLists: average verlet list "
                "size is {}",
                static_cast<double>(accumulatedListSize) / _aosNeighborLists.size());

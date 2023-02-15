@@ -567,7 +567,7 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
                                                         std::vector<std::vector<Particle>> &particleBuffer,
                                                         std::vector<std::vector<Particle>> &haloParticleBuffer) {
   auto containerPtr = getContainer();
-  AutoPasLog(debug, "Iterating with configuration: {} tuning: {}",
+  AutoPasLog(DEBUG, "Iterating with configuration: {} tuning: {}",
              _tuningStrategy->getCurrentConfiguration().toString(), inTuningPhase ? "true" : "false");
 
   auto traversal = autopas::utils::withStaticCellType<Particle>(
@@ -609,12 +609,12 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
   timerTotal.stop();
 
   if (doListRebuild) {
-    AutoPasLog(debug, "rebuildNeighborLists took {} nanoseconds", timerRebuild.getTotalTime());
+    AutoPasLog(DEBUG, "rebuildNeighborLists took {} nanoseconds", timerRebuild.getTotalTime());
   }
   // TODO: Fix misleading output
   // actually this is the time for iteratePairwise + init/endTraversal + rebuildNeighborLists
   // this containing all of this has legacy reasons so that old plot scripts work
-  AutoPasLog(debug, "IteratePairwise took {} nanoseconds", timerTotal.getTotalTime());
+  AutoPasLog(DEBUG, "IteratePairwise took {} nanoseconds", timerTotal.getTotalTime());
 
   _iterationLogger.logIteration(getCurrentConfig(), _iteration, inTuningPhase, timerIteratePairwise.getTotalTime(),
                                 timerRebuild.getTotalTime(), timerTotal.getTotalTime());
@@ -624,7 +624,7 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
     if (f->isRelevantForTuning()) {
       addTimeMeasurement(timerTotal.getTotalTime(), doListRebuild);
     } else {
-      AutoPasLog(trace, "Skipping adding of time measurement because functor is not marked relevant.");
+      AutoPasLog(TRACE, "Skipping adding of time measurement because functor is not marked relevant.");
     }
   }
 }
@@ -658,7 +658,7 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
 #ifdef AUTOPAS_INTERNODE_TUNING
       MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-      AutoPasLog(debug, "Calculating homogeneities took added up {} ns on rank {}.",
+      AutoPasLog(DEBUG, "Calculating homogeneities took added up {} ns on rank {}.",
                  _timerCalculateHomogeneity.getTotalTime(), rank);
       _homogeneitiesOfLastTenIterations.erase(_homogeneitiesOfLastTenIterations.begin(),
                                               _homogeneitiesOfLastTenIterations.end());
@@ -675,7 +675,7 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
     // check if newton3 works with this functor and remove config if not
     if ((currentConfig.newton3 == Newton3Option::enabled and not pairwiseFunctor.allowsNewton3()) or
         (currentConfig.newton3 == Newton3Option::disabled and not pairwiseFunctor.allowsNonNewton3())) {
-      AutoPasLog(warn, "Configuration with newton 3 {} called with a functor that does not support this!",
+      AutoPasLog(WARN, "Configuration with newton 3 {} called with a functor that does not support this!",
                  currentConfig.newton3.to_string());
 
       _tuningStrategy->removeN3Option(currentConfig.newton3);
@@ -684,7 +684,7 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
         // we found a valid config!
         break;
       } else {
-        AutoPasLog(debug, "Skip not applicable configuration {}", currentConfig.toString());
+        AutoPasLog(DEBUG, "Skip not applicable configuration {}", currentConfig.toString());
         stillTuning = _tuningStrategy->tune(true);
       }
     }
@@ -698,10 +698,10 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
   tuningTimer.stop();
   // when a tuning result is found log it
   if (not stillTuning) {
-    AutoPasLog(debug, "Selected Configuration {}", getCurrentConfig().toString());
+    AutoPasLog(DEBUG, "Selected Configuration {}", getCurrentConfig().toString());
     _tuningResultLogger.logTuningResult(getCurrentConfig(), _iteration, tuningTimer.getTotalTime());
   }
-  AutoPasLog(debug, "Tuning took {} ns.", tuningTimer.getTotalTime());
+  AutoPasLog(DEBUG, "Tuning took {} ns.", tuningTimer.getTotalTime());
   _iterationLogger.logTimeTuning(tuningTimer.getTotalTime());
 
   selectCurrentContainer();
@@ -741,7 +741,7 @@ template <class Particle>
 void AutoTuner<Particle>::addTimeMeasurement(long time, bool neighborListRebuilt) {
   const auto &currentConfig = _tuningStrategy->getCurrentConfiguration();
   if (getCurrentNumSamples() < _maxSamples) {
-    AutoPasLog(trace, "Adding sample.");
+    AutoPasLog(TRACE, "Adding sample.");
     if (neighborListRebuilt) {
       _samplesRebuildingNeighborLists.push_back(time);
     } else {
@@ -774,7 +774,7 @@ void AutoTuner<Particle>::addTimeMeasurement(long time, bool neighborListRebuilt
         ss << utils::ArrayUtils::to_string(_samplesNotRebuildingNeighborLists, " ",
                                            {"Without rebuilding neighbor lists [ ", " ]"});
         ss << " Smoothed value: " << smoothedValue;
-        AutoPasLog(debug, "Collected times for  {}", ss.str());
+        AutoPasLog(DEBUG, "Collected times for  {}", ss.str());
       }
       _tuningDataLogger.logTuningData(currentConfig, _samplesRebuildingNeighborLists,
                                       _samplesNotRebuildingNeighborLists, _iteration, reducedValue, smoothedValue);

@@ -112,7 +112,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
         return true;
       }
     }
-    AutoPasLog(trace, "UpdateHaloParticle was not able to update particle: {}", pCopy.toString());
+    AutoPasLog(TRACE, "UpdateHaloParticle was not able to update particle: {}", pCopy.toString());
     return false;
   }
 

@@ -17,12 +17,12 @@ int LoggerTest::testLevel(autopas::Logger::LogLevel level, bool enabled = true) 
   stream.flush();
   stream.clear();
 
-  AutoPasLog(trace, "trace");
-  AutoPasLog(debug, "debug");
-  AutoPasLog(info, "info");
-  AutoPasLog(warn, "warn");
-  AutoPasLog(error, "error");
-  AutoPasLog(critical, "critical");
+  AutoPasLog(TRACE, "trace");
+  AutoPasLog(DEBUG, "debug");
+  AutoPasLog(INFO, "info");
+  AutoPasLog(WARN, "warn");
+  AutoPasLog(ERROR, "error");
+  AutoPasLog(CRITICAL, "critical");
 
   int lineCount = 0;
   std::string str;

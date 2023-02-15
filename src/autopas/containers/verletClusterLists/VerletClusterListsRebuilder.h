@@ -223,7 +223,7 @@ class VerletClusterListsRebuilder {
           auto &tower = getTower(particle.getR());
           tower.addParticle(particle);
         } else {
-          AutoPasLog(trace, "Not adding particle to VerletClusterLists container, because it is outside the halo:\n{}",
+          AutoPasLog(TRACE, "Not adding particle to VerletClusterLists container, because it is outside the halo:\n{}",
                      particle.toString());
         }
       }

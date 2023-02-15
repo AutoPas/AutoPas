@@ -65,8 +65,18 @@ if (IS_DIRECTORY "${spdlog_SOURCE_DIR}")
     set_property(DIRECTORY ${spdlog_SOURCE_DIR} PROPERTY EXCLUDE_FROM_ALL YES)
 endif ()
 
+# let ccmake and cmake-gui offer options
+set(AUTOPAS_MIN_LOG_LVL
+        "INFO"
+        CACHE
+        STRING "Choose the finest log level to be compiled."
+)
+set_property(CACHE AUTOPAS_MIN_LOG_LVL PROPERTY STRINGS "TRACE;DEBUG;INFO;WARN;ERROR;CRITICAL;OFF")
+
 # Disable warnings
 target_compile_options(spdlog PRIVATE -w)
+# Set the finest compiled log level on the cmake target. Everything that includes this target will be affected!
+target_compile_options(spdlog PUBLIC -DSPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${AUTOPAS_MIN_LOG_LVL})
 
 get_target_property(propval spdlog INTERFACE_INCLUDE_DIRECTORIES)
 target_include_directories(spdlog SYSTEM PUBLIC "${propval}")

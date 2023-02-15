@@ -10,7 +10,7 @@ namespace autopas {
 
 bool MPIParallelizedStrategy::tune(bool currentInvalid) {
   if (_bucket == AUTOPAS_MPI_COMM_NULL) {
-    AutoPasLog(warn, "_bucket was AUTOPAS_MPI_COMM_NULL");
+    AutoPasLog(WARN, "_bucket was AUTOPAS_MPI_COMM_NULL");
     _bucket = _comm;
   }
 
@@ -23,13 +23,13 @@ bool MPIParallelizedStrategy::tune(bool currentInvalid) {
     try {
       _allLocalConfigurationsTested = not _tuningStrategy->tune(currentInvalid);
     } catch (utils::ExceptionHandler::AutoPasException &exception) {
-      AutoPasLog(warn,
+      AutoPasLog(WARN,
                  "MPIParallelizedStrategy: Underlying strategy failed (with error: {}). Reverting to fallback-mode.",
                  exception.what());
       setupFallbackOptions();
     }
   } else if (currentInvalid) {
-    AutoPasLog(warn, "MPIParallelizedStrategy: Underlying strategy found invalid optimum. Reverting to fallback-mode.");
+    AutoPasLog(WARN, "MPIParallelizedStrategy: Underlying strategy found invalid optimum. Reverting to fallback-mode.");
     setupFallbackOptions();
   }
 

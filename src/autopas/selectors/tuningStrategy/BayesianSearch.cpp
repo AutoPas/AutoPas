@@ -78,7 +78,7 @@ bool autopas::BayesianSearch::tune(bool currentInvalid) {
   if (_gaussianProcess.numEvidence() >= _maxEvidence) {
     // select best config
     _currentConfig = _encoder.oneHotDecode(_gaussianProcess.getEvidenceMax());
-    AutoPasLog(debug, "Selected Configuration {}", _currentConfig.toString());
+    AutoPasLog(DEBUG, "Selected Configuration {}", _currentConfig.toString());
     return false;
   }
 
@@ -101,7 +101,7 @@ bool autopas::BayesianSearch::tune(bool currentInvalid) {
     }
 
     // No valid configuration. This should rarely happen.
-    AutoPasLog(debug, "Tuning could not generate a valid configuration.");
+    AutoPasLog(DEBUG, "Tuning could not generate a valid configuration.");
   }
 
   utils::ExceptionHandler::exception("BayesianSearch: Failed to sample an valid FeatureVector");

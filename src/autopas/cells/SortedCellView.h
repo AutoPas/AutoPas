@@ -97,7 +97,7 @@ class SortedCellView : public ParticleCell<Particle> {
 
   void deleteByIndex(size_t index) override {
     if (index >= numParticles()) {
-      AutoPasLog(error, "Index out of range");
+      AutoPasLog(ERROR, "Index out of range");
       utils::ExceptionHandler::exception("Error: Index out of range");
     }
 

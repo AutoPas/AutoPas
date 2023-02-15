@@ -43,7 +43,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
                         const std::set<TraversalOption> &applicableTraversals, const double cellSizeFactor)
       : _linkedCells(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency, std::max(1.0, cellSizeFactor)) {
     if (cellSizeFactor < 1.0) {
-      AutoPasLog(debug, "VerletListsLinkedBase: CellSizeFactor smaller 1 detected. Set to 1.");
+      AutoPasLog(DEBUG, "VerletListsLinkedBase: CellSizeFactor smaller 1 detected. Set to 1.");
     }
   }
 
@@ -161,7 +161,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
         return true;
       }
     }
-    AutoPasLog(trace,
+    AutoPasLog(TRACE,
                "updateHaloParticle was not able to update particle at "
                "[{}, {}, {}]",
                pCopy.getR()[0], pCopy.getR()[1], pCopy.getR()[2]);

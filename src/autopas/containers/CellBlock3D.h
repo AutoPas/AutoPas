@@ -47,7 +47,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
 
     for (int i = 0; i < 3; ++i) {
       if (bMax[i] < bMin[i] + interactionLength) {
-        AutoPasLog(error, "Interaction length too large is {}, bmin {}, bmax {}", interactionLength, bMin[i], bMax[i]);
+        AutoPasLog(ERROR, "Interaction length too large is {}, bmin {}, bmax {}", interactionLength, bMin[i], bMax[i]);
         utils::ExceptionHandler::exception("Error in CellBlock3D: interaction Length too large!");
       }
     }
@@ -384,12 +384,12 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, c
 
     _numCells *= _cellsPerDimensionWithHalo[d];
   }
-  AutoPasLog(trace, "Box Length incl Halo : {}",
+  AutoPasLog(TRACE, "Box Length incl Halo : {}",
              autopas::utils::ArrayUtils::to_string(autopas::utils::ArrayMath::sub(_haloBoxMax, _haloBoxMin)));
-  AutoPasLog(trace, "Cells/Dim  incl Halo : {}", autopas::utils::ArrayUtils::to_string(_cellsPerDimensionWithHalo));
-  AutoPasLog(trace, "Cell Length          : {}", autopas::utils::ArrayUtils::to_string(_cellLength));
-  AutoPasLog(trace, "Interaction Length   : {}", interactionLength);
-  AutoPasLog(trace, "Cell Size Factor     : {}", cellSizeFactor);
+  AutoPasLog(TRACE, "Cells/Dim  incl Halo : {}", autopas::utils::ArrayUtils::to_string(_cellsPerDimensionWithHalo));
+  AutoPasLog(TRACE, "Cell Length          : {}", autopas::utils::ArrayUtils::to_string(_cellLength));
+  AutoPasLog(TRACE, "Interaction Length   : {}", interactionLength);
+  AutoPasLog(TRACE, "Cell Size Factor     : {}", cellSizeFactor);
 
   _firstOwnedCellIndex = _cellsPerDimensionWithHalo[0] * _cellsPerDimensionWithHalo[1] * _cellsPerInteractionLength +
                          _cellsPerDimensionWithHalo[0] * _cellsPerInteractionLength + _cellsPerInteractionLength;

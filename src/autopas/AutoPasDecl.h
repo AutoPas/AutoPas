@@ -529,7 +529,7 @@ class AutoPas {
    */
   void setCutoff(double cutoff) {
     if (cutoff <= 0.0) {
-      AutoPasLog(error, "Cutoff <= 0.0: {}", cutoff);
+      AutoPasLog(ERROR, "Cutoff <= 0.0: {}", cutoff);
       utils::ExceptionHandler::exception("Error: Cutoff <= 0.0!");
     }
     AutoPas::_cutoff = cutoff;
@@ -547,7 +547,7 @@ class AutoPas {
    */
   void setAllowedCellSizeFactors(const NumberSet<double> &allowedCellSizeFactors) {
     if (allowedCellSizeFactors.getMin() <= 0.0) {
-      AutoPasLog(error, "cell size <= 0.0");
+      AutoPasLog(ERROR, "cell size <= 0.0");
       utils::ExceptionHandler::exception("Error: cell size <= 0.0!");
     }
     AutoPas::_allowedCellSizeFactors = std::move(allowedCellSizeFactors.clone());
@@ -559,7 +559,7 @@ class AutoPas {
    */
   void setCellSizeFactor(double cellSizeFactor) {
     if (cellSizeFactor <= 0.0) {
-      AutoPasLog(error, "cell size <= 0.0: {}", cellSizeFactor);
+      AutoPasLog(ERROR, "cell size <= 0.0: {}", cellSizeFactor);
       utils::ExceptionHandler::exception("Error: cell size <= 0.0!");
     }
     AutoPas::_allowedCellSizeFactors = std::make_unique<NumberSetFinite<double>>(std::set<double>{cellSizeFactor});
