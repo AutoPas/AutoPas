@@ -17,12 +17,9 @@
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
+#include "autopas/containers/ParticleContainerInterface.h"
 
 namespace autopas {
-
-// forward declaration
-template <class Particle>
-class ParticleContainerInterface;
 
 namespace internal {
 /**
@@ -110,6 +107,11 @@ class ContainerIterator {
       std::conditional_t<modifiable, ParticleContainerInterface<Particle>, const ParticleContainerInterface<Particle>>;
 
   /**
+   * Default constructor that guarantees an invalid iterator.
+   */
+  ContainerIterator() : _currentParticle(nullptr) {};
+
+  /**
    * Region Iterator constructor meant to be called from the logic handler.
    *
    * @param container Reference to the particle container to iterate.
@@ -139,6 +141,86 @@ class ContainerIterator {
                   "Constructor for non-Region iterator called but template argument regionIter is true");
   }
 
+  /**
+   * Copy constructor
+   * @param other
+   */
+  ContainerIterator(const ContainerIterator<Particle, modifiable, regionIter> &other)
+      : _container(other._container),
+        _currentParticleIndex(other._currentParticleIndex),
+        _currentVectorIndex(other._currentVectorIndex),
+        _currentParticle(other._currentParticle),
+        _additionalVectors(other._additionalVectors),
+        _behavior(other._behavior),
+        _iteratingAdditionalVectors(other._iteratingAdditionalVectors),
+        _vectorIndexOffset(other._vectorIndexOffset),
+        _regionMin(other._regionMin),
+        _regionMax(other._regionMax) {}
+
+  /**
+   * Copy assignment operator
+   * @param other
+   * @return
+   */
+  ContainerIterator<Particle, modifiable, regionIter> &operator=(
+      const ContainerIterator<Particle, modifiable, regionIter> &other) {
+    if (this != other) {
+      _container = other._container;
+      _currentParticleIndex = other._currentParticleIndex;
+      _currentVectorIndex = other._currentVectorIndex;
+      _currentParticle = other._currentParticle;
+      _additionalVectors = other._additionalVectors;
+      _behavior = other._behavior;
+      _iteratingAdditionalVectors = other._iteratingAdditionalVectors;
+      _vectorIndexOffset = other._vectorIndexOffset;
+      if constexpr (regionIter) {
+        _regionMin = other._regionMin;
+        _regionMax = other._regionMax;
+      }
+    }
+    return *this;
+  }
+
+  /**
+   * Move constructor
+   * @param other
+   */
+  ContainerIterator(ContainerIterator<Particle, modifiable, regionIter> &&other) noexcept
+      : _container(other._container),
+        _currentParticleIndex(other._currentParticleIndex),
+        _currentVectorIndex(other._currentVectorIndex),
+        _currentParticle(other._currentParticle),
+        _additionalVectors(std::move(other._additionalVectors)),
+        _behavior(other._behavior),
+        _iteratingAdditionalVectors(other._iteratingAdditionalVectors),
+        _vectorIndexOffset(other._vectorIndexOffset),
+        _regionMin(std::move(other._regionMin)),
+        _regionMax(std::move(other._regionMax)) {}
+
+  /**
+   * Move assignment operator
+   * @param other
+   * @return
+   */
+  ContainerIterator<Particle, modifiable, regionIter> &operator=(
+      ContainerIterator<Particle, modifiable, regionIter> &&other) noexcept {
+    if (this != &other) {
+      _container = other._container;
+      _currentParticleIndex = other._currentParticleIndex;
+      _currentVectorIndex = other._currentVectorIndex;
+      _currentParticle = other._currentParticle;
+      _additionalVectors = std::move(other._additionalVectors);
+      _behavior = other._behavior;
+      _iteratingAdditionalVectors = other._iteratingAdditionalVectors;
+      _vectorIndexOffset = other._vectorIndexOffset;
+      if constexpr (regionIter) {
+        _regionMin = std::move(other._regionMin);
+        _regionMax = std::move(other._regionMax);
+      }
+    }
+    return *this;
+  }
+
  private:
   /**
    * Actual internal constructor.
@@ -152,7 +234,7 @@ class ContainerIterator {
   ContainerIterator(void * /*dummy*/, ContainerType &container, IteratorBehavior behavior,
                     ParticleVecType *additionalVectorsToIterate, const std::array<double, 3> &regionMin,
                     const std::array<double, 3> &regionMax)
-      : _container(container),
+      : _container(&container),
         _behavior(behavior),
         _currentVectorIndex(0),
         _vectorIndexOffset((behavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads()) {
@@ -235,10 +317,10 @@ class ContainerIterator {
       // getParticle either gives us a particle with the desired properties or a nullptr
       if constexpr (regionIter) {
         std::tie(_currentParticle, _currentVectorIndex, _currentParticleIndex) =
-            _container.getParticle(_currentVectorIndex, _currentParticleIndex, _behavior, _regionMin, _regionMax);
+            _container->getParticle(_currentVectorIndex, _currentParticleIndex, _behavior, _regionMin, _regionMax);
       } else {
         std::tie(_currentParticle, _currentVectorIndex, _currentParticleIndex) =
-            _container.getParticle(_currentVectorIndex, _currentParticleIndex, _behavior);
+            _container->getParticle(_currentVectorIndex, _currentParticleIndex, _behavior);
       }
       // if getParticle told us that the container doesn't have a particle in the first vector for our thread...
       if (_currentParticle == nullptr and not _additionalVectors.empty()) {
@@ -296,7 +378,7 @@ class ContainerIterator {
         this->operator++();
       }
     } else {
-      const auto indicesValid = _container.deleteParticle(_currentVectorIndex, _currentParticleIndex);
+      const auto indicesValid = _container->deleteParticle(_currentVectorIndex, _currentParticleIndex);
       // Edge cases:
       if (not indicesValid) {
         // CASE: the indices and thus the pointer are invalid now
@@ -312,7 +394,7 @@ class ContainerIterator {
   /**
    * Pointer to container that is iterated.
    */
-  ContainerType &_container;
+  ContainerType *_container;
 
   /**
    * Indicator which type of particles this iterator covers.
@@ -340,12 +422,12 @@ class ContainerIterator {
    * Index of the Vector where the current particle is found.
    * "Vector" typically refers to either a cell in the particle container or one of the additional vectors.
    */
-  size_t _currentVectorIndex;
+  size_t _currentVectorIndex{};
 
   /**
    * Offset which which to iterate over vectors. Determined through number of threads used for iterating.
    */
-  size_t _vectorIndexOffset;
+  size_t _vectorIndexOffset{};
 
   /**
    * Index within the current vector.
