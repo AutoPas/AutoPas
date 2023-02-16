@@ -132,6 +132,8 @@ class CellBlock3D : public CellBorderAndFlagManager {
   // this class doesn't actually know about particles
   /**
    * Get the containing cell of a specified position
+   * @note If pos is outside the domain vector->operator[]() will trigger undefined behavior.
+   *
    * @param pos the position for which the cell is needed
    * @return cell at the given position
    */
@@ -460,7 +462,7 @@ inline ParticleCell &CellBlock3D<ParticleCell>::getContainingCell(const std::arr
 
 template <class ParticleCell>
 inline ParticleCell &CellBlock3D<ParticleCell>::getCell(index_t index1d) const {
-  return _cells->at(index1d);
+  return (*_cells)[index1d];
 }
 
 template <class ParticleCell>
