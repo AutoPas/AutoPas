@@ -295,7 +295,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     return {currentCellIndex, dynamic_cast<OctreeLeafNode<Particle> *>(currentCell)};
   }
 
-  bool deleteParticle(ParticleType &particle) override {
+  bool deleteParticle(Particle &particle) override {
     if (particle.isOwned()) {
       return this->_cells[CellTypes::OWNED].deleteParticle(particle);
     } else if (particle.isHalo()) {
@@ -316,29 +316,28 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     return particleIndex < particleVec.size();
   }
 
-  [[nodiscard]] ContainerIterator<ParticleType, true, false> begin(
+  [[nodiscard]] ContainerIterator<Particle, true, false> begin(
       IteratorBehavior behavior,
-      typename ContainerIterator<ParticleType, true, false>::ParticleVecType *additionalVectors = nullptr) override {
-    return ContainerIterator<ParticleType, true, false>(*this, behavior, additionalVectors);
+      typename ContainerIterator<Particle, true, false>::ParticleVecType *additionalVectors = nullptr) override {
+    return ContainerIterator<Particle, true, false>(*this, behavior, additionalVectors);
   }
 
-  [[nodiscard]] ContainerIterator<ParticleType, false, false> begin(
+  [[nodiscard]] ContainerIterator<Particle, false, false> begin(
       IteratorBehavior behavior,
-      typename ContainerIterator<ParticleType, false, false>::ParticleVecType *additionalVectors =
-          nullptr) const override {
-    return ContainerIterator<ParticleType, false, false>(*this, behavior, additionalVectors);
+      typename ContainerIterator<Particle, false, false>::ParticleVecType *additionalVectors = nullptr) const override {
+    return ContainerIterator<Particle, false, false>(*this, behavior, additionalVectors);
   }
 
-  [[nodiscard]] ContainerIterator<ParticleType, true, true> getRegionIterator(
+  [[nodiscard]] ContainerIterator<Particle, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
       typename ContainerIterator<Particle, true, true>::ParticleVecType *additionalVectors) override {
-    return ContainerIterator<ParticleType, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
+    return ContainerIterator<Particle, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
-  [[nodiscard]] ContainerIterator<ParticleType, false, true> getRegionIterator(
+  [[nodiscard]] ContainerIterator<Particle, false, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
       typename ContainerIterator<Particle, false, true>::ParticleVecType *additionalVectors) const override {
-    return ContainerIterator<ParticleType, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
+    return ContainerIterator<Particle, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
   /**

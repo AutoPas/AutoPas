@@ -351,11 +351,13 @@ class ParticleContainerInterface {
                                                                    const std::array<double, 3> &boxMin,
                                                                    const std::array<double, 3> &boxMax) const = 0;
 
+  // clang-format off
   /**
    * @copydoc getParticle(size_t cellIndex, size_t particleIndex, IteratorBehavior iteratorBehavior, const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) const
    *
    * @note non-const region iter version
    */
+  // clang-format on
   std::tuple<Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
                                                      IteratorBehavior iteratorBehavior,
                                                      const std::array<double, 3> &boxMin,
