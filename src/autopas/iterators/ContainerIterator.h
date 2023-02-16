@@ -246,14 +246,10 @@ class ContainerIterator {
 
     if constexpr (regionIter) {
       // clamp region to the container, either with or without halo
-      const auto boxMax = (_behavior & IteratorBehavior::halo)
-                              ? utils::ArrayMath::addScalar(container.getBoxMax(), container.getInteractionLength())
-                              : container.getBoxMax();
-      const auto boxMin = (_behavior & IteratorBehavior::halo)
-                              ? utils::ArrayMath::subScalar(container.getBoxMin(), container.getInteractionLength())
-                              : container.getBoxMin();
-      _regionMax = utils::ArrayMath::min(regionMax, boxMax);
-      _regionMin = utils::ArrayMath::max(regionMin, boxMin);
+      const auto boxMaxWithHalo = utils::ArrayMath::addScalar(container.getBoxMax(), container.getInteractionLength());
+      const auto boxMinWithHalo = utils::ArrayMath::subScalar(container.getBoxMin(), container.getInteractionLength());
+      _regionMax = utils::ArrayMath::min(regionMax, boxMaxWithHalo);
+      _regionMin = utils::ArrayMath::max(regionMin, boxMinWithHalo);
     }
     // fetches the next (=first) valid particle or sets _currentParticle = nullptr which marks the iterator as invalid.
     fetchParticleAtCurrentIndex();
