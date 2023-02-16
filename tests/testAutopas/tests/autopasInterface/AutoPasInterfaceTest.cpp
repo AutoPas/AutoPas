@@ -318,10 +318,12 @@ void testSimulationLoop(testingTuple options) {
   };
 
   auto deleteIDs = [&autoPas, &numParticles](std::set<unsigned long> ids) {
-    for (auto iter = autoPas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    for (auto iter = autoPas.begin(autopas::IteratorBehavior::owned); iter.isValid();) {
       if (ids.find(iter->getID()) != ids.end()) {
         autoPas.deleteParticle(iter);
         --numParticles;
+      } else {
+        ++iter;
       }
     }
   };

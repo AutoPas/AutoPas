@@ -243,7 +243,8 @@ TEST_F(AutoPasTest, getNumParticlesIteratorTest) {
     expectedParticles(numParticles + 1, 0);
   }
 
-  for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
+  // Deletion moves the iterator so don't invoke ++
+  for (auto iter = autoPas.begin(); iter.isValid();) {
     autoPas.deleteParticle(iter);
     --numParticles;
     expectedParticles(numParticles, 0);
