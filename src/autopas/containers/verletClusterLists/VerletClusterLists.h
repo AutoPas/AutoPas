@@ -23,6 +23,7 @@
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/inBox.h"
+#include "autopas/utils/markParticleAsDeleted.h"
 
 namespace autopas {
 
@@ -219,7 +220,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
           // swap-"delete"
           tower[j] = tower[towerSize - 1 - numTailDummies];
           // Since we can't pop the moved particle here mark it for deletion.
-          tower[towerSize - 1 - numTailDummies].markAsDeleted();
+          internal::markParticleAsDeleted(tower[towerSize - 1 - numTailDummies]);
           ++numTailDummies;
           deletedSth = true;
         } else {
