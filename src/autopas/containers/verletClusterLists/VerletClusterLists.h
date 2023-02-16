@@ -213,15 +213,20 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       auto &tower = _towers[i];
       const auto towerSize = tower.getNumAllParticles();
       auto numTailDummies = _towers[i].getNumTailDummyParticles();
-      for (size_t j = 0; j < towerSize;) {
+      // iterate over all non-tail dummies.
+      for (size_t j = 0; j < towerSize - numTailDummies;) {
         if (tower[j].isHalo()) {
+          // swap-"delete"
           tower[j] = tower[towerSize - 1 - numTailDummies];
+          // Since we can't pop the moved particle here mark it for deletion.
+          tower[towerSize - 1 - numTailDummies].markAsDeleted();
           ++numTailDummies;
           deletedSth = true;
         } else {
           ++j;
         }
       }
+      // if anything was marked for deletion actually delete it now.
       if (deletedSth) {
         _towers[i].deleteDummyParticles();
       }
