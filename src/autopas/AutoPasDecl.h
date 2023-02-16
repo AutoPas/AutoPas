@@ -163,14 +163,14 @@ class AutoPas {
    *
    * @param iter Needs to be a modify-able iterator.
    */
-  void deleteParticle(IteratorT &iter);
+  void deleteParticle(ContainerIterator<Particle, true, false> &iter);
 
   /**
-   * @copydoc deleteParticle(IteratorT &iter)
+   * @copydoc deleteParticle(ContainerIterator<Particle, true, false> &iter)
    *
    * Region Iterator version.
    */
-  void deleteParticle(RegionIteratorT &iter);
+  void deleteParticle(ContainerIterator<Particle, true, true> &iter);
 
   /**
    * Deletes the given particle and leaves the container in a valid state.

@@ -254,6 +254,17 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     return getParticleImpl<false>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
   }
 
+  /**
+   * Container specific implementation for getParticle. See ParticleContainerInterface::getParticle().
+   *
+   * @tparam regionIter
+   * @param cellIndex
+   * @param particleIndex
+   * @param iteratorBehavior
+   * @param boxMin
+   * @param boxMax
+   * @return tuple<ParticlePointer, CellIndex, ParticleIndex>
+   */
   template <bool regionIter>
   std::tuple<const Particle *, size_t, size_t> getParticleImpl(size_t cellIndex, size_t particleIndex,
                                                                IteratorBehavior iteratorBehavior,
@@ -885,7 +896,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   /**
    * Returns the 2D index for the given 1D index of a tower.
    *
-   * @param index1D
+   * @param index
    * @return the 2D index for the given 1D index of a tower.
    */
   [[nodiscard]] std::array<size_t, 2> towerIndex1DTo2D(size_t index) const {
@@ -1134,6 +1145,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @param iteratorBehavior
    * @param boxMin
    * @param boxMax
+   * @param endCellIndex
    * @return tuple<cellIndex, particleIndex>
    */
   template <bool regionIter>

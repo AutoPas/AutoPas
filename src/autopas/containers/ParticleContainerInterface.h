@@ -179,8 +179,9 @@ class ParticleContainerInterface {
   /**
    * Iterate over all particles using
    * for(auto iter = container.begin(); iter.isValid(); ++iter) .
+   * @note The default argument for behavior is necessary to enable range based for loops.
    * @param behavior Behavior of the iterator, see IteratorBehavior.
-   * @note Default argument necessary to enable range based for loops.
+   * @param additionalVectors Vectors that should be included besides the container.
    * @return Iterator to the first particle.
    */
   [[nodiscard]] virtual ContainerIterator<ParticleType, true, false> begin(
@@ -212,6 +213,7 @@ class ParticleContainerInterface {
    * @param lowerCorner Lower corner of the region
    * @param higherCorner Higher corner of the region
    * @param behavior The behavior of the iterator (shall it iterate over halo particles as well?).
+   * @param additionalVectors Vectors that should be included besides the container.
    * @return Iterator to iterate over all particles in a specific region.
    */
   [[nodiscard]] virtual ContainerIterator<ParticleType, true, true> getRegionIterator(
@@ -327,10 +329,6 @@ class ParticleContainerInterface {
    * @param cellIndex Index of the cell the particle is located in.
    * @param particleIndex Particle index within the cell.
    * @param iteratorBehavior Which ownership states should be considered for the next particle.
-   * @param boxMin start of region in which the next particle should be. The coordinates are expected to be within the
-   * domain.
-   * @param boxMax end of region in which the next particle should be. The coordinates are expected to be within the
-   * domain.
    * @return Pointer to the particle and its indices.
    * If a index pair is given that does not exist but is also not beyond the last cell, the next fitting particle shall
    * be returned. Example: If [4,2] does not exist, [5,1] shall be returned (or whatever is the next particle that
@@ -338,20 +336,23 @@ class ParticleContainerInterface {
    * If there is no next fitting particle {nullptr, 0, 0} is returned.
    */
   virtual std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                                   IteratorBehavior iteratorBehavior) const = 0;
+
+  /**
+   * @copydoc getParticle(size_t cellIndex, size_t particleIndex, IteratorBehavior iteratorBehavior) const
+   *
+   * @param boxMin start of region in which the next particle should be. The coordinates are expected to be within the
+   * domain.
+   * @param boxMax end of region in which the next particle should be. The coordinates are expected to be within the
+   * domain.
+   */
+  virtual std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
                                                                    IteratorBehavior iteratorBehavior,
                                                                    const std::array<double, 3> &boxMin,
                                                                    const std::array<double, 3> &boxMax) const = 0;
 
   /**
-   * @copydoc getParticle()
-   *
-   * Non-Region iterator variant
-   */
-  virtual std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
-                                                                   IteratorBehavior iteratorBehavior) const = 0;
-
-  /**
-   * @copydoc getParticle()
+   * @copydoc getParticle(size_t cellIndex, size_t particleIndex, IteratorBehavior iteratorBehavior, const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) const
    *
    * @note non-const region iter version
    */
@@ -368,7 +369,7 @@ class ParticleContainerInterface {
   }
 
   /**
-   * @copydoc getParticle()
+   * @copydoc getParticle(size_t cellIndex, size_t particleIndex, IteratorBehavior iteratorBehavior) const
    *
    * @note non-const non-region iter version
    */

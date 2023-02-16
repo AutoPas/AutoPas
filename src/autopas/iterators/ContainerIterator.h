@@ -37,6 +37,9 @@ void deleteParticle(ParticleIterator &iterator) {
 }
 }  // namespace internal
 
+/**
+ * Helper functions related to iterators which should not be connected to the ContainerIterator class.
+ */
 namespace containerIteratorUtils {
 /**
  * Indicates whether the particle has the correct ownership state and if this is a region iterator is in the region.
@@ -230,6 +233,8 @@ class ContainerIterator {
    * @param container Reference to the particle container to iterate.
    * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated over.
    * @param additionalVectorsToIterate Thread buffers of additional Particle vector to iterate over.
+   * @param regionMin Left Front Lower corner of the iterator's region.
+   * @param regionMax Right Back Upper corner of the iterator's region.
    */
   ContainerIterator(void * /*dummy*/, ContainerType &container, IteratorBehavior behavior,
                     ParticleVecType *additionalVectorsToIterate, const std::array<double, 3> &regionMin,

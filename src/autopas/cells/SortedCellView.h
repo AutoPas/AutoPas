@@ -61,7 +61,7 @@ class SortedCellView : public ParticleCell<Particle> {
   }
 
   /**
-   * @copydoc autopas::CellIterator<typename ParticleCellType::StorageType, false>::begin()
+   * @copydoc autopas::FullParticleCell::begin()
    * @note const version
    */
   CellIterator<typename ParticleCellType::StorageType, false> begin() const {

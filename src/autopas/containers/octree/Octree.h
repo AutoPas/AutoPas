@@ -55,6 +55,9 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    */
   enum CellTypes : int { OWNED = 0, HALO = 1 };
 
+  /**
+   * A cell index that is definatly always invalid.
+   */
   constexpr static size_t invalidCellIndex = 9;
 
   /**
@@ -194,6 +197,17 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     return getParticleImpl<false>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
   }
 
+  /**
+   * Container specific implementation for getParticle. See ParticleContainerInterface::getParticle().
+   *
+   * @tparam regionIter
+   * @param cellIndex
+   * @param particleIndex
+   * @param iteratorBehavior
+   * @param boxMin
+   * @param boxMax
+   * @return tuple<ParticlePointer, CellIndex, ParticleIndex>
+   */
   template <bool regionIter>
   std::tuple<const ParticleType *, size_t, size_t> getParticleImpl(size_t cellIndex, size_t particleIndex,
                                                                    IteratorBehavior iteratorBehavior,
@@ -426,6 +440,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    *
    * @tparam regionIter
    * @param currentCellIndex In/Out parameter
+   * @param currentCellPtr
    * @param particleIndex
    * @param iteratorBehavior
    * @param boxMin

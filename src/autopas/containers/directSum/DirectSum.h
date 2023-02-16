@@ -291,6 +291,17 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
 
   } _cellBorderFlagManager;
 
+  /**
+   * Container specific implementation for getParticle. See ParticleContainerInterface::getParticle().
+   *
+   * @tparam regionIter
+   * @param cellIndex
+   * @param particleIndex
+   * @param iteratorBehavior
+   * @param boxMin
+   * @param boxMax
+   * @return tuple<ParticlePointer, CellIndex, ParticleIndex>
+   */
   template <bool regionIter>
   std::tuple<const Particle *, size_t, size_t> getParticleImpl(size_t cellIndex, size_t particleIndex,
                                                                IteratorBehavior iteratorBehavior,
