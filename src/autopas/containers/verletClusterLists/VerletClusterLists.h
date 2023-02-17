@@ -343,24 +343,17 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     std::vector<Particle> invalidParticles;
 
 #ifdef AUTOPAS_OPENMP
-// #pragma omp declare reduction(vecMergeParticle : std::vector<Particle> : omp_out.insert(omp_out.end(),
-// omp_in.begin(), omp_in.end()))
-#pragma omp parallel  // reduction(vecMergeParticle : invalidParticles)
+#pragma omp declare reduction(vecMergeParticle : std::vector<Particle> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
+#pragma omp parallel reduction(vecMergeParticle : invalidParticles)
 #endif
     {
-      std::vector<Particle> myInvalidParticles;
       for (auto iter = this->begin(IteratorBehavior::owned); iter.isValid(); ++iter) {
         if (not utils::inBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
-          myInvalidParticles.push_back(*iter);
-          //          invalidParticles.push_back(*iter);
+          invalidParticles.push_back(*iter);
           internal::deleteParticle(iter);
         }
       }
-#ifdef AUTOPAS_OPENMP
-      // FIXME: use reduction
-#pragma omp critical
-#endif
-      invalidParticles.insert(invalidParticles.end(), myInvalidParticles.begin(), myInvalidParticles.end());
+      invalidParticles.insert(invalidParticles.end(), invalidParticles.begin(), invalidParticles.end());
     }
     _isValid = ValidityState::invalid;
     return invalidParticles;
