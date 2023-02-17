@@ -435,15 +435,14 @@ inline std::pair<std::array<double, 3>, std::array<double, 3>> CellBlock3D<Parti
     boxmin[d] = index3d[d] * this->_cellLength[d] + _haloBoxMin[d];
     boxmax[d] = (index3d[d] + 1) * this->_cellLength[d] + _haloBoxMin[d];
 
-    // stupid rounding errors (makes sure that the lower corner is set
-    // correctly!
+    // stupid rounding errors. Make sure that the lower corner is set correctly!
     if (index3d[d] == 0) {
       boxmin[d] = _haloBoxMin[d];
       boxmax[d] = this->_cellLength[d];
     } else if (index3d[d] == _cellsPerInteractionLength) {
       boxmin[d] = _boxMin[d];
     }
-    // no else!, as this might ALSO be 1
+    // no else, as this might ALSO be 1
     if (index3d[d] == this->_cellsPerDimensionWithHalo[d] - _cellsPerInteractionLength - 1) {
       boxmax[d] = _boxMax[d];
     } else if (index3d[d] == this->_cellsPerDimensionWithHalo[d] - 1) {
