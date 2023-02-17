@@ -369,21 +369,15 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
   [[nodiscard]] ContainerIterator<ParticleType, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
       typename ContainerIterator<ParticleType, true, true>::ParticleVecType *additionalVectors) override {
-    // We increase the search region by skin, as particles can move over cell borders.
-    const auto boxMin = utils::ArrayMath::subScalar(lowerCorner, this->getVerletSkin());
-    const auto boxMax = utils::ArrayMath::addScalar(higherCorner, this->getVerletSkin());
 
-    return ContainerIterator<ParticleType, true, true>(*this, behavior, additionalVectors, boxMin, boxMax);
+    return ContainerIterator<ParticleType, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
   [[nodiscard]] ContainerIterator<ParticleType, false, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
       typename ContainerIterator<ParticleType, false, true>::ParticleVecType *additionalVectors) const override {
-    // We increase the search region by skin, as particles can move over cell borders.
-    const auto boxMin = utils::ArrayMath::subScalar(lowerCorner, this->getVerletSkin());
-    const auto boxMax = utils::ArrayMath::addScalar(higherCorner, this->getVerletSkin());
 
-    return ContainerIterator<ParticleType, false, true>(*this, behavior, additionalVectors, boxMin, boxMax);
+    return ContainerIterator<ParticleType, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
   /**
@@ -514,7 +508,10 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
         if (isRelevant) {
           // is the cell in the region?
           const auto [cellLowCorner, cellHighCorner] = _cellBlock.getCellBoundingBox(cellIndex);
-          isRelevant = utils::boxesOverlap(cellLowCorner, cellHighCorner, boxMin, boxMax);
+          // particles can move over cell borders. Calculate the volume this cell's particles can be.
+          const auto cellLowCornerSkin = utils::ArrayMath::subScalar(cellLowCorner, this->getVerletSkin() * 0.5);
+          const auto cellHighCornerSkin = utils::ArrayMath::addScalar(cellHighCorner, this->getVerletSkin() * 0.5);
+          isRelevant = utils::boxesOverlap(cellLowCornerSkin, cellHighCornerSkin, boxMin, boxMax);
         }
       }
       return isRelevant;

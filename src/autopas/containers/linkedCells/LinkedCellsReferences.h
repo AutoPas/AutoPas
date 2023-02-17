@@ -534,7 +534,10 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
         if (isRelevant) {
           // is the cell in the region?
           const auto [cellLowCorner, cellHighCorner] = _cellBlock.getCellBoundingBox(cellIndex);
-          isRelevant = utils::boxesOverlap(cellLowCorner, cellHighCorner, boxMin, boxMax);
+          // particles can move over cell borders. Calculate the volume this cell's particles can be.
+          const auto cellLowCornerSkin = utils::ArrayMath::subScalar(cellLowCorner, this->getVerletSkin() * 0.5);
+          const auto cellHighCornerSkin = utils::ArrayMath::addScalar(cellHighCorner, this->getVerletSkin() * 0.5);
+          isRelevant = utils::boxesOverlap(cellLowCornerSkin, cellHighCornerSkin, boxMin, boxMax);
         }
       }
       return isRelevant;

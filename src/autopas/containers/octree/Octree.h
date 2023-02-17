@@ -464,7 +464,10 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     auto cellIsRelevant = [&](const OctreeNodeInterface<Particle> *const cellPtr) {
       bool isRelevant = cellPtr->getNumberOfParticles() > 0;
       if constexpr (regionIter) {
-        isRelevant = isRelevant and utils::boxesOverlap(cellPtr->getBoxMin(), cellPtr->getBoxMax(), boxMin, boxMax);
+        // particles can move over cell borders. Calculate the volume this cell's particles can be.
+        const auto cellLowCornerSkin = utils::ArrayMath::subScalar(cellPtr->getBoxMin(), this->getVerletSkin() * 0.5);
+        const auto cellHighCornerSkin = utils::ArrayMath::addScalar(cellPtr->getBoxMax(), this->getVerletSkin() * 0.5);
+        isRelevant = utils::boxesOverlap(cellLowCornerSkin, cellHighCornerSkin, boxMin, boxMax);
       }
       return isRelevant;
     };

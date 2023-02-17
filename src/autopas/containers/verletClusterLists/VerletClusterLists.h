@@ -1160,7 +1160,10 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       if constexpr (regionIter) {
         // is the cell in the region?
         const auto [towerLowCorner, towerHighCorner] = getTowerBoundingBox(cellIndex);
-        isRelevant = utils::boxesOverlap(towerLowCorner, towerHighCorner, boxMin, boxMax);
+        // particles can move over cell borders. Calculate the volume this cell's particles can be.
+        const auto towerLowCornerSkin = utils::ArrayMath::subScalar(towerLowCorner, this->getVerletSkin() * 0.5);
+        const auto towerHighCornerSkin = utils::ArrayMath::addScalar(towerHighCorner, this->getVerletSkin() * 0.5);
+        isRelevant = utils::boxesOverlap(towerLowCornerSkin, towerHighCornerSkin, boxMin, boxMax);
       }
       return isRelevant;
     };
