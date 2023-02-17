@@ -1,3 +1,4 @@
+
 # ![AutoPas](https://raw.githubusercontent.com/AutoPas/AutoPas/master/docs/graphics/AutoPasLogo_Large.svg "Title")
 
 AutoPas is a node-level auto-tuned particle simulation library developed
@@ -188,7 +189,15 @@ The default parameter is `ownedOrHalo`, which is also used for range-based for l
 Analogously to `begin()`, `cbegin()` is also defined, which guarantees to return a `const_iterator`.
 
 Iterators are not guaranteed to be valid after particle insertion. 
-However, particle deletion while iterating is supported via `autoPas.markAsDeleted(iterator)`.
+However, particle deletion while iterating is supported via `autoPas.deleteParticle(iterator)`. 
+After deletion the `++` operator has to be called:
+```cpp
+#pragma omp parallel
+for(auto iter = autoPas.getIterator(); iter != autoPas.end(); ++iter) {
+  autoPas.deleteParticle(iterator);
+}
+```
+
 # TODO SHOW LOOP WITH EXAMPLE!
 
 ### Simulation Loop

@@ -390,6 +390,8 @@ class ContainerIterator {
         this->operator++();
       }
     }
+    // move the current index back so that the next ++ points again to the same particle.
+    --_currentParticleIndex;
   }
 
   /**
