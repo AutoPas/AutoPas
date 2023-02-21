@@ -22,7 +22,7 @@ Objects:
     0:
       box-length                 :  [5, 5, 5]
       bottomLeftCorner           :  [0, 0, 0]
-      particle-spacing           :  2
+      particle-spacing           :  1.5
       velocity                   :  [0, 5, 0]
       particle-type              :  0
       particle-epsilon           :  1
@@ -31,7 +31,7 @@ Objects:
     1:
       box-length                  : [5, 5, 5]
       bottomLeftCorner            : [0, 10, 0]
-      particle-spacing            : 2
+      particle-spacing            : 1.5
       velocity                    : [ 0, -5, 0 ]
       particle-type               : 1
       particle-epsilon            : 1
@@ -40,7 +40,7 @@ Objects:
 no-flops                         :  false
 no-end-config                    :  true
 no-progress-bar                  :  false
-vtk-filename                     :  explodingLiquid
+vtk-filename                     :  varibale_verlet
 vtk-write-frequency              :  500
 
 
