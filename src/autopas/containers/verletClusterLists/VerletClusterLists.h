@@ -353,7 +353,6 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
           internal::deleteParticle(iter);
         }
       }
-      invalidParticles.insert(invalidParticles.end(), invalidParticles.begin(), invalidParticles.end());
     }
     _isValid = ValidityState::invalid;
     return invalidParticles;
