@@ -3,8 +3,8 @@
  */
 struct WrapIteratorInterface {
     template<typename T>
-    void operator()(T&& wrapped) {
-        using WrapedT = typename T::type;        
+    void operator()(T&& iterator) {
+        using IteratorType = typename T::type;        
     }
 };
 
@@ -13,14 +13,17 @@ struct WrapIteratorInterface {
  */
 struct WrapIteratorWrapper {
     template<typename T>
-    void operator()(T&& wrapped) {
-        using WrappedT = typename T::type;
+    void operator()(T&& iterator) {
+        using IteratorType = typename T::type;
+
         // check if iterator is still valid/next element exists
-        wrapped.method("isValid", &WrappedT::isValid);
+        iterator.method("isValid", &IteratorType::isValid);
+
         // increase iterator / ++ operator
-        wrapped.method("++", &WrappedT::operator++);
+        iterator.method("++", &IteratorType::operator++);
+        
         // dereference iterator / * operator
-        wrapped.method("*", &WrappedT::operator*);
+        iterator.method("*", &IteratorType::operator*);
     }
 };
 

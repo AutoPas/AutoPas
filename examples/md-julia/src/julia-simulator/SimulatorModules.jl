@@ -110,7 +110,9 @@ module AutoPasInterface
     getNumberOfParticles,
     updateContainer,
     getCutoff,
-    deleteParticle
+    deleteParticle,
+    getBoxMin,
+    getBoxMax
 end
 
 using .Particles, .Options, .Iterators, .Properties, .AutoPasInterface
@@ -144,4 +146,24 @@ export
   updatePositions,
   updateVelocities
 
+include("./Domain.jl")
+export
+  Domain,
+  createDomain,
+  calculateMPIWidth,
+  insideLocalDomain
+
+include("./DomainDecomposition.jl")
+export
+  migrateParticles,
+  sendAndReceiveParticles,
+  groupParticles,
+  determineMigratingParticles,
+  exchangeBufferSizes,
+  getLeftAndRightNeighbour
+
+include("./ParticleSerialization.jl")
+export
+  serializeParticles,
+  deserializeParticles
 end

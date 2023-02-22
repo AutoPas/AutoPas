@@ -6,9 +6,11 @@
  */
 struct WrapParticleBase {
     template<typename T>
-    void operator()(T&& wrapped) {
-        using WrapedT = typename T::type;
-        wrapped.template constructor<>();
+    void operator()(T&& particle) {
+        using ParticleType = typename T::type;
+        
+        particle.template constructor<>();
+
         // wrapped.method("print_particle", &WrapedT::print_particle);
     }
 };
@@ -17,44 +19,46 @@ struct WrapParticleBase {
  * This class helps to wrap the MoleculeJ type
  */
 struct WrapMoleculeJ {
-    template<typename floatType>
-    void operator()(floatType&& wrapped) {
+    template<typename T>
+    void operator()(T&& particle) {
     
-        using WrappedT = typename floatType::type;
+        using ParticleType = typename T::type;
 
         // default constructor for MoleculeJ
-        wrapped.template constructor<>();
+        particle.template constructor<>();
 
         // typename WrappedT::value_type*
-        using ft = typename WrappedT::ft;
+        using ft = typename ParticleType::ft;
         
         // constructor for MoleculeJ with arguments for pos, v, moleculeId, typeId
-        wrapped.template constructor<jlcxx::ArrayRef<ft, 1>, jlcxx::ArrayRef<ft,1>, unsigned long, unsigned long>();
+        particle.template constructor<jlcxx::ArrayRef<ft, 1>, jlcxx::ArrayRef<ft,1>, unsigned long, unsigned long>();
 
         // setters of MoleculeJ attributes
-        wrapped.method("setPosition", &WrappedT::setPosition);
-        wrapped.method("setVelocity", &WrappedT::setVelocity);
-        wrapped.method("setForce", &WrappedT::setForce);
-        wrapped.method("setOldF", &WrappedT::setOldF);
-        wrapped.method("setID", &WrappedT::setID);
-        wrapped.method("setTypeId", &WrappedT::setTypeId);
+        particle.method("setPosition", &ParticleType::setPosition);
+        particle.method("setVelocity", &ParticleType::setVelocity);
+        particle.method("setForce", &ParticleType::setForce);
+        particle.method("setOldF", &ParticleType::setOldF);
+        particle.method("setID", &ParticleType::setID);
+        particle.method("setTypeId", &ParticleType::setTypeId);
+        // particle.method("setOwnershipState", &ParticleType::setOwnershipState);
 
         // getters of MoleculeJ attributes
-        wrapped.method("getPosition", &WrappedT::getPosition);
-        wrapped.method("getVelocity", &WrappedT::getVelocity);
-        wrapped.method("getForce", &WrappedT::getForce);
-        wrapped.method("getOldF", &WrappedT::getOldF);
-        wrapped.method("getID", &WrappedT::getID);
-        wrapped.method("getTypeId", &WrappedT::getTypeId);
+        particle.method("getPosition", &ParticleType::getPosition);
+        particle.method("getVelocity", &ParticleType::getVelocity);
+        particle.method("getForce", &ParticleType::getForce);
+        particle.method("getOldF", &ParticleType::getOldF);
+        particle.method("getID", &ParticleType::getID);
+        particle.method("getTypeId", &ParticleType::getTypeId);
+        // particle.method("getOwnershipState", &ParticleType::getOwnershipState);
 
         // add and sub methods of MoleculeJ attributes
-        wrapped.method("addPosition", &WrappedT::addPosition);
-        wrapped.method("addVelocity", &WrappedT::addVelocity);
-        wrapped.method("addForce", &WrappedT::addForce);
-        wrapped.method("subForce", &WrappedT::subForce);
+        particle.method("addPosition", &ParticleType::addPosition);
+        particle.method("addVelocity", &ParticleType::addVelocity);
+        particle.method("addForce", &ParticleType::addForce);
+        particle.method("subForce", &ParticleType::subForce);
 
         // get string representation of MoleculeJ object
-        wrapped.method("toString", &WrappedT::toString);
+        particle.method("toString", &ParticleType::toString);
     }
 };
 
@@ -63,11 +67,11 @@ struct WrapMoleculeJ {
  * TODO: if this class is necessary, add bindings which are needed into this wrapper class
  */
 struct WrapMoleculeLJ {
-    template<typename floatType>
-    void operator()(floatType&& wrapped) {
-        using WrappedT = typename floatType::type;
+    template<typename T>
+    void operator()(T&& particle) {
+        using ParticleType = typename T::type;
 
-        wrapped.template constructor<>();
+        particle.template constructor<>();
     }
 };
 

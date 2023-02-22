@@ -13,7 +13,7 @@ function getNp(apc)
 end
 
 
-function parseInput(inputParameters)
+function parseInput(inputParameters, comm)
 
     # create ParticlePropertiesLibrary and generate particles
     particlePropertiesLibrary = Properties.ParticlePropertiesLibrary{Float64, UInt}(inputParameters.cutoff)
@@ -23,17 +23,27 @@ function parseInput(inputParameters)
     autoPasContainer = initAutoPasContainer(inputParameters)
     Properties.calculateMixingCoefficients(particlePropertiesLibrary)
 
-    # add particles to AutoPas container
+    # create subdomain
+    # width = calculateMPIWidth(getBoxMin(autoPasContainer), getBoxMax(autoPasContainer), comm)
+    width = calculateMPIWidth([0,0,0], [10,10,10], comm)
+    # domain = createDomain(getBoxMin(autoPasContainer), getBoxMax(autoPasContainer), width, comm)
+    domain = createDomain([0,0,0], [10,10,10], width, comm)
+
+    # add particles to AutoPas container and check if particle is inside local domain
     index = 0
     for particle in particles
-        addParticle(autoPasContainer, particle)
-        index += 1
+        if insideLocalDomain(domain.localBoxMin, domain.localBoxMax, particle)
+            addParticle(autoPasContainer, particle)
+            index += 1
+        end
     end
     println("added " * string(index) * " particles")
+    rank_id = MPI.Comm_rank(comm)
+    println("$rank_id: $domain")
 
     # println("particles in container: ", getNp(autoPasContainer))
 
-    return autoPasContainer, particlePropertiesLibrary
+    return autoPasContainer, particlePropertiesLibrary, domain
 end
 
 function initPplAndParticles(ppl, objects)

@@ -7,36 +7,36 @@
  */
 struct WrapParticlePropertiesLibrary{
     template<typename T>
-    void operator()(T&& wrapped) {
-        using WrappedT = typename T::type;
+    void operator()(T&& pplibrary) {
+        using PplType = typename T::type;
 
         // constructor of ParticlePropertyLibrary to Julia
-        wrapped.template constructor<double>();
+        pplibrary.template constructor<double>();
         
         // add another type of particle to particleproperties
-        wrapped.method("addType", &WrappedT::addType);
+        pplibrary.method("addType", &PplType::addType);
 
         // calculate 
-        wrapped.method("calculateMixingCoefficients", &WrappedT::calculateMixingCoefficients);
-        wrapped.method("calcShift6", &WrappedT::calcShift6);        
+        pplibrary.method("calculateMixingCoefficients", &PplType::calculateMixingCoefficients);
+        pplibrary.method("calcShift6", &PplType::calcShift6);        
         
         // get 24epsilon of one type 
-        wrapped.method("get24Epsilon", &WrappedT::get24Epsilon);
+        pplibrary.method("get24Epsilon", &PplType::get24Epsilon);
         // get sigma * sigma of one type
-        wrapped.method("getSigmaSquare", &WrappedT::getSigmaSquare);
+        pplibrary.method("getSigmaSquare", &PplType::getSigmaSquare);
         // get mass of one type
-        wrapped.method("getMass", &WrappedT::getMass);
+        pplibrary.method("getMass", &PplType::getMass);
 
     	// get mixed 24epsilon of two types i and j
-        wrapped.method("mixing24Epsilon", &WrappedT::mixing24Epsilon);
+        pplibrary.method("mixing24Epsilon", &PplType::mixing24Epsilon);
         // get mixed sigma*sigma of two types i and j
-        wrapped.method("mixingSigmaSquare", &WrappedT::mixingSigmaSquare);
+        pplibrary.method("mixingSigmaSquare", &PplType::mixingSigmaSquare);
         // get mixed shift6 of two types i and j
-        wrapped.method("mixingShift6", &WrappedT::mixingShift6);
+        pplibrary.method("mixingShift6", &PplType::mixingShift6);
 
         // TDOO: check if necessary
-        // wrapped.method("getMixingData", &WrappedT::getMixingData); // return type?
-        // wrapped.method("getMixingDataPtr", &WrappedT::getMixingDataPtr); // return type?
+        // pplibrary.method("getMixingData", &PplType::getMixingData); // return type?
+        // pplibrary.method("getMixingDataPtr", &PplType::getMixingDataPtr); // return type?
     }
 };
 

@@ -11,3 +11,4 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/options/AcquisitionFunctionOption.h"
+#include "autopas/particles/OwnershipState.h"

@@ -170,4 +170,14 @@ JLCXX_MODULE define_module_options(jlcxx::Module& mod) {
      */
     mod.add_type<autopas::options::TraversalOption>("TraversalOption")
             .constructor<autopas::options::TraversalOption::Value>();
+
+    /**
+     * add OwnershipState values to Julia
+     */
+    /*
+    mod.add_bits<autopas::OwnershipState>("OwnershipState", jlcxx::julia_type("CppEnum"));
+    mod.set_const("dummy", autopas::OwnershipState::dummy);    
+    mod.set_const("owned", autopas::OwnershipState::owned);
+    mod.set_const("halo", autopas::OwnershipState::halo);
+    */
 }
