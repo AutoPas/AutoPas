@@ -22,20 +22,20 @@ Objects:
     0:
       box-length                 :  [10, 10, 10]
       bottomLeftCorner           :  [195, 85, 95]
-      particle-spacing           :  1
+      particle-spacing           :  1.1
       velocity                   :  [0, 10, 0]
       particle-type              :  0
       particle-epsilon           :  1
-      particle-sigma             :  1
+      particle-sigma             :  1.1
       particle-mass              :  1
     1:
       box-length                  : [20, 10, 10]
       bottomLeftCorner            : [190, 125, 95]
-      particle-spacing            : 0.9
+      particle-spacing            : 1
       velocity                    : [ 0, -20, 0 ]
       particle-type               : 1
       particle-epsilon            : 1
-      particle-sigma              : 0.9
+      particle-sigma              : 1
       particle-mass               : 1
 no-flops                         :  false
 no-end-config                    :  true
