@@ -22,7 +22,7 @@ class ContainerSelectorInfo {
   ContainerSelectorInfo()
       : cellSizeFactor(1.),
         verletSkinPerTimestep(0.),
-        verletRebuildFrequency(0.),
+        verletRebuildFrequency(5),
         verletClusterSize(64),
         loadEstimator(autopas::LoadEstimatorOption::none) {}
 
@@ -52,7 +52,8 @@ class ContainerSelectorInfo {
    */
   bool operator==(const ContainerSelectorInfo &other) const {
     return cellSizeFactor == other.cellSizeFactor and verletSkinPerTimestep == other.verletSkinPerTimestep and
-           verletClusterSize == other.verletClusterSize and loadEstimator == other.loadEstimator;
+           verletClusterSize == other.verletClusterSize and loadEstimator == other.loadEstimator and
+           verletRebuildFrequency == other.verletRebuildFrequency;
   }
 
   /**
