@@ -115,6 +115,32 @@ INSTANTIATE_TEST_SUITE_P(Generated, RegionParticleIteratorTest,
                                  ValuesIn(autopas::IteratorBehavior::getMostOptions())),
                          RegionParticleIteratorTest::PrintToStringParamName());
 
+/**
+ * Tests that AutoPas rejects regions where regionMin > regionMax.
+ */
+TEST_F(RegionParticleIteratorTest, testInvalidBox) {
+  // setup
+  autopas::AutoPas<Molecule> autoPas{};
+  const auto [haloBoxMin, haloBoxMax] = defaultInit(autoPas, autopas::ContainerOption::directSum, 1.);
+
+  // helpers
+  using autopas::utils::ArrayMath::mulScalar;
+  using autopas::utils::ArrayMath::sub;
+
+  // calculate box size
+  const std::array<double, 3> haloBoxLength = sub(haloBoxMax, haloBoxMin);
+  const std::array<double, 3> haloBoxLength3rd = mulScalar(haloBoxMax, 1. / 3.);
+
+  // calculate points within the domain
+  const std::array<double, 3> regionUpperLimit = mulScalar(haloBoxLength3rd, 2.);
+  const std::array<double, 3> regionLowerLimit = mulScalar(haloBoxLength3rd, 1.);
+
+  // actual test
+  EXPECT_NO_THROW(autoPas.getRegionIterator(regionLowerLimit, regionUpperLimit));
+  EXPECT_THROW(autoPas.getRegionIterator(regionUpperLimit, regionLowerLimit),
+               autopas::utils::ExceptionHandler::AutoPasException);
+}
+
 ///**
 // TODO: Is this worthwhile to reimplement? If yes how?
 // * Generates an iterator in a parallel region but iterates with only one and expects to find everything.
