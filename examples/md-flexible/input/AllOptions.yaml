@@ -58,7 +58,7 @@ Objects:
       bottomLeftCorner           :  [0, 0, 15]
       particle-spacing           :  1.1225
       velocity                   :  [0, 0, 0]
-      particle-type              :  2
+      particle-type              :  3
       particle-epsilon           :  1
       particle-sigma             :  1
       particle-mass              :  1
@@ -68,7 +68,7 @@ Objects:
       radius                     :  3
       particle-spacing           :  1.1225
       velocity                   :  [0, 0, 0]
-      particle-type              :  3
+      particle-type              :  4
       particle-epsilon           :  1
       particle-sigma             :  1
       particle-mass              :  1
