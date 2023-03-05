@@ -66,7 +66,7 @@ class VLCCellPairC08CellHandler : public LCC08CellHandler<ParticleCell, Pairwise
       // check if cell2 exists (in cell1's neighbor list)
       if (cell2Local != globalToLocalIndex[offsetCell1].end()) {
         // if aos, send every pair of interacting particles to functor
-        if (dataLayout == DataLayoutOption::aos) {
+        if constexpr (dataLayout == DataLayoutOption::aos) {
           // vector of pairs {particle, list}
           const auto &currentList = aosNeighborList[offsetCell1][cell2Local->second];
           for (auto &[particleBasePtr, particleList] : currentList) {
@@ -77,7 +77,7 @@ class VLCCellPairC08CellHandler : public LCC08CellHandler<ParticleCell, Pairwise
         }
 
         // if soa, send particle and corresponding neighbor list to the functor
-        else if (dataLayout == DataLayoutOption::soa) {
+        else if constexpr (dataLayout == DataLayoutOption::soa) {
           // vector of pairs {particle, list}
           const auto &currentList = soaNeighborList[offsetCell1][cell2Local->second];
           for (const auto &[particleIndex, particleList] : currentList) {
@@ -90,12 +90,12 @@ class VLCCellPairC08CellHandler : public LCC08CellHandler<ParticleCell, Pairwise
 
       // if newton3 is off, find cell1 in cell2's neighbor list ("switch" the pair from above) and repeat the
       // interaction from above
-      if (not useNewton3) {
+      if constexpr (not useNewton3) {
         const auto cell2LocalNoN3 = globalToLocalIndex[offsetCell2].find(offsetCell1);
         // exclude interaction within same cell - already handled in
         if (cell2LocalNoN3 != globalToLocalIndex[offsetCell2].end() and offsetCell1 != offsetCell2) {
           // if aos, send every pair of interacting particles to functor
-          if (dataLayout == DataLayoutOption::aos) {
+          if constexpr (dataLayout == DataLayoutOption::aos) {
             // vector of pairs {particle, list}
             const auto &currentList = aosNeighborList[offsetCell2][cell2LocalNoN3->second];
             for (auto &[particleBasePtr, particleList] : currentList) {
@@ -106,7 +106,7 @@ class VLCCellPairC08CellHandler : public LCC08CellHandler<ParticleCell, Pairwise
           }
 
           // if soa, send particle and corresponding neighbor list to the functor
-          else if (dataLayout == DataLayoutOption::soa) {
+          else if constexpr (dataLayout == DataLayoutOption::soa) {
             // vector of pairs {particle, list}
             const auto &currentList = soaNeighborList[offsetCell2][cell2LocalNoN3->second];
             for (const auto &[particleIndex, particleList] : currentList) {
