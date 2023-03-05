@@ -56,11 +56,10 @@ class VLCCellPairC08CellHandler : public LCC08CellHandler<ParticleCell, Pairwise
     const auto &globalToLocalIndex = neighborList.getGlobalToLocalMap();
 
     // for all interaction pairs defined via the c08 base step
-    for (const auto &offsets : this->_cellPairOffsets) {
+    for (const auto &[offsetA, offsetB, dirVec] : this->_cellPairOffsets) {
       // the lists are built with a c18 traversal
       // the interaction will always be saved in the smaller cell's neighbor list
-      const auto [offsetCell1, offsetCell2] =
-          std::minmax(cellIndex + std::get<0>(offsets), cellIndex + std::get<1>(offsets));
+      const auto [offsetCell1, offsetCell2] = std::minmax(cellIndex + offsetA, cellIndex + offsetB);
 
       const auto cell2Local = globalToLocalIndex[offsetCell1].find(offsetCell2);
 
