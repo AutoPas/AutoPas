@@ -49,7 +49,7 @@ class VLCCellPairC08CellHandler : public LCC08CellHandler<ParticleCell, Pairwise
    */
   void processCellListsC08(VLCCellPairNeighborList<typename ParticleCell::ParticleType> &neighborList,
                            unsigned long cellIndex, PairwiseFunctor *pairwiseFunctor, DataLayoutOption::Value layout,
-                           SoA<typename ParticleCell::ParticleType::SoAArraysType> *_soa,
+                           SoA<typename ParticleCell::ParticleType::SoAArraysType> *soa,
                            std::array<unsigned long, 3> dims) {
     const auto &aosNeighborList = neighborList.getAoSNeighborList();
     const auto &soaNeighborList = neighborList.getSoANeighborList();
@@ -83,7 +83,7 @@ class VLCCellPairC08CellHandler : public LCC08CellHandler<ParticleCell, Pairwise
           const auto &currentList = soaNeighborList[offsetCell1][cell2Local->second];
           for (const auto &[particleIndex, particleList] : currentList) {
             if (not particleList.empty()) {
-              pairwiseFunctor->SoAFunctorVerlet(*_soa, particleIndex, particleList, useNewton3);
+              pairwiseFunctor->SoAFunctorVerlet(*soa, particleIndex, particleList, useNewton3);
             }
           }
         }
@@ -112,7 +112,7 @@ class VLCCellPairC08CellHandler : public LCC08CellHandler<ParticleCell, Pairwise
             const auto &currentList = soaNeighborList[offsetCell2][cell2LocalNoN3->second];
             for (const auto &[particleIndex, particleList] : currentList) {
               if (not particleList.empty()) {
-                pairwiseFunctor->SoAFunctorVerlet(*_soa, particleIndex, particleList, useNewton3);
+                pairwiseFunctor->SoAFunctorVerlet(*soa, particleIndex, particleList, useNewton3);
               }
             }
           }
