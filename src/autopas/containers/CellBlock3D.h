@@ -118,6 +118,12 @@ class CellBlock3D : public CellBorderAndFlagManager {
   ParticleCell &getCell(const std::array<index_t, 3> &index3d) const;
 
   /**
+   * Reserve memory for a given number of particles.
+   * @param numParticles Particles incl. halo particles.
+   */
+  void reserve(size_t numParticles);
+
+  /**
    * rebuild the cellblock. This resizes the cellblock and sets the appropriate
    * internal variables
    * @param vec new vector of ParticleCells to which the internal pointer is set
@@ -297,7 +303,6 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * This is also the number of Halo cells per direction (always symmetric in each dimension).
    */
   std::array<index_t, 3> _cellsPerDimensionWithHalo;
-  index_t _numCells;
   index_t _firstOwnedCellIndex;
   index_t _lastOwnedCellIndex;
   std::vector<ParticleCell> *_cells;
@@ -354,6 +359,14 @@ inline std::array<typename CellBlock3D<ParticleCell>::index_t, 3> CellBlock3D<Pa
 }
 
 template <class ParticleCell>
+void CellBlock3D<ParticleCell>::reserve(size_t numParticles) {
+  const auto particlesPerCell = numParticles / _cells->size();
+  for (auto &cell : *_cells) {
+    cell.reserve(particlesPerCell);
+  }
+}
+
+template <class ParticleCell>
 inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, const std::array<double, 3> &bMin,
                                                const std::array<double, 3> &bMax, double interactionLength,
                                                double cellSizeFactor) {
@@ -367,8 +380,8 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, c
   } else {
     _cellsPerInteractionLength = ceil(1.0 / cellSizeFactor);
   }
-  // compute cell length
-  _numCells = 1;
+  // compute cell length and number of cells
+  index_t numCells = 1;
   for (int d = 0; d < 3; ++d) {
     const double diff = _boxMax[d] - _boxMin[d];
     auto cellsPerDim = static_cast<index_t>(std::floor(diff / (_interactionLength * cellSizeFactor)));
@@ -384,7 +397,7 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, c
     _haloBoxMin[d] = _boxMin[d] - _cellsPerInteractionLength * _cellLength[d];
     _haloBoxMax[d] = _boxMax[d] + _cellsPerInteractionLength * _cellLength[d];
 
-    _numCells *= _cellsPerDimensionWithHalo[d];
+    numCells *= _cellsPerDimensionWithHalo[d];
   }
   AutoPasLog(TRACE, "Box Length incl Halo : {}",
              autopas::utils::ArrayUtils::to_string(autopas::utils::ArrayMath::sub(_haloBoxMax, _haloBoxMin)));
@@ -395,10 +408,10 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, c
 
   _firstOwnedCellIndex = _cellsPerDimensionWithHalo[0] * _cellsPerDimensionWithHalo[1] * _cellsPerInteractionLength +
                          _cellsPerDimensionWithHalo[0] * _cellsPerInteractionLength + _cellsPerInteractionLength;
-  _lastOwnedCellIndex = _numCells - 1 - _firstOwnedCellIndex;
+  _lastOwnedCellIndex = numCells - 1 - _firstOwnedCellIndex;
 
   // initialize cells
-  _cells->resize(_numCells);
+  _cells->resize(numCells);
 
   for (auto &cell : *_cells) {
     cell.setCellLength(_cellLength);
@@ -407,7 +420,7 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, c
 
 template <class ParticleCell>
 typename CellBlock3D<ParticleCell>::index_t CellBlock3D<ParticleCell>::getNumCells() const {
-  return _numCells;
+  return _cells->size();
 }
 
 template <class ParticleCell>
@@ -466,7 +479,7 @@ inline ParticleCell &CellBlock3D<ParticleCell>::getCell(index_t index1d) const {
 
 template <class ParticleCell>
 inline ParticleCell &CellBlock3D<ParticleCell>::getCell(const std::array<index_t, 3> &index3d) const {
-  return _cells->at(index1D(index3d));
+  return (*_cells)[index1D(index3d)];
 }
 
 template <class ParticleCell>

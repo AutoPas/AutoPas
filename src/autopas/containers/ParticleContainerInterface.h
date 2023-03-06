@@ -79,6 +79,13 @@ class ParticleContainerInterface {
   [[nodiscard]] virtual ContainerOption getContainerType() const = 0;
 
   /**
+   * @copydoc AutoPas::reserve()
+   * @param numParticlesHaloEstimate Estimate for the number of halo particles.
+   * Reserves space in the container data structure.
+   */
+  virtual void reserve(size_t numParticles, size_t numParticlesHaloEstimate) = 0;
+
+  /**
    * Adds a particle to the container.
    * @tparam checkInBox Specifies whether a boundary check should be performed. Only disable this if the check has
    * already been performed.

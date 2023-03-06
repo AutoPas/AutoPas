@@ -10,6 +10,7 @@
 #include "autopas/iterators/ContainerIterator.h"
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/selectors/AutoTuner.h"
+#include "autopas/utils/NumParticlesEstimator.h"
 #include "autopas/utils/logging/Logger.h"
 #include "autopas/utils/markParticleAsDeleted.h"
 
@@ -174,6 +175,28 @@ class LogicHandler {
     _neighborListsAreValid = false;
 
     return particlesNowOutside;
+  }
+
+  /**
+   * @copydoc AutoPas::reserve()
+   *
+   * Reserves space in the particle buffers.
+   */
+  void reserve(size_t numParticles) {
+    const auto &container = _autoTuner.getContainer();
+    const auto numParticlesHaloEstimate = autopas::utils::NumParticlesEstimator::estimateNumHalosUniform(
+        numParticles, container->getBoxMin(), container->getBoxMax(), container->getInteractionLength());
+    const auto numParticlesHaloEstimatePerBuffer = numParticlesHaloEstimate / _haloParticleBuffer.size();
+
+    for (auto &buffer : _haloParticleBuffer) {
+      buffer.reserve(numParticlesHaloEstimatePerBuffer);
+    }
+    // there is currently no good heuristic for this buffer so reuse the one for halos.
+    for (auto &buffer : _particleBuffer) {
+      buffer.reserve(numParticlesHaloEstimatePerBuffer);
+    }
+
+    container->reserve(numParticles, numParticlesHaloEstimate);
   }
 
   /**

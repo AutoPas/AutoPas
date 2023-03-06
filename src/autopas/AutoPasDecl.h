@@ -131,6 +131,16 @@ class AutoPas {
   [[nodiscard]] std::vector<Particle> updateContainer();
 
   /**
+   * Reserve memory for a given number of particles in the container and logic layers.
+   * This function assumes a uniform distribution of particles throughout the domain.
+   * For example, this means that in a LinkedCells Container in each cell vector.reserve(numParticles/numCells) is
+   * called.
+   * @param numParticles No buffer factor is applied. It is probably wise to slighly over-reserve to account for
+   * imbalance or particle movement.
+   */
+  void reserve(size_t numParticles);
+
+  /**
    * Adds a particle to the container.
    * This is only allowed if the neighbor lists are not valid.
    * @param p Reference to the particle to be added

@@ -112,6 +112,11 @@ size_t AutoPas<Particle>::getNumberOfParticles(IteratorBehavior behavior) const 
 }
 
 template <class Particle>
+void AutoPas<Particle>::reserve(size_t numParticles) {
+  _logicHandler->reserve(numParticles);
+}
+
+template <class Particle>
 void AutoPas<Particle>::addParticle(const Particle &p) {
   _logicHandler->addParticle(p);
 }

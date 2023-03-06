@@ -149,6 +149,8 @@ Simulation::Simulation(const MDFlexConfig &configuration,
         "Search space must not be trivial if the simulation time is limited by the number tuning phases");
   }
 
+  // @todo: calculate the local number of particles and call _autopas.reserve(numParticlesLocal, numHalosEstimateLocal)
+
   // @todo: the object generators should only generate particles relevant for the current rank's domain
   for (auto &particle : _configuration.getParticles()) {
     if (_domainDecomposition->isInsideLocalDomain(particle.getR())) {

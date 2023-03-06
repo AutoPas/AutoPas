@@ -70,6 +70,10 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
 
   [[nodiscard]] CellType getParticleCellTypeEnum() override { return CellType::FullParticleCell; }
 
+  void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
+    _cellBlock.reserve(numParticles + numParticlesHaloEstimate);
+  }
+
   void addParticleImpl(const ParticleType &p) override {
     ParticleCell &cell = _cellBlock.getContainingCell(p.getR());
     cell.addParticle(p);

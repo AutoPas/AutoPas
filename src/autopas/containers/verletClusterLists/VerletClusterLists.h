@@ -154,6 +154,13 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     traversal->endTraversal();
   }
 
+  void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
+    const auto particlesPerTower = (numParticles + numParticlesHaloEstimate) / _towers.size();
+    for (auto &tower : _towers) {
+      tower.reserve(particlesPerTower);
+    }
+  }
+
   /**
    * Adds the given particle to the container. rebuildVerletLists() has to be called to have it actually sorted in.
    * @param p The particle to add.

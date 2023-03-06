@@ -52,6 +52,10 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    */
   CellType getParticleCellTypeEnum() override { return _linkedCells.getParticleCellTypeEnum(); };
 
+  void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
+    _linkedCells.reserve(numParticles, numParticlesHaloEstimate);
+  }
+
   /**
    * @copydoc autopas::ParticleContainerInterface::addParticleImpl
    * @note This function invalidates the neighbor lists.
