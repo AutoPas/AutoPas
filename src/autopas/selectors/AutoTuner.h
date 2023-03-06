@@ -591,6 +591,7 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
   autopas::utils::Timer timerTotal;
   autopas::utils::Timer timerRebuild;
   autopas::utils::Timer timerIteratePairwise;
+  autopas::utils::Timer timerRemainderTraversal;
   timerTotal.start();
 
   f->initTraversal();
@@ -601,23 +602,23 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
   }
   timerIteratePairwise.start();
   containerPtr->iteratePairwise(traversal.get());
-
-  doRemainderTraversal<useNewton3>(f, containerPtr, particleBuffer, haloParticleBuffer);
   timerIteratePairwise.stop();
+
+  timerRemainderTraversal.start();
+  doRemainderTraversal<useNewton3>(f, containerPtr, particleBuffer, haloParticleBuffer);
+  timerRemainderTraversal.stop();
   f->endTraversal(useNewton3);
 
   timerTotal.stop();
 
-  if (doListRebuild) {
-    AutoPasLog(DEBUG, "rebuildNeighborLists took {} nanoseconds", timerRebuild.getTotalTime());
-  }
-  // TODO: Fix misleading output
-  // actually this is the time for iteratePairwise + init/endTraversal + rebuildNeighborLists
-  // this containing all of this has legacy reasons so that old plot scripts work
-  AutoPasLog(DEBUG, "IteratePairwise took {} nanoseconds", timerTotal.getTotalTime());
+  AutoPasLog(DEBUG, "Container::iteratePairwise took {} ns", timerIteratePairwise.getTotalTime());
+  AutoPasLog(DEBUG, "RemainderTraversal         took {} ns", timerRemainderTraversal.getTotalTime());
+  AutoPasLog(DEBUG, "RebuildNeighborLists       took {} ns", timerRebuild.getTotalTime());
+  AutoPasLog(DEBUG, "AutoTuner::iteratePairwise took {} ns", timerTotal.getTotalTime());
 
   _iterationLogger.logIteration(getCurrentConfig(), _iteration, inTuningPhase, timerIteratePairwise.getTotalTime(),
-                                timerRebuild.getTotalTime(), timerTotal.getTotalTime());
+                                timerRemainderTraversal.getTotalTime(), timerRebuild.getTotalTime(),
+                                timerTotal.getTotalTime());
 
   // if tuning execute with time measurements
   if (inTuningPhase) {
