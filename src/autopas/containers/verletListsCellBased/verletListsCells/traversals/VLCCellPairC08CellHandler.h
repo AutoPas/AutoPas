@@ -44,7 +44,7 @@ class VLCCellPairC08CellHandler : public LCC08CellHandler<ParticleCell, Pairwise
    * @param cellIndex index of the current base cell
    * @param pairwiseFunctor functor that defines the interaction of two particles
    * @param layout data layout (AoS or SoA)
-   * @param _soa Structure of Arrays where the particles are loaded if the SoA data layout is used
+   * @param soa Structure of Arrays where the particles are loaded if the SoA data layout is used
    * @param dims number of cells per dimension
    */
   void processCellListsC08(VLCCellPairNeighborList<typename ParticleCell::ParticleType> &neighborList,
