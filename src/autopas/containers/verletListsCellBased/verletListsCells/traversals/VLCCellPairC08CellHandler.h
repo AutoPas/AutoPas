@@ -59,7 +59,10 @@ class VLCCellPairC08CellHandler : public LCC08CellHandler<ParticleCell, Pairwise
     for (const auto &[offsetA, offsetB, dirVec] : this->_cellPairOffsets) {
       // the lists are built with a c18 traversal
       // the interaction will always be saved in the smaller cell's neighbor list
-      const auto [offsetCell1, offsetCell2] = std::minmax(cellIndex + offsetA, cellIndex + offsetB);
+      // std::minmax(a, b) returns references. Hence, we can't use temporaries as arguments.
+      const auto offsetCellA = cellIndex + offsetA;
+      const auto offsetCellB = cellIndex + offsetB;
+      const auto [offsetCell1, offsetCell2] = std::minmax(offsetCellA, offsetCellB);
 
       const auto cell2Local = globalToLocalIndex[offsetCell1].find(offsetCell2);
 
