@@ -1,4 +1,12 @@
-function startSimulation(autoPasContainer, particlePropertiesLibrary, inputParameters)
+function updateDummy(autoPasContainer, shift)
+    iter = Simulator.AutoPasInterface.begin(autoPasContainer, IteratorBehavior(ownedOrHalo))
+    
+    while isValid(iter)
+        addPosition(Simulator.Iterators.:*(iter), shift)
+        Simulator.Iterators.:++(iter)
+    end
+end
+function startSimulation(autoPasContainer, particlePropertiesLibrary, inputParameters, domain, comm)
     #=
     iter = AutoPasM.begin(autoPasContainer, Options.IteratorBehavior(Options.owned))
     while AIterators.isValid(iter)
@@ -11,8 +19,21 @@ function startSimulation(autoPasContainer, particlePropertiesLibrary, inputParam
     tmpParticles = maxParticles
     for iteration = 1 : inputParameters.iterations
         
-        updatePositions(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
-        
+        # updatePositions(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
+        # updateDummy(autoPasContainer, shift)
+        # deleteHaloParticlesLocalBounds(autoPasContainer, domain)
+        # delete old halo Particles
+        updateContainer(autoPasContainer)
+
+        # migrate particles
+        exchangeMigratingParticles(autoPasContainer, domain, comm)
+
+        # apply periodic boundary condition
+        applyPeriodicBoundary(autoPasContainer, domain)
+
+        # exchange halo particles
+        exchangeHaloParticles(autoPasContainer, domain, comm)
+
         # handle boundary particles
         # handleBoundaries(autoPasContainer, inputParameters.boxMin, inputParameters.boxMax)
         # for outflow maybe only use updateContainer which has same effekt
@@ -22,6 +43,11 @@ function startSimulation(autoPasContainer, particlePropertiesLibrary, inputParam
         
         updateVelocities(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary)
         # println("after updateVelocities")
+
+        if iteration == 2
+            m = MoleculeJ{Float64}([0.5, 0.5, 0.5], [0.2, 0.15, 0.11], 8, 0)
+            addParticle(autoPasContainer, m)
+        end
         
     end
     #= 
@@ -35,6 +61,46 @@ function startSimulation(autoPasContainer, particlePropertiesLibrary, inputParam
     println("remaining particles ", np)
     # println("done")
     =#
+end
+
+function printAllParticles(autoPasContainer, comm)
+    ost = ""
+    iter = Simulator.AutoPasInterface.begin(autoPasContainer, Options.IteratorBehavior(Options.ownedOrHalo))
+
+    while isValid(iter)
+        particle = Simulator.Iterators.:*(iter)
+        ost = ost*toString(particle)*"\n"
+        # println(toString(particle))
+        Simulator.Iterators.:++(iter)
+    end
+    r = MPI.Comm_rank(comm)
+    println("\n rank $r:\n $ost")
+end
+
+function simulate(autoPasContainer, particlePropertiesLibrary, inputParameters, domain, comm, shift)
+    index = 1
+    for iteration = 1 : inputParameters.iterations
+        println("#######################################")
+        # updatePositions(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
+        updateDummy(autoPasContainer, shift)
+
+        # delte all halo particles
+        # updateContainer(autoPasContainer)
+
+        # migrate particles
+        exchangeMigratingParticles(autoPasContainer, domain, comm)
+        # apply periodic boundary condition
+        index = applyPeriodicBoundary(autoPasContainer, domain, index)
+
+        # exchange halo particles
+        exchangeHaloParticles(autoPasContainer, domain, comm)
+
+        updateForces(autoPasContainer, inputParameters.globalForce, particlePropertiesLibrary)
+        
+        updateVelocities(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary)
+        printAllParticles(autoPasContainer, comm)
+    end
+
 end
 
 function printSimulation()

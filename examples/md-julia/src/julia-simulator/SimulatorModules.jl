@@ -27,7 +27,11 @@ module Particles
     addVelocity,
     addForce,
     subForce,
-    toString
+    toString,
+    setOwnershipState,
+    getOwnershipState,
+    ownedS,
+    haloS
 
 end
 
@@ -49,6 +53,7 @@ export
   IteratorBehavior
 export
   linkedCells,
+  directSum,
   fastestAbs,
   aos,
   lc_c01,
@@ -57,6 +62,7 @@ export
   disabled,
   enabled,
   owned,
+  halo,
   ownedOrHalo
 end
 
@@ -110,7 +116,11 @@ module AutoPasInterface
     getNumberOfParticles,
     updateContainer,
     getCutoff,
-    deleteParticle
+    deleteParticle,
+    getBoxMin,
+    getBoxMax,
+    regionIterator,
+    addHaloParticle
 end
 
 using .Particles, .Options, .Iterators, .Properties, .AutoPasInterface
@@ -137,11 +147,37 @@ export
 include("./Simulator.jl")
 export
   startSimulation,
-  printSimulation
+  printSimulation,
+  simulate
 
 include("./TimeDiscretization.jl")
 export
   updatePositions,
   updateVelocities
+
+include("./Domain.jl")
+export
+  Domain,
+  createDomain,
+  calculateMPIWidth,
+  insideLocalDomain
+
+include("./DomainDecomposition.jl")
+export
+  migrateParticles,
+  sendAndReceiveParticles,
+  groupParticles,
+  determineMigratingParticles,
+  exchangeBufferSizes,
+  getLeftAndRightNeighbour,
+  exchangeHaloParticles,
+  exchangeMigratingParticles,
+  deleteHaloParticlesLocalBounds,
+  applyPeriodicBoundary
+
+include("./ParticleSerialization.jl")
+export
+  serializeParticles,
+  deserializeParticles
 
 end

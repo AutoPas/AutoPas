@@ -66,61 +66,64 @@
  * This class helps to wrap the AutoPas type
  */
 struct WrapAutoPas {
-    template<typename Particle>
-    void operator()(Particle&& wrapped) {
+    template<typename T>
+    void operator()(T&& autoPas) {
         
-        using WrappedT = typename Particle::type;
-        using iterator_t = typename autopas::IteratorTraits<typename WrappedT::Particle_t>::iterator_t;
+        using AutoPasType = typename T::type;
+        using iterator_t = typename autopas::IteratorTraits<typename AutoPasType::Particle_t>::iterator_t;
         // default constructor 
-        wrapped.template constructor<>();
+        autoPas.template constructor<>();
         
         // init method initializing e.g. _tuningStrategy, _autoTuner and _logicHandler
-        wrapped.method("init", &WrappedT::init);
+        autoPas.method("init", &AutoPasType::init);
         // resizeBox
         // force retune
 
         // delete particle form container
-        wrapped.method("deleteParticle", static_cast<void (WrappedT::*)(typename WrappedT::Particle_t&)> (&WrappedT::deleteParticle));
+        autoPas.method("deleteParticle", static_cast<void (AutoPasType::*)(typename AutoPasType::Particle_t&)> (&AutoPasType::deleteParticle));
         
-        wrapped.method("finalize", &WrappedT::finalize);
+        autoPas.method("finalize", &AutoPasType::finalize);
 
-        wrapped.method("updateContainer", &WrappedT::updateContainer);
+        autoPas.method("updateContainer", &AutoPasType::updateContainer);
         
         // add particle to AutoPas container
-        wrapped.method("addParticle", &WrappedT::addParticle);
+        autoPas.method("addParticle", &AutoPasType::addParticle);
         
         // delete all particles in container 
-        wrapped.method("deleteAllParticles", &WrappedT::deleteAllParticles);
+        autoPas.method("deleteAllParticles", &AutoPasType::deleteAllParticles);
         
         // return iterator to first element of container
-        wrapped.method("begin", static_cast<iterator_t (WrappedT::*)(autopas::options::IteratorBehavior)> (&WrappedT::begin));
+        autoPas.method("begin", static_cast<iterator_t (AutoPasType::*)(autopas::options::IteratorBehavior)> (&AutoPasType::begin));
 
         // retrun number of particles in the container
-        wrapped.method("getNumberOfParticles", &WrappedT::getNumberOfParticles);
+        autoPas.method("getNumberOfParticles", &AutoPasType::getNumberOfParticles);
+
+        // add a halo particle to the container
+        autoPas.method("addHaloParticle", &AutoPasType::addHaloParticle);
 
         // setters for AutoPas variables (further setters are defined below)
-        wrapped.method("setVerletSkinPerTimestep", &WrappedT::setVerletSkinPerTimestep);
-        wrapped.method("setVerletRebuildFrequency", &WrappedT::setVerletRebuildFrequency);
-        wrapped.method("setVerletClusterSize", &WrappedT::setVerletClusterSize);
-        wrapped.method("setTuningInterval", &WrappedT::setTuningInterval);
-        wrapped.method("setMaxEvidence", &WrappedT::setMaxEvidence);
-        wrapped.method("setNumSamples", &WrappedT::setNumSamples);
-        wrapped.method("setEvidenceFirstPrediction", &WrappedT::setEvidenceFirstPrediction);
-        wrapped.method("setRelativeBlacklistRange", &WrappedT::setRelativeBlacklistRange);
-        wrapped.method("setMaxTuningPhasesWithoutTest", &WrappedT::setMaxTuningPhasesWithoutTest);
-        wrapped.method("setRelativeOptimumRange", &WrappedT::setRelativeOptimumRange);
-        wrapped.method("setCutoff", &WrappedT::setCutoff);
-        wrapped.method("setOutputSuffix", &WrappedT::setOutputSuffix);
-        wrapped.method("setMPITuningWeightForMaxDensity", &WrappedT::setMPITuningWeightForMaxDensity);
-        wrapped.method("setMPITuningMaxDifferenceForBucket", &WrappedT::setMPITuningMaxDifferenceForBucket);
-        wrapped.method("setAcquisitionFunction", &WrappedT::setAcquisitionFunction);
-        wrapped.method("setMPIStrategy", &WrappedT::setMPIStrategy);
-        wrapped.method("setTuningStrategyOption", &WrappedT::setTuningStrategyOption);
-        wrapped.method("setSelectorStrategy", &WrappedT::setSelectorStrategy);
-        wrapped.method("setExtrapolationMethodOption", &WrappedT::setExtrapolationMethodOption);
+        autoPas.method("setVerletSkinPerTimestep", &AutoPasType::setVerletSkinPerTimestep);
+        autoPas.method("setVerletRebuildFrequency", &AutoPasType::setVerletRebuildFrequency);
+        autoPas.method("setVerletClusterSize", &AutoPasType::setVerletClusterSize);
+        autoPas.method("setTuningInterval", &AutoPasType::setTuningInterval);
+        autoPas.method("setMaxEvidence", &AutoPasType::setMaxEvidence);
+        autoPas.method("setNumSamples", &AutoPasType::setNumSamples);
+        autoPas.method("setEvidenceFirstPrediction", &AutoPasType::setEvidenceFirstPrediction);
+        autoPas.method("setRelativeBlacklistRange", &AutoPasType::setRelativeBlacklistRange);
+        autoPas.method("setMaxTuningPhasesWithoutTest", &AutoPasType::setMaxTuningPhasesWithoutTest);
+        autoPas.method("setRelativeOptimumRange", &AutoPasType::setRelativeOptimumRange);
+        autoPas.method("setCutoff", &AutoPasType::setCutoff);
+        autoPas.method("setOutputSuffix", &AutoPasType::setOutputSuffix);
+        autoPas.method("setMPITuningWeightForMaxDensity", &AutoPasType::setMPITuningWeightForMaxDensity);
+        autoPas.method("setMPITuningMaxDifferenceForBucket", &AutoPasType::setMPITuningMaxDifferenceForBucket);
+        autoPas.method("setAcquisitionFunction", &AutoPasType::setAcquisitionFunction);
+        autoPas.method("setMPIStrategy", &AutoPasType::setMPIStrategy);
+        autoPas.method("setTuningStrategyOption", &AutoPasType::setTuningStrategyOption);
+        autoPas.method("setSelectorStrategy", &AutoPasType::setSelectorStrategy);
+        autoPas.method("setExtrapolationMethodOption", &AutoPasType::setExtrapolationMethodOption);
 
         // getters of AutoPas variables
-        wrapped.method("getCutoff", &WrappedT::getCutoff);
+        autoPas.method("getCutoff", &AutoPasType::getCutoff);
     }
 };
 
@@ -137,8 +140,36 @@ bool iteratePairwise(autopas::AutoPas<MoleculeJ<double>>& autoPasContainer, Func
  * wrapper method for iteratePairwise with constant functor LJFunctorAVX
  */
 bool iteratePairwise(autopas::AutoPas<MoleculeJ<double>>& autoPasContainer, ParticlePropertiesLibrary<> particlePropertiesLibrary) {
+    /*std::cout << "in c++ function: ";
+    for (auto it = autoPasContainer.begin(); it.isValid(); ++it) {
+        std::cout << "[" << (*it).getR()[0] << ", " << (*it).getR()[1] << ", " << (*it).getR()[2] << "], ";
+        std::cout << "[" << (*it).getV()[0] << ", " << (*it).getV()[1] << ", " << (*it).getV()[2] << "], ";
+        std::cout << "[" << (*it).getF()[0] << ", " << (*it).getF()[1] << ", " << (*it).getF()[2] << "]\n";
+        // std::cout << (*it).toString() << " ";
+    }
+    std::cout << std::endl;
+    */
     autopas::LJFunctorAVX<MoleculeJ<double>, true, true> functor{autoPasContainer.getCutoff(), particlePropertiesLibrary};
-    return autoPasContainer.iteratePairwise(&functor);
+    autoPasContainer.iteratePairwise(&functor);
+    /*
+    for (auto it = autoPasContainer.begin(); it.isValid(); ++it) {
+        std::cout << "[" << (*it).getR()[0] << ", " << (*it).getR()[1] << ", " << (*it).getR()[2] << "], ";
+        std::cout << "[" << (*it).getV()[0] << ", " << (*it).getV()[1] << ", " << (*it).getV()[2] << "], ";
+        std::cout << "[" << (*it).getF()[0] << ", " << (*it).getF()[1] << ", " << (*it).getF()[2] << "]\n";
+        // std::cout << (*it).toString() << " ";
+    }
+    std::cout << std::endl;
+    */
+    return false;
+}
+
+/**
+ * wrapper method for region iterator
+ */
+autopas::IteratorTraits<MoleculeJ<double>>::iterator_t regionIterator(autopas::AutoPas<MoleculeJ<double>>& autoPasContainer, jlcxx::ArrayRef<double, 1> lowerCorner, jlcxx::ArrayRef<double,1> upperCorner, autopas::options::IteratorBehavior behavior) {
+    std::array<double,3> lC{lowerCorner[0], lowerCorner[1], lowerCorner[2]};
+    std::array<double,3> uC{upperCorner[0], upperCorner[1], upperCorner[2]};
+    return autoPasContainer.getRegionIterator(lC, uC, behavior);
 }
 
 /**
@@ -224,6 +255,16 @@ void setBoxMax(autopas::AutoPas<MoleculeJ<double>>& autoPasContainer, jlcxx::Arr
     autoPasContainer.setBoxMax({boxMax[0], boxMax[1], boxMax[1]});
 }
 
+jlcxx::ArrayRef<double,1> getBoxMin(autopas::AutoPas<MoleculeJ<double>>& autoPasContainer) {
+    // std::array<double,3> tmp = autoPasContainer.getBoxMin();
+    return {autoPasContainer.getBoxMin().data(), autoPasContainer.getBoxMin().size()};
+}
+
+jlcxx::ArrayRef<double,1> getBoxMax(autopas::AutoPas<MoleculeJ<double>>& autoPasContainer) {
+    // std::array<double,3> tmp = autoPasContainer.getBoxMax(); 
+    return {autoPasContainer.getBoxMax().data(), autoPasContainer.getBoxMax().size()};
+}
+
 /**
  * create Julia Module with AutoPas type
  */
@@ -287,6 +328,22 @@ JLCXX_MODULE define_module_autopas(jlcxx::Module& mod)
      * add setBoxMax method to Julia
      */
     mod.method("setBoxMax", &setBoxMax);
+
+    /**
+     * add getBoxMin mthod to Julia
+     */
+    mod.method("getBoxMin", &getBoxMin);
+    
+    /**
+     * add getBoxMax mthod to Julia
+     */
+    mod.method("getBoxMax", &getBoxMax);
+
+    /**
+     * add regionIterator to Julia
+     */
+    mod.method("regionIterator", &regionIterator);
 }
 
 // cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DAUTOPAS_BUILD_TESTS=OFF -DAUTOPAS_OPENMP=ON ..
+// cmake -DMD_FLEXIBLE_USE_MPI=ON -DMD_FLEXIBLE_FUNCTOR_AUTOVEC=ON -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DAUTOPAS_BUILD_TESTS=OFF -DAUTOPAS_OPENMP=ON ..

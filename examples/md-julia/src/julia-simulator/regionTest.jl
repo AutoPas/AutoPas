@@ -1,6 +1,3 @@
-# include("SimulatorModules.jl")
-# using .Simulator, .Simulator.Properties, .Simulator.Options, .Simulator.Particles, .Simulator.AutoPasM, .Simulator.Iterators
-
 include("SimulatorModules.jl")
 using .Simulator.AutoPasInterface, .Simulator.Properties, .Simulator.Iterators, .Simulator.Options, .Simulator.Particles, .Simulator
 using MPI
@@ -19,7 +16,8 @@ function printAllParticles(autoPasContainer, comm)
     r = MPI.Comm_rank(comm)
     println("\n rank $r:\n $ost")
 end
-function sim(iterations)
+
+function init()
     grid = CubeGridInput()
 
     grid.particlesPerDimension = [0, 0, 0]
@@ -47,7 +45,7 @@ function sim(iterations)
     inputParameters = InputParameters()
 
     inputParameters.container = [linkedCells] # vector of contianer options -> parsing needed 1
-    inputParameters.verletRebuildFrequency = 3
+    inputParameters.verletRebuildFrequency = 1
     inputParameters.verletSkinRadiusPerTimestep = 1.3
     inputParameters.verletClusterSize = 12
     inputParameters.selectorStrategy = SelectorStrategyOption(fastestAbs)
@@ -62,10 +60,10 @@ function sim(iterations)
     inputParameters.newton3 = [disabled, enabled]
     inputParameters.cutoff = 1.5
     inputParameters.boxMin = [0, 0, 0]
-    inputParameters.boxMax = [1000.0, 1000.0, 1000.0]
+    inputParameters.boxMax = [30.0, 30.0, 30.0]
     inputParameters.cellSize = [1] # check which values can be used
     inputParameters.deltaT = 0.0002
-    inputParameters.iterations = iterations
+    inputParameters.iterations = 1
     inputParameters.globalForce = [0.0, 0.0, 0.0]
     inputParameters.periodicBoundaries = true
     inputParameters.objects = [grid, grid1]
@@ -83,58 +81,50 @@ function sim(iterations)
 
     # parse input, create AutoPasContainer and ParticlePropertiesLibrary
     autoPasContainer, particlePropertiesLibrary, domain = parseInput(inputParameters, comm)
-    particle = MoleculeJ{Float64}([-0.5, -0.5, -0.5], [0.0,0.0,0.0], 0, 0)
-    addHaloParticle(autoPasContainer, particle)
+    return autoPasContainer, particlePropertiesLibrary, domain, inputParameters, comm
     
-    printAllParticles(autoPasContainer, comm)
-
-    updateContainer(autoPasContainer)
-
-    printAllParticles(autoPasContainer, comm)
-    
-
-    # @time startSimulation(autoPasContainer, particlePropertiesLibrary, inputParameters, domain, comm)
     println("ending simulation")
 end
-    #=
-    if MPI.Comm_rank(comm) == 0
-        pos = [3.7, 3.5, 3.5]
-        vel = [0.01, 0.023, 0.03551]
-        # p = MoleculeJ{Float64}(pos, vel, 12, 0)
-        p = MoleculeJ{Float64}(pos, vel, MPI.Comm_rank(comm), 0)
-        addParticle(autoPasContainer, p)
 
-        pos = [2.7, 3.5, 3.5]
-        vel = [0.01, 0.023, 0.03551]
-        # p = MoleculeJ{Float64}(pos, vel, 12, 0)
-        p = MoleculeJ{Float64}(pos, vel, MPI.Comm_rank(comm) + 3, 0)
-        addParticle(autoPasContainer, p)
+autoPasContainer, particlePropertiesLibrary, domain, inputParameters, comm = init()
+println("rank: ", MPI.Comm_rank(comm))
 
-    end
-    if MPI.Comm_rank(comm) == 1
-        pos = [5.15, 3.5, 3.5]
-        vel = [0.01, 0.023, 0.03551]
-        # p = MoleculeJ{Float64}(pos, vel, 12, 0)
-        p = MoleculeJ{Float64}(pos, vel, MPI.Comm_rank(comm), 0)
-        addParticle(autoPasContainer, p)
-    end
-    =#
-    # printAllParticles(autoPasContainer, comm)
+if MPI.Comm_rank(comm) == 0
+    println("in here")
+    pos = [16.0, 5.0, 5.0]
+    m = MoleculeJ{Float64}(pos, [1.0, 1.0, 1.0], 0, 0)
+    addParticle(autoPasContainer, m)
+    pos = [16.0, 5.0, 5.0]
+    m1 = MoleculeJ{Float64}(pos, [1.0, 1.0, 1.0], 0, 0)
+    addParticle(autoPasContainer, m1)
+end
 
-    # println("############################")
-    # exchangeHaloParticles(autoPasContainer, domain, comm)
-    # exchangeMigratingParticles(autoPasContainer, domain, comm)
-    # println("number of particles in main: " * string(getNp(autoPasContainer)))
-    # startSimulation(autoPasContainer, particlePropertiesLibrary, inputParameters)
-    # updateForces(autoPasContainer, inputParameters.globalForce, particlePropertiesLibrary)
+minPos = [0.0, 0.0, 0.0]
+maxPos = [15.0, 15.0, 15.0]
+#=
+iter = regionIterator(autoPasContainer, minPos, maxPos, IteratorBehavior(ownedOrHalo))
+println("region")
+while isValid(iter)
+    println(toString(Simulator.Iterators.:*(iter)))
+    Simulator.Iterators.:++(iter)
+end
+println("region end")
+=#
+iG = Simulator.AutoPasInterface.begin(autoPasContainer, IteratorBehavior(ownedOrHalo))
+println("changed pos")
+while isValid(iG)
+    addPosition(Simulator.Iterators.:*(iG), [-3.0, 0.0, 0.0])
+    # println(toString(Simulator.Iterators.:*(iG)))
+    Simulator.Iterators.:++(iG)
+end
+println("changed pos end")
 
-    # printAllParticles(autoPasContainer, comm)
-
-    # println("############################")
-
-    # deleteHaloParticlesLocalBounds(autoPasContainer, domain)
-
-    # printAllParticles(autoPasContainer, comm)
-
-sim(1)
-# sim(2)
+# updateContainer(autoPasContainer)
+println("updated Container")
+iter = regionIterator(autoPasContainer, minPos, maxPos, IteratorBehavior(ownedOrHalo))
+println("region")
+while isValid(iter)
+    println(toString(Simulator.Iterators.:*(iter)))
+    Simulator.Iterators.:++(iter)
+end
+println("end region")

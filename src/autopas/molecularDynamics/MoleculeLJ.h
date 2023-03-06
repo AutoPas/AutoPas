@@ -191,7 +191,8 @@ class MoleculeLJ final : public Particle {
   /**
    * adding construcor, getters, setters and add methods for Julia Usage
    */
-   
+  
+  
   /**
    * Constructor of lennard jones molecule from julia
    * @param pos Position of the molecule.
@@ -216,48 +217,48 @@ class MoleculeLJ final : public Particle {
                         _typeId = typeId;
                     }
 
-  void setPos(jlcxx::ArrayRef<double,1> pos_) {
+  void setPosition(jlcxx::ArrayRef<double,1> pos_) {
     ParticleBase::setR({pos_[0], pos_[1], pos_[2]});
   }
 
-  void setV(jlcxx::ArrayRef<double,1> v_) {
+  void setVelocity(jlcxx::ArrayRef<double,1> v_) {
     ParticleBase::setV({v_[0], v_[1], v_[2]});
   }
 
-  void setF(jlcxx::ArrayRef<double,1> f_) {
+  void setForce(jlcxx::ArrayRef<double,1> f_) {
     ParticleBase::setF({f_[0], f_[1], f_[2]});
   }
 
-  void setOldF(jlcxx::ArrayRef<double,1> oldF_) {
+  void setOldForce(jlcxx::ArrayRef<double,1> oldF_) {
     setOldF({oldF_[0], oldF_[1], oldF_[2]});
   }
 
-  jlcxx::ArrayRef<double,1> getPos() {
+  jlcxx::ArrayRef<double,1> getPosition() {
     // jlcxx::ArrayRef<double,1> pos_{getR().data(), getR().size()};
     return {_r.data(), _r.size()};
   }
 
-  jlcxx::ArrayRef<double,1> getV() {
+  jlcxx::ArrayRef<double,1> getVelocity() {
     return {_v.data(), _v.size()};
   }
 
-  jlcxx::ArrayRef<double,1> getF() {
+  jlcxx::ArrayRef<double,1> getForce() {
     return {_f.data(), _f.size()};
   }
 
-  jlcxx::ArrayRef<double,1> getOldF() {
+  jlcxx::ArrayRef<double,1> getOldForce() {
     return {_oldF.data(), _oldF.size()};
   }
 
-  void addPos(jlcxx::ArrayRef<double,1> pos_) {
+  void addPosition(jlcxx::ArrayRef<double,1> pos_) {
     ParticleBase::addR({pos_[0], pos_[1], pos_[2]});
   }
 
-  void addV(jlcxx::ArrayRef<double,1> v_) {
+  void addVelocity(jlcxx::ArrayRef<double,1> v_) {
     ParticleBase::addV({v_[0], v_[1], v_[2]});
   }
 
-  void addF(jlcxx::ArrayRef<double,1> f_) {
+  void addForce(jlcxx::ArrayRef<double,1> f_) {
     ParticleBase::addF({f_[0], f_[1], f_[2]});
   }
 
