@@ -447,7 +447,7 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
   autopasContainer->addParticle(mol);
 
   // Try to calculate the quaternion
-  EXPECT_ANY_THROW(TimeDiscretization::calculateQuaternions(*autopasContainer, *PPL, deltaT, {0, 0, 0}));
+  EXPECT_ANY_THROW(TimeDiscretization::calculateQuaternionsAndResetTorques(*autopasContainer, *PPL, deltaT, {0, 0, 0}));
 #endif
 }
 

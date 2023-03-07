@@ -848,15 +848,20 @@ class LJFunctorAVX
   constexpr static bool getMixing() { return useMixing; }
 
   /**
-   * Get the number of flops used per kernel call. This should count the
-   * floating point operations needed for two particles that lie within a cutoff
-   * radius.
+   * Get the number of flops used per kernel call for a given particle pair. This should count the
+   * floating point operations needed for two particles that lie within a cutoff radius, having already calculated the distance.
+   * @param molAType molecule A's type id
+   * @param molBType molecule B's type id
+   * @param newton3 is newton3 applied.
+   * @note molAType and molBType make no difference for LJFunctor, but are kept to have a consistent interface for other functors
+   * where they may.
    * @return the number of floating point operations
    */
-  static unsigned long getNumFlopsPerKernelCall() {
-    // Kernel: 12 = 1 (inverse R squared) + 8 (compute scale) + 3 (apply
-    // scale) sum Forces: 6 (forces) kernel total = 12 + 6 = 18
-    return 18ul;
+  static unsigned long getNumFlopsPerKernelCall(size_t molAType, size_t molBType, bool newton3) {
+    // Kernel: 12 = 1 (inverse R squared) + 8 (compute scale) + 3 (apply scale) sum
+    // Adding to particle forces: 6 or 3 depending newton3
+    // Total = 12 + (6 or 3) = 18 or 15
+    return newton3 ? 18ul : 15ul;
   }
 
   /**
