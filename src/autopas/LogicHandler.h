@@ -203,20 +203,21 @@ class LogicHandler {
    * @copydoc AutoPas::addParticle()
    */
   void addParticle(const Particle &p) {
+    // first check that the particle actually belongs in the container
+    const auto &boxMin = _autoTuner.getContainer()->getBoxMin();
+    const auto &boxMax = _autoTuner.getContainer()->getBoxMax();
+    if (utils::notInBox(p.getR(), boxMin, boxMax)) {
+      autopas::utils::ExceptionHandler::exception(
+          "LogicHandler: Trying to add a particle that is not in the bounding box.\n"
+          "Box Min {}\n"
+          "Box Max {}\n"
+          "{}",
+          boxMin, boxMax, p.toString());
+    }
     if (not neighborListsAreValid()) {
-      // Container has to be invalid to be able to add Particles!
-      _autoTuner.getContainer()->addParticle(p);
+      // Container has to (about to) be invalid to be able to add Particles!
+      _autoTuner.getContainer()->template addParticle<false>(p);
     } else {
-      const auto &boxMin = _autoTuner.getContainer()->getBoxMin();
-      const auto &boxMax = _autoTuner.getContainer()->getBoxMax();
-      if (utils::notInBox(p.getR(), boxMin, boxMax)) {
-        autopas::utils::ExceptionHandler::exception(
-            "LogicHandler: Trying to add a particle that is not in the bounding box.\n"
-            "Box Min {}\n"
-            "Box Max {}\n"
-            "{}",
-            utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), p.toString());
-      }
       // If the container is valid, we add it to the particle buffer.
       _particleBuffer[autopas_get_thread_num()].push_back(p);
     }

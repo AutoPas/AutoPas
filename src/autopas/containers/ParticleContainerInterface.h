@@ -93,12 +93,8 @@ class ParticleContainerInterface {
    */
   template <bool checkInBox = true>
   void addParticle(const Particle &p) {
-    if constexpr (not checkInBox) {
-      addParticleImpl(p);
-    } else {
-      if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
-        addParticleImpl(p);
-      } else {
+    if constexpr (checkInBox) {
+      if (utils::notInBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
         utils::ExceptionHandler::exception(
             "ParticleContainerInterface: Trying to add a particle that is not in the bounding box.\n"
             "Box Min {}\n"
@@ -107,6 +103,7 @@ class ParticleContainerInterface {
             this->getBoxMin(), this->getBoxMax(), p.toString());
       }
     }
+    addParticleImpl(p);
   };
 
  protected:
@@ -127,21 +124,18 @@ class ParticleContainerInterface {
    */
   template <bool checkInBox = true>
   void addHaloParticle(const Particle &haloParticle) {
-    if constexpr (not checkInBox) {
-      addHaloParticleImpl(haloParticle);
-    } else {
+    if constexpr (checkInBox) {
       /// @todo do we want a check of the particle not being too far away in here as well?
-      if (utils::inBox(haloParticle.getR(), this->getBoxMin(), this->getBoxMax())) {
+      if (utils::notInBox(haloParticle.getR(), this->getBoxMin(), this->getBoxMax())) {
         utils::ExceptionHandler::exception(
-            "Trying to add a halo particle that is not outside of in the bounding box.\n"
+            "ParticleContainerInterface: Trying to add a halo particle that is not outside of in the bounding box.\n"
             "Box Min {}\n"
-            "Box Max {}\n",
-            utils::ArrayUtils::to_string(this->getBoxMin()), utils::ArrayUtils::to_string(this->getBoxMax()),
-            haloParticle.toString());
-      } else {
-        addHaloParticleImpl(haloParticle);
+            "Box Max {}\n"
+            "{}",
+            this->getBoxMin(), this->getBoxMax(), haloParticle.toString());
       }
     }
+    addHaloParticleImpl(haloParticle);
   }
 
  protected:
