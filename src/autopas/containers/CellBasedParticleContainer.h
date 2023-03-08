@@ -121,10 +121,10 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
   [[nodiscard]] unsigned long getNumberOfParticles() const override {
     size_t numParticles = 0ul;
 #ifdef AUTOPAS_OPENMP
-    /// @todo: find a sensible value for magic number
-    /// numThreads should be at least 1 and maximal max_threads
-    const int numThreads = std::clamp(static_cast<int>(this->_cells.size() / 1000), 1, omp_get_max_threads());
-    AutoPasLog(TRACE, "LinkedCells::getNumberOfParticles uses {} threads", numThreads);
+    // parallelizing this loop is only worth it if we have LOTS of cells.
+    // numThreads should be at least 1 and maximal max_threads
+    const int numThreads = std::clamp(static_cast<int>(this->_cells.size() / 100000), 1, omp_get_max_threads());
+    AutoPasLog(TRACE, "CellBasedParticleContainer::getNumberOfParticles uses {} threads", numThreads);
 #pragma omp parallel for num_threads(numThreads) reduction(+ : numParticles)
 #endif
     for (size_t index = 0; index < _cells.size(); ++index) {
