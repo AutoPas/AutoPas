@@ -1,6 +1,7 @@
 include("testBoundaryCondition.jl")
 
 executeTest()
+#=
 
 CMake Error in /mnt/c/Users/laura/Documents/BA_SH/testB/AutoPas/build/CMakeFiles/CMakeTmp/CMakeLists.txt:
   Imported target "MPI::MPI_C" includes non-existent path
@@ -47,3 +48,5 @@ Call Stack (most recent call first):
   ./configure --prefix=/usr/lib/x86_64-linux-gnu/openmpi 2>&1 | tee config.out
   make all 2>&1 | tee make.out
   make install 2>&1 | tee install.out
+
+  =#

@@ -450,8 +450,8 @@ insert halo particles from particles in upper boundary zone
 
 function insertHaloParticles(autoPasContainer, minCorner, maxCorner, i, domain, index)
     println("in insertHaloParticlesUpper")
-    # iter = regionIterator(autoPasContainer, minCorner, maxCorner, IteratorBehavior(owned))
-    iter = Simulator.AutoPasInterface.begin(autoPasContainer, IteratorBehavior(ownedOrHalo))
+    iter = regionIterator(autoPasContainer, minCorner, maxCorner, IteratorBehavior(owned))
+    # iter = Simulator.AutoPasInterface.begin(autoPasContainer, IteratorBehavior(ownedOrHalo))
     np = getNumberOfParticles(autoPasContainer, IteratorBehavior(ownedOrHalo))
     println("number of partiles: $np")
     # println("$minCorner; $maxCorner")

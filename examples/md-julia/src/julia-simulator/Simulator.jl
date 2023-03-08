@@ -19,20 +19,20 @@ function startSimulation(autoPasContainer, particlePropertiesLibrary, inputParam
     tmpParticles = maxParticles
     for iteration = 1 : inputParameters.iterations
         
-        # updatePositions(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
+        updatePositions(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
         # updateDummy(autoPasContainer, shift)
         # deleteHaloParticlesLocalBounds(autoPasContainer, domain)
         # delete old halo Particles
-        updateContainer(autoPasContainer)
+        # updateContainer(autoPasContainer)
 
         # migrate particles
-        exchangeMigratingParticles(autoPasContainer, domain, comm)
+        # exchangeMigratingParticles(autoPasContainer, domain, comm)
 
         # apply periodic boundary condition
-        applyPeriodicBoundary(autoPasContainer, domain)
+        # applyPeriodicBoundary(autoPasContainer, domain)
 
         # exchange halo particles
-        exchangeHaloParticles(autoPasContainer, domain, comm)
+        # exchangeHaloParticles(autoPasContainer, domain, comm)
 
         # handle boundary particles
         # handleBoundaries(autoPasContainer, inputParameters.boxMin, inputParameters.boxMax)
@@ -44,10 +44,10 @@ function startSimulation(autoPasContainer, particlePropertiesLibrary, inputParam
         updateVelocities(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary)
         # println("after updateVelocities")
 
-        if iteration == 2
-            m = MoleculeJ{Float64}([0.5, 0.5, 0.5], [0.2, 0.15, 0.11], 8, 0)
-            addParticle(autoPasContainer, m)
-        end
+        # if iteration == 2
+        #     m = MoleculeJ{Float64}([0.5, 0.5, 0.5], [0.2, 0.15, 0.11], 8, 0)
+        #     addParticle(autoPasContainer, m)
+        # end
         
     end
     #= 

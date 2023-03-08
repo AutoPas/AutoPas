@@ -22,7 +22,7 @@ end
 function sim(iterations)
     grid = CubeGridInput()
 
-    grid.particlesPerDimension = [0, 0, 0]
+    grid.particlesPerDimension = [10, 10, 10]
     grid.particleSpacing = 1.1225
     grid.bottomLeftCorner = [2.5, 1.5, 1.5]
     grid.velocity = [0.0, 0.0, 0.0]
@@ -83,17 +83,17 @@ function sim(iterations)
 
     # parse input, create AutoPasContainer and ParticlePropertiesLibrary
     autoPasContainer, particlePropertiesLibrary, domain = parseInput(inputParameters, comm)
-    particle = MoleculeJ{Float64}([-0.5, -0.5, -0.5], [0.0,0.0,0.0], 0, 0)
-    addHaloParticle(autoPasContainer, particle)
+    # particle = MoleculeJ{Float64}([-0.5, -0.5, -0.5], [0.0,0.0,0.0], 0, 0)
+    # addHaloParticle(autoPasContainer, particle)
     
-    printAllParticles(autoPasContainer, comm)
+    # printAllParticles(autoPasContainer, comm)
 
-    updateContainer(autoPasContainer)
+    # updateContainer(autoPasContainer)
 
-    printAllParticles(autoPasContainer, comm)
+    # printAllParticles(autoPasContainer, comm)
     
 
-    # @time startSimulation(autoPasContainer, particlePropertiesLibrary, inputParameters, domain, comm)
+    @time startSimulation(autoPasContainer, particlePropertiesLibrary, inputParameters, domain, comm)
     println("ending simulation")
 end
     #=
@@ -137,4 +137,6 @@ end
     # printAllParticles(autoPasContainer, comm)
 
 sim(1)
+
+sim(1000)
 # sim(2)

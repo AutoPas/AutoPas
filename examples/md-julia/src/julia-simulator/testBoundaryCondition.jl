@@ -121,7 +121,7 @@ end
 
 # check if periodic boundary works in y direction
 function easyBoundaryPlaneY(autoPasContainer, domain, comm)
-    if MPI.Comm_rank(comm) == 1
+    if MPI.Comm_rank(comm) == 0
         pos = [15.0, 1.0, 10.0]
         m = MoleculeJ{Float64}(pos, [1.0, 1.0, 1.0], 0, 0)
         addParticle(autoPasContainer, m)
