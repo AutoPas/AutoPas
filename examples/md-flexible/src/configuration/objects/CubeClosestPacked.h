@@ -129,8 +129,6 @@ class CubeClosestPacked : public Object {
       }
       evenLayer = not evenLayer;
     }
-    std::cout << "NUMBER OF PARTICLES CALCULATED:" << getParticlesTotal() << std::endl;
-    std::cout << "NUMBER OF PARTICLES GENERATED:" << particles.size() << std::endl;
   }
 
  private:
