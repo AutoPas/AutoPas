@@ -44,12 +44,14 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   EXPECT_THAT(configuration.cubeGaussObjects, ::testing::SizeIs(1));
   EXPECT_THAT(configuration.cubeUniformObjects, ::testing::SizeIs(1));
   EXPECT_THAT(configuration.sphereObjects, ::testing::SizeIs(1));
+  EXPECT_THAT(configuration.cubeClosestPackedObjects, ::testing::SizeIs(1));
 
   // counters to checks if all particles types are well initialized for different Objects:
   int gridCounter = 0;
   int gaussCounter = 0;
   int uniformCounter = 0;
   int sphereCounter = 0;
+  int closestCounter = 0;
 
   std::array<double, 3> velocity = {0., 0., 0.};
   for (auto &particle : configuration.getParticles()) {
@@ -71,6 +73,10 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
         sphereCounter++;
         break;
       }
+      case 4: {
+        closestCounter++;
+        break;
+      }
       default: {
         throw std::runtime_error("something went wrong with the Types");
       }
@@ -81,6 +87,7 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   EXPECT_EQ(gaussCounter, configuration.cubeGaussObjects.at(0).getParticlesTotal());
   EXPECT_EQ(uniformCounter, configuration.cubeUniformObjects.at(0).getParticlesTotal());
   EXPECT_EQ(sphereCounter, configuration.sphereObjects.at(0).getParticlesTotal());
+  EXPECT_EQ(closestCounter, configuration.cubeClosestPackedObjects.at(0).getParticlesTotal());
   // check if during initialization, not 2 Particles were initialized with same id
   std::set<size_t> ids;
   for (auto &particle : configuration.getParticles()) {
