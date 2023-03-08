@@ -85,9 +85,7 @@ class Object {
    * Returns the total amount of Particles in the Object
    * @return ParticlesTotal
    */
-  [[nodiscard]] virtual size_t getParticlesTotal() const {
-    throw std::runtime_error("Objects::getParticlesTotal() not implemented.");
-  };
+  [[nodiscard]] virtual size_t getParticlesTotal() const = 0;
 
   /**
    * Getter for ParticleSpacing.

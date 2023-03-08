@@ -40,6 +40,40 @@ class CubeClosestPacked : public Object {
 
   [[nodiscard]] double getParticleSpacing() const override { return _particleSpacing; }
 
+  /**
+   * Returns the total amount of particles which will be / have been generated.
+   * @return number of generated particles.
+   */
+  [[nodiscard]] size_t getParticlesTotal() const override {
+    // Shorter part of the bisectrix when split at the intersection of all bisectrices.
+    const double xOffset = _particleSpacing * 1. / 2.;
+    // Number of particles in the first row
+    const size_t xNumRow = std::ceil(_boxLength[0] / _particleSpacing);
+    // True if total number of x-positions is odd
+    const bool xOdd = static_cast<int>(std::ceil(_boxLength[0] / xOffset)) % 2 == 1;
+
+    // Spacing in y direction when only moving 60° on the unit circle. Or the height in an equilateral triangle.
+    const double spacingRow = _particleSpacing * sqrt(3. / 4.);
+    // Shorter part of the bisectrix when split at the intersection of all bisectrices.
+    const double yOffset = _particleSpacing * sqrt(1. / 12.);
+    // Number of rows in an even layer
+    const size_t yNumEven = std::ceil(_boxLength[1] / spacingRow);
+    // Number of rows in an odd layer
+    const size_t yNumOdd = std::ceil((_boxLength[1] - yOffset) / spacingRow);
+
+    // Number of particles in an even layer
+    const size_t evenLayer = xNumRow * yNumEven - std::floor(xOdd * yNumEven * 0.5);
+    // Number of particles in an odd layer
+    const size_t oddLayer = xNumRow * yNumOdd - std::ceil(xOdd * yNumOdd * 0.5);
+
+    // Spacing in z direction. Height in an equilateral tetraeder.
+    const double spacingLayer = _particleSpacing * sqrt(2. / 3.);
+    // Total number of layers
+    const double numLayers = std::ceil(_boxLength[2] / spacingLayer);
+    // Add up even and odd layers
+    return evenLayer * std::ceil(numLayers / 2.) + oddLayer * std::floor(numLayers / 2.);
+  }
+
   [[nodiscard]] std::array<double, 3> getBoxMin() const override { return _bottomLeftCorner; }
 
   [[nodiscard]] std::array<double, 3> getBoxMax() const override {
@@ -69,17 +103,20 @@ class CubeClosestPacked : public Object {
    */
   void generate(std::vector<ParticleType> &particles) const override {
     ParticleType particle = getDummyParticle(particles.size());
-
+    // Spacing in y direction when only moving 60° on the unit circle. Or the height in an equilateral triangle.
     const double spacingRow = _particleSpacing * sqrt(3. / 4.);
+    // Spacing in z direction. Height in an equilateral tetraeder.
     const double spacingLayer = _particleSpacing * sqrt(2. / 3.);
+    // Shorter part of the bisectrix when split at the intersection of all bisectrices.
     const double xOffset = _particleSpacing * 1. / 2.;
+    // Shorter part of the bisectrix when split at the intersection of all bisectrices.
     const double yOffset = _particleSpacing * sqrt(1. / 12.);
 
     bool evenLayer = true;
-    bool evenRow = true;
 
     for (double z = _bottomLeftCorner[2]; z < _topRightCorner[2]; z += spacingLayer) {
       double starty = evenLayer ? _bottomLeftCorner[1] : _bottomLeftCorner[1] + yOffset;
+      bool evenRow = evenLayer;  // To ensure alternating layers as in hexagonal close packed
       for (double y = starty; y < _topRightCorner[1]; y += spacingRow) {
         double startx = evenRow ? _bottomLeftCorner[0] : _bottomLeftCorner[0] + xOffset;
         for (double x = startx; x < _topRightCorner[0]; x += _particleSpacing) {
@@ -92,6 +129,8 @@ class CubeClosestPacked : public Object {
       }
       evenLayer = not evenLayer;
     }
+    std::cout << "NUMBER OF PARTICLES CALCULATED:" << getParticlesTotal() << std::endl;
+    std::cout << "NUMBER OF PARTICLES GENERATED:" << particles.size() << std::endl;
   }
 
  private:
