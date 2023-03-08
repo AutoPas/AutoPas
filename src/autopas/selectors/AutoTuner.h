@@ -611,6 +611,18 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
 
   timerTotal.stop();
 
+  auto bufferSizeListing = [](const auto &buffers) -> std::string {
+    std::stringstream ss;
+    size_t sum = 0;
+    for (const auto &buffer : buffers) {
+      ss << buffer.size() << ", ";
+      sum += buffer.size();
+    }
+    ss << " Total: " << sum;
+    return ss.str();
+  };
+  AutoPasLog(DEBUG, "particleBuffer     size : {}", bufferSizeListing(particleBuffer));
+  AutoPasLog(DEBUG, "haloParticleBuffer size : {}", bufferSizeListing(haloParticleBuffer));
   AutoPasLog(DEBUG, "Container::iteratePairwise took {} ns", timerIteratePairwise.getTotalTime());
   AutoPasLog(DEBUG, "RemainderTraversal         took {} ns", timerRemainderTraversal.getTotalTime());
   AutoPasLog(DEBUG, "RebuildNeighborLists       took {} ns", timerRebuild.getTotalTime());
