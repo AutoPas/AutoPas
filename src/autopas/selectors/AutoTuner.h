@@ -476,6 +476,25 @@ bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild
 template <bool newton3, class Particle, class T, class PairwiseFunctor>
 void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<std::vector<Particle>> &particleBuffers,
                           std::vector<std::vector<Particle>> &haloParticleBuffers) {
+  using autopas::utils::ArrayMath::ceil;
+  using autopas::utils::ArrayMath::mulScalar;
+  using autopas::utils::ArrayMath::sub;
+  using autopas::utils::ArrayUtils::static_cast_array;
+  auto boxMin = containerPtr->getBoxMin();
+  const auto boxLength = sub(containerPtr->getBoxMax(), boxMin);
+  auto interactionLengthInv = 1. / containerPtr->getInteractionLength();
+  const auto locksPerDim = static_cast_array<size_t>(ceil(mulScalar(boxLength, interactionLengthInv)));
+  std::vector<std::vector<std::vector<std::unique_ptr<std::mutex>>>> locks(locksPerDim[0]);
+  for (auto &lockVecVec : locks) {
+    lockVecVec.resize(locksPerDim[1]);
+    for (auto &lockVec : lockVecVec) {
+      lockVec.resize(locksPerDim[2]);
+      for (auto &lockPtr : lockVec) {
+        lockPtr = std::make_unique<std::mutex>();
+      }
+    }
+  }
+
   // only activate time measurements if it will actually be logged
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   autopas::utils::Timer timerBufferContainer;
@@ -486,6 +505,11 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<std::v
 #endif
   withStaticContainerType(containerPtr, [&](auto staticTypedContainerPtr) {
     const double cutoff = staticTypedContainerPtr->getCutoff();
+#ifdef AUTOPAS_OPENMP
+// one halo and particle buffer pair per thread
+#pragma omp parallel for schedule(static, 1), private(f, boxMin, interactionLengthInv), shared(locks)
+#endif
+    //#pragma omp parallel for private(f, boxMin, interactionLengthInv), shared(locks)
     for (int bufferId = 0; bufferId < particleBuffers.size(); ++bufferId) {
       auto &particleBuffer = particleBuffers[bufferId];
       auto &haloParticleBuffer = haloParticleBuffers[bufferId];
@@ -496,12 +520,16 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<std::v
         auto max = autopas::utils::ArrayMath::addScalar(pos, cutoff);
         staticTypedContainerPtr->forEachInRegion(
             [&](auto &p2) {
+              const auto lockCoords =
+                  static_cast_array<size_t>(mulScalar(sub(p2.getR(), boxMin), interactionLengthInv));
               if (newton3) {
+                std::lock_guard<std::mutex> lock(*locks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
                 f->AoSFunctor(p1, p2, true);
               } else {
                 f->AoSFunctor(p1, p2, false);
                 // no need to calculate force enacted on a halo
                 if (not p2.isHalo()) {
+                  std::lock_guard<std::mutex> lock(*locks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
                   f->AoSFunctor(p2, p1, false);
                 }
               }
@@ -516,11 +544,15 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<std::v
         auto max = autopas::utils::ArrayMath::addScalar(pos, cutoff);
         staticTypedContainerPtr->forEachInRegion(
             [&](auto &p2) {
+              const auto lockCoords =
+                  static_cast_array<size_t>(mulScalar(sub(p2.getR(), boxMin), interactionLengthInv));
               if (newton3) {
+                std::lock_guard<std::mutex> lock(*locks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
                 f->AoSFunctor(p1, p2, true);
               } else {
                 // Here, we do not need to interact p1 with p2, because p is a halo particle and an AoSFunctor call with
                 // a halo particle as first argument has no effect if newton3 == false.
+                std::lock_guard<std::mutex> lock(*locks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
                 f->AoSFunctor(p2, p1, false);
               }
             },
