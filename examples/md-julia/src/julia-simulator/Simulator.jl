@@ -62,6 +62,7 @@ function startSimulation(autoPasContainer, particlePropertiesLibrary, inputParam
     # println("done")
     =#
 end
+#=
 
 function printAllParticles(autoPasContainer, comm)
     ost = ""
@@ -106,3 +107,4 @@ end
 function printSimulation()
     println("in simulation")
 end
+=#
