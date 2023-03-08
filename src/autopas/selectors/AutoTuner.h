@@ -492,7 +492,10 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<std::v
                 f->AoSFunctor(p1, p2, true);
               } else {
                 f->AoSFunctor(p1, p2, false);
-                f->AoSFunctor(p2, p1, false);
+                // no need to calculate force enacted on a halo
+                if (not p2.isHalo()) {
+                  f->AoSFunctor(p2, p1, false);
+                }
               }
             },
             min, max, IteratorBehavior::ownedOrHalo);
