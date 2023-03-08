@@ -124,8 +124,13 @@ std::vector<Particle> identifyNewHaloParticles(autopas::AutoPas<Particle> &autoP
  */
 template <class Particle>
 void addEnteringParticles(autopas::AutoPas<Particle> &autoPas, std::vector<Particle> &enteringParticles) {
-  for (auto &p : enteringParticles) {
-    autoPas.addParticle(p);
+#ifdef AUTOPAS_OPENMP
+// make sure each buffer gets filled equally while not inducing scheduling overhead
+#pragma omp parallel for schedule(static, enteringParticles.size() / omp_get_max_threads())
+#endif
+  // we can't use range based for loops here because clang accepts this only starting with version 11
+  for (size_t i = 0; i < enteringParticles.size(); ++i) {
+    autoPas.addParticle(enteringParticles[i]);
   }
 }
 
@@ -137,8 +142,14 @@ void addEnteringParticles(autopas::AutoPas<Particle> &autoPas, std::vector<Parti
  */
 template <class Particle>
 void addHaloParticles(autopas::AutoPas<Particle> &autoPas, std::vector<Particle> &haloParticles) {
-  for (auto &p : haloParticles) {
-    autoPas.addHaloParticle(p);
+#ifdef AUTOPAS_OPENMP
+// try to balance particles over buffers with minimal scheduling overhead.
+// Halos are either updated or pushed into buffers so balancing won't be perfect
+#pragma omp parallel for schedule(static, haloParticles.size() / static_cast <size_t>(4 * omp_get_max_threads()))
+#endif
+  // we can't use range based for loops here because clang accepts this only starting with version 11
+  for (size_t i = 0; i < haloParticles.size(); ++i) {
+    autoPas.addHaloParticle(haloParticles[i]);
   }
 }
 

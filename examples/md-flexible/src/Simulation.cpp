@@ -152,9 +152,19 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   // @todo: calculate the local number of particles and call _autopas.reserve(numParticlesLocal, numHalosEstimateLocal)
 
   // @todo: the object generators should only generate particles relevant for the current rank's domain
-  for (auto &particle : _configuration.getParticles()) {
-    if (_domainDecomposition->isInsideLocalDomain(particle.getR())) {
-      _autoPasContainer->addParticle(particle);
+  // limit scope of helper variable
+  {
+    const auto &confParticles = _configuration.getParticles();
+#ifdef AUTOPAS_OPENMP
+// make sure each buffer gets filled equally while not inducing scheduling overhead
+#pragma omp parallel for schedule(static, confParticles.size() / omp_get_max_threads())
+#endif
+    // we can't use range based for loops here because clang accepts this only starting with version 11
+    for (size_t i = 0; i < confParticles.size(); ++i) {
+      const auto &particle = confParticles[i];
+      if (_domainDecomposition->isInsideLocalDomain(particle.getR())) {
+        _autoPasContainer->addParticle(particle);
+      }
     }
   }
 
@@ -216,16 +226,19 @@ void Simulation::run() {
                                                                 _domainDecomposition->getLocalBoxMax());
         // because boundaries shifted, particles that were thrown out by the updateContainer previously might now be in
         // the container again
-        for (auto particleIter = emigrants.cbegin(); particleIter != emigrants.cend();) {
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel
+#endif
+        for (auto particleIter = emigrants.begin(); particleIter != emigrants.end(); ++particleIter) {
           const auto &boxMin = _autoPasContainer->getBoxMin();
           const auto &boxMax = _autoPasContainer->getBoxMax();
           if (autopas::utils::inBox(particleIter->getR(), boxMin, boxMax)) {
             _autoPasContainer->addParticle(*particleIter);
-            emigrants.erase(particleIter);
-          } else {
-            ++particleIter;
+            particleIter->setOwnershipState(autopas::OwnershipState::dummy);
           }
         }
+
+        std::remove_if(emigrants.begin(), emigrants.end(), [&](const auto &p) { return p.isDummy(); });
 
         emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
         _timers.loadBalancing.stop();
