@@ -94,33 +94,40 @@ if MPI.Comm_rank(comm) == 0
     pos = [16.0, 5.0, 5.0]
     m = MoleculeJ{Float64}(pos, [1.0, 1.0, 1.0], 0, 0)
     addParticle(autoPasContainer, m)
-    pos = [16.0, 5.0, 5.0]
-    m1 = MoleculeJ{Float64}(pos, [1.0, 1.0, 1.0], 0, 0)
-    addParticle(autoPasContainer, m1)
+    # pos = [16.0, 5.0, 5.0]
+    # m1 = MoleculeJ{Float64}(pos, [1.0, 1.0, 1.0], 0, 0)
+    # addParticle(autoPasContainer, m1)
 end
 
 minPos = [0.0, 0.0, 0.0]
 maxPos = [15.0, 15.0, 15.0]
-#=
-iter = regionIterator(autoPasContainer, minPos, maxPos, IteratorBehavior(ownedOrHalo))
+
+rIter1 = regionIterator(autoPasContainer, minPos, maxPos, IteratorBehavior(ownedOrHalo))
 println("region")
-while isValid(iter)
-    println(toString(Simulator.Iterators.:*(iter)))
-    Simulator.Iterators.:++(iter)
+while isValid(rIter1)
+    println(toString(Simulator.Iterators.:*(rIter1)))
+    Simulator.Iterators.:++(rIter1)
 end
 println("region end")
-=#
+
 iG = Simulator.AutoPasInterface.begin(autoPasContainer, IteratorBehavior(ownedOrHalo))
-println("changed pos")
+println("changing pos start")
 while isValid(iG)
-    addPosition(Simulator.Iterators.:*(iG), [-3.0, 0.0, 0.0])
-    # println(toString(Simulator.Iterators.:*(iG)))
+    addPosition(Simulator.Iterators.:*(iG), [15.0, 0.0, 0.0])
+    println(toString(Simulator.Iterators.:*(iG)))
     Simulator.Iterators.:++(iG)
 end
-println("changed pos end")
+println("changing pos end")
 
-# updateContainer(autoPasContainer)
-println("updated Container")
+iG = Simulator.AutoPasInterface.begin(autoPasContainer, IteratorBehavior(ownedOrHalo))
+println("changing pos start")
+while isValid(iG)
+    addPosition(Simulator.Iterators.:*(iG), [-17.0, 0.0, 0.0])
+    println(toString(Simulator.Iterators.:*(iG)))
+    Simulator.Iterators.:++(iG)
+end
+println("changing pos end")
+
 iter = regionIterator(autoPasContainer, minPos, maxPos, IteratorBehavior(ownedOrHalo))
 println("region")
 while isValid(iter)

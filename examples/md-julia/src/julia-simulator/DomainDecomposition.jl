@@ -449,9 +449,9 @@ insert halo particles from particles in upper boundary zone
 """
 
 function insertHaloParticles(autoPasContainer, minCorner, maxCorner, i, domain, index)
-    println("in insertHaloParticlesUpper")
-    iter = regionIterator(autoPasContainer, minCorner, maxCorner, IteratorBehavior(owned))
-    # iter = Simulator.AutoPasInterface.begin(autoPasContainer, IteratorBehavior(ownedOrHalo))
+    println("in insertHaloParticles2")
+    # iter = regionIterator(autoPasContainer, minCorner, maxCorner, IteratorBehavior(ownedOrHalo))
+    iter = Simulator.AutoPasInterface.begin(autoPasContainer, IteratorBehavior(owned))
     np = getNumberOfParticles(autoPasContainer, IteratorBehavior(ownedOrHalo))
     println("number of partiles: $np")
     # println("$minCorner; $maxCorner")
@@ -477,7 +477,7 @@ function insertHaloParticles(autoPasContainer, minCorner, maxCorner, i, domain, 
        
         pHalo = MoleculeJ{Float64}(newP , getVelocity(particle), index, getTypeId(particle))
         index += 1
-        # addHaloParticle(autoPasContainer, pHalo)
+        addHaloParticle(autoPasContainer, pHalo)
         println("added halo")
         
         if i == 1
@@ -586,12 +586,10 @@ function insertHaloParticles(autoPasContainer, domain, index)
 
         println("upper: $upperMinCorner ; $upperMaxCorner")
         if ((i == 1) && (domain.localBoxMax == domain.globalBoxMax)) || (i != 1)
-            println("in upper")
             index = insertHaloParticles(autoPasContainer, upperMinCorner, upperMaxCorner, i, domain, index)
         end
 
         if ((i == 1) && (domain.localBoxMin == domain.globalBoxMin)) || (i != 1)
-            println("in lower")
             index = insertHaloParticles(autoPasContainer, lowerMinCorner, lowerMaxCorner, i, domain, index)
         end
         
@@ -606,7 +604,7 @@ apply periodic boundary condition on all rank boundaries
 
 function applyPeriodicBoundary(autoPasContainer, domain, index)
     println("in applyBoundary condition")
-    autoPasContainer = moveOuterParticles(autoPasContainer, domain)
+    moveOuterParticles(autoPasContainer, domain)
 
     println("starting particle print: ")
     iter = Simulator.AutoPasInterface.begin(autoPasContainer, Options.IteratorBehavior(Options.ownedOrHalo))

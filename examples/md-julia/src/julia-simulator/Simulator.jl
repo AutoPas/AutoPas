@@ -98,7 +98,7 @@ function simulate(autoPasContainer, particlePropertiesLibrary, inputParameters, 
         updateForces(autoPasContainer, inputParameters.globalForce, particlePropertiesLibrary)
         
         updateVelocities(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary)
-        printAllParticles(autoPasContainer, comm)
+        # printAllParticles(autoPasContainer, comm)
     end
 
 end
