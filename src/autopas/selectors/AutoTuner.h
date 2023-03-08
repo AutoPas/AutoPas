@@ -476,6 +476,14 @@ bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild
 template <bool newton3, class Particle, class T, class PairwiseFunctor>
 void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<std::vector<Particle>> &particleBuffers,
                           std::vector<std::vector<Particle>> &haloParticleBuffers) {
+  // only activate time measurements if it will actually be logged
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+  autopas::utils::Timer timerBufferContainer;
+  autopas::utils::Timer timerPBufferPBuffer;
+  autopas::utils::Timer timerPBufferHBuffer;
+
+  timerBufferContainer.start();
+#endif
   withStaticContainerType(containerPtr, [&](auto staticTypedContainerPtr) {
     const double cutoff = staticTypedContainerPtr->getCutoff();
     for (int bufferId = 0; bufferId < particleBuffers.size(); ++bufferId) {
@@ -520,7 +528,10 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<std::v
       }
     }
   });
-
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+  timerBufferContainer.stop();
+  timerPBufferPBuffer.start();
+#endif
   // 3. particleBuffer with itself and all other buffers
   for (size_t bufferIdOuter = 0; bufferIdOuter < particleBuffers.size(); ++bufferIdOuter) {
     auto &particleBufferOuter = particleBuffers[bufferIdOuter];
@@ -540,6 +551,10 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<std::v
       }
     }
   }
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+  timerPBufferPBuffer.stop();
+  timerPBufferHBuffer.start();
+#endif
   // 4. particleBuffer with haloParticleBuffer
   for (size_t bufferIdOuter = 0; bufferIdOuter < particleBuffers.size(); ++bufferIdOuter) {
     auto &particleBufferOuter = particleBuffers[bufferIdOuter];
@@ -560,6 +575,13 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<std::v
       }
     }
   }
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+  timerPBufferHBuffer.stop();
+#endif
+
+  AutoPasLog(TRACE, "Timer Buffers <-> Container (1+2): {}", timerBufferContainer.getTotalTime());
+  AutoPasLog(TRACE, "Timer PBuffers<-> PBuffer   (  3): {}", timerPBufferPBuffer.getTotalTime());
+  AutoPasLog(TRACE, "Timer PBuffers<-> HBuffer   (  4): {}", timerPBufferHBuffer.getTotalTime());
 
   // Note: haloParticleBuffer with itself is NOT needed, as interactions between halo particles are unneeded!
 }
