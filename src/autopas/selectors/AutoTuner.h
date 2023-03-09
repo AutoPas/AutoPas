@@ -495,6 +495,12 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<std::v
     }
   }
 
+  // Balance buffers. This makes processing them with static scheduling quite efficient.
+  // Also, if particles were not inserted in parallel, this enables us to process them in parallel now.
+  // Cost is at max O(2N) worst O(N) per buffer collection and negligible compared to interacting them.
+  utils::ArrayUtils::balanceVectors(particleBuffers);
+  utils::ArrayUtils::balanceVectors(haloParticleBuffers);
+
   // only activate time measurements if it will actually be logged
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   autopas::utils::Timer timerBufferContainer;

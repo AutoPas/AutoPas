@@ -146,4 +146,60 @@ std::enable_if_t<autopas::utils::ArrayUtils::is_container<Container>::value, std
 
   return os;
 }
+
+/**
+ * Given a collection of vectors, redistributes the elements of the vectors so they all have the same (or +1) size.
+ * @tparam OuterContainerT Collection type
+ * @param vecvec Reference to the collection of vectors to be balanced in place.
+ */
+template <class OuterContainerT>
+void balanceVectors(OuterContainerT &vecvec) {
+  using InnerContainerT = typename OuterContainerT::value_type;
+  // calculate vecvec statistics
+  const auto vecvecSize = vecvec.size();
+  const size_t numElem =
+      std::transform_reduce(vecvec.begin(), vecvec.end(), 0, std::plus<>(), [](auto &vec) { return vec.size(); });
+  const auto targetSize = static_cast<long>(numElem / vecvecSize);
+  auto rest = numElem % vecvecSize;
+
+  std::vector<typename InnerContainerT::value_type> tmpStorage;
+  // index of the first subvec that has too few elements
+  size_t firstTooFew = 0;
+  // repeat as long as there is something in the buffer but at least 2 iterations.
+  for (int pass = 0; pass == 0 or not tmpStorage.empty(); ++pass) {
+    // scan all subvecs that are not known to have the desired size
+    for (size_t i = firstTooFew; i < vecvecSize; ++i) {
+      auto &vec = vecvec[i];
+      const auto thisTargetSize = i < rest ? targetSize + 1 : targetSize;
+      if (vec.size() > thisTargetSize) {
+        // move what is too much to tmpStorage
+        const auto startOfTooMuch = vec.begin() + thisTargetSize;
+        tmpStorage.insert(tmpStorage.end(), std::make_move_iterator(startOfTooMuch),
+                          std::make_move_iterator(vec.end()));
+        vec.erase(startOfTooMuch, vec.end());
+        // if firstTooFew points here bump it, since this vector is now satisfied
+        if (firstTooFew == i) {
+          ++firstTooFew;
+        }
+      } else if (vec.size() < thisTargetSize) {
+        // fill too small vectors from storage
+        vec.reserve(thisTargetSize);
+        const long numMissing = thisTargetSize - vec.size();
+        const auto startOfInsertion =
+            tmpStorage.begin() + (std::max(0l, static_cast<long>(tmpStorage.size()) - numMissing));
+        vec.insert(vec.end(), std::make_move_iterator(startOfInsertion), std::make_move_iterator(tmpStorage.end()));
+        tmpStorage.erase(startOfInsertion, tmpStorage.end());
+
+      } else if (firstTooFew == i) {
+        // if firstTooFew points here bump it, since this vector is already satisfied
+        ++firstTooFew;
+      }
+      // after the first pass all excess elements are collected. So as soon as everything is distributed we are done.
+      if (pass > 0 and tmpStorage.empty()) {
+        break;
+      }
+    }
+  }
+}
+
 }  // namespace autopas::utils::ArrayUtils
