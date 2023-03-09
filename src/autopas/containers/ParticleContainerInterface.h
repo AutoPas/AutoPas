@@ -126,7 +126,7 @@ class ParticleContainerInterface {
   void addHaloParticle(const Particle &haloParticle) {
     if constexpr (checkInBox) {
       /// @todo do we want a check of the particle not being too far away in here as well?
-      if (utils::notInBox(haloParticle.getR(), this->getBoxMin(), this->getBoxMax())) {
+      if (utils::inBox(haloParticle.getR(), this->getBoxMin(), this->getBoxMax())) {
         utils::ExceptionHandler::exception(
             "ParticleContainerInterface: Trying to add a halo particle that is not outside of in the bounding box.\n"
             "Box Min {}\n"
