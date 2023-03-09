@@ -565,19 +565,29 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<std::v
   timerPBufferPBuffer.start();
 #endif
   // 3. particleBuffer with itself and all other buffers
+#ifdef AUTOPAS_OPENMP
+// one halo and particle buffer pair per thread
+#pragma omp parallel for schedule(static, 1)
+#endif
   for (size_t bufferIdOuter = 0; bufferIdOuter < particleBuffers.size(); ++bufferIdOuter) {
     auto &particleBufferOuter = particleBuffers[bufferIdOuter];
     for (size_t i = 0; i < particleBufferOuter.size(); ++i) {
       auto &&p1 = particleBufferOuter[i];
-      for (size_t bufferIdInner = bufferIdOuter; bufferIdInner < particleBuffers.size(); ++bufferIdInner) {
+      for (size_t bufferIdInner = 0; bufferIdInner < particleBuffers.size(); ++bufferIdInner) {
         auto &particleBufferInner = particleBuffers[bufferIdInner];
-        for (size_t j = bufferIdOuter == bufferIdInner ? i + 1 : 0; j < particleBufferInner.size(); ++j) {
-          auto &&p2 = particleBufferInner[j];
-          if (newton3) {
-            f->AoSFunctor(p1, p2, true);
-          } else {
+        // self-interaction check in the innermost loop is only needed if the buffer interacts with itself
+        if (bufferIdInner == bufferIdOuter) {
+          for (size_t j = 0; j < particleBufferInner.size(); ++j) {
+            // don't interact a particle with itself
+            if (i != j) {
+              auto &&p2 = particleBufferInner[j];
+              f->AoSFunctor(p1, p2, false);
+            }
+          }
+        } else {
+          for (size_t j = 0; j < particleBufferInner.size(); ++j) {
+            auto &&p2 = particleBufferInner[j];
             f->AoSFunctor(p1, p2, false);
-            f->AoSFunctor(p2, p1, false);
           }
         }
       }
@@ -586,6 +596,10 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<std::v
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   timerPBufferPBuffer.stop();
   timerPBufferHBuffer.start();
+#endif
+#ifdef AUTOPAS_OPENMP
+// one halo and particle buffer pair per thread
+#pragma omp parallel for  // schedule(static, 1)
 #endif
   // 4. particleBuffer with haloParticleBuffer
   for (size_t bufferIdOuter = 0; bufferIdOuter < particleBuffers.size(); ++bufferIdOuter) {
@@ -596,13 +610,9 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<std::v
         auto &haloBufferInner = haloParticleBuffers[bufferIdInner];
         for (size_t j = 0; j < haloBufferInner.size(); ++j) {
           auto &&p2 = haloBufferInner[j];
-          if (newton3) {
-            f->AoSFunctor(p1, p2, true);
-          } else {
-            // Here, we do not need to interact p2 with p1, because p2 is a halo particle and an AoSFunctor call with an
-            // halo particle as first argument has no effect if newton3 == false.
-            f->AoSFunctor(p1, p2, false);
-          }
+          // Here, we do not need to interact p2 with p1, because p2 is a halo particle and an AoSFunctor call with a
+          // halo particle as first argument has no effect if newton3 == false.
+          f->AoSFunctor(p1, p2, false);
         }
       }
     }
