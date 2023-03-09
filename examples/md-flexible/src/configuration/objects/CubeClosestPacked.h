@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <math.h>
+#include <cmath>
 
 #include <functional>
 
@@ -36,7 +36,11 @@ class CubeClosestPacked : public Object {
         _boxLength(boxLength),
         _particleSpacing(particleSpacing),
         _bottomLeftCorner(bottomLeftCorner),
-        _topRightCorner(autopas::utils::ArrayMath::add(bottomLeftCorner, boxLength)) {}
+        _topRightCorner(autopas::utils::ArrayMath::add(bottomLeftCorner, boxLength)),
+        _spacingLayer(particleSpacing * sqrt(2. / 3.)),
+        _spacingRow(particleSpacing * sqrt(3. / 4.)),
+        _xOffset(particleSpacing * 1. / 2.),
+        _yOffset(particleSpacing * sqrt(1. / 12.)) {}
 
   [[nodiscard]] double getParticleSpacing() const override { return _particleSpacing; }
 
@@ -45,31 +49,23 @@ class CubeClosestPacked : public Object {
    * @return number of generated particles.
    */
   [[nodiscard]] size_t getParticlesTotal() const override {
-    // Shorter part of the bisectrix when split at the intersection of all bisectrices.
-    const double xOffset = _particleSpacing * 1. / 2.;
     // Number of particles in the first row.
     const size_t xNumRow = std::ceil(_boxLength[0] / _particleSpacing);
     // True if the total number of x-positions is odd.
-    const bool xOdd = static_cast<int>(std::ceil(_boxLength[0] / xOffset)) % 2 == 1;
+    const bool xOdd = static_cast<int>(std::ceil(_boxLength[0] / _xOffset)) % 2 == 1;
 
-    // Spacing in y direction when only moving 60° on the unit circle. Or the height in an equilateral triangle.
-    const double spacingRow = _particleSpacing * sqrt(3. / 4.);
-    // Shorter part of the bisectrix when split at the intersection of all bisectrices.
-    const double yOffset = _particleSpacing * sqrt(1. / 12.);
     // Number of rows in an even layer.
-    const size_t yNumEven = std::ceil(_boxLength[1] / spacingRow);
+    const size_t yNumEven = std::ceil(_boxLength[1] / _spacingRow);
     // Number of rows in an odd layer.
-    const size_t yNumOdd = std::ceil((_boxLength[1] - yOffset) / spacingRow);
+    const size_t yNumOdd = std::ceil((_boxLength[1] - _yOffset) / _spacingRow);
 
     // Number of particles in an even layer.
     const size_t evenLayer = xNumRow * yNumEven - std::floor(xOdd * yNumEven * 0.5);
     // Number of particles in an odd layer.
     const size_t oddLayer = xNumRow * yNumOdd - std::ceil(xOdd * yNumOdd * 0.5);
 
-    // Spacing in z direction. Height in an equilateral tetraeder.
-    const double spacingLayer = _particleSpacing * sqrt(2. / 3.);
     // Total number of layers.
-    const double numLayers = std::ceil(_boxLength[2] / spacingLayer);
+    const double numLayers = std::ceil(_boxLength[2] / _spacingLayer);
     // Add up all even and odd layers.
     return evenLayer * std::ceil(numLayers / 2.) + oddLayer * std::floor(numLayers / 2.);
   }
@@ -103,22 +99,14 @@ class CubeClosestPacked : public Object {
    */
   void generate(std::vector<ParticleType> &particles) const override {
     ParticleType particle = getDummyParticle(particles.size());
-    // Spacing in y direction when only moving 60° on the unit circle. Or the height in an equilateral triangle.
-    const double spacingRow = _particleSpacing * sqrt(3. / 4.);
-    // Spacing in z direction. Height in an equilateral tetraeder.
-    const double spacingLayer = _particleSpacing * sqrt(2. / 3.);
-    // Shorter part of the bisectrix when split at the intersection of all bisectrices.
-    const double xOffset = _particleSpacing * 1. / 2.;
-    // Shorter part of the bisectrix when split at the intersection of all bisectrices.
-    const double yOffset = _particleSpacing * sqrt(1. / 12.);
 
     bool evenLayer = true;
 
-    for (double z = _bottomLeftCorner[2]; z < _topRightCorner[2]; z += spacingLayer) {
-      double starty = evenLayer ? _bottomLeftCorner[1] : _bottomLeftCorner[1] + yOffset;
+    for (double z = _bottomLeftCorner[2]; z < _topRightCorner[2]; z += _spacingLayer) {
+      double starty = evenLayer ? _bottomLeftCorner[1] : _bottomLeftCorner[1] + _yOffset;
       bool evenRow = evenLayer;  // To ensure layers are alternating as for hexagonal close packed.
-      for (double y = starty; y < _topRightCorner[1]; y += spacingRow) {
-        double startx = evenRow ? _bottomLeftCorner[0] : _bottomLeftCorner[0] + xOffset;
+      for (double y = starty; y < _topRightCorner[1]; y += _spacingRow) {
+        double startx = evenRow ? _bottomLeftCorner[0] : _bottomLeftCorner[0] + _xOffset;
         for (double x = startx; x < _topRightCorner[0]; x += _particleSpacing) {
           particle.setR({x, y, z});
           particles.push_back(particle);
@@ -151,4 +139,24 @@ class CubeClosestPacked : public Object {
    * Maximum box coordinates
    */
   std::array<double, 3> _topRightCorner;
+
+  /**
+   * Spacing in y direction when only moving 60° on the unit circle. Or the height in an equilateral triangle.
+   */
+  double _spacingRow;
+
+  /**
+   * Spacing in z direction. Height in an equilateral tetraeder.
+   */
+  double _spacingLayer;
+
+  /**
+   * Shorter part of the bisectrix when split at the intersection of all bisectrices.
+   */
+  double _xOffset;
+
+  /**
+   * Shorter part of the bisectrix when split at the intersection of all bisectrices.
+   */
+  double _yOffset;
 };
