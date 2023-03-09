@@ -9,6 +9,7 @@
 
 #include <array>
 #include <iomanip>
+#include <numeric>
 #include <set>
 #include <sstream>
 #include <vector>
