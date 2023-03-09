@@ -15,6 +15,7 @@
 void testRemainderTraversal(const std::vector<Molecule> &particles, const std::vector<Molecule> &haloParticles,
                             std::vector<std::vector<Molecule>> &particlesBuffer,
                             std::vector<std::vector<Molecule>> &haloParticlesBuffer) {
+  /// Setup AutoTuner
   constexpr double cutoff = 2.5;
   constexpr double cellSizeFactor = 1.;
   const std::set<autopas::Configuration> confSet(
@@ -62,8 +63,9 @@ void testRemainderTraversal(const std::vector<Molecule> &particles, const std::v
  * Add a particle to one storage location and one to another (or the same) and check if they interact.
  */
 TEST_P(AutoTunerRemainderTraversalTest, testRemainderTraversal) {
+  /// SETUP
   const auto &[choiceA, choiceB] = GetParam();
-
+  // helper buffers to set up the test
   std::vector<Molecule> containerParticles{};
   std::vector<Molecule> containerHaloParticles{};
   std::vector<std::vector<Molecule>> bufferParticles{static_cast<size_t>(autopas::autopas_get_max_threads())};
@@ -86,6 +88,7 @@ TEST_P(AutoTunerRemainderTraversalTest, testRemainderTraversal) {
     }
   };
 
+  // create two particles. p1 in the container p2 outside if it is a halo.
   Molecule particle1{{1., 1., 1.}, {0., 0., 0.}, 0, 0};
   addParticleToTest(particle1, choiceA, 0);
   Molecule particle2{{2., 1., 1.}, {0., 0., 0.}, 1, 0};
@@ -93,7 +96,7 @@ TEST_P(AutoTunerRemainderTraversalTest, testRemainderTraversal) {
     particle2.setR({-1., 1., 1.});
   }
   addParticleToTest(particle2, choiceB, 0);
-  // if we check buffers make sure to also check that not only one sub buffer is used
+  // if we test buffers, make sure to also test that not only one sub buffer is used
   if (choiceB == ParticleStorage::buffer or choiceB == ParticleStorage::bufferHalo) {
     Molecule particle3{{1., 2., 1.}, {0., 0., 0.}, 1, 0};
     if (choiceB == ParticleStorage::bufferHalo) {
@@ -102,6 +105,7 @@ TEST_P(AutoTunerRemainderTraversalTest, testRemainderTraversal) {
     addParticleToTest(particle2, choiceB, autopas::autopas_get_max_threads() - 1);
   }
 
+  /// TEST
   testRemainderTraversal(containerParticles, containerHaloParticles, bufferParticles, bufferHaloParticles);
 }
 
