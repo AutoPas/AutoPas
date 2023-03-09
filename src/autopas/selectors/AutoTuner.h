@@ -480,9 +480,9 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<std::v
   using autopas::utils::ArrayMath::mulScalar;
   using autopas::utils::ArrayMath::sub;
   using autopas::utils::ArrayUtils::static_cast_array;
-  auto boxMin = containerPtr->getBoxMin();
+  const auto boxMin = containerPtr->getBoxMin();
   const auto boxLength = sub(containerPtr->getBoxMax(), boxMin);
-  auto interactionLengthInv = 1. / containerPtr->getInteractionLength();
+  const auto interactionLengthInv = 1. / containerPtr->getInteractionLength();
   const auto locksPerDim = static_cast_array<size_t>(ceil(mulScalar(boxLength, interactionLengthInv)));
   std::vector<std::vector<std::vector<std::unique_ptr<std::mutex>>>> locks(locksPerDim[0]);
   for (auto &lockVecVec : locks) {
@@ -507,7 +507,7 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<std::v
     const double cutoff = staticTypedContainerPtr->getCutoff();
 #ifdef AUTOPAS_OPENMP
 // one halo and particle buffer pair per thread
-#pragma omp parallel for schedule(static, 1), private(f, boxMin, interactionLengthInv), shared(locks)
+#pragma omp parallel for schedule(static, 1), shared(f, locks, boxMin, interactionLengthInv)
 #endif
     //#pragma omp parallel for private(f, boxMin, interactionLengthInv), shared(locks)
     for (int bufferId = 0; bufferId < particleBuffers.size(); ++bufferId) {
