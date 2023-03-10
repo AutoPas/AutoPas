@@ -1,3 +1,4 @@
+using TimerOutputs
 function updateDummy(autoPasContainer, shift)
     iter = Simulator.AutoPasInterface.begin(autoPasContainer, IteratorBehavior(ownedOrHalo))
     
@@ -17,9 +18,10 @@ function startSimulation(autoPasContainer, particlePropertiesLibrary, inputParam
     tmp = inputParameters.objects[1].particlesPerDimension
     maxParticles = tmp[1] * tmp[2] * tmp[3]
     tmpParticles = maxParticles
-    for iteration = 1 : inputParameters.iterations
-        
-        updatePositions(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
+    @inbounds for iteration = 1 : inputParameters.iterations
+        # println("pos update")
+        @timeit "pos update" updatePositions(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
+        # updatePositions(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
         # updateDummy(autoPasContainer, shift)
         # deleteHaloParticlesLocalBounds(autoPasContainer, domain)
         # delete old halo Particles
@@ -39,9 +41,12 @@ function startSimulation(autoPasContainer, particlePropertiesLibrary, inputParam
         # for outflow maybe only use updateContainer which has same effekt
         # deleted_items = updateContainer(autoPasContainer)
         # ff.handlePeriodic(autoPasContainer, inputParameters.boxMin, inputParameters.boxMax)
-        updateForces(autoPasContainer, inputParameters.globalForce, particlePropertiesLibrary)
         
-        updateVelocities(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary)
+        @timeit "force update" updateForces(autoPasContainer, inputParameters.globalForce, particlePropertiesLibrary)
+        #updateForces(autoPasContainer, inputParameters.globalForce, particlePropertiesLibrary)
+        
+        @timeit "vel update" updateVelocities(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary)
+        # updateVelocities(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary)
         # println("after updateVelocities")
 
         # if iteration == 2
@@ -50,6 +55,7 @@ function startSimulation(autoPasContainer, particlePropertiesLibrary, inputParam
         # end
         
     end
+    print_timer()
     #= 
     println()
     np = 0

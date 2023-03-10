@@ -46,6 +46,5 @@ target_compile_definitions(
     _USE_MATH_DEFINES
 )
 
-
 target_include_directories(autopas PUBLIC ${AUTOPAS_SOURCE_DIR}/src/)
 target_include_directories(autopas PUBLIC ${AUTOPAS_BINARY_DIR}/src/)

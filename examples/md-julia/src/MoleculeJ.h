@@ -270,4 +270,6 @@ class MoleculeJ : public autopas::Particle {
      * Old Force of the particle experiences as 3D vector.
      */
     std::array<floatType,3> _oldF = {0.0, 0.0, 0.0};
+
+    jlcxx::ArrayRef<double,1> _po{}
 };

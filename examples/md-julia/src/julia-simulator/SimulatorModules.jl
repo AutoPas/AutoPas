@@ -3,8 +3,8 @@ module Simulator
 # /mnt/c/Users/laura/Documents/BA_SH/testB/AutoPas/build/examples/md-julia/
 module Particles
   using CxxWrap
-  # @wrapmodule(joinpath("../../../../build/examples/md-julia/","libjulia_bindings.so"), :define_module_particles)
-  @wrapmodule(joinpath("/dss/dsshome1/03/ge49sib2/bachelor_thesis/AutoPas/build/examples/md-julia/","libjulia_bindings.so"), :define_module_particles)
+  @wrapmodule(joinpath("../../../../build/examples/md-julia/","libjulia_bindings.so"), :define_module_particles)
+  # @wrapmodule(joinpath("/dss/dsshome1/03/ge49sib2/bachelor_thesis/AutoPas/build/examples/md-julia/","libjulia_bindings.so"), :define_module_particles)
 
   function __init__()
     @initcxx
@@ -38,8 +38,8 @@ end
 
 module Options
   using CxxWrap
-  # @wrapmodule(joinpath("../../../../build/examples/md-julia/","libjulia_bindings.so"), :define_module_options)
-  @wrapmodule(joinpath("/dss/dsshome1/03/ge49sib2/bachelor_thesis/AutoPas/build/examples/md-julia/","libjulia_bindings.so"), :define_module_options)
+  @wrapmodule(joinpath("../../../../build/examples/md-julia/","libjulia_bindings.so"), :define_module_options)
+  # @wrapmodule(joinpath("/dss/dsshome1/03/ge49sib2/bachelor_thesis/AutoPas/build/examples/md-julia/","libjulia_bindings.so"), :define_module_options)
 
   function __init__()
     @initcxx
@@ -70,8 +70,8 @@ end
 
 module Iterators
   using CxxWrap
-  # @wrapmodule(joinpath("../../../../build/examples/md-julia/","libjulia_bindings.so"), :define_module_iterators)
-  @wrapmodule(joinpath("/dss/dsshome1/03/ge49sib2/bachelor_thesis/AutoPas/build/examples/md-julia/","libjulia_bindings.so"), :define_module_iterators)
+  @wrapmodule(joinpath("../../../../build/examples/md-julia/","libjulia_bindings.so"), :define_module_iterators)
+  # @wrapmodule(joinpath("/dss/dsshome1/03/ge49sib2/bachelor_thesis/AutoPas/build/examples/md-julia/","libjulia_bindings.so"), :define_module_iterators)
 
   function __init__()
     @initcxx
@@ -82,8 +82,8 @@ end
 
 module Properties
   using CxxWrap
-  # @wrapmodule(joinpath("../../../../build/examples/md-julia/","libjulia_bindings.so"), :define_module_properties)
-  @wrapmodule(joinpath("/dss/dsshome1/03/ge49sib2/bachelor_thesis/AutoPas/build/examples/md-julia/","libjulia_bindings.so"), :define_module_properties)
+  @wrapmodule(joinpath("../../../../build/examples/md-julia/","libjulia_bindings.so"), :define_module_properties)
+  # @wrapmodule(joinpath("/dss/dsshome1/03/ge49sib2/bachelor_thesis/AutoPas/build/examples/md-julia/","libjulia_bindings.so"), :define_module_properties)
 
   function __init__()
     @initcxx
@@ -94,9 +94,10 @@ export
 end
 
 module AutoPasInterface
+# /dss/dsshome1/03/ge49sib2/bachelor_thesis/AutoPas2/AutoPas/examples/md-julia/src/julia-simulator/main2.jl
   using CxxWrap
-  # @wrapmodule(joinpath("../../../../build/examples/md-julia/","libjulia_bindings.so"), :define_module_autopas)
-  @wrapmodule(joinpath("/dss/dsshome1/03/ge49sib2/bachelor_thesis/AutoPas/build/examples/md-julia/","libjulia_bindings.so"), :define_module_autopas)
+  @wrapmodule(joinpath("../../../../build/examples/md-julia/","libjulia_bindings.so"), :define_module_autopas)
+  # @wrapmodule(joinpath("/dss/dsshome1/03/ge49sib2/bachelor_thesis/AutoPas/build/examples/md-julia/","libjulia_bindings.so"), :define_module_autopas)
 
   function __init__()
     @initcxx

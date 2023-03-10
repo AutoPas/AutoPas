@@ -23,11 +23,11 @@ function sim(iterations)
     grid = CubeGridInput()
 
     grid.particlesPerDimension = [100, 100, 100]
-    grid.particleSpacing = 1.1225
-    grid.bottomLeftCorner = [2.5, 1.5, 1.5]
+    grid.particleSpacing = 1.5
+    grid.bottomLeftCorner = [20.0, 20.0, 20.0]
     grid.velocity = [0.0, 0.0, 0.0]
     grid.particleType = 0
-    grid.particleEpsilon = 5
+    grid.particleEpsilon = 1
     grid.particleSigma = 1.0
     grid.particleMass = 1.0
     grid.factorBrownianMotion = 0.1
@@ -47,24 +47,24 @@ function sim(iterations)
     inputParameters = InputParameters()
 
     inputParameters.container = [linkedCells] # vector of contianer options -> parsing needed 1
-    inputParameters.verletRebuildFrequency = 3
-    inputParameters.verletSkinRadiusPerTimestep = 1.3
-    inputParameters.verletClusterSize = 12
+    inputParameters.verletRebuildFrequency = 20
+    inputParameters.verletSkinRadiusPerTimestep = 0.1
+    inputParameters.verletClusterSize = 4
     inputParameters.selectorStrategy = SelectorStrategyOption(fastestAbs)
     inputParameters.dataLayout = [aos]
     inputParameters.traversal = [lc_c01]
     inputParameters.tuningStrategy = TuningStrategyOption(fullSearch)
     inputParameters.mpiStrategy = MPIStrategyOption(noMPI)
-    inputParameters.tuningInterval = 12
-    inputParameters.tuningSamples = 12
-    inputParameters.tuningMaxEvidence = 3
+    inputParameters.tuningInterval = 2500
+    inputParameters.tuningSamples = 3
+    inputParameters.tuningMaxEvidence = 10
     inputParameters.functor = "strategy"  # functor option e.g Lennard-Jones (12-6) 7
     inputParameters.newton3 = [disabled, enabled]
-    inputParameters.cutoff = 1.5
+    inputParameters.cutoff = 3
     inputParameters.boxMin = [0, 0, 0]
     inputParameters.boxMax = [1000.0, 1000.0, 1000.0]
     inputParameters.cellSize = [1] # check which values can be used
-    inputParameters.deltaT = 0.0002
+    inputParameters.deltaT = 0.0005
     inputParameters.iterations = iterations
     inputParameters.globalForce = [0.0, 0.0, 0.0]
     inputParameters.periodicBoundaries = true
@@ -140,6 +140,6 @@ end
 
 sim(1)
 for i in 1:1
-    sim(2)
+    sim(1000)
 end
 # sim(2)

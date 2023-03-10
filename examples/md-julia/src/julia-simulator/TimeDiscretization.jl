@@ -9,21 +9,24 @@ calculate the new position for all particles in the particle container
 function updatePositions(autoPasContainer, deltaT, particlePropertiesLibrary, globalForce)
 
     iter = AutoPasInterface.begin(autoPasContainer, Options.IteratorBehavior(Options.ownedOrHalo))
-
+    velocity = [1.2, 1.3, 1.5]# getVelocity(particle)
+    force = [1.2, 1.3, 1.5]# getForce(particle)
     while isValid(iter)
-        particle = Simulator.Iterators.:*(iter)
-        velocity = getVelocity(particle)
-        force = getForce(particle)
-        setOldF(particle, force)
-        setForce(particle, globalForce)
-        v = velocity * deltaT
+        # particle = Simulator.Iterators.:*(iter)
+        velocity = getVelocity(Simulator.Iterators.:*(iter))
+        force = getForce(Simulator.Iterators.:*(iter))
+        setOldF(Simulator.Iterators.:*(iter), force)
+        setForce(Simulator.Iterators.:*(iter), globalForce)
+        v = velocity .* deltaT
         # f = force * (deltaT * deltaT / (2*Properties.getMass(particlePropertiesLibrary, 0)))
-        f = force * (deltaT * deltaT / (2*getMass(particlePropertiesLibrary, Particles.getTypeId(particle))))
+        f = force .* (deltaT * deltaT / (2*getMass(particlePropertiesLibrary, Particles.getTypeId(Simulator.Iterators.:*(iter)))))
+        # f = force * (deltaT * deltaT / (2*1.5))
         # TODO: change back
         # if Particles.getID(particle) > 3
         #     Particles.addPos(particle, [100.0, 100.0, 100.0])
         # end
-        addPosition(particle, v + f)
+        addPosition(Simulator.Iterators.:*(iter), v .+ f)
+        # t = velocity .* deltaT .+ force * (deltaT * deltaT / (2*1.5))
         Simulator.Iterators.:++(iter)
     end
 

@@ -32,20 +32,21 @@ function parseInput(inputParameters, comm)
     # width = calculateMPIWidth(getBoxMin(autoPasContainer), getBoxMax(autoPasContainer), comm)
     width = calculateMPIWidth(globalBoxMin, globalBoxMax, comm)
     # domain = createDomain(getBoxMin(autoPasContainer), getBoxMax(autoPasContainer), width, comm)
+    # domain = 12
     # width = 10
     domain = createDomain(globalBoxMin, globalBoxMax, width, comm, inputParameters.cutoff)
 
     # add particles to AutoPas container and check if particle is inside local domain
     index = 0
     for particle in particles
-        if insideLocalDomain(domain.localBoxMin, domain.localBoxMax, particle)
-            addParticle(autoPasContainer, particle)
-            index += 1
-        end
+        # if insideLocalDomain(domain.localBoxMin, domain.localBoxMax, particle)
+        addParticle(autoPasContainer, particle)
+        index += 1
+        # end
     end
     # println("added " * string(index) * " particles")
     # rank_id = MPI.Comm_rank(comm)
-    println("$domain")
+    # println("$domain")
 
     # println("particles in container: ", getNp(autoPasContainer))
 

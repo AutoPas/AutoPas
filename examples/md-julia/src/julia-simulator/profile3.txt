@@ -1,0 +1,32 @@
+[2023-03-10 11:08:32.211] [AutoPasLog] [info] AutoPas Version: 2.0.0-6e146de-dirty
+[2023-03-10 11:08:32.211] [AutoPasLog] [warning] Number of samples (3) is not a multiple of the rebuild frequency (20). This can lead to problems when multiple AutoPas instances interact (e.g. via MPI).
+[2023-03-10 11:08:35.943] [AutoPasLog] [info] AutoPas Version: 2.0.0-6e146de-dirty
+[2023-03-10 11:08:35.944] [AutoPasLog] [warning] Number of samples (3) is not a multiple of the rebuild frequency (20). This can lead to problems when multiple AutoPas instances interact (e.g. via MPI).
+starting simulator
+0: DESKTOP-ND6E6A3
+ ─────────────────────────────────────────────────────────────────────────
+                                 Time                    Allocations      
+                        ───────────────────────   ────────────────────────
+    Tot / % measured:        6.21s /  42.6%           1.26GiB /  49.7%    
+
+ Section        ncalls     time    %tot     avg     alloc    %tot      avg
+ ─────────────────────────────────────────────────────────────────────────
+ pos update          1    1.49s   56.1%   1.49s    368MiB   57.2%   368MiB
+ vel update          1    855ms   32.3%   855ms    276MiB   42.8%   276MiB
+ force update        1    307ms   11.6%   307ms     32.0B    0.0%    32.0B
+ ─────────────────────────────────────────────────────────────────────────
+ending simulation
+starting simulator
+0: DESKTOP-ND6E6A3
+ ─────────────────────────────────────────────────────────────────────────
+                                 Time                    Allocations      
+                        ───────────────────────   ────────────────────────
+    Tot / % measured:        11.3s /  63.4%           2.89GiB /  64.0%    
+
+ Section        ncalls     time    %tot     avg     alloc    %tot      avg
+ ─────────────────────────────────────────────────────────────────────────
+ pos update          3    3.68s   51.4%   1.23s   1.04GiB   56.5%   357MiB
+ vel update          3    2.56s   35.8%   855ms    825MiB   43.5%   275MiB
+ force update        3    917ms   12.8%   306ms     96.0B    0.0%    32.0B
+ ─────────────────────────────────────────────────────────────────────────
+ending simulation

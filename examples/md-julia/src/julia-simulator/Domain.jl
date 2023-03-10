@@ -26,7 +26,9 @@ end
 
 function createDomain(globalBoxMin, globalBoxMax, rankWidth, comm, cutoff)
     rankId = MPI.Comm_rank(comm)# MPI.Comm_rank(comm)
-    
+    name = MPI.Get_processor_name()
+    st = string(rankId )* ": " * name
+    println("$st")
     lMin = globalBoxMin[1] + rankId * rankWidth
     lMax = globalBoxMin[1] + (rankId+1) * rankWidth
     localBoxMin = [globalBoxMin[1] + rankId * rankWidth, globalBoxMin[2], globalBoxMin[3]]
