@@ -605,7 +605,7 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<std::v
 #endif
 #ifdef AUTOPAS_OPENMP
 // one halo and particle buffer pair per thread
-#pragma omp parallel for  // schedule(static, 1)
+#pragma omp parallel for schedule(static, 1)
 #endif
   // 4. particleBuffer with haloParticleBuffer
   for (size_t bufferIdOuter = 0; bufferIdOuter < particleBuffers.size(); ++bufferIdOuter) {
