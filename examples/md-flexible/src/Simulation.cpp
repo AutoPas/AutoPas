@@ -267,7 +267,7 @@ void Simulation::run() {
     }
   }
   _timers.simulate.stop();
-
+  TimeDiscretization::printSimState(*_autoPasContainer);
   // Record last state of simulation.
   if (_createVtkFiles) {
     _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);

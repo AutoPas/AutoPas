@@ -35,4 +35,6 @@ void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
 void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
                          const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
 
+void printSimState(autopas::AutoPas<ParticleType> &);
+
 }  // namespace TimeDiscretization

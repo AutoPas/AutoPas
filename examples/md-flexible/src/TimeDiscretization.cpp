@@ -76,4 +76,18 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
     iter->addV(newV);
   }
 }
+
+void printSimState(autopas::AutoPas<ParticleType> &autoPasContainer) {
+  std::cout << "in println function \n";
+  std::cout << "#p: " << autoPasContainer.getNumberOfParticles(autopas::IteratorBehavior::ownedOrHalo) << "\n";
+  int index = 0;
+  for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    index++;
+    std::cout << iter->getID() << "\n";
+    std::cout << iter->toString() << "\n";
+    if (index > 10) {
+      break;
+    }
+  }
+}
 }  // namespace TimeDiscretization

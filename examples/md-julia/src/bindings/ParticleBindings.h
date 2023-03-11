@@ -38,19 +38,27 @@ struct WrapMoleculeJ {
         particle.method("setPosition", &ParticleType::setPosition);
         particle.method("setVelocity", &ParticleType::setVelocity);
         particle.method("setForce", &ParticleType::setForce);
-        particle.method("setOldF", &ParticleType::setOldF);
+        particle.method("setOldF", static_cast<void (ParticleType::*) (jlcxx::ArrayRef<double,1>)> (&ParticleType::setOldF));
         particle.method("setID", &ParticleType::setID);
         particle.method("setTypeId", &ParticleType::setTypeId);
         particle.method("setOwnershipState", &ParticleType::setOwnershipState);
+        particle.method("setP", static_cast<void (ParticleType::*) (double, int)> (&ParticleType::setPo));
+        particle.method("setV", static_cast<void (ParticleType::*) (double, int)> (&ParticleType::setVe));
+        particle.method("setF", static_cast<void (ParticleType::*) (double, int)> (&ParticleType::setFo));
+        particle.method("setOldF", static_cast<void (ParticleType::*) (double, int)> (&ParticleType::setOldFo));
 
         // getters of MoleculeJ attributes
         particle.method("getPosition", &ParticleType::getPosition);
         particle.method("getVelocity", &ParticleType::getVelocity);
         particle.method("getForce", &ParticleType::getForce);
-        particle.method("getOldF", &ParticleType::getOldF);
+        particle.method("getOldF",static_cast<jlcxx::ArrayRef<double,1> (ParticleType::*) ()> (&ParticleType::getOldF));
         particle.method("getID", &ParticleType::getID);
         particle.method("getTypeId", &ParticleType::getTypeId);
         particle.method("getOwnershipState", &ParticleType::getOwnershipState);
+        particle.method("getP", static_cast<ft (ParticleType::*)(int)> (&ParticleType::getPo));
+        particle.method("getV", static_cast<ft (ParticleType::*)(int)> (&ParticleType::getVe));
+        particle.method("getF", static_cast<ft (ParticleType::*)(int)> (&ParticleType::getFo));
+        particle.method("getOldF", static_cast<ft (ParticleType::*)(int)> (&ParticleType::getOldFo));
 
         // add and sub methods of MoleculeJ attributes
         particle.method("addPosition", &ParticleType::addPosition);
@@ -62,6 +70,7 @@ struct WrapMoleculeJ {
         particle.method("toString", &ParticleType::toString);
     }
 };
+//  static_cast<iterator_t (AutoPasType::*)(autopas::options::IteratorBehavior)> (&AutoPasType::begin));
 
 /**
  * This class helps to wrap the autopas::MoleculeLJ class.

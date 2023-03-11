@@ -22,14 +22,14 @@ end
 function sim(iterations)
     grid = CubeGridInput()
 
-    grid.particlesPerDimension = [100, 100, 100]
-    grid.particleSpacing = 1.5
+    grid.particlesPerDimension = [100, 10, 10]
+    grid.particleSpacing = 1.12
     grid.bottomLeftCorner = [20.0, 20.0, 20.0]
     grid.velocity = [0.0, 0.0, 0.0]
     grid.particleType = 0
-    grid.particleEpsilon = 1
+    grid.particleEpsilon = 5
     grid.particleSigma = 1.0
-    grid.particleMass = 1.0
+    grid.particleMass = 2.0
     grid.factorBrownianMotion = 0.1
 
     grid1 = CubeGridInput()
@@ -64,7 +64,7 @@ function sim(iterations)
     inputParameters.boxMin = [0, 0, 0]
     inputParameters.boxMax = [1000.0, 1000.0, 1000.0]
     inputParameters.cellSize = [1] # check which values can be used
-    inputParameters.deltaT = 0.0005
+    inputParameters.deltaT = 0.005
     inputParameters.iterations = iterations
     inputParameters.globalForce = [0.0, 0.0, 0.0]
     inputParameters.periodicBoundaries = true
@@ -83,6 +83,8 @@ function sim(iterations)
 
     # parse input, create AutoPasContainer and ParticlePropertiesLibrary
     autoPasContainer, particlePropertiesLibrary, domain = parseInput(inputParameters, comm)
+
+    pV, mid = generateCubeGridJulia(inputParameters.objects[1], 0) 
     # particle = MoleculeJ{Float64}([-0.5, -0.5, -0.5], [0.0,0.0,0.0], 0, 0)
     # addHaloParticle(autoPasContainer, particle)
     
@@ -94,7 +96,11 @@ function sim(iterations)
     
 
     # @profile startSimulation(autoPasContainer, particlePropertiesLibrary, inputParameters, domain, comm)
-    startSimulation(autoPasContainer, particlePropertiesLibrary, inputParameters, domain, comm)
+    # startSimulation(autoPasContainer, particlePropertiesLibrary, inputParameters, domain, comm)
+
+    # @profile startSimulationEx(autoPasContainer, particlePropertiesLibrary, inputParameters, domain, comm, pV)
+    startSimulationEx(autoPasContainer, particlePropertiesLibrary, inputParameters, domain, comm, pV)
+    
     # Profile.print()
     println("ending simulation")
 end

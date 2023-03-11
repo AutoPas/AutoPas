@@ -19,6 +19,24 @@ function generateCubeGrid(cubeGrid, mId)
     return particles, mId
 end
 
+function generateCubeGridJulia(cubeGrid, mId)
+    particles = Vector{Molecule}([])
+    id_ = 0
+    generator = createRandomGenerator()
+    for x in 1 : cubeGrid.particlesPerDimension[1]
+        for y in 1 : cubeGrid.particlesPerDimension[2]
+            for z in 1 : cubeGrid.particlesPerDimension[3]
+                pos = [(x-1) * cubeGrid.particleSpacing, (y-1) * cubeGrid.particleSpacing, (z-1) * cubeGrid.particleSpacing] + cubeGrid.bottomLeftCorner
+                v = cubeGrid.velocity + addBrownianMotion(cubeGrid.factorBrownianMotion, generator)
+                particle = Molecule(pos, v, [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], mId, cubeGrid.particleType)
+                push!(particles, particle)
+                mId = mId + 1
+            end
+        end
+    end
+    return particles, mId
+end
+
 function generateObject(particleObject, mId)
 
     if typeof(particleObject) == typeof(CubeGridInput())

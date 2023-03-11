@@ -18,8 +18,13 @@ module Particles
     setOldF,
     setID,
     setTypeId,
+    setP,
+    setV,
+    setF,
     getPosition,
     getVelocity,
+    getV,
+    getF,
     getForce,
     getOldF,
     getID,
@@ -138,7 +143,8 @@ export
 include("./Generator.jl")
 export
   generateObject,
-  generateCubeGrid
+  generateCubeGrid,
+  generateCubeGridJulia
 
 include("./ForceCalculation.jl")
 export
@@ -154,12 +160,16 @@ include("./Simulator.jl")
 export
   startSimulation,
   printSimulation,
-  simulate
+  simulate,
+  startSimulationEx
 
 include("./TimeDiscretization.jl")
 export
   updatePositions,
-  updateVelocities
+  updateVelocities,
+  updatePositionJM,
+  convertAndSo,
+  updatePo
 
 include("./Domain.jl")
 export
@@ -185,5 +195,9 @@ include("./ParticleSerialization.jl")
 export
   serializeParticles,
   deserializeParticles
+
+include("./FMol.jl")
+export
+  Molecule
 
 end

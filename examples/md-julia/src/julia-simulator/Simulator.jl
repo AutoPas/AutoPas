@@ -18,10 +18,11 @@ function startSimulation(autoPasContainer, particlePropertiesLibrary, inputParam
     tmp = inputParameters.objects[1].particlesPerDimension
     maxParticles = tmp[1] * tmp[2] * tmp[3]
     tmpParticles = maxParticles
-    @inbounds for iteration = 1 : inputParameters.iterations
+    # @inbounds for iteration = 1 : inputParameters.iterations
+    for iteration = 1 : inputParameters.iterations
         # println("pos update")
-        @timeit "pos update" updatePositions(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
-        # updatePositions(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
+        # @timeit "pos update" updatePositions(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
+        updatePositions(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
         # updateDummy(autoPasContainer, shift)
         # deleteHaloParticlesLocalBounds(autoPasContainer, domain)
         # delete old halo Particles
@@ -42,11 +43,11 @@ function startSimulation(autoPasContainer, particlePropertiesLibrary, inputParam
         # deleted_items = updateContainer(autoPasContainer)
         # ff.handlePeriodic(autoPasContainer, inputParameters.boxMin, inputParameters.boxMax)
         
-        @timeit "force update" updateForces(autoPasContainer, inputParameters.globalForce, particlePropertiesLibrary)
-        #updateForces(autoPasContainer, inputParameters.globalForce, particlePropertiesLibrary)
+        # @timeit "force update" updateForces(autoPasContainer, inputParameters.globalForce, particlePropertiesLibrary)
+        updateForces(autoPasContainer, inputParameters.globalForce, particlePropertiesLibrary)
         
-        @timeit "vel update" updateVelocities(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary)
-        # updateVelocities(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary)
+        # @timeit "vel update" updateVelocities(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary)
+        updateVelocities(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary)
         # println("after updateVelocities")
 
         # if iteration == 2
@@ -55,7 +56,7 @@ function startSimulation(autoPasContainer, particlePropertiesLibrary, inputParam
         # end
         
     end
-    print_timer()
+    # print_timer()
     #= 
     println()
     np = 0
@@ -66,6 +67,81 @@ function startSimulation(autoPasContainer, particlePropertiesLibrary, inputParam
     end
     println("remaining particles ", np)
     # println("done")
+    =#
+end
+
+function startSimulationEx(autoPasContainer, particlePropertiesLibrary, inputParameters, domain, comm, pV)
+    #=
+    println("iteration 0: ")
+            iter = AutoPasInterface.begin(autoPasContainer, Options.IteratorBehavior(Options.ownedOrHalo))
+            while isValid(iter)
+                particle = Simulator.Iterators.:*(iter)
+                if getID(particle) < 1
+                    println(getVelocity(particle))
+                    println(getPosition(particle))
+                end
+                Simulator.Iterators.:++(iter)
+            end
+    =#
+    @inbounds for iteration = 1 : inputParameters.iterations
+    # for iteration = 1 : inputParameters.iterations
+        #=
+        if iteration % 10 == 0 && iteration < 100
+            println("iteration ", iteration, ": ")
+            iter = AutoPasInterface.begin(autoPasContainer, Options.IteratorBehavior(Options.ownedOrHalo))
+            while isValid(iter)
+                particle = Simulator.Iterators.:*(iter)
+                if getID(particle) < 1
+                    println(getVelocity(particle))
+                    println(getPosition(particle))
+                end
+                Simulator.Iterators.:++(iter)
+            end
+        end
+
+        if iteration == 2
+            println("iteration ", iteration, ": ")
+            iter = AutoPasInterface.begin(autoPasContainer, Options.IteratorBehavior(Options.ownedOrHalo))
+            while isValid(iter)
+                particle = Simulator.Iterators.:*(iter)
+                if getID(particle) < 1
+                    println(getVelocity(particle))
+                    println(getPosition(particle))
+                end
+                Simulator.Iterators.:++(iter)
+            end
+        end
+        =#
+        # @timeit "pos update julia" updatePositionJM(pV, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
+        # updatePositionJM(pV, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
+
+        # @timeit "pos update" updatePositions(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
+        # updatePositions(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
+
+        @timeit "pos new" updatePo(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
+        # updatePo(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
+
+        @timeit "force update" updateForces(autoPasContainer, inputParameters.globalForce, particlePropertiesLibrary)
+        # updateForces(autoPasContainer, inputParameters.globalForce, particlePropertiesLibrary)
+        
+        @timeit "vel update" updateVelocities(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary)
+        # updateVelocities(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary)
+        
+        # @timeit "convert" convertAndSo(autoPasContainer, pV)
+
+    end
+    print_timer()
+    #=
+    iter = AutoPasInterface.begin(autoPasContainer, Options.IteratorBehavior(Options.ownedOrHalo))
+    
+    while isValid(iter)
+        particle = Simulator.Iterators.:*(iter)
+        if getID(particle) < 10
+            println(getVelocity(particle))
+            println(getPosition(particle))
+        end
+        Simulator.Iterators.:++(iter)
+    end
     =#
 end
 #=

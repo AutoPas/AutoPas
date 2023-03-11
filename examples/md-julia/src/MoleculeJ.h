@@ -260,6 +260,38 @@ class MoleculeJ : public autopas::Particle {
         ParticleBase::subF({f[0], f[1], f[2]});
     }
 
+    double getPo(int i) {
+      return _r[i];
+    }
+
+    double getVe(int i) {
+      return _v[i];
+    }
+
+    double getFo(int i) {
+      return _f[i];
+    }
+
+    double getOldFo(int i) {
+      return _oldF[i];
+    }
+
+    void setPo(double p_i, int i) {
+      _r[i] = p_i;
+    }
+
+    void setVe(double v_i, int i) {
+      _v[i] = v_i;
+    }
+
+    void setFo(double f_i, int i) {
+      _f[i] = f_i;
+    }
+
+    void setOldFo(double of_i, int i) {
+      _oldF[i] = of_i;
+    }
+
     private:
     /**
      * Particle type id.
@@ -270,6 +302,4 @@ class MoleculeJ : public autopas::Particle {
      * Old Force of the particle experiences as 3D vector.
      */
     std::array<floatType,3> _oldF = {0.0, 0.0, 0.0};
-
-    jlcxx::ArrayRef<double,1> _po{}
 };
