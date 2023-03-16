@@ -155,22 +155,35 @@ std::enable_if_t<autopas::utils::ArrayUtils::is_container<Container>::value, std
  */
 template <class OuterContainerT>
 void balanceVectors(OuterContainerT &vecvec) {
+  balanceVectors(vecvec, [](const auto &v) { return v; });
+}
+
+/**
+ * Given a collection of vectors, redistributes the elements of the vectors so they all have the same (or +1) size.
+ * @tparam OuterContainerT Collection type
+ * @param vecvec Reference to the collection of vectors to be balanced in place.
+ */
+template <class OuterContainerT, class F>
+void balanceVectors(OuterContainerT &vecvec, F innerContainerToVector) {
   using InnerContainerT = typename OuterContainerT::value_type;
+  // get type of what is stored in the inner container
+  using ElemT = typename std::remove_reference_t<
+      std::invoke_result_t<decltype(innerContainerToVector), InnerContainerT &>>::value_type;
   // calculate vecvec statistics
   const auto vecvecSize = vecvec.size();
-  const size_t numElem =
-      std::transform_reduce(vecvec.begin(), vecvec.end(), 0, std::plus<>(), [](auto &vec) { return vec.size(); });
+  const size_t numElem = std::transform_reduce(vecvec.begin(), vecvec.end(), 0, std::plus<>(),
+                                               [&](auto &vec) { return innerContainerToVector(vec).size(); });
   const auto targetSize = static_cast<long>(numElem / vecvecSize);
   auto rest = numElem % vecvecSize;
 
-  std::vector<typename InnerContainerT::value_type> tmpStorage;
+  std::vector<ElemT> tmpStorage;
   // index of the first subvec that has too few elements
   size_t firstTooFew = 0;
   // repeat as long as there is something in the buffer but at least 2 iterations.
   for (int pass = 0; pass == 0 or not tmpStorage.empty(); ++pass) {
     // scan all subvecs that are not known to have the desired size
     for (size_t i = firstTooFew; i < vecvecSize; ++i) {
-      auto &vec = vecvec[i];
+      auto &vec = innerContainerToVector(vecvec[i]);
       const auto thisTargetSize = i < rest ? targetSize + 1 : targetSize;
       if (vec.size() > thisTargetSize) {
         // move what is too much to tmpStorage

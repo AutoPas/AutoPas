@@ -46,7 +46,8 @@ class LogicHandler {
     const auto &boxMin = _autoTuner.getContainer()->getBoxMin();
     const auto &boxMax = _autoTuner.getContainer()->getBoxMax();
     std::vector<Particle> leavingBufferParticles{};
-    for (auto &buffer : _particleBuffer) {
+    for (auto &cell : _particleBuffer) {
+      auto &buffer = cell._particles;
       if (insertOwnedParticlesToContainer) {
         for (const auto &p : buffer) {
           if (p.isDummy()) {
@@ -219,7 +220,7 @@ class LogicHandler {
       _autoTuner.getContainer()->template addParticle<false>(p);
     } else {
       // If the container is valid, we add it to the particle buffer.
-      _particleBuffer[autopas_get_thread_num()].push_back(p);
+      _particleBuffer[autopas_get_thread_num()].addParticle(p);
     }
     _numParticlesOwned.fetch_add(1, std::memory_order_relaxed);
   }
@@ -247,8 +248,8 @@ class LogicHandler {
       bool updated = container->updateHaloParticle(haloParticle);
       if (not updated) {
         // If we couldn't find an existing particle, add it to the halo particle buffer.
-        _haloParticleBuffer[autopas_get_thread_num()].push_back(haloParticle);
-        _haloParticleBuffer[autopas_get_thread_num()].back().setOwnershipState(OwnershipState::halo);
+        _haloParticleBuffer[autopas_get_thread_num()].addParticle(haloParticle);
+        _haloParticleBuffer[autopas_get_thread_num()]._particles.back().setOwnershipState(OwnershipState::halo);
       }
     }
     _numParticlesHalo.fetch_add(1, std::memory_order_relaxed);
@@ -276,7 +277,8 @@ class LogicHandler {
   std::tuple<bool, bool> deleteParticleFromBuffers(Particle &particle) {
     // find the buffer the particle belongs to
     auto &bufferCollection = particle.isOwned() ? _particleBuffer : _haloParticleBuffer;
-    for (auto &buffer : bufferCollection) {
+    for (auto &cell : bufferCollection) {
+      auto &buffer = cell._particles;
       // if the address of the particle is between start and end of the buffer it is in this buffer
       if (not buffer.empty() and &(buffer.front()) <= &particle and &particle <= &(buffer.back())) {
         const bool isRearParticle = &particle == &buffer.back();
@@ -334,15 +336,15 @@ class LogicHandler {
                               static_cast<bool>(behavior & IteratorBehavior::halo) * _haloParticleBuffer.size());
     if (behavior & IteratorBehavior::owned) {
       for (auto &buffer : _particleBuffer) {
-        if (not buffer.empty()) {
-          additionalVectors.push_back(&buffer);
+        if (not buffer.isEmpty()) {
+          additionalVectors.push_back(&(buffer._particles));
         }
       }
     }
     if (behavior & IteratorBehavior::halo) {
       for (auto &buffer : _haloParticleBuffer) {
-        if (not buffer.empty()) {
-          additionalVectors.push_back(&buffer);
+        if (not buffer.isEmpty()) {
+          additionalVectors.push_back(&(buffer._particles));
         }
       }
     }
@@ -478,12 +480,12 @@ class LogicHandler {
    * Buffer to store particles that should not yet be added to the container. There is one buffer per thread.
    * @note This buffer could potentially be replaced by a ParticleCell.
    */
-  std::vector<std::vector<Particle>> _particleBuffer;
+  std::vector<FullParticleCell<Particle>> _particleBuffer;
 
   /**
    * Buffer to store halo particles that should not yet be added to the container. There is one buffer per thread.
    * @note This buffer could potentially be replaced by a ParticleCell.
    */
-  std::vector<std::vector<Particle>> _haloParticleBuffer;
+  std::vector<FullParticleCell<Particle>> _haloParticleBuffer;
 };
 }  // namespace autopas

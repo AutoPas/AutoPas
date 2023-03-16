@@ -13,8 +13,8 @@
 #include "testingHelpers/commonTypedefs.h"
 
 void testRemainderTraversal(const std::vector<Molecule> &particles, const std::vector<Molecule> &haloParticles,
-                            std::vector<std::vector<Molecule>> &particlesBuffer,
-                            std::vector<std::vector<Molecule>> &haloParticlesBuffer) {
+                            std::vector<autopas::FullParticleCell<Molecule>> &particlesBuffer,
+                            std::vector<autopas::FullParticleCell<Molecule>> &haloParticlesBuffer) {
   /// Setup AutoTuner
   constexpr double cutoff = 2.5;
   constexpr double cellSizeFactor = 1.;
