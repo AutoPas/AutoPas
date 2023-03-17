@@ -571,31 +571,28 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<FullPa
   timerPBufferPBuffer.start();
 #endif
   // 3. particleBuffer with itself and all other buffers
+
+  // All (halo-)buffer interactions shall happen vectorized, hence, load all buffer data into SoAs
+  for (auto &buffer : particleBuffers) {
+    f->SoALoader(buffer, buffer._particleSoABuffer, 0);
+  }
+  for (auto &buffer : haloParticleBuffers) {
+    f->SoALoader(buffer, buffer._particleSoABuffer, 0);
+  }
+
 #ifdef AUTOPAS_OPENMP
 // one halo and particle buffer pair per thread
 #pragma omp parallel for schedule(static, 1)
 #endif
-  for (size_t bufferIdOuter = 0; bufferIdOuter < particleBuffers.size(); ++bufferIdOuter) {
-    auto &particleBufferOuter = particleBuffers[bufferIdOuter];
-    for (size_t i = 0; i < particleBufferOuter.numParticles(); ++i) {
-      auto &&p1 = particleBufferOuter[i];
-      for (size_t bufferIdInner = 0; bufferIdInner < particleBuffers.size(); ++bufferIdInner) {
-        auto &particleBufferInner = particleBuffers[bufferIdInner];
-        // self-interaction check in the innermost loop is only needed if the buffer interacts with itself
-        if (bufferIdInner == bufferIdOuter) {
-          for (size_t j = 0; j < particleBufferInner.numParticles(); ++j) {
-            // don't interact a particle with itself
-            if (i != j) {
-              auto &&p2 = particleBufferInner[j];
-              f->AoSFunctor(p1, p2, false);
-            }
-          }
-        } else {
-          for (size_t j = 0; j < particleBufferInner.numParticles(); ++j) {
-            auto &&p2 = particleBufferInner[j];
-            f->AoSFunctor(p1, p2, false);
-          }
-        }
+  // can't do 'for each' because clang<11 can't do it
+  for (size_t i = 0; i < particleBuffers.size(); ++i) {
+    auto &bufferOuter = particleBuffers[i];
+    for (auto &bufferInner : particleBuffers) {
+      if (&bufferOuter == &bufferInner) {
+        f->SoAFunctorSingle(bufferInner._particleSoABuffer, true);
+      } else {
+        // no newton 3 to avoid RCs
+        f->SoAFunctorPair(bufferOuter._particleSoABuffer, bufferInner._particleSoABuffer, false);
       }
     }
   }
@@ -603,29 +600,27 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<FullPa
   timerPBufferPBuffer.stop();
   timerPBufferHBuffer.start();
 #endif
+  // 4. particleBuffer with haloParticleBuffer
 #ifdef AUTOPAS_OPENMP
 // one halo and particle buffer pair per thread
-#pragma omp parallel for  // schedule(static, 1)
+#pragma omp parallel for schedule(static, 1)
 #endif
-  // 4. particleBuffer with haloParticleBuffer
-  for (size_t bufferIdOuter = 0; bufferIdOuter < particleBuffers.size(); ++bufferIdOuter) {
-    auto &particleBufferOuter = particleBuffers[bufferIdOuter];
-    for (size_t i = 0; i < particleBufferOuter.numParticles(); ++i) {
-      auto &&p1 = particleBufferOuter[i];
-      for (size_t bufferIdInner = 0; bufferIdInner < haloParticleBuffers.size(); ++bufferIdInner) {
-        auto &haloBufferInner = haloParticleBuffers[bufferIdInner];
-        for (size_t j = 0; j < haloBufferInner.numParticles(); ++j) {
-          auto &&p2 = haloBufferInner[j];
-          // Here, we do not need to interact p2 with p1, because p2 is a halo particle and an AoSFunctor call with a
-          // halo particle as first argument has no effect if newton3 == false.
-          f->AoSFunctor(p1, p2, false);
-        }
-      }
+  // can't do 'for each' because clang<11 can't do it
+  for (size_t i = 0; i < particleBuffers.size(); ++i) {
+    auto &bufferOuterSoA = particleBuffers[i]._particleSoABuffer;
+    for (auto &bufferInner : haloParticleBuffers) {
+      // no newton 3 to avoid RCs
+      f->SoAFunctorPair(bufferOuterSoA, bufferInner._particleSoABuffer, false);
     }
   }
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   timerPBufferHBuffer.stop();
 #endif
+
+  // unpack particle SoAs. Halo data is not interesting
+  for (auto &buffer : particleBuffers) {
+    f->SoAExtractor(buffer, buffer._particleSoABuffer, 0);
+  }
 
   AutoPasLog(TRACE, "Timer Buffers <-> Container (1+2): {}", timerBufferContainer.getTotalTime());
   AutoPasLog(TRACE, "Timer PBuffers<-> PBuffer   (  3): {}", timerPBufferPBuffer.getTotalTime());
