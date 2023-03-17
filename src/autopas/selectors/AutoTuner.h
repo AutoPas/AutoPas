@@ -683,8 +683,8 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
     std::stringstream ss;
     size_t sum = 0;
     for (const auto &buffer : buffers) {
-      ss << buffer.size() << ", ";
-      sum += buffer.size();
+      ss << buffer.numParticles() << ", ";
+      sum += buffer.numParticles();
     }
     ss << " Total: " << sum;
     return ss.str();
