@@ -178,7 +178,7 @@ TEST_F(AutoTunerTest, testWillRebuildDDL) {
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
 
-  std::vector<std::vector<Molecule>> emptyVec(autopas::autopas_get_max_threads());
+  std::vector<autopas::FullParticleCell<Molecule>> emptyVec(autopas::autopas_get_max_threads());
 
   // Intended false positive
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild for first iteration.";
@@ -232,7 +232,7 @@ TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
 
-  std::vector<std::vector<Molecule>> emptyVec(autopas::autopas_get_max_threads());
+  std::vector<autopas::FullParticleCell<Molecule>> emptyVec(autopas::autopas_get_max_threads());
 
   // Intended false positive
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild for first iteration.";
@@ -274,7 +274,7 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
 
-  std::vector<std::vector<Molecule>> emptyVec(autopas::autopas_get_max_threads());
+  std::vector<autopas::FullParticleCell<Molecule>> emptyVec(autopas::autopas_get_max_threads());
 
   // Intended false positive
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild for first iteration.";
@@ -323,7 +323,7 @@ TEST_F(AutoTunerTest, testForceRetuneBetweenPhases) {
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
 
-  std::vector<std::vector<Molecule>> emptyVec(autopas::autopas_get_max_threads());
+  std::vector<autopas::FullParticleCell<Molecule>> emptyVec(autopas::autopas_get_max_threads());
 
   // expect a full tuning phase
   for (size_t i = 0; i < numExpectedTuningIterations; ++i) {
@@ -382,7 +382,7 @@ TEST_F(AutoTunerTest, testForceRetuneInPhase) {
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
 
-  std::vector<std::vector<Molecule>> emptyVec(autopas::autopas_get_max_threads());
+  std::vector<autopas::FullParticleCell<Molecule>> emptyVec(autopas::autopas_get_max_threads());
 
   // Do part of the tuning phase. After the loop we should be in the middle of sampling the second configuration.
   ASSERT_GT(maxSamples, 1);
@@ -459,7 +459,7 @@ TEST_F(AutoTunerTest, testOneConfig) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
 
-  std::vector<std::vector<Molecule>> emptyVec(autopas::autopas_get_max_threads());
+  std::vector<autopas::FullParticleCell<Molecule>> emptyVec(autopas::autopas_get_max_threads());
 
   bool doRebuild = true;
   size_t numSamples = 0;
@@ -494,7 +494,7 @@ TEST_F(AutoTunerTest, testConfigSecondInvalid) {
 
   EXPECT_EQ(confNoN3, tuner.getCurrentConfig());
 
-  std::vector<std::vector<Molecule>> emptyVec(autopas::autopas_get_max_threads());
+  std::vector<autopas::FullParticleCell<Molecule>> emptyVec(autopas::autopas_get_max_threads());
 
   MockFunctor<Molecule> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
@@ -535,7 +535,7 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(false));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
 
-  std::vector<std::vector<Molecule>> emptyVec(autopas::autopas_get_max_threads());
+  std::vector<autopas::FullParticleCell<Molecule>> emptyVec(autopas::autopas_get_max_threads());
 
   bool doRebuild = true;
   EXPECT_THROW(tuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec),
@@ -568,9 +568,10 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
 
-  std::vector<std::vector<Molecule>> emptyVec(autopas::autopas_get_max_threads());
-  std::vector<std::vector<Molecule>> twoParticles(autopas::autopas_get_max_threads());
-  twoParticles[0] = {Molecule{}, Molecule{}};
+  std::vector<autopas::FullParticleCell<Molecule>> emptyVec(autopas::autopas_get_max_threads());
+  std::vector<autopas::FullParticleCell<Molecule>> twoParticles(autopas::autopas_get_max_threads());
+  twoParticles[0].addParticle(Molecule{});
+  twoParticles[0].addParticle(Molecule{});
 
   using namespace std::literals;
 

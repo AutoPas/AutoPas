@@ -68,8 +68,10 @@ TEST_P(AutoTunerRemainderTraversalTest, testRemainderTraversal) {
   // helper buffers to set up the test
   std::vector<Molecule> containerParticles{};
   std::vector<Molecule> containerHaloParticles{};
-  std::vector<std::vector<Molecule>> bufferParticles{static_cast<size_t>(autopas::autopas_get_max_threads())};
-  std::vector<std::vector<Molecule>> bufferHaloParticles{static_cast<size_t>(autopas::autopas_get_max_threads())};
+  std::vector<autopas::FullParticleCell<Molecule>> bufferParticles{
+      static_cast<size_t>(autopas::autopas_get_max_threads())};
+  std::vector<autopas::FullParticleCell<Molecule>> bufferHaloParticles{
+      static_cast<size_t>(autopas::autopas_get_max_threads())};
 
   auto addParticleToTest = [&](const auto &p, ParticleStorage storage, int subBuffer) {
     switch (storage) {
@@ -80,10 +82,10 @@ TEST_P(AutoTunerRemainderTraversalTest, testRemainderTraversal) {
         containerHaloParticles.push_back(p);
         break;
       case ParticleStorage::buffer:
-        bufferParticles[subBuffer].push_back(p);
+        bufferParticles[subBuffer].addParticle(p);
         break;
       case ParticleStorage::bufferHalo:
-        bufferHaloParticles[subBuffer].push_back(p);
+        bufferHaloParticles[subBuffer].addParticle(p);
         break;
     }
   };
