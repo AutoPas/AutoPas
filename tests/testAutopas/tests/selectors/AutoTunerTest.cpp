@@ -6,6 +6,7 @@
 
 #include "AutoTunerTest.h"
 
+#include "autopas/cells/FullParticleCell.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -133,7 +134,7 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
       autopasTools::generators::GridGenerator::fillWithParticles(*(autoTuner.getContainer().get()), particlesPerDim,
                                                                  defaultParticle, spacing, offset);
     }
-    std::vector<std::vector<Molecule>> emptyVec(autopas::autopas_get_max_threads());
+    std::vector<autopas::FullParticleCell<Molecule>> emptyVec(autopas::autopas_get_max_threads());
     stillTuning = autoTuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);
     doRebuild = false;
     ++iterations;
