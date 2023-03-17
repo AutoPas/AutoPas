@@ -162,7 +162,9 @@ void balanceVectors(OuterContainerT &vecvec) {
 /**
  * Given a collection of containers, redistributes the elements of the vectors so they all have the same (or +1) size.
  * @tparam OuterContainerT Collection type
+ * @tparam F Type of the function innerContainerToVec
  * @param vecvec Reference to the collection of vectors to be balanced in place.
+ * @param innerContainerToVec Function to map inner containers to std::vector&.
  */
 template <class OuterContainerT, class F>
 void balanceVectors(OuterContainerT &vecvec, F innerContainerToVec) {
