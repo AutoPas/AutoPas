@@ -521,9 +521,9 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<FullPa
       auto &haloParticleBuffer = haloParticleBuffers[bufferId];
       // 1. particleBuffer with all close particles in container
       for (auto &&p1 : particleBuffer) {
-        auto pos = p1.getR();
-        auto min = autopas::utils::ArrayMath::subScalar(pos, cutoff);
-        auto max = autopas::utils::ArrayMath::addScalar(pos, cutoff);
+        const auto pos = p1.getR();
+        const auto min = autopas::utils::ArrayMath::subScalar(pos, cutoff);
+        const auto max = autopas::utils::ArrayMath::addScalar(pos, cutoff);
         staticTypedContainerPtr->forEachInRegion(
             [&](auto &p2) {
               const auto lockCoords =
@@ -544,23 +544,19 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<FullPa
       }
 
       // 2. haloParticleBuffer with owned, close particles in container
-      for (auto &&p1 : haloParticleBuffer) {
-        auto pos = p1.getR();
-        auto min = autopas::utils::ArrayMath::subScalar(pos, cutoff);
-        auto max = autopas::utils::ArrayMath::addScalar(pos, cutoff);
+      for (auto &&p1halo : haloParticleBuffer) {
+        const auto pos = p1halo.getR();
+        const auto min = autopas::utils::ArrayMath::subScalar(pos, cutoff);
+        const auto max = autopas::utils::ArrayMath::addScalar(pos, cutoff);
         staticTypedContainerPtr->forEachInRegion(
             [&](auto &p2) {
               const auto lockCoords =
                   static_cast_array<size_t>(mulScalar(sub(p2.getR(), boxMin), interactionLengthInv));
-              if (newton3) {
-                std::lock_guard<std::mutex> lock(*locks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
-                f->AoSFunctor(p1, p2, true);
-              } else {
-                // Here, we do not need to interact p1 with p2, because p is a halo particle and an AoSFunctor call with
-                // a halo particle as first argument has no effect if newton3 == false.
-                std::lock_guard<std::mutex> lock(*locks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
-                f->AoSFunctor(p2, p1, false);
-              }
+              // No need to apply anything to p1halo
+              //   -> no Newton3 needed
+              //   -> AoSFunctor(p1, p2, false) not needed
+              std::lock_guard<std::mutex> lock(*locks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
+              f->AoSFunctor(p2, p1halo, false);
             },
             min, max, IteratorBehavior::owned);
       }
