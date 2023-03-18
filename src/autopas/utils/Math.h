@@ -219,6 +219,15 @@ double normalCDF(double x);
 double sigmoid(double x);
 
 /**
+ * Determines if two doubles are near each other. This function should be preferred to comparing with ==.
+ * @param a
+ * @param b
+ * @param relativeDifference
+ * @return
+ */
+bool isNear(double a, double b, double relativeDifference = 0.00001);
+
+/**
  * Create a vector of doubles from given elements
  * @param elements
  * @return
