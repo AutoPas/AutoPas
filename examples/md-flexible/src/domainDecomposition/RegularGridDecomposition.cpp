@@ -14,6 +14,7 @@
 #include "DomainTools.h"
 #include "autopas/AutoPas.h"
 #include "autopas/utils/ArrayUtils.h"
+#include "autopas/utils/Math.h"
 #include "src/ParticleCommunicator.h"
 
 RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configuration)
@@ -157,14 +158,15 @@ std::array<int, 6> RegularGridDecomposition::getExtentOfSubdomain(const int subd
 }
 
 void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContainer) {
+  using autopas::utils::Math::isNear;
   std::vector<ParticleType> haloParticles{};
 
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
     // completely bypass Halo particle exchange in this dimension if boundaries in this direction are not periodic
     // *and* if both local boundaries are the global boundaries in this dimension
     if (_boundaryType[dimensionIndex] != options::BoundaryTypeOption::periodic and
-        _localBoxMin[dimensionIndex] == _globalBoxMin[dimensionIndex] and
-        _localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex]) {
+        isNear(_localBoxMin[dimensionIndex], _globalBoxMin[dimensionIndex]) and
+        isNear(_localBoxMax[dimensionIndex], _globalBoxMax[dimensionIndex])) {
       continue;
     }
 
@@ -182,7 +184,7 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
         particlesForLeftNeighbor.push_back(particle);
 
         // Apply boundary condition
-        if (_localBoxMin[dimensionIndex] == _globalBoxMin[dimensionIndex]) {
+        if (isNear(_localBoxMin[dimensionIndex], _globalBoxMin[dimensionIndex])) {
           position[dimensionIndex] =
               position[dimensionIndex] + (_globalBoxMax[dimensionIndex] - _globalBoxMin[dimensionIndex]);
           particlesForLeftNeighbor.back().setR(position);
@@ -191,7 +193,7 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
         particlesForRightNeighbor.push_back(particle);
 
         // Apply boundary condition
-        if (_localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex]) {
+        if (isNear(_localBoxMax[dimensionIndex], _globalBoxMax[dimensionIndex])) {
           position[dimensionIndex] =
               position[dimensionIndex] - (_globalBoxMax[dimensionIndex] - _globalBoxMin[dimensionIndex]);
           particlesForRightNeighbor.back().setR(position);
@@ -212,11 +214,12 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
 
 void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasContainer,
                                                           std::vector<ParticleType> &emigrants) {
+  using autopas::utils::Math::isNear;
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
     // if this rank spans the whole dimension but is not periodic -> skip.
     if (_boundaryType[dimensionIndex] != options::BoundaryTypeOption::periodic and
-        _localBoxMin[dimensionIndex] == _globalBoxMin[dimensionIndex] and
-        _localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex])
+        isNear(_localBoxMin[dimensionIndex], _globalBoxMin[dimensionIndex]) and
+        isNear(_localBoxMax[dimensionIndex], _globalBoxMax[dimensionIndex]))
       continue;
 
     // If the ALL load balancer is used, it may happen that particles migrate to a non-adjacent domain.
@@ -264,6 +267,7 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
 
 void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPasContainer,
                                                             ParticlePropertiesLibraryType &particlePropertiesLib) {
+  using autopas::utils::Math::isNear;
   std::array<double, _dimensionCount> reflSkinMin{}, reflSkinMax{};
   auto functorLJ = autopas::LJFunctor<ParticleType, false, true, autopas::FunctorN3Modes::Both, false, false>(
       _maxReflectiveSkin * 2., particlePropertiesLib);
@@ -295,7 +299,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
     };
 
     // apply if we are at a global boundary on lower end of the dimension
-    if (_localBoxMin[dimensionIndex] == _globalBoxMin[dimensionIndex]) {
+    if (isNear(_localBoxMin[dimensionIndex], _globalBoxMin[dimensionIndex])) {
       reflSkinMin = _globalBoxMin;
       reflSkinMax = _globalBoxMax;
       reflSkinMax[dimensionIndex] = _globalBoxMin[dimensionIndex] + _maxReflectiveSkin;
@@ -303,7 +307,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
       reflect(false);
     }
     // apply if we are at a global boundary on upper end of the dimension
-    if (_localBoxMax[dimensionIndex] == _globalBoxMax[dimensionIndex]) {
+    if (isNear(_localBoxMax[dimensionIndex], _globalBoxMax[dimensionIndex])) {
       reflSkinMin = _globalBoxMin;
       reflSkinMax = _globalBoxMax;
       reflSkinMin[dimensionIndex] = _globalBoxMax[dimensionIndex] - _maxReflectiveSkin;
@@ -337,6 +341,7 @@ std::vector<ParticleType> RegularGridDecomposition::sendAndReceiveParticlesLeftA
 
 std::vector<ParticleType> RegularGridDecomposition::collectHaloParticlesForLeftNeighbor(AutoPasType &autoPasContainer,
                                                                                         size_t direction) {
+  using autopas::utils::Math::isNear;
   std::vector<ParticleType> haloParticles{};
   // Calculate halo box for left neighbor
   const auto skinWidth = _skinWidthPerTimestep * _rebuildFrequency;
@@ -353,7 +358,7 @@ std::vector<ParticleType> RegularGridDecomposition::collectHaloParticlesForLeftN
     haloParticles.push_back(*particle);
 
     // if the particle is outside the global box move it to the other side (periodic boundary)
-    if (_localBoxMin[direction] == _globalBoxMin[direction]) {
+    if (isNear(_localBoxMin[direction], _globalBoxMin[direction])) {
       auto position = particle->getR();
       position[direction] = position[direction] + (_globalBoxMax[direction] - _globalBoxMin[direction]);
       haloParticles.back().setR(position);
@@ -364,6 +369,7 @@ std::vector<ParticleType> RegularGridDecomposition::collectHaloParticlesForLeftN
 
 std::vector<ParticleType> RegularGridDecomposition::collectHaloParticlesForRightNeighbor(AutoPasType &autoPasContainer,
                                                                                          size_t direction) {
+  using autopas::utils::Math::isNear;
   std::vector<ParticleType> haloParticles;
   // Calculate left halo box of right neighbor
   const auto skinWidth = _skinWidthPerTimestep * _rebuildFrequency;
@@ -380,7 +386,7 @@ std::vector<ParticleType> RegularGridDecomposition::collectHaloParticlesForRight
     haloParticles.push_back(*particle);
 
     // if the particle is outside the global box move it to the other side (periodic boundary)
-    if (_localBoxMax[direction] == _globalBoxMax[direction]) {
+    if (isNear(_localBoxMax[direction], _globalBoxMax[direction])) {
       auto position = particle->getR();
       position[direction] = position[direction] - (_globalBoxMax[direction] - _globalBoxMin[direction]);
       haloParticles.back().setR(position);
@@ -392,6 +398,7 @@ std::vector<ParticleType> RegularGridDecomposition::collectHaloParticlesForRight
 std::tuple<std::vector<ParticleType>, std::vector<ParticleType>, std::vector<ParticleType>>
 RegularGridDecomposition::categorizeParticlesIntoLeftAndRightNeighbor(const std::vector<ParticleType> &particles,
                                                                       size_t direction) {
+  using autopas::utils::Math::isNear;
   const std::array<double, _dimensionCount> globalBoxLength =
       autopas::utils::ArrayMath::sub(_globalBoxMax, _globalBoxMin);
 
@@ -411,7 +418,7 @@ RegularGridDecomposition::categorizeParticlesIntoLeftAndRightNeighbor(const std:
       leftNeighborParticles.push_back(particle);
 
       // if the particle is outside the global box move it to the other side (periodic boundary)
-      if (_localBoxMin[direction] == _globalBoxMin[direction]) {
+      if (isNear(_localBoxMin[direction], _globalBoxMin[direction])) {
         // TODO: check if this failsafe is really reasonable.
         //  It should only trigger if a particle's position was already inside the box?
         const auto periodicPosition = position[direction] + globalBoxLength[direction];
@@ -425,7 +432,7 @@ RegularGridDecomposition::categorizeParticlesIntoLeftAndRightNeighbor(const std:
         rightNeighborParticles.push_back(particle);
 
         // if the particle is outside the global box move it to the other side (periodic boundary)
-        if (_localBoxMax[direction] == _globalBoxMax[direction]) {
+        if (isNear(_localBoxMax[direction], _globalBoxMax[direction])) {
           // TODO: check if this failsafe is really reasonable.
           //  It should only trigger if a particle's position was already inside the box?
           const auto periodicPosition = position[direction] - globalBoxLength[direction];
@@ -441,6 +448,7 @@ RegularGridDecomposition::categorizeParticlesIntoLeftAndRightNeighbor(const std:
 }
 
 void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(double work) {
+  using autopas::utils::Math::isNear;
   // This is a dummy variable which is not being used. It is required by the non-blocking MPI_Send calls.
   autopas::AutoPas_MPI_Request dummyRequest{};
 
@@ -466,14 +474,14 @@ void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(double wo
     const int rightNeighbor = _neighborDomainIndices[i * 2 + 1];
 
     // Send average work in plane to neighbours
-    if (_localBoxMin[i] != _globalBoxMin[i]) {
+    if (not isNear(_localBoxMin[i], _globalBoxMin[i])) {
       autopas::AutoPas_MPI_Isend(&averageWorkInPlane[i], 1, AUTOPAS_MPI_DOUBLE, leftNeighbor, 0, _communicator,
                                  &dummyRequest);
       autopas::AutoPas_MPI_Isend(&oldLocalBoxMax[i], 1, AUTOPAS_MPI_DOUBLE, leftNeighbor, 0, _communicator,
                                  &dummyRequest);
     }
 
-    if (_localBoxMax[i] != _globalBoxMax[i]) {
+    if (not isNear(_localBoxMax[i], _globalBoxMax[i])) {
       autopas::AutoPas_MPI_Isend(&averageWorkInPlane[i], 1, AUTOPAS_MPI_DOUBLE, rightNeighbor, 0, _communicator,
                                  &dummyRequest);
       autopas::AutoPas_MPI_Isend(&oldLocalBoxMin[i], 1, AUTOPAS_MPI_DOUBLE, rightNeighbor, 0, _communicator,
@@ -487,7 +495,7 @@ void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(double wo
     const int rightNeighbor = _neighborDomainIndices[i * 2 + 1];
 
     double neighborPlaneWork{}, neighborBoundary{}, balancedPosition{};
-    if (_localBoxMin[i] != _globalBoxMin[i]) {
+    if (not isNear(_localBoxMin[i], _globalBoxMin[i])) {
       // Receive average work from neighbour planes.
       autopas::AutoPas_MPI_Recv(&neighborPlaneWork, 1, AUTOPAS_MPI_DOUBLE, leftNeighbor, 0, _communicator,
                                 AUTOPAS_MPI_STATUS_IGNORE);
@@ -502,7 +510,7 @@ void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(double wo
       _localBoxMin[i] += (balancedPosition - _localBoxMin[i]) / 2;
     }
 
-    if (_localBoxMax[i] != _globalBoxMax[i]) {
+    if (not isNear(_localBoxMax[i], _globalBoxMax[i])) {
       // Receive average work from neighbour planes.
       autopas::AutoPas_MPI_Recv(&neighborPlaneWork, 1, AUTOPAS_MPI_DOUBLE, rightNeighbor, 0, _communicator,
                                 AUTOPAS_MPI_STATUS_IGNORE);
