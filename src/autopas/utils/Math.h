@@ -225,7 +225,7 @@ double sigmoid(double x);
  * @param relativeDifference
  * @return
  */
-bool isNear(double a, double b, double relativeDifference = 0.00001);
+bool isNear(double a, double b, double relativeDifference = 1e-9);
 
 /**
  * Create a vector of doubles from given elements
