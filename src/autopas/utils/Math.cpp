@@ -33,7 +33,7 @@ bool isNear(double a, double b, double relativeDifference) {
   const auto greaterNumber = std::max(std::abs(a), std::abs(b));
   const auto absoluteDifference = relativeDifference * greaterNumber;
   const auto diff = std::abs(a - b);
-  return diff < absoluteDifference;
+  return diff <= absoluteDifference;
 }
 
 Eigen::VectorXd makeVectorXd(const std::vector<double> &elements) {
