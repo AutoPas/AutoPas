@@ -286,6 +286,7 @@ std::string MDFlexConfig::to_string() const {
   printObjectCollection(cubeGridObjects, cubeGridObjectsStr, os);
   printObjectCollection(cubeGaussObjects, cubeGaussObjectsStr, os);
   printObjectCollection(cubeUniformObjects, cubeUniformObjectsStr, os);
+  printObjectCollection(cubeClosestPackedObjects, cubeClosestPackedObjectsStr, os);
   printObjectCollection(sphereObjects, sphereObjectsStr, os);
 
   if (not globalForceIsZero()) {

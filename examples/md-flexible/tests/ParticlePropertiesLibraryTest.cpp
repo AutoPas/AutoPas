@@ -92,4 +92,7 @@ TEST_F(ParticlePropertiesLibraryTest, ParticlePropertiesInitialization) {
   EXPECT_EQ(configuration.getParticlePropertiesLibrary()->getMass(3), 4.0);
   EXPECT_EQ(configuration.getParticlePropertiesLibrary()->get24Epsilon(3), 96.0);
   EXPECT_EQ(configuration.getParticlePropertiesLibrary()->getSigmaSquare(3), 16.0);
+  EXPECT_EQ(configuration.getParticlePropertiesLibrary()->getMass(4), 5.0);
+  EXPECT_EQ(configuration.getParticlePropertiesLibrary()->get24Epsilon(4), 120.0);
+  EXPECT_EQ(configuration.getParticlePropertiesLibrary()->getSigmaSquare(4), 25.0);
 }

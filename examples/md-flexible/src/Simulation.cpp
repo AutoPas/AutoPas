@@ -249,7 +249,8 @@ void Simulation::run() {
       _timers.migratingParticleExchange.stop();
 
       _timers.reflectParticlesAtBoundaries.start();
-      _domainDecomposition->reflectParticlesAtBoundaries(*_autoPasContainer);
+      _domainDecomposition->reflectParticlesAtBoundaries(*_autoPasContainer,
+                                                         *_configuration.getParticlePropertiesLibrary());
       _timers.reflectParticlesAtBoundaries.stop();
 
       _timers.haloParticleExchange.start();

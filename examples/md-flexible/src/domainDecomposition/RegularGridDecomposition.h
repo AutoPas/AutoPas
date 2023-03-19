@@ -11,10 +11,18 @@
 #include <memory>
 
 #include "DomainDecomposition.h"
+#include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/utils/WrapMPI.h"
 #include "src/TypeDefinitions.h"
 #include "src/configuration/MDFlexConfig.h"
 #include "src/options/BoundaryTypeOption.h"
+
+namespace {
+/**
+ * Sixth Root of Two precomputed here, as it is used a lot in reflecting boundaries.
+ */
+const double sixthRootOfTwo = std::pow(2., 1. / 6.);
+}  // namespace
 
 /**
  * This class can be used as a domain decomposition which divides the domain in equal sized rectangular subdomains.
@@ -126,9 +134,15 @@ class RegularGridDecomposition final : public DomainDecomposition {
 
   /**
    * Reflects particles within a reflective skin along the inside of a boundary.
+   *
+   * Particle reflection occurs by interacting the particle with particle mirrored onto the other side of the boundary.
+   * Iteraction occurs using the AoS variant of the chosen functor. Particle reflection only occurs if the particle
+   * would experience a repulsive effect (i.e. is within the 6th root of sigma from the border).
+   *
    * @param autoPasContainer: The container, where the migrating particles originate from.
+   * @param PPL: Particle Properties Library (needed to get particle's sigma)
    */
-  void reflectParticlesAtBoundaries(AutoPasType &autoPasContainer);
+  void reflectParticlesAtBoundaries(AutoPasType &autoPasContainer, ParticlePropertiesLibraryType &PPL);
 
  private:
   /**
@@ -160,6 +174,10 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Stores the rebuild Frequency.
    */
   unsigned int _rebuildFrequency;
+  /**
+   * The greatest distance from a reflective boundary at which a particle might experience reflection.
+   */
+  double _maxReflectiveSkin;
   /**
    * The minimum coordinates of the global domain.
    */
