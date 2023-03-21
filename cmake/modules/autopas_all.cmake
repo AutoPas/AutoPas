@@ -1,6 +1,6 @@
 # cmake module for adding ALL
 
-option(MD_FLEXIBLE_ENABLE_ALLLBL "Enable ALL load balancing library" OFF)
+option(MD_FLEXIBLE_ENABLE_ALLLBL "Enable load balancing via ALL for MD-Flex" OFF)
 
 # Enable ExternalProject CMake module
 if (MD_FLEXIBLE_ENABLE_ALLLBL)
