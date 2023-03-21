@@ -484,8 +484,8 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<FullPa
   const auto boxLength = sub(containerPtr->getBoxMax(), boxMin);
   const auto interactionLengthInv = 1. / containerPtr->getInteractionLength();
   const auto locksPerDim = static_cast_array<size_t>(ceil(mulScalar(boxLength, interactionLengthInv)));
-  std::vector<std::vector<std::vector<std::unique_ptr<std::mutex>>>> locks(locksPerDim[0]);
-  for (auto &lockVecVec : locks) {
+  std::vector<std::vector<std::vector<std::unique_ptr<std::mutex>>>> spacialLocks(locksPerDim[0]);
+  for (auto &lockVecVec : spacialLocks) {
     lockVecVec.resize(locksPerDim[1]);
     for (auto &lockVec : lockVecVec) {
       lockVec.resize(locksPerDim[2]);
@@ -493,6 +493,10 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<FullPa
         lockPtr = std::make_unique<std::mutex>();
       }
     }
+  }
+  std::vector<std::unique_ptr<std::mutex>> bufferLocks(particleBuffers.size());
+  for (auto &lockPtr : bufferLocks) {
+    lockPtr = std::make_unique<std::mutex>();
   }
 
   // Balance buffers. This makes processing them with static scheduling quite efficient.
@@ -514,7 +518,7 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<FullPa
     const double cutoff = staticTypedContainerPtr->getCutoff();
 #ifdef AUTOPAS_OPENMP
 // one halo and particle buffer pair per thread
-#pragma omp parallel for schedule(static, 1), shared(f, locks, boxMin, interactionLengthInv)
+#pragma omp parallel for schedule(static, 1), shared(f, spacialLocks, boxMin, interactionLengthInv)
 #endif
     for (int bufferId = 0; bufferId < particleBuffers.size(); ++bufferId) {
       auto &particleBuffer = particleBuffers[bufferId];
@@ -529,13 +533,13 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<FullPa
               const auto lockCoords =
                   static_cast_array<size_t>(mulScalar(sub(p2.getR(), boxMin), interactionLengthInv));
               if (newton3) {
-                std::lock_guard<std::mutex> lock(*locks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
+                const std::lock_guard<std::mutex> lock(*spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
                 f->AoSFunctor(p1, p2, true);
               } else {
                 f->AoSFunctor(p1, p2, false);
                 // no need to calculate force enacted on a halo
                 if (not p2.isHalo()) {
-                  std::lock_guard<std::mutex> lock(*locks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
+                  const std::lock_guard<std::mutex> lock(*spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
                   f->AoSFunctor(p2, p1, false);
                 }
               }
@@ -555,8 +559,9 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<FullPa
               // No need to apply anything to p1halo
               //   -> no Newton3 needed
               //   -> AoSFunctor(p1, p2, false) not needed
-              std::lock_guard<std::mutex> lock(*locks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
-              f->AoSFunctor(p2, p1halo, false);
+              //   -> newton3 argument needed for correct globals
+              const std::lock_guard<std::mutex> lock(*spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
+              f->AoSFunctor(p2, p1halo, newton3);
             },
             min, max, IteratorBehavior::owned);
       }
@@ -583,12 +588,22 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<FullPa
   // can't do 'for each' because clang<11 can't do it
   for (size_t i = 0; i < particleBuffers.size(); ++i) {
     auto &bufferOuter = particleBuffers[i];
-    for (auto &bufferInner : particleBuffers) {
+    for (size_t j = i; j < particleBuffers.size(); ++j) {
+      auto &bufferInner = particleBuffers[j];
       if (&bufferOuter == &bufferInner) {
+        const std::lock_guard<std::mutex> lock(*bufferLocks[i]);
         f->SoAFunctorSingle(bufferInner._particleSoABuffer, newton3);
       } else {
-        // no newton 3 to avoid RCs
-        f->SoAFunctorPair(bufferOuter._particleSoABuffer, bufferInner._particleSoABuffer, false);
+        // lock both buffers but make sure to always lock the smaller id first to avoid deadlocks
+        const auto &[lockIdA, lockIdB] = std::minmax(i, j);
+        const std::lock_guard<std::mutex> lockA(*bufferLocks[lockIdA]);
+        const std::lock_guard<std::mutex> lockB(*bufferLocks[lockIdB]);
+        if constexpr (newton3) {
+          f->SoAFunctorPair(bufferInner._particleSoABuffer, bufferOuter._particleSoABuffer, true);
+        } else {
+          f->SoAFunctorPair(bufferOuter._particleSoABuffer, bufferInner._particleSoABuffer, false);
+          f->SoAFunctorPair(bufferInner._particleSoABuffer, bufferOuter._particleSoABuffer, false);
+        }
       }
     }
   }
@@ -604,9 +619,21 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<FullPa
   // can't do 'for each' because clang<11 can't do it
   for (size_t i = 0; i < particleBuffers.size(); ++i) {
     auto &bufferOuterSoA = particleBuffers[i]._particleSoABuffer;
-    for (auto &bufferInner : haloParticleBuffers) {
-      // no newton 3 to avoid RCs
-      f->SoAFunctorPair(bufferOuterSoA, bufferInner._particleSoABuffer, false);
+    for (size_t j = 0; j < haloParticleBuffers.size(); ++j) {
+      auto &bufferInnerSoA = haloParticleBuffers[i]._particleSoABuffer;
+      //      // no newton 3 to avoid RCs
+      //      f->SoAFunctorPair(bufferOuterSoA, bufferInner._particleSoABuffer, false);
+      if constexpr (newton3) {
+        // lock both buffers but make sure to always lock the smaller id first to avoid deadlocks
+        const auto &[lockIdA, lockIdB] = std::minmax(i, j);
+        const std::lock_guard<std::mutex> lockA(*bufferLocks[lockIdA]);
+        if (i != j) {
+          const std::lock_guard<std::mutex> lockB(*bufferLocks[lockIdB]);
+        }
+        f->SoAFunctorPair(bufferInnerSoA, bufferOuterSoA, true);
+      } else {
+        f->SoAFunctorPair(bufferOuterSoA, bufferInnerSoA, false);
+      }
     }
   }
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
