@@ -157,6 +157,11 @@ class Simulation {
     autopas::utils::Timer initialization;
 
     /**
+     * Records the time used to add particles
+     */
+    autopas::utils::Timer addParticles;
+
+    /**
      * Records the total time required for the simulation.
      */
     autopas::utils::Timer total;

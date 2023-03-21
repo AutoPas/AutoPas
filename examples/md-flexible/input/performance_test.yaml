@@ -1,0 +1,47 @@
+container                        :  [LinkedCells]
+verlet-rebuild-frequency         :  20
+verlet-skin-radius-per-timestep  :  0.1
+verlet-cluster-size              :  4
+selector-strategy                :  Fastest-Absolute-Value
+data-layout                      :  [AoS]
+traversal                        :  [lc_c08] # Please see AllOptions.yaml for a comprehensive list of traversals
+tuning-strategy                  :  full-Search
+tuning-interval                  :  2500
+tuning-samples                   :  3
+tuning-max-evidence              :  10
+functor                          :  Lennard-Jones
+newton3                          :  [disabled, enabled]
+cutoff                           :  3
+box-min                          :  [0, 0, 0]
+box-max                          :  [1500, 150, 150]
+cell-size                        :  [1]
+deltaT                           :  0.0005
+iterations                       :  0
+boundary-type                    : [none,none,none]
+globalForce                      :  [0,0,-12]
+Objects:
+  CubeGrid:
+    0:
+      particles-per-dimension    :  [1000, 100, 100]
+      particle-spacing           :  1.12
+      bottomLeftCorner           :  [20.0, 20.0, 20.0]
+      velocity                   :  [0, 0, 0]
+      particle-type              :  0
+      particle-epsilon           :  1
+      particle-sigma             :  1
+      particle-mass              :  1
+#  UniformGrid:
+#    0:
+#      boxLength                  : [98, 98, 98]
+#      botomLeftCorner            : [1,1,1]
+#      numParticles               : 1000
+#      velocity                   : [0.0, 0.0, 0.0]
+#      particle-type              : 0
+#      particle-epsilon           : 1
+#      particle-sigma             : 1
+#      particle-mass              : 1
+vtk-filename                     :  fallingDrop
+vtk-write-frequency              :  1000
+no-flops                         :  false
+no-end-config                    :  true
+log-level                        :  info

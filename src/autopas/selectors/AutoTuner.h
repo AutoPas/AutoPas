@@ -89,7 +89,6 @@ class AutoTuner {
     if (_tuningStrategy->searchSpaceIsEmpty()) {
       autopas::utils::ExceptionHandler::exception("AutoTuner: Passed tuning strategy has an empty search space.");
     }
-
     selectCurrentContainer();
   }
 

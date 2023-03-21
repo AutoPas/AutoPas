@@ -40,6 +40,7 @@ target_compile_definitions(
     _USE_MATH_DEFINES
 )
 
+target_compile_options(autopas PUBLIC -fPIC -pg)
 
 target_include_directories(autopas PUBLIC ${AUTOPAS_SOURCE_DIR}/src/)
 target_include_directories(autopas PUBLIC ${AUTOPAS_BINARY_DIR}/src/)

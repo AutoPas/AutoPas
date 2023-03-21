@@ -54,6 +54,7 @@ AutoPas<Particle> &AutoPas<Particle>::operator=(AutoPas &&other) noexcept {
 
 template <class Particle>
 void AutoPas<Particle>::init() {
+  std::cout << std::endl << "Using " << autopas::autopas_get_max_threads() << " Threads" << std::endl;
   AutoPasLog(info, "AutoPas Version: {}", AutoPas_VERSION);
   if (_numSamples % _verletRebuildFrequency != 0) {
     AutoPasLog(warn,
@@ -61,7 +62,6 @@ void AutoPas<Particle>::init() {
                "when multiple AutoPas instances interact (e.g. via MPI).",
                _numSamples, _verletRebuildFrequency);
   }
-
   if (_autopasMPICommunicator == AUTOPAS_MPI_COMM_NULL) {
     AutoPas_MPI_Comm_dup(AUTOPAS_MPI_COMM_WORLD, &_autopasMPICommunicator);
   } else {
@@ -72,8 +72,9 @@ void AutoPas<Particle>::init() {
       _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _relativeOptimumRange, _maxTuningPhasesWithoutTest,
       _relativeBlacklistRange, _evidenceFirstPrediction, _acquisitionFunctionOption, _extrapolationMethodOption,
       _outputSuffix, _mpiStrategyOption, _autopasMPICommunicator);
+  auto abc = std::move(tuningStrategy);
   _autoTuner = std::make_unique<autopas::AutoTuner<Particle>>(
-      _boxMin, _boxMax, _cutoff, _verletSkinPerTimestep, _verletClusterSize, std::move(tuningStrategy),
+      _boxMin, _boxMax, _cutoff, _verletSkinPerTimestep, _verletClusterSize, std::move(abc),
       _mpiTuningMaxDifferenceForBucket, _mpiTuningWeightForMaxDensity, _selectorStrategy, _tuningInterval, _numSamples,
       _verletRebuildFrequency, _outputSuffix);
   _logicHandler =

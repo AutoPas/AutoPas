@@ -64,7 +64,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
                         LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
       : CellBasedParticleContainer<ReferenceCell>(boxMin, boxMax, cutoff, skinPerTimestep * rebuildFrequency),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skinPerTimestep * rebuildFrequency, cellSizeFactor),
-        _loadEstimator(loadEstimator) {}
+        _loadEstimator(loadEstimator) {std::cout << "actually in linked cell references"<< std::endl;}
 
   /**
    * @copydoc ParticleContainerInterface::getContainerType()

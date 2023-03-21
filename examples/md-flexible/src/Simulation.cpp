@@ -149,12 +149,14 @@ Simulation::Simulation(const MDFlexConfig &configuration,
         "Search space must not be trivial if the simulation time is limited by the number tuning phases");
   }
 
+  _timers.addParticles.start();
   // @todo: the object generators should only generate particles relevant for the current rank's domain
   for (auto &particle : _configuration.getParticles()) {
     if (_domainDecomposition->isInsideLocalDomain(particle.getR())) {
       _autoPasContainer->addParticle(particle);
     }
   }
+  _timers.addParticles.stop();
 
   _configuration.flushParticles();
   std::cout << "Total number of particles at the initialization: "
@@ -481,6 +483,7 @@ void Simulation::logMeasurements() {
   const long simulate = accumulateTime(_timers.simulate.getTotalTime());
   const long vtk = accumulateTime(_timers.vtk.getTotalTime());
   const long initialization = accumulateTime(_timers.initialization.getTotalTime());
+  const long addParticles = accumulateTime(_timers.addParticles.getTotalTime());
   const long total = accumulateTime(_timers.total.getTotalTime());
   const long thermostat = accumulateTime(_timers.thermostat.getTotalTime());
   const long haloParticleExchange = accumulateTime(_timers.haloParticleExchange.getTotalTime());
@@ -493,6 +496,7 @@ void Simulation::logMeasurements() {
     std::cout << "Measurements:" << std::endl;
     std::cout << timerToString("Total accumulated                 ", total, maximumNumberOfDigits);
     std::cout << timerToString("  Initialization                  ", initialization, maximumNumberOfDigits, total);
+    std::cout << timerToString("    add Particles                 ", addParticles, maximumNumberOfDigits, total);
     std::cout << timerToString("  Simulate                        ", simulate, maximumNumberOfDigits, total);
     std::cout << timerToString("    PositionUpdate                ", positionUpdate, maximumNumberOfDigits, simulate);
     std::cout << timerToString("    UpdateContainer               ", updateContainer, maximumNumberOfDigits, simulate);

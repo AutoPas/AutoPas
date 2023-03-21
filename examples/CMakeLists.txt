@@ -20,6 +20,7 @@ add_custom_target(
 )
 
 add_subdirectory(md-flexible)
-add_subdirectory(sph)
-add_subdirectory(sph-mpi)
-add_subdirectory(sphDiagramGeneration)
+add_subdirectory(md-julia)
+# add_subdirectory(sph)
+# add_subdirectory(sph-mpi)
+# add_subdirectory(sphDiagramGeneration)
