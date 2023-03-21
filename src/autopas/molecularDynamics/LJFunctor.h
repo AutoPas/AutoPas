@@ -169,7 +169,7 @@ class LJFunctor
 
   /**
    * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3)
-   * This functor ignores the newton3 argument and will always do a newton3 like traversal of the soa.
+   * This functor will always do a newton3 like traversal of the soa.
    * However, it still needs to know about newton3 to correctly add up the global values.
    */
   void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) final {
