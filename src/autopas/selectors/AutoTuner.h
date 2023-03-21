@@ -585,7 +585,7 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<FullPa
     auto &bufferOuter = particleBuffers[i];
     for (auto &bufferInner : particleBuffers) {
       if (&bufferOuter == &bufferInner) {
-        f->SoAFunctorSingle(bufferInner._particleSoABuffer, true);
+        f->SoAFunctorSingle(bufferInner._particleSoABuffer, newton3);
       } else {
         // no newton 3 to avoid RCs
         f->SoAFunctorPair(bufferOuter._particleSoABuffer, bufferInner._particleSoABuffer, false);
