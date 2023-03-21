@@ -1,10 +1,10 @@
 # cmake module for adding ALL
 
-option(AUTOPAS_ENABLE_ALLLBL "Enable ALL load balancing library" OFF)
+option(MD_FLEXIBLE_ENABLE_ALLLBL "Enable ALL load balancing library" OFF)
 
 # Enable ExternalProject CMake module
-if (AUTOPAS_ENABLE_ALLLBL)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DAUTOPAS_ENABLE_ALLLBL")
+if (MD_FLEXIBLE_ENABLE_ALLLBL)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMD_FLEXIBLE_ENABLE_ALLLBL")
 
   include(FetchContent)
   FetchContent_Declare(

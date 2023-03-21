@@ -59,7 +59,7 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
   // initialize _neighborDomainIndices
   initializeNeighborIndices();
 
-#if defined(AUTOPAS_ENABLE_ALLLBL)
+#if defined(MD_FLEXIBLE_ENABLE_ALLLBL)
   if (_loadBalancerOption == LoadBalancerOption::all) {
     _allLoadBalancer = std::make_unique<ALL::ALL<double, double>>(ALL::TENSOR, _dimensionCount, 0);
     _allLoadBalancer->setCommunicator(_communicator);
@@ -85,7 +85,7 @@ void RegularGridDecomposition::update(const double &work) {
         balanceWithInvertedPressureLoadBalancer(work);
         break;
       }
-#if defined(AUTOPAS_ENABLE_ALLLBL)
+#if defined(MD_FLEXIBLE_ENABLE_ALLLBL)
       case LoadBalancerOption::all: {
         balanceWithAllLoadBalancer(work);
         break;
@@ -527,7 +527,7 @@ void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(double wo
   }
 }
 
-#if defined(AUTOPAS_ENABLE_ALLLBL)
+#if defined(MD_FLEXIBLE_ENABLE_ALLLBL)
 void RegularGridDecomposition::balanceWithAllLoadBalancer(const double &work) {
   std::vector<ALL::Point<double>> domain(2, ALL::Point<double>(3));
 
