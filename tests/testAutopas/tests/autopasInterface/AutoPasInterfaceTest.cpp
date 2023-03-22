@@ -89,11 +89,11 @@ std::vector<Molecule> convertToEnteringParticles(const std::vector<Molecule> &le
 auto identifyAndSendHaloParticles(autopas::AutoPas<Molecule> &autoPas) {
   std::vector<Molecule> haloParticles;
 
-  for (short x : {-1, 0, 1}) {
-    for (short y : {-1, 0, 1}) {
-      for (short z : {-1, 0, 1}) {
+  for (const int x : {-1, 0, 1}) {
+    for (const int y : {-1, 0, 1}) {
+      for (const int z : {-1, 0, 1}) {
         if (x == 0 and y == 0 and z == 0) continue;
-        std::array<short, 3> direction{x, y, z};
+        std::array<int, 3> direction{x, y, z};
         std::array<double, 3> min{}, max{}, shiftVec{};
         for (size_t dim = 0; dim < 3; ++dim) {
           // The search domain has to be enlarged as the position of the particles is not certain.
