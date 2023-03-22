@@ -93,7 +93,7 @@ class LogicHandler {
     bool doDataStructureUpdate = not neighborListsAreValid();
 
     if (doDataStructureUpdate) {
-      _neighborListsAreValid = false;
+      _neighborListsAreValid.store(false, std::memory_order_relaxed);
     }
     // The next call also adds particles to the container if doDataStructureUpdate is true.
     auto leavingBufferParticles = collectLeavingParticlesFromBuffer(doDataStructureUpdate);
@@ -106,7 +106,7 @@ class LogicHandler {
     _numParticlesOwned.fetch_sub(leavingParticles.size(), std::memory_order_relaxed);
     // updateContainer deletes all halo particles.
     std::for_each(_haloParticleBuffer.begin(), _haloParticleBuffer.end(), [](auto &buffer) { buffer.clear(); });
-    _numParticlesHalo.exchange(0, std::memory_order_relaxed);
+    _numParticlesHalo.store(0, std::memory_order_relaxed);
     return leavingParticles;
   }
 
@@ -173,7 +173,7 @@ class LogicHandler {
     // actually resize the container
     _autoTuner.resizeBox(boxMin, boxMax);
     // Set this flag, s.t., the container is rebuilt!
-    _neighborListsAreValid = false;
+    _neighborListsAreValid.store(false, std::memory_order_relaxed);
 
     return particlesNowOutside;
   }
@@ -259,13 +259,13 @@ class LogicHandler {
    * @copydoc AutoPas::deleteAllParticles()
    */
   void deleteAllParticles() {
-    _neighborListsAreValid = false;
+    _neighborListsAreValid.store(false, std::memory_order_relaxed);
     _autoTuner.getContainer()->deleteAllParticles();
     std::for_each(_particleBuffer.begin(), _particleBuffer.end(), [](auto &buffer) { buffer.clear(); });
     std::for_each(_haloParticleBuffer.begin(), _haloParticleBuffer.end(), [](auto &buffer) { buffer.clear(); });
     // all particles are gone -> reset counters.
-    _numParticlesOwned.exchange(0, std::memory_order_relaxed);
-    _numParticlesHalo.exchange(0, std::memory_order_relaxed);
+    _numParticlesOwned.store(0, std::memory_order_relaxed);
+    _numParticlesHalo.store(0, std::memory_order_relaxed);
   }
 
   /**
@@ -315,7 +315,7 @@ class LogicHandler {
 
     if (doRebuild /*we have done a rebuild now*/) {
       // list is now valid
-      _neighborListsAreValid = true;
+      _neighborListsAreValid.store(true, std::memory_order_relaxed);
       _stepsSinceLastListRebuild = 0;
     }
     ++_stepsSinceLastListRebuild;
@@ -441,9 +441,9 @@ class LogicHandler {
 
   bool neighborListsAreValid() {
     if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or _autoTuner.willRebuild()) {
-      _neighborListsAreValid = false;
+      _neighborListsAreValid.store(false, std::memory_order_relaxed);
     }
-    return _neighborListsAreValid;
+    return _neighborListsAreValid.load(std::memory_order_relaxed);
   }
 
   /**
@@ -459,7 +459,7 @@ class LogicHandler {
   /**
    * Specifies if the neighbor list is valid.
    */
-  bool _neighborListsAreValid{false};
+  std::atomic<bool> _neighborListsAreValid{false};
 
   /**
    * Steps since last rebuild
