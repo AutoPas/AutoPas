@@ -84,9 +84,33 @@ class AutoTuner {
         _maxSamples(maxSamples),
         _samplesNotRebuildingNeighborLists(maxSamples),
         _iteration(0),
+        _bufferLocks(autopas::autopas_get_max_threads()),  // typically there are as many buffers as locks
         _iterationLogger(outputSuffix),
         _tuningResultLogger(outputSuffix),
         _tuningDataLogger(maxSamples, outputSuffix) {
+    using autopas::utils::ArrayMath::ceil;
+    using autopas::utils::ArrayMath::mulScalar;
+    using autopas::utils::ArrayMath::sub;
+    using autopas::utils::ArrayUtils::static_cast_array;
+
+    // initialize locks needed for remainder traversal
+    const auto boxLength = sub(boxMax, boxMin);
+    const auto interactionLengthInv = 1. / (cutoff + verletSkinPerTimestep * rebuildFrequency);
+    const auto locksPerDim = static_cast_array<size_t>(ceil(mulScalar(boxLength, interactionLengthInv)));
+    _spacialLocks.resize(locksPerDim[0]);
+    for (auto &lockVecVec : _spacialLocks) {
+      lockVecVec.resize(locksPerDim[1]);
+      for (auto &lockVec : lockVecVec) {
+        lockVec.resize(locksPerDim[2]);
+        for (auto &lockPtr : lockVec) {
+          lockPtr = std::make_unique<std::mutex>();
+        }
+      }
+    }
+    for (auto &lockPtr : _bufferLocks) {
+      lockPtr = std::make_unique<std::mutex>();
+    }
+
     if (_tuningStrategy->searchSpaceIsEmpty()) {
       autopas::utils::ExceptionHandler::exception("AutoTuner: Passed tuning strategy has an empty search space.");
     }
@@ -246,6 +270,29 @@ class AutoTuner {
                                      std::vector<FullParticleCell<Particle>> &haloParticleBuffer);
 
   /**
+   * Performs the interactions ParticleContainer::iteratePairwise() did not cover.
+   *
+   * These interactions are:
+   *  - particleBuffer    <-> container
+   *  - haloParticleBuffer -> container
+   *  - particleBuffer    <-> particleBuffer
+   *  - haloParticleBuffer -> particleBuffer
+   *
+   * @tparam newton3
+   * @tparam T (Smart) pointer Type of the particle container.
+   * @tparam PairwiseFunctor
+   * @param f
+   * @param containerPtr (Smart) Pointer to the container
+   * @param particleBuffers vector of particle buffers. These particles' force vectors will be updated.
+   * @param haloParticleBuffers vector of halo particle buffers. These particles' force vectors will not necessarily be
+   * updated.
+   */
+  template <bool newton3, class T, class PairwiseFunctor>
+  void doRemainderTraversal(PairwiseFunctor *f, T containerPtr,
+                            std::vector<FullParticleCell<Particle>> &particleBuffers,
+                            std::vector<FullParticleCell<Particle>> &haloParticleBuffers);
+
+  /**
    * Tune available algorithm configurations.
    *
    * It is assumed this function is only called for relevant functors and that at least two configurations are allowed.
@@ -341,6 +388,16 @@ class AutoTuner {
    * Only used temporarily
    */
   autopas::utils::Timer _timerCalculateHomogeneity;
+
+  /**
+   * Locks for regions in the domain. Used for buffer <-> container interaction.
+   */
+  std::vector<std::vector<std::vector<std::unique_ptr<std::mutex>>>> _spacialLocks;
+
+  /**
+   * Locks for particle or halo buffers of the remainder traversal.
+   */
+  std::vector<std::unique_ptr<std::mutex>> _bufferLocks;
 
   IterationLogger _iterationLogger;
   TuningResultLogger _tuningResultLogger;
@@ -452,51 +509,24 @@ bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild
   return isTuning;
 }
 
-/**
- * Performs the interactions ParticleContainer::iteratePairwise() did not cover.
- *
- * These interactions are:
- *  - particleBuffer    <-> container
- *  - haloParticleBuffer -> container
- *  - particleBuffer    <-> particleBuffer
- *  - haloParticleBuffer -> particleBuffer
- *
- * @tparam newton3
- * @tparam Particle
- * @tparam T (Smart) pointer Type of the particle container.
- * @tparam PairwiseFunctor
- * @param f
- * @param containerPtr (Smart) Pointer to the container
- * @param particleBuffers vector of particle buffers. These particles' force vectors will be updated.
- * @param haloParticleBuffers vector of halo particle buffers. These particles' force vectors will not necessarily be
- * updated.
- * @note If the buffers are replaced with actual cells, we could use the CellFunctor to simplify things and potentially
- * even use SoA.
- */
-template <bool newton3, class Particle, class T, class PairwiseFunctor>
-void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<FullParticleCell<Particle>> &particleBuffers,
-                          std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
-  using autopas::utils::ArrayMath::ceil;
+template <class Particle>
+template <bool newton3, class T, class PairwiseFunctor>
+void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPtr,
+                                               std::vector<FullParticleCell<Particle>> &particleBuffers,
+                                               std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
+  using autopas::utils::ArrayMath::addScalar;
   using autopas::utils::ArrayMath::mulScalar;
   using autopas::utils::ArrayMath::sub;
+  using autopas::utils::ArrayMath::subScalar;
   using autopas::utils::ArrayUtils::static_cast_array;
+
   const auto boxMin = containerPtr->getBoxMin();
-  const auto boxLength = sub(containerPtr->getBoxMax(), boxMin);
   const auto interactionLengthInv = 1. / containerPtr->getInteractionLength();
-  const auto locksPerDim = static_cast_array<size_t>(ceil(mulScalar(boxLength, interactionLengthInv)));
-  std::vector<std::vector<std::vector<std::unique_ptr<std::mutex>>>> spacialLocks(locksPerDim[0]);
-  for (auto &lockVecVec : spacialLocks) {
-    lockVecVec.resize(locksPerDim[1]);
-    for (auto &lockVec : lockVecVec) {
-      lockVec.resize(locksPerDim[2]);
-      for (auto &lockPtr : lockVec) {
-        lockPtr = std::make_unique<std::mutex>();
-      }
-    }
-  }
-  std::vector<std::unique_ptr<std::mutex>> bufferLocks(particleBuffers.size());
-  for (auto &lockPtr : bufferLocks) {
-    lockPtr = std::make_unique<std::mutex>();
+
+  // Sanity check. If this is violated feel free to add some logic here that adapts the number of locks.
+  if (_bufferLocks.size() < particleBuffers.size() or _bufferLocks.size() < haloParticleBuffers.size()) {
+    utils::ExceptionHandler::exception("Not enough locks for buffers! Num Locks: {}, Buffers: {}, HaloBuffers: {}",
+                                       _bufferLocks.size(), particleBuffers.size(), haloParticleBuffers.size());
   }
 
   // Balance buffers. This makes processing them with static scheduling quite efficient.
@@ -518,7 +548,7 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<FullPa
     const double cutoff = staticTypedContainerPtr->getCutoff();
 #ifdef AUTOPAS_OPENMP
 // one halo and particle buffer pair per thread
-#pragma omp parallel for schedule(static, 1), shared(f, spacialLocks, boxMin, interactionLengthInv)
+#pragma omp parallel for schedule(static, 1), shared(f, _spacialLocks, boxMin, interactionLengthInv)
 #endif
     for (int bufferId = 0; bufferId < particleBuffers.size(); ++bufferId) {
       auto &particleBuffer = particleBuffers[bufferId];
@@ -526,20 +556,20 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<FullPa
       // 1. particleBuffer with all close particles in container
       for (auto &&p1 : particleBuffer) {
         const auto pos = p1.getR();
-        const auto min = autopas::utils::ArrayMath::subScalar(pos, cutoff);
-        const auto max = autopas::utils::ArrayMath::addScalar(pos, cutoff);
+        const auto min = subScalar(pos, cutoff);
+        const auto max = addScalar(pos, cutoff);
         staticTypedContainerPtr->forEachInRegion(
             [&](auto &p2) {
               const auto lockCoords =
                   static_cast_array<size_t>(mulScalar(sub(p2.getR(), boxMin), interactionLengthInv));
-              if (newton3) {
-                const std::lock_guard<std::mutex> lock(*spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
+              if constexpr (newton3) {
+                const std::lock_guard<std::mutex> lock(*_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
                 f->AoSFunctor(p1, p2, true);
               } else {
                 f->AoSFunctor(p1, p2, false);
                 // no need to calculate force enacted on a halo
                 if (not p2.isHalo()) {
-                  const std::lock_guard<std::mutex> lock(*spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
+                  const std::lock_guard<std::mutex> lock(*_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
                   f->AoSFunctor(p2, p1, false);
                 }
               }
@@ -560,7 +590,7 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<FullPa
               //   -> no Newton3 needed
               //   -> AoSFunctor(p1, p2, false) not needed
               //   -> newton3 argument needed for correct globals
-              const std::lock_guard<std::mutex> lock(*spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
+              const std::lock_guard<std::mutex> lock(*_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
               f->AoSFunctor(p2, p1halo, newton3);
             },
             min, max, IteratorBehavior::owned);
@@ -591,13 +621,13 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<FullPa
     for (size_t j = i; j < particleBuffers.size(); ++j) {
       auto &bufferInner = particleBuffers[j];
       if (&bufferOuter == &bufferInner) {
-        const std::lock_guard<std::mutex> lock(*bufferLocks[i]);
+        const std::lock_guard<std::mutex> lock(*_bufferLocks[i]);
         f->SoAFunctorSingle(bufferInner._particleSoABuffer, newton3);
       } else {
         // lock both buffers but make sure to always lock the smaller id first to avoid deadlocks
         const auto &[lockIdA, lockIdB] = std::minmax(i, j);
-        const std::lock_guard<std::mutex> lockA(*bufferLocks[lockIdA]);
-        const std::lock_guard<std::mutex> lockB(*bufferLocks[lockIdB]);
+        const std::lock_guard<std::mutex> lockA(*_bufferLocks[lockIdA]);
+        const std::lock_guard<std::mutex> lockB(*_bufferLocks[lockIdB]);
         if constexpr (newton3) {
           f->SoAFunctorPair(bufferInner._particleSoABuffer, bufferOuter._particleSoABuffer, true);
         } else {
@@ -626,9 +656,9 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<FullPa
       if constexpr (newton3) {
         // lock both buffers but make sure to always lock the smaller id first to avoid deadlocks
         const auto &[lockIdA, lockIdB] = std::minmax(i, j);
-        const std::lock_guard<std::mutex> lockA(*bufferLocks[lockIdA]);
+        const std::lock_guard<std::mutex> lockA(*_bufferLocks[lockIdA]);
         if (i != j) {
-          const std::lock_guard<std::mutex> lockB(*bufferLocks[lockIdB]);
+          const std::lock_guard<std::mutex> lockB(*_bufferLocks[lockIdB]);
         }
         f->SoAFunctorPair(bufferInnerSoA, bufferOuterSoA, true);
       } else {
