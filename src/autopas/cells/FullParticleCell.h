@@ -250,12 +250,12 @@ class FullParticleCell : public ParticleCell<Particle> {
   /**
    * Storage of the molecules of the cell.
    */
-  StorageType _particles;
+  StorageType _particles{};
 
   /**
    * SoA buffer of this cell.
    */
-  SoA<SoAArraysType> _particleSoABuffer;
+  SoA<SoAArraysType> _particleSoABuffer{};
 
  private:
   AutoPasLock particlesLock;
