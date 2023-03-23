@@ -173,6 +173,10 @@ void balanceVectors(OuterContainerT &vecvec, F innerContainerToVec) {
       std::invoke_result_t<decltype(innerContainerToVec), InnerContainerT &>>::value_type;
   // calculate vecvec statistics
   const auto vecvecSize = vecvec.size();
+  if (vecvecSize == 0) {
+    // nothing to do
+    return;
+  }
   const size_t numElem = std::transform_reduce(vecvec.begin(), vecvec.end(), 0, std::plus<>(),
                                                [&](auto &vec) { return innerContainerToVec(vec).size(); });
   const auto targetSize = static_cast<long>(numElem / vecvecSize);
