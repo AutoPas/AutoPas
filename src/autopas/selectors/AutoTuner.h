@@ -648,11 +648,11 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
 #endif
   // can't do 'for each' because clang<11 can't do it
   for (size_t i = 0; i < particleBuffers.size(); ++i) {
-    auto &bufferOuterSoA = particleBuffers[i]._particleSoABuffer;
+    auto &particleBufferSoA = particleBuffers[i]._particleSoABuffer;
     for (size_t j = 0; j < haloParticleBuffers.size(); ++j) {
-      auto &bufferInnerSoA = haloParticleBuffers[i]._particleSoABuffer;
+      auto &haloBufferSoA = haloParticleBuffers[j]._particleSoABuffer;
       //      // no newton 3 to avoid RCs
-      //      f->SoAFunctorPair(bufferOuterSoA, bufferInner._particleSoABuffer, false);
+      //      f->SoAFunctorPair(particleBufferSoA, bufferInner._particleSoABuffer, false);
       if constexpr (newton3) {
         // lock both buffers but make sure to always lock the smaller id first to avoid deadlocks
         const auto &[lockIdA, lockIdB] = std::minmax(i, j);
@@ -660,9 +660,9 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
         if (i != j) {
           const std::lock_guard<std::mutex> lockB(*_bufferLocks[lockIdB]);
         }
-        f->SoAFunctorPair(bufferInnerSoA, bufferOuterSoA, true);
+        f->SoAFunctorPair(particleBufferSoA, haloBufferSoA, true);
       } else {
-        f->SoAFunctorPair(bufferOuterSoA, bufferInnerSoA, false);
+        f->SoAFunctorPair(particleBufferSoA, haloBufferSoA, false);
       }
     }
   }
