@@ -157,7 +157,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
     const auto &confParticles = _configuration.getParticles();
 #ifdef AUTOPAS_OPENMP
 // make sure each buffer gets filled equally while not inducing scheduling overhead
-#pragma omp parallel for schedule(static, confParticles.size() / omp_get_max_threads())
+#pragma omp parallel for schedule(static, std::max(1ul, confParticles.size() / omp_get_max_threads()))
 #endif
     // we can't use range based for loops here because clang accepts this only starting with version 11
     for (size_t i = 0; i < confParticles.size(); ++i) {
