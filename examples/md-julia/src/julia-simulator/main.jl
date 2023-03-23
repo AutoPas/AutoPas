@@ -21,9 +21,9 @@ function sim(iterations)
     # define CubeGrid
     grid = CubeGridInput()
 
-    grid.particlesPerDimension = [100, 100, 100]
+    grid.particlesPerDimension = [50, 50, 10]
     grid.particleSpacing = 1.12
-    grid.bottomLeftCorner = [20.0, 20.0, 20.0]
+    grid.bottomLeftCorner = [1.0, 1.0, 1.0]
     grid.velocity = [0.0, 0.0, 0.0]
     grid.particleType = 0
     grid.particleEpsilon = 5
@@ -76,9 +76,9 @@ function sim(iterations)
     inputParameters.newton3 = [disabled, enabled]
     inputParameters.cutoff = 3
     inputParameters.boxMin = [0, 0, 0]
-    inputParameters.boxMax = [1500.0, 150.0, 150.0]
+    inputParameters.boxMax = [57.5, 57.5, 13.0]
     inputParameters.cellSize = [1] # check which values can be used
-    inputParameters.deltaT = 0.0005
+    inputParameters.deltaT = 0.002
     inputParameters.iterations = iterations
     inputParameters.globalForce = [0.0, 0.0, 0.0]
     inputParameters.periodicBoundaries = true
@@ -114,7 +114,7 @@ end
 function start()
     sim(1)
     for i in 1:1
-        @time sim(3)
+        @time sim(500)
     end
 end
 

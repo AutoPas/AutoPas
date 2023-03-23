@@ -86,9 +86,27 @@ function startSimulationEx(autoPasContainer, particlePropertiesLibrary, inputPar
     tmp = inputParameters.iterations / 10
     println(tmp)
     println("#threads: ", Threads.nthreads())
+    index = 0
+    iter = AutoPasInterface.begin(autoPasContainer, IteratorBehavior(ownedOrHalo))
+    #=
+    while isValid(iter) && (index < 10)
+        p = Simulator.Iterators.:*(iter)
+        if getID(p) < 10
+            println(toString(p))
+        end
+        Simulator.Iterators.:++(iter)
+        index += 1
+    end
+    =#
+    for i in 1:10
+        p = Simulator.Iterators.:*(iter)
+        println(toString(p))
+        Simulator.Iterators.:++(iter)
+    end
     @inbounds for iteration = 1 : inputParameters.iterations
         if mod(iteration, tmp) == 0
             println("at iteration: ", iteration)
+            println("#p: ", getNumberOfParticles(autoPasContainer, IteratorBehavior(ownedOrHalo)))
         end
     # for iteration = 1 : inputParameters.iterations
         #=
@@ -121,14 +139,14 @@ function startSimulationEx(autoPasContainer, particlePropertiesLibrary, inputPar
         @timeit "pos update julia" updatePositionJM(pV, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
         
         # updatePositionJM(pV, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
-
+        
         # @timeit "pos update" updatePositions(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
         # updatePositions(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
 
         # @timeit "pos new" updatePo(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
         @timeit "pos update parallel" updatePositionParallel(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
         # updatePo(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
-
+        updateContainer(autoPasContainer)
         @timeit "force update" updateForces(autoPasContainer, inputParameters.globalForce, particlePropertiesLibrary)
         # updateForces(autoPasContainer, inputParameters.globalForce, particlePropertiesLibrary)
         
@@ -139,6 +157,16 @@ function startSimulationEx(autoPasContainer, particlePropertiesLibrary, inputPar
         # @timeit "convert" convertAndSo(autoPasContainer, pV)
 
     end
+    iter = AutoPasInterface.begin(autoPasContainer, IteratorBehavior(ownedOrHalo))
+    index = 0
+    while isValid(iter) && (index < 10)
+        p = Simulator.Iterators.:*(iter)
+        println(toString(p))
+        Simulator.Iterators.:++(iter)
+        index += 1
+    end
+
+    println("left particles: ", getNumberOfParticles(autoPasContainer, IteratorBehavior(ownedOrHalo)))
     print_timer()
     #=
     iter = AutoPasInterface.begin(autoPasContainer, Options.IteratorBehavior(Options.ownedOrHalo))

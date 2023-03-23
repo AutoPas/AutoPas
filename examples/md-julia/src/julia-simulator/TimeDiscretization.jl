@@ -42,6 +42,8 @@ end
 
 function updatePositionParallelSub(autoPasContainer, deltaT, particlePropertiesLibrary, globalForce, nthreads, iter)
     # println("in position parallel sub")
+    index = 0
+
     while isValid(iter)
         # println("inside the loop")
         particle = Simulator.Iterators.:*(iter)
@@ -53,10 +55,25 @@ function updatePositionParallelSub(autoPasContainer, deltaT, particlePropertiesL
         force .*= (deltaT * deltaT / (2*getMass(particlePropertiesLibrary, Particles.getTypeId(particle))))
         force .+= velocity
         addPosition(particle, force)
+        
+        _out = false
+        _p = getPosition(particle)
+        for i in 1:3
+            if (_p[i] < 0) || (_p[i] > 13.0 && i == 3) || (_p[i] > 57.5 && i != 3) 
+                _out = true
+            end 
+        end
+        if _out
+            # println(toString(particle))
+            index += 1
+        end
         # println(toString(particle))
         for i in 1:nthreads
             Simulator.Iterators.:++(iter)
         end
+    end
+    if index > 0
+        println("delete #p: ", index)
     end
 end
 
