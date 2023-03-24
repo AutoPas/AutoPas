@@ -68,6 +68,21 @@ TEST_F(MDFlexConfigTest, UniformBoxMinMax) {
   EXPECT_THAT(configuration.boxMax.value, expectedBoxMax);
 }
 
+TEST_F(MDFlexConfigTest, ClosestPackedBoxMinMax) {
+  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
+                                        std::string(YAMLDIRECTORY) + "cubeClosestPacked.yaml"};
+
+  char *argv[3] = {&arguments[0][0], &arguments[1][0], &arguments[2][0]};
+
+  MDFlexConfig configuration(3, argv);
+
+  std::array<double, 3> expectedBoxMin = {-0.5, -0.5, 0.};
+  std::array<double, 3> expectedBoxMax = {7., 7.5, 27.5};
+
+  EXPECT_THAT(configuration.boxMin.value, expectedBoxMin);
+  EXPECT_THAT(configuration.boxMax.value, expectedBoxMax);
+}
+
 TEST_F(MDFlexConfigTest, calcAutoPasBox) {
   std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
                                         std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml"};
@@ -78,7 +93,7 @@ TEST_F(MDFlexConfigTest, calcAutoPasBox) {
 
   std::array<double, 3> expectedBoxMin = {-10.75, -25.75, -15.75};
   EXPECT_EQ(configuration.boxMin.value, expectedBoxMin);
-  std::array<double, 3> expectedBoxMax = {23, 10, 15.75};
+  std::array<double, 3> expectedBoxMax = {23, 10, 27.5};
   EXPECT_EQ(configuration.boxMax.value, expectedBoxMax);
 }
 
