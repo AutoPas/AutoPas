@@ -15,8 +15,6 @@ endif()
 # the parent project
 set(AUTOPAS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(AUTOPAS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 
 # append custom modules to the module path
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/)
