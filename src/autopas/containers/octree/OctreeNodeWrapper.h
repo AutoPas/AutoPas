@@ -119,12 +119,18 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
   /**
    * @copydoc autopas::FullParticleCell::end()
    */
-  CellIterator<StorageType, true> end() { return CellIterator<StorageType, true>(_ps.end()); }
+  CellIterator<StorageType, true> end() {
+    std::lock_guard<AutoPasLock> lock(_lock);
+    return CellIterator<StorageType, true>(_ps.end());
+  }
   /**
    * @copydoc autopas::FullParticleCell::end()
    * @note const version
    */
-  CellIterator<StorageType, false> end() const { return CellIterator<StorageType, false>(_ps.end()); }
+  CellIterator<StorageType, false> end() const {
+    std::lock_guard<AutoPasLock> lock(_lock);
+    return CellIterator<StorageType, false>(_ps.end());
+  }
 
   /**
    * Get the number of particles stored in this cell.
