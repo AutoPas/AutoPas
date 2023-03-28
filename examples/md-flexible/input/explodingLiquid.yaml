@@ -10,7 +10,7 @@ selector-strategy                :  Fastest-Mean-Value
 tuning-strategy                  :  predictive-tuning
 tuning-interval                  :  6000
 tuning-samples                   :  10
-functor                          :  Lennard-Jones-AVX2
+functor                          :  Lennard-Jones
 cutoff                           :  2
 box-min                          :  [0, 0, 0]
 box-max                          :  [15, 60, 15]
@@ -24,6 +24,13 @@ Sites:
     site-epsilon                 :  1.
     site-sigma                   :  1.
     site-mass                    :  1.
+# Uncomment below to run a multi-site simulation.
+#Molecules:
+#  0:
+#    molecule-id: 0
+#    molecule-to-site-id: [ 0 ]
+#    molecule-to-site-pos: [ [ 0., 0., 0. ]]
+#    molecule-moment-of-inertia: [ 1., 1., 1. ]
 Objects:                         
   CubeClosestPacked:
     0:
