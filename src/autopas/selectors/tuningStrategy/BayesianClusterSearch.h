@@ -68,6 +68,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    * @param allowedLoadEstimatorOptions
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
+   * @param allowedVerletRebuilFrequencies
    * @param maxEvidence Stop tuning after given number of evidence provided.
    * @param predAcqFunction Acquisition function used for prediction while tuning.
    * @param outputSuffix Suffix for output logger.

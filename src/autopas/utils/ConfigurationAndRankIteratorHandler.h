@@ -48,7 +48,7 @@ class ConfigurationAndRankIteratorHandler {
         _allowedLoadEstimatorOptions(loadEstimatorOptions),
         _dataLayoutOptions(dataLayoutOptions),
         _newton3Options(newton3Options),
-        _verletRebuildFrequenzies(verletRebuildFrequenzies) {
+        _verletRebuildFrequencies(verletRebuildFrequenzies) {
     reset(numConfigs, commSize);
   }
 
@@ -82,14 +82,14 @@ class ConfigurationAndRankIteratorHandler {
                                  std::set<LoadEstimatorOption>::iterator &loadEstimatorIt,
                                  std::set<DataLayoutOption>::iterator &dataLayoutIt,
                                  std::set<Newton3Option>::iterator &newton3It,
-                                 std::set<int>::iterator &verletRebuildFrequenzyIt) {
+                                 std::set<int>::iterator &verletRebuildFrequencyIt) {
     containerIt = _containerIt;
     cellSizeFactorIt = _cellSizeFactorIt;
     traversalIt = _traversalIt;
     loadEstimatorIt = _loadEstimatorIt;
     dataLayoutIt = _dataLayoutIt;
     newton3It = _newton3It;
-    verletRebuildFrequenzyIt = _verletRebuildFrequenzyIt;
+    verletRebuildFrequencyIt = _verletRebuildFrequencyIt;
   }
 
   /**
@@ -130,7 +130,7 @@ class ConfigurationAndRankIteratorHandler {
    * Getter for the VerletRebuildFrequenzyIterator.
    * @return
    */
-  [[nodiscard]] inline std::set<int>::iterator getVerletRebuildFrequenzyIterator() const { return _verletRebuildFrequenzyIt; }
+  [[nodiscard]] inline std::set<int>::iterator getVerletRebuildFrequencyIterator() const { return _verletRebuildFrequencyIt; }
 
   /**
    * Getter for the TraversalIterator.
@@ -177,7 +177,7 @@ class ConfigurationAndRankIteratorHandler {
 
   const std::set<ContainerOption> &_containers;
   const std::set<double> &_cellSizeFactors;
-  const std::set<int> &_verletRebuildFrequenzies;
+  const std::set<int> &_verletRebuildFrequencies;
   const std::set<TraversalOption> &_allowedTraversalOptions;
   const std::set<LoadEstimatorOption> &_allowedLoadEstimatorOptions;
   const std::set<DataLayoutOption> &_dataLayoutOptions;
@@ -186,7 +186,7 @@ class ConfigurationAndRankIteratorHandler {
   std::set<LoadEstimatorOption> _allowedAndApplicableLoadEstimatorOptions;
   std::set<ContainerOption>::iterator _containerIt;
   std::set<double>::iterator _cellSizeFactorIt;
-  std::set<int>::iterator _verletRebuildFrequenzyIt;
+  std::set<int>::iterator _verletRebuildFrequencyIt;
   std::set<TraversalOption>::iterator _traversalIt;
   std::set<LoadEstimatorOption>::iterator _loadEstimatorIt;
   std::set<DataLayoutOption>::iterator _dataLayoutIt;

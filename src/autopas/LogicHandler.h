@@ -26,7 +26,6 @@ class LogicHandler {
   /**
    * Constructor of the LogicHandler.
    * @param autoTuner
-   * @param rebuildFrequency
    */
   explicit LogicHandler(autopas::AutoTuner<Particle> &autoTuner)
       : _autoTuner(autoTuner),

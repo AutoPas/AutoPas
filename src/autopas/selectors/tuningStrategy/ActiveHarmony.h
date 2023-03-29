@@ -41,6 +41,7 @@ class ActiveHarmony : public TuningStrategyInterface {
    * @param allowedLoadEstimatorOptions
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
+   * @param allowedVerletRebuildFrequencies
    * @param mpiStrategyOption
    * @param comm
    */

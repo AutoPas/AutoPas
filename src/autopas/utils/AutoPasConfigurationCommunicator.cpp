@@ -120,7 +120,7 @@ void generateDistribution(const int numConfigs, const int commSize, const int ra
     newLoadEstimatorOptions.emplace(*iteratorHandler.getLoadEstimatorIterator());
     newDataLayoutOptions.emplace(*iteratorHandler.getDataLayoutIterator());
     newNewton3Options.emplace(*iteratorHandler.getNewton3Iterator());
-    newVerletRebuildFrequency.emplace(*iteratorHandler.getVerletRebuildFrequenzyIterator());
+    newVerletRebuildFrequency.emplace(*iteratorHandler.getVerletRebuildFrequencyIterator());
 
     iteratorHandler.advanceIterators(numConfigs, commSize);
   }

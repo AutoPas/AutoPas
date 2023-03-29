@@ -34,9 +34,9 @@ inline void ConfigurationAndRankIteratorHandler::advanceConfigIterators() {
   if (_cellSizeFactorIt != _cellSizeFactors.end()) return;
   _cellSizeFactorIt = _cellSizeFactors.begin();
 
-  ++_verletRebuildFrequenzyIt;
-  if (_verletRebuildFrequenzyIt != _verletRebuildFrequenzies.end()) return;
-  _verletRebuildFrequenzyIt = _verletRebuildFrequenzies.begin();
+  ++_verletRebuildFrequencyIt;
+  if (_verletRebuildFrequencyIt != _verletRebuildFrequencies.end()) return;
+  _verletRebuildFrequencyIt = _verletRebuildFrequencies.begin();
 
   ++_containerIt;
   if (_containerIt != _containers.end()) {
