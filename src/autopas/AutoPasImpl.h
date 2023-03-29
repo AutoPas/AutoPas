@@ -117,6 +117,11 @@ void AutoPas<Particle>::reserve(size_t numParticles) {
 }
 
 template <class Particle>
+void AutoPas<Particle>::reserve(size_t numParticles, size_t numHaloParticles) {
+  _logicHandler->reserve(numParticles);
+}
+
+template <class Particle>
 void AutoPas<Particle>::addParticle(const Particle &p) {
   _logicHandler->addParticle(p);
 }

@@ -181,23 +181,32 @@ class LogicHandler {
   /**
    * @copydoc AutoPas::reserve()
    *
-   * Reserves space in the particle buffers.
+   * Reserves space in the particle buffers and the container. Estimates number of halo particles.
    */
   void reserve(size_t numParticles) {
     const auto &container = _autoTuner.getContainer();
     const auto numParticlesHaloEstimate = autopas::utils::NumParticlesEstimator::estimateNumHalosUniform(
         numParticles, container->getBoxMin(), container->getBoxMax(), container->getInteractionLength());
-    const auto numParticlesHaloEstimatePerBuffer = numParticlesHaloEstimate / _haloParticleBuffer.size();
+    reserve(numParticles, numParticlesHaloEstimate);
+  }
 
+  /**
+   * Reserves space in the particle buffers and the container.
+   *
+   * @param numParticles
+   * @param numHaloParticles
+   */
+  void reserve(size_t numParticles, size_t numHaloParticles) {
+    const auto numHaloParticlesPerBuffer = numHaloParticles / _haloParticleBuffer.size();
     for (auto &buffer : _haloParticleBuffer) {
-      buffer.reserve(numParticlesHaloEstimatePerBuffer);
+      buffer.reserve(numHaloParticlesPerBuffer);
     }
     // there is currently no good heuristic for this buffer so reuse the one for halos.
     for (auto &buffer : _particleBuffer) {
-      buffer.reserve(numParticlesHaloEstimatePerBuffer);
+      buffer.reserve(numHaloParticlesPerBuffer);
     }
 
-    container->reserve(numParticles, numParticlesHaloEstimate);
+    _autoTuner.getContainer()->reserve(numParticles, numHaloParticles);
   }
 
   /**

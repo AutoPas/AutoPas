@@ -135,10 +135,21 @@ class AutoPas {
    * This function assumes a uniform distribution of particles throughout the domain.
    * For example, this means that in a LinkedCells Container in each cell vector.reserve(numParticles/numCells) is
    * called.
+   * @note This functions will create an estimate for the number of halo particles.
    * @param numParticles No buffer factor is applied. It is probably wise to slighly over-reserve to account for
    * imbalance or particle movement.
    */
   void reserve(size_t numParticles);
+
+  /**
+   * Reserve memory for a given number of particles in the container and logic layers.
+   * This function assumes a uniform distribution of particles throughout the domain.
+   * For example, this means that in a LinkedCells Container in each cell vector.reserve(numParticles/numCells) is
+   * called.
+   * @param numParticles
+   * @param numHaloParticles
+   */
+  void reserve(size_t numParticles, size_t numHaloParticles);
 
   /**
    * Adds a particle to the container.
