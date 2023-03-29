@@ -27,7 +27,7 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   config.subdivideDimension.value = {true, true, true};
   config.cutoff.value = 0.3;
   config.verletSkinRadiusPerTimestep.value = 0.02;
-  config.verletRebuildFrequencies.value = std::make_shared<autopas::NumberSetFinite<int>>(std::set<int>{10});
+  config.verletRebuildFrequencies.value = std::make_shared<autopas::NumberSetFinite<int>>(std::set<int>{24});
   config.boundaryOption.value = {options::BoundaryTypeOption::reflective, options::BoundaryTypeOption::reflective,
                                  options::BoundaryTypeOption::reflective};
 

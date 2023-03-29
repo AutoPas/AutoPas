@@ -191,6 +191,7 @@ class ActiveHarmony : public TuningStrategyInterface {
   static constexpr const char *loadEstimatorOptionName = "loadEstimatorOption";
   static constexpr const char *dataLayoutOptionName = "dataLayoutOption";
   static constexpr const char *cellSizeFactorsName = "cellSizeFactor";
+  static constexpr const char *verletRebuildFrequenciesName = "verletRebuildFrequencies";
   static constexpr const char *newton3OptionName = "newton3Option";
 };
 
@@ -237,9 +238,7 @@ void ActiveHarmony::fetchConfiguration() {
   } else {
     cellSizeFactor = ah_get_real(htask, cellSizeFactorsName);
   }
-
-  int verletRebuildFrequency = 5;
-  //TODO: copy cellSizeFactor
+  int verletRebuildFrequency = _allowedVerletRebuildFrequencies->getMin();
 
   _currentConfig = Configuration(containerOption, cellSizeFactor, traversalOption, loadEstimatorOption,
                                  dataLayoutOption, newton3Option, verletRebuildFrequency);

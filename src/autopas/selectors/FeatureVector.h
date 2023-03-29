@@ -44,6 +44,7 @@ class FeatureVector : public Configuration {
    * @param dataLayout
    * @param newton3
    * @param cellSizeFactor
+   * @param verletRebuildFrequency
    */
   FeatureVector(ContainerOption container, double cellSizeFactor, TraversalOption traversal,
                 LoadEstimatorOption loadEstimator, DataLayoutOption dataLayout, Newton3Option newton3, int verletRebuildFrequency)

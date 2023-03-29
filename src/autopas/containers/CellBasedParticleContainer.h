@@ -94,7 +94,7 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
   [[nodiscard]] double getInteractionLength() const override final { return _cutoff + _skin; }
   /**
    * Returns the total verlet Skin length
-   * @return _skinPerTimestep * _rebuildFrequencies
+   * @return _skinPerTimestep * _rebuildFrequency
    */
   [[nodiscard]] double getVerletSkin() const override final { return _skin; }
 

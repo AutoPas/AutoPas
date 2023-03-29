@@ -170,9 +170,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Stores the domain skin width per Timestep.
    */
   double _skinWidthPerTimestep;
-  /**
-   * Stores the rebuild Frequency.
-  int _rebuildFrequency;
+
   /**
    * The greatest distance from a reflective boundary at which a particle might experience reflection.
    */

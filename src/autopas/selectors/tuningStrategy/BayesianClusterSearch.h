@@ -81,7 +81,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
       const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions = LoadEstimatorOption::getAllOptions(),
       const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
       const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(),
-      const std::set<int> &allowedVerletRebuilFrequencies = std::set<int>({5,15,30}), size_t maxEvidence = 10,
+      const std::set<int> &allowedVerletRebuilFrequencies = std::set<int>({12, 24, 48}), size_t maxEvidence = 10,
       AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::upperConfidenceBound,
       const std::string &outputSuffix = "", size_t predNumLHSamples = 50, unsigned long seed = std::random_device()())
       : _containerOptionsSet(allowedContainerOptions),

@@ -62,7 +62,6 @@ public:
   * @param selectorStrategy Strategy for the configuration selection.
   * @param tuningInterval Number of time steps after which the auto-tuner shall reevaluate all selections.
   * @param maxSamples Number of samples that shall be collected for each combination.
-  * @param rebuildFrequency The rebuild frequency this AutoPas instance uses.
   * @param outputSuffix Suffix for all output files produced by this class.
   */
  AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkinPerTimestep,

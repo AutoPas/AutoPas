@@ -22,7 +22,7 @@ class ContainerSelectorInfo {
   ContainerSelectorInfo()
       : cellSizeFactor(1.),
         verletSkinPerTimestep(0.),
-        verletRebuildFrequency(5),
+        verletRebuildFrequency(24),
         verletClusterSize(64),
         loadEstimator(autopas::LoadEstimatorOption::none) {}
 

@@ -168,7 +168,7 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
   const std::set<ContainerOption> _fallbackContainers;
   // fallback options cannot deal with continuous cellSizeFactors.
   const autopas::NumberSetFinite<double> _fallbackCellSizeFactor{1};
-  const autopas::NumberSetFinite<int> _fallbackVerletRebuildFrequenzy{5};
+  const autopas::NumberSetFinite<int> _fallbackVerletRebuildFrequenzy{24};
   const std::set<TraversalOption> _fallbackTraversalOptions;
   const std::set<LoadEstimatorOption> _fallbackLoadEstimators;
   const std::set<DataLayoutOption> _fallbackDataLayouts;

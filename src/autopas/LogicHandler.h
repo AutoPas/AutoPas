@@ -28,12 +28,11 @@ class LogicHandler {
    * @param autoTuner
    * @param rebuildFrequency
    */
-  LogicHandler(autopas::AutoTuner<Particle> &autoTuner, unsigned int rebuildFrequency)
+  explicit LogicHandler(autopas::AutoTuner<Particle> &autoTuner)
       : _autoTuner(autoTuner),
         _particleBuffer(autopas_get_max_threads()),
         _haloParticleBuffer(autopas_get_max_threads()) {
     checkMinimalSize();
-    //autoTuner.setVerletRebuildFrequency(rebuildFrequency);
   }
 
   /**
