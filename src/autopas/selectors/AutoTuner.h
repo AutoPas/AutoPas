@@ -536,7 +536,7 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
   // not absolutely necessary but an assumption that is used in this implementation.
   if (particleBuffers.size() != haloParticleBuffers.size()) {
     utils::ExceptionHandler::exception("particleBuffers.size() ({}) != haloParticleBuffers.size() ({})",
-                                        particleBuffers.size(), haloParticleBuffers.size());
+                                       particleBuffers.size(), haloParticleBuffers.size());
   }
 
   // Balance buffers. This makes processing them with static scheduling quite efficient.
