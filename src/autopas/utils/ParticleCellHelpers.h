@@ -38,6 +38,7 @@ static bool checkParticleInCellAndUpdateByID(CellType &cell, const typename Cell
 template <class CellType>
 static bool checkParticleInCellAndUpdateByIDAndPosition(CellType &cell, const typename CellType::ParticleType &particle,
                                                         double absError) {
+  // FIXME: This calls begin and end AND is in a parallel region. => RC for octree
   for (auto &p : cell) {
     if (p.getID() == particle.getID()) {
       auto distanceVec = autopas::utils::ArrayMath::sub(p.getR(), particle.getR());

@@ -207,16 +207,7 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
         particlesForLeftNeighbor, particlesForRightNeighbor, leftNeighbor, rightNeighbor);
     haloParticles.insert(haloParticles.end(), receivedHaloParticles.begin(), receivedHaloParticles.end());
   }
-#ifdef AUTOPAS_OPENMP
-  // reduce scheduling overhead for large numbers of halo particles.
-  // No need to fill all buffers exactly equal because they will be rebalanced later anyway.
-  const auto ompChunkSize = std::max(1ul, haloParticles.size() / static_cast<size_t>(4 * omp_get_max_threads()));
-#pragma omp parallel for schedule(dynamic, ompChunkSize)
-#endif
-  // we can't use range based for loops here because clang accepts this only starting with version 11
-  for (size_t i = 0; i < haloParticles.size(); ++i) {
-    autoPasContainer.addHaloParticle(haloParticles[i]);
-  }
+  autoPasContainer.addHaloParticles(haloParticles);
 }
 
 void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasContainer,
