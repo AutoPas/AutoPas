@@ -50,6 +50,7 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
    * @param allowedCellSizeFactors
+   * @param allowedVerletRebuilFrequencies
    * @param relativeOptimum
    * @param maxTuningIterationsWithoutTest
    * @param relativeRangeForBlacklist

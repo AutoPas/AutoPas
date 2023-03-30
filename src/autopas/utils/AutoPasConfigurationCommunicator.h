@@ -51,6 +51,7 @@ inline std::byte castToByte(TOption option) {
  * @param loadEstimatorOptions
  * @param dataLayoutOptions
  * @param newton3Options
+ * @param verletRebuildFrequencies
  * @return
  */
 size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, const NumberSet<double> &cellSizeFactors,
@@ -70,6 +71,7 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
  * @param loadEstimatorOptions
  * @param dataLayoutOptions
  * @param newton3Options
+ * @param verletRebuildFrequencies
  * @param rank
  * @param commSize
  */

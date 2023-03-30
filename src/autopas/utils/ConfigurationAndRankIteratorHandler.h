@@ -30,6 +30,7 @@ class ConfigurationAndRankIteratorHandler {
    * @param loadEstimatorOptions
    * @param dataLayoutOptions
    * @param newton3Options
+   * @param verletRebuildFrequencies
    * @param numConfigs
    * @param commSize
    */
@@ -39,7 +40,7 @@ class ConfigurationAndRankIteratorHandler {
                                       const std::set<LoadEstimatorOption> &loadEstimatorOptions,
                                       const std::set<DataLayoutOption> &dataLayoutOptions,
                                       const std::set<Newton3Option> &newton3Options,
-                                      const std::set<int> &verletRebuildFrequenzies,
+                                      const std::set<int> &verletRebuildFrequencies,
                                       const int numConfigs,
                                       const int commSize)
       : _containers(containerOptions),
@@ -48,7 +49,7 @@ class ConfigurationAndRankIteratorHandler {
         _allowedLoadEstimatorOptions(loadEstimatorOptions),
         _dataLayoutOptions(dataLayoutOptions),
         _newton3Options(newton3Options),
-        _verletRebuildFrequencies(verletRebuildFrequenzies) {
+        _verletRebuildFrequencies(verletRebuildFrequencies) {
     reset(numConfigs, commSize);
   }
 
@@ -75,6 +76,7 @@ class ConfigurationAndRankIteratorHandler {
    * @param traversalIt out
    * @param dataLayoutIt out
    * @param newton3It out
+   * @param verletRebuildFrequencyIt
    */
   inline void getConfigIterators(std::set<ContainerOption>::iterator &containerIt,
                                  std::set<double>::iterator &cellSizeFactorIt,
