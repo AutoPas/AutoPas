@@ -128,7 +128,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
     }
 
     // the neighbor list is now valid
-    this->_neighborListIsValid = true;
+    this->_neighborListIsValid.store(true, std::memory_order_relaxed);
   }
 
   /**

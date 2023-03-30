@@ -66,7 +66,7 @@ class VarVerletLists : public VerletListsLinkedBase<Particle> {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
     _neighborList.buildAoSNeighborList(this->_linkedCells, traversal->getUseNewton3());
     // the neighbor list is now valid
-    this->_neighborListIsValid = true;
+    this->_neighborListIsValid.store(true, std::memory_order_relaxed);
 
     if (traversal->getDataLayout() == DataLayoutOption::soa and not _neighborList.isSoAListValid()) {
       _neighborList.generateSoAFromAoS();

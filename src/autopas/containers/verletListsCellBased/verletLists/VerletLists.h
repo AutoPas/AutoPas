@@ -102,7 +102,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
     this->updateVerletListsAoS(traversal->getUseNewton3());
     // the neighbor list is now valid
-    this->_neighborListIsValid = true;
+    this->_neighborListIsValid.store(true, std::memory_order_relaxed);
 
     if (not _soaListIsValid and traversal->getDataLayout() == DataLayoutOption::soa) {
       // only do this if we need it, i.e., if we are using soa!
