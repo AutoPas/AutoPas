@@ -64,7 +64,6 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
               const double cellSizeFactor = 1.0)
       : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency,
                                         compatibleTraversals::allVLCompatibleTraversals(), cellSizeFactor),
-        _soaListIsValid(false),
         _buildVerletListType(buildVerletListType) {}
 
   /**
@@ -231,7 +230,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
   /**
    * Shows if the SoA neighbor list is currently valid.
    */
-  bool _soaListIsValid;
+  bool _soaListIsValid{false};
 
   /**
    * Specifies for what data layout the verlet lists are build.
