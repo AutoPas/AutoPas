@@ -113,7 +113,7 @@ class ParticleCell {
   /**
    * Lock object for exclusive access to this cell.
    */
-  AutoPasLock _cellLock;
+  AutoPasLock _cellLock{};
 };
 
 }  // namespace autopas
