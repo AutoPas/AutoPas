@@ -22,7 +22,7 @@ using ::testing::_;
 TEST_F(AutoTunerTest, testAllConfigurations) {
   std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {2, 4, 2};
   // adaptive domain size so sliced is always applicable.
-  const double cutoff = 1;
+  const double cutoff =   1;
   const double cellSizeFactor = 1;
   const double verletSkinPerTimestep = 0;
   const int verletRebuildFrequency = 20;

@@ -274,7 +274,7 @@ inline std::unique_ptr<autopas::NumberSet<double>> parseNumberSetDoubles(const s
                            + regexDoubleStr +  // a double
                            ")"                 // end of 2. capture
   );
-  std::smatch matches;
+  std::smatch matches ;
   if (std::regex_match(setString, matches, regexInterval)) {
     try {
       // matchers has whole string as str(0) so start at 1
@@ -286,7 +286,7 @@ inline std::unique_ptr<autopas::NumberSet<double>> parseNumberSetDoubles(const s
     }
   }
 
-  std::set<double> values = autopas::utils::StringUtils::parseDoubles(setString);
+  std::set<double> values =   autopas::utils::StringUtils::parseDoubles(setString);
   return std::make_unique<autopas::NumberSetFinite<double>>(values);
 }
 
@@ -315,7 +315,7 @@ inline std::unique_ptr<autopas::NumberSet<int>> parseNumberSetInts(const std::st
   std::smatch matches;
   if (std::regex_match(setString, matches, regexInterval)) {
     try {
-      std::set<int> numbers = std::set<int>({});
+      std::set<int> numbers =  std::set<int>({});
       for (const auto& match : matches) {
         numbers.insert(std::stoi(match.str()));
       }

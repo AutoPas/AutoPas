@@ -54,7 +54,7 @@ inline std::byte castToByte(TOption option) {
  * @param verletRebuildFrequencies
  * @return
  */
-size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, const NumberSet<double> &cellSizeFactors,
+size_t getSearchSpaceSize(const std::set<ContainerOption>  &containerOptions, const NumberSet<double> &cellSizeFactors,
                           const std::set<TraversalOption> &traversalOptions,
                           const std::set<LoadEstimatorOption> &loadEstimatorOptions,
                           const std::set<DataLayoutOption> &dataLayoutOptions,
@@ -75,7 +75,7 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
  * @param rank
  * @param commSize
  */
-void distributeConfigurations(std::set<ContainerOption> &containerOptions, NumberSet<double> &cellSizeFactors,
+void distributeConfigurations(std::set<ContainerOption>  &containerOptions, NumberSet<double> &cellSizeFactors,
                               std::set<TraversalOption> &traversalOptions,
                               std::set<LoadEstimatorOption> &loadEstimatorOptions,
                               std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options,

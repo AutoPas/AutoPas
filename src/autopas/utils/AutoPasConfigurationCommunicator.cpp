@@ -69,7 +69,7 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
  * @param newton3Options inout
  * @param verletRebuildFrequencies
  */
-void generateDistribution(const int numConfigs, const int commSize, const int rank,
+void generateDistribution(const int numConfigs,   const int commSize, const int rank,
                           std::set<ContainerOption> &containerOptions, NumberSet<double> &cellSizeFactors,
                           std::set<TraversalOption> &traversalOptions,
                           std::set<LoadEstimatorOption> &loadEstimatorOptions,
@@ -78,7 +78,7 @@ void generateDistribution(const int numConfigs, const int commSize, const int ra
   // ============== setup ======================================================
 
   // These will be set to the Options specific to this rank and will overwrite the input sets.
-  auto newContainerOptions = std::set<ContainerOption>();
+  auto newContainerOptions =  std::set<ContainerOption>();
   auto newCellSizeFactors = std::set<double>();
   auto newTraversalOptions = std::set<TraversalOption>();
   auto newLoadEstimatorOptions = std::set<LoadEstimatorOption>();

@@ -17,7 +17,7 @@ TEST_P(TuningStrategyTest, testSearchSpaceEmpty) {
   auto noInterval = autopas::NumberSetFinite<double>({});
   auto noContainers = std::set<autopas::ContainerOption>({});
   auto noTraversals = std::set<autopas::TraversalOption>({});
-  auto noLoadEstimators = std::set<autopas::LoadEstimatorOption>({});
+  auto noLoadEstimators =  std::set<autopas::LoadEstimatorOption>({});
   auto noDataLayouts = std::set<autopas::DataLayoutOption>({});
   auto noNewton3Options = std::set<autopas::Newton3Option>({});
   auto noFreq = autopas::NumberSetFinite<int>({});

@@ -21,7 +21,7 @@ TEST(StringUtilsTest, parseNumberSetFiniteTest) {
 
 TEST(StringUtilsTest, parseNumberIntervalTest) {
   auto numberSet = autopas::utils::StringUtils::parseNumberSetDoubles("1.-2e1");
-  auto numberInterval = dynamic_cast<autopas::NumberInterval<double> *>(numberSet.get());
+  auto numberInterval =  dynamic_cast<autopas::NumberInterval<double> *>(numberSet.get());
   ASSERT_NE(numberInterval, nullptr);  // if this is null numberSet was parsed to a NumberSetFinite
   EXPECT_EQ(numberInterval->getMin(), 1.);
   EXPECT_EQ(numberInterval->getMax(), 2e1);

@@ -38,13 +38,13 @@ FeatureVectorTest::FeatureVectorTest() {
  */
 TEST_F(FeatureVectorTest, lhsSampleFeature) {
   autopas::Random rand;
-  size_t n = 100;
+  size_t n =   100;
 
   FeatureVectorEncoder encoder(allCompatibleContainerTraversalEstimators, allDataLayouts, allNewton3,
                                autopas::NumberInterval<double>(1., 2.), autopas::NumberSetFinite<int>(std::set<int>({5,15,30})));
   auto vecList = encoder.lhsSampleFeatures(n, rand);
 
-  EXPECT_EQ(vecList.size(), n);
+  EXPECT_EQ(vecList.size() , n);
 }
 
 /**

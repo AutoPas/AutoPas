@@ -21,7 +21,7 @@ TEST_F(BayesianClusterSearchTest, testMaxEvidence) {
 
   // fullSearch phase
   do {
-    autopas::FeatureVector current(bayesClusterSearch.getCurrentConfiguration());
+    autopas::FeatureVector  current(bayesClusterSearch.getCurrentConfiguration());
     bayesClusterSearch.addEvidence(0, iteration);
     ++iteration;
   } while (bayesClusterSearch.tune());
@@ -45,7 +45,7 @@ TEST_F(BayesianClusterSearchTest, testMaxEvidence) {
  * Find best configuration if configuration are similar through tuning phases.
  */
 TEST_F(BayesianClusterSearchTest, testFindBestSimilar) {
-  constexpr size_t maxEvidence = 10;
+  constexpr size_t maxEvidence =   10;
   constexpr unsigned long seed = 21;
   // we use a dummy time function which increases linearly with the squared distance to the chosen optimal solution
   constexpr double timePerDistanceSquared = 654321;

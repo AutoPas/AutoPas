@@ -19,7 +19,7 @@ autopas::PredictiveTuning PredictiveTuningTest::getPredictiveTuning(
 
 void PredictiveTuningTest::simulateTuningPhasesAndCheckPrediction(
     autopas::ExtrapolationMethodOption extrapolationMethodOption,
-    const std::vector<std::map<autopas::Configuration, long>> &evidencePerPhase, unsigned int tuningInterval,
+    const std::vector<std::map<autopas::Configuration,  long>> &evidencePerPhase, unsigned int tuningInterval,
     const std::map<autopas::Configuration, long> &expectedPredictions) {
   // setup sanity check
   ASSERT_EQ(evidencePerPhase.back().size(), expectedPredictions.size())
@@ -28,7 +28,7 @@ void PredictiveTuningTest::simulateTuningPhasesAndCheckPrediction(
 
   size_t iteration = 0;
 
-  auto predictiveTuning = getPredictiveTuning(evidencePerPhase.size(), extrapolationMethodOption);
+  auto predictiveTuning =  getPredictiveTuning(evidencePerPhase.size(), extrapolationMethodOption);
 
   // First reset tuning.
   predictiveTuning.reset(iteration);

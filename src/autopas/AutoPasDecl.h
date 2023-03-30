@@ -709,7 +709,7 @@ class AutoPas {
    * Get extrapolation method for the prediction of the configuration performance.
    * @return
    */
-  ExtrapolationMethodOption getExtrapolationMethodOption() const { return _extrapolationMethodOption; }
+  ExtrapolationMethodOption  getExtrapolationMethodOption() const { return _extrapolationMethodOption; }
 
   /**
    * Set extrapolation method for the prediction of the configuration performance.
@@ -736,7 +736,7 @@ class AutoPas {
    * Get the list of allowed load estimation algorithms.
    * @return
    */
-  const std::set<LoadEstimatorOption> &getAllowedLoadEstimators() const { return _allowedLoadEstimators; }
+  const std::set<LoadEstimatorOption>  &getAllowedLoadEstimators() const { return _allowedLoadEstimators; }
 
   /**
    * Set the list of allowed load estimation algorithms.
@@ -759,7 +759,7 @@ class AutoPas {
    * @param allowedContainers
    */
   void setAllowedContainers(const std::set<ContainerOption> &allowedContainers) {
-    AutoPas::_allowedContainers = allowedContainers;
+    AutoPas::_allowedContainers =   allowedContainers;
   }
 
   /**

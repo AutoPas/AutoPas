@@ -82,7 +82,7 @@ void AutoPas<Particle>::init() {
 
 template <class Particle>
 template <class Functor>
-bool AutoPas<Particle>::iteratePairwise(Functor *f) {
+bool AutoPas<Particle>::iteratePairwise( Functor *f) {
   static_assert(not std::is_same<Functor, autopas::Functor<Particle, Functor>>::value,
                 "The static type of Functor in iteratePairwise is not allowed to be autopas::Functor. Please use the "
                 "derived type instead, e.g. by using a dynamic_cast.");
@@ -97,7 +97,7 @@ template <class Particle>
 size_t AutoPas<Particle>::getNumberOfParticles(IteratorBehavior behavior) const {
   size_t numParticles{0};
   if (behavior & IteratorBehavior::owned) {
-    numParticles += _logicHandler->getNumParticlesOwned();
+    numParticles +=  _logicHandler->getNumParticlesOwned();
   }
   if (behavior & IteratorBehavior::halo) {
     numParticles += _logicHandler->getNumParticlesHalo();
