@@ -36,8 +36,6 @@ class RegularGridDecomposition final : public DomainDecomposition {
    */
   explicit RegularGridDecomposition(const MDFlexConfig &configuration);
 
-
-
   /**
    * Destructor.
    */
