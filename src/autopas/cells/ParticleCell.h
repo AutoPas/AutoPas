@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 
 namespace autopas {
@@ -108,6 +109,11 @@ class ParticleCell {
    * @return cell side length
    */
   [[nodiscard]] virtual std::array<double, 3> getCellLength() const = 0;
+
+  /**
+   * Lock object for exclusive access to this cell.
+   */
+  AutoPasLock _cellLock;
 };
 
 }  // namespace autopas
