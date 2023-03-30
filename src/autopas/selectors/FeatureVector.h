@@ -68,7 +68,8 @@ class FeatureVector : public Configuration {
     result << cellSizeFactor - other.cellSizeFactor,
         (container == other.container and traversal == other.traversal and loadEstimator == other.loadEstimator) ? 0.
                                                                                                                  : 1.,
-        dataLayout == other.dataLayout ? 0. : 1., newton3 == other.newton3 ? 0. : 1., verletRebuildFrequency- other.verletRebuildFrequency;
+        dataLayout == other.dataLayout ? 0. : 1., newton3 == other.newton3 ? 0. : 1.,
+        verletRebuildFrequency - other.verletRebuildFrequency;
     return result;
   }
 

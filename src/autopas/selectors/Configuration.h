@@ -81,8 +81,8 @@ class Configuration {
    */
   [[nodiscard]] bool hasValidValues() const {
     return container != ContainerOption() and cellSizeFactor != -1 and traversal != TraversalOption() and
-           loadEstimator != LoadEstimatorOption() and dataLayout != DataLayoutOption() and newton3 != Newton3Option() and
-           verletRebuildFrequency != -1;
+           loadEstimator != LoadEstimatorOption() and dataLayout != DataLayoutOption() and
+           newton3 != Newton3Option() and verletRebuildFrequency != -1;
   }
 
   /**

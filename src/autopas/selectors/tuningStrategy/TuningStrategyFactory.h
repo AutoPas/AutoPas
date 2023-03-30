@@ -41,9 +41,8 @@ std::unique_ptr<autopas::TuningStrategyInterface> generateTuningStrategy(
     autopas::NumberSet<double> &allowedCellSizeFactors, std::set<autopas::TraversalOption> &allowedTraversals,
     std::set<autopas::LoadEstimatorOption> &allowedLoadEstimators,
     std::set<autopas::DataLayoutOption> &allowedDataLayouts, std::set<autopas::Newton3Option> &allowedNewton3Options,
-    autopas::NumberSet<int> &allowedVerletRebuildFrequencies,
-    unsigned int maxEvidence, double relativeOptimum, unsigned int maxTuningPhasesWithoutTest,
-    double relativeBlacklistRange, unsigned int evidenceFirstPrediction,
+    autopas::NumberSet<int> &allowedVerletRebuildFrequencies, unsigned int maxEvidence, double relativeOptimum,
+    unsigned int maxTuningPhasesWithoutTest, double relativeBlacklistRange, unsigned int evidenceFirstPrediction,
     AcquisitionFunctionOption acquisitionFunctionOption, ExtrapolationMethodOption extrapolationMethodOption,
     const std::string &outputSuffix = "", MPIStrategyOption mpiStrategyOption = MPIStrategyOption::noMPI,
     AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD);

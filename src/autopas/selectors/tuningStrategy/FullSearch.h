@@ -40,8 +40,7 @@ class FullSearch : public SetSearchSpaceBasedTuningStrategy {
              const std::set<TraversalOption> &allowedTraversalOptions,
              const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
              const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-             const std::set<Newton3Option> &allowedNewton3Options,
-             const std::set<int> &allowedVerletRebuildFrequencies)
+             const std::set<Newton3Option> &allowedNewton3Options, const std::set<int> &allowedVerletRebuildFrequencies)
       : SetSearchSpaceBasedTuningStrategy(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
                                           allowedLoadEstimatorOptions, allowedDataLayoutOptions,
                                           allowedNewton3Options, allowedVerletRebuildFrequencies) {}
