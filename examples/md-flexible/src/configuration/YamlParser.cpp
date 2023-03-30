@@ -360,14 +360,12 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
                                  it->second[config.epsilonMap.name].as<double>(),
                                  it->second[config.sigmaMap.name].as<double>(),
-
                                  it->second[config.massMap.name].as<double>());
         }
         continue;
       }
     }
   }
-
 
   if (node[config.useThermostat.name]) {
     config.useThermostat.value = true;
