@@ -71,6 +71,9 @@ class FeatureVector : public Configuration {
         dataLayout == other.dataLayout ? 0. : 1., newton3 == other.newton3 ? 0. : 1., verletRebuildFrequency- other.verletRebuildFrequency;
     return result;
   }
+
+
+
 };
 
 /**

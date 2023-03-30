@@ -109,6 +109,8 @@ class BayesianClusterSearch : public TuningStrategyInterface {
         _currentOptimalTime(std::numeric_limits<long>::max()),
         _fullSearch(allowedContainerOptions, {allowedCellSizeFactors.getMedian()}, allowedTraversalOptions,
                     allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options, allowedVerletRebuilFrequencies) {
+
+
     //TODO: implement Frequency
     if (predNumLHSamples <= 0) {
       utils::ExceptionHandler::exception(

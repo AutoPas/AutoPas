@@ -366,6 +366,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
       }
     }
   }
+
+
   if (node[config.useThermostat.name]) {
     config.useThermostat.value = true;
 

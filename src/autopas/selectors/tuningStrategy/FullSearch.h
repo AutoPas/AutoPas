@@ -22,6 +22,8 @@ namespace autopas {
 /**
  * Exhaustive full search of the search space by testing every applicable configuration and then selecting the optimum.
  */
+
+
 class FullSearch : public SetSearchSpaceBasedTuningStrategy {
  public:
   /**

@@ -41,6 +41,8 @@ class SetSearchSpaceBasedTuningStrategy : public TuningStrategyInterface {
                         allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options, allowedVerletRebuildFrequencies);
   }
 
+
+
   /**
    * Constructor for the SetSearchSpaceBasedTuningStrategy that only contains the given configurations.
    * This constructor assumes only valid configurations are passed! Mainly for easier unit testing.

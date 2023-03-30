@@ -31,6 +31,8 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   config.boundaryOption.value = {options::BoundaryTypeOption::reflective, options::BoundaryTypeOption::reflective,
                                  options::BoundaryTypeOption::reflective};
 
+
+
   RegularGridDecomposition domainDecomposition(config);
 
   auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);

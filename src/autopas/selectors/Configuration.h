@@ -47,6 +47,9 @@ class Configuration {
    */
   constexpr Configuration() : container(), traversal(), loadEstimator(), dataLayout(), newton3(), cellSizeFactor(-1.), verletRebuildFrequency(-1) {}
 
+
+
+
   /**
    * Returns string representation in JSON style of the configuration object.
    * @return String representation.

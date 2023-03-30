@@ -66,6 +66,8 @@ class ActiveHarmony : public TuningStrategyInterface {
         _comm(comm),
         _nonLocalServer(getenv("HARMONY_HOST") != nullptr and
                         mpiStrategyOption == MPIStrategyOption::divideAndConquer) {
+
+
     auto cellSizeDummy = NumberSetFinite<double>{-1};
     auto rebuildFreqDummy = NumberSetFinite<int>{-1};
     utils::AutoPasConfigurationCommunicator::distributeConfigurations(

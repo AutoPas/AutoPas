@@ -22,6 +22,8 @@ auto MixedBoundaryConditionTest::setUpExpectations(
   std::vector<std::array<double, 3>> expectedForces;
   expectedForces.resize(particlePositions.size());
 
+
+
   auto forceFromReflection = [&](const std::array<double, 3> position, const int dimensionOfBoundary,
                                  const bool isUpper) {
     const auto distanceToBoundary = isUpper ? boxMax[dimensionOfBoundary] - position[dimensionOfBoundary]

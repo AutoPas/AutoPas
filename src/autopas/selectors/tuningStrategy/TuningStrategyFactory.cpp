@@ -43,6 +43,8 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
       break;
     }
 
+
+
     case MPIStrategyOption::divideAndConquer: {
 #ifndef AUTOPAS_INTERNODE_TUNING
       utils::ExceptionHandler::exception(

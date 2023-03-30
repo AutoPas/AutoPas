@@ -234,6 +234,7 @@ class MDFlexConfig {
       std::make_shared<autopas::NumberSetFinite<int>>(std::set<int>{5, 10, 20}), "verlet-rebuild-frequencies",
       true, "Number of iterations after which containers are rebuilt."};
 
+
   /**
    * logFileName
    */

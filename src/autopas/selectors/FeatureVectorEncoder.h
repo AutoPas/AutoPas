@@ -36,6 +36,8 @@ class FeatureVectorEncoder {
    */
   static constexpr size_t tunableDiscreteDims{static_cast<size_t>(DiscreteIndices::TOTALNUMBER)};
 
+
+
   /**
    * Number of tunable continuous dimensions.
    */

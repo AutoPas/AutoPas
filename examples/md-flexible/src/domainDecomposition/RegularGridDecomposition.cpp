@@ -28,6 +28,8 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
       _mpiCommunicationNeeded(
 #if defined(AUTOPAS_INCLUDE_MPI)
           true
+
+
 #else
           false
 #endif

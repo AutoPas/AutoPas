@@ -154,6 +154,8 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
   AutoPas_MPI_Comm _bucket{AUTOPAS_MPI_COMM_NULL};
   AutoPas_MPI_Request _request{AUTOPAS_MPI_REQUEST_NULL};
 
+
+
   /**
    * The globally optimal configuration.
    * Usually holds a value that is not in a given rank's search space
