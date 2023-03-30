@@ -123,8 +123,8 @@ void AutoPas<Particle>::reserve(size_t numParticles, size_t numHaloParticles) {
 
 template <class Particle>
 template <class F>
-void AutoPas<Particle>::addParticleAux(size_t numParticlesToAdd, size_t numHalosToAdd, size_t collectionSize,
-                                       F loopBody) {
+void AutoPas<Particle>::addParticlesAux(size_t numParticlesToAdd, size_t numHalosToAdd, size_t collectionSize,
+                                        F loopBody) {
   reserve(getNumberOfParticles(IteratorBehavior::owned) + numParticlesToAdd,
           getNumberOfParticles(IteratorBehavior::halo) + numHalosToAdd);
 #ifdef AUTOPAS_OPENMP
@@ -146,7 +146,7 @@ void AutoPas<Particle>::addParticle(const Particle &p) {
 template <class Particle>
 template <class Collection>
 void AutoPas<Particle>::addParticles(Collection &&particles) {
-  addParticleAux(particles.size(), 0, particles.size(), [&](auto i) { addParticle(particles[i]); });
+  addParticlesAux(particles.size(), 0, particles.size(), [&](auto i) { addParticle(particles[i]); });
 }
 
 template <class Particle>
@@ -166,7 +166,7 @@ void AutoPas<Particle>::addParticlesIf(Collection &&particles, F predicate) {
     }
   }
 
-  addParticleAux(numTrue, 0, particles.size(), [&](auto i) {
+  addParticlesAux(numTrue, 0, particles.size(), [&](auto i) {
     if (predicateMask[i]) {
       addParticle(particles[i]);
     }
@@ -199,7 +199,7 @@ void AutoPas<Particle>::addHaloParticle(const Particle &haloParticle) {
 template <class Particle>
 template <class Collection>
 void AutoPas<Particle>::addHaloParticles(Collection &&particles) {
-  addParticleAux(0, particles.size(), particles.size(), [&](auto i) { addHaloParticle(particles[i]); });
+  addParticlesAux(0, particles.size(), particles.size(), [&](auto i) { addHaloParticle(particles[i]); });
 }
 
 template <class Particle>
@@ -219,7 +219,7 @@ void AutoPas<Particle>::addHaloParticlesIf(Collection &&particles, F predicate) 
     }
   }
 
-  addParticleAux(0, numTrue, particles.size(), [&](auto i) {
+  addParticlesAux(0, numTrue, particles.size(), [&](auto i) {
     if (predicateMask[i]) {
       addHaloParticle(particles[i]);
     }

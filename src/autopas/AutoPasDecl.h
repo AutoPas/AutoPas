@@ -1115,6 +1115,6 @@ class AutoPas {
    * Typically `[&](auto i) {addParticle(collection[i]);}`.
    */
   template <class F>
-  void addParticleAux(size_t numParticlesToAdd, size_t numHalosToAdd, size_t collectionSize, F loopBody);
+  void addParticlesAux(size_t numParticlesToAdd, size_t numHalosToAdd, size_t collectionSize, F loopBody);
 };  // class AutoPas
 }  // namespace autopas
