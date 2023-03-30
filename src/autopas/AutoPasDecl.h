@@ -142,7 +142,8 @@ class AutoPas {
   void reserve(size_t numParticles);
 
   /**
-   * Reserve memory for a given number of particles in the container and logic layers.
+   * Reserve memory for a given number of particles in the container and logic layers
+   * (e.g. LogicHandler::_particleBuffer).
    * This function assumes a uniform distribution of particles throughout the domain.
    * For example, this means that in a LinkedCells Container in each cell vector.reserve(numParticles/numCells) is
    * called.
@@ -1105,14 +1106,15 @@ class AutoPas {
 
   /**
    * Helper function to reduce code duplication for all forms of addParticle while minimizing overhead through loops.
-   * @tparam F
-   * @param numParticlesToAdd
-   * @param numHalosToAdd
-   * @param collectionSize
-   * @param innerBody Function to be called in the parallel loop over collectionSize.
+   * Triggers reserve() and provides a parallel loop with deliberate scheduling.
+   * @tparam F Function type of loopBody: (int) -> void.
+   * @param numParticlesToAdd For how many new owned particles should space be allocated.
+   * @param numHalosToAdd For how many new halo particles should space be allocated.
+   * @param collectionSize Size of the collection from which particles are added.
+   * @param loopBody Function to be called in the parallel loop over collectionSize.
    * Typically `[&](auto i) {addParticle(collection[i]);}`.
    */
   template <class F>
-  void addParticleAux(size_t numParticlesToAdd, size_t numHalosToAdd, size_t collectionSize, F innerBody);
+  void addParticleAux(size_t numParticlesToAdd, size_t numHalosToAdd, size_t collectionSize, F loopBody);
 };  // class AutoPas
 }  // namespace autopas

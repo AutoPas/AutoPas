@@ -179,9 +179,10 @@ class LogicHandler {
   }
 
   /**
-   * @copydoc AutoPas::reserve()
+   * Estimates number of halo particles via autopas::utils::NumParticlesEstimator::estimateNumHalosUniform() then
+   * calls LogicHandler::reserve(size_t numParticles, size_t numHaloParticles).
    *
-   * Reserves space in the particle buffers and the container. Estimates number of halo particles.
+   * @param numParticles Total number of owned particles.
    */
   void reserve(size_t numParticles) {
     const auto &container = _autoTuner.getContainer();
@@ -193,8 +194,8 @@ class LogicHandler {
   /**
    * Reserves space in the particle buffers and the container.
    *
-   * @param numParticles
-   * @param numHaloParticles
+   * @param numParticles Total number of owned particles.
+   * @param numHaloParticles Total number of halo particles.
    */
   void reserve(size_t numParticles, size_t numHaloParticles) {
     const auto numHaloParticlesPerBuffer = numHaloParticles / _haloParticleBuffer.size();

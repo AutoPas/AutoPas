@@ -124,7 +124,7 @@ void AutoPas<Particle>::reserve(size_t numParticles, size_t numHaloParticles) {
 template <class Particle>
 template <class F>
 void AutoPas<Particle>::addParticleAux(size_t numParticlesToAdd, size_t numHalosToAdd, size_t collectionSize,
-                                       F innerBody) {
+                                       F loopBody) {
   reserve(getNumberOfParticles(IteratorBehavior::owned) + numParticlesToAdd,
           getNumberOfParticles(IteratorBehavior::halo) + numHalosToAdd);
 #ifdef AUTOPAS_OPENMP
@@ -134,7 +134,7 @@ void AutoPas<Particle>::addParticleAux(size_t numParticlesToAdd, size_t numHalos
     schedule(static, std::max(1ul, collectionSize / omp_get_max_threads()))
 #endif
   for (auto i = 0; i < collectionSize; ++i) {
-    innerBody(i);
+    loopBody(i);
   }
 }
 
