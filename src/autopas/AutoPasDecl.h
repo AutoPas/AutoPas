@@ -533,10 +533,15 @@ class AutoPas {
     AutoPas::_allowedCellSizeFactors = std::make_unique<NumberSetFinite<double>>(std::set<double>{cellSizeFactor});
   }
 
-
+  /**
+   * Get allowed verlet rebuild frequency (only relevant for VarVerletListsAsBuild, VerletClusterLists, VerletLists, VerletListsCells and PairwiseVerletLists).
+   * @return allowedVerletRebuildFrequencies
+   */
   [[nodiscard]] const NumberSet<int> &getAllowedVerletRebuildFrequencies() const { return *_allowedVerletRebuildFrequencies; }
 
   /**
+   * Set allowed verlet rebuild frequency (only relevant for VarVerletListsAsBuild, VerletClusterLists, VerletLists, VerletListsCells and PairwiseVerletLists).
+   * @param allowedVerletRebuildFrequencies
    */
   void setAllowedVerletRebuildFrequencies(const NumberSet<int> &allowedVerletRebuildFrequencies) {
     if (allowedVerletRebuildFrequencies.getMin() < 1) {
@@ -546,10 +551,17 @@ class AutoPas {
     AutoPas::_allowedVerletRebuildFrequencies = std::move(allowedVerletRebuildFrequencies.clone());
   }
 
+  /**
+   * Get verlet rebuild frequency (only relevant for VarVerletListsAsBuild, VerletClusterLists, VerletLists, VerletListsCells and PairwiseVerletLists).
+   * @return verletRebuildFrequency
+   */
   int getVerletRebuildFrequency(){
     return _verletRebuildFrequency;
   }
+
   /**
+   * Set allowed verlet rebuild frequency to one element (only relevant for VarVerletListsAsBuild, VerletClusterLists, VerletLists, VerletListsCells and PairwiseVerletLists).
+   * @param verletRebuildFrequency
    */
   void setVerletRebuildFrequency(int verletRebuildFrequency) {
     if (verletRebuildFrequency < 1) {
@@ -557,7 +569,6 @@ class AutoPas {
       utils::ExceptionHandler::exception("Error: rebuildFrequenzy < 1!");
     }
     _verletRebuildFrequency = verletRebuildFrequency;
-    //_allowedVerletRebuildFrequencies = std::make_unique<NumberSetFinite<int>>(std::set<int>{verletRebuildFrequency});
   }
 
   /**

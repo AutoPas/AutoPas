@@ -6,7 +6,6 @@
 
 #pragma once
 #include "NumberSet.h"
-#include "NumberSetFinite.h"
 
 namespace autopas {
 /**
@@ -137,15 +136,8 @@ class NumberInterval : public NumberSet<Number> {
 
   Number getMedian() const override { return (_max + _min) / 2; }
 
-  std::set<Number> getSet() {
-    std::set<Number> result;
-    for(int i=_min;i<=_max;i++) result.insert(i);
-    return result;
-  }
-
  private:
   Number _min;
   Number _max;
-
 };
 }  // namespace autopas

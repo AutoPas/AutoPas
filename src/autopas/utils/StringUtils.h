@@ -132,6 +132,10 @@ static const std::string regexDoubleStr{
     ")?"      // end of group, group is optional
 };
 
+
+/**
+ *  Regex for a int e.g. 1 | 2 | 3
+ */
 static const std::string regexIntStr{
     "[0-9]+"  // at least one int
 };
@@ -224,6 +228,11 @@ inline std::set<double> parseDoubles(const std::string &doubleString) {
   return doubles;
 }
 
+/**
+ * Converts a string to a set of ints.
+ * @param intString String containing ints.
+ * @return Set of ints. If no valid int was found the empty set is returned.
+ */
 inline std::set<int> parseInts(const std::string &intString) {
   std::set<int> ints;
 
@@ -281,6 +290,16 @@ inline std::unique_ptr<autopas::NumberSet<double>> parseNumberSetDoubles(const s
   return std::make_unique<autopas::NumberSetFinite<double>>(values);
 }
 
+/**
+ * Converts a string to a NumberSet<int>.
+ *
+ * @note Formats:
+ * NumberSetFinite [x,y,z]
+ * NumberInterval x-y
+ *
+ * @param setString String containing the set.
+ * @return NumberSet<int>. If no valid int was found the empty set is returned.
+ */
 inline std::unique_ptr<autopas::NumberSet<int>> parseNumberSetInts(const std::string &setString) {
   // try to match an interval x-y
   std::regex regexInterval("("                 // start of 1. capture
