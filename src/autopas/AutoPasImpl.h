@@ -128,10 +128,7 @@ void AutoPas<Particle>::addParticlesAux(size_t numParticlesToAdd, size_t numHalo
   reserve(getNumberOfParticles(IteratorBehavior::owned) + numParticlesToAdd,
           getNumberOfParticles(IteratorBehavior::halo) + numHalosToAdd);
 #ifdef AUTOPAS_OPENMP
-  // Hotfix: As long as the octree restructures itself during particle insertion this has to be done in serial.
-  const int numThreads = getContainerType() == autopas::ContainerOption::octree ? 1 : autopas_get_max_threads();
-#pragma omp parallel for num_threads(numThreads), \
-    schedule(static, std::max(1ul, collectionSize / omp_get_max_threads()))
+#pragma omp parallel for schedule(static, std::max(1ul, collectionSize / omp_get_max_threads()))
 #endif
   for (auto i = 0; i < collectionSize; ++i) {
     loopBody(i);
