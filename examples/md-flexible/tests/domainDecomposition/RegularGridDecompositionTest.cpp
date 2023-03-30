@@ -32,7 +32,8 @@ auto initDomain() {
   configuration.cutoff.value = 2.5;
   configuration.verletSkinRadiusPerTimestep.value = 0.5;
   configuration.verletRebuildFrequencies.value = std::make_shared<autopas::NumberSetFinite<int>>(std::set<int>{2});
-  const double interactionLength = configuration.cutoff.value+ configuration.verletSkinRadiusPerTimestep.value * configuration.verletRebuildFrequencies.value->getMin();
+  const double interactionLength = configuration.cutoff.value+ configuration.verletSkinRadiusPerTimestep.value *
+                                                                    configuration.verletRebuildFrequencies.value->getMin();
   // make sure evey rank gets exactly 3x3x3 cells
   const double localBoxLength = 3. * interactionLength;
   const double globalBoxLength = localBoxLength * numberOfProcesses;
