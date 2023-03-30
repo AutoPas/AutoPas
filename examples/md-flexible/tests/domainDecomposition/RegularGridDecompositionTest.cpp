@@ -42,9 +42,6 @@ auto initDomain() {
   configuration.boundaryOption.value = {options::BoundaryTypeOption::periodic, options::BoundaryTypeOption::periodic,
                                         options::BoundaryTypeOption::periodic};
 
-
-
-
   auto domainDecomposition = std::make_shared<RegularGridDecomposition>(configuration);
   const auto &localBoxMin = domainDecomposition->getLocalBoxMin();
   const auto &localBoxMax = domainDecomposition->getLocalBoxMax();
