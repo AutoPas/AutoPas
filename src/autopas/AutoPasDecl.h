@@ -135,10 +135,22 @@ class AutoPas {
    * This function assumes a uniform distribution of particles throughout the domain.
    * For example, this means that in a LinkedCells Container in each cell vector.reserve(numParticles/numCells) is
    * called.
+   * @note This functions will create an estimate for the number of halo particles.
    * @param numParticles No buffer factor is applied. It is probably wise to slighly over-reserve to account for
    * imbalance or particle movement.
    */
   void reserve(size_t numParticles);
+
+  /**
+   * Reserve memory for a given number of particles in the container and logic layers
+   * (e.g. LogicHandler::_particleBuffer).
+   * This function assumes a uniform distribution of particles throughout the domain.
+   * For example, this means that in a LinkedCells Container in each cell vector.reserve(numParticles/numCells) is
+   * called.
+   * @param numParticles
+   * @param numHaloParticles
+   */
+  void reserve(size_t numParticles, size_t numHaloParticles);
 
   /**
    * Adds a particle to the container.
@@ -146,18 +158,60 @@ class AutoPas {
    * @param p Reference to the particle to be added
    * @note An exception is thrown if the particle is added and it is not inside of the owned domain (defined by
    * boxmin and boxmax) of the container.
-   * @note This function is NOT thread-safe.
+   * @note This function is NOT thread-safe if the container is Octree.
    */
   void addParticle(const Particle &p);
+
+  /**
+   * Adds all particles from the collection to the container.
+   * @note This function uses addParticlesIf().
+   * @tparam Collection Collection type that contains the particles (e.g. std::vector). Needs to support `.size()`.
+   * @param particles
+   */
+  template <class Collection>
+  void addParticles(Collection &&particles);
+
+  /**
+   * Adds all particles for which predicate(particle) == true to the container.
+   * @note This function uses reserve().
+   * @note This function uses addParticle().
+   * @tparam Collection Collection type that contains the particles (e.g. std::vector). Needs to support `.size()`.
+   * @tparam F Function type of predicate. Should be of the form: (const Particle &) -> bool.
+   * @param particles Particles that are potentially added.
+   * @param predicate Condition that determines if an individual particle should be added.
+   */
+  template <class Collection, class F>
+  void addParticlesIf(Collection &&particles, F predicate);
 
   /**
    * Adds a particle to the container that lies in the halo region of the container.
    * @param haloParticle Particle to be added.
    * @note An exception is thrown if the halo particle is added and it is inside of the owned domain (defined by boxmin
    * and boxmax) of the container.
-   * @note This function is NOT thread-safe.
+   * @note This function is NOT thread-safe if the container is Octree.
    */
   void addHaloParticle(const Particle &haloParticle);
+
+  /**
+   * Adds all halo particles from the collection to the container.
+   * @note This function uses addHaloParticlesIf().
+   * @tparam Collection Collection type that contains the particles (e.g. std::vector). Needs to support `.size()`.
+   * @param particles
+   */
+  template <class Collection>
+  void addHaloParticles(Collection &&particles);
+
+  /**
+   * Adds all halo particles for which predicate(particle) == true to the container.
+   * @note This function uses reserve().
+   * @note This function uses addHaloParticle().
+   * @tparam Collection Collection type that contains the particles (e.g. std::vector). Needs to support `.size()`.
+   * @tparam F Function type of predicate. Should be of the form: (const Particle &) -> bool.
+   * @param particles Particles that are potentially added.
+   * @param predicate Condition that determines if an individual particle should be added.
+   */
+  template <class Collection, class F>
+  void addHaloParticlesIf(Collection &&particles, F predicate);
 
   /**
    * Deletes all particles.
@@ -1050,5 +1104,17 @@ class AutoPas {
    */
   std::string _outputSuffix{""};
 
+  /**
+   * Helper function to reduce code duplication for all forms of addParticle while minimizing overhead through loops.
+   * Triggers reserve() and provides a parallel loop with deliberate scheduling.
+   * @tparam F Function type of loopBody: (int) -> void.
+   * @param numParticlesToAdd For how many new owned particles should space be allocated.
+   * @param numHalosToAdd For how many new halo particles should space be allocated.
+   * @param collectionSize Size of the collection from which particles are added.
+   * @param loopBody Function to be called in the parallel loop over collectionSize.
+   * Typically `[&](auto i) {addParticle(collection[i]);}`.
+   */
+  template <class F>
+  void addParticlesAux(size_t numParticlesToAdd, size_t numHalosToAdd, size_t collectionSize, F loopBody);
 };  // class AutoPas
 }  // namespace autopas

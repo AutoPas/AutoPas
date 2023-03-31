@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 
 namespace autopas {
@@ -53,9 +54,26 @@ class ParticleCell {
   using ParticleType = Particle;
 
   /**
-   * Destructor of ParticleCell.
+   * Default destructor.
    */
   virtual ~ParticleCell() = default;
+
+  /**
+   * Default default constructor.
+   */
+  explicit ParticleCell() = default;
+
+  /**
+   * Default move constructor.
+   * @param other
+   */
+  ParticleCell(ParticleCell &&other) noexcept = default;
+
+  /**
+   * Copy constructor that creates a new default constructed lock for the new cell.
+   * @param other
+   */
+  ParticleCell(const ParticleCell &other) : _cellLock(){};
 
   /**
    * Adds a Particle to the cell.
@@ -108,6 +126,11 @@ class ParticleCell {
    * @return cell side length
    */
   [[nodiscard]] virtual std::array<double, 3> getCellLength() const = 0;
+
+  /**
+   * Lock object for exclusive access to this cell.
+   */
+  AutoPasLock _cellLock{};
 };
 
 }  // namespace autopas

@@ -14,7 +14,6 @@
 #include "autopas/iterators/CellIterator.h"
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/utils/SoA.h"
-#include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 
 namespace autopas {
@@ -50,9 +49,8 @@ class FullParticleCell : public ParticleCell<Particle> {
   explicit FullParticleCell(const std::array<double, 3> &cellLength) : _cellLength(cellLength) {}
 
   void addParticle(const Particle &p) override {
-    particlesLock.lock();
+    std::lock_guard guard(this->_cellLock);
     _particles.push_back(p);
-    particlesLock.unlock();
   }
 
   /**
@@ -210,7 +208,7 @@ class FullParticleCell : public ParticleCell<Particle> {
   }
 
   void deleteByIndex(size_t index) override {
-    std::lock_guard<AutoPasLock> lock(particlesLock);
+    std::lock_guard<AutoPasLock> lock(this->_cellLock);
     if (index >= numParticles()) {
       utils::ExceptionHandler::exception("Index out of range (range: [0, {}[, index: {})", numParticles(), index);
     }
@@ -258,7 +256,6 @@ class FullParticleCell : public ParticleCell<Particle> {
   SoA<SoAArraysType> _particleSoABuffer{};
 
  private:
-  AutoPasLock particlesLock;
   std::array<double, 3> _cellLength;
 
   template <bool ownershipCheck, bool regionCheck, typename Lambda>

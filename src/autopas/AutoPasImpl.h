@@ -117,8 +117,57 @@ void AutoPas<Particle>::reserve(size_t numParticles) {
 }
 
 template <class Particle>
+void AutoPas<Particle>::reserve(size_t numParticles, size_t numHaloParticles) {
+  _logicHandler->reserve(numParticles);
+}
+
+template <class Particle>
+template <class F>
+void AutoPas<Particle>::addParticlesAux(size_t numParticlesToAdd, size_t numHalosToAdd, size_t collectionSize,
+                                        F loopBody) {
+  reserve(getNumberOfParticles(IteratorBehavior::owned) + numParticlesToAdd,
+          getNumberOfParticles(IteratorBehavior::halo) + numHalosToAdd);
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel for schedule(static, std::max(1ul, collectionSize / omp_get_max_threads()))
+#endif
+  for (auto i = 0; i < collectionSize; ++i) {
+    loopBody(i);
+  }
+}
+
+template <class Particle>
 void AutoPas<Particle>::addParticle(const Particle &p) {
   _logicHandler->addParticle(p);
+}
+
+template <class Particle>
+template <class Collection>
+void AutoPas<Particle>::addParticles(Collection &&particles) {
+  addParticlesAux(particles.size(), 0, particles.size(), [&](auto i) { addParticle(particles[i]); });
+}
+
+template <class Particle>
+template <class Collection, class F>
+void AutoPas<Particle>::addParticlesIf(Collection &&particles, F predicate) {
+  std::vector<char> predicateMask(particles.size());
+  int numTrue = 0;
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel for reduction(+ : numTrue)
+#endif
+  for (auto i = 0; i < particles.size(); ++i) {
+    if (predicate(particles[i])) {
+      predicateMask[i] = static_cast<char>(true);
+      ++numTrue;
+    } else {
+      predicateMask[i] = static_cast<char>(false);
+    }
+  }
+
+  addParticlesAux(numTrue, 0, particles.size(), [&](auto i) {
+    if (predicateMask[i]) {
+      addParticle(particles[i]);
+    }
+  });
 }
 
 template <class Particle>
@@ -142,6 +191,36 @@ void AutoPas<Particle>::forceRetune() {
 template <class Particle>
 void AutoPas<Particle>::addHaloParticle(const Particle &haloParticle) {
   _logicHandler->addHaloParticle(haloParticle);
+}
+
+template <class Particle>
+template <class Collection>
+void AutoPas<Particle>::addHaloParticles(Collection &&particles) {
+  addParticlesAux(0, particles.size(), particles.size(), [&](auto i) { addHaloParticle(particles[i]); });
+}
+
+template <class Particle>
+template <class Collection, class F>
+void AutoPas<Particle>::addHaloParticlesIf(Collection &&particles, F predicate) {
+  std::vector<char> predicateMask(particles.size());
+  int numTrue = 0;
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel for reduction(+ : numTrue)
+#endif
+  for (auto i = 0; i < particles.size(); ++i) {
+    if (predicate(particles[i])) {
+      predicateMask[i] = static_cast<char>(true);
+      ++numTrue;
+    } else {
+      predicateMask[i] = static_cast<char>(false);
+    }
+  }
+
+  addParticlesAux(0, numTrue, particles.size(), [&](auto i) {
+    if (predicateMask[i]) {
+      addHaloParticle(particles[i]);
+    }
+  });
 }
 
 template <class Particle>
