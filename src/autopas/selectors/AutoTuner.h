@@ -665,10 +665,8 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
         if (i != j) {
           const std::lock_guard<std::mutex> lockB(*_bufferLocks[lockIdB]);
         }
-        f->SoAFunctorPair(particleBufferSoA, haloBufferSoA, true);
-      } else {
-        f->SoAFunctorPair(particleBufferSoA, haloBufferSoA, false);
       }
+      f->SoAFunctorPair(particleBufferSoA, haloBufferSoA, newton3);
     }
   }
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
