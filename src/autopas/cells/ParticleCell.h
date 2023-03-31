@@ -54,12 +54,19 @@ class ParticleCell {
   using ParticleType = Particle;
 
   /**
-   * Destructor of ParticleCell.
+   * Default destructor.
    */
   virtual ~ParticleCell() = default;
 
+  /**
+   * Default default constructor.
+   */
   explicit ParticleCell() = default;
 
+  /**
+   * Default move constructor.
+   * @param other
+   */
   ParticleCell(ParticleCell &&other) noexcept = default;
 
   /**
