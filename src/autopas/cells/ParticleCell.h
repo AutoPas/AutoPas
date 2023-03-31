@@ -58,6 +58,16 @@ class ParticleCell {
    */
   virtual ~ParticleCell() = default;
 
+  explicit ParticleCell() = default;
+
+  ParticleCell(ParticleCell &&other) noexcept = default;
+
+  /**
+   * Copy constructor that creates a new default constructed lock for the new cell.
+   * @param other
+   */
+  ParticleCell(const ParticleCell &other) : _cellLock(){};
+
   /**
    * Adds a Particle to the cell.
    * @param p the particle to be added
