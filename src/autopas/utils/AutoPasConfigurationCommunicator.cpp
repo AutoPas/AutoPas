@@ -148,12 +148,11 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
   generateDistribution(numConfigs, commSize, rank, containerOptions, cellSizeFactors, traversalOptions,
                        loadEstimatorOptions, dataLayoutOptions, newton3Options);
 
-  size_t cellSizeFactorsSize = cellSizeFactors.isFinite() ? cellSizeFactors.size() : 1;
   AutoPasLog(debug,
              "After distributing: {} containers, {} cellSizeFactors, {} traversals, {} dataLayouts, {} newton3s"
              " => {} total configs",
-             containerOptions.size(), cellSizeFactorsSize, traversalOptions.size(), dataLayoutOptions.size(),
-             newton3Options.size(),
+             containerOptions.size(), /*cellSizeFactorsSize*/ (cellSizeFactors.isFinite() ? cellSizeFactors.size() : 1),
+             traversalOptions.size(), dataLayoutOptions.size(), newton3Options.size(),
              getSearchSpaceSize(containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions,
                                 dataLayoutOptions, newton3Options));
 }
