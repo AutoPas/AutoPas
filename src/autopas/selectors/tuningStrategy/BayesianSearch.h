@@ -53,15 +53,13 @@ class BayesianSearch : public TuningStrategyInterface {
    * @param seed seed of random number generator (should only be used for tests)
    */
 
-
-
   explicit BayesianSearch(
       const std::set<ContainerOption> &allowedContainerOptions = ContainerOption::getAllOptions(),
       const NumberSet<double> &allowedCellSizeFactors = NumberInterval<double>(1., 2.),
       const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
       const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions = LoadEstimatorOption::getAllOptions(),
       const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
-      const NumberSet<int>  &allowedVerletRebuildFrequencies = NumberSetFinite<int>({12, 24, 48}),
+      const NumberSet<int> &allowedVerletRebuildFrequencies = NumberSetFinite<int>({12, 24, 48}),
       const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(), size_t maxEvidence = 10,
       AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::upperConfidenceBound,
       size_t predNumLHSamples = 1000, unsigned long seed = std::random_device()())

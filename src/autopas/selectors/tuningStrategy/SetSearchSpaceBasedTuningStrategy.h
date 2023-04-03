@@ -38,10 +38,9 @@ class SetSearchSpaceBasedTuningStrategy : public TuningStrategyInterface {
       : _allowedContainerOptions(allowedContainerOptions) {
     // sets search space and current config
     populateSearchSpace(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
-                        allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options, allowedVerletRebuildFrequencies);
+                        allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options,
+                        allowedVerletRebuildFrequencies);
   }
-
-
 
   /**
    * Constructor for the SetSearchSpaceBasedTuningStrategy that only contains the given configurations.

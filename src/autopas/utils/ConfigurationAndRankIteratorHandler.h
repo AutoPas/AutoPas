@@ -34,15 +34,11 @@ class ConfigurationAndRankIteratorHandler {
    * @param numConfigs
    * @param commSize
    */
-  ConfigurationAndRankIteratorHandler(const std::set<ContainerOption> &containerOptions,
-                                      const std::set<double> &cellSizeFactors,
-                                      const std::set<TraversalOption> &traversalOptions,
-                                      const std::set<LoadEstimatorOption> &loadEstimatorOptions,
-                                      const std::set<DataLayoutOption> &dataLayoutOptions,
-                                      const std::set<Newton3Option> &newton3Options,
-                                      const std::set<int> &verletRebuildFrequencies,
-                                      const int numConfigs,
-                                      const int commSize)
+  ConfigurationAndRankIteratorHandler(
+      const std::set<ContainerOption> &containerOptions, const std::set<double> &cellSizeFactors,
+      const std::set<TraversalOption> &traversalOptions, const std::set<LoadEstimatorOption> &loadEstimatorOptions,
+      const std::set<DataLayoutOption> &dataLayoutOptions, const std::set<Newton3Option> &newton3Options,
+      const std::set<int> &verletRebuildFrequencies, const int numConfigs, const int commSize)
       : _containers(containerOptions),
         _cellSizeFactors(cellSizeFactors),
         _allowedTraversalOptions(traversalOptions),
@@ -91,7 +87,7 @@ class ConfigurationAndRankIteratorHandler {
     loadEstimatorIt = _loadEstimatorIt;
     dataLayoutIt = _dataLayoutIt;
     newton3It = _newton3It;
-    verletRebuildFrequencyIt =  _verletRebuildFrequencyIt;
+    verletRebuildFrequencyIt = _verletRebuildFrequencyIt;
   }
 
   /**
@@ -100,7 +96,7 @@ class ConfigurationAndRankIteratorHandler {
    * point to.
    * @return
    */
-  [[nodiscard]] inline int getRankIterator() const { return  _rankIterator; }
+  [[nodiscard]] inline int getRankIterator() const { return _rankIterator; }
 
   /**
    * Getter for the number of ranks smaller than getRankIterator that have the exact same configs assigned to them.
@@ -126,13 +122,15 @@ class ConfigurationAndRankIteratorHandler {
    * Getter for the CellSizeFactorIterator.
    * @return
    */
-  [[nodiscard]] inline std::set<double>::iterator  getCellSizeFactorIterator() const { return _cellSizeFactorIt; }
+  [[nodiscard]] inline std::set<double>::iterator getCellSizeFactorIterator() const { return _cellSizeFactorIt; }
 
   /**
    * Getter for the VerletRebuildFrequenzyIterator.
    * @return
    */
-  [[nodiscard]] inline std::set<int>::iterator getVerletRebuildFrequencyIterator() const { return _verletRebuildFrequencyIt; }
+  [[nodiscard]] inline std::set<int>::iterator getVerletRebuildFrequencyIterator() const {
+    return _verletRebuildFrequencyIt;
+  }
 
   /**
    * Getter for the TraversalIterator.

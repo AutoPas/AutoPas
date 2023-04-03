@@ -56,9 +56,6 @@ class ContainerSelectorInfo {
            verletRebuildFrequency == other.verletRebuildFrequency;
   }
 
-
-
-
   /**
    * Inequality between ContainerSelectorInfo
    * @param other

@@ -19,8 +19,6 @@ bool MPIParallelizedStrategy::tune(bool currentInvalid) {
     return true;
   }
 
-
-
   if (not _allLocalConfigurationsTested) {
     try {
       _allLocalConfigurationsTested = not _tuningStrategy->tune(currentInvalid);

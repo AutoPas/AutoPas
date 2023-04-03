@@ -23,7 +23,7 @@ inline void ConfigurationAndRankIteratorHandler::advanceConfigIterators() {
   if (_loadEstimatorIt != _allowedAndApplicableLoadEstimatorOptions.end()) return;
   _loadEstimatorIt = _allowedAndApplicableLoadEstimatorOptions.begin();
   ++_traversalIt;
-  if (_traversalIt !=  _allowedAndApplicableTraversalOptions.end()) {
+  if (_traversalIt != _allowedAndApplicableTraversalOptions.end()) {
     selectLoadEstimatorsForCurrentContainerAndTraversal();
     return;
   } else {
@@ -46,7 +46,7 @@ inline void ConfigurationAndRankIteratorHandler::advanceConfigIterators() {
 }
 
 void ConfigurationAndRankIteratorHandler::advanceIterators(const int numConfigs, const int commSize) {
-  if (numConfigs >= commSize or _remainingBlockSize ==  0) {
+  if (numConfigs >= commSize or _remainingBlockSize == 0) {
     advanceConfigIterators();
   }
 

@@ -33,7 +33,8 @@ class Configuration {
    * @param _verletRebuildFrequency
    */
   constexpr Configuration(ContainerOption _container, double _cellSizeFactor, TraversalOption _traversal,
-                          LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout, Newton3Option _newton3, int _verletRebuildFrequency)
+                          LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout, Newton3Option _newton3,
+                          int _verletRebuildFrequency)
       : container(_container),
         traversal(_traversal),
         loadEstimator(_loadEstimator),
@@ -45,10 +46,14 @@ class Configuration {
   /**
    * Constructor taking no arguments. Initializes all properties to an invalid choice or false.
    */
-  constexpr Configuration() : container(), traversal(), loadEstimator(), dataLayout(), newton3(), cellSizeFactor(-1.), verletRebuildFrequency(-1) {}
-
-
-
+  constexpr Configuration()
+      : container(),
+        traversal(),
+        loadEstimator(),
+        dataLayout(),
+        newton3(),
+        cellSizeFactor(-1.),
+        verletRebuildFrequency(-1) {}
 
   /**
    * Returns string representation in JSON style of the configuration object.
@@ -142,7 +147,6 @@ class Configuration {
     retString.pop_back();
     return retString;
   }
-
 };
 
 /**
@@ -194,8 +198,10 @@ inline bool operator!=(const Configuration &lhs, const Configuration &rhs) { ret
  * @return
  */
 inline bool operator<(const Configuration &lhs, const Configuration &rhs) {
-  return std::tie(lhs.container, lhs.cellSizeFactor, lhs.traversal, lhs.loadEstimator, lhs.dataLayout, lhs.newton3, lhs.verletRebuildFrequency) <
-         std::tie(rhs.container, rhs.cellSizeFactor, rhs.traversal, rhs.loadEstimator, rhs.dataLayout, rhs.newton3, rhs.verletRebuildFrequency);
+  return std::tie(lhs.container, lhs.cellSizeFactor, lhs.traversal, lhs.loadEstimator, lhs.dataLayout, lhs.newton3,
+                  lhs.verletRebuildFrequency) < std::tie(rhs.container, rhs.cellSizeFactor, rhs.traversal,
+                                                         rhs.loadEstimator, rhs.dataLayout, rhs.newton3,
+                                                         rhs.verletRebuildFrequency);
 }
 
 /**
@@ -219,7 +225,5 @@ struct ConfigHash {
     return enumHash ^ doubleHash ^ intHash;
   }
 };
-
-
 
 }  // namespace autopas

@@ -47,8 +47,10 @@ class FeatureVector : public Configuration {
    * @param verletRebuildFrequency
    */
   FeatureVector(ContainerOption container, double cellSizeFactor, TraversalOption traversal,
-                LoadEstimatorOption loadEstimator, DataLayoutOption dataLayout, Newton3Option newton3, int verletRebuildFrequency)
-      : Configuration(container, cellSizeFactor, traversal, loadEstimator, dataLayout, newton3, verletRebuildFrequency) {}
+                LoadEstimatorOption loadEstimator, DataLayoutOption dataLayout, Newton3Option newton3,
+                int verletRebuildFrequency)
+      : Configuration(container, cellSizeFactor, traversal, loadEstimator, dataLayout, newton3,
+                      verletRebuildFrequency) {}
 
   /**
    * Construct from Configuration.
@@ -72,9 +74,6 @@ class FeatureVector : public Configuration {
         verletRebuildFrequency - other.verletRebuildFrequency;
     return result;
   }
-
-
-
 };
 
 /**

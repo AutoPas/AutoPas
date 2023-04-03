@@ -17,7 +17,7 @@ class NumberInterval : public NumberSet<Number> {
   /**
    * Default Constructor: Create a range which only contains 0
    */
-  NumberInterval() :  _min(0.), _max(0.) {}
+  NumberInterval() : _min(0.), _max(0.) {}
   /**
    * Create a range which only contains given value
    * @param val
@@ -42,7 +42,7 @@ class NumberInterval : public NumberSet<Number> {
    * If two are provided the smaller one is assumed to be the min value.
    */
   inline void resetValues(std::set<Number> &numbers) override {
-    if (numbers.size() ==  1) {
+    if (numbers.size() == 1) {
       _min = *numbers.begin();
       _max = *numbers.begin();
     } else if (numbers.size() == 2) {

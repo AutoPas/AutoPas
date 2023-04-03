@@ -47,7 +47,4 @@ std::unique_ptr<autopas::TuningStrategyInterface> generateTuningStrategy(
     const std::string &outputSuffix = "", MPIStrategyOption mpiStrategyOption = MPIStrategyOption::noMPI,
     AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD);
 
-
-
-
 }  // namespace autopas::TuningStrategyFactory

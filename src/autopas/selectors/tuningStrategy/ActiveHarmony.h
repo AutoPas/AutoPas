@@ -51,8 +51,7 @@ class ActiveHarmony : public TuningStrategyInterface {
                 const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
                 const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                 const std::set<Newton3Option> &allowedNewton3Options,
-                const NumberSet<int> &allowedVerletRebuildFrequencies,
-                const MPIStrategyOption mpiStrategyOption,
+                const NumberSet<int> &allowedVerletRebuildFrequencies, const MPIStrategyOption mpiStrategyOption,
                 const AutoPas_MPI_Comm comm)
       : _allowedContainerOptions(allowedContainerOptions),
         _allowedCellSizeFactors(allowedCellSizeFactors.clone()),
@@ -66,8 +65,6 @@ class ActiveHarmony : public TuningStrategyInterface {
         _comm(comm),
         _nonLocalServer(getenv("HARMONY_HOST") != nullptr and
                         mpiStrategyOption == MPIStrategyOption::divideAndConquer) {
-
-
     auto cellSizeDummy = NumberSetFinite<double>{-1};
     auto rebuildFreqDummy = NumberSetFinite<int>{-1};
     utils::AutoPasConfigurationCommunicator::distributeConfigurations(

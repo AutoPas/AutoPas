@@ -18,12 +18,11 @@
 
 std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory::generateTuningStrategy(
     autopas::TuningStrategyOption tuningStrategyOption, std::set<autopas::ContainerOption> &allowedContainers,
-    autopas::NumberSet<double> &allowedCellSizeFactors,
-    std::set<autopas::TraversalOption> &allowedTraversals, std::set<autopas::LoadEstimatorOption> &allowedLoadEstimators,
+    autopas::NumberSet<double> &allowedCellSizeFactors, std::set<autopas::TraversalOption> &allowedTraversals,
+    std::set<autopas::LoadEstimatorOption> &allowedLoadEstimators,
     std::set<autopas::DataLayoutOption> &allowedDataLayouts, std::set<autopas::Newton3Option> &allowedNewton3Options,
-    NumberSet<int> &allowedVerletRebuildFrequencies,
-    unsigned int maxEvidence, double relativeOptimum, unsigned int maxTuningPhasesWithoutTest,
-    double relativeBlacklistRange, unsigned int evidenceFirstPrediction,
+    NumberSet<int> &allowedVerletRebuildFrequencies, unsigned int maxEvidence, double relativeOptimum,
+    unsigned int maxTuningPhasesWithoutTest, double relativeBlacklistRange, unsigned int evidenceFirstPrediction,
     AcquisitionFunctionOption acquisitionFunctionOption, ExtrapolationMethodOption extrapolationMethodOption,
     const std::string &outputSuffix, MPIStrategyOption mpiStrategyOption, AutoPas_MPI_Comm comm) {
   // ======== prepare MPI =====================================================
@@ -42,8 +41,6 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     case MPIStrategyOption::noMPI: {
       break;
     }
-
-
 
     case MPIStrategyOption::divideAndConquer: {
 #ifndef AUTOPAS_INTERNODE_TUNING
@@ -65,7 +62,8 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
         fallbackCellSizeFactors = std::make_unique<autopas::NumberInterval<double>>(allowedCellSizeFactors.getMin(),
                                                                                     allowedCellSizeFactors.getMax());
       }
-      fallbackVerletRebuildFrequencies = std::make_unique<autopas::NumberSetFinite<int>>(allowedVerletRebuildFrequencies.getAll());
+      fallbackVerletRebuildFrequencies =
+          std::make_unique<autopas::NumberSetFinite<int>>(allowedVerletRebuildFrequencies.getAll());
       fallbackTraversals = std::set<autopas::TraversalOption>(allowedTraversals);
       fallbackLoadEstimators = std::set<autopas::LoadEstimatorOption>(allowedLoadEstimators);
       fallbackDataLayouts = std::set<autopas::DataLayoutOption>(allowedDataLayouts);
@@ -101,23 +99,24 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
         return nullptr;
       }
 
-      tuningStrategy =
-          std::make_unique<FullSearch>(allowedContainers, allowedCellSizeFactors.getAll(), allowedTraversals,
-                                       allowedLoadEstimators, allowedDataLayouts, allowedNewton3Options, allowedVerletRebuildFrequencies.getAll());
+      tuningStrategy = std::make_unique<FullSearch>(allowedContainers, allowedCellSizeFactors.getAll(),
+                                                    allowedTraversals, allowedLoadEstimators, allowedDataLayouts,
+                                                    allowedNewton3Options, allowedVerletRebuildFrequencies.getAll());
       break;
     }
 
     case TuningStrategyOption::bayesianSearch: {
-      tuningStrategy = std::make_unique<BayesianSearch>(allowedContainers, allowedCellSizeFactors, allowedTraversals,
-                                                        allowedLoadEstimators, allowedDataLayouts, allowedVerletRebuildFrequencies,
-                                                        allowedNewton3Options, maxEvidence, acquisitionFunctionOption);
+      tuningStrategy = std::make_unique<BayesianSearch>(
+          allowedContainers, allowedCellSizeFactors, allowedTraversals, allowedLoadEstimators, allowedDataLayouts,
+          allowedVerletRebuildFrequencies, allowedNewton3Options, maxEvidence, acquisitionFunctionOption);
       break;
     }
 
     case TuningStrategyOption::bayesianClusterSearch: {
       tuningStrategy = std::make_unique<BayesianClusterSearch>(
           allowedContainers, allowedCellSizeFactors, allowedTraversals, allowedLoadEstimators, allowedDataLayouts,
-          allowedNewton3Options, allowedVerletRebuildFrequencies.getAll(), maxEvidence, acquisitionFunctionOption, outputSuffix);
+          allowedNewton3Options, allowedVerletRebuildFrequencies.getAll(), maxEvidence, acquisitionFunctionOption,
+          outputSuffix);
       break;
     }
 
@@ -131,16 +130,16 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
       }
       tuningStrategy = std::make_unique<ActiveHarmony>(allowedContainers, allowedCellSizeFactors, allowedTraversals,
                                                        allowedLoadEstimators, allowedDataLayouts, allowedNewton3Options,
-                                                       allowedVerletRebuildFrequencies,
-                                                       mpiStrategyOption, comm);
+                                                       allowedVerletRebuildFrequencies, mpiStrategyOption, comm);
       break;
     }
 
     case TuningStrategyOption::predictiveTuning: {
       tuningStrategy = std::make_unique<PredictiveTuning>(
           allowedContainers, allowedCellSizeFactors.getAll(), allowedTraversals, allowedLoadEstimators,
-          allowedDataLayouts, allowedNewton3Options, allowedVerletRebuildFrequencies.getAll(), relativeOptimum, maxTuningPhasesWithoutTest,
-          relativeBlacklistRange, evidenceFirstPrediction, extrapolationMethodOption, outputSuffix);
+          allowedDataLayouts, allowedNewton3Options, allowedVerletRebuildFrequencies.getAll(), relativeOptimum,
+          maxTuningPhasesWithoutTest, relativeBlacklistRange, evidenceFirstPrediction, extrapolationMethodOption,
+          outputSuffix);
       break;
     }
 

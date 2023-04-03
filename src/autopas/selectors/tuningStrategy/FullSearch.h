@@ -23,7 +23,6 @@ namespace autopas {
  * Exhaustive full search of the search space by testing every applicable configuration and then selecting the optimum.
  */
 
-
 class FullSearch : public SetSearchSpaceBasedTuningStrategy {
  public:
   /**
@@ -42,8 +41,8 @@ class FullSearch : public SetSearchSpaceBasedTuningStrategy {
              const std::set<DataLayoutOption> &allowedDataLayoutOptions,
              const std::set<Newton3Option> &allowedNewton3Options, const std::set<int> &allowedVerletRebuildFrequencies)
       : SetSearchSpaceBasedTuningStrategy(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
-                                          allowedLoadEstimatorOptions, allowedDataLayoutOptions,
-                                          allowedNewton3Options, allowedVerletRebuildFrequencies) {}
+                                          allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options,
+                                          allowedVerletRebuildFrequencies) {}
 
   /**
    * Constructor for the FullSearch that only contains the given configurations.

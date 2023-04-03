@@ -54,7 +54,7 @@ inline std::byte castToByte(TOption option) {
  * @param verletRebuildFrequencies
  * @return
  */
-size_t getSearchSpaceSize(const std::set<ContainerOption>  &containerOptions, const NumberSet<double> &cellSizeFactors,
+size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, const NumberSet<double> &cellSizeFactors,
                           const std::set<TraversalOption> &traversalOptions,
                           const std::set<LoadEstimatorOption> &loadEstimatorOptions,
                           const std::set<DataLayoutOption> &dataLayoutOptions,
@@ -75,12 +75,11 @@ size_t getSearchSpaceSize(const std::set<ContainerOption>  &containerOptions, co
  * @param rank
  * @param commSize
  */
-void distributeConfigurations(std::set<ContainerOption>  &containerOptions, NumberSet<double> &cellSizeFactors,
+void distributeConfigurations(std::set<ContainerOption> &containerOptions, NumberSet<double> &cellSizeFactors,
                               std::set<TraversalOption> &traversalOptions,
                               std::set<LoadEstimatorOption> &loadEstimatorOptions,
                               std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options,
-                              NumberSet<int> &verletRebuildFrequencies,
-                              int rank, int commSize);
+                              NumberSet<int> &verletRebuildFrequencies, int rank, int commSize);
 
 /**
  * Distribute ranks in buckets, which contain only ranks with similar scenarios.
