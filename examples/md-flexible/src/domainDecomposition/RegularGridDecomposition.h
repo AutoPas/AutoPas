@@ -201,7 +201,6 @@ class RegularGridDecomposition final : public DomainDecomposition {
    */
   int _subdomainCount{};
 
-
   int _verletRebuildFrequency;
 
   /**

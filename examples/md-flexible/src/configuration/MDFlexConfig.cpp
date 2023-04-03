@@ -332,7 +332,8 @@ std::string MDFlexConfig::to_string() const {
 }
 
 void MDFlexConfig::calcSimulationBox() {
-  const double interactionLength = cutoff.value + verletSkinRadiusPerTimestep.value * verletRebuildFrequencies.value->getMax();
+  const double interactionLength =
+      cutoff.value + verletSkinRadiusPerTimestep.value * verletRebuildFrequencies.value->getMax();
 
   // helper function so that we can do the same for every object collection
   // resizes the domain to the maximal extents of all objects

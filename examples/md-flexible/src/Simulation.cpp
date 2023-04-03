@@ -36,8 +36,6 @@ extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJ
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::FlopCounterFunctor<ParticleType> *);
 //! @endcond
 
-
-
 #include <sys/ioctl.h>
 #include <unistd.h>
 

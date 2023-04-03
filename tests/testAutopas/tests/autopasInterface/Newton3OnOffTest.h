@@ -26,7 +26,7 @@ class Newton3OnOffTest
  public:
   Newton3OnOffTest() : mockFunctor() {}
 
-  void SetUp()  override {}
+  void SetUp() override {}
 
   void TearDown() override {}
 
@@ -35,7 +35,7 @@ class Newton3OnOffTest
   std::array<double, 3> getBoxMax() const { return {10.0, 10.0, 10.0}; }
 
   static double getCutoff() { return 1.0; }
-  static double getCellSizeFactor() {  return 1.0; }
+  static double getCellSizeFactor() { return 1.0; }
   static double getVerletSkinPerTimestep() { return 0.0; }
   static int getRebuildFrequency() { return 20; }
   static int getClusterSize() { return 4; }
@@ -69,7 +69,7 @@ class Newton3OnOffTest
       auto [containerOption, traversalOption, dataLayoutOption] = inputTuple;
 
       auto retStr =
-          containerOption.to_string()   + "_" + traversalOption.to_string() + "_" + dataLayoutOption.to_string();
+          containerOption.to_string() + "_" + traversalOption.to_string() + "_" + dataLayoutOption.to_string();
       // replace all '-' with '_', otherwise the test name is invalid
       std::replace(retStr.begin(), retStr.end(), '-', '_');
       return retStr;
