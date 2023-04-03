@@ -116,7 +116,7 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
 
   const auto &[expectedPositions, expectedHaloPositions, expectedForces] = setUpExpectations(
       particlePositions, config.boxMin.value, config.boxMax.value, sigma,
-      config.cutoff.value + config.verletSkinRadiusPerTimestep.value * config.verletRebuildFrequency.value,
+      config.cutoff.value + config.verletSkinRadiusPerTimestep.value * config.verletRebuildFrequencies.value->getMax(),
       config.boundaryOption.value);
 
   // particles need to be added at positions inside the domain
