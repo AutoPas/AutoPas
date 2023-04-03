@@ -108,10 +108,8 @@ class BayesianClusterSearch : public TuningStrategyInterface {
         _currentNumEvidence(0),
         _currentOptimalTime(std::numeric_limits<long>::max()),
         _fullSearch(allowedContainerOptions, {allowedCellSizeFactors.getMedian()}, allowedTraversalOptions,
-                    allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options, allowedVerletRebuilFrequencies) {
-
-
-    //TODO: implement Frequency
+                    allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options,
+                    allowedVerletRebuilFrequencies) {
     if (predNumLHSamples <= 0) {
       utils::ExceptionHandler::exception(
           "BayesianSearch: Number of samples used for predictions must be greater than 0!");
