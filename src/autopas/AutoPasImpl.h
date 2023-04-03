@@ -69,20 +69,21 @@ void AutoPas<Particle>::init() {
   }
   auto tuningStrategy = TuningStrategyFactory::generateTuningStrategy(
       _tuningStrategyOption, _allowedContainers, *_allowedCellSizeFactors, _allowedTraversals, _allowedLoadEstimators,
-      _allowedDataLayouts, _allowedNewton3Options, *_allowedVerletRebuildFrequencies, _maxEvidence, _relativeOptimumRange,
-      _maxTuningPhasesWithoutTest, _relativeBlacklistRange, _evidenceFirstPrediction, _acquisitionFunctionOption,
-      _extrapolationMethodOption, _outputSuffix, _mpiStrategyOption, _autopasMPICommunicator);
+      _allowedDataLayouts, _allowedNewton3Options, *_allowedVerletRebuildFrequencies, _maxEvidence,
+      _relativeOptimumRange, _maxTuningPhasesWithoutTest, _relativeBlacklistRange, _evidenceFirstPrediction,
+      _acquisitionFunctionOption, _extrapolationMethodOption, _outputSuffix, _mpiStrategyOption,
+      _autopasMPICommunicator);
   _autoTuner = std::make_unique<autopas::AutoTuner<Particle>>(
       _boxMin, _boxMax, _cutoff, _verletSkinPerTimestep, _verletClusterSize, std::move(tuningStrategy),
       _mpiTuningMaxDifferenceForBucket, _mpiTuningWeightForMaxDensity, _selectorStrategy, _tuningInterval, _numSamples,
       _outputSuffix);
-  _logicHandler =
-      std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(*(_autoTuner.get()), getAllowedVerletRebuildFrequencies().getMin());
+  _logicHandler = std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(
+      *(_autoTuner.get()), getAllowedVerletRebuildFrequencies().getMin());
 }
 
 template <class Particle>
 template <class Functor>
-bool AutoPas<Particle>::iteratePairwise( Functor *f) {
+bool AutoPas<Particle>::iteratePairwise(Functor *f) {
   static_assert(not std::is_same<Functor, autopas::Functor<Particle, Functor>>::value,
                 "The static type of Functor in iteratePairwise is not allowed to be autopas::Functor. Please use the "
                 "derived type instead, e.g. by using a dynamic_cast.");
@@ -97,7 +98,7 @@ template <class Particle>
 size_t AutoPas<Particle>::getNumberOfParticles(IteratorBehavior behavior) const {
   size_t numParticles{0};
   if (behavior & IteratorBehavior::owned) {
-    numParticles +=  _logicHandler->getNumParticlesOwned();
+    numParticles += _logicHandler->getNumParticlesOwned();
   }
   if (behavior & IteratorBehavior::halo) {
     numParticles += _logicHandler->getNumParticlesHalo();

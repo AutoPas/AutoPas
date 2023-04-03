@@ -23,12 +23,12 @@ class FeatureVectorEncoder {
   /**
    * Indices of the discrete part of convertToTunable().
    */
-  enum class DiscreteIndices { containerTraversalEstimator, dataLayout, newton3, verletRebuildFrequency, TOTALNUMBER};
+  enum class DiscreteIndices { containerTraversalEstimator, dataLayout, newton3, verletRebuildFrequency, TOTALNUMBER };
 
   /**
    * Indices of the continuous part of convertToTunable().
    */
-  enum class ContinuousIndices { cellSizeFactor, TOTALNUMBER};
+  enum class ContinuousIndices { cellSizeFactor, TOTALNUMBER };
 
  public:
   /**
@@ -71,7 +71,8 @@ class FeatureVectorEncoder {
       const std::vector<FeatureVector::ContainerTraversalEstimatorOption> &containerTraversalEstimatorOptions,
       const std::vector<DataLayoutOption> &dataLayoutOptions, const std::vector<Newton3Option> &newton3Options,
       const NumberSet<double> &cellSizeFactors, const NumberSet<int> &verletRebuildFrequencies) {
-    setAllowedOptions(containerTraversalEstimatorOptions, dataLayoutOptions, newton3Options, cellSizeFactors, verletRebuildFrequencies);
+    setAllowedOptions(containerTraversalEstimatorOptions, dataLayoutOptions, newton3Options, cellSizeFactors,
+                      verletRebuildFrequencies);
   }
 
   /**
@@ -90,7 +91,8 @@ class FeatureVectorEncoder {
     _dataLayoutOptions = dataLayoutOptions;
     _newton3Options = newton3Options;
     auto verletRebuildFrequenciestmp = verletRebuildFrequencies.getAll();
-    _verletRebuildFrequencies = std::vector<int>(verletRebuildFrequenciestmp.begin(), verletRebuildFrequenciestmp.end());
+    _verletRebuildFrequencies =
+        std::vector<int>(verletRebuildFrequenciestmp.begin(), verletRebuildFrequenciestmp.end());
 
     _oneHotDims = _containerTraversalEstimatorOptions.size() + _dataLayoutOptions.size() + _newton3Options.size() +
                   _verletRebuildFrequencies.size() + tunableContinuousDims;
@@ -101,7 +103,8 @@ class FeatureVectorEncoder {
     _discreteRestrictions[static_cast<size_t>(DiscreteIndices::newton3)] = _newton3Options.size();
 
     _continuousRestrictions[static_cast<size_t>(ContinuousIndices::cellSizeFactor)] = cellSizeFactors.clone();
-    _discreteRestrictions[static_cast<size_t>(DiscreteIndices::verletRebuildFrequency)] = verletRebuildFrequencies.size();
+    _discreteRestrictions[static_cast<size_t>(DiscreteIndices::verletRebuildFrequency)] =
+        verletRebuildFrequencies.size();
   }
 
   /**
@@ -399,7 +402,8 @@ class FeatureVectorEncoder {
 
     ContinuousDimensionType continuousValues;
     continuousValues[static_cast<size_t>(ContinuousIndices::cellSizeFactor)] = vec.cellSizeFactor;
-    discreteValues[static_cast<size_t>(DiscreteIndices::verletRebuildFrequency)] = getIndex(_verletRebuildFrequencies, vec.verletRebuildFrequency);
+    discreteValues[static_cast<size_t>(DiscreteIndices::verletRebuildFrequency)] =
+        getIndex(_verletRebuildFrequencies, vec.verletRebuildFrequency);
 
     return std::make_pair(discreteValues, continuousValues);
   }
@@ -420,7 +424,8 @@ class FeatureVectorEncoder {
     auto newton3 = _newton3Options[discreteValues[static_cast<size_t>(DiscreteIndices::newton3)]];
 
     auto cellSizeFactor = continuousValues[static_cast<size_t>(ContinuousIndices::cellSizeFactor)];
-    auto verletRebuildFrequency = _verletRebuildFrequencies[discreteValues[static_cast<size_t>(DiscreteIndices::verletRebuildFrequency)]];
+    auto verletRebuildFrequency =
+        _verletRebuildFrequencies[discreteValues[static_cast<size_t>(DiscreteIndices::verletRebuildFrequency)]];
 
     return FeatureVector(container, cellSizeFactor, traversal, estimator, dataLayout, newton3, verletRebuildFrequency);
   }

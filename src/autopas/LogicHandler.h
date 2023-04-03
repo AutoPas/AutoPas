@@ -28,7 +28,7 @@ class LogicHandler {
    * @param autoTuner
    */
   explicit LogicHandler(autopas::AutoTuner<Particle> &autoTuner)
-      : _autoTuner( autoTuner),
+      : _autoTuner(autoTuner),
         _particleBuffer(autopas_get_max_threads()),
         _haloParticleBuffer(autopas_get_max_threads()) {
     checkMinimalSize();
@@ -40,7 +40,7 @@ class LogicHandler {
    * @return Leaving particles.
    */
   [[nodiscard]] std::vector<Particle> collectLeavingParticlesFromBuffer(bool insertOwnedParticlesToContainer) {
-    const auto &boxMin =   _autoTuner.getContainer()->getBoxMin();
+    const auto &boxMin = _autoTuner.getContainer()->getBoxMin();
     const auto &boxMax = _autoTuner.getContainer()->getBoxMax();
     std::vector<Particle> leavingBufferParticles{};
     for (auto &buffer : _particleBuffer) {
@@ -400,7 +400,8 @@ class LogicHandler {
   }
 
   bool neighborListsAreValid() {
-    if (_stepsSinceLastListRebuild >= _autoTuner.getCurrentConfig().verletRebuildFrequency or _autoTuner.willRebuild()) {
+    if (_stepsSinceLastListRebuild >= _autoTuner.getCurrentConfig().verletRebuildFrequency or
+        _autoTuner.willRebuild()) {
       _neighborListsAreValid = false;
     }
     return _neighborListsAreValid;

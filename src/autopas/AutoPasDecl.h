@@ -534,13 +534,17 @@ class AutoPas {
   }
 
   /**
-   * Get allowed verlet rebuild frequency (only relevant for VarVerletListsAsBuild, VerletClusterLists, VerletLists, VerletListsCells and PairwiseVerletLists).
+   * Get allowed verlet rebuild frequency (only relevant for VarVerletListsAsBuild, VerletClusterLists, VerletLists,
+   * VerletListsCells and PairwiseVerletLists).
    * @return allowedVerletRebuildFrequencies
    */
-  [[nodiscard]] const NumberSet<int> &getAllowedVerletRebuildFrequencies() const { return *_allowedVerletRebuildFrequencies; }
+  [[nodiscard]] const NumberSet<int> &getAllowedVerletRebuildFrequencies() const {
+    return *_allowedVerletRebuildFrequencies;
+  }
 
   /**
-   * Set allowed verlet rebuild frequency (only relevant for VarVerletListsAsBuild, VerletClusterLists, VerletLists, VerletListsCells and PairwiseVerletLists).
+   * Set allowed verlet rebuild frequency (only relevant for VarVerletListsAsBuild, VerletClusterLists, VerletLists,
+   * VerletListsCells and PairwiseVerletLists).
    * @param allowedVerletRebuildFrequencies
    */
   void setAllowedVerletRebuildFrequencies(const NumberSet<int> &allowedVerletRebuildFrequencies) {
@@ -552,15 +556,15 @@ class AutoPas {
   }
 
   /**
-   * Get verlet rebuild frequency (only relevant for VarVerletListsAsBuild, VerletClusterLists, VerletLists, VerletListsCells and PairwiseVerletLists).
+   * Get verlet rebuild frequency (only relevant for VarVerletListsAsBuild, VerletClusterLists, VerletLists,
+   * VerletListsCells and PairwiseVerletLists).
    * @return verletRebuildFrequency
    */
-  int getVerletRebuildFrequency(){
-    return _verletRebuildFrequency;
-  }
+  int getVerletRebuildFrequency() { return _verletRebuildFrequency; }
 
   /**
-   * Set allowed verlet rebuild frequency to one element (only relevant for VarVerletListsAsBuild, VerletClusterLists, VerletLists, VerletListsCells and PairwiseVerletLists).
+   * Set allowed verlet rebuild frequency to one element (only relevant for VarVerletListsAsBuild, VerletClusterLists,
+   * VerletLists, VerletListsCells and PairwiseVerletLists).
    * @param verletRebuildFrequency
    */
   void setVerletRebuildFrequency(int verletRebuildFrequency) {
@@ -709,7 +713,7 @@ class AutoPas {
    * Get extrapolation method for the prediction of the configuration performance.
    * @return
    */
-  ExtrapolationMethodOption  getExtrapolationMethodOption() const { return _extrapolationMethodOption; }
+  ExtrapolationMethodOption getExtrapolationMethodOption() const { return _extrapolationMethodOption; }
 
   /**
    * Set extrapolation method for the prediction of the configuration performance.
@@ -736,7 +740,7 @@ class AutoPas {
    * Get the list of allowed load estimation algorithms.
    * @return
    */
-  const std::set<LoadEstimatorOption>  &getAllowedLoadEstimators() const { return _allowedLoadEstimators; }
+  const std::set<LoadEstimatorOption> &getAllowedLoadEstimators() const { return _allowedLoadEstimators; }
 
   /**
    * Set the list of allowed load estimation algorithms.
@@ -759,7 +763,7 @@ class AutoPas {
    * @param allowedContainers
    */
   void setAllowedContainers(const std::set<ContainerOption> &allowedContainers) {
-    AutoPas::_allowedContainers =   allowedContainers;
+    AutoPas::_allowedContainers = allowedContainers;
   }
 
   /**
