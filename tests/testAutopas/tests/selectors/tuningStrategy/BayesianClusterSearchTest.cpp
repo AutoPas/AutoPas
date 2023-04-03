@@ -15,13 +15,13 @@ TEST_F(BayesianClusterSearchTest, testMaxEvidence) {
       {autopas::ContainerOption::linkedCells}, autopas::NumberSetFinite<double>({1}),
       {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
       {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled},
-      std::set<int>({5,15,30}), maxEvidence);
+      std::set<int>({5, 15, 30}), maxEvidence);
 
   size_t iteration = 0;
 
   // fullSearch phase
   do {
-    autopas::FeatureVector  current(bayesClusterSearch.getCurrentConfiguration());
+    autopas::FeatureVector current(bayesClusterSearch.getCurrentConfiguration());
     bayesClusterSearch.addEvidence(0, iteration);
     ++iteration;
   } while (bayesClusterSearch.tune());
@@ -45,7 +45,7 @@ TEST_F(BayesianClusterSearchTest, testMaxEvidence) {
  * Find best configuration if configuration are similar through tuning phases.
  */
 TEST_F(BayesianClusterSearchTest, testFindBestSimilar) {
-  constexpr size_t maxEvidence =   10;
+  constexpr size_t maxEvidence = 10;
   constexpr unsigned long seed = 21;
   // we use a dummy time function which increases linearly with the squared distance to the chosen optimal solution
   constexpr double timePerDistanceSquared = 654321;
@@ -53,7 +53,7 @@ TEST_F(BayesianClusterSearchTest, testFindBestSimilar) {
       {autopas::ContainerOption::linkedCells}, autopas::NumberInterval<double>(1, 2),
       {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01}, {autopas::LoadEstimatorOption::none},
       {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos},
-      {autopas::Newton3Option::disabled, autopas::Newton3Option::enabled}, std::set<int>({5,15,30}), maxEvidence,
+      {autopas::Newton3Option::disabled, autopas::Newton3Option::enabled}, std::set<int>({5, 15, 30}), maxEvidence,
       autopas::AcquisitionFunctionOption::upperConfidenceBound, "", 50, seed);
 
   // configuration to find
@@ -106,8 +106,8 @@ TEST_F(BayesianClusterSearchTest, testFindBestDifferent) {
       {autopas::ContainerOption::linkedCells}, autopas::NumberInterval<double>(1, 2),
       {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01}, {autopas::LoadEstimatorOption::none},
       {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos},
-      {autopas::Newton3Option::disabled, autopas::Newton3Option::enabled}, std::set<int>({5,15,30}),
-      maxEvidence, autopas::AcquisitionFunctionOption::upperConfidenceBound, "", 50, seed);
+      {autopas::Newton3Option::disabled, autopas::Newton3Option::enabled}, std::set<int>({5, 15, 30}), maxEvidence,
+      autopas::AcquisitionFunctionOption::upperConfidenceBound, "", 50, seed);
 
   // optimal configuration in first tuning phase
   autopas::FeatureVector best1(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08,
@@ -170,8 +170,8 @@ TEST_F(BayesianClusterSearchTest, testFindBestVeryDifferent) {
       {autopas::ContainerOption::linkedCells}, autopas::NumberInterval<double>(1, 2),
       {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01}, {autopas::LoadEstimatorOption::none},
       {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos},
-      {autopas::Newton3Option::disabled, autopas::Newton3Option::enabled}, std::set<int>({5,15,30}),
-      maxEvidence, autopas::AcquisitionFunctionOption::upperConfidenceBound, "", 50, seed);
+      {autopas::Newton3Option::disabled, autopas::Newton3Option::enabled}, std::set<int>({5, 15, 30}), maxEvidence,
+      autopas::AcquisitionFunctionOption::upperConfidenceBound, "", 50, seed);
 
   // optimal configuration in first tuning phase
   autopas::FeatureVector best1(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08,

@@ -13,13 +13,13 @@ autopas::PredictiveTuning PredictiveTuningTest::getPredictiveTuning(
     double blacklistRange, const std::set<autopas::TraversalOption> &allowedLCTraversalOptions) {
   return autopas::PredictiveTuning(
       {autopas::ContainerOption::linkedCells}, {1.}, allowedLCTraversalOptions, {autopas::LoadEstimatorOption::none},
-      {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled}, {5,15,30}, _relativeOptimumRange,
+      {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled}, {5, 15, 30}, _relativeOptimumRange,
       _maxTuningIterationsWithoutTest, blacklistRange, testsUntilFirstPrediction, extrapolationMethodOption);
 }
 
 void PredictiveTuningTest::simulateTuningPhasesAndCheckPrediction(
     autopas::ExtrapolationMethodOption extrapolationMethodOption,
-    const std::vector<std::map<autopas::Configuration,  long>> &evidencePerPhase, unsigned int tuningInterval,
+    const std::vector<std::map<autopas::Configuration, long>> &evidencePerPhase, unsigned int tuningInterval,
     const std::map<autopas::Configuration, long> &expectedPredictions) {
   // setup sanity check
   ASSERT_EQ(evidencePerPhase.back().size(), expectedPredictions.size())
@@ -28,7 +28,7 @@ void PredictiveTuningTest::simulateTuningPhasesAndCheckPrediction(
 
   size_t iteration = 0;
 
-  auto predictiveTuning =  getPredictiveTuning(evidencePerPhase.size(), extrapolationMethodOption);
+  auto predictiveTuning = getPredictiveTuning(evidencePerPhase.size(), extrapolationMethodOption);
 
   // First reset tuning.
   predictiveTuning.reset(iteration);

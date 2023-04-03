@@ -19,7 +19,7 @@ class PredictiveTuningTest : public AutoPasTestBase,
   struct PrintToStringParamName {
     template <class ParamType>
     std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
-      auto extrapolationOption =  static_cast<ParamType>(info.param);
+      auto extrapolationOption = static_cast<ParamType>(info.param);
       auto str = extrapolationOption.to_string();
       std::replace(str.begin(), str.end(), '-', '_');
       std::replace(str.begin(), str.end(), '.', '_');

@@ -18,7 +18,7 @@ TEST_F(FullSearchTest, testSearchSpaceEmpty) {
 
 TEST_F(FullSearchTest, testTune) {
   autopas::FullSearch fullSearch(
-      {autopas::ContainerOption::linkedCells},  {1.},
+      {autopas::ContainerOption::linkedCells}, {1.},
       {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
       {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled}, {5});
 
@@ -34,7 +34,7 @@ TEST_F(FullSearchTest, testTune) {
                              autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
                              autopas::Newton3Option::disabled, 5)};
 
-  testedConfigs.emplace_back(  fullSearch.getCurrentConfiguration());
+  testedConfigs.emplace_back(fullSearch.getCurrentConfiguration());
   fullSearch.addEvidence(10, 0);
 
   fullSearch.tune();
