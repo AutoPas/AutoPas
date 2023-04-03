@@ -231,9 +231,8 @@ class MDFlexConfig {
    * verletRebuildFrequencies
    */
   MDFlexOption<std::shared_ptr<autopas::NumberSet<int>>, __LINE__> verletRebuildFrequencies{
-      std::make_shared<autopas::NumberSetFinite<int>>(std::set<int>{5, 10, 20}), "verlet-rebuild-frequencies",
-      true, "Number of iterations after which containers are rebuilt."};
-
+      std::make_shared<autopas::NumberSetFinite<int>>(std::set<int>{5, 10, 20}), "verlet-rebuild-frequencies", true,
+      "Number of iterations after which containers are rebuilt."};
 
   /**
    * logFileName
@@ -345,13 +344,13 @@ class MDFlexConfig {
    * vtkWriteFrequency
    */
   MDFlexOption<size_t, __LINE__> vtkWriteFrequency{100, "vtk-write-frequency", true,
+
                                                    "Number of iterations after which a VTK file is written."};
   /**
    * verletClusterSize
    */
   MDFlexOption<unsigned int, __LINE__> verletClusterSize{4, "verlet-cluster-size", true,
                                                          "Number of particles in Verlet clusters."};
-
 
   /**
    * verletSkinRadiusPerTimeStep
