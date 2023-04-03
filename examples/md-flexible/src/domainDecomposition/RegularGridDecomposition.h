@@ -5,7 +5,7 @@
  */
 #pragma once
 
-#if defined(AUTOPAS_ENABLE_ALLLBL)
+#if defined(MD_FLEXIBLE_ENABLE_ALLLBL)
 #include <ALL.hpp>
 #endif
 #include <memory>
@@ -253,7 +253,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    */
   std::array<double, _dimensionCount> _localBoxMax{};
 
-#if defined(AUTOPAS_ENABLE_ALLLBL)
+#if defined(MD_FLEXIBLE_ENABLE_ALLLBL)
   /**
    * The ALL load balancer used for diffuse load balancing
    * We cannot use a shared pointer here, because whenn the load balancer is deleted, it calls MPI_Comm_free after
@@ -335,7 +335,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    */
   void balanceWithInvertedPressureLoadBalancer(double work);
 
-#if defined(AUTOPAS_ENABLE_ALLLBL)
+#if defined(MD_FLEXIBLE_ENABLE_ALLLBL)
   /**
    * Balances the subdomains of the grid decomposition using the ALL load balancer.
    * @param work: The work performed by the process owning this sudomain.
