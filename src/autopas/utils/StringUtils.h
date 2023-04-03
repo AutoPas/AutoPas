@@ -132,7 +132,6 @@ static const std::string regexDoubleStr{
     ")?"      // end of group, group is optional
 };
 
-
 /**
  *  Regex for a int e.g. 1 | 2 | 3
  */
@@ -274,7 +273,7 @@ inline std::unique_ptr<autopas::NumberSet<double>> parseNumberSetDoubles(const s
                            + regexDoubleStr +  // a double
                            ")"                 // end of 2. capture
   );
-  std::smatch matches ;
+  std::smatch matches;
   if (std::regex_match(setString, matches, regexInterval)) {
     try {
       // matchers has whole string as str(0) so start at 1
@@ -286,7 +285,7 @@ inline std::unique_ptr<autopas::NumberSet<double>> parseNumberSetDoubles(const s
     }
   }
 
-  std::set<double> values =   autopas::utils::StringUtils::parseDoubles(setString);
+  std::set<double> values = autopas::utils::StringUtils::parseDoubles(setString);
   return std::make_unique<autopas::NumberSetFinite<double>>(values);
 }
 
@@ -302,21 +301,21 @@ inline std::unique_ptr<autopas::NumberSet<double>> parseNumberSetDoubles(const s
  */
 inline std::unique_ptr<autopas::NumberSet<int>> parseNumberSetInts(const std::string &setString) {
   // try to match an interval x-y
-  std::regex regexInterval("("                 // start of 1. capture
+  std::regex regexInterval("("              // start of 1. capture
                            + regexIntStr +  // a double
-                           ")"                 // end of 1. capture
-                           "\\s*"              // maybe whitespaces
-                           "-"                 // a dash
-                           "\\s*"              // maybe more whitespaces
-                           "("                 // start of 2. capture
+                           ")"              // end of 1. capture
+                           "\\s*"           // maybe whitespaces
+                           "-"              // a dash
+                           "\\s*"           // maybe more whitespaces
+                           "("              // start of 2. capture
                            + regexIntStr +  // a double
-                           ")"                 // end of 2. capture
+                           ")"              // end of 2. capture
   );
   std::smatch matches;
   if (std::regex_match(setString, matches, regexInterval)) {
     try {
-      std::set<int> numbers =  std::set<int>({});
-      for (const auto& match : matches) {
+      std::set<int> numbers = std::set<int>({});
+      for (const auto &match : matches) {
         numbers.insert(std::stoi(match.str()));
       }
       return std::make_unique<autopas::NumberSetFinite<int>>(std::set<int>({numbers}));
