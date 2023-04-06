@@ -55,7 +55,7 @@ function updatePositionParallelSub(autoPasContainer, deltaT, particlePropertiesL
         force .*= (deltaT * deltaT / (2*getMass(particlePropertiesLibrary, Particles.getTypeId(particle))))
         force .+= velocity
         addPosition(particle, force)
-        
+        #=
         _out = false
         _p = getPosition(particle)
         for i in 1:3
@@ -68,6 +68,7 @@ function updatePositionParallelSub(autoPasContainer, deltaT, particlePropertiesL
             index += 1
         end
         # println(toString(particle))
+        =#
         for i in 1:nthreads
             Simulator.Iterators.:++(iter)
         end
@@ -91,7 +92,7 @@ end
 
 function updatePositionJM(pV, deltaT, ppL, gloablForce)
 
-    for particle in pV
+    Threads.@threads for particle in pV
         velocity = particle.vel
         force = particle.f
 
@@ -210,6 +211,84 @@ function handlePeriodic(autoPasContainer, minBorder, maxBorder)
         Simulator.Iterators.:++(iter)
     end
 
+end
+
+function outflowBoundary(autoPasContainer, domain)
+    _min = domain.localBoxMin
+    _max = domain.localBoxMax
+
+    iter = AutoPasInterface.begin(autoPasContainer, Options.IteratorBehavior(Options.ownedOrHalo))
+
+    while isValid(iter)
+        pos = getPosition(Simulator.Iterators.:*(iter))
+        
+        if 1 in (pos .< _min)
+            deleteParticle(autoPasContainer, Simulator.Iterators.:*(iter))
+        elseif 1 in (pos .> _max)
+            deleteParticle(autoPasContainer, Simulator.Iterators.:*(iter))
+        end
+        
+        Simulator.Iterators.:++(iter)
+    end
+end
+
+function updatePositionSeq(autoPasContainer, deltaT, particlePropertiesLibrary, globalForce, iter, si, li)
+
+    for i in si:li
+        particle = Simulator.Iterators.:*(iter)
+        velocity = [getV(particle, i) for i in 0:2]
+        force = [getF(particle, i) for i in 0:2]
+        setOldF(particle, force)
+        setForce(particle, globalForce)
+        velocity .*=  deltaT
+        force .*= (deltaT * deltaT / (2*getMass(particlePropertiesLibrary, Particles.getTypeId(particle))))
+        force .+= velocity
+        addPosition(particle, force)
+        
+        Simulator.Iterators.:++(iter)
+    end
+
+end
+
+function updatePositionSeq2(autoPasContainer, deltaT, particlePropertiesLibrary, globalForce, iter, si, li)
+
+    for i in si:li
+        particle = Simulator.Iterators.:*(iter)
+        velocity = getVelocity(particle) # [getV(particle, i) for i in 0:2]
+        force = getForce(particle) # [getF(particle, i) for i in 0:2]
+        setOldF(particle, force)
+        setForce(particle, globalForce)
+        velocity .*=  deltaT
+        force .*= (deltaT * deltaT / (2*getMass(particlePropertiesLibrary, Particles.getTypeId(particle))))
+        force .+= velocity
+        addPosition(particle, force)
+        
+        Simulator.Iterators.:++(iter)
+    end
+
+end
+
+function updatePositionParallel2(autoPasContainer, deltaT, particlePropertiesLibrary, globalForce)
+    nthreads = Threads.nthreads()
+    nparticles = getNumberOfParticles(autoPasContainer, IteratorBehavior(ownedOrHalo))
+    parts = nparticles / nthreads
+    Threads.@threads for i in 1:nthreads
+        # calculate start index and 
+        iter = AutoPasInterface.begin(autoPasContainer, IteratorBehavior(ownedOrHalo))
+        si = (i-1)*parts
+        li = i*parts-1
+        for j in 1:si
+            Simulator.Iterators.:++(iter)
+        end
+        if i == nthreads
+            li = nparticles-1
+        end
+        # version single
+        updatePositionSeq(autoPasContainer, deltaT, particlePropertiesLibrary, globalForce,  iter, si, li)
+        
+        # version array ref
+        # updatePositionSeq2(autoPasContainer, deltaT, particlePropertiesLibrary, globalForce,  iter, si, li)
+    end
 end
 
 function executeUpdates()

@@ -97,17 +97,20 @@ function startSimulationEx(autoPasContainer, particlePropertiesLibrary, inputPar
         Simulator.Iterators.:++(iter)
         index += 1
     end
-    =#
+   
     for i in 1:10
         p = Simulator.Iterators.:*(iter)
         println(toString(p))
         Simulator.Iterators.:++(iter)
     end
+     =#
     @inbounds for iteration = 1 : inputParameters.iterations
+        #=
         if mod(iteration, tmp) == 0
             println("at iteration: ", iteration)
             println("#p: ", getNumberOfParticles(autoPasContainer, IteratorBehavior(ownedOrHalo)))
         end
+        =#
     # for iteration = 1 : inputParameters.iterations
         #=
         if iteration % 10 == 0 && iteration < 100
@@ -144,27 +147,40 @@ function startSimulationEx(autoPasContainer, particlePropertiesLibrary, inputPar
         # updatePositions(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
 
         # @timeit "pos new" updatePo(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
+        
+        # parallel 1
         @timeit "pos update parallel" updatePositionParallel(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
+        
+        # parallel 2
+        # @timeit "pos update parallel 2" updatePositionParallel2(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce )
+
+
         # updatePo(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
-        updateContainer(autoPasContainer)
-        @timeit "force update" updateForces(autoPasContainer, inputParameters.globalForce, particlePropertiesLibrary)
+        # @timeit "update container" updateContainer(autoPasContainer)
+        # @timeit "outlfow boundary" outflowBoundary(autoPasContainer, domain)
+        # @timeit "exchangeMigrating" exchangeMigratingParticles(autoPasContainer, domain, comm)
+        # @timeit "exchange halo" exchangeHaloParticles(autoPasContainer, domain, comm)
+        # @timeit "force update" updateForces(autoPasContainer, inputParameters.globalForce, particlePropertiesLibrary)
         # updateForces(autoPasContainer, inputParameters.globalForce, particlePropertiesLibrary)
         
         # @timeit "vel update" updateVelocities(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary)
-        @timeit "vel update parallel" updateVelocitiesParallel(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary)
+        # @timeit "vel update parallel" updateVelocitiesParallel(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary)
         # updateVelocities(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary)
         
         # @timeit "convert" convertAndSo(autoPasContainer, pV)
 
     end
+    outflowBoundary(autoPasContainer, domain)
     iter = AutoPasInterface.begin(autoPasContainer, IteratorBehavior(ownedOrHalo))
     index = 0
+    #=
     while isValid(iter) && (index < 10)
         p = Simulator.Iterators.:*(iter)
         println(toString(p))
         Simulator.Iterators.:++(iter)
         index += 1
     end
+    =#
 
     println("left particles: ", getNumberOfParticles(autoPasContainer, IteratorBehavior(ownedOrHalo)))
     print_timer()
@@ -180,6 +196,24 @@ function startSimulationEx(autoPasContainer, particlePropertiesLibrary, inputPar
         Simulator.Iterators.:++(iter)
     end
     =#
+end
+
+function startSimulationEx2(autoPasContainer, particlePropertiesLibrary, inputParameters, domain, comm, pV)
+    
+    @inbounds for iteration = 1 : inputParameters.iterations
+        
+        @timeit "pos update julia" updatePositionJM(pV, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
+        
+        # parallel 1
+        # @timeit "pos update parallel" updatePositionParallel(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce)
+        
+        # parallel 2 ebable for difference in single and array ref
+        @timeit "pos update parallel 2" updatePositionParallel2(autoPasContainer, inputParameters.deltaT, particlePropertiesLibrary, inputParameters.globalForce )
+
+    end
+    outflowBoundary(autoPasContainer, domain)
+    println("left particles: ", getNumberOfParticles(autoPasContainer, IteratorBehavior(ownedOrHalo)))
+    print_timer()
 end
 #=
 

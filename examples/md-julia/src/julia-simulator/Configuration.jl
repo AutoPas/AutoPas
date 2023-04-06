@@ -20,8 +20,7 @@ function parseInput(inputParameters, comm)
     particles = initPplAndParticles(particlePropertiesLibrary, inputParameters.objects)
 
     # create AutoPas container and initialize all values
-    autoPasContainer = initAutoPasContainer(inputParameters)
-    Properties.calculateMixingCoefficients(particlePropertiesLibrary)
+    
 
     # create subdomain
     globalBoxMin = inputParameters.boxMin
@@ -35,6 +34,19 @@ function parseInput(inputParameters, comm)
     # domain = 12
     # width = 10
     domain = createDomain(globalBoxMin, globalBoxMax, width, comm, inputParameters.cutoff)
+    r = domain.rank
+    mi = domain.localBoxMin
+    ma = domain.localBoxMax
+    println("rank $r local box min: $mi and max: $ma")
+    # setBoxMin(autoPasContainer, domain.localBoxMin)
+    # setBoxMax(autoPasContainer, domain.localBoxMax)
+    # maa = getBoxMax(autoPasContainer)
+    # mia = getBoxMin(autoPasContainer)
+    # println("rank $r min: $mia and max: $maa")
+    inputParameters.boxMin = mi
+    inputParameters.boxMax = ma
+    autoPasContainer = initAutoPasContainer(inputParameters)
+    Properties.calculateMixingCoefficients(particlePropertiesLibrary)
 
     # add particles to AutoPas container and check if particle is inside local domain
     #=
@@ -57,11 +69,17 @@ function parseInput(inputParameters, comm)
 end
 
 function addParticlesToContainer(autoPasContainer, particles, domain)
+    indexTotal = 0
+    indexAdded = 0
     for particle in particles
+        indexTotal += 1
         if insideLocalDomain(domain.localBoxMin, domain.localBoxMax, particle)
             addParticle(autoPasContainer, particle)
+            indexAdded += 1
         end
     end
+
+    println("added particles: $indexAdded of $indexTotal")
 end
 
 function initPplAndParticles(ppl, objects)

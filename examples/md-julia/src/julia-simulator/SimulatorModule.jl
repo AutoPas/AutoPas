@@ -164,7 +164,8 @@ export
   startSimulation,
   printSimulation,
   simulate,
-  startSimulationEx
+  startSimulationEx,
+  startSimulationEx2
 
 include("./TimeDiscretization.jl")
 export
@@ -174,7 +175,10 @@ export
   convertAndSo,
   updatePo,
   updatePositionParallel,
-  updateVelocitiesParallel
+  updateVelocitiesParallel,
+  outflowBoundary,
+  updatePositionSeq,
+  updatePositionParallel2
 
 include("./Domain.jl")
 export

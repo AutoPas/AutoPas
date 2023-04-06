@@ -70,6 +70,7 @@ function insideLocalDomain(localBoxMin, localBoxMax, particle)
     pos = getPosition(particle)
     for i in 1:3
         if (pos[i] < localBoxMin[i]) || (pos[i] > localBoxMax[1])
+            # println(pos[i])
             return false
         end
     end

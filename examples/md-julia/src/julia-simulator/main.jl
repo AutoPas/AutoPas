@@ -16,19 +16,48 @@ function printAllParticles(autoPasContainer, comm)
     println("\n rank $r:\n $ost")
 end
 
+function createStrings(autoPasContainer)
+    iter = AutoPasInterface.begin(autoPasContainer, IteratorBehavior(ownedOrHalo))
+    pos = []
+    vel = []
+    force = []
+
+    while isValid(iter)
+        p = Simulator.Iterators.:*(iter)
+        pos_ = getPosition(p)
+        vel_ = getVelocity(p)
+        fo = getForce(p)
+        ps = "id: " * string(getID(p)) * " " * string(pos_[1]) * " " * string(pos_[2]) * " " * string(pos_[3]) * "\n"
+        vs = string(vel_[1]) * " " * string(vel_[2]) * " " * string(vel_[3]) * "\n"
+        fs = string(fo[1]) * " " * string(fo[2]) * " " * string(fo[3]) * "\n"
+        append!(pos, ps)
+        append!(vel, vs)
+        append!(force, fs)
+        Simulator.Iterators.:++(iter)
+    end
+    open("particles.txt", "w") do io
+        write(io, "position\n")
+        write(io, join(pos))
+        write(io, "velocity\n")
+        write(io, join(vel))
+        write(io, "force\n")
+        write(io, join(force))
+    end;
+end
+
 function sim(iterations)
     
     # define CubeGrid
     grid = CubeGridInput()
 
-    grid.particlesPerDimension = [50, 50, 10]
+    grid.particlesPerDimension = [100, 100, 100]
     grid.particleSpacing = 1.12
     grid.bottomLeftCorner = [1.0, 1.0, 1.0]
-    grid.velocity = [0.0, 0.0, 0.0]
+    grid.velocity = [0.1, 0.1, 0.1]
     grid.particleType = 0
-    grid.particleEpsilon = 5
+    grid.particleEpsilon = 1
     grid.particleSigma = 1.0
-    grid.particleMass = 2.0
+    grid.particleMass = 1
     grid.factorBrownianMotion = 0.1
 
     # define another CubeGrid
@@ -76,11 +105,11 @@ function sim(iterations)
     inputParameters.newton3 = [disabled, enabled]
     inputParameters.cutoff = 3
     inputParameters.boxMin = [0, 0, 0]
-    inputParameters.boxMax = [57.5, 57.5, 13.0]
+    inputParameters.boxMax = [1122.0, 113.5, 113.5]
     inputParameters.cellSize = [1] # check which values can be used
-    inputParameters.deltaT = 0.002
+    inputParameters.deltaT = 0.0005
     inputParameters.iterations = iterations
-    inputParameters.globalForce = [0.0, 0.0, 0.0]
+    inputParameters.globalForce = [0.0, 0.0, -0.001]
     inputParameters.periodicBoundaries = true
     inputParameters.objects = [grid]
     inputParameters.thermostat = Thermostat()
@@ -105,16 +134,17 @@ function sim(iterations)
     # startSimulation(autoPasContainer, particlePropertiesLibrary, inputParameters, domain, comm)
 
     # @profile startSimulationEx(autoPasContainer, particlePropertiesLibrary, inputParameters, domain, comm, pV)
-    startSimulationEx(autoPasContainer, particlePropertiesLibrary, inputParameters, domain, comm, pV)
-    
-    # Profile.print()
+    if 
+    @profile startSimulationEx2(autoPasContainer, particlePropertiesLibrary, inputParameters, domain, comm, pV)
+    # createStrings(autoPasContainer)
+    Profile.print()
     println("ending simulation")
 end
 
 function start()
     sim(1)
     for i in 1:1
-        @time sim(500)
+        @time sim(1000)
     end
 end
 

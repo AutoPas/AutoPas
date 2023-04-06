@@ -174,7 +174,7 @@ function migrateParticles(autoPasContainer, domain)
     """
     
     function exchangeHaloParticles(autoPasContainer, domain, comm)
-        println("in exchange halo particles")
+        # println("in exchange halo particles")
         # 0. check if at border of global domain and see what happens in this case ?
         # println("halo")
         # 1. iterate over region and collect the particles
@@ -182,7 +182,7 @@ function migrateParticles(autoPasContainer, domain)
         lMin, lMax = getHaloAreaLeft(domain)
         iter = regionIterator(autoPasContainer, lMin, lMax, IteratorBehavior(ownedOrHalo))
         while isValid(iter)
-            println("in left halo")
+            # println("in left halo")
             push!(particlesLeft, Simulator.Iterators.:*(iter))
             Simulator.Iterators.:++(iter)
         end
@@ -191,7 +191,7 @@ function migrateParticles(autoPasContainer, domain)
         rMin, rMax = getHaloAreaRight(domain)
         iter = regionIterator(autoPasContainer, rMin, rMax, IteratorBehavior(ownedOrHalo))
         while isValid(iter)
-            println("in right halo")
+            # println("in right halo")
             push!(particlesRight, Simulator.Iterators.:*(iter))
             Simulator.Iterators.:++(iter)
         end
@@ -216,7 +216,7 @@ function migrateParticles(autoPasContainer, domain)
     """
     
     function exchangeMigratingParticles(autoPasContainer, domain, comm)
-        println("in exchange migrating particles")
+        # println("in exchange migrating particles")
         # calculate migrating area for left neighbour
         mLeftMin = copy(domain.localBoxMin)
         mLeftMin = mLeftMin .- domain.cutoff
@@ -230,7 +230,7 @@ function migrateParticles(autoPasContainer, domain)
         particlesLeft = []
         iter = regionIterator(autoPasContainer, mLeftMin, mLeftMax, IteratorBehavior(ownedOrHalo))
         while isValid(iter)
-            println("in left area")
+            # println("in left area")
             particle = Simulator.Iterators.:*(iter)
             pos = getPosition(particle)
             if mLeftMin < domain.globalBoxMin
@@ -263,7 +263,7 @@ function migrateParticles(autoPasContainer, domain)
         particlesRight = []
         iter = regionIterator(autoPasContainer, mRightMin, mRightMax, IteratorBehavior(ownedOrHalo))
         while isValid(iter)
-            println("in right area")
+            # println("in right area")
             # TODO: if at boundary -> change position of particle
             particle = Simulator.Iterators.:*(iter)
             pos = getPosition(particle)

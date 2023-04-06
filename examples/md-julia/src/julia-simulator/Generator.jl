@@ -5,11 +5,11 @@ function generateCubeGrid(cubeGrid, mId)
     particles = Vector{MoleculeJ{Float64}}([])
     id_ = 0
     generator = createRandomGenerator()
-    for x in 1 : cubeGrid.particlesPerDimension[1]
+    for z in 1 : cubeGrid.particlesPerDimension[3]
         for y in 1 : cubeGrid.particlesPerDimension[2]
-            for z in 1 : cubeGrid.particlesPerDimension[3]
+            for x in 1 : cubeGrid.particlesPerDimension[1]
                 pos = [(x-1) * cubeGrid.particleSpacing, (y-1) * cubeGrid.particleSpacing, (z-1) * cubeGrid.particleSpacing] + cubeGrid.bottomLeftCorner
-                v = cubeGrid.velocity + addBrownianMotion(cubeGrid.factorBrownianMotion, generator)
+                v = cubeGrid.velocity # + addBrownianMotion(cubeGrid.factorBrownianMotion, generator)
                 particle = MoleculeJ{Float64}(pos, v, mId, cubeGrid.particleType)
                 push!(particles, particle)
                 mId = mId + 1

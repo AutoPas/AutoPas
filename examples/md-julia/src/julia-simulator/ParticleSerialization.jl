@@ -25,16 +25,16 @@ function serializeParticles(particles)
             particleArray[baseIndex + 11] = oldForce[2]
             particleArray[baseIndex + 12] = oldForce[3]
             particleArray[baseIndex + 13] = getTypeId(particle)
-            println("###ownership state: ", getOwnershipState(particle))
-            println("ownedS: ", ownedS, ", haloS: ", haloS)
+            # println("###ownership state: ", getOwnershipState(particle))
+            # println("ownedS: ", ownedS, ", haloS: ", haloS)
             if getOwnershipState(particle) == ownedS
-                println("##ownership state s: owned")
+                # println("##ownership state s: owned")
                 particleArray[baseIndex + 14] = 1.0
             elseif getOwnershipState(particle) == haloS
-                println("##ownership state s: halo")
+                # println("##ownership state s: halo")
                 particleArray[baseIndex + 14] = 2.0
             else
-                println("##ownership state s: undef")
+                # println("##ownership state s: undef")
                 particleArray[baseIndex + 14] = 2.0
             end
             # particleArray[baseIndex + 14] = 1 # TODO: change
@@ -60,10 +60,10 @@ function serializeParticles(particles)
             setForce(particle, [particleArray[baseIndex+7], particleArray[baseIndex+8], particleArray[baseIndex+9]])
             setOldF(particle, [particleArray[baseIndex+10], particleArray[baseIndex+11], particleArray[baseIndex+12]])
             if particleArray[baseIndex + 14] == 1.0
-                println("##ownership state d: owned")
+                # println("##ownership state d: owned")
                 setOwnershipState(particle, ownedS)
             else
-                println("##ownership  state d: halo")
+                # println("##ownership  state d: halo")
                 setOwnershipState(particle, haloS)
             end
             push!(particles, particle)
