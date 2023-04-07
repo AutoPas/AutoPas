@@ -621,51 +621,64 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
   }
 
 #ifdef AUTOPAS_OPENMP
-// one halo and particle buffer pair per thread
-#pragma omp parallel for schedule(static, 1)
+  // Use task parallelism for better dependency resolution than locks
+#pragma omp parallel
+#pragma omp single
 #endif
-  // can't do 'for each' because clang<11 can't do it
-  for (size_t i = 0; i < particleBuffers.size(); ++i) {
-    auto &bufferOuter = particleBuffers[i];
-    for (size_t j = i; j < particleBuffers.size(); ++j) {
-      auto &bufferInner = particleBuffers[j];
-      if (&bufferOuter == &bufferInner) {
-        const std::lock_guard<std::mutex> lock(*_bufferLocks[i]);
-        f->SoAFunctorSingle(bufferInner._particleSoABuffer, newton3);
-      } else {
-        // lock both buffers but make sure to always lock the smaller id first to avoid deadlocks
-        const auto &[lockIdA, lockIdB] = std::minmax(i, j);
-        const std::lock_guard<std::mutex> lockA(*_bufferLocks[lockIdA]);
-        const std::lock_guard<std::mutex> lockB(*_bufferLocks[lockIdB]);
-        f->SoAFunctorPair(bufferInner._particleSoABuffer, bufferOuter._particleSoABuffer, newton3);
-        if constexpr (not newton3) {
-          f->SoAFunctorPair(bufferOuter._particleSoABuffer, bufferInner._particleSoABuffer, newton3);
+  {
+    for (size_t i = 0; i < particleBuffers.size(); ++i) {
+      auto *particleBufferSoA = &particleBuffers[i]._particleSoABuffer;
+#ifdef AUTOPAS_OPENMP
+#pragma omp task depend(mutexinoutset : particleBufferSoA)
+#endif
+      f->SoAFunctorSingle(*particleBufferSoA, newton3);
+    }
+
+    if constexpr (newton3) {
+      for (size_t i = 0; i < particleBuffers.size(); ++i) {
+        auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
+        for (size_t j = i + 1; j < particleBuffers.size(); ++j) {
+          auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
+#ifdef AUTOPAS_OPENMP
+#pragma omp task depend(mutexinoutset : particleBufferSoAA, particleBufferSoAB)
+#endif
+          f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, true);
+        }
+      }
+    } else {
+      for (size_t i = 0; i < particleBuffers.size(); ++i) {
+        auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
+        for (size_t j = 0; j < particleBuffers.size(); ++j) {
+          if (i == j) {
+            continue;
+          }
+          auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
+#ifdef AUTOPAS_OPENMP
+#pragma omp task depend(mutexinoutset : particleBufferSoAA)
+#endif
+          f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, false);
         }
       }
     }
   }
+
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   timerPBufferPBuffer.stop();
   timerPBufferHBuffer.start();
 #endif
-  // 4. particleBuffer with haloParticleBuffer
+// 4. particleBuffer with haloParticleBuffer
 #ifdef AUTOPAS_OPENMP
-// one halo and particle buffer pair per thread
-#pragma omp parallel for schedule(static, 1)
+  // Here, phase / color based parallelism turned out to be more efficient than tasks
+#pragma omp parallel
 #endif
-  // can't do 'for each' because clang<11 can't do it
-  for (size_t i = 0; i < particleBuffers.size(); ++i) {
-    auto &particleBufferSoA = particleBuffers[i]._particleSoABuffer;
-    for (size_t j = 0; j < haloParticleBuffers.size(); ++j) {
-      auto &haloBufferSoA = haloParticleBuffers[j]._particleSoABuffer;
-      if constexpr (newton3) {
-        // lock both buffers but make sure to always lock the smaller id first to avoid deadlocks
-        const auto &[lockIdA, lockIdB] = std::minmax(i, j);
-        const std::lock_guard<std::mutex> lockA(*_bufferLocks[lockIdA]);
-        if (i != j) {
-          const std::lock_guard<std::mutex> lockB(*_bufferLocks[lockIdB]);
-        }
-      }
+  for (int interactionOffset = 0; interactionOffset < haloParticleBuffers.size(); ++interactionOffset) {
+#ifdef AUTOPAS_OPENMP
+#pragma omp for
+#endif
+    for (size_t i = 0; i < particleBuffers.size(); ++i) {
+      auto &particleBufferSoA = particleBuffers[i]._particleSoABuffer;
+      auto &haloBufferSoA =
+          haloParticleBuffers[(i + interactionOffset) % haloParticleBuffers.size()]._particleSoABuffer;
       f->SoAFunctorPair(particleBufferSoA, haloBufferSoA, newton3);
     }
   }
