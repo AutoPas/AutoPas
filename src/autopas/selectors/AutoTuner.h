@@ -84,8 +84,6 @@ class AutoTuner {
         _maxSamples(maxSamples),
         _samplesNotRebuildingNeighborLists(maxSamples),
         _iteration(0),
-        _bufferLocks(std::max(2, autopas::autopas_get_max_threads())),  // typically there are as many buffers as locks
-                                                                        // but guarantee two for unit tests
         _iterationLogger(outputSuffix),
         _tuningResultLogger(outputSuffix),
         _tuningDataLogger(maxSamples, outputSuffix) {
@@ -107,9 +105,6 @@ class AutoTuner {
           lockPtr = std::make_unique<std::mutex>();
         }
       }
-    }
-    for (auto &lockPtr : _bufferLocks) {
-      lockPtr = std::make_unique<std::mutex>();
     }
 
     if (_tuningStrategy->searchSpaceIsEmpty()) {
@@ -399,11 +394,6 @@ class AutoTuner {
    */
   std::vector<std::vector<std::vector<std::unique_ptr<std::mutex>>>> _spacialLocks;
 
-  /**
-   * Locks for particle or halo buffers of the remainder traversal.
-   */
-  std::vector<std::unique_ptr<std::mutex>> _bufferLocks;
-
   IterationLogger _iterationLogger;
   TuningResultLogger _tuningResultLogger;
   TuningDataLogger _tuningDataLogger;
@@ -527,17 +517,6 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
 
   const auto boxMin = containerPtr->getBoxMin();
   const auto interactionLengthInv = 1. / containerPtr->getInteractionLength();
-
-  // Sanity check. If this is violated feel free to add some logic here that adapts the number of locks.
-  if (_bufferLocks.size() < particleBuffers.size() or _bufferLocks.size() < haloParticleBuffers.size()) {
-    utils::ExceptionHandler::exception("Not enough locks for buffers! Num Locks: {}, Buffers: {}, HaloBuffers: {}",
-                                       _bufferLocks.size(), particleBuffers.size(), haloParticleBuffers.size());
-  }
-  // not absolutely necessary but an assumption that is used in this implementation.
-  if (particleBuffers.size() != haloParticleBuffers.size()) {
-    utils::ExceptionHandler::exception("particleBuffers.size() ({}) != haloParticleBuffers.size() ({})",
-                                       particleBuffers.size(), haloParticleBuffers.size());
-  }
 
   // Balance buffers. This makes processing them with static scheduling quite efficient.
   // Also, if particles were not inserted in parallel, this enables us to process them in parallel now.
