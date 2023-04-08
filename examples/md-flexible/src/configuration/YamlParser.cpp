@@ -632,11 +632,31 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         config.useThermostat.value = true;
 
+        m = node[key][config.initTemperature.name].Mark();
+        expected = "Floating-Point Value";
+        description = config.initTemperature.description;
         config.initTemperature.value = node[config.useThermostat.name][config.initTemperature.name].as<double>();
+
+        m = node[key][config.thermostatInterval.name].Mark();
+        expected = "Unsigned Integer";
+        description = config.thermostatInterval.description;
         config.thermostatInterval.value = node[config.useThermostat.name][config.thermostatInterval.name].as<size_t>();
+
+        m = node[key][config.targetTemperature.name].Mark();
+        expected = "Floating-Point Value";
+        description = config.targetTemperature.description;
         config.targetTemperature.value = node[config.useThermostat.name][config.targetTemperature.name].as<double>();
+
+        m = node[key][config.deltaTemp.name].Mark();
+        expected = "Floating-Point Value";
+        description = config.deltaTemp.description;
         config.deltaTemp.value = node[config.useThermostat.name][config.deltaTemp.name].as<double>();
+
+        m = node[key][config.addBrownianMotion.name].Mark();
+        expected = "Boolean Value";
+        description = config.addBrownianMotion.description;
         config.addBrownianMotion.value = node[config.useThermostat.name][config.addBrownianMotion.name].as<bool>();
+
       } else if (key == config.loadBalancer.name) {
         expected = "YAML-sequence of possible values.";
         description = config.loadBalancer.description;
@@ -653,8 +673,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         }
         config.loadBalancer.value = *parsedOptions.begin();
       } else {
-        std::cerr << "Unrecognized option in input YAML: " + key + ". Press any key to continue anyway" << std::endl;
-        getchar();
+        std::cerr << "Unrecognized option in input YAML: " + key << std::endl;
         // return false;
       }
     } catch (const YAML::Exception &e) {
