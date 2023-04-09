@@ -90,8 +90,13 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
                                        options::BoundaryTypeOption::parseOptionExact(tmpNode[1].as<std::string>()),
                                        options::BoundaryTypeOption::parseOptionExact(tmpNode[2].as<std::string>())};
       } else if (key == config.cutoff.name) {
-        expected = "Positive floating point value.";
+        expected = "Positive floating point value > 0.";
         description = config.cutoff.description;
+
+        double tmp = node[config.cutoff.name].as<double>();
+        if (tmp <= 0) {
+          throw YamlParserException("Cutoff has to be > 0!");
+        }
 
         config.cutoff.value = node[config.cutoff.name].as<double>();
       } else if (key == config.cellSizeFactors.name) {
@@ -131,12 +136,12 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           throw YamlParserException("Unrecognized functor!");
         }
       } else if (key == config.iterations.name) {
-        expected = "Unsigned Integer";
+        expected = "Unsigned Integer > 0";
         description = config.iterations.description;
 
         long tmp = node[config.iterations.name].as<long>();
         if (tmp < 1) {
-          throw YamlParserException("The number of iterations has to be a positive integer.");
+          throw YamlParserException("The number of iterations has to be a positive integer > 0.");
         }
         config.iterations.value = tmp;
 
@@ -224,12 +229,12 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         config.tuningSamples.value = tmp;
       } else if (key == config.tuningMaxEvidence.name) {
-        expected = "Unsigned Integer";
+        expected = "Unsigned Integer >= 1";
         description = config.tuningMaxEvidence.description;
 
         int tmp = node[config.tuningMaxEvidence.name].as<int>();
         if (tmp < 1) {
-          throw YamlParserException("Tuning max evidence has to be a positive integer!");
+          throw YamlParserException("Tuning max evidence has to be a positive integer >= 1!");
         }
 
         config.tuningMaxEvidence.value = tmp;
@@ -404,12 +409,12 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           throw YamlParserException("Parsed log filename is empty!");
         }
       } else if (key == config.verletRebuildFrequency.name) {
-        expected = "Unsigned Integer";
+        expected = "Unsigned Integer >= 1";
         description = config.verletRebuildFrequency.description;
 
         int tmp = node[config.verletRebuildFrequency.name].as<int>();
-        if (tmp < 0) {
-          throw YamlParserException("Verlet rebuild frequency has to be a positive integer!");
+        if (tmp < 1) {
+          throw YamlParserException("Verlet rebuild frequency has to be a positive integer >= 1!");
         }
 
         config.verletRebuildFrequency.value = tmp;
@@ -638,8 +643,13 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         config.initTemperature.value = node[config.useThermostat.name][config.initTemperature.name].as<double>();
 
         m = node[key][config.thermostatInterval.name].Mark();
-        expected = "Unsigned Integer";
+        expected = "Unsigned Integer > 0";
         description = config.thermostatInterval.description;
+
+        int tmp = node[config.useThermostat.name][config.thermostatInterval.name].as<size_t>();
+        if (tmp <= 1) {
+          throw YamlParserException("thermostatInterval has to be > 0!");
+        }
         config.thermostatInterval.value = node[config.useThermostat.name][config.thermostatInterval.name].as<size_t>();
 
         m = node[key][config.targetTemperature.name].Mark();
@@ -684,8 +694,9 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
                 << "Parameter description: " << description << std::endl;
       return false;
     } catch (const YamlParserException &e) {
-      std::cerr << "Incorrect input-parameter for key " << key << ": " << e.what() << std::endl
-                << "Message: " << e.what() << std::endl
+      std::cerr << "Error while parsing the YAML-file in line " << (m.line + 1) << " at column " << m.column
+                << std::endl
+                << "Incorrect input-parameter for key " << key << ": " << e.what() << std::endl
                 << "Expected: " << expected << std::endl
                 << "Parameter description: " << description << std::endl;
       return false;
