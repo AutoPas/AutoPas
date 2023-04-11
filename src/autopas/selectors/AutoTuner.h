@@ -608,7 +608,7 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
     for (size_t i = 0; i < particleBuffers.size(); ++i) {
       auto *particleBufferSoA = &particleBuffers[i]._particleSoABuffer;
 #ifdef AUTOPAS_OPENMP
-#pragma omp task depend(mutexinoutset : particleBufferSoA)
+#pragma omp task firstprivate(particleBufferSoA) depend(mutexinoutset : particleBufferSoA)
 #endif
       f->SoAFunctorSingle(*particleBufferSoA, newton3);
     }
@@ -619,7 +619,8 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
         for (size_t j = i + 1; j < particleBuffers.size(); ++j) {
           auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
 #ifdef AUTOPAS_OPENMP
-#pragma omp task depend(mutexinoutset : particleBufferSoAA, particleBufferSoAB)
+#pragma omp task firstprivate(particleBufferSoAA, particleBufferSoAB) depend(mutexinoutset \
+                                                                             : particleBufferSoAA, particleBufferSoAB)
 #endif
           f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, true);
         }
@@ -633,7 +634,7 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
           }
           auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
 #ifdef AUTOPAS_OPENMP
-#pragma omp task depend(mutexinoutset : particleBufferSoAA)
+#pragma omp task firstprivate(particleBufferSoAA, particleBufferSoAB) depend(mutexinoutset : particleBufferSoAB)
 #endif
           f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, false);
         }
