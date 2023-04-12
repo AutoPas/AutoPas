@@ -17,26 +17,6 @@
 namespace MDFlexParser::YamlParser {
 
 /**
- * Custom Exception for the Yaml parser that is thrown if an error occured during parsing.
- */
-class YamlParserException : public std::exception {
- private:
-  const char *message;
-
- public:
-  /**
-   * Constructor for YamlParserException
-   * @param msg The message of the exception.
-   */
-  YamlParserException(const char *msg) : message(msg) {}
-
-  /**
-   * @return Returns the message of the exception.
-   */
-  const char *what() const noexcept override { return message; }
-};
-
-/**
  * Parses the Input for the simulation from the Yaml File specified in the configuration
  * @param config configuration where the input is stored.
  * @return false if any errors occurred during parsing.
@@ -51,7 +31,22 @@ bool parseYamlFile(MDFlexConfig &config);
  * @return Parsed value of key. Throws a runtime_error if key could not be parsed.
  */
 template <typename T>
-T parseObjectValue(YAML::iterator &it, const char *key, const char *exp);
+T parseObjectValueSingle(YAML::iterator &it, const char *key, const char *exp) {
+  T value;
+  try {
+    value = it->second[key].as<T>();
+  } catch (const std::exception &e) {
+    std::string msg;
+    msg.append("Error parsing ");
+    msg.append(key);
+    msg.append(". Make sure that key \"");
+    msg.append(key);
+    msg.append("\" exists and has the expected value: ");
+    msg.append(exp);
+    throw std::runtime_error(msg);
+  }
+  return value;
+}
 
 /**
  * Parses the sequence value of a key in a Object-Node of a YAML-config
@@ -61,7 +56,26 @@ T parseObjectValue(YAML::iterator &it, const char *key, const char *exp);
  * @return Parsed value of key. Throws a runtime_error if key could not be parsed.
  */
 template <typename T, size_t S>
-std::array<T, S> MDFlexParser::YamlParser::parseObjectValue(YAML::iterator &it, const char *key, const char *exp);
+std::array<T, S> parseObjectValueSequence(YAML::iterator &it, const char *key, const char *exp) {
+  std::array<T, S> value;
+  try {
+    YAML::Node n = it->second[key];
+    for (int i = 0; i < S; i++) {
+      value[i] = n[i].as<T>();
+    }
+
+  } catch (const std::exception &e) {
+    std::string msg;
+    msg.append("Error parsing ");
+    msg.append(key);
+    msg.append(". Make sure that key \"");
+    msg.append(key);
+    msg.append("\" exists and has the expected value: ");
+    msg.append(exp);
+    throw std::runtime_error(msg);
+  }
+  return value;
+}
 
 /**
  * Parses a CubeGrid-Object from a CubeGrid-Yaml-Node.
@@ -102,14 +116,6 @@ Sphere parseSphereObject(MDFlexConfig &config, YAML::iterator &it);
  * @return Particles from the CubeClosestPacked-Generator.
  */
 CubeClosestPacked parseCubeClosestPacked(MDFlexConfig &config, YAML::iterator &it);
-
-/**
- * Throws an exception if a parameter from a particle-generator is missing, or could not be parsed.
- * @param key The YAML-key that is missing, or caused the error.
- * @param exp The expected value of this key.
- * @return
- */
-void throwObjectParseException(const char *key, const char *exp);
 
 /**
  * Parses the velcity-parameter of a particle-generator.

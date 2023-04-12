@@ -7,98 +7,64 @@
 
 #include <string>
 
-void MDFlexParser::YamlParser::throwObjectParseException(const char *key, const char *exp) {
-  std::string msg;
-  msg.append("Error parsing ");
-  msg.append(key);
-  msg.append(". Make sure that key \"");
-  msg.append(key);
-  msg.append("\" exists and has the expected value: ");
-  msg.append(exp);
-  throw std::runtime_error(msg);
-}
-
-template <typename T>
-T MDFlexParser::YamlParser::parseObjectValue(YAML::iterator &it, const char *key, const char *exp) {
-  T value;
-  try {
-    value = it->second[key].as<T>();
-  } catch (const std::exception &e) {
-    throwObjectParseException(key, exp);
-  }
-  return value;
-}
-
-template <typename T, size_t S>
-std::array<T, S> MDFlexParser::YamlParser::parseObjectValue(YAML::iterator &it, const char *key, const char *exp) {
-  std::array<T, S> value;
-  try {
-    YAML::Node n = it->second[key];
-    for (int i = 0; i < S; i++) {
-      value[i] = n[i].as<T>();
-    }
-
-  } catch (const std::exception &e) {
-    throwObjectParseException(key, exp);
-  }
-  return value;
-}
-
 std::array<double, 3> MDFlexParser::YamlParser::parseVelocity(MDFlexConfig &config, YAML::iterator &it) {
-  return parseObjectValue<double, 3>(it, MDFlexConfig::velocityStr, "Three doubles as YAML-sequence");
+  return parseObjectValueSequence<double, 3>(it, MDFlexConfig::velocityStr, "Three doubles as YAML-sequence");
 }
 
 unsigned long MDFlexParser::YamlParser::parseParticleType(MDFlexConfig &config, YAML::iterator &it) {
-  return parseObjectValue<unsigned long>(it, MDFlexConfig::particleTypeStr, "Unsigned Integer");
+  return parseObjectValueSingle<unsigned long>(it, MDFlexConfig::particleTypeStr, "Unsigned Integer");
 }
 
 double MDFlexParser::YamlParser::parseEpsilon(MDFlexConfig &config, YAML::iterator &it) {
-  return parseObjectValue<double>(it, config.epsilonMap.name.c_str(), "Double");
+  return parseObjectValueSingle<double>(it, config.epsilonMap.name.c_str(), "Double");
 }
 
 double MDFlexParser::YamlParser::parseSigma(MDFlexConfig &config, YAML::iterator &it) {
-  return parseObjectValue<double>(it, config.sigmaMap.name.c_str(), "Double");
+  return parseObjectValueSingle<double>(it, config.sigmaMap.name.c_str(), "Double");
 }
 
 double MDFlexParser::YamlParser::parseMass(MDFlexConfig &config, YAML::iterator &it) {
-  return parseObjectValue<double>(it, config.massMap.name.c_str(), "Double");
+  return parseObjectValueSingle<double>(it, config.massMap.name.c_str(), "Double");
 }
 
 double MDFlexParser::YamlParser::parseParticleSpacing(MDFlexConfig &config, YAML::iterator &it) {
-  return parseObjectValue<double>(it, config.particleSpacing.name.c_str(), "Double");
+  return parseObjectValueSingle<double>(it, config.particleSpacing.name.c_str(), "Double");
 }
 
 std::array<unsigned long, 3> MDFlexParser::YamlParser::parseParticlesPerDim(MDFlexConfig &config, YAML::iterator &it) {
-  return parseObjectValue<unsigned long, 3>(it, config.particlesPerDim.name.c_str(),
-                                            "Three unsigned integers as YAML-sequence");
+  return parseObjectValueSequence<unsigned long, 3>(it, config.particlesPerDim.name.c_str(),
+                                                    "Three unsigned integers as YAML-sequence");
 }
 
 std::array<double, 3> MDFlexParser::YamlParser::parseBottomLeftCorner(MDFlexConfig &config, YAML::iterator &it) {
-  return parseObjectValue<double, 3>(it, MDFlexConfig::bottomLeftBackCornerStr, "Three doubles as YAML-sequence");
+  return parseObjectValueSequence<double, 3>(it, MDFlexConfig::bottomLeftBackCornerStr,
+                                             "Three doubles as YAML-sequence");
 }
 
 std::array<double, 3> MDFlexParser::YamlParser::parseDistrMean(MDFlexConfig &config, YAML::iterator &it) {
-  return parseObjectValue<double, 3>(it, config.distributionMean.name.c_str(), "Three doubles as YAML-sequence");
+  return parseObjectValueSequence<double, 3>(it, config.distributionMean.name.c_str(),
+                                             "Three doubles as YAML-sequence");
 }
 
 std::array<double, 3> MDFlexParser::YamlParser::parseDistrStdDev(MDFlexConfig &config, YAML::iterator &it) {
-  return parseObjectValue<double, 3>(it, config.distributionStdDev.name.c_str(), "Three doubles as YAML-sequence");
+  return parseObjectValueSequence<double, 3>(it, config.distributionStdDev.name.c_str(),
+                                             "Three doubles as YAML-sequence");
 }
 
 size_t MDFlexParser::YamlParser::parseNumParticles(MDFlexConfig &config, YAML::iterator &it) {
-  return parseObjectValue<size_t>(it, MDFlexConfig::particlesPerObjectStr, "Unsigned Integer");
+  return parseObjectValueSingle<size_t>(it, MDFlexConfig::particlesPerObjectStr, "Unsigned Integer");
 }
 
 std::array<double, 3> MDFlexParser::YamlParser::parseBoxLength(MDFlexConfig &config, YAML::iterator &it) {
-  return parseObjectValue<double, 3>(it, config.boxLength.name.c_str(), "Three doubles as YAML-sequence");
+  return parseObjectValueSequence<double, 3>(it, config.boxLength.name.c_str(), "Three doubles as YAML-sequence");
 }
 
 std::array<double, 3> MDFlexParser::YamlParser::parseCenter(MDFlexConfig &config, YAML::iterator &it) {
-  return parseObjectValue<double, 3>(it, MDFlexConfig::sphereCenterStr, "Three doubles as YAML-sequence");
+  return parseObjectValueSequence<double, 3>(it, MDFlexConfig::sphereCenterStr, "Three doubles as YAML-sequence");
 }
 
 double MDFlexParser::YamlParser::parseRadius(MDFlexConfig &config, YAML::iterator &it) {
-  return parseObjectValue<double>(it, MDFlexConfig::sphereRadiusStr, "Double");
+  return parseObjectValueSingle<double>(it, MDFlexConfig::sphereRadiusStr, "Double");
 }
 
 CubeGrid MDFlexParser::YamlParser::parseCubeGridObject(MDFlexConfig &config, YAML::iterator &it) {
@@ -202,7 +168,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
             autopas::ContainerOption::parseOptions(autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
 
         if (config.containerOptions.value.empty()) {
-          throw YamlParserException("Parsed container list is empty. You used possibly an unknown container option.");
+          throw std::runtime_error("Parsed container list is empty. You used possibly an unknown container option.");
         }
 
       } else if (key == config.boxMin.name) {
@@ -229,7 +195,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         int tmp = node[key].as<int>();
         if (tmp < 0) {
-          throw YamlParserException("Load balancing interval must be a positive integer.");
+          throw std::runtime_error("Load balancing interval must be a positive integer.");
         }
 
         config.loadBalancingInterval.value = tmp;
@@ -240,7 +206,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         std::set<autopas::options::SelectorStrategyOption> parsedOptions;
         if (node[key].IsSequence()) {
           if (node[key].size() != 1) {
-            throw YamlParserException("Pass Exactly one selector strategy.");
+            throw std::runtime_error("Pass Exactly one selector strategy.");
           }
           parsedOptions = autopas::SelectorStrategyOption::parseOptions(
               autopas::utils::ArrayUtils::to_string(node[key], "", {"", ""}));
@@ -263,7 +229,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         double tmp = node[key].as<double>();
         if (tmp <= 0) {
-          throw YamlParserException("Cutoff has to be > 0!");
+          throw std::runtime_error("Cutoff has to be > 0!");
         }
 
         config.cutoff.value = tmp;
@@ -275,7 +241,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
             autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
 
         if (config.cellSizeFactors.value->isEmpty()) {
-          throw YamlParserException("Parsed cell-size-factor-list is empty.");
+          throw std::runtime_error("Parsed cell-size-factor-list is empty.");
         }
       } else if (key == config.dataLayoutOptions.name) {
         expected = "YAML-sequence of possible values.";
@@ -284,7 +250,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         config.dataLayoutOptions.value =
             autopas::DataLayoutOption::parseOptions(autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
         if (config.dataLayoutOptions.value.empty()) {
-          throw YamlParserException("Parsed data-layouts-list is empty.");
+          throw std::runtime_error("Parsed data-layouts-list is empty.");
         }
       } else if (key == config.functorOption.name) {
         expected = "One of the possible values.";
@@ -301,7 +267,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         } else if (strArg.find("lj") != std::string::npos or strArg.find("lennard-jones") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
         } else {
-          throw YamlParserException("Unrecognized functor!");
+          throw std::runtime_error("Unrecognized functor!");
         }
       } else if (key == config.iterations.name) {
         expected = "Unsigned Integer > 0";
@@ -309,7 +275,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         long tmp = node[key].as<long>();
         if (tmp < 1) {
-          throw YamlParserException("The number of iterations has to be a positive integer > 0.");
+          throw std::runtime_error("The number of iterations has to be a positive integer > 0.");
         }
         config.iterations.value = tmp;
 
@@ -319,7 +285,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         long tmp = node[key].as<long>();
         if (tmp < 0) {
-          throw YamlParserException("The number of tuning phases has to be a positive integer.");
+          throw std::runtime_error("The number of tuning phases has to be a positive integer.");
         }
 
         config.tuningPhases.value = tmp;
@@ -347,7 +313,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         config.newton3Options.value =
             autopas::Newton3Option::parseOptions(autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
         if (config.newton3Options.value.empty()) {
-          throw YamlParserException("Unknown Newton3 option!");
+          throw std::runtime_error("Unknown Newton3 option!");
         }
       } else if (key == config.deltaT.name) {
         expected = "Positive floating point value.";
@@ -362,7 +328,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
             autopas::TraversalOption::parseOptions(autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
 
         if (config.traversalOptions.value.empty()) {
-          throw YamlParserException("Parsed traversal-list is empty. Maybe you used an unknown option.");
+          throw std::runtime_error("Parsed traversal-list is empty. Maybe you used an unknown option.");
         }
 
       } else if (key == config.loadEstimatorOptions.name) {
@@ -373,7 +339,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
             autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
 
         if (config.loadEstimatorOptions.value.empty()) {
-          throw YamlParserException("Parsed load-estimator-list is empty. Maybe you used an unknown option.");
+          throw std::runtime_error("Parsed load-estimator-list is empty. Maybe you used an unknown option.");
         }
 
       } else if (key == config.tuningInterval.name) {
@@ -382,7 +348,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         int tmp = node[key].as<int>();
         if (tmp < 1) {
-          throw YamlParserException("Tuning interval has to be a positive integer!");
+          throw std::runtime_error("Tuning interval has to be a positive integer!");
         }
 
         config.tuningInterval.value = tmp;
@@ -392,7 +358,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         int tmp = node[key].as<int>();
         if (tmp < 1) {
-          throw YamlParserException("Tuning samples has to be a positive integer!");
+          throw std::runtime_error("Tuning samples has to be a positive integer!");
         }
 
         config.tuningSamples.value = tmp;
@@ -402,7 +368,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         int tmp = node[key].as<int>();
         if (tmp < 1) {
-          throw YamlParserException("Tuning max evidence has to be a positive integer >= 1!");
+          throw std::runtime_error("Tuning max evidence has to be a positive integer >= 1!");
         }
 
         config.tuningMaxEvidence.value = tmp;
@@ -412,7 +378,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         double tmp = node[key].as<double>();
         if (tmp < 1.0) {
-          throw YamlParserException("Relative optimum range has to be greater or equal one!");
+          throw std::runtime_error("Relative optimum range has to be greater or equal one!");
         }
 
         config.relativeOptimumRange.value = tmp;
@@ -422,7 +388,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         int tmp = node[key].as<int>();
         if (tmp < 1) {
-          throw YamlParserException("Max tuning phases without test has to be positive!");
+          throw std::runtime_error("Max tuning phases without test has to be positive!");
         }
 
         config.maxTuningPhasesWithoutTest.value = tmp;
@@ -432,7 +398,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         double tmp = node[key].as<double>();
         if (tmp < 1.0 and tmp != 0.0) {
-          throw YamlParserException(
+          throw std::runtime_error(
               "Relative range for blacklist range has to be greater or equal one or has to be zero!");
         }
 
@@ -443,7 +409,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         int tmp = node[key].as<int>();
         if (tmp < 2) {
-          throw YamlParserException("The number of evidence for the first prediction has to be at least two!");
+          throw std::runtime_error("The number of evidence for the first prediction has to be at least two!");
         }
 
         config.evidenceFirstPrediction.value = tmp;
@@ -454,7 +420,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         std::set<autopas::options::ExtrapolationMethodOption> parsedOptions;
         if (node[key].IsSequence()) {
           if (node[key].size() != 1) {
-            throw YamlParserException("Pass exactly one extrapolation method!");
+            throw std::runtime_error("Pass exactly one extrapolation method!");
           }
           parsedOptions = autopas::ExtrapolationMethodOption::parseOptions(
               autopas::utils::ArrayUtils::to_string(node[key], "", {"", ""}));
@@ -470,7 +436,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         std::set<autopas::options::TuningStrategyOption> parsedOptions;
         if (node[key].IsSequence()) {
           if (node[key].size() != 1) {
-            throw YamlParserException("Pass Exactly one tuning strategy!");
+            throw std::runtime_error("Pass Exactly one tuning strategy!");
           }
           parsedOptions = autopas::TuningStrategyOption::parseOptions(
               autopas::utils::ArrayUtils::to_string(node[key], "", {"", ""}));
@@ -485,7 +451,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         std::set<autopas::options::MPIStrategyOption> parsedOptions;
         if (node[key].IsSequence()) {
           if (node[key].size() != 1) {
-            throw YamlParserException("Pass exactly one MPI strategy!");
+            throw std::runtime_error("Pass exactly one MPI strategy!");
           }
           parsedOptions =
               autopas::MPIStrategyOption::parseOptions(autopas::utils::ArrayUtils::to_string(node[key], "", {"", ""}));
@@ -510,7 +476,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         std::set<autopas::options::AcquisitionFunctionOption> parsedOptions;
         if (node[key].IsSequence()) {
           if (node[key].size() != 1) {
-            throw YamlParserException("Pass Exactly one acquisition function option!");
+            throw std::runtime_error("Pass Exactly one acquisition function option!");
           }
           parsedOptions = autopas::AcquisitionFunctionOption::parseOptions(
               autopas::utils::ArrayUtils::to_string(node[key], "", {"", ""}));
@@ -553,7 +519,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
             break;
           }
           default: {
-            throw YamlParserException("Unknown Log Level parsed!");
+            throw std::runtime_error("Unknown Log Level parsed!");
           }
         }
       } else if (key == config.checkpointfile.name) {
@@ -562,7 +528,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         config.checkpointfile.value = node[key].as<std::string>();
         if (config.checkpointfile.value.empty()) {
-          throw YamlParserException("Parsed checkpoint filename is empty!");
+          throw std::runtime_error("Parsed checkpoint filename is empty!");
         }
       } else if (key == config.logFileName.name) {
         expected = "String";
@@ -570,7 +536,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         config.logFileName.value = node[key].as<std::string>();
         if (config.logFileName.value.empty()) {
-          throw YamlParserException("Parsed log filename is empty!");
+          throw std::runtime_error("Parsed log filename is empty!");
         }
       } else if (key == config.verletRebuildFrequency.name) {
         expected = "Unsigned Integer >= 1";
@@ -578,7 +544,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         int tmp = node[key].as<int>();
         if (tmp < 1) {
-          throw YamlParserException("Verlet rebuild frequency has to be a positive integer >= 1!");
+          throw std::runtime_error("Verlet rebuild frequency has to be a positive integer >= 1!");
         }
 
         config.verletRebuildFrequency.value = tmp;
@@ -598,7 +564,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         int tmp = node[key].as<int>();
         if (tmp < 0) {
-          throw YamlParserException("Verlet cluster size has to be a positive integer!");
+          throw std::runtime_error("Verlet cluster size has to be a positive integer!");
         }
 
         config.verletClusterSize.value = tmp;
@@ -608,7 +574,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         config.vtkFileName.value = node[key].as<std::string>();
         if (config.vtkFileName.value.empty()) {
-          throw YamlParserException("Parsed VTK filename is empty!");
+          throw std::runtime_error("Parsed VTK filename is empty!");
         }
       } else if (key == config.vtkWriteFrequency.name) {
         expected = "Unsigned Integer >= 1";
@@ -616,7 +582,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         int tmp = node[key].as<int>();
         if (tmp < 1) {
-          throw YamlParserException("VTK write frequency has to be a positive integer >= 1!");
+          throw std::runtime_error("VTK write frequency has to be a positive integer >= 1!");
         }
 
         config.vtkWriteFrequency.value = (size_t)tmp;
@@ -735,7 +701,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         int tmp = node[key][config.thermostatInterval.name].as<size_t>();
         if (tmp <= 1) {
-          throw YamlParserException("thermostatInterval has to be > 0!");
+          throw std::runtime_error("thermostatInterval has to be > 0!");
         }
         config.thermostatInterval.value = node[key][config.thermostatInterval.name].as<size_t>();
 
@@ -761,7 +727,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         std::set<LoadBalancerOption> parsedOptions;
         if (node[key].IsSequence()) {
           if (node[key].size() != 1) {
-            throw YamlParserException("Pass Exactly one load balancer option!");
+            throw std::runtime_error("Pass Exactly one load balancer option!");
           }
           parsedOptions =
               LoadBalancerOption::parseOptions(autopas::utils::ArrayUtils::to_string(node[key], "", {"", ""}));
@@ -773,20 +739,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         std::cerr << "Unrecognized option in input YAML: " + key << std::endl;
         // return false;
       }
-    } catch (const YAML::Exception &e) {
-      // We do not use e.mark, as this don't provides the correct line number in some cases. Use the mark from above;
-      std::cerr << "Error while parsing the YAML-file in line " << (m.line + 1) << " at column " << m.column
-                << ", key: " << key << std::endl
-                << "Expected: " << expected << std::endl
-                << "Parameter description: " << description << std::endl;
-      return false;
-    } catch (const YamlParserException &e) {
-      std::cerr << "Error while parsing the YAML-file in line " << (m.line + 1) << " at column " << m.column
-                << std::endl
-                << "Incorrect input-parameter for key " << key << ": " << e.what() << std::endl
-                << "Expected: " << expected << std::endl
-                << "Parameter description: " << description << std::endl;
-      return false;
     } catch (const std::exception &e) {
       std::cerr << "Error while parsing the YAML-file in line " << (m.line + 1) << " at column " << m.column
                 << ", key: " << key << std::endl

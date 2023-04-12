@@ -122,7 +122,7 @@ TEST_F(MDFlexConfigTest, wrongTypeParsingInput) {
 
   char *argv[3] = {&arguments[0][0], &arguments[1][0], &arguments[2][0]};
 
-  ASSERT_ANY_THROW(MDFlexConfig(3, argv));
+  ASSERT_EXIT(MDFlexConfig(3, argv), testing::ExitedWithCode(1), "Error when parsing configuration file.");
 }
 
 TEST_F(MDFlexConfigTest, multipleSameObjectParsing) {
