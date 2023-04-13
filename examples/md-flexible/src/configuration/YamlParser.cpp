@@ -150,6 +150,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
   std::string expected;
   std::string description;
   YAML::Mark m;
+  bool errorOccured = false;
+  std::vector<std::string> errors;
 
   YAML::Node node = YAML::LoadFile(config.yamlFilename.value);
 
@@ -672,16 +674,19 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
                                        it->second[config.massMap.name].as<double>());
               }
             } else {
-              std::cerr << "YamlParser: Unrecognized generator \"" << objectIterator->first.as<std::string>()
-                        << "\" used." << std::endl;
-              return false;
+              std::stringstream ss;
+              ss << "YamlParser: Unrecognized generator \"" << objectIterator->first.as<std::string>() << "\" used."
+                 << std::endl;
+              errors.push_back(ss.str());
+              errorOccured = true;
             }
           } catch (const std::exception &e) {
-            std::cerr << "YamlParser: Error parsing " << generatorName << " object with ID " << objID << "."
-                      << std::endl
-                      << "Message: " << e.what() << std::endl
-                      << "See AllOptions.yaml for examples." << std::endl;
-            return false;
+            std::stringstream ss;
+            ss << "YamlParser: Error parsing " << generatorName << " object with ID " << objID << "." << std::endl
+               << "Message: " << e.what() << std::endl
+               << "See AllOptions.yaml for examples." << std::endl;
+            errors.push_back(ss.str());
+            errorOccured = true;
           }
         }
       } else if (key == config.useThermostat.name) {
@@ -736,17 +741,28 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         }
         config.loadBalancer.value = *parsedOptions.begin();
       } else {
-        std::cerr << "Unrecognized option in input YAML: " + key << std::endl;
-        // return false;
+        std::stringstream ss;
+        ss << "YamlParser: Unrecognized option in input YAML: " + key << std::endl;
+        errors.push_back(ss.str());
+        errorOccured = true;
       }
     } catch (const std::exception &e) {
-      std::cerr << "Error while parsing the YAML-file in line " << (m.line + 1) << " at column " << m.column
-                << ", key: " << key << std::endl
-                << "Message: " << e.what() << std::endl
-                << "Expected: " << expected << std::endl
-                << "Parameter description: " << description << std::endl;
-      return false;
+      std::stringstream ss;
+      ss << "YamlParser: Parsing error in line " << (m.line + 1) << " at column " << m.column
+         << ", key: " << key << std::endl
+         << "Message: " << e.what() << std::endl
+         << "Expected: " << expected << std::endl
+         << "Parameter description: " << description << std::endl;
+      errors.push_back(ss.str());
+      errorOccured = true;
     }
+  }
+
+  if (errorOccured) {
+    for (std::string &err : errors) {
+      std::cerr << err << std::endl << std::endl;
+    }
+    return false;
   }
 
   return true;
