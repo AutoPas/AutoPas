@@ -487,14 +487,14 @@ class LJMultisiteFunctorAVX
         const __m256d distanceSquaredCoM =
             _mm256_add_pd(_mm256_add_pd(distanceSquaredCoMX, distanceSquaredCoMY), distanceSquaredCoMZ);
 
-        const __m256i cutoffMask = _mm256_castpd_si256(_mm256_cmp_pd(distanceSquaredCoM, _cutoffSquared, _CMP_LE_OS));
-        const __m256i ownedStateB = _mm256_loadu_si256(reinterpret_cast<const __m256i *>(&ownedStatePtr[molB]));
-        const __m256i dummyMask =
-            _mm256_cmpgt_epi64(ownedStateB, _mm256_castpd_si256(_zero));  // Assuming that dummy = 0
-        const __m256i totalMask = _mm256_and_epi64(cutoffMask, dummyMask);
+        const __m256d cutoffMask = _mm256_cmp_pd(distanceSquaredCoM, _cutoffSquared, _CMP_LE_OS);
+        const __m256d ownedStateB = _mm256_load_pd(reinterpret_cast<double*>(ownedStatePtr[molB]));
+        const __m256d dummyMask =
+            _mm256_cmp_pd(ownedStateB, _mm256_castpd_si256(_zero), _CMP_EQ_OS);  // Assuming that dummy = 0
+        const __m256d totalMask = _mm256_and_pd(cutoffMask, dummyMask);
 
         // TODO may not work correctly?
-        _mm256_store_epi64(molMask.data() + (molB - (molA + 1)), totalMask);
+        _mm256_store_pd(reinterpret_cast<double *>(molMask.data() + (molB - (molA + 1))), totalMask);
       }
 
       // Scalar remainder loop, copied from scalar class
@@ -513,8 +513,8 @@ class LJMultisiteFunctorAVX
         const auto distanceSquaredCoM = distanceSquaredCoMX + distanceSquaredCoMY + distanceSquaredCoMZ;
 
         // mask sites of molecules beyond cutoff or if molecule is a dummy
-        molMask[molB - (molA + 1)] =
-            distanceSquaredCoM <= cutoffSquared and ownedStateB != autopas::OwnershipState::dummy;
+        const auto mask = static_cast<char>(distanceSquaredCoM <= _cutoffSquaredAoS and ownedStateB != autopas::OwnershipState::dummy);
+        molMask[molB - (molA + 1)] = mask;
       }
 
       // Copied site-mask building
@@ -547,7 +547,7 @@ class LJMultisiteFunctorAVX
 
         // TODO handle remainder case
         for (size_t siteB = siteIndexB; siteB < siteIndexB + num_sites_B; siteB += vecLength) {
-          const __m256d localMask = _mm256_castsi256_pd(_mm256_load_epi64(&siteMask[siteB]));
+          const __m256d localMask = _mm256_load_pd(reinterpret_cast<const double *>(&siteMask[siteB]));
           if (_mm256_movemask_pd(localMask) == 0) {
             continue;
           }
@@ -573,9 +573,9 @@ class LJMultisiteFunctorAVX
             }
           }
 
-          const __m256i siteGlobals = _mm256_set1_epi64x(!calculateGlobals);
-          const __m256i siteOwned = _mm256_load_epi64(&isSiteOwned[siteB]);
-          const __m256i isSiteBOwned = _mm256_or_epi64(siteGlobals, siteOwned);
+          const __m256d siteGlobals = _mm256_set1_pd(!calculateGlobals);
+          const __m256d siteOwned = _mm256_load_pd(reinterpret_cast<const double *>(&isSiteOwned[siteB]));
+          const __m256d isSiteBOwned = _mm256_or_pd(siteGlobals, siteOwned);
 
           const __m256d exactSitePositionsBX = _mm256_load_pd(&exactSitePositionX[siteB]);
           const __m256d exactSitePositionsBY = _mm256_load_pd(&exactSitePositionY[siteB]);
@@ -619,22 +619,22 @@ class LJMultisiteFunctorAVX
           _mm256_store_pd(siteForceY.data() + siteB, forceSumBY);
           _mm256_store_pd(siteForceZ.data() + siteB, forceSumBZ);
 
-          if constexpr (calculateGlobals) {
-            const __m256d virialX = _mm256_mul_pd(displacementX, forceX);
-            const __m256d virialY = _mm256_mul_pd(displacementY, forceY);
-            const __m256d virialZ = _mm256_mul_pd(displacementZ, forceZ);
-
-            // FUMA angle
-            __m256d potentialEnergy6 = _mm256_fmadd_pd(epsilon24s, lj12m6, shift6s);
-            potentialEnergy6 = _mm256_and_pd(localMask, potentialEnergy6);
-            __m256i ownerShipMask = _mm256_set1_epi64x(ownedStateA == OwnershipState::owned ? 1. : 0.);
-            ownerShipMask = _mm256_and_si256(ownerShipMask, isSiteBOwned);
-            potentialEnergySum =
-                _mm256_add_pd(potentialEnergySum, _mm256_and_pd(_mm256_castsi256_pd(ownerShipMask), potentialEnergy6));
-            virialSumX = _mm256_add_pd(virialSumX, _mm256_and_pd(_mm256_castsi256_pd(ownerShipMask), virialX));
-            virialSumY = _mm256_add_pd(virialSumY, _mm256_and_pd(_mm256_castsi256_pd(ownerShipMask), virialY));
-            virialSumZ = _mm256_add_pd(virialSumZ, _mm256_and_pd(_mm256_castsi256_pd(ownerShipMask), virialZ));
-          }
+//          if constexpr (calculateGlobals) {
+//            const __m256d virialX = _mm256_mul_pd(displacementX, forceX);
+//            const __m256d virialY = _mm256_mul_pd(displacementY, forceY);
+//            const __m256d virialZ = _mm256_mul_pd(displacementZ, forceZ);
+//
+//            // FUMA angle
+//            __m256d potentialEnergy6 = _mm256_fmadd_pd(epsilon24s, lj12m6, shift6s);
+//            potentialEnergy6 = _mm256_and_pd(localMask, potentialEnergy6);
+//            __m256i ownerShipMask = _mm256_set1_epi64x(ownedStateA == OwnershipState::owned ? 1. : 0.);
+//            ownerShipMask = _mm256_and_si256(ownerShipMask, isSiteBOwned);
+//            potentialEnergySum =
+//                _mm256_add_pd(potentialEnergySum, _mm256_and_pd(_mm256_castsi256_pd(ownerShipMask), potentialEnergy6));
+//            virialSumX = _mm256_add_pd(virialSumX, _mm256_and_pd(_mm256_castsi256_pd(ownerShipMask), virialX));
+//            virialSumY = _mm256_add_pd(virialSumY, _mm256_and_pd(_mm256_castsi256_pd(ownerShipMask), virialY));
+//            virialSumZ = _mm256_add_pd(virialSumZ, _mm256_and_pd(_mm256_castsi256_pd(ownerShipMask), virialZ));
+//          }
         }
         // copied from single site functor for horizontal add
         // TODO check if this actually works lol
@@ -733,6 +733,7 @@ class LJMultisiteFunctorAVX
     }
   }
 
+ public:
   /**
    * @copydoc Functor::getNeededAttr()
    */
