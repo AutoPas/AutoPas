@@ -62,6 +62,7 @@ class SortedCellView : public ParticleCell<Particle> {
 
   /**
    * @copydoc autopas::FullParticleCell::begin()
+   * @note: iterating via begin / iterators does not yield the sorted order.
    * @note const version
    */
   CellIterator<typename ParticleCellType::StorageType, false> begin() const {
