@@ -206,9 +206,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       }
     }
     // Step 2: Remove particles from _towers
-    bool deletedSth = false;
+    bool deletedSomething = false;
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel for reduction(|| : deletedSth)
+#pragma omp parallel for reduction(|| : deletedSomething)
 #endif
     for (size_t i = 0; i < _towers.size(); ++i) {
       auto &tower = _towers[i];
@@ -222,17 +222,17 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
           // Since we can't pop the moved particle here mark it for deletion.
           internal::markParticleAsDeleted(tower[towerSize - 1 - numTailDummies]);
           ++numTailDummies;
-          deletedSth = true;
+          deletedSomething = true;
         } else {
           ++j;
         }
       }
       // if anything was marked for deletion actually delete it now.
-      if (deletedSth) {
+      if (deletedSomething) {
         _towers[i].deleteDummyParticles();
       }
     }
-    if (deletedSth) {
+    if (deletedSomething) {
       _isValid = ValidityState::invalid;
     }
   }
@@ -1268,7 +1268,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     const auto lastTowerCoords = _builder->getTowerCoordinates(upperCornerInBounds);
     const auto lastTowerIndex = _builder->towerIndex2DTo1D(lastTowerCoords[0], lastTowerCoords[1]);
 
-    const std::array<size_t, 2> towersOfInterstPerDim = [&]() {
+    const std::array<size_t, 2> towersOfInterestPerDim = [&]() {
       std::array<size_t, 2> ret{};
       for (size_t dim = 0; dim < ret.size(); ++dim) {
         // use ternary operators instead of abs because these are unsigned values
@@ -1282,7 +1282,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       return ret;
     };
 
-    std::vector<size_t> towersOfInterest(towersOfInterstPerDim[0] * towersOfInterstPerDim[1]);
+    std::vector<size_t> towersOfInterest(towersOfInterestPerDim[0] * towersOfInterestPerDim[1]);
 
     auto towersOfInterestIterator = towersOfInterest.begin();
     for (size_t i = 0; i < towersOfInterstPerDim[1]; ++i) {

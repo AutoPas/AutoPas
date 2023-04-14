@@ -50,25 +50,25 @@ class AutoPas {
   using Particle_t = Particle;
 
   /**
-   * Define the iterator type for simple use, also from the outside.
+   * Define the iterator type for ease of use. Also for external use.
    * Helps to, e.g., wrap the AutoPas iterators
    */
   using IteratorT = autopas::ContainerIterator<Particle, true, false>;
 
   /**
-   * Define the const iterator type for simple use, also from the outside.
+   * Define the const iterator type for ease of use. Also for external use.
    * Helps to, e.g., wrap the AutoPas iterators
    */
   using ConstIteratorT = autopas::ContainerIterator<Particle, false, false>;
 
   /**
-   * Define the region iterator type for simple use, also from the outside.
+   * Define the region iterator type for ease of use. Also for external use.
    * Helps to, e.g., wrap the AutoPas iterators
    */
   using RegionIteratorT = autopas::ContainerIterator<Particle, true, true>;
 
   /**
-   * Define the const region iterator type for simple use, also from the outside.
+   * Define the const region iterator type for ease of use. Also for external use.
    * Helps to, e.g., wrap the AutoPas iterators
    */
   using RegionConstIteratorT = autopas::ContainerIterator<Particle, false, true>;
