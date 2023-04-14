@@ -150,6 +150,10 @@ std::enable_if_t<autopas::utils::ArrayUtils::is_container<Container>::value, std
 
 /**
  * Given a collection of vectors, redistributes the elements of the vectors so they all have the same (or +1) size.
+ *
+ * Elements are taken from the ends of too-long vectors and appended to the ends of too-short vectors.
+ * The overall ordering of elements is not preserved.
+ *
  * @tparam OuterContainerT Collection type
  * @param vecvec Reference to the collection of vectors to be balanced in place.
  */
@@ -160,7 +164,12 @@ void balanceVectors(OuterContainerT &vecvec) {
 }
 
 /**
- * Given a collection of containers, redistributes the elements of the vectors so they all have the same (or +1) size.
+ * Given a collection of containers that hold vectors,
+ * redistributes the elements of the vectors so they all have the same (or +1) size.
+ *
+ * Elements are taken from the ends of too-long vectors and appended to the ends of too-short vectors.
+ * The overall ordering of elements is not preserved.
+ *
  * @tparam OuterContainerT Collection type
  * @tparam F Type of the function innerContainerToVec
  * @param vecvec Reference to the collection of vectors to be balanced in place.
@@ -180,7 +189,7 @@ void balanceVectors(OuterContainerT &vecvec, F innerContainerToVec) {
   const size_t numElem = std::transform_reduce(vecvec.begin(), vecvec.end(), 0, std::plus<>(),
                                                [&](auto &vec) { return innerContainerToVec(vec).size(); });
   const auto targetSize = static_cast<long>(numElem / vecvecSize);
-  auto rest = numElem % vecvecSize;
+  const auto remainder = numElem % vecvecSize;
 
   std::vector<ElemT> tmpStorage;
   // index of the first subvec that has too few elements
@@ -190,7 +199,7 @@ void balanceVectors(OuterContainerT &vecvec, F innerContainerToVec) {
     // scan all subvecs that are not known to have the desired size
     for (size_t i = firstTooFew; i < vecvecSize; ++i) {
       auto &vec = innerContainerToVec(vecvec[i]);
-      const auto thisTargetSize = i < rest ? targetSize + 1 : targetSize;
+      const auto thisTargetSize = i < remainder ? targetSize + 1 : targetSize;
       if (vec.size() > thisTargetSize) {
         // move what is too much to tmpStorage
         const auto startOfTooMuch = vec.begin() + thisTargetSize;

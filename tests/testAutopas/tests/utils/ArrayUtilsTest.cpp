@@ -67,13 +67,13 @@ TEST(ArrayUtilsTest, testBalanceVectors) {
   }();
   // calculate expectations
   const auto expectedPerVec = numElements / vecvec.size();
-  const auto rest = numElements % vecvec.size();
+  const auto remainder = numElements % vecvec.size();
 
   // actual test starts here
   utils::ArrayUtils::balanceVectors(vecvec);
 
   for (size_t i = 0; i < vecvec.size(); ++i) {
     // the first vectors might have one extra element if the total number was not divisible by the number of vectors
-    EXPECT_EQ(vecvec[i].size(), i < rest ? expectedPerVec + 1 : expectedPerVec);
+    EXPECT_EQ(vecvec[i].size(), i < remainder ? expectedPerVec + 1 : expectedPerVec);
   }
 }

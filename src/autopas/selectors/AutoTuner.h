@@ -576,7 +576,7 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
               const auto lockCoords =
                   static_cast_array<size_t>(mulScalar(sub(p2.getR(), boxMin), interactionLengthInv));
               // No need to apply anything to p1halo
-              //   -> AoSFunctor(p1, p2, false) not needed as it neither adds force nor Upot
+              //   -> AoSFunctor(p1, p2, false) not needed as it neither adds force nor Upot (potential energy)
               //   -> newton3 argument needed for correct globals
               const std::lock_guard<std::mutex> lock(*_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
               f->AoSFunctor(p2, p1halo, newton3);

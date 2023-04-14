@@ -30,7 +30,7 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
                               std::vector<autopas::FullParticleCell<Molecule>> &particlesHaloBuffers,
                               autopas::Newton3Option n3) {
   // sanity check that there are exactly two particles in the test
-  const auto numParticlesBuffers =
+  const auto numParticlesInBuffers =
       std::transform_reduce(particlesBuffers.begin(), particlesBuffers.end(), 0, std::plus<>(),
                             [](const auto &cell) { return cell.numParticles(); });
   const auto numParticlesHaloBuffers =
@@ -42,7 +42,8 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
         return cell.numParticles();
       });
   ASSERT_EQ(
-      particlesContainerOwned.size() + particlesContainerHalo.size() + numParticlesBuffers + numParticlesHaloBuffers, 2)
+      particlesContainerOwned.size() + particlesContainerHalo.size() + numParticlesInBuffers + numParticlesHaloBuffers,
+      2)
       << "This test expects exactly two particles!";
 
   constexpr double cutoff = 2.5;
@@ -65,8 +66,8 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
     container->addHaloParticle(p);
   }
 
-  ASSERT_EQ(container->getNumberOfParticles(), 2 - numParticlesBuffers - numParticlesHaloBuffers)
-      << "Not all particles were added to the container! ParticlesBuffers(" << numParticlesBuffers << ") HaloBuffer("
+  ASSERT_EQ(container->getNumberOfParticles(), 2 - numParticlesInBuffers - numParticlesHaloBuffers)
+      << "Not all particles were added to the container! ParticlesBuffers(" << numParticlesInBuffers << ") HaloBuffer("
       << numParticlesHaloBuffers << ")";
 
   // create a functor that calculates globals!
