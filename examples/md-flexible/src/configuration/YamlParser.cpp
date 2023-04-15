@@ -5,139 +5,154 @@
  */
 #include "YamlParser.h"
 
-#include <string>
+const std::string MDFlexParser::YamlParser::parseSequenceOneElementExpected(const YAML::Node node, std::string errMsg) {
+  if (node.IsSequence()) {
+    if (node.size() != 1) {
+      throw std::runtime_error(errMsg);
+    }
+    return autopas::utils::ArrayUtils::to_string(node, "", {"", ""});
+  } else {
+    return node.as<std::string>();
+  }
+}
 
-std::array<double, 3> MDFlexParser::YamlParser::parseVelocity(MDFlexConfig &config, YAML::iterator &it) {
+const std::array<double, 3> MDFlexParser::YamlParser::parseVelocity(YAML::const_iterator &it) {
   return parseObjectValueSequence<double, 3>(it, MDFlexConfig::velocityStr, "Three doubles as YAML-sequence");
 }
 
-unsigned long MDFlexParser::YamlParser::parseParticleType(MDFlexConfig &config, YAML::iterator &it) {
+const unsigned long MDFlexParser::YamlParser::parseParticleType(YAML::const_iterator &it) {
   return parseObjectValueSingle<unsigned long>(it, MDFlexConfig::particleTypeStr, "Unsigned Integer");
 }
 
-double MDFlexParser::YamlParser::parseEpsilon(MDFlexConfig &config, YAML::iterator &it) {
+const double MDFlexParser::YamlParser::parseEpsilon(const MDFlexConfig &config, YAML::const_iterator &it) {
   return parseObjectValueSingle<double>(it, config.epsilonMap.name.c_str(), "Double");
 }
 
-double MDFlexParser::YamlParser::parseSigma(MDFlexConfig &config, YAML::iterator &it) {
+const double MDFlexParser::YamlParser::parseSigma(const MDFlexConfig &config, YAML::const_iterator &it) {
   return parseObjectValueSingle<double>(it, config.sigmaMap.name.c_str(), "Double");
 }
 
-double MDFlexParser::YamlParser::parseMass(MDFlexConfig &config, YAML::iterator &it) {
+const double MDFlexParser::YamlParser::parseMass(const MDFlexConfig &config, YAML::const_iterator &it) {
   return parseObjectValueSingle<double>(it, config.massMap.name.c_str(), "Double");
 }
 
-double MDFlexParser::YamlParser::parseParticleSpacing(MDFlexConfig &config, YAML::iterator &it) {
+const double MDFlexParser::YamlParser::parseParticleSpacing(const MDFlexConfig &config, YAML::const_iterator &it) {
   return parseObjectValueSingle<double>(it, config.particleSpacing.name.c_str(), "Double");
 }
 
-std::array<unsigned long, 3> MDFlexParser::YamlParser::parseParticlesPerDim(MDFlexConfig &config, YAML::iterator &it) {
-  return parseObjectValueSequence<unsigned long, 3>(it, config.particlesPerDim.name.c_str(),
+const std::array<unsigned long, 3> MDFlexParser::YamlParser::parseParticlesPerDim(const MDFlexConfig &config,
+                                                                                  YAML::const_iterator &it) {
+  return parseObjectValueSequence<unsigned long, 3>(it, config.particlesPerDim.name,
                                                     "Three unsigned integers as YAML-sequence");
 }
 
-std::array<double, 3> MDFlexParser::YamlParser::parseBottomLeftCorner(MDFlexConfig &config, YAML::iterator &it) {
+const std::array<double, 3> MDFlexParser::YamlParser::parseBottomLeftCorner(YAML::const_iterator &it) {
   return parseObjectValueSequence<double, 3>(it, MDFlexConfig::bottomLeftBackCornerStr,
                                              "Three doubles as YAML-sequence");
 }
 
-std::array<double, 3> MDFlexParser::YamlParser::parseDistrMean(MDFlexConfig &config, YAML::iterator &it) {
-  return parseObjectValueSequence<double, 3>(it, config.distributionMean.name.c_str(),
-                                             "Three doubles as YAML-sequence");
+const std::array<double, 3> MDFlexParser::YamlParser::parseDistrMean(const MDFlexConfig &config,
+                                                                     YAML::const_iterator &it) {
+  return parseObjectValueSequence<double, 3>(it, config.distributionMean.name, "Three doubles as YAML-sequence");
 }
 
-std::array<double, 3> MDFlexParser::YamlParser::parseDistrStdDev(MDFlexConfig &config, YAML::iterator &it) {
-  return parseObjectValueSequence<double, 3>(it, config.distributionStdDev.name.c_str(),
-                                             "Three doubles as YAML-sequence");
+const std::array<double, 3> MDFlexParser::YamlParser::parseDistrStdDev(const MDFlexConfig &config,
+                                                                       YAML::const_iterator &it) {
+  return parseObjectValueSequence<double, 3>(it, config.distributionStdDev.name, "Three doubles as YAML-sequence");
 }
 
-size_t MDFlexParser::YamlParser::parseNumParticles(MDFlexConfig &config, YAML::iterator &it) {
+const size_t MDFlexParser::YamlParser::parseNumParticles(YAML::const_iterator &it) {
   return parseObjectValueSingle<size_t>(it, MDFlexConfig::particlesPerObjectStr, "Unsigned Integer");
 }
 
-std::array<double, 3> MDFlexParser::YamlParser::parseBoxLength(MDFlexConfig &config, YAML::iterator &it) {
-  return parseObjectValueSequence<double, 3>(it, config.boxLength.name.c_str(), "Three doubles as YAML-sequence");
+const std::array<double, 3> MDFlexParser::YamlParser::parseBoxLength(const MDFlexConfig &config,
+                                                                     YAML::const_iterator &it) {
+  return parseObjectValueSequence<double, 3>(it, config.boxLength.name, "Three doubles as YAML-sequence");
 }
 
-std::array<double, 3> MDFlexParser::YamlParser::parseCenter(MDFlexConfig &config, YAML::iterator &it) {
+const std::array<double, 3> MDFlexParser::YamlParser::parseCenter(YAML::const_iterator &it) {
   return parseObjectValueSequence<double, 3>(it, MDFlexConfig::sphereCenterStr, "Three doubles as YAML-sequence");
 }
 
-double MDFlexParser::YamlParser::parseRadius(MDFlexConfig &config, YAML::iterator &it) {
+const double MDFlexParser::YamlParser::parseRadius(YAML::const_iterator &it) {
   return parseObjectValueSingle<double>(it, MDFlexConfig::sphereRadiusStr, "Double");
 }
 
-CubeGrid MDFlexParser::YamlParser::parseCubeGridObject(MDFlexConfig &config, YAML::iterator &it) {
-  std::array<double, 3> velocity = parseVelocity(config, it);
-  unsigned long particleType = parseParticleType(config, it);
-  double epsilon = parseEpsilon(config, it);
-  double sigma = parseSigma(config, it);
-  double mass = parseMass(config, it);
-  std::array<unsigned long, 3> particlesPerDim = parseParticlesPerDim(config, it);
-  double particleSpacing = parseParticleSpacing(config, it);
-  std::array<double, 3> bottomLeftCorner = parseBottomLeftCorner(config, it);
+const CubeGrid MDFlexParser::YamlParser::parseCubeGridObject(const MDFlexConfig &config, YAML::const_iterator &it) {
+  const auto velocity = parseVelocity(it);
+  const auto particleType = parseParticleType(it);
+  const auto epsilon = parseEpsilon(config, it);
+  const auto sigma = parseSigma(config, it);
+  const auto mass = parseMass(config, it);
+  const auto particlesPerDim = parseParticlesPerDim(config, it);
+  const auto particleSpacing = parseParticleSpacing(config, it);
+  const auto bottomLeftCorner = parseBottomLeftCorner(it);
 
-  CubeGrid cubeGrid(velocity, particleType, epsilon, sigma, mass, particlesPerDim, particleSpacing, bottomLeftCorner);
+  const CubeGrid cubeGrid(velocity, particleType, epsilon, sigma, mass, particlesPerDim, particleSpacing,
+                          bottomLeftCorner);
   return cubeGrid;
 }
 
-CubeUniform MDFlexParser::YamlParser::parseCubeUniformObject(MDFlexConfig &config, YAML::iterator &it) {
-  std::array<double, 3> velocity = parseVelocity(config, it);
-  unsigned long particleType = parseParticleType(config, it);
-  double epsilon = parseEpsilon(config, it);
-  double sigma = parseSigma(config, it);
-  double mass = parseMass(config, it);
-  size_t numParticles = parseNumParticles(config, it);
-  std::array<double, 3> boxLength = parseBoxLength(config, it);
-  std::array<double, 3> bottomLeftCorner = parseBottomLeftCorner(config, it);
+const CubeUniform MDFlexParser::YamlParser::parseCubeUniformObject(const MDFlexConfig &config,
+                                                                   YAML::const_iterator &it) {
+  const auto velocity = parseVelocity(it);
+  const auto particleType = parseParticleType(it);
+  const auto epsilon = parseEpsilon(config, it);
+  const auto sigma = parseSigma(config, it);
+  const auto mass = parseMass(config, it);
+  const auto numParticles = parseNumParticles(it);
+  const auto boxLength = parseBoxLength(config, it);
+  const auto bottomLeftCorner = parseBottomLeftCorner(it);
 
-  CubeUniform cubeUniform(velocity, particleType, epsilon, sigma, mass, numParticles, boxLength, bottomLeftCorner);
+  const CubeUniform cubeUniform(velocity, particleType, epsilon, sigma, mass, numParticles, boxLength,
+                                bottomLeftCorner);
   return cubeUniform;
 }
 
-CubeGauss MDFlexParser::YamlParser::parseCubeGaussObject(MDFlexConfig &config, YAML::iterator &it) {
-  std::array<double, 3> velocity = parseVelocity(config, it);
-  unsigned long particleType = parseParticleType(config, it);
-  double epsilon = parseEpsilon(config, it);
-  double sigma = parseSigma(config, it);
-  double mass = parseMass(config, it);
-  size_t numParticles = parseNumParticles(config, it);
-  std::array<double, 3> boxLength = parseBoxLength(config, it);
-  std::array<double, 3> distributionMean = parseDistrMean(config, it);
-  std::array<double, 3> distributionStdDev = parseDistrStdDev(config, it);
-  std::array<double, 3> bottomLeftCorner = parseBottomLeftCorner(config, it);
+const CubeGauss MDFlexParser::YamlParser::parseCubeGaussObject(const MDFlexConfig &config, YAML::const_iterator &it) {
+  const auto velocity = parseVelocity(it);
+  const auto particleType = parseParticleType(it);
+  const auto epsilon = parseEpsilon(config, it);
+  const auto sigma = parseSigma(config, it);
+  const auto mass = parseMass(config, it);
+  const auto numParticles = parseNumParticles(it);
+  const auto boxLength = parseBoxLength(config, it);
+  const auto distributionMean = parseDistrMean(config, it);
+  const auto distributionStdDev = parseDistrStdDev(config, it);
+  const auto bottomLeftCorner = parseBottomLeftCorner(it);
 
-  CubeGauss cubeGauss(velocity, particleType, epsilon, sigma, mass, numParticles, boxLength, distributionMean,
-                      distributionStdDev, bottomLeftCorner);
+  const CubeGauss cubeGauss(velocity, particleType, epsilon, sigma, mass, numParticles, boxLength, distributionMean,
+                            distributionStdDev, bottomLeftCorner);
   return cubeGauss;
 }
 
-Sphere MDFlexParser::YamlParser::parseSphereObject(MDFlexConfig &config, YAML::iterator &it) {
-  std::array<double, 3> velocity = parseVelocity(config, it);
-  unsigned long particleType = parseParticleType(config, it);
-  double epsilon = parseEpsilon(config, it);
-  double sigma = parseSigma(config, it);
-  double mass = parseMass(config, it);
-  std::array<double, 3> sphereCenter = parseCenter(config, it);
-  double sphereRadius = parseRadius(config, it);
-  double particleSpacing = parseParticleSpacing(config, it);
+const Sphere MDFlexParser::YamlParser::parseSphereObject(const MDFlexConfig &config, YAML::const_iterator &it) {
+  const auto velocity = parseVelocity(it);
+  const auto particleType = parseParticleType(it);
+  const auto epsilon = parseEpsilon(config, it);
+  const auto sigma = parseSigma(config, it);
+  const auto mass = parseMass(config, it);
+  const auto sphereCenter = parseCenter(it);
+  const auto sphereRadius = parseRadius(it);
+  const auto particleSpacing = parseParticleSpacing(config, it);
 
-  Sphere sphere(velocity, particleType, epsilon, sigma, mass, sphereCenter, sphereRadius, particleSpacing);
+  const Sphere sphere(velocity, particleType, epsilon, sigma, mass, sphereCenter, sphereRadius, particleSpacing);
   return sphere;
 }
 
-CubeClosestPacked MDFlexParser::YamlParser::parseCubeClosestPacked(MDFlexConfig &config, YAML::iterator &it) {
-  std::array<double, 3> velocity = parseVelocity(config, it);
-  unsigned long particleType = parseParticleType(config, it);
-  double epsilon = parseEpsilon(config, it);
-  double sigma = parseSigma(config, it);
-  double mass = parseMass(config, it);
-  double particleSpacing = parseParticleSpacing(config, it);
-  std::array<double, 3> boxLength = parseBoxLength(config, it);
-  std::array<double, 3> bottomLeftCorner = parseBottomLeftCorner(config, it);
+const CubeClosestPacked MDFlexParser::YamlParser::parseCubeClosestPacked(const MDFlexConfig &config,
+                                                                         YAML::const_iterator &it) {
+  const auto velocity = parseVelocity(it);
+  const auto particleType = parseParticleType(it);
+  const auto epsilon = parseEpsilon(config, it);
+  const auto sigma = parseSigma(config, it);
+  const auto mass = parseMass(config, it);
+  const auto particleSpacing = parseParticleSpacing(config, it);
+  const auto boxLength = parseBoxLength(config, it);
+  const auto bottomLeftCorner = parseBottomLeftCorner(it);
 
-  CubeClosestPacked cubeClosestPacked(velocity, particleType, epsilon, sigma, mass, particleSpacing, boxLength,
-                                      bottomLeftCorner);
+  const CubeClosestPacked cubeClosestPacked(velocity, particleType, epsilon, sigma, mass, particleSpacing, boxLength,
+                                            bottomLeftCorner);
 
   return cubeClosestPacked;
 }
@@ -149,18 +164,17 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
   */
   std::string expected;
   std::string description;
-  YAML::Mark m;
-  bool errorOccured = false;
+  YAML::Mark mark;
   std::vector<std::string> errors;
 
-  YAML::Node node = YAML::LoadFile(config.yamlFilename.value);
+  const auto node = YAML::LoadFile(config.yamlFilename.value);
 
   // We iterate over all keys to identify known/unknown parameters.
   for (auto itemIterator = node.begin(); itemIterator != node.end(); ++itemIterator) {
     std::string key;
     try {
       key = itemIterator->first.as<std::string>();
-      m = node[key].Mark();
+      mark = node[key].Mark();
 
       if (key == config.containerOptions.name) {
         expected = "YAML-sequence of possible values.";
@@ -177,64 +191,49 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         expected = "YAML-sequence of three floats. Example: [0, 0, 0].";
         description = config.boxMin.description;
 
-        auto tmpNode = node[key];
-        config.boxMin.value = {tmpNode[0].as<double>(), tmpNode[1].as<double>(), tmpNode[2].as<double>()};
+        config.boxMin.value = {node[key][0].as<double>(), node[key][1].as<double>(), node[key][2].as<double>()};
       } else if (key == config.boxMax.name) {
         expected = "YAML-sequence of three floats. Example: [42, 42, 42].";
         description = config.boxMax.description;
 
-        auto tmpNode = node[key];
-        config.boxMax.value = {tmpNode[0].as<double>(), tmpNode[1].as<double>(), tmpNode[2].as<double>()};
+        config.boxMax.value = {node[key][0].as<double>(), node[key][1].as<double>(), node[key][2].as<double>()};
       } else if (key == config.subdivideDimension.name) {
-        expected = "YAML-sequence of three ints in [0, 1].";
+        expected = "YAML-sequence of three booleans.";
         description = config.subdivideDimension.description;
 
-        auto tmpNode = node[key];
-        config.subdivideDimension.value = {tmpNode[0].as<bool>(), tmpNode[1].as<bool>(), tmpNode[2].as<bool>()};
+        config.subdivideDimension.value = {node[key][0].as<bool>(), node[key][1].as<bool>(), node[key][2].as<bool>()};
       } else if (key == config.loadBalancingInterval.name) {
         expected = "Unsigned Integer";
         description = config.loadBalancingInterval.description;
 
-        int tmp = node[key].as<int>();
-        if (tmp < 0) {
+        config.loadBalancingInterval.value = node[key].as<int>();
+        if (config.loadBalancingInterval.value < 0) {
           throw std::runtime_error("Load balancing interval must be a positive integer.");
         }
-
-        config.loadBalancingInterval.value = tmp;
       } else if (key == config.selectorStrategy.name) {
         expected = "Exactly one selector strategy out of the possible values.";
         description = config.selectorStrategy.description;
 
-        std::set<autopas::options::SelectorStrategyOption> parsedOptions;
-        if (node[key].IsSequence()) {
-          if (node[key].size() != 1) {
-            throw std::runtime_error("Pass Exactly one selector strategy.");
-          }
-          parsedOptions = autopas::SelectorStrategyOption::parseOptions(
-              autopas::utils::ArrayUtils::to_string(node[key], "", {"", ""}));
-        } else {
-          parsedOptions = autopas::SelectorStrategyOption::parseOptions(node[key].as<std::string>());
-        }
+        const auto parsedOptions = autopas::SelectorStrategyOption::parseOptions(
+            parseSequenceOneElementExpected(node[key], "Pass Exactly one selector strategy!"));
+
         config.selectorStrategy.value = *parsedOptions.begin();
 
       } else if (key == config.boundaryOption.name) {
         expected = "YAML-sequence of three possible values.";
         description = config.boundaryOption.description;
 
-        auto tmpNode = node[key];
-        config.boundaryOption.value = {options::BoundaryTypeOption::parseOptionExact(tmpNode[0].as<std::string>()),
-                                       options::BoundaryTypeOption::parseOptionExact(tmpNode[1].as<std::string>()),
-                                       options::BoundaryTypeOption::parseOptionExact(tmpNode[2].as<std::string>())};
+        config.boundaryOption.value = {options::BoundaryTypeOption::parseOptionExact(node[key][0].as<std::string>()),
+                                       options::BoundaryTypeOption::parseOptionExact(node[key][1].as<std::string>()),
+                                       options::BoundaryTypeOption::parseOptionExact(node[key][2].as<std::string>())};
       } else if (key == config.cutoff.name) {
         expected = "Positive floating point value > 0.";
         description = config.cutoff.description;
 
-        double tmp = node[key].as<double>();
-        if (tmp <= 0) {
+        config.cutoff.value = node[key].as<double>();
+        if (config.cutoff.value <= 0) {
           throw std::runtime_error("Cutoff has to be > 0!");
         }
-
-        config.cutoff.value = tmp;
       } else if (key == config.cellSizeFactors.name) {
         expected = "YAML-sequence of floats.";
         description = config.cellSizeFactors.description;
@@ -275,22 +274,19 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         expected = "Unsigned Integer > 0";
         description = config.iterations.description;
 
-        long tmp = node[key].as<long>();
-        if (tmp < 1) {
+        config.iterations.value = node[key].as<long>();
+        if (config.iterations.value < 1) {
           throw std::runtime_error("The number of iterations has to be a positive integer > 0.");
         }
-        config.iterations.value = tmp;
 
       } else if (key == config.tuningPhases.name) {
         expected = "Unsigned Integer";
         description = config.tuningPhases.description;
 
-        long tmp = node[key].as<long>();
-        if (tmp < 0) {
+        config.tuningPhases.value = node[key].as<long>();
+        if (config.tuningPhases.value < 0) {
           throw std::runtime_error("The number of tuning phases has to be a positive integer.");
         }
-
-        config.tuningPhases.value = tmp;
       } else if (key == config.dontMeasureFlops.name) {
         expected = "Boolean Value";
         description = config.dontMeasureFlops.description;
@@ -348,118 +344,83 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         expected = "Unsigned Integer";
         description = config.tuningInterval.description;
 
-        int tmp = node[key].as<int>();
-        if (tmp < 1) {
+        config.tuningInterval.value = node[key].as<int>();
+        if (config.tuningInterval.value < 1) {
           throw std::runtime_error("Tuning interval has to be a positive integer!");
         }
-
-        config.tuningInterval.value = tmp;
       } else if (key == config.tuningSamples.name) {
         expected = "Unsigned Integer >= 1";
         description = config.tuningSamples.description;
 
-        int tmp = node[key].as<int>();
-        if (tmp < 1) {
+        config.tuningSamples.value = node[key].as<int>();
+        if (config.tuningSamples.value < 1) {
           throw std::runtime_error("Tuning samples has to be a positive integer!");
         }
-
-        config.tuningSamples.value = tmp;
       } else if (key == config.tuningMaxEvidence.name) {
         expected = "Unsigned Integer >= 1";
         description = config.tuningMaxEvidence.description;
 
-        int tmp = node[key].as<int>();
-        if (tmp < 1) {
+        config.tuningMaxEvidence.value = node[key].as<int>();
+        if (config.tuningMaxEvidence.value < 1) {
           throw std::runtime_error("Tuning max evidence has to be a positive integer >= 1!");
         }
-
-        config.tuningMaxEvidence.value = tmp;
       } else if (key == config.relativeOptimumRange.name) {
         expected = "Floating point value >= 1";
         description = config.relativeOptimumRange.description;
 
-        double tmp = node[key].as<double>();
-        if (tmp < 1.0) {
+        config.relativeOptimumRange.value = node[key].as<double>();
+        if (config.relativeOptimumRange.value < 1.0) {
           throw std::runtime_error("Relative optimum range has to be greater or equal one!");
         }
-
-        config.relativeOptimumRange.value = tmp;
       } else if (key == config.maxTuningPhasesWithoutTest.name) {
         expected = "Unsigned Integer";
         description = config.maxTuningPhasesWithoutTest.description;
 
-        int tmp = node[key].as<int>();
-        if (tmp < 1) {
+        config.maxTuningPhasesWithoutTest.value = node[key].as<int>();
+        if (config.maxTuningPhasesWithoutTest.value < 1) {
           throw std::runtime_error("Max tuning phases without test has to be positive!");
         }
-
-        config.maxTuningPhasesWithoutTest.value = tmp;
       } else if (key == config.relativeBlacklistRange.name) {
         expected = "Floating point value >= 1 or 0";
         description = config.relativeBlacklistRange.description;
 
-        double tmp = node[key].as<double>();
-        if (tmp < 1.0 and tmp != 0.0) {
+        config.relativeBlacklistRange.value = node[key].as<double>();
+        if (config.relativeBlacklistRange.value < 1.0 and config.relativeBlacklistRange.value != 0.0) {
           throw std::runtime_error(
               "Relative range for blacklist range has to be greater or equal one or has to be zero!");
         }
-
-        config.relativeBlacklistRange.value = tmp;
       } else if (key == config.evidenceFirstPrediction.name) {
         expected = "Unsigned Integer >= 2";
         description = config.evidenceFirstPrediction.description;
 
-        int tmp = node[key].as<int>();
-        if (tmp < 2) {
+        config.evidenceFirstPrediction.value = node[key].as<int>();
+        if (config.evidenceFirstPrediction.value < 2) {
           throw std::runtime_error("The number of evidence for the first prediction has to be at least two!");
         }
-
-        config.evidenceFirstPrediction.value = tmp;
       } else if (key == config.extrapolationMethodOption.name) {
         expected = "Exactly one extrapolation method out of the possible values.";
         description = config.extrapolationMethodOption.description;
 
-        std::set<autopas::options::ExtrapolationMethodOption> parsedOptions;
-        if (node[key].IsSequence()) {
-          if (node[key].size() != 1) {
-            throw std::runtime_error("Pass exactly one extrapolation method!");
-          }
-          parsedOptions = autopas::ExtrapolationMethodOption::parseOptions(
-              autopas::utils::ArrayUtils::to_string(node[key], "", {"", ""}));
-        } else {
-          parsedOptions = autopas::ExtrapolationMethodOption::parseOptions(node[key].as<std::string>());
-        }
+        const auto parsedOptions = autopas::ExtrapolationMethodOption::parseOptions(
+            parseSequenceOneElementExpected(node[key], "Pass exactly one extrapolation method!"));
+
         config.extrapolationMethodOption.value = *parsedOptions.begin();
 
       } else if (key == config.tuningStrategyOption.name) {
         expected = "Exactly one tuning strategy option out of the possible values.";
         description = config.tuningStrategyOption.description;
 
-        std::set<autopas::options::TuningStrategyOption> parsedOptions;
-        if (node[key].IsSequence()) {
-          if (node[key].size() != 1) {
-            throw std::runtime_error("Pass Exactly one tuning strategy!");
-          }
-          parsedOptions = autopas::TuningStrategyOption::parseOptions(
-              autopas::utils::ArrayUtils::to_string(node[key], "", {"", ""}));
-        } else {
-          parsedOptions = autopas::TuningStrategyOption::parseOptions(node[key].as<std::string>());
-        }
+        const auto parsedOptions = autopas::TuningStrategyOption::parseOptions(
+            parseSequenceOneElementExpected(node[key], "Pass Exactly one tuning strategy!"));
+
         config.tuningStrategyOption.value = *parsedOptions.begin();
       } else if (key == config.mpiStrategyOption.name) {
         expected = "Exactly one MPI strategy option out of the possible values.";
         description = config.mpiStrategyOption.description;
 
-        std::set<autopas::options::MPIStrategyOption> parsedOptions;
-        if (node[key].IsSequence()) {
-          if (node[key].size() != 1) {
-            throw std::runtime_error("Pass exactly one MPI strategy!");
-          }
-          parsedOptions =
-              autopas::MPIStrategyOption::parseOptions(autopas::utils::ArrayUtils::to_string(node[key], "", {"", ""}));
-        } else {
-          parsedOptions = autopas::MPIStrategyOption::parseOptions(node[key].as<std::string>());
-        }
+        const auto parsedOptions = autopas::MPIStrategyOption::parseOptions(
+            parseSequenceOneElementExpected(node[key], "Pass exactly one MPI strategy!"));
+
         config.mpiStrategyOption.value = *parsedOptions.begin();
       } else if (key == config.MPITuningMaxDifferenceForBucket.name) {
         expected = "Floating-point Value";
@@ -475,16 +436,9 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         expected = "Exactly one acquisition function option out of the possible values.";
         description = config.acquisitionFunctionOption.description;
 
-        std::set<autopas::options::AcquisitionFunctionOption> parsedOptions;
-        if (node[key].IsSequence()) {
-          if (node[key].size() != 1) {
-            throw std::runtime_error("Pass Exactly one acquisition function option!");
-          }
-          parsedOptions = autopas::AcquisitionFunctionOption::parseOptions(
-              autopas::utils::ArrayUtils::to_string(node[key], "", {"", ""}));
-        } else {
-          parsedOptions = autopas::AcquisitionFunctionOption::parseOptions(node[key].as<std::string>());
-        }
+        const auto parsedOptions = autopas::AcquisitionFunctionOption::parseOptions(
+            parseSequenceOneElementExpected(node[key], "Pass Exactly one acquisition function option!"));
+
         config.acquisitionFunctionOption.value = *parsedOptions.begin();
       } else if (key == config.logLevel.name) {
         expected = "Log level out of the possible values.";
@@ -544,12 +498,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         expected = "Unsigned Integer >= 1";
         description = config.verletRebuildFrequency.description;
 
-        int tmp = node[key].as<int>();
-        if (tmp < 1) {
+        config.verletRebuildFrequency.value = node[key].as<int>();
+
+        if (config.verletRebuildFrequency.value < 1) {
           throw std::runtime_error("Verlet rebuild frequency has to be a positive integer >= 1!");
         }
-
-        config.verletRebuildFrequency.value = tmp;
       } else if (key == config.verletSkinRadiusPerTimestep.name) {
         expected = "Positive floating-point value.";
         description = config.verletSkinRadiusPerTimestep.description;
@@ -564,12 +517,10 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         expected = "Unsigned Integer";
         description = config.verletClusterSize.description;
 
-        int tmp = node[key].as<int>();
-        if (tmp < 0) {
+        config.verletClusterSize.value = node[key].as<int>();
+        if (config.verletClusterSize.value < 0) {
           throw std::runtime_error("Verlet cluster size has to be a positive integer!");
         }
-
-        config.verletClusterSize.value = tmp;
       } else if (key == config.vtkFileName.name) {
         expected = "String";
         description = config.vtkFileName.description;
@@ -582,12 +533,10 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         expected = "Unsigned Integer >= 1";
         description = config.vtkWriteFrequency.description;
 
-        int tmp = node[key].as<int>();
-        if (tmp < 1) {
+        config.vtkWriteFrequency.value = node[key].as<size_t>();
+        if (config.vtkWriteFrequency.value < 1) {
           throw std::runtime_error("VTK write frequency has to be a positive integer >= 1!");
         }
-
-        config.vtkWriteFrequency.value = (size_t)tmp;
       } else if (key == config.globalForce.name) {
         expected = "YAML-sequence of three floats. Example: [0, 0, -9.81].";
         description = config.globalForce.description;
@@ -608,7 +557,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         config.massMap.value.clear();
 
         int objID = 0;
-        const char *generatorName;
+        std::string generatorName;
 
         for (auto objectIterator = node[MDFlexConfig::objectsStr].begin();
              objectIterator != node[MDFlexConfig::objectsStr].end(); ++objectIterator) {
@@ -617,68 +566,56 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
               generatorName = MDFlexConfig::cubeGridObjectsStr;
               for (auto it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
                 objID = std::distance(objectIterator->second.begin(), it);
-                CubeGrid cubeGrid = parseCubeGridObject(config, it);
+                const auto cubeGrid = parseCubeGridObject(config, it);
 
                 config.cubeGridObjects.emplace_back(cubeGrid);
-                config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
-                                       it->second[config.epsilonMap.name].as<double>(),
-                                       it->second[config.sigmaMap.name].as<double>(),
-                                       it->second[config.massMap.name].as<double>());
+                config.addParticleType(cubeGrid.getTypeId(), cubeGrid.getEpsilon(), cubeGrid.getSigma(),
+                                       cubeGrid.getMass());
               }
             } else if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeGaussObjectsStr) {
               generatorName = MDFlexConfig::cubeGaussObjectsStr;
               for (auto it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
                 objID = std::distance(objectIterator->second.begin(), it);
-                CubeGauss cubeGauss = parseCubeGaussObject(config, it);
+                const auto cubeGauss = parseCubeGaussObject(config, it);
 
                 config.cubeGaussObjects.emplace_back(cubeGauss);
-                config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
-                                       it->second[config.epsilonMap.name].as<double>(),
-                                       it->second[config.sigmaMap.name].as<double>(),
-                                       it->second[config.massMap.name].as<double>());
+                config.addParticleType(cubeGauss.getTypeId(), cubeGauss.getEpsilon(), cubeGauss.getSigma(),
+                                       cubeGauss.getMass());
               }
             } else if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeUniformObjectsStr) {
               generatorName = MDFlexConfig::cubeUniformObjectsStr;
               for (auto it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
                 objID = std::distance(objectIterator->second.begin(), it);
-                CubeUniform cubeUniform = parseCubeUniformObject(config, it);
+                const auto cubeUniform = parseCubeUniformObject(config, it);
 
                 config.cubeUniformObjects.emplace_back(cubeUniform);
-                config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
-                                       it->second[config.epsilonMap.name].as<double>(),
-                                       it->second[config.sigmaMap.name].as<double>(),
-                                       it->second[config.massMap.name].as<double>());
+                config.addParticleType(cubeUniform.getTypeId(), cubeUniform.getEpsilon(), cubeUniform.getSigma(),
+                                       cubeUniform.getMass());
               }
             } else if (objectIterator->first.as<std::string>() == MDFlexConfig::sphereObjectsStr) {
               generatorName = MDFlexConfig::sphereObjectsStr;
               for (auto it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
                 objID = std::distance(objectIterator->second.begin(), it);
-                Sphere sphere = parseSphereObject(config, it);
+                const auto sphere = parseSphereObject(config, it);
 
                 config.sphereObjects.emplace_back(sphere);
-                config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
-                                       it->second[config.epsilonMap.name].as<double>(),
-                                       it->second[config.sigmaMap.name].as<double>(),
-                                       it->second[config.massMap.name].as<double>());
+                config.addParticleType(sphere.getTypeId(), sphere.getEpsilon(), sphere.getSigma(), sphere.getMass());
               }
             } else if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeClosestPackedObjectsStr) {
               generatorName = MDFlexConfig::cubeClosestPackedObjectsStr;
               for (auto it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
                 objID = std::distance(objectIterator->second.begin(), it);
-                CubeClosestPacked cubeClosestPacked = parseCubeClosestPacked(config, it);
+                const auto cubeClosestPacked = parseCubeClosestPacked(config, it);
 
                 config.cubeClosestPackedObjects.emplace_back(cubeClosestPacked);
-                config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
-                                       it->second[config.epsilonMap.name].as<double>(),
-                                       it->second[config.sigmaMap.name].as<double>(),
-                                       it->second[config.massMap.name].as<double>());
+                config.addParticleType(cubeClosestPacked.getTypeId(), cubeClosestPacked.getEpsilon(),
+                                       cubeClosestPacked.getSigma(), cubeClosestPacked.getMass());
               }
             } else {
               std::stringstream ss;
               ss << "YamlParser: Unrecognized generator \"" << objectIterator->first.as<std::string>() << "\" used."
                  << std::endl;
               errors.push_back(ss.str());
-              errorOccured = true;
             }
           } catch (const std::exception &e) {
             std::stringstream ss;
@@ -686,7 +623,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
                << "Message: " << e.what() << std::endl
                << "See AllOptions.yaml for examples." << std::endl;
             errors.push_back(ss.str());
-            errorOccured = true;
           }
         }
       } else if (key == config.useThermostat.name) {
@@ -695,32 +631,31 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         config.useThermostat.value = true;
 
-        m = node[key][config.initTemperature.name].Mark();
+        mark = node[key][config.initTemperature.name].Mark();
         expected = "Floating-Point Value";
         description = config.initTemperature.description;
         config.initTemperature.value = node[key][config.initTemperature.name].as<double>();
 
-        m = node[key][config.thermostatInterval.name].Mark();
+        mark = node[key][config.thermostatInterval.name].Mark();
         expected = "Unsigned Integer > 0";
         description = config.thermostatInterval.description;
 
-        int tmp = node[key][config.thermostatInterval.name].as<size_t>();
-        if (tmp <= 1) {
+        config.thermostatInterval.value = node[key][config.thermostatInterval.name].as<size_t>();
+        if (config.thermostatInterval.value <= 1) {
           throw std::runtime_error("thermostatInterval has to be > 0!");
         }
-        config.thermostatInterval.value = node[key][config.thermostatInterval.name].as<size_t>();
 
-        m = node[key][config.targetTemperature.name].Mark();
+        mark = node[key][config.targetTemperature.name].Mark();
         expected = "Floating-Point Value";
         description = config.targetTemperature.description;
         config.targetTemperature.value = node[key][config.targetTemperature.name].as<double>();
 
-        m = node[key][config.deltaTemp.name].Mark();
+        mark = node[key][config.deltaTemp.name].Mark();
         expected = "Floating-Point Value";
         description = config.deltaTemp.description;
         config.deltaTemp.value = node[key][config.deltaTemp.name].as<double>();
 
-        m = node[key][config.addBrownianMotion.name].Mark();
+        mark = node[key][config.addBrownianMotion.name].Mark();
         expected = "Boolean Value";
         description = config.addBrownianMotion.description;
         config.addBrownianMotion.value = node[key][config.addBrownianMotion.name].as<bool>();
@@ -729,36 +664,27 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         expected = "YAML-sequence of possible values.";
         description = config.loadBalancer.description;
 
-        std::set<LoadBalancerOption> parsedOptions;
-        if (node[key].IsSequence()) {
-          if (node[key].size() != 1) {
-            throw std::runtime_error("Pass Exactly one load balancer option!");
-          }
-          parsedOptions =
-              LoadBalancerOption::parseOptions(autopas::utils::ArrayUtils::to_string(node[key], "", {"", ""}));
-        } else {
-          parsedOptions = LoadBalancerOption::parseOptions(node[key].as<std::string>());
-        }
+        const auto parsedOptions = LoadBalancerOption::parseOptions(
+            parseSequenceOneElementExpected(node[key], "Pass Exactly one load balancer option!"));
+
         config.loadBalancer.value = *parsedOptions.begin();
       } else {
         std::stringstream ss;
         ss << "YamlParser: Unrecognized option in input YAML: " + key << std::endl;
         errors.push_back(ss.str());
-        errorOccured = true;
       }
     } catch (const std::exception &e) {
       std::stringstream ss;
-      ss << "YamlParser: Parsing error in line " << (m.line + 1) << " at column " << m.column
-         << ", key: " << key << std::endl
+      ss << "YamlParser: Parsing error in line " << (mark.line + 1) << " at column " << mark.column << ", key: " << key
+         << std::endl
          << "Message: " << e.what() << std::endl
          << "Expected: " << expected << std::endl
          << "Parameter description: " << description << std::endl;
       errors.push_back(ss.str());
-      errorOccured = true;
     }
   }
 
-  if (errorOccured) {
+  if (!errors.empty()) {
     for (std::string &err : errors) {
       std::cerr << err << std::endl << std::endl;
     }

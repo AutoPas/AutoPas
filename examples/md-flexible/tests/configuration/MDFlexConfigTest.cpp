@@ -122,6 +122,9 @@ TEST_F(MDFlexConfigTest, wrongTypeParsingInput) {
 
   char *argv[3] = {&arguments[0][0], &arguments[1][0], &arguments[2][0]};
 
+  // If an invalid YAML-file is used, exceptions are catched by YamlParser, MDFlexConfig will then exit with
+  // EXIT_FAILURE and write "Error when parsing configuration file." to cerr. YAML-file for this test is in
+  // examples/md-flexible/tests/yamlTestFiles/incorrectParsingFile.yaml
   ASSERT_EXIT(MDFlexConfig(3, argv), testing::ExitedWithCode(1), "Error when parsing configuration file.");
 }
 

@@ -7,6 +7,8 @@
 
 #include <yaml-cpp/yaml.h>
 
+#include <string>
+
 #include "MDFlexConfig.h"
 #include "autopas/utils/NumberSet.h"
 #include "objects/Object.h"
@@ -24,6 +26,14 @@ namespace MDFlexParser::YamlParser {
 bool parseYamlFile(MDFlexConfig &config);
 
 /**
+ * Parses an input where exactly one option is expected and throws an error if a sequence of multiple options is given
+ * @param node The current YAML::Node, that should be parsed
+ * @param errMsg The error message thrown if multiple options are passed
+ * @return String representation of the parsed node
+ */
+const std::string parseSequenceOneElementExpected(const YAML::Node node, std::string errMsg);
+
+/**
  * Parses the scalar value of a key in a Object-Node of a YAML-config.
  * @param it YAML-iterator that points to a key of an Object-Node.
  * @param key The key to parse.
@@ -31,7 +41,7 @@ bool parseYamlFile(MDFlexConfig &config);
  * @return Parsed value of key. Throws a runtime_error if key could not be parsed.
  */
 template <typename T>
-T parseObjectValueSingle(YAML::iterator &it, const char *key, const char *exp) {
+const T parseObjectValueSingle(YAML::const_iterator &it, std::string key, std::string exp) {
   T value;
   try {
     value = it->second[key].as<T>();
@@ -56,7 +66,7 @@ T parseObjectValueSingle(YAML::iterator &it, const char *key, const char *exp) {
  * @return Parsed value of key. Throws a runtime_error if key could not be parsed.
  */
 template <typename T, size_t S>
-std::array<T, S> parseObjectValueSequence(YAML::iterator &it, const char *key, const char *exp) {
+const std::array<T, S> parseObjectValueSequence(YAML::const_iterator &it, std::string key, std::string exp) {
   std::array<T, S> value;
   try {
     YAML::Node n = it->second[key];
@@ -83,7 +93,7 @@ std::array<T, S> parseObjectValueSequence(YAML::iterator &it, const char *key, c
  * @param it YAML-iterator that points to the root of a CubeGrid-Node.
  * @return Particles from the CubeGrid-Generator.
  */
-CubeGrid parseCubeGridObject(MDFlexConfig &config, YAML::iterator &it);
+const CubeGrid parseCubeGridObject(const MDFlexConfig &config, YAML::const_iterator &it);
 
 /**
  * Parses a CubeUniform-Object from a CubeUniform-Yaml-Node.
@@ -91,7 +101,7 @@ CubeGrid parseCubeGridObject(MDFlexConfig &config, YAML::iterator &it);
  * @param it YAML-iterator that points to the root of a CubeUniform-Node.
  * @return Particles from the CubeUniform-Generator.
  */
-CubeUniform parseCubeUniformObject(MDFlexConfig &config, YAML::iterator &it);
+const CubeUniform parseCubeUniformObject(const MDFlexConfig &config, YAML::const_iterator &it);
 
 /**
  * Parses a CubeGauss-Object from a CubeGauss-Yaml-Node.
@@ -99,7 +109,7 @@ CubeUniform parseCubeUniformObject(MDFlexConfig &config, YAML::iterator &it);
  * @param it YAML-iterator that points to the root of a CubeGauss-Node.
  * @return Particles from the CubeGauss-Generator.
  */
-CubeGauss parseCubeGaussObject(MDFlexConfig &config, YAML::iterator &it);
+const CubeGauss parseCubeGaussObject(const MDFlexConfig &config, YAML::const_iterator &it);
 
 /**
  * Parses a Sphere-Object from a Sphere-Yaml-Node.
@@ -107,7 +117,7 @@ CubeGauss parseCubeGaussObject(MDFlexConfig &config, YAML::iterator &it);
  * @param it YAML-iterator that points to the root of a Sphere-Node.
  * @return Particles from the Sphere-Generator.
  */
-Sphere parseSphereObject(MDFlexConfig &config, YAML::iterator &it);
+const Sphere parseSphereObject(const MDFlexConfig &config, YAML::const_iterator &it);
 
 /**
  * Parses a CubeClosestPacked-Object from a CubeClosestPacked-Yaml-Node.
@@ -115,23 +125,21 @@ Sphere parseSphereObject(MDFlexConfig &config, YAML::iterator &it);
  * @param it YAML-iterator that points to the root of a CubeClosestPacked-Node.
  * @return Particles from the CubeClosestPacked-Generator.
  */
-CubeClosestPacked parseCubeClosestPacked(MDFlexConfig &config, YAML::iterator &it);
+const CubeClosestPacked parseCubeClosestPacked(const MDFlexConfig &config, YAML::const_iterator &it);
 
 /**
  * Parses the velcity-parameter of a particle-generator.
- * @param config configuration where the input is stored.
  * @param it YAML-iterator that points to the velocity-node of a particleobject.
  * @return Initial particle velocity in x, y and z direction as array.
  */
-std::array<double, 3> parseVelocity(MDFlexConfig &config, YAML::iterator &it);
+const std::array<double, 3> parseVelocity(YAML::const_iterator &it);
 
 /**
  * Parses the particle-type-parameter of a particle-generator.
- * @param config configuration where the input is stored.
  * @param it YAML-iterator that points to the particle-type-node of a particleobject.
  * @return Particletype to be generated.
  */
-unsigned long parseParticleType(MDFlexConfig &config, YAML::iterator &it);
+const unsigned long parseParticleType(YAML::const_iterator &it);
 
 /**
  * Parses the particle-epsilon-parameter of a particle-generator.
@@ -139,7 +147,7 @@ unsigned long parseParticleType(MDFlexConfig &config, YAML::iterator &it);
  * @param it YAML-iterator that points to the particle-epsilon-node of a particleobject.
  * @return Epsilon for particles to be generated.
  */
-double parseEpsilon(MDFlexConfig &config, YAML::iterator &it);
+const double parseEpsilon(const MDFlexConfig &config, YAML::const_iterator &it);
 
 /**
  * Parses the particle-sigma-parameter of a particle-generator.
@@ -147,7 +155,7 @@ double parseEpsilon(MDFlexConfig &config, YAML::iterator &it);
  * @param it YAML-iterator that points to the particle-sigma-node of a particleobject.
  * @return Sigma for particles to be generated.
  */
-double parseSigma(MDFlexConfig &config, YAML::iterator &it);
+const double parseSigma(const MDFlexConfig &config, YAML::const_iterator &it);
 
 /**
  * Parses the particle-mass-parameter of a particle-generator.
@@ -155,7 +163,7 @@ double parseSigma(MDFlexConfig &config, YAML::iterator &it);
  * @param it YAML-iterator that points to the particle-mass-node of a particleobject.
  * @return Mass for particles to be generated.
  */
-double parseMass(MDFlexConfig &config, YAML::iterator &it);
+const double parseMass(const MDFlexConfig &config, YAML::const_iterator &it);
 
 /**
  * Parses the particle-spacing-parameter of a particle-generator.
@@ -163,7 +171,7 @@ double parseMass(MDFlexConfig &config, YAML::iterator &it);
  * @param it YAML-iterator that points to the particle-spacing-node of a particleobject.
  * @return Spacing between particles to be generated.
  */
-double parseParticleSpacing(MDFlexConfig &config, YAML::iterator &it);
+const double parseParticleSpacing(const MDFlexConfig &config, YAML::const_iterator &it);
 
 /**
  * Parses the particles-per-dimension-parameter of a particle-generator.
@@ -171,15 +179,14 @@ double parseParticleSpacing(MDFlexConfig &config, YAML::iterator &it);
  * @param it YAML-iterator that points to the particles-per-dimension-node of a particleobject.
  * @return Particles per dimension as array.
  */
-std::array<unsigned long, 3> parseParticlesPerDim(MDFlexConfig &config, YAML::iterator &it);
+const std::array<unsigned long, 3> parseParticlesPerDim(const MDFlexConfig &config, YAML::const_iterator &it);
 
 /**
  * Parses the bottomLeftCorner-parameter of a particle-generator.
- * @param config configuration where the input is stored.
  * @param it YAML-iterator that points to the bottomLeftCorner-node of a particleobject.
  * @return Bottom left corner of particles to be generated.
  */
-std::array<double, 3> parseBottomLeftCorner(MDFlexConfig &config, YAML::iterator &it);
+const std::array<double, 3> parseBottomLeftCorner(YAML::const_iterator &it);
 
 /**
  * Parses the distribution-mean-parameter of a particle-generator.
@@ -187,7 +194,7 @@ std::array<double, 3> parseBottomLeftCorner(MDFlexConfig &config, YAML::iterator
  * @param it YAML-iterator that points to the distribution-mean-node of a particleobject.
  * @return Mean value for normal distribution in x, y and z direction.
  */
-std::array<double, 3> parseDistrMean(MDFlexConfig &config, YAML::iterator &it);
+const std::array<double, 3> parseDistrMean(const MDFlexConfig &config, YAML::const_iterator &it);
 
 /**
  * Parses the distribution-stddeviation-parameter of a particle-generator.
@@ -195,15 +202,14 @@ std::array<double, 3> parseDistrMean(MDFlexConfig &config, YAML::iterator &it);
  * @param it YAML-iterator that points to the distribution-stddeviation-node of a particleobject.
  * @return Standard deviation for normal distribution in x, y and z direction as array.
  */
-std::array<double, 3> parseDistrStdDev(MDFlexConfig &config, YAML::iterator &it);
+const std::array<double, 3> parseDistrStdDev(const MDFlexConfig &config, YAML::const_iterator &it);
 
 /**
  * Parses the numberOfParticles-parameter of a particle-generator.
- * @param config configuration where the input is stored.
  * @param it YAML-iterator that points to the numberOfParticles-node of a particleobject.
  * @return Number of particles to be generated
  */
-size_t parseNumParticles(MDFlexConfig &config, YAML::iterator &it);
+const size_t parseNumParticles(YAML::const_iterator &it);
 
 /**
  * Parses the box-length-parameter of a particle-generator.
@@ -211,22 +217,20 @@ size_t parseNumParticles(MDFlexConfig &config, YAML::iterator &it);
  * @param it YAML-iterator that points to the box-length-node of a particleobject.
  * @return Box size in which particles should be generated in x, y and z direction as array.
  */
-std::array<double, 3> parseBoxLength(MDFlexConfig &config, YAML::iterator &it);
+const std::array<double, 3> parseBoxLength(const MDFlexConfig &config, YAML::const_iterator &it);
 
 /**
  * Parses the center-parameter of a sphere-generator.
- * @param config configuration where the input is stored.
  * @param it YAML-iterator that points to the center-node of a sphereobject.
  * @return Center of the sphere object.
  */
-std::array<double, 3> parseCenter(MDFlexConfig &config, YAML::iterator &it);
+const std::array<double, 3> parseCenter(YAML::const_iterator &it);
 
 /**
  * Parses the radius-parameter of a sphere-generator.
- * @param config configuration where the input is stored.
  * @param it YAML-iterator that points to the radius-node of a sphereobject.
  * @return Radius of the sphere object.
  */
-double parseRadius(MDFlexConfig &config, YAML::iterator &it);
+const double parseRadius(YAML::const_iterator &it);
 
 }  // namespace MDFlexParser::YamlParser
