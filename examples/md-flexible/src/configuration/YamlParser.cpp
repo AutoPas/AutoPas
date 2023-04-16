@@ -5,7 +5,8 @@
  */
 #include "YamlParser.h"
 
-const std::string MDFlexParser::YamlParser::parseSequenceOneElementExpected(const YAML::Node node, std::string errMsg) {
+const std::string MDFlexParser::YamlParser::parseSequenceOneElementExpected(const YAML::Node node,
+                                                                            const std::string &errMsg) {
   if (node.IsSequence()) {
     if (node.size() != 1) {
       throw std::runtime_error(errMsg);
@@ -16,140 +17,100 @@ const std::string MDFlexParser::YamlParser::parseSequenceOneElementExpected(cons
   }
 }
 
-const std::array<double, 3> MDFlexParser::YamlParser::parseVelocity(YAML::const_iterator &it) {
-  return parseObjectValueSequence<double, 3>(it, MDFlexConfig::velocityStr, "Three doubles as YAML-sequence");
+const std::string MDFlexParser::YamlParser::makeErrorMsg(const YAML::Mark &mark, const std::string &key,
+                                                         const std::string &errorMsg, const std::string &expected,
+                                                         const std::string &description) {
+  std::stringstream ss;
+  ss << "YamlParser: Parsing error in line " << (mark.line + 1) << " at column " << mark.column << ", key: " << key
+     << std::endl
+     << "Message: " << errorMsg << std::endl
+     << "Expected: " << expected << std::endl
+     << "Parameter description: " << description << std::endl;
+  return ss.str();
 }
 
-const unsigned long MDFlexParser::YamlParser::parseParticleType(YAML::const_iterator &it) {
-  return parseObjectValueSingle<unsigned long>(it, MDFlexConfig::particleTypeStr, "Unsigned Integer");
-}
-
-const double MDFlexParser::YamlParser::parseEpsilon(const MDFlexConfig &config, YAML::const_iterator &it) {
-  return parseObjectValueSingle<double>(it, config.epsilonMap.name.c_str(), "Double");
-}
-
-const double MDFlexParser::YamlParser::parseSigma(const MDFlexConfig &config, YAML::const_iterator &it) {
-  return parseObjectValueSingle<double>(it, config.sigmaMap.name.c_str(), "Double");
-}
-
-const double MDFlexParser::YamlParser::parseMass(const MDFlexConfig &config, YAML::const_iterator &it) {
-  return parseObjectValueSingle<double>(it, config.massMap.name.c_str(), "Double");
-}
-
-const double MDFlexParser::YamlParser::parseParticleSpacing(const MDFlexConfig &config, YAML::const_iterator &it) {
-  return parseObjectValueSingle<double>(it, config.particleSpacing.name.c_str(), "Double");
-}
-
-const std::array<unsigned long, 3> MDFlexParser::YamlParser::parseParticlesPerDim(const MDFlexConfig &config,
-                                                                                  YAML::const_iterator &it) {
-  return parseObjectValueSequence<unsigned long, 3>(it, config.particlesPerDim.name,
-                                                    "Three unsigned integers as YAML-sequence");
-}
-
-const std::array<double, 3> MDFlexParser::YamlParser::parseBottomLeftCorner(YAML::const_iterator &it) {
-  return parseObjectValueSequence<double, 3>(it, MDFlexConfig::bottomLeftBackCornerStr,
-                                             "Three doubles as YAML-sequence");
-}
-
-const std::array<double, 3> MDFlexParser::YamlParser::parseDistrMean(const MDFlexConfig &config,
-                                                                     YAML::const_iterator &it) {
-  return parseObjectValueSequence<double, 3>(it, config.distributionMean.name, "Three doubles as YAML-sequence");
-}
-
-const std::array<double, 3> MDFlexParser::YamlParser::parseDistrStdDev(const MDFlexConfig &config,
-                                                                       YAML::const_iterator &it) {
-  return parseObjectValueSequence<double, 3>(it, config.distributionStdDev.name, "Three doubles as YAML-sequence");
-}
-
-const size_t MDFlexParser::YamlParser::parseNumParticles(YAML::const_iterator &it) {
-  return parseObjectValueSingle<size_t>(it, MDFlexConfig::particlesPerObjectStr, "Unsigned Integer");
-}
-
-const std::array<double, 3> MDFlexParser::YamlParser::parseBoxLength(const MDFlexConfig &config,
-                                                                     YAML::const_iterator &it) {
-  return parseObjectValueSequence<double, 3>(it, config.boxLength.name, "Three doubles as YAML-sequence");
-}
-
-const std::array<double, 3> MDFlexParser::YamlParser::parseCenter(YAML::const_iterator &it) {
-  return parseObjectValueSequence<double, 3>(it, MDFlexConfig::sphereCenterStr, "Three doubles as YAML-sequence");
-}
-
-const double MDFlexParser::YamlParser::parseRadius(YAML::const_iterator &it) {
-  return parseObjectValueSingle<double>(it, MDFlexConfig::sphereRadiusStr, "Double");
-}
-
-const CubeGrid MDFlexParser::YamlParser::parseCubeGridObject(const MDFlexConfig &config, YAML::const_iterator &it) {
-  const auto velocity = parseVelocity(it);
-  const auto particleType = parseParticleType(it);
-  const auto epsilon = parseEpsilon(config, it);
-  const auto sigma = parseSigma(config, it);
-  const auto mass = parseMass(config, it);
-  const auto particlesPerDim = parseParticlesPerDim(config, it);
-  const auto particleSpacing = parseParticleSpacing(config, it);
-  const auto bottomLeftCorner = parseBottomLeftCorner(it);
+const CubeGrid MDFlexParser::YamlParser::parseCubeGridObject(const MDFlexConfig &config, const YAML::Node node,
+                                                             std::vector<std::string> &objectErrors) {
+  const auto velocity = parseObjectValueSequence<double, 3>(node, MDFlexConfig::velocityStr, objectErrors);
+  const auto particleType = parseObjectValueSingle<unsigned long>(node, MDFlexConfig::particleTypeStr, objectErrors);
+  const auto epsilon = parseObjectValueSingle<double>(node, config.epsilonMap.name.c_str(), objectErrors);
+  const auto sigma = parseObjectValueSingle<double>(node, config.sigmaMap.name.c_str(), objectErrors);
+  const auto mass = parseObjectValueSingle<double>(node, config.massMap.name.c_str(), objectErrors);
+  const auto particlesPerDim =
+      parseObjectValueSequence<unsigned long, 3>(node, config.particlesPerDim.name, objectErrors);
+  const auto particleSpacing = parseObjectValueSingle<double>(node, config.particleSpacing.name.c_str(), objectErrors);
+  const auto bottomLeftCorner =
+      parseObjectValueSequence<double, 3>(node, MDFlexConfig::bottomLeftBackCornerStr, objectErrors);
 
   const CubeGrid cubeGrid(velocity, particleType, epsilon, sigma, mass, particlesPerDim, particleSpacing,
                           bottomLeftCorner);
   return cubeGrid;
 }
 
-const CubeUniform MDFlexParser::YamlParser::parseCubeUniformObject(const MDFlexConfig &config,
-                                                                   YAML::const_iterator &it) {
-  const auto velocity = parseVelocity(it);
-  const auto particleType = parseParticleType(it);
-  const auto epsilon = parseEpsilon(config, it);
-  const auto sigma = parseSigma(config, it);
-  const auto mass = parseMass(config, it);
-  const auto numParticles = parseNumParticles(it);
-  const auto boxLength = parseBoxLength(config, it);
-  const auto bottomLeftCorner = parseBottomLeftCorner(it);
+const CubeUniform MDFlexParser::YamlParser::parseCubeUniformObject(const MDFlexConfig &config, const YAML::Node node,
+                                                                   std::vector<std::string> &objectErrors) {
+  const auto velocity = parseObjectValueSequence<double, 3>(node, MDFlexConfig::velocityStr, objectErrors);
+  const auto particleType = parseObjectValueSingle<unsigned long>(node, MDFlexConfig::particleTypeStr, objectErrors);
+  const auto epsilon = parseObjectValueSingle<double>(node, config.epsilonMap.name.c_str(), objectErrors);
+  const auto sigma = parseObjectValueSingle<double>(node, config.sigmaMap.name.c_str(), objectErrors);
+  const auto mass = parseObjectValueSingle<double>(node, config.massMap.name.c_str(), objectErrors);
+  const auto numParticles = parseObjectValueSingle<size_t>(node, MDFlexConfig::particlesPerObjectStr, objectErrors);
+  const auto boxLength = parseObjectValueSequence<double, 3>(node, config.boxLength.name, objectErrors);
+  const auto bottomLeftCorner =
+      parseObjectValueSequence<double, 3>(node, MDFlexConfig::bottomLeftBackCornerStr, objectErrors);
 
   const CubeUniform cubeUniform(velocity, particleType, epsilon, sigma, mass, numParticles, boxLength,
                                 bottomLeftCorner);
   return cubeUniform;
 }
 
-const CubeGauss MDFlexParser::YamlParser::parseCubeGaussObject(const MDFlexConfig &config, YAML::const_iterator &it) {
-  const auto velocity = parseVelocity(it);
-  const auto particleType = parseParticleType(it);
-  const auto epsilon = parseEpsilon(config, it);
-  const auto sigma = parseSigma(config, it);
-  const auto mass = parseMass(config, it);
-  const auto numParticles = parseNumParticles(it);
-  const auto boxLength = parseBoxLength(config, it);
-  const auto distributionMean = parseDistrMean(config, it);
-  const auto distributionStdDev = parseDistrStdDev(config, it);
-  const auto bottomLeftCorner = parseBottomLeftCorner(it);
+const CubeGauss MDFlexParser::YamlParser::parseCubeGaussObject(const MDFlexConfig &config, const YAML::Node node,
+                                                               std::vector<std::string> &objectErrors) {
+  const auto velocity = parseObjectValueSequence<double, 3>(node, MDFlexConfig::velocityStr, objectErrors);
+  const auto particleType = parseObjectValueSingle<unsigned long>(node, MDFlexConfig::particleTypeStr, objectErrors);
+  const auto epsilon = parseObjectValueSingle<double>(node, config.epsilonMap.name.c_str(), objectErrors);
+  const auto sigma = parseObjectValueSingle<double>(node, config.sigmaMap.name.c_str(), objectErrors);
+  const auto mass = parseObjectValueSingle<double>(node, config.massMap.name.c_str(), objectErrors);
+  const auto numParticles = parseObjectValueSingle<size_t>(node, MDFlexConfig::particlesPerObjectStr, objectErrors);
+  const auto boxLength = parseObjectValueSequence<double, 3>(node, config.boxLength.name, objectErrors);
+  const auto distributionMean = parseObjectValueSequence<double, 3>(node, config.distributionMean.name, objectErrors);
+  const auto distributionStdDev =
+      parseObjectValueSequence<double, 3>(node, config.distributionStdDev.name, objectErrors);
+  const auto bottomLeftCorner =
+      parseObjectValueSequence<double, 3>(node, MDFlexConfig::bottomLeftBackCornerStr, objectErrors);
 
   const CubeGauss cubeGauss(velocity, particleType, epsilon, sigma, mass, numParticles, boxLength, distributionMean,
                             distributionStdDev, bottomLeftCorner);
   return cubeGauss;
 }
 
-const Sphere MDFlexParser::YamlParser::parseSphereObject(const MDFlexConfig &config, YAML::const_iterator &it) {
-  const auto velocity = parseVelocity(it);
-  const auto particleType = parseParticleType(it);
-  const auto epsilon = parseEpsilon(config, it);
-  const auto sigma = parseSigma(config, it);
-  const auto mass = parseMass(config, it);
-  const auto sphereCenter = parseCenter(it);
-  const auto sphereRadius = parseRadius(it);
-  const auto particleSpacing = parseParticleSpacing(config, it);
+const Sphere MDFlexParser::YamlParser::parseSphereObject(const MDFlexConfig &config, const YAML::Node node,
+                                                         std::vector<std::string> &objectErrors) {
+  const auto velocity = parseObjectValueSequence<double, 3>(node, MDFlexConfig::velocityStr, objectErrors);
+  const auto particleType = parseObjectValueSingle<unsigned long>(node, MDFlexConfig::particleTypeStr, objectErrors);
+  const auto epsilon = parseObjectValueSingle<double>(node, config.epsilonMap.name.c_str(), objectErrors);
+  const auto sigma = parseObjectValueSingle<double>(node, config.sigmaMap.name.c_str(), objectErrors);
+  const auto mass = parseObjectValueSingle<double>(node, config.massMap.name.c_str(), objectErrors);
+  const auto sphereCenter = parseObjectValueSequence<double, 3>(node, MDFlexConfig::sphereCenterStr, objectErrors);
+  const auto sphereRadius = parseObjectValueSingle<double>(node, MDFlexConfig::sphereRadiusStr, objectErrors);
+  const auto particleSpacing = parseObjectValueSingle<double>(node, config.particleSpacing.name.c_str(), objectErrors);
 
   const Sphere sphere(velocity, particleType, epsilon, sigma, mass, sphereCenter, sphereRadius, particleSpacing);
   return sphere;
 }
 
 const CubeClosestPacked MDFlexParser::YamlParser::parseCubeClosestPacked(const MDFlexConfig &config,
-                                                                         YAML::const_iterator &it) {
-  const auto velocity = parseVelocity(it);
-  const auto particleType = parseParticleType(it);
-  const auto epsilon = parseEpsilon(config, it);
-  const auto sigma = parseSigma(config, it);
-  const auto mass = parseMass(config, it);
-  const auto particleSpacing = parseParticleSpacing(config, it);
-  const auto boxLength = parseBoxLength(config, it);
-  const auto bottomLeftCorner = parseBottomLeftCorner(it);
+                                                                         const YAML::Node node,
+                                                                         std::vector<std::string> &objectErrors) {
+  const auto velocity = parseObjectValueSequence<double, 3>(node, MDFlexConfig::velocityStr, objectErrors);
+  const auto particleType = parseObjectValueSingle<unsigned long>(node, MDFlexConfig::particleTypeStr, objectErrors);
+  const auto epsilon = parseObjectValueSingle<double>(node, config.epsilonMap.name.c_str(), objectErrors);
+  const auto sigma = parseObjectValueSingle<double>(node, config.sigmaMap.name.c_str(), objectErrors);
+  const auto mass = parseObjectValueSingle<double>(node, config.massMap.name.c_str(), objectErrors);
+  const auto particleSpacing = parseObjectValueSingle<double>(node, config.particleSpacing.name.c_str(), objectErrors);
+  const auto boxLength = parseObjectValueSequence<double, 3>(node, config.boxLength.name, objectErrors);
+  const auto bottomLeftCorner =
+      parseObjectValueSequence<double, 3>(node, MDFlexConfig::bottomLeftBackCornerStr, objectErrors);
 
   const CubeClosestPacked cubeClosestPacked(velocity, particleType, epsilon, sigma, mass, particleSpacing, boxLength,
                                             bottomLeftCorner);
@@ -558,70 +519,81 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         int objID = 0;
         std::string generatorName;
+        std::vector<std::string> objectErrors;
+
+        auto pushObjectError = [&](const std::string &error) {
+          std::stringstream ss;
+          ss << "YamlParser: Error parsing " << generatorName << " object with ID " << objID << "." << std::endl
+             << "Message: " << error << std::endl
+             << "See AllOptions.yaml for examples." << std::endl;
+          errors.push_back(ss.str());
+        };
 
         for (auto objectIterator = node[MDFlexConfig::objectsStr].begin();
              objectIterator != node[MDFlexConfig::objectsStr].end(); ++objectIterator) {
-          try {
-            if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeGridObjectsStr) {
-              generatorName = MDFlexConfig::cubeGridObjectsStr;
-              for (auto it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
-                objID = std::distance(objectIterator->second.begin(), it);
-                const auto cubeGrid = parseCubeGridObject(config, it);
+          if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeGridObjectsStr) {
+            generatorName = MDFlexConfig::cubeGridObjectsStr;
+            for (auto it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
+              objectErrors.clear();
+              objID = std::distance(objectIterator->second.begin(), it);
+              const auto cubeGrid = parseCubeGridObject(config, it->second, objectErrors);
 
-                config.cubeGridObjects.emplace_back(cubeGrid);
-                config.addParticleType(cubeGrid.getTypeId(), cubeGrid.getEpsilon(), cubeGrid.getSigma(),
-                                       cubeGrid.getMass());
-              }
-            } else if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeGaussObjectsStr) {
-              generatorName = MDFlexConfig::cubeGaussObjectsStr;
-              for (auto it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
-                objID = std::distance(objectIterator->second.begin(), it);
-                const auto cubeGauss = parseCubeGaussObject(config, it);
-
-                config.cubeGaussObjects.emplace_back(cubeGauss);
-                config.addParticleType(cubeGauss.getTypeId(), cubeGauss.getEpsilon(), cubeGauss.getSigma(),
-                                       cubeGauss.getMass());
-              }
-            } else if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeUniformObjectsStr) {
-              generatorName = MDFlexConfig::cubeUniformObjectsStr;
-              for (auto it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
-                objID = std::distance(objectIterator->second.begin(), it);
-                const auto cubeUniform = parseCubeUniformObject(config, it);
-
-                config.cubeUniformObjects.emplace_back(cubeUniform);
-                config.addParticleType(cubeUniform.getTypeId(), cubeUniform.getEpsilon(), cubeUniform.getSigma(),
-                                       cubeUniform.getMass());
-              }
-            } else if (objectIterator->first.as<std::string>() == MDFlexConfig::sphereObjectsStr) {
-              generatorName = MDFlexConfig::sphereObjectsStr;
-              for (auto it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
-                objID = std::distance(objectIterator->second.begin(), it);
-                const auto sphere = parseSphereObject(config, it);
-
-                config.sphereObjects.emplace_back(sphere);
-                config.addParticleType(sphere.getTypeId(), sphere.getEpsilon(), sphere.getSigma(), sphere.getMass());
-              }
-            } else if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeClosestPackedObjectsStr) {
-              generatorName = MDFlexConfig::cubeClosestPackedObjectsStr;
-              for (auto it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
-                objID = std::distance(objectIterator->second.begin(), it);
-                const auto cubeClosestPacked = parseCubeClosestPacked(config, it);
-
-                config.cubeClosestPackedObjects.emplace_back(cubeClosestPacked);
-                config.addParticleType(cubeClosestPacked.getTypeId(), cubeClosestPacked.getEpsilon(),
-                                       cubeClosestPacked.getSigma(), cubeClosestPacked.getMass());
-              }
-            } else {
-              std::stringstream ss;
-              ss << "YamlParser: Unrecognized generator \"" << objectIterator->first.as<std::string>() << "\" used."
-                 << std::endl;
-              errors.push_back(ss.str());
+              config.cubeGridObjects.emplace_back(cubeGrid);
+              config.addParticleType(cubeGrid.getTypeId(), cubeGrid.getEpsilon(), cubeGrid.getSigma(),
+                                     cubeGrid.getMass());
+              for_each(objectErrors.begin(), objectErrors.end(), pushObjectError);
             }
-          } catch (const std::exception &e) {
+          } else if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeGaussObjectsStr) {
+            generatorName = MDFlexConfig::cubeGaussObjectsStr;
+            for (auto it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
+              objectErrors.clear();
+              objID = std::distance(objectIterator->second.begin(), it);
+              const auto cubeGauss = parseCubeGaussObject(config, it->second, objectErrors);
+
+              config.cubeGaussObjects.emplace_back(cubeGauss);
+              config.addParticleType(cubeGauss.getTypeId(), cubeGauss.getEpsilon(), cubeGauss.getSigma(),
+                                     cubeGauss.getMass());
+              for_each(objectErrors.begin(), objectErrors.end(), pushObjectError);
+            }
+          } else if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeUniformObjectsStr) {
+            generatorName = MDFlexConfig::cubeUniformObjectsStr;
+            for (auto it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
+              objectErrors.clear();
+              objID = std::distance(objectIterator->second.begin(), it);
+              const auto cubeUniform = parseCubeUniformObject(config, it->second, objectErrors);
+
+              config.cubeUniformObjects.emplace_back(cubeUniform);
+              config.addParticleType(cubeUniform.getTypeId(), cubeUniform.getEpsilon(), cubeUniform.getSigma(),
+                                     cubeUniform.getMass());
+              for_each(objectErrors.begin(), objectErrors.end(), pushObjectError);
+            }
+          } else if (objectIterator->first.as<std::string>() == MDFlexConfig::sphereObjectsStr) {
+            generatorName = MDFlexConfig::sphereObjectsStr;
+            for (auto it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
+              objectErrors.clear();
+              objID = std::distance(objectIterator->second.begin(), it);
+              const auto sphere = parseSphereObject(config, it->second, objectErrors);
+
+              config.sphereObjects.emplace_back(sphere);
+              config.addParticleType(sphere.getTypeId(), sphere.getEpsilon(), sphere.getSigma(), sphere.getMass());
+              for_each(objectErrors.begin(), objectErrors.end(), pushObjectError);
+            }
+          } else if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeClosestPackedObjectsStr) {
+            generatorName = MDFlexConfig::cubeClosestPackedObjectsStr;
+            for (auto it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
+              objectErrors.clear();
+              objID = std::distance(objectIterator->second.begin(), it);
+              const auto cubeClosestPacked = parseCubeClosestPacked(config, it->second, objectErrors);
+
+              config.cubeClosestPackedObjects.emplace_back(cubeClosestPacked);
+              config.addParticleType(cubeClosestPacked.getTypeId(), cubeClosestPacked.getEpsilon(),
+                                     cubeClosestPacked.getSigma(), cubeClosestPacked.getMass());
+              for_each(objectErrors.begin(), objectErrors.end(), pushObjectError);
+            }
+          } else {
             std::stringstream ss;
-            ss << "YamlParser: Error parsing " << generatorName << " object with ID " << objID << "." << std::endl
-               << "Message: " << e.what() << std::endl
-               << "See AllOptions.yaml for examples." << std::endl;
+            ss << "YamlParser: Unrecognized generator \"" << objectIterator->first.as<std::string>() << "\" used."
+               << std::endl;
             errors.push_back(ss.str());
           }
         }
@@ -631,34 +603,58 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         config.useThermostat.value = true;
 
+        // Parse initTemperature.
         mark = node[key][config.initTemperature.name].Mark();
         expected = "Floating-Point Value";
         description = config.initTemperature.description;
-        config.initTemperature.value = node[key][config.initTemperature.name].as<double>();
+        try {
+          config.initTemperature.value = node[key][config.initTemperature.name].as<double>();
+        } catch (const std::exception &e) {
+          errors.push_back(makeErrorMsg(mark, key, e.what(), expected, description));
+        }
 
+        // Parse thermostatInterval.
         mark = node[key][config.thermostatInterval.name].Mark();
         expected = "Unsigned Integer > 0";
         description = config.thermostatInterval.description;
-
-        config.thermostatInterval.value = node[key][config.thermostatInterval.name].as<size_t>();
-        if (config.thermostatInterval.value <= 1) {
-          throw std::runtime_error("thermostatInterval has to be > 0!");
+        try {
+          config.thermostatInterval.value = node[key][config.thermostatInterval.name].as<size_t>();
+          if (config.thermostatInterval.value <= 1) {
+            throw std::runtime_error("thermostatInterval has to be > 0!");
+          }
+        } catch (const std::exception &e) {
+          errors.push_back(makeErrorMsg(mark, key, e.what(), expected, description));
         }
 
+        // Parse targetTemperature.
         mark = node[key][config.targetTemperature.name].Mark();
         expected = "Floating-Point Value";
         description = config.targetTemperature.description;
-        config.targetTemperature.value = node[key][config.targetTemperature.name].as<double>();
+        try {
+          config.targetTemperature.value = node[key][config.targetTemperature.name].as<double>();
+        } catch (const std::exception &e) {
+          errors.push_back(makeErrorMsg(mark, key, e.what(), expected, description));
+        }
 
+        // Parse deltaTemp.
         mark = node[key][config.deltaTemp.name].Mark();
         expected = "Floating-Point Value";
         description = config.deltaTemp.description;
-        config.deltaTemp.value = node[key][config.deltaTemp.name].as<double>();
+        try {
+          config.deltaTemp.value = node[key][config.deltaTemp.name].as<double>();
+        } catch (const std::exception &e) {
+          errors.push_back(makeErrorMsg(mark, key, e.what(), expected, description));
+        }
 
+        // Parse addBrownianMotion.
         mark = node[key][config.addBrownianMotion.name].Mark();
         expected = "Boolean Value";
         description = config.addBrownianMotion.description;
-        config.addBrownianMotion.value = node[key][config.addBrownianMotion.name].as<bool>();
+        try {
+          config.addBrownianMotion.value = node[key][config.addBrownianMotion.name].as<bool>();
+        } catch (const std::exception &e) {
+          errors.push_back(makeErrorMsg(mark, key, e.what(), expected, description));
+        }
 
       } else if (key == config.loadBalancer.name) {
         expected = "YAML-sequence of possible values.";
@@ -674,13 +670,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         errors.push_back(ss.str());
       }
     } catch (const std::exception &e) {
-      std::stringstream ss;
-      ss << "YamlParser: Parsing error in line " << (mark.line + 1) << " at column " << mark.column << ", key: " << key
-         << std::endl
-         << "Message: " << e.what() << std::endl
-         << "Expected: " << expected << std::endl
-         << "Parameter description: " << description << std::endl;
-      errors.push_back(ss.str());
+      errors.push_back(makeErrorMsg(mark, key, e.what(), expected, description));
     }
   }
 
