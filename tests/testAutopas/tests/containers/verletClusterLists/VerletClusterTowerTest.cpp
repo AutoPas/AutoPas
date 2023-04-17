@@ -105,16 +105,21 @@ TEST_F(VerletClusterTowerTest, testIterator) {
   tower.generateClusters();
   tower.setDummyValues(0, 0);
 
-  // Check that iterator iterates over all these particles and not over dummies. Dummies would have ID 0.
+  // Check that iterator iterates over all these particles and not over dummies. Dummies have ID max unsigned long.
   std::vector<size_t> IDs;
   IDs.reserve(numParticles);
-  size_t numDummiesFound = 0;
+  size_t numDummiesFoundByIsDummy = 0;
+  size_t numDummiesFoundById = 0;
   for (const auto &particle : tower) {
-    if (particle.getID(), std::numeric_limits<size_t>::max()) {
-      ++numDummiesFound;
+    if (particle.getID() == std::numeric_limits<size_t>::max()) {
+      ++numDummiesFoundById;
+    } else if (particle.isDummy()) {
+      ++numDummiesFoundByIsDummy;
     } else {
       EXPECT_TRUE(std::find(IDs.begin(), IDs.end(), particle.getID()) == IDs.end());
       IDs.push_back(particle.getID());
     }
   }
+  EXPECT_EQ(0, numDummiesFoundByIsDummy) << "The iterator came by a particle for which isDummy() == true.";
+  EXPECT_EQ(0, numDummiesFoundById) << "The iterator came by a particle which has a particle Id reserved for dummies.";
 }
