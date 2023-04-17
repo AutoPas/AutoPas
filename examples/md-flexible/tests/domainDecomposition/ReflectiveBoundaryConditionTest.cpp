@@ -34,6 +34,7 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   RegularGridDecomposition domainDecomposition(config);
 
   auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);
+  auto particlePropertiesLibrary = std::make_shared<ParticlePropertiesLibraryType>(.3);
 
   autoPasContainer->setBoxMin(domainDecomposition.getLocalBoxMin());
   autoPasContainer->setBoxMax(domainDecomposition.getLocalBoxMax());
@@ -41,6 +42,9 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   autoPasContainer->setVerletSkinPerTimestep(config.verletSkinRadiusPerTimestep.value);
   autoPasContainer->setVerletRebuildFrequency(config.verletRebuildFrequencies.value->getMin());
   autoPasContainer->init();
+
+  particlePropertiesLibrary->addType(0, 1., 1., 1.);
+  particlePropertiesLibrary->calculateMixingCoefficients();
 
   // get particle properties
   const std::array<double, 3> particlePosition = std::get<0>(GetParam());
@@ -78,7 +82,7 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
 
   // apply BCs + domain exchange
   domainDecomposition.exchangeMigratingParticles(*autoPasContainer, emigrants);
-  domainDecomposition.reflectParticlesAtBoundaries(*autoPasContainer);
+  domainDecomposition.reflectParticlesAtBoundaries(*autoPasContainer, *particlePropertiesLibrary);
   domainDecomposition.exchangeHaloParticles(*autoPasContainer);
 
   if (domainDecomposition.isInsideLocalDomain(expectedPosition)) {

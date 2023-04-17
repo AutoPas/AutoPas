@@ -233,7 +233,7 @@ TEST_F(MixedBoundaryConditionTest, testMixedReflection) {
   // particle 4 tests for reflection only in the directions with reflective boundaries in a periodic/refl/refl corner
   // particles 5-9 do the same as 0-4 respectively, except in the rightmost boundaries
 
-  testFunction(particlePositions, particleVelocities, boundaryConditions);
+  testFunction(particlePositions, boundaryConditions);
 }
 
 /**
@@ -262,7 +262,7 @@ TEST_F(MixedBoundaryConditionTest, testPeriodic) {
   //    particle
   // particle 4 tests that a particle that needs is beyond the right x-boundary is also correctly reflected in y and z
 
-  testFunction(particlePositions, particleVelocities, boundaryConditions);
+  testFunction(particlePositions, boundaryConditions);
 }
 
 /**
@@ -288,5 +288,5 @@ TEST_F(MixedBoundaryConditionTest, testNoBoundary) {
   // particle 2 tests the lack of reflection in the right x-boundary
   // particle 3 tests the lack of periodic translation in the right x-boundary
 
-  testFunction(particlePositions, particleVelocities, boundaryConditions);
+  testFunction(particlePositions, boundaryConditions);
 }
