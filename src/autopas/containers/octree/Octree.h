@@ -32,6 +32,8 @@ namespace autopas {
  *
  * The tree consists of OctreeNodeWrapper objects, which
  *
+ * @note Octree has a particular to interpret the index of the ContainerIterator. For details see getParticleImpl().
+ *
  * @tparam Particle
  */
 template <class Particle>
@@ -202,7 +204,9 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    *
    * @note In this context cell == leaf cell
    * @note The index encodes the location in the octree. Each digit signifies which child of the node to enter.
-   * The right most digit selects the tree, the next the child of the root, and so on.
+   * The right most digit selects the tree, the next the child of the root, and so on. So for example 31 would be the
+   * fourth child (3) in the halo tree (1). If this is not a leaf node, we recursively follow the first children
+   * (= prepend zeros) until the deepest level is found.
    *
    * @tparam regionIter
    * @param cellIndex

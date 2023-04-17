@@ -428,7 +428,7 @@ class ContainerIterator {
   size_t _currentVectorIndex{};
 
   /**
-   * Offset which which to iterate over vectors. Determined through number of threads used for iterating.
+   * Offset with which to iterate over vectors. Determined through number of threads used for iterating.
    */
   size_t _vectorIndexOffset{};
 
