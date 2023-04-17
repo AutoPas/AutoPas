@@ -336,33 +336,32 @@ void PredictiveTuning::linePrediction() {
       // check if multiplication overflowed and then explicitly set error value. No cast to avoid rounding errors.
       _configurationPredictions[configuration] =
           newValue == std::numeric_limits<double>::max() ? _predictionOverflowValue : static_cast<long>(newValue);
-    } else
+    } else if (const auto &traversalValues = _traversalTimesStorage[configuration];
+               traversalValues.size() >= _evidenceFirstPrediction) {
       // if there is enough evidence calculate new prediction function
-      if (const auto &traversalValues = _traversalTimesStorage[configuration];
-          traversalValues.size() >= _evidenceFirstPrediction) {
-        const auto &[traversal1Iteration, traversal1Time] = traversalValues[traversalValues.size() - 1];
-        const auto &[traversal2Iteration, traversal2Time] = traversalValues[traversalValues.size() - 2];
+      const auto &[traversal1Iteration, traversal1Time] = traversalValues[traversalValues.size() - 1];
+      const auto &[traversal2Iteration, traversal2Time] = traversalValues[traversalValues.size() - 2];
 
-        const long gradient = static_cast<long>(traversal1Time - traversal2Time) /
-                              static_cast<long>(traversal1Iteration - traversal2Iteration);
-        const long delta = static_cast<long>(_firstIterationOfTuningPhase) - static_cast<long>(traversal1Iteration);
+      const long gradient = static_cast<long>(traversal1Time - traversal2Time) /
+                            static_cast<long>(traversal1Iteration - traversal2Iteration);
+      const long delta = static_cast<long>(_firstIterationOfTuningPhase) - static_cast<long>(traversal1Iteration);
 
-        const long change = utils::Math::safeMul(gradient, delta);
+      const long change = utils::Math::safeMul(gradient, delta);
 
-        // this might overflow so use safeAdd.
-        const long newValue =
-            utils::Math::safeAdd(traversal1Time, change, _predictionUnderflowValue, _predictionOverflowValue);
-        // Do not accept values smaller zero.
-        _configurationPredictions[configuration] = newValue < 0 ? _predictionUnderflowValue : newValue;
+      // this might overflow so use safeAdd.
+      const long newValue =
+          utils::Math::safeAdd(traversal1Time, change, _predictionUnderflowValue, _predictionOverflowValue);
+      // Do not accept values smaller zero.
+      _configurationPredictions[configuration] = newValue < 0 ? _predictionUnderflowValue : newValue;
 
-        functionParams.clear();
-        functionParams.emplace_back(gradient);
-        functionParams.emplace_back(traversal1Time);
-      } else {
-        // When a configuration was not yet tested twice.
-        _configurationPredictions[configuration] = _predictionErrorValue;
-        _tooLongNotTestedSearchSpace.emplace(configuration);
-      }
+      functionParams.clear();
+      functionParams.emplace_back(gradient);
+      functionParams.emplace_back(traversal1Time);
+    } else {
+      // When a configuration was not yet tested twice.
+      _configurationPredictions[configuration] = _predictionErrorValue;
+      _tooLongNotTestedSearchSpace.emplace(configuration);
+    }
   }
 }
 
