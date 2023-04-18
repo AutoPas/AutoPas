@@ -99,27 +99,31 @@ TEST_F(VerletClusterTowerTest, testIterator) {
   constexpr size_t numDummies = clusterSize - (numParticles % clusterSize);
   static_assert(numDummies != 0, "Without dummies this test is boring. Adapt parameters!");
 
+  // map that counts how often each ID was found
+  std::map<size_t, size_t> ids;
   for (size_t i = 0; i < numParticles; i++) {
+    const auto id = i + 1;
     tower.addParticle({{}, {}, i + 1});
+    ids.emplace(id, 0);
   }
   tower.generateClusters();
   tower.setDummyValues(0, 0);
 
-  // Check that iterator iterates over all these particles and not over dummies. Dummies have ID max unsigned long.
-  std::vector<size_t> IDs;
-  IDs.reserve(numParticles);
-  size_t numDummiesFoundByIsDummy = 0;
-  size_t numDummiesFoundById = 0;
+  // Check that iterator iterates at least over particles, even dummies.
+  size_t numDummiesFound = 0;
   for (const auto &particle : tower) {
-    if (particle.getID() == std::numeric_limits<size_t>::max()) {
-      ++numDummiesFoundById;
-    } else if (particle.isDummy()) {
-      ++numDummiesFoundByIsDummy;
+    if (not(particle.isDummy())) {
+      ++ids[particle.getID()];
+      // if particle is NOT a dummy make sure their ID has not been encountered before
+      EXPECT_EQ(ids[particle.getID()], 1)
+          << "All particles should only be encountered exactly once! id: " << particle.getID();
     } else {
-      EXPECT_TRUE(std::find(IDs.begin(), IDs.end(), particle.getID()) == IDs.end());
-      IDs.push_back(particle.getID());
+      ++numDummiesFound;
     }
   }
-  EXPECT_EQ(0, numDummiesFoundByIsDummy) << "The iterator came by a particle for which isDummy() == true.";
-  EXPECT_EQ(0, numDummiesFoundById) << "The iterator came by a particle which has a particle Id reserved for dummies.";
+  // count found IDs in the map
+  const size_t numParticlesFound =
+      std::transform_reduce(ids.begin(), ids.end(), 0, std::plus(), [](const auto &pair) { return pair.second; });
+  EXPECT_EQ(numParticlesFound, numParticles) << "Not all particles were found by the iterator.";
+  EXPECT_EQ(numDummiesFound, numDummies) << "Not all dummies were found by the iterator.";
 }
