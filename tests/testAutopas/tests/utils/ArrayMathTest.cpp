@@ -75,6 +75,23 @@ TEST(ArrayMathTest, testMulDouble) {
   }
 }
 
+TEST(ArrayMathTest, testMulOpDouble) {
+  using namespace autopas::utils::ArrayMath::literals;
+
+  std::array<double, 3> a({1.1, 2.2, 3.3}), b({4.4, 5.5, 6.6});
+  std::array<double, 3> correctResult({1.21, 4.84, 10.89});
+  std::array<double, 3> result = a * a;
+  for (int d = 0; d < 3; ++d) {
+    ASSERT_DOUBLE_EQ(result[d], correctResult[d]);
+  }
+
+  correctResult = std::array<double, 3>({4.84, 12.1, 21.78});
+  result = a * b;
+  for (int d = 0; d < 3; ++d) {
+    ASSERT_DOUBLE_EQ(result[d], correctResult[d]);
+  }
+}
+
 TEST(ArrayMathTest, testDot) {
   std::array<double, 3> a({1.1, 2.2, 3.3}), b({4.4, 5.5, 6.6});
   double rd = utils::ArrayMath::dot(a, a);
@@ -91,6 +108,17 @@ TEST(ArrayMathTest, testAddScalar) {
   }
 }
 
+TEST(ArrayMathTest, testAddScalarOp) {
+  using namespace autopas::utils::ArrayMath::literals;
+
+  std::array<double, 3> a({1.1, 2.2, 3.3});
+  std::array<double, 3> correctResult({3.1, 4.2, 5.3});
+  std::array<double, 3> result = a + 2.0;
+  for (int d = 0; d < 3; ++d) {
+    ASSERT_DOUBLE_EQ(result[d], correctResult[d]);
+  }
+}
+
 TEST(ArrayMathTest, testSubScalar) {
   std::array<double, 3> a({1.1, 2.2, 3.3});
   std::array<double, 3> correctResult({-0.9, 0.2, 1.3});
@@ -100,10 +128,32 @@ TEST(ArrayMathTest, testSubScalar) {
   }
 }
 
+TEST(ArrayMathTest, testSubScalarOp) {
+  using namespace autopas::utils::ArrayMath::literals;
+
+  std::array<double, 3> a({1.1, 2.2, 3.3});
+  std::array<double, 3> correctResult({-0.9, 0.2, 1.3});
+  std::array<double, 3> result = a - 2.0;
+  for (int d = 0; d < 3; ++d) {
+    ASSERT_NEAR(result[d], correctResult[d], 1e-15);
+  }
+}
+
 TEST(ArrayMathTest, testMulScalar) {
   std::array<double, 3> a({1.1, 2.2, 3.3});
   std::array<double, 3> correctResult({2.2, 4.4, 6.6});
   std::array<double, 3> result = utils::ArrayMath::mulScalar(a, 2.0);
+  for (int d = 0; d < 3; ++d) {
+    ASSERT_DOUBLE_EQ(result[d], correctResult[d]);
+  }
+}
+
+TEST(ArrayMathTest, testMulScalarOp) {
+  using namespace autopas::utils::ArrayMath::literals;
+
+  std::array<double, 3> a({1.1, 2.2, 3.3});
+  std::array<double, 3> correctResult({2.2, 4.4, 6.6});
+  std::array<double, 3> result = a * 2.0;
   for (int d = 0; d < 3; ++d) {
     ASSERT_DOUBLE_EQ(result[d], correctResult[d]);
   }
