@@ -88,7 +88,7 @@ jobs:
           # derive whether or not to compile with MPI options ON.
           [ "${{ matrix.config[1] }}" = 'mpicc' ] && UseMPI=ON || UseMPI=OFF
           mkdir build && cd build
-          CXXFLAGS=-Wno-pass-failed CC=${{ matrix.config[1] }} CXX=${{ matrix.config[2] }} cmake \
+          CC=${{ matrix.config[1] }} CXX=${{ matrix.config[2] }} cmake \
             -G ${{ matrix.config[3] }} \
             -DCCACHE=ON \
             -DCMAKE_BUILD_TYPE=${{ matrix.config[4] }} \
