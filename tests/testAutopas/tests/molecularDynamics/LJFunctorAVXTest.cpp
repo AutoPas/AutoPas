@@ -222,7 +222,7 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doD
 void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDeleteSomeParticles) {
   using namespace autopas::utils::ArrayMath::literals;
 
-      FMCell cellAVX;
+  FMCell cellAVX;
 
   constexpr size_t numParticles = 7;
 

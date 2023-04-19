@@ -220,9 +220,9 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVEOneCell(bool newton3, bool doD
 }
 
 void LJFunctorSVETest::testLJFunctorVSLJFunctorSVEVerlet(bool newton3, bool doDeleteSomeParticles) {
-  namespace autopas::utils::ArrayMath
+  using namespace autopas::utils::ArrayMath::literals;
 
-      FMCell cellSVE;
+  FMCell cellSVE;
 
   constexpr size_t numParticles = 7;
 

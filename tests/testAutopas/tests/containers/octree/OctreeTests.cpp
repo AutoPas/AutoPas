@@ -614,7 +614,7 @@ TEST_P(OctreeTest, testCustomParticleDistribution) {
   // Fill a smaller portion of the octree region with particles
   std::vector<std::array<double, 3>> particlePositions;
   auto boxCenter = _boxMin + boxMax;
-  boxCenter = boxCenter - 0.5;
+  boxCenter = boxCenter * 0.5;
   for (int unsigned i = 0; i < numParticles; ++i) {
     auto position = random3D(_boxMin, boxMax);
     particlePositions.push_back(position);

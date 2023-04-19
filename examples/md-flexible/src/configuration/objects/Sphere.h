@@ -68,7 +68,7 @@ class Sphere : public Object {
               for (int l = -1; l <= 1; l += 2) {
                 std::array<double, 3> mirrorMultipliers = {(double)i, (double)k, (double)l};
                 // position mirrored, scaled and absolute
-                std::array<double, 3> posVector = _center + (relativePos * mirrorMultipliers) * _particleSpacing;
+                std::array<double, 3> posVector = _center + ((relativePos * mirrorMultipliers) * _particleSpacing);
 
                 double distFromCentersSquare = autopas::utils::ArrayMath::dot(posVector - _center, posVector - _center);
                 const auto r = (_radius + 1) * _particleSpacing;
