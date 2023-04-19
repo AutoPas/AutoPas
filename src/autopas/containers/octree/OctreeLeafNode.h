@@ -39,7 +39,7 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
                  OctreeNodeInterface<Particle> *parent, const int unsigned treeSplitThreshold,
                  const double interactionLength, const double cellSizeFactor)
       : OctreeNodeInterface<Particle>(boxMin, boxMax, parent, treeSplitThreshold, interactionLength, cellSizeFactor),
-        FullParticleCell<Particle>(utils::ArrayMath::sub(boxMax, boxMin)) {}
+        FullParticleCell<Particle>(utils::ArrayMath::operator-(boxMax, boxMin)) {}
 
   /**
    * Copy a leaf by copying all particles from the other leaf to this leaf.
@@ -48,7 +48,7 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
   OctreeLeafNode(OctreeLeafNode<Particle> const &other)
       : OctreeNodeInterface<Particle>(other._boxMin, other._boxMax, other._parent, other._treeSplitThreshold,
                                       other._interactionLength),
-        FullParticleCell<Particle>(utils::ArrayMath::sub(other._boxMax, other._boxMin)),
+        FullParticleCell<Particle>(utils::ArrayMath::operator-(other._boxMax, other._boxMin)),
         _id(other.getID()) {
     this->_particles.reserve(other._particles.size());
     for (auto &p : other._particles) {
@@ -60,9 +60,11 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
    * @copydoc OctreeNodeInterface::insert()
    */
   std::unique_ptr<OctreeNodeInterface<Particle>> insert(const Particle &p) override {
+    using namespace autopas::utils::ArrayMath::literals;
+
     // Check if the size of the new leaves would become smaller than cellSizeFactor*interactionLength
-    std::array<double, 3> splitLeafDimensions = utils::ArrayMath::sub(this->getBoxMax(), this->getBoxMin());
-    splitLeafDimensions = utils::ArrayMath::mulScalar(splitLeafDimensions, 0.5);
+    std::array<double, 3> splitLeafDimensions = this->getBoxMax() - this->getBoxMin();
+    splitLeafDimensions = splitLeafDimensions * 0.5;
     bool anyNewDimSmallerThanMinSize = false;
     for (auto d = 0; d < 3; ++d) {
       // auto cellSizeFactor = 1.0;

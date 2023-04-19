@@ -475,6 +475,8 @@ bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild
 template <bool newton3, class Particle, class T, class PairwiseFunctor>
 void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<std::vector<Particle>> &particleBuffers,
                           std::vector<std::vector<Particle>> &haloParticleBuffers) {
+  using namespace autopas::utils::ArrayMath::literals;
+
   const double cutoff = containerPtr->getCutoff();
   for (int bufferId = 0; bufferId < particleBuffers.size(); ++bufferId) {
     auto &particleBuffer = particleBuffers[bufferId];
@@ -482,8 +484,8 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<std::v
     // 1. particleBuffer with all close particles in container
     for (auto &&p : particleBuffer) {
       auto pos = p.getR();
-      auto min = autopas::utils::ArrayMath::subScalar(pos, cutoff);
-      auto max = autopas::utils::ArrayMath::addScalar(pos, cutoff);
+      auto min = pos - cutoff;
+      auto max = pos + cutoff;
       for (auto iter2 = containerPtr->getRegionIterator(min, max, IteratorBehavior::ownedOrHalo); iter2.isValid();
            ++iter2) {
         if (newton3) {
@@ -498,8 +500,8 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<std::v
     // 2. haloParticleBuffer with owned, close particles in container
     for (auto &&p : haloParticleBuffer) {
       auto pos = p.getR();
-      auto min = autopas::utils::ArrayMath::subScalar(pos, cutoff);
-      auto max = autopas::utils::ArrayMath::addScalar(pos, cutoff);
+      auto min = pos - cutoff;
+      auto max = pos + cutoff;
       for (auto iter2 = containerPtr->getRegionIterator(min, max, IteratorBehavior::owned); iter2.isValid(); ++iter2) {
         if (newton3) {
           f->AoSFunctor(p, *iter2, true);

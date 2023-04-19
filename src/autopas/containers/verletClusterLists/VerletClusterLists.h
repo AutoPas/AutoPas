@@ -79,8 +79,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
         _particlesToAdd(autopas_get_max_threads()),
         _boxMin{boxMin},
         _boxMax{boxMax},
-        _haloBoxMin{utils::ArrayMath::subScalar(boxMin, cutoff + skinPerTimestep * rebuildFrequency)},
-        _haloBoxMax{utils::ArrayMath::addScalar(boxMax, cutoff + skinPerTimestep * rebuildFrequency)},
+        _haloBoxMin{utils::ArrayMath::operator-(boxMin, cutoff + skinPerTimestep * rebuildFrequency)},
+        _haloBoxMax{utils::ArrayMath::operator+(boxMax, cutoff + skinPerTimestep * rebuildFrequency)},
         _cutoff{cutoff},
         _skinPerTimestep{skinPerTimestep},
         _rebuildFrequency{rebuildFrequency},
@@ -168,13 +168,15 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   bool updateHaloParticle(const Particle &haloParticle) override {
+    using namespace autopas::utils::ArrayMath::literals;
+
     Particle pCopy = haloParticle;
     pCopy.setOwnershipState(OwnershipState::halo);
 
     // this might be called from a parallel region so force this iterator to be sequential
-    for (auto it = getRegionIterator(utils::ArrayMath::subScalar(pCopy.getR(), this->getVerletSkin() / 2),
-                                     utils::ArrayMath::addScalar(pCopy.getR(), this->getVerletSkin() / 2),
-                                     IteratorBehavior::halo | IteratorBehavior::forceSequential);
+    for (auto it =
+             getRegionIterator(pCopy.getR() - (this->getVerletSkin() / 2), pCopy.getR() + (this->getVerletSkin() / 2),
+                               IteratorBehavior::halo | IteratorBehavior::forceSequential);
          it.isValid(); ++it) {
       if (pCopy.getID() == it->getID()) {
         *it = pCopy;
@@ -238,7 +240,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
-    auto boxSizeWithHalo = utils::ArrayMath::sub(this->getHaloBoxMax(), this->getHaloBoxMin());
+    using namespace autopas::utils::ArrayMath::literals;
+
+    auto boxSizeWithHalo = this->getHaloBoxMax() - this->getHaloBoxMin();
     auto towerSideLength = internal::VerletClusterListsRebuilder<Particle>::estimateOptimalGridSideLength(
         this->getNumberOfParticles(), boxSizeWithHalo, _clusterSize);
     auto towersPerDim =

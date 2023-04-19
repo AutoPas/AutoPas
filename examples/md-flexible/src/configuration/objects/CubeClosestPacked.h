@@ -35,7 +35,7 @@ class CubeClosestPacked : public Object {
         _boxLength(boxLength),
         _particleSpacing(particleSpacing),
         _bottomLeftCorner(bottomLeftCorner),
-        _topRightCorner(autopas::utils::ArrayMath::add(bottomLeftCorner, boxLength)),
+        _topRightCorner(autopas::utils::ArrayMath::operator+(bottomLeftCorner, boxLength)),
         _spacingLayer(particleSpacing * sqrt(2. / 3.)),
         _spacingRow(particleSpacing * sqrt(3. / 4.)),
         _xOffset(particleSpacing * 1. / 2.),
@@ -72,7 +72,8 @@ class CubeClosestPacked : public Object {
   [[nodiscard]] std::array<double, 3> getBoxMin() const override { return _bottomLeftCorner; }
 
   [[nodiscard]] std::array<double, 3> getBoxMax() const override {
-    return autopas::utils::ArrayMath::add(_bottomLeftCorner, _boxLength);
+    using namespace autopas::utils::ArrayMath::literals;
+    return _bottomLeftCorner + _boxLength;
   }
 
   /**

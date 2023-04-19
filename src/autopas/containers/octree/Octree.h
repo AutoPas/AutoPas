@@ -64,6 +64,8 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
   Octree(std::array<double, 3> boxMin, std::array<double, 3> boxMax, const double cutoff, const double skinPerTimestep,
          const unsigned int rebuildFrequency, const double cellSizeFactor)
       : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skinPerTimestep * rebuildFrequency) {
+    using namespace autopas::utils::ArrayMath::literals;
+
     // @todo Obtain this from a configuration, reported in https://github.com/AutoPas/AutoPas/issues/624
     int unsigned treeSplitThreshold = 16;
 
@@ -74,8 +76,8 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
         OctreeNodeWrapper<Particle>(boxMin, boxMax, treeSplitThreshold, interactionLength, cellSizeFactor));
 
     // Extend the halo region with cutoff + skin in all dimensions
-    auto haloBoxMin = utils::ArrayMath::subScalar(boxMin, interactionLength);
-    auto haloBoxMax = utils::ArrayMath::addScalar(boxMax, interactionLength);
+    auto haloBoxMin = boxMin - interactionLength;
+    auto haloBoxMax = boxMax + interactionLength;
     // Create the octree for the halo particles
     this->_cells.push_back(
         OctreeNodeWrapper<Particle>(haloBoxMin, haloBoxMax, treeSplitThreshold, interactionLength, cellSizeFactor));
@@ -213,9 +215,11 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    * @copydoc ParticleContainerInterface::getTraversalSelectorInfo()
    */
   [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
+    using namespace autopas::utils::ArrayMath::literals;
+
     // this is a dummy since it is not actually used
     std::array<unsigned long, 3> dims = {1, 1, 1};
-    std::array<double, 3> cellLength = utils::ArrayMath::sub(this->getBoxMax(), this->getBoxMin());
+    std::array<double, 3> cellLength = this->getBoxMax() + this->getBoxMin();
     return TraversalSelectorInfo(dims, this->getInteractionLength(), cellLength, 0);
   }
 

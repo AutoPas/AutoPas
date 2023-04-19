@@ -38,9 +38,10 @@ static bool checkParticleInCellAndUpdateByID(CellType &cell, const ParticleType 
  */
 template <class ParticleType, class CellType>
 static bool checkParticleInCellAndUpdateByIDAndPosition(CellType &cell, const ParticleType &particle, double absError) {
+  using namespace autopas::utils::ArrayMath::literals;
   for (auto iterator = cell.begin(); iterator.isValid(); ++iterator) {
     if (iterator->getID() == particle.getID()) {
-      auto distanceVec = autopas::utils::ArrayMath::sub(iterator->getR(), particle.getR());
+      auto distanceVec = iterator->getR() - particle.getR();
       auto distanceSqr = autopas::utils::ArrayMath::dot(distanceVec, distanceVec);
       if (distanceSqr < absError * absError) {
         *iterator = particle;

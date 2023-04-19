@@ -172,7 +172,8 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @return cell side length
    */
   [[nodiscard]] std::array<double, 3> getCellLength() const override {
-    return utils::ArrayMath::sub(_pointer->getBoxMin(), _pointer->getBoxMax());
+    using namespace autopas::utils::ArrayMath::literals;
+    return _pointer->getBoxMin() - _pointer->getBoxMax();
   }
 
   /**
