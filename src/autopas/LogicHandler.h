@@ -282,7 +282,7 @@ class LogicHandler {
    * Takes a particle, checks if it is in any of the particle buffers, and deletes it from them if found.
    * @param particle Particle to delete. If something was deleted this reference might point to a different particle or
    * invalid memory.
-   * @return Tuple: <True iff the particle was found and deleted, True iff the reference is not invalid>
+   * @return Tuple: <True iff the particle was found and deleted, True iff the reference is valid>
    */
   std::tuple<bool, bool> deleteParticleFromBuffers(Particle &particle) {
     // find the buffer the particle belongs to

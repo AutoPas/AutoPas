@@ -175,7 +175,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
         // if empty
         if (this->getCells()[cellId].isEmpty()) continue;
 
-        auto [cellLowerCorner, cellUpperCorner] = this->getCellBlock().getCellBoundingBox(cellId);
+        const auto [cellLowerCorner, cellUpperCorner] = this->getCellBlock().getCellBoundingBox(cellId);
 
         auto &particleVec = this->getCells()[cellId]._particles;
         for (auto pIter = particleVec.begin(); pIter < particleVec.end();) {

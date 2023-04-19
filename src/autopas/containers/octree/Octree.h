@@ -32,6 +32,8 @@ namespace autopas {
  *
  * The tree consists of OctreeNodeWrapper objects, which
  *
+ * @note Octree has a particular to interpret the index of the ContainerIterator. For details see getParticleImpl().
+ *
  * @tparam Particle
  */
 template <class Particle>
@@ -56,7 +58,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
   enum CellTypes : int { OWNED = 0, HALO = 1 };
 
   /**
-   * A cell index that is definatly always invalid.
+   * A cell index that is definitely always invalid.
    */
   constexpr static size_t invalidCellIndex = 9;
 
@@ -204,6 +206,12 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
   /**
    * Container specific implementation for getParticle. See ParticleContainerInterface::getParticle().
    *
+   * @note In this context cell == leaf cell
+   * @note The index encodes the location in the octree. Each digit signifies which child of the node to enter.
+   * The right most digit selects the tree, the next the child of the root, and so on. So for example 31 would be the
+   * fourth child (3) in the halo tree (1). If this is not a leaf node, we recursively follow the first children
+   * (= prepend zeros) until the deepest level is found.
+   *
    * @tparam regionIter
    * @param cellIndex
    * @param particleIndex
@@ -217,11 +225,6 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
                                                                    IteratorBehavior iteratorBehavior,
                                                                    const std::array<double, 3> &boxMin,
                                                                    const std::array<double, 3> &boxMax) const {
-    // in this context cell == leaf cell
-    // The index encodes the location in the octree.
-    // Each digit signifies which child of the node to enter.
-    // The right most digit selects the tree, the next the child of the root, and so on.
-
     // FIXME think about parallelism.
     // This `if` currently disables it but should be replaced with logic that determines the start index.
     if (autopas_get_thread_num() > 0 and not(iteratorBehavior & IteratorBehavior::forceSequential)) {
