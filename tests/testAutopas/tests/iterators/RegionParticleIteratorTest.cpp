@@ -8,12 +8,13 @@
 #include "IteratorTestHelper.h"
 #include "autopas/AutoPasDecl.h"
 #include "testingHelpers/EmptyFunctor.h"
+#include "testingHelpers/NumThreadGuard.h"
 
 extern template class autopas::AutoPas<Molecule>;
 extern template bool autopas::AutoPas<Molecule>::iteratePairwise(EmptyFunctor<Molecule> *);
 
 template <typename AutoPasT>
-auto RegionParticleIteratorTest::defaultInit(AutoPasT &autoPas, autopas::ContainerOption &containerOption,
+auto RegionParticleIteratorTest::defaultInit(AutoPasT &autoPas, const autopas::ContainerOption &containerOption,
                                              double cellSizeFactor) {
   autoPas.setBoxMin({0., 0., 0.});
   autoPas.setBoxMax({10., 10., 10.});
@@ -35,6 +36,12 @@ auto RegionParticleIteratorTest::defaultInit(AutoPasT &autoPas, autopas::Contain
   return std::make_tuple(haloBoxMin, haloBoxMax);
 }
 
+/**
+ * 1. Create an AutoPas container with 1000 particles that are placed around its 8 corners.
+ * 2. Create a region iterator well around the lower corner of the container
+ * 3. Run the region iterator for its full range and track the IDs it encounters
+ * 4. Compare the found IDs to the expectations from the initialization.
+ */
 TEST_P(RegionParticleIteratorTest, testRegionAroundCorner) {
   auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc, behavior] = GetParam();
 
@@ -45,13 +52,14 @@ TEST_P(RegionParticleIteratorTest, testRegionAroundCorner) {
   using ::autopas::utils::ArrayMath::add;
   using ::autopas::utils::ArrayMath::mulScalar;
   using ::autopas::utils::ArrayMath::sub;
-  auto domainLength = sub(autoPas.getBoxMax(), autoPas.getBoxMin());
+  const auto domainLength = sub(autoPas.getBoxMax(), autoPas.getBoxMin());
   // draw a box around the lower corner of the domain
-  auto searchBoxLengthHalf = mulScalar(domainLength, 0.3);
-  std::array<double, 3> searchBoxMin = sub(autoPas.getBoxMin(), searchBoxLengthHalf);
-  std::array<double, 3> searchBoxMax = add(autoPas.getBoxMin(), searchBoxLengthHalf);
+  const auto searchBoxLengthHalf = mulScalar(domainLength, 0.3);
+  const auto searchBoxMin = sub(autoPas.getBoxMin(), searchBoxLengthHalf);
+  const auto searchBoxMax = add(autoPas.getBoxMin(), searchBoxLengthHalf);
 
-  auto [particleIDsOwned, particleIDsHalo, particleIDsInBoxOwned, particleIDsInBoxHalo] =
+  // initialize particles and remember which IDs are in the search box
+  const auto [particleIDsOwned, particleIDsHalo, particleIDsInBoxOwned, particleIDsInBoxHalo] =
       IteratorTestHelper::fillContainerAroundBoundary(autoPas, searchBoxMin, searchBoxMax);
 
   if (priorForceCalc) {
@@ -60,6 +68,8 @@ TEST_P(RegionParticleIteratorTest, testRegionAroundCorner) {
     autoPas.iteratePairwise(&eFunctor);
   }
 
+  // set up expectations
+  // can't trivially convert this to const + lambda initialization bc behavior is a structured binding
   std::vector<size_t> expectedIDs;
   switch (behavior) {
     case autopas::IteratorBehavior::owned: {
@@ -107,46 +117,100 @@ INSTANTIATE_TEST_SUITE_P(Generated, RegionParticleIteratorTest,
                          RegionParticleIteratorTest::PrintToStringParamName());
 
 /**
- * Generates an iterator in a parallel region but iterates with only one and expects to find everything.
- * @note This behavior is needed by VerletClusterLists::updateHaloParticle().
+ * Tests that AutoPas rejects regions where regionMin > regionMax.
+ */
+TEST_F(RegionParticleIteratorTest, testInvalidBox) {
+  // setup
+  autopas::AutoPas<Molecule> autoPas{};
+  const auto [haloBoxMin, haloBoxMax] = defaultInit(autoPas, autopas::ContainerOption::directSum, 1.);
+
+  // helpers
+  using autopas::utils::ArrayMath::mulScalar;
+  using autopas::utils::ArrayMath::sub;
+
+  // calculate box size
+  const std::array<double, 3> haloBoxLength = sub(haloBoxMax, haloBoxMin);
+  const std::array<double, 3> haloBoxLength3rd = mulScalar(haloBoxMax, 1. / 3.);
+
+  // calculate points within the domain
+  const std::array<double, 3> regionUpperLimit = mulScalar(haloBoxLength3rd, 2.);
+  const std::array<double, 3> regionLowerLimit = mulScalar(haloBoxLength3rd, 1.);
+
+  // actual test
+  EXPECT_NO_THROW(autoPas.getRegionIterator(regionLowerLimit, regionUpperLimit));
+  EXPECT_THROW(autoPas.getRegionIterator(regionUpperLimit, regionLowerLimit),
+               autopas::utils::ExceptionHandler::AutoPasException);
+}
+
+/**
+ * Fills a container with (halo) particles, invokes region iterators with force sequential, and expects all of them to
+ * find everything in the search region.
  */
 TEST_F(RegionParticleIteratorTest, testForceSequential) {
-  constexpr size_t particlesPerCell = 1;
-  auto cells = IteratorTestHelper::generateCellsWithPattern(10, {1ul, 2ul, 4ul, 7ul, 8ul, 9ul}, particlesPerCell);
+  // helpers
+  using autopas::utils::ArrayMath::div;
+  using autopas::utils::ArrayMath::mulScalar;
+  using autopas::utils::ArrayMath::sub;
 
-  // min (inclusive) and max (exclusive) along the line of particles
-  size_t interestMin = 2;
-  size_t interestMax = 8;
-  const auto interestMinD = static_cast<double>(interestMin);
-  const auto interestMaxD = static_cast<double>(interestMax);
-  std::array<double, 3> searchBoxMin{interestMinD, interestMinD, interestMinD};
-  std::array<double, 3> searchBoxMax{interestMaxD, interestMaxD, interestMaxD};
-  std::vector<size_t> searchBoxCellIndices(interestMax - interestMin);
-  std::iota(searchBoxCellIndices.begin(), searchBoxCellIndices.end(), interestMin);
+  /// setup
+  autopas::AutoPas<Molecule> autoPas{};
+  const auto [haloBoxMin, haloBoxMax] = defaultInit(autoPas, autopas::ContainerOption::linkedCells, 1.);
+  const auto haloBoxSize = sub(haloBoxMax, haloBoxMin);
 
-  // IDs of particles in cells 2, 4, 7
-  std::vector<size_t> expectedIndices = {1, 2, 3};
+  // define a search box covering the first octant of the domain
+  const auto searchBoxMin = haloBoxMin;
+  const auto searchBoxMax = mulScalar(haloBoxMax, 0.5);
 
-  constexpr size_t numAdditionalVectors = 3;
-  std::vector<std::vector<Molecule>> additionalVectors(numAdditionalVectors);
+  const auto particlesPerDimension = 9;
+  const auto particleSpacing = div(haloBoxSize, {particlesPerDimension, particlesPerDimension, particlesPerDimension});
 
-  size_t particleId = cells.size() + 100;
-  for (auto &vector : additionalVectors) {
-    vector.emplace_back(Molecule({interestMinD, interestMinD, interestMinD}, {0., 0., 0.}, particleId));
-    expectedIndices.push_back(particleId);
-    ++particleId;
+  // fill a container with a grid and track what is in the search region
+  std::vector<size_t> idsInSearchRegion{};
+  std::vector<size_t> idsNotInSearchRegion{};
+  size_t id = 0;
+  for (int z = 0; z < particlesPerDimension; ++z) {
+    for (int y = 0; y < particlesPerDimension; ++y) {
+      for (int x = 0; x < particlesPerDimension; ++x, ++id) {
+        const auto pos = std::array<double, 3>{x * particleSpacing[0], y * particleSpacing[1], z * particleSpacing[2]};
+        const Molecule m{pos, {}, id};
+        // depending on the position add the particle as halo or owned
+        if (autopas::utils::inBox(pos, autoPas.getBoxMin(), autoPas.getBoxMax())) {
+          autoPas.addParticle(m);
+        } else {
+          autoPas.addHaloParticle(m);
+        }
+        // depending on the position track the particle id as in or out of the search box
+        if (autopas::utils::inBox(pos, searchBoxMin, searchBoxMax)) {
+          idsInSearchRegion.push_back(id);
+        } else {
+          idsNotInSearchRegion.push_back(id);
+        }
+      }
+    }
   }
 
-#pragma omp parallel
+  /// Actual test: Have several threads iterate the region with force sequential.
+  /// All should find everything in idsInSearchRegion.
+  const size_t numThreads = 3;
+  std::vector<std::vector<size_t>> encounteredIds(numThreads);
   {
-    std::vector<size_t> foundParticles;
-    constexpr bool modifyable = true;
-    autopas::internal::RegionParticleIterator<Molecule, FMCell, modifyable> iter(
-        &cells, searchBoxMin, searchBoxMax, searchBoxCellIndices, nullptr,
-        autopas::IteratorBehavior::ownedOrHalo | autopas::IteratorBehavior::forceSequential, &additionalVectors);
-    for (; iter.isValid(); ++iter) {
-      foundParticles.push_back(iter->getID());
+    const NumThreadGuard numThreadGuard(numThreads);
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel for
+#endif
+    for (int t = 0; t < numThreads; ++t) {
+      for (auto iter = autoPas.getRegionIterator(
+               searchBoxMin, searchBoxMax,
+               autopas::IteratorBehavior::ownedOrHalo | autopas::IteratorBehavior::forceSequential);
+           iter.isValid(); ++iter) {
+        encounteredIds[t].push_back(iter->getID());
+      }
     }
-    EXPECT_THAT(foundParticles, ::testing::UnorderedElementsAreArray(expectedIndices));
+  }
+
+  /// checks
+  for (int t = 0; t < numThreads; ++t) {
+    EXPECT_THAT(encounteredIds[t], ::testing::UnorderedElementsAreArray(idsInSearchRegion))
+        << "Thread " << t << " did not find the correct IDs.";
   }
 }

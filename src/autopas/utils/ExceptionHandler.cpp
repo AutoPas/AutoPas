@@ -60,11 +60,11 @@ void autopas::utils::ExceptionHandler::nonThrowException(const std::exception &e
       // do nothing
       break;
     case printAbort:
-      AutoPasLog(error, "{}\naborting", e.what());
+      AutoPasLog(ERROR, "{}\naborting", e.what());
       std::abort();
     case printCustomAbortFunction:
       spdlog::get("AutoPasLog");
-      AutoPasLog(error, "{}\nusing custom abort function", e.what());
+      AutoPasLog(ERROR, "{}\nusing custom abort function", e.what());
       _customAbortFunction();
       break;
     default:

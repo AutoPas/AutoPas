@@ -29,7 +29,7 @@ namespace autopas::internal {
  *  2. Then call generateClusters(). This copies the last particle as often as it is necessary to fill up the last
  * cluster. (maximum clusterSize-1 times).
  *  3. Generate your neighbor lists somehow.
- *  4. Call fillUpWithDummyParticles() to replace the copies of the last particle made in generateClusters() with
+ *  4. Call setDummyValues() to replace the copies of the last particle made in generateClusters() with
  * dummies.
  *
  * If you want to add more particles after calling generateClusters(), definitely make sure to call clear() before
@@ -42,6 +42,11 @@ namespace autopas::internal {
 template <class Particle>
 class ClusterTower : public ParticleCell<Particle> {
  public:
+  /**
+   * Type that holds or refers to the actual particles.
+   */
+  using StorageType = typename FullParticleCell<Particle>::StorageType;
+
   /**
    * Constructor
    * @param clusterSize of all clusters in this tower.
@@ -82,9 +87,11 @@ class ClusterTower : public ParticleCell<Particle> {
     if (getNumActualParticles() > 0) {
       _particlesStorage.sortByDim(2);
 
-      auto sizeLastCluster = (_particlesStorage.numParticles() % _clusterSize);
-      _numDummyParticles = sizeLastCluster != 0 ? _clusterSize - sizeLastCluster : 0;
+      // if the number of particles is divisible by the cluster size this is 0
+      const auto sizeLastCluster = _particlesStorage.numParticles() % _clusterSize;
+      _numDummyParticles = sizeLastCluster == 0 ? 0 : _clusterSize - sizeLastCluster;
 
+      // fill the last cluster with dummy copies of the last particle
       auto lastParticle = _particlesStorage[_particlesStorage.numParticles() - 1];
       markParticleAsDeleted(lastParticle);
       for (size_t i = 0; i < _numDummyParticles; i++) {
@@ -103,23 +110,25 @@ class ClusterTower : public ParticleCell<Particle> {
   }
 
   /**
-   * Replaces the copies of the last particle made in generateClusters() with dummies. Dummy particles have ID 0.
+   * Replaces the copies of the last particle made in generateClusters() with dummies.
+   * Dummy particles have ID std::numeric_limits<size_t>::max().
    *
    * @param dummyStartX The x-coordinate for all dummies.
    * @param dummyDistZ The distance in z-direction that all generated dummies will have from each other.
    */
-  void fillUpWithDummyParticles(double dummyStartX, double dummyDistZ) {
+  void setDummyValues(double dummyStartX, double dummyDistZ) {
     auto &lastCluster = getCluster(getNumClusters() - 1);
     for (size_t index = 1; index <= _numDummyParticles; index++) {
-      lastCluster[_clusterSize - index] = lastCluster[0];  // use first Particle in last cluster as dummy particle!
-      lastCluster[_clusterSize - index].setOwnershipState(OwnershipState::dummy);
-      lastCluster[_clusterSize - index].setR({dummyStartX, 0, dummyDistZ * index});
-      lastCluster[_clusterSize - index].setID(std::numeric_limits<size_t>::max());
+      auto &dummy = lastCluster[_clusterSize - index];
+      dummy = lastCluster[0];  // use first Particle in last cluster as dummy particle!
+      dummy.setOwnershipState(OwnershipState::dummy);
+      dummy.setR({dummyStartX, 0, dummyDistZ * static_cast<double>(index)});
+      dummy.setID(std::numeric_limits<size_t>::max());
     }
   }
 
   /**
-   * More or less inverse operation of fillUpWithDummyParticles().
+   * More or less inverse operation of setDummyValues().
    * It sets the positions of the dummy particles to the position of the last actual particle in the tower.
    */
   void setDummyParticlesToLastActualParticle() {
@@ -172,16 +181,28 @@ class ClusterTower : public ParticleCell<Particle> {
   }
 
   /**
-   * Returns the number of dummy particles in the tower (that all are in the last cluster).
-   * @return the number of dummy particles in the tower.
+   * Returns the number of dummy particles in the tower that were inserted in the tower to fill the last cluster.
+   * @return.
    */
-  [[nodiscard]] size_t getNumDummyParticles() const { return _numDummyParticles; }
+  [[nodiscard]] size_t getNumTailDummyParticles() const { return _numDummyParticles; }
 
   /**
-   * Returns the number of particles in the tower that are not dummies.
-   * @return the number of particles in the tower that are not dummies.
+   * @copydoc getNumActualParticles()
    */
-  [[nodiscard]] size_t getNumActualParticles() const { return _particlesStorage.numParticles() - _numDummyParticles; }
+  [[nodiscard]] unsigned long numParticles() const override { return getNumActualParticles(); }
+
+  /**
+   * Returns the number of particles in the tower before the filler dummies.
+   * There might still be particles that were marked as dummies due to deletion.
+   * @return
+   */
+  [[nodiscard]] size_t getNumActualParticles() const { return getNumAllParticles() - getNumTailDummyParticles(); }
+
+  /**
+   * Returns the size of the internal particle storage aka. the total number of particles incl. dummies.
+   * @return
+   */
+  [[nodiscard]] size_t getNumAllParticles() const { return _particlesStorage.numParticles(); }
 
   /**
    * Returns the number of clusters in the tower.
@@ -208,26 +229,29 @@ class ClusterTower : public ParticleCell<Particle> {
   [[nodiscard]] auto &getCluster(size_t index) const { return _clusters[index]; }
 
   /**
-   * @copydoc getNumActualParticles()
+   * @copydoc autopas::FullParticleCell::begin()
    */
-  [[nodiscard]] unsigned long numParticles() const override { return getNumActualParticles(); }
+  [[nodiscard]] CellIterator<StorageType, true> begin() { return _particlesStorage.begin(); }
 
   /**
-   * Returns an iterator over all non-dummy particles contained in this tower.
-   * @return an iterator over all non-dummy particles contained in this tower.
+   * @copydoc autopas::FullParticleCell::begin()
+   * @note const version
    */
-  [[nodiscard]] SingleCellIteratorWrapper<Particle, true> begin() override {
-    return SingleCellIteratorWrapper<Particle, true>{
-        new SingleCellIterator<Particle, ClusterTower<Particle>, true>(this)};
+  [[nodiscard]] CellIterator<StorageType, false> begin() const { return _particlesStorage.begin(); }
+
+  /**
+   * @copydoc autopas::FullParticleCell::end()
+   */
+  [[nodiscard]] CellIterator<StorageType, true> end() {
+    return CellIterator<StorageType, true>(_particlesStorage.end());
   }
 
   /**
-   * Returns an iterator over all non-dummy particles contained in this tower.
-   * @return an iterator over all non-dummy particles contained in this tower.
+   * @copydoc autopas::FullParticleCell::end()
+   * @note const version
    */
-  [[nodiscard]] SingleCellIteratorWrapper<Particle, false> begin() const override {
-    return SingleCellIteratorWrapper<Particle, false>{
-        new SingleCellIterator<Particle, ClusterTower<Particle>, false>(this)};
+  [[nodiscard]] CellIterator<StorageType, false> end() const {
+    return CellIterator<StorageType, false>(_particlesStorage.end());
   }
 
   /**
@@ -310,7 +334,7 @@ class ClusterTower : public ParticleCell<Particle> {
 
     // swap particle that should be deleted to end of actual particles.
     std::swap(_particlesStorage._particles[index], _particlesStorage._particles[getNumActualParticles() - 1]);
-    if (getNumDummyParticles() != 0) {
+    if (getNumTailDummyParticles() != 0) {
       // swap particle that should be deleted (now at end of actual particles) with last dummy particle.
       std::swap(_particlesStorage._particles[getNumActualParticles() - 1],
                 _particlesStorage._particles[_particlesStorage._particles.size() - 1]);
@@ -345,6 +369,12 @@ class ClusterTower : public ParticleCell<Particle> {
    */
   void reserve(size_t n) { _particlesStorage.reserve(n); }
 
+  /**
+   * Get reference to internal particle vector.
+   * @return
+   */
+  StorageType &particleVector() { return _particlesStorage._particles; }
+
  private:
   /**
    * The number of particles in a full cluster.
@@ -359,6 +389,7 @@ class ClusterTower : public ParticleCell<Particle> {
    * The particle cell to store the particles and SoA for this tower.
    */
   FullParticleCell<Particle> _particlesStorage;
+
   /**
    * The number of dummy particles in this tower.
    */

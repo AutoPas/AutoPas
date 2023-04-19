@@ -32,9 +32,9 @@ namespace IteratorTestHelper {
  *   3. All halo particles in the box of interest.
  */
 template <class AutoPasT>
-auto fillContainerAroundBoundary(AutoPasT &autoPas, std::array<double, 3> boxOfInterestMin,
-                                 std::array<double, 3> boxOfInterestMax) {
-  constexpr size_t numParticles1dTotal = 10;
+auto fillContainerAroundBoundary(AutoPasT &autoPas, const std::array<double, 3> &boxOfInterestMin,
+                                 const std::array<double, 3> &boxOfInterestMax) {
+  constexpr size_t numParticles1DTotal = 10;
 
   auto cutoff = autoPas.getCutoff();
   auto skin = autoPas.getVerletSkin();
@@ -43,12 +43,12 @@ auto fillContainerAroundBoundary(AutoPasT &autoPas, std::array<double, 3> boxOfI
   auto generateInteresting1DPositions = [&](double min, double max) -> auto {
     // ensure that all particles are at most skin away from halo!
     // interesting cases are:
-    //   - outside of the halo by skin
+    //   - outside the halo by skin
     //   - edge of halo
     //   - in the halo
     //   - edge of actual domain
     //   - just inside the domain
-    return std::array<double, numParticles1dTotal>{min - cutoff - skin + 1e-10,
+    return std::array<double, numParticles1DTotal>{min - cutoff - skin + 1e-10,
                                                    min - cutoff,
                                                    min - skin / 4,
                                                    min,
@@ -95,7 +95,7 @@ auto fillContainerAroundBoundary(AutoPasT &autoPas, std::array<double, 3> boxOfI
 
   // sanity check. Can not use ASSERT_EQ because this introduces a different return.
   EXPECT_EQ(particleIDsOwned.size() + particleIDsHalo.size(),
-            numParticles1dTotal * numParticles1dTotal * numParticles1dTotal);
+            numParticles1DTotal * numParticles1DTotal * numParticles1DTotal);
   // getNumberOfParticles works via counters in the logic handler
   EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::owned), particleIDsOwned.size());
   EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::halo), particleIDsHalo.size());
@@ -118,7 +118,7 @@ auto fillContainerAroundBoundary(AutoPasT &autoPas) {
 }
 
 /**
- * Creats a grid of particles in the given AutoPas object.
+ * Creates a grid of particles in the given AutoPas object.
  * Grid width is `sparsity * ( boxLength / ((cutoff + skin) * cellSizeFactor) )`.
  * E.g., for a sparsity of 1, 1 particle is inserted for every cell. For a sparsity of .5, 8 particles are inserted.
  * The lower corner of the grid is offset from boxMin by half the grid width in every dimension.
@@ -145,7 +145,7 @@ auto fillContainerWithGrid(AutoPasT &autoPas, double sparsity) {
   for (double x = gridWidth3D[0] / 2; x < boxLength[0]; x += sparsity * gridWidth3D[0]) {
     for (double y = gridWidth3D[1] / 2; y < boxLength[1]; y += sparsity * gridWidth3D[1]) {
       for (double z = gridWidth3D[2] / 2; z < boxLength[2]; z += sparsity * gridWidth3D[2]) {
-        std::array<double, 3> pos{x, y, z};
+        const std::array<double, 3> pos{x, y, z};
         Molecule p(pos, {0., 0., 0.}, id++, 0);
         autoPas.addParticle(p);
         particleIDs.push_back(p.getID());
@@ -181,26 +181,26 @@ auto getHaloBoxMinMax(AutoPasT &autoPas) {
 template <bool useConstIterator, class AutoPasT, class F>
 void provideIterator(AutoPasT &autoPas, autopas::IteratorBehavior behavior, bool useRegionIterator, F fun) {
   if (useRegionIterator) {
-    std::array<double, 3> haloBoxMin, haloBoxMax;
+    std::array<double, 3> haloBoxMin{}, haloBoxMax{};
     std::tie(haloBoxMin, haloBoxMax) = getHaloBoxMinMax(autoPas);
     if constexpr (useConstIterator) {
       const auto &autoPasRef = autoPas;
-      auto getIter = [&]() -> typename AutoPasT::const_iterator_t {
+      auto getIter = [&]() -> typename AutoPasT::RegionConstIteratorT {
         return autoPasRef.getRegionIterator(haloBoxMin, haloBoxMax, behavior);
       };
       fun(autoPasRef, getIter);
     } else {
-      auto getIter = [&]() -> typename AutoPasT::iterator_t {
+      auto getIter = [&]() -> typename AutoPasT::RegionIteratorT {
         return autoPas.getRegionIterator(haloBoxMin, haloBoxMax, behavior);
       };
       fun(autoPas, getIter);
     }
   } else {
     if constexpr (useConstIterator) {
-      auto getIter = [&]() -> typename AutoPasT::const_iterator_t { return autoPas.cbegin(behavior); };
+      auto getIter = [&]() -> typename AutoPasT::ConstIteratorT { return autoPas.cbegin(behavior); };
       fun(autoPas, getIter);
     } else {
-      auto getIter = [&]() -> typename AutoPasT::iterator_t { return autoPas.begin(behavior); };
+      auto getIter = [&]() -> typename AutoPasT::IteratorT { return autoPas.begin(behavior); };
       fun(autoPas, getIter);
     }
   }
@@ -243,12 +243,12 @@ void provideRegionIterator(AutoPasT &autoPas, autopas::IteratorBehavior behavior
                            const std::array<double, 3> &boxMax, F fun) {
   if constexpr (useConstIterator) {
     const auto &autoPasRef = autoPas;
-    auto getIter = [&]() -> typename AutoPasT::const_iterator_t {
+    auto getIter = [&]() -> typename AutoPasT::RegionConstIteratorT {
       return autoPasRef.getRegionIterator(boxMin, boxMax, behavior);
     };
     fun(autoPasRef, getIter);
   } else {
-    auto getIter = [&]() -> typename AutoPasT::iterator_t {
+    auto getIter = [&]() -> typename AutoPasT::RegionIteratorT {
       return autoPas.getRegionIterator(boxMin, boxMax, behavior);
     };
     fun(autoPas, getIter);
@@ -295,13 +295,15 @@ void findParticles(AutoPasT &autopas, FgetIter getIter, const std::vector<size_t
 #endif
   {
     for (auto iterator = getIter(); iterator.isValid(); ++iterator) {
-      auto id = iterator->getID();
+      const auto id = iterator->getID();
       particleIDsFound.push_back(id);
     }
   }
 
   // check that everything was found
-  EXPECT_THAT(particleIDsFound, ::testing::UnorderedElementsAreArray(particleIDsExpected));
+  EXPECT_THAT(particleIDsFound, ::testing::UnorderedElementsAreArray(particleIDsExpected))
+      << "Expected: " << autopas::utils::ArrayUtils::to_string(particleIDsExpected) << "\n\n"
+      << "Found   : " << autopas::utils::ArrayUtils::to_string(particleIDsFound);
 }
 
 /**
@@ -318,14 +320,14 @@ static std::vector<FMCell> generateCellsWithPattern(const size_t numCells, const
                                                     const size_t particlesPerCell) {
   constexpr double cellDiagonal = 1.;
   // distance between particles within one cell
-  const double distBetweenParticles = cellDiagonal / (particlesPerCell + 1.);
+  const double distBetweenParticles = cellDiagonal / (static_cast<double>(particlesPerCell) + 1.);
 
   std::vector<FMCell> cells(numCells);
   size_t numParticlesAdded = 0;
   for (auto cellId : cellsToFill) {
     for (size_t i = 0; i < particlesPerCell; ++i) {
-      auto position = cellId + distBetweenParticles * (i + 1.);
-      Molecule m({position, position, position}, {0, 0, 0}, numParticlesAdded++, 0);
+      auto position = static_cast<double>(cellId) + distBetweenParticles * (static_cast<double>(i) + 1.);
+      const Molecule m({position, position, position}, {0, 0, 0}, numParticlesAdded++, 0);
       cells[cellId].addParticle(m);
     }
   }

@@ -94,6 +94,14 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
     }
   }
 
+  bool deleteParticle(Particle &particle) override {
+    const bool isRearParticle = &particle == &this->_particles.back();
+    // WARNING no runtime check that this particle is actually within the node!
+    particle = this->_particles.back();
+    this->_particles.pop_back();
+    return not isRearParticle;
+  }
+
   /**
    * @copydoc OctreeNodeInterface::collectAllParticles()
    */
@@ -122,7 +130,7 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
   /**
    * @copydoc OctreeNodeInterface::getNumberOfParticles()
    */
-  unsigned int getNumberOfParticles() override { return this->_particles.size(); }
+  unsigned int getNumberOfParticles() const override { return this->_particles.size(); }
 
   /**
    * @copydoc OctreeNodeInterface::hasChildren()

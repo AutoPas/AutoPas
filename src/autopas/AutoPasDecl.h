@@ -9,7 +9,6 @@
 #include <set>
 
 #include "autopas/containers/ParticleContainerInterface.h"
-#include "autopas/iterators/ParticleIteratorWrapper.h"
 #include "autopas/options//ExtrapolationMethodOption.h"
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ContainerOption.h"
@@ -51,16 +50,28 @@ class AutoPas {
   using Particle_t = Particle;
 
   /**
-   * Define the iterator_t for simple use, also from the outside.
+   * Define the iterator type for ease of use. Also for external use.
    * Helps to, e.g., wrap the AutoPas iterators
    */
-  using iterator_t = typename autopas::IteratorTraits<Particle>::iterator_t;
+  using IteratorT = autopas::ContainerIterator<Particle, true, false>;
 
   /**
-   * Define the const_iterator_t for simple use, also from the outside.
+   * Define the const iterator type for ease of use. Also for external use.
    * Helps to, e.g., wrap the AutoPas iterators
    */
-  using const_iterator_t = typename autopas::IteratorTraits<Particle>::const_iterator_t;
+  using ConstIteratorT = autopas::ContainerIterator<Particle, false, false>;
+
+  /**
+   * Define the region iterator type for ease of use. Also for external use.
+   * Helps to, e.g., wrap the AutoPas iterators
+   */
+  using RegionIteratorT = autopas::ContainerIterator<Particle, true, true>;
+
+  /**
+   * Define the const region iterator type for ease of use. Also for external use.
+   * Helps to, e.g., wrap the AutoPas iterators
+   */
+  using RegionConstIteratorT = autopas::ContainerIterator<Particle, false, true>;
 
   /**
    * Constructor for the autopas class.
@@ -145,16 +156,35 @@ class AutoPas {
   void deleteAllParticles();
 
   /**
-   * Deletes the particle behind the current iterator position.
+   * Deletes the particle behind the current iterator position and leaves the container in a valid state.
+   *
+   * Internally, depending on the container, this might just mark the particle as deleted without actually removing it.
+   * If this can not be done without compromising e.g. a VerletList reference structure the particle is only marked.
+   *
    * @param iter Needs to be a modify-able iterator.
    */
-  void deleteParticle(ParticleIteratorWrapper<Particle, true> &iter);
+  void deleteParticle(ContainerIterator<Particle, true, false> &iter);
 
   /**
-   * Deletes the given particle.
-   * @param particle Reference to the particle that should be deleted.
+   * @copydoc deleteParticle(ContainerIterator<Particle, true, false> &iter)
+   *
+   * Region Iterator version.
    */
-  void deleteParticle(Particle &particle);
+  void deleteParticle(ContainerIterator<Particle, true, true> &iter);
+
+  /**
+   * Deletes the given particle and leaves the container in a valid state.
+   *
+   * Internally, depending on the container, this might just mark the particle as deleted without actually removing it.
+   * If this can not be done without compromising e.g. a VerletList reference structure the particle is only marked.
+   *
+   * @note This function might invalidate iterators.
+   *
+   * @param particle Reference to the particle that should be deleted.
+   *
+   * @return True iff the reference still points to a valid particle.
+   */
+  bool deleteParticle(Particle &particle);
 
   /**
    * Function to iterate over all pairs of particles in the container.
@@ -172,13 +202,13 @@ class AutoPas {
    * particles, or both.
    * @return iterator to the first particle.
    */
-  iterator_t begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo);
+  IteratorT begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo);
 
   /**
    * @copydoc begin()
    * @note const version
    */
-  const_iterator_t begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
+  ConstIteratorT begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
 
   /**
    * execute code on all particles in parallel as defined by a lambda function
@@ -278,11 +308,12 @@ class AutoPas {
    * @copydoc begin()
    * @note cbegin will guarantee to return a const_iterator.
    */
-  const_iterator_t cbegin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const { return begin(behavior); }
+  ConstIteratorT cbegin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const { return begin(behavior); }
 
   /**
-   * End of the iterator.
-   * This returns a bool, which is false to allow range-based for loops.
+   * Helper to enable range-based for loops for the AutoPas object.
+   * ParticleIterator::operator==() compares its own validity state against this value. Hence, as soon as the iterator
+   * is invalid the loop ends.
    * @return false
    */
   [[nodiscard]] constexpr bool end() const { return false; }
@@ -297,14 +328,15 @@ class AutoPas {
    * particles, or both.
    * @return iterator to iterate over all particles in a specific region
    */
-  iterator_t getRegionIterator(std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-                               IteratorBehavior behavior = IteratorBehavior::ownedOrHalo);
+  RegionIteratorT getRegionIterator(const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
+                                    IteratorBehavior behavior = IteratorBehavior::ownedOrHalo);
   /**
    * @copydoc getRegionIterator()
    * @note const version
    */
-  const_iterator_t getRegionIterator(std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-                                     IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
+  RegionConstIteratorT getRegionIterator(const std::array<double, 3> &lowerCorner,
+                                         const std::array<double, 3> &higherCorner,
+                                         IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
 
   /**
    * Execute code on all particles in a certain region in parallel as defined by a lambda function.
@@ -497,7 +529,7 @@ class AutoPas {
    */
   void setCutoff(double cutoff) {
     if (cutoff <= 0.0) {
-      AutoPasLog(error, "Cutoff <= 0.0: {}", cutoff);
+      AutoPasLog(ERROR, "Cutoff <= 0.0: {}", cutoff);
       utils::ExceptionHandler::exception("Error: Cutoff <= 0.0!");
     }
     AutoPas::_cutoff = cutoff;
@@ -515,7 +547,7 @@ class AutoPas {
    */
   void setAllowedCellSizeFactors(const NumberSet<double> &allowedCellSizeFactors) {
     if (allowedCellSizeFactors.getMin() <= 0.0) {
-      AutoPasLog(error, "cell size <= 0.0");
+      AutoPasLog(ERROR, "cell size <= 0.0");
       utils::ExceptionHandler::exception("Error: cell size <= 0.0!");
     }
     AutoPas::_allowedCellSizeFactors = std::move(allowedCellSizeFactors.clone());
@@ -527,7 +559,7 @@ class AutoPas {
    */
   void setCellSizeFactor(double cellSizeFactor) {
     if (cellSizeFactor <= 0.0) {
-      AutoPasLog(error, "cell size <= 0.0: {}", cellSizeFactor);
+      AutoPasLog(ERROR, "cell size <= 0.0: {}", cellSizeFactor);
       utils::ExceptionHandler::exception("Error: cell size <= 0.0!");
     }
     AutoPas::_allowedCellSizeFactors = std::make_unique<NumberSetFinite<double>>(std::set<double>{cellSizeFactor});

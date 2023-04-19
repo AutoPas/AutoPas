@@ -19,6 +19,9 @@ namespace internal {
 
 /**
  * Helper class for rebuilding the VerletClusterLists container.
+ *
+ * @note Towers are always built on the xy plane towering into the z dimension.
+ *
  * @tparam Particle The type of the particle the container contains.
  */
 template <class Particle>
@@ -100,7 +103,7 @@ class VerletClusterListsRebuilder {
 
     // create towers and make an estimate for how many particles memory needs to be allocated
     // 2.7 seems high but gave the best performance when testing
-    const size_t sizeEstimation = (static_cast<double>(numParticles) / numTowers) * 2.7;
+    const auto sizeEstimation = static_cast<size_t>((static_cast<double>(numParticles) / numTowers) * 2.7);
     for (int i = 0; i < numTowers; ++i) {
       _towers.emplace_back(ClusterTower<Particle>(_clusterSize));
       _towers[i].reserve(sizeEstimation);
@@ -119,7 +122,7 @@ class VerletClusterListsRebuilder {
 
   /**
    * Rebuilds the neighbor lists and fills Clusters with dummies as described in
-   * ClusterTower::fillUpWithDummyParticles.
+   * ClusterTower::setDummyValues.
    * @param useNewton3 Specifies, whether neighbor lists should use newton3. This changes the way what the lists
    * contain. If an cluster A interacts with cluster B, then this interaction will either show up only once in the
    * interaction lists of the custers (for newton3 == true) or show up in the interaction lists of both (for newton3 ==
@@ -132,7 +135,7 @@ class VerletClusterListsRebuilder {
     double dummyParticleDistance = _interactionLength * 2;
     double startDummiesX = 1000 * _haloBoxMax[0];
     for (size_t index = 0; index < _towers.size(); index++) {
-      _towers[index].fillUpWithDummyParticles(startDummiesX + index * dummyParticleDistance, dummyParticleDistance);
+      _towers[index].setDummyValues(startDummiesX + index * dummyParticleDistance, dummyParticleDistance);
     }
   }
   /**
@@ -142,14 +145,14 @@ class VerletClusterListsRebuilder {
    * @param clusterSize the number of particles per cluster.
    * @return an estimated optimal grid side length.
    */
-  [[nodiscard]] static double estimateOptimalGridSideLength(size_t numParticles, std::array<double, 3> boxSize,
+  [[nodiscard]] static double estimateOptimalGridSideLength(size_t numParticles, const std::array<double, 3> &boxSize,
                                                             size_t clusterSize) {
-    double volume = boxSize[0] * boxSize[1] * boxSize[2];
+    const double volume = boxSize[0] * boxSize[1] * boxSize[2];
     if (numParticles > 0) {
       // estimate particle density
-      double density = numParticles / volume;
+      const double density = static_cast<double>(numParticles) / volume;
 
-      return std::cbrt(clusterSize / density);
+      return std::cbrt(static_cast<double>(clusterSize) / density);
     } else {
       return std::max(boxSize[0], boxSize[1]);
     }
@@ -161,7 +164,7 @@ class VerletClusterListsRebuilder {
    * @param towerSideLengthReciprocal 1.0 / towerSidelength.
    * @return the cells per dimension in the container.
    */
-  [[nodiscard]] static std::array<size_t, 2> calculateTowersPerDim(std::array<double, 3> boxSize,
+  [[nodiscard]] static std::array<size_t, 2> calculateTowersPerDim(const std::array<double, 3> &boxSize,
                                                                    double towerSideLengthReciprocal) {
     std::array<size_t, 2> towersPerDim{};
     for (int d = 0; d < 2; d++) {
@@ -220,7 +223,7 @@ class VerletClusterListsRebuilder {
           auto &tower = getTower(particle.getR());
           tower.addParticle(particle);
         } else {
-          AutoPasLog(trace, "Not adding particle to VerletClusterLists container, because it is far outside:\n{}",
+          AutoPasLog(TRACE, "Not adding particle to VerletClusterLists container, because it is outside the halo:\n{}",
                      particle.toString());
         }
       }
@@ -420,7 +423,7 @@ class VerletClusterListsRebuilder {
    * @param location The 3D coordinates.
    * @return Tower reference.
    */
-  auto &getTower(std::array<double, 3> location) {
+  auto &getTower(const std::array<double, 3> &location) {
     auto [towerIndexX, towerIndexY] = getTowerCoordinates(location);
     return getTower(towerIndexX, towerIndexY);
   }
@@ -432,7 +435,7 @@ class VerletClusterListsRebuilder {
    * @param location The 3D coordinates.
    * @return Tower reference.
    */
-  std::array<size_t, 2> getTowerCoordinates(std::array<double, 3> location) {
+  [[nodiscard]] std::array<size_t, 2> getTowerCoordinates(const std::array<double, 3> &location) const {
     std::array<size_t, 2> towerIndex2D{};
 
     for (int dim = 0; dim < 2; dim++) {
@@ -460,7 +463,7 @@ class VerletClusterListsRebuilder {
    * @param y The y-index of the tower.
    * @return 1D index for _towers vector.
    */
-  size_t towerIndex2DTo1D(const size_t x, const size_t y) {
+  [[nodiscard]] size_t towerIndex2DTo1D(const size_t x, const size_t y) const {
     // It is necessary to use the static method in VerletClusterLists here instead of the member method, because
     // _towersPerDim does not have the new value yet in the container.
     return VerletClusterLists<Particle>::towerIndex2DTo1D(x, y, _towersPerDim);

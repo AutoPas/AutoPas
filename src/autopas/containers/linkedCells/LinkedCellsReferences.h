@@ -14,8 +14,7 @@
 #include "autopas/containers/LoadEstimators.h"
 #include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
 #include "autopas/containers/linkedCells/ParticleVector.h"
-#include "autopas/iterators/ParticleIterator.h"
-#include "autopas/iterators/RegionParticleIterator.h"
+#include "autopas/iterators/ContainerIterator.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/particles/OwnershipState.h"
@@ -24,6 +23,7 @@
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
+#include "autopas/utils/markParticleAsDeleted.h"
 
 namespace autopas {
 
@@ -112,7 +112,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
         return true;
       }
     }
-    AutoPasLog(trace, "UpdateHaloParticle was not able to update particle: {}", pCopy.toString());
+    AutoPasLog(TRACE, "UpdateHaloParticle was not able to update particle: {}", pCopy.toString());
     return false;
   }
 
@@ -195,6 +195,93 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     traversal->endTraversal();
   }
 
+  std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                           IteratorBehavior iteratorBehavior,
+                                                           const std::array<double, 3> &boxMin,
+                                                           const std::array<double, 3> &boxMax) const override {
+    return getParticleImpl<true>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
+  }
+  std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                           IteratorBehavior iteratorBehavior) const override {
+    // this is not a region iter hence we stretch the bounding box to the numeric max
+    constexpr std::array<double, 3> boxMin{std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(),
+                                           std::numeric_limits<double>::lowest()};
+
+    constexpr std::array<double, 3> boxMax{std::numeric_limits<double>::max(), std::numeric_limits<double>::max(),
+                                           std::numeric_limits<double>::max()};
+    return getParticleImpl<false>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
+  }
+
+  /**
+   * Container specific implementation for getParticle. See ParticleContainerInterface::getParticle().
+   *
+   * @tparam regionIter
+   * @param cellIndex
+   * @param particleIndex
+   * @param iteratorBehavior
+   * @param boxMin
+   * @param boxMax
+   * @return tuple<ParticlePointer, CellIndex, ParticleIndex>
+   */
+  template <bool regionIter>
+  std::tuple<const Particle *, size_t, size_t> getParticleImpl(size_t cellIndex, size_t particleIndex,
+                                                               IteratorBehavior iteratorBehavior,
+                                                               const std::array<double, 3> &boxMin,
+                                                               const std::array<double, 3> &boxMax) const {
+    // first and last relevant cell index
+    const auto [startCellIndex, endCellIndex] = [&]() -> std::tuple<size_t, size_t> {
+      if constexpr (regionIter) {
+        return {_cellBlock.get1DIndexOfPosition(boxMin), _cellBlock.get1DIndexOfPosition(boxMax)};
+      } else {
+        if (not(iteratorBehavior & IteratorBehavior::halo)) {
+          // only potentially owned region
+          return {_cellBlock.getFirstOwnedCellIndex(), _cellBlock.getLastOwnedCellIndex()};
+        } else {
+          // whole range of cells
+          return {0, this->_cells.size() - 1};
+        }
+      }
+    }();
+
+    // if we are at the start of an iteration ...
+    if (cellIndex == 0 and particleIndex == 0) {
+      cellIndex =
+          startCellIndex + ((iteratorBehavior & IteratorBehavior::forceSequential) ? 0 : autopas_get_thread_num());
+    }
+    // abort if the start index is already out of bounds
+    if (cellIndex >= this->_cells.size()) {
+      return {nullptr, 0, 0};
+    }
+    // check the data behind the indices
+    if (particleIndex >= this->_cells[cellIndex].numParticles() or
+        not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
+            this->_cells[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax)) {
+      // either advance them to something interesting or invalidate them.
+      std::tie(cellIndex, particleIndex) =
+          advanceIteratorIndices<regionIter>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax, endCellIndex);
+    }
+
+    // shortcut if the given index doesn't exist
+    if (cellIndex > endCellIndex) {
+      return {nullptr, 0, 0};
+    }
+    const Particle *retPtr = &this->_cells[cellIndex][particleIndex];
+
+    return {retPtr, cellIndex, particleIndex};
+  }
+
+  bool deleteParticle(Particle &particle) override {
+    // This function doesn't actually delete anything as it would mess up the reference structure.
+    internal::markParticleAsDeleted(particle);
+    return false;
+  }
+
+  bool deleteParticle(size_t cellIndex, size_t particleIndex) override {
+    // This function doesn't actually delete anything as it would mess up the reference structure.
+    internal::markParticleAsDeleted(this->_cells[cellIndex][particleIndex]);
+    return false;
+  }
+
   std::vector<ParticleType> updateContainer(bool keepNeighborListsValid) override {
     if (keepNeighborListsValid) {
       return autopas::LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);
@@ -220,16 +307,26 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
 
         auto [cellLowerCorner, cellUpperCorner] = this->getCellBlock().getCellBoundingBox(cellId);
 
-        for (auto &&pIter = this->getCells()[cellId].begin(); pIter.isValid(); ++pIter) {
-          // if not in cell
-          if (utils::notInBox(pIter->getR(), cellLowerCorner, cellUpperCorner)) {
-            myInvalidParticles.push_back(*pIter);
-            internal::deleteParticle(pIter);
+        auto &particleVec = this->getCells()[cellId]._particles;
+        for (auto pIter = particleVec.begin(); pIter != particleVec.end();) {
+          if (utils::notInBox((*pIter)->getR(), cellLowerCorner, cellUpperCorner)) {
+            myInvalidParticles.push_back(**pIter);
+
+            // multi layer swap-delete
+            // we copy the particle behind the last pointer in the cell over the particle we want to delete
+            **pIter = *particleVec.back();
+            // since we will not actually delete the particle we just copied mark it as dummy.
+            particleVec.back()->setOwnershipState(OwnershipState::dummy);
+            // then we pop the last pointer from the cell.
+            particleVec.pop_back();
+
+          } else {
+            ++pIter;
           }
         }
       }
       // implicit barrier here
-      // the barrier is needed because iterators are not threadsafe w.r.t. addParticle()
+      // the barrier is needed because iterators are not thread safe w.r.t. addParticle()
 
       // this loop is executed for every thread and thus parallel. Don't use #pragma omp for here!
       for (auto &&p : myInvalidParticles) {
@@ -262,18 +359,17 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
                                  this->getCellBlock().getCellLength(), 0);
   }
 
-  ParticleIteratorWrapper<ParticleType, true> begin(
-      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) override {
-    return ParticleIteratorWrapper<ParticleType, true>(
-        new internal::ParticleIterator<ParticleType, ReferenceCell, true>(&this->_cells, 0, &_cellBlock, behavior,
-                                                                          nullptr));
+  ContainerIterator<ParticleType, true, false> begin(
+      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
+      typename ContainerIterator<ParticleType, true, false>::ParticleVecType *additionalVectors = nullptr) override {
+    return ContainerIterator<ParticleType, true, false>(*this, behavior, additionalVectors);
   }
 
-  ParticleIteratorWrapper<ParticleType, false> begin(
-      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) const override {
-    return ParticleIteratorWrapper<ParticleType, false>(
-        new internal::ParticleIterator<ParticleType, ReferenceCell, false>(&this->_cells, 0, &_cellBlock, behavior,
-                                                                           nullptr));
+  ContainerIterator<ParticleType, false, false> begin(
+      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
+      typename ContainerIterator<ParticleType, false, false>::ParticleVecType *additionalVectors =
+          nullptr) const override {
+    return ContainerIterator<ParticleType, false, false>(*this, behavior, additionalVectors);
   }
 
   /**
@@ -310,60 +406,16 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     }
   }
 
-  ParticleIteratorWrapper<ParticleType, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
-                                                                const std::array<double, 3> &higherCorner,
-                                                                IteratorBehavior behavior) override {
-    // We increase the search region by skin, as particles can move over cell borders.
-    auto startIndex3D =
-        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::subScalar(lowerCorner, this->getVerletSkin()));
-    auto stopIndex3D =
-        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::addScalar(higherCorner, this->getVerletSkin()));
-
-    size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
-                                (stopIndex3D[2] - startIndex3D[2] + 1);
-    std::vector<size_t> cellsOfInterest(numCellsOfInterest);
-
-    int i = 0;
-    for (size_t z = startIndex3D[2]; z <= stopIndex3D[2]; ++z) {
-      for (size_t y = startIndex3D[1]; y <= stopIndex3D[1]; ++y) {
-        for (size_t x = startIndex3D[0]; x <= stopIndex3D[0]; ++x) {
-          cellsOfInterest[i++] =
-              utils::ThreeDimensionalMapping::threeToOneD({x, y, z}, this->_cellBlock.getCellsPerDimensionWithHalo());
-        }
-      }
-    }
-
-    return ParticleIteratorWrapper<ParticleType, true>(
-        new internal::RegionParticleIterator<ParticleType, ReferenceCell, true>(
-            &this->_cells, lowerCorner, higherCorner, std::move(cellsOfInterest), &_cellBlock, behavior, nullptr));
+  [[nodiscard]] ContainerIterator<ParticleType, true, true> getRegionIterator(
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
+      typename ContainerIterator<ParticleType, true, true>::ParticleVecType *additionalVectors) override {
+    return ContainerIterator<ParticleType, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
-  ParticleIteratorWrapper<ParticleType, false> getRegionIterator(const std::array<double, 3> &lowerCorner,
-                                                                 const std::array<double, 3> &higherCorner,
-                                                                 IteratorBehavior behavior) const override {
-    // We increase the search region by skin, as particles can move over cell borders.
-    auto startIndex3D =
-        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::subScalar(lowerCorner, this->getVerletSkin()));
-    auto stopIndex3D =
-        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::addScalar(higherCorner, this->getVerletSkin()));
-
-    size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
-                                (stopIndex3D[2] - startIndex3D[2] + 1);
-    std::vector<size_t> cellsOfInterest(numCellsOfInterest);
-
-    int i = 0;
-    for (size_t z = startIndex3D[2]; z <= stopIndex3D[2]; ++z) {
-      for (size_t y = startIndex3D[1]; y <= stopIndex3D[1]; ++y) {
-        for (size_t x = startIndex3D[0]; x <= stopIndex3D[0]; ++x) {
-          cellsOfInterest[i++] =
-              utils::ThreeDimensionalMapping::threeToOneD({x, y, z}, this->_cellBlock.getCellsPerDimensionWithHalo());
-        }
-      }
-    }
-
-    return ParticleIteratorWrapper<ParticleType, false>(
-        new internal::RegionParticleIterator<ParticleType, ReferenceCell, false>(
-            &this->_cells, lowerCorner, higherCorner, std::move(cellsOfInterest), &_cellBlock, behavior, nullptr));
+  [[nodiscard]] ContainerIterator<ParticleType, false, true> getRegionIterator(
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
+      typename ContainerIterator<ParticleType, false, true>::ParticleVecType *additionalVectors) const override {
+    return ContainerIterator<ParticleType, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
   /**
@@ -450,13 +502,72 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    */
   std::vector<ReferenceCell> &getCells() { return this->_cells; }
 
-  /**
-   * @copydoc getCells()
-   * @note const version
-   */
-  const std::vector<ReferenceCell> &getCells() const { return this->_cells; }
-
  protected:
+  /**
+   * Given a pair of cell-/particleIndex and iterator restrictions either returns the next indices that match these
+   * restrictions or indices that are out of bounds (e.g. cellIndex >= cells.size())
+   * @tparam regionIter
+   * @param cellIndex
+   * @param particleIndex
+   * @param iteratorBehavior
+   * @param boxMin
+   * @param boxMax
+   * @param endCellIndex Last relevant cell index
+   * @return tuple<cellIndex, particleIndex>
+   */
+  template <bool regionIter>
+  std::tuple<size_t, size_t> advanceIteratorIndices(size_t cellIndex, size_t particleIndex,
+                                                    IteratorBehavior iteratorBehavior,
+                                                    const std::array<double, 3> &boxMin,
+                                                    const std::array<double, 3> &boxMax, size_t endCellIndex) const {
+    // Finding the indices for the next particle
+    const size_t stride = (iteratorBehavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads();
+
+    // helper function to determine if the cell can even contain particles of interest to the iterator
+    auto cellIsRelevant = [&]() -> bool {
+      bool isRelevant =
+          // behavior matches possible particle ownership
+          (iteratorBehavior & IteratorBehavior::owned and _cellBlock.cellCanContainOwnedParticles(cellIndex)) or
+          (iteratorBehavior & IteratorBehavior::halo and _cellBlock.cellCanContainHaloParticles(cellIndex));
+      if constexpr (regionIter) {
+        // short circuit if already false
+        if (isRelevant) {
+          // is the cell in the region?
+          const auto [cellLowCorner, cellHighCorner] = _cellBlock.getCellBoundingBox(cellIndex);
+          // particles can move over cell borders. Calculate the volume this cell's particles can be.
+          const auto cellLowCornerSkin = utils::ArrayMath::subScalar(cellLowCorner, this->getVerletSkin() * 0.5);
+          const auto cellHighCornerSkin = utils::ArrayMath::addScalar(cellHighCorner, this->getVerletSkin() * 0.5);
+          isRelevant = utils::boxesOverlap(cellLowCornerSkin, cellHighCornerSkin, boxMin, boxMax);
+        }
+      }
+      return isRelevant;
+    };
+
+    do {
+      // advance to the next particle
+      ++particleIndex;
+      // If this breaches the end of a cell, find the next non-empty cell and reset particleIndex.
+
+      // If cell has wrong type, or there are no more particles in this cell jump to the next
+      while (not cellIsRelevant() or particleIndex >= this->_cells[cellIndex].numParticles()) {
+        // TODO: can this jump be done more efficient if behavior is only halo or owned?
+        // TODO: can this jump be done more efficient for region iters if the cell is outside the region?
+        cellIndex += stride;
+        particleIndex = 0;
+
+        // If we notice that there is nothing else to look at set invalid values, so we get a nullptr next time and
+        // break.
+        if (cellIndex > endCellIndex) {
+          return {std::numeric_limits<decltype(cellIndex)>::max(), std::numeric_limits<decltype(particleIndex)>::max()};
+        }
+      }
+    } while (not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
+        this->_cells[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax));
+
+    // the indices returned at this point should always be valid
+    return {cellIndex, particleIndex};
+  }
+
   /**
    * object that stores the actual Particles and keeps track of the references.
    */

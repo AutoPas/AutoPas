@@ -98,7 +98,7 @@ void autopas::RandomSearch::selectOptimalConfiguration() {
     _currentConfig.loadEstimator = *applicableLoadEstimators.begin();
     _currentConfig.dataLayout = *_dataLayoutOptions.begin();
     _currentConfig.newton3 = *_newton3Options.begin();
-    AutoPasLog(debug, "Selected optimal configuration {}", _currentConfig.toString());
+    AutoPasLog(DEBUG, "Selected optimal configuration {}", _currentConfig.toString());
     return;
   }
 
@@ -116,7 +116,7 @@ void autopas::RandomSearch::selectOptimalConfiguration() {
 
   _currentConfig = optimum->first;
 
-  AutoPasLog(debug, "Selected Configuration {}", _currentConfig.toString());
+  AutoPasLog(DEBUG, "Selected Configuration {}", _currentConfig.toString());
 }
 
 bool autopas::RandomSearch::searchSpaceIsTrivial() const {

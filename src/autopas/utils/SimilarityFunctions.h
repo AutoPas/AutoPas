@@ -60,7 +60,7 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const Container &con
 
   // add particles accordingly to their cell to get the amount of particles in each cell
   for (auto particleItr = container.begin(autopas::IteratorBehavior::owned); particleItr.isValid(); ++particleItr) {
-    const std::array<double, 3> particleLocation = particleItr->getR();
+    const auto &particleLocation = particleItr->getR();
     std::array<size_t, 3> index = {};
     for (size_t i = 0; i < particleLocation.size(); i++) {
       index[i] = particleLocation[i] / cellLength;

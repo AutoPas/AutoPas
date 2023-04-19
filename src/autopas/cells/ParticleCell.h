@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include "autopas/iterators/SingleCellIteratorWrapper.h"
 #include "autopas/utils/inBox.h"
 
 namespace autopas {
@@ -63,27 +62,6 @@ class ParticleCell {
    * @param p the particle to be added
    */
   virtual void addParticle(const Particle &p) = 0;
-
-  /**
-   * Get an iterator to the start of a ParticleCell.
-   * normal use:
-   * for(auto iter = cell.begin(); iter.isValid; ++iter){...}
-   * @return the iterator
-   */
-  virtual SingleCellIteratorWrapper<Particle, true> begin() = 0;
-
-  /**
-   * @copydoc autopas::ParticleCell::begin()
-   * @note const version
-   */
-  virtual SingleCellIteratorWrapper<Particle, false> begin() const = 0;
-
-  /**
-   * End expression for all cells, this simply returns false.
-   * Allows range-based for loops.
-   * @return false
-   */
-  [[nodiscard]] constexpr bool end() const { return false; }
 
   /**
    * Get the number of particles stored in this cell.

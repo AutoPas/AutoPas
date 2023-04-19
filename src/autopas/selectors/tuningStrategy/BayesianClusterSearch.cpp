@@ -114,7 +114,7 @@ long autopas::BayesianClusterSearch::getEvidence(Configuration configuration) co
 void autopas::BayesianClusterSearch::reset(size_t iteration) {
   size_t iterationSinceLastEvidence = iteration - _currentIteration;
   if (iterationSinceLastEvidence * _iterationScale > suggestedMaxDistance) {
-    AutoPasLog(warn, "BayesianClusterSearch: Time since the last evidence may be too long.");
+    AutoPasLog(WARN, "BayesianClusterSearch: Time since the last evidence may be too long.");
   }
 
   _currentIteration = iteration;
@@ -227,7 +227,7 @@ bool autopas::BayesianClusterSearch::tune(bool currentInvalid) {
     }
 
     // No valid configuration. This should rarely happen.
-    AutoPasLog(debug, "Tuning could not generate a valid configuration.");
+    AutoPasLog(DEBUG, "Tuning could not generate a valid configuration.");
   }
 
   utils::ExceptionHandler::exception("BayesianClusterSearch: Failed to sample an valid FeatureVector");

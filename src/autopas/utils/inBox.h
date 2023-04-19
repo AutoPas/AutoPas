@@ -30,7 +30,7 @@ bool inBox(const std::array<T, 3> &position, const std::array<T, 3> &low, const 
   for (int d = 0; d < 3; ++d) {
     const bool isLargerThanLower = position[d] >= low[d];
     const bool isSmallerThanHigher = position[d] < high[d];
-    inBox &= isLargerThanLower and isSmallerThanHigher;
+    inBox = inBox and isLargerThanLower and isSmallerThanHigher;
   }
   return inBox;
 }
@@ -51,4 +51,22 @@ bool notInBox(const std::array<T, 3> &position, const std::array<T, 3> &low, con
   return not(inBox(position, low, high));
 }
 
+/**
+ * Checks if two boxes have overlap.
+ * @tparam T
+ * @param boxALow
+ * @param boxAHigh
+ * @param boxBLow
+ * @param boxBHigh
+ * @return
+ */
+template <typename T>
+bool boxesOverlap(const std::array<T, 3> &boxALow, const std::array<T, 3> &boxAHigh, const std::array<T, 3> &boxBLow,
+                  const std::array<T, 3> &boxBHigh) {
+  static_assert(std::is_floating_point<T>::value, "boxesOverlap assumes floating point types");
+
+  auto overlap1D = [&](size_t dim) { return boxAHigh[dim] >= boxBLow[dim] and boxBHigh[dim] >= boxALow[dim]; };
+
+  return overlap1D(0) and overlap1D(1) and overlap1D(2);
+}
 }  // namespace autopas::utils

@@ -29,8 +29,8 @@ autopas::ActiveHarmony::ActiveHarmony(const std::set<ContainerOption> &allowedCo
       _allowedContainerOptions, cellSizeDummy, _allowedTraversalOptions, _allowedLoadEstimatorOptions,
       _allowedDataLayoutOptions, _allowedNewton3Options, 0, 1);
 
-  AutoPasLog(debug, "Possible container options: {}", autopas::utils::ArrayUtils::to_string(_allowedContainerOptions));
-  AutoPasLog(debug, "Possible traversal options: {}", autopas::utils::ArrayUtils::to_string(_allowedTraversalOptions));
+  AutoPasLog(DEBUG, "Possible container options: {}", autopas::utils::ArrayUtils::to_string(_allowedContainerOptions));
+  AutoPasLog(DEBUG, "Possible traversal options: {}", autopas::utils::ArrayUtils::to_string(_allowedTraversalOptions));
 
   if (searchSpaceIsEmpty()) {
     autopas::utils::ExceptionHandler::exception("BayesianSearch: No valid configurations could be created.");
@@ -57,7 +57,7 @@ autopas::ActiveHarmony::~ActiveHarmony() {
 
 void autopas::ActiveHarmony::addEvidence(long time, size_t iteration) {
   if (searchSpaceIsTrivial() or searchSpaceIsEmpty()) {
-    AutoPasLog(debug, "ActiveHarmony::addEvidence: Search space is {}; did not report performance",
+    AutoPasLog(DEBUG, "ActiveHarmony::addEvidence: Search space is {}; did not report performance",
                searchSpaceIsTrivial() ? "trivial" : "empty");
   } else {
     auto perf = static_cast<double>(time);
@@ -106,7 +106,7 @@ void autopas::ActiveHarmony::fetchConfiguration() {
 void autopas::ActiveHarmony::invalidateConfiguration() {
   auto worstPerf = std::numeric_limits<long>::max();
   addEvidence(worstPerf, 0);
-  AutoPasLog(debug, "ActiveHarmony::invalidateConfiguration: {}", _currentConfig.toString());
+  AutoPasLog(DEBUG, "ActiveHarmony::invalidateConfiguration: {}", _currentConfig.toString());
 }
 
 bool autopas::ActiveHarmony::tune(bool currentInvalid) {
@@ -119,7 +119,7 @@ bool autopas::ActiveHarmony::tune(bool currentInvalid) {
   }
   if (currentInvalid) {
     if (ah_converged(htask)) {
-      AutoPasLog(debug, "Active Harmony converged to invalid configuration; resetting active-harmony server.");
+      AutoPasLog(DEBUG, "Active Harmony converged to invalid configuration; resetting active-harmony server.");
       resetHarmony();
     } else {
       invalidateConfiguration();
@@ -143,12 +143,12 @@ bool autopas::ActiveHarmony::tune(bool currentInvalid) {
     auto converged = ah_converged(htask);
     if (converged) {
       // set configuration to optimum
-      AutoPasLog(debug, "ActiveHarmony::tune: Reached converged state.");
+      AutoPasLog(DEBUG, "ActiveHarmony::tune: Reached converged state.");
       if (ah_best(htask) != 0) {
         utils::ExceptionHandler::exception("ActiveHarmony::tune: Error fetching best point.");
       }
       fetchConfiguration();
-      AutoPasLog(debug, "ActiveHarmony::tune: Selected optimal configuration {}.", _currentConfig.toString());
+      AutoPasLog(DEBUG, "ActiveHarmony::tune: Selected optimal configuration {}.", _currentConfig.toString());
       return false;
     }
 
@@ -189,7 +189,7 @@ void autopas::ActiveHarmony::configureTuningParameter(hdef_t *hdef, const char *
       }
     }
   } else {
-    AutoPasLog(debug, "ActiveHarmony::configureTuningParameter: Skipping trivial parameter {}", name);
+    AutoPasLog(DEBUG, "ActiveHarmony::configureTuningParameter: Skipping trivial parameter {}", name);
   }
 }
 
@@ -217,7 +217,7 @@ void autopas::ActiveHarmony::resetHarmony() {
   }
 
   if (searchSpaceIsTrivial() or searchSpaceIsEmpty()) {
-    AutoPasLog(debug, "Search space is {}; skipping harmony initialization.",
+    AutoPasLog(DEBUG, "Search space is {}; skipping harmony initialization.",
                searchSpaceIsTrivial() ? "trivial" : "empty");
     // Barrier in case the search space is bigger for some ranks
     if (_mpiStrategyOption == MPIStrategyOption::divideAndConquer) {
@@ -296,9 +296,9 @@ void autopas::ActiveHarmony::setupTuningParameters(int commSize, hdef_t *hdef) {
 
   if (_allowedCellSizeFactors->isFinite()) {  // finite cell-size factors => define parameter as enum
     if (_allowedCellSizeFactors->size() == 1) {
-      AutoPasLog(debug, "ActiveHarmony::reset: Skipping trivial parameter {}", cellSizeFactorsName);
+      AutoPasLog(DEBUG, "ActiveHarmony::reset: Skipping trivial parameter {}", cellSizeFactorsName);
     } else if (_allowedCellSizeFactors->size() > 1) {
-      AutoPasLog(debug, "ActiveHarmony::reset: Finite cell-size factors; defining parameter as enum");
+      AutoPasLog(DEBUG, "ActiveHarmony::reset: Finite cell-size factors; defining parameter as enum");
       if (ah_def_enum(hdef, cellSizeFactorsName, nullptr) != 0) {
         utils::ExceptionHandler::exception("ActiveHarmony::configureTuningParameter: Error defining enum \"{}\"",
                                            cellSizeFactorsName);
@@ -312,7 +312,7 @@ void autopas::ActiveHarmony::setupTuningParameters(int commSize, hdef_t *hdef) {
       }
     }
   } else {  // infinite cell-size factors => define parameter as real
-    AutoPasLog(debug, "ActiveHarmony::reset: Infinite cell-size factors; defining parameter as real");
+    AutoPasLog(DEBUG, "ActiveHarmony::reset: Infinite cell-size factors; defining parameter as real");
     if (ah_def_real(hdef, cellSizeFactorsName, _allowedCellSizeFactors->getMin(), _allowedCellSizeFactors->getMax(),
                     (_allowedCellSizeFactors->getMax() - _allowedCellSizeFactors->getMin()) / cellSizeSamples,
                     nullptr) != 0) {

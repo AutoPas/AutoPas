@@ -4,13 +4,13 @@
  * @date 19.01.18
  */
 
-#include "SingleCellIteratorTest.h"
+#include "CellIteratorTest.h"
 
 #include <gtest/gtest.h>
 
 using namespace autopas;
 
-void SingleCellIteratorTest::SetUp() {
+void CellIteratorTest::SetUp() {
   for (int i = 0; i < 4; ++i) {
     std::array<double, 3> arr{};
     for (auto &a : arr) {
@@ -21,16 +21,16 @@ void SingleCellIteratorTest::SetUp() {
   }
 }
 
-void SingleCellIteratorTest::TearDown() {}
+void CellIteratorTest::TearDown() {}
 
-TEST_F(SingleCellIteratorTest, testFullParticleCell) {
+TEST_F(CellIteratorTest, testFullParticleCell) {
   FMCell fpc;
 
   fillWithParticles(&fpc);
 
   auto iter = fpc.begin();
   int i = 0;
-  for (; iter.isValid(); ++iter, ++i) {
+  for (; iter != fpc.end(); ++iter, ++i) {
     for (int d = 0; d < 3; ++d) {
       ASSERT_DOUBLE_EQ(iter->getR()[d], _vecOfMolecules[i].getR()[d]);
     }
