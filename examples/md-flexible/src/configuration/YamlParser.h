@@ -23,7 +23,7 @@ namespace MDFlexParser::YamlParser {
  * @return String representation of type
  */
 template <typename T>
-std::string type2Str() {
+std::string typeToStr() {
   if (typeid(T) == typeid(double)) {
     return "Double";
   }
@@ -84,7 +84,7 @@ const T parseObjectValueSingle(const YAML::Node node, const std::string &key, st
   } catch (const std::exception &e) {
     std::stringstream ss;
     ss << "Error parsing " << key << ". Make sure that key \"" << key
-       << "\" exists and has the expected value: " << type2Str<T>();
+       << "\" exists and has the expected value: " << typeToStr<T>();
     objectErrors.push_back(ss.str());
   }
   return value;
@@ -110,7 +110,7 @@ const std::array<T, S> parseObjectValueSequence(const YAML::Node node, const std
   } catch (const std::exception &e) {
     std::stringstream ss;
     ss << "Error parsing " << key << ". Make sure that key \"" << key << "\" exists and has the expected value: "
-       << "YAML-sequence of " << std::to_string(S) << " " << type2Str<T>() << " values.";
+       << "YAML-sequence of " << std::to_string(S) << " " << typeToStr<T>() << " values.";
     objectErrors.push_back(ss.str());
   }
   return value;
