@@ -1236,16 +1236,14 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
             "forceSequential encountered, but the container is invalid.");
       }
     } else {
-      // Only one thread is allowed to rebuild the towers, so we do an omp single here.
-      // This single is only possible when we do not force sequential mode as otherwise not all threads might pass
-      // through here and we end up waiting for them forever.
+      // Only one thread is allowed to rebuild the towers. Since rebuildTowersAndClusters() sets _isValid,
+      // subsequent threads that will enter the if will not rebuild.
 #ifdef AUTOPAS_OPENMP
-#pragma omp single
+#pragma omp critical
 #endif
       if (_isValid == ValidityState::invalid) {
         rebuildTowersAndClusters();
       }
-      // there is an implicit barrier at end of single!
     }
   }
 
