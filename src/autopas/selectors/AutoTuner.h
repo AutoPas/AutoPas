@@ -84,6 +84,7 @@ class AutoTuner {
         _maxSamples(maxSamples),
         _samplesNotRebuildingNeighborLists(maxSamples),
         _iteration(0),
+        _bufferLocks(std::max(2, autopas::autopas_get_max_threads())),
         _iterationLogger(outputSuffix),
         _tuningResultLogger(outputSuffix),
         _tuningDataLogger(maxSamples, outputSuffix) {
@@ -105,6 +106,9 @@ class AutoTuner {
           lockPtr = std::make_unique<std::mutex>();
         }
       }
+    }
+    for (auto &lockPtr : _bufferLocks) {
+      lockPtr = std::make_unique<std::mutex>();
     }
 
     if (_tuningStrategy->searchSpaceIsEmpty()) {
@@ -394,6 +398,8 @@ class AutoTuner {
    */
   std::vector<std::vector<std::vector<std::unique_ptr<std::mutex>>>> _spacialLocks;
 
+  std::vector<std::unique_ptr<std::mutex>> _bufferLocks;
+
   IterationLogger _iterationLogger;
   TuningResultLogger _tuningResultLogger;
   TuningDataLogger _tuningDataLogger;
@@ -515,6 +521,12 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
   using autopas::utils::ArrayMath::subScalar;
   using autopas::utils::ArrayUtils::static_cast_array;
 
+  // Sanity check. If this is violated feel free to add some logic here that adapts the number of locks.
+  if (_bufferLocks.size() < particleBuffers.size()) {
+    utils::ExceptionHandler::exception("Not enough locks for non-halo buffers! Num Locks: {}, Buffers: {}",
+                                       _bufferLocks.size(), particleBuffers.size());
+  }
+
   const auto boxMin = containerPtr->getBoxMin();
   const auto interactionLengthInv = 1. / containerPtr->getInteractionLength();
 
@@ -526,7 +538,7 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
   utils::ArrayUtils::balanceVectors(haloParticleBuffers, cellToVec);
 
   // only activate time measurements if it will actually be logged
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_DEBUG
   autopas::utils::Timer timerBufferContainer;
   autopas::utils::Timer timerPBufferPBuffer;
   autopas::utils::Timer timerPBufferHBuffer;
@@ -585,7 +597,7 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
       }
     }
   });
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_DEBUG
   timerBufferContainer.stop();
   timerPBufferPBuffer.start();
 #endif
@@ -601,48 +613,37 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
 
 #ifdef AUTOPAS_OPENMP
   // Use task parallelism for better dependency resolution than locks
-#pragma omp parallel
-#pragma omp single
+#pragma omp parallel for
 #endif
-  {
-    for (size_t i = 0; i < particleBuffers.size(); ++i) {
-      auto *particleBufferSoA = &particleBuffers[i]._particleSoABuffer;
-#ifdef AUTOPAS_OPENMP
-#pragma omp task firstprivate(particleBufferSoA) depend(mutexinoutset : particleBufferSoA)
-#endif
-      f->SoAFunctorSingle(*particleBufferSoA, newton3);
-    }
-
+  for (size_t i = 0; i < particleBuffers.size(); ++i) {
+    auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
     if constexpr (newton3) {
-      for (size_t i = 0; i < particleBuffers.size(); ++i) {
-        auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
-        for (size_t j = i + 1; j < particleBuffers.size(); ++j) {
-          auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
-#ifdef AUTOPAS_OPENMP
-#pragma omp task firstprivate(particleBufferSoAA, particleBufferSoAB) depend(mutexinoutset \
-                                                                             : particleBufferSoAA, particleBufferSoAB)
-#endif
-          f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, true);
-        }
+      {
+        const std::lock_guard<std::mutex> lockA(*_bufferLocks[i]);
+        f->SoAFunctorSingle(*particleBufferSoAA, true);
+      }
+      for (size_t j = i + 1; j < particleBuffers.size(); ++j) {
+        auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
+        const std::lock_guard<std::mutex> lockA(*_bufferLocks[i]);
+        const std::lock_guard<std::mutex> lockB(*_bufferLocks[j]);
+        f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, true);
       }
     } else {
-      for (size_t i = 0; i < particleBuffers.size(); ++i) {
-        auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
-        for (size_t j = 0; j < particleBuffers.size(); ++j) {
-          if (i == j) {
-            continue;
-          }
+      for (size_t jj = 0; jj < particleBuffers.size(); ++jj) {
+        const auto j = (i + jj) % particleBuffers.size();
+        if (i == j) {
+          const std::lock_guard<std::mutex> lockA(*_bufferLocks[i]);
+          f->SoAFunctorSingle(*particleBufferSoAA, false);
+        } else {
           auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
-#ifdef AUTOPAS_OPENMP
-#pragma omp task firstprivate(particleBufferSoAA, particleBufferSoAB) depend(mutexinoutset : particleBufferSoAB)
-#endif
+          const std::lock_guard<std::mutex> lockA(*_bufferLocks[i]);
           f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, false);
         }
       }
     }
   }
 
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_DEBUG
   timerPBufferPBuffer.stop();
   timerPBufferHBuffer.start();
 #endif
@@ -662,7 +663,7 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
       f->SoAFunctorPair(particleBufferSoA, haloBufferSoA, newton3);
     }
   }
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_DEBUG
   timerPBufferHBuffer.stop();
 #endif
 
@@ -671,9 +672,9 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
     f->SoAExtractor(buffer, buffer._particleSoABuffer, 0);
   }
 
-  AutoPasLog(TRACE, "Timer Buffers <-> Container (1+2): {}", timerBufferContainer.getTotalTime());
-  AutoPasLog(TRACE, "Timer PBuffers<-> PBuffer   (  3): {}", timerPBufferPBuffer.getTotalTime());
-  AutoPasLog(TRACE, "Timer PBuffers<-> HBuffer   (  4): {}", timerPBufferHBuffer.getTotalTime());
+  AutoPasLog(DEBUG, "Timer Buffers <-> Container (1+2): {}", timerBufferContainer.getTotalTime());
+  AutoPasLog(DEBUG, "Timer PBuffers<-> PBuffer   (  3): {}", timerPBufferPBuffer.getTotalTime());
+  AutoPasLog(DEBUG, "Timer PBuffers<-> HBuffer   (  4): {}", timerPBufferHBuffer.getTotalTime());
 
   // Note: haloParticleBuffer with itself is NOT needed, as interactions between halo particles are unneeded!
 }
@@ -738,8 +739,8 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
     ss << " Total: " << sum;
     return ss.str();
   };
-  AutoPasLog(TRACE, "particleBuffer     size : {}", bufferSizeListing(particleBuffer));
-  AutoPasLog(TRACE, "haloParticleBuffer size : {}", bufferSizeListing(haloParticleBuffer));
+  AutoPasLog(DEBUG, "particleBuffer     size : {}", bufferSizeListing(particleBuffer));
+  AutoPasLog(DEBUG, "haloParticleBuffer size : {}", bufferSizeListing(haloParticleBuffer));
   AutoPasLog(DEBUG, "Container::iteratePairwise took {} ns", timerIteratePairwise.getTotalTime());
   AutoPasLog(DEBUG, "RemainderTraversal         took {} ns", timerRemainderTraversal.getTotalTime());
   AutoPasLog(DEBUG, "RebuildNeighborLists       took {} ns", timerRebuild.getTotalTime());
