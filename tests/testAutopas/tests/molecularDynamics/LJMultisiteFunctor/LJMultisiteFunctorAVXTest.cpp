@@ -45,13 +45,52 @@ void LJMultisiteFunctorAVXTest::generateMolecules(std::vector<autopas::Multisite
 }
 
 template <bool newton3, bool calculateGlobals, bool applyShift>
-void LJMultisiteFunctorAVXTest::testSoACellAgainstAoS(std::vector<autopas::MultisiteMoleculeLJ> molecules,
+void LJMultisiteFunctorAVXTest::testSoACellAgainstAoS(std::vector<autopas::MultisiteMoleculeLJ> &molecules,
                                                       ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
   using autopas::MultisiteMoleculeLJ;
 
   autopas::LJMultisiteFunctorAVX<MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals,
                                  true>
       functor(cutoff, PPL);
+
+  auto moleculesAoS = molecules;
+  auto moleculesSoA = molecules;
+  const size_t numberOfMolecules = molecules.size();
+
+  // Init traversal for functor
+  functor.initTraversal();
+
+  // Apply AoSFunctor to molecules
+  for (size_t i = 0; i < numberOfMolecules; ++i) {
+    for (size_t j = 0; j< numberOfMolecules; ++j) {
+      functor.AoSFunctor(moleculesAoS[i], moleculesAoS[j], newton3);
+    }
+  }
+
+  functor.endTraversal(newton3);
+  //const double potentialEnergyAoS = functor.getPotentialEnergy();
+  //const double virialAoS = functor.getVirial();
+
+  // create the SoA cell
+  autopas::FullParticleCell<MultisiteMoleculeLJ> cellSoA;
+  for (auto &&molecule : moleculesSoA) {
+    cellSoA.addParticle(molecule);
+  }
+
+  // init traversal for functor
+  functor.initTraversal();
+  functor.SoALoader(cellSoA,cellSoA._particleSoABuffer, 0);
+
+  // apply functor
+  functor.SoAFunctorSingle(cellSoA._particleSoABuffer, newton3);
+
+  // copy back to original particle array
+  moleculesSoA.clear();
+
+  functor.SoAExtractor(cellSoA, cellSoA._particleSoABuffer, 0);
+
+  // end traversal for functor and get globals
+  functor.endTraversal(newton3);
 }
 
 /*
@@ -71,5 +110,5 @@ TEST_F(LJMultisiteFunctorAVXTest, functorDoesntBurnTheComputerTest) {
   generatePPL(&PPL);
   generateMolecules(&molecules);
 
-  testSoACellAgainstAoS<true, false , false>(molecules, PPL, cutoff);
+  testSoACellAgainstAoS<true, false, false>(molecules, PPL, cutoff);
 }

@@ -382,8 +382,13 @@ class LJMultisiteFunctorAVX
       const size_t siteIndexB = siteIndexA + numSitesA;
       const size_t numSitesB = siteCount - siteIndexA;
 
-      // TODO improve mask (check phd paper)
-      std::vector<char, autopas::AlignedAllocator<char>> molMask(soa.getNumberOfParticles() - (molA + 1));
+      // TODO improve mask (check phd paper); This is using doubles to make the store intrinsics work
+      std::vector<double, autopas::AlignedAllocator<double>> molMask(soa.getNumberOfParticles() - (molA + 1));
+
+      // This seems like dark magic but it enables the use of aligned operations
+      // double *molMask = nullptr;
+      // posix_memalign((void **)&molMask, 32, (soa.getNumberOfParticles() - (molA + 1)) * sizeof(double));
+      // std::unique_ptr<double, decltype(&free)> vec_ptr(molMask, &free);
 
       // Broadcast A's data
       const __m256d xposA = _mm256_broadcast_sd(&xptr[molA]);
@@ -393,9 +398,9 @@ class LJMultisiteFunctorAVX
       // Build the molMask
       size_t molB = molA + 1;
       for (; molB < soa.getNumberOfParticles(); molB += vecLength) {
-        const __m256d xposB = _mm256_load_pd(xptr + molB);
-        const __m256d yposB = _mm256_load_pd(yptr + molB);
-        const __m256d zposB = _mm256_load_pd(zptr + molB);
+        const __m256d xposB = _mm256_loadu_pd(&xptr[molB]);
+        const __m256d yposB = _mm256_loadu_pd(&yptr[molB]);
+        const __m256d zposB = _mm256_loadu_pd(&zptr[molB]);
 
         const __m256d displacementCoMX = _mm256_sub_pd(xposA, xposB);
         const __m256d displacementCoMY = _mm256_sub_pd(yposA, yposB);
@@ -409,13 +414,13 @@ class LJMultisiteFunctorAVX
             _mm256_add_pd(_mm256_add_pd(distanceSquaredCoMX, distanceSquaredCoMY), distanceSquaredCoMZ);
 
         const __m256d cutoffMask = _mm256_cmp_pd(distanceSquaredCoM, _cutoffSquared, _CMP_LE_OS);
-        const __m256d ownedStateB = _mm256_load_pd(reinterpret_cast<double *>(ownedStatePtr[molB]));
+        const __m256i ownedStateB = _mm256_loadu_si256(reinterpret_cast<const __m256i *>(&ownedStatePtr[molB]));
         const __m256d dummyMask =
-            _mm256_cmp_pd(ownedStateB, _mm256_castpd_si256(_zero), _CMP_EQ_OS);  // Assuming that dummy = 0
+            _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB), _zero, _CMP_NEQ_OS);  // Assuming that dummy = 0
         const __m256d totalMask = _mm256_and_pd(cutoffMask, dummyMask);
 
         // TODO may not work correctly?
-        _mm256_store_pd(reinterpret_cast<double *>(molMask.data() + (molB - (molA + 1))), totalMask);
+        _mm256_storeu_pd((&molMask[molB - (molA + 1)]), totalMask);
       }
 
       // Scalar remainder loop, copied from scalar class
@@ -440,11 +445,14 @@ class LJMultisiteFunctorAVX
       }
 
       // Copied site-mask building
-      std::vector<char, autopas::AlignedAllocator<char>> siteMask(numSitesB);
+      std::vector<double, autopas::AlignedAllocator<double>> siteMask;
+      siteMask.reserve(numSitesB);
 
       for (size_t mol = molA + 1; mol < soa.getNumberOfParticles(); ++mol) {
         for (size_t siteB = 0; siteB < _PPLibrary->getNumSites(typeptr[mol]); ++siteB) {
-          siteMask.emplace_back(molMask[mol - (molA + 1)]);
+          size_t index = mol - (molA + 1);
+          double mask = molMask[index];
+          siteMask.push_back(mask);
         }
       }
 
@@ -469,7 +477,7 @@ class LJMultisiteFunctorAVX
 
         // TODO handle remainder case
         for (size_t siteB = siteIndexB; siteB < siteIndexB + numSitesB; siteB += vecLength) {
-          const __m256d localMask = _mm256_load_pd(reinterpret_cast<const double *>(&siteMask[siteB]));
+          const __m256d localMask = _mm256_loadu_pd(&siteMask[siteB]);
           if (_mm256_movemask_pd(localMask) == 0) {
             continue;
           }
@@ -495,13 +503,13 @@ class LJMultisiteFunctorAVX
             }
           }
 
-          const __m256d siteGlobals = _mm256_set1_pd(!calculateGlobals);
-          const __m256d siteOwned = _mm256_load_pd(reinterpret_cast<const double *>(&isSiteOwned[siteB]));
-          const __m256d isSiteBOwned = _mm256_or_pd(siteGlobals, siteOwned);
+//          const __m256d siteGlobals = _mm256_set1_pd(!calculateGlobals);
+//          const __m256d siteOwned = _mm256_loadu_pd(reinterpret_cast<const double *>(&isSiteOwned[siteB]));
+//          const __m256d isSiteBOwned = _mm256_or_pd(siteGlobals, siteOwned);
 
-          const __m256d exactSitePositionsBX = _mm256_load_pd(&exactSitePositionX[siteB]);
-          const __m256d exactSitePositionsBY = _mm256_load_pd(&exactSitePositionY[siteB]);
-          const __m256d exactSitePositionsBZ = _mm256_load_pd(&exactSitePositionZ[siteB]);
+          const __m256d exactSitePositionsBX = _mm256_loadu_pd(&exactSitePositionX[siteB]);
+          const __m256d exactSitePositionsBY = _mm256_loadu_pd(&exactSitePositionY[siteB]);
+          const __m256d exactSitePositionsBZ = _mm256_loadu_pd(&exactSitePositionZ[siteB]);
 
           const __m256d displacementX = _mm256_sub_pd(exactSitePositionsAX, exactSitePositionsBX);
           const __m256d displacementY = _mm256_sub_pd(exactSitePositionsAY, exactSitePositionsBY);
@@ -531,15 +539,15 @@ class LJMultisiteFunctorAVX
           forceSumAZ = _mm256_add_pd(forceSumAZ, forceZ);
 
           // N3
-          __m256d forceSumBX = _mm256_load_pd(&siteForceX[siteB]);
-          __m256d forceSumBY = _mm256_load_pd(&siteForceY[siteB]);
-          __m256d forceSumBZ = _mm256_load_pd(&siteForceZ[siteB]);
+          __m256d forceSumBX = _mm256_loadu_pd(&siteForceX[siteB]);
+          __m256d forceSumBY = _mm256_loadu_pd(&siteForceY[siteB]);
+          __m256d forceSumBZ = _mm256_loadu_pd(&siteForceZ[siteB]);
           forceSumBX = _mm256_sub_pd(forceSumBX, forceX);
           forceSumBY = _mm256_sub_pd(forceSumBY, forceY);
           forceSumBZ = _mm256_sub_pd(forceSumBZ, forceZ);
-          _mm256_store_pd(siteForceX.data() + siteB, forceSumBX);
-          _mm256_store_pd(siteForceY.data() + siteB, forceSumBY);
-          _mm256_store_pd(siteForceZ.data() + siteB, forceSumBZ);
+          _mm256_storeu_pd(siteForceX.data() + siteB, forceSumBX);
+          _mm256_storeu_pd(siteForceY.data() + siteB, forceSumBY);
+          _mm256_storeu_pd(siteForceZ.data() + siteB, forceSumBZ);
 
           // TODO Global calculation with without AVX512
           //          if constexpr (calculateGlobals) {
@@ -820,8 +828,6 @@ class LJMultisiteFunctorAVX
 
       // Main loop over sites of molecules in soaA
       for (size_t siteA = 0; siteA < numSitesA; ++siteA) {
-
-
         const __m256d rotatedSitePositionsAX = _mm256_set1_pd(rotatedSitePositionsA[siteA][0]);
         const __m256d rotatedSitePositionsAY = _mm256_set1_pd(rotatedSitePositionsA[siteA][1]);
         const __m256d rotatedSitePositionsAZ = _mm256_set1_pd(rotatedSitePositionsA[siteA][2]);
@@ -922,7 +928,6 @@ class LJMultisiteFunctorAVX
           // TODO Global calculations
         }
         // TODO Here comes the remainder loop
-
       }
       // Load old force and torque
       __m256d forceAX = _mm256_load_pd(&fxAptr[molA]);
@@ -955,7 +960,7 @@ class LJMultisiteFunctorAVX
       size_t siteIndex = 0;
       for (size_t mol = 0; mol < soaB.getNumberOfParticles(); ++mol) {
         const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
-            {q0Bptr[mol], q1Bptr[mol], q2Bptr[mol], q3Bptr[mol]}, _PPLibrary->getSitePositions(typeptrB[mol]) );
+            {q0Bptr[mol], q1Bptr[mol], q2Bptr[mol], q3Bptr[mol]}, _PPLibrary->getSitePositions(typeptrB[mol]));
         for (size_t site = 0; site < _PPLibrary->getNumSites(typeptrB[mol]); ++site) {
           fxBptr[mol] += siteForceX[siteIndex];
           fyBptr[mol] += siteForceY[siteIndex];
@@ -973,7 +978,7 @@ class LJMultisiteFunctorAVX
       size_t siteIndex = 0;
       for (size_t mol = 0; mol < soaB.getNumberOfParticles(); ++mol) {
         const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
-            {q0Bptr[mol],q1Bptr[mol],q2Bptr[mol],q3Bptr[mol]}, const_unrotatedSitePositions );
+            {q0Bptr[mol], q1Bptr[mol], q2Bptr[mol], q3Bptr[mol]}, const_unrotatedSitePositions);
         for (size_t site = 0; site < const_unrotatedSitePositions.size(); ++site) {
           fxBptr[mol] += siteForceX[siteIndex];
           fyBptr[mol] += siteForceY[siteIndex];
@@ -990,8 +995,8 @@ class LJMultisiteFunctorAVX
     }
     if constexpr (calculateGlobals) {
       const auto threadNum = autopas_get_thread_num();
-      // SoAFunctorPairImpl obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in post-processing.
-      // For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
+      // SoAFunctorPairImpl obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
+      // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       const auto newton3Factor = newton3 ? .5 : 1.;
 
       _aosThreadData[threadNum].potentialEnergySum += potentialEnergySum * newton3Factor;
@@ -1166,7 +1171,6 @@ class LJMultisiteFunctorAVX
   }
 
  private:
-
   // @TODO I tried to vectorize this, but i don't know if this actually works, so I may have to look into
   // it again, we can also do this in a scalar way if it doesn't work
   // count number of sites in SoA
@@ -1214,12 +1218,19 @@ class LJMultisiteFunctorAVX
     exactSitePositionX.clear();
     exactSitePositionY.clear();
     exactSitePositionZ.clear();
+    siteForceX.clear();
+    siteForceY.clear();
+    siteForceZ.clear();
     isSiteOwned.clear();
     siteTypes.clear();
 
     exactSitePositionX.reserve(siteCount);
     exactSitePositionY.reserve(siteCount);
     exactSitePositionZ.reserve(siteCount);
+
+    siteForceX.reserve(siteCount);
+    siteForceY.reserve(siteCount);
+    siteForceZ.reserve(siteCount);
 
     if constexpr (calculateGlobals) {
       isSiteOwned.reserve(siteCount);
