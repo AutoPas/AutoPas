@@ -51,13 +51,15 @@ inline std::byte castToByte(TOption option) {
  * @param loadEstimatorOptions
  * @param dataLayoutOptions
  * @param newton3Options
+ * @param verletRebuildFrequencies
  * @return
  */
 size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, const NumberSet<double> &cellSizeFactors,
                           const std::set<TraversalOption> &traversalOptions,
                           const std::set<LoadEstimatorOption> &loadEstimatorOptions,
                           const std::set<DataLayoutOption> &dataLayoutOptions,
-                          const std::set<Newton3Option> &newton3Options);
+                          const std::set<Newton3Option> &newton3Options,
+                          const NumberSet<int> &verletRebuildFrequencies);
 
 /**
  * Distributes the provided configurations globally for equal work loads.
@@ -69,6 +71,7 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
  * @param loadEstimatorOptions
  * @param dataLayoutOptions
  * @param newton3Options
+ * @param verletRebuildFrequencies
  * @param rank
  * @param commSize
  */
@@ -76,7 +79,7 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
                               std::set<TraversalOption> &traversalOptions,
                               std::set<LoadEstimatorOption> &loadEstimatorOptions,
                               std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options,
-                              int rank, int commSize);
+                              NumberSet<int> &verletRebuildFrequencies, int rank, int commSize);
 
 /**
  * Distribute ranks in buckets, which contain only ranks with similar scenarios.

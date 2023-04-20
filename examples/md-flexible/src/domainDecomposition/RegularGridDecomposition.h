@@ -170,10 +170,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Stores the domain skin width per Timestep.
    */
   double _skinWidthPerTimestep;
-  /**
-   * Stores the rebuild Frequency.
-   */
-  unsigned int _rebuildFrequency;
+
   /**
    * The greatest distance from a reflective boundary at which a particle might experience reflection.
    */
@@ -203,6 +200,8 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * The number of subdomains in this decomposition.
    */
   int _subdomainCount{};
+
+  int _verletRebuildFrequency;
 
   /**
    * The decomposition computed depending on the number of subdomains.

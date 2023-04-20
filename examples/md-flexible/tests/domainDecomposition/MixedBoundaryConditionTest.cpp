@@ -116,7 +116,7 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
 
   const auto &[expectedPositions, expectedHaloPositions, expectedForces] = setUpExpectations(
       particlePositions, config.boxMin.value, config.boxMax.value, sigma,
-      config.cutoff.value + config.verletSkinRadiusPerTimestep.value * config.verletRebuildFrequency.value,
+      config.cutoff.value + config.verletSkinRadiusPerTimestep.value * config.verletRebuildFrequencies.value->getMin(),
       config.boundaryOption.value);
 
   // particles need to be added at positions inside the domain
@@ -226,9 +226,12 @@ TEST_F(MixedBoundaryConditionTest, testMixedReflection) {
                                                                 {4.995, 0.005, 0.005}, {4.0, 4.995, 4.0},
                                                                 {4.0, 4.995, 4.995},   {0.005, 4.995, 4.995}};
   // particle 0 tests for reflection along a reflective boundary
-  // particle 1 tests for reflection in the edge between two reflective boundaries
-  // particle 2 tests for reflection only in the directions with reflective boundaries in a periodic/refl/refl corner
-  // particles 3-5 do the same as 0-2 respectively, except in the rightmost boundaries
+  // particle 1 tests for no reflection along a reflective boundary when the direction is into the domain
+  // particle 2 tests for reflection in the edge between two reflective boundaries
+  // particle 3 tests for reflection in a single direction along a reflective/reflective edge when in one dimension the
+  //    particle is travelling towards the boundary and the other away
+  // particle 4 tests for reflection only in the directions with reflective boundaries in a periodic/refl/refl corner
+  // particles 5-9 do the same as 0-4 respectively, except in the rightmost boundaries
 
   testFunction(particlePositions, boundaryConditions);
 }
@@ -237,8 +240,8 @@ TEST_F(MixedBoundaryConditionTest, testMixedReflection) {
  * Designed to test that exchangeMigratingParticles and exchangeHaloParticles in the mixed boundary case
  * Note: this is not designed to replace the more extensive tests in RegularGridDecompositionTest, but to test the
  * periodic BC in the mixed case.
- * Places particles in within range of reflection and such that it is either periodically translated or halo particles
- * are created to test that particles these particles have the correct reflections.
+ * Places particles in reflective skin and (primarily) outside of periodic boundary to test that particles
+ * translated (as a result of the periodic boundary) and halo particles have the correct reflections.
  */
 TEST_F(MixedBoundaryConditionTest, testPeriodic) {
   const std::array<options::BoundaryTypeOption, 3> boundaryConditions = {options::BoundaryTypeOption::periodic,
@@ -246,13 +249,18 @@ TEST_F(MixedBoundaryConditionTest, testPeriodic) {
                                                                          options::BoundaryTypeOption::reflective};
 
   const std::vector<std::array<double, 3>> particlePositions = {
-      {-0.005, 0.005, 0.005}, {0.005, 0.005, 0.005}, {5.005, 4.995, 4.995}, {4.995, 4.995, 4.995}};
+      {-0.005, 0.005, 1.0}, {-0.005, 0.005, 2.0}, {-0.005, 0.005, 3.0}, {4.995, 4.995, 4.995}, {5.005, 4.995, 4.995}};
+  const std::vector<std::array<double, 3>> particleVelocities = {
+      {-1.0, -1.0, 0.0}, {-1.0, 1.0, 0.0}, {1.0, -1.0, 0.0}, {1.0, 1.0, 1.0}, {1.0, 1.0, 1.0}};
 
-  // particle 0 tests that a particle that needs to be periodically translated in x, is also reflected correctly in y
-  // and z
-  // particle 1 tests that a particle in a periodic/reflective/reflective corner produces a correctly reflected
-  // halo particle
-  // particles 2 & 3 do the same, but for the rightmost boundary.
+  // particle 0 tests that a particle that needs to be periodic translated in x, is also reflected correctly in y
+  // particle 1 tests that a particle that needs to be periodic translated in x, whilst within the reflective skin of
+  //    a y-boundary but moving away, is not reflected
+  // particle 2 tests that a particle that needs to be periodic translated in x, but is moving towards the domain, is
+  //    also correctly translated in x + reflected in y
+  // particle 3 tests that a particle in a periodic/reflective/reflective corner produces a correctly reflected halo
+  //    particle
+  // particle 4 tests that a particle that needs is beyond the right x-boundary is also correctly reflected in y and z
 
   testFunction(particlePositions, boundaryConditions);
 }
@@ -271,15 +279,14 @@ TEST_F(MixedBoundaryConditionTest, testNoBoundary) {
       options::BoundaryTypeOption::none, options::BoundaryTypeOption::none, options::BoundaryTypeOption::none};
 
   const std::vector<std::array<double, 3>> particlePositions = {
-      {-0.005, 2.5, 2.5}, {0.005, 2.5, 2.5}, {4.995, 2.5, 2.5}, {5.005, 2.5, 2.5},
-      {2.5, -0.005, 2.5}, {2.5, 0.005, 2.5}, {2.5, 4.995, 2.5}, {2.5, 5.005, 2.5},
-      {2.5, 2.5, -0.005}, {2.5, 2.5, 0.005}, {2.5, 2.5, 4.995}, {2.5, 2.5, 5.005}};
+      {-0.005, 2.5, 2.5}, {0.005, 2.5, 2.5}, {4.995, 2.5, 2.5}, {5.005, 2.5, 2.5}};
+  const std::vector<std::array<double, 3>> particleVelocities = {
+      {-1.0, 1.0, 1.0}, {-1.0, 1.0, 1.0}, {1.0, 1.0, 1.0}, {1.0, 1.0, 1.0}};
 
   // particle 0 tests the lack of periodic translation in the left x-boundary
   // particle 1 tests the lack of reflection in the left x-boundary
   // particle 2 tests the lack of reflection in the right x-boundary
   // particle 3 tests the lack of periodic translation in the right x-boundary
-  // particles 4-7 and 8-11 do the same for the y-boundary and z-boundary respectively.
 
   testFunction(particlePositions, boundaryConditions);
 }

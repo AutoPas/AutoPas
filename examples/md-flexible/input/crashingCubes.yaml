@@ -1,0 +1,47 @@
+container                        :  [VerletLists]
+traversal                        :  [lc_sliced, lc_sliced_balanced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18, vcl_c06, vcl_c01_balanced, vcl_sliced, vcl_sliced_balanced, vcl_sliced_c02, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced, vlc_sliced_balanced, vlc_sliced_c02, vvl_as_built, vlp_c01, vlp_c18, vlp_sliced, vlp_sliced_balanced, vlp_sliced_c02]
+data-layout                      :  [AoS, SoA]
+newton3                          :  [disabled, enabled]
+verlet-rebuild-frequencies       :  [10]
+verlet-skin-radius-per-timestep  :  0.2
+verlet-cluster-size              :  3
+selector-strategy                :  Fastest-Mean-Value
+tuning-strategy                  :  predictive-tuning
+tuning-interval                  :  2000
+tuning-samples                   :  6
+functor                          :  Lennard-Jones-AVX2
+cutoff                           :  2
+box-min                          :  [0, 0, 0]
+box-max                          :  [400, 200, 200]
+cell-size                        :  [1]
+deltaT                           :  0.002
+iterations                       :  1000
+boundary-type                    : [periodic,periodic,periodic]
+Objects:
+  CubeClosestPacked:
+    0:
+      box-length                 :  [10, 10, 10]
+      bottomLeftCorner           :  [195, 85, 95]
+      particle-spacing           :  1.1
+      velocity                   :  [0, 10, 0]
+      particle-type              :  0
+      particle-epsilon           :  1
+      particle-sigma             :  1.1
+      particle-mass              :  1
+    1:
+      box-length                  : [20, 10, 10]
+      bottomLeftCorner            : [190, 125, 95]
+      particle-spacing            : 1
+      velocity                    : [ 0, -20, 0 ]
+      particle-type               : 1
+      particle-epsilon            : 1
+      particle-sigma              : 1
+      particle-mass               : 1
+no-flops                         :  false
+no-end-config                    :  true
+no-progress-bar                  :  false
+vtk-filename                     :  varibale_verlet
+vtk-write-frequency              :  500
+
+
+

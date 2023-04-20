@@ -6,8 +6,6 @@
 
 #include "ReflectiveBoundaryConditionTest.h"
 
-#include <gmock/gmock-matchers.h>
-
 #include "autopas/AutoPasDecl.h"
 #include "autopas/utils/ArrayMath.h"
 #include "src/domainDecomposition/RegularGridDecomposition.h"
@@ -36,7 +34,7 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   const double cutoff = 0.3;
   config.cutoff.value = cutoff;
   config.verletSkinRadiusPerTimestep.value = 0.02;
-  config.verletRebuildFrequency.value = 10;
+  config.verletRebuildFrequencies.value = std::make_shared<autopas::NumberSetFinite<int>>(std::set<int>{10});
   const double sigma = 1.;
   config.addParticleType(0, 1., sigma, 1.);
   config.boundaryOption.value = {options::BoundaryTypeOption::reflective, options::BoundaryTypeOption::reflective,
@@ -51,7 +49,7 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   autoPasContainer->setBoxMax(boxMax);
   autoPasContainer->setCutoff(cutoff);
   autoPasContainer->setVerletSkinPerTimestep(config.verletSkinRadiusPerTimestep.value);
-  autoPasContainer->setVerletRebuildFrequency(config.verletRebuildFrequency.value);
+  autoPasContainer->setVerletRebuildFrequency(config.verletRebuildFrequencies.value->getMin());
   autoPasContainer->init();
 
   particlePropertiesLibrary->addType(0, 1., sigma, 1.);
@@ -193,7 +191,7 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> particlePosition, 
   config.subdivideDimension.value = {true, true, true};
   config.cutoff.value = cutoff;
   config.verletSkinRadiusPerTimestep.value = 0.01;
-  config.verletRebuildFrequency.value = 10;
+  config.verletRebuildFrequencies.value = std::make_shared<autopas::NumberSetFinite<int>>(std::set<int>{10});
   config.addParticleType(0, 1., sigmas[0], 1.);
   config.addParticleType(1, 1., sigmas[1], 1.);
   config.boundaryOption.value = {options::BoundaryTypeOption::reflective, options::BoundaryTypeOption::reflective,
@@ -208,7 +206,7 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> particlePosition, 
   autoPasContainer->setBoxMax(boxMax);
   autoPasContainer->setCutoff(cutoff);
   autoPasContainer->setVerletSkinPerTimestep(config.verletSkinRadiusPerTimestep.value);
-  autoPasContainer->setVerletRebuildFrequency(config.verletRebuildFrequency.value);
+  autoPasContainer->setVerletRebuildFrequency(config.verletRebuildFrequencies.value->getMin());
   autoPasContainer->init();
 
   particlePropertiesLibrary->addType(0, 1., sigmas[0], 1.);

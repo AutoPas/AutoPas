@@ -20,14 +20,14 @@ void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
   using autopas::utils::ArrayMath::dot;
   using autopas::utils::ArrayMath::mulScalar;
 
-  const auto maxAllowedDistanceMoved =
-      autoPasContainer.getVerletSkin() / (2 * autoPasContainer.getVerletRebuildFrequency());
+  const auto maxAllowedDistanceMoved = autoPasContainer.getVerletSkinPerTimestep() / 2;
   const auto maxAllowedDistanceMovedSquared = maxAllowedDistanceMoved * maxAllowedDistanceMoved;
 
   bool throwException = false;
 
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel reduction(|| : throwException)
+
 #endif
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     const auto m = particlePropertiesLibrary.getMass(iter->getTypeId());

@@ -68,6 +68,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    * @param allowedLoadEstimatorOptions
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
+   * @param allowedVerletRebuilFrequencies
    * @param maxEvidence Stop tuning after given number of evidence provided.
    * @param predAcqFunction Acquisition function used for prediction while tuning.
    * @param outputSuffix Suffix for output logger.
@@ -80,13 +81,15 @@ class BayesianClusterSearch : public TuningStrategyInterface {
       const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
       const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions = LoadEstimatorOption::getAllOptions(),
       const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
-      const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(), size_t maxEvidence = 10,
+      const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(),
+      const std::set<int> &allowedVerletRebuilFrequencies = std::set<int>({12, 24, 48}), size_t maxEvidence = 10,
       AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::upperConfidenceBound,
       const std::string &outputSuffix = "", size_t predNumLHSamples = 50, unsigned long seed = std::random_device()())
       : _containerOptionsSet(allowedContainerOptions),
         _dataLayoutOptions(allowedDataLayoutOptions.begin(), allowedDataLayoutOptions.end()),
         _newton3Options(allowedNewton3Options.begin(), allowedNewton3Options.end()),
         _cellSizeFactors(allowedCellSizeFactors.clone()),
+        _verletRebuildFrequencies((NumberSetFinite<int>(allowedVerletRebuilFrequencies)).clone()),
         _encoder(),
         _currentConfig(),
         _invalidConfigs(),
@@ -106,7 +109,8 @@ class BayesianClusterSearch : public TuningStrategyInterface {
         _currentNumEvidence(0),
         _currentOptimalTime(std::numeric_limits<long>::max()),
         _fullSearch(allowedContainerOptions, {allowedCellSizeFactors.getMedian()}, allowedTraversalOptions,
-                    allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options) {
+                    allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options,
+                    allowedVerletRebuilFrequencies) {
     if (predNumLHSamples <= 0) {
       utils::ExceptionHandler::exception(
           "BayesianSearch: Number of samples used for predictions must be greater than 0!");
@@ -224,6 +228,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
   std::vector<DataLayoutOption> _dataLayoutOptions;
   std::vector<Newton3Option> _newton3Options;
   std::unique_ptr<NumberSet<double>> _cellSizeFactors;
+  std::unique_ptr<NumberSet<int>> _verletRebuildFrequencies;
   FeatureVectorEncoder _encoder;
 
   FeatureVector _currentConfig;
@@ -391,7 +396,7 @@ void BayesianClusterSearch::removeN3Option(Newton3Option badNewton3Option) {
 
 void BayesianClusterSearch::updateOptions() {
   _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options,
-                             *_cellSizeFactors);
+                             *_cellSizeFactors, *_verletRebuildFrequencies);
 
   auto newRestrictions = _encoder.getDiscreteRestrictions();
   _gaussianCluster.setDimensions(std::vector<int>(newRestrictions.begin(), newRestrictions.end()));

@@ -26,17 +26,20 @@ class SetSearchSpaceBasedTuningStrategy : public TuningStrategyInterface {
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
    * @param allowedCellSizeFactors
+   * @param allowedVerletRebuildFrequencies
    */
   SetSearchSpaceBasedTuningStrategy(const std::set<ContainerOption> &allowedContainerOptions,
                                     const std::set<double> &allowedCellSizeFactors,
                                     const std::set<TraversalOption> &allowedTraversalOptions,
                                     const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
                                     const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                                    const std::set<Newton3Option> &allowedNewton3Options)
+                                    const std::set<Newton3Option> &allowedNewton3Options,
+                                    const std::set<int> &allowedVerletRebuildFrequencies)
       : _allowedContainerOptions(allowedContainerOptions) {
     // sets search space and current config
     populateSearchSpace(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
-                        allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options);
+                        allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options,
+                        allowedVerletRebuildFrequencies);
   }
 
   /**
@@ -75,13 +78,15 @@ class SetSearchSpaceBasedTuningStrategy : public TuningStrategyInterface {
    * @param allowedLoadEstimatorOptions
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
+   * @param allowedVerletRebuildFrequencies
    */
   inline void populateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
                                   const std::set<double> &allowedCellSizeFactors,
                                   const std::set<TraversalOption> &allowedTraversalOptions,
                                   const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
                                   const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                                  const std::set<Newton3Option> &allowedNewton3Options);
+                                  const std::set<Newton3Option> &allowedNewton3Options,
+                                  const std::set<int> &allowedVerletRebuildFrequencies);
 
   /**
    * Finds the optimal configuration in a given search space.
@@ -108,7 +113,8 @@ void SetSearchSpaceBasedTuningStrategy::populateSearchSpace(
     const std::set<ContainerOption> &allowedContainerOptions, const std::set<double> &allowedCellSizeFactors,
     const std::set<TraversalOption> &allowedTraversalOptions,
     const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
-    const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options) {
+    const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options,
+    const std::set<int> &allowedVerletRebuildFrequencies) {
   // generate all potential configs
   for (const auto &containerOption : allowedContainerOptions) {
     // get all traversals of the container and restrict them to the allowed ones
@@ -127,8 +133,10 @@ void SetSearchSpaceBasedTuningStrategy::populateSearchSpace(
         for (const auto &loadEstimatorOption : allowedAndApplicableLoadEstimators) {
           for (const auto &dataLayoutOption : allowedDataLayoutOptions) {
             for (const auto &newton3Option : allowedNewton3Options) {
-              _searchSpace.emplace(containerOption, cellSizeFactor, traversalOption, loadEstimatorOption,
-                                   dataLayoutOption, newton3Option);
+              for (const auto &verletRebuildFrequency : allowedVerletRebuildFrequencies) {
+                _searchSpace.emplace(containerOption, cellSizeFactor, traversalOption, loadEstimatorOption,
+                                     dataLayoutOption, newton3Option, verletRebuildFrequency);
+              }
             }
           }
         }

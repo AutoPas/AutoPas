@@ -19,13 +19,13 @@ void testRemainderTraversal(const std::vector<Molecule> &particles, const std::v
   constexpr double cellSizeFactor = 1.;
   const std::set<autopas::Configuration> confSet(
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
-        autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled}});
+        autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, 5}});
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(confSet);
   const std::array<double, 3> boxMin = {0., 0., 0.};
   const std::array<double, 3> boxMax = {9., 9., 9.};
   autopas::AutoTuner<Molecule> autoTuner{
       boxMin, boxMax, cutoff, 0.05, 4, std::move(tuningStrategy), 0.3, 0.0, autopas::SelectorStrategyOption::fastestAbs,
-      1000,   3,      10};
+      1000,   3};
 
   // fill the container with the given particles
   for (const auto &p : particles) {

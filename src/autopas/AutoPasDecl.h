@@ -438,7 +438,7 @@ class AutoPas {
    * @return _verletSkin
    */
   double getVerletSkin() {
-    double _verletSkin = AutoPas::_verletSkinPerTimestep * AutoPas::_verletRebuildFrequency;
+    double _verletSkin = AutoPas::_verletSkinPerTimestep * _allowedVerletRebuildFrequencies->getMedian();
     return _verletSkin;
   };
 
@@ -534,6 +534,48 @@ class AutoPas {
   }
 
   /**
+   * Get allowed verlet rebuild frequency (only relevant for VarVerletListsAsBuild, VerletClusterLists, VerletLists,
+   * VerletListsCells and PairwiseVerletLists).
+   * @return allowedVerletRebuildFrequencies
+   */
+  [[nodiscard]] const NumberSet<int> &getAllowedVerletRebuildFrequencies() const {
+    return *_allowedVerletRebuildFrequencies;
+  }
+
+  /**
+   * Set allowed verlet rebuild frequency (only relevant for VarVerletListsAsBuild, VerletClusterLists, VerletLists,
+   * VerletListsCells and PairwiseVerletLists).
+   * @param allowedVerletRebuildFrequencies
+   */
+  void setAllowedVerletRebuildFrequencies(const NumberSet<int> &allowedVerletRebuildFrequencies) {
+    if (allowedVerletRebuildFrequencies.getMin() < 1) {
+      AutoPasLog(error, "rebuildFrequenzy < 1");
+      utils::ExceptionHandler::exception("Error: rebuildFrequenzy < 1!");
+    }
+    AutoPas::_allowedVerletRebuildFrequencies = std::move(allowedVerletRebuildFrequencies.clone());
+  }
+
+  /**
+   * Get verlet rebuild frequency (only relevant for VarVerletListsAsBuild, VerletClusterLists, VerletLists,
+   * VerletListsCells and PairwiseVerletLists).
+   * @return verletRebuildFrequency
+   */
+  int getVerletRebuildFrequency() { return _verletRebuildFrequency; }
+
+  /**
+   * Set allowed verlet rebuild frequency to one element (only relevant for VarVerletListsAsBuild, VerletClusterLists,
+   * VerletLists, VerletListsCells and PairwiseVerletLists).
+   * @param verletRebuildFrequency
+   */
+  void setVerletRebuildFrequency(int verletRebuildFrequency) {
+    if (verletRebuildFrequency < 1) {
+      AutoPasLog(error, "rebuildFrequenzy < 1");
+      utils::ExceptionHandler::exception("Error: rebuildFrequenzy < 1!");
+    }
+    _verletRebuildFrequency = verletRebuildFrequency;
+  }
+
+  /**
    * Get length added to the cutoff for the Verlet lists' skin per timestep.
    * @return _verletSkinPerTimestep
    */
@@ -547,19 +589,6 @@ class AutoPas {
     AutoPas::_verletSkinPerTimestep = verletSkinPerTimestep;
   }
 
-  /**
-   * Get Verlet rebuild frequency.
-   * @return _verletRebuildFrequency
-   */
-  [[nodiscard]] unsigned int getVerletRebuildFrequency() const { return _verletRebuildFrequency; }
-
-  /**
-   * Set Verlet rebuild frequency.
-   * @param verletRebuildFrequency
-   */
-  void setVerletRebuildFrequency(unsigned int verletRebuildFrequency) {
-    AutoPas::_verletRebuildFrequency = verletRebuildFrequency;
-  }
   /**
    * Get Verlet cluster size.
    * @return
@@ -870,10 +899,6 @@ class AutoPas {
    */
   double _verletSkinPerTimestep{0.01};
   /**
-   * Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
-   */
-  unsigned int _verletRebuildFrequency{20};
-  /**
    * Specifies the size of clusters for Verlet lists.
    */
   unsigned int _verletClusterSize{4};
@@ -975,6 +1000,11 @@ class AutoPas {
    */
   std::unique_ptr<NumberSet<double>> _allowedCellSizeFactors{
       std::make_unique<NumberSetFinite<double>>(std::set<double>({1.}))};
+
+  std::unique_ptr<NumberSet<int>> _allowedVerletRebuildFrequencies{
+      std::make_unique<NumberSetFinite<int>>(std::set<int>({5}))};
+
+  int _verletRebuildFrequency = 5;
 
   /***
    * Load estimation algorithm to be used for efficient parallelisation (only relevant for LCSlicedBalancedTraversal and

@@ -22,6 +22,7 @@ namespace autopas {
 /**
  * Exhaustive full search of the search space by testing every applicable configuration and then selecting the optimum.
  */
+
 class FullSearch : public SetSearchSpaceBasedTuningStrategy {
  public:
   /**
@@ -32,15 +33,16 @@ class FullSearch : public SetSearchSpaceBasedTuningStrategy {
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
    * @param allowedCellSizeFactors
+   * @param allowedVerletRebuildFrequencies
    */
   FullSearch(const std::set<ContainerOption> &allowedContainerOptions, const std::set<double> &allowedCellSizeFactors,
              const std::set<TraversalOption> &allowedTraversalOptions,
              const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
              const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-             const std::set<Newton3Option> &allowedNewton3Options)
+             const std::set<Newton3Option> &allowedNewton3Options, const std::set<int> &allowedVerletRebuildFrequencies)
       : SetSearchSpaceBasedTuningStrategy(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
-                                          allowedLoadEstimatorOptions, allowedDataLayoutOptions,
-                                          allowedNewton3Options) {}
+                                          allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options,
+                                          allowedVerletRebuildFrequencies) {}
 
   /**
    * Constructor for the FullSearch that only contains the given configurations.

@@ -50,6 +50,7 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
    * @param allowedCellSizeFactors
+   * @param allowedVerletRebuilFrequencies
    * @param relativeOptimum
    * @param maxTuningIterationsWithoutTest
    * @param relativeRangeForBlacklist
@@ -57,17 +58,20 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
    * @param extrapolationMethodOption
    * @param outputSuffix
    */
+
   PredictiveTuning(const std::set<ContainerOption> &allowedContainerOptions,
                    const std::set<double> &allowedCellSizeFactors,
                    const std::set<TraversalOption> &allowedTraversalOptions,
                    const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
                    const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                   const std::set<Newton3Option> &allowedNewton3Options, double relativeOptimum,
+                   const std::set<Newton3Option> &allowedNewton3Options,
+                   const std::set<int> &allowedVerletRebuilFrequencies, double relativeOptimum,
                    unsigned int maxTuningIterationsWithoutTest, double relativeRangeForBlacklist,
                    unsigned int testsUntilFirstPrediction, ExtrapolationMethodOption extrapolationMethodOption,
                    const std::string &outputSuffix = "")
       : SetSearchSpaceBasedTuningStrategy(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
-                                          allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options),
+                                          allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options,
+                                          allowedVerletRebuilFrequencies),
         _relativeOptimumRange(relativeOptimum),
         _maxTuningPhasesWithoutTest(maxTuningIterationsWithoutTest),
         _relativeBlacklistRange(relativeRangeForBlacklist),
@@ -332,10 +336,9 @@ void PredictiveTuning::linePrediction() {
       // check if multiplication overflowed and then explicitly set error value. No cast to avoid rounding errors.
       _configurationPredictions[configuration] =
           newValue == std::numeric_limits<double>::max() ? _predictionOverflowValue : static_cast<long>(newValue);
-    } else
-        // if there is enough evidence calculate new prediction function
-        if (const auto &traversalValues = _traversalTimesStorage[configuration];
-            traversalValues.size() >= _evidenceFirstPrediction) {
+    } else if (const auto &traversalValues = _traversalTimesStorage[configuration];
+               traversalValues.size() >= _evidenceFirstPrediction) {
+      // if there is enough evidence calculate new prediction function
       const auto &[traversal1Iteration, traversal1Time] = traversalValues[traversalValues.size() - 1];
       const auto &[traversal2Iteration, traversal2Time] = traversalValues[traversalValues.size() - 2];
 

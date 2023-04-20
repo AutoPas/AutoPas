@@ -24,7 +24,7 @@ class FeatureVector : public Configuration {
    * Number of tune-able dimensions.
    * container-traversal-estimator + dataLayout + newton3 + cellSizeFactor
    */
-  static constexpr size_t featureSpaceDims = 4;
+  static constexpr size_t featureSpaceDims = 5;
 
   /**
    * Consider Container, Traversal and LoadEstimator options as one dimension.
@@ -44,10 +44,13 @@ class FeatureVector : public Configuration {
    * @param dataLayout
    * @param newton3
    * @param cellSizeFactor
+   * @param verletRebuildFrequency
    */
   FeatureVector(ContainerOption container, double cellSizeFactor, TraversalOption traversal,
-                LoadEstimatorOption loadEstimator, DataLayoutOption dataLayout, Newton3Option newton3)
-      : Configuration(container, cellSizeFactor, traversal, loadEstimator, dataLayout, newton3) {}
+                LoadEstimatorOption loadEstimator, DataLayoutOption dataLayout, Newton3Option newton3,
+                int verletRebuildFrequency)
+      : Configuration(container, cellSizeFactor, traversal, loadEstimator, dataLayout, newton3,
+                      verletRebuildFrequency) {}
 
   /**
    * Construct from Configuration.
@@ -67,7 +70,8 @@ class FeatureVector : public Configuration {
     result << cellSizeFactor - other.cellSizeFactor,
         (container == other.container and traversal == other.traversal and loadEstimator == other.loadEstimator) ? 0.
                                                                                                                  : 1.,
-        dataLayout == other.dataLayout ? 0. : 1., newton3 == other.newton3 ? 0. : 1.;
+        dataLayout == other.dataLayout ? 0. : 1., newton3 == other.newton3 ? 0. : 1.,
+        verletRebuildFrequency - other.verletRebuildFrequency;
     return result;
   }
 };

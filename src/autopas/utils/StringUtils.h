@@ -133,6 +133,13 @@ static const std::string regexDoubleStr{
 };
 
 /**
+ *  Regex for a int e.g. 1 | 2 | 3
+ */
+static const std::string regexIntStr{
+    "[0-9]+"  // at least one int
+};
+
+/**
  * Splits a string by multiple delimiters.
  * @param searchString
  * @param delimiters
@@ -221,6 +228,30 @@ inline std::set<double> parseDoubles(const std::string &doubleString) {
 }
 
 /**
+ * Converts a string to a set of ints.
+ * @param intString String containing ints.
+ * @return Set of ints. If no valid int was found the empty set is returned.
+ */
+inline std::set<int> parseInts(const std::string &intString) {
+  std::set<int> ints;
+
+  std::regex regexInt(regexIntStr);
+
+  // use regex iter to find all ints in the string.
+  for (auto number = std::sregex_iterator(intString.begin(), intString.end(), regexInt);
+       number != std::sregex_iterator(); ++number) {
+    try {
+      int value = stoi(number->str());
+      ints.insert(value);
+    } catch (const std::exception &) {
+      autopas::utils::ExceptionHandler::exception("Failed to parse a int from: {}", number->str());
+    }
+  }
+
+  return ints;
+}
+
+/**
  * Converts a string to a NumberSet<double>.
  *
  * @note Formats:
@@ -230,7 +261,7 @@ inline std::set<double> parseDoubles(const std::string &doubleString) {
  * @param setString String containing the set.
  * @return NumberSet<double>. If no valid double was found the empty set is returned.
  */
-inline std::unique_ptr<autopas::NumberSet<double>> parseNumberSet(const std::string &setString) {
+inline std::unique_ptr<autopas::NumberSet<double>> parseNumberSetDoubles(const std::string &setString) {
   // try to match an interval x-y
   std::regex regexInterval("("                 // start of 1. capture
                            + regexDoubleStr +  // a double
@@ -256,6 +287,45 @@ inline std::unique_ptr<autopas::NumberSet<double>> parseNumberSet(const std::str
 
   std::set<double> values = autopas::utils::StringUtils::parseDoubles(setString);
   return std::make_unique<autopas::NumberSetFinite<double>>(values);
+}
+
+/**
+ * Converts a string to a NumberSet<int>.
+ *
+ * @note Formats:
+ * NumberSetFinite [x,y,z]
+ * NumberInterval x-y
+ *
+ * @param setString String containing the set.
+ * @return NumberSet<int>. If no valid int was found the empty set is returned.
+ */
+inline std::unique_ptr<autopas::NumberSet<int>> parseNumberSetInts(const std::string &setString) {
+  // try to match an interval x-y
+  std::regex regexInterval("("              // start of 1. capture
+                           + regexIntStr +  // a double
+                           ")"              // end of 1. capture
+                           "\\s*"           // maybe whitespaces
+                           "-"              // a dash
+                           "\\s*"           // maybe more whitespaces
+                           "("              // start of 2. capture
+                           + regexIntStr +  // a double
+                           ")"              // end of 2. capture
+  );
+  std::smatch matches;
+  if (std::regex_match(setString, matches, regexInterval)) {
+    try {
+      std::set<int> numbers = std::set<int>({});
+      for (const auto &match : matches) {
+        numbers.insert(std::stoi(match.str()));
+      }
+      return std::make_unique<autopas::NumberSetFinite<int>>(std::set<int>({numbers}));
+    } catch (const std::exception &) {
+      // try parseDoubles instead
+    }
+  }
+
+  std::set<int> values = autopas::utils::StringUtils::parseInts(setString);
+  return std::make_unique<autopas::NumberSetFinite<int>>(values);
 }
 
 }  // namespace autopas::utils::StringUtils

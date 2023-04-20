@@ -25,7 +25,7 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   const double cutoff = 1;
   const double cellSizeFactor = 1;
   const double verletSkinPerTimestep = 0;
-  const unsigned verletRebuildFrequency = 20;
+  const int verletRebuildFrequency = 20;
   const unsigned int verletClusterSize = 64;
   const double mpiTuningMaxDifferenceForBucket = 0.3;
   const double mpiTuningWeightForMaxDensity = 0.0;
@@ -47,11 +47,11 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(
       autopas::ContainerOption::getAllOptions(), std::set<double>({cellSizeFactor}),
       autopas::TraversalOption::getAllOptions(), autopas::LoadEstimatorOption::getAllOptions(),
-      autopas::DataLayoutOption::getAllOptions(), autopas::Newton3Option::getAllOptions());
+      autopas::DataLayoutOption::getAllOptions(), autopas::Newton3Option::getAllOptions(), std::set<int>({5}));
   autopas::AutoTuner<Molecule> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkinPerTimestep, verletClusterSize,
                                          std::move(tuningStrategy), mpiTuningMaxDifferenceForBucket,
                                          mpiTuningWeightForMaxDensity, autopas::SelectorStrategyOption::fastestAbs, 100,
-                                         maxSamples, verletRebuildFrequency);
+                                         maxSamples);
 
   autopas::Logger::get()->set_level(autopas::Logger::LogLevel::off);
   //  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
@@ -160,15 +160,18 @@ TEST_F(AutoTunerTest, testWillRebuildDDL) {
   double cellSizeFactor = 1.;
   std::set<autopas::Configuration> configs;
   configs.emplace(autopas::ContainerOption::directSum, cellSizeFactor, autopas::TraversalOption::ds_sequential,
-                  autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
+                  autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
+                  5);
   configs.emplace(autopas::ContainerOption::directSum, cellSizeFactor, autopas::TraversalOption::ds_sequential,
-                  autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
+                  autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled,
+                  5);
   configs.emplace(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
-                  autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
+                  autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
+                  5);
 
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configs);
   autopas::AutoTuner<Molecule> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy), 0.3, 0.0,
-                                         autopas::SelectorStrategyOption::fastestAbs, 1000, 2, 20);
+                                         autopas::SelectorStrategyOption::fastestAbs, 1000, 2);
 
   EXPECT_EQ(*(configs.begin()), autoTuner.getCurrentConfig());
 
@@ -214,15 +217,18 @@ TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
   double cellSizeFactor = 1.;
   std::set<autopas::Configuration> configs;
   configs.emplace(autopas::ContainerOption::directSum, cellSizeFactor, autopas::TraversalOption::ds_sequential,
-                  autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
+                  autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled,
+                  5);
   configs.emplace(autopas::ContainerOption::directSum, cellSizeFactor, autopas::TraversalOption::ds_sequential,
-                  autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
+                  autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
+                  5);
   configs.emplace(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
-                  autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
+                  autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled,
+                  5);
 
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configs);
   autopas::AutoTuner<Molecule> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy), 0.3, 0.0,
-                                         autopas::SelectorStrategyOption::fastestAbs, 1000, 2, 20);
+                                         autopas::SelectorStrategyOption::fastestAbs, 1000, 2);
 
   EXPECT_EQ(*(configs.begin()), autoTuner.getCurrentConfig());
 
@@ -258,13 +264,15 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
   double cellSizeFactor = 1.;
   std::set<autopas::Configuration> configs;
   configs.emplace(autopas::ContainerOption::directSum, cellSizeFactor, autopas::TraversalOption::ds_sequential,
-                  autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
+                  autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
+                  5);
   configs.emplace(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
-                  autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
+                  autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
+                  5);
 
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configs);
   autopas::AutoTuner<Molecule> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy), 0.3, 0.0,
-                                         autopas::SelectorStrategyOption::fastestAbs, 1000, 2, 20);
+                                         autopas::SelectorStrategyOption::fastestAbs, 1000, 2);
 
   EXPECT_EQ(*(configs.begin()), autoTuner.getCurrentConfig());
 
@@ -302,7 +310,6 @@ TEST_F(AutoTunerTest, testForceRetuneBetweenPhases) {
   std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {2, 4, 2};
   const double cutoff = 1;
   const double verletSkinPerTimestep = 0;
-  const unsigned int verletRebuildFrequency = 20;
   const unsigned int verletClusterSize = 4;
   const double mpiTuningMaxDifferenceForBucket = 0.3;
   const double mpiTuningWeightForMaxDensity = 0.0;
@@ -314,7 +321,7 @@ TEST_F(AutoTunerTest, testForceRetuneBetweenPhases) {
   autopas::AutoTuner<Molecule> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkinPerTimestep, verletClusterSize,
                                          std::move(tuningStrategy), mpiTuningMaxDifferenceForBucket,
                                          mpiTuningWeightForMaxDensity, autopas::SelectorStrategyOption::fastestAbs, 100,
-                                         maxSamples, verletRebuildFrequency);
+                                         maxSamples);
 
   size_t numExpectedTuningIterations = configsList.size() * maxSamples;
   MockFunctor<Molecule> functor;
@@ -351,7 +358,6 @@ TEST_F(AutoTunerTest, testForceRetuneInPhase) {
   const double cutoff = 1;
   const double cellSizeFactor = 1;
   const double verletSkinPerTimestep = 0;
-  const unsigned int verletRebuildFrequency = 20;
   const unsigned int verletClusterSize = 4;
   const double mpiTuningMaxDifferenceForBucket = 0.3;
   const double mpiTuningWeightForMaxDensity = 0.0;
@@ -359,13 +365,13 @@ TEST_F(AutoTunerTest, testForceRetuneInPhase) {
 
   autopas::Configuration confLc_c01(autopas::ContainerOption::linkedCells, cellSizeFactor,
                                     autopas::TraversalOption::lc_c01, autopas::LoadEstimatorOption::none,
-                                    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
+                                    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, 5);
   autopas::Configuration confLc_c04(autopas::ContainerOption::linkedCells, cellSizeFactor,
                                     autopas::TraversalOption::lc_c04, autopas::LoadEstimatorOption::none,
-                                    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
+                                    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, 5);
   autopas::Configuration confLc_c08(autopas::ContainerOption::linkedCells, cellSizeFactor,
                                     autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
-                                    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
+                                    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, 5);
 
   auto configsList = {confLc_c01, confLc_c04, confLc_c08};
 
@@ -373,7 +379,7 @@ TEST_F(AutoTunerTest, testForceRetuneInPhase) {
   autopas::AutoTuner<Molecule> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkinPerTimestep, verletClusterSize,
                                          std::move(tuningStrategy), mpiTuningMaxDifferenceForBucket,
                                          mpiTuningWeightForMaxDensity, autopas::SelectorStrategyOption::fastestAbs, 100,
-                                         maxSamples, verletRebuildFrequency);
+                                         maxSamples);
 
   size_t numExpectedTuningIterations = configsList.size() * maxSamples;
   MockFunctor<Molecule> functor;
@@ -421,7 +427,7 @@ TEST_F(AutoTunerTest, testNoConfig) {
     std::set<autopas::Configuration> configsList = {};
     auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
     autopas::AutoTuner<Molecule> autoTuner({0, 0, 0}, {10, 10, 10}, 0.05, 0, 64, std::move(tuningStrategy), 0.3, 0.0,
-                                           autopas::SelectorStrategyOption::fastestAbs, 1000, 3, 20);
+                                           autopas::SelectorStrategyOption::fastestAbs, 1000, 3);
   };
 
   EXPECT_THROW(exp1(), autopas::utils::ExceptionHandler::AutoPasException) << "Constructor with given configs";
@@ -434,9 +440,9 @@ TEST_F(AutoTunerTest, testNoConfig) {
     std::set<autopas::LoadEstimatorOption> le = {};
     std::set<autopas::DataLayoutOption> dl = {};
     std::set<autopas::Newton3Option> n3 = {};
-    auto tuningStrategy = std::make_unique<autopas::FullSearch>(co, csf, tr, le, dl, n3);
+    auto tuningStrategy = std::make_unique<autopas::FullSearch>(co, csf, tr, le, dl, n3, std::set<int>({}));
     autopas::AutoTuner<Molecule> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy), 0.3, 0.0,
-                                           autopas::SelectorStrategyOption::fastestAbs, 1000, 3, 20);
+                                           autopas::SelectorStrategyOption::fastestAbs, 1000, 3);
   };
 
   EXPECT_THROW(exp2(), autopas::utils::ExceptionHandler::AutoPasException) << "Constructor which generates configs";
@@ -450,7 +456,7 @@ TEST_F(AutoTunerTest, testOneConfig) {
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
   size_t maxSamples = 3;
   autopas::AutoTuner<Molecule> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy), 0.3, 0.0,
-                                     autopas::SelectorStrategyOption::fastestAbs, 1000, maxSamples, 20);
+                                     autopas::SelectorStrategyOption::fastestAbs, 1000, maxSamples);
 
   EXPECT_EQ(_confLc_c08, tuner.getCurrentConfig());
 
@@ -481,15 +487,15 @@ TEST_F(AutoTunerTest, testConfigSecondInvalid) {
   double cellSizeFactor = 1.;
   autopas::Configuration confN3(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
                                 autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                                autopas::Newton3Option::enabled);
+                                autopas::Newton3Option::enabled, 5);
   autopas::Configuration confNoN3(autopas::ContainerOption::linkedCells, cellSizeFactor,
                                   autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
-                                  autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
+                                  autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, 5);
 
   auto configsList = {confNoN3, confN3};
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
   autopas::AutoTuner<Molecule> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy), 0.3, 0.0,
-                                     autopas::SelectorStrategyOption::fastestAbs, 1000, 3, 20);
+                                     autopas::SelectorStrategyOption::fastestAbs, 1000, 3);
 
   EXPECT_EQ(confNoN3, tuner.getCurrentConfig());
 
@@ -517,15 +523,15 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
   double cellSizeFactor = 1.;
   autopas::Configuration confN3(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
                                 autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                                autopas::Newton3Option::enabled);
+                                autopas::Newton3Option::enabled, 5);
   autopas::Configuration confNoN3(autopas::ContainerOption::linkedCells, cellSizeFactor,
                                   autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
-                                  autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled);
+                                  autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled, 5);
 
   auto configsList = {confN3, confNoN3};
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
   autopas::AutoTuner<Molecule> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy), 0.3, 0.0,
-                                     autopas::SelectorStrategyOption::fastestAbs, 1000, 3, 20);
+                                     autopas::SelectorStrategyOption::fastestAbs, 1000, 3);
 
   EXPECT_EQ(confN3, tuner.getCurrentConfig());
 
@@ -551,17 +557,15 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
   const double cellSizeFactor = 1.;
   autopas::Configuration confA(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
                                autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                               autopas::Newton3Option::enabled);
+                               autopas::Newton3Option::enabled, 3);
   autopas::Configuration confB(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c18,
                                autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                               autopas::Newton3Option::enabled);
-
-  auto rebuildFrequency = 3;
+                               autopas::Newton3Option::enabled, 3);
 
   auto configsList = {confA, confB};
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
   autopas::AutoTuner<Molecule> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy), 0.3, 0.0,
-                                     autopas::SelectorStrategyOption::fastestAbs, 1000, 3, rebuildFrequency);
+                                     autopas::SelectorStrategyOption::fastestAbs, 1000, 3);
 
   MockFunctor<Molecule> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));

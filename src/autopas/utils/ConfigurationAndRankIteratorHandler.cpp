@@ -33,6 +33,11 @@ inline void ConfigurationAndRankIteratorHandler::advanceConfigIterators() {
   ++_cellSizeFactorIt;
   if (_cellSizeFactorIt != _cellSizeFactors.end()) return;
   _cellSizeFactorIt = _cellSizeFactors.begin();
+
+  ++_verletRebuildFrequencyIt;
+  if (_verletRebuildFrequencyIt != _verletRebuildFrequencies.end()) return;
+  _verletRebuildFrequencyIt = _verletRebuildFrequencies.begin();
+
   ++_containerIt;
   if (_containerIt != _containers.end()) {
     selectTraversalsForCurrentContainer();
@@ -79,6 +84,7 @@ void ConfigurationAndRankIteratorHandler::reset(const int numConfigs, const int 
   _cellSizeFactorIt = _cellSizeFactors.begin();
   _dataLayoutIt = _dataLayoutOptions.begin();
   _newton3It = _newton3Options.begin();
+  _verletRebuildFrequencyIt = _verletRebuildFrequencies.begin();
   selectTraversalsForCurrentContainer();
   selectLoadEstimatorsForCurrentContainerAndTraversal();
 

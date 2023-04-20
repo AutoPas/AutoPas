@@ -18,7 +18,8 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
                           const std::set<TraversalOption> &traversalOptions,
                           const std::set<LoadEstimatorOption> &loadEstimatorOptions,
                           const std::set<DataLayoutOption> &dataLayoutOptions,
-                          const std::set<Newton3Option> &newton3Options) {
+                          const std::set<Newton3Option> &newton3Options,
+                          const NumberSet<int> &verletRebuildFrequencies) {
   size_t numConfigs = 0;
   // only take into account finite sets of cellSizeFactors.
   size_t cellSizeFactorArraySize;
@@ -42,7 +43,7 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
       const std::set<LoadEstimatorOption> allowedAndApplicableLoadEstimators =
           loadEstimators::getApplicableLoadEstimators(containerOption, traversalOption, loadEstimatorOptions);
       numConfigs += cellSizeFactorArraySize * allowedAndApplicableLoadEstimators.size() * dataLayoutOptions.size() *
-                    newton3Options.size();
+                    newton3Options.size() * verletRebuildFrequencies.size();
     }
   }
   return numConfigs;
@@ -59,12 +60,14 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
  * @param loadEstimatorOptions inout
  * @param dataLayoutOptions inout
  * @param newton3Options inout
+ * @param verletRebuildFrequencies
  */
 void generateDistribution(const int numConfigs, const int commSize, const int rank,
                           std::set<ContainerOption> &containerOptions, NumberSet<double> &cellSizeFactors,
                           std::set<TraversalOption> &traversalOptions,
                           std::set<LoadEstimatorOption> &loadEstimatorOptions,
-                          std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options) {
+                          std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options,
+                          NumberSet<int> &verletRebuildFrequencies) {
   // ============== setup ======================================================
 
   // These will be set to the Options specific to this rank and will overwrite the input sets.
@@ -74,6 +77,7 @@ void generateDistribution(const int numConfigs, const int commSize, const int ra
   auto newLoadEstimatorOptions = std::set<LoadEstimatorOption>();
   auto newDataLayoutOptions = std::set<DataLayoutOption>();
   auto newNewton3Options = std::set<Newton3Option>();
+  auto newVerletRebuildFrequencies = std::set<int>();
 
   // Distribution works only with finite sets of cellSizeFactors.
   // If the set is infinite a dummy value will be used and replaced later on.
@@ -89,7 +93,7 @@ void generateDistribution(const int numConfigs, const int commSize, const int ra
 
   ConfigurationAndRankIteratorHandler iteratorHandler(containerOptions, finiteCellSizeFactors, traversalOptions,
                                                       loadEstimatorOptions, dataLayoutOptions, newton3Options,
-                                                      numConfigs, commSize);
+                                                      verletRebuildFrequencies.getAll(), numConfigs, commSize);
 
   while (iteratorHandler.getRankIterator() < rank) {
     iteratorHandler.advanceIterators(numConfigs, commSize);
@@ -107,6 +111,7 @@ void generateDistribution(const int numConfigs, const int commSize, const int ra
     newLoadEstimatorOptions.emplace(*iteratorHandler.getLoadEstimatorIterator());
     newDataLayoutOptions.emplace(*iteratorHandler.getDataLayoutIterator());
     newNewton3Options.emplace(*iteratorHandler.getNewton3Iterator());
+    newVerletRebuildFrequencies.emplace(*iteratorHandler.getVerletRebuildFrequencyIterator());
 
     iteratorHandler.advanceIterators(numConfigs, commSize);
   }
@@ -134,9 +139,9 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
                               std::set<TraversalOption> &traversalOptions,
                               std::set<LoadEstimatorOption> &loadEstimatorOptions,
                               std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options,
-                              const int rank, const int commSize) {
+                              NumberSet<int> &verletRebuildFrequencies, const int rank, const int commSize) {
   int numConfigs = getSearchSpaceSize(containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions,
-                                      dataLayoutOptions, newton3Options);
+                                      dataLayoutOptions, newton3Options, verletRebuildFrequencies);
 
   if (numConfigs == 0) {
     utils::ExceptionHandler::exception("Could not generate valid configurations, aborting");
@@ -146,7 +151,7 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
   // Creates a set for each option and each rank containing the serialized versions (std::byte or double) of all
   // options assigned to that rank.
   generateDistribution(numConfigs, commSize, rank, containerOptions, cellSizeFactors, traversalOptions,
-                       loadEstimatorOptions, dataLayoutOptions, newton3Options);
+                       loadEstimatorOptions, dataLayoutOptions, newton3Options, verletRebuildFrequencies);
 
   size_t cellSizeFactorsSize = cellSizeFactors.isFinite() ? cellSizeFactors.size() : 1;
   AutoPasLog(debug,
@@ -155,7 +160,7 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
              containerOptions.size(), cellSizeFactorsSize, traversalOptions.size(), dataLayoutOptions.size(),
              newton3Options.size(),
              getSearchSpaceSize(containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions,
-                                dataLayoutOptions, newton3Options));
+                                dataLayoutOptions, newton3Options, verletRebuildFrequencies));
 }
 
 Configuration optimizeConfiguration(AutoPas_MPI_Comm comm, Configuration localOptimalConfig, size_t localOptimalTime) {
@@ -192,16 +197,19 @@ SerializedConfiguration serializeConfiguration(Configuration configuration) {
   config[3] = castToByte(configuration.dataLayout);
   config[4] = castToByte(configuration.newton3);
   std::memcpy(&config[5], &configuration.cellSizeFactor, sizeof(double));
+  std::memcpy(&config[6], &configuration.verletRebuildFrequency, sizeof(int));
   return config;
 }
 
 Configuration deserializeConfiguration(SerializedConfiguration config) {
   double cellSizeFactor;
+  int verletRebuildFrequency;
   std::memcpy(&cellSizeFactor, &config[5], sizeof(double));
-  return Configuration(static_cast<ContainerOption::Value>(config[0]), cellSizeFactor,
-                       static_cast<TraversalOption::Value>(config[1]),
-                       static_cast<LoadEstimatorOption::Value>(config[2]),
-                       static_cast<DataLayoutOption::Value>(config[3]), static_cast<Newton3Option::Value>(config[4]));
+  std::memcpy(&verletRebuildFrequency, &config[6], sizeof(int));
+  return Configuration(
+      static_cast<ContainerOption::Value>(config[0]), cellSizeFactor, static_cast<TraversalOption::Value>(config[1]),
+      static_cast<LoadEstimatorOption::Value>(config[2]), static_cast<DataLayoutOption::Value>(config[3]),
+      static_cast<Newton3Option::Value>(config[4]), verletRebuildFrequency);
 }
 
 }  // namespace autopas::utils::AutoPasConfigurationCommunicator

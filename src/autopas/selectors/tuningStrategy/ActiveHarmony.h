@@ -41,6 +41,7 @@ class ActiveHarmony : public TuningStrategyInterface {
    * @param allowedLoadEstimatorOptions
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
+   * @param allowedVerletRebuildFrequencies
    * @param mpiStrategyOption
    * @param comm
    */
@@ -49,7 +50,8 @@ class ActiveHarmony : public TuningStrategyInterface {
                 const std::set<TraversalOption> &allowedTraversalOptions,
                 const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
                 const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                const std::set<Newton3Option> &allowedNewton3Options, const MPIStrategyOption mpiStrategyOption,
+                const std::set<Newton3Option> &allowedNewton3Options,
+                const NumberSet<int> &allowedVerletRebuildFrequencies, const MPIStrategyOption mpiStrategyOption,
                 const AutoPas_MPI_Comm comm)
       : _allowedContainerOptions(allowedContainerOptions),
         _allowedCellSizeFactors(allowedCellSizeFactors.clone()),
@@ -57,15 +59,17 @@ class ActiveHarmony : public TuningStrategyInterface {
         _allowedLoadEstimatorOptions(allowedLoadEstimatorOptions),
         _allowedDataLayoutOptions(allowedDataLayoutOptions),
         _allowedNewton3Options(allowedNewton3Options),
+        _allowedVerletRebuildFrequencies(allowedVerletRebuildFrequencies.clone()),
         _currentConfig(),
         _mpiStrategyOption(mpiStrategyOption),
         _comm(comm),
         _nonLocalServer(getenv("HARMONY_HOST") != nullptr and
                         mpiStrategyOption == MPIStrategyOption::divideAndConquer) {
     auto cellSizeDummy = NumberSetFinite<double>{-1};
+    auto rebuildFreqDummy = NumberSetFinite<int>{-1};
     utils::AutoPasConfigurationCommunicator::distributeConfigurations(
         _allowedContainerOptions, cellSizeDummy, _allowedTraversalOptions, _allowedLoadEstimatorOptions,
-        _allowedDataLayoutOptions, _allowedNewton3Options, 0, 1);
+        _allowedDataLayoutOptions, _allowedNewton3Options, *_allowedVerletRebuildFrequencies, 0, 1);
 
     AutoPasLog(debug, "Possible container options: {}",
                autopas::utils::ArrayUtils::to_string(_allowedContainerOptions));
@@ -127,6 +131,7 @@ class ActiveHarmony : public TuningStrategyInterface {
 
   std::set<ContainerOption> _allowedContainerOptions;
   std::unique_ptr<NumberSet<double>> _allowedCellSizeFactors;
+  std::unique_ptr<NumberSet<int>> _allowedVerletRebuildFrequencies;
   std::set<TraversalOption> _allowedTraversalOptions;
   std::set<LoadEstimatorOption> _allowedLoadEstimatorOptions;
   std::set<DataLayoutOption> _allowedDataLayoutOptions;
@@ -186,6 +191,7 @@ class ActiveHarmony : public TuningStrategyInterface {
   static constexpr const char *loadEstimatorOptionName = "loadEstimatorOption";
   static constexpr const char *dataLayoutOptionName = "dataLayoutOption";
   static constexpr const char *cellSizeFactorsName = "cellSizeFactor";
+  static constexpr const char *verletRebuildFrequenciesName = "verletRebuildFrequencies";
   static constexpr const char *newton3OptionName = "newton3Option";
 };
 
@@ -232,9 +238,10 @@ void ActiveHarmony::fetchConfiguration() {
   } else {
     cellSizeFactor = ah_get_real(htask, cellSizeFactorsName);
   }
+  int verletRebuildFrequency = _allowedVerletRebuildFrequencies->getMin();
 
   _currentConfig = Configuration(containerOption, cellSizeFactor, traversalOption, loadEstimatorOption,
-                                 dataLayoutOption, newton3Option);
+                                 dataLayoutOption, newton3Option, verletRebuildFrequency);
 }
 
 void ActiveHarmony::invalidateConfiguration() {

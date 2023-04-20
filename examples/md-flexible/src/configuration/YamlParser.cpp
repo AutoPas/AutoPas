@@ -49,9 +49,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     config.cutoff.value = node[config.cutoff.name].as<double>();
   }
   if (node[config.cellSizeFactors.name]) {
-    config.cellSizeFactors.value = autopas::utils::StringUtils::parseNumberSet(
+    config.cellSizeFactors.value = autopas::utils::StringUtils::parseNumberSetDoubles(
         autopas::utils::ArrayUtils::to_string(node[config.cellSizeFactors.name], ", ", {"", ""}));
   }
+  if (node[config.verletRebuildFrequencies.name]) {
+    config.verletRebuildFrequencies.value = autopas::utils::StringUtils::parseNumberSetInts(
+        autopas::utils::ArrayUtils::to_string(node[config.verletRebuildFrequencies.name], ", ", {"", ""}));
+  }
+
   if (node[config.dataLayoutOptions.name]) {
     config.dataLayoutOptions.value = autopas::DataLayoutOption::parseOptions(
         autopas::utils::ArrayUtils::to_string(node[config.dataLayoutOptions.name], ", ", {"", ""}));
@@ -207,9 +212,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
   if (node[config.logFileName.name]) {
     config.logFileName.value = node[config.logFileName.name].as<std::string>();
   }
-  if (node[config.verletRebuildFrequency.name]) {
-    config.verletRebuildFrequency.value = node[config.verletRebuildFrequency.name].as<unsigned int>();
-  }
   if (node[config.verletSkinRadiusPerTimestep.name]) {
     config.verletSkinRadiusPerTimestep.value = node[config.verletSkinRadiusPerTimestep.name].as<double>();
   }
@@ -358,15 +360,16 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
                                  it->second[config.epsilonMap.name].as<double>(),
                                  it->second[config.sigmaMap.name].as<double>(),
+
                                  it->second[config.massMap.name].as<double>());
         }
         continue;
       }
     }
   }
+
   if (node[config.useThermostat.name]) {
     config.useThermostat.value = true;
-
     config.initTemperature.value = node[config.useThermostat.name][config.initTemperature.name].as<double>();
     config.thermostatInterval.value = node[config.useThermostat.name][config.thermostatInterval.name].as<size_t>();
     config.targetTemperature.value = node[config.useThermostat.name][config.targetTemperature.name].as<double>();

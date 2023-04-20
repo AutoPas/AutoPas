@@ -62,14 +62,13 @@ class AutoTuner {
    * @param selectorStrategy Strategy for the configuration selection.
    * @param tuningInterval Number of time steps after which the auto-tuner shall reevaluate all selections.
    * @param maxSamples Number of samples that shall be collected for each combination.
-   * @param rebuildFrequency The rebuild frequency this AutoPas instance uses.
    * @param outputSuffix Suffix for all output files produced by this class.
    */
   AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkinPerTimestep,
             unsigned int verletClusterSize, std::unique_ptr<TuningStrategyInterface> tuningStrategy,
             double MPITuningMaxDifferenceForBucket, double MPITuningWeightForMaxDensity,
             SelectorStrategyOption selectorStrategy, unsigned int tuningInterval, unsigned int maxSamples,
-            unsigned int rebuildFrequency, const std::string &outputSuffix = "")
+            const std::string &outputSuffix = "")
       : _selectorStrategy(selectorStrategy),
         _tuningStrategy(std::move(tuningStrategy)),
         _tuningInterval(tuningInterval),
@@ -79,7 +78,6 @@ class AutoTuner {
         _verletClusterSize(verletClusterSize),
         _mpiTuningMaxDifferenceForBucket(MPITuningMaxDifferenceForBucket),
         _mpiTuningWeightForMaxDensity(MPITuningWeightForMaxDensity),
-        _rebuildFrequency(rebuildFrequency),
         _maxSamples(maxSamples),
         _samplesNotRebuildingNeighborLists(maxSamples),
         _iteration(0),
@@ -226,12 +224,14 @@ class AutoTuner {
             : autopas::OptimumSelector::optimumValue(_samplesNotRebuildingNeighborLists, _selectorStrategy);
 
     const auto numIterationsNotBuilding =
-        std::max(0, static_cast<int>(_rebuildFrequency) - static_cast<int>(_samplesRebuildingNeighborLists.size()));
-    const auto numIterationsBuilding = _rebuildFrequency - numIterationsNotBuilding;
+        std::max(0, static_cast<int>(_tuningStrategy->getCurrentConfiguration().verletRebuildFrequency) -
+                        static_cast<int>(_samplesRebuildingNeighborLists.size()));
+    const auto numIterationsBuilding =
+        _tuningStrategy->getCurrentConfiguration().verletRebuildFrequency - numIterationsNotBuilding;
 
     // calculate weighted estimate for one iteration
     return (numIterationsBuilding * reducedValueBuilding + numIterationsNotBuilding * reducedValueNotBuilding) /
-           _rebuildFrequency;
+           _tuningStrategy->getCurrentConfiguration().verletRebuildFrequency;
   }
 
   /**
@@ -283,11 +283,6 @@ class AutoTuner {
 
   double _verletSkinPerTimestep;
   unsigned int _verletClusterSize;
-
-  /**
-   * The rebuild frequency this instance of AutoPas uses.
-   */
-  unsigned int _rebuildFrequency;
 
   /**
    * How many times each configuration should be tested.
@@ -350,7 +345,7 @@ template <class Particle>
 void AutoTuner<Particle>::selectCurrentContainer() {
   auto conf = _tuningStrategy->getCurrentConfiguration();
   _containerSelector.selectContainer(
-      conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkinPerTimestep, _rebuildFrequency,
+      conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkinPerTimestep, conf.verletRebuildFrequency,
                                             _verletClusterSize, conf.loadEstimator));
 }
 
@@ -712,7 +707,7 @@ bool AutoTuner<Particle>::configApplicable(const Configuration &conf, PairwiseFu
   }
 
   _containerSelector.selectContainer(
-      conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkinPerTimestep, _rebuildFrequency,
+      conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkinPerTimestep, conf.verletRebuildFrequency,
                                             _verletClusterSize, conf.loadEstimator));
   auto traversalInfo = _containerSelector.getCurrentContainer()->getTraversalSelectorInfo();
 

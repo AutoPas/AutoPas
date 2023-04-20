@@ -74,7 +74,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.tuningStrategyOption,
       config.useThermostat,
       config.verletClusterSize,
-      config.verletRebuildFrequency,
+      config.verletRebuildFrequencies,
       config.verletSkinRadiusPerTimestep,
       config.vtkFileName,
       config.vtkWriteFrequency,
@@ -145,7 +145,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         break;
       }
       case decltype(config.cellSizeFactors)::getoptChar: {
-        config.cellSizeFactors.value = autopas::utils::StringUtils::parseNumberSet(strArg);
+        config.cellSizeFactors.value = autopas::utils::StringUtils::parseNumberSetDoubles(strArg);
         if (config.cellSizeFactors.value->isEmpty()) {
           cerr << "Error parsing cell size factors: " << optarg << endl;
           displayHelp = true;
@@ -540,9 +540,10 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         config.useThermostat.value = autopas::utils::StringUtils::parseBoolOption(strArg);
         break;
       }
-      case decltype(config.verletRebuildFrequency)::getoptChar: {
+      case decltype(config.verletRebuildFrequencies)::getoptChar: {
         try {
-          config.verletRebuildFrequency.value = (unsigned int)stoul(strArg);
+          config.verletRebuildFrequencies.value =
+              make_shared<autopas::NumberSetFinite<int>>(std::set<int>({(int)stoul(strArg)}));
         } catch (const exception &) {
           cerr << "Error parsing verlet-rebuild-frequency: " << optarg << endl;
           displayHelp = true;
