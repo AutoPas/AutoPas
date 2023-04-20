@@ -614,10 +614,12 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
 #ifdef AUTOPAS_OPENMP
   // Tasks would be better than locks but sanitizers seem to have problems
 #pragma omp parallel
+#endif
+  {
+#ifdef AUTOPAS_OPENMP
   // No need to synchronize after this loop since we have locks
 #pragma omp for nowait
 #endif
-  {
     for (size_t i = 0; i < particleBuffers.size(); ++i) {
       auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
       const std::lock_guard<std::mutex> lockA(*_bufferLocks[i]);
