@@ -617,7 +617,7 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
 #endif
   {
 #ifdef AUTOPAS_OPENMP
-  // No need to synchronize after this loop since we have locks
+    // No need to synchronize after this loop since we have locks
 #pragma omp for nowait
 #endif
     for (size_t i = 0; i < particleBuffers.size(); ++i) {
