@@ -612,32 +612,47 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
   }
 
 #ifdef AUTOPAS_OPENMP
-  // Use task parallelism for better dependency resolution than locks
-#pragma omp parallel for
+  // Tasks would be better than locks but sanitizers seem to have problems
+#pragma omp parallel
+  // No need to synchronize after this loop since we have locks
+#pragma omp for nowait
 #endif
-  for (size_t i = 0; i < particleBuffers.size(); ++i) {
-    auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
+  {
+    for (size_t i = 0; i < particleBuffers.size(); ++i) {
+      auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
+      const std::lock_guard<std::mutex> lockA(*_bufferLocks[i]);
+      f->SoAFunctorSingle(*particleBufferSoAA, newton3);
+    }
     if constexpr (newton3) {
-      {
-        const std::lock_guard<std::mutex> lockA(*_bufferLocks[i]);
-        f->SoAFunctorSingle(*particleBufferSoAA, true);
-      }
-      for (size_t j = i + 1; j < particleBuffers.size(); ++j) {
-        auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
-        const std::lock_guard<std::mutex> lockA(*_bufferLocks[i]);
-        const std::lock_guard<std::mutex> lockB(*_bufferLocks[j]);
-        f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, true);
-      }
-    } else {
-      for (size_t jj = 0; jj < particleBuffers.size(); ++jj) {
-        const auto j = (i + jj) % particleBuffers.size();
-        if (i == j) {
-          const std::lock_guard<std::mutex> lockA(*_bufferLocks[i]);
-          f->SoAFunctorSingle(*particleBufferSoAA, false);
-        } else {
+#ifdef AUTOPAS_OPENMP
+      // collapse loops for better scheduling
+#pragma omp for collapse(2)
+#endif
+      for (size_t i = 0; i < particleBuffers.size(); ++i) {
+        for (size_t j = i + 1; j < particleBuffers.size(); ++j) {
+          auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
           auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
           const std::lock_guard<std::mutex> lockA(*_bufferLocks[i]);
-          f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, false);
+          const std::lock_guard<std::mutex> lockB(*_bufferLocks[j]);
+          f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, true);
+        }
+      }
+    } else {
+#ifdef AUTOPAS_OPENMP
+      // collapse loops for better scheduling
+#pragma omp for collapse(2)
+#endif
+      for (size_t i = 0; i < particleBuffers.size(); ++i) {
+        for (size_t jj = 0; jj < particleBuffers.size(); ++jj) {
+          auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
+          const auto j = (i + jj) % particleBuffers.size();
+          if (i == j) {
+            continue;
+          } else {
+            auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
+            const std::lock_guard<std::mutex> lockA(*_bufferLocks[i]);
+            f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, false);
+          }
         }
       }
     }
