@@ -29,13 +29,6 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
     cellSizeFactorArraySize = 1;
   }
 
-  size_t verletRebuildFrequencyArraySize;
-  if (verletRebuildFrequencies.isFinite()) {
-    verletRebuildFrequencyArraySize = verletRebuildFrequencies.size();
-  } else {
-    verletRebuildFrequencyArraySize = 1;
-  }
-
   for (const auto &containerOption : containerOptions) {
     // get all traversals of the container and restrict them to the allowed ones.
     const std::set<TraversalOption> &allContainerTraversals =
@@ -50,7 +43,7 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
       const std::set<LoadEstimatorOption> allowedAndApplicableLoadEstimators =
           loadEstimators::getApplicableLoadEstimators(containerOption, traversalOption, loadEstimatorOptions);
       numConfigs += cellSizeFactorArraySize * allowedAndApplicableLoadEstimators.size() * dataLayoutOptions.size() *
-                    newton3Options.size() * verletRebuildFrequencyArraySize;
+                    newton3Options.size() * verletRebuildFrequencies.size();
     }
   }
   return numConfigs;
@@ -84,7 +77,7 @@ void generateDistribution(const int numConfigs, const int commSize, const int ra
   auto newLoadEstimatorOptions = std::set<LoadEstimatorOption>();
   auto newDataLayoutOptions = std::set<DataLayoutOption>();
   auto newNewton3Options = std::set<Newton3Option>();
-  auto newVerletRebuildFrequency = std::set<int>();
+  auto newVerletRebuildFrequencies = std::set<int>();
 
   // Distribution works only with finite sets of cellSizeFactors.
   // If the set is infinite a dummy value will be used and replaced later on.
@@ -95,8 +88,6 @@ void generateDistribution(const int numConfigs, const int commSize, const int ra
     // Dummy value which makes the code simpler in case the cellSizeFactors are not a finite set.
     finiteCellSizeFactors = std::set<double>{-1};
   }
-
-  // TODO verletRebuildFrequency is Finite?
 
   // ============== main computation ===========================================
 
@@ -120,7 +111,7 @@ void generateDistribution(const int numConfigs, const int commSize, const int ra
     newLoadEstimatorOptions.emplace(*iteratorHandler.getLoadEstimatorIterator());
     newDataLayoutOptions.emplace(*iteratorHandler.getDataLayoutIterator());
     newNewton3Options.emplace(*iteratorHandler.getNewton3Iterator());
-    newVerletRebuildFrequency.emplace(*iteratorHandler.getVerletRebuildFrequencyIterator());
+    newVerletRebuildFrequencies.emplace(*iteratorHandler.getVerletRebuildFrequencyIterator());
 
     iteratorHandler.advanceIterators(numConfigs, commSize);
   }
@@ -206,7 +197,7 @@ SerializedConfiguration serializeConfiguration(Configuration configuration) {
   config[3] = castToByte(configuration.dataLayout);
   config[4] = castToByte(configuration.newton3);
   std::memcpy(&config[5], &configuration.cellSizeFactor, sizeof(double));
-  std::memcpy(&config[6], &configuration.cellSizeFactor, sizeof(int));
+  std::memcpy(&config[6], &configuration.verletRebuildFrequency, sizeof(int));
   return config;
 }
 

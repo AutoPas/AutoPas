@@ -117,14 +117,14 @@ class PredictiveTuningTest : public AutoPasTestBase,
 
   static constexpr autopas::Configuration _configurationLC_C01 = autopas::Configuration(
       autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c01, autopas::LoadEstimatorOption::none,
-      autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled, 5);
+      autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled, 15);
   static constexpr autopas::Configuration _configurationLC_C08 = autopas::Configuration(
       autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
-      autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled, 5);
+      autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled, 15);
 
   static constexpr autopas::Configuration _configurationLC_Sliced = autopas::Configuration(
       autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_sliced,
-      autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled, 5);
+      autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled, 15);
 
   ///@todo c++20: this can be made constexpr, as std::vector will get to be constexpr.
   inline static std::vector<autopas::Configuration> _allConfigs{_configurationLC_C01, _configurationLC_C08,

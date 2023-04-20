@@ -89,6 +89,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
         _dataLayoutOptions(allowedDataLayoutOptions.begin(), allowedDataLayoutOptions.end()),
         _newton3Options(allowedNewton3Options.begin(), allowedNewton3Options.end()),
         _cellSizeFactors(allowedCellSizeFactors.clone()),
+        _verletRebuildFrequencies((NumberSetFinite<int>(allowedVerletRebuilFrequencies)).clone()),
         _encoder(),
         _currentConfig(),
         _invalidConfigs(),

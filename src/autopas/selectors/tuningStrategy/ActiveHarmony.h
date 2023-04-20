@@ -69,7 +69,7 @@ class ActiveHarmony : public TuningStrategyInterface {
     auto rebuildFreqDummy = NumberSetFinite<int>{-1};
     utils::AutoPasConfigurationCommunicator::distributeConfigurations(
         _allowedContainerOptions, cellSizeDummy, _allowedTraversalOptions, _allowedLoadEstimatorOptions,
-        _allowedDataLayoutOptions, _allowedNewton3Options, rebuildFreqDummy, 0, 1);
+        _allowedDataLayoutOptions, _allowedNewton3Options, *_allowedVerletRebuildFrequencies, 0, 1);
 
     AutoPasLog(debug, "Possible container options: {}",
                autopas::utils::ArrayUtils::to_string(_allowedContainerOptions));

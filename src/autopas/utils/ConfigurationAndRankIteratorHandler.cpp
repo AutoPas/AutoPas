@@ -84,6 +84,7 @@ void ConfigurationAndRankIteratorHandler::reset(const int numConfigs, const int 
   _cellSizeFactorIt = _cellSizeFactors.begin();
   _dataLayoutIt = _dataLayoutOptions.begin();
   _newton3It = _newton3Options.begin();
+  _verletRebuildFrequencyIt = _verletRebuildFrequencies.begin();
   selectTraversalsForCurrentContainer();
   selectLoadEstimatorsForCurrentContainerAndTraversal();
 

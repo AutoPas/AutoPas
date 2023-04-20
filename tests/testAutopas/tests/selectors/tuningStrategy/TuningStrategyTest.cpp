@@ -36,7 +36,7 @@ TEST_P(TuningStrategyTest, testSearchSpaceOneOption) {
   auto oneLoadEstimator = std::set<autopas::LoadEstimatorOption>({autopas::LoadEstimatorOption::none});
   auto oneDataLayout = std::set<autopas::DataLayoutOption>({autopas::DataLayoutOption::soa});
   auto oneNewton3Option = std::set<autopas::Newton3Option>({autopas::Newton3Option::enabled});
-  auto oneFreq = autopas::NumberSetFinite<int>({5});
+  auto oneFreq = autopas::NumberSetFinite<int>({15});
   auto search = autopas::TuningStrategyFactory::generateTuningStrategy(
       tuningStrategy, oneContainer, oneInterval, oneTraversal, oneLoadEstimator, oneDataLayout, oneNewton3Option,
       oneFreq, 42, 1.2, 5, 0, 3, autopas::AcquisitionFunctionOption::expectedImprovement,

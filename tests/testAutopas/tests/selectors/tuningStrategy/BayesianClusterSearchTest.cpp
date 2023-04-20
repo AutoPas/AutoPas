@@ -15,7 +15,7 @@ TEST_F(BayesianClusterSearchTest, testMaxEvidence) {
       {autopas::ContainerOption::linkedCells}, autopas::NumberSetFinite<double>({1}),
       {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced},
       {autopas::LoadEstimatorOption::none}, {autopas::DataLayoutOption::soa}, {autopas::Newton3Option::disabled},
-      std::set<int>({5, 15, 30}), maxEvidence);
+      std::set<int>({15}), maxEvidence);
 
   size_t iteration = 0;
 
@@ -53,7 +53,7 @@ TEST_F(BayesianClusterSearchTest, testFindBestSimilar) {
       {autopas::ContainerOption::linkedCells}, autopas::NumberInterval<double>(1, 2),
       {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01}, {autopas::LoadEstimatorOption::none},
       {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos},
-      {autopas::Newton3Option::disabled, autopas::Newton3Option::enabled}, std::set<int>({5, 15, 30}), maxEvidence,
+      {autopas::Newton3Option::disabled, autopas::Newton3Option::enabled}, std::set<int>({15}), maxEvidence,
       autopas::AcquisitionFunctionOption::upperConfidenceBound, "", 50, seed);
 
   // configuration to find
