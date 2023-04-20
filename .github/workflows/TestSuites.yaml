@@ -100,8 +100,8 @@ jobs:
             -DMD_FLEXIBLE_USE_MPI=${UseMPI} \
             -DMD_FLEXIBLE_FUNCTOR_AUTOVEC=ON \
             -DMD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS=OFF \
-            -DMD_FLEXIBLE_FUNCTOR_AUTOVEC_AVX=ON \
-            -DMD_FLEXIBLE_FUNCTOR_AUTOVEC_SVE=OFF \
+            -DMD_FLEXIBLE_FUNCTOR_AVX=ON \
+            -DMD_FLEXIBLE_FUNCTOR_SVE=OFF \
             -DAUTOPAS_ENABLE_ALLLBL=${UseMPI} \
             ..
           entrypoint.sh cmake --build . --parallel 1 
