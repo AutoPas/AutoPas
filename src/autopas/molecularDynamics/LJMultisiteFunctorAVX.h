@@ -822,13 +822,13 @@ class LJMultisiteFunctorAVX
       for (size_t siteA = 0; siteA < numSitesA; ++siteA) {
 
 
-        const __m256d rotatedSitePositionsAX = _mm256_broadcast_sd(rotatedSitePositionsA[siteA][0]);
-        const __m256d rotatedSitePositionsAY = _mm256_broadcast_sd(rotatedSitePositionsA[siteA][1]);
-        const __m256d rotatedSitePositionsAZ = _mm256_broadcast_sd(rotatedSitePositionsA[siteA][2]);
+        const __m256d rotatedSitePositionsAX = _mm256_set1_pd(rotatedSitePositionsA[siteA][0]);
+        const __m256d rotatedSitePositionsAY = _mm256_set1_pd(rotatedSitePositionsA[siteA][1]);
+        const __m256d rotatedSitePositionsAZ = _mm256_set1_pd(rotatedSitePositionsA[siteA][2]);
 
-        const __m256d exactSitePositionsAX = _mm256_broadcast_sd(rotatedSitePositionsAX + xAptr[molA]);
-        const __m256d exactSitePositionsAY = _mm256_broadcast_sd(rotatedSitePositionsAY + yAptr[molA]);
-        const __m256d exactSitePositionsAZ = _mm256_broadcast_sd(rotatedSitePositionsAZ + zAptr[molA]);
+        const __m256d exactSitePositionsAX = _mm256_set1_pd(rotatedSitePositionsA[siteA][0] + xAptr[molA]);
+        const __m256d exactSitePositionsAY = _mm256_set1_pd(rotatedSitePositionsA[siteA][1] + yAptr[molA]);
+        const __m256d exactSitePositionsAZ = _mm256_set1_pd(rotatedSitePositionsA[siteA][2] + zAptr[molA]);
 
         // TODO handle the remainder case
         size_t siteB = 0;
@@ -1166,11 +1166,12 @@ class LJMultisiteFunctorAVX
   }
 
  private:
+
   // @TODO I tried to vectorize this, but i don't know if this actually works, so I may have to look into
   // it again, we can also do this in a scalar way if it doesn't work
   // count number of sites in SoA
   // @note This assumes that getNumSites returns a 64bit integer, if not we need 32bit intrinsics
-  size_t countSitesSoA(const autopas::SoA<typename Particle::SoAArraysType> &soa) {
+  size_t countSitesSoA(SoAView<SoAArraysType> &soa) {
     size_t siteCount = 0;
     auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
     if constexpr (useMixing) {
@@ -1195,7 +1196,7 @@ class LJMultisiteFunctorAVX
 
   // TODO check if this works correctly, and vectorize it if possible
   // Clear and set up the site vectors for the force calculation
-  void fillSiteVectors(const autopas::SoA<typename Particle::SoAArraysType> &soa, const size_t siteCount) {
+  void fillSiteVectors(SoAView<SoAArraysType> &soa, const size_t siteCount) {
     const auto *const __restrict q0Ptr = soa.template begin<Particle::AttributeNames::quaternion0>();
     const auto *const __restrict q1Ptr = soa.template begin<Particle::AttributeNames::quaternion1>();
     const auto *const __restrict q2Ptr = soa.template begin<Particle::AttributeNames::quaternion2>();
