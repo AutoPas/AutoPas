@@ -362,9 +362,9 @@ class LJMultisiteFunctorAVX
     const SoAFloatPrecision const_epsilon24 = _epsilon24AoS;
     const SoAFloatPrecision const_shift6 = _shift6AoS;
 
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> sigmaSquaredVector;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> epsilon24Vector;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> shift6Vector;
+    //    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> sigmaSquaredVector;
+    //    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> epsilon24Vector;
+    //    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> shift6Vector;
 
     const auto const_unrotatedSitePositions = _sitePositionsLJ;
 
@@ -373,7 +373,6 @@ class LJMultisiteFunctorAVX
     fillSiteVectors(soa, siteCount);
 
     // main force calculation loop on CoM-CoM basis
-    // TODO check if indices are correct
     size_t siteIndexA = 0;  // index of first site in molA
     for (size_t molA = 0; molA < soa.getNumberOfParticles(); molA++) {
       const auto ownedStateA = ownedStatePtr[molA];
@@ -461,27 +460,6 @@ class LJMultisiteFunctorAVX
       }
 
       for (size_t siteA = siteIndexA; siteA < numSitesA; ++siteA) {
-        if (useMixing) {
-          // preload sigmas, epsilons, and shifts
-          sigmaSquaredVector.clear();
-          epsilon24Vector.clear();
-          sigmaSquaredVector.reserve(numSitesB);
-          epsilon24Vector.reserve(numSitesB);
-          if constexpr (applyShift) {
-            shift6Vector.reserve(numSitesB);
-            shift6Vector.clear();
-          }
-
-          for (size_t siteB = 0; siteB < siteCount - (siteIndexB); ++siteB) {
-            const auto mixingData = _PPLibrary->getMixingData(siteTypes[siteA], siteTypes[siteIndexB + siteB]);
-            sigmaSquaredVector.emplace_back(mixingData.sigmaSquared);
-            epsilon24Vector.emplace_back(mixingData.epsilon24);
-            if (applyShift) {
-              shift6Vector.emplace_back(mixingData.shift6);
-            }
-          }
-        }
-
         // Sums used for siteA
 
         __m256d forceSumAX = _zero;
@@ -500,61 +478,51 @@ class LJMultisiteFunctorAVX
         const __m256d exactSitePositionsAY = _mm256_broadcast_sd(&exactSitePositionY[siteA]);
         const __m256d exactSitePositionsAZ = _mm256_broadcast_sd(&exactSitePositionZ[siteA]);
 
+        const double *mixingPtr = (_PPLibrary->getMixingDataPtr(siteTypes[siteA], 0));
+
         // TODO handle remainder case
-        for (size_t siteB = siteIndexB; siteB < siteIndexB + numSitesB; siteB += vecLength) {
+        for (size_t siteB = 0; siteB < numSitesB; siteB += vecLength) {
+          const size_t globalSiteBIndex = siteB + siteIndexB;
           const __m256d localMask = _mm256_loadu_pd(&siteMask[siteB]);
           if (_mm256_movemask_pd(localMask) == 0) {
             continue;
           }
-          //          if constexpr (useMixing) {
-          //            // TODO Can probably be improved lol (maybe by loading from mixingDataPtr)
-          //            sigmaSquaredVector = _mm256_set_pd(_PPLibrary->getMixingSigmaSquared(siteA, siteB),
-          //                                          _PPLibrary->getMixingSigmaSquared(siteA, siteB + 1),
-          //                                          _PPLibrary->getMixingSigmaSquared(siteA, siteB + 2),
-          //                                          _PPLibrary->getMixingSigmaSquared(siteA, siteB + 3));
-          //            epsilon24Vector = _mm256_set_pd(
-          //                _PPLibrary->getMixing24Epsilon(siteA, siteB), _PPLibrary->getMixing24Epsilon(siteA, siteB +
-          //                1), _PPLibrary->getMixing24Epsilon(siteA, siteB + 2), _PPLibrary->getMixing24Epsilon(siteA,
-          //                siteB + 3));
-          //            if constexpr (applyShift) {
-          //              shift6Vector = _mm256_set_pd(
-          //                  _PPLibrary->getMixingShift6(siteA, siteB), _PPLibrary->getMixingShift6(siteA, siteB + 1),
-          //                  _PPLibrary->getMixingShift6(siteA, siteB + 2), _PPLibrary->getMixingShift6(siteA, siteB +
-          //                  3));
-          //            }
-          //          } else {
-          //            sigmaSquaredVector = _mm256_set1_pd(const_sigmaSquared);
-          //            epsilon24Vector = _mm256_set1_pd(const_epsilon24);
-          //            if (applyShift) {
-          //              shift6Vector = _mm256_set1_pd(const_shift6);
-          //            }
-          //          }
 
-          //          const __m256d siteGlobals = _mm256_set1_pd(!calculateGlobals);
-          //          const __m256d siteOwned = _mm256_loadu_pd(reinterpret_cast<const double *>(&isSiteOwned[siteB]));
-          //          const __m256d isSiteBOwned = _mm256_or_pd(siteGlobals, siteOwned);
-
+          // Not sure if shifting is correct
           if constexpr (useMixing) {
-            sigmaSquareds = _mm256_loadu_pd(&sigmaSquaredVector[siteB]);
-            epsilon24s = _mm256_loadu_pd(&epsilon24Vector[siteB]);
-          } else {
-            sigmaSquareds = _mm256_set1_pd(const_sigmaSquared);
-            epsilon24s = _mm256_set1_pd(const_epsilon24);
-          }
-
-          if constexpr (applyShift) {
-            if constexpr (useMixing) {
-              shift6s = _mm256_loadu_pd(&shift6Vector[siteB]);
-            } else {
-              shift6s = _mm256_set1_pd(const_shift6);
+            __m256i sindex = _mm256_loadu_si256(reinterpret_cast<const __m256i *>(siteTypes.data() + globalSiteBIndex));
+            sindex = _mm256_mul_epu32(
+                sindex, _mm256_set1_epi64x(3));  // Multiply indices by 3 since each mixing data contains 3 doubles
+            // sindex = _mm256_permute4x64_epi64(sindex, _MM_SHUFFLE(0,1,2,3)); // Reverse indices
+            epsilon24s = _mm256_i64gather_pd(mixingPtr, sindex, 8);
+            sigmaSquareds = _mm256_i64gather_pd(mixingPtr + 1, sindex, 8);
+            if constexpr (applyShift) {
+              shift6s = _mm256_i64gather_pd(mixingPtr + 2, sindex, 8);
             }
           } else {
-            shift6s = _zero;
+            epsilon24s = _mm256_set1_pd(const_epsilon24);
+            sigmaSquareds = _mm256_set1_pd(const_sigmaSquared);
+            if constexpr (applyShift) {
+              shift6s = _mm256_set1_pd(const_shift6);
+            }
           }
 
-          const __m256d exactSitePositionsBX = _mm256_loadu_pd(&exactSitePositionX[siteB]);
-          const __m256d exactSitePositionsBY = _mm256_loadu_pd(&exactSitePositionY[siteB]);
-          const __m256d exactSitePositionsBZ = _mm256_loadu_pd(&exactSitePositionZ[siteB]);
+          // These values may be useful for debugging
+          /*
+          const double e1 = _PPLibrary->getMixing24Epsilon(siteTypes[siteA], siteTypes[globalSiteBIndex]);
+          const double e2 = _PPLibrary->getMixing24Epsilon(siteTypes[siteA], siteTypes[globalSiteBIndex + 1]);
+          const double e3 = _PPLibrary->getMixing24Epsilon(siteTypes[siteA], siteTypes[globalSiteBIndex + 2]);
+          const double e4 = _PPLibrary->getMixing24Epsilon(siteTypes[siteA], siteTypes[globalSiteBIndex + 3]);
+
+          const double s1 = _PPLibrary->getMixingSigmaSquared(siteTypes[siteA], siteTypes[globalSiteBIndex]);
+          const double s2 = _PPLibrary->getMixingSigmaSquared(siteTypes[siteA], siteTypes[globalSiteBIndex + 1]);
+          const double s3 = _PPLibrary->getMixingSigmaSquared(siteTypes[siteA], siteTypes[globalSiteBIndex + 2]);
+          const double s4 = _PPLibrary->getMixingSigmaSquared(siteTypes[siteA], siteTypes[globalSiteBIndex + 3]);
+           */
+
+          const __m256d exactSitePositionsBX = _mm256_loadu_pd(&exactSitePositionX[globalSiteBIndex]);
+          const __m256d exactSitePositionsBY = _mm256_loadu_pd(&exactSitePositionY[globalSiteBIndex]);
+          const __m256d exactSitePositionsBZ = _mm256_loadu_pd(&exactSitePositionZ[globalSiteBIndex]);
 
           const __m256d displacementX = _mm256_sub_pd(exactSitePositionsAX, exactSitePositionsBX);
           const __m256d displacementY = _mm256_sub_pd(exactSitePositionsAY, exactSitePositionsBY);
@@ -584,17 +552,17 @@ class LJMultisiteFunctorAVX
           forceSumAZ = _mm256_add_pd(forceSumAZ, forceZ);
 
           // N3
-          __m256d forceSumBX = _mm256_loadu_pd(&siteForceX[siteB]);
-          __m256d forceSumBY = _mm256_loadu_pd(&siteForceY[siteB]);
-          __m256d forceSumBZ = _mm256_loadu_pd(&siteForceZ[siteB]);
+          __m256d forceSumBX = _mm256_loadu_pd(&siteForceX[globalSiteBIndex]);
+          __m256d forceSumBY = _mm256_loadu_pd(&siteForceY[globalSiteBIndex]);
+          __m256d forceSumBZ = _mm256_loadu_pd(&siteForceZ[globalSiteBIndex]);
           forceSumBX = _mm256_sub_pd(forceSumBX, forceX);
           forceSumBY = _mm256_sub_pd(forceSumBY, forceY);
           forceSumBZ = _mm256_sub_pd(forceSumBZ, forceZ);
-          _mm256_storeu_pd(siteForceX.data() + siteB, forceSumBX);
-          _mm256_storeu_pd(siteForceY.data() + siteB, forceSumBY);
-          _mm256_storeu_pd(siteForceZ.data() + siteB, forceSumBZ);
+          _mm256_storeu_pd(siteForceX.data() + globalSiteBIndex, forceSumBX);
+          _mm256_storeu_pd(siteForceY.data() + globalSiteBIndex, forceSumBY);
+          _mm256_storeu_pd(siteForceZ.data() + globalSiteBIndex, forceSumBZ);
 
-          // TODO Global calculation with without AVX512
+          // TODO Global calculation without AVX512
           //          if constexpr (calculateGlobals) {
           //            const __m256d virialX = _mm256_mul_pd(displacementX, forceX);
           //            const __m256d virialY = _mm256_mul_pd(displacementY, forceY);
