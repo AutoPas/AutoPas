@@ -362,6 +362,10 @@ class LJMultisiteFunctorAVX
     const SoAFloatPrecision const_epsilon24 = _epsilon24AoS;
     const SoAFloatPrecision const_shift6 = _shift6AoS;
 
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> sigmaSquaredVector;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> epsilon24Vector;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> shift6Vector;
+
     const auto const_unrotatedSitePositions = _sitePositionsLJ;
 
     size_t siteCount = countSitesSoA(soa);
@@ -457,6 +461,27 @@ class LJMultisiteFunctorAVX
       }
 
       for (size_t siteA = siteIndexA; siteA < numSitesA; ++siteA) {
+        if (useMixing) {
+          // preload sigmas, epsilons, and shifts
+          sigmaSquaredVector.clear();
+          epsilon24Vector.clear();
+          sigmaSquaredVector.reserve(numSitesB);
+          epsilon24Vector.reserve(numSitesB);
+          if constexpr (applyShift) {
+            shift6Vector.reserve(numSitesB);
+            shift6Vector.clear();
+          }
+
+          for (size_t siteB = 0; siteB < siteCount - (siteIndexB); ++siteB) {
+            const auto mixingData = _PPLibrary->getMixingData(siteTypes[siteA], siteTypes[siteIndexB + siteB]);
+            sigmaSquaredVector.emplace_back(mixingData.sigmaSquared);
+            epsilon24Vector.emplace_back(mixingData.epsilon24);
+            if (applyShift) {
+              shift6Vector.emplace_back(mixingData.shift6);
+            }
+          }
+        }
+
         // Sums used for siteA
 
         __m256d forceSumAX = _zero;
@@ -481,31 +506,51 @@ class LJMultisiteFunctorAVX
           if (_mm256_movemask_pd(localMask) == 0) {
             continue;
           }
+          //          if constexpr (useMixing) {
+          //            // TODO Can probably be improved lol (maybe by loading from mixingDataPtr)
+          //            sigmaSquaredVector = _mm256_set_pd(_PPLibrary->getMixingSigmaSquared(siteA, siteB),
+          //                                          _PPLibrary->getMixingSigmaSquared(siteA, siteB + 1),
+          //                                          _PPLibrary->getMixingSigmaSquared(siteA, siteB + 2),
+          //                                          _PPLibrary->getMixingSigmaSquared(siteA, siteB + 3));
+          //            epsilon24Vector = _mm256_set_pd(
+          //                _PPLibrary->getMixing24Epsilon(siteA, siteB), _PPLibrary->getMixing24Epsilon(siteA, siteB +
+          //                1), _PPLibrary->getMixing24Epsilon(siteA, siteB + 2), _PPLibrary->getMixing24Epsilon(siteA,
+          //                siteB + 3));
+          //            if constexpr (applyShift) {
+          //              shift6Vector = _mm256_set_pd(
+          //                  _PPLibrary->getMixingShift6(siteA, siteB), _PPLibrary->getMixingShift6(siteA, siteB + 1),
+          //                  _PPLibrary->getMixingShift6(siteA, siteB + 2), _PPLibrary->getMixingShift6(siteA, siteB +
+          //                  3));
+          //            }
+          //          } else {
+          //            sigmaSquaredVector = _mm256_set1_pd(const_sigmaSquared);
+          //            epsilon24Vector = _mm256_set1_pd(const_epsilon24);
+          //            if (applyShift) {
+          //              shift6Vector = _mm256_set1_pd(const_shift6);
+          //            }
+          //          }
+
+          //          const __m256d siteGlobals = _mm256_set1_pd(!calculateGlobals);
+          //          const __m256d siteOwned = _mm256_loadu_pd(reinterpret_cast<const double *>(&isSiteOwned[siteB]));
+          //          const __m256d isSiteBOwned = _mm256_or_pd(siteGlobals, siteOwned);
+
           if constexpr (useMixing) {
-            // TODO Can probably be improved lol (maybe by loading from mixingDataPtr)
-            sigmaSquareds = _mm256_set_pd(_PPLibrary->getMixingSigmaSquared(siteA, siteB),
-                                          _PPLibrary->getMixingSigmaSquared(siteA, siteB + 1),
-                                          _PPLibrary->getMixingSigmaSquared(siteA, siteB + 2),
-                                          _PPLibrary->getMixingSigmaSquared(siteA, siteB + 3));
-            epsilon24s = _mm256_set_pd(
-                _PPLibrary->getMixing24Epsilon(siteA, siteB), _PPLibrary->getMixing24Epsilon(siteA, siteB + 1),
-                _PPLibrary->getMixing24Epsilon(siteA, siteB + 2), _PPLibrary->getMixing24Epsilon(siteA, siteB + 3));
-            if constexpr (applyShift) {
-              shift6s = _mm256_set_pd(
-                  _PPLibrary->getMixingShift6(siteA, siteB), _PPLibrary->getMixingShift6(siteA, siteB + 1),
-                  _PPLibrary->getMixingShift6(siteA, siteB + 2), _PPLibrary->getMixingShift6(siteA, siteB + 3));
-            }
+            sigmaSquareds = _mm256_loadu_pd(&sigmaSquaredVector[siteB]);
+            epsilon24s = _mm256_loadu_pd(&epsilon24Vector[siteB]);
           } else {
             sigmaSquareds = _mm256_set1_pd(const_sigmaSquared);
             epsilon24s = _mm256_set1_pd(const_epsilon24);
-            if (applyShift) {
-              shift6s = _mm256_set1_pd(const_shift6);
-            }
           }
 
-//          const __m256d siteGlobals = _mm256_set1_pd(!calculateGlobals);
-//          const __m256d siteOwned = _mm256_loadu_pd(reinterpret_cast<const double *>(&isSiteOwned[siteB]));
-//          const __m256d isSiteBOwned = _mm256_or_pd(siteGlobals, siteOwned);
+          if constexpr (applyShift) {
+            if constexpr (useMixing) {
+              shift6s = _mm256_loadu_pd(&shift6Vector[siteB]);
+            } else {
+              shift6s = _mm256_set1_pd(const_shift6);
+            }
+          } else {
+            shift6s = _zero;
+          }
 
           const __m256d exactSitePositionsBX = _mm256_loadu_pd(&exactSitePositionX[siteB]);
           const __m256d exactSitePositionsBY = _mm256_loadu_pd(&exactSitePositionY[siteB]);
@@ -556,7 +601,7 @@ class LJMultisiteFunctorAVX
           //            const __m256d virialZ = _mm256_mul_pd(displacementZ, forceZ);
           //
           //            // FUMA angle
-          //            __m256d potentialEnergy6 = _mm256_fmadd_pd(epsilon24s, lj12m6, shift6s);
+          //            __m256d potentialEnergy6 = _mm256_fmadd_pd(epsilon24Vector, lj12m6, shift6Vector);
           //            potentialEnergy6 = _mm256_and_pd(localMask, potentialEnergy6);
           //            __m256i ownerShipMask = _mm256_set1_epi64x(ownedStateA == OwnershipState::owned ? 1. : 0.);
           //            ownerShipMask = _mm256_and_si256(ownerShipMask, isSiteBOwned);
@@ -570,7 +615,6 @@ class LJMultisiteFunctorAVX
           //          }
         }
         // copied from single site functor for horizontal add
-        // TODO check if this actually works lol
         const __m256d hSumfxfy = _mm256_hadd_pd(forceSumAX, forceSumAY);
         const __m256d hSumfz = _mm256_hadd_pd(forceSumAZ, forceSumAZ);
 
