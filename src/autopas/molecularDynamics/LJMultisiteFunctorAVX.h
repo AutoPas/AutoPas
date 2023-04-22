@@ -122,6 +122,11 @@ class LJMultisiteFunctorAVX
   const __m256d _cutoffSquared{};
   const __m256d _zero{_mm256_set1_pd(0.)};
   const __m256d _one{_mm256_set1_pd(1.)};
+  const __m256i _masks[3]{
+      _mm256_set_epi64x(0, 0, 0, -1),
+      _mm256_set_epi64x(0, 0, -1, -1),
+      _mm256_set_epi64x(0, -1, -1, -1),
+  };
 
 #endif
 
@@ -195,14 +200,6 @@ class LJMultisiteFunctorAVX
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
-  /*
-   * TODO add (more) Functors here
-   * 1. AoS Functor
-   * 2. SoA Functor Single
-   * 3. SoA Functor Verlet
-   * 4. CoM-Site Version?
-   */
-
   /**
    * @copydoc Functor::AoSFunctor(Particle&, Particle&, bool)
    * @note This is a copy of the scalar functor and does currently not use any vectorization.
@@ -212,6 +209,9 @@ class LJMultisiteFunctorAVX
     if (particleA.isDummy() or particleB.isDummy()) {
       return;
     }
+
+    const auto AR = particleA.getR();
+    const auto BR = particleB.getR();
 
     // Don't calculate force if particleB outside cutoff of particleA
     const auto displacementCoM = autopas::utils::ArrayMath::sub(particleA.getR(), particleB.getR());
@@ -383,7 +383,7 @@ class LJMultisiteFunctorAVX
       const size_t numSitesA = useMixing ? _PPLibrary->getNumSites(typeptr[molA])
                                          : const_unrotatedSitePositions.size();  // Number of sites in molecule A
       const size_t siteIndexB = siteIndexA + numSitesA;
-      const size_t numSitesB = siteCount - siteIndexA;
+      const size_t numSitesB = siteCount - siteIndexB;
 
       // TODO improve mask (check phd paper); This is using doubles to make the store intrinsics work
       std::vector<double, autopas::AlignedAllocator<double>> molMask(soa.getNumberOfParticles() - (molA + 1));
@@ -459,9 +459,8 @@ class LJMultisiteFunctorAVX
         }
       }
 
-      for (size_t siteA = siteIndexA; siteA < numSitesA; ++siteA) {
+      for (size_t siteA = siteIndexA; siteA < siteIndexB; ++siteA) {
         // Sums used for siteA
-
         __m256d forceSumAX = _zero;
         __m256d forceSumAY = _zero;
         __m256d forceSumAZ = _zero;
@@ -482,18 +481,26 @@ class LJMultisiteFunctorAVX
 
         // TODO handle remainder case
         for (size_t siteB = 0; siteB < numSitesB; siteB += vecLength) {
+          const size_t rest = numSitesB - siteB;
+          const bool remainderCase = rest < vecLength;
+          __m256i remainderMask = _one;
+          if (remainderCase) {
+            remainderMask = _masks[rest - 1];
+          }
+
           const size_t globalSiteBIndex = siteB + siteIndexB;
-          const __m256d localMask = _mm256_loadu_pd(&siteMask[siteB]);
+          const __m256d localMask =
+              remainderCase ? _mm256_maskload_pd(&siteMask[siteB], remainderMask) : _mm256_loadu_pd(&siteMask[siteB]);
           if (_mm256_movemask_pd(localMask) == 0) {
             continue;
           }
 
-          // Not sure if shifting is correct
+          // Not sure if shifting is correct, also mask load/store operation may be necessary
           if constexpr (useMixing) {
-            __m256i sindex = _mm256_loadu_si256(reinterpret_cast<const __m256i *>(siteTypes.data() + globalSiteBIndex));
+            __m256i sindex = remainderCase? _mm256_maskload_epi64(reinterpret_cast<const long long *>(siteTypes.data() + globalSiteBIndex), remainderMask)
+                                           :_mm256_loadu_si256(reinterpret_cast<const __m256i *>(siteTypes.data() + globalSiteBIndex));
             sindex = _mm256_mul_epu32(
                 sindex, _mm256_set1_epi64x(3));  // Multiply indices by 3 since each mixing data contains 3 doubles
-            // sindex = _mm256_permute4x64_epi64(sindex, _MM_SHUFFLE(0,1,2,3)); // Reverse indices
             epsilon24s = _mm256_i64gather_pd(mixingPtr, sindex, 8);
             sigmaSquareds = _mm256_i64gather_pd(mixingPtr + 1, sindex, 8);
             if constexpr (applyShift) {
@@ -507,22 +514,15 @@ class LJMultisiteFunctorAVX
             }
           }
 
-          // These values may be useful for debugging
-          /*
-          const double e1 = _PPLibrary->getMixing24Epsilon(siteTypes[siteA], siteTypes[globalSiteBIndex]);
-          const double e2 = _PPLibrary->getMixing24Epsilon(siteTypes[siteA], siteTypes[globalSiteBIndex + 1]);
-          const double e3 = _PPLibrary->getMixing24Epsilon(siteTypes[siteA], siteTypes[globalSiteBIndex + 2]);
-          const double e4 = _PPLibrary->getMixing24Epsilon(siteTypes[siteA], siteTypes[globalSiteBIndex + 3]);
-
-          const double s1 = _PPLibrary->getMixingSigmaSquared(siteTypes[siteA], siteTypes[globalSiteBIndex]);
-          const double s2 = _PPLibrary->getMixingSigmaSquared(siteTypes[siteA], siteTypes[globalSiteBIndex + 1]);
-          const double s3 = _PPLibrary->getMixingSigmaSquared(siteTypes[siteA], siteTypes[globalSiteBIndex + 2]);
-          const double s4 = _PPLibrary->getMixingSigmaSquared(siteTypes[siteA], siteTypes[globalSiteBIndex + 3]);
-           */
-
-          const __m256d exactSitePositionsBX = _mm256_loadu_pd(&exactSitePositionX[globalSiteBIndex]);
-          const __m256d exactSitePositionsBY = _mm256_loadu_pd(&exactSitePositionY[globalSiteBIndex]);
-          const __m256d exactSitePositionsBZ = _mm256_loadu_pd(&exactSitePositionZ[globalSiteBIndex]);
+          const __m256d exactSitePositionsBX =
+              remainderCase ? _mm256_maskload_pd(&exactSitePositionX[globalSiteBIndex], remainderMask)
+                            : _mm256_loadu_pd(&exactSitePositionX[globalSiteBIndex]);
+          const __m256d exactSitePositionsBY =
+              remainderCase ? _mm256_maskload_pd(&exactSitePositionY[globalSiteBIndex], remainderMask)
+                            : _mm256_loadu_pd(&exactSitePositionY[globalSiteBIndex]);
+          const __m256d exactSitePositionsBZ =
+              remainderCase ? _mm256_maskload_pd(&exactSitePositionZ[globalSiteBIndex], remainderMask)
+                            : _mm256_loadu_pd(&exactSitePositionZ[globalSiteBIndex]);
 
           const __m256d displacementX = _mm256_sub_pd(exactSitePositionsAX, exactSitePositionsBX);
           const __m256d displacementY = _mm256_sub_pd(exactSitePositionsAY, exactSitePositionsBY);
@@ -552,15 +552,21 @@ class LJMultisiteFunctorAVX
           forceSumAZ = _mm256_add_pd(forceSumAZ, forceZ);
 
           // N3
-          __m256d forceSumBX = _mm256_loadu_pd(&siteForceX[globalSiteBIndex]);
-          __m256d forceSumBY = _mm256_loadu_pd(&siteForceY[globalSiteBIndex]);
-          __m256d forceSumBZ = _mm256_loadu_pd(&siteForceZ[globalSiteBIndex]);
+          __m256d forceSumBX = remainderCase ? _mm256_maskload_pd(&siteForceX[globalSiteBIndex], remainderMask)
+                                             : _mm256_loadu_pd(&siteForceX[globalSiteBIndex]);
+          __m256d forceSumBY = remainderCase ? _mm256_maskload_pd(&siteForceY[globalSiteBIndex], remainderMask)
+                                             : _mm256_loadu_pd(&siteForceY[globalSiteBIndex]);
+          __m256d forceSumBZ = remainderCase ? _mm256_maskload_pd(&siteForceZ[globalSiteBIndex], remainderMask)
+                                             : _mm256_loadu_pd(&siteForceZ[globalSiteBIndex]);
           forceSumBX = _mm256_sub_pd(forceSumBX, forceX);
           forceSumBY = _mm256_sub_pd(forceSumBY, forceY);
           forceSumBZ = _mm256_sub_pd(forceSumBZ, forceZ);
-          _mm256_storeu_pd(siteForceX.data() + globalSiteBIndex, forceSumBX);
-          _mm256_storeu_pd(siteForceY.data() + globalSiteBIndex, forceSumBY);
-          _mm256_storeu_pd(siteForceZ.data() + globalSiteBIndex, forceSumBZ);
+          remainderCase ? _mm256_maskstore_pd(siteForceX.data() + globalSiteBIndex, remainderMask, forceSumBX)
+                        : _mm256_storeu_pd(siteForceX.data() + globalSiteBIndex, forceSumBX);
+          remainderCase ? _mm256_maskstore_pd(siteForceY.data() + globalSiteBIndex, remainderMask, forceSumBY)
+                        : _mm256_storeu_pd(siteForceY.data() + globalSiteBIndex, forceSumBY);
+          remainderCase ? _mm256_maskstore_pd(siteForceZ.data() + globalSiteBIndex, remainderMask, forceSumBZ)
+                        : _mm256_storeu_pd(siteForceZ.data() + globalSiteBIndex, forceSumBZ);
 
           // TODO Global calculation without AVX512
           //          if constexpr (calculateGlobals) {
@@ -653,10 +659,10 @@ class LJMultisiteFunctorAVX
       // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       const auto newton3Factor = newton3 ? .5 : 1.;
 
-      _aosThreadData[threadNum].potentialEnergySum += potentialEnergySum * newton3Factor;
-      _aosThreadData[threadNum].virialSum[0] += virialSumX * newton3Factor;
-      _aosThreadData[threadNum].virialSum[1] += virialSumY * newton3Factor;
-      _aosThreadData[threadNum].virialSum[2] += virialSumZ * newton3Factor;
+      //      _aosThreadData[threadNum].potentialEnergySum += potentialEnergySum * newton3Factor;
+      //      _aosThreadData[threadNum].virialSum[0] += virialSumX * newton3Factor;
+      //      _aosThreadData[threadNum].virialSum[1] += virialSumY * newton3Factor;
+      //      _aosThreadData[threadNum].virialSum[2] += virialSumZ * newton3Factor;
     }
   }
 
@@ -1011,10 +1017,10 @@ class LJMultisiteFunctorAVX
       // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       const auto newton3Factor = newton3 ? .5 : 1.;
 
-      _aosThreadData[threadNum].potentialEnergySum += potentialEnergySum * newton3Factor;
-      _aosThreadData[threadNum].virialSum[0] += virialSumX * newton3Factor;
-      _aosThreadData[threadNum].virialSum[1] += virialSumY * newton3Factor;
-      _aosThreadData[threadNum].virialSum[2] += virialSumZ * newton3Factor;
+      //      _aosThreadData[threadNum].potentialEnergySum += potentialEnergySum * newton3Factor;
+      //      _aosThreadData[threadNum].virialSum[0] += virialSumX * newton3Factor;
+      //      _aosThreadData[threadNum].virialSum[1] += virialSumY * newton3Factor;
+      //      _aosThreadData[threadNum].virialSum[2] += virialSumZ * newton3Factor;
     }
   }
 

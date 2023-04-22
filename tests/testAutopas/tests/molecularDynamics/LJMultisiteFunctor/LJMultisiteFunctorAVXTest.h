@@ -47,6 +47,6 @@ class LJMultisiteFunctorAVXTest : public AutoPasTestBase{
    * @param cutoff
    */
   template <bool newton3, bool calculateGlobals, bool applyShift>
-  void testSoACellAgainstAoS(std::vector<autopas::MultisiteMoleculeLJ> &molecules, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
+  void testSoACellAgainstAoS(std::vector<autopas::MultisiteMoleculeLJ> molecules, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 
 };
