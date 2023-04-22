@@ -69,8 +69,9 @@ void LJMultisiteFunctorAVXTest::testSoACellAgainstAoS(std::vector<autopas::Multi
 
   // end traversal for functor and get globals
   functor.endTraversal(newton3);
-  //  const auto potentialEnergyAoS = functor.getPotentialEnergy();
-  //  const auto virialAoS = functor.getVirial();
+  const auto potentialEnergyAoS = calculateGlobals?functor.getPotentialEnergy():0;
+  const auto virialAoS = calculateGlobals?functor.getVirial():0;
+
 
   // generate SoA Cell
   autopas::FullParticleCell<MultisiteMoleculeLJ> cellSoA;
@@ -92,25 +93,34 @@ void LJMultisiteFunctorAVXTest::testSoACellAgainstAoS(std::vector<autopas::Multi
 
   // end traversal for functor and get globals
   functor.endTraversal(newton3);
-  //  const auto potentialEnergySoA = functor.getPotentialEnergy();
-  //  const auto virialSoA = functor.getVirial();
+  const auto potentialEnergySoA = calculateGlobals?functor.getPotentialEnergy():0;
+  const auto virialSoA = calculateGlobals?functor.getVirial():0;
 
   // compare for consistency
   EXPECT_EQ(moleculesAoS.size(), cellSoA.numParticles());
 
-  // Nice for debugging
-  /*for (size_t i = 0; i < numberMolecules; ++i) {
-    std::cout << "AoS: " << moleculesAoS[i].getF()[0] << " " << moleculesAoS[i].getF()[1] << " "
-              << moleculesAoS[i].getF()[2] << " | SoA: " << cellSoA._particles[i].getF()[0] << " "
-              << cellSoA._particles[i].getF()[1] << " " << cellSoA._particles[i].getF()[2] << std::endl;
-  }*/
-
   for (size_t i = 0; i < numberMolecules; ++i) {
-    EXPECT_NEAR(moleculesAoS[i].getF()[0], cellSoA._particles[i].getF()[0], AOS_VS_SOA_ACCURACY) << "Incorrect x-force for molecule " << i << " with newton3 = " << newton3;
-    EXPECT_NEAR(moleculesAoS[i].getF()[1], cellSoA._particles[i].getF()[1], AOS_VS_SOA_ACCURACY) << "Incorrect y-force for molecule " << i << " with newton3 = " << newton3;
-    EXPECT_NEAR(moleculesAoS[i].getF()[2], cellSoA._particles[i].getF()[2], AOS_VS_SOA_ACCURACY) << "Incorrect z-force for molecule " << i << " with newton3 = " << newton3;
+    EXPECT_NEAR(moleculesAoS[i].getF()[0], cellSoA._particles[i].getF()[0], AOS_VS_SOA_ACCURACY)
+        << "Incorrect x-force for molecule " << i << " with newton3 = " << newton3;
+    EXPECT_NEAR(moleculesAoS[i].getF()[1], cellSoA._particles[i].getF()[1], AOS_VS_SOA_ACCURACY)
+        << "Incorrect y-force for molecule " << i << " with newton3 = " << newton3;
+    EXPECT_NEAR(moleculesAoS[i].getF()[2], cellSoA._particles[i].getF()[2], AOS_VS_SOA_ACCURACY)
+        << "Incorrect z-force for molecule " << i << " with newton3 = " << newton3;
   }
 
+  for (size_t i = 0; i < numberMolecules; ++i) {
+    EXPECT_NEAR(moleculesAoS[i].getTorque()[0], cellSoA._particles[i].getTorque()[0], AOS_VS_SOA_ACCURACY) << "Incorrect x-torque for molecule " << i << " with newton3 = " << newton3;
+    EXPECT_NEAR(moleculesAoS[i].getTorque()[1], cellSoA._particles[i].getTorque()[1], AOS_VS_SOA_ACCURACY) << "Incorrect y-torque for molecule " << i << " with newton3 = " << newton3;
+    EXPECT_NEAR(moleculesAoS[i].getTorque()[2], cellSoA._particles[i].getTorque()[2], AOS_VS_SOA_ACCURACY) << "Incorrect z-torque for molecule " << i << " with newton3 = " << newton3;
+  }
+
+  // This is currently only working if shifting is applied
+  if constexpr (calculateGlobals && applyShift) {
+    EXPECT_NEAR(potentialEnergyAoS, potentialEnergySoA, AOS_VS_SOA_ACCURACY)
+        << "Incorrect potential energy with newton3 = " << newton3 << " and applyShift = " << applyShift;
+    EXPECT_NEAR(virialAoS, virialSoA, AOS_VS_SOA_ACCURACY)
+        << "Incorrect potential energy with newton3 = " << newton3 << " and applyShift = " << applyShift;
+  }
 }
 
 /*

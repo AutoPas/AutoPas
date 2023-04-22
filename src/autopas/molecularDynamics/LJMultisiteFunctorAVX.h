@@ -127,6 +127,8 @@ class LJMultisiteFunctorAVX
       _mm256_set_epi64x(0, 0, -1, -1),
       _mm256_set_epi64x(0, -1, -1, -1),
   };
+  const __m256i _ownedStateDummyMM256i{0x0};
+  const __m256i _ownedStateOwnedMM256i{_mm256_set1_epi64x(static_cast<int64_t>(OwnershipState::owned))};
 
 #endif
 
@@ -209,9 +211,6 @@ class LJMultisiteFunctorAVX
     if (particleA.isDummy() or particleB.isDummy()) {
       return;
     }
-
-    const auto AR = particleA.getR();
-    const auto BR = particleB.getR();
 
     // Don't calculate force if particleB outside cutoff of particleA
     const auto displacementCoM = autopas::utils::ArrayMath::sub(particleA.getR(), particleB.getR());
@@ -379,6 +378,7 @@ class LJMultisiteFunctorAVX
       if (ownedStateA == OwnershipState::dummy) {
         continue;
       }
+      __m256i ownedStateA4 = _mm256_set1_epi64x(static_cast<int64_t>(ownedStateA));
 
       const size_t numSitesA = useMixing ? _PPLibrary->getNumSites(typeptr[molA])
                                          : const_unrotatedSitePositions.size();  // Number of sites in molecule A
@@ -479,7 +479,6 @@ class LJMultisiteFunctorAVX
 
         const double *mixingPtr = (_PPLibrary->getMixingDataPtr(siteTypes[siteA], 0));
 
-        // TODO handle remainder case
         for (size_t siteB = 0; siteB < numSitesB; siteB += vecLength) {
           const size_t rest = numSitesB - siteB;
           const bool remainderCase = rest < vecLength;
@@ -497,8 +496,11 @@ class LJMultisiteFunctorAVX
 
           // Not sure if shifting is correct, also mask load/store operation may be necessary
           if constexpr (useMixing) {
-            __m256i sindex = remainderCase? _mm256_maskload_epi64(reinterpret_cast<const long long *>(siteTypes.data() + globalSiteBIndex), remainderMask)
-                                           :_mm256_loadu_si256(reinterpret_cast<const __m256i *>(siteTypes.data() + globalSiteBIndex));
+            __m256i sindex =
+                remainderCase
+                    ? _mm256_maskload_epi64(reinterpret_cast<const long long *>(siteTypes.data() + globalSiteBIndex),
+                                            remainderMask)
+                    : _mm256_loadu_si256(reinterpret_cast<const __m256i *>(siteTypes.data() + globalSiteBIndex));
             sindex = _mm256_mul_epu32(
                 sindex, _mm256_set1_epi64x(3));  // Multiply indices by 3 since each mixing data contains 3 doubles
             epsilon24s = _mm256_i64gather_pd(mixingPtr, sindex, 8);
@@ -568,42 +570,39 @@ class LJMultisiteFunctorAVX
           remainderCase ? _mm256_maskstore_pd(siteForceZ.data() + globalSiteBIndex, remainderMask, forceSumBZ)
                         : _mm256_storeu_pd(siteForceZ.data() + globalSiteBIndex, forceSumBZ);
 
-          // TODO Global calculation without AVX512
-          //          if constexpr (calculateGlobals) {
-          //            const __m256d virialX = _mm256_mul_pd(displacementX, forceX);
-          //            const __m256d virialY = _mm256_mul_pd(displacementY, forceY);
-          //            const __m256d virialZ = _mm256_mul_pd(displacementZ, forceZ);
-          //
-          //            // FUMA angle
-          //            __m256d potentialEnergy6 = _mm256_fmadd_pd(epsilon24Vector, lj12m6, shift6Vector);
-          //            potentialEnergy6 = _mm256_and_pd(localMask, potentialEnergy6);
-          //            __m256i ownerShipMask = _mm256_set1_epi64x(ownedStateA == OwnershipState::owned ? 1. : 0.);
-          //            ownerShipMask = _mm256_and_si256(ownerShipMask, isSiteBOwned);
-          //            potentialEnergySum =
-          //                _mm256_add_pd(potentialEnergySum, _mm256_and_pd(_mm256_castsi256_pd(ownerShipMask),
-          //                potentialEnergy6));
-          //            virialSumX = _mm256_add_pd(virialSumX, _mm256_and_pd(_mm256_castsi256_pd(ownerShipMask),
-          //            virialX)); virialSumY = _mm256_add_pd(virialSumY,
-          //            _mm256_and_pd(_mm256_castsi256_pd(ownerShipMask), virialY)); virialSumZ =
-          //            _mm256_add_pd(virialSumZ, _mm256_and_pd(_mm256_castsi256_pd(ownerShipMask), virialZ));
-          //          }
+          // TODO Global calculation
+          if constexpr (calculateGlobals) {
+            const __m256d virialX = _mm256_mul_pd(displacementX, forceX);
+            const __m256d virialY = _mm256_mul_pd(displacementY, forceY);
+            const __m256d virialZ = _mm256_mul_pd(displacementZ, forceZ);
+
+            // FMA angle
+            const __m256d potentialEnergy6 = _mm256_fmadd_pd(epsilon24s, lj12m6, shift6s);
+            const __m256d potentialEnergy6Masked = _mm256_and_pd(localMask, potentialEnergy6);
+
+            __m256d ownedMaskA = _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateA4),
+                                               _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
+            __m256d energyFactor = _mm256_blendv_pd(_zero, _one, ownedMaskA);
+            if constexpr (newton3) {
+              const __m256i ownedStateB =
+                  remainderCase
+                      ? _mm256_castpd_si256(_mm256_maskload_pd(
+                            reinterpret_cast<double const *>(&isSiteOwned[globalSiteBIndex]), _masks[rest - 1]))
+                      : _mm256_loadu_si256(reinterpret_cast<const __m256i *>(&isSiteOwned[globalSiteBIndex]));
+              __m256d ownedMaskB = _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB),
+                                                 _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
+              energyFactor = _mm256_add_pd(energyFactor, _mm256_blendv_pd(_zero, _one, ownedMaskB));
+            }
+            potentialEnergySum = _mm256_fmadd_pd(energyFactor, potentialEnergy6Masked, potentialEnergySum);
+            virialSumX = _mm256_fmadd_pd(energyFactor, virialX, virialSumX);
+            virialSumY = _mm256_fmadd_pd(energyFactor, virialY, virialSumY);
+            virialSumZ = _mm256_fmadd_pd(energyFactor, virialZ, virialSumZ);
+          }
         }
-        // copied from single site functor for horizontal add
-        const __m256d hSumfxfy = _mm256_hadd_pd(forceSumAX, forceSumAY);
-        const __m256d hSumfz = _mm256_hadd_pd(forceSumAZ, forceSumAZ);
 
-        const __m128d hSumfxfyLow = _mm256_extractf128_pd(hSumfxfy, 0);
-        const __m128d hSumfzLow = _mm256_extractf128_pd(hSumfz, 0);
-
-        const __m128d hSumfxfyHigh = _mm256_extractf128_pd(hSumfxfy, 1);
-        const __m128d hSumfzHigh = _mm256_extractf128_pd(hSumfz, 1);
-
-        const __m128d sumfxfyVEC = _mm_add_pd(hSumfxfyLow, hSumfxfyHigh);
-        const __m128d sumfzVEC = _mm_add_pd(hSumfzLow, hSumfzHigh);
-
-        const double sumfx = sumfxfyVEC[0];
-        const double sumfy = sumfxfyVEC[1];
-        const double sumfz = _mm_cvtsd_f64(sumfzVEC);
+        const double sumfx = horizontalSum(forceSumAX);
+        const double sumfy = horizontalSum(forceSumAY);
+        const double sumfz = horizontalSum(forceSumAZ);
 
         // sum forces on single site in mol A
         siteForceX[siteA] += sumfx;
@@ -659,10 +658,16 @@ class LJMultisiteFunctorAVX
       // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       const auto newton3Factor = newton3 ? .5 : 1.;
 
-      //      _aosThreadData[threadNum].potentialEnergySum += potentialEnergySum * newton3Factor;
-      //      _aosThreadData[threadNum].virialSum[0] += virialSumX * newton3Factor;
-      //      _aosThreadData[threadNum].virialSum[1] += virialSumY * newton3Factor;
-      //      _aosThreadData[threadNum].virialSum[2] += virialSumZ * newton3Factor;
+      // This multiplication by 4 seems kinda needed, but I don't know why.
+      potentialEnergySum = _mm256_mul_pd(potentialEnergySum, _mm256_set1_pd(4.));
+      virialSumX = _mm256_mul_pd(virialSumX, _mm256_set1_pd(4.));
+      virialSumY = _mm256_mul_pd(virialSumY, _mm256_set1_pd(4.));
+      virialSumZ = _mm256_mul_pd(virialSumZ, _mm256_set1_pd(4.));
+
+      _aosThreadData[threadNum].potentialEnergySum += horizontalSum(potentialEnergySum) * newton3Factor;
+      _aosThreadData[threadNum].virialSum[0] += horizontalSum(virialSumX) * newton3Factor;
+      _aosThreadData[threadNum].virialSum[1] += horizontalSum(virialSumY) * newton3Factor;
+      _aosThreadData[threadNum].virialSum[2] += horizontalSum(virialSumZ) * newton3Factor;
     }
   }
 
@@ -1298,6 +1303,14 @@ class LJMultisiteFunctorAVX
         }
       }
     }
+  }
+
+  double horizontalSum(const __m256d &data) {
+    __m256d sum = _mm256_hadd_pd(data, data);
+    __m256d permuted = _mm256_permute4x64_pd(sum, _MM_PERM_ACBD);
+    sum = _mm256_hadd_pd(sum, permuted);
+    sum = _mm256_permute4x64_pd(sum, _MM_PERM_BBDD);
+    return _mm_cvtsd_f64(_mm256_extractf128_pd(sum, 0));
   }
 
  public:
