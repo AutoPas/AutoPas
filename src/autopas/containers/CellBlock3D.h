@@ -216,8 +216,8 @@ class CellBlock3D : public CellBorderAndFlagManager {
       closeHaloCells.push_back(&getCell(index3d));
     }
 
-    auto lowIndex3D = get3DIndexOfPosition(position - allowedDistance);
-    auto highIndex3D = get3DIndexOfPosition(position + allowedDistance);
+    const auto lowIndex3D = get3DIndexOfPosition(position - allowedDistance);
+    const auto highIndex3D = get3DIndexOfPosition(position + allowedDistance);
     // these indices are (already) at least 0 and at most _cellsPerDimensionWithHalo[i]-1
 
     auto currentIndex = lowIndex3D;

@@ -420,7 +420,7 @@ void printConservativeVariables(AutoPasContainer &sphSystem, MPI_Comm &comm) {
   std::array<double, 3> momSum = {0., 0., 0.};  // total momentum
   double energySum = 0.;                        // total energy
   for (auto it = sphSystem.begin(autopas::IteratorBehavior::owned); it.isValid(); ++it) {
-    momSum = momSum + (it->getV() * it->getMass());
+    momSum += (it->getV() * it->getMass());
     energySum += (it->getEnergy() + 0.5 * autopas::utils::ArrayMath::dot(it->getV(), it->getV())) * it->getMass();
   }
 

@@ -35,7 +35,7 @@ class CubeClosestPacked : public Object {
         _boxLength(boxLength),
         _particleSpacing(particleSpacing),
         _bottomLeftCorner(bottomLeftCorner),
-        _topRightCorner(autopas::utils::ArrayMath::operator+(bottomLeftCorner, boxLength)),
+        _topRightCorner(autopas::utils::ArrayMath::add(bottomLeftCorner, boxLength)),
         _spacingLayer(particleSpacing * sqrt(2. / 3.)),
         _spacingRow(particleSpacing * sqrt(3. / 4.)),
         _xOffset(particleSpacing * 1. / 2.),

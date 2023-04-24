@@ -271,8 +271,8 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     using namespace autopas::utils::ArrayMath::literals;
 
     // We increase the search region by skin, as particles can move over cell borders.
-    auto startIndex3D = this->_cellBlock.get3DIndexOfPosition(lowerCorner - this->getVerletSkin());
-    auto stopIndex3D = this->_cellBlock.get3DIndexOfPosition(higherCorner + this->getVerletSkin());
+    const auto startIndex3D = this->_cellBlock.get3DIndexOfPosition(lowerCorner - this->getVerletSkin());
+    const auto stopIndex3D = this->_cellBlock.get3DIndexOfPosition(higherCorner + this->getVerletSkin());
 
     size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
                                 (stopIndex3D[2] - startIndex3D[2] + 1);
@@ -299,8 +299,8 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     using namespace autopas::utils::ArrayMath::literals;
 
     // We increase the search region by skin, as particles can move over cell borders.
-    auto startIndex3D = this->_cellBlock.get3DIndexOfPosition(lowerCorner - this->getVerletSkin());
-    auto stopIndex3D = this->_cellBlock.get3DIndexOfPosition(higherCorner + this->getVerletSkin());
+    const auto startIndex3D = this->_cellBlock.get3DIndexOfPosition(lowerCorner - this->getVerletSkin());
+    const auto stopIndex3D = this->_cellBlock.get3DIndexOfPosition(higherCorner + this->getVerletSkin());
 
     size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
                                 (stopIndex3D[2] - startIndex3D[2] + 1);
@@ -334,8 +334,8 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
                        const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
     using namespace autopas::utils::ArrayMath::literals;
 
-    auto startIndex3D = this->_cellBlock.get3DIndexOfPosition(lowerCorner - this->getVerletSkin());
-    auto stopIndex3D = this->_cellBlock.get3DIndexOfPosition(higherCorner + this->getVerletSkin());
+    const auto startIndex3D = this->_cellBlock.get3DIndexOfPosition(lowerCorner - this->getVerletSkin());
+    const auto stopIndex3D = this->_cellBlock.get3DIndexOfPosition(higherCorner + this->getVerletSkin());
 
     size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
                                 (stopIndex3D[2] - startIndex3D[2] + 1);
@@ -373,8 +373,8 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
   void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
     using namespace autopas::utils::ArrayMath::literals;
-    auto startIndex3D = this->_cellBlock.get3DIndexOfPosition(lowerCorner - this->getVerletSkin());
-    auto stopIndex3D = this->_cellBlock.get3DIndexOfPosition(higherCorner + this->getVerletSkin());
+    const auto startIndex3D = this->_cellBlock.get3DIndexOfPosition(lowerCorner - this->getVerletSkin());
+    const auto stopIndex3D = this->_cellBlock.get3DIndexOfPosition(higherCorner + this->getVerletSkin());
 
     size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
                                 (stopIndex3D[2] - startIndex3D[2] + 1);

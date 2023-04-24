@@ -115,7 +115,7 @@ class ParticleBase {
    */
   void addF(const std::array<double, 3> &f) {
     using namespace autopas::utils::ArrayMath::literals;
-    _f = _f + f;
+    _f += f;
   }
 
   /**
@@ -124,7 +124,7 @@ class ParticleBase {
    */
   void subF(const std::array<double, 3> &f) {
     using namespace autopas::utils::ArrayMath::literals;
-    _f = _f - f;
+    _f -= f;
   }
 
   /**
@@ -157,7 +157,7 @@ class ParticleBase {
    */
   void addR(const std::array<double, 3> &r) {
     using namespace autopas::utils::ArrayMath::literals;
-    _r = _r + r;
+    _r += r;
   }
 
   /**
@@ -178,7 +178,7 @@ class ParticleBase {
    */
   void addV(const std::array<double, 3> &v) {
     using namespace autopas::utils::ArrayMath::literals;
-    _v = _v + v;
+    _v += v;
   }
 
   /**

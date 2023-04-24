@@ -148,8 +148,8 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton
         notifyColorChange(col);
         // implicit barrier at end of function.
       }
-      std::array<unsigned long, 3> startWithoutOffset(utils::ThreeDimensionalMapping::oneToThreeD(col, stride));
-      std::array<unsigned long, 3> start(startWithoutOffset + offset);
+      const std::array<unsigned long, 3> startWithoutOffset(utils::ThreeDimensionalMapping::oneToThreeD(col, stride));
+      const std::array<unsigned long, 3> start(startWithoutOffset + offset);
 
       // intel compiler demands following:
       const unsigned long start_x = start[0], start_y = start[1], start_z = start[2];

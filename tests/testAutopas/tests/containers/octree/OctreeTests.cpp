@@ -254,8 +254,8 @@ static std::array<double, 3> random3D(std::array<double, 3> min, std::array<doub
 
   // Map in the given space
   std::array<double, 3> dim = max - min;
-  randomPosition = randomPosition * dim;  // Map [0,1] to [0,width on axis]
-  randomPosition = randomPosition + min;
+  randomPosition *= dim;  // Map [0,1] to [0,width on axis]
+  randomPosition += min;
 
   return randomPosition;
 }
@@ -520,7 +520,7 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
         ++numPairs;
 
         // Store the particle pair interaction if it is within cutoff range
-        auto dr = utils::ArrayMath::operator-(i.getR(), j.getR());
+        auto dr = utils::ArrayMath::sub(i.getR(), j.getR());
         double dr2 = utils::ArrayMath::dot(dr, dr);
         // Exclude halo interactions from the diff since they are the wrong way around sometimes.
         if (dr2 <= _cutoffsquare and i.getID() < numParticles and j.getID() < numHaloParticles) {
@@ -614,7 +614,7 @@ TEST_P(OctreeTest, testCustomParticleDistribution) {
   // Fill a smaller portion of the octree region with particles
   std::vector<std::array<double, 3>> particlePositions;
   auto boxCenter = _boxMin + boxMax;
-  boxCenter = boxCenter * 0.5;
+  boxCenter *= 0.5;
   for (int unsigned i = 0; i < numParticles; ++i) {
     auto position = random3D(_boxMin, boxMax);
     particlePositions.push_back(position);

@@ -160,16 +160,16 @@ class LJFunctorAVX
       // for non-newton3 the division is in the post-processing step.
       if (newton3) {
         upot *= 0.5;
-        virial = virial * (double)0.5;
+        virial *= (double)0.5;
       }
       if (i.isOwned()) {
         _aosThreadData[threadnum].upotSum += upot;
-        _aosThreadData[threadnum].virialSum = _aosThreadData[threadnum].virialSum + virial;
+        _aosThreadData[threadnum].virialSum += virial;
       }
       // for non-newton3 the second particle will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
         _aosThreadData[threadnum].upotSum += upot;
-        _aosThreadData[threadnum].virialSum = _aosThreadData[threadnum].virialSum + virial;
+        _aosThreadData[threadnum].virialSum += virial;
       }
     }
   }
@@ -885,13 +885,13 @@ class LJFunctorAVX
     if (calculateGlobals) {
       for (size_t i = 0; i < _aosThreadData.size(); ++i) {
         _upotSum += _aosThreadData[i].upotSum;
-        _virialSum = _virialSum + _aosThreadData[i].virialSum;
+        _virialSum += _aosThreadData[i].virialSum;
       }
       if (not newton3) {
         // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
         // here.
         _upotSum *= 0.5;
-        _virialSum = _virialSum * 0.5;
+        _virialSum *= 0.5;
       }
       // we have always calculated 6*upot, so we divide by 6 here!
       _upotSum /= 6.;

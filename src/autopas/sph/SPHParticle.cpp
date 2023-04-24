@@ -14,12 +14,12 @@ using namespace autopas::sph;
 
 void SPHParticle::addAcceleration(const std::array<double, 3> &acc) {
   using namespace autopas::utils::ArrayMath::literals;
-  _acc = _acc + acc;
+  _acc += acc;
 }
 
 void SPHParticle::subAcceleration(const std::array<double, 3> &acc) {
   using namespace autopas::utils::ArrayMath::literals;
-  _acc = _acc - acc;
+  _acc -= acc;
 }
 
 void SPHParticle::calcPressure() {

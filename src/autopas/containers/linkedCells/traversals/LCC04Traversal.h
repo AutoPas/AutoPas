@@ -46,7 +46,7 @@ class LCC04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, d
                                                                                  interactionLength, cellLength),
         _cellOffsets32Pack(computeOffsets32Pack()),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap),
-        _end(utils::ArrayMath::operator-(utils::ArrayUtils::static_cast_array<long>(this->_cellsPerDimension), 1l)) {}
+        _end(utils::ArrayMath::subScalar(utils::ArrayUtils::static_cast_array<long>(this->_cellsPerDimension), 1l)) {}
 
   void traverseParticlePairs() override;
 

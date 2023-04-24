@@ -68,10 +68,10 @@ class CubeGrid : public Object {
   [[nodiscard]] std::array<double, 3> getBoxMax() const override {
     using namespace autopas::utils::ArrayMath::literals;
 
-    auto particlesPerDimDouble = autopas::utils::ArrayUtils::static_cast_array<double>(_particlesPerDim);
+    const auto particlesPerDimDouble = autopas::utils::ArrayUtils::static_cast_array<double>(_particlesPerDim);
     // subtract one because the first particle is at bottomLeftCorner
-    auto particlesPerDimSubOne = particlesPerDimDouble - 1.;
-    auto lastParticleRelative = particlesPerDimSubOne * _particleSpacing;
+    const auto particlesPerDimSubOne = particlesPerDimDouble - 1.;
+    const auto lastParticleRelative = particlesPerDimSubOne * _particleSpacing;
     auto lastParticleAbsolute = _bottomLeftCorner + lastParticleRelative;
 
     return lastParticleAbsolute;
