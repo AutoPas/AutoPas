@@ -30,7 +30,7 @@ class GaussianProcessTest : public AutoPasTestBase {
   void test2DFunction(const std::function<double(double, double)> &function, const Eigen::VectorXd &target,
                       double precision, const std::pair<NumberSetType, NumberSetType> &domain,
                       autopas::AcquisitionFunctionOption acquisitionFunctionOption, bool visualize) {
-    autopas::Random rng(42);  // random generator
+    autopas::Random rng(32);  // random generator
 
     constexpr size_t numEvidence = 8;      // number of samples allowed to make
     constexpr size_t lhsNumSamples = 900;  // number of samples to find max of acquisition function
