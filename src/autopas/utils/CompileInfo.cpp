@@ -6,7 +6,7 @@
 
 #include "CompileInfo.h"
 
-std::string utils::CompileInfo::getCompilerInfo() {
+std::string autopas::utils::CompileInfo::getCompilerInfo() {
   std::stringstream ss;
   // prefix if not included in VERSION
 #if defined(__FUJITSU) or defined(__CLANG_FUJITSU)

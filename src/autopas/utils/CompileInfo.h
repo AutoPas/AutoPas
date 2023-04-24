@@ -9,7 +9,7 @@
 #include <sstream>
 #include <string>
 
-namespace utils::CompileInfo {
+namespace autopas::utils::CompileInfo {
 
 /**
  * Get name and version number of a list of known compilers.
@@ -21,4 +21,4 @@ namespace utils::CompileInfo {
  * @return String : "Name Version.Number"
  */
 std::string getCompilerInfo();
-}  // namespace CompileInfo
+}  // namespace autopas::utils::CompileInfo
