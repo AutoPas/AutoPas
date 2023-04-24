@@ -13,12 +13,12 @@
 #include "autopas/utils/WrapMPI.h"
 /**
  * Parameterized test case for reflective boundary conditions in RegularGridDecomposition
+ * Quaternion parameter is not used for single-site compilations.
  */
 class ReflectiveBoundaryConditionTest
     : public AutoPasTestBase,
       public ::testing::WithParamInterface<std::tuple</*position*/ std::array<double, 3>,
-                                                      /*velocity*/ std::array<double, 3>,
-                                                      /*isReflected*/ std::array<bool, 3>>> {
+                                                      /*quaternion*/ std::array<double, 4>>> {
  public:
   /**
    * Constructor.

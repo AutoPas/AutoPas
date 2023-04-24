@@ -455,10 +455,6 @@ void MDFlexConfig::addMolType(unsigned long molId, const std::vector<unsigned lo
 void MDFlexConfig::flushParticles() { _particles.clear(); }
 
 void MDFlexConfig::initializeParticlePropertiesLibrary() {
-  if (molToSiteIdMap.empty()) {
-    throw std::runtime_error("No properties found in particle properties library!");
-  }
-
   _particlePropertiesLibrary = std::make_shared<ParticlePropertiesLibraryType>(cutoff.value);
 
   // check size of site level vectors match

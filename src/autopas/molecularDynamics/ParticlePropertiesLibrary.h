@@ -337,6 +337,10 @@ void ParticlePropertiesLibrary<floatType, intType>::addMolType(const intType mol
 
 template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients() {
+  if (_numRegisteredSiteTypes == 0) {
+    autopas::utils::ExceptionHandler::AutoPasException("ParticlePropertiesLibrary::calculateMixingCoefficients was called without any site types being registered!");
+  }
+
   _computedMixingData.resize(_numRegisteredSiteTypes * _numRegisteredSiteTypes);
 
   const auto cutoffSquared = _cutoff * _cutoff;
