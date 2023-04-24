@@ -18,6 +18,7 @@ namespace autopas::utils::CompileInfo {
  *   - gcc
  *   - icpc
  *   - icpx
+ *   - fcc (trad and clang mode)
  * @return String : "Name Version.Number"
  */
 std::string getCompilerInfo();
