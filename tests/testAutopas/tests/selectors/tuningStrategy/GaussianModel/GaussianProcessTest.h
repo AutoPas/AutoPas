@@ -32,8 +32,8 @@ class GaussianProcessTest : public AutoPasTestBase {
                       autopas::AcquisitionFunctionOption acquisitionFunctionOption, bool visualize) {
     autopas::Random rng(42);  // random generator
 
-    constexpr size_t numEvidence = 7;      // number of samples allowed to make
-    constexpr size_t lhsNumSamples = 850;  // number of samples to find max of acquisition function
+    constexpr size_t numEvidence = 8;      // number of samples allowed to make
+    constexpr size_t lhsNumSamples = 900;  // number of samples to find max of acquisition function
 
     autopas::GaussianProcess gp(2, 0.001, rng);
 
