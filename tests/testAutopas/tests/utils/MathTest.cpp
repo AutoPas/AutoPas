@@ -14,6 +14,11 @@ TEST(MathTest, isNearTest) {
     EXPECT_TRUE(autopas::utils::Math::isNear(a, a));
   }
   {
+    const double a = 0;
+    const double b = -0;
+    EXPECT_TRUE(autopas::utils::Math::isNear(a, b));
+  }
+  {
     const double a = 1. / 3.;
     const double b = std::nextafter(a, a + 1);
     EXPECT_TRUE(autopas::utils::Math::isNear(a, b));

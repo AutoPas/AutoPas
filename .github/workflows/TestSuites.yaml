@@ -20,7 +20,7 @@ jobs:
   StyleCheck:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: DoozyX/clang-format-lint-action@v0.12
         with:
           source: 'src tests examples'
@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Checks
         # this exits immediately when any command returns != 0
         run: |
@@ -81,7 +81,7 @@ jobs:
         LSAN_OPTIONS: "verbosity=1:log_threads=1"
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Build everything
         run: |
