@@ -61,6 +61,6 @@ TEST_P(AutoPasAllContainersTest, addParticlesTest) {
       ++numHalosFound;
     }
   }
-  EXPECT_EQ(numParticlesFound, numMols / 2) << "Either iterators are broken or the wrong number of particles is wrong!";
-  EXPECT_EQ(numHalosFound, 0) << "Either iterators are broken or the wrong number of particles is wrong!";
+  EXPECT_EQ(numParticlesFound, numMols / 2) << "Either iterators are broken or the number of particles is wrong!";
+  EXPECT_EQ(numHalosFound, 0) << "Either iterators are broken or the number of particles is wrong!";
 }

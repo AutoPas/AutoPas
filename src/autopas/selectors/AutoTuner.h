@@ -581,8 +581,8 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
       // 2. haloParticleBuffer with owned, close particles in container
       for (auto &&p1halo : haloParticleBuffer) {
         const auto pos = p1halo.getR();
-        const auto min = autopas::utils::ArrayMath::subScalar(pos, cutoff);
-        const auto max = autopas::utils::ArrayMath::addScalar(pos, cutoff);
+        const auto min = subScalar(pos, cutoff);
+        const auto max = addScalar(pos, cutoff);
         staticTypedContainerPtr->forEachInRegion(
             [&](auto &p2) {
               const auto lockCoords =
