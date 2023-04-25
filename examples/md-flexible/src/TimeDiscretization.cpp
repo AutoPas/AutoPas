@@ -20,9 +20,7 @@ void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
   using autopas::utils::ArrayMath::dot;
   using autopas::utils::ArrayMath::mulScalar;
 
-  const auto maxAllowedDistanceMoved =
-      autoPasContainer.getVerletSkin() / (2 * autoPasContainer.getVerletRebuildFrequency());
-  const auto maxAllowedDistanceMovedSquared = maxAllowedDistanceMoved * maxAllowedDistanceMoved;
+  const auto maxAllowedDistanceMoved = autoPasContainer.getVerletSkinPerTimestep() / 2.;
 
   bool throwException = false;
 
