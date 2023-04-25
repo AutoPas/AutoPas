@@ -443,9 +443,9 @@ RegularGridDecomposition::categorizeParticlesIntoLeftAndRightNeighbor(const std:
         const auto periodicPosition = position[direction] - globalBoxLength[direction];
         position[direction] = std::max(_globalBoxMin[direction], periodicPosition);
         rightNeighborParticles.back().setR(position);
-      } else {
-        uncategorizedParticles.push_back(particle);
       }
+    } else {
+      uncategorizedParticles.push_back(particle);
     }
   }
   return {leftNeighborParticles, rightNeighborParticles, uncategorizedParticles};
