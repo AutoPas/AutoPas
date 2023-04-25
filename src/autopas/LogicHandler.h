@@ -488,13 +488,11 @@ class LogicHandler {
 
   /**
    * Buffer to store particles that should not yet be added to the container. There is one buffer per thread.
-   * @note This buffer could potentially be replaced by a ParticleCell.
    */
   std::vector<FullParticleCell<Particle>> _particleBuffer;
 
   /**
    * Buffer to store halo particles that should not yet be added to the container. There is one buffer per thread.
-   * @note This buffer could potentially be replaced by a ParticleCell.
    */
   std::vector<FullParticleCell<Particle>> _haloParticleBuffer;
 };
