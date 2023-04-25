@@ -164,7 +164,7 @@ class AutoPas {
 
   /**
    * Adds all particles from the collection to the container.
-   * @note This function uses addParticlesIf().
+   * @note This function uses addParticle().
    * @tparam Collection Collection type that contains the particles (e.g. std::vector). Needs to support `.size()`.
    * @param particles
    */
