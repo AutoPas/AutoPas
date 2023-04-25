@@ -361,10 +361,6 @@ class LJMultisiteFunctorAVX
     const SoAFloatPrecision const_epsilon24 = _epsilon24AoS;
     const SoAFloatPrecision const_shift6 = _shift6AoS;
 
-    //    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> sigmaSquaredVector;
-    //    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> epsilon24Vector;
-    //    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> shift6Vector;
-
     const auto const_unrotatedSitePositions = _sitePositionsLJ;
 
     size_t siteCount = countSitesSoA(soa);
@@ -422,7 +418,6 @@ class LJMultisiteFunctorAVX
             _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB), _zero, _CMP_NEQ_OS);  // Assuming that dummy = 0
         const __m256d totalMask = _mm256_and_pd(cutoffMask, dummyMask);
 
-        // TODO may not work correctly?
         _mm256_storeu_pd((&molMask[molB - (molA + 1)]), totalMask);
       }
 
@@ -458,156 +453,12 @@ class LJMultisiteFunctorAVX
           siteMask.push_back(mask);
         }
       }
-
       for (size_t siteA = siteIndexA; siteA < siteIndexB; ++siteA) {
-        // Sums used for siteA
-        __m256d forceSumAX = _zero;
-        __m256d forceSumAY = _zero;
-        __m256d forceSumAZ = _zero;
-
-        __m256d torqueSumAX = _zero;
-        __m256d torqueSumAY = _zero;
-        __m256d torqueSumAZ = _zero;
-
-        __m256d sigmaSquareds = _zero;
-        __m256d epsilon24s = _zero;
-        __m256d shift6s = _zero;
-
-        const __m256d exactSitePositionsAX = _mm256_broadcast_sd(&exactSitePositionX[siteA]);
-        const __m256d exactSitePositionsAY = _mm256_broadcast_sd(&exactSitePositionY[siteA]);
-        const __m256d exactSitePositionsAZ = _mm256_broadcast_sd(&exactSitePositionZ[siteA]);
-
-        const double *mixingPtr = (_PPLibrary->getMixingDataPtr(siteTypes[siteA], 0));
-
-        for (size_t siteB = 0; siteB < numSitesB; siteB += vecLength) {
-          const size_t rest = numSitesB - siteB;
-          const bool remainderCase = rest < vecLength;
-          __m256i remainderMask = _one;
-          if (remainderCase) {
-            remainderMask = _masks[rest - 1];
-          }
-
-          const size_t globalSiteBIndex = siteB + siteIndexB;
-          const __m256d localMask =
-              remainderCase ? _mm256_maskload_pd(&siteMask[siteB], remainderMask) : _mm256_loadu_pd(&siteMask[siteB]);
-          if (_mm256_movemask_pd(localMask) == 0) {
-            continue;
-          }
-
-          // Not sure if shifting is correct, also mask load/store operation may be necessary
-          if constexpr (useMixing) {
-            __m256i sindex =
-                remainderCase
-                    ? _mm256_maskload_epi64(reinterpret_cast<const long long *>(siteTypes.data() + globalSiteBIndex),
-                                            remainderMask)
-                    : _mm256_loadu_si256(reinterpret_cast<const __m256i *>(siteTypes.data() + globalSiteBIndex));
-            sindex = _mm256_mul_epu32(
-                sindex, _mm256_set1_epi64x(3));  // Multiply indices by 3 since each mixing data contains 3 doubles
-            epsilon24s = _mm256_i64gather_pd(mixingPtr, sindex, 8);
-            sigmaSquareds = _mm256_i64gather_pd(mixingPtr + 1, sindex, 8);
-            if constexpr (applyShift) {
-              shift6s = _mm256_i64gather_pd(mixingPtr + 2, sindex, 8);
-            }
-          } else {
-            epsilon24s = _mm256_set1_pd(const_epsilon24);
-            sigmaSquareds = _mm256_set1_pd(const_sigmaSquared);
-            if constexpr (applyShift) {
-              shift6s = _mm256_set1_pd(const_shift6);
-            }
-          }
-
-          const __m256d exactSitePositionsBX =
-              remainderCase ? _mm256_maskload_pd(&exactSitePositionX[globalSiteBIndex], remainderMask)
-                            : _mm256_loadu_pd(&exactSitePositionX[globalSiteBIndex]);
-          const __m256d exactSitePositionsBY =
-              remainderCase ? _mm256_maskload_pd(&exactSitePositionY[globalSiteBIndex], remainderMask)
-                            : _mm256_loadu_pd(&exactSitePositionY[globalSiteBIndex]);
-          const __m256d exactSitePositionsBZ =
-              remainderCase ? _mm256_maskload_pd(&exactSitePositionZ[globalSiteBIndex], remainderMask)
-                            : _mm256_loadu_pd(&exactSitePositionZ[globalSiteBIndex]);
-
-          const __m256d displacementX = _mm256_sub_pd(exactSitePositionsAX, exactSitePositionsBX);
-          const __m256d displacementY = _mm256_sub_pd(exactSitePositionsAY, exactSitePositionsBY);
-          const __m256d displacementZ = _mm256_sub_pd(exactSitePositionsAZ, exactSitePositionsBZ);
-
-          const __m256d distanceSquaredX = _mm256_mul_pd(displacementX, displacementX);
-          const __m256d distanceSquaredY = _mm256_mul_pd(displacementY, displacementY);
-          const __m256d distanceSquaredZ = _mm256_mul_pd(displacementZ, displacementZ);
-
-          const __m256d distanceSquared =
-              _mm256_add_pd(distanceSquaredX, _mm256_add_pd(distanceSquaredY, distanceSquaredZ));
-
-          const __m256d invDistSquared = _mm256_div_pd(_one, distanceSquared);
-          const __m256d lj2 = _mm256_mul_pd(sigmaSquareds, invDistSquared);
-          const __m256d lj6 = _mm256_mul_pd(_mm256_mul_pd(lj2, lj2), lj2);
-          const __m256d lj12 = _mm256_mul_pd(lj6, lj6);
-          const __m256d lj12m6 = _mm256_sub_pd(lj12, lj6);
-          const __m256d scalar = _mm256_mul_pd(epsilon24s, _mm256_mul_pd(_mm256_add_pd(lj12, lj12m6), invDistSquared));
-          const __m256d scalarMultiple = _mm256_and_pd(localMask, scalar);
-
-          const __m256d forceX = _mm256_mul_pd(scalarMultiple, displacementX);
-          const __m256d forceY = _mm256_mul_pd(scalarMultiple, displacementY);
-          const __m256d forceZ = _mm256_mul_pd(scalarMultiple, displacementZ);
-
-          forceSumAX = _mm256_add_pd(forceSumAX, forceX);
-          forceSumAY = _mm256_add_pd(forceSumAY, forceY);
-          forceSumAZ = _mm256_add_pd(forceSumAZ, forceZ);
-
-          // N3
-          __m256d forceSumBX = remainderCase ? _mm256_maskload_pd(&siteForceX[globalSiteBIndex], remainderMask)
-                                             : _mm256_loadu_pd(&siteForceX[globalSiteBIndex]);
-          __m256d forceSumBY = remainderCase ? _mm256_maskload_pd(&siteForceY[globalSiteBIndex], remainderMask)
-                                             : _mm256_loadu_pd(&siteForceY[globalSiteBIndex]);
-          __m256d forceSumBZ = remainderCase ? _mm256_maskload_pd(&siteForceZ[globalSiteBIndex], remainderMask)
-                                             : _mm256_loadu_pd(&siteForceZ[globalSiteBIndex]);
-          forceSumBX = _mm256_sub_pd(forceSumBX, forceX);
-          forceSumBY = _mm256_sub_pd(forceSumBY, forceY);
-          forceSumBZ = _mm256_sub_pd(forceSumBZ, forceZ);
-          remainderCase ? _mm256_maskstore_pd(siteForceX.data() + globalSiteBIndex, remainderMask, forceSumBX)
-                        : _mm256_storeu_pd(siteForceX.data() + globalSiteBIndex, forceSumBX);
-          remainderCase ? _mm256_maskstore_pd(siteForceY.data() + globalSiteBIndex, remainderMask, forceSumBY)
-                        : _mm256_storeu_pd(siteForceY.data() + globalSiteBIndex, forceSumBY);
-          remainderCase ? _mm256_maskstore_pd(siteForceZ.data() + globalSiteBIndex, remainderMask, forceSumBZ)
-                        : _mm256_storeu_pd(siteForceZ.data() + globalSiteBIndex, forceSumBZ);
-
-          // TODO Global calculation
-          if constexpr (calculateGlobals) {
-            const __m256d virialX = _mm256_mul_pd(displacementX, forceX);
-            const __m256d virialY = _mm256_mul_pd(displacementY, forceY);
-            const __m256d virialZ = _mm256_mul_pd(displacementZ, forceZ);
-
-            // FMA angle
-            const __m256d potentialEnergy6 = _mm256_fmadd_pd(epsilon24s, lj12m6, shift6s);
-            const __m256d potentialEnergy6Masked = _mm256_and_pd(localMask, potentialEnergy6);
-
-            __m256d ownedMaskA = _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateA4),
-                                               _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
-            __m256d energyFactor = _mm256_blendv_pd(_zero, _one, ownedMaskA);
-            if constexpr (newton3) {
-              const __m256i ownedStateB =
-                  remainderCase
-                      ? _mm256_castpd_si256(_mm256_maskload_pd(
-                            reinterpret_cast<double const *>(&isSiteOwned[globalSiteBIndex]), _masks[rest - 1]))
-                      : _mm256_loadu_si256(reinterpret_cast<const __m256i *>(&isSiteOwned[globalSiteBIndex]));
-              __m256d ownedMaskB = _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB),
-                                                 _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
-              energyFactor = _mm256_add_pd(energyFactor, _mm256_blendv_pd(_zero, _one, ownedMaskB));
-            }
-            potentialEnergySum = _mm256_fmadd_pd(energyFactor, potentialEnergy6Masked, potentialEnergySum);
-            virialSumX = _mm256_fmadd_pd(energyFactor, virialX, virialSumX);
-            virialSumY = _mm256_fmadd_pd(energyFactor, virialY, virialSumY);
-            virialSumZ = _mm256_fmadd_pd(energyFactor, virialZ, virialSumZ);
-          }
-        }
-
-        const double sumfx = horizontalSum(forceSumAX);
-        const double sumfy = horizontalSum(forceSumAY);
-        const double sumfz = horizontalSum(forceSumAZ);
-
-        // sum forces on single site in mol A
-        siteForceX[siteA] += sumfx;
-        siteForceY[siteA] += sumfy;
-        siteForceZ[siteA] += sumfz;
+        std::array<__m256d, 3> exactSitePositionsA = {_mm256_broadcast_sd(&exactSitePositionX[siteA]),
+                                                     _mm256_broadcast_sd(&exactSitePositionY[siteA]),
+                                                     _mm256_broadcast_sd(&exactSitePositionZ[siteA])};
+        SoAFunctorKernel<newton3, false>(siteA,siteIndexB, numSitesB, siteMask, exactSitePositionsA, exactSitePositionsA,
+                                         ownedStateA, &potentialEnergySum, &virialSumX, &virialSumY, &virialSumZ);
       }
       siteIndexA += numSitesA;
     }
@@ -766,11 +617,12 @@ class LJMultisiteFunctorAVX
       const auto unrotatedSitePositionsA =
           useMixing ? _PPLibrary->getSitePositions(typeptrA[molA]) : const_unrotatedSitePositions;
 
-      const auto rotatedSitePositionsA = autopas::utils::quaternion::rotateVectorOfPositions(
-          {q0Aptr[molA], q1Aptr[molA], q2Aptr[molA], q3Aptr[molA]}, unrotatedSitePositionsA);
+      const std::vector<std::array<double, 3>> rotatedSitePositionsA =
+          autopas::utils::quaternion::rotateVectorOfPositions({q0Aptr[molA], q1Aptr[molA], q2Aptr[molA], q3Aptr[molA]},
+                                                              unrotatedSitePositionsA);
 
       // create mask over every mol in cell B (char to keep arrays aligned)
-      std::vector<char, autopas::AlignedAllocator<char>> molMask;
+      std::vector<double, autopas::AlignedAllocator<double>> molMask;
       molMask.reserve(soaB.getNumberOfParticles());
 
       // Broadcast A's data
@@ -823,13 +675,13 @@ class LJMultisiteFunctorAVX
         const auto distanceSquaredCoM = distanceSquaredCoMX + distanceSquaredCoMY + distanceSquaredCoMZ;
 
         // mask sites of molecules beyond cutoff or if molecule is a dummy
-        const auto mask = static_cast<char>(distanceSquaredCoM <= _cutoffSquaredAoS and
+        const auto mask = static_cast<double>(distanceSquaredCoM <= _cutoffSquaredAoS and
                                             ownedStateB != autopas::OwnershipState::dummy);
         molMask[molB - (molA + 1)] = mask;
       }
 
       // Build the site mask
-      std::vector<char, autopas::AlignedAllocator<char>> siteMask(siteCountB);
+      std::vector<double, autopas::AlignedAllocator<double>> siteMask(siteCountB);
 
       for (size_t mol = 0; mol < soaB.getNumberOfParticles(); ++mol) {
         for (size_t siteB = 0; siteB < _PPLibrary->getNumSites(typeptrB[mol]); ++siteB) {
@@ -851,106 +703,17 @@ class LJMultisiteFunctorAVX
 
       // Main loop over sites of molecules in soaA
       for (size_t siteA = 0; siteA < numSitesA; ++siteA) {
-        const __m256d rotatedSitePositionsAX = _mm256_set1_pd(rotatedSitePositionsA[siteA][0]);
-        const __m256d rotatedSitePositionsAY = _mm256_set1_pd(rotatedSitePositionsA[siteA][1]);
-        const __m256d rotatedSitePositionsAZ = _mm256_set1_pd(rotatedSitePositionsA[siteA][2]);
+        std::array<__m256d,3> rotatedSitePositions = {_mm256_broadcast_sd(&rotatedSitePositionsA[siteA][0]),
+                                                     _mm256_broadcast_sd(&rotatedSitePositionsA[siteA][1]),
+                                                     _mm256_broadcast_sd(&rotatedSitePositionsA[siteA][2])};
 
-        const __m256d exactSitePositionsAX = _mm256_set1_pd(rotatedSitePositionsA[siteA][0] + xAptr[molA]);
-        const __m256d exactSitePositionsAY = _mm256_set1_pd(rotatedSitePositionsA[siteA][1] + yAptr[molA]);
-        const __m256d exactSitePositionsAZ = _mm256_set1_pd(rotatedSitePositionsA[siteA][2] + zAptr[molA]);
+        std::array<__m256d,3> exactSitePositions = {_mm256_add_pd(rotatedSitePositions[0], xposA),
+                                                    _mm256_add_pd(rotatedSitePositions[1], yposA),
+                                                    _mm256_add_pd(rotatedSitePositions[2], zposA)};
 
-        // TODO handle the remainder case
-        size_t siteB = 0;
-        for (; siteB < siteCountB; siteB += vecLength) {
-          const __m256d localMask = _mm256_load_pd(reinterpret_cast<const double *>(&siteMask[siteB]));
-          if (_mm256_movemask_pd(localMask) == 0) {
-            continue;
-          }
 
-          // Set sigma, epsilon and shift
-          if constexpr (useMixing) {
-            // TODO Can probably be improved (maybe by loading from mixingDataPtr)
-            sigmaSquareds = _mm256_set_pd(_PPLibrary->getMixingSigmaSquared(siteA, siteB),
-                                          _PPLibrary->getMixingSigmaSquared(siteA, siteB + 1),
-                                          _PPLibrary->getMixingSigmaSquared(siteA, siteB + 2),
-                                          _PPLibrary->getMixingSigmaSquared(siteA, siteB + 3));
-            epsilon24s = _mm256_set_pd(
-                _PPLibrary->getMixing24Epsilon(siteA, siteB), _PPLibrary->getMixing24Epsilon(siteA, siteB + 1),
-                _PPLibrary->getMixing24Epsilon(siteA, siteB + 2), _PPLibrary->getMixing24Epsilon(siteA, siteB + 3));
-            if constexpr (applyShift) {
-              shift6s = _mm256_set_pd(
-                  _PPLibrary->getMixingShift6(siteA, siteB), _PPLibrary->getMixingShift6(siteA, siteB + 1),
-                  _PPLibrary->getMixingShift6(siteA, siteB + 2), _PPLibrary->getMixingShift6(siteA, siteB + 3));
-            }
-          } else {
-            sigmaSquareds = _mm256_set1_pd(const_sigmaSquared);
-            epsilon24s = _mm256_set1_pd(const_epsilon24);
-            if (applyShift) {
-              shift6s = _mm256_set1_pd(const_shift6);
-            }
-          }
+        SoAFunctorKernel<newton3,true>(siteA,0, siteCountB, siteMask,exactSitePositions,rotatedSitePositions,ownedStateA,&potentialEnergySum,&virialSumX,&virialSumY,&virialSumZ);
 
-          const __m256d siteGlobals = _mm256_set1_pd(!calculateGlobals);
-          const __m256d siteOwned = _mm256_load_pd(reinterpret_cast<const double *>(&isSiteOwned[siteB]));
-          const __m256d isSiteBOwned = _mm256_or_pd(siteGlobals, siteOwned);
-
-          const __m256d exactSitePositionsBX = _mm256_load_pd(&exactSitePositionX[siteB]);
-          const __m256d exactSitePositionsBY = _mm256_load_pd(&exactSitePositionY[siteB]);
-          const __m256d exactSitePositionsBZ = _mm256_load_pd(&exactSitePositionZ[siteB]);
-
-          const __m256d displacementX = _mm256_sub_pd(exactSitePositionsAX, exactSitePositionsBX);
-          const __m256d displacementY = _mm256_sub_pd(exactSitePositionsAY, exactSitePositionsBY);
-          const __m256d displacementZ = _mm256_sub_pd(exactSitePositionsAZ, exactSitePositionsBZ);
-
-          const __m256d distanceSquaredX = _mm256_mul_pd(displacementX, displacementX);
-          const __m256d distanceSquaredY = _mm256_mul_pd(displacementY, displacementY);
-          const __m256d distanceSquaredZ = _mm256_mul_pd(displacementZ, displacementZ);
-
-          const __m256d distanceSquared =
-              _mm256_add_pd(distanceSquaredX, _mm256_add_pd(distanceSquaredY, distanceSquaredZ));
-
-          const __m256d invDistSquared = _mm256_div_pd(_one, distanceSquared);
-          const __m256d lj2 = _mm256_mul_pd(sigmaSquareds, invDistSquared);
-          const __m256d lj6 = _mm256_mul_pd(_mm256_mul_pd(lj2, lj2), lj2);
-          const __m256d lj12 = _mm256_mul_pd(lj6, lj6);
-          const __m256d lj12m6 = _mm256_sub_pd(lj12, lj6);
-          const __m256d scalar = _mm256_mul_pd(epsilon24s, _mm256_mul_pd(_mm256_add_pd(lj12, lj12m6), invDistSquared));
-          const __m256d scalarMultiple = _mm256_and_pd(localMask, scalar);
-
-          const __m256d forceX = _mm256_mul_pd(scalarMultiple, displacementX);
-          const __m256d forceY = _mm256_mul_pd(scalarMultiple, displacementY);
-          const __m256d forceZ = _mm256_mul_pd(scalarMultiple, displacementZ);
-
-          const __m256d torqueAX =
-              _mm256_fmsub_pd(rotatedSitePositionsAY, forceZ, _mm256_mul_pd(rotatedSitePositionsAZ, forceY));
-          const __m256d torqueAY =
-              _mm256_fmsub_pd(rotatedSitePositionsAZ, forceX, _mm256_mul_pd(rotatedSitePositionsAX, forceZ));
-          const __m256d torqueAZ =
-              _mm256_fmsub_pd(rotatedSitePositionsAX, forceY, _mm256_mul_pd(rotatedSitePositionsAY, forceX));
-
-          forceSumAX = _mm256_add_pd(forceSumAX, forceX);
-          forceSumAY = _mm256_add_pd(forceSumAY, forceY);
-          forceSumAZ = _mm256_add_pd(forceSumAZ, forceZ);
-
-          torqueSumAX = _mm256_add_pd(torqueSumAX, torqueAX);
-          torqueSumAY = _mm256_add_pd(torqueSumAY, torqueAY);
-          torqueSumAZ = _mm256_add_pd(torqueSumAZ, torqueAZ);
-
-          if constexpr (newton3) {
-            __m256d forceSumBX = _mm256_load_pd(&siteForceX[siteB]);
-            __m256d forceSumBY = _mm256_load_pd(&siteForceY[siteB]);
-            __m256d forceSumBZ = _mm256_load_pd(&siteForceZ[siteB]);
-            forceSumBX = _mm256_sub_pd(forceSumBX, forceX);
-            forceSumBY = _mm256_sub_pd(forceSumBY, forceY);
-            forceSumBZ = _mm256_sub_pd(forceSumBZ, forceZ);
-            _mm256_store_pd(siteForceX.data() + siteB, forceSumBX);
-            _mm256_store_pd(siteForceY.data() + siteB, forceSumBY);
-            _mm256_store_pd(siteForceZ.data() + siteB, forceSumBZ);
-          }
-
-          // TODO Global calculations
-        }
-        // TODO Here comes the remainder loop
       }
       // Load old force and torque
       __m256d forceAX = _mm256_load_pd(&fxAptr[molA]);
@@ -1027,6 +790,171 @@ class LJMultisiteFunctorAVX
       //      _aosThreadData[threadNum].virialSum[1] += virialSumY * newton3Factor;
       //      _aosThreadData[threadNum].virialSum[2] += virialSumZ * newton3Factor;
     }
+  }
+
+  template <bool newton3, bool torque>
+  inline void SoAFunctorKernel(const size_t siteIndexA, const size_t siteIndexB, const size_t numSitesB,
+                               const std::vector<double, autopas::AlignedAllocator<double>> &siteMask,
+                               const std::array<__m256d, 3>& exactSitePositionsA,
+                               const std::array<__m256d, 3>& rotatedSitePositionsA,
+                               const autopas::OwnershipState ownedStateA, __m256d *potentialEnergySum,
+                               __m256d *virialSumX, __m256d *virialSumY, __m256d *virialSumZ) {
+    // Sums used for siteA
+    __m256d forceSumAX = _zero;
+    __m256d forceSumAY = _zero;
+    __m256d forceSumAZ = _zero;
+
+    __m256d torqueSumAX = _zero;
+    __m256d torqueSumAY = _zero;
+    __m256d torqueSumAZ = _zero;
+
+    __m256d sigmaSquareds = _zero;
+    __m256d epsilon24s = _zero;
+    __m256d shift6s = _zero;
+
+    __m256i ownedStateA4 = _mm256_set1_epi64x(static_cast<int64_t>(ownedStateA));
+
+    const double *mixingPtr = (_PPLibrary->getMixingDataPtr(siteTypes[siteIndexA], 0));
+
+    for (size_t siteB = 0; siteB < numSitesB; siteB += vecLength) {
+      const size_t rest = numSitesB - siteB;
+      const bool remainderCase = rest < vecLength;
+      __m256i remainderMask = _one;
+      if (remainderCase) {
+        remainderMask = _masks[rest - 1];
+      }
+
+      const size_t globalSiteBIndex = siteB + siteIndexB;
+      const __m256d localMask =
+          remainderCase ? _mm256_maskload_pd(&siteMask[siteB], remainderMask) : _mm256_loadu_pd(&siteMask[siteB]);
+      if (_mm256_movemask_pd(localMask) == 0) {
+        continue;
+      }
+
+      // Not sure if shifting is correct
+      if constexpr (useMixing) {
+        __m256i sindex =
+            remainderCase ? _mm256_maskload_epi64(
+                                reinterpret_cast<const long long *>(siteTypes.data() + globalSiteBIndex), remainderMask)
+                          : _mm256_loadu_si256(reinterpret_cast<const __m256i *>(siteTypes.data() + globalSiteBIndex));
+        sindex = _mm256_mul_epu32(
+            sindex, _mm256_set1_epi64x(3));  // Multiply indices by 3 since each mixing data contains 3 doubles
+        epsilon24s = _mm256_i64gather_pd(mixingPtr, sindex, 8);
+        sigmaSquareds = _mm256_i64gather_pd(mixingPtr + 1, sindex, 8);
+        if constexpr (applyShift) {
+          shift6s = _mm256_i64gather_pd(mixingPtr + 2, sindex, 8);
+        }
+      } else {
+        epsilon24s = _mm256_set1_pd(_epsilon24AoS);
+        sigmaSquareds = _mm256_set1_pd(_sigmaSquaredAoS);
+        if constexpr (applyShift) {
+          shift6s = _mm256_set1_pd(_shift6AoS);
+        }
+      }
+      const __m256d exactSitePositionsBX =
+          remainderCase ? _mm256_maskload_pd(&exactSitePositionX[globalSiteBIndex], remainderMask)
+                        : _mm256_loadu_pd(&exactSitePositionX[globalSiteBIndex]);
+      const __m256d exactSitePositionsBY =
+          remainderCase ? _mm256_maskload_pd(&exactSitePositionY[globalSiteBIndex], remainderMask)
+                        : _mm256_loadu_pd(&exactSitePositionY[globalSiteBIndex]);
+      const __m256d exactSitePositionsBZ =
+          remainderCase ? _mm256_maskload_pd(&exactSitePositionZ[globalSiteBIndex], remainderMask)
+                        : _mm256_loadu_pd(&exactSitePositionZ[globalSiteBIndex]);
+
+      const __m256d displacementX = _mm256_sub_pd(exactSitePositionsA[0], exactSitePositionsBX);
+      const __m256d displacementY = _mm256_sub_pd(exactSitePositionsA[1], exactSitePositionsBY);
+      const __m256d displacementZ = _mm256_sub_pd(exactSitePositionsA[2], exactSitePositionsBZ);
+
+      const __m256d distanceSquaredX = _mm256_mul_pd(displacementX, displacementX);
+      const __m256d distanceSquaredY = _mm256_mul_pd(displacementY, displacementY);
+      const __m256d distanceSquaredZ = _mm256_mul_pd(displacementZ, displacementZ);
+
+      const __m256d distanceSquared =
+          _mm256_add_pd(distanceSquaredX, _mm256_add_pd(distanceSquaredY, distanceSquaredZ));
+
+      const __m256d invDistSquared = _mm256_div_pd(_one, distanceSquared);
+      const __m256d lj2 = _mm256_mul_pd(sigmaSquareds, invDistSquared);
+      const __m256d lj6 = _mm256_mul_pd(_mm256_mul_pd(lj2, lj2), lj2);
+      const __m256d lj12 = _mm256_mul_pd(lj6, lj6);
+      const __m256d lj12m6 = _mm256_sub_pd(lj12, lj6);
+      const __m256d scalar = _mm256_mul_pd(epsilon24s, _mm256_mul_pd(_mm256_add_pd(lj12, lj12m6), invDistSquared));
+      const __m256d scalarMultiple = _mm256_and_pd(localMask, scalar);
+
+      const __m256d forceX = _mm256_mul_pd(scalarMultiple, displacementX);
+      const __m256d forceY = _mm256_mul_pd(scalarMultiple, displacementY);
+      const __m256d forceZ = _mm256_mul_pd(scalarMultiple, displacementZ);
+
+      forceSumAX = _mm256_add_pd(forceSumAX, forceX);
+      forceSumAY = _mm256_add_pd(forceSumAY, forceY);
+      forceSumAZ = _mm256_add_pd(forceSumAZ, forceZ);
+
+      if constexpr (torque) {
+        const __m256d torqueAX =
+            _mm256_fmsub_pd(rotatedSitePositionsA[1], forceZ, _mm256_mul_pd(rotatedSitePositionsA[2], forceY));
+        const __m256d torqueAY =
+            _mm256_fmsub_pd(rotatedSitePositionsA[2], forceX, _mm256_mul_pd(rotatedSitePositionsA[0], forceZ));
+        const __m256d torqueAZ =
+            _mm256_fmsub_pd(rotatedSitePositionsA[0], forceY, _mm256_mul_pd(rotatedSitePositionsA[1], forceX));
+
+        torqueSumAX = _mm256_add_pd(torqueSumAX, torqueAX);
+        torqueSumAY = _mm256_add_pd(torqueSumAY, torqueAY);
+        torqueSumAZ = _mm256_add_pd(torqueSumAZ, torqueAZ);
+      }
+
+      // N3
+      __m256d forceSumBX = remainderCase ? _mm256_maskload_pd(&siteForceX[globalSiteBIndex], remainderMask)
+                                         : _mm256_loadu_pd(&siteForceX[globalSiteBIndex]);
+      __m256d forceSumBY = remainderCase ? _mm256_maskload_pd(&siteForceY[globalSiteBIndex], remainderMask)
+                                         : _mm256_loadu_pd(&siteForceY[globalSiteBIndex]);
+      __m256d forceSumBZ = remainderCase ? _mm256_maskload_pd(&siteForceZ[globalSiteBIndex], remainderMask)
+                                         : _mm256_loadu_pd(&siteForceZ[globalSiteBIndex]);
+      forceSumBX = _mm256_sub_pd(forceSumBX, forceX);
+      forceSumBY = _mm256_sub_pd(forceSumBY, forceY);
+      forceSumBZ = _mm256_sub_pd(forceSumBZ, forceZ);
+      remainderCase ? _mm256_maskstore_pd(siteForceX.data() + globalSiteBIndex, remainderMask, forceSumBX)
+                    : _mm256_storeu_pd(siteForceX.data() + globalSiteBIndex, forceSumBX);
+      remainderCase ? _mm256_maskstore_pd(siteForceY.data() + globalSiteBIndex, remainderMask, forceSumBY)
+                    : _mm256_storeu_pd(siteForceY.data() + globalSiteBIndex, forceSumBY);
+      remainderCase ? _mm256_maskstore_pd(siteForceZ.data() + globalSiteBIndex, remainderMask, forceSumBZ)
+                    : _mm256_storeu_pd(siteForceZ.data() + globalSiteBIndex, forceSumBZ);
+
+      // Global calculation
+      if constexpr (calculateGlobals) {
+        const __m256d virialX = _mm256_mul_pd(displacementX, forceX);
+        const __m256d virialY = _mm256_mul_pd(displacementY, forceY);
+        const __m256d virialZ = _mm256_mul_pd(displacementZ, forceZ);
+
+        // FMA angle
+        const __m256d potentialEnergy6 = _mm256_fmadd_pd(epsilon24s, lj12m6, shift6s);
+        const __m256d potentialEnergy6Masked = _mm256_and_pd(localMask, potentialEnergy6);
+
+        __m256d ownedMaskA =
+            _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateA4), _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
+        __m256d energyFactor = _mm256_blendv_pd(_zero, _one, ownedMaskA);
+        if constexpr (newton3) {
+          const __m256i ownedStateB =
+              remainderCase ? _mm256_castpd_si256(_mm256_maskload_pd(
+                                  reinterpret_cast<double const *>(&isSiteOwned[globalSiteBIndex]), _masks[rest - 1]))
+                            : _mm256_loadu_si256(reinterpret_cast<const __m256i *>(&isSiteOwned[globalSiteBIndex]));
+          __m256d ownedMaskB =
+              _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB), _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
+          energyFactor = _mm256_add_pd(energyFactor, _mm256_blendv_pd(_zero, _one, ownedMaskB));
+        }
+        *potentialEnergySum = _mm256_fmadd_pd(energyFactor, potentialEnergy6Masked, *potentialEnergySum);
+        *virialSumX = _mm256_fmadd_pd(energyFactor, virialX, *virialSumX);
+        *virialSumY = _mm256_fmadd_pd(energyFactor, virialY, *virialSumY);
+        *virialSumZ = _mm256_fmadd_pd(energyFactor, virialZ, *virialSumZ);
+      }
+    }
+
+    const double sumfx = horizontalSum(forceSumAX);
+    const double sumfy = horizontalSum(forceSumAY);
+    const double sumfz = horizontalSum(forceSumAZ);
+
+    // sum forces on single site in mol A
+    siteForceX[siteIndexA] += sumfx;
+    siteForceY[siteIndexA] += sumfy;
+    siteForceZ[siteIndexA] += sumfz;
   }
 
  public:
