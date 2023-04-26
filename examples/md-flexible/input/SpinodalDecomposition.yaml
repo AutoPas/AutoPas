@@ -5,7 +5,7 @@ box-min                          :  [-0.75, -0.75, -0.75]
 box-max                          :  [239.25, 239.25, 239.25]
 deltaT                           :  0.00182367
 iterations                       :  30000
-periodic-boundaries              :  true
+boundary-type                    :  [periodic, periodic, periodic]
 thermostat:
   initialTemperature             :  0.7
   targetTemperature              :  0.7
