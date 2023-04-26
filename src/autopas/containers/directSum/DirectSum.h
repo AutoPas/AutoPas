@@ -144,11 +144,13 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
    * @copydoc ParticleContainerInterface::getTraversalSelectorInfo()
    */
   [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
+    using namespace autopas::utils::ArrayMath::literals;
+
     // direct sum technically consists of two cells (owned + halo)
     return TraversalSelectorInfo(
         {2, 0, 0},
         this->getCutoff() /*intentionally use cutoff here, as the directsumtraversal should be using the cutoff.*/,
-        utils::ArrayMath::sub(this->getBoxMax(), this->getBoxMin()), 0);
+        this->getBoxMax() - this->getBoxMin(), 0);
   }
 
   [[nodiscard]] ContainerIterator<ParticleType, true, false> begin(

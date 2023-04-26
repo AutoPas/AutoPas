@@ -178,6 +178,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   bool updateHaloParticle(const Particle &haloParticle) override {
+    using namespace autopas::utils::ArrayMath::literals;
+
     Particle pCopy = haloParticle;
     pCopy.setOwnershipState(OwnershipState::halo);
 
@@ -188,9 +190,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
 
     // this might be called from a parallel region so force this iterator to be sequential
-    for (auto it = getRegionIterator(utils::ArrayMath::subScalar(pCopy.getR(), this->getVerletSkin() / 2),
-                                     utils::ArrayMath::addScalar(pCopy.getR(), this->getVerletSkin() / 2),
-                                     IteratorBehavior::halo | IteratorBehavior::forceSequential, &additionalVectors);
+    for (auto it =
+             getRegionIterator(pCopy.getR() - (this->getVerletSkin() / 2), pCopy.getR() + (this->getVerletSkin() / 2),
+                               IteratorBehavior::halo | IteratorBehavior::forceSequential, &additionalVectors);
          it.isValid(); ++it) {
       if (pCopy.getID() == it->getID()) {
         *it = pCopy;
@@ -366,7 +368,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
-    auto boxSizeWithHalo = utils::ArrayMath::sub(this->getHaloBoxMax(), this->getHaloBoxMin());
+    using namespace autopas::utils::ArrayMath::literals;
+
+    auto boxSizeWithHalo = this->getHaloBoxMax() - this->getHaloBoxMin();
     auto towerSideLength = internal::VerletClusterListsRebuilder<Particle>::estimateOptimalGridSideLength(
         this->getNumberOfParticles(), boxSizeWithHalo, _clusterSize);
     auto towersPerDim =

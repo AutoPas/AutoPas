@@ -208,6 +208,8 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @return a container of references to nearby halo cells
    */
   std::vector<ParticleCell *> getNearbyHaloCells(const std::array<double, 3> &position, double allowedDistance) const {
+    using namespace autopas::utils::ArrayMath::literals;
+
     auto index3d = get3DIndexOfPosition(position);
 
     std::vector<ParticleCell *> closeHaloCells;
@@ -227,8 +229,8 @@ class CellBlock3D : public CellBorderAndFlagManager {
       closeHaloCells.push_back(&getCell(index3d));
     }
 
-    auto lowIndex3D = get3DIndexOfPosition(utils::ArrayMath::subScalar(position, allowedDistance));
-    auto highIndex3D = get3DIndexOfPosition(utils::ArrayMath::addScalar(position, allowedDistance));
+    const auto lowIndex3D = get3DIndexOfPosition(position - allowedDistance);
+    const auto highIndex3D = get3DIndexOfPosition(position + allowedDistance);
     // these indices are (already) at least 0 and at most _cellsPerDimensionWithHalo[i]-1
 
     auto currentIndex = lowIndex3D;
@@ -370,6 +372,8 @@ template <class ParticleCell>
 inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, const std::array<double, 3> &bMin,
                                                const std::array<double, 3> &bMax, double interactionLength,
                                                double cellSizeFactor) {
+  using namespace autopas::utils::ArrayMath::literals;
+
   _cells = &vec;
   _boxMin = bMin;
   _boxMax = bMax;
@@ -399,8 +403,7 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, c
 
     numCells *= _cellsPerDimensionWithHalo[d];
   }
-  AutoPasLog(TRACE, "Box Length incl Halo : {}",
-             autopas::utils::ArrayUtils::to_string(autopas::utils::ArrayMath::sub(_haloBoxMax, _haloBoxMin)));
+  AutoPasLog(TRACE, "Box Length incl Halo : {}", autopas::utils::ArrayUtils::to_string(_haloBoxMax - _haloBoxMin));
   AutoPasLog(TRACE, "Cells/Dim  incl Halo : {}", autopas::utils::ArrayUtils::to_string(_cellsPerDimensionWithHalo));
   AutoPasLog(TRACE, "Cell Length          : {}", autopas::utils::ArrayUtils::to_string(_cellLength));
   AutoPasLog(TRACE, "Interaction Length   : {}", interactionLength);

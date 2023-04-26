@@ -16,9 +16,8 @@ void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
                         const std::array<double, 3> &globalForce, bool fastParticlesThrow) {
   using autopas::utils::ArrayUtils::operator<<;
-  using autopas::utils::ArrayMath::add;
   using autopas::utils::ArrayMath::dot;
-  using autopas::utils::ArrayMath::mulScalar;
+  using namespace autopas::utils::ArrayMath::literals;
 
   const auto maxAllowedDistanceMoved = autoPasContainer.getVerletSkinPerTimestep() / 2.;
   const auto maxAllowedDistanceMovedSquared = maxAllowedDistanceMoved * maxAllowedDistanceMoved;
@@ -34,9 +33,9 @@ void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
     auto f = iter->getF();
     iter->setOldF(f);
     iter->setF(globalForce);
-    v = mulScalar(v, deltaT);
-    f = mulScalar(f, (deltaT * deltaT / (2 * m)));
-    const auto displacement = add(v, f);
+    v *= deltaT;
+    f *= (deltaT * deltaT / (2 * m));
+    const auto displacement = v + f;
     // sanity check that particles are not too fast for the Verlet skin technique.
     // If this condition is violated once this is not necessarily an error. Only if the total distance traveled over
     // the whole rebuild frequency is farther than the skin we lose interactions.
@@ -45,7 +44,7 @@ void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
 #pragma omp critical
       std::cerr << "A particle moved farther than verletSkinPerTimestep/2: " << std::sqrt(distanceMovedSquared) << " > "
                 << autoPasContainer.getVerletSkinPerTimestep() << "/2 = " << maxAllowedDistanceMoved << "\n"
-                << *iter << "\nNew Position: " << add(iter->getR(), displacement) << std::endl;
+                << *iter << "\nNew Position: " << iter->getR() + displacement << std::endl;
       if (fastParticlesThrow) {
         throwException = true;
       }
@@ -61,8 +60,7 @@ void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
 void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
                          const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
   // helper declarations for operations with vector
-  using autopas::utils::ArrayMath::add;
-  using autopas::utils::ArrayMath::mulScalar;
+  using namespace autopas::utils::ArrayMath::literals;
 
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
@@ -71,7 +69,7 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
     auto m = particlePropertiesLibrary.getMass(iter->getTypeId());
     auto force = iter->getF();
     auto oldForce = iter->getOldF();
-    auto newV = mulScalar((add(force, oldForce)), deltaT / (2 * m));
+    auto newV = (force + oldForce) * (deltaT / (2 * m));
     iter->addV(newV);
   }
 }

@@ -16,6 +16,8 @@ extern template bool autopas::AutoPas<Molecule>::iteratePairwise(EmptyFunctor<Mo
 template <typename AutoPasT>
 auto RegionParticleIteratorTest::defaultInit(AutoPasT &autoPas, const autopas::ContainerOption &containerOption,
                                              double cellSizeFactor) {
+  using namespace autopas::utils::ArrayMath::literals;
+
   autoPas.setBoxMin({0., 0., 0.});
   autoPas.setBoxMax({10., 10., 10.});
   autoPas.setCutoff(1);
@@ -28,10 +30,8 @@ auto RegionParticleIteratorTest::defaultInit(AutoPasT &autoPas, const autopas::C
 
   autoPas.init();
 
-  auto haloBoxMin =
-      autopas::utils::ArrayMath::subScalar(autoPas.getBoxMin(), autoPas.getVerletSkin() + autoPas.getCutoff());
-  auto haloBoxMax =
-      autopas::utils::ArrayMath::addScalar(autoPas.getBoxMax(), autoPas.getVerletSkin() + autoPas.getCutoff());
+  auto haloBoxMin = autoPas.getBoxMin() - (autoPas.getVerletSkin() + autoPas.getCutoff());
+  auto haloBoxMax = autoPas.getBoxMax() + (autoPas.getVerletSkin() + autoPas.getCutoff());
 
   return std::make_tuple(haloBoxMin, haloBoxMax);
 }
@@ -43,20 +43,19 @@ auto RegionParticleIteratorTest::defaultInit(AutoPasT &autoPas, const autopas::C
  * 4. Compare the found IDs to the expectations from the initialization.
  */
 TEST_P(RegionParticleIteratorTest, testRegionAroundCorner) {
+  using namespace autopas::utils::ArrayMath::literals;
+
   auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc, behavior] = GetParam();
 
   // init autopas and fill it with some particles
   autopas::AutoPas<Molecule> autoPas;
   defaultInit(autoPas, containerOption, cellSizeFactor);
 
-  using ::autopas::utils::ArrayMath::add;
-  using ::autopas::utils::ArrayMath::mulScalar;
-  using ::autopas::utils::ArrayMath::sub;
-  const auto domainLength = sub(autoPas.getBoxMax(), autoPas.getBoxMin());
+  const auto domainLength = autoPas.getBoxMax() - autoPas.getBoxMin();
   // draw a box around the lower corner of the domain
-  const auto searchBoxLengthHalf = mulScalar(domainLength, 0.3);
-  const auto searchBoxMin = sub(autoPas.getBoxMin(), searchBoxLengthHalf);
-  const auto searchBoxMax = add(autoPas.getBoxMin(), searchBoxLengthHalf);
+  const auto searchBoxLengthHalf = domainLength * 0.3;
+  const auto searchBoxMin = autoPas.getBoxMin() - searchBoxLengthHalf;
+  const auto searchBoxMax = autoPas.getBoxMin() + searchBoxLengthHalf;
 
   // initialize particles and remember which IDs are in the search box
   const auto [particleIDsOwned, particleIDsHalo, particleIDsInBoxOwned, particleIDsInBoxHalo] =

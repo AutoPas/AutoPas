@@ -22,6 +22,7 @@ using ::testing::_;
 template <typename AutoPasT>
 auto ContainerIteratorTest::defaultInit(AutoPasT &autoPas, autopas::ContainerOption &containerOption,
                                         double cellSizeFactor) {
+  using namespace autopas::utils::ArrayMath::literals;
   autoPas.setBoxMin({0., 0., 0.});
   autoPas.setBoxMax({10., 10., 10.});
   autoPas.setCutoff(1);
@@ -34,10 +35,8 @@ auto ContainerIteratorTest::defaultInit(AutoPasT &autoPas, autopas::ContainerOpt
 
   autoPas.init();
 
-  auto haloBoxMin =
-      autopas::utils::ArrayMath::subScalar(autoPas.getBoxMin(), autoPas.getVerletSkin() + autoPas.getCutoff());
-  auto haloBoxMax =
-      autopas::utils::ArrayMath::addScalar(autoPas.getBoxMax(), autoPas.getVerletSkin() + autoPas.getCutoff());
+  auto haloBoxMin = autoPas.getBoxMin() - (autoPas.getVerletSkin() + autoPas.getCutoff());
+  auto haloBoxMax = autoPas.getBoxMax() + (autoPas.getVerletSkin() + autoPas.getCutoff());
 
   return std::make_tuple(haloBoxMin, haloBoxMax);
 }

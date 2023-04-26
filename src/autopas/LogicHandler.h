@@ -117,6 +117,7 @@ class LogicHandler {
    * @return Vector of particles that are outside the box after the resize.
    */
   std::vector<Particle> resizeBox(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) {
+    using namespace autopas::utils::ArrayMath::literals;
     const auto &oldMin = _autoTuner.getContainer()->getBoxMin();
     const auto &oldMax = _autoTuner.getContainer()->getBoxMax();
 
@@ -135,9 +136,9 @@ class LogicHandler {
     }
 
     // warn if domain changes too drastically
-    const auto newLength = utils::ArrayMath::sub(boxMax, boxMin);
-    const auto oldLength = utils::ArrayMath::sub(oldMax, oldMin);
-    const auto relDiffLength = utils::ArrayMath::div(newLength, oldLength);
+    const auto newLength = boxMax - boxMin;
+    const auto oldLength = oldMax - oldMin;
+    const auto relDiffLength = newLength / oldLength;
     for (size_t i = 0; i < newLength.size(); ++i) {
       // warning threshold is set arbitrary and up for change if needed
       if (relDiffLength[i] > 1.3 or relDiffLength[i] < 0.7) {

@@ -16,7 +16,8 @@ auto MixedBoundaryConditionTest::setUpExpectations(
     const std::vector<std::array<double, 3>> &particlePositions, const std::array<double, 3> &boxMin,
     const std::array<double, 3> &boxMax, const double sigma, const double interactionLength,
     const std::array<options::BoundaryTypeOption, 3> &boundaryConditions) {
-  const auto boxLength = autopas::utils::ArrayMath::sub(boxMax, boxMin);
+  using namespace autopas::utils::ArrayMath::literals;
+  const auto boxLength = boxMax - boxMin;
   auto expectedPositions = particlePositions;
   auto expectedHaloPositions = particlePositions;
   std::vector<std::array<double, 3>> expectedForces;
@@ -85,6 +86,8 @@ auto MixedBoundaryConditionTest::setUpExpectations(
 
 void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<double, 3>> &particlePositions,
                                               const std::array<options::BoundaryTypeOption, 3> &boundaryConditions) {
+  using namespace autopas::utils::ArrayMath::literals;
+
   const double cutoff = 0.3;
   const double sigma = 1.;
 
@@ -100,7 +103,7 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
   config.boundaryOption.value = boundaryConditions;
   config.addParticleType(0, 1., sigma, 1.);
 
-  const std::array<double, 3> boxLength = autopas::utils::ArrayMath::sub(config.boxMax.value, config.boxMin.value);
+  const std::array<double, 3> boxLength = config.boxMax.value - config.boxMin.value;
   RegularGridDecomposition domainDecomposition(config);
 
   auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);

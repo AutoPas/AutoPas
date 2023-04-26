@@ -35,9 +35,10 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
                   int unsigned treeSplitThreshold, double interactionLength, double cellSizeFactor)
       : OctreeNodeInterface<Particle>(boxMin, boxMax, parent, treeSplitThreshold, interactionLength, cellSizeFactor) {
     using namespace autopas::utils;
+    using namespace autopas::utils::ArrayMath::literals;
 
     // The inner node is initialized with 8 leaves.
-    const auto center = ArrayMath::mulScalar(ArrayMath::add(boxMin, boxMax), 0.5);
+    const auto center = (boxMin + boxMax) * 0.5;
     for (auto i = 0; i < _children.size(); ++i) {
       // Subdivide the bounding box of the parent.
       std::array<double, 3> newBoxMin = {};
