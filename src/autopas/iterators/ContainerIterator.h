@@ -424,6 +424,7 @@ class ContainerIterator {
   /**
    * Index of the Vector where the current particle is found.
    * "Vector" typically refers to either a cell in the particle container or one of the additional vectors.
+   * If the Iterator is currently invalid, the state of this index is undefined.
    */
   size_t _currentVectorIndex{};
 
@@ -434,6 +435,7 @@ class ContainerIterator {
 
   /**
    * Index within the current vector.
+   * If the Iterator is currently invalid, the state of this index is undefined.
    */
   size_t _currentParticleIndex{0};
 
