@@ -14,6 +14,7 @@
 #include "autopas/AutoPasDecl.h"
 #include "autopas/InstanceCounter.h"
 #include "autopas/Version.h"
+#include "autopas/utils/CompileInfo.h"
 
 // These next three includes have dependencies to all of AutoPas and thus are moved here from AutoPasDecl.h.
 #include "autopas/LogicHandler.h"
@@ -55,6 +56,7 @@ AutoPas<Particle> &AutoPas<Particle>::operator=(AutoPas &&other) noexcept {
 template <class Particle>
 void AutoPas<Particle>::init() {
   AutoPasLog(INFO, "AutoPas Version: {}", AutoPas_VERSION);
+  AutoPasLog(info, "Compiled with  : {}", utils::CompileInfo::getCompilerInfo());
   if (_numSamples % _verletRebuildFrequency != 0) {
     AutoPasLog(WARN,
                "Number of samples ({}) is not a multiple of the rebuild frequency ({}). This can lead to problems "
