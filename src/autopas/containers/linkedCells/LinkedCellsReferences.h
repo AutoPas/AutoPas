@@ -313,11 +313,11 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   ParticleIteratorWrapper<ParticleType, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
                                                                 const std::array<double, 3> &higherCorner,
                                                                 IteratorBehavior behavior) override {
+    using namespace autopas::utils::ArrayMath::literals;
+
     // We increase the search region by skin, as particles can move over cell borders.
-    auto startIndex3D =
-        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::subScalar(lowerCorner, this->getVerletSkin()));
-    auto stopIndex3D =
-        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::addScalar(higherCorner, this->getVerletSkin()));
+    const auto startIndex3D = this->_cellBlock.get3DIndexOfPosition(lowerCorner - this->getVerletSkin());
+    const auto stopIndex3D = this->_cellBlock.get3DIndexOfPosition(higherCorner + this->getVerletSkin());
 
     size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
                                 (stopIndex3D[2] - startIndex3D[2] + 1);
@@ -341,11 +341,11 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   ParticleIteratorWrapper<ParticleType, false> getRegionIterator(const std::array<double, 3> &lowerCorner,
                                                                  const std::array<double, 3> &higherCorner,
                                                                  IteratorBehavior behavior) const override {
+    using namespace autopas::utils::ArrayMath::literals;
+
     // We increase the search region by skin, as particles can move over cell borders.
-    auto startIndex3D =
-        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::subScalar(lowerCorner, this->getVerletSkin()));
-    auto stopIndex3D =
-        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::addScalar(higherCorner, this->getVerletSkin()));
+    const auto startIndex3D = this->_cellBlock.get3DIndexOfPosition(lowerCorner - this->getVerletSkin());
+    const auto stopIndex3D = this->_cellBlock.get3DIndexOfPosition(higherCorner + this->getVerletSkin());
 
     size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
                                 (stopIndex3D[2] - startIndex3D[2] + 1);
@@ -372,11 +372,11 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                        const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    using namespace autopas::utils::ArrayMath::literals;
+
     // We increase the search region by skin, as particles can move over cell borders.
-    auto startIndex3D =
-        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::subScalar(lowerCorner, this->getVerletSkin()));
-    auto stopIndex3D =
-        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::addScalar(higherCorner, this->getVerletSkin()));
+    const auto startIndex3D = this->_cellBlock.get3DIndexOfPosition(lowerCorner - this->getVerletSkin());
+    const auto stopIndex3D = this->_cellBlock.get3DIndexOfPosition(higherCorner + this->getVerletSkin());
 
     size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
                                 (stopIndex3D[2] - startIndex3D[2] + 1);
@@ -405,11 +405,11 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   template <typename Lambda, typename A>
   void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    using namespace autopas::utils::ArrayMath::literals;
+
     // We increase the search region by skin, as particles can move over cell borders.
-    auto startIndex3D =
-        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::subScalar(lowerCorner, this->getVerletSkin()));
-    auto stopIndex3D =
-        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::addScalar(higherCorner, this->getVerletSkin()));
+    const auto startIndex3D = this->_cellBlock.get3DIndexOfPosition(lowerCorner - this->getVerletSkin());
+    const auto stopIndex3D = this->_cellBlock.get3DIndexOfPosition(higherCorner + this->getVerletSkin());
 
     size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
                                 (stopIndex3D[2] - startIndex3D[2] + 1);

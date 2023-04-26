@@ -322,6 +322,7 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::computeOffsets(
     std::array<unsigned long, 3> cellsPerDimension) {
+  using namespace autopas::utils::ArrayMath::literals;
   using std::make_pair;
 
   std::vector<std::vector<std::pair<unsigned long, unsigned long>>> cellPairOffsets;
@@ -334,7 +335,7 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
 
   _baseOffsets.resize(ov1);
 
-  std::array<unsigned long, 3> overlap_1 = utils::ArrayMath::addScalar(_overlap, 1ul);
+  const std::array<unsigned long, 3> overlap_1 = _overlap + 1ul;
 
   std::vector<unsigned long> cellOffsets;
   cellOffsets.reserve(overlap_1[0] * overlap_1[1] * overlap_1[2]);
@@ -359,8 +360,9 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
         // origin
         {
           // check whether cell is within cutoff radius
-          auto distVec = utils::ArrayMath::mul({std::max(0.0, x - 1.0), std::max(0.0, y - 1.0), std::max(0.0, z - 1.0)},
-                                               _cellLength);
+          const auto distVec =
+              std::array<double, 3>{std::max(0.0, x - 1.0), std::max(0.0, y - 1.0), std::max(0.0, z - 1.0)} *
+              _cellLength;
           const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
           if (distSquare <= interactionLengthSquare) {
             cellPairOffsets[x].push_back(make_pair(cellOffsets[z], offset));
@@ -369,8 +371,9 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
         // back left
         if (y != _overlap[1] and z != 0) {
           // check whether cell is within cutoff radius
-          auto distVec = utils::ArrayMath::mul(
-              {std::max(0.0, x - 1.0), std::max(0.0, _overlap[1] - y - 1.0), std::max(0.0, z - 1.0)}, _cellLength);
+          const auto distVec = std::array<double, 3>{std::max(0.0, x - 1.0), std::max(0.0, _overlap[1] - y - 1.0),
+                                                     std::max(0.0, z - 1.0)} *
+                               _cellLength;
           const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
           if (distSquare <= interactionLengthSquare) {
             cellPairOffsets[x].push_back(make_pair(cellOffsets[ov1_squared - ov1 + z], offset));
@@ -379,8 +382,9 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
         // front right
         if (x != _overlap[0] and (y != 0 or z != 0)) {
           // check whether cell is within cutoff radius
-          auto distVec = utils::ArrayMath::mul(
-              {std::max(0.0, _overlap[0] - x - 1.0), std::max(0.0, y - 1.0), std::max(0.0, z - 1.0)}, _cellLength);
+          const auto distVec = std::array<double, 3>{std::max(0.0, _overlap[0] - x - 1.0), std::max(0.0, y - 1.0),
+                                                     std::max(0.0, z - 1.0)} *
+                               _cellLength;
           const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
           if (distSquare <= interactionLengthSquare) {
             cellPairOffsets[x].push_back(make_pair(cellOffsets[ov1_squared * _overlap[0] + z], offset));
@@ -389,9 +393,9 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
         // back right
         if (y != _overlap[1] and x != _overlap[0] and z != 0) {
           // check whether cell is within cutoff radius
-          auto distVec = utils::ArrayMath::mul(
-              {std::max(0.0, _overlap[0] - x - 1.0), std::max(0.0, _overlap[1] - y - 1.0), std::max(0.0, z - 1.0)},
-              _cellLength);
+          const auto distVec = std::array<double, 3>{std::max(0.0, _overlap[0] - x - 1.0),
+                                                     std::max(0.0, _overlap[1] - y - 1.0), std::max(0.0, z - 1.0)} *
+                               _cellLength;
           const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
           if (distSquare <= interactionLengthSquare) {
             cellPairOffsets[x].push_back(make_pair(cellOffsets[ov1_squared * ov1 - ov1 + z], offset));

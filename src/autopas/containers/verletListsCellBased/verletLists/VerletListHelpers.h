@@ -60,10 +60,12 @@ class VerletListHelpers {
     }
 
     void AoSFunctor(Particle &i, Particle &j, bool /*newton3*/) override {
+      using namespace autopas::utils::ArrayMath::literals;
+
       if (i.isDummy() or j.isDummy()) {
         return;
       }
-      auto dist = utils::ArrayMath::sub(i.getR(), j.getR());
+      auto dist = i.getR() - j.getR();
 
       double distsquare = utils::ArrayMath::dot(dist, dist);
       if (distsquare < _interactionLengthSquared) {
@@ -222,7 +224,9 @@ class VerletListHelpers {
     }
 
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
-      auto dist = utils::ArrayMath::sub(i.getR(), j.getR());
+      using namespace autopas::utils::ArrayMath::literals;
+
+      auto dist = i.getR() - j.getR();
       double distsquare = utils::ArrayMath::dot(dist, dist);
       if (distsquare < _cutoffsquared) {
         // this is thread safe, we have variables on the stack

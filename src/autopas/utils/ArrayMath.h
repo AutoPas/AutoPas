@@ -248,4 +248,212 @@ template <class T, std::size_t SIZE>
   return mulScalar(a, static_cast<T>(1) / L2Norm(a));
 }
 
+// namespace for templated operators
+inline namespace literals {
+
+/**
+ * Adds two arrays, returns the result.
+ * @tparam T floating point type
+ * @tparam SIZE size of the arrays
+ * @param a first summand
+ * @param b second summand
+ * @return a + b
+ */
+template <class T, std::size_t SIZE>
+inline std::array<T, SIZE> operator+(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+  return add(a, b);
+}
+
+/**
+ * Assignment operator to add two arrays
+ * @tparam T floating point type
+ * @tparam SIZE size of the arrays
+ * @param a first summand
+ * @param b second summand
+ * @return a + b
+ */
+template <class T, std::size_t SIZE>
+inline std::array<T, SIZE> &operator+=(std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+  for (std::size_t d = 0; d < SIZE; ++d) {
+    a[d] += b[d];
+  }
+  return a;
+}
+
+/**
+ * Subtracts array b from array a and returns the result.
+ * @tparam T floating point type
+ * @tparam SIZE size of the arrays
+ * @param a
+ * @param b
+ * @return a - b
+ */
+template <class T, std::size_t SIZE>
+inline std::array<T, SIZE> operator-(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+  return sub(a, b);
+}
+
+/**
+ * Assignment operator to subtract two arrays
+ * @tparam T floating point type
+ * @tparam SIZE size of the arrays
+ * @param a
+ * @param b
+ * @return a - b
+ */
+template <class T, std::size_t SIZE>
+inline std::array<T, SIZE> &operator-=(std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+  for (std::size_t d = 0; d < SIZE; ++d) {
+    a[d] -= b[d];
+  }
+  return a;
+}
+
+/**
+ * Multiplies two array's element wise and returns the result.
+ * @tparam T floating point type
+ * @tparam SIZE size of the arrays
+ * @param a
+ * @param b
+ * @return element-wise multiplication of a and b
+ */
+template <class T, std::size_t SIZE>
+inline std::array<T, SIZE> operator*(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+  return mul(a, b);
+}
+
+/**
+ * Assignment operator to multply two arrays
+ * @tparam T floating point type
+ * @tparam SIZE size of the arrays
+ * @param a
+ * @param b
+ * @return element-wise multiplication of a and b
+ */
+template <class T, std::size_t SIZE>
+inline std::array<T, SIZE> &operator*=(std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+  for (std::size_t d = 0; d < SIZE; ++d) {
+    a[d] *= b[d];
+  }
+  return a;
+}
+
+/**
+ * Divides two array's element-wise and returns the result.
+ * @tparam T floating point type
+ * @tparam SIZE size of the arrays
+ * @param a dividend.
+ * @param b divisor.
+ * @return element-wise quotient of a and b, i.e., `result[i] = a[i]/b[i]`
+ */
+template <class T, std::size_t SIZE>
+inline std::array<T, SIZE> operator/(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+  return div(a, b);
+}
+
+/**
+ * Assignment operator to divide two arrays
+ * @tparam T floating point type
+ * @tparam SIZE size of the arrays
+ * @param a dividend.
+ * @param b divisor.
+ * @return element-wise quotient of a and b, i.e., `result[i] = a[i]/b[i]`
+ */
+template <class T, std::size_t SIZE>
+inline std::array<T, SIZE> &operator/=(std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+  for (std::size_t d = 0; d < SIZE; ++d) {
+    a[d] /= b[d];
+  }
+  return a;
+}
+
+/**
+ * Adds a scalar s to each element of array a and returns the result.
+ * @tparam T floating point type
+ * @tparam SIZE size of the array a
+ * @param a the array
+ * @param s the scalar to be added to each element of a
+ * @return array who's elements are a[i]+s
+ */
+template <class T, std::size_t SIZE>
+inline std::array<T, SIZE> operator+(const std::array<T, SIZE> &a, T s) {
+  return addScalar(a, s);
+}
+
+/**
+ * Assignment operator to add a scalar s to each element of array
+ * @tparam T floating point type
+ * @tparam SIZE size of the array a
+ * @param a the array
+ * @param s the scalar to be added to each element of a
+ * @return array who's elements are a[i]+s
+ */
+template <class T, std::size_t SIZE>
+inline std::array<T, SIZE> &operator+=(std::array<T, SIZE> &a, T s) {
+  for (std::size_t d = 0; d < SIZE; ++d) {
+    a[d] += s;
+  }
+  return a;
+}
+
+/**
+ * Subtracts a scalar s from each element of array a and returns the result.
+ * @tparam T floating point type
+ * @tparam SIZE size of the array a
+ * @param a the array
+ * @param s the scalar to be subtracted from each element of a
+ * @return array who's elements are a[i]-s
+ */
+template <class T, std::size_t SIZE>
+inline std::array<T, SIZE> operator-(const std::array<T, SIZE> &a, T s) {
+  return subScalar(a, s);
+}
+
+/**
+ * Assignment operator to subtract a scalar s to each element of array
+ * @tparam T floating point type
+ * @tparam SIZE size of the array a
+ * @param a the array
+ * @param s the scalar to be subtracted from each element of a
+ * @return array who's elements are a[i]-s
+ */
+template <class T, std::size_t SIZE>
+inline std::array<T, SIZE> &operator-=(std::array<T, SIZE> &a, T s) {
+  for (std::size_t d = 0; d < SIZE; ++d) {
+    a[d] -= s;
+  }
+  return a;
+}
+
+/**
+ * Multiplies a scalar s to each element of array a and returns the result.
+ * @tparam T floating point type
+ * @tparam SIZE size of the array a
+ * @param a the array
+ * @param s the scalar to be multiplied to each element of a
+ * @return array who's elements are a[i]*s
+ */
+template <class T, std::size_t SIZE>
+inline std::array<T, SIZE> operator*(const std::array<T, SIZE> &a, T s) {
+  return mulScalar(a, s);
+}
+
+/**
+ * Assignment operator to multiply a scalar s to each element of array
+ * @tparam T floating point type
+ * @tparam SIZE size of the array a
+ * @param a the array
+ * @param s the scalar to be multiplied to each element of a
+ * @return array who's elements are a[i]*s
+ */
+template <class T, std::size_t SIZE>
+inline std::array<T, SIZE> &operator*=(std::array<T, SIZE> &a, T s) {
+  for (std::size_t d = 0; d < SIZE; ++d) {
+    a[d] *= s;
+  }
+  return a;
+}
+
+}  // namespace literals
+
 }  // namespace autopas::utils::ArrayMath

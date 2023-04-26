@@ -60,9 +60,11 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
    * @copydoc OctreeNodeInterface::insert()
    */
   std::unique_ptr<OctreeNodeInterface<Particle>> insert(const Particle &p) override {
+    using namespace autopas::utils::ArrayMath::literals;
+
     // Check if the size of the new leaves would become smaller than cellSizeFactor*interactionLength
-    std::array<double, 3> splitLeafDimensions = utils::ArrayMath::sub(this->getBoxMax(), this->getBoxMin());
-    splitLeafDimensions = utils::ArrayMath::mulScalar(splitLeafDimensions, 0.5);
+    std::array<double, 3> splitLeafDimensions = this->getBoxMax() - this->getBoxMin();
+    splitLeafDimensions *= 0.5;
     bool anyNewDimSmallerThanMinSize = false;
     for (auto d = 0; d < 3; ++d) {
       // auto cellSizeFactor = 1.0;

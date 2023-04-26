@@ -54,6 +54,8 @@ class Sphere : public Object {
    * @param f Function called for every point.
    */
   void iteratePositions(const std::function<void(std::array<double, 3>)> &f) const {
+    using namespace autopas::utils::ArrayMath::literals;
+
     // generate regular grid for 1/8th of the sphere
     for (int z = 0; z <= _radius; ++z) {
       for (int y = 0; y <= _radius; ++y) {
@@ -66,13 +68,9 @@ class Sphere : public Object {
               for (int l = -1; l <= 1; l += 2) {
                 std::array<double, 3> mirrorMultipliers = {(double)i, (double)k, (double)l};
                 // position mirrored, scaled and absolute
-                std::array<double, 3> posVector = autopas::utils::ArrayMath::add(
-                    _center, autopas::utils::ArrayMath::mulScalar(
-                                 autopas::utils::ArrayMath::mul(relativePos, mirrorMultipliers), _particleSpacing));
+                std::array<double, 3> posVector = _center + ((relativePos * mirrorMultipliers) * _particleSpacing);
 
-                double distFromCentersSquare =
-                    autopas::utils::ArrayMath::dot(autopas::utils::ArrayMath::sub(posVector, _center),
-                                                   autopas::utils::ArrayMath::sub(posVector, _center));
+                double distFromCentersSquare = autopas::utils::ArrayMath::dot(posVector - _center, posVector - _center);
                 const auto r = (_radius + 1) * _particleSpacing;
                 const auto rSquare = r * r;
                 // since the loops create a cubic grid only apply f for positions inside the sphere

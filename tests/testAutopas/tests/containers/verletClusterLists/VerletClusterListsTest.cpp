@@ -98,11 +98,13 @@ TEST_F(VerletClusterListsTest, testIterator) {
 }
 
 auto calculateValidPairs(const std::vector<autopas::Particle *> &particles, double cutoffSqr) {
+  using namespace autopas::utils::ArrayMath::literals;
+
   std::vector<std::pair<autopas::Particle *, autopas::Particle *>> particlePairs;
   for (auto *particlePtr : particles) {
     for (auto *neighborPtr : particles) {
       if (particlePtr != neighborPtr) {
-        auto dist = autopas::utils::ArrayMath::sub(particlePtr->getR(), neighborPtr->getR());
+        auto dist = particlePtr->getR() - neighborPtr->getR();
         if (autopas::utils::ArrayMath::dot(dist, dist) <= cutoffSqr) {
           particlePairs.emplace_back(particlePtr, neighborPtr);
         }
@@ -121,6 +123,8 @@ void compareParticlePairs(const std::vector<std::pair<autopas::Particle *, autop
 }
 
 TEST_F(VerletClusterListsTest, testNeighborListsValidAfterMovingLessThanHalfSkin) {
+  using namespace autopas::utils::ArrayMath::literals;
+
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
@@ -158,8 +162,7 @@ TEST_F(VerletClusterListsTest, testNeighborListsValidAfterMovingLessThanHalfSkin
     // generate some different directions
     std::array<double, 3> direction = {(double)(i % 2), (double)(i % 3),
                                        (double)(i % numParticles) / (double)numParticles};
-    auto offset = autopas::utils::ArrayMath::mulScalar(autopas::utils::ArrayMath::normalize(direction),
-                                                       skinPerTimestep * rebuildFrequency / 2.1);
+    auto offset = autopas::utils::ArrayMath::normalize(direction) * (skinPerTimestep * rebuildFrequency / 2.1);
     particle.addR(offset);
     // Upper corner is excluded
     constexpr double smallValue = 0.000001;
