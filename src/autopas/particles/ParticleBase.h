@@ -316,7 +316,7 @@ class ParticleBase {
   /**
    * Marks a particle as deleted.
    * @note: This function should not be used from outside of AutoPas,
-   * because the logic handler keeps track of the number of particles. Instead, use AutoPas::markAsDeleted(iterator).
+   * because the logic handler keeps track of the number of particles. Instead, use AutoPas::deleteParticle(iterator).
    * @note: From within autopas, you might want to use internal::markParticleAsDeleted(Particle &particle)
    */
   void markAsDeleted() {

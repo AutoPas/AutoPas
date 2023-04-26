@@ -12,7 +12,7 @@
 /**
  * Wraps the iterator of arbitrary cells to provide a common interface.
  * @note This class is necessary because some cells store `Particle` and others `Particle *`.
- * @tparam StorageType Type of the cell, used to derive the particle and storage type.
+ * @tparam StorageType Type of the cell, used to derive the particle type.
  * @tparam modifiable If false, this is a const iterator, meaning, the underlying particle can not be modified.
  */
 template <class StorageType, bool modifiable>
