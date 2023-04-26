@@ -254,6 +254,22 @@ template <class T, std::size_t SIZE>
 }
 
 /**
+ * For each element in a, computes the smallest integer value not less than the element.
+ * @tparam T floating point type
+ * @tparam SIZE size of the array
+ * @param a input array
+ * @return rounded up values of a
+ */
+template <class T, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<T, SIZE> ceil(const std::array<T, SIZE> &a) {
+  std::array<T, SIZE> result{};
+  for (std::size_t d = 0; d < SIZE; ++d) {
+    result[d] = std::ceil(a[d]);
+  }
+  return result;
+}
+
+/**
  * Generates a normalized array (|a| = 1).
  * @tparam T floating point type
  * @tparam SIZE size of the array

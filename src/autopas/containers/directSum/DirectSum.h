@@ -65,6 +65,11 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
    */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::directSum; }
 
+  void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
+    this->getCell().reserve(numParticles);
+    this->getHaloCell().reserve(numParticlesHaloEstimate);
+  };
+
   /**
    * @copydoc ParticleContainerInterface::addParticleImpl()
    */

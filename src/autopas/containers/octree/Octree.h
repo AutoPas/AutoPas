@@ -156,6 +156,10 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    */
   [[nodiscard]] CellType getParticleCellTypeEnum() override { return CellType::FullParticleCell; }
 
+  void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
+    // TODO create a balanced tree and reserve space in the leaves.
+  }
+
   /**
    * @copydoc ParticleContainerInterface::addParticleImpl()
    */

@@ -76,6 +76,10 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    */
   [[nodiscard]] CellType getParticleCellTypeEnum() override { return CellType::ReferenceParticleCell; }
 
+  void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
+    _cellBlock.reserve(numParticles + numParticlesHaloEstimate);
+  }
+
   /**
    * @copydoc ParticleContainerInterface::addParticleImpl()
    */

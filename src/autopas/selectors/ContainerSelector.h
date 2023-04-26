@@ -22,6 +22,7 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/selectors/ContainerSelectorInfo.h"
+#include "autopas/utils/NumParticlesEstimator.h"
 #include "autopas/utils/StringUtils.h"
 
 namespace autopas {
@@ -164,6 +165,13 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
 
   // copy particles so they do not get lost when container is switched
   if (_currentContainer != nullptr) {
+    // with these assumptions slightly more space is reserved as numParticlesTotal already includes halos
+    const auto numParticlesTotal = _currentContainer->getNumberOfParticles();
+    const auto numParticlesHalo = autopas::utils::NumParticlesEstimator::estimateNumHalosUniform(
+        numParticlesTotal, _currentContainer->getBoxMin(), _currentContainer->getBoxMax(),
+        _currentContainer->getInteractionLength());
+
+    container->reserve(numParticlesTotal, numParticlesHalo);
     for (auto particleIter = _currentContainer->begin(IteratorBehavior::ownedOrHalo); particleIter.isValid();
          ++particleIter) {
       // add particle as inner if it is owned

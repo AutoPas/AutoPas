@@ -236,9 +236,8 @@ This logger is switched on/off via the `CMake` variable `AUTOPAS_LOG_TUNINGDATA`
 Creates a csv containing the results of every tuning phase. Useful if only the high level end results are of interest.
 This logger is switched on/off via the `CMake` variable `AUTOPAS_LOG_TUNINGRESULTS`.
 
-# TODO SHOW LOOP WITH EXAMPLE!
-
 ### Simulation Loop
+*TODO SHOW WHOLE LOOP WITH EXAMPLE!*
 One simulation loop should always consist of the following phases:
 
 1. Updating the Container:

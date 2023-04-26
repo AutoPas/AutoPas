@@ -207,9 +207,7 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
         particlesForLeftNeighbor, particlesForRightNeighbor, leftNeighbor, rightNeighbor);
     haloParticles.insert(haloParticles.end(), receivedHaloParticles.begin(), receivedHaloParticles.end());
   }
-  for (const auto &particle : haloParticles) {
-    autoPasContainer.addHaloParticle(particle);
-  }
+  autoPasContainer.addHaloParticles(haloParticles);
 }
 
 void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasContainer,
@@ -237,8 +235,16 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
 
       const auto immigrants = sendAndReceiveParticlesLeftAndRight(particlesForLeftNeighbor, particlesForRightNeighbor,
                                                                   leftNeighbor, rightNeighbor);
-
-      for (const auto &particle : immigrants) {
+#ifdef AUTOPAS_OPENMP
+#pragma omp declare reduction(vecMergeParticle : std::remove_reference_t<decltype(emigrants)> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
+// make sure each buffer gets filled equally while not inducing scheduling overhead
+#pragma omp parallel for reduction(vecMergeParticle \
+                                   : emigrants),    \
+    schedule(static, std::max(1ul, immigrants.size() / omp_get_max_threads()))
+#endif
+      // we can't use range based for loops here because clang accepts this only starting with version 11
+      for (size_t i = 0; i < immigrants.size(); ++i) {
+        const auto &particle = immigrants[i];
         if (isInsideLocalDomain(particle.getR())) {
           autoPasContainer.addParticle(particle);
         } else {
@@ -426,22 +432,20 @@ RegularGridDecomposition::categorizeParticlesIntoLeftAndRightNeighbor(const std:
         position[direction] = std::min(justInsideOfBox, periodicPosition);
         leftNeighborParticles.back().setR(position);
       }
-    } else {
       // if the particle is right of the box
-      if (position[direction] >= _localBoxMax[direction]) {
-        rightNeighborParticles.push_back(particle);
+    } else if (position[direction] >= _localBoxMax[direction]) {
+      rightNeighborParticles.push_back(particle);
 
-        // if the particle is outside the global box move it to the other side (periodic boundary)
-        if (isNear(_localBoxMax[direction], _globalBoxMax[direction])) {
-          // TODO: check if this failsafe is really reasonable.
-          //  It should only trigger if a particle's position was already inside the box?
-          const auto periodicPosition = position[direction] - globalBoxLength[direction];
-          position[direction] = std::max(_globalBoxMin[direction], periodicPosition);
-          rightNeighborParticles.back().setR(position);
-        }
-      } else {
-        uncategorizedParticles.push_back(particle);
+      // if the particle is outside the global box move it to the other side (periodic boundary)
+      if (isNear(_localBoxMax[direction], _globalBoxMax[direction])) {
+        // TODO: check if this failsafe is really reasonable.
+        //  It should only trigger if a particle's position was already inside the box?
+        const auto periodicPosition = position[direction] - globalBoxLength[direction];
+        position[direction] = std::max(_globalBoxMin[direction], periodicPosition);
+        rightNeighborParticles.back().setR(position);
       }
+    } else {
+      uncategorizedParticles.push_back(particle);
     }
   }
   return {leftNeighborParticles, rightNeighborParticles, uncategorizedParticles};

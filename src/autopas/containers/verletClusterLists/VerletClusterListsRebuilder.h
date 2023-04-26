@@ -103,7 +103,8 @@ class VerletClusterListsRebuilder {
 
     // create towers and make an estimate for how many particles memory needs to be allocated
     // 2.7 seems high but gave the best performance when testing
-    const auto sizeEstimation = static_cast<size_t>((static_cast<double>(numParticles) / numTowers) * 2.7);
+    const auto sizeEstimation =
+        static_cast<size_t>((static_cast<double>(numParticles) / static_cast<double>(numTowers)) * 2.7);
     for (int i = 0; i < numTowers; ++i) {
       _towers.emplace_back(ClusterTower<Particle>(_clusterSize));
       _towers[i].reserve(sizeEstimation);
@@ -135,7 +136,8 @@ class VerletClusterListsRebuilder {
     double dummyParticleDistance = _interactionLength * 2;
     double startDummiesX = 1000 * _haloBoxMax[0];
     for (size_t index = 0; index < _towers.size(); index++) {
-      _towers[index].setDummyValues(startDummiesX + index * dummyParticleDistance, dummyParticleDistance);
+      _towers[index].setDummyValues(startDummiesX + static_cast<double>(index) * dummyParticleDistance,
+                                    dummyParticleDistance);
     }
   }
   /**
@@ -213,7 +215,7 @@ class VerletClusterListsRebuilder {
   void sortParticlesIntoTowers(const std::vector<std::vector<Particle>> &particles2D) {
     const auto numVectors = particles2D.size();
 #if defined(AUTOPAS_OPENMP)
-    /// @todo: find sensible chunksize
+    /// @todo: find sensible chunk size
 #pragma omp parallel for schedule(dynamic)
 #endif
     for (size_t index = 0; index < numVectors; index++) {
@@ -319,7 +321,8 @@ class VerletClusterListsRebuilder {
     const int interactionCellTowerX = towerIndexX / _interactionLengthInTowers;
     const int interactionCellTowerY = towerIndexY / _interactionLengthInTowers;
 
-    const int numInteractionCellsX = static_cast<int>(std::ceil(_towersPerDim[0] / (double)_interactionLengthInTowers));
+    const int numInteractionCellsX =
+        static_cast<int>(std::ceil(_towersPerDim[0] / static_cast<double>(_interactionLengthInTowers)));
 
     return interactionCellTowerX + numInteractionCellsX * interactionCellTowerY;
   }
@@ -339,8 +342,8 @@ class VerletClusterListsRebuilder {
    */
   bool isForwardNeighbor(const int towerIndexX, const int towerIndexY, const int neighborIndexX,
                          const int neighborIndexY) {
-    auto interactionCellTowerIndex1D = get1DInteractionCellIndexForTower(towerIndexX, towerIndexY);
-    auto interactionCellNeighborIndex1D = get1DInteractionCellIndexForTower(neighborIndexX, neighborIndexY);
+    const auto interactionCellTowerIndex1D = get1DInteractionCellIndexForTower(towerIndexX, towerIndexY);
+    const auto interactionCellNeighborIndex1D = get1DInteractionCellIndexForTower(neighborIndexX, neighborIndexY);
 
     if (interactionCellNeighborIndex1D > interactionCellTowerIndex1D) {
       return true;
@@ -348,8 +351,8 @@ class VerletClusterListsRebuilder {
       return false;
     }  // else if (interactionCellNeighborIndex1D == interactionCellTowerIndex1D) ...
 
-    auto towerIndex1D = towerIndex2DTo1D(towerIndexX, towerIndexY);
-    auto neighborIndex1D = towerIndex2DTo1D(neighborIndexX, neighborIndexY);
+    const auto towerIndex1D = towerIndex2DTo1D(towerIndexX, towerIndexY);
+    const auto neighborIndex1D = towerIndex2DTo1D(neighborIndexX, neighborIndexY);
 
     return neighborIndex1D >= towerIndex1D;
   }

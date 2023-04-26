@@ -52,12 +52,16 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    */
   CellType getParticleCellTypeEnum() override { return _linkedCells.getParticleCellTypeEnum(); };
 
+  void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
+    _linkedCells.reserve(numParticles, numParticlesHaloEstimate);
+  }
+
   /**
    * @copydoc autopas::ParticleContainerInterface::addParticleImpl
    * @note This function invalidates the neighbor lists.
    */
   void addParticleImpl(const Particle &p) override {
-    _neighborListIsValid = false;
+    _neighborListIsValid.store(false, std::memory_order_relaxed);
     // position is already checked, so call impl directly.
     _linkedCells.addParticleImpl(p);
   }
@@ -67,7 +71,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    * @note This function invalidates the neighbor lists.
    */
   void addHaloParticleImpl(const Particle &haloParticle) override {
-    _neighborListIsValid = false;
+    _neighborListIsValid.store(false, std::memory_order_relaxed);
     // position is already checked, so call impl directly.
     _linkedCells.addHaloParticleImpl(haloParticle);
   }
@@ -82,7 +86,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    * @note This function invalidates the neighbor lists.
    */
   void deleteHaloParticles() override {
-    _neighborListIsValid = false;
+    _neighborListIsValid.store(false, std::memory_order_relaxed);
     _linkedCells.deleteHaloParticles();
   }
 
@@ -91,7 +95,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    * @note This function invalidates the neighbor lists.
    */
   void deleteAllParticles() override {
-    _neighborListIsValid = false;
+    _neighborListIsValid.store(false, std::memory_order_relaxed);
     _linkedCells.deleteAllParticles();
   }
 
@@ -151,7 +155,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
     if (keepNeighborListsValid) {
       return autopas::LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(_linkedCells);
     }
-    _neighborListIsValid = false;
+    _neighborListIsValid.store(false, std::memory_order_relaxed);
     return _linkedCells.updateContainer(false);
   }
 
@@ -311,7 +315,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   LinkedCells<Particle> _linkedCells;
 
   /// specifies if the neighbor list is currently valid
-  bool _neighborListIsValid{false};
+  std::atomic<bool> _neighborListIsValid{false};
 
   /// specifies if the current verlet list was built for newton3
   bool _verletBuiltNewton3{false};

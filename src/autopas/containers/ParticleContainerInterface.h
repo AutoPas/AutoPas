@@ -79,6 +79,13 @@ class ParticleContainerInterface {
   [[nodiscard]] virtual ContainerOption getContainerType() const = 0;
 
   /**
+   * @copydoc AutoPas::reserve()
+   * @param numParticlesHaloEstimate Estimate for the number of halo particles.
+   * Reserves space in the container data structure.
+   */
+  virtual void reserve(size_t numParticles, size_t numParticlesHaloEstimate) = 0;
+
+  /**
    * Adds a particle to the container.
    * @tparam checkInBox Specifies whether a boundary check should be performed. Only disable this if the check has
    * already been performed.
@@ -86,12 +93,8 @@ class ParticleContainerInterface {
    */
   template <bool checkInBox = true>
   void addParticle(const Particle &p) {
-    if constexpr (not checkInBox) {
-      addParticleImpl(p);
-    } else {
-      if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
-        addParticleImpl(p);
-      } else {
+    if constexpr (checkInBox) {
+      if (utils::notInBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
         utils::ExceptionHandler::exception(
             "ParticleContainerInterface: Trying to add a particle that is not in the bounding box.\n"
             "Box Min {}\n"
@@ -100,6 +103,7 @@ class ParticleContainerInterface {
             this->getBoxMin(), this->getBoxMax(), p.toString());
       }
     }
+    addParticleImpl(p);
   };
 
  protected:
@@ -120,21 +124,18 @@ class ParticleContainerInterface {
    */
   template <bool checkInBox = true>
   void addHaloParticle(const Particle &haloParticle) {
-    if constexpr (not checkInBox) {
-      addHaloParticleImpl(haloParticle);
-    } else {
+    if constexpr (checkInBox) {
       /// @todo do we want a check of the particle not being too far away in here as well?
       if (utils::inBox(haloParticle.getR(), this->getBoxMin(), this->getBoxMax())) {
         utils::ExceptionHandler::exception(
-            "Trying to add a halo particle that is not outside of in the bounding box.\n"
+            "ParticleContainerInterface: Trying to add a halo particle that is not outside of in the bounding box.\n"
             "Box Min {}\n"
-            "Box Max {}\n",
-            utils::ArrayUtils::to_string(this->getBoxMin()), utils::ArrayUtils::to_string(this->getBoxMax()),
-            haloParticle.toString());
-      } else {
-        addHaloParticleImpl(haloParticle);
+            "Box Max {}\n"
+            "{}",
+            this->getBoxMin(), this->getBoxMax(), haloParticle.toString());
       }
     }
+    addHaloParticleImpl(haloParticle);
   }
 
  protected:
