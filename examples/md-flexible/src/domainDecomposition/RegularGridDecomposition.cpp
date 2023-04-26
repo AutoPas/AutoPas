@@ -304,9 +304,9 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
         // Calculates force acting on site from another site
         const auto LJKernel = [](const std::array<double, 3> sitePosition, const std::array<double, 3> mirrorSitePosition, const double sigmaSquared, const double epsilon24) {
           const auto displacement = autopas::utils::ArrayMath::sub(sitePosition, mirrorSitePosition);
-          const auto displacementSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
+          const auto distanceSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
 
-          const auto inverseDistanceSquared = 1. / displacementSquared;
+          const auto inverseDistanceSquared = 1. / distanceSquared;
           const auto lj2 = sigmaSquared * inverseDistanceSquared;
           const auto lj6 = lj2 * lj2 * lj2;
           const auto lj12 = lj6 * lj6;

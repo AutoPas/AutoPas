@@ -20,6 +20,15 @@ extern template class autopas::AutoPas<ParticleType>;
  * the particle receives the correct force.
  *
  * Note, this test is not designed to deal with multiple particle types - see reflectiveZoningTest for this.
+ *
+ * The multi-site force calculation works a bit differently to in RegularGridDecomposition. Here, we mirror the molecule
+ * by
+ * a) reflecting the unrotated rigid bodies in the dimension given by the dimension normal to the reflective boundary. (So that
+ * the unrotated body is a mirror image of the unrotated mirror body)
+ * b) reflecting the quaternion with qMirror so that the rotation is mirrored.
+ *
+ * Part (a) involves created a new molecule type for reflections in all 3 dimensions, so is not suitable for real simulations,
+ * but we use it here so that we can compare results of the actually used algorithm with a fairly different algorithm.
  */
 TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   // initialise AutoPas container & domainDecomposition
@@ -41,10 +50,6 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   config.verletRebuildFrequency.value = 10;
   const double sigma = 1.;
   config.addSiteType(0, 1., sigma, 1.);
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
-  config.addMolType(0, {0, 0, 0},
-{{0.74349607, 1.20300191, 0.}, {0.3249197, -1.37638192, 0.}, {-1.37638192, -0.3249197, 0.}}, {5.23606798, 0.76393202, 6.});
-#endif
   config.boundaryOption.value = {options::BoundaryTypeOption::reflective, options::BoundaryTypeOption::reflective,
                                  options::BoundaryTypeOption::reflective};
 
@@ -62,8 +67,15 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
 
   particlePropertiesLibrary->addSiteType(0, 1., sigma, 1.);
 #ifdef MD_FLEXIBLE_USE_MULTI_SITE
+  // Correct Moment of Inertia is irrelevant to test, so accept that they are wrong
   particlePropertiesLibrary->addMolType(0, {0, 0, 0},
                                         {{0.74349607, 1.20300191, 0.}, {0.3249197, -1.37638192, 0.}, {-1.37638192, -0.3249197, 0.}}, {5.23606798, 0.76393202, 6.});
+  particlePropertiesLibrary->addMolType(1, {0, 0, 0},
+                                        {{-0.74349607, 1.20300191, 0.}, {-0.3249197, -1.37638192, 0.}, {1.37638192, -0.3249197, 0.}}, {5.23606798, 0.76393202, 6.});
+  particlePropertiesLibrary->addMolType(2, {0, 0, 0},
+                                        {{0.74349607, -1.20300191, 0.}, {0.3249197, 1.37638192, 0.}, {-1.37638192, 0.3249197, 0.}}, {5.23606798, 0.76393202, 6.});
+  particlePropertiesLibrary->addMolType(3, {0, 0, 0},
+                                        {{0.74349607, 1.20300191, -0.}, {0.3249197, -1.37638192, -0.}, {-1.37638192, -0.3249197, -0.}}, {5.23606798, 0.76393202, 6.});
 #endif
   particlePropertiesLibrary->calculateMixingCoefficients();
 
@@ -83,23 +95,23 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   auto addForceFromReflection = [&](const int dimensionOfBoundary, const bool isUpper) {
 #ifdef MD_FLEXIBLE_USE_MULTI_SITE
     // get properties of mirror particle
-    const auto getMirroredPosition = [&] () {
+    const auto mirroredPosition = [&] () {
       const auto distanceCenterOfMassToBoundary = isUpper ? boxMax[dimensionOfBoundary] - particlePosition[dimensionOfBoundary]
                                                           : particlePosition[dimensionOfBoundary] - boxMin[dimensionOfBoundary];
       auto mirroredPositionTmp = particlePosition;
       mirroredPositionTmp[dimensionOfBoundary] = isUpper ? boxMax[dimensionOfBoundary] + distanceCenterOfMassToBoundary
                                                          : boxMin[dimensionOfBoundary] - distanceCenterOfMassToBoundary;
       return mirroredPositionTmp;
-    };
-    const auto mirroredPosition = getMirroredPosition();
+    } ();
     const auto mirroredQuaternion = autopas::utils::quaternion::qMirror(particleQuaternion, dimensionOfBoundary);
 
     // get rotated site positions
     const auto unrotatedUntranslatedSitePositions = particlePropertiesLibrary->getSitePositions(0);
     const auto rotatedUntranslatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(particleQuaternion, unrotatedUntranslatedSitePositions);
-    const auto rotatedUntranslatedMirroredSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(mirroredQuaternion, unrotatedUntranslatedSitePositions);
+    const auto unrotatedUntranslatedMirrorSitePositions = particlePropertiesLibrary->getSitePositions(1 + dimensionOfBoundary);
+    const auto rotatedUntranslatedMirroredSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(mirroredQuaternion, unrotatedUntranslatedMirrorSitePositions);
 
-
+    // get expected force
     for (int siteOriginal = 0; siteOriginal < particlePropertiesLibrary->getNumSites(0); siteOriginal++) {
       for (int siteMirror = 0; siteMirror < particlePropertiesLibrary->getNumSites(0); siteMirror++) {
         const auto exactSitePosition =
@@ -121,6 +133,12 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
         expectedForce = autopas::utils::ArrayMath::add(expectedForce, forceContribution);
         expectedTorque = autopas::utils::ArrayMath::add(expectedTorque, torqueContribution);
       }
+    }
+
+    // if expectedForce is attractive towards the wall, reset everything
+    if (expectedForce[dimensionOfBoundary] * (isUpper? 1 : -1) > 0) {
+      expectedForce = {0., 0., 0.};
+      expectedTorque = {0., 0., 0.};
     }
 #else
     const auto distanceToBoundary = isUpper ? boxMax[dimensionOfBoundary] - particlePosition[dimensionOfBoundary]
