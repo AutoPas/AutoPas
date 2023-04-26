@@ -14,6 +14,7 @@
 #include "DomainTools.h"
 #include "autopas/AutoPas.h"
 #include "autopas/utils/ArrayUtils.h"
+#include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/Quaternion.h"
 #include "src/ParticleCommunicator.h"
 #include "src/TypeDefinitions.h"
@@ -279,8 +280,8 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
       for (auto p = autoPasContainer.getRegionIterator(reflSkinMin, reflSkinMax, autopas::IteratorBehavior::owned);
            p.isValid(); ++p) {
         // Check that particle is within 6th root of 2 * sigma
-        const auto position = p->getR()[dimensionIndex];
-        const auto distanceToBoundary = std::abs(position - boundaryPosition);
+        const auto position = p->getR();
+        const auto distanceToBoundary = std::abs(position[dimensionIndex] - boundaryPosition);
 
         // For single-site molecules, we discard molecules further than sixthRootOfTwo * sigma, and are left only with
         // molecules who will experience repulsion from the boundary.
@@ -296,24 +297,23 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
 
         // To produce a "mirrored" multi-site molecule that could be used with the multi-site molecule functor would be very nasty.
         // As such, we reimplement the kernel of the lennard-jones force here.
-        // We also use this for single-site molecules, as there are some small benefits e.g. cheaper distance calculations
-        // and don't have to create a mirror molecule.
+        // We also use this for single-site molecules, primarily for consistency but it is also suspected to be cheaper than creating
+        // a mirror particle for use with the actual functor.
 
 
-        // Calculates force acting on site from a mirror site on other side of boundary
-        const auto LJReflectionKernel = [](const double sitePosition, const double boundaryPosition, const double sigmaSquared, const double epsilon24) {
-          const auto displacementToBoundary = boundaryPosition - sitePosition;
-          const auto displacementToMirrorSite = 2 * displacementToBoundary;
-          const auto distanceToMirrorSiteSquared = displacementToMirrorSite * displacementToMirrorSite;
+        // Calculates force acting on site from another site
+        const auto LJKernel = [](const std::array<double, 3> sitePosition, const std::array<double, 3> mirrorSitePosition, const double sigmaSquared, const double epsilon24) {
+          const auto displacement = autopas::utils::ArrayMath::sub(sitePosition, mirrorSitePosition);
+          const auto displacementSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
 
-          const auto inverseDistanceSquared = 1. / distanceToMirrorSiteSquared;
+          const auto inverseDistanceSquared = 1. / displacementSquared;
           const auto lj2 = sigmaSquared * inverseDistanceSquared;
           const auto lj6 = lj2 * lj2 * lj2;
           const auto lj12 = lj6 * lj6;
           const auto lj12m6 = lj12 - lj6;
           const auto scalarMultiple = epsilon24 * (lj12 + lj12m6) * inverseDistanceSquared;
 
-          return scalarMultiple * displacementToMirrorSite;
+          return autopas::utils::ArrayMath::mulScalar(displacement, scalarMultiple);
         };
 
         const bool reflectMoleculeFlag =
@@ -328,28 +328,53 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
           const auto currentForce = p->getF();
           const auto currentTorque = p->getTorque();
 
-          // load site positions
+          // load site positions and types
           const auto unrotatedSitePositions = particlePropertiesLib.getSitePositions(p->getTypeId());
           const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(p->getQ(), unrotatedSitePositions);
+          const auto exactSitePositions = [rotatedSitePositions, position]() {
+            std::vector<std::array<double, 3>> returnedPositions{};
+            returnedPositions.reserve(rotatedSitePositions.size());
+            for (const auto & rotatedSitePosition : rotatedSitePositions) {
+              returnedPositions.push_back(autopas::utils::ArrayMath::add(rotatedSitePosition, position));
+            }
+            return returnedPositions;
+          } ();
           const auto siteTypes = particlePropertiesLib.getSiteTypes(p->getTypeId());
+
+          // get positions of opposing mirror sites
+          const auto exactMirrorSitePositions = [exactSitePositions, boundaryPosition, dimensionIndex]() {
+            std::vector<std::array<double, 3>> returnedPositions{};
+            returnedPositions.reserve(exactSitePositions.size());
+            for (const auto & exactSitePosition : exactSitePositions) {
+              auto mirrorPosition = exactSitePosition;
+              const auto displacementToBoundary = boundaryPosition - exactSitePosition[dimensionIndex];
+              mirrorPosition[dimensionIndex] += 2 * displacementToBoundary;
+              returnedPositions.push_back(mirrorPosition);
+            }
+            return returnedPositions;
+          } ();
+
+          // Add forces + torques for molecule-to-molecule interaction
           for (int site = 0; site < particlePropertiesLib.getNumSites(p->getTypeId()); site++) {
-            const auto siteExactPositionInDimensionNormalToBoundary = rotatedSitePositions[site][dimensionIndex] + position;
-            const auto sigmaSquared = particlePropertiesLib.getMixingSigmaSquared(siteTypes[site], siteTypes[site]);
-            const auto epsilon24 = particlePropertiesLib.getMixing24Epsilon(siteTypes[site], siteTypes[site]);
-            const auto forceOnSite = LJReflectionKernel(siteExactPositionInDimensionNormalToBoundary, boundaryPosition, sigmaSquared, epsilon24);
-            std::array<double, 3> forceOnSite3D = {0, 0, 0};
-            forceOnSite3D[dimensionIndex] += forceOnSite;
-            p->addF(forceOnSite3D);
-            p->addTorque(autopas::utils::ArrayMath::cross(rotatedSitePositions[site], forceOnSite3D));
+            for (int mirrorSite = 0; mirrorSite < particlePropertiesLib.getNumSites(p->getTypeId()); mirrorSite++) {
+              const auto sigmaSquared = particlePropertiesLib.getMixingSigmaSquared(siteTypes[site], siteTypes[site]);
+              const auto epsilon24 = particlePropertiesLib.getMixing24Epsilon(siteTypes[site], siteTypes[site]);
+              const auto force = LJKernel(exactSitePositions[site], exactMirrorSitePositions[mirrorSite], sigmaSquared, epsilon24);
+              p->addF(force);
+              p->addTorque((autopas::utils::ArrayMath::cross(rotatedSitePositions[site], force)));
+            }
           }
 #else
           const auto siteType = p->getTypeId();
+          const auto mirrorPosition = [position, boundaryPosition, dimensionIndex]() {
+            auto returnedPosition = position;
+            returnedPosition[dimensionIndex] += 2 * boundaryPosition;
+            return returnedPosition;
+          } ();
           const auto sigmaSquared = particlePropertiesLib.getMixingSigmaSquared(siteType, siteType);
           const auto epsilon24 = particlePropertiesLib.getMixing24Epsilon(siteType, siteType);
-          const auto force = LJReflectionKernel(position, boundaryPosition, sigmaSquared, epsilon24);
-          std::array<double, 3> force3D = {0, 0, 0};
-          force3D[dimensionIndex] += force;
-          p->addF(force3D);
+          const auto force = LJKernel(position, mirrorPosition, sigmaSquared, epsilon24);
+          p->addF(force);
 #endif
 
 #ifdef MD_FLEXIBLE_USE_MULTI_SITE
