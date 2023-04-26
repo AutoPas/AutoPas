@@ -73,6 +73,10 @@ class DynamicVerletLists : public VerletListsLinkedBase<Particle> {
    }
  }
 
+ bool neighborListsAreValid() override {
+   return true;
+ }
+
 protected:
 
  void updateVerletListsAoS(bool useNewton3) {

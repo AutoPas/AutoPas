@@ -99,6 +99,8 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     // nothing to do.
   }
 
+  bool neighborListsAreValid() override { return true; }
+
   CellType getParticleCellTypeEnum() override { return CellType::FullParticleCell; }
 
   void iteratePairwise(TraversalInterface *traversal) override {

@@ -155,6 +155,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    */
   void rebuildNeighborLists(TraversalInterface *traversal) override { updateDirtyParticleReferences(); }
 
+  bool neighborListsAreValid() override { return true; }
+
   /**
    * Updates all the References in the cells that are out of date.
    * @note Removes all dummy particles.

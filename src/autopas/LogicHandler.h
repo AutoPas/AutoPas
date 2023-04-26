@@ -450,7 +450,7 @@ class LogicHandler {
   }
 
   bool neighborListsAreValid() {
-    if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or _autoTuner.willRebuild()) {
+    if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or _autoTuner.willRebuild() or not _autoTuner.getContainer()->neighborListsAreValid()) {
       _neighborListsAreValid.store(false, std::memory_order_relaxed);
     }
     return _neighborListsAreValid.load(std::memory_order_relaxed);

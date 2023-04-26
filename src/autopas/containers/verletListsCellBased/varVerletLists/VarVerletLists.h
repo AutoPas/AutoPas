@@ -73,6 +73,8 @@ class VarVerletLists : public VerletListsLinkedBase<Particle> {
     }
   }
 
+  bool neighborListsAreValid() override { return true; }
+
  private:
   NeighborList _neighborList;
 };

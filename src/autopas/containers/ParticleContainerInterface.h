@@ -162,6 +162,12 @@ class ParticleContainerInterface {
   virtual void rebuildNeighborLists(TraversalInterface *traversal) = 0;
 
   /**
+   * Determines whether the container's neighbor list is valid
+   * @return A bool for valid
+   */
+  virtual bool neighborListsAreValid() = 0;
+
+  /**
    * Deletes all halo particles.
    */
   virtual void deleteHaloParticles() = 0;

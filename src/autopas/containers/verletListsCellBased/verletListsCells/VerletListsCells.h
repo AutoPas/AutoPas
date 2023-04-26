@@ -131,6 +131,8 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
     this->_neighborListIsValid.store(true, std::memory_order_relaxed);
   }
 
+  bool neighborListsAreValid() override { return true; }
+
   /**
    * Return the cell length of the underlying linked cells structure, normally needed only for unit tests.
    * @return

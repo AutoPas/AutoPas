@@ -186,6 +186,8 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {}
 
+  bool neighborListsAreValid() override { return true; }
+
   std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
                                                            IteratorBehavior iteratorBehavior,
                                                            const std::array<double, 3> &boxMin,
