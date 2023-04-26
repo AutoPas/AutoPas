@@ -106,13 +106,13 @@ TEST_F(BayesianClusterSearchTest, testFindBestDifferent) {
       {autopas::ContainerOption::linkedCells}, autopas::NumberInterval<double>(1, 2),
       {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01}, {autopas::LoadEstimatorOption::none},
       {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos},
-      {autopas::Newton3Option::disabled, autopas::Newton3Option::enabled}, std::set<int>({5, 15, 30}), maxEvidence,
+      {autopas::Newton3Option::disabled, autopas::Newton3Option::enabled}, std::set<int>({15}), maxEvidence,
       autopas::AcquisitionFunctionOption::upperConfidenceBound, "", 50, seed);
 
   // optimal configuration in first tuning phase
   autopas::FeatureVector best1(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08,
                                autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
-                               autopas::Newton3Option::enabled, 5);
+                               autopas::Newton3Option::enabled, 15);
 
   auto dummyTimeFun1 = [&best1](autopas::FeatureVector target) -> long {
     Eigen::VectorXd diff = best1 - target;
@@ -123,7 +123,7 @@ TEST_F(BayesianClusterSearchTest, testFindBestDifferent) {
   // optimal configuration in second tuning phase (only traversal changed)
   autopas::FeatureVector best2(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c01,
                                autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
-                               autopas::Newton3Option::enabled, 5);
+                               autopas::Newton3Option::enabled, 15);
 
   auto dummyTimeFun2 = [&best2](autopas::FeatureVector target) -> long {
     Eigen::VectorXd diff = best2 - target;
@@ -170,13 +170,13 @@ TEST_F(BayesianClusterSearchTest, testFindBestVeryDifferent) {
       {autopas::ContainerOption::linkedCells}, autopas::NumberInterval<double>(1, 2),
       {autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01}, {autopas::LoadEstimatorOption::none},
       {autopas::DataLayoutOption::soa, autopas::DataLayoutOption::aos},
-      {autopas::Newton3Option::disabled, autopas::Newton3Option::enabled}, std::set<int>({5, 15, 30}), maxEvidence,
+      {autopas::Newton3Option::disabled, autopas::Newton3Option::enabled}, std::set<int>({15}), maxEvidence,
       autopas::AcquisitionFunctionOption::upperConfidenceBound, "", 50, seed);
 
   // optimal configuration in first tuning phase
   autopas::FeatureVector best1(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08,
                                autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
-                               autopas::Newton3Option::enabled, 5);
+                               autopas::Newton3Option::enabled, 15);
 
   auto dummyTimeFun1 = [&best1](autopas::FeatureVector target) -> long {
     Eigen::VectorXd diff = best1 - target;
@@ -187,7 +187,7 @@ TEST_F(BayesianClusterSearchTest, testFindBestVeryDifferent) {
   // optimal configuration in second tuning phase (every option changed)
   autopas::FeatureVector best2(autopas::ContainerOption::linkedCells, 2., autopas::TraversalOption::lc_c01,
                                autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                               autopas::Newton3Option::disabled, 5);
+                               autopas::Newton3Option::disabled, 15);
 
   auto dummyTimeFun2 = [&best2](autopas::FeatureVector target) -> long {
     Eigen::VectorXd diff = best2 - target;

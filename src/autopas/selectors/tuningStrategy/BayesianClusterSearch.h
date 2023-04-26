@@ -68,7 +68,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    * @param allowedLoadEstimatorOptions
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
-   * @param allowedVerletRebuilFrequencies
+   * @param allowedVerletRebuildFrequencies
    * @param maxEvidence Stop tuning after given number of evidence provided.
    * @param predAcqFunction Acquisition function used for prediction while tuning.
    * @param outputSuffix Suffix for output logger.
@@ -82,14 +82,14 @@ class BayesianClusterSearch : public TuningStrategyInterface {
       const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions = LoadEstimatorOption::getAllOptions(),
       const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
       const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(),
-      const std::set<int> &allowedVerletRebuilFrequencies = std::set<int>({12, 24, 48}), size_t maxEvidence = 10,
+      const std::set<int> &allowedVerletRebuildFrequencies = std::set<int>({12, 24, 48}), size_t maxEvidence = 10,
       AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::upperConfidenceBound,
       const std::string &outputSuffix = "", size_t predNumLHSamples = 50, unsigned long seed = std::random_device()())
       : _containerOptionsSet(allowedContainerOptions),
         _dataLayoutOptions(allowedDataLayoutOptions.begin(), allowedDataLayoutOptions.end()),
         _newton3Options(allowedNewton3Options.begin(), allowedNewton3Options.end()),
         _cellSizeFactors(allowedCellSizeFactors.clone()),
-        _verletRebuildFrequencies((NumberSetFinite<int>(allowedVerletRebuilFrequencies)).clone()),
+        _verletRebuildFrequencies((NumberSetFinite<int>(allowedVerletRebuildFrequencies)).clone()),
         _encoder(),
         _currentConfig(),
         _invalidConfigs(),
@@ -110,7 +110,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
         _currentOptimalTime(std::numeric_limits<long>::max()),
         _fullSearch(allowedContainerOptions, {allowedCellSizeFactors.getMedian()}, allowedTraversalOptions,
                     allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options,
-                    allowedVerletRebuilFrequencies) {
+                    allowedVerletRebuildFrequencies) {
     if (predNumLHSamples <= 0) {
       utils::ExceptionHandler::exception(
           "BayesianSearch: Number of samples used for predictions must be greater than 0!");
