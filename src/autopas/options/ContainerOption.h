@@ -54,6 +54,11 @@ class ContainerOption : public Option<ContainerOption> {
      */
     verletLists,
     /**
+     * DynamicVerletLists : Similar to VerletLists but neighbor lists are not updated in fixed intervals but based on
+     * the particles' movements
+     */
+    dynamicVerletLists,
+    /**
      * VerletListsCells : Similar to VerletLists but Lists are associated with the underlying cells to achieve location
      * information. Parallelization options similar to LinkedCells.
      */
@@ -105,6 +110,7 @@ class ContainerOption : public Option<ContainerOption> {
         {ContainerOption::linkedCells, "LinkedCells"},
         {ContainerOption::linkedCellsReferences, "LinkedCellsReferences"},
         {ContainerOption::verletLists, "VerletLists"},
+        {ContainerOption::dynamicVerletLists, "DynamicVerletLists"},
         {ContainerOption::verletListsCells, "VerletListsCells"},
         {ContainerOption::verletClusterLists, "VerletClusterLists"},
         {ContainerOption::varVerletListsAsBuild, "VarVerletListsAsBuild"},

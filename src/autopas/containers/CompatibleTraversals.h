@@ -72,6 +72,15 @@ static const std::set<TraversalOption> &allVLCompatibleTraversals() {
 }
 
 /**
+ * Lists all traversal options applicable for the Dynamic Verlet Lists container
+ * @return set of all applicable traversal options.
+ */
+static const std::set<TraversalOption> &allDVLCompatibleTraversals() {
+  static const std::set<TraversalOption> s{TraversalOption::vl_list_iteration};
+  return s;
+}
+
+/**
  * Lists all traversal options applicable for the Verlet Lists Cells container.
  * @return set of all applicable traversal options.
  */
@@ -132,6 +141,9 @@ static inline const std::set<TraversalOption> &allCompatibleTraversals(Container
     }
     case ContainerOption::verletLists: {
       return allVLCompatibleTraversals();
+    }
+    case ContainerOption::dynamicVerletLists: {
+      return allDVLCompatibleTraversals();
     }
     case ContainerOption::verletListsCells: {
       return allVLCCompatibleTraversals();

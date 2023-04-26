@@ -15,6 +15,7 @@
 #include "autopas/containers/linkedCells/LinkedCellsReferences.h"
 #include "autopas/containers/octree/Octree.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
+#include "autopas/containers/verletListsCellBased/dynamicVerletLists/DynamicVerletLists.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/VarVerletLists.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/neighborLists/asBuild/VerletNeighborListAsBuild.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
@@ -124,6 +125,13 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
           VerletLists<Particle>::BuildVerletListType::VerletSoA, containerInfo.cellSizeFactor);
       break;
     }
+    case ContainerOption::dynamicVerletLists: {
+      container = std::make_unique<DynamicVerletLists<Particle>>(
+          _boxMin, _boxMax, _cutoff, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency,
+          DynamicVerletLists<Particle>::BuildVerletListType::VerletSoA, containerInfo.cellSizeFactor);
+      break;
+    }
+
     case ContainerOption::verletListsCells: {
       container = std::make_unique<VerletListsCells<Particle, VLCAllCellsNeighborList<Particle>>>(
           _boxMin, _boxMax, _cutoff, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency,

@@ -13,6 +13,7 @@
 #include "autopas/containers/linkedCells/LinkedCellsReferences.h"
 #include "autopas/containers/octree/Octree.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
+#include "autopas/containers/verletListsCellBased/dynamicVerletLists/DynamicVerletLists.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/VarVerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
@@ -42,6 +43,8 @@ decltype(auto) withStaticContainerType(const std::shared_ptr<ParticleContainerIn
       return function(dynamic_cast<autopas::LinkedCellsReferences<Particle> *>(containerPtr));
     case ContainerOption::verletLists:
       return function(dynamic_cast<autopas::VerletLists<Particle> *>(containerPtr));
+    case ContainerOption::dynamicVerletLists:
+      return function(dynamic_cast<autopas::DynamicVerletLists<Particle>*>(containerPtr));
     case ContainerOption::verletListsCells:
       return function(
           dynamic_cast<autopas::VerletListsCells<Particle, VLCAllCellsNeighborList<Particle>> *>(containerPtr));
