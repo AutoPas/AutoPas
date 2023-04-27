@@ -763,7 +763,7 @@ class LJFunctorSVE
    * @param newton3
    */
   void endTraversal(bool newton3) final {
-    namespace autopas::utils::ArrayMath::literals;
+    using namespace autopas::utils::ArrayMath::literals;
 
     if (_postProcessed) {
       throw utils::ExceptionHandler::AutoPasException(
