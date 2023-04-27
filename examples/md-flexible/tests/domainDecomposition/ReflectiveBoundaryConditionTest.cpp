@@ -17,7 +17,7 @@ extern template class autopas::AutoPas<ParticleType>;
 
 /**
  * Very simple test of reflective boundaries in all 3 dimension. Places identical particles on every face and tests that
- * the particle receives the correct force.
+ * the particle receives the correct force. Get's input parameters from test suite below.
  *
  * Note, this test is not designed to deal with multiple particle types - see reflectiveZoningTest for this.
  *
@@ -69,13 +69,13 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
 #ifdef MD_FLEXIBLE_USE_MULTI_SITE
   // Correct Moment of Inertia is irrelevant to test, so accept that they are wrong
   particlePropertiesLibrary->addMolType(0, {0, 0, 0},
-                                        {{0.74349607, 1.20300191, 0.}, {0.3249197, -1.37638192, 0.}, {-1.37638192, -0.3249197, 0.}}, {5.23606798, 0.76393202, 6.});
+                                        {{0.074349607, 0.120300191, 0.}, {0.03249197, -0.137638192, 0.}, {-0.137638192, -0.03249197, 0.}}, {5.23606798, 0.76393202, 6.});
   particlePropertiesLibrary->addMolType(1, {0, 0, 0},
-                                        {{-0.74349607, 1.20300191, 0.}, {-0.3249197, -1.37638192, 0.}, {1.37638192, -0.3249197, 0.}}, {5.23606798, 0.76393202, 6.});
+                                        {{-0.074349607, 0.120300191, 0.}, {-0.03249197, -0.137638192, 0.}, {0.137638192, -0.03249197, 0.}}, {5.23606798, 0.76393202, 6.});
   particlePropertiesLibrary->addMolType(2, {0, 0, 0},
-                                        {{0.74349607, -1.20300191, 0.}, {0.3249197, 1.37638192, 0.}, {-1.37638192, 0.3249197, 0.}}, {5.23606798, 0.76393202, 6.});
+                                        {{0.074349607, -0.120300191, 0.}, {0.03249197, 0.137638192, 0.}, {-0.137638192, 0.03249197, 0.}}, {5.23606798, 0.76393202, 6.});
   particlePropertiesLibrary->addMolType(3, {0, 0, 0},
-                                        {{0.74349607, 1.20300191, -0.}, {0.3249197, -1.37638192, -0.}, {-1.37638192, -0.3249197, -0.}}, {5.23606798, 0.76393202, 6.});
+                                        {{0.074349607, 0.120300191, -0.}, {0.03249197, -0.137638192, -0.}, {-0.137638192, -0.03249197, -0.}}, {5.23606798, 0.76393202, 6.});
 #endif
   particlePropertiesLibrary->calculateMixingCoefficients();
 
@@ -222,33 +222,37 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
 }
 
 /**
- * Particle 0: Repulsed in x
- * Particle 1: Repulsed in x
- * Particle 2: Repulsed in x (upper)
- * Particle 3: Repulsed in x (upper)
- * Particle 4-7: Same but y
- * Particle 8-11: Same but z
+ * Tests reflective boundaries in all three dimensions for both single and multi site molecules.
+ *
+ * Expected results:
+ * Particle 0: Repulsed in x (lower)
+ * Particle 1: Repulsed in x (upper)
+ * Particle 2,3: Same but y
+ * Particle 4,5: Same but z
+ * Particles 6-11: Same as 0-5 but with a non identity quaternion. Does not run with multi-site compilation.
  */
 INSTANTIATE_TEST_SUITE_P(
     TestSimpleReflections, ReflectiveBoundaryConditionTest,
     testing::Values(/*position*/ /*velocity*/ /*quaternion*/
-                    std::make_tuple(std::array<double, 3>{0.005, 2.50, 2.50}, std::array<double, 4>{1., 0., 0., 0.}),
-                    std::make_tuple(std::array<double, 3>{4.995, 2.50, 2.50}, std::array<double, 4>{1., 0., 0., 0.}),
+                    std::make_tuple(std::array<double, 3>{0.5, 2.50, 2.50}, std::array<double, 4>{1., 0., 0., 0.}),
+                    std::make_tuple(std::array<double, 3>{4.5, 2.50, 2.50}, std::array<double, 4>{1., 0., 0., 0.}),
 
-                    std::make_tuple(std::array<double, 3>{2.50, 0.005, 2.50}, std::array<double, 4>{1., 0., 0., 0.}),
-                    std::make_tuple(std::array<double, 3>{2.50, 4.995, 2.50}, std::array<double, 4>{1., 0., 0., 0.}),
+                    std::make_tuple(std::array<double, 3>{2.50, 0.5, 2.50}, std::array<double, 4>{1., 0., 0., 0.}),
+                    std::make_tuple(std::array<double, 3>{2.50, 4.5, 2.50}, std::array<double, 4>{1., 0., 0., 0.}),
 
-                    std::make_tuple(std::array<double, 3>{2.50, 2.50, 0.005}, std::array<double, 4>{1., 0., 0., 0.}),
-                    std::make_tuple(std::array<double, 3>{2.50, 2.50, 4.995}, std::array<double, 4>{1., 0., 0., 0.}),
+                    std::make_tuple(std::array<double, 3>{2.50, 2.50, 0.5}, std::array<double, 4>{1., 0., 0., 0.}),
+                    std::make_tuple(std::array<double, 3>{2.50, 2.50, 4.5}, std::array<double, 4>{1., 0., 0., 0.}),
 
-                    std::make_tuple(std::array<double, 3>{0.005, 2.50, 2.50}, autopas::utils::ArrayMath::normalize(std::array<double, 4>{1., 0.5, 0.25, 0.125})),
-                    std::make_tuple(std::array<double, 3>{4.995, 2.50, 2.50}, autopas::utils::ArrayMath::normalize(std::array<double, 4>{1., 0.5, 0.25, 0.125})),
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+                    std::make_tuple(std::array<double, 3>{0.5, 2.50, 2.50}, autopas::utils::ArrayMath::normalize(std::array<double, 4>{1., 0.5, 0.25, 0.125})),
+                    std::make_tuple(std::array<double, 3>{4.5, 2.50, 2.50}, autopas::utils::ArrayMath::normalize(std::array<double, 4>{1., 0.5, 0.25, 0.125})),
 
-                    std::make_tuple(std::array<double, 3>{2.50, 0.005, 2.50}, autopas::utils::ArrayMath::normalize(std::array<double, 4>{1., 0.5, 0.25, 0.125})),
-                    std::make_tuple(std::array<double, 3>{2.50, 4.995, 2.50}, autopas::utils::ArrayMath::normalize(std::array<double, 4>{1., 0.5, 0.25, 0.125})),
+                    std::make_tuple(std::array<double, 3>{2.50, 0.5, 2.50}, autopas::utils::ArrayMath::normalize(std::array<double, 4>{1., 0.5, 0.25, 0.125})),
+                    std::make_tuple(std::array<double, 3>{2.50, 4.5, 2.50}, autopas::utils::ArrayMath::normalize(std::array<double, 4>{1., 0.5, 0.25, 0.125})),
 
-                    std::make_tuple(std::array<double, 3>{2.50, 2.50, 0.005}, autopas::utils::ArrayMath::normalize(std::array<double, 4>{1., 0.5, 0.25, 0.125})),
-                    std::make_tuple(std::array<double, 3>{2.50, 2.50, 4.995}, autopas::utils::ArrayMath::normalize(std::array<double, 4>{1., 0.5, 0.25, 0.125})))
+                    std::make_tuple(std::array<double, 3>{2.50, 2.50, 0.5}, autopas::utils::ArrayMath::normalize(std::array<double, 4>{1., 0.5, 0.25, 0.125})),
+                    std::make_tuple(std::array<double, 3>{2.50, 2.50, 4.5}, autopas::utils::ArrayMath::normalize(std::array<double, 4>{1., 0.5, 0.25, 0.125})))
+#endif
     //    ,ReflectiveBoundaryConditionTest::PrintToStringParamName());
 );
 
