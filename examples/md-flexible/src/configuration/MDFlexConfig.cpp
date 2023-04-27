@@ -310,7 +310,13 @@ std::string MDFlexConfig::to_string() const {
   for (auto [molId, molToSiteId] : molToSiteIdMap) {
     os << "  " << molId << ":" << endl;
     os << "    " << setw(valueOffset - 4) << left << moleculeToSiteIdStr     << ":  " << molToSiteId << endl;
-    os << "    " << setw(valueOffset - 4) << left << moleculeToSitePosStr    << ":  " << molToSitePosMap.at(molId) << endl;
+    auto sitePosIter = molToSitePosMap.at(molId).begin();
+    os << "    " << setw(valueOffset - 4) << left << moleculeToSitePosStr    << ":  [" << *sitePosIter;
+    sitePosIter++;
+    for (; sitePosIter != molToSitePosMap.at(molId).end(); sitePosIter++) {
+      os << ", " << *sitePosIter;
+    }
+    os << "]" << endl;
     os << "    " << setw(valueOffset - 4) << left << momentOfInertiaStr << ":  " << massMap.value.at(molId) << endl;
   }
 #endif
