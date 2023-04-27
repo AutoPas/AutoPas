@@ -437,9 +437,9 @@ TEST_F(ReflectiveBoundaryConditionTest, reflectiveMultiSiteZoningTest) {
   config.cutoff.value = cutoff;
   config.verletSkinRadiusPerTimestep.value = 0.01;
   config.verletRebuildFrequency.value = 10;
-  config.addSiteType(0, 0.1, 0.1, 1.);
-  config.addSiteType(1, 1., 0.2, 1.);
-  config.addSiteType(2, 0.0001, 0.2, 1.);
+  config.addSiteType(0, 0.1, 0.2, 1.);
+  config.addSiteType(1, 1000., 0.4, 1.);
+  config.addSiteType(2, 0.0001, 0.4, 1.);
   config.boundaryOption.value = {options::BoundaryTypeOption::reflective, options::BoundaryTypeOption::reflective,
                                  options::BoundaryTypeOption::reflective};
 
@@ -455,54 +455,53 @@ TEST_F(ReflectiveBoundaryConditionTest, reflectiveMultiSiteZoningTest) {
   autoPasContainer->setVerletRebuildFrequency(config.verletRebuildFrequency.value);
   autoPasContainer->init();
 
-  particlePropertiesLibrary->addSiteType(0, 0.1, 0.1, 1.);
-  particlePropertiesLibrary->addSiteType(1, 1., 0.2, 1.);
-  particlePropertiesLibrary->addSiteType(2, 0.0001, 0.2, 1.);
+  particlePropertiesLibrary->addSiteType(0, 1, 0.2, 1.);
+  particlePropertiesLibrary->addSiteType(1, 1000., 0.4, 1.);
+  particlePropertiesLibrary->addSiteType(2, 0.0001, 0.4, 1.);
   particlePropertiesLibrary->calculateMixingCoefficients();
 
-  // Molecule 0: All sites experience repulsion. Expects overall repulsion
+  // Add molecules
+
+  // Molecule 0: All sites experience repulsion.
   particlePropertiesLibrary->addMolType(0, {0, 1}, {{-0.01, 0., 0.}, {0.01, 0., 0.}}, {1., 1., 1.});
   autopas::MultisiteMoleculeLJ mol0({0.05, 2.5, 2.5}, {0., 0., 0.}, {1., 0., 0., 0.}, {0., 0., 0.}, 0, 0);
   autoPasContainer->addParticle(mol0);
 
-  domainDecomposition.reflectParticlesAtBoundaries(*autoPasContainer, *particlePropertiesLibrary);
-
-  EXPECT_TRUE(autoPasContainer->begin()->getF()[0] > 0); // Repulsion in lower boundary is positive
-
-  autoPasContainer->deleteParticle(mol0);
-
-  // Molecule 1: One site experiences attraction, one site experiences repulsion, overall molecule experiences repulsion. Expects overall repulsion.
+  // Molecule 1: One site experiences attraction, one site experiences repulsion, overall molecule experiences repulsion.
   particlePropertiesLibrary->addMolType(1, {0, 1}, {{-0.01, 0., 0.}, {0.01, 0., 0.}}, {1., 1., 1.});
-  autopas::MultisiteMoleculeLJ mol1({0.15, 2.5, 2.5}, {0., 0., 0.}, {1., 0., 0., 0.}, {0., 0., 0.}, 1, 1);
+  autopas::MultisiteMoleculeLJ mol1({0.2, 2.5, 2.5}, {0., 0., 0.}, {1., 0., 0., 0.}, {0., 0., 0.}, 1, 1);
   autoPasContainer->addParticle(mol1);
 
-  domainDecomposition.reflectParticlesAtBoundaries(*autoPasContainer, *particlePropertiesLibrary);
-
-  EXPECT_TRUE(autoPasContainer->begin()->getF()[0] > 0); // Repulsion in lower boundary is positive
-
-  autoPasContainer->deleteParticle(mol1);
-
-  // Molecule 2: Both sites experience attraction. Expects no force.
+  // Molecule 2: Both sites experience attraction.
   particlePropertiesLibrary->addMolType(2, {2, 0}, {{-0.01, 0., 0.}, {0.01, 0., 0.}}, {1., 1., 1.});
-  autopas::MultisiteMoleculeLJ mol2({0.15, 2.5, 2.5}, {0., 0., 0.}, {1., 0., 0., 0.}, {0., 0., 0.}, 2, 2);
+  autopas::MultisiteMoleculeLJ mol2({0.22, 2.5, 2.5}, {0., 0., 0.}, {1., 0., 0., 0.}, {0., 0., 0.}, 2, 2);
   autoPasContainer->addParticle(mol2);
 
-  domainDecomposition.reflectParticlesAtBoundaries(*autoPasContainer, *particlePropertiesLibrary);
-
-  EXPECT_DOUBLE_EQ(autoPasContainer->begin()->getF()[0], 0); // Attraction => Zero force contribution
-
-  autoPasContainer->deleteParticle(mol2);
-
-  // Molecule 3: One site experiences attraction, one site experiences repulsion, overall molecule experiences attraction. Expects overall repulsion.
+  // Molecule 3: One site experiences attraction, one site experiences repulsion, overall molecule experiences attraction.
   particlePropertiesLibrary->addMolType(3, {0, 01}, {{-0.01, 0., 0.}, {0.01, 0., 0.}}, {1., 1., 1.});
   autopas::MultisiteMoleculeLJ mol3({0.3, 2.5, 2.5}, {0., 0., 0.}, {1., 0., 0., 0.}, {0., 0., 0.}, 3, 3);
   autoPasContainer->addParticle(mol3);
 
+  // Reflect
+
   domainDecomposition.reflectParticlesAtBoundaries(*autoPasContainer, *particlePropertiesLibrary);
 
-  EXPECT_DOUBLE_EQ(autoPasContainer->begin()->getF()[0], 0); // Attraction => Zero force contribution
+  // Test for correctness
 
-  autoPasContainer->deleteParticle(mol3);
+  for (auto iter = autoPasContainer->begin(); iter.isValid(); ++iter) {
+    switch (iter->getID()) {
+      case 0:
+      case 1:
+        // Expect repulsion. Reflection on lower boundary is a positive force.
+        EXPECT_TRUE(iter->getF()[0] > 0) << "Molecule " << iter->getID() << " is not experiencing repulsion";
+        break;
+      case 2:
+      case 3:
+        EXPECT_DOUBLE_EQ(iter->getF()[0], 0) << "Molecule " << iter->getID() << " is experiencing a non-zero force";
+        break;
+    }
+  }
+
 
 #endif
 
