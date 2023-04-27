@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include "DynamicVerletListHelpers.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayMath.h"
@@ -21,7 +20,6 @@ namespace autopas {
  */
 template <class Particle>
 class DynamicVerletLists : public VerletLists<Particle> {
-  using LinkedParticleCell = FullParticleCell<Particle>;
 
  public:
 
@@ -32,75 +30,42 @@ class DynamicVerletLists : public VerletLists<Particle> {
       : VerletLists<Particle>(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency,
                                         buildVerletListType, cellSizeFactor) {}
   
-  bool neighborListsAreValid() {
+  bool neighborListsAreValid() override {
 
     auto halfSkinSquare = (this->getVerletSkin() * this->getVerletSkin()) / 4;
+    bool listInvalid = false;
 
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel reduction(|| : listInvalid)
+#endif
     for (auto& [particlePtr, neighborLists] : this->getVerletListsAoS()) {
-
-      auto distance = utils::ArrayMath::sub(particlePtr->getR(), _particlePtr2rebuildPositionMap.at(particlePtr));
+      auto rebuildPosition = _particlePtr2rebuildPositionMap.at(particlePtr);
+      auto distance = utils::ArrayMath::sub(particlePtr->getR(), rebuildPosition);
       double distanceSquare = utils::ArrayMath::dot(distance, distance);
 
       if (distanceSquare >=  halfSkinSquare) {
-        return false;
+        listInvalid = false;
       }
     }
 
-    return true;
-  }
-  
- protected:
-
-  size_t generateRebuildPositionMap() {
-    size_t numParticles = 0;
-    _particlePtr2rebuildPositionMap.clear();
-    
-    for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++numParticles) {
-      _particlePtr2rebuildPositionMap[&(*iter)];
-    }
-    return numParticles;
+    return !listInvalid;
   }
 
-  // TODO : think about templating this function and reuse it from VerletLists.h
-  void updateVerletListsAoS(bool useNewton3) override {
-    VerletLists<Particle>::generateAoSNeighborLists();
+  void rebuildNeighborLists(TraversalInterface *traversal) override {
     generateRebuildPositionMap();
-    typename DynamicVerletListHelpers<Particle>::DynamicVerletListGeneratorFunctor f(this->getVerletListsAoS(), _particlePtr2rebuildPositionMap,
-                                                                                     this->getCutoff() + this->getVerletSkin());
-    /// @todo autotune traversal
-    switch (this->_buildVerletListType) {
-      case VerletLists<Particle>::BuildVerletListType::VerletAoS: {
-        utils::withStaticBool(useNewton3, [&](auto theBool) {
-          auto traversal =
-              LCC08Traversal<LinkedParticleCell, typename DynamicVerletListHelpers<Particle>::DynamicVerletListGeneratorFunctor,
-                             DataLayoutOption::aos, theBool>(
-                  this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
-                  this->_linkedCells.getCellBlock().getCellLength());
-          this->_linkedCells.iteratePairwise(&traversal);
-        });
-        break;
-      }
-      case VerletLists<Particle>::BuildVerletListType::VerletSoA: {
-        utils::withStaticBool(useNewton3, [&](auto theBool) {
-          auto traversal =
-              LCC08Traversal<LinkedParticleCell, typename DynamicVerletListHelpers<Particle>::DynamicVerletListGeneratorFunctor,
-                             DataLayoutOption::soa, theBool>(
-                  this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
-                  this->_linkedCells.getCellBlock().getCellLength());
-          this->_linkedCells.iteratePairwise(&traversal);
-        });
-        break;
-      }
-      default:
-        utils::ExceptionHandler::exception("DynamicVerletLists::updateVerletListsAoS(): unsupported BuildVerletListType: {}",
-                                           this->_buildVerletListType);
-        break;
-    }
-    
-    this->_soaListIsValid = false;
+    VerletLists<Particle>::rebuildNeighborLists(traversal);
   }
-  
+
  private:
+
+  void generateRebuildPositionMap() {
+    _particlePtr2rebuildPositionMap.clear();
+    _particlePtr2rebuildPositionMap.reserve(this->getVerletListsAoS().size());
+
+    for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter) {
+      _particlePtr2rebuildPositionMap[&(*iter)] = (*iter).getR();
+    }
+  }
   
   std::unordered_map<Particle*, std::array<double, 3>> _particlePtr2rebuildPositionMap;
   

@@ -128,7 +128,7 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
     case ContainerOption::dynamicVerletLists: {
       container = std::make_unique<DynamicVerletLists<Particle>>(
           _boxMin, _boxMax, _cutoff, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency,
-          DynamicVerletLists<Particle>::BuildVerletListType::VerletSoA, containerInfo.cellSizeFactor);
+          DynamicVerletLists<Particle>::BuildVerletListType::VerletAoS, containerInfo.cellSizeFactor);
       break;
     }
 
