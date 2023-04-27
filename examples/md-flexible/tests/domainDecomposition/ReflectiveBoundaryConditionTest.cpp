@@ -412,7 +412,7 @@ TEST_F(ReflectiveBoundaryConditionTest, reflectiveSingleSiteZoningTest) {
  * * One where all sites are near enough that to experience repulsion. Expects repulsion.
  * * One where a site will be attracted to the boundary, but that the molecule overall experiences repulsion. Expects repulsion.
  * * One where a site will be repulsed from the boundary, but that the molecule overall experiences attraction. Expects no change in force on molecule.
- * * One with all sites far enough that the would all experience attraction. Expects no change in force on molecule.
+ * * One with all sites far enough that they would all experience attraction. Expects no change in force on molecule.
  */
 TEST_F(ReflectiveBoundaryConditionTest, reflectiveMultiSiteZoningTest) {
 #ifndef MD_FLEXIBLE_USE_MULTI_SITE
@@ -439,6 +439,7 @@ TEST_F(ReflectiveBoundaryConditionTest, reflectiveMultiSiteZoningTest) {
   config.verletRebuildFrequency.value = 10;
   config.addSiteType(0, 0.1, 0.1, 1.);
   config.addSiteType(1, 1., 0.2, 1.);
+  config.addSiteType(2, 0.0001, 0.2, 1.);
   config.boundaryOption.value = {options::BoundaryTypeOption::reflective, options::BoundaryTypeOption::reflective,
                                  options::BoundaryTypeOption::reflective};
 
@@ -456,8 +457,52 @@ TEST_F(ReflectiveBoundaryConditionTest, reflectiveMultiSiteZoningTest) {
 
   particlePropertiesLibrary->addSiteType(0, 0.1, 0.1, 1.);
   particlePropertiesLibrary->addSiteType(1, 1., 0.2, 1.);
-  particlePropertiesLibrary->addMolType(0, {0}, {{0., 0., 0.}}, {1., 1., 1.});
+  particlePropertiesLibrary->addSiteType(2, 0.0001, 0.2, 1.);
   particlePropertiesLibrary->calculateMixingCoefficients();
+
+  // Molecule 0: All sites experience repulsion. Expects overall repulsion
+  particlePropertiesLibrary->addMolType(0, {0, 1}, {{-0.01, 0., 0.}, {0.01, 0., 0.}}, {1., 1., 1.});
+  autopas::MultisiteMoleculeLJ mol0({0.05, 2.5, 2.5}, {0., 0., 0.}, {1., 0., 0., 0.}, {0., 0., 0.}, 0, 0);
+  autoPasContainer->addParticle(mol0);
+
+  domainDecomposition.reflectParticlesAtBoundaries(*autoPasContainer, *particlePropertiesLibrary);
+
+  EXPECT_TRUE(autoPasContainer->begin()->getF()[0] > 0); // Repulsion in lower boundary is positive
+
+  autoPasContainer->deleteParticle(mol0);
+
+  // Molecule 1: One site experiences attraction, one site experiences repulsion, overall molecule experiences repulsion. Expects overall repulsion.
+  particlePropertiesLibrary->addMolType(1, {0, 1}, {{-0.01, 0., 0.}, {0.01, 0., 0.}}, {1., 1., 1.});
+  autopas::MultisiteMoleculeLJ mol1({0.15, 2.5, 2.5}, {0., 0., 0.}, {1., 0., 0., 0.}, {0., 0., 0.}, 1, 1);
+  autoPasContainer->addParticle(mol1);
+
+  domainDecomposition.reflectParticlesAtBoundaries(*autoPasContainer, *particlePropertiesLibrary);
+
+  EXPECT_TRUE(autoPasContainer->begin()->getF()[0] > 0); // Repulsion in lower boundary is positive
+
+  autoPasContainer->deleteParticle(mol1);
+
+  // Molecule 2: Both sites experience attraction. Expects no force.
+  particlePropertiesLibrary->addMolType(2, {2, 0}, {{-0.01, 0., 0.}, {0.01, 0., 0.}}, {1., 1., 1.});
+  autopas::MultisiteMoleculeLJ mol2({0.15, 2.5, 2.5}, {0., 0., 0.}, {1., 0., 0., 0.}, {0., 0., 0.}, 2, 2);
+  autoPasContainer->addParticle(mol2);
+
+  domainDecomposition.reflectParticlesAtBoundaries(*autoPasContainer, *particlePropertiesLibrary);
+
+  EXPECT_DOUBLE_EQ(autoPasContainer->begin()->getF()[0], 0); // Attraction => Zero force contribution
+
+  autoPasContainer->deleteParticle(mol2);
+
+  // Molecule 3: One site experiences attraction, one site experiences repulsion, overall molecule experiences attraction. Expects overall repulsion.
+  particlePropertiesLibrary->addMolType(3, {0, 01}, {{-0.01, 0., 0.}, {0.01, 0., 0.}}, {1., 1., 1.});
+  autopas::MultisiteMoleculeLJ mol3({0.3, 2.5, 2.5}, {0., 0., 0.}, {1., 0., 0., 0.}, {0., 0., 0.}, 3, 3);
+  autoPasContainer->addParticle(mol3);
+
+  domainDecomposition.reflectParticlesAtBoundaries(*autoPasContainer, *particlePropertiesLibrary);
+
+  EXPECT_DOUBLE_EQ(autoPasContainer->begin()->getF()[0], 0); // Attraction => Zero force contribution
+
+  autoPasContainer->deleteParticle(mol3);
 
 #endif
 
