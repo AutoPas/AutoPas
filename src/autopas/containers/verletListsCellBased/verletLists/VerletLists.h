@@ -110,9 +110,10 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
     }
   }
 
-  bool neighborListsAreValid() override { return true; }
+  virtual bool neighborListsAreValid() { return true; }
 
  protected:
+
   /**
    * Update the verlet lists for AoS usage
    * @param useNewton3
@@ -211,6 +212,16 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
     _soaListIsValid = true;
   }
 
+  /**
+   * Shows if the SoA neighbor list is currently valid.
+   */
+  bool _soaListIsValid{false};
+
+  /**
+   * Specifies for what data layout the verlet lists are build.
+   */
+  BuildVerletListType _buildVerletListType;
+
  private:
   /**
    * Neighbor Lists: Map of particle pointers to vector of particle pointers.
@@ -228,16 +239,6 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
    * For every Particle, identified via the _particlePtr2indexMap, a vector of its neighbor indices is stored.
    */
   std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> _soaNeighborLists;
-
-  /**
-   * Shows if the SoA neighbor list is currently valid.
-   */
-  bool _soaListIsValid{false};
-
-  /**
-   * Specifies for what data layout the verlet lists are build.
-   */
-  BuildVerletListType _buildVerletListType;
 };
 
 }  // namespace autopas

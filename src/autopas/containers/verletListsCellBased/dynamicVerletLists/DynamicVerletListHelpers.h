@@ -24,14 +24,15 @@ class DynamicVerletListHelpers {
   /**
    * Neighbor list AoS style
    */
-   using AoSNeighborListType = std::unordered_map<Particle *, std::pair<std::array<double, 3>, std::vector<Particle*>>>;
+   using AoSNeighborListType = std::unordered_map<Particle *,  std::vector<Particle*>>;
 
    class DynamicVerletListGeneratorFunctor : public Functor<Particle, DynamicVerletListGeneratorFunctor> {
     public:
 
-     DynamicVerletListGeneratorFunctor(AoSNeighborListType &verletListsAoS, double interactionLength)
+     DynamicVerletListGeneratorFunctor(AoSNeighborListType &verletListsAoS, std::unordered_map<Particle*, std::array<double, 3>> &particlePtr2rebuildPosition, double interactionLength)
       : Functor<Particle, DynamicVerletListGeneratorFunctor>(interactionLength),
           _verletListsAoS(verletListsAoS),
+           _particlePtr2rebuildPosition(particlePtr2rebuildPosition),
            _interactionLengthSquared(interactionLength * interactionLength) {}
 
     bool isRelevantForTuning() override { return false; }
@@ -55,8 +56,8 @@ class DynamicVerletListHelpers {
 
       double distanceSquare = utils::ArrayMath::dot(distance, distance);
       if (distanceSquare < _interactionLengthSquared) {
-        _verletListsAoS.at(&i).first = i.getR();
-        _verletListsAoS.at(&i).second.push_back(&j);
+        _verletListsAoS.at(&i).push_back(&j);
+        _particlePtr2rebuildPosition.at(&i) = i.getR();
       }
     }
 
@@ -79,6 +80,7 @@ class DynamicVerletListHelpers {
     private:
      AoSNeighborListType & _verletListsAoS;
      double _interactionLengthSquared;
+     std::unordered_map<Particle*, std::array<double, 3>> _particlePtr2rebuildPosition;
    };
 };
 
