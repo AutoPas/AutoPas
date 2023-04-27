@@ -333,8 +333,8 @@ void LJMultisiteFunctorTest::testSoACellPairAgainstAoS(std::vector<autopas::Mult
 
   // end traversal for functor and get globals
   functor.endTraversal(newton3);
-  const auto potentialEnergyAoS = functor.getPotentialEnergy();
-  const auto virialAoS = functor.getVirial();
+  const auto potentialEnergyAoS = calculateGlobals?functor.getPotentialEnergy():0;
+  const auto virialAoS = calculateGlobals?functor.getVirial():0;
 
   // generate SoA Cells
   autopas::FullParticleCell<MultisiteMoleculeLJ> cellSoAA;
@@ -364,8 +364,8 @@ void LJMultisiteFunctorTest::testSoACellPairAgainstAoS(std::vector<autopas::Mult
 
   // end traversal for functor and get globals
   functor.endTraversal(newton3);
-  const auto potentialEnergySoA = functor.getPotentialEnergy();
-  const auto virialSoA = functor.getVirial();
+  const auto potentialEnergySoA = calculateGlobals?functor.getPotentialEnergy():0;
+  const auto virialSoA = calculateGlobals?functor.getVirial():0;
 
   // compare for consistency
   EXPECT_EQ(moleculesAoSA.size(), cellSoAA.numParticles());
