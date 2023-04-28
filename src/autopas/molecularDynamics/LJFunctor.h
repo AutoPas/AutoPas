@@ -158,36 +158,26 @@ class LJFunctor
         virial *= (double)0.5;
       }
       if (i.isOwned()) {
-<<<<<<< HEAD
         if (newton3) {
           _aosThreadData[threadnum].upotSumN3 += upot;
-          _aosThreadData[threadnum].virialSumN3 = utils::ArrayMath::add(_aosThreadData[threadnum].virialSumN3, virial);
+          _aosThreadData[threadnum].virialSumN3 += virial;
         } else {
-          _aosThreadData[threadnum].upotSum += upot;
-          _aosThreadData[threadnum].virialSum = utils::ArrayMath::add(_aosThreadData[threadnum].virialSum, virial);
+          _aosThreadData[threadnum].upotSumNoN3 += upot;
+          _aosThreadData[threadnum].virialSumNoN3 += virial;
         }
       }
       // for non-newton3 the second particle will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
         _aosThreadData[threadnum].upotSumN3 += upot;
-        _aosThreadData[threadnum].virialSumN3 = utils::ArrayMath::add(_aosThreadData[threadnum].virialSumN3, virial);
-=======
-        _aosThreadData[threadnum].upotSum += upot;
-        _aosThreadData[threadnum].virialSum += virial;
-      }
-      // for non-newton3 the second particle will be considered in a separate calculation
-      if (newton3 and j.isOwned()) {
-        _aosThreadData[threadnum].upotSum += upot;
-        _aosThreadData[threadnum].virialSum += virial;
->>>>>>> origin/inlineAnalysis
+        _aosThreadData[threadnum].virialSumN3 += virial;
       }
     }
   }
 
   /**
    * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3)
-   * This functor will always do a newton3 like traversal of the soa.
-   * However, it still needs to know about newton3 to correctly add up the global values.
+   * This functor ignores will use a newton3 like traversing of the soa, however, it still needs to know about newton3
+   * to use it correctly for the global values.
    */
   void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) final {
     if (soa.getNumberOfParticles() == 0) return;
@@ -331,10 +321,10 @@ class LJFunctor
         _aosThreadData[threadnum].virialSumN3[1] += virialSumY * .5;
         _aosThreadData[threadnum].virialSumN3[2] += virialSumZ * .5;
       } else {
-        _aosThreadData[threadnum].upotSum += upotSum;
-        _aosThreadData[threadnum].virialSum[0] += virialSumX;
-        _aosThreadData[threadnum].virialSum[1] += virialSumY;
-        _aosThreadData[threadnum].virialSum[2] += virialSumZ;
+        _aosThreadData[threadnum].upotSumNoN3 += upotSum;
+        _aosThreadData[threadnum].virialSumNoN3[0] += virialSumX;
+        _aosThreadData[threadnum].virialSumNoN3[1] += virialSumY;
+        _aosThreadData[threadnum].virialSumNoN3[2] += virialSumZ;
       }
     }
   }
@@ -506,10 +496,10 @@ class LJFunctor
         _aosThreadData[threadnum].virialSumN3[1] += virialSumY * newton3Factor;
         _aosThreadData[threadnum].virialSumN3[2] += virialSumZ * newton3Factor;
       } else {
-        _aosThreadData[threadnum].upotSum += upotSum;
-        _aosThreadData[threadnum].virialSum[0] += virialSumX;
-        _aosThreadData[threadnum].virialSum[1] += virialSumY;
-        _aosThreadData[threadnum].virialSum[2] += virialSumZ;
+        _aosThreadData[threadnum].upotSumNoN3 += upotSum;
+        _aosThreadData[threadnum].virialSumNoN3[0] += virialSumX;
+        _aosThreadData[threadnum].virialSumNoN3[1] += virialSumY;
+        _aosThreadData[threadnum].virialSumNoN3[2] += virialSumZ;
       }
     }
   }
@@ -621,33 +611,22 @@ class LJFunctor
           "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
     }
     if (calculateGlobals) {
-      double upotSumTmp = 0;
-      std::array<double, 3> virialSumTmp = {0, 0, 0};
+      double upotSumNoN3Acc = 0;
+      std::array<double, 3> virialSumNoN3Acc = {0, 0, 0};
       for (size_t i = 0; i < _aosThreadData.size(); ++i) {
-<<<<<<< HEAD
-        upotSumTmp += _aosThreadData[i].upotSum;
+        upotSumNoN3Acc += _aosThreadData[i].upotSumNoN3;
         _upotSum += _aosThreadData[i].upotSumN3;
 
-        virialSumTmp = utils::ArrayMath::add(virialSumTmp, _aosThreadData[i].virialSum);
-        _virialSum = utils::ArrayMath::add(_virialSum, _aosThreadData[i].virialSumN3);
-=======
-        _upotSum += _aosThreadData[i].upotSum;
-        _virialSum += _aosThreadData[i].virialSum;
-      }
-      if (not newton3) {
-        // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
-        // here.
-        _upotSum *= 0.5;
-        _virialSum *= 0.5;
->>>>>>> origin/inlineAnalysis
+        virialSumNoN3Acc += _aosThreadData[i].virialSumNoN3;
+        _virialSum += _aosThreadData[i].virialSumN3;
       }
       // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
       // here.
-      upotSumTmp *= 0.5;
-      virialSumTmp = utils::ArrayMath::mulScalar(virialSumTmp, 0.5);
+      upotSumNoN3Acc *= 0.5;
+      virialSumNoN3Acc *= 0.5;
 
-      _upotSum += upotSumTmp;
-      _virialSum = utils::ArrayMath::add(_virialSum, virialSumTmp);
+      _upotSum += upotSumNoN3Acc;
+      _virialSum += _virialSum, virialSumNoN3Acc;
 
       // we have always calculated 6*upot, so we divide by 6 here!
       _upotSum /= 6.;
@@ -948,10 +927,10 @@ class LJFunctor
         _aosThreadData[threadnum].virialSumN3[1] += virialSumY * 0.5;
         _aosThreadData[threadnum].virialSumN3[2] += virialSumZ * 0.5;
       } else {
-        _aosThreadData[threadnum].upotSum += upotSum;
-        _aosThreadData[threadnum].virialSum[0] += virialSumX;
-        _aosThreadData[threadnum].virialSum[1] += virialSumY;
-        _aosThreadData[threadnum].virialSum[2] += virialSumZ;
+        _aosThreadData[threadnum].upotSumNoN3 += upotSum;
+        _aosThreadData[threadnum].virialSumNoN3[0] += virialSumX;
+        _aosThreadData[threadnum].virialSumNoN3[1] += virialSumY;
+        _aosThreadData[threadnum].virialSumNoN3[2] += virialSumZ;
       }
     }
   }
@@ -961,18 +940,19 @@ class LJFunctor
    */
   class AoSThreadData {
    public:
-    AoSThreadData() : virialSum{0., 0., 0.}, virialSumN3{0., 0., 0.}, upotSum{0.}, upotSumN3{0.}, __remainingTo64{} {}
+    AoSThreadData()
+        : virialSumNoN3{0., 0., 0.}, virialSumN3{0., 0., 0.}, upotSumNoN3{0.}, upotSumN3{0.}, __remainingTo64{} {}
     void setZero() {
-      virialSum = {0., 0., 0.};
+      virialSumNoN3 = {0., 0., 0.};
       virialSumN3 = {0., 0., 0.};
-      upotSum = 0.;
+      upotSumNoN3 = 0.;
       upotSumN3 = 0.;
     }
 
     // variables
-    std::array<double, 3> virialSum;
+    std::array<double, 3> virialSumNoN3;
     std::array<double, 3> virialSumN3;
-    double upotSum;
+    double upotSumNoN3;
     double upotSumN3;
 
    private:
