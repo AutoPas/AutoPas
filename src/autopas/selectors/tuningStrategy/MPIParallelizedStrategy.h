@@ -77,7 +77,7 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
     try {
       _tuningStrategy->reset(iteration);
     } catch (utils::ExceptionHandler::AutoPasException &exception) {
-      AutoPasLog(warn,
+      AutoPasLog(WARN,
                  "MPIParallelizedStrategy: Underlying strategy failed (with error: {}). Reverting to fallback-mode.",
                  exception.what());
       setupFallbackOptions();
@@ -110,11 +110,11 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
     autopas::utils::AutoPasConfigurationCommunicator::distributeRanksInBuckets<Particle>(
         _comm, &_bucket, container, smoothedHomogeneityAndMaxDensity, MPITuningMaxDifferenceForBucket,
         MPITuningWeightForMaxDensity);
-    AutoPasLog(debug, "finished bucket distribution");
+    AutoPasLog(DEBUG, "finished bucket distribution");
     try {
       _tuningStrategy->reset(iteration);
     } catch (utils::ExceptionHandler::AutoPasException &exception) {
-      AutoPasLog(warn,
+      AutoPasLog(WARN,
                  "MPIParallelizedStrategy: Underlying strategy failed (with error: {}). Reverting to fallback-mode.",
                  exception.what());
       setupFallbackOptions();

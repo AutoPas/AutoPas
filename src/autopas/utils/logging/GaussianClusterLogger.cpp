@@ -79,7 +79,7 @@ void GaussianClusterLogger::flush() {
     outputFile << _edgeStream.str();
     outputFile << end_marker << std::endl;
   } else {
-    AutoPasLog(error, "Output file {} is not open for writing!", _outputFileName);
+    AutoPasLog(ERROR, "Output file {} is not open for writing!", _outputFileName);
   }
   outputFile.close();
   reset();

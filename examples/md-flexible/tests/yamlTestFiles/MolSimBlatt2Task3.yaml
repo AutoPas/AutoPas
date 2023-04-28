@@ -22,7 +22,7 @@ vtk-write-frequency: 10              #size_t option
 delta_t: 0.0002                     #double option
 cutoff: 2.5                         #double option
 iterations: 25000
-periodic-boundaries: false          #boolean option
+boundary-type:  [none, none, none]
 
 ###Objects generation Options
 Objects:

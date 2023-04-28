@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "autopas/iterators/SingleCellIteratorWrapper.h"
+#include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 
 namespace autopas {
@@ -54,36 +54,32 @@ class ParticleCell {
   using ParticleType = Particle;
 
   /**
-   * Destructor of ParticleCell.
+   * Default destructor.
    */
   virtual ~ParticleCell() = default;
+
+  /**
+   * Default default constructor.
+   */
+  explicit ParticleCell() = default;
+
+  /**
+   * Default move constructor.
+   * @param other
+   */
+  ParticleCell(ParticleCell &&other) noexcept = default;
+
+  /**
+   * Copy constructor that creates a new default constructed lock for the new cell.
+   * @param other
+   */
+  ParticleCell(const ParticleCell &other) : _cellLock(){};
 
   /**
    * Adds a Particle to the cell.
    * @param p the particle to be added
    */
   virtual void addParticle(const Particle &p) = 0;
-
-  /**
-   * Get an iterator to the start of a ParticleCell.
-   * normal use:
-   * for(auto iter = cell.begin(); iter.isValid; ++iter){...}
-   * @return the iterator
-   */
-  virtual SingleCellIteratorWrapper<Particle, true> begin() = 0;
-
-  /**
-   * @copydoc autopas::ParticleCell::begin()
-   * @note const version
-   */
-  virtual SingleCellIteratorWrapper<Particle, false> begin() const = 0;
-
-  /**
-   * End expression for all cells, this simply returns false.
-   * Allows range-based for loops.
-   * @return false
-   */
-  [[nodiscard]] constexpr bool end() const { return false; }
 
   /**
    * Get the number of particles stored in this cell.
@@ -130,6 +126,11 @@ class ParticleCell {
    * @return cell side length
    */
   [[nodiscard]] virtual std::array<double, 3> getCellLength() const = 0;
+
+  /**
+   * Lock object for exclusive access to this cell.
+   */
+  AutoPasLock _cellLock{};
 };
 
 }  // namespace autopas

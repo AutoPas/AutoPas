@@ -1,7 +1,7 @@
 /**
- * @file ParticleIteratorInterfaceTest.h
- * @author seckler
- * @date 22.07.19
+ * @file ContainerIteratorTest.h
+ * @author F.Gratl
+ * @date 13.01.23
  */
 
 #pragma once
@@ -17,7 +17,7 @@ using testingTuple =
     std::tuple<autopas::ContainerOption, double /*cell size factor*/, bool /*regionIterator (true) or regular (false)*/,
                bool /*testConstIterators*/, bool /*priorForceCalc*/, autopas::IteratorBehavior>;
 
-class ParticleIteratorInterfaceTest : public testing::Test, public ::testing::WithParamInterface<testingTuple> {
+class ContainerIteratorTest : public testing::Test, public ::testing::WithParamInterface<testingTuple> {
  public:
   struct PrintToStringParamName {
     template <class ParamType>

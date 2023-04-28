@@ -13,26 +13,29 @@
 #include "autopas/containers/LeavingParticleCollector.h"
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/containers/ParticleDeletedObserver.h"
-#include "autopas/containers/UnknowingCellBorderAndFlagManager.h"
 #include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
 #include "autopas/containers/verletClusterLists/ClusterTower.h"
 #include "autopas/containers/verletClusterLists/VerletClusterListsRebuilder.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLTraversalInterface.h"
-#include "autopas/iterators/ParticleIterator.h"
-#include "autopas/iterators/RegionParticleIterator.h"
+#include "autopas/iterators/ContainerIterator.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/Timer.h"
+#include "autopas/utils/inBox.h"
+#include "autopas/utils/markParticleAsDeleted.h"
 
 namespace autopas {
 
 /**
  * Particles are divided into clusters.
- * The VerletClusterLists class uses neighborhood lists for each cluster
- * to calculate pairwise interactions of particles.
- * It is optimized for a constant, i.e. particle independent, cutoff radius of
- * the interaction.
+ * The VerletClusterLists class uses neighborhood lists for each cluster to calculate pairwise interactions of
+ * particles. It is optimized for a constant, i.e. particle independent, cutoff radius of the interaction.
+ *
+ * This Container does (currently?) not make use of the cellSizeFactor.
+ *
+ * @note See VerletClusterListsRebuilder for the layout of the towers and clusters.
+ *
  * @tparam Particle
  */
 template <class Particle>
@@ -107,7 +110,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
           for (unsigned long x = lowerCorner[0]; x <= upperCorner[0]; x++) {
             for (unsigned long y = lowerCorner[1]; y <= upperCorner[1]; y++) {
               unsigned long cellLoad = 0;
-              auto &tower = getTowerAtCoordinates(x, y);
+              auto &tower = getTowerByIndex(x, y);
               for (auto &cluster : tower.getClusters()) {
                 cellLoad += cluster.getNeighbors().size();
               }
@@ -151,6 +154,13 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     traversal->endTraversal();
   }
 
+  void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
+    const auto particlesPerTower = (numParticles + numParticlesHaloEstimate) / _towers.size();
+    for (auto &tower : _towers) {
+      tower.reserve(particlesPerTower);
+    }
+  }
+
   /**
    * Adds the given particle to the container. rebuildVerletLists() has to be called to have it actually sorted in.
    * @param p The particle to add.
@@ -168,13 +178,21 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   bool updateHaloParticle(const Particle &haloParticle) override {
+    using namespace autopas::utils::ArrayMath::literals;
+
     Particle pCopy = haloParticle;
     pCopy.setOwnershipState(OwnershipState::halo);
 
+    typename ContainerIterator<Particle, true, true>::ParticleVecType additionalVectors;
+    additionalVectors.reserve(_particlesToAdd.size());
+    for (auto &v : _particlesToAdd) {
+      additionalVectors.push_back(&v);
+    }
+
     // this might be called from a parallel region so force this iterator to be sequential
-    for (auto it = getRegionIterator(utils::ArrayMath::subScalar(pCopy.getR(), this->getVerletSkin() / 2),
-                                     utils::ArrayMath::addScalar(pCopy.getR(), this->getVerletSkin() / 2),
-                                     IteratorBehavior::halo | IteratorBehavior::forceSequential);
+    for (auto it =
+             getRegionIterator(pCopy.getR() - (this->getVerletSkin() / 2), pCopy.getR() + (this->getVerletSkin() / 2),
+                               IteratorBehavior::halo | IteratorBehavior::forceSequential, &additionalVectors);
          it.isValid(); ++it) {
       if (pCopy.getID() == it->getID()) {
         *it = pCopy;
@@ -185,19 +203,135 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   void deleteHaloParticles() override {
-    bool deletedSth = false;
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel reduction(|| : deletedSth)
-#endif
-    {
-      for (auto iter = this->begin(IteratorBehavior::halo); iter.isValid(); ++iter) {
-        internal::deleteParticle(iter);
-        deletedSth = true;
+    // Step 1: Remove particles from _particlesToAdd
+    for (auto &particleVec : _particlesToAdd) {
+      for (size_t j = 0; j < particleVec.size();) {
+        if (particleVec[j].isHalo()) {
+          particleVec[j] = particleVec[particleVec.size() - 1];
+          particleVec.pop_back();
+        } else {
+          ++j;
+        }
       }
     }
-    if (deletedSth) {
+    // Step 2: Remove particles from _towers
+    bool deletedSomething = false;
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel for reduction(|| : deletedSomething)
+#endif
+    for (size_t i = 0; i < _towers.size(); ++i) {
+      auto &tower = _towers[i];
+      const auto towerSize = tower.getNumAllParticles();
+      auto numTailDummies = _towers[i].getNumTailDummyParticles();
+      // iterate over all non-tail dummies.
+      for (size_t j = 0; j < towerSize - numTailDummies;) {
+        if (tower[j].isHalo()) {
+          // swap-"delete"
+          tower[j] = tower[towerSize - 1 - numTailDummies];
+          // Since we can't pop the moved particle here mark it for deletion.
+          internal::markParticleAsDeleted(tower[towerSize - 1 - numTailDummies]);
+          ++numTailDummies;
+          deletedSomething = true;
+        } else {
+          ++j;
+        }
+      }
+      // if anything was marked for deletion actually delete it now.
+      if (deletedSomething) {
+        _towers[i].deleteDummyParticles();
+      }
+    }
+    if (deletedSomething) {
       _isValid = ValidityState::invalid;
     }
+  }
+
+  std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                           IteratorBehavior iteratorBehavior,
+                                                           const std::array<double, 3> &boxMin,
+                                                           const std::array<double, 3> &boxMax) const override {
+    return getParticleImpl<true>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
+  }
+  std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                           IteratorBehavior iteratorBehavior) const override {
+    // this is not a region iter hence we stretch the bounding box to the numeric max
+    constexpr std::array<double, 3> boxMin{std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(),
+                                           std::numeric_limits<double>::lowest()};
+
+    constexpr std::array<double, 3> boxMax{std::numeric_limits<double>::max(), std::numeric_limits<double>::max(),
+                                           std::numeric_limits<double>::max()};
+    return getParticleImpl<false>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
+  }
+
+  /**
+   * Container specific implementation for getParticle. See ParticleContainerInterface::getParticle().
+   *
+   * @tparam regionIter
+   * @param cellIndex
+   * @param particleIndex
+   * @param iteratorBehavior
+   * @param boxMin
+   * @param boxMax
+   * @return tuple<ParticlePointer, CellIndex, ParticleIndex>
+   */
+  template <bool regionIter>
+  std::tuple<const Particle *, size_t, size_t> getParticleImpl(size_t cellIndex, size_t particleIndex,
+                                                               IteratorBehavior iteratorBehavior,
+                                                               const std::array<double, 3> &boxMin,
+                                                               const std::array<double, 3> &boxMax) const {
+    // in this context cell == tower
+    // catching the edge case that towers are not yet built -> Iterator jumps to additional vectors
+    if (_towers.empty()) {
+      return {nullptr, 0, 0};
+    }
+
+    // first and last relevant cell index
+    const auto [startCellIndex, endCellIndex] = [&]() -> std::tuple<size_t, size_t> {
+      if constexpr (regionIter) {
+        return {getTowerIndex1DAtPosition(boxMin), getTowerIndex1DAtPosition(boxMax)};
+      } else {
+        // whole range of cells
+        return {0, this->_towers.size() - 1};
+      }
+    }();
+
+    // if we are at the start of an iteration ...
+    if (cellIndex == 0 and particleIndex == 0) {
+      cellIndex =
+          startCellIndex + ((iteratorBehavior & IteratorBehavior::forceSequential) ? 0 : autopas_get_thread_num());
+    }
+    // abort if the start index is already out of bounds
+    if (cellIndex >= this->_towers.size()) {
+      return {nullptr, 0, 0};
+    }
+    // check the data behind the indices
+    if (particleIndex >= this->_towers[cellIndex].numParticles() or
+        not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
+            this->_towers[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax)) {
+      // either advance them to something interesting or invalidate them.
+      std::tie(cellIndex, particleIndex) =
+          advanceIteratorIndices<regionIter>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax, endCellIndex);
+    }
+
+    // shortcut if the given index doesn't exist
+    if (cellIndex > endCellIndex) {
+      return {nullptr, 0, 0};
+    }
+    const Particle *retPtr = &this->_towers[cellIndex][particleIndex];
+
+    return {retPtr, cellIndex, particleIndex};
+  }
+
+  bool deleteParticle(Particle &particle) override {
+    // This function doesn't actually delete anything as it would mess up the clusters' references.
+    internal::markParticleAsDeleted(particle);
+    return false;
+  }
+
+  bool deleteParticle(size_t cellIndex, size_t particleIndex) override {
+    // This function doesn't actually delete anything as it would mess up the clusters' references.
+    internal::markParticleAsDeleted(_towers[cellIndex][particleIndex]);
+    return false;
   }
 
   [[nodiscard]] std::vector<Particle> updateContainer(bool keepNeighborListsValid) override {
@@ -218,27 +352,25 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     std::vector<Particle> invalidParticles;
 
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel
+#pragma omp declare reduction(vecMergeParticle : std::vector<Particle> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
+#pragma omp parallel reduction(vecMergeParticle : invalidParticles)
 #endif
     {
-      std::vector<Particle> myInvalidParticles;
       for (auto iter = this->begin(IteratorBehavior::owned); iter.isValid(); ++iter) {
         if (not utils::inBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
-          myInvalidParticles.push_back(*iter);
+          invalidParticles.push_back(*iter);
           internal::deleteParticle(iter);
         }
       }
-#ifdef AUTOPAS_OPENMP
-#pragma omp critical
-#endif
-      invalidParticles.insert(invalidParticles.end(), myInvalidParticles.begin(), myInvalidParticles.end());
     }
     _isValid = ValidityState::invalid;
     return invalidParticles;
   }
 
   [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
-    auto boxSizeWithHalo = utils::ArrayMath::sub(this->getHaloBoxMax(), this->getHaloBoxMin());
+    using namespace autopas::utils::ArrayMath::literals;
+
+    auto boxSizeWithHalo = this->getHaloBoxMax() - this->getHaloBoxMin();
     auto towerSideLength = internal::VerletClusterListsRebuilder<Particle>::estimateOptimalGridSideLength(
         this->getNumberOfParticles(), boxSizeWithHalo, _clusterSize);
     auto towersPerDim =
@@ -254,13 +386,11 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @copydoc autopas::ParticleContainerInterface::begin()
    * @note This function additionally rebuilds the towers if the tower-structure isn't valid.
    */
-  [[nodiscard]] ParticleIteratorWrapper<Particle, true> begin(
-      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) override {
+  [[nodiscard]] ContainerIterator<Particle, true, false> begin(
+      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
+      typename ContainerIterator<Particle, true, false>::ParticleVecType *additionalVectors = nullptr) override {
     prepareContainerForIteration(behavior);
-
-    return ParticleIteratorWrapper<Particle, true>(
-        new internal::ParticleIterator<Particle, internal::ClusterTower<Particle>, true>(
-            &(this->_towers), 0, &unknowingCellBorderAndFlagManager, behavior, nullptr));
+    return ContainerIterator<Particle, true, false>(*this, behavior, additionalVectors);
   }
 
   /**
@@ -268,23 +398,30 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @note const version.
    * @note This function additionally iterates over the _particlesToAdd vector if the tower-structure isn't valid.
    */
-  [[nodiscard]] ParticleIteratorWrapper<Particle, false> begin(
-      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) const override {
-    /// @todo use proper cellBorderAndFlagManager instead of the unknowing.
+  [[nodiscard]] ContainerIterator<Particle, false, false> begin(
+      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
+      typename ContainerIterator<Particle, false, false>::ParticleVecType *additionalVectors = nullptr) const override {
     if (_isValid != ValidityState::invalid) {
       if (not particlesToAddEmpty()) {
         autopas::utils::ExceptionHandler::exception(
             "VerletClusterLists::begin() const: Error: particle container is valid, but _particlesToAdd isn't empty!");
       }
       // If the particles are sorted into the towers, we can simply use the iteration over towers.
-      return ParticleIteratorWrapper<Particle, false>{
-          new internal::ParticleIterator<Particle, internal::ClusterTower<Particle>, false>(
-              &(this->_towers), 0, &unknowingCellBorderAndFlagManager, behavior, nullptr)};
+      return ContainerIterator<Particle, false, false>(*this, behavior, additionalVectors);
     } else {
       // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
-      return ParticleIteratorWrapper<Particle, false>{
-          new internal::ParticleIterator<Particle, internal::ClusterTower<Particle>, false>(
-              &(this->_towers), 0, &unknowingCellBorderAndFlagManager, behavior, &_particlesToAdd)};
+      // store all pointers in a temporary which is passed to the ParticleIterator constructor.
+      typename ContainerIterator<Particle, false, false>::ParticleVecType additionalVectorsTmp;
+      if (additionalVectors) {
+        additionalVectorsTmp.reserve(_particlesToAdd.size() + additionalVectors->size());
+        additionalVectorsTmp.insert(additionalVectorsTmp.end(), additionalVectors->begin(), additionalVectors->end());
+      } else {
+        additionalVectorsTmp.reserve(_particlesToAdd.size());
+      }
+      for (auto &vec : _particlesToAdd) {
+        additionalVectorsTmp.push_back(&vec);
+      }
+      return ContainerIterator<Particle, false, false>(*this, behavior, &additionalVectorsTmp);
     }
   }
 
@@ -381,18 +518,12 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
    * @note This function additionally rebuilds the towers if the tower-structure isn't valid.
    */
-  [[nodiscard]] ParticleIteratorWrapper<Particle, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
-                                                                          const std::array<double, 3> &higherCorner,
-                                                                          IteratorBehavior behavior) override {
+  [[nodiscard]] ContainerIterator<Particle, true, true> getRegionIterator(
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
+      typename ContainerIterator<Particle, true, true>::ParticleVecType *additionalVectors) override {
     prepareContainerForIteration(behavior);
 
-    auto [lowerCornerInBounds, upperCornerInBounds, cellsOfInterest] =
-        getRegionIteratorHelper(lowerCorner, higherCorner, behavior);
-
-    return ParticleIteratorWrapper<Particle, true>(
-        new internal::RegionParticleIterator<Particle, internal::ClusterTower<Particle>, true>(
-            &this->_towers, lowerCornerInBounds, upperCornerInBounds, cellsOfInterest,
-            &internal::UnknowingCellBorderAndFlagManager::get(), behavior, nullptr));
+    return ContainerIterator<Particle, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
   /**
@@ -400,22 +531,23 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @note const version.
    * @note This function additionally iterates over _particlesToAdd if the container structure isn't valid.
    */
-  [[nodiscard]] ParticleIteratorWrapper<Particle, false> getRegionIterator(const std::array<double, 3> &lowerCorner,
-                                                                           const std::array<double, 3> &higherCorner,
-                                                                           IteratorBehavior behavior) const override {
+  [[nodiscard]] ContainerIterator<Particle, false, true> getRegionIterator(
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
+      typename ContainerIterator<Particle, false, true>::ParticleVecType *additionalVectors) const override {
     if (_isValid != ValidityState::invalid && not particlesToAddEmpty()) {
       autopas::utils::ExceptionHandler::exception(
           "VerletClusterLists::begin() const: Error: particle container is valid, but _particlesToAdd isn't empty!");
     }
-
-    auto [lowerCornerInBounds, upperCornerInBounds, cellsOfInterest] =
-        getRegionIteratorHelper(lowerCorner, higherCorner, behavior);
-
-    return ParticleIteratorWrapper<Particle, false>(
-        new internal::RegionParticleIterator<Particle, internal::ClusterTower<Particle>, false>(
-            &this->_towers, lowerCornerInBounds, upperCornerInBounds, cellsOfInterest,
-            &internal::UnknowingCellBorderAndFlagManager::get(), behavior,
-            _isValid != ValidityState::invalid ? nullptr : &_particlesToAdd));
+    typename ContainerIterator<Particle, false, true>::ParticleVecType additionalContainerVectors;
+    additionalContainerVectors.reserve(_particlesToAdd.size() + additionalVectors->size());
+    for (auto &v : _particlesToAdd) {
+      additionalContainerVectors.push_back(&v);
+    }
+    additionalContainerVectors.insert(additionalContainerVectors.end(), additionalVectors->begin(),
+                                      additionalVectors->end());
+    return ContainerIterator<Particle, false, true>(
+        *this, behavior, _isValid != ValidityState::invalid ? nullptr : &additionalContainerVectors, lowerCorner,
+        higherCorner);
   }
 
   /**
@@ -428,8 +560,15 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
                        IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) {
     prepareContainerForIteration(behavior);
 
-    for (auto &tower : this->_towers) {
-      tower.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+    for (size_t i = 0; i < _towers.size(); ++i) {
+      auto &tower = _towers[i];
+      const auto [towerLowCorner, towerHighCorner] = getTowerBoundingBox(i);
+      // particles can move over cell borders. Calculate the volume this cell's particles can be.
+      const auto towerLowCornerSkin = utils::ArrayMath::subScalar(towerLowCorner, this->getVerletSkin() * 0.5);
+      const auto towerHighCornerSkin = utils::ArrayMath::addScalar(towerHighCorner, this->getVerletSkin() * 0.5);
+      if (utils::boxesOverlap(towerLowCornerSkin, towerHighCornerSkin, lowerCorner, higherCorner)) {
+        tower.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+      }
     }
   }
 
@@ -450,8 +589,15 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
 
     // If the particles are sorted into the towers, we can simply use the iteration over towers.
-    for (auto tower : this->_towers) {
-      tower.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+    for (size_t i = 0; i < _towers.size(); ++i) {
+      auto &tower = _towers[i];
+      const auto [towerLowCorner, towerHighCorner] = getTowerBoundingBox(i);
+      // particles can move over cell borders. Calculate the volume this cell's particles can be.
+      const auto towerLowCornerSkin = utils::ArrayMath::subScalar(towerLowCorner, this->getVerletSkin() * 0.5);
+      const auto towerHighCornerSkin = utils::ArrayMath::addScalar(towerHighCorner, this->getVerletSkin() * 0.5);
+      if (utils::boxesOverlap(towerLowCornerSkin, towerHighCornerSkin, lowerCorner, higherCorner)) {
+        tower.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+      }
     }
 
     if (_isValid == ValidityState::invalid) {
@@ -636,12 +782,110 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
+   * Calculates the low and high corner of a tower given by its index.
+   *
+   * @note If towers are not built yet the corners of the full container are returned.
+   *
+   * @param index1D The tower's index in _towers.
+   * @return tuple<lowCorner, highCorner>
+   */
+  [[nodiscard]] std::tuple<std::array<double, 3>, std::array<double, 3>> getTowerBoundingBox(size_t index1D) const {
+    // case: towers are not built yet.
+    if (_towersPerDim[0] == 0) {
+      return {_boxMin, _boxMax};
+    }
+    return getTowerBoundingBox(towerIndex1DTo2D(index1D));
+  }
+
+  /**
+   * Calculates the low and high corner of a tower given by its 2D grid index.
+   *
+   * @note If towers are not built yet the corners of the full container are returned.
+   *
+   * @param index2D The tower's 2D index in the grid.
+   * @return tuple<lowCorner, highCorner>
+   */
+  [[nodiscard]] std::tuple<std::array<double, 3>, std::array<double, 3>> getTowerBoundingBox(
+      const std::array<size_t, 2> &index2D) const {
+    // case: towers are not built yet.
+    if (_towersPerDim[0] == 0) {
+      return {_boxMin, _boxMax};
+    }
+    std::array<double, 3> boxMin{
+        _haloBoxMin[0] + _towerSideLength * static_cast<double>(index2D[0]),
+        _haloBoxMin[1] + _towerSideLength * static_cast<double>(index2D[1]),
+        _haloBoxMin[2],
+    };
+    std::array<double, 3> boxMax{
+        boxMin[0] + _towerSideLength,
+        boxMin[1] + _towerSideLength,
+        _haloBoxMax[2],
+    };
+    return {boxMin, boxMax};
+  }
+
+  /**
+   * Return the 2D index of the tower at a given position in the global domain.
+   * @param pos
+   * @return array<X, Y>
+   */
+  [[nodiscard]] std::array<size_t, 2> getTowerIndex2DAtPosition(const std::array<double, 3> &pos) const {
+    // special case: Towers are not yet built, then everything is in this one tower.
+    if (_towers.size() == 1) {
+      return {0, 0};
+    }
+
+    // FIXME: this is a copy of VerletClusterListsRebuilder::getTowerCoordinates(). See Issue 716
+    // https://github.com/AutoPas/AutoPas/issues/716
+    std::array<size_t, 2> towerIndex2D{};
+
+    for (int dim = 0; dim < 2; dim++) {
+      const auto towerDimIndex =
+          static_cast<long int>(floor((pos[dim] - _haloBoxMin[dim]) * _towerSideLengthReciprocal));
+      const auto towerDimIndexNonNegative = static_cast<size_t>(std::max(towerDimIndex, 0l));
+      const auto towerDimIndexNonLargerValue = std::min(towerDimIndexNonNegative, _towersPerDim[dim] - 1);
+      towerIndex2D[dim] = towerDimIndexNonLargerValue;
+      /// @todo this is a sanity check to prevent doubling of particles, but could be done better! e.g. by border and
+      // flag manager
+      if (pos[dim] >= _boxMax[dim]) {
+        towerIndex2D[dim] = _towersPerDim[dim] - 1;
+      } else if (pos[dim] < _boxMin[dim]) {
+        towerIndex2D[dim] = 0;
+      }
+    }
+
+    return towerIndex2D;
+  }
+
+  /**
+   * Return the 1D index of the tower at a given position
+   * @param pos
+   * @return
+   */
+  [[nodiscard]] size_t getTowerIndex1DAtPosition(const std::array<double, 3> &pos) const {
+    const auto [x, y] = getTowerIndex2DAtPosition(pos);
+    return towerIndex2DTo1D(x, y);
+  }
+
+  /**
+   * Return a reference to the tower at a given position in the simulation coordinate system (e.g. particle position).
+   * @param pos
+   * @return
+   */
+  internal::ClusterTower<Particle> &getTowerAtPosition(const std::array<double, 3> &pos) {
+    const auto [x, y] = getTowerIndex2DAtPosition(pos);
+    return getTowerByIndex(x, y);
+  }
+
+  /**
    * Returns a reference to the tower for the given tower grid coordinates.
    * @param x The x-th tower in x direction.
    * @param y The y-th tower in y direction.
    * @return a reference to the tower for the given tower grid coordinates.
    */
-  auto &getTowerAtCoordinates(const size_t x, const size_t y) { return _towers[towerIndex2DTo1D(x, y)]; }
+  internal::ClusterTower<Particle> &getTowerByIndex(const size_t x, const size_t y) {
+    return _towers[towerIndex2DTo1D(x, y)];
+  }
 
   /**
    * Returns the 1D index for the given tower grid coordinates of a tower.
@@ -651,7 +895,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @param towersPerDim The number of towers in each dimension.
    * @return the 1D index for the given tower grid coordinates of a tower.
    */
-  static auto towerIndex2DTo1D(const size_t x, const size_t y, const std::array<size_t, 2> towersPerDim) {
+  static size_t towerIndex2DTo1D(const size_t x, const size_t y, const std::array<size_t, 2> towersPerDim) {
     return x + y * towersPerDim[0];
   }
 
@@ -664,6 +908,20 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    */
   [[nodiscard]] size_t towerIndex2DTo1D(const size_t x, const size_t y) const {
     return towerIndex2DTo1D(x, y, _towersPerDim);
+  }
+
+  /**
+   * Returns the 2D index for the given 1D index of a tower.
+   *
+   * @param index
+   * @return the 2D index for the given 1D index of a tower.
+   */
+  [[nodiscard]] std::array<size_t, 2> towerIndex1DTo2D(size_t index) const {
+    if (_towersPerDim[0] == 0) {
+      return {0, 0};
+    } else {
+      return {index % _towersPerDim[0], index / _towersPerDim[0]};
+    }
   }
 
   [[nodiscard]] const std::array<double, 3> &getBoxMax() const override { return _boxMax; }
@@ -724,7 +982,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * This function sets the container structure to valid.
    */
   void rebuildTowersAndClusters() {
-    // collect all particles to add from accross the thread buffers
+    // collect all particles to add from across the thread buffers
     typename decltype(_particlesToAdd)::value_type particlesToAdd;
     size_t numParticlesToAdd = std::accumulate(_particlesToAdd.begin(), _particlesToAdd.end(), 0,
                                                [](size_t acc, const auto &buffer) { return acc + buffer.size(); });
@@ -756,7 +1014,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   void traverseClustersSequential(LoopBody &&loopBody) {
     for (size_t x = 0; x < _towersPerDim[0]; x++) {
       for (size_t y = 0; y < _towersPerDim[1]; y++) {
-        auto &tower = getTowerAtCoordinates(x, y);
+        auto &tower = getTowerByIndex(x, y);
         for (auto &cluster : tower.getClusters()) {
           loopBody(cluster);
         }
@@ -783,7 +1041,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 #endif
     for (size_t x = 0; x < towersPerDimX; x++) {
       for (size_t y = 0; y < towersPerDimY; y++) {
-        auto &tower = getTowerAtCoordinates(x, y);
+        auto &tower = getTowerByIndex(x, y);
 
         for (auto &cluster : tower.getClusters()) {
           loopBody(cluster);
@@ -896,6 +1154,68 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
  private:
   /**
+   * Given a pair of cell-/particleIndex and iterator restrictions either returns the next indices that match these
+   * restrictions or indices that are out of bounds (e.g. cellIndex >= cells.size())
+   * @tparam regionIter
+   * @param cellIndex
+   * @param particleIndex
+   * @param iteratorBehavior
+   * @param boxMin
+   * @param boxMax
+   * @param endCellIndex
+   * @return tuple<cellIndex, particleIndex>
+   */
+  template <bool regionIter>
+  [[nodiscard]] std::tuple<size_t, size_t> advanceIteratorIndices(size_t cellIndex, size_t particleIndex,
+                                                                  IteratorBehavior iteratorBehavior,
+                                                                  const std::array<double, 3> &boxMin,
+                                                                  const std::array<double, 3> &boxMax,
+                                                                  size_t endCellIndex) const {
+    // Finding the indices for the next particle
+    const size_t stride = (iteratorBehavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads();
+
+    // helper function to determine if the cell can even contain particles of interest to the iterator
+    auto towerIsRelevant = [&]() -> bool {
+      // special case: Towers are not yet built, then the tower acting as buffer is always relevant.
+      if (_towers.size() == 1) {
+        return true;
+      }
+      bool isRelevant = true;
+      if constexpr (regionIter) {
+        // is the cell in the region?
+        const auto [towerLowCorner, towerHighCorner] = getTowerBoundingBox(cellIndex);
+        // particles can move over cell borders. Calculate the volume this cell's particles can be.
+        const auto towerLowCornerSkin = utils::ArrayMath::subScalar(towerLowCorner, this->getVerletSkin() * 0.5);
+        const auto towerHighCornerSkin = utils::ArrayMath::addScalar(towerHighCorner, this->getVerletSkin() * 0.5);
+        isRelevant = utils::boxesOverlap(towerLowCornerSkin, towerHighCornerSkin, boxMin, boxMax);
+      }
+      return isRelevant;
+    };
+
+    do {
+      // advance to the next particle
+      ++particleIndex;
+      // If this breaches the end of a cell, find the next non-empty cell and reset particleIndex.
+
+      // If cell has wrong type, or there are no more particles in this cell jump to the next
+      while (not towerIsRelevant() or particleIndex >= this->_towers[cellIndex].numParticles()) {
+        cellIndex += stride;
+        particleIndex = 0;
+
+        // If we notice that there is nothing else to look at set invalid values, so we get a nullptr next time and
+        // break.
+        if (cellIndex > endCellIndex) {
+          return {std::numeric_limits<size_t>::max(), particleIndex};
+        }
+      }
+    } while (not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
+        this->_towers[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax));
+
+    // the indices returned at this point should always be valid
+    return {cellIndex, particleIndex};
+  }
+
+  /**
    * load estimation algorithm for balanced traversals.
    */
   autopas::LoadEstimatorOption _loadEstimator;
@@ -920,16 +1240,14 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
             "forceSequential encountered, but the container is invalid.");
       }
     } else {
-      // Only one thread is allowed to rebuild the towers, so we do an omp single here.
-      // This single is only possible when we do not force sequential mode as otherwise not all threads might pass
-      // through here and we end up waiting for them forever.
+      // Only one thread is allowed to rebuild the towers. Since rebuildTowersAndClusters() sets _isValid,
+      // subsequent threads that will enter the if will not rebuild.
 #ifdef AUTOPAS_OPENMP
-#pragma omp single
+#pragma omp critical
 #endif
       if (_isValid == ValidityState::invalid) {
         rebuildTowersAndClusters();
       }
-      // there is an implicit barrier at end of single!
     }
   }
 
@@ -954,30 +1272,32 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
 
     // Find towers intersecting the search region
-    auto firstTowerCoords = _builder->getTowerCoordinates(lowerCornerInBounds);
-    auto firstTowerIndex = _builder->towerIndex2DTo1D(firstTowerCoords[0], firstTowerCoords[1]);
-    auto lastTowerCoords = _builder->getTowerCoordinates(upperCornerInBounds);
-    auto lastTowerIndex = _builder->towerIndex2DTo1D(lastTowerCoords[0], lastTowerCoords[1]);
+    const auto firstTowerCoords = _builder->getTowerCoordinates(lowerCornerInBounds);
+    const auto firstTowerIndex = _builder->towerIndex2DTo1D(firstTowerCoords[0], firstTowerCoords[1]);
+    const auto lastTowerCoords = _builder->getTowerCoordinates(upperCornerInBounds);
+    const auto lastTowerIndex = _builder->towerIndex2DTo1D(lastTowerCoords[0], lastTowerCoords[1]);
 
-    std::array<size_t, 2> towersOfInterstPerDim;
-    for (size_t dim = 0; dim < towersOfInterstPerDim.size(); ++dim) {
-      // use ternary operators instead of abs because these are unsigned values
-      towersOfInterstPerDim[dim] = firstTowerCoords[dim] > lastTowerCoords[dim]
-                                       ? firstTowerCoords[dim] - lastTowerCoords[dim]
-                                       : lastTowerCoords[dim] - firstTowerCoords[dim];
-      // +1 because we want to include first AND last
-      towersOfInterstPerDim[dim] += 1;
-      // sanity check
-      towersOfInterstPerDim[dim] = std::max(towersOfInterstPerDim[dim], static_cast<size_t>(1));
-    }
+    const std::array<size_t, 2> towersOfInterestPerDim = [&]() {
+      std::array<size_t, 2> ret{};
+      for (size_t dim = 0; dim < ret.size(); ++dim) {
+        // use ternary operators instead of abs because these are unsigned values
+        ret[dim] = firstTowerCoords[dim] > lastTowerCoords[dim] ? firstTowerCoords[dim] - lastTowerCoords[dim]
+                                                                : lastTowerCoords[dim] - firstTowerCoords[dim];
+        // +1 because we want to include first AND last
+        ret[dim] += 1;
+        // sanity check
+        ret[dim] = std::max(ret[dim], static_cast<size_t>(1));
+      }
+      return ret;
+    };
 
-    std::vector<size_t> towersOfInterest(towersOfInterstPerDim[0] * towersOfInterstPerDim[1]);
+    std::vector<size_t> towersOfInterest(towersOfInterestPerDim[0] * towersOfInterestPerDim[1]);
 
     auto towersOfInterestIterator = towersOfInterest.begin();
-    for (size_t i = 0; i < towersOfInterstPerDim[1]; ++i) {
-      std::iota(towersOfInterestIterator, towersOfInterestIterator + towersOfInterstPerDim[0],
+    for (size_t i = 0; i < towersOfInterestPerDim[1]; ++i) {
+      std::iota(towersOfInterestIterator, towersOfInterestIterator + towersOfInterestPerDim[0],
                 std::min(firstTowerIndex, lastTowerIndex) + i * _towersPerDim[0]);
-      towersOfInterestIterator += towersOfInterstPerDim[0];
+      towersOfInterestIterator += towersOfInterestPerDim[0];
     }
 
     return std::make_tuple(lowerCornerInBounds, upperCornerInBounds, towersOfInterest);
@@ -999,9 +1319,13 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   std::array<size_t, 2> _towersPerDim{};
 
   /**
-   * Side length of xy-grid.
+   * Side length of xy-grid cells.
    */
   double _towerSideLength{0.};
+
+  /**
+   * 1/side length of xy-grid cells.
+   */
   double _towerSideLengthReciprocal{0.};
 
   /**
@@ -1090,11 +1414,6 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * The builder for the verlet cluster lists.
    */
   std::unique_ptr<internal::VerletClusterListsRebuilder<Particle>> _builder;
-
-  /**
-   * The flag manager of this container.
-   */
-  internal::UnknowingCellBorderAndFlagManager unknowingCellBorderAndFlagManager;
 };
 
 }  // namespace autopas

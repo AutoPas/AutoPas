@@ -1,3 +1,4 @@
+
 # ![AutoPas](https://raw.githubusercontent.com/AutoPas/AutoPas/master/docs/graphics/AutoPasLogo_Large.svg "Title")
 
 AutoPas is a node-level auto-tuned particle simulation library developed
@@ -15,7 +16,7 @@ Alternatively you can build the documentation on your own:
 ## Requirements
 * CMake 3.14 or newer
 * make (build-essentials) or ninja
-* a C++17 compiler (gcc9, clang9, and ~~icpc 2019~~ are tested.)
+* a C++17 compiler (gcc11, clang13, and ~~icpc 2019~~ are tested.)
 
 ## Building AutoPas
 build instructions for make:
@@ -188,9 +189,55 @@ The default parameter is `ownedOrHalo`, which is also used for range-based for l
 Analogously to `begin()`, `cbegin()` is also defined, which guarantees to return a `const_iterator`.
 
 Iterators are not guaranteed to be valid after particle insertion. 
-However, particle deletion while iterating is supported via `autoPas.deleteParticle(iterator)`.
+However, particle deletion while iterating is supported via `autoPas.deleteParticle(iterator)`. 
+After deletion the `++` operator has to be called:
+```cpp
+#pragma omp parallel
+for(auto iter = autoPas.getIterator(); iter != autoPas.end(); ++iter) {
+  autoPas.deleteParticle(iterator);
+}
+```
+
+### Logging
+
+AutoPas contains multiple loggers with different purposes that can help to shed light into the black box.
+Under the hood, they use [spdlog](https://github.com/gabime/spdlog). 
+When deactivated via `CMake` these loggers do not add any run time overhead. 
+
+#### AutoPasLog
+This is the main, general purpose logger. It supports all spdlog-levels. These levels can be (de)activated at compile
+time via the `CMake` variable `AUTOPAS_MIN_LOG_LVL`. At run time, this logger's compiled levels can be set e.g. via: 
+`autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);`
+
+At debug level, this logger will print the full configuration of every call to `autopas::AutoPas::iteratePairwise()`.
+
+#### GaussianClusterLogger
+Creates a graph representation of the Gaussian cluster model that was created during the simulation.
+This logger is switched on/off via the `CMake` variable `AUTOPAS_LOG_GAUSSIANCLUSTER`.
+
+#### IterationLogger
+Creates a csv file containing information about the configuration and timings of every single pairwise iteration.
+This logger is switched on/off via the `CMake` variable `AUTOPAS_LOG_ITERATIONS`.
+
+#### OctreeLogger
+Creates a vtk file to visualize the Octree particle container.
+This logger is switched on/off via the `CMake` variable `AUTOPAS_LOG_OCTREE`.
+
+#### PredictionLogger
+Creates a csv containing the predictions made by the PredictiveTuning strategy.
+This logger is switched on/off via the `CMake` variable `AUTOPAS_LOG_PREDICTIONS`.
+
+#### TuningDataLogger
+Creates a csv containing all data that is collected for tuning purposes. This is the raw data that is available to 
+the tuning algorithms. 
+This logger is switched on/off via the `CMake` variable `AUTOPAS_LOG_TUNINGDATA`.
+
+#### TuningResultLogger
+Creates a csv containing the results of every tuning phase. Useful if only the high level end results are of interest.
+This logger is switched on/off via the `CMake` variable `AUTOPAS_LOG_TUNINGRESULTS`.
 
 ### Simulation Loop
+*TODO SHOW WHOLE LOOP WITH EXAMPLE!*
 One simulation loop should always consist of the following phases:
 
 1. Updating the Container:
@@ -265,7 +312,7 @@ There exist some things you have to be careful about when using multiple functor
 ## Developing AutoPas
 Please look at our [contribution guidelines](https://github.com/AutoPas/AutoPas/blob/master/.github/CONTRIBUTING.md).
 
-For profiling the compile-time, the cmake option `AUTOPAS_COMPILE_TIME_PROFILING` can be turned on. This enables gcc's -`ftime-report` and clang's `-ftime-trace`. 
+For profiling the compile-time, the `cmake` option `AUTOPAS_COMPILE_TIME_PROFILING` can be turned on. This enables gcc's -`ftime-report` and clang's `-ftime-trace`. 
 It is recommended to use clang, as its output is more detailed.
 `-ftime-trace` generates a .json file for each compilation unit next to the generated object file (inside one of the CMakeFiles directories).
 Chrome has a built-in tool for viewing these files in a flame graph. It can be accessed through the URL `chrome://tracing`.

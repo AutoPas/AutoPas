@@ -75,7 +75,7 @@ bool LJFunctorAVXTest::AoSParticlesEqual(FMCell &cell1, FMCell &cell2) {
 
   bool ret = true;
   for (size_t i = 0; i < cell1.numParticles(); ++i) {
-    ret &= particleEqual(cell1._particles[i], cell2._particles[i]);
+    ret = ret and particleEqual(cell1._particles[i], cell2._particles[i]);
   }
 
   return ret;
@@ -220,6 +220,8 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doD
 }
 
 void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDeleteSomeParticles) {
+  using namespace autopas::utils::ArrayMath::literals;
+
   FMCell cellAVX;
 
   constexpr size_t numParticles = 7;
@@ -242,7 +244,7 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDe
       if (i == j) {
         continue;
       }
-      auto dr = autopas::utils::ArrayMath::sub(cellAVX[i].getR(), cellAVX[j].getR());
+      auto dr = cellAVX[i].getR() - cellAVX[j].getR();
       double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
       if (dr2 <= _interactionLengthSquare) {
         neighborLists[i].push_back(j);

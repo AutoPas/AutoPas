@@ -89,11 +89,11 @@ std::vector<Molecule> convertToEnteringParticles(const std::vector<Molecule> &le
 auto identifyAndSendHaloParticles(autopas::AutoPas<Molecule> &autoPas) {
   std::vector<Molecule> haloParticles;
 
-  for (short x : {-1, 0, 1}) {
-    for (short y : {-1, 0, 1}) {
-      for (short z : {-1, 0, 1}) {
+  for (const int x : {-1, 0, 1}) {
+    for (const int y : {-1, 0, 1}) {
+      for (const int z : {-1, 0, 1}) {
         if (x == 0 and y == 0 and z == 0) continue;
-        std::array<short, 3> direction{x, y, z};
+        std::array<int, 3> direction{x, y, z};
         std::array<double, 3> min{}, max{}, shiftVec{};
         for (size_t dim = 0; dim < 3; ++dim) {
           // The search domain has to be enlarged as the position of the particles is not certain.
@@ -296,10 +296,11 @@ void testSimulationLoop(testingTuple options) {
   int maxID = 0;
 
   auto addParticlePair = [&autoPas, &numParticles, &maxID](std::array<double, 3> pos1) {
+    using namespace autopas::utils::ArrayMath::literals;
     // create two particles with distance .5
     double distance = .5;
     std::array<double, 3> distVec{0., distance, 0.};
-    std::array<double, 3> pos2 = autopas::utils::ArrayMath::add(pos1, distVec);
+    std::array<double, 3> pos2 = pos1 + distVec;
 
     Molecule particle1(pos1, {0., 0., 0.}, maxID++, 0);
     Molecule particle2(pos2, {0., 0., 0.}, maxID++, 0);
@@ -311,8 +312,9 @@ void testSimulationLoop(testingTuple options) {
   };
 
   auto moveParticlesAndResetF = [&autoPas](std::array<double, 3> moveVec) {
+    using namespace autopas::utils::ArrayMath::literals;
     for (auto iter = autoPas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-      iter->setR(autopas::utils::ArrayMath::add(iter->getR(), moveVec));
+      iter->setR(iter->getR() + moveVec);
       iter->setF(zeroArr);
     }
   };
@@ -373,6 +375,8 @@ void testSimulationLoop(testingTuple options) {
  * @param options
  */
 void testHaloCalculation(testingTuple options) {
+  using namespace autopas::utils::ArrayMath::literals;
+
   // create AutoPas object
   autopas::AutoPas<Molecule> autoPas;
 
@@ -396,10 +400,10 @@ void testHaloCalculation(testingTuple options) {
         std::array<double, 3> edge{x_diff * mul + mid, y_diff * mul + mid, z_diff * mul + mid};
 
         std::array<double, 3> diff = {x_diff * 1., y_diff * 1., z_diff * 1.};
-        diff = autopas::utils::ArrayMath::mulScalar(autopas::utils::ArrayMath::normalize(diff), distance / 2.);
+        diff = autopas::utils::ArrayMath::normalize(diff) * (distance / 2.);
 
-        auto pos1 = autopas::utils::ArrayMath::sub(edge, diff);
-        auto pos2 = autopas::utils::ArrayMath::add(edge, diff);
+        auto pos1 = edge - diff;
+        auto pos2 = edge + diff;
 
         Molecule particle1(pos1, {0., 0., 0.}, id++);
         autoPas.addParticle(particle1);
@@ -540,6 +544,7 @@ INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterface1ContainersTest, ValuesIn(ge
 
 void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::ContainerOption containerOption2,
                         size_t autoPasDirection) {
+  using namespace autopas::utils::ArrayMath::literals;
   // create AutoPas object
   autopas::AutoPas<Molecule> autoPas1;
   autoPas1.setOutputSuffix("1_");
@@ -556,7 +561,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
   double distance = .5;
   std::array<double, 3> pos1{9.99, 5., 5.};
   std::array<double, 3> distVec{0., distance, 0.};
-  std::array<double, 3> pos2 = autopas::utils::ArrayMath::add(pos1, distVec);
+  std::array<double, 3> pos2 = pos1 + distVec;
 
   {
     Molecule particle1(pos1, {0., 0., 0.}, 0, 0);
@@ -588,7 +593,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
     std::array<double, 3> moveVec{skinPerTimestep * rebuildFrequency / 3., 0., 0.};
     for (auto *aP : {&autoPas1, &autoPas2}) {
       for (auto iter = aP->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-        iter->setR(autopas::utils::ArrayMath::add(iter->getR(), moveVec));
+        iter->setR(iter->getR() + moveVec);
         iter->setF(zeroArr);
       }
     }
@@ -604,7 +609,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
     std::array<double, 3> moveVec{-skinPerTimestep * rebuildFrequency / 3., 0., 0.};
     for (auto *aP : {&autoPas1, &autoPas2}) {
       for (auto iter = aP->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-        iter->setR(autopas::utils::ArrayMath::add(iter->getR(), moveVec));
+        iter->setR(iter->getR() + moveVec);
         iter->setF(zeroArr);
       }
     }
@@ -620,7 +625,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
     std::array<double, 3> moveVec{skinPerTimestep * rebuildFrequency / 3., 0., 0.};
     for (auto *aP : {&autoPas1, &autoPas2}) {
       for (auto iter = aP->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-        iter->setR(autopas::utils::ArrayMath::add(iter->getR(), moveVec));
+        iter->setR(iter->getR() + moveVec);
         iter->setF(zeroArr);
       }
     }
