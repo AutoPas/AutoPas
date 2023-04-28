@@ -757,63 +757,46 @@ class LJMultisiteFunctorAVX
       const __m256d zposA = _mm256_broadcast_sd(&zAptr[molA]);
       const __m256i ownedStateA4 = _mm256_set1_epi64x(static_cast<int64_t>(ownedStateA));
 
-      // This doesn't work atm
       // Build the molMask
-//      for (size_t molB = 0; molB < soaB.getNumberOfParticles(); molB += vecLength) {
-//        const size_t rest = soaB.getNumberOfParticles() - molB;
-//        const bool remainderCase = rest < vecLength;
-//        __m256i remainderMask = _one;
-//        if (remainderCase) {
-//          remainderMask = _masks[rest - 1];
-//        }
-//        const __m256d xposB =
-//            remainderCase ? _mm256_maskload_pd(&xBptr[molB], remainderMask) : _mm256_loadu_pd(&xBptr[molB]);
-//        const __m256d yposB =
-//            remainderCase ? _mm256_maskload_pd(&yBptr[molB], remainderMask) : _mm256_loadu_pd(&yBptr[molB]);
-//        const __m256d zposB =
-//            remainderCase ? _mm256_maskload_pd(&zBptr[molB], remainderMask) : _mm256_loadu_pd(&zBptr[molB]);
-//
-//        const __m256d displacementCoMX = _mm256_sub_pd(xposA, xposB);
-//        const __m256d displacementCoMY = _mm256_sub_pd(yposA, yposB);
-//        const __m256d displacementCoMZ = _mm256_sub_pd(zposA, zposB);
-//
-//        const __m256d distanceSquaredCoMX = _mm256_mul_pd(displacementCoMX, displacementCoMX);
-//        const __m256d distanceSquaredCoMY = _mm256_mul_pd(displacementCoMY, displacementCoMY);
-//        const __m256d distanceSquaredCoMZ = _mm256_mul_pd(displacementCoMZ, displacementCoMZ);
-//
-//        const __m256d distanceSquaredCoM =
-//            _mm256_add_pd(_mm256_add_pd(distanceSquaredCoMX, distanceSquaredCoMY), distanceSquaredCoMZ);
-//
-//        const __m256d cutoffMask = _mm256_cmp_pd(distanceSquaredCoM, _cutoffSquared, _CMP_LE_OS);
-//        const __m256i ownedStateB = remainderCase
-//                                        ? _mm256_castpd_si256(_mm256_maskload_pd(
-//                                              reinterpret_cast<double const *>(&ownedStatePtrB[molB]), remainderMask))
-//                                        : _mm256_loadu_si256(reinterpret_cast<const __m256i *>(&ownedStatePtrB[molB]));
-//        const __m256d dummyMask =
-//            _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB), _zero, _CMP_NEQ_OS);  // Assuming that dummy = 0
-//        const __m256d totalMask = _mm256_and_pd(cutoffMask, dummyMask);
-//
-//        if (remainderCase) {
-//          _mm256_maskstore_pd((&molMask[molB - (molA + 1)]), remainderMask, totalMask);
-//        } else {
-//          _mm256_storeu_pd((&molMask[molB - (molA + 1)]), totalMask);
-//        }
-//      }
-      for (size_t molB = 0; molB < soaB.getNumberOfParticles(); ++molB) {
-        const auto ownedStateB = ownedStatePtrB[molB];
+      for (size_t molB = 0; molB < soaB.getNumberOfParticles(); molB += vecLength) {
+        const size_t rest = soaB.getNumberOfParticles() - molB;
+        const bool remainderCase = rest < vecLength;
+        __m256i remainderMask = _one;
+        if (remainderCase) {
+          remainderMask = _masks[rest - 1];
+        }
+        const __m256d xposB =
+            remainderCase ? _mm256_maskload_pd(&xBptr[molB], remainderMask) : _mm256_loadu_pd(&xBptr[molB]);
+        const __m256d yposB =
+            remainderCase ? _mm256_maskload_pd(&yBptr[molB], remainderMask) : _mm256_loadu_pd(&yBptr[molB]);
+        const __m256d zposB =
+            remainderCase ? _mm256_maskload_pd(&zBptr[molB], remainderMask) : _mm256_loadu_pd(&zBptr[molB]);
 
-        const auto displacementCoMX = xAptr[molA] - xBptr[molB];
-        const auto displacementCoMY = yAptr[molA] - yBptr[molB];
-        const auto displacementCoMZ = zAptr[molA] - zBptr[molB];
+        const __m256d displacementCoMX = _mm256_sub_pd(xposA, xposB);
+        const __m256d displacementCoMY = _mm256_sub_pd(yposA, yposB);
+        const __m256d displacementCoMZ = _mm256_sub_pd(zposA, zposB);
 
-        const auto distanceSquaredCoMX = displacementCoMX * displacementCoMX;
-        const auto distanceSquaredCoMY = displacementCoMY * displacementCoMY;
-        const auto distanceSquaredCoMZ = displacementCoMZ * displacementCoMZ;
+        const __m256d distanceSquaredCoMX = _mm256_mul_pd(displacementCoMX, displacementCoMX);
+        const __m256d distanceSquaredCoMY = _mm256_mul_pd(displacementCoMY, displacementCoMY);
+        const __m256d distanceSquaredCoMZ = _mm256_mul_pd(displacementCoMZ, displacementCoMZ);
 
-        const auto distanceSquaredCoM = distanceSquaredCoMX + distanceSquaredCoMY + distanceSquaredCoMZ;
+        const __m256d distanceSquaredCoM =
+            _mm256_add_pd(_mm256_add_pd(distanceSquaredCoMX, distanceSquaredCoMY), distanceSquaredCoMZ);
 
-        // mask sites of molecules beyond cutoff or if molecule is a dummy
-        molMask[molB] = distanceSquaredCoM <= _cutoffSquaredAoS and ownedStateB != autopas::OwnershipState::dummy;
+        const __m256d cutoffMask = _mm256_cmp_pd(distanceSquaredCoM, _cutoffSquared, _CMP_LE_OS);
+        const __m256i ownedStateB = remainderCase
+                                        ? _mm256_castpd_si256(_mm256_maskload_pd(
+                                              reinterpret_cast<double const *>(&ownedStatePtrB[molB]), remainderMask))
+                                        : _mm256_loadu_si256(reinterpret_cast<const __m256i *>(&ownedStatePtrB[molB]));
+        const __m256d dummyMask =
+            _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB), _zero, _CMP_NEQ_OS);  // Assuming that dummy = 0
+        const __m256d totalMask = _mm256_and_pd(cutoffMask, dummyMask);
+
+        if (remainderCase) {
+          _mm256_maskstore_pd((&molMask[molB]), remainderMask, totalMask);
+        } else {
+          _mm256_storeu_pd((&molMask[molB]), totalMask);
+        }
       }
 
       // Build the site mask
