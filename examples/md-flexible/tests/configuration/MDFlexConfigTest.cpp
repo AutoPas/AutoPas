@@ -141,3 +141,15 @@ TEST_F(MDFlexConfigTest, multipleSameObjectParsing) {
   ASSERT_EQ(configuration.cubeGridObjects.at(0).getParticleSpacing(), 0.5);
   ASSERT_EQ(configuration.cubeGridObjects.at(1).getTypeId(), 1);
 }
+
+TEST_F(MDFlexConfigTest, vtkRelatedProperties) {
+  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename", std::string(YAMLDIRECTORY) + "vtkRelatedProperties.yaml"};
+
+  char *argv[3] = {&arguments[0][0], &arguments[1][0], &arguments[2][0]};
+
+  MDFlexConfig configuration(3, argv);
+
+  EXPECT_THAT(configuration.vtkOutputFolder.value, "fancyFolderName");
+  EXPECT_THAT(configuration.vtkFileName.value, "fancyFileName");
+  EXPECT_THAT(configuration.vtkWriteFrequency.value, 42);
+}
