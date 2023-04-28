@@ -490,6 +490,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.vtkFileName.value.empty()) {
           throw std::runtime_error("Parsed VTK filename is empty!");
         }
+      } else if (key == config.vtkOutputFolder.name) {
+        expected = "String";
+        description = config.vtkOutputFolder.description;
+
+        config.vtkOutputFolder.value = node[key].as<std::string>();
+        if (config.vtkOutputFolder.value.empty()) {
+          throw std::runtime_error("Parsed VTK output folder name is empty");
+        }
       } else if (key == config.vtkWriteFrequency.name) {
         expected = "Unsigned Integer >= 1";
         description = config.vtkWriteFrequency.description;
