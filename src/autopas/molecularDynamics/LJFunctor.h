@@ -626,7 +626,7 @@ class LJFunctor
       virialSumNoN3Acc *= 0.5;
 
       _upotSum += upotSumNoN3Acc;
-      _virialSum += _virialSum, virialSumNoN3Acc;
+      _virialSum += virialSumNoN3Acc;
 
       // we have always calculated 6*upot, so we divide by 6 here!
       _upotSum /= 6.;
