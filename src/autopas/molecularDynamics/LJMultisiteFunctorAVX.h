@@ -100,11 +100,6 @@ class LJMultisiteFunctorAVX
   // MUST be power of 2 because some optimizations make this assumption
   constexpr static size_t vecLength = 4;
 
-  // Extract vectors from functor into a private data member to avoid unnecessary construction/destruction of vectors
-  //  std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> sigmaSquareds;
-  //  std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> epsilon24s;
-  //  std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> shift6s;
-
   std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionX;
   std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionY;
   std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionZ;
@@ -117,7 +112,6 @@ class LJMultisiteFunctorAVX
   std::vector<size_t, autopas::AlignedAllocator<size_t>> siteTypes;
   std::vector<char, autopas::AlignedAllocator<char>> isSiteOwned;
 
-  // TODO: probably have to add more data members here: e.g. m256d variables
 #ifdef __AVX__
   const __m256d _cutoffSquared{};
   const __m256d _zero{_mm256_set1_pd(0.)};
@@ -315,8 +309,33 @@ class LJMultisiteFunctorAVX
   }
 
   /**
-   * @TODO probably have to find a way to make this work with float and doubles depending on the given type
-   * @TODO incomplete
+   * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
+   */
+  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3) final {
+    if (newton3) {
+      SoAFunctorPairImpl<true>(soa1, soa2);
+    } else {
+      SoAFunctorPairImpl<false>(soa1, soa2);
+    }
+  }
+
+  /**
+   * @copydoc Functor::SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst, const std::vector<size_t,
+   * autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
+   */
+  void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
+                        const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
+                        bool newton3) final {
+    if (soa.getNumberOfParticles() == 0 or neighborList.empty()) return;
+    if (newton3) {
+      SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
+    } else {
+      SoAFunctorVerletImpl<false>(soa, indexFirst, neighborList);
+    }
+  }
+
+  /**
+   * @TODO Documentation
    */
  private:
   template <bool newton3>
@@ -654,21 +673,6 @@ class LJMultisiteFunctorAVX
     }
   }
 
- public:
-  // clang-format off
-  /**
-   * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
-   */
-  // clang-format on
-  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3) final {
-    if (newton3) {
-      SoAFunctorPairImpl<true>(soa1, soa2);
-    } else {
-      SoAFunctorPairImpl<false>(soa1, soa2);
-    }
-  }
-
- private:
   /**
    * Implementation function of SoAFunctorPair(soa1, soa2, newton3)
    * @tparam newton3 flag for if newton's third law is used
@@ -822,19 +826,15 @@ class LJMultisiteFunctorAVX
       __m256d epsilon24s = _zero;
       __m256d shift6s = _zero;
 
-      const __m256d xA = _mm256_broadcast_sd(xAptr + molA);
-      const __m256d yA = _mm256_broadcast_sd(yAptr + molA);
-      const __m256d zA = _mm256_broadcast_sd(zAptr + molA);
-
       // Main loop over sites of molecules in soaA
       for (size_t siteA = 0; siteA < numSitesA; ++siteA) {
         const __m256d rotatedSitePositionsAX = _mm256_broadcast_sd(&rotatedSitePositionsA[siteA][0]);
         const __m256d rotatedSitePositionsAY = _mm256_broadcast_sd(&rotatedSitePositionsA[siteA][1]);
         const __m256d rotatedSitePositionsAZ = _mm256_broadcast_sd(&rotatedSitePositionsA[siteA][2]);
 
-        const __m256d exactSitePositionsAX = _mm256_add_pd(rotatedSitePositionsAX, xA);
-        const __m256d exactSitePositionsAY = _mm256_add_pd(rotatedSitePositionsAY, yA);
-        const __m256d exactSitePositionsAZ = _mm256_add_pd(rotatedSitePositionsAZ, zA);
+        const __m256d exactSitePositionsAX = _mm256_add_pd(rotatedSitePositionsAX, xposA);
+        const __m256d exactSitePositionsAY = _mm256_add_pd(rotatedSitePositionsAY, yposA);
+        const __m256d exactSitePositionsAZ = _mm256_add_pd(rotatedSitePositionsAZ, zposA);
 
         const double *mixingPtr = (_PPLibrary->getMixingDataPtr(siteTypes[siteA], 0));
 
@@ -854,11 +854,10 @@ class LJMultisiteFunctorAVX
           // Set sigma, epsilon and shift
           // Not sure if shifting is correct
           if constexpr (useMixing) {
-            __m256i sindex =
-                remainderCase
-                    ? _mm256_maskload_epi64(reinterpret_cast<const long long *>(siteTypes.data() + siteB),
-                                            remainderMask)
-                    : _mm256_loadu_si256(reinterpret_cast<const __m256i *>(siteTypes.data() + siteB));
+            __m256i sindex = remainderCase
+                                 ? _mm256_maskload_epi64(reinterpret_cast<const long long *>(siteTypes.data() + siteB),
+                                                         remainderMask)
+                                 : _mm256_loadu_si256(reinterpret_cast<const __m256i *>(siteTypes.data() + siteB));
             sindex = _mm256_mul_epu32(
                 sindex, _mm256_set1_epi64x(3));  // Multiply indices by 3 since each mixing data contains 3 doubles
             epsilon24s = _mm256_i64gather_pd(mixingPtr, sindex, 8);
@@ -874,15 +873,15 @@ class LJMultisiteFunctorAVX
             }
           }
 
-          const __m256d exactSitePositionsBX =
-              remainderCase ? _mm256_maskload_pd(&exactSitePositionX[siteB], remainderMask)
-                            : _mm256_loadu_pd(&exactSitePositionX[siteB]);
-          const __m256d exactSitePositionsBY =
-              remainderCase ? _mm256_maskload_pd(&exactSitePositionY[siteB], remainderMask)
-                            : _mm256_loadu_pd(&exactSitePositionY[siteB]);
-          const __m256d exactSitePositionsBZ =
-              remainderCase ? _mm256_maskload_pd(&exactSitePositionZ[siteB], remainderMask)
-                            : _mm256_loadu_pd(&exactSitePositionZ[siteB]);
+          const __m256d exactSitePositionsBX = remainderCase
+                                                   ? _mm256_maskload_pd(&exactSitePositionX[siteB], remainderMask)
+                                                   : _mm256_loadu_pd(&exactSitePositionX[siteB]);
+          const __m256d exactSitePositionsBY = remainderCase
+                                                   ? _mm256_maskload_pd(&exactSitePositionY[siteB], remainderMask)
+                                                   : _mm256_loadu_pd(&exactSitePositionY[siteB]);
+          const __m256d exactSitePositionsBZ = remainderCase
+                                                   ? _mm256_maskload_pd(&exactSitePositionZ[siteB], remainderMask)
+                                                   : _mm256_loadu_pd(&exactSitePositionZ[siteB]);
 
           const __m256d displacementX = _mm256_sub_pd(exactSitePositionsAX, exactSitePositionsBX);
           const __m256d displacementY = _mm256_sub_pd(exactSitePositionsAY, exactSitePositionsBY);
@@ -955,10 +954,9 @@ class LJMultisiteFunctorAVX
             __m256d energyFactor = _mm256_blendv_pd(_zero, _one, ownedMaskA);
             if constexpr (newton3) {
               const __m256i ownedStateB =
-                  remainderCase
-                      ? _mm256_castpd_si256(_mm256_maskload_pd(
-                            reinterpret_cast<double const *>(&isSiteOwned[siteB]), _masks[rest - 1]))
-                      : _mm256_loadu_si256(reinterpret_cast<const __m256i *>(&isSiteOwned[siteB]));
+                  remainderCase ? _mm256_castpd_si256(_mm256_maskload_pd(
+                                      reinterpret_cast<double const *>(&isSiteOwned[siteB]), _masks[rest - 1]))
+                                : _mm256_loadu_si256(reinterpret_cast<const __m256i *>(&isSiteOwned[siteB]));
               __m256d ownedMaskB = _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB),
                                                  _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
               energyFactor = _mm256_add_pd(energyFactor, _mm256_blendv_pd(_zero, _one, ownedMaskB));
@@ -1031,6 +1029,371 @@ class LJMultisiteFunctorAVX
           txBptr[mol] += rotatedSitePositions[site][0] * siteForceY[siteIndex] -
                          rotatedSitePositions[site][1] * siteForceX[siteIndex];
           ++siteIndex;
+        }
+      }
+    }
+
+    if constexpr (calculateGlobals) {
+      const auto threadNum = autopas_get_thread_num();
+      // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
+      // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
+      const auto newton3Factor = newton3 ? .5 : 1.;
+
+      // This multiplication by 4 seems kinda needed, but I don't know why.
+      potentialEnergySum = _mm256_mul_pd(potentialEnergySum, _mm256_set1_pd(4.));
+      virialSumX = _mm256_mul_pd(virialSumX, _mm256_set1_pd(4.));
+      virialSumY = _mm256_mul_pd(virialSumY, _mm256_set1_pd(4.));
+      virialSumZ = _mm256_mul_pd(virialSumZ, _mm256_set1_pd(4.));
+
+      _aosThreadData[threadNum].potentialEnergySum += horizontalSum(potentialEnergySum) * newton3Factor;
+      _aosThreadData[threadNum].virialSum[0] += horizontalSum(virialSumX) * newton3Factor;
+      _aosThreadData[threadNum].virialSum[1] += horizontalSum(virialSumY) * newton3Factor;
+      _aosThreadData[threadNum].virialSum[2] += horizontalSum(virialSumZ) * newton3Factor;
+    }
+  }
+
+  // TODO Documentation
+  template <bool newton3>
+  void SoAFunctorVerletImpl(SoAView<SoAArraysType> soa, const size_t indexFirst,
+                            const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+
+    // Skip if primary particle is dummy
+    const auto ownedStatePrime = ownedStatePtr[indexFirst];
+    if (ownedStatePrime == OwnershipState::dummy) {
+      return;
+    }
+
+    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+
+    const auto *const __restrict q0ptr = soa.template begin<Particle::AttributeNames::quaternion0>();
+    const auto *const __restrict q1ptr = soa.template begin<Particle::AttributeNames::quaternion1>();
+    const auto *const __restrict q2ptr = soa.template begin<Particle::AttributeNames::quaternion2>();
+    const auto *const __restrict q3ptr = soa.template begin<Particle::AttributeNames::quaternion3>();
+
+    SoAFloatPrecision *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
+    SoAFloatPrecision *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
+    SoAFloatPrecision *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+
+    SoAFloatPrecision *const __restrict txptr = soa.template begin<Particle::AttributeNames::torqueX>();
+    SoAFloatPrecision *const __restrict typtr = soa.template begin<Particle::AttributeNames::torqueY>();
+    SoAFloatPrecision *const __restrict tzptr = soa.template begin<Particle::AttributeNames::torqueZ>();
+
+    [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
+
+    __m256d potentialEnergySum = _zero;
+    __m256d virialSumX = _zero;
+    __m256d virialSumY = _zero;
+    __m256d virialSumZ = _zero;
+
+    const size_t neighborListSize = neighborList.size();
+    const size_t *const __restrict neighborListPtr = neighborList.data();
+    const size_t siteCountMolPrime = useMixing ? _PPLibrary->getNumSites(typeptr[indexFirst]) : _sitePositionsLJ.size();
+
+    // Obtain number of sites in neighborList
+    size_t siteCountNeighbors = 0;
+    if constexpr (useMixing) {
+      for (size_t neighborMol = 0; neighborMol < neighborListSize; ++neighborMol) {
+        siteCountNeighbors += _PPLibrary->getNumSites(typeptr[neighborList[neighborMol]]);
+      }
+    } else {
+      siteCountNeighbors = _sitePositionsLJ.size() * neighborListSize;
+    }
+
+    const std::vector<std::array<double, 3>> rotatedSitePositionsPrime =
+        useMixing ? autopas::utils::quaternion::rotateVectorOfPositions(
+                        {q0ptr[indexFirst], q1ptr[indexFirst], q2ptr[indexFirst], q3ptr[indexFirst]},
+                        _PPLibrary->getSitePositions(typeptr[indexFirst]))
+                  : autopas::utils::quaternion::rotateVectorOfPositions(
+                        {q0ptr[indexFirst], q1ptr[indexFirst], q2ptr[indexFirst], q3ptr[indexFirst]}, _sitePositionsLJ);
+
+    const std::vector<size_t> siteTypesPrime = _PPLibrary->getSiteTypes(typeptr[indexFirst]);
+
+    fillSiteVectors(soa, siteCountNeighbors, indexFirst, neighborList, rotatedSitePositionsPrime, siteTypesPrime);
+
+    // Build molecular mask
+    std::vector<double, autopas::AlignedAllocator<double>> molMask;
+    molMask.reserve(siteCountNeighbors);
+
+    const __m256d xposA = _mm256_broadcast_sd(xptr + indexFirst);
+    const __m256d yposA = _mm256_broadcast_sd(yptr + indexFirst);
+    const __m256d zposA = _mm256_broadcast_sd(zptr + indexFirst);
+    const __m256i ownedStateA4 = _mm256_set1_epi64x(static_cast<int64_t>(ownedStatePrime));
+
+    // TODO check if this works, else we can also just use scalar version
+    for (size_t molB = 0; molB < neighborListSize; molB += vecLength) {
+      const size_t rest = neighborListSize - molB;
+      const bool remainderCase = rest < vecLength;
+      __m256i remainderMask = _one;
+      if (remainderCase) {
+        remainderMask = _masks[rest - 1];
+      }
+
+      const __m256i neighborMolIndex =
+          remainderCase
+              ? _mm256_maskload_epi64(reinterpret_cast<const long long *>(neighborList.data() + molB), remainderMask)
+              : _mm256_loadu_si256(reinterpret_cast<const __m256i_u *>(neighborList.data() + molB));
+
+      const __m256d xposB = _mm256_i64gather_pd(xptr, neighborMolIndex, 8);
+      const __m256d yposB = _mm256_i64gather_pd(yptr, neighborMolIndex, 8);
+      const __m256d zposB = _mm256_i64gather_pd(zptr, neighborMolIndex, 8);
+      const __m256i ownedStateB = _mm256_i64gather_pd(ownedStatePtr, neighborMolIndex, 8);
+
+      const __m256d displacementCoMX = _mm256_sub_pd(xposA, xposB);
+      const __m256d displacementCoMY = _mm256_sub_pd(yposA, yposB);
+      const __m256d displacementCoMZ = _mm256_sub_pd(zposA, zposB);
+
+      const __m256d distanceSquaredCoMX = _mm256_mul_pd(displacementCoMX, displacementCoMX);
+      const __m256d distanceSquaredCoMY = _mm256_mul_pd(displacementCoMY, displacementCoMY);
+      const __m256d distanceSquaredCoMZ = _mm256_mul_pd(displacementCoMZ, displacementCoMZ);
+
+      const __m256d distanceSquaredCoM =
+          _mm256_add_pd(_mm256_add_pd(distanceSquaredCoMX, distanceSquaredCoMY), distanceSquaredCoMZ);
+
+      const __m256d cutoffMask = _mm256_cmp_pd(distanceSquaredCoM, _cutoffSquared, _CMP_LE_OS);
+      const __m256d dummyMask =
+          _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB), _zero, _CMP_NEQ_OS);  // Assuming that dummy = 0
+      const __m256d totalMask = _mm256_and_pd(cutoffMask, dummyMask);
+
+      if (remainderCase) {
+        _mm256_maskstore_pd((&molMask[molB]), remainderMask, totalMask);
+      } else {
+        _mm256_storeu_pd((&molMask[molB]), totalMask);
+      }
+    }
+
+    // Build the site mask
+    std::vector<double, autopas::AlignedAllocator<double>> siteMask;
+    siteMask.reserve(siteCountNeighbors);
+
+    for (size_t mol = 0; mol < neighborListSize; ++mol) {
+      const auto neighborMolIndex = neighborList[mol];  // index of neighbor mol in soa
+      for (size_t siteB = 0; siteB < _PPLibrary->getNumSites(typeptr[neighborMolIndex]); ++siteB) {
+        double mask = molMask[mol];
+        siteMask.emplace_back(mask);
+      }
+    }
+
+    __m256d forceSumX = _zero;
+    __m256d forceSumY = _zero;
+    __m256d forceSumZ = _zero;
+
+    __m256d torqueSumX = _zero;
+    __m256d torqueSumY = _zero;
+    __m256d torqueSumZ = _zero;
+
+    __m256d sigmaSquareds = _zero;
+    __m256d epsilon24s = _zero;
+    __m256d shift6s = _zero;
+
+    for (size_t primeSite = 0; primeSite < siteCountMolPrime; ++primeSite) {
+      const __m256d rotatedPrimeSitePositionX = _mm256_broadcast_sd(&rotatedSitePositionsPrime[primeSite][0]);
+      const __m256d rotatedPrimeSitePositionY = _mm256_broadcast_sd(&rotatedSitePositionsPrime[primeSite][1]);
+      const __m256d rotatedPrimeSitePositionZ = _mm256_broadcast_sd(&rotatedSitePositionsPrime[primeSite][2]);
+
+      const __m256d exactPrimeSitePositionX = _mm256_add_pd(rotatedPrimeSitePositionX, xposA);
+      const __m256d exactPrimeSitePositionY = _mm256_add_pd(rotatedPrimeSitePositionY, yposA);
+      const __m256d exactPrimeSitePositionZ = _mm256_add_pd(rotatedPrimeSitePositionZ, zposA);
+
+      const double *mixingPtr = (_PPLibrary->getMixingDataPtr(siteTypes[primeSite], 0));
+
+      for (size_t neighborSite = 0; neighborSite < siteCountNeighbors; ++neighborSite) {
+        const size_t rest = siteCountNeighbors - neighborSite;
+        const bool remainderCase = rest < vecLength;
+        __m256i remainderMask = _one;
+        if (remainderCase) {
+          remainderMask = _masks[rest - 1];
+        }
+        const __m256d localMask = remainderCase ? _mm256_maskload_pd(&siteMask[neighborSite], remainderMask)
+                                                : _mm256_loadu_pd(&siteMask[neighborSite]);
+        if (_mm256_movemask_pd(localMask) == 0) {
+          continue;
+        }
+
+        // Set sigma, epsilon and shift
+        // Not sure if this is correct
+        if constexpr (useMixing) {
+          __m256i sindex =
+              remainderCase ? _mm256_maskload_epi64(
+                                  reinterpret_cast<const long long *>(siteTypes.data() + neighborSite), remainderMask)
+                            : _mm256_loadu_si256(reinterpret_cast<const __m256i *>(siteTypes.data() + neighborSite));
+          sindex = _mm256_mul_epu32(
+              sindex, _mm256_set1_epi64x(3));  // Multiply indices by 3 since each mixing data contains 3 doubles
+          epsilon24s = _mm256_i64gather_pd(mixingPtr, sindex, 8);
+          sigmaSquareds = _mm256_i64gather_pd(mixingPtr + 1, sindex, 8);
+          if constexpr (applyShift) {
+            shift6s = _mm256_i64gather_pd(mixingPtr + 2, sindex, 8);
+          }
+        } else {
+          epsilon24s = _mm256_set1_pd(_epsilon24AoS);
+          sigmaSquareds = _mm256_set1_pd(_sigmaSquaredAoS);
+          if constexpr (applyShift) {
+            shift6s = _mm256_set1_pd(_shift6AoS);
+          }
+        }
+
+        const __m256d exactSitePositionsBX = remainderCase
+                                                 ? _mm256_maskload_pd(&exactSitePositionX[neighborSite], remainderMask)
+                                                 : _mm256_loadu_pd(&exactSitePositionX[neighborSite]);
+        const __m256d exactSitePositionsBY = remainderCase
+                                                 ? _mm256_maskload_pd(&exactSitePositionY[neighborSite], remainderMask)
+                                                 : _mm256_loadu_pd(&exactSitePositionY[neighborSite]);
+        const __m256d exactSitePositionsBZ = remainderCase
+                                                 ? _mm256_maskload_pd(&exactSitePositionZ[neighborSite], remainderMask)
+                                                 : _mm256_loadu_pd(&exactSitePositionZ[neighborSite]);
+
+        const __m256d displacementX = _mm256_sub_pd(exactPrimeSitePositionX, exactSitePositionsBX);
+        const __m256d displacementY = _mm256_sub_pd(exactPrimeSitePositionY, exactSitePositionsBY);
+        const __m256d displacementZ = _mm256_sub_pd(exactPrimeSitePositionZ, exactSitePositionsBZ);
+
+        const __m256d distanceSquaredX = _mm256_mul_pd(displacementX, displacementX);
+        const __m256d distanceSquaredY = _mm256_mul_pd(displacementY, displacementY);
+        const __m256d distanceSquaredZ = _mm256_mul_pd(displacementZ, displacementZ);
+
+        const __m256d distanceSquared =
+            _mm256_add_pd(distanceSquaredX, _mm256_add_pd(distanceSquaredY, distanceSquaredZ));
+
+        const __m256d invDistSquared = _mm256_div_pd(_one, distanceSquared);
+        const __m256d lj2 = _mm256_mul_pd(sigmaSquareds, invDistSquared);
+        const __m256d lj6 = _mm256_mul_pd(_mm256_mul_pd(lj2, lj2), lj2);
+        const __m256d lj12 = _mm256_mul_pd(lj6, lj6);
+        const __m256d lj12m6 = _mm256_sub_pd(lj12, lj6);
+        const __m256d scalar = _mm256_mul_pd(epsilon24s, _mm256_mul_pd(_mm256_add_pd(lj12, lj12m6), invDistSquared));
+        const __m256d scalarMultiple = _mm256_and_pd(localMask, scalar);
+
+        const __m256d forceX = _mm256_mul_pd(scalarMultiple, displacementX);
+        const __m256d forceY = _mm256_mul_pd(scalarMultiple, displacementY);
+        const __m256d forceZ = _mm256_mul_pd(scalarMultiple, displacementZ);
+
+        const __m256d torqueAX =
+            _mm256_fmsub_pd(rotatedPrimeSitePositionY, forceZ, _mm256_mul_pd(rotatedPrimeSitePositionZ, forceY));
+        const __m256d torqueAY =
+            _mm256_fmsub_pd(rotatedPrimeSitePositionZ, forceX, _mm256_mul_pd(rotatedPrimeSitePositionX, forceZ));
+        const __m256d torqueAZ =
+            _mm256_fmsub_pd(rotatedPrimeSitePositionX, forceY, _mm256_mul_pd(rotatedPrimeSitePositionY, forceX));
+
+        forceSumX = _mm256_add_pd(forceSumX, forceX);
+        forceSumY = _mm256_add_pd(forceSumY, forceY);
+        forceSumZ = _mm256_add_pd(forceSumZ, forceZ);
+
+        torqueSumX = _mm256_add_pd(torqueSumX, torqueAX);
+        torqueSumY = _mm256_add_pd(torqueSumY, torqueAY);
+        torqueSumZ = _mm256_add_pd(torqueSumZ, torqueAZ);
+
+        if constexpr (newton3) {
+          __m256d forceSumBX = remainderCase ? _mm256_maskload_pd(&siteForceX[neighborSite], remainderMask)
+                                             : _mm256_loadu_pd(&siteForceX[neighborSite]);
+          __m256d forceSumBY = remainderCase ? _mm256_maskload_pd(&siteForceY[neighborSite], remainderMask)
+                                             : _mm256_loadu_pd(&siteForceY[neighborSite]);
+          __m256d forceSumBZ = remainderCase ? _mm256_maskload_pd(&siteForceZ[neighborSite], remainderMask)
+                                             : _mm256_loadu_pd(&siteForceZ[neighborSite]);
+          forceSumBX = _mm256_sub_pd(forceSumBX, forceX);
+          forceSumBY = _mm256_sub_pd(forceSumBY, forceY);
+          forceSumBZ = _mm256_sub_pd(forceSumBZ, forceZ);
+          remainderCase ? _mm256_maskstore_pd(&siteForceX[neighborSite], remainderMask, forceSumBX)
+                        : _mm256_storeu_pd(&siteForceX[neighborSite], forceSumBX);
+          remainderCase ? _mm256_maskstore_pd(&siteForceY[neighborSite], remainderMask, forceSumBY)
+                        : _mm256_storeu_pd(&siteForceY[neighborSite], forceSumBY);
+          remainderCase ? _mm256_maskstore_pd(&siteForceZ[neighborSite], remainderMask, forceSumBZ)
+                        : _mm256_storeu_pd(&siteForceZ[neighborSite], forceSumBZ);
+        }
+
+        // TODO Probably not correct
+        if constexpr (calculateGlobals) {
+          const __m256d virialX = _mm256_mul_pd(displacementX, forceX);
+          const __m256d virialY = _mm256_mul_pd(displacementY, forceY);
+          const __m256d virialZ = _mm256_mul_pd(displacementZ, forceZ);
+
+          // FMA angle
+          const __m256d potentialEnergy6 = _mm256_fmadd_pd(epsilon24s, lj12m6, shift6s);
+          const __m256d potentialEnergy6Masked = _mm256_and_pd(localMask, potentialEnergy6);
+
+          __m256d ownedMaskA =
+              _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateA4), _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
+          __m256d energyFactor = _mm256_blendv_pd(_zero, _one, ownedMaskA);
+          if constexpr (newton3) {
+            const __m256i ownedStateB =
+                remainderCase ? _mm256_castpd_si256(_mm256_maskload_pd(
+                                    reinterpret_cast<double const *>(&isSiteOwned[neighborSite]), _masks[rest - 1]))
+                              : _mm256_loadu_si256(reinterpret_cast<const __m256i *>(&isSiteOwned[neighborSite]));
+            __m256d ownedMaskB = _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB),
+                                               _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
+            energyFactor = _mm256_add_pd(energyFactor, _mm256_blendv_pd(_zero, _one, ownedMaskB));
+          }
+          potentialEnergySum = _mm256_fmadd_pd(energyFactor, potentialEnergy6Masked, potentialEnergySum);
+          virialSumX = _mm256_fmadd_pd(energyFactor, virialX, virialSumX);
+          virialSumY = _mm256_fmadd_pd(energyFactor, virialY, virialSumY);
+          virialSumZ = _mm256_fmadd_pd(energyFactor, virialZ, virialSumZ);
+        }
+      }
+    }
+    // Load old force and torque
+    __m256d forceAX = _mm256_loadu_pd(&fxptr[indexFirst]);
+    __m256d forceAY = _mm256_loadu_pd(&fyptr[indexFirst]);
+    __m256d forceAZ = _mm256_loadu_pd(&fzptr[indexFirst]);
+    __m256d torqueAX = _mm256_loadu_pd(&txptr[indexFirst]);
+    __m256d torqueAY = _mm256_loadu_pd(&typtr[indexFirst]);
+    __m256d torqueAZ = _mm256_loadu_pd(&tzptr[indexFirst]);
+
+    // Add new force and torque
+    forceAX = _mm256_add_pd(forceAX, forceSumX);
+    forceAY = _mm256_add_pd(forceAY, forceSumY);
+    forceAZ = _mm256_add_pd(forceAZ, forceSumZ);
+    torqueAX = _mm256_add_pd(torqueAX, torqueSumX);
+    torqueAY = _mm256_add_pd(torqueAY, torqueSumY);
+    torqueAZ = _mm256_add_pd(torqueAZ, torqueSumZ);
+
+    // Store new force and torque
+    _mm256_storeu_pd(&fxptr[indexFirst], forceAX);
+    _mm256_storeu_pd(&fyptr[indexFirst], forceAY);
+    _mm256_storeu_pd(&fzptr[indexFirst], forceAZ);
+    _mm256_storeu_pd(&txptr[indexFirst], torqueAX);
+    _mm256_storeu_pd(&typtr[indexFirst], torqueAY);
+    _mm256_storeu_pd(&tzptr[indexFirst], torqueAZ);
+
+    // Reduce forces on individual neighbor sites to molecular forces & torques if newton3=true
+    if constexpr (newton3) {
+      if constexpr (useMixing) {
+        size_t siteIndex = 0;
+        for (size_t neighborMol = 0; neighborMol < neighborListSize; ++neighborMol) {
+          const auto neighborMolIndex = neighborList[neighborMol];
+          const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
+              {q0ptr[neighborMolIndex], q1ptr[neighborMolIndex], q2ptr[neighborMolIndex], q3ptr[neighborMolIndex]},
+              _PPLibrary->getSitePositions(typeptr[neighborMolIndex]));
+          for (size_t site = 0; site < _PPLibrary->getNumSites(typeptr[neighborMolIndex]); ++site) {
+            fxptr[neighborMolIndex] += siteForceX[siteIndex];
+            fyptr[neighborMolIndex] += siteForceY[siteIndex];
+            fzptr[neighborMolIndex] += siteForceZ[siteIndex];
+            txptr[neighborMolIndex] += rotatedSitePositions[site][1] * siteForceZ[siteIndex] -
+                                       rotatedSitePositions[site][2] * siteForceY[siteIndex];
+            typtr[neighborMolIndex] += rotatedSitePositions[site][2] * siteForceX[siteIndex] -
+                                       rotatedSitePositions[site][0] * siteForceZ[siteIndex];
+            tzptr[neighborMolIndex] += rotatedSitePositions[site][0] * siteForceY[siteIndex] -
+                                       rotatedSitePositions[site][1] * siteForceX[siteIndex];
+            ++siteIndex;
+          }
+        }
+      } else {
+        size_t siteIndex = 0;
+        for (size_t neighborMol = 0; neighborMol < neighborListSize; ++neighborMol) {
+          const auto neighborMolIndex = neighborList[neighborMol];
+          const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
+              {q0ptr[neighborMolIndex], q1ptr[neighborMolIndex], q2ptr[neighborMolIndex], q3ptr[neighborMolIndex]},
+              _sitePositionsLJ);
+          for (size_t site = 0; site < _sitePositionsLJ.size(); ++site) {
+            fxptr[neighborMolIndex] += siteForceX[siteIndex];
+            fyptr[neighborMolIndex] += siteForceY[siteIndex];
+            fzptr[neighborMolIndex] += siteForceZ[siteIndex];
+            txptr[neighborMolIndex] += rotatedSitePositions[site][1] * siteForceZ[siteIndex] -
+                                       rotatedSitePositions[site][2] * siteForceY[siteIndex];
+            typtr[neighborMolIndex] += rotatedSitePositions[site][2] * siteForceX[siteIndex] -
+                                       rotatedSitePositions[site][0] * siteForceZ[siteIndex];
+            txptr[neighborMolIndex] += rotatedSitePositions[site][0] * siteForceY[siteIndex] -
+                                       rotatedSitePositions[site][1] * siteForceX[siteIndex];
+            ++siteIndex;
+          }
         }
       }
     }
@@ -1219,11 +1582,12 @@ class LJMultisiteFunctorAVX
   }
 
  private:
-  // @TODO I tried to vectorize this, but i don't know if this actually works, so I may have to look into
-  // it again, we can also do this in a scalar way if it doesn't work
-  // count number of sites in SoA
-  // @note This assumes that getNumSites returns a 64bit integer, if not we need 32bit intrinsics
-  size_t countSitesSoA(SoAView<SoAArraysType> &soa) {
+  /**
+   * @brief Count the number of sites for a given SoA
+   * @param soa SoA
+   * @result number of sites
+   */
+  inline size_t countSitesSoA(SoAView<SoAArraysType> &soa) {
     size_t siteCount = 0;
     auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
     if constexpr (useMixing) {
@@ -1246,9 +1610,12 @@ class LJMultisiteFunctorAVX
     return siteCount;
   }
 
-  // TODO check if this works correctly, and vectorize it if possible
-  // Clear and set up the site vectors for the force calculation
-  void fillSiteVectors(SoAView<SoAArraysType> &soa, const size_t siteCount) {
+  /**
+   * @brief Clear and set up the site vectors for the force calculation
+   * @param soa SoA of particles
+   * @param siteCount number of sites of the SoA
+   */
+  inline void fillSiteVectors(SoAView<SoAArraysType> &soa, const size_t siteCount) {
     const auto *const __restrict q0Ptr = soa.template begin<Particle::AttributeNames::quaternion0>();
     const auto *const __restrict q1Ptr = soa.template begin<Particle::AttributeNames::quaternion1>();
     const auto *const __restrict q2Ptr = soa.template begin<Particle::AttributeNames::quaternion2>();
@@ -1330,7 +1697,99 @@ class LJMultisiteFunctorAVX
     }
   }
 
-  double horizontalSum(const __m256d &data) {
+  /**
+   * TODO Documentation
+   */
+  inline void fillSiteVectors(SoAView<SoAArraysType> &soa, const size_t siteCount, const size_t indexFirst,
+                              const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
+                              const std::vector<std::array<double, 3>> &rotatedSitePositionsPrime,
+                              const std::vector<size_t> &siteTypesPrime) {
+    const auto *const __restrict q0Ptr = soa.template begin<Particle::AttributeNames::quaternion0>();
+    const auto *const __restrict q1Ptr = soa.template begin<Particle::AttributeNames::quaternion1>();
+    const auto *const __restrict q2Ptr = soa.template begin<Particle::AttributeNames::quaternion2>();
+    const auto *const __restrict q3Ptr = soa.template begin<Particle::AttributeNames::quaternion3>();
+    const auto *const __restrict typePtr = soa.template begin<Particle::AttributeNames::typeId>();
+    const auto *const __restrict xPtr = soa.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict yPtr = soa.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict zPtr = soa.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+
+    // Don't know if clear is necessary
+    exactSitePositionX.clear();
+    exactSitePositionY.clear();
+    exactSitePositionZ.clear();
+    siteForceX.clear();
+    siteForceY.clear();
+    siteForceZ.clear();
+    isSiteOwned.clear();
+    siteTypes.clear();
+
+    exactSitePositionX.reserve(siteCount);
+    exactSitePositionY.reserve(siteCount);
+    exactSitePositionZ.reserve(siteCount);
+
+    siteForceX.reserve(siteCount);
+    siteForceY.reserve(siteCount);
+    siteForceZ.reserve(siteCount);
+
+    if constexpr (calculateGlobals) {
+      isSiteOwned.reserve(siteCount);
+    }
+
+    if constexpr (useMixing) {
+      siteTypes.reserve(siteCount);
+    }
+
+    if constexpr (useMixing) {
+      size_t siteIndex = 0;
+      for (unsigned long neighborMolIndex : neighborList) {
+        const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
+            {q0Ptr[neighborMolIndex], q1Ptr[neighborMolIndex], q2Ptr[neighborMolIndex], q3Ptr[neighborMolIndex]},
+            _PPLibrary->getSitePositions(typePtr[neighborMolIndex]));
+        const auto siteTypesOfMol = _PPLibrary->getSiteTypes(typePtr[neighborMolIndex]);
+
+        for (size_t site = 0; site < _PPLibrary->getNumSites(typePtr[neighborMolIndex]); ++site) {
+          exactSitePositionX[siteIndex] = rotatedSitePositions[site][0] + xPtr[neighborMolIndex];
+          exactSitePositionY[siteIndex] = rotatedSitePositions[site][1] + yPtr[neighborMolIndex];
+          exactSitePositionZ[siteIndex] = rotatedSitePositions[site][2] + zPtr[neighborMolIndex];
+          siteTypes[siteIndex] = siteTypesOfMol[site];
+          siteForceX[siteIndex] = 0.;
+          siteForceY[siteIndex] = 0.;
+          siteForceZ[siteIndex] = 0.;
+          if (calculateGlobals) {
+            isSiteOwned[siteIndex] = ownedStatePtr[neighborMolIndex] == OwnershipState::owned;
+          }
+          ++siteIndex;
+        }
+      }
+    } else {
+      size_t siteIndex = 0;
+      for (unsigned long neighborMolIndex : neighborList) {
+        const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
+            {q0Ptr[neighborMolIndex], q1Ptr[neighborMolIndex], q2Ptr[neighborMolIndex], q3Ptr[neighborMolIndex]},
+            _sitePositionsLJ);
+        for (size_t site = 0; site < _sitePositionsLJ.size(); ++site) {
+          exactSitePositionX[siteIndex] = rotatedSitePositions[site][0] + xPtr[neighborMolIndex];
+          exactSitePositionY[siteIndex] = rotatedSitePositions[site][1] + yPtr[neighborMolIndex];
+          exactSitePositionZ[siteIndex] = rotatedSitePositions[site][2] + zPtr[neighborMolIndex];
+          siteForceX[siteIndex] = 0.;
+          siteForceY[siteIndex] = 0.;
+          siteForceZ[siteIndex] = 0.;
+          if (calculateGlobals) {
+            isSiteOwned[siteIndex] = ownedStatePtr[neighborMolIndex] == OwnershipState::owned;
+          }
+          ++siteIndex;
+        }
+      }
+    }
+  }
+
+  /**
+   * @brief Utility function to calculate the sum of an AVX register horizontally.
+   * @param data register of 4 doubles
+   * @return sum of its elements
+   */
+  inline double horizontalSum(const __m256d &data) {
     __m256d sum = _mm256_hadd_pd(data, data);
     __m256d permuted = _mm256_permute4x64_pd(sum, _MM_PERM_ACBD);
     sum = _mm256_hadd_pd(sum, permuted);
