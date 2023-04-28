@@ -13,8 +13,8 @@
 #include "autopas/containers/linkedCells/LinkedCellsReferences.h"
 #include "autopas/containers/octree/Octree.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
-#include "autopas/containers/verletListsCellBased/dynamicVerletLists/DynamicVerletLists.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/VarVerletLists.h"
+#include "autopas/containers/verletListsCellBased/verletLists/DynamicVerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 
