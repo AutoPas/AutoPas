@@ -697,9 +697,11 @@ class LJFunctorAVX
         x2tmp[vecIndex] = xptr[neighborList[j + vecIndex]];
         y2tmp[vecIndex] = yptr[neighborList[j + vecIndex]];
         z2tmp[vecIndex] = zptr[neighborList[j + vecIndex]];
-        fx2tmp[vecIndex] = fxptr[neighborList[j + vecIndex]];
-        fy2tmp[vecIndex] = fyptr[neighborList[j + vecIndex]];
-        fz2tmp[vecIndex] = fzptr[neighborList[j + vecIndex]];
+        if constexpr (newton3) {
+          fx2tmp[vecIndex] = fxptr[neighborList[j + vecIndex]];
+          fy2tmp[vecIndex] = fyptr[neighborList[j + vecIndex]];
+          fz2tmp[vecIndex] = fzptr[neighborList[j + vecIndex]];
+        }
         typeID2tmp[vecIndex] = typeIDptr[neighborList[j + vecIndex]];
         ownedStates2tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
       }
@@ -738,9 +740,12 @@ class LJFunctorAVX
         x2tmp[vecIndex] = xptr[neighborList[j + vecIndex]];
         y2tmp[vecIndex] = yptr[neighborList[j + vecIndex]];
         z2tmp[vecIndex] = zptr[neighborList[j + vecIndex]];
-        fx2tmp[vecIndex] = fxptr[neighborList[j + vecIndex]];
-        fy2tmp[vecIndex] = fyptr[neighborList[j + vecIndex]];
-        fz2tmp[vecIndex] = fzptr[neighborList[j + vecIndex]];
+        // if newton3 is used we need to load f of particle j so the kernel can update it too
+        if constexpr (newton3) {
+          fx2tmp[vecIndex] = fxptr[neighborList[j + vecIndex]];
+          fy2tmp[vecIndex] = fyptr[neighborList[j + vecIndex]];
+          fz2tmp[vecIndex] = fzptr[neighborList[j + vecIndex]];
+        }
         typeID2tmp[vecIndex] = typeIDptr[neighborList[j + vecIndex]];
         ownedStates2tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
       }
