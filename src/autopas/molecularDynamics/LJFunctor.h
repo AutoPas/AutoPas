@@ -176,8 +176,7 @@ class LJFunctor
 
   /**
    * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3)
-   * This functor ignores will use a newton3 like traversing of the soa, however, it still needs to know about newton3
-   * to use it correctly for the global values.
+   * This functor always uses a newton3 like traversal.
    */
   void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) final {
     if (soa.getNumberOfParticles() == 0) return;
@@ -313,19 +312,11 @@ class LJFunctor
     }
     if (calculateGlobals) {
       const int threadnum = autopas_get_thread_num();
-      // we assume newton3 to be enabled in this function call, thus we multiply by two if the value of newton3 is
-      // false, since for newton3 disabled we divide by two later on.
-      if (newton3) {
-        _aosThreadData[threadnum].upotSumN3 += upotSum * .5;
-        _aosThreadData[threadnum].virialSumN3[0] += virialSumX * .5;
-        _aosThreadData[threadnum].virialSumN3[1] += virialSumY * .5;
-        _aosThreadData[threadnum].virialSumN3[2] += virialSumZ * .5;
-      } else {
-        _aosThreadData[threadnum].upotSumNoN3 += upotSum;
-        _aosThreadData[threadnum].virialSumNoN3[0] += virialSumX;
-        _aosThreadData[threadnum].virialSumNoN3[1] += virialSumY;
-        _aosThreadData[threadnum].virialSumNoN3[2] += virialSumZ;
-      }
+      // don't neeed to pay attention to newton3 value in this functor
+      _aosThreadData[threadnum].upotSumNoN3 += upotSum;
+      _aosThreadData[threadnum].virialSumNoN3[0] += virialSumX;
+      _aosThreadData[threadnum].virialSumNoN3[1] += virialSumY;
+      _aosThreadData[threadnum].virialSumNoN3[2] += virialSumZ;
     }
   }
 
