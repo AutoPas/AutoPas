@@ -631,6 +631,9 @@ class LJFunctor
       // we have always calculated 6*upot, so we divide by 6 here!
       _upotSum /= 6.;
       _postProcessed = true;
+
+      AutoPasLog(TRACE, "Final potential energy {}", _upotSum);
+      AutoPasLog(TRACE, "Final virial           {}", _virialSum);
     }
   }
 
