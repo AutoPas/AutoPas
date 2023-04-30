@@ -117,6 +117,8 @@ class LJFunctorSVE
     return useNewton3 == FunctorN3Modes::Newton3Off or useNewton3 == FunctorN3Modes::Both;
   }
 
+  bool allowsMixedNewton3() final { return useNewton3 == FunctorN3Modes::Both; }
+
   void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
 

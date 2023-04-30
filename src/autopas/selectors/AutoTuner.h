@@ -517,6 +517,8 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
   using namespace autopas::utils::ArrayMath::literals;
   using autopas::utils::ArrayUtils::static_cast_array;
 
+  const bool optimizeN3Behavior = false;
+
   // Sanity check. If this is violated feel free to add some logic here that adapts the number of locks.
   if (_bufferLocks.size() < particleBuffers.size()) {
     utils::ExceptionHandler::exception("Not enough locks for non-halo buffers! Num Locks: {}, Buffers: {}",
@@ -558,15 +560,24 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
         staticTypedContainerPtr->forEachInRegion(
             [&](auto &p2) {
               const auto lockCoords = static_cast_array<size_t>((p2.getR() - haloBoxMin) * interactionLengthInv);
-              if constexpr (newton3) {
-                const std::lock_guard<std::mutex> lock(*_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
-                f->AoSFunctor(p1, p2, true);
-              } else {
-                f->AoSFunctor(p1, p2, false);
-                // no need to calculate force enacted on a halo
+              if (optimizeN3Behavior) {
                 if (not p2.isHalo()) {
                   const std::lock_guard<std::mutex> lock(*_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
-                  f->AoSFunctor(p2, p1, false);
+                  f->AoSFunctor(p1, p2, true);
+                } else {
+                  f->AoSFunctor(p1, p2, false);
+                }
+              } else {
+                if constexpr (newton3) {
+                  const std::lock_guard<std::mutex> lock(*_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
+                  f->AoSFunctor(p1, p2, true);
+                } else {
+                  f->AoSFunctor(p1, p2, false);
+                  // no need to calculate force enacted on a halo
+                  if (not p2.isHalo()) {
+                    const std::lock_guard<std::mutex> lock(*_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
+                    f->AoSFunctor(p2, p1, false);
+                  }
                 }
               }
             },
@@ -584,8 +595,13 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
               // No need to apply anything to p1halo
               //   -> AoSFunctor(p1, p2, false) not needed as it neither adds force nor Upot (potential energy)
               //   -> newton3 argument needed for correct globals
-              const std::lock_guard<std::mutex> lock(*_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
-              f->AoSFunctor(p2, p1halo, newton3);
+              if (optimizeN3Behavior) {
+                const std::lock_guard<std::mutex> lock(*_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
+                f->AoSFunctor(p2, p1halo, false);
+              } else {
+                const std::lock_guard<std::mutex> lock(*_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
+                f->AoSFunctor(p2, p1halo, newton3);
+              }
             },
             min, max, IteratorBehavior::owned);
       }
@@ -617,9 +633,13 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
     for (size_t i = 0; i < particleBuffers.size(); ++i) {
       auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
       const std::lock_guard<std::mutex> lockA(*_bufferLocks[i]);
-      f->SoAFunctorSingle(*particleBufferSoAA, newton3);
+      if (optimizeN3Behavior) {
+        f->SoAFunctorSingle(*particleBufferSoAA, true);
+      } else {
+        f->SoAFunctorSingle(*particleBufferSoAA, newton3);
+      }
     }
-    if constexpr (newton3) {
+    if constexpr (newton3 && not optimizeN3Behavior) {
 #ifdef AUTOPAS_OPENMP
       // collapse loops for better scheduling
 #pragma omp for collapse(2)
@@ -671,7 +691,11 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
       auto &particleBufferSoA = particleBuffers[i]._particleSoABuffer;
       auto &haloBufferSoA =
           haloParticleBuffers[(i + interactionOffset) % haloParticleBuffers.size()]._particleSoABuffer;
-      f->SoAFunctorPair(particleBufferSoA, haloBufferSoA, newton3);
+      if (optimizeN3Behavior) {
+        f->SoAFunctorPair(particleBufferSoA, haloBufferSoA, false);
+      } else {
+        f->SoAFunctorPair(particleBufferSoA, haloBufferSoA, newton3);
+      }
     }
   }
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE

@@ -210,6 +210,14 @@ class Functor {
   virtual bool allowsNonNewton3() = 0;
 
   /**
+   * Specifies whether the functor can handle mixed functor-calls with newton3 enabled and disabled in one iteration,
+   * while correctly calculating the globals after an iteration
+   * @return true if and only if this functor can handle mixed functor-calls with newton3 enabled and disabled in one
+   * iteration
+   */
+  virtual bool allowsMixedNewton3() = 0;
+
+  /**
    * Specifies whether the functor should be considered for the auto-tuning process.
    * @return true if and only if this functor is relevant for auto-tuning.
    */

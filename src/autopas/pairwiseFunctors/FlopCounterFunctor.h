@@ -30,6 +30,8 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
 
   bool allowsNonNewton3() override { return true; }
 
+  bool allowsMixedNewton3() override { return false; }
+
   /**
    * constructor of FlopCounterFunctor
    * @param cutoffRadius the cutoff radius

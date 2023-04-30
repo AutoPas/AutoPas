@@ -129,7 +129,7 @@ Once you have defined your particle you can start with the functor class.
 #### Definition
 Important parts to implement:
 * Actual force calculations: `AoSFunctor()` and all Versions of `SoAFunctor*()` 
-* Newton3 characteristics of the force: `allowsNewton3()` and `allowsNonNewton3()`
+* Newton3 characteristics of the force: `allowsNewton3()`, `allowsNonNewton3()` and `allowsMixedNewton3()`
 * Input and output variables of the force calculation via: `getComputedAttr()` and `getNeededAttr()`
 
 #### Usage
