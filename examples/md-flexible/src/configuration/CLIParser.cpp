@@ -554,6 +554,10 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         config.vtkFileName.value = strArg;
         break;
       }
+      case decltype(config.vtkOutputFolder)::getoptChar: {
+        config.vtkOutputFolder.value = strArg;
+        break;
+      }
       case decltype(config.vtkWriteFrequency)::getoptChar: {
         try {
           config.vtkWriteFrequency.value = (size_t)stoul(strArg);
