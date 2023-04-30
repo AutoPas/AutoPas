@@ -143,7 +143,8 @@ TEST_F(MDFlexConfigTest, multipleSameObjectParsing) {
 }
 
 TEST_F(MDFlexConfigTest, vtkRelatedProperties) {
-  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename", std::string(YAMLDIRECTORY) + "vtkRelatedProperties.yaml"};
+  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
+                                        std::string(YAMLDIRECTORY) + "vtkRelatedProperties.yaml"};
 
   char *argv[3] = {&arguments[0][0], &arguments[1][0], &arguments[2][0]};
 
