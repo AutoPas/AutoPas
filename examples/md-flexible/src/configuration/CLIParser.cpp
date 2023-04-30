@@ -77,6 +77,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.verletRebuildFrequency,
       config.verletSkinRadiusPerTimestep,
       config.vtkFileName,
+      config.vtkOutputFolder,
       config.vtkWriteFrequency,
       config.yamlFilename,
       zshCompletionsOption,
