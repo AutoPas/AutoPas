@@ -403,3 +403,5 @@ void BayesianClusterSearch::updateOptions() {
 }
 
 }  // namespace autopas
+
+//run checks
