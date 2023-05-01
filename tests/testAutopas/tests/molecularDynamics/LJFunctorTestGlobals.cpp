@@ -345,7 +345,38 @@ TYPED_TEST_P(LJFunctorTestGlobals, testFunctorGlobalsThrowBad) {
 }
 
 template <class FuncType>
-void LJFunctorTestGlobals<FuncType>::testAoSGlobalsMixedN3() {
+void LJFunctorTestGlobals<FuncType>::testAoSGlobalsMixedN3(LJFunctorTestGlobals<FuncType>::where_type where) {
+  double xOffset;
+  std::string where_str;
+  bool owned1, owned2, owned3;
+  switch (where) {
+    case inside:
+      xOffset = 0.;
+      where_str = "inside";
+      owned1 = owned2 = owned3 = true;
+      break;
+    case boundary:
+      xOffset = 4.9;
+      // if there are no duplicated calculations all calculations count, therefore factor = 1
+      // if there are duplicated calculations there shouldn't be only a partial (factor 0.5) contribution to the energy
+      // if one particle is inside and one outside
+      where_str = "boundary";
+      owned1 = true;
+      owned2 = false;
+      owned3 = false;
+      break;
+    case outside:
+      xOffset = 5.0;
+      // if there are no duplicated calculations all calculations count, therefore factor = 1
+      // if there are duplicated calculations there shouldn't be any contribution to the energy if both particles are
+      // outside
+      where_str = "outside";
+      owned1 = owned2 = owned3 = false;
+      break;
+    default:
+      FAIL() << "not in enum where_type";
+  }
+
   std::vector<double> allVirials;
   std::vector<double> allUpots;
 
@@ -354,12 +385,12 @@ void LJFunctorTestGlobals<FuncType>::testAoSGlobalsMixedN3() {
       FuncType functor(cutoff);
       functor.setParticleProperties(epsilon * 24, sigma);
 
-      Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 0);
-      p1.setOwnershipState(autopas::OwnershipState::owned);
-      Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, 0);
-      p2.setOwnershipState(autopas::OwnershipState::owned);
-      Molecule p3({0.1, 0.3, 0.4}, {0., 0., 0.}, 2, 0);
-      p3.setOwnershipState(autopas::OwnershipState::owned);
+      Molecule p1({0. + xOffset, 0., 0.}, {0., 0., 0.}, 0, 0);
+      p1.setOwnershipState(owned1 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
+      Molecule p2({0.1 + xOffset, 0.2, 0.3}, {0., 0., 0.}, 1, 0);
+      p2.setOwnershipState(owned2 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
+      Molecule p3({0.1 + xOffset, 0.3, 0.4}, {0., 0., 0.}, 2, 0);
+      p3.setOwnershipState(owned3 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
 
       functor.initTraversal();
 
@@ -408,8 +439,11 @@ TYPED_TEST_P(LJFunctorTestGlobals, testAoSFunctorGlobalsMixedN3) {
   using FuncType = TypeParam;
   using TestType = LJFunctorTestGlobals<FuncType>;
 
-  if (auto msg = this->shouldSkipIfNotImplemented([&]() { this->testAoSGlobalsMixedN3(); }); msg != "") {
-    GTEST_SKIP() << msg;
+  for (typename TestType::where_type where :
+       {TestType::where_type::inside, TestType::where_type::boundary, TestType::where_type::outside}) {
+    if (auto msg = this->shouldSkipIfNotImplemented([&]() { this->testAoSGlobalsMixedN3(where); }); msg != "") {
+      GTEST_SKIP() << msg;
+    }
   }
 }
 
