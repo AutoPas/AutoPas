@@ -20,6 +20,7 @@ class LJFunctorTestGlobals : public LJFunctorTest {
   static void testAoSGlobals(where_type where, bool newton3);
   static void testSoAGlobals(where_type where, bool newton3, InteractionType interactionType,
                              size_t additionalParticlesToVerletNumber, uint64_t numParticleReplicas);
+  static void testAoSGlobalsMixedN3();
 
   constexpr static double cutoff{1.};
   constexpr static double epsilon{1.};

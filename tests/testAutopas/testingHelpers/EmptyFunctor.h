@@ -68,7 +68,7 @@ class EmptyFunctor : public autopas::Functor<Particle, EmptyFunctor<Particle>> {
   /**
    * @copydoc autopas::Functor::allowsMixedNewton3()
    */
-  bool allowsMixedNewton3() override { return flase; }
+  bool allowsMixedNewton3() override { return false; }
 
   /**
    * @copydoc autopas::Functor::isRelevantForTuning()

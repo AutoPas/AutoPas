@@ -344,9 +344,78 @@ TYPED_TEST_P(LJFunctorTestGlobals, testFunctorGlobalsThrowBad) {
   EXPECT_NO_THROW(functor.endTraversal(true));
 }
 
+template <class FuncType>
+void LJFunctorTestGlobals<FuncType>::testAoSGlobalsMixedN3() {
+  std::vector<double> allVirials;
+  std::vector<double> allUpots;
+
+  for (int i = 0; i < 8; i++) {
+    for (bool newton3 : {false, true}) {
+      FuncType functor(cutoff);
+      functor.setParticleProperties(epsilon * 24, sigma);
+
+      Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 0);
+      p1.setOwnershipState(autopas::OwnershipState::owned);
+      Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, 0);
+      p2.setOwnershipState(autopas::OwnershipState::owned);
+      Molecule p3({0.1, 0.3, 0.4}, {0., 0., 0.}, 2, 0);
+      p3.setOwnershipState(autopas::OwnershipState::owned);
+
+      functor.initTraversal();
+
+      const bool p1p2 = (bool)((i >> 0) & 1);
+      const bool p1p3 = (bool)((i >> 1) & 1);
+      const bool p2p3 = (bool)((i >> 2) & 1);
+
+      functor.AoSFunctor(p1, p2, p1p2);
+      if (not p1p2) {
+        functor.AoSFunctor(p2, p1, p1p2);
+      }
+      functor.AoSFunctor(p1, p3, p1p3);
+      if (not p1p3) {
+        functor.AoSFunctor(p3, p1, p1p3);
+      }
+      functor.AoSFunctor(p2, p3, p2p3);
+      if (not p2p3) {
+        functor.AoSFunctor(p3, p2, p2p3);
+      }
+
+      functor.endTraversal(newton3);
+
+      allUpots.push_back(functor.getUpot());
+      allVirials.push_back(functor.getVirial());
+    }
+  }
+
+  const auto checkEquality = [](const std::vector<double> v) {
+    if (v.size() == 0) return false;
+    for (int i = 1; i < v.size(); i++) {
+      if (std::fabs(v[0] - v[i]) > 1e-3) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const bool virialsOK = checkEquality(allVirials);
+  const bool upotsOK = checkEquality(allUpots);
+
+  EXPECT_TRUE(virialsOK);
+  EXPECT_TRUE(upotsOK);
+}
+
+TYPED_TEST_P(LJFunctorTestGlobals, testAoSFunctorGlobalsMixedN3) {
+  using FuncType = TypeParam;
+  using TestType = LJFunctorTestGlobals<FuncType>;
+
+  if (auto msg = this->shouldSkipIfNotImplemented([&]() { this->testAoSGlobalsMixedN3(); }); msg != "") {
+    GTEST_SKIP() << msg;
+  }
+}
+
 REGISTER_TYPED_TEST_SUITE_P(LJFunctorTestGlobals, testAoSFunctorGlobals, testAoSFunctorGlobalsOpenMPParallel,
                             testSoAFunctorGlobalsOwn, testSoAFunctorGlobalsPair, testSoAFunctorGlobalsVerlet,
-                            testFunctorGlobalsThrowBad);
+                            testFunctorGlobalsThrowBad, testAoSFunctorGlobalsMixedN3);
 
 using MyTypes = ::testing::Types<LJFunShiftNoMixGlob
 #ifdef __AVX__
