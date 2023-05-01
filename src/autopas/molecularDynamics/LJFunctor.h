@@ -154,24 +154,20 @@ class LJFunctor
       double upot = epsilon24 * lj12m6 + shift6;
 
       const int threadnum = autopas_get_thread_num();
-      // for non-newton3 the division is in the post-processing step.
-      if (newton3) {
-        upot *= 0.5;
-        virial *= (double)0.5;
-      }
       if (i.isOwned()) {
         if (newton3) {
-          _aosThreadData[threadnum].upotSumN3 += upot;
-          _aosThreadData[threadnum].virialSumN3 += virial;
+          _aosThreadData[threadnum].upotSumN3 += upot * 0.5;
+          _aosThreadData[threadnum].virialSumN3 += virial * 0.5;
         } else {
+          // for non-newton3 the division is in the post-processing step.
           _aosThreadData[threadnum].upotSumNoN3 += upot;
           _aosThreadData[threadnum].virialSumNoN3 += virial;
         }
       }
       // for non-newton3 the second particle will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
-        _aosThreadData[threadnum].upotSumN3 += upot;
-        _aosThreadData[threadnum].virialSumN3 += virial;
+        _aosThreadData[threadnum].upotSumN3 += upot * 0.5;
+        _aosThreadData[threadnum].virialSumN3 += virial * 0.5;
       }
     }
   }
@@ -314,11 +310,19 @@ class LJFunctor
     }
     if (calculateGlobals) {
       const int threadnum = autopas_get_thread_num();
-      // don't neeed to pay attention to newton3 value in this functor
-      _aosThreadData[threadnum].upotSumNoN3 += upotSum;
-      _aosThreadData[threadnum].virialSumNoN3[0] += virialSumX;
-      _aosThreadData[threadnum].virialSumNoN3[1] += virialSumY;
-      _aosThreadData[threadnum].virialSumNoN3[2] += virialSumZ;
+
+      if (newton3) {
+        SoAFloatPrecision newton3Factor = 0.5;  // we count the energies partly to one of the two cells!
+        _aosThreadData[threadnum].upotSumN3 += upotSum * newton3Factor;
+        _aosThreadData[threadnum].virialSumN3[0] += virialSumX * newton3Factor;
+        _aosThreadData[threadnum].virialSumN3[1] += virialSumY * newton3Factor;
+        _aosThreadData[threadnum].virialSumN3[2] += virialSumZ * newton3Factor;
+      } else {
+        _aosThreadData[threadnum].upotSumNoN3 += upotSum;
+        _aosThreadData[threadnum].virialSumNoN3[0] += virialSumX;
+        _aosThreadData[threadnum].virialSumNoN3[1] += virialSumY;
+        _aosThreadData[threadnum].virialSumNoN3[2] += virialSumZ;
+      }
     }
   }
 

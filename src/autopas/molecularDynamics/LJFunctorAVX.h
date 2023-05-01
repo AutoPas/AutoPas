@@ -157,19 +157,20 @@ class LJFunctorAVX
       double upot = epsilon24 * lj12m6 + shift6;
 
       const int threadnum = autopas_get_thread_num();
-      // for non-newton3 the division is in the post-processing step.
-      if (newton3) {
-        upot *= 0.5;
-        virial *= (double)0.5;
-      }
       if (i.isOwned()) {
-        _aosThreadData[threadnum].upotSum += upot;
-        _aosThreadData[threadnum].virialSum += virial;
+        if (newton3) {
+          _aosThreadData[threadnum].upotSumN3 += upot * 0.5;
+          _aosThreadData[threadnum].virialSumN3 += virial * 0.5;
+        } else {
+          // for non-newton3 the division is in the post-processing step.
+          _aosThreadData[threadnum].upotSumNoN3 += upot;
+          _aosThreadData[threadnum].virialSumNoN3 += virial;
+        }
       }
       // for non-newton3 the second particle will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
-        _aosThreadData[threadnum].upotSum += upot;
-        _aosThreadData[threadnum].virialSum += virial;
+        _aosThreadData[threadnum].upotSumN3 += upot * 0.5;
+        _aosThreadData[threadnum].virialSumN3 += virial * 0.5;
       }
     }
   }
@@ -310,15 +311,18 @@ class LJFunctorAVX
       _mm_store_pd(&globals[0], hSumVirialxyVec);
       _mm_store_pd(&globals[2], hSumVirialzUpotVec);
 
-      double factor = 1.;
-      // we assume newton3 to be enabled in this function call, thus we multiply by two if the value of newton3 is
-      // false, since for newton3 disabled we divide by two later on.
-      factor *= newton3 ? .5 : 1.;
-      // In case we have a non-cell-wise owned state, we have multiplied everything by two, so we divide it by 2 again.
-      _aosThreadData[threadnum].virialSum[0] += globals[0] * factor;
-      _aosThreadData[threadnum].virialSum[1] += globals[1] * factor;
-      _aosThreadData[threadnum].virialSum[2] += globals[2] * factor;
-      _aosThreadData[threadnum].upotSum += globals[3] * factor;
+      if constexpr (newton3) {
+        // we count the energies partly to one of the two cells!
+        _aosThreadData[threadnum].virialSumN3[0] += globals[0] * 0.5;
+        _aosThreadData[threadnum].virialSumN3[1] += globals[1] * 0.5;
+        _aosThreadData[threadnum].virialSumN3[2] += globals[2] * 0.5;
+        _aosThreadData[threadnum].upotSumN3 += globals[3] * 0.5;
+      } else {
+        _aosThreadData[threadnum].virialSumNoN3[0] += globals[0];
+        _aosThreadData[threadnum].virialSumNoN3[1] += globals[1];
+        _aosThreadData[threadnum].virialSumNoN3[2] += globals[2];
+        _aosThreadData[threadnum].upotSumNoN3 += globals[3];
+      }
     }
 #endif
   }
@@ -428,17 +432,18 @@ class LJFunctorAVX
       _mm_store_pd(&globals[0], hSumVirialxyVec);
       _mm_store_pd(&globals[2], hSumVirialzUpotVec);
 
-      // we have duplicated calculations, i.e., we calculate interactions multiple times, so we have to take care
-      // that we do not add the energy multiple times!
-      double energyfactor = 1.;
       if constexpr (newton3) {
-        energyfactor *= 0.5;  // we count the energies partly to one of the two cells!
+        // we count the energies partly to one of the two cells!
+        _aosThreadData[threadnum].virialSumN3[0] += globals[0] * 0.5;
+        _aosThreadData[threadnum].virialSumN3[1] += globals[1] * 0.5;
+        _aosThreadData[threadnum].virialSumN3[2] += globals[2] * 0.5;
+        _aosThreadData[threadnum].upotSumN3 += globals[3] * 0.5;
+      } else {
+        _aosThreadData[threadnum].virialSumNoN3[0] += globals[0];
+        _aosThreadData[threadnum].virialSumNoN3[1] += globals[1];
+        _aosThreadData[threadnum].virialSumNoN3[2] += globals[2];
+        _aosThreadData[threadnum].upotSumNoN3 += globals[3];
       }
-
-      _aosThreadData[threadnum].virialSum[0] += globals[0] * energyfactor;
-      _aosThreadData[threadnum].virialSum[1] += globals[1] * energyfactor;
-      _aosThreadData[threadnum].virialSum[2] += globals[2] * energyfactor;
-      _aosThreadData[threadnum].upotSum += globals[3] * energyfactor;
     }
 #endif
   }
@@ -798,15 +803,17 @@ class LJFunctorAVX
       _mm_store_pd(&globals[0], hSumVirialxyVec);
       _mm_store_pd(&globals[2], hSumVirialzUpotVec);
 
-      double factor = 1.;
-      // we assume newton3 to be enabled in this function call, thus we multiply by two if the value of newton3 is
-      // false, since for newton3 disabled we divide by two later on.
-      factor *= newton3 ? .5 : 1.;
-      // In case we have a non-cell-wise owned state, we have multiplied everything by two, so we divide it by 2 again.
-      _aosThreadData[threadnum].virialSum[0] += globals[0] * factor;
-      _aosThreadData[threadnum].virialSum[1] += globals[1] * factor;
-      _aosThreadData[threadnum].virialSum[2] += globals[2] * factor;
-      _aosThreadData[threadnum].upotSum += globals[3] * factor;
+      if (newton3) {
+        _aosThreadData[threadnum].virialSumN3[0] += globals[0] * 0.5;
+        _aosThreadData[threadnum].virialSumN3[1] += globals[1] * 0.5;
+        _aosThreadData[threadnum].virialSumN3[2] += globals[2] * 0.5;
+        _aosThreadData[threadnum].upotSumN3 += globals[3] * 0.5;
+      } else {
+        _aosThreadData[threadnum].virialSumNoN3[0] += globals[0];
+        _aosThreadData[threadnum].virialSumNoN3[1] += globals[1];
+        _aosThreadData[threadnum].virialSumNoN3[2] += globals[2];
+        _aosThreadData[threadnum].upotSumNoN3 += globals[3];
+      }
     }
     // interact with i with 4 neighbors
 #endif  // __AVX__
@@ -872,7 +879,7 @@ class LJFunctorAVX
   }
 
   /**
-   * Accumulates global values, e.g. upot and virial.
+   * Postprocesses global values, e.g. upot and virial
    * @param newton3
    */
   void endTraversal(bool newton3) final {
@@ -882,21 +889,30 @@ class LJFunctorAVX
       throw utils::ExceptionHandler::AutoPasException(
           "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
     }
-
     if (calculateGlobals) {
+      double upotSumNoN3Acc = 0;
+      std::array<double, 3> virialSumNoN3Acc = {0, 0, 0};
       for (size_t i = 0; i < _aosThreadData.size(); ++i) {
-        _upotSum += _aosThreadData[i].upotSum;
-        _virialSum += _aosThreadData[i].virialSum;
+        upotSumNoN3Acc += _aosThreadData[i].upotSumNoN3;
+        _upotSum += _aosThreadData[i].upotSumN3;
+
+        virialSumNoN3Acc += _aosThreadData[i].virialSumNoN3;
+        _virialSum += _aosThreadData[i].virialSumN3;
       }
-      if (not newton3) {
-        // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
-        // here.
-        _upotSum *= 0.5;
-        _virialSum *= 0.5;
-      }
+      // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
+      // here.
+      upotSumNoN3Acc *= 0.5;
+      virialSumNoN3Acc *= 0.5;
+
+      _upotSum += upotSumNoN3Acc;
+      _virialSum += virialSumNoN3Acc;
+
       // we have always calculated 6*upot, so we divide by 6 here!
       _upotSum /= 6.;
       _postProcessed = true;
+
+      AutoPasLog(TRACE, "Final potential energy {}", _upotSum);
+      AutoPasLog(TRACE, "Final virial           {}", _virialSum);
     }
   }
 
@@ -988,19 +1004,24 @@ class LJFunctorAVX
    */
   class AoSThreadData {
    public:
-    AoSThreadData() : virialSum{0., 0., 0.}, upotSum{0.} {}
+    AoSThreadData()
+        : virialSumNoN3{0., 0., 0.}, virialSumN3{0., 0., 0.}, upotSumNoN3{0.}, upotSumN3{0.}, __remainingTo64{} {}
     void setZero() {
-      virialSum = {0., 0., 0.};
-      upotSum = 0.;
+      virialSumNoN3 = {0., 0., 0.};
+      virialSumN3 = {0., 0., 0.};
+      upotSumNoN3 = 0.;
+      upotSumN3 = 0.;
     }
 
     // variables
-    std::array<double, 3> virialSum;
-    double upotSum;
+    std::array<double, 3> virialSumNoN3;
+    std::array<double, 3> virialSumN3;
+    double upotSumNoN3;
+    double upotSumN3;
 
    private:
     // dummy parameter to get the right size (64 bytes)
-    double __remainingTo64[4];
+    double __remainingTo64[(64 - 8 * sizeof(double)) / sizeof(double)];
   };
   // make sure of the size of AoSThreadData
   static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
