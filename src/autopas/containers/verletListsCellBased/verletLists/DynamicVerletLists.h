@@ -44,7 +44,7 @@ class DynamicVerletLists : public VerletLists<Particle> {
       double distanceSquare = utils::ArrayMath::dot(distance, distance);
 
       if (distanceSquare >=  halfSkinSquare) {
-        listInvalid = false;
+        listInvalid = true;
       }
     }
 
