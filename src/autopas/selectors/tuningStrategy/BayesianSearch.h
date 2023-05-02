@@ -52,7 +52,6 @@ class BayesianSearch : public TuningStrategyInterface {
    * @param maxEvidence stop tuning after given number of evidence provided.
    * @param seed seed of random number generator (should only be used for tests)
    */
-
   explicit BayesianSearch(
       const std::set<ContainerOption> &allowedContainerOptions = ContainerOption::getAllOptions(),
       const NumberSet<double> &allowedCellSizeFactors = NumberInterval<double>(1., 2.),

@@ -27,7 +27,6 @@ void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
 
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel reduction(|| : throwException)
-
 #endif
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     const auto m = particlePropertiesLibrary.getMass(iter->getTypeId());

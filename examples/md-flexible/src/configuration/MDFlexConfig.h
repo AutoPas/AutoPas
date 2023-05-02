@@ -344,7 +344,6 @@ class MDFlexConfig {
    * vtkWriteFrequency
    */
   MDFlexOption<size_t, __LINE__> vtkWriteFrequency{100, "vtk-write-frequency", true,
-
                                                    "Number of iterations after which a VTK file is written."};
   /**
    * verletClusterSize

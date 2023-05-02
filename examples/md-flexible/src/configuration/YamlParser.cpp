@@ -360,16 +360,15 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
                                  it->second[config.epsilonMap.name].as<double>(),
                                  it->second[config.sigmaMap.name].as<double>(),
-
                                  it->second[config.massMap.name].as<double>());
         }
         continue;
       }
     }
   }
-
   if (node[config.useThermostat.name]) {
     config.useThermostat.value = true;
+
     config.initTemperature.value = node[config.useThermostat.name][config.initTemperature.name].as<double>();
     config.thermostatInterval.value = node[config.useThermostat.name][config.thermostatInterval.name].as<size_t>();
     config.targetTemperature.value = node[config.useThermostat.name][config.targetTemperature.name].as<double>();

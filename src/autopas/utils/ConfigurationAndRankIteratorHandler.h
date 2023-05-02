@@ -72,7 +72,7 @@ class ConfigurationAndRankIteratorHandler {
    * @param traversalIt out
    * @param dataLayoutIt out
    * @param newton3It out
-   * @param verletRebuildFrequencyIt
+   * @param verletRebuildFrequencyIt out
    */
   inline void getConfigIterators(std::set<ContainerOption>::iterator &containerIt,
                                  std::set<double>::iterator &cellSizeFactorIt,
