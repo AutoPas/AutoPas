@@ -425,8 +425,8 @@ void LJMultisiteFunctorTest::testSoAVerletAgainstAoS(std::vector<autopas::Multis
 
   // end traversal for functor and get globals
   functor.endTraversal(newton3);
-  const auto potentialEnergyAoS = functor.getPotentialEnergy();
-  const auto virialAoS = functor.getVirial();
+  const auto potentialEnergyAoS = calculateGlobals?functor.getPotentialEnergy():0;
+  const auto virialAoS = calculateGlobals?functor.getVirial():0;
 
   // generate neighbor lists
   std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> neighborLists(numberMolecules);
@@ -469,8 +469,8 @@ void LJMultisiteFunctorTest::testSoAVerletAgainstAoS(std::vector<autopas::Multis
 
   // end traversal for functor and get globals
   functor.endTraversal(newton3);
-  const auto potentialEnergySoA = functor.getPotentialEnergy();
-  const auto virialSoA = functor.getVirial();
+  const auto potentialEnergySoA = calculateGlobals?functor.getPotentialEnergy():0;
+  const auto virialSoA = calculateGlobals?functor.getVirial():0;
 
   // compare for consistency
   EXPECT_EQ(moleculesAoS.size(), cellSoA.numParticles());
