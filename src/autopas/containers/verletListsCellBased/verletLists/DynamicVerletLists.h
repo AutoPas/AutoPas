@@ -38,9 +38,8 @@ class DynamicVerletLists : public VerletLists<Particle> {
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel reduction(|| : listInvalid)
 #endif
-    for (auto& [particlePtr, neighborLists] : this->getVerletListsAoS()) {
-      auto rebuildPosition = _particlePtr2rebuildPositionMap.at(particlePtr);
-      auto distance = utils::ArrayMath::sub(particlePtr->getR(), rebuildPosition);
+    for (auto& particlePositionPair : _particlePtr2rebuildPositionBuffer) {
+      auto distance = utils::ArrayMath::sub(particlePositionPair.first->getR(), particlePositionPair.second);
       double distanceSquare = utils::ArrayMath::dot(distance, distance);
 
       if (distanceSquare >=  halfSkinSquare) {
@@ -59,15 +58,16 @@ class DynamicVerletLists : public VerletLists<Particle> {
  private:
 
   void generateRebuildPositionMap() {
-    _particlePtr2rebuildPositionMap.clear();
-    _particlePtr2rebuildPositionMap.reserve(this->getVerletListsAoS().size());
+    _particlePtr2rebuildPositionBuffer.clear();
+    _particlePtr2rebuildPositionBuffer.reserve(this->getVerletListsAoS().size());
 
     for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter) {
-      _particlePtr2rebuildPositionMap[&(*iter)] = (*iter).getR();
+      std::pair<Particle*, std::array<double, 3>> particlePositionPair = std::make_pair(&(*iter), (*iter).getR());
+      _particlePtr2rebuildPositionBuffer.emplace_back(particlePositionPair);
     }
   }
   
-  std::unordered_map<Particle*, std::array<double, 3>> _particlePtr2rebuildPositionMap;
+  std::vector<std::pair<Particle*, std::array<double, 3>>> _particlePtr2rebuildPositionBuffer;
   
 };
 }
