@@ -313,12 +313,12 @@ class AutoTuner {
   std::unique_ptr<TuningStrategyInterface> _tuningStrategy;
 
   /**
-   * Counter for the simulation iteration.
+   * Counter for the current simulation iteration.
    */
   size_t _iteration;
 
   /**
-   * Counter for the number of times a tuning phase was started.
+   * Number of iterations between two tuning phases.
    */
   size_t _tuningInterval;
 
@@ -432,11 +432,7 @@ template <class PairwiseFunctor>
 bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild,
                                           std::vector<FullParticleCell<Particle>> &particleBuffers,
                                           std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
-  bool isTuning = false;
-  // tune if :
-  // - more than one config exists
-  // - currently in tuning phase
-  // - functor is relevant
+  // calc homogeneity if needed, and we are within 10 iterations of the next tuning phase
   if (_tuningStrategy->smoothedHomogeneityAndMaxDensityNeeded() and _iterationsSinceTuning >= _tuningInterval - 9 and
       _iterationsSinceTuning <= _tuningInterval) {
     _timerCalculateHomogeneity.start();
@@ -447,6 +443,11 @@ bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild
     _maxDensitiesOfLastTenIterations.push_back(maxDensity);
     _timerCalculateHomogeneity.stop();
   }
+  bool isTuning = false;
+  // tune if :
+  // - more than one config exists
+  // - currently in tuning phase
+  // - functor is relevant
   if ((not _tuningStrategy->searchSpaceIsTrivial()) and _iterationsSinceTuning >= _tuningInterval and
       f->isRelevantForTuning()) {
     isTuning = tune<PairwiseFunctor>(*f);
@@ -811,7 +812,7 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
     stillTuning = _tuningStrategy->tune();
   }
 
-  // repeat as long as traversals are not applicable or we run out of configs
+  // repeat as long as traversals are not applicable, or we run out of configs
   while (true) {
     auto &currentConfig = getCurrentConfig();
     // check if newton3 works with this functor and remove config if not

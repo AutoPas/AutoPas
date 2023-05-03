@@ -322,7 +322,7 @@ class LogicHandler {
   bool iteratePairwise(Functor *f) {
     const bool doRebuild = not neighborListsAreValid();
 
-    bool result = _autoTuner.iteratePairwise(f, doRebuild, _particleBuffer, _haloParticleBuffer);
+    const bool isTuningIteration = _autoTuner.iteratePairwise(f, doRebuild, _particleBuffer, _haloParticleBuffer);
 
     if (doRebuild /*we have done a rebuild now*/) {
       // list is now valid
@@ -331,7 +331,7 @@ class LogicHandler {
     }
     ++_stepsSinceLastListRebuild;
 
-    return result;
+    return isTuningIteration;
   }
 
   /**
