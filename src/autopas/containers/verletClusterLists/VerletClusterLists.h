@@ -1257,58 +1257,6 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   autopas::LoadEstimatorOption _loadEstimator;
 
   /**
-   * Helper function for the region iterators to determine bounds and towers to iterate over.
-   * @param lowerCorner
-   * @param higherCorner
-   * @param behavior
-   * @return
-   */
-  [[nodiscard]] auto getRegionIteratorHelper(const std::array<double, 3> &lowerCorner,
-                                             const std::array<double, 3> &higherCorner,
-                                             IteratorBehavior behavior) const {
-    // Check all cells, as dummy particles are outside the domain they are only found if the search region is outside
-    // the domain.
-    const auto lowerCornerInBounds = utils::ArrayMath::max(lowerCorner, _haloBoxMin);
-    const auto upperCornerInBounds = utils::ArrayMath::min(higherCorner, _haloBoxMax);
-
-    if (not _builder) {
-      // if no builder exists the clusters have not been built yet and all particles are stored in the first tower.
-      return std::make_tuple(lowerCornerInBounds, upperCornerInBounds, std::vector<size_t>{0});
-    }
-
-    // Find towers intersecting the search region
-    const auto firstTowerCoords = _builder->getTowerCoordinates(lowerCornerInBounds);
-    const auto firstTowerIndex = _builder->towerIndex2DTo1D(firstTowerCoords[0], firstTowerCoords[1]);
-    const auto lastTowerCoords = _builder->getTowerCoordinates(upperCornerInBounds);
-    const auto lastTowerIndex = _builder->towerIndex2DTo1D(lastTowerCoords[0], lastTowerCoords[1]);
-
-    const std::array<size_t, 2> towersOfInterestPerDim = [&]() {
-      std::array<size_t, 2> ret{};
-      for (size_t dim = 0; dim < ret.size(); ++dim) {
-        // use ternary operators instead of abs because these are unsigned values
-        ret[dim] = firstTowerCoords[dim] > lastTowerCoords[dim] ? firstTowerCoords[dim] - lastTowerCoords[dim]
-                                                                : lastTowerCoords[dim] - firstTowerCoords[dim];
-        // +1 because we want to include first AND last
-        ret[dim] += 1;
-        // sanity check
-        ret[dim] = std::max(ret[dim], static_cast<size_t>(1));
-      }
-      return ret;
-    };
-
-    std::vector<size_t> towersOfInterest(towersOfInterestPerDim[0] * towersOfInterestPerDim[1]);
-
-    auto towersOfInterestIterator = towersOfInterest.begin();
-    for (size_t i = 0; i < towersOfInterestPerDim[1]; ++i) {
-      std::iota(towersOfInterestIterator, towersOfInterestIterator + towersOfInterestPerDim[0],
-                std::min(firstTowerIndex, lastTowerIndex) + i * _towersPerDim[0]);
-      towersOfInterestIterator += towersOfInterestPerDim[0];
-    }
-
-    return std::make_tuple(lowerCornerInBounds, upperCornerInBounds, towersOfInterest);
-  }
-
-  /**
    * The number of particles in a full cluster.
    */
   size_t _clusterSize;
