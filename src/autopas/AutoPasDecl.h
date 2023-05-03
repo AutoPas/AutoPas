@@ -232,7 +232,7 @@ class AutoPas {
   void deleteParticle(IteratorT &iter);
 
   /**
-   * @copydoc deleteParticle(ContainerIterator<Particle, true, false> &iter)
+   * @copydoc deleteParticle(IteratorT &iter)
    *
    * Region Iterator version.
    */
