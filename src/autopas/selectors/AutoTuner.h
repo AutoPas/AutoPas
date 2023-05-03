@@ -44,7 +44,6 @@ namespace autopas {
  * If it should not look for a new optimum it is not in a tuning phase.
  *
  * @tparam Particle
- * @tparam ParticleCell
  */
 template <class Particle>
 class AutoTuner {
