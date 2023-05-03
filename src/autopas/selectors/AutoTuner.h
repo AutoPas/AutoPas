@@ -24,6 +24,7 @@
 #include "autopas/utils/StaticCellSelector.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
+#include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/logging/IterationLogger.h"
 #include "autopas/utils/logging/TuningDataLogger.h"
 #include "autopas/utils/logging/TuningResultLogger.h"
@@ -795,18 +796,14 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
     } else {
       _tuningStrategy->reset(_iteration);
     }
-    // only used temporarily of evaluation of smoothing
+    // Homogeneity was calculated directly before the tuning phase so reset it now.
     if (_tuningStrategy->smoothedHomogeneityAndMaxDensityNeeded()) {
       int rank{0};
-#ifdef AUTOPAS_INTERNODE_TUNING
-      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
+      AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
       AutoPasLog(DEBUG, "Calculating homogeneities took added up {} ns on rank {}.",
                  _timerCalculateHomogeneity.getTotalTime(), rank);
-      _homogeneitiesOfLastTenIterations.erase(_homogeneitiesOfLastTenIterations.begin(),
-                                              _homogeneitiesOfLastTenIterations.end());
-      _maxDensitiesOfLastTenIterations.erase(_maxDensitiesOfLastTenIterations.begin(),
-                                             _maxDensitiesOfLastTenIterations.end());
+      _homogeneitiesOfLastTenIterations.clear();
+      _maxDensitiesOfLastTenIterations.clear();
     }
   } else {  // enough samples -> next config
     stillTuning = _tuningStrategy->tune();
