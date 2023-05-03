@@ -58,7 +58,7 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
       boxMin, boxMax, cutoff, 0.05, 4, std::move(tuningStrategy), 0.3, 0.0, autopas::SelectorStrategyOption::fastestAbs,
       1000,   3,      10};
 
-  auto container = autoTuner.getContainer();
+  auto container & = autoTuner.getContainer();
   for (const auto &p : particlesContainerOwned) {
     container->addParticle(p);
   }

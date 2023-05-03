@@ -92,7 +92,7 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
  */
 template <class Particle>
 void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket,
-                              const std::shared_ptr<autopas::ParticleContainerInterface<Particle>> &container,
+                              const autopas::ParticleContainerInterface<Particle> &container,
                               const std::pair<double, double> smoothedHomogeneityAndMaxDensity,
                               double MPITuningMaxDifferenceForBucket, double MPITuningWeightForMaxDensity) {
   int rank;

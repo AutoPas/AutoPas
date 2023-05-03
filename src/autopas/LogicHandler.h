@@ -240,7 +240,7 @@ class LogicHandler {
    * @copydoc AutoPas::addHaloParticle()
    */
   void addHaloParticle(const Particle &haloParticle) {
-    auto container = _autoTuner.getContainer();
+    auto &container = _autoTuner.getContainer();
     const auto &boxMin = container->getBoxMin();
     const auto &boxMax = container->getBoxMax();
     if (utils::inBox(haloParticle.getR(), boxMin, boxMax)) {
@@ -438,7 +438,7 @@ class LogicHandler {
 
  private:
   void checkMinimalSize() {
-    auto container = _autoTuner.getContainer();
+    const auto &container = _autoTuner.getContainer();
     // check boxSize at least cutoff + skin
     for (unsigned int dim = 0; dim < 3; ++dim) {
       if (container->getBoxMax()[dim] - container->getBoxMin()[dim] < container->getInteractionLength()) {

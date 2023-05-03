@@ -284,7 +284,7 @@ class AutoPas {
   template <typename Lambda>
   void forEachParallel(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     // TODO lgaertner: parallelize with kokkos integration
-    withStaticContainerType(getContainer(), [&](auto containerPtr) { containerPtr->forEach(forEachLambda, behavior); });
+    withStaticContainerType(getContainer(), [&](auto &container) { container.forEach(forEachLambda, behavior); });
   }
 
   /**
@@ -294,7 +294,7 @@ class AutoPas {
   template <typename Lambda>
   void forEachParallel(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     // TODO lgaertner: parallelize with kokkos integration
-    withStaticContainerType(getContainer(), [&](auto containerPtr) { containerPtr->forEach(forEachLambda, behavior); });
+    withStaticContainerType(getContainer(), [&](auto &container) { container.forEach(forEachLambda, behavior); });
   }
 
   /**
@@ -305,7 +305,7 @@ class AutoPas {
    */
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    withStaticContainerType(getContainer(), [&](auto containerPtr) { containerPtr->forEach(forEachLambda, behavior); });
+    withStaticContainerType(getContainer(), [&](auto &container) { container.forEach(forEachLambda, behavior); });
   }
 
   /**
@@ -314,7 +314,7 @@ class AutoPas {
    */
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
-    withStaticContainerType(getContainer(), [&](auto containerPtr) { containerPtr->forEach(forEachLambda, behavior); });
+    withStaticContainerType(getContainer(), [&](auto &container) { container.forEach(forEachLambda, behavior); });
   }
 
   /**
@@ -329,8 +329,7 @@ class AutoPas {
   template <typename Lambda, typename A>
   void reduceParallel(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     // TODO lgaertner: parallelize with kokkos integration
-    withStaticContainerType(getContainer(),
-                            [&](auto containerPtr) { containerPtr->reduce(reduceLambda, result, behavior); });
+    withStaticContainerType(getContainer(), [&](auto &container) { container.reduce(reduceLambda, result, behavior); });
   }
 
   /**
@@ -340,8 +339,7 @@ class AutoPas {
   template <typename Lambda, typename A>
   void reduceParallel(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     // TODO lgaertner: parallelize with kokkos integration
-    withStaticContainerType(getContainer(),
-                            [&](auto containerPtr) { containerPtr->reduce(reduceLambda, result, behavior); });
+    withStaticContainerType(getContainer(), [&](auto &container) { container.reduce(reduceLambda, result, behavior); });
   }
 
   /**
@@ -354,8 +352,7 @@ class AutoPas {
    */
   template <typename Lambda, typename A>
   void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    withStaticContainerType(getContainer(),
-                            [&](auto containerPtr) { containerPtr->reduce(reduceLambda, result, behavior); });
+    withStaticContainerType(getContainer(), [&](auto &container) { container.reduce(reduceLambda, result, behavior); });
   }
 
   /**
@@ -364,8 +361,7 @@ class AutoPas {
    */
   template <typename Lambda, typename A>
   void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
-    withStaticContainerType(getContainer(),
-                            [&](auto containerPtr) { containerPtr->reduce(reduceLambda, result, behavior); });
+    withStaticContainerType(getContainer(), [&](auto &container) { container.reduce(reduceLambda, result, behavior); });
   }
 
   /**
@@ -416,8 +412,8 @@ class AutoPas {
                                std::array<double, 3> higherCorner,
                                IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     // TODO (lgaertner): parallelize with kokkos integration
-    withStaticContainerType(getContainer(), [&](auto containerPtr) {
-      containerPtr->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+    withStaticContainerType(getContainer(), [&](auto &container) {
+      container.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
     });
   }
 
@@ -430,8 +426,8 @@ class AutoPas {
                                std::array<double, 3> higherCorner,
                                IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     // TODO (lgaertner): parallelize with kokkos integration
-    withStaticContainerType(getContainer(), [&](auto containerPtr) {
-      containerPtr->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+    withStaticContainerType(getContainer(), [&](auto &container) {
+      container.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
     });
   }
 
@@ -446,8 +442,8 @@ class AutoPas {
   template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
                        IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    withStaticContainerType(getContainer(), [&](auto containerPtr) {
-      containerPtr->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+    withStaticContainerType(getContainer(), [&](auto &container) {
+      container.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
     });
   }
 
@@ -458,8 +454,8 @@ class AutoPas {
   template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
                        IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
-    withStaticContainerType(getContainer(), [&](auto containerPtr) {
-      containerPtr->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+    withStaticContainerType(getContainer(), [&](auto &container) {
+      container.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
     });
   }
 
@@ -479,8 +475,8 @@ class AutoPas {
                               std::array<double, 3> higherCorner,
                               IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     // TODO lgaertner: parallelize with kokkos integration
-    withStaticContainerType(getContainer(), [&](auto containerPtr) {
-      containerPtr->reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
+    withStaticContainerType(getContainer(), [&](auto &container) {
+      container.reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
     });
   }
 
@@ -493,8 +489,8 @@ class AutoPas {
                               std::array<double, 3> higherCorner,
                               IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     // TODO lgaertner: parallelize with kokkos integration
-    withStaticContainerType(getContainer(), [&](auto containerPtr) {
-      containerPtr->reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
+    withStaticContainerType(getContainer(), [&](auto &container) {
+      container.reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
     });
   }
 
@@ -511,8 +507,8 @@ class AutoPas {
   template <typename Lambda, typename A>
   void reduceInRegion(Lambda reduceLambda, A &result, std::array<double, 3> lowerCorner,
                       std::array<double, 3> higherCorner, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    withStaticContainerType(getContainer(), [&](auto containerPtr) {
-      containerPtr->reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
+    withStaticContainerType(getContainer(), [&](auto &container) {
+      container.reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
     });
   }
 
@@ -524,8 +520,8 @@ class AutoPas {
   void reduceInRegion(Lambda reduceLambda, A &result, std::array<double, 3> lowerCorner,
                       std::array<double, 3> higherCorner,
                       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
-    withStaticContainerType(getContainer(), [&](auto containerPtr) {
-      containerPtr->reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
+    withStaticContainerType(getContainer(), [&](auto &container) {
+      container.reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
     });
   }
   /**
@@ -945,9 +941,9 @@ class AutoPas {
   void setOutputSuffix(const std::string &suffix) { _outputSuffix = suffix; }
 
  private:
-  std::shared_ptr<autopas::ParticleContainerInterface<Particle>> getContainer();
+  autopas::ParticleContainerInterface<Particle> &getContainer();
 
-  std::shared_ptr<const autopas::ParticleContainerInterface<Particle>> getContainer() const;
+  const autopas::ParticleContainerInterface<Particle> &getContainer() const;
 
   /**
    * Lower corner of the container.

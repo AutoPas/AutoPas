@@ -69,29 +69,29 @@ class ContainerSelector {
 
   /**
    * Getter for the optimal container. If no container is chosen yet the first allowed is selected.
-   * @return Smartpointer to the optimal container.
+   * @return Reference to the optimal container.
    */
-  inline std::shared_ptr<autopas::ParticleContainerInterface<Particle>> getCurrentContainer();
+  inline autopas::ParticleContainerInterface<Particle> &getCurrentContainer();
 
   /**
    * Getter for the optimal container. If no container is chosen yet the first allowed is selected.
-   * @return Smartpointer to the optimal container.
+   * @return Reference to the optimal container.
    */
-  inline std::shared_ptr<const autopas::ParticleContainerInterface<Particle>> getCurrentContainer() const;
+  inline const autopas::ParticleContainerInterface<Particle> &getCurrentContainer() const;
 
  private:
   /**
    * Container factory that also copies all particles to the new container
    * @param containerChoice container to generate
    * @param containerInfo additional parameter for the container
-   * @return smartpointer to new container
+   * @return Smartpointer to new container
    */
   std::unique_ptr<autopas::ParticleContainerInterface<Particle>> generateContainer(ContainerOption containerChoice,
                                                                                    ContainerSelectorInfo containerInfo);
 
   std::array<double, 3> _boxMin, _boxMax;
   const double _cutoff;
-  std::shared_ptr<autopas::ParticleContainerInterface<Particle>> _currentContainer;
+  std::unique_ptr<autopas::ParticleContainerInterface<Particle>> _currentContainer;
   ContainerSelectorInfo _currentInfo;
 };
 
@@ -187,22 +187,21 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
 }
 
 template <class Particle>
-std::shared_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector<Particle>::getCurrentContainer() {
+autopas::ParticleContainerInterface<Particle> &ContainerSelector<Particle>::getCurrentContainer() {
   if (_currentContainer == nullptr) {
     autopas::utils::ExceptionHandler::exception(
         "ContainerSelector: getCurrentContainer() called before any container was selected!");
   }
-  return _currentContainer;
+  return *_currentContainer;
 }
 
 template <class Particle>
-std::shared_ptr<const autopas::ParticleContainerInterface<Particle>> ContainerSelector<Particle>::getCurrentContainer()
-    const {
+const autopas::ParticleContainerInterface<Particle> &ContainerSelector<Particle>::getCurrentContainer() const {
   if (_currentContainer == nullptr) {
     autopas::utils::ExceptionHandler::exception(
         "ContainerSelector: getCurrentContainer() called before any container was selected!");
   }
-  return _currentContainer;
+  return *_currentContainer;
 }
 
 template <class Particle>
