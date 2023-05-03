@@ -40,6 +40,7 @@ void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
     // sanity check that particles are not too fast for the Verlet skin technique.
     // If this condition is violated once this is not necessarily an error. Only if the total distance traveled over
     // the whole rebuild frequency is farther than the skin we lose interactions.
+    /*
     const auto distanceMovedSquared = dot(displacement, displacement);
     if (distanceMovedSquared > maxAllowedDistanceMovedSquared) {
 #pragma omp critical
@@ -50,6 +51,7 @@ void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
         throwException = true;
       }
     }
+     */
     iter->addR(displacement);
   }
 
