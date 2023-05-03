@@ -223,7 +223,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     for (size_t i = 0; i < _towers.size(); ++i) {
       auto &tower = _towers[i];
       const auto towerSize = tower.getNumAllParticles();
-      auto numTailDummies = _towers[i].getNumTailDummyParticles();
+      auto numTailDummies = tower.getNumTailDummyParticles();
       // iterate over all non-tail dummies.
       for (size_t j = 0; j < towerSize - numTailDummies;) {
         if (tower[j].isHalo()) {
@@ -239,7 +239,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       }
       // if anything was marked for deletion actually delete it now.
       if (deletedSomething) {
-        _towers[i].deleteDummyParticles();
+        tower.deleteDummyParticles();
       }
     }
     if (deletedSomething) {
