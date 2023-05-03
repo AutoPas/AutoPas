@@ -651,8 +651,15 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
                       const std::array<double, 3> &higherCorner,
                       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) {
-    for (auto &tower : this->_towers) {
-      tower.reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
+    for (size_t i = 0; i < _towers.size(); ++i) {
+      auto &tower = _towers[i];
+      const auto [towerLowCorner, towerHighCorner] = getTowerBoundingBox(i);
+      // particles can move over cell borders. Calculate the volume this cell's particles can be.
+      const auto towerLowCornerSkin = utils::ArrayMath::subScalar(towerLowCorner, this->getVerletSkin() * 0.5);
+      const auto towerHighCornerSkin = utils::ArrayMath::addScalar(towerHighCorner, this->getVerletSkin() * 0.5);
+      if (utils::boxesOverlap(towerLowCornerSkin, towerHighCornerSkin, lowerCorner, higherCorner)) {
+        tower.reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
+      }
     }
     for (auto &vector : _particlesToAdd) {
       for (auto &particle : vector) {
@@ -681,8 +688,15 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       }
     }
     // If the particles are sorted into the towers, we can simply use the iteration over towers.
-    for (auto tower : this->_towers) {
-      tower.reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
+    for (size_t i = 0; i < _towers.size(); ++i) {
+      auto &tower = _towers[i];
+      const auto [towerLowCorner, towerHighCorner] = getTowerBoundingBox(i);
+      // particles can move over cell borders. Calculate the volume this cell's particles can be.
+      const auto towerLowCornerSkin = utils::ArrayMath::subScalar(towerLowCorner, this->getVerletSkin() * 0.5);
+      const auto towerHighCornerSkin = utils::ArrayMath::addScalar(towerHighCorner, this->getVerletSkin() * 0.5);
+      if (utils::boxesOverlap(towerLowCornerSkin, towerHighCornerSkin, lowerCorner, higherCorner)) {
+        tower.reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
+      }
     }
 
     if (_isValid == ValidityState::invalid) {
