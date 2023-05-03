@@ -231,7 +231,7 @@ void AutoPas<Particle>::deleteAllParticles() {
 }
 
 template <class Particle>
-void AutoPas<Particle>::deleteParticle(ContainerIterator<Particle, true, false> &iter) {
+void AutoPas<Particle>::deleteParticle(AutoPas<Particle>::IteratorT &iter) {
   _logicHandler->decreaseParticleCounter(*iter);
   internal::deleteParticle(iter);
 }

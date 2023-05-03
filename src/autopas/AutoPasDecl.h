@@ -164,6 +164,7 @@ class AutoPas {
 
   /**
    * Adds all particles from the collection to the container.
+   * @note This function uses reserve().
    * @note This function uses addParticle().
    * @tparam Collection Collection type that contains the particles (e.g. std::vector). Needs to support `.size()`.
    * @param particles
@@ -194,7 +195,8 @@ class AutoPas {
 
   /**
    * Adds all halo particles from the collection to the container.
-   * @note This function uses addHaloParticlesIf().
+   * @note This function uses reserve().
+   * @note This function uses addHaloParticle().
    * @tparam Collection Collection type that contains the particles (e.g. std::vector). Needs to support `.size()`.
    * @param particles
    */
@@ -227,14 +229,14 @@ class AutoPas {
    *
    * @param iter Needs to be a modify-able iterator.
    */
-  void deleteParticle(ContainerIterator<Particle, true, false> &iter);
+  void deleteParticle(IteratorT &iter);
 
   /**
    * @copydoc deleteParticle(ContainerIterator<Particle, true, false> &iter)
    *
    * Region Iterator version.
    */
-  void deleteParticle(ContainerIterator<Particle, true, true> &iter);
+  void deleteParticle(RegionIteratorT &iter);
 
   /**
    * Deletes the given particle and leaves the container in a valid state.
