@@ -90,11 +90,9 @@ class LogicHandler {
    * @copydoc AutoPas::updateContainer()
    */
   [[nodiscard]] std::vector<Particle> updateContainer() {
-    bool doDataStructureUpdate = not neighborListsAreValid();
+    neighborListsAreValid();
+    bool doDataStructureUpdate = not _neighborListsAreValid.load(std::memory_order_relaxed);
 
-    if (doDataStructureUpdate) {
-      _neighborListsAreValid.store(false, std::memory_order_relaxed);
-    }
     // The next call also adds particles to the container if doDataStructureUpdate is true.
     auto leavingBufferParticles = collectLeavingParticlesFromBuffer(doDataStructureUpdate);
 
@@ -225,7 +223,7 @@ class LogicHandler {
           "{}",
           boxMin, boxMax, p.toString());
     }
-    if (not neighborListsAreValid()) {
+    if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
       // Container has to (about to) be invalid to be able to add Particles!
       _autoTuner.getContainer()->template addParticle<false>(p);
     } else {
@@ -250,7 +248,7 @@ class LogicHandler {
           "{}",
           utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), haloParticle.toString());
     }
-    if (not neighborListsAreValid()) {
+    if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
       // If the neighbor lists are not valid, we can add the particle.
       container->template addHaloParticle</* checkInBox */ false>(haloParticle);
     } else {
@@ -319,12 +317,11 @@ class LogicHandler {
    */
   template <class Functor>
   bool iteratePairwise(Functor *f) {
-    const bool doRebuild = not neighborListsAreValid();
+    const bool doRebuild = not _neighborListsAreValid.load(std::memory_order_relaxed);
 
     bool result = _autoTuner.iteratePairwise(f, doRebuild, _particleBuffer, _haloParticleBuffer);
 
     if (doRebuild /*we have done a rebuild now*/) {
-      // list is now valid
       _neighborListsAreValid.store(true, std::memory_order_relaxed);
       _stepsSinceLastListRebuild = 0;
     }
@@ -449,11 +446,11 @@ class LogicHandler {
     }
   }
 
-  bool neighborListsAreValid() {
+  void neighborListsAreValid() {
+    _neighborListsAreValid.store(true, std::memory_order_relaxed);
     if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or _autoTuner.willRebuild() or not _autoTuner.getContainer()->neighborListsAreValid()) {
       _neighborListsAreValid.store(false, std::memory_order_relaxed);
     }
-    return _neighborListsAreValid.load(std::memory_order_relaxed);
   }
 
   /**
