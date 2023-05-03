@@ -23,7 +23,7 @@ enum class OwnershipState : int64_t {
   /// Owned state, a particle with this state is an actual particle and owned by the current AutoPas object!
   owned = 0b0001,  // 1
   /// Halo state, a particle with this state is an actual particle, but not owned by the current AutoPas object!
-  halo = 0b0010,   // 2
+  halo = 0b0010,  // 2
 };
 
 /**
