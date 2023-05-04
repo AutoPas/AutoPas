@@ -66,7 +66,18 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
   }
 
   void traverseParticlePairs() override {
-    auto &aosNeighborLists = *(this->_aosNeighborLists);
+    if (this->_staticAoSNeighborLists != nullptr) {
+      traverseStaticParticlePairs();
+    }
+    else if (this->_dynamicAoSNeighborLists != nullptr) {
+      traverseDynamicParticlePairs();
+    }
+  }
+
+ private:
+
+  void traverseStaticParticlePairs() {
+    auto &aosNeighborLists = *(this->_staticAoSNeighborLists);
     auto &soaNeighborLists = *(this->_soaNeighborLists);
     switch (dataLayout) {
       case DataLayoutOption::aos: {
@@ -124,7 +135,65 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
     }
   }
 
- private:
+  void traverseDynamicParticlePairs() {
+    auto &aosNeighborLists = *(this->_dynamicAoSNeighborLists);
+    auto &soaNeighborLists = *(this->_soaNeighborLists);
+    switch (dataLayout) {
+      case DataLayoutOption::aos: {
+#if defined(AUTOPAS_OPENMP)
+        if (not useNewton3) {
+          size_t buckets = aosNeighborLists.bucket_count();
+          /// @todo find a sensible chunk size
+#pragma omp parallel for schedule(dynamic)
+          for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
+            auto endIter = aosNeighborLists.end(bucketId);
+            for (auto bucketIter = aosNeighborLists.begin(bucketId); bucketIter != endIter; ++bucketIter) {
+              Particle &particle = *(bucketIter->first);
+              for (auto neighborPtr : bucketIter->second.first) {
+                Particle &neighbor = *neighborPtr;
+                _functor->AoSFunctor(particle, neighbor, false);
+              }
+            }
+          }
+        } else
+#endif
+        {
+          for (auto &[particlePtr, neighborPtrList] : aosNeighborLists) {
+            Particle &particle = *particlePtr;
+            for (auto neighborPtr : neighborPtrList.first) {
+              Particle &neighbor = *neighborPtr;
+              _functor->AoSFunctor(particle, neighbor, useNewton3);
+            }
+          }
+        }
+        return;
+      }
+
+      case DataLayoutOption::soa: {
+#if defined(AUTOPAS_OPENMP)
+        if (not useNewton3) {
+          /// @todo find a sensible chunk size
+          const size_t chunkSize = std::max(soaNeighborLists.size() / (omp_get_max_threads() * 10), 1ul);
+#pragma omp parallel for schedule(dynamic, chunkSize)
+          for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
+            _functor->SoAFunctorVerlet(_soa, particleIndex, soaNeighborLists[particleIndex], useNewton3);
+          }
+        } else
+#endif
+        {
+          // iterate over SoA
+          for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
+            _functor->SoAFunctorVerlet(_soa, particleIndex, soaNeighborLists[particleIndex], useNewton3);
+          }
+        }
+        return;
+      }
+      default: {
+        utils::ExceptionHandler::exception("VerletList dataLayout {} not available", dataLayout);
+      }
+    }
+  }
+
   /**
    * Functor for Traversal
    */

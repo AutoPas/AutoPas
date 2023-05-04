@@ -17,8 +17,9 @@
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/VarVerletLists.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/neighborLists/asBuild/VerletNeighborListAsBuild.h"
-#include "autopas/containers/verletListsCellBased/verletLists/DynamicVerletLists.h"
-#include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
+// #include "autopas/containers/verletListsCellBased/verletLists/DynamicVerletLists.h"
+// #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
+#include "autopas/containers/verletListsCellBased/verletLists/NewVerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/options/ContainerOption.h"
@@ -120,15 +121,15 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
       break;
     }
     case ContainerOption::verletLists: {
-      container = std::make_unique<VerletLists<Particle>>(
+      container = std::make_unique<NewVerletLists<Particle, StaticVLNeighborList<Particle>>>(
           _boxMin, _boxMax, _cutoff, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency,
-          VerletLists<Particle>::BuildVerletListType::VerletSoA, containerInfo.cellSizeFactor);
+          NewVerletListHelpers<Particle>::VLBuildType::Value::aosBuild, containerInfo.cellSizeFactor);
       break;
     }
     case ContainerOption::dynamicVerletLists: {
-      container = std::make_unique<DynamicVerletLists<Particle>>(
+      container = std::make_unique<NewVerletLists<Particle, DynamicVLNeighborList<Particle>>>(
           _boxMin, _boxMax, _cutoff, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency,
-          DynamicVerletLists<Particle>::BuildVerletListType::VerletAoS, containerInfo.cellSizeFactor);
+          NewVerletListHelpers<Particle>::VLBuildType::Value::aosBuild, containerInfo.cellSizeFactor);
       break;
     }
 

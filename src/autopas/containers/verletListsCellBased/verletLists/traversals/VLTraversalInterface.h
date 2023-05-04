@@ -7,7 +7,7 @@
 #pragma once
 
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
-#include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
+#include "autopas/containers/verletListsCellBased/verletLists/NewVerletListHelpers.h"
 #include "autopas/options/DataLayoutOption.h"
 
 namespace autopas {
@@ -20,6 +20,9 @@ namespace autopas {
  */
 template <class LinkedParticleCell>
 class VLTraversalInterface {
+
+  using Particle = typename LinkedParticleCell::ParticleType;
+
  public:
   /**
    * Destructor
@@ -29,15 +32,30 @@ class VLTraversalInterface {
   /**
    * Sets the information the traversal needs for the iteration.
    * @param cells The cells of the underlying LinkedCells container.
-   * @param aosNeighborLists The AoS neighbor list.
+   * @param aosNeighborLists The AoS static neighbor list.
    * @param soaNeighborLists The SoA neighbor list.
    */
   virtual void setCellsAndNeighborLists(
       std::vector<LinkedParticleCell> &cells,
-      typename VerletListHelpers<typename LinkedParticleCell::ParticleType>::NeighborListAoSType &aosNeighborLists,
+      typename NewVerletListHelpers<Particle>::StaticNeighborListsType &aosNeighborLists,
       std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &soaNeighborLists) {
     _cells = &cells;
-    _aosNeighborLists = &aosNeighborLists;
+    _staticAoSNeighborLists = &aosNeighborLists;
+    _soaNeighborLists = &soaNeighborLists;
+  }
+
+  /**
+   * Sets the information the traversal needs for the iteration.
+   * @param cells The cells of the underlying LinkedCells container.
+   * @param aosNeighborLists The AoS dynamic neighbor list.
+   * @param soaNeighborLists The SoA neighbor list.
+   */
+  virtual void setCellsAndNeighborLists(
+      std::vector<LinkedParticleCell> &cells,
+      typename NewVerletListHelpers<Particle>::DynamicNeighborListsType &aosNeighborLists,
+      std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &soaNeighborLists) {
+    _cells = &cells;
+    _dynamicAoSNeighborLists = &aosNeighborLists;
     _soaNeighborLists = &soaNeighborLists;
   }
 
@@ -47,10 +65,14 @@ class VLTraversalInterface {
    */
   std::vector<LinkedParticleCell> *_cells = nullptr;
   /**
-   * The AoS neighbor list of the verlet lists container.
+   * The AoS neighbor list of the static verlet lists container.
    */
-  typename VerletListHelpers<typename LinkedParticleCell::ParticleType>::NeighborListAoSType *_aosNeighborLists =
+  typename NewVerletListHelpers<Particle>::StaticNeighborListsType *_staticAoSNeighborLists =
       nullptr;
+
+  typename NewVerletListHelpers<Particle>::DynamicNeighborListsType *_dynamicAoSNeighborLists =
+      nullptr;
+
   /**
    * The SoA neighbor list of the verlet lists container.
    */
