@@ -21,38 +21,38 @@ INSTANTIATE_TEST_SUITE_P(Generated, AllContainersTestsBothUpdates,
  * Checks if ParticleContainerInterface::getNumParticle() returns the correct number of particles.
  */
 TEST_P(AllContainersTests, testGetNumParticles) {
-  auto container = getInitializedContainer(std::get<0>(GetParam()));
-  EXPECT_EQ(container->getNumberOfParticles(), 0);
+  auto &container = getInitializedContainer(std::get<0>(GetParam()));
+  EXPECT_EQ(container.getNumberOfParticles(), 0);
 
-  std::array<double, 3> r = {2, 2, 2};
-  Particle p(r, {0., 0., 0.}, 0);
-  container->addParticle(p);
-  EXPECT_EQ(container->getNumberOfParticles(), 1);
+  const std::array<double, 3> r = {2, 2, 2};
+  const Particle p(r, {0., 0., 0.}, 0);
+  container.addParticle(p);
+  EXPECT_EQ(container.getNumberOfParticles(), 1);
 
-  std::array<double, 3> r2 = {1.5, 2, 2};
-  Particle p2(r2, {0., 0., 0.}, 1);
-  container->addParticle(p2);
-  EXPECT_EQ(container->getNumberOfParticles(), 2);
+  const std::array<double, 3> r2 = {1.5, 2, 2};
+  const Particle p2(r2, {0., 0., 0.}, 1);
+  container.addParticle(p2);
+  EXPECT_EQ(container.getNumberOfParticles(), 2);
 }
 
 /**
  * Checks if ParticleContainerInterface::deleteAllParticles() deletes all particles.
  */
 TEST_P(AllContainersTests, testDeleteAllParticles) {
-  auto container = this->getInitializedContainer(std::get<0>(GetParam()));
-  EXPECT_EQ(container->getNumberOfParticles(), 0);
+  auto &container = this->getInitializedContainer(std::get<0>(GetParam()));
+  EXPECT_EQ(container.getNumberOfParticles(), 0);
 
-  std::array<double, 3> r = {2, 2, 2};
-  Particle p(r, {0., 0., 0.}, 0);
-  container->addParticle(p);
+  const std::array<double, 3> r = {2, 2, 2};
+  const Particle p(r, {0., 0., 0.}, 0);
+  container.addParticle(p);
 
-  std::array<double, 3> r2 = {1.5, 2, 2};
-  Particle p2(r2, {0., 0., 0.}, 1);
-  container->addParticle(p2);
-  EXPECT_EQ(container->getNumberOfParticles(), 2);
+  const std::array<double, 3> r2 = {1.5, 2, 2};
+  const Particle p2(r2, {0., 0., 0.}, 1);
+  container.addParticle(p2);
+  EXPECT_EQ(container.getNumberOfParticles(), 2);
 
-  container->deleteAllParticles();
-  EXPECT_EQ(container->getNumberOfParticles(), 0);
+  container.deleteAllParticles();
+  EXPECT_EQ(container.getNumberOfParticles(), 0);
 }
 
 /**
@@ -60,7 +60,7 @@ TEST_P(AllContainersTests, testDeleteAllParticles) {
  * throws.
  */
 TEST_P(AllContainersTests, testParticleAdding) {
-  auto container = getInitializedContainer(std::get<0>(GetParam()));
+  auto &container = getInitializedContainer(std::get<0>(GetParam()));
   int id = 1;
   for (double x : {boxMin[0] - 1.5, boxMin[0] - .5, boxMin[0], boxMin[0] + 5., boxMax[0] - 0.001, boxMax[0],
                    boxMax[0] + .5, boxMax[0] + 1.5}) {
@@ -68,19 +68,19 @@ TEST_P(AllContainersTests, testParticleAdding) {
                      boxMax[1] + .5, boxMax[1] + 1.5}) {
       for (double z : {boxMin[2] - 1.5, boxMin[2] - .5, boxMin[2], boxMin[2] + 5., boxMax[2] - 0.001, boxMax[2],
                        boxMax[2] + .5, boxMax[2] + 1.5}) {
-        autopas::Particle p({x, y, z}, {0., 0., 0.}, id++);
+        const autopas::Particle p({x, y, z}, {0., 0., 0.}, id++);
         if (x == -1.5 or y == -1.5 or z == -1.5 or x == 11.5 or y == 11.5 or z == 11.5) {
-          EXPECT_ANY_THROW(container->addParticle(p));     // outside, therefore not ok!
-          EXPECT_NO_THROW(container->addHaloParticle(p));  // much outside, still ok because it is ignored!
+          EXPECT_ANY_THROW(container.addParticle(p));     // outside, therefore not ok!
+          EXPECT_NO_THROW(container.addHaloParticle(p));  // much outside, still ok because it is ignored!
         } else if (x == 10. or y == 10. or z == 10. or x == -.5 or y == -.5 or z == -.5 or x == 10.5 or y == 10.5 or
                    z == 10.5) {
-          EXPECT_ANY_THROW(container->addParticle(p));     // outside, therefore not ok!
-          EXPECT_NO_THROW(container->addHaloParticle(p));  // outside, therefore ok!
+          EXPECT_ANY_THROW(container.addParticle(p));     // outside, therefore not ok!
+          EXPECT_NO_THROW(container.addHaloParticle(p));  // outside, therefore ok!
         } else {
-          EXPECT_NO_THROW(container->addParticle(p));  // inside, therefore ok!
+          EXPECT_NO_THROW(container.addParticle(p));  // inside, therefore ok!
           EXPECT_ANY_THROW(
               // inside, and not ok, as halo particles cannot be added inside of the domain!
-              container->addHaloParticle(p));
+              container.addHaloParticle(p));
         }
       }
     }
@@ -94,62 +94,62 @@ TEST_P(AllContainersTests, testParticleAdding) {
 TEST_P(AllContainersTests, testDeleteHaloParticles) {
   using namespace autopas::utils::ArrayMath::literals;
 
-  auto container = getInitializedContainer(std::get<0>(GetParam()));
+  auto &container = getInitializedContainer(std::get<0>(GetParam()));
 
-  std::array<double, 3> zeros{0, 0, 0};
+  const std::array<double, 3> zeros{0, 0, 0};
 
   // counter and id for particles to be added
   size_t numParticles = 0;
 
   // calculate some distances needed later
-  auto domainSize = container->getBoxMax() - container->getBoxMin();
+  auto domainSize = container.getBoxMax() - container.getBoxMin();
   auto domainSizeHalf = domainSize * 0.5;
-  auto domainCenter = container->getBoxMin() + domainSizeHalf;
-  auto interactionLengthHalf = container->getInteractionLength() * 0.5;
+  auto domainCenter = container.getBoxMin() + domainSizeHalf;
+  auto interactionLengthHalf = container.getInteractionLength() * 0.5;
   auto distCenterToMidHalo =
       domainSizeHalf + std::array<double, 3>{interactionLengthHalf, interactionLengthHalf, interactionLengthHalf};
 
   // setup: add some halo particles on every side and corner
-  for (int x : {-1, 0, 1}) {
-    for (int y : {-1, 0, 1}) {
-      for (int z : {-1, 0, 1}) {
+  for (const int x : {-1, 0, 1}) {
+    for (const int y : {-1, 0, 1}) {
+      for (const int z : {-1, 0, 1}) {
         if (x == 0 and y == 0 and z == 0) {
           continue;
         }
         auto pos = domainCenter + std::array<double, 3>{distCenterToMidHalo[0] * x, distCenterToMidHalo[1] * y,
                                                         distCenterToMidHalo[2] * z};
-        Particle p{pos, zeros, numParticles++};
-        container->addHaloParticle(p);
+        const Particle p{pos, zeros, numParticles++};
+        container.addHaloParticle(p);
       }
     }
   }
   // sanity checks
   ASSERT_GT(numParticles, 0);
-  ASSERT_EQ(container->getNumberOfParticles(), numParticles);
+  ASSERT_EQ(container.getNumberOfParticles(), numParticles);
 
   // actual test:
-  container->deleteHaloParticles();
-  ASSERT_EQ(container->getNumberOfParticles(), 0);
+  container.deleteHaloParticles();
+  ASSERT_EQ(container.getNumberOfParticles(), 0);
 }
 
 /**
  * Checks if updateContainer() deletes particles in halo.
  */
 TEST_P(AllContainersTestsBothUpdates, testUpdateContainerHalo) {
-  auto container = getInitializedContainer(std::get<0>(GetParam()));
-  autopas::Particle p({boxMin[0] - 0.5, boxMin[1] - 0.5, boxMin[2] - 0.5}, {0, 0, 0}, 42);
-  container->addHaloParticle(p);
+  auto &container = getInitializedContainer(std::get<0>(GetParam()));
+  const autopas::Particle p({boxMin[0] - 0.5, boxMin[1] - 0.5, boxMin[2] - 0.5}, {0, 0, 0}, 42);
+  container.addHaloParticle(p);
 
-  EXPECT_EQ(container->getNumberOfParticles(), 1);
-  EXPECT_EQ(container->begin()->getID(), 42);
+  EXPECT_EQ(container.getNumberOfParticles(), 1);
+  EXPECT_EQ(container.begin()->getID(), 42);
 
-  auto invalidParticles = container->updateContainer(std::get<1>(GetParam()));
+  auto invalidParticles = container.updateContainer(std::get<1>(GetParam()));
 
   // no particle should be returned
   EXPECT_EQ(invalidParticles.size(), 0);
 
   // no particle should remain
-  auto iter = container->begin();
+  auto iter = container.begin();
   EXPECT_FALSE(iter.isValid());
 }
 
@@ -170,32 +170,32 @@ void AllContainersTestsBothUpdates::testUpdateContainerDeletesDummy(bool previou
   };
 
   // We need the container to use TestParticle!
-  auto container = getInitializedContainer<TestParticle>(std::get<0>(GetParam()));
+  auto &container = getInitializedContainer<TestParticle>(std::get<0>(GetParam()));
 
   // Add particle
   {
-    double pos = previouslyOwned ? 0.5 : -0.5;
-    TestParticle p({pos, pos, pos}, {0, 0, 0}, 42);
+    const double pos = previouslyOwned ? 0.5 : -0.5;
+    const TestParticle p({pos, pos, pos}, {0, 0, 0}, 42);
     if (previouslyOwned) {
-      container->addParticle(p);
+      container.addParticle(p);
     } else {
-      container->addHaloParticle(p);
+      container.addHaloParticle(p);
     }
   }
   // Mark particle as deleted
   {
-    auto iter = container->begin();
+    auto iter = container.begin();
     ASSERT_TRUE(iter.isValid());
     autopas::internal::markParticleAsDeleted(*iter);
   }
   // Check that we do not iterate over it.
   {
-    auto iter = container->begin();
+    auto iter = container.begin();
     ASSERT_FALSE(iter.isValid());
   }
 
   // This should remove the dummy particle(s), while not returning it as invalid particle.
-  auto invalidParticles = container->updateContainer(std::get<1>(GetParam()));
+  auto invalidParticles = container.updateContainer(std::get<1>(GetParam()));
 
   // No particle should be returned
   EXPECT_EQ(invalidParticles.size(), 0);
@@ -203,9 +203,9 @@ void AllContainersTestsBothUpdates::testUpdateContainerDeletesDummy(bool previou
   EXPECT_EQ(numParticles, 0);
 
   // no particle should remain, therefore the iterator should be invalid!
-  EXPECT_FALSE(container->begin().isValid());
+  EXPECT_FALSE(container.begin().isValid());
 
-  container->deleteAllParticles();
+  container.deleteAllParticles();
   ASSERT_EQ(numParticles, 0);
 }
 
@@ -227,28 +227,28 @@ TEST_P(AllContainersTestsBothUpdates, testUpdateContainerDeletesPreviouslyHaloDu
  * b) Owned particles are not moved within the container, i.e., the pointer to the particle is still the same.
  */
 TEST_P(AllContainersTests, testUpdateContainerKeepsNeighborListsValidIfSpecified) {
-  auto container = getInitializedContainer(std::get<0>(GetParam()));
+  auto &container = getInitializedContainer(std::get<0>(GetParam()));
 
   {
-    Particle p({-.1, -.1, -.1}, {0., 0., 0.}, 0);
-    container->addHaloParticle(p);
+    const Particle p({-.1, -.1, -.1}, {0., 0., 0.}, 0);
+    container.addHaloParticle(p);
   }
 
   {
-    Particle p({.02, .1, .1}, {0., 0., 0.}, 1);
-    container->addParticle(p);
+    const Particle p({.02, .1, .1}, {0., 0., 0.}, 1);
+    container.addParticle(p);
   }
 
   {
-    Particle p({1.23, .1, .1}, {0., 0., 0.}, 2);
-    container->addParticle(p);
+    const Particle p({1.23, .1, .1}, {0., 0., 0.}, 2);
+    container.addParticle(p);
   }
   struct Values {
     unsigned long id;
     int occurrences;
   };
   std::map<Particle *, Values> previous_particles;
-  for (auto &&p : *container) {
+  for (auto &&p : container) {
     // Iterates over owned and halo particles!
     previous_particles[&p] = {p.getID(), 0};
     if (p.getID() == 1) {
@@ -260,13 +260,13 @@ TEST_P(AllContainersTests, testUpdateContainerKeepsNeighborListsValidIfSpecified
     }
   }
 
-  auto leavingParticles = container->updateContainer(true);
+  auto leavingParticles = container.updateContainer(true);
 
   // Particle 1 should be returned!
   ASSERT_EQ(leavingParticles.size(), 1ul);
   EXPECT_EQ(leavingParticles[0].getID(), 1);
 
-  for (auto iter = container->begin(autopas::IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter) {
+  for (auto iter = container.begin(autopas::IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter) {
     ASSERT_EQ(previous_particles.count(&*iter), 1ul);
 
     ++previous_particles[&*iter].occurrences;

@@ -58,15 +58,15 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
       boxMin, boxMax, cutoff, 0.05, 4, std::move(tuningStrategy), 0.3, 0.0, autopas::SelectorStrategyOption::fastestAbs,
       1000,   3,      10};
 
-  auto container & = autoTuner.getContainer();
+  auto &container = autoTuner.getContainer();
   for (const auto &p : particlesContainerOwned) {
-    container->addParticle(p);
+    container.addParticle(p);
   }
   for (const auto &p : particlesContainerHalo) {
-    container->addHaloParticle(p);
+    container.addHaloParticle(p);
   }
 
-  ASSERT_EQ(container->getNumberOfParticles(), 2 - numParticlesInBuffers - numParticlesHaloBuffers)
+  ASSERT_EQ(container.getNumberOfParticles(), 2 - numParticlesInBuffers - numParticlesHaloBuffers)
       << "Not all particles were added to the container! ParticlesBuffers(" << numParticlesInBuffers << ") HaloBuffer("
       << numParticlesHaloBuffers << ")";
 
@@ -86,14 +86,14 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
   std::array<double, 3> totalObservedForce = {0., 0., 0.};
   using autopas::utils::ArrayUtils::operator<<;
   using autopas::utils::ArrayMath::add;
-  for (auto iter = container->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+  for (auto iter = container.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     const auto particleForceL2 = autopas::utils::ArrayMath::L2Norm(iter->getF());
     totalObservedForce = add(totalObservedForce, iter->getF());
     EXPECT_NEAR(particleForceL2, expectedAbsForce, 1e-12)
         << "Force for particle " << iter->getID() << " in the container is wrong!";
   }
-  for (size_t i = 0; i < particlesBuffers.size(); ++i) {
-    for (const auto &p : particlesBuffers[i]) {
+  for (auto &particlesBuffer : particlesBuffers) {
+    for (const auto &p : particlesBuffer) {
       const auto particleForceL2 = autopas::utils::ArrayMath::L2Norm(p.getF());
       totalObservedForce = add(totalObservedForce, p.getF());
       EXPECT_NEAR(particleForceL2, expectedAbsForce, 1e-12)
@@ -319,14 +319,14 @@ void testRemainderTraversal(const std::vector<Molecule> &particles, const std::v
 
   // fill the container with the given particles
   for (const auto &p : particles) {
-    autoTuner.getContainer()->addParticle(p);
+    autoTuner.getContainer().addParticle(p);
   }
-  ASSERT_EQ(autoTuner.getContainer()->getNumberOfParticles(), particles.size())
+  ASSERT_EQ(autoTuner.getContainer().getNumberOfParticles(), particles.size())
       << "Container contains incorrect number of particles!";
   for (const auto &p : haloParticles) {
-    autoTuner.getContainer()->addHaloParticle(p);
+    autoTuner.getContainer().addHaloParticle(p);
   }
-  ASSERT_EQ(autoTuner.getContainer()->getNumberOfParticles(), particles.size() + haloParticles.size())
+  ASSERT_EQ(autoTuner.getContainer().getNumberOfParticles(), particles.size() + haloParticles.size())
       << "Container contains incorrect number of halo particles!";
 
   autopas::LJFunctor<Molecule> functor(cutoff);
@@ -334,7 +334,7 @@ void testRemainderTraversal(const std::vector<Molecule> &particles, const std::v
   // do the actual test
   autoTuner.iteratePairwise(&functor, false, particlesBuffer, haloParticlesBuffer);
 
-  for (const auto &p : *(autoTuner.getContainer())) {
+  for (const auto &p : autoTuner.getContainer()) {
     EXPECT_THAT(p.getF(), testing::Not(::testing::ElementsAreArray({0., 0., 0.})))
         << "Particle in container had no interaction!\n"
         << p;

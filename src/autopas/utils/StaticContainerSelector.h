@@ -30,7 +30,7 @@ namespace autopas {
  * @return Returns whatever function returns.
  */
 template <typename Particle, typename FunctionType>
-decltype(auto) withStaticContainerType(const autopas::ParticleContainerInterface<Particle> &container,
+decltype(auto) withStaticContainerType(autopas::ParticleContainerInterface<Particle> &container,
                                        FunctionType &&function) {
   switch (container.getContainerType()) {
     case ContainerOption::directSum:
@@ -56,7 +56,7 @@ decltype(auto) withStaticContainerType(const autopas::ParticleContainerInterface
       return function(dynamic_cast<autopas::Octree<Particle> &>(container));
   }
   autopas::utils::ExceptionHandler::exception("Unknown type of container in StaticContainerSelector.h. Type: {}",
-                                              container->getContainerType());
+                                              container.getContainerType());
 }
 
 }  // namespace autopas

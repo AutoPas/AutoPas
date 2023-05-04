@@ -34,13 +34,13 @@ std::array<double, 3> randomShift(double magnitude, std::mt19937 &generator) {
 /**
  * Adds shifts with the given magnitude to all particles.
  * The shifts are generated in order of the particle id and with a fixed seed to ensure a reproducible behavior.
- * @tparam ContainerPtrType
- * @param containerPtr
+ * @tparam ContainerType
+& * @param containerPtr
  * @param magnitude
  * @param totalNumParticles
  */
-template <class ContainerPtrType>
-void TraversalComparison::executeShift(ContainerPtrType containerPtr, double magnitude, size_t totalNumParticles) {
+template <class ContainerType>
+void TraversalComparison::executeShift(ContainerType &container, double magnitude, size_t totalNumParticles) {
   std::vector<std::array<double, 3>> shiftVectorByID(totalNumParticles);
   constexpr unsigned seed = 42;
   std::mt19937 generator(seed);
@@ -48,8 +48,7 @@ void TraversalComparison::executeShift(ContainerPtrType containerPtr, double mag
     elem = randomShift(magnitude, generator);
   }
   size_t numIteratedParticles = 0;
-  for (auto iter = containerPtr->begin(autopas::IteratorBehavior::ownedOrHaloOrDummy); iter != containerPtr->end();
-       ++iter) {
+  for (auto iter = container.begin(autopas::IteratorBehavior::ownedOrHaloOrDummy); iter != container.end(); ++iter) {
     if (not iter->isDummy()) {
       iter->addR(shiftVectorByID[iter->getID()]);
     }
@@ -72,7 +71,7 @@ void markSomeParticlesAsDeleted(ContainerT &container, size_t numTotalParticles,
     // Set to true if we are within deletionPercentage
     return uniform0_100(generator) < deletionPercentage;
   });
-  for (auto &mol : *container) {
+  for (auto &mol : container) {
     if (doDelete[mol.getID()]) {
       autopas::internal::markParticleAsDeleted(mol);
     }
@@ -106,25 +105,24 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   selector.selectContainer(containerOption,
                            autopas::ContainerSelectorInfo{cellSizeFactor, skinPerTimestep, rebuildFrequency, 32,
                                                           autopas::LoadEstimatorOption::none});
-  auto container = selector.getCurrentContainer();
+  auto &container = selector.getCurrentContainer();
   autopas::LJFunctor<Molecule, true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both,
                      globals /*calculateGlobals*/>
       functor{_cutoff};
   functor.setParticleProperties(_eps * 24, _sig * _sig);
 
-  autopasTools::generators::RandomGenerator::fillWithParticles(*container, Molecule({0., 0., 0.}, {0., 0., 0.}, 0),
-                                                               container->getBoxMin(), container->getBoxMax(),
-                                                               numMolecules);
-  EXPECT_EQ(container->getNumberOfParticles(), numMolecules) << "Wrong number of molecules inserted!";
+  autopasTools::generators::RandomGenerator::fillWithParticles(
+      container, Molecule({0., 0., 0.}, {0., 0., 0.}, 0), container.getBoxMin(), container.getBoxMax(), numMolecules);
+  EXPECT_EQ(container.getNumberOfParticles(), numMolecules) << "Wrong number of molecules inserted!";
   autopasTools::generators::RandomGenerator::fillWithHaloParticles(
-      *container, Molecule({0., 0., 0.}, {0., 0., 0.}, numMolecules /*initial ID*/), container->getCutoff(),
+      container, Molecule({0., 0., 0.}, {0., 0., 0.}, numMolecules /*initial ID*/), container.getCutoff(),
       numHaloMolecules);
-  EXPECT_EQ(container->getNumberOfParticles(), numMolecules + numHaloMolecules)
+  EXPECT_EQ(container.getNumberOfParticles(), numMolecules + numHaloMolecules)
       << "Wrong number of halo molecules inserted!";
   auto traversal =
-      autopas::utils::withStaticCellType<Molecule>(container->getParticleCellTypeEnum(), [&](auto particleCellDummy) {
+      autopas::utils::withStaticCellType<Molecule>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
         return autopas::TraversalSelector<decltype(particleCellDummy)>::generateTraversal(
-            traversalOption, functor, container->getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
+            traversalOption, functor, container.getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
       });
 
   if (not traversal->isApplicable()) {
@@ -135,7 +133,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
     markSomeParticlesAsDeleted(container, numMolecules + numHaloMolecules, 19);
   }
 
-  container->rebuildNeighborLists(traversal.get());
+  container.rebuildNeighborLists(traversal.get());
 
   if (doSlightShift) {
     executeShift(container, skinPerTimestep * rebuildFrequency / 2, numMolecules + numHaloMolecules);
@@ -146,11 +144,11 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   }
 
   functor.initTraversal();
-  container->iteratePairwise(traversal.get());
+  container.iteratePairwise(traversal.get());
   functor.endTraversal(newton3Option);
 
   std::vector<std::array<double, 3>> forces(numMolecules);
-  for (auto it = container->begin(autopas::IteratorBehavior::owned); it.isValid(); ++it) {
+  for (auto it = container.begin(autopas::IteratorBehavior::owned); it.isValid(); ++it) {
     EXPECT_TRUE(it->isOwned());
     forces.at(it->getID()) = it->getF();
   }

@@ -283,14 +283,13 @@ class AutoTuner {
    * @tparam T (Smart) pointer Type of the particle container.
    * @tparam PairwiseFunctor
    * @param f
-   * @param containerPtr (Smart) Pointer to the container
+   * @param container Reference the container
    * @param particleBuffers vector of particle buffers. These particles' force vectors will be updated.
    * @param haloParticleBuffers vector of halo particle buffers. These particles' force vectors will not necessarily be
    * updated.
    */
   template <bool newton3, class T, class PairwiseFunctor>
-  void doRemainderTraversal(PairwiseFunctor *f, T containerPtr,
-                            std::vector<FullParticleCell<Particle>> &particleBuffers,
+  void doRemainderTraversal(PairwiseFunctor *f, T &container, std::vector<FullParticleCell<Particle>> &particleBuffers,
                             std::vector<FullParticleCell<Particle>> &haloParticleBuffers);
 
   /**
@@ -436,7 +435,7 @@ bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild
     _timerCalculateHomogeneity.start();
     const auto &container = getContainer();
     const auto [homogeneity, maxDensity] =
-        autopas::utils::calculateHomogeneityAndMaxDensity(*container, container->getBoxMin(), container->getBoxMax());
+        autopas::utils::calculateHomogeneityAndMaxDensity(container, container.getBoxMin(), container.getBoxMax());
     _homogeneitiesOfLastTenIterations.push_back(homogeneity);
     _maxDensitiesOfLastTenIterations.push_back(maxDensity);
     _timerCalculateHomogeneity.stop();
@@ -510,7 +509,7 @@ bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild
 
 template <class Particle>
 template <bool newton3, class T, class PairwiseFunctor>
-void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPtr,
+void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T &container,
                                                std::vector<FullParticleCell<Particle>> &particleBuffers,
                                                std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
   using namespace autopas::utils::ArrayMath::literals;
@@ -522,8 +521,8 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
                                        _bufferLocks.size(), particleBuffers.size());
   }
 
-  const auto boxMin = containerPtr->getBoxMin();
-  const auto interactionLengthInv = 1. / containerPtr->getInteractionLength();
+  const auto boxMin = container.getBoxMin();
+  const auto interactionLengthInv = 1. / container.getInteractionLength();
 
   // Balance buffers. This makes processing them with static scheduling quite efficient.
   // Also, if particles were not inserted in parallel, this enables us to process them in parallel now.
@@ -540,8 +539,8 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
 
   timerBufferContainer.start();
 #endif
-  withStaticContainerType(containerPtr, [&](auto staticTypedContainerPtr) {
-    const double cutoff = staticTypedContainerPtr->getCutoff();
+  withStaticContainerType(container, [&](auto &staticTypedContainer) {
+    const double cutoff = staticTypedContainer.getCutoff();
 #ifdef AUTOPAS_OPENMP
 // one halo and particle buffer pair per thread
 #pragma omp parallel for schedule(static, 1), shared(f, _spacialLocks, boxMin, interactionLengthInv)
@@ -554,7 +553,7 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
         const auto pos = p1.getR();
         const auto min = pos - cutoff;
         const auto max = pos + cutoff;
-        staticTypedContainerPtr->forEachInRegion(
+        staticTypedContainer.forEachInRegion(
             [&](auto &p2) {
               const auto lockCoords = static_cast_array<size_t>((p2.getR() - boxMin) * interactionLengthInv);
               if constexpr (newton3) {
@@ -577,7 +576,7 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
         const auto pos = p1halo.getR();
         const auto min = pos - cutoff;
         const auto max = pos + cutoff;
-        staticTypedContainerPtr->forEachInRegion(
+        staticTypedContainer.forEachInRegion(
             [&](auto &p2) {
               const auto lockCoords = static_cast_array<size_t>((p2.getR() - boxMin) * interactionLengthInv);
               // No need to apply anything to p1halo
@@ -694,15 +693,15 @@ template <class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNew
 void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool doListRebuild,
                                                         std::vector<FullParticleCell<Particle>> &particleBuffer,
                                                         std::vector<FullParticleCell<Particle>> &haloParticleBuffer) {
-  auto containerPtr = getContainer();
+  auto &container = getContainer();
   AutoPasLog(DEBUG, "Iterating with configuration: {} tuning: {}",
              _tuningStrategy->getCurrentConfiguration().toString(), inTuningPhase ? "true" : "false");
 
-  auto traversal = autopas::utils::withStaticCellType<Particle>(
-      containerPtr->getParticleCellTypeEnum(), [&](auto particleCellDummy) {
+  auto traversal =
+      autopas::utils::withStaticCellType<Particle>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
         return TraversalSelector<decltype(particleCellDummy)>::template generateTraversal<PairwiseFunctor, dataLayout,
                                                                                           useNewton3>(
-            _tuningStrategy->getCurrentConfiguration().traversal, *f, containerPtr->getTraversalSelectorInfo());
+            _tuningStrategy->getCurrentConfiguration().traversal, *f, container.getTraversalSelectorInfo());
       });
 
   if (not traversal->isApplicable()) {
@@ -725,15 +724,15 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
   f->initTraversal();
   if (doListRebuild) {
     timerRebuild.start();
-    containerPtr->rebuildNeighborLists(traversal.get());
+    container.rebuildNeighborLists(traversal.get());
     timerRebuild.stop();
   }
   timerIteratePairwise.start();
-  containerPtr->iteratePairwise(traversal.get());
+  container.iteratePairwise(traversal.get());
   timerIteratePairwise.stop();
 
   timerRemainderTraversal.start();
-  doRemainderTraversal<useNewton3>(f, containerPtr, particleBuffer, haloParticleBuffer);
+  doRemainderTraversal<useNewton3>(f, container, particleBuffer, haloParticleBuffer);
   timerRemainderTraversal.stop();
   f->endTraversal(useNewton3);
 
@@ -857,16 +856,15 @@ bool AutoTuner<Particle>::configApplicable(const Configuration &conf, PairwiseFu
   _containerSelector.selectContainer(
       conf.container, ContainerSelectorInfo(conf.cellSizeFactor, _verletSkinPerTimestep, _rebuildFrequency,
                                             _verletClusterSize, conf.loadEstimator));
-  auto traversalInfo = _containerSelector.getCurrentContainer()->getTraversalSelectorInfo();
+  auto traversalInfo = _containerSelector.getCurrentContainer().getTraversalSelectorInfo();
 
-  auto containerPtr = getContainer();
+  auto &container = getContainer();
 
-  return autopas::utils::withStaticCellType<Particle>(
-      containerPtr->getParticleCellTypeEnum(), [&](auto particleCellDummy) {
-        return TraversalSelector<decltype(particleCellDummy)>::template generateTraversal<PairwiseFunctor>(
-                   conf.traversal, pairwiseFunctor, traversalInfo, conf.dataLayout, conf.newton3)
-            ->isApplicable();
-      });
+  return autopas::utils::withStaticCellType<Particle>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
+    return TraversalSelector<decltype(particleCellDummy)>::template generateTraversal<PairwiseFunctor>(
+               conf.traversal, pairwiseFunctor, traversalInfo, conf.dataLayout, conf.newton3)
+        ->isApplicable();
+  });
 }
 
 template <class Particle>

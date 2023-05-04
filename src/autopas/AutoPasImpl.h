@@ -248,7 +248,7 @@ bool AutoPas<Particle>::deleteParticle(Particle &particle) {
   // if the particle was not found in the logic handler's buffers it must be in the container
   auto [particleDeleted, refStillValid] = _logicHandler->deleteParticleFromBuffers(particle);
   if (not particleDeleted) {
-    refStillValid = _autoTuner->getContainer()->deleteParticle(particle);
+    refStillValid = _autoTuner->getContainer().deleteParticle(particle);
   }
   return refStillValid;
 }
@@ -278,17 +278,17 @@ typename AutoPas<Particle>::RegionConstIteratorT AutoPas<Particle>::getRegionIte
 
 template <class Particle>
 unsigned long AutoPas<Particle>::getContainerType() const {
-  return _autoTuner->getContainer()->getContainerType();
+  return _autoTuner->getContainer().getContainerType();
 }
 
 template <class Particle>
 std::array<double, 3> AutoPas<Particle>::getBoxMin() const {
-  return _autoTuner->getContainer()->getBoxMin();
+  return _autoTuner->getContainer().getBoxMin();
 }
 
 template <class Particle>
 std::array<double, 3> AutoPas<Particle>::getBoxMax() const {
-  return _autoTuner->getContainer()->getBoxMax();
+  return _autoTuner->getContainer().getBoxMax();
 }
 
 template <class Particle>

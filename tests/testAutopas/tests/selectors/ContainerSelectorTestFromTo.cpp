@@ -26,13 +26,13 @@ void getStatus(const std::array<double, 3> &bBoxMin, const std::array<double, 3>
                std::vector<Particle> &ListHaloWithinCutoff, std::vector<Particle> &ListHaloOutsideCutoff) {
   using namespace autopas::utils::ArrayMath::literals;
 
-  for (auto iter = containerSelector.getCurrentContainer()->begin(autopas::IteratorBehavior::owned); iter.isValid();
+  for (auto iter = containerSelector.getCurrentContainer().begin(autopas::IteratorBehavior::owned); iter.isValid();
        ++iter) {
     ListInner.push_back(*iter);
   }
   const auto cutoffBoxMin = bBoxMin - cutoff;
   const auto cutoffBoxMax = bBoxMax + cutoff;
-  for (auto iter = containerSelector.getCurrentContainer()->begin(autopas::IteratorBehavior::halo); iter.isValid();
+  for (auto iter = containerSelector.getCurrentContainer().begin(autopas::IteratorBehavior::halo); iter.isValid();
        ++iter) {
     if (autopas::utils::inBox(iter->getR(), cutoffBoxMin, cutoffBoxMax)) {
       ListHaloWithinCutoff.push_back(*iter);
@@ -54,7 +54,7 @@ TEST_P(ContainerSelectorTestFromTo, testContainerConversion) {
 
   // fill with problematic particles
   {
-    auto container = containerSelector.getCurrentContainer();
+    auto &container = containerSelector.getCurrentContainer();
     auto getPossible1DPositions = [&](double min, double max) -> auto {
       return std::array<double, 6>{min - cutoff - verletSkinPerTimestep * verletRebuildFrequency,
                                    min - cutoff,
@@ -71,9 +71,9 @@ TEST_P(ContainerSelectorTestFromTo, testContainerConversion) {
           const std::array<double, 3> pos{x, y, z};
           Particle p(pos, {0., 0., 0.}, id);
           if (autopas::utils::inBox(pos, bBoxMin, bBoxMax)) {
-            container->addParticle(p);
+            container.addParticle(p);
           } else {
-            container->addHaloParticle(p);
+            container.addHaloParticle(p);
           }
           ++id;
         }

@@ -126,12 +126,12 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
       collectedSamples = 0;
       doRebuild = true;
       // add particles, so VerletClusterLists uses more than one tower.
-      autoTuner.getContainer().get()->deleteAllParticles();
+      autoTuner.getContainer().deleteAllParticles();
       const std::array<size_t, 3> particlesPerDim = {8, 16, 8};
       const std::array<double, 3> spacing = {0.25, 0.25, 0.25};
       const std::array<double, 3> offset = {0.125, 0.125, 0.125};
       Molecule defaultParticle{};
-      autopasTools::generators::GridGenerator::fillWithParticles(*(autoTuner.getContainer().get()), particlesPerDim,
+      autopasTools::generators::GridGenerator::fillWithParticles(autoTuner.getContainer(), particlesPerDim,
                                                                  defaultParticle, spacing, offset);
     }
     std::vector<autopas::FullParticleCell<Molecule>> emptyVec(autopas::autopas_get_max_threads());
@@ -575,8 +575,8 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
   EXPECT_CALL(functor, SoAFunctorPair(_, _, _)).Times(testing::AtLeast(0));
   EXPECT_CALL(functor, SoAFunctorSingle(_, _)).Times(testing::AtLeast(0));
   std::vector<autopas::FullParticleCell<Molecule>> emptyVec(autopas::autopas_get_max_threads());
-  tuner.getContainer()->addParticle((Molecule{{1., 1., 1.}, {0., 0., 0.}, 0, 0}));
-  tuner.getContainer()->addParticle((Molecule{{2., 1., 1.}, {0., 0., 0.}, 1, 0}));
+  tuner.getContainer().addParticle((Molecule{{1., 1., 1.}, {0., 0., 0.}, 0, 0}));
+  tuner.getContainer().addParticle((Molecule{{2., 1., 1.}, {0., 0., 0.}, 1, 0}));
 
   using namespace std::literals;
 

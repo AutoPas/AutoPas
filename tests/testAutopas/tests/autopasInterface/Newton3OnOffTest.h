@@ -44,7 +44,7 @@ class Newton3OnOffTest
                          autopas::DataLayoutOption dataLayout);
 
   template <class Container, class Traversal>
-  void iterate(Container container, Traversal traversal);
+  void iterate(Container &container, Traversal traversal);
 
   MockFunctor<Particle> mockFunctor;
 

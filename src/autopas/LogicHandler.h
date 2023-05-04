@@ -43,8 +43,8 @@ class LogicHandler {
    * @return Leaving particles.
    */
   [[nodiscard]] std::vector<Particle> collectLeavingParticlesFromBuffer(bool insertOwnedParticlesToContainer) {
-    const auto &boxMin = _autoTuner.getContainer()->getBoxMin();
-    const auto &boxMax = _autoTuner.getContainer()->getBoxMax();
+    const auto &boxMin = _autoTuner.getContainer().getBoxMin();
+    const auto &boxMax = _autoTuner.getContainer().getBoxMax();
     std::vector<Particle> leavingBufferParticles{};
     for (auto &cell : _particleBuffer) {
       auto &buffer = cell._particles;
@@ -54,7 +54,7 @@ class LogicHandler {
             continue;
           }
           if (utils::inBox(p.getR(), boxMin, boxMax)) {
-            _autoTuner.getContainer()->template addParticle(p);
+            _autoTuner.getContainer().addParticle(p);
           } else {
             leavingBufferParticles.push_back(p);
           }
@@ -99,7 +99,7 @@ class LogicHandler {
     auto leavingBufferParticles = collectLeavingParticlesFromBuffer(doDataStructureUpdate);
 
     AutoPasLog(DEBUG, "Initiating container update.");
-    auto leavingParticles = _autoTuner.getContainer()->updateContainer(not doDataStructureUpdate);
+    auto leavingParticles = _autoTuner.getContainer().updateContainer(not doDataStructureUpdate);
     leavingParticles.insert(leavingParticles.end(), leavingBufferParticles.begin(), leavingBufferParticles.end());
 
     // Substract the amount of leaving particles from the number of owned particles.
@@ -118,8 +118,8 @@ class LogicHandler {
    */
   std::vector<Particle> resizeBox(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) {
     using namespace autopas::utils::ArrayMath::literals;
-    const auto &oldMin = _autoTuner.getContainer()->getBoxMin();
-    const auto &oldMax = _autoTuner.getContainer()->getBoxMax();
+    const auto &oldMin = _autoTuner.getContainer().getBoxMin();
+    const auto &oldMax = _autoTuner.getContainer().getBoxMax();
 
     // if nothing changed do nothing
     if (oldMin == boxMin and oldMax == boxMax) {
@@ -155,7 +155,7 @@ class LogicHandler {
 
     // check all particles
     std::vector<Particle> particlesNowOutside;
-    for (auto pIter = _autoTuner.getContainer()->begin(); pIter.isValid(); ++pIter) {
+    for (auto pIter = _autoTuner.getContainer().begin(); pIter.isValid(); ++pIter) {
       // make sure only owned ones are present
       if (not pIter->isOwned()) {
         utils::ExceptionHandler::exception(
@@ -188,7 +188,7 @@ class LogicHandler {
   void reserve(size_t numParticles) {
     const auto &container = _autoTuner.getContainer();
     const auto numParticlesHaloEstimate = autopas::utils::NumParticlesEstimator::estimateNumHalosUniform(
-        numParticles, container->getBoxMin(), container->getBoxMax(), container->getInteractionLength());
+        numParticles, container.getBoxMin(), container.getBoxMax(), container.getInteractionLength());
     reserve(numParticles, numParticlesHaloEstimate);
   }
 
@@ -208,7 +208,7 @@ class LogicHandler {
       buffer.reserve(numHaloParticlesPerBuffer);
     }
 
-    _autoTuner.getContainer()->reserve(numParticles, numHaloParticles);
+    _autoTuner.getContainer().reserve(numParticles, numHaloParticles);
   }
 
   /**
@@ -216,8 +216,8 @@ class LogicHandler {
    */
   void addParticle(const Particle &p) {
     // first check that the particle actually belongs in the container
-    const auto &boxMin = _autoTuner.getContainer()->getBoxMin();
-    const auto &boxMax = _autoTuner.getContainer()->getBoxMax();
+    const auto &boxMin = _autoTuner.getContainer().getBoxMin();
+    const auto &boxMax = _autoTuner.getContainer().getBoxMax();
     if (utils::notInBox(p.getR(), boxMin, boxMax)) {
       autopas::utils::ExceptionHandler::exception(
           "LogicHandler: Trying to add a particle that is not in the bounding box.\n"
@@ -228,7 +228,7 @@ class LogicHandler {
     }
     if (not neighborListsAreValid()) {
       // Container has to (about to) be invalid to be able to add Particles!
-      _autoTuner.getContainer()->template addParticle<false>(p);
+      _autoTuner.getContainer().template addParticle<false>(p);
     } else {
       // If the container is valid, we add it to the particle buffer.
       _particleBuffer[autopas_get_thread_num()].addParticle(p);
@@ -241,8 +241,8 @@ class LogicHandler {
    */
   void addHaloParticle(const Particle &haloParticle) {
     auto &container = _autoTuner.getContainer();
-    const auto &boxMin = container->getBoxMin();
-    const auto &boxMax = container->getBoxMax();
+    const auto &boxMin = container.getBoxMin();
+    const auto &boxMax = container.getBoxMax();
     if (utils::inBox(haloParticle.getR(), boxMin, boxMax)) {
       autopas::utils::ExceptionHandler::exception(
           "LogicHandler: Trying to add a halo particle that is not outside the box of the container.\n"
@@ -253,10 +253,10 @@ class LogicHandler {
     }
     if (not neighborListsAreValid()) {
       // If the neighbor lists are not valid, we can add the particle.
-      container->template addHaloParticle</* checkInBox */ false>(haloParticle);
+      container.template addHaloParticle</* checkInBox */ false>(haloParticle);
     } else {
       // Check if we can update an existing halo(dummy) particle.
-      bool updated = container->updateHaloParticle(haloParticle);
+      bool updated = container.updateHaloParticle(haloParticle);
       if (not updated) {
         // If we couldn't find an existing particle, add it to the halo particle buffer.
         _haloParticleBuffer[autopas_get_thread_num()].addParticle(haloParticle);
@@ -271,7 +271,7 @@ class LogicHandler {
    */
   void deleteAllParticles() {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
-    _autoTuner.getContainer()->deleteAllParticles();
+    _autoTuner.getContainer().deleteAllParticles();
     std::for_each(_particleBuffer.begin(), _particleBuffer.end(), [](auto &buffer) { buffer.clear(); });
     std::for_each(_haloParticleBuffer.begin(), _haloParticleBuffer.end(), [](auto &buffer) { buffer.clear(); });
     // all particles are gone -> reset counters.
@@ -367,7 +367,7 @@ class LogicHandler {
    */
   autopas::ContainerIterator<Particle, true, false> begin(IteratorBehavior behavior) {
     auto additionalVectors = gatherAdditionalVectors<ContainerIterator<Particle, true, false>>(behavior);
-    return _autoTuner.getContainer()->begin(behavior, &additionalVectors);
+    return _autoTuner.getContainer().begin(behavior, &additionalVectors);
   }
 
   /**
@@ -376,7 +376,7 @@ class LogicHandler {
   autopas::ContainerIterator<Particle, false, false> begin(IteratorBehavior behavior) const {
     auto additionalVectors =
         const_cast<LogicHandler *>(this)->gatherAdditionalVectors<ContainerIterator<Particle, false, false>>(behavior);
-    return std::as_const(_autoTuner).getContainer()->begin(behavior, &additionalVectors);
+    return std::as_const(_autoTuner).getContainer().begin(behavior, &additionalVectors);
   }
 
   /**
@@ -397,7 +397,7 @@ class LogicHandler {
     }
 
     auto additionalVectors = gatherAdditionalVectors<ContainerIterator<Particle, true, true>>(behavior);
-    return _autoTuner.getContainer()->getRegionIterator(lowerCorner, higherCorner, behavior, &additionalVectors);
+    return _autoTuner.getContainer().getRegionIterator(lowerCorner, higherCorner, behavior, &additionalVectors);
   }
 
   /**
@@ -421,7 +421,7 @@ class LogicHandler {
         const_cast<LogicHandler *>(this)->gatherAdditionalVectors<ContainerIterator<Particle, false, true>>(behavior);
     return std::as_const(_autoTuner)
         .getContainer()
-        ->getRegionIterator(lowerCorner, higherCorner, behavior, &additionalVectors);
+        .getRegionIterator(lowerCorner, higherCorner, behavior, &additionalVectors);
   }
 
   /**
@@ -441,11 +441,11 @@ class LogicHandler {
     const auto &container = _autoTuner.getContainer();
     // check boxSize at least cutoff + skin
     for (unsigned int dim = 0; dim < 3; ++dim) {
-      if (container->getBoxMax()[dim] - container->getBoxMin()[dim] < container->getInteractionLength()) {
+      if (container.getBoxMax()[dim] - container.getBoxMin()[dim] < container.getInteractionLength()) {
         autopas::utils::ExceptionHandler::exception(
             "Box (boxMin[{}]={} and boxMax[{}]={}) is too small.\nHas to be at least cutoff({}) + skin({}) = {}.", dim,
-            container->getBoxMin()[dim], dim, container->getBoxMax()[dim], container->getCutoff(),
-            container->getVerletSkin(), container->getCutoff() + container->getVerletSkin());
+            container.getBoxMin()[dim], dim, container.getBoxMax()[dim], container.getCutoff(),
+            container.getVerletSkin(), container.getCutoff() + container.getVerletSkin());
       }
     }
   }
