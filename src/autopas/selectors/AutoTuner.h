@@ -95,7 +95,7 @@ class AutoTuner {
     // initialize locks needed for remainder traversal
     const auto boxLength = boxMax - boxMin;
     const auto interactionLengthInv = 1. / (cutoff + verletSkinPerTimestep * rebuildFrequency);
-    const auto locksPerDim = static_cast_array<size_t>(ceil(boxLength * interactionLengthInv));
+    const auto locksPerDim = static_cast_array<size_t>(ceil(boxLength * interactionLengthInv) + 2.);
     _spacialLocks.resize(locksPerDim[0]);
     for (auto &lockVecVec : _spacialLocks) {
       lockVecVec.resize(locksPerDim[1]);
@@ -523,7 +523,7 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
                                        _bufferLocks.size(), particleBuffers.size());
   }
 
-  const auto boxMin = containerPtr->getBoxMin();
+  const auto haloBoxMin = containerPtr->getBoxMin() - containerPtr->getInteractionLength();
   const auto interactionLengthInv = 1. / containerPtr->getInteractionLength();
 
   // Balance buffers. This makes processing them with static scheduling quite efficient.
@@ -545,7 +545,7 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
     const double cutoff = staticTypedContainerPtr->getCutoff();
 #ifdef AUTOPAS_OPENMP
 // one halo and particle buffer pair per thread
-#pragma omp parallel for schedule(static, 1), shared(f, _spacialLocks, boxMin, interactionLengthInv)
+#pragma omp parallel for schedule(static, 1), shared(f, _spacialLocks, haloBoxMin, interactionLengthInv)
 #endif
     for (int bufferId = 0; bufferId < particleBuffers.size(); ++bufferId) {
       auto &particleBuffer = particleBuffers[bufferId];
@@ -557,7 +557,7 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
         const auto max = pos + cutoff;
         staticTypedContainerPtr->forEachInRegion(
             [&](auto &p2) {
-              const auto lockCoords = static_cast_array<size_t>((p2.getR() - boxMin) * interactionLengthInv);
+              const auto lockCoords = static_cast_array<size_t>((p2.getR() - haloBoxMin) * interactionLengthInv);
               if constexpr (newton3) {
                 const std::lock_guard<std::mutex> lock(*_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
                 f->AoSFunctor(p1, p2, true);
@@ -580,7 +580,7 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
         const auto max = pos + cutoff;
         staticTypedContainerPtr->forEachInRegion(
             [&](auto &p2) {
-              const auto lockCoords = static_cast_array<size_t>((p2.getR() - boxMin) * interactionLengthInv);
+              const auto lockCoords = static_cast_array<size_t>((p2.getR() - haloBoxMin) * interactionLengthInv);
               // No need to apply anything to p1halo
               //   -> AoSFunctor(p1, p2, false) not needed as it neither adds force nor Upot (potential energy)
               //   -> newton3 argument needed for correct globals
