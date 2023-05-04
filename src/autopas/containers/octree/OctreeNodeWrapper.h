@@ -10,7 +10,6 @@
 
 #include "autopas/containers/octree/OctreeNodeInterface.h"
 #include "autopas/containers/octree/OctreeStaticNodeSelector.h"
-#include "autopas/iterators/ParticleIteratorWrapper.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -45,6 +44,10 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * The contained particle type.
    */
   using ParticleType = typename ParticleCell::ParticleType;
+  /**
+   * Type that holds or refers to the actual particles.
+   */
+  using StorageType = std::vector<Particle *>;
 
   /**
    * Constructs a new, empty octree and stores the root.
@@ -66,7 +69,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * Append all particles in the octree to a list using DFS.
    * @param ps The list to which the particles should be appended to
    */
-  void collectAllParticles(std::vector<Particle *> &ps) {
+  void collectAllParticles(StorageType &ps) {
     std::lock_guard<AutoPasLock> lock(_lock);
     _pointer->collectAllParticles(ps);
   }
@@ -95,23 +98,33 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * for(auto iter = cell.begin(); iter.isValid; ++iter){...}
    * @return the iterator
    */
-  SingleCellIteratorWrapper<Particle, true> begin() override {
+  CellIterator<StorageType, true> begin() {
     std::lock_guard<AutoPasLock> lock(_lock);
     _ps.clear();
     _pointer->collectAllParticles(_ps);
-    return SingleCellIteratorWrapper<ParticleType, true>(new iterator_t(this));
+    return CellIterator<StorageType, true>(_ps.begin());
   }
 
   /**
    * @copydoc begin()
    * @note const version
    */
-  SingleCellIteratorWrapper<Particle, false> begin() const override {
+  CellIterator<StorageType, false> begin() const {
     std::lock_guard<AutoPasLock> lock(_lock);
     _ps.clear();
     _pointer->collectAllParticles(_ps);
-    return SingleCellIteratorWrapper<ParticleType, false>(new const_iterator_t(this));
+    return CellIterator<StorageType, false>(_ps.cbegin());
   }
+
+  /**
+   * @copydoc autopas::FullParticleCell::end()
+   */
+  CellIterator<StorageType, true> end() { return CellIterator<StorageType, true>(_ps.end()); }
+  /**
+   * @copydoc autopas::FullParticleCell::end()
+   * @note const version
+   */
+  CellIterator<StorageType, false> end() const { return CellIterator<StorageType, false>(_ps.end()); }
 
   /**
    * Get the number of particles stored in this cell.
@@ -152,6 +165,17 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
   CellType getParticleCellTypeAsEnum() override { return CellType::FullParticleCell; }
 
   /**
+   * Delete the given particle from the data structure.
+   * This function does not change the tree layout if the node is empty after the operation.
+   * @param particle
+   * @return True if the given pointer still points to a new, valid particle.
+   */
+  bool deleteParticle(Particle &particle) {
+    --_enclosedParticleCount;
+    return _pointer->deleteParticle(particle);
+  };
+
+  /**
    * Deletes the index-th particle.
    * @param index the index of the particle that shall be deleted
    */
@@ -184,7 +208,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    */
   Particle &at(size_t index) {
     std::lock_guard<AutoPasLock> lock(_lock);
-    return *_ps[index];
+    return _ps.at(index);
   }
 
   /**
@@ -194,6 +218,28 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @return A const ref to a particle
    */
   const Particle &at(size_t index) const {
+    std::lock_guard<AutoPasLock> lock(_lock);
+    return _ps.at(index);
+  }
+
+  /**
+   * Get a particle from the iterator
+   *
+   * @param index The index of the particle
+   * @return A ref to a particle
+   */
+  Particle &operator[](size_t index) {
+    std::lock_guard<AutoPasLock> lock(_lock);
+    return *_ps[index];
+  }
+
+  /**
+   * Get a particle from the iterator
+   *
+   * @param index The index of the particle
+   * @return A ref to a particle
+   */
+  const Particle &operator[](size_t index) const {
     std::lock_guard<AutoPasLock> lock(_lock);
     return *_ps[index];
   }
@@ -214,16 +260,6 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @return A raw C pointer to the enclosed node
    */
   OctreeNodeInterface<Particle> *getRaw() const { return _pointer.get(); }
-
-  /**
-   * Type of the internal iterator.
-   */
-  using iterator_t = internal::SingleCellIterator<Particle, OctreeNodeWrapper<Particle>, true>;
-
-  /**
-   * Type of the internal const iterator.
-   */
-  using const_iterator_t = internal::SingleCellIterator<Particle, OctreeNodeWrapper<Particle>, false>;
 
   /**
    * Apply the forEach lambda to each particle.
@@ -299,7 +335,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * The field is marked mutable since it is used inside the `begin()` method, which is marked `const`. This function
    * loads the cache `ps`, which is therefore required to be mutable.
    */
-  mutable std::vector<Particle *> _ps;
+  mutable StorageType _ps;
 
   /**
    * This lock is required to synchronize loading the cache `ps` across multiple threads. To change the state of the

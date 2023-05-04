@@ -14,7 +14,6 @@
 #include <array>
 
 #include "ParticlePropertiesLibrary.h"
-#include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
@@ -117,9 +116,8 @@ class LJFunctorAVX
     return useNewton3 == FunctorN3Modes::Newton3Off or useNewton3 == FunctorN3Modes::Both;
   }
 
-  void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
+  inline void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
-
     if (i.isDummy() or j.isDummy()) {
       return;
     }
@@ -176,9 +174,10 @@ class LJFunctorAVX
 
   /**
    * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3)
-   * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
+   * This functor will always do a newton3 like traversal of the soa.
+   * However, it still needs to know about newton3 to correctly add up the global values.
    */
-  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) final {
+  inline void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) final {
     if (newton3) {
       SoAFunctorSingleImpl<true>(soa);
     } else {
@@ -191,7 +190,7 @@ class LJFunctorAVX
    * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
    */
   // clang-format on
-  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3) final {
+  inline void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3) final {
     if (newton3) {
       SoAFunctorPairImpl<true>(soa1, soa2);
     } else {
@@ -206,7 +205,7 @@ class LJFunctorAVX
    * @param soa
    */
   template <bool newton3>
-  void SoAFunctorSingleImpl(SoAView<SoAArraysType> soa) {
+  inline void SoAFunctorSingleImpl(SoAView<SoAArraysType> soa) {
 #ifdef __AVX__
     if (soa.getNumberOfParticles() == 0) return;
 
@@ -323,7 +322,7 @@ class LJFunctorAVX
   }
 
   template <bool newton3>
-  void SoAFunctorPairImpl(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2) {
+  inline void SoAFunctorPairImpl(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2) {
 #ifdef __AVX__
     if (soa1.getNumberOfParticles() == 0 || soa2.getNumberOfParticles() == 0) return;
 
@@ -618,9 +617,9 @@ class LJFunctorAVX
    * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly.
    */
   // clang-format on
-  void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
-                        const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
-                        bool newton3) final {
+  inline void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
+                               const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
+                               bool newton3) final {
     if (soa.getNumberOfParticles() == 0 or neighborList.empty()) return;
     if (newton3) {
       SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
@@ -631,8 +630,8 @@ class LJFunctorAVX
 
  private:
   template <bool newton3>
-  void SoAFunctorVerletImpl(SoAView<SoAArraysType> soa, const size_t indexFirst,
-                            const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
+  inline void SoAFunctorVerletImpl(SoAView<SoAArraysType> soa, const size_t indexFirst,
+                                   const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
 #ifdef __AVX__
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
     if (ownedStatePtr[indexFirst] == OwnershipState::dummy) {

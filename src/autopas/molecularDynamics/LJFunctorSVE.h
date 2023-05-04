@@ -15,7 +15,6 @@
 #include <array>
 
 #include "ParticlePropertiesLibrary.h"
-#include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
@@ -177,7 +176,8 @@ class LJFunctorSVE
 
   /**
    * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3)
-   * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
+   * This functor will always do a newton3 like traversal of the soa.
+   * However, it still needs to know about newton3 to correctly add up the global values.
    */
   void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) final {
     if (newton3) {
@@ -763,7 +763,7 @@ class LJFunctorSVE
    * @param newton3
    */
   void endTraversal(bool newton3) final {
-    namespace autopas::utils::ArrayMath::literals;
+    using namespace autopas::utils::ArrayMath::literals;
 
     if (_postProcessed) {
       throw utils::ExceptionHandler::AutoPasException(

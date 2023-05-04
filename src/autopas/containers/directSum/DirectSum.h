@@ -14,8 +14,7 @@
 #include "autopas/containers/LeavingParticleCollector.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/containers/directSum/traversals/DSTraversalInterface.h"
-#include "autopas/iterators/ParticleIterator.h"
-#include "autopas/iterators/RegionParticleIterator.h"
+#include "autopas/iterators/ContainerIterator.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AutoPasMacros.h"
@@ -65,6 +64,11 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
    * @copydoc ParticleContainerInterface::getContainerType()
    */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::directSum; }
+
+  void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
+    this->getCell().reserve(numParticles);
+    this->getHaloCell().reserve(numParticlesHaloEstimate);
+  };
 
   /**
    * @copydoc ParticleContainerInterface::addParticleImpl()
@@ -122,10 +126,15 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     getCell().deleteDummyParticles();
 
     std::vector<ParticleType> invalidParticles{};
-    for (auto iter = getCell().begin(); iter.isValid(); ++iter) {
+    auto &particleVec = getCell()._particles;
+    for (auto iter = particleVec.begin(); iter != particleVec.end();) {
       if (utils::notInBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
         invalidParticles.push_back(*iter);
-        internal::deleteParticle(iter);
+        // swap-delete
+        *iter = particleVec.back();
+        particleVec.pop_back();
+      } else {
+        ++iter;
       }
     }
     return invalidParticles;
@@ -144,17 +153,17 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
         this->getBoxMax() - this->getBoxMin(), 0);
   }
 
-  [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> begin(
-      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) override {
-    return ParticleIteratorWrapper<ParticleType, true>(new internal::ParticleIterator<ParticleType, ParticleCell, true>(
-        &this->_cells, 0, &_cellBorderFlagManager, behavior, nullptr));
+  [[nodiscard]] ContainerIterator<ParticleType, true, false> begin(
+      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
+      typename ContainerIterator<ParticleType, true, false>::ParticleVecType *additionalVectors = nullptr) override {
+    return ContainerIterator<ParticleType, true, false>(*this, behavior, additionalVectors);
   }
 
-  [[nodiscard]] ParticleIteratorWrapper<ParticleType, false> begin(
-      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) const override {
-    return ParticleIteratorWrapper<ParticleType, false>(
-        new internal::ParticleIterator<ParticleType, ParticleCell, false>(&this->_cells, 0, &_cellBorderFlagManager,
-                                                                          behavior, nullptr));
+  [[nodiscard]] ContainerIterator<ParticleType, false, false> begin(
+      IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
+      typename ContainerIterator<ParticleType, false, false>::ParticleVecType *additionalVectors =
+          nullptr) const override {
+    return ContainerIterator<ParticleType, false, false>(*this, behavior, additionalVectors);
   }
 
   /**
@@ -162,12 +171,6 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
    */
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior) {
-    auto forEach = [&](ParticleCell &cell) {
-      for (Particle &p : cell._particles) {
-        forEachLambda(p);
-      }
-    };
-
     if (behavior & IteratorBehavior::owned) {
       getCell().forEach(forEachLambda);
     }
@@ -185,12 +188,6 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
    */
   template <typename Lambda, typename A>
   void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior) {
-    auto forEach = [&](ParticleCell &cell) {
-      for (Particle &p : cell._particles) {
-        reduceLambda(p, result);
-      }
-    };
-
     if (behavior & IteratorBehavior::owned) {
       getCell().reduce(reduceLambda, result);
     }
@@ -203,46 +200,16 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     }
   }
 
-  [[nodiscard]] ParticleIteratorWrapper<ParticleType, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
-                                                                              const std::array<double, 3> &higherCorner,
-                                                                              IteratorBehavior behavior) override {
-    std::vector<size_t> cellsOfInterest;
-
-    if (behavior & IteratorBehavior::owned) {
-      cellsOfInterest.push_back(0);
-    }
-    if (behavior & IteratorBehavior::halo) {
-      cellsOfInterest.push_back(1);
-    }
-    // sanity check
-    if (cellsOfInterest.empty()) {
-      utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
-    }
-
-    return ParticleIteratorWrapper<ParticleType, true>(
-        new internal::RegionParticleIterator<ParticleType, ParticleCell, true>(
-            &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBorderFlagManager, behavior, nullptr));
+  [[nodiscard]] ContainerIterator<ParticleType, true, true> getRegionIterator(
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
+      typename ContainerIterator<ParticleType, true, true>::ParticleVecType *additionalVectors) override {
+    return ContainerIterator<ParticleType, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
-  [[nodiscard]] ParticleIteratorWrapper<ParticleType, false> getRegionIterator(
-      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
-      IteratorBehavior behavior) const override {
-    std::vector<size_t> cellsOfInterest;
-
-    if (behavior & IteratorBehavior::owned) {
-      cellsOfInterest.push_back(0);
-    }
-    if (behavior & IteratorBehavior::halo) {
-      cellsOfInterest.push_back(1);
-    }
-    // sanity check
-    if (cellsOfInterest.empty()) {
-      utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
-    }
-
-    return ParticleIteratorWrapper<ParticleType, false>(
-        new internal::RegionParticleIterator<ParticleType, ParticleCell, false>(
-            &this->_cells, lowerCorner, higherCorner, cellsOfInterest, &_cellBorderFlagManager, behavior, nullptr));
+  [[nodiscard]] ContainerIterator<ParticleType, false, true> getRegionIterator(
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
+      typename ContainerIterator<ParticleType, false, true>::ParticleVecType *additionalVectors) const override {
+    return ContainerIterator<ParticleType, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
   /**
@@ -281,6 +248,42 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     }
   }
 
+  std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                           IteratorBehavior iteratorBehavior,
+                                                           const std::array<double, 3> &boxMin,
+                                                           const std::array<double, 3> &boxMax) const override {
+    return getParticleImpl<true>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
+  }
+  std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                           IteratorBehavior iteratorBehavior) const override {
+    // this is not a region iter hence we stretch the bounding box to the numeric max
+    constexpr std::array<double, 3> boxMin{std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(),
+                                           std::numeric_limits<double>::lowest()};
+
+    constexpr std::array<double, 3> boxMax{std::numeric_limits<double>::max(), std::numeric_limits<double>::max(),
+                                           std::numeric_limits<double>::max()};
+    return getParticleImpl<false>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
+  }
+
+  bool deleteParticle(Particle &particle) override {
+    // deduce into which vector the reference points
+    auto &particleVec = particle.isOwned() ? getCell()._particles : getHaloCell()._particles;
+    const bool isRearParticle = &particle == &particleVec.back();
+    // swap-delete
+    particle = particleVec.back();
+    particleVec.pop_back();
+    return not isRearParticle;
+  }
+
+  bool deleteParticle(size_t cellIndex, size_t particleIndex) override {
+    auto &particleVec = this->_cells[cellIndex]._particles;
+    auto &particle = particleVec[particleIndex];
+    // swap-delete
+    particle = particleVec.back();
+    particleVec.pop_back();
+    return particleIndex < particleVec.size();
+  }
+
  private:
   class DirectSumCellBorderAndFlagManager : public internal::CellBorderAndFlagManager {
     /**
@@ -295,9 +298,111 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
 
   } _cellBorderFlagManager;
 
-  ParticleCell &getCell() { return this->_cells.at(0); };
+  /**
+   * Container specific implementation for getParticle. See ParticleContainerInterface::getParticle().
+   *
+   * @tparam regionIter
+   * @param cellIndex
+   * @param particleIndex
+   * @param iteratorBehavior
+   * @param boxMin
+   * @param boxMax
+   * @return tuple<ParticlePointer, CellIndex, ParticleIndex>
+   */
+  template <bool regionIter>
+  std::tuple<const Particle *, size_t, size_t> getParticleImpl(size_t cellIndex, size_t particleIndex,
+                                                               IteratorBehavior iteratorBehavior,
+                                                               const std::array<double, 3> &boxMin,
+                                                               const std::array<double, 3> &boxMax) const {
+    // first and last relevant cell index
+    const auto [startCellIndex, endCellIndex] = [&]() -> std::tuple<size_t, size_t> {
+      // shortcuts to limit the iterator to only part of the domain.
+      if (not(iteratorBehavior & IteratorBehavior::halo)) {
+        // only owned region
+        return {0, 0};
+      }
+      if (not(iteratorBehavior & IteratorBehavior::owned)) {
+        // only halo region
+        return {1, 1};
+      }
+      if constexpr (regionIter) {
+        // if the region lies fully within the container only look at the owned cell
+        if (utils::ArrayMath::less(this->getBoxMin(), boxMin) and utils::ArrayMath::less(boxMax, this->getBoxMax())) {
+          return {0, 0};
+        }
+      }
+      // all cells
+      return {0, 1};
+    }();
 
-  ParticleCell &getHaloCell() { return this->_cells.at(1); };
+    // if we are at the start of an iteration determine this thread's cell index
+    if (cellIndex == 0 and particleIndex == 0) {
+      cellIndex =
+          startCellIndex + ((iteratorBehavior & IteratorBehavior::forceSequential) ? 0 : autopas_get_thread_num());
+    }
+    // abort if the index is out of bounds
+    if (cellIndex >= this->_cells.size()) {
+      return {nullptr, 0, 0};
+    }
+    // check the data behind the indices
+    if (particleIndex >= this->_cells[cellIndex].numParticles() or
+        not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
+            this->_cells[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax)) {
+      // either advance them to something interesting or invalidate them.
+      std::tie(cellIndex, particleIndex) =
+          advanceIteratorIndices<regionIter>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
+    }
+
+    // shortcut if the given index doesn't exist
+    if (cellIndex >= this->_cells.size()) {
+      return {nullptr, 0, 0};
+    }
+    const Particle *retPtr = &this->_cells[cellIndex][particleIndex];
+
+    return {retPtr, cellIndex, particleIndex};
+  }
+
+  /**
+   * Given a pair of cell-/particleIndex and iterator restrictions either returns the next indices that match these
+   * restrictions or indices that are out of bounds (e.g. cellIndex >= cells.size())
+   * @tparam regionIter
+   * @param cellIndex
+   * @param particleIndex
+   * @param iteratorBehavior
+   * @param boxMin
+   * @param boxMax
+   * @return tuple<cellIndex, particleIndex>
+   */
+  template <bool regionIter>
+  std::tuple<size_t, size_t> advanceIteratorIndices(size_t cellIndex, size_t particleIndex,
+                                                    IteratorBehavior iteratorBehavior,
+                                                    const std::array<double, 3> &boxMin,
+                                                    const std::array<double, 3> &boxMax) const {
+    // Find the indices for the next particle
+    const size_t stride = (iteratorBehavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads();
+
+    do {
+      // advance to the next particle
+      ++particleIndex;
+      // If this breaches the end of a cell, find the next non-empty cell and reset particleIndex.
+      while (particleIndex >= this->_cells[cellIndex].numParticles()) {
+        cellIndex += stride;
+        particleIndex = 0;
+        // If there are no more reasonable cells return invalid indices.
+        if (cellIndex > ((not(iteratorBehavior & IteratorBehavior::halo)) ? 0 : (this->_cells.size() - 1))) {
+          return {std::numeric_limits<decltype(cellIndex)>::max(), std::numeric_limits<decltype(particleIndex)>::max()};
+        }
+      }
+    } while (not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
+        this->_cells[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax));
+
+    // the indices returned at this point should always be valid
+    return {cellIndex, particleIndex};
+  }
+
+  ParticleCell &getCell() { return this->_cells[0]; };
+
+  ParticleCell &getHaloCell() { return this->_cells[1]; };
 };
 
 }  // namespace autopas

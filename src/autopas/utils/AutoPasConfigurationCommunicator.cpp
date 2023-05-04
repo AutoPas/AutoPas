@@ -143,7 +143,7 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
   generateDistribution(numConfigs, commSize, rank, containerOptions, cellSizeFactors, traversalOptions,
                        loadEstimatorOptions, dataLayoutOptions, newton3Options);
 
-  AutoPasLog(debug,
+  AutoPasLog(DEBUG,
              "After distributing: {} containers, {} cellSizeFactors, {} traversals, {} dataLayouts, {} newton3s"
              " => {} total configs",
              containerOptions.size(), /*cellSizeFactorsSize*/ (cellSizeFactors.isFinite() ? cellSizeFactors.size() : 1),
@@ -173,7 +173,7 @@ Configuration optimizeConfiguration(AutoPas_MPI_Comm comm, Configuration localOp
                     comm);
 
   Configuration deserializedConfig = deserializeConfiguration(serializedConfiguration);
-  AutoPasLog(debug, "Globally optimal configuration: {}", deserializedConfig.toString());
+  AutoPasLog(DEBUG, "Globally optimal configuration: {}", deserializedConfig.toString());
 
   return deserializedConfig;
 }

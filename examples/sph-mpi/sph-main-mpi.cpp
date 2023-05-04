@@ -503,9 +503,11 @@ int main(int argc, char *argv[]) {
   sphSystem.setVerletSkinPerTimestep(skinToCutoffRatio * cutoff / rebuildFrequency);
   sphSystem.setVerletRebuildFrequency(rebuildFrequency);
 
-  std::set<autopas::ContainerOption> allowedContainers{autopas::ContainerOption::linkedCells,
-                                                       autopas::ContainerOption::verletLists,
-                                                       autopas::ContainerOption::verletListsCells};
+  std::set<autopas::ContainerOption> allowedContainers{
+      autopas::ContainerOption::linkedCells,
+      autopas::ContainerOption::verletLists,
+      autopas::ContainerOption::verletListsCells,
+  };
   sphSystem.setAllowedContainers(allowedContainers);
 
   int rank;

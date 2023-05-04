@@ -1,10 +1,10 @@
 /**
- * @file ParticleIteratorInterfaceTest.cpp
- * @author seckler
- * @date 22.07.19
+ * @file ContainerIteratorTest.cpp
+ * @author F.Gratl
+ * @date 13.01.23
  */
 
-#include "ParticleIteratorInterfaceTest.h"
+#include "ContainerIteratorTest.h"
 
 #include "IteratorTestHelper.h"
 #include "autopas/AutoPasDecl.h"
@@ -20,10 +20,9 @@ extern template bool autopas::AutoPas<Molecule>::iteratePairwise(EmptyFunctor<Mo
 using ::testing::_;
 
 template <typename AutoPasT>
-auto ParticleIteratorInterfaceTest::defaultInit(AutoPasT &autoPas, autopas::ContainerOption &containerOption,
-                                                double cellSizeFactor) {
+auto ContainerIteratorTest::defaultInit(AutoPasT &autoPas, autopas::ContainerOption &containerOption,
+                                        double cellSizeFactor) {
   using namespace autopas::utils::ArrayMath::literals;
-
   autoPas.setBoxMin({0., 0., 0.});
   autoPas.setBoxMax({10., 10., 10.});
   autoPas.setCutoff(1);
@@ -43,8 +42,8 @@ auto ParticleIteratorInterfaceTest::defaultInit(AutoPasT &autoPas, autopas::Cont
 }
 
 template <bool constIter, class AutoPasT, class F>
-auto ParticleIteratorInterfaceTest::deleteParticles(AutoPasT &autopas, F predicate, bool useRegionIterator,
-                                                    const autopas::IteratorBehavior &behavior) {
+auto ContainerIteratorTest::deleteParticles(AutoPasT &autopas, F predicate, bool useRegionIterator,
+                                            const autopas::IteratorBehavior &behavior) {
   if constexpr (not constIter) {
     IteratorTestHelper::provideIterator<false>(autopas, behavior, useRegionIterator, [&](auto &autopas, auto getIter) {
 #ifdef AUTOPAS_OPENMP
@@ -52,7 +51,8 @@ auto ParticleIteratorInterfaceTest::deleteParticles(AutoPasT &autopas, F predica
 #endif
       {
         for (auto iter = getIter(); iter.isValid(); ++iter) {
-          if (predicate(iter->getID())) {
+          const auto leID = iter->getID();
+          if (predicate(leID)) {
             autopas.deleteParticle(iter);
           }
         }
@@ -69,7 +69,7 @@ auto ParticleIteratorInterfaceTest::deleteParticles(AutoPasT &autopas, F predica
  * - Create an AutoPas object with a specified container.
  * - Apply an iterator and confirm that it finds no particles.
  */
-TEST_P(ParticleIteratorInterfaceTest, emptyContainer) {
+TEST_P(ContainerIteratorTest, emptyContainer) {
   auto [containerOption, cellSizeFactor, useRegionIterator, useConstIterator, priorForceCalc, behavior] = GetParam();
 
   // init autopas and fill it with some particles
@@ -95,7 +95,7 @@ TEST_P(ParticleIteratorInterfaceTest, emptyContainer) {
  * - Place particles in a grid inside the domain.
  * - Find the particles with iterators and compare their IDs with expectations.
  */
-TEST_P(ParticleIteratorInterfaceTest, findAllParticlesInsideDomain) {
+TEST_P(ContainerIteratorTest, findAllParticlesInsideDomain) {
   auto [containerOption, cellSizeFactor, useRegionIterator, useConstIterator, priorForceCalc, behavior] = GetParam();
 
   // init autopas and fill it with some particles
@@ -127,7 +127,6 @@ TEST_P(ParticleIteratorInterfaceTest, findAllParticlesInsideDomain) {
                    << "  should not be tested through this test!\n"
                       "Container behavior with dummy particles is not uniform.\n"
                       "forceSequential alone makes no sense.";
-      break;
     }
   }
 
@@ -144,7 +143,7 @@ TEST_P(ParticleIteratorInterfaceTest, findAllParticlesInsideDomain) {
  * - Strategically place particles around the boundaries.
  * - Find the particles with iterators and compare their IDs with expectations.
  */
-TEST_P(ParticleIteratorInterfaceTest, findAllParticlesAroundBoundaries) {
+TEST_P(ContainerIteratorTest, findAllParticlesAroundBoundaries) {
   auto [containerOption, cellSizeFactor, useRegionIterator, useConstIterator, priorForceCalc, behavior] = GetParam();
 
   // init autopas and fill it with some particles
@@ -179,7 +178,6 @@ TEST_P(ParticleIteratorInterfaceTest, findAllParticlesAroundBoundaries) {
                    << "  should not be tested through this test!\n"
                       "Container behavior with dummy particles is not uniform.\n"
                       "Using forceSequential is not supported.";
-      break;
     }
   }
 
@@ -194,7 +192,7 @@ TEST_P(ParticleIteratorInterfaceTest, findAllParticlesAroundBoundaries) {
  * Since deletion does not work through const iterators this test is skipped when instantiated with
  * useConstIterator==true.
  */
-TEST_P(ParticleIteratorInterfaceTest, deleteParticles) {
+TEST_P(ContainerIteratorTest, deleteParticles) {
   auto [containerOption, cellSizeFactor, useRegionIterator, useConstIterator, priorForceCalc, behavior] = GetParam();
 
   if (useConstIterator) {
@@ -233,7 +231,6 @@ TEST_P(ParticleIteratorInterfaceTest, deleteParticles) {
                    << "  should not be tested through this test!\n"
                       "Container behavior with dummy particles is not uniform.\n"
                       "Using forceSequential is not supported.";
-      break;
     }
   }
 
@@ -257,9 +254,9 @@ using ::testing::ValuesIn;
 
 static inline auto getTestableContainerOptions() { return autopas::ContainerOption::getAllOptions(); }
 
-INSTANTIATE_TEST_SUITE_P(Generated, ParticleIteratorInterfaceTest,
+INSTANTIATE_TEST_SUITE_P(Generated, ContainerIteratorTest,
                          Combine(ValuesIn(getTestableContainerOptions()), /*cell size factor*/ Values(0.5, 1., 1.5),
                                  /*use region iter*/ Values(true, false),
                                  /*use const*/ Values(true, false), /*prior force calc*/ Values(true, false),
                                  ValuesIn(autopas::IteratorBehavior::getMostOptions())),
-                         ParticleIteratorInterfaceTest::PrintToStringParamName());
+                         ContainerIteratorTest::PrintToStringParamName());

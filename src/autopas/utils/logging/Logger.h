@@ -45,8 +45,7 @@
  * @param ... Formatting arguments
  * @note A ';' is enforced at the end of the macro.
  */
-#define AutoPasLog(lvl, fmt, ...) spdlog::get("AutoPasLog")->lvl(fmt, ##__VA_ARGS__)
-
+#define AutoPasLog(lvl, fmt, ...) SPDLOG_LOGGER_##lvl(spdlog::get("AutoPasLog"), fmt, ##__VA_ARGS__)
 #endif
 
 namespace autopas {

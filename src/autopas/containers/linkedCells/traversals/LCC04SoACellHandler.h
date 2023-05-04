@@ -310,7 +310,7 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
     // make sure everything is correct
     if (bufferView.getNumberOfParticles() != cells[currentOffset].numParticles()) {
       const auto pos = utils::ThreeDimensionalMapping::oneToThreeD(currentOffset, _cellsPerDimension);
-      AutoPasLog(error,
+      AutoPasLog(ERROR,
                  "Particle number in SoA buffer and cell doesn't match. current position: [{} {} {}] is: {} should: {}",
                  pos[0], pos[1], pos[2], buffer.getNumberOfParticles(), cells[currentOffset].numParticles());
     }

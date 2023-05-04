@@ -74,6 +74,11 @@ namespace ThreeDimensionalMapping {}
  */
 namespace TupleUtils {}
 
+/**
+ * Functions to estimate numbers of particles.
+ */
+namespace NumParticlesEstimator {}
+
 }  // namespace utils
 
 /**
