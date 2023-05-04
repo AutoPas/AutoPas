@@ -39,6 +39,7 @@ template <class CellType>
 static bool checkParticleInCellAndUpdateByIDAndPosition(CellType &cell, const typename CellType::ParticleType &particle,
                                                         double absError) {
   using namespace autopas::utils::ArrayMath::literals;
+  // This lock is relevant for octree and directSum.
   std::lock_guard<AutoPasLock> cellLock(cell._cellLock);
   for (auto &p : cell) {
     if (p.getID() == particle.getID()) {

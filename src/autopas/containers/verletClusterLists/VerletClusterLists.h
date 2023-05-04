@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cmath>
 
 #include "autopas/cells/FullParticleCell.h"
@@ -222,7 +223,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     for (size_t i = 0; i < _towers.size(); ++i) {
       auto &tower = _towers[i];
       const auto towerSize = tower.getNumAllParticles();
-      auto numTailDummies = _towers[i].getNumTailDummyParticles();
+      auto numTailDummies = tower.getNumTailDummyParticles();
       // iterate over all non-tail dummies.
       for (size_t j = 0; j < towerSize - numTailDummies;) {
         if (tower[j].isHalo()) {
@@ -238,7 +239,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       }
       // if anything was marked for deletion actually delete it now.
       if (deletedSomething) {
-        _towers[i].deleteDummyParticles();
+        tower.deleteDummyParticles();
       }
     }
     if (deletedSomething) {
@@ -384,13 +385,23 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
   /**
    * @copydoc autopas::ParticleContainerInterface::begin()
-   * @note This function additionally rebuilds the towers if the tower-structure isn't valid.
    */
   [[nodiscard]] ContainerIterator<Particle, true, false> begin(
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
       typename ContainerIterator<Particle, true, false>::ParticleVecType *additionalVectors = nullptr) override {
-    prepareContainerForIteration(behavior);
-    return ContainerIterator<Particle, true, false>(*this, behavior, additionalVectors);
+    // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
+    // store all pointers in a temporary which is passed to the ParticleIterator constructor.
+    typename ContainerIterator<Particle, true, false>::ParticleVecType additionalVectorsTmp;
+    if (additionalVectors) {
+      additionalVectorsTmp.reserve(_particlesToAdd.size() + additionalVectors->size());
+      additionalVectorsTmp.insert(additionalVectorsTmp.end(), additionalVectors->begin(), additionalVectors->end());
+    } else {
+      additionalVectorsTmp.reserve(_particlesToAdd.size());
+    }
+    for (auto &vec : _particlesToAdd) {
+      additionalVectorsTmp.push_back(&vec);
+    }
+    return ContainerIterator<Particle, true, false>(*this, behavior, &additionalVectorsTmp);
   }
 
   /**
@@ -427,14 +438,18 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
   /**
    * @copydoc autopas::LinkedCells::forEach()
-   * @note This function additionally rebuilds the towers if the tower-structure isn't valid.
    */
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) {
-    prepareContainerForIteration(behavior);
-
     for (auto &tower : this->_towers) {
       tower.forEach(forEachLambda, behavior);
+    }
+    for (auto &vector : this->_particlesToAdd) {
+      for (auto &particle : vector) {
+        if (behavior.contains(particle)) {
+          forEachLambda(particle);
+        }
+      }
     }
   }
 
@@ -471,14 +486,18 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
   /**
    * @copydoc autopas::LinkedCells::reduce()
-   * @note This function additionally rebuilds the towers if the tower-structure isn't valid.
    */
   template <typename Lambda, typename A>
   void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) {
-    prepareContainerForIteration(behavior);
-
     for (auto &tower : this->_towers) {
       tower.reduce(reduceLambda, result, behavior);
+    }
+    for (auto &vector : this->_particlesToAdd) {
+      for (auto &p : vector) {
+        if (behavior.contains(p)) {
+          reduceLambda(p, result);
+        }
+      }
     }
   }
 
@@ -516,14 +535,19 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
-   * @note This function additionally rebuilds the towers if the tower-structure isn't valid.
    */
   [[nodiscard]] ContainerIterator<Particle, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
       typename ContainerIterator<Particle, true, true>::ParticleVecType *additionalVectors) override {
-    prepareContainerForIteration(behavior);
-
-    return ContainerIterator<Particle, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
+    typename ContainerIterator<Particle, true, true>::ParticleVecType additionalContainerVectors;
+    additionalContainerVectors.reserve(_particlesToAdd.size() + additionalVectors->size());
+    for (auto &v : _particlesToAdd) {
+      additionalContainerVectors.push_back(&v);
+    }
+    additionalContainerVectors.insert(additionalContainerVectors.end(), additionalVectors->begin(),
+                                      additionalVectors->end());
+    return ContainerIterator<Particle, true, true>(*this, behavior, &additionalContainerVectors, lowerCorner,
+                                                   higherCorner);
   }
 
   /**
@@ -552,14 +576,11 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
   /**
    * @copydoc autopas::LinkedCells::forEachInRegion()
-   * @note This function additionally rebuilds the towers if the tower-structure isn't valid.
    */
   template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                        const std::array<double, 3> &higherCorner,
                        IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) {
-    prepareContainerForIteration(behavior);
-
     for (size_t i = 0; i < _towers.size(); ++i) {
       auto &tower = _towers[i];
       const auto [towerLowCorner, towerHighCorner] = getTowerBoundingBox(i);
@@ -568,6 +589,15 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       const auto towerHighCornerSkin = utils::ArrayMath::addScalar(towerHighCorner, this->getVerletSkin() * 0.5);
       if (utils::boxesOverlap(towerLowCornerSkin, towerHighCornerSkin, lowerCorner, higherCorner)) {
         tower.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+      }
+    }
+    for (auto &vector : _particlesToAdd) {
+      for (auto &particle : vector) {
+        if (behavior.contains(particle)) {
+          if (utils::inBox(particle.getR(), lowerCorner, higherCorner)) {
+            forEachLambda(particle);
+          }
+        }
       }
     }
   }
@@ -616,16 +646,29 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
   /**
    * @copydoc autopas::LinkedCells::reduceInRegion()
-   * @note This function additionally rebuilds the towers if the tower-structure isn't valid.
    */
   template <typename Lambda, typename A>
   void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
                       const std::array<double, 3> &higherCorner,
                       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) {
-    prepareContainerForIteration(behavior);
-
-    for (auto &tower : this->_towers) {
-      tower.reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
+    for (size_t i = 0; i < _towers.size(); ++i) {
+      auto &tower = _towers[i];
+      const auto [towerLowCorner, towerHighCorner] = getTowerBoundingBox(i);
+      // particles can move over cell borders. Calculate the volume this cell's particles can be.
+      const auto towerLowCornerSkin = utils::ArrayMath::subScalar(towerLowCorner, this->getVerletSkin() * 0.5);
+      const auto towerHighCornerSkin = utils::ArrayMath::addScalar(towerHighCorner, this->getVerletSkin() * 0.5);
+      if (utils::boxesOverlap(towerLowCornerSkin, towerHighCornerSkin, lowerCorner, higherCorner)) {
+        tower.reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
+      }
+    }
+    for (auto &vector : _particlesToAdd) {
+      for (auto &particle : vector) {
+        if (behavior.contains(particle)) {
+          if (utils::inBox(particle.getR(), lowerCorner, higherCorner)) {
+            reduceLambda(particle, result);
+          }
+        }
+      }
     }
   }
 
@@ -645,8 +688,15 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       }
     }
     // If the particles are sorted into the towers, we can simply use the iteration over towers.
-    for (auto tower : this->_towers) {
-      tower.reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
+    for (size_t i = 0; i < _towers.size(); ++i) {
+      auto &tower = _towers[i];
+      const auto [towerLowCorner, towerHighCorner] = getTowerBoundingBox(i);
+      // particles can move over cell borders. Calculate the volume this cell's particles can be.
+      const auto towerLowCornerSkin = utils::ArrayMath::subScalar(towerLowCorner, this->getVerletSkin() * 0.5);
+      const auto towerHighCornerSkin = utils::ArrayMath::addScalar(towerHighCorner, this->getVerletSkin() * 0.5);
+      if (utils::boxesOverlap(towerLowCornerSkin, towerHighCornerSkin, lowerCorner, higherCorner)) {
+        tower.reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
+      }
     }
 
     if (_isValid == ValidityState::invalid) {
@@ -1219,89 +1269,6 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * load estimation algorithm for balanced traversals.
    */
   autopas::LoadEstimatorOption _loadEstimator;
-
-  /**
-   * Checks the state of the container and whether it is ready to launch an iterator.
-   * Depending on the behavior and current state, this might rebuild towers and clusters.
-   *
-   * @note This function needs to be called by all functions that create an iterator with modifiable flag == true.
-   *
-   * @param behavior
-   */
-  void prepareContainerForIteration(const IteratorBehavior &behavior) {
-    // For good openmp scalability we want the particles to be sorted into the clusters, so we do this!
-
-    // If multiple asynchronous iterators are used the container must already be valid.
-    // Otherwise it is impossible to decide which thread needs to rebuild the tower structure and which need to wait.
-    if (behavior & IteratorBehavior::forceSequential) {
-      if (_isValid == ValidityState::invalid) {
-        autopas::utils::ExceptionHandler::exception(
-            "VerletClusterLists::prepareContainerForIteration(): Parallel iterators with behavior containing "
-            "forceSequential encountered, but the container is invalid.");
-      }
-    } else {
-      // Only one thread is allowed to rebuild the towers. Since rebuildTowersAndClusters() sets _isValid,
-      // subsequent threads that will enter the if will not rebuild.
-#ifdef AUTOPAS_OPENMP
-#pragma omp critical
-#endif
-      if (_isValid == ValidityState::invalid) {
-        rebuildTowersAndClusters();
-      }
-    }
-  }
-
-  /**
-   * Helper function for the region iterators to determine bounds and towers to iterate over.
-   * @param lowerCorner
-   * @param higherCorner
-   * @param behavior
-   * @return
-   */
-  [[nodiscard]] auto getRegionIteratorHelper(const std::array<double, 3> &lowerCorner,
-                                             const std::array<double, 3> &higherCorner,
-                                             IteratorBehavior behavior) const {
-    // Check all cells, as dummy particles are outside the domain they are only found if the search region is outside
-    // the domain.
-    const auto lowerCornerInBounds = utils::ArrayMath::max(lowerCorner, _haloBoxMin);
-    const auto upperCornerInBounds = utils::ArrayMath::min(higherCorner, _haloBoxMax);
-
-    if (not _builder) {
-      // if no builder exists the clusters have not been built yet and all particles are stored in the first tower.
-      return std::make_tuple(lowerCornerInBounds, upperCornerInBounds, std::vector<size_t>{0});
-    }
-
-    // Find towers intersecting the search region
-    const auto firstTowerCoords = _builder->getTowerCoordinates(lowerCornerInBounds);
-    const auto firstTowerIndex = _builder->towerIndex2DTo1D(firstTowerCoords[0], firstTowerCoords[1]);
-    const auto lastTowerCoords = _builder->getTowerCoordinates(upperCornerInBounds);
-    const auto lastTowerIndex = _builder->towerIndex2DTo1D(lastTowerCoords[0], lastTowerCoords[1]);
-
-    const std::array<size_t, 2> towersOfInterestPerDim = [&]() {
-      std::array<size_t, 2> ret{};
-      for (size_t dim = 0; dim < ret.size(); ++dim) {
-        // use ternary operators instead of abs because these are unsigned values
-        ret[dim] = firstTowerCoords[dim] > lastTowerCoords[dim] ? firstTowerCoords[dim] - lastTowerCoords[dim]
-                                                                : lastTowerCoords[dim] - firstTowerCoords[dim];
-        // +1 because we want to include first AND last
-        ret[dim] += 1;
-        // sanity check
-        ret[dim] = std::max(ret[dim], static_cast<size_t>(1));
-      }
-      return ret;
-    };
-
-    std::vector<size_t> towersOfInterest(towersOfInterestPerDim[0] * towersOfInterestPerDim[1]);
-
-    auto towersOfInterestIterator = towersOfInterest.begin();
-    for (size_t i = 0; i < towersOfInterestPerDim[1]; ++i) {
-      std::iota(towersOfInterestIterator, towersOfInterestIterator + towersOfInterestPerDim[0],
-                std::min(firstTowerIndex, lastTowerIndex) + i * _towersPerDim[0]);
-      towersOfInterestIterator += towersOfInterestPerDim[0];
-    }
-
-    return std::make_tuple(lowerCornerInBounds, upperCornerInBounds, towersOfInterest);
-  }
 
   /**
    * The number of particles in a full cluster.
