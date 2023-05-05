@@ -116,7 +116,7 @@ class LJFunctorAVX
     return useNewton3 == FunctorN3Modes::Newton3Off or useNewton3 == FunctorN3Modes::Both;
   }
 
-  bool allowsMixedNewton3() final { return useNewton3 == FunctorN3Modes::Both; }
+  bool allowsMixedNewton3() final { return true; }
 
   inline void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
@@ -912,7 +912,7 @@ class LJFunctorAVX
       _postProcessed = true;
 
       AutoPasLog(TRACE, "Final potential energy {}", _upotSum);
-      AutoPasLog(TRACE, "Final virial           {}", _virialSum);
+      AutoPasLog(TRACE, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
     }
   }
 
