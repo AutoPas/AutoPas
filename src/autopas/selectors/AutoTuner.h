@@ -129,8 +129,7 @@ class AutoTuner {
     // The container might have changed sufficiently enough so that we need more or less spacial locks
     const auto boxLength = boxMax - boxMin;
     const auto container = getContainer();
-    const auto interactionLengthInv =
-        1. / (container->cutoff + container->verletSkinPerTimestep * container->rebuildFrequency);
+    const auto interactionLengthInv = 1. / (container->getInteractionLength());
     initSpacialLocks(boxLength, interactionLengthInv);
   }
 
