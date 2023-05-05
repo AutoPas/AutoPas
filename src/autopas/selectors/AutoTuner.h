@@ -95,17 +95,7 @@ class AutoTuner {
     // initialize locks needed for remainder traversal
     const auto boxLength = boxMax - boxMin;
     const auto interactionLengthInv = 1. / (cutoff + verletSkinPerTimestep * rebuildFrequency);
-    const auto locksPerDim = static_cast_array<size_t>(ceil(boxLength * interactionLengthInv) + 2.);
-    _spacialLocks.resize(locksPerDim[0]);
-    for (auto &lockVecVec : _spacialLocks) {
-      lockVecVec.resize(locksPerDim[1]);
-      for (auto &lockVec : lockVecVec) {
-        lockVec.resize(locksPerDim[2]);
-        for (auto &lockPtr : lockVec) {
-          lockPtr = std::make_unique<std::mutex>();
-        }
-      }
-    }
+    initSpacialLocks(boxLength, interactionLengthInv);
     for (auto &lockPtr : _bufferLocks) {
       lockPtr = std::make_unique<std::mutex>();
     }
@@ -133,7 +123,15 @@ class AutoTuner {
    * @param boxMax
    */
   void resizeBox(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) {
+    using namespace autopas::utils::ArrayMath::literals;
+
     _containerSelector.resizeBox(boxMin, boxMax);
+    // The container might have changed sufficiently enough so that we need more or less spacial locks
+    const auto boxLength = boxMax - boxMin;
+    const auto container = getContainer();
+    const auto interactionLengthInv =
+        1. / (container->cutoff + container->verletSkinPerTimestep * container->rebuildFrequency);
+    initSpacialLocks(boxLength, interactionLengthInv);
   }
 
   /**
@@ -214,6 +212,35 @@ class AutoTuner {
   bool searchSpaceIsTrivial();
 
  private:
+  /**
+   * Initialize or update the spacial locks used during the remainder traversal.
+   * If the locks are already initialized but the container size changed, surplus locks will
+   * be deleted, new locks are allocated and locks that are still necessary are reused.
+   *
+   * @param boxLength
+   * @param interactionLengthInv
+   */
+  void initSpacialLocks(const std::array<double, 3> &boxLength, double interactionLengthInv) {
+    using namespace autopas::utils::ArrayMath::literals;
+    using autopas::utils::ArrayMath::ceil;
+    using autopas::utils::ArrayUtils::static_cast_array;
+
+    // one lock per interaction length + one for each halo region
+    const auto locksPerDim = static_cast_array<size_t>(ceil(boxLength * interactionLengthInv) + 2.);
+    _spacialLocks.resize(locksPerDim[0]);
+    for (auto &lockVecVec : _spacialLocks) {
+      lockVecVec.resize(locksPerDim[1]);
+      for (auto &lockVec : lockVecVec) {
+        lockVec.resize(locksPerDim[2]);
+        for (auto &lockPtr : lockVec) {
+          if (not lockPtr) {
+            lockPtr = std::make_unique<std::mutex>();
+          }
+        }
+      }
+    }
+  }
+
   /**
    * Total number of collected samples. This is the sum of the sizes of all sample vectors.
    * @return Sum of sizes of sample vectors.
