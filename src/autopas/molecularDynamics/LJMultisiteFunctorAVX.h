@@ -1115,53 +1115,33 @@ class LJMultisiteFunctorAVX
 
     // Build molecular mask
     std::vector<double, autopas::AlignedAllocator<double>> molMask;
-    molMask.reserve(siteCountNeighbors);
+    molMask.reserve(neighborListSize);
 
     const __m256d xposA = _mm256_broadcast_sd(xptr + indexFirst);
     const __m256d yposA = _mm256_broadcast_sd(yptr + indexFirst);
     const __m256d zposA = _mm256_broadcast_sd(zptr + indexFirst);
     const __m256i ownedStateA4 = _mm256_set1_epi64x(static_cast<int64_t>(ownedStatePrime));
 
-    // TODO check if this works, else we can also just use scalar version
-    for (size_t molB = 0; molB < neighborListSize; molB += vecLength) {
-      const size_t rest = neighborListSize - molB;
-      const bool remainderCase = rest < vecLength;
-      __m256i remainderMask = _one;
-      if (remainderCase) {
-        remainderMask = _masks[rest - 1];
-      }
+    // Just scalar version for now
+    for (size_t neighborMol = 0; neighborMol < neighborListSize; ++neighborMol) {
+      const auto neighborMolIndex = neighborList[neighborMol];  // index of neighbor mol in soa
 
-      const __m256i neighborMolIndex =
-          remainderCase
-              ? _mm256_maskload_epi64(reinterpret_cast<const long long *>(neighborList.data() + molB), remainderMask)
-              : _mm256_loadu_si256(reinterpret_cast<const __m256i_u *>(neighborList.data() + molB));
+      const auto ownedState = ownedStatePtr[neighborMolIndex];
 
-      const __m256d xposB = _mm256_i64gather_pd(xptr, neighborMolIndex, 8);
-      const __m256d yposB = _mm256_i64gather_pd(yptr, neighborMolIndex, 8);
-      const __m256d zposB = _mm256_i64gather_pd(zptr, neighborMolIndex, 8);
-      const __m256i ownedStateB = _mm256_i64gather_pd(ownedStatePtr, neighborMolIndex, 8);
+      const auto displacementCoMX = xptr[indexFirst] - xptr[neighborMolIndex];
+      const auto displacementCoMY = yptr[indexFirst] - yptr[neighborMolIndex];
+      const auto displacementCoMZ = zptr[indexFirst] - zptr[neighborMolIndex];
 
-      const __m256d displacementCoMX = _mm256_sub_pd(xposA, xposB);
-      const __m256d displacementCoMY = _mm256_sub_pd(yposA, yposB);
-      const __m256d displacementCoMZ = _mm256_sub_pd(zposA, zposB);
+      const auto distanceSquaredCoMX = displacementCoMX * displacementCoMX;
+      const auto distanceSquaredCoMY = displacementCoMY * displacementCoMY;
+      const auto distanceSquaredCoMZ = displacementCoMZ * displacementCoMZ;
 
-      const __m256d distanceSquaredCoMX = _mm256_mul_pd(displacementCoMX, displacementCoMX);
-      const __m256d distanceSquaredCoMY = _mm256_mul_pd(displacementCoMY, displacementCoMY);
-      const __m256d distanceSquaredCoMZ = _mm256_mul_pd(displacementCoMZ, displacementCoMZ);
+      const auto distanceSquaredCoM = distanceSquaredCoMX + distanceSquaredCoMY + distanceSquaredCoMZ;
 
-      const __m256d distanceSquaredCoM =
-          _mm256_add_pd(_mm256_add_pd(distanceSquaredCoMX, distanceSquaredCoMY), distanceSquaredCoMZ);
-
-      const __m256d cutoffMask = _mm256_cmp_pd(distanceSquaredCoM, _cutoffSquared, _CMP_LE_OS);
-      const __m256d dummyMask =
-          _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB), _zero, _CMP_NEQ_OS);  // Assuming that dummy = 0
-      const __m256d totalMask = _mm256_and_pd(cutoffMask, dummyMask);
-
-      if (remainderCase) {
-        _mm256_maskstore_pd((&molMask[molB]), remainderMask, totalMask);
-      } else {
-        _mm256_storeu_pd((&molMask[molB]), totalMask);
-      }
+      // mask molecules beyond cutoff or if molecule is a dummy
+      const bool condition = distanceSquaredCoM <= _cutoffSquaredAoS and ownedState != autopas::OwnershipState::dummy;
+      unsigned long long binaryValue = 0xFFFFFFFFFFFFFFFF;  // Dark technology
+      molMask.push_back(condition ? *(double *)&binaryValue : 0.);
     }
 
     // Build the site mask
@@ -1197,17 +1177,17 @@ class LJMultisiteFunctorAVX
       const __m256d exactPrimeSitePositionY = _mm256_add_pd(rotatedPrimeSitePositionY, yposA);
       const __m256d exactPrimeSitePositionZ = _mm256_add_pd(rotatedPrimeSitePositionZ, zposA);
 
-      const double *mixingPtr = (_PPLibrary->getMixingDataPtr(siteTypes[primeSite], 0));
+      const double *mixingPtr = _PPLibrary->getMixingDataPtr(siteTypesPrime[primeSite], 0);
 
-      for (size_t neighborSite = 0; neighborSite < siteCountNeighbors; ++neighborSite) {
+      for (size_t neighborSite = 0; neighborSite < siteCountNeighbors; neighborSite += vecLength) {
         const size_t rest = siteCountNeighbors - neighborSite;
         const bool remainderCase = rest < vecLength;
         __m256i remainderMask = _one;
         if (remainderCase) {
           remainderMask = _masks[rest - 1];
         }
-        const __m256d localMask = remainderCase ? _mm256_maskload_pd(&siteMask[neighborSite], remainderMask)
-                                                : _mm256_loadu_pd(&siteMask[neighborSite]);
+        __m256d localMask = remainderCase ? _mm256_maskload_pd(&siteMask[neighborSite], remainderMask)
+                                          : _mm256_loadu_pd(&siteMask[neighborSite]);
         if (_mm256_movemask_pd(localMask) == 0) {
           continue;
         }
@@ -1329,29 +1309,19 @@ class LJMultisiteFunctorAVX
         }
       }
     }
-    // Load old force and torque
-    __m256d forceAX = _mm256_loadu_pd(&fxptr[indexFirst]);
-    __m256d forceAY = _mm256_loadu_pd(&fyptr[indexFirst]);
-    __m256d forceAZ = _mm256_loadu_pd(&fzptr[indexFirst]);
-    __m256d torqueAX = _mm256_loadu_pd(&txptr[indexFirst]);
-    __m256d torqueAY = _mm256_loadu_pd(&typtr[indexFirst]);
-    __m256d torqueAZ = _mm256_loadu_pd(&tzptr[indexFirst]);
+    const double sumfx = horizontalSum(forceSumX);
+    const double sumfy = horizontalSum(forceSumY);
+    const double sumfz = horizontalSum(forceSumZ);
+    const double sumtx = horizontalSum(torqueSumX);
+    const double sumty = horizontalSum(torqueSumY);
+    const double sumtz = horizontalSum(torqueSumZ);
 
-    // Add new force and torque
-    forceAX = _mm256_add_pd(forceAX, forceSumX);
-    forceAY = _mm256_add_pd(forceAY, forceSumY);
-    forceAZ = _mm256_add_pd(forceAZ, forceSumZ);
-    torqueAX = _mm256_add_pd(torqueAX, torqueSumX);
-    torqueAY = _mm256_add_pd(torqueAY, torqueSumY);
-    torqueAZ = _mm256_add_pd(torqueAZ, torqueSumZ);
-
-    // Store new force and torque
-    _mm256_storeu_pd(&fxptr[indexFirst], forceAX);
-    _mm256_storeu_pd(&fyptr[indexFirst], forceAY);
-    _mm256_storeu_pd(&fzptr[indexFirst], forceAZ);
-    _mm256_storeu_pd(&txptr[indexFirst], torqueAX);
-    _mm256_storeu_pd(&typtr[indexFirst], torqueAY);
-    _mm256_storeu_pd(&tzptr[indexFirst], torqueAZ);
+    fxptr[indexFirst] += sumfx;
+    fyptr[indexFirst] += sumfy;
+    fzptr[indexFirst] += sumfz;
+    txptr[indexFirst] += sumtx;
+    typtr[indexFirst] += sumty;
+    tzptr[indexFirst] += sumtz;
 
     // Reduce forces on individual neighbor sites to molecular forces & torques if newton3=true
     if constexpr (newton3) {

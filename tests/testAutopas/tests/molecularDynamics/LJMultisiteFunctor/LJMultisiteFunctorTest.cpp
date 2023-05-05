@@ -437,7 +437,7 @@ void LJMultisiteFunctorTest::testSoAVerletAgainstAoS(std::vector<autopas::Multis
       }
       auto displacement = autopas::utils::ArrayMath::sub(moleculesSoA[i].getR(), moleculesSoA[j].getR());
       double distanceSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
-      if (distanceSquared < cutoff * cutoff) {
+      if (distanceSquared <= cutoff * cutoff) {
         neighborLists[i].push_back(j);
         if constexpr (not newton3) {
           neighborLists[j].push_back(i);
@@ -711,7 +711,7 @@ TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACellPair){
 TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoAVerlet){
   using autopas::MultisiteMoleculeLJ;
 
-  const double cutoff = 3.1;
+  const double cutoff = 3.0;
 
   std::vector<autopas::MultisiteMoleculeLJ> molecules;
   ParticlePropertiesLibrary<double, size_t> PPL(cutoff);
@@ -720,20 +720,20 @@ TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoAVerlet){
   generateMolecules(&molecules);
 
   // N3L optimization disabled, global calculation disabled.
-  testSoAVerletAgainstAoS<false, false, false>(molecules,PPL,1.);
+  testSoAVerletAgainstAoS<false, false, false>(molecules,PPL,cutoff);
 
   // N3L optimization enabled, global calculation disabled.
-  testSoAVerletAgainstAoS<true, false, false>(molecules,PPL,1.);
+  testSoAVerletAgainstAoS<true, false, false>(molecules,PPL,cutoff);
 
   // N3L optimization disabled, global calculation enabled, apply shift disabled.
-  testSoAVerletAgainstAoS<false, true, false>(molecules,PPL,1.);
+  testSoAVerletAgainstAoS<false, true, false>(molecules,PPL,cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift disabled.
-  testSoAVerletAgainstAoS<true, true, false>(molecules,PPL,1.);
+  testSoAVerletAgainstAoS<true, true, false>(molecules,PPL,cutoff);
 
   // N3L optimization disabled, global calculation enabled, apply shift enabled.
-  testSoAVerletAgainstAoS<false, true, true>(molecules,PPL,1.);
+  testSoAVerletAgainstAoS<false, true, true>(molecules,PPL,cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift enabled.
-  testSoAVerletAgainstAoS<true, true, true>(molecules,PPL,1.);
+  testSoAVerletAgainstAoS<true, true, true>(molecules,PPL,cutoff);
 }
