@@ -21,10 +21,11 @@ namespace TimeDiscretization {
  * @param globalForce Base force value to which every particle is reset.
  * @param fastParticlesThrow When true throws an exception if particles moved too far for verlet technique
  * (>skin/2/rebuildFrequency).
+ * @param fastParticleWarn When true prints console warning if particles moved too far for verlet technique
  */
 void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
-                        const std::array<double, 3> &globalForce, bool fastParticlesThrow);
+                        const std::array<double, 3> &globalForce, bool fastParticlesThrow, bool fastParticleWarn);
 
 /**
  * Calculate and update the velocity for every particle using the the Störmer-Verlet Algorithm.

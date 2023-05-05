@@ -14,7 +14,7 @@
 namespace TimeDiscretization {
 void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
-                        const std::array<double, 3> &globalForce, bool fastParticlesThrow) {
+                        const std::array<double, 3> &globalForce, bool fastParticlesThrow, bool fastParticleWarn) {
   using autopas::utils::ArrayUtils::operator<<;
   using autopas::utils::ArrayMath::add;
   using autopas::utils::ArrayMath::dot;
@@ -40,18 +40,18 @@ void calculatePositions(autopas::AutoPas<ParticleType> &autoPasContainer,
     // sanity check that particles are not too fast for the Verlet skin technique.
     // If this condition is violated once this is not necessarily an error. Only if the total distance traveled over
     // the whole rebuild frequency is farther than the skin we lose interactions.
-    /*
-    const auto distanceMovedSquared = dot(displacement, displacement);
-    if (distanceMovedSquared > maxAllowedDistanceMovedSquared) {
+    if (fastParticleWarn) {
+      const auto distanceMovedSquared = dot(displacement, displacement);
+      if (distanceMovedSquared > maxAllowedDistanceMovedSquared) {
 #pragma omp critical
-      std::cerr << "A particle moved farther than verletSkinPerTimestep/2: " << std::sqrt(distanceMovedSquared) << " > "
-                << autoPasContainer.getVerletSkinPerTimestep() << "/2 = " << maxAllowedDistanceMoved << "\n"
-                << *iter << "\nNew Position: " << add(iter->getR(), displacement) << std::endl;
-      if (fastParticlesThrow) {
-        throwException = true;
+        std::cerr << "A particle moved farther than verletSkinPerTimestep/2: " << std::sqrt(distanceMovedSquared)
+                  << " > " << autoPasContainer.getVerletSkinPerTimestep() << "/2 = " << maxAllowedDistanceMoved << "\n"
+                  << *iter << "\nNew Position: " << add(iter->getR(), displacement) << std::endl;
+        if (fastParticlesThrow) {
+          throwException = true;
+        }
       }
     }
-     */
     iter->addR(displacement);
   }
 

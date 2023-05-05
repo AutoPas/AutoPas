@@ -33,3 +33,4 @@ no-end-config                    :  true
 no-progress-bar                  :  false
 vtk-filename                     :  explodingLiquidDenseDynamicNew
 vtk-write-frequency              :  100
+fast-particle-warn               :  false

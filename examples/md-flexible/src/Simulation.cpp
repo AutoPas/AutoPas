@@ -360,7 +360,8 @@ void Simulation::updatePositions() {
   _timers.positionUpdate.start();
   TimeDiscretization::calculatePositions(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                                          _configuration.deltaT.value, _configuration.globalForce.value,
-                                         _configuration.fastParticlesThrow.value);
+                                         _configuration.fastParticlesThrow.value,
+                                         _configuration.fastParticleWarn.value);
   _timers.positionUpdate.stop();
 }
 

@@ -2,8 +2,8 @@ container                        :  [VerletLists]
 traversal                        :  [vl_list_iteration]
 data-layout                      :  [AoS]
 newton3                          :  [disabled]
-verlet-rebuild-frequency         :  24
-verlet-skin-radius-per-timestep  :  0.025
+verlet-rebuild-frequency         :  12
+verlet-skin-radius-per-timestep  :  0.05
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Mean-Value
 tuning-strategy                  :  predictive-tuning
@@ -33,3 +33,4 @@ no-end-config                    :  true
 no-progress-bar                  :  false
 vtk-filename                     :  explodingLiquidDenseStaticNew
 vtk-write-frequency              :  100
+fast-particle-warn              :  true

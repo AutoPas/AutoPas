@@ -474,6 +474,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.fastParticlesThrow.description;
 
         config.fastParticlesThrow.value = node[key].as<bool>();
+      } else if (key == config.fastParticleWarn.name) {
+        expected = "Boolean Value";
+        description = config.fastParticleWarn.description;
+
+        config.fastParticleWarn.value = node[key].as<bool>();
       } else if (key == config.verletClusterSize.name) {
         expected = "Unsigned Integer";
         description = config.verletClusterSize.description;

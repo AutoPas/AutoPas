@@ -41,7 +41,7 @@ class DynamicVLNeighborList : public VLNeighborListInterface<Particle> {
     size_t buckets = _aosNeighborList.bucket_count();
 
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel for reduction(|| : listInvalid) schedule(dynamic, 10)
+#pragma omp parallel for reduction(|| : listInvalid) schedule(dynamic)
 #endif
     for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
       auto endIter = _aosNeighborList.end(bucketId);
