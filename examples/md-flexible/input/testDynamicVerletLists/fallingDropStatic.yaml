@@ -1,6 +1,6 @@
 container                        :  [VerletLists]
-verlet-rebuild-frequency         :  24
-verlet-skin-radius-per-timestep  :  0.025
+verlet-rebuild-frequency         :  4
+verlet-skin-radius-per-timestep  :  0.075
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [AoS]
@@ -52,3 +52,4 @@ vtk-write-frequency              :  100000
 no-flops                         :  false
 no-end-config                    :  true
 log-level                        :  error
+fast-particle-warn               :  true

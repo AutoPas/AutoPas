@@ -1,4 +1,4 @@
-container                        :  [DynamicVerletLists]
+container                        :  [ExperimentalDynamicVerletLists]
 verlet-rebuild-frequency         :  100
 verlet-skin-radius-per-timestep  :  0.003
 verlet-cluster-size              :  4

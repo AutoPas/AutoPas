@@ -1,6 +1,6 @@
-container                        :  [DynamicVerletLists]
-verlet-rebuild-frequency         :  100
-verlet-skin-radius-per-timestep  :  0.003
+container                        :  [ExperimentalVerletLists]
+verlet-rebuild-frequency         :  4
+verlet-skin-radius-per-timestep  :  0.075
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [AoS]
@@ -47,9 +47,9 @@ Objects:
 #   deltaTemperature               :  0.1
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
-vtk-filename                     :  fallingDropDynamic
+vtk-filename                     :  fallingDropStatic
 vtk-write-frequency              :  100000
 no-flops                         :  false
 no-end-config                    :  true
 log-level                        :  error
-fast-particle-warn               :  false
+fast-particle-warn               :  true
