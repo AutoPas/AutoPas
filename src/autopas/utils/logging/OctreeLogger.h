@@ -356,8 +356,8 @@ class OctreeLogger {
    * @param node An octree node to obtain the box minimum and maximum coordinates from
    */
   static void outBoxCoordinatesJSON(FILE *out, OctreeNodeInterface<Particle> *node) {
-    std::array<double, 3> min = node->getBoxMin();
-    std::array<double, 3> max = node->getBoxMax();
+    const auto min = node->getBoxMin();
+    const auto max = node->getBoxMax();
     outLocationArrayJSON(out, min, max);
   }
 
