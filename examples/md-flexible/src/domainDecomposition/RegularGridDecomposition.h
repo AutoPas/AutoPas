@@ -181,12 +181,12 @@ class RegularGridDecomposition final : public DomainDecomposition {
   /**
    * The minimum coordinates of the global domain.
    */
-  const std::array<double, _dimensionCount> _globalBoxMin;
+  std::array<double, _dimensionCount> _globalBoxMin;
 
   /**
    * The maximum coordinates of the global domain.
    */
-  const std::array<double, _dimensionCount> _globalBoxMax;
+  std::array<double, _dimensionCount> _globalBoxMax;
 
   /**
    * Boundary condition types of all dimensions.
@@ -214,7 +214,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Indicator to MPI to view all communication dimensions as periodic.
    * @note For usage in MPI functions, the const needs to be casted away.
    */
-  const std::vector<int> _periods{_dimensionCount, 1};
+  std::vector<int> _periods{_dimensionCount, 1};
 
   /**
    * The MPI communicator containing all processes which own a subdomain in this decomposition.
