@@ -517,8 +517,6 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
   using namespace autopas::utils::ArrayMath::literals;
   using autopas::utils::ArrayUtils::static_cast_array;
 
-  const bool optimizeN3Behavior = false;
-
   // Sanity check. If this is violated feel free to add some logic here that adapts the number of locks.
   if (_bufferLocks.size() < particleBuffers.size()) {
     utils::ExceptionHandler::exception("Not enough locks for non-halo buffers! Num Locks: {}, Buffers: {}",
@@ -560,7 +558,7 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
         staticTypedContainerPtr->forEachInRegion(
             [&](auto &p2) {
               const auto lockCoords = static_cast_array<size_t>((p2.getR() - haloBoxMin) * interactionLengthInv);
-              if (optimizeN3Behavior) {
+              if (f->allowsMixedNewton3()) {
                 if (not p2.isHalo()) {
                   const std::lock_guard<std::mutex> lock(*_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
                   f->AoSFunctor(p1, p2, true);
@@ -595,7 +593,7 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
               // No need to apply anything to p1halo
               //   -> AoSFunctor(p1, p2, false) not needed as it neither adds force nor Upot (potential energy)
               //   -> newton3 argument needed for correct globals
-              if (optimizeN3Behavior) {
+              if (f->allowsMixedNewton3()) {
                 const std::lock_guard<std::mutex> lock(*_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
                 f->AoSFunctor(p2, p1halo, false);
               } else {
@@ -625,35 +623,8 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
   // Tasks would be better than locks but sanitizers seem to have problems
 #pragma omp parallel
 #endif
-  {
-#ifdef AUTOPAS_OPENMP
-    // No need to synchronize after this loop since we have locks
-#pragma omp for nowait
-#endif
-    for (size_t i = 0; i < particleBuffers.size(); ++i) {
-      auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
-      const std::lock_guard<std::mutex> lockA(*_bufferLocks[i]);
-      if (optimizeN3Behavior) {
-        f->SoAFunctorSingle(*particleBufferSoAA, true);
-      } else {
-        f->SoAFunctorSingle(*particleBufferSoAA, newton3);
-      }
-    }
-    if constexpr (newton3 && not optimizeN3Behavior) {
-#ifdef AUTOPAS_OPENMP
-      // collapse loops for better scheduling
-#pragma omp for collapse(2)
-#endif
-      for (size_t i = 0; i < particleBuffers.size(); ++i) {
-        for (size_t j = i + 1; j < particleBuffers.size(); ++j) {
-          auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
-          auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
-          const std::lock_guard<std::mutex> lockA(*_bufferLocks[i]);
-          const std::lock_guard<std::mutex> lockB(*_bufferLocks[j]);
-          f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, true);
-        }
-      }
-    } else {
+  if (f->allowsMixedNewton3()) {
+    {
 #ifdef AUTOPAS_OPENMP
       // collapse loops for better scheduling
 #pragma omp for collapse(2)
@@ -662,12 +633,56 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
         for (size_t jj = 0; jj < particleBuffers.size(); ++jj) {
           auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
           const auto j = (i + jj) % particleBuffers.size();
+          auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
           if (i == j) {
-            continue;
+            f->SoAFunctorSingle(*particleBufferSoAA, true);
           } else {
+            f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, false);
+          }
+        }
+      }
+    }
+  } else {
+    {
+#ifdef AUTOPAS_OPENMP
+      // No need to synchronize after this loop since we have locks
+#pragma omp for nowait
+#endif
+      for (size_t i = 0; i < particleBuffers.size(); ++i) {
+        auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
+        const std::lock_guard<std::mutex> lockA(*_bufferLocks[i]);
+        f->SoAFunctorSingle(*particleBufferSoAA, newton3);
+      }
+      if constexpr (newton3) {
+#ifdef AUTOPAS_OPENMP
+        // collapse loops for better scheduling
+#pragma omp for collapse(2)
+#endif
+        for (size_t i = 0; i < particleBuffers.size(); ++i) {
+          for (size_t j = i + 1; j < particleBuffers.size(); ++j) {
+            auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
             auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
             const std::lock_guard<std::mutex> lockA(*_bufferLocks[i]);
-            f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, false);
+            const std::lock_guard<std::mutex> lockB(*_bufferLocks[j]);
+            f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, true);
+          }
+        }
+      } else {
+#ifdef AUTOPAS_OPENMP
+        // collapse loops for better scheduling
+#pragma omp for collapse(2)
+#endif
+        for (size_t i = 0; i < particleBuffers.size(); ++i) {
+          for (size_t jj = 0; jj < particleBuffers.size(); ++jj) {
+            auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
+            const auto j = (i + jj) % particleBuffers.size();
+            if (i == j) {
+              continue;
+            } else {
+              auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
+              const std::lock_guard<std::mutex> lockA(*_bufferLocks[i]);
+              f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, false);
+            }
           }
         }
       }
@@ -691,7 +706,7 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
       auto &particleBufferSoA = particleBuffers[i]._particleSoABuffer;
       auto &haloBufferSoA =
           haloParticleBuffers[(i + interactionOffset) % haloParticleBuffers.size()]._particleSoABuffer;
-      if (optimizeN3Behavior) {
+      if (f->allowsMixedNewton3()) {
         f->SoAFunctorPair(particleBufferSoA, haloBufferSoA, false);
       } else {
         f->SoAFunctorPair(particleBufferSoA, haloBufferSoA, newton3);
