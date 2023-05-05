@@ -30,7 +30,7 @@ class DynamicVLNeighborList : public VLNeighborListInterface<Particle> {
   /**
    * @copydoc VLNeighborListInterface::getContainerType()
    */
-  [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::dynamicVerletLists; }
+  [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::experimentalDynamicVerletLists; }
 
   bool neighborListsAreValid() override {
 

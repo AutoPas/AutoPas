@@ -7,7 +7,7 @@ verlet-skin-radius-per-timestep  :  0.006
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Mean-Value
 tuning-strategy                  :  predictive-tuning
-tuning-interval                  :  6000explodingLiquidDynamic.yaml
+tuning-interval                  :  6000
 tuning-samples                   :  10
 functor                          :  Lennard-Jones-AVX2
 cutoff                           :  2

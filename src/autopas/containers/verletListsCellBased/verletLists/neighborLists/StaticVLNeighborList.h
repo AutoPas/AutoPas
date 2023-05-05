@@ -30,7 +30,7 @@ class StaticVLNeighborList : public VLNeighborListInterface<Particle> {
   /**
    * @copydoc VLNeighborListInterface::getContainerType()
    */
-  [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletLists; }
+  [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::experimentalVerletLists; }
 
   bool neighborListsAreValid() override {
     return true;
