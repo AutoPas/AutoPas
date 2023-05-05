@@ -17,8 +17,8 @@
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/VarVerletLists.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/neighborLists/asBuild/VerletNeighborListAsBuild.h"
-// #include "autopas/containers/verletListsCellBased/verletLists/DynamicVerletLists.h"
-// #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
+#include "autopas/containers/verletListsCellBased/verletLists/DynamicVerletLists.h"
+#include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/NewVerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
@@ -121,12 +121,24 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
       break;
     }
     case ContainerOption::verletLists: {
+      container = std::make_unique<VerletLists<Particle>>(
+          _boxMin, _boxMax, _cutoff, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency,
+          VerletLists<Particle>::BuildVerletListType::VerletAoS, containerInfo.cellSizeFactor);
+      break;
+    }
+    case ContainerOption::dynamicVerletLists: {
+      container = std::make_unique<DynamicVerletLists<Particle>>(
+          _boxMin, _boxMax, _cutoff, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency,
+          VerletLists<Particle>::BuildVerletListType::VerletAoS, containerInfo.cellSizeFactor);
+      break;
+    }
+    case ContainerOption::experimentalVerletLists: {
       container = std::make_unique<NewVerletLists<Particle, StaticVLNeighborList<Particle>>>(
           _boxMin, _boxMax, _cutoff, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency,
           NewVerletListHelpers<Particle>::VLBuildType::Value::aosBuild, containerInfo.cellSizeFactor);
       break;
     }
-    case ContainerOption::dynamicVerletLists: {
+    case ContainerOption::experimentalDynamicVerletLists: {
       container = std::make_unique<NewVerletLists<Particle, DynamicVLNeighborList<Particle>>>(
           _boxMin, _boxMax, _cutoff, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency,
           NewVerletListHelpers<Particle>::VLBuildType::Value::aosBuild, containerInfo.cellSizeFactor);

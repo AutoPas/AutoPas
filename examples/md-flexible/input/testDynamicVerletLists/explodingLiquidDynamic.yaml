@@ -1,4 +1,4 @@
-container                        :  [DynamicVerletLists]
+container                        :  [ExperimentalDynamicVerletLists]
 traversal                        :  [vl_list_iteration]
 data-layout                      :  [AoS]
 newton3                          :  [disabled]

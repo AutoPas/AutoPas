@@ -15,7 +15,7 @@
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/VarVerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/DynamicVerletLists.h"
-// #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
+#include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/NewVerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 
@@ -43,8 +43,12 @@ decltype(auto) withStaticContainerType(const std::shared_ptr<ParticleContainerIn
     case ContainerOption::linkedCellsReferences:
       return function(dynamic_cast<autopas::LinkedCellsReferences<Particle> *>(containerPtr));
     case ContainerOption::verletLists:
-      return function(dynamic_cast<autopas::NewVerletLists<Particle, StaticVLNeighborList<Particle>> *>(containerPtr));
+      return function(dynamic_cast<autopas::VerletLists<Particle> *>(containerPtr));
     case ContainerOption::dynamicVerletLists:
+      return function(dynamic_cast<autopas::DynamicVerletLists<Particle> *>(containerPtr));
+    case ContainerOption::experimentalVerletLists:
+      return function(dynamic_cast<autopas::NewVerletLists<Particle, StaticVLNeighborList<Particle>> *>(containerPtr));
+    case ContainerOption::experimentalDynamicVerletLists:
       return function(dynamic_cast<autopas::NewVerletLists<Particle, DynamicVLNeighborList<Particle>> *>(containerPtr));
     case ContainerOption::verletListsCells:
       return function(

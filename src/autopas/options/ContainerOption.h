@@ -58,6 +58,11 @@ class ContainerOption : public Option<ContainerOption> {
      * the particles' movements
      */
     dynamicVerletLists,
+
+    experimentalVerletLists,
+
+    experimentalDynamicVerletLists,
+
     /**
      * VerletListsCells : Similar to VerletLists but Lists are associated with the underlying cells to achieve location
      * information. Parallelization options similar to LinkedCells.
@@ -109,6 +114,8 @@ class ContainerOption : public Option<ContainerOption> {
         {ContainerOption::directSum, "DirectSum"},
         {ContainerOption::linkedCells, "LinkedCells"},
         {ContainerOption::linkedCellsReferences, "LinkedCellsReferences"},
+        {ContainerOption::experimentalDynamicVerletLists, "ExperimentalDynamicVerletLists"},
+        {ContainerOption::experimentalVerletLists, "ExperimentalVerletLists"},
         {ContainerOption::verletLists, "VerletLists"},
         {ContainerOption::dynamicVerletLists, "DynamicVerletLists"},
         {ContainerOption::verletListsCells, "VerletListsCells"},
