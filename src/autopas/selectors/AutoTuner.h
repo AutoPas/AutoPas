@@ -66,11 +66,11 @@ class AutoTuner {
    * @param rebuildFrequency The rebuild frequency this AutoPas instance uses.
    * @param outputSuffix Suffix for all output files produced by this class.
    */
-  AutoTuner(std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff, double verletSkinPerTimestep,
-            unsigned int verletClusterSize, std::unique_ptr<TuningStrategyInterface> tuningStrategy,
-            double MPITuningMaxDifferenceForBucket, double MPITuningWeightForMaxDensity,
-            SelectorStrategyOption selectorStrategy, unsigned int tuningInterval, unsigned int maxSamples,
-            unsigned int rebuildFrequency, const std::string &outputSuffix = "")
+  AutoTuner(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff,
+            double verletSkinPerTimestep, unsigned int verletClusterSize,
+            std::unique_ptr<TuningStrategyInterface> tuningStrategy, double MPITuningMaxDifferenceForBucket,
+            double MPITuningWeightForMaxDensity, SelectorStrategyOption selectorStrategy, unsigned int tuningInterval,
+            unsigned int maxSamples, unsigned int rebuildFrequency, const std::string &outputSuffix = "")
       : _selectorStrategy(selectorStrategy),
         _tuningStrategy(std::move(tuningStrategy)),
         _tuningInterval(tuningInterval),

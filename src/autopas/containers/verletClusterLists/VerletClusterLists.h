@@ -73,7 +73,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @param clusterSize Number of particles per cluster.
    * @param loadEstimator load estimation algorithm for balanced traversals.
    */
-  VerletClusterLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
+  VerletClusterLists(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff,
                      double skinPerTimestep, unsigned int rebuildFrequency, size_t clusterSize,
                      LoadEstimatorOption loadEstimator = LoadEstimatorOption::none)
       : ParticleContainerInterface<Particle>(),

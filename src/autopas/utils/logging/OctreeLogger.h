@@ -342,7 +342,7 @@ class OctreeLogger {
    * @param min The minimum coordinate
    * @param max The maximum coordinate
    */
-  static void outLocationArrayJSON(FILE *out, std::array<double, 3> min, std::array<double, 3> max) {
+  static void outLocationArrayJSON(FILE *out, const std::array<double, 3> &min, const std::array<double, 3> &max) {
     fputc('[', out);
     out3(out, min[0], min[1], min[2]);
     fputc(',', out);

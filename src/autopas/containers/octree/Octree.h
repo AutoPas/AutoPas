@@ -71,8 +71,8 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    * @param rebuildFrequency The Rebuild Frequency
    * @param cellSizeFactor The cell size factor
    */
-  Octree(std::array<double, 3> boxMin, std::array<double, 3> boxMax, const double cutoff, const double skinPerTimestep,
-         const unsigned int rebuildFrequency, const double cellSizeFactor)
+  Octree(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
+         const double skinPerTimestep, const unsigned int rebuildFrequency, const double cellSizeFactor)
       : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skinPerTimestep * rebuildFrequency) {
     using namespace autopas::utils::ArrayMath::literals;
 

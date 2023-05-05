@@ -43,7 +43,7 @@ class SPHParticle : public autopas::Particle {
    * @param v velocity of the particle
    * @param id id of the particle. This id should be unique
    */
-  SPHParticle(std::array<double, 3> r, std::array<double, 3> v, unsigned long id)
+  SPHParticle(const std::array<double, 3> &r, const std::array<double, 3> &v, unsigned long id)
       : autopas::Particle(r, v, id),
         _density(0.),
         _pressure(0.),
@@ -68,7 +68,8 @@ class SPHParticle : public autopas::Particle {
    * @param smth smoothing length of the particle
    * @param snds speed of sound (SouND Speed)
    */
-  SPHParticle(std::array<double, 3> r, std::array<double, 3> v, unsigned long id, double mass, double smth, double snds)
+  SPHParticle(const std::array<double, 3> &r, const std::array<double, 3> &v, unsigned long id, double mass, double smth,
+              double snds)
       : autopas::Particle(r, v, id),
         _density(0.),
         _pressure(0.),
@@ -268,13 +269,13 @@ class SPHParticle : public autopas::Particle {
    * Getter for velocity at half-time step (leapfrog)
    * @return
    */
-  std::array<double, 3> getVel_half() const { return _vel_half; }
+  const std::array<double, 3> &getVel_half() const { return _vel_half; }
 
   /**
    * Setter for velocity at half-time step (leapfrog)
    * @param vel_half
    */
-  void setVel_half(std::array<double, 3> vel_half) { SPHParticle::_vel_half = vel_half; }
+  void setVel_half(const std::array<double, 3> &vel_half) { SPHParticle::_vel_half = vel_half; }
 
   /**
    * Getter for energy at half-time step (leapfrog)
