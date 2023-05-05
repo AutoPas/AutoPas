@@ -1,13 +1,13 @@
-container                        :  [DynamicVerletLists]
+container                        :  [ExperimentalVerletLists]
 traversal                        :  [vl_list_iteration]
 data-layout                      :  [AoS]
 newton3                          :  [disabled]
-verlet-rebuild-frequency         :  100
-verlet-skin-radius-per-timestep  :  0.006
+verlet-rebuild-frequency         :  12
+verlet-skin-radius-per-timestep  :  0.05
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Mean-Value
 tuning-strategy                  :  predictive-tuning
-tuning-interval                  :  6000explodingLiquidDynamic.yaml
+tuning-interval                  :  6000
 tuning-samples                   :  10
 functor                          :  Lennard-Jones-AVX2
 cutoff                           :  2
@@ -17,9 +17,9 @@ cell-size                        :  [1]
 deltaT                           :  0.00182367
 iterations                       :  12000
 boundary-type                    :  [periodic, periodic, periodic]
-Objects:                         
+Objects:
   CubeClosestPacked:
-    0:  
+    0:
       box-length                 :  [15, 15, 15]
       bottomLeftCorner           :  [0, 27, 0]
       particle-spacing           :  1.
@@ -31,6 +31,6 @@ Objects:
 no-flops                         :  false
 no-end-config                    :  true
 no-progress-bar                  :  false
-vtk-filename                     :  explodingLiquidDenseDynamicNew
+vtk-filename                     :  explodingLiquidDenseStaticNew
 vtk-write-frequency              :  100
-fast-particle-warn               :  false
+fast-particle-warn              :  true
