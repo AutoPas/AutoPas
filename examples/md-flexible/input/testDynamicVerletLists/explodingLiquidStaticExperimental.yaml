@@ -2,7 +2,7 @@ container                        :  [ExperimentalVerletLists]
 traversal                        :  [vl_list_iteration]
 data-layout                      :  [AoS]
 newton3                          :  [disabled]
-verlet-rebuild-frequency         :  12
+verlet-rebuild-frequency         :  10
 verlet-skin-radius-per-timestep  :  0.05
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Mean-Value
@@ -31,6 +31,7 @@ Objects:
 no-flops                         :  false
 no-end-config                    :  true
 no-progress-bar                  :  false
-vtk-filename                     :  explodingLiquidDenseStaticNew
+vtk-filename                     :  explodingLiquidDenseStaticExperimental
 vtk-write-frequency              :  100
-fast-particle-warn              :  true
+fast-particle-warn               :  true
+fastParticlesThrow               :  true
