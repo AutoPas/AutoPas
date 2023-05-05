@@ -622,52 +622,10 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
 #ifdef AUTOPAS_OPENMP
   // Tasks would be better than locks but sanitizers seem to have problems
 #pragma omp parallel
+  {
 #endif
-  if (f->allowsMixedNewton3()) {
-    {
-#ifdef AUTOPAS_OPENMP
-      // collapse loops for better scheduling
-#pragma omp for collapse(2)
-#endif
-      for (size_t i = 0; i < particleBuffers.size(); ++i) {
-        for (size_t jj = 0; jj < particleBuffers.size(); ++jj) {
-          auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
-          const auto j = (i + jj) % particleBuffers.size();
-          auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
-          if (i == j) {
-            f->SoAFunctorSingle(*particleBufferSoAA, true);
-          } else {
-            f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, false);
-          }
-        }
-      }
-    }
-  } else {
-    {
-#ifdef AUTOPAS_OPENMP
-      // No need to synchronize after this loop since we have locks
-#pragma omp for nowait
-#endif
-      for (size_t i = 0; i < particleBuffers.size(); ++i) {
-        auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
-        const std::lock_guard<std::mutex> lockA(*_bufferLocks[i]);
-        f->SoAFunctorSingle(*particleBufferSoAA, newton3);
-      }
-      if constexpr (newton3) {
-#ifdef AUTOPAS_OPENMP
-        // collapse loops for better scheduling
-#pragma omp for collapse(2)
-#endif
-        for (size_t i = 0; i < particleBuffers.size(); ++i) {
-          for (size_t j = i + 1; j < particleBuffers.size(); ++j) {
-            auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
-            auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
-            const std::lock_guard<std::mutex> lockA(*_bufferLocks[i]);
-            const std::lock_guard<std::mutex> lockB(*_bufferLocks[j]);
-            f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, true);
-          }
-        }
-      } else {
+    if (f->allowsMixedNewton3()) {
+      {
 #ifdef AUTOPAS_OPENMP
         // collapse loops for better scheduling
 #pragma omp for collapse(2)
@@ -677,11 +635,55 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
             auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
             const auto j = (i + jj) % particleBuffers.size();
             if (i == j) {
-              continue;
+              f->SoAFunctorSingle(*particleBufferSoAA, true);
             } else {
               auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
-              const std::lock_guard<std::mutex> lockA(*_bufferLocks[i]);
               f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, false);
+            }
+          }
+        }
+      }
+    } else {
+      {
+#ifdef AUTOPAS_OPENMP
+        // No need to synchronize after this loop since we have locks
+#pragma omp for nowait
+#endif
+        for (size_t i = 0; i < particleBuffers.size(); ++i) {
+          auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
+          const std::lock_guard<std::mutex> lockA(*_bufferLocks[i]);
+          f->SoAFunctorSingle(*particleBufferSoAA, newton3);
+        }
+        if constexpr (newton3) {
+#ifdef AUTOPAS_OPENMP
+          // collapse loops for better scheduling
+#pragma omp for collapse(2)
+#endif
+          for (size_t i = 0; i < particleBuffers.size(); ++i) {
+            for (size_t j = i + 1; j < particleBuffers.size(); ++j) {
+              auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
+              auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
+              const std::lock_guard<std::mutex> lockA(*_bufferLocks[i]);
+              const std::lock_guard<std::mutex> lockB(*_bufferLocks[j]);
+              f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, true);
+            }
+          }
+        } else {
+#ifdef AUTOPAS_OPENMP
+          // collapse loops for better scheduling
+#pragma omp for collapse(2)
+#endif
+          for (size_t i = 0; i < particleBuffers.size(); ++i) {
+            for (size_t jj = 0; jj < particleBuffers.size(); ++jj) {
+              auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
+              const auto j = (i + jj) % particleBuffers.size();
+              if (i == j) {
+                continue;
+              } else {
+                auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
+                const std::lock_guard<std::mutex> lockA(*_bufferLocks[i]);
+                f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, false);
+              }
             }
           }
         }
@@ -722,9 +724,9 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
     f->SoAExtractor(buffer, buffer._particleSoABuffer, 0);
   }
 
-  AutoPasLog(TRACE, "Timer Buffers <-> Container (1+2): {}", timerBufferContainer.getTotalTime());
-  AutoPasLog(TRACE, "Timer PBuffers<-> PBuffer   (  3): {}", timerPBufferPBuffer.getTotalTime());
-  AutoPasLog(TRACE, "Timer PBuffers<-> HBuffer   (  4): {}", timerPBufferHBuffer.getTotalTime());
+  AutoPasLog(DEBUG, "Timer Buffers <-> Container (1+2): {}", timerBufferContainer.getTotalTime());
+  AutoPasLog(DEBUG, "Timer PBuffers<-> PBuffer   (  3): {}", timerPBufferPBuffer.getTotalTime());
+  AutoPasLog(DEBUG, "Timer PBuffers<-> HBuffer   (  4): {}", timerPBufferHBuffer.getTotalTime());
 
   // Note: haloParticleBuffer with itself is NOT needed, as interactions between halo particles are unneeded!
 }
@@ -789,8 +791,8 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
     ss << " Total: " << sum;
     return ss.str();
   };
-  AutoPasLog(TRACE, "particleBuffer     size : {}", bufferSizeListing(particleBuffer));
-  AutoPasLog(TRACE, "haloParticleBuffer size : {}", bufferSizeListing(haloParticleBuffer));
+  AutoPasLog(DEBUG, "particleBuffer     size : {}", bufferSizeListing(particleBuffer));
+  AutoPasLog(DEBUG, "haloParticleBuffer size : {}", bufferSizeListing(haloParticleBuffer));
   AutoPasLog(DEBUG, "Container::iteratePairwise took {} ns", timerIteratePairwise.getTotalTime());
   AutoPasLog(DEBUG, "RemainderTraversal         took {} ns", timerRemainderTraversal.getTotalTime());
   AutoPasLog(DEBUG, "RebuildNeighborLists       took {} ns", timerRebuild.getTotalTime());
