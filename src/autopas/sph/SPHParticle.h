@@ -68,8 +68,8 @@ class SPHParticle : public autopas::Particle {
    * @param smth smoothing length of the particle
    * @param snds speed of sound (SouND Speed)
    */
-  SPHParticle(const std::array<double, 3> &r, const std::array<double, 3> &v, unsigned long id, double mass, double smth,
-              double snds)
+  SPHParticle(const std::array<double, 3> &r, const std::array<double, 3> &v, unsigned long id, double mass,
+              double smth, double snds)
       : autopas::Particle(r, v, id),
         _density(0.),
         _pressure(0.),
