@@ -144,9 +144,15 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
           NewVerletListHelpers<Particle>::VLBuildType::Value::aosBuild, containerInfo.cellSizeFactor);
       break;
     }
-
     case ContainerOption::verletListsCells: {
       container = std::make_unique<VerletListsCells<Particle, VLCAllCellsNeighborList<Particle>>>(
+          _boxMin, _boxMax, _cutoff, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency,
+          containerInfo.cellSizeFactor, containerInfo.loadEstimator,
+          VerletListsCellsHelpers<Particle>::VLCBuildType::Value::soaBuild);
+      break;
+    }
+    case ContainerOption::dynamicVerletListsCells: {
+      container = std::make_unique<DynamicVerletListsCells<Particle, VLCAllCellsNeighborList<Particle>>>(
           _boxMin, _boxMax, _cutoff, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency,
           containerInfo.cellSizeFactor, containerInfo.loadEstimator,
           VerletListsCellsHelpers<Particle>::VLCBuildType::Value::soaBuild);
@@ -164,9 +170,15 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
           containerInfo.cellSizeFactor);
       break;
     }
-
     case ContainerOption::pairwiseVerletLists: {
       container = std::make_unique<VerletListsCells<Particle, VLCCellPairNeighborList<Particle>>>(
+          _boxMin, _boxMax, _cutoff, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency,
+          containerInfo.cellSizeFactor, containerInfo.loadEstimator,
+          VerletListsCellsHelpers<Particle>::VLCBuildType::Value::soaBuild);
+      break;
+    }
+    case ContainerOption::dynamicPairwiseVerletLists: {
+      container = std::make_unique<DynamicVerletListsCells<Particle, VLCCellPairNeighborList<Particle>>>(
           _boxMin, _boxMax, _cutoff, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency,
           containerInfo.cellSizeFactor, containerInfo.loadEstimator,
           VerletListsCellsHelpers<Particle>::VLCBuildType::Value::soaBuild);

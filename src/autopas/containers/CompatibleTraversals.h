@@ -145,6 +145,9 @@ static inline const std::set<TraversalOption> &allCompatibleTraversals(Container
     case ContainerOption::verletListsCells: {
       return allVLCCompatibleTraversals();
     }
+    case ContainerOption::dynamicVerletListsCells: {
+      return allVLCCompatibleTraversals();
+    }
     case ContainerOption::varVerletListsAsBuild: {
       return allVarVLAsBuildCompatibleTraversals();
     }
@@ -152,6 +155,9 @@ static inline const std::set<TraversalOption> &allCompatibleTraversals(Container
       return allRLCCompatibleTraversals();
     }
     case ContainerOption::pairwiseVerletLists: {
+      return allVLPCompatibleTraversals();
+    }
+    case ContainerOption::dynamicPairwiseVerletLists: {
       return allVLPCompatibleTraversals();
     }
     case ContainerOption::octree: {
