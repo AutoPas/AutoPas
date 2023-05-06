@@ -121,7 +121,6 @@ class LJMultisiteFunctorAVX
       _mm256_set_epi64x(0, 0, -1, -1),
       _mm256_set_epi64x(0, -1, -1, -1),
   };
-  const __m256i _ownedStateDummyMM256i{0x0};
   const __m256i _ownedStateOwnedMM256i{_mm256_set1_epi64x(static_cast<int64_t>(OwnershipState::owned))};
 
 #endif

@@ -7,8 +7,6 @@
 
 #include <gtest/gtest.h>
 
-#include <chrono>
-
 #define PARTICLES_PER_DIM 8
 #define AOS_VS_SOA_ACCURACY 1e-8
 
