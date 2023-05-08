@@ -50,7 +50,7 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
    * @param allowedCellSizeFactors
-   * @param allowedVerletRebuilFrequencies
+   * @param allowedVerletRebuildFrequencies
    * @param relativeOptimum
    * @param maxTuningIterationsWithoutTest
    * @param relativeRangeForBlacklist
@@ -65,13 +65,13 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
                    const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
                    const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                    const std::set<Newton3Option> &allowedNewton3Options,
-                   const std::set<int> &allowedVerletRebuilFrequencies, double relativeOptimum,
+                   const std::set<int> &allowedVerletRebuildFrequencies, double relativeOptimum,
                    unsigned int maxTuningIterationsWithoutTest, double relativeRangeForBlacklist,
                    unsigned int testsUntilFirstPrediction, ExtrapolationMethodOption extrapolationMethodOption,
                    const std::string &outputSuffix = "")
       : SetSearchSpaceBasedTuningStrategy(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
                                           allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options,
-                                          allowedVerletRebuilFrequencies),
+                                          allowedVerletRebuildFrequencies),
         _relativeOptimumRange(relativeOptimum),
         _maxTuningPhasesWithoutTest(maxTuningIterationsWithoutTest),
         _relativeBlacklistRange(relativeRangeForBlacklist),
