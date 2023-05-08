@@ -1078,7 +1078,7 @@ class LJMultisiteFunctor
                         rotatedSitePositions[site][2] * siteForceBy[siteIndex];
           tyBptr[mol] += rotatedSitePositions[site][2] * siteForceBx[siteIndex] -
                         rotatedSitePositions[site][0] * siteForceBz[siteIndex];
-          txBptr[mol] += rotatedSitePositions[site][0] * siteForceBy[siteIndex] -
+          tzBptr[mol] += rotatedSitePositions[site][0] * siteForceBy[siteIndex] -
                         rotatedSitePositions[site][1] * siteForceBx[siteIndex];
           ++siteIndex;
         }
@@ -1096,7 +1096,7 @@ class LJMultisiteFunctor
                          rotatedSitePositions[site][2] * siteForceBy[siteIndex];
           tyBptr[mol] += rotatedSitePositions[site][2] * siteForceBx[siteIndex] -
                          rotatedSitePositions[site][0] * siteForceBz[siteIndex];
-          txBptr[mol] += rotatedSitePositions[site][0] * siteForceBy[siteIndex] -
+          tzBptr[mol] += rotatedSitePositions[site][0] * siteForceBy[siteIndex] -
                          rotatedSitePositions[site][1] * siteForceBx[siteIndex];
           ++siteIndex;
         }
