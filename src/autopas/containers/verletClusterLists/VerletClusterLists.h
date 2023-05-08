@@ -945,7 +945,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @param towersPerDim The number of towers in each dimension.
    * @return the 1D index for the given tower grid coordinates of a tower.
    */
-  static size_t towerIndex2DTo1D(const size_t x, const size_t y, const std::array<size_t, 2> towersPerDim) {
+  static size_t towerIndex2DTo1D(const size_t x, const size_t y, const std::array<size_t, 2> &towersPerDim) {
     return x + y * towersPerDim[0];
   }
 
