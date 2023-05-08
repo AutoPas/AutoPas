@@ -69,9 +69,9 @@ class SlicedBalancedBasedTraversal
       std::array<unsigned long, 3> lowerCorner = {0, 0, 0};
       std::array<unsigned long, 3> upperCorner = this->_cellsPerDimension;
       // upper corner is inclusive, so subtract 1 from each coordinate
-      upperCorner[0]--;
-      upperCorner[1]--;
-      upperCorner[2]--;
+      --upperCorner[0];
+      --upperCorner[1];
+      --upperCorner[2];
       lowerCorner[maxDimension] = x;
       upperCorner[maxDimension] = x;
       if (not this->_loadEstimator) {
