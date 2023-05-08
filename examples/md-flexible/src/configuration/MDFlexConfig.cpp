@@ -310,7 +310,13 @@ std::string MDFlexConfig::to_string() const {
   for (auto [molId, molToSiteId] : molToSiteIdMap) {
     os << "  " << molId << ":" << endl;
     os << "    " << setw(valueOffset - 4) << left << moleculeToSiteIdStr     << ":  " << molToSiteId << endl;
-    //os << "    " << setw(valueOffset - 4) << left << moleculeToSitePosStr    << ":  " << molToSitePosMap.at(molId) << endl; // todo fix this
+    auto sitePosIter = molToSitePosMap.at(molId).begin();
+    os << "    " << setw(valueOffset - 4) << left << moleculeToSitePosStr    << ":  [" << *sitePosIter;
+    sitePosIter++;
+    for (; sitePosIter != molToSitePosMap.at(molId).end(); sitePosIter++) {
+      os << ", " << *sitePosIter;
+    }
+    os << "]" << endl;
     os << "    " << setw(valueOffset - 4) << left << momentOfInertiaStr << ":  " << massMap.value.at(molId) << endl;
   }
 #endif
@@ -455,10 +461,6 @@ void MDFlexConfig::addMolType(unsigned long molId, const std::vector<unsigned lo
 void MDFlexConfig::flushParticles() { _particles.clear(); }
 
 void MDFlexConfig::initializeParticlePropertiesLibrary() {
-  if (molToSiteIdMap.empty()) {
-    throw std::runtime_error("No properties found in particle properties library!");
-  }
-
   _particlePropertiesLibrary = std::make_shared<ParticlePropertiesLibraryType>(cutoff.value);
 
   // check size of site level vectors match
