@@ -232,7 +232,7 @@ class MDFlexConfig {
    */
   MDFlexOption<std::shared_ptr<autopas::NumberSet<int>>, __LINE__> verletRebuildFrequencies{
       std::make_shared<autopas::NumberSetFinite<int>>(std::set<int>{5, 10, 20}), "verlet-rebuild-frequencies", true,
-      "Number of iterations after which containers are rebuilt."};
+      "Set of possible rebuild frequencies i.e. the number of iterations after which containers are rebuilt."};
 
   /**
    * logFileName

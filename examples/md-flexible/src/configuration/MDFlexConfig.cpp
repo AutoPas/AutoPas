@@ -331,7 +331,7 @@ std::string MDFlexConfig::to_string() const {
 }
 
 void MDFlexConfig::calcSimulationBox() {
-  const double interactionLength =
+  const double maximumInteractionLength =
       cutoff.value + verletSkinRadiusPerTimestep.value * verletRebuildFrequencies.value->getMax();
 
   // helper function so that we can do the same for every object collection
@@ -359,12 +359,12 @@ void MDFlexConfig::calcSimulationBox() {
 
   // guarantee the box is at least of size interationLength
   for (int i = 0; i < 3; i++) {
-    // needed for 2D Simulation, that BoxLength >= interactionLength for all Dimensions
-    if (boxMax.value[i] - boxMin.value[i] < interactionLength) {
+    // needed for 2D Simulation, that BoxLength >= maximumInteractionLength for all Dimensions
+    if (boxMax.value[i] - boxMin.value[i] < maximumInteractionLength) {
       std::cout << "WARNING: Simulation box in dimension " << i
                 << " is shorter than interaction length and will be increased." << std::endl;
-      boxMin.value[i] -= interactionLength / 2;
-      boxMax.value[i] += interactionLength / 2;
+      boxMin.value[i] -= maximumInteractionLength / 2;
+      boxMax.value[i] += maximumInteractionLength / 2;
     }
   }
 }
