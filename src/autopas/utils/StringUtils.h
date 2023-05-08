@@ -251,6 +251,55 @@ inline std::set<int> parseInts(const std::string &intString) {
   return ints;
 }
 
+template <typename N>
+inline std::unique_ptr<autopas::NumberSet<N>> parseNumberSet<N>(const std::string &setString) {
+  std::string str = regexDoubleStr;
+  if (typeid(N) == typeid(int)) {
+    str = regexIntStr;
+  }
+  // try to match an interval x-y
+  std::regex regexInterval("("      // start of 1. capture
+                           + str +  // a double
+                           ")"      // end of 1. capture
+                           "\\s*"   // maybe whitespaces
+                           "-"      // a dash
+                           "\\s*"   // maybe more whitespaces
+                           "("      // start of 2. capture
+                           + str +  // a double
+                           ")"      // end of 2. capture
+  );
+  std::smatch matches;
+
+  std::set<N> values;
+  if (typeid(N) == typeid(int)) {
+    if (std::regex_match(setString, matches, regexInterval)) {
+      try {
+        std::set<int> numbers = std::set<int>({});
+        for (const auto &match : matches) {
+          numbers.insert(std::stoi(match.str()));
+        }
+        return std::make_unique<autopas::NumberSetFinite<int>>(std::set<int>({numbers}));
+      } catch (const std::exception &) {
+        // try parseDoubles instead
+      }
+    }
+    values = autopas::utils::StringUtils::parseInts(setString);
+  } else {
+    if (std::regex_match(setString, matches, regexInterval)) {
+      try {
+        // matchers has whole string as str(0) so start at 1
+        double min = stod(matches.str(1));
+        double max = stod(matches.str(2));
+        return std::make_unique<autopas::NumberInterval<N>>(min, max);
+      } catch (const std::exception &) {
+        // try parseDoubles instead
+      }
+    }
+    values = autopas::utils::StringUtils::parseDoubles(setString);
+  }
+  return std::make_unique<autopas::NumberSetFinite<N>>(values);
+}
+
 /**
  * Converts a string to a NumberSet<double>.
  *
