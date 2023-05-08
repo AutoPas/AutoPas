@@ -28,9 +28,9 @@ auto ContainerForEachTest::defaultInit(AutoPasT &autoPas, const autopas::Contain
   autoPas.init();
 
   auto haloBoxMin =
-      autopas::utils::ArrayMath::subScalar(autoPas.getBoxMin(), autoPas.getVerletSkin() + autoPas.getCutoff());
+      autopas::utils::ArrayMath::subScalar(autoPas.getBoxMin(), autoPas.getCurrentVerletSkin() + autoPas.getCutoff());
   auto haloBoxMax =
-      autopas::utils::ArrayMath::addScalar(autoPas.getBoxMax(), autoPas.getVerletSkin() + autoPas.getCutoff());
+      autopas::utils::ArrayMath::addScalar(autoPas.getBoxMax(), autoPas.getCurrentVerletSkin() + autoPas.getCutoff());
 
   return std::make_tuple(haloBoxMin, haloBoxMax);
 }

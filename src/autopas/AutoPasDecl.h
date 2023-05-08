@@ -437,8 +437,8 @@ class AutoPas {
    * This function only handles short-range interactions.
    * @return _verletSkin
    */
-  double getVerletSkin() {
-    double _verletSkin = AutoPas::_verletSkinPerTimestep * _allowedVerletRebuildFrequencies->getMedian();
+  double getCurrentVerletSkin() {
+    double _verletSkin = AutoPas::_verletSkinPerTimestep * getCurrentConfig().verletRebuildFrequency;
     return _verletSkin;
   };
 
@@ -549,18 +549,11 @@ class AutoPas {
    */
   void setAllowedVerletRebuildFrequencies(const NumberSet<int> &allowedVerletRebuildFrequencies) {
     if (allowedVerletRebuildFrequencies.getMin() < 1) {
-      AutoPasLog(error, "rebuildFrequenzy < 1");
-      utils::ExceptionHandler::exception("Error: rebuildFrequenzy < 1!");
+      AutoPasLog(error, "rebuildFrequency < 1");
+      utils::ExceptionHandler::exception("Error: rebuildFrequency < 1!");
     }
     AutoPas::_allowedVerletRebuildFrequencies = std::move(allowedVerletRebuildFrequencies.clone());
   }
-
-  /**
-   * Get verlet rebuild frequency (only relevant for VarVerletListsAsBuild, VerletClusterLists, VerletLists,
-   * VerletListsCells and PairwiseVerletLists).
-   * @return verletRebuildFrequency
-   */
-  int getVerletRebuildFrequency() { return _verletRebuildFrequency; }
 
   /**
    * Set allowed verlet rebuild frequency to one element (only relevant for VarVerletListsAsBuild, VerletClusterLists,
@@ -572,7 +565,7 @@ class AutoPas {
       AutoPasLog(error, "rebuildFrequenzy < 1");
       utils::ExceptionHandler::exception("Error: rebuildFrequenzy < 1!");
     }
-    _verletRebuildFrequency = verletRebuildFrequency;
+    setAllowedVerletRebuildFrequencies(NumberSetFinite<int>({verletRebuildFrequency}));
   }
 
   /**
@@ -1002,9 +995,7 @@ class AutoPas {
       std::make_unique<NumberSetFinite<double>>(std::set<double>({1.}))};
 
   std::unique_ptr<NumberSet<int>> _allowedVerletRebuildFrequencies{
-      std::make_unique<NumberSetFinite<int>>(std::set<int>({5}))};
-
-  int _verletRebuildFrequency = 5;
+      std::make_unique<NumberSetFinite<int>>(std::set<int>({15}))};
 
   /***
    * Load estimation algorithm to be used for efficient parallelisation (only relevant for LCSlicedBalancedTraversal and

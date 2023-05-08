@@ -337,7 +337,7 @@ void testSimulationLoop(testingTuple options) {
 
   doAssertions(autoPas, &functor, numParticles, __LINE__);
 
-  moveParticlesAndResetF({autoPas.getVerletSkin() / 6, 0., 0.});
+  moveParticlesAndResetF({autoPas.getCurrentVerletSkin() / 6, 0., 0.});
   addParticlePair({9.99, 1., 5.});
 
   // do second simulation loop
@@ -345,7 +345,7 @@ void testSimulationLoop(testingTuple options) {
 
   doAssertions(autoPas, &functor, numParticles, __LINE__);
 
-  moveParticlesAndResetF({-autoPas.getVerletSkin() / 6, 0., 0.});
+  moveParticlesAndResetF({-autoPas.getCurrentVerletSkin() / 6, 0., 0.});
   addParticlePair({9.99, 7., 5.});
   deleteIDs({2, 3});
 
@@ -355,7 +355,7 @@ void testSimulationLoop(testingTuple options) {
   doAssertions(autoPas, &functor, numParticles, __LINE__);
 
   // update positions a bit (outside of domain!) + reset F
-  moveParticlesAndResetF({autoPas.getVerletSkin() / 6, 0., 0.});
+  moveParticlesAndResetF({autoPas.getCurrentVerletSkin() / 6, 0., 0.});
 
   // do fourth simulation loop, tests rebuilding of container.
   doSimulationLoop(autoPas, &functor);

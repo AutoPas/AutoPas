@@ -37,7 +37,7 @@ auto fillContainerAroundBoundary(AutoPasT &autoPas, std::array<double, 3> boxOfI
   constexpr size_t numParticles1dTotal = 10;
 
   auto cutoff = autoPas.getCutoff();
-  auto skin = autoPas.getVerletSkin();
+  auto skin = autoPas.getCurrentVerletSkin();
 
   // generator function for critical coordinates (along  one dimension)
   auto generateInteresting1DPositions = [&](double min, double max) -> auto {

@@ -246,7 +246,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   void setCutoff(double cutoff) override final { _linkedCells.setCutoff(cutoff); }
 
   /**
-   * @copydoc autopas::ParticleContainerInterface::getVerletSkin()
+   * @copydoc autopas::ParticleContainerInterface::getCurrentVerletSkin()
    */
   [[nodiscard]] double getVerletSkin() const override final { return _linkedCells.getVerletSkin(); }
 
