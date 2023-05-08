@@ -629,8 +629,8 @@ class LJFunctor
       _upotSum /= 6.;
       _postProcessed = true;
 
-      AutoPasLog(DEBUG, "Final potential energy {}", _upotSum);
-      AutoPasLog(DEBUG, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
+      AutoPasLog(TRACE, "Final potential energy {}", _upotSum);
+      AutoPasLog(TRACE, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
     }
   }
 
