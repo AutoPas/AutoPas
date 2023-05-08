@@ -241,6 +241,9 @@ void LJMultisiteFunctorTest::singleSiteSanityCheck(autopas::MultisiteMoleculeLJ 
   for (size_t i = 0; i < 3; ++i) {
     EXPECT_NEAR(molB.getF()[i],molBSimple.getF()[i], 1e-13);
   }
+
+  EXPECT_NEAR(singleSiteFunctor.getPotentialEnergy(), multiSiteFunctor.getPotentialEnergy(), 1e-13);
+  EXPECT_NEAR(singleSiteFunctor.getVirial(), multiSiteFunctor.getVirial(), 1e-13);
 }
 
 template <bool newton3, bool calculateGlobals, bool applyShift>
