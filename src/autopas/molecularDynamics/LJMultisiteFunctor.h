@@ -206,7 +206,7 @@ class LJMultisiteFunctor
 
         const auto sigmaSquared = useMixing ? _PPLibrary->getMixingSigmaSquared(siteIdsA[i], siteIdsB[j]) : _sigmaSquared;
         const auto epsilon24 = useMixing ? _PPLibrary->getMixing24Epsilon(siteIdsA[i], siteIdsB[j]) : _epsilon24;
-        const auto shift6 = useMixing ? _PPLibrary->getMixingShift6(siteIdsA[i], siteIdsB[j]) : _shift6;
+        const auto shift6 = applyShift ? (useMixing ? _PPLibrary->getMixingShift6(siteIdsA[i], siteIdsB[j]) : _shift6) : 0;
 
         // clang-format off
         // Calculate potential between sites and thus force
@@ -237,8 +237,9 @@ class LJMultisiteFunctor
           // Here we calculate either the potential energy * 6 or the potential energy * 12.
           // For newton3, this potential energy contribution is distributed evenly to the two molecules.
           // For non-newton3, the full potential energy is added to the one molecule.
+          // I.e. double the potential energy will be added in this case.
           // The division by 6 is handled in endTraversal, as well as the division by two needed if newton3 is not used.
-          const auto potentialEnergy6 = newton3 ? (epsilon24 * lj12m6 + shift6) : 0.5 * (epsilon24 * lj12m6 + shift6);
+          const auto potentialEnergy6 = newton3 ? 0.5 * (epsilon24 * lj12m6 + shift6) : (epsilon24 * lj12m6 + shift6);
           const auto virial = newton3 ? utils::ArrayMath::mul(displacement, force) : utils::ArrayMath::mulScalar(utils::ArrayMath::mul(displacement, force),0.5);
 
           const auto threadNum = autopas_get_thread_num();

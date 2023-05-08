@@ -117,7 +117,9 @@ void LJMultisiteFunctorTest::testAoSForceCalculation(autopas::MultisiteMoleculeL
           const auto shift = shift6 / 6.;
           const auto epsilon4 = epsilon24 / 6.;
 
-          const auto potentialEnergy = epsilon4 * lj12m6 + shift;
+          // only add half the potential energy if no newton3 is used (because we are missing half the interaction between
+          // the two molecules).
+          const auto potentialEnergy = newton3 ? epsilon4 * lj12m6 + shift : 0.5 * (epsilon4 * lj12m6 + shift);
           const auto virialDimensionwiseContributions = newton3 ? autopas::utils::ArrayMath::mul(displacement, force) :
                                       autopas::utils::ArrayMath::mulScalar(autopas::utils::ArrayMath::mul(displacement, force),0.5);
 
@@ -146,30 +148,36 @@ void LJMultisiteFunctorTest::testAoSForceCalculation(autopas::MultisiteMoleculeL
   for (size_t i = 0; i < 3; ++i) {
     EXPECT_NEAR(molA.getF()[i], expectedForceA[i], 1e-13) << "molA: Unexpected force[" << i << "] = "
                                                                   << molA.getF()[i] << " != "
-                                                                  << expectedForceA[i] << " as expected.";
+                                                                  << expectedForceA[i] << " as expected with newton3 = "
+        << newton3 << ", calculateGlobals = " << calculateGlobals << ", and applyShift = " << applyShift << ".";
   }
   for (size_t i = 0; i < 3; ++i) {
     EXPECT_NEAR(molA.getTorque()[i], expectedTorqueA[i], 1e-13) << "molA: Unexpected force[" << i << "] = "
                                                                   << molA.getTorque()[i] << " != "
-                                                                  << expectedTorqueA[i] << " as expected.";
+                                                                  << expectedTorqueA[i] << " as expected with newton3 = "
+                                                                << newton3 << ", calculateGlobals = " << calculateGlobals << ", and applyShift = " << applyShift << ".";
   }
   for (size_t i = 0; i < 3; ++i) {
     EXPECT_NEAR(molB.getF()[i], expectedForceB[i], 1e-13) << "molB: Unexpected force[" << i << "] = "
                                                                   << molB.getF()[i] << " != "
-                                                                  << expectedForceB[i] << " as expected.";
+                                                                  << expectedForceB[i] << " as expected with newton3 = "
+                                                          << newton3 << ", calculateGlobals = " << calculateGlobals << ", and applyShift = " << applyShift << ".";
   }
   for (size_t i = 0; i < 3; ++i) {
     EXPECT_NEAR(molB.getTorque()[i], expectedTorqueB[i], 1e-13) << "molB: Unexpected force[" << i << "] = "
                                                                         << molB.getTorque()[i] << " != "
-                                                                        << expectedTorqueB[i] << " as expected.";
+                                                                        << expectedTorqueB[i] << " as expected with newton3 = "
+                                                                << newton3 << ", calculateGlobals = " << calculateGlobals << ", and applyShift = " << applyShift << ".";
   }
   if constexpr (calculateGlobals) {
     EXPECT_NEAR(functor.getPotentialEnergy(), expectedPotentialEnergySum, 1e-13) << "Unexpected potential energy = "
-    << functor.getPotentialEnergy() << " != " << expectedPotentialEnergySum << " as expected.";
+    << functor.getPotentialEnergy() << " != " << expectedPotentialEnergySum << " as expected with newton3 = "
+                                                                                 << newton3 << ", calculateGlobals = " << calculateGlobals << ", and applyShift = " << applyShift << ".";
 
     EXPECT_NEAR(functor.getVirial(), expectedVirialSum, 1e-13) << "Unexpected virial = "
                                                                 << functor.getVirial() << " != "
-                                                                << expectedVirialSum << " as expected.";
+                                                                << expectedVirialSum << " as expected with newton3 = "
+                                                               << newton3 << ", calculateGlobals = " << calculateGlobals << ", and applyShift = " << applyShift << ".";
   }
 }
 
@@ -501,7 +509,9 @@ void LJMultisiteFunctorTest::testSoAVerletAgainstAoS(std::vector<autopas::Multis
 TEST_F(LJMultisiteFunctorTest, AoSTest) {
   using autopas::MultisiteMoleculeLJ;
 
-  ParticlePropertiesLibrary PPL(1.);
+  const double cutoff = 2.5;
+
+  ParticlePropertiesLibrary PPL(cutoff);
   PPL.addSiteType(0,1.,1.,1.);
   PPL.addSiteType(1,0.5,0.5,0.5);
 
@@ -516,7 +526,7 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
   PPL.addMolType(0,{0},{{0.,0.,0.}},{1.,1.,1.});
 
   MultisiteMoleculeLJ mol1;
-  mol1.setR({0.1,0.,0.});
+  mol1.setR({1.,0.,0.});
   mol1.setQ({0., 0., 0., 1.});
   mol1.setF({0.,0.,0.});
   mol1.setTorque({0.,0.,0.});
@@ -524,7 +534,7 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
   PPL.addMolType(1,{0,0},{{0.,0.01,0.},{0.,-0.01,0.}},{1.,1.,1.});
 
   MultisiteMoleculeLJ mol2;
-  mol2.setR({0.,0.1,0.});
+  mol2.setR({0.,1.,0.});
   mol2.setQ({0., 0., 0., 1.});
   mol2.setF({0.,0.,0.});
   mol2.setTorque({0.,0.,0.});
@@ -540,7 +550,7 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
   PPL.addMolType(3,{0,0,0},{{-0.05,-0.05,0.},{0.,0.1,0.},{0.05,-0.05,0.}},{1.,1.,1.});
 
   MultisiteMoleculeLJ mol4;
-  mol4.setR({0.,0.,0.1});
+  mol4.setR({0.,0.,1.});
   mol4.setQ({0.7071067811865475, 0.7071067811865475, 0., 0.});
   mol4.setF({0.,0.,0.});
   mol4.setTorque({0.,0.,0.});
@@ -548,7 +558,7 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
   PPL.addMolType(4,{0,0,0},{{-0.05,-0.05,0.},{0.,0.1,0.},{0.05,-0.05,0.}},{1.,1.,1.});
 
   MultisiteMoleculeLJ mol5;
-  mol5.setR({2.,2.,2.});
+  mol5.setR({2.5,2.5,2.5});
   mol5.setQ({0., 0., 0., 1.});
   mol5.setF({0.,0.,0.});
   mol5.setTorque({0.,0.,0.});
@@ -556,7 +566,7 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
   PPL.addMolType(5,{0,0},{{0.,0.01,0.},{0.,-0.01,0.}},{1.,1.,1.});
 
   MultisiteMoleculeLJ mol6;
-  mol6.setR({0.,1.05,0.});
+  mol6.setR({0.,2.55,0.});
   mol6.setQ({0., 0., 0., 1.});
   mol6.setF({0.,0.,0.});
   mol6.setTorque({0.,0.,0.});
@@ -564,7 +574,7 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
   PPL.addMolType(6,{0,0},{{0.,0.1,0.},{0.,-0.1,0.}},{1.,1.,1.});
 
   MultisiteMoleculeLJ mol7;
-  mol7.setR({0.,0.95,0.});
+  mol7.setR({0.,2.45,0.});
   mol7.setQ({0., 0., 0., 1.});
   mol7.setF({0.,0.,0.});
   mol7.setTorque({0.,0.,0.});
@@ -583,28 +593,28 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
 
 
   // tests: 1 site <-> 2 site interaction
-  testSuiteAoSForceCalculation(mol0, mol1,PPL,1.);
+  testSuiteAoSForceCalculation(mol0, mol1,PPL,cutoff);
 
   // tests: 1 site <-> 2 site interaction, where sites are aligned such that all 3 sites are along the same line
-  testSuiteAoSForceCalculation(mol0, mol2,PPL,1.);
+  testSuiteAoSForceCalculation(mol0, mol2,PPL,cutoff);
 
   // tests: 2 site <-> 3 site interaction
-  testSuiteAoSForceCalculation(mol1, mol3,PPL,1.);
+  testSuiteAoSForceCalculation(mol1, mol3,PPL,cutoff);
 
   // tests: 3 site <-> 3 site interaction, where one has a nontrivial (needs rotating) quaternion
-  testSuiteAoSForceCalculation(mol3, mol4,PPL,1.);
+  testSuiteAoSForceCalculation(mol3, mol4,PPL,cutoff);
 
   // tests: 2 site <-> 2 site, where molecules are beyond cutoff
-  testSuiteAoSForceCalculation(mol1, mol5,PPL,1.);
+  testSuiteAoSForceCalculation(mol1, mol5,PPL,cutoff);
 
   // tests: 1 site <-> 2 site, where one site is beyond cutoff, the other within; and CoM beyond cutoff
-  testSuiteAoSForceCalculation(mol0, mol6,PPL,1.);
+  testSuiteAoSForceCalculation(mol0, mol6,PPL,cutoff);
 
   // tests: 1 site <-> 2 site, where one site is beyond cutoff, the other within; and CoM within cutoff
-  testSuiteAoSForceCalculation(mol0, mol7,PPL,1.);
+  testSuiteAoSForceCalculation(mol0, mol7,PPL,cutoff);
 
   // tests: 3 site <-> 3 site, with some different site types
-  testSuiteAoSForceCalculation(mol4, mol8,PPL,1.);
+  testSuiteAoSForceCalculation(mol4, mol8,PPL,cutoff);
 
 }
 
