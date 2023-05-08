@@ -266,10 +266,8 @@ void LJMultisiteFunctorTest::testSoACellAgainstAoS(std::vector<autopas::Multisit
     }
   }
 
-  // end traversal for functor and get globals
+  // end traversal for functor
   functor.endTraversal(newton3);
-  const auto potentialEnergyAoS = functor.getPotentialEnergy();
-  const auto virialAoS = functor.getVirial();
 
   // generate SoA Cell
   autopas::FullParticleCell<MultisiteMoleculeLJ> cellSoA;
@@ -290,10 +288,8 @@ void LJMultisiteFunctorTest::testSoACellAgainstAoS(std::vector<autopas::Multisit
 
   functor.SoAExtractor(cellSoA, cellSoA._particleSoABuffer, 0);
 
-  // end traversal for functor and get globals
+  // end traversal for functor
   functor.endTraversal(newton3);
-  const auto potentialEnergySoA = functor.getPotentialEnergy();
-  const auto virialSoA = functor.getVirial();
 
   // compare for consistency
   EXPECT_EQ(moleculesAoS.size(), cellSoA.numParticles());
@@ -311,6 +307,11 @@ void LJMultisiteFunctorTest::testSoACellAgainstAoS(std::vector<autopas::Multisit
   }
 
   if constexpr (calculateGlobals) {
+    const auto potentialEnergyAoS = functor.getPotentialEnergy();
+    const auto virialAoS = functor.getVirial();
+    const auto potentialEnergySoA = functor.getPotentialEnergy();
+    const auto virialSoA = functor.getVirial();
+
     EXPECT_NEAR(potentialEnergyAoS, potentialEnergySoA, AOS_VS_SOA_ACCURACY)
         << "Incorrect potential energy with newton3 = " << newton3 << " and applyShift = " << applyShift;
     EXPECT_NEAR(virialAoS, virialSoA, AOS_VS_SOA_ACCURACY)
