@@ -125,7 +125,7 @@ class ConfigurationAndRankIteratorHandler {
   [[nodiscard]] inline std::set<double>::iterator getCellSizeFactorIterator() const { return _cellSizeFactorIt; }
 
   /**
-   * Getter for the VerletRebuildFrequenzyIterator.
+   * Getter for the VerletRebuildFrequencyIterator.
    * @return
    */
   [[nodiscard]] inline std::set<int>::iterator getVerletRebuildFrequencyIterator() const {
