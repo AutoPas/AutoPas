@@ -201,14 +201,14 @@ void LJMultisiteFunctorTest::testSuiteAoSForceCalculation(autopas::MultisiteMole
   testAoSForceCalculation<true, true, true>(molA, molB, PPL, cutoff);
 }
 
-template<bool newton3, bool calculateGobals, bool applyShift>
+template<bool newton3, bool calculateGlobals, bool applyShift>
 void LJMultisiteFunctorTest::singleSiteSanityCheck(autopas::MultisiteMoleculeLJ molA, autopas::MultisiteMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
   using autopas::MoleculeLJ;
   using autopas::MoleculeLJ;
 
   // create functors
-  autopas::LJMultisiteFunctor<autopas::MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGobals, true> multiSiteFunctor(cutoff, PPL);
-  autopas::LJFunctor<autopas::MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGobals, true> singleSiteFunctor(cutoff, PPL);
+  autopas::LJMultisiteFunctor<autopas::MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true> multiSiteFunctor(cutoff, PPL);
+  autopas::LJFunctor<autopas::MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true> singleSiteFunctor(cutoff, PPL);
 
   // create single site versions of the molecules
   autopas::MoleculeLJ molASimple;
@@ -229,11 +229,17 @@ void LJMultisiteFunctorTest::singleSiteSanityCheck(autopas::MultisiteMoleculeLJ 
   molBSimple.setID(molB.getID());
   molBSimple.setOwnershipState(molB.getOwnershipState());
 
-  // apply multisite functor
+  // initialise traversals
+  singleSiteFunctor.initTraversal();
+  multiSiteFunctor.initTraversal();
+
+  // apply functors
+  singleSiteFunctor.AoSFunctor(molASimple, molBSimple, newton3);
   multiSiteFunctor.AoSFunctor(molA, molB, newton3);
 
-  // apply singlesite functor
-  singleSiteFunctor.AoSFunctor(molASimple, molBSimple, newton3);
+  // end traversals
+  singleSiteFunctor.endTraversal(newton3);
+  multiSiteFunctor.endTraversal(newton3);
 
   for (size_t i = 0; i < 3; ++i) {
     EXPECT_NEAR(molA.getF()[i],molASimple.getF()[i], 1e-13);
@@ -242,8 +248,10 @@ void LJMultisiteFunctorTest::singleSiteSanityCheck(autopas::MultisiteMoleculeLJ 
     EXPECT_NEAR(molB.getF()[i],molBSimple.getF()[i], 1e-13);
   }
 
-  EXPECT_NEAR(singleSiteFunctor.getPotentialEnergy(), multiSiteFunctor.getPotentialEnergy(), 1e-13);
-  EXPECT_NEAR(singleSiteFunctor.getVirial(), multiSiteFunctor.getVirial(), 1e-13);
+  if constexpr (calculateGlobals) {
+    EXPECT_NEAR(singleSiteFunctor.getPotentialEnergy(), multiSiteFunctor.getPotentialEnergy(), 1e-13);
+    EXPECT_NEAR(singleSiteFunctor.getVirial(), multiSiteFunctor.getVirial(), 1e-13);
+  }
 }
 
 template <bool newton3, bool calculateGlobals, bool applyShift>
@@ -627,7 +635,9 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
 TEST_F(LJMultisiteFunctorTest, singleSiteSanityCheck) {
   using autopas::MultisiteMoleculeLJ;
 
-  ParticlePropertiesLibrary PPL(1.);
+  const double cutoff = 3.;
+
+  ParticlePropertiesLibrary PPL(cutoff);
   PPL.addSiteType(0,1.,1.,1.);
   PPL.addSiteType(1,0.5,0.5,0.5);
 
@@ -650,22 +660,22 @@ TEST_F(LJMultisiteFunctorTest, singleSiteSanityCheck) {
   PPL.calculateMixingCoefficients();
 
   // N3L optimization disabled, global calculation disabled.
-  singleSiteSanityCheck<false, false, false>(mol0,mol1,PPL,1.);
+  singleSiteSanityCheck<false, false, false>(mol0,mol1,PPL,cutoff);
 
   // N3L optimization enabled, global calculation disabled.
-  singleSiteSanityCheck<true, false, false>(mol0,mol1,PPL,1.);
+  singleSiteSanityCheck<true, false, false>(mol0,mol1,PPL,cutoff);
 
   // N3L optimization disabled, global calculation enabled, apply shift disabled.
-  singleSiteSanityCheck<false, true, false>(mol0,mol1,PPL,1.);
+  singleSiteSanityCheck<false, true, false>(mol0,mol1,PPL,cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift disabled.
-  singleSiteSanityCheck<true, true, false>(mol0,mol1,PPL,1.);
+  singleSiteSanityCheck<true, true, false>(mol0,mol1,PPL,cutoff);
 
   // N3L optimization disabled, global calculation enabled, apply shift enabled.
-  singleSiteSanityCheck<false, true, true>(mol0,mol1,PPL,1.);
+  singleSiteSanityCheck<false, true, true>(mol0,mol1,PPL,cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift enabled.
-  singleSiteSanityCheck<true, true, true>(mol0,mol1,PPL,1.);
+  singleSiteSanityCheck<true, true, true>(mol0,mol1,PPL,cutoff);
 }
 
 TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACell){
@@ -682,13 +692,13 @@ TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACell){
   // Todo Add special AoS test for non-N3L, to test globals handling.
 
   // N3L optimization enabled, global calculation disabled.
-  testSoACellAgainstAoS<true, false, false>(molecules,PPL,1.);
+  testSoACellAgainstAoS<true, false, false>(molecules,PPL,cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift disabled.
-  testSoACellAgainstAoS<true, true, false>(molecules,PPL,1.);
+  testSoACellAgainstAoS<true, true, false>(molecules,PPL,cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift enabled.
-  testSoACellAgainstAoS<true, true, true>(molecules,PPL,1.);
+  testSoACellAgainstAoS<true, true, true>(molecules,PPL,cutoff);
 }
 
 TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACellPair){
@@ -705,22 +715,22 @@ TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACellPair){
   generateMolecules(&moleculesB, {0,0,9});
 
   // N3L optimization disabled, global calculation disabled.
-  testSoACellPairAgainstAoS<false, false, false>(moleculesA, moleculesB,PPL,1.);
+  testSoACellPairAgainstAoS<false, false, false>(moleculesA, moleculesB,PPL,cutoff);
 
   // N3L optimization enabled, global calculation disabled.
-  testSoACellPairAgainstAoS<true, false, false>(moleculesA, moleculesB,PPL,1.);
+  testSoACellPairAgainstAoS<true, false, false>(moleculesA, moleculesB,PPL,cutoff);
 
   // N3L optimization disabled, global calculation enabled, apply shift disabled.
-  testSoACellPairAgainstAoS<false, true, false>(moleculesA, moleculesB,PPL,1.);
+  testSoACellPairAgainstAoS<false, true, false>(moleculesA, moleculesB,PPL,cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift disabled.
-  testSoACellPairAgainstAoS<true, true, false>(moleculesA, moleculesB,PPL,1.);
+  testSoACellPairAgainstAoS<true, true, false>(moleculesA, moleculesB,PPL,cutoff);
 
   // N3L optimization disabled, global calculation enabled, apply shift enabled.
-  testSoACellPairAgainstAoS<false, true, true>(moleculesA, moleculesB,PPL,1.);
+  testSoACellPairAgainstAoS<false, true, true>(moleculesA, moleculesB,PPL,cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift enabled.
-  testSoACellPairAgainstAoS<true, true, true>(moleculesA, moleculesB,PPL,1.);
+  testSoACellPairAgainstAoS<true, true, true>(moleculesA, moleculesB,PPL,cutoff);
 }
 
 TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoAVerlet){
@@ -735,20 +745,20 @@ TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoAVerlet){
   generateMolecules(&molecules);
 
   // N3L optimization disabled, global calculation disabled.
-  testSoAVerletAgainstAoS<false, false, false>(molecules,PPL,1.);
+  testSoAVerletAgainstAoS<false, false, false>(molecules,PPL,cutoff);
 
   // N3L optimization enabled, global calculation disabled.
-  testSoAVerletAgainstAoS<true, false, false>(molecules,PPL,1.);
+  testSoAVerletAgainstAoS<true, false, false>(molecules,PPL,cutoff);
 
   // N3L optimization disabled, global calculation enabled, apply shift disabled.
-  testSoAVerletAgainstAoS<false, true, false>(molecules,PPL,1.);
+  testSoAVerletAgainstAoS<false, true, false>(molecules,PPL,cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift disabled.
-  testSoAVerletAgainstAoS<true, true, false>(molecules,PPL,1.);
+  testSoAVerletAgainstAoS<true, true, false>(molecules,PPL,cutoff);
 
   // N3L optimization disabled, global calculation enabled, apply shift enabled.
-  testSoAVerletAgainstAoS<false, true, true>(molecules,PPL,1.);
+  testSoAVerletAgainstAoS<false, true, true>(molecules,PPL,cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift enabled.
-  testSoAVerletAgainstAoS<true, true, true>(molecules,PPL,1.);
+  testSoAVerletAgainstAoS<true, true, true>(molecules,PPL,cutoff);
 }
