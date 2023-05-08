@@ -11,12 +11,10 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
                        const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
                        const std::array<double, 3> &globalForce, bool fastParticlesThrow) {
   using autopas::utils::ArrayUtils::operator<<;
-  using autopas::utils::ArrayMath::add;
   using autopas::utils::ArrayMath::dot;
-  using autopas::utils::ArrayMath::mulScalar;
+  using namespace autopas::utils::ArrayMath::literals;
 
-  const auto maxAllowedDistanceMoved =
-      autoPasContainer.getVerletSkin() / (2 * autoPasContainer.getVerletRebuildFrequency());
+  const auto maxAllowedDistanceMoved = autoPasContainer.getVerletSkinPerTimestep() / 2.;
   const auto maxAllowedDistanceMovedSquared = maxAllowedDistanceMoved * maxAllowedDistanceMoved;
 
   bool throwException = false;
@@ -30,9 +28,9 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
     auto f = iter->getF();
     iter->setOldF(f);
     iter->setF(globalForce);
-    v = mulScalar(v, deltaT);
-    f = mulScalar(f, (deltaT * deltaT / (2 * m)));
-    const auto displacement = add(v, f);
+    v *= deltaT;
+    f *= (deltaT * deltaT / (2 * m));
+    const auto displacement = v + f;
     // sanity check that particles are not too fast for the Verlet skin technique.
     // If this condition is violated once this is not necessarily an error. Only if the total distance traveled over
     // the whole rebuild frequency is farther than the skin we lose interactions.
@@ -41,7 +39,7 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
 #pragma omp critical
       std::cerr << "A particle moved farther than verletSkinPerTimestep/2: " << std::sqrt(distanceMovedSquared) << " > "
                 << autoPasContainer.getVerletSkinPerTimestep() << "/2 = " << maxAllowedDistanceMoved << "\n"
-                << *iter << "\nNew Position: " << add(iter->getR(), displacement) << std::endl;
+                << *iter << "\nNew Position: " << iter->getR() + displacement << std::endl;
       if (fastParticlesThrow) {
         throwException = true;
       }
@@ -57,11 +55,7 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
 void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPasContainer,
                                                            const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
                                                            const std::array<double, 3> &globalForce) {
- using autopas::utils::ArrayMath::add;
- using autopas::utils::ArrayMath::addScalar;
- using autopas::utils::ArrayMath::sub;
- using autopas::utils::ArrayMath::mul;
- using autopas::utils::ArrayMath::mulScalar;
+  using namespace autopas::utils::ArrayMath::literals;
  using autopas::utils::ArrayMath::div;
  using autopas::utils::ArrayMath::cross;
  using autopas::utils::ArrayMath::L2Norm;
@@ -90,30 +84,30 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
 
    const auto I = particlePropertiesLibrary.getMomentOfInertia(iter->getTypeId()); // moment of inertia
 
-   const auto angMomentumM = mul(I,angVelM); // equivalent to (19)
-   const auto derivativeAngMomentumM = sub(torqueM, cross(angVelM,angMomentumM)); // (20)
-   const auto angMomentumMHalfStep = add(angMomentumM, mulScalar(derivativeAngMomentumM, halfDeltaT)); // (21)
+   const auto angMomentumM = I * angVelM; // equivalent to (19)
+   const auto derivativeAngMomentumM = torqueM - cross(angVelM,angMomentumM); // (20)
+   const auto angMomentumMHalfStep = angMomentumM + derivativeAngMomentumM * halfDeltaT; // (21)
 
-   auto derivativeQHalfStep = mulScalar(qMul(q, div(angMomentumMHalfStep, I)), 0.5); // (22)
+   auto derivativeQHalfStep = qMul(q, div(angMomentumMHalfStep, I)) * 0.5; // (22)
 
-   auto qHalfStep = normalize(add(q, mulScalar(derivativeQHalfStep,halfDeltaT))); // (23)
+   auto qHalfStep = normalize(q + derivativeQHalfStep * halfDeltaT); // (23)
 
-   const auto angVelWHalfStep = add(angVelW, mulScalar(rotatePosition(q,div(torqueM, I)), halfDeltaT)); // equivalent to (24)
+   const auto angVelWHalfStep = angVelW + rotatePosition(q, torqueM / I) * halfDeltaT; // equivalent to (24)
 
    // (25) start
    // initialise qHalfStepOld to be outside tolerable distance from qHalfStep to satisfy while statement
    auto qHalfStepOld = qHalfStep;
    qHalfStepOld[0] += 2 * tol;
 
-   while (L2Norm(sub(qHalfStep,qHalfStepOld))>tol) {
+   while (L2Norm(qHalfStep - qHalfStepOld)>tol) {
      qHalfStepOld = qHalfStep;
      auto angVelMHalfStep = rotatePositionBackwards(qHalfStepOld,angVelWHalfStep); // equivalent to first two lines of (25)
-     derivativeQHalfStep = mulScalar(qMul(qHalfStepOld,angVelMHalfStep),0.5);
-     qHalfStep = normalize(add(q, mulScalar(derivativeQHalfStep, halfDeltaT)));
+     derivativeQHalfStep = qMul(qHalfStepOld,angVelMHalfStep) * 0.5;
+     qHalfStep = normalize(q + derivativeQHalfStep * halfDeltaT);
    }
    // (25) end
 
-   const auto qFullStep = normalize(add(q, mulScalar(derivativeQHalfStep, deltaT))); // (26)
+   const auto qFullStep = normalize(q + derivativeQHalfStep * deltaT); // (26)
 
    iter->setQ(qFullStep);
    iter->setAngularVel(angVelWHalfStep); // save angular velocity half step, to be used by calculateAngularVelocities
@@ -139,8 +133,7 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
 void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
   // helper declarations for operations with vector
-  using autopas::utils::ArrayMath::add;
-  using autopas::utils::ArrayMath::mulScalar;
+  using namespace autopas::utils::ArrayMath::literals;
 
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
@@ -149,7 +142,7 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
     const auto molecularMass = particlePropertiesLibrary.getMolMass(iter->getTypeId());
     const auto force = iter->getF();
     const auto oldForce = iter->getOldF();
-    const auto changeInVel = mulScalar((add(force, oldForce)), deltaT / (2 * molecularMass));
+    const auto changeInVel = (force + oldForce) * (deltaT / (2 * molecularMass));
     iter->addV(changeInVel);
   }
 }
@@ -157,8 +150,7 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
 
 void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
                                                                  const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
- using autopas::utils::ArrayMath::mulScalar;
- using autopas::utils::ArrayMath::div;
+  using namespace autopas::utils::ArrayMath::literals;
  using autopas::utils::quaternion::rotatePosition;
  using autopas::utils::quaternion::rotatePositionBackwards;
 
@@ -176,12 +168,12 @@ void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer
    const auto torqueM = rotatePositionBackwards(q, torqueW);
 
    // get I^-1 T in molecular-frame
-   const auto torqueDivMoIM = div(torqueM, I);
+   const auto torqueDivMoIM = torqueM / I;
 
    // convert to world-frame
    const auto torqueDivMoIW = rotatePosition(q, torqueDivMoIM);
 
-   iter->addAngularVel(mulScalar(torqueDivMoIW, 0.5*deltaT)); // (28)
+   iter->addAngularVel(torqueDivMoIW * 0.5*deltaT); // (28)
  }
 
 #else

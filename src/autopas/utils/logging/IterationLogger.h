@@ -44,12 +44,14 @@ class IterationLogger {
    * @param configuration
    * @param iteration
    * @param inTuningPhase
-   * @param timeIteratePairwise
-   * @param timeRebuildNeighborLists
-   * @param timeWholeIteration
+   * @param timeIteratePairwise Time for Container::iteratePairwise().
+   * @param timeRemainderTraversal Time for AutoTuner::doRemainderTraversal().
+   * @param timeRebuildNeighborLists Time for Container::rebuildNeighborLists().
+   * @param timeIteratePairwiseTotal Time for AutoTuner::iteratePairwise(). This is slightly more than the sum of the
+   * above. Additional steps, only included in this timer are e.g. Functor::initTraversal() and Functor::endTraversal().
    */
   void logIteration(const Configuration &configuration, size_t iteration, bool inTuningPhase, long timeIteratePairwise,
-                    long timeRebuildNeighborLists, long timeWholeIteration);
+                    long timeRemainderTraversal, long timeRebuildNeighborLists, long timeIteratePairwiseTotal);
 
  private:
   std::string _loggerName;

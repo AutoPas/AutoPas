@@ -22,6 +22,7 @@
 #include "autopas/selectors/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/StaticCellSelector.h"
+#include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/logging/IterationLogger.h"
 #include "autopas/utils/logging/TuningDataLogger.h"
@@ -83,9 +84,22 @@ class AutoTuner {
         _maxSamples(maxSamples),
         _samplesNotRebuildingNeighborLists(maxSamples),
         _iteration(0),
+        _bufferLocks(std::max(2, autopas::autopas_get_max_threads())),
         _iterationLogger(outputSuffix),
         _tuningResultLogger(outputSuffix),
         _tuningDataLogger(maxSamples, outputSuffix) {
+    using namespace autopas::utils::ArrayMath::literals;
+    using autopas::utils::ArrayMath::ceil;
+    using autopas::utils::ArrayUtils::static_cast_array;
+
+    // initialize locks needed for remainder traversal
+    const auto boxLength = boxMax - boxMin;
+    const auto interactionLengthInv = 1. / (cutoff + verletSkinPerTimestep * rebuildFrequency);
+    initSpacialLocks(boxLength, interactionLengthInv);
+    for (auto &lockPtr : _bufferLocks) {
+      lockPtr = std::make_unique<std::mutex>();
+    }
+
     if (_tuningStrategy->searchSpaceIsEmpty()) {
       autopas::utils::ExceptionHandler::exception("AutoTuner: Passed tuning strategy has an empty search space.");
     }
@@ -109,7 +123,14 @@ class AutoTuner {
    * @param boxMax
    */
   void resizeBox(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) {
+    using namespace autopas::utils::ArrayMath::literals;
+
     _containerSelector.resizeBox(boxMin, boxMax);
+    // The container might have changed sufficiently enough so that we need more or less spacial locks
+    const auto boxLength = boxMax - boxMin;
+    const auto container = getContainer();
+    const auto interactionLengthInv = 1. / (container->getInteractionLength());
+    initSpacialLocks(boxLength, interactionLengthInv);
   }
 
   /**
@@ -152,6 +173,8 @@ class AutoTuner {
    *  - Measurement of timings and calls to addTimeMeasurement() if necessary.
    *  - Calls to _iterationLogger if necessary.
    *
+   * @note Buffers need to have at least one (empty) cell. They must not be empty.
+   *
    * @tparam PairwiseFunctor
    * @param f Functor that describes the pair-potential.
    * @param doListRebuild Indicates whether or not the verlet lists should be rebuild.
@@ -160,8 +183,8 @@ class AutoTuner {
    * @return true if this was a tuning iteration.
    */
   template <class PairwiseFunctor>
-  bool iteratePairwise(PairwiseFunctor *f, bool doListRebuild, std::vector<std::vector<Particle>> &particleBuffers,
-                       std::vector<std::vector<Particle>> &haloParticleBuffers);
+  bool iteratePairwise(PairwiseFunctor *f, bool doListRebuild, std::vector<FullParticleCell<Particle>> &particleBuffers,
+                       std::vector<FullParticleCell<Particle>> &haloParticleBuffers);
 
   /**
    * Returns whether the configuration will be changed in the next iteration.
@@ -188,6 +211,35 @@ class AutoTuner {
   bool searchSpaceIsTrivial();
 
  private:
+  /**
+   * Initialize or update the spacial locks used during the remainder traversal.
+   * If the locks are already initialized but the container size changed, surplus locks will
+   * be deleted, new locks are allocated and locks that are still necessary are reused.
+   *
+   * @param boxLength
+   * @param interactionLengthInv
+   */
+  void initSpacialLocks(const std::array<double, 3> &boxLength, double interactionLengthInv) {
+    using namespace autopas::utils::ArrayMath::literals;
+    using autopas::utils::ArrayMath::ceil;
+    using autopas::utils::ArrayUtils::static_cast_array;
+
+    // one lock per interaction length + one for each halo region
+    const auto locksPerDim = static_cast_array<size_t>(ceil(boxLength * interactionLengthInv) + 2.);
+    _spacialLocks.resize(locksPerDim[0]);
+    for (auto &lockVecVec : _spacialLocks) {
+      lockVecVec.resize(locksPerDim[1]);
+      for (auto &lockVec : lockVecVec) {
+        lockVec.resize(locksPerDim[2]);
+        for (auto &lockPtr : lockVec) {
+          if (not lockPtr) {
+            lockPtr = std::make_unique<std::mutex>();
+          }
+        }
+      }
+    }
+  }
+
   /**
    * Total number of collected samples. This is the sum of the sizes of all sample vectors.
    * @return Sum of sizes of sample vectors.
@@ -241,8 +293,33 @@ class AutoTuner {
 
   template <class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, bool inTuningPhase>
   void iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool doListRebuild,
-                                     std::vector<std::vector<Particle>> &particleBuffer,
-                                     std::vector<std::vector<Particle>> &haloParticleBuffer);
+                                     std::vector<FullParticleCell<Particle>> &particleBuffer,
+                                     std::vector<FullParticleCell<Particle>> &haloParticleBuffer);
+
+  /**
+   * Performs the interactions ParticleContainer::iteratePairwise() did not cover.
+   *
+   * These interactions are:
+   *  - particleBuffer    <-> container
+   *  - haloParticleBuffer -> container
+   *  - particleBuffer    <-> particleBuffer
+   *  - haloParticleBuffer -> particleBuffer
+   *
+   * @note Buffers need to have at least one (empty) cell. They must not be empty.
+   *
+   * @tparam newton3
+   * @tparam T (Smart) pointer Type of the particle container.
+   * @tparam PairwiseFunctor
+   * @param f
+   * @param containerPtr (Smart) Pointer to the container
+   * @param particleBuffers vector of particle buffers. These particles' force vectors will be updated.
+   * @param haloParticleBuffers vector of halo particle buffers. These particles' force vectors will not necessarily be
+   * updated.
+   */
+  template <bool newton3, class T, class PairwiseFunctor>
+  void doRemainderTraversal(PairwiseFunctor *f, T containerPtr,
+                            std::vector<FullParticleCell<Particle>> &particleBuffers,
+                            std::vector<FullParticleCell<Particle>> &haloParticleBuffers);
 
   /**
    * Tune available algorithm configurations.
@@ -341,6 +418,13 @@ class AutoTuner {
    */
   autopas::utils::Timer _timerCalculateHomogeneity;
 
+  /**
+   * Locks for regions in the domain. Used for buffer <-> container interaction.
+   */
+  std::vector<std::vector<std::vector<std::unique_ptr<std::mutex>>>> _spacialLocks;
+
+  std::vector<std::unique_ptr<std::mutex>> _bufferLocks;
+
   IterationLogger _iterationLogger;
   TuningResultLogger _tuningResultLogger;
   TuningDataLogger _tuningDataLogger;
@@ -372,8 +456,8 @@ void AutoTuner<Particle>::forceRetune() {
 template <class Particle>
 template <class PairwiseFunctor>
 bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild,
-                                          std::vector<std::vector<Particle>> &particleBuffers,
-                                          std::vector<std::vector<Particle>> &haloParticleBuffers) {
+                                          std::vector<FullParticleCell<Particle>> &particleBuffers,
+                                          std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
   bool isTuning = false;
   // tune if :
   // - more than one config exists
@@ -451,106 +535,183 @@ bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild
   return isTuning;
 }
 
-/**
- * Performs the interactions ParticleContainer::iteratePairwise() did not cover.
- *
- * These interactions are:
- *  - particleBuffer    <-> container
- *  - haloParticleBuffer -> container
- *  - particleBuffer    <-> particleBuffer
- *  - haloParticleBuffer -> particleBuffer
- *
- * @tparam newton3
- * @tparam Particle
- * @tparam T (Smart) pointer Type of the particle container.
- * @tparam PairwiseFunctor
- * @param f
- * @param containerPtr (Smart) Pointer to the container
- * @param particleBuffers vector of particle buffers. These particles' force vectors will be updated.
- * @param haloParticleBuffers vector of halo particle buffers. These particles' force vectors will not necessarily be
- * updated.
- * @note If the buffers are replaced with actual cells, we could use the CellFunctor to simplify things and potentially
- * even use SoA.
- */
-template <bool newton3, class Particle, class T, class PairwiseFunctor>
-void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<std::vector<Particle>> &particleBuffers,
-                          std::vector<std::vector<Particle>> &haloParticleBuffers) {
-  const double cutoff = containerPtr->getCutoff();
-  for (int bufferId = 0; bufferId < particleBuffers.size(); ++bufferId) {
-    auto &particleBuffer = particleBuffers[bufferId];
-    auto &haloParticleBuffer = haloParticleBuffers[bufferId];
-    // 1. particleBuffer with all close particles in container
-    for (auto &&p : particleBuffer) {
-      auto pos = p.getR();
-      auto min = autopas::utils::ArrayMath::subScalar(pos, cutoff);
-      auto max = autopas::utils::ArrayMath::addScalar(pos, cutoff);
-      for (auto iter2 = containerPtr->getRegionIterator(min, max, IteratorBehavior::ownedOrHalo); iter2.isValid();
-           ++iter2) {
-        if (newton3) {
-          f->AoSFunctor(p, *iter2, true);
-        } else {
-          f->AoSFunctor(p, *iter2, false);
-          f->AoSFunctor(*iter2, p, false);
-        }
-      }
-    }
+template <class Particle>
+template <bool newton3, class T, class PairwiseFunctor>
+void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPtr,
+                                               std::vector<FullParticleCell<Particle>> &particleBuffers,
+                                               std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
+  using namespace autopas::utils::ArrayMath::literals;
+  using autopas::utils::ArrayUtils::static_cast_array;
 
-    // 2. haloParticleBuffer with owned, close particles in container
-    for (auto &&p : haloParticleBuffer) {
-      auto pos = p.getR();
-      auto min = autopas::utils::ArrayMath::subScalar(pos, cutoff);
-      auto max = autopas::utils::ArrayMath::addScalar(pos, cutoff);
-      for (auto iter2 = containerPtr->getRegionIterator(min, max, IteratorBehavior::owned); iter2.isValid(); ++iter2) {
-        if (newton3) {
-          f->AoSFunctor(p, *iter2, true);
-        } else {
-          // Here, we do not need to interact p with *iter2, because p is a halo particle and an AoSFunctor call with an
-          // halo particle as first argument has no effect if newton3 == false.
-          f->AoSFunctor(*iter2, p, false);
-        }
-      }
-    }
+  // Sanity check. If this is violated feel free to add some logic here that adapts the number of locks.
+  if (_bufferLocks.size() < particleBuffers.size()) {
+    utils::ExceptionHandler::exception("Not enough locks for non-halo buffers! Num Locks: {}, Buffers: {}",
+                                       _bufferLocks.size(), particleBuffers.size());
   }
 
+  const auto haloBoxMin = containerPtr->getBoxMin() - containerPtr->getInteractionLength();
+  const auto interactionLengthInv = 1. / containerPtr->getInteractionLength();
+
+  // Balance buffers. This makes processing them with static scheduling quite efficient.
+  // Also, if particles were not inserted in parallel, this enables us to process them in parallel now.
+  // Cost is at max O(2N) worst O(N) per buffer collection and negligible compared to interacting them.
+  auto cellToVec = [](auto &cell) -> std::vector<Particle> & { return cell._particles; };
+  utils::ArrayUtils::balanceVectors(particleBuffers, cellToVec);
+  utils::ArrayUtils::balanceVectors(haloParticleBuffers, cellToVec);
+
+  // only activate time measurements if it will actually be logged
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+  autopas::utils::Timer timerBufferContainer;
+  autopas::utils::Timer timerPBufferPBuffer;
+  autopas::utils::Timer timerPBufferHBuffer;
+
+  timerBufferContainer.start();
+#endif
+  withStaticContainerType(containerPtr, [&](auto staticTypedContainerPtr) {
+    const double cutoff = staticTypedContainerPtr->getCutoff();
+#ifdef AUTOPAS_OPENMP
+// one halo and particle buffer pair per thread
+#pragma omp parallel for schedule(static, 1), shared(f, _spacialLocks, haloBoxMin, interactionLengthInv)
+#endif
+    for (int bufferId = 0; bufferId < particleBuffers.size(); ++bufferId) {
+      auto &particleBuffer = particleBuffers[bufferId];
+      auto &haloParticleBuffer = haloParticleBuffers[bufferId];
+      // 1. particleBuffer with all close particles in container
+      for (auto &&p1 : particleBuffer) {
+        const auto pos = p1.getR();
+        const auto min = pos - cutoff;
+        const auto max = pos + cutoff;
+        staticTypedContainerPtr->forEachInRegion(
+            [&](auto &p2) {
+              const auto lockCoords = static_cast_array<size_t>((p2.getR() - haloBoxMin) * interactionLengthInv);
+              if constexpr (newton3) {
+                const std::lock_guard<std::mutex> lock(*_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
+                f->AoSFunctor(p1, p2, true);
+              } else {
+                f->AoSFunctor(p1, p2, false);
+                // no need to calculate force enacted on a halo
+                if (not p2.isHalo()) {
+                  const std::lock_guard<std::mutex> lock(*_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
+                  f->AoSFunctor(p2, p1, false);
+                }
+              }
+            },
+            min, max, IteratorBehavior::ownedOrHalo);
+      }
+
+      // 2. haloParticleBuffer with owned, close particles in container
+      for (auto &&p1halo : haloParticleBuffer) {
+        const auto pos = p1halo.getR();
+        const auto min = pos - cutoff;
+        const auto max = pos + cutoff;
+        staticTypedContainerPtr->forEachInRegion(
+            [&](auto &p2) {
+              const auto lockCoords = static_cast_array<size_t>((p2.getR() - haloBoxMin) * interactionLengthInv);
+              // No need to apply anything to p1halo
+              //   -> AoSFunctor(p1, p2, false) not needed as it neither adds force nor Upot (potential energy)
+              //   -> newton3 argument needed for correct globals
+              const std::lock_guard<std::mutex> lock(*_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
+              f->AoSFunctor(p2, p1halo, newton3);
+            },
+            min, max, IteratorBehavior::owned);
+      }
+    }
+  });
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+  timerBufferContainer.stop();
+  timerPBufferPBuffer.start();
+#endif
   // 3. particleBuffer with itself and all other buffers
-  for (size_t bufferIdOuter = 0; bufferIdOuter < particleBuffers.size(); ++bufferIdOuter) {
-    auto &particleBufferOuter = particleBuffers[bufferIdOuter];
-    for (size_t i = 0; i < particleBufferOuter.size(); ++i) {
-      auto &&p1 = particleBufferOuter[i];
-      for (size_t bufferIdInner = bufferIdOuter; bufferIdInner < particleBuffers.size(); ++bufferIdInner) {
-        auto &particleBufferInner = particleBuffers[bufferIdInner];
-        for (size_t j = bufferIdOuter == bufferIdInner ? i + 1 : 0; j < particleBufferInner.size(); ++j) {
-          auto &&p2 = particleBufferInner[j];
-          if (newton3) {
-            f->AoSFunctor(p1, p2, true);
+
+  // All (halo-)buffer interactions shall happen vectorized, hence, load all buffer data into SoAs
+  for (auto &buffer : particleBuffers) {
+    f->SoALoader(buffer, buffer._particleSoABuffer, 0);
+  }
+  for (auto &buffer : haloParticleBuffers) {
+    f->SoALoader(buffer, buffer._particleSoABuffer, 0);
+  }
+
+#ifdef AUTOPAS_OPENMP
+  // Tasks would be better than locks but sanitizers seem to have problems
+#pragma omp parallel
+#endif
+  {
+#ifdef AUTOPAS_OPENMP
+    // No need to synchronize after this loop since we have locks
+#pragma omp for nowait
+#endif
+    for (size_t i = 0; i < particleBuffers.size(); ++i) {
+      auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
+      const std::lock_guard<std::mutex> lockA(*_bufferLocks[i]);
+      f->SoAFunctorSingle(*particleBufferSoAA, newton3);
+    }
+    if constexpr (newton3) {
+#ifdef AUTOPAS_OPENMP
+      // collapse loops for better scheduling
+#pragma omp for collapse(2)
+#endif
+      for (size_t i = 0; i < particleBuffers.size(); ++i) {
+        for (size_t j = i + 1; j < particleBuffers.size(); ++j) {
+          auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
+          auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
+          const std::lock_guard<std::mutex> lockA(*_bufferLocks[i]);
+          const std::lock_guard<std::mutex> lockB(*_bufferLocks[j]);
+          f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, true);
+        }
+      }
+    } else {
+#ifdef AUTOPAS_OPENMP
+      // collapse loops for better scheduling
+#pragma omp for collapse(2)
+#endif
+      for (size_t i = 0; i < particleBuffers.size(); ++i) {
+        for (size_t jj = 0; jj < particleBuffers.size(); ++jj) {
+          auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
+          const auto j = (i + jj) % particleBuffers.size();
+          if (i == j) {
+            continue;
           } else {
-            f->AoSFunctor(p1, p2, false);
-            f->AoSFunctor(p2, p1, false);
+            auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
+            const std::lock_guard<std::mutex> lockA(*_bufferLocks[i]);
+            f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, false);
           }
         }
       }
     }
   }
-  // 4. particleBuffer with haloParticleBuffer
-  for (size_t bufferIdOuter = 0; bufferIdOuter < particleBuffers.size(); ++bufferIdOuter) {
-    auto &particleBufferOuter = particleBuffers[bufferIdOuter];
-    for (size_t i = 0; i < particleBufferOuter.size(); ++i) {
-      auto &&p1 = particleBufferOuter[i];
-      for (size_t bufferIdInner = 0; bufferIdInner < haloParticleBuffers.size(); ++bufferIdInner) {
-        auto &haloBufferInner = haloParticleBuffers[bufferIdInner];
-        for (size_t j = 0; j < haloBufferInner.size(); ++j) {
-          auto &&p2 = haloBufferInner[j];
-          if (newton3) {
-            f->AoSFunctor(p1, p2, true);
-          } else {
-            // Here, we do not need to interact p2 with p1, because p2 is a halo particle and an AoSFunctor call with an
-            // halo particle as first argument has no effect if newton3 == false.
-            f->AoSFunctor(p1, p2, false);
-          }
-        }
-      }
+
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+  timerPBufferPBuffer.stop();
+  timerPBufferHBuffer.start();
+#endif
+// 4. particleBuffer with haloParticleBuffer
+#ifdef AUTOPAS_OPENMP
+  // Here, phase / color based parallelism turned out to be more efficient than tasks
+#pragma omp parallel
+#endif
+  for (int interactionOffset = 0; interactionOffset < haloParticleBuffers.size(); ++interactionOffset) {
+#ifdef AUTOPAS_OPENMP
+#pragma omp for
+#endif
+    for (size_t i = 0; i < particleBuffers.size(); ++i) {
+      auto &particleBufferSoA = particleBuffers[i]._particleSoABuffer;
+      auto &haloBufferSoA =
+          haloParticleBuffers[(i + interactionOffset) % haloParticleBuffers.size()]._particleSoABuffer;
+      f->SoAFunctorPair(particleBufferSoA, haloBufferSoA, newton3);
     }
   }
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+  timerPBufferHBuffer.stop();
+#endif
+
+  // unpack particle SoAs. Halo data is not interesting
+  for (auto &buffer : particleBuffers) {
+    f->SoAExtractor(buffer, buffer._particleSoABuffer, 0);
+  }
+
+  AutoPasLog(TRACE, "Timer Buffers <-> Container (1+2): {}", timerBufferContainer.getTotalTime());
+  AutoPasLog(TRACE, "Timer PBuffers<-> PBuffer   (  3): {}", timerPBufferPBuffer.getTotalTime());
+  AutoPasLog(TRACE, "Timer PBuffers<-> HBuffer   (  4): {}", timerPBufferHBuffer.getTotalTime());
 
   // Note: haloParticleBuffer with itself is NOT needed, as interactions between halo particles are unneeded!
 }
@@ -558,10 +719,10 @@ void doRemainderTraversal(PairwiseFunctor *f, T containerPtr, std::vector<std::v
 template <class Particle>
 template <class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, bool inTuningPhase>
 void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool doListRebuild,
-                                                        std::vector<std::vector<Particle>> &particleBuffer,
-                                                        std::vector<std::vector<Particle>> &haloParticleBuffer) {
+                                                        std::vector<FullParticleCell<Particle>> &particleBuffer,
+                                                        std::vector<FullParticleCell<Particle>> &haloParticleBuffer) {
   auto containerPtr = getContainer();
-  AutoPasLog(debug, "Iterating with configuration: {} tuning: {}",
+  AutoPasLog(DEBUG, "Iterating with configuration: {} tuning: {}",
              _tuningStrategy->getCurrentConfiguration().toString(), inTuningPhase ? "true" : "false");
 
   auto traversal = autopas::utils::withStaticCellType<Particle>(
@@ -585,6 +746,7 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
   autopas::utils::Timer timerTotal;
   autopas::utils::Timer timerRebuild;
   autopas::utils::Timer timerIteratePairwise;
+  autopas::utils::Timer timerRemainderTraversal;
   timerTotal.start();
 
   f->initTraversal();
@@ -595,30 +757,42 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
   }
   timerIteratePairwise.start();
   containerPtr->iteratePairwise(traversal.get());
-
-  doRemainderTraversal<useNewton3>(f, containerPtr, particleBuffer, haloParticleBuffer);
   timerIteratePairwise.stop();
+
+  timerRemainderTraversal.start();
+  doRemainderTraversal<useNewton3>(f, containerPtr, particleBuffer, haloParticleBuffer);
+  timerRemainderTraversal.stop();
   f->endTraversal(useNewton3);
 
   timerTotal.stop();
 
-  if (doListRebuild) {
-    AutoPasLog(debug, "rebuildNeighborLists took {} nanoseconds", timerRebuild.getTotalTime());
-  }
-  // TODO: Fix misleading output
-  // actually this is the time for iteratePairwise + init/endTraversal + rebuildNeighborLists
-  // this containing all of this has legacy reasons so that old plot scripts work
-  AutoPasLog(debug, "IteratePairwise took {} nanoseconds", timerTotal.getTotalTime());
+  auto bufferSizeListing = [](const auto &buffers) -> std::string {
+    std::stringstream ss;
+    size_t sum = 0;
+    for (const auto &buffer : buffers) {
+      ss << buffer.numParticles() << ", ";
+      sum += buffer.numParticles();
+    }
+    ss << " Total: " << sum;
+    return ss.str();
+  };
+  AutoPasLog(TRACE, "particleBuffer     size : {}", bufferSizeListing(particleBuffer));
+  AutoPasLog(TRACE, "haloParticleBuffer size : {}", bufferSizeListing(haloParticleBuffer));
+  AutoPasLog(DEBUG, "Container::iteratePairwise took {} ns", timerIteratePairwise.getTotalTime());
+  AutoPasLog(DEBUG, "RemainderTraversal         took {} ns", timerRemainderTraversal.getTotalTime());
+  AutoPasLog(DEBUG, "RebuildNeighborLists       took {} ns", timerRebuild.getTotalTime());
+  AutoPasLog(DEBUG, "AutoTuner::iteratePairwise took {} ns", timerTotal.getTotalTime());
 
   _iterationLogger.logIteration(getCurrentConfig(), _iteration, inTuningPhase, timerIteratePairwise.getTotalTime(),
-                                timerRebuild.getTotalTime(), timerTotal.getTotalTime());
+                                timerRemainderTraversal.getTotalTime(), timerRebuild.getTotalTime(),
+                                timerTotal.getTotalTime());
 
   // if tuning execute with time measurements
   if (inTuningPhase) {
     if (f->isRelevantForTuning()) {
       addTimeMeasurement(timerTotal.getTotalTime(), doListRebuild);
     } else {
-      AutoPasLog(trace, "Skipping adding of time measurement because functor is not marked relevant.");
+      AutoPasLog(TRACE, "Skipping adding of time measurement because functor is not marked relevant.");
     }
   }
 }
@@ -652,7 +826,7 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
 #ifdef AUTOPAS_INTERNODE_TUNING
       MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-      AutoPasLog(debug, "Calculating homogeneities took added up {} ns on rank {}.",
+      AutoPasLog(DEBUG, "Calculating homogeneities took added up {} ns on rank {}.",
                  _timerCalculateHomogeneity.getTotalTime(), rank);
       _homogeneitiesOfLastTenIterations.erase(_homogeneitiesOfLastTenIterations.begin(),
                                               _homogeneitiesOfLastTenIterations.end());
@@ -669,7 +843,7 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
     // check if newton3 works with this functor and remove config if not
     if ((currentConfig.newton3 == Newton3Option::enabled and not pairwiseFunctor.allowsNewton3()) or
         (currentConfig.newton3 == Newton3Option::disabled and not pairwiseFunctor.allowsNonNewton3())) {
-      AutoPasLog(warn, "Configuration with newton 3 {} called with a functor that does not support this!",
+      AutoPasLog(WARN, "Configuration with newton 3 {} called with a functor that does not support this!",
                  currentConfig.newton3.to_string());
 
       _tuningStrategy->removeN3Option(currentConfig.newton3);
@@ -678,7 +852,7 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
         // we found a valid config!
         break;
       } else {
-        AutoPasLog(debug, "Skip not applicable configuration {}", currentConfig.toString());
+        AutoPasLog(DEBUG, "Skip not applicable configuration {}", currentConfig.toString());
         stillTuning = _tuningStrategy->tune(true);
       }
     }
@@ -692,10 +866,10 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
   tuningTimer.stop();
   // when a tuning result is found log it
   if (not stillTuning) {
-    AutoPasLog(debug, "Selected Configuration {}", getCurrentConfig().toString());
+    AutoPasLog(DEBUG, "Selected Configuration {}", getCurrentConfig().toString());
     _tuningResultLogger.logTuningResult(getCurrentConfig(), _iteration, tuningTimer.getTotalTime());
   }
-  AutoPasLog(debug, "Tuning took {} ns.", tuningTimer.getTotalTime());
+  AutoPasLog(DEBUG, "Tuning took {} ns.", tuningTimer.getTotalTime());
   _iterationLogger.logTimeTuning(tuningTimer.getTotalTime());
 
   selectCurrentContainer();
@@ -735,7 +909,7 @@ template <class Particle>
 void AutoTuner<Particle>::addTimeMeasurement(long time, bool neighborListRebuilt) {
   const auto &currentConfig = _tuningStrategy->getCurrentConfiguration();
   if (getCurrentNumSamples() < _maxSamples) {
-    AutoPasLog(trace, "Adding sample.");
+    AutoPasLog(TRACE, "Adding sample.");
     if (neighborListRebuilt) {
       _samplesRebuildingNeighborLists.push_back(time);
     } else {
@@ -768,7 +942,7 @@ void AutoTuner<Particle>::addTimeMeasurement(long time, bool neighborListRebuilt
         ss << utils::ArrayUtils::to_string(_samplesNotRebuildingNeighborLists, " ",
                                            {"Without rebuilding neighbor lists [ ", " ]"});
         ss << " Smoothed value: " << smoothedValue;
-        AutoPasLog(debug, "Collected times for  {}", ss.str());
+        AutoPasLog(DEBUG, "Collected times for  {}", ss.str());
       }
       _tuningDataLogger.logTuningData(currentConfig, _samplesRebuildingNeighborLists,
                                       _samplesNotRebuildingNeighborLists, _iteration, reducedValue, smoothedValue);

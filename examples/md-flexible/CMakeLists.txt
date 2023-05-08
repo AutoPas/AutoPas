@@ -74,7 +74,7 @@ add_test(
         --distribution-mean 5.0
         --distribution-stddeviation 2.0
         --data-layout soa
-        --functor lj
+        --functor "Lennard-Jones"
         --iterations 10
         --particle-generator gauss
         --particles-total 10
@@ -88,28 +88,6 @@ add_test(
         CONFIGURATIONS checkExamples
 )
 
-#stable, periodic particle grid tested with all configurations
-add_test(
-        NAME md-flexible.test-sim
-        COMMAND
-        md-flexible
-        --container all
-        --traversal all
-        --cutoff 1.5
-        --functor lj
-        --tuning-phases 1
-        --particle-generator grid
-        --particles-per-dimension 10
-        --particle-spacing 1.1225
-        --verlet-rebuild-frequency 4
-        --verlet-skin-radius-per-timestep 0.05
-        --boundary-type periodic
-        --deltaT 0.005
-        --no-end-config
-        --no-flops
-        --no-progress-bar
-        CONFIGURATIONS checkExamples
-)
 
 # The AVX example should only be tested if AVX is available.
 set(HAS_AVX true)
@@ -137,6 +115,7 @@ else ()
 endif ()
 
 if (HAS_AVX)
+    set(TEST_FUNCTOR "Lennard-Jones-AVX")
     message(STATUS "AVX detected. Adding AVX test.")
     #dangerous, as lc_c04_combined_SoA uses unaligned values.
     add_test(
@@ -145,7 +124,7 @@ if (HAS_AVX)
             md-flexible
             --no-end-config
             --no-flops
-            --functor lennard-jones-AVX2
+            --functor "${TEST_FUNCTOR}"
             --deltaT 0
             --particle-generator uniform
             --log-level debug
@@ -155,8 +134,33 @@ if (HAS_AVX)
             CONFIGURATIONS checkExamples
     )
 else ()
-    message(STATUS "AVX could not be detected. Not adding AVX test.")
+  message(STATUS "AVX could not be detected. Not testing the AVX Functor.")
+  set(TEST_FUNCTOR "Lennard-Jones")
 endif ()
+
+#stable, periodic particle grid tested with all configurations
+message("TEST_FUNCTOR = ${TEST_FUNCTOR}")
+add_test(
+        NAME md-flexible.test-sim
+        COMMAND
+        md-flexible
+        --container all
+        --traversal all
+        --cutoff 1.5
+        --functor "${TEST_FUNCTOR}"
+        --tuning-phases 1
+        --particle-generator grid
+        --particles-per-dimension 10
+        --particle-spacing 1.1225
+        --verlet-rebuild-frequency 4
+        --verlet-skin-radius-per-timestep 0.05
+        --boundary-type periodic
+        --deltaT 0.005
+        --no-end-config
+        --no-flops
+        --no-progress-bar
+        CONFIGURATIONS checkExamples
+)
 
 add_test(
         NAME md-flexMeasurePerf

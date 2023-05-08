@@ -466,17 +466,20 @@ TEST_F(TimeDiscretizationTest, testFastParticlesCheck) {
 
   initPPL(*PPL);
 
+  const auto deltaT = 0.1;
   // slow particle -> no exception
 #ifdef MD_FLEXIBLE_USE_MULTI_SITE
   autoPas->addParticle(ParticleType({0., 0., 0.}, {0.05, 0., 0.}, {0.7071067811865475, 0.7071067811865475, 0., 0.}, {0., 0., 0.}, 0));
 #else
   autoPas->addParticle(ParticleType({0., 0., 0.}, {0.05, 0., 0.}, 0));
 #endif
-  EXPECT_NO_THROW(TimeDiscretization::calculatePositionsAndResetForces(*autoPas, *PPL, 0.1, {0., 0., 0.}, true));
+  EXPECT_NO_THROW(TimeDiscretization::calculatePositionsAndResetForces(*autoPas, *PPL, deltaT, {0., 0., 0.}, true))
+      << "Updating the position of a slow particle should not throw an exception.";
   // fast particle -> exception
   autoPas->begin()->setV({1., 0., 0.});
-  EXPECT_THROW(TimeDiscretization::calculatePositionsAndResetForces(*autoPas, *PPL, 0.1, {0., 0., 0.}, true),
-               std::runtime_error);
+  EXPECT_THROW(TimeDiscretization::calculatePositionsAndResetForces(*autoPas, *PPL, deltaT, {0., 0., 0.}, true),
+               std::runtime_error)
+      << "The particle moved farther than the allowed change in position but no exception was thrown.";
 }
 
 // @todo: move tests to new class SimulationTest.cpp -> Issue #641

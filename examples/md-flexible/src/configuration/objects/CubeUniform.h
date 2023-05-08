@@ -50,7 +50,8 @@ class CubeUniform : public Object {
    * @return top right back corner of the cube.
    */
   [[nodiscard]] std::array<double, 3> getBoxMax() const override {
-    return autopas::utils::ArrayMath::add(_bottomLeftCorner, _boxLength);
+    using namespace autopas::utils::ArrayMath::literals;
+    return _bottomLeftCorner + _boxLength;
   }
 
   /**

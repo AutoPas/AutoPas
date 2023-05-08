@@ -23,9 +23,9 @@ target_link_libraries(
         spdlog::spdlog
         $<$<OR:$<BOOL:${AUTOPAS_INTERNODE_TUNING}>,$<BOOL:${MD_FLEXIBLE_USE_MPI}>>:MPI::MPI_CXX>
         $<$<BOOL:${AUTOPAS_INCLUDE_MPI}>:MPI::MPI_CXX>
-        Eigen3 # needs to be public as Math.h is used by LJMUlticenterFunctor used in md-flexible
+        Eigen3
     PRIVATE
-        # harmony only needed privately when building AutoPas.
+        # harmony are only needed privately when building AutoPas.
         harmony
 )
 

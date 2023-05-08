@@ -187,7 +187,7 @@ MDFlexConfig::MDFlexConfig(int argc, char **argv) {
   auto parserExitCode = MDFlexParser::parseInput(argc, argv, *this);
   if (parserExitCode != MDFlexParser::exitCodes::success) {
     if (parserExitCode == MDFlexParser::exitCodes::parsingError) {
-      std::cout << "Error when parsing configuration file." << std::endl;
+      std::cerr << "Error when parsing configuration file." << std::endl;
       exit(EXIT_FAILURE);
     }
     exit(EXIT_SUCCESS);
@@ -339,6 +339,7 @@ std::string MDFlexConfig::to_string() const {
   printObjectCollection(cubeGridObjects, cubeGridObjectsStr, os);
   printObjectCollection(cubeGaussObjects, cubeGaussObjectsStr, os);
   printObjectCollection(cubeUniformObjects, cubeUniformObjectsStr, os);
+  printObjectCollection(cubeClosestPackedObjects, cubeClosestPackedObjectsStr, os);
   printObjectCollection(sphereObjects, sphereObjectsStr, os);
 
   if (not globalForceIsZero()) {

@@ -45,10 +45,11 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle,
         _kernelFlops(0ul) {}
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
+    using namespace autopas::utils::ArrayMath::literals;
     if (i.isDummy() or j.isDummy()) {
       return;
     }
-    const auto displacement = utils::ArrayMath::sub(i.getR(), j.getR());
+    const auto displacement = i.getR() - j.getR();
     const auto distanceSquared = utils::ArrayMath::dot(displacement, displacement);
     _distanceCalculations.fetch_add(1, std::memory_order_relaxed);
 

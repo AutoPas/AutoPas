@@ -15,7 +15,6 @@
 #include <array>
 
 #include "ParticlePropertiesLibrary.h"
-#include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
@@ -119,6 +118,8 @@ class LJFunctorSVE
   }
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
+    using namespace autopas::utils::ArrayMath::literals;
+
     if (i.isDummy() or j.isDummy()) {
       return;
     }
@@ -132,7 +133,7 @@ class LJFunctorSVE
         shift6 = _PPLibrary->getMixingShift6(i.getTypeId(), j.getTypeId());
       }
     }
-    auto dr = utils::ArrayMath::sub(i.getR(), j.getR());
+    auto dr = i.getR() - j.getR();
     double dr2 = utils::ArrayMath::dot(dr, dr);
 
     if (dr2 > _cutoffSquaredAoS) {
@@ -145,37 +146,38 @@ class LJFunctorSVE
     double lj12 = lj6 * lj6;
     double lj12m6 = lj12 - lj6;
     double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
-    auto f = utils::ArrayMath::mulScalar(dr, fac);
+    auto f = dr * fac;
     i.addF(f);
     if (newton3) {
       // only if we use newton 3 here, we want to
       j.subF(f);
     }
     if (calculateGlobals) {
-      auto virial = utils::ArrayMath::mul(dr, f);
+      auto virial = dr * f;
       double potentialEnergy6 = epsilon24 * lj12m6 + shift6;
 
       const int threadnum = autopas_get_thread_num();
       // for non-newton3 the division is in the post-processing step.
       if (newton3) {
         potentialEnergy6 *= 0.5;
-        virial = utils::ArrayMath::mulScalar(virial, (double)0.5);
+        virial *= (double)0.5;
       }
       if (i.isOwned()) {
         _aosThreadData[threadnum].potentialEnergySum += potentialEnergy6;
-        _aosThreadData[threadnum].virialSum = utils::ArrayMath::add(_aosThreadData[threadnum].virialSum, virial);
+        _aosThreadData[threadnum].virialSum += virial;
       }
       // for non-newton3 the second particle will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
         _aosThreadData[threadnum].potentialEnergySum += potentialEnergy6;
-        _aosThreadData[threadnum].virialSum = utils::ArrayMath::add(_aosThreadData[threadnum].virialSum, virial);
+        _aosThreadData[threadnum].virialSum += virial;
       }
     }
   }
 
   /**
    * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3)
-   * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
+   * This functor will always do a newton3 like traversal of the soa.
+   * However, it still needs to know about newton3 to correctly add up the global values.
    */
   void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) final {
     if (newton3) {
@@ -766,6 +768,8 @@ class LJFunctorSVE
    * @param newton3
    */
   void endTraversal(bool newton3) final {
+    using namespace autopas::utils::ArrayMath::literals;
+
     if (_postProcessed) {
       throw utils::ExceptionHandler::AutoPasException(
           "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
@@ -774,13 +778,13 @@ class LJFunctorSVE
     if (calculateGlobals) {
       for (size_t i = 0; i < _aosThreadData.size(); ++i) {
         _potentialEnergySum += _aosThreadData[i].potentialEnergySum;
-        _virialSum = utils::ArrayMath::add(_virialSum, _aosThreadData[i].virialSum);
+        _virialSum += _aosThreadData[i].virialSum;
       }
       if (not newton3) {
         // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
         // here.
         _potentialEnergySum *= 0.5;
-        _virialSum = utils::ArrayMath::mulScalar(_virialSum, 0.5);
+        _virialSum *= 0.5;
       }
       // we have always calculated 6*potentialEnergy, so we divide by 6 here!
       _potentialEnergySum /= 6.;

@@ -15,6 +15,8 @@ extern template bool autopas::AutoPas<Molecule>::iteratePairwise(EmptyFunctor<Mo
 template <typename AutoPasT>
 auto ContainerReduceTest::defaultInit(AutoPasT &autoPas, autopas::ContainerOption &containerOption,
                                       double cellSizeFactor) {
+  using namespace autopas::utils::ArrayMath::literals;
+
   autoPas.setBoxMin({0., 0., 0.});
   autoPas.setBoxMax({10., 10., 10.});
   autoPas.setCutoff(1);
@@ -27,10 +29,8 @@ auto ContainerReduceTest::defaultInit(AutoPasT &autoPas, autopas::ContainerOptio
 
   autoPas.init();
 
-  auto haloBoxMin =
-      autopas::utils::ArrayMath::subScalar(autoPas.getBoxMin(), autoPas.getVerletSkin() + autoPas.getCutoff());
-  auto haloBoxMax =
-      autopas::utils::ArrayMath::addScalar(autoPas.getBoxMax(), autoPas.getVerletSkin() + autoPas.getCutoff());
+  auto haloBoxMin = autoPas.getBoxMin() - (autoPas.getVerletSkin() + autoPas.getCutoff());
+  auto haloBoxMax = autoPas.getBoxMax() + (autoPas.getVerletSkin() + autoPas.getCutoff());
 
   return std::make_tuple(haloBoxMin, haloBoxMax);
 }
@@ -65,20 +65,19 @@ std::vector<size_t> getExpectedIds(autopas::IteratorBehavior behavior, Ids owned
  * checking if the sum of both index lists equal.
  */
 TEST_P(ContainerReduceTest, testReduceInRegion) {
+  using namespace autopas::utils::ArrayMath::literals;
+
   auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc, behavior] = GetParam();
 
   // init autopas and fill it with some particles
   autopas::AutoPas<Molecule> autoPas;
   defaultInit(autoPas, containerOption, cellSizeFactor);
 
-  using ::autopas::utils::ArrayMath::add;
-  using ::autopas::utils::ArrayMath::mulScalar;
-  using ::autopas::utils::ArrayMath::sub;
-  auto domainLength = sub(autoPas.getBoxMax(), autoPas.getBoxMin());
+  auto domainLength = autoPas.getBoxMax() - autoPas.getBoxMin();
   // draw a box around the lower corner of the domain
-  auto searchBoxLengthHalf = mulScalar(domainLength, 0.3);
-  std::array<double, 3> searchBoxMin = sub(autoPas.getBoxMin(), searchBoxLengthHalf);
-  std::array<double, 3> searchBoxMax = add(autoPas.getBoxMin(), searchBoxLengthHalf);
+  auto searchBoxLengthHalf = domainLength * 0.3;
+  std::array<double, 3> searchBoxMin = autoPas.getBoxMin() - searchBoxLengthHalf;
+  std::array<double, 3> searchBoxMax = autoPas.getBoxMin() + searchBoxLengthHalf;
 
   auto [particleIDsOwned, particleIDsHalo, particleIDsInBoxOwned, particleIDsInBoxHalo] =
       ForEachTestHelper::fillContainerAroundBoundary(autoPas, searchBoxMin, searchBoxMax);
@@ -126,20 +125,19 @@ TEST_P(ContainerReduceTest, testReduceInRegion) {
  * checking if the sum of both index lists equal.
  */
 TEST_P(ContainerReduceTest, testReduce) {
+  using namespace autopas::utils::ArrayMath::literals;
+
   auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc, behavior] = GetParam();
 
   // init autopas and fill it with some particles
   autopas::AutoPas<Molecule> autoPas;
   defaultInit(autoPas, containerOption, cellSizeFactor);
 
-  using ::autopas::utils::ArrayMath::add;
-  using ::autopas::utils::ArrayMath::mulScalar;
-  using ::autopas::utils::ArrayMath::sub;
-  auto domainLength = sub(autoPas.getBoxMax(), autoPas.getBoxMin());
+  auto domainLength = autoPas.getBoxMax() - autoPas.getBoxMin();
   // draw a box around the lower corner of the domain
-  auto searchBoxLengthHalf = mulScalar(domainLength, 0.3);
-  std::array<double, 3> searchBoxMin = sub(autoPas.getBoxMin(), searchBoxLengthHalf);
-  std::array<double, 3> searchBoxMax = add(autoPas.getBoxMin(), searchBoxLengthHalf);
+  auto searchBoxLengthHalf = domainLength * 0.3;
+  std::array<double, 3> searchBoxMin = autoPas.getBoxMin() - searchBoxLengthHalf;
+  std::array<double, 3> searchBoxMax = autoPas.getBoxMin() + searchBoxLengthHalf;
 
   auto [particleIDsOwned, particleIDsHalo, particleIDsInBoxOwned, particleIDsInBoxHalo] =
       ForEachTestHelper::fillContainerAroundBoundary(autoPas, searchBoxMin, searchBoxMax);
@@ -187,20 +185,19 @@ TEST_P(ContainerReduceTest, testReduce) {
  * checking if the sum of both index lists equal.
  */
 TEST_P(ContainerReduceTest, testReduceInRegionParallel) {
+  using namespace autopas::utils::ArrayMath::literals;
+
   auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc, behavior] = GetParam();
 
   // init autopas and fill it with some particles
   autopas::AutoPas<Molecule> autoPas;
   defaultInit(autoPas, containerOption, cellSizeFactor);
 
-  using ::autopas::utils::ArrayMath::add;
-  using ::autopas::utils::ArrayMath::mulScalar;
-  using ::autopas::utils::ArrayMath::sub;
-  auto domainLength = sub(autoPas.getBoxMax(), autoPas.getBoxMin());
+  auto domainLength = autoPas.getBoxMax() - autoPas.getBoxMin();
   // draw a box around the lower corner of the domain
-  auto searchBoxLengthHalf = mulScalar(domainLength, 0.3);
-  std::array<double, 3> searchBoxMin = sub(autoPas.getBoxMin(), searchBoxLengthHalf);
-  std::array<double, 3> searchBoxMax = add(autoPas.getBoxMin(), searchBoxLengthHalf);
+  auto searchBoxLengthHalf = domainLength * 0.3;
+  std::array<double, 3> searchBoxMin = autoPas.getBoxMin() - searchBoxLengthHalf;
+  std::array<double, 3> searchBoxMax = autoPas.getBoxMin() + searchBoxLengthHalf;
 
   auto [particleIDsOwned, particleIDsHalo, particleIDsInBoxOwned, particleIDsInBoxHalo] =
       ForEachTestHelper::fillContainerAroundBoundary(autoPas, searchBoxMin, searchBoxMax);
@@ -248,20 +245,19 @@ TEST_P(ContainerReduceTest, testReduceInRegionParallel) {
  * checking if the sum of both index lists equal.
  */
 TEST_P(ContainerReduceTest, testReduceParallel) {
+  using namespace autopas::utils::ArrayMath::literals;
+
   auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc, behavior] = GetParam();
 
   // init autopas and fill it with some particles
   autopas::AutoPas<Molecule> autoPas;
   defaultInit(autoPas, containerOption, cellSizeFactor);
 
-  using ::autopas::utils::ArrayMath::add;
-  using ::autopas::utils::ArrayMath::mulScalar;
-  using ::autopas::utils::ArrayMath::sub;
-  auto domainLength = sub(autoPas.getBoxMax(), autoPas.getBoxMin());
+  auto domainLength = autoPas.getBoxMax() - autoPas.getBoxMin();
   // draw a box around the lower corner of the domain
-  auto searchBoxLengthHalf = mulScalar(domainLength, 0.3);
-  std::array<double, 3> searchBoxMin = sub(autoPas.getBoxMin(), searchBoxLengthHalf);
-  std::array<double, 3> searchBoxMax = add(autoPas.getBoxMin(), searchBoxLengthHalf);
+  auto searchBoxLengthHalf = domainLength * 0.3;
+  std::array<double, 3> searchBoxMin = autoPas.getBoxMin() - searchBoxLengthHalf;
+  std::array<double, 3> searchBoxMax = autoPas.getBoxMin() + searchBoxLengthHalf;
 
   auto [particleIDsOwned, particleIDsHalo, particleIDsInBoxOwned, particleIDsInBoxHalo] =
       ForEachTestHelper::fillContainerAroundBoundary(autoPas, searchBoxMin, searchBoxMax);

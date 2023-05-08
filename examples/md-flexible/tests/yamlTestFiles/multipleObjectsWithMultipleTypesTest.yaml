@@ -34,3 +34,13 @@ Objects:
       radius: 10
       particle-spacing: 1.5
       velocity: [0.,0.,0.]
+  CubeClosestPacked:
+    0:
+      particle-type              :  4
+      particle-epsilon           :  5.
+      particle-sigma             :  5.
+      particle-mass              :  5.
+      box-length                 :  [6.5, 7., 7.]
+      bottomLeftCorner           :  [0., 0., 20.]
+      particle-spacing           :  1
+      velocity                   :  [0., 0., 0.]

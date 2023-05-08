@@ -75,14 +75,15 @@ template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 auto calcTemperatureComponent(const AutoPasTemplate &autopas,
                               ParticlePropertiesLibraryTemplate &particlePropertiesLibrary) {
   using autopas::utils::ArrayMath::dot;
-  using autopas::utils::ArrayMath::mul;
+  using namespace autopas::utils::ArrayMath::literals;
+//  using autopas::utils::ArrayMath::mul;
 
   // map of: particle typeID -> kinetic energy times 2 for this type
   std::map<size_t, double> kineticEnergyMul2Map;
   // map of: particle typeID -> number of particles of this type
   std::map<size_t, size_t> numParticleMap;
 
-  for (int typeID = 0; typeID < particlePropertiesLibrary.getNumberRegisteredSiteTypes(); typeID++) {
+  for (const auto &typeID : particlePropertiesLibrary.getTypes()) {
     kineticEnergyMul2Map[typeID] = 0.;
     numParticleMap[typeID] = 0ul;
   }
@@ -94,7 +95,7 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
     // create aggregators for each thread
     std::map<size_t, double> kineticEnergyMul2MapThread;
     std::map<size_t, size_t> numParticleMapThread;
-    for (int typeID = 0; typeID < particlePropertiesLibrary.getNumberRegisteredSiteTypes(); typeID++) {
+    for (const auto &typeID : particlePropertiesLibrary.getTypes()) {
       kineticEnergyMul2MapThread[typeID] = 0.;
       numParticleMapThread[typeID] = 0ul;
     }
@@ -108,7 +109,7 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
           particlePropertiesLibrary.getMolMass(iter->getTypeId()) * dot(vel, vel);
 #if defined(MD_FLEXIBLE_USE_MULTI_SITE)
       kineticEnergyMul2MapThread.at(iter->getTypeId()) += dot(particlePropertiesLibrary.getMomentOfInertia(iter->getTypeId()),
-                                                              mul(angVel, angVel));
+                                                              angVel * angVel);
 #endif
       numParticleMapThread.at(iter->getTypeId())++;
     }
@@ -117,7 +118,7 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
 #pragma omp critical
 #endif
     {
-      for (int typeID = 0; typeID < particlePropertiesLibrary.getNumberRegisteredSiteTypes(); typeID++) {
+      for (const auto &typeID : particlePropertiesLibrary.getTypes()) {
         kineticEnergyMul2Map[typeID] += kineticEnergyMul2MapThread[typeID];
         numParticleMap[typeID] += numParticleMapThread[typeID];
       }
@@ -130,7 +131,7 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
   constexpr unsigned int degreesOfFreedom{3};
 #endif
 
-  for (int typeID = 0; typeID < particlePropertiesLibrary.getNumberRegisteredSiteTypes(); typeID++) {
+  for (const auto &typeID : particlePropertiesLibrary.getTypes()) {
     // workaround for MPICH: send and receive buffer must not be the same.
     autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &kineticEnergyMul2Map[typeID], 1, AUTOPAS_MPI_DOUBLE,
                                    AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
@@ -175,6 +176,7 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particlePropertiesLibrary,
                        const double targetTemperature) {
+  using namespace autopas::utils::ArrayMath::literals;
   // Generate map(s) of molecule type Id to scaling factors
   std::map<size_t, double> translationalVelocityScale;
 #if defined(MD_FLEXIBLE_USE_MULTI_SITE)
@@ -208,10 +210,10 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
     std::normal_distribution<double> normalDistribution{0, 1};
     for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
       const std::array<double, 3> normal3DVecTranslational = {normalDistribution(randomEngine), normalDistribution(randomEngine), normalDistribution(randomEngine)};
-      iter->addV(autopas::utils::ArrayMath::mulScalar(normal3DVecTranslational, translationalVelocityScale[iter->getTypeId()]));
+      iter->addV(normal3DVecTranslational * translationalVelocityScale[iter->getTypeId()]);
 #if defined(MD_FLEXIBLE_USE_MULTI_SITE)
       const std::array<double, 3> normal3DVecRotational = {normalDistribution(randomEngine), normalDistribution(randomEngine), normalDistribution(randomEngine)};
-      iter->addAngularVel(autopas::utils::ArrayMath::mul(normal3DVecRotational, rotationalVelocityScale[iter->getTypeId()]));
+      iter->addAngularVel(normal3DVecRotational * rotationalVelocityScale[iter->getTypeId()]);
 #endif
     }
   }
@@ -229,6 +231,7 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particlePropertiesLibrary,
            const double targetTemperature, const double deltaTemperature) {
+  using namespace autopas::utils::ArrayMath::literals;
   const auto currentTemperatureMap = calcTemperatureComponent(autopas, particlePropertiesLibrary);
 
   // make sure we work with a positive delta
@@ -254,9 +257,9 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
 #pragma omp parallel default(none) shared(autopas, scalingMap)
 #endif
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-    iter->setV(autopas::utils::ArrayMath::mulScalar(iter->getV(), scalingMap[iter->getTypeId()]));
+    iter->setV(iter->getV() * scalingMap[iter->getTypeId()]);
 #if defined(MD_FLEXIBLE_USE_MULTI_SITE)
-    iter->setAngularVel(autopas::utils::ArrayMath::mulScalar(iter->getAngularVel(), scalingMap[iter->getTypeId()]));
+    iter->setAngularVel(iter->getAngularVel() * scalingMap[iter->getTypeId()]);
 #endif
   }
 }

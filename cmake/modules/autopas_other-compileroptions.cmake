@@ -45,6 +45,7 @@ target_compile_options(
         -Wall
         -Wno-unused-variable
         -Wno-unused-function
+        -Winline
         >
         $<$<CXX_COMPILER_ID:Clang>:
         -Wall

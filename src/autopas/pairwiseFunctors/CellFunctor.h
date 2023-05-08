@@ -8,7 +8,6 @@
 #pragma once
 
 #include "autopas/cells/SortedCellView.h"
-#include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ExceptionHandler.h"
 
@@ -186,13 +185,13 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
       }
     }
   } else {
-    auto outer = getStaticCellIter(cell);
-    for (; outer.isValid(); ++outer) {
+    auto outer = cell.begin();
+    for (; outer != cell.end(); ++outer) {
       Particle &p1 = *outer;
 
       auto inner = outer;
       ++inner;
-      for (; inner.isValid(); ++inner) {
+      for (; inner != cell.end(); ++inner) {
         Particle &p2 = *inner;
 
         if constexpr (newton3) {
@@ -227,13 +226,13 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
       }
     }
   } else {
-    auto outer = getStaticCellIter(cell1);
-    auto innerStart = getStaticCellIter(cell2);
+    auto outer = cell1.begin();
+    auto innerStart = cell2.begin();
 
-    for (; outer.isValid(); ++outer) {
+    for (; outer != cell1.end(); ++outer) {
       Particle &p1 = *outer;
 
-      for (auto inner = innerStart; inner.isValid(); ++inner) {
+      for (auto inner = innerStart; inner != cell2.end(); ++inner) {
         Particle &p2 = *inner;
 
         _functor->AoSFunctor(p1, p2, true);
@@ -265,12 +264,12 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
       }
     }
   } else {
-    auto innerStart = getStaticCellIter(cell2);
+    auto innerStart = cell2.begin();
 
-    for (auto outer = cell1.begin(); outer.isValid(); ++outer) {
+    for (auto outer = cell1.begin(); outer != cell1.end(); ++outer) {
       Particle &p1 = *outer;
 
-      for (auto inner = innerStart; inner.isValid(); ++inner) {
+      for (auto inner = innerStart; inner != cell2.end(); ++inner) {
         Particle &p2 = *inner;
 
         _functor->AoSFunctor(p1, p2, false);
