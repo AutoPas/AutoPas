@@ -251,8 +251,8 @@ inline std::set<int> parseInts(const std::string &intString) {
   return ints;
 }
 
-template <typename N>
-inline std::unique_ptr<autopas::NumberSet<N>> parseNumberSet<N>(const std::string &setString) {
+template <class N>
+inline std::unique_ptr<autopas::NumberSet<N>> parseNumberSet(const std::string &setString) {
   std::string str = regexDoubleStr;
   if (typeid(N) == typeid(int)) {
     str = regexIntStr;

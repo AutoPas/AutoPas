@@ -542,7 +542,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.verletRebuildFrequencies)::getoptChar: {
         try {
-          config.verletRebuildFrequencies.value = autopas::utils::StringUtils::parseNumberSetInts(strArg);
+          config.verletRebuildFrequencies.value = autopas::utils::StringUtils::parseNumberSet<int>(strArg);
         } catch (const exception &) {
           cerr << "Error parsing verlet-rebuild-frequency: " << optarg << endl;
           displayHelp = true;
