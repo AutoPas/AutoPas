@@ -87,6 +87,7 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
                                               const std::array<options::BoundaryTypeOption, 3> &boundaryConditions) {
   const double cutoff = 0.3;
   const double sigma = 1.;
+  const int verletRebuildFrequency = 15;
 
   // initialise AutoPas container & domainDecomposition
   MDFlexConfig config(0, nullptr);
@@ -96,6 +97,8 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
   config.boxMin.value = {0., 0., 0.};
   config.boxMax.value = {5., 5., 5.};
   config.cutoff.value = cutoff;
+  config.verletRebuildFrequencies.value =
+      std::make_shared<autopas::NumberSetFinite<int>>(std::set<int>{verletRebuildFrequency});
   config.subdivideDimension.value = {true, true, true};
   config.boundaryOption.value = boundaryConditions;
   config.addParticleType(0, 1., sigma, 1.);
@@ -109,15 +112,16 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
   autoPasContainer->setBoxMin(domainDecomposition.getLocalBoxMin());
   autoPasContainer->setBoxMax(domainDecomposition.getLocalBoxMax());
   autoPasContainer->setCutoff(config.cutoff.value);
+  autoPasContainer->setVerletRebuildFrequency(verletRebuildFrequency);
   autoPasContainer->init();
 
   particlePropertiesLibrary->addType(0, 1., sigma, 1.);
   particlePropertiesLibrary->calculateMixingCoefficients();
 
-  const auto &[expectedPositions, expectedHaloPositions, expectedForces] = setUpExpectations(
-      particlePositions, config.boxMin.value, config.boxMax.value, sigma,
-      config.cutoff.value + config.verletSkinRadiusPerTimestep.value * config.verletRebuildFrequencies.value->getMin(),
-      config.boundaryOption.value);
+  const auto &[expectedPositions, expectedHaloPositions, expectedForces] =
+      setUpExpectations(particlePositions, config.boxMin.value, config.boxMax.value, sigma,
+                        config.cutoff.value + config.verletSkinRadiusPerTimestep.value * verletRebuildFrequency,
+                        config.boundaryOption.value);
 
   // particles need to be added at positions inside the domain
   // but also close to their designated positions, so they end up in the correct MPI rank
