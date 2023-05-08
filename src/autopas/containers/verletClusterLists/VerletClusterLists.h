@@ -376,10 +376,10 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
         this->getNumberOfParticles(), boxSizeWithHalo, _clusterSize);
     auto towersPerDim =
         internal::VerletClusterListsRebuilder<Particle>::calculateTowersPerDim(boxSizeWithHalo, 1.0 / towerSideLength);
-    std::array<double, 3> towerSize = {towerSideLength, towerSideLength,
+    const std::array<double, 3> towerSize = {towerSideLength, towerSideLength,
 
-                                       this->getHaloBoxMax()[2] - this->getHaloBoxMin()[2]};
-    std::array<unsigned long, 3> towerDimensions = {towersPerDim[0], towersPerDim[1], 1};
+                                             this->getHaloBoxMax()[2] - this->getHaloBoxMin()[2]};
+    const std::array<unsigned long, 3> towerDimensions = {towersPerDim[0], towersPerDim[1], 1};
     return TraversalSelectorInfo(towerDimensions, this->getInteractionLength(), towerSize, _clusterSize);
   }
 
@@ -861,12 +861,12 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     if (_towersPerDim[0] == 0) {
       return {_boxMin, _boxMax};
     }
-    std::array<double, 3> boxMin{
+    const std::array<double, 3> boxMin{
         _haloBoxMin[0] + _towerSideLength * static_cast<double>(index2D[0]),
         _haloBoxMin[1] + _towerSideLength * static_cast<double>(index2D[1]),
         _haloBoxMin[2],
     };
-    std::array<double, 3> boxMax{
+    const std::array<double, 3> boxMax{
         boxMin[0] + _towerSideLength,
         boxMin[1] + _towerSideLength,
         _haloBoxMax[2],

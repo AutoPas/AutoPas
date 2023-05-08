@@ -356,8 +356,8 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     using namespace autopas::utils::ArrayMath::literals;
 
     // this is a dummy since it is not actually used
-    std::array<unsigned long, 3> dims = {1, 1, 1};
-    std::array<double, 3> cellLength = this->getBoxMax() - this->getBoxMin();
+    const std::array<unsigned long, 3> dims = {1, 1, 1};
+    const std::array<double, 3> cellLength = this->getBoxMax() - this->getBoxMin();
     return TraversalSelectorInfo(dims, this->getInteractionLength(), cellLength, 0);
   }
 
