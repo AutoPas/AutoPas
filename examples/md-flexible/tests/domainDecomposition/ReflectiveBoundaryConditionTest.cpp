@@ -234,6 +234,7 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
 INSTANTIATE_TEST_SUITE_P(
     TestSimpleReflections, ReflectiveBoundaryConditionTest,
     testing::Values(/*position*/ /*velocity*/ /*quaternion*/
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
                     std::make_tuple(std::array<double, 3>{0.5, 2.50, 2.50}, std::array<double, 4>{1., 0., 0., 0.}),
                     std::make_tuple(std::array<double, 3>{4.5, 2.50, 2.50}, std::array<double, 4>{1., 0., 0., 0.}),
 
@@ -243,7 +244,7 @@ INSTANTIATE_TEST_SUITE_P(
                     std::make_tuple(std::array<double, 3>{2.50, 2.50, 0.5}, std::array<double, 4>{1., 0., 0., 0.}),
                     std::make_tuple(std::array<double, 3>{2.50, 2.50, 4.5}, std::array<double, 4>{1., 0., 0., 0.}),
 
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+
                     std::make_tuple(std::array<double, 3>{0.5, 2.50, 2.50}, autopas::utils::ArrayMath::normalize(std::array<double, 4>{1., 0.5, 0.25, 0.125})),
                     std::make_tuple(std::array<double, 3>{4.5, 2.50, 2.50}, autopas::utils::ArrayMath::normalize(std::array<double, 4>{1., 0.5, 0.25, 0.125})),
 
@@ -252,6 +253,15 @@ INSTANTIATE_TEST_SUITE_P(
 
                     std::make_tuple(std::array<double, 3>{2.50, 2.50, 0.5}, autopas::utils::ArrayMath::normalize(std::array<double, 4>{1., 0.5, 0.25, 0.125})),
                     std::make_tuple(std::array<double, 3>{2.50, 2.50, 4.5}, autopas::utils::ArrayMath::normalize(std::array<double, 4>{1., 0.5, 0.25, 0.125})))
+#else
+                    std::make_tuple(std::array<double, 3>{0.5, 2.50, 2.50}, std::array<double, 4>{1., 0., 0., 0.}),
+                    std::make_tuple(std::array<double, 3>{4.5, 2.50, 2.50}, std::array<double, 4>{1., 0., 0., 0.}),
+
+                    std::make_tuple(std::array<double, 3>{2.50, 0.5, 2.50}, std::array<double, 4>{1., 0., 0., 0.}),
+                    std::make_tuple(std::array<double, 3>{2.50, 4.5, 2.50}, std::array<double, 4>{1., 0., 0., 0.}),
+
+                    std::make_tuple(std::array<double, 3>{2.50, 2.50, 0.5}, std::array<double, 4>{1., 0., 0., 0.}),
+                    std::make_tuple(std::array<double, 3>{2.50, 2.50, 4.5}, std::array<double, 4>{1., 0., 0., 0.}))
 #endif
     //    ,ReflectiveBoundaryConditionTest::PrintToStringParamName());
 );
