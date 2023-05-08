@@ -238,7 +238,9 @@ void ActiveHarmony::fetchConfiguration() {
   } else {
     cellSizeFactor = ah_get_real(htask, cellSizeFactorsName);
   }
-  int verletRebuildFrequency = _allowedVerletRebuildFrequencies->getMin();
+
+  // verletRebuildFrequency is always Finite
+  int verletRebuildFrequency = std::stoi(ah_get_enum(htask, verletRebuildFrequenciesName), nullptr);
 
   _currentConfig = Configuration(containerOption, cellSizeFactor, traversalOption, loadEstimatorOption,
                                  dataLayoutOption, newton3Option, verletRebuildFrequency);

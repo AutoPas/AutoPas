@@ -22,7 +22,7 @@ class FeatureVector : public Configuration {
  public:
   /**
    * Number of tune-able dimensions.
-   * container-traversal-estimator + dataLayout + newton3 + cellSizeFactor
+   * container-traversal-estimator + dataLayout + newton3 + cellSizeFactor + verletRebuildFrequency
    */
   static constexpr size_t featureSpaceDims = 5;
 
