@@ -468,9 +468,9 @@ TEST_F(TimeDiscretizationTest, testFastParticlesCheck) {
 
   // slow particle -> no exception
 #ifdef MD_FLEXIBLE_USE_MULTI_SITE
-  autoPas->addParticle(ParticleType({0., 0., 0.}, {0.1, 0., 0.}, {0.7071067811865475, 0.7071067811865475, 0., 0.}, {0., 0., 0.}, 0));
+  autoPas->addParticle(ParticleType({0., 0., 0.}, {0.05, 0., 0.}, {0.7071067811865475, 0.7071067811865475, 0., 0.}, {0., 0., 0.}, 0));
 #else
-  autoPas->addParticle(ParticleType({0., 0., 0.}, {0.1, 0., 0.}, 0));
+  autoPas->addParticle(ParticleType({0., 0., 0.}, {0.05, 0., 0.}, 0));
 #endif
   EXPECT_NO_THROW(TimeDiscretization::calculatePositionsAndResetForces(*autoPas, *PPL, 0.1, {0., 0., 0.}, true));
   // fast particle -> exception
