@@ -542,8 +542,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.verletRebuildFrequencies)::getoptChar: {
         try {
-          config.verletRebuildFrequencies.value =
-              make_shared<autopas::NumberSetFinite<int>>(std::set<int>({(int)stoul(strArg)}));
+          config.verletRebuildFrequencies.value = autopas::utils::StringUtils::parseNumberSetInts(strArg);
         } catch (const exception &) {
           cerr << "Error parsing verlet-rebuild-frequency: " << optarg << endl;
           displayHelp = true;
@@ -704,6 +703,7 @@ bool checkFileExists(const std::string &filename) {
 }  // namespace
 
 void MDFlexParser::CLIParser::inputFilesPresent(int argc, char **argv, MDFlexConfig &config) {
+
   // suppress error messages since we only want to look if the yaml option is there
   auto opterrBefore = opterr;
   opterr = 0;
