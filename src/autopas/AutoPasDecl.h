@@ -944,6 +944,8 @@ class AutoPas {
    */
   void setOutputSuffix(const std::string &suffix) { _outputSuffix = suffix; }
 
+  double getMeanRebuildFrequency () { return _logicHandler->getMeanRebuildFrequency(); }
+
  private:
   std::shared_ptr<autopas::ParticleContainerInterface<Particle>> getContainer();
 

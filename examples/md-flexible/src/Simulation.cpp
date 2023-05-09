@@ -520,6 +520,8 @@ void Simulation::logMeasurements() {
     std::cout << timerToString("One iteration                     ", simulate / static_cast<long>(_iteration),
                                maximumNumberOfDigits, total);
 
+    std::cout << "Mean Rebuild Frequency             : " << _autoPasContainer->getMeanRebuildFrequency() << std::endl;
+
     const long wallClockTime = _timers.total.getTotalTime();
     std::cout << timerToString("Total wall-clock time             ", wallClockTime,
                                static_cast<int>(std::to_string(wallClockTime).length()), total);

@@ -323,6 +323,7 @@ class LogicHandler {
 
     if (doRebuild /*we have done a rebuild now*/) {
       _neighborListsAreValid.store(true, std::memory_order_relaxed);
+      _rebuildDistances.push_back(_stepsSinceLastListRebuild);
       _stepsSinceLastListRebuild = 0;
     }
     ++_stepsSinceLastListRebuild;
@@ -432,6 +433,10 @@ class LogicHandler {
    */
   [[nodiscard]] unsigned long getNumParticlesHalo() const { return _numParticlesHalo; }
 
+  [[nodiscard]] double getMeanRebuildFrequency () const {
+    return _rebuildDistances.empty() ? 0 : (std::accumulate(_rebuildDistances.begin(), _rebuildDistances.end(), 0) * 1.0) / _rebuildDistances.size();
+  }
+
  private:
   void checkMinimalSize() {
     auto container = _autoTuner.getContainer();
@@ -457,6 +462,8 @@ class LogicHandler {
    * Specifies after how many pair-wise traversals the neighbor lists (if they exist) are to be rebuild.
    */
   const unsigned int _neighborListRebuildFrequency;
+
+  std::vector<int> _rebuildDistances;
 
   /**
    * Reference to the AutoTuner that owns the container, ...
