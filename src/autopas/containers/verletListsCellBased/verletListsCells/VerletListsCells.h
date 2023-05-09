@@ -50,7 +50,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
    * @param loadEstimator load estimation algorithm for balanced traversals
    * @param buildType data layout of the particles which are used to generate the neighbor lists
    */
-  VerletListsCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
+  VerletListsCells(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
                    const double skinPerTimestep = 0, const unsigned int rebuildFrequency = 2,
                    const double cellSizeFactor = 1.0,
                    const LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell,
