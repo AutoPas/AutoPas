@@ -31,7 +31,7 @@ class VarVerletLists : public VerletListsLinkedBase<Particle> {
    * @param rebuildFrequency The rebuild Frequency.
    * @param cellSizeFactor cell size factor relative to cutoff
    */
-  VarVerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
+  VarVerletLists(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
                  const double skinPerTimestep, const unsigned int rebuildFrequency, const double cellSizeFactor = 1.0)
       : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency,
                                         compatibleTraversals::allVarVLAsBuildCompatibleTraversals(), cellSizeFactor),

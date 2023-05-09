@@ -282,12 +282,12 @@ unsigned long AutoPas<Particle>::getContainerType() const {
 }
 
 template <class Particle>
-std::array<double, 3> AutoPas<Particle>::getBoxMin() const {
+const std::array<double, 3> &AutoPas<Particle>::getBoxMin() const {
   return _autoTuner->getContainer()->getBoxMin();
 }
 
 template <class Particle>
-std::array<double, 3> AutoPas<Particle>::getBoxMax() const {
+const std::array<double, 3> &AutoPas<Particle>::getBoxMax() const {
   return _autoTuner->getContainer()->getBoxMax();
 }
 
