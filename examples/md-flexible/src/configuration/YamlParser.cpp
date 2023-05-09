@@ -503,6 +503,39 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.globalForce.description;
 
         config.globalForce.value = {node[key][0].as<double>(), node[key][1].as<double>(), node[key][2].as<double>()};
+      } else if (key == MDFlexConfig::siteStr) {
+        expected = "See AllOptions.yaml for examples.";
+        description = "";
+
+        // remove default objects
+        config.epsilonMap.value.clear();
+        config.sigmaMap.value.clear();
+        config.massMap.value.clear();
+
+        int siteID = 0;
+        std::vector<std::string> siteErrors;
+
+        auto pushSiteError = [&](const std::string &error) {
+          std::stringstream ss;
+          ss << "YamlParser: Error parsing site with ID " << siteID << "." << std::endl
+             << "Message: " << error << std::endl
+             << "See AllOptions.yaml for examples." << std::endl;
+          errors.push_back(ss.str());
+        };
+
+        for (auto siteIterator = node[MDFlexConfig::siteStr].begin(); siteIterator != node[MDFlexConfig::siteStr].end(); ++siteIterator) {
+          siteErrors.clear();
+          siteID = std::distance(node[MDFlexConfig::siteStr].begin(), siteIterator);
+
+          const auto epsilon = parseObjectValueSingle<double>(siteIterator->second, config.epsilonMap.name.c_str(), siteErrors);
+          const auto sigma = parseObjectValueSingle<double>(siteIterator->second, config.sigmaMap.name.c_str(), siteErrors);
+          const auto mass = parseObjectValueSingle<double>(siteIterator->second, config.massMap.name.c_str(), siteErrors);
+
+          config.addSiteType(siteIterator->second[MDFlexConfig::siteTypeStr].as<unsigned long>(),
+                             siteIterator->second[config.epsilonMap.name].as<double>(),
+                             siteIterator->second[config.sigmaMap.name].as<double>(),
+                             siteIterator->second[config.massMap.name].as<double>());
+        }
       } else if (key == MDFlexConfig::objectsStr) {
         expected = "See AllOptions.yaml for examples.";
         description = "";
