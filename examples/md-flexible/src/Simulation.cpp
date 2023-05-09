@@ -520,8 +520,6 @@ void Simulation::logMeasurements() {
     std::cout << timerToString("One iteration                     ", simulate / static_cast<long>(_iteration),
                                maximumNumberOfDigits, total);
 
-    std::cout << "Mean Rebuild Frequency             : " << _autoPasContainer->getMeanRebuildFrequency() << std::endl;
-
     const long wallClockTime = _timers.total.getTotalTime();
     std::cout << timerToString("Total wall-clock time             ", wallClockTime,
                                static_cast<int>(std::to_string(wallClockTime).length()), total);
@@ -555,6 +553,7 @@ void Simulation::logMeasurements() {
       std::cout << "GFLOPs/sec                         : "
                 << static_cast<double>(flops) * 1e-9 / (static_cast<double>(simulate) * 1e-9) << std::endl;
       std::cout << "Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl;
+      std::cout << "Mean Rebuild Frequency             : " << _autoPasContainer->getMeanRebuildFrequency() << std::endl;
     }
   }
 }
