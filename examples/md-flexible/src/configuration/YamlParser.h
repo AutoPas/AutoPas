@@ -117,6 +117,34 @@ const std::array<T, S> parseObjectValueSequence(const YAML::Node node, const std
 }
 
 /**
+ * Parses the sequence value of a key in a Object-Node of a YAML-config. Variant for an unknown sequence size.
+ * @param node root-YAML-node of an Object.
+ * @param key The key to parse.
+ * @param objectErrors Vector to store all errors during parsing of one object
+ * @return Parsed value of key. Throws a runtime_error if key could not be parsed.
+ */
+template <typename T>
+const std::vector<T> parseObjectValueSequence(const YAML::Node node, const std::string &key,
+                                                std::vector<std::string> &objectErrors) {
+  std::vector<T> value;
+  try {
+    YAML::Node n = node[key];
+    const auto vecLength = n.size();
+    value.reserve(vecLength);
+    for (int i = 0; i < vecLength; i++) {
+      value[i] = n[i].as<T>();
+    }
+
+  } catch (const std::exception &e) {
+    std::stringstream ss;
+    ss << "Error parsing " << key << ". Make sure that key \"" << key << "\" exists and has the expected value: "
+       << "YAML-sequence of " << typeToStr<T>() << " values.";
+    objectErrors.push_back(ss.str());
+  }
+  return value;
+}
+
+/**
  * Parses a CubeGrid-Object from a CubeGrid-Yaml-Node.
  * @param config configuration where the input is stored.
  * @param node root-YAML-node of an Object.

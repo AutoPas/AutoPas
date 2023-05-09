@@ -536,7 +536,50 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
                              siteIterator->second[config.sigmaMap.name].as<double>(),
                              siteIterator->second[config.massMap.name].as<double>());
         }
-      } else if (key == MDFlexConfig::objectsStr) {
+      } else if (key == MDFlexConfig::moleculesStr) {
+        // todo throw error if momentOfInertia with zero element is used (physically nonsense + breaks the quaternion update)
+        expected = "See AllOptions.yaml for examples.";
+        description = "";
+
+        // remove default objects
+        config.molToSiteIdMap.clear();
+        config.molToSitePosMap.clear();
+        config.momentOfInertiaMap.clear();
+
+        int molID = 0;
+        std::vector<std::string> molErrors;
+
+        auto pushMolError = [&](const std::string &error) {
+          std::stringstream ss;
+          ss << "YamlParser: Error parsing multi-site molecule with ID " << molID << "." << std::endl
+             << "Message: " << error << std::endl
+             << "See AllOptions.yaml for examples." << std::endl;
+          errors.push_back(ss.str());
+        };
+
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+        for (auto molIterator = node[MDFlexConfig::moleculesStr].begin(); molIterator != node[MDFlexConfig::moleculesStr].end(); ++molIterator) {
+          molErrors.clear();
+          molID = std::distance(node[MDFlexConfig::siteStr].begin(), molIterator);
+
+          const auto molToSiteId = parseObjectValueSequence<unsigned long>(molIterator->second, MDFlexConfig::moleculeToSiteIdStr, molErrors);
+          const auto molToSitePos = parseObjectValueSequence<std::array<double, 3>>(molIterator->second, MDFlexConfig::moleculeToSitePosStr, molErrors);
+          const auto momentOfInertia = parseObjectValueSequence<double, 3>(molIterator->second, MDFlexConfig::momentOfInertiaStr, molErrors);
+
+          if (molToSiteId.size() != molToSitePos.size()) {
+            std::stringstream ss;
+            ss << "Lengths of " << MDFlexConfig::moleculeToSiteIdStr << " and " << MDFlexConfig::moleculeToSitePosStr << "do not match!";
+            molErrors.push_back(ss.str());
+          }
+
+          config.addMolType(molID, molToSiteId, molToSitePos, momentOfInertia);
+        }
+
+        for_each(molErrors.begin(), molErrors.end(), pushMolError);
+#else
+        AutoPasLog(WARN, "Multi-Site Molecule information has been provided, however md-flexible has been compiled without Multi-Site support.");
+#endif
+      }else if (key == MDFlexConfig::objectsStr) {
         expected = "See AllOptions.yaml for examples.";
         description = "";
 
