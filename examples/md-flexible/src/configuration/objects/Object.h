@@ -70,24 +70,6 @@ class Object {
   [[nodiscard]] unsigned long getTypeId() const { return _typeId; }
 
   /**
-   * Getter for Epsilon.
-   * @return epsilon
-   */
-  [[nodiscard]] double getEpsilon() const { return _epsilon; }
-
-  /**
-   * Getter for Sigma.
-   * @return sigma
-   */
-  [[nodiscard]] double getSigma() const { return _sigma; }
-
-  /**
-   * Getter for Mass.
-   * @return mass
-   */
-  [[nodiscard]] double getMass() const { return _mass; }
-
-  /**
    * Getter for the smallest x,y,z coordinates for Object
    * @return BoxMin of Cube
    */
