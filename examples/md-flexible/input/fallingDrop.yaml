@@ -34,17 +34,14 @@ Objects:
       bottomLeftCorner           :  [1, 1, 1]
       box-length                 :  [48, 28, 10]
       velocity                   :  [0, 0, 0]
-      molecule-id
+      site-id                    :  0
   Sphere:
     0:  
       center                     :  [18, 15, 30]
       radius                     :  6
       particle-spacing           :  1.122462048
       velocity                   :  [0, 0, 0]
-      particle-type              :  1
-      particle-epsilon           :  1
-      particle-sigma             :  1
-      particle-mass              :  1
+      site-id                    :  0
 # thermostat:
 #   initialTemperature             :  1
 #   targetTemperature              :  4

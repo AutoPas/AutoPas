@@ -54,10 +54,8 @@ Objects:
       particle-spacing               :  1.1225
       bottomLeftCorner               :  [0, 0, 0]
       velocity                       :  [0, 0, 0]
-      particle-type                  :  0
-      particle-epsilon               :  1
-      particle-sigma                 :  1
-      particle-mass                  :  1
+      site-id                        :  0
+#      molecule-id                :  0     # Replace the site-id line with this for multi-site md-flexible
   CubeGauss:
     0:
       distribution-mean              :  [2, 2, 2]
@@ -66,40 +64,32 @@ Objects:
       box-length                     :  [8, 8, 8]
       bottomLeftCorner               :  [15, 15, 15]
       velocity                       :  [0, 0, 0]
-      particle-type                  :  1
-      particle-epsilon               :  1
-      particle-sigma                 :  1
-      particle-mass                  :  1
+      site-id                        :  0
+#      molecule-id                :  0     # Replace the site-id line with this for multi-site md-flexible
   CubeUniform:
     0:
       numberOfParticles              :  100
       box-length                     :  [10, 10, 10]
       bottomLeftCorner               :  [15, 0, 0]
       velocity                       :  [0, 0, 0]
-      particle-type                  :  2
-      particle-epsilon               :  1
-      particle-sigma                 :  1
-      particle-mass                  :  1
+      site-id                        :  0
+#      molecule-id                :  0     # Replace the site-id line with this for multi-site md-flexible
   CubeClosestPacked:
     0:
       box-length                     :  [4, 4, 4]
       bottomLeftCorner               :  [0, 0, 15]
       particle-spacing               :  1.1225
       velocity                       :  [0, 0, 0]
-      particle-type                  :  3
-      particle-epsilon               :  1
-      particle-sigma                 :  1
-      particle-mass                  :  1
+      site-id                        :  0
+#      molecule-id                :  0     # Replace the site-id line with this for multi-site md-flexible
   Sphere:
     0:
       center                         :  [4, 16, 4]
       radius                         :  3
       particle-spacing               :  1.1225
       velocity                       :  [0, 0, 0]
-      particle-type                  :  4
-      particle-epsilon               :  1
-      particle-sigma                 :  1
-      particle-mass                  :  1
+      site-id                        :  0
+#      molecule-id                :  0     # Replace the site-id line with this for multi-site md-flexible
 thermostat:
   initialTemperature                 :  1
   targetTemperature                  :  4

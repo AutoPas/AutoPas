@@ -1,4 +1,5 @@
-# This yaml file is for single-site molecular simulation
+# This yaml file is for single-site molecular simulation. Uncomment the Molecules option to run this experiment using
+# md-flexible compiled for multi-site molecules.
 # container                        :  [LinkedCells, VarVerletListsAsBuild, VerletClusterLists, VerletLists, VerletListsCells, PairwiseVerletLists]
 # traversal                        :  [lc_sliced, lc_sliced_balanced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18, vcl_c06, vcl_c01_balanced, vcl_sliced, vcl_sliced_balanced, vcl_sliced_c02, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced, vlc_sliced_balanced, vlc_sliced_c02, vvl_as_built, vlp_c01, vlp_c18, vlp_sliced, vlp_sliced_balanced, vlp_sliced_c02]
 # data-layout                      :  [AoS, SoA]
@@ -24,10 +25,17 @@ Sites:
     site-epsilon                 :  1.
     site-sigma                   :  1.
     site-mass                    :  1.
+#Molecules:
+#  0:
+#    molecule-id                  :  0
+#    molecule-to-site-id          :  [ 0 ]
+#    molecule-to-site-pos         : [ [0, 0, 0 ] ]
+#    molecule-moment-of-inertia   : [ 1., 1., 1. ]
 Objects:                         
   CubeClosestPacked:
     0:
-      molecule-id                :  0
+      site-id                    :  0
+#      molecule-id                :  0     # Replace the site-id line with this for multi-site md-flexible
       box-length                 :  [15, 6, 15]
       bottomLeftCorner           :  [0, 27, 0]
       particle-spacing           :  1.
