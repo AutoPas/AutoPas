@@ -36,7 +36,7 @@ class DynamicVerletLists : public VerletLists<Particle> {
     bool listInvalid = false;
 
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel for reduction(|| : listInvalid) schedule(dynamic, 10)
+#pragma omp parallel for reduction(|| : listInvalid) schedule(static, 50)
 #endif
     for (auto& particlePositionPair : _particlePtr2rebuildPositionBuffer) {
       auto distance = utils::ArrayMath::sub(particlePositionPair.first->getR(), particlePositionPair.second);
