@@ -98,6 +98,9 @@ include(autopas_logging)
 include(autopas_other-compileroptions)
 include(autopas_vectorization)
 
+# application libraries
+add_subdirectory(applicationLibrary)
+
 # tests and examples
 add_subdirectory(tests)
 # might also include tests, hence might need flags from tests subdirectory

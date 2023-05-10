@@ -8,9 +8,9 @@
 
 #include "autopas/particles/ParticleBase.h"
 #include "autopas/particles/OwnershipState.h"
-#include "autopas/molecularDynamics/MoleculeLJ.h"
+#include "MoleculeLJ.h"
 
-namespace autopas {
+namespace mdLib {
 /**
  * Standard multi-site LJ molecules.
  *
@@ -339,4 +339,4 @@ class MultisiteMoleculeLJ : public autopas::MoleculeLJ {
   }
 };
 
-}  // namespace autopas
+}  // namespace mdLib

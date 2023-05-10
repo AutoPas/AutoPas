@@ -18,7 +18,7 @@
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 
-namespace autopas {
+namespace mdLib {
 
 /**
  * A functor to handle lennard-jones interactions between two particles (molecules).
@@ -940,4 +940,4 @@ class LJFunctor
   // defines whether or whether not the global values are already preprocessed
   bool _postProcessed;
 };
-}  // namespace autopas
+}  // namespace mdLib

@@ -22,7 +22,7 @@
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 
-namespace autopas {
+namespace mdLib {
 
 /**
  * A functor to handle lennard-jones interactions between two particles (molecules).
@@ -1059,4 +1059,4 @@ class LJFunctorAVX
   // MUST be power of 2 because some optimizations make this assumption
   constexpr static size_t vecLength = 4;
 };
-}  // namespace autopas
+}  // namespace mdLib

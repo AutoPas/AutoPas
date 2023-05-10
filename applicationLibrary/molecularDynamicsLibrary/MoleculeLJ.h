@@ -12,7 +12,7 @@
 #include "autopas/particles/Particle.h"
 #include "autopas/utils/ExceptionHandler.h"
 
-namespace autopas {
+namespace mdLib {
 
 /**
  * Molecule class for the LJFunctor.
@@ -203,4 +203,4 @@ class MoleculeLJ : public autopas::Particle {
   std::array<double, 3> _oldF = {0., 0., 0.};
 };
 
-}  // namespace autopas
+}  // namespace mdLib

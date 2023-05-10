@@ -7,8 +7,8 @@
 #pragma once
 
 #include "MultisiteMoleculeLJ.h"
-#include "autopas/molecularDynamics/MoleculeLJ.h"
-#include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
+#include "MoleculeLJ.h"
+#include "ParticlePropertiesLibrary.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
@@ -21,7 +21,7 @@
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 
-namespace autopas {
+namespace mdLib {
 
 /**
  * A functor to handle Lennard-Jones interactions between two Multisite Molecules.
@@ -1615,4 +1615,4 @@ class LJMultisiteFunctor<autopas::MoleculeLJ, applyShift, useMixing, useNewton3,
         "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
   }
 };
-}  // namespace autopas
+}  // namespace mdLib
