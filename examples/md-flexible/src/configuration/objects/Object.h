@@ -48,7 +48,7 @@ class Object {
     particle.setV(_velocity);
     particle.setF({0.0, 0.0, 0.0});
     particle.setOldF({0.0, 0.0, 0.0});
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+#if MD_FLEXIBLE_MODE==MULTISITE
     particle.setQ({0.0, 0.0, 0.0, 1.0}); // todo: add option for this to be set randomly
     particle.setAngularVel({0.0, 0.0, 0.0});
     particle.setTorque({0.0, 0.0, 0.0});
@@ -100,7 +100,7 @@ class Object {
    */
   [[nodiscard]] virtual std::string to_string() const {
     std::ostringstream output;
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+#if MD_FLEXIBLE_MODE==MULTISITE
     const auto typeName = "molecule-type";
 #else
     const auto typeName = "site-type";

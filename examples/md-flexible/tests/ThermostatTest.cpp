@@ -67,7 +67,7 @@ TEST_F(ThermostatTest, BrownianMotionTest_NonZeroInitialVel) {
  * has non-zero initial angular velocity but zero translational velocity.
  */
 TEST_F(ThermostatTest, BrownianMotionTest_NonZeroInitialAngVelWithZeroTransVel) {
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
   ParticleType dummyMolecule;
   dummyMolecule.setAngularVel({1, 1, 1});
   testBrownianMotion(dummyMolecule, 1.5);
@@ -79,7 +79,7 @@ TEST_F(ThermostatTest, BrownianMotionTest_NonZeroInitialAngVelWithZeroTransVel) 
  * has non-zero initial angular velocity and non-zero translational velocity.
  */
 TEST_F(ThermostatTest, BrownianMotionTest_NonZeroInitialAngVelWithNonZeroTransVel) {
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
   ParticleType dummyMolecule;
   dummyMolecule.setV({1, 1, 1});
   dummyMolecule.setAngularVel({1, 1, 1});

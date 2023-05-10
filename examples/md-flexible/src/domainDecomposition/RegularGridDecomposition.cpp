@@ -326,13 +326,13 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
         };
 
         const bool reflectMoleculeFlag =
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
             distanceToBoundary < sixthRootOfTwo * particlePropertiesLib.getMoleculesLargestSigma(p->getTypeId()) / 2.;
 #else
             distanceToBoundary < sixthRootOfTwo * particlePropertiesLib.getSigma(p->getTypeId()) / 2.;
 #endif
         if (reflectMoleculeFlag) {
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
           // Keep track of current force and torque to see if molecule is repulsed, and, if not, reset the force.
           const auto currentForce = p->getF();
           const auto currentTorque = p->getTorque();
@@ -386,7 +386,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
           p->addF(force);
 #endif
 
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
           // test if attraction has occurred
           const bool reflectionIsAttractive = isUpper ? p->getF()[dimensionIndex] - currentForce[dimensionIndex] > 0 :
                                                       p->getF()[dimensionIndex] - currentForce[dimensionIndex] < 0;

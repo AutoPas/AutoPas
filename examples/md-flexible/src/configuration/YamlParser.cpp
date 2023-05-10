@@ -32,7 +32,7 @@ const std::string MDFlexParser::YamlParser::makeErrorMsg(const YAML::Mark &mark,
 const CubeGrid MDFlexParser::YamlParser::parseCubeGridObject(const MDFlexConfig &config, const YAML::Node node,
                                                              std::vector<std::string> &objectErrors) {
   auto particleTypeStr =
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
       MDFlexConfig::molTypeStr;
 #else
       MDFlexConfig::siteTypeStr;
@@ -52,7 +52,7 @@ const CubeGrid MDFlexParser::YamlParser::parseCubeGridObject(const MDFlexConfig 
 const CubeUniform MDFlexParser::YamlParser::parseCubeUniformObject(const MDFlexConfig &config, const YAML::Node node,
                                                                    std::vector<std::string> &objectErrors) {
   auto particleTypeStr =
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
       MDFlexConfig::molTypeStr;
 #else
       MDFlexConfig::siteTypeStr;
@@ -71,7 +71,7 @@ const CubeUniform MDFlexParser::YamlParser::parseCubeUniformObject(const MDFlexC
 const CubeGauss MDFlexParser::YamlParser::parseCubeGaussObject(const MDFlexConfig &config, const YAML::Node node,
                                                                std::vector<std::string> &objectErrors) {
   auto particleTypeStr =
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
       MDFlexConfig::molTypeStr;
 #else
       MDFlexConfig::siteTypeStr;
@@ -93,7 +93,7 @@ const CubeGauss MDFlexParser::YamlParser::parseCubeGaussObject(const MDFlexConfi
 const Sphere MDFlexParser::YamlParser::parseSphereObject(const MDFlexConfig &config, const YAML::Node node,
                                                          std::vector<std::string> &objectErrors) {
   auto particleTypeStr =
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
       MDFlexConfig::molTypeStr;
 #else
       MDFlexConfig::siteTypeStr;
@@ -112,7 +112,7 @@ const CubeClosestPacked MDFlexParser::YamlParser::parseCubeClosestPacked(const M
                                                                          const YAML::Node node,
                                                                          std::vector<std::string> &objectErrors) {
   auto particleTypeStr =
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
       MDFlexConfig::molTypeStr;
 #else
       MDFlexConfig::siteTypeStr;
@@ -565,7 +565,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           errors.push_back(ss.str());
         };
 
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
         for (auto molIterator = node[MDFlexConfig::moleculesStr].begin(); molIterator != node[MDFlexConfig::moleculesStr].end(); ++molIterator) {
           molErrors.clear();
           molID = std::distance(node[MDFlexConfig::moleculesStr].begin(), molIterator);

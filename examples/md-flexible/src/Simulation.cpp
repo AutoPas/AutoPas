@@ -189,7 +189,7 @@ void Simulation::run() {
     _timers.computationalLoad.start();
     if (_configuration.deltaT.value != 0) {
       updatePositions();
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+#if MD_FLEXIBLE_MODE==MULTISITE
       updateQuaternions();
 #endif
     }
@@ -242,7 +242,7 @@ void Simulation::run() {
 
     if (_configuration.deltaT.value != 0) {
       updateVelocities();
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+#if MD_FLEXIBLE_MODE==MULTISITE
       updateAngularVelocities();
 #endif
       updateThermostat();
@@ -509,7 +509,7 @@ void Simulation::logMeasurements() {
     std::cout << timerToString("  Initialization                  ", initialization, maximumNumberOfDigits, total);
     std::cout << timerToString("  Simulate                        ", simulate, maximumNumberOfDigits, total);
     std::cout << timerToString("    PositionUpdate                ", positionUpdate, maximumNumberOfDigits, simulate);
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
     std::cout << timerToString("    QuaternionUpdate              ", quaternionUpdate, maximumNumberOfDigits, simulate);
 #endif
     std::cout << timerToString("    UpdateContainer               ", updateContainer, maximumNumberOfDigits, simulate);
@@ -532,7 +532,7 @@ void Simulation::logMeasurements() {
     std::cout << timerToString("      ForceUpdateNonTuning        ", forceUpdateNonTuning, maximumNumberOfDigits,
                                forceUpdateTotal);
     std::cout << timerToString("    VelocityUpdate                ", velocityUpdate, maximumNumberOfDigits, simulate);
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
     std::cout << timerToString("    AngularVelocityUpdate         ", angularVelocityUpdate, maximumNumberOfDigits, simulate);
 #endif
     std::cout << timerToString("    Thermostat                    ", thermostat, maximumNumberOfDigits, simulate);

@@ -68,7 +68,7 @@ TEST_F(ParticlePropertiesLibraryTest, MolPropertiesAddingAndGettingTest) {
   std::shared_ptr<ParticlePropertiesLibrary<double, unsigned int>> PPL =
       std::make_shared<ParticlePropertiesLibrary<double, unsigned int>>(cutoff);
 
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+#if MD_FLEXIBLE_MODE==MULTISITE
   // add two site types
   PPL->addSiteType(0, 1., 1., 1.);
   PPL->addSiteType(1, 0.2, 0.7, 1.2);

@@ -136,7 +136,7 @@ void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, 
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
   auto forces = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
 
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
   findWord(inputStream, "quaternions");
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
   auto quaternions = readPayload<std::array<double, 4>, 4>(inputStream, numParticles);
@@ -172,7 +172,7 @@ void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, 
     particle.setID(ids[i]);
     particle.setTypeId(typeIds[i]);
 
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
     particle.setQ(quaternions[i]);
     particle.setAngularVel(angularVelocities[i]);
     particle.setTorque(torques[i]);
@@ -221,7 +221,7 @@ std::string MDFlexConfig::to_string() const {
     os << endl;
   };
 
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
   os << "Running multi-site MD simulation.\n" << endl;
 #else
   os << "Running single-site MD simulation.\n" << endl;
@@ -305,7 +305,7 @@ std::string MDFlexConfig::to_string() const {
     os << "    " << setw(valueOffset - 4) << left << massMap.name    << ":  " << massMap.value.at(siteId) << endl;
   }
 
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
   os << setw(valueOffset) << left << "Molecules:" << endl;
   for (auto [molId, molToSiteId] : molToSiteIdMap) {
     os << "  " << molId << ":" << endl;
@@ -438,7 +438,7 @@ void MDFlexConfig::addSiteType(unsigned long siteId, double epsilon, double sigm
 }
 
 void MDFlexConfig::addMolType(unsigned long molId, const std::vector<unsigned long>& siteIds, const std::vector<std::array<double, 3>>& relSitePos, std::array<double, 3> momentOfInertia) {
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+#if MD_FLEXIBLE_MODE==MULTISITE
   // check if siteId is already existing and if there no error in input
   if (molToSiteIdMap.count(molId) == 1) {
     // check if type is already added
@@ -475,7 +475,7 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
   }
 
   // if doing Multi-site MD simulation, also check molecule level vectors match and initialize at molecular level
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+#if MD_FLEXIBLE_MODE==MULTISITE
     // check size of molecular level vectors match
     if (molToSiteIdMap.size() != molToSitePosMap.size()) {
       throw std::runtime_error("Number of molecular-level properties differ!");

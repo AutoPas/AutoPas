@@ -65,7 +65,7 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
  using autopas::utils::quaternion::rotateVectorOfPositions;
  using autopas::utils::quaternion::rotatePositionBackwards;
 
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+#if MD_FLEXIBLE_MODE==MULTISITE
 
  const auto halfDeltaT = 0.5 * deltaT;
 
@@ -154,7 +154,7 @@ void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer
  using autopas::utils::quaternion::rotatePosition;
  using autopas::utils::quaternion::rotatePositionBackwards;
 
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+#if MD_FLEXIBLE_MODE==MULTISITE
 
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel

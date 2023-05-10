@@ -68,7 +68,7 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   autoPasContainer->init();
 
   particlePropertiesLibrary->addSiteType(0, 1., sigma, 1.);
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
   // Correct Moment of Inertia is irrelevant to test, so accept that they are wrong
   particlePropertiesLibrary->addMolType(0, {0, 0, 0},
                                         {{0.074349607, 0.120300191, 0.}, {0.03249197, -0.137638192, 0.}, {-0.137638192, -0.03249197, 0.}}, {5.23606798, 0.76393202, 6.});
@@ -83,19 +83,19 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
 
   // get particle properties
   const std::array<double, 3> particlePosition = std::get<0>(GetParam());
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
   const std::array<double, 4> particleQuaternion = std::get<1>(GetParam());
 #endif
 
   const auto expectedPosition = particlePosition;
   std::array<double, 3> expectedForce{0., 0., 0.};
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
   std::array<double, 3> expectedTorque{0., 0., 0.};
 #endif
 
   // derive expected position
   auto addForceFromReflection = [&](const int dimensionOfBoundary, const bool isUpper) {
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
     // get properties of mirror particle
     const auto mirroredPosition = [&] () {
       const auto distanceCenterOfMassToBoundary = isUpper ? boxMax[dimensionOfBoundary] - particlePosition[dimensionOfBoundary]
@@ -176,7 +176,7 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
     particle.setR(particlePosition);
     particle.setV({0., 0., 0.});
     particle.setF({0., 0., 0.});
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
     particle.setQ(particleQuaternion);
     particle.setAngularVel({0., 0., 0.});
     particle.setTorque({0., 0., 0.});
@@ -202,13 +202,13 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
     const auto &reflectedPosition = reflectedParticle->getR();
     const auto &reflectedVelocity = reflectedParticle->getV();
     const auto &reflectedForce = reflectedParticle->getF();
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
     const auto &reflectedTorque = reflectedParticle->getTorque();
 #endif
     for (size_t i = 0; i < 3; ++i) {
       EXPECT_NEAR(reflectedPosition[i], expectedPosition[i], 1e-13) << "Unexpected position[" << i << "]";
       EXPECT_NEAR(reflectedForce[i], expectedForce[i], 1e-13) << "Unexpected force[" << i << "]";
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
       EXPECT_NEAR(reflectedTorque[i], expectedTorque[i], 1e-13) << "Unexpected torque[" << i << "]";
 #endif
     }
@@ -236,7 +236,7 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
 INSTANTIATE_TEST_SUITE_P(
     TestSimpleReflections, ReflectiveBoundaryConditionTest,
     testing::Values(/*position*/ /*velocity*/ /*quaternion*/
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
                     std::make_tuple(std::array<double, 3>{0.5, 2.50, 2.50}, std::array<double, 4>{1., 0., 0., 0.}),
                     std::make_tuple(std::array<double, 3>{4.5, 2.50, 2.50}, std::array<double, 4>{1., 0., 0., 0.}),
 
@@ -282,7 +282,7 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> &particlePosition,
   config.epsilonMap.value.clear();
   config.sigmaMap.value.clear();
   config.massMap.value.clear();
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
   config.molToSiteIdMap.clear();
   config.molToSitePosMap.clear();
   config.momentOfInertiaMap.clear();
@@ -319,7 +319,7 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> &particlePosition,
 
   particlePropertiesLibrary->addSiteType(0, 1., sigmas[0], 1.);
   particlePropertiesLibrary->addSiteType(1, 1., sigmas[1], 1.);
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
   particlePropertiesLibrary->addMolType(0, {0}, {{0., 0., 0.}}, {1., 1., 1.});
   particlePropertiesLibrary->addMolType(1, {1}, {{0., 0., 0.}}, {1., 1., 1.});
 #endif
@@ -341,7 +341,7 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> &particlePosition,
     particle.setID(0);
     particle.setR(particlePosition);
     particle.setF({0., 0., 0.});
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
     particle.setQ({0., 0., 0., 1.});
     particle.setTorque({0., 0., 0.});
 #endif

@@ -35,18 +35,18 @@ double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibrary
 #endif
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     const auto vel = iter->getV();
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
     const auto angVel = iter->getAngularVel();
 #endif
     kineticEnergyMul2 +=
         particlePropertiesLibrary.getMolMass(iter->getTypeId()) * autopas::utils::ArrayMath::dot(vel, vel);
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+#if MD_FLEXIBLE_MODE==MULTISITE
     kineticEnergyMul2 += autopas::utils::ArrayMath::dot(particlePropertiesLibrary.getMomentOfInertia(iter->getTypeId()),
                                                             autopas::utils::ArrayMath::mul(angVel, angVel));
 #endif
   }
 // md-flexible's molecules have 3 DoF for translational velocity and optionally 3 additional rotational DoF
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
 constexpr unsigned int degreesOfFreedom{6};
 #else
 constexpr unsigned int degreesOfFreedom{3};
@@ -101,12 +101,12 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
     // parallel iterators
     for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
       const auto &vel = iter->getV();
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+#if MD_FLEXIBLE_MODE==MULTISITE
       const auto &angVel = iter->getAngularVel();
 #endif
       kineticEnergyMul2MapThread.at(iter->getTypeId()) +=
           particlePropertiesLibrary.getMolMass(iter->getTypeId()) * dot(vel, vel);
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+#if MD_FLEXIBLE_MODE==MULTISITE
       kineticEnergyMul2MapThread.at(iter->getTypeId()) += dot(particlePropertiesLibrary.getMomentOfInertia(iter->getTypeId()),
                                                               angVel * angVel);
 #endif
@@ -124,7 +124,7 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
     }
   }
   // md-flexible's molecules have 3 DoF for translational velocity and optionally 3 additional rotational DoF
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
   constexpr unsigned int degreesOfFreedom{6};
 #else
   constexpr unsigned int degreesOfFreedom{3};
@@ -178,13 +178,13 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
   using namespace autopas::utils::ArrayMath::literals;
   // Generate map(s) of molecule type Id to scaling factors
   std::map<size_t, double> translationalVelocityScale;
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+#if MD_FLEXIBLE_MODE==MULTISITE
   std::map<size_t, std::array<double,3>> rotationalVelocityScale;
 #endif
 
   for (int typeID = 0; typeID < particlePropertiesLibrary.getNumberRegisteredSiteTypes(); typeID++) {
     translationalVelocityScale.emplace(typeID, std::sqrt(targetTemperature / particlePropertiesLibrary.getMolMass(typeID)));
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+#if MD_FLEXIBLE_MODE==MULTISITE
     const auto momentOfInertia = particlePropertiesLibrary.getMomentOfInertia(typeID);
     const std::array<double, 3> scale{std::sqrt(targetTemperature / momentOfInertia[0]), std::sqrt(targetTemperature / momentOfInertia[1]),
                                       std::sqrt(targetTemperature / momentOfInertia[2])};
@@ -193,7 +193,7 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
   }
 
 
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+#if MD_FLEXIBLE_MODE==MULTISITE
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel default(none) shared(autopas, translationalVelocityScale, rotationalVelocityScale)
 #endif
@@ -210,7 +210,7 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
     for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
       const std::array<double, 3> normal3DVecTranslational = {normalDistribution(randomEngine), normalDistribution(randomEngine), normalDistribution(randomEngine)};
       iter->addV(normal3DVecTranslational * translationalVelocityScale[iter->getTypeId()]);
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+#if MD_FLEXIBLE_MODE==MULTISITE
       const std::array<double, 3> normal3DVecRotational = {normalDistribution(randomEngine), normalDistribution(randomEngine), normalDistribution(randomEngine)};
       iter->addAngularVel(normal3DVecRotational * rotationalVelocityScale[iter->getTypeId()]);
 #endif
@@ -257,7 +257,7 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
 #endif
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     iter->setV(iter->getV() * scalingMap[iter->getTypeId()]);
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+#if MD_FLEXIBLE_MODE==MULTISITE
     iter->setAngularVel(iter->getAngularVel() * scalingMap[iter->getTypeId()]);
 #endif
   }

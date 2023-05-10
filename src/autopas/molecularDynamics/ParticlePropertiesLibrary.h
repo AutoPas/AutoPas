@@ -368,7 +368,7 @@ floatType ParticlePropertiesLibrary<floatType, intType>::getSiteMass(intType i) 
 
 template <typename floatType, typename intType>
 floatType ParticlePropertiesLibrary<floatType, intType>::getMolMass(intType i) const {
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
   return _molMasses[i];
 #else
   return _siteMasses[i];

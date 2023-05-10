@@ -19,7 +19,7 @@ void fillWithParticlesAndInit(autopas::AutoPas<ParticleType> &autopasContainer) 
   ParticleType dummy;
   dummy.setF({0., 0., 1.});
   dummy.setV({0., 0., 1.});
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
   dummy.setTorque({1., 0., 0.});
   dummy.setAngularVel({1., 0., 0.});
   dummy.setQ({0., 0., 0., 1.});
@@ -30,7 +30,7 @@ void fillWithParticlesAndInit(autopas::AutoPas<ParticleType> &autopasContainer) 
 }
 
 void initPPL(ParticlePropertiesLibrary<> &PPL) {
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
   PPL.addSiteType(0, 1., 1., 0.5);
   PPL.addMolType(0, {0, 0}, {{-0.05, 0, 0}, {0.05, 0, 0}}, {1., 1., 1.});
 #else
@@ -170,7 +170,7 @@ TEST_F(TimeDiscretizationTest, testCalculateAngularVelocities) {
 
   // Init PPL
   PPL->addSiteType(0, 1, 1, 0.5);
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
   const std::array<double, 3> momentOfInertiaM = {5.23606798, 0.76393202, 6.};
   PPL->addMolType(0, {0, 0, 0},
                   {{0.74349607, 1.20300191, 0.}, {0.3249197, -1.37638192, 0.}, {-1.37638192, -0.3249197, 0.}},
@@ -299,7 +299,7 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
 
   const double deltaT = 0.1;
 
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
 
   // Init autopas
   autopasContainer->setBoxMin({0., 0., 0.});
@@ -468,7 +468,7 @@ TEST_F(TimeDiscretizationTest, testFastParticlesCheck) {
 
   const auto deltaT = 0.1;
   // slow particle -> no exception
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
   autoPas->addParticle(ParticleType({0., 0., 0.}, {0.05, 0., 0.}, {0.7071067811865475, 0.7071067811865475, 0., 0.}, {0., 0., 0.}, 0));
 #else
   autoPas->addParticle(ParticleType({0., 0., 0.}, {0.05, 0., 0.}, 0));

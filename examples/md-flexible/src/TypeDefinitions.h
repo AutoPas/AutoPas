@@ -6,7 +6,7 @@
 
 #pragma once
 
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+#if MD_FLEXIBLE_MODE==MULTISITE
 
 #include "autopas/molecularDynamics/MultisiteMoleculeLJ.h"
 
@@ -43,7 +43,7 @@ using FloatPrecision = double;
  * Type of the Particles used in md-flexible.
  * Switches between autopas::MoleculeLJ and autopas::MultisiteMoleculeLJ as determined by CMake flag MD_FLEXIBLE_USE_MULTI_SITE.
  */
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+#if MD_FLEXIBLE_MODE==MULTISITE
   using ParticleType = autopas::MultisiteMoleculeLJ;
 #else
   using ParticleType = autopas::MoleculeLJ;
@@ -54,7 +54,7 @@ using FloatPrecision = double;
  * Type of LJFunctorTypeAutovec used in md-flexible.
  * Switches between autopas::LJFunctor and autopas::LJMultisiteFunctor as determined by CMake flag MD_FLEXIBLE_USE_MULTI_SITE.
  */
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+#if MD_FLEXIBLE_MODE==MULTISITE
   using LJFunctorTypeAutovec = autopas::LJMultisiteFunctor<ParticleType, true, true>;
 #else
   using LJFunctorTypeAutovec = autopas::LJFunctor<ParticleType, true, true>;
@@ -67,7 +67,7 @@ using FloatPrecision = double;
  * Type of LJFunctorTypeAutovecGlobals used in md-flexible.
  * Switches between autopas::LJFunctor and autopas::LJMultisiteFunctor as determined by CMake flag MD_FLEXIBLE_USE_MULTI_SITE.
  */
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+#if MD_FLEXIBLE_MODE==MULTISITE
   using LJFunctorTypeAutovecGlobals = autopas::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
 #else
   using LJFunctorTypeAutovecGlobals = autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
@@ -81,7 +81,7 @@ using FloatPrecision = double;
  * Switches between autopas::LJFunctorAVX and autopas::LJMultisiteFunctorAVX as determined by CMake flag MD_FLEXIBLE_USE_MULTI_SITE.
  * @note autopas::LJMultisiteFunctorAVX is yet to be written, so a compiler pre-processing error is thrown.
  */
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+#if MD_FLEXIBLE_MODE==MULTISITE
 #error "Multi-Site Lennard-Jones Functor does not have AVX support!"
 #else
   using LJFunctorTypeAVX = autopas::LJFunctorAVX<ParticleType, true, true>;
@@ -96,7 +96,7 @@ using FloatPrecision = double;
  * Switches between autopas::LJFunctorSVE and autopas::LJMultisiteFunctorSVE as determined by CMake flag MD_FLEXIBLE_USE_MULTI_SITE.
  * @note autopas::LJMultisiteFunctorSVE is yet to be written, so a compiler pre-processing error is thrown.
    */
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+#if MD_FLEXIBLE_MODE==MULTISITE
 #error "Multi-Site Lennard-Jones Functor does not have SVE support!"
 #else
   using LJFunctorTypeSVE = autopas::LJFunctorSVE<ParticleType, true, true>;
@@ -116,7 +116,7 @@ using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<FloatPrecision, 
  * the CMake.
  * If no (valid) implementation is chosen, this is set to some arbitrary valid implementation, e.g. AutoVec.
  */
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE==MULTISITE
 #ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
 using LJFunctorTypeAbstract = autopas::LJMultisiteFunctor<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS
