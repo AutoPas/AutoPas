@@ -70,14 +70,14 @@ const std::string makeErrorMsg(const YAML::Mark &mark, const std::string &key, c
                                const std::string &expected, const std::string &description);
 
 /**
- * Parses the scalar value of a key in a Object-Node of a YAML-config.
- * @param node root-YAML-node of an Object.
+ * Parses the scalar value of a key in a complex-type node of a YAML-config.
+ * @param node root-YAML-node of a complex-type.
  * @param key The key to parse.
- * @param objectErrors Vector to store all errors during parsing of one object
+ * @param complexTypeErrors Vector to store all errors during parsing of one complex-type node
  * @return Parsed value of key. Throws a runtime_error if key could not be parsed.
  */
 template <typename T>
-const T parseObjectValueSingle(const YAML::Node node, const std::string &key, std::vector<std::string> &objectErrors) {
+const T parseComplexTypeValueSingle(const YAML::Node node, const std::string &key, std::vector<std::string> &complexTypeErrors) {
   T value;
   try {
     value = node[key].as<T>();
@@ -85,21 +85,21 @@ const T parseObjectValueSingle(const YAML::Node node, const std::string &key, st
     std::stringstream ss;
     ss << "Error parsing " << key << ". Make sure that key \"" << key
        << "\" exists and has the expected value: " << typeToStr<T>();
-    objectErrors.push_back(ss.str());
+    complexTypeErrors.push_back(ss.str());
   }
   return value;
 }
 
 /**
- * Parses the sequence value of a key in a Object-Node of a YAML-config
- * @param node root-YAML-node of an Object.
+ * Parses the sequence value of a key in a complex-type node of a YAML-config
+ * @param node root-YAML-node of a complex-type.
  * @param key The key to parse.
- * @param objectErrors Vector to store all errors during parsing of one object
+ * @param complexTypeErrors Vector to store all errors during parsing of one complex-type node
  * @return Parsed value of key. Throws a runtime_error if key could not be parsed.
  */
 template <typename T, size_t S>
-const std::array<T, S> parseObjectValueSequence(const YAML::Node node, const std::string &key,
-                                                std::vector<std::string> &objectErrors) {
+const std::array<T, S> parseComplexTypeValueSequence(const YAML::Node node, const std::string &key,
+                                                std::vector<std::string> &complexTypeErrors) {
   std::array<T, S> value;
   try {
     YAML::Node n = node[key];
@@ -111,21 +111,21 @@ const std::array<T, S> parseObjectValueSequence(const YAML::Node node, const std
     std::stringstream ss;
     ss << "Error parsing " << key << ". Make sure that key \"" << key << "\" exists and has the expected value: "
        << "YAML-sequence of " << std::to_string(S) << " " << typeToStr<T>() << " values.";
-    objectErrors.push_back(ss.str());
+    complexTypeErrors.push_back(ss.str());
   }
   return value;
 }
 
 /**
- * Parses the sequence value of a key in a Object-Node of a YAML-config. Variant for an unknown sequence size.
- * @param node root-YAML-node of an Object.
+ * Parses the sequence value of a key in a complex-type node of a YAML-config. Variant for an unknown sequence size.
+ * @param node root-YAML-node of a complex-type.
  * @param key The key to parse.
- * @param objectErrors Vector to store all errors during parsing of one object
+ * @param complexTypeErrors Vector to store all errors during parsing of one complex-type node
  * @return Parsed value of key. Throws a runtime_error if key could not be parsed.
  */
 template <typename T>
-const std::vector<T> parseObjectValueSequence(const YAML::Node node, const std::string &key,
-                                                std::vector<std::string> &objectErrors) {
+const std::vector<T> parseComplexTypeValueSequence(const YAML::Node node, const std::string &key,
+                                                std::vector<std::string> &complexTypeErrors) {
   std::vector<T> value;
   try {
     YAML::Node n = node[key];
@@ -139,7 +139,7 @@ const std::vector<T> parseObjectValueSequence(const YAML::Node node, const std::
     std::stringstream ss;
     ss << "Error parsing " << key << ". Make sure that key \"" << key << "\" exists and has the expected value: "
        << "YAML-sequence of " << typeToStr<T>() << " values.";
-    objectErrors.push_back(ss.str());
+    complexTypeErrors.push_back(ss.str());
   }
   return value;
 }
