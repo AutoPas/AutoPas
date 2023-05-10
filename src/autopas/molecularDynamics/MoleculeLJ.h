@@ -187,7 +187,7 @@ class MoleculeLJ : public autopas::Particle {
    */
   void setTypeId(size_t typeId) { _typeId = typeId; }
 
- private:
+ protected:
   /**
    * Molecule type id. In single-site simulations, this is used as a siteId to look up site attributes in the particle
    * properties library.

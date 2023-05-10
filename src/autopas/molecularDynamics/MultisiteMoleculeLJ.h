@@ -190,11 +190,11 @@ class MultisiteMoleculeLJ : public autopas::MoleculeLJ {
     } else if constexpr (attribute == AttributeNames::forceZ) {
       _f[2] = value;
     } else if constexpr (attribute == AttributeNames::oldForceX) {
-      setOldF(value, 0);
+      _oldF[0] = value;
     } else if constexpr (attribute == AttributeNames::oldForceY) {
-      setOldF(value, 1);
+      _oldF[1] = value;
     } else if constexpr (attribute == AttributeNames::oldForceZ) {
-      setOldF(value, 2);
+      _oldF[2] = value;
     } else if constexpr (attribute == AttributeNames::quaternion0) {
       _q[0] = value;
     } else if constexpr (attribute == AttributeNames::quaternion1) {
@@ -216,7 +216,7 @@ class MultisiteMoleculeLJ : public autopas::MoleculeLJ {
     } else if constexpr (attribute == AttributeNames::torqueZ) {
       _torque[2] = value;
     } else if constexpr (attribute == AttributeNames::typeId) {
-      setTypeId(value);
+      _typeId = value;
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       this->_ownershipState = value;
     } else {
