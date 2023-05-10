@@ -132,7 +132,7 @@ const std::vector<T> parseObjectValueSequence(const YAML::Node node, const std::
     const auto vecLength = n.size();
     value.reserve(vecLength);
     for (int i = 0; i < vecLength; i++) {
-      value[i] = n[i].as<T>();
+      value.emplace_back(n[i].as<T>());
     }
 
   } catch (const std::exception &e) {
