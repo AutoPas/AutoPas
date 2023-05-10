@@ -20,7 +20,7 @@ boundary-type                    :  [periodic, periodic, periodic]
 Objects:
   CubeClosestPacked:
     0:
-      box-length                 :  [15, 15, 15]
+      box-length                 :  [15, 6, 15]
       bottomLeftCorner           :  [0, 27, 0]
       particle-spacing           :  1.
       velocity                   :  [0, 0, 0]
