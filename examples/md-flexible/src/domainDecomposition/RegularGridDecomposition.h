@@ -60,31 +60,31 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Returns the minimum coordinates of global domain.
    * @return bottom left front corner of the global domain.
    */
-  [[nodiscard]] std::array<double, 3> getGlobalBoxMin() const override { return _globalBoxMin; }
+  [[nodiscard]] const std::array<double, 3> &getGlobalBoxMin() const override { return _globalBoxMin; }
 
   /**
    * Returns the maximum coordinates of global domain.
    * @return top right back corner of the global domain.
    */
-  [[nodiscard]] std::array<double, 3> getGlobalBoxMax() const override { return _globalBoxMax; }
+  [[nodiscard]] const std::array<double, 3> &getGlobalBoxMax() const override { return _globalBoxMax; }
 
   /**
    * Returns the minimum coordinates of local domain.
    * @return bottom left front corner of the local domain.
    */
-  [[nodiscard]] std::array<double, 3> getLocalBoxMin() const override { return _localBoxMin; }
+  [[nodiscard]] const std::array<double, 3> &getLocalBoxMin() const override { return _localBoxMin; }
 
   /**
    * Returns the maximum coordinates of local domain.
    * @return top right back corner of the local domain.
    */
-  [[nodiscard]] std::array<double, 3> getLocalBoxMax() const override { return _localBoxMax; }
+  [[nodiscard]] const std::array<double, 3> &getLocalBoxMax() const override { return _localBoxMax; }
 
   /**
    * Returns the number of domains in each dimension
    * @return vector containing the number of subdomains along each dimension
    */
-  [[nodiscard]] std::array<int, 3> getDecomposition() const { return _decomposition; }
+  [[nodiscard]] const std::array<int, 3> &getDecomposition() const { return _decomposition; }
 
   /**
    * Returns the numnber of subdomains in the decomposition.
@@ -96,7 +96,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Returns the current processes domain id.
    * @return domain id of the current processor
    */
-  [[nodiscard]] const std::array<int, 3> getDomainId() const { return _domainId; }
+  [[nodiscard]] const std::array<int, 3> &getDomainId() const { return _domainId; }
 
   /**
    * Returns the number of subdomains in the simulation.
@@ -116,7 +116,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param subdomainIndex: The index of the subdomain for which to calculate the extent.
    * @return extent of the subdomain with index subdomainIndex.
    */
-  [[nodiscard]] std::array<int, 6> getExtentOfSubdomain(const int subdomainIndex) const;
+  [[nodiscard]] std::array<int, 6> getExtentOfSubdomain(int subdomainIndex) const;
 
   /**
    * Exchanges halo particles with all neighbors of the provided AutoPasContainer.
@@ -180,12 +180,12 @@ class RegularGridDecomposition final : public DomainDecomposition {
   /**
    * The minimum coordinates of the global domain.
    */
-  const std::array<double, _dimensionCount> _globalBoxMin;
+  std::array<double, _dimensionCount> _globalBoxMin;
 
   /**
    * The maximum coordinates of the global domain.
    */
-  const std::array<double, _dimensionCount> _globalBoxMax;
+  std::array<double, _dimensionCount> _globalBoxMax;
 
   /**
    * Boundary condition types of all dimensions.
@@ -213,7 +213,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Indicator to MPI to view all communication dimensions as periodic.
    * @note For usage in MPI functions, the const needs to be casted away.
    */
-  const std::vector<int> _periods{_dimensionCount, 1};
+  std::vector<int> _periods{_dimensionCount, 1};
 
   /**
    * The MPI communicator containing all processes which own a subdomain in this decomposition.

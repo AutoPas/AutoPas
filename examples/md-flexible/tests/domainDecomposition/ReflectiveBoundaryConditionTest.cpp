@@ -268,13 +268,12 @@ INSTANTIATE_TEST_SUITE_P(
     //    ,ReflectiveBoundaryConditionTest::PrintToStringParamName());
 );
 
-
 /**
  * Implements the reflective boundary zoning test.
  * @param particlePosition
  * @param particleType Must be either 0 or 1. 0 corresponds to a sigma of 0.1, 1 corresponds to a sigma of 0.2.
  */
-void testReflectiveBoundaryZoning(const std::array<double, 3> particlePosition, int particleTypeID) {
+void testReflectiveBoundaryZoning(const std::array<double, 3> &particlePosition, int particleTypeID) {
   using namespace autopas::utils::ArrayMath::literals;
   if (particleTypeID != 0 and particleTypeID != 1) {
     std::cerr << "testReflectiveBoundaryZoning only takes particle types of 0 or 1 only!";

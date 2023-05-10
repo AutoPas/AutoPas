@@ -61,14 +61,15 @@ class Sphere : public Object {
       for (int y = 0; y <= _radius; ++y) {
         for (int x = 0; x <= _radius; ++x) {
           // position relative to the center
-          std::array<double, 3> relativePos = {(double)x, (double)y, (double)z};
+          const std::array<double, 3> relativePos = {(double)x, (double)y, (double)z};
           // mirror to rest of sphere
           for (int i = -1; i <= 1; i += 2) {
             for (int k = -1; k <= 1; k += 2) {
               for (int l = -1; l <= 1; l += 2) {
-                std::array<double, 3> mirrorMultipliers = {(double)i, (double)k, (double)l};
+                const std::array<double, 3> mirrorMultipliers = {(double)i, (double)k, (double)l};
                 // position mirrored, scaled and absolute
-                std::array<double, 3> posVector = _center + ((relativePos * mirrorMultipliers) * _particleSpacing);
+                const std::array<double, 3> posVector =
+                    _center + ((relativePos * mirrorMultipliers) * _particleSpacing);
 
                 double distFromCentersSquare = autopas::utils::ArrayMath::dot(posVector - _center, posVector - _center);
                 const auto r = (_radius + 1) * _particleSpacing;

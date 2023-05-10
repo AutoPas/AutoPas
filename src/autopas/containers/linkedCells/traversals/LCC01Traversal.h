@@ -199,10 +199,11 @@ inline void LCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
   for (long x = -this->_overlap[0]; x <= 0l; ++x) {
     for (long y = -this->_overlap[1]; y <= static_cast<long>(this->_overlap[1]); ++y) {
       for (long z = -this->_overlap[2]; z <= static_cast<long>(this->_overlap[2]); ++z) {
-        std::array<double, 3> pos = {};
-        pos[0] = std::max(0l, (std::abs(x) - 1l)) * this->_cellLength[0];
-        pos[1] = std::max(0l, (std::abs(y) - 1l)) * this->_cellLength[1];
-        pos[2] = std::max(0l, (std::abs(z) - 1l)) * this->_cellLength[2];
+        const std::array<double, 3> pos = {
+            std::max(0l, (std::abs(x) - 1l)) * this->_cellLength[0],
+            std::max(0l, (std::abs(y) - 1l)) * this->_cellLength[1],
+            std::max(0l, (std::abs(z) - 1l)) * this->_cellLength[2],
+        };
         const double distSquare = utils::ArrayMath::dot(pos, pos);
         if (distSquare <= interactionLengthSquare) {
           const long currentOffset = utils::ThreeDimensionalMapping::threeToOneD(
@@ -222,7 +223,7 @@ inline void LCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
               _cellOffsets[index].insert(_cellOffsets[index].cbegin(),
                                          std::make_pair(offset, utils::ArrayMath::normalize(pos)));
             } else {
-              _cellOffsets[index].push_back(std::make_pair(offset, utils::ArrayMath::normalize(pos)));
+              _cellOffsets[index].emplace_back(offset, utils::ArrayMath::normalize(pos));
             }
           }
         }
