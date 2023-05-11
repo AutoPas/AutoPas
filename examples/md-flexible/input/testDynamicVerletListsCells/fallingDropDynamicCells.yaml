@@ -1,6 +1,6 @@
 container                        :  [DynamicVerletListsCells]
 verlet-rebuild-frequency         :  100
-verlet-skin-radius-per-timestep  :  0.003
+verlet-skin-radius-per-timestep  :  0.006
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [AoS]
@@ -48,7 +48,7 @@ Objects:
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
 vtk-filename                     :  fallingDropDynamicCells
-vtk-write-frequency              :  100000
+vtk-write-frequency              :  100
 no-flops                         :  false
 no-end-config                    :  true
 log-level                        :  error
