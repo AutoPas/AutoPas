@@ -171,11 +171,11 @@ TEST_F(ParticlePropertiesLibraryTest, LennardJonesTestShiftGivesCorrectEnergyAtC
   const auto shift = shift6 / 6.;
 
   // Create two LJ Molecules that are cutoff apart
-  Molecule molA({0.,0.,0.}, {0.,0.,0.}, 0, 0);
-  Molecule molB({cutoff,0.,0.}, {0.,0.,0.}, 1, 0);
+  mdLib::MoleculeLJ molA({0.,0.,0.}, {0.,0.,0.}, 0, 0);
+  mdLib::MoleculeLJ molB({cutoff,0.,0.}, {0.,0.,0.}, 1, 0);
 
   // Create LJ Functor class and use it to calculate the potential energy between the two
-  autopas::LJFunctor<Molecule, /* shifting */ false, /*mixing*/ true, autopas::FunctorN3Modes::Both,
+  mdLib::LJFunctor<mdLib::MoleculeLJ, /* shifting */ false, /*mixing*/ true, autopas::FunctorN3Modes::Both,
                        /*globals*/ true> ljFunctor(cutoff, *PPL);
 
   ljFunctor.initTraversal();
