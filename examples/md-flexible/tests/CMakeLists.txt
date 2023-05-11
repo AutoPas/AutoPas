@@ -42,6 +42,7 @@ target_link_libraries(
   PUBLIC
     autopas
     autopasTools
+    molecularDynamicsLibrary
     gmock
     yaml-cpp
     ${ALL_LIB} 

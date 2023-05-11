@@ -8,6 +8,7 @@ set(
     "${PROJECT_SOURCE_DIR}/examples/"
     "${PROJECT_SOURCE_DIR}/tests/"
     "${PROJECT_SOURCE_DIR}/tools/"
+    "${PROJECT_SOURCE_DIR}/applicationLibrary/"
 )
 
 # set ALL_CMake_FILES to cmake files in PROJECT_SOURCE_DIR, as we cannot do a recurse there.

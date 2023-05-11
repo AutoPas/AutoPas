@@ -8,6 +8,7 @@ INPUT                  = @PROJECT_SOURCE_DIR@/@DOXY_MAIN_PAGE@ \
                          @PROJECT_SOURCE_DIR@/tests/testAutopas/testingHelpers/ \
                          @PROJECT_SOURCE_DIR@/docs \
                          @PROJECT_SOURCE_DIR@/tools
+                         @PROJECT_SOURCE_DIR@/applicationLibrary
 FILE_PATTERNS          = *.h \
                          *.cuh \
                          *.cpp \
