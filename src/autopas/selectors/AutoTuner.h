@@ -584,15 +584,24 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
         staticTypedContainerPtr->forEachInRegion(
             [&](auto &p2) {
               const auto lockCoords = static_cast_array<size_t>((p2.getR() - haloBoxMin) * interactionLengthInv);
-              if constexpr (newton3) {
-                const std::lock_guard<std::mutex> lock(*_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
-                f->AoSFunctor(p1, p2, true);
-              } else {
-                f->AoSFunctor(p1, p2, false);
-                // no need to calculate force enacted on a halo
+              if (f->allowsMixedNewton3()) {
                 if (not p2.isHalo()) {
                   const std::lock_guard<std::mutex> lock(*_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
-                  f->AoSFunctor(p2, p1, false);
+                  f->AoSFunctor(p1, p2, true);
+                } else {
+                  f->AoSFunctor(p1, p2, false);
+                }
+              } else {
+                if constexpr (newton3) {
+                  const std::lock_guard<std::mutex> lock(*_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
+                  f->AoSFunctor(p1, p2, true);
+                } else {
+                  f->AoSFunctor(p1, p2, false);
+                  // no need to calculate force enacted on a halo
+                  if (not p2.isHalo()) {
+                    const std::lock_guard<std::mutex> lock(*_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
+                    f->AoSFunctor(p2, p1, false);
+                  }
                 }
               }
             },
@@ -610,8 +619,13 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
               // No need to apply anything to p1halo
               //   -> AoSFunctor(p1, p2, false) not needed as it neither adds force nor Upot (potential energy)
               //   -> newton3 argument needed for correct globals
-              const std::lock_guard<std::mutex> lock(*_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
-              f->AoSFunctor(p2, p1halo, newton3);
+              if (f->allowsMixedNewton3()) {
+                const std::lock_guard<std::mutex> lock(*_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
+                f->AoSFunctor(p2, p1halo, false);
+              } else {
+                const std::lock_guard<std::mutex> lock(*_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
+                f->AoSFunctor(p2, p1halo, newton3);
+              }
             },
             min, max, IteratorBehavior::owned);
       }
@@ -716,7 +730,11 @@ void AutoTuner<Particle>::doRemainderTraversal(PairwiseFunctor *f, T containerPt
       auto &particleBufferSoA = particleBuffers[i]._particleSoABuffer;
       auto &haloBufferSoA =
           haloParticleBuffers[(i + interactionOffset) % haloParticleBuffers.size()]._particleSoABuffer;
-      f->SoAFunctorPair(particleBufferSoA, haloBufferSoA, newton3);
+      if (f->allowsMixedNewton3()) {
+        f->SoAFunctorPair(particleBufferSoA, haloBufferSoA, false);
+      } else {
+        f->SoAFunctorPair(particleBufferSoA, haloBufferSoA, newton3);
+      }
     }
   }
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
