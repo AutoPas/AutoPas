@@ -19,7 +19,7 @@ namespace mdLib {
  * angular direction.
  *
  */
-class MultisiteMoleculeLJ : public autopas::MoleculeLJ {
+class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
   using idType = size_t;
 
  public:
@@ -36,7 +36,7 @@ class MultisiteMoleculeLJ : public autopas::MoleculeLJ {
    */
   MultisiteMoleculeLJ(std::array<double, 3> r, std::array<double, 3> v, std::array<double, 4> q,
                           std::array<double, 3> angularVel, unsigned long moleculeId, unsigned long typeId = 0)
-      : autopas::MoleculeLJ(r, v, moleculeId, typeId), _q(q), _angularVel(angularVel), _torque({0., 0., 0.}) {}
+      : mdLib::MoleculeLJ(r, v, moleculeId, typeId), _q(q), _angularVel(angularVel), _torque({0., 0., 0.}) {}
 
   /**
    * Destructor of the MulticenteredParticle class.
