@@ -12,7 +12,7 @@
 
 #include "WrapMPI.h"
 #include "autopas/containers/ParticleContainerInterface.h"
-#include "autopas/molecularDynamics/MoleculeLJ.h"
+#include "molecularDynamicsLibrary/MoleculeLJ.h"
 #include "autopas/selectors/Configuration.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/NumberSet.h"

@@ -12,8 +12,8 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPas.h"
-#include "autopas/molecularDynamics/MultisiteMoleculeLJ.h"
-#include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
+#include "molecularDynamicsLibrary/MultisiteMoleculeLJ.h"
+#include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopasTools/generators/GridGenerator.h"
 #include "src/TimeDiscretization.h"

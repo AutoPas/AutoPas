@@ -10,7 +10,7 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/cells/FullParticleCell.h"
-#include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
+#include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 #include "autopas/particles/Particle.h"
 #include "autopasTools/generators/RandomGenerator.h"
 #include "mocks/MockFunctor.h"

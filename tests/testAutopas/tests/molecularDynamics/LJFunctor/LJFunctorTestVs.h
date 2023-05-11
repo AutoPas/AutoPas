@@ -10,7 +10,7 @@
 
 #include "AutoPasTestBase.h"
 #include "LJFunctorTest.h"
-#include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
+#include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 #include "autopasTools/generators/RandomGenerator.h"
 
 template <class FuncType>

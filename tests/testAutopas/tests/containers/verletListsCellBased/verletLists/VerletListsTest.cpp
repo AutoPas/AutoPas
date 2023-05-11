@@ -8,7 +8,7 @@
 
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIterationTraversal.h"
-#include "autopas/molecularDynamics/LJFunctor.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
 
 using ::testing::_;
 using ::testing::AtLeast;

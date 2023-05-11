@@ -6,7 +6,7 @@
 #pragma once
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPasDecl.h"
-#include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
+#include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 #include "testingHelpers/commonTypedefs.h"
 #include "src/TypeDefinitions.h"
 

@@ -7,7 +7,7 @@
 #pragma once
 
 #include "autopas/cells/FullParticleCell.h"
-#include "autopas/molecularDynamics/MoleculeLJ.h"
+#include "molecularDynamicsLibrary/MoleculeLJ.h"
 #include "autopas/particles/Particle.h"
 #include "mocks/MockFunctor.h"
 

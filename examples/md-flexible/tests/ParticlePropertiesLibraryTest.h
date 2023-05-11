@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "AutoPasTestBase.h"
-#include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
+#include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 
 
 class ParticlePropertiesLibraryTest : public AutoPasTestBase {};

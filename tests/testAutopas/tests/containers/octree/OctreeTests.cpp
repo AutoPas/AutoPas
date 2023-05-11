@@ -15,7 +15,7 @@
 #include "autopas/containers/octree/Octree.h"
 #include "autopas/containers/octree/OctreeDirection.h"
 #include "autopas/containers/octree/OctreeNodeInterface.h"
-#include "autopas/molecularDynamics/LJFunctor.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/particles/Particle.h"
 #include "autopas/selectors/ContainerSelector.h"

@@ -5,7 +5,7 @@
  */
 #include "ParticlePropertiesLibraryTest.h"
 
-#include "autopas/molecularDynamics/LJFunctor.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
 /**

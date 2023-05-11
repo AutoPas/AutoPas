@@ -10,10 +10,10 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPasDecl.h"
-#include "autopas/molecularDynamics/LJFunctor.h"
-#include "autopas/molecularDynamics/LJMultisiteFunctor.h"
-#include "autopas/molecularDynamics/MultisiteMoleculeLJ.h"
-#include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
+#include "molecularDynamicsLibrary/LJMultisiteFunctor.h"
+#include "molecularDynamicsLibrary/MultisiteMoleculeLJ.h"
+#include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 
 /**
  * Test class for LJMultisiteFunctor

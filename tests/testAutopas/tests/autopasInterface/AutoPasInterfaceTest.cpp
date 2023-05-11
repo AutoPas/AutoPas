@@ -8,7 +8,7 @@
 
 #include "autopas/AutoPasDecl.h"
 #include "autopas/containers/CompatibleLoadEstimators.h"
-#include "autopas/molecularDynamics/LJFunctor.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
 extern template class autopas::AutoPas<Molecule>;

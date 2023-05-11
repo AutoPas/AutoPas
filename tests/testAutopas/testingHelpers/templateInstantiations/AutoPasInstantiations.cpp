@@ -6,7 +6,7 @@
  */
 
 #include "autopas/AutoPasImpl.h"
-#include "autopas/molecularDynamics/LJFunctor.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 #include "testingHelpers/EmptyFunctor.h"
 #include "testingHelpers/NonConstructibleParticle.h"

@@ -9,8 +9,8 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
-#include "autopas/molecularDynamics/LJFunctor.h"
-#include "autopas/molecularDynamics/LJFunctorAVX.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
+#include "molecularDynamicsLibrary/LJFunctorAVX.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -76,7 +76,7 @@ struct LJFunAVXShiftNoMixGlob : public LJFunAVXMol<true, false, true> {
   using LJFunAVXMol<true, false, true>::LJFunctorAVX;
 };
 #ifdef __ARM_FEATURE_SVE
-#include "autopas/molecularDynamics/LJFunctorSVE.h"
+#include "molecularDynamicsLibrary/LJFunctorSVE.h"
 
 template <bool shift, bool mixing, bool globals>
 using LJFunSVEMol = autopas::LJFunctorSVE<Molecule, shift, mixing, autopas::FunctorN3Modes::Both, globals>;

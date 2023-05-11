@@ -6,7 +6,7 @@
 
 #include "AoSvsSoATest.h"
 
-#include "autopas/molecularDynamics/LJFunctor.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
 
 using namespace autopas;
 

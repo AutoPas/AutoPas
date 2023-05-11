@@ -8,10 +8,10 @@
 
 #if MD_FLEXIBLE_MODE==MULTISITE
 
-#include "autopas/molecularDynamics/MultisiteMoleculeLJ.h"
+#include "molecularDynamicsLibrary/MultisiteMoleculeLJ.h"
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC) || defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
-#include "autopas/molecularDynamics/LJMultisiteFunctor.h"
+#include "molecularDynamicsLibrary/LJMultisiteFunctor.h"
 #endif
 
 #else
@@ -19,20 +19,20 @@
 #include "applicationLibrary/molecularDynamicsLibrary/MoleculeLJ.h"
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC) || defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
-#include "autopas/molecularDynamics/LJFunctor.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX)
-#include "autopas/molecularDynamics/LJFunctorAVX.h"
+#include "molecularDynamicsLibrary/LJFunctorAVX.h"
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE)
-#include "autopas/molecularDynamics/LJFunctorSVE.h"
+#include "molecularDynamicsLibrary/LJFunctorSVE.h"
 #endif
 
 #endif
 
-#include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
+#include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 
 /**
  * Precision used for particle representations. If you want to test other precisions change it here.
@@ -122,7 +122,7 @@ using LJFunctorTypeAbstract = autopas::LJMultisiteFunctor<ParticleType, true, tr
 #elif MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS
 using LJFunctorTypeAbstract = autopas::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
 #else
-#include "autopas/molecularDynamics/LJMultisiteFunctor.h"
+#include "molecularDynamicsLibrary/LJMultisiteFunctor.h"
 using LJFunctorTypeAbstract = autopas::LJMultisiteFunctor<ParticleType, true, true>;
 #endif
 
@@ -136,7 +136,7 @@ using LJFunctorTypeAbstract = autopas::LJFunctorAVX<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_SVE
 using LJFunctorTypeAbstract = autopas::LJFunctorSVE<ParticleType, true, true>;
 #else
-#include "autopas/molecularDynamics/LJFunctor.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
 using LJFunctorTypeAbstract = autopas::LJFunctor<ParticleType, true, true>;
 #endif
 
