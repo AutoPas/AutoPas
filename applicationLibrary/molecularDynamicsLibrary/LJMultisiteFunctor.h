@@ -166,6 +166,7 @@ class LJMultisiteFunctor
    * @param newton3 Flag for if newton3 is used.
    */
   void AoSFunctor(Particle &particleA, Particle &particleB, bool newton3) final {
+    using namespace autopas::utils::ArrayMath::literals;
     if (particleA.isDummy() or particleB.isDummy()) {
       return;
     }
@@ -241,17 +242,17 @@ class LJMultisiteFunctor
           // The division by 6 is handled in endTraversal, as well as the division by two needed if newton3 is not used.
           // There is a similar handling of the virial, but without the mutliplication/division by 6.
           const auto potentialEnergy6 = newton3 ? 0.5 * (epsilon24 * lj12m6 + shift6) : (epsilon24 * lj12m6 + shift6);
-          const auto virial = newton3 ? utils::ArrayMath::mulScalar(utils::ArrayMath::mul(displacement, force),0.5) : utils::ArrayMath::mul(displacement, force);
+          const auto virial = newton3 ? 0.5 * displacement * force : displacement * force;
 
-          const auto threadNum = autopas_get_thread_num();
+          const auto threadNum = autopas::autopas_get_thread_num();
 
           if (particleA.isOwned()) {
             _aosThreadData[threadNum].potentialEnergySum += potentialEnergy6;
-            _aosThreadData[threadNum].virialSum = utils::ArrayMath::add(_aosThreadData[threadNum].virialSum,virial);
+            _aosThreadData[threadNum].virialSum = _aosThreadData[threadNum].virialSum +virial;
           }
           if (newton3 and particleB.isOwned()) {
             _aosThreadData[threadNum].potentialEnergySum += potentialEnergy6;
-            _aosThreadData[threadNum].virialSum = utils::ArrayMath::add(_aosThreadData[threadNum].virialSum,virial);
+            _aosThreadData[threadNum].virialSum = _aosThreadData[threadNum].virialSum +virial;
           }
 
         }
@@ -363,7 +364,7 @@ class LJMultisiteFunctor
           siteForceY[siteIndex] = 0.;
           siteForceZ[siteIndex] = 0.;
           if (calculateGlobals) {
-            isSiteOwned[siteIndex] = ownedStatePtr[mol] == OwnershipState::owned;
+            isSiteOwned[siteIndex] = ownedStatePtr[mol] == autopas::OwnershipState::owned;
           }
           ++siteIndex;
         }
@@ -381,7 +382,7 @@ class LJMultisiteFunctor
           siteForceY[siteIndex] = 0.;
           siteForceZ[siteIndex] = 0.;
           if (calculateGlobals) {
-            isSiteOwned[siteIndex] = ownedStatePtr[mol] == OwnershipState::owned;
+            isSiteOwned[siteIndex] = ownedStatePtr[mol] == autopas::OwnershipState::owned;
           }
           ++siteIndex;
         }
@@ -512,7 +513,7 @@ class LJMultisiteFunctor
 
             // Add to the potential energy sum for each particle which is owned.
             // This results in obtaining 12 * the potential energy for the SoA.
-            const auto ownershipMask = (ownedStateA == OwnershipState::owned ? 1. : 0.) + (isSiteBOwned ? 1. : 0.);
+            const auto ownershipMask = (ownedStateA == autopas::OwnershipState::owned ? 1. : 0.) + (isSiteBOwned ? 1. : 0.);
             potentialEnergySum += potentialEnergy6 * ownershipMask;
             virialSumX += virialX * ownershipMask;
             virialSumY += virialY * ownershipMask;
@@ -567,7 +568,7 @@ class LJMultisiteFunctor
     }
 
     if constexpr (calculateGlobals) {
-      const auto threadNum = autopas_get_thread_num();
+      const auto threadNum = autopas::autopas_get_thread_num();
       // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in post-processing.
       // For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       const auto newton3Factor = newton3 ? .5 : 1.;
@@ -890,7 +891,7 @@ class LJMultisiteFunctor
           siteForceBy[siteIndex] = 0.;
           siteForceBz[siteIndex] = 0.;
           if (calculateGlobals) {
-            isSiteOwnedBArr[siteIndex] = ownedStatePtrB[mol] == OwnershipState::owned;
+            isSiteOwnedBArr[siteIndex] = ownedStatePtrB[mol] == autopas::OwnershipState::owned;
           }
           ++siteIndex;
         }
@@ -908,7 +909,7 @@ class LJMultisiteFunctor
           siteForceBy[siteIndex] = 0.;
           siteForceBz[siteIndex] = 0.;
           if (calculateGlobals) {
-            isSiteOwnedBArr[siteIndex] = ownedStatePtrB[mol] == OwnershipState::owned;
+            isSiteOwnedBArr[siteIndex] = ownedStatePtrB[mol] == autopas::OwnershipState::owned;
           }
           ++siteIndex;
         }
@@ -1045,9 +1046,9 @@ class LJMultisiteFunctor
             // Add to the potential energy sum for each particle which is owned.
             // This results in obtaining 12 * the potential energy for the SoA.
             const auto ownershipFactor = newton3 ?
-                                                 (ownedStateA==OwnershipState::owned ? 1. : 0.) +
+                                                 (ownedStateA==autopas::OwnershipState::owned ? 1. : 0.) +
                                                      (isSiteOwnedB ? 1. : 0.) :
-                                                 (ownedStateA==OwnershipState::owned ? 1. : 0.);
+                                                 (ownedStateA==autopas::OwnershipState::owned ? 1. : 0.);
             potentialEnergySum += potentialEnergy6 * ownershipFactor;
             virialSumX += virialX * ownershipFactor;
             virialSumY += virialY * ownershipFactor;
@@ -1103,7 +1104,7 @@ class LJMultisiteFunctor
       }
     }
     if constexpr (calculateGlobals) {
-      const auto threadNum = autopas_get_thread_num();
+      const auto threadNum = autopas::autopas_get_thread_num();
       // SoAFunctorPairImpl obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in post-processing.
       // For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       const auto newton3Factor = newton3 ? .5 : 1.;
@@ -1117,13 +1118,13 @@ class LJMultisiteFunctor
   }
 
   template <bool newton3>
-  void SoAFunctorVerletImpl(SoAView<SoAArraysType> soa, const size_t indexFirst,
+  void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                             const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
     // Skip if primary particle is dummy
     const auto ownedStatePrime = ownedStatePtr[indexFirst];
-    if (ownedStatePrime == OwnershipState::dummy) { return; }
+    if (ownedStatePrime == autopas::OwnershipState::dummy) { return; }
 
     const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
@@ -1243,7 +1244,7 @@ class LJMultisiteFunctor
           siteForceY[siteIndex] = 0.;
           siteForceZ[siteIndex] = 0.;
           if (calculateGlobals) {
-            isNeighborSiteOwnedArr[siteIndex] = ownedStatePtr[neighborMolIndex] == OwnershipState::owned;
+            isNeighborSiteOwnedArr[siteIndex] = ownedStatePtr[neighborMolIndex] == autopas::OwnershipState::owned;
           }
           ++siteIndex;
         }
@@ -1262,7 +1263,7 @@ class LJMultisiteFunctor
           siteForceY[siteIndex] = 0.;
           siteForceZ[siteIndex] = 0.;
           if (calculateGlobals) {
-            isNeighborSiteOwnedArr[siteIndex] = ownedStatePtr[neighborMolIndex] == OwnershipState::owned;
+            isNeighborSiteOwnedArr[siteIndex] = ownedStatePtr[neighborMolIndex] == autopas::OwnershipState::owned;
           }
           ++siteIndex;
         }
@@ -1402,9 +1403,9 @@ class LJMultisiteFunctor
           // Add to the potential energy sum for each particle which is owned.
           // This results in obtaining 12 * the potential energy for the SoA.
           const auto ownershipFactor = newton3 ?
-                                               (ownedStatePrime==OwnershipState::owned ? 1. : 0.) +
+                                               (ownedStatePrime==autopas::OwnershipState::owned ? 1. : 0.) +
                                                    (isNeighborSiteOwned ? 1. : 0.) :
-                                               (ownedStatePrime==OwnershipState::owned ? 1. : 0.);
+                                               (ownedStatePrime==autopas::OwnershipState::owned ? 1. : 0.);
           potentialEnergySum += potentialEnergy6 * ownershipFactor;
           virialSumX += virialX * ownershipFactor;
           virialSumY += virialY * ownershipFactor;
@@ -1467,7 +1468,7 @@ class LJMultisiteFunctor
     }
 
     if constexpr (calculateGlobals) {
-      const auto threadNum = autopas_get_thread_num();
+      const auto threadNum = autopas::autopas_get_thread_num();
       // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in post-processing.
       // For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       const auto newton3Factor = newton3 ? .5 : 1.;
@@ -1509,17 +1510,17 @@ class LJMultisiteFunctor
 
 template <bool applyShift, bool useMixing, autopas::FunctorN3Modes useNewton3, bool calculateGlobals,
           bool relevantForTuning>
-class LJMultisiteFunctor<autopas::MoleculeLJ, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>
-    : public autopas::Functor<autopas::MoleculeLJ,
-                              LJMultisiteFunctor<autopas::MoleculeLJ, applyShift, useMixing, useNewton3,
+class LJMultisiteFunctor<mdLib::MoleculeLJ, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>
+    : public autopas::Functor<mdLib::MoleculeLJ,
+                              LJMultisiteFunctor<mdLib::MoleculeLJ, applyShift, useMixing, useNewton3,
                                                    calculateGlobals, relevantForTuning>> {
  public:
   /**
    * Structure of the SoAs defined by the particle.
    */
-  using SoAArraysType = typename autopas::MoleculeLJ::SoAArraysType;
+  using SoAArraysType = typename mdLib::MoleculeLJ::SoAArraysType;
 
-  using SoAFloatPrecision = typename autopas::MoleculeLJ::ParticleSoAFloatPrecision;
+  using SoAFloatPrecision = typename mdLib::MoleculeLJ::ParticleSoAFloatPrecision;
 
   /**
    * Delete Default constructor
@@ -1533,7 +1534,7 @@ class LJMultisiteFunctor<autopas::MoleculeLJ, applyShift, useMixing, useNewton3,
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit LJMultisiteFunctor(SoAFloatPrecision cutoff, void * /*dummy*/)
-      : autopas::Functor<autopas::MoleculeLJ, LJMultisiteFunctor<autopas::MoleculeLJ, applyShift, useMixing,
+      : autopas::Functor<mdLib::MoleculeLJ, LJMultisiteFunctor<mdLib::MoleculeLJ, applyShift, useMixing,
                                                                    useNewton3, calculateGlobals, relevantForTuning>>(
             cutoff) {
     autopas::utils::ExceptionHandler::exception(
@@ -1562,13 +1563,13 @@ class LJMultisiteFunctor<autopas::MoleculeLJ, applyShift, useMixing, useNewton3,
         "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
   }
 
-  bool isRelevantForTuning() final { return relevantForTuning; }
+  bool isRelevantForTuning()  { return relevantForTuning; }
 
-  bool allowsNewton3() final {
+  bool allowsNewton3()  {
     return useNewton3 == autopas::FunctorN3Modes::Newton3Only or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
-  bool allowsNonNewton3() final {
+  bool allowsNonNewton3()  {
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
@@ -1582,18 +1583,18 @@ class LJMultisiteFunctor<autopas::MoleculeLJ, applyShift, useMixing, useNewton3,
    * @param particleB Particle j
    * @param newton3 Flag for if newton3 is used.
    */
-  void AoSFunctor(autopas::MoleculeLJ &particleA, autopas::MoleculeLJ &particleB, bool newton3) final {
+  void AoSFunctor(mdLib::MoleculeLJ &particleA, mdLib::MoleculeLJ &particleB, bool newton3)  {
     autopas::utils::ExceptionHandler::exception(
         "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
   }
 
-  void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
+  void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3)  {
     autopas::utils::ExceptionHandler::exception(
         "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
   }
 
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
-                      const bool newton3) final {
+                      const bool newton3)  {
     autopas::utils::ExceptionHandler::exception(
         "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
   }
@@ -1605,12 +1606,12 @@ class LJMultisiteFunctor<autopas::MoleculeLJ, applyShift, useMixing, useNewton3,
 
   static unsigned long getNumFlopsPerKernelCall(bool newton3, size_t numA, size_t numB) { return 0ul; }
 
-  void initTraversal() final {
+  void initTraversal()  {
     autopas::utils::ExceptionHandler::exception(
         "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
   }
 
-  void endTraversal(bool newton3) final {
+  void endTraversal(bool newton3)  {
     autopas::utils::ExceptionHandler::exception(
         "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
   }

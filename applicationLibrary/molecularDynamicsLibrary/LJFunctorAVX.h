@@ -39,10 +39,10 @@ namespace mdLib {
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
 template <class Particle, bool applyShift = false, bool useMixing = false,
-          FunctorN3Modes useNewton3 = FunctorN3Modes::Both, bool calculateGlobals = false,
+          autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool relevantForTuning = true>
 class LJFunctorAVX
-    : public Functor<Particle,
+    : public autopas::Functor<Particle,
                      LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
@@ -69,7 +69,7 @@ class LJFunctorAVX
         _aosThreadData(),
         _postProcessed{false} {
     if (calculateGlobals) {
-      _aosThreadData.resize(autopas_get_max_threads());
+      _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
   }
 #else
@@ -110,10 +110,10 @@ class LJFunctorAVX
 
   bool isRelevantForTuning() final { return relevantForTuning; }
 
-  bool allowsNewton3() final { return useNewton3 == FunctorN3Modes::Newton3Only or useNewton3 == FunctorN3Modes::Both; }
+  bool allowsNewton3() final { return useNewton3 == autopas::FunctorN3Modes::Newton3Only or useNewton3 == autopas::FunctorN3Modes::Both; }
 
   bool allowsNonNewton3() final {
-    return useNewton3 == FunctorN3Modes::Newton3Off or useNewton3 == FunctorN3Modes::Both;
+    return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
   inline void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
@@ -132,7 +132,7 @@ class LJFunctorAVX
       }
     }
     auto dr = i.getR() - j.getR();
-    double dr2 = utils::ArrayMath::dot(dr, dr);
+    double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
     if (dr2 > _cutoffSquaredAoS) {
       return;
@@ -158,7 +158,7 @@ class LJFunctorAVX
       // The division by 6 is handled in endTraversal, as well as the division by two needed if newton3 is not used.
       double potentialEnergy6 = epsilon24 * lj12m6 + shift6;
 
-      const int threadnum = autopas_get_thread_num();
+      const int threadnum = autopas::autopas_get_thread_num();
       // for non-newton3 the division is in the post-processing step.
       if (newton3) {
         potentialEnergy6 *= 0.5;
@@ -181,7 +181,7 @@ class LJFunctorAVX
    * This functor will always do a newton3 like traversal of the soa.
    * However, it still needs to know about newton3 to correctly add up the global values.
    */
-  inline void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) final {
+  inline void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
     if (newton3) {
       SoAFunctorSingleImpl<true>(soa);
     } else {
@@ -194,7 +194,7 @@ class LJFunctorAVX
    * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
    */
   // clang-format on
-  inline void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3) final {
+  inline void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, const bool newton3) final {
     if (newton3) {
       SoAFunctorPairImpl<true>(soa1, soa2);
     } else {
@@ -209,7 +209,7 @@ class LJFunctorAVX
    * @param soa
    */
   template <bool newton3>
-  inline void SoAFunctorSingleImpl(SoAView<SoAArraysType> soa) {
+  inline void SoAFunctorSingleImpl(autopas::SoAView<SoAArraysType> soa) {
 #ifdef __AVX__
     if (soa.getNumberOfParticles() == 0) return;
 
@@ -233,12 +233,12 @@ class LJFunctorAVX
     // reverse outer loop s.th. inner loop always beginns at aligned array start
     // typecast to detect underflow
     for (size_t i = soa.getNumberOfParticles() - 1; (long)i >= 0; --i) {
-      if (ownedStatePtr[i] == OwnershipState::dummy) {
+      if (ownedStatePtr[i] == autopas::OwnershipState::dummy) {
         // If the i-th particle is a dummy, skip this loop iteration.
         continue;
       }
 
-      static_assert(std::is_same_v<std::underlying_type_t<OwnershipState>, int64_t>,
+      static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int64_t>,
                     "OwnershipStates underlying type should be int64_t!");
       // ownedStatePtr contains int64_t, so we broadcast these to make an __m256i.
       // _mm256_set1_epi64x broadcasts a 64-bit integer, we use this instruction to have 4 values!
@@ -293,7 +293,7 @@ class LJFunctorAVX
     }
 
     if constexpr (calculateGlobals) {
-      const int threadnum = autopas_get_thread_num();
+      const int threadnum = autopas::autopas_get_thread_num();
 
       // horizontally reduce virialSumX and virialSumY
       const __m256d hSumVirialxy = _mm256_hadd_pd(virialSumX, virialSumY);
@@ -326,7 +326,7 @@ class LJFunctorAVX
   }
 
   template <bool newton3>
-  inline void SoAFunctorPairImpl(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2) {
+  inline void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2) {
 #ifdef __AVX__
     if (soa1.getNumberOfParticles() == 0 || soa2.getNumberOfParticles() == 0) return;
 
@@ -356,7 +356,7 @@ class LJFunctorAVX
     __m256d potentialEnergySum = _mm256_setzero_pd();
 
     for (unsigned int i = 0; i < soa1.getNumberOfParticles(); ++i) {
-      if (ownedStatePtr1[i] == OwnershipState::dummy) {
+      if (ownedStatePtr1[i] == autopas::OwnershipState::dummy) {
         // If the i-th particle is a dummy, skip this loop iteration.
         continue;
       }
@@ -365,7 +365,7 @@ class LJFunctorAVX
       __m256d fyacc = _mm256_setzero_pd();
       __m256d fzacc = _mm256_setzero_pd();
 
-      static_assert(std::is_same_v<std::underlying_type_t<OwnershipState>, int64_t>,
+      static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int64_t>,
                     "OwnershipStates underlying type should be int64_t!");
       // ownedStatePtr1 contains int64_t, so we broadcast these to make an __m256i.
       // _mm256_set1_epi64x broadcasts a 64-bit integer, we use this instruction to have 4 values!
@@ -411,7 +411,7 @@ class LJFunctorAVX
     }
 
     if constexpr (calculateGlobals) {
-      const int threadnum = autopas_get_thread_num();
+      const int threadnum = autopas::autopas_get_thread_num();
 
       // horizontally reduce virialSumX and virialSumY
       const __m256d hSumVirialxy = _mm256_hadd_pd(virialSumX, virialSumY);
@@ -621,7 +621,7 @@ class LJFunctorAVX
    * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly.
    */
   // clang-format on
-  inline void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
+  inline void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                                const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                                bool newton3) final {
     if (soa.getNumberOfParticles() == 0 or neighborList.empty()) return;
@@ -634,11 +634,11 @@ class LJFunctorAVX
 
  private:
   template <bool newton3>
-  inline void SoAFunctorVerletImpl(SoAView<SoAArraysType> soa, const size_t indexFirst,
+  inline void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                                    const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
 #ifdef __AVX__
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
-    if (ownedStatePtr[indexFirst] == OwnershipState::dummy) {
+    if (ownedStatePtr[indexFirst] == autopas::OwnershipState::dummy) {
       return;
     }
 
@@ -790,7 +790,7 @@ class LJFunctorAVX
     fzptr[indexFirst] += sumfz;
 
     if constexpr (calculateGlobals) {
-      const int threadnum = autopas_get_thread_num();
+      const int threadnum = autopas::autopas_get_thread_num();
 
       // horizontally reduce virialSumX and virialSumY
       const __m256d hSumVirialxy = _mm256_hadd_pd(virialSumX, virialSumY);
@@ -895,7 +895,7 @@ class LJFunctorAVX
     using namespace autopas::utils::ArrayMath::literals;
 
     if (_postProcessed) {
-      throw utils::ExceptionHandler::AutoPasException(
+      throw autopas::utils::ExceptionHandler::AutoPasException(
           "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
     }
 
@@ -922,12 +922,12 @@ class LJFunctorAVX
    */
   double getPotentialEnergy() {
     if (not calculateGlobals) {
-      throw utils::ExceptionHandler::AutoPasException(
+      throw autopas::utils::ExceptionHandler::AutoPasException(
           "Trying to get potential energy even though calculateGlobals is false. If you want this functor to calculate global "
           "values, please specify calculateGlobals to be true.");
     }
     if (not _postProcessed) {
-      throw utils::ExceptionHandler::AutoPasException("Cannot get potential energy, because endTraversal was not called.");
+      throw autopas::utils::ExceptionHandler::AutoPasException("Cannot get potential energy, because endTraversal was not called.");
     }
     return _potentialEnergySum;
   }
@@ -938,12 +938,12 @@ class LJFunctorAVX
    */
   double getVirial() {
     if (not calculateGlobals) {
-      throw utils::ExceptionHandler::AutoPasException(
+      throw autopas::utils::ExceptionHandler::AutoPasException(
           "Trying to get virial even though calculateGlobals is false. If you want this functor to calculate global "
           "values, please specify calculateGlobals to be true.");
     }
     if (not _postProcessed) {
-      throw utils::ExceptionHandler::AutoPasException("Cannot get virial, because endTraversal was not called.");
+      throw autopas::utils::ExceptionHandler::AutoPasException("Cannot get virial, because endTraversal was not called.");
     }
     return _virialSum[0] + _virialSum[1] + _virialSum[2];
   }
@@ -1031,7 +1031,7 @@ class LJFunctorAVX
       _mm256_set_epi64x(0, -1, -1, -1),
   };
   const __m256i _ownedStateDummyMM256i{0x0};
-  const __m256i _ownedStateOwnedMM256i{_mm256_set1_epi64x(static_cast<int64_t>(OwnershipState::owned))};
+  const __m256i _ownedStateOwnedMM256i{_mm256_set1_epi64x(static_cast<int64_t>(autopas::OwnershipState::owned))};
   const __m256d _cutoffSquared{};
   __m256d _shift6 = _mm256_setzero_pd();
   __m256d _epsilon24{};

@@ -30,7 +30,7 @@ class MoleculeLJ : public autopas::Particle {
    */
   explicit MoleculeLJ(const std::array<double, 3> &pos, const std::array<double, 3> &v, unsigned long moleculeId,
                       unsigned long typeId = 0)
-      : Particle(pos, v, moleculeId), _typeId(typeId) {}
+      : autopas::Particle(pos, v, moleculeId), _typeId(typeId) {}
 
   ~MoleculeLJ() = default;
 
@@ -66,7 +66,7 @@ class MoleculeLJ : public autopas::Particle {
   using SoAArraysType = typename autopas::utils::SoAType<
       MoleculeLJ *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/, double /*vx*/,
       double /*vy*/, double /*vz*/, double /*fx*/, double /*fy*/, double /*fz*/, double /*oldFx*/,
-      double /*oldFy*/, double /*oldFz*/, size_t /*typeid*/, OwnershipState /*ownershipState*/>::Type;
+      double /*oldFy*/, double /*oldFz*/, size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
 
   /**
    * Non-const getter for the pointer of this object.
@@ -116,7 +116,7 @@ class MoleculeLJ : public autopas::Particle {
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       return this->_ownershipState;
     } else {
-      utils::ExceptionHandler::exception("MoleculeLJ::get() unknown attribute {}", attribute);
+      autopas::utils::ExceptionHandler::exception("MoleculeLJ::get() unknown attribute {}", attribute);
     }
   }
 
@@ -159,7 +159,7 @@ class MoleculeLJ : public autopas::Particle {
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       this->_ownershipState = value;
     } else {
-      utils::ExceptionHandler::exception("MoleculeLJ::set() unknown attribute {}", attribute);
+      autopas::utils::ExceptionHandler::exception("MoleculeLJ::set() unknown attribute {}", attribute);
     }
   }
 

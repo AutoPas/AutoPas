@@ -40,10 +40,10 @@ namespace mdLib {
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
 template <class Particle, bool applyShift = false, bool useMixing = false,
-          FunctorN3Modes useNewton3 = FunctorN3Modes::Both, bool calculateGlobals = false,
+          autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool relevantForTuning = true>
 class LJFunctorSVE
-    : public Functor<Particle,
+    : public autopas::Functor<Particle,
                      LJFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
@@ -74,10 +74,10 @@ class LJFunctorSVE
     }
   }
 #else
-      : Functor<Particle,
+      : autopas::Functor<Particle,
                 LJFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
             cutoff) {
-    utils::ExceptionHandler::exception("AutoPas was compiled without SVE support!");
+    autopas::utils::ExceptionHandler::exception("AutoPas was compiled without SVE support!");
   }
 #endif
  public:
@@ -111,10 +111,10 @@ class LJFunctorSVE
 
   bool isRelevantForTuning() final { return relevantForTuning; }
 
-  bool allowsNewton3() final { return useNewton3 == FunctorN3Modes::Newton3Only or useNewton3 == FunctorN3Modes::Both; }
+  bool allowsNewton3() final { return useNewton3 == autopas::FunctorN3Modes::Newton3Only or useNewton3 == autopas::FunctorN3Modes::Both; }
 
   bool allowsNonNewton3() final {
-    return useNewton3 == FunctorN3Modes::Newton3Off or useNewton3 == FunctorN3Modes::Both;
+    return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
@@ -134,7 +134,7 @@ class LJFunctorSVE
       }
     }
     auto dr = i.getR() - j.getR();
-    double dr2 = utils::ArrayMath::dot(dr, dr);
+    double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
     if (dr2 > _cutoffSquaredAoS) {
       return;
@@ -156,7 +156,7 @@ class LJFunctorSVE
       auto virial = dr * f;
       double potentialEnergy6 = epsilon24 * lj12m6 + shift6;
 
-      const int threadnum = autopas_get_thread_num();
+      const int threadnum = autopas::autopas_get_thread_num();
       // for non-newton3 the division is in the post-processing step.
       if (newton3) {
         potentialEnergy6 *= 0.5;
@@ -179,7 +179,7 @@ class LJFunctorSVE
    * This functor will always do a newton3 like traversal of the soa.
    * However, it still needs to know about newton3 to correctly add up the global values.
    */
-  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) final {
+  void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
     if (newton3) {
       SoAFunctorSingleImpl<true>(soa);
     } else {
@@ -192,7 +192,7 @@ class LJFunctorSVE
    * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
    */
   // clang-format on
-  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3) final {
+  void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, const bool newton3) final {
     if (newton3) {
       SoAFunctorPairImpl<true>(soa1, soa2);
     } else {
@@ -207,7 +207,7 @@ class LJFunctorSVE
    * @param soa
    */
   template <bool newton3>
-  void SoAFunctorSingleImpl(SoAView<SoAArraysType> soa) {
+  void SoAFunctorSingleImpl(autopas::SoAView<SoAArraysType> soa) {
 #ifdef __ARM_FEATURE_SVE
     if (soa.getNumberOfParticles() == 0) return;
 
@@ -288,7 +288,7 @@ class LJFunctorSVE
   }
 
   template <bool newton3>
-  void SoAFunctorPairImpl(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2) {
+  void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2) {
 #ifdef __ARM_FEATURE_SVE
     if (soa1.getNumberOfParticles() == 0 || soa2.getNumberOfParticles() == 0) return;
 
@@ -603,7 +603,7 @@ class LJFunctorSVE
    * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly.
    */
   // clang-format on
-  void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
+  void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                         bool newton3) final {
     if (soa.getNumberOfParticles() == 0 or neighborList.empty()) return;
@@ -616,7 +616,7 @@ class LJFunctorSVE
 
  private:
   template <bool newton3>
-  void SoAFunctorVerletImpl(SoAView<SoAArraysType> soa, const size_t indexFirst,
+  void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                             const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
 #ifdef __ARM_FEATURE_SVE
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
@@ -771,7 +771,7 @@ class LJFunctorSVE
     using namespace autopas::utils::ArrayMath::literals;
 
     if (_postProcessed) {
-      throw utils::ExceptionHandler::AutoPasException(
+      throw autopas::utils::ExceptionHandler::AutoPasException(
           "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
     }
 
@@ -798,12 +798,12 @@ class LJFunctorSVE
    */
   double getPotentialEnergy() {
     if (not calculateGlobals) {
-      throw utils::ExceptionHandler::AutoPasException(
+      throw autopas::utils::ExceptionHandler::AutoPasException(
           "Trying to get potential energy even though calculateGlobals is false. If you want this functor to calculate global "
           "values, please specify calculateGlobals to be true.");
     }
     if (not _postProcessed) {
-      throw utils::ExceptionHandler::AutoPasException("Cannot get potential energy, because endTraversal was not called.");
+      throw autopas::utils::ExceptionHandler::AutoPasException("Cannot get potential energy, because endTraversal was not called.");
     }
     return _potentialEnergySum;
   }
@@ -814,12 +814,12 @@ class LJFunctorSVE
    */
   double getVirial() {
     if (not calculateGlobals) {
-      throw utils::ExceptionHandler::AutoPasException(
+      throw autopas::utils::ExceptionHandler::AutoPasException(
           "Trying to get virial even though calculateGlobals is false. If you want this functor to calculate global "
           "values, please specify calculateGlobals to be true.");
     }
     if (not _postProcessed) {
-      throw utils::ExceptionHandler::AutoPasException("Cannot get virial, because endTraversal was not called.");
+      throw autopas::utils::ExceptionHandler::AutoPasException("Cannot get virial, because endTraversal was not called.");
     }
     return _virialSum[0] + _virialSum[1] + _virialSum[2];
   }

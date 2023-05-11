@@ -33,10 +33,10 @@ namespace mdLib {
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
 template <class Particle, bool applyShift = false, bool useMixing = false,
-          FunctorN3Modes useNewton3 = FunctorN3Modes::Both, bool calculateGlobals = false,
+          autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool relevantForTuning = true>
 class LJFunctor
-    : public Functor<Particle,
+    : public autopas::Functor<Particle,
                      LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
   /**
    * Structure of the SoAs defined by the particle.
@@ -61,7 +61,7 @@ class LJFunctor
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit LJFunctor(double cutoff, void * /*dummy*/)
-      : Functor<Particle, LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
+      : autopas::Functor<Particle, LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
             cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
@@ -69,7 +69,7 @@ class LJFunctor
         _aosThreadData(),
         _postProcessed{false} {
     if constexpr (calculateGlobals) {
-      _aosThreadData.resize(autopas_get_max_threads());
+      _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
   }
 
@@ -104,10 +104,10 @@ class LJFunctor
 
   bool isRelevantForTuning() final { return relevantForTuning; }
 
-  bool allowsNewton3() final { return useNewton3 == FunctorN3Modes::Newton3Only or useNewton3 == FunctorN3Modes::Both; }
+  bool allowsNewton3() final { return useNewton3 == autopas::FunctorN3Modes::Newton3Only or useNewton3 == autopas::FunctorN3Modes::Both; }
 
   bool allowsNonNewton3() final {
-    return useNewton3 == FunctorN3Modes::Newton3Off or useNewton3 == FunctorN3Modes::Both;
+    return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
@@ -127,7 +127,7 @@ class LJFunctor
       }
     }
     auto dr = i.getR() - j.getR();
-    double dr2 = utils::ArrayMath::dot(dr, dr);
+    double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
     if (dr2 > _cutoffSquared) {
       return;
@@ -153,7 +153,7 @@ class LJFunctor
       // The division by 6 is handled in endTraversal, as well as the division by two needed if newton3 is not used.
       double potentialEnergy6 = epsilon24 * lj12m6 + shift6;
 
-      const int threadnum = autopas_get_thread_num();
+      const int threadnum = autopas::autopas_get_thread_num();
       if (newton3) {
         potentialEnergy6 *= 0.5;
         virial *= (double)0.5;
@@ -175,7 +175,7 @@ class LJFunctor
    * This functor will always use a newton3 like traversal of the soa.
    * However, it still needs to know about newton3 to correctly add up the global values.
    */
-  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) final {
+  void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
     if (soa.getNumberOfParticles() == 0) return;
 
     const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
@@ -196,9 +196,9 @@ class LJFunctor
     SoAFloatPrecision virialSumY = 0.;
     SoAFloatPrecision virialSumZ = 0.;
 
-    std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> sigmaSquareds;
-    std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> epsilon24s;
-    std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> shift6s;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> sigmaSquareds;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> epsilon24s;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> shift6s;
     if constexpr (useMixing) {
       // Preload all sigma and epsilons for next vectorized region.
       // Not preloading and directly using the values, will produce worse results.
@@ -216,7 +216,7 @@ class LJFunctor
 
     for (unsigned int i = 0; i < soa.getNumberOfParticles(); ++i) {
       const auto ownedStateI = ownedStatePtr[i];
-      if (ownedStateI == OwnershipState::dummy) {
+      if (ownedStateI == autopas::OwnershipState::dummy) {
         continue;
       }
 
@@ -264,7 +264,7 @@ class LJFunctor
 
         // Mask away if distance is too large or any particle is a dummy.
         // Particle ownedStateI was already checked previously.
-        const bool mask = dr2 <= cutoffSquared and ownedStateJ != OwnershipState::dummy;
+        const bool mask = dr2 <= cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy;
 
         const SoAFloatPrecision invdr2 = 1. / dr2;
         const SoAFloatPrecision lj2 = sigmaSquared * invdr2;
@@ -295,7 +295,7 @@ class LJFunctor
           // Add to the potential energy sum for each particle which is owned.
           // This results in obtaining 12 * the potential energy for the SoA.
           SoAFloatPrecision energyFactor =
-              (ownedStateI == OwnershipState::owned ? 1. : 0.) + (ownedStateJ == OwnershipState::owned ? 1. : 0.);
+              (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) + (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.);
           potentialEnergySum += potentialEnergy6 * energyFactor;
 
           virialSumX += virialx * energyFactor;
@@ -309,7 +309,7 @@ class LJFunctor
       fzptr[i] += fzacc;
     }
     if (calculateGlobals) {
-      const int threadnum = autopas_get_thread_num();
+      const int threadnum = autopas::autopas_get_thread_num();
       // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in post-processing.
       // For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       const double factor = newton3 ? .5 : 1.;
@@ -323,7 +323,7 @@ class LJFunctor
   /**
    * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
    */
-  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3) final {
+  void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, const bool newton3) final {
     if (newton3) {
       SoAFunctorPairImpl<true>(soa1, soa2);
     } else {
@@ -340,7 +340,7 @@ class LJFunctor
    * @param soa2
    */
   template <bool newton3>
-  void SoAFunctorPairImpl(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2) {
+  void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2) {
     if (soa1.getNumberOfParticles() == 0 || soa2.getNumberOfParticles() == 0) return;
 
     const auto *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
@@ -373,9 +373,9 @@ class LJFunctor
     SoAFloatPrecision epsilon24 = _epsilon24;
 
     // preload all sigma and epsilons for next vectorized region
-    std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> sigmaSquareds;
-    std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> epsilon24s;
-    std::vector<SoAFloatPrecision, AlignedAllocator<SoAFloatPrecision>> shift6s;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> sigmaSquareds;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> epsilon24s;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> shift6s;
     if constexpr (useMixing) {
       sigmaSquareds.resize(soa2.getNumberOfParticles());
       epsilon24s.resize(soa2.getNumberOfParticles());
@@ -391,7 +391,7 @@ class LJFunctor
       SoAFloatPrecision fzacc = 0;
 
       const auto ownedStateI = ownedStatePtr1[i];
-      if (ownedStateI == OwnershipState::dummy) {
+      if (ownedStateI == autopas::OwnershipState::dummy) {
         continue;
       }
 
@@ -432,7 +432,7 @@ class LJFunctor
 
         // Mask away if distance is too large or any particle is a dummy.
         // Particle ownedStateI was already checked previously.
-        const bool mask = dr2 <= cutoffSquared and ownedStateJ != OwnershipState::dummy;
+        const bool mask = dr2 <= cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy;
 
         const SoAFloatPrecision invdr2 = 1. / dr2;
         const SoAFloatPrecision lj2 = sigmaSquared * invdr2;
@@ -463,7 +463,7 @@ class LJFunctor
           // Add to the potential energy sum for each particle which is owned.
           // This results in obtaining 12 * the potential energy for the SoA.
           SoAFloatPrecision energyFactor =
-              (ownedStateI == OwnershipState::owned ? 1. : 0.) + (ownedStateJ == OwnershipState::owned ? 1. : 0.);
+              (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) + (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.);
           potentialEnergySum += potentialEnergy6 * energyFactor;
 
           virialSumX += virialx * energyFactor;
@@ -476,7 +476,7 @@ class LJFunctor
       fz1ptr[i] += fzacc;
     }
     if (calculateGlobals) {
-      const int threadnum = autopas_get_thread_num();
+      const int threadnum = autopas::autopas_get_thread_num();
       // SoAFunctorPairImpl obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in post-processing.
       // For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       const double factor = newton3 ? .5 : 1.;
@@ -495,7 +495,7 @@ class LJFunctor
    * are no dependencies, i.e. introduce colors!
    */
   // clang-format on
-  void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
+  void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                         bool newton3) final {
     if (soa.getNumberOfParticles() == 0 or neighborList.empty()) return;
@@ -595,7 +595,7 @@ class LJFunctor
     using namespace autopas::utils::ArrayMath::literals;
 
     if (_postProcessed) {
-      throw utils::ExceptionHandler::AutoPasException(
+      throw autopas::utils::ExceptionHandler::AutoPasException(
           "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
     }
     if (calculateGlobals) {
@@ -621,12 +621,12 @@ class LJFunctor
    */
   double getPotentialEnergy() {
     if (not calculateGlobals) {
-      throw utils::ExceptionHandler::AutoPasException(
+      throw autopas::utils::ExceptionHandler::AutoPasException(
           "Trying to get potential energy even though calculateGlobals is false. If you want this functor to calculate global "
           "values, please specify calculateGlobals to be true.");
     }
     if (not _postProcessed) {
-      throw utils::ExceptionHandler::AutoPasException("Cannot get potential energy, because endTraversal was not called.");
+      throw autopas::utils::ExceptionHandler::AutoPasException("Cannot get potential energy, because endTraversal was not called.");
     }
     return _potentialEnergySum;
   }
@@ -637,12 +637,12 @@ class LJFunctor
    */
   double getVirial() {
     if (not calculateGlobals) {
-      throw utils::ExceptionHandler::AutoPasException(
+      throw autopas::utils::ExceptionHandler::AutoPasException(
           "Trying to get virial even though calculateGlobals is false. If you want this functor to calculate global "
           "values, please specify calculateGlobals to be true.");
     }
     if (not _postProcessed) {
-      throw utils::ExceptionHandler::AutoPasException("Cannot get virial, because endTraversal was not called.");
+      throw autopas::utils::ExceptionHandler::AutoPasException("Cannot get virial, because endTraversal was not called.");
     }
     return _virialSum[0] + _virialSum[1] + _virialSum[2];
   }
@@ -650,7 +650,7 @@ class LJFunctor
 
  private:
   template <bool newton3>
-  void SoAFunctorVerletImpl(SoAView<SoAArraysType> soa, const size_t indexFirst,
+  void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                             const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
     const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
@@ -682,7 +682,7 @@ class LJFunctor
 
     // checks whether particle i is owned.
     const auto ownedStateI = ownedStatePtr[indexFirst];
-    if (ownedStateI == OwnershipState::dummy) {
+    if (ownedStateI == autopas::OwnershipState::dummy) {
       return;
     }
 
@@ -706,7 +706,7 @@ class LJFunctor
     // we will use a vectorized version.
     if (neighborListSize >= vecsize) {
       alignas(64) std::array<SoAFloatPrecision, vecsize> xtmp, ytmp, ztmp, xArr, yArr, zArr, fxArr, fyArr, fzArr;
-      alignas(64) std::array<OwnershipState, vecsize> ownedStateArr{};
+      alignas(64) std::array<autopas::OwnershipState, vecsize> ownedStateArr{};
       // broadcast of the position of particle i
       for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
         xtmp[tmpj] = xptr[indexFirst];
@@ -719,9 +719,9 @@ class LJFunctor
         // vecsize particles in the neighborlist of particle i starting at
         // particle joff
 
-        [[maybe_unused]] alignas(DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecsize> sigmaSquareds;
-        [[maybe_unused]] alignas(DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecsize> epsilon24s;
-        [[maybe_unused]] alignas(DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecsize> shift6s;
+        [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecsize> sigmaSquareds;
+        [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecsize> epsilon24s;
+        [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecsize> shift6s;
         if constexpr (useMixing) {
           for (size_t j = 0; j < vecsize; j++) {
             sigmaSquareds[j] = _PPLibrary->getMixingSigmaSquared(typeptr1[indexFirst], typeptr2[neighborListPtr[joff + j]]);
@@ -766,7 +766,7 @@ class LJFunctor
 
           // Mask away if distance is too large or any particle is a dummy.
           // Particle ownedStateI was already checked previously.
-          const bool mask = dr2 <= cutoffSquared and ownedStateJ != OwnershipState::dummy;
+          const bool mask = dr2 <= cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy;
 
           const SoAFloatPrecision invdr2 = 1. / dr2;
           const SoAFloatPrecision lj2 = sigmaSquared * invdr2;
@@ -793,9 +793,9 @@ class LJFunctor
             SoAFloatPrecision virialz = drz * fz;
             SoAFloatPrecision potentialEnergy6 = mask ? (epsilon24 * lj12m6 + shift6) : 0.;
 
-            SoAFloatPrecision energyFactor = (ownedStateI == OwnershipState::owned ? 1. : 0.);
+            SoAFloatPrecision energyFactor = (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.);
             if constexpr (newton3) {
-              energyFactor += (ownedStateJ == OwnershipState::owned ? 1. : 0.);
+              energyFactor += (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.);
             }
             potentialEnergySum += potentialEnergy6 * energyFactor;
             virialSumX += virialx * energyFactor;
@@ -828,7 +828,7 @@ class LJFunctor
       }
 
       const auto ownedStateJ = ownedStatePtr[j];
-      if (ownedStateJ == OwnershipState::dummy) {
+      if (ownedStateJ == autopas::OwnershipState::dummy) {
         continue;
       }
 
@@ -874,7 +874,7 @@ class LJFunctor
         // Add to the potential energy sum for each particle which is owned.
         // This results in obtaining 12 * the potential energy for the SoA.
         SoAFloatPrecision energyFactor =
-            (ownedStateI == OwnershipState::owned ? 1. : 0.) + (ownedStateJ == OwnershipState::owned ? 1. : 0.);
+            (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) + (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.);
         potentialEnergySum += potentialEnergy6 * energyFactor;
         virialSumX += virialx * energyFactor;
         virialSumY += virialy * energyFactor;
@@ -889,7 +889,7 @@ class LJFunctor
     }
 
     if (calculateGlobals) {
-      const int threadnum = autopas_get_thread_num();
+      const int threadnum = autopas::autopas_get_thread_num();
       // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in post-processing.
       // For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       const double factor = newton3 ? .5 : 1.;
