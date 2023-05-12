@@ -8,6 +8,7 @@
 #include <gtest/gtest.h>
 
 #define AOS_VS_SOA_ACCURACY 1e-8
+#define PARTICLES_PER_DIM 8
 
 void LJMultisiteFunctorCTSTest::generatePPL(ParticlePropertiesLibrary<double, size_t> *PPL) {
   PPL->addSiteType(0, 1, 1, 1);
