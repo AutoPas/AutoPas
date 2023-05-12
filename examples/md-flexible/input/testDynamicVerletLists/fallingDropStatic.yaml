@@ -1,5 +1,5 @@
 container                        :  [VerletLists]
-verlet-rebuild-frequency         :  8
+verlet-rebuild-frequency         :  4
 verlet-skin-radius-per-timestep  :  0.075
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
