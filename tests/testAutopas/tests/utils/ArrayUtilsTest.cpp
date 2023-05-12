@@ -12,16 +12,16 @@
 
 using namespace autopas;
 
-TEST(ArrayUtilsTest, teststatic_cast_array) {
+TEST(ArrayUtilsTest, teststatic_cast_copy_array) {
   {
     std::array<long, 3> in({1l, 2l, 3l});
-    auto out = utils::ArrayUtils::static_cast_array<unsigned long>(in);
+    auto out = utils::ArrayUtils::static_cast_copy_array<unsigned long>(in);
     static_assert(std::is_same<decltype(out), std::array<unsigned long, 3>>::value, "Type mismatch");
   }
 
   {
     std::array<long, 3> in({1l, 2l, 3l});
-    auto out = utils::ArrayUtils::static_cast_array<double>(in);
+    auto out = utils::ArrayUtils::static_cast_copy_array<double>(in);
     static_assert(std::is_same<decltype(out), std::array<double, 3>>::value, "Type mismatch");
   }
 }
