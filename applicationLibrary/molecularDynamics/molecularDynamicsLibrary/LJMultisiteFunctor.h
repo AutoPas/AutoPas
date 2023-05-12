@@ -242,7 +242,7 @@ class LJMultisiteFunctor
           // The division by 6 is handled in endTraversal, as well as the division by two needed if newton3 is not used.
           // There is a similar handling of the virial, but without the mutliplication/division by 6.
           const auto potentialEnergy6 = newton3 ? 0.5 * (epsilon24 * lj12m6 + shift6) : (epsilon24 * lj12m6 + shift6);
-          const auto virial = newton3 ? 0.5 * displacement * force : displacement * force;
+          const auto virial = newton3 ? (displacement * force) * 0.5 : displacement * force;
 
           const auto threadNum = autopas::autopas_get_thread_num();
 

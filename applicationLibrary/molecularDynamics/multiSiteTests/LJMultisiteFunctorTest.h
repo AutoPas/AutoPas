@@ -35,7 +35,7 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
    * @param molecules
    * @param offset position offset
    */
-  void generateMolecules(std::vector<autopas::MultisiteMoleculeLJ> *molecules, std::array<double, 3> offset);
+  void generateMolecules(std::vector<mdLib::MultisiteMoleculeLJ> *molecules, std::array<double, 3> offset);
 
   /**
    * Tests the correctness of the AoS functor for a given molA, molB, PPL, and cutoff.
@@ -50,7 +50,7 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
    * @param cutoff
    */
   template <bool newton3, bool calculateGlobals, bool applyShift>
-  void testAoSForceCalculation(autopas::MultisiteMoleculeLJ molA, autopas::MultisiteMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
+  void testAoSForceCalculation(mdLib::MultisiteMoleculeLJ molA, mdLib::MultisiteMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 
   /**
    * Runs a suite of testAoSForceCalculation functions such that the AoS Functor is tested for the given arguments with
@@ -63,7 +63,7 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
    * @param PPL
    * @param cutoff
    */
-  void testSuiteAoSForceCalculation(autopas::MultisiteMoleculeLJ molA, autopas::MultisiteMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
+  void testSuiteAoSForceCalculation(mdLib::MultisiteMoleculeLJ molA, mdLib::MultisiteMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 
   /**
    * Compares the forces produced by the single-site functor and the multi-site functor applied to single-site molecules.
@@ -80,7 +80,7 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
    * @param cutoff
    */
   template <bool newton3, bool calculateGobals, bool applyShift>
-  void singleSiteSanityCheck(autopas::MultisiteMoleculeLJ molA, autopas::MultisiteMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
+  void singleSiteSanityCheck(mdLib::MultisiteMoleculeLJ molA, mdLib::MultisiteMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 
   /**
    * Compares the correctness of the SoACellFunctor against that of the AoSFunctor.
@@ -93,7 +93,7 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
    * @param cutoff
    */
   template <bool newton3, bool calculateGlobals, bool applyShift>
-  void testSoACellAgainstAoS(std::vector<autopas::MultisiteMoleculeLJ> molecules, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
+  void testSoACellAgainstAoS(std::vector<mdLib::MultisiteMoleculeLJ> molecules, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 
   /**
    * Compares the correctness of the SoACellPairFunctor against that of the AoSFunctor.
@@ -107,7 +107,7 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
    * @param cutoff
    */
   template <bool newton3, bool calculateGlobals, bool applyShift>
-  void testSoACellPairAgainstAoS(std::vector<autopas::MultisiteMoleculeLJ> moleculesA, std::vector<autopas::MultisiteMoleculeLJ> moleculesB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
+  void testSoACellPairAgainstAoS(std::vector<mdLib::MultisiteMoleculeLJ> moleculesA, std::vector<mdLib::MultisiteMoleculeLJ> moleculesB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 
   /**
    * Compares the correctness of the SoAVerletFunctor against that of the AoSFunctor.
@@ -120,7 +120,7 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
    * @param cutoff
    */
   template <bool newton3, bool calculateGlobals, bool applyShift>
-  void testSoAVerletAgainstAoS(std::vector<autopas::MultisiteMoleculeLJ> molecules, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
+  void testSoAVerletAgainstAoS(std::vector<mdLib::MultisiteMoleculeLJ> molecules, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 };
 
 

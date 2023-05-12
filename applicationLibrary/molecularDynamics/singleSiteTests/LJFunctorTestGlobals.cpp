@@ -85,7 +85,7 @@ void LJFunctorTestGlobals<FuncType>::testSoAGlobals(LJFunctorTestGlobals<FuncTyp
                                                     uint64_t numParticleReplicas) {
   constexpr bool shifting = true;
   constexpr bool mixing = false;
-  autopas::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> functor(cutoff);
+  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> functor(cutoff);
   functor.setParticleProperties(epsilon * 24, sigma);
   double xOffset;
   double whereFactor = 0.;
