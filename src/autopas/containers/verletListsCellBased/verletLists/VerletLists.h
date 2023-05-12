@@ -100,7 +100,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
    */
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
-    this->updateVerletListsAoS(traversal->getUseNewton3(), _partialRebuilding);
+    this->updateVerletListsAoS(traversal->getUseNewton3());
     // the neighbor list is now valid
     this->_neighborListIsValid.store(true, std::memory_order_relaxed);
 
@@ -118,7 +118,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
    * Update the verlet lists for AoS usage
    * @param useNewton3
    */
-  virtual void updateVerletListsAoS(bool useNewton3, bool partialRebuilding) {
+  virtual void updateVerletListsAoS(bool useNewton3) {
     generateAoSNeighborLists();
     typename VerletListHelpers<Particle>::VerletListGeneratorFunctor f(_aosNeighborLists,
                                                                        this->getCutoff() + this->getVerletSkin());
@@ -132,7 +132,6 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
                              DataLayoutOption::aos, theBool>(
                   this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
                   this->_linkedCells.getCellBlock().getCellLength());
-          this->_linkedCells.setOnlyDirtyCells(partialRebuilding);
           this->_linkedCells.iteratePairwise(&traversal);
         });
         break;
@@ -144,7 +143,6 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
                              DataLayoutOption::soa, theBool>(
                   this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
                   this->_linkedCells.getCellBlock().getCellLength());
-          this->_linkedCells.setOnlyDirtyCells(partialRebuilding);
           this->_linkedCells.iteratePairwise(&traversal);
         });
         break;
@@ -218,8 +216,6 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
    * Shows if the SoA neighbor list is currently valid.
    */
   bool _soaListIsValid{false};
-
-  bool _partialRebuilding {false};
 
   /**
    * Specifies for what data layout the verlet lists are build.

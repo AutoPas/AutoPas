@@ -34,24 +34,19 @@ class DynamicVerletLists : public VerletLists<Particle> {
 
     auto halfSkinSquare = (this->getVerletSkin() * this->getVerletSkin()) / 4;
     bool listInvalid = false;
-    bool partialRebuilding = false;
 
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel for reduction(|| : listInvalid, partialRebuilding) schedule(static, 50)
+#pragma omp parallel for reduction(|| : listInvalid) schedule(static, 50)
 #endif
     for (auto& particlePositionPair : _particlePtr2rebuildPositionBuffer) {
       auto distance = utils::ArrayMath::sub(particlePositionPair.first->getR(), particlePositionPair.second);
       double distanceSquare = utils::ArrayMath::dot(distance, distance);
 
       if (distanceSquare >=  halfSkinSquare) {
-        auto& cell = this->_linkedCells.getCellBlock().getContainingCell(particlePositionPair.first->getR());
-        cell.setDirty(true);
-        partialRebuilding = true;
         listInvalid = true;
       }
     }
 
-    this->_partialRebuilding = partialRebuilding;
     return !listInvalid;
   }
 
