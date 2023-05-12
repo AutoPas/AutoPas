@@ -121,7 +121,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
 
     _neighborList.buildAoSNeighborList(this->_linkedCells, this->_verletBuiltNewton3, this->getCutoff(),
                                        this->getVerletSkin(), this->getInteractionLength(), TraversalOption::lc_c18,
-                                       _buildType);
+                                       _buildType, _partialRebuilding);
 
     if (traversal->getDataLayout() == DataLayoutOption::soa) {
       _neighborList.generateSoAFromAoS(this->_linkedCells);
@@ -146,6 +146,8 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
    * Neighbor list abstraction for neighbor list used in the container.
    */
   NeighborList _neighborList;
+
+  bool _partialRebuilding {false};
 
 private:
   /**

@@ -63,15 +63,25 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
    */
   void buildAoSNeighborList(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
                             double interactionLength, const TraversalOption buildTraversalOption,
-                            typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType) override {
+                            typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType, bool partialRebuilding) override {
     // Initialize a neighbor list for each cell.
-    _aosNeighborList.clear();
+    if (!partialRebuilding) {
+      _aosNeighborList.clear();
+    }
     this->_internalLinkedCells = &linkedCells;
     auto &cells = linkedCells.getCells();
     size_t cellsSize = cells.size();
-    _aosNeighborList.resize(cellsSize);
+    // If partial rebuilding, don't delete all existing neighbor lists
+    if (!partialRebuilding) {
+      _aosNeighborList.resize(cellsSize);
+    }
     for (size_t cellIndex = 0; cellIndex < cellsSize; ++cellIndex) {
       auto &cell = cells[cellIndex];
+      // If partial rebuilding, only consider dirty cells
+      if (partialRebuilding && !cell.getDirty()) {
+        continue;
+      }
+      // _aosNeighborList[cellIndex].clear();
       _aosNeighborList[cellIndex].reserve(cell.numParticles());
       size_t particleIndexWithinCell = 0;
       for (auto iter = cell.begin(); iter != cell.end(); ++iter, ++particleIndexWithinCell) {
@@ -84,7 +94,8 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
       }
     }
 
-    applyBuildFunctor(linkedCells, useNewton3, cutoff, skin, interactionLength, buildTraversalOption, buildType);
+    // linkedCells.setOnlyDirtyCells(partialRebuilding);
+    applyBuildFunctor(linkedCells, useNewton3, cutoff, skin, interactionLength, buildTraversalOption, buildType, partialRebuilding);
   }
 
   /**
@@ -171,7 +182,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
    */
   void applyBuildFunctor(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
                          double interactionLength, const TraversalOption buildTraversalOption,
-                         typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType) override {
+                         typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType, bool partialRebuilding) override {
     VLCAllCellsGeneratorFunctor<Particle> f(_aosNeighborList, _particleToCellMap, cutoff + skin);
 
     // Generate the build traversal with the traversal selector and apply the build functor with it.

@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <atomic>
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 
@@ -131,6 +132,17 @@ class ParticleCell {
    * Lock object for exclusive access to this cell.
    */
   AutoPasLock _cellLock{};
+
+  void setDirty (bool dirty) {
+    // TODO : think about how to identify neighboring cells
+    this->_dirty.store(dirty, std::memory_order_relaxed);
+  }
+
+  bool getDirty() { return this->_dirty.load(std::memory_order_relaxed); }
+
+ private:
+
+  std::atomic<bool> _dirty{false};
 };
 
 }  // namespace autopas

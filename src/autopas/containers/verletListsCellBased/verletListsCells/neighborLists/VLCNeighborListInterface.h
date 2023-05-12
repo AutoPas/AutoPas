@@ -35,7 +35,7 @@ class VLCNeighborListInterface {
    */
   virtual void buildAoSNeighborList(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
                                     double interactionLength, const TraversalOption buildTraversalOption,
-                                    typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType) = 0;
+                                    typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType, bool partialRebuilding) = 0;
 
   /**
    * Gets the number of neighbors over all neighbor lists that belong to this particle.
@@ -123,7 +123,7 @@ class VLCNeighborListInterface {
    */
   virtual void applyBuildFunctor(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
                                  double interactionLength, const TraversalOption buildTraversalOption,
-                                 typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType) = 0;
+                                 typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType, bool partialRebuilding) = 0;
 };
 
 }  // namespace autopas

@@ -85,7 +85,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
 
   void buildAoSNeighborList(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
                             double interactionLength, const TraversalOption buildTraversalOption,
-                            typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType) override {
+                            typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType, bool partialRebuilding) override {
     this->_internalLinkedCells = &linkedCells;
     _aosNeighborList.clear();
     _globalToLocalIndex.clear();
@@ -148,7 +148,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
     }
 
     // fill the lists
-    applyBuildFunctor(linkedCells, useNewton3, cutoff, skin, interactionLength, buildTraversalOption, buildType);
+    applyBuildFunctor(linkedCells, useNewton3, cutoff, skin, interactionLength, buildTraversalOption, buildType, partialRebuilding);
   }
 
   void generateSoAFromAoS(LinkedCells<Particle> &linkedCells) override {
@@ -217,7 +217,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
  private:
   void applyBuildFunctor(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
                          double interactionLength, const TraversalOption buildTraversalOption,
-                         typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType) override {
+                         typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType, bool partialRebuilding) override {
     VLCCellPairGeneratorFunctor<Particle> f(_aosNeighborList, _particleToCellMap, _globalToLocalIndex, cutoff + skin);
 
     // Generate the build traversal with the traversal selector and apply the build functor with it.
