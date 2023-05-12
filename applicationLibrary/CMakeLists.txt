@@ -18,9 +18,11 @@ if (AUTOPAS_BUILD_TESTS)
             SS_TEST_SRC
             "molecularDynamics/singleSiteTests/*.cpp"
             "molecularDynamics/singleSiteTests/*.h"
+            "molecularDynamics/particlePropertiesLibraryTests/*.cpp"
+            "molecularDynamics/particlePropertiesLibraryTests/*.h"
     )
 
-    add_executable(mdLibSingleSiteTests ${SS_TEST_SRC})
+    add_executable(mdLibSingleSiteTests ${SS_TEST_SRC} mdLibTests.cpp)
 
     target_compile_definitions(
             mdLibSingleSiteTests PRIVATE
@@ -42,9 +44,11 @@ if (AUTOPAS_BUILD_TESTS)
             MS_TEST_SRC
             "molecularDynamics/multiSiteTests/*.cpp"
             "molecularDynamics/multiSiteTests/*.h"
+            "molecularDynamics/particlePropertiesLibraryTests/*.cpp"
+            "molecularDynamics/particlePropertiesLibraryTests/*.h"
     )
 
-    add_executable(mdLibMultiSiteTests ${MS_TEST_SRC})
+    add_executable(mdLibMultiSiteTests ${MS_TEST_SRC} mdLibTests.cpp molecularDynamics/testingTemplateInstatiations/templateInstatiations.cpp)
 
     target_compile_definitions(
             mdLibMultiSiteTests PRIVATE

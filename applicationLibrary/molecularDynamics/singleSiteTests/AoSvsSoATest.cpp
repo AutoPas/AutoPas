@@ -8,8 +8,6 @@
 
 #include "molecularDynamicsLibrary/LJFunctor.h"
 
-using namespace autopas;
-
 #define PARTICLES_PER_DIM 16
 
 /**
@@ -37,7 +35,7 @@ TEST_F(AoSvsSoATest, testAoSvsSoA) {
   auto particlesAoS = std::vector<Molecule>();
   generateParticles(&particlesAoS);
   auto particlesSoA = particlesAoS;
-  LJFunctor<Molecule> ljFunctor(PARTICLES_PER_DIM * 10);
+  mdLib::LJFunctor<Molecule> ljFunctor(PARTICLES_PER_DIM * 10);
   ljFunctor.setParticleProperties(1., 1.);
   // AoS
   std::chrono::high_resolution_clock::time_point start, stop;
