@@ -131,6 +131,14 @@ class ParticleCell {
    * Lock object for exclusive access to this cell.
    */
   AutoPasLock _cellLock{};
+
+  void setDirty(bool dirty) { _dirty = dirty; }
+
+  bool getDirty() { return _dirty; }
+
+ private:
+
+  bool _dirty {false};
 };
 
 }  // namespace autopas

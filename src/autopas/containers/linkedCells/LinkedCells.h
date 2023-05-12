@@ -106,6 +106,8 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     // nothing to do.
   }
 
+  void setOnlyDirtyCells (bool onlyDirty) { _onlyDirtyCells = onlyDirty; }
+
   bool neighborListsAreValid() override { return true; }
 
   /**
@@ -138,7 +140,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
     }
     if (traversalInterface && cellPairTraversal) {
-      cellPairTraversal->setCellsToTraverse(this->_cells);
+      prepareCellsToTraverse(cellPairTraversal);
     } else {
       autopas::utils::ExceptionHandler::exception(
           "Trying to use a traversal of wrong type in LinkedCells::iteratePairwise. TraversalID: {}",
@@ -555,6 +557,23 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
    * load estimation algorithm for balanced traversals.
    */
   autopas::LoadEstimatorOption _loadEstimator;
+
+  bool _onlyDirtyCells {false};
+
+  void prepareCellsToTraverse(CellPairTraversal<ParticleCell>* traversal) {
+
+    if (_onlyDirtyCells) {
+      std::vector<ParticleCell> dirtyCells;
+      std::copy_if(this->_cells.begin(), this->_cells.end(),
+                   std::back_inserter(dirtyCells), [](auto & cell) { return cell.getDirty(); });
+
+      traversal->setCellsToTraverse(dirtyCells);
+      setOnlyDirtyCells(false);
+    }else {
+      traversal->setCellsToTraverse(this->_cells);
+    }
+
+  }
 };
 
 }  // namespace autopas
