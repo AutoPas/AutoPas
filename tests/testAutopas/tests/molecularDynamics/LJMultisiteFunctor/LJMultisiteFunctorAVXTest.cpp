@@ -7,7 +7,7 @@
 
 #include <gtest/gtest.h>
 
-#define PARTICLES_PER_DIM 10
+#define PARTICLES_PER_DIM 8
 #define AOS_VS_SOA_ACCURACY 1e-8
 
 void LJMultisiteFunctorAVXTest::generatePPL(ParticlePropertiesLibrary<double, size_t> *PPL) {
@@ -618,13 +618,13 @@ TEST_F(LJMultisiteFunctorAVXTest, MulticenteredLJFunctorTest_AoSVsSoACell) {
   generateMolecules(&molecules);
 
   // N3L optimization enabled, global calculation disabled.
-  testSoACellAgainstAoS<true, false, false>(molecules, PPL, 1.);
+  testSoACellAgainstAoS<true, false, false>(molecules, PPL, cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift disabled.
-  testSoACellAgainstAoS<true, true, false>(molecules, PPL, 1.);
+  testSoACellAgainstAoS<true, true, false>(molecules, PPL, cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift enabled.
-  testSoACellAgainstAoS<true, true, true>(molecules, PPL, 1.);
+  testSoACellAgainstAoS<true, true, true>(molecules, PPL, cutoff);
 }
 
 TEST_F(LJMultisiteFunctorAVXTest, MulticenteredLJFunctorTest_AoSVsSoACellPair) {

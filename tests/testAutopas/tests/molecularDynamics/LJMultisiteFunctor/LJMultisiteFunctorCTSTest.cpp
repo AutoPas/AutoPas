@@ -108,20 +108,14 @@ void LJMultisiteFunctorCTSTest::testSoACellAgainstAoS(std::vector<autopas::Multi
         << "Incorrect z-force for molecule " << i << " with newton3 = " << newton3;
   }
 
-//  for (size_t i = 0; i < numberMolecules; ++i) {
-//    std::cout << "Torque " << i << ": " << moleculesAoS[i].getTorque()[0] << " " << moleculesAoS[i].getTorque()[1]
-//              << " " << moleculesAoS[i].getTorque()[2] << "| " << cellSoA._particles[i].getTorque()[0] << " "
-//              << cellSoA._particles[i].getTorque()[1] << " " << cellSoA._particles[i].getTorque()[2] << std::endl;
-//  }
-
-   for (size_t i = 0; i < numberMolecules; ++i) {
-     EXPECT_NEAR(moleculesAoS[i].getTorque()[0], cellSoA._particles[i].getTorque()[0], AOS_VS_SOA_ACCURACY)
-         << "Incorrect x-torque for molecule " << i << " with newton3 = " << newton3;
-     EXPECT_NEAR(moleculesAoS[i].getTorque()[1], cellSoA._particles[i].getTorque()[1], AOS_VS_SOA_ACCURACY)
-         << "Incorrect y-torque for molecule " << i << " with newton3 = " << newton3;
-     EXPECT_NEAR(moleculesAoS[i].getTorque()[2], cellSoA._particles[i].getTorque()[2], AOS_VS_SOA_ACCURACY)
-         << "Incorrect z-torque for molecule " << i << " with newton3 = " << newton3;
-   }
+  for (size_t i = 0; i < numberMolecules; ++i) {
+    EXPECT_NEAR(moleculesAoS[i].getTorque()[0], cellSoA._particles[i].getTorque()[0], AOS_VS_SOA_ACCURACY)
+        << "Incorrect x-torque for molecule " << i << " with newton3 = " << newton3;
+    EXPECT_NEAR(moleculesAoS[i].getTorque()[1], cellSoA._particles[i].getTorque()[1], AOS_VS_SOA_ACCURACY)
+        << "Incorrect y-torque for molecule " << i << " with newton3 = " << newton3;
+    EXPECT_NEAR(moleculesAoS[i].getTorque()[2], cellSoA._particles[i].getTorque()[2], AOS_VS_SOA_ACCURACY)
+        << "Incorrect z-torque for molecule " << i << " with newton3 = " << newton3;
+  }
 
   // This is currently only working if shifting is applied
   // if constexpr (calculateGlobals && applyShift) {
@@ -142,7 +136,7 @@ void LJMultisiteFunctorCTSTest::testSoACellAgainstAoS(std::vector<autopas::Multi
 TEST_F(LJMultisiteFunctorCTSTest, MulticenteredLJFunctorTest_AoSVsSoACell) {
   using autopas::MultisiteMoleculeLJ;
 
-  const double cutoff = 1.5;
+  const double cutoff = 3.0;
 
   std::vector<autopas::MultisiteMoleculeLJ> molecules;
   ParticlePropertiesLibrary<double, size_t> PPL(cutoff);

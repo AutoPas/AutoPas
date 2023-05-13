@@ -14,7 +14,7 @@
 #include "autopas/molecularDynamics/LJMultisiteFunctor.h"
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX)
-#include "autopas/molecularDynamics/LJMultisiteFunctorAVX.h"
+#include "autopas/molecularDynamics/LJMultisiteFunctorCTS.h"
 #endif
 
 #endif
@@ -93,7 +93,7 @@ using LJFunctorTypeAutovecGlobals = autopas::LJFunctor<ParticleType, true, true,
  */
 #if defined(MD_FLEXIBLE_USE_MULTI_SITE)
 //#pragma message "Multi-Site Lennard-Jones Functor with AVX is currently WIP!"
-using LJFunctorTypeAVX = autopas::LJMultisiteFunctorAVX<ParticleType, true, true>;
+using LJFunctorTypeAVX = autopas::LJMultisiteFunctorCTS<ParticleType, true, true>;
 #else
 using LJFunctorTypeAVX = autopas::LJFunctorAVX<ParticleType, true, true>;
 #endif
