@@ -244,6 +244,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     }
   }
   if (node[MDFlexConfig::moleculesStr]) {
+    // todo throw warning if momentOfInertia with zero element is used (physically nonsense + breaks the quaternion update)
+
     // remove default objects
     config.molToSiteIdMap.clear();
     config.molToSitePosMap.clear();

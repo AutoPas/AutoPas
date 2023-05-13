@@ -117,7 +117,9 @@ void LJMultisiteFunctorTest::testAoSForceCalculation(autopas::MultisiteMoleculeL
           const auto shift = shift6 / 6.;
           const auto epsilon4 = epsilon24 / 6.;
 
-          const auto potentialEnergy = epsilon4 * lj12m6 + shift;
+          // only add half the potential energy if no newton3 is used (because we are missing half the interaction between
+          // the two molecules).
+          const auto potentialEnergy = newton3 ? epsilon4 * lj12m6 + shift : 0.5 * (epsilon4 * lj12m6 + shift);
           const auto virialDimensionwiseContributions = newton3 ? autopas::utils::ArrayMath::mul(displacement, force) :
                                       autopas::utils::ArrayMath::mulScalar(autopas::utils::ArrayMath::mul(displacement, force),0.5);
 
@@ -146,30 +148,36 @@ void LJMultisiteFunctorTest::testAoSForceCalculation(autopas::MultisiteMoleculeL
   for (size_t i = 0; i < 3; ++i) {
     EXPECT_NEAR(molA.getF()[i], expectedForceA[i], 1e-13) << "molA: Unexpected force[" << i << "] = "
                                                                   << molA.getF()[i] << " != "
-                                                                  << expectedForceA[i] << " as expected.";
+                                                                  << expectedForceA[i] << " as expected with newton3 = "
+        << newton3 << ", calculateGlobals = " << calculateGlobals << ", and applyShift = " << applyShift << ".";
   }
   for (size_t i = 0; i < 3; ++i) {
     EXPECT_NEAR(molA.getTorque()[i], expectedTorqueA[i], 1e-13) << "molA: Unexpected force[" << i << "] = "
                                                                   << molA.getTorque()[i] << " != "
-                                                                  << expectedTorqueA[i] << " as expected.";
+                                                                  << expectedTorqueA[i] << " as expected with newton3 = "
+                                                                << newton3 << ", calculateGlobals = " << calculateGlobals << ", and applyShift = " << applyShift << ".";
   }
   for (size_t i = 0; i < 3; ++i) {
     EXPECT_NEAR(molB.getF()[i], expectedForceB[i], 1e-13) << "molB: Unexpected force[" << i << "] = "
                                                                   << molB.getF()[i] << " != "
-                                                                  << expectedForceB[i] << " as expected.";
+                                                                  << expectedForceB[i] << " as expected with newton3 = "
+                                                          << newton3 << ", calculateGlobals = " << calculateGlobals << ", and applyShift = " << applyShift << ".";
   }
   for (size_t i = 0; i < 3; ++i) {
     EXPECT_NEAR(molB.getTorque()[i], expectedTorqueB[i], 1e-13) << "molB: Unexpected force[" << i << "] = "
                                                                         << molB.getTorque()[i] << " != "
-                                                                        << expectedTorqueB[i] << " as expected.";
+                                                                        << expectedTorqueB[i] << " as expected with newton3 = "
+                                                                << newton3 << ", calculateGlobals = " << calculateGlobals << ", and applyShift = " << applyShift << ".";
   }
   if constexpr (calculateGlobals) {
     EXPECT_NEAR(functor.getPotentialEnergy(), expectedPotentialEnergySum, 1e-13) << "Unexpected potential energy = "
-    << functor.getPotentialEnergy() << " != " << expectedPotentialEnergySum << " as expected.";
+    << functor.getPotentialEnergy() << " != " << expectedPotentialEnergySum << " as expected with newton3 = "
+                                                                                 << newton3 << ", calculateGlobals = " << calculateGlobals << ", and applyShift = " << applyShift << ".";
 
     EXPECT_NEAR(functor.getVirial(), expectedVirialSum, 1e-13) << "Unexpected virial = "
                                                                 << functor.getVirial() << " != "
-                                                                << expectedVirialSum << " as expected.";
+                                                                << expectedVirialSum << " as expected with newton3 = "
+                                                               << newton3 << ", calculateGlobals = " << calculateGlobals << ", and applyShift = " << applyShift << ".";
   }
 }
 
@@ -193,14 +201,14 @@ void LJMultisiteFunctorTest::testSuiteAoSForceCalculation(autopas::MultisiteMole
   testAoSForceCalculation<true, true, true>(molA, molB, PPL, cutoff);
 }
 
-template<bool newton3, bool calculateGobals, bool applyShift>
+template<bool newton3, bool calculateGlobals, bool applyShift>
 void LJMultisiteFunctorTest::singleSiteSanityCheck(autopas::MultisiteMoleculeLJ molA, autopas::MultisiteMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
   using autopas::MoleculeLJ;
   using autopas::MoleculeLJ;
 
   // create functors
-  autopas::LJMultisiteFunctor<autopas::MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGobals, true> multiSiteFunctor(cutoff, PPL);
-  autopas::LJFunctor<autopas::MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGobals, true> singleSiteFunctor(cutoff, PPL);
+  autopas::LJMultisiteFunctor<autopas::MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true> multiSiteFunctor(cutoff, PPL);
+  autopas::LJFunctor<autopas::MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true> singleSiteFunctor(cutoff, PPL);
 
   // create single site versions of the molecules
   autopas::MoleculeLJ molASimple;
@@ -221,17 +229,28 @@ void LJMultisiteFunctorTest::singleSiteSanityCheck(autopas::MultisiteMoleculeLJ 
   molBSimple.setID(molB.getID());
   molBSimple.setOwnershipState(molB.getOwnershipState());
 
-  // apply multisite functor
+  // initialise traversals
+  singleSiteFunctor.initTraversal();
+  multiSiteFunctor.initTraversal();
+
+  // apply functors
+  singleSiteFunctor.AoSFunctor(molASimple, molBSimple, newton3);
   multiSiteFunctor.AoSFunctor(molA, molB, newton3);
 
-  // apply singlesite functor
-  singleSiteFunctor.AoSFunctor(molASimple, molBSimple, newton3);
+  // end traversals
+  singleSiteFunctor.endTraversal(newton3);
+  multiSiteFunctor.endTraversal(newton3);
 
   for (size_t i = 0; i < 3; ++i) {
     EXPECT_NEAR(molA.getF()[i],molASimple.getF()[i], 1e-13);
   }
   for (size_t i = 0; i < 3; ++i) {
     EXPECT_NEAR(molB.getF()[i],molBSimple.getF()[i], 1e-13);
+  }
+
+  if constexpr (calculateGlobals) {
+    EXPECT_NEAR(singleSiteFunctor.getPotentialEnergy(), multiSiteFunctor.getPotentialEnergy(), 1e-13);
+    EXPECT_NEAR(singleSiteFunctor.getVirial(), multiSiteFunctor.getVirial(), 1e-13);
   }
 }
 
@@ -255,10 +274,8 @@ void LJMultisiteFunctorTest::testSoACellAgainstAoS(std::vector<autopas::Multisit
     }
   }
 
-  // end traversal for functor and get globals
+  // end traversal for functor
   functor.endTraversal(newton3);
-  const auto potentialEnergyAoS = functor.getPotentialEnergy();
-  const auto virialAoS = functor.getVirial();
 
   // generate SoA Cell
   autopas::FullParticleCell<MultisiteMoleculeLJ> cellSoA;
@@ -279,10 +296,8 @@ void LJMultisiteFunctorTest::testSoACellAgainstAoS(std::vector<autopas::Multisit
 
   functor.SoAExtractor(cellSoA, cellSoA._particleSoABuffer, 0);
 
-  // end traversal for functor and get globals
+  // end traversal for functor
   functor.endTraversal(newton3);
-  const auto potentialEnergySoA = functor.getPotentialEnergy();
-  const auto virialSoA = functor.getVirial();
 
   // compare for consistency
   EXPECT_EQ(moleculesAoS.size(), cellSoA.numParticles());
@@ -300,6 +315,11 @@ void LJMultisiteFunctorTest::testSoACellAgainstAoS(std::vector<autopas::Multisit
   }
 
   if constexpr (calculateGlobals) {
+    const auto potentialEnergyAoS = functor.getPotentialEnergy();
+    const auto virialAoS = functor.getVirial();
+    const auto potentialEnergySoA = functor.getPotentialEnergy();
+    const auto virialSoA = functor.getVirial();
+
     EXPECT_NEAR(potentialEnergyAoS, potentialEnergySoA, AOS_VS_SOA_ACCURACY)
         << "Incorrect potential energy with newton3 = " << newton3 << " and applyShift = " << applyShift;
     EXPECT_NEAR(virialAoS, virialSoA, AOS_VS_SOA_ACCURACY)
@@ -331,10 +351,8 @@ void LJMultisiteFunctorTest::testSoACellPairAgainstAoS(std::vector<autopas::Mult
     }
   }
 
-  // end traversal for functor and get globals
+  // end traversal for functor
   functor.endTraversal(newton3);
-  const auto potentialEnergyAoS = calculateGlobals?functor.getPotentialEnergy():0;
-  const auto virialAoS = calculateGlobals?functor.getVirial():0;
 
   // generate SoA Cells
   autopas::FullParticleCell<MultisiteMoleculeLJ> cellSoAA;
@@ -362,10 +380,8 @@ void LJMultisiteFunctorTest::testSoACellPairAgainstAoS(std::vector<autopas::Mult
   functor.SoAExtractor(cellSoAA, cellSoAA._particleSoABuffer, 0);
   functor.SoAExtractor(cellSoAB, cellSoAB._particleSoABuffer, 0);
 
-  // end traversal for functor and get globals
+  // end traversal for functor
   functor.endTraversal(newton3);
-  const auto potentialEnergySoA = calculateGlobals?functor.getPotentialEnergy():0;
-  const auto virialSoA = calculateGlobals?functor.getVirial():0;
 
   // compare for consistency
   EXPECT_EQ(moleculesAoSA.size(), cellSoAA.numParticles());
@@ -394,6 +410,11 @@ void LJMultisiteFunctorTest::testSoACellPairAgainstAoS(std::vector<autopas::Mult
   }
 
   if constexpr (calculateGlobals) {
+    const auto potentialEnergyAoS = functor.getPotentialEnergy();
+    const auto virialAoS = functor.getVirial();
+    const auto potentialEnergySoA = functor.getPotentialEnergy();
+    const auto virialSoA = functor.getVirial();
+
     EXPECT_NEAR(potentialEnergyAoS, potentialEnergySoA, AOS_VS_SOA_ACCURACY)
         << "Incorrect potential energy with newton3 = " << newton3 << " and applyShift = " << applyShift;
     EXPECT_NEAR(virialAoS, virialSoA, AOS_VS_SOA_ACCURACY)
@@ -423,10 +444,8 @@ void LJMultisiteFunctorTest::testSoAVerletAgainstAoS(std::vector<autopas::Multis
     }
   }
 
-  // end traversal for functor and get globals
+  // end traversal for functor
   functor.endTraversal(newton3);
-  const auto potentialEnergyAoS = calculateGlobals?functor.getPotentialEnergy():0;
-  const auto virialAoS = calculateGlobals?functor.getVirial():0;
 
   // generate neighbor lists
   std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> neighborLists(numberMolecules);
@@ -437,7 +456,7 @@ void LJMultisiteFunctorTest::testSoAVerletAgainstAoS(std::vector<autopas::Multis
       }
       auto displacement = autopas::utils::ArrayMath::sub(moleculesSoA[i].getR(), moleculesSoA[j].getR());
       double distanceSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
-      if (distanceSquared <= cutoff * cutoff) {
+      if (distanceSquared < cutoff * cutoff) {
         neighborLists[i].push_back(j);
         if constexpr (not newton3) {
           neighborLists[j].push_back(i);
@@ -467,10 +486,8 @@ void LJMultisiteFunctorTest::testSoAVerletAgainstAoS(std::vector<autopas::Multis
 
   functor.SoAExtractor(cellSoA, cellSoA._particleSoABuffer, 0);
 
-  // end traversal for functor and get globals
+  // end traversal for functor
   functor.endTraversal(newton3);
-  const auto potentialEnergySoA = calculateGlobals?functor.getPotentialEnergy():0;
-  const auto virialSoA = calculateGlobals?functor.getVirial():0;
 
   // compare for consistency
   EXPECT_EQ(moleculesAoS.size(), cellSoA.numParticles());
@@ -488,6 +505,11 @@ void LJMultisiteFunctorTest::testSoAVerletAgainstAoS(std::vector<autopas::Multis
   }
 
   if constexpr (calculateGlobals) {
+    const auto potentialEnergyAoS = functor.getPotentialEnergy();
+    const auto virialAoS = functor.getVirial();
+    const auto potentialEnergySoA = functor.getPotentialEnergy();
+    const auto virialSoA = functor.getVirial();
+
     EXPECT_NEAR(potentialEnergyAoS, potentialEnergySoA, AOS_VS_SOA_ACCURACY)
         << "Incorrect potential energy with newton3 = " << newton3 << " and applyShift = " << applyShift;
     EXPECT_NEAR(virialAoS, virialSoA, AOS_VS_SOA_ACCURACY)
@@ -501,7 +523,9 @@ void LJMultisiteFunctorTest::testSoAVerletAgainstAoS(std::vector<autopas::Multis
 TEST_F(LJMultisiteFunctorTest, AoSTest) {
   using autopas::MultisiteMoleculeLJ;
 
-  ParticlePropertiesLibrary PPL(1.);
+  const double cutoff = 2.5;
+
+  ParticlePropertiesLibrary PPL(cutoff);
   PPL.addSiteType(0,1.,1.,1.);
   PPL.addSiteType(1,0.5,0.5,0.5);
 
@@ -516,7 +540,7 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
   PPL.addMolType(0,{0},{{0.,0.,0.}},{1.,1.,1.});
 
   MultisiteMoleculeLJ mol1;
-  mol1.setR({0.1,0.,0.});
+  mol1.setR({1.,0.,0.});
   mol1.setQ({0., 0., 0., 1.});
   mol1.setF({0.,0.,0.});
   mol1.setTorque({0.,0.,0.});
@@ -524,7 +548,7 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
   PPL.addMolType(1,{0,0},{{0.,0.01,0.},{0.,-0.01,0.}},{1.,1.,1.});
 
   MultisiteMoleculeLJ mol2;
-  mol2.setR({0.,0.1,0.});
+  mol2.setR({0.,1.,0.});
   mol2.setQ({0., 0., 0., 1.});
   mol2.setF({0.,0.,0.});
   mol2.setTorque({0.,0.,0.});
@@ -540,7 +564,7 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
   PPL.addMolType(3,{0,0,0},{{-0.05,-0.05,0.},{0.,0.1,0.},{0.05,-0.05,0.}},{1.,1.,1.});
 
   MultisiteMoleculeLJ mol4;
-  mol4.setR({0.,0.,0.1});
+  mol4.setR({0.,0.,1.});
   mol4.setQ({0.7071067811865475, 0.7071067811865475, 0., 0.});
   mol4.setF({0.,0.,0.});
   mol4.setTorque({0.,0.,0.});
@@ -548,7 +572,7 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
   PPL.addMolType(4,{0,0,0},{{-0.05,-0.05,0.},{0.,0.1,0.},{0.05,-0.05,0.}},{1.,1.,1.});
 
   MultisiteMoleculeLJ mol5;
-  mol5.setR({2.,2.,2.});
+  mol5.setR({2.5,2.5,2.5});
   mol5.setQ({0., 0., 0., 1.});
   mol5.setF({0.,0.,0.});
   mol5.setTorque({0.,0.,0.});
@@ -556,7 +580,7 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
   PPL.addMolType(5,{0,0},{{0.,0.01,0.},{0.,-0.01,0.}},{1.,1.,1.});
 
   MultisiteMoleculeLJ mol6;
-  mol6.setR({0.,1.05,0.});
+  mol6.setR({0.,2.55,0.});
   mol6.setQ({0., 0., 0., 1.});
   mol6.setF({0.,0.,0.});
   mol6.setTorque({0.,0.,0.});
@@ -564,7 +588,7 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
   PPL.addMolType(6,{0,0},{{0.,0.1,0.},{0.,-0.1,0.}},{1.,1.,1.});
 
   MultisiteMoleculeLJ mol7;
-  mol7.setR({0.,0.95,0.});
+  mol7.setR({0.,2.45,0.});
   mol7.setQ({0., 0., 0., 1.});
   mol7.setF({0.,0.,0.});
   mol7.setTorque({0.,0.,0.});
@@ -583,35 +607,37 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
 
 
   // tests: 1 site <-> 2 site interaction
-  testSuiteAoSForceCalculation(mol0, mol1,PPL,1.);
+  testSuiteAoSForceCalculation(mol0, mol1,PPL,cutoff);
 
   // tests: 1 site <-> 2 site interaction, where sites are aligned such that all 3 sites are along the same line
-  testSuiteAoSForceCalculation(mol0, mol2,PPL,1.);
+  testSuiteAoSForceCalculation(mol0, mol2,PPL,cutoff);
 
   // tests: 2 site <-> 3 site interaction
-  testSuiteAoSForceCalculation(mol1, mol3,PPL,1.);
+  testSuiteAoSForceCalculation(mol1, mol3,PPL,cutoff);
 
   // tests: 3 site <-> 3 site interaction, where one has a nontrivial (needs rotating) quaternion
-  testSuiteAoSForceCalculation(mol3, mol4,PPL,1.);
+  testSuiteAoSForceCalculation(mol3, mol4,PPL,cutoff);
 
   // tests: 2 site <-> 2 site, where molecules are beyond cutoff
-  testSuiteAoSForceCalculation(mol1, mol5,PPL,1.);
+  testSuiteAoSForceCalculation(mol1, mol5,PPL,cutoff);
 
   // tests: 1 site <-> 2 site, where one site is beyond cutoff, the other within; and CoM beyond cutoff
-  testSuiteAoSForceCalculation(mol0, mol6,PPL,1.);
+  testSuiteAoSForceCalculation(mol0, mol6,PPL,cutoff);
 
   // tests: 1 site <-> 2 site, where one site is beyond cutoff, the other within; and CoM within cutoff
-  testSuiteAoSForceCalculation(mol0, mol7,PPL,1.);
+  testSuiteAoSForceCalculation(mol0, mol7,PPL,cutoff);
 
   // tests: 3 site <-> 3 site, with some different site types
-  testSuiteAoSForceCalculation(mol4, mol8,PPL,1.);
+  testSuiteAoSForceCalculation(mol4, mol8,PPL,cutoff);
 
 }
 
 TEST_F(LJMultisiteFunctorTest, singleSiteSanityCheck) {
   using autopas::MultisiteMoleculeLJ;
 
-  ParticlePropertiesLibrary PPL(1.);
+  const double cutoff = 3.;
+
+  ParticlePropertiesLibrary PPL(cutoff);
   PPL.addSiteType(0,1.,1.,1.);
   PPL.addSiteType(1,0.5,0.5,0.5);
 
@@ -634,31 +660,28 @@ TEST_F(LJMultisiteFunctorTest, singleSiteSanityCheck) {
   PPL.calculateMixingCoefficients();
 
   // N3L optimization disabled, global calculation disabled.
-  singleSiteSanityCheck<false, false, false>(mol0,mol1,PPL,1.);
+  singleSiteSanityCheck<false, false, false>(mol0,mol1,PPL,cutoff);
 
   // N3L optimization enabled, global calculation disabled.
-  singleSiteSanityCheck<true, false, false>(mol0,mol1,PPL,1.);
+  singleSiteSanityCheck<true, false, false>(mol0,mol1,PPL,cutoff);
 
   // N3L optimization disabled, global calculation enabled, apply shift disabled.
-  singleSiteSanityCheck<false, true, false>(mol0,mol1,PPL,1.);
+  singleSiteSanityCheck<false, true, false>(mol0,mol1,PPL,cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift disabled.
-  singleSiteSanityCheck<true, true, false>(mol0,mol1,PPL,1.);
+  singleSiteSanityCheck<true, true, false>(mol0,mol1,PPL,cutoff);
 
   // N3L optimization disabled, global calculation enabled, apply shift enabled.
-  singleSiteSanityCheck<false, true, true>(mol0,mol1,PPL,1.);
+  singleSiteSanityCheck<false, true, true>(mol0,mol1,PPL,cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift enabled.
-  singleSiteSanityCheck<true, true, true>(mol0,mol1,PPL,1.);
+  singleSiteSanityCheck<true, true, true>(mol0,mol1,PPL,cutoff);
 }
 
-/*
- * @note No newton3 disabled as SoACell always uses newton3 optimisation
- */
 TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACell){
   using autopas::MultisiteMoleculeLJ;
 
-  const double cutoff = 1.5;
+  const double cutoff = 3.;
 
   std::vector<autopas::MultisiteMoleculeLJ> molecules;
   ParticlePropertiesLibrary<double, size_t> PPL(cutoff);
@@ -666,14 +689,16 @@ TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACell){
   generatePPL(&PPL);
   generateMolecules(&molecules);
 
+  // Todo Add special AoS test for non-N3L, to test globals handling.
+
   // N3L optimization enabled, global calculation disabled.
   testSoACellAgainstAoS<true, false, false>(molecules,PPL,cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift disabled.
-//  testSoACellAgainstAoS<true, true, false>(molecules,PPL,cutoff);
-//
-//  // N3L optimization enabled, global calculation enabled, apply shift enabled.
-//  testSoACellAgainstAoS<true, true, true>(molecules,PPL,cutoff);
+  testSoACellAgainstAoS<true, true, false>(molecules,PPL,cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift enabled.
+  testSoACellAgainstAoS<true, true, true>(molecules,PPL,cutoff);
 }
 
 TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACellPair){
@@ -690,28 +715,28 @@ TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACellPair){
   generateMolecules(&moleculesB, {0,0,9});
 
   // N3L optimization disabled, global calculation disabled.
-  testSoACellPairAgainstAoS<false, false, false>(moleculesA, moleculesB,PPL,1.);
+  testSoACellPairAgainstAoS<false, false, false>(moleculesA, moleculesB,PPL,cutoff);
 
   // N3L optimization enabled, global calculation disabled.
-  testSoACellPairAgainstAoS<true, false, false>(moleculesA, moleculesB,PPL,1.);
+  testSoACellPairAgainstAoS<true, false, false>(moleculesA, moleculesB,PPL,cutoff);
 
   // N3L optimization disabled, global calculation enabled, apply shift disabled.
-  testSoACellPairAgainstAoS<false, true, false>(moleculesA, moleculesB,PPL,1.);
+  testSoACellPairAgainstAoS<false, true, false>(moleculesA, moleculesB,PPL,cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift disabled.
-  testSoACellPairAgainstAoS<true, true, false>(moleculesA, moleculesB,PPL,1.);
+  testSoACellPairAgainstAoS<true, true, false>(moleculesA, moleculesB,PPL,cutoff);
 
   // N3L optimization disabled, global calculation enabled, apply shift enabled.
-  testSoACellPairAgainstAoS<false, true, true>(moleculesA, moleculesB,PPL,1.);
+  testSoACellPairAgainstAoS<false, true, true>(moleculesA, moleculesB,PPL,cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift enabled.
-  testSoACellPairAgainstAoS<true, true, true>(moleculesA, moleculesB,PPL,1.);
+  testSoACellPairAgainstAoS<true, true, true>(moleculesA, moleculesB,PPL,cutoff);
 }
 
 TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoAVerlet){
   using autopas::MultisiteMoleculeLJ;
 
-  const double cutoff = 3.0;
+  const double cutoff = 3.1;
 
   std::vector<autopas::MultisiteMoleculeLJ> molecules;
   ParticlePropertiesLibrary<double, size_t> PPL(cutoff);

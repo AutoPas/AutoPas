@@ -196,7 +196,8 @@ TEST(QuaternionTest, qMulvTest) {
 
 /**
  * Tests qMirror. Begins with a rigid body, made from a set of points about a center-of-mass and a non-identity quaternion dictating
- * the relative rotation of the points. The quaternion is mirrored, resulting in a mirrored rigid body.
+ * the relative rotation of the points. We mirror the body in all three dimensions by mirroring the rigid body, and then
+ * applying the correct rotation for a mirror by applying qMirror to the quaternion.
  *
  * If the quaternion is manipulated correctly, each point in the mirrored rigid body should have two coordinates equal to
  * those of the point's non-mirrored original and one coordinate which is equal in distance to the mirror plane as the original.
@@ -207,17 +208,24 @@ TEST(QuaternionTest, qMulvTest) {
  * The test also checks that, if a dimensionNormalToMirror that is not 0, 1, or 2 is provided, an error is thrown.
  */
 TEST(QuaternionTest, qMirrorTest) {
-  const std::vector<std::array<double, 3>> unrotatedUntranslatedPointPositions{{0., 0., 1.}, {-0.2, 0.3, 0.4}, {-0.5, -0.6, 0.7}};
+  const std::vector<std::array<double, 3>> unrotatedPointPositions{{0., 0., 1.}, {-0.2, 0.3, 0.4}, {-0.5, -0.6, 0.7}};
   const std::array<double, 4> unnormalizedQuaternion{1., -0.5, 0.25, -0.125};
   const std::array<double, 4> quaternion{autopas::utils::ArrayMath::normalize(unnormalizedQuaternion)};
 
   auto testMirroring = [&](int dimensionNormalToBoundary) {
     const auto mirroredQuaternion = utils::quaternion::qMirror(quaternion, dimensionNormalToBoundary);
+    const auto originalRotatedPointPositions = utils::quaternion::rotateVectorOfPositions(quaternion, unrotatedPointPositions);
 
-    const auto originalRotatedPointPositions = utils::quaternion::rotateVectorOfPositions(quaternion, unrotatedUntranslatedPointPositions);
-    const auto mirroredRotatedPointPositions = utils::quaternion::rotateVectorOfPositions(mirroredQuaternion, unrotatedUntranslatedPointPositions);
+    const auto mirroredUnrotatedPointPositions = [unrotatedPointPositions, dimensionNormalToBoundary]() {
+      auto returnedPositions = unrotatedPointPositions;
+      for (auto & point : returnedPositions) {
+        point[dimensionNormalToBoundary] *= -1;
+      }
+      return returnedPositions;
+    } ();
+    const auto mirroredRotatedPointPositions = utils::quaternion::rotateVectorOfPositions(mirroredQuaternion, mirroredUnrotatedPointPositions);
 
-    for (int point = 0; point < unrotatedUntranslatedPointPositions.size(); point++) {
+    for (int point = 0; point < unrotatedPointPositions.size(); point++) {
       for (int dim = 0; dim < 3; dim++) {
         if (dim == dimensionNormalToBoundary) {
           EXPECT_DOUBLE_EQ(originalRotatedPointPositions[point][dim], -1 * mirroredRotatedPointPositions[point][dim]);

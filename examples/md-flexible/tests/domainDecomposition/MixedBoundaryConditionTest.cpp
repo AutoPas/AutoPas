@@ -112,6 +112,9 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
   autoPasContainer->init();
 
   particlePropertiesLibrary->addSiteType(0, 1., sigma, 1.);
+#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+  particlePropertiesLibrary->addMolType(0, {0}, {{0., 0., 0.}}, {1., 1., 1.});
+#endif
   particlePropertiesLibrary->calculateMixingCoefficients();
 
   const auto &[expectedPositions, expectedHaloPositions, expectedForces] = setUpExpectations(
