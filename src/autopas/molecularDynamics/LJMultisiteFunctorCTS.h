@@ -434,19 +434,19 @@ class LJMultisiteFunctorCTS
           // The division by 6 is handled in endTraversal, as well as the division by two needed if newton3 is not used.
           // There is a similar handling of the virial, but without the mutliplication/division by 6.
           const auto potentialEnergy6 = newton3 ? 0.5 * (epsilon24 * lj12m6 + shift6) : (epsilon24 * lj12m6 + shift6);
-          const auto virial = newton3 ? utils::ArrayMath::mulScalar(utils::ArrayMath::mul(displacement, force),0.5) : utils::ArrayMath::mul(displacement, force);
+          const auto virial = newton3 ? utils::ArrayMath::mulScalar(utils::ArrayMath::mul(displacement, force), 0.5)
+                                      : utils::ArrayMath::mul(displacement, force);
 
           const auto threadNum = autopas_get_thread_num();
 
           if (particleA.isOwned()) {
             _aosThreadData[threadNum].potentialEnergySum += potentialEnergy6;
-            _aosThreadData[threadNum].virialSum = utils::ArrayMath::add(_aosThreadData[threadNum].virialSum,virial);
+            _aosThreadData[threadNum].virialSum = utils::ArrayMath::add(_aosThreadData[threadNum].virialSum, virial);
           }
           if (newton3 and particleB.isOwned()) {
             _aosThreadData[threadNum].potentialEnergySum += potentialEnergy6;
-            _aosThreadData[threadNum].virialSum = utils::ArrayMath::add(_aosThreadData[threadNum].virialSum,virial);
+            _aosThreadData[threadNum].virialSum = utils::ArrayMath::add(_aosThreadData[threadNum].virialSum, virial);
           }
-
         }
       }
     }
