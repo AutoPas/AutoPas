@@ -11,6 +11,7 @@
 #include "LJFunctorTest.h"
 #include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
 #include "autopasTools/generators/RandomGenerator.h"
+#include "testingHelpers/LJPotential.h"
 
 template <class FuncType>
 class LJFunctorTestGlobals : public LJFunctorTest {
@@ -27,7 +28,5 @@ class LJFunctorTestGlobals : public LJFunctorTest {
   constexpr static double epsilon{1.};
   constexpr static double sigma{1.};
 
-  constexpr static double expectedVirial{6366148.4585504318};
-  constexpr static double expectedEnergy{529783.50857210846};
   constexpr static double absDelta{1e-7};
 };

@@ -293,7 +293,7 @@ inline namespace literals {
  * @return a + b
  */
 template <class T, std::size_t SIZE>
-inline std::array<T, SIZE> operator+(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+constexpr std::array<T, SIZE> operator+(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
   return add(a, b);
 }
 
@@ -306,7 +306,7 @@ inline std::array<T, SIZE> operator+(const std::array<T, SIZE> &a, const std::ar
  * @return a + b
  */
 template <class T, std::size_t SIZE>
-inline std::array<T, SIZE> &operator+=(std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+constexpr std::array<T, SIZE> &operator+=(std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
   for (std::size_t d = 0; d < SIZE; ++d) {
     a[d] += b[d];
   }
@@ -322,7 +322,7 @@ inline std::array<T, SIZE> &operator+=(std::array<T, SIZE> &a, const std::array<
  * @return a - b
  */
 template <class T, std::size_t SIZE>
-inline std::array<T, SIZE> operator-(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+constexpr std::array<T, SIZE> operator-(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
   return sub(a, b);
 }
 
@@ -335,7 +335,7 @@ inline std::array<T, SIZE> operator-(const std::array<T, SIZE> &a, const std::ar
  * @return a - b
  */
 template <class T, std::size_t SIZE>
-inline std::array<T, SIZE> &operator-=(std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+constexpr std::array<T, SIZE> &operator-=(std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
   for (std::size_t d = 0; d < SIZE; ++d) {
     a[d] -= b[d];
   }
@@ -351,7 +351,7 @@ inline std::array<T, SIZE> &operator-=(std::array<T, SIZE> &a, const std::array<
  * @return element-wise multiplication of a and b
  */
 template <class T, std::size_t SIZE>
-inline std::array<T, SIZE> operator*(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+constexpr std::array<T, SIZE> operator*(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
   return mul(a, b);
 }
 
@@ -364,7 +364,7 @@ inline std::array<T, SIZE> operator*(const std::array<T, SIZE> &a, const std::ar
  * @return element-wise multiplication of a and b
  */
 template <class T, std::size_t SIZE>
-inline std::array<T, SIZE> &operator*=(std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+constexpr std::array<T, SIZE> &operator*=(std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
   for (std::size_t d = 0; d < SIZE; ++d) {
     a[d] *= b[d];
   }
@@ -380,7 +380,7 @@ inline std::array<T, SIZE> &operator*=(std::array<T, SIZE> &a, const std::array<
  * @return element-wise quotient of a and b, i.e., `result[i] = a[i]/b[i]`
  */
 template <class T, std::size_t SIZE>
-inline std::array<T, SIZE> operator/(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+constexpr std::array<T, SIZE> operator/(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
   return div(a, b);
 }
 
@@ -393,7 +393,7 @@ inline std::array<T, SIZE> operator/(const std::array<T, SIZE> &a, const std::ar
  * @return element-wise quotient of a and b, i.e., `result[i] = a[i]/b[i]`
  */
 template <class T, std::size_t SIZE>
-inline std::array<T, SIZE> &operator/=(std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
+constexpr std::array<T, SIZE> &operator/=(std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
   for (std::size_t d = 0; d < SIZE; ++d) {
     a[d] /= b[d];
   }
@@ -409,7 +409,7 @@ inline std::array<T, SIZE> &operator/=(std::array<T, SIZE> &a, const std::array<
  * @return array who's elements are a[i]+s
  */
 template <class T, std::size_t SIZE>
-inline std::array<T, SIZE> operator+(const std::array<T, SIZE> &a, T s) {
+constexpr std::array<T, SIZE> operator+(const std::array<T, SIZE> &a, T s) {
   return addScalar(a, s);
 }
 
@@ -422,7 +422,7 @@ inline std::array<T, SIZE> operator+(const std::array<T, SIZE> &a, T s) {
  * @return array who's elements are a[i]+s
  */
 template <class T, std::size_t SIZE>
-inline std::array<T, SIZE> &operator+=(std::array<T, SIZE> &a, T s) {
+constexpr std::array<T, SIZE> &operator+=(std::array<T, SIZE> &a, T s) {
   for (std::size_t d = 0; d < SIZE; ++d) {
     a[d] += s;
   }
@@ -438,7 +438,7 @@ inline std::array<T, SIZE> &operator+=(std::array<T, SIZE> &a, T s) {
  * @return array who's elements are a[i]-s
  */
 template <class T, std::size_t SIZE>
-inline std::array<T, SIZE> operator-(const std::array<T, SIZE> &a, T s) {
+constexpr std::array<T, SIZE> operator-(const std::array<T, SIZE> &a, T s) {
   return subScalar(a, s);
 }
 
@@ -451,7 +451,7 @@ inline std::array<T, SIZE> operator-(const std::array<T, SIZE> &a, T s) {
  * @return array who's elements are a[i]-s
  */
 template <class T, std::size_t SIZE>
-inline std::array<T, SIZE> &operator-=(std::array<T, SIZE> &a, T s) {
+constexpr std::array<T, SIZE> &operator-=(std::array<T, SIZE> &a, T s) {
   for (std::size_t d = 0; d < SIZE; ++d) {
     a[d] -= s;
   }
@@ -467,7 +467,7 @@ inline std::array<T, SIZE> &operator-=(std::array<T, SIZE> &a, T s) {
  * @return array who's elements are a[i]*s
  */
 template <class T, std::size_t SIZE>
-inline std::array<T, SIZE> operator*(const std::array<T, SIZE> &a, T s) {
+constexpr std::array<T, SIZE> operator*(const std::array<T, SIZE> &a, T s) {
   return mulScalar(a, s);
 }
 
@@ -480,7 +480,7 @@ inline std::array<T, SIZE> operator*(const std::array<T, SIZE> &a, T s) {
  * @return array who's elements are a[i]*s
  */
 template <class T, std::size_t SIZE>
-inline std::array<T, SIZE> &operator*=(std::array<T, SIZE> &a, T s) {
+constexpr std::array<T, SIZE> &operator*=(std::array<T, SIZE> &a, T s) {
   for (std::size_t d = 0; d < SIZE; ++d) {
     a[d] *= s;
   }

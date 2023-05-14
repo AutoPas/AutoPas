@@ -10,6 +10,13 @@ TYPED_TEST_SUITE_P(LJFunctorTestGlobals);
 
 template <class FuncType>
 void LJFunctorTestGlobals<FuncType>::testAoSGlobals(LJFunctorTestGlobals<FuncType>::where_type where, bool newton3) {
+  double p1X = 0.;
+  double p1Y = 0.;
+  double p1Z = 0.;
+  double p2X = 0.1;
+  double p2Y = 0.2;
+  double p2Z = 0.3;
+
   FuncType functor(cutoff);
   functor.setParticleProperties(epsilon * 24, sigma);
   double xOffset;
@@ -45,9 +52,13 @@ void LJFunctorTestGlobals<FuncType>::testAoSGlobals(LJFunctorTestGlobals<FuncTyp
     default:
       FAIL() << "not in enum where_type";
   }
-  Molecule p1({0. + xOffset, 0., 0.}, {0., 0., 0.}, 0, 0);
+
+  std::array<double, 3> p1Pos{p1X + xOffset, p1Y, p1Z};
+  std::array<double, 3> p2Pos{p2X + xOffset, p2Y, p2Z};
+
+  Molecule p1(p1Pos, {0., 0., 0.}, 0, 0);
   p1.setOwnershipState(owned1 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
-  Molecule p2({0.1 + xOffset, 0.2, 0.3}, {0., 0., 0.}, 1, 0);
+  Molecule p2(p2Pos, {0., 0., 0.}, 1, 0);
   p2.setOwnershipState(owned2 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
   functor.initTraversal();
 
@@ -59,6 +70,9 @@ void LJFunctorTestGlobals<FuncType>::testAoSGlobals(LJFunctorTestGlobals<FuncTyp
 
   double upot = functor.getUpot();
   double virial = functor.getVirial();
+
+  double expectedEnergy = calculateLJPotential(p1Pos, p2Pos, cutoff, sigma, epsilon);
+  double expectedVirial = calculateLJVirialTotal(p1Pos, p2Pos, cutoff, sigma, epsilon);
 
   EXPECT_NEAR(upot, whereFactor * expectedEnergy, absDelta) << "where: " << where_str << ", newton3: " << newton3;
   EXPECT_NEAR(virial, whereFactor * expectedVirial, absDelta) << "where: " << where_str << ", newton3: " << newton3;
@@ -159,6 +173,23 @@ void LJFunctorTestGlobals<FuncType>::testSoAGlobals(LJFunctorTestGlobals<FuncTyp
   constexpr bool shifting = true;
   constexpr bool mixing = false;
 
+  // static coords for the particles
+  constexpr double p1X = 0.;
+  constexpr double p1Y = 0.;
+  constexpr double p1Z = 0.;
+  constexpr double p2X = 0.1;
+  constexpr double p2Y = 0.2;
+  constexpr double p2Z = 0.3;
+  constexpr double pAddX = 1.2;
+  constexpr double pAddY = 0.;
+  constexpr double pAddZ = 0.;
+
+  // calculate the reference values for the globals
+  std::array<double, 3> p1Pos{p1X, p1Y, p1Z};
+  std::array<double, 3> p2Pos{p2X, p2Y, p2Z};
+  double expectedEnergy = calculateLJPotential(p1Pos, p2Pos, cutoff, sigma, epsilon);
+  double expectedVirial = calculateLJVirialTotal(p1Pos, p2Pos, cutoff, sigma, epsilon);
+
   autopas::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> functor(cutoff);
   functor.setParticleProperties(epsilon * 24, sigma);
   double xOffset;
@@ -197,9 +228,9 @@ void LJFunctorTestGlobals<FuncType>::testSoAGlobals(LJFunctorTestGlobals<FuncTyp
       }
     }
 
-    Molecule p1({0. + xOffset, 0. + 2. * replicaID, 0.}, {0., 0., 0.}, 2 * replicaID, 0);
+    Molecule p1({p1X + xOffset, p1Y + 2. * replicaID, p1Z}, {0., 0., 0.}, 2 * replicaID, 0);
     p1.setOwnershipState(owned1 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
-    Molecule p2({0.1 + xOffset, 0.2 + 2. * replicaID, 0.3}, {0., 0., 0.}, 2 * replicaID + 1, 0);
+    Molecule p2({p2X + xOffset, p2Y + 2. * replicaID, p2Z}, {0., 0., 0.}, 2 * replicaID + 1, 0);
     p2.setOwnershipState(owned2 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
 
     // calculate whereFactor:
@@ -233,7 +264,7 @@ void LJFunctorTestGlobals<FuncType>::testSoAGlobals(LJFunctorTestGlobals<FuncTyp
   }
 
   if (interactionType == InteractionType::verlet) {
-    Molecule pAdditional({1.2 + xOffset, 0., 0.}, {0., 0., 0.}, std::numeric_limits<uint64_t>::max(), 0);
+    Molecule pAdditional({pAddX + xOffset, pAddY, pAddZ}, {0., 0., 0.}, std::numeric_limits<uint64_t>::max(), 0);
     pAdditional.setOwnershipState(owned2 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
     // add dummy particles outside of the cutoff. this will only change the number of particles in the verlet lists,
     // but will leave the desired result unchanged. the higher number of particles is useful to test the soa
@@ -327,6 +358,7 @@ void LJFunctorTestGlobals<FuncType>::testSoAGlobals(LJFunctorTestGlobals<FuncTyp
   double upot = functor.getUpot();
   double virial = functor.getVirial();
 
+  // we multiply the expected values by two as we have always p1 and p2 both in cell1 and cell2
   EXPECT_NEAR(upot, whereFactor * expectedEnergy * 2., absDelta)
       << "where: " << where_str << ", newton3: " << newton3
       << ", interactionType: " << (interactionType == pair ? "pair" : (interactionType == own ? "own" : "verlet"))
@@ -420,14 +452,19 @@ TYPED_TEST_P(LJFunctorTestGlobals, testAoSFunctorGlobalsOpenMPParallel) {
   using TestType = LJFunctorTestGlobals<FuncType>;
 
   constexpr bool newton3 = true;
-  constexpr double multiParticleFactor = 2.;  // two particles, so factor 2
-  constexpr double whereFactor = 1.;          // all inside, so factor 1
+  constexpr double whereFactor = 1.;  // all inside, so factor 1
   std::string where_str = "inside";
-  Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 0);
-  Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, 0);
 
-  Molecule p3({0., 2., 0.}, {0., 0., 0.}, 0, 0);
-  Molecule p4({0.1, 2.2, 0.3}, {0., 0., 0.}, 1, 0);
+  std::array<double, 3> p1Pos{0., 0., 0.};
+  std::array<double, 3> p2Pos{0.1, 0.2, 0.3};
+  std::array<double, 3> p3Pos{0., 2., 0.};
+  std::array<double, 3> p4Pos{0.1, 2.2, 0.3};
+
+  Molecule p1(p1Pos, {0., 0., 0.}, 0, 0);
+  Molecule p2(p2Pos, {0., 0., 0.}, 1, 0);
+
+  Molecule p3(p3Pos, {0., 0., 0.}, 0, 0);
+  Molecule p4(p4Pos, {0., 0., 0.}, 1, 0);
   FuncType functor(this->cutoff);
   functor.setParticleProperties(this->epsilon * 24, 1);
 
@@ -471,9 +508,13 @@ TYPED_TEST_P(LJFunctorTestGlobals, testAoSFunctorGlobalsOpenMPParallel) {
   double upot = functor.getUpot();
   double virial = functor.getVirial();
 
-  EXPECT_NEAR(upot, whereFactor * multiParticleFactor * this->expectedEnergy, this->absDelta)
-      << "where: " << where_str << ", newton3: " << newton3;
-  EXPECT_NEAR(virial, whereFactor * multiParticleFactor * this->expectedVirial, this->absDelta)
+  double expectedEnergy = calculateLJPotential(p1Pos, p2Pos, this->cutoff, this->sigma, this->epsilon);
+  double expectedVirial = calculateLJVirialTotal(p1Pos, p2Pos, this->cutoff, this->sigma, this->epsilon);
+  expectedEnergy += calculateLJPotential(p3Pos, p4Pos, this->cutoff, this->sigma, this->epsilon);
+  expectedVirial += calculateLJVirialTotal(p3Pos, p4Pos, this->cutoff, this->sigma, this->epsilon);
+
+  EXPECT_NEAR(upot, whereFactor * expectedEnergy, this->absDelta) << "where: " << where_str << ", newton3: " << newton3;
+  EXPECT_NEAR(virial, whereFactor * expectedVirial, this->absDelta)
       << "where: " << where_str << ", newton3: " << newton3;
 }
 
