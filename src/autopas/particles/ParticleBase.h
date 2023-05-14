@@ -39,7 +39,7 @@ class ParticleBase {
    * @param v Velocity of the particle.
    * @param id Id of the particle.
    */
-  ParticleBase(std::array<double, 3> r, std::array<double, 3> v, idType id)
+  ParticleBase(const std::array<double, 3> &r, const std::array<double, 3> &v, idType id)
       : _r(r), _v(v), _f({0.0, 0.0, 0.0}), _id(id) {}
 
   /**

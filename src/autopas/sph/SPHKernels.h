@@ -35,7 +35,7 @@ class SPHKernels {
    * @param h relative kernel support radius
    * @return value of the kernel function
    */
-  static inline double W(const std::array<double, 3> dr, const double h) {
+  static inline double W(const std::array<double, 3> &dr, const double h) {
     const double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
     return W(dr2, h);
   }
@@ -73,7 +73,7 @@ class SPHKernels {
    * @param h kernel support radius
    * @return gradient of W evaluated at dr and h
    */
-  static inline std::array<double, 3> gradW(const std::array<double, 3> dr, const double h) {
+  static inline std::array<double, 3> gradW(const std::array<double, 3> &dr, const double h) {
     using namespace autopas::utils::ArrayMath::literals;
 
     const double H = kernelSupportRadius * h;

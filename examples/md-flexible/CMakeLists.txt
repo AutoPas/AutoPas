@@ -127,7 +127,6 @@ else ()
 endif ()
 
 #stable, periodic particle grid tested with all configurations
-message("TEST_FUNCTOR = ${TEST_FUNCTOR}")
 add_test(
         NAME md-flexible.test-sim
         COMMAND

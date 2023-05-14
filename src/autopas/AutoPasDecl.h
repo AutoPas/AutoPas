@@ -414,8 +414,8 @@ class AutoPas {
    * @note not actually parallel until kokkos integration
    */
   template <typename Lambda>
-  void forEachInRegionParallel(Lambda forEachLambda, std::array<double, 3> lowerCorner,
-                               std::array<double, 3> higherCorner,
+  void forEachInRegionParallel(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+                               const std::array<double, 3> &higherCorner,
                                IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     // TODO (lgaertner): parallelize with kokkos integration
     withStaticContainerType(getContainer(), [&](auto containerPtr) {
@@ -428,8 +428,8 @@ class AutoPas {
    * @note const version
    */
   template <typename Lambda>
-  void forEachInRegionParallel(Lambda forEachLambda, std::array<double, 3> lowerCorner,
-                               std::array<double, 3> higherCorner,
+  void forEachInRegionParallel(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+                               const std::array<double, 3> &higherCorner,
                                IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     // TODO (lgaertner): parallelize with kokkos integration
     withStaticContainerType(getContainer(), [&](auto containerPtr) {
@@ -446,7 +446,8 @@ class AutoPas {
    * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownerOrHalo
    */
   template <typename Lambda>
-  void forEachInRegion(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+                       const std::array<double, 3> &higherCorner,
                        IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     withStaticContainerType(getContainer(), [&](auto containerPtr) {
       containerPtr->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
@@ -458,7 +459,8 @@ class AutoPas {
    * @note const version
    */
   template <typename Lambda>
-  void forEachInRegion(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+                       const std::array<double, 3> &higherCorner,
                        IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     withStaticContainerType(getContainer(), [&](auto containerPtr) {
       containerPtr->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
@@ -477,8 +479,8 @@ class AutoPas {
    * @note not actually parallel until kokkos integration
    */
   template <typename Lambda, typename A>
-  void reduceInRegionParallel(Lambda reduceLambda, A &result, std::array<double, 3> lowerCorner,
-                              std::array<double, 3> higherCorner,
+  void reduceInRegionParallel(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+                              const std::array<double, 3> &higherCorner,
                               IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     // TODO lgaertner: parallelize with kokkos integration
     withStaticContainerType(getContainer(), [&](auto containerPtr) {
@@ -491,8 +493,8 @@ class AutoPas {
    * @note const version
    */
   template <typename Lambda, typename A>
-  void reduceInRegionParallel(Lambda reduceLambda, A &result, std::array<double, 3> lowerCorner,
-                              std::array<double, 3> higherCorner,
+  void reduceInRegionParallel(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+                              const std::array<double, 3> &higherCorner,
                               IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     // TODO lgaertner: parallelize with kokkos integration
     withStaticContainerType(getContainer(), [&](auto containerPtr) {
@@ -511,8 +513,9 @@ class AutoPas {
    * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownerOrHalo
    */
   template <typename Lambda, typename A>
-  void reduceInRegion(Lambda reduceLambda, A &result, std::array<double, 3> lowerCorner,
-                      std::array<double, 3> higherCorner, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+  void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+                      const std::array<double, 3> &higherCorner,
+                      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     withStaticContainerType(getContainer(), [&](auto containerPtr) {
       containerPtr->reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
     });
@@ -523,8 +526,8 @@ class AutoPas {
    * @note const version
    */
   template <typename Lambda, typename A>
-  void reduceInRegion(Lambda reduceLambda, A &result, std::array<double, 3> lowerCorner,
-                      std::array<double, 3> higherCorner,
+  void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+                      const std::array<double, 3> &higherCorner,
                       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     withStaticContainerType(getContainer(), [&](auto containerPtr) {
       containerPtr->reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
@@ -557,13 +560,13 @@ class AutoPas {
    * Get the lower corner of the container without the halo.
    * @return lower corner of the container.
    */
-  [[nodiscard]] std::array<double, 3> getBoxMin() const;
+  [[nodiscard]] const std::array<double, 3> &getBoxMin() const;
 
   /**
    * Get the upper corner of the container without the halo.
    * @return upper corner of the container.
    */
-  [[nodiscard]] std::array<double, 3> getBoxMax() const;
+  [[nodiscard]] const std::array<double, 3> &getBoxMax() const;
 
   /**
    * get the bool value indicating if the search space is trivial (not more than one configuration to test).
