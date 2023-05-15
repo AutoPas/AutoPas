@@ -667,13 +667,18 @@ class LJMultisiteFunctorCTS
       }
 
       // generate mask for each site in the mols 'above' molA from molecular mask
-      std::vector<double, autopas::AlignedAllocator<double>> siteMask;
-      siteMask.reserve(noSitesB);
+      std::vector<size_t, autopas::AlignedAllocator<size_t>> siteVector;
+      siteVector.reserve(noSitesB);
 
-      for (size_t molB = molA + 1; molB < soa.getNumberOfParticles(); ++molB) {
-        for (size_t siteB = 0; siteB < _PPLibrary->getNumSites(typeptr[molB]); ++siteB) {
-          double condition = molMask[molB - (molA + 1)];
-          siteMask.emplace_back(molMask[molB - (molA + 1)]);
+      for (size_t molB = molA + 1, siteIndex = 0; molB < soa.getNumberOfParticles(); ++molB) {
+        bool condition = static_cast<bool>(molMask[molB - (molA + 1)]);
+        size_t siteCountB = _PPLibrary->getNumSites(typeptr[molB]);  // Maybe needs to change if no mixing
+        if (condition) {
+          for (size_t siteB = 0; siteB < _PPLibrary->getNumSites(typeptr[molB]); ++siteB) {
+            siteVector.emplace_back(siteIndex++);
+          }
+        } else {
+          siteIndex += siteCountB;
         }
       }
 
@@ -694,23 +699,18 @@ class LJMultisiteFunctorCTS
         __m256d sigmaSquared = _mm256_set1_pd(const_sigmaSquared);
         __m256d shift6 = applyShift ? _mm256_set1_pd(const_shift6) : _zero;
 
-        for (size_t siteB = 0; siteB < noSitesB; siteB += vecLength) {
-          const size_t rest = noSitesB - siteB;
+        for (size_t siteVectorIndex = 0; siteVectorIndex < siteVector.size(); siteVectorIndex += vecLength) {
+          const size_t rest = siteVector.size() - siteVectorIndex;
           const bool remainderCase = rest < vecLength;
-          const __m256i remainderMask = remainderCase ? _masks[rest - 1] : _one;
+          const __m256i remainderMask = remainderCase ? _masks[rest - 1] : _mm256_set1_epi64x(-1);
 
-          const size_t globalSiteBIndex = siteB + siteIndexMolB;
-          const __m256d localMask =
-              remainderCase ? _mm256_maskload_pd(&siteMask[siteB], remainderMask) : _mm256_loadu_pd(&siteMask[siteB]);
-          if (_mm256_movemask_pd(localMask) == 0) {
-            continue;
-          }
+          const __m256i siteIndices =
+              remainderCase ? _mm256_maskload_epi64(reinterpret_cast<const long long *>(&siteVector[siteVectorIndex]),
+                                                    remainderMask)
+                            : _mm256_loadu_si256(reinterpret_cast<const __m256i *>(&siteVector[siteVectorIndex]));
 
           if constexpr (useMixing) {
-            __m256i siteTypesBMask =
-                remainderCase ? _mm256_maskload_epi64(reinterpret_cast<const long long *>(&siteTypes[globalSiteBIndex]),
-                                                      remainderMask)
-                              : _mm256_loadu_si256(reinterpret_cast<const __m256i *>(&siteTypes[globalSiteBIndex]));
+            __m256i siteTypesBMask = gather_epi64(remainderCase, &siteTypes[siteIndexMolB], siteIndices, remainderMask);
             siteTypesBMask = _mm256_mul_epu32(siteTypesBMask, _mm256_set1_epi64x(3));
 
             epsilon24 = _mm256_i64gather_pd(mixingPtr, siteTypesBMask, 8);
@@ -721,15 +721,11 @@ class LJMultisiteFunctorCTS
           }
 
           const __m256d exactSitePositionsBX =
-              remainderCase ? _mm256_maskload_pd(&exactSitePositionX[globalSiteBIndex], remainderMask)
-                            : _mm256_loadu_pd(&exactSitePositionX[globalSiteBIndex]);
+              gather_pd(remainderCase, &exactSitePositionX[siteIndexMolB], siteIndices, remainderMask);
           const __m256d exactSitePositionsBY =
-              remainderCase ? _mm256_maskload_pd(&exactSitePositionY[globalSiteBIndex], remainderMask)
-                            : _mm256_loadu_pd(&exactSitePositionY[globalSiteBIndex]);
+              gather_pd(remainderCase, &exactSitePositionY[siteIndexMolB], siteIndices, remainderMask);
           const __m256d exactSitePositionsBZ =
-              remainderCase ? _mm256_maskload_pd(&exactSitePositionZ[globalSiteBIndex], remainderMask)
-                            : _mm256_loadu_pd(&exactSitePositionZ[globalSiteBIndex]);
-
+              gather_pd(remainderCase, &exactSitePositionZ[siteIndexMolB], siteIndices, remainderMask);
           const __m256d displacementX = _mm256_sub_pd(exactSitePositionsAX, exactSitePositionsBX);
           const __m256d displacementY = _mm256_sub_pd(exactSitePositionsAY, exactSitePositionsBY);
           const __m256d displacementZ = _mm256_sub_pd(exactSitePositionsAZ, exactSitePositionsBZ);
@@ -747,7 +743,8 @@ class LJMultisiteFunctorCTS
           const __m256d lj12 = _mm256_mul_pd(lj6, lj6);
           const __m256d lj12m6 = _mm256_sub_pd(lj12, lj6);
           const __m256d scalar = _mm256_mul_pd(epsilon24, _mm256_mul_pd(_mm256_add_pd(lj12, lj12m6), invDistSquared));
-          const __m256d scalarMultiple = _mm256_and_pd(localMask, scalar);
+          const __m256d scalarMultiple =
+              _mm256_and_pd(_mm256_castsi256_pd(remainderMask), scalar);  // Idk why this is needed
 
           const __m256d forceX = _mm256_mul_pd(scalarMultiple, displacementX);
           const __m256d forceY = _mm256_mul_pd(scalarMultiple, displacementY);
@@ -758,21 +755,18 @@ class LJMultisiteFunctorCTS
           forceSumZ = _mm256_add_pd(forceSumZ, forceZ);
 
           // N3
-          __m256d forceSumBX = remainderCase ? _mm256_maskload_pd(&siteForceX[globalSiteBIndex], remainderMask)
-                                             : _mm256_loadu_pd(&siteForceX[globalSiteBIndex]);
-          __m256d forceSumBY = remainderCase ? _mm256_maskload_pd(&siteForceY[globalSiteBIndex], remainderMask)
-                                             : _mm256_loadu_pd(&siteForceY[globalSiteBIndex]);
-          __m256d forceSumBZ = remainderCase ? _mm256_maskload_pd(&siteForceZ[globalSiteBIndex], remainderMask)
-                                             : _mm256_loadu_pd(&siteForceZ[globalSiteBIndex]);
+
+          __m256d forceSumBX = gather_pd(remainderCase, &siteForceX[siteIndexMolB], siteIndices, remainderMask);
+          __m256d forceSumBY = gather_pd(remainderCase, &siteForceY[siteIndexMolB], siteIndices, remainderMask);
+          __m256d forceSumBZ = gather_pd(remainderCase, &siteForceZ[siteIndexMolB], siteIndices, remainderMask);
+
           forceSumBX = _mm256_sub_pd(forceSumBX, forceX);
           forceSumBY = _mm256_sub_pd(forceSumBY, forceY);
           forceSumBZ = _mm256_sub_pd(forceSumBZ, forceZ);
-          remainderCase ? _mm256_maskstore_pd(siteForceX.data() + globalSiteBIndex, remainderMask, forceSumBX)
-                        : _mm256_storeu_pd(siteForceX.data() + globalSiteBIndex, forceSumBX);
-          remainderCase ? _mm256_maskstore_pd(siteForceY.data() + globalSiteBIndex, remainderMask, forceSumBY)
-                        : _mm256_storeu_pd(siteForceY.data() + globalSiteBIndex, forceSumBY);
-          remainderCase ? _mm256_maskstore_pd(siteForceZ.data() + globalSiteBIndex, remainderMask, forceSumBZ)
-                        : _mm256_storeu_pd(siteForceZ.data() + globalSiteBIndex, forceSumBZ);
+
+          scatter_pd(remainderCase, &siteForceX[siteIndexMolB], siteIndices, remainderMask, forceSumBX);
+          scatter_pd(remainderCase, &siteForceY[siteIndexMolB], siteIndices, remainderMask, forceSumBY);
+          scatter_pd(remainderCase, &siteForceZ[siteIndexMolB], siteIndices, remainderMask, forceSumBZ);
 
           if constexpr (calculateGlobals) {
             const __m256d virialX = _mm256_mul_pd(displacementX, forceX);
@@ -781,18 +775,20 @@ class LJMultisiteFunctorCTS
 
             // FMA angle
             const __m256d potentialEnergy6 = _mm256_fmadd_pd(epsilon24, lj12m6, shift6);
-            const __m256d potentialEnergy6Masked = _mm256_and_pd(localMask, potentialEnergy6);
+            const __m256d potentialEnergy6Masked = _mm256_and_pd(remainderMask, potentialEnergy6);
 
             __m256i ownedStateA4 = _mm256_set1_epi64x(static_cast<int64_t>(ownedStateA));
             __m256d ownedMaskA = _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateA4),
                                                _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
             __m256d energyFactor = _mm256_blendv_pd(_zero, _one, ownedMaskA);
             if constexpr (newton3) {
-              const __m256i ownedStateB =
-                  remainderCase
-                      ? _mm256_castpd_si256(_mm256_maskload_pd(
-                            reinterpret_cast<double const *>(&isSiteOwned[globalSiteBIndex]), _masks[rest - 1]))
-                      : _mm256_loadu_si256(reinterpret_cast<const __m256i *>(&isSiteOwned[globalSiteBIndex]));
+//              const __m256i ownedStateB =
+//                  remainderCase
+//                      ? _mm256_castpd_si256(_mm256_maskload_pd(
+//                            reinterpret_cast<double const *>(&isSiteOwned[globalSiteBIndex]), _masks[rest - 1]))
+//                      : _mm256_loadu_si256(reinterpret_cast<const __m256i *>(&isSiteOwned[globalSiteBIndex]));
+              const __m256i ownedStateB = gather_epi64(remainderCase, &isSiteOwned[siteIndexMolB], siteIndices,
+                                                       remainderMask);
               __m256d ownedMaskB = _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB),
                                                  _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
               energyFactor = _mm256_add_pd(energyFactor, _mm256_blendv_pd(_zero, _one, ownedMaskB));
@@ -1701,30 +1697,38 @@ class LJMultisiteFunctorCTS
     return _mm_cvtsd_f64(_mm256_extractf128_pd(sum, 0));
   }
 
-  // TODO Documentation
-  inline __m256d vectorLoad(bool remainder, const double *__restrict ptr, const __m256i &remainderMask) {
-    if (remainder) {
-      return _mm256_maskload_pd(ptr, remainderMask);
+  static inline __m256d gather_pd(bool useMask, const double *const __restrict data, const __m256i &indices,
+                                  const __m256i &mask) {
+    if (useMask) {
+      return _mm256_mask_i64gather_pd(_mm256_setzero_pd(), data, indices, mask, 8);
     } else {
-      return _mm256_loadu_pd(ptr);
+      return _mm256_i64gather_pd(data, indices, 8);
     }
   }
 
-  // TODO Documentation
-  inline __m256i vectorLoad(bool remainder, const unsigned long *__restrict ptr, const __m256i &remainderMask) {
-    if (remainder) {
-      return _mm256_maskload_epi64(reinterpret_cast<const long long *>(ptr), remainderMask);
+  static inline __m256i gather_epi64(bool useMask, const size_t *const __restrict data, const __m256i &indices,
+                                     const __m256i &mask) {
+    if (useMask) {
+      return _mm256_mask_i64gather_epi64(_mm256_setzero_si256(), data, indices, mask, 8);
     } else {
-      return _mm256_loadu_si256(reinterpret_cast<const __m256i *>(ptr));
+      return _mm256_i64gather_epi64(data, indices, 8);
     }
   }
 
-  // TODO Documentation
-  inline void vectorStore(bool remainder, double *__restrict ptr, const __m256i &remainderMask, __m256d data) {
-    if (remainder) {
-      _mm256_maskstore_pd(ptr, remainderMask, data);
-    } else {
-      _mm256_storeu_pd(ptr, data);
+  // Workaround for missing _mm256_i64scatter_pd :(
+  static inline void scatter_pd(bool useMask, double *const __restrict ptr, const __m256i &indices, const __m256i &mask,
+                                __m256d &values) {
+    alignas(32) double temp[4];
+    alignas(32) size_t idx[4];
+
+    _mm256_store_pd(temp, values);
+    _mm256_store_si256((__m256i *)idx, indices);
+
+    for (size_t i = 0; i < 4; ++i) {
+      if (mask[i]) {  // <- This does not work for all compilers >:(
+        ptr[idx[i]] = temp[i];
+      } else
+        break;
     }
   }
 
