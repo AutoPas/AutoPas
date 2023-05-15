@@ -88,7 +88,6 @@ size_t getNumPiecesInCheckpoint(const std::string &filename) {
  * @param rank The rank which created the respective vtu file.
  * @param particles Container for the particles recorded in the respective vts file.
  */
-template <class ParticleType>
 void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, std::vector<ParticleType> &particles) {
   const size_t endOfPath = filename.find_last_of('/');
   const auto filePath = filename.substr(0ul, endOfPath);
@@ -421,14 +420,15 @@ void MDFlexConfig::calcSimulationBox() {
 }
 
 void MDFlexConfig::addSiteType(unsigned long siteId, double epsilon, double sigma, double mass) {
-  // check if siteId is already existing and if there no error in input
+  // check if siteId is already existing and if there is no error in input
   if (epsilonMap.value.count(siteId) == 1) {
     // check if type is already added
-    if (epsilonMap.value.at(siteId) == epsilon and sigmaMap.value.at(siteId) == sigma and
-        massMap.value.at(siteId) == mass) {
+    if (autopas::utils::Math::isNear(epsilonMap.value.at(siteId), epsilon) and
+        autopas::utils::Math::isNear(sigmaMap.value.at(siteId), sigma) and
+        autopas::utils::Math::isNear(massMap.value.at(siteId), mass)) {
       return;
     } else {  // wrong initialization:
-      throw std::runtime_error("Wrong Particle initialization: using same typeId for different properties");
+      throw std::runtime_error("Wrong Particle initialization: using same siteId for different properties");
     }
   } else {
     epsilonMap.value.emplace(siteId, epsilon);
@@ -441,13 +441,14 @@ void MDFlexConfig::addMolType(unsigned long molId, const std::vector<unsigned lo
 #if MD_FLEXIBLE_MODE==MULTISITE
   // check if siteId is already existing and if there no error in input
   if (molToSiteIdMap.count(molId) == 1) {
+
     // check if type is already added
-    if (autopas::utils::ArrayUtils::equals(molToSiteIdMap.at(molId),siteIds) and
-        autopas::utils::ArrayUtils::equals(molToSitePosMap.at(molId),relSitePos) and
-        (momentOfInertiaMap.at(molId) == momentOfInertia)) {
+    if (autopas::utils::ArrayMath::isEqual(molToSiteIdMap.at(molId),siteIds) and
+        autopas::utils::ArrayMath::isNear(molToSitePosMap.at(molId),relSitePos) and
+        autopas::utils::ArrayMath::isNear(momentOfInertiaMap.at(molId),momentOfInertia)) {
       return;
     } else {  // wrong initialization:
-      throw std::runtime_error("Wrong Particle initialization: using same typeId for different properties");
+      throw std::runtime_error("Wrong Particle initialization: using same molId for different properties");
     }
   } else {
     molToSiteIdMap.emplace(molId,siteIds);

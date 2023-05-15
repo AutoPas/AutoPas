@@ -126,52 +126,6 @@ template <class Container>
 }
 
 /**
- * Tests if two vectors (of float-types) are (almost) equal.
- * @tparam T float type
- * @param A vector A
- * @param B vector B
- * @param tol tolerance for equality
- * @return
- */
-template <class T>
-bool equals(std::vector<T> A, std::vector<T> B, double tol = 1e-10) {
-  const auto size = A.size();
-  if (size != B.size()) {
-    return false;
-  }
-  for (size_t i = 0; i < size; ++i) {
-    if (A[i] - B[i] > tol) {
-      return false;
-    }
-  }
-  return true;
-}
-
-/**
- * Tests if two vectors of arrays (of float-types) are (almost) equal.
- * @tparam T float type
- * @tparam SIZE size of array
- * @param A vector A
- * @param B vector B
- * @param tol tolerance for equality
- * @return
- */
-template <class T, std::size_t SIZE>
-bool equals(std::vector<std::array<T, SIZE>> A, std::vector<std::array<T, SIZE>> B, double tol = 1e-10) {
-  const auto vec_size = A.size();
-  if (vec_size != B.size()) {
-    return false;
-  }
-  for (size_t i = 0; i < vec_size; ++i) {
-    for (size_t j = 0; j < SIZE; ++j)
-    if (A[i][j] - B[i][j] > tol) {
-      return false;
-    }
-  }
-  return true;
-}
-
-/**
  * Stream operator for containers (array and vector types).
  *
  * This function actually checks if the given Template parameter satisfies is_container.

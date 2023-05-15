@@ -12,6 +12,8 @@
 #include <numeric>
 #include <sstream>
 
+#include "Math.h"
+
 namespace autopas::utils::ArrayMath {
 
 /**
@@ -291,6 +293,68 @@ template <class T, std::size_t SIZE>
 template <class T, std::size_t SIZE>
 [[nodiscard]] constexpr std::array<T, SIZE> normalize(const std::array<T, SIZE> &a) {
   return mulScalar(a, static_cast<T>(1) / L2Norm(a));
+}
+
+/**
+ * Returns true if arrays are elementwise relatively near each other.
+ * @tparam T floating point type
+ * @tparam SIZE size of the array
+ * @param a input array
+ * @param b input array
+ * @param relativeDifference
+ * @return
+ */
+template <class T, std::size_t SIZE>
+[[nodiscard]] bool isNear(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b, double relativeDifference = 1e-9) {
+  bool arraysAreNear = true;
+  for (std::size_t i = 0; i < SIZE; ++i) {
+    arraysAreNear = arraysAreNear and utils::Math::isNear(a[i], b[i], relativeDifference);
+  }
+  return arraysAreNear;
+}
+
+/**
+ * Returns true if vectors of arrays are elementwise relatively near each other. Also returns false if vectors are of different
+ * sizes.
+ * @tparam T floating point type
+ * @tparam SIZE size of the array
+ * @param a input vector of arrays
+ * @param b input vector of arrays
+ * @param relativeDifference
+ * @return
+ */
+template <class T, std::size_t SIZE>
+[[nodiscard]] bool isNear(const std::vector<std::array<T,SIZE>> &a, const std::vector<std::array<T,SIZE>> &b, double relativeDifference = 1e-9) {
+  const auto size = a.size();
+  if (size != b.size()) {
+    return false;
+  }
+  bool arraysAreNear = true;
+  for (std::size_t i = 0; i < size; ++i) {
+    arraysAreNear = arraysAreNear and utils::ArrayMath::isNear(a[i], b[i], relativeDifference);
+  }
+  return arraysAreNear;
+}
+
+/**
+ * Returns true if vectors are elementwise equal to each other. Also returns false if vectors are of different
+ * sizes. Should only be used with an integer type.
+ * @tparam T integer type
+ * @param a input vector
+ * @param b input vector
+ * @param relativeDifference
+ * @return
+ */
+template <class T>
+[[nodiscard]] bool isEqual(const std::vector<T> &a, const std::vector<T> &b) {
+  if (a.size() != b.size()) {
+    return false;
+  }
+  bool arraysAreEqual = true;
+  for (std::size_t i = 0; i < a.size(); ++i) {
+    arraysAreEqual = arraysAreEqual and (a[i] == b[i]);
+  }
+  return arraysAreEqual;
 }
 
 // namespace for templated operators
