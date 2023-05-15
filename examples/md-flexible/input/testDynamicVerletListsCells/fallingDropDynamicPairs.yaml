@@ -48,7 +48,7 @@ Objects:
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
 vtk-filename                     :  fallingDropDynamicPairs
-vtk-write-frequency              :  100
+vtk-write-frequency              :  100000
 no-flops                         :  false
 no-end-config                    :  true
 log-level                        :  error
