@@ -41,21 +41,21 @@ constexpr std::array<typename ParticleType::AttributeNames, 25> Attributes = {
     autopas::MultisiteMoleculeLJ::AttributeNames::ownershipState};
 #else
 constexpr std::array<typename ParticleType::AttributeNames, 15> Attributes = {
-    autopas::MoleculeLJ::AttributeNames::id,
-    autopas::MoleculeLJ::AttributeNames::posX,
-    autopas::MoleculeLJ::AttributeNames::posY,
-    autopas::MoleculeLJ::AttributeNames::posZ,
-    autopas::MoleculeLJ::AttributeNames::velocityX,
-    autopas::MoleculeLJ::AttributeNames::velocityY,
-    autopas::MoleculeLJ::AttributeNames::velocityZ,
-    autopas::MoleculeLJ::AttributeNames::forceX,
-    autopas::MoleculeLJ::AttributeNames::forceY,
-    autopas::MoleculeLJ::AttributeNames::forceZ,
-    autopas::MoleculeLJ::AttributeNames::oldForceX,
-    autopas::MoleculeLJ::AttributeNames::oldForceY,
-    autopas::MoleculeLJ::AttributeNames::oldForceZ,
-    autopas::MoleculeLJ::AttributeNames::typeId,
-    autopas::MoleculeLJ::AttributeNames::ownershipState};
+    mdLib::MoleculeLJ::AttributeNames::id,
+    mdLib::MoleculeLJ::AttributeNames::posX,
+    mdLib::MoleculeLJ::AttributeNames::posY,
+    mdLib::MoleculeLJ::AttributeNames::posZ,
+    mdLib::MoleculeLJ::AttributeNames::velocityX,
+    mdLib::MoleculeLJ::AttributeNames::velocityY,
+    mdLib::MoleculeLJ::AttributeNames::velocityZ,
+    mdLib::MoleculeLJ::AttributeNames::forceX,
+    mdLib::MoleculeLJ::AttributeNames::forceY,
+    mdLib::MoleculeLJ::AttributeNames::forceZ,
+    mdLib::MoleculeLJ::AttributeNames::oldForceX,
+    mdLib::MoleculeLJ::AttributeNames::oldForceY,
+    mdLib::MoleculeLJ::AttributeNames::oldForceZ,
+    mdLib::MoleculeLJ::AttributeNames::typeId,
+    mdLib::MoleculeLJ::AttributeNames::ownershipState};
 #endif
 
 /**

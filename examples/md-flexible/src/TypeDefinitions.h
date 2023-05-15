@@ -16,7 +16,7 @@
 
 #else
 
-#include "applicationLibrary/molecularDynamicsLibrary/MoleculeLJ.h"
+#include "molecularDynamicsLibrary/MoleculeLJ.h"
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC) || defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
 #include "molecularDynamicsLibrary/LJFunctor.h"
