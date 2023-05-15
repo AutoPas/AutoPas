@@ -21,6 +21,6 @@ Objects:
       box-length                 :  [10, 10, 10]
       bottomLeftCorner           :  [0, 0, 0]
       velocity                   :  [0, 0, 0]
-      particleTypeStr            :  2
+      particleTypeId             :  2
 no-flops                         :  true
 no-end-config                    :  true

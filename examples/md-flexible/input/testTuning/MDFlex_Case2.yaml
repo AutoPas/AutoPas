@@ -25,6 +25,6 @@ Objects:
       particle-spacing           :  0.5
       bottomLeftCorner           :  [0, 0, 0]
       velocity                   :  [0, 0, 0]
-      particleTypeStr            :  0
+      particleTypeId             :  0
 no-flops                         :  true
 no-end-config                    :  true
