@@ -5,7 +5,7 @@
 Objects:
   CubeUniform:
     0:
-      molecule-id: 0
+      particleTypeId:  0
       numberOfParticles: 100
       box-length: [10.,10.,10.]
       velocity: [0.,0.,0.]

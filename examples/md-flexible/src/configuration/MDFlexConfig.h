@@ -582,6 +582,11 @@ class MDFlexConfig {
    */
   static inline const char *objectsStr{"Objects"};
   /**
+   * particleTypeStr. A md-flex mode blind string name for the particle type of the object's particles. E.g. this is siteId
+   * in a single-site simulation and molId in a multi-site simulation.
+   */
+  static inline const char *particleTypeStr{"particleTypeId"};
+  /**
    * bottomLeftBackCornerStr
    */
   static inline const char *bottomLeftBackCornerStr{"bottomLeftCorner"};

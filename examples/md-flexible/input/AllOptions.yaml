@@ -54,8 +54,7 @@ Objects:
       particle-spacing               :  1.1225
       bottomLeftCorner               :  [0, 0, 0]
       velocity                       :  [0, 0, 0]
-      site-id                        :  0
-#      molecule-id                :  0     # Replace the site-id line with this for multi-site md-flexible
+      particleTypeId                 :  0
   CubeGauss:
     0:
       distribution-mean              :  [2, 2, 2]
@@ -64,32 +63,28 @@ Objects:
       box-length                     :  [8, 8, 8]
       bottomLeftCorner               :  [15, 15, 15]
       velocity                       :  [0, 0, 0]
-      site-id                        :  0
-#      molecule-id                :  0     # Replace the site-id line with this for multi-site md-flexible
+      particleTypeId                 :  0
   CubeUniform:
     0:
       numberOfParticles              :  100
       box-length                     :  [10, 10, 10]
       bottomLeftCorner               :  [15, 0, 0]
       velocity                       :  [0, 0, 0]
-      site-id                        :  0
-#      molecule-id                :  0     # Replace the site-id line with this for multi-site md-flexible
+      particleTypeId                 :  0
   CubeClosestPacked:
     0:
       box-length                     :  [4, 4, 4]
       bottomLeftCorner               :  [0, 0, 15]
       particle-spacing               :  1.1225
       velocity                       :  [0, 0, 0]
-      site-id                        :  0
-#      molecule-id                :  0     # Replace the site-id line with this for multi-site md-flexible
+      particleTypeId                 :  0
   Sphere:
     0:
       center                         :  [4, 16, 4]
       radius                         :  3
       particle-spacing               :  1.1225
       velocity                       :  [0, 0, 0]
-      site-id                        :  0
-#      molecule-id                :  0     # Replace the site-id line with this for multi-site md-flexible
+      particleTypeId                 :  0
 thermostat:
   initialTemperature                 :  1
   targetTemperature                  :  4

@@ -31,14 +31,8 @@ const std::string MDFlexParser::YamlParser::makeErrorMsg(const YAML::Mark &mark,
 
 const CubeGrid MDFlexParser::YamlParser::parseCubeGridObject(const MDFlexConfig &config, const YAML::Node node,
                                                              std::vector<std::string> &objectErrors) {
-  auto particleTypeStr =
-#if MD_FLEXIBLE_MODE==MULTISITE
-      MDFlexConfig::molTypeStr;
-#else
-      MDFlexConfig::siteTypeStr;
-#endif
   const auto velocity = parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::velocityStr, objectErrors);
-  const auto particleType = parseComplexTypeValueSingle<unsigned long>(node, particleTypeStr, objectErrors);
+  const auto particleType = parseComplexTypeValueSingle<unsigned long>(node, MDFlexConfig::particleTypeStr, objectErrors);
   const auto particlesPerDim =
       parseComplexTypeValueSequence<unsigned long, 3>(node, config.particlesPerDim.name, objectErrors);
   const auto particleSpacing = parseComplexTypeValueSingle<double>(node, config.particleSpacing.name.c_str(), objectErrors);
@@ -51,14 +45,8 @@ const CubeGrid MDFlexParser::YamlParser::parseCubeGridObject(const MDFlexConfig 
 
 const CubeUniform MDFlexParser::YamlParser::parseCubeUniformObject(const MDFlexConfig &config, const YAML::Node node,
                                                                    std::vector<std::string> &objectErrors) {
-  auto particleTypeStr =
-#if MD_FLEXIBLE_MODE==MULTISITE
-      MDFlexConfig::molTypeStr;
-#else
-      MDFlexConfig::siteTypeStr;
-#endif
   const auto velocity = parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::velocityStr, objectErrors);
-  const auto particleType = parseComplexTypeValueSingle<unsigned long>(node, particleTypeStr, objectErrors);
+  const auto particleType = parseComplexTypeValueSingle<unsigned long>(node, MDFlexConfig::particleTypeStr, objectErrors);
   const auto numParticles = parseComplexTypeValueSingle<size_t>(node, MDFlexConfig::particlesPerObjectStr, objectErrors);
   const auto boxLength = parseComplexTypeValueSequence<double, 3>(node, config.boxLength.name, objectErrors);
   const auto bottomLeftCorner =
@@ -70,14 +58,8 @@ const CubeUniform MDFlexParser::YamlParser::parseCubeUniformObject(const MDFlexC
 
 const CubeGauss MDFlexParser::YamlParser::parseCubeGaussObject(const MDFlexConfig &config, const YAML::Node node,
                                                                std::vector<std::string> &objectErrors) {
-  auto particleTypeStr =
-#if MD_FLEXIBLE_MODE==MULTISITE
-      MDFlexConfig::molTypeStr;
-#else
-      MDFlexConfig::siteTypeStr;
-#endif
   const auto velocity = parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::velocityStr, objectErrors);
-  const auto particleType = parseComplexTypeValueSingle<unsigned long>(node, particleTypeStr, objectErrors);
+  const auto particleType = parseComplexTypeValueSingle<unsigned long>(node, MDFlexConfig::particleTypeStr, objectErrors);
   const auto numParticles = parseComplexTypeValueSingle<size_t>(node, MDFlexConfig::particlesPerObjectStr, objectErrors);
   const auto boxLength = parseComplexTypeValueSequence<double, 3>(node, config.boxLength.name, objectErrors);
   const auto distributionMean = parseComplexTypeValueSequence<double, 3>(node, config.distributionMean.name, objectErrors);
@@ -92,14 +74,8 @@ const CubeGauss MDFlexParser::YamlParser::parseCubeGaussObject(const MDFlexConfi
 
 const Sphere MDFlexParser::YamlParser::parseSphereObject(const MDFlexConfig &config, const YAML::Node node,
                                                          std::vector<std::string> &objectErrors) {
-  auto particleTypeStr =
-#if MD_FLEXIBLE_MODE==MULTISITE
-      MDFlexConfig::molTypeStr;
-#else
-      MDFlexConfig::siteTypeStr;
-#endif
   const auto velocity = parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::velocityStr, objectErrors);
-  const auto particleType = parseComplexTypeValueSingle<unsigned long>(node, particleTypeStr, objectErrors);
+  const auto particleType = parseComplexTypeValueSingle<unsigned long>(node, MDFlexConfig::particleTypeStr, objectErrors);
   const auto sphereCenter = parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::sphereCenterStr, objectErrors);
   const auto sphereRadius = parseComplexTypeValueSingle<double>(node, MDFlexConfig::sphereRadiusStr, objectErrors);
   const auto particleSpacing = parseComplexTypeValueSingle<double>(node, config.particleSpacing.name.c_str(), objectErrors);
@@ -111,14 +87,8 @@ const Sphere MDFlexParser::YamlParser::parseSphereObject(const MDFlexConfig &con
 const CubeClosestPacked MDFlexParser::YamlParser::parseCubeClosestPacked(const MDFlexConfig &config,
                                                                          const YAML::Node node,
                                                                          std::vector<std::string> &objectErrors) {
-  auto particleTypeStr =
-#if MD_FLEXIBLE_MODE==MULTISITE
-      MDFlexConfig::molTypeStr;
-#else
-      MDFlexConfig::siteTypeStr;
-#endif
   const auto velocity = parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::velocityStr, objectErrors);
-  const auto particleType = parseComplexTypeValueSingle<unsigned long>(node, particleTypeStr, objectErrors);
+  const auto particleType = parseComplexTypeValueSingle<unsigned long>(node, MDFlexConfig::particleTypeStr, objectErrors);
   const auto particleSpacing = parseComplexTypeValueSingle<double>(node, config.particleSpacing.name.c_str(), objectErrors);
   const auto boxLength = parseComplexTypeValueSequence<double, 3>(node, config.boxLength.name, objectErrors);
   const auto bottomLeftCorner =
