@@ -616,7 +616,7 @@ class LJMultisiteFunctorCTS
       const size_t siteIndexMolB = siteIndexMolA + noSitesInMolA;                    // index of first site in molB
       const size_t noSitesB = (siteCount - siteIndexMolB);  // Number of sites in molecules that A interacts with
 
-      // create mask over every mol 'above' molA  (char to keep arrays aligned)
+      // create mask over every mol 'above' molA  (doubles because they are easy to vectorize)
       std::vector<double, autopas::AlignedAllocator<double>> molMask;
       molMask.reserve(soa.getNumberOfParticles() - (molA + 1));
 
@@ -628,16 +628,11 @@ class LJMultisiteFunctorCTS
       for (size_t molB = molA + 1; molB < soa.getNumberOfParticles(); molB += vecLength) {
         const size_t rest = soa.getNumberOfParticles() - molB;
         const bool remainderCase = rest < vecLength;
-        __m256i remainderMask = _one;
-        if (remainderCase) {
-          remainderMask = _masks[rest - 1];
-        }
-        const __m256d xposB =
-            remainderCase ? _mm256_maskload_pd(&xptr[molB], remainderMask) : _mm256_loadu_pd(&xptr[molB]);
-        const __m256d yposB =
-            remainderCase ? _mm256_maskload_pd(&yptr[molB], remainderMask) : _mm256_loadu_pd(&yptr[molB]);
-        const __m256d zposB =
-            remainderCase ? _mm256_maskload_pd(&zptr[molB], remainderMask) : _mm256_loadu_pd(&zptr[molB]);
+        __m256i remainderMask = remainderCase ? _masks[rest - 1] : _mm256_set1_epi64x(-1);
+
+        const __m256d xposB = load_pd(remainderCase, &xptr[molB], remainderMask);
+        const __m256d yposB = load_pd(remainderCase, &yptr[molB], remainderMask);
+        const __m256d zposB = load_pd(remainderCase, &zptr[molB], remainderMask);
 
         const __m256d displacementCoMX = _mm256_sub_pd(xposA, xposB);
         const __m256d displacementCoMY = _mm256_sub_pd(yposA, yposB);
@@ -651,10 +646,8 @@ class LJMultisiteFunctorCTS
             _mm256_add_pd(_mm256_add_pd(distanceSquaredCoMX, distanceSquaredCoMY), distanceSquaredCoMZ);
 
         const __m256d cutoffMask = _mm256_cmp_pd(distanceSquaredCoM, _cutoffSquared, _CMP_LE_OS);
-        const __m256i ownedStateB = remainderCase
-                                        ? _mm256_castpd_si256(_mm256_maskload_pd(
-                                              reinterpret_cast<double const *>(&ownedStatePtr[molB]), remainderMask))
-                                        : _mm256_loadu_si256(reinterpret_cast<const __m256i *>(&ownedStatePtr[molB]));
+        const __m256i ownedStateB =
+            load_epi64(remainderCase, reinterpret_cast<const size_t *>(&ownedStatePtr[molB]), remainderMask);
         const __m256d dummyMask =
             _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB), _zero, _CMP_NEQ_OS);  // Assuming that dummy = 0
         const __m256d totalMask = _mm256_and_pd(cutoffMask, dummyMask);
@@ -674,7 +667,7 @@ class LJMultisiteFunctorCTS
         bool condition = static_cast<bool>(molMask[molB - (molA + 1)]);
         size_t siteCountB = _PPLibrary->getNumSites(typeptr[molB]);  // Maybe needs to change if no mixing
         if (condition) {
-          for (size_t siteB = 0; siteB < _PPLibrary->getNumSites(typeptr[molB]); ++siteB) {
+          for (size_t siteB = 0; siteB < siteCountB; ++siteB) {
             siteVector.emplace_back(siteIndex++);
           }
         } else {
@@ -705,18 +698,17 @@ class LJMultisiteFunctorCTS
           const __m256i remainderMask = remainderCase ? _masks[rest - 1] : _mm256_set1_epi64x(-1);
 
           const __m256i siteIndices =
-              remainderCase ? _mm256_maskload_epi64(reinterpret_cast<const long long *>(&siteVector[siteVectorIndex]),
-                                                    remainderMask)
-                            : _mm256_loadu_si256(reinterpret_cast<const __m256i *>(&siteVector[siteVectorIndex]));
+              load_epi64(remainderCase, reinterpret_cast<const size_t *>(&siteVector[siteVectorIndex]), remainderMask);
 
           if constexpr (useMixing) {
-            __m256i siteTypesBMask = gather_epi64(remainderCase, &siteTypes[siteIndexMolB], siteIndices, remainderMask);
-            siteTypesBMask = _mm256_mul_epu32(siteTypesBMask, _mm256_set1_epi64x(3));
+            __m256i siteTypeValues = gather_epi64(remainderCase, &siteTypes[siteIndexMolB], siteIndices, remainderMask);
+            siteTypeValues =
+                _mm256_mul_epu32(siteTypeValues, _mm256_set1_epi64x(3));  // This could maybe be problematic!
 
-            epsilon24 = _mm256_i64gather_pd(mixingPtr, siteTypesBMask, 8);
-            sigmaSquared = _mm256_i64gather_pd(mixingPtr + 1, siteTypesBMask, 8);
+            epsilon24 = _mm256_i64gather_pd(mixingPtr, siteTypeValues, 8);
+            sigmaSquared = _mm256_i64gather_pd(mixingPtr + 1, siteTypeValues, 8);
             if constexpr (applyShift) {
-              shift6 = _mm256_i64gather_pd(mixingPtr + 2, siteTypesBMask, 8);
+              shift6 = _mm256_i64gather_pd(mixingPtr + 2, siteTypeValues, 8);
             }
           }
 
@@ -773,8 +765,8 @@ class LJMultisiteFunctorCTS
             const __m256d virialY = _mm256_mul_pd(displacementY, forceY);
             const __m256d virialZ = _mm256_mul_pd(displacementZ, forceZ);
 
-            // FMA angle
-            const __m256d potentialEnergy6 = _mm256_fmadd_pd(epsilon24, lj12m6, shift6);
+            const __m256d potentialEnergy6 =
+                _mm256_fmadd_pd(epsilon24, lj12m6, shift6);  // FMA may not be supported on all CPUs
             const __m256d potentialEnergy6Masked = _mm256_and_pd(remainderMask, potentialEnergy6);
 
             __m256i ownedStateA4 = _mm256_set1_epi64x(static_cast<int64_t>(ownedStateA));
@@ -782,13 +774,8 @@ class LJMultisiteFunctorCTS
                                                _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
             __m256d energyFactor = _mm256_blendv_pd(_zero, _one, ownedMaskA);
             if constexpr (newton3) {
-//              const __m256i ownedStateB =
-//                  remainderCase
-//                      ? _mm256_castpd_si256(_mm256_maskload_pd(
-//                            reinterpret_cast<double const *>(&isSiteOwned[globalSiteBIndex]), _masks[rest - 1]))
-//                      : _mm256_loadu_si256(reinterpret_cast<const __m256i *>(&isSiteOwned[globalSiteBIndex]));
-              const __m256i ownedStateB = gather_epi64(remainderCase, &isSiteOwned[siteIndexMolB], siteIndices,
-                                                       remainderMask);
+              const __m256i ownedStateB =
+                  gather_epi64(remainderCase, &isSiteOwned[siteIndexMolB], siteIndices, remainderMask);
               __m256d ownedMaskB = _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB),
                                                  _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
               energyFactor = _mm256_add_pd(energyFactor, _mm256_blendv_pd(_zero, _one, ownedMaskB));
@@ -868,6 +855,9 @@ class LJMultisiteFunctorCTS
    */
   template <bool newton3>
   void SoAFunctorPairImpl(SoAView<SoAArraysType> soaA, SoAView<SoAArraysType> soaB) {
+#ifndef __AVX__
+#pragma message "SoAFunctorPair functor called without AVX support!"
+#endif
     if (soaA.getNumberOfParticles() == 0 || soaB.getNumberOfParticles() == 0) return;
 
     const auto *const __restrict xAptr = soaA.template begin<Particle::AttributeNames::posX>();
@@ -906,12 +896,12 @@ class LJMultisiteFunctorCTS
     [[maybe_unused]] auto *const __restrict typeptrA = soaA.template begin<Particle::AttributeNames::typeId>();
     [[maybe_unused]] auto *const __restrict typeptrB = soaB.template begin<Particle::AttributeNames::typeId>();
 
-    SoAFloatPrecision potentialEnergySum = 0.;
-    SoAFloatPrecision virialSumX = 0.;
-    SoAFloatPrecision virialSumY = 0.;
-    SoAFloatPrecision virialSumZ = 0.;
+    __m256d virialSumX = _mm256_setzero_pd();
+    __m256d virialSumY = _mm256_setzero_pd();
+    __m256d virialSumZ = _mm256_setzero_pd();
+    __m256d potentialEnergySum = _mm256_setzero_pd();
 
-    // local redeclarations to help compilers
+    // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
     const SoAFloatPrecision cutoffSquared = _cutoffSquaredAoS;
 
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionBx;
@@ -961,43 +951,28 @@ class LJMultisiteFunctorCTS
     }
 
     // Fill site-wise std::vectors for SIMD
-    if constexpr (useMixing) {
-      size_t siteIndex = 0;
-      for (size_t mol = 0; mol < soaB.getNumberOfParticles(); ++mol) {
-        const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
+    std::vector<std::array<double, 3>> rotatedSitePositions;
+    std::fill_n(siteForceBx.begin(), siteCountB, 0.);
+    std::fill_n(siteForceBy.begin(), siteCountB, 0.);
+    std::fill_n(siteForceBz.begin(), siteCountB, 0.);
+    for (size_t mol = 0; mol < soaB.getNumberOfParticles(); ++mol) {
+      if constexpr (useMixing) {
+        rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
             {q0Bptr[mol], q1Bptr[mol], q2Bptr[mol], q3Bptr[mol]}, _PPLibrary->getSitePositions(typeptrB[mol]));
-        const auto siteTypesOfMol = _PPLibrary->getSiteTypes(typeptrB[mol]);
-
-        for (size_t site = 0; site < _PPLibrary->getNumSites(typeptrB[mol]); ++site) {
-          exactSitePositionBx[siteIndex] = rotatedSitePositions[site][0] + xBptr[mol];
-          exactSitePositionBy[siteIndex] = rotatedSitePositions[site][1] + yBptr[mol];
-          exactSitePositionBz[siteIndex] = rotatedSitePositions[site][2] + zBptr[mol];
-          siteTypesB[siteIndex] = siteTypesOfMol[site];
-          siteForceBx[siteIndex] = 0.;
-          siteForceBy[siteIndex] = 0.;
-          siteForceBz[siteIndex] = 0.;
-          if (calculateGlobals) {
-            isSiteOwnedBArr[siteIndex] = ownedStatePtrB[mol] == OwnershipState::owned;
-          }
-          ++siteIndex;
-        }
-      }
-    } else {
-      size_t siteIndex = 0;
-      for (size_t mol = 0; mol < soaB.getNumberOfParticles(); mol++) {
-        const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
+      } else {
+        rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
             {q0Bptr[mol], q1Bptr[mol], q2Bptr[mol], q3Bptr[mol]}, const_unrotatedSitePositions);
-        for (size_t site = 0; site < const_unrotatedSitePositions.size(); ++site) {
-          exactSitePositionBx[siteIndex] = rotatedSitePositions[site][0] + xBptr[mol];
-          exactSitePositionBy[siteIndex] = rotatedSitePositions[site][1] + yBptr[mol];
-          exactSitePositionBz[siteIndex] = rotatedSitePositions[site][2] + zBptr[mol];
-          siteForceBx[siteIndex] = 0.;
-          siteForceBy[siteIndex] = 0.;
-          siteForceBz[siteIndex] = 0.;
-          if (calculateGlobals) {
-            isSiteOwnedBArr[siteIndex] = ownedStatePtrB[mol] == OwnershipState::owned;
-          }
-          ++siteIndex;
+      }
+
+      for (size_t site = 0; site < _PPLibrary->getNumSites(typeptrB[mol]); ++site) {
+        exactSitePositionBx.push_back(rotatedSitePositions[site][0] + xBptr[mol]);
+        exactSitePositionBy.push_back(rotatedSitePositions[site][1] + yBptr[mol]);
+        exactSitePositionBz.push_back(rotatedSitePositions[site][2] + zBptr[mol]);
+        if (calculateGlobals) {
+          isSiteOwnedBArr.push_back(ownedStatePtrB[mol] == OwnershipState::owned);
+        }
+        if constexpr (useMixing) {
+          siteTypesB.push_back(_PPLibrary->getSiteTypes(typeptrB[mol])[site]);
         }
       }
     }
@@ -1021,33 +996,80 @@ class LJMultisiteFunctorCTS
       std::vector<double, autopas::AlignedAllocator<double>> molMask;
       molMask.reserve(soaB.getNumberOfParticles());
 
-      unsigned long max_long = 0xFFFFFFFFFFFFFFFF;
-      double max_double = *(double *)&max_long;
-      for (size_t molB = 0; molB < soaB.getNumberOfParticles(); ++molB) {
-        const auto ownedStateB = ownedStatePtrB[molB];
+      // TODO vectorize this loop
+      //      unsigned long max_long = 0xFFFFFFFFFFFFFFFF;
+      //      double max_double = *(double *)&max_long;
+      //      for (size_t molB = 0; molB < soaB.getNumberOfParticles(); ++molB) {
+      //        const auto ownedStateB = ownedStatePtrB[molB];
+      //
+      //        const auto displacementCoMX = xAptr[molA] - xBptr[molB];
+      //        const auto displacementCoMY = yAptr[molA] - yBptr[molB];
+      //        const auto displacementCoMZ = zAptr[molA] - zBptr[molB];
+      //
+      //        const auto distanceSquaredCoMX = displacementCoMX * displacementCoMX;
+      //        const auto distanceSquaredCoMY = displacementCoMY * displacementCoMY;
+      //        const auto distanceSquaredCoMZ = displacementCoMZ * displacementCoMZ;
+      //
+      //        const auto distanceSquaredCoM = distanceSquaredCoMX + distanceSquaredCoMY + distanceSquaredCoMZ;
+      //
+      //        // mask sites of molecules beyond cutoff or if molecule is a dummy
+      //        bool condition = distanceSquaredCoM <= cutoffSquared and ownedStateB != autopas::OwnershipState::dummy;
+      //        molMask[molB] = condition ? max_double : 0.;
+      //      }
 
-        const auto displacementCoMX = xAptr[molA] - xBptr[molB];
-        const auto displacementCoMY = yAptr[molA] - yBptr[molB];
-        const auto displacementCoMZ = zAptr[molA] - zBptr[molB];
+      const __m256d xposA = _mm256_broadcast_sd(&xAptr[molA]);
+      const __m256d yposA = _mm256_broadcast_sd(&yAptr[molA]);
+      const __m256d zposA = _mm256_broadcast_sd(&zAptr[molA]);
 
-        const auto distanceSquaredCoMX = displacementCoMX * displacementCoMX;
-        const auto distanceSquaredCoMY = displacementCoMY * displacementCoMY;
-        const auto distanceSquaredCoMZ = displacementCoMZ * displacementCoMZ;
+      for (size_t molB = 0; molB < soaB.getNumberOfParticles(); molB += vecLength) {
+        const size_t rest = soaB.getNumberOfParticles() - molB;
+        const bool remainderCase = rest < vecLength;
+        __m256i remainderMask = remainderCase ? _masks[rest - 1] : _mm256_set1_epi64x(-1);
 
-        const auto distanceSquaredCoM = distanceSquaredCoMX + distanceSquaredCoMY + distanceSquaredCoMZ;
+        const __m256d xposB = load_pd(remainderCase, &xBptr[molB], remainderMask);
+        const __m256d yposB = load_pd(remainderCase, &yBptr[molB], remainderMask);
+        const __m256d zposB = load_pd(remainderCase, &zBptr[molB], remainderMask);
 
-        // mask sites of molecules beyond cutoff or if molecule is a dummy
-        bool condition = distanceSquaredCoM <= cutoffSquared and ownedStateB != autopas::OwnershipState::dummy;
-        molMask[molB] = condition ? max_double : 0.;
+        const __m256d displacementCoMX = _mm256_sub_pd(xposA, xposB);
+        const __m256d displacementCoMY = _mm256_sub_pd(yposA, yposB);
+        const __m256d displacementCoMZ = _mm256_sub_pd(zposA, zposB);
+
+        const __m256d distanceSquaredCoMX = _mm256_mul_pd(displacementCoMX, displacementCoMX);
+        const __m256d distanceSquaredCoMY = _mm256_mul_pd(displacementCoMY, displacementCoMY);
+        const __m256d distanceSquaredCoMZ = _mm256_mul_pd(displacementCoMZ, displacementCoMZ);
+
+        const __m256d distanceSquaredCoM =
+            _mm256_add_pd(_mm256_add_pd(distanceSquaredCoMX, distanceSquaredCoMY), distanceSquaredCoMZ);
+
+        const __m256d cutoffMask = _mm256_cmp_pd(distanceSquaredCoM, _cutoffSquared, _CMP_LE_OS);
+        const __m256i ownedStateB =
+            remainderCase
+                ? _mm256_maskload_epi64(reinterpret_cast<const long long *>(&ownedStatePtrB[molB]), remainderMask)
+                : _mm256_loadu_si256((__m256i *)&ownedStatePtrB[molB]);
+        const __m256d dummyMask =
+            _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB), _zero, _CMP_NEQ_OS);  // Assuming that dummy = 0
+        const __m256d totalMask = _mm256_and_pd(cutoffMask, dummyMask);
+
+        if (remainderCase) {
+          _mm256_maskstore_pd((&molMask[molB]), remainderMask, totalMask);
+        } else {
+          _mm256_storeu_pd((&molMask[molB]), totalMask);
+        }
       }
 
       // generate mask for each site in cell B from molecular mask
-      std::vector<double, autopas::AlignedAllocator<double>> siteMask;
-      siteMask.reserve(siteCountB);
+      std::vector<size_t, autopas::AlignedAllocator<size_t>> siteVector;
+      siteVector.reserve(siteCountB);
 
-      for (size_t molB = 0; molB < soaB.getNumberOfParticles(); ++molB) {
-        for (size_t siteB = 0; siteB < _PPLibrary->getNumSites(typeptrB[molB]); ++siteB) {
-          siteMask.emplace_back(molMask[molB]);
+      for (size_t molB = 0, siteIndex = 0; molB < soaB.getNumberOfParticles(); ++molB) {
+        bool condition = static_cast<bool>(molMask[molB]);
+        size_t siteCount = _PPLibrary->getNumSites(typeptrB[molB]);
+        if (condition) {
+          for (size_t siteB = 0; siteB < siteCount; ++siteB) {
+            siteVector.emplace_back(siteIndex++);
+          }
+        } else {
+          siteIndex += siteCount;
         }
       }
 
@@ -1058,14 +1080,6 @@ class LJMultisiteFunctorCTS
       __m256d torqueSumX = _zero;
       __m256d torqueSumY = _zero;
       __m256d torqueSumZ = _zero;
-
-      __m256d sigmaSquared = _mm256_set1_pd(const_sigmaSquared);
-      __m256d epsilon24 = _mm256_set1_pd(const_epsilon24);
-      __m256d shift6 = applyShift ? _mm256_set1_pd(const_shift6) : _zero;
-
-      const __m256d xposA = _mm256_broadcast_sd(&xAptr[molA]);
-      const __m256d yposA = _mm256_broadcast_sd(&yAptr[molA]);
-      const __m256d zposA = _mm256_broadcast_sd(&zAptr[molA]);
 
       for (size_t siteA = 0; siteA < noSitesInMolA; ++siteA) {
         const double *mixingPtr =
@@ -1079,51 +1093,36 @@ class LJMultisiteFunctorCTS
         const __m256d exactSitePositionsAY = _mm256_add_pd(rotatedSitePositionsAY, yposA);
         const __m256d exactSitePositionsAZ = _mm256_add_pd(rotatedSitePositionsAZ, zposA);
 
-        for (size_t siteB = 0; siteB < siteCountB; siteB += vecLength) {
-          const size_t remainder = siteCountB - siteB;
-          const bool remainderCase = remainder < vecLength;
-          const __m256i remainderMask = remainderCase ? _masks[remainder - 1] : _one;
+        __m256d sigmaSquared = _mm256_set1_pd(const_sigmaSquared);
+        __m256d epsilon24 = _mm256_set1_pd(const_epsilon24);
+        __m256d shift6 = applyShift ? _mm256_set1_pd(const_shift6) : _zero;
 
-          const __m256d localMask =
-              remainderCase ? _mm256_maskload_pd(&siteMask[siteB], remainderMask) : _mm256_loadu_pd(&siteMask[siteB]);
-          if (_mm256_movemask_pd(localMask) == 0) {
-            continue;
-          }
+        for (size_t siteVectorIndex = 0; siteVectorIndex < siteVector.size(); siteVectorIndex += vecLength) {
+          const size_t rest = siteVector.size() - siteVectorIndex;
+          const bool remainderCase = rest < vecLength;
+          const __m256i remainderMask = remainderCase ? _masks[rest - 1] : _mm256_set1_epi64x(-1);
+
+          const __m256i siteIndices =
+              load_epi64(remainderCase, reinterpret_cast<const size_t *>(&siteVector[siteVectorIndex]), remainderMask);
 
           if constexpr (useMixing) {
-            if (remainderCase) {
-              __m256i siteTypesBMask =
-                  _mm256_maskload_epi64(reinterpret_cast<const long long *>(&siteTypesB[siteB]), remainderMask);
-              siteTypesBMask = _mm256_mul_epu32(siteTypesBMask, _mm256_set1_epi64x(3));
+            __m256i siteTypeValues = gather_epi64(remainderCase, siteTypesB.data(), siteIndices, remainderMask);
+            siteTypeValues =
+                _mm256_mul_epu32(siteTypeValues, _mm256_set1_epi64x(3));  // This could maybe be problematic!
 
-              epsilon24 = _mm256_i64gather_pd(mixingPtr, siteTypesBMask, 8);
-              sigmaSquared = _mm256_i64gather_pd(mixingPtr + 1, siteTypesBMask, 8);
-              if constexpr (applyShift) {
-                shift6 = _mm256_i64gather_pd(mixingPtr + 2, siteTypesBMask, 8);
-              }
-            } else {
-              __m256i siteTypesBMask = _mm256_loadu_si256(reinterpret_cast<const __m256i *>(&siteTypesB[siteB]));
-              siteTypesBMask = _mm256_mul_epu32(
-                  siteTypesBMask,
-                  _mm256_set1_epi64x(3));  // Multiply indices by 3 since each mixing data contains 3 doubles
-              epsilon24 = _mm256_i64gather_pd(mixingPtr, siteTypesBMask, 8);
-              sigmaSquared = _mm256_i64gather_pd(mixingPtr + 1, siteTypesBMask, 8);
-              if constexpr (applyShift) {
-                shift6 = _mm256_i64gather_pd(mixingPtr + 2, siteTypesBMask, 8);
-              }
+            epsilon24 = _mm256_i64gather_pd(mixingPtr, siteTypeValues, 8);
+            sigmaSquared = _mm256_i64gather_pd(mixingPtr + 1, siteTypeValues, 8);
+            if constexpr (applyShift) {
+              shift6 = _mm256_i64gather_pd(mixingPtr + 2, siteTypeValues, 8);
             }
           }
 
-          // const auto isSiteOwnedB = !calculateGlobals || isSiteOwnedBArr[siteB];
-          const __m256d exactSitePositionsBX = remainderCase
-                                                   ? _mm256_maskload_pd(&exactSitePositionBx[siteB], remainderMask)
-                                                   : _mm256_loadu_pd(&exactSitePositionBx[siteB]);
-          const __m256d exactSitePositionsBY = remainderCase
-                                                   ? _mm256_maskload_pd(&exactSitePositionBy[siteB], remainderMask)
-                                                   : _mm256_loadu_pd(&exactSitePositionBy[siteB]);
-          const __m256d exactSitePositionsBZ = remainderCase
-                                                   ? _mm256_maskload_pd(&exactSitePositionBz[siteB], remainderMask)
-                                                   : _mm256_loadu_pd(&exactSitePositionBz[siteB]);
+          const __m256d exactSitePositionsBX =
+              gather_pd(remainderCase, exactSitePositionBx.data(), siteIndices, remainderMask);
+          const __m256d exactSitePositionsBY =
+              gather_pd(remainderCase, exactSitePositionBy.data(), siteIndices, remainderMask);
+          const __m256d exactSitePositionsBZ =
+              gather_pd(remainderCase, exactSitePositionBz.data(), siteIndices, remainderMask);
 
           const __m256d displacementX = _mm256_sub_pd(exactSitePositionsAX, exactSitePositionsBX);
           const __m256d displacementY = _mm256_sub_pd(exactSitePositionsAY, exactSitePositionsBY);
@@ -1142,7 +1141,8 @@ class LJMultisiteFunctorCTS
           const __m256d lj12 = _mm256_mul_pd(lj6, lj6);
           const __m256d lj12m6 = _mm256_sub_pd(lj12, lj6);
           const __m256d scalar = _mm256_mul_pd(epsilon24, _mm256_mul_pd(_mm256_add_pd(lj12, lj12m6), invDistSquared));
-          const __m256d scalarMultiple = _mm256_and_pd(localMask, scalar);
+          const __m256d scalarMultiple =
+              _mm256_and_pd(_mm256_castsi256_pd(remainderMask), scalar);  // Idk why this is needed
 
           // calculate forces
           const __m256d forceX = _mm256_mul_pd(scalarMultiple, displacementX);
@@ -1166,40 +1166,44 @@ class LJMultisiteFunctorCTS
 
           // N3L ( total molecular forces + torques to be determined later )
           if constexpr (newton3) {
-            __m256d forceSumBX = remainderCase ? _mm256_maskload_pd(&siteForceBx[siteB], remainderMask)
-                                               : _mm256_loadu_pd(&siteForceBx[siteB]);
-            __m256d forceSumBY = remainderCase ? _mm256_maskload_pd(&siteForceBy[siteB], remainderMask)
-                                               : _mm256_loadu_pd(&siteForceBy[siteB]);
-            __m256d forceSumBZ = remainderCase ? _mm256_maskload_pd(&siteForceBz[siteB], remainderMask)
-                                               : _mm256_loadu_pd(&siteForceBz[siteB]);
+            __m256d forceSumBX = gather_pd(remainderCase, siteForceBx.data(), siteIndices, remainderMask);
+            __m256d forceSumBY = gather_pd(remainderCase, siteForceBy.data(), siteIndices, remainderMask);
+            __m256d forceSumBZ = gather_pd(remainderCase, siteForceBz.data(), siteIndices, remainderMask);
             forceSumBX = _mm256_sub_pd(forceSumBX, forceX);
             forceSumBY = _mm256_sub_pd(forceSumBY, forceY);
             forceSumBZ = _mm256_sub_pd(forceSumBZ, forceZ);
-            remainderCase ? _mm256_maskstore_pd(siteForceBx.data() + siteB, remainderMask, forceSumBX)
-                          : _mm256_storeu_pd(siteForceBx.data() + siteB, forceSumBX);
-            remainderCase ? _mm256_maskstore_pd(siteForceBy.data() + siteB, remainderMask, forceSumBY)
-                          : _mm256_storeu_pd(siteForceBy.data() + siteB, forceSumBY);
-            remainderCase ? _mm256_maskstore_pd(siteForceBz.data() + siteB, remainderMask, forceSumBZ)
-                          : _mm256_storeu_pd(siteForceBz.data() + siteB, forceSumBZ);
+
+            scatter_pd(remainderCase, siteForceBx.data(), siteIndices, remainderMask, forceSumBX);
+            scatter_pd(remainderCase, siteForceBy.data(), siteIndices, remainderMask, forceSumBY);
+            scatter_pd(remainderCase, siteForceBz.data(), siteIndices, remainderMask, forceSumBZ);
           }
 
           // globals
-          //          if constexpr (calculateGlobals) {
-          //            const auto potentialEnergy6 = siteMask[siteB] ? (epsilon24 * lj12m6 + shift6) : 0.;
-          //            const auto virialX = displacementX * forceX;
-          //            const auto virialY = displacementY * forceY;
-          //            const auto virialZ = displacementZ * forceZ;
-          //
-          //            // Add to the potential energy sum for each particle which is owned.
-          //            // This results in obtaining 12 * the potential energy for the SoA.
-          //            const auto ownershipFactor =
-          //                newton3 ? (ownedStateA == OwnershipState::owned ? 1. : 0.) + (isSiteOwnedB ? 1. : 0.)
-          //                        : (ownedStateA == OwnershipState::owned ? 1. : 0.);
-          //            potentialEnergySum += potentialEnergy6 * ownershipFactor;
-          //            virialSumX += virialX * ownershipFactor;
-          //            virialSumY += virialY * ownershipFactor;
-          //            virialSumZ += virialZ * ownershipFactor;
-          //          }
+          if constexpr (calculateGlobals) {
+            const __m256d virialX = _mm256_mul_pd(displacementX, forceX);
+            const __m256d virialY = _mm256_mul_pd(displacementY, forceY);
+            const __m256d virialZ = _mm256_mul_pd(displacementZ, forceZ);
+
+            const __m256d potentialEnergy6 =
+                _mm256_fmadd_pd(epsilon24, lj12m6, shift6);  // FMA may not be supported on all CPUs
+            const __m256d potentialEnergy6Masked = _mm256_and_pd(remainderMask, potentialEnergy6);
+
+            __m256i ownedStateA4 = _mm256_set1_epi64x(static_cast<int64_t>(ownedStateA));
+            __m256d ownedMaskA = _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateA4),
+                                               _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
+            __m256d energyFactor = _mm256_blendv_pd(_zero, _one, ownedMaskA);
+            if constexpr (newton3) {
+              const __m256i ownedStateB =
+                  gather_epi64(remainderCase, isSiteOwnedBArr.data(), siteIndices, remainderMask);
+              __m256d ownedMaskB = _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB),
+                                                 _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
+              energyFactor = _mm256_add_pd(energyFactor, _mm256_blendv_pd(_zero, _one, ownedMaskB));
+            }
+            potentialEnergySum = _mm256_fmadd_pd(energyFactor, potentialEnergy6Masked, potentialEnergySum);
+            virialSumX = _mm256_fmadd_pd(energyFactor, virialX, virialSumX);
+            virialSumY = _mm256_fmadd_pd(energyFactor, virialY, virialSumY);
+            virialSumZ = _mm256_fmadd_pd(energyFactor, virialZ, virialSumZ);
+          }
         }
       }
       fxAptr[molA] += horizontalSum(forceSumX);
@@ -1214,7 +1218,7 @@ class LJMultisiteFunctorCTS
     if constexpr (useMixing) {
       size_t siteIndex = 0;
       for (size_t mol = 0; mol < soaB.getNumberOfParticles(); ++mol) {
-        const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
+        rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
             {q0Bptr[mol], q1Bptr[mol], q2Bptr[mol], q3Bptr[mol]}, _PPLibrary->getSitePositions(typeptrB[mol]));
         for (size_t site = 0; site < _PPLibrary->getNumSites(typeptrB[mol]); ++site) {
           fxBptr[mol] += siteForceBx[siteIndex];
@@ -1232,7 +1236,7 @@ class LJMultisiteFunctorCTS
     } else {
       size_t siteIndex = 0;
       for (size_t mol = 0; mol < soaB.getNumberOfParticles(); ++mol) {
-        const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
+        rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
             {q0Bptr[mol], q1Bptr[mol], q2Bptr[mol], q3Bptr[mol]}, const_unrotatedSitePositions);
         for (size_t site = 0; site < const_unrotatedSitePositions.size(); ++site) {
           fxBptr[mol] += siteForceBx[siteIndex];
@@ -1254,10 +1258,10 @@ class LJMultisiteFunctorCTS
       // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       const auto newton3Factor = newton3 ? .5 : 1.;
 
-      _aosThreadData[threadNum].potentialEnergySum += potentialEnergySum * newton3Factor;
-      _aosThreadData[threadNum].virialSum[0] += virialSumX * newton3Factor;
-      _aosThreadData[threadNum].virialSum[1] += virialSumY * newton3Factor;
-      _aosThreadData[threadNum].virialSum[2] += virialSumZ * newton3Factor;
+      _aosThreadData[threadNum].potentialEnergySum += horizontalSum(potentialEnergySum) * newton3Factor;
+      _aosThreadData[threadNum].virialSum[0] += horizontalSum(virialSumX) * newton3Factor;
+      _aosThreadData[threadNum].virialSum[1] += horizontalSum(virialSumY) * newton3Factor;
+      _aosThreadData[threadNum].virialSum[2] += horizontalSum(virialSumZ) * newton3Factor;
     }
   }
 
@@ -1695,6 +1699,22 @@ class LJMultisiteFunctorCTS
     sum = _mm256_hadd_pd(sum, permuted);
     sum = _mm256_permute4x64_pd(sum, _MM_PERM_BBDD);
     return _mm_cvtsd_f64(_mm256_extractf128_pd(sum, 0));
+  }
+
+  static inline __m256d load_pd(bool useMask, const double *const __restrict data, const __m256i &mask) {
+    if (useMask) {
+      return _mm256_maskload_pd(data, mask);
+    } else {
+      return _mm256_loadu_pd(data);
+    }
+  };
+
+  static inline __m256d load_epi64(bool useMask, const size_t *const __restrict data, const __m256i &mask) {
+    if (useMask) {
+      return _mm256_maskload_epi64(reinterpret_cast<const long long int *>(data), mask);
+    } else {
+      return _mm256_loadu_si256(reinterpret_cast<const __m256i *>(data));
+    }
   }
 
   static inline __m256d gather_pd(bool useMask, const double *const __restrict data, const __m256i &indices,

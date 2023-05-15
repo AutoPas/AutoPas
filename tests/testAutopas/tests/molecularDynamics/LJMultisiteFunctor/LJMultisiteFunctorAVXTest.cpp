@@ -7,6 +7,8 @@
 
 #include <gtest/gtest.h>
 
+#include <chrono>
+
 #define PARTICLES_PER_DIM 8
 #define AOS_VS_SOA_ACCURACY 1e-8
 
@@ -84,7 +86,12 @@ void LJMultisiteFunctorAVXTest::testSoACellAgainstAoS(std::vector<autopas::Multi
 
   functor.SoALoader(cellSoA, cellSoA._particleSoABuffer, 0);
   // apply functor
+  using namespace std::chrono;
+  auto start = high_resolution_clock::now();
   functor.SoAFunctorSingle(cellSoA._particleSoABuffer, newton3);
+  auto end = high_resolution_clock::now();
+  auto duration = duration_cast<microseconds>(end - start);
+  std::cout << "SoA functor took " << duration.count() << " microseconds." << std::endl;
 
   // copy back to original particle array
   moleculesSoA.clear();
@@ -118,12 +125,12 @@ void LJMultisiteFunctorAVXTest::testSoACellAgainstAoS(std::vector<autopas::Multi
   }
 
   // This is currently not working
-//  if constexpr (calculateGlobals && applyShift) {
-//    EXPECT_NEAR(potentialEnergyAoS, potentialEnergySoA, AOS_VS_SOA_ACCURACY)
-//        << "Incorrect potential energy with newton3 = " << newton3 << " and applyShift = " << applyShift;
-//    EXPECT_NEAR(virialAoS, virialSoA, AOS_VS_SOA_ACCURACY)
-//        << "Incorrect potential energy with newton3 = " << newton3 << " and applyShift = " << applyShift;
-//  }
+  if constexpr (calculateGlobals && applyShift) {
+    EXPECT_NEAR(potentialEnergyAoS, potentialEnergySoA, AOS_VS_SOA_ACCURACY)
+        << "Incorrect potential energy with newton3 = " << newton3 << " and applyShift = " << applyShift;
+    EXPECT_NEAR(virialAoS, virialSoA, AOS_VS_SOA_ACCURACY)
+        << "Incorrect potential energy with newton3 = " << newton3 << " and applyShift = " << applyShift;
+  }
 }
 
 template <bool newton3, bool calculateGlobals, bool applyShift>
@@ -609,7 +616,7 @@ TEST_F(LJMultisiteFunctorAVXTest, AoSTest) {
 TEST_F(LJMultisiteFunctorAVXTest, MulticenteredLJFunctorTest_AoSVsSoACell) {
   using autopas::MultisiteMoleculeLJ;
 
-  const double cutoff = 3.;
+  const double cutoff = 1.5;
 
   std::vector<autopas::MultisiteMoleculeLJ> molecules;
   ParticlePropertiesLibrary<double, size_t> PPL(cutoff);

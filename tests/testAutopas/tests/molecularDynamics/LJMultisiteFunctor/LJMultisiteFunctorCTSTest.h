@@ -47,4 +47,18 @@ class LJMultisiteFunctorCTSTest : public AutoPasTestBase{
    */
   template <bool newton3, bool calculateGlobals, bool applyShift>
   void testSoACellAgainstAoS(std::vector<autopas::MultisiteMoleculeLJ> molecules, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
+
+  /**
+   * Compares the correctness of the SoACellPairFunctor against that of the AoSFunctor.
+   * @tparam newton3 enables N3L optimizations for both functors.
+   * @tparam calculateGlobals Both functors calculate global attributes such as potential energy and virial which are
+   * compared in addition to force and torque.
+   * @tparam applyShift applies a shift to the potential energy calculation for both functors.
+   * @param moleculesA vector of multi-site molecules
+   * @param moleculesB vector of multi-site molecules
+   * @param PPL
+   * @param cutoff
+   */
+  template <bool newton3, bool calculateGlobals, bool applyShift>
+  void testSoACellPairAgainstAoS(std::vector<autopas::MultisiteMoleculeLJ> moleculesA, std::vector<autopas::MultisiteMoleculeLJ> moleculesB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 };
