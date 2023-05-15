@@ -6,6 +6,9 @@
  * A simple reference implementation of the lennard jones potential to calculate expected forces
  */
 
+#pragma once
+#include "autopas/utils/ConstexprMath.h"
+
 /**
  * Calculates the potential energy between particle i and j using the Lennard Jones 12-6 potential.
  * @param i coordinate of the first particle
@@ -20,10 +23,10 @@ constexpr double calculateLJPotential(std::array<double, 3> i, std::array<double
   using namespace autopas::utils::ArrayMath::literals;
 
   // the vector from particle j to i
-  auto imj = std::array<double, 3>{i[0] - j[0], i[1] - j[1], i[2] - j[2]};
+  auto imj = i - j;
 
   // the distance between both particles
-  auto r = sqrt(pow(imj[0], 2.) + pow(imj[1], 2.) + pow(imj[2], 2.));
+  auto r = autopas::utils::ConstexprMath::sqrt(imj[0] * imj[0] + imj[1] * imj[1] + imj[2] * imj[2]);
 
   // if the distance between the two particles is larger then cutoff, we don't
   // consider this interaction
@@ -31,9 +34,12 @@ constexpr double calculateLJPotential(std::array<double, 3> i, std::array<double
     return 0;
   }
 
+  auto sdr = sigma / r;
+  // (sigma / r)^6
+  auto lj6 = sdr * sdr * sdr * sdr * sdr * sdr;
+  // (sigma / r)^12
+  auto lj12 = lj6 * lj6;
   // the lennard jones potential
-  auto lj6 = pow(sigma / r, 6.);
-  auto lj12 = pow(sigma / r, 12.);
   auto v = 4.0 * epsilon * (lj12 - lj6);
 
   return v;
@@ -53,10 +59,10 @@ constexpr std::array<double, 3> calculateLJForce(std::array<double, 3> i, std::a
   using namespace autopas::utils::ArrayMath::literals;
 
   // the vector from particle j to i
-  auto imj = std::array<double, 3>{i[0] - j[0], i[1] - j[1], i[2] - j[2]};
+  auto imj = i - j;
 
   // the distance between both particles
-  auto r = sqrt(pow(imj[0], 2.) + pow(imj[1], 2.) + pow(imj[2], 2.));
+  auto r = autopas::utils::ConstexprMath::sqrt(imj[0] * imj[0] + imj[1] * imj[1] + imj[2] * imj[2]);
 
   // if the distance between the two prticles is larger thn cutoff, we don't
   // consider this interaction
@@ -64,9 +70,15 @@ constexpr std::array<double, 3> calculateLJForce(std::array<double, 3> i, std::a
     return {0, 0, 0};
   }
 
+  // r^6
+  auto r6 = r * r * r * r * r * r;
+  // sigma^6
+  auto sigma6 = sigma * sigma * sigma * sigma * sigma * sigma;
+  // sigma^6 / r^7
+  auto dlj6 = sigma6 / (r6 * r);
+  // sigma^12 / r^13
+  auto dlj12 = (sigma6 * sigma6) / (r6 * r6 * r);
   // the derivative with respect to r of the lennard jones potential
-  auto dlj6 = pow(sigma, 6.) / pow(r, 7.);
-  auto dlj12 = pow(sigma, 12.) / pow(r, 13.);
   auto dUr = 48. * epsilon * (dlj12 - 0.5 * dlj6);
 
   // the forces in x, y and z direction
@@ -95,7 +107,7 @@ constexpr std::array<double, 3> calculateLJVirial(std::array<double, 3> i, std::
   // first we need the forces
   auto f = calculateLJForce(i, j, cutoff, sigma, epsilon);
   // the vector from particle j to i
-  auto imj = std::array<double, 3>{i[0] - j[0], i[1] - j[1], i[2] - j[2]};
+  auto imj = i - j;
   auto virial = std::array<double, 3>{imj[0] * f[0], imj[1] * f[1], imj[2] * f[2]};
   return virial;
 }
