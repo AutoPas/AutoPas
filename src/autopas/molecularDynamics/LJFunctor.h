@@ -312,11 +312,11 @@ class LJFunctor
       const int threadnum = autopas_get_thread_num();
 
       if (newton3) {
-        SoAFloatPrecision newton3Factor = 0.5;  // we count the energies partly to one of the two cells!
-        _aosThreadData[threadnum].upotSumN3 += upotSum * newton3Factor;
-        _aosThreadData[threadnum].virialSumN3[0] += virialSumX * newton3Factor;
-        _aosThreadData[threadnum].virialSumN3[1] += virialSumY * newton3Factor;
-        _aosThreadData[threadnum].virialSumN3[2] += virialSumZ * newton3Factor;
+        // we count the energies partly to one of the two cells!
+        _aosThreadData[threadnum].upotSumN3 += upotSum * 0.5;
+        _aosThreadData[threadnum].virialSumN3[0] += virialSumX * 0.5;
+        _aosThreadData[threadnum].virialSumN3[1] += virialSumY * 0.5;
+        _aosThreadData[threadnum].virialSumN3[2] += virialSumZ * 0.5;
       } else {
         _aosThreadData[threadnum].upotSumNoN3 += upotSum;
         _aosThreadData[threadnum].virialSumNoN3[0] += virialSumX;
@@ -487,11 +487,11 @@ class LJFunctor
       const int threadnum = autopas_get_thread_num();
 
       if constexpr (newton3) {
-        SoAFloatPrecision newton3Factor = 0.5;  // we count the energies partly to one of the two cells!
-        _aosThreadData[threadnum].upotSumN3 += upotSum * newton3Factor;
-        _aosThreadData[threadnum].virialSumN3[0] += virialSumX * newton3Factor;
-        _aosThreadData[threadnum].virialSumN3[1] += virialSumY * newton3Factor;
-        _aosThreadData[threadnum].virialSumN3[2] += virialSumZ * newton3Factor;
+        // we count the energies partly to one of the two cells!
+        _aosThreadData[threadnum].upotSumN3 += upotSum * 0.5;
+        _aosThreadData[threadnum].virialSumN3[0] += virialSumX * 0.5;
+        _aosThreadData[threadnum].virialSumN3[1] += virialSumY * 0.5;
+        _aosThreadData[threadnum].virialSumN3[2] += virialSumZ * 0.5;
       } else {
         _aosThreadData[threadnum].upotSumNoN3 += upotSum;
         _aosThreadData[threadnum].virialSumNoN3[0] += virialSumX;
@@ -608,6 +608,8 @@ class LJFunctor
           "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
     }
     if (calculateGlobals) {
+      // We distinguish between non-newton3 and newton3 functor calls. Newton3 calls are accumulated directly.
+      // Non-newton3 calls are accumulated temporarily and later divided by 2.
       double upotSumNoN3Acc = 0;
       std::array<double, 3> virialSumNoN3Acc = {0, 0, 0};
       for (size_t i = 0; i < _aosThreadData.size(); ++i) {

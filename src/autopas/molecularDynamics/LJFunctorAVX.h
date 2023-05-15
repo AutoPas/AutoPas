@@ -899,6 +899,8 @@ class LJFunctorAVX
           "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
     }
     if (calculateGlobals) {
+      // We distinguish between non-newton3 and newton3 functor calls. Newton3 calls are accumulated directly.
+      // Non-newton3 calls are accumulated temporarily and later divided by 2.
       double upotSumNoN3Acc = 0;
       std::array<double, 3> virialSumNoN3Acc = {0, 0, 0};
       for (size_t i = 0; i < _aosThreadData.size(); ++i) {
