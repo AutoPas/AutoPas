@@ -427,7 +427,7 @@ TEST_F(ReflectiveBoundaryConditionTest, reflectiveSingleSiteZoningTest) {
  * * One with all sites far enough that they would all experience attraction. Expects no change in force on molecule.
  */
 TEST_F(ReflectiveBoundaryConditionTest, reflectiveMultiSiteZoningTest) {
-#ifndef MD_FLEXIBLE_USE_MULTI_SITE
+#if not MD_FLEXIBLE_MODE==MULTISITE
   GTEST_SKIP() << "reflectiveMultiSiteZoningTest: Skipping as multi-site not compiled";
 #else
   MDFlexConfig config(0, nullptr);
@@ -476,22 +476,22 @@ TEST_F(ReflectiveBoundaryConditionTest, reflectiveMultiSiteZoningTest) {
 
   // Molecule 0: All sites experience repulsion.
   particlePropertiesLibrary->addMolType(0, {0, 1}, {{-0.01, 0., 0.}, {0.01, 0., 0.}}, {1., 1., 1.});
-  autopas::MultisiteMoleculeLJ mol0({0.05, 2.5, 2.5}, {0., 0., 0.}, {1., 0., 0., 0.}, {0., 0., 0.}, 0, 0);
+  mdLib::MultisiteMoleculeLJ mol0({0.05, 2.5, 2.5}, {0., 0., 0.}, {1., 0., 0., 0.}, {0., 0., 0.}, 0, 0);
   autoPasContainer->addParticle(mol0);
 
   // Molecule 1: One site experiences attraction, one site experiences repulsion, overall molecule experiences repulsion.
   particlePropertiesLibrary->addMolType(1, {0, 1}, {{-0.01, 0., 0.}, {0.01, 0., 0.}}, {1., 1., 1.});
-  autopas::MultisiteMoleculeLJ mol1({0.2, 2.5, 2.5}, {0., 0., 0.}, {1., 0., 0., 0.}, {0., 0., 0.}, 1, 1);
+  mdLib::MultisiteMoleculeLJ mol1({0.2, 2.5, 2.5}, {0., 0., 0.}, {1., 0., 0., 0.}, {0., 0., 0.}, 1, 1);
   autoPasContainer->addParticle(mol1);
 
   // Molecule 2: Both sites experience attraction.
   particlePropertiesLibrary->addMolType(2, {2, 0}, {{-0.01, 0., 0.}, {0.01, 0., 0.}}, {1., 1., 1.});
-  autopas::MultisiteMoleculeLJ mol2({0.22, 2.5, 2.5}, {0., 0., 0.}, {1., 0., 0., 0.}, {0., 0., 0.}, 2, 2);
+  mdLib::MultisiteMoleculeLJ mol2({0.22, 2.5, 2.5}, {0., 0., 0.}, {1., 0., 0., 0.}, {0., 0., 0.}, 2, 2);
   autoPasContainer->addParticle(mol2);
 
   // Molecule 3: One site experiences attraction, one site experiences repulsion, overall molecule experiences attraction.
   particlePropertiesLibrary->addMolType(3, {0, 01}, {{-0.01, 0., 0.}, {0.01, 0., 0.}}, {1., 1., 1.});
-  autopas::MultisiteMoleculeLJ mol3({0.3, 2.5, 2.5}, {0., 0., 0.}, {1., 0., 0., 0.}, {0., 0., 0.}, 3, 3);
+  mdLib::MultisiteMoleculeLJ mol3({0.3, 2.5, 2.5}, {0., 0., 0.}, {1., 0., 0., 0.}, {0., 0., 0.}, 3, 3);
   autoPasContainer->addParticle(mol3);
 
   // Reflect

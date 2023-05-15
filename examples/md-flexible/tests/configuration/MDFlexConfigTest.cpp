@@ -171,8 +171,8 @@ TEST_F(MDFlexConfigTest, correctSiteParsing) {
  */
 TEST_F(MDFlexConfigTest, correctMolParsing) {
   // Skip test if not compiled for multi-site molecules.
-#if not defined(MD_FLEXIBLE_USE_MULTI_SITE)
-  GTEST_SKIP();
+#if not MD_FLEXIBLE_MODE==MULTISITE
+  GTEST_SKIP() << "correctMolParsing: Skipping as multi-site not compiled";
 #endif
 
   // Configure md-flexible using correct yaml file and expect no throw in doing so.
