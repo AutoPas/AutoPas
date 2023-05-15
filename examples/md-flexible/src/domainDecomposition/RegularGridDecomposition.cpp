@@ -296,8 +296,8 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
         // molecules who will experience repulsion from the boundary.
 
         // For multi-site molecules, we discard molecules with center-of-mass further than sixthRootOfTwo * the largest sigma of any site of
-        // that molecule. Some molecules may experience attraction, and this is only stopped after calculation of force
-        // with mirror particle.
+        // that molecule. Some molecules may still experience attraction in which case their force is reset to before
+        // the force interaction.
         //
         // Note, there is a scenario where a molecule has center-of-mass further than sixthRootOfTwo * sigma, but has a
         // site closer than this distance, with a large enough epsilon, that repulsion would occur. For computational cost

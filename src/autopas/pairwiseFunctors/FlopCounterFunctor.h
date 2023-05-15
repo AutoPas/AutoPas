@@ -17,7 +17,6 @@ namespace autopas {
  * operations.
  * @todo this class currently is limited to the following case:
  *  - constant cutoff radius
- *  - constant amount of floating point operations for one kernel call (distance < cutoff)
  * @todo: we may want the possibility of doing this faster in cases where the number of flops per kernel call is constant
  * @tparam Particle
  * @tparam ForceFunctorType

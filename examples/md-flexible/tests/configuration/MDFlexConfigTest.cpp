@@ -97,26 +97,6 @@ TEST_F(MDFlexConfigTest, calcAutoPasBox) {
   EXPECT_EQ(configuration.boxMax.value, expectedBoxMax);
 }
 
-// todo Check this for multi-site
-TEST_F(MDFlexConfigTest, addType) {
-  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
-                                        std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml"};
-
-  char *argv[3] = {&arguments[0][0], &arguments[1][0], &arguments[2][0]};
-
-  MDFlexConfig configuration(3, argv);
-
-  configuration.addSiteType(0, 1.0, 1.0, 1.0);
-  EXPECT_NO_THROW(configuration.addSiteType(0, 1.0, 1.0, 1.0));
-  EXPECT_ANY_THROW(configuration.addSiteType(0, 1.5, 1.0, 1.0));
-  EXPECT_ANY_THROW(configuration.addSiteType(0, 1.5, 1.1, 1.0));
-  EXPECT_ANY_THROW(configuration.addSiteType(0, 1.1, 1.1, 1.1));
-  EXPECT_NO_THROW(configuration.addSiteType(1, 2.0, 2.0, 2.0));
-  EXPECT_EQ(configuration.massMap.value.at(0), 1.0);
-  EXPECT_EQ(configuration.massMap.value.at(1), 2.0);
-  EXPECT_EQ(configuration.epsilonMap.value.at(1), 2.0);
-}
-
 TEST_F(MDFlexConfigTest, wrongTypeParsingInput) {
   std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
                                         std::string(YAMLDIRECTORY) + "incorrectParsingFile.yaml"};

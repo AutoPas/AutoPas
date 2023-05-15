@@ -17,7 +17,7 @@ extern template class autopas::AutoPas<ParticleType>;
 
 /**
  * Very simple test of reflective boundaries in all 3 dimension. Places identical particles on every face and tests that
- * the particle receives the correct force. Get's input parameters from test suite below.
+ * the particle receives the correct force. Gets input parameters from test suite below.
  *
  * Note, this test is not designed to deal with multiple particle types - see reflectiveZoningTest for this.
  *
