@@ -7,11 +7,11 @@
 #include <array>
 #include <iostream>
 
-#include "../../applicationLibrary/sph/SPHLibrary/autopassph.h"
+#include "SPHLibrary/autopassph.h"
 #include "autopas/AutoPas.h"
 #include "autopasTools/generators/RandomGenerator.h"
 
-using Particle = autopas::sph::SPHParticle;
+using Particle = sphLib::SPHParticle;
 using AutoPasContainer = autopas::AutoPas<Particle>;
 
 template <class Container, class Functor>
@@ -45,8 +45,8 @@ int main(int argc, char *argv[]) {
   boxMax[1] = boxMax[2] = boxMax[0] / 1.0;
   double cutoff = .03;
 
-  autopas::sph::SPHCalcDensityFunctor<Particle> densfunc;
-  autopas::sph::SPHCalcHydroForceFunctor<Particle> hydrofunc;
+  sphLib::SPHCalcDensityFunctor<Particle> densfunc;
+  sphLib::SPHCalcHydroForceFunctor<Particle> hydrofunc;
 
   int numParticles;
   int numIterations;

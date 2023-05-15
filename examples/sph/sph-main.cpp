@@ -8,11 +8,11 @@
 #include <cmath>
 #include <iostream>
 
-#include "../../applicationLibrary/sph/SPHLibrary/autopassph.h"
+#include "SPHLibrary/autopassph.h"
 #include "autopas/AutoPas.h"
 #include "autopas/utils/ArrayUtils.h"
 
-using Particle = autopas::sph::SPHParticle;
+using Particle = sphLib::SPHParticle;
 using AutoPasContainer = autopas::AutoPas<Particle>;
 
 void SetupIC(AutoPasContainer &sphSystem, double *end_time, const std::array<double, 3> &bBoxMax) {
@@ -205,8 +205,8 @@ void updateHaloParticles(AutoPasContainer &sphSystem) {
 
 void densityPressureHydroForce(AutoPasContainer &sphSystem) {
   // declare the used functors
-  autopas::sph::SPHCalcDensityFunctor<Particle> densityFunctor;
-  autopas::sph::SPHCalcHydroForceFunctor<Particle> hydroForceFunctor;
+  sphLib::SPHCalcDensityFunctor<Particle> densityFunctor;
+  sphLib::SPHCalcHydroForceFunctor<Particle> hydroForceFunctor;
 
   std::cout << "\nhaloupdate\n" << std::endl;
 

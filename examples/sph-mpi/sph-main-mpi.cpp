@@ -10,10 +10,10 @@
 #include <cmath>
 #include <iostream>
 
-#include "../../applicationLibrary/sph/SPHLibrary/autopassph.h"
+#include "SPHLibrary/autopassph.h"
 #include "autopas/AutoPas.h"
 
-using Particle = autopas::sph::SPHParticle;
+using Particle = sphLib::SPHParticle;
 using AutoPasContainer = autopas::AutoPas<Particle>;
 
 void SetupIC(AutoPasContainer &sphSystem, double *end_time, const std::array<double, 3> &bBoxMax) {
@@ -373,8 +373,8 @@ void periodicBoundaryUpdate(AutoPasContainer &sphSystem, MPI_Comm &comm, const s
 void densityPressureHydroForce(AutoPasContainer &sphSystem, MPI_Comm &comm, const std::array<double, 3> &globalBoxMin,
                                const std::array<double, 3> &globalBoxMax) {
   // declare the used functors
-  autopas::sph::SPHCalcDensityFunctor<Particle> densityFunctor;
-  autopas::sph::SPHCalcHydroForceFunctor<Particle> hydroForceFunctor;
+  sphLib::SPHCalcDensityFunctor<Particle> densityFunctor;
+  sphLib::SPHCalcHydroForceFunctor<Particle> hydroForceFunctor;
 
   // 1.first calculate density
   // 1.1 to calculate the density we need the halo particles
