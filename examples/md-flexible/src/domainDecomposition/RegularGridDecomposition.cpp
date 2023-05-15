@@ -376,8 +376,9 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
 #else
           const auto siteType = p->getTypeId();
           const auto mirrorPosition = [position, boundaryPosition, dimensionIndex]() {
+            const auto displacementToBoundary = boundaryPosition - position[dimensionIndex];
             auto returnedPosition = position;
-            returnedPosition[dimensionIndex] += 2 * boundaryPosition;
+            returnedPosition[dimensionIndex] += 2 * displacementToBoundary;
             return returnedPosition;
           } ();
           const auto sigmaSquared = particlePropertiesLib.getMixingSigmaSquared(siteType, siteType);
