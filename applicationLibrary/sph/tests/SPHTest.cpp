@@ -9,28 +9,28 @@
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 
-using DensityFunctorType = autopas::sph::SPHCalcDensityFunctor<autopas::sph::SPHParticle>;
+using DensityFunctorType = sphLib::SPHCalcDensityFunctor<sphLib::SPHParticle>;
 
-using HydroForceFunctorType = autopas::sph::SPHCalcHydroForceFunctor<autopas::sph::SPHParticle>;
+using HydroForceFunctorType = sphLib::SPHCalcHydroForceFunctor<sphLib::SPHParticle>;
 
 TEST_F(SPHTest, testW) {
-  double value = autopas::sph::SPHKernels::W({1., 1., 1.}, 1.);
+  double value = sphLib::SPHKernels::W({1., 1., 1.}, 1.);
   double shouldBeValue = 0.00944773;
   EXPECT_NEAR(value, shouldBeValue, 1e-8);
 
-  value = autopas::sph::SPHKernels::W({1., .5, .25}, .5);
+  value = sphLib::SPHKernels::W({1., .5, .25}, .5);
   shouldBeValue = 0.00151727;
   EXPECT_NEAR(value, shouldBeValue, 1e-8);
 }
 
 TEST_F(SPHTest, testGradW) {
-  std::array<double, 3> value = autopas::sph::SPHKernels::gradW({1., 1., 1.}, 1.);
+  std::array<double, 3> value = sphLib::SPHKernels::gradW({1., 1., 1.}, 1.);
   std::array<double, 3> shouldBeValue = {-0.0213086, -0.0213086, -0.0213086};
   for (int i = 0; i < 3; i++) {
     EXPECT_NEAR(value[i], shouldBeValue[i], 1e-7);
   }
 
-  value = autopas::sph::SPHKernels::gradW({1., .5, .25}, .5);
+  value = sphLib::SPHKernels::gradW({1., .5, .25}, .5);
   shouldBeValue = {-0.038073, -0.0190365, -0.00951825};
   for (int i = 0; i < 3; i++) {
     EXPECT_NEAR(value[i], shouldBeValue[i], 1e-7);
@@ -38,8 +38,8 @@ TEST_F(SPHTest, testGradW) {
 }
 
 TEST_F(SPHTest, testSPHCalcDensityFunctor) {
-  autopas::sph::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
-  autopas::sph::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5, 1.3, 0.8);
+  sphLib::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
+  sphLib::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5, 1.3, 0.8);
 
   DensityFunctorType densityFunctor;
   densityFunctor.AoSFunctor(sphParticle1, sphParticle2);
@@ -50,11 +50,11 @@ TEST_F(SPHTest, testSPHCalcDensityFunctor) {
 }
 
 TEST_F(SPHTest, testSPHCalcDensityFunctorSoALoadExtract) {
-  autopas::sph::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
-  autopas::sph::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5, 1.3, 0.8);
+  sphLib::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
+  sphLib::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5, 1.3, 0.8);
 
   // add particles to cell
-  autopas::FullParticleCell<autopas::sph::SPHParticle> cell;
+  autopas::FullParticleCell<sphLib::SPHParticle> cell;
   cell.addParticle(sphParticle1);
   cell.addParticle(sphParticle2);
 
@@ -67,12 +67,12 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorSoALoadExtract) {
   // load soa
   densityFunctor.SoALoader(cell, soa, 0);
 
-  auto massptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::mass>();
-  auto densityptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::density>();
-  auto smthlngthptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::smth>();
-  auto xptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posX>();
-  auto yptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posY>();
-  auto zptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posZ>();
+  auto massptr = soa.begin<sphLib::SPHParticle::AttributeNames::mass>();
+  auto densityptr = soa.begin<sphLib::SPHParticle::AttributeNames::density>();
+  auto smthlngthptr = soa.begin<sphLib::SPHParticle::AttributeNames::smth>();
+  auto xptr = soa.begin<sphLib::SPHParticle::AttributeNames::posX>();
+  auto yptr = soa.begin<sphLib::SPHParticle::AttributeNames::posY>();
+  auto zptr = soa.begin<sphLib::SPHParticle::AttributeNames::posZ>();
 
   // check loading
   {
@@ -111,15 +111,15 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorSoALoadExtract) {
 }
 
 TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoALoadExtract) {
-  autopas::sph::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
-  autopas::sph::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5, 1.3, 0.8);
+  sphLib::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
+  sphLib::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5, 1.3, 0.8);
 
   // simulate density functor call
   sphParticle1.setDensity(3.);
   sphParticle2.setDensity(2.);
 
   // add particles to cell
-  autopas::FullParticleCell<autopas::sph::SPHParticle> cell;
+  autopas::FullParticleCell<sphLib::SPHParticle> cell;
   cell.addParticle(sphParticle1);
   cell.addParticle(sphParticle2);
 
@@ -132,22 +132,22 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoALoadExtract) {
   // load soa
   hydroForceFunctor.SoALoader(cell, soa, 0);
 
-  auto *const massptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::mass>();
-  auto *const densityptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::density>();
-  auto *const smthlngthptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::smth>();
-  auto *const soundSpeedptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::soundSpeed>();
-  auto *const pressureptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::pressure>();
-  auto *const vsigmaxptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::vsigmax>();
-  auto *const engDotptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::engDot>();
-  auto *const xptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posX>();
-  auto *const yptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posY>();
-  auto *const zptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::posZ>();
-  auto *const velXptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::velX>();
-  auto *const velYptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::velY>();
-  auto *const velZptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::velZ>();
-  auto *const accXptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::accX>();
-  auto *const accYptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::accY>();
-  auto *const accZptr = soa.begin<autopas::sph::SPHParticle::AttributeNames::accZ>();
+  auto *const massptr = soa.begin<sphLib::SPHParticle::AttributeNames::mass>();
+  auto *const densityptr = soa.begin<sphLib::SPHParticle::AttributeNames::density>();
+  auto *const smthlngthptr = soa.begin<sphLib::SPHParticle::AttributeNames::smth>();
+  auto *const soundSpeedptr = soa.begin<sphLib::SPHParticle::AttributeNames::soundSpeed>();
+  auto *const pressureptr = soa.begin<sphLib::SPHParticle::AttributeNames::pressure>();
+  auto *const vsigmaxptr = soa.begin<sphLib::SPHParticle::AttributeNames::vsigmax>();
+  auto *const engDotptr = soa.begin<sphLib::SPHParticle::AttributeNames::engDot>();
+  auto *const xptr = soa.begin<sphLib::SPHParticle::AttributeNames::posX>();
+  auto *const yptr = soa.begin<sphLib::SPHParticle::AttributeNames::posY>();
+  auto *const zptr = soa.begin<sphLib::SPHParticle::AttributeNames::posZ>();
+  auto *const velXptr = soa.begin<sphLib::SPHParticle::AttributeNames::velX>();
+  auto *const velYptr = soa.begin<sphLib::SPHParticle::AttributeNames::velY>();
+  auto *const velZptr = soa.begin<sphLib::SPHParticle::AttributeNames::velZ>();
+  auto *const accXptr = soa.begin<sphLib::SPHParticle::AttributeNames::accX>();
+  auto *const accYptr = soa.begin<sphLib::SPHParticle::AttributeNames::accY>();
+  auto *const accZptr = soa.begin<sphLib::SPHParticle::AttributeNames::accZ>();
 
   // check loading
   {
@@ -217,10 +217,10 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoALoadExtract) {
 }
 
 TEST_F(SPHTest, testSPHCalcDensityFunctorSoAvsAoSSingleCell) {
-  autopas::FullParticleCell<autopas::sph::SPHParticle> cellUsingSoA;
-  autopas::FullParticleCell<autopas::sph::SPHParticle> cellUsingAoS;
+  autopas::FullParticleCell<sphLib::SPHParticle> cellUsingSoA;
+  autopas::FullParticleCell<sphLib::SPHParticle> cellUsingAoS;
   {
-    autopas::sph::SPHParticle defaultSphParticle({0., 0., 0.}, {1., .5, .25}, 0, 2.5, 0.7, 0.6);
+    sphLib::SPHParticle defaultSphParticle({0., 0., 0.}, {1., .5, .25}, 0, 2.5, 0.7, 0.6);
     autopasTools::generators::RandomGenerator::fillWithParticles(cellUsingSoA, defaultSphParticle, {0., 0., 0.},
                                                                  {1., 1., 1.}, 30);
     autopasTools::generators::RandomGenerator::fillWithParticles(cellUsingAoS, defaultSphParticle, {0., 0., 0.},
@@ -266,10 +266,10 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorSoAvsAoSSingleCell) {
 }
 
 TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoAvsAoSSingleCell) {
-  autopas::FullParticleCell<autopas::sph::SPHParticle> cellUsingSoA;
-  autopas::FullParticleCell<autopas::sph::SPHParticle> cellUsingAoS;
+  autopas::FullParticleCell<sphLib::SPHParticle> cellUsingSoA;
+  autopas::FullParticleCell<sphLib::SPHParticle> cellUsingAoS;
   {
-    autopas::sph::SPHParticle defaultSphParticle({0., 0., 0.}, {1., .5, .25}, 0, 2.5, 0.7, 0.6);
+    sphLib::SPHParticle defaultSphParticle({0., 0., 0.}, {1., .5, .25}, 0, 2.5, 0.7, 0.6);
     autopasTools::generators::RandomGenerator::fillWithParticles(cellUsingSoA, defaultSphParticle, {0., 0., 0.},
                                                                  {1., 1., 1.}, 30);
     autopasTools::generators::RandomGenerator::fillWithParticles(cellUsingAoS, defaultSphParticle, {0., 0., 0.},
@@ -337,12 +337,12 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoAvsAoSSingleCell) {
 }
 
 TEST_F(SPHTest, testSPHCalcDensityFunctorSoAvsAoSCellPair) {
-  autopas::FullParticleCell<autopas::sph::SPHParticle> cellUsingSoA1;
-  autopas::FullParticleCell<autopas::sph::SPHParticle> cellUsingSoA2;
-  autopas::FullParticleCell<autopas::sph::SPHParticle> cellUsingAoS1;
-  autopas::FullParticleCell<autopas::sph::SPHParticle> cellUsingAoS2;
+  autopas::FullParticleCell<sphLib::SPHParticle> cellUsingSoA1;
+  autopas::FullParticleCell<sphLib::SPHParticle> cellUsingSoA2;
+  autopas::FullParticleCell<sphLib::SPHParticle> cellUsingAoS1;
+  autopas::FullParticleCell<sphLib::SPHParticle> cellUsingAoS2;
   {
-    autopas::sph::SPHParticle defaultSphParticle({0., 0., 0.}, {1., .5, .25}, 0, 2.5, 0.7, 0.6);
+    sphLib::SPHParticle defaultSphParticle({0., 0., 0.}, {1., .5, .25}, 0, 2.5, 0.7, 0.6);
     autopasTools::generators::RandomGenerator::fillWithParticles(cellUsingSoA1, defaultSphParticle, {0., 0., 0.},
                                                                  {.5, 1., 1.}, 30);
     autopasTools::generators::RandomGenerator::fillWithParticles(cellUsingAoS1, defaultSphParticle, {0., 0., 0.},
@@ -400,12 +400,12 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorSoAvsAoSCellPair) {
 }
 
 TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoAvsAoSCellPair) {
-  autopas::FullParticleCell<autopas::sph::SPHParticle> cellUsingSoA1;
-  autopas::FullParticleCell<autopas::sph::SPHParticle> cellUsingSoA2;
-  autopas::FullParticleCell<autopas::sph::SPHParticle> cellUsingAoS1;
-  autopas::FullParticleCell<autopas::sph::SPHParticle> cellUsingAoS2;
+  autopas::FullParticleCell<sphLib::SPHParticle> cellUsingSoA1;
+  autopas::FullParticleCell<sphLib::SPHParticle> cellUsingSoA2;
+  autopas::FullParticleCell<sphLib::SPHParticle> cellUsingAoS1;
+  autopas::FullParticleCell<sphLib::SPHParticle> cellUsingAoS2;
   {
-    autopas::sph::SPHParticle defaultSphParticle({0., 0., 0.}, {1., .5, .25}, 0, 2.5, 0.7, 0.6);
+    sphLib::SPHParticle defaultSphParticle({0., 0., 0.}, {1., .5, .25}, 0, 2.5, 0.7, 0.6);
     autopasTools::generators::RandomGenerator::fillWithParticles(cellUsingSoA1, defaultSphParticle, {0., 0., 0.},
                                                                  {.5, 1., 1.}, 30);
     autopasTools::generators::RandomGenerator::fillWithParticles(cellUsingAoS1, defaultSphParticle, {0., 0., 0.},
@@ -505,8 +505,8 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoAvsAoSCellPair) {
 }
 
 TEST_F(SPHTest, testSPHCalcPressure) {
-  autopas::sph::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
-  autopas::sph::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5, 1.3, 0.8);
+  sphLib::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
+  sphLib::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5, 1.3, 0.8);
 
   // simulate density functor call:
   sphParticle1.addDensity(0.559026);
@@ -525,8 +525,8 @@ TEST_F(SPHTest, testSPHCalcPressure) {
 }
 
 TEST_F(SPHTest, testSPHCalcHydroForceFunctor) {
-  autopas::sph::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
-  autopas::sph::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5, 1.3, 0.8);
+  sphLib::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
+  sphLib::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5, 1.3, 0.8);
 
   // simulate density functor call:
   sphParticle1.addDensity(0.559026);
@@ -560,8 +560,8 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctor) {
 }
 
 TEST_F(SPHTest, testSPHCalcDensityFunctorNewton3OnOff) {
-  autopas::sph::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
-  autopas::sph::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5, 1.3, 0.8);
+  sphLib::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
+  sphLib::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5, 1.3, 0.8);
 
   DensityFunctorType densityFunctor;
   densityFunctor.AoSFunctor(sphParticle1, sphParticle2);
@@ -577,8 +577,8 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorNewton3OnOff) {
 }
 
 TEST_F(SPHTest, testSPHCalcHydroForceFunctorNewton3OnOff) {
-  autopas::sph::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
-  autopas::sph::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5, 1.3, 0.8);
+  sphLib::SPHParticle sphParticle1({0., 0., 0.}, {1., .5, .25}, 1, 2.5, 0.7, 0.6);
+  sphLib::SPHParticle sphParticle2({.1, .2, .3}, {-1., -.3, -.5}, 2, 1.5, 1.3, 0.8);
 
   // simulate density functor call:
   sphParticle1.addDensity(0.559026);
@@ -593,8 +593,8 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorNewton3OnOff) {
   sphParticle2.setSoundSpeed(1.18322);
 
   // make copies of the particles
-  autopas::sph::SPHParticle sphParticle3 = sphParticle1;
-  autopas::sph::SPHParticle sphParticle4 = sphParticle2;
+  sphLib::SPHParticle sphParticle3 = sphParticle1;
+  sphLib::SPHParticle sphParticle4 = sphParticle2;
 
   HydroForceFunctorType hydroForceFunctor;
   // using newton 3
@@ -631,18 +631,18 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorNewton3OnOff) {
   EXPECT_NEAR(sphParticle4.getDt(), sphParticle2.getDt(), 1e-10);
 }
 
-void densityCheck(autopas::VerletLists<autopas::sph::SPHParticle> &verletLists,
-                  autopas::LinkedCells<autopas::sph::SPHParticle> &linkedCells, size_t numMolecules,
+void densityCheck(autopas::VerletLists<sphLib::SPHParticle> &verletLists,
+                  autopas::LinkedCells<sphLib::SPHParticle> &linkedCells, size_t numMolecules,
                   double relErrTolerance) {
   std::vector<double> densityVerlet(numMolecules), densityLinked(numMolecules);
   /* get and sort by id, the */
   for (auto it = verletLists.begin(); it.isValid(); ++it) {
-    autopas::sph::SPHParticle &m = *it;
+    sphLib::SPHParticle &m = *it;
     densityVerlet.at(m.getID()) = m.getDensity();
   }
 
   for (auto it = linkedCells.begin(); it.isValid(); ++it) {
-    autopas::sph::SPHParticle &m = *it;
+    sphLib::SPHParticle &m = *it;
     densityLinked.at(m.getID()) = m.getDensity();
   }
 
@@ -653,7 +653,7 @@ void densityCheck(autopas::VerletLists<autopas::sph::SPHParticle> &verletLists,
   }
 }
 
-void hydroInit(autopas::VerletLists<autopas::sph::SPHParticle> &verletLists) {
+void hydroInit(autopas::VerletLists<sphLib::SPHParticle> &verletLists) {
   for (auto itVerlet = verletLists.begin(); itVerlet.isValid(); ++itVerlet) {
     double density = static_cast<double>(rand()) / RAND_MAX;
     double pressure = static_cast<double>(rand()) / RAND_MAX;
@@ -662,22 +662,22 @@ void hydroInit(autopas::VerletLists<autopas::sph::SPHParticle> &verletLists) {
   }
 }
 
-void hydroCheck(autopas::VerletLists<autopas::sph::SPHParticle> &verletLists,
-                autopas::LinkedCells<autopas::sph::SPHParticle> &linkedCells, size_t numMolecules,
+void hydroCheck(autopas::VerletLists<sphLib::SPHParticle> &verletLists,
+                autopas::LinkedCells<sphLib::SPHParticle> &linkedCells, size_t numMolecules,
                 double relErrTolerance) {
   std::vector<double> vsigmaxVerlet(numMolecules), vsigmaxLinked(numMolecules);
   std::vector<double> engdotVerlet(numMolecules), engdotLinked(numMolecules);
   std::vector<std::array<double, 3>> accVerlet(numMolecules), accLinked(numMolecules);
   /* get and sort by id, the */
   for (auto it = verletLists.begin(); it.isValid(); ++it) {
-    autopas::sph::SPHParticle &m = *it;
+    sphLib::SPHParticle &m = *it;
     vsigmaxVerlet.at(m.getID()) = m.getVSigMax();
     engdotVerlet.at(m.getID()) = m.getEngDot();
     accVerlet.at(m.getID()) = m.getAcceleration();
   }
 
   for (auto it = verletLists.begin(); it.isValid(); ++it) {
-    autopas::sph::SPHParticle &m = *it;
+    sphLib::SPHParticle &m = *it;
     vsigmaxLinked.at(m.getID()) = m.getVSigMax();
     engdotLinked.at(m.getID()) = m.getEngDot();
     accLinked.at(m.getID()) = m.getAcceleration();
@@ -697,13 +697,13 @@ void testVerLetVsLC(FunctorType &fnctr, InitType init, CheckType check, autopas:
   unsigned int numMolecules = 50;
   double relErrTolerance = 1e-10;
   double cutoff = 1.;
-  using autopas::sph::SPHParticle;
+  using sphLib::SPHParticle;
 
   autopas::VerletLists<SPHParticle> verletLists({0., 0., 0.}, {5., 5., 5.}, cutoff, 0.5, 1);
-  autopas::LinkedCells<autopas::sph::SPHParticle> linkedCells({0., 0., 0.}, {5., 5., 5.}, cutoff, 0.5, 1., 1);
+  autopas::LinkedCells<sphLib::SPHParticle> linkedCells({0., 0., 0.}, {5., 5., 5.}, cutoff, 0.5, 1., 1);
 
-  autopas::sph::SPHParticle defaultSPHParticle({0., 0., 0.}, {1., .5, .25}, 0, 2.5,
-                                               cutoff / autopas::sph::SPHKernels::getKernelSupportRadius(), 0.6);
+  sphLib::SPHParticle defaultSPHParticle({0., 0., 0.}, {1., .5, .25}, 0, 2.5,
+                                               cutoff / sphLib::SPHKernels::getKernelSupportRadius(), 0.6);
   autopasTools::generators::RandomGenerator::fillWithParticles(verletLists, defaultSPHParticle, verletLists.getBoxMin(),
                                                                verletLists.getBoxMax(), numMolecules);
 

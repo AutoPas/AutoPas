@@ -11,8 +11,7 @@
 
 #include "autopas/particles/Particle.h"
 
-namespace autopas {
-namespace sph {
+namespace sphLib {
 /**
  * Basic SPHParticle class.
  */
@@ -118,7 +117,11 @@ class SPHParticle : public autopas::Particle {
    * Calculates the pressure within the particle from the energy and density of
    * the particle and updates the pressure and sound of speed
    */
-  void calcPressure();
+  void calcPressure() {
+    const double hcr = 1.4;
+    _pressure = (hcr - 1.0) * _density * _energy;
+    _snds = sqrt(hcr * _pressure / _density);
+  }
 
   /**
    * Setter for the pressure
@@ -192,14 +195,20 @@ class SPHParticle : public autopas::Particle {
    * Used to sum up different acceleration values.
    * @param acc Acceleration to be added
    */
-  void addAcceleration(const std::array<double, 3> &acc);
+  void addAcceleration(const std::array<double, 3> &acc) {
+    using namespace autopas::utils::ArrayMath::literals;
+    _acc += acc;
+  };
 
   /**
    * Substracts the given acceleration from the local acceleration.
    * Used to sum up different negative acceleration values.
    * @param acc Acceleration to be substracted
    */
-  void subAcceleration(const std::array<double, 3> &acc);
+  void subAcceleration(const std::array<double, 3> &acc) {
+    using namespace autopas::utils::ArrayMath::literals;
+    _acc -= acc;
+  };
 
   /**
    * Setter for the acceleration
@@ -406,7 +415,7 @@ class SPHParticle : public autopas::Particle {
    */
   using SoAArraysType =
       autopas::utils::SoAType<SPHParticle *, double, double, double, double, double, double, double, double, double,
-                              double, double, double, double, double, double, double, OwnershipState>::Type;
+                              double, double, double, double, double, double, double, autopas::OwnershipState>::Type;
 
   /**
    * Non-const getter for the pointer of this object.
@@ -460,7 +469,7 @@ class SPHParticle : public autopas::Particle {
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       return this->_ownershipState;
     } else {
-      utils::ExceptionHandler::exception("SPHParticle::get: unknown attribute");
+      autopas::utils::ExceptionHandler::exception("SPHParticle::get: unknown attribute");
     }
   }
 
@@ -506,7 +515,7 @@ class SPHParticle : public autopas::Particle {
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       _ownershipState = value;
     } else {
-      utils::ExceptionHandler::exception("SPHParticle::set: unknown attribute");
+      autopas::utils::ExceptionHandler::exception("SPHParticle::set: unknown attribute");
     }
   }
 
@@ -530,5 +539,4 @@ class SPHParticle : public autopas::Particle {
   std::array<double, 3> _vel_half;  // velocity at half time-step
   double _eng_half;                 // energy at half time-step
 };
-}  // namespace sph
-}  // namespace autopas
+}  // namespace sphLib

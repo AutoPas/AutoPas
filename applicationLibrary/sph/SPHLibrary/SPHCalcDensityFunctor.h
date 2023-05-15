@@ -6,11 +6,11 @@
 
 #pragma once
 
+#include "SPHKernels.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/particles/OwnershipState.h"
-#include "autopas/sph/SPHKernels.h"
 
-namespace autopas::sph {
+namespace sphLib {
 /**
  * Class that defines the density functor.
  * It is used to calculate the density based on the given SPH kernel.
@@ -18,7 +18,7 @@ namespace autopas::sph {
  * @tparam ParticleCell
  */
 template <class Particle>
-class SPHCalcDensityFunctor : public Functor<Particle, SPHCalcDensityFunctor<Particle>> {
+class SPHCalcDensityFunctor : public autopas::Functor<Particle, SPHCalcDensityFunctor<Particle>> {
  public:
   /// soa arrays type
   using SoAArraysType = typename Particle::SoAArraysType;
@@ -74,7 +74,7 @@ class SPHCalcDensityFunctor : public Functor<Particle, SPHCalcDensityFunctor<Par
    * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType>, bool)
    * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
    */
-  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
+  void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) override {
     if (soa.getNumberOfParticles() == 0) return;
 
     double *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
@@ -90,7 +90,7 @@ class SPHCalcDensityFunctor : public Functor<Particle, SPHCalcDensityFunctor<Par
     size_t numParticles = soa.getNumberOfParticles();
     for (unsigned int i = 0; i < numParticles; ++i) {
       // checks whether particle i is owned.
-      if (ownedStatePtr[i] == OwnershipState::dummy) {
+      if (ownedStatePtr[i] == autopas::OwnershipState::dummy) {
         continue;
       }
 
@@ -110,7 +110,7 @@ class SPHCalcDensityFunctor : public Functor<Particle, SPHCalcDensityFunctor<Par
         const double dr2 = drx2 + dry2 + drz2;
 
         // if second particle is a dummy, we skip the interaction.
-        const bool mask = ownedStatePtr[j] != OwnershipState::dummy;
+        const bool mask = ownedStatePtr[j] != autopas::OwnershipState::dummy;
 
         const double density = mask ? massptr[j] * SPHKernels::W(dr2, smthptr[i]) : 0.;
         densacc += density;
@@ -128,7 +128,7 @@ class SPHCalcDensityFunctor : public Functor<Particle, SPHCalcDensityFunctor<Par
   /**
    * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType>, SoAView<SoAArraysType>, bool)
    */
-  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) override {
+  void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, bool newton3) override {
     if (soa1.getNumberOfParticles() == 0 || soa2.getNumberOfParticles() == 0) return;
 
     double *const __restrict xptr1 = soa1.template begin<Particle::AttributeNames::posX>();
@@ -153,7 +153,7 @@ class SPHCalcDensityFunctor : public Functor<Particle, SPHCalcDensityFunctor<Par
     size_t numParticlesi = soa1.getNumberOfParticles();
     for (unsigned int i = 0; i < numParticlesi; ++i) {
       // checks whether particle i is in the domain box, unused if calculateGlobals is false!
-      if (ownedStatePtr1[i] == OwnershipState::dummy) {
+      if (ownedStatePtr1[i] == autopas::OwnershipState::dummy) {
         continue;
       }
 
@@ -174,7 +174,7 @@ class SPHCalcDensityFunctor : public Functor<Particle, SPHCalcDensityFunctor<Par
         const double dr2 = drx2 + dry2 + drz2;
 
         // if second particle is a dummy, we skip the interaction.
-        const bool mask = ownedStatePtr2[j] != OwnershipState::dummy;
+        const bool mask = ownedStatePtr2[j] != autopas::OwnershipState::dummy;
 
         const double density = mask ? massptr2[j] * SPHKernels::W(dr2, smthptr1[i]) : 0.;
         densacc += density;
@@ -195,7 +195,7 @@ class SPHCalcDensityFunctor : public Functor<Particle, SPHCalcDensityFunctor<Par
    * @copydoc Functor::SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
    */
   // clang-format on
-  void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
+  void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                         bool newton3) override {
     if (soa.getNumberOfParticles() == 0) return;
@@ -203,7 +203,7 @@ class SPHCalcDensityFunctor : public Functor<Particle, SPHCalcDensityFunctor<Par
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
     // checks whether particle i is owned.
-    if (ownedStatePtr[indexFirst] == OwnershipState::dummy) {
+    if (ownedStatePtr[indexFirst] == autopas::OwnershipState::dummy) {
       return;
     }
 
@@ -233,7 +233,7 @@ class SPHCalcDensityFunctor : public Functor<Particle, SPHCalcDensityFunctor<Par
       const double dr2 = drx2 + dry2 + drz2;
 
       // if second particle is a dummy, we skip the interaction.
-      const bool mask = ownedStatePtr[currentList[j]] != OwnershipState::dummy;
+      const bool mask = ownedStatePtr[currentList[j]] != autopas::OwnershipState::dummy;
 
       const double density = mask ? massptr[currentList[j]] * SPHKernels::W(dr2, smthptr[indexFirst]) : 0.;
       densacc += density;
@@ -274,4 +274,4 @@ class SPHCalcDensityFunctor : public Functor<Particle, SPHCalcDensityFunctor<Par
     return std::array<typename Particle::AttributeNames, 1>{Particle::AttributeNames::density};
   }
 };
-}  // namespace autopas::sph
+}  // namespace sphLib

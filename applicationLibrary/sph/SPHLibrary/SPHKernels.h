@@ -12,8 +12,7 @@
 
 #include "autopas/utils/ArrayMath.h"
 
-namespace autopas {
-namespace sph {
+namespace sphLib {
 /**
  * class to define a kernel function for SPH simulations
  */
@@ -65,7 +64,16 @@ class SPHKernels {
    * returns the flops for one full calculation of the kernel
    * @return flops for one full calculation of the kernel
    */
-  static unsigned long getFlopsW();
+  static unsigned long getFlopsW() {
+    unsigned long flops = 0;
+    flops += 1;      // calculating H
+    flops += 5;      // dot product for s
+    flops += 1 + 1;  // s (except dot product)
+    flops += 1;      // calculating s1 and s2 (either for s1 or s2 one flop will be
+                     // necessary
+    flops += 6 + 4;  // calculating r_value
+    return flops;
+  };
 
   /**
    * gradient of the kernel function W
@@ -88,5 +96,4 @@ class SPHKernels {
     return dr * scale;  // dr * r_value / (sqrt(dr * dr) * H + 1.0e-6 * h);
   }
 };
-}  // namespace sph
-}  // namespace autopas
+}  // namespace sphLib

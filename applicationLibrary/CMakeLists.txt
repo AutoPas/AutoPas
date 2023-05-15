@@ -1,16 +1,36 @@
+# --------------------------libraries-------------------------------------------
+
+# --- molecular dynamics ---
+
 file(
         GLOB_RECURSE
-        LIB_SRC
+        LIB_MD_SRC
         "molecularDynamics/molecularDynamicsLibrary/*.h"
 )
 
-add_library(molecularDynamicsLibrary STATIC ${LIB_SRC})
+add_library(molecularDynamicsLibrary STATIC ${LIB_MD_SRC})
 
 target_link_libraries(molecularDynamicsLibrary PUBLIC autopas)
 
 target_include_directories(molecularDynamicsLibrary PUBLIC ./molecularDynamics)
 
+# --- sph ---
+
+file(
+        GLOB_RECURSE
+        LIB_SPH_SRC
+        "sph/SPHLibrary/*.h"
+)
+
+add_library(SPHLibrary STATIC ${LIB_SPH_SRC})
+
+target_link_libraries(SPHLibrary PUBLIC autopas)
+
+target_include_directories(SPHLibrary PUBLIC ./sph)
+
 # --------------------------------tests---------------------------------------
+
+# --- molecular dynamics ---
 
 if (AUTOPAS_BUILD_TESTS)
     file(
@@ -81,6 +101,35 @@ if (AUTOPAS_BUILD_TESTS)
             ENVIRONMENT "${LSAN_OPTIONS_STR}"
     )
 
+# --- SPH ---
+    file(
+            GLOB_RECURSE
+            SPH_TEST_SRC
+            "sph/tests/*.cpp"
+            "sph/tests/*.h"
+    )
+
+    add_executable(sphLibTests ${SPH_TEST_SRC} sphLibTests.cpp)
+
+    target_include_directories(
+            sphLibTests PUBLIC
+            ${PROJECT_SOURCE_DIR}/tests/testAutopas sph
+    )
+
+    target_link_libraries(
+            sphLibTests PUBLIC
+            autopas autopasTools gmock
+    )
+
+    # this cmake module was only introduced in 3.10
+    include(GoogleTest)
+    # more robust, queries the compiled executable
+    gtest_discover_tests(
+            sphLibTests TEST_PREFIX "sphLibTests/"
+            PROPERTIES
+            ENVIRONMENT "${LSAN_OPTIONS_STR}"
+    )
+
 else()
-    message(STATUS "AUTOPAS_BUILD_TESTS is disabled. Not building Molecular Dynamics Library tests!")
+    message(STATUS "AUTOPAS_BUILD_TESTS is disabled. Not building Application Libraries tests!")
 endif()

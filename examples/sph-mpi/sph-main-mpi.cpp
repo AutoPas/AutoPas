@@ -10,8 +10,8 @@
 #include <cmath>
 #include <iostream>
 
+#include "../../applicationLibrary/sph/SPHLibrary/autopassph.h"
 #include "autopas/AutoPas.h"
-#include "autopas/sph/autopassph.h"
 
 using Particle = autopas::sph::SPHParticle;
 using AutoPasContainer = autopas::AutoPas<Particle>;

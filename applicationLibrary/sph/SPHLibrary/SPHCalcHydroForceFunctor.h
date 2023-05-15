@@ -6,10 +6,10 @@
 
 #pragma once
 
+#include "SPHKernels.h"
 #include "autopas/particles/OwnershipState.h"
-#include "autopas/sph/SPHKernels.h"
 
-namespace autopas::sph {
+namespace sphLib {
 /**
  * Class that defines the hydrodynamic force functor.
  * It is used to calculate the force based on the given SPH kernels.
@@ -17,7 +17,7 @@ namespace autopas::sph {
  * @tparam ParticleCell
  */
 template <class Particle>
-class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunctor<Particle>> {
+class SPHCalcHydroForceFunctor : public autopas::Functor<Particle, SPHCalcHydroForceFunctor<Particle>> {
  public:
   /// soa arrays type
   using SoAArraysType = typename Particle::SoAArraysType;
@@ -50,7 +50,7 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
     const std::array<double, 3> dr = i.getR() - j.getR();
     // const PS::F64vec dr = ep_i[i].pos - ep_j[j].pos;
 
-    double cutoff = i.getSmoothingLength() * autopas::sph::SPHKernels::getKernelSupportRadius();
+    double cutoff = i.getSmoothingLength() * sphLib::SPHKernels::getKernelSupportRadius();
 
     if (autopas::utils::ArrayMath::dot(dr, dr) >= cutoff * cutoff) {
       return;
@@ -59,8 +59,8 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
     const std::array<double, 3> dv = i.getV() - j.getV();
     // const PS::F64vec dv = ep_i[i].vel - ep_j[j].vel;
 
-    double dvdr = utils::ArrayMath::dot(dv, dr);
-    const double w_ij = (dvdr < 0) ? dvdr / utils::ArrayMath::L2Norm(dr) : 0;
+    double dvdr = autopas::utils::ArrayMath::dot(dv, dr);
+    const double w_ij = (dvdr < 0) ? dvdr / autopas::utils::ArrayMath::L2Norm(dr) : 0;
     // const PS::F64 w_ij = (dv * dr < 0) ? dv * dr / sqrt(dr * dr) : 0;
 
     const double v_sig = i.getSoundSpeed() + j.getSoundSpeed() - 3.0 * w_ij;
@@ -91,13 +91,13 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
       // Newton3, gradW_ij = -gradW_ji
     }
     double scale2i = j.getMass() * (i.getPressure() / (i.getDensity() * i.getDensity()) + 0.5 * AV);
-    i.addEngDot(utils::ArrayMath::dot(gradW_ij, dv) * scale2i);
+    i.addEngDot(autopas::utils::ArrayMath::dot(gradW_ij, dv) * scale2i);
     // hydro[i].eng_dot += ep_j[j].mass * (ep_i[i].pres / (ep_i[i].dens *
     // ep_i[i].dens) + 0.5 * AV) * dv * gradW_ij;
 
     if (newton3) {
       double scale2j = i.getMass() * (j.getPressure() / (j.getDensity() * j.getDensity()) + 0.5 * AV);
-      j.addEngDot(utils::ArrayMath::dot(gradW_ij, dv) * scale2j);
+      j.addEngDot(autopas::utils::ArrayMath::dot(gradW_ij, dv) * scale2j);
       // Newton 3
     }
   }
@@ -106,7 +106,7 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
    * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType>, bool)
    * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
    */
-  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
+  void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) override {
     using namespace autopas::utils::ArrayMath::literals;
     if (soa.getNumberOfParticles() == 0) return;
 
@@ -132,7 +132,7 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
 
     for (unsigned int indexFirst = 0; indexFirst < soa.getNumberOfParticles(); ++indexFirst) {
       // checks whether particle i is owned.
-      if (ownedStatePtr[indexFirst] == OwnershipState::dummy) {
+      if (ownedStatePtr[indexFirst] == autopas::OwnershipState::dummy) {
         continue;
       }
 
@@ -157,8 +157,8 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
         const double drz2 = drz * drz;
 
         const double dr2 = drx2 + dry2 + drz2;
-        double cutoff = smthptr[indexFirst] * autopas::sph::SPHKernels::getKernelSupportRadius();
-        if (dr2 >= cutoff * cutoff or ownedStatePtr[j] == OwnershipState::dummy) continue;
+        double cutoff = smthptr[indexFirst] * sphLib::SPHKernels::getKernelSupportRadius();
+        if (dr2 >= cutoff * cutoff or ownedStatePtr[j] == autopas::OwnershipState::dummy) continue;
 
         const double dvX = velXptr[indexFirst] - velXptr[j];
         const double dvY = velYptr[indexFirst] - velYptr[j];
@@ -225,7 +225,7 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
   /**
    * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType>, SoAView<SoAArraysType>, bool)
    */
-  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) override {
+  void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, bool newton3) override {
     using namespace autopas::utils::ArrayMath::literals;
     if (soa1.getNumberOfParticles() == 0 || soa2.getNumberOfParticles() == 0) return;
 
@@ -270,7 +270,7 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
 
     for (unsigned int indexFirst = 0; indexFirst < soa1.getNumberOfParticles(); ++indexFirst) {
       // checks whether particle i is owned.
-      if (ownedStatePtr1[indexFirst] == OwnershipState::dummy) {
+      if (ownedStatePtr1[indexFirst] == autopas::OwnershipState::dummy) {
         continue;
       }
 
@@ -295,8 +295,8 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
         const double drz2 = drz * drz;
 
         const double dr2 = drx2 + dry2 + drz2;
-        double cutoff = smthptr1[indexFirst] * autopas::sph::SPHKernels::getKernelSupportRadius();
-        if (dr2 >= cutoff * cutoff or ownedStatePtr2[j] == OwnershipState::dummy) continue;
+        double cutoff = smthptr1[indexFirst] * sphLib::SPHKernels::getKernelSupportRadius();
+        if (dr2 >= cutoff * cutoff or ownedStatePtr2[j] == autopas::OwnershipState::dummy) continue;
 
         const double dvX = velXptr1[indexFirst] - velXptr2[j];
         const double dvY = velYptr1[indexFirst] - velYptr2[j];
@@ -367,7 +367,7 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
    * @copydoc Functor::SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
    */
   // clang-format on
-  void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
+  void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                         bool newton3) override {
     using namespace autopas::utils::ArrayMath::literals;
@@ -376,7 +376,7 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
     // checks whether particle i is owned.
-    if (ownedStatePtr[indexFirst] == OwnershipState::dummy) {
+    if (ownedStatePtr[indexFirst] == autopas::OwnershipState::dummy) {
       return;
     }
 
@@ -422,8 +422,8 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
       const double drz2 = drz * drz;
 
       const double dr2 = drx2 + dry2 + drz2;
-      double cutoff = smthptr[indexFirst] * autopas::sph::SPHKernels::getKernelSupportRadius();
-      if (dr2 >= cutoff * cutoff or ownedStatePtr[currentList[j]] == OwnershipState::dummy) continue;
+      double cutoff = smthptr[indexFirst] * sphLib::SPHKernels::getKernelSupportRadius();
+      if (dr2 >= cutoff * cutoff or ownedStatePtr[currentList[j]] == autopas::OwnershipState::dummy) continue;
 
       const double dvX = velXptr[indexFirst] - velXptr[currentList[j]];
       const double dvY = velYptr[indexFirst] - velYptr[currentList[j]];
@@ -540,4 +540,4 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
   }
 };
 
-}  // namespace autopas::sph
+}  // namespace sphLib
