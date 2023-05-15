@@ -462,10 +462,9 @@ class LJFunctor
 
           // Add to the potential energy sum for each particle which is owned.
           // This results in obtaining 12 * the potential energy for the SoA.
-          SoAFloatPrecision energyFactor =
-              (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) + (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.);
+          const SoAFloatPrecision energyFactor =
+              (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) + (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.);
           potentialEnergySum += potentialEnergy6 * energyFactor;
-
           virialSumX += virialx * energyFactor;
           virialSumY += virialy * energyFactor;
           virialSumZ += virialz * energyFactor;
@@ -793,10 +792,8 @@ class LJFunctor
             SoAFloatPrecision virialz = drz * fz;
             SoAFloatPrecision potentialEnergy6 = mask ? (epsilon24 * lj12m6 + shift6) : 0.;
 
-            SoAFloatPrecision energyFactor = (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.);
-            if constexpr (newton3) {
-              energyFactor += (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.);
-            }
+            const SoAFloatPrecision energyFactor =
+                (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) + (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.);
             potentialEnergySum += potentialEnergy6 * energyFactor;
             virialSumX += virialx * energyFactor;
             virialSumY += virialy * energyFactor;
@@ -873,8 +870,8 @@ class LJFunctor
 
         // Add to the potential energy sum for each particle which is owned.
         // This results in obtaining 12 * the potential energy for the SoA.
-        SoAFloatPrecision energyFactor =
-            (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) + (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.);
+        const SoAFloatPrecision energyFactor =
+            (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) + (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.);
         potentialEnergySum += potentialEnergy6 * energyFactor;
         virialSumX += virialx * energyFactor;
         virialSumY += virialy * energyFactor;
