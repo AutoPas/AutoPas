@@ -10,37 +10,6 @@
 namespace autopas::utils::quaternion {
 
 /**
- * Compute rotational matrix from quaternion
- * @param q Quaternion
- * @return rotational matrix
- */
-std::array<double,9> calculateRotationalMatrix(const std::array<double,4> q) {
-  const auto ww = q[0]*q[0];
-  const auto wx = q[0]*q[1];
-  const auto wy = q[0]*q[2];
-  const auto wz = q[0]*q[3];
-  const auto xx = q[1]*q[1];
-  const auto xy = q[1]*q[2];
-  const auto xz = q[1]*q[3];
-  const auto yy = q[2]*q[2];
-  const auto yz = q[2]*q[3];
-  const auto zz = q[3]*q[3];
-
-  std::array<double,9> rotMatrix{};
-  rotMatrix[0] = ww+xx-yy-zz;
-  rotMatrix[1] = 2.*(xy-wz);
-  rotMatrix[2] = 2.*(xy-wz);
-  rotMatrix[3] = 2.*(xy+wz);
-  rotMatrix[4] = ww-xx+yy-zz;
-  rotMatrix[5] = 2.*(yz-wx);
-  rotMatrix[6] = 2.*(xz-wy);
-  rotMatrix[7] = 2.*(yz+wx);
-  rotMatrix[8] = ww-xx-yy+zz;
-
-  return rotMatrix;
-}
-
-/**
  * Rotates a std::vector of 3D positions
  * @param q Quaternion defining rotation
  * @param positionVector std::vector of arrays of 3 doubles, defining positions
@@ -88,7 +57,6 @@ std::vector<std::array<double,3>> rotateVectorOfPositions(const std::array<doubl
  * @return rotated position
  */
 std::array<double,3> rotatePosition(const std::array<double,4> q, const std::array<double,3> pos) {
-  // todo investigate the more efficient version discussed in wikipedia page https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation
   // Alan Watt and Mark Watt (1992) Advanced Animation and Rendering Techniques: Theory and Practice
   const auto ww = q[0]*q[0];
   const auto wx = q[0]*q[1];

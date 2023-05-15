@@ -16,13 +16,6 @@
 namespace autopas::utils::quaternion {
 
 /**
- * Compute rotational matrix from quaternion
- * @param q Quaternion
- * @return rotational matrix
- */
-std::array<double,9> calculateRotationalMatrix(std::array<double,4> q);
-
-/**
  * Rotates a std::vector of 3D positions
  * @param q Quaternion defining rotation
  * @param positionVector std::vector of arrays of 3 doubles, defining positions
