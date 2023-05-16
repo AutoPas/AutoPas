@@ -42,8 +42,8 @@ template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool relevantForTuning = true>
 class LJFunctorAVX
-    : public autopas::Functor<Particle,
-                     LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
+    : public autopas::Functor<
+          Particle, LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
  public:
@@ -60,8 +60,9 @@ class LJFunctorAVX
    */
   explicit LJFunctorAVX(double cutoff, void * /*dummy*/)
 #ifdef __AVX__
-      : autopas::Functor<Particle,
-                LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(cutoff),
+      : autopas::Functor<
+            Particle, LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
+            cutoff),
         _cutoffSquared{_mm256_set1_pd(cutoff * cutoff)},
         _cutoffSquaredAoS(cutoff * cutoff),
         _potentialEnergySum{0.},
@@ -110,7 +111,9 @@ class LJFunctorAVX
 
   bool isRelevantForTuning() final { return relevantForTuning; }
 
-  bool allowsNewton3() final { return useNewton3 == autopas::FunctorN3Modes::Newton3Only or useNewton3 == autopas::FunctorN3Modes::Both; }
+  bool allowsNewton3() final {
+    return useNewton3 == autopas::FunctorN3Modes::Newton3Only or useNewton3 == autopas::FunctorN3Modes::Both;
+  }
 
   bool allowsNonNewton3() final {
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
@@ -194,7 +197,8 @@ class LJFunctorAVX
    * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
    */
   // clang-format on
-  inline void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, const bool newton3) final {
+  inline void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
+                             const bool newton3) final {
     if (newton3) {
       SoAFunctorPairImpl<true>(soa1, soa2);
     } else {
@@ -305,7 +309,8 @@ class LJFunctorAVX
       const __m256d hSumVirialzPotentialEnergy = _mm256_hadd_pd(virialSumZ, potentialEnergySum);
       const __m128d hSumVirialzPotentialEnergyLow = _mm256_extractf128_pd(hSumVirialzPotentialEnergy, 0);
       const __m128d hSumVirialzPotentialEnergyHigh = _mm256_extractf128_pd(hSumVirialzPotentialEnergy, 1);
-      const __m128d hSumVirialzPotentialEnergyVec = _mm_add_pd(hSumVirialzPotentialEnergyHigh, hSumVirialzPotentialEnergyLow);
+      const __m128d hSumVirialzPotentialEnergyVec =
+          _mm_add_pd(hSumVirialzPotentialEnergyHigh, hSumVirialzPotentialEnergyLow);
 
       // globals = {virialX, virialY, virialZ, potentialEnergy}
       double globals[4];
@@ -423,7 +428,8 @@ class LJFunctorAVX
       const __m256d hSumVirialzPotentialEnergy = _mm256_hadd_pd(virialSumZ, potentialEnergySum);
       const __m128d hSumVirialzPotentialEnergyLow = _mm256_extractf128_pd(hSumVirialzPotentialEnergy, 0);
       const __m128d hSumVirialzPotentialEnergyHigh = _mm256_extractf128_pd(hSumVirialzPotentialEnergy, 1);
-      const __m128d hSumVirialzPotentialEnergyVec = _mm_add_pd(hSumVirialzPotentialEnergyHigh, hSumVirialzPotentialEnergyLow);
+      const __m128d hSumVirialzPotentialEnergyVec =
+          _mm_add_pd(hSumVirialzPotentialEnergyHigh, hSumVirialzPotentialEnergyLow);
 
       // globals = {virialX, virialY, virialZ, potentialEnergy}
       double globals[4];
@@ -594,8 +600,9 @@ class LJFunctorAVX
       const __m256d potentialEnergy = wrapperFMA(epsilon24s, lj12m6, shift6s);
 
       const __m256d potentialEnergyMasked =
-          remainderIsMasked ? _mm256_and_pd(potentialEnergy, _mm256_and_pd(cutoffDummyMask, _mm256_castsi256_pd(_masks[rest - 1])))
-                            : _mm256_and_pd(potentialEnergy, cutoffDummyMask);
+          remainderIsMasked
+              ? _mm256_and_pd(potentialEnergy, _mm256_and_pd(cutoffDummyMask, _mm256_castsi256_pd(_masks[rest - 1])))
+              : _mm256_and_pd(potentialEnergy, cutoffDummyMask);
 
       __m256d ownedMaskI =
           _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateI), _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
@@ -802,7 +809,8 @@ class LJFunctorAVX
       const __m256d hSumVirialzPotentialEnergy = _mm256_hadd_pd(virialSumZ, potentialEnergySum);
       const __m128d hSumVirialzPotentialEnergyLow = _mm256_extractf128_pd(hSumVirialzPotentialEnergy, 0);
       const __m128d hSumVirialzPotentialEnergyHigh = _mm256_extractf128_pd(hSumVirialzPotentialEnergy, 1);
-      const __m128d hSumVirialzPotentialEnergyVec = _mm_add_pd(hSumVirialzPotentialEnergyHigh, hSumVirialzPotentialEnergyLow);
+      const __m128d hSumVirialzPotentialEnergyVec =
+          _mm_add_pd(hSumVirialzPotentialEnergyHigh, hSumVirialzPotentialEnergyLow);
 
       // globals = {virialX, virialY, virialZ, potentialEnergy}
       double globals[4];
@@ -859,12 +867,13 @@ class LJFunctorAVX
 
   /**
    * Get the number of flops used per kernel call for a given particle pair. This should count the
-   * floating point operations needed for two particles that lie within a cutoff radius, having already calculated the distance.
+   * floating point operations needed for two particles that lie within a cutoff radius, having already calculated the
+   * distance.
    * @param molAType molecule A's type id
    * @param molBType molecule B's type id
    * @param newton3 is newton3 applied.
-   * @note molAType and molBType make no difference for LJFunctor, but are kept to have a consistent interface for other functors
-   * where they may.
+   * @note molAType and molBType make no difference for LJFunctor, but are kept to have a consistent interface for other
+   * functors where they may.
    * @return the number of floating point operations
    */
   static unsigned long getNumFlopsPerKernelCall(size_t molAType, size_t molBType, bool newton3) {
@@ -923,11 +932,13 @@ class LJFunctorAVX
   double getPotentialEnergy() {
     if (not calculateGlobals) {
       throw autopas::utils::ExceptionHandler::AutoPasException(
-          "Trying to get potential energy even though calculateGlobals is false. If you want this functor to calculate global "
+          "Trying to get potential energy even though calculateGlobals is false. If you want this functor to calculate "
+          "global "
           "values, please specify calculateGlobals to be true.");
     }
     if (not _postProcessed) {
-      throw autopas::utils::ExceptionHandler::AutoPasException("Cannot get potential energy, because endTraversal was not called.");
+      throw autopas::utils::ExceptionHandler::AutoPasException(
+          "Cannot get potential energy, because endTraversal was not called.");
     }
     return _potentialEnergySum;
   }
@@ -943,7 +954,8 @@ class LJFunctorAVX
           "values, please specify calculateGlobals to be true.");
     }
     if (not _postProcessed) {
-      throw autopas::utils::ExceptionHandler::AutoPasException("Cannot get virial, because endTraversal was not called.");
+      throw autopas::utils::ExceptionHandler::AutoPasException(
+          "Cannot get virial, because endTraversal was not called.");
     }
     return _virialSum[0] + _virialSum[1] + _virialSum[2];
   }

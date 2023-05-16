@@ -6,10 +6,10 @@
 
 #include "AutoTunerRemainderTraversalTest.h"
 
-#include "molecularDynamicsLibrary/LJFunctor.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/Configuration.h"
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
 /**
@@ -107,8 +107,9 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
     }
   }
   // if halo particles are involved only expect half the Upot
-  const double expectedPotentialEnergy = 4 * epsilon * (std::pow(sigma / expectedDist, 12.) - std::pow(sigma / expectedDist, 6.)) *
-                              ((numParticlesHaloBuffers != 0 or not particlesContainerHalo.empty()) ? 0.5 : 1);
+  const double expectedPotentialEnergy =
+      4 * epsilon * (std::pow(sigma / expectedDist, 12.) - std::pow(sigma / expectedDist, 6.)) *
+      ((numParticlesHaloBuffers != 0 or not particlesContainerHalo.empty()) ? 0.5 : 1);
   EXPECT_NEAR(expectedPotentialEnergy, functor.getPotentialEnergy(), 1e-12);
 }
 

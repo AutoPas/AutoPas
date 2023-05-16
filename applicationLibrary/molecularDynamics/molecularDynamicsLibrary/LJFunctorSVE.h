@@ -43,8 +43,8 @@ template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool relevantForTuning = true>
 class LJFunctorSVE
-    : public autopas::Functor<Particle,
-                     LJFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
+    : public autopas::Functor<
+          Particle, LJFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
  public:
@@ -74,8 +74,8 @@ class LJFunctorSVE
     }
   }
 #else
-      : autopas::Functor<Particle,
-                LJFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
+      : autopas::Functor<
+            Particle, LJFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
             cutoff) {
     autopas::utils::ExceptionHandler::exception("AutoPas was compiled without SVE support!");
   }
@@ -111,7 +111,9 @@ class LJFunctorSVE
 
   bool isRelevantForTuning() final { return relevantForTuning; }
 
-  bool allowsNewton3() final { return useNewton3 == autopas::FunctorN3Modes::Newton3Only or useNewton3 == autopas::FunctorN3Modes::Both; }
+  bool allowsNewton3() final {
+    return useNewton3 == autopas::FunctorN3Modes::Newton3Only or useNewton3 == autopas::FunctorN3Modes::Both;
+  }
 
   bool allowsNonNewton3() final {
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
@@ -192,7 +194,8 @@ class LJFunctorSVE
    * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
    */
   // clang-format on
-  void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, const bool newton3) final {
+  void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
+                      const bool newton3) final {
     if (newton3) {
       SoAFunctorPairImpl<true>(soa1, soa2);
     } else {
@@ -263,8 +266,8 @@ class LJFunctorSVE
         SoAKernel<newton3, false>(j, ownedStatePtr[i] == OwnershipState::owned,
                                   reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr, zptr, fxptr,
                                   fyptr, fzptr, &typeIDptr[i], typeIDptr, fxacc, fyacc, fzacc, virialSumX, virialSumY,
-                                  virialSumZ, potentialEnergySum, pg_1, svundef_u64(), pg_2, svundef_u64(), pg_3, svundef_u64(),
-                                  pg_4, svundef_u64());
+                                  virialSumZ, potentialEnergySum, pg_1, svundef_u64(), pg_2, svundef_u64(), pg_3,
+                                  svundef_u64(), pg_4, svundef_u64());
       }
 
       fxptr[i] += svaddv(svptrue_b64(), fxacc);
@@ -350,8 +353,8 @@ class LJFunctorSVE
         SoAKernel<newton3, false>(j, ownedStatePtr1[i] == OwnershipState::owned,
                                   reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr, y2ptr, z2ptr,
                                   fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc, fyacc, fzacc, virialSumX,
-                                  virialSumY, virialSumZ, potentialEnergySum, pg_1, svundef_u64(), pg_2, svundef_u64(), pg_3,
-                                  svundef_u64(), pg_4, svundef_u64());
+                                  virialSumY, virialSumZ, potentialEnergySum, pg_1, svundef_u64(), pg_2, svundef_u64(),
+                                  pg_3, svundef_u64(), pg_4, svundef_u64());
       }
 
       fx1ptr[i] += svaddv_f64(svptrue_b64(), fxacc);
@@ -440,11 +443,11 @@ class LJFunctorSVE
                           double *const __restrict fx2ptr, double *const __restrict fy2ptr,
                           double *const __restrict fz2ptr, svfloat64_t &fxacc, svfloat64_t &fyacc, svfloat64_t &fzacc,
                           svfloat64_t &virialSumX, svfloat64_t &virialSumY, svfloat64_t &virialSumZ,
-                          svfloat64_t &potentialEnergySum, const svfloat64_t &drx, const svfloat64_t &dry, const svfloat64_t &drz,
-                          const double *const __restrict x2ptr, const double *const __restrict y2ptr,
-                          const double *const __restrict z2ptr, const svint64_t &ownedStateJ, const svbool_t &pgC,
-                          const svfloat64_t &epsilon24s, const svfloat64_t &shift6s, const svfloat64_t &lj6,
-                          const svfloat64_t &fac) {
+                          svfloat64_t &potentialEnergySum, const svfloat64_t &drx, const svfloat64_t &dry,
+                          const svfloat64_t &drz, const double *const __restrict x2ptr,
+                          const double *const __restrict y2ptr, const double *const __restrict z2ptr,
+                          const svint64_t &ownedStateJ, const svbool_t &pgC, const svfloat64_t &epsilon24s,
+                          const svfloat64_t &shift6s, const svfloat64_t &lj6, const svfloat64_t &fac) {
     const svfloat64_t fx = svmul_x(pgC, drx, fac);
     const svfloat64_t fy = svmul_x(pgC, dry, fac);
     const svfloat64_t fz = svmul_x(pgC, drz, fac);
@@ -576,22 +579,24 @@ class LJFunctorSVE
 
     if (continue_1)
       applyForces<newton3, indexed>(j, index_1, ownedStateIisOwned, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc,
-                                    virialSumX, virialSumY, virialSumZ, potentialEnergySum, drx_1, dry_1, drz_1, x2ptr, y2ptr,
-                                    z2ptr, ownedStateJ_1, pgC_1, epsilon24s_1, shift6s_1, lj6_1, fac_1);
+                                    virialSumX, virialSumY, virialSumZ, potentialEnergySum, drx_1, dry_1, drz_1, x2ptr,
+                                    y2ptr, z2ptr, ownedStateJ_1, pgC_1, epsilon24s_1, shift6s_1, lj6_1, fac_1);
     if (continue_2)
       applyForces<newton3, indexed>(j + svlen(x1), index_2, ownedStateIisOwned, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc,
-                                    fzacc, virialSumX, virialSumY, virialSumZ, potentialEnergySum, drx_2, dry_2, drz_2, x2ptr,
-                                    y2ptr, z2ptr, ownedStateJ_2, pgC_2, epsilon24s_2, shift6s_2, lj6_2, fac_2);
+                                    fzacc, virialSumX, virialSumY, virialSumZ, potentialEnergySum, drx_2, dry_2, drz_2,
+                                    x2ptr, y2ptr, z2ptr, ownedStateJ_2, pgC_2, epsilon24s_2, shift6s_2, lj6_2, fac_2);
 
     if (continue_3)
       applyForces<newton3, indexed>(j + svlen(x1) * 2, index_3, ownedStateIisOwned, fx2ptr, fy2ptr, fz2ptr, fxacc,
-                                    fyacc, fzacc, virialSumX, virialSumY, virialSumZ, potentialEnergySum, drx_3, dry_3, drz_3,
-                                    x2ptr, y2ptr, z2ptr, ownedStateJ_3, pgC_3, epsilon24s_3, shift6s_3, lj6_3, fac_3);
+                                    fyacc, fzacc, virialSumX, virialSumY, virialSumZ, potentialEnergySum, drx_3, dry_3,
+                                    drz_3, x2ptr, y2ptr, z2ptr, ownedStateJ_3, pgC_3, epsilon24s_3, shift6s_3, lj6_3,
+                                    fac_3);
 
     if (continue_4)
       applyForces<newton3, indexed>(j + svlen(x1) * 3, index_4, ownedStateIisOwned, fx2ptr, fy2ptr, fz2ptr, fxacc,
-                                    fyacc, fzacc, virialSumX, virialSumY, virialSumZ, potentialEnergySum, drx_4, dry_4, drz_4,
-                                    x2ptr, y2ptr, z2ptr, ownedStateJ_4, pgC_4, epsilon24s_4, shift6s_4, lj6_4, fac_4);
+                                    fyacc, fzacc, virialSumX, virialSumY, virialSumZ, potentialEnergySum, drx_4, dry_4,
+                                    drz_4, x2ptr, y2ptr, z2ptr, ownedStateJ_4, pgC_4, epsilon24s_4, shift6s_4, lj6_4,
+                                    fac_4);
   }
 #endif
 
@@ -673,8 +678,8 @@ class LJFunctorSVE
 
       if (continue_1)
         applyForces<newton3, true>(0, index_1, ownedStatePtr[indexFirst] == OwnershipState::owned, fxptr, fyptr, fzptr,
-                                   fxacc, fyacc, fzacc, virialSumX, virialSumY, virialSumZ, potentialEnergySum, drx_1, dry_1,
-                                   drz_1, xptr, yptr, zptr, ownedStateJ_1, pgC_1, epsilon24s_1, shift6s_1, lj6_1,
+                                   fxacc, fyacc, fzacc, virialSumX, virialSumY, virialSumZ, potentialEnergySum, drx_1,
+                                   dry_1, drz_1, xptr, yptr, zptr, ownedStateJ_1, pgC_1, epsilon24s_1, shift6s_1, lj6_1,
                                    fac_1);
     }
 
@@ -735,12 +740,13 @@ class LJFunctorSVE
 
   /**
    * Get the number of flops used per kernel call for a given particle pair. This should count the
-   * floating point operations needed for two particles that lie within a cutoff radius, having already calculated the distance.
+   * floating point operations needed for two particles that lie within a cutoff radius, having already calculated the
+   * distance.
    * @param molAType molecule A's type id
    * @param molBType molecule B's type id
    * @param newton3 is newton3 applied.
-   * @note molAType and molBType make no difference for LJFunctor, but are kept to have a consistent interface for other functors
-   * where they may.
+   * @note molAType and molBType make no difference for LJFunctor, but are kept to have a consistent interface for other
+   * functors where they may.
    * @return the number of floating point operations
    */
   static unsigned long getNumFlopsPerKernelCall(size_t molAType, size_t molBType, bool newton3) {
@@ -799,11 +805,13 @@ class LJFunctorSVE
   double getPotentialEnergy() {
     if (not calculateGlobals) {
       throw autopas::utils::ExceptionHandler::AutoPasException(
-          "Trying to get potential energy even though calculateGlobals is false. If you want this functor to calculate global "
+          "Trying to get potential energy even though calculateGlobals is false. If you want this functor to calculate "
+          "global "
           "values, please specify calculateGlobals to be true.");
     }
     if (not _postProcessed) {
-      throw autopas::utils::ExceptionHandler::AutoPasException("Cannot get potential energy, because endTraversal was not called.");
+      throw autopas::utils::ExceptionHandler::AutoPasException(
+          "Cannot get potential energy, because endTraversal was not called.");
     }
     return _potentialEnergySum;
   }
@@ -819,7 +827,8 @@ class LJFunctorSVE
           "values, please specify calculateGlobals to be true.");
     }
     if (not _postProcessed) {
-      throw autopas::utils::ExceptionHandler::AutoPasException("Cannot get virial, because endTraversal was not called.");
+      throw autopas::utils::ExceptionHandler::AutoPasException(
+          "Cannot get virial, because endTraversal was not called.");
     }
     return _virialSum[0] + _virialSum[1] + _virialSum[2];
   }

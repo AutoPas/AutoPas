@@ -121,8 +121,8 @@ class OctreeLogger {
     vtkFile.close();
 
     // TODO(johannes): Enclose with macro
-    //#ifdef AUTOPAS_LOG_OCTREE
-    //#endif
+    // #ifdef AUTOPAS_LOG_OCTREE
+    // #endif
   }
 
   /**

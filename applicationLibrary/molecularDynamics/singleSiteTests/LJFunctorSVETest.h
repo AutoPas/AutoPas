@@ -8,8 +8,8 @@
 #pragma once
 
 #include "AutoPasTestBase.h"
-#include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 #include "autopas/utils/SoA.h"
+#include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 #include "testingHelpers/commonTypedefs.h"
 
 using LJFunctorSVETestingTuple = std::tuple<bool /*newton3*/, bool /*doDeleteSomeParticles*/>;

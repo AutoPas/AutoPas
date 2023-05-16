@@ -7,12 +7,13 @@
 #include "FlopCounterTest.h"
 
 #include "autopas/AutoPasDecl.h"
-#include "molecularDynamicsLibrary/LJFunctor.h"
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
 extern template class autopas::AutoPas<Molecule>;
-extern template bool autopas::AutoPas<Molecule>::iteratePairwise(autopas::FlopCounterFunctor<Molecule, mdLib::LJFunctor<Molecule>> *);
+extern template bool autopas::AutoPas<Molecule>::iteratePairwise(
+    autopas::FlopCounterFunctor<Molecule, mdLib::LJFunctor<Molecule>> *);
 
 /**
  * Generates a square of four particles, iterates over it with the FlopCounter and checks its values
@@ -50,7 +51,7 @@ void FlopCounterTest::test(autopas::DataLayoutOption dataLayoutOption) {
   ASSERT_EQ(expectedKernelCalls, flopCounterFunctor.getKernelCalls());
 
   // distance calculations cost 8 flops, LJ kernel calls with n3l cost 18 flops
-  auto expectedFlops = expectedDistanceCalculations * 8 + expectedKernelCalls  * 18;
+  auto expectedFlops = expectedDistanceCalculations * 8 + expectedKernelCalls * 18;
   ASSERT_EQ(expectedFlops, flopCounterFunctor.getFlops());
 
   // two out of three particles are in range

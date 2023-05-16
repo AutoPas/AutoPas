@@ -11,11 +11,11 @@
 #include <cstdlib>
 
 #include "AutoPasTestBase.h"
-#include "molecularDynamicsLibrary/LJFunctor.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopasTools/generators/RandomGenerator.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
 enum DeletionPosition {

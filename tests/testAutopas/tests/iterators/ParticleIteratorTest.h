@@ -5,11 +5,11 @@
 // * @date 08.03.21
 // */
 //
-//#pragma once
+// #pragma once
 //
-//#include <gtest/gtest.h>
+// #include <gtest/gtest.h>
 //
-//#include "AutoPasTestBase.h"
+// #include "AutoPasTestBase.h"
 //
 // class ParticleIteratorTest : public AutoPasTestBase, public ::testing::WithParamInterface<std::tuple<size_t, size_t>>
 // {

@@ -632,8 +632,7 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorNewton3OnOff) {
 }
 
 void densityCheck(autopas::VerletLists<sphLib::SPHParticle> &verletLists,
-                  autopas::LinkedCells<sphLib::SPHParticle> &linkedCells, size_t numMolecules,
-                  double relErrTolerance) {
+                  autopas::LinkedCells<sphLib::SPHParticle> &linkedCells, size_t numMolecules, double relErrTolerance) {
   std::vector<double> densityVerlet(numMolecules), densityLinked(numMolecules);
   /* get and sort by id, the */
   for (auto it = verletLists.begin(); it.isValid(); ++it) {
@@ -663,8 +662,7 @@ void hydroInit(autopas::VerletLists<sphLib::SPHParticle> &verletLists) {
 }
 
 void hydroCheck(autopas::VerletLists<sphLib::SPHParticle> &verletLists,
-                autopas::LinkedCells<sphLib::SPHParticle> &linkedCells, size_t numMolecules,
-                double relErrTolerance) {
+                autopas::LinkedCells<sphLib::SPHParticle> &linkedCells, size_t numMolecules, double relErrTolerance) {
   std::vector<double> vsigmaxVerlet(numMolecules), vsigmaxLinked(numMolecules);
   std::vector<double> engdotVerlet(numMolecules), engdotLinked(numMolecules);
   std::vector<std::array<double, 3>> accVerlet(numMolecules), accLinked(numMolecules);
@@ -703,7 +701,7 @@ void testVerLetVsLC(FunctorType &fnctr, InitType init, CheckType check, autopas:
   autopas::LinkedCells<sphLib::SPHParticle> linkedCells({0., 0., 0.}, {5., 5., 5.}, cutoff, 0.5, 1., 1);
 
   sphLib::SPHParticle defaultSPHParticle({0., 0., 0.}, {1., .5, .25}, 0, 2.5,
-                                               cutoff / sphLib::SPHKernels::getKernelSupportRadius(), 0.6);
+                                         cutoff / sphLib::SPHKernels::getKernelSupportRadius(), 0.6);
   autopasTools::generators::RandomGenerator::fillWithParticles(verletLists, defaultSPHParticle, verletLists.getBoxMin(),
                                                                verletLists.getBoxMax(), numMolecules);
 

@@ -10,8 +10,8 @@
 
 #include <tuple>
 
-#include "SPHLibrary/autopassph.h"
 #include "AutoPasTestBase.h"
+#include "SPHLibrary/autopassph.h"
 #include "autopasTools/generators/RandomGenerator.h"
 
 enum SPHFunctorType { density, hydro };

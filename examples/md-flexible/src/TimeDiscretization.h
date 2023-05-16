@@ -7,8 +7,8 @@
 
 #include "TypeDefinitions.h"
 #include "autopas/AutoPasDecl.h"
-#include "src/configuration/MDFlexConfig.h"
 #include "autopas/utils/Quaternion.h"
+#include "src/configuration/MDFlexConfig.h"
 
 /**
  * Functions for updating velocities and positions as simulation time progresses.
@@ -34,8 +34,9 @@ namespace TimeDiscretization {
  * (>skin/2/rebuildFrequency).
  */
 void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasContainer,
-                                       const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
-                                       const std::array<double, 3> &globalForce, bool fastParticlesThrow);
+                                      const ParticlePropertiesLibraryType &particlePropertiesLibrary,
+                                      const double &deltaT, const std::array<double, 3> &globalForce,
+                                      bool fastParticlesThrow);
 
 /**
  * Calculate and update the quaternion for every particle. Uses the rotational velocity-verlet algorithm as described by
@@ -53,8 +54,8 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
  * @param globalForce
  */
 void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPasContainer,
-                          const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT,
-                          const std::array<double, 3> &globalForce);
+                                         const ParticlePropertiesLibraryType &particlePropertiesLibrary,
+                                         const double &deltaT, const std::array<double, 3> &globalForce);
 
 /**
  * Calculate and update the velocity for every particle using the the Störmer-Verlet Algorithm.
@@ -80,7 +81,6 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
  * @param globalForce
  */
 void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
-                                       const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
-
+                                const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
 
 }  // namespace TimeDiscretization

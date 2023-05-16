@@ -24,8 +24,7 @@ class Object {
    * @param velocity
    * @param typeId
    */
-  Object(const std::array<double, 3> &velocity, unsigned long typeId)
-      : _velocity(velocity), _typeId(typeId){}
+  Object(const std::array<double, 3> &velocity, unsigned long typeId) : _velocity(velocity), _typeId(typeId) {}
 
   virtual ~Object() = default;
 
@@ -48,8 +47,8 @@ class Object {
     particle.setV(_velocity);
     particle.setF({0.0, 0.0, 0.0});
     particle.setOldF({0.0, 0.0, 0.0});
-#if MD_FLEXIBLE_MODE==MULTISITE
-    particle.setQ({1.0, 0.0, 0.0, 0.0}); // todo: add option for this to be set randomly
+#if MD_FLEXIBLE_MODE == MULTISITE
+    particle.setQ({1.0, 0.0, 0.0, 0.0});  // todo: add option for this to be set randomly
     particle.setAngularVel({0.0, 0.0, 0.0});
     particle.setTorque({0.0, 0.0, 0.0});
 #endif
@@ -100,15 +99,14 @@ class Object {
    */
   [[nodiscard]] virtual std::string to_string() const {
     std::ostringstream output;
-#if MD_FLEXIBLE_MODE==MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
     const auto typeName = "molecule-id";
 #else
     const auto typeName = "site-id";
 #endif
     output << std::setw(_valueOffset) << std::left << "velocity"
            << ":  " << autopas::utils::ArrayUtils::to_string(_velocity) << std::endl;
-    output << std::setw(_valueOffset) << std::left << typeName
-           << ":  " << _typeId << std::endl;
+    output << std::setw(_valueOffset) << std::left << typeName << ":  " << _typeId << std::endl;
     return output.str();
   };
 
@@ -129,8 +127,8 @@ class Object {
    */
   std::array<double, 3> _velocity;
   /**
-   * Type of every particle in the object. For single-site simulations, this refers directly to the siteId. For multi-site
-   * simulations, this refers to the molId.
+   * Type of every particle in the object. For single-site simulations, this refers directly to the siteId. For
+   * multi-site simulations, this refers to the molId.
    */
   unsigned long _typeId;
   /**

@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include "autopas/particles/ParticleBase.h"
-#include "autopas/particles/OwnershipState.h"
 #include "MoleculeLJ.h"
+#include "autopas/particles/OwnershipState.h"
+#include "autopas/particles/ParticleBase.h"
 
 namespace mdLib {
 /**
@@ -35,7 +35,7 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
    * @param id Id of the particle.
    */
   MultisiteMoleculeLJ(std::array<double, 3> r, std::array<double, 3> v, std::array<double, 4> q,
-                          std::array<double, 3> angularVel, unsigned long moleculeId, unsigned long typeId = 0)
+                      std::array<double, 3> angularVel, unsigned long moleculeId, unsigned long typeId = 0)
       : mdLib::MoleculeLJ(r, v, moleculeId, typeId), _q(q), _angularVel(angularVel), _torque({0., 0., 0.}) {}
 
   /**
@@ -245,25 +245,25 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
    * Get the quaternion defining rotation
    * @return quaternion defining rotation
    */
-  [[nodiscard]] const std::array<double, 4> &getQ() const  { return _q; }
+  [[nodiscard]] const std::array<double, 4> &getQ() const { return _q; }
 
   /**
    * Set the quaternion defining rotation
    * @param q quaternion defining rotation
    */
-  void setQ(const std::array<double, 4> &q)  { _q = q; }
+  void setQ(const std::array<double, 4> &q) { _q = q; }
 
   /**
    * Get the angular velocity
    * @return angular velocity
    */
-  [[nodiscard]] const std::array<double, 3> &getAngularVel() const  { return _angularVel; }
+  [[nodiscard]] const std::array<double, 3> &getAngularVel() const { return _angularVel; }
 
   /**
    * Set the angular velocity
    * @param angularVelocity
    */
-  void setAngularVel(const std::array<double, 3> &angularVel)  { _angularVel = angularVel; }
+  void setAngularVel(const std::array<double, 3> &angularVel) { _angularVel = angularVel; }
 
   /**
    * Adds given angular velocity to the particle's angular velocity.

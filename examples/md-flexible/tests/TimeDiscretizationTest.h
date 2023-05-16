@@ -12,10 +12,10 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPas.h"
-#include "molecularDynamicsLibrary/MultisiteMoleculeLJ.h"
-#include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopasTools/generators/GridGenerator.h"
+#include "molecularDynamicsLibrary/MultisiteMoleculeLJ.h"
+#include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 #include "src/TimeDiscretization.h"
 #include "src/configuration/MDFlexConfig.h"
 
@@ -32,7 +32,7 @@ void fillWithParticlesAndInit(autopas::AutoPas<ParticleType> &autopasContainer);
  */
 void initPPL(ParticlePropertiesLibrary<> &PPL);
 
-}
+}  // namespace
 
 class TimeDiscretizationTest : public AutoPasTestBase {
  public:

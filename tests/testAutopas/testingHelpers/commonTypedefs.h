@@ -7,9 +7,9 @@
 #pragma once
 
 #include "autopas/cells/FullParticleCell.h"
-#include "molecularDynamicsLibrary/MoleculeLJ.h"
 #include "autopas/particles/Particle.h"
 #include "mocks/MockFunctor.h"
+#include "molecularDynamicsLibrary/MoleculeLJ.h"
 
 // a place for usings that are commonly used in tests
 

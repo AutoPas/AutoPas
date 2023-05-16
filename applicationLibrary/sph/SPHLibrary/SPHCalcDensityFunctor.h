@@ -128,7 +128,8 @@ class SPHCalcDensityFunctor : public autopas::Functor<Particle, SPHCalcDensityFu
   /**
    * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType>, SoAView<SoAArraysType>, bool)
    */
-  void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, bool newton3) override {
+  void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
+                      bool newton3) override {
     if (soa1.getNumberOfParticles() == 0 || soa2.getNumberOfParticles() == 0) return;
 
     double *const __restrict xptr1 = soa1.template begin<Particle::AttributeNames::posX>();

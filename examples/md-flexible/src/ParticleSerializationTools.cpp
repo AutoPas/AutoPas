@@ -12,7 +12,7 @@ namespace {
 /**
  * Stores the AttributeNames of the attributes of ParticleType which have to be communicated using MPI.
  */
-#if MD_FLEXIBLE_MODE==MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
 constexpr std::array<typename ParticleType::AttributeNames, 25> Attributes = {
     mdLib::MultisiteMoleculeLJ::AttributeNames::id,
     mdLib::MultisiteMoleculeLJ::AttributeNames::posX,
@@ -61,7 +61,7 @@ constexpr std::array<typename ParticleType::AttributeNames, 15> Attributes = {
 /**
  * The combined size in byte of the simple attributes which need to be communicated using MPI.
  */
-#if MD_FLEXIBLE_MODE==MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
 constexpr size_t AttributesSize = 200;
 #else
 constexpr size_t AttributesSize = 120;

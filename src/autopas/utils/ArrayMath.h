@@ -225,7 +225,7 @@ template <class T, std::size_t SIZE>
  */
 template <class T>
 [[nodiscard]] constexpr std::array<T, 3> cross(const std::array<T, 3> &a, const std::array<T, 3> &b) {
-  return {a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]};
+  return {a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]};
 }
 
 /**
@@ -305,7 +305,8 @@ template <class T, std::size_t SIZE>
  * @return
  */
 template <class T, std::size_t SIZE>
-[[nodiscard]] bool isNear(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b, double relativeDifference = 1e-9) {
+[[nodiscard]] bool isNear(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b,
+                          double relativeDifference = 1e-9) {
   bool arraysAreNear = true;
   for (std::size_t i = 0; i < SIZE; ++i) {
     arraysAreNear = arraysAreNear and utils::Math::isNear(a[i], b[i], relativeDifference);
@@ -314,8 +315,8 @@ template <class T, std::size_t SIZE>
 }
 
 /**
- * Returns true if vectors of arrays are elementwise relatively near each other. Also returns false if vectors are of different
- * sizes.
+ * Returns true if vectors of arrays are elementwise relatively near each other. Also returns false if vectors are of
+ * different sizes.
  * @tparam T floating point type
  * @tparam SIZE size of the array
  * @param a input vector of arrays
@@ -324,7 +325,8 @@ template <class T, std::size_t SIZE>
  * @return
  */
 template <class T, std::size_t SIZE>
-[[nodiscard]] bool isNear(const std::vector<std::array<T,SIZE>> &a, const std::vector<std::array<T,SIZE>> &b, double relativeDifference = 1e-9) {
+[[nodiscard]] bool isNear(const std::vector<std::array<T, SIZE>> &a, const std::vector<std::array<T, SIZE>> &b,
+                          double relativeDifference = 1e-9) {
   const auto size = a.size();
   if (size != b.size()) {
     return false;

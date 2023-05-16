@@ -9,10 +9,10 @@
 #include "LJFunctorAVXTest.h"
 
 #include "autopas/cells/FullParticleCell.h"
-#include "molecularDynamicsLibrary/LJFunctor.h"
-#include "molecularDynamicsLibrary/LJFunctorAVX.h"
 #include "autopas/particles/Particle.h"
 #include "autopasTools/generators/RandomGenerator.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
+#include "molecularDynamicsLibrary/LJFunctorAVX.h"
 
 template <class SoAType>
 bool LJFunctorAVXTest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::SoA<SoAType> &soa2) {
@@ -257,8 +257,7 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDe
   constexpr bool shifting = true;
   constexpr bool mixing = false;
   constexpr bool calculateGlobals = true;
-  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorNoAVX(
-      _cutoff);
+  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorNoAVX(_cutoff);
   ljFunctorNoAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
   mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorAVX(
       _cutoff);

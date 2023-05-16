@@ -15,11 +15,11 @@
 #include "autopas/containers/octree/Octree.h"
 #include "autopas/containers/octree/OctreeDirection.h"
 #include "autopas/containers/octree/OctreeNodeInterface.h"
-#include "molecularDynamicsLibrary/LJFunctor.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/particles/Particle.h"
 #include "autopas/selectors/ContainerSelector.h"
 #include "autopas/utils/StaticCellSelector.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
 
 using ::testing::_;
 
@@ -487,7 +487,7 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
 
   // Create a functor that is able to calculate forces
   mdLib::LJFunctor<Molecule, true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both,
-                     false /*calculateGlobals*/>
+                   false /*calculateGlobals*/>
       ljFunctor{cutoff};
   ljFunctor.setParticleProperties(_eps * 24, _sig * _sig);
 

@@ -17,7 +17,8 @@ namespace autopas {
  * operations.
  * @todo this class currently is limited to the following case:
  *  - constant cutoff radius
- * @todo: we may want the possibility of doing this faster in cases where the number of flops per kernel call is constant
+ * @todo: we may want the possibility of doing this faster in cases where the number of flops per kernel call is
+ * constant
  * @tparam Particle
  * @tparam ForceFunctorType
  */
@@ -54,7 +55,8 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle,
 
     if (distanceSquared <= _cutoffSquare) {
       _kernelCalls.fetch_add(1, std::memory_order_relaxed);
-      _kernelFlops.fetch_add(_forceFunctor.getNumFlopsPerKernelCall(i.getTypeId(), j.getTypeId(), newton3), std::memory_order_relaxed);
+      _kernelFlops.fetch_add(_forceFunctor.getNumFlopsPerKernelCall(i.getTypeId(), j.getTypeId(), newton3),
+                             std::memory_order_relaxed);
     }
   }
 
@@ -87,7 +89,8 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle,
 
         if (dr2 <= _cutoffSquare) {
           ++_kernelCalls;
-          _kernelFlops += _forceFunctor.getNumFlopsPerKernelCall(typePtr[i], typePtr[j], true); // SoAFunctorSingle always uses newton3.
+          _kernelFlops += _forceFunctor.getNumFlopsPerKernelCall(typePtr[i], typePtr[j],
+                                                                 true);  // SoAFunctorSingle always uses newton3.
         }
       }
     }

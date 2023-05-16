@@ -9,9 +9,9 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
+#include "autopas/utils/ExceptionHandler.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctorAVX.h"
-#include "autopas/utils/ExceptionHandler.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class LJFunctorTest : public AutoPasTestBase {

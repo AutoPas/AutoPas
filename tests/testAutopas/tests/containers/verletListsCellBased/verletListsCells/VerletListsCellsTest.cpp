@@ -10,10 +10,10 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCAllCellsNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCC18Traversal.h"
-#include "molecularDynamicsLibrary/LJFunctor.h"
 #include "autopas/particles/Particle.h"
 #include "autopasTools/generators/RandomGenerator.h"
 #include "mocks/MockFunctor.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
 using ::testing::_;

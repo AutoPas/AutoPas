@@ -55,7 +55,7 @@ TEST_P(ContainerSelectorTestFromTo, testContainerConversion) {
   // fill with problematic particles
   {
     auto container = containerSelector.getCurrentContainer();
-    auto getPossible1DPositions = [&](double min, double max) -> auto {
+    auto getPossible1DPositions = [&](double min, double max) -> auto{
       return std::array<double, 6>{min - cutoff - verletSkinPerTimestep * verletRebuildFrequency,
                                    min - cutoff,
                                    min,

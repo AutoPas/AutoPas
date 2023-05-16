@@ -14,8 +14,8 @@
 #include <vector>
 
 #include "MDFlexParser.h"
-#include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/ArrayUtils.h"
+#include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/isSmartPointer.h"
 #include "src/ParticleSerializationTools.h"
 #include "src/Thermostat.h"
@@ -135,7 +135,7 @@ void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, 
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
   auto forces = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
 
-#if MD_FLEXIBLE_MODE==MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
   findWord(inputStream, "quaternions");
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
   auto quaternions = readPayload<std::array<double, 4>, 4>(inputStream, numParticles);
@@ -171,7 +171,7 @@ void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, 
     particle.setID(ids[i]);
     particle.setTypeId(typeIds[i]);
 
-#if MD_FLEXIBLE_MODE==MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
     particle.setQ(quaternions[i]);
     particle.setAngularVel(angularVelocities[i]);
     particle.setTorque(torques[i]);
@@ -220,7 +220,7 @@ std::string MDFlexConfig::to_string() const {
     os << endl;
   };
 
-#if MD_FLEXIBLE_MODE==MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
   os << "Running multi-site MD simulation.\n" << endl;
 #else
   os << "Running single-site MD simulation.\n" << endl;
@@ -300,17 +300,17 @@ std::string MDFlexConfig::to_string() const {
   for (auto [siteId, epsilon] : epsilonMap.value) {
     os << "  " << siteId << ":" << endl;
     os << "    " << setw(valueOffset - 4) << left << epsilonMap.name << ":  " << epsilon << endl;
-    os << "    " << setw(valueOffset - 4) << left << sigmaMap.name   << ":  " << sigmaMap.value.at(siteId) << endl;
-    os << "    " << setw(valueOffset - 4) << left << massMap.name    << ":  " << massMap.value.at(siteId) << endl;
+    os << "    " << setw(valueOffset - 4) << left << sigmaMap.name << ":  " << sigmaMap.value.at(siteId) << endl;
+    os << "    " << setw(valueOffset - 4) << left << massMap.name << ":  " << massMap.value.at(siteId) << endl;
   }
 
-#if MD_FLEXIBLE_MODE==MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
   os << setw(valueOffset) << left << "Molecules:" << endl;
   for (auto [molId, molToSiteId] : molToSiteIdMap) {
     os << "  " << molId << ":" << endl;
-    os << "    " << setw(valueOffset - 4) << left << moleculeToSiteIdStr     << ":  " << molToSiteId << endl;
+    os << "    " << setw(valueOffset - 4) << left << moleculeToSiteIdStr << ":  " << molToSiteId << endl;
     auto sitePosIter = molToSitePosMap.at(molId).begin();
-    os << "    " << setw(valueOffset - 4) << left << moleculeToSitePosStr    << ":  [" << *sitePosIter;
+    os << "    " << setw(valueOffset - 4) << left << moleculeToSitePosStr << ":  [" << *sitePosIter;
     sitePosIter++;
     for (; sitePosIter != molToSitePosMap.at(molId).end(); sitePosIter++) {
       os << ", " << *sitePosIter;
@@ -437,26 +437,28 @@ void MDFlexConfig::addSiteType(unsigned long siteId, double epsilon, double sigm
   }
 }
 
-void MDFlexConfig::addMolType(unsigned long molId, const std::vector<unsigned long>& siteIds, const std::vector<std::array<double, 3>>& relSitePos, std::array<double, 3> momentOfInertia) {
-#if MD_FLEXIBLE_MODE==MULTISITE
+void MDFlexConfig::addMolType(unsigned long molId, const std::vector<unsigned long> &siteIds,
+                              const std::vector<std::array<double, 3>> &relSitePos,
+                              std::array<double, 3> momentOfInertia) {
+#if MD_FLEXIBLE_MODE == MULTISITE
   // check if siteId is already existing and if there no error in input
   if (molToSiteIdMap.count(molId) == 1) {
-
     // check if type is already added
-    if (autopas::utils::ArrayMath::isEqual(molToSiteIdMap.at(molId),siteIds) and
-        autopas::utils::ArrayMath::isNear(molToSitePosMap.at(molId),relSitePos) and
-        autopas::utils::ArrayMath::isNear(momentOfInertiaMap.at(molId),momentOfInertia)) {
+    if (autopas::utils::ArrayMath::isEqual(molToSiteIdMap.at(molId), siteIds) and
+        autopas::utils::ArrayMath::isNear(molToSitePosMap.at(molId), relSitePos) and
+        autopas::utils::ArrayMath::isNear(momentOfInertiaMap.at(molId), momentOfInertia)) {
       return;
     } else {  // wrong initialization:
       throw std::runtime_error("Wrong Particle initialization: using same molId for different properties");
     }
   } else {
-    molToSiteIdMap.emplace(molId,siteIds);
-    molToSitePosMap.emplace(molId,relSitePos);
-    momentOfInertiaMap.emplace(molId,momentOfInertia);
+    molToSiteIdMap.emplace(molId, siteIds);
+    molToSitePosMap.emplace(molId, relSitePos);
+    momentOfInertiaMap.emplace(molId, momentOfInertia);
   }
 #else
-  throw std::runtime_error("MDFlexConfig::addMolType was used without support for multi-site simulations being compiled");
+  throw std::runtime_error(
+      "MDFlexConfig::addMolType was used without support for multi-site simulations being compiled");
 #endif
 }
 
@@ -472,20 +474,22 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
 
   // initialize at site level
   for (auto [siteTypeId, epsilon] : epsilonMap.value) {
-    _particlePropertiesLibrary->addSiteType(siteTypeId, epsilon, sigmaMap.value.at(siteTypeId), massMap.value.at(siteTypeId));
+    _particlePropertiesLibrary->addSiteType(siteTypeId, epsilon, sigmaMap.value.at(siteTypeId),
+                                            massMap.value.at(siteTypeId));
   }
 
   // if doing Multi-site MD simulation, also check molecule level vectors match and initialize at molecular level
-#if MD_FLEXIBLE_MODE==MULTISITE
-    // check size of molecular level vectors match
-    if (molToSiteIdMap.size() != molToSitePosMap.size()) {
-      throw std::runtime_error("Number of molecular-level properties differ!");
-    }
+#if MD_FLEXIBLE_MODE == MULTISITE
+  // check size of molecular level vectors match
+  if (molToSiteIdMap.size() != molToSitePosMap.size()) {
+    throw std::runtime_error("Number of molecular-level properties differ!");
+  }
 
-    // initialize at molecular level
-    for (auto [molTypeId, siteTypeIds] : molToSiteIdMap) {
-      _particlePropertiesLibrary->addMolType(molTypeId,siteTypeIds,molToSitePosMap.at(molTypeId), momentOfInertiaMap.at(molTypeId));
-    }
+  // initialize at molecular level
+  for (auto [molTypeId, siteTypeIds] : molToSiteIdMap) {
+    _particlePropertiesLibrary->addMolType(molTypeId, siteTypeIds, molToSitePosMap.at(molTypeId),
+                                           momentOfInertiaMap.at(molTypeId));
+  }
 #endif
 
   _particlePropertiesLibrary->calculateMixingCoefficients();

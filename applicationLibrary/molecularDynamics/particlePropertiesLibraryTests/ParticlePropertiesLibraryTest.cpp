@@ -58,8 +58,8 @@ TEST_F(ParticlePropertiesLibraryTest, SitePropertiesAddingAndGettingTest) {
  * Initializes a ParticleProperties Library and adds two sites. Then adds two molecule types, testing that the getters
  * return correct information.
  *
- * When md-flexible is compiled without support for multi-site molecules, this test checks that attempting to add multi-site molecule
- * types results in an exception being thrown.
+ * When md-flexible is compiled without support for multi-site molecules, this test checks that attempting to add
+ * multi-site molecule types results in an exception being thrown.
  *
  * @note This molecular information is not intended to be mathematically sound.
  */
@@ -68,7 +68,7 @@ TEST_F(ParticlePropertiesLibraryTest, MolPropertiesAddingAndGettingTest) {
   std::shared_ptr<ParticlePropertiesLibrary<double, unsigned int>> PPL =
       std::make_shared<ParticlePropertiesLibrary<double, unsigned int>>(cutoff);
 
-#if MD_FLEXIBLE_MODE==MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
   // add two site types
   PPL->addSiteType(0, 1., 1., 1.);
   PPL->addSiteType(1, 0.2, 0.7, 1.2);
@@ -78,8 +78,8 @@ TEST_F(ParticlePropertiesLibraryTest, MolPropertiesAddingAndGettingTest) {
 
   // Add Molecule Type 0
   const std::vector<unsigned int> siteIds0 = {0};
-  const std::vector<std::array<double,3>> sitePositions0 = {{0.,0.,0.}};
-  const std::array<double,3> MoI0 = {1., 1., 1.};
+  const std::vector<std::array<double, 3>> sitePositions0 = {{0., 0., 0.}};
+  const std::array<double, 3> MoI0 = {1., 1., 1.};
   PPL->addMolType(0, siteIds0, sitePositions0, MoI0);
 
   // Check getters
@@ -91,8 +91,8 @@ TEST_F(ParticlePropertiesLibraryTest, MolPropertiesAddingAndGettingTest) {
 
   // Add Molecule Type 1
   const std::vector<unsigned int> siteIds1 = {0, 1, 1};
-  const std::vector<std::array<double,3>> sitePositions1 = {{1.,0.,0.}, {-0.5, 0., 0.}, {0.5, 0., 0.}};
-  const std::array<double,3> MoI1 = {1., -1., 0.5};
+  const std::vector<std::array<double, 3>> sitePositions1 = {{1., 0., 0.}, {-0.5, 0., 0.}, {0.5, 0., 0.}};
+  const std::array<double, 3> MoI1 = {1., -1., 0.5};
   PPL->addMolType(1, siteIds1, sitePositions1, MoI1);
 
   // Check getters
@@ -111,14 +111,14 @@ TEST_F(ParticlePropertiesLibraryTest, MolPropertiesAddingAndGettingTest) {
   EXPECT_ANY_THROW(PPL->addMolType(5, {0}, {{0., 0., 0.}}, {1., 1., 1.}););
 
   // Try adding molecules with non-matching sizes of site type Ids and site position vectors
-  EXPECT_ANY_THROW(PPL->addMolType(2, {0}, {{0.,0.,0.}, {0.,0.,0.}}, {1., 1., 1.}););
-  EXPECT_ANY_THROW(PPL->addMolType(2, {0, 0}, {{0.,0.,0.}}, {1., 1., 1.}););
+  EXPECT_ANY_THROW(PPL->addMolType(2, {0}, {{0., 0., 0.}, {0., 0., 0.}}, {1., 1., 1.}););
+  EXPECT_ANY_THROW(PPL->addMolType(2, {0, 0}, {{0., 0., 0.}}, {1., 1., 1.}););
 
   // Try adding molecules with non-existant site Ids
-  EXPECT_ANY_THROW(PPL->addMolType(2, {2}, {{0.,0.,0.}}, {1., 1., 1.}););
+  EXPECT_ANY_THROW(PPL->addMolType(2, {2}, {{0., 0., 0.}}, {1., 1., 1.}););
 #else
   // Add Molecule Type
-  EXPECT_ANY_THROW(PPL->addMolType(0, {0}, {{0., 0., 0.}}, {1.,1.,1.}));
+  EXPECT_ANY_THROW(PPL->addMolType(0, {0}, {{0., 0., 0.}}, {1., 1., 1.}));
 #endif
 }
 
@@ -171,12 +171,13 @@ TEST_F(ParticlePropertiesLibraryTest, LennardJonesTestShiftGivesCorrectEnergyAtC
   const auto shift = shift6 / 6.;
 
   // Create two LJ Molecules that are cutoff apart
-  mdLib::MoleculeLJ molA({0.,0.,0.}, {0.,0.,0.}, 0, 0);
-  mdLib::MoleculeLJ molB({cutoff,0.,0.}, {0.,0.,0.}, 1, 0);
+  mdLib::MoleculeLJ molA({0., 0., 0.}, {0., 0., 0.}, 0, 0);
+  mdLib::MoleculeLJ molB({cutoff, 0., 0.}, {0., 0., 0.}, 1, 0);
 
   // Create LJ Functor class and use it to calculate the potential energy between the two
   mdLib::LJFunctor<mdLib::MoleculeLJ, /* shifting */ false, /*mixing*/ true, autopas::FunctorN3Modes::Both,
-                       /*globals*/ true> ljFunctor(cutoff, *PPL);
+                   /*globals*/ true>
+      ljFunctor(cutoff, *PPL);
 
   ljFunctor.initTraversal();
   ljFunctor.AoSFunctor(molA, molB, true);
@@ -186,8 +187,8 @@ TEST_F(ParticlePropertiesLibraryTest, LennardJonesTestShiftGivesCorrectEnergyAtC
 }
 
 /**
- * Tests that getting the Lennard-Jones mixing data works correctly and that the mixing rules applied in PPL are correct.
- * In addition, tests that all of the mixing data getters are consistent with each other.
+ * Tests that getting the Lennard-Jones mixing data works correctly and that the mixing rules applied in PPL are
+ * correct. In addition, tests that all of the mixing data getters are consistent with each other.
  */
 TEST_F(ParticlePropertiesLibraryTest, LennardJonesMixingTest) {
   const double cutoff = 1.1;
@@ -197,11 +198,11 @@ TEST_F(ParticlePropertiesLibraryTest, LennardJonesMixingTest) {
 
   // Add three sites
   const double epsilon0 = 0.6;
-  const double sigma0   = 1.2;
+  const double sigma0 = 1.2;
   const double epsilon1 = 0.7;
-  const double sigma1   = 1.4;
+  const double sigma1 = 1.4;
   const double epsilon2 = 1.;
-  const double sigma2   = 1.;
+  const double sigma2 = 1.;
   PPL->addSiteType(0, epsilon0, sigma0, 1.);
   PPL->addSiteType(1, epsilon1, sigma1, 1.);
   PPL->addSiteType(2, epsilon2, sigma2, 1.);
@@ -226,35 +227,35 @@ TEST_F(ParticlePropertiesLibraryTest, LennardJonesMixingTest) {
   const auto shift6_22 = PPL->calcShift6(24. * epsilon2, sigma2 * sigma2, cutoffSquared);
 
   // Compare PPL's calculated mixing coefficients against the expected values
-  EXPECT_DOUBLE_EQ(PPL->getMixing24Epsilon(0,0), 24. * epsilon0 );
-  EXPECT_DOUBLE_EQ(PPL->getMixing24Epsilon(0,1), 24. * epsilon01);
-  EXPECT_DOUBLE_EQ(PPL->getMixing24Epsilon(0,2), 24. * epsilon02);
-  EXPECT_DOUBLE_EQ(PPL->getMixing24Epsilon(1,0), 24. * epsilon01);
-  EXPECT_DOUBLE_EQ(PPL->getMixing24Epsilon(1,1), 24. * epsilon1 );
-  EXPECT_DOUBLE_EQ(PPL->getMixing24Epsilon(1,2), 24. * epsilon12);
-  EXPECT_DOUBLE_EQ(PPL->getMixing24Epsilon(2,0), 24. * epsilon02);
-  EXPECT_DOUBLE_EQ(PPL->getMixing24Epsilon(2,1), 24. * epsilon12);
-  EXPECT_DOUBLE_EQ(PPL->getMixing24Epsilon(2,2), 24. * epsilon2 );
+  EXPECT_DOUBLE_EQ(PPL->getMixing24Epsilon(0, 0), 24. * epsilon0);
+  EXPECT_DOUBLE_EQ(PPL->getMixing24Epsilon(0, 1), 24. * epsilon01);
+  EXPECT_DOUBLE_EQ(PPL->getMixing24Epsilon(0, 2), 24. * epsilon02);
+  EXPECT_DOUBLE_EQ(PPL->getMixing24Epsilon(1, 0), 24. * epsilon01);
+  EXPECT_DOUBLE_EQ(PPL->getMixing24Epsilon(1, 1), 24. * epsilon1);
+  EXPECT_DOUBLE_EQ(PPL->getMixing24Epsilon(1, 2), 24. * epsilon12);
+  EXPECT_DOUBLE_EQ(PPL->getMixing24Epsilon(2, 0), 24. * epsilon02);
+  EXPECT_DOUBLE_EQ(PPL->getMixing24Epsilon(2, 1), 24. * epsilon12);
+  EXPECT_DOUBLE_EQ(PPL->getMixing24Epsilon(2, 2), 24. * epsilon2);
 
-  EXPECT_DOUBLE_EQ(PPL->getMixingSigmaSquared(0,0), sigma0  * sigma0 );
-  EXPECT_DOUBLE_EQ(PPL->getMixingSigmaSquared(0,1), sigma01 * sigma01);
-  EXPECT_DOUBLE_EQ(PPL->getMixingSigmaSquared(0,2), sigma02 * sigma02);
-  EXPECT_DOUBLE_EQ(PPL->getMixingSigmaSquared(1,0), sigma01 * sigma01);
-  EXPECT_DOUBLE_EQ(PPL->getMixingSigmaSquared(1,1), sigma1  * sigma1 );
-  EXPECT_DOUBLE_EQ(PPL->getMixingSigmaSquared(1,2), sigma12 * sigma12);
-  EXPECT_DOUBLE_EQ(PPL->getMixingSigmaSquared(2,0), sigma02 * sigma02);
-  EXPECT_DOUBLE_EQ(PPL->getMixingSigmaSquared(2,1), sigma12 * sigma12);
-  EXPECT_DOUBLE_EQ(PPL->getMixingSigmaSquared(2,2), sigma2  * sigma2 );
+  EXPECT_DOUBLE_EQ(PPL->getMixingSigmaSquared(0, 0), sigma0 * sigma0);
+  EXPECT_DOUBLE_EQ(PPL->getMixingSigmaSquared(0, 1), sigma01 * sigma01);
+  EXPECT_DOUBLE_EQ(PPL->getMixingSigmaSquared(0, 2), sigma02 * sigma02);
+  EXPECT_DOUBLE_EQ(PPL->getMixingSigmaSquared(1, 0), sigma01 * sigma01);
+  EXPECT_DOUBLE_EQ(PPL->getMixingSigmaSquared(1, 1), sigma1 * sigma1);
+  EXPECT_DOUBLE_EQ(PPL->getMixingSigmaSquared(1, 2), sigma12 * sigma12);
+  EXPECT_DOUBLE_EQ(PPL->getMixingSigmaSquared(2, 0), sigma02 * sigma02);
+  EXPECT_DOUBLE_EQ(PPL->getMixingSigmaSquared(2, 1), sigma12 * sigma12);
+  EXPECT_DOUBLE_EQ(PPL->getMixingSigmaSquared(2, 2), sigma2 * sigma2);
 
-  EXPECT_DOUBLE_EQ(PPL->getMixingShift6(0,0), shift6_00 );
-  EXPECT_DOUBLE_EQ(PPL->getMixingShift6(0,1), shift6_01 );
-  EXPECT_DOUBLE_EQ(PPL->getMixingShift6(0,2), shift6_02 );
-  EXPECT_DOUBLE_EQ(PPL->getMixingShift6(1,0), shift6_01 );
-  EXPECT_DOUBLE_EQ(PPL->getMixingShift6(1,1), shift6_11 );
-  EXPECT_DOUBLE_EQ(PPL->getMixingShift6(1,2), shift6_12 );
-  EXPECT_DOUBLE_EQ(PPL->getMixingShift6(2,0), shift6_02 );
-  EXPECT_DOUBLE_EQ(PPL->getMixingShift6(2,1), shift6_12 );
-  EXPECT_DOUBLE_EQ(PPL->getMixingShift6(2,2), shift6_22 );
+  EXPECT_DOUBLE_EQ(PPL->getMixingShift6(0, 0), shift6_00);
+  EXPECT_DOUBLE_EQ(PPL->getMixingShift6(0, 1), shift6_01);
+  EXPECT_DOUBLE_EQ(PPL->getMixingShift6(0, 2), shift6_02);
+  EXPECT_DOUBLE_EQ(PPL->getMixingShift6(1, 0), shift6_01);
+  EXPECT_DOUBLE_EQ(PPL->getMixingShift6(1, 1), shift6_11);
+  EXPECT_DOUBLE_EQ(PPL->getMixingShift6(1, 2), shift6_12);
+  EXPECT_DOUBLE_EQ(PPL->getMixingShift6(2, 0), shift6_02);
+  EXPECT_DOUBLE_EQ(PPL->getMixingShift6(2, 1), shift6_12);
+  EXPECT_DOUBLE_EQ(PPL->getMixingShift6(2, 2), shift6_22);
 
   // Confirm that PPL's individual get sime mixing data functions match PPL's get all mixing data for a site-type pair.
   for (unsigned int i = 0; i < PPL->getNumberRegisteredSiteTypes(); i++) {

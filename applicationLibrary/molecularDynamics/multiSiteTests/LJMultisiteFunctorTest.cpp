@@ -4,25 +4,26 @@
  * @date 16/05/2022
  */
 
-#include <gtest/gtest.h>
-
 #include "LJMultisiteFunctorTest.h"
+
+#include <gtest/gtest.h>
 
 #define PARTICLES_PER_DIM 8
 #define AOS_VS_SOA_ACCURACY 1e-8
 
 void LJMultisiteFunctorTest::generatePPL(ParticlePropertiesLibrary<double, size_t> *PPL) {
-  PPL->addSiteType(0,1,1,1);
-  PPL->addSiteType(1,0.5,0.5,0.7);
-  PPL->addMolType(0,{0},{{0,0,0}},{1,1,1});
-  PPL->addMolType(1,{1,0},{{-0.05,0,0},{0.05,0,0}},{1,1,1});
-  PPL->addMolType(2,{1,0,1,0},{{-0.025,0,-0.025},{-0.025,0,0.025},{0.025,0,-0.025},{0.025,0,0.025}},{1,1,1});
+  PPL->addSiteType(0, 1, 1, 1);
+  PPL->addSiteType(1, 0.5, 0.5, 0.7);
+  PPL->addMolType(0, {0}, {{0, 0, 0}}, {1, 1, 1});
+  PPL->addMolType(1, {1, 0}, {{-0.05, 0, 0}, {0.05, 0, 0}}, {1, 1, 1});
+  PPL->addMolType(2, {1, 0, 1, 0}, {{-0.025, 0, -0.025}, {-0.025, 0, 0.025}, {0.025, 0, -0.025}, {0.025, 0, 0.025}},
+                  {1, 1, 1});
 
   PPL->calculateMixingCoefficients();
 }
 
-
-void LJMultisiteFunctorTest::generateMolecules(std::vector<mdLib::MultisiteMoleculeLJ> *molecules, std::array<double, 3> offset = {0,0,0}) {
+void LJMultisiteFunctorTest::generateMolecules(std::vector<mdLib::MultisiteMoleculeLJ> *molecules,
+                                               std::array<double, 3> offset = {0, 0, 0}) {
   molecules->resize(PARTICLES_PER_DIM * PARTICLES_PER_DIM * PARTICLES_PER_DIM);
 
   for (unsigned int i = 0; i < PARTICLES_PER_DIM; ++i) {
@@ -32,7 +33,8 @@ void LJMultisiteFunctorTest::generateMolecules(std::vector<mdLib::MultisiteMolec
         molecules->at(index).setID(index);
         molecules->at(index).setR({(double)i + offset[0], (double)j + offset[1], (double)k + offset[2]});
         // Generate quaternion deterministically but arbitrarily with fair variation
-        const std::array<double, 4> qNonNormalized{1. , (double)i + offset[0], (double)j + offset[1], (double)k + offset[2]};
+        const std::array<double, 4> qNonNormalized{1., (double)i + offset[0], (double)j + offset[1],
+                                                   (double)k + offset[2]};
         molecules->at(index).setQ(autopas::utils::ArrayMath::normalize(qNonNormalized));
         molecules->at(index).setF({0, 0, 0});
         molecules->at(index).setTorque({0, 0, 0});
@@ -44,13 +46,13 @@ void LJMultisiteFunctorTest::generateMolecules(std::vector<mdLib::MultisiteMolec
   }
 }
 
-
-template<bool newton3, bool calculateGlobals, bool applyShift>
-void LJMultisiteFunctorTest::testAoSForceCalculation(mdLib::MultisiteMoleculeLJ molA, mdLib::MultisiteMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
+template <bool newton3, bool calculateGlobals, bool applyShift>
+void LJMultisiteFunctorTest::testAoSForceCalculation(mdLib::MultisiteMoleculeLJ molA, mdLib::MultisiteMoleculeLJ molB,
+                                                     ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
   using autopas::utils::ArrayMath::add;
-  using autopas::utils::ArrayMath::sub;
-  using autopas::utils::ArrayMath::dot;
   using autopas::utils::ArrayMath::cross;
+  using autopas::utils::ArrayMath::dot;
+  using autopas::utils::ArrayMath::sub;
   using autopas::utils::quaternion::rotateVectorOfPositions;
 
   const auto molTypeA = molA.getTypeId();
@@ -60,37 +62,36 @@ void LJMultisiteFunctorTest::testAoSForceCalculation(mdLib::MultisiteMoleculeLJ 
   const auto siteTypesA = PPL.getSiteTypes(molTypeA);
   const auto siteTypesB = PPL.getSiteTypes(molTypeB);
 
-
   // determine expected forces + torques (+ globals)
-  std::array<double,3> expectedForceA{};
-  std::array<double,3> expectedTorqueA{};
-  std::array<double,3> expectedForceB{};
-  std::array<double,3> expectedTorqueB{};
+  std::array<double, 3> expectedForceA{};
+  std::array<double, 3> expectedTorqueA{};
+  std::array<double, 3> expectedForceB{};
+  std::array<double, 3> expectedTorqueB{};
 
   if constexpr (not newton3) {
-    expectedForceB = {0.,0.,0.};
-    expectedTorqueB = {0.,0.,0.};
+    expectedForceB = {0., 0., 0.};
+    expectedTorqueB = {0., 0., 0.};
   }
 
   double expectedPotentialEnergySum{0.};
   double expectedVirialSum{0.};
 
   // determine if within cutoff
-  if (dot(sub(molA.getR(),molB.getR()),sub(molA.getR(),molB.getR())) < cutoff * cutoff) {
+  if (dot(sub(molA.getR(), molB.getR()), sub(molA.getR(), molB.getR())) < cutoff * cutoff) {
     // calculate exact site positions
     const auto rotatedSitePositionsA = rotateVectorOfPositions(molA.getQ(), PPL.getSitePositions(molTypeA));
     const auto rotatedSitePositionsB = rotateVectorOfPositions(molB.getQ(), PPL.getSitePositions(molTypeB));
 
     for (size_t siteA = 0; siteA < numberOfSitesA; ++siteA) {
-      const auto exactSitePositionA = add(rotatedSitePositionsA[siteA],molA.getR());
+      const auto exactSitePositionA = add(rotatedSitePositionsA[siteA], molA.getR());
       for (size_t siteB = 0; siteB < numberOfSitesB; ++siteB) {
-        const auto exactSitePositionB = add(rotatedSitePositionsB[siteB],molB.getR());
+        const auto exactSitePositionB = add(rotatedSitePositionsB[siteB], molB.getR());
 
-        const auto displacement = sub(exactSitePositionA,exactSitePositionB);
-        const auto distanceSquared = dot(displacement,displacement);
+        const auto displacement = sub(exactSitePositionA, exactSitePositionB);
+        const auto distanceSquared = dot(displacement, displacement);
 
-        const auto sigmaSquared = PPL.getMixingData(siteTypesA[siteA],siteTypesB[siteB]).sigmaSquared;
-        const auto epsilon24 = PPL.getMixingData(siteTypesA[siteA],siteTypesB[siteB]).epsilon24;
+        const auto sigmaSquared = PPL.getMixingData(siteTypesA[siteA], siteTypesB[siteB]).sigmaSquared;
+        const auto epsilon24 = PPL.getMixingData(siteTypesA[siteA], siteTypesB[siteB]).epsilon24;
 
         const auto invDistSquared = 1. / distanceSquared;
         const auto lj2 = sigmaSquared * invDistSquared;
@@ -100,88 +101,95 @@ void LJMultisiteFunctorTest::testAoSForceCalculation(mdLib::MultisiteMoleculeLJ 
         const auto scalarMultiple = epsilon24 * (lj12 + lj12m6) * invDistSquared;
         const auto force = autopas::utils::ArrayMath::mulScalar(displacement, scalarMultiple);
 
-        expectedForceA = add(expectedForceA,force);
+        expectedForceA = add(expectedForceA, force);
         if constexpr (newton3) {
-          expectedForceB = sub(expectedForceB,force);
+          expectedForceB = sub(expectedForceB, force);
         }
 
         const auto torqueOnA = cross(rotatedSitePositionsA[siteA], force);
-        expectedTorqueA = add(expectedTorqueA,torqueOnA);
+        expectedTorqueA = add(expectedTorqueA, torqueOnA);
         if constexpr (newton3) {
           const auto torqueOnB = cross(rotatedSitePositionsB[siteB], force);
-          expectedTorqueB = sub(expectedTorqueB,torqueOnB);
+          expectedTorqueB = sub(expectedTorqueB, torqueOnB);
         }
 
         if constexpr (calculateGlobals) {
-          const auto shift6 = applyShift ? PPL.getMixingData(siteTypesA[siteA],siteTypesB[siteB]).shift6 : 0;
+          const auto shift6 = applyShift ? PPL.getMixingData(siteTypesA[siteA], siteTypesB[siteB]).shift6 : 0;
           const auto shift = shift6 / 6.;
           const auto epsilon4 = epsilon24 / 6.;
 
-          // only add half the potential energy if no newton3 is used (because we are missing half the interaction between
-          // the two molecules).
+          // only add half the potential energy if no newton3 is used (because we are missing half the interaction
+          // between the two molecules).
           const auto potentialEnergy = newton3 ? epsilon4 * lj12m6 + shift : 0.5 * (epsilon4 * lj12m6 + shift);
-          const auto virialDimensionwiseContributions = newton3 ? autopas::utils::ArrayMath::mul(displacement, force) :
-                                      autopas::utils::ArrayMath::mulScalar(autopas::utils::ArrayMath::mul(displacement, force),0.5);
+          const auto virialDimensionwiseContributions =
+              newton3 ? autopas::utils::ArrayMath::mul(displacement, force)
+                      : autopas::utils::ArrayMath::mulScalar(autopas::utils::ArrayMath::mul(displacement, force), 0.5);
 
           expectedPotentialEnergySum += potentialEnergy;
-          expectedVirialSum += virialDimensionwiseContributions[0] + virialDimensionwiseContributions[1]
-                               + virialDimensionwiseContributions[2];
+          expectedVirialSum += virialDimensionwiseContributions[0] + virialDimensionwiseContributions[1] +
+                               virialDimensionwiseContributions[2];
         }
       }
     }
   } else {
-    expectedForceA = {0,0,0};
-    expectedTorqueA = {0,0,0};
-    expectedForceB = {0,0,0};
-    expectedTorqueB = {0,0,0};
+    expectedForceA = {0, 0, 0};
+    expectedTorqueA = {0, 0, 0};
+    expectedForceB = {0, 0, 0};
+    expectedTorqueB = {0, 0, 0};
   }
 
   // calculate forces and torques using AoS functor
 
   // create functor
-  mdLib::LJMultisiteFunctor<mdLib::MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true> functor(cutoff, PPL);
+  mdLib::LJMultisiteFunctor<mdLib::MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both,
+                            calculateGlobals, true>
+      functor(cutoff, PPL);
 
   functor.initTraversal();
-  functor.AoSFunctor(molA,molB,newton3);
+  functor.AoSFunctor(molA, molB, newton3);
   functor.endTraversal(newton3);
 
   for (size_t i = 0; i < 3; ++i) {
-    EXPECT_NEAR(molA.getF()[i], expectedForceA[i], 1e-13) << "molA: Unexpected force[" << i << "] = "
-                                                                  << molA.getF()[i] << " != "
-                                                                  << expectedForceA[i] << " as expected with newton3 = "
-        << newton3 << ", calculateGlobals = " << calculateGlobals << ", and applyShift = " << applyShift << ".";
+    EXPECT_NEAR(molA.getF()[i], expectedForceA[i], 1e-13)
+        << "molA: Unexpected force[" << i << "] = " << molA.getF()[i] << " != " << expectedForceA[i]
+        << " as expected with newton3 = " << newton3 << ", calculateGlobals = " << calculateGlobals
+        << ", and applyShift = " << applyShift << ".";
   }
   for (size_t i = 0; i < 3; ++i) {
-    EXPECT_NEAR(molA.getTorque()[i], expectedTorqueA[i], 1e-13) << "molA: Unexpected force[" << i << "] = "
-                                                                  << molA.getTorque()[i] << " != "
-                                                                  << expectedTorqueA[i] << " as expected with newton3 = "
-                                                                << newton3 << ", calculateGlobals = " << calculateGlobals << ", and applyShift = " << applyShift << ".";
+    EXPECT_NEAR(molA.getTorque()[i], expectedTorqueA[i], 1e-13)
+        << "molA: Unexpected force[" << i << "] = " << molA.getTorque()[i] << " != " << expectedTorqueA[i]
+        << " as expected with newton3 = " << newton3 << ", calculateGlobals = " << calculateGlobals
+        << ", and applyShift = " << applyShift << ".";
   }
   for (size_t i = 0; i < 3; ++i) {
-    EXPECT_NEAR(molB.getF()[i], expectedForceB[i], 1e-13) << "molB: Unexpected force[" << i << "] = "
-                                                                  << molB.getF()[i] << " != "
-                                                                  << expectedForceB[i] << " as expected with newton3 = "
-                                                          << newton3 << ", calculateGlobals = " << calculateGlobals << ", and applyShift = " << applyShift << ".";
+    EXPECT_NEAR(molB.getF()[i], expectedForceB[i], 1e-13)
+        << "molB: Unexpected force[" << i << "] = " << molB.getF()[i] << " != " << expectedForceB[i]
+        << " as expected with newton3 = " << newton3 << ", calculateGlobals = " << calculateGlobals
+        << ", and applyShift = " << applyShift << ".";
   }
   for (size_t i = 0; i < 3; ++i) {
-    EXPECT_NEAR(molB.getTorque()[i], expectedTorqueB[i], 1e-13) << "molB: Unexpected force[" << i << "] = "
-                                                                        << molB.getTorque()[i] << " != "
-                                                                        << expectedTorqueB[i] << " as expected with newton3 = "
-                                                                << newton3 << ", calculateGlobals = " << calculateGlobals << ", and applyShift = " << applyShift << ".";
+    EXPECT_NEAR(molB.getTorque()[i], expectedTorqueB[i], 1e-13)
+        << "molB: Unexpected force[" << i << "] = " << molB.getTorque()[i] << " != " << expectedTorqueB[i]
+        << " as expected with newton3 = " << newton3 << ", calculateGlobals = " << calculateGlobals
+        << ", and applyShift = " << applyShift << ".";
   }
   if constexpr (calculateGlobals) {
-    EXPECT_NEAR(functor.getPotentialEnergy(), expectedPotentialEnergySum, 1e-13) << "Unexpected potential energy = "
-    << functor.getPotentialEnergy() << " != " << expectedPotentialEnergySum << " as expected with newton3 = "
-                                                                                 << newton3 << ", calculateGlobals = " << calculateGlobals << ", and applyShift = " << applyShift << ".";
+    EXPECT_NEAR(functor.getPotentialEnergy(), expectedPotentialEnergySum, 1e-13)
+        << "Unexpected potential energy = " << functor.getPotentialEnergy() << " != " << expectedPotentialEnergySum
+        << " as expected with newton3 = " << newton3 << ", calculateGlobals = " << calculateGlobals
+        << ", and applyShift = " << applyShift << ".";
 
-    EXPECT_NEAR(functor.getVirial(), expectedVirialSum, 1e-13) << "Unexpected virial = "
-                                                                << functor.getVirial() << " != "
-                                                                << expectedVirialSum << " as expected with newton3 = "
-                                                               << newton3 << ", calculateGlobals = " << calculateGlobals << ", and applyShift = " << applyShift << ".";
+    EXPECT_NEAR(functor.getVirial(), expectedVirialSum, 1e-13)
+        << "Unexpected virial = " << functor.getVirial() << " != " << expectedVirialSum
+        << " as expected with newton3 = " << newton3 << ", calculateGlobals = " << calculateGlobals
+        << ", and applyShift = " << applyShift << ".";
   }
 }
 
-void LJMultisiteFunctorTest::testSuiteAoSForceCalculation(mdLib::MultisiteMoleculeLJ molA, mdLib::MultisiteMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
+void LJMultisiteFunctorTest::testSuiteAoSForceCalculation(mdLib::MultisiteMoleculeLJ molA,
+                                                          mdLib::MultisiteMoleculeLJ molB,
+                                                          ParticlePropertiesLibrary<double, size_t> PPL,
+                                                          double cutoff) {
   // N3L Disabled, No Calculating Globals
   testAoSForceCalculation<false, false, false>(molA, molB, PPL, cutoff);
 
@@ -201,14 +209,17 @@ void LJMultisiteFunctorTest::testSuiteAoSForceCalculation(mdLib::MultisiteMolecu
   testAoSForceCalculation<true, true, true>(molA, molB, PPL, cutoff);
 }
 
-template<bool newton3, bool calculateGlobals, bool applyShift>
-void LJMultisiteFunctorTest::singleSiteSanityCheck(mdLib::MultisiteMoleculeLJ molA, mdLib::MultisiteMoleculeLJ molB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
-  using mdLib::MoleculeLJ;
+template <bool newton3, bool calculateGlobals, bool applyShift>
+void LJMultisiteFunctorTest::singleSiteSanityCheck(mdLib::MultisiteMoleculeLJ molA, mdLib::MultisiteMoleculeLJ molB,
+                                                   ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
   using mdLib::MoleculeLJ;
 
   // create functors
-  mdLib::LJMultisiteFunctor<mdLib::MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true> multiSiteFunctor(cutoff, PPL);
-  mdLib::LJFunctor<mdLib::MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true> singleSiteFunctor(cutoff, PPL);
+  mdLib::LJMultisiteFunctor<mdLib::MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both,
+                            calculateGlobals, true>
+      multiSiteFunctor(cutoff, PPL);
+  mdLib::LJFunctor<mdLib::MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true>
+      singleSiteFunctor(cutoff, PPL);
 
   // create single site versions of the molecules
   mdLib::MoleculeLJ molASimple;
@@ -242,10 +253,10 @@ void LJMultisiteFunctorTest::singleSiteSanityCheck(mdLib::MultisiteMoleculeLJ mo
   multiSiteFunctor.endTraversal(newton3);
 
   for (size_t i = 0; i < 3; ++i) {
-    EXPECT_NEAR(molA.getF()[i],molASimple.getF()[i], 1e-13);
+    EXPECT_NEAR(molA.getF()[i], molASimple.getF()[i], 1e-13);
   }
   for (size_t i = 0; i < 3; ++i) {
-    EXPECT_NEAR(molB.getF()[i],molBSimple.getF()[i], 1e-13);
+    EXPECT_NEAR(molB.getF()[i], molBSimple.getF()[i], 1e-13);
   }
 
   if constexpr (calculateGlobals) {
@@ -255,11 +266,16 @@ void LJMultisiteFunctorTest::singleSiteSanityCheck(mdLib::MultisiteMoleculeLJ mo
 }
 
 template <bool newton3, bool calculateGlobals, bool applyShift>
-void LJMultisiteFunctorTest::testSoACellAgainstAoS(std::vector<mdLib::MultisiteMoleculeLJ> molecules, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
+void LJMultisiteFunctorTest::testSoACellAgainstAoS(std::vector<mdLib::MultisiteMoleculeLJ> molecules,
+                                                   ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
   using mdLib::MultisiteMoleculeLJ;
 
-  mdLib::LJMultisiteFunctor<MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true> functorAoS(cutoff, PPL);
-  mdLib::LJMultisiteFunctor<MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true> functorSoA(cutoff, PPL);
+  mdLib::LJMultisiteFunctor<MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals,
+                            true>
+      functorAoS(cutoff, PPL);
+  mdLib::LJMultisiteFunctor<MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals,
+                            true>
+      functorSoA(cutoff, PPL);
 
   auto moleculesAoS = molecules;
   auto moleculesSoA = molecules;
@@ -270,9 +286,9 @@ void LJMultisiteFunctorTest::testSoACellAgainstAoS(std::vector<mdLib::MultisiteM
 
   // Apply AoSFunctor to molecules
   for (size_t i = 0; i < numberMolecules; ++i) {
-    for (size_t j = newton3 ? i+1 : 0; j < numberMolecules; ++j) {
+    for (size_t j = newton3 ? i + 1 : 0; j < numberMolecules; ++j) {
       if (i == j) continue;
-      functorAoS.AoSFunctor(moleculesAoS[i],moleculesAoS[j],newton3);
+      functorAoS.AoSFunctor(moleculesAoS[i], moleculesAoS[j], newton3);
     }
   }
 
@@ -305,15 +321,21 @@ void LJMultisiteFunctorTest::testSoACellAgainstAoS(std::vector<mdLib::MultisiteM
   EXPECT_EQ(moleculesAoS.size(), cellSoA.numParticles());
 
   for (size_t i = 0; i < numberMolecules; ++i) {
-    EXPECT_NEAR(moleculesAoS[i].getF()[0], cellSoA._particles[i].getF()[0], AOS_VS_SOA_ACCURACY) << "Incorrect x-force for molecule " << i << " with newton3 = " << newton3;
-    EXPECT_NEAR(moleculesAoS[i].getF()[1], cellSoA._particles[i].getF()[1], AOS_VS_SOA_ACCURACY) << "Incorrect y-force for molecule " << i << " with newton3 = " << newton3;
-    EXPECT_NEAR(moleculesAoS[i].getF()[2], cellSoA._particles[i].getF()[2], AOS_VS_SOA_ACCURACY) << "Incorrect z-force for molecule " << i << " with newton3 = " << newton3;
+    EXPECT_NEAR(moleculesAoS[i].getF()[0], cellSoA._particles[i].getF()[0], AOS_VS_SOA_ACCURACY)
+        << "Incorrect x-force for molecule " << i << " with newton3 = " << newton3;
+    EXPECT_NEAR(moleculesAoS[i].getF()[1], cellSoA._particles[i].getF()[1], AOS_VS_SOA_ACCURACY)
+        << "Incorrect y-force for molecule " << i << " with newton3 = " << newton3;
+    EXPECT_NEAR(moleculesAoS[i].getF()[2], cellSoA._particles[i].getF()[2], AOS_VS_SOA_ACCURACY)
+        << "Incorrect z-force for molecule " << i << " with newton3 = " << newton3;
   }
 
   for (size_t i = 0; i < numberMolecules; ++i) {
-    EXPECT_NEAR(moleculesAoS[i].getTorque()[0], cellSoA._particles[i].getTorque()[0], AOS_VS_SOA_ACCURACY) << "Incorrect x-torque for molecule " << i << " with newton3 = " << newton3;
-    EXPECT_NEAR(moleculesAoS[i].getTorque()[1], cellSoA._particles[i].getTorque()[1], AOS_VS_SOA_ACCURACY) << "Incorrect y-torque for molecule " << i << " with newton3 = " << newton3;
-    EXPECT_NEAR(moleculesAoS[i].getTorque()[2], cellSoA._particles[i].getTorque()[2], AOS_VS_SOA_ACCURACY) << "Incorrect z-torque for molecule " << i << " with newton3 = " << newton3;
+    EXPECT_NEAR(moleculesAoS[i].getTorque()[0], cellSoA._particles[i].getTorque()[0], AOS_VS_SOA_ACCURACY)
+        << "Incorrect x-torque for molecule " << i << " with newton3 = " << newton3;
+    EXPECT_NEAR(moleculesAoS[i].getTorque()[1], cellSoA._particles[i].getTorque()[1], AOS_VS_SOA_ACCURACY)
+        << "Incorrect y-torque for molecule " << i << " with newton3 = " << newton3;
+    EXPECT_NEAR(moleculesAoS[i].getTorque()[2], cellSoA._particles[i].getTorque()[2], AOS_VS_SOA_ACCURACY)
+        << "Incorrect z-torque for molecule " << i << " with newton3 = " << newton3;
   }
 
   if constexpr (calculateGlobals) {
@@ -330,12 +352,17 @@ void LJMultisiteFunctorTest::testSoACellAgainstAoS(std::vector<mdLib::MultisiteM
 }
 
 template <bool newton3, bool calculateGlobals, bool applyShift>
-void LJMultisiteFunctorTest::testSoACellPairAgainstAoS(std::vector<mdLib::MultisiteMoleculeLJ> moleculesA, std::vector<mdLib::MultisiteMoleculeLJ> moleculesB, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
+void LJMultisiteFunctorTest::testSoACellPairAgainstAoS(std::vector<mdLib::MultisiteMoleculeLJ> moleculesA,
+                                                       std::vector<mdLib::MultisiteMoleculeLJ> moleculesB,
+                                                       ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
   using mdLib::MultisiteMoleculeLJ;
 
-  mdLib::LJMultisiteFunctor<MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true> functorAoS(cutoff, PPL);
-  mdLib::LJMultisiteFunctor<MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true> functorSoA(cutoff, PPL);
-
+  mdLib::LJMultisiteFunctor<MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals,
+                            true>
+      functorAoS(cutoff, PPL);
+  mdLib::LJMultisiteFunctor<MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals,
+                            true>
+      functorSoA(cutoff, PPL);
 
   auto moleculesAoSA = moleculesA;
   auto moleculesSoAA = moleculesA;
@@ -351,7 +378,7 @@ void LJMultisiteFunctorTest::testSoACellPairAgainstAoS(std::vector<mdLib::Multis
   // Apply AoSFunctor to molecules
   for (size_t i = 0; i < numberMoleculesA; ++i) {
     for (size_t j = 0; j < numberMoleculesB; ++j) {
-      functorAoS.AoSFunctor(moleculesAoSA[i],moleculesAoSB[j],newton3);
+      functorAoS.AoSFunctor(moleculesAoSA[i], moleculesAoSB[j], newton3);
     }
   }
 
@@ -392,25 +419,37 @@ void LJMultisiteFunctorTest::testSoACellPairAgainstAoS(std::vector<mdLib::Multis
   EXPECT_EQ(moleculesAoSB.size(), cellSoAB.numParticles());
 
   for (size_t i = 0; i < numberMoleculesA; ++i) {
-    EXPECT_NEAR(moleculesAoSA[i].getF()[0], cellSoAA._particles[i].getF()[0], AOS_VS_SOA_ACCURACY) << "Incorrect x-force for molecule " << i << " with newton3 = " << newton3;
-    EXPECT_NEAR(moleculesAoSA[i].getF()[1], cellSoAA._particles[i].getF()[1], AOS_VS_SOA_ACCURACY) << "Incorrect y-force for molecule " << i << " with newton3 = " << newton3;
-    EXPECT_NEAR(moleculesAoSA[i].getF()[2], cellSoAA._particles[i].getF()[2], AOS_VS_SOA_ACCURACY) << "Incorrect z-force for molecule " << i << " with newton3 = " << newton3;
+    EXPECT_NEAR(moleculesAoSA[i].getF()[0], cellSoAA._particles[i].getF()[0], AOS_VS_SOA_ACCURACY)
+        << "Incorrect x-force for molecule " << i << " with newton3 = " << newton3;
+    EXPECT_NEAR(moleculesAoSA[i].getF()[1], cellSoAA._particles[i].getF()[1], AOS_VS_SOA_ACCURACY)
+        << "Incorrect y-force for molecule " << i << " with newton3 = " << newton3;
+    EXPECT_NEAR(moleculesAoSA[i].getF()[2], cellSoAA._particles[i].getF()[2], AOS_VS_SOA_ACCURACY)
+        << "Incorrect z-force for molecule " << i << " with newton3 = " << newton3;
   }
   for (size_t i = 0; i < numberMoleculesA; ++i) {
-    EXPECT_NEAR(moleculesAoSA[i].getTorque()[0], cellSoAA._particles[i].getTorque()[0], AOS_VS_SOA_ACCURACY) << "Incorrect x-torque for molecule " << i << " with newton3 = " << newton3;
-    EXPECT_NEAR(moleculesAoSA[i].getTorque()[1], cellSoAA._particles[i].getTorque()[1], AOS_VS_SOA_ACCURACY) << "Incorrect y-torque for molecule " << i << " with newton3 = " << newton3;
-    EXPECT_NEAR(moleculesAoSA[i].getTorque()[2], cellSoAA._particles[i].getTorque()[2], AOS_VS_SOA_ACCURACY) << "Incorrect z-torque for molecule " << i << " with newton3 = " << newton3;
+    EXPECT_NEAR(moleculesAoSA[i].getTorque()[0], cellSoAA._particles[i].getTorque()[0], AOS_VS_SOA_ACCURACY)
+        << "Incorrect x-torque for molecule " << i << " with newton3 = " << newton3;
+    EXPECT_NEAR(moleculesAoSA[i].getTorque()[1], cellSoAA._particles[i].getTorque()[1], AOS_VS_SOA_ACCURACY)
+        << "Incorrect y-torque for molecule " << i << " with newton3 = " << newton3;
+    EXPECT_NEAR(moleculesAoSA[i].getTorque()[2], cellSoAA._particles[i].getTorque()[2], AOS_VS_SOA_ACCURACY)
+        << "Incorrect z-torque for molecule " << i << " with newton3 = " << newton3;
   }
 
   for (size_t i = 0; i < numberMoleculesB; ++i) {
-    EXPECT_NEAR(moleculesAoSB[i].getF()[0], cellSoAB._particles[i].getF()[0], AOS_VS_SOA_ACCURACY) << "Incorrect x-force for molecule " << i << " with newton3 = " << newton3;
-    EXPECT_NEAR(moleculesAoSB[i].getF()[1], cellSoAB._particles[i].getF()[1], AOS_VS_SOA_ACCURACY) << "Incorrect y-force for molecule " << i << " with newton3 = " << newton3;
-    EXPECT_NEAR(moleculesAoSB[i].getF()[2], cellSoAB._particles[i].getF()[2], AOS_VS_SOA_ACCURACY) << "Incorrect z-force for molecule " << i << " with newton3 = " << newton3;
+    EXPECT_NEAR(moleculesAoSB[i].getF()[0], cellSoAB._particles[i].getF()[0], AOS_VS_SOA_ACCURACY)
+        << "Incorrect x-force for molecule " << i << " with newton3 = " << newton3;
+    EXPECT_NEAR(moleculesAoSB[i].getF()[1], cellSoAB._particles[i].getF()[1], AOS_VS_SOA_ACCURACY)
+        << "Incorrect y-force for molecule " << i << " with newton3 = " << newton3;
+    EXPECT_NEAR(moleculesAoSB[i].getF()[2], cellSoAB._particles[i].getF()[2], AOS_VS_SOA_ACCURACY)
+        << "Incorrect z-force for molecule " << i << " with newton3 = " << newton3;
   }
   for (size_t i = 0; i < numberMoleculesB; ++i) {
-    EXPECT_NEAR(moleculesAoSB[i].getTorque()[0], cellSoAB._particles[i].getTorque()[0], AOS_VS_SOA_ACCURACY) << "Incorrect x-torque for molecule " << i << " with newton3 = " << newton3;
-    EXPECT_NEAR(moleculesAoSB[i].getTorque()[1], cellSoAB._particles[i].getTorque()[1], AOS_VS_SOA_ACCURACY) << "Incorrect y-torque for molecule " << i << " with newton3 = " << newton3;
-    EXPECT_NEAR(moleculesAoSB[i].getTorque()[2], cellSoAB._particles[i].getTorque()[2], AOS_VS_SOA_ACCURACY) << "Incorrect z-torque for molecule " << i << " with newton3 = " << newton3;
+    EXPECT_NEAR(moleculesAoSB[i].getTorque()[0], cellSoAB._particles[i].getTorque()[0], AOS_VS_SOA_ACCURACY)
+        << "Incorrect x-torque for molecule " << i << " with newton3 = " << newton3;
+    EXPECT_NEAR(moleculesAoSB[i].getTorque()[1], cellSoAB._particles[i].getTorque()[1], AOS_VS_SOA_ACCURACY)
+        << "Incorrect y-torque for molecule " << i << " with newton3 = " << newton3;
+    EXPECT_NEAR(moleculesAoSB[i].getTorque()[2], cellSoAB._particles[i].getTorque()[2], AOS_VS_SOA_ACCURACY)
+        << "Incorrect z-torque for molecule " << i << " with newton3 = " << newton3;
   }
 
   if constexpr (calculateGlobals) {
@@ -427,11 +466,16 @@ void LJMultisiteFunctorTest::testSoACellPairAgainstAoS(std::vector<mdLib::Multis
 }
 
 template <bool newton3, bool calculateGlobals, bool applyShift>
-void LJMultisiteFunctorTest::testSoAVerletAgainstAoS(std::vector<mdLib::MultisiteMoleculeLJ> molecules, ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
+void LJMultisiteFunctorTest::testSoAVerletAgainstAoS(std::vector<mdLib::MultisiteMoleculeLJ> molecules,
+                                                     ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
   using mdLib::MultisiteMoleculeLJ;
 
-  mdLib::LJMultisiteFunctor<MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true> functorAoS(cutoff, PPL);
-  mdLib::LJMultisiteFunctor<MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true> functorSoA(cutoff, PPL);
+  mdLib::LJMultisiteFunctor<MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals,
+                            true>
+      functorAoS(cutoff, PPL);
+  mdLib::LJMultisiteFunctor<MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals,
+                            true>
+      functorSoA(cutoff, PPL);
 
   auto moleculesAoS = molecules;
   auto moleculesSoA = molecules;
@@ -442,9 +486,9 @@ void LJMultisiteFunctorTest::testSoAVerletAgainstAoS(std::vector<mdLib::Multisit
 
   // Apply AoSFunctor to molecules
   for (size_t i = 0; i < numberMolecules; ++i) {
-    for (size_t j = newton3 ? i+1 : 0; j < numberMolecules; ++j) {
+    for (size_t j = newton3 ? i + 1 : 0; j < numberMolecules; ++j) {
       if (i != j) {
-        functorAoS.AoSFunctor(moleculesAoS[i],moleculesAoS[j],newton3);
+        functorAoS.AoSFunctor(moleculesAoS[i], moleculesAoS[j], newton3);
       }
     }
   }
@@ -498,15 +542,21 @@ void LJMultisiteFunctorTest::testSoAVerletAgainstAoS(std::vector<mdLib::Multisit
   EXPECT_EQ(moleculesAoS.size(), cellSoA.numParticles());
 
   for (size_t i = 0; i < numberMolecules; ++i) {
-    EXPECT_NEAR(moleculesAoS[i].getF()[0], cellSoA._particles[i].getF()[0], AOS_VS_SOA_ACCURACY) << "Incorrect x-force for molecule " << i << " with newton3 = " << newton3;
-    EXPECT_NEAR(moleculesAoS[i].getF()[1], cellSoA._particles[i].getF()[1], AOS_VS_SOA_ACCURACY) << "Incorrect y-force for molecule " << i << " with newton3 = " << newton3;
-    EXPECT_NEAR(moleculesAoS[i].getF()[2], cellSoA._particles[i].getF()[2], AOS_VS_SOA_ACCURACY) << "Incorrect z-force for molecule " << i << " with newton3 = " << newton3;
+    EXPECT_NEAR(moleculesAoS[i].getF()[0], cellSoA._particles[i].getF()[0], AOS_VS_SOA_ACCURACY)
+        << "Incorrect x-force for molecule " << i << " with newton3 = " << newton3;
+    EXPECT_NEAR(moleculesAoS[i].getF()[1], cellSoA._particles[i].getF()[1], AOS_VS_SOA_ACCURACY)
+        << "Incorrect y-force for molecule " << i << " with newton3 = " << newton3;
+    EXPECT_NEAR(moleculesAoS[i].getF()[2], cellSoA._particles[i].getF()[2], AOS_VS_SOA_ACCURACY)
+        << "Incorrect z-force for molecule " << i << " with newton3 = " << newton3;
   }
 
   for (size_t i = 0; i < numberMolecules; ++i) {
-    EXPECT_NEAR(moleculesAoS[i].getTorque()[0], cellSoA._particles[i].getTorque()[0], AOS_VS_SOA_ACCURACY) << "Incorrect x-torque for molecule " << i << " with newton3 = " << newton3;
-    EXPECT_NEAR(moleculesAoS[i].getTorque()[1], cellSoA._particles[i].getTorque()[1], AOS_VS_SOA_ACCURACY) << "Incorrect y-torque for molecule " << i << " with newton3 = " << newton3;
-    EXPECT_NEAR(moleculesAoS[i].getTorque()[2], cellSoA._particles[i].getTorque()[2], AOS_VS_SOA_ACCURACY) << "Incorrect z-torque for molecule " << i << " with newton3 = " << newton3;
+    EXPECT_NEAR(moleculesAoS[i].getTorque()[0], cellSoA._particles[i].getTorque()[0], AOS_VS_SOA_ACCURACY)
+        << "Incorrect x-torque for molecule " << i << " with newton3 = " << newton3;
+    EXPECT_NEAR(moleculesAoS[i].getTorque()[1], cellSoA._particles[i].getTorque()[1], AOS_VS_SOA_ACCURACY)
+        << "Incorrect y-torque for molecule " << i << " with newton3 = " << newton3;
+    EXPECT_NEAR(moleculesAoS[i].getTorque()[2], cellSoA._particles[i].getTorque()[2], AOS_VS_SOA_ACCURACY)
+        << "Incorrect z-torque for molecule " << i << " with newton3 = " << newton3;
   }
 
   if constexpr (calculateGlobals) {
@@ -531,110 +581,108 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
   const double cutoff = 2.5;
 
   ParticlePropertiesLibrary PPL(cutoff);
-  PPL.addSiteType(0,1.,1.,1.);
-  PPL.addSiteType(1,0.5,0.5,0.5);
+  PPL.addSiteType(0, 1., 1., 1.);
+  PPL.addSiteType(1, 0.5, 0.5, 0.5);
 
   // Molecules to be used in the tests (explanation of choices documented when tests are run).
   // For ease of readability, each molecule has its own molType, even when duplicated.
   MultisiteMoleculeLJ mol0;
-  mol0.setR({0.,0.,0.});
+  mol0.setR({0., 0., 0.});
   mol0.setQ({0., 0., 0., 1.});
-  mol0.setF({0.,0.,0.});
-  mol0.setTorque({0.,0.,0.});
+  mol0.setF({0., 0., 0.});
+  mol0.setTorque({0., 0., 0.});
   mol0.setTypeId(0);
-  PPL.addMolType(0,{0},{{0.,0.,0.}},{1.,1.,1.});
+  PPL.addMolType(0, {0}, {{0., 0., 0.}}, {1., 1., 1.});
 
   MultisiteMoleculeLJ mol1;
-  mol1.setR({1.,0.,0.});
+  mol1.setR({1., 0., 0.});
   mol1.setQ({0., 0., 0., 1.});
-  mol1.setF({0.,0.,0.});
-  mol1.setTorque({0.,0.,0.});
+  mol1.setF({0., 0., 0.});
+  mol1.setTorque({0., 0., 0.});
   mol1.setTypeId(1);
-  PPL.addMolType(1,{0,0},{{0.,0.01,0.},{0.,-0.01,0.}},{1.,1.,1.});
+  PPL.addMolType(1, {0, 0}, {{0., 0.01, 0.}, {0., -0.01, 0.}}, {1., 1., 1.});
 
   MultisiteMoleculeLJ mol2;
-  mol2.setR({0.,1.,0.});
+  mol2.setR({0., 1., 0.});
   mol2.setQ({0., 0., 0., 1.});
-  mol2.setF({0.,0.,0.});
-  mol2.setTorque({0.,0.,0.});
+  mol2.setF({0., 0., 0.});
+  mol2.setTorque({0., 0., 0.});
   mol2.setTypeId(2);
-  PPL.addMolType(2,{0,0},{{0.,0.01,0.},{0.,-0.01,0.}},{1.,1.,1.});
+  PPL.addMolType(2, {0, 0}, {{0., 0.01, 0.}, {0., -0.01, 0.}}, {1., 1., 1.});
 
   MultisiteMoleculeLJ mol3;
-  mol3.setR({0.,0.,0.});
+  mol3.setR({0., 0., 0.});
   mol3.setQ({0., 0., 0., 1.});
-  mol3.setF({0.,0.,0.});
-  mol3.setTorque({0.,0.,0.});
+  mol3.setF({0., 0., 0.});
+  mol3.setTorque({0., 0., 0.});
   mol3.setTypeId(3);
-  PPL.addMolType(3,{0,0,0},{{-0.05,-0.05,0.},{0.,0.1,0.},{0.05,-0.05,0.}},{1.,1.,1.});
+  PPL.addMolType(3, {0, 0, 0}, {{-0.05, -0.05, 0.}, {0., 0.1, 0.}, {0.05, -0.05, 0.}}, {1., 1., 1.});
 
   MultisiteMoleculeLJ mol4;
-  mol4.setR({0.,0.,1.});
+  mol4.setR({0., 0., 1.});
   mol4.setQ({0.7071067811865475, 0.7071067811865475, 0., 0.});
-  mol4.setF({0.,0.,0.});
-  mol4.setTorque({0.,0.,0.});
+  mol4.setF({0., 0., 0.});
+  mol4.setTorque({0., 0., 0.});
   mol4.setTypeId(4);
-  PPL.addMolType(4,{0,0,0},{{-0.05,-0.05,0.},{0.,0.1,0.},{0.05,-0.05,0.}},{1.,1.,1.});
+  PPL.addMolType(4, {0, 0, 0}, {{-0.05, -0.05, 0.}, {0., 0.1, 0.}, {0.05, -0.05, 0.}}, {1., 1., 1.});
 
   MultisiteMoleculeLJ mol5;
-  mol5.setR({2.5,2.5,2.5});
+  mol5.setR({2.5, 2.5, 2.5});
   mol5.setQ({0., 0., 0., 1.});
-  mol5.setF({0.,0.,0.});
-  mol5.setTorque({0.,0.,0.});
+  mol5.setF({0., 0., 0.});
+  mol5.setTorque({0., 0., 0.});
   mol5.setTypeId(5);
-  PPL.addMolType(5,{0,0},{{0.,0.01,0.},{0.,-0.01,0.}},{1.,1.,1.});
+  PPL.addMolType(5, {0, 0}, {{0., 0.01, 0.}, {0., -0.01, 0.}}, {1., 1., 1.});
 
   MultisiteMoleculeLJ mol6;
-  mol6.setR({0.,2.55,0.});
+  mol6.setR({0., 2.55, 0.});
   mol6.setQ({0., 0., 0., 1.});
-  mol6.setF({0.,0.,0.});
-  mol6.setTorque({0.,0.,0.});
+  mol6.setF({0., 0., 0.});
+  mol6.setTorque({0., 0., 0.});
   mol6.setTypeId(6);
-  PPL.addMolType(6,{0,0},{{0.,0.1,0.},{0.,-0.1,0.}},{1.,1.,1.});
+  PPL.addMolType(6, {0, 0}, {{0., 0.1, 0.}, {0., -0.1, 0.}}, {1., 1., 1.});
 
   MultisiteMoleculeLJ mol7;
-  mol7.setR({0.,2.45,0.});
+  mol7.setR({0., 2.45, 0.});
   mol7.setQ({0., 0., 0., 1.});
-  mol7.setF({0.,0.,0.});
-  mol7.setTorque({0.,0.,0.});
+  mol7.setF({0., 0., 0.});
+  mol7.setTorque({0., 0., 0.});
   mol7.setTypeId(7);
-  PPL.addMolType(7,{0,0},{{0.,0.1,0.},{0.,-0.1,0.}},{1.,1.,1.});
+  PPL.addMolType(7, {0, 0}, {{0., 0.1, 0.}, {0., -0.1, 0.}}, {1., 1., 1.});
 
   MultisiteMoleculeLJ mol8;
-  mol8.setR({0.,0.,0.});
+  mol8.setR({0., 0., 0.});
   mol8.setQ({0., 0., 0., 1.});
-  mol8.setF({0.,0.,0.});
-  mol8.setTorque({0.,0.,0.});
+  mol8.setF({0., 0., 0.});
+  mol8.setTorque({0., 0., 0.});
   mol8.setTypeId(8);
-  PPL.addMolType(8,{1,1,0},{{-0.05,-0.05,0.},{0.,0.1,0.},{0.05,-0.05,0.}},{1.,1.,1.});
+  PPL.addMolType(8, {1, 1, 0}, {{-0.05, -0.05, 0.}, {0., 0.1, 0.}, {0.05, -0.05, 0.}}, {1., 1., 1.});
 
   PPL.calculateMixingCoefficients();
 
-
   // tests: 1 site <-> 2 site interaction
-  testSuiteAoSForceCalculation(mol0, mol1,PPL,cutoff);
+  testSuiteAoSForceCalculation(mol0, mol1, PPL, cutoff);
 
   // tests: 1 site <-> 2 site interaction, where sites are aligned such that all 3 sites are along the same line
-  testSuiteAoSForceCalculation(mol0, mol2,PPL,cutoff);
+  testSuiteAoSForceCalculation(mol0, mol2, PPL, cutoff);
 
   // tests: 2 site <-> 3 site interaction
-  testSuiteAoSForceCalculation(mol1, mol3,PPL,cutoff);
+  testSuiteAoSForceCalculation(mol1, mol3, PPL, cutoff);
 
   // tests: 3 site <-> 3 site interaction, where one has a nontrivial (needs rotating) quaternion
-  testSuiteAoSForceCalculation(mol3, mol4,PPL,cutoff);
+  testSuiteAoSForceCalculation(mol3, mol4, PPL, cutoff);
 
   // tests: 2 site <-> 2 site, where molecules are beyond cutoff
-  testSuiteAoSForceCalculation(mol1, mol5,PPL,cutoff);
+  testSuiteAoSForceCalculation(mol1, mol5, PPL, cutoff);
 
   // tests: 1 site <-> 2 site, where one site is beyond cutoff, the other within; and CoM beyond cutoff
-  testSuiteAoSForceCalculation(mol0, mol6,PPL,cutoff);
+  testSuiteAoSForceCalculation(mol0, mol6, PPL, cutoff);
 
   // tests: 1 site <-> 2 site, where one site is beyond cutoff, the other within; and CoM within cutoff
-  testSuiteAoSForceCalculation(mol0, mol7,PPL,cutoff);
+  testSuiteAoSForceCalculation(mol0, mol7, PPL, cutoff);
 
   // tests: 3 site <-> 3 site, with some different site types
-  testSuiteAoSForceCalculation(mol4, mol8,PPL,cutoff);
-
+  testSuiteAoSForceCalculation(mol4, mol8, PPL, cutoff);
 }
 
 TEST_F(LJMultisiteFunctorTest, singleSiteSanityCheck) {
@@ -643,47 +691,47 @@ TEST_F(LJMultisiteFunctorTest, singleSiteSanityCheck) {
   const double cutoff = 3.;
 
   ParticlePropertiesLibrary PPL(cutoff);
-  PPL.addSiteType(0,1.,1.,1.);
-  PPL.addSiteType(1,0.5,0.5,0.5);
+  PPL.addSiteType(0, 1., 1., 1.);
+  PPL.addSiteType(1, 0.5, 0.5, 0.5);
 
   MultisiteMoleculeLJ mol0;
-  mol0.setR({0.,0.,0.});
+  mol0.setR({0., 0., 0.});
   mol0.setQ({0., 0., 0., 1.});
-  mol0.setF({0.,0.,0.});
-  mol0.setTorque({0.,0.,0.});
+  mol0.setF({0., 0., 0.});
+  mol0.setTorque({0., 0., 0.});
   mol0.setTypeId(0);
-  PPL.addMolType(0,{0},{{0.,0.,0.}},{1.,1.,1.});
+  PPL.addMolType(0, {0}, {{0., 0., 0.}}, {1., 1., 1.});
 
   MultisiteMoleculeLJ mol1;
-  mol1.setR({0.5,0.,0.});
+  mol1.setR({0.5, 0., 0.});
   mol1.setQ({0., 0., 0., 1.});
-  mol1.setF({0.,0.,0.});
-  mol1.setTorque({0.,0.,0.});
+  mol1.setF({0., 0., 0.});
+  mol1.setTorque({0., 0., 0.});
   mol1.setTypeId(1);
-  PPL.addMolType(1,{1},{{0.,0.,0.}},{1.,1.,1.});
+  PPL.addMolType(1, {1}, {{0., 0., 0.}}, {1., 1., 1.});
 
   PPL.calculateMixingCoefficients();
 
   // N3L optimization disabled, global calculation disabled.
-  singleSiteSanityCheck<false, false, false>(mol0,mol1,PPL,cutoff);
+  singleSiteSanityCheck<false, false, false>(mol0, mol1, PPL, cutoff);
 
   // N3L optimization enabled, global calculation disabled.
-  singleSiteSanityCheck<true, false, false>(mol0,mol1,PPL,cutoff);
+  singleSiteSanityCheck<true, false, false>(mol0, mol1, PPL, cutoff);
 
   // N3L optimization disabled, global calculation enabled, apply shift disabled.
-  singleSiteSanityCheck<false, true, false>(mol0,mol1,PPL,cutoff);
+  singleSiteSanityCheck<false, true, false>(mol0, mol1, PPL, cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift disabled.
-  singleSiteSanityCheck<true, true, false>(mol0,mol1,PPL,cutoff);
+  singleSiteSanityCheck<true, true, false>(mol0, mol1, PPL, cutoff);
 
   // N3L optimization disabled, global calculation enabled, apply shift enabled.
-  singleSiteSanityCheck<false, true, true>(mol0,mol1,PPL,cutoff);
+  singleSiteSanityCheck<false, true, true>(mol0, mol1, PPL, cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift enabled.
-  singleSiteSanityCheck<true, true, true>(mol0,mol1,PPL,cutoff);
+  singleSiteSanityCheck<true, true, true>(mol0, mol1, PPL, cutoff);
 }
 
-TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACell){
+TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACell) {
   using mdLib::MultisiteMoleculeLJ;
 
   const double cutoff = 3.;
@@ -695,25 +743,25 @@ TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACell){
   generateMolecules(&molecules);
 
   // N3L optimization disabled, global calculation disabled.
-  testSoACellAgainstAoS<false, false, false>(molecules,PPL,cutoff);
+  testSoACellAgainstAoS<false, false, false>(molecules, PPL, cutoff);
 
   // N3L optimization enabled, global calculation disabled.
-  testSoACellAgainstAoS<true, false, false>(molecules,PPL,cutoff);
+  testSoACellAgainstAoS<true, false, false>(molecules, PPL, cutoff);
 
   // N3L optimization disabled, global calculation enabled, apply shift disabled.
-  testSoACellAgainstAoS<false, true, false>(molecules,PPL,cutoff);
+  testSoACellAgainstAoS<false, true, false>(molecules, PPL, cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift disabled.
-  testSoACellAgainstAoS<true, true, false>(molecules,PPL,cutoff);
+  testSoACellAgainstAoS<true, true, false>(molecules, PPL, cutoff);
 
   // N3L optimization disabled, global calculation enabled, apply shift enabled.
-  testSoACellAgainstAoS<false, true, true>(molecules,PPL,cutoff);
+  testSoACellAgainstAoS<false, true, true>(molecules, PPL, cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift enabled.
-  testSoACellAgainstAoS<true, true, true>(molecules,PPL,cutoff);
+  testSoACellAgainstAoS<true, true, true>(molecules, PPL, cutoff);
 }
 
-TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACellPair){
+TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACellPair) {
   using mdLib::MultisiteMoleculeLJ;
 
   const double cutoff = 5.;
@@ -723,29 +771,29 @@ TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACellPair){
   ParticlePropertiesLibrary<double, size_t> PPL(cutoff);
 
   generatePPL(&PPL);
-  generateMolecules(&moleculesA, {0,0,0});
-  generateMolecules(&moleculesB, {0,0,9});
+  generateMolecules(&moleculesA, {0, 0, 0});
+  generateMolecules(&moleculesB, {0, 0, 9});
 
   // N3L optimization disabled, global calculation disabled.
-  testSoACellPairAgainstAoS<false, false, false>(moleculesA, moleculesB,PPL,cutoff);
+  testSoACellPairAgainstAoS<false, false, false>(moleculesA, moleculesB, PPL, cutoff);
 
   // N3L optimization enabled, global calculation disabled.
-  testSoACellPairAgainstAoS<true, false, false>(moleculesA, moleculesB,PPL,cutoff);
+  testSoACellPairAgainstAoS<true, false, false>(moleculesA, moleculesB, PPL, cutoff);
 
   // N3L optimization disabled, global calculation enabled, apply shift disabled.
-  testSoACellPairAgainstAoS<false, true, false>(moleculesA, moleculesB,PPL,cutoff);
+  testSoACellPairAgainstAoS<false, true, false>(moleculesA, moleculesB, PPL, cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift disabled.
-  testSoACellPairAgainstAoS<true, true, false>(moleculesA, moleculesB,PPL,cutoff);
+  testSoACellPairAgainstAoS<true, true, false>(moleculesA, moleculesB, PPL, cutoff);
 
   // N3L optimization disabled, global calculation enabled, apply shift enabled.
-  testSoACellPairAgainstAoS<false, true, true>(moleculesA, moleculesB,PPL,cutoff);
+  testSoACellPairAgainstAoS<false, true, true>(moleculesA, moleculesB, PPL, cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift enabled.
-  testSoACellPairAgainstAoS<true, true, true>(moleculesA, moleculesB,PPL,cutoff);
+  testSoACellPairAgainstAoS<true, true, true>(moleculesA, moleculesB, PPL, cutoff);
 }
 
-TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoAVerlet){
+TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoAVerlet) {
   using mdLib::MultisiteMoleculeLJ;
 
   const double cutoff = 3.1;
@@ -757,20 +805,20 @@ TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoAVerlet){
   generateMolecules(&molecules);
 
   // N3L optimization disabled, global calculation disabled.
-  testSoAVerletAgainstAoS<false, false, false>(molecules,PPL,cutoff);
+  testSoAVerletAgainstAoS<false, false, false>(molecules, PPL, cutoff);
 
   // N3L optimization enabled, global calculation disabled.
-  testSoAVerletAgainstAoS<true, false, false>(molecules,PPL,cutoff);
+  testSoAVerletAgainstAoS<true, false, false>(molecules, PPL, cutoff);
 
   // N3L optimization disabled, global calculation enabled, apply shift disabled.
-  testSoAVerletAgainstAoS<false, true, false>(molecules,PPL,cutoff);
+  testSoAVerletAgainstAoS<false, true, false>(molecules, PPL, cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift disabled.
-  testSoAVerletAgainstAoS<true, true, false>(molecules,PPL,cutoff);
+  testSoAVerletAgainstAoS<true, true, false>(molecules, PPL, cutoff);
 
   // N3L optimization disabled, global calculation enabled, apply shift enabled.
-  testSoAVerletAgainstAoS<false, true, true>(molecules,PPL,cutoff);
+  testSoAVerletAgainstAoS<false, true, true>(molecules, PPL, cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift enabled.
-  testSoAVerletAgainstAoS<true, true, true>(molecules,PPL,cutoff);
+  testSoAVerletAgainstAoS<true, true, true>(molecules, PPL, cutoff);
 }

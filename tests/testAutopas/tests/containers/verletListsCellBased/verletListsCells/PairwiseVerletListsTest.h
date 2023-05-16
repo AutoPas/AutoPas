@@ -11,10 +11,10 @@
 #include "AutoPasTestBase.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
-#include "molecularDynamicsLibrary/LJFunctor.h"
 #include "autopas/particles/Particle.h"
 #include "autopasTools/generators/RandomGenerator.h"
 #include "mocks/MockFunctor.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class PairwiseVerletListsTest

@@ -23,12 +23,13 @@ extern template class autopas::AutoPas<ParticleType>;
  *
  * The multi-site force calculation works a bit differently to in RegularGridDecomposition. Here, we mirror the molecule
  * by
- * a) reflecting the unrotated rigid bodies in the dimension given by the dimension normal to the reflective boundary. (So that
- * the unrotated body is a mirror image of the unrotated mirror body)
- * b) reflecting the quaternion with qMirror so that the rotation is mirrored.
+ * a) reflecting the unrotated rigid bodies in the dimension given by the dimension normal to the reflective boundary.
+ * (So that the unrotated body is a mirror image of the unrotated mirror body) b) reflecting the quaternion with qMirror
+ * so that the rotation is mirrored.
  *
- * Part (a) involves created a new molecule type for reflections in all 3 dimensions, so is not suitable for real simulations,
- * but we use it here so that we can compare results of the actually used algorithm with a fairly different algorithm.
+ * Part (a) involves created a new molecule type for reflections in all 3 dimensions, so is not suitable for real
+ * simulations, but we use it here so that we can compare results of the actually used algorithm with a fairly different
+ * algorithm.
  */
 TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   using namespace autopas::utils::ArrayMath::literals;
@@ -68,50 +69,59 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   autoPasContainer->init();
 
   particlePropertiesLibrary->addSiteType(0, 1., sigma, 1.);
-#if MD_FLEXIBLE_MODE==MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
   // Correct Moment of Inertia is irrelevant to test, so accept that they are wrong
-  particlePropertiesLibrary->addMolType(0, {0, 0, 0},
-                                        {{0.074349607, 0.120300191, 0.}, {0.03249197, -0.137638192, 0.}, {-0.137638192, -0.03249197, 0.}}, {5.23606798, 0.76393202, 6.});
-  particlePropertiesLibrary->addMolType(1, {0, 0, 0},
-                                        {{-0.074349607, 0.120300191, 0.}, {-0.03249197, -0.137638192, 0.}, {0.137638192, -0.03249197, 0.}}, {5.23606798, 0.76393202, 6.});
-  particlePropertiesLibrary->addMolType(2, {0, 0, 0},
-                                        {{0.074349607, -0.120300191, 0.}, {0.03249197, 0.137638192, 0.}, {-0.137638192, 0.03249197, 0.}}, {5.23606798, 0.76393202, 6.});
-  particlePropertiesLibrary->addMolType(3, {0, 0, 0},
-                                        {{0.074349607, 0.120300191, -0.}, {0.03249197, -0.137638192, -0.}, {-0.137638192, -0.03249197, -0.}}, {5.23606798, 0.76393202, 6.});
+  particlePropertiesLibrary->addMolType(
+      0, {0, 0, 0}, {{0.074349607, 0.120300191, 0.}, {0.03249197, -0.137638192, 0.}, {-0.137638192, -0.03249197, 0.}},
+      {5.23606798, 0.76393202, 6.});
+  particlePropertiesLibrary->addMolType(
+      1, {0, 0, 0}, {{-0.074349607, 0.120300191, 0.}, {-0.03249197, -0.137638192, 0.}, {0.137638192, -0.03249197, 0.}},
+      {5.23606798, 0.76393202, 6.});
+  particlePropertiesLibrary->addMolType(
+      2, {0, 0, 0}, {{0.074349607, -0.120300191, 0.}, {0.03249197, 0.137638192, 0.}, {-0.137638192, 0.03249197, 0.}},
+      {5.23606798, 0.76393202, 6.});
+  particlePropertiesLibrary->addMolType(
+      3, {0, 0, 0},
+      {{0.074349607, 0.120300191, -0.}, {0.03249197, -0.137638192, -0.}, {-0.137638192, -0.03249197, -0.}},
+      {5.23606798, 0.76393202, 6.});
 #endif
   particlePropertiesLibrary->calculateMixingCoefficients();
 
   // get particle properties
   const std::array<double, 3> particlePosition = std::get<0>(GetParam());
-#if MD_FLEXIBLE_MODE==MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
   const std::array<double, 4> particleQuaternion = std::get<1>(GetParam());
 #endif
 
   const auto expectedPosition = particlePosition;
   std::array<double, 3> expectedForce{0., 0., 0.};
-#if MD_FLEXIBLE_MODE==MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
   std::array<double, 3> expectedTorque{0., 0., 0.};
 #endif
 
   // derive expected position
   auto addForceFromReflection = [&](const int dimensionOfBoundary, const bool isUpper) {
-#if MD_FLEXIBLE_MODE==MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
     // get properties of mirror particle
-    const auto mirroredPosition = [&] () {
-      const auto distanceCenterOfMassToBoundary = isUpper ? boxMax[dimensionOfBoundary] - particlePosition[dimensionOfBoundary]
-                                                          : particlePosition[dimensionOfBoundary] - boxMin[dimensionOfBoundary];
+    const auto mirroredPosition = [&]() {
+      const auto distanceCenterOfMassToBoundary =
+          isUpper ? boxMax[dimensionOfBoundary] - particlePosition[dimensionOfBoundary]
+                  : particlePosition[dimensionOfBoundary] - boxMin[dimensionOfBoundary];
       auto mirroredPositionTmp = particlePosition;
       mirroredPositionTmp[dimensionOfBoundary] = isUpper ? boxMax[dimensionOfBoundary] + distanceCenterOfMassToBoundary
                                                          : boxMin[dimensionOfBoundary] - distanceCenterOfMassToBoundary;
       return mirroredPositionTmp;
-    } ();
+    }();
     const auto mirroredQuaternion = autopas::utils::quaternion::qMirror(particleQuaternion, dimensionOfBoundary);
 
     // get rotated site positions
     const auto unrotatedUntranslatedSitePositions = particlePropertiesLibrary->getSitePositions(0);
-    const auto rotatedUntranslatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(particleQuaternion, unrotatedUntranslatedSitePositions);
-    const auto unrotatedUntranslatedMirrorSitePositions = particlePropertiesLibrary->getSitePositions(1 + dimensionOfBoundary);
-    const auto rotatedUntranslatedMirroredSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(mirroredQuaternion, unrotatedUntranslatedMirrorSitePositions);
+    const auto rotatedUntranslatedSitePositions =
+        autopas::utils::quaternion::rotateVectorOfPositions(particleQuaternion, unrotatedUntranslatedSitePositions);
+    const auto unrotatedUntranslatedMirrorSitePositions =
+        particlePropertiesLibrary->getSitePositions(1 + dimensionOfBoundary);
+    const auto rotatedUntranslatedMirroredSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
+        mirroredQuaternion, unrotatedUntranslatedMirrorSitePositions);
 
     // get expected force
     for (int siteOriginal = 0; siteOriginal < particlePropertiesLibrary->getNumSites(0); siteOriginal++) {
@@ -121,8 +131,10 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
         const auto exactMirrorSitePosition =
             autopas::utils::ArrayMath::add(mirroredPosition, rotatedUntranslatedMirroredSitePositions[siteMirror]);
 
-        const auto displacementToMirrorParticle = autopas::utils::ArrayMath::sub(exactSitePosition, exactMirrorSitePosition);
-        const auto distanceSquared = autopas::utils::ArrayMath::dot(displacementToMirrorParticle, displacementToMirrorParticle);
+        const auto displacementToMirrorParticle =
+            autopas::utils::ArrayMath::sub(exactSitePosition, exactMirrorSitePosition);
+        const auto distanceSquared =
+            autopas::utils::ArrayMath::dot(displacementToMirrorParticle, displacementToMirrorParticle);
 
         const auto inverseDistanceSquared = 1. / distanceSquared;
         const auto lj2 = sigma * sigma * inverseDistanceSquared;
@@ -130,15 +142,17 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
         const auto lj12 = lj6 * lj6;
         const auto lj12m6 = lj12 - lj6;
         const auto ljForceFactor = 24 * (lj12 + lj12m6) * inverseDistanceSquared;
-        const auto forceContribution = autopas::utils::ArrayMath::mulScalar(displacementToMirrorParticle, ljForceFactor);
-        const auto torqueContribution = autopas::utils::ArrayMath::cross(rotatedUntranslatedSitePositions[siteOriginal], forceContribution);
+        const auto forceContribution =
+            autopas::utils::ArrayMath::mulScalar(displacementToMirrorParticle, ljForceFactor);
+        const auto torqueContribution =
+            autopas::utils::ArrayMath::cross(rotatedUntranslatedSitePositions[siteOriginal], forceContribution);
         expectedForce = autopas::utils::ArrayMath::add(expectedForce, forceContribution);
         expectedTorque = autopas::utils::ArrayMath::add(expectedTorque, torqueContribution);
       }
     }
 
     // if expectedForce is attractive towards the wall, reset everything
-    if (expectedForce[dimensionOfBoundary] * (isUpper? 1 : -1) > 0) {
+    if (expectedForce[dimensionOfBoundary] * (isUpper ? 1 : -1) > 0) {
       expectedForce = {0., 0., 0.};
       expectedTorque = {0., 0., 0.};
     }
@@ -176,7 +190,7 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
     particle.setR(particlePosition);
     particle.setV({0., 0., 0.});
     particle.setF({0., 0., 0.});
-#if MD_FLEXIBLE_MODE==MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
     particle.setQ(particleQuaternion);
     particle.setAngularVel({0., 0., 0.});
     particle.setTorque({0., 0., 0.});
@@ -202,13 +216,13 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
     const auto &reflectedPosition = reflectedParticle->getR();
     const auto &reflectedVelocity = reflectedParticle->getV();
     const auto &reflectedForce = reflectedParticle->getF();
-#if MD_FLEXIBLE_MODE==MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
     const auto &reflectedTorque = reflectedParticle->getTorque();
 #endif
     for (size_t i = 0; i < 3; ++i) {
       EXPECT_NEAR(reflectedPosition[i], expectedPosition[i], 1e-13) << "Unexpected position[" << i << "]";
       EXPECT_NEAR(reflectedForce[i], expectedForce[i], 1e-13) << "Unexpected force[" << i << "]";
-#if MD_FLEXIBLE_MODE==MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
       EXPECT_NEAR(reflectedTorque[i], expectedTorque[i], 1e-13) << "Unexpected torque[" << i << "]";
 #endif
     }
@@ -236,7 +250,7 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
 INSTANTIATE_TEST_SUITE_P(
     TestSimpleReflections, ReflectiveBoundaryConditionTest,
     testing::Values(/*position*/ /*velocity*/ /*quaternion*/
-#if MD_FLEXIBLE_MODE==MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
                     std::make_tuple(std::array<double, 3>{0.5, 2.50, 2.50}, std::array<double, 4>{1., 0., 0., 0.}),
                     std::make_tuple(std::array<double, 3>{4.5, 2.50, 2.50}, std::array<double, 4>{1., 0., 0., 0.}),
 
@@ -246,15 +260,20 @@ INSTANTIATE_TEST_SUITE_P(
                     std::make_tuple(std::array<double, 3>{2.50, 2.50, 0.5}, std::array<double, 4>{1., 0., 0., 0.}),
                     std::make_tuple(std::array<double, 3>{2.50, 2.50, 4.5}, std::array<double, 4>{1., 0., 0., 0.}),
 
+                    std::make_tuple(std::array<double, 3>{0.5, 2.50, 2.50},
+                                    autopas::utils::ArrayMath::normalize(std::array<double, 4>{1., 0.5, 0.25, 0.125})),
+                    std::make_tuple(std::array<double, 3>{4.5, 2.50, 2.50},
+                                    autopas::utils::ArrayMath::normalize(std::array<double, 4>{1., 0.5, 0.25, 0.125})),
 
-                    std::make_tuple(std::array<double, 3>{0.5, 2.50, 2.50}, autopas::utils::ArrayMath::normalize(std::array<double, 4>{1., 0.5, 0.25, 0.125})),
-                    std::make_tuple(std::array<double, 3>{4.5, 2.50, 2.50}, autopas::utils::ArrayMath::normalize(std::array<double, 4>{1., 0.5, 0.25, 0.125})),
+                    std::make_tuple(std::array<double, 3>{2.50, 0.5, 2.50},
+                                    autopas::utils::ArrayMath::normalize(std::array<double, 4>{1., 0.5, 0.25, 0.125})),
+                    std::make_tuple(std::array<double, 3>{2.50, 4.5, 2.50},
+                                    autopas::utils::ArrayMath::normalize(std::array<double, 4>{1., 0.5, 0.25, 0.125})),
 
-                    std::make_tuple(std::array<double, 3>{2.50, 0.5, 2.50}, autopas::utils::ArrayMath::normalize(std::array<double, 4>{1., 0.5, 0.25, 0.125})),
-                    std::make_tuple(std::array<double, 3>{2.50, 4.5, 2.50}, autopas::utils::ArrayMath::normalize(std::array<double, 4>{1., 0.5, 0.25, 0.125})),
-
-                    std::make_tuple(std::array<double, 3>{2.50, 2.50, 0.5}, autopas::utils::ArrayMath::normalize(std::array<double, 4>{1., 0.5, 0.25, 0.125})),
-                    std::make_tuple(std::array<double, 3>{2.50, 2.50, 4.5}, autopas::utils::ArrayMath::normalize(std::array<double, 4>{1., 0.5, 0.25, 0.125})))
+                    std::make_tuple(std::array<double, 3>{2.50, 2.50, 0.5},
+                                    autopas::utils::ArrayMath::normalize(std::array<double, 4>{1., 0.5, 0.25, 0.125})),
+                    std::make_tuple(std::array<double, 3>{2.50, 2.50, 4.5},
+                                    autopas::utils::ArrayMath::normalize(std::array<double, 4>{1., 0.5, 0.25, 0.125})))
 #else
                     std::make_tuple(std::array<double, 3>{0.5, 2.50, 2.50}, std::array<double, 4>{1., 0., 0., 0.}),
                     std::make_tuple(std::array<double, 3>{4.5, 2.50, 2.50}, std::array<double, 4>{1., 0., 0., 0.}),
@@ -282,7 +301,7 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> &particlePosition,
   config.epsilonMap.value.clear();
   config.sigmaMap.value.clear();
   config.massMap.value.clear();
-#if MD_FLEXIBLE_MODE==MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
   config.molToSiteIdMap.clear();
   config.molToSitePosMap.clear();
   config.momentOfInertiaMap.clear();
@@ -319,7 +338,7 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> &particlePosition,
 
   particlePropertiesLibrary->addSiteType(0, 1., sigmas[0], 1.);
   particlePropertiesLibrary->addSiteType(1, 1., sigmas[1], 1.);
-#if MD_FLEXIBLE_MODE==MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
   particlePropertiesLibrary->addMolType(0, {0}, {{0., 0., 0.}}, {1., 1., 1.});
   particlePropertiesLibrary->addMolType(1, {1}, {{0., 0., 0.}}, {1., 1., 1.});
 #endif
@@ -341,7 +360,7 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> &particlePosition,
     particle.setID(0);
     particle.setR(particlePosition);
     particle.setF({0., 0., 0.});
-#if MD_FLEXIBLE_MODE==MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
     particle.setQ({0., 0., 0., 1.});
     particle.setTorque({0., 0., 0.});
 #endif
@@ -378,8 +397,8 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> &particlePosition,
 }
 
 /**
- * Tests that reflective boundaries are applied only to single-site particles near enough to the boundary that a repulsive
- * force is applied. For multi-site compilations, molecules consist solely of single sites.
+ * Tests that reflective boundaries are applied only to single-site particles near enough to the boundary that a
+ * repulsive force is applied. For multi-site compilations, molecules consist solely of single sites.
  *
  * Four particles are created, with two different sigmas, as follows
  * * One, with a small sigma, is placed close to the boundary and is expected to be reflected.
@@ -422,12 +441,14 @@ TEST_F(ReflectiveBoundaryConditionTest, reflectiveSingleSiteZoningTest) {
 /**
  * Places 4 molecules near a boundary:
  * * One where all sites are near enough that to experience repulsion. Expects repulsion.
- * * One where a site will be attracted to the boundary, but that the molecule overall experiences repulsion. Expects repulsion.
- * * One where a site will be repulsed from the boundary, but that the molecule overall experiences attraction. Expects no change in force on molecule.
+ * * One where a site will be attracted to the boundary, but that the molecule overall experiences repulsion. Expects
+ * repulsion.
+ * * One where a site will be repulsed from the boundary, but that the molecule overall experiences attraction. Expects
+ * no change in force on molecule.
  * * One with all sites far enough that they would all experience attraction. Expects no change in force on molecule.
  */
 TEST_F(ReflectiveBoundaryConditionTest, reflectiveMultiSiteZoningTest) {
-#if not MD_FLEXIBLE_MODE==MULTISITE
+#if not MD_FLEXIBLE_MODE == MULTISITE
   GTEST_SKIP() << "reflectiveMultiSiteZoningTest: Skipping as multi-site not compiled";
 #else
   MDFlexConfig config(0, nullptr);
@@ -479,7 +500,8 @@ TEST_F(ReflectiveBoundaryConditionTest, reflectiveMultiSiteZoningTest) {
   mdLib::MultisiteMoleculeLJ mol0({0.05, 2.5, 2.5}, {0., 0., 0.}, {1., 0., 0., 0.}, {0., 0., 0.}, 0, 0);
   autoPasContainer->addParticle(mol0);
 
-  // Molecule 1: One site experiences attraction, one site experiences repulsion, overall molecule experiences repulsion.
+  // Molecule 1: One site experiences attraction, one site experiences repulsion, overall molecule experiences
+  // repulsion.
   particlePropertiesLibrary->addMolType(1, {0, 1}, {{-0.01, 0., 0.}, {0.01, 0., 0.}}, {1., 1., 1.});
   mdLib::MultisiteMoleculeLJ mol1({0.2, 2.5, 2.5}, {0., 0., 0.}, {1., 0., 0., 0.}, {0., 0., 0.}, 1, 1);
   autoPasContainer->addParticle(mol1);
@@ -489,7 +511,8 @@ TEST_F(ReflectiveBoundaryConditionTest, reflectiveMultiSiteZoningTest) {
   mdLib::MultisiteMoleculeLJ mol2({0.22, 2.5, 2.5}, {0., 0., 0.}, {1., 0., 0., 0.}, {0., 0., 0.}, 2, 2);
   autoPasContainer->addParticle(mol2);
 
-  // Molecule 3: One site experiences attraction, one site experiences repulsion, overall molecule experiences attraction.
+  // Molecule 3: One site experiences attraction, one site experiences repulsion, overall molecule experiences
+  // attraction.
   particlePropertiesLibrary->addMolType(3, {0, 01}, {{-0.01, 0., 0.}, {0.01, 0., 0.}}, {1., 1., 1.});
   mdLib::MultisiteMoleculeLJ mol3({0.3, 2.5, 2.5}, {0., 0., 0.}, {1., 0., 0., 0.}, {0., 0., 0.}, 3, 3);
   autoPasContainer->addParticle(mol3);
@@ -514,8 +537,5 @@ TEST_F(ReflectiveBoundaryConditionTest, reflectiveMultiSiteZoningTest) {
     }
   }
 
-
 #endif
-
-
 }

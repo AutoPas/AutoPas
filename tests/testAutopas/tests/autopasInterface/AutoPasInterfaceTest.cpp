@@ -234,8 +234,9 @@ void doAssertions(autopas::AutoPas<Molecule> &autoPas, Functor *functor, unsigne
         << "Called from line: " << line;
   }
 
-  EXPECT_NEAR(functor->getPotentialEnergy(), 16128.983372449373 * numParticles / 2., 1e-5) << "wrong upot calculated" << std::endl
-                                                                                << "Called from line: " << line;
+  EXPECT_NEAR(functor->getPotentialEnergy(), 16128.983372449373 * numParticles / 2., 1e-5)
+      << "wrong upot calculated" << std::endl
+      << "Called from line: " << line;
   EXPECT_NEAR(functor->getVirial(), 195072. * numParticles / 2., 1e-5) << "wrong virial calculated" << std::endl
                                                                        << "Called from line: " << line;
 }
@@ -331,7 +332,7 @@ void testSimulationLoop(testingTuple options) {
   addParticlePair({9.99, 5., 5.});
 
   mdLib::LJFunctor<Molecule, /* shifting */ true, /* mixing */ false, autopas::FunctorN3Modes::Both,
-                     /* globals */ true>
+                   /* globals */ true>
       functor(cutoff);
   functor.setParticleProperties(24.0, 1);
   // do first simulation loop
@@ -414,7 +415,7 @@ void testHaloCalculation(testingTuple options) {
   }
 
   mdLib::LJFunctor<Molecule, /* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
-                     /*globals*/ true>
+                   /*globals*/ true>
       functor(cutoff);
   functor.setParticleProperties(24, 1);
 

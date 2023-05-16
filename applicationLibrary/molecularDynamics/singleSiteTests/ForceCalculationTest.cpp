@@ -7,8 +7,8 @@
 #include "ForceCalculationTest.h"
 
 #include "autopas/AutoPasDecl.h"
-#include "molecularDynamicsLibrary/LJFunctor.h"
 #include "autopasTools/generators/GridGenerator.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
 extern template class autopas::AutoPas<Molecule>;

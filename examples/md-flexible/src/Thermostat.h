@@ -35,21 +35,21 @@ double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibrary
 #endif
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     const auto vel = iter->getV();
-#if MD_FLEXIBLE_MODE==MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
     const auto angVel = iter->getAngularVel();
 #endif
     kineticEnergyMul2 +=
         particlePropertiesLibrary.getMolMass(iter->getTypeId()) * autopas::utils::ArrayMath::dot(vel, vel);
-#if MD_FLEXIBLE_MODE==MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
     kineticEnergyMul2 += autopas::utils::ArrayMath::dot(particlePropertiesLibrary.getMomentOfInertia(iter->getTypeId()),
-                                                            autopas::utils::ArrayMath::mul(angVel, angVel));
+                                                        autopas::utils::ArrayMath::mul(angVel, angVel));
 #endif
   }
 // md-flexible's molecules have 3 DoF for translational velocity and optionally 3 additional rotational DoF
-#if MD_FLEXIBLE_MODE==MULTISITE
-constexpr unsigned int degreesOfFreedom{6};
+#if MD_FLEXIBLE_MODE == MULTISITE
+  constexpr unsigned int degreesOfFreedom{6};
 #else
-constexpr unsigned int degreesOfFreedom{3};
+  constexpr unsigned int degreesOfFreedom{3};
 #endif
   return kineticEnergyMul2 / (autopas.getNumberOfParticles() * degreesOfFreedom);
 }
@@ -101,14 +101,14 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
     // parallel iterators
     for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
       const auto &vel = iter->getV();
-#if MD_FLEXIBLE_MODE==MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
       const auto &angVel = iter->getAngularVel();
 #endif
       kineticEnergyMul2MapThread.at(iter->getTypeId()) +=
           particlePropertiesLibrary.getMolMass(iter->getTypeId()) * dot(vel, vel);
-#if MD_FLEXIBLE_MODE==MULTISITE
-      kineticEnergyMul2MapThread.at(iter->getTypeId()) += dot(particlePropertiesLibrary.getMomentOfInertia(iter->getTypeId()),
-                                                              angVel * angVel);
+#if MD_FLEXIBLE_MODE == MULTISITE
+      kineticEnergyMul2MapThread.at(iter->getTypeId()) +=
+          dot(particlePropertiesLibrary.getMomentOfInertia(iter->getTypeId()), angVel * angVel);
 #endif
       numParticleMapThread.at(iter->getTypeId())++;
     }
@@ -124,7 +124,7 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
     }
   }
   // md-flexible's molecules have 3 DoF for translational velocity and optionally 3 additional rotational DoF
-#if MD_FLEXIBLE_MODE==MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
   constexpr unsigned int degreesOfFreedom{6};
 #else
   constexpr unsigned int degreesOfFreedom{3};
@@ -152,17 +152,17 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
 /**
  * Adds brownian motion to the given system.
  *
- * This is achieved by each degree-of-freedom for the Kinetic Energy being sampled via the normal distribution and scaled
- * appropriately, as determined by the equipartition theorem.
+ * This is achieved by each degree-of-freedom for the Kinetic Energy being sampled via the normal distribution and
+ * scaled appropriately, as determined by the equipartition theorem.
  *
- * For multi-site MD we assume that the kinetic energy of the system can be split equally into translational and rotational
- * kinetic energies.
+ * For multi-site MD we assume that the kinetic energy of the system can be split equally into translational and
+ * rotational kinetic energies.
  *
- * For translational velocity, each degree-of-freedom is sampled via the normal distribution and scaled equally, dependant
- * on the temperature and mass.
+ * For translational velocity, each degree-of-freedom is sampled via the normal distribution and scaled equally,
+ * dependant on the temperature and mass.
  *
- * For angular velocity, each degree-of-freedom is sampled via the normal distribution and scaled dependent on the temperature
- * and the corresponding component of the diagonalized Moment-Of-Inertia.
+ * For angular velocity, each degree-of-freedom is sampled via the normal distribution and scaled dependent on the
+ * temperature and the corresponding component of the diagonalized Moment-Of-Inertia.
  *
  * In all cases, we assume a Boltzmann constant of 1.
  *
@@ -178,22 +178,23 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
   using namespace autopas::utils::ArrayMath::literals;
   // Generate map(s) of molecule type Id to scaling factors
   std::map<size_t, double> translationalVelocityScale;
-#if MD_FLEXIBLE_MODE==MULTISITE
-  std::map<size_t, std::array<double,3>> rotationalVelocityScale;
+#if MD_FLEXIBLE_MODE == MULTISITE
+  std::map<size_t, std::array<double, 3>> rotationalVelocityScale;
 #endif
 
   for (int typeID = 0; typeID < particlePropertiesLibrary.getNumberRegisteredSiteTypes(); typeID++) {
-    translationalVelocityScale.emplace(typeID, std::sqrt(targetTemperature / particlePropertiesLibrary.getMolMass(typeID)));
-#if MD_FLEXIBLE_MODE==MULTISITE
+    translationalVelocityScale.emplace(typeID,
+                                       std::sqrt(targetTemperature / particlePropertiesLibrary.getMolMass(typeID)));
+#if MD_FLEXIBLE_MODE == MULTISITE
     const auto momentOfInertia = particlePropertiesLibrary.getMomentOfInertia(typeID);
-    const std::array<double, 3> scale{std::sqrt(targetTemperature / momentOfInertia[0]), std::sqrt(targetTemperature / momentOfInertia[1]),
+    const std::array<double, 3> scale{std::sqrt(targetTemperature / momentOfInertia[0]),
+                                      std::sqrt(targetTemperature / momentOfInertia[1]),
                                       std::sqrt(targetTemperature / momentOfInertia[2])};
     rotationalVelocityScale.emplace(typeID, scale);
 #endif
   }
 
-
-#if MD_FLEXIBLE_MODE==MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel default(none) shared(autopas, translationalVelocityScale, rotationalVelocityScale)
 #endif
@@ -208,10 +209,12 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
     std::default_random_engine randomEngine(42 + autopas::autopas_get_thread_num());
     std::normal_distribution<double> normalDistribution{0, 1};
     for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-      const std::array<double, 3> normal3DVecTranslational = {normalDistribution(randomEngine), normalDistribution(randomEngine), normalDistribution(randomEngine)};
+      const std::array<double, 3> normal3DVecTranslational = {
+          normalDistribution(randomEngine), normalDistribution(randomEngine), normalDistribution(randomEngine)};
       iter->addV(normal3DVecTranslational * translationalVelocityScale[iter->getTypeId()]);
-#if MD_FLEXIBLE_MODE==MULTISITE
-      const std::array<double, 3> normal3DVecRotational = {normalDistribution(randomEngine), normalDistribution(randomEngine), normalDistribution(randomEngine)};
+#if MD_FLEXIBLE_MODE == MULTISITE
+      const std::array<double, 3> normal3DVecRotational = {
+          normalDistribution(randomEngine), normalDistribution(randomEngine), normalDistribution(randomEngine)};
       iter->addAngularVel(normal3DVecRotational * rotationalVelocityScale[iter->getTypeId()]);
 #endif
     }
@@ -219,7 +222,8 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
 }
 
 /**
- * Scales velocity of particles towards a given temperature. For Multi-site simulations, angular velocity is also scaled.
+ * Scales velocity of particles towards a given temperature. For Multi-site simulations, angular velocity is also
+ * scaled.
  * @tparam AutoPasTemplate Type of AutoPas Object (no pointer)
  * @tparam ParticlePropertiesLibraryTemplate Type of ParticlePropertiesLibrary Object (no pointer)
  * @param autopas
@@ -245,8 +249,10 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
     // Else, set immediate target temperature to absoluteDeltaTemperature towards the target temperature from the
     // current temperature.
 
-    const auto immediateTargetTemperature = currentTemperature < targetTemperature ? std::min(currentTemperature + absoluteDeltaTemperature, targetTemperature) :
-                                                                                   std::max(currentTemperature - absoluteDeltaTemperature, targetTemperature);
+    const auto immediateTargetTemperature =
+        currentTemperature < targetTemperature
+            ? std::min(currentTemperature + absoluteDeltaTemperature, targetTemperature)
+            : std::max(currentTemperature - absoluteDeltaTemperature, targetTemperature);
     // Determine a scaling factor for each particle type.
     scalingMap[particleTypeID] = std::sqrt(immediateTargetTemperature / currentTemperature);
   }
@@ -257,7 +263,7 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
 #endif
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     iter->setV(iter->getV() * scalingMap[iter->getTypeId()]);
-#if MD_FLEXIBLE_MODE==MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
     iter->setAngularVel(iter->getAngularVel() * scalingMap[iter->getTypeId()]);
 #endif
   }

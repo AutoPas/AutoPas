@@ -9,10 +9,10 @@
 #include "LJFunctorSVETest.h"
 
 #include "autopas/cells/FullParticleCell.h"
-#include "molecularDynamicsLibrary/LJFunctor.h"
-#include "molecularDynamicsLibrary/LJFunctorSVE.h"
 #include "autopas/particles/Particle.h"
 #include "autopasTools/generators/RandomGenerator.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
+#include "molecularDynamicsLibrary/LJFunctorSVE.h"
 
 template <class SoAType>
 bool LJFunctorSVETest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::SoA<SoAType> &soa2) {
@@ -257,8 +257,7 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVEVerlet(bool newton3, bool doDe
   constexpr bool shifting = true;
   constexpr bool mixing = false;
   constexpr bool calculateGlobals = true;
-  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorNoSVE(
-      _cutoff);
+  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorNoSVE(_cutoff);
   ljFunctorNoSVE.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
   mdLib::LJFunctorSVE<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorSVE(
       _cutoff);

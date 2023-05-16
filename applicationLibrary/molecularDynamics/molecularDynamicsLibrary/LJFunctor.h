@@ -36,8 +36,8 @@ template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool relevantForTuning = true>
 class LJFunctor
-    : public autopas::Functor<Particle,
-                     LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
+    : public autopas::Functor<
+          Particle, LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -61,7 +61,8 @@ class LJFunctor
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit LJFunctor(double cutoff, void * /*dummy*/)
-      : autopas::Functor<Particle, LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
+      : autopas::Functor<Particle,
+                         LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
             cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
@@ -104,7 +105,9 @@ class LJFunctor
 
   bool isRelevantForTuning() final { return relevantForTuning; }
 
-  bool allowsNewton3() final { return useNewton3 == autopas::FunctorN3Modes::Newton3Only or useNewton3 == autopas::FunctorN3Modes::Both; }
+  bool allowsNewton3() final {
+    return useNewton3 == autopas::FunctorN3Modes::Newton3Only or useNewton3 == autopas::FunctorN3Modes::Both;
+  }
 
   bool allowsNonNewton3() final {
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
@@ -191,7 +194,8 @@ class LJFunctor
     // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
     const SoAFloatPrecision cutoffSquared = _cutoffSquared;
 
-    SoAFloatPrecision potentialEnergySum = 0.; // Note: this is not the potential energy, but some fixed multiple of it.
+    SoAFloatPrecision potentialEnergySum =
+        0.;  // Note: this is not the potential energy, but some fixed multiple of it.
     SoAFloatPrecision virialSumX = 0.;
     SoAFloatPrecision virialSumY = 0.;
     SoAFloatPrecision virialSumZ = 0.;
@@ -294,8 +298,8 @@ class LJFunctor
 
           // Add to the potential energy sum for each particle which is owned.
           // This results in obtaining 12 * the potential energy for the SoA.
-          SoAFloatPrecision energyFactor =
-              (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) + (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.);
+          SoAFloatPrecision energyFactor = (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
+                                           (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.);
           potentialEnergySum += potentialEnergy6 * energyFactor;
 
           virialSumX += virialx * energyFactor;
@@ -310,8 +314,8 @@ class LJFunctor
     }
     if (calculateGlobals) {
       const int threadnum = autopas::autopas_get_thread_num();
-      // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in post-processing.
-      // For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
+      // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
+      // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       const double factor = newton3 ? .5 : 1.;
       _aosThreadData[threadnum].potentialEnergySum += potentialEnergySum * factor;
       _aosThreadData[threadnum].virialSum[0] += virialSumX * factor;
@@ -323,7 +327,8 @@ class LJFunctor
   /**
    * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
    */
-  void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, const bool newton3) final {
+  void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
+                      const bool newton3) final {
     if (newton3) {
       SoAFunctorPairImpl<true>(soa1, soa2);
     } else {
@@ -463,7 +468,8 @@ class LJFunctor
           // Add to the potential energy sum for each particle which is owned.
           // This results in obtaining 12 * the potential energy for the SoA.
           const SoAFloatPrecision energyFactor =
-              (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) + (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.);
+              (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
+              (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.);
           potentialEnergySum += potentialEnergy6 * energyFactor;
           virialSumX += virialx * energyFactor;
           virialSumY += virialy * energyFactor;
@@ -476,8 +482,8 @@ class LJFunctor
     }
     if (calculateGlobals) {
       const int threadnum = autopas::autopas_get_thread_num();
-      // SoAFunctorPairImpl obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in post-processing.
-      // For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
+      // SoAFunctorPairImpl obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
+      // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       const double factor = newton3 ? .5 : 1.;
       _aosThreadData[threadnum].potentialEnergySum += potentialEnergySum * factor;
       _aosThreadData[threadnum].virialSum[0] += virialSumX * factor;
@@ -558,12 +564,13 @@ class LJFunctor
 
   /**
    * Get the number of flops used per kernel call for a given particle pair. This should count the
-   * floating point operations needed for two particles that lie within a cutoff radius, having already calculated the distance.
+   * floating point operations needed for two particles that lie within a cutoff radius, having already calculated the
+   * distance.
    * @param molAType molecule A's type id
    * @param molBType molecule B's type id
    * @param newton3 is newton3 applied.
-   * @note molAType and molBType make no difference for LJFunctor, but are kept to have a consistent interface for other functors
-   * where they may.
+   * @note molAType and molBType make no difference for LJFunctor, but are kept to have a consistent interface for other
+   * functors where they may.
    * @return the number of floating point operations
    */
   static unsigned long getNumFlopsPerKernelCall(size_t molAType, size_t molBType, bool newton3) {
@@ -621,11 +628,13 @@ class LJFunctor
   double getPotentialEnergy() {
     if (not calculateGlobals) {
       throw autopas::utils::ExceptionHandler::AutoPasException(
-          "Trying to get potential energy even though calculateGlobals is false. If you want this functor to calculate global "
+          "Trying to get potential energy even though calculateGlobals is false. If you want this functor to calculate "
+          "global "
           "values, please specify calculateGlobals to be true.");
     }
     if (not _postProcessed) {
-      throw autopas::utils::ExceptionHandler::AutoPasException("Cannot get potential energy, because endTraversal was not called.");
+      throw autopas::utils::ExceptionHandler::AutoPasException(
+          "Cannot get potential energy, because endTraversal was not called.");
     }
     return _potentialEnergySum;
   }
@@ -641,11 +650,11 @@ class LJFunctor
           "values, please specify calculateGlobals to be true.");
     }
     if (not _postProcessed) {
-      throw autopas::utils::ExceptionHandler::AutoPasException("Cannot get virial, because endTraversal was not called.");
+      throw autopas::utils::ExceptionHandler::AutoPasException(
+          "Cannot get virial, because endTraversal was not called.");
     }
     return _virialSum[0] + _virialSum[1] + _virialSum[2];
   }
-
 
  private:
   template <bool newton3>
@@ -723,7 +732,8 @@ class LJFunctor
         [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecsize> shift6s;
         if constexpr (useMixing) {
           for (size_t j = 0; j < vecsize; j++) {
-            sigmaSquareds[j] = _PPLibrary->getMixingSigmaSquared(typeptr1[indexFirst], typeptr2[neighborListPtr[joff + j]]);
+            sigmaSquareds[j] =
+                _PPLibrary->getMixingSigmaSquared(typeptr1[indexFirst], typeptr2[neighborListPtr[joff + j]]);
             epsilon24s[j] = _PPLibrary->getMixing24Epsilon(typeptr1[indexFirst], typeptr2[neighborListPtr[joff + j]]);
             if constexpr (applyShift) {
               shift6s[j] = _PPLibrary->getMixingShift6(typeptr1[indexFirst], typeptr2[neighborListPtr[joff + j]]);
@@ -793,7 +803,8 @@ class LJFunctor
             SoAFloatPrecision potentialEnergy6 = mask ? (epsilon24 * lj12m6 + shift6) : 0.;
 
             const SoAFloatPrecision energyFactor =
-                (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) + (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.);
+                (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
+                (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.);
             potentialEnergySum += potentialEnergy6 * energyFactor;
             virialSumX += virialx * energyFactor;
             virialSumY += virialy * energyFactor;
@@ -871,7 +882,8 @@ class LJFunctor
         // Add to the potential energy sum for each particle which is owned.
         // This results in obtaining 12 * the potential energy for the SoA.
         const SoAFloatPrecision energyFactor =
-            (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) + (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.);
+            (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
+            (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.);
         potentialEnergySum += potentialEnergy6 * energyFactor;
         virialSumX += virialx * energyFactor;
         virialSumY += virialy * energyFactor;
@@ -887,8 +899,8 @@ class LJFunctor
 
     if (calculateGlobals) {
       const int threadnum = autopas::autopas_get_thread_num();
-      // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in post-processing.
-      // For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
+      // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
+      // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       const double factor = newton3 ? .5 : 1.;
       _aosThreadData[threadnum].potentialEnergySum += potentialEnergySum * factor;
       _aosThreadData[threadnum].virialSum[0] += virialSumX * factor;

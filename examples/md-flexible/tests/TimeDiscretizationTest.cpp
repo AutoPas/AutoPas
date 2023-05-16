@@ -19,18 +19,19 @@ void fillWithParticlesAndInit(autopas::AutoPas<ParticleType> &autopasContainer) 
   ParticleType dummy;
   dummy.setF({0., 0., 1.});
   dummy.setV({0., 0., 1.});
-#if MD_FLEXIBLE_MODE==MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
   dummy.setTorque({1., 0., 0.});
   dummy.setAngularVel({1., 0., 0.});
   dummy.setQ({0., 0., 0., 1.});
 #endif
 
   // Use dummy to fill container
-  autopasTools::generators::GridGenerator::fillWithParticles(autopasContainer, {2, 2, 2}, dummy, {1, 1, 1}, {0., 0., 0.});
+  autopasTools::generators::GridGenerator::fillWithParticles(autopasContainer, {2, 2, 2}, dummy, {1, 1, 1},
+                                                             {0., 0., 0.});
 }
 
 void initPPL(ParticlePropertiesLibrary<> &PPL) {
-#if MD_FLEXIBLE_MODE==MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
   PPL.addSiteType(0, 1., 1., 0.5);
   PPL.addMolType(0, {0, 0}, {{-0.05, 0, 0}, {0.05, 0, 0}}, {1., 1., 1.});
 #else
@@ -38,8 +39,7 @@ void initPPL(ParticlePropertiesLibrary<> &PPL) {
 #endif
   PPL.calculateMixingCoefficients();
 }
-}
-
+}  // namespace
 
 TEST_F(TimeDiscretizationTest, testCalculateVelocities) {
   auto autoPas = std::make_shared<autopas::AutoPas<ParticleType>>();
@@ -80,7 +80,7 @@ TEST_F(TimeDiscretizationTest, testCalculatePositions) {
   fillWithParticlesAndInit(*autoPas);
   initPPL(*PPL);
 
-// Set verlet skin per timestep to something large so no error messages are displayed
+  // Set verlet skin per timestep to something large so no error messages are displayed
   autoPas->setVerletSkinPerTimestep(1.);
 
   // The reference positions are the position of the particles in the AutoPas container before
@@ -124,8 +124,9 @@ TEST_F(TimeDiscretizationTest, testCalculatePositions) {
 
   // The reference positions are the position of the particles in the AutoPas container before
   // calling calculatePositions.
-  const std::vector<std::array<double, 3>> referencePositions2 = {{0, 0, 0.105}, {1, 0, 0.105}, {0, 1, 0.105}, {1, 1, 0.105},
-                                                                  {0, 0, 1.105}, {1, 0, 1.105}, {0, 1, 1.105}, {1, 1, 1.105}};
+  const std::vector<std::array<double, 3>> referencePositions2 = {{0, 0, 0.105}, {1, 0, 0.105}, {0, 1, 0.105},
+                                                                  {1, 1, 0.105}, {0, 0, 1.105}, {1, 0, 1.105},
+                                                                  {0, 1, 1.105}, {1, 1, 1.105}};
 
   TimeDiscretization::calculatePositionsAndResetForces(*autoPas, *PPL, 0.1, {0., 0., 0.}, false);
   index = 0;
@@ -148,15 +149,15 @@ TEST_F(TimeDiscretizationTest, testCalculatePositions) {
 }
 
 TEST_F(TimeDiscretizationTest, testCalculateAngularVelocities) {
-  using autopas::utils::ArrayMath::mulScalar;
   using autopas::utils::ArrayMath::add;
-  using autopas::utils::ArrayMath::mul;
   using autopas::utils::ArrayMath::div;
+  using autopas::utils::ArrayMath::mul;
+  using autopas::utils::ArrayMath::mulScalar;
+  using autopas::utils::quaternion::convertQuaternionTo3DVec;
+  using autopas::utils::quaternion::qConjugate;
+  using autopas::utils::quaternion::qMul;
   using autopas::utils::quaternion::rotatePosition;
   using autopas::utils::quaternion::rotatePositionBackwards;
-  using autopas::utils::quaternion::qMul;
-  using autopas::utils::quaternion::qConjugate;
-  using autopas::utils::quaternion::convertQuaternionTo3DVec;
 
   auto autopasContainer = std::make_shared<autopas::AutoPas<ParticleType>>();
   auto PPL = std::make_shared<ParticlePropertiesLibrary<>>(1.0);
@@ -170,7 +171,7 @@ TEST_F(TimeDiscretizationTest, testCalculateAngularVelocities) {
 
   // Init PPL
   PPL->addSiteType(0, 1, 1, 0.5);
-#if MD_FLEXIBLE_MODE==MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
   const std::array<double, 3> momentOfInertiaM = {5.23606798, 0.76393202, 6.};
   PPL->addMolType(0, {0, 0, 0},
                   {{0.74349607, 1.20300191, 0.}, {0.3249197, -1.37638192, 0.}, {-1.37638192, -0.3249197, 0.}},
@@ -282,16 +283,16 @@ TEST_F(TimeDiscretizationTest, testCalculateAngularVelocities) {
 
 TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
   using autopas::utils::ArrayMath::add;
-  using autopas::utils::ArrayMath::sub;
-  using autopas::utils::ArrayMath::mul;
-  using autopas::utils::ArrayMath::div;
-  using autopas::utils::ArrayMath::mulScalar;
   using autopas::utils::ArrayMath::cross;
+  using autopas::utils::ArrayMath::div;
   using autopas::utils::ArrayMath::L2Norm;
+  using autopas::utils::ArrayMath::mul;
+  using autopas::utils::ArrayMath::mulScalar;
   using autopas::utils::ArrayMath::normalize;
-  using autopas::utils::quaternion::qMul;
-  using autopas::utils::quaternion::qConjugate;
+  using autopas::utils::ArrayMath::sub;
   using autopas::utils::quaternion::convertQuaternionTo3DVec;
+  using autopas::utils::quaternion::qConjugate;
+  using autopas::utils::quaternion::qMul;
   using autopas::utils::quaternion::rotateVectorOfPositions;
 
   auto autopasContainer = std::make_shared<autopas::AutoPas<ParticleType>>();
@@ -299,7 +300,7 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
 
   const double deltaT = 0.1;
 
-#if MD_FLEXIBLE_MODE==MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
 
   // Init autopas
   autopasContainer->setBoxMin({0., 0., 0.});
@@ -308,8 +309,9 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
 
   // Init PPL
   PPL->addSiteType(0, 1, 1, 0.5);
-  PPL->addMolType(0, {0, 0, 0}, {{0.74349607, 1.20300191, 0.}, {0.3249197, -1.37638192, 0.},
-                                 {-1.37638192, -0.3249197, 0.}}, {5.23606798, 0.76393202, 6.});
+  PPL->addMolType(0, {0, 0, 0},
+                  {{0.74349607, 1.20300191, 0.}, {0.3249197, -1.37638192, 0.}, {-1.37638192, -0.3249197, 0.}},
+                  {5.23606798, 0.76393202, 6.});
   // comment on seemingly random site positions + MoI:
   // this molecule looks like
   //
@@ -342,13 +344,15 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
   const auto momentOfInertiaM = PPL->getMomentOfInertia(mol.getTypeId());
 
   // (17)
-  const auto angularVelocityM0 = convertQuaternionTo3DVec(qMul(qConjugate(mol.getQ()),qMul(mol.getAngularVel(), mol.getQ())));
+  const auto angularVelocityM0 =
+      convertQuaternionTo3DVec(qMul(qConjugate(mol.getQ()), qMul(mol.getAngularVel(), mol.getQ())));
   const auto angularMomentumM0 = mul(angularVelocityM0, momentOfInertiaM);
 
-  const auto angularMomentumW0 = convertQuaternionTo3DVec(qMul(mol.getQ(),qMul(angularMomentumM0, qConjugate(mol.getQ())))); // this is used later
+  const auto angularMomentumW0 = convertQuaternionTo3DVec(
+      qMul(mol.getQ(), qMul(angularMomentumM0, qConjugate(mol.getQ()))));  // this is used later
 
   // (18)
-  const auto torqueM0 = convertQuaternionTo3DVec(qMul(qConjugate(mol.getQ()),qMul(mol.getTorque(), mol.getQ())));
+  const auto torqueM0 = convertQuaternionTo3DVec(qMul(qConjugate(mol.getQ()), qMul(mol.getTorque(), mol.getQ())));
 
   // (19)
   const auto angularVelM0 = div(angularMomentumM0, momentOfInertiaM);
@@ -360,7 +364,7 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
   const auto angularMomentumMHalf = add(angularMomentumM0, mulScalar(derivAngularMomentumM0, 0.5 * deltaT));
 
   // (22)
-  const auto derivQHalf0 = mulScalar(qMul(mol.getQ(), div(angularMomentumMHalf, momentOfInertiaM) ), 0.5);
+  const auto derivQHalf0 = mulScalar(qMul(mol.getQ(), div(angularMomentumMHalf, momentOfInertiaM)), 0.5);
 
   // (23)
   const auto qHalf0 = normalize(add(mol.getQ(), mulScalar(derivQHalf0, 0.5 * deltaT)));
@@ -372,11 +376,12 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
   auto qHalfK = qHalf0;
   auto qHalfKp1 = qHalf0;
   auto derivQHalfKp1 = derivQHalf0;
-  qHalfK[0] += 2e-13; // ensuring while loop runs at least once
+  qHalfK[0] += 2e-13;  // ensuring while loop runs at least once
   while (L2Norm(sub(qHalfKp1, qHalfK)) > 1e-13) {
     qHalfK = qHalfKp1;
-    const auto angularMomentumMHalfKp1 = convertQuaternionTo3DVec(qMul(qConjugate(qHalfK), qMul(angularMomentumWHalf, qHalfK)));
-    const auto angularVelocityHalfKp1 = div(angularMomentumMHalfKp1,momentOfInertiaM);
+    const auto angularMomentumMHalfKp1 =
+        convertQuaternionTo3DVec(qMul(qConjugate(qHalfK), qMul(angularMomentumWHalf, qHalfK)));
+    const auto angularVelocityHalfKp1 = div(angularMomentumMHalfKp1, momentOfInertiaM);
     derivQHalfKp1 = mulScalar(qMul(qHalfK, angularVelocityHalfKp1), 0.5);
     qHalfKp1 = normalize(add(mol.getQ(), mulScalar(derivQHalfKp1, 0.5 * deltaT)));
   }
@@ -386,7 +391,8 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
 
   // Obtaining angularVelocityWHalf (Not part of original algorithm but needed for implementation in md-flexible)
   const auto angularVelocityMHalf = div(angularMomentumMHalf, momentOfInertiaM);
-  const auto angularVelocityWHalfExpected = convertQuaternionTo3DVec(qMul(mol.getQ(),qMul(angularVelocityMHalf, qConjugate(mol.getQ()))));
+  const auto angularVelocityWHalfExpected =
+      convertQuaternionTo3DVec(qMul(mol.getQ(), qMul(angularVelocityMHalf, qConjugate(mol.getQ()))));
 
   // Run TimeDiscretization::calculateQuaternions
   TimeDiscretization::calculateQuaternionsAndResetTorques(*autopasContainer, *PPL, deltaT, {0, 0, 0});
@@ -468,8 +474,9 @@ TEST_F(TimeDiscretizationTest, testFastParticlesCheck) {
 
   const auto deltaT = 0.1;
   // slow particle -> no exception
-#if MD_FLEXIBLE_MODE==MULTISITE
-  autoPas->addParticle(ParticleType({0., 0., 0.}, {0.05, 0., 0.}, {0.7071067811865475, 0.7071067811865475, 0., 0.}, {0., 0., 0.}, 0));
+#if MD_FLEXIBLE_MODE == MULTISITE
+  autoPas->addParticle(
+      ParticleType({0., 0., 0.}, {0.05, 0., 0.}, {0.7071067811865475, 0.7071067811865475, 0., 0.}, {0., 0., 0.}, 0));
 #else
   autoPas->addParticle(ParticleType({0., 0., 0.}, {0.05, 0., 0.}, 0));
 #endif
@@ -484,7 +491,8 @@ TEST_F(TimeDiscretizationTest, testFastParticlesCheck) {
 
 // @todo: move tests to new class SimulationTest.cpp -> Issue #641
 // https://github.com/AutoPas/AutoPas/issues/641
-// @note: since this issue was made, these tests have been converted to templates for either Molecule or MultisiteMolecule
+// @note: since this issue was made, these tests have been converted to templates for either Molecule or
+// MultisiteMolecule
 
 // TEST_F(TimeDiscretizationTest, calculatePairwiseForces) {
 //   auto autoPas = std::make_shared<autopas::AutoPas<Molecule>>();

@@ -22,8 +22,8 @@
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/TuningStrategyOption.h"
-#include "autopas/utils/NumberSet.h"
 #include "autopas/utils/Math.h"
+#include "autopas/utils/NumberSet.h"
 #include "src/TypeDefinitions.h"
 #include "src/configuration/objects/CubeClosestPacked.h"
 #include "src/configuration/objects/CubeGauss.h"
@@ -159,8 +159,8 @@ class MDFlexConfig {
    * @param relSitePos vector of relative site positions
    * @param momentOfInertia diagonalized moment of inertia as a length 3 array of double representing diagonal elements
    */
-  void addMolType(unsigned long molId, const std::vector<unsigned long>& siteIds, const std::vector<std::array<double, 3>>& relSitePos, std::array<double, 3> momentOfInertia);
-
+  void addMolType(unsigned long molId, const std::vector<unsigned long> &siteIds,
+                  const std::vector<std::array<double, 3>> &relSitePos, std::array<double, 3> momentOfInertia);
 
   /**
    * Flushes the particles.
@@ -572,7 +572,7 @@ class MDFlexConfig {
   /**
    * molToSitePosMap
    */
-  std::map<unsigned long, std::vector<std::array<double, 3>>>molToSitePosMap{};
+  std::map<unsigned long, std::vector<std::array<double, 3>>> molToSitePosMap{};
   /**
    * momentOfInertiaMap
    */
@@ -583,8 +583,8 @@ class MDFlexConfig {
    */
   static inline const char *objectsStr{"Objects"};
   /**
-   * particleTypeStr. A md-flex mode blind string name for the particle type of the object's particles. E.g. this is siteId
-   * in a single-site simulation and molId in a multi-site simulation.
+   * particleTypeStr. A md-flex mode blind string name for the particle type of the object's particles. E.g. this is
+   * siteId in a single-site simulation and molId in a multi-site simulation.
    */
   static inline const char *particleTypeStr{"particleTypeId"};
   /**

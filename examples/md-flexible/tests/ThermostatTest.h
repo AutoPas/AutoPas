@@ -7,8 +7,8 @@
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPasDecl.h"
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
-#include "testingHelpers/commonTypedefs.h"
 #include "src/TypeDefinitions.h"
+#include "testingHelpers/commonTypedefs.h"
 
 extern template class autopas::AutoPas<ParticleType>;
 
@@ -20,9 +20,10 @@ class ThermostatTest : public AutoPasTestBase,
   ThermostatTest() : AutoPasTestBase(), _particlePropertiesLibrary(ParticlePropertiesLibrary<double, size_t>(1.)) {
     _particlePropertiesLibrary.addSiteType(0, 1., 1., 1.);
     _particlePropertiesLibrary.addSiteType(1, 1., 1., 2.);
-#if MD_FLEXIBLE_MODE==MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
     _particlePropertiesLibrary.addMolType(0, {0}, {{0., 0., 0.}}, {1., 1., 1.});
-    _particlePropertiesLibrary.addMolType(1, {0, 0, 1}, {{0., -0.05, 0.}, {0.5, 0., 0.}, {0., 0.25, 0.25}}, {1., 1., 1.});
+    _particlePropertiesLibrary.addMolType(1, {0, 0, 1}, {{0., -0.05, 0.}, {0.5, 0., 0.}, {0., 0.25, 0.25}},
+                                          {1., 1., 1.});
 #endif
     _particlePropertiesLibrary.calculateMixingCoefficients();
   }

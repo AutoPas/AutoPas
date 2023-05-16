@@ -640,8 +640,9 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
 
     switch (config.generatorOption.value) {
       case MDFlexConfig::GeneratorOption::grid: {
-        CubeGrid grid(velocity, typeID, {config.particlesPerDim.value, config.particlesPerDim.value,
-                                         config.particlesPerDim.value}, config.particleSpacing.value, bottomLeftCorner);
+        CubeGrid grid(velocity, typeID,
+                      {config.particlesPerDim.value, config.particlesPerDim.value, config.particlesPerDim.value},
+                      config.particleSpacing.value, bottomLeftCorner);
         config.cubeGridObjects.push_back(grid);
         break;
       }
@@ -661,8 +662,8 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case MDFlexConfig::GeneratorOption::sphere: {
         auto centerOfBox = config.particlesPerDim.value / 2.;
-        Sphere sphere(velocity, typeID, {(double)centerOfBox, (double)centerOfBox, (double)centerOfBox}, (int)centerOfBox,
-                      config.particleSpacing.value);
+        Sphere sphere(velocity, typeID, {(double)centerOfBox, (double)centerOfBox, (double)centerOfBox},
+                      (int)centerOfBox, config.particleSpacing.value);
         config.sphereObjects.push_back(sphere);
         break;
       }
@@ -692,7 +693,7 @@ namespace {
  * @return True iff the file exists.
  */
 bool checkFileExists(const std::string &filename) {
-  struct stat buffer{};
+  struct stat buffer {};
   return (stat(filename.c_str(), &buffer) == 0);
 }
 

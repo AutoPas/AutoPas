@@ -63,10 +63,11 @@ class MoleculeLJ : public autopas::Particle {
    * This means it shall always only take values 0.0 (=false) or 1.0 (=true).
    * The reason for this is the easier use of the value in calculations (See LJFunctor "energyFactor")
    */
-  using SoAArraysType = typename autopas::utils::SoAType<
-      MoleculeLJ *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/, double /*vx*/,
-      double /*vy*/, double /*vz*/, double /*fx*/, double /*fy*/, double /*fz*/, double /*oldFx*/,
-      double /*oldFy*/, double /*oldFz*/, size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
+  using SoAArraysType =
+      typename autopas::utils::SoAType<MoleculeLJ *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/,
+                                       double /*vx*/, double /*vy*/, double /*vz*/, double /*fx*/, double /*fy*/,
+                                       double /*fz*/, double /*oldFx*/, double /*oldFy*/, double /*oldFz*/,
+                                       size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
 
   /**
    * Non-const getter for the pointer of this object.

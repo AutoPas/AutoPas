@@ -58,8 +58,8 @@ class ParticlePropertiesLibrary {
   void addSiteType(const intType siteId, const floatType epsilon, const floatType sigma, const floatType mass);
 
   /**
-   * Adds the properties of a molecule type to the library including: position and type of all sites, as well as the diagonalized moment of
-   * inertia.
+   * Adds the properties of a molecule type to the library including: position and type of all sites, as well as the
+   * diagonalized moment of inertia.
    *
    * If md-flexible has been compiled for single-site molecules, calls to this function result in an error.
    * If the type id already exists the values will be overwritten.
@@ -69,7 +69,8 @@ class ParticlePropertiesLibrary {
    * @param relPos vector of relative positions
    * @param momentOfInertia diagonalized moment of inertia as a array of 3 floats
    */
-  void addMolType(const intType molId, const std::vector<intType> siteIds, const std::vector<std::array<floatType,3>> relPos, const std::array<floatType, 3> momentOfInertia);
+  void addMolType(const intType molId, const std::vector<intType> siteIds,
+                  const std::vector<std::array<floatType, 3>> relPos, const std::array<floatType, 3> momentOfInertia);
 
   /**
    * Calculates the actual mixing coefficients.
@@ -82,9 +83,7 @@ class ParticlePropertiesLibrary {
    * Returns the number of registered site / single-site molecule types.
    * @return Number of registered site types.
    */
-  [[nodiscard]] int getNumberRegisteredSiteTypes() const {
-    return _numRegisteredSiteTypes;
-  }
+  [[nodiscard]] int getNumberRegisteredSiteTypes() const { return _numRegisteredSiteTypes; }
 
   /**
    * Returns the number of registered multi-site molecule types.
@@ -95,13 +94,13 @@ class ParticlePropertiesLibrary {
    */
   [[nodiscard]] int getNumberRegisteredMolTypes() const {
 #if not defined(MD_FLEXIBLE_USE_MULTI_SITE)
-//    AutoPasLog(warn, "ParticlePropertiesLibrary::getNumberRegisteredMolTypes(): trying to get the number of registered multi-site"
-//        "molecule types when md-flexible has been compiled without support for multi-site molecules. Please compile with"
-//        " the CMake argument '-D MD_FLEXIBLE_USE_MULTI_SITE=ON'.");
+//    AutoPasLog(warn, "ParticlePropertiesLibrary::getNumberRegisteredMolTypes(): trying to get the number of registered
+//    multi-site"
+//        "molecule types when md-flexible has been compiled without support for multi-site molecules. Please compile
+//        with" " the CMake argument '-D MD_FLEXIBLE_USE_MULTI_SITE=ON'.");
 #endif
     return _numRegisteredMolTypes;
   }
-
 
   /**
    * Getter for the site's epsilon.
@@ -144,7 +143,7 @@ class ParticlePropertiesLibrary {
    * @return diagonalized moment of inertia, with each element of the returned array corresponding to a diagonal element
    * of the MoI matrix/tensor.
    */
-  std::array<floatType,3> getMomentOfInertia(intType i) const;
+  std::array<floatType, 3> getMomentOfInertia(intType i) const;
 
   /**
    * Get relative site positions to a multi-site molecule's center-of-mass. These site positions must be appropriately
@@ -155,7 +154,7 @@ class ParticlePropertiesLibrary {
    * @param i Type Id of a multi-site molecule.
    * @return untranslated, non-rotated site positions
    */
-  std::vector<std::array<floatType,3>> getSitePositions(intType i) const;
+  std::vector<std::array<floatType, 3>> getSitePositions(intType i) const;
 
   /**
    * Get site types of a multi-site molecule.
@@ -257,9 +256,9 @@ class ParticlePropertiesLibrary {
   // Note: this is a vector of site type Ids for the sites of a certain molecular Id
   std::vector<std::vector<intType>> _siteIds;
   // This is a vector (indexed by mol ID) of vectors of site positions (which are 3D arrays)
-  std::vector<std::vector<std::array<floatType,3>>> _relativeSitePositions;
+  std::vector<std::vector<std::array<floatType, 3>>> _relativeSitePositions;
   std::vector<floatType> _molMasses;
-  std::vector<std::array<floatType,3>> _momentOfInertias;
+  std::vector<std::array<floatType, 3>> _momentOfInertias;
   std::vector<size_t> _numSites;
   std::vector<floatType> _moleculesLargestSigma;
 
@@ -273,7 +272,8 @@ class ParticlePropertiesLibrary {
 };
 
 template <typename floatType, typename intType>
-void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, floatType epsilon, floatType sigma, floatType mass) {
+void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, floatType epsilon, floatType sigma,
+                                                                floatType mass) {
   if (_numRegisteredSiteTypes != siteID) {
     autopas::utils::ExceptionHandler::exception(
         "ParticlePropertiesLibrary::addSiteType(): trying to register a site type with id {}. Please register types "
@@ -288,11 +288,12 @@ void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, 
 
 template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::addMolType(const intType molId, const std::vector<intType> siteIds,
-                                                               const std::vector<std::array<floatType,3>> relPos,
+                                                               const std::vector<std::array<floatType, 3>> relPos,
                                                                const std::array<floatType, 3> momentOfInertia) {
   // Error handling
 #if not defined(MD_FLEXIBLE_USE_MULTI_SITE)
-//  AutoPasLog(warn, "ParticlePropertiesLibrary::addMolType(): trying to register a multi-site molecule type when md-flexible has been "
+//  AutoPasLog(warn, "ParticlePropertiesLibrary::addMolType(): trying to register a multi-site molecule type when
+//  md-flexible has been "
 //      "compiled without support for multi-site molecules. Please compile with the CMake argument '-D "
 //      "MD_FLEXIBLE_USE_MULTI_SITE=ON'.");
 #endif
@@ -302,9 +303,10 @@ void ParticlePropertiesLibrary<floatType, intType>::addMolType(const intType mol
         "consecutively, starting at id 0. Currently there are {} registered types.",
         molId, _numRegisteredSiteTypes);
   }
-  if (std::any_of(siteIds.cbegin(), siteIds.cend(), [this](intType i){return i >= this->_numRegisteredSiteTypes;})) {
+  if (std::any_of(siteIds.cbegin(), siteIds.cend(), [this](intType i) { return i >= this->_numRegisteredSiteTypes; })) {
     autopas::utils::ExceptionHandler::exception(
-        "ParticlePropertiesLibrary::addMolType(): trying to register a molecule type with an unregistered site type Id.");
+        "ParticlePropertiesLibrary::addMolType(): trying to register a molecule type with an unregistered site type "
+        "Id.");
   }
   if (siteIds.size() != relPos.size()) {
     autopas::utils::ExceptionHandler::exception(
@@ -334,7 +336,8 @@ void ParticlePropertiesLibrary<floatType, intType>::addMolType(const intType mol
 template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients() {
   if (_numRegisteredSiteTypes == 0) {
-    autopas::utils::ExceptionHandler::AutoPasException("ParticlePropertiesLibrary::calculateMixingCoefficients was called without any site types being registered!");
+    autopas::utils::ExceptionHandler::AutoPasException(
+        "ParticlePropertiesLibrary::calculateMixingCoefficients was called without any site types being registered!");
   }
 
   _computedMixingData.resize(_numRegisteredSiteTypes * _numRegisteredSiteTypes);
@@ -368,7 +371,7 @@ floatType ParticlePropertiesLibrary<floatType, intType>::getSiteMass(intType i) 
 
 template <typename floatType, typename intType>
 floatType ParticlePropertiesLibrary<floatType, intType>::getMolMass(intType i) const {
-#if MD_FLEXIBLE_MODE==MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
   return _molMasses[i];
 #else
   return _siteMasses[i];
@@ -376,21 +379,23 @@ floatType ParticlePropertiesLibrary<floatType, intType>::getMolMass(intType i) c
 }
 
 template <typename floatType, typename intType>
-std::array<floatType,3> ParticlePropertiesLibrary<floatType, intType>::getMomentOfInertia(intType i) const {
+std::array<floatType, 3> ParticlePropertiesLibrary<floatType, intType>::getMomentOfInertia(intType i) const {
 #if not defined(MD_FLEXIBLE_USE_MULTI_SITE)
-//  AutoPasLog(warn, "ParticlePropertiesLibrary::getMomentOfInertia(): trying to get the Moment of Inertia of a multi-site molecule type"
-//      " when md-flexible has been compiled without support for multi-site molecules. Please compile with the CMake argument '-D "
-//      "MD_FLEXIBLE_USE_MULTI_SITE=ON'.");
+//  AutoPasLog(warn, "ParticlePropertiesLibrary::getMomentOfInertia(): trying to get the Moment of Inertia of a
+//  multi-site molecule type"
+//      " when md-flexible has been compiled without support for multi-site molecules. Please compile with the CMake
+//      argument '-D " "MD_FLEXIBLE_USE_MULTI_SITE=ON'.");
 #endif
   return _momentOfInertias[i];
 }
 
 template <typename floatType, typename intType>
-std::vector<std::array<floatType,3>> ParticlePropertiesLibrary<floatType, intType>::getSitePositions(intType i) const {
+std::vector<std::array<floatType, 3>> ParticlePropertiesLibrary<floatType, intType>::getSitePositions(intType i) const {
 #if not defined(MD_FLEXIBLE_USE_MULTI_SITE)
-//  AutoPasLog(warn, "ParticlePropertiesLibrary::getSitePositions(): trying to get the site positions of a multi-site molecule type"
-//      " when md-flexible has been compiled without support for multi-site molecules. Please compile with the CMake argument '-D "
-//      "MD_FLEXIBLE_USE_MULTI_SITE=ON'.");
+//  AutoPasLog(warn, "ParticlePropertiesLibrary::getSitePositions(): trying to get the site positions of a multi-site
+//  molecule type"
+//      " when md-flexible has been compiled without support for multi-site molecules. Please compile with the CMake
+//      argument '-D " "MD_FLEXIBLE_USE_MULTI_SITE=ON'.");
 #endif
   return _relativeSitePositions[i];
 }
@@ -398,9 +403,10 @@ std::vector<std::array<floatType,3>> ParticlePropertiesLibrary<floatType, intTyp
 template <typename floatType, typename intType>
 std::vector<intType> ParticlePropertiesLibrary<floatType, intType>::getSiteTypes(intType i) const {
 #if not defined(MD_FLEXIBLE_USE_MULTI_SITE)
-//  AutoPasLog(warn, "ParticlePropertiesLibrary::getSiteTypes(): trying to get the site types of a multi-site molecule type"
-//      " when md-flexible has been compiled without support for multi-site molecules. Please compile with the CMake argument '-D "
-//      "MD_FLEXIBLE_USE_MULTI_SITE=ON'.");
+//  AutoPasLog(warn, "ParticlePropertiesLibrary::getSiteTypes(): trying to get the site types of a multi-site molecule
+//  type"
+//      " when md-flexible has been compiled without support for multi-site molecules. Please compile with the CMake
+//      argument '-D " "MD_FLEXIBLE_USE_MULTI_SITE=ON'.");
 #endif
   return _siteIds[i];
 }
@@ -415,19 +421,23 @@ floatType ParticlePropertiesLibrary<floatType, intType>::getSigma(intType i) con
   return _sigmas[i];
 }
 
-template<typename floatType, typename intType>
+template <typename floatType, typename intType>
 intType ParticlePropertiesLibrary<floatType, intType>::getNumSites(intType i) const {
 #if not defined(MD_FLEXIBLE_USE_MULTI_SITE)
-//  AutoPasLog(warn, "ParticlePropertiesLibrary::getNumSites(): trying to get the number of sites of a multi-site molecule type when md-flexible has been compiled without support for multi-site molecules. Please compile with the CMake argument '-D "
+//  AutoPasLog(warn, "ParticlePropertiesLibrary::getNumSites(): trying to get the number of sites of a multi-site
+//  molecule type when md-flexible has been compiled without support for multi-site molecules. Please compile with the
+//  CMake argument '-D "
 //      "MD_FLEXIBLE_USE_MULTI_SITE=ON'.");
 #endif
   return _numSites[i];
 }
 
-template<typename floatType, typename intType>
+template <typename floatType, typename intType>
 floatType ParticlePropertiesLibrary<floatType, intType>::getMoleculesLargestSigma(intType i) const {
 #if not defined(MD_FLEXIBLE_USE_MULTI_SITE)
-//  AutoPasLog(warn, "ParticlePropertiesLibrary::getNumSites(): trying to get the number of sites of a multi-site molecule type when md-flexible has been compiled without support for multi-site molecules. Please compile with the CMake argument '-D "
+//  AutoPasLog(warn, "ParticlePropertiesLibrary::getNumSites(): trying to get the number of sites of a multi-site
+//  molecule type when md-flexible has been compiled without support for multi-site molecules. Please compile with the
+//  CMake argument '-D "
 //      "MD_FLEXIBLE_USE_MULTI_SITE=ON'.");
 #endif
   return _moleculesLargestSigma[i];

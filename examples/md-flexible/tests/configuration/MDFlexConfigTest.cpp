@@ -131,7 +131,7 @@ TEST_F(MDFlexConfigTest, multipleSameObjectParsing) {
 TEST_F(MDFlexConfigTest, correctSiteParsing) {
   // Configure md-flexible using correct yaml file and expect no throw in doing so.
   std::vector<std::string> argumentsTest = {"md-flexible", "--yaml-filename",
-                                        std::string(YAMLDIRECTORY) + "siteParsingTest.yaml"};
+                                            std::string(YAMLDIRECTORY) + "siteParsingTest.yaml"};
 
   char *argv[3] = {&argumentsTest[0][0], &argumentsTest[1][0], &argumentsTest[2][0]};
 
@@ -151,7 +151,7 @@ TEST_F(MDFlexConfigTest, correctSiteParsing) {
  */
 TEST_F(MDFlexConfigTest, correctMolParsing) {
   // Skip test if not compiled for multi-site molecules.
-#if not MD_FLEXIBLE_MODE==MULTISITE
+#if not MD_FLEXIBLE_MODE == MULTISITE
   GTEST_SKIP() << "correctMolParsing: Skipping as multi-site not compiled";
 #endif
 
@@ -168,7 +168,8 @@ TEST_F(MDFlexConfigTest, correctMolParsing) {
   const std::vector<std::array<double, 3>> expectedSitePositions0 = {{0., 0., 0.}};
   const std::array<double, 3> expectedMoI0 = {1., 1., 1.};
   const std::vector<int> expectedSiteIds1 = {0, 0, 1};
-  const std::vector<std::array<double, 3>> expectedSitePositions1 = {{0., -0.5, 0.}, {1., 0.1, 0.01}, {-0.2, -0.3, 0.4}};
+  const std::vector<std::array<double, 3>> expectedSitePositions1 = {
+      {0., -0.5, 0.}, {1., 0.1, 0.01}, {-0.2, -0.3, 0.4}};
   const std::array<double, 3> expectedMoI1 = {1., 0.5, 0.25};
 
   const auto siteIds0 = configuration.molToSiteIdMap.at(0);

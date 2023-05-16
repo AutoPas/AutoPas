@@ -11,10 +11,10 @@
 #include <string>
 #include <tuple>
 
+#include "TimeDiscretization.h"
 #include "autopas/AutoPasDecl.h"
 #include "src/ParallelVtkWriter.h"
 #include "src/TypeDefinitions.h"
-#include "TimeDiscretization.h"
 #include "src/configuration/MDFlexConfig.h"
 #include "src/domainDecomposition/DomainDecomposition.h"
 #include "src/domainDecomposition/RegularGridDecomposition.h"
@@ -40,8 +40,8 @@ class Simulation {
   /**
    * Runs the simulation, implementing velocity verlet.
    *
-   * If md-flexible is compiled for multi-site molecules, rotational integration is done with an implementation of the the quaternion
-   * approach (A) as described in Rozmanov, 2010, Robust rotational-velocity-Verlet integration methods.
+   * If md-flexible is compiled for multi-site molecules, rotational integration is done with an implementation of the
+   * the quaternion approach (A) as described in Rozmanov, 2010, Robust rotational-velocity-Verlet integration methods.
    */
   void run();
 
@@ -263,7 +263,8 @@ class Simulation {
   void updateQuaternions();
 
   /**
-   * Updates the forces of particles in the local AutoPas container. Includes torque updates (if an appropriate functor is used).
+   * Updates the forces of particles in the local AutoPas container. Includes torque updates (if an appropriate functor
+   * is used).
    */
   void updateForces();
 

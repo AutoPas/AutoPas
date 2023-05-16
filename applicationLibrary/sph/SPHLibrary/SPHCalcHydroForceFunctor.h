@@ -144,7 +144,7 @@ class SPHCalcHydroForceFunctor : public autopas::Functor<Particle, SPHCalcHydroF
 
       // icpc vectorizes this.
       // g++ only with -ffast-math or -funsafe-math-optimizations
-      //#pragma omp simd reduction(+ : localengdotsum, localAccX, localAccY, localAccZ), reduction(max : localvsigmax)
+      // #pragma omp simd reduction(+ : localengdotsum, localAccX, localAccY, localAccZ), reduction(max : localvsigmax)
       for (unsigned int j = indexFirst + 1; j < soa.getNumberOfParticles(); ++j) {
         using namespace autopas::utils::ArrayMath::literals;
 
@@ -225,7 +225,8 @@ class SPHCalcHydroForceFunctor : public autopas::Functor<Particle, SPHCalcHydroF
   /**
    * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType>, SoAView<SoAArraysType>, bool)
    */
-  void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, bool newton3) override {
+  void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
+                      bool newton3) override {
     using namespace autopas::utils::ArrayMath::literals;
     if (soa1.getNumberOfParticles() == 0 || soa2.getNumberOfParticles() == 0) return;
 
@@ -282,7 +283,7 @@ class SPHCalcHydroForceFunctor : public autopas::Functor<Particle, SPHCalcHydroF
 
       // icpc vectorizes this.
       // g++ only with -ffast-math or -funsafe-math-optimizations
-      //#pragma omp simd reduction(+ : localengdotsum, localAccX, localAccY, localAccZ), reduction(max : localvsigmax)
+      // #pragma omp simd reduction(+ : localengdotsum, localAccX, localAccY, localAccZ), reduction(max : localvsigmax)
       for (unsigned int j = 0; j < soa2.getNumberOfParticles(); ++j) {
         using namespace autopas::utils::ArrayMath::literals;
 
@@ -409,7 +410,7 @@ class SPHCalcHydroForceFunctor : public autopas::Functor<Particle, SPHCalcHydroF
 
     // icpc vectorizes this.
     // g++ only with -ffast-math or -funsafe-math-optimizations
-    //#pragma omp simd reduction(+ : localengdotsum, localAccX, localAccY, localAccZ), reduction(max : localvsigmax)
+    // #pragma omp simd reduction(+ : localengdotsum, localAccX, localAccY, localAccZ), reduction(max : localvsigmax)
     for (unsigned int j = 0; j < listSize; ++j) {
       using namespace autopas::utils::ArrayMath::literals;
 
