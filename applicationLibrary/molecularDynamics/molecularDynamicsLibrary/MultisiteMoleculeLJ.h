@@ -39,7 +39,7 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
       : mdLib::MoleculeLJ(r, v, moleculeId, typeId), _q(q), _angularVel(angularVel), _torque({0., 0., 0.}) {}
 
   /**
-   * Destructor of the MulticenteredParticle class.
+   * Destructor of the MultisiteMoleculeLJ class.
    */
   ~MultisiteMoleculeLJ() override = default;
 

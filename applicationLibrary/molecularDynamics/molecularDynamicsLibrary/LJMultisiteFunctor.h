@@ -1125,12 +1125,12 @@ class LJMultisiteFunctor
   }
 
   template <bool newton3>
-  void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
+  void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexPrime,
                             const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
     // Skip if primary particle is dummy
-    const auto ownedStatePrime = ownedStatePtr[indexFirst];
+    const auto ownedStatePrime = ownedStatePtr[indexPrime];
     if (ownedStatePrime == autopas::OwnershipState::dummy) {
       return;
     }
@@ -1176,7 +1176,7 @@ class LJMultisiteFunctor
 
     // Count sites
     const size_t siteCountMolPrime =
-        useMixing ? _PPLibrary->getNumSites(typeptr[indexFirst]) : const_unrotatedSitePositions.size();
+        useMixing ? _PPLibrary->getNumSites(typeptr[indexPrime]) : const_unrotatedSitePositions.size();
 
     size_t siteCountNeighbors = 0;  // site count of neighbours of primary molecule
     if constexpr (useMixing) {
@@ -1227,13 +1227,13 @@ class LJMultisiteFunctor
 
     const auto rotatedSitePositionsPrime =
         useMixing ? autopas::utils::quaternion::rotateVectorOfPositions(
-                        {q0ptr[indexFirst], q1ptr[indexFirst], q2ptr[indexFirst], q3ptr[indexFirst]},
-                        _PPLibrary->getSitePositions(typeptr[indexFirst]))
+                        {q0ptr[indexPrime], q1ptr[indexPrime], q2ptr[indexPrime], q3ptr[indexPrime]},
+                        _PPLibrary->getSitePositions(typeptr[indexPrime]))
                   : autopas::utils::quaternion::rotateVectorOfPositions(
-                        {q0ptr[indexFirst], q1ptr[indexFirst], q2ptr[indexFirst], q3ptr[indexFirst]},
+                        {q0ptr[indexPrime], q1ptr[indexPrime], q2ptr[indexPrime], q3ptr[indexPrime]},
                         const_unrotatedSitePositions);
 
-    const auto siteTypesPrime = _PPLibrary->getSiteTypes(typeptr[indexFirst]);  // todo make this work for no mixing
+    const auto siteTypesPrime = _PPLibrary->getSiteTypes(typeptr[indexPrime]);  // this is not used if non-mixing
 
     // generate site-wise arrays for neighbors of primary mol
     if constexpr (useMixing) {
@@ -1293,9 +1293,9 @@ class LJMultisiteFunctor
 
       const auto ownedState = ownedStatePtr[neighborMolIndex];
 
-      const auto displacementCoMX = xptr[indexFirst] - xptr[neighborMolIndex];
-      const auto displacementCoMY = yptr[indexFirst] - yptr[neighborMolIndex];
-      const auto displacementCoMZ = zptr[indexFirst] - zptr[neighborMolIndex];
+      const auto displacementCoMX = xptr[indexPrime] - xptr[neighborMolIndex];
+      const auto displacementCoMY = yptr[indexPrime] - yptr[neighborMolIndex];
+      const auto displacementCoMZ = zptr[indexPrime] - zptr[neighborMolIndex];
 
       const auto distanceSquaredCoMX = displacementCoMX * displacementCoMX;
       const auto distanceSquaredCoMY = displacementCoMY * displacementCoMY;
@@ -1333,9 +1333,9 @@ class LJMultisiteFunctor
       const auto rotatedPrimeSitePositionY = rotatedSitePositionsPrime[primeSite][1];
       const auto rotatedPrimeSitePositionZ = rotatedSitePositionsPrime[primeSite][2];
 
-      const auto exactPrimeSitePositionX = rotatedPrimeSitePositionX + xptr[indexFirst];
-      const auto exactPrimeSitePositionY = rotatedPrimeSitePositionY + yptr[indexFirst];
-      const auto exactPrimeSitePositionZ = rotatedPrimeSitePositionZ + zptr[indexFirst];
+      const auto exactPrimeSitePositionX = rotatedPrimeSitePositionX + xptr[indexPrime];
+      const auto exactPrimeSitePositionY = rotatedPrimeSitePositionY + yptr[indexPrime];
+      const auto exactPrimeSitePositionZ = rotatedPrimeSitePositionZ + zptr[indexPrime];
 
       // generate parameter data for chosen site
       if constexpr (useMixing) {
@@ -1423,12 +1423,12 @@ class LJMultisiteFunctor
       }
     }
     // Add forces to prime mol
-    fxptr[indexFirst] += forceSumX;
-    fyptr[indexFirst] += forceSumY;
-    fzptr[indexFirst] += forceSumZ;
-    txptr[indexFirst] += torqueSumX;
-    typtr[indexFirst] += torqueSumY;
-    tzptr[indexFirst] += torqueSumZ;
+    fxptr[indexPrime] += forceSumX;
+    fyptr[indexPrime] += forceSumY;
+    fzptr[indexPrime] += forceSumZ;
+    txptr[indexPrime] += torqueSumX;
+    typtr[indexPrime] += torqueSumY;
+    tzptr[indexPrime] += torqueSumZ;
 
     // Reduce forces on individual neighbor sites to molecular forces & torques if newton3=true
     if constexpr (newton3) {
