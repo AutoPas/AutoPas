@@ -71,7 +71,7 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
       << numParticlesHaloBuffers << ")";
 
   // create a functor that calculates globals!
-  autopas::LJFunctor<Molecule, /*shift*/ false, /*mixing*/ false, autopas::FunctorN3Modes::Both, /*globals*/ true>
+  mdLib::LJFunctor<Molecule, /*shift*/ false, /*mixing*/ false, autopas::FunctorN3Modes::Both, /*globals*/ true>
       functor(cutoff);
   // Choose sigma != distance so we get Upot != 0
   constexpr double sigma = 2.;
@@ -329,7 +329,7 @@ void testRemainderTraversal(const std::vector<Molecule> &particles, const std::v
   ASSERT_EQ(autoTuner.getContainer()->getNumberOfParticles(), particles.size() + haloParticles.size())
       << "Container contains incorrect number of halo particles!";
 
-  autopas::LJFunctor<Molecule> functor(cutoff);
+  mdLib::LJFunctor<Molecule> functor(cutoff);
   functor.setParticleProperties(24, 1);
   // do the actual test
   autoTuner.iteratePairwise(&functor, false, particlesBuffer, haloParticlesBuffer);

@@ -12,7 +12,7 @@
 #include "testingHelpers/commonTypedefs.h"
 
 extern template class autopas::AutoPas<Molecule>;
-extern template bool autopas::AutoPas<Molecule>::iteratePairwise(autopas::LJFunctor<Molecule, true, false> *);
+extern template bool autopas::AutoPas<Molecule>::iteratePairwise(mdLib::LJFunctor<Molecule, true, false> *);
 
 constexpr double cutoff = 1.1;
 constexpr double skinPerTimestep = 0.2;
@@ -330,7 +330,7 @@ void testSimulationLoop(testingTuple options) {
 
   addParticlePair({9.99, 5., 5.});
 
-  autopas::LJFunctor<Molecule, /* shifting */ true, /* mixing */ false, autopas::FunctorN3Modes::Both,
+  mdLib::LJFunctor<Molecule, /* shifting */ true, /* mixing */ false, autopas::FunctorN3Modes::Both,
                      /* globals */ true>
       functor(cutoff);
   functor.setParticleProperties(24.0, 1);
@@ -413,7 +413,7 @@ void testHaloCalculation(testingTuple options) {
     }
   }
 
-  autopas::LJFunctor<Molecule, /* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
+  mdLib::LJFunctor<Molecule, /* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
                      /*globals*/ true>
       functor(cutoff);
   functor.setParticleProperties(24, 1);
@@ -579,9 +579,9 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
 
   constexpr bool shifting = true;
   constexpr bool mixing = false;
-  autopas::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> functor1(cutoff);
+  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> functor1(cutoff);
   functor1.setParticleProperties(24.0, 1);
-  autopas::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> functor2(cutoff);
+  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> functor2(cutoff);
   functor2.setParticleProperties(24.0, 1);
   // do first simulation loop
   doSimulationLoop(autoPas1, autoPas2, &functor1, &functor2);

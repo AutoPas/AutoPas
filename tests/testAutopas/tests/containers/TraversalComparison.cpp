@@ -107,7 +107,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
                            autopas::ContainerSelectorInfo{cellSizeFactor, skinPerTimestep, rebuildFrequency, 32,
                                                           autopas::LoadEstimatorOption::none});
   auto container = selector.getCurrentContainer();
-  autopas::LJFunctor<Molecule, true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both,
+  mdLib::LJFunctor<Molecule, true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both,
                      globals /*calculateGlobals*/>
       functor{_cutoff};
   functor.setParticleProperties(_eps * 24, _sig * _sig);

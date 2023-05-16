@@ -486,7 +486,7 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
   auto container = selector.getCurrentContainer();
 
   // Create a functor that is able to calculate forces
-  autopas::LJFunctor<Molecule, true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both,
+  mdLib::LJFunctor<Molecule, true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both,
                      false /*calculateGlobals*/>
       ljFunctor{cutoff};
   ljFunctor.setParticleProperties(_eps * 24, _sig * _sig);
@@ -735,7 +735,7 @@ TEST_F(OctreeTest, testLeafIDs) {
   // Get leaves
   std::vector<OctreeLeafNode<ParticleFP64> *> leaves;
   root->appendAllLeaves(leaves);
-  OTC18Traversal<ParticleFP64, LJFunctor<ParticleFP64>, DataLayoutOption::aos, true>::assignIDs(leaves);
+  OTC18Traversal<ParticleFP64, mdLib::LJFunctor<ParticleFP64>, DataLayoutOption::aos, true>::assignIDs(leaves);
 
   std::vector<int> ids, expected;
   for (int i = 0; i < leaves.size(); ++i) {
