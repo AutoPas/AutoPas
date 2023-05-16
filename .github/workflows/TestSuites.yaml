@@ -62,8 +62,7 @@ jobs:
         part: [1, 2, 3]
         # Part 1: Tests requiring with and without MPI
         # Part 2: Tests that don't require MPI
-        # Part 3: Md-flexible tests. These should be tested for both single-site and multi-site molecules.
-        is-multi-site: [ON, OFF]
+        md-flex-mode: [0, 1] # 0 corresponds to single-site, 1 corresponds to multi-site
         config: [
             #    0              1       2       3                   4        5       6     7
             # container      , CC   , CXX    , builder          , mode   , OpenMP , ASan, TSan
@@ -75,16 +74,17 @@ jobs:
         [autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF ],
         ]
         exclude:
-          - is-multi-site: ON
+          - md-flex-mode: 1
           # Exclude MPI configuration from part 2, where tests are not affected by use of MPI.
           - config: [autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF ,   OFF   ]
             part: 2
         # For two configurations, compile with Multi-Site Molecule support for md-flexible.
         include:
           - config: [autopas-build-archer, clang, clang++, Ninja            , Release, ON     , OFF , ON  ]
-            is-multi-site: ON
+            md-flex-mode: 1
           - config: [autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF ]
             is-multi-site: ON
+            md-flex-mode: 1
     name: Matrix - ${{ matrix.config[1] }}|${{ matrix.config[4] }}|OpenMP=${{ matrix.config[5] }}|ASan=${{ matrix.config[6] }}|TSan=${{ matrix.config[7] }} (${{ matrix.part }}/2)
     container: autopas/${{ matrix.config[0] }}
     env:
@@ -109,7 +109,7 @@ jobs:
             -DAUTOPAS_ENABLE_THREAD_SANITIZER=${{ matrix.config[7] }} \
             -DAUTOPAS_INTERNODE_TUNING=${UseMPI} \
             -DMD_FLEXIBLE_USE_MPI=${UseMPI} \
-            -DMD_FLEXIBLE_USE_MULTI_SITE=${{is-multi-site}} \
+            -DMD_FLEXIBLE_MODE=${{md-flex-mode}} \
             -DMD_FLEXIBLE_FUNCTOR_AUTOVEC=ON \
             -DMD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS=OFF \
             -DMD_FLEXIBLE_FUNCTOR_AVX=ON \
@@ -120,7 +120,7 @@ jobs:
       - name: Run tests ${{ matrix.part }}/2
         run: |
           # For Multi-Site Molecule Md-flexible builds, only run tests for md-flexible.
-          if [ "${{ is-multi-site }}" = OFF ]
+          if [ "${{ md-flex-mode }}" = 0 ]
             then
             # derive whether or not to run with MPI.
             if [ "${{ matrix.config[1] }}" = 'mpicc' ]
@@ -135,6 +135,8 @@ jobs:
             else
               cd build
               # Start with test 0 or 1 and do every second test
+              ctest --output-on-failure -I ${{ matrix.part }},,2 -j 2
+              cd applicationLibrary
               ctest --output-on-failure -I ${{ matrix.part }},,2 -j 2
               cd examples
               ctest -C checkExamples --output-on-failure -I ${{ matrix.part }},,2 -j 2
