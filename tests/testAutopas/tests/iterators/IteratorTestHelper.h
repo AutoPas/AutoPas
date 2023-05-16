@@ -40,7 +40,7 @@ auto fillContainerAroundBoundary(AutoPasT &autoPas, const std::array<double, 3> 
   auto skin = autoPas.getVerletSkin();
 
   // generator function for critical coordinates (along  one dimension)
-  auto generateInteresting1DPositions = [&](double min, double max) -> auto{
+  auto generateInteresting1DPositions = [&](double min, double max) -> auto {
     // ensure that all particles are at most skin away from halo!
     // interesting cases are:
     //   - outside the halo by skin
@@ -194,8 +194,9 @@ void provideIterator(AutoPasT &autoPas, autopas::IteratorBehavior behavior, bool
       };
       fun(autoPasRef, getIter);
     } else {
-      auto getIter = [&]() ->
-          typename AutoPasT::RegionIteratorT { return autoPas.getRegionIterator(haloBoxMin, haloBoxMax, behavior); };
+      auto getIter = [&]() -> typename AutoPasT::RegionIteratorT {
+        return autoPas.getRegionIterator(haloBoxMin, haloBoxMax, behavior);
+      };
       fun(autoPas, getIter);
     }
   } else {
@@ -246,12 +247,14 @@ void provideRegionIterator(AutoPasT &autoPas, autopas::IteratorBehavior behavior
                            const std::array<double, 3> &boxMax, F fun) {
   if constexpr (useConstIterator) {
     const auto &autoPasRef = autoPas;
-    auto getIter = [&]() ->
-        typename AutoPasT::RegionConstIteratorT { return autoPasRef.getRegionIterator(boxMin, boxMax, behavior); };
+    auto getIter = [&]() -> typename AutoPasT::RegionConstIteratorT {
+      return autoPasRef.getRegionIterator(boxMin, boxMax, behavior);
+    };
     fun(autoPasRef, getIter);
   } else {
-    auto getIter = [&]() ->
-        typename AutoPasT::RegionIteratorT { return autoPas.getRegionIterator(boxMin, boxMax, behavior); };
+    auto getIter = [&]() -> typename AutoPasT::RegionIteratorT {
+      return autoPas.getRegionIterator(boxMin, boxMax, behavior);
+    };
     fun(autoPas, getIter);
   }
 }

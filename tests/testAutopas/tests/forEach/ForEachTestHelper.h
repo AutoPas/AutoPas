@@ -40,7 +40,7 @@ auto fillContainerAroundBoundary(AutoPasT &autoPas, std::array<double, 3> boxOfI
   auto skin = autoPas.getVerletSkin();
 
   // generator function for critical coordinates (along  one dimension)
-  auto generateInteresting1DPositions = [&](double min, double max) -> auto{
+  auto generateInteresting1DPositions = [&](double min, double max) -> auto {
     // ensure that all particles are at most skin away from halo!
     // interesting cases are:
     //   - outside of the halo by skin
