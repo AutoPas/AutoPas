@@ -681,7 +681,7 @@ TEST_F(LJMultisiteFunctorTest, singleSiteSanityCheck) {
 TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACell){
   using autopas::MultisiteMoleculeLJ;
 
-  const double cutoff = 3.;
+  const double cutoff = 1.5;
 
   std::vector<autopas::MultisiteMoleculeLJ> molecules;
   ParticlePropertiesLibrary<double, size_t> PPL(cutoff);
@@ -704,7 +704,7 @@ TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACell){
 TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACellPair){
   using autopas::MultisiteMoleculeLJ;
 
-  const double cutoff = 5.;
+  const double cutoff = 1.5;
 
   std::vector<autopas::MultisiteMoleculeLJ> moleculesA;
   std::vector<autopas::MultisiteMoleculeLJ> moleculesB;
@@ -736,7 +736,7 @@ TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACellPair){
 TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoAVerlet){
   using autopas::MultisiteMoleculeLJ;
 
-  const double cutoff = 3.1;
+  const double cutoff = 1.5;
 
   std::vector<autopas::MultisiteMoleculeLJ> molecules;
   ParticlePropertiesLibrary<double, size_t> PPL(cutoff);

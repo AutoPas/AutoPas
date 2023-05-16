@@ -7,8 +7,6 @@
 
 #include <gtest/gtest.h>
 
-#include <chrono>
-
 #define PARTICLES_PER_DIM 8
 #define AOS_VS_SOA_ACCURACY 1e-8
 
@@ -86,12 +84,7 @@ void LJMultisiteFunctorAVXTest::testSoACellAgainstAoS(std::vector<autopas::Multi
 
   functor.SoALoader(cellSoA, cellSoA._particleSoABuffer, 0);
   // apply functor
-  using namespace std::chrono;
-  auto start = high_resolution_clock::now();
   functor.SoAFunctorSingle(cellSoA._particleSoABuffer, newton3);
-  auto end = high_resolution_clock::now();
-  auto duration = duration_cast<microseconds>(end - start);
-  std::cout << "SoA functor took " << duration.count() << " microseconds." << std::endl;
 
   // copy back to original particle array
   moleculesSoA.clear();
@@ -489,12 +482,12 @@ void LJMultisiteFunctorAVXTest::testSoAVerletAgainstAoS(std::vector<autopas::Mul
         << "Incorrect z-torque for molecule " << i << " with newton3 = " << newton3;
   }
 
-  //  if constexpr (calculateGlobals) {
-  //    EXPECT_NEAR(potentialEnergyAoS, potentialEnergySoA, AOS_VS_SOA_ACCURACY)
-  //        << "Incorrect potential energy with newton3 = " << newton3 << " and applyShift = " << applyShift;
-  //    EXPECT_NEAR(virialAoS, virialSoA, AOS_VS_SOA_ACCURACY)
-  //        << "Incorrect potential energy with newton3 = " << newton3 << " and applyShift = " << applyShift;
-  //  }
+    if constexpr (calculateGlobals) {
+      EXPECT_NEAR(potentialEnergyAoS, potentialEnergySoA, AOS_VS_SOA_ACCURACY)
+          << "Incorrect potential energy with newton3 = " << newton3 << " and applyShift = " << applyShift;
+      EXPECT_NEAR(virialAoS, virialSoA, AOS_VS_SOA_ACCURACY)
+          << "Incorrect potential energy with newton3 = " << newton3 << " and applyShift = " << applyShift;
+    }
 }
 
 /*
@@ -613,7 +606,7 @@ TEST_F(LJMultisiteFunctorAVXTest, AoSTest) {
 /*
  * @note No newton3 disabled as SoACell always uses newton3 optimisation
  */
-TEST_F(LJMultisiteFunctorAVXTest, MulticenteredLJFunctorTest_AoSVsSoACell) {
+TEST_F(LJMultisiteFunctorAVXTest, AoSVsSoACell) {
   using autopas::MultisiteMoleculeLJ;
 
   const double cutoff = 1.5;
@@ -634,10 +627,10 @@ TEST_F(LJMultisiteFunctorAVXTest, MulticenteredLJFunctorTest_AoSVsSoACell) {
   testSoACellAgainstAoS<true, true, true>(molecules, PPL, cutoff);
 }
 
-TEST_F(LJMultisiteFunctorAVXTest, MulticenteredLJFunctorTest_AoSVsSoACellPair) {
+TEST_F(LJMultisiteFunctorAVXTest, AoSVsSoACellPair) {
   using autopas::MultisiteMoleculeLJ;
 
-  const double cutoff = 5.;
+  const double cutoff = 1.5;
 
   std::vector<autopas::MultisiteMoleculeLJ> moleculesA;
   std::vector<autopas::MultisiteMoleculeLJ> moleculesB;
@@ -648,25 +641,25 @@ TEST_F(LJMultisiteFunctorAVXTest, MulticenteredLJFunctorTest_AoSVsSoACellPair) {
   generateMolecules(&moleculesB, {0, 0, 9});
 
   // N3L optimization disabled, global calculation disabled.
-  testSoACellPairAgainstAoS<false, false, false>(moleculesA, moleculesB, PPL, 1.);
+  testSoACellPairAgainstAoS<false, false, false>(moleculesA, moleculesB, PPL, cutoff);
 
   // N3L optimization enabled, global calculation disabled.
-  testSoACellPairAgainstAoS<true, false, false>(moleculesA, moleculesB, PPL, 1.);
+  testSoACellPairAgainstAoS<true, false, false>(moleculesA, moleculesB, PPL, cutoff);
 
   // N3L optimization disabled, global calculation enabled, apply shift disabled.
-  testSoACellPairAgainstAoS<false, true, false>(moleculesA, moleculesB, PPL, 1.);
+  testSoACellPairAgainstAoS<false, true, false>(moleculesA, moleculesB, PPL, cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift disabled.
-  testSoACellPairAgainstAoS<true, true, false>(moleculesA, moleculesB, PPL, 1.);
+  testSoACellPairAgainstAoS<true, true, false>(moleculesA, moleculesB, PPL, cutoff);
 
   // N3L optimization disabled, global calculation enabled, apply shift enabled.
-  testSoACellPairAgainstAoS<false, true, true>(moleculesA, moleculesB, PPL, 1.);
+  testSoACellPairAgainstAoS<false, true, true>(moleculesA, moleculesB, PPL, cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift enabled.
-  testSoACellPairAgainstAoS<true, true, true>(moleculesA, moleculesB, PPL, 1.);
+  testSoACellPairAgainstAoS<true, true, true>(moleculesA, moleculesB, PPL, cutoff);
 }
 
-TEST_F(LJMultisiteFunctorAVXTest, MulticenteredLJFunctorTest_AoSVsSoAVerlet) {
+TEST_F(LJMultisiteFunctorAVXTest,AoSVsSoAVerlet) {
   using autopas::MultisiteMoleculeLJ;
 
   const double cutoff = 3.0;

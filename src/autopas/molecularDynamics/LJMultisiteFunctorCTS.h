@@ -1392,62 +1392,62 @@ class LJMultisiteFunctorCTS
 
     // WIP vectorized version
 
-//    for (size_t neighborMol = 0; neighborMol < neighborListSize; neighborMol += vecLength) {
-//      const size_t rest = neighborListSize - neighborMol;
-//      const bool remainderCase = rest < vecLength;
-//      __m256i remainderMask = remainderCase ? _masks[rest - 1] : _mm256_set1_epi64x(-1);
-//      const __m256i neighborMolIndex = load_epi64(remainderCase, &neighborList[neighborMol], remainderMask);
-//
-//      const __m256d xposB = gather_pd(remainderCase, xptr, neighborMolIndex, remainderMask);
-//      const __m256d yposB = gather_pd(remainderCase, yptr, neighborMolIndex, remainderMask);
-//      const __m256d zposB = gather_pd(remainderCase, zptr, neighborMolIndex, remainderMask);
-//
-//      const __m256d displacementCoMX = _mm256_sub_pd(xPosFirst, xposB);
-//      const __m256d displacementCoMY = _mm256_sub_pd(yPosFirst, yposB);
-//      const __m256d displacementCoMZ = _mm256_sub_pd(zPosFirst, zposB);
-//
-//      const __m256d distanceSquaredCoMX = _mm256_mul_pd(displacementCoMX, displacementCoMX);
-//      const __m256d distanceSquaredCoMY = _mm256_mul_pd(displacementCoMY, displacementCoMY);
-//      const __m256d distanceSquaredCoMZ = _mm256_mul_pd(displacementCoMZ, displacementCoMZ);
-//
-//      const __m256d distanceSquaredCoM =
-//          _mm256_add_pd(_mm256_add_pd(distanceSquaredCoMX, distanceSquaredCoMY), distanceSquaredCoMZ);
-//
-//      const __m256d cutoffMask = _mm256_cmp_pd(distanceSquaredCoM, _cutoffSquared, _CMP_LE_OS);
-//      const __m256i ownedStateB =
-//          remainderCase ? _mm256_mask_i64gather_epi64(_zero, ownedStatePtr, neighborMolIndex, remainderMask, 8)
-//                        : _mm256_i64gather_pd(ownedStatePtr, neighborMolIndex, 8);
-//      const __m256d dummyMask =
-//          _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB), _zero, _CMP_NEQ_OS);  // Assuming that dummy = 0
-//      const __m256d totalMask = _mm256_and_pd(cutoffMask, dummyMask);
-//
-//      if (remainderCase) {
-//        _mm256_maskstore_pd((&molMask[neighborMol]), remainderMask, totalMask);
-//      } else {
-//        _mm256_storeu_pd((&molMask[neighborMol]), totalMask);
-//      }
-//    }
-    unsigned long max_long = 0xFFFFFFFFFFFFFFFF;
-    double max_double = *(double *)&max_long;
-    for (size_t neighborMol = 0; neighborMol < neighborListSize; ++neighborMol) {
-      const auto neighborMolIndex = neighborList[neighborMol];  // index of neighbor mol in soa
+    for (size_t neighborMol = 0; neighborMol < neighborListSize; neighborMol += vecLength) {
+      const size_t rest = neighborListSize - neighborMol;
+      const bool remainderCase = rest < vecLength;
+      __m256i remainderMask = remainderCase ? _masks[rest - 1] : _mm256_set1_epi64x(-1);
+      const __m256i neighborMolIndex = load_epi64(remainderCase, &neighborList[neighborMol], remainderMask);
 
-      const auto ownedState = ownedStatePtr[neighborMolIndex];
+      const __m256d xposB = gather_pd(remainderCase, xptr, neighborMolIndex, remainderMask);
+      const __m256d yposB = gather_pd(remainderCase, yptr, neighborMolIndex, remainderMask);
+      const __m256d zposB = gather_pd(remainderCase, zptr, neighborMolIndex, remainderMask);
 
-      const auto displacementCoMX = xptr[indexFirst] - xptr[neighborMolIndex];
-      const auto displacementCoMY = yptr[indexFirst] - yptr[neighborMolIndex];
-      const auto displacementCoMZ = zptr[indexFirst] - zptr[neighborMolIndex];
+      const __m256d displacementCoMX = _mm256_sub_pd(xPosFirst, xposB);
+      const __m256d displacementCoMY = _mm256_sub_pd(yPosFirst, yposB);
+      const __m256d displacementCoMZ = _mm256_sub_pd(zPosFirst, zposB);
 
-      const auto distanceSquaredCoMX = displacementCoMX * displacementCoMX;
-      const auto distanceSquaredCoMY = displacementCoMY * displacementCoMY;
-      const auto distanceSquaredCoMZ = displacementCoMZ * displacementCoMZ;
+      const __m256d distanceSquaredCoMX = _mm256_mul_pd(displacementCoMX, displacementCoMX);
+      const __m256d distanceSquaredCoMY = _mm256_mul_pd(displacementCoMY, displacementCoMY);
+      const __m256d distanceSquaredCoMZ = _mm256_mul_pd(displacementCoMZ, displacementCoMZ);
 
-      const auto distanceSquaredCoM = distanceSquaredCoMX + distanceSquaredCoMY + distanceSquaredCoMZ;
+      const __m256d distanceSquaredCoM =
+          _mm256_add_pd(_mm256_add_pd(distanceSquaredCoMX, distanceSquaredCoMY), distanceSquaredCoMZ);
 
-      // mask molecules beyond cutoff or if molecule is a dummy
-      bool condition = distanceSquaredCoM <= cutoffSquared and ownedState != autopas::OwnershipState::dummy;
-      molMask[neighborMol] = condition ? max_double : 0.;
+      const __m256d cutoffMask = _mm256_cmp_pd(distanceSquaredCoM, _cutoffSquared, _CMP_LE_OS);
+      const __m256i ownedStateB =
+          remainderCase ? _mm256_mask_i64gather_epi64(_zero, ownedStatePtr, neighborMolIndex, remainderMask, 8)
+                        : _mm256_i64gather_pd(ownedStatePtr, neighborMolIndex, 8);
+      const __m256d dummyMask =
+          _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB), _zero, _CMP_NEQ_OS);  // Assuming that dummy = 0
+      const __m256d totalMask = _mm256_and_pd(cutoffMask, dummyMask);
+
+      if (remainderCase) {
+        _mm256_maskstore_pd((&molMask[neighborMol]), remainderMask, totalMask);
+      } else {
+        _mm256_storeu_pd((&molMask[neighborMol]), totalMask);
+      }
     }
+//    unsigned long max_long = 0xFFFFFFFFFFFFFFFF;
+//    double max_double = *(double *)&max_long;
+//    for (size_t neighborMol = 0; neighborMol < neighborListSize; ++neighborMol) {
+//      const auto neighborMolIndex = neighborList[neighborMol];  // index of neighbor mol in soa
+//
+//      const auto ownedState = ownedStatePtr[neighborMolIndex];
+//
+//      const auto displacementCoMX = xptr[indexFirst] - xptr[neighborMolIndex];
+//      const auto displacementCoMY = yptr[indexFirst] - yptr[neighborMolIndex];
+//      const auto displacementCoMZ = zptr[indexFirst] - zptr[neighborMolIndex];
+//
+//      const auto distanceSquaredCoMX = displacementCoMX * displacementCoMX;
+//      const auto distanceSquaredCoMY = displacementCoMY * displacementCoMY;
+//      const auto distanceSquaredCoMZ = displacementCoMZ * displacementCoMZ;
+//
+//      const auto distanceSquaredCoM = distanceSquaredCoMX + distanceSquaredCoMY + distanceSquaredCoMZ;
+//
+//      // mask molecules beyond cutoff or if molecule is a dummy
+//      bool condition = distanceSquaredCoM <= cutoffSquared and ownedState != autopas::OwnershipState::dummy;
+//      molMask[neighborMol] = condition ? max_double : 0.;
+//    }
 
     //     generate mask for each site from molecular mask
     std::vector<size_t, autopas::AlignedAllocator<size_t>> siteVector;
