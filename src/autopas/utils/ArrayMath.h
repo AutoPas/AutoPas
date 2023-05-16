@@ -344,7 +344,6 @@ template <class T, std::size_t SIZE>
  * @tparam T integer type
  * @param a input vector
  * @param b input vector
- * @param relativeDifference
  * @return
  */
 template <class T>

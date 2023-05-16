@@ -78,7 +78,6 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
  * @param autoPasContainer
  * @param particlePropertiesLibrary
  * @param deltaT
- * @param globalForce
  */
 void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
                                 const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);

@@ -20,9 +20,6 @@ class CubeGrid : public Object {
    * Constructor.
    * @param velocity
    * @param typeId
-   * @param epsilon
-   * @param sigma
-   * @param mass
    * @param particlesPerDim
    * @param particleSpacing
    * @param bottomLeftCorner

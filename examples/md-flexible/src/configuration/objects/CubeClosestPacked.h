@@ -21,9 +21,6 @@ class CubeClosestPacked : public Object {
    * Constructor.
    * @param velocity
    * @param typeId
-   * @param epsilon
-   * @param sigma
-   * @param mass
    * @param particleSpacing distance between all neighboring particles
    * @param boxLength
    * @param bottomLeftCorner

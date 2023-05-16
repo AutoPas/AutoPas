@@ -58,7 +58,9 @@ double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibrary
  * Calculates temperature of system, for each component separately.
  *
  * Kinetic Energy for each molecule is
- *      1/2 * mass * dot(vel, vel) + 1/2 \Sum_{0 \leq i < 3} MoI_i * angVel_i^2
+ \f[
+      1/2 * mass * dot(vel, vel) + 1/2 \Sum_{0 \leq i < 3} MoI_i * angVel_i^2
+\f]
  * where MoI is the diagonal Moment of Inertia. This formula comes from Rapport, The Art of MD, equation (8.2.34).
  *
  * The second term is only applied for Multi-Site MD.

@@ -17,9 +17,6 @@ class Sphere : public Object {
    * Constructor.
    * @param velocity
    * @param typeId
-   * @param epsilon
-   * @param sigma
-   * @param mass
    * @param center
    * @param radius
    * @param particleSpacing
