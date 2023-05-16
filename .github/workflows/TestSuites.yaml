@@ -109,7 +109,7 @@ jobs:
             -DAUTOPAS_ENABLE_THREAD_SANITIZER=${{ matrix.config[7] }} \
             -DAUTOPAS_INTERNODE_TUNING=${UseMPI} \
             -DMD_FLEXIBLE_USE_MPI=${UseMPI} \
-            -DMD_FLEXIBLE_MODE=${{md-flex-mode}} \
+            -DMD_FLEXIBLE_MODE=${{ matrix.md-flex-mode }} \
             -DMD_FLEXIBLE_FUNCTOR_AUTOVEC=ON \
             -DMD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS=OFF \
             -DMD_FLEXIBLE_FUNCTOR_AVX=ON \
