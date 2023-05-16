@@ -59,7 +59,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        part: [1, 2, 3]
+        part: [1, 2]
         # Part 1: Tests requiring with and without MPI
         # Part 2: Tests that don't require MPI
         md-flex-mode: [0, 1] # 0 corresponds to single-site, 1 corresponds to multi-site
@@ -83,7 +83,6 @@ jobs:
           - config: [autopas-build-archer, clang, clang++, Ninja            , Release, ON     , OFF , ON  ]
             md-flex-mode: 1
           - config: [autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF ]
-            is-multi-site: ON
             md-flex-mode: 1
     name: Matrix - ${{ matrix.config[1] }}|${{ matrix.config[4] }}|OpenMP=${{ matrix.config[5] }}|ASan=${{ matrix.config[6] }}|TSan=${{ matrix.config[7] }} (${{ matrix.part }}/2)
     container: autopas/${{ matrix.config[0] }}
@@ -138,7 +137,7 @@ jobs:
               ctest --output-on-failure -I ${{ matrix.part }},,2 -j 2
               cd applicationLibrary
               ctest --output-on-failure -I ${{ matrix.part }},,2 -j 2
-              cd examples
+              cd ../examples
               ctest -C checkExamples --output-on-failure -I ${{ matrix.part }},,2 -j 2
             fi
           else
