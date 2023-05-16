@@ -28,7 +28,7 @@ std::vector<std::array<double, 3>> rotateVectorOfPositions(std::array<double, 4>
 /**
  * Rotates a single 3D position
  * @param q Quaternion defining rotation
- * @param position array of 3 doubles, defining position
+ * @param pos array of 3 doubles, defining position
  * @return rotated position
  */
 std::array<double, 3> rotatePosition(std::array<double, 4> q, std::array<double, 3> pos);
@@ -36,7 +36,7 @@ std::array<double, 3> rotatePosition(std::array<double, 4> q, std::array<double,
 /**
  * Rotates a single 3D position backwards
  * @param q Quaternion defining rotation
- * @param position array of 3 doubles, defining position
+ * @param pos array of 3 doubles, defining position
  * @return rotated position
  */
 std::array<double, 3> rotatePositionBackwards(std::array<double, 4> q, std::array<double, 3> pos);

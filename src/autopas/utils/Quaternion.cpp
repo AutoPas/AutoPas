@@ -10,13 +10,6 @@
 
 namespace autopas::utils::quaternion {
 
-/**
- * Rotates a std::vector of 3D positions
- * @param q Quaternion defining rotation
- * @param positionVector std::vector of arrays of 3 doubles, defining positions
- * @return rotated positions
- * @note we could instead pre-compute the rotation matrix -
- */
 std::vector<std::array<double, 3>> rotateVectorOfPositions(const std::array<double, 4> q,
                                                            const std::vector<std::array<double, 3>> positionVector) {
   const auto ww = q[0] * q[0];
@@ -51,12 +44,6 @@ std::vector<std::array<double, 3>> rotateVectorOfPositions(const std::array<doub
   return rotatedPositions;
 }
 
-/**
- * Rotates a single 3D position
- * @param q Quaternion defining rotation
- * @param pos array of 3 doubles, defining position
- * @return rotated position
- */
 std::array<double, 3> rotatePosition(const std::array<double, 4> q, const std::array<double, 3> pos) {
   // Alan Watt and Mark Watt (1992) Advanced Animation and Rendering Techniques: Theory and Practice
   const auto ww = q[0] * q[0];
@@ -89,12 +76,6 @@ std::array<double, 3> rotatePosition(const std::array<double, 4> q, const std::a
   return rotatedPosition;
 }
 
-/**
- * Rotates a single 3D position backwards
- * @param q Quaternion defining rotation
- * @param pos array of 3 doubles, defining position
- * @return rotated position
- */
 std::array<double, 3> rotatePositionBackwards(const std::array<double, 4> q, const std::array<double, 3> pos) {
   const auto ww = q[0] * q[0];
   const auto wx = -q[0] * q[1];
@@ -126,12 +107,6 @@ std::array<double, 3> rotatePositionBackwards(const std::array<double, 4> q, con
   return rotatedPosition;
 }
 
-/**
- * Quaternion multiplication
- * @param q1 quaternion 1
- * @param q2 quaternion 2
- * @return q1 times q2
- */
 std::array<double, 4> qMul(const std::array<double, 4> q1, const std::array<double, 4> q2) {
   return {q1[0] * q2[0] - q1[1] * q2[1] - q1[2] * q2[2] - q1[3] * q2[3],
           q1[0] * q2[1] + q2[0] * q1[1] + q1[2] * q2[3] - q1[3] * q2[2],
@@ -139,33 +114,16 @@ std::array<double, 4> qMul(const std::array<double, 4> q1, const std::array<doub
           q1[0] * q2[3] + q2[0] * q1[3] + q1[1] * q2[2] - q1[2] * q2[1]};
 }
 
-/**
- * Quaternion multiplication (converting v into a quaternion (0,v))
- * @param q quaternion
- * @param v 3D-vector
- * @return q times (0,v)
- */
 std::array<double, 4> qMul(const std::array<double, 4> q, const std::array<double, 3> v) {
   return {-q[1] * v[0] - q[2] * v[1] - q[3] * v[2], q[0] * v[0] + q[2] * v[2] - q[3] * v[1],
           q[0] * v[1] + q[3] * v[0] - q[1] * v[2], q[0] * v[2] + q[1] * v[1] - q[2] * v[0]};
 }
 
-/**
- * Quaternion multiplication (converting v into a quaternion (0,v))
- * @param v 3D-vector
- * @param q quaternion
- * @return (0,v) times q
- */
 std::array<double, 4> qMul(const std::array<double, 3> v, const std::array<double, 4> q) {
   return {-v[0] * q[1] - v[1] * q[2] - v[2] * q[3], q[0] * v[0] + v[1] * q[3] - v[2] * q[2],
           q[0] * v[1] + v[2] * q[1] - v[0] * q[3], q[0] * v[2] + v[0] * q[2] - v[1] * q[1]};
 }
 
-/**
- * Quaternion conjugation.
- * @param q quaternion
- * @return conjugated quaternion
- */
 std::array<double, 4> qConjugate(const std::array<double, 4> q) { return {q[0], -q[1], -q[2], -q[3]}; }
 
 std::array<double, 3> convertQuaternionTo3DVec(const std::array<double, 4> q) {
