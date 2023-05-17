@@ -17,6 +17,7 @@
 #include "../utils/ExceptionHandler.h"
 #include "MultisiteMoleculeLJ.h"
 #include "ParticlePropertiesLibrary.h"
+#include "autopas/utils/AVXUtils.h"
 #include "autopas/utils/Quaternion.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -462,9 +463,9 @@ class LJMultisiteFunctorAVX
         const bool remainderCase = rest < vecLength;
         __m256i remainderMask = remainderCase ? _masks[rest - 1] : _mm256_set1_epi64x(-1);
 
-        const __m256d xposB = load_pd(remainderCase, &xptr[molB], remainderMask);
-        const __m256d yposB = load_pd(remainderCase, &yptr[molB], remainderMask);
-        const __m256d zposB = load_pd(remainderCase, &zptr[molB], remainderMask);
+        const __m256d xposB = autopas::utils::avx::load_pd(remainderCase, &xptr[molB], remainderMask);
+        const __m256d yposB = autopas::utils::avx::load_pd(remainderCase, &yptr[molB], remainderMask);
+        const __m256d zposB = autopas::utils::avx::load_pd(remainderCase, &zptr[molB], remainderMask);
 
         const __m256d displacementCoMX = _mm256_sub_pd(xposA, xposB);
         const __m256d displacementCoMY = _mm256_sub_pd(yposA, yposB);
@@ -478,8 +479,8 @@ class LJMultisiteFunctorAVX
             _mm256_add_pd(_mm256_add_pd(distanceSquaredCoMX, distanceSquaredCoMY), distanceSquaredCoMZ);
 
         const __m256d cutoffMask = _mm256_cmp_pd(distanceSquaredCoM, _cutoffSquared, _CMP_LE_OS);
-        const __m256i ownedStateB =
-            load_epi64(remainderCase, reinterpret_cast<const size_t *>(&ownedStatePtr[molB]), remainderMask);
+        const __m256i ownedStateB = autopas::utils::avx::load_epi64(
+            remainderCase, reinterpret_cast<const size_t *>(&ownedStatePtr[molB]), remainderMask);
         const __m256d dummyMask =
             _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB), _zero, _CMP_NEQ_OS);  // Assuming that dummy = 0
         const __m256d totalMask = _mm256_and_pd(cutoffMask, dummyMask);
@@ -529,10 +530,12 @@ class LJMultisiteFunctorAVX
           const bool remainderCase = rest < vecLength;
           const __m256i remainderMask = remainderCase ? _masks[rest - 1] : _mm256_set1_epi64x(-1);
 
-          const __m256i siteIndices = load_epi64(remainderCase, &siteVector[siteVectorIndex], remainderMask);
+          const __m256i siteIndices =
+              autopas::utils::avx::load_epi64(remainderCase, &siteVector[siteVectorIndex], remainderMask);
 
           if constexpr (useMixing) {
-            __m256i siteTypeValues = gather_epi64(remainderCase, &siteTypes[siteIndexMolB], siteIndices, remainderMask);
+            __m256i siteTypeValues =
+                autopas::utils::avx::gather_epi64(remainderCase, &siteTypes[siteIndexMolB], siteIndices, remainderMask);
             siteTypeValues =
                 _mm256_mul_epu32(siteTypeValues, _mm256_set1_epi64x(3));  // This could maybe be problematic!
 
@@ -543,12 +546,12 @@ class LJMultisiteFunctorAVX
             }
           }
 
-          const __m256d exactSitePositionsBX =
-              gather_pd(remainderCase, &exactSitePositionX[siteIndexMolB], siteIndices, remainderMask);
-          const __m256d exactSitePositionsBY =
-              gather_pd(remainderCase, &exactSitePositionY[siteIndexMolB], siteIndices, remainderMask);
-          const __m256d exactSitePositionsBZ =
-              gather_pd(remainderCase, &exactSitePositionZ[siteIndexMolB], siteIndices, remainderMask);
+          const __m256d exactSitePositionsBX = autopas::utils::avx::gather_pd(
+              remainderCase, &exactSitePositionX[siteIndexMolB], siteIndices, remainderMask);
+          const __m256d exactSitePositionsBY = autopas::utils::avx::gather_pd(
+              remainderCase, &exactSitePositionY[siteIndexMolB], siteIndices, remainderMask);
+          const __m256d exactSitePositionsBZ = autopas::utils::avx::gather_pd(
+              remainderCase, &exactSitePositionZ[siteIndexMolB], siteIndices, remainderMask);
           const __m256d displacementX = _mm256_sub_pd(exactSitePositionsAX, exactSitePositionsBX);
           const __m256d displacementY = _mm256_sub_pd(exactSitePositionsAY, exactSitePositionsBY);
           const __m256d displacementZ = _mm256_sub_pd(exactSitePositionsAZ, exactSitePositionsBZ);
@@ -579,17 +582,20 @@ class LJMultisiteFunctorAVX
 
           // N3
 
-          __m256d forceSumBX = gather_pd(remainderCase, &siteForceX[siteIndexMolB], siteIndices, remainderMask);
-          __m256d forceSumBY = gather_pd(remainderCase, &siteForceY[siteIndexMolB], siteIndices, remainderMask);
-          __m256d forceSumBZ = gather_pd(remainderCase, &siteForceZ[siteIndexMolB], siteIndices, remainderMask);
+          __m256d forceSumBX =
+              autopas::utils::avx::gather_pd(remainderCase, &siteForceX[siteIndexMolB], siteIndices, remainderMask);
+          __m256d forceSumBY =
+              autopas::utils::avx::gather_pd(remainderCase, &siteForceY[siteIndexMolB], siteIndices, remainderMask);
+          __m256d forceSumBZ =
+              autopas::utils::avx::gather_pd(remainderCase, &siteForceZ[siteIndexMolB], siteIndices, remainderMask);
 
           forceSumBX = _mm256_sub_pd(forceSumBX, forceX);
           forceSumBY = _mm256_sub_pd(forceSumBY, forceY);
           forceSumBZ = _mm256_sub_pd(forceSumBZ, forceZ);
 
-          scatter_pd(remainderCase, &siteForceX[siteIndexMolB], siteIndices, remainderMask, forceSumBX);
-          scatter_pd(remainderCase, &siteForceY[siteIndexMolB], siteIndices, remainderMask, forceSumBY);
-          scatter_pd(remainderCase, &siteForceZ[siteIndexMolB], siteIndices, remainderMask, forceSumBZ);
+          autopas::utils::avx::scatter_pd(remainderCase, &siteForceX[siteIndexMolB], siteIndices, remainderMask, forceSumBX);
+          autopas::utils::avx::scatter_pd(remainderCase, &siteForceY[siteIndexMolB], siteIndices, remainderMask, forceSumBY);
+          autopas::utils::avx::scatter_pd(remainderCase, &siteForceZ[siteIndexMolB], siteIndices, remainderMask, forceSumBZ);
 
           if constexpr (calculateGlobals) {
             const __m256d virialX = _mm256_mul_pd(displacementX, forceX);
@@ -605,8 +611,8 @@ class LJMultisiteFunctorAVX
                                                _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
             __m256d energyFactor = _mm256_blendv_pd(_zero, _one, ownedMaskA);
             if constexpr (newton3) {
-              const __m256i ownedStateB =
-                  gather_epi64(remainderCase, &isSiteOwned[siteIndexMolB], siteIndices, remainderMask);
+              const __m256i ownedStateB = autopas::utils::avx::gather_epi64(remainderCase, &isSiteOwned[siteIndexMolB],
+                                                                            siteIndices, remainderMask);
               __m256d ownedMaskB = _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB),
                                                  _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
               energyFactor = _mm256_add_pd(energyFactor, _mm256_blendv_pd(_zero, _one, ownedMaskB));
@@ -618,9 +624,9 @@ class LJMultisiteFunctorAVX
           }
         }
         // sum forces on single site in mol A
-        siteForceX[siteA] += horizontalSum(forceSumX);
-        siteForceY[siteA] += horizontalSum(forceSumY);
-        siteForceZ[siteA] += horizontalSum(forceSumZ);
+        siteForceX[siteA] += autopas::utils::avx::horizontalSum(forceSumX);
+        siteForceY[siteA] += autopas::utils::avx::horizontalSum(forceSumY);
+        siteForceZ[siteA] += autopas::utils::avx::horizontalSum(forceSumZ);
       }
       // ------------------- end of vectorized part -------------------
       siteIndexMolA += noSitesInMolA;
@@ -671,10 +677,10 @@ class LJMultisiteFunctorAVX
       // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       const auto newton3Factor = newton3 ? .5 : 1.;
 
-      _aosThreadData[threadNum].potentialEnergySum += horizontalSum(potentialEnergySum) * newton3Factor;
-      _aosThreadData[threadNum].virialSum[0] += horizontalSum(virialSumX) * newton3Factor;
-      _aosThreadData[threadNum].virialSum[1] += horizontalSum(virialSumY) * newton3Factor;
-      _aosThreadData[threadNum].virialSum[2] += horizontalSum(virialSumZ) * newton3Factor;
+      _aosThreadData[threadNum].potentialEnergySum += autopas::utils::avx::horizontalSum(potentialEnergySum) * newton3Factor;
+      _aosThreadData[threadNum].virialSum[0] += autopas::utils::avx::horizontalSum(virialSumX) * newton3Factor;
+      _aosThreadData[threadNum].virialSum[1] += autopas::utils::avx::horizontalSum(virialSumY) * newton3Factor;
+      _aosThreadData[threadNum].virialSum[2] += autopas::utils::avx::horizontalSum(virialSumZ) * newton3Factor;
     }
   }
 
@@ -837,9 +843,9 @@ class LJMultisiteFunctorAVX
         const bool remainderCase = rest < vecLength;
         __m256i remainderMask = remainderCase ? _masks[rest - 1] : _mm256_set1_epi64x(-1);
 
-        const __m256d xposB = load_pd(remainderCase, &xBptr[molB], remainderMask);
-        const __m256d yposB = load_pd(remainderCase, &yBptr[molB], remainderMask);
-        const __m256d zposB = load_pd(remainderCase, &zBptr[molB], remainderMask);
+        const __m256d xposB = autopas::utils::avx::load_pd(remainderCase, &xBptr[molB], remainderMask);
+        const __m256d yposB = autopas::utils::avx::load_pd(remainderCase, &yBptr[molB], remainderMask);
+        const __m256d zposB = autopas::utils::avx::load_pd(remainderCase, &zBptr[molB], remainderMask);
 
         const __m256d displacementCoMX = _mm256_sub_pd(xposA, xposB);
         const __m256d displacementCoMY = _mm256_sub_pd(yposA, yposB);
@@ -914,10 +920,11 @@ class LJMultisiteFunctorAVX
           const __m256i remainderMask = remainderCase ? _masks[remainder - 1] : _mm256_set1_epi64x(-1);
 
           const __m256i siteIndices =
-              load_epi64(remainderCase, &siteVector[siteVectorIndex], remainderMask);
+              autopas::utils::avx::load_epi64(remainderCase, &siteVector[siteVectorIndex], remainderMask);
 
           if constexpr (useMixing) {
-            __m256i siteTypeValues = gather_epi64(remainderCase, siteTypesB.data(), siteIndices, remainderMask);
+            __m256i siteTypeValues =
+                autopas::utils::avx::gather_epi64(remainderCase, siteTypesB.data(), siteIndices, remainderMask);
             siteTypeValues =
                 _mm256_mul_epu32(siteTypeValues, _mm256_set1_epi64x(3));  // This could maybe be problematic!
 
@@ -929,11 +936,11 @@ class LJMultisiteFunctorAVX
           }
 
           const __m256d exactSitePositionsBX =
-              gather_pd(remainderCase, exactSitePositionBx.data(), siteIndices, remainderMask);
+              autopas::utils::avx::gather_pd(remainderCase, exactSitePositionBx.data(), siteIndices, remainderMask);
           const __m256d exactSitePositionsBY =
-              gather_pd(remainderCase, exactSitePositionBy.data(), siteIndices, remainderMask);
+              autopas::utils::avx::gather_pd(remainderCase, exactSitePositionBy.data(), siteIndices, remainderMask);
           const __m256d exactSitePositionsBZ =
-              gather_pd(remainderCase, exactSitePositionBz.data(), siteIndices, remainderMask);
+              autopas::utils::avx::gather_pd(remainderCase, exactSitePositionBz.data(), siteIndices, remainderMask);
 
           const __m256d displacementX = _mm256_sub_pd(exactSitePositionsAX, exactSitePositionsBX);
           const __m256d displacementY = _mm256_sub_pd(exactSitePositionsAY, exactSitePositionsBY);
@@ -977,16 +984,19 @@ class LJMultisiteFunctorAVX
 
           // N3L ( total molecular forces + torques to be determined later )
           if constexpr (newton3) {
-            __m256d forceSumBX = gather_pd(remainderCase, siteForceBx.data(), siteIndices, remainderMask);
-            __m256d forceSumBY = gather_pd(remainderCase, siteForceBy.data(), siteIndices, remainderMask);
-            __m256d forceSumBZ = gather_pd(remainderCase, siteForceBz.data(), siteIndices, remainderMask);
+            __m256d forceSumBX =
+                autopas::utils::avx::gather_pd(remainderCase, siteForceBx.data(), siteIndices, remainderMask);
+            __m256d forceSumBY =
+                autopas::utils::avx::gather_pd(remainderCase, siteForceBy.data(), siteIndices, remainderMask);
+            __m256d forceSumBZ =
+                autopas::utils::avx::gather_pd(remainderCase, siteForceBz.data(), siteIndices, remainderMask);
             forceSumBX = _mm256_sub_pd(forceSumBX, forceX);
             forceSumBY = _mm256_sub_pd(forceSumBY, forceY);
             forceSumBZ = _mm256_sub_pd(forceSumBZ, forceZ);
 
-            scatter_pd(remainderCase, siteForceBx.data(), siteIndices, remainderMask, forceSumBX);
-            scatter_pd(remainderCase, siteForceBy.data(), siteIndices, remainderMask, forceSumBY);
-            scatter_pd(remainderCase, siteForceBz.data(), siteIndices, remainderMask, forceSumBZ);
+            autopas::utils::avx::scatter_pd(remainderCase, siteForceBx.data(), siteIndices, remainderMask, forceSumBX);
+            autopas::utils::avx::scatter_pd(remainderCase, siteForceBy.data(), siteIndices, remainderMask, forceSumBY);
+            autopas::utils::avx::scatter_pd(remainderCase, siteForceBz.data(), siteIndices, remainderMask, forceSumBZ);
           }
 
           // globals
@@ -1005,7 +1015,7 @@ class LJMultisiteFunctorAVX
             __m256d energyFactor = _mm256_blendv_pd(_zero, _one, ownedMaskA);
             if constexpr (newton3) {
               const __m256i ownedStateB =
-                  gather_epi64(remainderCase, isSiteOwnedBArr.data(), siteIndices, remainderMask);
+                  autopas::utils::avx::gather_epi64(remainderCase, isSiteOwnedBArr.data(), siteIndices, remainderMask);
               __m256d ownedMaskB = _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB),
                                                  _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
               energyFactor = _mm256_add_pd(energyFactor, _mm256_blendv_pd(_zero, _one, ownedMaskB));
@@ -1017,12 +1027,12 @@ class LJMultisiteFunctorAVX
           }
         }
       }
-      fxAptr[molA] += horizontalSum(forceSumX);
-      fyAptr[molA] += horizontalSum(forceSumY);
-      fzAptr[molA] += horizontalSum(forceSumZ);
-      txAptr[molA] += horizontalSum(torqueSumX);
-      tyAptr[molA] += horizontalSum(torqueSumY);
-      tzAptr[molA] += horizontalSum(torqueSumZ);
+      fxAptr[molA] += autopas::utils::avx::horizontalSum(forceSumX);
+      fyAptr[molA] += autopas::utils::avx::horizontalSum(forceSumY);
+      fzAptr[molA] += autopas::utils::avx::horizontalSum(forceSumZ);
+      txAptr[molA] += autopas::utils::avx::horizontalSum(torqueSumX);
+      tyAptr[molA] += autopas::utils::avx::horizontalSum(torqueSumY);
+      tzAptr[molA] += autopas::utils::avx::horizontalSum(torqueSumZ);
     }
 
     // reduce the forces on individual sites in SoA B to total forces & torques on whole molecules
@@ -1069,10 +1079,10 @@ class LJMultisiteFunctorAVX
       // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       const auto newton3Factor = newton3 ? .5 : 1.;
 
-      _aosThreadData[threadNum].potentialEnergySum += horizontalSum(potentialEnergySum) * newton3Factor;
-      _aosThreadData[threadNum].virialSum[0] += horizontalSum(virialSumX) * newton3Factor;
-      _aosThreadData[threadNum].virialSum[1] += horizontalSum(virialSumY) * newton3Factor;
-      _aosThreadData[threadNum].virialSum[2] += horizontalSum(virialSumZ) * newton3Factor;
+      _aosThreadData[threadNum].potentialEnergySum += autopas::utils::avx::horizontalSum(potentialEnergySum) * newton3Factor;
+      _aosThreadData[threadNum].virialSum[0] += autopas::utils::avx::horizontalSum(virialSumX) * newton3Factor;
+      _aosThreadData[threadNum].virialSum[1] += autopas::utils::avx::horizontalSum(virialSumY) * newton3Factor;
+      _aosThreadData[threadNum].virialSum[2] += autopas::utils::avx::horizontalSum(virialSumZ) * newton3Factor;
     }
   }
 
@@ -1226,11 +1236,12 @@ class LJMultisiteFunctorAVX
       const size_t rest = neighborListSize - neighborMol;
       const bool remainderCase = rest < vecLength;
       __m256i remainderMask = remainderCase ? _masks[rest - 1] : _mm256_set1_epi64x(-1);
-      const __m256i neighborMolIndex = load_epi64(remainderCase, &neighborList[neighborMol], remainderMask);
+      const __m256i neighborMolIndex =
+          autopas::utils::avx::load_epi64(remainderCase, &neighborList[neighborMol], remainderMask);
 
-      const __m256d xposB = gather_pd(remainderCase, xptr, neighborMolIndex, remainderMask);
-      const __m256d yposB = gather_pd(remainderCase, yptr, neighborMolIndex, remainderMask);
-      const __m256d zposB = gather_pd(remainderCase, zptr, neighborMolIndex, remainderMask);
+      const __m256d xposB = autopas::utils::avx::gather_pd(remainderCase, xptr, neighborMolIndex, remainderMask);
+      const __m256d yposB = autopas::utils::avx::gather_pd(remainderCase, yptr, neighborMolIndex, remainderMask);
+      const __m256d zposB = autopas::utils::avx::gather_pd(remainderCase, zptr, neighborMolIndex, remainderMask);
 
       const __m256d displacementCoMX = _mm256_sub_pd(xPosFirst, xposB);
       const __m256d displacementCoMY = _mm256_sub_pd(yPosFirst, yposB);
@@ -1326,11 +1337,11 @@ class LJMultisiteFunctorAVX
         const __m256i remainderMask = remainderCase ? _masks[remainder - 1] : _mm256_set1_epi64x(-1);
 
         const __m256i siteIndices =
-            load_epi64(remainderCase, &siteVector[siteVectorIndex], remainderMask);
+            autopas::utils::avx::load_epi64(remainderCase, &siteVector[siteVectorIndex], remainderMask);
 
         if constexpr (useMixing) {
-
-          __m256i siteTypeValues = gather_epi64(remainderCase, siteTypesNeighbors.data(), siteIndices, remainderMask);
+          __m256i siteTypeValues =
+              autopas::utils::avx::gather_epi64(remainderCase, siteTypesNeighbors.data(), siteIndices, remainderMask);
           siteTypeValues = _mm256_mul_epu32(siteTypeValues, _mm256_set1_epi64x(3));  // This could maybe be problematic!
 
           epsilon24 = _mm256_i64gather_pd(mixingPtr, siteTypeValues, 8);
@@ -1340,12 +1351,12 @@ class LJMultisiteFunctorAVX
           }
         }
 
-        const __m256d exactNeighborSitePositionX =
-            gather_pd(remainderCase, exactNeighborSitePositionsX.data(), siteIndices, remainderMask);
-        const __m256d exactNeighborSitePositionY =
-            gather_pd(remainderCase, exactNeighborSitePositionsY.data(), siteIndices, remainderMask);
-        const __m256d exactNeighborSitePositionZ =
-            gather_pd(remainderCase, exactNeighborSitePositionsZ.data(), siteIndices, remainderMask);
+        const __m256d exactNeighborSitePositionX = autopas::utils::avx::gather_pd(
+            remainderCase, exactNeighborSitePositionsX.data(), siteIndices, remainderMask);
+        const __m256d exactNeighborSitePositionY = autopas::utils::avx::gather_pd(
+            remainderCase, exactNeighborSitePositionsY.data(), siteIndices, remainderMask);
+        const __m256d exactNeighborSitePositionZ = autopas::utils::avx::gather_pd(
+            remainderCase, exactNeighborSitePositionsZ.data(), siteIndices, remainderMask);
 
         const __m256d displacementX = _mm256_sub_pd(exactPrimeSitePositionX, exactNeighborSitePositionX);
         const __m256d displacementY = _mm256_sub_pd(exactPrimeSitePositionY, exactNeighborSitePositionY);
@@ -1366,7 +1377,6 @@ class LJMultisiteFunctorAVX
         const __m256d scalar = _mm256_mul_pd(epsilon24, _mm256_mul_pd(_mm256_add_pd(lj12, lj12m6), invDistSquared));
         const __m256d scalarMultiple =
             _mm256_and_pd(_mm256_castsi256_pd(remainderMask), scalar);  // Idk why this is needed
-
 
         // calculate forces
         const __m256d forceX = _mm256_mul_pd(scalarMultiple, displacementX);
@@ -1390,16 +1400,19 @@ class LJMultisiteFunctorAVX
 
         // N3L
         if constexpr (newton3) {
-          __m256d forceSumBX = gather_pd(remainderCase, siteForceX.data(), siteIndices, remainderMask);
-          __m256d forceSumBY = gather_pd(remainderCase, siteForceY.data(), siteIndices, remainderMask);
-          __m256d forceSumBZ = gather_pd(remainderCase, siteForceZ.data(), siteIndices, remainderMask);
+          __m256d forceSumBX =
+              autopas::utils::avx::gather_pd(remainderCase, siteForceX.data(), siteIndices, remainderMask);
+          __m256d forceSumBY =
+              autopas::utils::avx::gather_pd(remainderCase, siteForceY.data(), siteIndices, remainderMask);
+          __m256d forceSumBZ =
+              autopas::utils::avx::gather_pd(remainderCase, siteForceZ.data(), siteIndices, remainderMask);
           forceSumBX = _mm256_sub_pd(forceSumBX, forceX);
           forceSumBY = _mm256_sub_pd(forceSumBY, forceY);
           forceSumBZ = _mm256_sub_pd(forceSumBZ, forceZ);
 
-          scatter_pd(remainderCase, siteForceX.data(), siteIndices, remainderMask, forceSumBX);
-          scatter_pd(remainderCase, siteForceY.data(), siteIndices, remainderMask, forceSumBY);
-          scatter_pd(remainderCase, siteForceZ.data(), siteIndices, remainderMask, forceSumBZ);
+          autopas::utils::avx::scatter_pd(remainderCase, siteForceX.data(), siteIndices, remainderMask, forceSumBX);
+          autopas::utils::avx::scatter_pd(remainderCase, siteForceY.data(), siteIndices, remainderMask, forceSumBY);
+          autopas::utils::avx::scatter_pd(remainderCase, siteForceZ.data(), siteIndices, remainderMask, forceSumBZ);
         }
 
         // calculate globals
@@ -1413,12 +1426,12 @@ class LJMultisiteFunctorAVX
           const __m256d potentialEnergy6Masked = _mm256_and_pd(remainderMask, potentialEnergy6);
 
           __m256i ownedStateP4 = _mm256_set1_epi64x(static_cast<int64_t>(ownedStatePrime));
-          __m256d ownedMaskPrime = _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateP4),
-                                                 _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
+          __m256d ownedMaskPrime =
+              _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateP4), _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
           __m256d energyFactor = _mm256_blendv_pd(_zero, _one, ownedMaskPrime);
           if constexpr (newton3) {
-            const __m256i ownedStateB =
-                gather_epi64(remainderCase, isNeighborSiteOwnedArr.data(), siteIndices, remainderMask);
+            const __m256i ownedStateB = autopas::utils::avx::gather_epi64(remainderCase, isNeighborSiteOwnedArr.data(),
+                                                                          siteIndices, remainderMask);
             __m256d ownedMaskB = _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB),
                                                _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
             energyFactor = _mm256_add_pd(energyFactor, _mm256_blendv_pd(_zero, _one, ownedMaskB));
@@ -1431,12 +1444,12 @@ class LJMultisiteFunctorAVX
       }
     }
     // Add forces to prime mol
-    fxptr[indexFirst] += horizontalSum(forceSumX);
-    fyptr[indexFirst] += horizontalSum(forceSumY);
-    fzptr[indexFirst] += horizontalSum(forceSumZ);
-    txptr[indexFirst] += horizontalSum(torqueSumX);
-    typtr[indexFirst] += horizontalSum(torqueSumY);
-    tzptr[indexFirst] += horizontalSum(torqueSumZ);
+    fxptr[indexFirst] += autopas::utils::avx::horizontalSum(forceSumX);
+    fyptr[indexFirst] += autopas::utils::avx::horizontalSum(forceSumY);
+    fzptr[indexFirst] += autopas::utils::avx::horizontalSum(forceSumZ);
+    txptr[indexFirst] += autopas::utils::avx::horizontalSum(torqueSumX);
+    typtr[indexFirst] += autopas::utils::avx::horizontalSum(torqueSumY);
+    tzptr[indexFirst] += autopas::utils::avx::horizontalSum(torqueSumZ);
 
     // Reduce forces on individual neighbor sites to molecular forces & torques if newton3=true
     if constexpr (newton3) {
@@ -1489,10 +1502,10 @@ class LJMultisiteFunctorAVX
       // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       const auto newton3Factor = newton3 ? .5 : 1.;
 
-      _aosThreadData[threadNum].potentialEnergySum += horizontalSum(potentialEnergySum) * newton3Factor;
-      _aosThreadData[threadNum].virialSum[0] += horizontalSum(virialSumX) * newton3Factor;
-      _aosThreadData[threadNum].virialSum[1] += horizontalSum(virialSumY) * newton3Factor;
-      _aosThreadData[threadNum].virialSum[2] += horizontalSum(virialSumZ) * newton3Factor;
+      _aosThreadData[threadNum].potentialEnergySum += autopas::utils::avx::horizontalSum(potentialEnergySum) * newton3Factor;
+      _aosThreadData[threadNum].virialSum[0] += autopas::utils::avx::horizontalSum(virialSumX) * newton3Factor;
+      _aosThreadData[threadNum].virialSum[1] += autopas::utils::avx::horizontalSum(virialSumY) * newton3Factor;
+      _aosThreadData[threadNum].virialSum[2] += autopas::utils::avx::horizontalSum(virialSumZ) * newton3Factor;
     }
   }
 
@@ -1658,71 +1671,6 @@ class LJMultisiteFunctorAVX
           "Cannot get virial, because endTraversal was not called.");
     }
     return _virialSum[0] + _virialSum[1] + _virialSum[2];
-  }
-
- private:
-  /**
-   * @brief Utility function to calculate the sum of an AVX register horizontally.
-   * @param data register of 4 doubles
-   * @return sum of its elements
-   */
-  inline double horizontalSum(const __m256d &data) {
-    __m256d sum = _mm256_hadd_pd(data, data);
-    __m256d permuted = _mm256_permute4x64_pd(sum, _MM_PERM_ACBD);
-    sum = _mm256_hadd_pd(sum, permuted);
-    sum = _mm256_permute4x64_pd(sum, _MM_PERM_BBDD);
-    return _mm_cvtsd_f64(_mm256_extractf128_pd(sum, 0));
-  }
-
-  static inline __m256d load_pd(bool useMask, const double *const __restrict data, const __m256i &mask) {
-    if (useMask) {
-      return _mm256_maskload_pd(data, mask);
-    } else {
-      return _mm256_loadu_pd(data);
-    }
-  };
-
-  static inline __m256d load_epi64(bool useMask, const size_t *const __restrict data, const __m256i &mask) {
-    if (useMask) {
-      return _mm256_maskload_epi64(reinterpret_cast<const long long int *>(data), mask);
-    } else {
-      return _mm256_loadu_si256(reinterpret_cast<const __m256i *>(data));
-    }
-  }
-
-  static inline __m256d gather_pd(bool useMask, const double *const __restrict data, const __m256i &indices,
-                                  const __m256i &mask) {
-    if (useMask) {
-      return _mm256_mask_i64gather_pd(_mm256_setzero_pd(), data, indices, mask, 8);
-    } else {
-      return _mm256_i64gather_pd(data, indices, 8);
-    }
-  }
-
-  static inline __m256i gather_epi64(bool useMask, const size_t *const __restrict data, const __m256i &indices,
-                                     const __m256i &mask) {
-    if (useMask) {
-      return _mm256_mask_i64gather_epi64(_mm256_setzero_si256(), data, indices, mask, 8);
-    } else {
-      return _mm256_i64gather_epi64(data, indices, 8);
-    }
-  }
-
-  // Workaround for missing _mm256_i64scatter_pd :(
-  static inline void scatter_pd(bool useMask, double *const __restrict ptr, const __m256i &indices, const __m256i &mask,
-                                __m256d &values) {
-    alignas(32) double temp[4];
-    alignas(32) size_t idx[4];
-
-    _mm256_store_pd(temp, values);
-    _mm256_store_si256((__m256i *)idx, indices);
-
-    for (size_t i = 0; i < 4; ++i) {
-      if (mask[i]) {  // <- This does not work for all compilers >:(
-        ptr[idx[i]] = temp[i];
-      } else
-        break;
-    }
   }
 
  public:
