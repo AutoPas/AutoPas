@@ -597,7 +597,7 @@ class LJFunctor
   }
 
   /**
-   * Postprocesses global values, e.g. upot and virial
+   * Accumulates global values, e.g. upot and virial.
    * @param newton3
    */
   void endTraversal(bool newton3) final {
