@@ -264,7 +264,7 @@ class LJMultisiteFunctor
   }
 
   /**
-   * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3)
+   * @copydoc autopas::Functor::SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3)
    * This functor will always use a newton3 like traversing of the soa, however, it still needs to know about newton3
    * to use it correctly for the global values.
    */
@@ -582,7 +582,7 @@ class LJMultisiteFunctor
     }
   }
   /**
-   * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
+   * @copydoc autopas::Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
    */
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                       const bool newton3) final {
@@ -595,7 +595,7 @@ class LJMultisiteFunctor
 
   // clang-format off
   /**
-   * @copydoc Functor::SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
+   * @copydoc autopas::Functor::SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
    */
   // clang-format on
   void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
@@ -627,7 +627,7 @@ class LJMultisiteFunctor
   }
 
   /**
-   * @copydoc Functor::getNeededAttr()
+   * @copydoc autopas::Functor::getNeededAttr()
    */
   constexpr static auto getNeededAttr() {
     return std::array<typename Particle::AttributeNames, 16>{
@@ -642,7 +642,7 @@ class LJMultisiteFunctor
   }
 
   /**
-   * @copydoc Functor::getNeededAttr(std::false_type)
+   * @copydoc autopas::Functor::getNeededAttr(std::false_type)
    */
   constexpr static auto getNeededAttr(std::false_type) {
     return std::array<typename Particle::AttributeNames, 16>{
@@ -657,7 +657,7 @@ class LJMultisiteFunctor
   }
 
   /**
-   * @copydoc Functor::getComputedAttr()
+   * @copydoc autopas::Functor::getComputedAttr()
    */
   constexpr static auto getComputedAttr() {
     return std::array<typename Particle::AttributeNames, 6>{
