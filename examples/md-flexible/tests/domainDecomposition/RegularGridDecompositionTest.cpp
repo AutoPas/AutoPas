@@ -144,7 +144,7 @@ TEST_F(RegularGridDecompositionTest, testGetLocalDomain) {
   const auto decomposition = domainDecomposition->getDecomposition();
 
   const std::array<double, 3> expectedLocalBoxExtend =
-      globalBoxExtend / autopas::utils::ArrayUtils::static_cast_array<double>(decomposition);
+      globalBoxExtend / autopas::utils::ArrayUtils::static_cast_copy_array<double>(decomposition);
   // make sure expectations make sense
   ASSERT_THAT(expectedLocalBoxExtend, ::testing::Each(::testing::Gt(1e-10)));
 

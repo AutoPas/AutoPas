@@ -207,7 +207,7 @@ inline void LCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
         const double distSquare = utils::ArrayMath::dot(pos, pos);
         if (distSquare <= interactionLengthSquare) {
           const long currentOffset = utils::ThreeDimensionalMapping::threeToOneD(
-              x, y, z, utils::ArrayUtils::static_cast_array<long>(this->_cellsPerDimension));
+              x, y, z, utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension));
           const bool containCurrentOffset =
               std::any_of(_cellOffsets[x + this->_overlap[0]].cbegin(), _cellOffsets[x + this->_overlap[0]].cend(),
                           [currentOffset](const auto &e) { return e.first == currentOffset; });
@@ -216,7 +216,7 @@ inline void LCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
           }
           for (long ix = x; ix <= std::abs(x); ++ix) {
             const long offset = utils::ThreeDimensionalMapping::threeToOneD(
-                ix, y, z, utils::ArrayUtils::static_cast_array<long>(this->_cellsPerDimension));
+                ix, y, z, utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension));
             const size_t index = ix + this->_overlap[0];
             if (y == 0l and z == 0l) {
               // make sure center of slice is always at the beginning
