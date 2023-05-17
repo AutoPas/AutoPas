@@ -1,5 +1,5 @@
 /**
- * @file PCLTest.h
+ * @file ParticlePropertiesLibraryTest.h
  * @author N. Fottner
  * @date 7/7/19
  */

@@ -1,5 +1,5 @@
 /**
- * @file LJFunctorAVX2Test.h
+ * @file LJFunctorAVXTest.h
  * @author F. Gratl
  * @date 12/17/18
  */
