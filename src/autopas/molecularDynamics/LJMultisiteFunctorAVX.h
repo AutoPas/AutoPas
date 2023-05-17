@@ -439,13 +439,15 @@ class LJMultisiteFunctorAVX
     // main force calculation loop
     size_t siteIndexMolA = 0;  // index of first site in molA
     for (size_t molA = 0; molA < soa.getNumberOfParticles(); ++molA) {
+      const size_t noSitesInMolA = useMixing ? _PPLibrary->getNumSites(typeptr[molA])
+                                             : const_unrotatedSitePositions.size();  // Number of sites in molecule A
+
       const auto ownedStateA = ownedStatePtr[molA];
       if (ownedStateA == autopas::OwnershipState::dummy) {
+        siteIndexMolA += noSitesInMolA;
         continue;
       }
 
-      const size_t noSitesInMolA = useMixing ? _PPLibrary->getNumSites(typeptr[molA])
-                                             : const_unrotatedSitePositions.size();  // Number of sites in molecule A
       const size_t siteIndexMolB = siteIndexMolA + noSitesInMolA;                    // index of first site in molB
       const size_t noSitesB = (siteCount - siteIndexMolB);  // Number of sites in molecules that A interacts with
 
@@ -1268,27 +1270,6 @@ class LJMultisiteFunctorAVX
         _mm256_storeu_pd((&molMask[neighborMol]), totalMask);
       }
     }
-    //    unsigned long max_long = 0xFFFFFFFFFFFFFFFF;
-    //    double max_double = *(double *)&max_long;
-    //    for (size_t neighborMol = 0; neighborMol < neighborListSize; ++neighborMol) {
-    //      const auto neighborMolIndex = neighborList[neighborMol];  // index of neighbor mol in soa
-    //
-    //      const auto ownedState = ownedStatePtr[neighborMolIndex];
-    //
-    //      const auto displacementCoMX = xptr[indexFirst] - xptr[neighborMolIndex];
-    //      const auto displacementCoMY = yptr[indexFirst] - yptr[neighborMolIndex];
-    //      const auto displacementCoMZ = zptr[indexFirst] - zptr[neighborMolIndex];
-    //
-    //      const auto distanceSquaredCoMX = displacementCoMX * displacementCoMX;
-    //      const auto distanceSquaredCoMY = displacementCoMY * displacementCoMY;
-    //      const auto distanceSquaredCoMZ = displacementCoMZ * displacementCoMZ;
-    //
-    //      const auto distanceSquaredCoM = distanceSquaredCoMX + distanceSquaredCoMY + distanceSquaredCoMZ;
-    //
-    //      // mask molecules beyond cutoff or if molecule is a dummy
-    //      bool condition = distanceSquaredCoM <= cutoffSquared and ownedState != autopas::OwnershipState::dummy;
-    //      molMask[neighborMol] = condition ? max_double : 0.;
-    //    }
 
     //     generate mask for each site from molecular mask
     std::vector<size_t, autopas::AlignedAllocator<size_t>> siteVector;

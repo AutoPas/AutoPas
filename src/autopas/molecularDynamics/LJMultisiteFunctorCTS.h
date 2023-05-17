@@ -531,14 +531,14 @@ class LJMultisiteFunctorCTS
     // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
     const SoAFloatPrecision cutoffSquared = _cutoffSquaredAoS;
 
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionX;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionY;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionZ;
+    std::vector<double, autopas::AlignedAllocator<double>> exactSitePositionX;
+    std::vector<double, autopas::AlignedAllocator<double>> exactSitePositionY;
+    std::vector<double, autopas::AlignedAllocator<double>> exactSitePositionZ;
 
     // we require arrays for forces for sites to maintain SIMD in site-site calculations
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceX;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceY;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceZ;
+    std::vector<double, autopas::AlignedAllocator<double>> siteForceX;
+    std::vector<double, autopas::AlignedAllocator<double>> siteForceY;
+    std::vector<double, autopas::AlignedAllocator<double>> siteForceZ;
 
     std::vector<size_t, autopas::AlignedAllocator<size_t>> siteTypes;
     std::vector<size_t, autopas::AlignedAllocator<size_t>> isSiteOwned;
@@ -605,59 +605,20 @@ class LJMultisiteFunctorCTS
     size_t siteIndexMolA = 0;  // index of first site in molA
     for (size_t molA = 0; molA < soa.getNumberOfParticles(); ++molA) {
       const auto ownedStateA = ownedStatePtr[molA];
+      const size_t noSitesInMolA = useMixing ? _PPLibrary->getNumSites(typeptr[molA])
+                                             : const_unrotatedSitePositions.size();  // Number of sites in molecule A
       if (ownedStateA == autopas::OwnershipState::dummy) {
+        siteIndexMolA += noSitesInMolA;
         continue;
       }
 
-      const size_t noSitesInMolA = useMixing ? _PPLibrary->getNumSites(typeptr[molA])
-                                             : const_unrotatedSitePositions.size();  // Number of sites in molecule A
       const size_t siteIndexMolB = siteIndexMolA + noSitesInMolA;                    // index of first site in molB
       const size_t noSitesB = (siteCount - siteIndexMolB);  // Number of sites in molecules that A interacts with
 
-      // generate mask for each site in the mols 'above' molA from molecular mask
-      std::vector<size_t, autopas::AlignedAllocator<size_t>> siteVector;
-      siteVector.reserve(noSitesB);
-
-      const __m256d xposA = _mm256_broadcast_sd(&xptr[molA]);
-      const __m256d yposA = _mm256_broadcast_sd(&yptr[molA]);
-      const __m256d zposA = _mm256_broadcast_sd(&zptr[molA]);
-
-      for (size_t site = 0; site < noSitesB; site += vecLength) {
-        const size_t remainder = noSitesB - site;
-        const bool remainderCase = remainder < vecLength;
-        __m256i remainderMask = remainderCase ? _masks[remainder - 1] : _mm256_set1_epi64x(-1);
-
-        const __m256d xposB =
-            autopas::utils::avx::load_pd(remainderCase, &exactSitePositionX[siteIndexMolB + site], remainderMask);
-        const __m256d yposB =
-            autopas::utils::avx::load_pd(remainderCase, &exactSitePositionY[siteIndexMolB + site], remainderMask);
-        const __m256d zposB =
-            autopas::utils::avx::load_pd(remainderCase, &exactSitePositionZ[siteIndexMolB + site], remainderMask);
-
-        const __m256d displacementCoMX = _mm256_sub_pd(xposA, xposB);
-        const __m256d displacementCoMY = _mm256_sub_pd(yposA, yposB);
-        const __m256d displacementCoMZ = _mm256_sub_pd(zposA, zposB);
-
-        const __m256d distanceSquaredCoMX = _mm256_mul_pd(displacementCoMX, displacementCoMX);
-        const __m256d distanceSquaredCoMY = _mm256_mul_pd(displacementCoMY, displacementCoMY);
-        const __m256d distanceSquaredCoMZ = _mm256_mul_pd(displacementCoMZ, displacementCoMZ);
-
-        const __m256d distanceSquaredCoM =
-            _mm256_add_pd(_mm256_add_pd(distanceSquaredCoMX, distanceSquaredCoMY), distanceSquaredCoMZ);
-
-        const __m256d cutoffMask = _mm256_cmp_pd(distanceSquaredCoM, _cutoffSquared, _CMP_LE_OS);
-        const __m256i ownedStateB = autopas::utils::avx::load_epi64(remainderCase, &isSiteOwned[site], remainderMask);
-        const __m256d dummyMask =
-            _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB), _zero, _CMP_NEQ_OS);  // Assuming that dummy = 0
-        const __m256d totalMask = _mm256_and_pd(cutoffMask, dummyMask);
-
-        // This gets the job done, but is not very efficient.
-        for (size_t i = 0; i < vecLength; ++i) {
-          if (totalMask[i] != 0) {
-            siteVector.emplace_back(site + i);
-          }
-        }
-      }
+      // Build the site vector for molecule A
+      const std::vector<size_t, autopas::AlignedAllocator<size_t>> siteVector =
+          buildSiteVector(xptr, yptr, zptr, noSitesB, exactSitePositionX, exactSitePositionY, exactSitePositionZ,
+                          xptr[molA], yptr[molA], zptr[molA], isSiteOwned, siteIndexMolB);
 
       // ------- Main force calculation loop -------
       for (size_t siteA = siteIndexMolA; siteA < siteIndexMolB; ++siteA) {
@@ -884,14 +845,14 @@ class LJMultisiteFunctorCTS
     // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
     const SoAFloatPrecision cutoffSquared = _cutoffSquaredAoS;
 
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionBx;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionBy;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionBz;
+    std::vector<double, autopas::AlignedAllocator<double>> exactSitePositionBx;
+    std::vector<double, autopas::AlignedAllocator<double>> exactSitePositionBy;
+    std::vector<double, autopas::AlignedAllocator<double>> exactSitePositionBz;
 
     // we require arrays for forces for sites to maintain SIMD in site-site calculations
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceBx;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceBy;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceBz;
+    std::vector<double, autopas::AlignedAllocator<double>> siteForceBx;
+    std::vector<double, autopas::AlignedAllocator<double>> siteForceBy;
+    std::vector<double, autopas::AlignedAllocator<double>> siteForceBz;
 
     std::vector<size_t, autopas::AlignedAllocator<size_t>> siteTypesB;
     std::vector<size_t, autopas::AlignedAllocator<size_t>> isSiteOwnedBArr;
@@ -968,48 +929,10 @@ class LJMultisiteFunctorCTS
       const auto rotatedSitePositionsA = autopas::utils::quaternion::rotateVectorOfPositions(
           {q0Aptr[molA], q1Aptr[molA], q2Aptr[molA], q3Aptr[molA]}, unrotatedSitePositionsA);
 
-      // generate mask for each site in the mols 'above' molA from molecular mask
-      std::vector<size_t, autopas::AlignedAllocator<size_t>> siteVector;
-      siteVector.reserve(siteCountB);
-
-      const __m256d xposA = _mm256_broadcast_sd(&xAptr[molA]);
-      const __m256d yposA = _mm256_broadcast_sd(&yAptr[molA]);
-      const __m256d zposA = _mm256_broadcast_sd(&zAptr[molA]);
-
-      for (size_t site = 0; site < siteCountB; site += vecLength) {
-        const size_t remainder = siteCountB - site;
-        const bool remainderCase = remainder < vecLength;
-        __m256i remainderMask = remainderCase ? _masks[remainder - 1] : _mm256_set1_epi64x(-1);
-
-        const __m256d xposB = autopas::utils::avx::load_pd(remainderCase, &exactSitePositionBx[site], remainderMask);
-        const __m256d yposB = autopas::utils::avx::load_pd(remainderCase, &exactSitePositionBy[site], remainderMask);
-        const __m256d zposB = autopas::utils::avx::load_pd(remainderCase, &exactSitePositionBz[site], remainderMask);
-
-        const __m256d displacementCoMX = _mm256_sub_pd(xposA, xposB);
-        const __m256d displacementCoMY = _mm256_sub_pd(yposA, yposB);
-        const __m256d displacementCoMZ = _mm256_sub_pd(zposA, zposB);
-
-        const __m256d distanceSquaredCoMX = _mm256_mul_pd(displacementCoMX, displacementCoMX);
-        const __m256d distanceSquaredCoMY = _mm256_mul_pd(displacementCoMY, displacementCoMY);
-        const __m256d distanceSquaredCoMZ = _mm256_mul_pd(displacementCoMZ, displacementCoMZ);
-
-        const __m256d distanceSquaredCoM =
-            _mm256_add_pd(_mm256_add_pd(distanceSquaredCoMX, distanceSquaredCoMY), distanceSquaredCoMZ);
-
-        const __m256d cutoffMask = _mm256_cmp_pd(distanceSquaredCoM, _cutoffSquared, _CMP_LE_OS);
-        const __m256i ownedStateB =
-            autopas::utils::avx::load_epi64(remainderCase, &isSiteOwnedBArr[site], remainderMask);
-        const __m256d dummyMask =
-            _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB), _zero, _CMP_NEQ_OS);  // Assuming that dummy = 0
-        const __m256d totalMask = _mm256_and_pd(cutoffMask, dummyMask);
-
-        // This gets the job done, but is not very efficient.
-        for (size_t i = 0; i < vecLength; ++i) {
-          if (totalMask[i] != 0) {
-            siteVector.emplace_back(site + i);
-          }
-        }
-      }
+      // Build the site vector for molecule A
+      const std::vector<size_t, autopas::AlignedAllocator<size_t>> siteVector =
+          buildSiteVector(xBptr, yBptr, zBptr, siteCountB, exactSitePositionBx, exactSitePositionBy,
+                          exactSitePositionBz, xAptr[molA], yAptr[molA], zAptr[molA], isSiteOwnedBArr);
 
       // sums used for molA
       __m256d forceSumX = _zero;
@@ -1018,6 +941,10 @@ class LJMultisiteFunctorCTS
       __m256d torqueSumX = _zero;
       __m256d torqueSumY = _zero;
       __m256d torqueSumZ = _zero;
+
+      const __m256d xposA = _mm256_broadcast_sd(&xAptr[molA]);
+      const __m256d yposA = _mm256_broadcast_sd(&yAptr[molA]);
+      const __m256d zposA = _mm256_broadcast_sd(&zAptr[molA]);
 
       for (size_t siteA = 0; siteA < noSitesInMolA; ++siteA) {
         const double *mixingPtr =
@@ -1261,17 +1188,17 @@ class LJMultisiteFunctorCTS
     }
 
     // initialize site-wise arrays for neighbors
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactNeighborSitePositionsX;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactNeighborSitePositionsY;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactNeighborSitePositionsZ;
+    std::vector<double, autopas::AlignedAllocator<double>> exactNeighborSitePositionsX;
+    std::vector<double, autopas::AlignedAllocator<double>> exactNeighborSitePositionsY;
+    std::vector<double, autopas::AlignedAllocator<double>> exactNeighborSitePositionsZ;
 
     std::vector<size_t, autopas::AlignedAllocator<size_t>> siteTypesNeighbors;
     std::vector<size_t, autopas::AlignedAllocator<size_t>> isNeighborSiteOwnedArr;
 
     // we require arrays for forces for sites to maintain SIMD in site-site calculations
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceX;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceY;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceZ;
+    std::vector<double, autopas::AlignedAllocator<double>> siteForceX;
+    std::vector<double, autopas::AlignedAllocator<double>> siteForceY;
+    std::vector<double, autopas::AlignedAllocator<double>> siteForceZ;
 
     // pre-reserve arrays
     exactNeighborSitePositionsX.reserve(siteCountNeighbors);
@@ -1331,51 +1258,9 @@ class LJMultisiteFunctorCTS
 
     // -- main force calculation --
 
-    //     generate mask for each site from molecular mask
-    std::vector<size_t, autopas::AlignedAllocator<size_t>> siteVector;
-    siteVector.reserve(siteCountNeighbors);
-
-    const __m256d xPosFirst = _mm256_broadcast_sd(&xptr[indexFirst]);
-    const __m256d yPosFirst = _mm256_broadcast_sd(&yptr[indexFirst]);
-    const __m256d zPosFirst = _mm256_broadcast_sd(&zptr[indexFirst]);
-
-    for (size_t site = 0; site < siteCountNeighbors; site += vecLength) {
-      const size_t remainder = siteCountNeighbors - site;
-      const bool remainderCase = remainder < vecLength;
-      __m256i remainderMask = remainderCase ? _masks[remainder - 1] : _mm256_set1_epi64x(-1);
-
-      const __m256d xposB =
-          autopas::utils::avx::load_pd(remainderCase, &exactNeighborSitePositionsX[site], remainderMask);
-      const __m256d yposB =
-          autopas::utils::avx::load_pd(remainderCase, &exactNeighborSitePositionsY[site], remainderMask);
-      const __m256d zposB =
-          autopas::utils::avx::load_pd(remainderCase, &exactNeighborSitePositionsZ[site], remainderMask);
-
-      const __m256d displacementCoMX = _mm256_sub_pd(xPosFirst, xposB);
-      const __m256d displacementCoMY = _mm256_sub_pd(yPosFirst, yposB);
-      const __m256d displacementCoMZ = _mm256_sub_pd(zPosFirst, zposB);
-
-      const __m256d distanceSquaredCoMX = _mm256_mul_pd(displacementCoMX, displacementCoMX);
-      const __m256d distanceSquaredCoMY = _mm256_mul_pd(displacementCoMY, displacementCoMY);
-      const __m256d distanceSquaredCoMZ = _mm256_mul_pd(displacementCoMZ, displacementCoMZ);
-
-      const __m256d distanceSquaredCoM =
-          _mm256_add_pd(_mm256_add_pd(distanceSquaredCoMX, distanceSquaredCoMY), distanceSquaredCoMZ);
-
-      const __m256d cutoffMask = _mm256_cmp_pd(distanceSquaredCoM, _cutoffSquared, _CMP_LE_OS);
-      const __m256i ownedStateB =
-          autopas::utils::avx::load_epi64(remainderCase, &isNeighborSiteOwnedArr[site], remainderMask);
-      const __m256d dummyMask =
-          _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB), _zero, _CMP_NEQ_OS);  // Assuming that dummy = 0
-      const __m256d totalMask = _mm256_and_pd(cutoffMask, dummyMask);
-
-      // This gets the job done, but is not very efficient.
-      for (size_t i = 0; i < vecLength; ++i) {
-        if (totalMask[i] != 0) {
-          siteVector.emplace_back(site + i);
-        }
-      }
-    }
+    const std::vector<size_t, autopas::AlignedAllocator<size_t>> siteVector =
+        buildSiteVector(xptr, yptr, zptr, siteCountNeighbors, exactNeighborSitePositionsX, exactNeighborSitePositionsY,
+                        exactNeighborSitePositionsZ, xptr[indexFirst], yptr[indexFirst], zptr[indexFirst], isNeighborSiteOwnedArr);
 
     // sums used for prime mol
     __m256d forceSumX = _zero;
@@ -1384,6 +1269,10 @@ class LJMultisiteFunctorCTS
     __m256d torqueSumX = _zero;
     __m256d torqueSumY = _zero;
     __m256d torqueSumZ = _zero;
+
+    const __m256d xPosFirst = _mm256_broadcast_sd(&xptr[indexFirst]);
+    const __m256d yPosFirst = _mm256_broadcast_sd(&yptr[indexFirst]);
+    const __m256d zPosFirst = _mm256_broadcast_sd(&zptr[indexFirst]);
 
     __m256d sigmaSquared = _mm256_set1_pd(const_sigmaSquared);
     __m256d epsilon24 = _mm256_set1_pd(const_epsilon24);
@@ -1565,6 +1454,60 @@ class LJMultisiteFunctorCTS
       _aosThreadData[threadNum].virialSum[1] += autopas::utils::avx::horizontalSum(virialSumY) * newton3Factor;
       _aosThreadData[threadNum].virialSum[2] += autopas::utils::avx::horizontalSum(virialSumZ) * newton3Factor;
     }
+  }
+
+ private:
+  inline std::vector<size_t, autopas::AlignedAllocator<size_t>> buildSiteVector(
+      const double *const xptr, const double *const yptr, const double *const zptr, const size_t siteCount,
+      const std::vector<double, autopas::AlignedAllocator<double>> &exactSitePositionsX,
+      const std::vector<double, autopas::AlignedAllocator<double>> &exactSitePositionsY,
+      const std::vector<double, autopas::AlignedAllocator<double>> &exactSitePositionsZ, double comPosX, double comPosY,
+      double comPosZ, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &ownedArray,
+      size_t offset = 0) const {
+    std::vector<size_t, autopas::AlignedAllocator<size_t>> siteVector;
+    siteVector.reserve(siteCount);
+    __m256d comPosXVec = _mm256_set1_pd(comPosX);
+    __m256d comPosYVec = _mm256_set1_pd(comPosY);
+    __m256d comPosZVec = _mm256_set1_pd(comPosZ);
+
+    for (size_t site = 0; site < siteCount; site += vecLength) {
+      const size_t remainder = siteCount - site;
+      const bool remainderCase = remainder < vecLength;
+      __m256i remainderMask = remainderCase ? _masks[remainder - 1] : _mm256_set1_epi64x(-1);
+
+      const __m256d xposB =
+          autopas::utils::avx::load_pd(remainderCase, &exactSitePositionsX[site + offset], remainderMask);
+      const __m256d yposB =
+          autopas::utils::avx::load_pd(remainderCase, &exactSitePositionsY[site + offset], remainderMask);
+      const __m256d zposB =
+          autopas::utils::avx::load_pd(remainderCase, &exactSitePositionsZ[site + offset], remainderMask);
+
+      const __m256d displacementCoMX = _mm256_sub_pd(comPosXVec, xposB);
+      const __m256d displacementCoMY = _mm256_sub_pd(comPosYVec, yposB);
+      const __m256d displacementCoMZ = _mm256_sub_pd(comPosZVec, zposB);
+
+      const __m256d distanceSquaredCoMX = _mm256_mul_pd(displacementCoMX, displacementCoMX);
+      const __m256d distanceSquaredCoMY = _mm256_mul_pd(displacementCoMY, displacementCoMY);
+      const __m256d distanceSquaredCoMZ = _mm256_mul_pd(displacementCoMZ, displacementCoMZ);
+
+      const __m256d distanceSquaredCoM =
+          _mm256_add_pd(_mm256_add_pd(distanceSquaredCoMX, distanceSquaredCoMY), distanceSquaredCoMZ);
+
+      const __m256d cutoffMask = _mm256_cmp_pd(distanceSquaredCoM, _cutoffSquared, _CMP_LE_OS);
+      const __m256i ownedStateB = autopas::utils::avx::load_epi64(remainderCase, &ownedArray[site], remainderMask);
+      const __m256d dummyMask =
+          _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB), _zero, _CMP_NEQ_OS);  // Assuming that dummy = 0
+      const __m256d totalMask = _mm256_and_pd(cutoffMask, dummyMask);
+
+      // This gets the job done, but is not very efficient.
+      for (size_t i = 0; i < vecLength; ++i) {
+        if (totalMask[i] != 0) {
+          siteVector.emplace_back(site + i);
+        }
+      }
+    }
+
+    return siteVector;
   }
 
  public:

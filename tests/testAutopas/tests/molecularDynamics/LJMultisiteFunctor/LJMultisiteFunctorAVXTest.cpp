@@ -380,14 +380,14 @@ void LJMultisiteFunctorAVXTest::testAoSForceCalculation(autopas::MultisiteMolecu
         << "molB: Unexpected force[" << i << "] = " << molB.getTorque()[i] << " != " << expectedTorqueB[i]
         << " as expected.";
   }
-//  if constexpr (calculateGlobals) {
-//    EXPECT_NEAR(functor.getPotentialEnergy(), expectedPotentialEnergySum, 1e-13)
-//        << "Unexpected potential energy = " << functor.getPotentialEnergy() << " != " << expectedPotentialEnergySum
-//        << " as expected.";
-//
-//    EXPECT_NEAR(functor.getVirial(), expectedVirialSum, 1e-13)
-//        << "Unexpected virial = " << functor.getVirial() << " != " << expectedVirialSum << " as expected.";
-//  }
+    if constexpr (calculateGlobals) {
+      EXPECT_NEAR(functor.getPotentialEnergy(), expectedPotentialEnergySum, 1e-13)
+          << "Unexpected potential energy = " << functor.getPotentialEnergy() << " != " << expectedPotentialEnergySum
+          << " as expected.";
+
+      EXPECT_NEAR(functor.getVirial(), expectedVirialSum, 1e-13)
+          << "Unexpected virial = " << functor.getVirial() << " != " << expectedVirialSum << " as expected.";
+    }
 }
 
 template <bool newton3, bool calculateGlobals, bool applyShift>
@@ -482,12 +482,12 @@ void LJMultisiteFunctorAVXTest::testSoAVerletAgainstAoS(std::vector<autopas::Mul
         << "Incorrect z-torque for molecule " << i << " with newton3 = " << newton3;
   }
 
-    if constexpr (calculateGlobals) {
-      EXPECT_NEAR(potentialEnergyAoS, potentialEnergySoA, AOS_VS_SOA_ACCURACY)
-          << "Incorrect potential energy with newton3 = " << newton3 << " and applyShift = " << applyShift;
-      EXPECT_NEAR(virialAoS, virialSoA, AOS_VS_SOA_ACCURACY)
-          << "Incorrect potential energy with newton3 = " << newton3 << " and applyShift = " << applyShift;
-    }
+  if constexpr (calculateGlobals) {
+    EXPECT_NEAR(potentialEnergyAoS, potentialEnergySoA, AOS_VS_SOA_ACCURACY)
+        << "Incorrect potential energy with newton3 = " << newton3 << " and applyShift = " << applyShift;
+    EXPECT_NEAR(virialAoS, virialSoA, AOS_VS_SOA_ACCURACY)
+        << "Incorrect potential energy with newton3 = " << newton3 << " and applyShift = " << applyShift;
+  }
 }
 
 /*
@@ -659,7 +659,7 @@ TEST_F(LJMultisiteFunctorAVXTest, AoSVsSoACellPair) {
   testSoACellPairAgainstAoS<true, true, true>(moleculesA, moleculesB, PPL, cutoff);
 }
 
-TEST_F(LJMultisiteFunctorAVXTest,AoSVsSoAVerlet) {
+TEST_F(LJMultisiteFunctorAVXTest, AoSVsSoAVerlet) {
   using autopas::MultisiteMoleculeLJ;
 
   const double cutoff = 3.0;
