@@ -62,6 +62,8 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
         fallbackCellSizeFactors = std::make_unique<autopas::NumberInterval<double>>(allowedCellSizeFactors.getMin(),
                                                                                     allowedCellSizeFactors.getMax());
       }
+
+      // AutoPas assumes the set of allowed VerletRebuildFrequencies is finite
       fallbackVerletRebuildFrequencies =
           std::make_unique<autopas::NumberSetFinite<int>>(allowedVerletRebuildFrequencies.getAll());
       fallbackTraversals = std::set<autopas::TraversalOption>(allowedTraversals);

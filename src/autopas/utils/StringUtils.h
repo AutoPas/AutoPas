@@ -251,10 +251,10 @@ inline std::set<int> parseInts(const std::string &intString) {
   return ints;
 }
 
-template <class N>
-inline std::unique_ptr<autopas::NumberSet<N>> parseNumberSet(const std::string &setString) {
+template <class T>
+inline std::unique_ptr<autopas::NumberSet<T>> parseNumberSet(const std::string &setString) {
   std::string str = regexDoubleStr;
-  if (typeid(N) == typeid(int)) {
+  if (typeid(T) == typeid(int)) {
     str = regexIntStr;
   }
   // try to match an interval x-y
@@ -270,8 +270,8 @@ inline std::unique_ptr<autopas::NumberSet<N>> parseNumberSet(const std::string &
   );
   std::smatch matches;
 
-  std::set<N> values;
-  if (typeid(N) == typeid(int)) {
+  std::set<T> values;
+  if constexpr ((typeid(T) == typeid(int))) {
     if (std::regex_match(setString, matches, regexInterval)) {
       try {
         std::set<int> numbers = std::set<int>({});
@@ -290,14 +290,14 @@ inline std::unique_ptr<autopas::NumberSet<N>> parseNumberSet(const std::string &
         // matchers has whole string as str(0) so start at 1
         double min = stod(matches.str(1));
         double max = stod(matches.str(2));
-        return std::make_unique<autopas::NumberInterval<N>>(min, max);
+        return std::make_unique<autopas::NumberInterval<T>>(min, max);
       } catch (const std::exception &) {
         // try parseDoubles instead
       }
     }
     values = autopas::utils::StringUtils::parseDoubles(setString);
   }
-  return std::make_unique<autopas::NumberSetFinite<N>>(values);
+  return std::make_unique<autopas::NumberSetFinite<T>>(values);
 }
 
 /**

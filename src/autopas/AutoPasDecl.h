@@ -562,8 +562,8 @@ class AutoPas {
    */
   void setVerletRebuildFrequency(int verletRebuildFrequency) {
     if (verletRebuildFrequency < 1) {
-      AutoPasLog(error, "rebuildFrequenzy < 1");
-      utils::ExceptionHandler::exception("Error: rebuildFrequenzy < 1!");
+      AutoPasLog(error, "rebuildFrequency < 1");
+      utils::ExceptionHandler::exception("Error: rebuildFrequency < 1!");
     }
     setAllowedVerletRebuildFrequencies(NumberSetFinite<int>({verletRebuildFrequency}));
   }

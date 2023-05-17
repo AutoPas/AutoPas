@@ -53,7 +53,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         autopas::utils::ArrayUtils::to_string(node[config.cellSizeFactors.name], ", ", {"", ""}));
   }
   if (node[config.verletRebuildFrequencies.name]) {
-    config.verletRebuildFrequencies.value = autopas::utils::StringUtils::parseNumberSetInts(
+    config.verletRebuildFrequencies.value = autopas::utils::StringUtils::parseNumberSet<int>(
         autopas::utils::ArrayUtils::to_string(node[config.verletRebuildFrequencies.name], ", ", {"", ""}));
   }
 
