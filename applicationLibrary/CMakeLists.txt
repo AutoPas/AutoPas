@@ -33,6 +33,7 @@ target_include_directories(SPHLibrary PUBLIC ./sph)
 # --- molecular dynamics ---
 
 if (AUTOPAS_BUILD_TESTS)
+    message(STATUS "applicationLibrary - adding all tests")
     file(
             GLOB_RECURSE
             SS_TEST_SRC
