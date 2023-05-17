@@ -25,12 +25,12 @@ Sites:
     site-sigma                   :  1.
     site-mass                    :  1.
 # Uncomment below to run a multi-site simulation.
-#Molecules:
-#  0:
-#    molecule-id: 0
-#    molecule-to-site-id: [ 0 ]
-#    molecule-to-site-pos: [ [ 0., 0., 0. ]]
-#    molecule-moment-of-inertia: [ 1., 1., 1. ]
+Molecules:
+  0:
+    molecule-id: 0
+    molecule-to-site-id: [ 0 ]
+    molecule-to-site-pos: [ [ 0., 0., 0. ]]
+    molecule-moment-of-inertia: [ 1., 1., 1. ]
 Objects:                         
   CubeClosestPacked:
     0:
@@ -43,4 +43,4 @@ no-flops                         :  false
 no-end-config                    :  true
 no-progress-bar                  :  false
 vtk-filename                     :  explodingLiquid
-vtk-write-frequency              :  100
+vtk-write-frequency              :  12000

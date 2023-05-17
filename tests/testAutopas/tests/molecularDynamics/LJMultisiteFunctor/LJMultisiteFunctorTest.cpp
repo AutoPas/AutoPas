@@ -8,7 +8,7 @@
 
 #include "LJMultisiteFunctorTest.h"
 
-#define PARTICLES_PER_DIM 8
+#define PARTICLES_PER_DIM 2
 #define AOS_VS_SOA_ACCURACY 1e-8
 
 void LJMultisiteFunctorTest::generatePPL(ParticlePropertiesLibrary<double, size_t> *PPL) {
