@@ -94,7 +94,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
       }
     }
 
-    // linkedCells.setOnlyDirtyCells(partialRebuilding);
+    linkedCells.setOnlyDirtyCells(partialRebuilding);
     applyBuildFunctor(linkedCells, useNewton3, cutoff, skin, interactionLength, buildTraversalOption, buildType, partialRebuilding);
   }
 
