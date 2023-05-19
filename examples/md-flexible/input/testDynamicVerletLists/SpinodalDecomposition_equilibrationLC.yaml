@@ -2,8 +2,8 @@ container                        :  [LinkedCells]
 traversal                        :  [lc_sliced, lc_sliced_balanced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18]
 data-layout                      :  [AoS]
 newton3                          :  [disabled]
-verlet-rebuild-frequency         :  1000
-verlet-skin-radius-per-timestep  :  0.0025
+verlet-rebuild-frequency         :  10
+verlet-skin-radius-per-timestep  :  0.05
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Mean-Value
 tuning-strategy                  :  predictive-tuning
