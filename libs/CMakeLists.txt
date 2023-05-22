@@ -5,4 +5,6 @@ include(autopas_eigen)
 
 add_subdirectory(fake-dlclose)
 
+include(autopas_xsimd)
+
 # the other libraries in this folder are needed from elsewhere (examples, test, ...)

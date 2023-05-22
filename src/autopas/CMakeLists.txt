@@ -24,10 +24,12 @@ target_link_libraries(
         $<$<OR:$<BOOL:${AUTOPAS_INTERNODE_TUNING}>,$<BOOL:${MD_FLEXIBLE_USE_MPI}>>:MPI::MPI_CXX>
         $<$<BOOL:${AUTOPAS_INCLUDE_MPI}>:MPI::MPI_CXX>
         Eigen3
+        xsimd
     PRIVATE
         # harmony are only needed privately when building AutoPas.
         harmony
 )
+
 
 # Ompstuff needs to be here because autopas_OpenMP.cmake needs to run before this file to create to OpenMP
 # target. this can be resolved by upgrading to CMake 3.13 and enforcing CMP0079.
