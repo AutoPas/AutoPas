@@ -25,5 +25,5 @@ if (NOT xsimd_POPULATED) # must be lowercase "eigen3" Fetch the content using pr
             IMPORTED GLOBAL
     )
 
-    target_include_directories(xsimd SYSTEM INTERFACE "${xsimd_SOURCE_DIR}")
+    target_include_directories(xsimd SYSTEM INTERFACE "${xsimd_SOURCE_DIR}/include")
 endif ()
