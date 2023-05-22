@@ -81,7 +81,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
       if (partialRebuilding && !cell.getDirty()) {
         continue;
       }
-      // _aosNeighborList[cellIndex].clear();
+      _aosNeighborList[cellIndex].clear();
       _aosNeighborList[cellIndex].reserve(cell.numParticles());
       size_t particleIndexWithinCell = 0;
       for (auto iter = cell.begin(); iter != cell.end(); ++iter, ++particleIndexWithinCell) {

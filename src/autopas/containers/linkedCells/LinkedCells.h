@@ -140,15 +140,8 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
     }
     if (traversalInterface && cellPairTraversal) {
-      if (_onlyDirtyCells) {
-        std::vector<ParticleCell> dirtyCells;
-        std::copy_if(this->_cells.begin(), this->_cells.end(), std::back_inserter(dirtyCells),
-                     [](auto& cell) { return cell.getDirty(); });
-        cellPairTraversal->setCellsToTraverse(dirtyCells);
-      }
-      else {
-        cellPairTraversal->setCellsToTraverse(this->_cells);
-      }
+      cellPairTraversal->setCellsToTraverse(this->_cells);
+      cellPairTraversal->setOnlyDirtyCells(this->_onlyDirtyCells);
     } else {
       autopas::utils::ExceptionHandler::exception(
           "Trying to use a traversal of wrong type in LinkedCells::iteratePairwise. TraversalID: {}",

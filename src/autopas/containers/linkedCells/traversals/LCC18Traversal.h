@@ -172,6 +172,11 @@ void LCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::proc
   const unsigned long yArray = getIndex(y, 1);
 
   ParticleCell &baseCell = cells[baseIndex];
+
+  if (this->_onlyDirty && !baseCell.getDirty()) {
+    return;
+  }
+
   offsetArray_t &offsets = this->_cellOffsets[yArray][xArray];
   for (auto const &[offset, r] : offsets) {
     unsigned long otherIndex = baseIndex + offset;
@@ -183,6 +188,8 @@ void LCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::proc
       this->_cellFunctor.processCellPair(baseCell, otherCell, r);
     }
   }
+
+  baseCell.setDirty(false);
 }
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>

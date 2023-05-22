@@ -40,6 +40,8 @@ class CellPairTraversal : public TraversalInterface {
    */
   virtual void setCellsToTraverse(std::vector<ParticleCell> &cells) { _cells = &cells; }
 
+  void setOnlyDirtyCells(bool dirty) {_onlyDirty = dirty;};
+
  protected:
   /**
    * The dimensions of the cellblock.
@@ -51,6 +53,8 @@ class CellPairTraversal : public TraversalInterface {
    * The cells to traverse.
    */
   std::vector<ParticleCell> *_cells;
+
+  bool _onlyDirty {false};
 };
 
 }  // namespace autopas
