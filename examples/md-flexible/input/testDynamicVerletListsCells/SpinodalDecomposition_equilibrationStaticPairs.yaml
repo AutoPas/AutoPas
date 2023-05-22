@@ -2,7 +2,7 @@ container                        :  [PairwiseVerletLists]
 traversal                        :  [ vlp_c01, vlp_c18, vlp_sliced, vlp_sliced_balanced, vlp_sliced_c02]
 data-layout                      :  [AoS]
 newton3                          :  [disabled]
-verlet-rebuild-frequency         :  5
+verlet-rebuild-frequency         :  15
 verlet-skin-radius-per-timestep  :  0.05
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Mean-Value
