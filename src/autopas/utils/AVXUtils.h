@@ -112,5 +112,5 @@ inline void scatter_pd(bool useMask, double *const __restrict ptr, const __m256i
       break;
   }
 }
-}  // namespace autopas
+}  // namespace autopas::utils::avx
 #endif

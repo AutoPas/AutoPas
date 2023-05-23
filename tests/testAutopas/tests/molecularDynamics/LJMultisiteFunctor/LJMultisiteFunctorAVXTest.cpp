@@ -117,8 +117,7 @@ void LJMultisiteFunctorAVXTest::testSoACellAgainstAoS(std::vector<autopas::Multi
         << "Incorrect z-torque for molecule " << i << " with newton3 = " << newton3;
   }
 
-  // This is currently not working
-  if constexpr (calculateGlobals && applyShift) {
+  if constexpr (calculateGlobals) {
     EXPECT_NEAR(potentialEnergyAoS, potentialEnergySoA, AOS_VS_SOA_ACCURACY)
         << "Incorrect potential energy with newton3 = " << newton3 << " and applyShift = " << applyShift;
     EXPECT_NEAR(virialAoS, virialSoA, AOS_VS_SOA_ACCURACY)
@@ -450,7 +449,6 @@ void LJMultisiteFunctorAVXTest::testSoAVerletAgainstAoS(std::vector<autopas::Mul
   for (size_t i = 0; i < numberMolecules; ++i) {
     functor.SoAFunctorVerlet(cellSoA._particleSoABuffer, i, neighborLists[i], newton3);
   }
-
   // copy back to original particle array
   moleculesSoA.clear();
 
