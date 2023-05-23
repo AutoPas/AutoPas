@@ -1,0 +1,40 @@
+container                        :  [DynamicVerletLists]
+traversal                        :  [vl_list_iteration]
+data-layout                      :  [AoS]
+newton3                          :  [disabled]
+verlet-rebuild-frequency         :  1000
+verlet-skin-radius-per-timestep  :  0.00025
+verlet-cluster-size              :  4
+selector-strategy                :  Fastest-Mean-Value
+tuning-strategy                  :  predictive-tuning
+tuning-interval                  :  6000
+tuning-samples                   :  10
+functor                          :  Lennard-Jones (12-6)
+cutoff                           :  2.5
+deltaT                           :  0.0005
+iterations                       :  10000
+boundary-type                    :  [reflective,reflective,reflective]
+globalForce                      :  [0,0,0]
+box-min                          :  [-0.25, -0.25, -0.25]
+box-max                          :  [10.25, 10.25, 10.25]
+Objects:
+  CubeGrid:
+    0:
+      particles-per-dimension    :  [4, 4, 4]
+      particle-spacing           :  1.5
+      bottomLeftCorner           :  [1, 1, 1]
+      velocity                   :  [0, 0, 0]
+      particle-type              :  0
+      particle-epsilon           :  1
+      particle-sigma             :  1
+      particle-mass              :  1
+thermostat:
+  initialTemperature             :  1.4
+  targetTemperature              :  1.4
+  deltaTemperature               :  2
+  thermostatInterval             :  10
+  addBrownianMotion              :  true
+vtk-write-frequency              :  100
+vtk-filename                     :  partialTesting
+fast-particle-warn               :  false
+fastParticlesThrow               :  false

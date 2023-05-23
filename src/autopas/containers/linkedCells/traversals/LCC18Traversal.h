@@ -173,14 +173,16 @@ void LCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::proc
 
   ParticleCell &baseCell = cells[baseIndex];
 
-  if (this->_onlyDirty && !baseCell.getDirty()) {
-    return;
-  }
-
   offsetArray_t &offsets = this->_cellOffsets[yArray][xArray];
   for (auto const &[offset, r] : offsets) {
     unsigned long otherIndex = baseIndex + offset;
     ParticleCell &otherCell = cells[otherIndex];
+
+    // TODO : determine when to traverse neighboring cells as well
+    // Potential solution : use the flag for newton3
+    if (this->_onlyDirty && !baseCell.getDirty() && !otherCell.getDirty()) {
+      continue;
+    }
 
     if (baseIndex == otherIndex) {
       this->_cellFunctor.processCell(baseCell);
@@ -188,8 +190,6 @@ void LCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::proc
       this->_cellFunctor.processCellPair(baseCell, otherCell, r);
     }
   }
-
-  baseCell.setDirty(false);
 }
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
