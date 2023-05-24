@@ -126,7 +126,7 @@ class SPHCalcDensityFunctor : public autopas::Functor<Particle, SPHCalcDensityFu
   }
 
   /**
-   * @copydoc Functor::SoAFunctorPair()
+   * @copydoc autopas::Functor::SoAFunctorPair()
    */
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                       bool newton3) override {
@@ -193,7 +193,7 @@ class SPHCalcDensityFunctor : public autopas::Functor<Particle, SPHCalcDensityFu
 
   // clang-format off
   /**
-   * @copydoc Functor::SoAFunctorVerlet()
+   * @copydoc autopas::Functor::SoAFunctorVerlet()
    */
   // clang-format on
   void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
@@ -250,7 +250,7 @@ class SPHCalcDensityFunctor : public autopas::Functor<Particle, SPHCalcDensityFu
   }
 
   /**
-   * @copydoc Functor::getNeededAttr()
+   * @copydoc autopas::Functor::getNeededAttr()
    */
   constexpr static auto getNeededAttr() {
     return std::array<typename Particle::AttributeNames, 7>{
@@ -260,7 +260,7 @@ class SPHCalcDensityFunctor : public autopas::Functor<Particle, SPHCalcDensityFu
   }
 
   /**
-   * @copydoc Functor::getNeededAttr(std::false_type)
+   * @copydoc autopas::Functor::getNeededAttr(std::false_type)
    */
   constexpr static auto getNeededAttr(std::false_type) {
     return std::array<typename Particle::AttributeNames, 6>{
@@ -269,7 +269,7 @@ class SPHCalcDensityFunctor : public autopas::Functor<Particle, SPHCalcDensityFu
   }
 
   /**
-   * @copydoc Functor::getComputedAttr()
+   * @copydoc autopas::Functor::getComputedAttr()
    */
   constexpr static auto getComputedAttr() {
     return std::array<typename Particle::AttributeNames, 1>{Particle::AttributeNames::density};

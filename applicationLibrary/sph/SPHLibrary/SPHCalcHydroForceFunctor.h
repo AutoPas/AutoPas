@@ -223,7 +223,7 @@ class SPHCalcHydroForceFunctor : public autopas::Functor<Particle, SPHCalcHydroF
   }
 
   /**
-   * @copydoc Functor::SoAFunctorPair()
+   * @copydoc autopas::Functor::SoAFunctorPair()
    */
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                       bool newton3) override {
@@ -365,7 +365,7 @@ class SPHCalcHydroForceFunctor : public autopas::Functor<Particle, SPHCalcHydroF
   }
   // clang-format off
   /**
-   * @copydoc Functor::SoAFunctorVerlet()
+   * @copydoc autopas::Functor::SoAFunctorVerlet()
    */
   // clang-format on
   void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
@@ -494,7 +494,7 @@ class SPHCalcHydroForceFunctor : public autopas::Functor<Particle, SPHCalcHydroF
   }
 
   /**
-   * @copydoc Functor::getNeededAttr()
+   * @copydoc autopas::Functor::getNeededAttr()
    */
   constexpr static auto getNeededAttr() {
     return std::array<typename Particle::AttributeNames, 17>{
@@ -510,7 +510,7 @@ class SPHCalcHydroForceFunctor : public autopas::Functor<Particle, SPHCalcHydroF
   }
 
   /**
-   * @copydoc Functor::getNeededAttr(std::false_type)
+   * @copydoc autopas::Functor::getNeededAttr(std::false_type)
    */
   constexpr static auto getNeededAttr(std::false_type) {
     return std::array<typename Particle::AttributeNames, 12>{
