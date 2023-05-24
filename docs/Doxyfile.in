@@ -9,7 +9,7 @@ INPUT                  = @PROJECT_SOURCE_DIR@/@DOXY_MAIN_PAGE@ \
                          @PROJECT_SOURCE_DIR@/docs \
                          @PROJECT_SOURCE_DIR@/tools \
                          @PROJECT_SOURCE_DIR@/applicationLibrary/molecularDynamics/molecularDynamicsLibrary \
-                         @PROJECT_SOURCE_DIR@/sph/SPHLibrary
+                         @PROJECT_SOURCE_DIR@/applicationLibrary/sph/SPHLibrary
 FILE_PATTERNS          = *.h \
                          *.cuh \
                          *.cpp \

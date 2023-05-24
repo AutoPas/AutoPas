@@ -71,7 +71,7 @@ class SPHCalcDensityFunctor : public autopas::Functor<Particle, SPHCalcDensityFu
   }
 
   /**
-   * @copydoc autopas::Functor::SoAFunctorSingle(SoAView<SoAArraysType>, bool)
+   * @copydoc autopas::Functor::SoAFunctorSingle()
    * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
    */
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) override {
@@ -126,7 +126,7 @@ class SPHCalcDensityFunctor : public autopas::Functor<Particle, SPHCalcDensityFu
   }
 
   /**
-   * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType>, SoAView<SoAArraysType>, bool)
+   * @copydoc Functor::SoAFunctorPair()
    */
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                       bool newton3) override {
@@ -193,7 +193,7 @@ class SPHCalcDensityFunctor : public autopas::Functor<Particle, SPHCalcDensityFu
 
   // clang-format off
   /**
-   * @copydoc Functor::SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
+   * @copydoc Functor::SoAFunctorVerlet()
    */
   // clang-format on
   void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
