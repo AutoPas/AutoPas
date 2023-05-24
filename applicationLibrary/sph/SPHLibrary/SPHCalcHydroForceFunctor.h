@@ -523,7 +523,7 @@ class SPHCalcHydroForceFunctor : public autopas::Functor<Particle, SPHCalcHydroF
   }
 
   /**
-   * @copydoc Functor::getComputedAttr()
+   * @copydoc autopas::Functor::getComputedAttr()
    */
   constexpr static auto getComputedAttr() {
     return std::array<typename Particle::AttributeNames, 6>{
