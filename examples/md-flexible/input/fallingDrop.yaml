@@ -10,7 +10,7 @@ tuning-strategy                  :  full-Search
 tuning-interval                  :  2500
 tuning-samples                   :  3
 tuning-max-evidence              :  10
-functor                          :  Lennard-Jones AVX
+functor                          :  Lennard-Jones
 newton3                          :  [disabled, enabled]
 cutoff                           :  3
 box-min                          :  [0, 0, 0]
@@ -18,7 +18,7 @@ box-max                          :  [7.25, 7.25, 7.25]
 cell-size                        :  [1]
 deltaT                           :  0.0005
 iterations                       :  15000
-boundary-type                    :  [reflective,reflective,reflective]
+boundary-type                    :  [periodic,periodic,reflective]
 globalForce                      :  [0,0,-12]
 Sites:
   0:
@@ -26,6 +26,12 @@ Sites:
     site-epsilon                 :  1.
     site-sigma                   :  1.
     site-mass                    :  1.
+Molecules:
+  0:
+    molecule-type: 0
+    molecule-to-site-id: [ 0 ]
+    molecule-to-site-pos: [ [ 0, 0, 0] ]
+    molecule-moment-of-inertia: [ 5.23606798, 0.76393202, 6. ]
 Objects:
   # "water"
   CubeClosestPacked:
@@ -34,14 +40,14 @@ Objects:
       bottomLeftCorner           :  [1, 1, 1]
       box-length                 :  [48, 28, 10]
       velocity                   :  [0, 0, 0]
-      site-id                    :  0
+      molecule-id                    :  0
   Sphere:
     0:  
       center                     :  [18, 15, 30]
       radius                     :  6
       particle-spacing           :  1.122462048
       velocity                   :  [0, 0, 0]
-      site-id                    :  0
+      molecule-id                    :  0
 # thermostat:
 #   initialTemperature             :  1
 #   targetTemperature              :  4
