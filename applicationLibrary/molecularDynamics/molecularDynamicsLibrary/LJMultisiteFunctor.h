@@ -395,13 +395,15 @@ class LJMultisiteFunctor
     // main force calculation loop
     size_t siteIndexMolA = 0;  // index of first site in molA
     for (size_t molA = 0; molA < soa.getNumberOfParticles(); ++molA) {
+      const size_t noSitesInMolA = useMixing ? _PPLibrary->getNumSites(typeptr[molA])
+                                             : const_unrotatedSitePositions.size();  // Number of sites in molecule A
+
       const auto ownedStateA = ownedStatePtr[molA];
       if (ownedStateA == autopas::OwnershipState::dummy) {
+        siteIndexMolA += noSitesInMolA;
         continue;
       }
 
-      const size_t noSitesInMolA = useMixing ? _PPLibrary->getNumSites(typeptr[molA])
-                                             : const_unrotatedSitePositions.size();  // Number of sites in molecule A
       const size_t siteIndexMolB = siteIndexMolA + noSitesInMolA;                    // index of first site in molB
       const size_t noSitesB = (siteCount - siteIndexMolB);  // Number of sites in molecules that A interacts with
 
