@@ -61,7 +61,7 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle,
   }
 
   /**
-   * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3)
+   * @copydoc Functor::SoAFunctorSingle()
    * This SoA Functor does not use any vectorization.
    */
   void SoAFunctorSingle(SoAView<typename Particle::SoAArraysType> soa, bool newton3) override {
@@ -97,7 +97,7 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle,
   }
 
   /**
-   * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
+   * @copydoc Functor::SoAFunctorPair()
    */
   void SoAFunctorPair(SoAView<typename Particle::SoAArraysType> soa1, SoAView<typename Particle::SoAArraysType> soa2,
                       bool newton3) override {
@@ -135,13 +135,13 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle,
 
   // clang-format off
   /**
-   * @copydoc Functor::SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
+   * @copydoc Functor::SoAFunctorVerlet()
    * @note If you want to parallelize this by openmp, please ensure that there
    * are no dependencies, i.e. introduce colors!
    */
   // clang-format on
   void SoAFunctorVerlet(SoAView<typename Particle::SoAArraysType> soa, const size_t indexFirst,
-                        const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
+                        const std::vector<size_t, AlignedAllocator<size_t>> &neighborList,
                         bool newton3) override {
     const auto numParticles = soa.getNumberOfParticles();
 
