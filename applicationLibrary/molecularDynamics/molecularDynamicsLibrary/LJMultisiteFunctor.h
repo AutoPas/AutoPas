@@ -677,8 +677,8 @@ class LJMultisiteFunctor
    * number of flops.
    * @param molAType molecule A's type id
    * @param molBType molecule B's type id
-   * @param numB number of sites in molecule B
-   * @return #FLOPs
+   * @param newton3 true if newton3 optimizations enabled
+   * @return Number of FLOPs
    */
   unsigned long getNumFlopsPerKernelCall(size_t molAType, size_t molBType, bool newton3) {
     // Site-to-site displacement: 6 (3 in the SoA case, but this requires O(N) precomputing site positions)
@@ -687,7 +687,7 @@ class LJMultisiteFunctor
     // Apply scale to force: With newton3: 6, Without: 3
     // Apply scale to torque: With newton3 18, Without: 9 (0 in SoA case, with O(N) post computing)
     // Site-to-site total: With newton3: 33, Without: 26
-    // (SoA total: With N3L: 19)
+    // (SoA total: With N3L: 22, Without N3L: 19)
     // Above multiplied by number sites of i * number sites of j
     const unsigned long siteToSiteFlops = newton3 ? 33ul : 26ul;
     return _PPLibrary->getNumSites(molAType) * _PPLibrary->getNumSites(molBType) * siteToSiteFlops;

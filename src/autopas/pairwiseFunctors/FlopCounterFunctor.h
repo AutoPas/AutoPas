@@ -17,6 +17,8 @@ namespace autopas {
  * operations.
  * @todo this class currently is limited to the following case:
  *  - constant cutoff radius
+ *  - cases where cutoff is determined with a single distance calculation between two positions ( the notable case where
+ *    this doesn't hold is in a CoM-to-site style SoA Functor for multi-site molecules )
  * @todo: we may want the possibility of doing this faster in cases where the number of flops per kernel call is
  * constant
  * @tparam Particle
