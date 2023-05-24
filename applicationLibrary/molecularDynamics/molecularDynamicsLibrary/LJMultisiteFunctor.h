@@ -264,7 +264,7 @@ class LJMultisiteFunctor
   }
 
   /**
-   * @copydoc autopas::Functor::SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3)
+   * @copydoc autopas::Functor::SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3)
    * This functor will always use a newton3 like traversing of the soa, however, it still needs to know about newton3
    * to use it correctly for the global values.
    */
@@ -582,7 +582,7 @@ class LJMultisiteFunctor
     }
   }
   /**
-   * @copydoc autopas::Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
+   * @copydoc autopas::Functor::SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, bool newton3)
    */
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                       const bool newton3) final {
@@ -595,7 +595,7 @@ class LJMultisiteFunctor
 
   // clang-format off
   /**
-   * @copydoc autopas::Functor::SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
+   * @copydoc autopas::Functor::SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
    */
   // clang-format on
   void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,

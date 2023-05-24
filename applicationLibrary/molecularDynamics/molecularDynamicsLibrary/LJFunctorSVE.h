@@ -177,7 +177,7 @@ class LJFunctorSVE
   }
 
   /**
-   * @copydoc autopas::Functor::SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3)
+   * @copydoc autopas::Functor::SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3)
    * This functor will always do a newton3 like traversal of the soa.
    * However, it still needs to know about newton3 to correctly add up the global values.
    */
@@ -191,7 +191,7 @@ class LJFunctorSVE
 
   // clang-format off
   /**
-   * @copydoc autopas::Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
+   * @copydoc autopas::Functor::SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, bool newton3)
    */
   // clang-format on
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
@@ -603,7 +603,7 @@ class LJFunctorSVE
  public:
   // clang-format off
   /**
-   * @copydoc autopas::Functor::SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
+   * @copydoc autopas::Functor::SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
    * @note If you want to parallelize this by openmp, please ensure that there
    * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly.
    */
