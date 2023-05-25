@@ -134,7 +134,6 @@ class ParticleCell {
   AutoPasLock _cellLock{};
 
   void setDirty (bool dirty) {
-    // TODO : think about how to identify neighboring cells
     this->_dirty.store(dirty, std::memory_order_relaxed);
   }
 

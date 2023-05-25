@@ -178,8 +178,6 @@ void LCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::proc
     unsigned long otherIndex = baseIndex + offset;
     ParticleCell &otherCell = cells[otherIndex];
 
-    // TODO : determine when to traverse neighboring cells as well
-    // Potential solution : use the flag for newton3
     if (this->_onlyDirty && !baseCell.getDirty() && !otherCell.getDirty()) {
       continue;
     }

@@ -32,19 +32,32 @@ class DynamicVerletListsCells : public VerletListsCells<Particle, NeighborList> 
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel for reduction(|| : listInvalid, partialRebuilding) schedule(static, 50)
 #endif
-    for (auto& particlePositionPair : _particlePtr2rebuildPositionBuffer) {
+    for (auto iter = _particlePtr2rebuildPositionBuffer.begin(); iter != _particlePtr2rebuildPositionBuffer.end(); ++iter) {
+      auto particlePositionPair = (*iter);
       auto distance = utils::ArrayMath::sub(particlePositionPair.first->getR(), particlePositionPair.second);
       double distanceSquare = utils::ArrayMath::dot(distance, distance);
 
       if (distanceSquare >=  halfSkinSquare) {
         listInvalid = true;
         auto & cell = this->_linkedCells.getCellBlock().getContainingCell(particlePositionPair.first->getR());
-        cell.setDirty(true);
-
-        // TODO : set dirty flag of this neighboring cells as well
+        // TODO : figure out why this is not enough synchronization because of atomic bool and critical section
+#pragma omp critical
+        { cell.setDirty(true); }
         partialRebuilding = true;
+        // delete this entry from the buffer because it is reinserted later -> avoid duplicates
+        iter = _particlePtr2rebuildPositionBuffer.erase(iter);
+        --iter;
         }
     }
+
+    if (partialRebuilding) {
+        for (size_t i = 0; i < this->_linkedCells.getCells().size(); ++i) {
+          if (this->_linkedCells.getCells().at(i).getDirty()) {
+            std::cout << "Cell with index : " << i << " is dirty \n" << std::endl;
+          }
+        }
+    }
+
     this->_partialRebuilding = partialRebuilding;
     return !listInvalid;
   }
@@ -84,7 +97,11 @@ class DynamicVerletListsCells : public VerletListsCells<Particle, NeighborList> 
 
       for (FullParticleCell<Particle> &cell : this->_linkedCells.getCells()) {
           if (cell.getDirty()) {
-            // TODO : update every particles position in the rebuild position map
+            // reinsert every "dirty" particle back in the rebuildPositionBuffer
+            for (auto iter = cell.begin(); iter != cell.end(); ++iter) {
+              std::pair<Particle *, std::array<double, 3>> particlePositionPair = std::make_pair(&(*iter), (*iter).getR());
+              _particlePtr2rebuildPositionBuffer.emplace_back(particlePositionPair);
+            }
             cell.setDirty(false);
           }
       }

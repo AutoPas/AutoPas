@@ -87,16 +87,19 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
                             double interactionLength, const TraversalOption buildTraversalOption,
                             typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType, bool partialRebuilding) override {
     this->_internalLinkedCells = &linkedCells;
-    _aosNeighborList.clear();
-    _globalToLocalIndex.clear();
-    _particleToCellMap.clear();
     auto &cells = linkedCells.getCells();
     const auto cellsSize = cells.size();
-    _aosNeighborList.resize(cellsSize);
-    _globalToLocalIndex.resize(cellsSize);
-
     const auto cellLength = linkedCells.getCellBlock().getCellLength();
     const auto interactionLengthSquare = linkedCells.getInteractionLength() * linkedCells.getInteractionLength();
+
+    if (!partialRebuilding) {
+      _aosNeighborList.clear();
+      _globalToLocalIndex.clear();
+      _particleToCellMap.clear();
+
+      _aosNeighborList.resize(cellsSize);
+      _globalToLocalIndex.resize(cellsSize);
+    }
 
     std::array<long, 3> overlap{};
     for (unsigned int d = 0; d < 3; d++) {
@@ -128,26 +131,51 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
       }
     }
 
-    // initialize empty lists for every particle-cell pair
+    // initialize lists for every particle-cell pair
     for (size_t firstCellIndex = 0; firstCellIndex < cellsSize; ++firstCellIndex) {
-      _aosNeighborList[firstCellIndex].resize(neighborCells);
-      size_t numParticlesFirstCell = cells[firstCellIndex].numParticles();
-      for (auto &cellPair : _aosNeighborList[firstCellIndex]) {
-        // reserve vector of neighbor lists for every particle in cell1
-        cellPair.reserve(numParticlesFirstCell);
-        size_t particleIndexCurrentCell = 0;
-        for (auto &particle : cells[firstCellIndex]) {
-          // for each particle in cell1 make a pair of particle and neighbor list
-          cellPair.emplace_back(std::make_pair(&particle, std::vector<Particle *>()));
 
-          // add a pair of cell's index and particle's index in the cell
-          _particleToCellMap[&particle] = std::make_pair(firstCellIndex, particleIndexCurrentCell);
-          particleIndexCurrentCell++;
+      // either not partial rebuilding or the current cell is dirty
+      if (!partialRebuilding || cells[firstCellIndex].getDirty()) {
+        size_t numParticlesFirstCell = cells[firstCellIndex].numParticles();
+        _aosNeighborList[firstCellIndex].clear();
+        _aosNeighborList[firstCellIndex].resize(neighborCells);
+        for (auto &cellPair : _aosNeighborList[firstCellIndex]) {
+          // reserve vector of neighbor lists for every particle in cell1
+          cellPair.reserve(numParticlesFirstCell);
+          size_t particleIndexCurrentCell = 0;
+          for (auto &particle : cells[firstCellIndex]) {
+            // for each particle in cell1 make a pair of particle and neighbor list
+            cellPair.emplace_back(std::make_pair(&particle, std::vector<Particle *>()));
+
+            // add a pair of cell's index and particle's index in the cell
+            _particleToCellMap[&particle] = std::make_pair(firstCellIndex, particleIndexCurrentCell);
+            particleIndexCurrentCell++;
+          }
+        }
+      }
+      // partial rebuilding and cell is not dirty
+      else {
+        // have a look at this cells neighboring cells
+        for (auto [globalIndex, localIndex] : _globalToLocalIndex.at(firstCellIndex)) {
+          // neighboring cell is dirty
+          if (cells.at(globalIndex).getDirty()) {
+            // clear all neighbor lists for this cell pair
+            _aosNeighborList[firstCellIndex][localIndex].clear();
+            size_t numParticlesFirstCell = cells[firstCellIndex].numParticles();
+            _aosNeighborList[firstCellIndex][localIndex].reserve(numParticlesFirstCell);
+            size_t particleIndexCurrentCell = 0;
+            for (auto &particle : cells[firstCellIndex]) {
+              _aosNeighborList[firstCellIndex][localIndex].emplace_back(std::make_pair(&particle, std::vector<Particle *>()));
+              _particleToCellMap[&particle] = std::make_pair(firstCellIndex, particleIndexCurrentCell);
+              particleIndexCurrentCell++;
+            }
+          }
         }
       }
     }
 
     // fill the lists
+    linkedCells.setOnlyDirtyCells(partialRebuilding);
     applyBuildFunctor(linkedCells, useNewton3, cutoff, skin, interactionLength, buildTraversalOption, buildType, partialRebuilding);
   }
 

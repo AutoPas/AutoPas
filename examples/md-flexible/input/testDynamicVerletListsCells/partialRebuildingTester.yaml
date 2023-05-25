@@ -1,5 +1,5 @@
-container                        :  [DynamicVerletLists]
-traversal                        :  [vl_list_iteration]
+container                        :  [DynamicPairwiseVerletLists]
+traversal                        :  [vlp_c01, vlp_c18, vlp_sliced, vlp_sliced_balanced, vlp_sliced_c02]
 data-layout                      :  [AoS]
 newton3                          :  [disabled]
 verlet-rebuild-frequency         :  1000
@@ -20,7 +20,7 @@ box-max                          :  [10.25, 10.25, 10.25]
 Objects:
   CubeGrid:
     0:
-      particles-per-dimension    :  [4, 4, 4]
+      particles-per-dimension    :  [3, 3, 3]
       particle-spacing           :  1.5
       bottomLeftCorner           :  [1, 1, 1]
       velocity                   :  [0, 0, 0]
