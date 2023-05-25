@@ -34,8 +34,10 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
    * Generates a reproducible set of molecules of varying numbers of molecules.
    * @param molecules
    * @param offset position offset
+   * @param allOwned true if all generated molecules are owned. If false, molecule ownership will alternate in the order
+   * owned -> halo -> dummy -> owned -> ...
    */
-  void generateMolecules(std::vector<mdLib::MultisiteMoleculeLJ> *molecules, std::array<double, 3> offset);
+  void generateMolecules(std::vector<mdLib::MultisiteMoleculeLJ> *molecules, std::array<double, 3> offset, bool allOwned);
 
   /**
    * Tests the correctness of the AoS functor for a given molA, molB, PPL, and cutoff.

@@ -23,7 +23,7 @@ void LJMultisiteFunctorTest::generatePPL(ParticlePropertiesLibrary<double, size_
 }
 
 void LJMultisiteFunctorTest::generateMolecules(std::vector<mdLib::MultisiteMoleculeLJ> *molecules,
-                                               std::array<double, 3> offset = {0, 0, 0}) {
+                                               std::array<double, 3> offset = {0, 0, 0}, bool allOwned = true) {
   molecules->resize(PARTICLES_PER_DIM * PARTICLES_PER_DIM * PARTICLES_PER_DIM);
 
   for (unsigned int i = 0; i < PARTICLES_PER_DIM; ++i) {
@@ -41,6 +41,17 @@ void LJMultisiteFunctorTest::generateMolecules(std::vector<mdLib::MultisiteMolec
         molecules->at(index).setV({0, 0, 0});
         molecules->at(index).setAngularVel({0, 0, 0});
         molecules->at(index).setTypeId(index % 3);
+        if (allOwned) {
+          molecules->at(index).setOwnershipState(autopas::OwnershipState::owned);
+        } else {
+          if (index % 3 == 0) {
+            molecules->at(index).setOwnershipState(autopas::OwnershipState::owned);
+          } else if (index % 3 == 1) {
+            molecules->at(index).setOwnershipState(autopas::OwnershipState::halo);
+          } else {
+            molecules->at(index).setOwnershipState(autopas::OwnershipState::dummy);
+          }
+        }
       }
     }
   }
@@ -685,6 +696,86 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
   testSuiteAoSForceCalculation(mol4, mol8, PPL, cutoff);
 }
 
+/**
+ * Tests that the AoS functor bypasses molecules that are dummies.
+ */
+TEST_F(LJMultisiteFunctorTest, AoSDummyTest) {
+  using mdLib::MultisiteMoleculeLJ;
+
+  const double cutoff = 2.5;
+
+  ParticlePropertiesLibrary PPL(cutoff);
+  PPL.addSiteType(0, 1., 1., 1.);
+  PPL.addMolType(0, {0}, {{0., 0., 0.}}, {1., 1., 1.});
+  PPL.calculateMixingCoefficients();
+
+  MultisiteMoleculeLJ mol0;
+  mol0.setR({0., 0., 0.});
+  mol0.setQ({0., 0., 0., 1.});
+  mol0.setF({0., 0., 0.});
+  mol0.setTorque({0., 0., 0.});
+  mol0.setTypeId(0);
+  mol0.setOwnershipState(autopas::OwnershipState::owned);
+
+  MultisiteMoleculeLJ mol1;
+  mol1.setR({-1., 0., 0.});
+  mol1.setQ({0., 0., 0., 1.});
+  mol1.setF({0., 0., 0.});
+  mol1.setTorque({0., 0., 0.});
+  mol1.setTypeId(0);
+  mol1.setOwnershipState(autopas::OwnershipState::dummy);
+
+  MultisiteMoleculeLJ mol2;
+  mol2.setR({1., 0., 0.});
+  mol2.setQ({0., 0., 0., 1.});
+  mol2.setF({0., 0., 0.});
+  mol2.setTorque({0., 0., 0.});
+  mol2.setTypeId(0);
+  mol2.setOwnershipState(autopas::OwnershipState::dummy);
+
+  // Interact molecules together with newton3 on and off
+  // create functor
+  mdLib::LJMultisiteFunctor<mdLib::MultisiteMoleculeLJ, true, true, autopas::FunctorN3Modes::Both, true, true>
+      functor(cutoff, PPL);
+
+  // newton3 on
+  functor.initTraversal();
+  // Test (owned, dummy)
+  functor.AoSFunctor(mol0, mol1, false);
+  // Test (dummy, owned)
+  functor.AoSFunctor(mol1, mol0, false);
+  // Test (dummy, dummy)
+  functor.AoSFunctor(mol1, mol2, false);
+  functor.endTraversal(false);
+
+  // newton3 on
+  functor.initTraversal();
+  // Test (owned, dummy)
+  functor.AoSFunctor(mol0, mol1, true);
+  // Test (dummy, owned)
+  functor.AoSFunctor(mol1, mol0, true);
+  // Test (dummy, dummy)
+  functor.AoSFunctor(mol1, mol2, true);
+  functor.endTraversal(true);
+
+  // Test all forces and torques are zero
+  // mol0
+  EXPECT_DOUBLE_EQ(mol0.getF()[0], 0);
+  EXPECT_DOUBLE_EQ(mol0.getF()[1], 0);
+  EXPECT_DOUBLE_EQ(mol0.getF()[2], 0);
+  // mol1
+  EXPECT_DOUBLE_EQ(mol1.getF()[0], 0);
+  EXPECT_DOUBLE_EQ(mol1.getF()[1], 0);
+  EXPECT_DOUBLE_EQ(mol1.getF()[2], 0);
+  // mol2
+  EXPECT_DOUBLE_EQ(mol2.getF()[0], 0);
+  EXPECT_DOUBLE_EQ(mol2.getF()[1], 0);
+  EXPECT_DOUBLE_EQ(mol2.getF()[2], 0);
+}
+
+/**
+ * Tests for correctness of AoS functor by comparing the force with FunctorLJ for a single-site molecule.
+ */
 TEST_F(LJMultisiteFunctorTest, singleSiteSanityCheck) {
   using mdLib::MultisiteMoleculeLJ;
 
@@ -731,94 +822,178 @@ TEST_F(LJMultisiteFunctorTest, singleSiteSanityCheck) {
   singleSiteSanityCheck<true, true, true>(mol0, mol1, PPL, cutoff);
 }
 
-TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACell) {
+/**
+ * Tests SoAFunctorSingle using AoS functor as a reference.
+ */
+TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoASingle) {
   using mdLib::MultisiteMoleculeLJ;
 
   const double cutoff = 3.;
 
-  std::vector<mdLib::MultisiteMoleculeLJ> molecules;
+  std::vector<mdLib::MultisiteMoleculeLJ> allOwnedMolecules;
+  std::vector<mdLib::MultisiteMoleculeLJ> mixedOwnershipMolecules;
   ParticlePropertiesLibrary<double, size_t> PPL(cutoff);
 
   generatePPL(&PPL);
-  generateMolecules(&molecules);
+  generateMolecules(&allOwnedMolecules);
+  generateMolecules(&mixedOwnershipMolecules, {0, 0, 0}, false);
+
+  // tests with only owned molecules
 
   // N3L optimization disabled, global calculation disabled.
-  testSoACellAgainstAoS<false, false, false>(molecules, PPL, cutoff);
+  testSoACellAgainstAoS<false, false, false>(allOwnedMolecules, PPL, cutoff);
 
   // N3L optimization enabled, global calculation disabled.
-  testSoACellAgainstAoS<true, false, false>(molecules, PPL, cutoff);
+  testSoACellAgainstAoS<true, false, false>(allOwnedMolecules, PPL, cutoff);
 
   // N3L optimization disabled, global calculation enabled, apply shift disabled.
-  testSoACellAgainstAoS<false, true, false>(molecules, PPL, cutoff);
+  testSoACellAgainstAoS<false, true, false>(allOwnedMolecules, PPL, cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift disabled.
-  testSoACellAgainstAoS<true, true, false>(molecules, PPL, cutoff);
+  testSoACellAgainstAoS<true, true, false>(allOwnedMolecules, PPL, cutoff);
 
   // N3L optimization disabled, global calculation enabled, apply shift enabled.
-  testSoACellAgainstAoS<false, true, true>(molecules, PPL, cutoff);
+  testSoACellAgainstAoS<false, true, true>(allOwnedMolecules, PPL, cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift enabled.
-  testSoACellAgainstAoS<true, true, true>(molecules, PPL, cutoff);
+  testSoACellAgainstAoS<true, true, true>(allOwnedMolecules, PPL, cutoff);
+
+  // tests with a mix of ownership states
+
+  // N3L optimization disabled, global calculation disabled.
+  testSoACellAgainstAoS<false, false, false>(mixedOwnershipMolecules, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation disabled.
+  testSoACellAgainstAoS<true, false, false>(mixedOwnershipMolecules, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift disabled.
+  testSoACellAgainstAoS<false, true, false>(mixedOwnershipMolecules, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift disabled.
+  testSoACellAgainstAoS<true, true, false>(mixedOwnershipMolecules, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift enabled.
+  testSoACellAgainstAoS<false, true, true>(mixedOwnershipMolecules, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift enabled.
+  testSoACellAgainstAoS<true, true, true>(mixedOwnershipMolecules, PPL, cutoff);
 }
 
-TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoACellPair) {
+/**
+ * Tests SoAFunctorPair using AoS functor as a reference.
+ */
+TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoAPair) {
   using mdLib::MultisiteMoleculeLJ;
 
   const double cutoff = 5.;
 
-  std::vector<mdLib::MultisiteMoleculeLJ> moleculesA;
-  std::vector<mdLib::MultisiteMoleculeLJ> moleculesB;
+  std::vector<mdLib::MultisiteMoleculeLJ> allOwnedMoleculesA;
+  std::vector<mdLib::MultisiteMoleculeLJ> allOwnedMoleculesB;
+  std::vector<mdLib::MultisiteMoleculeLJ> mixedOwnershipMoleculesA;
+  std::vector<mdLib::MultisiteMoleculeLJ> mixedOwnershipMoleculesB;
   ParticlePropertiesLibrary<double, size_t> PPL(cutoff);
 
   generatePPL(&PPL);
-  generateMolecules(&moleculesA, {0, 0, 0});
-  generateMolecules(&moleculesB, {0, 0, 9});
+  generateMolecules(&allOwnedMoleculesA, {0, 0, 0});
+  generateMolecules(&allOwnedMoleculesB, {0, 0, 9});
+  generateMolecules(&mixedOwnershipMoleculesA, {0, 0, 0}, false);
+  generateMolecules(&mixedOwnershipMoleculesB, {0, 0, 9}, false);
+
+  // tests with only owned molecules
 
   // N3L optimization disabled, global calculation disabled.
-  testSoACellPairAgainstAoS<false, false, false>(moleculesA, moleculesB, PPL, cutoff);
+  testSoACellPairAgainstAoS<false, false, false>(allOwnedMoleculesA, allOwnedMoleculesB, PPL, cutoff);
 
   // N3L optimization enabled, global calculation disabled.
-  testSoACellPairAgainstAoS<true, false, false>(moleculesA, moleculesB, PPL, cutoff);
+  testSoACellPairAgainstAoS<true, false, false>(allOwnedMoleculesA, allOwnedMoleculesB, PPL, cutoff);
 
   // N3L optimization disabled, global calculation enabled, apply shift disabled.
-  testSoACellPairAgainstAoS<false, true, false>(moleculesA, moleculesB, PPL, cutoff);
+  testSoACellPairAgainstAoS<false, true, false>(allOwnedMoleculesA, allOwnedMoleculesB, PPL, cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift disabled.
-  testSoACellPairAgainstAoS<true, true, false>(moleculesA, moleculesB, PPL, cutoff);
+  testSoACellPairAgainstAoS<true, true, false>(allOwnedMoleculesA, allOwnedMoleculesB, PPL, cutoff);
 
   // N3L optimization disabled, global calculation enabled, apply shift enabled.
-  testSoACellPairAgainstAoS<false, true, true>(moleculesA, moleculesB, PPL, cutoff);
+  testSoACellPairAgainstAoS<false, true, true>(allOwnedMoleculesA, allOwnedMoleculesB, PPL, cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift enabled.
-  testSoACellPairAgainstAoS<true, true, true>(moleculesA, moleculesB, PPL, cutoff);
+  testSoACellPairAgainstAoS<true, true, true>(allOwnedMoleculesA, allOwnedMoleculesB, PPL, cutoff);
+
+  // tests with a mix of ownership states
+
+  // N3L optimization disabled, global calculation disabled.
+  testSoACellPairAgainstAoS<false, false, false>(mixedOwnershipMoleculesA, mixedOwnershipMoleculesB, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation disabled.
+  testSoACellPairAgainstAoS<true, false, false>(mixedOwnershipMoleculesA, mixedOwnershipMoleculesB, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift disabled.
+  testSoACellPairAgainstAoS<false, true, false>(mixedOwnershipMoleculesA, mixedOwnershipMoleculesB, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift disabled.
+  testSoACellPairAgainstAoS<true, true, false>(mixedOwnershipMoleculesA, mixedOwnershipMoleculesB, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift enabled.
+  testSoACellPairAgainstAoS<false, true, true>(mixedOwnershipMoleculesA, mixedOwnershipMoleculesB, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift enabled.
+  testSoACellPairAgainstAoS<true, true, true>(mixedOwnershipMoleculesA, mixedOwnershipMoleculesB, PPL, cutoff);
+
 }
 
-TEST_F(LJMultisiteFunctorTest, MulticenteredLJFunctorTest_AoSVsSoAVerlet) {
+/**
+ * Tests SoAFunctorVerlet using AoS functor as a reference.
+ */
+TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoAVerlet) {
   using mdLib::MultisiteMoleculeLJ;
 
   const double cutoff = 3.1;
 
-  std::vector<mdLib::MultisiteMoleculeLJ> molecules;
+  std::vector<mdLib::MultisiteMoleculeLJ> allOwnedMolecules;
+  std::vector<mdLib::MultisiteMoleculeLJ> mixedOwnershipMolecules;
   ParticlePropertiesLibrary<double, size_t> PPL(cutoff);
 
   generatePPL(&PPL);
-  generateMolecules(&molecules);
+  generateMolecules(&allOwnedMolecules);
+  generateMolecules(&mixedOwnershipMolecules, {0, 0, 0}, false);
+
+  // tests with only owned molecules
 
   // N3L optimization disabled, global calculation disabled.
-  testSoAVerletAgainstAoS<false, false, false>(molecules, PPL, cutoff);
+  testSoAVerletAgainstAoS<false, false, false>(allOwnedMolecules, PPL, cutoff);
 
   // N3L optimization enabled, global calculation disabled.
-  testSoAVerletAgainstAoS<true, false, false>(molecules, PPL, cutoff);
+  testSoAVerletAgainstAoS<true, false, false>(allOwnedMolecules, PPL, cutoff);
 
   // N3L optimization disabled, global calculation enabled, apply shift disabled.
-  testSoAVerletAgainstAoS<false, true, false>(molecules, PPL, cutoff);
+  testSoAVerletAgainstAoS<false, true, false>(allOwnedMolecules, PPL, cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift disabled.
-  testSoAVerletAgainstAoS<true, true, false>(molecules, PPL, cutoff);
+  testSoAVerletAgainstAoS<true, true, false>(allOwnedMolecules, PPL, cutoff);
 
   // N3L optimization disabled, global calculation enabled, apply shift enabled.
-  testSoAVerletAgainstAoS<false, true, true>(molecules, PPL, cutoff);
+  testSoAVerletAgainstAoS<false, true, true>(allOwnedMolecules, PPL, cutoff);
 
   // N3L optimization enabled, global calculation enabled, apply shift enabled.
-  testSoAVerletAgainstAoS<true, true, true>(molecules, PPL, cutoff);
+  testSoAVerletAgainstAoS<true, true, true>(allOwnedMolecules, PPL, cutoff);
+
+  // tests with a mix of ownership states
+
+  // N3L optimization disabled, global calculation disabled.
+  testSoAVerletAgainstAoS<false, false, false>(mixedOwnershipMolecules, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation disabled.
+  testSoAVerletAgainstAoS<true, false, false>(mixedOwnershipMolecules, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift disabled.
+  testSoAVerletAgainstAoS<false, true, false>(mixedOwnershipMolecules, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift disabled.
+  testSoAVerletAgainstAoS<true, true, false>(mixedOwnershipMolecules, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift enabled.
+  testSoAVerletAgainstAoS<false, true, true>(mixedOwnershipMolecules, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift enabled.
+  testSoAVerletAgainstAoS<true, true, true>(mixedOwnershipMolecules, PPL, cutoff);
 }
