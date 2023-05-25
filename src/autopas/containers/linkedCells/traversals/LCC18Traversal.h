@@ -129,10 +129,11 @@ inline void LCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
           if (std::abs(yArray + y) <= _overlap_s[1]) {
             for (long xArray = -_overlap_s[0]; xArray <= _overlap_s[0]; ++xArray) {
               if (std::abs(xArray + x) <= _overlap_s[0]) {
-                std::array<double, 3> pos = {};
-                pos[0] = std::max(0l, (std::abs(x) - 1l)) * this->_cellLength[0];
-                pos[1] = std::max(0l, (std::abs(y) - 1l)) * this->_cellLength[1];
-                pos[2] = std::max(0l, (std::abs(z) - 1l)) * this->_cellLength[2];
+                const std::array<double, 3> pos = {
+                    std::max(0l, (std::abs(x) - 1l)) * this->_cellLength[0],
+                    std::max(0l, (std::abs(y) - 1l)) * this->_cellLength[1],
+                    std::max(0l, (std::abs(z) - 1l)) * this->_cellLength[2],
+                };
                 // calculate distance between base cell and other cell
                 const double distSquare = utils::ArrayMath::dot(pos, pos);
                 // only add cell offset if cell is within cutoff radius

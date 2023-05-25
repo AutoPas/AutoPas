@@ -40,7 +40,7 @@ class ParticleBase {
    * @param v Velocity of the particle.
    * @param id Id of the particle.
    */
-  ParticleBase(std::array<double, 3> r, std::array<double, 3> v, idType id)
+  ParticleBase(const std::array<double, 3> &r, const std::array<double, 3> &v, idType id)
       : _r(r), _v(v), _f({0.0, 0.0, 0.0}), _id(id) {}
 
   /**
@@ -114,13 +114,19 @@ class ParticleBase {
    * Add a partial force to the force acting on the particle
    * @param f partial force to be added
    */
-  void addF(const std::array<double, 3> &f) { _f = utils::ArrayMath::add(_f, f); }
+  void addF(const std::array<double, 3> &f) {
+    using namespace autopas::utils::ArrayMath::literals;
+    _f += f;
+  }
 
   /**
    * Substract a partial force from the force acting on the particle
    * @param f partial force to be substracted
    */
-  void subF(const std::array<double, 3> &f) { _f = utils::ArrayMath::sub(_f, f); }
+  void subF(const std::array<double, 3> &f) {
+    using namespace autopas::utils::ArrayMath::literals;
+    _f -= f;
+  }
 
   /**
    * Get the id of the particle
@@ -150,7 +156,10 @@ class ParticleBase {
    * Add a distance vector to the position of the particle
    * @param r vector to be added
    */
-  void addR(const std::array<double, 3> &r) { _r = utils::ArrayMath::add(_r, r); }
+  void addR(const std::array<double, 3> &r) {
+    using namespace autopas::utils::ArrayMath::literals;
+    _r += r;
+  }
 
   /**
    * Get the velocity of the particle
@@ -168,7 +177,10 @@ class ParticleBase {
    * Add a vector to the current velocity of the particle
    * @param v vector to be added
    */
-  void addV(const std::array<double, 3> &v) { _v = utils::ArrayMath::add(_v, v); }
+  void addV(const std::array<double, 3> &v) {
+    using namespace autopas::utils::ArrayMath::literals;
+    _v += v;
+  }
 
   /**
    * Creates a string containing all data of the particle.
@@ -316,7 +328,8 @@ class ParticleBase {
  private:
   /**
    * Marks a particle as deleted.
-   * @note: This function should not be used from outside of AutoPas. Instead, use AutoPas::deleteParticle(iterator).
+   * @note: This function should not be used from outside of AutoPas,
+   * because the logic handler keeps track of the number of particles. Instead, use AutoPas::deleteParticle(iterator).
    * @note: From within autopas, you might want to use internal::markParticleAsDeleted(Particle &particle)
    */
   void markAsDeleted() {

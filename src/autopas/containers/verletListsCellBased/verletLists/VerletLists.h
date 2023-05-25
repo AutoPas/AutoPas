@@ -27,7 +27,6 @@ namespace autopas {
  * the interaction.
  * Cells are created using a cell size of at least cutoff + skin radius.
  * @tparam Particle
- * @todo deleting particles should also invalidate the verlet lists - should be implemented somehow
  */
 template <class Particle>
 class VerletLists : public VerletListsLinkedBase<Particle> {
@@ -59,13 +58,12 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
    * @param buildVerletListType Specifies how the verlet list should be build, see BuildVerletListType
    * @param cellSizeFactor cell size factor ralative to cutoff
    */
-  VerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
+  VerletLists(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
               const double skinPerTimestep, const unsigned int rebuildFrequency,
               const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
               const double cellSizeFactor = 1.0)
       : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency,
                                         compatibleTraversals::allVLCompatibleTraversals(), cellSizeFactor),
-        _soaListIsValid(false),
         _buildVerletListType(buildVerletListType) {}
 
   /**
@@ -104,7 +102,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
     this->updateVerletListsAoS(traversal->getUseNewton3());
     // the neighbor list is now valid
-    this->_neighborListIsValid = true;
+    this->_neighborListIsValid.store(true, std::memory_order_relaxed);
 
     if (not _soaListIsValid and traversal->getDataLayout() == DataLayoutOption::soa) {
       // only do this if we need it, i.e., if we are using soa!
@@ -204,7 +202,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
       }
     }
 
-    AutoPasLog(debug,
+    AutoPasLog(DEBUG,
                "VerletLists::generateSoAListFromAoSVerletLists: average verlet list "
                "size is {}",
                static_cast<double>(accumulatedListSize) / _aosNeighborLists.size());
@@ -232,7 +230,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
   /**
    * Shows if the SoA neighbor list is currently valid.
    */
-  bool _soaListIsValid;
+  bool _soaListIsValid{false};
 
   /**
    * Specifies for what data layout the verlet lists are build.

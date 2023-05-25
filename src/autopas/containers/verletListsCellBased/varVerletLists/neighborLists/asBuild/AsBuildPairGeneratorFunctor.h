@@ -78,8 +78,10 @@ class AsBuildPairGeneratorFunctor
    * @param newton3 Not used!
    */
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
-    auto dist = utils::ArrayMath::sub(i.getR(), j.getR());
-    double distsquare = utils::ArrayMath::dot(dist, dist);
+    using namespace autopas::utils::ArrayMath::literals;
+
+    const auto dist = i.getR() - j.getR();
+    const double distsquare = utils::ArrayMath::dot(dist, dist);
     if (distsquare < _cutoffskinsquared) {
       if (callCheckInstead) {
         _list.checkPair(&i, &j);

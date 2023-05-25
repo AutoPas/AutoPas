@@ -10,7 +10,6 @@
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/cells/ParticleCell.h"
-#include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -29,14 +28,18 @@ template <class Particle, class ParticleCellType>
 class SortedCellView : public ParticleCell<Particle> {
  public:
   /**
+   * Type that holds or refers to the actual particles.
+   */
+  using StorageType = std::vector<Particle *>;
+  /**
    * Constructs a FullSortedParticleCell.
    * @param cell Cell whose particles are sorted.
    * @param r Normalized vector along particles are sorted.
    */
   SortedCellView(ParticleCellType &cell, const std::array<double, 3> &r) : _cell(&cell) {
     _particles.reserve(cell.numParticles());
-    for (auto p = getStaticCellIter(cell); p.isValid(); ++p) {
-      _particles.push_back(std::make_pair(utils::ArrayMath::dot(p->getR(), r), &(*p)));
+    for (auto &p : cell) {
+      _particles.push_back(std::make_pair(utils::ArrayMath::dot(p.getR(), r), &p));
     }
     std::sort(_particles.begin(), _particles.end(),
               [](const auto &a, const auto &b) -> bool { return a.first < b.first; });
@@ -49,9 +52,37 @@ class SortedCellView : public ParticleCell<Particle> {
    */
   void addParticle(const Particle &p) override {}
 
-  SingleCellIteratorWrapper<Particle, true> begin() override { return _cell->begin(); }
+  /**
+   * @copydoc autopas::FullParticleCell::begin()
+   * @note: iterating via begin / iterators does not yield the sorted order.
+   */
+  CellIterator<typename ParticleCellType::StorageType, true> begin() {
+    return CellIterator<typename ParticleCellType::StorageType, true>(_cell->begin());
+  }
 
-  SingleCellIteratorWrapper<Particle, false> begin() const override { return std::as_const(*_cell).begin(); }
+  /**
+   * @copydoc autopas::FullParticleCell::begin()
+   * @note: iterating via begin / iterators does not yield the sorted order.
+   * @note const version
+   */
+  CellIterator<typename ParticleCellType::StorageType, false> begin() const {
+    return CellIterator<typename ParticleCellType::StorageType, false>(_cell->begin());
+  }
+
+  /**
+   * @copydoc autopas::FullParticleCell::end()
+   */
+  CellIterator<typename ParticleCellType::StorageType, true> end() {
+    return CellIterator<typename ParticleCellType::StorageType, true>(_cell->end());
+  }
+
+  /**
+   * @copydoc autopas::FullParticleCell::end()
+   * @note const version
+   */
+  CellIterator<typename ParticleCellType::StorageType, false> end() const {
+    return CellIterator<typename ParticleCellType::StorageType, false>(_cell->end());
+  }
 
   unsigned long numParticles() const override { return _particles.size(); }
 
@@ -67,7 +98,7 @@ class SortedCellView : public ParticleCell<Particle> {
 
   void deleteByIndex(size_t index) override {
     if (index >= numParticles()) {
-      AutoPasLog(error, "Index out of range");
+      AutoPasLog(ERROR, "Index out of range");
       utils::ExceptionHandler::exception("Error: Index out of range");
     }
 

@@ -28,7 +28,7 @@ class MoleculeLJ : public autopas::Particle {
    * @param moleculeId Id of the molecule.
    * @param typeId TypeId of the molecule.
    */
-  explicit MoleculeLJ(std::array<double, 3> pos, std::array<double, 3> v, unsigned long moleculeId,
+  explicit MoleculeLJ(const std::array<double, 3> &pos, const std::array<double, 3> &v, unsigned long moleculeId,
                       unsigned long typeId = 0)
       : Particle(pos, v, moleculeId), _typeId(typeId) {}
 
@@ -167,20 +167,13 @@ class MoleculeLJ : public autopas::Particle {
    * Get the old force.
    * @return
    */
-  [[nodiscard]] std::array<double, 3> getOldF() const { return _oldF; }
+  [[nodiscard]] const std::array<double, 3> &getOldF() const { return _oldF; }
 
   /**
    * Set old force.
    * @param oldForce
    */
   void setOldF(const std::array<double, 3> &oldForce) { _oldF = oldForce; }
-
-  /**
-   * Set old force.
-   * @param oldForce
-   * @param i index of oldForce being set
-   */
-  void setOldF(const double &oldForce, size_t i) { _oldF[i] = oldForce; }
 
   /**
    * Get TypeId.
@@ -194,24 +187,7 @@ class MoleculeLJ : public autopas::Particle {
    */
   void setTypeId(size_t typeId) { _typeId = typeId; }
 
-  /**
-   * Returns molecule of type MoleculeLJ, with the same position, velocity, Id, and type Id as this molecule.
-   * Throws exception when called (should be used to convert from molecules with more data members to moleculeLJ).
-   * @tparam returnedType type of returned
-   * @return
-   */
-  template <class returnedType>
-  returnedType returnSimpleMolecule() {
-    utils::ExceptionHandler::exception("Converting from MoleculeLJ to MoleculeLJ. This function should not be called.");
-    returnedType simpleMolecule;
-    simpleMolecule.setR(this->getR());
-    simpleMolecule.setV(this->getV());
-    simpleMolecule.setID(this->getID());
-    simpleMolecule.setTypeId(this->getTypeId());
-    return simpleMolecule;
-  }
-
- private:
+ protected:
   /**
    * Molecule type id. In single-site simulations, this is used as a siteId to look up site attributes in the particle
    * properties library.

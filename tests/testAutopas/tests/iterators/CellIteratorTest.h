@@ -1,7 +1,7 @@
 /**
- * @file SingleCellIteratorTest.h
- * @author tchipev
- * @date 19.01.18
+ * @file CellIteratorTest.h
+ * @author F. Gratl
+ * @date 12.01.23
  */
 
 #pragma once
@@ -11,15 +11,20 @@
 #include "AutoPasTestBase.h"
 #include "testingHelpers/commonTypedefs.h"
 
-class SingleCellIteratorTest : public AutoPasTestBase {
+/**
+ * There used to be a dedicated CellIterator.
+ * In https://github.com/AutoPas/AutoPas/pull/712 this was removed so this test now only
+ * tests if FullParticleCell provides good interfaces to std::vector::iterator.
+ */
+class CellIteratorTest : public AutoPasTestBase {
  public:
-  SingleCellIteratorTest() = default;
+  CellIteratorTest() = default;
 
   void SetUp() override;
 
   void TearDown() override;
 
-  ~SingleCellIteratorTest() override = default;
+  ~CellIteratorTest() override = default;
 
   template <class Cell>
   void fillWithParticles(Cell *pc) {

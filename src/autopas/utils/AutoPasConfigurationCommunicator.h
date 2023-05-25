@@ -105,10 +105,10 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket,
       smoothedHomogeneityAndMaxDensity.first + MPITuningWeightForMaxDensity * smoothedHomogeneityAndMaxDensity.second;
 
   // debug print for evaluation
-  AutoPasLog(debug, "similarityMetric of rank: " + std::to_string(rank) + " is: " + std::to_string(similarityMetric));
-  AutoPasLog(debug, "smoothedHomogeneity of rank: " + std::to_string(rank) +
+  AutoPasLog(DEBUG, "similarityMetric of rank: " + std::to_string(rank) + " is: " + std::to_string(similarityMetric));
+  AutoPasLog(DEBUG, "smoothedHomogeneity of rank: " + std::to_string(rank) +
                         " is: " + std::to_string(smoothedHomogeneityAndMaxDensity.first));
-  AutoPasLog(debug, "smoothedMaxDensity of rank: " + std::to_string(rank) +
+  AutoPasLog(DEBUG, "smoothedMaxDensity of rank: " + std::to_string(rank) +
                         " is: " + std::to_string(smoothedHomogeneityAndMaxDensity.second));
 
   // get all the similarityMetrics of the other ranks
@@ -134,7 +134,7 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket,
     if (differences[i] > MPITuningMaxDifferenceForBucket) current_bucket++;
 
     // debug print for evaluation
-    AutoPasLog(debug, "I am rank: " + std::to_string(rank) + " bucket: " + std::to_string(current_bucket) +
+    AutoPasLog(DEBUG, "I am rank: " + std::to_string(rank) + " bucket: " + std::to_string(current_bucket) +
                           "  new value: " + std::to_string(similarityMetrics[i]));
     if (similarityMetrics[i] == similarityMetric) my_bucket = current_bucket;
   }

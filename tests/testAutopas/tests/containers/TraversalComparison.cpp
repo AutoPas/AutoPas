@@ -115,11 +115,12 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   autopasTools::generators::RandomGenerator::fillWithParticles(*container, Molecule({0., 0., 0.}, {0., 0., 0.}, 0),
                                                                container->getBoxMin(), container->getBoxMax(),
                                                                numMolecules);
-
+  EXPECT_EQ(container->getNumberOfParticles(), numMolecules) << "Wrong number of molecules inserted!";
   autopasTools::generators::RandomGenerator::fillWithHaloParticles(
       *container, Molecule({0., 0., 0.}, {0., 0., 0.}, numMolecules /*initial ID*/), container->getCutoff(),
       numHaloMolecules);
-
+  EXPECT_EQ(container->getNumberOfParticles(), numMolecules + numHaloMolecules)
+      << "Wrong number of halo molecules inserted!";
   auto traversal =
       autopas::utils::withStaticCellType<Molecule>(container->getParticleCellTypeEnum(), [&](auto particleCellDummy) {
         return autopas::TraversalSelector<decltype(particleCellDummy)>::generateTraversal(
@@ -222,10 +223,10 @@ TEST_P(TraversalComparison, traversalTest) {
 
   for (size_t i = 0; i < numParticles; ++i) {
     for (unsigned int d = 0; d < 3; ++d) {
-      double calculatedForce = calculatedForces[i][d];
-      double referenceForce = _forcesReference[key][i][d];
+      const double calculatedForce = calculatedForces[i][d];
+      const double referenceForce = _forcesReference[key][i][d];
       EXPECT_NEAR(calculatedForce, referenceForce, std::fabs(calculatedForce * rel_err_tolerance))
-          << "Particle id: " << i;
+          << "Dim: " << d << " Particle id: " << i;
     }
   }
 

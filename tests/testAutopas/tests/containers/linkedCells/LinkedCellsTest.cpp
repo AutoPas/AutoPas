@@ -103,6 +103,7 @@ struct two_values {
   using second_t = second;
 };
 
+// defines the types of _linkedCells and _keepListsValid
 using LC_true = two_values<autopas::LinkedCells<Particle>, std::true_type>;
 using LC_false = two_values<autopas::LinkedCells<Particle>, std::false_type>;
 using LCRef_true = two_values<autopas::LinkedCellsReferences<Particle>, std::true_type>;

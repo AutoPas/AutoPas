@@ -68,25 +68,22 @@ auto initDomain() {
  * @return Vector of generated positions.
  */
 auto generatePositionsInsideDomain(const autopas::AutoPas<ParticleType> &autoPasContainer) {
-  using autopas::utils::ArrayMath::add;
-  using autopas::utils::ArrayMath::mul;
-  using autopas::utils::ArrayMath::mulScalar;
-  using autopas::utils::ArrayMath::sub;
-  using autopas::utils::ArrayMath::subScalar;
+  using namespace autopas::utils::ArrayMath::literals;
+
   const auto &localBoxMin = autoPasContainer.getBoxMin();
   const auto &localBoxMax = autoPasContainer.getBoxMax();
-  const auto localBoxLength = sub(localBoxMax, localBoxMin);
+  const auto localBoxLength = localBoxMax - localBoxMin;
 
   std::vector<std::array<double, 3>> positions{};
   positions.reserve(27);
-  const auto midOfLocalBox = add(localBoxMin, mulScalar(localBoxLength, 0.5));
+  const auto midOfLocalBox = localBoxMin + (localBoxLength * 0.5);
   // particles should be placed cutoff/2 inside from the box border
-  const auto midToParticle = mulScalar(subScalar(localBoxLength, autoPasContainer.getCutoff()), 0.5);
+  const auto midToParticle = (localBoxLength - autoPasContainer.getCutoff()) * 0.5;
   for (double z = -1; z <= 1; ++z) {
     for (double y = -1; y <= 1; ++y) {
       for (double x = -1; x <= 1; ++x) {
-        const auto relativePosition = mul({x, y, z}, midToParticle);
-        const auto absolutePosition = add(midOfLocalBox, relativePosition);
+        const auto relativePosition = std::array<double, 3>{x, y, z} * midToParticle;
+        const auto absolutePosition = midOfLocalBox + relativePosition;
         positions.push_back(absolutePosition);
       }
     }
@@ -104,29 +101,25 @@ auto generatePositionsInsideDomain(const autopas::AutoPas<ParticleType> &autoPas
  * @return Vector of generated positions.
  */
 auto generatePositionsOutsideDomain(const autopas::AutoPas<ParticleType> &autoPasContainer) {
-  using autopas::utils::ArrayMath::add;
-  using autopas::utils::ArrayMath::addScalar;
-  using autopas::utils::ArrayMath::mul;
-  using autopas::utils::ArrayMath::mulScalar;
-  using autopas::utils::ArrayMath::sub;
-  using autopas::utils::ArrayMath::subScalar;
+  using namespace autopas::utils::ArrayMath::literals;
+
   const auto &localBoxMin = autoPasContainer.getBoxMin();
   const auto &localBoxMax = autoPasContainer.getBoxMax();
-  const auto localBoxLength = sub(localBoxMax, localBoxMin);
+  const auto localBoxLength = localBoxMax - localBoxMin;
 
   std::vector<std::array<double, 3>> positions{};
   positions.reserve(98);
-  const auto midOfLocalBox = add(localBoxMin, mulScalar(localBoxLength, 0.5));
-  const auto midToParticleNear = mulScalar(subScalar(localBoxLength, autoPasContainer.getCutoff()), 0.5);
-  const auto midToParticleFar = mulScalar(addScalar(localBoxLength, autoPasContainer.getCutoff()), 0.5);
+  const auto midOfLocalBox = localBoxMin + (localBoxLength * 0.5);
+  const auto midToParticleNear = (localBoxLength - autoPasContainer.getCutoff()) * 0.5;
+  const auto midToParticleFar = (localBoxLength + autoPasContainer.getCutoff()) * 0.5;
 
   const std::array<std::vector<double>, 3> distances = {{
       {-midToParticleFar[0], -midToParticleNear[0], 0., midToParticleNear[0], midToParticleFar[0]},
       {-midToParticleFar[1], -midToParticleNear[1], 0., midToParticleNear[1], midToParticleFar[1]},
       {-midToParticleFar[2], -midToParticleNear[2], 0., midToParticleNear[2], midToParticleFar[2]},
   }};
-  const auto relLocalBoxMin = mulScalar(localBoxLength, -.5);
-  const auto relLocalBoxMax = add(relLocalBoxMin, localBoxLength);
+  const auto relLocalBoxMin = localBoxLength * -.5;
+  const auto relLocalBoxMax = relLocalBoxMin + localBoxLength;
   for (double z : distances[2]) {
     for (double y : distances[1]) {
       for (double x : distances[0]) {
@@ -134,7 +127,7 @@ auto generatePositionsOutsideDomain(const autopas::AutoPas<ParticleType> &autoPa
         // only add a particle if the position is in the halo region (=not in the inner box).
         // This is equivalent to at least one of x/y/z has to be ==abs(midToParticle1DFar)
         if (autopas::utils::notInBox(relativePosition, relLocalBoxMin, relLocalBoxMax)) {
-          const auto absolutePosition = add(midOfLocalBox, relativePosition);
+          const auto absolutePosition = midOfLocalBox + relativePosition;
           positions.push_back(absolutePosition);
         }
       }
@@ -144,19 +137,19 @@ auto generatePositionsOutsideDomain(const autopas::AutoPas<ParticleType> &autoPa
 }
 
 TEST_F(RegularGridDecompositionTest, testGetLocalDomain) {
+  using namespace autopas::utils::ArrayMath::literals;
   auto [autoPasContainer, domainDecomposition] = initDomain();
 
-  const auto globalBoxExtend =
-      autopas::utils::ArrayMath::sub(domainDecomposition->getGlobalBoxMax(), domainDecomposition->getGlobalBoxMin());
+  const auto globalBoxExtend = domainDecomposition->getGlobalBoxMax() - domainDecomposition->getGlobalBoxMin();
   const auto decomposition = domainDecomposition->getDecomposition();
 
-  const std::array<double, 3> expectedLocalBoxExtend = autopas::utils::ArrayMath::div(
-      globalBoxExtend, autopas::utils::ArrayUtils::static_cast_array<double>(decomposition));
+  const std::array<double, 3> expectedLocalBoxExtend =
+      globalBoxExtend / autopas::utils::ArrayUtils::static_cast_array<double>(decomposition);
   // make sure expectations make sense
   ASSERT_THAT(expectedLocalBoxExtend, ::testing::Each(::testing::Gt(1e-10)));
 
   const std::array<double, 3> resultingLocalBoxExtend =
-      autopas::utils::ArrayMath::sub(domainDecomposition->getLocalBoxMax(), domainDecomposition->getLocalBoxMin());
+      domainDecomposition->getLocalBoxMax() - domainDecomposition->getLocalBoxMin();
 
   EXPECT_NEAR(expectedLocalBoxExtend[0], resultingLocalBoxExtend[0], 1e-10);
   EXPECT_NEAR(expectedLocalBoxExtend[1], resultingLocalBoxExtend[1], 1e-10);

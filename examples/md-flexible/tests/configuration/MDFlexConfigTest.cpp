@@ -68,6 +68,21 @@ TEST_F(MDFlexConfigTest, UniformBoxMinMax) {
   EXPECT_THAT(configuration.boxMax.value, expectedBoxMax);
 }
 
+TEST_F(MDFlexConfigTest, ClosestPackedBoxMinMax) {
+  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
+                                        std::string(YAMLDIRECTORY) + "cubeClosestPacked.yaml"};
+
+  char *argv[3] = {&arguments[0][0], &arguments[1][0], &arguments[2][0]};
+
+  MDFlexConfig configuration(3, argv);
+
+  std::array<double, 3> expectedBoxMin = {-0.5, -0.5, 0.};
+  std::array<double, 3> expectedBoxMax = {7., 7.5, 27.5};
+
+  EXPECT_THAT(configuration.boxMin.value, expectedBoxMin);
+  EXPECT_THAT(configuration.boxMax.value, expectedBoxMax);
+}
+
 TEST_F(MDFlexConfigTest, calcAutoPasBox) {
   std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
                                         std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml"};
@@ -78,45 +93,43 @@ TEST_F(MDFlexConfigTest, calcAutoPasBox) {
 
   std::array<double, 3> expectedBoxMin = {-10.75, -25.75, -15.75};
   EXPECT_EQ(configuration.boxMin.value, expectedBoxMin);
-  std::array<double, 3> expectedBoxMax = {23, 10, 15.75};
+  std::array<double, 3> expectedBoxMax = {23, 10, 27.5};
   EXPECT_EQ(configuration.boxMax.value, expectedBoxMax);
 }
 
-///**
-// * Test that MDFlexConfig correctly adds site types.
-// */
-//TEST_F(MDFlexConfigTest, addSiteType) {
-//  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
-//                                        std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml"};
-//
-//  char *argv[3] = {&arguments[0][0], &arguments[1][0], &arguments[2][0]};
-//
-//  MDFlexConfig configuration(3, argv);
-//
-//  const double epsilon0 = 1.0;
-//  const double sigma0 = 1.0;
-//  const double mass0 = 1.0;
-//  const double epsilon1 = 2.0;
-//  const double sigma1 = 2.0;
-//  const double mass1 = 2.0;
-//
-//  // Add site types to configuration, and test that attempting to add rewrite types results in an error.
-//  EXPECT_NO_THROW(configuration.addSiteType(0, epsilon0, sigma0, mass0));
-//  EXPECT_ANY_THROW(configuration.addSiteType(0, 1.5, 1.0, 1.0));
-//  EXPECT_ANY_THROW(configuration.addSiteType(0, 1.5, 1.1, 1.0));
-//  EXPECT_ANY_THROW(configuration.addSiteType(0, 1.1, 1.1, 1.1));
-//  EXPECT_NO_THROW(configuration.addSiteType(1, epsilon1, sigma1, mass1));
-//
-//  // Check added site types are correct
-//  EXPECT_EQ(configuration.epsilonMap.value.at(0), epsilon0);
-//  EXPECT_EQ(configuration.sigmaMap.value.at(0), sigma0);
-//  EXPECT_EQ(configuration.massMap.value.at(0), mass0);
-//  EXPECT_EQ(configuration.epsilonMap.value.at(1), epsilon1);
-//  EXPECT_EQ(configuration.sigmaMap.value.at(1), sigma1);
-//  EXPECT_EQ(configuration.massMap.value.at(1), mass1);
-//}
+// todo Check this for multi-site
+TEST_F(MDFlexConfigTest, addType) {
+  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
+                                        std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml"};
 
-TEST_F(MDFlexConfigTest, multipleSimilarObjectParsing) {
+  char *argv[3] = {&arguments[0][0], &arguments[1][0], &arguments[2][0]};
+
+  MDFlexConfig configuration(3, argv);
+
+  configuration.addSiteType(0, 1.0, 1.0, 1.0);
+  EXPECT_NO_THROW(configuration.addSiteType(0, 1.0, 1.0, 1.0));
+  EXPECT_ANY_THROW(configuration.addSiteType(0, 1.5, 1.0, 1.0));
+  EXPECT_ANY_THROW(configuration.addSiteType(0, 1.5, 1.1, 1.0));
+  EXPECT_ANY_THROW(configuration.addSiteType(0, 1.1, 1.1, 1.1));
+  EXPECT_NO_THROW(configuration.addSiteType(1, 2.0, 2.0, 2.0));
+  EXPECT_EQ(configuration.massMap.value.at(0), 1.0);
+  EXPECT_EQ(configuration.massMap.value.at(1), 2.0);
+  EXPECT_EQ(configuration.epsilonMap.value.at(1), 2.0);
+}
+
+TEST_F(MDFlexConfigTest, wrongTypeParsingInput) {
+  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
+                                        std::string(YAMLDIRECTORY) + "incorrectParsingFile.yaml"};
+
+  char *argv[3] = {&arguments[0][0], &arguments[1][0], &arguments[2][0]};
+
+  // If an invalid YAML-file is used, exceptions are catched by YamlParser, MDFlexConfig will then exit with
+  // EXIT_FAILURE and write "Error when parsing configuration file." to cerr. YAML-file for this test is in
+  // examples/md-flexible/tests/yamlTestFiles/incorrectParsingFile.yaml
+  ASSERT_EXIT(MDFlexConfig(3, argv), testing::ExitedWithCode(1), "Error when parsing configuration file.");
+}
+
+TEST_F(MDFlexConfigTest, multipleSameObjectParsing) {
   std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
                                         std::string(YAMLDIRECTORY) + "multipleSimilarObjects.yaml"};
 

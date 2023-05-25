@@ -60,9 +60,11 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
    * @copydoc OctreeNodeInterface::insert()
    */
   std::unique_ptr<OctreeNodeInterface<Particle>> insert(const Particle &p) override {
+    using namespace autopas::utils::ArrayMath::literals;
+
     // Check if the size of the new leaves would become smaller than cellSizeFactor*interactionLength
-    std::array<double, 3> splitLeafDimensions = utils::ArrayMath::sub(this->getBoxMax(), this->getBoxMin());
-    splitLeafDimensions = utils::ArrayMath::mulScalar(splitLeafDimensions, 0.5);
+    std::array<double, 3> splitLeafDimensions = this->getBoxMax() - this->getBoxMin();
+    splitLeafDimensions *= 0.5;
     bool anyNewDimSmallerThanMinSize = false;
     for (auto d = 0; d < 3; ++d) {
       // auto cellSizeFactor = 1.0;
@@ -94,6 +96,14 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
     }
   }
 
+  bool deleteParticle(Particle &particle) override {
+    const bool isRearParticle = &particle == &this->_particles.back();
+    // WARNING no runtime check that this particle is actually within the node!
+    particle = this->_particles.back();
+    this->_particles.pop_back();
+    return not isRearParticle;
+  }
+
   /**
    * @copydoc OctreeNodeInterface::collectAllParticles()
    */
@@ -122,7 +132,7 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
   /**
    * @copydoc OctreeNodeInterface::getNumberOfParticles()
    */
-  unsigned int getNumberOfParticles() override { return this->_particles.size(); }
+  unsigned int getNumberOfParticles() const override { return this->_particles.size(); }
 
   /**
    * @copydoc OctreeNodeInterface::hasChildren()
@@ -149,7 +159,8 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
     leaves.push_back((OctreeLeafNode<Particle> *)this);
   }
 
-  std::set<OctreeLeafNode<Particle> *> getLeavesInRange(std::array<double, 3> min, std::array<double, 3> max) override {
+  std::set<OctreeLeafNode<Particle> *> getLeavesInRange(const std::array<double, 3> &min,
+                                                        const std::array<double, 3> &max) override {
     if (this->getEnclosedVolumeWith(min, max) > 0.0) {
       return {this};
     } else {

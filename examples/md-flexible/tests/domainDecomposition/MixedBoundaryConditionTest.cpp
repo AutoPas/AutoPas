@@ -16,13 +16,14 @@ auto MixedBoundaryConditionTest::setUpExpectations(
     const std::vector<std::array<double, 3>> &particlePositions, const std::array<double, 3> &boxMin,
     const std::array<double, 3> &boxMax, const double sigma, const double interactionLength,
     const std::array<options::BoundaryTypeOption, 3> &boundaryConditions) {
-  const auto boxLength = autopas::utils::ArrayMath::sub(boxMax, boxMin);
+  using namespace autopas::utils::ArrayMath::literals;
+  const auto boxLength = boxMax - boxMin;
   auto expectedPositions = particlePositions;
   auto expectedHaloPositions = particlePositions;
   std::vector<std::array<double, 3>> expectedForces;
   expectedForces.resize(particlePositions.size());
 
-  auto forceFromReflection = [&](const std::array<double, 3> position, const int dimensionOfBoundary,
+  auto forceFromReflection = [&](const std::array<double, 3> &position, const int dimensionOfBoundary,
                                  const bool isUpper) {
     const auto distanceToBoundary = isUpper ? boxMax[dimensionOfBoundary] - position[dimensionOfBoundary]
                                             : position[dimensionOfBoundary] - boxMin[dimensionOfBoundary];
@@ -64,7 +65,7 @@ auto MixedBoundaryConditionTest::setUpExpectations(
           }
           break;
         case ::options::BoundaryTypeOption::reflective:
-          // if near a reflective boundary and flying towards it the velocity sign is flipped
+          // if near a reflective boundary, we expect a repulsive force from reflection
           if (particlePositions[id][dim] < boxMin[dim] + sixthRootOfTwo * sigma / 2.) {
             expectedForces[id][dim] = forceFromReflection(particlePositions[id], (int)dim, false);
           } else if (particlePositions[id][dim] > boxMax[dim] - sixthRootOfTwo * sigma / 2.) {
@@ -85,6 +86,8 @@ auto MixedBoundaryConditionTest::setUpExpectations(
 
 void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<double, 3>> &particlePositions,
                                               const std::array<options::BoundaryTypeOption, 3> &boundaryConditions) {
+  using namespace autopas::utils::ArrayMath::literals;
+
   const double cutoff = 0.3;
   const double sigma = 1.;
 
@@ -100,7 +103,7 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
   config.boundaryOption.value = boundaryConditions;
   config.addSiteType(0, 1., sigma, 1.);
 
-  const std::array<double, 3> boxLength = autopas::utils::ArrayMath::sub(config.boxMax.value, config.boxMin.value);
+  const std::array<double, 3> boxLength = config.boxMax.value - config.boxMin.value;
   RegularGridDecomposition domainDecomposition(config);
 
   auto autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(std::cout);

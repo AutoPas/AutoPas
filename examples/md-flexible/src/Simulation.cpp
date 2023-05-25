@@ -143,11 +143,8 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   }
 
   // @todo: the object generators should only generate particles relevant for the current rank's domain
-  for (auto &particle : _configuration.getParticles()) {
-    if (_domainDecomposition->isInsideLocalDomain(particle.getR())) {
-      _autoPasContainer->addParticle(particle);
-    }
-  }
+  _autoPasContainer->addParticlesIf(_configuration.getParticles(),
+                                    [&](const auto &p) { return _domainDecomposition->isInsideLocalDomain(p.getR()); });
 
   _configuration.flushParticles();
   std::cout << "Total number of particles at the initialization: "
@@ -203,24 +200,25 @@ void Simulation::run() {
 
     const auto computationalLoad = static_cast<double>(_timers.computationalLoad.stop());
 
-    // periodically resize box for MPI load balancing
-    if (_iteration % _configuration.loadBalancingInterval.value == 0) {
-      _timers.loadBalancing.start();
-      _domainDecomposition->update(computationalLoad);
-      auto additionalEmigrants =
-          _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(), _domainDecomposition->getLocalBoxMax());
-      // because boundaries shifted, particles that were thrown out by the updateContainer previously might now be in
-      // the container again
-      for (auto particleIter = emigrants.cbegin(); particleIter != emigrants.cend();) {
+      // periodically resize box for MPI load balancing
+      if (_iteration % _configuration.loadBalancingInterval.value == 0) {
+        _timers.loadBalancing.start();
+        _domainDecomposition->update(computationalLoad);
+        auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(),
+                                                                _domainDecomposition->getLocalBoxMax());
+        // because boundaries shifted, particles that were thrown out by the updateContainer previously might now be in
+        // the container again
         const auto &boxMin = _autoPasContainer->getBoxMin();
         const auto &boxMax = _autoPasContainer->getBoxMax();
-        if (autopas::utils::inBox(particleIter->getR(), boxMin, boxMax)) {
-          _autoPasContainer->addParticle(*particleIter);
-          emigrants.erase(particleIter);
-        } else {
-          ++particleIter;
-        }
-      }
+        _autoPasContainer->addParticlesIf(emigrants, [&](auto &p) {
+          if (autopas::utils::inBox(p.getR(), boxMin, boxMax)) {
+            p.setOwnershipState(autopas::OwnershipState::dummy);
+            return true;
+          }
+          return false;
+        });
+
+        std::remove_if(emigrants.begin(), emigrants.end(), [&](const auto &p) { return p.isDummy(); });
 
       emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
       _timers.loadBalancing.stop();
@@ -515,7 +513,7 @@ void Simulation::logMeasurements() {
     std::cout << timerToString("    QuaternionUpdate              ", quaternionUpdate, maximumNumberOfDigits, simulate);
 #endif
     std::cout << timerToString("    UpdateContainer               ", updateContainer, maximumNumberOfDigits, simulate);
-    std::cout << timerToString("    Boundaries:                   ", haloParticleExchange + migratingParticleExchange,
+    std::cout << timerToString("    Boundaries                    ", haloParticleExchange + migratingParticleExchange,
                                maximumNumberOfDigits, simulate);
     std::cout << timerToString("      HaloParticleExchange        ", haloParticleExchange, maximumNumberOfDigits,
                                haloParticleExchange + reflectParticlesAtBoundaries + migratingParticleExchange);
@@ -531,7 +529,7 @@ void Simulation::logMeasurements() {
                                forceUpdateTotal);
     std::cout << timerToString("      ForceUpdateTuning           ", forceUpdateTuning, maximumNumberOfDigits,
                                forceUpdateTotal);
-    std::cout << timerToString("      ForceUpdateNonTuning       ", forceUpdateNonTuning, maximumNumberOfDigits,
+    std::cout << timerToString("      ForceUpdateNonTuning        ", forceUpdateNonTuning, maximumNumberOfDigits,
                                forceUpdateTotal);
     std::cout << timerToString("    VelocityUpdate                ", velocityUpdate, maximumNumberOfDigits, simulate);
 #ifdef MD_FLEXIBLE_USE_MULTI_SITE
