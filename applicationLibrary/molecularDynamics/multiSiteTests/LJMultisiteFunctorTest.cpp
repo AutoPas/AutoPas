@@ -735,8 +735,8 @@ TEST_F(LJMultisiteFunctorTest, AoSDummyTest) {
 
   // Interact molecules together with newton3 on and off
   // create functor
-  mdLib::LJMultisiteFunctor<mdLib::MultisiteMoleculeLJ, true, true, autopas::FunctorN3Modes::Both, true, true>
-      functor(cutoff, PPL);
+  mdLib::LJMultisiteFunctor<mdLib::MultisiteMoleculeLJ, true, true, autopas::FunctorN3Modes::Both, true, true> functor(
+      cutoff, PPL);
 
   // newton3 on
   functor.initTraversal();
@@ -938,7 +938,6 @@ TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoAPair) {
 
   // N3L optimization enabled, global calculation enabled, apply shift enabled.
   testSoACellPairAgainstAoS<true, true, true>(mixedOwnershipMoleculesA, mixedOwnershipMoleculesB, PPL, cutoff);
-
 }
 
 /**
