@@ -143,8 +143,7 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle,
    */
   // clang-format on
   void SoAFunctorVerlet(SoAView<typename Particle::SoAArraysType> soa, const size_t indexFirst,
-                        const std::vector<size_t, AlignedAllocator<size_t>> &neighborList,
-                        bool newton3) override {
+                        const std::vector<size_t, AlignedAllocator<size_t>> &neighborList, bool newton3) override {
     const auto numParticles = soa.getNumberOfParticles();
 
     if (numParticles == 0) return;

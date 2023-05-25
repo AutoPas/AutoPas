@@ -32,8 +32,8 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
    * @param q Quaternion defining rotation of particle.
    * @param angularVel Rotational velocity of the particle.
    * @param moleculeId Id of the particle.
-   * @param typeId Id of the type of the particle. Used in conjunction with ParticlePropertiesLibrary to access molecular
-   * information such as site types and relative site positions.
+   * @param typeId Id of the type of the particle. Used in conjunction with ParticlePropertiesLibrary to access
+   * molecular information such as site types and relative site positions.
    */
   MultisiteMoleculeLJ(std::array<double, 3> r, std::array<double, 3> v, std::array<double, 4> q,
                       std::array<double, 3> angularVel, unsigned long moleculeId, unsigned long typeId = 0)
