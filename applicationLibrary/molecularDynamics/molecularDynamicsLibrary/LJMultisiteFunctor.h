@@ -404,8 +404,8 @@ class LJMultisiteFunctor
         continue;
       }
 
-      const size_t siteIndexMolB = siteIndexMolA + noSitesInMolA;                    // index of first site in molB
-      const size_t noSitesB = (siteCount - siteIndexMolB);  // Number of sites in molecules that A interacts with
+      const size_t siteIndexMolB = siteIndexMolA + noSitesInMolA;  // index of first site in molB
+      const size_t noSitesB = (siteCount - siteIndexMolB);         // Number of sites in molecules that A interacts with
 
       // create mask over every mol 'above' molA  (char to keep arrays aligned)
       std::vector<char, autopas::AlignedAllocator<char>> molMask;
