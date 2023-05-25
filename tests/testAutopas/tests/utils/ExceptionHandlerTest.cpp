@@ -80,7 +80,7 @@ TEST_F(ExceptionHandlerTest, TestAbort) {
 
 TEST_F(ExceptionHandlerTest, TestAbortCustom) {
   auto abortFunction = []() -> void {
-    AutoPasLog(error, "TESTABORTCUSTOMCALL123");
+    AutoPasLog(ERROR, "TESTABORTCUSTOMCALL123");
     abort();
   };
   ExceptionHandler::setBehavior(ExceptionBehavior::printCustomAbortFunction);
@@ -126,7 +126,7 @@ TEST_F(ExceptionHandlerTest, TestThreadSafe) {
       ExceptionHandler::setBehavior(ExceptionBehavior::throwException);
       ExceptionHandler::setBehavior(ExceptionBehavior::printCustomAbortFunction);
       auto abortFunction = []() -> void {
-        AutoPasLog(error, "TESTABORTCUSTOMCALL123");
+        AutoPasLog(ERROR, "TESTABORTCUSTOMCALL123");
         abort();
       };
       ExceptionHandler::setCustomAbortFunction(abortFunction);

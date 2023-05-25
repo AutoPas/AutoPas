@@ -75,7 +75,7 @@ bool LJFunctorSVETest::AoSParticlesEqual(FMCell &cell1, FMCell &cell2) {
 
   bool ret = true;
   for (size_t i = 0; i < cell1.numParticles(); ++i) {
-    ret &= particleEqual(cell1._particles[i], cell2._particles[i]);
+    ret = ret and particleEqual(cell1._particles[i], cell2._particles[i]);
   }
 
   return ret;

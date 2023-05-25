@@ -242,12 +242,12 @@ class Functor {
      * Store the start address of all needed arrays inside the SoA buffer in a tuple. This avoids unnecessary look ups
      * in the following loop.
      */
-    // maybe_unused necessary because gcc doesnt understand that pointer is used later
+    // maybe_unused necessary because gcc doesn't understand that pointer is used later
     [[maybe_unused]] auto const pointer = std::make_tuple(soa.template begin<Functor_T::getNeededAttr()[I]>()...);
 
     auto cellIter = cell.begin();
     // load particles in SoAs
-    for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
+    for (size_t i = offset; cellIter != cell.end(); ++cellIter, ++i) {
       /**
        * The following statement writes the values of all attributes defined in neededAttr into the respective position
        * inside the SoA buffer. I represents the index inside neededAttr. The whole expression is folded sizeof...(I)
@@ -275,12 +275,12 @@ class Functor {
      * Store the start address of all needed arrays inside the SoA buffer in a tuple. This avoids unnecessary look ups
      * in the following loop.
      */
-    // maybe_unused necessary because gcc doesnt understand that pointer is used later
+    // maybe_unused necessary because gcc doesn't understand that pointer is used later
     [[maybe_unused]] auto const pointer = std::make_tuple(soa.template begin<Functor_T::getComputedAttr()[I]>()...);
 
     auto cellIter = cell.begin();
     // write values in SoAs back to particles
-    for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
+    for (size_t i = offset; cellIter != cell.end(); ++cellIter, ++i) {
       /**
        * The following statement writes the value of all attributes defined in computedAttr back into the particle.
        * I represents the index inside computedAttr.

@@ -10,7 +10,6 @@
 #include <vector>
 
 #include "autopas/cells/ParticleCell.h"
-#include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -28,6 +27,10 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
    * The structure of the SoAs is defined by the particle.
    */
   using SoAArraysType = typename Particle::SoAArraysType;
+  /**
+   * Type that holds or refers to the actual particles.
+   */
+  using StorageType = std::vector<Particle *>;
 
   /**
    * Constructs a new ReferenceParticleCell.
@@ -55,12 +58,30 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
     _particlesLock.unlock();
   }
 
-  SingleCellIteratorWrapper<Particle, true> begin() override {
-    return SingleCellIteratorWrapper<Particle, true>(new iterator_t(this));
+  /**
+   * @copydoc autopas::FullParticleCell::begin()
+   */
+  [[nodiscard]] CellIterator<StorageType, true> begin() { return CellIterator<StorageType, true>(_particles.begin()); }
+
+  /**
+   * @copydoc autopas::FullParticleCell::begin()
+   * @note const version
+   */
+  [[nodiscard]] CellIterator<StorageType, false> begin() const {
+    return CellIterator<StorageType, false>(_particles.cbegin());
   }
 
-  SingleCellIteratorWrapper<Particle, false> begin() const override {
-    return SingleCellIteratorWrapper<Particle, false>(new const_iterator_t(this));
+  /**
+   * @copydoc autopas::FullParticleCell::end()
+   */
+  [[nodiscard]] CellIterator<StorageType, true> end() { return CellIterator<StorageType, true>(_particles.end()); }
+
+  /**
+   * @copydoc autopas::FullParticleCell::end()
+   * @note const version
+   */
+  [[nodiscard]] CellIterator<StorageType, false> end() const {
+    return CellIterator<StorageType, false>(_particles.cend());
   }
 
   /**
@@ -206,22 +227,12 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
   /**
    * Storage of the molecules of the cell.
    */
-  std::vector<Particle *> _particles;
+  StorageType _particles;
 
   /**
    * SoA buffer of this cell.
    */
   SoA<SoAArraysType> _particleSoABuffer;
-
-  /**
-   * Type of the internal iterator.
-   */
-  using iterator_t = internal::SingleCellIterator<Particle, ReferenceParticleCell<Particle>, true>;
-
-  /**
-   * Type of the internal const iterator.
-   */
-  using const_iterator_t = internal::SingleCellIterator<Particle, ReferenceParticleCell<Particle>, false>;
 
  private:
   AutoPasLock _particlesLock;

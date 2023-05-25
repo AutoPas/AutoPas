@@ -9,6 +9,7 @@
 #include <set>
 
 #include "autopas/options/Option.h"
+#include "autopas/particles/OwnershipState.h"
 
 namespace autopas {
 inline namespace options {
@@ -58,7 +59,7 @@ class IteratorBehavior : public Option<IteratorBehavior> {
   static_assert((owned | halo) == ownedOrHalo, "Iterator behaviors are defined with non matching values!");
   static_assert((owned | halo | dummy) == ownedOrHaloOrDummy,
                 "Iterator behaviors are defined with non matching values!");
-  // forceSequential must does not overlap with anything else
+  // forceSequential must not overlap with anything else
   static_assert((ownedOrHaloOrDummy & forceSequential) == 0,
                 "Iterator behaviors are defined with non matching values!");
 

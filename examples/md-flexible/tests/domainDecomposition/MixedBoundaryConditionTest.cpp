@@ -23,7 +23,7 @@ auto MixedBoundaryConditionTest::setUpExpectations(
   std::vector<std::array<double, 3>> expectedForces;
   expectedForces.resize(particlePositions.size());
 
-  auto forceFromReflection = [&](const std::array<double, 3> position, const int dimensionOfBoundary,
+  auto forceFromReflection = [&](const std::array<double, 3> &position, const int dimensionOfBoundary,
                                  const bool isUpper) {
     const auto distanceToBoundary = isUpper ? boxMax[dimensionOfBoundary] - position[dimensionOfBoundary]
                                             : position[dimensionOfBoundary] - boxMin[dimensionOfBoundary];
@@ -65,7 +65,7 @@ auto MixedBoundaryConditionTest::setUpExpectations(
           }
           break;
         case ::options::BoundaryTypeOption::reflective:
-          // if near a reflective boundary and flying towards it the velocity sign is flipped
+          // if near a reflective boundary, we expect a repulsive force from reflection
           if (particlePositions[id][dim] < boxMin[dim] + sixthRootOfTwo * sigma / 2.) {
             expectedForces[id][dim] = forceFromReflection(particlePositions[id], (int)dim, false);
           } else if (particlePositions[id][dim] > boxMax[dim] - sixthRootOfTwo * sigma / 2.) {

@@ -14,7 +14,6 @@
 #include <array>
 
 #include "ParticlePropertiesLibrary.h"
-#include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
@@ -117,9 +116,8 @@ class LJFunctorAVX
     return useNewton3 == FunctorN3Modes::Newton3Off or useNewton3 == FunctorN3Modes::Both;
   }
 
-  void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
+  inline void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
-
     if (i.isDummy() or j.isDummy()) {
       return;
     }
@@ -176,9 +174,10 @@ class LJFunctorAVX
 
   /**
    * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3)
-   * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
+   * This functor will always do a newton3 like traversal of the soa.
+   * However, it still needs to know about newton3 to correctly add up the global values.
    */
-  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) final {
+  inline void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) final {
     if (newton3) {
       SoAFunctorSingleImpl<true>(soa);
     } else {
@@ -191,7 +190,7 @@ class LJFunctorAVX
    * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
    */
   // clang-format on
-  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3) final {
+  inline void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3) final {
     if (newton3) {
       SoAFunctorPairImpl<true>(soa1, soa2);
     } else {
@@ -206,7 +205,7 @@ class LJFunctorAVX
    * @param soa
    */
   template <bool newton3>
-  void SoAFunctorSingleImpl(SoAView<SoAArraysType> soa) {
+  inline void SoAFunctorSingleImpl(SoAView<SoAArraysType> soa) {
 #ifdef __AVX__
     if (soa.getNumberOfParticles() == 0) return;
 
@@ -323,7 +322,7 @@ class LJFunctorAVX
   }
 
   template <bool newton3>
-  void SoAFunctorPairImpl(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2) {
+  inline void SoAFunctorPairImpl(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2) {
 #ifdef __AVX__
     if (soa1.getNumberOfParticles() == 0 || soa2.getNumberOfParticles() == 0) return;
 
@@ -561,7 +560,7 @@ class LJFunctorAVX
     fzacc = _mm256_add_pd(fzacc, fz);
 
     // if newton 3 is used subtract fD from particle j
-    if (newton3) {
+    if constexpr (newton3) {
       const __m256d fx2 =
           remainderIsMasked ? _mm256_maskload_pd(&fx2ptr[j], _masks[rest - 1]) : _mm256_loadu_pd(&fx2ptr[j]);
       const __m256d fy2 =
@@ -581,7 +580,7 @@ class LJFunctorAVX
                         : _mm256_storeu_pd(&fz2ptr[j], fz2new);
     }
 
-    if (calculateGlobals) {
+    if constexpr (calculateGlobals) {
       // Global Virial
       const __m256d virialX = _mm256_mul_pd(fx, drx);
       const __m256d virialY = _mm256_mul_pd(fy, dry);
@@ -618,9 +617,9 @@ class LJFunctorAVX
    * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly.
    */
   // clang-format on
-  void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
-                        const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
-                        bool newton3) final {
+  inline void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
+                               const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
+                               bool newton3) final {
     if (soa.getNumberOfParticles() == 0 or neighborList.empty()) return;
     if (newton3) {
       SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
@@ -631,8 +630,8 @@ class LJFunctorAVX
 
  private:
   template <bool newton3>
-  void SoAFunctorVerletImpl(SoAView<SoAArraysType> soa, const size_t indexFirst,
-                            const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
+  inline void SoAFunctorVerletImpl(SoAView<SoAArraysType> soa, const size_t indexFirst,
+                                   const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
 #ifdef __AVX__
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
     if (ownedStatePtr[indexFirst] == OwnershipState::dummy) {
@@ -677,8 +676,11 @@ class LJFunctorAVX
 
     // load 4 neighbors
     size_t j = 0;
+    // Loop over all neighbors as long as we can fill full vectors
+    // (until `neighborList.size() - neighborList.size() % vecLength`)
+    //
     // If b is a power of 2 the following holds:
-    // a & ~(b -1) == a - (a mod b)
+    // a & ~(b - 1) == a - (a mod b)
     for (; j < (neighborList.size() & ~(vecLength - 1)); j += vecLength) {
       // AVX2 variant:
       // create buffer for 4 interaction particles
@@ -695,9 +697,11 @@ class LJFunctorAVX
         x2tmp[vecIndex] = xptr[neighborList[j + vecIndex]];
         y2tmp[vecIndex] = yptr[neighborList[j + vecIndex]];
         z2tmp[vecIndex] = zptr[neighborList[j + vecIndex]];
-        fx2tmp[vecIndex] = fxptr[neighborList[j + vecIndex]];
-        fy2tmp[vecIndex] = fyptr[neighborList[j + vecIndex]];
-        fz2tmp[vecIndex] = fzptr[neighborList[j + vecIndex]];
+        if constexpr (newton3) {
+          fx2tmp[vecIndex] = fxptr[neighborList[j + vecIndex]];
+          fy2tmp[vecIndex] = fyptr[neighborList[j + vecIndex]];
+          fz2tmp[vecIndex] = fzptr[neighborList[j + vecIndex]];
+        }
         typeID2tmp[vecIndex] = typeIDptr[neighborList[j + vecIndex]];
         ownedStates2tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
       }
@@ -707,7 +711,7 @@ class LJFunctorAVX
                                 &typeIDptr[indexFirst], typeID2tmp.data(), fxacc, fyacc, fzacc, &virialSumX,
                                 &virialSumY, &virialSumZ, &upotSum, 0);
 
-      if (newton3) {
+      if constexpr (newton3) {
         for (size_t vecIndex = 0; vecIndex < vecLength; ++vecIndex) {
           fxptr[neighborList[j + vecIndex]] = fx2tmp[vecIndex];
           fyptr[neighborList[j + vecIndex]] = fy2tmp[vecIndex];
@@ -715,9 +719,10 @@ class LJFunctorAVX
         }
       }
     }
+    // Remainder loop
     // If b is a power of 2 the following holds:
-    // a & (b -1) == a mod b
-    const int rest = (int)(neighborList.size() & (vecLength - 1));
+    // a & (b - 1) == a mod b
+    const auto rest = static_cast<int>(neighborList.size() & (vecLength - 1));
     if (rest > 0) {
       // AVX2 variant:
       // create buffer for 4 interaction particles
@@ -735,9 +740,12 @@ class LJFunctorAVX
         x2tmp[vecIndex] = xptr[neighborList[j + vecIndex]];
         y2tmp[vecIndex] = yptr[neighborList[j + vecIndex]];
         z2tmp[vecIndex] = zptr[neighborList[j + vecIndex]];
-        fx2tmp[vecIndex] = fxptr[neighborList[j + vecIndex]];
-        fy2tmp[vecIndex] = fyptr[neighborList[j + vecIndex]];
-        fz2tmp[vecIndex] = fzptr[neighborList[j + vecIndex]];
+        // if newton3 is used we need to load f of particle j so the kernel can update it too
+        if constexpr (newton3) {
+          fx2tmp[vecIndex] = fxptr[neighborList[j + vecIndex]];
+          fy2tmp[vecIndex] = fyptr[neighborList[j + vecIndex]];
+          fz2tmp[vecIndex] = fzptr[neighborList[j + vecIndex]];
+        }
         typeID2tmp[vecIndex] = typeIDptr[neighborList[j + vecIndex]];
         ownedStates2tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
       }
@@ -747,7 +755,7 @@ class LJFunctorAVX
                                &typeIDptr[indexFirst], typeID2tmp.data(), fxacc, fyacc, fzacc, &virialSumX, &virialSumY,
                                &virialSumZ, &upotSum, rest);
 
-      if (newton3) {
+      if constexpr (newton3) {
         for (size_t vecIndex = 0; vecIndex < rest; ++vecIndex) {
           fxptr[neighborList[j + vecIndex]] = fx2tmp[vecIndex];
           fyptr[neighborList[j + vecIndex]] = fy2tmp[vecIndex];

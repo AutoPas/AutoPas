@@ -446,7 +446,7 @@ void printConservativeVariables(AutoPasContainer &sphSystem, MPI_Comm &comm) {
   }
 }
 
-MPI_Comm getDecomposition(const std::array<double, 3> globalMin, const std::array<double, 3> globalMax,
+MPI_Comm getDecomposition(const std::array<double, 3> &globalMin, const std::array<double, 3> &globalMax,
                           std::array<double, 3> &localMin, std::array<double, 3> &localMax) {
   int numProcs;
   MPI_Comm_size(MPI_COMM_WORLD, &numProcs);
@@ -503,9 +503,11 @@ int main(int argc, char *argv[]) {
   sphSystem.setVerletSkinPerTimestep(skinToCutoffRatio * cutoff / rebuildFrequency);
   sphSystem.setVerletRebuildFrequency(rebuildFrequency);
 
-  std::set<autopas::ContainerOption> allowedContainers{autopas::ContainerOption::linkedCells,
-                                                       autopas::ContainerOption::verletLists,
-                                                       autopas::ContainerOption::verletListsCells};
+  std::set<autopas::ContainerOption> allowedContainers{
+      autopas::ContainerOption::linkedCells,
+      autopas::ContainerOption::verletLists,
+      autopas::ContainerOption::verletListsCells,
+  };
   sphSystem.setAllowedContainers(allowedContainers);
 
   int rank;

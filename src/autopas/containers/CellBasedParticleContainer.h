@@ -34,7 +34,7 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    * @param cutoff
    * @param skin
    */
-  CellBasedParticleContainer(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax,
+  CellBasedParticleContainer(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                              const double cutoff, const double skin)
       : _cells(), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff), _skin(skin) {}
 
@@ -61,42 +61,42 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
   /**
    * @copydoc autopas::ParticleContainerInterface::getBoxMax()
    */
-  [[nodiscard]] const std::array<double, 3> &getBoxMax() const override final { return _boxMax; }
+  [[nodiscard]] const std::array<double, 3> &getBoxMax() const final { return _boxMax; }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::setBoxMax()
    */
-  void setBoxMax(const std::array<double, 3> &boxMax) override final { _boxMax = boxMax; }
+  void setBoxMax(const std::array<double, 3> &boxMax) final { _boxMax = boxMax; }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getBoxMin()
    */
-  [[nodiscard]] const std::array<double, 3> &getBoxMin() const override final { return _boxMin; }
+  [[nodiscard]] const std::array<double, 3> &getBoxMin() const final { return _boxMin; }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::setBoxMin()
    */
-  void setBoxMin(const std::array<double, 3> &boxMin) override final { _boxMin = boxMin; }
+  void setBoxMin(const std::array<double, 3> &boxMin) final { _boxMin = boxMin; }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getCutoff()
    */
-  [[nodiscard]] double getCutoff() const override final { return _cutoff; }
+  [[nodiscard]] double getCutoff() const final { return _cutoff; }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::setCutoff()
    */
-  void setCutoff(double cutoff) override final { _cutoff = cutoff; }
+  void setCutoff(double cutoff) final { _cutoff = cutoff; }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getInteractionLength()
    */
-  [[nodiscard]] double getInteractionLength() const override final { return _cutoff + _skin; }
+  [[nodiscard]] double getInteractionLength() const final { return _cutoff + _skin; }
   /**
    * Returns the total verlet Skin length
    * @return _skinPerTimestep * _rebuildFrequency
    */
-  [[nodiscard]] double getVerletSkin() const override final { return _skin; }
+  [[nodiscard]] double getVerletSkin() const final { return _skin; }
 
   /**
    * Deletes all particles from the container.
@@ -106,7 +106,7 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
     /// @todo: find a sensible value for magic number
     /// numThreads should be at least 1 and maximal max_threads
     int numThreads = std::max(1, std::min(omp_get_max_threads(), (int)(this->_cells.size() / 1000)));
-    AutoPasLog(trace, "Using {} threads", numThreads);
+    AutoPasLog(TRACE, "Using {} threads", numThreads);
 #pragma omp parallel for num_threads(numThreads)
 #endif
     for (size_t i = 0; i < this->_cells.size(); ++i) {
@@ -121,10 +121,10 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
   [[nodiscard]] unsigned long getNumberOfParticles() const override {
     size_t numParticles = 0ul;
 #ifdef AUTOPAS_OPENMP
-    /// @todo: find a sensible value for magic number
-    /// numThreads should be at least 1 and maximal max_threads
-    int numThreads = std::max(1, std::min(omp_get_max_threads(), (int)(this->_cells.size() / 1000)));
-    AutoPasLog(trace, "Using {} threads", numThreads);
+    // parallelizing this loop is only worth it if we have LOTS of cells.
+    // numThreads should be at least 1 and maximal max_threads
+    const int numThreads = std::clamp(static_cast<int>(this->_cells.size() / 100000), 1, omp_get_max_threads());
+    AutoPasLog(TRACE, "CellBasedParticleContainer::getNumberOfParticles uses {} threads", numThreads);
 #pragma omp parallel for num_threads(numThreads) reduction(+ : numParticles)
 #endif
     for (size_t index = 0; index < _cells.size(); ++index) {

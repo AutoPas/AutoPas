@@ -31,8 +31,9 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
    * @param interactionLength The minimum distance at which a force is considered nonzero, cutoff+skin.
    * @param cellSizeFactor The cell size factor
    */
-  OctreeInnerNode(std::array<double, 3> boxMin, std::array<double, 3> boxMax, OctreeNodeInterface<Particle> *parent,
-                  int unsigned treeSplitThreshold, double interactionLength, double cellSizeFactor)
+  OctreeInnerNode(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
+                  OctreeNodeInterface<Particle> *parent, int unsigned treeSplitThreshold, double interactionLength,
+                  double cellSizeFactor)
       : OctreeNodeInterface<Particle>(boxMin, boxMax, parent, treeSplitThreshold, interactionLength, cellSizeFactor) {
     using namespace autopas::utils;
     using namespace autopas::utils::ArrayMath::literals;
@@ -106,6 +107,22 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
     return nullptr;
   }
 
+  bool deleteParticle(Particle &particle) override {
+    for (auto &child : _children) {
+      if (child->isInside(particle.getR())) {
+        return child->deleteParticle(particle);
+      }
+    }
+    // clang-format off
+    utils::ExceptionHandler::exception(
+        "Particle not found in this node!"
+        "\nBoxMin: " + utils::ArrayUtils::to_string(this->_boxMin) +
+        "\nBoxMax: " + utils::ArrayUtils::to_string(this->_boxMax) +
+        "\n" + particle.toString());
+    // clang-format on
+    return false;
+  }
+
   /**
    * @copydoc OctreeNodeInterface::collectAllParticles()
    */
@@ -142,9 +159,9 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
   /**
    * @copydoc OctreeNodeInterface::getNumberOfParticles()
    */
-  unsigned int getNumberOfParticles() override {
+  unsigned int getNumberOfParticles() const override {
     unsigned int result = 0;
-    for (auto &child : _children) {
+    for (const auto &child : _children) {
       result += child->getNumberOfParticles();
     }
     return result;
@@ -189,7 +206,8 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
     }
   }
 
-  std::set<OctreeLeafNode<Particle> *> getLeavesInRange(std::array<double, 3> min, std::array<double, 3> max) override {
+  std::set<OctreeLeafNode<Particle> *> getLeavesInRange(const std::array<double, 3> &min,
+                                                        const std::array<double, 3> &max) override {
     std::set<OctreeLeafNode<Particle> *> result;
     for (auto &child : _children) {
       double vol = child->getEnclosedVolumeWith(min, max);

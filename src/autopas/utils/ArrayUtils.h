@@ -9,6 +9,7 @@
 
 #include <array>
 #include <iomanip>
+#include <numeric>
 #include <set>
 #include <sstream>
 #include <vector>
@@ -65,6 +66,11 @@ struct is_container {
 
 /**
  * Creates a new array by performing an element-wise static_cast<>.
+ *
+ * @note This function returns a new copy of the array with the desired type!
+ *
+ * Even though this is implemented to copy the array, compilers optimize this away: https://gcc.godbolt.org/z/6dav1PEGP
+ *
  * @tparam output_t Output type.
  * @tparam input_t Input type.
  * @tparam SIZE Size of the array.
@@ -72,7 +78,7 @@ struct is_container {
  * @return Array of type std::array<output_t, SIZE>.
  */
 template <class output_t, class input_t, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<output_t, SIZE> static_cast_array(const std::array<input_t, SIZE> &a) {
+[[nodiscard]] constexpr std::array<output_t, SIZE> static_cast_copy_array(const std::array<input_t, SIZE> &a) {
   std::array<output_t, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
     result[d] = static_cast<output_t>(a[d]);
@@ -146,4 +152,88 @@ std::enable_if_t<autopas::utils::ArrayUtils::is_container<Container>::value, std
 
   return os;
 }
+
+/**
+ * Given a collection of vectors, redistributes the elements of the vectors so they all have the same (or +1) size.
+ *
+ * Elements are taken from the ends of too-long vectors and appended to the ends of too-short vectors.
+ * The overall ordering of elements is not preserved.
+ *
+ * @tparam OuterContainerT Collection type
+ * @param vecvec Reference to the collection of vectors to be balanced in place.
+ */
+template <class OuterContainerT>
+void balanceVectors(OuterContainerT &vecvec) {
+  balanceVectors(
+      vecvec, [](auto &innerContainer) -> auto & { return innerContainer; });
+}
+
+/**
+ * Given a collection of containers that hold vectors,
+ * redistributes the elements of the vectors so they all have the same (or +1) size.
+ *
+ * Elements are taken from the ends of too-long vectors and appended to the ends of too-short vectors.
+ * The overall ordering of elements is not preserved.
+ *
+ * @tparam OuterContainerT Collection type
+ * @tparam F Type of the function innerContainerToVec
+ * @param vecvec Reference to the collection of vectors to be balanced in place.
+ * @param innerContainerToVec Function to map inner containers to std::vector&.
+ */
+template <class OuterContainerT, class F>
+void balanceVectors(OuterContainerT &vecvec, F innerContainerToVec) {
+  using InnerContainerT = typename OuterContainerT::value_type;
+  using ElemT = typename std::remove_reference_t<
+      std::invoke_result_t<decltype(innerContainerToVec), InnerContainerT &>>::value_type;
+  // calculate vecvec statistics
+  const auto vecvecSize = vecvec.size();
+  if (vecvecSize == 0) {
+    // nothing to do
+    return;
+  }
+  const size_t numElem = std::transform_reduce(vecvec.begin(), vecvec.end(), 0, std::plus<>(),
+                                               [&](auto &vec) { return innerContainerToVec(vec).size(); });
+  const auto targetSize = static_cast<long>(numElem / vecvecSize);
+  const auto remainder = numElem % vecvecSize;
+
+  std::vector<ElemT> tmpStorage;
+  // index of the first subvec that has too few elements
+  size_t firstTooFew = 0;
+  // repeat as long as there is something in the buffer but at least 2 iterations.
+  for (int pass = 0; pass == 0 or not tmpStorage.empty(); ++pass) {
+    // scan all subvecs that are not known to have the desired size
+    for (size_t i = firstTooFew; i < vecvecSize; ++i) {
+      auto &vec = innerContainerToVec(vecvec[i]);
+      const auto thisTargetSize = i < remainder ? targetSize + 1 : targetSize;
+      if (vec.size() > thisTargetSize) {
+        // move what is too much to tmpStorage
+        const auto startOfTooMuch = vec.begin() + thisTargetSize;
+        tmpStorage.insert(tmpStorage.end(), std::make_move_iterator(startOfTooMuch),
+                          std::make_move_iterator(vec.end()));
+        vec.erase(startOfTooMuch, vec.end());
+        // if firstTooFew points here bump it, since this vector is now satisfied
+        if (firstTooFew == i) {
+          ++firstTooFew;
+        }
+      } else if (vec.size() < thisTargetSize) {
+        // fill too small vectors from storage
+        vec.reserve(thisTargetSize);
+        const long numMissing = thisTargetSize - vec.size();
+        const auto startOfInsertion =
+            tmpStorage.begin() + (std::max(0l, static_cast<long>(tmpStorage.size()) - numMissing));
+        vec.insert(vec.end(), std::make_move_iterator(startOfInsertion), std::make_move_iterator(tmpStorage.end()));
+        tmpStorage.erase(startOfInsertion, tmpStorage.end());
+
+      } else if (firstTooFew == i) {
+        // if firstTooFew points here bump it, since this vector is already satisfied
+        ++firstTooFew;
+      }
+      // after the first pass all excess elements are collected. So as soon as everything is distributed we are done.
+      if (pass > 0 and tmpStorage.empty()) {
+        break;
+      }
+    }
+  }
+}
+
 }  // namespace autopas::utils::ArrayUtils

@@ -39,7 +39,7 @@ class ParticleBase {
    * @param v Velocity of the particle.
    * @param id Id of the particle.
    */
-  ParticleBase(std::array<double, 3> r, std::array<double, 3> v, idType id)
+  ParticleBase(const std::array<double, 3> &r, const std::array<double, 3> &v, idType id)
       : _r(r), _v(v), _f({0.0, 0.0, 0.0}), _id(id) {}
 
   /**
@@ -327,7 +327,8 @@ class ParticleBase {
  private:
   /**
    * Marks a particle as deleted.
-   * @note: This function should not be used from outside of AutoPas. Instead, use AutoPas::deleteParticle(iterator).
+   * @note: This function should not be used from outside of AutoPas,
+   * because the logic handler keeps track of the number of particles. Instead, use AutoPas::deleteParticle(iterator).
    * @note: From within autopas, you might want to use internal::markParticleAsDeleted(Particle &particle)
    */
   void markAsDeleted() {

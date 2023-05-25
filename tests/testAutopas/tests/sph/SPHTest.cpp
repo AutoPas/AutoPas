@@ -231,12 +231,12 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorSoAvsAoSSingleCell) {
   DensityFunctorType densityFunctor;
 
   // ------------- aos ------------------ (using newton3)
-  for (auto outer = cellUsingAoS.begin(); outer.isValid(); ++outer) {
+  for (auto outer = cellUsingAoS.begin(); outer != cellUsingAoS.end(); ++outer) {
     auto &p1 = *outer;
 
     auto inner = outer;
     ++inner;
-    for (; inner.isValid(); ++inner) {
+    for (; inner != cellUsingAoS.end(); ++inner) {
       auto &p2 = *inner;
 
       densityFunctor.AoSFunctor(p1, p2, true);
@@ -256,11 +256,11 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorSoAvsAoSSingleCell) {
 
   // check same densities
   {
-    auto iteratoraos = cellUsingAoS.begin();
-    auto iteratorsoa = cellUsingSoA.begin();
-    for (; iteratoraos.isValid(); ++iteratoraos, ++iteratorsoa) {
-      ASSERT_TRUE(iteratorsoa.isValid());
-      EXPECT_NEAR(iteratoraos->getDensity(), iteratorsoa->getDensity(), 1.e-15 * fabs(iteratoraos->getDensity()));
+    auto iteratorAoS = cellUsingAoS.begin();
+    auto iteratorSoA = cellUsingSoA.begin();
+    for (; iteratorAoS != cellUsingAoS.end(); ++iteratorAoS, ++iteratorSoA) {
+      ASSERT_TRUE(iteratorSoA != cellUsingSoA.end());
+      EXPECT_NEAR(iteratorAoS->getDensity(), iteratorSoA->getDensity(), 1.e-15 * fabs(iteratorAoS->getDensity()));
     }
   }
 }
@@ -278,16 +278,16 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoAvsAoSSingleCell) {
 
   // simulate density functor call by setting density to sth. between 0 and 1
   {
-    auto iteratoraos = cellUsingAoS.begin();
-    auto iteratorsoa = cellUsingSoA.begin();
-    for (; iteratoraos.isValid(); ++iteratoraos, ++iteratorsoa) {
-      ASSERT_TRUE(iteratorsoa.isValid());
+    auto iteratorAoS = cellUsingAoS.begin();
+    auto iteratorSoA = cellUsingSoA.begin();
+    for (; iteratorAoS != cellUsingAoS.end(); ++iteratorAoS, ++iteratorSoA) {
+      ASSERT_TRUE(iteratorSoA != cellUsingSoA.end());
       double density = static_cast<double>(rand()) / RAND_MAX;
       double pressure = static_cast<double>(rand()) / RAND_MAX;
-      iteratoraos->setDensity(density);
-      iteratoraos->setPressure(pressure);
-      iteratorsoa->setDensity(density);
-      iteratorsoa->setPressure(pressure);
+      iteratorAoS->setDensity(density);
+      iteratorAoS->setPressure(pressure);
+      iteratorSoA->setDensity(density);
+      iteratorSoA->setPressure(pressure);
     }
   }
 
@@ -295,12 +295,12 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoAvsAoSSingleCell) {
   HydroForceFunctorType hydroForceFunctor;
 
   // ------------- aos ------------------ (using newton3)
-  for (auto outer = cellUsingAoS.begin(); outer.isValid(); ++outer) {
+  for (auto outer = cellUsingAoS.begin(); outer != cellUsingAoS.end(); ++outer) {
     auto &p1 = *outer;
 
     auto inner = outer;
     ++inner;
-    for (; inner.isValid(); ++inner) {
+    for (; inner != cellUsingAoS.end(); ++inner) {
       auto &p2 = *inner;
 
       hydroForceFunctor.AoSFunctor(p1, p2, true);
@@ -320,18 +320,18 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoAvsAoSSingleCell) {
 
   // check same values
   {
-    auto iteratoraos = cellUsingAoS.begin();
-    auto iteratorsoa = cellUsingSoA.begin();
-    for (; iteratoraos.isValid(); ++iteratoraos, ++iteratorsoa) {
-      ASSERT_TRUE(iteratorsoa.isValid());
-      EXPECT_NEAR(iteratoraos->getVSigMax(), iteratorsoa->getVSigMax(), 1.e-15 * fabs(iteratoraos->getVSigMax()));
-      EXPECT_NEAR(iteratoraos->getEngDot(), iteratorsoa->getEngDot(), 1.e-15 * fabs(iteratoraos->getEngDot()));
-      EXPECT_NEAR(iteratoraos->getAcceleration()[0], iteratorsoa->getAcceleration()[0],
-                  1.e-14 * fabs(iteratoraos->getAcceleration()[0]));
-      EXPECT_NEAR(iteratoraos->getAcceleration()[1], iteratorsoa->getAcceleration()[1],
-                  1.e-14 * fabs(iteratoraos->getAcceleration()[1]));
-      EXPECT_NEAR(iteratoraos->getAcceleration()[2], iteratorsoa->getAcceleration()[2],
-                  1.e-14 * fabs(iteratoraos->getAcceleration()[2]));
+    auto iteratorAoS = cellUsingAoS.begin();
+    auto iteratorSoA = cellUsingSoA.begin();
+    for (; iteratorAoS != cellUsingAoS.end(); ++iteratorAoS, ++iteratorSoA) {
+      ASSERT_TRUE(iteratorSoA != cellUsingSoA.end());
+      EXPECT_NEAR(iteratorAoS->getVSigMax(), iteratorSoA->getVSigMax(), 1.e-15 * fabs(iteratorAoS->getVSigMax()));
+      EXPECT_NEAR(iteratorAoS->getEngDot(), iteratorSoA->getEngDot(), 1.e-15 * fabs(iteratorAoS->getEngDot()));
+      EXPECT_NEAR(iteratorAoS->getAcceleration()[0], iteratorSoA->getAcceleration()[0],
+                  1.e-14 * fabs(iteratorAoS->getAcceleration()[0]));
+      EXPECT_NEAR(iteratorAoS->getAcceleration()[1], iteratorSoA->getAcceleration()[1],
+                  1.e-14 * fabs(iteratorAoS->getAcceleration()[1]));
+      EXPECT_NEAR(iteratorAoS->getAcceleration()[2], iteratorSoA->getAcceleration()[2],
+                  1.e-14 * fabs(iteratorAoS->getAcceleration()[2]));
     }
   }
 }
@@ -357,10 +357,10 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorSoAvsAoSCellPair) {
   DensityFunctorType densityFunctor;
 
   // ------------- aos ------------------ (using newton3)
-  for (auto outer = cellUsingAoS1.begin(); outer.isValid(); ++outer) {
+  for (auto outer = cellUsingAoS1.begin(); outer != cellUsingAoS1.end(); ++outer) {
     auto &p1 = *outer;
 
-    for (auto inner = cellUsingAoS2.begin(); inner.isValid(); ++inner) {
+    for (auto inner = cellUsingAoS2.begin(); inner != cellUsingAoS2.end(); ++inner) {
       auto &p2 = *inner;
 
       densityFunctor.AoSFunctor(p1, p2, true);
@@ -382,19 +382,19 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorSoAvsAoSCellPair) {
 
   // check same densities
   {
-    auto iteratoraos = cellUsingAoS1.begin();
-    auto iteratorsoa = cellUsingSoA1.begin();
-    for (; iteratoraos.isValid(); ++iteratoraos, ++iteratorsoa) {
-      ASSERT_TRUE(iteratorsoa.isValid());
-      EXPECT_NEAR(iteratoraos->getDensity(), iteratorsoa->getDensity(), 1.e-15 * fabs(iteratoraos->getDensity()));
+    auto iteratorAoS = cellUsingAoS1.begin();
+    auto iteratorSoA = cellUsingSoA1.begin();
+    for (; iteratorAoS != cellUsingAoS1.end(); ++iteratorAoS, ++iteratorSoA) {
+      ASSERT_TRUE(iteratorSoA != cellUsingSoA1.end());
+      EXPECT_NEAR(iteratorAoS->getDensity(), iteratorSoA->getDensity(), 1.e-15 * fabs(iteratorAoS->getDensity()));
     }
   }
   {
-    auto iteratoraos = cellUsingAoS2.begin();
-    auto iteratorsoa = cellUsingSoA2.begin();
-    for (; iteratoraos.isValid(); ++iteratoraos, ++iteratorsoa) {
-      ASSERT_TRUE(iteratorsoa.isValid());
-      EXPECT_NEAR(iteratoraos->getDensity(), iteratorsoa->getDensity(), 1.e-15 * fabs(iteratoraos->getDensity()));
+    auto iteratorAoS = cellUsingAoS2.begin();
+    auto iteratorSoA = cellUsingSoA2.begin();
+    for (; iteratorAoS != cellUsingAoS2.end(); ++iteratorAoS, ++iteratorSoA) {
+      ASSERT_TRUE(iteratorSoA != cellUsingSoA2.end());
+      EXPECT_NEAR(iteratorAoS->getDensity(), iteratorSoA->getDensity(), 1.e-15 * fabs(iteratorAoS->getDensity()));
     }
   }
 }
@@ -418,29 +418,29 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoAvsAoSCellPair) {
 
   // simulate density functor call by setting density to sth. between 0 and 1
   {  // cell 1
-    auto iteratoraos = cellUsingAoS1.begin();
-    auto iteratorsoa = cellUsingSoA1.begin();
-    for (; iteratoraos.isValid(); ++iteratoraos, ++iteratorsoa) {
-      ASSERT_TRUE(iteratorsoa.isValid());
+    auto iteratorAoS = cellUsingAoS1.begin();
+    auto iteratorSoA = cellUsingSoA1.begin();
+    for (; iteratorAoS != cellUsingAoS1.end(); ++iteratorAoS, ++iteratorSoA) {
+      ASSERT_TRUE(iteratorSoA != cellUsingSoA1.end());
       double density = static_cast<double>(rand()) / RAND_MAX;
       double pressure = static_cast<double>(rand()) / RAND_MAX;
-      iteratoraos->setDensity(density);
-      iteratoraos->setPressure(pressure);
-      iteratorsoa->setDensity(density);
-      iteratorsoa->setPressure(pressure);
+      iteratorAoS->setDensity(density);
+      iteratorAoS->setPressure(pressure);
+      iteratorSoA->setDensity(density);
+      iteratorSoA->setPressure(pressure);
     }
   }
   {  // cell 2
-    auto iteratoraos = cellUsingAoS2.begin();
-    auto iteratorsoa = cellUsingSoA2.begin();
-    for (; iteratoraos.isValid(); ++iteratoraos, ++iteratorsoa) {
-      ASSERT_TRUE(iteratorsoa.isValid());
+    auto iteratorAoS = cellUsingAoS2.begin();
+    auto iteratorSoA = cellUsingSoA2.begin();
+    for (; iteratorAoS != cellUsingAoS2.end(); ++iteratorAoS, ++iteratorSoA) {
+      ASSERT_TRUE(iteratorSoA != cellUsingSoA2.end());
       double density = static_cast<double>(rand()) / RAND_MAX;
       double pressure = static_cast<double>(rand()) / RAND_MAX;
-      iteratoraos->setDensity(density);
-      iteratoraos->setPressure(pressure);
-      iteratorsoa->setDensity(density);
-      iteratorsoa->setPressure(pressure);
+      iteratorAoS->setDensity(density);
+      iteratorAoS->setPressure(pressure);
+      iteratorSoA->setDensity(density);
+      iteratorSoA->setPressure(pressure);
     }
   }
 
@@ -448,10 +448,10 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoAvsAoSCellPair) {
   HydroForceFunctorType hydroForceFunctor;
 
   // ------------- aos ------------------ (using newton3)
-  for (auto outer = cellUsingAoS1.begin(); outer.isValid(); ++outer) {
+  for (auto outer = cellUsingAoS1.begin(); outer != cellUsingAoS1.end(); ++outer) {
     auto &p1 = *outer;
 
-    for (auto inner = cellUsingAoS2.begin(); inner.isValid(); ++inner) {
+    for (auto inner = cellUsingAoS2.begin(); inner != cellUsingAoS2.end(); ++inner) {
       auto &p2 = *inner;
 
       hydroForceFunctor.AoSFunctor(p1, p2, true);
@@ -473,33 +473,33 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoAvsAoSCellPair) {
 
   // check same results properties
   {
-    auto iteratoraos = cellUsingAoS1.begin();
-    auto iteratorsoa = cellUsingSoA1.begin();
-    for (; iteratoraos.isValid(); ++iteratoraos, ++iteratorsoa) {
-      ASSERT_TRUE(iteratorsoa.isValid());
-      EXPECT_NEAR(iteratoraos->getVSigMax(), iteratorsoa->getVSigMax(), 1.e-14 * fabs(iteratoraos->getVSigMax()));
-      EXPECT_NEAR(iteratoraos->getEngDot(), iteratorsoa->getEngDot(), 1.e-14 * fabs(iteratoraos->getEngDot()));
-      EXPECT_NEAR(iteratoraos->getAcceleration()[0], iteratorsoa->getAcceleration()[0],
-                  1.e-14 * fabs(iteratoraos->getAcceleration()[0]));
-      EXPECT_NEAR(iteratoraos->getAcceleration()[1], iteratorsoa->getAcceleration()[1],
-                  1.e-14 * fabs(iteratoraos->getAcceleration()[1]));
-      EXPECT_NEAR(iteratoraos->getAcceleration()[2], iteratorsoa->getAcceleration()[2],
-                  1.e-14 * fabs(iteratoraos->getAcceleration()[2]));
+    auto iteratorAoS = cellUsingAoS1.begin();
+    auto iteratorSoA = cellUsingSoA1.begin();
+    for (; iteratorAoS != cellUsingAoS1.end(); ++iteratorAoS, ++iteratorSoA) {
+      ASSERT_TRUE(iteratorSoA != cellUsingSoA1.end());
+      EXPECT_NEAR(iteratorAoS->getVSigMax(), iteratorSoA->getVSigMax(), 1.e-14 * fabs(iteratorAoS->getVSigMax()));
+      EXPECT_NEAR(iteratorAoS->getEngDot(), iteratorSoA->getEngDot(), 1.e-14 * fabs(iteratorAoS->getEngDot()));
+      EXPECT_NEAR(iteratorAoS->getAcceleration()[0], iteratorSoA->getAcceleration()[0],
+                  1.e-14 * fabs(iteratorAoS->getAcceleration()[0]));
+      EXPECT_NEAR(iteratorAoS->getAcceleration()[1], iteratorSoA->getAcceleration()[1],
+                  1.e-14 * fabs(iteratorAoS->getAcceleration()[1]));
+      EXPECT_NEAR(iteratorAoS->getAcceleration()[2], iteratorSoA->getAcceleration()[2],
+                  1.e-14 * fabs(iteratorAoS->getAcceleration()[2]));
     }
   }
   {
-    auto iteratoraos = cellUsingAoS2.begin();
-    auto iteratorsoa = cellUsingSoA2.begin();
-    for (; iteratoraos.isValid(); ++iteratoraos, ++iteratorsoa) {
-      ASSERT_TRUE(iteratorsoa.isValid());
-      EXPECT_NEAR(iteratoraos->getVSigMax(), iteratorsoa->getVSigMax(), 1.e-14 * fabs(iteratoraos->getVSigMax()));
-      EXPECT_NEAR(iteratoraos->getEngDot(), iteratorsoa->getEngDot(), 1.e-14 * fabs(iteratoraos->getEngDot()));
-      EXPECT_NEAR(iteratoraos->getAcceleration()[0], iteratorsoa->getAcceleration()[0],
-                  1.e-14 * fabs(iteratoraos->getAcceleration()[0]));
-      EXPECT_NEAR(iteratoraos->getAcceleration()[1], iteratorsoa->getAcceleration()[1],
-                  1.e-14 * fabs(iteratoraos->getAcceleration()[1]));
-      EXPECT_NEAR(iteratoraos->getAcceleration()[2], iteratorsoa->getAcceleration()[2],
-                  1.e-14 * fabs(iteratoraos->getAcceleration()[2]));
+    auto iteratorAoS = cellUsingAoS2.begin();
+    auto iteratorSoA = cellUsingSoA2.begin();
+    for (; iteratorAoS != cellUsingAoS2.end(); ++iteratorAoS, ++iteratorSoA) {
+      ASSERT_TRUE(iteratorSoA != cellUsingSoA2.end());
+      EXPECT_NEAR(iteratorAoS->getVSigMax(), iteratorSoA->getVSigMax(), 1.e-14 * fabs(iteratorAoS->getVSigMax()));
+      EXPECT_NEAR(iteratorAoS->getEngDot(), iteratorSoA->getEngDot(), 1.e-14 * fabs(iteratorAoS->getEngDot()));
+      EXPECT_NEAR(iteratorAoS->getAcceleration()[0], iteratorSoA->getAcceleration()[0],
+                  1.e-14 * fabs(iteratorAoS->getAcceleration()[0]));
+      EXPECT_NEAR(iteratorAoS->getAcceleration()[1], iteratorSoA->getAcceleration()[1],
+                  1.e-14 * fabs(iteratorAoS->getAcceleration()[1]));
+      EXPECT_NEAR(iteratorAoS->getAcceleration()[2], iteratorSoA->getAcceleration()[2],
+                  1.e-14 * fabs(iteratorAoS->getAcceleration()[2]));
     }
   }
 }

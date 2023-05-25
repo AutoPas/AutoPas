@@ -39,7 +39,7 @@ class LCC04SoACellHandler {
    * @param cellLength cell length.
    * @param overlap number of overlapping cells in each direction as result from cutoff and cellLength.
    */
-  explicit LCC04SoACellHandler(PairwiseFunctor *pairwiseFunctor, std::array<unsigned long, 3> cellsPerDimension,
+  explicit LCC04SoACellHandler(PairwiseFunctor *pairwiseFunctor, const std::array<unsigned long, 3> &cellsPerDimension,
                                const double interactionLength, const std::array<double, 3> &cellLength,
                                const std::array<unsigned long, 3> &overlap = {1ul, 1ul, 1ul})
       : _interactionLength(interactionLength),
@@ -73,7 +73,7 @@ class LCC04SoACellHandler {
    * docs/C08TraversalScheme.py
    * @param cellsPerDimension
    */
-  void computeOffsets(std::array<unsigned long, 3> cellsPerDimension);
+  void computeOffsets(const std::array<unsigned long, 3> &cellsPerDimension);
 
   /**
    * Interaction Length (cutoff + skin).
@@ -310,7 +310,7 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
     // make sure everything is correct
     if (bufferView.getNumberOfParticles() != cells[currentOffset].numParticles()) {
       const auto pos = utils::ThreeDimensionalMapping::oneToThreeD(currentOffset, _cellsPerDimension);
-      AutoPasLog(error,
+      AutoPasLog(ERROR,
                  "Particle number in SoA buffer and cell doesn't match. current position: [{} {} {}] is: {} should: {}",
                  pos[0], pos[1], pos[2], buffer.getNumberOfParticles(), cells[currentOffset].numParticles());
     }
@@ -321,7 +321,7 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::computeOffsets(
-    std::array<unsigned long, 3> cellsPerDimension) {
+    const std::array<unsigned long, 3> &cellsPerDimension) {
   using namespace autopas::utils::ArrayMath::literals;
   using std::make_pair;
 
