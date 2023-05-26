@@ -187,6 +187,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
           // if not in cell
           if (utils::notInBox(pIter->getR(), cellLowerCorner, cellUpperCorner)) {
             myInvalidParticles.push_back(*pIter);
+            this->getCells()[cellId].setDirty(true);
             // swap-delete
             *pIter = particleVec.back();
             particleVec.pop_back();

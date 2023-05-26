@@ -70,6 +70,25 @@ class CellIterator {
     return *this;
   }
 
+  inline CellIterator<StorageType, modifiable> &operator--() {
+    --iterator;
+    return *this;
+  }
+
+  inline size_t operator-(CellIterator<StorageType, modifiable> &other) {
+    return iterator - other.iterator;
+  }
+
+  inline CellIterator<StorageType, modifiable> &operator+=(size_t diff) {
+    iterator += diff;
+    return *this;
+  }
+
+  inline CellIterator<StorageType, modifiable> &operator-=(size_t diff) {
+    iterator -= diff;
+    return *this;
+  }
+
   /**
    * Equality operator
    * @param rhs

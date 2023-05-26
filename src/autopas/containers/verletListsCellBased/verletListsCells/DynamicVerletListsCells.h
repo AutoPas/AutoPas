@@ -40,21 +40,8 @@ class DynamicVerletListsCells : public VerletListsCells<Particle, NeighborList> 
       if (distanceSquare >=  halfSkinSquare) {
         listInvalid = true;
         auto & cell = this->_linkedCells.getCellBlock().getContainingCell(particlePositionPair.first->getR());
-        // TODO : figure out why this is not enough synchronization because of atomic bool and critical section
-#pragma omp critical
-        { cell.setDirty(true); }
+        cell.setDirty(true);
         partialRebuilding = true;
-        // delete this entry from the buffer because it is reinserted later -> avoid duplicates
-        iter = _particlePtr2rebuildPositionBuffer.erase(iter);
-        --iter;
-        }
-    }
-
-    if (partialRebuilding) {
-        for (size_t i = 0; i < this->_linkedCells.getCells().size(); ++i) {
-          if (this->_linkedCells.getCells().at(i).getDirty()) {
-            std::cout << "Cell with index : " << i << " is dirty \n" << std::endl;
-          }
         }
     }
 
@@ -87,20 +74,43 @@ class DynamicVerletListsCells : public VerletListsCells<Particle, NeighborList> 
       // every particle's position needs to be updated
       _particlePtr2rebuildPositionBuffer.clear();
       _particlePtr2rebuildPositionBuffer.reserve(this->_neighborList.getNumberOfParticles());
+      _particlePtr2BufferPosition.clear();
+      _particlePtr2BufferPosition.reserve(this->_neighborList.getNumberOfParticles());
 
+      size_t particleBufferPosition = 0;
       for (auto iter = this->begin(IteratorBehavior::owned); iter.isValid(); ++iter) {
           std::pair<Particle *, std::array<double, 3>> particlePositionPair = std::make_pair(&(*iter), (*iter).getR());
           _particlePtr2rebuildPositionBuffer.emplace_back(particlePositionPair);
+          std::pair<Particle *, size_t> particleMapping = std::make_pair(&(*iter), particleBufferPosition);
+          _particlePtr2BufferPosition.emplace(particleMapping);
+          ++particleBufferPosition;
       }
     }
     else {
 
       for (FullParticleCell<Particle> &cell : this->_linkedCells.getCells()) {
           if (cell.getDirty()) {
-            // reinsert every "dirty" particle back in the rebuildPositionBuffer
+            // update every "dirty" particle in the rebuildPositionBuffer
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel for schedule(static, 50)
+#endif
             for (auto iter = cell.begin(); iter != cell.end(); ++iter) {
               std::pair<Particle *, std::array<double, 3>> particlePositionPair = std::make_pair(&(*iter), (*iter).getR());
-              _particlePtr2rebuildPositionBuffer.emplace_back(particlePositionPair);
+              if (_particlePtr2BufferPosition.find(&(*iter)) != _particlePtr2BufferPosition.end()) {
+                auto particleBufferPosition = _particlePtr2BufferPosition.at(&(*iter));
+                _particlePtr2rebuildPositionBuffer.at(particleBufferPosition) = particlePositionPair;
+              }
+              else {
+#ifdef AUTOPAS_OPENMP
+#pragma omp critical
+#endif
+                {
+                  _particlePtr2rebuildPositionBuffer.emplace_back(particlePositionPair);
+                  _particlePtr2BufferPosition.emplace(
+                      std::make_pair(&(*iter), _particlePtr2rebuildPositionBuffer.size() - 1));
+                }
+              }
+
             }
             cell.setDirty(false);
           }
@@ -109,7 +119,7 @@ class DynamicVerletListsCells : public VerletListsCells<Particle, NeighborList> 
   }
 
   std::vector<std::pair<Particle*, std::array<double, 3>>> _particlePtr2rebuildPositionBuffer;
-
+  std::unordered_map<Particle*, size_t> _particlePtr2BufferPosition;
 
 };
 

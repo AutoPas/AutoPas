@@ -139,7 +139,7 @@ class ParticleCell {
 
   bool getDirty() { return this->_dirty.load(std::memory_order_relaxed); }
 
- private:
+ protected:
 
   std::atomic<bool> _dirty{false};
 };
