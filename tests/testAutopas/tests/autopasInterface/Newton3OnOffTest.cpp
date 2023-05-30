@@ -140,7 +140,7 @@ std::pair<size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataL
   std::atomic<unsigned int> callsPair(0ul);
   EXPECT_CALL(mockFunctor, allowsNewton3()).WillRepeatedly(Return(useNewton3));
   EXPECT_CALL(mockFunctor, allowsNonNewton3()).WillRepeatedly(Return(not useNewton3));
-  EXPECT_CALL(mockFunctor, allowsMixedNewton3()).WillRepeatedly(Return(false));
+  EXPECT_CALL(mockFunctor, allowsMixedNewton3CallsForGlobals()).WillRepeatedly(Return(false));
 
   auto traversalSelectorInfo = container->getTraversalSelectorInfo();
 

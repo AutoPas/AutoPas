@@ -36,7 +36,7 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, allowsMixedNewton3()).WillRepeatedly(::testing::Return(false));
+  EXPECT_CALL(functor, allowsMixedNewton3CallsForGlobals()).WillRepeatedly(::testing::Return(false));
   // Need to resize cells during loading, otherwise we get exceptions in SoAFunctors
   EXPECT_CALL(functor, SoALoader(::testing::Matcher<autopas::ReferenceParticleCell<Molecule> &>(_), _, _))
       .Times(testing::AtLeast(1))
@@ -178,7 +178,7 @@ TEST_F(AutoTunerTest, testWillRebuildDDL) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, allowsMixedNewton3()).WillRepeatedly(::testing::Return(false));
+  EXPECT_CALL(functor, allowsMixedNewton3CallsForGlobals()).WillRepeatedly(::testing::Return(false));
 
   std::vector<autopas::FullParticleCell<Molecule>> emptyVec(autopas::autopas_get_max_threads());
 
@@ -233,7 +233,7 @@ TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
-  EXPECT_CALL(functor, allowsMixedNewton3()).WillRepeatedly(::testing::Return(false));
+  EXPECT_CALL(functor, allowsMixedNewton3CallsForGlobals()).WillRepeatedly(::testing::Return(false));
 
   std::vector<autopas::FullParticleCell<Molecule>> emptyVec(autopas::autopas_get_max_threads());
 
@@ -276,7 +276,7 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, allowsMixedNewton3()).WillRepeatedly(::testing::Return(false));
+  EXPECT_CALL(functor, allowsMixedNewton3CallsForGlobals()).WillRepeatedly(::testing::Return(false));
 
   std::vector<autopas::FullParticleCell<Molecule>> emptyVec(autopas::autopas_get_max_threads());
 
@@ -326,7 +326,7 @@ TEST_F(AutoTunerTest, testForceRetuneBetweenPhases) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, allowsMixedNewton3()).WillRepeatedly(::testing::Return(false));
+  EXPECT_CALL(functor, allowsMixedNewton3CallsForGlobals()).WillRepeatedly(::testing::Return(false));
 
   std::vector<autopas::FullParticleCell<Molecule>> emptyVec(autopas::autopas_get_max_threads());
 
@@ -386,7 +386,7 @@ TEST_F(AutoTunerTest, testForceRetuneInPhase) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, allowsMixedNewton3()).WillRepeatedly(::testing::Return(false));
+  EXPECT_CALL(functor, allowsMixedNewton3CallsForGlobals()).WillRepeatedly(::testing::Return(false));
 
   std::vector<autopas::FullParticleCell<Molecule>> emptyVec(autopas::autopas_get_max_threads());
 
@@ -506,7 +506,7 @@ TEST_F(AutoTunerTest, testConfigSecondInvalid) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
-  EXPECT_CALL(functor, allowsMixedNewton3()).WillRepeatedly(::testing::Return(false));
+  EXPECT_CALL(functor, allowsMixedNewton3CallsForGlobals()).WillRepeatedly(::testing::Return(false));
 
   bool doRebuild = true;
   tuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);
@@ -542,7 +542,7 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(false));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, allowsMixedNewton3()).WillRepeatedly(::testing::Return(false));
+  EXPECT_CALL(functor, allowsMixedNewton3CallsForGlobals()).WillRepeatedly(::testing::Return(false));
 
   std::vector<autopas::FullParticleCell<Molecule>> emptyVec(autopas::autopas_get_max_threads());
 

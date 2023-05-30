@@ -55,7 +55,7 @@ class TraversalTest
 
     bool allowsNonNewton3() override { return true; }
 
-    bool allowsMixedNewton3() override { return false; }
+    bool allowsMixedNewton3CallsForGlobals() override { return false; }
 
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
       using namespace autopas::utils::ArrayMath::literals;

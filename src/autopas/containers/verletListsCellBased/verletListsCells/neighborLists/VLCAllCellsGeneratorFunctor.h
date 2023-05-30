@@ -47,9 +47,9 @@ class VLCAllCellsGeneratorFunctor : public Functor<Particle, VLCAllCellsGenerato
     return true;
   }
 
-  bool allowsMixedNewton3() override {
+  bool allowsMixedNewton3CallsForGlobals() override {
     utils::ExceptionHandler::exception(
-        "VLCAllCellsGeneratorFunctor::allowsMixedNewton3() is not implemented, because it should not be called.");
+        "VLCAllCellsGeneratorFunctor::allowsMixedNewton3CallsForGlobals() is not implemented, because it should not be called.");
     return false;
   }
 

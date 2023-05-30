@@ -31,7 +31,7 @@ class SPHCalcDensityFunctor : public Functor<Particle, SPHCalcDensityFunctor<Par
 
   bool allowsNonNewton3() override { return true; }
 
-  bool allowsMixedNewton3() override { return false; }
+  bool allowsMixedNewton3CallsForGlobals() override { return false; }
 
   /**
    * Calculates the density contribution of the interaction of particle i and j.

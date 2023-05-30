@@ -30,7 +30,7 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
 
   bool allowsNonNewton3() override { return true; }
 
-  bool allowsMixedNewton3() override { return false; }
+  bool allowsMixedNewton3CallsForGlobals() override { return false; }
 
   /**
    * constructor of FlopCounterFunctor

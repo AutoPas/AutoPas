@@ -13,41 +13,47 @@
 using namespace autopas;
 
 TEST(ConstexprMathTest, testFloatSqrtPosValue) {
-  double x = 2.0;
-  double exp = std::sqrt(x);
-  ASSERT_DOUBLE_EQ(utils::ConstexprMath::sqrt(x), exp);
+  constexpr double x = 2.0;
+  const double exp = std::sqrt(x);
+  constexpr double res = utils::ConstexprMath::sqrt(x, 1e-16);
+  ASSERT_DOUBLE_EQ(res, exp);
 }
 
 TEST(ConstexprMathTest, testFloatSqrtZero) {
-  double x = 0;
-  double exp = std::sqrt(x);
-  ASSERT_DOUBLE_EQ(utils::ConstexprMath::sqrt(x), exp);
+  constexpr double x = 0;
+  const double exp = std::sqrt(x);
+  constexpr double res = utils::ConstexprMath::sqrt(x, 1e-16);
+  ASSERT_DOUBLE_EQ(res, exp);
 }
 
 TEST(ConstexprMathTest, testFloatSqrtNegative) {
-  double x = -1.;
-  ASSERT_TRUE(std::isnan(utils::ConstexprMath::sqrt(x)));
+  constexpr double x = -1.;
+  constexpr double res = utils::ConstexprMath::sqrt(x, 1e-16);
+  ASSERT_TRUE(std::isnan(res));
 }
 
 TEST(ConstexprMathTest, testIntSqrtPos) {
-  int x = 25;
-  int exp = std::sqrt(x);
-  ASSERT_EQ(utils::ConstexprMath::sqrt(x), exp);
+  constexpr int x = 25;
+  const int exp = std::sqrt(x);
+  constexpr int res = utils::ConstexprMath::sqrt(x);
+  ASSERT_EQ(res, exp);
 }
 
 TEST(ConstexprMathTest, testIntSqrtPos2) {
-  int x = 17;
-  int exp = std::sqrt(x);
-  ASSERT_EQ(utils::ConstexprMath::sqrt(x), exp);
+  constexpr int x = 17;
+  const int exp = std::sqrt(x);
+  constexpr int res = utils::ConstexprMath::sqrt(x);
+  ASSERT_EQ(res, exp);
 }
 
 TEST(ConstexprMathTest, testIntSqrtZero) {
-  int x = 0;
-  int exp = std::sqrt(x);
-  ASSERT_EQ(utils::ConstexprMath::sqrt(x), exp);
+  constexpr int x = 0;
+  const int exp = std::sqrt(x);
+  constexpr int res = utils::ConstexprMath::sqrt(x);
+  ASSERT_EQ(res, exp);
 }
 
 TEST(ConstexprMathTest, testIntSqrtNegative) {
-  int x = -1;
+  const int x = -1;
   EXPECT_ANY_THROW(utils::ConstexprMath::sqrt(x));
 }
