@@ -176,8 +176,8 @@ void LJFunctorTestGlobals<FuncType>::testSoAGlobals(LJFunctorTestGlobals<FuncTyp
   constexpr double p2Z = 0.3;
 
   // calculate the reference values for the globals
-  const std::array<double, 3> p1Pos{p1X, p1Y, p1Z};
-  const std::array<double, 3> p2Pos{p2X, p2Y, p2Z};
+  constexpr std::array<double, 3> p1Pos{p1X, p1Y, p1Z};
+  constexpr std::array<double, 3> p2Pos{p2X, p2Y, p2Z};
   constexpr double expectedEnergy = calculateLJPotential(p1Pos, p2Pos, cutoff, sigma, epsilon);
   constexpr double expectedVirial = calculateLJVirialTotal(p1Pos, p2Pos, cutoff, sigma, epsilon);
 
@@ -446,10 +446,10 @@ TYPED_TEST_P(LJFunctorTestGlobals, testAoSFunctorGlobalsOpenMPParallel) {
   const double whereFactor = 1.;  // all inside, so factor 1
   const std::string where_str = "inside";
 
-  const std::array<double, 3> p1Pos{0., 0., 0.};
-  const std::array<double, 3> p2Pos{0.1, 0.2, 0.3};
-  const std::array<double, 3> p3Pos{0., 2., 0.};
-  const std::array<double, 3> p4Pos{0.1, 2.2, 0.3};
+  constexpr std::array<double, 3> p1Pos{0., 0., 0.};
+  constexpr std::array<double, 3> p2Pos{0.1, 0.2, 0.3};
+  constexpr std::array<double, 3> p3Pos{0., 2., 0.};
+  constexpr std::array<double, 3> p4Pos{0.1, 2.2, 0.3};
 
   Molecule p1(p1Pos, {0., 0., 0.}, 0, 0);
   Molecule p2(p2Pos, {0., 0., 0.}, 1, 0);
@@ -499,12 +499,12 @@ TYPED_TEST_P(LJFunctorTestGlobals, testAoSFunctorGlobalsOpenMPParallel) {
   const double upot = functor.getUpot();
   const double virial = functor.getVirial();
 
-  constexpr double expectedEnergyP1P2 = calculateLJPotential(p1Pos, p2Pos, this->cutoff, this->sigma, this->epsilon);
-  constexpr double expectedVirialP1P2 = calculateLJVirialTotal(p1Pos, p2Pos, this->cutoff, this->sigma, this->epsilon);
-  constexpr double expectedEnergyP3P4 = calculateLJPotential(p3Pos, p4Pos, this->cutoff, this->sigma, this->epsilon);
-  constexpr double expectedVirialP3P4 = calculateLJVirialTotal(p3Pos, p4Pos, this->cutoff, this->sigma, this->epsilon);
-  constexpr double expectedEnergy = expectedEnergyP1P2 + expectedEnergyP3P4;
-  constexpr double expectedVirial = expectedVirialP1P2 + expectedVirialP3P4;
+  const double expectedEnergyP1P2 = calculateLJPotential(p1Pos, p2Pos, this->cutoff, this->sigma, this->epsilon);
+  const double expectedVirialP1P2 = calculateLJVirialTotal(p1Pos, p2Pos, this->cutoff, this->sigma, this->epsilon);
+  const double expectedEnergyP3P4 = calculateLJPotential(p3Pos, p4Pos, this->cutoff, this->sigma, this->epsilon);
+  const double expectedVirialP3P4 = calculateLJVirialTotal(p3Pos, p4Pos, this->cutoff, this->sigma, this->epsilon);
+  const double expectedEnergy = expectedEnergyP1P2 + expectedEnergyP3P4;
+  const double expectedVirial = expectedVirialP1P2 + expectedVirialP3P4;
 
   EXPECT_NEAR(upot, whereFactor * expectedEnergy, this->absDelta) << "where: " << where_str << ", newton3: " << newton3;
   EXPECT_NEAR(virial, whereFactor * expectedVirial, this->absDelta)
