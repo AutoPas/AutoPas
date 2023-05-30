@@ -725,88 +725,25 @@ void AutoTuner<Particle>::remainderHelperBufferBuffer(PairwiseFunctor *f, T cont
   }
 
 #ifdef AUTOPAS_OPENMP
-  // Tasks would be better than locks but sanitizers seem to have problems
 #pragma omp parallel
 #endif
   {
-    // we distingush between functors that can handle newton3==true and newton3==false within one iteration. If a
-    // functor supports these mixed calls, we can combine interactions within the same buffer and interactions between
-    // two different buffers into one nested loop. As we can always set newton3 to false for interactions between two
-    // different buffers, there is no need for locks, since it is garuanteed that only one thread is writing to the same
-    // buffer.
-
-    if (f->allowsMixedNewton3CallsForGlobals()) {
+    // For buffer interactions where bufferA == bufferB we can always enable newton3. For all interactions between
+    // different buffers we turn newton3 always off, which ensures that only one thread at a time is writing to a
+    // buffer. This saves expensive locks.
 #ifdef AUTOPAS_OPENMP
-      // we can not use collapse here without locks, otherwise races would occur.
+    // we can not use collapse here without locks, otherwise races would occur.
 #pragma omp for
 #endif
-      for (size_t i = 0; i < particleBuffers.size(); ++i) {
-        for (size_t jj = 0; jj < particleBuffers.size(); ++jj) {
-          auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
-          const auto j = (i + jj) % particleBuffers.size();
-          if (i == j) {
-            f->SoAFunctorSingle(*particleBufferSoAA, true);
-          } else {
-            auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
-            f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, false);
-          }
-        }
-      }
-
-    } else {
-      // The following part does the same calculation as the branch above. However here we can not always set newton3 to
-      // false for interactions between two different buffers, as the functior does not support it here. Therefore we
-      // need to use two loops. The first calculates all interactions within the same buffer. The second one calculates
-      // all interactions between two different buffers. As the first loop has a nowait-clause, we need locks in the
-      // second loop (and also in the first loop). Furthermore we have to distinguish between a newton3==true and
-      // newton3==false iteration for the second loop. For a newton3==true iteration we need two locks for the
-      // respective buffers. For a non newton3 iteration we need oly one lock.
-
-#ifdef AUTOPAS_OPENMP
-      // No need to synchronize after this loop since we have locks
-#pragma omp for nowait
-#endif
-      for (size_t i = 0; i < particleBuffers.size(); ++i) {
+    for (size_t i = 0; i < particleBuffers.size(); ++i) {
+      for (size_t jj = 0; jj < particleBuffers.size(); ++jj) {
         auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
-        const std::lock_guard<std::mutex> lockA(*_bufferLocks[i]);
-        f->SoAFunctorSingle(*particleBufferSoAA, newton3);
-      }
-
-      // In this case we need to distinguish between a newton3==true and a newton3==false iteration, as the functor
-      // does not support mixed calls. The following part is for a newton3==true iteration.
-      if constexpr (newton3) {
-#ifdef AUTOPAS_OPENMP
-        // collapse loops for better scheduling
-#pragma omp for collapse(2)
-#endif
-        for (size_t i = 0; i < particleBuffers.size(); ++i) {
-          for (size_t j = i + 1; j < particleBuffers.size(); ++j) {
-            auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
-            auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
-            const std::lock_guard<std::mutex> lockA(*_bufferLocks[i]);
-            const std::lock_guard<std::mutex> lockB(*_bufferLocks[j]);
-            f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, true);
-          }
-        }
-      } else {
-        // This is the branch for a newton3==false iteration. Since we have the nowait
-        // from above, we still need the lock for buffer A.
-#ifdef AUTOPAS_OPENMP
-        // collapse loops for better scheduling
-#pragma omp for collapse(2)
-#endif
-        for (size_t i = 0; i < particleBuffers.size(); ++i) {
-          for (size_t jj = 0; jj < particleBuffers.size(); ++jj) {
-            auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
-            const auto j = (i + jj) % particleBuffers.size();
-            if (i == j) {
-              continue;
-            } else {
-              auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
-              const std::lock_guard<std::mutex> lockA(*_bufferLocks[i]);
-              f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, false);
-            }
-          }
+        const auto j = (i + jj) % particleBuffers.size();
+        if (i == j) {
+          f->SoAFunctorSingle(*particleBufferSoAA, true);
+        } else {
+          auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
+          f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, false);
         }
       }
     }
@@ -830,11 +767,7 @@ void AutoTuner<Particle>::remainderHelperBufferHaloBuffer(
       auto &particleBufferSoA = particleBuffers[i]._particleSoABuffer;
       auto &haloBufferSoA =
           haloParticleBuffers[(i + interactionOffset) % haloParticleBuffers.size()]._particleSoABuffer;
-      if (f->allowsMixedNewton3CallsForGlobals()) {
-        f->SoAFunctorPair(particleBufferSoA, haloBufferSoA, false);
-      } else {
-        f->SoAFunctorPair(particleBufferSoA, haloBufferSoA, newton3);
-      }
+      f->SoAFunctorPair(particleBufferSoA, haloBufferSoA, false);
     }
   }
 }

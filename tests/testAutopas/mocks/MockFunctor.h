@@ -59,9 +59,6 @@ class MockFunctor : public autopas::Functor<Particle, MockFunctor<Particle>> {
   // virtual bool allowsNonNewton3() { return false; }
   MOCK_METHOD(bool, allowsNonNewton3, (), (override));
 
-  // virtual bool allowsMixedNewton3CallsForGlobals() { return false; }
-  MOCK_METHOD(bool, allowsMixedNewton3CallsForGlobals, (), (override));
-
   //  bool isRelevantForTuning() { return true; }
   MOCK_METHOD(bool, isRelevantForTuning, (), (override));
 };

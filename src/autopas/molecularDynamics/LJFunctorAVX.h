@@ -116,8 +116,6 @@ class LJFunctorAVX
     return useNewton3 == FunctorN3Modes::Newton3Off or useNewton3 == FunctorN3Modes::Both;
   }
 
-  bool allowsMixedNewton3CallsForGlobals() final { return true; }
-
   inline void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
     if (i.isDummy() or j.isDummy()) {

@@ -66,11 +66,6 @@ class EmptyFunctor : public autopas::Functor<Particle, EmptyFunctor<Particle>> {
   bool allowsNonNewton3() override { return true; }
 
   /**
-   * @copydoc autopas::Functor::allowsMixedNewton3CallsForGlobals()
-   */
-  bool allowsMixedNewton3CallsForGlobals() override { return false; }
-
-  /**
    * @copydoc autopas::Functor::isRelevantForTuning()
    */
   bool isRelevantForTuning() override { return true; }

@@ -58,7 +58,6 @@ class AsBuildPairGeneratorFunctor
 
   bool allowsNewton3() override { return true; }
   bool allowsNonNewton3() override { return true; }
-  bool allowsMixedNewton3CallsForGlobals() override { return false; }
 
   /**
    * Constructor of the functor.

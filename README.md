@@ -130,7 +130,7 @@ Once you have defined your particle you can start with the functor class.
 Important parts to implement:
 * Actual force calculations: `AoSFunctor()` and all Versions of `SoAFunctor*()` 
 * Newton3 characteristics of the force: `allowsNewton3()`, `allowsNonNewton3()`
-* Allowed Newton3 characteristics for globals :`allowsMixedNewton3CallsForGlobals()`. If a functor can accept calls with newton3 enabled and newton3 disabled within one iteration, while calculating the globals correctly, this should return true. Note that this function is not related to `allowsNewton3()` and `allowsNonNewton3()`. So even if both of them return true `allowsMixedNewton3CallsForGlobals()` can return false.
+* The calculation of the globals (potential energy, virial) must be implemented in a way so functor calls with newton3 enabled and newton3 disabled within one iteration are possible.
 * Input and output variables of the force calculation via: `getComputedAttr()` and `getNeededAttr()`
 
 #### Usage

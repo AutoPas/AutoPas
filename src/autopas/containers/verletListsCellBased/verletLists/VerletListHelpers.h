@@ -59,13 +59,6 @@ class VerletListHelpers {
       return true;
     }
 
-    bool allowsMixedNewton3CallsForGlobals() override {
-      utils::ExceptionHandler::exception(
-          "VLCAllCellsGeneratorFunctor::allowsMixedNewton3CallsForGlobals() is not implemented, because it should not "
-          "be called.");
-      return false;
-    }
-
     void AoSFunctor(Particle &i, Particle &j, bool /*newton3*/) override {
       using namespace autopas::utils::ArrayMath::literals;
 
@@ -228,13 +221,6 @@ class VerletListHelpers {
       utils::ExceptionHandler::exception(
           "VLCAllCellsGeneratorFunctor::allowsNonNewton3() is not implemented, because it should not be called.");
       return true;
-    }
-
-    bool allowsMixedNewton3CallsForGlobals() override {
-      utils::ExceptionHandler::exception(
-          "VLCAllCellsGeneratorFunctor::allowsMixedNewton3CallsForGlobals() is not implemented, because it should not "
-          "be called.");
-      return false;
     }
 
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {

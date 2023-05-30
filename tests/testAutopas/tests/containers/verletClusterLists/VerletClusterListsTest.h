@@ -51,7 +51,6 @@ class CollectParticlePairsFunctor : public autopas::Functor<autopas::Particle, C
 
   bool allowsNewton3() override { return true; }
   bool allowsNonNewton3() override { return true; }
-  bool allowsMixedNewton3CallsForGlobals() override { return false; }
 
   auto getParticlePairs() { return _pairs; }
 };
@@ -85,7 +84,6 @@ class CollectParticlesPerThreadFunctor : public autopas::Functor<autopas::Partic
 
   bool allowsNewton3() override { return true; }
   bool allowsNonNewton3() override { return true; }
-  bool allowsMixedNewton3CallsForGlobals() override { return false; }
 
   void nextColor(int newColor) { _currentColor = newColor; }
 };
