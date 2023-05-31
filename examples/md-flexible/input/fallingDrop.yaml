@@ -49,6 +49,7 @@ Objects:
 #   addBrownianMotion              :  false
 vtk-filename                     :  fallingDrop
 vtk-write-frequency              :  1000
+vtk-output-folder                :  vtkOutputFolder
 no-flops                         :  false
 no-end-config                    :  true
 log-level                        :  info

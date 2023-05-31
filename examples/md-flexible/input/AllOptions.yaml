@@ -98,6 +98,7 @@ no-flops                             :  false
 no-end-config                        :  false
 no-progress-bar                      :  false
 vtk-filename                         :  AllOptionsSim
+vtk-output-folder                    :  allOptionsOutput
 vtk-write-frequency                  :  1
 #checkpoint                          : AllOptionsSim_10.vtk
 #log-file                            : log.txt
