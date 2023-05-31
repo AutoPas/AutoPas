@@ -82,6 +82,9 @@ include(autopas_CodeCoverage)
 include(autopas_OpenMP)
 include(autopas_mpi)
 
+option(AUTOPAS_ENABLE_3_BODY_INTERACTIONS "Compiles AutoPas with functionality for 3-body interactions." OFF)
+message(STATUS "Compiling AutoPas with support for 3-body interactions.")
+
 include(version.cmake)
 
 # libraries
