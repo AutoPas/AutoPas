@@ -156,7 +156,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
       return autopas::LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(_linkedCells);
     }
     _neighborListIsValid.store(false, std::memory_order_relaxed);
-    return _linkedCells.updateContainer(false);
+    return _linkedCells.updateContainer(false, this->_partialRebuilding);
   }
 
   /**
@@ -313,6 +313,8 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
  protected:
   /// internal linked cells storage, handles Particle storage and used to build verlet lists
   LinkedCells<Particle> _linkedCells;
+
+  bool _partialRebuilding {false};
 
   /// specifies if the neighbor list is currently valid
   std::atomic<bool> _neighborListIsValid{false};

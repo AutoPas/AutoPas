@@ -345,7 +345,7 @@ std::ostream &operator<<(std::ostream &os, const ParticleBase<floatType, idType>
   using utils::ArrayUtils::operator<<;
   os << "Particle"
      << "\nID      : " << particle._id << "\nPosition: " << particle._r << "\nVelocity: " << particle._v
-     << "\nForce   : " << particle._f << "\nOwnershipState : " << particle._ownershipState;
+     << "\nForce   : " << particle._f <<"\nOwnershipState : " << particle._ownershipState;
   // clang-format on
   return os;
 }

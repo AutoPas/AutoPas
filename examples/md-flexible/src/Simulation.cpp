@@ -554,6 +554,10 @@ void Simulation::logMeasurements() {
                 << static_cast<double>(flops) * 1e-9 / (static_cast<double>(simulate) * 1e-9) << std::endl;
       std::cout << "Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl;
       std::cout << "Mean Rebuild Frequency             : " << _autoPasContainer->getMeanRebuildFrequency() << std::endl;
+      std::cout << "Num Rebuild Cells                  : " << _autoPasContainer->getNumRebuildCells() << std::endl;
+      std::cout << "Num Moving Cells                   : " << _autoPasContainer->getNumMovingCells() << std::endl;
+      std::cout << "Num Exchanging Cells               : " << _autoPasContainer->getNumExchangeCells() << std::endl;
+      std::cout << "Avg Cell Rebuilds per iteration    : " << (_autoPasContainer->getNumRebuildCells() * 1.0) / _configuration.iterations.value << std::endl;
     }
   }
 }

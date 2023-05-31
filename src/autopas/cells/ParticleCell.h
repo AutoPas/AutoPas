@@ -104,6 +104,8 @@ class ParticleCell {
    */
   virtual void deleteDummyParticles() = 0;
 
+  virtual void deleteHaloParticles() = 0;
+
   /**
    * Get the ParticleCell type as an ParticleCellTypeEnum
    * @return The Cell type as an Enum
@@ -137,11 +139,19 @@ class ParticleCell {
     this->_dirty.store(dirty, std::memory_order_relaxed);
   }
 
+  void setExchangingDirty (bool dirty) {
+    this->_exchangingDirty.store(dirty, std::memory_order_relaxed);
+  }
+
   bool getDirty() { return this->_dirty.load(std::memory_order_relaxed); }
+
+  bool getExchangingDirty() { return this->_exchangingDirty.load(std::memory_order_relaxed); }
 
  protected:
 
   std::atomic<bool> _dirty{false};
+
+  std::atomic<bool> _exchangingDirty{false};
 };
 
 }  // namespace autopas

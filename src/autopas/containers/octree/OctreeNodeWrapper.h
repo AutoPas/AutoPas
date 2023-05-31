@@ -158,6 +158,8 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    */
   void deleteDummyParticles() override {}
 
+  void deleteHaloParticles() override {}
+
   /**
    * Get the ParticleCell type as an ParticleCellTypeEnum
    * @return The Cell type as an Enum

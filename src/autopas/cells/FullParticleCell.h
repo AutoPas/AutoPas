@@ -51,6 +51,7 @@ class FullParticleCell : public ParticleCell<Particle> {
   void addParticle(const Particle &p) override {
     std::lock_guard guard(this->_cellLock);
     _particles.push_back(p);
+    this->_exchangingDirty.store(true, std::memory_order_relaxed);
     this->_dirty.store(true, std::memory_order_relaxed);
   }
 
@@ -205,6 +206,12 @@ class FullParticleCell : public ParticleCell<Particle> {
   void deleteDummyParticles() override {
     _particles.erase(
         std::remove_if(_particles.begin(), _particles.end(), [](const auto &particle) { return particle.isDummy(); }),
+        _particles.end());
+  }
+
+  void deleteHaloParticles() override {
+    _particles.erase(
+        std::remove_if(_particles.begin(), _particles.end(), [](const auto &particle) { return particle.isHalo(); }),
         _particles.end());
   }
 

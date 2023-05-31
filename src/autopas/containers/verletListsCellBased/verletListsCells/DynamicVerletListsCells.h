@@ -45,6 +45,9 @@ class DynamicVerletListsCells : public VerletListsCells<Particle, NeighborList> 
         }
     }
 
+    size_t numHighMovementCells = std::count_if(this->_linkedCells.getCells().begin(), this->_linkedCells.getCells().end(), [](auto & cell) { return cell.getDirty(); });
+    this->_cellMovingCounter.emplace_back(numHighMovementCells);
+
     this->_partialRebuilding = partialRebuilding;
     return !listInvalid;
   }
@@ -52,6 +55,7 @@ class DynamicVerletListsCells : public VerletListsCells<Particle, NeighborList> 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     VerletListsCells<Particle, NeighborList>::rebuildNeighborLists(traversal);
     generateRebuildPositionMap();
+    this->_partialRebuilding = false;
   }
 
   [[nodiscard]] ContainerOption getContainerType() const override {
@@ -70,49 +74,66 @@ class DynamicVerletListsCells : public VerletListsCells<Particle, NeighborList> 
 
   void generateRebuildPositionMap() {
 
+    size_t numRebuildCells {0};
+    size_t numExchangingCells {0};
+
     if (!this->_partialRebuilding) {
       // every particle's position needs to be updated
       _particlePtr2rebuildPositionBuffer.clear();
       _particlePtr2rebuildPositionBuffer.reserve(this->_neighborList.getNumberOfParticles());
-      _particlePtr2BufferPosition.clear();
-      _particlePtr2BufferPosition.reserve(this->_neighborList.getNumberOfParticles());
+      _particleId2BufferPosition.clear();
+      _particleId2BufferPosition.reserve(this->_neighborList.getNumberOfParticles());
 
       size_t particleBufferPosition = 0;
       for (auto iter = this->begin(IteratorBehavior::owned); iter.isValid(); ++iter) {
           std::pair<Particle *, std::array<double, 3>> particlePositionPair = std::make_pair(&(*iter), (*iter).getR());
           _particlePtr2rebuildPositionBuffer.emplace_back(particlePositionPair);
-          std::pair<Particle *, size_t> particleMapping = std::make_pair(&(*iter), particleBufferPosition);
-          _particlePtr2BufferPosition.emplace(particleMapping);
+          std::pair<unsigned long, size_t> particleMapping = std::make_pair((*iter).getID(), particleBufferPosition);
+          _particleId2BufferPosition.emplace(particleMapping);
           ++particleBufferPosition;
       }
     }
     else {
-
+      // TODO : think about chunk size
+#pragma omp parallel for reduction (+:numRebuildCells, numExchangingCells) schedule (dynamic, 10)
       for (FullParticleCell<Particle> &cell : this->_linkedCells.getCells()) {
           if (cell.getDirty()) {
+            ++numRebuildCells;
+
+            if (cell.getExchangingDirty()) {
+              ++numExchangingCells;
+            }
+
             // update every "dirty" particle in the rebuildPositionBuffer
             for (auto iter = cell.begin(); iter != cell.end(); ++iter) {
               std::pair<Particle *, std::array<double, 3>> particlePositionPair = std::make_pair(&(*iter), (*iter).getR());
-              if (_particlePtr2BufferPosition.find(&(*iter)) != _particlePtr2BufferPosition.end()) {
-                auto particleBufferPosition = _particlePtr2BufferPosition.at(&(*iter));
+              if (_particleId2BufferPosition.find((*iter).getID()) != _particleId2BufferPosition.end()) {
+                auto particleBufferPosition = _particleId2BufferPosition.at((*iter).getID());
                 _particlePtr2rebuildPositionBuffer.at(particleBufferPosition) = particlePositionPair;
               }
               else {
-                _particlePtr2rebuildPositionBuffer.emplace_back(particlePositionPair);
-                _particlePtr2BufferPosition.emplace(
-                   std::make_pair(&(*iter), _particlePtr2rebuildPositionBuffer.size() - 1));
+#pragma omp critical
+                {
+                  _particlePtr2rebuildPositionBuffer.emplace_back(particlePositionPair);
+                  _particleId2BufferPosition.emplace(
+                      std::make_pair((*iter).getID(), _particlePtr2rebuildPositionBuffer.size() - 1));
+                }
               }
 
             }
             cell.setDirty(false);
+            cell.setExchangingDirty(false);
           }
       }
     }
+    // std::cout << "Ratio of dirty cells: " << (numRebuildCells * 1.0) / this->_linkedCells.getCells().size() << "\n" << std::endl;
+    this->_cellRebuildCounter.emplace_back(numRebuildCells);
+    this->_cellExchangeCounter.emplace_back(numExchangingCells);
   }
 
   std::vector<std::pair<Particle*, std::array<double, 3>>> _particlePtr2rebuildPositionBuffer;
-  std::unordered_map<Particle*, size_t> _particlePtr2BufferPosition;
-
+  // TODO : think about how to determine particle's id type with template parameter
+  std::unordered_map<unsigned long, size_t> _particleId2BufferPosition;
 };
 
 }

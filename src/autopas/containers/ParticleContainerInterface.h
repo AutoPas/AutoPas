@@ -106,6 +106,12 @@ class ParticleContainerInterface {
     addParticleImpl(p);
   };
 
+  virtual size_t getNumRebuildCells () { return 0; }
+
+  virtual size_t getNumExchangeCells() { return 0; }
+
+  virtual size_t getNumMovingCells() { return 0; }
+
  protected:
   /**
    * Adds a particle to the container.

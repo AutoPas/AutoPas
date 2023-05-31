@@ -437,6 +437,18 @@ class LogicHandler {
     return _rebuildDistances.empty() ? 0 : (std::accumulate(_rebuildDistances.begin(), _rebuildDistances.end(), 0) * 1.0) / _rebuildDistances.size();
   }
 
+  size_t getNumRebuildCells() const {
+    return _autoTuner.getContainer()->getNumRebuildCells();
+  }
+
+  size_t getNumExchangeCells() const {
+    return _autoTuner.getContainer()->getNumExchangeCells();
+  }
+
+  size_t getNumMovingCells() const {
+    return _autoTuner.getContainer()->getNumMovingCells();
+  }
+
  private:
   void checkMinimalSize() {
     auto container = _autoTuner.getContainer();

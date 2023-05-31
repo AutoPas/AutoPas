@@ -96,6 +96,13 @@ class SortedCellView : public ParticleCell<Particle> {
                      _particles.end());
   }
 
+  void deleteHaloParticles() override {
+    _particles.erase(
+        std::remove_if(_particles.begin(), _particles.end(),
+                       [](const auto &particlePosPair) { return particlePosPair.second->isHalo(); }),
+        _particles.end());
+  }
+
   void deleteByIndex(size_t index) override {
     if (index >= numParticles()) {
       AutoPasLog(ERROR, "Index out of range");

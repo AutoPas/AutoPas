@@ -153,6 +153,77 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     traversal->endTraversal();
   }
 
+  std::vector<ParticleType> updateContainer(bool keepNeighborListsValid, bool partialRebuilding) {
+    if (!partialRebuilding) {
+      return updateContainer(keepNeighborListsValid);
+    }
+
+    if (keepNeighborListsValid) {
+      return autopas::LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);
+    }
+
+    std::vector<ParticleType> invalidParticles;
+
+    this->deleteHaloParticles();
+
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel
+#endif  // AUTOPAS_OPENMP
+    {
+      // private for each thread!
+      std::vector<ParticleType> myInvalidParticles{}, myInvalidNotOwnedParticles{};
+      // TODO: needs smarter heuristic than this.
+      myInvalidParticles.reserve(128);
+      myInvalidNotOwnedParticles.reserve(128);
+#ifdef AUTOPAS_OPENMP
+#pragma omp for
+#endif  // AUTOPAS_OPENMP
+      for (size_t cellId = 0; cellId < this->getCells().size(); ++cellId) {
+        // Delete dummy particles of each cell.
+        this->getCells()[cellId].deleteDummyParticles();
+
+        // if empty
+        if (this->getCells()[cellId].isEmpty()) continue;
+
+        const auto [cellLowerCorner, cellUpperCorner] = this->getCellBlock().getCellBoundingBox(cellId);
+
+        auto &particleVec = this->getCells()[cellId]._particles;
+        for (auto pIter = particleVec.begin(); pIter < particleVec.end();) {
+          // if not in cell
+          if (utils::notInBox(pIter->getR(), cellLowerCorner, cellUpperCorner) && this->getCells()[cellId].getDirty()) {
+            myInvalidParticles.push_back(*pIter);
+            // swap-delete
+            *pIter = particleVec.back();
+            particleVec.pop_back();
+          } else {
+            ++pIter;
+          }
+        }
+      }
+      // implicit barrier here
+      // the barrier is needed because iterators are not threadsafe w.r.t. addParticle()
+
+      // this loop is executed for every thread and thus parallel. Don't use #pragma omp for here!
+      for (auto &&p : myInvalidParticles) {
+        // if not in halo
+        if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
+          this->template addParticle<false>(p);
+        } else {
+          myInvalidNotOwnedParticles.push_back(p);
+        }
+      }
+#ifdef AUTOPAS_OPENMP
+#pragma omp critical
+#endif
+      {
+        // merge private vectors to global one.
+        invalidParticles.insert(invalidParticles.end(), myInvalidNotOwnedParticles.begin(),
+                                myInvalidNotOwnedParticles.end());
+      }
+    }
+    return invalidParticles;
+  }
+
   [[nodiscard]] std::vector<ParticleType> updateContainer(bool keepNeighborListsValid) override {
     if (keepNeighborListsValid) {
       return autopas::LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);
@@ -187,7 +258,6 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
           // if not in cell
           if (utils::notInBox(pIter->getR(), cellLowerCorner, cellUpperCorner)) {
             myInvalidParticles.push_back(*pIter);
-            this->getCells()[cellId].setDirty(true);
             // swap-delete
             *pIter = particleVec.back();
             particleVec.pop_back();

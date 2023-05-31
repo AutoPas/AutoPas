@@ -184,6 +184,12 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
         _particles.end());
   }
 
+  void deleteHaloParticles() override {
+    _particles.erase(
+        std::remove_if(_particles.begin(), _particles.end(), [](const auto &particle) { return particle->isHalo(); }),
+        _particles.end());
+  }
+
   void deleteByIndex(size_t index) override {
     std::lock_guard<AutoPasLock> lock(_particlesLock);
     if (index >= numParticles()) {

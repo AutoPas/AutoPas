@@ -1,6 +1,6 @@
 container                        :  [DynamicPairwiseVerletLists]
-verlet-rebuild-frequency         :  100
-verlet-skin-radius-per-timestep  :  0.006
+verlet-rebuild-frequency         :  1000
+verlet-skin-radius-per-timestep  :  0.0009
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [AoS]
@@ -9,8 +9,8 @@ tuning-strategy                  :  full-Search
 tuning-interval                  :  2500
 tuning-samples                   :  3
 tuning-max-evidence              :  10
-functor                          :  Lennard-Jones
-newton3                          :  [disabled]
+functor                          :  Lennard-Jones avx
+newton3                          :  [enabled]
 cutoff                           :  3
 box-min                          :  [0, 0, 0]
 box-max                          :  [7.25, 7.25, 7.25]
@@ -47,7 +47,7 @@ Objects:
 #   deltaTemperature               :  0.1
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
-vtk-filename                     :  fallingDropDynamicPairs
+vtk-filename                     :  fallingDropDynamicPairsPartial
 vtk-write-frequency              :  100
 no-flops                         :  false
 no-end-config                    :  true

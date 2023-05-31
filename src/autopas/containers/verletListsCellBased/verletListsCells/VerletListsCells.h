@@ -121,12 +121,15 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
 
     _neighborList.buildAoSNeighborList(this->_linkedCells, this->_verletBuiltNewton3, this->getCutoff(),
                                        this->getVerletSkin(), this->getInteractionLength(), TraversalOption::lc_c18,
-                                       _buildType, _partialRebuilding);
+                                       _buildType, this->_partialRebuilding);
 
     if (traversal->getDataLayout() == DataLayoutOption::soa) {
       _neighborList.generateSoAFromAoS(this->_linkedCells);
     }
 
+    if (!this->_partialRebuilding) {
+      this->_cellRebuildCounter.emplace_back(this->_linkedCells.getCells().size());
+    }
     // the neighbor list is now valid
     this->_neighborListIsValid.store(true, std::memory_order_relaxed);
   }
@@ -141,13 +144,29 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
     return this->_linkedCells.getCellBlock().getCellLength();
   }
 
+  size_t getNumRebuildCells() override {
+    return std::accumulate(this->_cellRebuildCounter.begin(), this->_cellRebuildCounter.end(), 0);
+  }
+
+  size_t getNumExchangeCells() override {
+    return std::accumulate(this->_cellExchangeCounter.begin(), this->_cellExchangeCounter.end(), 0);
+  }
+
+  size_t getNumMovingCells() override {
+    return std::accumulate(this->_cellMovingCounter.begin(), this->_cellMovingCounter.end(), 0);
+  }
+
  protected:
   /**
    * Neighbor list abstraction for neighbor list used in the container.
    */
   NeighborList _neighborList;
 
-  bool _partialRebuilding {false};
+  std::vector<size_t> _cellRebuildCounter;
+
+  std::vector<size_t> _cellExchangeCounter;
+
+  std::vector<size_t> _cellMovingCounter;
 
 private:
   /**

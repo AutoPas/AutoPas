@@ -946,6 +946,12 @@ class AutoPas {
 
   double getMeanRebuildFrequency () { return _logicHandler->getMeanRebuildFrequency(); }
 
+  size_t getNumRebuildCells () { return _logicHandler->getNumRebuildCells(); }
+
+  size_t getNumExchangeCells() { return _logicHandler->getNumExchangeCells(); }
+
+  size_t getNumMovingCells() { return _logicHandler->getNumMovingCells(); }
+
  private:
   std::shared_ptr<autopas::ParticleContainerInterface<Particle>> getContainer();
 

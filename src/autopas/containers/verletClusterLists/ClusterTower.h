@@ -327,6 +327,10 @@ class ClusterTower : public ParticleCell<Particle> {
     _numDummyParticles = 0;
   }
 
+  void deleteHaloParticles() override {
+    _particlesStorage.deleteHaloParticles();
+  }
+
   void deleteByIndex(size_t index) override {
     /// @note The implementation of this function prevents a regionIterator to make sorted assumptions of particles
     /// inside a cell! supporting this would mean that the deleted particle should be swapped to the end of the valid
