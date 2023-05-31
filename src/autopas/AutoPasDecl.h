@@ -262,6 +262,16 @@ class AutoPas {
   bool iteratePairwise(Functor *f);
 
   /**
+   * Function to iterate over all triplets of particles in the container.
+   * This function only handles short-range interactions with a cutoff criterion that all three pairs of particles are no more
+   * than the cutoff distance apart.
+   * @param f Functor that describes the triplet-potential.
+   * @return true if this was a tuning iteration.
+   */
+  template <class Functor>
+  bool iterateTriwise(Functor *f);
+
+  /**
    * Iterate over all particles by using
    * for(auto iter = autoPas.begin(); iter.isValid(); ++iter)
    * @param behavior The behavior of the iterator. You can specify whether to iterate over owned particles, halo
@@ -1039,10 +1049,16 @@ class AutoPas {
   std::set<ContainerOption> _allowedContainers{ContainerOption::getMostOptions()};
 
   /**
-   * List of traversals AutoPas can choose from.
+   * List of pairwise traversals AutoPas can choose from.
    * For possible traversal choices see options::TraversalOption::Value.
    */
   std::set<TraversalOption> _allowedTraversals{TraversalOption::getMostOptions()};
+
+  /**
+   * List of 3-body traversals AutoPas can choose from.
+   * For possible traversal choices see options::TriwiseTraversalOption::Value.
+   */
+  std::set<TriwiseTraversalOption> _allowedTriwiseTraversals{TriwiseTraversalOption::getMostOptions()};
 
   /**
    * List of data layouts AutoPas can choose from.
