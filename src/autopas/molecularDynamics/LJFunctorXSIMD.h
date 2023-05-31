@@ -9,6 +9,8 @@
 #include "autopas/utils/WrapOpenMP.h"
 #include "xsimd/xsimd.hpp"
 
+#include "hwy/highway.h"
+
 namespace autopas {
 /**
  * A functor to handle lennard-jones interactions between two particles (molecules).
@@ -117,6 +119,7 @@ class LJFunctorXSIMD
        if (dr2 > _cutoffsquareAoS) {
          return;
        }
+
 
        double invdr2 = 1. / dr2;
        double lj6 = sigmasquare * invdr2;
