@@ -533,6 +533,15 @@ class AutoPas {
       containerPtr->reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
     });
   }
+
+  /**
+   * Increments any iteration-based counters within AutoPas.
+   */
+  void incrementIterationCounters() {
+    _logicHandler->incrementNumStepsSinceLastRebuild();
+    _autoTuner->incrementIterationCounters();
+  }
+
   /**
    * Function to iterate over all pairs of particles in the container.
    * This function only handles short-range interactions.

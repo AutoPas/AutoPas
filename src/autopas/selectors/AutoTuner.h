@@ -210,6 +210,14 @@ class AutoTuner {
    */
   bool searchSpaceIsTrivial();
 
+  /**
+   * Increments iteration counters. Specifically _iteration and _iterationsSinceTuning.
+   */
+  void incrementIterationCounters() {
+    ++_iterationsSinceTuning;
+    ++_iteration;
+  }
+
  private:
   /**
    * Initialize or update the spacial locks used during the remainder traversal.
@@ -526,11 +534,6 @@ bool AutoTuner<Particle>::iteratePairwise(PairwiseFunctor *f, bool doListRebuild
     default:
       utils::ExceptionHandler::exception("AutoTuner: Unknown data layout : {}",
                                          _tuningStrategy->getCurrentConfiguration().dataLayout);
-  }
-
-  if (f->isRelevantForTuning()) {
-    ++_iterationsSinceTuning;
-    ++_iteration;
   }
   return isTuning;
 }

@@ -329,7 +329,6 @@ class LogicHandler {
       _neighborListsAreValid.store(true, std::memory_order_relaxed);
       _stepsSinceLastListRebuild = 0;
     }
-    ++_stepsSinceLastListRebuild;
 
     return result;
   }
@@ -435,6 +434,10 @@ class LogicHandler {
    * @return
    */
   [[nodiscard]] unsigned long getNumParticlesHalo() const { return _numParticlesHalo; }
+
+  void incrementNumStepsSinceLastRebuild() {
+    _stepsSinceLastListRebuild++;
+  }
 
  private:
   void checkMinimalSize() {
