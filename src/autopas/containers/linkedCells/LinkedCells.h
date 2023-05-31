@@ -190,11 +190,28 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
         auto &particleVec = this->getCells()[cellId]._particles;
         for (auto pIter = particleVec.begin(); pIter < particleVec.end();) {
           // if not in cell
-          if (utils::notInBox(pIter->getR(), cellLowerCorner, cellUpperCorner) && this->getCells()[cellId].getDirty()) {
-            myInvalidParticles.push_back(*pIter);
-            // swap-delete
-            *pIter = particleVec.back();
-            particleVec.pop_back();
+          if (utils::notInBox(pIter->getR(), cellLowerCorner, cellUpperCorner)) {
+
+            // delete and exchange if original cell is dirty
+            if (this->getCells()[cellId].getDirty()) {
+              myInvalidParticles.push_back(*pIter);
+              // swap-delete
+              *pIter = particleVec.back();
+              particleVec.pop_back();
+            }
+            // delete and exchange if target cell is dirty
+            else if (this->getCellBlock().getContainingCell(pIter->getR()).getDirty()) {
+              this->getCells()[cellId].setDirty(true);
+              myInvalidParticles.push_back(*pIter);
+              // swap-delete
+              *pIter = particleVec.back();
+              particleVec.pop_back();
+            }
+            else {
+              ++pIter;
+            }
+
+
           } else {
             ++pIter;
           }
