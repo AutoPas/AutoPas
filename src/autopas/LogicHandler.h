@@ -335,6 +335,26 @@ class LogicHandler {
   }
 
   /**
+   * @copydoc AutoPas::iterateTriwise()
+   */
+  template <class Functor>
+  bool iterateTriwise(Functor *f) {
+    const bool doRebuild = not neighborListsAreValid();
+
+    bool result = _autoTuner.iterateTriwise(f, doRebuild, _particleBuffer, _haloParticleBuffer);
+
+    // @todo handling of _stepsSinceLastListRebuild doesn't work properly for iterateTriwise -- don't merge until this is fixed
+    if (doRebuild /*we have done a rebuild now*/) {
+      // list is now valid
+      _neighborListsAreValid.store(true, std::memory_order_relaxed);
+      _stepsSinceLastListRebuild = 0;
+    }
+    ++_stepsSinceLastListRebuild;
+
+    return result;
+  }
+
+  /**
    * Create the additional vectors vector for a given iterator behavior.
    * @tparam Iterator
    * @param behavior

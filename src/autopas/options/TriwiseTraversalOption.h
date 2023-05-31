@@ -1,7 +1,7 @@
 /**
- * @file TraversalOption.h
- * @author F. Gratl
- * @date 1/18/19
+ * @file TriwiseTraversalOption.h
+ * @author S. Newcome
+ * @date 31/05/2023
  */
 
 #pragma once
