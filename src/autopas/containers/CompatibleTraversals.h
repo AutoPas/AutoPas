@@ -160,6 +160,9 @@ static inline const std::set<TraversalOption> &allCompatibleTraversals(Container
     case ContainerOption::dynamicPairwiseVerletLists: {
       return allVLPCompatibleTraversals();
     }
+    case ContainerOption::partialPairwiseVerletLists: {
+      return allVLPCompatibleTraversals();
+    }
     case ContainerOption::octree: {
       return allOTCompatibleTraversals();
     }

@@ -1,4 +1,4 @@
-container                        :  [DynamicPairwiseVerletLists]
+container                        :  [PartialPairwiseVerletLists]
 verlet-rebuild-frequency         :  1000
 verlet-skin-radius-per-timestep  :  0.0009
 verlet-cluster-size              :  4
@@ -47,7 +47,7 @@ Objects:
 #   deltaTemperature               :  0.1
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
-vtk-filename                     :  fallingDropDynamicPairs
+vtk-filename                     :  fallingDropDynamicPairsPartial
 vtk-write-frequency              :  100
 no-flops                         :  false
 no-end-config                    :  true

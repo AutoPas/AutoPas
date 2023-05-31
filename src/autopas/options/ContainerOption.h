@@ -73,6 +73,8 @@ class ContainerOption : public Option<ContainerOption> {
 
     dynamicPairwiseVerletLists,
 
+    partialPairwiseVerletLists,
+
     /**
      * PairwiseVerletLists : Also similar to VerletLists but the lists are associated to each pair of neighboring cells.
      * Improves data locality and cache efficiency.
@@ -126,6 +128,7 @@ class ContainerOption : public Option<ContainerOption> {
         {ContainerOption::verletListsCells, "VerletListsCells"},
         {ContainerOption::dynamicVerletListsCells, "DynamicVerletListsCells"},
         {ContainerOption::dynamicPairwiseVerletLists, "DynamicPairwiseVerletLists"},
+        {ContainerOption::partialPairwiseVerletLists, "PartialPairwiseVerletLists"},
         {ContainerOption::verletClusterLists, "VerletClusterLists"},
         {ContainerOption::varVerletListsAsBuild, "VarVerletListsAsBuild"},
         {ContainerOption::pairwiseVerletLists, "PairwiseVerletLists"},
