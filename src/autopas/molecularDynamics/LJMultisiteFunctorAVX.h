@@ -12,7 +12,6 @@
 #endif
 
 #include <array>
-// #include <chrono>
 
 #include "../pairwiseFunctors/Functor.h"
 #include "../utils/ExceptionHandler.h"
@@ -117,7 +116,7 @@ class LJMultisiteFunctorAVX
 
   bool buildVectors = true;  // only build vectors once
 
-  // Experimental site vectors
+  // Vectors used to speed up the verlet functor
   std::vector<double, autopas::AlignedAllocator<double>> _exactSitePositionsX;
   std::vector<double, autopas::AlignedAllocator<double>> _exactSitePositionsY;
   std::vector<double, autopas::AlignedAllocator<double>> _exactSitePositionsZ;
@@ -337,7 +336,7 @@ class LJMultisiteFunctorAVX
   }
 
   /**
-   * @TODO Documentation
+   * SoAFunctorSingle Implementation.
    */
  private:
   template <bool newton3>
@@ -706,7 +705,7 @@ class LJMultisiteFunctorAVX
   }
 
   /**
-   * Implementation function of SoAFunctorPair(soa1, soa2, newton3)
+   * Implementation of SoAFunctorPair(soa1, soa2, newton3)
    * @tparam newton3 flag for if newton's third law is used
    * @param soaA structure of arrays A
    * @param soaB structure of arrays B
@@ -901,7 +900,7 @@ class LJMultisiteFunctorAVX
 
       for (size_t molB = 0, siteIndex = 0; molB < soaB.getNumberOfParticles(); ++molB) {
         bool condition = static_cast<bool>(molMask[molB]);
-        size_t siteCount = _PPLibrary->getNumSites(typeptrB[molB]);  // TODO: change if no mixing is used
+        size_t siteCount = useMixing?_PPLibrary->getNumSites(typeptrB[molB]):const_unrotatedSitePositions.size();
         if (condition) {
           for (size_t siteB = 0; siteB < siteCount; ++siteB) {
             siteVector.emplace_back(siteIndex++);
@@ -1108,7 +1107,7 @@ class LJMultisiteFunctorAVX
     }
   }
 
-  // TODO Documentation
+  // Implementation for SoAFunctorVerlet
   template <bool newton3>
   void SoAFunctorVerletImpl(SoAView<SoAArraysType> soa, const size_t indexFirst,
                             const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
@@ -1411,7 +1410,10 @@ class LJMultisiteFunctorAVX
     }
   }
 
-  // TODO Documentation
+  /** Constructs site vectors for the given SoA.
+   * @param soa the SoA to construct the site vectors for.
+   * @note This function should be called exactly once per iteration
+   */
   inline void buildSiteVectors(SoAView<SoAArraysType> soa) {
     const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();

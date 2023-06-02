@@ -10,8 +10,6 @@
 #define AOS_VS_SOA_ACCURACY 1e-8
 #define PARTICLES_PER_DIM 8
 
-#include <chrono>
-
 void LJMultisiteFunctorCTSTest::generatePPL(ParticlePropertiesLibrary<double, size_t> *PPL) {
   PPL->addSiteType(0, 1, 1, 1);
   PPL->addSiteType(1, 0.5, 0.5, 0.7);
@@ -86,12 +84,8 @@ void LJMultisiteFunctorCTSTest::testSoACellAgainstAoS(std::vector<autopas::Multi
 
   functor.SoALoader(cellSoA, cellSoA._particleSoABuffer, 0);
   // apply functor
-  using namespace std::chrono;
-  auto start = high_resolution_clock::now();
+
   functor.SoAFunctorSingle(cellSoA._particleSoABuffer, newton3);
-  auto end = high_resolution_clock::now();
-  auto duration = duration_cast<microseconds>(end - start);
-  std::cout << "SoA functor took " << duration.count() << " microseconds." << std::endl;
 
   // copy back to original particle array
   moleculesSoA.clear();
@@ -183,12 +177,7 @@ void LJMultisiteFunctorCTSTest::testSoACellPairAgainstAoS(std::vector<autopas::M
   functor.SoALoader(cellSoAB, cellSoAB._particleSoABuffer, 0);
 
   // apply functor
-  using namespace std::chrono;
-  auto start = high_resolution_clock::now();
   functor.SoAFunctorPair(cellSoAA._particleSoABuffer,cellSoAB._particleSoABuffer, newton3);
-  auto end = high_resolution_clock::now();
-  auto duration = duration_cast<microseconds>(end - start);
-  std::cout << "SoA functor took " << duration.count() << " microseconds." << std::endl;
 
   // copy back to original particle array
   moleculesSoAA.clear();
@@ -305,14 +294,9 @@ void LJMultisiteFunctorCTSTest::testSoAVerletAgainstAoS(std::vector<autopas::Mul
   functor.SoALoader(cellSoA, cellSoA._particleSoABuffer, 0);
 
   // apply functor
-  using namespace std::chrono;
-  auto start = high_resolution_clock::now();
   for (size_t i = 0; i < numberMolecules; ++i) {
     functor.SoAFunctorVerlet(cellSoA._particleSoABuffer, i, neighborLists[i], newton3);
   }
-  auto end = high_resolution_clock::now();
-  auto duration = duration_cast<microseconds>(end - start);
-  std::cout << "SoA functor took " << duration.count() << " microseconds." << std::endl;
 
   // copy back to original particle array
   moleculesSoA.clear();
