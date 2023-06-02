@@ -62,7 +62,8 @@ class PartialVerletListsCells : public DynamicVerletListsCells<Particle, Neighbo
   void generateRebuildPositionMap() override {
 
     size_t numRebuildCells {0};
-    size_t numExchangingCells {0};
+    size_t numInflowCells{0};
+    size_t numOutflowCells{0};
 
     if (!this->_partialRebuilding) {
       // every particle's position needs to be updated
@@ -82,13 +83,17 @@ class PartialVerletListsCells : public DynamicVerletListsCells<Particle, Neighbo
     }
     else {
       // TODO : think about chunk size
-#pragma omp parallel for reduction (+:numRebuildCells, numExchangingCells) schedule (dynamic, 10)
+#pragma omp parallel for reduction (+:numRebuildCells, numInflowCells, numOutflowCells) schedule (dynamic, 10)
       for (FullParticleCell<Particle> &cell : this->_linkedCells.getCells()) {
-        if (cell.getDirty()) {
+        if (cell.getDirty() || cell.getInflowDirty() || cell.getOutflowDirty()) {
           ++numRebuildCells;
 
-          if (cell.getExchangingDirty()) {
-            ++numExchangingCells;
+          if (cell.getInflowDirty()) {
+            ++numInflowCells;
+          }
+
+          if (cell.getOutflowDirty()) {
+            ++numOutflowCells;
           }
 
           // update every "dirty" particle in the rebuildPositionBuffer
@@ -109,13 +114,14 @@ class PartialVerletListsCells : public DynamicVerletListsCells<Particle, Neighbo
 
           }
           cell.setDirty(false);
-          cell.setExchangingDirty(false);
+          cell.setInflowDirty(false);
+          cell.setOutflowDirty(false);
         }
       }
     }
-    // std::cout << "Ratio of dirty cells: " << (numRebuildCells * 1.0) / this->_linkedCells.getCells().size() << "\n" << std::endl;
+    this->_cellOutflowCounter.emplace_back(numOutflowCells);
     this->_cellRebuildCounter.emplace_back(numRebuildCells);
-    this->_cellExchangeCounter.emplace_back(numExchangingCells);
+    this->_cellInflowCounter.emplace_back(numInflowCells);
   }
 
  private:

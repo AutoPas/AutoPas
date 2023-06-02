@@ -108,7 +108,9 @@ class ParticleContainerInterface {
 
   virtual size_t getNumRebuildCells () { return 0; }
 
-  virtual size_t getNumExchangeCells() { return 0; }
+  virtual size_t getNumInflowCells() { return 0; }
+
+  virtual size_t getNumOutflowCells() { return 0; }
 
   virtual size_t getNumMovingCells() { return 0; }
 

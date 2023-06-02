@@ -69,7 +69,7 @@ public:
    for (size_t firstCellIndex = 0; firstCellIndex < cellsSize; ++firstCellIndex) {
 
      // either not partial rebuilding or the current cell is dirty
-     if (!partialRebuilding || cells[firstCellIndex].getDirty()) {
+     if (!partialRebuilding || cells[firstCellIndex].getDirty() || cells[firstCellIndex].getInflowDirty() ||cells[firstCellIndex].getOutflowDirty()) {
        size_t numParticlesFirstCell = cells[firstCellIndex].numParticles();
        this->_aosNeighborList[firstCellIndex].clear();
        this->_aosNeighborList[firstCellIndex].resize(neighborCells);
@@ -92,7 +92,7 @@ public:
        // have a look at this cells neighboring cells
        for (auto [globalIndex, localIndex] : this->_globalToLocalIndex.at(firstCellIndex)) {
          // neighboring cell is dirty
-         if (cells.at(globalIndex).getDirty()) {
+         if (cells.at(globalIndex).getDirty() || cells.at(globalIndex).getOutflowDirty() || cells.at(globalIndex).getInflowDirty()) {
            // clear all neighbor lists for this cell pair
            this->_aosNeighborList[firstCellIndex][localIndex].clear();
            size_t numParticlesFirstCell = cells[firstCellIndex].numParticles();

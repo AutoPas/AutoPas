@@ -51,8 +51,7 @@ class FullParticleCell : public ParticleCell<Particle> {
   void addParticle(const Particle &p) override {
     std::lock_guard guard(this->_cellLock);
     _particles.push_back(p);
-    this->_exchangingDirty.store(true, std::memory_order_relaxed);
-    this->_dirty.store(true, std::memory_order_relaxed);
+    this->_inflowDirty.store(true, std::memory_order_relaxed);
   }
 
   /**

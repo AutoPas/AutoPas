@@ -139,19 +139,27 @@ class ParticleCell {
     this->_dirty.store(dirty, std::memory_order_relaxed);
   }
 
-  void setExchangingDirty (bool dirty) {
-    this->_exchangingDirty.store(dirty, std::memory_order_relaxed);
+  void setInflowDirty(bool dirty) {
+    this->_inflowDirty.store(dirty, std::memory_order_relaxed);
+  }
+
+  void setOutflowDirty(bool dirty) {
+    this->_outflowDirty.store(dirty, std::memory_order_relaxed);
   }
 
   bool getDirty() { return this->_dirty.load(std::memory_order_relaxed); }
 
-  bool getExchangingDirty() { return this->_exchangingDirty.load(std::memory_order_relaxed); }
+  bool getInflowDirty() { return this->_inflowDirty.load(std::memory_order_relaxed); }
+
+  bool getOutflowDirty() { return this->_outflowDirty.load(std::memory_order_relaxed); }
 
  protected:
 
   std::atomic<bool> _dirty{false};
 
-  std::atomic<bool> _exchangingDirty{false};
+  std::atomic<bool> _outflowDirty{false};
+
+  std::atomic<bool> _inflowDirty{false};
 };
 
 }  // namespace autopas

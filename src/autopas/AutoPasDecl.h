@@ -948,7 +948,9 @@ class AutoPas {
 
   size_t getNumRebuildCells () { return _logicHandler->getNumRebuildCells(); }
 
-  size_t getNumExchangeCells() { return _logicHandler->getNumExchangeCells(); }
+  size_t getNumInflowCells() { return _logicHandler->getNumInflowCells(); }
+
+  size_t getNumOutflowCells() { return _logicHandler->getNumOutflowCells(); }
 
   size_t getNumMovingCells() { return _logicHandler->getNumMovingCells(); }
 

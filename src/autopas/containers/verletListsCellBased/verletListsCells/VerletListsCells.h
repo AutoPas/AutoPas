@@ -148,8 +148,12 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
     return std::accumulate(this->_cellRebuildCounter.begin(), this->_cellRebuildCounter.end(), 0);
   }
 
-  size_t getNumExchangeCells() override {
-    return std::accumulate(this->_cellExchangeCounter.begin(), this->_cellExchangeCounter.end(), 0);
+  size_t getNumInflowCells() override {
+    return std::accumulate(this->_cellInflowCounter.begin(), this->_cellInflowCounter.end(), 0);
+  }
+
+  size_t getNumOutflowCells() override {
+    return std::accumulate(this->_cellOutflowCounter.begin(), this->_cellOutflowCounter.end(), 0);
   }
 
   size_t getNumMovingCells() override {
@@ -164,7 +168,9 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
 
   std::vector<size_t> _cellRebuildCounter;
 
-  std::vector<size_t> _cellExchangeCounter;
+  std::vector<size_t> _cellInflowCounter;
+
+  std::vector<size_t> _cellOutflowCounter;
 
   std::vector<size_t> _cellMovingCounter;
 

@@ -441,8 +441,12 @@ class LogicHandler {
     return _autoTuner.getContainer()->getNumRebuildCells();
   }
 
-  size_t getNumExchangeCells() const {
-    return _autoTuner.getContainer()->getNumExchangeCells();
+  size_t getNumInflowCells() const {
+    return _autoTuner.getContainer()->getNumInflowCells();
+  }
+
+  size_t getNumOutflowCells() const {
+    return _autoTuner.getContainer()->getNumOutflowCells();
   }
 
   size_t getNumMovingCells() const {
