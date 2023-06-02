@@ -9,7 +9,7 @@
 #include "autopas/utils/WrapOpenMP.h"
 #include "xsimd/xsimd.hpp"
 
-#include "hwy/highway.h"
+
 
 namespace autopas {
 /**
