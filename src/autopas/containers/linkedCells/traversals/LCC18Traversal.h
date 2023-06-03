@@ -183,8 +183,8 @@ void LCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::proc
         this->_cellFunctor.processCell(baseCell);
       }
     } else {
-      if (!this->_onlyDirty || baseCell.getInflowDirty() || baseCell.getOutflowDirty() || baseCell.getDirty() ||
-          otherCell.getDirty() || otherCell.getInflowDirty() || otherCell.getOutflowDirty()) {
+      if (!this->_onlyDirty || baseCell.getOutflowDirty()|| baseCell.getDirty() ||
+          otherCell.getDirty() || otherCell.getOutflowDirty()) {
         this->_cellFunctor.processCellPair(baseCell, otherCell, r);
       }
     }

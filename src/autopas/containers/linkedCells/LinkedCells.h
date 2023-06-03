@@ -201,10 +201,16 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
             // delete and exchange if target cell is dirty
             else if (this->getCellBlock().getContainingCell(pIter->getR()).getDirty()) {
               this->getCells()[cellId].setOutflowDirty(true);
+              // Particle newP {*pIter};
               myInvalidParticles.push_back(*pIter);
+              /*
+              pIter->setOwnershipState(OwnershipState::dummy);
+              ++pIter;
+              */
               // swap-delete
               *pIter = particleVec.back();
               particleVec.pop_back();
+
             }
             else {
               ++pIter;
