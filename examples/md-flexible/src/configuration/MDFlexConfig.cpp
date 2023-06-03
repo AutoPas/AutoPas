@@ -318,7 +318,8 @@ std::string MDFlexConfig::to_string() const {
     printOption(checkpointfile);
   }
 
-  printOption(logLevel);
+  os << setw(valueOffset) << left << logLevel.name << ":  " << spdlog::level::to_string_view(logLevel.value).data()
+     << endl;
 
   os << setw(valueOffset) << left << dontMeasureFlops.name << ":  " << (not dontMeasureFlops.value) << endl;
   os << setw(valueOffset) << left << dontCreateEndConfig.name << ":  " << (not dontCreateEndConfig.value) << endl;
