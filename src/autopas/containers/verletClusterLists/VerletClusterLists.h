@@ -183,7 +183,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
-   * Adds the given particle to the container. rebuildVerletLists() has to be called to have it actually sorted in.
+   * Adds the given particle to the container. rebuildTowersAndClusters() has to be called to have it actually sorted
+   * in.
    * @param p The particle to add.
    */
   void addParticleImpl(const Particle &p) override {
@@ -490,6 +491,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       createIteratorFromParticlesToAdd<false>(additionalVectorsToPass);
     }
 
+    // pToAddEmpty we are in anon-rebuild-iteration and can simply pass additionalVectors, which saves buffer
+    // allocations
     return ContainerIterator<Particle, true, false>(*this, behavior,
                                                     pToAddEmpty ? additionalVectors : &additionalVectorsToPass);
   }
@@ -526,6 +529,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       createIteratorFromParticlesToAdd<false>(additionalVectorsToPass);
     }
 
+    // pToAddEmpty we are in anon-rebuild-iteration and can simply pass additionalVectors, which saves buffer
+    // allocations
     return ContainerIterator<Particle, false, false>(*this, behavior,
                                                      pToAddEmpty ? additionalVectors : &additionalVectorsToPass);
   }
@@ -662,6 +667,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       createIteratorFromParticlesToAdd<true>(additionalVectorsToPass);
     }
 
+    // pToAddEmpty we are in anon-rebuild-iteration and can simply pass additionalVectors, which saves buffer
+    // allocations
     return ContainerIterator<Particle, true, true>(
         *this, behavior, pToAddEmpty ? additionalVectors : &additionalVectorsToPass, lowerCorner, higherCorner);
   }
@@ -701,6 +708,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       createIteratorFromParticlesToAdd<true>(additionalVectorsToPass);
     }
 
+    // pToAddEmpty we are in anon-rebuild-iteration and can simply pass additionalVectors, which saves buffer
+    // allocations
     return ContainerIterator<Particle, false, true>(
         *this, behavior, pToAddEmpty ? additionalVectors : &additionalVectorsToPass, lowerCorner, higherCorner);
   }
