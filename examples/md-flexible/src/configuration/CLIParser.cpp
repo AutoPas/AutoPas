@@ -77,6 +77,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.verletRebuildFrequency,
       config.verletSkinRadiusPerTimestep,
       config.vtkFileName,
+      config.vtkOutputFolder,
       config.vtkWriteFrequency,
       config.yamlFilename,
       zshCompletionsOption,
@@ -551,6 +552,10 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.vtkFileName)::getoptChar: {
         config.vtkFileName.value = strArg;
+        break;
+      }
+      case decltype(config.vtkOutputFolder)::getoptChar: {
+        config.vtkOutputFolder.value = strArg;
         break;
       }
       case decltype(config.vtkWriteFrequency)::getoptChar: {
