@@ -162,9 +162,9 @@ class LJFunctorXSIMD
       */
      inline void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) final {
        if (newton3) {
-         SoAFunctorSingleImpl<true>(soa);
+         //SoAFunctorSingleImpl<true>(soa);
        } else {
-         SoAFunctorSingleImpl<false>(soa);
+         //SoAFunctorSingleImpl<false>(soa);
        }
      }
 
@@ -241,25 +241,10 @@ class LJFunctorXSIMD
                                  &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
          }
 
-         // horizontally reduce fDacc to sumfD
-         const xsimd::batch<double> hSumfxfy = xsimd::haddp((xsimd::batch<double>[]){fxacc, fyacc});
-         const xsimd::batch<double> hSumfz = xsimd::haddp((xsimd::batch<double>[]){fzacc, fzacc});
 
-
-
-         //TODO: what's up with this part?
-         const __m128d hSumfxfyLow = _mm256_extractf128_pd(hSumfxfy, 0);
-         const __m128d hSumfzLow = _mm256_extractf128_pd(hSumfz, 0);
-
-         const __m128d hSumfxfyHigh = _mm256_extractf128_pd(hSumfxfy, 1);
-         const __m128d hSumfzHigh = _mm256_extractf128_pd(hSumfz, 1);
-
-         const __m128d sumfxfyVEC = _mm_add_pd(hSumfxfyLow, hSumfxfyHigh);
-         const __m128d sumfzVEC = _mm_add_pd(hSumfzLow, hSumfzHigh);
-
-         const double sumfx = sumfxfyVEC[0];
-         const double sumfy = sumfxfyVEC[1];
-         const double sumfz = _mm_cvtsd_f64(sumfzVEC);
+         double sumfx = xsimd::reduce_add(fxacc);
+         double sumfy = xsimd::reduce_add(fyacc);
+         double sumfz = xsimd::reduce_add(fzacc);
 
          fxptr[i] += sumfx;
          fyptr[i] += sumfy;
@@ -348,19 +333,16 @@ class LJFunctorXSIMD
        //const xsimd::batch<double> cutoffMask = _mm256_cmp_pd(dr2, _cutoffsquare, _CMP_LE_OS);
        const xsimd::batch_bool<double> cutoffMask = xsimd::le(dr2, _cutoffsquare);
 
-       //TODO: what is the reason behind the dummy? //
-       // This requires that dummy is zero (otherwise when loading using a mask the owned state will not be zero)
-       const __m256i ownedStateJ = remainderIsMasked
-                                       ? _mm256_castpd_si256(_mm256_maskload_pd(
-                                             reinterpret_cast<double const *>(&ownedStatePtr2[j]), _masks[rest - 1]))
-                                       : _mm256_loadu_si256(reinterpret_cast<const __m256i *>(&ownedStatePtr2[j]));
+       const xsimd::batch<double> ownedStateJ = remainderIsMasked
+                                       ? xsimd::bitwise_and(
+                                                xsimd::bitwise_cast<double>(ownedStatePtr2[j]), _masks[rest - 1])
+                                       : xsimd::bitwise_cast<double>(ownedStatePtr2[j]);
        // This requires that dummy is the first entry in OwnershipState!
-       const xsimd::batch<double> dummyMask = xsimd::neq()
-       const xsimd::batch<double> dummyMask = _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateJ), _zero, _CMP_NEQ_UQ);
-       const xsimd::batch<double> cutoffDummyMask = _mm256_and_pd(cutoffMask, dummyMask);
+       const xsimd::batch_bool<double> dummyMask = xsimd::neq(ownedStateJ, _zero);
+       const xsimd::batch_bool<double> cutoffDummyMask = xsimd::bitwise_and(cutoffMask, dummyMask);
 
        // if everything is masked away return from this function.
-       if (_mm256_movemask_pd(cutoffDummyMask) == 0) {
+       if (none(cutoffDummyMask)) {
          return;
        }
 
@@ -374,10 +356,9 @@ class LJFunctorXSIMD
        const xsimd::batch<double> lj12m6alj12e = xsimd::mul(lj12m6alj12, epsilon24s);
        const xsimd::batch<double> fac = xsimd::mul(lj12m6alj12e, invdr2);
 
-       //TODO: remainderIsMasked not clear
        const xsimd::batch<double> facMasked =
-           remainderIsMasked ? _mm256_and_pd(fac, _mm256_and_pd(cutoffDummyMask, _mm256_castsi256_pd(_masks[rest - 1])))
-                             : _mm256_and_pd(fac, cutoffDummyMask);
+           remainderIsMasked ? xsimd::bitwise_and(fac, xsimd::select(cutoffDummyMask, _masks[rest - 1], _zero))
+                             : xsimd::select(cutoffDummyMask, fac, _zero);
 
        const xsimd::batch<double> fx = xsimd::mul(drx, facMasked);
        const xsimd::batch<double> fy = xsimd::mul(dry, facMasked);
@@ -390,50 +371,31 @@ class LJFunctorXSIMD
        // if newton 3 is used subtract fD from particle j
        if constexpr (newton3) {
          const xsimd::batch<double> fx2 =
-             remainderIsMasked ? _mm256_maskload_pd(&fx2ptr[j], _masks[rest - 1]) : _mm256_loadu_pd(&fx2ptr[j]);
+             remainderIsMasked ? xsimd::bitwise_and(xsimd::load(&fx2ptr[j]), _masks[rest - 1]) : xsimd::load(&fx2ptr[j]);
          const xsimd::batch<double> fy2 =
-             remainderIsMasked ? _mm256_maskload_pd(&fy2ptr[j], _masks[rest - 1]) : _mm256_loadu_pd(&fy2ptr[j]);
+             remainderIsMasked ? xsimd::bitwise_and(xsimd::load(&fy2ptr[j]), _masks[rest - 1]) : xsimd::load(&fy2ptr[j]);
          const xsimd::batch<double> fz2 =
-             remainderIsMasked ? _mm256_maskload_pd(&fz2ptr[j], _masks[rest - 1]) : _mm256_loadu_pd(&fz2ptr[j]);
+             remainderIsMasked ? xsimd::bitwise_and(xsimd::load(&fz2ptr[j]), _masks[rest - 1]) : xsimd::load(&fz2ptr[j]);
 
          const xsimd::batch<double> fx2new = xsimd::sub(fx2, fx);
          const xsimd::batch<double> fy2new = xsimd::sub(fy2, fy);
          const xsimd::batch<double> fz2new = xsimd::sub(fz2, fz);
 
-         remainderIsMasked ? _mm256_maskstore_pd(&fx2ptr[j], _masks[rest - 1], fx2new)
-                           : _mm256_storeu_pd(&fx2ptr[j], fx2new);
-         remainderIsMasked ? _mm256_maskstore_pd(&fy2ptr[j], _masks[rest - 1], fy2new)
-                           : _mm256_storeu_pd(&fy2ptr[j], fy2new);
-         remainderIsMasked ? _mm256_maskstore_pd(&fz2ptr[j], _masks[rest - 1], fz2new)
-                           : _mm256_storeu_pd(&fz2ptr[j], fz2new);
+
+         ;
+         remainderIsMasked ? xsimd::store(&fx2ptr[j], xsimd::bitwise_and(_masks[rest - 1], fx2new))
+                           : xsimd::store(&fx2ptr[j], fx2new);
+         remainderIsMasked ? xsimd::store(&fy2ptr[j], xsimd::bitwise_and(_masks[rest - 1], fy2new))
+                           : xsimd::store(&fy2ptr[j], fy2new);
+         remainderIsMasked ? xsimd::store(&fz2ptr[j], xsimd::bitwise_and(_masks[rest - 1], fz2new))
+                           : xsimd::store(&fz2ptr[j], fz2new);
        }
 
        if constexpr (calculateGlobals) {
-         // Global Virial
-         const xsimd::batch<double> virialX = xsimd::mul(fx, drx);
-         const xsimd::batch<double> virialY = xsimd::mul(fy, dry);
-         const xsimd::batch<double> virialZ = xsimd::mul(fz, drz);
-
-         // Global Potential
-         const xsimd::batch<double> upot = wrapperFMA(epsilon24s, lj12m6, shift6s);
-
-         const xsimd::batch<double> upotMasked =
-             remainderIsMasked ? _mm256_and_pd(upot, _mm256_and_pd(cutoffDummyMask, _mm256_castsi256_pd(_masks[rest - 1])))
-                               : _mm256_and_pd(upot, cutoffDummyMask);
-
-         xsimd::batch<double> ownedMaskI =
-             _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateI), _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
-         xsimd::batch<double> energyFactor = _mm256_blendv_pd(_zero, _one, ownedMaskI);
-         if constexpr (newton3) {
-           xsimd::batch<double> ownedMaskJ =
-               _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateJ), _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
-           energyFactor = _mm256_add_pd(energyFactor, _mm256_blendv_pd(_zero, _one, ownedMaskJ));
-         }
-         *upotSum = wrapperFMA(energyFactor, upotMasked, *upotSum);
-         *virialSumX = wrapperFMA(energyFactor, virialX, *virialSumX);
-         *virialSumY = wrapperFMA(energyFactor, virialY, *virialSumY);
-         *virialSumZ = wrapperFMA(energyFactor, virialZ, *virialSumZ);
+         //TODO
        }
+
+
      }
 
     private:
