@@ -65,11 +65,14 @@ public:
      }
    }
 
+   size_t dirtyCounter = 0;
+   size_t inflowCounter = 0;
    // initialize lists for every particle-cell pair
    for (size_t firstCellIndex = 0; firstCellIndex < cellsSize; ++firstCellIndex) {
 
      // either not partial rebuilding or the current cell is dirty
-     if (!partialRebuilding || cells[firstCellIndex].getDirty() || cells[firstCellIndex].getOutflowDirty()) {
+     if (!partialRebuilding || cells[firstCellIndex].getDirty() || cells[firstCellIndex].getOutflowDirty() || cells[firstCellIndex].getInflowDirty()) {
+       ++dirtyCounter;
        size_t numParticlesFirstCell = cells[firstCellIndex].numParticles();
        this->_aosNeighborList[firstCellIndex].clear();
        this->_aosNeighborList[firstCellIndex].resize(neighborCells);
@@ -79,7 +82,7 @@ public:
          size_t particleIndexCurrentCell = 0;
          for (auto &particle : cells[firstCellIndex]) {
            // for each particle in cell1 make a pair of particle and neighbor list
-           cellPair.emplace_back(std::make_pair(&particle, std::vector<Particle *>()));
+           cellPair.emplace_back(std::make_pair(&particle, std::vector<Particle *>{}));
 
            // add a pair of cell's index and particle's index in the cell
            this->_particleToCellMap[&particle] = std::make_pair(firstCellIndex, particleIndexCurrentCell);
@@ -88,37 +91,39 @@ public:
        }
      }
      // partial rebuilding and cell is inflow dirty
+     /*
      else if (cells.at(firstCellIndex).getInflowDirty()) {
+        ++inflowCounter;
        for (auto [globalIndex, localIndex] : this->_globalToLocalIndex.at(firstCellIndex)) {
          // only delete neighbour lists which are pointing to same cell
          if (globalIndex == firstCellIndex) {
-           // TODO : figure out what to do here as the following seems to break something
            // clear only the neighbor list which relates the particles in the same cell
            this->_aosNeighborList[firstCellIndex][localIndex].clear();
            size_t numParticlesFirstCell = cells[firstCellIndex].numParticles();
            this->_aosNeighborList[firstCellIndex][localIndex].reserve(numParticlesFirstCell);
            size_t particleIndexCurrentCell = 0;
            for (auto &particle : cells[firstCellIndex]) {
-             this->_aosNeighborList[firstCellIndex][localIndex].emplace_back(std::make_pair(&particle, std::vector<Particle *>()));
+             this->_aosNeighborList[firstCellIndex][localIndex].emplace_back(std::make_pair(&particle, std::vector<Particle *>{}));
              this->_particleToCellMap[&particle] = std::make_pair(firstCellIndex, particleIndexCurrentCell);
              particleIndexCurrentCell++;
            }
          }
        }
      }
+     */
      // partial rebuilding and base cell is not dirty
      else {
        // have a look at this cells neighboring cells
        for (auto [globalIndex, localIndex] : this->_globalToLocalIndex.at(firstCellIndex)) {
          // neighboring cell is dirty
-         if (cells.at(globalIndex).getDirty() || cells.at(globalIndex).getOutflowDirty()) {
+         if (cells.at(globalIndex).getDirty() || cells.at(globalIndex).getOutflowDirty() || cells.at(globalIndex).getInflowDirty()) {
            // clear all neighbor lists for this cell pair
            this->_aosNeighborList[firstCellIndex][localIndex].clear();
            size_t numParticlesFirstCell = cells[firstCellIndex].numParticles();
            this->_aosNeighborList[firstCellIndex][localIndex].reserve(numParticlesFirstCell);
            size_t particleIndexCurrentCell = 0;
            for (auto &particle : cells[firstCellIndex]) {
-             this->_aosNeighborList[firstCellIndex][localIndex].emplace_back(std::make_pair(&particle, std::vector<Particle *>()));
+             this->_aosNeighborList[firstCellIndex][localIndex].emplace_back(std::make_pair(&particle, std::vector<Particle *>{}));
              this->_particleToCellMap[&particle] = std::make_pair(firstCellIndex, particleIndexCurrentCell);
              particleIndexCurrentCell++;
            }

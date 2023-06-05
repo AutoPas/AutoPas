@@ -83,13 +83,17 @@ class PartialVerletListsCells : public DynamicVerletListsCells<Particle, Neighbo
     }
     else {
       // TODO : think about chunk size
-#pragma omp parallel for reduction (+:numRebuildCells, numInflowCells, numOutflowCells) schedule (dynamic, 10)
+#pragma omp parallel for reduction (+:numRebuildCells, numInflowCells, numOutflowCells) schedule (dynamic, 50)
       for (FullParticleCell<Particle> &cell : this->_linkedCells.getCells()) {
-        if (cell.getDirty() || cell.getOutflowDirty()) {
+        if (cell.getDirty() || cell.getOutflowDirty() || cell.getInflowDirty()) {
           ++numRebuildCells;
 
           if (cell.getOutflowDirty()) {
             ++numOutflowCells;
+          }
+
+          if (cell.getInflowDirty()) {
+            ++numInflowCells;
           }
 
           // update every "dirty" particle in the rebuildPositionBuffer
@@ -111,9 +115,6 @@ class PartialVerletListsCells : public DynamicVerletListsCells<Particle, Neighbo
           }
           cell.setDirty(false);
           cell.setOutflowDirty(false);
-        }
-        else if (cell.getInflowDirty()) {
-          ++numInflowCells;
           cell.setInflowDirty(false);
         }
       }
