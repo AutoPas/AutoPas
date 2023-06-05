@@ -44,7 +44,7 @@ std::vector<std::array<double, 3>> rotateVectorOfPositions(const std::array<doub
   return rotatedPositions;
 }
 
-std::array<double, 3> rotatePosition(const std::array<double, 4> q, const std::array<double, 3> pos) {
+std::array<double, 3> rotatePosition(const std::array<double, 4> &q, const std::array<double, 3> &pos) {
   // Alan Watt and Mark Watt (1992) Advanced Animation and Rendering Techniques: Theory and Practice
   const auto ww = q[0] * q[0];
   const auto wx = q[0] * q[1];
@@ -67,13 +67,12 @@ std::array<double, 3> rotatePosition(const std::array<double, 4> q, const std::a
   const auto r21 = 2. * (yz + wx);
   const auto r22 = ww - xx - yy + zz;
 
-  std::array<double, 3> rotatedPosition;
-
-  rotatedPosition[0] = r00 * pos[0] + r01 * pos[1] + r02 * pos[2];
-  rotatedPosition[1] = r10 * pos[0] + r11 * pos[1] + r12 * pos[2];
-  rotatedPosition[2] = r20 * pos[0] + r21 * pos[1] + r22 * pos[2];
-
-  return rotatedPosition;
+  // rotated position
+  return {
+      r00 * pos[0] + r01 * pos[1] + r02 * pos[2],
+      r10 * pos[0] + r11 * pos[1] + r12 * pos[2],
+      r20 * pos[0] + r21 * pos[1] + r22 * pos[2],
+  };
 }
 
 std::array<double, 3> rotatePositionBackwards(const std::array<double, 4> q, const std::array<double, 3> pos) {

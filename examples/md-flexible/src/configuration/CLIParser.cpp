@@ -662,8 +662,8 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case MDFlexConfig::GeneratorOption::sphere: {
         auto centerOfBox = config.particlesPerDim.value / 2.;
-        Sphere sphere(velocity, typeID, {(double)centerOfBox, (double)centerOfBox, (double)centerOfBox},
-                      (int)centerOfBox, config.particleSpacing.value);
+        Sphere sphere(velocity, typeID, {static_cast<double>(centerOfBox), static_cast<double>(centerOfBox), static_cast<double>(centerOfBox)},
+                      static_cast<int>(centerOfBox), config.particleSpacing.value);
         config.sphereObjects.push_back(sphere);
         break;
       }
