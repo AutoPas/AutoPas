@@ -306,4 +306,10 @@ bool AutoPas<Particle>::searchSpaceIsTrivial() {
   return _autoTuner->searchSpaceIsTrivial();
 }
 
+template <class Particle>
+void AutoPas<Particle>::incrementIterationCounters() {
+  _logicHandler->incrementNumStepsSinceLastRebuild();
+  _autoTuner->incrementIterationCounters();
+}
+
 }  // namespace autopas

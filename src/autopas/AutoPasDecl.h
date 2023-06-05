@@ -534,13 +534,6 @@ class AutoPas {
     });
   }
 
-  /**
-   * Increments any iteration-based counters within AutoPas.
-   */
-  void incrementIterationCounters() {
-    _logicHandler->incrementNumStepsSinceLastRebuild();
-    _autoTuner->incrementIterationCounters();
-  }
 
   /**
    * Function to iterate over all pairs of particles in the container.
@@ -582,6 +575,11 @@ class AutoPas {
    * @return bool indicating if search space is trivial.
    */
   [[nodiscard]] bool searchSpaceIsTrivial();
+
+  /**
+   * Increments any iteration-based counters within AutoPas.
+   */
+  [[nodiscard]] void incrementIterationCounters();
 
   /**
    * Set coordinates of the lower corner of the domain.
