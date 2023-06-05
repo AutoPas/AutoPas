@@ -252,6 +252,7 @@ void Simulation::run() {
     _timers.computationalLoad.stop();
 
     ++_iteration;
+    _autoPasContainer->incrementIterationCounters();
 
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Current Memory usage on rank " << _domainDecomposition->getDomainIndex() << ": "

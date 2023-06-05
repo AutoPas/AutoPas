@@ -537,7 +537,7 @@ int main(int argc, char *argv[]) {
 
   // 1 ---- START MAIN LOOP ----
   size_t step = 0;
-  for (double time = 0.; time < t_end && step < 55; time += dt, ++step) {
+  for (double time = 0.; time < t_end && step < 55; time += dt, ++step, sphSystem.incrementIterationCounters()) {
     if (rank == 0) {
       std::cout << "\n-------------------------\ntime step " << step << "(t = " << time << ")..." << std::endl;
     }
