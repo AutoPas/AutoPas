@@ -10,8 +10,8 @@
 
 namespace autopas::utils::quaternion {
 
-std::vector<std::array<double, 3>> rotateVectorOfPositions(const std::array<double, 4> q,
-                                                           const std::vector<std::array<double, 3>> positionVector) {
+std::vector<std::array<double, 3>> rotateVectorOfPositions(const std::array<double, 4> &q,
+                                                           const std::vector<std::array<double, 3>> &positionVector) {
   const auto ww = q[0] * q[0];
   const auto wx = q[0] * q[1];
   const auto wy = q[0] * q[2];
