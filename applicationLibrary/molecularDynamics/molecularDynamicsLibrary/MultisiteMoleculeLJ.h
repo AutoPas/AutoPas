@@ -328,23 +328,17 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
    * @return String representation.
    */
   [[nodiscard]] std::string toString() const override {
+    using autopas::utils::ArrayUtils::operator<<;
     std::ostringstream text;
-    std::ostringstream lj_str;
     // clang-format off
       text << "Particle"
          << "\nID                 : " << _id
-         << "\nPosition           : "
-         << autopas::utils::ArrayUtils::to_string(_r)
-         << "\nVelocity           : "
-         << autopas::utils::ArrayUtils::to_string(_v)
-         << "\nForce              : "
-         << autopas::utils::ArrayUtils::to_string(_f)
-         << "\nQuaternion         : "
-         << autopas::utils::ArrayUtils::to_string(_q)
-         << "\nRotational Velocity: "
-         << autopas::utils::ArrayUtils::to_string(_angularVel)
-         << "\nOwnershipState     : "
-         << _ownershipState;
+         << "\nPosition           : " << _r
+         << "\nVelocity           : " << _v
+         << "\nForce              : " << _f
+         << "\nQuaternion         : " << _q
+         << "\nRotational Velocity: " << _angularVel
+         << "\nOwnershipState     : " << _ownershipState;
     // clang-format on
     return text.str();
   }
