@@ -6,6 +6,8 @@
 
 #pragma once
 
+#define MD_FLEXIBLE_MULTI_SITE_AVX_FUNCTOR "autopas/molecularDynamics/LJMultisiteFunctorAVX.h"
+
 #if defined(MD_FLEXIBLE_USE_MULTI_SITE)
 
 #include "autopas/molecularDynamics/MultisiteMoleculeLJ.h"

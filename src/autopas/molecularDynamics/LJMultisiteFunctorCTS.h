@@ -198,174 +198,6 @@ class LJMultisiteFunctorCTS
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
- public:
-  /**
-   * Sets the particle properties constants for this functor.
-   *
-   * This is only necessary if no particlePropertiesLibrary is used.
-   * @param epsilon24 epsilon * 24
-   * @param sigmaSquared sigma^2
-   */
-  void setParticleProperties(SoAFloatPrecision epsilon24, SoAFloatPrecision sigmaSquared) {
-    _epsilon24AoS = epsilon24;
-    _sigmaSquaredAoS = sigmaSquared;
-    if (applyShift) {
-      _shift6AoS =
-          ParticlePropertiesLibrary<double, size_t>::calcShift6(_epsilon24AoS, _sigmaSquaredAoS, _cutoffSquaredAoS);
-    } else {
-      _shift6AoS = 0;
-    }
-  }
-
-  /**
-   * @copydoc Functor::getNeededAttr()
-   */
-  constexpr static auto getNeededAttr() {
-    return std::array<typename Particle::AttributeNames, 16>{
-        Particle::AttributeNames::id,          Particle::AttributeNames::posX,
-        Particle::AttributeNames::posY,        Particle::AttributeNames::posZ,
-        Particle::AttributeNames::forceX,      Particle::AttributeNames::forceY,
-        Particle::AttributeNames::forceZ,      Particle::AttributeNames::quaternion0,
-        Particle::AttributeNames::quaternion1, Particle::AttributeNames::quaternion2,
-        Particle::AttributeNames::quaternion3, Particle::AttributeNames::torqueX,
-        Particle::AttributeNames::torqueY,     Particle::AttributeNames::torqueZ,
-        Particle::AttributeNames::typeId,      Particle::AttributeNames::ownershipState};
-  }
-
-  /**
-   * @copydoc Functor::getNeededAttr(std::false_type)
-   */
-  constexpr static auto getNeededAttr(std::false_type) {
-    return std::array<typename Particle::AttributeNames, 16>{
-        Particle::AttributeNames::id,          Particle::AttributeNames::posX,
-        Particle::AttributeNames::posY,        Particle::AttributeNames::posZ,
-        Particle::AttributeNames::forceX,      Particle::AttributeNames::forceY,
-        Particle::AttributeNames::forceZ,      Particle::AttributeNames::quaternion0,
-        Particle::AttributeNames::quaternion1, Particle::AttributeNames::quaternion2,
-        Particle::AttributeNames::quaternion3, Particle::AttributeNames::torqueX,
-        Particle::AttributeNames::torqueY,     Particle::AttributeNames::torqueZ,
-        Particle::AttributeNames::typeId,      Particle::AttributeNames::ownershipState};
-  }
-
-  /**
-   * @copydoc Functor::getComputedAttr()
-   */
-  constexpr static auto getComputedAttr() {
-    return std::array<typename Particle::AttributeNames, 6>{
-        Particle::AttributeNames::forceX,  Particle::AttributeNames::forceY,  Particle::AttributeNames::forceZ,
-        Particle::AttributeNames::torqueX, Particle::AttributeNames::torqueY, Particle::AttributeNames::torqueZ};
-  }
-
-  /**
-   * @return useMixing
-   */
-  constexpr static bool getMixing() { return useMixing; }
-
-  /**
-   * Get the number of flops used per kernel call - i.e. number of flops to calculate kernel *given* the two particles
-   * lie within the cutoff (i.e. distance^2 / cutoff has been already been calculated).
-   * Note: there is currently a large difference between AoS & SoA number of flops. This function returns the AoS
-   * number of flops.
-   * @param molAType molecule A's type id
-   * @param molBType molecule B's type id
-   * @param numB number of sites in molecule B
-   * @return #FLOPs
-   * @TODO this will probably need a change for vectorized functors
-   */
-  unsigned long getNumFlopsPerKernelCall(size_t molAType, size_t molBType, bool newton3) {
-    // Site-to-site displacement: 6 (3 in the SoA case, but this requires O(N) precomputing site positions)
-    // Site-to-site distance squared: 4
-    // Compute scale: 9
-    // Apply scale to force: With newton3: 6, Without: 3
-    // Apply scale to torque: With newton3 18, Without: 9 (0 in SoA case, with O(N) post computing)
-    // Site-to-site total: With newton3: 33, Without: 26
-    // (SoA total: With N3L: 19)
-    // Above multiplied by number sites of i * number sites of j
-    const unsigned long siteToSiteFlops = newton3 ? 33ul : 26ul;
-    return _PPLibrary->getNumSites(molAType) * _PPLibrary->getNumSites(molBType) * siteToSiteFlops;
-  }
-
-  /**
-   * Reset the global values.
-   * Will set the global values to zero to prepare for the next iteration.
-   * @TODO maybe needs refactoring for vectorization
-   */
-  void initTraversal() final {
-    _potentialEnergySum = 0;
-    _virialSum = {0., 0., 0.};
-    _postProcessed = false;
-    for (size_t i = 0; i < _aosThreadData.size(); i++) {
-      _aosThreadData[i].setZero();
-    }
-  }
-
-  /**
-   * Postprocesses global values, e.g. potential energy & virial
-   * @TODO maybe needs refactoring for vectorization
-   * @param newton3
-   */
-  void endTraversal(bool newton3) final {
-    if (_postProcessed) {
-      throw autopas::utils::ExceptionHandler::AutoPasException(
-          "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
-    }
-    if (calculateGlobals) {
-      for (size_t i = 0; i < _aosThreadData.size(); ++i) {
-        _potentialEnergySum += _aosThreadData[i].potentialEnergySum;
-        _virialSum = autopas::utils::ArrayMath::add(_virialSum, _aosThreadData[i].virialSum);
-      }
-      if (not newton3) {
-        // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
-        // here.
-        _potentialEnergySum *= 0.5;
-        _virialSum = autopas::utils::ArrayMath::mulScalar(_virialSum, 0.5);
-      }
-      // we have always calculated 6*potential, so we divide by 6 here!
-      _potentialEnergySum /= 6.;
-      _postProcessed = true;
-    }
-  }
-
-  /**
-   * Get the potential energy.
-   * @return the potential energy
-   */
-  double getPotentialEnergy() {
-    if (not calculateGlobals) {
-      throw autopas::utils::ExceptionHandler::AutoPasException(
-          "Trying to get potential energy even though calculateGlobals is false. If you want this functor to "
-          "calculate "
-          "global "
-          "values, please specify calculateGlobals to be true.");
-    }
-    if (not _postProcessed) {
-      throw autopas::utils::ExceptionHandler::AutoPasException(
-          "Cannot get potential energy, because endTraversal was not called.");
-    }
-    return _potentialEnergySum;
-  }
-
-  /**
-   * Get the virial.
-   * @return the virial
-   */
-  double getVirial() {
-    if (not calculateGlobals) {
-      throw autopas::utils::ExceptionHandler::AutoPasException(
-          "Trying to get virial even though calculateGlobals is false. If you want this functor to calculate global "
-          "values, please specify calculateGlobals to be true.");
-    }
-    if (not _postProcessed) {
-      throw autopas::utils::ExceptionHandler::AutoPasException(
-          "Cannot get virial, because endTraversal was not called.");
-    }
-    return _virialSum[0] + _virialSum[1] + _virialSum[2];
-  }
-
-  /**
-   * Functors
-   */
-
   /**
    * @copydoc Functor::AoSFunctor(Particle&, Particle&, bool)
    */
@@ -416,9 +248,9 @@ class LJMultisiteFunctorCTS
         const auto shift6 = applyShift ? _PPLibrary->getMixingShift6(siteIdsA[i], siteIdsB[j]) : _shift6AoS;
 
         // clang-format off
-        // Calculate potential between sites and thus force
-        // Force = 24 * epsilon * (2*(sigma/distance)^12 - (sigma/distance)^6) * (1/distance)^2 * [x_displacement, y_displacement, z_displacement]
-        //         {                         scalarMultiple                                   } * {                     displacement             }
+       // Calculate potential between sites and thus force
+       // Force = 24 * epsilon * (2*(sigma/distance)^12 - (sigma/distance)^6) * (1/distance)^2 * [x_displacement, y_displacement, z_displacement]
+       //         {                         scalarMultiple                                   } * {                     displacement             }
         // clang-format on
         const auto invDistSquared = 1. / distanceSquared;
         const auto lj2 = sigmaSquared * invDistSquared;
@@ -505,7 +337,7 @@ class LJMultisiteFunctorCTS
   }
 
   /**
-   * @TODO Documentation
+   * SoAFunctorSingle Implementation.
    */
  private:
   template <bool newton3>
@@ -544,14 +376,14 @@ class LJMultisiteFunctorCTS
     // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
     const SoAFloatPrecision cutoffSquared = _cutoffSquaredAoS;
 
-    std::vector<double, autopas::AlignedAllocator<double>> exactSitePositionX;
-    std::vector<double, autopas::AlignedAllocator<double>> exactSitePositionY;
-    std::vector<double, autopas::AlignedAllocator<double>> exactSitePositionZ;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionX;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionY;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionZ;
 
     // we require arrays for forces for sites to maintain SIMD in site-site calculations
-    std::vector<double, autopas::AlignedAllocator<double>> siteForceX;
-    std::vector<double, autopas::AlignedAllocator<double>> siteForceY;
-    std::vector<double, autopas::AlignedAllocator<double>> siteForceZ;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceX;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceY;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceZ;
 
     std::vector<size_t, autopas::AlignedAllocator<size_t>> siteTypes;
     std::vector<size_t, autopas::AlignedAllocator<size_t>> isSiteOwned;
@@ -617,9 +449,10 @@ class LJMultisiteFunctorCTS
     // main force calculation loop
     size_t siteIndexMolA = 0;  // index of first site in molA
     for (size_t molA = 0; molA < soa.getNumberOfParticles(); ++molA) {
-      const auto ownedStateA = ownedStatePtr[molA];
       const size_t noSitesInMolA = useMixing ? _PPLibrary->getNumSites(typeptr[molA])
                                              : const_unrotatedSitePositions.size();  // Number of sites in molecule A
+
+      const auto ownedStateA = ownedStatePtr[molA];
       if (ownedStateA == autopas::OwnershipState::dummy) {
         siteIndexMolA += noSitesInMolA;
         continue;
@@ -804,30 +637,42 @@ class LJMultisiteFunctorCTS
       siteIndexMolA += noSitesInMolA;
     }
 
-    // Reduce forces on individual neighbor sites to molecular forces & torques if newton3=true
-    size_t siteIndex = 0;
-    size_t localSiteCount = 0;
-    for (size_t mol = 0; mol < soa.getNumberOfParticles(); ++mol) {
-      if constexpr (useMixing) {
+    // reduce the forces on individual sites to forces & torques on whole molecules.
+    if constexpr (useMixing) {
+      size_t siteIndex = 0;
+      for (size_t mol = 0; mol < soa.getNumberOfParticles(); ++mol) {
         rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
             {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, _PPLibrary->getSitePositions(typeptr[mol]));
-        localSiteCount = _PPLibrary->getNumSites(typeptr[mol]);
-      } else {
+        for (size_t site = 0; site < _PPLibrary->getNumSites(typeptr[mol]); ++site) {
+          fxptr[mol] += siteForceX[siteIndex];
+          fyptr[mol] += siteForceY[siteIndex];
+          fzptr[mol] += siteForceZ[siteIndex];
+          txptr[mol] += rotatedSitePositions[site][1] * siteForceZ[siteIndex] -
+                        rotatedSitePositions[site][2] * siteForceY[siteIndex];
+          typtr[mol] += rotatedSitePositions[site][2] * siteForceX[siteIndex] -
+                        rotatedSitePositions[site][0] * siteForceZ[siteIndex];
+          tzptr[mol] += rotatedSitePositions[site][0] * siteForceY[siteIndex] -
+                        rotatedSitePositions[site][1] * siteForceX[siteIndex];
+          ++siteIndex;
+        }
+      }
+    } else {
+      size_t siteIndex = 0;
+      for (size_t mol = 0; mol < soa.getNumberOfParticles(); mol++) {
         rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
             {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, const_unrotatedSitePositions);
-        localSiteCount = const_unrotatedSitePositions.size();
-      }
-      for (size_t site = 0; site < localSiteCount; ++site) {
-        fxptr[mol] += siteForceX[siteIndex];
-        fyptr[mol] += siteForceY[siteIndex];
-        fzptr[mol] += siteForceZ[siteIndex];
-        txptr[mol] += rotatedSitePositions[site][1] * siteForceZ[siteIndex] -
-                      rotatedSitePositions[site][2] * siteForceY[siteIndex];
-        typtr[mol] += rotatedSitePositions[site][2] * siteForceX[siteIndex] -
-                      rotatedSitePositions[site][0] * siteForceZ[siteIndex];
-        tzptr[mol] += rotatedSitePositions[site][0] * siteForceY[siteIndex] -
-                      rotatedSitePositions[site][1] * siteForceX[siteIndex];
-        ++siteIndex;
+        for (size_t site = 0; site < const_unrotatedSitePositions.size(); ++site) {
+          fxptr[mol] += siteForceX[siteIndex];
+          fyptr[mol] += siteForceY[siteIndex];
+          fzptr[mol] += siteForceZ[siteIndex];
+          txptr[mol] += rotatedSitePositions[site][1] * siteForceZ[siteIndex] -
+                        rotatedSitePositions[site][2] * siteForceY[siteIndex];
+          typtr[mol] += rotatedSitePositions[site][2] * siteForceX[siteIndex] -
+                        rotatedSitePositions[site][0] * siteForceZ[siteIndex];
+          tzptr[mol] += rotatedSitePositions[site][0] * siteForceY[siteIndex] -
+                        rotatedSitePositions[site][1] * siteForceX[siteIndex];
+          ++siteIndex;
+        }
       }
     }
 
@@ -846,7 +691,7 @@ class LJMultisiteFunctorCTS
   }
 
   /**
-   * Implementation function of SoAFunctorPair(soa1, soa2, newton3)
+   * Implementation of SoAFunctorPair(soa1, soa2, newton3)
    * @tparam newton3 flag for if newton's third law is used
    * @param soaA structure of arrays A
    * @param soaB structure of arrays B
@@ -902,14 +747,14 @@ class LJMultisiteFunctorCTS
     // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
     const SoAFloatPrecision cutoffSquared = _cutoffSquaredAoS;
 
-    std::vector<double, autopas::AlignedAllocator<double>> exactSitePositionBx;
-    std::vector<double, autopas::AlignedAllocator<double>> exactSitePositionBy;
-    std::vector<double, autopas::AlignedAllocator<double>> exactSitePositionBz;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionBx;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionBy;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionBz;
 
     // we require arrays for forces for sites to maintain SIMD in site-site calculations
-    std::vector<double, autopas::AlignedAllocator<double>> siteForceBx;
-    std::vector<double, autopas::AlignedAllocator<double>> siteForceBy;
-    std::vector<double, autopas::AlignedAllocator<double>> siteForceBz;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceBx;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceBy;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceBz;
 
     std::vector<size_t, autopas::AlignedAllocator<size_t>> siteTypesB;
     std::vector<size_t, autopas::AlignedAllocator<size_t>> isSiteOwnedBArr;
@@ -993,9 +838,9 @@ class LJMultisiteFunctorCTS
 
       std::vector<size_t, autopas::AlignedAllocator<size_t>> siteVector;
       siteVector.reserve(siteCountB);
-      __m256d comPosXVec = _mm256_set1_pd(xAptr[molA]);
-      __m256d comPosYVec = _mm256_set1_pd(yAptr[molA]);
-      __m256d comPosZVec = _mm256_set1_pd(zAptr[molA]);
+      __m256d xposA = _mm256_set1_pd(xAptr[molA]);
+      __m256d yposA = _mm256_set1_pd(yAptr[molA]);
+      __m256d zposA = _mm256_set1_pd(zAptr[molA]);
 
       for (size_t site = 0; site < siteCountB; site += vecLength) {
         const size_t remainder = siteCountB - site;
@@ -1006,9 +851,9 @@ class LJMultisiteFunctorCTS
         const __m256d yposB = autopas::utils::avx::load_pd(remainderCase, &exactSitePositionBy[site], remainderMask);
         const __m256d zposB = autopas::utils::avx::load_pd(remainderCase, &exactSitePositionBz[site], remainderMask);
 
-        const __m256d displacementCoMX = _mm256_sub_pd(comPosXVec, xposB);
-        const __m256d displacementCoMY = _mm256_sub_pd(comPosYVec, yposB);
-        const __m256d displacementCoMZ = _mm256_sub_pd(comPosZVec, zposB);
+        const __m256d displacementCoMX = _mm256_sub_pd(xposA, xposB);
+        const __m256d displacementCoMY = _mm256_sub_pd(yposA, yposB);
+        const __m256d displacementCoMZ = _mm256_sub_pd(zposA, zposB);
 
         const __m256d distanceSquaredCoMX = _mm256_mul_pd(displacementCoMX, displacementCoMX);
         const __m256d distanceSquaredCoMY = _mm256_mul_pd(displacementCoMY, displacementCoMY);
@@ -1039,10 +884,6 @@ class LJMultisiteFunctorCTS
       __m256d torqueSumX = _zero;
       __m256d torqueSumY = _zero;
       __m256d torqueSumZ = _zero;
-
-      const __m256d xposA = _mm256_broadcast_sd(&xAptr[molA]);
-      const __m256d yposA = _mm256_broadcast_sd(&yAptr[molA]);
-      const __m256d zposA = _mm256_broadcast_sd(&zAptr[molA]);
 
       for (size_t siteA = 0; siteA < noSitesInMolA; ++siteA) {
         const double *mixingPtr =
@@ -1181,33 +1022,44 @@ class LJMultisiteFunctorCTS
       tzAptr[molA] += autopas::utils::avx::horizontalSum(torqueSumZ);
     }
 
-    // Reduce forces on individual neighbor sites to molecular forces & torques if newton3=true
-    size_t siteIndex = 0;
-    size_t localSiteCount = 0;
-    for (size_t mol = 0; mol < soaB.getNumberOfParticles(); ++mol) {
-      if constexpr (useMixing) {
+    // reduce the forces on individual sites in SoA B to total forces & torques on whole molecules
+    if constexpr (useMixing) {
+      size_t siteIndex = 0;
+      for (size_t mol = 0; mol < soaB.getNumberOfParticles(); ++mol) {
         rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
             {q0Bptr[mol], q1Bptr[mol], q2Bptr[mol], q3Bptr[mol]}, _PPLibrary->getSitePositions(typeptrB[mol]));
-        localSiteCount = _PPLibrary->getNumSites(typeptrB[mol]);
-      } else {
+        for (size_t site = 0; site < _PPLibrary->getNumSites(typeptrB[mol]); ++site) {
+          fxBptr[mol] += siteForceBx[siteIndex];
+          fyBptr[mol] += siteForceBy[siteIndex];
+          fzBptr[mol] += siteForceBz[siteIndex];
+          txBptr[mol] += rotatedSitePositions[site][1] * siteForceBz[siteIndex] -
+                         rotatedSitePositions[site][2] * siteForceBy[siteIndex];
+          tyBptr[mol] += rotatedSitePositions[site][2] * siteForceBx[siteIndex] -
+                         rotatedSitePositions[site][0] * siteForceBz[siteIndex];
+          tzBptr[mol] += rotatedSitePositions[site][0] * siteForceBy[siteIndex] -
+                         rotatedSitePositions[site][1] * siteForceBx[siteIndex];
+          ++siteIndex;
+        }
+      }
+    } else {
+      size_t siteIndex = 0;
+      for (size_t mol = 0; mol < soaB.getNumberOfParticles(); ++mol) {
         rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
             {q0Bptr[mol], q1Bptr[mol], q2Bptr[mol], q3Bptr[mol]}, const_unrotatedSitePositions);
-        localSiteCount = const_unrotatedSitePositions.size();
-      }
-      for (size_t site = 0; site < localSiteCount; ++site) {
-        fxBptr[mol] += siteForceBx[siteIndex];
-        fyBptr[mol] += siteForceBy[siteIndex];
-        fzBptr[mol] += siteForceBz[siteIndex];
-        txBptr[mol] += rotatedSitePositions[site][1] * siteForceBz[siteIndex] -
-                       rotatedSitePositions[site][2] * siteForceBy[siteIndex];
-        tyBptr[mol] += rotatedSitePositions[site][2] * siteForceBx[siteIndex] -
-                       rotatedSitePositions[site][0] * siteForceBz[siteIndex];
-        tzBptr[mol] += rotatedSitePositions[site][0] * siteForceBy[siteIndex] -
-                       rotatedSitePositions[site][1] * siteForceBx[siteIndex];
-        ++siteIndex;
+        for (size_t site = 0; site < const_unrotatedSitePositions.size(); ++site) {
+          fxBptr[mol] += siteForceBx[siteIndex];
+          fyBptr[mol] += siteForceBy[siteIndex];
+          fzBptr[mol] += siteForceBz[siteIndex];
+          txBptr[mol] += rotatedSitePositions[site][1] * siteForceBz[siteIndex] -
+                         rotatedSitePositions[site][2] * siteForceBy[siteIndex];
+          tyBptr[mol] += rotatedSitePositions[site][2] * siteForceBx[siteIndex] -
+                         rotatedSitePositions[site][0] * siteForceBz[siteIndex];
+          tzBptr[mol] += rotatedSitePositions[site][0] * siteForceBy[siteIndex] -
+                         rotatedSitePositions[site][1] * siteForceBx[siteIndex];
+          ++siteIndex;
+        }
       }
     }
-
     if constexpr (calculateGlobals) {
       const auto threadNum = autopas_get_thread_num();
       // SoAFunctorPairImpl obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
@@ -1222,7 +1074,7 @@ class LJMultisiteFunctorCTS
     }
   }
 
-  // TODO Documentation
+  // Implementation for SoAFunctorVerlet
   template <bool newton3>
   void SoAFunctorVerletImpl(SoAView<SoAArraysType> soa, const size_t indexFirst,
                             const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
@@ -1289,76 +1141,6 @@ class LJMultisiteFunctorCTS
     } else {
       siteCountNeighbors = const_unrotatedSitePositions.size() * neighborListSize;
     }
-
-    //    // initialize site-wise arrays for neighbors
-    //    std::vector<double, autopas::AlignedAllocator<double>> exactNeighborSitePositionsX;
-    //    std::vector<double, autopas::AlignedAllocator<double>> exactNeighborSitePositionsY;
-    //    std::vector<double, autopas::AlignedAllocator<double>> exactNeighborSitePositionsZ;
-    //
-    //    std::vector<size_t, autopas::AlignedAllocator<size_t>> siteTypesNeighbors;
-    //    std::vector<size_t, autopas::AlignedAllocator<size_t>> isNeighborSiteOwnedArr;
-    //
-    //    // we require arrays for forces for sites to maintain SIMD in site-site calculations
-    //    std::vector<double, autopas::AlignedAllocator<double>> siteForceX;
-    //    std::vector<double, autopas::AlignedAllocator<double>> siteForceY;
-    //    std::vector<double, autopas::AlignedAllocator<double>> siteForceZ;
-    //
-    //    // pre-reserve arrays
-    //    exactNeighborSitePositionsX.reserve(siteCountNeighbors);
-    //    exactNeighborSitePositionsY.reserve(siteCountNeighbors);
-    //    exactNeighborSitePositionsZ.reserve(siteCountNeighbors);
-    //
-    //    if constexpr (useMixing) {
-    //      siteTypesNeighbors.reserve(siteCountNeighbors);
-    //    }
-    //
-    //    siteForceX.reserve(siteCountNeighbors);
-    //    siteForceY.reserve(siteCountNeighbors);
-    //    siteForceZ.reserve(siteCountNeighbors);
-    //
-    //    if constexpr (calculateGlobals) {
-    //      isNeighborSiteOwnedArr.reserve(siteCountNeighbors);
-    //    }
-    //
-    //    const auto rotatedSitePositionsPrime =
-    //        useMixing ? autopas::utils::quaternion::rotateVectorOfPositions(
-    //                        {q0ptr[indexFirst], q1ptr[indexFirst], q2ptr[indexFirst], q3ptr[indexFirst]},
-    //                        _PPLibrary->getSitePositions(typeptr[indexFirst]))
-    //                  : autopas::utils::quaternion::rotateVectorOfPositions(
-    //                        {q0ptr[indexFirst], q1ptr[indexFirst], q2ptr[indexFirst], q3ptr[indexFirst]},
-    //                        const_unrotatedSitePositions);
-    //
-    //    const auto siteTypesPrime = _PPLibrary->getSiteTypes(typeptr[indexFirst]);  // todo make this work for no
-    //    mixing
-    //
-    //    std::vector<std::array<double, 3>> rotatedSitePositions;
-    //    std::fill_n(siteForceX.begin(), siteCountNeighbors, 0.);
-    //    std::fill_n(siteForceY.begin(), siteCountNeighbors, 0.);
-    //    std::fill_n(siteForceZ.begin(), siteCountNeighbors, 0.);
-    //    for (size_t neighborMol = 0; neighborMol < neighborListSize; ++neighborMol) {
-    //      const size_t neighborMolIndex = neighborList[neighborMol];
-    //      if constexpr (useMixing) {
-    //        rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
-    //            {q0ptr[neighborMolIndex], q1ptr[neighborMolIndex], q2ptr[neighborMolIndex], q3ptr[neighborMolIndex]},
-    //            _PPLibrary->getSitePositions(typeptr[neighborMolIndex]));
-    //      } else {
-    //        rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
-    //            {q0ptr[neighborMolIndex], q1ptr[neighborMolIndex], q2ptr[neighborMolIndex], q3ptr[neighborMolIndex]},
-    //            const_unrotatedSitePositions);
-    //      }
-    //
-    //      size_t localSiteCount =
-    //          useMixing ? _PPLibrary->getNumSites(typeptr[neighborMolIndex]) : const_unrotatedSitePositions.size();
-    //      for (size_t site = 0; site < localSiteCount; ++site) {
-    //        exactNeighborSitePositionsX.push_back(rotatedSitePositions[site][0] + xptr[neighborMolIndex]);
-    //        exactNeighborSitePositionsY.push_back(rotatedSitePositions[site][1] + yptr[neighborMolIndex]);
-    //        exactNeighborSitePositionsZ.push_back(rotatedSitePositions[site][2] + zptr[neighborMolIndex]);
-    //        isNeighborSiteOwnedArr.push_back(ownedStatePtr[neighborMolIndex] == OwnershipState::owned);
-    //        if constexpr (useMixing) {
-    //          siteTypesNeighbors.push_back(_PPLibrary->getSiteTypes(typeptr[neighborMolIndex])[site]);
-    //        }
-    //      }
-    //    }
 
     // -- main force calculation --
 
@@ -1537,22 +1319,6 @@ class LJMultisiteFunctorCTS
         torqueSumZ = _mm256_add_pd(torqueSumZ, torqueAZ);
 
         // N3L
-        //        if constexpr (newton3) {
-        //          __m256d forceSumBX =
-        //              autopas::utils::avx::gather_pd(remainderCase, siteForceX.data(), siteIndices, remainderMask);
-        //          __m256d forceSumBY =
-        //              autopas::utils::avx::gather_pd(remainderCase, siteForceY.data(), siteIndices, remainderMask);
-        //          __m256d forceSumBZ =
-        //              autopas::utils::avx::gather_pd(remainderCase, siteForceZ.data(), siteIndices, remainderMask);
-        //          forceSumBX = _mm256_sub_pd(forceSumBX, forceX);
-        //          forceSumBY = _mm256_sub_pd(forceSumBY, forceY);
-        //          forceSumBZ = _mm256_sub_pd(forceSumBZ, forceZ);
-        //
-        //          autopas::utils::avx::scatter_pd(remainderCase, siteForceX.data(), siteIndices, remainderMask,
-        //          forceSumBX); autopas::utils::avx::scatter_pd(remainderCase, siteForceY.data(), siteIndices,
-        //          remainderMask, forceSumBY); autopas::utils::avx::scatter_pd(remainderCase, siteForceZ.data(),
-        //          siteIndices, remainderMask, forceSumBZ);
-        //        }
         if constexpr (newton3) {
           // TODO don't know if vectorized version is possible here
           for (size_t i = 0; i < std::min(vecLength, remainder); i++) {
@@ -1603,6 +1369,7 @@ class LJMultisiteFunctorCTS
         }
       }
     }
+
     // Add forces to prime mol
     fxptr[indexFirst] += autopas::utils::avx::horizontalSum(forceSumX);
     fyptr[indexFirst] += autopas::utils::avx::horizontalSum(forceSumY);
@@ -1610,38 +1377,6 @@ class LJMultisiteFunctorCTS
     txptr[indexFirst] += autopas::utils::avx::horizontalSum(torqueSumX);
     typtr[indexFirst] += autopas::utils::avx::horizontalSum(torqueSumY);
     tzptr[indexFirst] += autopas::utils::avx::horizontalSum(torqueSumZ);
-
-    // Reduce forces on individual neighbor sites to molecular forces & torques if newton3=true
-    //    if constexpr (newton3) {
-    //      size_t siteIndex = 0;
-    //      size_t localSiteCount = 0;
-    //      for (size_t neighborMol = 0; neighborMol < neighborListSize; ++neighborMol) {
-    //        const auto neighborMolIndex = neighborList[neighborMol];
-    //        if constexpr (useMixing) {
-    //          rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
-    //              {q0ptr[neighborMolIndex], q1ptr[neighborMolIndex], q2ptr[neighborMolIndex],
-    //              q3ptr[neighborMolIndex]}, _PPLibrary->getSitePositions(typeptr[neighborMolIndex]));
-    //          localSiteCount = _PPLibrary->getNumSites(typeptr[neighborMolIndex]);
-    //        } else {
-    //          rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
-    //              {q0ptr[neighborMolIndex], q1ptr[neighborMolIndex], q2ptr[neighborMolIndex],
-    //              q3ptr[neighborMolIndex]}, const_unrotatedSitePositions);
-    //          localSiteCount = const_unrotatedSitePositions.size();
-    //        }
-    //        for (size_t site = 0; site < localSiteCount; ++site) {
-    //          fxptr[neighborMolIndex] += siteForceX[siteIndex];
-    //          fyptr[neighborMolIndex] += siteForceY[siteIndex];
-    //          fzptr[neighborMolIndex] += siteForceZ[siteIndex];
-    //          txptr[neighborMolIndex] += rotatedSitePositions[site][1] * siteForceZ[siteIndex] -
-    //                                     rotatedSitePositions[site][2] * siteForceY[siteIndex];
-    //          typtr[neighborMolIndex] += rotatedSitePositions[site][2] * siteForceX[siteIndex] -
-    //                                     rotatedSitePositions[site][0] * siteForceZ[siteIndex];
-    //          tzptr[neighborMolIndex] += rotatedSitePositions[site][0] * siteForceY[siteIndex] -
-    //                                     rotatedSitePositions[site][1] * siteForceX[siteIndex];
-    //          ++siteIndex;
-    //        }
-    //      }
-    //    }
 
     if constexpr (calculateGlobals) {
       const auto threadNum = autopas_get_thread_num();
@@ -1657,7 +1392,6 @@ class LJMultisiteFunctorCTS
     }
   }
 
- private:
   /** Constructs site vectors for the given SoA.
    * @param soa the SoA to construct the site vectors for.
    * @note This function should be called exactly once per iteration
@@ -1710,6 +1444,170 @@ class LJMultisiteFunctorCTS
 
  public:
   /**
+   * Sets the particle properties constants for this functor.
+   *
+   * This is only necessary if no particlePropertiesLibrary is used.
+   * @param epsilon24 epsilon * 24
+   * @param sigmaSquared sigma^2
+   */
+  void setParticleProperties(SoAFloatPrecision epsilon24, SoAFloatPrecision sigmaSquared) {
+    _epsilon24AoS = epsilon24;
+    _sigmaSquaredAoS = sigmaSquared;
+    if (applyShift) {
+      _shift6AoS =
+          ParticlePropertiesLibrary<double, size_t>::calcShift6(_epsilon24AoS, _sigmaSquaredAoS, _cutoffSquaredAoS);
+    } else {
+      _shift6AoS = 0;
+    }
+  }
+
+  /**
+   * @copydoc Functor::getNeededAttr()
+   */
+  constexpr static auto getNeededAttr() {
+    return std::array<typename Particle::AttributeNames, 16>{
+        Particle::AttributeNames::id,          Particle::AttributeNames::posX,
+        Particle::AttributeNames::posY,        Particle::AttributeNames::posZ,
+        Particle::AttributeNames::forceX,      Particle::AttributeNames::forceY,
+        Particle::AttributeNames::forceZ,      Particle::AttributeNames::quaternion0,
+        Particle::AttributeNames::quaternion1, Particle::AttributeNames::quaternion2,
+        Particle::AttributeNames::quaternion3, Particle::AttributeNames::torqueX,
+        Particle::AttributeNames::torqueY,     Particle::AttributeNames::torqueZ,
+        Particle::AttributeNames::typeId,      Particle::AttributeNames::ownershipState};
+  }
+
+  /**
+   * @copydoc Functor::getNeededAttr(std::false_type)
+   */
+  constexpr static auto getNeededAttr(std::false_type) {
+    return std::array<typename Particle::AttributeNames, 16>{
+        Particle::AttributeNames::id,          Particle::AttributeNames::posX,
+        Particle::AttributeNames::posY,        Particle::AttributeNames::posZ,
+        Particle::AttributeNames::forceX,      Particle::AttributeNames::forceY,
+        Particle::AttributeNames::forceZ,      Particle::AttributeNames::quaternion0,
+        Particle::AttributeNames::quaternion1, Particle::AttributeNames::quaternion2,
+        Particle::AttributeNames::quaternion3, Particle::AttributeNames::torqueX,
+        Particle::AttributeNames::torqueY,     Particle::AttributeNames::torqueZ,
+        Particle::AttributeNames::typeId,      Particle::AttributeNames::ownershipState};
+  }
+
+  /**
+   * @copydoc Functor::getComputedAttr()
+   */
+  constexpr static auto getComputedAttr() {
+    return std::array<typename Particle::AttributeNames, 6>{
+        Particle::AttributeNames::forceX,  Particle::AttributeNames::forceY,  Particle::AttributeNames::forceZ,
+        Particle::AttributeNames::torqueX, Particle::AttributeNames::torqueY, Particle::AttributeNames::torqueZ};
+  }
+
+  /**
+   * @return useMixing
+   */
+  constexpr static bool getMixing() { return useMixing; }
+
+  /**
+   * Get the number of flops used per kernel call - i.e. number of flops to calculate kernel *given* the two particles
+   * lie within the cutoff (i.e. distance^2 / cutoff has been already been calculated).
+   * Note: there is currently a large difference between AoS & SoA number of flops. This function returns the AoS
+   * number of flops.
+   * @param molAType molecule A's type id
+   * @param molBType molecule B's type id
+   * @param numB number of sites in molecule B
+   * @return #FLOPs
+   * @TODO this will probably need a change for vectorized functors
+   */
+  unsigned long getNumFlopsPerKernelCall(size_t molAType, size_t molBType, bool newton3) {
+    // Site-to-site displacement: 6 (3 in the SoA case, but this requires O(N) precomputing site positions)
+    // Site-to-site distance squared: 4
+    // Compute scale: 9
+    // Apply scale to force: With newton3: 6, Without: 3
+    // Apply scale to torque: With newton3 18, Without: 9 (0 in SoA case, with O(N) post computing)
+    // Site-to-site total: With newton3: 33, Without: 26
+    // (SoA total: With N3L: 19)
+    // Above multiplied by number sites of i * number sites of j
+    const unsigned long siteToSiteFlops = newton3 ? 33ul : 26ul;
+    return _PPLibrary->getNumSites(molAType) * _PPLibrary->getNumSites(molBType) * siteToSiteFlops;
+  }
+
+  /**
+   * Reset the global values.
+   * Will set the global values to zero to prepare for the next iteration.
+   * @TODO maybe needs refactoring for vectorization
+   */
+  void initTraversal() final {
+    _potentialEnergySum = 0;
+    _virialSum = {0., 0., 0.};
+    _postProcessed = false;
+    for (size_t i = 0; i < _aosThreadData.size(); i++) {
+      _aosThreadData[i].setZero();
+    }
+  }
+
+  /**
+   * Postprocesses global values, e.g. potential energy & virial
+   * @TODO maybe needs refactoring for vectorization
+   * @param newton3
+   */
+  void endTraversal(bool newton3) final {
+    if (_postProcessed) {
+      throw autopas::utils::ExceptionHandler::AutoPasException(
+          "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
+    }
+    if (calculateGlobals) {
+      for (size_t i = 0; i < _aosThreadData.size(); ++i) {
+        _potentialEnergySum += _aosThreadData[i].potentialEnergySum;
+        _virialSum = autopas::utils::ArrayMath::add(_virialSum, _aosThreadData[i].virialSum);
+      }
+      if (not newton3) {
+        // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
+        // here.
+        _potentialEnergySum *= 0.5;
+        _virialSum = autopas::utils::ArrayMath::mulScalar(_virialSum, 0.5);
+      }
+      // we have always calculated 6*potential, so we divide by 6 here!
+      _potentialEnergySum /= 6.;
+      _postProcessed = true;
+    }
+  }
+
+  /**
+   * Get the potential energy.
+   * @return the potential energy
+   */
+  double getPotentialEnergy() {
+    if (not calculateGlobals) {
+      throw autopas::utils::ExceptionHandler::AutoPasException(
+          "Trying to get potential energy even though calculateGlobals is false. If you want this functor to "
+          "calculate "
+          "global "
+          "values, please specify calculateGlobals to be true.");
+    }
+    if (not _postProcessed) {
+      throw autopas::utils::ExceptionHandler::AutoPasException(
+          "Cannot get potential energy, because endTraversal was not called.");
+    }
+    return _potentialEnergySum;
+  }
+
+  /**
+   * Get the virial.
+   * @return the virial
+   */
+  double getVirial() {
+    if (not calculateGlobals) {
+      throw autopas::utils::ExceptionHandler::AutoPasException(
+          "Trying to get virial even though calculateGlobals is false. If you want this functor to calculate global "
+          "values, please specify calculateGlobals to be true.");
+    }
+    if (not _postProcessed) {
+      throw autopas::utils::ExceptionHandler::AutoPasException(
+          "Cannot get virial, because endTraversal was not called.");
+    }
+    return _virialSum[0] + _virialSum[1] + _virialSum[2];
+  }
+
+ public:
+  /**
    * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
    * TODO: This is just a copy of the AoSThreadData from the LJFunctor. This may need refactoring.
    */
@@ -1736,6 +1634,121 @@ class LJMultisiteFunctorCTS
    * Thread buffer for AoS
    */
   std::vector<AoSThreadData> _aosThreadData;
-};
+};  // namespace autopas
 
+/**
+ * Prevent usage of non-multisite molecule
+ * @tparam applyShift
+ * @tparam useMixing
+ * @tparam useNewton3
+ * @tparam calculateGlobals
+ * @tparam relevantForTuning
+ */
+template <bool applyShift, bool useMixing, autopas::FunctorN3Modes useNewton3, bool calculateGlobals,
+          bool relevantForTuning>
+class LJMultisiteFunctorCTS<autopas::MoleculeLJ, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>
+    : public autopas::Functor<autopas::MoleculeLJ,
+                              LJMultisiteFunctorCTS<autopas::MoleculeLJ, applyShift, useMixing, useNewton3,
+                                                 calculateGlobals, relevantForTuning>> {
+ public:
+  /**
+   * Structure of the SoAs defined by the particle.
+   */
+  using SoAArraysType = typename autopas::MoleculeLJ::SoAArraysType;
+
+  using SoAFloatPrecision = typename autopas::MoleculeLJ::ParticleSoAFloatPrecision;
+
+  /**
+   * Delete Default constructor
+   */
+  LJMultisiteFunctorCTS() = delete;
+
+ private:
+  /**
+   * Internal (actually used) constructor
+   * @param cutoff
+   * @note param dummy is unused, only there to make the signature different from the public constructor.
+   */
+  explicit LJMultisiteFunctorCTS(SoAFloatPrecision cutoff, void * /*dummy*/)
+      : autopas::Functor<autopas::MoleculeLJ, LJMultisiteFunctorCTS<autopas::MoleculeLJ, applyShift, useMixing, useNewton3,
+                                                                 calculateGlobals, relevantForTuning>>(cutoff) {
+    autopas::utils::ExceptionHandler::exception(
+        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
+  }
+
+ public:
+  /**
+   * Constructor for Functor with particle mixing disabled. setParticleProperties() must be called.
+   * @param cutoff
+   */
+  explicit LJMultisiteFunctorCTS(double cutoff) : LJMultisiteFunctorCTS(cutoff, nullptr) {
+    autopas::utils::ExceptionHandler::exception(
+        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
+  }
+
+  /**
+   * Constructor for Functor with particle mixing enabled.
+   * @param cutoff
+   * @param particlePropertiesLibrary Library used to look up the properties of each type of particle e.g. sigma,
+   * epsilon, shift.
+   */
+  explicit LJMultisiteFunctorCTS(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+      : LJMultisiteFunctorCTS(cutoff, nullptr) {
+    autopas::utils::ExceptionHandler::exception(
+        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
+  }
+
+  bool isRelevantForTuning() final { return relevantForTuning; }
+
+  bool allowsNewton3() final {
+    return useNewton3 == autopas::FunctorN3Modes::Newton3Only or useNewton3 == autopas::FunctorN3Modes::Both;
+  }
+
+  bool allowsNonNewton3() final {
+    return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
+  }
+
+  constexpr static bool getMixing() { return useMixing; }
+
+  double getVirial() { return 0; }
+
+  /**
+   * Functor for AoS. Simply loops over the sites of two particles/molecules to calculate force.
+   * @param particleA Particle i
+   * @param particleB Particle j
+   * @param newton3 Flag for if newton3 is used.
+   */
+  void AoSFunctor(autopas::MoleculeLJ &particleA, autopas::MoleculeLJ &particleB, bool newton3) final {
+    autopas::utils::ExceptionHandler::exception(
+        "LJMultisiteFunctorAVX can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
+  }
+
+  void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
+    autopas::utils::ExceptionHandler::exception(
+        "LJMultisiteFunctorAVX can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
+  }
+
+  void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
+                      const bool newton3) final {
+    autopas::utils::ExceptionHandler::exception(
+        "LJMultisiteFunctorAVX can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
+  }
+
+  void setParticleProperties(SoAFloatPrecision epsilon24, SoAFloatPrecision sigmaSquared) {
+    autopas::utils::ExceptionHandler::exception(
+        "LJMultisiteFunctorAVX can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
+  }
+
+  static unsigned long getNumFlopsPerKernelCall(bool newton3, size_t numA, size_t numB) { return 0ul; }
+
+  void initTraversal() final {
+    autopas::utils::ExceptionHandler::exception(
+        "LJMultisiteFunctorAVX can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
+  }
+
+  void endTraversal(bool newton3) final {
+    autopas::utils::ExceptionHandler::exception(
+        "LJMultisiteFunctorAVX can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
+  }
+};
 }  // namespace autopas
