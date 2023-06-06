@@ -632,7 +632,7 @@ class LJMultisiteFunctorAVX
 
             const __m256d potentialEnergy6 =
                 _mm256_fmadd_pd(epsilon24, lj12m6, shift6);  // FMA may not be supported on all CPUs
-            const __m256d potentialEnergy6Masked = _mm256_and_pd(remainderMask, potentialEnergy6);
+            const __m256d potentialEnergy6Masked = _mm256_and_pd(_mm256_castsi256_pd(remainderMask), potentialEnergy6);
 
             __m256i ownedStateA4 = _mm256_set1_epi64x(static_cast<int64_t>(ownedStateA));
             __m256d ownedMaskA = _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateA4),
@@ -1036,7 +1036,7 @@ class LJMultisiteFunctorAVX
 
             const __m256d potentialEnergy6 =
                 _mm256_fmadd_pd(epsilon24, lj12m6, shift6);  // FMA may not be supported on all CPUs
-            const __m256d potentialEnergy6Masked = _mm256_and_pd(remainderMask, potentialEnergy6);
+            const __m256d potentialEnergy6Masked = _mm256_and_pd(_mm256_castsi256_pd(remainderMask), potentialEnergy6);
 
             __m256i ownedStateA4 = _mm256_set1_epi64x(static_cast<int64_t>(ownedStateA));
             __m256d ownedMaskA = _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateA4),
@@ -1376,7 +1376,7 @@ class LJMultisiteFunctorAVX
 
           const __m256d potentialEnergy6 =
               _mm256_fmadd_pd(epsilon24, lj12m6, shift6);  // FMA may not be supported on all CPUs
-          const __m256d potentialEnergy6Masked = _mm256_and_pd(remainderMask, potentialEnergy6);
+          const __m256d potentialEnergy6Masked = _mm256_and_pd(_mm256_castsi256_pd(remainderMask), potentialEnergy6);
 
           __m256i ownedStateP4 = _mm256_set1_epi64x(static_cast<int64_t>(ownedStatePrime));
           __m256d ownedMaskPrime =
@@ -1589,8 +1589,8 @@ class LJMultisiteFunctorAVX
 
       const __m256d cutoffMask = _mm256_cmp_pd(distanceSquaredCoM, _cutoffSquared, _CMP_LE_OS);
       const __m256i ownedStateB =
-          remainderCase ? _mm256_mask_i64gather_epi64(_zero, ownedStatePtr, neighborMolIndex, remainderMask, 8)
-                        : _mm256_i64gather_pd(ownedStatePtr, neighborMolIndex, 8);
+          remainderCase ? _mm256_mask_i64gather_epi64(_mm256_set1_epi64x(0), reinterpret_cast<const long long int*>(ownedStatePtr), neighborMolIndex, remainderMask, 8)
+                        : _mm256_i64gather_epi64(reinterpret_cast<const long long int*>(ownedStatePtr), neighborMolIndex, 8);
       const __m256d dummyMask =
           _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB), _zero, _CMP_NEQ_OS);  // Assuming that dummy = 0
       const __m256d totalMask = _mm256_and_pd(cutoffMask, dummyMask);
@@ -1735,7 +1735,7 @@ class LJMultisiteFunctorAVX
 
           const __m256d potentialEnergy6 =
               _mm256_fmadd_pd(epsilon24, lj12m6, shift6);  // FMA may not be supported on all CPUs
-          const __m256d potentialEnergy6Masked = _mm256_and_pd(remainderMask, potentialEnergy6);
+          const __m256d potentialEnergy6Masked = _mm256_and_pd(_mm256_castsi256_pd(remainderMask), potentialEnergy6);
 
           __m256i ownedStateP4 = _mm256_set1_epi64x(static_cast<int64_t>(ownedStatePrime));
           __m256d ownedMaskPrime =

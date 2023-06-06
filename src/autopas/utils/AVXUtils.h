@@ -47,7 +47,7 @@ inline __m256d load_pd(bool useMask, const double *const __restrict data, const 
  * @param mask the mask to use
  * @return the loaded data
  */
-inline __m256d load_epi64(bool useMask, const size_t *const __restrict data, const __m256i &mask) {
+inline __m256i load_epi64(bool useMask, const size_t *const __restrict data, const __m256i &mask) {
   if (useMask) {
     return _mm256_maskload_epi64(reinterpret_cast<const long long int *>(data), mask);
   } else {
@@ -66,7 +66,7 @@ inline __m256d load_epi64(bool useMask, const size_t *const __restrict data, con
 inline __m256d gather_pd(bool useMask, const double *const __restrict data, const __m256i &indices,
                                 const __m256i &mask) {
   if (useMask) {
-    return _mm256_mask_i64gather_pd(_mm256_setzero_pd(), data, indices, mask, 8);
+    return _mm256_mask_i64gather_pd(_mm256_setzero_pd(), data, indices, _mm256_castsi256_pd(mask), 8);
   } else {
     return _mm256_i64gather_pd(data, indices, 8);
   }
@@ -83,9 +83,9 @@ inline __m256d gather_pd(bool useMask, const double *const __restrict data, cons
 inline __m256i gather_epi64(bool useMask, const size_t *const __restrict data, const __m256i &indices,
                                    const __m256i &mask) {
   if (useMask) {
-    return _mm256_mask_i64gather_epi64(_mm256_setzero_si256(), data, indices, mask, 8);
+    return _mm256_mask_i64gather_epi64(_mm256_setzero_si256(), reinterpret_cast<const long long int*>(data), indices, mask, 8);
   } else {
-    return _mm256_i64gather_epi64(data, indices, 8);
+    return _mm256_i64gather_epi64(reinterpret_cast<const long long int*>(data), indices, 8);
   }
 }
 
