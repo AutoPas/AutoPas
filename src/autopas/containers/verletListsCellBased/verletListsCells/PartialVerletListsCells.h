@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <unordered_set>
+
 #include "autopas/containers/verletListsCellBased/verletListsCells/DynamicVerletListsCells.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCPartialCellPairNeighborList.h"
 
@@ -30,29 +32,48 @@ class PartialVerletListsCells : public DynamicVerletListsCells<Particle, Neighbo
     bool listInvalid = false;
     auto partialRebuilding = false;
 
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel for reduction(|| : listInvalid, partialRebuilding) schedule(static, 50)
-#endif
-    for (auto iter = this->_particlePtr2rebuildPositionBuffer.begin(); iter != this->_particlePtr2rebuildPositionBuffer.end(); ++iter) {
-      auto particlePositionPair = (*iter);
+    std::unordered_set<size_t> dirtyCells {};
 
-      if (particlePositionPair.first->isDummy() || particlePositionPair.first->isHalo()) {
-        continue;
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel
+#endif
+    {
+      std::unordered_set<size_t> myDirtyCells {};
+
+#ifdef AUTOPAS_OPENMP
+#pragma omp for reduction(|| : listInvalid, partialRebuilding) schedule(static, 50)
+#endif
+      for (auto iter = this->_particlePtr2rebuildPositionBuffer.begin();
+           iter != this->_particlePtr2rebuildPositionBuffer.end(); ++iter) {
+        auto particlePositionPair = (*iter);
+
+        if (particlePositionPair.first->isDummy() || particlePositionPair.first->isHalo()) {
+          continue;
+        }
+
+        auto distance = utils::ArrayMath::sub(particlePositionPair.first->getR(), particlePositionPair.second);
+        double distanceSquare = utils::ArrayMath::dot(distance, distance);
+
+        if (distanceSquare >= halfSkinSquare) {
+          listInvalid = true;
+          myDirtyCells.emplace(this->_linkedCells.getCellBlock().get1DIndexOfPosition(particlePositionPair.first->getR()));
+          partialRebuilding = true;
+        }
       }
 
-      auto distance = utils::ArrayMath::sub(particlePositionPair.first->getR(), particlePositionPair.second);
-      double distanceSquare = utils::ArrayMath::dot(distance, distance);
-
-      if (distanceSquare >=  halfSkinSquare) {
-        listInvalid = true;
-        auto & cell = this->_linkedCells.getCellBlock().getContainingCell(particlePositionPair.first->getR());
-        cell.setDirty(true);
-        partialRebuilding = true;
+#ifdef AUTOPAS_OPENMP
+#pragma omp critical
+#endif
+      {
+        dirtyCells.insert(myDirtyCells.begin(), myDirtyCells.end());
       }
     }
 
-    size_t numHighMovementCells = std::count_if(this->_linkedCells.getCells().begin(), this->_linkedCells.getCells().end(), [](auto & cell) { return cell.getDirty(); });
-    this->_cellMovingCounter.emplace_back(numHighMovementCells);
+    for (size_t cellId : dirtyCells) {
+      this->_linkedCells.getCells()[cellId].setDirty(true);
+    }
+
+    this->_cellMovingCounter.emplace_back(dirtyCells.size());
 
     this->_partialRebuilding = partialRebuilding;
     return !listInvalid;
@@ -88,7 +109,7 @@ class PartialVerletListsCells : public DynamicVerletListsCells<Particle, Neighbo
     }
     else {
       // TODO : think about chunk size
-#pragma omp parallel for reduction (+:numRebuildCells, numInflowCells, numOutflowCells) schedule (dynamic, 5)
+#pragma omp parallel for reduction (+:numRebuildCells, numInflowCells, numOutflowCells) schedule (dynamic, 10)
       for (FullParticleCell<Particle> &cell : this->_linkedCells.getCells()) {
         if (cell.getDirty() || cell.getInflowDirty() /* || cell.getOutflowDirty()*/) {
           ++numRebuildCells;

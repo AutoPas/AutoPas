@@ -176,7 +176,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
       myInvalidParticles.reserve(128);
       myInvalidNotOwnedParticles.reserve(128);
 #ifdef AUTOPAS_OPENMP
-#pragma omp for
+#pragma omp for schedule (dynamic, 10)
 #endif  // AUTOPAS_OPENMP
       for (size_t cellId = 0; cellId < this->getCells().size(); ++cellId) {
         // Delete dummy particles of each cell.

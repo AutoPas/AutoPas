@@ -322,12 +322,6 @@ class CellBlock3D : public CellBorderAndFlagManager {
 };
 
 template <class ParticleCell>
-inline typename CellBlock3D<ParticleCell>::index_t CellBlock3D<ParticleCell>::get1DIndexOfPosition(
-    const std::array<double, 3> &pos) const {
-  return index1D(get3DIndexOfPosition(pos));
-}
-
-template <class ParticleCell>
 inline std::array<typename CellBlock3D<ParticleCell>::index_t, 3> CellBlock3D<ParticleCell>::get3DIndexOfPosition(
     const std::array<double, 3> &pos) const {
   std::array<typename CellBlock3D<ParticleCell>::index_t, 3> cellIndex{};
@@ -470,6 +464,11 @@ template <class ParticleCell>
 inline ParticleCell &CellBlock3D<ParticleCell>::getContainingCell(const std::array<double, 3> &pos) const {
   auto ind = get1DIndexOfPosition(pos);
   return getCell(ind);
+}
+
+template <class ParticleCell>
+inline typename CellBlock3D<ParticleCell>::index_t CellBlock3D<ParticleCell>::get1DIndexOfPosition(const std::array<double, 3> &pos) const {
+  return index1D(get3DIndexOfPosition(pos));
 }
 
 template <class ParticleCell>
