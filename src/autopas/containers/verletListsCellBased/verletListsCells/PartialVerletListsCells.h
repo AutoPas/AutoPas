@@ -35,6 +35,11 @@ class PartialVerletListsCells : public DynamicVerletListsCells<Particle, Neighbo
 #endif
     for (auto iter = this->_particlePtr2rebuildPositionBuffer.begin(); iter != this->_particlePtr2rebuildPositionBuffer.end(); ++iter) {
       auto particlePositionPair = (*iter);
+
+      if (particlePositionPair.first->isDummy() || particlePositionPair.first->isHalo()) {
+        continue;
+      }
+
       auto distance = utils::ArrayMath::sub(particlePositionPair.first->getR(), particlePositionPair.second);
       double distanceSquare = utils::ArrayMath::dot(distance, distance);
 
@@ -83,14 +88,10 @@ class PartialVerletListsCells : public DynamicVerletListsCells<Particle, Neighbo
     }
     else {
       // TODO : think about chunk size
-#pragma omp parallel for reduction (+:numRebuildCells, numInflowCells, numOutflowCells) schedule (dynamic, 50)
+#pragma omp parallel for reduction (+:numRebuildCells, numInflowCells, numOutflowCells) schedule (dynamic, 5)
       for (FullParticleCell<Particle> &cell : this->_linkedCells.getCells()) {
-        if (cell.getDirty() || cell.getOutflowDirty() || cell.getInflowDirty()) {
+        if (cell.getDirty() || cell.getInflowDirty() /* || cell.getOutflowDirty()*/) {
           ++numRebuildCells;
-
-          if (cell.getOutflowDirty()) {
-            ++numOutflowCells;
-          }
 
           if (cell.getInflowDirty()) {
             ++numInflowCells;
@@ -98,6 +99,11 @@ class PartialVerletListsCells : public DynamicVerletListsCells<Particle, Neighbo
 
           // update every "dirty" particle in the rebuildPositionBuffer
           for (auto iter = cell.begin(); iter != cell.end(); ++iter) {
+
+            if ((*iter).isDummy() || (*iter).isHalo()) {
+              continue;
+            }
+
             std::pair<Particle *, std::array<double, 3>> particlePositionPair = std::make_pair(&(*iter), (*iter).getR());
             if (_particleId2BufferPosition.find((*iter).getID()) != _particleId2BufferPosition.end()) {
               auto particleBufferPosition = _particleId2BufferPosition.at((*iter).getID());
@@ -111,11 +117,13 @@ class PartialVerletListsCells : public DynamicVerletListsCells<Particle, Neighbo
                     std::make_pair((*iter).getID(), this->_particlePtr2rebuildPositionBuffer.size() - 1));
               }
             }
-
           }
           cell.setDirty(false);
-          cell.setOutflowDirty(false);
           cell.setInflowDirty(false);
+        }
+        if (cell.getOutflowDirty()) {
+          ++numOutflowCells;
+          cell.setOutflowDirty(false);
         }
       }
     }

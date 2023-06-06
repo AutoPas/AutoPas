@@ -180,7 +180,9 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
 #endif  // AUTOPAS_OPENMP
       for (size_t cellId = 0; cellId < this->getCells().size(); ++cellId) {
         // Delete dummy particles of each cell.
-        this->getCells()[cellId].deleteDummyParticles();
+        if (this->getCells()[cellId].getDirty()) {
+          this->getCells()[cellId].deleteDummyParticles();
+        }
 
         // if empty
         if (this->getCells()[cellId].isEmpty()) continue;
@@ -201,16 +203,15 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
             // delete and exchange if target cell is dirty
             else if (this->getCellBlock().getContainingCell(pIter->getR()).getDirty()) {
               this->getCells()[cellId].setOutflowDirty(true);
-              // Particle newP {*pIter};
-              myInvalidParticles.push_back(*pIter);
-              /*
+              Particle newP {*pIter};
+              myInvalidParticles.push_back(newP);
               pIter->setOwnershipState(OwnershipState::dummy);
               ++pIter;
-              */
+              /*
               // swap-delete
               *pIter = particleVec.back();
               particleVec.pop_back();
-
+              */
             }
             else {
               ++pIter;

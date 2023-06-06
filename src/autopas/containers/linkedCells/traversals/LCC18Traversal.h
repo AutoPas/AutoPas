@@ -179,12 +179,12 @@ void LCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::proc
     ParticleCell &otherCell = cells[otherIndex];
 
     if (baseIndex == otherIndex) {
-      if (!this->_onlyDirty || baseCell.getDirty() || baseCell.getInflowDirty() || baseCell.getOutflowDirty()) {
+      if (!this->_onlyDirty || baseCell.getDirty() || baseCell.getInflowDirty() /* || baseCell.getOutflowDirty() */) {
         this->_cellFunctor.processCell(baseCell);
       }
     } else {
-      if (!this->_onlyDirty || baseCell.getOutflowDirty()|| baseCell.getDirty() ||
-          otherCell.getDirty() || otherCell.getOutflowDirty()
+      if (!this->_onlyDirty /*|| baseCell.getOutflowDirty() */|| baseCell.getDirty() ||
+          otherCell.getDirty()  /*|| otherCell.getOutflowDirty() */
           || baseCell.getInflowDirty() || otherCell.getInflowDirty()) {
         this->_cellFunctor.processCellPair(baseCell, otherCell, r);
       }

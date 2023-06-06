@@ -71,7 +71,7 @@ public:
    for (size_t firstCellIndex = 0; firstCellIndex < cellsSize; ++firstCellIndex) {
 
      // either not partial rebuilding or the current cell is dirty
-     if (!partialRebuilding || cells[firstCellIndex].getDirty() || cells[firstCellIndex].getOutflowDirty() || cells[firstCellIndex].getInflowDirty()) {
+     if (!partialRebuilding || cells[firstCellIndex].getDirty() || cells[firstCellIndex].getInflowDirty() /*|| cells[firstCellIndex].getOutflowDirty()*/) {
        ++dirtyCounter;
        size_t numParticlesFirstCell = cells[firstCellIndex].numParticles();
        this->_aosNeighborList[firstCellIndex].clear();
@@ -110,13 +110,43 @@ public:
          }
        }
      }
+
+     // partial rebuilding and base cell has outflow particles
+     else if (cells[firstCellIndex].getOutflowDirty()) {
+       // delete all dummy particles from the neighbor lists
+       for (auto [globalIndex, localIndex] : this->_globalToLocalIndex.at(firstCellIndex)) {
+         // neighbour list pointing to same cell
+         if (firstCellIndex == globalIndex) {
+           for (auto& [particle, neighborList] : this->_aosNeighborList[firstCellIndex][localIndex]) {
+             // delete dummy particles' neighbor lists and replace them with real dummy
+              if (particle->isDummy()) {
+                auto& [cellIndex, particleIndex] = this->_particleToCellMap[particle];
+                this->_particleToCellMap.erase(particle);
+                this->_aosNeighborList[firstCellIndex][localIndex][particleIndex].second.clear();
+                Particle dummyParticle {};
+                dummyParticle.setOwnershipState(OwnershipState::dummy);
+                this->_aosNeighborList[firstCellIndex][localIndex][particleIndex].first = &dummyParticle;
+              }
+              // delete every dummy particle in a neighbor list
+              for (auto neighborIter = neighborList.begin(); neighborIter != neighborList.end() ;) {
+                if ((*neighborIter)->isDummy()) {
+                  neighborIter = neighborList.erase(neighborIter);
+                }
+                else {
+                  ++neighborIter;
+                }
+              }
+           }
+         }
+       }
+     }
      */
      // partial rebuilding and base cell is not dirty
      else {
        // have a look at this cells neighboring cells
        for (auto [globalIndex, localIndex] : this->_globalToLocalIndex.at(firstCellIndex)) {
          // neighboring cell is dirty
-         if (cells.at(globalIndex).getDirty() || cells.at(globalIndex).getOutflowDirty() || cells.at(globalIndex).getInflowDirty()) {
+         if (cells.at(globalIndex).getDirty() || cells.at(globalIndex).getInflowDirty() /*|| cells.at(globalIndex).getOutflowDirty()*/) {
            // clear all neighbor lists for this cell pair
            this->_aosNeighborList[firstCellIndex][localIndex].clear();
            size_t numParticlesFirstCell = cells[firstCellIndex].numParticles();
@@ -128,8 +158,9 @@ public:
              particleIndexCurrentCell++;
            }
          }
-         // if neighbour has outflowing particles -> delete them from the neighbour lists
+
          /*
+         // if neighbour has outflowing particles -> delete them from the neighbour lists
          else if (cells.at(globalIndex).getOutflowDirty()) {
            for (auto particleNeighboursIter = this->_aosNeighborList[firstCellIndex][localIndex].begin();
                 particleNeighboursIter != this->_aosNeighborList[firstCellIndex][localIndex].end(); ++particleNeighboursIter) {
