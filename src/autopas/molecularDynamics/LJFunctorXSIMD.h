@@ -162,9 +162,9 @@ class LJFunctorXSIMD
       */
      inline void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) final {
        if (newton3) {
-         //SoAFunctorSingleImpl<true>(soa);
+         SoAFunctorSingleImpl<true>(soa);
        } else {
-         //SoAFunctorSingleImpl<false>(soa);
+         SoAFunctorSingleImpl<false>(soa);
        }
      }
 
@@ -184,6 +184,7 @@ class LJFunctorXSIMD
 
 
     private:
+     template <bool newton3>
      inline void SoAFunctorSingleImpl(SoAView<SoAArraysType> soa) {
        if (soa.getNumberOfParticles() == 0) return;
 
@@ -252,6 +253,108 @@ class LJFunctorXSIMD
        }
      }
 
+
+     template <bool newton3>
+     inline void SoAFunctorPairImpl(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2) {
+       if (soa1.getNumberOfParticles() == 0 || soa2.getNumberOfParticles() == 0) return;
+
+       const auto *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
+       const auto *const __restrict y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
+       const auto *const __restrict z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
+       const auto *const __restrict x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
+       const auto *const __restrict y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
+       const auto *const __restrict z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
+
+       const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle::AttributeNames::ownershipState>();
+       const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle::AttributeNames::ownershipState>();
+
+       auto *const __restrict fx1ptr = soa1.template begin<Particle::AttributeNames::forceX>();
+       auto *const __restrict fy1ptr = soa1.template begin<Particle::AttributeNames::forceY>();
+       auto *const __restrict fz1ptr = soa1.template begin<Particle::AttributeNames::forceZ>();
+       auto *const __restrict fx2ptr = soa2.template begin<Particle::AttributeNames::forceX>();
+       auto *const __restrict fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
+       auto *const __restrict fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
+
+       const auto *const __restrict typeID1ptr = soa1.template begin<Particle::AttributeNames::typeId>();
+       const auto *const __restrict typeID2ptr = soa2.template begin<Particle::AttributeNames::typeId>();
+
+       xsimd::batch<double> virialSumX{0};
+       xsimd::batch<double> virialSumY{0};
+       xsimd::batch<double> virialSumZ{0};
+       xsimd::batch<double> upotSum{0};
+
+       for (unsigned int i = 0; i < soa1.getNumberOfParticles(); ++i) {
+         if (ownedStatePtr1[i] == OwnershipState::dummy) {
+           // If the i-th particle is a dummy, skip this loop iteration.
+           continue;
+         }
+
+         xsimd::batch<double> fxacc{0};
+         xsimd::batch<double> fyacc{0};
+         xsimd::batch<double> fzacc{0};
+
+         static_assert(std::is_same_v<std::underlying_type_t<OwnershipState>, int64_t>,
+                       "OwnershipStates underlying type should be int64_t!");
+         // ownedStatePtr1 contains int64_t, so we broadcast these to make an __m256i.
+         // _mm256_set1_epi64x broadcasts a 64-bit integer, we use this instruction to have 4 values!
+         xsimd::batch<int64_t> ownedStateI{static_cast<int64_t>(ownedStatePtr1[i])};
+
+         const xsimd::batch<double> x1 = xsimd::broadcast(&x1ptr[i]);
+         const xsimd::batch<double> y1 = xsimd::broadcast(&y1ptr[i]);
+         const xsimd::batch<double> z1 = xsimd::broadcast(&z1ptr[i]);
+
+         // floor soa2 numParticles to multiple of vecLength
+         unsigned int j = 0;
+         for (; j < (soa2.getNumberOfParticles() & ~(vecLength - 1)); j += vecLength) {
+           SoAKernel<newton3, false>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr,
+                                     y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc, fyacc, fzacc,
+                                     &virialSumX, &virialSumY, &virialSumZ, &upotSum, 0);
+         }
+         const int rest = (int)(soa2.getNumberOfParticles() & (vecLength - 1));
+         if (rest > 0)
+           SoAKernel<newton3, true>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr,
+                                    y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc, fyacc, fzacc,
+                                    &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
+
+         fx1ptr[i] += xsimd::reduce_add(fxacc);
+         fy1ptr[i] += xsimd::reduce_add(fyacc);
+         fz1ptr[i] += xsimd::reduce_add(fzacc);
+       }
+
+       if constexpr (calculateGlobals) {
+         //TODO
+//         const int threadnum = autopas_get_thread_num();
+//
+//         // horizontally reduce virialSumX and virialSumY
+//         const __m256d hSumVirialxy = _mm256_hadd_pd(virialSumX, virialSumY);
+//         const __m128d hSumVirialxyLow = _mm256_extractf128_pd(hSumVirialxy, 0);
+//         const __m128d hSumVirialxyHigh = _mm256_extractf128_pd(hSumVirialxy, 1);
+//         const __m128d hSumVirialxyVec = _mm_add_pd(hSumVirialxyHigh, hSumVirialxyLow);
+//
+//         // horizontally reduce virialSumZ and upotSum
+//         const __m256d hSumVirialzUpot = _mm256_hadd_pd(virialSumZ, upotSum);
+//         const __m128d hSumVirialzUpotLow = _mm256_extractf128_pd(hSumVirialzUpot, 0);
+//         const __m128d hSumVirialzUpotHigh = _mm256_extractf128_pd(hSumVirialzUpot, 1);
+//         const __m128d hSumVirialzUpotVec = _mm_add_pd(hSumVirialzUpotHigh, hSumVirialzUpotLow);
+//
+//         // globals = {virialX, virialY, virialZ, uPot}
+//         double globals[4];
+//         _mm_store_pd(&globals[0], hSumVirialxyVec);
+//         _mm_store_pd(&globals[2], hSumVirialzUpotVec);
+//
+//         // we have duplicated calculations, i.e., we calculate interactions multiple times, so we have to take care
+//         // that we do not add the energy multiple times!
+//         double energyfactor = 1.;
+//         if constexpr (newton3) {
+//           energyfactor *= 0.5;  // we count the energies partly to one of the two cells!
+//         }
+//
+//         _aosThreadData[threadnum].virialSum[0] += globals[0] * energyfactor;
+//         _aosThreadData[threadnum].virialSum[1] += globals[1] * energyfactor;
+//         _aosThreadData[threadnum].virialSum[2] += globals[2] * energyfactor;
+//         _aosThreadData[threadnum].upotSum += globals[3] * energyfactor;
+       }
+     }
      /**
    * Actual inner kernel of the SoAFunctors.
    *
@@ -395,6 +498,170 @@ class LJFunctorXSIMD
          //TODO
        }
 
+
+     }
+
+    public:
+     // clang-format off
+  /**
+   * @copydoc Functor::SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
+   * @note If you want to parallelize this by openmp, please ensure that there
+   * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly.
+   */
+     // clang-format on
+     inline void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
+                                  const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
+                                  bool newton3) final {
+       if (soa.getNumberOfParticles() == 0 or neighborList.empty()) return;
+       if (newton3) {
+         SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
+       } else {
+         SoAFunctorVerletImpl<false>(soa, indexFirst, neighborList);
+       }
+     }
+
+    private:
+     template <bool newton3>
+     inline void SoAFunctorVerletImpl(SoAView<SoAArraysType> soa, const size_t indexFirst,
+                                      const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
+       const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+       if (ownedStatePtr[indexFirst] == OwnershipState::dummy) {
+         return;
+       }
+
+       const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
+       const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
+       const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+
+       auto *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
+       auto *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
+       auto *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+
+       const auto *const __restrict typeIDptr = soa.template begin<Particle::AttributeNames::typeId>();
+
+       // accumulators
+       xsimd::batch<double> virialSumX{0};
+       xsimd::batch<double> virialSumY{0};
+       xsimd::batch<double> virialSumZ{0};
+       xsimd::batch<double> upotSum{0};
+       xsimd::batch<double> fxacc{0};
+        xsimd::batch<double> fyacc{0};
+         xsimd::batch<double> fzacc{0};
+
+       // broadcast particle 1
+       const xsimd::batch<double> x1 = xsimd::broadcast(&xptr[indexFirst]);
+       const xsimd::batch<double> y1 = xsimd::broadcast(&yptr[indexFirst]);
+       const xsimd::batch<double> z1 = xsimd::broadcast(&zptr[indexFirst]);
+       // ownedStatePtr contains int64_t, so we broadcast these to make an __m256i.
+       // _mm256_set1_epi64x broadcasts a 64-bit integer, we use this instruction to have 4 values!
+       xsimd::batch<int64_t> ownedStateI{static_cast<int64_t>(ownedStatePtr[indexFirst])};
+
+       alignas(64) std::array<double, vecLength> x2tmp{};
+       alignas(64) std::array<double, vecLength> y2tmp{};
+       alignas(64) std::array<double, vecLength> z2tmp{};
+       alignas(64) std::array<double, vecLength> fx2tmp{};
+       alignas(64) std::array<double, vecLength> fy2tmp{};
+       alignas(64) std::array<double, vecLength> fz2tmp{};
+       alignas(64) std::array<size_t, vecLength> typeID2tmp{};
+       alignas(64) std::array<autopas::OwnershipState, vecLength> ownedStates2tmp{};
+
+       // load 4 neighbors
+       size_t j = 0;
+       // Loop over all neighbors as long as we can fill full vectors
+       // (until `neighborList.size() - neighborList.size() % vecLength`)
+       //
+       // If b is a power of 2 the following holds:
+       // a & ~(b - 1) == a - (a mod b)
+       for (; j < (neighborList.size() & ~(vecLength - 1)); j += vecLength) {
+         // AVX2 variant:
+         // create buffer for 4 interaction particles
+         // and fill buffers via gathering
+         //      const __m256d x2tmp = _mm256_i64gather_pd(&xptr[j], _vindex, 1);
+         //      const __m256d y2tmp = _mm256_i64gather_pd(&yptr[j], _vindex, 1);
+         //      const __m256d z2tmp = _mm256_i64gather_pd(&zptr[j], _vindex, 1);
+         //      const __m256d fx2tmp = _mm256_i64gather_pd(&fxptr[j], _vindex, 1);
+         //      const __m256d fy2tmp = _mm256_i64gather_pd(&fyptr[j], _vindex, 1);
+         //      const __m256d fz2tmp = _mm256_i64gather_pd(&fzptr[j], _vindex, 1);
+         //      const __m256i typeID2tmp = _mm256_i64gather_epi64(&typeIDptr[j], _vindex, 1);
+
+         for (size_t vecIndex = 0; vecIndex < vecLength; ++vecIndex) {
+           x2tmp[vecIndex] = xptr[neighborList[j + vecIndex]];
+           y2tmp[vecIndex] = yptr[neighborList[j + vecIndex]];
+           z2tmp[vecIndex] = zptr[neighborList[j + vecIndex]];
+           if constexpr (newton3) {
+             fx2tmp[vecIndex] = fxptr[neighborList[j + vecIndex]];
+             fy2tmp[vecIndex] = fyptr[neighborList[j + vecIndex]];
+             fz2tmp[vecIndex] = fzptr[neighborList[j + vecIndex]];
+           }
+           typeID2tmp[vecIndex] = typeIDptr[neighborList[j + vecIndex]];
+           ownedStates2tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
+         }
+
+         SoAKernel<newton3, false>(0, ownedStateI, reinterpret_cast<const int64_t *>(ownedStates2tmp.data()), x1, y1, z1,
+                                   x2tmp.data(), y2tmp.data(), z2tmp.data(), fx2tmp.data(), fy2tmp.data(), fz2tmp.data(),
+                                   &typeIDptr[indexFirst], typeID2tmp.data(), fxacc, fyacc, fzacc, &virialSumX,
+                                   &virialSumY, &virialSumZ, &upotSum, 0);
+
+         if constexpr (newton3) {
+           for (size_t vecIndex = 0; vecIndex < vecLength; ++vecIndex) {
+             fxptr[neighborList[j + vecIndex]] = fx2tmp[vecIndex];
+             fyptr[neighborList[j + vecIndex]] = fy2tmp[vecIndex];
+             fzptr[neighborList[j + vecIndex]] = fz2tmp[vecIndex];
+           }
+         }
+       }
+       // Remainder loop
+       // If b is a power of 2 the following holds:
+       // a & (b - 1) == a mod b
+       const auto rest = static_cast<int>(neighborList.size() & (vecLength - 1));
+       if (rest > 0) {
+         // AVX2 variant:
+         // create buffer for 4 interaction particles
+         // and fill buffers via gathering
+         //      TODO: use masked load because there will not be enough data left for the whole gather
+         //      const __m256d x2tmp = _mm256_i64gather_pd(&xptr[j], _vindex, 1);
+         //      const __m256d y2tmp = _mm256_i64gather_pd(&yptr[j], _vindex, 1);
+         //      const __m256d z2tmp = _mm256_i64gather_pd(&zptr[j], _vindex, 1);
+         //      const __m256d fx2tmp = _mm256_i64gather_pd(&fxptr[j], _vindex, 1);
+         //      const __m256d fy2tmp = _mm256_i64gather_pd(&fyptr[j], _vindex, 1);
+         //      const __m256d fz2tmp = _mm256_i64gather_pd(&fzptr[j], _vindex, 1);
+         //      const __m256d typeID2tmp = _mm256_i64gather_pd(&typeIDptr[j], _vindex, 1);
+
+         for (size_t vecIndex = 0; vecIndex < rest; ++vecIndex) {
+           x2tmp[vecIndex] = xptr[neighborList[j + vecIndex]];
+           y2tmp[vecIndex] = yptr[neighborList[j + vecIndex]];
+           z2tmp[vecIndex] = zptr[neighborList[j + vecIndex]];
+           // if newton3 is used we need to load f of particle j so the kernel can update it too
+           if constexpr (newton3) {
+             fx2tmp[vecIndex] = fxptr[neighborList[j + vecIndex]];
+             fy2tmp[vecIndex] = fyptr[neighborList[j + vecIndex]];
+             fz2tmp[vecIndex] = fzptr[neighborList[j + vecIndex]];
+           }
+           typeID2tmp[vecIndex] = typeIDptr[neighborList[j + vecIndex]];
+           ownedStates2tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
+         }
+
+         SoAKernel<newton3, true>(0, ownedStateI, reinterpret_cast<const int64_t *>(ownedStates2tmp.data()), x1, y1, z1,
+                                  x2tmp.data(), y2tmp.data(), z2tmp.data(), fx2tmp.data(), fy2tmp.data(), fz2tmp.data(),
+                                  &typeIDptr[indexFirst], typeID2tmp.data(), fxacc, fyacc, fzacc, &virialSumX, &virialSumY,
+                                  &virialSumZ, &upotSum, rest);
+
+         if constexpr (newton3) {
+           for (size_t vecIndex = 0; vecIndex < rest; ++vecIndex) {
+             fxptr[neighborList[j + vecIndex]] = fx2tmp[vecIndex];
+             fyptr[neighborList[j + vecIndex]] = fy2tmp[vecIndex];
+             fzptr[neighborList[j + vecIndex]] = fz2tmp[vecIndex];
+           }
+         }
+       }
+
+       fxptr[indexFirst] += xsimd::reduce_add(fxacc);
+       fyptr[indexFirst] += xsimd::reduce_add(fyacc);
+       fzptr[indexFirst] += xsimd::reduce_add(fzacc);
+
+       if constexpr (calculateGlobals) {
+         //TODO
+       }
 
      }
 
