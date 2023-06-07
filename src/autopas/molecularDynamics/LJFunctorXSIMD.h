@@ -219,9 +219,9 @@ class LJFunctorXSIMD
          xsimd::batch<double> fyacc{0};
          xsimd::batch<double> fzacc{0};
 
-         const xsimd::batch<double> x1 = xsimd::broadcast(&xptr[i]);
-         const xsimd::batch<double> y1 = xsimd::broadcast(&yptr[i]);
-         const xsimd::batch<double> z1 = xsimd::broadcast(&zptr[i]);
+         xsimd::batch<double> x1 = xsimd::broadcast(xptr[i]);
+         xsimd::batch<double> y1 = xsimd::broadcast(yptr[i]);
+         xsimd::batch<double> z1 = xsimd::broadcast(zptr[i]);
 
          size_t j = 0;
 
@@ -299,9 +299,9 @@ class LJFunctorXSIMD
          // _mm256_set1_epi64x broadcasts a 64-bit integer, we use this instruction to have 4 values!
          xsimd::batch<int64_t> ownedStateI{static_cast<int64_t>(ownedStatePtr1[i])};
 
-         const xsimd::batch<double> x1 = xsimd::broadcast(&x1ptr[i]);
-         const xsimd::batch<double> y1 = xsimd::broadcast(&y1ptr[i]);
-         const xsimd::batch<double> z1 = xsimd::broadcast(&z1ptr[i]);
+         const xsimd::batch<double> x1 = xsimd::broadcast(x1ptr[i]);
+         const xsimd::batch<double> y1 = xsimd::broadcast(y1ptr[i]);
+         const xsimd::batch<double> z1 = xsimd::broadcast(z1ptr[i]);
 
          // floor soa2 numParticles to multiple of vecLength
          unsigned int j = 0;
@@ -385,13 +385,13 @@ class LJFunctorXSIMD
    * @param rest
       */
      template <bool newton3, bool remainderIsMasked>
-     inline void SoAKernel(const size_t j, const __m256i ownedStateI, const xsimd::batch<int64_t> *const __restrict ownedStatePtr2,
-                           const xsimd::batch<float> &x1, const xsimd::batch<float> &y1, const xsimd::batch<float> &z1, const double *const __restrict x2ptr,
+     inline void SoAKernel(const size_t j, const xsimd::batch<int64_t> ownedStateI, const int64_t *const __restrict ownedStatePtr2,
+                           const xsimd::batch<double> &x1, const xsimd::batch<double> &y1, const xsimd::batch<double> &z1, const double *const __restrict x2ptr,
                            const double *const __restrict y2ptr, const double *const __restrict z2ptr,
                            double *const __restrict fx2ptr, double *const __restrict fy2ptr,
                            double *const __restrict fz2ptr, const size_t *const typeID1ptr, const size_t *const typeID2ptr,
-                           xsimd::batch<float> &fxacc, xsimd::batch<float> &fyacc, xsimd::batch<float> &fzacc, xsimd::batch<float> *virialSumX, xsimd::batch<float> *virialSumY,
-                           xsimd::batch<float> *virialSumZ, xsimd::batch<float> *upotSum, const unsigned int rest = 0) {
+                           xsimd::batch<double> &fxacc, xsimd::batch<double> &fyacc, xsimd::batch<double> &fzacc, xsimd::batch<double> *virialSumX, xsimd::batch<double> *virialSumY,
+                           xsimd::batch<double> *virialSumZ, xsimd::batch<double> *upotSum, const unsigned int rest = 0) {
        xsimd::batch<double> epsilon24s = _epsilon24;
        xsimd::batch<double> sigmaSquares = _sigmaSquare;
        xsimd::batch<double> shift6s = _shift6;
@@ -438,8 +438,8 @@ class LJFunctorXSIMD
 
        const xsimd::batch<double> ownedStateJ = remainderIsMasked
                                        ? xsimd::bitwise_and(
-                                                xsimd::bitwise_cast<double>(ownedStatePtr2[j]), _masks[rest - 1])
-                                       : xsimd::bitwise_cast<double>(ownedStatePtr2[j]);
+                                         xsimd::load(reinterpret_cast<double const *>(&ownedStatePtr2[j])), _masks[rest - 1])
+                                       : xsimd::load(reinterpret_cast<double const *>(&ownedStatePtr2[j]));
        // This requires that dummy is the first entry in OwnershipState!
        const xsimd::batch_bool<double> dummyMask = xsimd::neq(ownedStateJ, _zero);
        const xsimd::batch_bool<double> cutoffDummyMask = xsimd::bitwise_and(cutoffMask, dummyMask);
@@ -549,9 +549,9 @@ class LJFunctorXSIMD
          xsimd::batch<double> fzacc{0};
 
        // broadcast particle 1
-       const xsimd::batch<double> x1 = xsimd::broadcast(&xptr[indexFirst]);
-       const xsimd::batch<double> y1 = xsimd::broadcast(&yptr[indexFirst]);
-       const xsimd::batch<double> z1 = xsimd::broadcast(&zptr[indexFirst]);
+       const xsimd::batch<double> x1 = xsimd::broadcast(xptr[indexFirst]);
+       const xsimd::batch<double> y1 = xsimd::broadcast(yptr[indexFirst]);
+       const xsimd::batch<double> z1 = xsimd::broadcast(zptr[indexFirst]);
        // ownedStatePtr contains int64_t, so we broadcast these to make an __m256i.
        // _mm256_set1_epi64x broadcasts a 64-bit integer, we use this instruction to have 4 values!
        xsimd::batch<int64_t> ownedStateI{static_cast<int64_t>(ownedStatePtr[indexFirst])};
@@ -664,6 +664,149 @@ class LJFunctorXSIMD
        }
 
      }
+    public:
+     /**
+   * @copydoc Functor::getNeededAttr()
+      */
+     constexpr static auto getNeededAttr() {
+       return std::array<typename Particle::AttributeNames, 9>{
+           Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
+           Particle::AttributeNames::posZ,   Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
+           Particle::AttributeNames::forceZ, Particle::AttributeNames::typeId, Particle::AttributeNames::ownershipState};
+     }
+
+     /**
+   * @copydoc Functor::getNeededAttr(std::false_type)
+      */
+     constexpr static auto getNeededAttr(std::false_type) {
+       return std::array<typename Particle::AttributeNames, 6>{
+           Particle::AttributeNames::id,   Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
+           Particle::AttributeNames::posZ, Particle::AttributeNames::typeId, Particle::AttributeNames::ownershipState};
+     }
+
+     /**
+   * @copydoc Functor::getComputedAttr()
+      */
+     constexpr static auto getComputedAttr() {
+       return std::array<typename Particle::AttributeNames, 3>{
+           Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ};
+     }
+
+     /**
+   *
+   * @return useMixing
+      */
+     constexpr static bool getMixing() { return useMixing; }
+
+     /**
+   * Get the number of flops used per kernel call. This should count the
+   * floating point operations needed for two particles that lie within a cutoff
+   * radius.
+   * @return the number of floating point operations
+      */
+     static unsigned long getNumFlopsPerKernelCall() {
+       // Kernel: 12 = 1 (inverse R squared) + 8 (compute scale) + 3 (apply
+       // scale) sum Forces: 6 (forces) kernel total = 12 + 6 = 18
+       return 18ul;
+     }
+
+     /**
+   * Reset the global values.
+   * Will set the global values to zero to prepare for the next iteration.
+      */
+     void initTraversal() final {
+       _upotSum = 0.;
+       _virialSum = {0., 0., 0.};
+       _postProcessed = false;
+       for (size_t i = 0; i < _aosThreadData.size(); ++i) {
+         _aosThreadData[i].setZero();
+       }
+     }
+
+     /**
+   * Accumulates global values, e.g. upot and virial.
+   * @param newton3
+      */
+     void endTraversal(bool newton3) final {
+       using namespace autopas::utils::ArrayMath::literals;
+
+       if (_postProcessed) {
+         throw utils::ExceptionHandler::AutoPasException(
+             "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
+       }
+
+       if (calculateGlobals) {
+         for (size_t i = 0; i < _aosThreadData.size(); ++i) {
+           _upotSum += _aosThreadData[i].upotSum;
+           _virialSum += _aosThreadData[i].virialSum;
+         }
+         if (not newton3) {
+           // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
+           // here.
+           _upotSum *= 0.5;
+           _virialSum *= 0.5;
+         }
+         // we have always calculated 6*upot, so we divide by 6 here!
+         _upotSum /= 6.;
+         _postProcessed = true;
+       }
+     }
+
+     /**
+   * Get the potential Energy
+   * @return the potential Energy
+      */
+     double getUpot() {
+       if (not calculateGlobals) {
+         throw utils::ExceptionHandler::AutoPasException(
+             "Trying to get upot even though calculateGlobals is false. If you want this functor to calculate global "
+             "values, please specify calculateGlobals to be true.");
+       }
+       if (not _postProcessed) {
+         throw utils::ExceptionHandler::AutoPasException("Cannot get upot, because endTraversal was not called.");
+       }
+       return _upotSum;
+     }
+
+     /**
+   * Get the virial
+   * @return the virial
+      */
+     double getVirial() {
+       if (not calculateGlobals) {
+         throw utils::ExceptionHandler::AutoPasException(
+             "Trying to get virial even though calculateGlobals is false. If you want this functor to calculate global "
+             "values, please specify calculateGlobals to be true.");
+       }
+       if (not _postProcessed) {
+         throw utils::ExceptionHandler::AutoPasException("Cannot get virial, because endTraversal was not called.");
+       }
+       return _virialSum[0] + _virialSum[1] + _virialSum[2];
+     }
+     /**
+   * Sets the particle properties constants for this functor.
+   *
+   * This is only necessary if no particlePropertiesLibrary is used.
+   *
+   * @param epsilon24
+   * @param sigmaSquare
+      */
+     void setParticleProperties(double epsilon24, double sigmaSquare) {
+       _epsilon24 = epsilon24;
+       _sigmaSquare = sigmaSquare;
+       if constexpr (applyShift) {
+         _shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquare, _cutoffsquare.get(0));
+       } else {
+         _shift6 = 0;
+       }
+        _epsilon24AoS = epsilon24;
+        _sigmaSquareAoS = sigmaSquare;
+        if constexpr (applyShift) {
+       _shift6AoS = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquare, _cutoffsquareAoS);
+     } else {
+       _shift6AoS = 0.;
+     }
+     }
 
     private:
      /**
@@ -703,14 +846,14 @@ class LJFunctorXSIMD
 
      const xsimd::batch<double> _zero{0};
      const xsimd::batch<double> _one{1.};
-     const xsimd::batch<int> _vindex{0, 1, 3, 4};
+     const xsimd::batch<int64_t> _vindex{0, 1, 3, 4};
      const xsimd::batch<double> _masks[3]{
          xsimd::batch<double>(0, 0, 0, -1),
          xsimd::batch<double>(0, 0, -1, -1),
          xsimd::batch<double>(0, -1, -1, -1),
      };
-     const __m256i _ownedStateDummyMM256i{0x0};
-     const __m256i _ownedStateOwnedMM256i{_mm256_set1_epi64x(static_cast<int64_t>(OwnershipState::owned))};
+     const xsimd::batch<int64_t> _ownedStateDummyMM256i{0x0};
+     const xsimd::batch<int64_t> _ownedStateOwnedMM256i{static_cast<int64_t>(OwnershipState::owned)};
      const xsimd::batch<double> _cutoffsquare{};
      xsimd::batch<double> _shift6{0};
      xsimd::batch<double> _epsilon24{};
