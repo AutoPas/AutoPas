@@ -101,7 +101,12 @@ class LJMultisiteFunctorAVX
   // MUST be power of 2 because some optimizations make this assumption
   constexpr static size_t vecLength = 4;
 
-  static constexpr bool useLocalVectors = true;
+  /*
+   * Whether to build vectors for exact site position locally in each function call or once globally.
+   * @note Currently only implemented for Verlet functor
+   */
+  constexpr static bool useLocalVectors = true;
+
 #ifdef __AVX__
   const __m256d _cutoffSquared{};
   const __m256d _zero{_mm256_set1_pd(0.)};
@@ -114,8 +119,6 @@ class LJMultisiteFunctorAVX
   const __m256i _ownedStateOwnedMM256i{_mm256_set1_epi64x(static_cast<int64_t>(OwnershipState::owned))};
 
 #endif
-
-  bool buildVectors = true;  // only build vectors once
 
   // Vectors used to speed up the verlet functor
   std::vector<double, autopas::AlignedAllocator<double>> _exactSitePositionsX;
@@ -344,11 +347,13 @@ class LJMultisiteFunctorAVX
     }
   }
 
+
+ private:
+
   /**
    * SoAFunctorSingle Implementation.
    */
- private:
-  template <bool newton3>
+   template <bool newton3>
   void SoAFunctorSingleImpl(SoAView<SoAArraysType> soa) {
 #ifndef __AVX__
 #pragma message "SoAFunctorCTS called without AVX support!"
@@ -1150,10 +1155,8 @@ class LJMultisiteFunctorAVX
 
     [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
 
-#pragma omp critical  // Needed if multiple threads are running
-    {
-      if (buildVectors) buildSiteVectors(soa);
-    }
+#pragma omp single  // Needed if multiple threads are running
+    buildSiteVectors(soa);
 
     __m256d virialSumX = _mm256_setzero_pd();
     __m256d virialSumY = _mm256_setzero_pd();
@@ -1589,8 +1592,11 @@ class LJMultisiteFunctorAVX
 
       const __m256d cutoffMask = _mm256_cmp_pd(distanceSquaredCoM, _cutoffSquared, _CMP_LE_OS);
       const __m256i ownedStateB =
-          remainderCase ? _mm256_mask_i64gather_epi64(_mm256_set1_epi64x(0), reinterpret_cast<const long long int*>(ownedStatePtr), neighborMolIndex, remainderMask, 8)
-                        : _mm256_i64gather_epi64(reinterpret_cast<const long long int*>(ownedStatePtr), neighborMolIndex, 8);
+          remainderCase
+              ? _mm256_mask_i64gather_epi64(_mm256_set1_epi64x(0),
+                                            reinterpret_cast<const long long int *>(ownedStatePtr), neighborMolIndex,
+                                            remainderMask, 8)
+              : _mm256_i64gather_epi64(reinterpret_cast<const long long int *>(ownedStatePtr), neighborMolIndex, 8);
       const __m256d dummyMask =
           _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB), _zero, _CMP_NEQ_OS);  // Assuming that dummy = 0
       const __m256d totalMask = _mm256_and_pd(cutoffMask, dummyMask);
@@ -1869,7 +1875,6 @@ class LJMultisiteFunctorAVX
         }
       }
     }
-    buildVectors = false;
   }
 
  public:
@@ -2078,8 +2083,8 @@ template <bool applyShift, bool useMixing, autopas::FunctorN3Modes useNewton3, b
           bool relevantForTuning>
 class LJMultisiteFunctorAVX<autopas::MoleculeLJ, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>
     : public autopas::Functor<autopas::MoleculeLJ,
-                              LJMultisiteFunctor<autopas::MoleculeLJ, applyShift, useMixing, useNewton3,
-                                                 calculateGlobals, relevantForTuning>> {
+                              LJMultisiteFunctorAVX<autopas::MoleculeLJ, applyShift, useMixing, useNewton3,
+                                                    calculateGlobals, relevantForTuning>> {
  public:
   /**
    * Structure of the SoAs defined by the particle.
@@ -2100,8 +2105,9 @@ class LJMultisiteFunctorAVX<autopas::MoleculeLJ, applyShift, useMixing, useNewto
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit LJMultisiteFunctorAVX(SoAFloatPrecision cutoff, void * /*dummy*/)
-      : autopas::Functor<autopas::MoleculeLJ, LJMultisiteFunctor<autopas::MoleculeLJ, applyShift, useMixing, useNewton3,
-                                                                 calculateGlobals, relevantForTuning>>(cutoff) {
+      : autopas::Functor<autopas::MoleculeLJ, LJMultisiteFunctorAVX<autopas::MoleculeLJ, applyShift, useMixing,
+                                                                    useNewton3, calculateGlobals, relevantForTuning>>(
+            cutoff) {
     autopas::utils::ExceptionHandler::exception(
         "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
   }
