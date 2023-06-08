@@ -1,6 +1,6 @@
-container                        :  [DynamicPairwiseVerletLists]
-verlet-rebuild-frequency         :  1000
-verlet-skin-radius-per-timestep  :  0.0003
+container                        :  [PairwiseVerletLists]
+verlet-rebuild-frequency         :  4
+verlet-skin-radius-per-timestep  :  0.075
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [AoS]
@@ -16,7 +16,7 @@ box-min                          :  [0, 0, 0]
 box-max                          :  [7.25, 7.25, 7.25]
 cell-size                        :  [1]
 deltaT                           :  0.0005
-iterations                       :  10000
+iterations                       :  15000
 boundary-type                    :  [reflective,reflective,reflective]
 globalForce                      :  [0,0,-12]
 Objects:
@@ -33,7 +33,7 @@ Objects:
       particle-mass              :  1
   Sphere:
     0:
-      center                     :  [18, 15, 60]
+      center                     :  [18, 15, 30]
       radius                     :  3
       particle-spacing           :  1.122462048
       velocity                   :  [0, 0, 0]
@@ -47,9 +47,9 @@ Objects:
 #   deltaTemperature               :  0.1
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
-vtk-filename                     :  fallingMiniPairsDynamic
-vtk-write-frequency              :  100
+vtk-filename                     :  fallingDropStaticPairs
+vtk-write-frequency              :  100000
 no-flops                         :  false
 no-end-config                    :  true
 log-level                        :  error
-fast-particle-warn               :  false
+fast-particle-warn               :  true

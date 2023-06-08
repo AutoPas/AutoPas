@@ -1,6 +1,6 @@
 container                        :  [PartialPairwiseVerletLists]
 verlet-rebuild-frequency         :  1000
-verlet-skin-radius-per-timestep  :  0.0009
+verlet-skin-radius-per-timestep  :  0.0003
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [AoS]
@@ -16,7 +16,7 @@ box-min                          :  [0, 0, 0]
 box-max                          :  [7.25, 7.25, 7.25]
 cell-size                        :  [1]
 deltaT                           :  0.0005
-iterations                       :  15000
+iterations                       :  10000
 boundary-type                    :  [reflective,reflective,reflective]
 globalForce                      :  [0,0,-12]
 Objects:
@@ -25,7 +25,7 @@ Objects:
     0:
       particle-spacing           :  1.122462048
       bottomLeftCorner           :  [1, 1, 1]
-      box-length                 :  [48, 28, 10]
+      box-length                 :  [58, 38, 7]
       velocity                   :  [0, 0, 0]
       particle-type              :  0
       particle-epsilon           :  1
