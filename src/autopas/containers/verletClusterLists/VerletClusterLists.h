@@ -39,20 +39,13 @@ namespace autopas {
  * the same buffer structure. In principle, moving the particles directly into one of the towers would be possible,
  * since particles are moved from LogicHandler to VCL only in a rebuild iteration. However, storing the particles in a
  * tower (e.g. tower0) is only possible very inefficiently, since several threads would write to this buffer at the same
- * time.
- * Hypotetic solution suggestion, if storing the particles in one of the towers (e.g. tower0) can be solved
- * efficiently: Check in addParticleImpl() and addHaloParticleImpl() if the container is valid. If yes, then copy all
- * particles from tower0 into a temporary buffer, execute clear() on the tower and then paste the particles from the
- * temporary buffer back into tower0 (makes sure that the tower is not broken by inserting further particles). Set the
- * container status to invalid. Then addParticleImpl() and addHaloParticleImpl() can store incoming particles in tower0.
- * Since there are more logic steps executed before the actual rebuild, it is necessary to return not a region iterator
- * in getRegionIterator() if the container-status is invalid, but a "normal" iterator, which iterates over all buffers,
- * so that also the added particles in tower0 are considered. For reduceInRegion() and forEachInRegion() we would have
- * to iterate over tower0 in addition to the tower in the region. The _particlesToAdd buffer structure could then be
- * removed completely.
+ * time. Even if we could add the particles to tower0 efficiently, there are still problems in getRegionIterator(),
+ * because this function is executed between the addition of particles and the actual rebuild. getRegionIterator()
+ * expects that all particles are already sorted correctly into the towers (if we do not use _particlesToAdd).
+ *
  * In the current solution, we can make use of the fact that _particlesToAdd only contains particles in a
  * rebuild-iteration and the additionalVectors only contain particles in a non-rebuild-iteration. This means that we can
- * save expensive buffer allocations in begin() and getRegionIterator() in valid container-status iterations, ba just
+ * save expensive buffer allocations in begin() and getRegionIterator() in valid container-status iterations, by just
  * passing the additionalVectors instead of concatenating them with _particlesToAdd.
  *
  * @note See VerletClusterListsRebuilder for the layout of the towers and clusters.
