@@ -416,9 +416,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   template <bool modifiable, bool regionIter>
   bool additionalVectorsEmpty(
       typename ContainerIterator<Particle, modifiable, regionIter>::ParticleVecType *additionalVectors) const {
-    bool addVectorsEmpty = true;
     if (additionalVectors) {
-      for (auto &buffer : *additionalVectors) {
+      for (const auto &buffer : *additionalVectors) {
         if (not buffer->empty()) {
           return false;
         }
@@ -428,14 +427,14 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
-   * Helper function for begin() and getRegionIterator() that creates a ContainerIterator from all particles in
-   * _particlesToAdd
+   * Helper function for begin() and getRegionIterator() that merges all buffers from _particlesToAdd into a single
+   * buffer
    *
    * @tparam regionIter
    * @param additionalVectorsToPass
    */
   template <bool regionIter>
-  void createIteratorFromParticlesToAdd(
+  void appendBuffersFromParticlesToAdd(
       typename ContainerIterator<Particle, true, regionIter>::ParticleVecType &additionalVectorsToPass) {
     additionalVectorsToPass.reserve(_particlesToAdd.size());
     for (auto &vec : _particlesToAdd) {
@@ -444,14 +443,14 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
-   * Helper function for begin() and getRegionIterator() that creates a ContainerIterator from all particles in
-   * _particlesToAdd
+   * Helper function for begin() and getRegionIterator() that merges all buffers from _particlesToAdd into a single
+   * buffer
    * note: const version
    * @tparam regionIter
    * @param additionalVectorsToPass
    */
   template <bool regionIter>
-  void createIteratorFromParticlesToAdd(
+  void appendBuffersFromParticlesToAdd(
       typename ContainerIterator<Particle, false, regionIter>::ParticleVecType &additionalVectorsToPass) const {
     additionalVectorsToPass.reserve(_particlesToAdd.size());
     for (auto &vec : _particlesToAdd) {
@@ -488,7 +487,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
       // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
       // store all pointers in a temporary which is passed to the ParticleIterator constructor.
-      createIteratorFromParticlesToAdd<false>(additionalVectorsToPass);
+      appendBuffersFromParticlesToAdd<false>(additionalVectorsToPass);
     }
 
     // pToAddEmpty we are in anon-rebuild-iteration and can simply pass additionalVectors, which saves buffer
@@ -526,7 +525,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
       // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
       // store all pointers in a temporary which is passed to the ParticleIterator constructor.
-      createIteratorFromParticlesToAdd<false>(additionalVectorsToPass);
+      appendBuffersFromParticlesToAdd<false>(additionalVectorsToPass);
     }
 
     // pToAddEmpty we are in anon-rebuild-iteration and can simply pass additionalVectors, which saves buffer
@@ -664,7 +663,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
       // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
       // store all pointers in a temporary which is passed to the ParticleIterator constructor.
-      createIteratorFromParticlesToAdd<true>(additionalVectorsToPass);
+      appendBuffersFromParticlesToAdd<true>(additionalVectorsToPass);
     }
 
     // pToAddEmpty we are in anon-rebuild-iteration and can simply pass additionalVectors, which saves buffer
@@ -705,7 +704,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
       // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
       // store all pointers in a temporary which is passed to the ParticleIterator constructor.
-      createIteratorFromParticlesToAdd<true>(additionalVectorsToPass);
+      appendBuffersFromParticlesToAdd<true>(additionalVectorsToPass);
     }
 
     // pToAddEmpty we are in anon-rebuild-iteration and can simply pass additionalVectors, which saves buffer
