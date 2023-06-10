@@ -628,7 +628,7 @@ TEST_F(LJMultisiteFunctorAVXTest, AoSVsSoACell) {
 TEST_F(LJMultisiteFunctorAVXTest, AoSVsSoACellPair) {
   using autopas::MultisiteMoleculeLJ;
 
-  const double cutoff = 3.0;
+  const double cutoff = 1.5;
 
   std::vector<autopas::MultisiteMoleculeLJ> moleculesA;
   std::vector<autopas::MultisiteMoleculeLJ> moleculesB;
@@ -660,7 +660,7 @@ TEST_F(LJMultisiteFunctorAVXTest, AoSVsSoACellPair) {
 TEST_F(LJMultisiteFunctorAVXTest, AoSVsSoAVerlet) {
   using autopas::MultisiteMoleculeLJ;
 
-  const double cutoff = 3.0;
+  const double cutoff = 1.5;
 
   std::vector<autopas::MultisiteMoleculeLJ> molecules;
   ParticlePropertiesLibrary<double, size_t> PPL(cutoff);

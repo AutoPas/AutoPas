@@ -109,9 +109,15 @@ class LJMultisiteFunctorAVX
 
   /*
    * Whether to use site masks or site indices
-   * @note Currently only implemented for Verlet functor
+   * TODO: More explanation
    */
-  constexpr static bool useSiteMasks = true;
+  constexpr static bool useSiteMasks = false;
+
+  /*
+   * Whether to evaluate cutoff condition with Center-To-Center or Center-To-Site distance
+   * TODO: More explanation
+   */
+  constexpr static bool useCTC = true;
 
 #ifdef __AVX__
   const __m256d _cutoffSquared{};
@@ -123,7 +129,6 @@ class LJMultisiteFunctorAVX
       _mm256_set_epi64x(0, -1, -1, -1),
   };
   const __m256i _ownedStateOwnedMM256i{_mm256_set1_epi64x(static_cast<int64_t>(OwnershipState::owned))};
-
 #endif
 
   // Vectors used to speed up the verlet functor
@@ -415,11 +420,7 @@ class LJMultisiteFunctorAVX
     if constexpr (useMixing) {
       siteTypes.reserve(siteCount);
     }
-
-    // this is only needed for vectorization when calculating globals
-    if constexpr (calculateGlobals) {
-      isSiteOwned.reserve(siteCount);
-    }
+    isSiteOwned.reserve(siteCount);
 
     // Fill site-wise std::vectors for SIMD
     std::vector<std::array<double, 3>> rotatedSitePositions;
@@ -437,9 +438,7 @@ class LJMultisiteFunctorAVX
         exactSitePositionX.push_back(rotatedSitePositions[site][0] + xptr[mol]);
         exactSitePositionY.push_back(rotatedSitePositions[site][1] + yptr[mol]);
         exactSitePositionZ.push_back(rotatedSitePositions[site][2] + zptr[mol]);
-        if constexpr (calculateGlobals) {
-          isSiteOwned.push_back(ownedStatePtr[mol] == OwnershipState::owned);
-        }
+        isSiteOwned.push_back(ownedStatePtr[mol] == OwnershipState::owned);
         if constexpr (useMixing) {
           siteTypes.push_back(_PPLibrary->getSiteTypes(typeptr[mol])[site]);
         }
@@ -464,63 +463,22 @@ class LJMultisiteFunctorAVX
       const size_t siteIndexMolB = siteIndexMolA + noSitesInMolA;  // index of first site in molB
       const size_t noSitesB = (siteCount - siteIndexMolB);         // Number of sites in molecules that A interacts with
 
-      // create mask over every mol 'above' molA  (doubles because they are easy to vectorize)
-      std::vector<double, autopas::AlignedAllocator<double>> molMask;
-      molMask.reserve(soa.getNumberOfParticles() - (molA + 1));
+      // Create the site mask
+      std::vector<size_t, autopas::AlignedAllocator<size_t>> siteMask;
+      std::array<double, 3> centerOfMass{xptr[molA], yptr[molA], zptr[molA]};
+      if constexpr (useCTC) {
+        std::vector<size_t, autopas::AlignedAllocator<size_t>> indices(soa.getNumberOfParticles() - molA - 1);
+        std::iota(indices.begin(), indices.end(), molA + 1);
 
-      const __m256d xposA = _mm256_broadcast_sd(&xptr[molA]);
-      const __m256d yposA = _mm256_broadcast_sd(&yptr[molA]);
-      const __m256d zposA = _mm256_broadcast_sd(&zptr[molA]);
+        siteMask = buildSiteMask<true>(useSiteMasks, indices, xptr, yptr, zptr, typeptr, ownedStatePtr, centerOfMass);
+      } else {
+        std::vector<size_t, autopas::AlignedAllocator<size_t>> indices(noSitesB);
+        std::iota(indices.begin(), indices.end(), 0);
 
-      // Build the molMask
-      for (size_t molB = molA + 1; molB < soa.getNumberOfParticles(); molB += vecLength) {
-        const size_t rest = soa.getNumberOfParticles() - molB;
-        const bool remainderCase = rest < vecLength;
-        __m256i remainderMask = remainderCase ? _masks[rest - 1] : _mm256_set1_epi64x(-1);
-
-        const __m256d xposB = autopas::utils::avx::load_pd(remainderCase, &xptr[molB], remainderMask);
-        const __m256d yposB = autopas::utils::avx::load_pd(remainderCase, &yptr[molB], remainderMask);
-        const __m256d zposB = autopas::utils::avx::load_pd(remainderCase, &zptr[molB], remainderMask);
-
-        const __m256d displacementCoMX = _mm256_sub_pd(xposA, xposB);
-        const __m256d displacementCoMY = _mm256_sub_pd(yposA, yposB);
-        const __m256d displacementCoMZ = _mm256_sub_pd(zposA, zposB);
-
-        const __m256d distanceSquaredCoMX = _mm256_mul_pd(displacementCoMX, displacementCoMX);
-        const __m256d distanceSquaredCoMY = _mm256_mul_pd(displacementCoMY, displacementCoMY);
-        const __m256d distanceSquaredCoMZ = _mm256_mul_pd(displacementCoMZ, displacementCoMZ);
-
-        const __m256d distanceSquaredCoM =
-            _mm256_add_pd(_mm256_add_pd(distanceSquaredCoMX, distanceSquaredCoMY), distanceSquaredCoMZ);
-
-        const __m256d cutoffMask = _mm256_cmp_pd(distanceSquaredCoM, _cutoffSquared, _CMP_LE_OS);
-        const __m256i ownedStateB = autopas::utils::avx::load_epi64(
-            remainderCase, reinterpret_cast<const size_t *>(&ownedStatePtr[molB]), remainderMask);
-        const __m256d dummyMask =
-            _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB), _zero, _CMP_NEQ_OS);  // Assuming that dummy = 0
-        const __m256d totalMask = _mm256_and_pd(cutoffMask, dummyMask);
-
-        if (remainderCase) {
-          _mm256_maskstore_pd((&molMask[molB - (molA + 1)]), remainderMask, totalMask);
-        } else {
-          _mm256_storeu_pd((&molMask[molB - (molA + 1)]), totalMask);
-        }
-      }
-
-      // generate mask for each site in the mols 'above' molA from molecular mask
-      std::vector<size_t, autopas::AlignedAllocator<size_t>> siteVector;
-      siteVector.reserve(noSitesB);
-
-      for (size_t molB = molA + 1, siteIndex = 0; molB < soa.getNumberOfParticles(); ++molB) {
-        bool condition = static_cast<bool>(molMask[molB - (molA + 1)]);
-        size_t siteCountB = _PPLibrary->getNumSites(typeptr[molB]);  // Maybe needs to change if no mixing
-        if (condition) {
-          for (size_t siteB = 0; siteB < siteCountB; ++siteB) {
-            siteVector.emplace_back(siteIndex++);
-          }
-        } else {
-          siteIndex += siteCountB;
-        }
+        siteMask = buildSiteMask<false>(useSiteMasks, indices, exactSitePositionX.data(), exactSitePositionY.data(),
+                                        exactSitePositionZ.data(), typeptr,
+                                        reinterpret_cast<const autopas::OwnershipState *>(isSiteOwned.data()),
+                                        centerOfMass, siteIndexMolB);
       }
 
       // These are technically not needed for this functor
@@ -535,10 +493,10 @@ class LJMultisiteFunctorAVX
 
         std::array<double, 3> forceAccumulator = {0., 0., 0.};
 
-        SoAKernel<true, false, false>(siteVector, siteTypes, exactSitePositionX, exactSitePositionY, exactSitePositionZ,
-                                      siteForceX, siteForceY, siteForceZ, isSiteOwned, ownedStateA, siteTypeA,
-                                      exactSitePositionA, rotatedSitePositionA, forceAccumulator, torqueAccumulator,
-                                      potentialEnergyAccumulator, virialAccumulator, siteIndexMolB);
+        SoAKernel<true, false, useSiteMasks>(
+            siteMask, siteTypes, exactSitePositionX, exactSitePositionY, exactSitePositionZ, siteForceX, siteForceY,
+            siteForceZ, isSiteOwned, ownedStateA, siteTypeA, exactSitePositionA, rotatedSitePositionA, forceAccumulator,
+            torqueAccumulator, potentialEnergyAccumulator, virialAccumulator, siteIndexMolB);
 
         // sum forces on single site in mol A
         siteForceX[siteA] += forceAccumulator[0];
@@ -681,10 +639,7 @@ class LJMultisiteFunctorAVX
       siteTypesB.reserve(siteCountB);
     }
 
-    // this is only needed for vectorization when calculating globals
-    if constexpr (calculateGlobals) {
-      isSiteOwnedBArr.reserve(siteCountB);
-    }
+    isSiteOwnedBArr.reserve(siteCountB);
 
     // Fill site-wise std::vectors for SIMD
     std::vector<std::array<double, 3>> rotatedSitePositions;
@@ -702,9 +657,9 @@ class LJMultisiteFunctorAVX
         exactSitePositionBx.push_back(rotatedSitePositions[site][0] + xBptr[mol]);
         exactSitePositionBy.push_back(rotatedSitePositions[site][1] + yBptr[mol]);
         exactSitePositionBz.push_back(rotatedSitePositions[site][2] + zBptr[mol]);
-        if constexpr (calculateGlobals) {
-          isSiteOwnedBArr.push_back(ownedStatePtrB[mol] == OwnershipState::owned);
-        }
+
+        isSiteOwnedBArr.push_back(ownedStatePtrB[mol] == OwnershipState::owned);
+
         if constexpr (useMixing) {
           siteTypesB.push_back(_PPLibrary->getSiteTypes(typeptrB[mol])[site]);
         }
@@ -727,64 +682,23 @@ class LJMultisiteFunctorAVX
       const auto rotatedSitePositionsA = autopas::utils::quaternion::rotateVectorOfPositions(
           {q0Aptr[molA], q1Aptr[molA], q2Aptr[molA], q3Aptr[molA]}, unrotatedSitePositionsA);
 
-      // create mask over every mol in cell B (char to keep arrays aligned)
-      std::vector<double, autopas::AlignedAllocator<double>> molMask;
-      molMask.reserve(soaB.getNumberOfParticles());
 
-      const __m256d xposA = _mm256_broadcast_sd(&xAptr[molA]);
-      const __m256d yposA = _mm256_broadcast_sd(&yAptr[molA]);
-      const __m256d zposA = _mm256_broadcast_sd(&zAptr[molA]);
+      // Create the site mask
+      std::vector<size_t, autopas::AlignedAllocator<size_t>> siteMask;
+      std::array<double, 3> centerOfMass{xAptr[molA], yAptr[molA], zAptr[molA]};
+      if constexpr (useCTC) {
+        std::vector<size_t, autopas::AlignedAllocator<size_t>> indices(soaB.getNumberOfParticles());
+        std::iota(indices.begin(), indices.end(), 0);
 
-      for (size_t molB = 0; molB < soaB.getNumberOfParticles(); molB += vecLength) {
-        const size_t rest = soaB.getNumberOfParticles() - molB;
-        const bool remainderCase = rest < vecLength;
-        __m256i remainderMask = remainderCase ? _masks[rest - 1] : _mm256_set1_epi64x(-1);
+        siteMask =
+            buildSiteMask<true>(useSiteMasks, indices, xBptr, yBptr, zBptr, typeptrB, ownedStatePtrB, centerOfMass);
+      } else {
+        std::vector<size_t, autopas::AlignedAllocator<size_t>> indices(siteCountB);
+        std::iota(indices.begin(), indices.end(), 0);
 
-        const __m256d xposB = autopas::utils::avx::load_pd(remainderCase, &xBptr[molB], remainderMask);
-        const __m256d yposB = autopas::utils::avx::load_pd(remainderCase, &yBptr[molB], remainderMask);
-        const __m256d zposB = autopas::utils::avx::load_pd(remainderCase, &zBptr[molB], remainderMask);
-
-        const __m256d displacementCoMX = _mm256_sub_pd(xposA, xposB);
-        const __m256d displacementCoMY = _mm256_sub_pd(yposA, yposB);
-        const __m256d displacementCoMZ = _mm256_sub_pd(zposA, zposB);
-
-        const __m256d distanceSquaredCoMX = _mm256_mul_pd(displacementCoMX, displacementCoMX);
-        const __m256d distanceSquaredCoMY = _mm256_mul_pd(displacementCoMY, displacementCoMY);
-        const __m256d distanceSquaredCoMZ = _mm256_mul_pd(displacementCoMZ, displacementCoMZ);
-
-        const __m256d distanceSquaredCoM =
-            _mm256_add_pd(_mm256_add_pd(distanceSquaredCoMX, distanceSquaredCoMY), distanceSquaredCoMZ);
-
-        const __m256d cutoffMask = _mm256_cmp_pd(distanceSquaredCoM, _cutoffSquared, _CMP_LE_OS);
-        const __m256i ownedStateB =
-            remainderCase
-                ? _mm256_maskload_epi64(reinterpret_cast<const long long *>(&ownedStatePtrB[molB]), remainderMask)
-                : _mm256_loadu_si256((__m256i *)&ownedStatePtrB[molB]);
-        const __m256d dummyMask =
-            _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB), _zero, _CMP_NEQ_OS);  // Assuming that dummy = 0
-        const __m256d totalMask = _mm256_and_pd(cutoffMask, dummyMask);
-
-        if (remainderCase) {
-          _mm256_maskstore_pd((&molMask[molB]), remainderMask, totalMask);
-        } else {
-          _mm256_storeu_pd((&molMask[molB]), totalMask);
-        }
-      }
-
-      // generate mask for each site in cell B from molecular mask
-      std::vector<size_t, autopas::AlignedAllocator<size_t>> siteVector;
-      siteVector.reserve(siteCountB);
-
-      for (size_t molB = 0, siteIndex = 0; molB < soaB.getNumberOfParticles(); ++molB) {
-        bool condition = static_cast<bool>(molMask[molB]);
-        size_t siteCount = useMixing ? _PPLibrary->getNumSites(typeptrB[molB]) : _sitePositionsLJ.size();
-        if (condition) {
-          for (size_t siteB = 0; siteB < siteCount; ++siteB) {
-            siteVector.emplace_back(siteIndex++);
-          }
-        } else {
-          siteIndex += siteCount;
-        }
+        siteMask = buildSiteMask<false>(
+            useSiteMasks, indices, exactSitePositionBx.data(), exactSitePositionBy.data(), exactSitePositionBz.data(),
+            typeptrB, reinterpret_cast<const autopas::OwnershipState *>(isSiteOwnedBArr.data()), centerOfMass);
       }
 
       std::array<double, 3> forceAccumulator = {0., 0., 0.};
@@ -794,10 +708,10 @@ class LJMultisiteFunctorAVX
         const size_t siteTypeA = _PPLibrary->getSiteTypes(typeptrA[molA])[siteA];
         const std::array<double, 3> rotatedSitePositionA = rotatedSitePositionsA[siteA];
         const std::array<double, 3> exactSitePositionA =
-            autopas::utils::ArrayMath::add(rotatedSitePositionA, {xAptr[molA], yAptr[molA], zAptr[molA]});
+            autopas::utils::ArrayMath::add(rotatedSitePositionA, centerOfMass);
 
-        SoAKernel<newton3, true, false>(
-            siteVector, siteTypesB, exactSitePositionBx, exactSitePositionBy, exactSitePositionBz, siteForceBx,
+        SoAKernel<newton3, true, useSiteMasks>(
+            siteMask, siteTypesB, exactSitePositionBx, exactSitePositionBy, exactSitePositionBz, siteForceBx,
             siteForceBy, siteForceBz, isSiteOwnedBArr, ownedStateA, siteTypeA, exactSitePositionA, rotatedSitePositionA,
             forceAccumulator, torqueAccumulator, potentialEnergyAccumulator, virialAccumulator);
       }
@@ -894,8 +808,9 @@ class LJMultisiteFunctorAVX
 
     [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
 
-#pragma omp single  // Needed if multiple threads are running
-    buildSiteVectors(soa);
+    // This is necessary if multiple threads are involved
+#pragma omp single
+    buildGlobalSiteVectors(soa);
 
     __m256d virialSumX = _mm256_setzero_pd();
     __m256d virialSumY = _mm256_setzero_pd();
@@ -1232,9 +1147,7 @@ class LJMultisiteFunctorAVX
       siteTypesNeighbors.reserve(siteCountNeighbors);
     }
 
-    if constexpr (calculateGlobals) {
-      isNeighborSiteOwnedArr.reserve(siteCountNeighbors);
-    }
+    isNeighborSiteOwnedArr.reserve(siteCountNeighbors);
 
     const auto rotatedSitePositionsPrime =
         useMixing ? autopas::utils::quaternion::rotateVectorOfPositions(
@@ -1263,9 +1176,9 @@ class LJMultisiteFunctorAVX
         exactNeighborSitePositionsX.push_back(rotatedSitePositions[site][0] + xptr[neighborMolIndex]);
         exactNeighborSitePositionsY.push_back(rotatedSitePositions[site][1] + yptr[neighborMolIndex]);
         exactNeighborSitePositionsZ.push_back(rotatedSitePositions[site][2] + zptr[neighborMolIndex]);
-        if constexpr (calculateGlobals) {
-          isNeighborSiteOwnedArr.push_back(ownedStatePtr[neighborMolIndex] == OwnershipState::owned);
-        }
+
+        isNeighborSiteOwnedArr.push_back(ownedStatePtr[neighborMolIndex] == OwnershipState::owned);
+
         if constexpr (useMixing) {
           siteTypesNeighbors.push_back(_PPLibrary->getSiteTypes(typeptr[neighborMolIndex])[site]);
         }
@@ -1275,107 +1188,24 @@ class LJMultisiteFunctorAVX
     double potentialEnergyAccumulator = 0;
     std::array<double, 3> virialAccumulator = {0., 0., 0.};
 
-    // -- main force calculation --
+    // ------------------------------ Main force calculation -----------------------------
 
-    // - calculate mol mask -
-    std::vector<double, autopas::AlignedAllocator<double>> molMask;
-    molMask.reserve(neighborListSize);
+    // ------------------- Build site mask -------------------
+    std::vector<size_t, autopas::AlignedAllocator<size_t>> siteMask;
+    std::array<double, 3> centerOfMass{xptr[indexFirst], yptr[indexFirst], zptr[indexFirst]};
 
-    const __m256d xPosFirst = _mm256_broadcast_sd(&xptr[indexFirst]);
-    const __m256d yPosFirst = _mm256_broadcast_sd(&yptr[indexFirst]);
-    const __m256d zPosFirst = _mm256_broadcast_sd(&zptr[indexFirst]);
-
-    // WIP vectorized version
-
-    for (size_t neighborMol = 0; neighborMol < neighborListSize; neighborMol += vecLength) {
-      const size_t rest = neighborListSize - neighborMol;
-      const bool remainderCase = rest < vecLength;
-      __m256i remainderMask = remainderCase ? _masks[rest - 1] : _mm256_set1_epi64x(-1);
-      const __m256i neighborMolIndex =
-          autopas::utils::avx::load_epi64(remainderCase, &neighborList[neighborMol], remainderMask);
-
-      const __m256d xposB = autopas::utils::avx::gather_pd(remainderCase, xptr, neighborMolIndex, remainderMask);
-      const __m256d yposB = autopas::utils::avx::gather_pd(remainderCase, yptr, neighborMolIndex, remainderMask);
-      const __m256d zposB = autopas::utils::avx::gather_pd(remainderCase, zptr, neighborMolIndex, remainderMask);
-
-      const __m256d displacementCoMX = _mm256_sub_pd(xPosFirst, xposB);
-      const __m256d displacementCoMY = _mm256_sub_pd(yPosFirst, yposB);
-      const __m256d displacementCoMZ = _mm256_sub_pd(zPosFirst, zposB);
-
-      const __m256d distanceSquaredCoMX = _mm256_mul_pd(displacementCoMX, displacementCoMX);
-      const __m256d distanceSquaredCoMY = _mm256_mul_pd(displacementCoMY, displacementCoMY);
-      const __m256d distanceSquaredCoMZ = _mm256_mul_pd(displacementCoMZ, displacementCoMZ);
-
-      const __m256d distanceSquaredCoM =
-          _mm256_add_pd(_mm256_add_pd(distanceSquaredCoMX, distanceSquaredCoMY), distanceSquaredCoMZ);
-
-      const __m256d cutoffMask = _mm256_cmp_pd(distanceSquaredCoM, _cutoffSquared, _CMP_LE_OS);
-      const __m256i ownedStateB =
-          remainderCase
-              ? _mm256_mask_i64gather_epi64(_mm256_set1_epi64x(0),
-                                            reinterpret_cast<const long long int *>(ownedStatePtr), neighborMolIndex,
-                                            remainderMask, 8)
-              : _mm256_i64gather_epi64(reinterpret_cast<const long long int *>(ownedStatePtr), neighborMolIndex, 8);
-      const __m256d dummyMask =
-          _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB), _zero, _CMP_NEQ_OS);  // Assuming that dummy = 0
-      const __m256d totalMask = _mm256_and_pd(cutoffMask, dummyMask);
-
-      if (remainderCase) {
-        _mm256_maskstore_pd((&molMask[neighborMol]), remainderMask, totalMask);
-      } else {
-        _mm256_storeu_pd((&molMask[neighborMol]), totalMask);
-      }
-    }
-
-    //     generate mask for each site from molecular mask
-    std::vector<size_t, autopas::AlignedAllocator<size_t>> siteVector;
-    siteVector.reserve(siteCountNeighbors);
-
-    if constexpr (useSiteMasks) {
-      for (size_t neighborMol = 0; neighborMol < neighborListSize; ++neighborMol) {
-        const auto neighborMolIndex = neighborList[neighborMol];  // index of neighbor mol in soa
-
-        const double xPosB = xptr[neighborMolIndex];
-        const double yPosB = yptr[neighborMolIndex];
-        const double zPosB = zptr[neighborMolIndex];
-
-        // calculate displacement
-        const double displacementCoMX = xptr[indexFirst] - xPosB;
-        const double displacementCoMY = yptr[indexFirst] - yPosB;
-        const double displacementCoMZ = zptr[indexFirst] - zPosB;
-
-        // calculate distance squared
-        const double distanceSquaredCoMX = displacementCoMX * displacementCoMX;
-        const double distanceSquaredCoMY = displacementCoMY * displacementCoMY;
-        const double distanceSquaredCoMZ = displacementCoMZ * displacementCoMZ;
-
-        const double distanceSquaredCoM = distanceSquaredCoMX + distanceSquaredCoMY + distanceSquaredCoMZ;
-
-        bool cutoffCondition = distanceSquaredCoM <= _cutoffSquaredAoS;
-        bool dummyCondition = ownedStatePtr[neighborMolIndex] != OwnershipState::dummy;
-
-        size_t mask = cutoffCondition and dummyCondition ? std::numeric_limits<size_t>::max() : 0;
-
-        for (size_t siteB = 0; siteB < _PPLibrary->getNumSites(typeptr[neighborMolIndex]); ++siteB) {
-          siteVector.emplace_back(mask);
-        }
-      }
+    if constexpr (useCTC) {
+      siteMask =
+          buildSiteMask<true>(useSiteMasks, neighborList, xptr, yptr, zptr, typeptr, ownedStatePtr, centerOfMass);
     } else {
-      for (size_t neighborMol = 0, siteIndex = 0; neighborMol < neighborListSize; ++neighborMol) {
-        bool condition = static_cast<bool>(molMask[neighborMol]);
-        const auto neighborMolIndex = neighborList[neighborMol];
-        size_t siteCount = _PPLibrary->getNumSites(typeptr[neighborMolIndex]);  // TODO: change if no mixing is used
-        if (condition) {
-          for (size_t siteB = 0; siteB < siteCount; ++siteB) {
-            siteVector.emplace_back(siteIndex++);
-          }
-        } else {
-          siteIndex += siteCount;
-        }
-      }
+      std::vector<size_t, autopas::AlignedAllocator<size_t>> indices(siteCountNeighbors);
+      std::iota(indices.begin(), indices.end(), 0);
+      siteMask = buildSiteMask<false>(useSiteMasks, indices, exactNeighborSitePositionsX.data(),
+                                      exactNeighborSitePositionsY.data(), exactNeighborSitePositionsZ.data(), typeptr,
+                                      reinterpret_cast<const autopas::OwnershipState*>(isNeighborSiteOwnedArr.data()), centerOfMass);
     }
 
-    // - actual LJ calculation -
+    // ------------------- Calculate Forces -------------------
 
     std::array<double, 3> forceAccumulator = {0., 0., 0.};
     std::array<double, 3> torqueAccumulator = {0., 0., 0.};
@@ -1383,11 +1213,11 @@ class LJMultisiteFunctorAVX
     for (size_t primeSite = 0; primeSite < siteCountMolPrime; ++primeSite) {
       const size_t siteTypePrime = siteTypesPrime[primeSite];
       const std::array<double, 3> rotatedSitePositionPrime = rotatedSitePositionsPrime[primeSite];
-      const std::array<double, 3> exactSitePositionPrime = autopas::utils::ArrayMath::add(
-          rotatedSitePositionPrime, {xptr[indexFirst], yptr[indexFirst], zptr[indexFirst]});
+      const std::array<double, 3> exactSitePositionPrime =
+          autopas::utils::ArrayMath::add(rotatedSitePositionPrime, centerOfMass);
 
       SoAKernel<newton3, true, useSiteMasks>(
-          siteVector, siteTypesNeighbors, exactNeighborSitePositionsX, exactNeighborSitePositionsY,
+          siteMask, siteTypesNeighbors, exactNeighborSitePositionsX, exactNeighborSitePositionsY,
           exactNeighborSitePositionsZ, siteForceX, siteForceY, siteForceZ, isNeighborSiteOwnedArr, ownedStatePrime,
           siteTypePrime, exactSitePositionPrime, rotatedSitePositionPrime, forceAccumulator, torqueAccumulator,
           potentialEnergyAccumulator, virialAccumulator);
@@ -1400,7 +1230,7 @@ class LJMultisiteFunctorAVX
     typtr[indexFirst] += torqueAccumulator[1];
     tzptr[indexFirst] += torqueAccumulator[2];
 
-    // Reduce forces on individual neighbor sites to molecular forces & torques if newton3=true
+    // ------------------- Reduction -------------------
     if constexpr (newton3) {
       if constexpr (useMixing) {
         size_t siteIndex = 0;
@@ -1462,7 +1292,7 @@ class LJMultisiteFunctorAVX
    * @param soa the SoA to construct the site vectors for.
    * @note This function should be called exactly once per iteration
    */
-  inline void buildSiteVectors(SoAView<SoAArraysType> soa) {
+  inline void buildGlobalSiteVectors(SoAView<SoAArraysType> soa) {
     const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
     const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
@@ -1509,7 +1339,7 @@ class LJMultisiteFunctorAVX
 
   // TODO: DOCUMENTATION
   template <bool newton3, bool calculateTorque, bool masked>
-  inline void SoAKernel(const std::vector<size_t, autopas::AlignedAllocator<size_t>> &siteVector,
+  inline void SoAKernel(const std::vector<size_t, autopas::AlignedAllocator<size_t>> &siteMask,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &siteTypesB,
                         const std::vector<double, autopas::AlignedAllocator<double>> &exactSitePositionX,
                         const std::vector<double, autopas::AlignedAllocator<double>> &exactSitePositionY,
@@ -1553,18 +1383,18 @@ class LJMultisiteFunctorAVX
 
     __m256i sites = _mm256_setzero_si256();
 
-    for (size_t siteVectorIndex = 0; siteVectorIndex < siteVector.size(); siteVectorIndex += vecLength) {
-      const size_t remainder = siteVector.size() - siteVectorIndex;
+    for (size_t siteVectorIndex = 0; siteVectorIndex < siteMask.size(); siteVectorIndex += vecLength) {
+      const size_t remainder = siteMask.size() - siteVectorIndex;
       const bool remainderCase = remainder < vecLength;
       const __m256i remainderMask = remainderCase ? _masks[remainder - 1] : _mm256_set1_epi64x(-1);
 
       if constexpr (masked) {
-        sites = autopas::utils::avx::load_epi64(remainderCase, &siteVector[siteVectorIndex], remainderMask);
+        sites = autopas::utils::avx::load_epi64(remainderCase, &siteMask[siteVectorIndex], remainderMask);
         if (_mm256_testz_si256(sites, sites)) {
           continue;
         }
       } else {
-        sites = autopas::utils::avx::load_epi64(remainderCase, &siteVector[siteVectorIndex], remainderMask);
+        sites = autopas::utils::avx::load_epi64(remainderCase, &siteMask[siteVectorIndex], remainderMask);
       }
 
       if constexpr (useMixing) {
@@ -1687,7 +1517,7 @@ class LJMultisiteFunctorAVX
 
         const __m256d potentialEnergy6 =
             _mm256_fmadd_pd(epsilon24, lj12m6, shift6);  // FMA may not be supported on all CPUs
-        __m256d potentialEnergy6Masked = _mm256_and_pd(castedMask, potentialEnergy6);
+        __m256d potentialEnergy6Masked = masked ? _mm256_and_pd(castedMask, potentialEnergy6) : potentialEnergy6;
         potentialEnergy6Masked = _mm256_and_pd(_mm256_castsi256_pd(remainderMask), potentialEnergy6Masked);
 
         __m256i ownedStateA4 = _mm256_set1_epi64x(static_cast<int64_t>(ownedStateA));
@@ -1726,6 +1556,98 @@ class LJMultisiteFunctorAVX
       virialAccumulator[1] += utils::avx::horizontalSum(virialSumY);
       virialAccumulator[2] += utils::avx::horizontalSum(virialSumZ);
     }
+  }
+
+  template <bool CenterToCenter>
+  inline std::vector<size_t, autopas::AlignedAllocator<size_t>> buildSiteMask(
+      bool buildMask, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &indices,
+      const double *__restrict xptr, const double *__restrict yptr, const double *__restrict zptr,
+      const size_t *__restrict typeptr, const autopas::OwnershipState *__restrict ownedStatePtr,
+      const std::array<double, 3> &centerOfMass, size_t offset = 0);
+
+  template <>
+  inline std::vector<size_t, autopas::AlignedAllocator<size_t>> buildSiteMask<true>(
+      bool buildMask, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &indices,
+      const double *const __restrict xptr, const double *const __restrict yptr, const double *const __restrict zptr,
+      const size_t *const __restrict typeptr, const autopas::OwnershipState *const __restrict ownedStatePtr,
+      const std::array<double, 3> &centerOfMass, size_t offset) {
+    std::vector<size_t, autopas::AlignedAllocator<size_t>> siteMask;
+    size_t siteIndex = 0;
+
+    for (const auto molIndex : indices) {
+      const size_t siteCount = useMixing ? _PPLibrary->getNumSites(typeptr[molIndex]) : _sitePositionsLJ.size();
+
+      const double xPosB = xptr[molIndex];
+      const double yPosB = yptr[molIndex];
+      const double zPosB = zptr[molIndex];
+
+      // calculate displacement
+      const double displacementCoMX = centerOfMass[0] - xPosB;
+      const double displacementCoMY = centerOfMass[1] - yPosB;
+      const double displacementCoMZ = centerOfMass[2] - zPosB;
+
+      // calculate distance squared
+      const double distanceSquaredCoMX = displacementCoMX * displacementCoMX;
+      const double distanceSquaredCoMY = displacementCoMY * displacementCoMY;
+      const double distanceSquaredCoMZ = displacementCoMZ * displacementCoMZ;
+
+      const double distanceSquaredCoM = distanceSquaredCoMX + distanceSquaredCoMY + distanceSquaredCoMZ;
+
+      const bool cutoffCondition = distanceSquaredCoM <= _cutoffSquaredAoS;
+      const bool dummyCondition = ownedStatePtr[molIndex] != OwnershipState::dummy;
+      const bool condition = cutoffCondition and dummyCondition;
+
+      for (size_t siteB = 0; siteB < siteCount; ++siteB) {
+        if (buildMask) {
+          const size_t mask = condition ? std::numeric_limits<size_t>::max() : 0;
+          siteMask.emplace_back(mask);
+        } else if (condition) {
+          siteMask.emplace_back(siteIndex++);
+        } else {
+          siteIndex += siteCount;
+          break;
+        }
+      }
+    }
+    return siteMask;
+  }
+
+  template <>
+  inline std::vector<size_t, autopas::AlignedAllocator<size_t>> buildSiteMask<false>(
+      bool buildMask, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &indices,
+      const double *const __restrict xptr, const double *const __restrict yptr, const double *const __restrict zptr,
+      const size_t *const __restrict typeptr, const autopas::OwnershipState *const __restrict ownedStatePtr,
+      const std::array<double, 3> &centerOfMass, size_t offset) {
+    std::vector<size_t, autopas::AlignedAllocator<size_t>> siteMask;
+
+    for (size_t site : indices) {
+      const double xposB = xptr[site + offset];
+      const double yposB = yptr[site + offset];
+      const double zposB = zptr[site + offset];
+
+      // calculate displacement
+      const double displacementCoMX = centerOfMass[0] - xposB;
+      const double displacementCoMY = centerOfMass[1] - yposB;
+      const double displacementCoMZ = centerOfMass[2] - zposB;
+
+      const double distanceSquaredCoMX = displacementCoMX * displacementCoMX;
+      const double distanceSquaredCoMY = displacementCoMY * displacementCoMY;
+      const double distanceSquaredCoMZ = displacementCoMZ * displacementCoMZ;
+
+      const double distanceSquaredCoM = distanceSquaredCoMX + distanceSquaredCoMY + distanceSquaredCoMZ;
+
+      const bool cutoffCondition = distanceSquaredCoM <= _cutoffSquaredAoS;
+      const bool dummyCondition = ownedStatePtr[site + offset] != OwnershipState::dummy;
+      const bool condition = cutoffCondition and dummyCondition;
+
+      if (buildMask) {
+        const size_t mask = condition ? std::numeric_limits<size_t>::max() : 0;
+        siteMask.emplace_back(mask);
+      } else if (condition) {
+        siteMask.emplace_back(site);
+      }
+    }
+    return siteMask;
   }
 
  public:
