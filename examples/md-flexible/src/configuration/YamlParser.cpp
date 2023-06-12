@@ -4,6 +4,7 @@
  * @date 15.07.2019, 11.04.2023
  */
 #include "YamlParser.h"
+
 #include "autopas/options/TuningMetricOption.h"
 
 const std::string MDFlexParser::YamlParser::parseSequenceOneElementExpected(const YAML::Node node,
