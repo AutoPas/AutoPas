@@ -500,6 +500,7 @@ TEST_F(AutoTunerTest, testConfigSecondInvalid) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
+
   bool doRebuild = true;
   tuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);
   EXPECT_EQ(confN3, tuner.getCurrentConfig());
