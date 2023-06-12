@@ -99,6 +99,13 @@ class ParticlePropertiesLibrary {
   floatType getSigmaSquare(intType i) const;
 
   /**
+   * Getter for the particle's sigma.
+   * @param i typeId of the particle.
+   * @return sigma_i
+   */
+  floatType getSigma(intType i) const;
+
+  /**
    * Getter for the particle's mass.
    * @param i typeId of the particle.
    * @return mass_i
@@ -233,6 +240,11 @@ floatType ParticlePropertiesLibrary<floatType, intType>::get24Epsilon(intType i)
 template <typename floatType, typename intType>
 floatType ParticlePropertiesLibrary<floatType, intType>::getSigmaSquare(intType i) const {
   return _computedMixingData[i * _numRegisteredTypes + i].sigmaSquare;
+}
+
+template <typename floatType, typename intType>
+floatType ParticlePropertiesLibrary<floatType, intType>::getSigma(intType i) const {
+  return _sigmas[i];
 }
 
 template <typename floatType, typename intType>

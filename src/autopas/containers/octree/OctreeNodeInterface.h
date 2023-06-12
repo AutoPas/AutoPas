@@ -64,6 +64,11 @@ class OctreeNodeInterface {
   virtual std::unique_ptr<OctreeNodeInterface<Particle>> insert(const Particle &p) = 0;
 
   /**
+   * @copydoc OctreeNodeWrapper::deleteParticle()
+   */
+  virtual bool deleteParticle(Particle &particle) = 0;
+
+  /**
    * Put all particles that are below this node into the vector.
    * @param ps A reference to the vector that should contain the particles after the operation
    */
@@ -91,7 +96,7 @@ class OctreeNodeInterface {
   /**
    * @copydoc CellBasedParticleContainer::getNumberOfParticles()
    */
-  virtual unsigned int getNumberOfParticles() = 0;
+  virtual unsigned int getNumberOfParticles() const = 0;
 
   /**
    * Get a child node of this node (if there are children) given a specific octant using the spacial structure of the
@@ -102,7 +107,9 @@ class OctreeNodeInterface {
   virtual OctreeNodeInterface<Particle> *SON(octree::Octant O) = 0;
 
   /**
-   * Check if the node is a leaf or an inner node. The function exists for debugging.
+   * Check if the node is a leaf or an inner node. Use this over dynamic_cast to distinguish node types.
+   * It is 20-50 times faster!
+   * https://stackoverflow.com/a/49296405/7019073
    * @return true iff the node is a leaf, false otherwise.
    */
   virtual bool hasChildren() = 0;
@@ -120,8 +127,8 @@ class OctreeNodeInterface {
    * @param max The maximum coordinate in 3D space of the query area
    * @return A set of all leaf nodes that are in the query region
    */
-  virtual std::set<OctreeLeafNode<Particle> *> getLeavesInRange(std::array<double, 3> min,
-                                                                std::array<double, 3> max) = 0;
+  virtual std::set<OctreeLeafNode<Particle> *> getLeavesInRange(const std::array<double, 3> &min,
+                                                                const std::array<double, 3> &max) = 0;
 
   /**
    * Check if a 3d point is inside the node's axis aligned bounding box. (Set by the boxMin and boxMax fields.)
@@ -361,13 +368,13 @@ class OctreeNodeInterface {
    * Get the minimum coordinate of the enclosing box.
    * @return A point in 3D space
    */
-  [[nodiscard]] std::array<double, 3> getBoxMin() const { return _boxMin; }
+  [[nodiscard]] const std::array<double, 3> &getBoxMin() const { return _boxMin; }
 
   /**
    * Get the maximum coordinate of the enclosing box.
    * @return A point in 3D space
    */
-  [[nodiscard]] std::array<double, 3> getBoxMax() const { return _boxMax; }
+  [[nodiscard]] const std::array<double, 3> &getBoxMax() const { return _boxMax; }
 
   /**
    * Get the parent node of this node.

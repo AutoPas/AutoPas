@@ -32,39 +32,26 @@ class SetSearchSpaceBasedTuningStrategy : public TuningStrategyInterface {
                                     const std::set<TraversalOption> &allowedTraversalOptions,
                                     const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
                                     const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                                    const std::set<Newton3Option> &allowedNewton3Options)
-      : _allowedContainerOptions(allowedContainerOptions) {
-    // sets search space and current config
-    populateSearchSpace(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
-                        allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options);
-  }
+                                    const std::set<Newton3Option> &allowedNewton3Options);
 
   /**
    * Constructor for the SetSearchSpaceBasedTuningStrategy that only contains the given configurations.
    * This constructor assumes only valid configurations are passed! Mainly for easier unit testing.
    * @param allowedConfigurations Set of configurations AutoPas can choose from.
    */
-  explicit SetSearchSpaceBasedTuningStrategy(std::set<Configuration> allowedConfigurations)
-      : _allowedContainerOptions{}, _searchSpace(std::move(allowedConfigurations)) {
-    for (const auto &config : _searchSpace) {
-      _allowedContainerOptions.insert(config.container);
-    }
-    _currentConfig = _searchSpace.begin();
-  }
+  explicit SetSearchSpaceBasedTuningStrategy(std::set<Configuration> allowedConfigurations);
 
-  [[nodiscard]] inline std::set<ContainerOption> getAllowedContainerOptions() const override {
-    return _allowedContainerOptions;
-  }
+  [[nodiscard]] std::set<ContainerOption> getAllowedContainerOptions() const override;
 
-  inline const Configuration &getCurrentConfiguration() const override { return *_currentConfig; }
+  [[nodiscard]] const Configuration &getCurrentConfiguration() const override;
 
-  [[nodiscard]] inline bool searchSpaceIsTrivial() const override { return _searchSpace.size() == 1; }
+  [[nodiscard]] bool searchSpaceIsTrivial() const override;
 
-  [[nodiscard]] inline bool searchSpaceIsEmpty() const override { return _searchSpace.empty(); }
+  [[nodiscard]] bool searchSpaceIsEmpty() const override;
 
-  [[nodiscard]] inline bool smoothedHomogeneityAndMaxDensityNeeded() const override { return false; }
+  [[nodiscard]] bool smoothedHomogeneityAndMaxDensityNeeded() const override;
 
-  inline void removeN3Option(Newton3Option badNewton3Option) override;
+  void removeN3Option(Newton3Option badNewton3Option) override;
 
  protected:
   /**
@@ -76,19 +63,20 @@ class SetSearchSpaceBasedTuningStrategy : public TuningStrategyInterface {
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
    */
-  inline void populateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
-                                  const std::set<double> &allowedCellSizeFactors,
-                                  const std::set<TraversalOption> &allowedTraversalOptions,
-                                  const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
-                                  const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                                  const std::set<Newton3Option> &allowedNewton3Options);
+  void populateSearchSpace(const std::set<ContainerOption> &allowedContainerOptions,
+                           const std::set<double> &allowedCellSizeFactors,
+                           const std::set<TraversalOption> &allowedTraversalOptions,
+                           const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
+                           const std::set<DataLayoutOption> &allowedDataLayoutOptions,
+                           const std::set<Newton3Option> &allowedNewton3Options);
 
   /**
    * Finds the optimal configuration in a given search space.
    * @param searchSpace Map<Configuration, runTime> to search.
    * @return Iterator to optimal (=fastest) configuration.
    */
-  static inline auto getOptimum(const std::unordered_map<Configuration, long, ConfigHash> &searchSpace);
+  static std::unordered_map<autopas::Configuration, long, autopas::ConfigHash>::const_iterator getOptimum(
+      const std::unordered_map<Configuration, long, ConfigHash> &searchSpace);
 
   /**
    * Contains every allowed container option.
@@ -103,74 +91,4 @@ class SetSearchSpaceBasedTuningStrategy : public TuningStrategyInterface {
    */
   std::set<Configuration>::iterator _currentConfig{};
 };
-
-void SetSearchSpaceBasedTuningStrategy::populateSearchSpace(
-    const std::set<ContainerOption> &allowedContainerOptions, const std::set<double> &allowedCellSizeFactors,
-    const std::set<TraversalOption> &allowedTraversalOptions,
-    const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
-    const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options) {
-  // generate all potential configs
-  for (const auto &containerOption : allowedContainerOptions) {
-    // get all traversals of the container and restrict them to the allowed ones
-    const std::set<TraversalOption> &allContainerTraversals =
-        compatibleTraversals::allCompatibleTraversals(containerOption);
-    std::set<TraversalOption> allowedAndApplicable;
-    std::set_intersection(allowedTraversalOptions.begin(), allowedTraversalOptions.end(),
-                          allContainerTraversals.begin(), allContainerTraversals.end(),
-                          std::inserter(allowedAndApplicable, allowedAndApplicable.begin()));
-
-    for (const auto &cellSizeFactor : allowedCellSizeFactors)
-      for (const auto &traversalOption : allowedAndApplicable) {
-        // if load estimators are not applicable LoadEstimatorOption::none is returned.
-        const std::set<LoadEstimatorOption> allowedAndApplicableLoadEstimators =
-            loadEstimators::getApplicableLoadEstimators(containerOption, traversalOption, allowedLoadEstimatorOptions);
-        for (const auto &loadEstimatorOption : allowedAndApplicableLoadEstimators) {
-          for (const auto &dataLayoutOption : allowedDataLayoutOptions) {
-            for (const auto &newton3Option : allowedNewton3Options) {
-              _searchSpace.emplace(containerOption, cellSizeFactor, traversalOption, loadEstimatorOption,
-                                   dataLayoutOption, newton3Option);
-            }
-          }
-        }
-      }
-  }
-
-  AutoPasLog(debug, "Points in search space: {}", _searchSpace.size());
-
-  if (_searchSpace.empty()) {
-    autopas::utils::ExceptionHandler::exception("No valid configurations could be created.");
-  }
-
-  _currentConfig = _searchSpace.begin();
-}
-
-auto SetSearchSpaceBasedTuningStrategy::getOptimum(
-    const std::unordered_map<Configuration, long, ConfigHash> &searchSpace) {
-  // find mapping with smallest second (=runtime)
-  return std::min_element(
-      searchSpace.begin(), searchSpace.end(),
-      [](std::pair<Configuration, long> a, std::pair<Configuration, long> b) -> bool { return a.second < b.second; });
-}
-
-void SetSearchSpaceBasedTuningStrategy::removeN3Option(Newton3Option badNewton3Option) {
-  for (auto ssIter = _searchSpace.begin(); ssIter != _searchSpace.end();) {
-    if (ssIter->newton3 == badNewton3Option) {
-      // change current config to the next non-deleted
-      if (ssIter == _currentConfig) {
-        ssIter = _searchSpace.erase(ssIter);
-        _currentConfig = ssIter;
-      } else {
-        ssIter = _searchSpace.erase(ssIter);
-      }
-    } else {
-      ++ssIter;
-    }
-  }
-
-  if (this->searchSpaceIsEmpty()) {
-    utils::ExceptionHandler::exception(
-        "Removing all configurations with Newton 3 {} caused the search space to be empty!", badNewton3Option);
-  }
-}
-
 }  // namespace autopas

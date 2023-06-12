@@ -27,7 +27,6 @@ namespace autopas {
  * the interaction.
  * Cells are created using a cell size of at least cutoff + skin radius.
  * @tparam Particle
- * @todo deleting particles should also invalidate the verlet lists - should be implemented somehow
  */
 template <class Particle>
 class VerletLists : public VerletListsLinkedBase<Particle> {
@@ -50,20 +49,21 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
 
   /**
    * Constructor of the VerletLists class.
-   * The neighbor lists are build using a search radius of cutoff + skin.
+   * The neighbor lists are build using a search radius of cutoff + skinPerTimestep*rebuildFrequency.
    * @param boxMin The lower corner of the domain.
    * @param boxMax The upper corner of the domain.
    * @param cutoff The cutoff radius of the interaction.
-   * @param skin The skin radius.
+   * @param skinPerTimestep The skin radius per timestep.
+   * @param rebuildFrequency rebuild fequency.
    * @param buildVerletListType Specifies how the verlet list should be build, see BuildVerletListType
    * @param cellSizeFactor cell size factor ralative to cutoff
    */
-  VerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-              const double skin, const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
+  VerletLists(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
+              const double skinPerTimestep, const unsigned int rebuildFrequency,
+              const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
               const double cellSizeFactor = 1.0)
-      : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skin, compatibleTraversals::allVLCompatibleTraversals(),
-                                        cellSizeFactor),
-        _soaListIsValid(false),
+      : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency,
+                                        compatibleTraversals::allVLCompatibleTraversals(), cellSizeFactor),
         _buildVerletListType(buildVerletListType) {}
 
   /**
@@ -102,7 +102,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
     this->updateVerletListsAoS(traversal->getUseNewton3());
     // the neighbor list is now valid
-    this->_neighborListIsValid = true;
+    this->_neighborListIsValid.store(true, std::memory_order_relaxed);
 
     if (not _soaListIsValid and traversal->getDataLayout() == DataLayoutOption::soa) {
       // only do this if we need it, i.e., if we are using soa!
@@ -118,7 +118,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
   virtual void updateVerletListsAoS(bool useNewton3) {
     generateAoSNeighborLists();
     typename VerletListHelpers<Particle>::VerletListGeneratorFunctor f(_aosNeighborLists,
-                                                                       this->getCutoff() + this->getSkin());
+                                                                       this->getCutoff() + this->getVerletSkin());
 
     /// @todo autotune traversal
     switch (_buildVerletListType) {
@@ -202,7 +202,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
       }
     }
 
-    AutoPasLog(debug,
+    AutoPasLog(DEBUG,
                "VerletLists::generateSoAListFromAoSVerletLists: average verlet list "
                "size is {}",
                static_cast<double>(accumulatedListSize) / _aosNeighborLists.size());
@@ -230,7 +230,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
   /**
    * Shows if the SoA neighbor list is currently valid.
    */
-  bool _soaListIsValid;
+  bool _soaListIsValid{false};
 
   /**
    * Specifies for what data layout the verlet lists are build.

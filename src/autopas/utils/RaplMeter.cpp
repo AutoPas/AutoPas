@@ -59,7 +59,7 @@ void RaplMeter::init() {
       }
       fclose(fd);
       if (this->_cpus.size() == 0 or last_package < package) {
-        AutoPasLog(debug, "Found CPU with ID {} in package {}", i, package);
+        AutoPasLog(DEBUG, "Found CPU with ID {} in package {}", i, package);
         _cpus.push_back(i);
         last_package = package;
       }
@@ -78,72 +78,72 @@ void RaplMeter::init() {
   this->_psys_config = 0;
   if (FILE *fff = fopen("/sys/bus/event_source/devices/power/events/energy-psys", "r")) {
     if (fscanf(fff, "event=%x", &this->_psys_config) != 1) {
-      AutoPasLog(warn, "psys measurement support detected, but failed to parse config file");
+      AutoPasLog(WARN, "psys measurement support detected, but failed to parse config file");
       _psys_config = 0;
     }
     fclose(fff);
   }
   if (FILE *fff = fopen("/sys/bus/event_source/devices/power/events/energy-psys.scale", "r")) {
     if (fscanf(fff, "%lf", &this->_psys_unit) != 1) {
-      AutoPasLog(warn,
+      AutoPasLog(WARN,
                  "psys energy measurement support detected, but failed to parse scale file, using 1.0 as fallback");
       _psys_unit = 1.0;
     }
-    AutoPasLog(debug, "psys scale={} J", _psys_unit);
+    AutoPasLog(DEBUG, "psys scale={} J", _psys_unit);
     fclose(fff);
   }
 
   this->_pkg_config = 0;
   if (FILE *fff = fopen("/sys/bus/event_source/devices/power/events/energy-pkg", "r")) {
     if (fscanf(fff, "event=%x", &this->_pkg_config) != 1) {
-      AutoPasLog(warn, "pkg energy measurement support detected, but failed to parse config file");
+      AutoPasLog(WARN, "pkg energy measurement support detected, but failed to parse config file");
       _pkg_config = 0;
     }
     fclose(fff);
   }
   if (FILE *fff = fopen("/sys/bus/event_source/devices/power/events/energy-pkg.scale", "r")) {
     if (fscanf(fff, "%lf", &this->_pkg_unit) != 1) {
-      AutoPasLog(warn,
+      AutoPasLog(WARN,
                  "pkg energy measurement support detected, but failed to parse scale file, using 1.0 as fallback");
       _pkg_unit = 1.0;
     }
-    AutoPasLog(debug, "pkg scale={} J", _pkg_unit);
+    AutoPasLog(DEBUG, "pkg scale={} J", _pkg_unit);
     fclose(fff);
   }
 
   this->_cores_config = 0;
   if (FILE *fff = fopen("/sys/bus/event_source/devices/power/events/energy-cores", "r")) {
     if (fscanf(fff, "event=%x", &this->_cores_config) != 1) {
-      AutoPasLog(warn, "cores energy measurement support detected, but failed to parse config file");
+      AutoPasLog(WARN, "cores energy measurement support detected, but failed to parse config file");
       _cores_config = 0;
     }
     fclose(fff);
   }
   if (FILE *fff = fopen("/sys/bus/event_source/devices/power/events/energy-cores.scale", "r")) {
     if (fscanf(fff, "%lf", &this->_cores_unit) != 1) {
-      AutoPasLog(warn,
+      AutoPasLog(WARN,
                  "cores energy measurement support detected, but failed to parse scale file, using 1.0 as fallback");
       _cores_unit = 1.0;
     }
-    AutoPasLog(debug, "cores scale={} J", _cores_unit);
+    AutoPasLog(DEBUG, "cores scale={} J", _cores_unit);
     fclose(fff);
   }
 
   this->_ram_config = 0;
   if (FILE *fff = fopen("/sys/bus/event_source/devices/power/events/energy-ram", "r")) {
     if (fscanf(fff, "event=%x", &this->_ram_config) != 1) {
-      AutoPasLog(warn, "ram energy measurement support detected, but failed to parse config file");
+      AutoPasLog(WARN, "ram energy measurement support detected, but failed to parse config file");
       _ram_config = 0;
     }
     fclose(fff);
   }
   if (FILE *fff = fopen("/sys/bus/event_source/devices/power/events/energy-ram.scale", "r")) {
     if (fscanf(fff, "%lf", &this->_ram_unit) != 1) {
-      AutoPasLog(warn,
+      AutoPasLog(WARN,
                  "ram energy measurement support detected, but failed to parse scale file, using 1.0 as fallback");
       _ram_unit = 1.0;
     }
-    AutoPasLog(debug, "ram scale={} J", _ram_unit);
+    AutoPasLog(DEBUG, "ram scale={} J", _ram_unit);
     fclose(fff);
   }
 }

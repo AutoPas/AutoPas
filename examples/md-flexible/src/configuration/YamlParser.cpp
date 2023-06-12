@@ -1,393 +1,702 @@
 /**
  * @file YamlParser.cpp
- * @author N. Fottner
- * @date 15.07.2019
+ * @author N. Fottner, D. Martin
+ * @date 15.07.2019, 11.04.2023
  */
 #include "YamlParser.h"
+#include "autopas/options/TuningMetricOption.h"
 
-#include <string>
+const std::string MDFlexParser::YamlParser::parseSequenceOneElementExpected(const YAML::Node node,
+                                                                            const std::string &errMsg) {
+  if (node.IsSequence()) {
+    if (node.size() != 1) {
+      throw std::runtime_error(errMsg);
+    }
+    return autopas::utils::ArrayUtils::to_string(node, "", {"", ""});
+  } else {
+    return node.as<std::string>();
+  }
+}
+
+const std::string MDFlexParser::YamlParser::makeErrorMsg(const YAML::Mark &mark, const std::string &key,
+                                                         const std::string &errorMsg, const std::string &expected,
+                                                         const std::string &description) {
+  std::stringstream ss;
+  ss << "YamlParser: Parsing error in line " << (mark.line + 1) << " at column " << mark.column << ", key: " << key
+     << std::endl
+     << "Message: " << errorMsg << std::endl
+     << "Expected: " << expected << std::endl
+     << "Parameter description: " << description << std::endl;
+  return ss.str();
+}
+
+const CubeGrid MDFlexParser::YamlParser::parseCubeGridObject(const MDFlexConfig &config, const YAML::Node node,
+                                                             std::vector<std::string> &objectErrors) {
+  const auto velocity = parseObjectValueSequence<double, 3>(node, MDFlexConfig::velocityStr, objectErrors);
+  const auto particleType = parseObjectValueSingle<unsigned long>(node, MDFlexConfig::particleTypeStr, objectErrors);
+  const auto epsilon = parseObjectValueSingle<double>(node, config.epsilonMap.name.c_str(), objectErrors);
+  const auto sigma = parseObjectValueSingle<double>(node, config.sigmaMap.name.c_str(), objectErrors);
+  const auto mass = parseObjectValueSingle<double>(node, config.massMap.name.c_str(), objectErrors);
+  const auto particlesPerDim =
+      parseObjectValueSequence<unsigned long, 3>(node, config.particlesPerDim.name, objectErrors);
+  const auto particleSpacing = parseObjectValueSingle<double>(node, config.particleSpacing.name.c_str(), objectErrors);
+  const auto bottomLeftCorner =
+      parseObjectValueSequence<double, 3>(node, MDFlexConfig::bottomLeftBackCornerStr, objectErrors);
+
+  const CubeGrid cubeGrid(velocity, particleType, epsilon, sigma, mass, particlesPerDim, particleSpacing,
+                          bottomLeftCorner);
+  return cubeGrid;
+}
+
+const CubeUniform MDFlexParser::YamlParser::parseCubeUniformObject(const MDFlexConfig &config, const YAML::Node node,
+                                                                   std::vector<std::string> &objectErrors) {
+  const auto velocity = parseObjectValueSequence<double, 3>(node, MDFlexConfig::velocityStr, objectErrors);
+  const auto particleType = parseObjectValueSingle<unsigned long>(node, MDFlexConfig::particleTypeStr, objectErrors);
+  const auto epsilon = parseObjectValueSingle<double>(node, config.epsilonMap.name.c_str(), objectErrors);
+  const auto sigma = parseObjectValueSingle<double>(node, config.sigmaMap.name.c_str(), objectErrors);
+  const auto mass = parseObjectValueSingle<double>(node, config.massMap.name.c_str(), objectErrors);
+  const auto numParticles = parseObjectValueSingle<size_t>(node, MDFlexConfig::particlesPerObjectStr, objectErrors);
+  const auto boxLength = parseObjectValueSequence<double, 3>(node, config.boxLength.name, objectErrors);
+  const auto bottomLeftCorner =
+      parseObjectValueSequence<double, 3>(node, MDFlexConfig::bottomLeftBackCornerStr, objectErrors);
+
+  const CubeUniform cubeUniform(velocity, particleType, epsilon, sigma, mass, numParticles, boxLength,
+                                bottomLeftCorner);
+  return cubeUniform;
+}
+
+const CubeGauss MDFlexParser::YamlParser::parseCubeGaussObject(const MDFlexConfig &config, const YAML::Node node,
+                                                               std::vector<std::string> &objectErrors) {
+  const auto velocity = parseObjectValueSequence<double, 3>(node, MDFlexConfig::velocityStr, objectErrors);
+  const auto particleType = parseObjectValueSingle<unsigned long>(node, MDFlexConfig::particleTypeStr, objectErrors);
+  const auto epsilon = parseObjectValueSingle<double>(node, config.epsilonMap.name.c_str(), objectErrors);
+  const auto sigma = parseObjectValueSingle<double>(node, config.sigmaMap.name.c_str(), objectErrors);
+  const auto mass = parseObjectValueSingle<double>(node, config.massMap.name.c_str(), objectErrors);
+  const auto numParticles = parseObjectValueSingle<size_t>(node, MDFlexConfig::particlesPerObjectStr, objectErrors);
+  const auto boxLength = parseObjectValueSequence<double, 3>(node, config.boxLength.name, objectErrors);
+  const auto distributionMean = parseObjectValueSequence<double, 3>(node, config.distributionMean.name, objectErrors);
+  const auto distributionStdDev =
+      parseObjectValueSequence<double, 3>(node, config.distributionStdDev.name, objectErrors);
+  const auto bottomLeftCorner =
+      parseObjectValueSequence<double, 3>(node, MDFlexConfig::bottomLeftBackCornerStr, objectErrors);
+
+  const CubeGauss cubeGauss(velocity, particleType, epsilon, sigma, mass, numParticles, boxLength, distributionMean,
+                            distributionStdDev, bottomLeftCorner);
+  return cubeGauss;
+}
+
+const Sphere MDFlexParser::YamlParser::parseSphereObject(const MDFlexConfig &config, const YAML::Node node,
+                                                         std::vector<std::string> &objectErrors) {
+  const auto velocity = parseObjectValueSequence<double, 3>(node, MDFlexConfig::velocityStr, objectErrors);
+  const auto particleType = parseObjectValueSingle<unsigned long>(node, MDFlexConfig::particleTypeStr, objectErrors);
+  const auto epsilon = parseObjectValueSingle<double>(node, config.epsilonMap.name.c_str(), objectErrors);
+  const auto sigma = parseObjectValueSingle<double>(node, config.sigmaMap.name.c_str(), objectErrors);
+  const auto mass = parseObjectValueSingle<double>(node, config.massMap.name.c_str(), objectErrors);
+  const auto sphereCenter = parseObjectValueSequence<double, 3>(node, MDFlexConfig::sphereCenterStr, objectErrors);
+  const auto sphereRadius = parseObjectValueSingle<double>(node, MDFlexConfig::sphereRadiusStr, objectErrors);
+  const auto particleSpacing = parseObjectValueSingle<double>(node, config.particleSpacing.name.c_str(), objectErrors);
+
+  const Sphere sphere(velocity, particleType, epsilon, sigma, mass, sphereCenter, sphereRadius, particleSpacing);
+  return sphere;
+}
+
+const CubeClosestPacked MDFlexParser::YamlParser::parseCubeClosestPacked(const MDFlexConfig &config,
+                                                                         const YAML::Node node,
+                                                                         std::vector<std::string> &objectErrors) {
+  const auto velocity = parseObjectValueSequence<double, 3>(node, MDFlexConfig::velocityStr, objectErrors);
+  const auto particleType = parseObjectValueSingle<unsigned long>(node, MDFlexConfig::particleTypeStr, objectErrors);
+  const auto epsilon = parseObjectValueSingle<double>(node, config.epsilonMap.name.c_str(), objectErrors);
+  const auto sigma = parseObjectValueSingle<double>(node, config.sigmaMap.name.c_str(), objectErrors);
+  const auto mass = parseObjectValueSingle<double>(node, config.massMap.name.c_str(), objectErrors);
+  const auto particleSpacing = parseObjectValueSingle<double>(node, config.particleSpacing.name.c_str(), objectErrors);
+  const auto boxLength = parseObjectValueSequence<double, 3>(node, config.boxLength.name, objectErrors);
+  const auto bottomLeftCorner =
+      parseObjectValueSequence<double, 3>(node, MDFlexConfig::bottomLeftBackCornerStr, objectErrors);
+
+  const CubeClosestPacked cubeClosestPacked(velocity, particleType, epsilon, sigma, mass, particleSpacing, boxLength,
+                                            bottomLeftCorner);
+
+  return cubeClosestPacked;
+}
 
 bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
-  YAML::Node node = YAML::LoadFile(config.yamlFilename.value);
+  /*
+  Global variables used to print the expected input and a description of the parameter if an error occurs while
+  parsing. Yaml mark is used to identify the current line of the error.
+  */
+  std::string expected;
+  std::string description;
+  YAML::Mark mark;
+  std::vector<std::string> errors;
 
-  if (node[config.containerOptions.name]) {
-    config.containerOptions.value = autopas::ContainerOption::parseOptions(
-        autopas::utils::ArrayUtils::to_string(node[config.containerOptions.name], ", ", {"", ""}));
-  }
-  if (node[config.boxMin.name]) {
-    auto tmpNode = node[config.boxMin.name];
-    config.boxMin.value = {tmpNode[0].as<double>(), tmpNode[1].as<double>(), tmpNode[2].as<double>()};
-  }
-  if (node[config.boxMax.name]) {
-    auto tmpNode = node[config.boxMax.name];
-    config.boxMax.value = {tmpNode[0].as<double>(), tmpNode[1].as<double>(), tmpNode[2].as<double>()};
-  }
-  if (node[config.subdivideDimension.name]) {
-    auto tmpNode = node[config.subdivideDimension.name];
-    config.subdivideDimension.value = {tmpNode[0].as<bool>(), tmpNode[1].as<bool>(), tmpNode[2].as<bool>()};
-  }
-  if (node[config.loadBalancingInterval.name]) {
-    config.loadBalancingInterval.value = node[config.loadBalancingInterval.name].as<unsigned int>();
-  }
-  if (node[config.selectorStrategy.name]) {
-    auto parsedOptions =
-        autopas::SelectorStrategyOption::parseOptions(node[config.selectorStrategy.name].as<std::string>());
-    if (parsedOptions.size() != 1) {
-      throw std::runtime_error(
-          "YamlParser::parseYamlFile: Pass exactly one selector strategy option! Possible values:\n" +
-          autopas::utils::ArrayUtils::to_string(autopas::SelectorStrategyOption::getAllOptions(), "", {"(", ")"}));
-    }
-    config.selectorStrategy.value = *parsedOptions.begin();
-  }
-  if (node[config.boundaryOption.name]) {
-    auto tmpNode = node[config.boundaryOption.name];
-    config.boundaryOption.value = {options::BoundaryTypeOption::parseOptionExact(tmpNode[0].as<std::string>()),
-                                   options::BoundaryTypeOption::parseOptionExact(tmpNode[1].as<std::string>()),
-                                   options::BoundaryTypeOption::parseOptionExact(tmpNode[2].as<std::string>())};
-  }
-  if (node[config.cutoff.name]) {
-    config.cutoff.value = node[config.cutoff.name].as<double>();
-  }
-  if (node[config.cellSizeFactors.name]) {
-    config.cellSizeFactors.value = autopas::utils::StringUtils::parseNumberSet(
-        autopas::utils::ArrayUtils::to_string(node[config.cellSizeFactors.name], ", ", {"", ""}));
-  }
-  if (node[config.dataLayoutOptions.name]) {
-    config.dataLayoutOptions.value = autopas::DataLayoutOption::parseOptions(
-        autopas::utils::ArrayUtils::to_string(node[config.dataLayoutOptions.name], ", ", {"", ""}));
-  }
-  if (node[config.functorOption.name]) {
-    auto strArg = node[config.functorOption.name].as<std::string>();
-    transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
-    if (strArg.find("avx") != std::string::npos) {
-      config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX;
-    } else if (strArg.find("sve") != std::string::npos) {
-      config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
-    } else if (strArg.find("glob") != std::string::npos) {
-      config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_Globals;
-    } else if (strArg.find("lj") != std::string::npos or strArg.find("lennard-jones") != std::string::npos) {
-      config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
-    }
-  }
-  if (node[config.iterations.name]) {
-    config.iterations.value = node[config.iterations.name].as<unsigned long>();
-  }
-  if (node[config.tuningPhases.name]) {
-    config.tuningPhases.value = node[config.tuningPhases.name].as<unsigned long>();
-  }
-  if (node[config.dontMeasureFlops.name]) {
-    // "not" needed because of semantics
-    config.dontMeasureFlops.value = not node[config.dontMeasureFlops.name].as<bool>();
-  }
-  if (node[config.dontCreateEndConfig.name]) {
-    // "not" needed because of semantics
-    config.dontCreateEndConfig.value = not node[config.dontCreateEndConfig.name].as<bool>();
-  }
-  if (node[config.dontShowProgressBar.name]) {
-    config.dontShowProgressBar.value = node[config.dontShowProgressBar.name].as<bool>();
-  }
-  if (node[config.newton3Options.name]) {
-    config.newton3Options.value = autopas::Newton3Option::parseOptions(
-        autopas::utils::ArrayUtils::to_string(node[config.newton3Options.name], ", ", {"", ""}));
-  }
-  if (node[config.deltaT.name]) {
-    config.deltaT.value = node[config.deltaT.name].as<double>();
-  }
-  if (node[config.traversalOptions.name]) {
-    config.traversalOptions.value = autopas::TraversalOption::parseOptions(
-        autopas::utils::ArrayUtils::to_string(node[config.traversalOptions.name], ", ", {"", ""}));
-  }
-  if (node[config.loadEstimatorOptions.name]) {
-    config.loadEstimatorOptions.value = autopas::LoadEstimatorOption::parseOptions(
-        autopas::utils::ArrayUtils::to_string(node[config.loadEstimatorOptions.name], ", ", {"", ""}));
-  }
-  if (node[config.tuningInterval.name]) {
-    config.tuningInterval.value = node[config.tuningInterval.name].as<unsigned int>();
-  }
-  if (node[config.tuningSamples.name]) {
-    config.tuningSamples.value = node[config.tuningSamples.name].as<unsigned int>();
-  }
-  if (node[config.tuningMaxEvidence.name]) {
-    config.tuningMaxEvidence.value = node[config.tuningMaxEvidence.name].as<unsigned int>();
-  }
-  if (node[config.relativeOptimumRange.name]) {
-    config.relativeOptimumRange.value = node[config.relativeOptimumRange.name].as<double>();
-  }
-  if (node[config.maxTuningPhasesWithoutTest.name]) {
-    config.maxTuningPhasesWithoutTest.value = node[config.maxTuningPhasesWithoutTest.name].as<unsigned int>();
-  }
-  if (node[config.relativeBlacklistRange.name]) {
-    config.relativeBlacklistRange.value = node[config.relativeBlacklistRange.name].as<double>();
-  }
-  if (node[config.evidenceFirstPrediction.name]) {
-    config.evidenceFirstPrediction.value = node[config.evidenceFirstPrediction.name].as<unsigned int>();
-  }
-  if (node[config.extrapolationMethodOption.name]) {
-    auto parsedOptions =
-        autopas::ExtrapolationMethodOption::parseOptions(node[config.extrapolationMethodOption.name].as<std::string>());
-    if (parsedOptions.size() != 1) {
-      throw std::runtime_error(
-          "YamlParser::parseYamlFile: Pass exactly one extrapolation method option! Possible values:\n" +
-          autopas::utils::ArrayUtils::to_string(autopas::ExtrapolationMethodOption::getAllOptions(), "", {"(", ")"}));
-    }
-    config.extrapolationMethodOption.value = *parsedOptions.begin();
-  }
-  if (node[config.tuningStrategyOption.name]) {
-    auto parsedOptions =
-        autopas::TuningStrategyOption::parseOptions(node[config.tuningStrategyOption.name].as<std::string>());
-    if (parsedOptions.size() != 1) {
-      throw std::runtime_error(
-          "YamlParser::parseYamlFile: Pass exactly one tuning strategy option! Possible values:\n" +
-          autopas::utils::ArrayUtils::to_string(autopas::TuningStrategyOption::getAllOptions(), "", {"(", ")"}));
-    }
-    config.tuningStrategyOption.value = *parsedOptions.begin();
-  }
-  if (node[config.tuningMetricOption.name]) {
-    auto parsedOptions =
-        autopas::TuningMetricOption::parseOptions(node[config.tuningMetricOption.name].as<std::string>());
-    if (parsedOptions.size() != 1) {
-      throw std::runtime_error(
-          "YamlParser::parseYamlFile: Pass exactly one tuning Metric option! Possible values:\n" +
-          autopas::utils::ArrayUtils::to_string(autopas::TuningMetricOption::getAllOptions(), "", {"(", ")"}));
-    }
-    config.tuningMetricOption.value = *parsedOptions.begin();
-  }
-  if (node[config.mpiStrategyOption.name]) {
-    auto parsedOptions =
-        autopas::MPIStrategyOption::parseOptions(node[config.mpiStrategyOption.name].as<std::string>());
-    if (parsedOptions.size() != 1) {
-      throw std::runtime_error(
-          "YamlParser::parseYamlFile: Pass exactly one mpi strategy option!"
-          "AutoPas cannot switch between several.");
-    }
-    config.mpiStrategyOption.value = *parsedOptions.begin();
-  }
-  if (node[config.MPITuningMaxDifferenceForBucket.name]) {
-    config.MPITuningMaxDifferenceForBucket.value = node[config.MPITuningMaxDifferenceForBucket.name].as<double>();
-  }
-  if (node[config.MPITuningWeightForMaxDensity.name]) {
-    config.MPITuningWeightForMaxDensity.value = node[config.MPITuningWeightForMaxDensity.name].as<double>();
-  }
-  if (node[config.acquisitionFunctionOption.name]) {
-    auto parsedOptions =
-        autopas::AcquisitionFunctionOption::parseOptions(node[config.acquisitionFunctionOption.name].as<std::string>());
-    if (parsedOptions.size() != 1) {
-      throw std::runtime_error(
-          "YamlParser::parseYamlFile: Pass exactly one acquisition function option! Possible values:\n" +
-          autopas::utils::ArrayUtils::to_string(autopas::AcquisitionFunctionOption::getAllOptions(), "", {"(", ")"}));
-    }
-    config.acquisitionFunctionOption.value = *parsedOptions.begin();
-  }
-  if (node[config.logLevel.name]) {
-    auto strArg = node[config.logLevel.name].as<std::string>();
-    switch (std::tolower(strArg[0])) {
-      case 't': {
-        config.logLevel.value = autopas::Logger::LogLevel::trace;
-        break;
-      }
-      case 'd': {
-        config.logLevel.value = autopas::Logger::LogLevel::debug;
-        break;
-      }
-      case 'i': {
-        config.logLevel.value = autopas::Logger::LogLevel::info;
-        break;
-      }
-      case 'w': {
-        config.logLevel.value = autopas::Logger::LogLevel::warn;
-        break;
-      }
-      case 'e': {
-        config.logLevel.value = autopas::Logger::LogLevel::err;
-        break;
-      }
-      case 'c': {
-        config.logLevel.value = autopas::Logger::LogLevel::critical;
-        break;
-      }
-      case 'o': {
-        config.logLevel.value = autopas::Logger::LogLevel::off;
-        break;
-      }
-    }
-  }
-  if (node[config.checkpointfile.name]) {
-    config.checkpointfile.value = node[config.checkpointfile.name].as<std::string>();
-  }
-  if (node[config.logFileName.name]) {
-    config.logFileName.value = node[config.logFileName.name].as<std::string>();
-  }
-  if (node[config.verletRebuildFrequency.name]) {
-    config.verletRebuildFrequency.value = node[config.verletRebuildFrequency.name].as<unsigned int>();
-  }
-  if (node[config.verletSkinRadius.name]) {
-    config.verletSkinRadius.value = node[config.verletSkinRadius.name].as<double>();
-  }
-  if (node[config.verletClusterSize.name]) {
-    config.verletClusterSize.value = node[config.verletClusterSize.name].as<unsigned int>();
-  }
-  if (node[config.vtkFileName.name]) {
-    config.vtkFileName.value = node[config.vtkFileName.name].as<std::string>();
-  }
-  if (node[config.vtkWriteFrequency.name]) {
-    config.vtkWriteFrequency.value = node[config.vtkWriteFrequency.name].as<size_t>();
-  }
-  if (node[config.globalForce.name]) {
-    config.globalForce.value = {node[config.globalForce.name][0].as<double>(),
-                                node[config.globalForce.name][1].as<double>(),
-                                node[config.globalForce.name][2].as<double>()};
-  }
-  if (node[MDFlexConfig::objectsStr]) {
-    // remove default objects
-    config.cubeGridObjects.clear();
-    config.cubeGaussObjects.clear();
-    config.cubeUniformObjects.clear();
-    config.sphereObjects.clear();
-    config.cubeClosestPackedObjects.clear();
-    config.epsilonMap.value.clear();
-    config.sigmaMap.value.clear();
-    config.massMap.value.clear();
+  const auto node = YAML::LoadFile(config.yamlFilename.value);
 
-    for (auto objectIterator = node[MDFlexConfig::objectsStr].begin();
-         objectIterator != node[MDFlexConfig::objectsStr].end(); ++objectIterator) {
-      if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeGridObjectsStr) {
-        for (auto it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
-          CubeGrid cubeGrid({it->second[MDFlexConfig::velocityStr][0].as<double>(),
-                             it->second[MDFlexConfig::velocityStr][1].as<double>(),
-                             it->second[MDFlexConfig::velocityStr][2].as<double>()},
-                            it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
-                            it->second[config.epsilonMap.name].as<double>(),
-                            it->second[config.sigmaMap.name].as<double>(), it->second[config.massMap.name].as<double>(),
-                            {it->second[config.particlesPerDim.name][0].as<unsigned long>(),
-                             it->second[config.particlesPerDim.name][1].as<unsigned long>(),
-                             it->second[config.particlesPerDim.name][2].as<unsigned long>()},
-                            it->second[config.particleSpacing.name].as<double>(),
-                            {it->second[MDFlexConfig::bottomLeftBackCornerStr][0].as<double>(),
-                             it->second[MDFlexConfig::bottomLeftBackCornerStr][1].as<double>(),
-                             it->second[MDFlexConfig::bottomLeftBackCornerStr][2].as<double>()});
+  // We iterate over all keys to identify known/unknown parameters.
+  for (auto itemIterator = node.begin(); itemIterator != node.end(); ++itemIterator) {
+    std::string key;
+    try {
+      key = itemIterator->first.as<std::string>();
+      mark = node[key].Mark();
 
-          config.cubeGridObjects.emplace_back(cubeGrid);
-          config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
-                                 it->second[config.epsilonMap.name].as<double>(),
-                                 it->second[config.sigmaMap.name].as<double>(),
-                                 it->second[config.massMap.name].as<double>());
+      if (key == config.containerOptions.name) {
+        expected = "YAML-sequence of possible values.";
+        description = config.containerOptions.description;
+
+        config.containerOptions.value =
+            autopas::ContainerOption::parseOptions(autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
+
+        if (config.containerOptions.value.empty()) {
+          throw std::runtime_error("Parsed container list is empty. You used possibly an unknown container option.");
         }
-        continue;
-      }
-      if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeGaussObjectsStr) {
-        for (auto it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
-          CubeGauss cubeGauss(
-              {it->second[MDFlexConfig::velocityStr][0].as<double>(),
-               it->second[MDFlexConfig::velocityStr][1].as<double>(),
-               it->second[MDFlexConfig::velocityStr][2].as<double>()},
-              it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
-              it->second[config.epsilonMap.name].as<double>(), it->second[config.sigmaMap.name].as<double>(),
-              it->second[config.massMap.name].as<double>(),
-              it->second[MDFlexConfig::particlesPerObjectStr].as<size_t>(),
-              {it->second[config.boxLength.name][0].as<double>(), it->second[config.boxLength.name][1].as<double>(),
-               it->second[config.boxLength.name][2].as<double>()},
-              {it->second[config.distributionMean.name][0].as<double>(),
-               it->second[config.distributionMean.name][1].as<double>(),
-               it->second[config.distributionMean.name][2].as<double>()},
-              {it->second[config.distributionStdDev.name][0].as<double>(),
-               it->second[config.distributionStdDev.name][1].as<double>(),
-               it->second[config.distributionStdDev.name][2].as<double>()},
-              {it->second[MDFlexConfig::bottomLeftBackCornerStr][0].as<double>(),
-               it->second[MDFlexConfig::bottomLeftBackCornerStr][1].as<double>(),
-               it->second[MDFlexConfig::bottomLeftBackCornerStr][2].as<double>()});
-          config.cubeGaussObjects.emplace_back(cubeGauss);
-          config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
-                                 it->second[config.epsilonMap.name].as<double>(),
-                                 it->second[config.sigmaMap.name].as<double>(),
-                                 it->second[config.massMap.name].as<double>());
+
+      } else if (key == config.boxMin.name) {
+        expected = "YAML-sequence of three floats. Example: [0, 0, 0].";
+        description = config.boxMin.description;
+
+        config.boxMin.value = {node[key][0].as<double>(), node[key][1].as<double>(), node[key][2].as<double>()};
+      } else if (key == config.boxMax.name) {
+        expected = "YAML-sequence of three floats. Example: [42, 42, 42].";
+        description = config.boxMax.description;
+
+        config.boxMax.value = {node[key][0].as<double>(), node[key][1].as<double>(), node[key][2].as<double>()};
+      } else if (key == config.subdivideDimension.name) {
+        expected = "YAML-sequence of three booleans.";
+        description = config.subdivideDimension.description;
+
+        config.subdivideDimension.value = {node[key][0].as<bool>(), node[key][1].as<bool>(), node[key][2].as<bool>()};
+      } else if (key == config.loadBalancingInterval.name) {
+        expected = "Unsigned Integer";
+        description = config.loadBalancingInterval.description;
+
+        config.loadBalancingInterval.value = node[key].as<int>();
+        if (config.loadBalancingInterval.value < 0) {
+          throw std::runtime_error("Load balancing interval must be a positive integer.");
         }
-        continue;
-      }
-      if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeUniformObjectsStr) {
-        for (auto it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
-          CubeUniform cubeUniform(
-              {it->second[MDFlexConfig::velocityStr][0].as<double>(),
-               it->second[MDFlexConfig::velocityStr][1].as<double>(),
-               it->second[MDFlexConfig::velocityStr][2].as<double>()},
-              it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
-              it->second[config.epsilonMap.name].as<double>(), it->second[config.sigmaMap.name].as<double>(),
-              it->second[config.massMap.name].as<double>(),
-              it->second[MDFlexConfig::particlesPerObjectStr].as<size_t>(),
-              {it->second[config.boxLength.name][0].as<double>(), it->second[config.boxLength.name][1].as<double>(),
-               it->second[config.boxLength.name][2].as<double>()},
-              {it->second[MDFlexConfig::bottomLeftBackCornerStr][0].as<double>(),
-               it->second[MDFlexConfig::bottomLeftBackCornerStr][1].as<double>(),
-               it->second[MDFlexConfig::bottomLeftBackCornerStr][2].as<double>()});
-          config.cubeUniformObjects.emplace_back(cubeUniform);
-          config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
-                                 it->second[config.epsilonMap.name].as<double>(),
-                                 it->second[config.sigmaMap.name].as<double>(),
-                                 it->second[config.massMap.name].as<double>());
+      } else if (key == config.selectorStrategy.name) {
+        expected = "Exactly one selector strategy out of the possible values.";
+        description = config.selectorStrategy.description;
+
+        const auto parsedOptions = autopas::SelectorStrategyOption::parseOptions(
+            parseSequenceOneElementExpected(node[key], "Pass Exactly one selector strategy!"));
+
+        config.selectorStrategy.value = *parsedOptions.begin();
+
+      } else if (key == config.boundaryOption.name) {
+        expected = "YAML-sequence of three possible values.";
+        description = config.boundaryOption.description;
+
+        config.boundaryOption.value = {options::BoundaryTypeOption::parseOptionExact(node[key][0].as<std::string>()),
+                                       options::BoundaryTypeOption::parseOptionExact(node[key][1].as<std::string>()),
+                                       options::BoundaryTypeOption::parseOptionExact(node[key][2].as<std::string>())};
+      } else if (key == config.cutoff.name) {
+        expected = "Positive floating point value > 0.";
+        description = config.cutoff.description;
+
+        config.cutoff.value = node[key].as<double>();
+        if (config.cutoff.value <= 0) {
+          throw std::runtime_error("Cutoff has to be > 0!");
         }
-        continue;
-      }
-      if (objectIterator->first.as<std::string>() == MDFlexConfig::sphereObjectsStr) {
-        for (auto it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
-          Sphere sphere({it->second[MDFlexConfig::velocityStr][0].as<double>(),
-                         it->second[MDFlexConfig::velocityStr][1].as<double>(),
-                         it->second[MDFlexConfig::velocityStr][2].as<double>()},
-                        it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
-                        it->second[config.epsilonMap.name].as<double>(), it->second[config.sigmaMap.name].as<double>(),
-                        it->second[config.massMap.name].as<double>(),
-                        {it->second[MDFlexConfig::sphereCenterStr][0].as<double>(),
-                         it->second[MDFlexConfig::sphereCenterStr][1].as<double>(),
-                         it->second[MDFlexConfig::sphereCenterStr][2].as<double>()},
-                        it->second[MDFlexConfig::sphereRadiusStr].as<int>(),
-                        it->second[config.particleSpacing.name].as<double>());
-          config.sphereObjects.emplace_back(sphere);
-          config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
-                                 it->second[config.epsilonMap.name].as<double>(),
-                                 it->second[config.sigmaMap.name].as<double>(),
-                                 it->second[config.massMap.name].as<double>());
+      } else if (key == config.cellSizeFactors.name) {
+        expected = "YAML-sequence of floats.";
+        description = config.cellSizeFactors.description;
+
+        config.cellSizeFactors.value = autopas::utils::StringUtils::parseNumberSet(
+            autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
+
+        if (config.cellSizeFactors.value->isEmpty()) {
+          throw std::runtime_error("Parsed cell-size-factor-list is empty.");
         }
-        continue;
-      }
-      if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeClosestPackedObjectsStr) {
-        for (auto it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
-          CubeClosestPacked cubeClosestPacked(
-              {it->second[MDFlexConfig::velocityStr][0].as<double>(),
-               it->second[MDFlexConfig::velocityStr][1].as<double>(),
-               it->second[MDFlexConfig::velocityStr][2].as<double>()},
-              it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
-              it->second[config.epsilonMap.name].as<double>(), it->second[config.sigmaMap.name].as<double>(),
-              it->second[config.massMap.name].as<double>(), it->second[config.particleSpacing.name].as<double>(),
-              {it->second[config.boxLength.name][0].as<double>(), it->second[config.boxLength.name][1].as<double>(),
-               it->second[config.boxLength.name][2].as<double>()},
-              {it->second[MDFlexConfig::bottomLeftBackCornerStr][0].as<double>(),
-               it->second[MDFlexConfig::bottomLeftBackCornerStr][1].as<double>(),
-               it->second[MDFlexConfig::bottomLeftBackCornerStr][2].as<double>()});
-          config.cubeClosestPackedObjects.emplace_back(cubeClosestPacked);
-          config.addParticleType(it->second[MDFlexConfig::particleTypeStr].as<unsigned long>(),
-                                 it->second[config.epsilonMap.name].as<double>(),
-                                 it->second[config.sigmaMap.name].as<double>(),
-                                 it->second[config.massMap.name].as<double>());
+      } else if (key == config.dataLayoutOptions.name) {
+        expected = "YAML-sequence of possible values.";
+        description = config.dataLayoutOptions.description;
+
+        config.dataLayoutOptions.value =
+            autopas::DataLayoutOption::parseOptions(autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
+        if (config.dataLayoutOptions.value.empty()) {
+          throw std::runtime_error("Parsed data-layouts-list is empty.");
         }
-        continue;
+      } else if (key == config.functorOption.name) {
+        expected = "One of the possible values.";
+        description = config.functorOption.description;
+
+        auto strArg = node[key].as<std::string>();
+        transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
+        if (strArg.find("avx") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX;
+        } else if (strArg.find("sve") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
+        } else if (strArg.find("glob") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_Globals;
+        } else if (strArg.find("lj") != std::string::npos or strArg.find("lennard-jones") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
+        } else {
+          throw std::runtime_error("Unrecognized functor!");
+        }
+      } else if (key == config.iterations.name) {
+        expected = "Unsigned Integer > 0";
+        description = config.iterations.description;
+
+        config.iterations.value = node[key].as<long>();
+        if (config.iterations.value < 1) {
+          throw std::runtime_error("The number of iterations has to be a positive integer > 0.");
+        }
+
+      } else if (key == config.tuningPhases.name) {
+        expected = "Unsigned Integer";
+        description = config.tuningPhases.description;
+
+        config.tuningPhases.value = node[key].as<long>();
+        if (config.tuningPhases.value < 0) {
+          throw std::runtime_error("The number of tuning phases has to be a positive integer.");
+        }
+      } else if (key == config.dontMeasureFlops.name) {
+        expected = "Boolean Value";
+        description = config.dontMeasureFlops.description;
+
+        // "not" needed because of semantics
+        config.dontMeasureFlops.value = not node[key].as<bool>();
+      } else if (key == config.dontCreateEndConfig.name) {
+        expected = "Boolean Value";
+        description = config.dontCreateEndConfig.description;
+
+        // "not" needed because of semantics
+        config.dontCreateEndConfig.value = not node[key].as<bool>();
+      } else if (key == config.dontShowProgressBar.name) {
+        expected = "Boolean Value";
+        description = config.dontShowProgressBar.description;
+
+        config.dontShowProgressBar.value = node[key].as<bool>();
+      } else if (key == config.newton3Options.name) {
+        expected = "YAML-sequence of possible values.";
+        description = config.newton3Options.description;
+
+        config.newton3Options.value =
+            autopas::Newton3Option::parseOptions(autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
+        if (config.newton3Options.value.empty()) {
+          throw std::runtime_error("Unknown Newton3 option!");
+        }
+      } else if (key == config.deltaT.name) {
+        expected = "Positive floating point value.";
+        description = config.deltaT.description;
+
+        config.deltaT.value = node[key].as<double>();
+      } else if (key == config.traversalOptions.name) {
+        expected = "YAML-sequence of possible values.";
+        description = config.traversalOptions.description;
+
+        config.traversalOptions.value =
+            autopas::TraversalOption::parseOptions(autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
+
+        if (config.traversalOptions.value.empty()) {
+          throw std::runtime_error("Parsed traversal-list is empty. Maybe you used an unknown option.");
+        }
+
+      } else if (key == config.loadEstimatorOptions.name) {
+        expected = "YAML-sequence of possible values.";
+        description = config.loadEstimatorOptions.description;
+
+        config.loadEstimatorOptions.value = autopas::LoadEstimatorOption::parseOptions(
+            autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
+
+        if (config.loadEstimatorOptions.value.empty()) {
+          throw std::runtime_error("Parsed load-estimator-list is empty. Maybe you used an unknown option.");
+        }
+
+      } else if (key == config.tuningInterval.name) {
+        expected = "Unsigned Integer";
+        description = config.tuningInterval.description;
+
+        config.tuningInterval.value = node[key].as<int>();
+        if (config.tuningInterval.value < 1) {
+          throw std::runtime_error("Tuning interval has to be a positive integer!");
+        }
+      } else if (key == config.tuningSamples.name) {
+        expected = "Unsigned Integer >= 1";
+        description = config.tuningSamples.description;
+
+        config.tuningSamples.value = node[key].as<int>();
+        if (config.tuningSamples.value < 1) {
+          throw std::runtime_error("Tuning samples has to be a positive integer!");
+        }
+      } else if (key == config.tuningMaxEvidence.name) {
+        expected = "Unsigned Integer >= 1";
+        description = config.tuningMaxEvidence.description;
+
+        config.tuningMaxEvidence.value = node[key].as<int>();
+        if (config.tuningMaxEvidence.value < 1) {
+          throw std::runtime_error("Tuning max evidence has to be a positive integer >= 1!");
+        }
+      } else if (key == config.relativeOptimumRange.name) {
+        expected = "Floating point value >= 1";
+        description = config.relativeOptimumRange.description;
+
+        config.relativeOptimumRange.value = node[key].as<double>();
+        if (config.relativeOptimumRange.value < 1.0) {
+          throw std::runtime_error("Relative optimum range has to be greater or equal one!");
+        }
+      } else if (key == config.maxTuningPhasesWithoutTest.name) {
+        expected = "Unsigned Integer";
+        description = config.maxTuningPhasesWithoutTest.description;
+
+        config.maxTuningPhasesWithoutTest.value = node[key].as<int>();
+        if (config.maxTuningPhasesWithoutTest.value < 1) {
+          throw std::runtime_error("Max tuning phases without test has to be positive!");
+        }
+      } else if (key == config.relativeBlacklistRange.name) {
+        expected = "Floating point value >= 1 or 0";
+        description = config.relativeBlacklistRange.description;
+
+        config.relativeBlacklistRange.value = node[key].as<double>();
+        if (config.relativeBlacklistRange.value < 1.0 and config.relativeBlacklistRange.value != 0.0) {
+          throw std::runtime_error(
+              "Relative range for blacklist range has to be greater or equal one or has to be zero!");
+        }
+      } else if (key == config.evidenceFirstPrediction.name) {
+        expected = "Unsigned Integer >= 2";
+        description = config.evidenceFirstPrediction.description;
+
+        config.evidenceFirstPrediction.value = node[key].as<int>();
+        if (config.evidenceFirstPrediction.value < 2) {
+          throw std::runtime_error("The number of evidence for the first prediction has to be at least two!");
+        }
+      } else if (key == config.extrapolationMethodOption.name) {
+        expected = "Exactly one extrapolation method out of the possible values.";
+        description = config.extrapolationMethodOption.description;
+
+        const auto parsedOptions = autopas::ExtrapolationMethodOption::parseOptions(
+            parseSequenceOneElementExpected(node[key], "Pass exactly one extrapolation method!"));
+
+        config.extrapolationMethodOption.value = *parsedOptions.begin();
+
+      } else if (key == config.tuningStrategyOption.name) {
+        expected = "Exactly one tuning strategy option out of the possible values.";
+        description = config.tuningStrategyOption.description;
+
+        const auto parsedOptions = autopas::TuningStrategyOption::parseOptions(
+            parseSequenceOneElementExpected(node[key], "Pass Exactly one tuning strategy!"));
+
+        config.tuningStrategyOption.value = *parsedOptions.begin();
+      } else if (key == config.tuningMetricOption.name) {
+        expected = "Exactly one tuning metric option out of the possible values.";
+        description = config.tuningMetricOption.description;
+
+        const auto parsedOptions = autopas::TuningMetricOption::parseOptions(
+            parseSequenceOneElementExpected(node[key], "Pass Exactly one tuning metric!"));
+
+        config.tuningMetricOption.value = *parsedOptions.begin();
+      } else if (key == config.mpiStrategyOption.name) {
+        expected = "Exactly one MPI strategy option out of the possible values.";
+        description = config.mpiStrategyOption.description;
+
+        const auto parsedOptions = autopas::MPIStrategyOption::parseOptions(
+            parseSequenceOneElementExpected(node[key], "Pass exactly one MPI strategy!"));
+
+        config.mpiStrategyOption.value = *parsedOptions.begin();
+      } else if (key == config.MPITuningMaxDifferenceForBucket.name) {
+        expected = "Floating-point Value";
+        description = config.MPITuningMaxDifferenceForBucket.description;
+
+        config.MPITuningMaxDifferenceForBucket.value = node[key].as<double>();
+      } else if (key == config.MPITuningWeightForMaxDensity.name) {
+        expected = "Floating-point Value";
+        description = config.MPITuningWeightForMaxDensity.description;
+
+        config.MPITuningWeightForMaxDensity.value = node[key].as<double>();
+      } else if (key == config.acquisitionFunctionOption.name) {
+        expected = "Exactly one acquisition function option out of the possible values.";
+        description = config.acquisitionFunctionOption.description;
+
+        const auto parsedOptions = autopas::AcquisitionFunctionOption::parseOptions(
+            parseSequenceOneElementExpected(node[key], "Pass Exactly one acquisition function option!"));
+
+        config.acquisitionFunctionOption.value = *parsedOptions.begin();
+      } else if (key == config.logLevel.name) {
+        expected = "Log level out of the possible values.";
+        description = config.logLevel.description;
+
+        auto strArg = node[key].as<std::string>();
+        switch (std::tolower(strArg[0])) {
+          case 't': {
+            config.logLevel.value = autopas::Logger::LogLevel::trace;
+            break;
+          }
+          case 'd': {
+            config.logLevel.value = autopas::Logger::LogLevel::debug;
+            break;
+          }
+          case 'i': {
+            config.logLevel.value = autopas::Logger::LogLevel::info;
+            break;
+          }
+          case 'w': {
+            config.logLevel.value = autopas::Logger::LogLevel::warn;
+            break;
+          }
+          case 'e': {
+            config.logLevel.value = autopas::Logger::LogLevel::err;
+            break;
+          }
+          case 'c': {
+            config.logLevel.value = autopas::Logger::LogLevel::critical;
+            break;
+          }
+          case 'o': {
+            config.logLevel.value = autopas::Logger::LogLevel::off;
+            break;
+          }
+          default: {
+            throw std::runtime_error("Unknown Log Level parsed!");
+          }
+        }
+      } else if (key == config.checkpointfile.name) {
+        expected = "String";
+        description = config.checkpointfile.description;
+
+        config.checkpointfile.value = node[key].as<std::string>();
+        if (config.checkpointfile.value.empty()) {
+          throw std::runtime_error("Parsed checkpoint filename is empty!");
+        }
+      } else if (key == config.logFileName.name) {
+        expected = "String";
+        description = config.logFileName.description;
+
+        config.logFileName.value = node[key].as<std::string>();
+        if (config.logFileName.value.empty()) {
+          throw std::runtime_error("Parsed log filename is empty!");
+        }
+      } else if (key == config.verletRebuildFrequency.name) {
+        expected = "Unsigned Integer >= 1";
+        description = config.verletRebuildFrequency.description;
+
+        config.verletRebuildFrequency.value = node[key].as<int>();
+
+        if (config.verletRebuildFrequency.value < 1) {
+          throw std::runtime_error("Verlet rebuild frequency has to be a positive integer >= 1!");
+        }
+      } else if (key == config.verletSkinRadiusPerTimestep.name) {
+        expected = "Positive floating-point value.";
+        description = config.verletSkinRadiusPerTimestep.description;
+
+        config.verletSkinRadiusPerTimestep.value = node[key].as<double>();
+      } else if (key == config.fastParticlesThrow.name) {
+        expected = "Boolean Value";
+        description = config.fastParticlesThrow.description;
+
+        config.fastParticlesThrow.value = node[key].as<bool>();
+      } else if (key == config.verletClusterSize.name) {
+        expected = "Unsigned Integer";
+        description = config.verletClusterSize.description;
+
+        config.verletClusterSize.value = node[key].as<int>();
+        if (config.verletClusterSize.value < 0) {
+          throw std::runtime_error("Verlet cluster size has to be a positive integer!");
+        }
+      } else if (key == config.vtkFileName.name) {
+        expected = "String";
+        description = config.vtkFileName.description;
+
+        config.vtkFileName.value = node[key].as<std::string>();
+        if (config.vtkFileName.value.empty()) {
+          throw std::runtime_error("Parsed VTK filename is empty!");
+        }
+      } else if (key == config.vtkOutputFolder.name) {
+        expected = "String";
+        description = config.vtkOutputFolder.description;
+
+        config.vtkOutputFolder.value = node[key].as<std::string>();
+        if (config.vtkOutputFolder.value.empty()) {
+          throw std::runtime_error("Parsed VTK output folder name is empty");
+        }
+      } else if (key == config.vtkWriteFrequency.name) {
+        expected = "Unsigned Integer >= 1";
+        description = config.vtkWriteFrequency.description;
+
+        config.vtkWriteFrequency.value = node[key].as<size_t>();
+        if (config.vtkWriteFrequency.value < 1) {
+          throw std::runtime_error("VTK write frequency has to be a positive integer >= 1!");
+        }
+      } else if (key == config.globalForce.name) {
+        expected = "YAML-sequence of three floats. Example: [0, 0, -9.81].";
+        description = config.globalForce.description;
+
+        config.globalForce.value = {node[key][0].as<double>(), node[key][1].as<double>(), node[key][2].as<double>()};
+      } else if (key == MDFlexConfig::objectsStr) {
+        expected = "See AllOptions.yaml for examples.";
+        description = "";
+
+        // remove default objects
+        config.cubeGridObjects.clear();
+        config.cubeGaussObjects.clear();
+        config.cubeUniformObjects.clear();
+        config.sphereObjects.clear();
+        config.cubeClosestPackedObjects.clear();
+        config.epsilonMap.value.clear();
+        config.sigmaMap.value.clear();
+        config.massMap.value.clear();
+
+        int objID = 0;
+        std::string generatorName;
+        std::vector<std::string> objectErrors;
+
+        auto pushObjectError = [&](const std::string &error) {
+          std::stringstream ss;
+          ss << "YamlParser: Error parsing " << generatorName << " object with ID " << objID << "." << std::endl
+             << "Message: " << error << std::endl
+             << "See AllOptions.yaml for examples." << std::endl;
+          errors.push_back(ss.str());
+        };
+
+        for (auto objectIterator = node[MDFlexConfig::objectsStr].begin();
+             objectIterator != node[MDFlexConfig::objectsStr].end(); ++objectIterator) {
+          if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeGridObjectsStr) {
+            generatorName = MDFlexConfig::cubeGridObjectsStr;
+            for (auto it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
+              objectErrors.clear();
+              objID = std::distance(objectIterator->second.begin(), it);
+              const auto cubeGrid = parseCubeGridObject(config, it->second, objectErrors);
+
+              config.cubeGridObjects.emplace_back(cubeGrid);
+              config.addParticleType(cubeGrid.getTypeId(), cubeGrid.getEpsilon(), cubeGrid.getSigma(),
+                                     cubeGrid.getMass());
+              for_each(objectErrors.begin(), objectErrors.end(), pushObjectError);
+            }
+          } else if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeGaussObjectsStr) {
+            generatorName = MDFlexConfig::cubeGaussObjectsStr;
+            for (auto it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
+              objectErrors.clear();
+              objID = std::distance(objectIterator->second.begin(), it);
+              const auto cubeGauss = parseCubeGaussObject(config, it->second, objectErrors);
+
+              config.cubeGaussObjects.emplace_back(cubeGauss);
+              config.addParticleType(cubeGauss.getTypeId(), cubeGauss.getEpsilon(), cubeGauss.getSigma(),
+                                     cubeGauss.getMass());
+              for_each(objectErrors.begin(), objectErrors.end(), pushObjectError);
+            }
+          } else if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeUniformObjectsStr) {
+            generatorName = MDFlexConfig::cubeUniformObjectsStr;
+            for (auto it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
+              objectErrors.clear();
+              objID = std::distance(objectIterator->second.begin(), it);
+              const auto cubeUniform = parseCubeUniformObject(config, it->second, objectErrors);
+
+              config.cubeUniformObjects.emplace_back(cubeUniform);
+              config.addParticleType(cubeUniform.getTypeId(), cubeUniform.getEpsilon(), cubeUniform.getSigma(),
+                                     cubeUniform.getMass());
+              for_each(objectErrors.begin(), objectErrors.end(), pushObjectError);
+            }
+          } else if (objectIterator->first.as<std::string>() == MDFlexConfig::sphereObjectsStr) {
+            generatorName = MDFlexConfig::sphereObjectsStr;
+            for (auto it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
+              objectErrors.clear();
+              objID = std::distance(objectIterator->second.begin(), it);
+              const auto sphere = parseSphereObject(config, it->second, objectErrors);
+
+              config.sphereObjects.emplace_back(sphere);
+              config.addParticleType(sphere.getTypeId(), sphere.getEpsilon(), sphere.getSigma(), sphere.getMass());
+              for_each(objectErrors.begin(), objectErrors.end(), pushObjectError);
+            }
+          } else if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeClosestPackedObjectsStr) {
+            generatorName = MDFlexConfig::cubeClosestPackedObjectsStr;
+            for (auto it = objectIterator->second.begin(); it != objectIterator->second.end(); ++it) {
+              objectErrors.clear();
+              objID = std::distance(objectIterator->second.begin(), it);
+              const auto cubeClosestPacked = parseCubeClosestPacked(config, it->second, objectErrors);
+
+              config.cubeClosestPackedObjects.emplace_back(cubeClosestPacked);
+              config.addParticleType(cubeClosestPacked.getTypeId(), cubeClosestPacked.getEpsilon(),
+                                     cubeClosestPacked.getSigma(), cubeClosestPacked.getMass());
+              for_each(objectErrors.begin(), objectErrors.end(), pushObjectError);
+            }
+          } else {
+            std::stringstream ss;
+            ss << "YamlParser: Unrecognized generator \"" << objectIterator->first.as<std::string>() << "\" used."
+               << std::endl;
+            errors.push_back(ss.str());
+          }
+        }
+      } else if (key == config.useThermostat.name) {
+        expected = "See AllOptions.yaml for examples.";
+        description = config.useThermostat.description;
+
+        config.useThermostat.value = true;
+
+        // Parse initTemperature.
+        mark = node[key][config.initTemperature.name].Mark();
+        expected = "Floating-Point Value";
+        description = config.initTemperature.description;
+        try {
+          config.initTemperature.value = node[key][config.initTemperature.name].as<double>();
+        } catch (const std::exception &e) {
+          errors.push_back(makeErrorMsg(mark, key, e.what(), expected, description));
+        }
+
+        // Parse thermostatInterval.
+        mark = node[key][config.thermostatInterval.name].Mark();
+        expected = "Unsigned Integer > 0";
+        description = config.thermostatInterval.description;
+        try {
+          config.thermostatInterval.value = node[key][config.thermostatInterval.name].as<size_t>();
+          if (config.thermostatInterval.value <= 1) {
+            throw std::runtime_error("thermostatInterval has to be > 0!");
+          }
+        } catch (const std::exception &e) {
+          errors.push_back(makeErrorMsg(mark, key, e.what(), expected, description));
+        }
+
+        // Parse targetTemperature.
+        mark = node[key][config.targetTemperature.name].Mark();
+        expected = "Floating-Point Value";
+        description = config.targetTemperature.description;
+        try {
+          config.targetTemperature.value = node[key][config.targetTemperature.name].as<double>();
+        } catch (const std::exception &e) {
+          errors.push_back(makeErrorMsg(mark, key, e.what(), expected, description));
+        }
+
+        // Parse deltaTemp.
+        mark = node[key][config.deltaTemp.name].Mark();
+        expected = "Floating-Point Value";
+        description = config.deltaTemp.description;
+        try {
+          config.deltaTemp.value = node[key][config.deltaTemp.name].as<double>();
+        } catch (const std::exception &e) {
+          errors.push_back(makeErrorMsg(mark, key, e.what(), expected, description));
+        }
+
+        // Parse addBrownianMotion.
+        mark = node[key][config.addBrownianMotion.name].Mark();
+        expected = "Boolean Value";
+        description = config.addBrownianMotion.description;
+        try {
+          config.addBrownianMotion.value = node[key][config.addBrownianMotion.name].as<bool>();
+        } catch (const std::exception &e) {
+          errors.push_back(makeErrorMsg(mark, key, e.what(), expected, description));
+        }
+
+      } else if (key == config.loadBalancer.name) {
+        expected = "YAML-sequence of possible values.";
+        description = config.loadBalancer.description;
+
+        const auto parsedOptions = LoadBalancerOption::parseOptions(
+            parseSequenceOneElementExpected(node[key], "Pass Exactly one load balancer option!"));
+
+        config.loadBalancer.value = *parsedOptions.begin();
+      } else {
+        std::stringstream ss;
+        ss << "YamlParser: Unrecognized option in input YAML: " + key << std::endl;
+        errors.push_back(ss.str());
       }
+    } catch (const std::exception &e) {
+      errors.push_back(makeErrorMsg(mark, key, e.what(), expected, description));
     }
   }
-  if (node[config.useThermostat.name]) {
-    config.useThermostat.value = true;
 
-    config.initTemperature.value = node[config.useThermostat.name][config.initTemperature.name].as<double>();
-    config.thermostatInterval.value = node[config.useThermostat.name][config.thermostatInterval.name].as<size_t>();
-    config.targetTemperature.value = node[config.useThermostat.name][config.targetTemperature.name].as<double>();
-    config.deltaTemp.value = node[config.useThermostat.name][config.deltaTemp.name].as<double>();
-    config.addBrownianMotion.value = node[config.useThermostat.name][config.addBrownianMotion.name].as<bool>();
-  }
-  if (node[config.loadBalancer.name]) {
-    auto parsedOptions = LoadBalancerOption::parseOptions(node[config.loadBalancer.name].as<std::string>());
-    if (parsedOptions.size() != 1) {
-      throw std::runtime_error(
-          "YamlParser::parseYamlFile: Pass exactly one load balancer option! Possible values:\n" +
-          autopas::utils::ArrayUtils::to_string(LoadBalancerOption::getAllOptions(), "", {"(", ")"}));
+  if (!errors.empty()) {
+    for (std::string &err : errors) {
+      std::cerr << err << std::endl << std::endl;
     }
-    config.loadBalancer.value = *parsedOptions.begin();
+    return false;
   }
+
   return true;
 }

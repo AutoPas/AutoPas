@@ -54,6 +54,11 @@ namespace ArrayMath {}
 namespace ArrayUtils {}
 
 /**
+ * Namespace for functions that provide information about what the code was compiled with.
+ */
+namespace CompileInfo {}
+
+/**
  * Some functions to parse enums from (input-) strings.
  */
 namespace StringUtils {}
@@ -68,6 +73,11 @@ namespace ThreeDimensionalMapping {}
  * In this namespace some helper functions for std::tuple can be found.
  */
 namespace TupleUtils {}
+
+/**
+ * Functions to estimate numbers of particles.
+ */
+namespace NumParticlesEstimator {}
 
 }  // namespace utils
 

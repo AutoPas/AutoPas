@@ -76,31 +76,37 @@ double getTimeStepGlobal(AutoPasContainer &sphSystem) {
 }
 
 void leapfrogInitialKick(AutoPasContainer &sphSystem, const double dt) {
+  using namespace autopas::utils::ArrayMath::literals;
+
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::owned); part.isValid(); ++part) {
-    part->setVel_half(autopas::utils::ArrayMath::add(
-        part->getV(), autopas::utils::ArrayMath::mulScalar(part->getAcceleration(), 0.5 * dt)));
+    part->setVel_half(part->getV() + (part->getAcceleration() * (0.5 * dt)));
     part->setEng_half(part->getEnergy() + 0.5 * dt * part->getEngDot());
   }
 }
 
 void leapfrogFullDrift(AutoPasContainer &sphSystem, const double dt) {
+  using namespace autopas::utils::ArrayMath::literals;
+
   // time becomes t + dt;
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::owned); part.isValid(); ++part) {
-    part->addR(autopas::utils::ArrayMath::mulScalar(part->getVel_half(), dt));
+    part->addR(part->getVel_half() * dt);
   }
 }
 
 void leapfrogPredict(AutoPasContainer &sphSystem, const double dt) {
+  using namespace autopas::utils::ArrayMath::literals;
+
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::owned); part.isValid(); ++part) {
-    part->addV(autopas::utils::ArrayMath::mulScalar(part->getAcceleration(), dt));
+    part->addV(part->getAcceleration() * dt);
     part->addEnergy(part->getEngDot() * dt);
   }
 }
 
 void leapfrogFinalKick(AutoPasContainer &sphSystem, const double dt) {
+  using namespace autopas::utils::ArrayMath::literals;
+
   for (auto part = sphSystem.begin(autopas::IteratorBehavior::owned); part.isValid(); ++part) {
-    part->setV(autopas::utils::ArrayMath::add(part->getVel_half(),
-                                              autopas::utils::ArrayMath::mulScalar(part->getAcceleration(), 0.5 * dt)));
+    part->setV(part->getVel_half() + (part->getAcceleration() * (0.5 * dt)));
     part->setEnergy(part->getEng_half() + 0.5 * dt * part->getEngDot());
   }
 }
@@ -273,17 +279,22 @@ void densityPressureHydroForce(AutoPasContainer &sphSystem) {
 }
 
 void printConservativeVariables(AutoPasContainer &sphSystem) {
+  using namespace autopas::utils::ArrayMath::literals;
+
   std::array<double, 3> momSum = {0., 0., 0.};  // total momentum
   double energySum = 0.0;                       // total energy
   for (auto it = sphSystem.begin(autopas::IteratorBehavior::owned); it.isValid(); ++it) {
-    momSum = autopas::utils::ArrayMath::add(momSum, autopas::utils::ArrayMath::mulScalar(it->getV(), it->getMass()));
+    momSum += (it->getV() * it->getMass());
     energySum += (it->getEnergy() + 0.5 * autopas::utils::ArrayMath::dot(it->getV(), it->getV())) * it->getMass();
   }
-  printf("%.16e\n", energySum);
+  printf("Energy     : %.16e\n", energySum);
   for (int i = 0; i < 3; ++i) {
-    printf("%.16e\n", momSum[i]);
+    printf("Momentum[%d]: %.16e\n", i, momSum[i]);
     if (std::abs(momSum[i]) > 1.e-15) {
-      throw std::runtime_error("ERROR: bad moment sum detected (should be small, but isn't!");
+      std::stringstream ss;
+      ss << std::setprecision(15) << "ERROR: The total momentum should cancel out (should be <1e-15 but is "
+         << std::abs(momSum[i]) << ")!";
+      throw std::runtime_error(ss.str());
     }
   }
 }
@@ -302,7 +313,7 @@ int main() {
   sphSystem.setBoxMin(boxMin);
   sphSystem.setBoxMax(boxMax);
   sphSystem.setCutoff(cutoff);
-  sphSystem.setVerletSkin(skinToCutoffRatio * cutoff);
+  sphSystem.setVerletSkinPerTimestep(skinToCutoffRatio * cutoff / rebuildFrequency);
   sphSystem.setVerletRebuildFrequency(rebuildFrequency);
 
   // In case you want to use another tuning strategy, you can do that using:

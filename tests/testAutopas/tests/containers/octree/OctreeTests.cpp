@@ -27,7 +27,7 @@ TEST_F(OctreeTest, testDummy) {
   using namespace autopas;
 
   std::array<double, 3> min = {0, 0, 0}, max = {2, 2, 2};
-  Octree<ParticleFP64> tree(min, max, 0.001f, 0.1f, 1.0f);
+  Octree<ParticleFP64> tree(min, max, 0.001f, 0.01f, 10, 1.0f);
 }
 
 /**
@@ -125,6 +125,7 @@ static int getAxis(autopas::octree::Face f) { return (f - 1) >> 1; }
  * This testcase checks if the indexing of octree node children works as intended.
  */
 TEST_F(OctreeTest, testChildIndexing) {
+  using namespace autopas::utils::ArrayMath::literals;
   using namespace autopas;
 
   // Create an inner node that is split once.
@@ -132,7 +133,7 @@ TEST_F(OctreeTest, testChildIndexing) {
   OctreeInnerNode<ParticleFP64> inner(min, max, nullptr, 16, 1, 1.0);
 
   // Get the center of the node
-  std::array<double, 3> center = utils::ArrayMath::mulScalar(utils::ArrayMath::add(min, max), 0.5);
+  std::array<double, 3> center = (min + max) * 0.5;
 
   // Check if the child indexing works
   using Node = OctreeNodeInterface<ParticleFP64>;
@@ -244,6 +245,7 @@ static void verifyFaceNeighbor(autopas::octree::Face face, autopas::OctreeNodeIn
  * @return A poorly random-sampled point in the box
  */
 static std::array<double, 3> random3D(std::array<double, 3> min, std::array<double, 3> max) {
+  using namespace autopas::utils::ArrayMath::literals;
   using namespace autopas;
 
   // Create a random point in the [0,0,0] to [1,1,1] cube
@@ -251,9 +253,9 @@ static std::array<double, 3> random3D(std::array<double, 3> min, std::array<doub
                                           (double)rand() / (double)RAND_MAX};
 
   // Map in the given space
-  std::array<double, 3> dim = utils::ArrayMath::sub(max, min);
-  randomPosition = utils::ArrayMath::mul(randomPosition, dim);  // Map [0,1] to [0,width on axis]
-  randomPosition = utils::ArrayMath::add(randomPosition, min);
+  std::array<double, 3> dim = max - min;
+  randomPosition *= dim;  // Map [0,1] to [0,width on axis]
+  randomPosition += min;
 
   return randomPosition;
 }
@@ -379,6 +381,7 @@ TEST_F(OctreeTest, testOverlapVolume) {
  */
 TEST_F(OctreeTest, testRangeNeighborFinding) {
   using namespace autopas;
+  using namespace autopas::utils::ArrayMath::literals;
 
   // Create an octree with a random particle configuration.
   std::array<double, 3> min = {0, 0, 0}, max = {1, 1, 1};
@@ -394,8 +397,8 @@ TEST_F(OctreeTest, testRangeNeighborFinding) {
     auto randomPosition = random3D(min, max);
 
     for (double pseudoInteractionLength : {0.1, 1.0}) {
-      auto pseudoBoxMin = utils::ArrayMath::subScalar(randomPosition, pseudoInteractionLength);
-      auto pseudoBoxMax = utils::ArrayMath::addScalar(randomPosition, pseudoInteractionLength);
+      auto pseudoBoxMin = randomPosition - pseudoInteractionLength;
+      auto pseudoBoxMax = randomPosition + pseudoInteractionLength;
 
       auto containingBoxes = root->getLeavesInRange(pseudoBoxMin, pseudoBoxMax);
       for (OctreeLeafNode<ParticleFP64> *leaf : containingBoxes) {
@@ -466,9 +469,9 @@ std::pair<OctreeTest::Vector3DList, std::vector<std::tuple<unsigned long, unsign
 OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
                                     autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option,
                                     size_t numParticles, size_t numHaloParticles, std::array<double, 3> boxMin,
-                                    std::array<double, 3> boxMax, double cellSizeFactor, double cutoff, double skin,
-                                    double interactionLength, Vector3DList particlePositions,
-                                    Vector3DList haloParticlePositions) {
+                                    std::array<double, 3> boxMax, double cellSizeFactor, double cutoff,
+                                    double skinPerTimestep, unsigned int rebuildFrequency, double interactionLength,
+                                    Vector3DList particlePositions, Vector3DList haloParticlePositions) {
   using namespace autopas;
 
   double _cutoffsquare = cutoff * cutoff;
@@ -477,8 +480,9 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
 
   // Construct container
   ContainerSelector<Molecule> selector{boxMin, boxMax, cutoff};
-  selector.selectContainer(
-      containerOption, autopas::ContainerSelectorInfo{cellSizeFactor, skin, 32, autopas::LoadEstimatorOption::none});
+  selector.selectContainer(containerOption,
+                           autopas::ContainerSelectorInfo{cellSizeFactor, skinPerTimestep, rebuildFrequency, 32,
+                                                          autopas::LoadEstimatorOption::none});
   auto container = selector.getCurrentContainer();
 
   // Create a functor that is able to calculate forces
@@ -580,6 +584,7 @@ static std::vector<std::tuple<unsigned long, unsigned long, double>> onlyFromRef
 }
 
 TEST_P(OctreeTest, testCustomParticleDistribution) {
+  using namespace autopas::utils::ArrayMath::literals;
   using namespace autopas;
 
   auto [boxMax, numParticles, numHaloParticles] = GetParam();
@@ -590,8 +595,9 @@ TEST_P(OctreeTest, testCustomParticleDistribution) {
 
   std::array<double, 3> _boxMin{0, 0, 0};
   double _cutoff{1.};
-  double skin = _cutoff * 0.1;
-  double interactionLength = _cutoff + skin;
+  double skinPerTimestep = _cutoff * 0.1;
+  unsigned int rebuildFrequency = 1;
+  double interactionLength = _cutoff + skinPerTimestep * rebuildFrequency;
 
   // Obtain a starting configuration
   auto containerOption = ContainerOption::octree;
@@ -607,8 +613,8 @@ TEST_P(OctreeTest, testCustomParticleDistribution) {
 
   // Fill a smaller portion of the octree region with particles
   std::vector<std::array<double, 3>> particlePositions;
-  auto boxCenter = utils::ArrayMath::add(_boxMin, boxMax);
-  boxCenter = utils::ArrayMath::mulScalar(boxCenter, 0.5);
+  auto boxCenter = _boxMin + boxMax;
+  boxCenter *= 0.5;
   for (int unsigned i = 0; i < numParticles; ++i) {
     auto position = random3D(_boxMin, boxMax);
     particlePositions.push_back(position);
@@ -616,8 +622,8 @@ TEST_P(OctreeTest, testCustomParticleDistribution) {
 
   // Fill the area around the octree with halo particles
   std::vector<std::array<double, 3>> haloParticlePositions;
-  auto haloMin = utils::ArrayMath::subScalar(_boxMin, interactionLength);
-  auto haloMax = utils::ArrayMath::addScalar(boxMax, interactionLength);
+  auto haloMin = _boxMin - interactionLength;
+  auto haloMax = boxMax + interactionLength;
   for (int unsigned i = 0; i < numHaloParticles;) {
     auto position = random3D(haloMin, haloMax);
     if (!utils::inBox(position, _boxMin, boxMax)) {
@@ -627,15 +633,16 @@ TEST_P(OctreeTest, testCustomParticleDistribution) {
   }
 
   // Calculate the forces using the octree
-  auto [calculatedForces, calculatedPairs] = calculateForcesAndPairs(
-      containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles, numHaloParticles, _boxMin,
-      boxMax, cellSizeFactor, _cutoff, skin, interactionLength, particlePositions, haloParticlePositions);
+  auto [calculatedForces, calculatedPairs] =
+      calculateForcesAndPairs(containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles,
+                              numHaloParticles, _boxMin, boxMax, cellSizeFactor, _cutoff, skinPerTimestep,
+                              rebuildFrequency, interactionLength, particlePositions, haloParticlePositions);
 
   // Calculate the forces using the reference implementation
   auto [referenceForces, referencePairs] = calculateForcesAndPairs(
       autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c08, autopas::DataLayoutOption::aos,
-      autopas::Newton3Option::enabled, numParticles, numHaloParticles, _boxMin, boxMax, cellSizeFactor, _cutoff, skin,
-      interactionLength, particlePositions, haloParticlePositions);
+      autopas::Newton3Option::enabled, numParticles, numHaloParticles, _boxMin, boxMax, cellSizeFactor, _cutoff,
+      skinPerTimestep, rebuildFrequency, interactionLength, particlePositions, haloParticlePositions);
 
   // Calculate which pairs are in the set difference between the reference pairs and the calculated pairs
   // std::sort(calculatedPairs.begin(), calculatedPairs.end());

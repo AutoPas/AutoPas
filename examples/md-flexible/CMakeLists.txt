@@ -16,6 +16,20 @@ option(MD_FLEXIBLE_USE_MPI "Enable MPI parallelism for md-flexible." OFF)
 
 target_link_libraries(md-flexible PUBLIC autopas autopasTools yaml-cpp  ${ALL_LIB} $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
 
+option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor without calculation of global values." OFF)
+option(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS "Compile AutoVec Functor with calculation of global values." OFF)
+option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor without calculation of global values." ON)
+option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor without calculation of global values." ON)
+
+target_compile_definitions(
+        md-flexible
+        PUBLIC
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AUTOVEC}>:MD_FLEXIBLE_FUNCTOR_AUTOVEC>
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS}>:MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS>
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AVX}>:MD_FLEXIBLE_FUNCTOR_AVX>
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SVE}>:MD_FLEXIBLE_FUNCTOR_SVE>
+)
+
 # --- copy script files to build dir ---
 file(
         GLOB_RECURSE SCRIPTS
@@ -48,13 +62,13 @@ add_test(
         --distribution-mean 5.0
         --distribution-stddeviation 2.0
         --data-layout soa
-        --functor lj
+        --functor "Lennard-Jones"
         --iterations 10
         --particle-generator gauss
         --particles-total 10
         --traversal c08,sliced
         --verlet-rebuild-frequency 5
-        --verlet-skin-radius 0
+        --verlet-skin-radius-per-timestep 0
         --boundary-type none
         --deltaT 0.
         --no-end-config
@@ -62,28 +76,6 @@ add_test(
         CONFIGURATIONS checkExamples
 )
 
-#stable, periodic particle grid tested with all configurations
-add_test(
-        NAME md-flexible.test-sim
-        COMMAND
-        md-flexible
-        --container all
-        --traversal all
-        --cutoff 1.5
-        --functor lj
-        --tuning-phases 1
-        --particle-generator grid
-        --particles-per-dimension 10
-        --particle-spacing 1.1225
-        --verlet-rebuild-frequency 4
-        --verlet-skin-radius 0.2
-        --boundary-type periodic
-        --deltaT 0.005
-        --no-end-config
-        --no-flops
-        --no-progress-bar
-        CONFIGURATIONS checkExamples
-)
 
 # The AVX example should only be tested if AVX is available.
 set(HAS_AVX true)
@@ -111,6 +103,7 @@ else ()
 endif ()
 
 if (HAS_AVX)
+    set(TEST_FUNCTOR "Lennard-Jones-AVX")
     message(STATUS "AVX detected. Adding AVX test.")
     #dangerous, as lc_c04_combined_SoA uses unaligned values.
     add_test(
@@ -119,7 +112,7 @@ if (HAS_AVX)
             md-flexible
             --no-end-config
             --no-flops
-            --functor lennard-jones-AVX2
+            --functor "${TEST_FUNCTOR}"
             --deltaT 0
             --particle-generator uniform
             --log-level debug
@@ -129,8 +122,32 @@ if (HAS_AVX)
             CONFIGURATIONS checkExamples
     )
 else ()
-    message(STATUS "AVX could not be detected. Not adding AVX test.")
+  message(STATUS "AVX could not be detected. Not testing the AVX Functor.")
+  set(TEST_FUNCTOR "Lennard-Jones")
 endif ()
+
+#stable, periodic particle grid tested with all configurations
+add_test(
+        NAME md-flexible.test-sim
+        COMMAND
+        md-flexible
+        --container all
+        --traversal all
+        --cutoff 1.5
+        --functor "${TEST_FUNCTOR}"
+        --tuning-phases 1
+        --particle-generator grid
+        --particles-per-dimension 10
+        --particle-spacing 1.1225
+        --verlet-rebuild-frequency 4
+        --verlet-skin-radius-per-timestep 0.05
+        --boundary-type periodic
+        --deltaT 0.005
+        --no-end-config
+        --no-flops
+        --no-progress-bar
+        CONFIGURATIONS checkExamples
+)
 
 add_test(
         NAME md-flexMeasurePerf

@@ -71,14 +71,15 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
     size_t cellsSize = cells.size();
     _aosNeighborList.resize(cellsSize);
     for (size_t cellIndex = 0; cellIndex < cellsSize; ++cellIndex) {
-      _aosNeighborList[cellIndex].reserve(cells[cellIndex].numParticles());
+      auto &cell = cells[cellIndex];
+      _aosNeighborList[cellIndex].reserve(cell.numParticles());
       size_t particleIndexWithinCell = 0;
-      for (auto iter = cells[cellIndex].begin(); iter.isValid(); ++iter, ++particleIndexWithinCell) {
+      for (auto iter = cell.begin(); iter != cell.end(); ++iter, ++particleIndexWithinCell) {
         Particle *particle = &*iter;
         _aosNeighborList[cellIndex].emplace_back(particle, std::vector<Particle *>());
         // In a cell with N particles, reserve space for 5N neighbors.
         // 5 is an empirically determined magic number that provides good speed.
-        _aosNeighborList[cellIndex].back().second.reserve(cells[cellIndex].numParticles() * 5);
+        _aosNeighborList[cellIndex].back().second.reserve(cell.numParticles() * 5);
         _particleToCellMap[particle] = std::make_pair(cellIndex, particleIndexWithinCell);
       }
     }
