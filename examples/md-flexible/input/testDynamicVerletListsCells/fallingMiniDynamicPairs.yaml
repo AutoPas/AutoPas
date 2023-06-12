@@ -25,7 +25,7 @@ Objects:
     0:
       particle-spacing           :  1.122462048
       bottomLeftCorner           :  [1, 1, 1]
-      box-length                 :  [70, 70, 10]
+      box-length                 :  [80, 80, 10]
       velocity                   :  [0, 0, 0]
       particle-type              :  0
       particle-epsilon           :  1
@@ -33,7 +33,7 @@ Objects:
       particle-mass              :  1
   Sphere:
     0:
-      center                     :  [40, 40, 90]
+      center                     :  [40, 40, 100]
       radius                     :  5
       particle-spacing           :  1.122462048
       velocity                   :  [0, 0, 0]
