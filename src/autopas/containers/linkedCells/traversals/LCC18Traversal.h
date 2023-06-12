@@ -173,21 +173,17 @@ void LCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::proc
 
   ParticleCell &baseCell = cells[baseIndex];
 
+  this->_cellFunctor.setOnlyDirty(this->_onlyDirty);
+
   offsetArray_t &offsets = this->_cellOffsets[yArray][xArray];
   for (auto const &[offset, r] : offsets) {
     unsigned long otherIndex = baseIndex + offset;
     ParticleCell &otherCell = cells[otherIndex];
 
     if (baseIndex == otherIndex) {
-      if (!this->_onlyDirty || baseCell.getDirty() || baseCell.getInflowDirty() /* || baseCell.getOutflowDirty() */) {
-        this->_cellFunctor.processCell(baseCell);
-      }
+      this->_cellFunctor.processCell(baseCell);
     } else {
-      if (!this->_onlyDirty /*|| baseCell.getOutflowDirty() */|| baseCell.getDirty() ||
-          otherCell.getDirty()  /*|| otherCell.getOutflowDirty() */
-          || baseCell.getInflowDirty() || otherCell.getInflowDirty()) {
-        this->_cellFunctor.processCellPair(baseCell, otherCell, r);
-      }
+      this->_cellFunctor.processCellPair(baseCell, otherCell, r);
     }
   }
 }

@@ -161,6 +161,7 @@ void LCC04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::proc
 
     if (isIn) {
       const unsigned long ulIndex = threeToOneD(index, signedDims);
+      _cellHandler.setOnlyDirty(this->_onlyDirty);
       _cellHandler.processBaseCell(cells, ulIndex);
     }
   }

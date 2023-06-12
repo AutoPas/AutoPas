@@ -57,6 +57,10 @@ class LCC08CellHandler {
    */
   void processBaseCell(std::vector<ParticleCell> &cells, unsigned long baseIndex);
 
+  void setOnlyDirty(bool onlyDirty) {
+    _onlyDirty = onlyDirty;
+  }
+
  protected:
   /**
    * Pair sets for processBaseCell().
@@ -76,6 +80,8 @@ class LCC08CellHandler {
    * Overlap of interacting cells. Array allows asymmetric cell sizes.
    */
   const std::array<unsigned long, 3> _overlap;
+
+  bool _onlyDirty {false};
 
  private:
   /**
@@ -104,6 +110,8 @@ inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewto
 
     ParticleCell &cell1 = cells[cellIndex1];
     ParticleCell &cell2 = cells[cellIndex2];
+
+    this->_cellFunctor.setOnlyDirty(this->_onlyDirty);
 
     if (cellIndex1 == cellIndex2) {
       this->_cellFunctor.processCell(cell1);

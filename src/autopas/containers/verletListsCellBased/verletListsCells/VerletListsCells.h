@@ -120,7 +120,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
 
     _neighborList.buildAoSNeighborList(this->_linkedCells, this->_verletBuiltNewton3, this->getCutoff(),
-                                       this->getVerletSkin(), this->getInteractionLength(), TraversalOption::lc_c18,
+                                       this->getVerletSkin(), this->getInteractionLength(), TraversalOption::lc_c08,
                                        _buildType, this->_partialRebuilding);
 
     if (traversal->getDataLayout() == DataLayoutOption::soa) {

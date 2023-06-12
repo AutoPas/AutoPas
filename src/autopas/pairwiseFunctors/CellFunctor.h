@@ -53,6 +53,10 @@ class CellFunctor {
   void processCellPair(ParticleCell &cell1, ParticleCell &cell2,
                        const std::array<double, 3> &sortingDirection = {0., 0., 0.});
 
+  void setOnlyDirty(bool onlyDirty) {
+    _onlyDirty = onlyDirty;
+  }
+
  private:
   /**
    * Applies the functor to all particle pairs exploiting newtons third law of
@@ -97,6 +101,8 @@ class CellFunctor {
 
   const double _sortingCutoff;
 
+  bool _onlyDirty {false};
+
   /**
    * Min. number of particles to start sorting.
    * @todo Currently, this is disabled because of https://github.com/AutoPas/AutoPas/issues/418
@@ -113,17 +119,19 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
     return;
   }
 
-  switch (DataLayout) {
-    case DataLayoutOption::aos:
-      processCellAoS<useNewton3>(cell);
-      break;
-    case DataLayoutOption::soa:
-      if (useNewton3) {
-        processCellSoAN3(cell);
-      } else {
-        processCellSoANoN3(cell);
-      }
-      break;
+  if (!this->_onlyDirty || cell.getDirty() || cell.getInflowDirty()) {
+    switch (DataLayout) {
+      case DataLayoutOption::aos:
+        processCellAoS<useNewton3>(cell);
+        break;
+      case DataLayoutOption::soa:
+        if (useNewton3) {
+          processCellSoAN3(cell);
+        } else {
+          processCellSoANoN3(cell);
+        }
+        break;
+    }
   }
 }
 
@@ -138,21 +146,24 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
     return;
   }
 
-  switch (DataLayout) {
-    case DataLayoutOption::aos:
-      if (useNewton3) {
-        processCellPairAoSN3(cell1, cell2, sortingDirection);
-      } else {
-        processCellPairAoSNoN3(cell1, cell2, sortingDirection);
-      }
-      break;
-    case DataLayoutOption::soa:
-      if (useNewton3) {
-        processCellPairSoAN3(cell1, cell2);
-      } else {
-        processCellPairSoANoN3(cell1, cell2);
-      }
-      break;
+  if (!this->_onlyDirty || cell1.getDirty() || cell2.getDirty()
+      || cell1.getInflowDirty() || cell2.getInflowDirty()) {
+    switch (DataLayout) {
+      case DataLayoutOption::aos:
+        if (useNewton3) {
+          processCellPairAoSN3(cell1, cell2, sortingDirection);
+        } else {
+          processCellPairAoSNoN3(cell1, cell2, sortingDirection);
+        }
+        break;
+      case DataLayoutOption::soa:
+        if (useNewton3) {
+          processCellPairSoAN3(cell1, cell2);
+        } else {
+          processCellPairSoANoN3(cell1, cell2);
+        }
+        break;
+    }
   }
 }
 
