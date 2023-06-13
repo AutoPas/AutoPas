@@ -25,7 +25,7 @@ Objects:
     0:
       particle-spacing           :  1.122462048
       bottomLeftCorner           :  [1, 1, 1]
-      box-length                 :  [100, 100, 10]
+      box-length                 :  [120, 120, 12]
       velocity                   :  [0, 0, 0]
       particle-type              :  0
       particle-epsilon           :  1
@@ -33,14 +33,14 @@ Objects:
       particle-mass              :  1
   Sphere:
     0:
-      center                     :  [50, 50, 100]
-      radius                     :  5
+      center                     :  [60, 60, 120]
+      radius                     :  6
       particle-spacing           :  1.122462048
       velocity                   :  [0, 0, 0]
       particle-type              :  1
       particle-epsilon           :  1
       particle-sigma             :  1
-      particle-mass              :  1
+      particle-mass              :  2
 # thermostat:
 #   initialTemperature             :  1
 #   targetTemperature              :  4
