@@ -521,7 +521,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.useTuningLogger.description;
 
         config.useTuningLogger.value = node[config.useTuningLogger.name].as<bool>();
-      } else if (key == config.outputSuffix.value) {
+      } else if (key == config.outputSuffix.name) {
         expected = "String";
         description = config.outputSuffix.description;
 
