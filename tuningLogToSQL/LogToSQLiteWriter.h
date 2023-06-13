@@ -79,7 +79,7 @@ class LogToSQLiteWriter {
     auto failed = sqlite3_open(databaseName.c_str(), &_db);
 
     if(failed) {
-      AutoPasLog(error, "Can't open database {}: {}", databaseName, sqlite3_errmsg(_db));
+      AutoPasLog(ERROR, "Can't open database {}: {}", databaseName, sqlite3_errmsg(_db));
       throw std::invalid_argument{databaseName};
     }
 
@@ -90,8 +90,8 @@ class LogToSQLiteWriter {
     std::ifstream in{filename};
 
     if (not in.is_open()) {
-      AutoPasLog(error, "Could not open file {}", filename);
-      AutoPasLog(error, "Exiting!");
+      AutoPasLog(ERROR, "Could not open file {}", filename);
+      AutoPasLog(ERROR, "Exiting!");
       exit(-1);
     }
 
@@ -165,7 +165,7 @@ private:
    auto returnCode = sqlite3_exec(_db, query, callback, nullptr, &errMsg);
 
    if(returnCode != SQLITE_OK) {
-     AutoPasLog(error, "SQL error: {}", errMsg);
+     AutoPasLog(ERROR, "SQL error: {}", errMsg);
      sqlite3_free(errMsg);
    }
  }

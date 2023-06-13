@@ -24,12 +24,14 @@ using ::testing::ValuesIn;
 void getStatus(const std::array<double, 3> &bBoxMin, const std::array<double, 3> &bBoxMax, const double cutoff,
                autopas::ContainerSelector<Particle> &containerSelector, std::vector<Particle> &ListInner,
                std::vector<Particle> &ListHaloWithinCutoff, std::vector<Particle> &ListHaloOutsideCutoff) {
+  using namespace autopas::utils::ArrayMath::literals;
+
   for (auto iter = containerSelector.getCurrentContainer()->begin(autopas::IteratorBehavior::owned); iter.isValid();
        ++iter) {
     ListInner.push_back(*iter);
   }
-  const auto cutoffBoxMin = autopas::utils::ArrayMath::subScalar(bBoxMin, cutoff);
-  const auto cutoffBoxMax = autopas::utils::ArrayMath::addScalar(bBoxMax, cutoff);
+  const auto cutoffBoxMin = bBoxMin - cutoff;
+  const auto cutoffBoxMax = bBoxMax + cutoff;
   for (auto iter = containerSelector.getCurrentContainer()->begin(autopas::IteratorBehavior::halo); iter.isValid();
        ++iter) {
     if (autopas::utils::inBox(iter->getR(), cutoffBoxMin, cutoffBoxMax)) {
@@ -44,7 +46,8 @@ TEST_P(ContainerSelectorTestFromTo, testContainerConversion) {
   const auto &[from, to] = GetParam();
 
   autopas::ContainerSelector<Particle> containerSelector(bBoxMin, bBoxMax, cutoff);
-  autopas::ContainerSelectorInfo containerInfo(cellSizeFactor, verletSkin, 64, autopas::LoadEstimatorOption::none);
+  autopas::ContainerSelectorInfo containerInfo(cellSizeFactor, verletSkinPerTimestep, verletRebuildFrequency, 64,
+                                               autopas::LoadEstimatorOption::none);
 
   // select container from which we want to convert from
   containerSelector.selectContainer(from, containerInfo);
@@ -53,8 +56,12 @@ TEST_P(ContainerSelectorTestFromTo, testContainerConversion) {
   {
     auto container = containerSelector.getCurrentContainer();
     auto getPossible1DPositions = [&](double min, double max) -> auto {
-      return std::array<double, 6>{min - cutoff - verletSkin,       min - cutoff, min, max, max + cutoff - 1e-3,
-                                   max + cutoff + verletSkin - 1e-3};
+      return std::array<double, 6>{min - cutoff - verletSkinPerTimestep * verletRebuildFrequency,
+                                   min - cutoff,
+                                   min,
+                                   max,
+                                   max + cutoff - 1e-3,
+                                   max + cutoff + verletSkinPerTimestep * verletRebuildFrequency - 1e-3};
     };
     size_t id = 0;
 

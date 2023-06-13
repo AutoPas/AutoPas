@@ -77,7 +77,7 @@ class LiveInfo {
               unsigned int rebuildFrequency) {
     infos["numParticles"] = container.getNumberOfParticles();
     infos["cutoff"] = container.getCutoff();
-    infos["skin"] = container.getSkin();
+    infos["skin"] = container.getVerletSkin();
     infos["rebuildFrequency"] = static_cast<size_t>(rebuildFrequency);
     auto domainSize = utils::ArrayMath::sub(container.getBoxMax(), container.getBoxMin());
 

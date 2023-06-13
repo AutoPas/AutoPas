@@ -92,7 +92,7 @@ TEST_F(AutoPasTest, checkRebuildingNewMove) {
   ASSERT_DOUBLE_EQ(boxMax2[2], 5.);
 
   // ensure logger still working
-  AutoPasLog(info, "test logger working.");
+  AutoPasLog(INFO, "test logger working.");
 }
 
 /**
@@ -159,7 +159,7 @@ TEST_F(AutoPasTest, checkRebuildingCopyCreateNew) {
   ASSERT_DOUBLE_EQ(boxMax2[2], 5.);
 
   // ensure logger still working
-  AutoPasLog(info, "test logger working.");
+  AutoPasLog(INFO, "test logger working.");
 }
 
 TEST_F(AutoPasTest, checkArgumentValidation) {

@@ -69,9 +69,9 @@ class SlicedBalancedBasedTraversal
       std::array<unsigned long, 3> lowerCorner = {0, 0, 0};
       std::array<unsigned long, 3> upperCorner = this->_cellsPerDimension;
       // upper corner is inclusive, so subtract 1 from each coordinate
-      upperCorner[0]--;
-      upperCorner[1]--;
-      upperCorner[2]--;
+      --upperCorner[0];
+      --upperCorner[1];
+      --upperCorner[2];
       lowerCorner[maxDimension] = x;
       upperCorner[maxDimension] = x;
       if (not this->_loadEstimator) {
@@ -86,10 +86,10 @@ class SlicedBalancedBasedTraversal
     }
     auto fullLoad = loads.back();
     auto loadEstimationTime = timer.stop();
-    AutoPasLog(debug, "load estimation took {} nanoseconds", loadEstimationTime);
+    AutoPasLog(DEBUG, "load estimation took {} nanoseconds", loadEstimationTime);
 
     auto numSlices = (size_t)autopas_get_max_threads();
-    AutoPasLog(debug, "{} threads available.", numSlices);
+    AutoPasLog(DEBUG, "{} threads available.", numSlices);
     // using greedy algorithm to assign slice thicknesses. May lead to less slices being used.
     unsigned int totalThickness = 0;
     // avg load per slice
@@ -116,7 +116,7 @@ class SlicedBalancedBasedTraversal
       if (totalThickness + thickness > maxDimensionLength || thickness < minSliceThickness) {
         // if minSlicethickness can no longer be satisfied, add remaining space to last slice
         this->_sliceThickness[s - 1] += maxDimensionLength - totalThickness;
-        AutoPasLog(debug, "Balanced Sliced traversal only using {} threads because of greedy algorithm.", s);
+        AutoPasLog(DEBUG, "Balanced Sliced traversal only using {} threads because of greedy algorithm.", s);
         numSlices = s;
         break;
 
@@ -156,8 +156,8 @@ class SlicedBalancedBasedTraversal
       }
 
       /// @todo: use autopas::utils::ArrayUtils::to_string()
-      AutoPasLog(debug, "Slice Thicknesses: [{}]", thicknessStr);
-      AutoPasLog(debug, "Slice loads: [{}]", loadStr);
+      AutoPasLog(DEBUG, "Slice Thicknesses: [{}]", thicknessStr);
+      AutoPasLog(DEBUG, "Slice loads: [{}]", loadStr);
     }
 
     if (spaciallyForward) {

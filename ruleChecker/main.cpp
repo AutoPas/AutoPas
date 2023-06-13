@@ -53,7 +53,7 @@ int main(int argc, char **argv) {
       numBigErrors++;
     }
 
-    AutoPasLog(error,
+    AutoPasLog(ERROR,
                "\n"
                "\tError in ConfigurationOrder {}:\n"
                "\t\t{}ns for config\t{}\n"
@@ -68,13 +68,13 @@ int main(int argc, char **argv) {
   std::string rulesfile{argv[1]};
   for (int i = 2; i < argc; i++) {
     std::string filename{argv[i]};
-    AutoPasLog(info, "Checking file {}: {}", i, filename);
+    AutoPasLog(INFO, "Checking file {}: {}", i, filename);
     auto strategy =
         std::make_shared<autopas::RuleBasedTuning>(containers, std::set<double>({1., 2.}), traversals, loadEstimators,
                                                    dataLayouts, newton3Options, true, rulesfile, errorHandler);
     autopas::TuningStrategyLogReplayer logReplayer{filename, strategy};
     auto optBestConfig = logReplayer.replay();
-    AutoPasLog(info, "");
+    AutoPasLog(INFO, "");
 
     if (optBestConfig.has_value()) {
       bestConfigs[optBestConfig.value()].push_back(i);
@@ -94,15 +94,15 @@ int main(int argc, char **argv) {
   }
 
   // -2 because 0 is exe 1 is rules.
-  AutoPasLog(info, "Finished replaying {} scenarios!", argc - 2);
-  AutoPasLog(info, "\nSummary of best configurations:\n{}", str.str());
-  AutoPasLog(info, "In sum, found {} errors! Of these, {} errors where greater than {}", numErrors, numBigErrors,
+  AutoPasLog(INFO, "Finished replaying {} scenarios!", argc - 2);
+  AutoPasLog(INFO, "\nSummary of best configurations:\n{}", str.str());
+  AutoPasLog(INFO, "In sum, found {} errors! Of these, {} errors where greater than {}", numErrors, numBigErrors,
              bigErrorThreshold);
 
   auto savedTuningTimeRatio =
       static_cast<double>(wouldHaveSkippedTuningTimeSum) / static_cast<double>(tuningTimeSum) * 100;
   auto savedTuningTimeRatioRounded = std::round(savedTuningTimeRatio * 100) / 100;
-  AutoPasLog(info, "Overall, {}% of the tuning time would have been saved.", savedTuningTimeRatioRounded);
+  AutoPasLog(INFO, "Overall, {}% of the tuning time would have been saved.", savedTuningTimeRatioRounded);
 
   autopas::Logger::unregister();
 }

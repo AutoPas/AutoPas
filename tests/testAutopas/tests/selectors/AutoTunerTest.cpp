@@ -6,8 +6,10 @@
 
 #include "AutoTunerTest.h"
 
+#include "autopas/cells/FullParticleCell.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
+#include "autopas/utils/WrapOpenMP.h"
 #include "autopasTools/generators/GridGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -21,10 +23,10 @@ using ::testing::_;
 TEST_F(AutoTunerTest, testAllConfigurations) {
   std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {2, 4, 2};
   // adaptive domain size so sliced is always applicable.
-  // bBoxMax[1] = autopas::autopas_get_max_threads() * 2;
   const double cutoff = 1;
   const double cellSizeFactor = 1;
-  const double verletSkin = 0;
+  const double verletSkinPerTimestep = 0;
+  const unsigned verletRebuildFrequency = 20;
   const unsigned int verletClusterSize = 64;
   const double mpiTuningMaxDifferenceForBucket = 0.3;
   const double mpiTuningWeightForMaxDensity = 0.0;
@@ -47,10 +49,10 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
       autopas::ContainerOption::getAllOptions(), std::set<double>({cellSizeFactor}),
       autopas::TraversalOption::getAllOptions(), autopas::LoadEstimatorOption::getAllOptions(),
       autopas::DataLayoutOption::getAllOptions(), autopas::Newton3Option::getAllOptions());
-  autopas::AutoTuner<Molecule> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, verletClusterSize,
+  autopas::AutoTuner<Molecule> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkinPerTimestep, verletClusterSize,
                                          std::move(tuningStrategy), mpiTuningMaxDifferenceForBucket,
-                                         mpiTuningWeightForMaxDensity, autopas::SelectorStrategyOption::fastestAbs, 100,
-                                         maxSamples, 20);
+                                         mpiTuningWeightForMaxDensity, autopas::SelectorStrategyOption::fastestAbs,
+                                         autopas::TuningMetricOption::time, 100, maxSamples, verletRebuildFrequency);
 
   autopas::Logger::get()->set_level(autopas::Logger::LogLevel::off);
   //  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
@@ -132,7 +134,7 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
       autopasTools::generators::GridGenerator::fillWithParticles(*(autoTuner.getContainer().get()), particlesPerDim,
                                                                  defaultParticle, spacing, offset);
     }
-    std::vector<Molecule> emptyVec;
+    std::vector<autopas::FullParticleCell<Molecule>> emptyVec(autopas::autopas_get_max_threads());
     stillTuning = autoTuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);
     doRebuild = false;
     ++iterations;
@@ -167,7 +169,8 @@ TEST_F(AutoTunerTest, testWillRebuildDDL) {
 
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configs);
   autopas::AutoTuner<Molecule> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy), 0.3, 0.0,
-                                         autopas::SelectorStrategyOption::fastestAbs, 1000, 2, 20);
+                                         autopas::SelectorStrategyOption::fastestAbs, autopas::TuningMetricOption::time,
+                                         1000, 2, 20);
 
   EXPECT_EQ(*(configs.begin()), autoTuner.getCurrentConfig());
 
@@ -176,7 +179,7 @@ TEST_F(AutoTunerTest, testWillRebuildDDL) {
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
 
-  std::vector<Molecule> emptyVec;
+  std::vector<autopas::FullParticleCell<Molecule>> emptyVec(autopas::autopas_get_max_threads());
 
   // Intended false positive
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild for first iteration.";
@@ -221,7 +224,8 @@ TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
 
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configs);
   autopas::AutoTuner<Molecule> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy), 0.3, 0.0,
-                                         autopas::SelectorStrategyOption::fastestAbs, 1000, 2, 20);
+                                         autopas::SelectorStrategyOption::fastestAbs, autopas::TuningMetricOption::time,
+                                         1000, 2, 20);
 
   EXPECT_EQ(*(configs.begin()), autoTuner.getCurrentConfig());
 
@@ -230,7 +234,7 @@ TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
 
-  std::vector<Molecule> emptyVec;
+  std::vector<autopas::FullParticleCell<Molecule>> emptyVec(autopas::autopas_get_max_threads());
 
   // Intended false positive
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild for first iteration.";
@@ -263,7 +267,8 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
 
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configs);
   autopas::AutoTuner<Molecule> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy), 0.3, 0.0,
-                                         autopas::SelectorStrategyOption::fastestAbs, 1000, 2, 20);
+                                         autopas::SelectorStrategyOption::fastestAbs, autopas::TuningMetricOption::time,
+                                         1000, 2, 20);
 
   EXPECT_EQ(*(configs.begin()), autoTuner.getCurrentConfig());
 
@@ -272,7 +277,7 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
 
-  std::vector<Molecule> emptyVec;
+  std::vector<autopas::FullParticleCell<Molecule>> emptyVec(autopas::autopas_get_max_threads());
 
   // Intended false positive
   EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild for first iteration.";
@@ -300,7 +305,8 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
 TEST_F(AutoTunerTest, testForceRetuneBetweenPhases) {
   std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {2, 4, 2};
   const double cutoff = 1;
-  const double verletSkin = 0;
+  const double verletSkinPerTimestep = 0;
+  const unsigned int verletRebuildFrequency = 20;
   const unsigned int verletClusterSize = 4;
   const double mpiTuningMaxDifferenceForBucket = 0.3;
   const double mpiTuningWeightForMaxDensity = 0.0;
@@ -309,10 +315,10 @@ TEST_F(AutoTunerTest, testForceRetuneBetweenPhases) {
   auto configsList = {_confLc_c01, _confLc_c04, _confLc_c08};
 
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
-  autopas::AutoTuner<Molecule> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, verletClusterSize,
+  autopas::AutoTuner<Molecule> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkinPerTimestep, verletClusterSize,
                                          std::move(tuningStrategy), mpiTuningMaxDifferenceForBucket,
-                                         mpiTuningWeightForMaxDensity, autopas::SelectorStrategyOption::fastestAbs, 100,
-                                         maxSamples, 20);
+                                         mpiTuningWeightForMaxDensity, autopas::SelectorStrategyOption::fastestAbs,
+                                         autopas::TuningMetricOption::time, 100, maxSamples, verletRebuildFrequency);
 
   size_t numExpectedTuningIterations = configsList.size() * maxSamples;
   MockFunctor<Molecule> functor;
@@ -320,7 +326,7 @@ TEST_F(AutoTunerTest, testForceRetuneBetweenPhases) {
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
 
-  std::vector<Molecule> emptyVec;
+  std::vector<autopas::FullParticleCell<Molecule>> emptyVec(autopas::autopas_get_max_threads());
 
   // expect a full tuning phase
   for (size_t i = 0; i < numExpectedTuningIterations; ++i) {
@@ -348,7 +354,8 @@ TEST_F(AutoTunerTest, testForceRetuneInPhase) {
   std::array<double, 3> bBoxMin = {0, 0, 0}, bBoxMax = {2, 4, 2};
   const double cutoff = 1;
   const double cellSizeFactor = 1;
-  const double verletSkin = 0;
+  const double verletSkinPerTimestep = 0;
+  const unsigned int verletRebuildFrequency = 20;
   const unsigned int verletClusterSize = 4;
   const double mpiTuningMaxDifferenceForBucket = 0.3;
   const double mpiTuningWeightForMaxDensity = 0.0;
@@ -367,10 +374,10 @@ TEST_F(AutoTunerTest, testForceRetuneInPhase) {
   auto configsList = {confLc_c01, confLc_c04, confLc_c08};
 
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
-  autopas::AutoTuner<Molecule> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkin, verletClusterSize,
+  autopas::AutoTuner<Molecule> autoTuner(bBoxMin, bBoxMax, cutoff, verletSkinPerTimestep, verletClusterSize,
                                          std::move(tuningStrategy), mpiTuningMaxDifferenceForBucket,
-                                         mpiTuningWeightForMaxDensity, autopas::SelectorStrategyOption::fastestAbs, 100,
-                                         maxSamples, 20);
+                                         mpiTuningWeightForMaxDensity, autopas::SelectorStrategyOption::fastestAbs,
+                                         autopas::TuningMetricOption::time, 100, maxSamples, verletRebuildFrequency);
 
   size_t numExpectedTuningIterations = configsList.size() * maxSamples;
   MockFunctor<Molecule> functor;
@@ -378,7 +385,7 @@ TEST_F(AutoTunerTest, testForceRetuneInPhase) {
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
 
-  std::vector<Molecule> emptyVec;
+  std::vector<autopas::FullParticleCell<Molecule>> emptyVec(autopas::autopas_get_max_threads());
 
   // Do part of the tuning phase. After the loop we should be in the middle of sampling the second configuration.
   ASSERT_GT(maxSamples, 1);
@@ -417,8 +424,9 @@ TEST_F(AutoTunerTest, testNoConfig) {
   auto exp1 = []() {
     std::set<autopas::Configuration> configsList = {};
     auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
-    autopas::AutoTuner<Molecule> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy), 0.3, 0.0,
-                                           autopas::SelectorStrategyOption::fastestAbs, 1000, 3, 20);
+    autopas::AutoTuner<Molecule> autoTuner({0, 0, 0}, {10, 10, 10}, 0.05, 0, 64, std::move(tuningStrategy), 0.3, 0.0,
+                                           autopas::SelectorStrategyOption::fastestAbs,
+                                           autopas::TuningMetricOption::time, 1000, 3, 20);
   };
 
   EXPECT_THROW(exp1(), autopas::utils::ExceptionHandler::AutoPasException) << "Constructor with given configs";
@@ -433,7 +441,8 @@ TEST_F(AutoTunerTest, testNoConfig) {
     std::set<autopas::Newton3Option> n3 = {};
     auto tuningStrategy = std::make_unique<autopas::FullSearch>(co, csf, tr, le, dl, n3);
     autopas::AutoTuner<Molecule> autoTuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy), 0.3, 0.0,
-                                           autopas::SelectorStrategyOption::fastestAbs, 1000, 3, 20);
+                                           autopas::SelectorStrategyOption::fastestAbs,
+                                           autopas::TuningMetricOption::time, 1000, 3, 20);
   };
 
   EXPECT_THROW(exp2(), autopas::utils::ExceptionHandler::AutoPasException) << "Constructor which generates configs";
@@ -447,7 +456,8 @@ TEST_F(AutoTunerTest, testOneConfig) {
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
   size_t maxSamples = 3;
   autopas::AutoTuner<Molecule> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy), 0.3, 0.0,
-                                     autopas::SelectorStrategyOption::fastestAbs, 1000, maxSamples, 20);
+                                     autopas::SelectorStrategyOption::fastestAbs, autopas::TuningMetricOption::time,
+                                     1000, maxSamples, 20);
 
   EXPECT_EQ(_confLc_c08, tuner.getCurrentConfig());
 
@@ -455,7 +465,7 @@ TEST_F(AutoTunerTest, testOneConfig) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
 
-  std::vector<Molecule> emptyVec;
+  std::vector<autopas::FullParticleCell<Molecule>> emptyVec(autopas::autopas_get_max_threads());
 
   bool doRebuild = true;
   size_t numSamples = 0;
@@ -486,16 +496,18 @@ TEST_F(AutoTunerTest, testConfigSecondInvalid) {
   auto configsList = {confNoN3, confN3};
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
   autopas::AutoTuner<Molecule> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy), 0.3, 0.0,
-                                     autopas::SelectorStrategyOption::fastestAbs, 1000, 3, 20);
+                                     autopas::SelectorStrategyOption::fastestAbs, autopas::TuningMetricOption::time,
+                                     1000, 3, 20);
 
   EXPECT_EQ(confNoN3, tuner.getCurrentConfig());
 
-  std::vector<Molecule> emptyVec;
+  std::vector<autopas::FullParticleCell<Molecule>> emptyVec(autopas::autopas_get_max_threads());
 
   MockFunctor<Molecule> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
+
   bool doRebuild = true;
   tuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);
   EXPECT_EQ(confN3, tuner.getCurrentConfig());
@@ -522,7 +534,8 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
   auto configsList = {confN3, confNoN3};
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
   autopas::AutoTuner<Molecule> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy), 0.3, 0.0,
-                                     autopas::SelectorStrategyOption::fastestAbs, 1000, 3, 20);
+                                     autopas::SelectorStrategyOption::fastestAbs, autopas::TuningMetricOption::time,
+                                     1000, 3, 20);
 
   EXPECT_EQ(confN3, tuner.getCurrentConfig());
 
@@ -531,7 +544,7 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(false));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
 
-  std::vector<Molecule> emptyVec;
+  std::vector<autopas::FullParticleCell<Molecule>> emptyVec(autopas::autopas_get_max_threads());
 
   bool doRebuild = true;
   EXPECT_THROW(tuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec),
@@ -557,45 +570,54 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
 
   auto configsList = {confA, confB};
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
-  autopas::AutoTuner<Molecule> tuner({0, 0, 0}, {10, 10, 10}, 1, 0, 64, std::move(tuningStrategy), 0.3, 0.0,
-                                     autopas::SelectorStrategyOption::fastestAbs, 1000, 3, rebuildFrequency);
+  autopas::AutoTuner<Molecule> tuner({0, 0, 0}, {10, 10, 10}, 2, 0, 64, std::move(tuningStrategy), 0.3, 0.0,
+                                     autopas::SelectorStrategyOption::fastestAbs, autopas::TuningMetricOption::time,
+                                     1000, 3, rebuildFrequency);
 
+  using ::testing::_;
   MockFunctor<Molecule> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
-
-  std::vector<Molecule> emptyVec;
-  std::vector<Molecule> twoParticles = {Molecule{}, Molecule{}};
+  EXPECT_CALL(functor, SoALoader(::testing::Matcher<autopas::FullParticleCell<Molecule> &>(_), _, _))
+      .Times(testing::AtLeast(0));
+  EXPECT_CALL(functor, SoAExtractor(::testing::Matcher<autopas::FullParticleCell<Molecule> &>(_), _, _))
+      .Times(testing::AtLeast(0));
+  EXPECT_CALL(functor, SoAFunctorPair(_, _, _)).Times(testing::AtLeast(0));
+  EXPECT_CALL(functor, SoAFunctorSingle(_, _)).Times(testing::AtLeast(0));
+  std::vector<autopas::FullParticleCell<Molecule>> emptyVec(autopas::autopas_get_max_threads());
+  tuner.getContainer()->addParticle((Molecule{{1., 1., 1.}, {0., 0., 0.}, 0, 0}));
+  tuner.getContainer()->addParticle((Molecule{{2., 1., 1.}, {0., 0., 0.}, 1, 0}));
 
   using namespace std::literals;
 
   bool doRebuild = true;
   EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(100ms); }));
-  tuner.iteratePairwise(&functor, doRebuild, twoParticles, emptyVec);
+  tuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);
 
   auto firstConfig = tuner.getCurrentConfig();
 
   doRebuild = false;
   EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(30ms); }));
-  tuner.iteratePairwise(&functor, doRebuild, twoParticles, emptyVec);
+  tuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);
   EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(30ms); }));
-  tuner.iteratePairwise(&functor, doRebuild, twoParticles, emptyVec);
+  tuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);
 
   // Here, second config will start to be tuned
 
   doRebuild = true;
   EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(300ms); }));
-  tuner.iteratePairwise(&functor, doRebuild, twoParticles, emptyVec);
+  tuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);
 
   auto secondConfig = tuner.getCurrentConfig();
 
   doRebuild = false;
   EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(25ms); }));
-  tuner.iteratePairwise(&functor, doRebuild, twoParticles, emptyVec);
+  tuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);
   EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(25ms); }));
-  tuner.iteratePairwise(&functor, doRebuild, twoParticles, emptyVec);
+  tuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);
 
   // Here, tuning should be finished and first should have been chosen (100 + 2 * 30 = 160 < 350 = 300 + 2 * 25)
+  EXPECT_CALL(functor, AoSFunctor).Times(1);
   tuner.iteratePairwise(&functor, doRebuild, emptyVec, emptyVec);
 
   EXPECT_EQ(tuner.getCurrentConfig(), firstConfig);

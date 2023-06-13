@@ -41,10 +41,12 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
         _kernelCalls(0ul) {}
 
   void AoSFunctor(Particle &i, Particle &j, bool /*newton3*/) override {
+    using namespace autopas::utils::ArrayMath::literals;
+
     if (i.isDummy() or j.isDummy()) {
       return;
     }
-    auto dr = utils::ArrayMath::sub(i.getR(), j.getR());
+    auto dr = i.getR() - j.getR();
     double dr2 = utils::ArrayMath::dot(dr, dr);
     _distanceCalculations.fetch_add(1, std::memory_order_relaxed);
 
@@ -303,7 +305,7 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
    * number of flops for one distance calculation.
    * 3 sub + 3 square + 2 add
    */
-  static constexpr double numFlopsPerDistanceCalculation = 8.0;
+  static constexpr size_t numFlopsPerDistanceCalculation = 8ul;
 
  private:
   double _cutoffSquare;

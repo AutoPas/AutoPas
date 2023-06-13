@@ -129,7 +129,7 @@ class RuleBasedTuning : public FullSearch {
       if (tuningTime > 0) {
         auto percent = static_cast<double>(wouldHaveSkippedTuningTime) / static_cast<double>(tuningTime) * 100;
         auto percentRounded = std::round(percent * 100) / 100;
-        AutoPasLog(info, "Rules would have saved {} ns removing {}/{} configurations. ({}% of total tuning time)",
+        AutoPasLog(INFO, "Rules would have saved {} ns removing {}/{} configurations. ({}% of total tuning time)",
                    wouldHaveSkippedTuningTime, _removedConfigurations.size(), _originalSearchSpace.size(),
                    percentRounded);
       }
@@ -192,7 +192,7 @@ class RuleBasedTuning : public FullSearch {
    * program.
    */
   std::vector<rule_syntax::ConfigurationOrder> applyRules() {
-    AutoPasLog(debug, _currentLiveInfo.toString());
+    AutoPasLog(DEBUG, _currentLiveInfo.toString());
 
     std::vector<RuleVM::MemoryCell> initialStack;
     std::vector<std::pair<std::string, rule_syntax::Define>> defines{};
@@ -212,14 +212,14 @@ class RuleBasedTuning : public FullSearch {
     RuleVM vm{};
     auto removePatterns = vm.execute(generatedProgram, initialStack);
 
-    AutoPasLog(debug, "Remove patterns (Count {}):", removePatterns.size());
+    AutoPasLog(DEBUG, "Remove patterns (Count {}):", removePatterns.size());
     std::vector<ConfigurationPattern> toRemovePatterns{};
     std::vector<rule_syntax::ConfigurationOrder> applicableConfigurationOrders{};
     for (const auto &patternIdx : removePatterns) {
       auto pattern = context.smallerConfigurationPatternByIndex(patternIdx);
       toRemovePatterns.push_back(pattern);
       auto str = pattern.toString();
-      AutoPasLog(debug, "Remove {}", str);
+      AutoPasLog(DEBUG, "Remove {}", str);
 
       applicableConfigurationOrders.push_back(context.getConfigurationOrders().at(patternIdx));
     }
@@ -235,7 +235,7 @@ class RuleBasedTuning : public FullSearch {
       }
       return remove;
     });
-    AutoPasLog(debug, "Rules remove {} out of {} configurations", _originalSearchSpace.size() - newSearchSpace.size(),
+    AutoPasLog(DEBUG, "Rules remove {} out of {} configurations", _originalSearchSpace.size() - newSearchSpace.size(),
                _originalSearchSpace.size());
     if (not _verifyModeEnabled) {
       this->_searchSpace = {newSearchSpace.begin(), newSearchSpace.end()};

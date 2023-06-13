@@ -11,6 +11,7 @@
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ParticleCellHelpers.h"
+#include "autopas/utils/markParticleAsDeleted.h"
 
 namespace autopas {
 
@@ -27,20 +28,22 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   /**
    * Constructor of the VerletListsLinkedBase class.
    * The neighbor lists are build using a search radius of cutoff + skin.LinkedParticleCell::ParticleType
+   * *rebuildFrequency
    * @param boxMin the lower corner of the domain
    * @param boxMax the upper corner of the domain
    * @param cutoff the cutoff radius of the interaction
-   * @param skin the skin radius
+   * @param skinPerTimestep the skin radius per timestep
+   * @param rebuildFrequency the rebuild frequency.
    * @param applicableTraversals all applicable traversals
    * @param cellSizeFactor cell size factor relative to cutoff. Verlet lists are only implemented for values >= 1.0
    * (smaller values are set to 1.0).
    */
-  VerletListsLinkedBase(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-                        const double skin, const std::set<TraversalOption> &applicableTraversals,
-                        const double cellSizeFactor)
-      : _linkedCells(boxMin, boxMax, cutoff, skin, std::max(1.0, cellSizeFactor)) {
+  VerletListsLinkedBase(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
+                        const double skinPerTimestep, const unsigned int rebuildFrequency,
+                        const std::set<TraversalOption> &applicableTraversals, const double cellSizeFactor)
+      : _linkedCells(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency, std::max(1.0, cellSizeFactor)) {
     if (cellSizeFactor < 1.0) {
-      AutoPasLog(debug, "VerletListsLinkedBase: CellSizeFactor smaller 1 detected. Set to 1.");
+      AutoPasLog(DEBUG, "VerletListsLinkedBase: CellSizeFactor smaller 1 detected. Set to 1.");
     }
   }
 
@@ -49,12 +52,16 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    */
   CellType getParticleCellTypeEnum() override { return _linkedCells.getParticleCellTypeEnum(); };
 
+  void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
+    _linkedCells.reserve(numParticles, numParticlesHaloEstimate);
+  }
+
   /**
    * @copydoc autopas::ParticleContainerInterface::addParticleImpl
    * @note This function invalidates the neighbor lists.
    */
   void addParticleImpl(const Particle &p) override {
-    _neighborListIsValid = false;
+    _neighborListIsValid.store(false, std::memory_order_relaxed);
     // position is already checked, so call impl directly.
     _linkedCells.addParticleImpl(p);
   }
@@ -64,7 +71,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    * @note This function invalidates the neighbor lists.
    */
   void addHaloParticleImpl(const Particle &haloParticle) override {
-    _neighborListIsValid = false;
+    _neighborListIsValid.store(false, std::memory_order_relaxed);
     // position is already checked, so call impl directly.
     _linkedCells.addHaloParticleImpl(haloParticle);
   }
@@ -79,7 +86,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    * @note This function invalidates the neighbor lists.
    */
   void deleteHaloParticles() override {
-    _neighborListIsValid = false;
+    _neighborListIsValid.store(false, std::memory_order_relaxed);
     _linkedCells.deleteHaloParticles();
   }
 
@@ -88,8 +95,56 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    * @note This function invalidates the neighbor lists.
    */
   void deleteAllParticles() override {
-    _neighborListIsValid = false;
+    _neighborListIsValid.store(false, std::memory_order_relaxed);
     _linkedCells.deleteAllParticles();
+  }
+
+  std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                           IteratorBehavior iteratorBehavior,
+                                                           const std::array<double, 3> &boxMin,
+                                                           const std::array<double, 3> &boxMax) const override {
+    return getParticleImpl<true>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
+  }
+  std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                           IteratorBehavior iteratorBehavior) const override {
+    // this is not a region iter hence we stretch the bounding box to the numeric max
+    constexpr std::array<double, 3> boxMin{std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(),
+                                           std::numeric_limits<double>::lowest()};
+
+    constexpr std::array<double, 3> boxMax{std::numeric_limits<double>::max(), std::numeric_limits<double>::max(),
+                                           std::numeric_limits<double>::max()};
+    return getParticleImpl<false>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
+  }
+
+  /**
+   * Container specific implementation for getParticle. See ParticleContainerInterface::getParticle().
+   *
+   * @tparam regionIter
+   * @param cellIndex
+   * @param particleIndex
+   * @param iteratorBehavior
+   * @param boxMin
+   * @param boxMax
+   * @return tuple<ParticlePointer, CellIndex, ParticleIndex>
+   */
+  template <bool regionIter>
+  std::tuple<const Particle *, size_t, size_t> getParticleImpl(size_t cellIndex, size_t particleIndex,
+                                                               IteratorBehavior iteratorBehavior,
+                                                               const std::array<double, 3> &boxMin,
+                                                               const std::array<double, 3> &boxMax) const {
+    return _linkedCells.getParticle(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
+  }
+
+  bool deleteParticle(Particle &particle) override {
+    // This function doesn't actually delete anything as it would mess up the references in the lists.
+    internal::markParticleAsDeleted(particle);
+    return false;
+  }
+
+  bool deleteParticle(size_t cellIndex, size_t particleIndex) override {
+    // This function doesn't actually delete anything as it would mess up the references in the lists.
+    internal::markParticleAsDeleted(this->_linkedCells.getCells()[cellIndex][particleIndex]);
+    return false;
   }
 
   /**
@@ -100,7 +155,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
     if (keepNeighborListsValid) {
       return autopas::LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(_linkedCells);
     }
-    _neighborListIsValid = false;
+    _neighborListIsValid.store(false, std::memory_order_relaxed);
     return _linkedCells.updateContainer(false);
   }
 
@@ -114,14 +169,14 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   bool updateHaloParticle(const Particle &particle) override {
     Particle pCopy = particle;
     pCopy.setOwnershipState(OwnershipState::halo);
-    auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(pCopy.getR(), this->getSkin());
+    auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(pCopy.getR(), this->getVerletSkin());
     for (auto cellptr : cells) {
       bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, pCopy);
       if (updated) {
         return true;
       }
     }
-    AutoPasLog(trace,
+    AutoPasLog(TRACE,
                "updateHaloParticle was not able to update particle at "
                "[{}, {}, {}]",
                pCopy.getR()[0], pCopy.getR()[1], pCopy.getR()[2]);
@@ -131,17 +186,19 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   /**
    * @copydoc autopas::ParticleContainerInterface::begin()
    */
-  [[nodiscard]] ParticleIteratorWrapper<Particle, true> begin(
-      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) override {
-    return _linkedCells.begin(behavior);
+  [[nodiscard]] ContainerIterator<Particle, true, false> begin(
+      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
+      typename ContainerIterator<Particle, true, false>::ParticleVecType *additionalVectors = nullptr) override {
+    return _linkedCells.begin(behavior, additionalVectors);
   }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::begin()
    */
-  [[nodiscard]] ParticleIteratorWrapper<Particle, false> begin(
-      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const override {
-    return _linkedCells.begin(behavior);
+  [[nodiscard]] ContainerIterator<Particle, false, false> begin(
+      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
+      typename ContainerIterator<Particle, false, false>::ParticleVecType *additionalVectors = nullptr) const override {
+    return _linkedCells.begin(behavior, additionalVectors);
   }
 
   /**
@@ -163,19 +220,19 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   /**
    * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
    */
-  [[nodiscard]] ParticleIteratorWrapper<Particle, true> getRegionIterator(const std::array<double, 3> &lowerCorner,
-                                                                          const std::array<double, 3> &higherCorner,
-                                                                          IteratorBehavior behavior) override {
-    return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior);
+  [[nodiscard]] ContainerIterator<Particle, true, true> getRegionIterator(
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
+      typename ContainerIterator<Particle, true, true>::ParticleVecType *additionalVectors) override {
+    return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior, additionalVectors);
   }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
    */
-  [[nodiscard]] ParticleIteratorWrapper<Particle, false> getRegionIterator(const std::array<double, 3> &lowerCorner,
-                                                                           const std::array<double, 3> &higherCorner,
-                                                                           IteratorBehavior behavior) const override {
-    return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior);
+  [[nodiscard]] ContainerIterator<Particle, false, true> getRegionIterator(
+      const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
+      typename ContainerIterator<Particle, false, true>::ParticleVecType *additionalVectors) const override {
+    return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior, additionalVectors);
   }
 
   /**
@@ -216,54 +273,49 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   /**
    * @copydoc autopas::ParticleContainerInterface::getBoxMax()
    */
-  [[nodiscard]] const std::array<double, 3> &getBoxMax() const override final { return _linkedCells.getBoxMax(); }
+  [[nodiscard]] const std::array<double, 3> &getBoxMax() const final { return _linkedCells.getBoxMax(); }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::setBoxMax()
    */
-  void setBoxMax(const std::array<double, 3> &boxMax) override final { _linkedCells.setBoxMax(boxMax); }
+  void setBoxMax(const std::array<double, 3> &boxMax) final { _linkedCells.setBoxMax(boxMax); }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getBoxMin()
    */
-  [[nodiscard]] const std::array<double, 3> &getBoxMin() const override final { return _linkedCells.getBoxMin(); }
+  [[nodiscard]] const std::array<double, 3> &getBoxMin() const final { return _linkedCells.getBoxMin(); }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::setBoxMin()
    */
-  void setBoxMin(const std::array<double, 3> &boxMin) override final { _linkedCells.setBoxMin(boxMin); }
+  void setBoxMin(const std::array<double, 3> &boxMin) final { _linkedCells.setBoxMin(boxMin); }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getCutoff()
    */
-  [[nodiscard]] double getCutoff() const override final { return _linkedCells.getCutoff(); }
+  [[nodiscard]] double getCutoff() const final { return _linkedCells.getCutoff(); }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::setCutoff()
    */
-  void setCutoff(double cutoff) override final { _linkedCells.setCutoff(cutoff); }
+  void setCutoff(double cutoff) final { _linkedCells.setCutoff(cutoff); }
 
   /**
-   * @copydoc autopas::ParticleContainerInterface::getSkin()
+   * @copydoc autopas::ParticleContainerInterface::getVerletSkin()
    */
-  [[nodiscard]] double getSkin() const override final { return _linkedCells.getSkin(); }
-
-  /**
-   * @copydoc autopas::ParticleContainerInterface::setSkin()
-   */
-  void setSkin(double skin) override final { _linkedCells.setSkin(skin); }
+  [[nodiscard]] double getVerletSkin() const final { return _linkedCells.getVerletSkin(); }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getInteractionLength()
    */
-  [[nodiscard]] double getInteractionLength() const override final { return _linkedCells.getInteractionLength(); }
+  [[nodiscard]] double getInteractionLength() const final { return _linkedCells.getInteractionLength(); }
 
  protected:
   /// internal linked cells storage, handles Particle storage and used to build verlet lists
   LinkedCells<Particle> _linkedCells;
 
   /// specifies if the neighbor list is currently valid
-  bool _neighborListIsValid{false};
+  std::atomic<bool> _neighborListIsValid{false};
 
   /// specifies if the current verlet list was built for newton3
   bool _verletBuiltNewton3{false};

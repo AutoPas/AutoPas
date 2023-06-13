@@ -111,7 +111,7 @@ class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, d
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 inline void LCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::computeOffsets() {
   _cellOffsets.resize(2 * this->_overlap[1] + 1, std::vector<offsetArray_t>(2 * this->_overlap[0] + 1));
-  const std::array<long, 3> _overlap_s = utils::ArrayUtils::static_cast_array<long>(this->_overlap);
+  const std::array<long, 3> _overlap_s = utils::ArrayUtils::static_cast_copy_array<long>(this->_overlap);
 
   const auto interactionLengthSquare(this->_interactionLength * this->_interactionLength);
 
@@ -119,7 +119,7 @@ inline void LCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
     for (long y = -_overlap_s[1]; y <= _overlap_s[1]; ++y) {
       for (long x = -_overlap_s[0]; x <= _overlap_s[0]; ++x) {
         const long offset = utils::ThreeDimensionalMapping::threeToOneD(
-            x, y, z, utils::ArrayUtils::static_cast_array<long>(this->_cellsPerDimension));
+            x, y, z, utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension));
 
         if (offset < 0l) {
           continue;
@@ -129,10 +129,11 @@ inline void LCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
           if (std::abs(yArray + y) <= _overlap_s[1]) {
             for (long xArray = -_overlap_s[0]; xArray <= _overlap_s[0]; ++xArray) {
               if (std::abs(xArray + x) <= _overlap_s[0]) {
-                std::array<double, 3> pos = {};
-                pos[0] = std::max(0l, (std::abs(x) - 1l)) * this->_cellLength[0];
-                pos[1] = std::max(0l, (std::abs(y) - 1l)) * this->_cellLength[1];
-                pos[2] = std::max(0l, (std::abs(z) - 1l)) * this->_cellLength[2];
+                const std::array<double, 3> pos = {
+                    std::max(0l, (std::abs(x) - 1l)) * this->_cellLength[0],
+                    std::max(0l, (std::abs(y) - 1l)) * this->_cellLength[1],
+                    std::max(0l, (std::abs(z) - 1l)) * this->_cellLength[2],
+                };
                 // calculate distance between base cell and other cell
                 const double distSquare = utils::ArrayMath::dot(pos, pos);
                 // only add cell offset if cell is within cutoff radius

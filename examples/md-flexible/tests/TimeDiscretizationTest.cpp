@@ -60,7 +60,7 @@ TEST_F(TimeDiscretizationTest, testCalculatePositions) {
                                                            {0, 0, 1}, {1, 0, 1}, {0, 1, 1}, {1, 1, 1}};
 
   size_t index = 0;
-  TimeDiscretization::calculatePositions(*autoPas, _particlePropertiesLibrary, 0.1, {0., 0., 0.});
+  TimeDiscretization::calculatePositions(*autoPas, _particlePropertiesLibrary, 0.1, {0., 0., 0.}, false);
   for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
     // only change in one direction is expected
     EXPECT_EQ(iter->getR()[0], referencePositions[index][0]);
@@ -83,7 +83,7 @@ TEST_F(TimeDiscretizationTest, testCalculatePositions) {
   referencePositions = {{0, 0, 0.105}, {1, 0, 0.105}, {0, 1, 0.105}, {1, 1, 0.105},
                         {0, 0, 1.105}, {1, 0, 1.105}, {0, 1, 1.105}, {1, 1, 1.105}};
 
-  TimeDiscretization::calculatePositions(*autoPas, _particlePropertiesLibrary, 0.1, {0., 0., 0.});
+  TimeDiscretization::calculatePositions(*autoPas, _particlePropertiesLibrary, 0.1, {0., 0., 0.}, false);
   index = 0;
 
   for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
@@ -93,6 +93,30 @@ TEST_F(TimeDiscretizationTest, testCalculatePositions) {
     EXPECT_NEAR(iter->getR()[2], referencePositions[index][2] + 0.06, 1e-13);
     ++index;
   }
+}
+
+/**
+ * Test the mechanism that throws an exception when particles travel faster than skin/2/rebuildFreq
+ */
+TEST_F(TimeDiscretizationTest, testFastParticlesCheck) {
+  auto autoPas = std::make_shared<autopas::AutoPas<Molecule>>();
+  autoPas->setBoxMin({0., 0., 0.});
+  autoPas->setBoxMax({10., 10., 10.});
+  autoPas->setVerletSkinPerTimestep(.02);
+  autoPas->setVerletRebuildFrequency(10);
+  autoPas->init();
+
+  const auto deltaT = 0.1;
+  // slow particle -> no exception
+  autoPas->addParticle(autopas::MoleculeLJ({0., 0., 0.}, {0.01, 0., 0.}, 0));
+  EXPECT_NO_THROW(
+      TimeDiscretization::calculatePositions(*autoPas, _particlePropertiesLibrary, deltaT, {0., 0., 0.}, true))
+      << "Updating the position of a slow particle should not throw an exception.";
+  // fast particle -> exception
+  autoPas->begin()->setV({1., 0., 0.});
+  EXPECT_THROW(TimeDiscretization::calculatePositions(*autoPas, _particlePropertiesLibrary, deltaT, {0., 0., 0.}, true),
+               std::runtime_error)
+      << "The particle moved farther than the allowed change in position but no exception was thrown.";
 }
 
 // @todo: move tests to new class SimulationTest.cpp -> Issue #641

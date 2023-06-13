@@ -1,7 +1,7 @@
 /**
  * @file Configuration.h
  * @author F. Gratl
- * @date 2/1/19
+ * @date 1 Feb. 2019
  */
 
 #pragma once
@@ -13,7 +13,6 @@
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/TraversalOption.h"
-#include "autopas/utils/StringUtils.h"
 
 namespace autopas {
 
@@ -30,6 +29,8 @@ class Configuration {
    * @param _dataLayout
    * @param _newton3
    * @param _cellSizeFactor
+   *
+   * @note needs constexpr (hence inline) constructor to be a literal.
    */
   constexpr Configuration(ContainerOption _container, double _cellSizeFactor, TraversalOption _traversal,
                           LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout, Newton3Option _newton3)
@@ -42,6 +43,7 @@ class Configuration {
 
   /**
    * Constructor taking no arguments. Initializes all properties to an invalid choice or false.
+   * @note needs constexpr (hence inline) constructor to be a literal.
    */
   constexpr Configuration() : container(), traversal(), loadEstimator(), dataLayout(), newton3(), cellSizeFactor(-1.) {}
 
@@ -49,11 +51,7 @@ class Configuration {
    * Returns string representation in JSON style of the configuration object.
    * @return String representation.
    */
-  [[nodiscard]] std::string toString() const {
-    return "{Container: " + container.to_string() + " , CellSizeFactor: " + std::to_string(cellSizeFactor) +
-           " , Traversal: " + traversal.to_string() + " , Load Estimator: " + loadEstimator.to_string() +
-           " , Data Layout: " + dataLayout.to_string() + " , Newton 3: " + newton3.to_string() + "}";
-  }
+  [[nodiscard]] std::string toString() const;
 
   /**
    * Returns a short string representation of the configuration object, suitable for tabular output.
@@ -69,13 +67,13 @@ class Configuration {
    * Generate a csv header containing all keys from the toString() method.
    * @return Contains the header.
    */
-  [[nodiscard]] std::string getCSVHeader() const { return getCSVRepresentation(true); }
+  [[nodiscard]] std::string getCSVHeader() const;
 
   /**
    * Generate a csv representation containing all values from the toString() method.
    * @return String representing the current configuration.
    */
-  [[nodiscard]] std::string getCSVLine() const { return getCSVRepresentation(false); }
+  [[nodiscard]] std::string getCSVLine() const;
 
   /**
    * Returns whether the configuration has been initialized with valid values or as an invalid one.
@@ -83,10 +81,7 @@ class Configuration {
    * not fit).
    * @return
    */
-  [[nodiscard]] bool hasValidValues() const {
-    return container != ContainerOption() and cellSizeFactor != -1 and traversal != TraversalOption() and
-           loadEstimator != LoadEstimatorOption() and dataLayout != DataLayoutOption() and newton3 != Newton3Option();
-  }
+  [[nodiscard]] bool hasValidValues() const;
 
   /**
    * Container option.
@@ -119,28 +114,7 @@ class Configuration {
    * @param returnHeaderOnly Switch to return the header or content.
    * @return
    */
-  [[nodiscard]] std::string getCSVRepresentation(bool returnHeaderOnly) const {
-    auto rgx = returnHeaderOnly ?
-                                // match any sequence before a colon and drop any spaces, comma or brackets before it
-                   std::regex("[{, ]+([^:]+):[^,]*")
-                                :
-                                // match any sequence after a colon and drop any spaces, comma or brackets around it
-                   std::regex(": ([^,]+)(?: ,|})");
-    auto searchString = toString();
-    std::sregex_iterator matchIter(searchString.begin(), searchString.end(), rgx);
-    std::sregex_iterator end;
-    std::stringstream retStream;
-
-    while (matchIter != end) {
-      // first submatch is the match of the capture group
-      retStream << matchIter->str(1) << ",";
-      ++matchIter;
-    }
-    auto retString = retStream.str();
-    // drop trailing ','
-    retString.pop_back();
-    return retString;
-  }
+  [[nodiscard]] std::string getCSVRepresentation(bool returnHeaderOnly) const;
 };
 
 /**
@@ -149,9 +123,7 @@ class Configuration {
  * @param configuration
  * @return
  */
-inline std::ostream &operator<<(std::ostream &os, const Configuration &configuration) {
-  return os << configuration.toString();
-}
+std::ostream &operator<<(std::ostream &os, const Configuration &configuration);
 
 /**
  * Stream extraction operator.
@@ -178,29 +150,19 @@ inline std::istream &operator>>(std::istream &in, Configuration &configuration) 
 
 /**
  * Equals operator for Configuration objects.
- *
- * @remark removing "inline" here leads to multiple definition errors.
- *
  * @param lhs
  * @param rhs
  * @return true iff all members are equal.
  */
-inline bool operator==(const Configuration &lhs, const Configuration &rhs) {
-  return lhs.container == rhs.container and lhs.cellSizeFactor == rhs.cellSizeFactor and
-         lhs.traversal == rhs.traversal and lhs.loadEstimator == rhs.loadEstimator and
-         lhs.dataLayout == rhs.dataLayout and lhs.newton3 == rhs.newton3;
-}
+bool operator==(const Configuration &lhs, const Configuration &rhs);
 
 /**
  * Not-Equals operator for Configuration objects.
- *
- * @remark removing "inline" here leads to multiple definition errors.
- *
  * @param lhs
  * @param rhs
  * @return true iff at least one member is different.
  */
-inline bool operator!=(const Configuration &lhs, const Configuration &rhs) { return not(lhs == rhs); }
+bool operator!=(const Configuration &lhs, const Configuration &rhs);
 
 /**
  * Comparison operator for Configuration objects. This is mainly used for configurations to have a sane ordering in e.g.
@@ -213,10 +175,7 @@ inline bool operator!=(const Configuration &lhs, const Configuration &rhs) { ret
  * @param rhs
  * @return
  */
-inline bool operator<(const Configuration &lhs, const Configuration &rhs) {
-  return std::tie(lhs.container, lhs.cellSizeFactor, lhs.traversal, lhs.loadEstimator, lhs.dataLayout, lhs.newton3) <
-         std::tie(rhs.container, rhs.cellSizeFactor, rhs.traversal, rhs.loadEstimator, rhs.dataLayout, rhs.newton3);
-}
+bool operator<(const Configuration &lhs, const Configuration &rhs);
 
 /**
  * Hash function for Configuration objects to be used in e.g. unordered maps.

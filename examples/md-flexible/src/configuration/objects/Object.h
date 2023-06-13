@@ -70,6 +70,24 @@ class Object {
   [[nodiscard]] unsigned long getTypeId() const { return _typeId; }
 
   /**
+   * Getter for Epsilon.
+   * @return epsilon
+   */
+  [[nodiscard]] double getEpsilon() const { return _epsilon; }
+
+  /**
+   * Getter for Sigma.
+   * @return sigma
+   */
+  [[nodiscard]] double getSigma() const { return _sigma; }
+
+  /**
+   * Getter for Mass.
+   * @return mass
+   */
+  [[nodiscard]] double getMass() const { return _mass; }
+
+  /**
    * Getter for the smallest x,y,z coordinates for Object
    * @return BoxMin of Cube
    */
@@ -85,9 +103,7 @@ class Object {
    * Returns the total amount of Particles in the Object
    * @return ParticlesTotal
    */
-  [[nodiscard]] virtual size_t getParticlesTotal() const {
-    throw std::runtime_error("Objects::getParticlesTotal() not implemented.");
-  };
+  [[nodiscard]] virtual size_t getParticlesTotal() const = 0;
 
   /**
    * Getter for ParticleSpacing.

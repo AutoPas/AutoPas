@@ -41,5 +41,5 @@ class RegionParticleIteratorTest : public AutoPasTestBase, public ::testing::Wit
    * @return tuple {haloBoxMin, haloBoxMax}
    */
   template <class AutoPasT>
-  auto defaultInit(AutoPasT &autoPas, autopas::ContainerOption &containerOption, double cellSizeFactor);
+  auto defaultInit(AutoPasT &autoPas, const autopas::ContainerOption &containerOption, double cellSizeFactor);
 };

@@ -9,7 +9,6 @@
 #include <set>
 
 #include "autopas/containers/ParticleContainerInterface.h"
-#include "autopas/iterators/ParticleIteratorWrapper.h"
 #include "autopas/options//ExtrapolationMethodOption.h"
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ContainerOption.h"
@@ -20,6 +19,7 @@
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
+#include "autopas/options/TuningMetricOption.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/selectors/Configuration.h"
 #include "autopas/utils/NumberSet.h"
@@ -51,16 +51,28 @@ class AutoPas {
   using Particle_t = Particle;
 
   /**
-   * Define the iterator_t for simple use, also from the outside.
+   * Define the iterator type for ease of use. Also for external use.
    * Helps to, e.g., wrap the AutoPas iterators
    */
-  using iterator_t = typename autopas::IteratorTraits<Particle>::iterator_t;
+  using IteratorT = autopas::ContainerIterator<Particle, true, false>;
 
   /**
-   * Define the const_iterator_t for simple use, also from the outside.
+   * Define the const iterator type for ease of use. Also for external use.
    * Helps to, e.g., wrap the AutoPas iterators
    */
-  using const_iterator_t = typename autopas::IteratorTraits<Particle>::const_iterator_t;
+  using ConstIteratorT = autopas::ContainerIterator<Particle, false, false>;
+
+  /**
+   * Define the region iterator type for ease of use. Also for external use.
+   * Helps to, e.g., wrap the AutoPas iterators
+   */
+  using RegionIteratorT = autopas::ContainerIterator<Particle, true, true>;
+
+  /**
+   * Define the const region iterator type for ease of use. Also for external use.
+   * Helps to, e.g., wrap the AutoPas iterators
+   */
+  using RegionConstIteratorT = autopas::ContainerIterator<Particle, false, true>;
 
   /**
    * Constructor for the autopas class.
@@ -120,23 +132,89 @@ class AutoPas {
   [[nodiscard]] std::vector<Particle> updateContainer();
 
   /**
+   * Reserve memory for a given number of particles in the container and logic layers.
+   * This function assumes a uniform distribution of particles throughout the domain.
+   * For example, this means that in a LinkedCells Container in each cell vector.reserve(numParticles/numCells) is
+   * called.
+   * @note This functions will create an estimate for the number of halo particles.
+   * @param numParticles No buffer factor is applied. It is probably wise to slighly over-reserve to account for
+   * imbalance or particle movement.
+   */
+  void reserve(size_t numParticles);
+
+  /**
+   * Reserve memory for a given number of particles in the container and logic layers
+   * (e.g. LogicHandler::_particleBuffer).
+   * This function assumes a uniform distribution of particles throughout the domain.
+   * For example, this means that in a LinkedCells Container in each cell vector.reserve(numParticles/numCells) is
+   * called.
+   * @param numParticles
+   * @param numHaloParticles
+   */
+  void reserve(size_t numParticles, size_t numHaloParticles);
+
+  /**
    * Adds a particle to the container.
    * This is only allowed if the neighbor lists are not valid.
    * @param p Reference to the particle to be added
    * @note An exception is thrown if the particle is added and it is not inside of the owned domain (defined by
    * boxmin and boxmax) of the container.
-   * @note This function is NOT thread-safe.
+   * @note This function is NOT thread-safe if the container is Octree.
    */
   void addParticle(const Particle &p);
+
+  /**
+   * Adds all particles from the collection to the container.
+   * @note This function uses reserve().
+   * @note This function uses addParticle().
+   * @tparam Collection Collection type that contains the particles (e.g. std::vector). Needs to support `.size()`.
+   * @param particles
+   */
+  template <class Collection>
+  void addParticles(Collection &&particles);
+
+  /**
+   * Adds all particles for which predicate(particle) == true to the container.
+   * @note This function uses reserve().
+   * @note This function uses addParticle().
+   * @tparam Collection Collection type that contains the particles (e.g. std::vector). Needs to support `.size()`.
+   * @tparam F Function type of predicate. Should be of the form: (const Particle &) -> bool.
+   * @param particles Particles that are potentially added.
+   * @param predicate Condition that determines if an individual particle should be added.
+   */
+  template <class Collection, class F>
+  void addParticlesIf(Collection &&particles, F predicate);
 
   /**
    * Adds a particle to the container that lies in the halo region of the container.
    * @param haloParticle Particle to be added.
    * @note An exception is thrown if the halo particle is added and it is inside of the owned domain (defined by boxmin
    * and boxmax) of the container.
-   * @note This function is NOT thread-safe.
+   * @note This function is NOT thread-safe if the container is Octree.
    */
   void addHaloParticle(const Particle &haloParticle);
+
+  /**
+   * Adds all halo particles from the collection to the container.
+   * @note This function uses reserve().
+   * @note This function uses addHaloParticle().
+   * @tparam Collection Collection type that contains the particles (e.g. std::vector). Needs to support `.size()`.
+   * @param particles
+   */
+  template <class Collection>
+  void addHaloParticles(Collection &&particles);
+
+  /**
+   * Adds all halo particles for which predicate(particle) == true to the container.
+   * @note This function uses reserve().
+   * @note This function uses addHaloParticle().
+   * @tparam Collection Collection type that contains the particles (e.g. std::vector). Needs to support `.size()`.
+   * @tparam F Function type of predicate. Should be of the form: (const Particle &) -> bool.
+   * @param particles Particles that are potentially added.
+   * @param predicate Condition that determines if an individual particle should be added.
+   */
+  template <class Collection, class F>
+  void addHaloParticlesIf(Collection &&particles, F predicate);
 
   /**
    * Deletes all particles.
@@ -145,16 +223,35 @@ class AutoPas {
   void deleteAllParticles();
 
   /**
-   * Deletes the particle behind the current iterator position.
+   * Deletes the particle behind the current iterator position and leaves the container in a valid state.
+   *
+   * Internally, depending on the container, this might just mark the particle as deleted without actually removing it.
+   * If this can not be done without compromising e.g. a VerletList reference structure the particle is only marked.
+   *
    * @param iter Needs to be a modify-able iterator.
    */
-  void deleteParticle(ParticleIteratorWrapper<Particle, true> &iter);
+  void deleteParticle(IteratorT &iter);
 
   /**
-   * Deletes the given particle.
-   * @param particle Reference to the particle that should be deleted.
+   * @copydoc deleteParticle(IteratorT &iter)
+   *
+   * Region Iterator version.
    */
-  void deleteParticle(Particle &particle);
+  void deleteParticle(RegionIteratorT &iter);
+
+  /**
+   * Deletes the given particle and leaves the container in a valid state.
+   *
+   * Internally, depending on the container, this might just mark the particle as deleted without actually removing it.
+   * If this can not be done without compromising e.g. a VerletList reference structure the particle is only marked.
+   *
+   * @note This function might invalidate iterators.
+   *
+   * @param particle Reference to the particle that should be deleted.
+   *
+   * @return True iff the reference still points to a valid particle.
+   */
+  bool deleteParticle(Particle &particle);
 
   /**
    * Function to iterate over all pairs of particles in the container.
@@ -172,13 +269,13 @@ class AutoPas {
    * particles, or both.
    * @return iterator to the first particle.
    */
-  iterator_t begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo);
+  IteratorT begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo);
 
   /**
    * @copydoc begin()
    * @note const version
    */
-  const_iterator_t begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
+  ConstIteratorT begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
 
   /**
    * execute code on all particles in parallel as defined by a lambda function
@@ -278,11 +375,12 @@ class AutoPas {
    * @copydoc begin()
    * @note cbegin will guarantee to return a const_iterator.
    */
-  const_iterator_t cbegin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const { return begin(behavior); }
+  ConstIteratorT cbegin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const { return begin(behavior); }
 
   /**
-   * End of the iterator.
-   * This returns a bool, which is false to allow range-based for loops.
+   * Helper to enable range-based for loops for the AutoPas object.
+   * ParticleIterator::operator==() compares its own validity state against this value. Hence, as soon as the iterator
+   * is invalid the loop ends.
    * @return false
    */
   [[nodiscard]] constexpr bool end() const { return false; }
@@ -297,14 +395,15 @@ class AutoPas {
    * particles, or both.
    * @return iterator to iterate over all particles in a specific region
    */
-  iterator_t getRegionIterator(std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-                               IteratorBehavior behavior = IteratorBehavior::ownedOrHalo);
+  RegionIteratorT getRegionIterator(const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
+                                    IteratorBehavior behavior = IteratorBehavior::ownedOrHalo);
   /**
    * @copydoc getRegionIterator()
    * @note const version
    */
-  const_iterator_t getRegionIterator(std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
-                                     IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
+  RegionConstIteratorT getRegionIterator(const std::array<double, 3> &lowerCorner,
+                                         const std::array<double, 3> &higherCorner,
+                                         IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
 
   /**
    * Execute code on all particles in a certain region in parallel as defined by a lambda function.
@@ -316,8 +415,8 @@ class AutoPas {
    * @note not actually parallel until kokkos integration
    */
   template <typename Lambda>
-  void forEachInRegionParallel(Lambda forEachLambda, std::array<double, 3> lowerCorner,
-                               std::array<double, 3> higherCorner,
+  void forEachInRegionParallel(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+                               const std::array<double, 3> &higherCorner,
                                IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     // TODO (lgaertner): parallelize with kokkos integration
     withStaticContainerType(getContainer(), [&](auto containerPtr) {
@@ -330,8 +429,8 @@ class AutoPas {
    * @note const version
    */
   template <typename Lambda>
-  void forEachInRegionParallel(Lambda forEachLambda, std::array<double, 3> lowerCorner,
-                               std::array<double, 3> higherCorner,
+  void forEachInRegionParallel(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+                               const std::array<double, 3> &higherCorner,
                                IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     // TODO (lgaertner): parallelize with kokkos integration
     withStaticContainerType(getContainer(), [&](auto containerPtr) {
@@ -348,7 +447,8 @@ class AutoPas {
    * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownerOrHalo
    */
   template <typename Lambda>
-  void forEachInRegion(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+                       const std::array<double, 3> &higherCorner,
                        IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     withStaticContainerType(getContainer(), [&](auto containerPtr) {
       containerPtr->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
@@ -360,7 +460,8 @@ class AutoPas {
    * @note const version
    */
   template <typename Lambda>
-  void forEachInRegion(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+                       const std::array<double, 3> &higherCorner,
                        IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     withStaticContainerType(getContainer(), [&](auto containerPtr) {
       containerPtr->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
@@ -379,8 +480,8 @@ class AutoPas {
    * @note not actually parallel until kokkos integration
    */
   template <typename Lambda, typename A>
-  void reduceInRegionParallel(Lambda reduceLambda, A &result, std::array<double, 3> lowerCorner,
-                              std::array<double, 3> higherCorner,
+  void reduceInRegionParallel(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+                              const std::array<double, 3> &higherCorner,
                               IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     // TODO lgaertner: parallelize with kokkos integration
     withStaticContainerType(getContainer(), [&](auto containerPtr) {
@@ -393,8 +494,8 @@ class AutoPas {
    * @note const version
    */
   template <typename Lambda, typename A>
-  void reduceInRegionParallel(Lambda reduceLambda, A &result, std::array<double, 3> lowerCorner,
-                              std::array<double, 3> higherCorner,
+  void reduceInRegionParallel(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+                              const std::array<double, 3> &higherCorner,
                               IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     // TODO lgaertner: parallelize with kokkos integration
     withStaticContainerType(getContainer(), [&](auto containerPtr) {
@@ -413,8 +514,9 @@ class AutoPas {
    * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownerOrHalo
    */
   template <typename Lambda, typename A>
-  void reduceInRegion(Lambda reduceLambda, A &result, std::array<double, 3> lowerCorner,
-                      std::array<double, 3> higherCorner, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+  void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+                      const std::array<double, 3> &higherCorner,
+                      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     withStaticContainerType(getContainer(), [&](auto containerPtr) {
       containerPtr->reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
     });
@@ -425,13 +527,22 @@ class AutoPas {
    * @note const version
    */
   template <typename Lambda, typename A>
-  void reduceInRegion(Lambda reduceLambda, A &result, std::array<double, 3> lowerCorner,
-                      std::array<double, 3> higherCorner,
+  void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+                      const std::array<double, 3> &higherCorner,
                       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     withStaticContainerType(getContainer(), [&](auto containerPtr) {
       containerPtr->reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
     });
   }
+  /**
+   * Function to iterate over all pairs of particles in the container.
+   * This function only handles short-range interactions.
+   * @return _verletSkin
+   */
+  double getVerletSkin() {
+    double _verletSkin = AutoPas::_verletSkinPerTimestep * AutoPas::_verletRebuildFrequency;
+    return _verletSkin;
+  };
 
   /**
    * Returns the number of particles in this container.
@@ -450,13 +561,13 @@ class AutoPas {
    * Get the lower corner of the container without the halo.
    * @return lower corner of the container.
    */
-  [[nodiscard]] std::array<double, 3> getBoxMin() const;
+  [[nodiscard]] const std::array<double, 3> &getBoxMin() const;
 
   /**
    * Get the upper corner of the container without the halo.
    * @return upper corner of the container.
    */
-  [[nodiscard]] std::array<double, 3> getBoxMax() const;
+  [[nodiscard]] const std::array<double, 3> &getBoxMax() const;
 
   /**
    * get the bool value indicating if the search space is trivial (not more than one configuration to test).
@@ -488,7 +599,7 @@ class AutoPas {
    */
   void setCutoff(double cutoff) {
     if (cutoff <= 0.0) {
-      AutoPasLog(error, "Cutoff <= 0.0: {}", cutoff);
+      AutoPasLog(ERROR, "Cutoff <= 0.0: {}", cutoff);
       utils::ExceptionHandler::exception("Error: Cutoff <= 0.0!");
     }
     AutoPas::_cutoff = cutoff;
@@ -506,7 +617,7 @@ class AutoPas {
    */
   void setAllowedCellSizeFactors(const NumberSet<double> &allowedCellSizeFactors) {
     if (allowedCellSizeFactors.getMin() <= 0.0) {
-      AutoPasLog(error, "cell size <= 0.0");
+      AutoPasLog(ERROR, "cell size <= 0.0");
       utils::ExceptionHandler::exception("Error: cell size <= 0.0!");
     }
     AutoPas::_allowedCellSizeFactors = std::move(allowedCellSizeFactors.clone());
@@ -518,27 +629,29 @@ class AutoPas {
    */
   void setCellSizeFactor(double cellSizeFactor) {
     if (cellSizeFactor <= 0.0) {
-      AutoPasLog(error, "cell size <= 0.0: {}", cellSizeFactor);
+      AutoPasLog(ERROR, "cell size <= 0.0: {}", cellSizeFactor);
       utils::ExceptionHandler::exception("Error: cell size <= 0.0!");
     }
     AutoPas::_allowedCellSizeFactors = std::make_unique<NumberSetFinite<double>>(std::set<double>{cellSizeFactor});
   }
 
   /**
-   * Get length added to the cutoff for the Verlet lists' skin.
-   * @return
+   * Get length added to the cutoff for the Verlet lists' skin per timestep.
+   * @return _verletSkinPerTimestep
    */
-  [[nodiscard]] double getVerletSkin() const { return _verletSkin; }
+  [[nodiscard]] double getVerletSkinPerTimestep() const { return _verletSkinPerTimestep; }
 
   /**
-   * Set length added to the cutoff for the Verlet lists' skin.
-   * @param verletSkin
+   * Set length added to the cutoff for the Verlet lists' skin per timestep.
+   * @param verletSkinPerTimestep
    */
-  void setVerletSkin(double verletSkin) { AutoPas::_verletSkin = verletSkin; }
+  void setVerletSkinPerTimestep(double verletSkinPerTimestep) {
+    AutoPas::_verletSkinPerTimestep = verletSkinPerTimestep;
+  }
 
   /**
    * Get Verlet rebuild frequency.
-   * @return
+   * @return _verletRebuildFrequency
    */
   [[nodiscard]] unsigned int getVerletRebuildFrequency() const { return _verletRebuildFrequency; }
 
@@ -549,7 +662,6 @@ class AutoPas {
   void setVerletRebuildFrequency(unsigned int verletRebuildFrequency) {
     AutoPas::_verletRebuildFrequency = verletRebuildFrequency;
   }
-
   /**
    * Get Verlet cluster size.
    * @return
@@ -793,6 +905,13 @@ class AutoPas {
   }
 
   /**
+   * Setter for the tuning metric option.
+   * For possible tuning metric choices see options::TuningMetricOption::Value.
+   * @param tuningMetricOption
+   */
+  void setTuningMetricOption(TuningMetricOption tuningMetricOption) { _tuningMetricOption = tuningMetricOption; }
+
+  /**
    * Setter for the mpi strategy option
    * @param mpiStrategyOption
    */
@@ -855,7 +974,6 @@ class AutoPas {
 
   std::shared_ptr<const autopas::ParticleContainerInterface<Particle>> getContainer() const;
 
- private:
   /**
    * Lower corner of the container.
    */
@@ -869,9 +987,9 @@ class AutoPas {
    */
   double _cutoff{1.0};
   /**
-   * Length added to the cutoff for the Verlet lists' skin.
+   * Length added to the cutoff for the Verlet lists' skin per Timestep.
    */
-  double _verletSkin{0.2};
+  double _verletSkinPerTimestep{0.01};
   /**
    * Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
    */
@@ -927,6 +1045,12 @@ class AutoPas {
    * For possible tuning strategy choices see options::TuningStrategyOption::Value.
    */
   TuningStrategyOption _tuningStrategyOption{TuningStrategyOption::fullSearch};
+
+  /**
+   * Strategy option for the auto tuner.
+   * For possible tuning strategy choices see options::TuningStrategyOption::Value.
+   */
+  TuningMetricOption _tuningMetricOption{TuningMetricOption::time};
 
   /**
    * Strategy for the configuration selector.
@@ -1021,5 +1145,17 @@ class AutoPas {
    */
   std::string _ruleFileName{"tuningRules.rule"};
 
+  /**
+   * Helper function to reduce code duplication for all forms of addParticle while minimizing overhead through loops.
+   * Triggers reserve() and provides a parallel loop with deliberate scheduling.
+   * @tparam F Function type of loopBody: (int) -> void.
+   * @param numParticlesToAdd For how many new owned particles should space be allocated.
+   * @param numHalosToAdd For how many new halo particles should space be allocated.
+   * @param collectionSize Size of the collection from which particles are added.
+   * @param loopBody Function to be called in the parallel loop over collectionSize.
+   * Typically `[&](auto i) {addParticle(collection[i]);}`.
+   */
+  template <class F>
+  void addParticlesAux(size_t numParticlesToAdd, size_t numHalosToAdd, size_t collectionSize, F loopBody);
 };  // class AutoPas
 }  // namespace autopas

@@ -36,7 +36,8 @@ class Newton3OnOffTest
 
   static double getCutoff() { return 1.0; }
   static double getCellSizeFactor() { return 1.0; }
-  static double getVerletSkin() { return 0.0; }
+  static double getVerletSkinPerTimestep() { return 0.0; }
+  static unsigned int getRebuildFrequency() { return 20; }
   static int getClusterSize() { return 4; }
 
   void countFunctorCalls(autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,

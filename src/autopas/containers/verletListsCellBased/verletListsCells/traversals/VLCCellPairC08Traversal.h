@@ -70,7 +70,7 @@ inline void VLCCellPairC08Traversal<ParticleCell, PairwiseFunctor, dataLayout, u
   }
 
   this->c08Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
-    unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
+    const auto baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
     _cellHandler.processCellListsC08(*(this->_cellPairVerletList), baseIndex, _functor, dataLayout, _soa,
                                      this->_cellsPerDimension);
   });

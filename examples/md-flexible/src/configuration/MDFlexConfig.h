@@ -20,6 +20,7 @@
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
+#include "autopas/options/TuningMetricOption.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/utils/NumberSet.h"
 #include "src/TypeDefinitions.h"
@@ -37,11 +38,17 @@
 class MDFlexConfig {
  public:
   /**
-   * Constructor.
+   * Constructor that initializes the configuration from the CLI arguments (incl. yaml file argument).
    * @param argc: the argument count of the arguments passed to the main function.
    * @param argv: the argument vector passed to the main function.
    */
   MDFlexConfig(int argc, char **argv);
+
+  /**
+   * Constructor using only default values.
+   * Useful for testing but might require setting some values before this is valid.
+   */
+  MDFlexConfig() = default;
 
   /**
    * Struct to bundle information for options.
@@ -240,6 +247,13 @@ class MDFlexConfig {
       "Strategy how to reduce the sample measurements to a single value. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::TuningStrategyOption::getAllOptions(), " ", {"(", ")"})};
   /**
+   * tuningMetricOption
+   */
+  MDFlexOption<autopas::TuningMetricOption, __LINE__> tuningMetricOption{
+      autopas::TuningMetricOption::time, "tuning-metric", true,
+      "Metric to use for tuning. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(autopas::TuningMetricOption::getAllOptions(), " ", {"(", ")"})};
+  /**
    * mpiStrategyOption
    */
   MDFlexOption<autopas::MPIStrategyOption, __LINE__> mpiStrategyOption{
@@ -340,12 +354,21 @@ class MDFlexConfig {
    * verletRebuildFrequency
    */
   MDFlexOption<unsigned int, __LINE__> verletRebuildFrequency{
-      20, "verlet-rebuild-frequency", true, "Number of iterations after which containers are rebuilt."};
+      15, "verlet-rebuild-frequency", true, "Number of iterations after which containers are rebuilt."};
   /**
-   * verletSkinRadius
+   * verletSkinRadiusPerTimeStep
    */
-  MDFlexOption<double, __LINE__> verletSkinRadius{.2, "verlet-skin-radius", true,
-                                                  "Skin added to the cutoff to form the interaction length."};
+  MDFlexOption<double, __LINE__> verletSkinRadiusPerTimestep{
+      .2, "verlet-skin-radius-per-timestep", true,
+      "Skin added to the cutoff to form the interaction length. The total skin width is this number times "
+      "verletRebuildFrequency."};
+
+  /**
+   * fastParticlesThrow
+   */
+  MDFlexOption<bool, __LINE__> fastParticlesThrow{false, "fastParticlesThrow", false,
+                                                  "Decide if particles that move farther than skin/2/rebuildFrequency "
+                                                  "will throw an exception during the position update or not."};
   /**
    * boxMin
    */
@@ -389,9 +412,19 @@ class MDFlexConfig {
   /**
    * functorOption
    */
-  MDFlexOption<FunctorOption, __LINE__> functorOption{FunctorOption::lj12_6, "functor", true,
-                                                      "Force functor to use. Possible Values: (lennard-jones "
-                                                      "lennard-jones-AVX2 lennard-jones-SVE lennard-jones-globals)"};
+  MDFlexOption<FunctorOption, __LINE__> functorOption {
+    // choose a reasonable default depending on what is available at compile time
+#if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
+    FunctorOption::lj12_6_AVX,
+#elif defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
+    FunctorOption::lj12_6_SVE,
+#else
+    FunctorOption::lj12_6,
+#endif
+        "functor", true,
+        "Force functor to use. Possible Values: (lennard-jones "
+        "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals)"
+  };
   /**
    * iterations
    */
@@ -652,7 +685,7 @@ class MDFlexConfig {
   /**
    * valueOffset used for cli-output alignment
    */
-  static constexpr size_t valueOffset{33};
+  static constexpr int valueOffset{33};
 
  private:
   /**

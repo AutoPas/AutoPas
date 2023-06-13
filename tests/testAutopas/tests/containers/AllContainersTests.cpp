@@ -92,9 +92,7 @@ TEST_P(AllContainersTests, testParticleAdding) {
  * gone.
  */
 TEST_P(AllContainersTests, testDeleteHaloParticles) {
-  using autopas::utils::ArrayMath::add;
-  using autopas::utils::ArrayMath::mulScalar;
-  using autopas::utils::ArrayMath::sub;
+  using namespace autopas::utils::ArrayMath::literals;
 
   auto container = getInitializedContainer(std::get<0>(GetParam()));
 
@@ -104,11 +102,12 @@ TEST_P(AllContainersTests, testDeleteHaloParticles) {
   size_t numParticles = 0;
 
   // calculate some distances needed later
-  auto domainSize = sub(container->getBoxMax(), container->getBoxMin());
-  auto domainSizeHalf = mulScalar(domainSize, 0.5);
-  auto domainCenter = add(container->getBoxMin(), domainSizeHalf);
+  auto domainSize = container->getBoxMax() - container->getBoxMin();
+  auto domainSizeHalf = domainSize * 0.5;
+  auto domainCenter = container->getBoxMin() + domainSizeHalf;
   auto interactionLengthHalf = container->getInteractionLength() * 0.5;
-  auto distCenterToMidHalo = add(domainSizeHalf, {interactionLengthHalf, interactionLengthHalf, interactionLengthHalf});
+  auto distCenterToMidHalo =
+      domainSizeHalf + std::array<double, 3>{interactionLengthHalf, interactionLengthHalf, interactionLengthHalf};
 
   // setup: add some halo particles on every side and corner
   for (int x : {-1, 0, 1}) {
@@ -117,8 +116,8 @@ TEST_P(AllContainersTests, testDeleteHaloParticles) {
         if (x == 0 and y == 0 and z == 0) {
           continue;
         }
-        auto pos =
-            add(domainCenter, {distCenterToMidHalo[0] * x, distCenterToMidHalo[1] * y, distCenterToMidHalo[2] * z});
+        auto pos = domainCenter + std::array<double, 3>{distCenterToMidHalo[0] * x, distCenterToMidHalo[1] * y,
+                                                        distCenterToMidHalo[2] * z};
         Particle p{pos, zeros, numParticles++};
         container->addHaloParticle(p);
       }

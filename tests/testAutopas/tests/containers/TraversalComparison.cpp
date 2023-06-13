@@ -101,9 +101,11 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
     DeletionPosition particleDeletionPosition) {
   // Construct container
   autopas::ContainerSelector<Molecule> selector{_boxMin, boxMax, _cutoff};
-  constexpr double skin = _cutoff * 0.1;
-  selector.selectContainer(
-      containerOption, autopas::ContainerSelectorInfo{cellSizeFactor, skin, 32, autopas::LoadEstimatorOption::none});
+  constexpr double skinPerTimestep = _cutoff * 0.1;
+  constexpr unsigned int rebuildFrequency = 1;
+  selector.selectContainer(containerOption,
+                           autopas::ContainerSelectorInfo{cellSizeFactor, skinPerTimestep, rebuildFrequency, 32,
+                                                          autopas::LoadEstimatorOption::none});
   auto container = selector.getCurrentContainer();
   autopas::LJFunctor<Molecule, true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both,
                      globals /*calculateGlobals*/>
@@ -113,11 +115,12 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   autopasTools::generators::RandomGenerator::fillWithParticles(*container, Molecule({0., 0., 0.}, {0., 0., 0.}, 0),
                                                                container->getBoxMin(), container->getBoxMax(),
                                                                numMolecules);
-
+  EXPECT_EQ(container->getNumberOfParticles(), numMolecules) << "Wrong number of molecules inserted!";
   autopasTools::generators::RandomGenerator::fillWithHaloParticles(
       *container, Molecule({0., 0., 0.}, {0., 0., 0.}, numMolecules /*initial ID*/), container->getCutoff(),
       numHaloMolecules);
-
+  EXPECT_EQ(container->getNumberOfParticles(), numMolecules + numHaloMolecules)
+      << "Wrong number of halo molecules inserted!";
   auto traversal =
       autopas::utils::withStaticCellType<Molecule>(container->getParticleCellTypeEnum(), [&](auto particleCellDummy) {
         return autopas::TraversalSelector<decltype(particleCellDummy)>::generateTraversal(
@@ -135,7 +138,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   container->rebuildNeighborLists(traversal.get());
 
   if (doSlightShift) {
-    executeShift(container, skin / 2, numMolecules + numHaloMolecules);
+    executeShift(container, skinPerTimestep * rebuildFrequency / 2, numMolecules + numHaloMolecules);
   }
 
   if (particleDeletionPosition & DeletionPosition::afterLists) {
@@ -220,10 +223,10 @@ TEST_P(TraversalComparison, traversalTest) {
 
   for (size_t i = 0; i < numParticles; ++i) {
     for (unsigned int d = 0; d < 3; ++d) {
-      double calculatedForce = calculatedForces[i][d];
-      double referenceForce = _forcesReference[key][i][d];
+      const double calculatedForce = calculatedForces[i][d];
+      const double referenceForce = _forcesReference[key][i][d];
       EXPECT_NEAR(calculatedForce, referenceForce, std::fabs(calculatedForce * rel_err_tolerance))
-          << "Particle id: " << i;
+          << "Dim: " << d << " Particle id: " << i;
     }
   }
 

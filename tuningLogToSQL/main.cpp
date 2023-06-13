@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
 
   for(int i = 1; i < argc; i++) {
     auto filename = argv[i];
-    AutoPasLog(info, "Writing file {}: {}", i, filename);
+    AutoPasLog(INFO, "Writing file {}: {}", i, filename);
 
     writer.write(filename);
   }

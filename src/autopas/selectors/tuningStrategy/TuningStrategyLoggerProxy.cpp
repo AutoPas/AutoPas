@@ -183,8 +183,8 @@ std::optional<Configuration> TuningStrategyLogReplayer::replay() {
   std::ifstream in{_filename};
 
   if (not in.is_open()) {
-    AutoPasLog(error, "Could not open file {}", _filename);
-    AutoPasLog(error, "Exiting!");
+    AutoPasLog(ERROR, "Could not open file {}", _filename);
+    AutoPasLog(ERROR, "Exiting!");
     exit(-1);
   }
 
@@ -209,7 +209,7 @@ std::optional<Configuration> TuningStrategyLogReplayer::replay() {
       // Do nothing in former tune
     } else if (type == "liveInfo") {
       const auto &liveInfo = tuningLogEntry::readLiveInfo(stream);
-      AutoPasLog(info, "\t{}", liveInfo.toString());
+      AutoPasLog(INFO, "\t{}", liveInfo.toString());
       _tuningStrategy->receiveLiveInfo(liveInfo);
     } else if (type == "reset" || in.eof()) {
       auto cont = not traversalTimes.empty();
@@ -225,7 +225,7 @@ std::optional<Configuration> TuningStrategyLogReplayer::replay() {
       }
 
       if (evidenceAdded) {
-        AutoPasLog(info, "Best Configuration found: {}", _tuningStrategy->getCurrentConfiguration().toShortString());
+        AutoPasLog(INFO, "Best Configuration found: {}", _tuningStrategy->getCurrentConfiguration().toShortString());
         bestConfiguration = _tuningStrategy->getCurrentConfiguration();
         evidenceAdded = false;
       }

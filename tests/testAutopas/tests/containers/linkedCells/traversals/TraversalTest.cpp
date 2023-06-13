@@ -21,12 +21,14 @@ using ::testing::ValuesIn;
 
 void testTraversal(autopas::TraversalOption traversalOption, autopas::LoadEstimatorOption loadEstimatorOption,
                    bool useN3, const std::array<size_t, 3> &edgeLength, int interactions, double cutoff = 1.0) {
+  using namespace autopas::utils::ArrayMath::literals;
+
   const std::array<double, 3> linkedCellsBoxMax = {(double)(edgeLength[0]), (double)(edgeLength[1]),
                                                    (double)(edgeLength[2])};
   const std::array<double, 3> linkedCellsBoxMin = {0., 0., 0.};
 
   TraversalTest::CountFunctor functor(cutoff);
-  autopas::LinkedCells<Particle> linkedCells(linkedCellsBoxMin, linkedCellsBoxMax, cutoff, 0.0, 1.0 / cutoff,
+  autopas::LinkedCells<Particle> linkedCells(linkedCellsBoxMin, linkedCellsBoxMax, cutoff, 0.0, 1, 1.0 / cutoff,
                                              loadEstimatorOption);
 
   autopasTools::generators::GridGenerator::fillWithParticles(linkedCells, edgeLength);
@@ -36,8 +38,7 @@ void testTraversal(autopas::TraversalOption traversalOption, autopas::LoadEstima
   for (unsigned int d = 0; d < 3; d++) {
     overlap[d] = std::ceil(cutoff / 1.0);
   }
-  const auto cellsPerDim =
-      autopas::utils::ArrayMath::add(edgeLength, autopas::utils::ArrayMath::mulScalar(overlap, 2ul));
+  const auto cellsPerDim = edgeLength + (overlap * 2ul);
   NumThreadGuard numThreadGuard(4);
   // clustersize is 32 if traversal has something like cluster in it, otherwise 0.
   unsigned int clusterSize = traversalOption.to_string().find("luster") != std::string::npos ? 32 : 0;
@@ -56,7 +57,7 @@ void testTraversal(autopas::TraversalOption traversalOption, autopas::LoadEstima
 
   unsigned long cellId = 0;
 
-  const auto boxMax = autopas::utils::ArrayMath::sub(edgeLength, overlap);
+  const auto boxMax = edgeLength - overlap;
 
   for (unsigned int z = 0; z < edgeLength[2]; ++z) {
     for (unsigned int y = 0; y < edgeLength[1]; ++y) {

@@ -78,11 +78,13 @@ void SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewt
   locks.resize((numSlices - 1) * this->_overlapLongestAxis);
 
   // 0) check if applicable
-  std::array<size_t, 2> overLapps23{this->_overlap[this->_dimsPerLength[1]], this->_overlap[this->_dimsPerLength[2]]};
-
-  if (not spaciallyForward) {
-    overLapps23 = {0ul, 0ul};
-  }
+  const auto overLapps23 = [&]() -> std::array<size_t, 2> {
+    if constexpr (spaciallyForward) {
+      return {this->_overlap[this->_dimsPerLength[1]], this->_overlap[this->_dimsPerLength[2]]};
+    } else {
+      return {0ul, 0ul};
+    }
+  }();
 
   std::vector<utils::Timer> timers;
   std::vector<double> threadTimes;
@@ -166,10 +168,10 @@ void SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewt
                   numSlices;
   auto stddev = std::sqrt(variance);
 
-  AutoPasLog(debug, "times per slice: [{}].", timesStr);
-  AutoPasLog(debug, "Difference between longest and shortest time: {:.3G}", *minMax.second - *minMax.first);
-  AutoPasLog(debug, "Ratio between longest and shortest time: {:.3G}", (float)*minMax.second / *minMax.first);
-  AutoPasLog(debug, "avg: {:.3G}, std-deviation: {:.3G} ({:.3G}%)", avg, stddev, 100 * stddev / avg);
+  AutoPasLog(DEBUG, "times per slice: [{}].", timesStr);
+  AutoPasLog(DEBUG, "Difference between longest and shortest time: {:.3G}", *minMax.second - *minMax.first);
+  AutoPasLog(DEBUG, "Ratio between longest and shortest time: {:.3G}", (float)*minMax.second / *minMax.first);
+  AutoPasLog(DEBUG, "avg: {:.3G}, std-deviation: {:.3G} ({:.3G}%)", avg, stddev, 100 * stddev / avg);
 }
 
 }  // namespace autopas

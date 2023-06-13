@@ -68,6 +68,21 @@ TEST_F(MDFlexConfigTest, UniformBoxMinMax) {
   EXPECT_THAT(configuration.boxMax.value, expectedBoxMax);
 }
 
+TEST_F(MDFlexConfigTest, ClosestPackedBoxMinMax) {
+  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
+                                        std::string(YAMLDIRECTORY) + "cubeClosestPacked.yaml"};
+
+  char *argv[3] = {&arguments[0][0], &arguments[1][0], &arguments[2][0]};
+
+  MDFlexConfig configuration(3, argv);
+
+  std::array<double, 3> expectedBoxMin = {-0.5, -0.5, 0.};
+  std::array<double, 3> expectedBoxMax = {7., 7.5, 27.5};
+
+  EXPECT_THAT(configuration.boxMin.value, expectedBoxMin);
+  EXPECT_THAT(configuration.boxMax.value, expectedBoxMax);
+}
+
 TEST_F(MDFlexConfigTest, calcAutoPasBox) {
   std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
                                         std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml"};
@@ -78,7 +93,7 @@ TEST_F(MDFlexConfigTest, calcAutoPasBox) {
 
   std::array<double, 3> expectedBoxMin = {-10.75, -25.75, -15.75};
   EXPECT_EQ(configuration.boxMin.value, expectedBoxMin);
-  std::array<double, 3> expectedBoxMax = {23, 10, 15.75};
+  std::array<double, 3> expectedBoxMax = {23, 10, 27.5};
   EXPECT_EQ(configuration.boxMax.value, expectedBoxMax);
 }
 
@@ -107,7 +122,10 @@ TEST_F(MDFlexConfigTest, wrongTypeParsingInput) {
 
   char *argv[3] = {&arguments[0][0], &arguments[1][0], &arguments[2][0]};
 
-  ASSERT_ANY_THROW(MDFlexConfig(3, argv));
+  // If an invalid YAML-file is used, exceptions are catched by YamlParser, MDFlexConfig will then exit with
+  // EXIT_FAILURE and write "Error when parsing configuration file." to cerr. YAML-file for this test is in
+  // examples/md-flexible/tests/yamlTestFiles/incorrectParsingFile.yaml
+  ASSERT_EXIT(MDFlexConfig(3, argv), testing::ExitedWithCode(1), "Error when parsing configuration file.");
 }
 
 TEST_F(MDFlexConfigTest, multipleSameObjectParsing) {
@@ -122,4 +140,17 @@ TEST_F(MDFlexConfigTest, multipleSameObjectParsing) {
   ASSERT_EQ(configuration.cubeGridObjects.at(0).getTypeId(), 0);
   ASSERT_EQ(configuration.cubeGridObjects.at(0).getParticleSpacing(), 0.5);
   ASSERT_EQ(configuration.cubeGridObjects.at(1).getTypeId(), 1);
+}
+
+TEST_F(MDFlexConfigTest, vtkRelatedProperties) {
+  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
+                                        std::string(YAMLDIRECTORY) + "vtkRelatedProperties.yaml"};
+
+  char *argv[3] = {&arguments[0][0], &arguments[1][0], &arguments[2][0]};
+
+  MDFlexConfig configuration(3, argv);
+
+  EXPECT_THAT(configuration.vtkOutputFolder.value, "fancyFolderName");
+  EXPECT_THAT(configuration.vtkFileName.value, "fancyFileName");
+  EXPECT_THAT(configuration.vtkWriteFrequency.value, 42);
 }

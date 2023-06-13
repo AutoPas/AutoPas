@@ -34,6 +34,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.boundaryOption,
       config.boxLength,
       config.cellSizeFactors,
+      config.fastParticlesThrow,
       config.checkpointfile,
       config.containerOptions,
       config.cutoff,
@@ -69,6 +70,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.traversalOptions,
       config.tuningInterval,
       config.tuningMaxEvidence,
+      config.tuningMetricOption,
       config.tuningPhases,
       config.tuningSamples,
       config.tuningStrategyOption,
@@ -76,8 +78,9 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.useTuningLogger,
       config.verletClusterSize,
       config.verletRebuildFrequency,
-      config.verletSkinRadius,
+      config.verletSkinRadiusPerTimestep,
       config.vtkFileName,
+      config.vtkOutputFolder,
       config.vtkWriteFrequency,
       config.yamlFilename,
       zshCompletionsOption,
@@ -446,13 +449,17 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case decltype(config.verletSkinRadius)::getoptChar: {
+      case decltype(config.verletSkinRadiusPerTimestep)::getoptChar: {
         try {
-          config.verletSkinRadius.value = stod(strArg);
+          config.verletSkinRadiusPerTimestep.value = stod(strArg);
         } catch (const exception &) {
-          cerr << "Error parsing verlet-skin-radius: " << optarg << endl;
+          cerr << "Error parsing verlet-skin-radius-per-timestep: " << optarg << endl;
           displayHelp = true;
         }
+        break;
+      }
+      case decltype(config.fastParticlesThrow)::getoptChar: {
+        config.fastParticlesThrow.value = true;
         break;
       }
       case decltype(config.tuningSamples)::getoptChar: {
@@ -504,6 +511,17 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         config.tuningStrategyOption.value = *parsedOptions.begin();
         break;
       }
+      case decltype(config.tuningMetricOption)::getoptChar: {
+        auto parsedOptions = autopas::TuningMetricOption::parseOptions(strArg);
+        if (parsedOptions.size() != 1) {
+          cerr << "Pass exactly one tuning metric option." << endl
+               << "Passed: " << strArg << endl
+               << "Parsed: " << autopas::utils::ArrayUtils::to_string(parsedOptions) << endl;
+          displayHelp = true;
+        }
+        config.tuningMetricOption.value = *parsedOptions.begin();
+        break;
+      }
       case decltype(config.mpiStrategyOption)::getoptChar: {
         auto parsedOptions = autopas::MPIStrategyOption::parseOptions(strArg);
         if (parsedOptions.size() != 1) {
@@ -548,6 +566,10 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.vtkFileName)::getoptChar: {
         config.vtkFileName.value = strArg;
+        break;
+      }
+      case decltype(config.vtkOutputFolder)::getoptChar: {
+        config.vtkOutputFolder.value = strArg;
         break;
       }
       case decltype(config.vtkWriteFrequency)::getoptChar: {

@@ -20,20 +20,28 @@ class ContainerSelectorInfo {
    * Default Constructor.
    */
   ContainerSelectorInfo()
-      : cellSizeFactor(1.), verletSkin(0.), verletClusterSize(64), loadEstimator(autopas::LoadEstimatorOption::none) {}
+      : cellSizeFactor(1.),
+        verletSkinPerTimestep(0.),
+        verletRebuildFrequency(0.),
+        verletClusterSize(64),
+        loadEstimator(autopas::LoadEstimatorOption::none) {}
 
   /**
    * Constructor.
    * @param cellSizeFactor Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and
    * VerletListsCells).
-   * @param verletSkin Length added to the cutoff for the verlet lists' skin.
+   * @param verletSkinPerTimestep Length added to the cutoff for the verlet lists' skin per timestep inbetween
+   * rebuilding lists.
+   * @param verletRebuildFrequency rebuild frequency.
    * @param verletClusterSize Size of verlet Clusters
    * @param loadEstimator load estimation algorithm for balanced traversals.
    */
-  explicit ContainerSelectorInfo(double cellSizeFactor, double verletSkin, unsigned int verletClusterSize,
+  explicit ContainerSelectorInfo(double cellSizeFactor, double verletSkinPerTimestep,
+                                 unsigned int verletRebuildFrequency, unsigned int verletClusterSize,
                                  autopas::LoadEstimatorOption loadEstimator)
       : cellSizeFactor(cellSizeFactor),
-        verletSkin(verletSkin),
+        verletSkinPerTimestep(verletSkinPerTimestep),
+        verletRebuildFrequency(verletRebuildFrequency),
         verletClusterSize(verletClusterSize),
         loadEstimator(loadEstimator) {}
 
@@ -43,7 +51,7 @@ class ContainerSelectorInfo {
    * @return True iff all member equal
    */
   bool operator==(const ContainerSelectorInfo &other) const {
-    return cellSizeFactor == other.cellSizeFactor and verletSkin == other.verletSkin and
+    return cellSizeFactor == other.cellSizeFactor and verletSkinPerTimestep == other.verletSkinPerTimestep and
            verletClusterSize == other.verletClusterSize and loadEstimator == other.loadEstimator;
   }
 
@@ -56,15 +64,16 @@ class ContainerSelectorInfo {
 
   /**
    * Comparison operator for ContainerSelectorInfo objects.
-   * Configurations are compared member wise in the order: _cellSizeFactor, _verletSkin, _verlerRebuildFrequency,
-   * loadEstimator
+   * Configurations are compared member wise in the order: _cellSizeFactor, _verletSkinPerTimestep,
+   * _verlerRebuildFrequency, loadEstimator
    *
    * @param other
    * @return
    */
   bool operator<(const ContainerSelectorInfo &other) {
-    return std::tie(cellSizeFactor, verletSkin, verletClusterSize, loadEstimator) <
-           std::tie(other.cellSizeFactor, other.verletSkin, other.verletClusterSize, other.loadEstimator);
+    return std::tie(cellSizeFactor, verletSkinPerTimestep, verletRebuildFrequency, verletClusterSize, loadEstimator) <
+           std::tie(other.cellSizeFactor, other.verletSkinPerTimestep, other.verletRebuildFrequency,
+                    other.verletClusterSize, other.loadEstimator);
   }
 
   /**
@@ -72,15 +81,17 @@ class ContainerSelectorInfo {
    */
   double cellSizeFactor;
   /**
-   * Length added to the cutoff for the verlet lists' skin.
+   * Length added to the cutoff for the verlet lists' skin per timestep inbetween rebuilding lists.
    */
-  double verletSkin;
-
+  double verletSkinPerTimestep;
+  /**
+   * The rebuild frequency.
+   */
+  double verletRebuildFrequency;
   /**
    * Size of Verlet Clusters
    */
   unsigned int verletClusterSize;
-
   /**
    * Load estimator for balanced sliced traversals.
    */
