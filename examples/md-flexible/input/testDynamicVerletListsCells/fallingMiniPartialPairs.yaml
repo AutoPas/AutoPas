@@ -16,7 +16,7 @@ box-min                          :  [0, 0, 0]
 box-max                          :  [7.25, 7.25, 7.25]
 cell-size                        :  [1]
 deltaT                           :  0.0005
-iterations                       :  15000
+iterations                       :  10000
 boundary-type                    :  [reflective,reflective,reflective]
 globalForce                      :  [0,0,-12]
 Objects:
@@ -25,7 +25,7 @@ Objects:
     0:
       particle-spacing           :  1.122462048
       bottomLeftCorner           :  [1, 1, 1]
-      box-length                 :  [80, 80, 10]
+      box-length                 :  [100, 100, 10]
       velocity                   :  [0, 0, 0]
       particle-type              :  0
       particle-epsilon           :  1
@@ -33,7 +33,7 @@ Objects:
       particle-mass              :  1
   Sphere:
     0:
-      center                     :  [40, 40, 100]
+      center                     :  [50, 50, 100]
       radius                     :  5
       particle-spacing           :  1.122462048
       velocity                   :  [0, 0, 0]
