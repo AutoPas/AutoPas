@@ -1,5 +1,5 @@
 /**
- * @file TuningStrategyLoggerProxy.h
+ * @file TuningStrategyLoggerWrapper.h
  * @author humig
  * @date 24.09.2021
  */
@@ -15,22 +15,22 @@
 namespace autopas {
 
 /**
- * A proxy for a tuning strategy that logs all calls and their parameters. Just hands over all calls to a wrapped real
- * tuning strategy.
+ * This wrapper can wrap any tuning strategy and produce a log of its activity.
+ * All methods first invoke a log call and are then passed on to the wrapped strategy.
  *
  * The log can be replayed using the TuningStrategyLogReplayer.
  */
-class TuningStrategyLoggerProxy : public TuningStrategyInterface {
+class TuningStrategyLoggerWrapper : public TuningStrategyInterface {
  public:
   /**
-   * Creates a tuning strategy logger proxy.
+   * Creates a wrapper logger for a tuning strategy.
    * @param actualTuningStrategy The tuning strategy to hand all calls over.
    * @param outputSuffix The output suffix for all written log files.
    */
-  explicit TuningStrategyLoggerProxy(std::unique_ptr<TuningStrategyInterface> actualTuningStrategy,
-                                     const std::string &outputSuffix);
+  explicit TuningStrategyLoggerWrapper(std::unique_ptr<TuningStrategyInterface> actualTuningStrategy,
+                                       const std::string &outputSuffix);
 
-  ~TuningStrategyLoggerProxy() override;
+  ~TuningStrategyLoggerWrapper() override;
 
   /**
    * Logs evidence and hands it to wrapped.

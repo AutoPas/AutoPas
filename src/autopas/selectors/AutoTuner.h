@@ -23,7 +23,7 @@
 #include "autopas/selectors/TraversalSelector.h"
 #include "autopas/selectors/tuningStrategy/MPIParallelizedStrategy.h"
 #include "autopas/selectors/tuningStrategy/TuningStrategyInterface.h"
-#include "autopas/selectors/tuningStrategy/TuningStrategyLoggerProxy.h"
+#include "autopas/selectors/tuningStrategy/TuningStrategyLoggerWrapper.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/RaplMeter.h"
@@ -86,7 +86,7 @@ class AutoTuner {
       : _selectorStrategy(selectorStrategy),
         _tuningMetric(tuningMetric),
         _tuningStrategy(useTuningStrategyLoggerProxy
-                            ? std::make_unique<TuningStrategyLoggerProxy>(std::move(tuningStrategy), outputSuffix)
+                            ? std::make_unique<TuningStrategyLoggerWrapper>(std::move(tuningStrategy), outputSuffix)
                             : std::move(tuningStrategy)),
         _tuningInterval(tuningInterval),
         _iterationsSinceTuning(tuningInterval),  // init to max so that tuning happens in first iteration

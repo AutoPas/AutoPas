@@ -4,10 +4,9 @@
  * @date 24.09.2021
  */
 
-#include "TuningStrategyLoggerProxy.h"
-
 #include <chrono>
 
+#include "TuningStrategyLoggerWrapper.h"
 #include "autopas/utils/Timer.h"
 
 namespace autopas {
@@ -114,8 +113,8 @@ std::string writeLiveInfo(const LiveInfo &liveInfo) { return toString(std::strin
 LiveInfo readLiveInfo(std::stringstream &str) { return std::get<0>(fromString<LiveInfo>(str)); }
 };  // namespace tuningLogEntry
 
-TuningStrategyLoggerProxy::TuningStrategyLoggerProxy(std::unique_ptr<TuningStrategyInterface> actualTuningStrategy,
-                                                     const std::string &outputSuffix)
+TuningStrategyLoggerWrapper::TuningStrategyLoggerWrapper(std::unique_ptr<TuningStrategyInterface> actualTuningStrategy,
+                                                         const std::string &outputSuffix)
     : _actualTuningStrategy(std::move(actualTuningStrategy)) {
   std::stringstream filename;
   filename << "tuningLog-";
@@ -125,53 +124,55 @@ TuningStrategyLoggerProxy::TuningStrategyLoggerProxy(std::unique_ptr<TuningStrat
   _logOut.open(filename.str());
 }
 
-TuningStrategyLoggerProxy::~TuningStrategyLoggerProxy() { _logOut.flush(); }
+TuningStrategyLoggerWrapper::~TuningStrategyLoggerWrapper() { _logOut.flush(); }
 
-void TuningStrategyLoggerProxy::addEvidence(long time, size_t iteration) {
+void TuningStrategyLoggerWrapper::addEvidence(long time, size_t iteration) {
   _actualTuningStrategy->addEvidence(time, iteration);
 
   _logOut << tuningLogEntry::writeEvidence(time, iteration, _actualTuningStrategy->getCurrentConfiguration())
           << std::endl;
 }
 
-long TuningStrategyLoggerProxy::getEvidence(Configuration configuration) const {
+long TuningStrategyLoggerWrapper::getEvidence(Configuration configuration) const {
   return _actualTuningStrategy->getEvidence(configuration);
 }
 
-const Configuration &TuningStrategyLoggerProxy::getCurrentConfiguration() const {
+const Configuration &TuningStrategyLoggerWrapper::getCurrentConfiguration() const {
   return _actualTuningStrategy->getCurrentConfiguration();
 }
 
-bool TuningStrategyLoggerProxy::tune(bool currentInvalid) {
+bool TuningStrategyLoggerWrapper::tune(bool currentInvalid) {
   _logOut << tuningLogEntry::writeTune(currentInvalid) << std::endl;
 
   return _actualTuningStrategy->tune(currentInvalid);
 }
 
-void TuningStrategyLoggerProxy::reset(size_t iteration) {
+void TuningStrategyLoggerWrapper::reset(size_t iteration) {
   _logOut << tuningLogEntry::writeReset(iteration) << std::endl;
 
   _actualTuningStrategy->reset(iteration);
 }
 
-bool TuningStrategyLoggerProxy::needsLiveInfo() const { return true; }
+bool TuningStrategyLoggerWrapper::needsLiveInfo() const { return true; }
 
-void TuningStrategyLoggerProxy::receiveLiveInfo(const LiveInfo &info) {
+void TuningStrategyLoggerWrapper::receiveLiveInfo(const LiveInfo &info) {
   _logOut << tuningLogEntry::writeLiveInfo(info) << std::endl;
 
   _actualTuningStrategy->receiveLiveInfo(info);
 }
 
-std::set<ContainerOption> TuningStrategyLoggerProxy::getAllowedContainerOptions() const {
+std::set<ContainerOption> TuningStrategyLoggerWrapper::getAllowedContainerOptions() const {
   return _actualTuningStrategy->getAllowedContainerOptions();
 }
 
-void TuningStrategyLoggerProxy::removeN3Option(Newton3Option option) { _actualTuningStrategy->removeN3Option(option); }
-bool TuningStrategyLoggerProxy::searchSpaceIsTrivial() const { return _actualTuningStrategy->searchSpaceIsTrivial(); }
+void TuningStrategyLoggerWrapper::removeN3Option(Newton3Option option) {
+  _actualTuningStrategy->removeN3Option(option);
+}
+bool TuningStrategyLoggerWrapper::searchSpaceIsTrivial() const { return _actualTuningStrategy->searchSpaceIsTrivial(); }
 
-bool TuningStrategyLoggerProxy::searchSpaceIsEmpty() const { return _actualTuningStrategy->searchSpaceIsEmpty(); }
+bool TuningStrategyLoggerWrapper::searchSpaceIsEmpty() const { return _actualTuningStrategy->searchSpaceIsEmpty(); }
 
-bool TuningStrategyLoggerProxy::smoothedHomogeneityAndMaxDensityNeeded() const {
+bool TuningStrategyLoggerWrapper::smoothedHomogeneityAndMaxDensityNeeded() const {
   return _actualTuningStrategy->smoothedHomogeneityAndMaxDensityNeeded();
 }
 

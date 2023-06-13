@@ -1,4 +1,4 @@
-#include "autopas/selectors/tuningStrategy/TuningStrategyLoggerProxy.h"
+#include "autopas/selectors/tuningStrategy/TuningStrategyLoggerWrapper.h"
 #include "autopas/selectors/tuningStrategy/ruleBasedTuning/RuleBasedTuning.h"
 
 /**
