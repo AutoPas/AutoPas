@@ -42,7 +42,7 @@ std::array<double, 3> rotatePosition(std::array<double, 4> &q, std::array<double
 std::array<double, 3> rotatePositionBackwards(std::array<double, 4> &q, std::array<double, 3> &pos);
 
 /**
- * Quaternion multiplication
+ * Quaternion multiplication. See Hamiltonian Product: https://en.wikipedia.org/wiki/Quaternion#Hamilton_product.
  * @param q1 quaternion 1
  * @param q2 quaternion 2
  * @return q1 times q2

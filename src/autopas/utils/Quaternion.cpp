@@ -81,23 +81,17 @@ std::array<double, 3> rotatePositionBackwards(const std::array<double, 4> &q, co
 
 std::array<double, 4> qMul(const std::array<double, 4> &q1, const std::array<double, 4> &q2) {
   return {q1[0] * q2[0] - q1[1] * q2[1] - q1[2] * q2[2] - q1[3] * q2[3],
-          q1[0] * q2[1] + q2[0] * q1[1] + q1[2] * q2[3] - q1[3] * q2[2],
-          q1[0] * q2[2] + q2[0] * q1[2] + q1[3] * q2[1] - q1[1] * q2[3],
-          q1[0] * q2[3] + q2[0] * q1[3] + q1[1] * q2[2] - q1[2] * q2[1]};
+          q1[0] * q2[1] + q1[1] * q2[0] + q1[2] * q2[3] - q1[3] * q2[2],
+          q1[0] * q2[2] - q1[1] * q2[3] + q1[2] * q2[0] + q1[3] * q2[1],
+          q1[0] * q2[3] + q1[1] * q2[2] - q1[2] * q2[1] + q1[3] * q2[0]};
 }
 
 std::array<double, 4> qMul(const std::array<double, 4> &q, const std::array<double, 3> &v) {
-  return {-q[1] * v[0] - q[2] * v[1] - q[3] * v[2],
-           q[0] * v[0] + q[2] * v[2] - q[3] * v[1],
-           q[0] * v[1] + q[3] * v[0] - q[1] * v[2],
-           q[0] * v[2] + q[1] * v[1] - q[2] * v[0]};
+  return qMul(q, [v]() -> std::array<double, 4>{ return {0, v[0], v[1], v[2]}; }());
 }
 
 std::array<double, 4> qMul(const std::array<double, 3> &v, const std::array<double, 4> &q) {
-  return {-v[0] * q[1] - v[1] * q[2] - v[2] * q[3],
-           q[0] * v[0] + v[1] * q[3] - v[2] * q[2],
-           q[0] * v[1] + v[2] * q[1] - v[0] * q[3],
-           q[0] * v[2] + v[0] * q[2] - v[1] * q[1]};
+  return qMul([v]() -> std::array<double, 4>{ return {0, v[0], v[1], v[2]}; }(), q);
 }
 
 std::array<double, 4> qConjugate(const std::array<double, 4> &q) { return {q[0], -q[1], -q[2], -q[3]}; }
