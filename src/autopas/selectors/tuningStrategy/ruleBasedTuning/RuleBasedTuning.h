@@ -222,8 +222,7 @@ class RuleBasedTuning : public FullSearch {
     for (const auto &patternIdx : removePatterns) {
       const auto pattern = context.smallerConfigurationPatternByIndex(patternIdx);
       toRemovePatterns.push_back(pattern);
-      auto str = pattern.toString();
-      AutoPasLog(DEBUG, "Remove {}", str);
+      AutoPasLog(DEBUG, "Remove {}", pattern.toString());
 
       applicableConfigurationOrders.push_back(context.getConfigurationOrders().at(patternIdx));
     }
