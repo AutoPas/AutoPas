@@ -376,7 +376,7 @@ constexpr std::array<T, SIZE> operator*(const std::array<T, SIZE> &a, const std:
 }
 
 /**
- * Assignment operator to multply two arrays
+ * Assignment operator to multiply two arrays
  * @tparam T floating point type
  * @tparam SIZE size of the arrays
  * @param a
