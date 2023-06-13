@@ -953,11 +953,13 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
 
   // first tuning iteration -> reset to first config
   if (_iterationsSinceTuning == _tuningInterval) {
+    // if necessary gather current live info and pass it to the actual strategy
     if (_tuningStrategy->needsLiveInfo()) {
       LiveInfo info{};
       info.gather(*_containerSelector.getCurrentContainer(), pairwiseFunctor, _rebuildFrequency);
-      _tuningStrategy->receiveLiveInfo(std::move(info));
+      _tuningStrategy->receiveLiveInfo(info);
     }
+    // call the appropriate version of reset
     if (auto *mpiStrategy = dynamic_cast<MPIParallelizedStrategy *>(_tuningStrategy.get())) {
       const std::pair<double, double> smoothedHomogeneityAndMaxDensity{
           autopas::OptimumSelector::medianValue(_homogeneitiesOfLastTenIterations),
@@ -967,7 +969,7 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
     } else {
       _tuningStrategy->reset(_iteration);
     }
-    // only used temporarily of evaluation of smoothing
+    // Reset homogeneity and smoothing data
     if (_tuningStrategy->smoothedHomogeneityAndMaxDensityNeeded()) {
       int rank{0};
 #ifdef AUTOPAS_INTERNODE_TUNING
@@ -984,7 +986,7 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
     stillTuning = _tuningStrategy->tune();
   }
 
-  // repeat as long as traversals are not applicable or we run out of configs
+  // repeat as long as traversals are not applicable, or we run out of configs
   while (true) {
     auto &currentConfig = getCurrentConfig();
     // check if newton3 works with this functor and remove config if not
