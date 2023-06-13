@@ -127,11 +127,15 @@ class RuleBasedTuning : public FullSearch {
 
     if (_verifyModeEnabled) {
       if (tuningTime > 0) {
-        auto percent = static_cast<double>(wouldHaveSkippedTuningTime) / static_cast<double>(tuningTime) * 100;
-        auto percentRounded = std::round(percent * 100) / 100;
         AutoPasLog(INFO, "Rules would have saved {} ns removing {}/{} configurations. ({}% of total tuning time)",
                    wouldHaveSkippedTuningTime, _removedConfigurations.size(), _originalSearchSpace.size(),
-                   percentRounded);
+                   // TODO: This lambda could probably be replaced by some formatting parameters in the fmt string.
+                   []() {
+                     const auto percent =
+                         ((static_cast<double>(wouldHaveSkippedTuningTime) / static_cast<double>(tuningTime)) * 100);
+                     const auto percentRounded = std::round(percent * 100) / 100;
+                     return percentRounded;
+                   }());
       }
     }
 
