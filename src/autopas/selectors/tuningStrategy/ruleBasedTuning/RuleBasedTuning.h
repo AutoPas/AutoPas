@@ -171,7 +171,7 @@ class RuleBasedTuning : public FullSearch {
         continue;
       }
 
-      auto currentConfigTime = _traversalTimes.at(*_currentConfig);
+      const auto currentConfigTime = _traversalTimes.at(*_currentConfig);
       const auto &comparePattern = shouldBeBetter ? order.greater : order.smaller;
       for (const auto &[otherConfig, time] : _traversalTimes) {
         bool error = false;
@@ -206,21 +206,21 @@ class RuleBasedTuning : public FullSearch {
     }
 
     std::ifstream ifs{_ruleFileName};
-    std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
+    const std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
 
     rule_syntax::RuleBasedProgramParser parser{defines};
     auto [programTree, context] = parser.parse(content);
 
-    auto generatedProgram = programTree.generateCode(context);
+    const auto generatedProgram = programTree.generateCode(context);
 
     RuleVM vm{};
-    auto removePatterns = vm.execute(generatedProgram, initialStack);
+    const auto removePatterns = vm.execute(generatedProgram, initialStack);
 
     AutoPasLog(DEBUG, "Remove patterns (Count {}):", removePatterns.size());
     std::vector<ConfigurationPattern> toRemovePatterns{};
     std::vector<rule_syntax::ConfigurationOrder> applicableConfigurationOrders{};
     for (const auto &patternIdx : removePatterns) {
-      auto pattern = context.smallerConfigurationPatternByIndex(patternIdx);
+      const auto pattern = context.smallerConfigurationPatternByIndex(patternIdx);
       toRemovePatterns.push_back(pattern);
       auto str = pattern.toString();
       AutoPasLog(DEBUG, "Remove {}", str);
@@ -232,8 +232,8 @@ class RuleBasedTuning : public FullSearch {
     _removedConfigurations.clear();
     auto &removedConfigsLocal = _removedConfigurations;
     newSearchSpace.remove_if([&toRemovePatterns, &removedConfigsLocal](const Configuration &configuration) {
-      bool remove = std::any_of(toRemovePatterns.begin(), toRemovePatterns.end(),
-                                [&configuration](const auto &pattern) { return pattern.matches(configuration); });
+      const bool remove = std::any_of(toRemovePatterns.begin(), toRemovePatterns.end(),
+                                      [&configuration](const auto &pattern) { return pattern.matches(configuration); });
       if (remove) {
         removedConfigsLocal.insert(configuration);
       }
@@ -248,7 +248,6 @@ class RuleBasedTuning : public FullSearch {
     return applicableConfigurationOrders;
   }
 
- private:
   const std::list<Configuration> _originalSearchSpace;
   std::unordered_set<Configuration, ConfigHash> _removedConfigurations;
   std::vector<rule_syntax::ConfigurationOrder> _lastApplicableConfigurationOrders;
