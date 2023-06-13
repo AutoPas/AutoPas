@@ -69,6 +69,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.traversalOptions,
       config.tuningInterval,
       config.tuningMaxEvidence,
+      config.tuningMetricOption,
       config.tuningPhases,
       config.tuningSamples,
       config.tuningStrategyOption,
@@ -506,6 +507,17 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           displayHelp = true;
         }
         config.tuningStrategyOption.value = *parsedOptions.begin();
+        break;
+      }
+      case decltype(config.tuningMetricOption)::getoptChar: {
+        auto parsedOptions = autopas::TuningMetricOption::parseOptions(strArg);
+        if (parsedOptions.size() != 1) {
+          cerr << "Pass exactly one tuning metric option." << endl
+               << "Passed: " << strArg << endl
+               << "Parsed: " << autopas::utils::ArrayUtils::to_string(parsedOptions) << endl;
+          displayHelp = true;
+        }
+        config.tuningMetricOption.value = *parsedOptions.begin();
         break;
       }
       case decltype(config.mpiStrategyOption)::getoptChar: {

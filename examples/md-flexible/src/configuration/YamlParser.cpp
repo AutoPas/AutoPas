@@ -5,6 +5,8 @@
  */
 #include "YamlParser.h"
 
+#include "autopas/options/TuningMetricOption.h"
+
 const std::string MDFlexParser::YamlParser::parseSequenceOneElementExpected(const YAML::Node node,
                                                                             const std::string &errMsg) {
   if (node.IsSequence()) {
@@ -375,6 +377,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
             parseSequenceOneElementExpected(node[key], "Pass Exactly one tuning strategy!"));
 
         config.tuningStrategyOption.value = *parsedOptions.begin();
+      } else if (key == config.tuningMetricOption.name) {
+        expected = "Exactly one tuning metric option out of the possible values.";
+        description = config.tuningMetricOption.description;
+
+        const auto parsedOptions = autopas::TuningMetricOption::parseOptions(
+            parseSequenceOneElementExpected(node[key], "Pass Exactly one tuning metric!"));
+
+        config.tuningMetricOption.value = *parsedOptions.begin();
       } else if (key == config.mpiStrategyOption.name) {
         expected = "Exactly one MPI strategy option out of the possible values.";
         description = config.mpiStrategyOption.description;

@@ -7,6 +7,8 @@
 #pragma once
 
 #include <array>
+#include <cmath>
+#include <limits>
 #include <memory>
 #include <set>
 
@@ -14,6 +16,7 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/TraversalOption.h"
+#include "autopas/options/TuningMetricOption.h"
 #include "autopas/selectors/Configuration.h"
 #include "autopas/selectors/ContainerSelector.h"
 #include "autopas/selectors/OptimumSelector.h"
@@ -21,10 +24,13 @@
 #include "autopas/selectors/tuningStrategy/MPIParallelizedStrategy.h"
 #include "autopas/selectors/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/utils/ArrayUtils.h"
+#include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/RaplMeter.h"
 #include "autopas/utils/StaticCellSelector.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/logging/IterationLogger.h"
+#include "autopas/utils/logging/Logger.h"
 #include "autopas/utils/logging/TuningDataLogger.h"
 #include "autopas/utils/logging/TuningResultLogger.h"
 
@@ -62,6 +68,7 @@ class AutoTuner {
    * distribution.
    * @param selectorStrategy Strategy for the configuration selection.
    * @param tuningInterval Number of time steps after which the auto-tuner shall reevaluate all selections.
+   * @param tuningMetric Metric used to rate configurations (time or energy).
    * @param maxSamples Number of samples that shall be collected for each combination.
    * @param rebuildFrequency The rebuild frequency this AutoPas instance uses.
    * @param outputSuffix Suffix for all output files produced by this class.
@@ -69,9 +76,11 @@ class AutoTuner {
   AutoTuner(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff,
             double verletSkinPerTimestep, unsigned int verletClusterSize,
             std::unique_ptr<TuningStrategyInterface> tuningStrategy, double MPITuningMaxDifferenceForBucket,
-            double MPITuningWeightForMaxDensity, SelectorStrategyOption selectorStrategy, unsigned int tuningInterval,
-            unsigned int maxSamples, unsigned int rebuildFrequency, const std::string &outputSuffix = "")
+            double MPITuningWeightForMaxDensity, SelectorStrategyOption selectorStrategy,
+            TuningMetricOption tuningMetric, unsigned int tuningInterval, unsigned int maxSamples,
+            unsigned int rebuildFrequency, const std::string &outputSuffix = "")
       : _selectorStrategy(selectorStrategy),
+        _tuningMetric(tuningMetric),
         _tuningStrategy(std::move(tuningStrategy)),
         _tuningInterval(tuningInterval),
         _iterationsSinceTuning(tuningInterval),  // init to max so that tuning happens in first iteration
@@ -102,6 +111,21 @@ class AutoTuner {
 
     if (_tuningStrategy->searchSpaceIsEmpty()) {
       autopas::utils::ExceptionHandler::exception("AutoTuner: Passed tuning strategy has an empty search space.");
+    }
+
+    // Check if energy measurement is possible,
+    _energy_measurement_available = true;
+    try {
+      _raplMeter.init();
+      _raplMeter.reset();
+      _raplMeter.sample();
+    } catch (const utils::ExceptionHandler::AutoPasException &e) {
+      if (tuningMetric == TuningMetricOption::energy) {
+        throw e;
+      } else {
+        AutoPasLog(WARN, "Energy Measurement not possible:\n\t{}", e.what());
+        _energy_measurement_available = false;
+      }
     }
 
     selectCurrentContainer();
@@ -170,7 +194,7 @@ class AutoTuner {
    *  - Instantiation of the traversal to be used.
    *  - Actual pairwise iteration for application of the functor.
    *  - Management of tuning phases and calls to tune() if necessary.
-   *  - Measurement of timings and calls to addTimeMeasurement() if necessary.
+   *  - Measurement of timings/energies and calls to addMeasurement() if necessary.
    *  - Calls to _iterationLogger if necessary.
    *
    * @note Buffers need to have at least one (empty) cell. They must not be empty.
@@ -211,6 +235,11 @@ class AutoTuner {
   bool searchSpaceIsTrivial();
 
  private:
+  /**
+   * Measures consumed energy for tuning
+   */
+  utils::RaplMeter _raplMeter;
+
   /**
    * Initialize or update the spacial locks used during the remainder traversal.
    * If the locks are already initialized but the container size changed, surplus locks will
@@ -253,12 +282,12 @@ class AutoTuner {
    *
    * Samples are collected and reduced to one single value according to _selectorStrategy. Only then the value is passed
    * on to the tuning strategy. This function expects that samples of the same configuration are taken consecutively.
-   * The time argument is a long because std::chrono::duration::count returns a long.
+   * The sample argument is a long because std::chrono::duration::count returns a long.
    *
-   * @param time
+   * @param sample
    * @param neighborListRebuilt If the neighbor list as been rebuilt during the given time.
    */
-  void addTimeMeasurement(long time, bool neighborListRebuilt);
+  void addMeasurement(long sample, bool neighborListRebuilt);
 
   /**
    * Estimate the runtime from the current samples according to the SelectorStrategy and rebuild frequency.
@@ -405,6 +434,16 @@ class AutoTuner {
    * Object holding the actual particle container and having the ability to change it.
    */
   ContainerSelector<Particle> _containerSelector;
+
+  /**
+   * Metric to use for tuning.
+   */
+  TuningMetricOption _tuningMetric;
+
+  /**
+   * Is energy measurement possible
+   */
+  bool _energy_measurement_available;
 
   double _verletSkinPerTimestep;
   unsigned int _verletClusterSize;
@@ -803,6 +842,21 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
   autopas::utils::Timer timerRebuild;
   autopas::utils::Timer timerIteratePairwise;
   autopas::utils::Timer timerRemainderTraversal;
+  if (_energy_measurement_available) {
+    try {
+      _raplMeter.reset();
+    } catch (const utils::ExceptionHandler::AutoPasException &e) {
+      /**
+       * very unlikely to happen, as check was performed at initialisation of autotuner
+       * but may occur if permissions are changed during runtime.
+       */
+      AutoPasLog(WARN, "Energy Measurement no longer possible:\n\t{}", e.what());
+      _energy_measurement_available = false;
+      if (_tuningMetric == TuningMetricOption::energy) {
+        throw e;
+      }
+    }
+  }
   timerTotal.start();
 
   f->initTraversal();
@@ -819,6 +873,18 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
   doRemainderTraversal<useNewton3>(f, containerPtr, particleBuffer, haloParticleBuffer);
   timerRemainderTraversal.stop();
   f->endTraversal(useNewton3);
+
+  if (_energy_measurement_available) {
+    try {
+      _raplMeter.sample();
+    } catch (const utils::ExceptionHandler::AutoPasException &e) {
+      AutoPasLog(WARN, "Energy Measurement no longer possible:\n\t{}", e.what());
+      _energy_measurement_available = false;
+      if (_tuningMetric == TuningMetricOption::energy) {
+        throw e;
+      }
+    }
+  }
 
   timerTotal.stop();
 
@@ -838,17 +904,32 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
   AutoPasLog(DEBUG, "RemainderTraversal         took {} ns", timerRemainderTraversal.getTotalTime());
   AutoPasLog(DEBUG, "RebuildNeighborLists       took {} ns", timerRebuild.getTotalTime());
   AutoPasLog(DEBUG, "AutoTuner::iteratePairwise took {} ns", timerTotal.getTotalTime());
-
-  _iterationLogger.logIteration(getCurrentConfig(), _iteration, inTuningPhase, timerIteratePairwise.getTotalTime(),
-                                timerRemainderTraversal.getTotalTime(), timerRebuild.getTotalTime(),
-                                timerTotal.getTotalTime());
-
+  if (_energy_measurement_available) {
+    AutoPasLog(DEBUG, "Energy Consumption: Psys: {} Joules Pkg: {} Joules Ram: {} Joules", _raplMeter.get_psys_energy(),
+               _raplMeter.get_pkg_energy(), _raplMeter.get_ram_energy());
+    _iterationLogger.logIteration(getCurrentConfig(), _iteration, inTuningPhase, timerIteratePairwise.getTotalTime(),
+                                  timerRemainderTraversal.getTotalTime(), timerRebuild.getTotalTime(),
+                                  timerTotal.getTotalTime(), _raplMeter.get_psys_energy(), _raplMeter.get_pkg_energy(),
+                                  _raplMeter.get_ram_energy());
+  } else {
+    constexpr auto nan = std::numeric_limits<double>::quiet_NaN();
+    _iterationLogger.logIteration(getCurrentConfig(), _iteration, inTuningPhase, timerIteratePairwise.getTotalTime(),
+                                  timerRemainderTraversal.getTotalTime(), timerRebuild.getTotalTime(),
+                                  timerTotal.getTotalTime(), nan, nan, nan);
+  }
   // if tuning execute with time measurements
   if (inTuningPhase) {
     if (f->isRelevantForTuning()) {
-      addTimeMeasurement(timerTotal.getTotalTime(), doListRebuild);
+      switch (this->_tuningMetric) {
+        case TuningMetricOption::time:
+          addMeasurement(timerTotal.getTotalTime(), doListRebuild);
+          break;
+        case TuningMetricOption::energy:
+          addMeasurement(_raplMeter.get_total_energy(), doListRebuild);
+          break;
+      }
     } else {
-      AutoPasLog(TRACE, "Skipping adding of time measurement because functor is not marked relevant.");
+      AutoPasLog(TRACE, "Skipping adding of sample because functor is not marked relevant.");
     }
   }
 }
@@ -962,14 +1043,14 @@ const Configuration &AutoTuner<Particle>::getCurrentConfig() const {
 }
 
 template <class Particle>
-void AutoTuner<Particle>::addTimeMeasurement(long time, bool neighborListRebuilt) {
+void AutoTuner<Particle>::addMeasurement(long sample, bool neighborListRebuilt) {
   const auto &currentConfig = _tuningStrategy->getCurrentConfiguration();
   if (getCurrentNumSamples() < _maxSamples) {
     AutoPasLog(TRACE, "Adding sample.");
     if (neighborListRebuilt) {
-      _samplesRebuildingNeighborLists.push_back(time);
+      _samplesRebuildingNeighborLists.push_back(sample);
     } else {
-      _samplesNotRebuildingNeighborLists.push_back(time);
+      _samplesNotRebuildingNeighborLists.push_back(sample);
     }
     // if this was the last sample:
     if (getCurrentNumSamples() == _maxSamples) {
@@ -998,7 +1079,14 @@ void AutoTuner<Particle>::addTimeMeasurement(long time, bool neighborListRebuilt
         ss << utils::ArrayUtils::to_string(_samplesNotRebuildingNeighborLists, " ",
                                            {"Without rebuilding neighbor lists [ ", " ]"});
         ss << " Smoothed value: " << smoothedValue;
-        AutoPasLog(DEBUG, "Collected times for  {}", ss.str());
+        switch (this->_tuningMetric) {
+          case TuningMetricOption::time:
+            AutoPasLog(DEBUG, "Collected times for  {}", ss.str());
+            break;
+          case TuningMetricOption::energy:
+            AutoPasLog(DEBUG, "Collected energy consumption for  {}", ss.str());
+            break;
+        }
       }
       _tuningDataLogger.logTuningData(currentConfig, _samplesRebuildingNeighborLists,
                                       _samplesNotRebuildingNeighborLists, _iteration, reducedValue, smoothedValue);
