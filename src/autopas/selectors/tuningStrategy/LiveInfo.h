@@ -241,6 +241,7 @@ class LiveInfo {
     out << info.infos.size() << ' ';
     for (const auto &[name, val] : info.infos) {
       // val.index here is the index of this value's type in the LiveInfo::InfoType variant type.
+      // This is needed for determining the type when reading this file via readIndex.
       out << name << ' ' << val.index() << ' ';
       std::visit([&](const auto &v) { out << v << ' '; }, val);
     }
