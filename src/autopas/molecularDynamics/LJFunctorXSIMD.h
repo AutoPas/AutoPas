@@ -228,7 +228,7 @@ class LJFunctorXSIMD
          // floor soa numParticles to multiple of vecLength
          // If b is a power of 2 the following holds:
          // a & ~(b -1) == a - (a mod b)
-         for (; j < (i & ~(vecLength - 1)); j += 4) {
+         for (; j < (i & ~(vecLength - 1)); j += vecLength) {
            SoAKernel<true, false>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr,
                                   yptr, zptr, fxptr, fyptr, fzptr, &typeIDptr[i], typeIDptr, fxacc, fyacc, fzacc,
                                   &virialSumX, &virialSumY, &virialSumZ, &upotSum, 0);
@@ -250,6 +250,27 @@ class LJFunctorXSIMD
          fxptr[i] += sumfx;
          fyptr[i] += sumfy;
          fzptr[i] += sumfz;
+       }
+
+       if constexpr (calculateGlobals) {
+         const int threadnum = autopas_get_thread_num();
+
+         double globals[] = {
+             xsimd::reduce_add(virialSumX),
+             xsimd::reduce_add(virialSumY),
+             xsimd::reduce_add(virialSumZ),
+             xsimd::reduce_add(upotSum)
+         };
+
+         double factor = 1.;
+         // we assume newton3 to be enabled in this function call, thus we multiply by two if the value of newton3 is
+         // false, since for newton3 disabled we divide by two later on.
+         factor *= newton3 ? .5 : 1.;
+         // In case we have a non-cell-wise owned state, we have multiplied everything by two, so we divide it by 2 again.
+         _aosThreadData[threadnum].virialSum[0] += globals[0] * factor;
+         _aosThreadData[threadnum].virialSum[1] += globals[1] * factor;
+         _aosThreadData[threadnum].virialSum[2] += globals[2] * factor;
+         _aosThreadData[threadnum].upotSum += globals[3] * factor;
        }
      }
 
@@ -322,37 +343,26 @@ class LJFunctorXSIMD
        }
 
        if constexpr (calculateGlobals) {
-         //TODO
-//         const int threadnum = autopas_get_thread_num();
-//
-//         // horizontally reduce virialSumX and virialSumY
-//         const __m256d hSumVirialxy = _mm256_hadd_pd(virialSumX, virialSumY);
-//         const __m128d hSumVirialxyLow = _mm256_extractf128_pd(hSumVirialxy, 0);
-//         const __m128d hSumVirialxyHigh = _mm256_extractf128_pd(hSumVirialxy, 1);
-//         const __m128d hSumVirialxyVec = _mm_add_pd(hSumVirialxyHigh, hSumVirialxyLow);
-//
-//         // horizontally reduce virialSumZ and upotSum
-//         const __m256d hSumVirialzUpot = _mm256_hadd_pd(virialSumZ, upotSum);
-//         const __m128d hSumVirialzUpotLow = _mm256_extractf128_pd(hSumVirialzUpot, 0);
-//         const __m128d hSumVirialzUpotHigh = _mm256_extractf128_pd(hSumVirialzUpot, 1);
-//         const __m128d hSumVirialzUpotVec = _mm_add_pd(hSumVirialzUpotHigh, hSumVirialzUpotLow);
-//
-//         // globals = {virialX, virialY, virialZ, uPot}
-//         double globals[4];
-//         _mm_store_pd(&globals[0], hSumVirialxyVec);
-//         _mm_store_pd(&globals[2], hSumVirialzUpotVec);
-//
-//         // we have duplicated calculations, i.e., we calculate interactions multiple times, so we have to take care
-//         // that we do not add the energy multiple times!
-//         double energyfactor = 1.;
-//         if constexpr (newton3) {
-//           energyfactor *= 0.5;  // we count the energies partly to one of the two cells!
-//         }
-//
-//         _aosThreadData[threadnum].virialSum[0] += globals[0] * energyfactor;
-//         _aosThreadData[threadnum].virialSum[1] += globals[1] * energyfactor;
-//         _aosThreadData[threadnum].virialSum[2] += globals[2] * energyfactor;
-//         _aosThreadData[threadnum].upotSum += globals[3] * energyfactor;
+         const int threadnum = autopas_get_thread_num();
+
+         double globals[] = {
+             xsimd::reduce_add(virialSumX),
+             xsimd::reduce_add(virialSumY),
+             xsimd::reduce_add(virialSumZ),
+             xsimd::reduce_add(upotSum)
+         };
+
+         // we have duplicated calculations, i.e., we calculate interactions multiple times, so we have to take care
+         // that we do not add the energy multiple times!
+         double energyfactor = 1.;
+         if constexpr (newton3) {
+           energyfactor *= 0.5;  // we count the energies partly to one of the two cells!
+         }
+
+         _aosThreadData[threadnum].virialSum[0] += globals[0] * energyfactor;
+         _aosThreadData[threadnum].virialSum[1] += globals[1] * energyfactor;
+         _aosThreadData[threadnum].virialSum[2] += globals[2] * energyfactor;
+         _aosThreadData[threadnum].upotSum += globals[3] * energyfactor;
        }
      }
      /**
@@ -415,9 +425,9 @@ class LJFunctorXSIMD
                _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 0))};
          }
        }
-       const xsimd::batch<double> x2 = remainderIsMasked ? xsimd::bitwise_and(xsimd::load(&x2ptr[j]), _masks[rest - 1]) : xsimd::load(&x2ptr[j]);
-       const xsimd::batch<double> y2 = remainderIsMasked ? xsimd::bitwise_and(xsimd::load(&y2ptr[j]), _masks[rest - 1]) : xsimd::load(&x2ptr[j]);
-       const xsimd::batch<double> z2 = remainderIsMasked ? xsimd::bitwise_and(xsimd::load(&z2ptr[j]), _masks[rest - 1]) : xsimd::load(&x2ptr[j]);
+       const xsimd::batch<double> x2 = remainderIsMasked ? xsimd::select(_masks[rest - 1], xsimd::load(&x2ptr[j]), _zero) : xsimd::load(&x2ptr[j]);
+       const xsimd::batch<double> y2 = remainderIsMasked ? xsimd::select(_masks[rest - 1], xsimd::load(&y2ptr[j]), _zero) : xsimd::load(&y2ptr[j]);
+       const xsimd::batch<double> z2 = remainderIsMasked ? xsimd::select(_masks[rest - 1], xsimd::load(&z2ptr[j]), _zero) : xsimd::load(&z2ptr[j]);
 
        const xsimd::batch<double> drx = xsimd::sub(x1,x2);
        const xsimd::batch<double> dry = xsimd::sub(y1,y2);
@@ -433,12 +443,12 @@ class LJFunctorXSIMD
        // _CMP_LE_OS == Less-Equal-then (ordered, signaling)
        // signaling = throw error if NaN is encountered
        // dr2 <= _cutoffsquare ? 0xFFFFFFFFFFFFFFFF : 0
-       //const xsimd::batch<double> cutoffMask = _mm256_cmp_pd(dr2, _cutoffsquare, _CMP_LE_OS);
+
        const xsimd::batch_bool<double> cutoffMask = xsimd::le(dr2, _cutoffsquare);
 
        const xsimd::batch<double> ownedStateJ = remainderIsMasked
-                                       ? xsimd::bitwise_and(
-                                         xsimd::load(reinterpret_cast<double const *>(&ownedStatePtr2[j])), _masks[rest - 1])
+                                       ? xsimd::select(_masks[rest - 1],
+                                         xsimd::load(reinterpret_cast<double const *>(&ownedStatePtr2[j])), _zero)
                                        : xsimd::load(reinterpret_cast<double const *>(&ownedStatePtr2[j]));
        // This requires that dummy is the first entry in OwnershipState!
        const xsimd::batch_bool<double> dummyMask = xsimd::neq(ownedStateJ, _zero);
@@ -459,26 +469,29 @@ class LJFunctorXSIMD
        const xsimd::batch<double> lj12m6alj12e = xsimd::mul(lj12m6alj12, epsilon24s);
        const xsimd::batch<double> fac = xsimd::mul(lj12m6alj12e, invdr2);
 
+
        const xsimd::batch<double> facMasked =
-           remainderIsMasked ? xsimd::bitwise_and(fac, xsimd::select(cutoffDummyMask, _masks[rest - 1], _zero))
+           remainderIsMasked ? xsimd::select(xsimd::bitwise_and(cutoffDummyMask, _masks[rest - 1]), fac, _zero)
                              : xsimd::select(cutoffDummyMask, fac, _zero);
 
        const xsimd::batch<double> fx = xsimd::mul(drx, facMasked);
        const xsimd::batch<double> fy = xsimd::mul(dry, facMasked);
        const xsimd::batch<double> fz = xsimd::mul(drz, facMasked);
 
+
        fxacc = xsimd::add(fxacc, fx);
        fyacc = xsimd::add(fyacc, fy);
        fzacc = xsimd::add(fzacc, fz);
 
        // if newton 3 is used subtract fD from particle j
+
        if constexpr (newton3) {
          const xsimd::batch<double> fx2 =
-             remainderIsMasked ? xsimd::bitwise_and(xsimd::load(&fx2ptr[j]), _masks[rest - 1]) : xsimd::load(&fx2ptr[j]);
+             remainderIsMasked ? xsimd::select(_masks[rest - 1], xsimd::load(&fx2ptr[j]), _zero) : xsimd::load(&fx2ptr[j]);
          const xsimd::batch<double> fy2 =
-             remainderIsMasked ? xsimd::bitwise_and(xsimd::load(&fy2ptr[j]), _masks[rest - 1]) : xsimd::load(&fy2ptr[j]);
+             remainderIsMasked ? xsimd::select(_masks[rest - 1], xsimd::load(&fy2ptr[j]), _zero) : xsimd::load(&fy2ptr[j]);
          const xsimd::batch<double> fz2 =
-             remainderIsMasked ? xsimd::bitwise_and(xsimd::load(&fz2ptr[j]), _masks[rest - 1]) : xsimd::load(&fz2ptr[j]);
+             remainderIsMasked ? xsimd::select(_masks[rest - 1], xsimd::load(&fz2ptr[j]), _zero) : xsimd::load(&fz2ptr[j]);
 
          const xsimd::batch<double> fx2new = xsimd::sub(fx2, fx);
          const xsimd::batch<double> fy2new = xsimd::sub(fy2, fy);
@@ -486,16 +499,35 @@ class LJFunctorXSIMD
 
 
          ;
-         remainderIsMasked ? xsimd::store(&fx2ptr[j], xsimd::bitwise_and(_masks[rest - 1], fx2new))
+         remainderIsMasked ? xsimd::store(&fx2ptr[j], xsimd::select(_masks[rest - 1], fx2new, _zero))
                            : xsimd::store(&fx2ptr[j], fx2new);
-         remainderIsMasked ? xsimd::store(&fy2ptr[j], xsimd::bitwise_and(_masks[rest - 1], fy2new))
+         remainderIsMasked ? xsimd::store(&fy2ptr[j], xsimd::select(_masks[rest - 1], fy2new, _zero))
                            : xsimd::store(&fy2ptr[j], fy2new);
-         remainderIsMasked ? xsimd::store(&fz2ptr[j], xsimd::bitwise_and(_masks[rest - 1], fz2new))
+         remainderIsMasked ? xsimd::store(&fz2ptr[j], xsimd::select(_masks[rest - 1], fz2new, _zero))
                            : xsimd::store(&fz2ptr[j], fz2new);
        }
 
        if constexpr (calculateGlobals) {
-         //TODO
+         const xsimd::batch<double> virialX = xsimd::mul(fx, drx);
+         const xsimd::batch<double> virialY = xsimd::mul(fy, dry);
+         const xsimd::batch<double> virialZ = xsimd::mul(fz, drz);
+
+         const xsimd::batch<double> updot = wrapperFMA(epsilon24s, lj12m6, shift6s);
+
+         const __m256d upotMasked =
+             remainderIsMasked ? xsimd::select(xsimd::bitwise_and(cutoffDummyMask, _masks[rest - 1]), updot, _zero)
+                               : xsimd::select(cutoffDummyMask, updot, _zero);
+         xsimd::batch_bool<double> ownedMaskI = xsimd::eq(to_float(ownedStateI), to_float(_ownedStateOwnedMM256i));
+         xsimd::batch<double> energyFactor = xsimd::select(ownedMaskI, _zero, _one);
+         if constexpr (newton3) {
+           xsimd::batch_bool<double> ownedMaskJ =
+               xsimd::eq(ownedStateJ, to_float(_ownedStateOwnedMM256i));
+           energyFactor = xsimd::add(energyFactor, xsimd::select(ownedMaskJ, _zero, _one));
+         }
+         *upotSum = wrapperFMA(energyFactor, upotMasked, *upotSum);
+         *virialSumX = wrapperFMA(energyFactor, virialX, *virialSumX);
+         *virialSumY = wrapperFMA(energyFactor, virialY, *virialSumY);
+         *virialSumZ = wrapperFMA(energyFactor, virialZ, *virialSumZ);
        }
 
 
@@ -660,7 +692,24 @@ class LJFunctorXSIMD
        fzptr[indexFirst] += xsimd::reduce_add(fzacc);
 
        if constexpr (calculateGlobals) {
-         //TODO
+         const int threadnum = autopas_get_thread_num();
+
+         double globals[] = {
+             xsimd::reduce_add(virialSumX),
+             xsimd::reduce_add(virialSumY),
+             xsimd::reduce_add(virialSumZ),
+             xsimd::reduce_add(upotSum)
+         };
+
+         double factor = 1.;
+         // we assume newton3 to be enabled in this function call, thus we multiply by two if the value of newton3 is
+         // false, since for newton3 disabled we divide by two later on.
+         factor *= newton3 ? .5 : 1.;
+         // In case we have a non-cell-wise owned state, we have multiplied everything by two, so we divide it by 2 again.
+         _aosThreadData[threadnum].virialSum[0] += globals[0] * factor;
+         _aosThreadData[threadnum].virialSum[1] += globals[1] * factor;
+         _aosThreadData[threadnum].virialSum[2] += globals[2] * factor;
+         _aosThreadData[threadnum].upotSum += globals[3] * factor;
        }
 
      }
@@ -847,10 +896,10 @@ class LJFunctorXSIMD
      const xsimd::batch<double> _zero{0};
      const xsimd::batch<double> _one{1.};
      const xsimd::batch<int64_t> _vindex{0, 1, 3, 4};
-     const xsimd::batch<double> _masks[3]{
-         xsimd::batch<double>(0, 0, 0, -1),
-         xsimd::batch<double>(0, 0, -1, -1),
-         xsimd::batch<double>(0, -1, -1, -1),
+     const xsimd::batch_bool<double> _masks[3] {
+         xsimd::batch_bool<double>(true, false, false, false),
+         xsimd::batch_bool<double>(true, true, false, false),
+         xsimd::batch_bool<double>(true, true, true, false)
      };
      const xsimd::batch<int64_t> _ownedStateDummyMM256i{0x0};
      const xsimd::batch<int64_t> _ownedStateOwnedMM256i{static_cast<int64_t>(OwnershipState::owned)};

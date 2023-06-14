@@ -16,6 +16,8 @@ class LJFunctorXSIMDTest : public AutoPasTestBase, public ::testing::WithParamIn
    */
   constexpr static double _maxError = 1e-12;
 
+  //void testLJFunctorVSLJFunctorXSIMDKernel(bool newton3);
+
   /**
    * Checks equality of SoALoader, SoAFunctorPair and SoAExtractor.
    * Expects that particles are loaded and extracted in the same order.
