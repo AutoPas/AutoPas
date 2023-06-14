@@ -28,7 +28,7 @@ Objects:
       box-length                 :  [120, 120, 12]
       velocity                   :  [0, 0, 0]
       particle-type              :  0
-      particle-epsilon           :  1
+      particle-epsilon           :  0.5
       particle-sigma             :  1
       particle-mass              :  1
   Sphere:
@@ -38,7 +38,7 @@ Objects:
       particle-spacing           :  1.122462048
       velocity                   :  [0, 0, 0]
       particle-type              :  1
-      particle-epsilon           :  1
+      particle-epsilon           :  0.5
       particle-sigma             :  1
       particle-mass              :  2
 # thermostat:
