@@ -40,7 +40,7 @@ Objects:
       particle-type              :  1
       particle-epsilon           :  0.5
       particle-sigma             :  1
-      particle-mass              :  2
+      particle-mass              :  1
 # thermostat:
 #   initialTemperature             :  1
 #   targetTemperature              :  4
