@@ -221,11 +221,12 @@ class LiveInfo {
       }
       return std::string{"fail"};
     };
-    auto toString = [&](const auto &pair) { return pair.first + "=" + std::visit(typeToString, pair.second); };
+    auto pairToString = [&](const auto &pair) { return pair.first + "=" + std::visit(typeToString, pair.second); };
     std::string res{"Live Info: "};
     if (not infos.empty()) {
-      res += std::accumulate(std::next(infos.begin()), infos.end(), toString(*infos.begin()),
-                             [&](std::string s, const auto &elem) { return std::move(s) + " " + toString(elem); });
+      // We initialize the accumulation with the first element. Hence, the accumulation starts at next(begin).
+      res += std::accumulate(std::next(infos.begin()), infos.end(), pairToString(*infos.begin()),
+                             [&](std::string s, const auto &elem) { return std::move(s) + " " + pairToString(elem); });
     }
     return res;
   }
@@ -239,6 +240,7 @@ class LiveInfo {
   friend std::ostream &operator<<(std::ostream &out, const LiveInfo &info) {
     out << info.infos.size() << ' ';
     for (const auto &[name, val] : info.infos) {
+      // val.index here is the index of this value's type in the LiveInfo::InfoType variant type.
       out << name << ' ' << val.index() << ' ';
       std::visit([&](const auto &v) { out << v << ' '; }, val);
     }
