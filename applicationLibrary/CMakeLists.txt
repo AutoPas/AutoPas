@@ -6,6 +6,7 @@ file(
         GLOB_RECURSE
         LIB_MD_SRC
         "molecularDynamics/molecularDynamicsLibrary/*.h"
+        "molecularDynamics/molecularDynamicsLibrary/*.cpp"
 )
 
 add_library(molecularDynamicsLibrary STATIC ${LIB_MD_SRC})
@@ -20,6 +21,7 @@ file(
         GLOB_RECURSE
         LIB_SPH_SRC
         "sph/SPHLibrary/*.h"
+        "sph/SPHLibrary/*.cpp"
 )
 
 add_library(SPHLibrary STATIC ${LIB_SPH_SRC})
