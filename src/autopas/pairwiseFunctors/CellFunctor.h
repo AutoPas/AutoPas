@@ -119,7 +119,7 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
     return;
   }
 
-  if (!this->_onlyDirty || cell.getDirty() || cell.getInflowDirty()) {
+  if (!this->_onlyDirty || cell.getDirty() || cell.getInflowDirty() || cell.getOutflowDirty()) {
     switch (DataLayout) {
       case DataLayoutOption::aos:
         processCellAoS<useNewton3>(cell);
@@ -147,7 +147,8 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
   }
 
   if (!this->_onlyDirty || cell1.getDirty() || cell2.getDirty()
-      || cell1.getInflowDirty() || cell2.getInflowDirty()) {
+      || cell1.getInflowDirty() || cell2.getInflowDirty()
+      || cell1.getOutflowDirty() || cell2.getOutflowDirty()) {
     switch (DataLayout) {
       case DataLayoutOption::aos:
         if (useNewton3) {
