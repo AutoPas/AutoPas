@@ -141,23 +141,6 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
   template <AttributeNames attribute>
   constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value);
 
- protected:
-  /**
-   * Rotational direction of particle as quaternion.
-   */
-  std::array<double, 4> _q{};
-
-  /**
-   * Angular velocity of the particle
-   */
-  std::array<double, 3> _angularVel{};
-
-  /**
-   * Torque applied to particle.
-   */
-  std::array<double, 3> _torque{};
-
- public:
   /**
    * Get the quaternion defining rotation
    * @return quaternion defining rotation
@@ -217,6 +200,22 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
    * @return String representation.
    */
   [[nodiscard]] std::string toString() const override;
+
+ protected:
+  /**
+   * Rotational direction of particle as quaternion.
+   */
+  std::array<double, 4> _q{};
+
+  /**
+   * Angular velocity of the particle
+   */
+  std::array<double, 3> _angularVel{};
+
+  /**
+   * Torque applied to particle.
+   */
+  std::array<double, 3> _torque{};
 };
 
 }  // namespace mdLib
