@@ -48,7 +48,10 @@ if (AUTOPAS_BUILD_TESTS)
 
     target_compile_definitions(
             mdLibSingleSiteTests PRIVATE
-            MD_FLEXIBLE_MODE=0 # 0 corresponds to single-site
+            MD_FLEXIBLE_MODE=0 # set MD_FLEXIBLE_MODE to single-site
+            # Tests need definitions of SINGLESITE and MULTISITE so it can correctly compile single-site tests
+            SINGLESITE=0
+            MULTISITE=1
     )
 
     target_include_directories(
@@ -75,7 +78,10 @@ if (AUTOPAS_BUILD_TESTS)
 
     target_compile_definitions(
             mdLibMultiSiteTests PRIVATE
-            MD_FLEXIBLE_MODE=1 # 1 corresponds to multi-site
+            MD_FLEXIBLE_MODE=1  # set MD_FLEXIBLE_MODE to multi-site
+            # Tests need definitions of SINGLESITE and MULTISITE so it can correctly compile multi-site tests
+            SINGLESITE=0
+            MULTISITE=1
     )
 
     target_include_directories(
