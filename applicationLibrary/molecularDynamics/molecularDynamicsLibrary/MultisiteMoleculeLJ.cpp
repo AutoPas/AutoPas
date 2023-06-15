@@ -143,13 +143,16 @@ namespace mdLib {
     using autopas::utils::ArrayUtils::operator<<;
     std::ostringstream text;
     // clang-format off
-      text << "Particle"
+      text << "MultisiteMoleculeLJ"
          << "\nID                 : " << _id
          << "\nPosition           : " << _r
          << "\nVelocity           : " << _v
          << "\nForce              : " << _f
+         << "\nOld Force          : " << _oldF
          << "\nQuaternion         : " << _q
          << "\nRotational Velocity: " << _angularVel
+         << "\nTorque             : " << _torque
+         << "\nType ID            : " << _typeId
          << "\nOwnershipState     : " << _ownershipState;
     // clang-format on
     return text.str();

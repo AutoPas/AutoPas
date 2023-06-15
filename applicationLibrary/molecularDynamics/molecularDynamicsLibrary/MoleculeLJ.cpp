@@ -90,6 +90,22 @@ namespace mdLib {
 
   size_t MoleculeLJ::getTypeId() const { return _typeId; }
   void MoleculeLJ::setTypeId(size_t typeId) { _typeId = typeId; }
+
+  std::string MoleculeLJ::toString() const  {
+    using autopas::utils::ArrayUtils::operator<<;
+    std::ostringstream text;
+    // clang-format off
+      text << "MoleculeLJ"
+         << "\nID                 : " << _id
+         << "\nPosition           : " << _r
+         << "\nVelocity           : " << _v
+         << "\nForce              : " << _f
+         << "\nOld Force          : " << _oldF
+         << "\nType ID            : " << _typeId
+         << "\nOwnershipState     : " << _ownershipState;
+    // clang-format on
+    return text.str();
+  }
 }
 
 

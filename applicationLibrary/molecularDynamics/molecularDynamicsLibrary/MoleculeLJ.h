@@ -119,6 +119,12 @@ class MoleculeLJ : public autopas::Particle {
    */
   void setTypeId(size_t typeId);
 
+  /**
+   * Creates a string containing all data of the particle.
+   * @return String representation.
+   */
+  [[nodiscard]] std::string toString() const override;
+
  protected:
   /**
    * Molecule type id. In single-site simulations, this is used as a siteId to look up site attributes in the particle
