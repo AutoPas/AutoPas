@@ -19,6 +19,7 @@
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
+#include "autopas/options/TuningMetricOption.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/selectors/Configuration.h"
 #include "autopas/utils/NumberSet.h"
@@ -164,6 +165,7 @@ class AutoPas {
 
   /**
    * Adds all particles from the collection to the container.
+   * @note This function uses reserve().
    * @note This function uses addParticle().
    * @tparam Collection Collection type that contains the particles (e.g. std::vector). Needs to support `.size()`.
    * @param particles
@@ -194,7 +196,8 @@ class AutoPas {
 
   /**
    * Adds all halo particles from the collection to the container.
-   * @note This function uses addHaloParticlesIf().
+   * @note This function uses reserve().
+   * @note This function uses addHaloParticle().
    * @tparam Collection Collection type that contains the particles (e.g. std::vector). Needs to support `.size()`.
    * @param particles
    */
@@ -227,14 +230,14 @@ class AutoPas {
    *
    * @param iter Needs to be a modify-able iterator.
    */
-  void deleteParticle(ContainerIterator<Particle, true, false> &iter);
+  void deleteParticle(IteratorT &iter);
 
   /**
-   * @copydoc deleteParticle(ContainerIterator<Particle, true, false> &iter)
+   * @copydoc deleteParticle(IteratorT &iter)
    *
    * Region Iterator version.
    */
-  void deleteParticle(ContainerIterator<Particle, true, true> &iter);
+  void deleteParticle(RegionIteratorT &iter);
 
   /**
    * Deletes the given particle and leaves the container in a valid state.
@@ -408,8 +411,8 @@ class AutoPas {
    * @note not actually parallel until kokkos integration
    */
   template <typename Lambda>
-  void forEachInRegionParallel(Lambda forEachLambda, std::array<double, 3> lowerCorner,
-                               std::array<double, 3> higherCorner,
+  void forEachInRegionParallel(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+                               const std::array<double, 3> &higherCorner,
                                IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     // TODO (lgaertner): parallelize with kokkos integration
     withStaticContainerType(getContainer(), [&](auto &container) {
@@ -422,8 +425,8 @@ class AutoPas {
    * @note const version
    */
   template <typename Lambda>
-  void forEachInRegionParallel(Lambda forEachLambda, std::array<double, 3> lowerCorner,
-                               std::array<double, 3> higherCorner,
+  void forEachInRegionParallel(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+                               const std::array<double, 3> &higherCorner,
                                IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     // TODO (lgaertner): parallelize with kokkos integration
     withStaticContainerType(getContainer(), [&](auto &container) {
@@ -440,7 +443,8 @@ class AutoPas {
    * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownerOrHalo
    */
   template <typename Lambda>
-  void forEachInRegion(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+                       const std::array<double, 3> &higherCorner,
                        IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     withStaticContainerType(getContainer(), [&](auto &container) {
       container.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
@@ -452,7 +456,8 @@ class AutoPas {
    * @note const version
    */
   template <typename Lambda>
-  void forEachInRegion(Lambda forEachLambda, std::array<double, 3> lowerCorner, std::array<double, 3> higherCorner,
+  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+                       const std::array<double, 3> &higherCorner,
                        IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     withStaticContainerType(getContainer(), [&](auto &container) {
       container.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
@@ -471,8 +476,8 @@ class AutoPas {
    * @note not actually parallel until kokkos integration
    */
   template <typename Lambda, typename A>
-  void reduceInRegionParallel(Lambda reduceLambda, A &result, std::array<double, 3> lowerCorner,
-                              std::array<double, 3> higherCorner,
+  void reduceInRegionParallel(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+                              const std::array<double, 3> &higherCorner,
                               IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     // TODO lgaertner: parallelize with kokkos integration
     withStaticContainerType(getContainer(), [&](auto &container) {
@@ -485,8 +490,8 @@ class AutoPas {
    * @note const version
    */
   template <typename Lambda, typename A>
-  void reduceInRegionParallel(Lambda reduceLambda, A &result, std::array<double, 3> lowerCorner,
-                              std::array<double, 3> higherCorner,
+  void reduceInRegionParallel(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+                              const std::array<double, 3> &higherCorner,
                               IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     // TODO lgaertner: parallelize with kokkos integration
     withStaticContainerType(getContainer(), [&](auto &container) {
@@ -505,8 +510,9 @@ class AutoPas {
    * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownerOrHalo
    */
   template <typename Lambda, typename A>
-  void reduceInRegion(Lambda reduceLambda, A &result, std::array<double, 3> lowerCorner,
-                      std::array<double, 3> higherCorner, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+  void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+                      const std::array<double, 3> &higherCorner,
+                      IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     withStaticContainerType(getContainer(), [&](auto &container) {
       container.reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
     });
@@ -517,8 +523,8 @@ class AutoPas {
    * @note const version
    */
   template <typename Lambda, typename A>
-  void reduceInRegion(Lambda reduceLambda, A &result, std::array<double, 3> lowerCorner,
-                      std::array<double, 3> higherCorner,
+  void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+                      const std::array<double, 3> &higherCorner,
                       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     withStaticContainerType(getContainer(), [&](auto &container) {
       container.reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
@@ -551,13 +557,13 @@ class AutoPas {
    * Get the lower corner of the container without the halo.
    * @return lower corner of the container.
    */
-  [[nodiscard]] std::array<double, 3> getBoxMin() const;
+  [[nodiscard]] const std::array<double, 3> &getBoxMin() const;
 
   /**
    * Get the upper corner of the container without the halo.
    * @return upper corner of the container.
    */
-  [[nodiscard]] std::array<double, 3> getBoxMax() const;
+  [[nodiscard]] const std::array<double, 3> &getBoxMax() const;
 
   /**
    * get the bool value indicating if the search space is trivial (not more than one configuration to test).
@@ -895,6 +901,13 @@ class AutoPas {
   }
 
   /**
+   * Setter for the tuning metric option.
+   * For possible tuning metric choices see options::TuningMetricOption::Value.
+   * @param tuningMetricOption
+   */
+  void setTuningMetricOption(TuningMetricOption tuningMetricOption) { _tuningMetricOption = tuningMetricOption; }
+
+  /**
    * Setter for the mpi strategy option
    * @param mpiStrategyOption
    */
@@ -1016,6 +1029,12 @@ class AutoPas {
    * For possible tuning strategy choices see options::TuningStrategyOption::Value.
    */
   TuningStrategyOption _tuningStrategyOption{TuningStrategyOption::fullSearch};
+
+  /**
+   * Strategy option for the auto tuner.
+   * For possible tuning strategy choices see options::TuningStrategyOption::Value.
+   */
+  TuningMetricOption _tuningMetricOption{TuningMetricOption::time};
 
   /**
    * Strategy for the configuration selector.

@@ -41,7 +41,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param interactionLength max. radius of interaction between particles
    * @param cellSizeFactor cell size factor relative to interactionLength
    */
-  CellBlock3D(std::vector<ParticleCell> &vec, const std::array<double, 3> bMin, const std::array<double, 3> bMax,
+  CellBlock3D(std::vector<ParticleCell> &vec, const std::array<double, 3> &bMin, const std::array<double, 3> &bMax,
               double interactionLength, double cellSizeFactor = 1.0) {
     rebuild(vec, bMin, bMax, interactionLength, cellSizeFactor);
 
@@ -257,13 +257,13 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * Get the lower corner of the halo region.
    * @return Coordinates of the lower corner.
    */
-  [[nodiscard]] std::array<double, 3> getHaloBoxMin() const { return _haloBoxMin; }
+  [[nodiscard]] const std::array<double, 3> &getHaloBoxMin() const { return _haloBoxMin; }
 
   /**
    * Get the upper corner of the halo region.
    * @return Coordinates of the upper corner.
    */
-  [[nodiscard]] std::array<double, 3> getHaloBoxMax() const { return _haloBoxMax; }
+  [[nodiscard]] const std::array<double, 3> &getHaloBoxMax() const { return _haloBoxMax; }
 
   /**
    * Get the number of cells per interaction length.

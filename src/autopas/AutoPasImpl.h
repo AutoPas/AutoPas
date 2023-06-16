@@ -76,8 +76,8 @@ void AutoPas<Particle>::init() {
       _outputSuffix, _mpiStrategyOption, _autopasMPICommunicator);
   _autoTuner = std::make_unique<autopas::AutoTuner<Particle>>(
       _boxMin, _boxMax, _cutoff, _verletSkinPerTimestep, _verletClusterSize, std::move(tuningStrategy),
-      _mpiTuningMaxDifferenceForBucket, _mpiTuningWeightForMaxDensity, _selectorStrategy, _tuningInterval, _numSamples,
-      _verletRebuildFrequency, _outputSuffix);
+      _mpiTuningMaxDifferenceForBucket, _mpiTuningWeightForMaxDensity, _selectorStrategy, _tuningMetricOption,
+      _tuningInterval, _numSamples, _verletRebuildFrequency, _outputSuffix);
   _logicHandler =
       std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(*(_autoTuner.get()), _verletRebuildFrequency);
 }
@@ -231,13 +231,13 @@ void AutoPas<Particle>::deleteAllParticles() {
 }
 
 template <class Particle>
-void AutoPas<Particle>::deleteParticle(ContainerIterator<Particle, true, false> &iter) {
+void AutoPas<Particle>::deleteParticle(IteratorT &iter) {
   _logicHandler->decreaseParticleCounter(*iter);
   internal::deleteParticle(iter);
 }
 
 template <class Particle>
-void AutoPas<Particle>::deleteParticle(ContainerIterator<Particle, true, true> &iter) {
+void AutoPas<Particle>::deleteParticle(RegionIteratorT &iter) {
   _logicHandler->decreaseParticleCounter(*iter);
   internal::deleteParticle(iter);
 }
@@ -282,12 +282,12 @@ unsigned long AutoPas<Particle>::getContainerType() const {
 }
 
 template <class Particle>
-std::array<double, 3> AutoPas<Particle>::getBoxMin() const {
+const std::array<double, 3> &AutoPas<Particle>::getBoxMin() const {
   return _autoTuner->getContainer().getBoxMin();
 }
 
 template <class Particle>
-std::array<double, 3> AutoPas<Particle>::getBoxMax() const {
+const std::array<double, 3> &AutoPas<Particle>::getBoxMax() const {
   return _autoTuner->getContainer().getBoxMax();
 }
 
