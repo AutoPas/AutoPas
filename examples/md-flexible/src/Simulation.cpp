@@ -137,9 +137,10 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setVerletRebuildFrequency(_configuration.verletRebuildFrequency.value);
   _autoPasContainer->setVerletSkinPerTimestep(_configuration.verletSkinRadiusPerTimestep.value);
   _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
+  _autoPasContainer->setUseTuningLogger(_configuration.useTuningLogger.value);
   int rank{};
   autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
-  _autoPasContainer->setOutputSuffix("Rank" + std::to_string(rank) + "_");
+  _autoPasContainer->setOutputSuffix("Rank" + std::to_string(rank) + "_" + _configuration.outputSuffix.value);
   autopas::Logger::get()->set_level(_configuration.logLevel.value);
   _autoPasContainer->init();
 

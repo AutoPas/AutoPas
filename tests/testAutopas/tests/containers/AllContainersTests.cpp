@@ -20,7 +20,7 @@ INSTANTIATE_TEST_SUITE_P(Generated, AllContainersTestsBothUpdates,
 /**
  * Checks if ParticleContainerInterface::getNumParticle() returns the correct number of particles.
  */
-TEST_P(AllContainersTests, testGetNumParticles) {
+TEST_P(AllContainersTests, testgetNumberOfParticles) {
   auto &container = getInitializedContainer(std::get<0>(GetParam()));
   EXPECT_EQ(container.getNumberOfParticles(), 0);
 

@@ -56,9 +56,15 @@ class FullSearch : public SetSearchSpaceBasedTuningStrategy {
 
   bool tune(bool = false) override;
 
- private:
+ protected:
+  /**
+   * Selects the optimal configuration.
+   */
   void selectOptimalConfiguration();
 
+  /**
+   * Stores the time for each configuration that was already tested.
+   */
   std::unordered_map<Configuration, size_t, ConfigHash> _traversalTimes;
 };
 }  // namespace autopas

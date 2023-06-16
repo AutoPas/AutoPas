@@ -23,6 +23,7 @@
 #include "autopas/selectors/TraversalSelector.h"
 #include "autopas/selectors/tuningStrategy/MPIParallelizedStrategy.h"
 #include "autopas/selectors/tuningStrategy/TuningStrategyInterface.h"
+#include "autopas/selectors/tuningStrategy/TuningStrategyLoggerWrapper.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/RaplMeter.h"
@@ -72,16 +73,20 @@ class AutoTuner {
    * @param maxSamples Number of samples that shall be collected for each combination.
    * @param rebuildFrequency The rebuild frequency this AutoPas instance uses.
    * @param outputSuffix Suffix for all output files produced by this class.
+   * @param useTuningStrategyLoggerProxy Whether to use the tuning strategy logger proxy to log tuning information.
    */
   AutoTuner(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff,
             double verletSkinPerTimestep, unsigned int verletClusterSize,
             std::unique_ptr<TuningStrategyInterface> tuningStrategy, double MPITuningMaxDifferenceForBucket,
             double MPITuningWeightForMaxDensity, SelectorStrategyOption selectorStrategy,
             TuningMetricOption tuningMetric, unsigned int tuningInterval, unsigned int maxSamples,
-            unsigned int rebuildFrequency, const std::string &outputSuffix = "")
+            unsigned int rebuildFrequency, const std::string &outputSuffix = "",
+            bool useTuningStrategyLoggerProxy = false)
       : _selectorStrategy(selectorStrategy),
         _tuningMetric(tuningMetric),
-        _tuningStrategy(std::move(tuningStrategy)),
+        _tuningStrategy(useTuningStrategyLoggerProxy
+                            ? std::make_unique<TuningStrategyLoggerWrapper>(std::move(tuningStrategy), outputSuffix)
+                            : std::move(tuningStrategy)),
         _tuningInterval(tuningInterval),
         _iterationsSinceTuning(tuningInterval),  // init to max so that tuning happens in first iteration
         _containerSelector(boxMin, boxMax, cutoff),
@@ -808,7 +813,7 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
                                                         std::vector<FullParticleCell<Particle>> &haloParticleBuffer) {
   auto &container = getContainer();
   AutoPasLog(DEBUG, "Iterating with configuration: {} tuning: {}",
-             _tuningStrategy->getCurrentConfiguration().toString(), inTuningPhase ? "true" : "false");
+             _tuningStrategy->getCurrentConfiguration().toString(), inTuningPhase);
 
   auto traversal =
       autopas::utils::withStaticCellType<Particle>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
@@ -940,6 +945,13 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
 
   // first tuning iteration -> reset to first config
   if (_iterationsSinceTuning == _tuningInterval) {
+    // if necessary gather current live info and pass it to the actual strategy
+    if (_tuningStrategy->needsLiveInfo()) {
+      LiveInfo info{};
+      info.gather(_containerSelector.getCurrentContainer(), pairwiseFunctor, _rebuildFrequency);
+      _tuningStrategy->receiveLiveInfo(info);
+    }
+    // call the appropriate version of reset
     if (auto *mpiStrategy = dynamic_cast<MPIParallelizedStrategy *>(_tuningStrategy.get())) {
       const std::pair<double, double> smoothedHomogeneityAndMaxDensity{
           autopas::OptimumSelector::medianValue(_homogeneitiesOfLastTenIterations),
@@ -951,10 +963,12 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
     }
     // Homogeneity was calculated directly before the tuning phase so reset it now.
     if (_tuningStrategy->smoothedHomogeneityAndMaxDensityNeeded()) {
-      int rank{0};
-      AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
       AutoPasLog(DEBUG, "Calculating homogeneities took added up {} ns on rank {}.",
-                 _timerCalculateHomogeneity.getTotalTime(), rank);
+                 _timerCalculateHomogeneity.getTotalTime(), []() {
+                   int rank{0};
+                   AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
+                   return rank;
+                 });
       _homogeneitiesOfLastTenIterations.clear();
       _maxDensitiesOfLastTenIterations.clear();
     }

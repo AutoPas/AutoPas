@@ -21,6 +21,8 @@ target_link_libraries(
         ${CMAKE_THREAD_LIBS_INIT} # required for Logger and ExceptionHandler
         $<$<BOOL:${AUTOPAS_OPENMP}>:OpenMP::OpenMP_CXX>
         spdlog::spdlog
+        $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:MPI::MPI_CXX>
+        antlr4cpp
         $<$<OR:$<BOOL:${AUTOPAS_INTERNODE_TUNING}>,$<BOOL:${MD_FLEXIBLE_USE_MPI}>>:MPI::MPI_CXX>
         $<$<BOOL:${AUTOPAS_INCLUDE_MPI}>:MPI::MPI_CXX>
         Eigen3

@@ -73,11 +73,11 @@ void AutoPas<Particle>::init() {
       _tuningStrategyOption, _allowedContainers, *_allowedCellSizeFactors, _allowedTraversals, _allowedLoadEstimators,
       _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _relativeOptimumRange, _maxTuningPhasesWithoutTest,
       _relativeBlacklistRange, _evidenceFirstPrediction, _acquisitionFunctionOption, _extrapolationMethodOption,
-      _outputSuffix, _mpiStrategyOption, _autopasMPICommunicator);
+      _ruleFileName, _outputSuffix, _mpiStrategyOption, _autopasMPICommunicator);
   _autoTuner = std::make_unique<autopas::AutoTuner<Particle>>(
       _boxMin, _boxMax, _cutoff, _verletSkinPerTimestep, _verletClusterSize, std::move(tuningStrategy),
       _mpiTuningMaxDifferenceForBucket, _mpiTuningWeightForMaxDensity, _selectorStrategy, _tuningMetricOption,
-      _tuningInterval, _numSamples, _verletRebuildFrequency, _outputSuffix);
+      _tuningInterval, _numSamples, _verletRebuildFrequency, _outputSuffix, _useTuningLogger);
   _logicHandler =
       std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(*(_autoTuner.get()), _verletRebuildFrequency);
 }
@@ -99,10 +99,10 @@ template <class Particle>
 size_t AutoPas<Particle>::getNumberOfParticles(IteratorBehavior behavior) const {
   size_t numParticles{0};
   if (behavior & IteratorBehavior::owned) {
-    numParticles += _logicHandler->getNumParticlesOwned();
+    numParticles += _logicHandler->getNumberOfParticlesOwned();
   }
   if (behavior & IteratorBehavior::halo) {
-    numParticles += _logicHandler->getNumParticlesHalo();
+    numParticles += _logicHandler->getNumberOfParticlesHalo();
   }
   // non fatal sanity check whether the behavior contained anything else
   if (behavior & ~(IteratorBehavior::ownedOrHalo)) {

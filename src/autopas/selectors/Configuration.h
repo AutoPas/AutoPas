@@ -54,6 +54,16 @@ class Configuration {
   [[nodiscard]] std::string toString() const;
 
   /**
+   * Returns a short string representation of the configuration object, suitable for tabular output.
+   * @return A short string representation.
+   */
+  [[nodiscard]] std::string toShortString() const {
+    return "{" + container.to_string(true) + " , " + std::to_string(cellSizeFactor) + " , " +
+           traversal.to_string(true) + " , " + loadEstimator.to_string(true) + " , " + dataLayout.to_string(true) +
+           " , " + newton3.to_string(true) + "}";
+  }
+
+  /**
    * Generate a csv header containing all keys from the toString() method.
    * @return Contains the header.
    */
@@ -114,6 +124,29 @@ class Configuration {
  * @return
  */
 std::ostream &operator<<(std::ostream &os, const Configuration &configuration);
+
+/**
+ * Stream extraction operator.
+ * @param in
+ * @param configuration
+ * @return
+ */
+inline std::istream &operator>>(std::istream &in, Configuration &configuration) {
+  constexpr auto max = std::numeric_limits<std::streamsize>::max();
+  in.ignore(max, ':');
+  in >> configuration.container;
+  in.ignore(max, ':');
+  in >> configuration.cellSizeFactor;
+  in.ignore(max, ':');
+  in >> configuration.traversal;
+  in.ignore(max, ':');
+  in >> configuration.loadEstimator;
+  in.ignore(max, ':');
+  in >> configuration.dataLayout;
+  in.ignore(max, ':');
+  in >> configuration.newton3;
+  return in;
+}
 
 /**
  * Equals operator for Configuration objects.

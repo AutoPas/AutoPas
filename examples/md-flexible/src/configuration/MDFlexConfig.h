@@ -667,6 +667,22 @@ class MDFlexConfig {
           autopas::utils::ArrayUtils::to_string(LoadBalancerOption::getAllOptions(), " ", {"(", ")"})};
 
   /**
+   * Whether to use the tuning logger or not.
+   *
+   * @see TuningStrategyLoggerProxy
+   */
+  MDFlexOption<bool, __LINE__> useTuningLogger{false, "use-tuning-logger", true,
+                                               "If tuning information should be logged"};
+
+  /**
+   * The suffix for files created by the tuning logger.
+   */
+  MDFlexOption<std::string, __LINE__> outputSuffix{"default", "output-suffix", true,
+                                                   "An identifier that is contained in the filename "
+                                                   "of the logged tuning information (e.g. if setting "
+                                                   "--use-tuning-logger=true"};
+
+  /**
    * valueOffset used for cli-output alignment
    */
   static constexpr int valueOffset{33};

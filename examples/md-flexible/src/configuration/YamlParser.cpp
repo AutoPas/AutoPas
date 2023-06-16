@@ -516,6 +516,16 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.vtkWriteFrequency.value < 1) {
           throw std::runtime_error("VTK write frequency has to be a positive integer >= 1!");
         }
+      } else if (key == config.useTuningLogger.name) {
+        expected = "Boolean Value";
+        description = config.useTuningLogger.description;
+
+        config.useTuningLogger.value = node[config.useTuningLogger.name].as<bool>();
+      } else if (key == config.outputSuffix.name) {
+        expected = "String";
+        description = config.outputSuffix.description;
+
+        config.outputSuffix.value = node[config.outputSuffix.name].as<std::string>();
       } else if (key == config.globalForce.name) {
         expected = "YAML-sequence of three floats. Example: [0, 0, -9.81].";
         description = config.globalForce.description;

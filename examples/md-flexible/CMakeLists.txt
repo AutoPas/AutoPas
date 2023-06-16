@@ -38,6 +38,7 @@ file(
         "*.gp"
         "*.py"
         "*.yaml"
+        "*.rule"
 )
 
 foreach (script ${SCRIPTS})

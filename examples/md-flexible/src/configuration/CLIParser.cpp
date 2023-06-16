@@ -60,6 +60,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.MPITuningMaxDifferenceForBucket,
       config.MPITuningWeightForMaxDensity,
       config.newton3Options,
+      config.outputSuffix,
       config.particleSpacing,
       config.particlesPerDim,
       config.particlesTotal,
@@ -74,6 +75,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.tuningSamples,
       config.tuningStrategyOption,
       config.useThermostat,
+      config.useTuningLogger,
       config.verletClusterSize,
       config.verletRebuildFrequency,
       config.verletSkinRadiusPerTimestep,
@@ -619,6 +621,22 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       case decltype(config.boundaryOption)::getoptChar: {
         auto parsedOption = options::BoundaryTypeOption::parseOptionExact((strArg));
         config.boundaryOption.value = {parsedOption, parsedOption, parsedOption};
+        break;
+      }
+      case decltype(config.useTuningLogger)::getoptChar: {
+        if (strArg == "true") {
+          config.useTuningLogger.value = true;
+        } else if (strArg == "false") {
+          config.useTuningLogger.value = false;
+        } else {
+          cerr << "Error parsing 'useTuningLogger': " << optarg << endl;
+          cerr << "Value should be true or false." << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.outputSuffix)::getoptChar: {
+        config.outputSuffix.value = strArg;
         break;
       }
       case decltype(config.loadBalancer)::getoptChar: {

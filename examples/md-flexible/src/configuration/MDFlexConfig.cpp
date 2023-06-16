@@ -318,6 +318,9 @@ std::string MDFlexConfig::to_string() const {
     printOption(checkpointfile);
   }
 
+  os << setw(valueOffset) << left << useTuningLogger.name << ":  " << useTuningLogger.value << endl;
+  os << setw(valueOffset) << left << outputSuffix.name << ":  " << outputSuffix.value << endl;
+
   os << setw(valueOffset) << left << logLevel.name << ":  " << spdlog::level::to_string_view(logLevel.value).data()
      << endl;
 

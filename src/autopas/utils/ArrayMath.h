@@ -242,6 +242,18 @@ template <class T, std::size_t SIZE>
 }
 
 /**
+ * Generates a normalized array (|a| = 1).
+ * @tparam T floating point type
+ * @tparam SIZE size of the array
+ * @param a input array
+ * @return normalized array of a
+ */
+template <class T, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<T, SIZE> normalize(const std::array<T, SIZE> &a) {
+  return mulScalar(a, static_cast<T>(1) / L2Norm(a));
+}
+
+/**
  * For each element in a, computes the smallest integer value not less than the element.
  * @tparam T floating point type
  * @tparam SIZE size of the array
@@ -258,15 +270,35 @@ template <class T, std::size_t SIZE>
 }
 
 /**
- * Generates a normalized array (|a| = 1).
+ * Floors all array elements and converts them to integers.
  * @tparam T floating point type
  * @tparam SIZE size of the array
  * @param a input array
- * @return normalized array of a
+ * @return New array with floored elements of new type int.
  */
 template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<T, SIZE> normalize(const std::array<T, SIZE> &a) {
-  return mulScalar(a, static_cast<T>(1) / L2Norm(a));
+[[nodiscard]] constexpr std::array<int, SIZE> floorToInt(const std::array<T, SIZE> &a) {
+  std::array<int, SIZE> result{};
+  for (std::size_t d = 0; d < SIZE; ++d) {
+    result[d] = static_cast<int>(std::floor(a[d]));
+  }
+  return result;
+}
+
+/**
+ * Ceils all array elements and converts them to integers.
+ * @tparam T floating point type
+ * @tparam SIZE size of the array
+ * @param a input array
+ * @return New array with ceiled elements of new type int.
+ */
+template <class T, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<int, SIZE> ceilToInt(const std::array<T, SIZE> &a) {
+  std::array<int, SIZE> result{};
+  for (std::size_t d = 0; d < SIZE; ++d) {
+    result[d] = static_cast<int>(std::ceil(a[d]));
+  }
+  return result;
 }
 
 // namespace for templated operators
@@ -344,7 +376,7 @@ constexpr std::array<T, SIZE> operator*(const std::array<T, SIZE> &a, const std:
 }
 
 /**
- * Assignment operator to multply two arrays
+ * Assignment operator to multiply two arrays
  * @tparam T floating point type
  * @tparam SIZE size of the arrays
  * @param a
