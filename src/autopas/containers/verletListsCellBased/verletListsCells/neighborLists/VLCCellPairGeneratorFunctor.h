@@ -29,7 +29,7 @@ class VLCCellPairGeneratorFunctor : public Functor<Particle, VLCCellPairGenerato
    * @param cutoffskin cutoff + skin
    */
   VLCCellPairGeneratorFunctor(PairwiseNeighborListsType &neighborLists,
-                              std::unordered_map<Particle *, std::pair<size_t, size_t>> &particleToCellMap,
+                              std::unordered_map<size_t, std::pair<size_t, size_t>> &particleToCellMap,
                               std::vector<std::unordered_map<size_t, size_t>> &globalToLocalIndex, double cutoffskin)
       : Functor<Particle, VLCCellPairGeneratorFunctor<Particle>>(0.),
         _neighborLists(neighborLists),
@@ -67,8 +67,8 @@ class VLCCellPairGeneratorFunctor : public Functor<Particle, VLCCellPairGenerato
       // (ensured by traversals)
       // also the list is not allowed to be resized!
 
-      auto &[cellIndex, particleIndex] = _particleToCellMap[&i];
-      auto &[cellIndexNeighbor, particleIndexNeighbor] = _particleToCellMap[&j];
+      auto &[cellIndex, particleIndex] = _particleToCellMap[i.getID()];
+      auto &[cellIndexNeighbor, particleIndexNeighbor] = _particleToCellMap[j.getID()];
 
       // if cell1 hasn't interacted with cell2 yet and there is no mapping from global to relative index for cell2,
       // add one
@@ -93,7 +93,7 @@ class VLCCellPairGeneratorFunctor : public Functor<Particle, VLCCellPairGenerato
     double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
 
     // index of cell1 is particleToCellMap of ptr1ptr, same for 2
-    auto cell = _particleToCellMap.at(ptrptr[0]).first;
+    auto cell = _particleToCellMap.at(ptrptr[0]->getID()).first;
 
     auto iter = _globalToLocalIndex[cell].find(cell);
     if (iter == _globalToLocalIndex[cell].end()) {
@@ -154,8 +154,8 @@ class VLCCellPairGeneratorFunctor : public Functor<Particle, VLCCellPairGenerato
     double *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
 
     // index of cell1 is particleToCellMap of ptr1ptr, same for 2
-    size_t cell1 = _particleToCellMap.at(ptr1ptr[0]).first;
-    size_t cell2 = _particleToCellMap.at(ptr2ptr[0]).first;
+    size_t cell1 = _particleToCellMap.at(ptr1ptr[0]->getID()).first;
+    size_t cell2 = _particleToCellMap.at(ptr2ptr[0]->getID()).first;
 
     auto iter = _globalToLocalIndex[cell1].find(cell2);
     if (iter == _globalToLocalIndex[cell1].end()) {
@@ -223,7 +223,7 @@ class VLCCellPairGeneratorFunctor : public Functor<Particle, VLCCellPairGenerato
   /**
    * Mapping of each particle to its corresponding cell and id within this cell.
    */
-  std::unordered_map<Particle *, std::pair<size_t, size_t>> &_particleToCellMap;
+  std::unordered_map<size_t, std::pair<size_t, size_t>> &_particleToCellMap;
   /**
    * For each cell1: a mapping of the "absolute" index of cell2 (in the base linked cells structure) to its "relative"
    * index in cell1's neighbors.

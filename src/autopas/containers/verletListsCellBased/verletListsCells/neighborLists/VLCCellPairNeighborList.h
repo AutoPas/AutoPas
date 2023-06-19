@@ -50,7 +50,7 @@ public:
 
  size_t getNumberOfPartners(const Particle *particle) const override {
    size_t listSize = 0;
-   const auto &[firstCellIndex, particleInCellIndex] = _particleToCellMap.at(const_cast<Particle *>(particle));
+   const auto &[firstCellIndex, particleInCellIndex] = _particleToCellMap.at(const_cast<Particle *>(particle)->getID());
    for (auto &cellPair : _aosNeighborList[firstCellIndex]) {
      listSize += cellPair[particleInCellIndex].second.size();
    }
@@ -141,7 +141,7 @@ public:
          cellPair.emplace_back(std::make_pair(&particle, std::vector<Particle *>()));
 
          // add a pair of cell's index and particle's index in the cell
-         _particleToCellMap[&particle] = std::make_pair(firstCellIndex, particleIndexCurrentCell);
+         _particleToCellMap[particle.getID()] = std::make_pair(firstCellIndex, particleIndexCurrentCell);
          particleIndexCurrentCell++;
        }
      }
@@ -255,8 +255,8 @@ protected:
  /**
   * Mapping of each particle to its corresponding cell and id within this cell.
   */
- std::unordered_map<Particle *, std::pair<size_t, size_t>> _particleToCellMap =
-     std::unordered_map<Particle *, std::pair<size_t, size_t>>();
+ std::unordered_map<size_t, std::pair<size_t, size_t>> _particleToCellMap =
+     std::unordered_map<size_t, std::pair<size_t, size_t>>();
 
  /**
   * For each cell1: a mapping of the "absolute" index of cell2 (in the base linked cells structure) to its "relative"
