@@ -956,7 +956,7 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
       const std::pair<double, double> smoothedHomogeneityAndMaxDensity{
           autopas::OptimumSelector::medianValue(_homogeneitiesOfLastTenIterations),
           autopas::OptimumSelector::medianValue(_maxDensitiesOfLastTenIterations)};
-      mpiStrategy->reset<Particle>(_iteration, getContainer(), smoothedHomogeneityAndMaxDensity,
+      mpiStrategy->reset<Particle>(_iteration, smoothedHomogeneityAndMaxDensity,
                                    _mpiTuningMaxDifferenceForBucket, _mpiTuningWeightForMaxDensity);
     } else {
       _tuningStrategy->reset(_iteration);

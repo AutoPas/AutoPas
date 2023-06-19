@@ -84,7 +84,6 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
  * @tparam Particle
  * @param comm MPI communicator
  * @param bucket new MPI communicator for its bucket
- * @param container container of current simulation
  * @param smoothedHomogeneityAndMaxDensity [homogeneity, maxDensity] smoothed over last 10 iterations.
  * @param MPITuningMaxDifferenceForBucket For MPI-tuning: Maximum of the relative difference in the comparison metric
  * for two ranks which exchange their tuning information.
@@ -92,7 +91,6 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
  */
 template <class Particle>
 void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket,
-                              const autopas::ParticleContainerInterface<Particle> &container,
                               const std::pair<double, double> smoothedHomogeneityAndMaxDensity,
                               double MPITuningMaxDifferenceForBucket, double MPITuningWeightForMaxDensity) {
   int rank;
