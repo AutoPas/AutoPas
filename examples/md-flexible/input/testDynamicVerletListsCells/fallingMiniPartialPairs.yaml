@@ -28,7 +28,7 @@ Objects:
       box-length                 :  [150, 150, 10]
       velocity                   :  [0, 0, 0]
       particle-type              :  0
-      particle-epsilon           :  0.5
+      particle-epsilon           :  0.25
       particle-sigma             :  1
       particle-mass              :  1
   Sphere:
