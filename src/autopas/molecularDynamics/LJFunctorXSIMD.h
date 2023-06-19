@@ -445,13 +445,13 @@ class LJFunctorXSIMD
        // dr2 <= _cutoffsquare ? 0xFFFFFFFFFFFFFFFF : 0
 
        const xsimd::batch_bool<double> cutoffMask = xsimd::le(dr2, _cutoffsquare);
-
-       const xsimd::batch<double> ownedStateJ = remainderIsMasked
-                                       ? xsimd::select(_masks[rest - 1],
-                                         xsimd::load(reinterpret_cast<double const *>(&ownedStatePtr2[j])), _zero)
-                                       : xsimd::load(reinterpret_cast<double const *>(&ownedStatePtr2[j]));
-       // This requires that dummy is the first entry in OwnershipState!
-       const xsimd::batch_bool<double> dummyMask = xsimd::neq(ownedStateJ, _zero);
+       const xsimd::batch<int64_t> _zeroI = xsimd::to_int(_zero);
+       const xsimd::batch<int64_t> ownedStateJ = remainderIsMasked
+                                                     ? xsimd::select(xsimd::batch_bool_cast<int64_t>(_masks[rest - 1]), 
+                                                               xsimd::load(&ownedStatePtr2[j]), _zeroI)
+                                                     : xsimd::load(&ownedStatePtr2[j]);
+       const xsimd::batch_bool<double> dummyMask = xsimd::batch_bool_cast<double>(xsimd::neq(ownedStateJ, _zeroI));
+       
        const xsimd::batch_bool<double> cutoffDummyMask = xsimd::bitwise_and(cutoffMask, dummyMask);
 
        // if everything is masked away return from this function.
@@ -498,13 +498,18 @@ class LJFunctorXSIMD
          const xsimd::batch<double> fz2new = xsimd::sub(fz2, fz);
 
 
-         ;
-         remainderIsMasked ? xsimd::store(&fx2ptr[j], xsimd::select(_masks[rest - 1], fx2new, _zero))
-                           : xsimd::store(&fx2ptr[j], fx2new);
-         remainderIsMasked ? xsimd::store(&fy2ptr[j], xsimd::select(_masks[rest - 1], fy2new, _zero))
-                           : xsimd::store(&fy2ptr[j], fy2new);
-         remainderIsMasked ? xsimd::store(&fz2ptr[j], xsimd::select(_masks[rest - 1], fz2new, _zero))
-                           : xsimd::store(&fz2ptr[j], fz2new);
+        // store only masked values
+         if(remainderIsMasked) {
+           for(int i = 0; _masks[rest - 1].get(i); ++i) {
+             fx2ptr[j + i] = fx2new.get(i);
+             fy2ptr[j + i] = fy2new.get(i);
+             fz2ptr[j + i] = fz2new.get(i);
+           }
+         } else {
+           xsimd::store(&fx2ptr[j], fx2new);
+           xsimd::store(&fy2ptr[j], fy2new);
+           xsimd::store(&fz2ptr[j], fz2new);
+         }
        }
 
        if constexpr (calculateGlobals) {
@@ -518,11 +523,11 @@ class LJFunctorXSIMD
              remainderIsMasked ? xsimd::select(xsimd::bitwise_and(cutoffDummyMask, _masks[rest - 1]), updot, _zero)
                                : xsimd::select(cutoffDummyMask, updot, _zero);
          xsimd::batch_bool<double> ownedMaskI = xsimd::eq(to_float(ownedStateI), to_float(_ownedStateOwnedMM256i));
-         xsimd::batch<double> energyFactor = xsimd::select(ownedMaskI, _zero, _one);
+         xsimd::batch<double> energyFactor = xsimd::select(ownedMaskI, _one, _zero);
          if constexpr (newton3) {
            xsimd::batch_bool<double> ownedMaskJ =
-               xsimd::eq(ownedStateJ, to_float(_ownedStateOwnedMM256i));
-           energyFactor = xsimd::add(energyFactor, xsimd::select(ownedMaskJ, _zero, _one));
+               xsimd::eq(to_float(ownedStateJ), to_float(_ownedStateOwnedMM256i));
+           energyFactor = xsimd::add(energyFactor, xsimd::select(ownedMaskJ, _one, _zero));
          }
          *upotSum = wrapperFMA(energyFactor, upotMasked, *upotSum);
          *virialSumX = wrapperFMA(energyFactor, virialX, *virialSumX);
