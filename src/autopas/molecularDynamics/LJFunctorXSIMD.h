@@ -425,10 +425,35 @@ class LJFunctorXSIMD
                _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 0))};
          }
        }
-       const xsimd::batch<double> x2 = remainderIsMasked ? xsimd::select(_masks[rest - 1], xsimd::load(&x2ptr[j]), _zero) : xsimd::load(&x2ptr[j]);
-       const xsimd::batch<double> y2 = remainderIsMasked ? xsimd::select(_masks[rest - 1], xsimd::load(&y2ptr[j]), _zero) : xsimd::load(&y2ptr[j]);
-       const xsimd::batch<double> z2 = remainderIsMasked ? xsimd::select(_masks[rest - 1], xsimd::load(&z2ptr[j]), _zero) : xsimd::load(&z2ptr[j]);
-
+       xsimd::batch<double> x2;
+       xsimd::batch<double> y2;
+       xsimd::batch<double> z2;
+       // load only masked values
+       //TODO: doesnt work with other sized batches than 4
+       if(remainderIsMasked) {
+         x2 = {
+           _masks[rest-1].get(0) ? x2ptr[j] : 0,
+           _masks[rest-1].get(1) ? x2ptr[j + 1] : 0,
+           _masks[rest-1].get(2) ? x2ptr[j + 2] : 0,
+           _masks[rest-1].get(3) ? x2ptr[j + 3] : 0,
+         };
+         y2 = {
+             _masks[rest-1].get(0) ? y2ptr[j] : 0,
+             _masks[rest-1].get(1) ? y2ptr[j + 1] : 0,
+             _masks[rest-1].get(2) ? y2ptr[j + 2] : 0,
+             _masks[rest-1].get(3) ? y2ptr[j + 3] : 0,
+         };
+         z2 = {
+             _masks[rest-1].get(0) ? z2ptr[j] : 0,
+             _masks[rest-1].get(1) ? z2ptr[j + 1] : 0,
+             _masks[rest-1].get(2) ? z2ptr[j + 2] : 0,
+             _masks[rest-1].get(3) ? z2ptr[j + 3] : 0,
+         };
+       } else {
+         x2 = xsimd::load_unaligned(&x2ptr[j]);
+         y2 = xsimd::load_unaligned(&y2ptr[j]);
+         z2 = xsimd::load_unaligned(&z2ptr[j]);
+       }
        const xsimd::batch<double> drx = xsimd::sub(x1,x2);
        const xsimd::batch<double> dry = xsimd::sub(y1,y2);
        const xsimd::batch<double> drz = xsimd::sub(z1,z2);
@@ -448,8 +473,8 @@ class LJFunctorXSIMD
        const xsimd::batch<int64_t> _zeroI = xsimd::to_int(_zero);
        const xsimd::batch<int64_t> ownedStateJ = remainderIsMasked
                                                      ? xsimd::select(xsimd::batch_bool_cast<int64_t>(_masks[rest - 1]), 
-                                                               xsimd::load(&ownedStatePtr2[j]), _zeroI)
-                                                     : xsimd::load(&ownedStatePtr2[j]);
+                                                               xsimd::load_unaligned(&ownedStatePtr2[j]), _zeroI)
+                                                     : xsimd::load_unaligned(&ownedStatePtr2[j]);
        const xsimd::batch_bool<double> dummyMask = xsimd::batch_bool_cast<double>(xsimd::neq(ownedStateJ, _zeroI));
        
        const xsimd::batch_bool<double> cutoffDummyMask = xsimd::bitwise_and(cutoffMask, dummyMask);
@@ -487,11 +512,11 @@ class LJFunctorXSIMD
 
        if constexpr (newton3) {
          const xsimd::batch<double> fx2 =
-             remainderIsMasked ? xsimd::select(_masks[rest - 1], xsimd::load(&fx2ptr[j]), _zero) : xsimd::load(&fx2ptr[j]);
+             remainderIsMasked ? xsimd::select(_masks[rest - 1], xsimd::load_unaligned(&fx2ptr[j]), _zero) : xsimd::load_unaligned(&fx2ptr[j]);
          const xsimd::batch<double> fy2 =
-             remainderIsMasked ? xsimd::select(_masks[rest - 1], xsimd::load(&fy2ptr[j]), _zero) : xsimd::load(&fy2ptr[j]);
+             remainderIsMasked ? xsimd::select(_masks[rest - 1], xsimd::load_unaligned(&fy2ptr[j]), _zero) : xsimd::load_unaligned(&fy2ptr[j]);
          const xsimd::batch<double> fz2 =
-             remainderIsMasked ? xsimd::select(_masks[rest - 1], xsimd::load(&fz2ptr[j]), _zero) : xsimd::load(&fz2ptr[j]);
+             remainderIsMasked ? xsimd::select(_masks[rest - 1], xsimd::load_unaligned(&fz2ptr[j]), _zero) : xsimd::load_unaligned(&fz2ptr[j]);
 
          const xsimd::batch<double> fx2new = xsimd::sub(fx2, fx);
          const xsimd::batch<double> fy2new = xsimd::sub(fy2, fy);
@@ -506,9 +531,9 @@ class LJFunctorXSIMD
              fz2ptr[j + i] = fz2new.get(i);
            }
          } else {
-           xsimd::store(&fx2ptr[j], fx2new);
-           xsimd::store(&fy2ptr[j], fy2new);
-           xsimd::store(&fz2ptr[j], fz2new);
+           xsimd::store_unaligned(&fx2ptr[j], fx2new);
+           xsimd::store_unaligned(&fy2ptr[j], fy2new);
+           xsimd::store_unaligned(&fz2ptr[j], fz2new);
          }
        }
 
