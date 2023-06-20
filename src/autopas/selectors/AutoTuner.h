@@ -168,13 +168,13 @@ class AutoTuner {
 
   /**
    * Getter for the current container.
-   * @return Smart pointer to the current container.
+   * @return Reference to the current container.
    */
   autopas::ParticleContainerInterface<Particle> &getContainer() { return _containerSelector.getCurrentContainer(); }
 
   /**
    * Getter for the current container.
-   * @return Smart pointer to the current container.
+   * @return Reference to the current container.
    */
   const autopas::ParticleContainerInterface<Particle> &getContainer() const {
     return _containerSelector.getCurrentContainer();
