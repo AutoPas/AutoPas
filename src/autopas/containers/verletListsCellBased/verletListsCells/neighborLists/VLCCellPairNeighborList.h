@@ -89,7 +89,7 @@ public:
    this->_internalLinkedCells = &linkedCells;
    _aosNeighborList.clear();
    _globalToLocalIndex.clear();
-   _particleToCellMap.clear();
+   // _particleToCellMap.clear();
    auto &cells = linkedCells.getCells();
    const auto cellsSize = cells.size();
    _aosNeighborList.resize(cellsSize);
@@ -129,6 +129,8 @@ public:
    }
 
    // initialize empty lists for every particle-cell pair
+   // TODO : think about chunk size
+#pragma omp parallel for schedule(dynamic, 25)
    for (size_t firstCellIndex = 0; firstCellIndex < cellsSize; ++firstCellIndex) {
      _aosNeighborList[firstCellIndex].resize(neighborCells);
      size_t numParticlesFirstCell = cells[firstCellIndex].numParticles();
@@ -141,7 +143,13 @@ public:
          cellPair.emplace_back(std::make_pair(&particle, std::vector<Particle *>()));
 
          // add a pair of cell's index and particle's index in the cell
-         _particleToCellMap[particle.getID()] = std::make_pair(firstCellIndex, particleIndexCurrentCell);
+         if (this->_particleToCellMap.find(particle.getID()) == this->_particleToCellMap.end()) {
+#pragma omp critical
+           this->_particleToCellMap[particle.getID()] = std::make_pair(firstCellIndex, particleIndexCurrentCell);
+         }
+         else {
+           this->_particleToCellMap[particle.getID()] = std::make_pair(firstCellIndex, particleIndexCurrentCell);
+         }
          particleIndexCurrentCell++;
        }
      }

@@ -67,7 +67,7 @@ public:
    }
 
    // initialize lists for every particle-cell pair
-   // TODO : make this section parallel
+   // TODO : think about chunk size
 #pragma omp parallel for schedule(dynamic, 25)
    for (size_t firstCellIndex = 0; firstCellIndex < cellsSize; ++firstCellIndex) {
 
