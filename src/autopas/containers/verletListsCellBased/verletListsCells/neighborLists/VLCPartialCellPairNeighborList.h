@@ -66,14 +66,13 @@ public:
      }
    }
 
-   size_t dirtyCounter = 0;
-   size_t inflowCounter = 0;
    // initialize lists for every particle-cell pair
+   // TODO : make this section parallel
+#pragma omp parallel for schedule(dynamic, 25)
    for (size_t firstCellIndex = 0; firstCellIndex < cellsSize; ++firstCellIndex) {
 
      // either not partial rebuilding or the current cell is dirty
      if (!partialRebuilding || cells[firstCellIndex].getDirty() || cells[firstCellIndex].getInflowDirty() /*|| cells[firstCellIndex].getOutflowDirty()*/) {
-       ++dirtyCounter;
        size_t numParticlesFirstCell = cells[firstCellIndex].numParticles();
        this->_aosNeighborList[firstCellIndex].clear();
        this->_aosNeighborList[firstCellIndex].resize(neighborCells);
@@ -89,7 +88,14 @@ public:
            // for each particle in cell1 make a pair of particle and neighbor list
            cellPair.emplace_back(std::make_pair(&particle, std::vector<Particle *>{}));
            // add a pair of cell's index and particle's index in the cell
-           this->_particleToCellMap[particle.getID()] = std::make_pair(firstCellIndex, particleIndexCurrentCell);
+           // critical if a new entry is necessary
+           if (this->_particleToCellMap.find(particle.getID()) == this->_particleToCellMap.end()) {
+#pragma omp critical
+             this->_particleToCellMap[particle.getID()] = std::make_pair(firstCellIndex, particleIndexCurrentCell);
+           }
+           else {
+             this->_particleToCellMap[particle.getID()] = std::make_pair(firstCellIndex, particleIndexCurrentCell);
+           }
            particleIndexCurrentCell++;
          }
        }
@@ -97,7 +103,6 @@ public:
      // partial rebuilding and cell is inflow dirty
      /*
      else if (cells.at(firstCellIndex).getInflowDirty()) {
-        ++inflowCounter;
        for (auto [globalIndex, localIndex] : this->_globalToLocalIndex.at(firstCellIndex)) {
          // only delete neighbour lists which are pointing to same cell
          if (globalIndex == firstCellIndex) {
@@ -162,7 +167,14 @@ public:
              }
 
              this->_aosNeighborList[firstCellIndex][localIndex].emplace_back(std::make_pair(&particle, std::vector<Particle *>{}));
-             this->_particleToCellMap[particle.getID()] = std::make_pair(firstCellIndex, particleIndexCurrentCell);
+             // critical if a new entry is necessary
+             if (this->_particleToCellMap.find(particle.getID()) == this->_particleToCellMap.end()) {
+#pragma omp critical
+               this->_particleToCellMap[particle.getID()] = std::make_pair(firstCellIndex, particleIndexCurrentCell);
+             }
+             else {
+               this->_particleToCellMap[particle.getID()] = std::make_pair(firstCellIndex, particleIndexCurrentCell);
+             }
              particleIndexCurrentCell++;
            }
          }
