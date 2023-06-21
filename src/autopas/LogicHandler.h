@@ -72,6 +72,10 @@ class LogicHandler {
     }
   }
 
+  /**
+   * Returns a non-const reference to the currently selected particle container.
+   * @return Non-const reference to the container.
+   */
   inline autopas::ParticleContainerInterface<Particle> &getContainer() {
     return _containerSelector.getCurrentContainer();
   }
@@ -484,6 +488,17 @@ class LogicHandler {
    */
   [[nodiscard]] unsigned long getNumberOfParticlesHalo() const { return _numParticlesHalo; }
 
+  /**
+   * Checks if the given configuration can be used with the given functor and the current state of the simulation.
+   * For the checks we need to switch to the container in the config. Also we need to build the traversal,
+   * hence, it is returned.
+   * @tparam PairwiseFunctor
+   * @param conf
+   * @param pairwiseFunctor
+   * @return tuple<optional<Traversal>, rejectIndefinitely> The optional is empty if the configuration is not applicable
+   * The bool indicates if the configuration can be completely removed from the search space because it will never be
+   * applicable.
+   */
   template <class PairwiseFunctor>
   [[nodiscard]] std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> isConfigurationApplicable(
       const Configuration &conf, PairwiseFunctor &pairwiseFunctor);
