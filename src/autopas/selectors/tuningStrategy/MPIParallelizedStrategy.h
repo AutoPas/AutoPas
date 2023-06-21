@@ -87,7 +87,6 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
   /**
    * Reset all internal parameters to the beginning of a new tuning cycle.
    * Also distribute ranks in buckets for MPI tuning
-   * @tparam Particle
    * @param iteration Gives the current iteration to the tuning strategy.
    * @param smoothedHomogeneityAndMaxDensity [homogeneity, maxDensity] smoothed over last 10 iterations.
    * @param MPITuningMaxDifferenceForBucket For MPI-tuning: Maximum of the relative difference in the comparison metric
@@ -95,7 +94,6 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
    * @param MPITuningWeightForMaxDensity For MPI-tuning: Weight for maxDensity in the calculation for bucket
    * distribution.
    */
-  template <class Particle>
   void reset(size_t iteration, const std::pair<double, double> smoothedHomogeneityAndMaxDensity,
              double MPITuningMaxDifferenceForBucket, double MPITuningWeightForMaxDensity) {
     _optimalConfiguration = Configuration();
@@ -105,7 +103,7 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
     if (_configIterator != nullptr) {
       _configIterator.reset();
     }
-    autopas::utils::AutoPasConfigurationCommunicator::distributeRanksInBuckets<Particle>(
+    autopas::utils::AutoPasConfigurationCommunicator::distributeRanksInBuckets(
         _comm, &_bucket, smoothedHomogeneityAndMaxDensity, MPITuningMaxDifferenceForBucket,
         MPITuningWeightForMaxDensity);
     AutoPasLog(DEBUG, "finished bucket distribution");
