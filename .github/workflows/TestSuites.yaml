@@ -93,6 +93,7 @@ jobs:
             -DCCACHE=ON \
             -DCMAKE_BUILD_TYPE=${{ matrix.config[4] }} \
             -DAUTOPAS_LOG_ALL=ON \
+            -DAUTOPAS_MIN_LOG_LVL:STRING=TRACE \
             -DAUTOPAS_OPENMP=${{ matrix.config[5] }} \
             -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=${{ matrix.config[6] }} \
             -DAUTOPAS_ENABLE_THREAD_SANITIZER=${{ matrix.config[7] }} \
