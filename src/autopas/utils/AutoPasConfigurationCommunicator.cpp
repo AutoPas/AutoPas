@@ -213,9 +213,9 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket,
   // debug print for evaluation
   AutoPasLog(DEBUG, "similarityMetric of rank: " + std::to_string(rank) + " is: " + std::to_string(similarityMetric));
   AutoPasLog(DEBUG, "smoothedHomogeneity of rank: " + std::to_string(rank) +
-      " is: " + std::to_string(smoothedHomogeneityAndMaxDensity.first));
+                        " is: " + std::to_string(smoothedHomogeneityAndMaxDensity.first));
   AutoPasLog(DEBUG, "smoothedMaxDensity of rank: " + std::to_string(rank) +
-      " is: " + std::to_string(smoothedHomogeneityAndMaxDensity.second));
+                        " is: " + std::to_string(smoothedHomogeneityAndMaxDensity.second));
 
   // get all the similarityMetrics of the other ranks
   AutoPas_MPI_Allgather(&similarityMetric, 1, AUTOPAS_MPI_DOUBLE, similarityMetrics.data(), 1, AUTOPAS_MPI_DOUBLE,
@@ -241,7 +241,7 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket,
 
     // debug print for evaluation
     AutoPasLog(DEBUG, "I am rank: " + std::to_string(rank) + " bucket: " + std::to_string(current_bucket) +
-        "  new value: " + std::to_string(similarityMetrics[i]));
+                          "  new value: " + std::to_string(similarityMetrics[i]));
     if (similarityMetrics[i] == similarityMetric) my_bucket = current_bucket;
   }
   // split MPI_Comm in as many new communications as there are groups with similar scenarios
