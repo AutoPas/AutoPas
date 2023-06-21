@@ -96,9 +96,8 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
    * distribution.
    */
   template <class Particle>
-  void reset(size_t iteration,
-             const std::pair<double, double> smoothedHomogeneityAndMaxDensity, double MPITuningMaxDifferenceForBucket,
-             double MPITuningWeightForMaxDensity) {
+  void reset(size_t iteration, const std::pair<double, double> smoothedHomogeneityAndMaxDensity,
+             double MPITuningMaxDifferenceForBucket, double MPITuningWeightForMaxDensity) {
     _optimalConfiguration = Configuration();
     _allGlobalConfigurationsTested = false;
     _allLocalConfigurationsTested = false;
