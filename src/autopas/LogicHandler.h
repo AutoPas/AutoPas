@@ -21,6 +21,8 @@
 #include "autopas/selectors/ContainerSelectorInfo.h"
 #include "autopas/selectors/TraversalSelector.h"
 #include "autopas/utils/NumParticlesEstimator.h"
+#include "autopas/utils/StaticCellSelector.h"
+#include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/logging/IterationLogger.h"
 #include "autopas/utils/logging/Logger.h"
