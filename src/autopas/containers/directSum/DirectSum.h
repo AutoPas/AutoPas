@@ -99,7 +99,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     // nothing to do.
   }
 
-  CellType getParticleCellTypeEnum() override { return CellType::FullParticleCell; }
+  CellType getParticleCellTypeEnum() const override { return CellType::FullParticleCell; }
 
   void iteratePairwise(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.

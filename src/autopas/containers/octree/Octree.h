@@ -156,7 +156,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    * are an extension of `FullParticleCell`. However, the interface stays the same and the leaves can be treated just
    * like regular `FullParticleCell`s.
    */
-  [[nodiscard]] CellType getParticleCellTypeEnum() override { return CellType::FullParticleCell; }
+  [[nodiscard]] CellType getParticleCellTypeEnum() const override { return CellType::FullParticleCell; }
 
   void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
     // TODO create a balanced tree and reserve space in the leaves.

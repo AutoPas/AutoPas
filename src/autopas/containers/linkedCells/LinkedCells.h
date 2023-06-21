@@ -68,7 +68,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
 
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::linkedCells; }
 
-  [[nodiscard]] CellType getParticleCellTypeEnum() override { return CellType::FullParticleCell; }
+  [[nodiscard]] CellType getParticleCellTypeEnum() const override { return CellType::FullParticleCell; }
 
   void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
     _cellBlock.reserve(numParticles + numParticlesHaloEstimate);

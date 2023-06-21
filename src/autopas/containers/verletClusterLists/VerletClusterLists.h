@@ -106,7 +106,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     _towers.push_back(internal::ClusterTower<Particle>(_clusterSize));
   }
 
-  CellType getParticleCellTypeEnum() override { return CellType::ClusterTower; };
+  CellType getParticleCellTypeEnum() const override { return CellType::ClusterTower; };
 
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletClusterLists; }
 

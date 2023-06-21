@@ -50,7 +50,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   /**
    * @copydoc autopas::ParticleContainerInterface::getParticleCellTypeEnum()
    */
-  CellType getParticleCellTypeEnum() override { return _linkedCells.getParticleCellTypeEnum(); };
+  CellType getParticleCellTypeEnum() const override { return _linkedCells.getParticleCellTypeEnum(); };
 
   void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
     _linkedCells.reserve(numParticles, numParticlesHaloEstimate);
