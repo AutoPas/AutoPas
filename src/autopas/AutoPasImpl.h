@@ -13,6 +13,7 @@
 
 #include "autopas/AutoPasDecl.h"
 #include "autopas/InstanceCounter.h"
+#include "autopas/LogicHandlerInfo.h"
 #include "autopas/Version.h"
 #include "autopas/utils/CompileInfo.h"
 
@@ -75,11 +76,11 @@ void AutoPas<Particle>::init() {
       _relativeBlacklistRange, _evidenceFirstPrediction, _acquisitionFunctionOption, _extrapolationMethodOption,
       _ruleFileName, _outputSuffix, _mpiStrategyOption, _autopasMPICommunicator);
   _autoTuner = std::make_unique<autopas::AutoTuner<Particle>>(
-      _boxMin, _boxMax, _cutoff, _verletSkinPerTimestep, _verletClusterSize, std::move(tuningStrategy),
-      _mpiTuningMaxDifferenceForBucket, _mpiTuningWeightForMaxDensity, _selectorStrategy, _tuningMetricOption,
-      _tuningInterval, _numSamples, _verletRebuildFrequency, _outputSuffix, _useTuningLogger);
-  _logicHandler =
-      std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(*(_autoTuner.get()), _verletRebuildFrequency);
+      std::move(tuningStrategy), _mpiTuningMaxDifferenceForBucket, _mpiTuningWeightForMaxDensity, _selectorStrategy,
+      _tuningMetricOption, _tuningInterval, _numSamples, _verletRebuildFrequency, _outputSuffix, _useTuningLogger);
+  LogicHandlerInfo logicHandlerInfo{
+      _boxMin, _boxMax, _cutoff, _verletSkinPerTimestep, _verletRebuildFrequency, _verletClusterSize, _outputSuffix};
+  _logicHandler = std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(*_autoTuner, logicHandlerInfo);
 }
 
 template <class Particle>
@@ -92,7 +93,7 @@ bool AutoPas<Particle>::iteratePairwise(Functor *f) {
     utils::ExceptionHandler::exception("Functor cutoff ({}) must not be larger than container cutoff ({})",
                                        f->getCutoff(), this->getCutoff());
   }
-  return _logicHandler->iteratePairwise(f);
+  return _logicHandler->iteratePairwisePipeline(f);
 }
 
 template <class Particle>
@@ -248,7 +249,7 @@ bool AutoPas<Particle>::deleteParticle(Particle &particle) {
   // if the particle was not found in the logic handler's buffers it must be in the container
   auto [particleDeleted, refStillValid] = _logicHandler->deleteParticleFromBuffers(particle);
   if (not particleDeleted) {
-    refStillValid = _autoTuner->getContainer().deleteParticle(particle);
+    refStillValid = _logicHandler->getContainer().deleteParticle(particle);
   }
   return refStillValid;
 }
@@ -278,27 +279,27 @@ typename AutoPas<Particle>::RegionConstIteratorT AutoPas<Particle>::getRegionIte
 
 template <class Particle>
 unsigned long AutoPas<Particle>::getContainerType() const {
-  return _autoTuner->getContainer().getContainerType();
+  return _logicHandler->getContainer().getContainerType();
 }
 
 template <class Particle>
 const std::array<double, 3> &AutoPas<Particle>::getBoxMin() const {
-  return _autoTuner->getContainer().getBoxMin();
+  return _logicHandler->getContainer().getBoxMin();
 }
 
 template <class Particle>
 const std::array<double, 3> &AutoPas<Particle>::getBoxMax() const {
-  return _autoTuner->getContainer().getBoxMax();
+  return _logicHandler->getContainer().getBoxMax();
 }
 
 template <class Particle>
 autopas::ParticleContainerInterface<Particle> &AutoPas<Particle>::getContainer() {
-  return _autoTuner->getContainer();
+  return _logicHandler->getContainer();
 }
 
 template <class Particle>
 const autopas::ParticleContainerInterface<Particle> &AutoPas<Particle>::getContainer() const {
-  return _autoTuner->getContainer();
+  return _logicHandler->getContainer();
 }
 
 template <class Particle>
