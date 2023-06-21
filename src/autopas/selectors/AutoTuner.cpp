@@ -100,7 +100,7 @@ bool AutoTuner::tune() {
 
   // If we reach this line and are still tuning we have a new config, hence, we need to clear the samples.
   if (stillTuning) {
-    // samples are no longer needed. Delete them here so willRebuild() works as expected.
+    // samples are no longer needed.
     _samplesNotRebuildingNeighborLists.clear();
     _samplesRebuildingNeighborLists.clear();
   }
@@ -184,11 +184,13 @@ void AutoTuner::bumpIterationCounters() {
   ++_iterationsSinceTuning;
 }
 
-bool AutoTuner::willRebuild() {
-  if (_tuningStrategy->searchSpaceIsTrivial()) {
-    return false;
-  }
-  return _iterationsSinceTuning >= _tuningInterval and getCurrentNumSamples() >= _maxSamples;
+bool AutoTuner::willRebuildNeighborLists() const {
+  const bool inTuningPhase = _iterationsSinceTuning >= _tuningInterval;
+  // How many iterations ago did the rhythm of rebuilds change?
+  const auto iterationBaseline = inTuningPhase ? (_iterationsSinceTuning - _tuningInterval) : _iterationsSinceTuning;
+  // What is the rebuild rhythm?
+  const auto iterationsPerRebuild = inTuningPhase ? _maxSamples : _rebuildFrequency;
+  return (iterationBaseline % iterationsPerRebuild) == 0;
 }
 
 bool AutoTuner::resetEnergy() {

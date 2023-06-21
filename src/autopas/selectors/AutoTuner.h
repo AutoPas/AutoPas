@@ -137,12 +137,12 @@ class AutoTuner {
   void bumpIterationCounters();
 
   /**
-   * Returns whether the configuration will be changed in the next iteration.
-   * This does does not necessarily mean that the container will change.
+   * Returns whether rebuildNeighborLists() will be triggered in the next call to iteratePairwise().
+   * This might also indicate a container change.
    *
-   * @return True if the next iteratePairwise() call uses a different configuration. False otherwise.
+   * @return True if the the current iteration counters indicate a rebuild in the next iteration.
    */
-  bool willRebuild();
+  bool willRebuildNeighborLists() const;
 
   /**
    * Get the currently selected configuration.

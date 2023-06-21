@@ -10,6 +10,7 @@
 #include "autopas/LogicHandler.h"
 #include "autopas/LogicHandlerInfo.h"
 #include "autopas/cells/FullParticleCell.h"
+#include "autopas/options/ContainerOption.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -179,26 +180,26 @@ TEST_F(AutoTunerTest, testWillRebuildDDL) {
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
 
   // Intended false positive
-  EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild for first iteration.";
+  EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild for first iteration.";
   logicHandler.iteratePairwisePipeline(&functor);  // DS NoN3
-  EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
+  EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
   logicHandler.iteratePairwisePipeline(&functor);  // DS NoN3
   // Intended false positive
-  EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because we change config.";
+  EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild because we change config.";
   logicHandler.iteratePairwisePipeline(&functor);  // DS N3
-  EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
+  EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
   logicHandler.iteratePairwisePipeline(&functor);  // DS N3
-  EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because we change config.";
+  EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild because we change config.";
   logicHandler.iteratePairwisePipeline(&functor);  // LC NoN3
-  EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
+  EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
   logicHandler.iteratePairwisePipeline(&functor);  // LC NoN3
-  EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because reached end of tuning phase.";
+  EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild because reached end of tuning phase.";
   logicHandler.iteratePairwisePipeline(&functor);  // optimum
-  EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because not tuning.";
+  EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because not tuning.";
 }
 
 /**
- * This test simulates that the next config (which is checked by willRebuild) is invalid.
+ * This test simulates that the next config (which is checked by willRebuildNeighborLists) is invalid.
  */
 TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
   // also check if rebuild is detected if next config is invalid
@@ -225,17 +226,17 @@ TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
 
   // Intended false positive
-  EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild for first iteration.";
+  EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild for first iteration.";
   logicHandler.iteratePairwisePipeline(&functor);  // DS N3
-  EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
+  EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
   logicHandler.iteratePairwisePipeline(&functor);  // DS N3
-  EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because we change config.";
+  EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild because we change config.";
   logicHandler.iteratePairwisePipeline(&functor);  // LC N3
-  EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
+  EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
   logicHandler.iteratePairwisePipeline(&functor);  // LC N3
-  EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because reached end of tuning phase.";
+  EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild because reached end of tuning phase.";
   logicHandler.iteratePairwisePipeline(&functor);  // optimum
-  EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because not tuning.";
+  EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because not tuning.";
 }
 
 TEST_F(AutoTunerTest, testWillRebuildDL) {
@@ -261,17 +262,17 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
 
   // Intended false positive
-  EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild for first iteration.";
+  EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild for first iteration.";
   logicHandler.iteratePairwisePipeline(&functor);  // DS NoN3
-  EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
+  EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
   logicHandler.iteratePairwisePipeline(&functor);  // DS NoN3
-  EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because we change config.";
+  EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild because we change config.";
   logicHandler.iteratePairwisePipeline(&functor);  // LC NoN3
-  EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because more samples needed.";
+  EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
   logicHandler.iteratePairwisePipeline(&functor);  // LC NoN3
-  EXPECT_TRUE(autoTuner.willRebuild()) << "Expect rebuild because reached end of tuning phase.";
+  EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild because reached end of tuning phase.";
   logicHandler.iteratePairwisePipeline(&functor);  // optimum
-  EXPECT_FALSE(autoTuner.willRebuild()) << "Expect no rebuild because not tuning.";
+  EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because not tuning.";
 }
 
 /**
@@ -310,10 +311,10 @@ TEST_F(AutoTunerTest, testForceRetuneBetweenPhases) {
   // first iteration after tuning phase
   EXPECT_FALSE(logicHandler.iteratePairwisePipeline(&functor)) << "Tuner should be done be tuning.";
 
-  EXPECT_FALSE(autoTuner.willRebuild()) << "No rebuilding expected here.";
+  EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "No rebuilding expected here.";
   // instead of waiting the full tuning interval restart tuning immediately
   autoTuner.forceRetune();
-  EXPECT_TRUE(autoTuner.willRebuild()) << "willRebuild() does not recognize forceRetune()";
+  EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "willRebuildNeighborLists() does not recognize forceRetune()";
 
   // expect a full tuning phase
   for (size_t i = 0; i < numExpectedTuningIterations; ++i) {
@@ -372,7 +373,7 @@ TEST_F(AutoTunerTest, testForceRetuneInPhase) {
   }
   // restart the full tuning phase
   autoTuner.forceRetune();
-  EXPECT_TRUE(autoTuner.willRebuild()) << "willRebuild() does not recognize forceRetune()";
+  EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "willRebuildNeighborLists() does not recognize forceRetune()";
 
   // expect a full tuning phase
   for (size_t i = 0; i < numExpectedTuningIterations; ++i, ++iteration) {
