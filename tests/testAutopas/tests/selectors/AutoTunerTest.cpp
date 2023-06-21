@@ -439,6 +439,7 @@ TEST_F(AutoTunerTest, testOneConfig) {
   MockFunctor<Molecule> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
 
   size_t numSamples = 0;
   for (int i = 0; i < 5; ++i) {
