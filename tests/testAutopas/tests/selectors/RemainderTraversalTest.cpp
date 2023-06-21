@@ -1,11 +1,13 @@
 /**
- * @file AutoTunerRemainderTraversalTest.cpp
+ * @file RemainderTraversalTest.cpp
  * @author F. Gratl
  * @date 28.11.2022
  */
 
-#include "AutoTunerRemainderTraversalTest.h"
+#include "RemainderTraversalTest.h"
 
+#include "autopas/AutoPasDecl.h"
+#include "autopas/LogicHandler.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/options/TuningMetricOption.h"
 #include "autopas/selectors/AutoTuner.h"
@@ -49,27 +51,22 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
 
   constexpr double cutoff = 2.5;
   constexpr double cellSizeFactor = 1.;
+  constexpr double verletSkinPerTimestep = 0.05;
+  constexpr unsigned int verletClusterSize = 4;
+  constexpr unsigned int verletRebuildFrequency = 10;
   const std::set<autopas::Configuration> confSet(
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
         autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, n3}});
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(confSet);
   const std::array<double, 3> boxMin = {0., 0., 0.};
   const std::array<double, 3> boxMax = {10., 10., 10.};
-  autopas::AutoTuner<Molecule> autoTuner{boxMin,
-                                         boxMax,
-                                         cutoff,
-                                         0.05,
-                                         4,
-                                         std::move(tuningStrategy),
-                                         0.3,
-                                         0.0,
-                                         autopas::SelectorStrategyOption::fastestAbs,
-                                         autopas::TuningMetricOption::time,
-                                         1000,
-                                         3,
-                                         10};
+  autopas::AutoTuner autoTuner{
+      std::move(tuningStrategy),         0.3,  0.0, autopas::SelectorStrategyOption::fastestAbs,
+      autopas::TuningMetricOption::time, 1000, 3,   verletRebuildFrequency};
+  autopas::LogicHandler<Molecule> logicHandler(
+      autoTuner, {boxMin, boxMax, cutoff, verletSkinPerTimestep, verletRebuildFrequency, verletClusterSize, ""});
 
-  auto &container = autoTuner.getContainer();
+  auto &container = logicHandler.getContainer();
   for (const auto &p : particlesContainerOwned) {
     container.addParticle(p);
   }
@@ -89,7 +86,7 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
   constexpr double epsilon = 1.;
   functor.setParticleProperties(24 * epsilon, sigma * sigma);
   // do the actual test
-  autoTuner.iteratePairwise(&functor, false, particlesBuffers, particlesHaloBuffers);
+  logicHandler.iteratePairwisePipeline(&functor);
   constexpr double expectedDist = 1.;
   const double expectedAbsForce =
       std::abs((24 * epsilon) / (expectedDist * expectedDist) *
@@ -123,7 +120,7 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
   EXPECT_NEAR(expectedUpot, functor.getUpot(), 1e-12);
 }
 
-TEST_F(AutoTunerRemainderTraversalTest, testRemainderTraversalDirectly_container_container_NoN3) {
+TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_container_container_NoN3) {
   std::vector<Molecule> particlesContainerOwned{
       Molecule{{6., 1., 1.}, {0., 0., 0.}, 0, 0},
       Molecule{{7., 1., 1.}, {0., 0., 0.}, 1, 0},
@@ -135,7 +132,7 @@ TEST_F(AutoTunerRemainderTraversalTest, testRemainderTraversalDirectly_container
                            autopas::Newton3Option::disabled);
 }
 
-TEST_F(AutoTunerRemainderTraversalTest, testRemainderTraversalDirectly_container_containerHalo_NoN3) {
+TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_container_containerHalo_NoN3) {
   std::vector<Molecule> particlesContainerOwned{
       Molecule{{0.5, 1., 1.}, {0., 0., 0.}, 0, 0},
   };
@@ -148,7 +145,7 @@ TEST_F(AutoTunerRemainderTraversalTest, testRemainderTraversalDirectly_container
                            autopas::Newton3Option::disabled);
 }
 
-TEST_F(AutoTunerRemainderTraversalTest, testRemainderTraversalDirectly_particleBuffer_container_NoN3) {
+TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_particleBuffer_container_NoN3) {
   std::vector<Molecule> particlesContainerOwned{
       Molecule{{2., 1., 1.}, {0., 0., 0.}, 1, 0},
   };
@@ -160,7 +157,7 @@ TEST_F(AutoTunerRemainderTraversalTest, testRemainderTraversalDirectly_particleB
                            autopas::Newton3Option::disabled);
 }
 
-TEST_F(AutoTunerRemainderTraversalTest, testRemainderTraversalDirectly_particleBuffer_containerHalo_NoN3) {
+TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_particleBuffer_containerHalo_NoN3) {
   std::vector<Molecule> particlesContainerOwned{};
   std::vector<Molecule> particlesContainerHalo{
       Molecule{{-0.5, 1., 1.}, {0., 0., 0.}, 1, 0},
@@ -172,7 +169,7 @@ TEST_F(AutoTunerRemainderTraversalTest, testRemainderTraversalDirectly_particleB
                            autopas::Newton3Option::disabled);
 }
 
-TEST_F(AutoTunerRemainderTraversalTest, testRemainderTraversalDirectly_particleBufferA_particleBufferA_NoN3) {
+TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_particleBufferA_particleBufferA_NoN3) {
   std::vector<Molecule> particlesContainerOwned{};
   std::vector<Molecule> particlesContainerHalo{};
   std::vector<autopas::FullParticleCell<Molecule>> particlesBuffers(2);
@@ -183,7 +180,7 @@ TEST_F(AutoTunerRemainderTraversalTest, testRemainderTraversalDirectly_particleB
                            autopas::Newton3Option::disabled);
 }
 
-TEST_F(AutoTunerRemainderTraversalTest, testRemainderTraversalDirectly_particleBufferA_particleBufferB_NoN3) {
+TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_particleBufferA_particleBufferB_NoN3) {
   std::vector<Molecule> particlesContainerOwned{};
   std::vector<Molecule> particlesContainerHalo{};
   std::vector<autopas::FullParticleCell<Molecule>> particlesBuffers(2);
@@ -194,7 +191,7 @@ TEST_F(AutoTunerRemainderTraversalTest, testRemainderTraversalDirectly_particleB
                            autopas::Newton3Option::disabled);
 }
 
-TEST_F(AutoTunerRemainderTraversalTest, testRemainderTraversalDirectly_haloBuffer_container_NoN3) {
+TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_haloBuffer_container_NoN3) {
   std::vector<Molecule> particlesContainerOwned{
       Molecule{{2., 1., 1.}, {0., 0., 0.}, 1, 0},
   };
@@ -206,7 +203,7 @@ TEST_F(AutoTunerRemainderTraversalTest, testRemainderTraversalDirectly_haloBuffe
                            autopas::Newton3Option::disabled);
 }
 
-TEST_F(AutoTunerRemainderTraversalTest, testRemainderTraversalDirectly_haloBuffer_particleBuffer_NoN3) {
+TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_haloBuffer_particleBuffer_NoN3) {
   std::vector<Molecule> particlesContainerOwned{};
   std::vector<Molecule> particlesContainerHalo{};
   std::vector<autopas::FullParticleCell<Molecule>> particlesBuffers(2);
@@ -218,7 +215,7 @@ TEST_F(AutoTunerRemainderTraversalTest, testRemainderTraversalDirectly_haloBuffe
 }
 
 /// Newton 3 enabled
-TEST_F(AutoTunerRemainderTraversalTest, testRemainderTraversalDirectly_container_container_N3) {
+TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_container_container_N3) {
   std::vector<Molecule> particlesContainerOwned{
       Molecule{{6., 1., 1.}, {0., 0., 0.}, 0, 0},
       Molecule{{7., 1., 1.}, {0., 0., 0.}, 1, 0},
@@ -230,7 +227,7 @@ TEST_F(AutoTunerRemainderTraversalTest, testRemainderTraversalDirectly_container
                            autopas::Newton3Option::enabled);
 }
 
-TEST_F(AutoTunerRemainderTraversalTest, testRemainderTraversalDirectly_container_containerHalo_N3) {
+TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_container_containerHalo_N3) {
   std::vector<Molecule> particlesContainerOwned{
       Molecule{{0.5, 1., 1.}, {0., 0., 0.}, 0, 0},
   };
@@ -243,7 +240,7 @@ TEST_F(AutoTunerRemainderTraversalTest, testRemainderTraversalDirectly_container
                            autopas::Newton3Option::enabled);
 }
 
-TEST_F(AutoTunerRemainderTraversalTest, testRemainderTraversalDirectly_particleBuffer_container_N3) {
+TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_particleBuffer_container_N3) {
   std::vector<Molecule> particlesContainerOwned{
       Molecule{{2., 1., 1.}, {0., 0., 0.}, 1, 0},
   };
@@ -255,7 +252,7 @@ TEST_F(AutoTunerRemainderTraversalTest, testRemainderTraversalDirectly_particleB
                            autopas::Newton3Option::enabled);
 }
 
-TEST_F(AutoTunerRemainderTraversalTest, testRemainderTraversalDirectly_particleBuffer_containerHalo_N3) {
+TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_particleBuffer_containerHalo_N3) {
   std::vector<Molecule> particlesContainerOwned{};
   std::vector<Molecule> particlesContainerHalo{
       Molecule{{-0.5, 1., 1.}, {0., 0., 0.}, 1, 0},
@@ -267,7 +264,7 @@ TEST_F(AutoTunerRemainderTraversalTest, testRemainderTraversalDirectly_particleB
                            autopas::Newton3Option::enabled);
 }
 
-TEST_F(AutoTunerRemainderTraversalTest, testRemainderTraversalDirectly_particleBufferA_particleBufferA_N3) {
+TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_particleBufferA_particleBufferA_N3) {
   std::vector<Molecule> particlesContainerOwned{};
   std::vector<Molecule> particlesContainerHalo{};
   std::vector<autopas::FullParticleCell<Molecule>> particlesBuffers(2);
@@ -278,7 +275,7 @@ TEST_F(AutoTunerRemainderTraversalTest, testRemainderTraversalDirectly_particleB
                            autopas::Newton3Option::enabled);
 }
 
-TEST_F(AutoTunerRemainderTraversalTest, testRemainderTraversalDirectly_particleBufferA_particleBufferB_N3) {
+TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_particleBufferA_particleBufferB_N3) {
   std::vector<Molecule> particlesContainerOwned{};
   std::vector<Molecule> particlesContainerHalo{};
   std::vector<autopas::FullParticleCell<Molecule>> particlesBuffers(2);
@@ -289,7 +286,7 @@ TEST_F(AutoTunerRemainderTraversalTest, testRemainderTraversalDirectly_particleB
                            autopas::Newton3Option::enabled);
 }
 
-TEST_F(AutoTunerRemainderTraversalTest, testRemainderTraversalDirectly_haloBuffer_container_N3) {
+TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_haloBuffer_container_N3) {
   std::vector<Molecule> particlesContainerOwned{
       Molecule{{2., 1., 1.}, {0., 0., 0.}, 1, 0},
   };
@@ -301,7 +298,7 @@ TEST_F(AutoTunerRemainderTraversalTest, testRemainderTraversalDirectly_haloBuffe
                            autopas::Newton3Option::enabled);
 }
 
-TEST_F(AutoTunerRemainderTraversalTest, testRemainderTraversalDirectly_haloBuffer_particleBuffer_N3) {
+TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_haloBuffer_particleBuffer_N3) {
   std::vector<Molecule> particlesContainerOwned{};
   std::vector<Molecule> particlesContainerHalo{};
   std::vector<autopas::FullParticleCell<Molecule>> particlesBuffers(2);
@@ -318,44 +315,39 @@ void testRemainderTraversal(const std::vector<Molecule> &particles, const std::v
   /// Setup AutoTuner
   constexpr double cutoff = 2.5;
   constexpr double cellSizeFactor = 1.;
+  constexpr double verletSkinPerTimestep = 0.05;
+  constexpr unsigned int verletClusterSize = 4;
+  constexpr unsigned int verletRebuildFrequency = 10;
   const std::set<autopas::Configuration> confSet(
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
         autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled}});
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(confSet);
   const std::array<double, 3> boxMin = {0., 0., 0.};
   const std::array<double, 3> boxMax = {9., 9., 9.};
-  autopas::AutoTuner<Molecule> autoTuner{boxMin,
-                                         boxMax,
-                                         cutoff,
-                                         0.05,
-                                         4,
-                                         std::move(tuningStrategy),
-                                         0.3,
-                                         0.0,
-                                         autopas::SelectorStrategyOption::fastestAbs,
-                                         autopas::TuningMetricOption::time,
-                                         1000,
-                                         3,
-                                         10};
+  autopas::AutoTuner autoTuner{
+      std::move(tuningStrategy),         0.3,  0.0, autopas::SelectorStrategyOption::fastestAbs,
+      autopas::TuningMetricOption::time, 1000, 3,   verletRebuildFrequency};
+  autopas::LogicHandler<Molecule> logicHandler(
+      autoTuner, {boxMin, boxMax, cutoff, verletSkinPerTimestep, verletRebuildFrequency, verletClusterSize, ""});
 
   // fill the container with the given particles
   for (const auto &p : particles) {
-    autoTuner.getContainer().addParticle(p);
+    logicHandler.getContainer().addParticle(p);
   }
-  ASSERT_EQ(autoTuner.getContainer().getNumberOfParticles(), particles.size())
+  ASSERT_EQ(logicHandler.getContainer().getNumberOfParticles(), particles.size())
       << "Container contains incorrect number of particles!";
   for (const auto &p : haloParticles) {
-    autoTuner.getContainer().addHaloParticle(p);
+    logicHandler.getContainer().addHaloParticle(p);
   }
-  ASSERT_EQ(autoTuner.getContainer().getNumberOfParticles(), particles.size() + haloParticles.size())
+  ASSERT_EQ(logicHandler.getContainer().getNumberOfParticles(), particles.size() + haloParticles.size())
       << "Container contains incorrect number of halo particles!";
 
   autopas::LJFunctor<Molecule> functor(cutoff);
   functor.setParticleProperties(24, 1);
   // do the actual test
-  autoTuner.iteratePairwise(&functor, false, particlesBuffer, haloParticlesBuffer);
+  logicHandler.iteratePairwisePipeline(&functor);
 
-  for (const auto &p : autoTuner.getContainer()) {
+  for (const auto &p : logicHandler.getContainer()) {
     EXPECT_THAT(p.getF(), testing::Not(::testing::ElementsAreArray({0., 0., 0.})))
         << "Particle in container had no interaction!\n"
         << p;
@@ -372,7 +364,7 @@ void testRemainderTraversal(const std::vector<Molecule> &particles, const std::v
 /**
  * Add a particle to one storage location and one to another (or the same) and check if they interact.
  */
-TEST_P(AutoTunerRemainderTraversalTest, testRemainderTraversal) {
+TEST_P(RemainderTraversalTest, testRemainderTraversal) {
   /// SETUP
   const auto &[choiceA, choiceB] = GetParam();
   // helper buffers to set up the test
@@ -421,7 +413,7 @@ TEST_P(AutoTunerRemainderTraversalTest, testRemainderTraversal) {
   testRemainderTraversal(containerParticles, containerHaloParticles, bufferParticles, bufferHaloParticles);
 }
 
-INSTANTIATE_TEST_SUITE_P(Generated, AutoTunerRemainderTraversalTest,
+INSTANTIATE_TEST_SUITE_P(Generated, RemainderTraversalTest,
                          ::testing::ValuesIn(std::vector<std::tuple<ParticleStorage, ParticleStorage>>{
                              {ParticleStorage::container, ParticleStorage::container},
                              {ParticleStorage::container, ParticleStorage::containerHalo},
@@ -431,4 +423,4 @@ INSTANTIATE_TEST_SUITE_P(Generated, AutoTunerRemainderTraversalTest,
                              {ParticleStorage::buffer, ParticleStorage::buffer},
                              {ParticleStorage::buffer, ParticleStorage::bufferHalo},
                          }),
-                         AutoTunerRemainderTraversalTest::twoParamToString());
+                         RemainderTraversalTest::twoParamToString());

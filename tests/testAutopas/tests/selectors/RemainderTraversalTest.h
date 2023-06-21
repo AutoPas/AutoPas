@@ -1,5 +1,5 @@
 /**
- * @file AutoTunerRemainderTraversalTest.h
+ * @file RemainderTraversalTest.h
  * @author F. Gratl
  * @date 28.11.2022
  */
@@ -15,12 +15,11 @@ enum ParticleStorage {
   bufferHalo,
 };
 
-class AutoTunerRemainderTraversalTest
-    : public AutoPasTestBase,
-      public ::testing::WithParamInterface<std::tuple<ParticleStorage, ParticleStorage>> {
+class RemainderTraversalTest : public AutoPasTestBase,
+                               public ::testing::WithParamInterface<std::tuple<ParticleStorage, ParticleStorage>> {
  public:
-  AutoTunerRemainderTraversalTest() = default;
-  ~AutoTunerRemainderTraversalTest() override = default;
+  RemainderTraversalTest() = default;
+  ~RemainderTraversalTest() override = default;
 
   struct twoParamToString {
     template <class ParamType>
