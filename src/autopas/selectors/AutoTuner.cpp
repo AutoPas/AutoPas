@@ -112,8 +112,8 @@ bool AutoTuner::tune() {
 const Configuration &AutoTuner::getCurrentConfig() const { return _tuningStrategy->getCurrentConfiguration(); }
 
 std::tuple<Configuration, bool> AutoTuner::getNextConfig() {
-  // If we are not (yet) tuning config return immediately.
-  if (_iterationsSinceTuning < _tuningInterval) {
+  // If we are not (yet) tuning or there is nothing to tune return immediately.
+  if (_iterationsSinceTuning < _tuningInterval or searchSpaceIsTrivial()) {
     return {getCurrentConfig(), false};
   } else if (getCurrentNumSamples() < _maxSamples) {
     // If we are still collecting samples from one config return immediately.
