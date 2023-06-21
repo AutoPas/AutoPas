@@ -6,6 +6,8 @@
 
 #include "AutoTunerTest.h"
 
+#include <cstddef>
+
 #include "autopas/AutoPasDecl.h"
 #include "autopas/LogicHandler.h"
 #include "autopas/LogicHandlerInfo.h"
@@ -425,10 +427,12 @@ TEST_F(AutoTunerTest, testNoConfig) {
 TEST_F(AutoTunerTest, testOneConfig) {
   auto configsList = {_confLc_c08};
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
-  const size_t maxSamples = 3;
+  constexpr size_t maxSamples = 3;
+  constexpr size_t rebuildFrequency = 20;
   autopas::AutoTuner tuner(std::move(tuningStrategy), 0.3, 0.0, autopas::SelectorStrategyOption::fastestAbs,
                            autopas::TuningMetricOption::time, 1000, maxSamples, 20);
-  autopas::LogicHandler<Molecule> logicHandler(tuner, {{0., 0., 0.}, {10., 10., 10.}, 1., 0., 5, 64, ""});
+  autopas::LogicHandler<Molecule> logicHandler(tuner,
+                                               {{0., 0., 0.}, {10., 10., 10.}, 1., 0., rebuildFrequency, 64, ""});
 
   EXPECT_EQ(_confLc_c08, tuner.getCurrentConfig());
 
@@ -452,6 +456,7 @@ TEST_F(AutoTunerTest, testOneConfig) {
  */
 TEST_F(AutoTunerTest, testConfigSecondInvalid) {
   const double cellSizeFactor = 1.;
+  constexpr size_t rebuildFrequency = 20;
   autopas::Configuration confN3(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
                                 autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
                                 autopas::Newton3Option::enabled);
@@ -462,8 +467,9 @@ TEST_F(AutoTunerTest, testConfigSecondInvalid) {
   auto configsList = {confNoN3, confN3};
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
   autopas::AutoTuner tuner(std::move(tuningStrategy), 0.3, 0.0, autopas::SelectorStrategyOption::fastestAbs,
-                           autopas::TuningMetricOption::time, 1000, 3, 20);
-  autopas::LogicHandler<Molecule> logicHandler(tuner, {{0., 0., 0.}, {10., 10., 10.}, 1., 0., 5, 64, ""});
+                           autopas::TuningMetricOption::time, 1000, 3, rebuildFrequency);
+  autopas::LogicHandler<Molecule> logicHandler(tuner,
+                                               {{0., 0., 0.}, {10., 10., 10.}, 1., 0., rebuildFrequency, 64, ""});
 
   EXPECT_EQ(confNoN3, tuner.getCurrentConfig());
 
@@ -485,6 +491,7 @@ TEST_F(AutoTunerTest, testConfigSecondInvalid) {
  */
 TEST_F(AutoTunerTest, testLastConfigThrownOut) {
   const double cellSizeFactor = 1.;
+  constexpr size_t rebuildFrequency = 20;
   autopas::Configuration confN3(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
                                 autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
                                 autopas::Newton3Option::enabled);
@@ -495,8 +502,9 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
   auto configsList = {confN3, confNoN3};
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
   autopas::AutoTuner tuner(std::move(tuningStrategy), 0.3, 0.0, autopas::SelectorStrategyOption::fastestAbs,
-                           autopas::TuningMetricOption::time, 1000, 3, 20);
-  autopas::LogicHandler<Molecule> logicHandler(tuner, {{0., 0., 0.}, {10., 10., 10.}, 1., 0., 5, 64, ""});
+                           autopas::TuningMetricOption::time, 1000, 3, rebuildFrequency);
+  autopas::LogicHandler<Molecule> logicHandler(tuner,
+                                               {{0., 0., 0.}, {10., 10., 10.}, 1., 0., rebuildFrequency, 64, ""});
 
   EXPECT_EQ(confN3, tuner.getCurrentConfig());
 
@@ -523,13 +531,13 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
                                      autopas::TraversalOption::lc_c18, autopas::LoadEstimatorOption::none,
                                      autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
 
-  auto rebuildFrequency = 3;
-
+  const size_t rebuildFrequency = 3;
   auto configsList = {confA, confB};
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(configsList);
   autopas::AutoTuner tuner(std::move(tuningStrategy), 0.3, 0.0, autopas::SelectorStrategyOption::fastestAbs,
                            autopas::TuningMetricOption::time, 1000, 3, rebuildFrequency);
-  autopas::LogicHandler<Molecule> logicHandler(tuner, {{0., 0., 0.}, {10., 10., 10.}, 1., 0., 5, 64, ""});
+  autopas::LogicHandler<Molecule> logicHandler(tuner,
+                                               {{0., 0., 0.}, {10., 10., 10.}, 1., 0., rebuildFrequency, 64, ""});
 
   using ::testing::_;
   MockFunctor<Molecule> functor;
