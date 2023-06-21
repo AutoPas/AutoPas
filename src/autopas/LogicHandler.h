@@ -705,11 +705,6 @@ class LogicHandler {
   ContainerSelector<Particle> _containerSelector;
 
   /**
-   * Used to store the information about containers needed to switch to new ones.
-   */
-  ContainerSelectorInfo _containerSelectorInfo{};
-
-  /**
    * Locks for regions in the domain. Used for buffer <-> container interaction.
    */
   std::vector<std::vector<std::vector<std::unique_ptr<std::mutex>>>> _spacialLocks;
