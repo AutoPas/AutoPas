@@ -75,7 +75,7 @@ void AutoPas<Particle>::init() {
       _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _relativeOptimumRange, _maxTuningPhasesWithoutTest,
       _relativeBlacklistRange, _evidenceFirstPrediction, _acquisitionFunctionOption, _extrapolationMethodOption,
       _ruleFileName, _outputSuffix, _mpiStrategyOption, _autopasMPICommunicator);
-  _autoTuner = std::make_unique<autopas::AutoTuner<Particle>>(
+  _autoTuner = std::make_unique<autopas::AutoTuner>(
       std::move(tuningStrategy), _mpiTuningMaxDifferenceForBucket, _mpiTuningWeightForMaxDensity, _selectorStrategy,
       _tuningMetricOption, _tuningInterval, _numSamples, _verletRebuildFrequency, _outputSuffix, _useTuningLogger);
   LogicHandlerInfo logicHandlerInfo{

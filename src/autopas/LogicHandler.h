@@ -41,7 +41,7 @@ class LogicHandler {
    * @param autoTuner
    * @param logicHandlerInfo
    */
-  LogicHandler(autopas::AutoTuner<Particle> &autoTuner, const LogicHandlerInfo &logicHandlerInfo)
+  LogicHandler(autopas::AutoTuner &autoTuner, const LogicHandlerInfo &logicHandlerInfo)
       : _neighborListRebuildFrequency{logicHandlerInfo.rebuildFrequency},
         _autoTuner(autoTuner),
         _particleBuffer(autopas_get_max_threads()),
@@ -645,7 +645,7 @@ class LogicHandler {
   /**
    * Reference to the AutoTuner that owns the container, ...
    */
-  autopas::AutoTuner<Particle> &_autoTuner;
+  autopas::AutoTuner &_autoTuner;
 
   /**
    * Specifies if the neighbor list is valid.

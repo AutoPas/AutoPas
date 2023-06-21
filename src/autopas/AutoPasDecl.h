@@ -21,6 +21,7 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/TuningMetricOption.h"
 #include "autopas/options/TuningStrategyOption.h"
+#include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/Configuration.h"
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/StaticContainerSelector.h"
@@ -28,11 +29,8 @@
 
 namespace autopas {
 
-// Forward declare AutoTuner and LogicHandler so that including this header does not include the whole library with all
+// Forward declare Handler so that including this header does not include the whole library with all
 // containers and traversals.
-template <class Particle>
-class AutoTuner;
-
 template <class Particle>
 class LogicHandler;
 
@@ -1113,7 +1111,7 @@ class AutoPas {
   /**
    * This is the AutoTuner that owns the container, ...
    */
-  std::unique_ptr<autopas::AutoTuner<Particle>> _autoTuner;
+  std::unique_ptr<autopas::AutoTuner> _autoTuner;
 
   /**
    * Communicator that should be used for MPI calls inside of AutoPas
