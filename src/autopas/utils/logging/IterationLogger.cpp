@@ -49,23 +49,14 @@ autopas::IterationLogger::~IterationLogger() {
 #endif
 }
 
-void autopas::IterationLogger::logTimeTuning(long timeTuning) {
-#ifdef AUTOPAS_LOG_ITERATIONS
-  _bufferTimeTuning = timeTuning;
-#endif
-}
-
 void autopas::IterationLogger::logIteration(const autopas::Configuration &configuration, size_t iteration,
                                             bool inTuningPhase, long timeIteratePairwise, long timeRemainderTraversal,
                                             long timeRebuildNeighborLists, long timeIteratePairwiseTotal,
-                                            double energyPsys, double energyPkg, double energyRam) {
+                                            long timeTuning, double energyPsys, double energyPkg, double energyRam) {
 #ifdef AUTOPAS_LOG_ITERATIONS
   spdlog::get(_loggerName)
       ->info("{},{},{},{},{},{},{},{},{},{},{}", iteration, inTuningPhase ? "true" : "false",
              configuration.getCSVLine(), timeIteratePairwise, timeRemainderTraversal, timeRebuildNeighborLists,
-             timeIteratePairwiseTotal, _bufferTimeTuning, energyPsys, energyPkg, energyRam);
-
-  // reset buffer
-  _bufferTimeTuning = 0;
+             timeIteratePairwiseTotal, timeTuning, energyPsys, energyPkg, energyRam);
 #endif
 }
