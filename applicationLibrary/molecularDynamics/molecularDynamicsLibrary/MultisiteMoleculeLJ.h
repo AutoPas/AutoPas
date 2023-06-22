@@ -15,7 +15,7 @@ namespace mdLib {
  * Standard multi-site LJ molecules.
  *
  * The molecule is treated as a single particle for the purposes of cutoffs and containers, with a quaternion for
- * angular direction, a 3D vector-array for angular velocity, and a vectors of site positions relative to the CoM and
+ * angular direction, a 3D vector-array for angular velocity, and a vectors of site positions relative to the center of mass and
  * angular direction.
  *
  */

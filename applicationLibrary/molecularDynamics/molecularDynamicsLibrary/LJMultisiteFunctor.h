@@ -135,7 +135,7 @@ class LJMultisiteFunctor
 
   /**
    * Constructor for Functor with particle mixing enabled.
-   * Calculating global attributes is done with CoM and overall forces applied
+   * Calculating global attributes is done with the center of mass and overall forces applied
    * @param cutoff
    * @param particlePropertiesLibrary Library used to look up the properties of each type of particle e.g. sigma,
    * epsilon, shift.
@@ -195,7 +195,7 @@ class LJMultisiteFunctor
     const std::vector<std::array<double, 3>> unrotatedSitePositionsB =
         useMixing ? _PPLibrary->getSitePositions(particleB.getTypeId()) : _sitePositionsLJ;
 
-    // calculate correctly rotated relative site positions (rotated correctly)
+    // calculate correctly rotated relative site positions
     const auto rotatedSitePositionsA =
         autopas::utils::quaternion::rotateVectorOfPositions(particleA.getQ(), unrotatedSitePositionsA);
     const auto rotatedSitePositionsB =
@@ -252,11 +252,11 @@ class LJMultisiteFunctor
 
           if (particleA.isOwned()) {
             _aosThreadData[threadNum].potentialEnergySum += potentialEnergy6;
-            _aosThreadData[threadNum].virialSum = _aosThreadData[threadNum].virialSum + virial;
+            _aosThreadData[threadNum].virialSum += virial;
           }
           if (newton3 and particleB.isOwned()) {
             _aosThreadData[threadNum].potentialEnergySum += potentialEnergy6;
-            _aosThreadData[threadNum].virialSum = _aosThreadData[threadNum].virialSum + virial;
+            _aosThreadData[threadNum].virialSum += virial;
           }
         }
       }
