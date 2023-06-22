@@ -75,7 +75,7 @@ jobs:
           # Exclude multisite tests (to later be re-added for some configurations)
           - md-flex-mode: multisite
           # Exclude MPI configuration from part 2, as there are not many tests and so don't need to be split
-          - config: [autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF ,   OFF   ]
+          - config: [autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF   ]
             part: 2
         # For two configurations, compile with Multi-Site Molecule support for md-flexible. There are not so many tests
         # so we only add tests for part 1
