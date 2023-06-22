@@ -612,13 +612,14 @@ class LJMultisiteFunctor
   }
 
   /**
-   * Sets the particle properties constants for this functor.
+   * Sets the molecule properties constants for this functor.
    *
    * This is only necessary if no particlePropertiesLibrary is used.
    * @param epsilon24 epsilon * 24
    * @param sigmaSquared sigma^2
+   * @param sitePositionsLJ vector of 3D relative unrotated untranslated site positions
    */
-  void setParticleProperties(SoAFloatPrecision epsilon24, SoAFloatPrecision sigmaSquared) {
+  void setParticleProperties(SoAFloatPrecision epsilon24, SoAFloatPrecision sigmaSquared, std::vector<std::array<SoAFloatPrecision, 3>> sitePositionsLJ) {
     _epsilon24 = epsilon24;
     _sigmaSquared = sigmaSquared;
     if (applyShift) {
@@ -626,6 +627,7 @@ class LJMultisiteFunctor
     } else {
       _shift6 = 0;
     }
+    _sitePositionsLJ = sitePositionsLJ;
   }
 
   /**
