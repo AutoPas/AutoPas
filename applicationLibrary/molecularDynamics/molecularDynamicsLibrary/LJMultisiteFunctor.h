@@ -619,7 +619,7 @@ class LJMultisiteFunctor
    * @param sigmaSquared sigma^2
    * @param sitePositionsLJ vector of 3D relative unrotated untranslated site positions
    */
-  void setMoleculeProperties(SoAFloatPrecision epsilon24, SoAFloatPrecision sigmaSquared, std::vector<std::array<SoAFloatPrecision, 3>> sitePositionsLJ) {
+  void setParticleProperties(SoAFloatPrecision epsilon24, SoAFloatPrecision sigmaSquared, std::vector<std::array<SoAFloatPrecision, 3>> sitePositionsLJ) {
     _epsilon24 = epsilon24;
     _sigmaSquared = sigmaSquared;
     if (applyShift) {
