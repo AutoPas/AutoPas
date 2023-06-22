@@ -18,7 +18,7 @@ constexpr double cutoff = 1.1;
 constexpr double skinPerTimestep = 0.2;
 constexpr unsigned int rebuildFrequency = 3;
 constexpr std::array<double, 3> boxMin{0., 0., 0.};
-constexpr std::array<double, 3> boxMax{100., 100., 100.};
+constexpr std::array<double, 3> boxMax{10., 10., 10.};
 
 constexpr std::array<double, 3> zeroArr = {0., 0., 0.};
 
@@ -449,7 +449,7 @@ TEST_P(AutoPasInterfaceTest, HaloCalculationTest) {
     testHaloCalculation(options);
   } catch (autopas::utils::ExceptionHandler::AutoPasException &autoPasException) {
     std::string str = autoPasException.what();
-    if (str.find("Trying to execute a traversal that is not applicable") != std::string::npos) {
+    if (str.find("Rejected the only configuration in the search space!") != std::string::npos) {
       GTEST_SKIP() << "skipped with exception: " << autoPasException.what() << std::endl;
     } else {
       // rethrow
