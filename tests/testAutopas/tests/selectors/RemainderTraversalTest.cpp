@@ -66,13 +66,16 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
   autopas::LogicHandler<Molecule> logicHandler(
       autoTuner, {boxMin, boxMax, cutoff, verletSkinPerTimestep, verletRebuildFrequency, verletClusterSize, ""});
 
+  // Add particles. Calling add(Halo)Particle on a fresh logicHandler should place the particles directly in the
+  // container.
   auto &container = logicHandler.getContainer();
   for (const auto &p : particlesContainerOwned) {
-    container.addParticle(p);
+    logicHandler.addParticle(p);
   }
   for (const auto &p : particlesContainerHalo) {
-    container.addHaloParticle(p);
+    logicHandler.addHaloParticle(p);
   }
+  logicHandler.setParticleBuffers(particlesBuffers, particlesHaloBuffers);
 
   ASSERT_EQ(container.getNumberOfParticles(), 2 - numParticlesInBuffers - numParticlesHaloBuffers)
       << "Not all particles were added to the container! ParticlesBuffers(" << numParticlesInBuffers << ") HaloBuffer("
@@ -100,7 +103,8 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
     EXPECT_NEAR(particleForceL2, expectedAbsForce, 1e-12)
         << "Force for particle " << iter->getID() << " in the container is wrong!";
   }
-  for (auto &particlesBuffer : particlesBuffers) {
+  const auto &[logicHandlerParticleBuffers, logicHandlerHaloBuffers] = logicHandler.getParticleBuffers();
+  for (auto &particlesBuffer : logicHandlerParticleBuffers) {
     for (const auto &p : particlesBuffer) {
       const auto particleForceL2 = autopas::utils::ArrayMath::L2Norm(p.getF());
       totalObservedForce = add(totalObservedForce, p.getF());
@@ -332,15 +336,17 @@ void testRemainderTraversal(const std::vector<Molecule> &particles, const std::v
 
   // fill the container with the given particles
   for (const auto &p : particles) {
-    logicHandler.getContainer().addParticle(p);
+    logicHandler.addParticle(p);
   }
   ASSERT_EQ(logicHandler.getContainer().getNumberOfParticles(), particles.size())
       << "Container contains incorrect number of particles!";
   for (const auto &p : haloParticles) {
-    logicHandler.getContainer().addHaloParticle(p);
+    logicHandler.addHaloParticle(p);
   }
   ASSERT_EQ(logicHandler.getContainer().getNumberOfParticles(), particles.size() + haloParticles.size())
       << "Container contains incorrect number of halo particles!";
+
+  logicHandler.setParticleBuffers(particlesBuffer, haloParticlesBuffer);
 
   autopas::LJFunctor<Molecule> functor(cutoff);
   functor.setParticleProperties(24, 1);
@@ -352,7 +358,8 @@ void testRemainderTraversal(const std::vector<Molecule> &particles, const std::v
         << "Particle in container had no interaction!\n"
         << p;
   }
-  for (const auto &buffer : particlesBuffer) {
+  const auto &[logicHandlerParticlesBuffer, logicHandlerHaloBuffer] = logicHandler.getParticleBuffers();
+  for (const auto &buffer : logicHandlerParticlesBuffer) {
     for (const auto &p : buffer) {
       EXPECT_THAT(p.getF(), testing::Not(::testing::ElementsAreArray({0., 0., 0.})))
           << "Particle in particlesBuffer had no interaction!\n"

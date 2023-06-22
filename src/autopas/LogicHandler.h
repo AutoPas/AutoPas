@@ -5,12 +5,16 @@
  */
 
 #pragma once
+#include <atomic>
 #include <limits>
 #include <memory>
 #include <optional>
+#include <tuple>
 #include <type_traits>
+#include <vector>
 
 #include "autopas/LogicHandlerInfo.h"
+#include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/iterators/ContainerIterator.h"
 #include "autopas/options/IteratorBehavior.h"
@@ -501,6 +505,61 @@ class LogicHandler {
   template <class PairwiseFunctor>
   [[nodiscard]] std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> isConfigurationApplicable(
       const Configuration &conf, PairwiseFunctor &pairwiseFunctor);
+
+  /**
+   * Directly exchange the internal particle and halo buffers with the given vectors and update particle counters.
+   *
+   * @note This function is for testing purposes only!
+   * @warning This function only sets as many buffers as are given to it. E.g. if particleBuffers.size() == 3 but there
+   * LogicHandler has 8 the last five buffers will not be touched.
+   *
+   * @param particleBuffers
+   * @param haloParticleBuffers
+   */
+  void setParticleBuffers(const std::vector<FullParticleCell<Particle>> &particleBuffers,
+                          const std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
+    auto exchangeBuffer = [](const auto &newBuffers, auto &oldBuffers, auto &particleCounter) {
+      // sanity check
+      if (oldBuffers.size() < newBuffers.size()) {
+        autopas::utils::ExceptionHandler::exception(
+            "The number of new buffers ({}) is larger than number of existing buffers ({})!", newBuffers.size(),
+            oldBuffers.size());
+      }
+
+      // we will clear the old buffers so subtract the particles from the counters.
+      const auto numParticlesInOldBuffers =
+          std::transform_reduce(oldBuffers.begin(), std::next(oldBuffers.begin(), newBuffers.size()), 0, std::plus<>(),
+                                [](const auto &cell) { return cell.numParticles(); });
+      particleCounter.fetch_sub(numParticlesInOldBuffers, std::memory_order_relaxed);
+
+      // clear the old buffers and copy the content of the new buffers over.
+      size_t numParticlesInNewBuffers = 0;
+      for (size_t i = 0; i < newBuffers.size(); ++i) {
+        oldBuffers[i].clear();
+        for (const auto &p : newBuffers[i]) {
+          ++numParticlesInNewBuffers;
+          oldBuffers[i].addParticle(p);
+        }
+      }
+      // update the counters.
+      particleCounter.fetch_add(numParticlesInNewBuffers, std::memory_order_relaxed);
+    };
+
+    exchangeBuffer(particleBuffers, _particleBuffer, _numParticlesOwned);
+    exchangeBuffer(haloParticleBuffers, _haloParticleBuffer, _numParticlesHalo);
+  }
+
+  /**
+   * Getter for the particle buffers.
+   *
+   * @note Intended for tests only.
+   *
+   * @return tuple of const references to the internal buffers.
+   */
+  std::tuple<const std::vector<FullParticleCell<Particle>> &, const std::vector<FullParticleCell<Particle>> &>
+  getParticleBuffers() {
+    return {_particleBuffer, _haloParticleBuffer};
+  };
 
  private:
   /**
