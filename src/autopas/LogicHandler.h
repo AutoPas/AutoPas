@@ -51,7 +51,6 @@ class LogicHandler {
         _containerSelector(logicHandlerInfo.boxMin, logicHandlerInfo.boxMax, logicHandlerInfo.cutoff),
         _verletClusterSize(logicHandlerInfo.verletClusterSize),
         _iterationLogger(logicHandlerInfo.outputSuffix),
-        _tuningResultLogger(logicHandlerInfo.outputSuffix),
         _bufferLocks(std::max(2, autopas::autopas_get_max_threads())) {
     using namespace autopas::utils::ArrayMath::literals;
     // initialize the container and make sure it is valid
@@ -715,7 +714,6 @@ class LogicHandler {
   std::vector<std::unique_ptr<std::mutex>> _bufferLocks;
 
   IterationLogger _iterationLogger;
-  TuningResultLogger _tuningResultLogger;
 };
 
 template <typename Particle>
