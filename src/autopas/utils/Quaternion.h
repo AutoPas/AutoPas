@@ -22,8 +22,8 @@ namespace autopas::utils::quaternion {
  * @return rotated positions
  * @note we could instead pre-compute the rotation matrix -
  */
-std::vector<std::array<double, 3>> rotateVectorOfPositions(std::array<double, 4> &q,
-                                                           std::vector<std::array<double, 3>> &positionVector);
+std::vector<std::array<double, 3>> rotateVectorOfPositions(const std::array<double, 4> &q,
+                                                           const std::vector<std::array<double, 3>> &positionVector);
 
 /**
  * Rotates a single 3D position
