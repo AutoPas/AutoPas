@@ -142,7 +142,7 @@ jobs:
             ctest --output-on-failure -C checkExamples -E 'sph-((main.test)|(diagram.*))'
           fi
           
-          # If multi-site & No MPI, run every other md-flexible test
+          # If multi-site run every md-flexible test
           if [ "${{ matrix.md-flex-mode }}" = 'multisite']; then
             cd build/examples/md-flexible
             ctest -C mdFlexTests --output-on-failure
