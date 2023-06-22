@@ -104,7 +104,7 @@ std::array<double, 3> convertQuaternionTo3DVec(const std::array<double, 4> &q) {
   return {q[1], q[2], q[3]};
 }
 
-std::array<double, 4> qMirror(const std::array<double, 4> &q, int &dimensionNormalToMirror) {
+std::array<double, 4> qMirror(const std::array<double, 4> &q, const int &dimensionNormalToMirror) {
   if (dimensionNormalToMirror == 0) {
     return {q[0], q[1], -q[2], -q[3]};
   } else if (dimensionNormalToMirror == 1) {
