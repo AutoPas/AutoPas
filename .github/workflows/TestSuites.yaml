@@ -59,10 +59,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        part: [1, 2]
-        # Part 1: Tests requiring with and without MPI
-        # Part 2: Tests that don't require MPI
-        md-flex-mode: [0, 1] # 0 corresponds to single-site, 1 corresponds to multi-site
+        part: [1, 2] # Split tests into two parts, to be run by separate runners
+        md-flex-mode: [singlesite, multisite]
         config: [
             #    0              1       2       3                   4        5       6     7
             # container      , CC   , CXX    , builder          , mode   , OpenMP , ASan, TSan
@@ -74,16 +72,20 @@ jobs:
         [autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF ],
         ]
         exclude:
-          - md-flex-mode: 1
-          # Exclude MPI configuration from part 2, where tests are not affected by use of MPI.
+          # Exclude multisite tests (to later be re-added for some configurations)
+          - md-flex-mode: multisite
+          # Exclude MPI configuration from part 2, as there are not many tests and so don't need to be split
           - config: [autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF ,   OFF   ]
             part: 2
-        # For two configurations, compile with Multi-Site Molecule support for md-flexible.
+        # For two configurations, compile with Multi-Site Molecule support for md-flexible. There are not so many tests
+        # so we only add tests for part 1
         include:
           - config: [autopas-build-archer, clang, clang++, Ninja            , Release, ON     , OFF , ON  ]
-            md-flex-mode: 1
+            md-flex-mode: multisite
+            part: 1
           - config: [autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF ]
-            md-flex-mode: 1
+            md-flex-mode: multisite
+            part: 1
     name: Matrix - ${{ matrix.config[1] }}|${{ matrix.config[4] }}|OpenMP=${{ matrix.config[5] }}|ASan=${{ matrix.config[6] }}|TSan=${{ matrix.config[7] }} (${{ matrix.part }}/2)
     container: autopas/${{ matrix.config[0] }}
     env:
@@ -118,35 +120,31 @@ jobs:
           entrypoint.sh cmake --build . --parallel 1 
       - name: Run tests ${{ matrix.part }}/2
         run: |
-          # For Multi-Site Molecule Md-flexible builds, only run tests for md-flexible.
-          if [ "${{ matrix.md-flex-mode }}" = 0 ]
-            then
-            # derive whether or not to run with MPI.
-            if [ "${{ matrix.config[1] }}" = 'mpicc' ]
-            then
-              cd build
-              # Only run MPI tests.
-              # No `--oversubscribe`, as MPI in container doesn't need it.
-              ctest --output-on-failure -R MPIParallelAutoPasTests
-              cd examples
-              # exclude examples that do not support MPI 
-              ctest --output-on-failure -C checkExamples -E 'sph-((main.test)|(diagram.*))'
-            else
-              cd build
-              # Start with test 0 or 1 and do every second test
-              ctest --output-on-failure -I ${{ matrix.part }},,2 -j 2
-              cd applicationLibrary
-              ctest --output-on-failure -I ${{ matrix.part }},,2 -j 2
-              cd ../examples
-              ctest -C checkExamples --output-on-failure -I ${{ matrix.part }},,2 -j 2
-            fi
-          else
+          # If single-site & No MPI, run every other AutoPas and example test
+          if [ "${{ matrix.md-flex-mode }}" = 'singlesite'] && ["${{ matrix.config[1] }}" != 'mpicc'; then
+            cd build
+            # Start with test 0 or 1 and do every second test
+            ctest --output-on-failure -I ${{ matrix.part }},,2 -j 2
+            cd applicationLibrary
+            ctest --output-on-failure -I ${{ matrix.part }},,2 -j 2
+            cd ../examples
+            ctest -C checkExamples --output-on-failure -I ${{ matrix.part }},,2 -j 2
+          fi
+          
+          # If single-site & MPI, run MPI tests for AutoPas and example tests
+          if [ "${{ matrix.md-flex-mode }}" = 'singlesite'] && ["${{ matrix.config[1] }}" = 'mpicc'; then
+            cd build
+            # Only run MPI tests.
+            # No `--oversubscribe`, as MPI in container doesn't need it.
+            ctest --output-on-failure -R MPIParallelAutoPasTests
+            cd examples
+            # exclude examples that do not support MPI 
+            ctest --output-on-failure -C checkExamples -E 'sph-((main.test)|(diagram.*))'
+          fi
+          
+          # If multi-site & No MPI, run every other md-flexible test
+          if [ "${{ matrix.md-flex-mode }}" = 'multisite']; then
             cd build/examples/md-flexible
-            if [ "${{ matrix.config[1] }}" = 'mpicc' ]
-            then
-              ctest -C mdFlexTests --output-on-failure
-            else
-              ctest -C mdFlexTests --output-on-failure -I ${{ matrix.part }},,2 -j 2
-            fi
+            ctest -C mdFlexTests --output-on-failure
           fi
               
