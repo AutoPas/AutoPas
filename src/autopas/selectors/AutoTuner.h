@@ -171,6 +171,10 @@ class AutoTuner {
    */
   [[nodiscard]] std::tuple<Configuration, bool> rejectConfig(const Configuration &rejectedConfig, bool indefinitely) {
     // TODO: removing indefinitely will only be implemented once the AutoTuner manages the search space!
+    if (searchSpaceIsTrivial()) {
+      utils::ExceptionHandler::exception("Rejected the only configuration in the search space!\n{}",
+                                         rejectedConfig.toString());
+    }
     const auto stillTuning = _tuningStrategy->tune(true);
     return {getCurrentConfig(), stillTuning};
   }
