@@ -115,6 +115,42 @@ static const std::set<TraversalOption> &allOTCompatibleTraversals() {
 }
 
 /**
+ * Provides a set of all traversals that only support Newton3 mode disabled.
+ * @return
+ */
+static std::set<TraversalOption> allTraversalsSupportingOnlyNewton3Disabled() {
+  return {
+      TraversalOption::lc_c01,           TraversalOption::lc_c01_combined_SoA,   TraversalOption::ot_c01,
+      TraversalOption::vcl_c01_balanced, TraversalOption::vcl_cluster_iteration, TraversalOption::vl_list_iteration,
+      TraversalOption::vlc_c01,
+  };
+};
+/**
+ * Provides a set of all traversals that only support Newton3 mode enabled.
+ * @return
+ */
+static std::set<TraversalOption> allTraversalsSupportingOnlyNewton3Enabled() {
+  return {
+      TraversalOption::ot_c18,
+  };
+};
+/**
+ * Provides a set of all traversals that only support DataLayout AoS.
+ * @return
+ */
+static std::set<TraversalOption> allTraversalsSupportingOnlyAoS() { return {}; };
+/**
+ * Provides a set of all traversals that only support DataLayout SoA.
+ * @return
+ */
+static std::set<TraversalOption> allTraversalsSupportingOnlySoA() {
+  return {
+      TraversalOption::lc_c01_combined_SoA,
+      TraversalOption::lc_c04_combined_SoA,
+  };
+};
+
+/**
  * Lists all traversal options applicable for the given container.
  * @param containerOption ContainerOption
  * @return set of all applicable traversal options.

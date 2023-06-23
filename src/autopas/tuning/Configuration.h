@@ -13,6 +13,8 @@
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/TraversalOption.h"
+#include "containers/CompatibleLoadEstimators.h"
+#include "containers/CompatibleTraversals.h"
 
 namespace autopas {
 
@@ -82,6 +84,12 @@ class Configuration {
    * @return
    */
   [[nodiscard]] bool hasValidValues() const;
+
+  /**
+   * Checks if any of the configuration values are incompatible with each other.
+   * @return
+   */
+  [[nodiscard]] bool isValid() const;
 
   /**
    * Container option.

@@ -46,6 +46,49 @@ std::string autopas::Configuration::getCSVRepresentation(bool returnHeaderOnly) 
   return retString;
 }
 
+bool autopas::Configuration::isValid() const {
+  // Check if container and traversal fit together
+  const auto &allContainerTraversals = compatibleTraversals::allCompatibleTraversals(container);
+  if (allContainerTraversals.find(traversal) != allContainerTraversals.end()) {
+    return false;
+  }
+
+  // Check if the selected load estimator option is applicable.
+  const std::set<LoadEstimatorOption> applicableLoadEstimators =
+      loadEstimators::getApplicableLoadEstimators(container, traversal, LoadEstimatorOption::getAllOptions());
+  if (applicableLoadEstimators.find(loadEstimator) == applicableLoadEstimators.end()) {
+    return false;
+  }
+
+  // Check if any of the traversal's newton3 or data layout restrictions are violated.
+  if (newton3 == Newton3Option::enabled) {
+    const auto newton3DisabledTraversals = compatibleTraversals::allTraversalsSupportingOnlyNewton3Disabled();
+    if (newton3DisabledTraversals.find(traversal) != newton3DisabledTraversals.end()) {
+      return false;
+    }
+  }
+  if (newton3 == Newton3Option::disabled) {
+    const auto newton3EnabledTraversals = compatibleTraversals::allTraversalsSupportingOnlyNewton3Enabled();
+    if (newton3EnabledTraversals.find(traversal) != newton3EnabledTraversals.end()) {
+      return false;
+    }
+  }
+  if (dataLayout == DataLayoutOption::aos) {
+    const auto soaTraversals = compatibleTraversals::allTraversalsSupportingOnlySoA();
+    if (soaTraversals.find(traversal) != soaTraversals.end()) {
+      return false;
+    }
+  }
+  if (dataLayout == DataLayoutOption::soa) {
+    const auto soaTraversals = compatibleTraversals::allTraversalsSupportingOnlySoA();
+    if (soaTraversals.find(traversal) != soaTraversals.end()) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 std::ostream &autopas::operator<<(std::ostream &os, const autopas::Configuration &configuration) {
   return os << configuration.toString();
 }

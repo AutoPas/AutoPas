@@ -1,3 +1,4 @@
+
 # Contributing to AutoPas
 
 **Thanks for contributing to AutoPas!** 
@@ -110,6 +111,7 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
   * Add a new enum in `TraversalOption::Value`.
   * Add a new string representation in the `map` of `TraversalOption::getOptionNames()`.
 * Add the enum to every compatible container in `src/autopas/containers/CompatibleTraversals.h`.
+  * If applicability of the traversal is restricted, add your new enum to any of the functions that return sets of restricted traversals.
 * Add a case for the new traversal in `src/autopas/selectors/TraversalSelector.h::generateTraversal()`.
 * Check that the new option is working in the md-flexible example.
 * Adapt unit tests (e.g. expected number of iterations in `tests/testAutopas/tests/selectors/AutoTunerTest.cpp::testAllConfigurations()` and `OptionTest::parseTraversalOptionsTest`).
