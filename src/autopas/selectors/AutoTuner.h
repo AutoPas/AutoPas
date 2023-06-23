@@ -193,6 +193,12 @@ class AutoTuner {
   void logIteration(const Configuration &conf, bool tuningIteration, long tuningTime);
 
   /**
+   * Initialize rapl meter.
+   * @return True if energy measurements are possible on this system.
+   */
+  bool initEnergy();
+
+  /**
    * Reset the rapl meter to prepare for a new measurement.
    * @return True if energy measurements are possible on this system.
    */
@@ -282,7 +288,7 @@ class AutoTuner {
    * Is energy measurement possible.
    * Initialize as true and check in the constructor if it is indeed possible.
    */
-  bool _energyMeasurementPossible{true};
+  bool _energyMeasurementPossible;
 
   /**
    * The rebuild frequency this instance of AutoPas uses.

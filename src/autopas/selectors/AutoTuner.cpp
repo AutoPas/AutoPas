@@ -26,6 +26,7 @@ AutoTuner::AutoTuner(std::unique_ptr<TuningStrategyInterface> tuningStrategy, do
       _tuningInterval(tuningInterval),
       _iterationsSinceTuning(tuningInterval),  // init to max so that tuning happens in first iteration
       _tuningMetric(tuningMetric),
+      _energyMeasurementPossible(initEnergy()),
       _rebuildFrequency(rebuildFrequency),
       _maxSamples(maxSamples),
       _mpiTuningMaxDifferenceForBucket(MPITuningMaxDifferenceForBucket),
@@ -39,19 +40,7 @@ AutoTuner::AutoTuner(std::unique_ptr<TuningStrategyInterface> tuningStrategy, do
     autopas::utils::ExceptionHandler::exception("AutoTuner: Passed tuning strategy has an empty search space.");
   }
 
-  // Check if energy measurement is possible,
-  try {
-    _raplMeter.init();
-    _raplMeter.reset();
-    _raplMeter.sample();
-  } catch (const utils::ExceptionHandler::AutoPasException &e) {
-    if (tuningMetric == TuningMetricOption::energy) {
-      throw e;
-    } else {
-      AutoPasLog(WARN, "Energy Measurement not possible:\n\t{}", e.what());
-      _energyMeasurementPossible = false;
-    }
-  }
+
 }
 
 AutoTuner &AutoTuner::operator=(AutoTuner &&other) noexcept {
@@ -191,6 +180,23 @@ bool AutoTuner::willRebuildNeighborLists() const {
   // What is the rebuild rhythm?
   const auto iterationsPerRebuild = inTuningPhase ? _maxSamples : _rebuildFrequency;
   return (iterationBaseline % iterationsPerRebuild) == 0;
+}
+
+bool AutoTuner::initEnergy() {
+  // Check if energy measurement is possible,
+  try {
+    _raplMeter.init();
+    _raplMeter.reset();
+    _raplMeter.sample();
+  } catch (const utils::ExceptionHandler::AutoPasException &e) {
+    if (_tuningMetric == TuningMetricOption::energy) {
+      throw e;
+    } else {
+      AutoPasLog(WARN, "Energy Measurement not possible:\n\t{}", e.what());
+      return false;
+    }
+  }
+  return true;
 }
 
 bool AutoTuner::resetEnergy() {
