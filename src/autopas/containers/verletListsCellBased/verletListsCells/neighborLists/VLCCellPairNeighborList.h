@@ -130,7 +130,7 @@ public:
 
    // initialize empty lists for every particle-cell pair
    // TODO : think about chunk size
-#pragma omp parallel for schedule(dynamic, 25)
+#pragma omp parallel for schedule(dynamic, 15)
    for (size_t firstCellIndex = 0; firstCellIndex < cellsSize; ++firstCellIndex) {
      _aosNeighborList[firstCellIndex].resize(neighborCells);
      size_t numParticlesFirstCell = cells[firstCellIndex].numParticles();

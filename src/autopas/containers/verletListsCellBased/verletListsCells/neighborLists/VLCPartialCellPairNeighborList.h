@@ -68,7 +68,7 @@ public:
 
    // initialize lists for every particle-cell pair
    // TODO : think about chunk size
-#pragma omp parallel for schedule(dynamic, 25)
+#pragma omp parallel for schedule(dynamic, 15)
    for (size_t firstCellIndex = 0; firstCellIndex < cellsSize; ++firstCellIndex) {
 
      // either not partial rebuilding or the current cell is dirty
