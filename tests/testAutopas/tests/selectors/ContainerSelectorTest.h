@@ -9,7 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
-#include "autopas/selectors/ContainerSelector.h"
+#include "autopas/tuning/selectors/ContainerSelector.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class ContainerSelectorTest : public AutoPasTestBase {

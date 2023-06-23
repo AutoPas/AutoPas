@@ -9,6 +9,6 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
-#include "autopas/selectors/tuningStrategy/ruleBasedTuning/RuleBasedTuning.h"
+#include "autopas/tuning/tuningStrategy/ruleBasedTuning/RuleBasedTuning.h"
 
 class RuleBasedTuningTest : public AutoPasTestBase {};

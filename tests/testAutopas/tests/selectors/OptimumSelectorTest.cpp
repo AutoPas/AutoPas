@@ -6,7 +6,7 @@
 
 #include "OptimumSelectorTest.h"
 
-#include "autopas/selectors/OptimumSelector.h"
+#include "autopas/tuning/selectors/OptimumSelector.h"
 
 TEST(OptimumSelectorTest, min) {
   std::vector<long> vals = {5, 6, 3, 1, 7};

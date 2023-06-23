@@ -10,8 +10,8 @@
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
-#include "autopas/selectors/TraversalSelector.h"
-#include "autopas/selectors/TraversalSelectorInfo.h"
+#include "autopas/tuning/selectors/TraversalSelector.h"
+#include "autopas/tuning/selectors/TraversalSelectorInfo.h"
 #include "testingHelpers/NumThreadGuard.h"
 
 using ::testing::_;  // anything is ok

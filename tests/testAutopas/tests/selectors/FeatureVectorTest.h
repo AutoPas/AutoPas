@@ -9,7 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
-#include "autopas/selectors/FeatureVectorEncoder.h"
+#include "autopas/tuning/utils/FeatureVectorEncoder.h"
 
 class FeatureVectorTest : public AutoPasTestBase {
  public:

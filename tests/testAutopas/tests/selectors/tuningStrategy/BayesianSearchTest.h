@@ -9,6 +9,6 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
-#include "autopas/selectors/tuningStrategy/BayesianSearch.h"
+#include "autopas/tuning/tuningStrategy/BayesianSearch.h"
 
 class BayesianSearchTest : public AutoPasTestBase {};

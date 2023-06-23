@@ -6,8 +6,8 @@
 
 #include "SmoothingTest.h"
 
-#include "autopas/selectors/Evidence.h"
-#include "autopas/selectors/Smoothing.h"
+#include "autopas/tuning/utils/Evidence.h"
+#include "autopas/tuning/utils/Smoothing.h"
 
 TEST(SmoothingTest, lowessLastPoint) {
   std::vector<size_t> xvals{1, 2, 3, 4, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 8, 10, 12};

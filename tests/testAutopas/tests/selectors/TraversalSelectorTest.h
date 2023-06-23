@@ -10,7 +10,7 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/particles/Particle.h"
-#include "autopas/selectors/TraversalSelector.h"
+#include "autopas/tuning/selectors/TraversalSelector.h"
 #include "mocks/MockFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 

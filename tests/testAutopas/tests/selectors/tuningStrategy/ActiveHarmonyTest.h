@@ -9,6 +9,6 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
-#include "autopas/selectors/tuningStrategy/ActiveHarmony.h"
+#include "autopas/tuning/tuningStrategy/ActiveHarmony.h"
 
 class ActiveHarmonyTest : public AutoPasTestBase {};

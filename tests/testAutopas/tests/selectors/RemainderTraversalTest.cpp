@@ -10,9 +10,9 @@
 #include "autopas/LogicHandler.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/options/TuningMetricOption.h"
-#include "autopas/selectors/AutoTuner.h"
-#include "autopas/selectors/Configuration.h"
-#include "autopas/selectors/tuningStrategy/FullSearch.h"
+#include "autopas/tuning/AutoTuner.h"
+#include "autopas/tuning/Configuration.h"
+#include "autopas/tuning/tuningStrategy/FullSearch.h"
 #include "testingHelpers/NumThreadGuard.h"
 #include "testingHelpers/commonTypedefs.h"
 

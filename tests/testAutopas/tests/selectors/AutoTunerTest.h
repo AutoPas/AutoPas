@@ -9,7 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
-#include "autopas/selectors/Configuration.h"
+#include "autopas/tuning/Configuration.h"
 
 class AutoTunerTest : public AutoPasTestBase {
  public:

@@ -8,8 +8,8 @@
 
 #include <string>
 
-#include "autopas/selectors/ContainerSelector.h"
-#include "autopas/selectors/TraversalSelector.h"
+#include "autopas/tuning/selectors/ContainerSelector.h"
+#include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/StaticCellSelector.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopasTools/generators/RandomGenerator.h"

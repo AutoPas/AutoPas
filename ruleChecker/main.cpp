@@ -1,5 +1,5 @@
-#include "autopas/selectors/tuningStrategy/TuningStrategyLogReplayer.h"
-#include "autopas/selectors/tuningStrategy/ruleBasedTuning/RuleBasedTuning.h"
+#include "autopas/tuning/tuningStrategy/TuningStrategyLogReplayer.h"
+#include "autopas/tuning/tuningStrategy/ruleBasedTuning/RuleBasedTuning.h"
 
 /**
  * The program analyzes the log of a tuning phase with respect to a given rule file. The following aspects are checked:

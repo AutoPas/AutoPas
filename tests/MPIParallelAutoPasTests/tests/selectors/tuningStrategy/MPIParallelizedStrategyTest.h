@@ -10,10 +10,10 @@
 #include <mpi.h>
 
 #include "AutoPasMPITestBase.h"
-#include "autopas/selectors/tuningStrategy/ActiveHarmony.h"
-#include "autopas/selectors/tuningStrategy/BayesianSearch.h"
-#include "autopas/selectors/tuningStrategy/FullSearch.h"
-#include "autopas/selectors/tuningStrategy/MPIParallelizedStrategy.h"
-#include "autopas/selectors/tuningStrategy/RandomSearch.h"
+#include "autopas/tuning/tuningStrategy/ActiveHarmony.h"
+#include "autopas/tuning/tuningStrategy/BayesianSearch.h"
+#include "autopas/tuning/tuningStrategy/FullSearch.h"
+#include "autopas/tuning/tuningStrategy/MPIParallelizedStrategy.h"
+#include "autopas/tuning/tuningStrategy/RandomSearch.h"
 
 class MPIParallelizedStrategyTest : public AutoPasMPITestBase {};

@@ -9,7 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
-#include "autopas/selectors/tuningStrategy/TuningStrategyFactory.h"
+#include "autopas/tuning/tuningStrategy/TuningStrategyFactory.h"
 
 class TuningStrategyTest : public AutoPasTestBase, public ::testing::WithParamInterface<autopas::TuningStrategyOption> {
  public:

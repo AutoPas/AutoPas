@@ -18,7 +18,7 @@
 #include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/particles/Particle.h"
-#include "autopas/selectors/ContainerSelector.h"
+#include "autopas/tuning/selectors/ContainerSelector.h"
 #include "autopas/utils/StaticCellSelector.h"
 
 using ::testing::_;

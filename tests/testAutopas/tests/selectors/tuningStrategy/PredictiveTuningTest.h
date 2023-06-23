@@ -11,7 +11,7 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/options/ExtrapolationMethodOption.h"
-#include "autopas/selectors/tuningStrategy/PredictiveTuning.h"
+#include "autopas/tuning/tuningStrategy/PredictiveTuning.h"
 
 class PredictiveTuningTest : public AutoPasTestBase,
                              public ::testing::WithParamInterface<autopas::ExtrapolationMethodOption> {

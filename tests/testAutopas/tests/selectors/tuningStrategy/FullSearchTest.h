@@ -9,6 +9,6 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
-#include "autopas/selectors/tuningStrategy/FullSearch.h"
+#include "autopas/tuning/tuningStrategy/FullSearch.h"
 
 class FullSearchTest : public AutoPasTestBase {};

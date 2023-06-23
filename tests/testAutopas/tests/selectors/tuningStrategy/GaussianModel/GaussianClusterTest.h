@@ -10,8 +10,8 @@
 
 #include "AutoPasTestBase.h"
 #include "Eigen/Dense"
-#include "autopas/selectors/FeatureVector.h"
-#include "autopas/selectors/tuningStrategy/GaussianModel/GaussianCluster.h"
+#include "autopas/tuning/selectors/FeatureVector.h"
+#include "autopas/tuning/tuningStrategy/GaussianModel/GaussianCluster.h"
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/Random.h"
 

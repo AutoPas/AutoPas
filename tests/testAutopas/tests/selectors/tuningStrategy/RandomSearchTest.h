@@ -9,6 +9,6 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
-#include "autopas/selectors/tuningStrategy/RandomSearch.h"
+#include "autopas/tuning/tuningStrategy/RandomSearch.h"
 
 class RandomSearchTest : public AutoPasTestBase {};

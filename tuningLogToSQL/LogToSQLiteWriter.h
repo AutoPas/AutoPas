@@ -1,7 +1,7 @@
 #pragma once
 
-#include "autopas/selectors/Configuration.h"
-#include "autopas/selectors/tuningStrategy/LiveInfo.h"
+#include "autopas/tuning/Configuration.h"
+#include "autopas/tuning/tuningStrategy/LiveInfo.h"
 
 #include <fstream>
 #include <sstream>
