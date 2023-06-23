@@ -20,7 +20,7 @@
  * @return Tuple of a vector containing the weights for the neighbors
  * and a bool indicating whether fitting is unnecessary.
  */
-std::tuple<std::vector<double>, bool> calculateWeightsSimple(const std::vector<Evidence> &points,
+std::tuple<std::vector<double>, bool> calculateWeightsSimple(const std::vector<autopas::Evidence> &points,
                                                              size_t pointsPerEstimation,
                                                              size_t maxDistFromIntervalEdge) {
   // since we will only smooth the last point there is no outer loop and indexToFit shall be fixed
@@ -85,7 +85,7 @@ std::tuple<std::vector<double>, bool> calculateWeightsSimple(const std::vector<E
  * @param weights
  * @return
  */
-double calculateYFitSimple(const std::vector<Evidence> &points, size_t pointsPerEstimation,
+double calculateYFitSimple(const std::vector<autopas::Evidence> &points, size_t pointsPerEstimation,
                            const std::vector<double> &weights) {
   // since we will only smooth the last point there is no outer loop and indexToFit shall be fixed
   const size_t indexToFit = points.size() - 1;

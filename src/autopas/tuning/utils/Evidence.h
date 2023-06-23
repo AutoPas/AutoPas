@@ -8,6 +8,7 @@
 
 #include <cstddef>
 
+namespace autopas {
 /**
  * Helper class that associates a measurement with the iteration when it was taken.
  */
@@ -24,3 +25,4 @@ class Evidence {
    */
   long value;
 };
+}  // namespace autopas

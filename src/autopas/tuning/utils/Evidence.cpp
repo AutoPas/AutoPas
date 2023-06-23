@@ -5,4 +5,4 @@
  */
 
 #include "Evidence.h"
-Evidence::Evidence(size_t iteration, long value) : iteration(iteration), value(value) {}
+autopas::Evidence::Evidence(size_t iteration, long value) : iteration(iteration), value(value) {}
