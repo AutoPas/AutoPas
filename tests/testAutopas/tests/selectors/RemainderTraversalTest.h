@@ -19,7 +19,7 @@ enum ParticleStorage {
 class RemainderTraversalTest : public AutoPasTestBase,
                                public ::testing::WithParamInterface<std::tuple<ParticleStorage, ParticleStorage>> {
  public:
-  RemainderTraversalTest() : numBuffers(autopas::autopas_get_num_threads()) {};
+  RemainderTraversalTest() : numBuffers(autopas::autopas_get_num_threads()){};
   ~RemainderTraversalTest() override = default;
 
   size_t numBuffers;
