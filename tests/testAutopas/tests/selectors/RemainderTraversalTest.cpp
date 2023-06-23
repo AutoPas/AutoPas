@@ -125,13 +125,6 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
   EXPECT_NEAR(expectedUpot, functor.getUpot(), 1e-12);
 }
 
-constexpr size_t numBuffers =
-#ifdef AUTOPAS_OPENMP
-    2;
-#else
-    1;
-#endif
-
 TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_container_container_NoN3) {
   std::vector<Molecule> particlesContainerOwned{
       Molecule{{6., 1., 1.}, {0., 0., 0.}, 0, 0},
