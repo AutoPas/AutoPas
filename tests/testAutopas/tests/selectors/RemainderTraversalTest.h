@@ -7,6 +7,7 @@
 #pragma once
 
 #include "AutoPasTestBase.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 enum ParticleStorage {
   container,
@@ -18,8 +19,10 @@ enum ParticleStorage {
 class RemainderTraversalTest : public AutoPasTestBase,
                                public ::testing::WithParamInterface<std::tuple<ParticleStorage, ParticleStorage>> {
  public:
-  RemainderTraversalTest() = default;
+  RemainderTraversalTest() : numBuffers(autopas::autopas_get_num_threads()) {};
   ~RemainderTraversalTest() override = default;
+
+  size_t numBuffers;
 
   struct twoParamToString {
     template <class ParamType>
