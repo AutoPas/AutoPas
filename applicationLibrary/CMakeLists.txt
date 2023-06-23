@@ -39,10 +39,10 @@ if (AUTOPAS_BUILD_TESTS)
     file(
             GLOB_RECURSE
             SS_TEST_SRC
-            "molecularDynamics/singleSiteTests/*.cpp"
-            "molecularDynamics/singleSiteTests/*.h"
-            "molecularDynamics/particlePropertiesLibraryTests/*.cpp"
-            "molecularDynamics/particlePropertiesLibraryTests/*.h"
+            "molecularDynamics/tests/singleSiteTests/*.cpp"
+            "molecularDynamics/tests/singleSiteTests/*.h"
+            "molecularDynamics/tests/particlePropertiesLibraryTests/*.cpp"
+            "molecularDynamics/tests/particlePropertiesLibraryTests/*.h"
             "molecularDynamics/templateInstatiations/AutoPasInstantiations.cpp"
     )
 
@@ -63,16 +63,16 @@ if (AUTOPAS_BUILD_TESTS)
 
     target_link_libraries(
             mdLibSingleSiteTests PUBLIC
-            autopas autopasTools gmock
+            autopas autopasTools molecularDynamicsLibrary gmock
     )
 
     file(
             GLOB_RECURSE
             MS_TEST_SRC
-            "molecularDynamics/multiSiteTests/*.cpp"
-            "molecularDynamics/multiSiteTests/*.h"
-            "molecularDynamics/particlePropertiesLibraryTests/*.cpp"
-            "molecularDynamics/particlePropertiesLibraryTests/*.h"
+            "molecularDynamics/tests/multiSiteTests/*.cpp"
+            "molecularDynamics/tests/multiSiteTests/*.h"
+            "molecularDynamics/tests/particlePropertiesLibraryTests/*.cpp"
+            "molecularDynamics/tests/particlePropertiesLibraryTests/*.h"
             "molecularDynamics/templateInstatiations/AutoPasInstantiations.cpp"
     )
 
@@ -93,7 +93,7 @@ if (AUTOPAS_BUILD_TESTS)
 
     target_link_libraries(
             mdLibMultiSiteTests PUBLIC
-            autopas autopasTools gmock
+            autopas autopasTools molecularDynamicsLibrary gmock
     )
 
     # this cmake module was only introduced in 3.10
