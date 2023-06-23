@@ -39,8 +39,7 @@ AutoTuner::AutoTuner(std::unique_ptr<TuningStrategyInterface> tuningStrategy, do
   if (_tuningStrategy->searchSpaceIsEmpty()) {
     autopas::utils::ExceptionHandler::exception("AutoTuner: Passed tuning strategy has an empty search space.");
   }
-
-
+  AutoPasLog(DEBUG, "Points in search space: {}", _searchSpace.size());
 }
 
 AutoTuner &AutoTuner::operator=(AutoTuner &&other) noexcept {
@@ -124,7 +123,7 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
     }
     // if this was the last sample:
     if (getCurrentNumSamples() == _maxSamples) {
-      auto &evidenceCurrentConfig = _evidence[currentConfig];
+      auto &evidenceCurrentConfig = _searchSpace[currentConfig];
 
       const long reducedValue = estimateRuntimeFromSamples();
 
@@ -134,7 +133,7 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
       const auto smoothedValue = std::min(reducedValue, smoothing::smoothLastPoint(evidenceCurrentConfig, 5));
 
       // replace collected evidence with smoothed value to improve next smoothing
-      evidenceCurrentConfig.back().second = smoothedValue;
+      evidenceCurrentConfig.back().value = smoothedValue;
 
       _tuningStrategy->addEvidence(smoothedValue, _iteration);
 

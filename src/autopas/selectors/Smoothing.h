@@ -10,6 +10,8 @@
 #include <tuple>
 #include <vector>
 
+#include "autopas/selectors/Evidence.h"
+
 namespace autopas::smoothing {
 
 /**
@@ -21,6 +23,6 @@ namespace autopas::smoothing {
  * @param pointsPerEstimation Number of points to take into account for smoothing.
  * @return
  */
-long smoothLastPoint(const std::vector<std::pair<size_t, long>> &points, size_t pointsPerEstimation);
+long smoothLastPoint(const std::vector<Evidence> &points, size_t pointsPerEstimation);
 
 }  // namespace autopas::smoothing

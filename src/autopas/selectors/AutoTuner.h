@@ -9,9 +9,12 @@
 #include <cstddef>
 #include <memory>
 #include <tuple>
+#include <map>
+#include <vector>
 
 #include "autopas/options/TuningMetricOption.h"
 #include "autopas/selectors/Configuration.h"
+#include "autopas/selectors/Evidence.h"
 #include "autopas/selectors/OptimumSelector.h"
 #include "autopas/selectors/tuningStrategy/MPIParallelizedStrategy.h"
 #include "autopas/selectors/tuningStrategy/TuningStrategyInterface.h"
@@ -339,7 +342,7 @@ class AutoTuner {
    * For each configuration the collection of all evidence (smoothed values) collected so far and in which iteration.
    * Configuration -> vector< iteration, time >
    */
-  std::map<Configuration, std::vector<std::pair<size_t, long>>> _evidence;
+  std::map<Configuration, std::vector<Evidence>> _searchSpace;
 
   /**
    * Timer used to determine how much time is wasted by calculating multiple homogeneities for smoothing
