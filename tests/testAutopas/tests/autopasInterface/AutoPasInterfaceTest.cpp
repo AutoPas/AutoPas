@@ -9,10 +9,20 @@
 #include "autopas/AutoPasDecl.h"
 #include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/molecularDynamics/LJFunctor.h"
+#include "autopas/tuning/Configuration.h"
+#include "autopas/tuning/selectors/ContainerSelector.h"
+#include "autopas/tuning/selectors/ContainerSelectorInfo.h"
+#include "autopas/tuning/selectors/TraversalSelector.h"
+#include "autopas/tuning/selectors/TraversalSelectorInfo.h"
+#include "autopas/utils/StaticCellSelector.h"
+#include "testingHelpers/NumThreadGuard.h"
 #include "testingHelpers/commonTypedefs.h"
 
 extern template class autopas::AutoPas<Molecule>;
-extern template bool autopas::AutoPas<Molecule>::iteratePairwise(autopas::LJFunctor<Molecule, true, false> *);
+using LJFunctorGlobals =
+    autopas::LJFunctor<Molecule, /* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
+                       /*globals*/ true>;
+extern template bool autopas::AutoPas<Molecule>::iteratePairwise(LJFunctorGlobals *);
 
 constexpr double cutoff = 1.1;
 constexpr double skinPerTimestep = 0.2;
@@ -330,9 +340,7 @@ void testSimulationLoop(testingTuple options) {
 
   addParticlePair({9.99, 5., 5.});
 
-  autopas::LJFunctor<Molecule, /* shifting */ true, /* mixing */ false, autopas::FunctorN3Modes::Both,
-                     /* globals */ true>
-      functor(cutoff);
+  LJFunctorGlobals functor(cutoff);
   functor.setParticleProperties(24.0, 1);
   // do first simulation loop
   doSimulationLoop(autoPas, &functor);
@@ -413,9 +421,7 @@ void testHaloCalculation(testingTuple options) {
     }
   }
 
-  autopas::LJFunctor<Molecule, /* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
-                     /*globals*/ true>
-      functor(cutoff);
+  LJFunctorGlobals functor(cutoff);
   functor.setParticleProperties(24, 1);
 
   autoPas.iteratePairwise(&functor);
@@ -577,11 +583,9 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
     }
   }
 
-  constexpr bool shifting = true;
-  constexpr bool mixing = false;
-  autopas::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> functor1(cutoff);
+  LJFunctorGlobals functor1(cutoff);
   functor1.setParticleProperties(24.0, 1);
-  autopas::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> functor2(cutoff);
+  LJFunctorGlobals functor2(cutoff);
   functor2.setParticleProperties(24.0, 1);
   // do first simulation loop
   doSimulationLoop(autoPas1, autoPas2, &functor1, &functor2);
