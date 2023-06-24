@@ -10,6 +10,7 @@
 
 #include <tuple>
 
+#include "AutoPasTestBase.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
@@ -21,7 +22,7 @@ using testingTuple =
     std::tuple<std::tuple<autopas::ContainerOption, autopas::TraversalOption, autopas::LoadEstimatorOption>,
                autopas::DataLayoutOption, autopas::Newton3Option, double /*cell size factor*/>;
 
-class AutoPasInterfaceTest : public testing::Test, public ::testing::WithParamInterface<testingTuple> {
+class AutoPasInterfaceTest : public AutoPasTestBase, public ::testing::WithParamInterface<testingTuple> {
  public:
   struct PrintToStringParamName {
     template <class ParamType>
