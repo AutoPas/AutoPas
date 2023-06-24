@@ -464,6 +464,45 @@ TEST_P(AutoPasInterfaceTest, HaloCalculationTest) {
   }
 }
 
+TEST_P(AutoPasInterfaceTest, ConfigIsValidVSTraversalIsApplicable) {
+  using namespace autopas::utils::ArrayMath::literals;
+  using autopas::utils::ArrayMath::ceil;
+  using autopas::utils::ArrayUtils::static_cast_copy_array;
+
+  NumThreadGuard numThreadGuard(3);
+  const autopas::Configuration conf = [&]() {
+    const auto [containerTraversalLoadEst, dataLayoutOption, newton3Option, cellSizeOption] = GetParam();
+    const auto [containerOption, traversalOption, loadEstimatorOption] = containerTraversalLoadEst;
+
+    return autopas::Configuration{containerOption,     cellSizeOption,   traversalOption,
+                                  loadEstimatorOption, dataLayoutOption, newton3Option};
+  }();
+
+  constexpr double cutoffLocal = 1.;
+  constexpr double skinLocal = .1;
+  constexpr double interactionLength = cutoffLocal + skinLocal;
+  constexpr unsigned int clusterSize = 4;
+  const std::array<double, 3> boxMinLocal{0., 0., 0.};
+  const std::array<double, 3> boxMaxLocal{33., 11., 11.};
+  const auto cellsPerDim = static_cast_copy_array<unsigned long>(ceil(boxMaxLocal * (1. / interactionLength)));
+  const autopas::TraversalSelectorInfo traversalSelectorInfo{
+      cellsPerDim, interactionLength, {interactionLength, interactionLength, interactionLength}, clusterSize};
+  LJFunctorGlobals functor(cutoffLocal);
+  const autopas::ContainerSelectorInfo containerSelectorInfo{conf.cellSizeFactor, skinLocal, rebuildFrequency,
+                                                             clusterSize, conf.loadEstimator};
+  autopas::ContainerSelector<Molecule> containerSelector{boxMinLocal, boxMaxLocal, cutoffLocal};
+  containerSelector.selectContainer(conf.container, containerSelectorInfo);
+  auto traversalPtr = autopas::utils::withStaticCellType<Molecule>(
+      containerSelector.getCurrentContainer().getParticleCellTypeEnum(), [&](auto particleCellDummy) {
+        return autopas::TraversalSelector<decltype(particleCellDummy)>::generateTraversal(
+            conf.traversal, functor, traversalSelectorInfo, conf.dataLayout, conf.newton3);
+      });
+
+  EXPECT_EQ(conf.isValid(), traversalPtr->isApplicable())
+      << "Either the domain is chosen badly (fix this!) or isValid and isApplicable don't follow the same logic "
+         "anymore.";
+}
+
 using ::testing::Combine;
 using ::testing::UnorderedElementsAreArray;
 using ::testing::Values;
