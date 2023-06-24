@@ -16,23 +16,27 @@ class TraversalSelectorInfo {
   /**
    * Dummy constructor such that this class can be used in maps
    */
-  TraversalSelectorInfo() : dims({0, 0, 0}), interactionLength(1.0), cellLength({0.0, 0.0, 0.0}), clusterSize{0} {}
+  TraversalSelectorInfo()
+      : cellsPerDim({0, 0, 0}), interactionLength(1.0), cellLength({0.0, 0.0, 0.0}), clusterSize{0} {}
 
   /**
    * Constructor of the TraversalSelector class.
-   * @param dims Array with the dimension lengths of the domain
+   * @param cellsPerDim Array with the dimension lengths of the domain in number of cells.
    * @param interactionLength Interaction length (cutoff radius + skin)
    * @param cellLength cell length.
    * @param clusterSize The size of a cluster (set this to 0 if not applicable).
    */
-  explicit TraversalSelectorInfo(const std::array<unsigned long, 3> &dims, const double interactionLength,
+  explicit TraversalSelectorInfo(const std::array<unsigned long, 3> &cellsPerDim, const double interactionLength,
                                  const std::array<double, 3> &cellLength, const unsigned int clusterSize)
-      : dims(dims), interactionLength(interactionLength), cellLength(cellLength), clusterSize{clusterSize} {}
+      : cellsPerDim(cellsPerDim),
+        interactionLength(interactionLength),
+        cellLength(cellLength),
+        clusterSize{clusterSize} {}
 
   /**
-   * Array with the dimension lengths of the domain
+   * Number of cells in the domain per dimension.
    */
-  const std::array<unsigned long, 3> dims;
+  const std::array<unsigned long, 3> cellsPerDim;
 
   /**
    * Interaction length
