@@ -22,7 +22,7 @@ class ContainerSelectorInfo {
   ContainerSelectorInfo()
       : cellSizeFactor(1.),
         verletSkinPerTimestep(0.),
-        verletRebuildFrequency(0.),
+        verletRebuildFrequency(0),
         verletClusterSize(64),
         loadEstimator(autopas::LoadEstimatorOption::none) {}
 
@@ -87,7 +87,7 @@ class ContainerSelectorInfo {
   /**
    * The rebuild frequency.
    */
-  double verletRebuildFrequency;
+  unsigned int verletRebuildFrequency;
   /**
    * Size of Verlet Clusters
    */
