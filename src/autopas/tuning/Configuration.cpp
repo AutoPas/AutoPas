@@ -49,7 +49,7 @@ std::string autopas::Configuration::getCSVRepresentation(bool returnHeaderOnly) 
 bool autopas::Configuration::isValid() const {
   // Check if container and traversal fit together
   const auto &allContainerTraversals = compatibleTraversals::allCompatibleTraversals(container);
-  if (allContainerTraversals.find(traversal) != allContainerTraversals.end()) {
+  if (allContainerTraversals.find(traversal) == allContainerTraversals.end()) {
     return false;
   }
 
@@ -80,7 +80,7 @@ bool autopas::Configuration::isValid() const {
     }
   }
   if (dataLayout == DataLayoutOption::soa) {
-    const auto soaTraversals = compatibleTraversals::allTraversalsSupportingOnlySoA();
+    const auto soaTraversals = compatibleTraversals::allTraversalsSupportingOnlyAoS();
     if (soaTraversals.find(traversal) != soaTraversals.end()) {
       return false;
     }
