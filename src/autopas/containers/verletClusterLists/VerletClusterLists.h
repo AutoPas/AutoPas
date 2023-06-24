@@ -413,17 +413,18 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     } else {
       // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
       // store all pointers in a temporary which is passed to the ParticleIterator constructor.
-      typename ContainerIterator<Particle, true, false>::ParticleVecType additionalVectorsTmp;
+      typename ContainerIterator<Particle, true, false>::ParticleVecType additionalVectorsToPass;
       if (not additionalVectorsEmpty<true, false>(additionalVectors)) {
-        additionalVectorsTmp.reserve(_particlesToAdd.size() + additionalVectors->size());
-        additionalVectorsTmp.insert(additionalVectorsTmp.end(), additionalVectors->begin(), additionalVectors->end());
+        additionalVectorsToPass.reserve(_particlesToAdd.size() + additionalVectors->size());
+        additionalVectorsToPass.insert(additionalVectorsToPass.end(), additionalVectors->begin(),
+                                       additionalVectors->end());
       } else {
-        additionalVectorsTmp.reserve(_particlesToAdd.size());
+        additionalVectorsToPass.reserve(_particlesToAdd.size());
       }
       for (auto &vec : _particlesToAdd) {
-        additionalVectorsTmp.push_back(&vec);
+        additionalVectorsToPass.push_back(&vec);
       }
-      return ContainerIterator<Particle, true, false>(*this, behavior, &additionalVectorsTmp);
+      return ContainerIterator<Particle, true, false>(*this, behavior, &additionalVectorsToPass);
     }
   }
 
@@ -444,17 +445,18 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     } else {
       // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
       // store all pointers in a temporary which is passed to the ParticleIterator constructor.
-      typename ContainerIterator<Particle, false, false>::ParticleVecType additionalVectorsTmp;
+      typename ContainerIterator<Particle, false, false>::ParticleVecType additionalVectorsToPass;
       if (not additionalVectorsEmpty<false, false>(additionalVectors)) {
-        additionalVectorsTmp.reserve(_particlesToAdd.size() + additionalVectors->size());
-        additionalVectorsTmp.insert(additionalVectorsTmp.end(), additionalVectors->begin(), additionalVectors->end());
+        additionalVectorsToPass.reserve(_particlesToAdd.size() + additionalVectors->size());
+        additionalVectorsToPass.insert(additionalVectorsToPass.end(), additionalVectors->begin(),
+                                       additionalVectors->end());
       } else {
-        additionalVectorsTmp.reserve(_particlesToAdd.size());
+        additionalVectorsToPass.reserve(_particlesToAdd.size());
       }
       for (auto &vec : _particlesToAdd) {
-        additionalVectorsTmp.push_back(&vec);
+        additionalVectorsToPass.push_back(&vec);
       }
-      return ContainerIterator<Particle, false, false>(*this, behavior, &additionalVectorsTmp);
+      return ContainerIterator<Particle, false, false>(*this, behavior, &additionalVectorsToPass);
     }
   }
 
@@ -573,17 +575,19 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     } else {
       // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
       // store all pointers in a temporary which is passed to the ParticleIterator constructor.
-      typename ContainerIterator<Particle, true, true>::ParticleVecType additionalVectorsTmp;
+      typename ContainerIterator<Particle, true, true>::ParticleVecType additionalVectorsToPass;
       if (not additionalVectorsEmpty<true, true>(additionalVectors)) {
-        additionalVectorsTmp.reserve(_particlesToAdd.size() + additionalVectors->size());
-        additionalVectorsTmp.insert(additionalVectorsTmp.end(), additionalVectors->begin(), additionalVectors->end());
+        additionalVectorsToPass.reserve(_particlesToAdd.size() + additionalVectors->size());
+        additionalVectorsToPass.insert(additionalVectorsToPass.end(), additionalVectors->begin(),
+                                       additionalVectors->end());
       } else {
-        additionalVectorsTmp.reserve(_particlesToAdd.size());
+        additionalVectorsToPass.reserve(_particlesToAdd.size());
       }
       for (auto &vec : _particlesToAdd) {
-        additionalVectorsTmp.push_back(&vec);
+        additionalVectorsToPass.push_back(&vec);
       }
-      return ContainerIterator<Particle, true, true>(*this, behavior, &additionalVectorsTmp, lowerCorner, higherCorner);
+      return ContainerIterator<Particle, true, true>(*this, behavior, &additionalVectorsToPass, lowerCorner,
+                                                     higherCorner);
     }
   }
 
@@ -605,17 +609,18 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     } else {
       // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
       // store all pointers in a temporary which is passed to the ParticleIterator constructor.
-      typename ContainerIterator<Particle, false, true>::ParticleVecType additionalVectorsTmp;
+      typename ContainerIterator<Particle, false, true>::ParticleVecType additionalVectorsToPass;
       if (not additionalVectorsEmpty<false, true>(additionalVectors)) {
-        additionalVectorsTmp.reserve(_particlesToAdd.size() + additionalVectors->size());
-        additionalVectorsTmp.insert(additionalVectorsTmp.end(), additionalVectors->begin(), additionalVectors->end());
+        additionalVectorsToPass.reserve(_particlesToAdd.size() + additionalVectors->size());
+        additionalVectorsToPass.insert(additionalVectorsToPass.end(), additionalVectors->begin(),
+                                       additionalVectors->end());
       } else {
-        additionalVectorsTmp.reserve(_particlesToAdd.size());
+        additionalVectorsToPass.reserve(_particlesToAdd.size());
       }
       for (auto &vec : _particlesToAdd) {
-        additionalVectorsTmp.push_back(&vec);
+        additionalVectorsToPass.push_back(&vec);
       }
-      return ContainerIterator<Particle, false, true>(*this, behavior, &additionalVectorsTmp, lowerCorner,
+      return ContainerIterator<Particle, false, true>(*this, behavior, &additionalVectorsToPass, lowerCorner,
                                                       higherCorner);
     }
   }
