@@ -181,12 +181,12 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @param p The particle to add.
    */
   void addParticleImpl(const Particle &p) override {
-    _isValid = ValidityState::invalid;
+    _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
     _particlesToAdd[autopas_get_thread_num()].push_back(p);
   }
 
   void addHaloParticleImpl(const Particle &haloParticle) override {
-    _isValid = ValidityState::invalid;
+    _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
     Particle copy = haloParticle;
     copy.setOwnershipState(OwnershipState::halo);
     _particlesToAdd[autopas_get_thread_num()].push_back(copy);
@@ -257,7 +257,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       }
     }
     if (deletedSomething) {
-      _isValid = ValidityState::invalid;
+      _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
     }
   }
 
@@ -378,7 +378,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
         }
       }
     }
-    _isValid = ValidityState::invalid;
+    _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
     return invalidParticles;
   }
 
@@ -1074,7 +1074,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   [[nodiscard]] double getInteractionLength() const override { return _cutoff + _skinPerTimestep * _rebuildFrequency; }
 
   void deleteAllParticles() override {
-    _isValid = ValidityState::invalid;
+    _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
     std::for_each(_particlesToAdd.begin(), _particlesToAdd.end(), [](auto &buffer) { buffer.clear(); });
     std::for_each(_towers.begin(), _towers.end(), [](auto &tower) { tower.clear(); });
   }
@@ -1102,7 +1102,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
         _builder->rebuildTowersAndClusters();
 
     _towerSideLengthReciprocal = 1 / _towerSideLength;
-    _isValid = ValidityState::cellsValidListsInvalid;
+    _isValid.store(ValidityState::cellsValidListsInvalid, std::memory_order::memory_order_relaxed);
     for (auto &tower : _towers) {
       tower.setParticleDeletionObserver(this);
     }
