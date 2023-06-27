@@ -52,10 +52,10 @@ target_compile_definitions(
 # --- display warnings if single-/multi-site mode is used with a functor type that has not been implemented ---
 if (MD_FLEXIBLE_MODE MATCHES "MULTI-SITE")
     if (MD_FLEXIBLE_FUNCTOR_AVX)
-        message(STATUS "AVX Lennard-Jones functor has not been implemented for Multi-Site Molecules")
+        message(WARNING "AVX Lennard-Jones functor has not been implemented for Multi-Site Molecules")
     endif()
     if (MD_FLEXIBLE_FUNCTOR_SVE)
-        message(STATUS "SVE Lennard-Jones functor has not been implemented for Multi-Site Molecules")
+        message(WARNING "SVE Lennard-Jones functor has not been implemented for Multi-Site Molecules")
     endif()
 endif()
 
