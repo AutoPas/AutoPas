@@ -404,8 +404,26 @@ class SPHParticle : public autopas::Particle {
    * SoA arrays type, cf. AttributeNames
    */
   using SoAArraysType =
-      autopas::utils::SoAType<SPHParticle *, double, double, double, double, double, double, double, double, double,
-                              double, double, double, double, double, double, double, autopas::OwnershipState>::Type;
+      autopas::utils::SoAType<
+          SPHParticle *,
+          double, // mass
+          double, // posX
+          double, // posY
+          double, // posZ
+          double, // smth
+          double, // density
+          double, // velX
+          double, // velY
+          double, // velZ
+          double, // soundSpeed
+          double, // pressure
+          double, // vsigmax
+          double, // accX
+          double, // accY
+          double, // accZ
+          double, // engDot
+          autopas::OwnershipState
+        >::Type;
 
   /**
    * Non-const getter for the pointer of this object.
