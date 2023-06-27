@@ -43,7 +43,7 @@ if (AUTOPAS_BUILD_TESTS)
             "molecularDynamics/tests/singleSiteTests/*.h"
             "molecularDynamics/tests/particlePropertiesLibraryTests/*.cpp"
             "molecularDynamics/tests/particlePropertiesLibraryTests/*.h"
-            "molecularDynamics/templateInstatiations/AutoPasInstantiations.cpp"
+            "molecularDynamics/tests/templateInstatiations/AutoPasInstantiations.cpp"
     )
 
     add_executable(mdLibSingleSiteTests ${SS_TEST_SRC} mdLibTests.cpp)
@@ -73,7 +73,7 @@ if (AUTOPAS_BUILD_TESTS)
             "molecularDynamics/tests/multiSiteTests/*.h"
             "molecularDynamics/tests/particlePropertiesLibraryTests/*.cpp"
             "molecularDynamics/tests/particlePropertiesLibraryTests/*.h"
-            "molecularDynamics/templateInstatiations/AutoPasInstantiations.cpp"
+            "molecularDynamics/tests/templateInstatiations/AutoPasInstantiations.cpp"
     )
 
     add_executable(mdLibMultiSiteTests ${MS_TEST_SRC} mdLibTests.cpp)
