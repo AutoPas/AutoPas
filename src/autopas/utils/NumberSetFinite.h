@@ -16,7 +16,7 @@ namespace autopas {
  * Class describing a finite set of numbers
  */
 template <class Number>
-class NumberSetFinite : public NumberSet<Number> {
+class NumberSetFinite final : public NumberSet<Number> {
  public:
   /**
    * Default Constructor: Empty set
@@ -38,7 +38,7 @@ class NumberSetFinite : public NumberSet<Number> {
    * Setter for NumberSetFinite
    * @param numbers The set of numbers the new NumberSetFinite represents
    */
-  inline void resetValues(std::set<Number> &numbers) override { _set = numbers; }
+  inline void resetValues(const std::set<Number> &numbers) override { _set = numbers; }
 
   std::string to_string() const override { return "" + utils::ArrayUtils::to_string(_set) + ""; }
 

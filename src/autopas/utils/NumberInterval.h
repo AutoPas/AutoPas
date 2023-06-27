@@ -12,7 +12,7 @@ namespace autopas {
  * Class describing an interval
  */
 template <class Number>
-class NumberInterval : public NumberSet<Number> {
+class NumberInterval final : public NumberSet<Number> {
  public:
   /**
    * Default Constructor: Create a range which only contains 0
@@ -41,7 +41,7 @@ class NumberInterval : public NumberSet<Number> {
    * @param numbers One or two values, like the available constructors for NumberInterval.
    * If two are provided the smaller one is assumed to be the min value.
    */
-  inline void resetValues(std::set<Number> &numbers) override {
+  inline void resetValues(const std::set<Number> &numbers) override {
     if (numbers.size() == 1) {
       _min = *numbers.begin();
       _max = *numbers.begin();
