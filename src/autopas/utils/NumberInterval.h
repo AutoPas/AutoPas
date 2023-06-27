@@ -64,6 +64,7 @@ class NumberInterval final : public NumberSet<Number> {
 
   inline bool isEmpty() const override { return false; }
   inline bool isFinite() const override { return _max == _min; }
+  inline bool isInterval() const override { return true; }
   size_t size() const override {
     if (isFinite()) return 1ul;
 
@@ -135,6 +136,10 @@ class NumberInterval final : public NumberSet<Number> {
   }
 
   Number getMedian() const override { return (_max + _min) / 2; }
+
+  bool operator==(const NumberSet<Number> &rhs) const override {
+    return this->isInterval() == rhs.isInterval() and this->_min == rhs.getMin() and this->_max == rhs.getMax();
+  }
 
  private:
   Number _min;

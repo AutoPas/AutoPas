@@ -44,6 +44,7 @@ class NumberSetFinite final : public NumberSet<Number> {
 
   inline bool isEmpty() const override { return _set.empty(); }
   inline bool isFinite() const override { return true; }
+  inline bool isInterval() const override { return false; }
   inline size_t size() const override { return _set.size(); }
 
   inline Number getMin() const override { return *_set.begin(); }
@@ -60,6 +61,10 @@ class NumberSetFinite final : public NumberSet<Number> {
     auto it = std::begin(_set);
     std::advance(it, _set.size() / 2);
     return *it;
+  }
+
+  bool operator==(const NumberSet<Number> &rhs) const override {
+    return this->isInterval() == rhs.isInterval() and getAll() == rhs.getAll();
   }
 
  private:

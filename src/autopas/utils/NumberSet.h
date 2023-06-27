@@ -65,6 +65,12 @@ class NumberSet {
   virtual bool isFinite() const = 0;
 
   /**
+   * Function to distinguish between NumberSetFinite and NumberInterval.
+   * @return True for NumberInterval, false for NumberSetFinite.
+   */
+  virtual bool isInterval() const = 0;
+
+  /**
    * Get size of set.
    * Only usable if set is finite.
    * @return size of set
@@ -118,6 +124,12 @@ class NumberSet {
    * @return
    */
   virtual Number getMedian() const = 0;
+
+  /**
+   * Comparison operator.
+   * @return
+   */
+  virtual bool operator==(const NumberSet<Number> &rhs) const = 0;
 };
 
 }  // namespace autopas
