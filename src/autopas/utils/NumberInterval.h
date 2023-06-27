@@ -141,6 +141,20 @@ class NumberInterval final : public NumberSet<Number> {
     return this->isInterval() == rhs.isInterval() and this->_min == rhs.getMin() and this->_max == rhs.getMax();
   }
 
+  /**
+   * Check if this and another interval overlap.
+   * @param other
+   * @return
+   */
+  bool overlaps(const NumberInterval<Number> &other) const { return (_min <= other._max) and (_max >= other._min); }
+
+  /**
+   * Check if the other interval is fully included in this interval.
+   * @param other
+   * @return
+   */
+  bool includes(const NumberInterval<Number> &other) const { return (_min <= other._min) and (_max >= other._max); }
+
  private:
   Number _min;
   Number _max;
