@@ -4,13 +4,13 @@
  * @date 19.01.18
  */
 
-#include "autopas/sph/SPHParticle.h"
+#include "SPHParticle.h"
 
 #include <cmath>
 
 #include "autopas/utils/ArrayMath.h"
 
-using namespace autopas::sph;
+using namespace sphLib;
 
 void SPHParticle::addAcceleration(const std::array<double, 3> &acc) {
   using namespace autopas::utils::ArrayMath::literals;

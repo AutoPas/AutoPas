@@ -117,11 +117,7 @@ class SPHParticle : public autopas::Particle {
    * Calculates the pressure within the particle from the energy and density of
    * the particle and updates the pressure and sound of speed
    */
-  void calcPressure() {
-    const double hcr = 1.4;
-    _pressure = (hcr - 1.0) * _density * _energy;
-    _snds = sqrt(hcr * _pressure / _density);
-  }
+  void calcPressure();
 
   /**
    * Setter for the pressure
@@ -195,20 +191,14 @@ class SPHParticle : public autopas::Particle {
    * Used to sum up different acceleration values.
    * @param acc Acceleration to be added
    */
-  void addAcceleration(const std::array<double, 3> &acc) {
-    using namespace autopas::utils::ArrayMath::literals;
-    _acc += acc;
-  };
+  void addAcceleration(const std::array<double, 3> &acc);
 
   /**
    * Substracts the given acceleration from the local acceleration.
    * Used to sum up different negative acceleration values.
    * @param acc Acceleration to be substracted
    */
-  void subAcceleration(const std::array<double, 3> &acc) {
-    using namespace autopas::utils::ArrayMath::literals;
-    _acc -= acc;
-  };
+  void subAcceleration(const std::array<double, 3> &acc);
 
   /**
    * Setter for the acceleration

@@ -3,12 +3,12 @@
  * @author seckler
  * @date 22.01.18
  */
-#include "autopas/sph/SPHKernels.h"
+#include "SPHKernels.h"
 
 #include <algorithm>
 #include <cmath>
 
-unsigned long autopas::sph::SPHKernels::getFlopsW() {
+unsigned long sphLib::SPHKernels::getFlopsW() {
   unsigned long flops = 0;
   flops += 1;      // calculating H
   flops += 5;      // dot product for s

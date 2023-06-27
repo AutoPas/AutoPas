@@ -64,16 +64,7 @@ class SPHKernels {
    * returns the flops for one full calculation of the kernel
    * @return flops for one full calculation of the kernel
    */
-  static unsigned long getFlopsW() {
-    unsigned long flops = 0;
-    flops += 1;      // calculating H
-    flops += 5;      // dot product for s
-    flops += 1 + 1;  // s (except dot product)
-    flops += 1;      // calculating s1 and s2 (either for s1 or s2 one flop will be
-                     // necessary
-    flops += 6 + 4;  // calculating r_value
-    return flops;
-  };
+  static unsigned long getFlopsW();
 
   /**
    * gradient of the kernel function W
