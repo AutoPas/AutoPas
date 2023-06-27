@@ -139,22 +139,7 @@ std::ostream &operator<<(std::ostream &os, const Configuration &configuration);
  * @param configuration
  * @return
  */
-inline std::istream &operator>>(std::istream &in, Configuration &configuration) {
-  constexpr auto max = std::numeric_limits<std::streamsize>::max();
-  in.ignore(max, ':');
-  in >> configuration.container;
-  in.ignore(max, ':');
-  in >> configuration.cellSizeFactor;
-  in.ignore(max, ':');
-  in >> configuration.traversal;
-  in.ignore(max, ':');
-  in >> configuration.loadEstimator;
-  in.ignore(max, ':');
-  in >> configuration.dataLayout;
-  in.ignore(max, ':');
-  in >> configuration.newton3;
-  return in;
-}
+inline std::istream &operator>>(std::istream &in, Configuration &configuration);
 
 /**
  * Equals operator for Configuration objects.

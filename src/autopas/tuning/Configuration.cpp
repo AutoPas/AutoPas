@@ -107,3 +107,20 @@ bool autopas::operator<(const autopas::Configuration &lhs, const autopas::Config
   return std::tie(lhs.container, lhs.cellSizeFactor, lhs.traversal, lhs.loadEstimator, lhs.dataLayout, lhs.newton3) <
          std::tie(rhs.container, rhs.cellSizeFactor, rhs.traversal, rhs.loadEstimator, rhs.dataLayout, rhs.newton3);
 }
+
+std::istream &autopas::operator>>(std::istream &in, autopas::Configuration &configuration) {
+  constexpr auto max = std::numeric_limits<std::streamsize>::max();
+  in.ignore(max, ':');
+  in >> configuration.container;
+  in.ignore(max, ':');
+  in >> configuration.cellSizeFactor;
+  in.ignore(max, ':');
+  in >> configuration.traversal;
+  in.ignore(max, ':');
+  in >> configuration.loadEstimator;
+  in.ignore(max, ':');
+  in >> configuration.dataLayout;
+  in.ignore(max, ':');
+  in >> configuration.newton3;
+  return in;
+}
