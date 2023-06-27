@@ -144,7 +144,7 @@ class LJMultisiteFunctorAVX
   const __m256i _ownedStateOwnedMM256i{_mm256_set1_epi64x(static_cast<int64_t>(OwnershipState::owned))};
 #endif
 
-  // Vectors used to speed up the verlet functor
+  // Vectors used to speed up the global verlet functor
   std::vector<double, autopas::AlignedAllocator<double>> _exactSitePositionsX;
   std::vector<double, autopas::AlignedAllocator<double>> _exactSitePositionsY;
   std::vector<double, autopas::AlignedAllocator<double>> _exactSitePositionsZ;
@@ -1415,7 +1415,6 @@ class LJMultisiteFunctorAVX
     __m256d sigmaSquared = _mm256_set1_pd(_sigmaSquaredAoS);
     __m256d epsilon24 = _mm256_set1_pd(_epsilon24AoS);
     __m256d shift6 = applyShift ? _mm256_set1_pd(_shift6AoS) : _zero;
-    const double *const __restrict mixingPtr = useMixing ? _PPLibrary->getMixingDataPtr(siteTypeA, 0) : nullptr;
 
     // Broadcast exact site positions of particle A
     const __m256d exactSitePositionsAX = _mm256_set1_pd(exactSitePositionA[0]);
@@ -1462,6 +1461,7 @@ class LJMultisiteFunctorAVX
 
       // Load the mixing parameters
       if constexpr (useMixing) {
+        const double *const __restrict mixingPtr = useMixing ? _PPLibrary->getMixingDataPtr(siteTypeA, 0) : nullptr;
         __m256i siteTypeIndices =
             masked
                 ? autopas::utils::avx::load_epi64(remainderCase, &siteTypesB[siteVectorIndex + offset], remainderMask)
@@ -1565,6 +1565,7 @@ class LJMultisiteFunctorAVX
           __m256d forceSumBX = autopas::utils::avx::gather_pd(remainderCase, &siteForceX[offset], sites, remainderMask);
           __m256d forceSumBY = autopas::utils::avx::gather_pd(remainderCase, &siteForceY[offset], sites, remainderMask);
           __m256d forceSumBZ = autopas::utils::avx::gather_pd(remainderCase, &siteForceZ[offset], sites, remainderMask);
+
           forceSumBX = _mm256_sub_pd(forceSumBX, forceX);
           forceSumBY = _mm256_sub_pd(forceSumBY, forceY);
           forceSumBZ = _mm256_sub_pd(forceSumBZ, forceZ);
@@ -1627,8 +1628,13 @@ class LJMultisiteFunctorAVX
   }
 
   /**
+   * @note There used to be a template specialization here, but it wouldn't compile with gcc
+   */
+
+  /**
    * @brief Calculates the site mask
-   * @tparam CenterToCenter Whether the cutoff condition is determined by the center to center distance or the center to site distance.
+   * @tparam CenterToCenter Whether the cutoff condition is determined by the center to center distance or the center to
+   * site distance.
    * @param buildMask Whether to store a mask (0s and 1s) or the indices of the sites.
    * @param indices The range of potential site indices.
    * @param xptr The exact x coordinates of the potential sites.
@@ -1645,14 +1651,18 @@ class LJMultisiteFunctorAVX
       bool buildMask, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &indices,
       const double *__restrict xptr, const double *__restrict yptr, const double *__restrict zptr,
       const size_t *__restrict typeptr, const autopas::OwnershipState *__restrict ownedStatePtr,
-      const std::array<double, 3> &centerOfMass, size_t offset = 0);
+      const std::array<double, 3> &centerOfMass, size_t offset = 0) {
+    if constexpr (CenterToCenter) {
+      return buildSiteMaskCTC(buildMask, indices, xptr, yptr, zptr, typeptr, ownedStatePtr, centerOfMass, offset);
+    } else {
+      return buildSiteMaskCTS(buildMask, indices, xptr, yptr, zptr, typeptr, ownedStatePtr, centerOfMass, offset);
+    }
+  }
 
   /**
    * @copydoc buildSiteMask
-   * @note Specialization for center to center distance.
    */
-  template <>
-  inline std::vector<size_t, autopas::AlignedAllocator<size_t>> buildSiteMask<true>(
+  inline std::vector<size_t, autopas::AlignedAllocator<size_t>> buildSiteMaskCTC(
       bool buildMask, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &indices,
       const double *const __restrict xptr, const double *const __restrict yptr, const double *const __restrict zptr,
       const size_t *const __restrict typeptr, const autopas::OwnershipState *const __restrict ownedStatePtr,
@@ -1700,10 +1710,8 @@ class LJMultisiteFunctorAVX
 
   /**
    * @copydoc buildSiteMask
-   * @note Specialization for center to site distance.
    */
-  template <>
-  inline std::vector<size_t, autopas::AlignedAllocator<size_t>> buildSiteMask<false>(
+  inline std::vector<size_t, autopas::AlignedAllocator<size_t>> buildSiteMaskCTS(
       bool buildMask, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &indices,
       const double *const __restrict xptr, const double *const __restrict yptr, const double *const __restrict zptr,
       const size_t *const __restrict typeptr, const autopas::OwnershipState *const __restrict ownedStatePtr,
