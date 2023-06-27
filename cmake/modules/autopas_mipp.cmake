@@ -22,7 +22,7 @@ if (NOT mipp_POPULATED) # must be lowercase "eigen3" Fetch the content using pre
         OBJECT # this is a header only lib therefore object type is needed
         IMPORTED GLOBAL
     )
-    target_include_directories(mipp SYSTEM INTERFACE "${mipp_SOURCE_DIR}")
+    target_include_directories(mipp SYSTEM INTERFACE "${mipp_SOURCE_DIR}/src")
 
     # add_subdirectory(${eigen3_SOURCE_DIR} ${eigen3_BINARY_DIR})
 endif ()
