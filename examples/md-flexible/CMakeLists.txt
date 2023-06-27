@@ -25,14 +25,14 @@ set(MD_FLEXIBLE_MODE
 set_property(CACHE MD_FLEXIBLE_MODE PROPERTY STRINGS "SINGLE-SITE;MULTI-SITE")
 
 # Define numerical values for different md-flexible modes
-add_compile_definitions( SINGLESITE=0 )
-add_compile_definitions( MULTISITE=1)
+target_compile_definitions(md-flexible PUBLIC SINGLESITE=0 )
+target_compile_definitions(md-flexible PUBLIC MULTISITE=1)
 
 # Define numerical value for actually compiled md-flexible mode, as per above.
 if (MD_FLEXIBLE_MODE MATCHES "SINGLE-SITE")
-    add_compile_definitions( MD_FLEXIBLE_MODE=0)
+    target_compile_definitions(md-flexible PUBLIC MD_FLEXIBLE_MODE=0)
 elseif(MD_FLEXIBLE_MODE MATCHES "MULTI-SITE")
-    add_compile_definitions( MD_FLEXIBLE_MODE=1)
+    target_compile_definitions(md-flexible PUBLIC MD_FLEXIBLE_MODE=1)
 endif()
 
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor without calculation of global values." OFF)
