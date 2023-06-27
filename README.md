@@ -114,7 +114,7 @@ Steps to using AutoPas in your particle simulation program:
 
 ### Custom Particles
 First you will need to define a particle class which will be passed to AutoPas as template Argument.
-For that we provide some basic Particle classes defined in `applicationLibrary/molecularDynamicsLibrary` or `src/autopas/sph` 
+For that we provide some basic Particle classes defined in `applicationLibrary/molecularDynamics/molecularDynamicsLibrary` or `applicationLibrary/sph/SPHLibrary` 
 that you can use either directly or you can write your own Particle class by inheriting from one of the provided
 classes or from `autopas::Particle`.
 
