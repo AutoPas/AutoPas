@@ -93,10 +93,17 @@ std::ostream &autopas::operator<<(std::ostream &os, const autopas::Configuration
   return os << configuration.toString();
 }
 
+bool autopas::Configuration::equalsDiscreteOptions(const autopas::Configuration &rhs) const {
+  return container == rhs.container and traversal == rhs.traversal and loadEstimator == rhs.loadEstimator and
+         dataLayout == rhs.dataLayout and newton3 == rhs.newton3;
+}
+
+bool autopas::Configuration::equalsContinuousOptions(const autopas::Configuration &rhs, double epsilon) const {
+  return std::abs(cellSizeFactor - rhs.cellSizeFactor) < epsilon;
+}
+
 bool autopas::operator==(const autopas::Configuration &lhs, const autopas::Configuration &rhs) {
-  return lhs.container == rhs.container and lhs.cellSizeFactor == rhs.cellSizeFactor and
-         lhs.traversal == rhs.traversal and lhs.loadEstimator == rhs.loadEstimator and
-         lhs.dataLayout == rhs.dataLayout and lhs.newton3 == rhs.newton3;
+  return lhs.equalsContinuousOptions(rhs) and lhs.equalsDiscreteOptions(rhs);
 }
 
 bool autopas::operator!=(const autopas::Configuration &lhs, const autopas::Configuration &rhs) {

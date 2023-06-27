@@ -92,6 +92,21 @@ class Configuration {
   [[nodiscard]] bool isValid() const;
 
   /**
+   * Check if all discrete options of the given configuration are equal to this'.
+   * @param rhs
+   * @return
+   */
+  bool equalsDiscreteOptions(const Configuration &rhs) const;
+
+  /**
+   * Check if all continuous options of the given configuration are equal to this'.
+   * @param rhs
+   * @param epsilon Maximal allowed absolute difference between two continuous values to be considered equal.
+   * @return
+   */
+  bool equalsContinuousOptions(const autopas::Configuration &rhs, double epsilon = 1e-12) const;
+
+  /**
    * Container option.
    */
   ContainerOption container;
