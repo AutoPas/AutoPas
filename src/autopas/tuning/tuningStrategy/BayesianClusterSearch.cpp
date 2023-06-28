@@ -214,7 +214,7 @@ bool autopas::BayesianClusterSearch::tune(bool currentInvalid) {
 
     // test best vectors until empty
     while (not _currentAcquisitions.empty()) {
-      auto best = _encoder.convertFromCluster(_currentAcquisitions.back());
+      const auto best = _encoder.convertFromCluster(_currentAcquisitions.back());
 
       if (_invalidConfigs.find(best) == _invalidConfigs.end()) {
         // valid config found!

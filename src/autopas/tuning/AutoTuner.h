@@ -93,10 +93,11 @@ class AutoTuner {
    * @return Tuple indicating what is needed before the next call to tune: tuple<liveInfo, homogeneity>
    */
   std::tuple<bool, bool> prepareIteration() {
-    const bool isFirstTuningIteration = _iterationsSinceTuning == _tuningInterval;
+    // Flag if this is the first iteration in a new tuning phase
+    const bool startOfTuningPhase = _iterationsSinceTuning == _tuningInterval;
 
     // first tuning iteration -> reset everything
-    if (isFirstTuningIteration) {
+    if (startOfTuningPhase) {
       // call the appropriate version of reset
       if (auto *mpiStrategy = dynamic_cast<MPIParallelizedStrategy *>(_tuningStrategy.get())) {
         const std::pair<double, double> smoothedHomogeneityAndMaxDensity{
@@ -122,7 +123,7 @@ class AutoTuner {
     }
 
     // if necessary, we need to collect live info in the first tuning iteration
-    const bool needsLiveInfo = isFirstTuningIteration and _tuningStrategy->needsLiveInfo();
+    const bool needsLiveInfo = startOfTuningPhase and _tuningStrategy->needsLiveInfo();
 
     // calc homogeneity if needed, and we are within 10 iterations of the next tuning phase
     const size_t numIterationsForHomogeneity = 10;
@@ -179,6 +180,7 @@ class AutoTuner {
     }
 
     if (indefinitely) {
+      // delete rejected config from the search space and assemble new sets.
       _searchSpace.erase(rejectedConfig);
     }
 

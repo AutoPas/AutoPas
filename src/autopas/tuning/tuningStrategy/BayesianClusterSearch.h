@@ -23,8 +23,7 @@ namespace autopas {
 
 /**
  * Assume that the stochastic distribution of the execution time while fixing discrete variables corresponds
- * to a Gaussian Process. This allows to estimate the 'gain' of testing a given
- * feature next.
+ * to a Gaussian Process. This allows to estimate the 'gain' of testing a given feature next.
  */
 class BayesianClusterSearch : public TuningStrategyInterface {
   /**
@@ -141,7 +140,9 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    * Refrain from reading the data from GaussianProcesses to maintain abstraction.
    */
   std::unordered_map<Configuration, long, ConfigHash> _traversalTimes;
-
+  /**
+   * Random engine.
+   */
   Random _rng;
   /**
    * Stochastic model used for predictions.
@@ -151,6 +152,9 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    * Function to generate neighbours with weight of given vector.
    */
   GaussianModelTypes::NeighbourFunction _neighbourFun;
+  /**
+   * Maximum number of evidences to collect after which an optimum is declared.
+   */
   const size_t _maxEvidence;
   /**
    * Acquisition function used to predict informational gain.
@@ -160,7 +164,9 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    * Number of latin-hypercube-samples used to find a evidence with high predicted acquisition.
    */
   const size_t _predNumLHSamples;
-
+  /**
+   * Flag indicating that we are in the first tuning phase.
+   */
   bool _firstTuningPhase;
   /**
    * Iteration of last added evidence or reset.
