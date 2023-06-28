@@ -121,7 +121,7 @@ class LJMultisiteFunctorAVX
    * efficient memory operations. It may result in poorer cache performance due to potentially scattered memory access
    * patterns.
    */
-  constexpr static bool useSiteMasks = false;
+  constexpr static bool useSiteMasks = true;
 
   /**
    * @brief How to evaluate the cutoff condition
@@ -130,7 +130,7 @@ class LJMultisiteFunctorAVX
    * If set to false, the cutoff conditions is evaluated between the center of mass of the first particle and the site
    * positions of the second particle
    */
-  constexpr static bool useCTC = true;
+  constexpr static bool useCTC = false;
 
 #ifdef __AVX__
   const __m256d _cutoffSquared{};
@@ -802,7 +802,7 @@ class LJMultisiteFunctorAVX
 
   /** Implementation for SoAFunctorVerlet
    * Uses global vectors instead of calculating the exact site position for each functor call
-   * @note This implementation is a bit experimental and not yet optimized.
+   * @note This implementation is a bit experimental and is not recommended to use
    */
   template <bool newton3>
   void SoAFunctorVerletImpl_global(SoAView<SoAArraysType> soa, const size_t indexFirst,
@@ -1717,32 +1717,73 @@ class LJMultisiteFunctorAVX
       const size_t *const __restrict typeptr, const autopas::OwnershipState *const __restrict ownedStatePtr,
       const std::array<double, 3> &centerOfMass, size_t offset) {
     std::vector<size_t, autopas::AlignedAllocator<size_t>> siteMask;
+    siteMask.reserve(indices.size());
+    // Scalar version
+    //    for (size_t site : indices) {
+    //      const double xposB = xptr[site + offset];
+    //      const double yposB = yptr[site + offset];
+    //      const double zposB = zptr[site + offset];
+    //
+    //      // calculate displacement
+    //      const double displacementCoMX = centerOfMass[0] - xposB;
+    //      const double displacementCoMY = centerOfMass[1] - yposB;
+    //      const double displacementCoMZ = centerOfMass[2] - zposB;
+    //
+    //      const double distanceSquaredCoMX = displacementCoMX * displacementCoMX;
+    //      const double distanceSquaredCoMY = displacementCoMY * displacementCoMY;
+    //      const double distanceSquaredCoMZ = displacementCoMZ * displacementCoMZ;
+    //
+    //      const double distanceSquaredCoM = distanceSquaredCoMX + distanceSquaredCoMY + distanceSquaredCoMZ;
+    //
+    //      const bool cutoffCondition = distanceSquaredCoM <= _cutoffSquaredAoS;
+    //      const bool dummyCondition = ownedStatePtr[site + offset] != OwnershipState::dummy;
+    //      const bool condition = cutoffCondition and dummyCondition;
+    //
+    //      if (buildMask) {
+    //        const size_t mask = condition ? std::numeric_limits<size_t>::max() : 0;
+    //        siteMask.emplace_back(mask);
+    //      } else if (condition) {
+    //        siteMask.emplace_back(site);
+    //      }
+    //    }
 
-    for (size_t site : indices) {
-      const double xposB = xptr[site + offset];
-      const double yposB = yptr[site + offset];
-      const double zposB = zptr[site + offset];
+    // Vectorized version
+    for (size_t index = 0; index < indices.size(); index += vecLength) {
+      const size_t remainder = indices.size() - index;
+      const bool remainderCase = remainder < vecLength;
+      const __m256i remainderMask = remainderCase ? _masks[remainder - 1] : _mm256_set1_epi64x(-1);
+
+      const __m256i sites = autopas::utils::avx::load_epi64(remainderCase, &indices[index], remainderMask);
+
+      const __m256d xposB = autopas::utils::avx::gather_pd(remainderCase, &xptr[offset], sites, remainderMask);
+      const __m256d yposB = autopas::utils::avx::gather_pd(remainderCase, &yptr[offset], sites, remainderMask);
+      const __m256d zposB = autopas::utils::avx::gather_pd(remainderCase, &zptr[offset], sites, remainderMask);
 
       // calculate displacement
-      const double displacementCoMX = centerOfMass[0] - xposB;
-      const double displacementCoMY = centerOfMass[1] - yposB;
-      const double displacementCoMZ = centerOfMass[2] - zposB;
+      const __m256d displacementCoMX = _mm256_sub_pd(_mm256_set1_pd(centerOfMass[0]), xposB);
+      const __m256d displacementCoMY = _mm256_sub_pd(_mm256_set1_pd(centerOfMass[1]), yposB);
+      const __m256d displacementCoMZ = _mm256_sub_pd(_mm256_set1_pd(centerOfMass[2]), zposB);
 
-      const double distanceSquaredCoMX = displacementCoMX * displacementCoMX;
-      const double distanceSquaredCoMY = displacementCoMY * displacementCoMY;
-      const double distanceSquaredCoMZ = displacementCoMZ * displacementCoMZ;
+      const __m256d distanceSquaredCoMX = _mm256_mul_pd(displacementCoMX, displacementCoMX);
+      const __m256d distanceSquaredCoMY = _mm256_mul_pd(displacementCoMY, displacementCoMY);
+      const __m256d distanceSquaredCoMZ = _mm256_mul_pd(displacementCoMZ, displacementCoMZ);
 
-      const double distanceSquaredCoM = distanceSquaredCoMX + distanceSquaredCoMY + distanceSquaredCoMZ;
+      const __m256d distanceSquaredCoM =
+          _mm256_add_pd(_mm256_add_pd(distanceSquaredCoMX, distanceSquaredCoMY), distanceSquaredCoMZ);
 
-      const bool cutoffCondition = distanceSquaredCoM <= _cutoffSquaredAoS;
-      const bool dummyCondition = ownedStatePtr[site + offset] != OwnershipState::dummy;
-      const bool condition = cutoffCondition and dummyCondition;
+      const __m256d cutoffCondition = _mm256_cmp_pd(distanceSquaredCoM, _cutoffSquared, _CMP_LE_OQ);
+      const __m256i ownedState = autopas::utils::avx::gather_epi64(
+          remainderCase, reinterpret_cast<const size_t *>(ownedStatePtr), sites, remainderMask);
+      const __m256d dummyMask = _mm256_cmp_pd(_mm256_castsi256_pd(ownedState), _zero, _CMP_NEQ_UQ);
+      const __m256i condition = _mm256_castpd_si256(_mm256_and_pd(cutoffCondition, dummyMask));
 
-      if (buildMask) {
-        const size_t mask = condition ? std::numeric_limits<size_t>::max() : 0;
-        siteMask.emplace_back(mask);
-      } else if (condition) {
-        siteMask.emplace_back(site);
+      // Not optimal, but regular store seems to not work properly
+      for (size_t i = 0; i < std::min(remainder, vecLength); ++i) {
+        if (buildMask) {
+          siteMask.emplace_back(condition[i]);
+        } else if (condition[i] != 0) {
+          siteMask.emplace_back(sites[i]);
+        }
       }
     }
     return siteMask;

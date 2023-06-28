@@ -56,6 +56,21 @@ inline __m256i load_epi64(bool useMask, const size_t *const __restrict data, con
 }
 
 /**
+ * @brief Utility function to conditionally store contiguous 64-bit integers into a memory location
+ * @param useMask whether to use the mask
+ * @param data the data to store to
+ * @param mask the mask to use
+ * @param values the data to be stored
+ */
+inline void store_epi64(bool useMask, size_t *const __restrict data, const __m256i &mask, const __m256i &values){
+  if (useMask) {
+    _mm256_maskstore_epi64(reinterpret_cast<long long int *>(data), mask, values);
+  } else {
+    _mm256_storeu_si256(reinterpret_cast<__m256i *>(data), values);
+  }
+}
+
+/**
  * @brief Utility function to conditionally load non-contiguous 64-bit doubles from memory
  * @param useMask whether to use the mask
  * @param data the data to load from

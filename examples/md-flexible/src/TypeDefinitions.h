@@ -16,7 +16,6 @@
 #include "autopas/molecularDynamics/LJMultisiteFunctor.h"
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX)
-//#include "autopas/molecularDynamics/LJMultisiteFunctorCTS.h"
 #include "autopas/molecularDynamics/LJMultisiteFunctorAVX.h"
 #endif
 
