@@ -118,17 +118,13 @@ using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<FloatPrecision, 
 /**
  * We require access to a version of the force functor for non-iteratePairwise purposes, e.g. calculating FLOPs or AoS
  * functor calls. This is abstracted from whichever SoA implementation is used, so we pick any functor that is chosen to
- * be used in the CMake. If no (valid) implementation is chosen, this is set to some arbitrary valid implementation,
- * e.g. AutoVec.
+ * be used in the CMake.
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
 #ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
 using LJFunctorTypeAbstract = mdLib::LJMultisiteFunctor<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS
 using LJFunctorTypeAbstract = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
-#else
-#include "molecularDynamicsLibrary/LJMultisiteFunctor.h"
-using LJFunctorTypeAbstract = mdLib::LJMultisiteFunctor<ParticleType, true, true>;
 #endif
 
 #else
@@ -140,9 +136,6 @@ using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true, autopas
 using LJFunctorTypeAbstract = mdLib::LJFunctorAVX<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_SVE
 using LJFunctorTypeAbstract = mdLib::LJFunctorSVE<ParticleType, true, true>;
-#else
-#include "molecularDynamicsLibrary/LJFunctor.h"
-using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true>;
 #endif
 
 #endif
