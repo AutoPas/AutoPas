@@ -6,14 +6,19 @@ iterations                       :  100000
 boundary-type                    : [periodic, periodic, periodic]
 Sites:
   0:
-    site-id                      :  0
-    site-epsilon                 :  1.
-    site-sigma                   :  1.
-    site-mass                    :  1.
+    epsilon                      :  1.
+    sigma                        :  1.
+    mass                         :  1.
+# Uncomment below to run a multi-site simulation.
+#Molecules:
+#  0:
+#    site-types                   :  [ 0 ]
+#    relative-site-positions      :  [ [0, 0, 0 ] ]
+#    moment-of-inertia            :  [ 1., 1., 1. ]
 Objects:
   CubeGrid:
     0:
-      particleTypeId             :  0
+      particle-type-id           :  0
       particles-per-dimension    :  [160, 160, 160]
       particle-spacing           :  1.5
       bottomLeftCorner           :  [0, 0, 0]

@@ -22,10 +22,15 @@ boundary-type                    :  [reflective,reflective,reflective]
 globalForce                      :  [0,0,-12]
 Sites:
   0:
-    site-id                      :  0
-    site-epsilon                 :  1.
-    site-sigma                   :  1.
-    site-mass                    :  1.
+    epsilon                      :  1.
+    sigma                        :  1.
+    mass                         :  1.
+# Uncomment below to run a multi-site simulation.
+#Molecules:
+#  0:
+#    site-types                   :  [ 0 ]
+#    relative-site-positions      :  [ [0, 0, 0 ] ]
+#    moment-of-inertia            :  [ 1., 1., 1. ]
 Objects:
   # "water"
   CubeClosestPacked:
@@ -34,14 +39,14 @@ Objects:
       bottomLeftCorner           :  [1, 1, 1]
       box-length                 :  [48, 28, 10]
       velocity                   :  [0, 0, 0]
-      particleTypeId             :  0
+      particle-type-id           :  0
   Sphere:
     0:  
       center                     :  [18, 15, 30]
       radius                     :  6
       particle-spacing           :  1.122462048
       velocity                   :  [0, 0, 0]
-      particleTypeId             :  0
+      particle-type-id           :  0
 # thermostat:
 #   initialTemperature             :  1
 #   targetTemperature              :  4

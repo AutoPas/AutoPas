@@ -524,24 +524,20 @@ class MDFlexConfig {
    */
   static inline const char *siteStr{"Sites"};
   /**
-   * siteTypeStr
-   */
-  static inline const char *const siteTypeStr{"site-id"};
-  /**
    * epsilonMap
    */
   MDFlexOption<std::map<unsigned long, double>, 0> epsilonMap{
-      {{0ul, 1.}}, "site-epsilon", true, "Mapping from site type to an epsilon value."};
+      {{0ul, 1.}}, "epsilon", true, "Mapping from site type to an epsilon value."};
   /**
    * sigmaMap
    */
   MDFlexOption<std::map<unsigned long, double>, 0> sigmaMap{
-      {{0ul, 1.}}, "site-sigma", true, "Mapping from site type to a sigma value."};
+      {{0ul, 1.}}, "sigma", true, "Mapping from site type to a sigma value."};
   /**
    * massMap
    */
   MDFlexOption<std::map<unsigned long, double>, 0> massMap{
-      {{0ul, 1.}}, "site-mass", true, "Mapping from site type to a mass value."};
+      {{0ul, 1.}}, "mass", true, "Mapping from site type to a mass value."};
   // Molecule Type Generation
   // Strings for parsing yaml files.
   /**
@@ -549,21 +545,17 @@ class MDFlexConfig {
    */
   static inline const char *moleculesStr{"Molecules"};
   /**
-   * molTypeStr
-   */
-  static inline const char *const molTypeStr{"molecule-id"};
-  /**
    * moleculeToSiteIdStr
    */
-  static inline const char *moleculeToSiteIdStr{"molecule-to-site-id"};
+  static inline const char *moleculeToSiteIdStr{"site-types"};
   /**
    * moleculeToSitePosStr
    */
-  static inline const char *moleculeToSitePosStr{"molecule-to-site-pos"};
+  static inline const char *moleculeToSitePosStr{"relative-site-positions"};
   /**
    * momentOfInertiaStr
    */
-  static inline const char *momentOfInertiaStr{"molecule-moment-of-inertia"};
+  static inline const char *momentOfInertiaStr{"moment-of-inertia"};
   // Maps where the molecule type information is actually stored
   /**
    * molToSiteIdMap
@@ -584,9 +576,9 @@ class MDFlexConfig {
   static inline const char *objectsStr{"Objects"};
   /**
    * particleTypeStr. A md-flex mode blind string name for the particle type of the object's particles. E.g. this is
-   * siteId in a single-site simulation and molId in a multi-site simulation.
+   * site-type-id in a single-site simulation and molecule-type-id in a multi-site simulation.
    */
-  static inline const char *particleTypeStr{"particleTypeId"};
+  static inline const char *particleTypeStr{"particle-type-id"};
   /**
    * bottomLeftBackCornerStr
    */
