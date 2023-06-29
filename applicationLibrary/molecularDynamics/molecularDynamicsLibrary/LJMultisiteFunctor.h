@@ -726,24 +726,38 @@ class LJMultisiteFunctor
    * @param newton3
    */
   void endTraversal(bool newton3) final {
+    using namespace autopas::utils::ArrayMath::literals;
+
     if (_postProcessed) {
       throw autopas::utils::ExceptionHandler::AutoPasException(
           "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
     }
     if (calculateGlobals) {
+      // We distinguish between non-newton3 and newton3 functor calls. Newton3 calls are accumulated directly.
+      // Non-newton3 calls are accumulated temporarily and later divided by 2.
+      double potentialEnergySumNoN3Acc = 0;
+      std::array<double, 3> virialSumNoN3Acc = {0, 0, 0};
       for (size_t i = 0; i < _aosThreadData.size(); ++i) {
-        _potentialEnergySum += _aosThreadData[i].potentialEnergySum;
-        _virialSum = autopas::utils::ArrayMath::add(_virialSum, _aosThreadData[i].virialSum);
+        potentialEnergySumNoN3Acc += _aosThreadData[i].potentialEnergySumNoN3;
+        _potentialEnergySum += _aosThreadData[i].potentialEnergySumN3;
+
+        virialSumNoN3Acc += _aosThreadData[i].virialSumNoN3;
+        _virialSum += _aosThreadData[i].virialSumN3;
       }
-      if (not newton3) {
-        // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
-        // here.
-        _potentialEnergySum *= 0.5;
-        _virialSum = autopas::utils::ArrayMath::mulScalar(_virialSum, 0.5);
-      }
-      // we have always calculated 6*potential, so we divide by 6 here!
+      // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
+      // here.
+      potentialEnergySumNoN3Acc *= 0.5;
+      virialSumNoN3Acc *= 0.5;
+
+      _potentialEnergySum += potentialEnergySumNoN3Acc;
+      _virialSum += virialSumNoN3Acc;
+
+      // we have always calculated 6*potentialEnergy, so we divide by 6 here!
       _potentialEnergySum /= 6.;
       _postProcessed = true;
+
+      AutoPasLog(TRACE, "Final potential energy {}", _potentialEnergySum);
+      AutoPasLog(TRACE, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
     }
   }
 
@@ -1518,19 +1532,24 @@ class LJMultisiteFunctor
    */
   class AoSThreadData {
    public:
-    AoSThreadData() : virialSum{0., 0., 0.}, potentialEnergySum{0.}, __remainingTo64{} {}
-
+    AoSThreadData()
+        : virialSumNoN3{0., 0., 0.}, virialSumN3{0., 0., 0.}, potentialEnergySumNoN3{0.}, potentialEnergySumN3{0.}, __remainingTo64{} {}
     void setZero() {
-      virialSum = {0., 0., 0.};
-      potentialEnergySum = 0;
+      virialSumNoN3 = {0., 0., 0.};
+      virialSumN3 = {0., 0., 0.};
+      potentialEnergySumNoN3 = 0.;
+      potentialEnergySumN3 = 0.;
     }
 
-    std::array<double, 3> virialSum;
-    double potentialEnergySum;
+    // variables
+    std::array<double, 3> virialSumNoN3;
+    std::array<double, 3> virialSumN3;
+    double potentialEnergySumNoN3;
+    double potentialEnergySumN3;
 
    private:
     // dummy parameter to get the right size (64 bytes)
-    double __remainingTo64[(64 - 4 * sizeof(double)) / sizeof(double)];
+    double __remainingTo64[(64 - 8 * sizeof(double)) / sizeof(double)];
   };
 
   static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size (should be multiple of 64)");
