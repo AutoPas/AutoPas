@@ -10,6 +10,7 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/utils/ArrayUtils.h"
+#include "autopas/utils/Quaternion.h"
 #include "autopas/utils/WrapMPI.h"
 /**
  * Parameterized test case for reflective boundary conditions in RegularGridDecomposition
