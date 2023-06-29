@@ -53,7 +53,7 @@ Int_t safeAdd(const Int_t &a, const Int_t &b, const Int_t &valUnderflow = std::n
  * @param a
  * @param b
  * @param valUnderflow Return value in case of underflow.
- * @param valOverflow Returns value in case of overflow.
+ * @param valOverflow Return value in case of overflow.
  * @return Sum or valUnderflow or valOverflow.
  */
 template <class Float_t, std::enable_if_t<std::is_floating_point_v<Float_t>, bool> = true>
@@ -106,7 +106,7 @@ Int_t safeSub(const Int_t &a, const Int_t &b, const Int_t &valUnderflow = std::n
  * @param a
  * @param b
  * @param valUnderflow Return value in case of underflow.
- * @param valOverflow Returns value in case of overflow.
+ * @param valOverflow Return value in case of overflow.
  * @return Sum or valUnderflow or valOverflow.
  */
 template <class Float_t, std::enable_if_t<std::is_floating_point_v<Float_t>, bool> = true>
@@ -159,7 +159,7 @@ Int_t safeMul(const Int_t &a, const Int_t &b, const Int_t &valUnderflow = std::n
  * @param a
  * @param b
  * @param valUnderflow Return value in case of underflow.
- * @param valOverflow Returns value in case of overflow.
+ * @param valOverflow Return value in case of overflow.
  * @return Product or valUnderflow or valOverflow.
  */
 template <class Float_t, std::enable_if_t<std::is_floating_point_v<Float_t>, bool> = true>
