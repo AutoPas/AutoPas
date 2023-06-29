@@ -14,12 +14,14 @@ namespace autopas {
  */
 class Evidence {
  public:
-  Evidence(size_t iteration, long value);
-
   /**
    * Iteration in which the measurement was taken.
    */
   size_t iteration;
+  /**
+   * Tuning phase in which the measurement was taken.
+   */
+  size_t tuningPhase;
   /**
    * Value of the measurement (time, energy, ...).
    */
