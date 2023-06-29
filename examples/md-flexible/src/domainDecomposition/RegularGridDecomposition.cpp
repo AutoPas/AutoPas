@@ -331,11 +331,13 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
         };
 
         const bool reflectMoleculeFlag =
+            distanceToBoundary < sixthRootOfTwo * 0.5 *
 #if MD_FLEXIBLE_MODE == MULTISITE
-            distanceToBoundary < sixthRootOfTwo * particlePropertiesLib.getMoleculesLargestSigma(p->getTypeId()) / 2.;
+                                     particlePropertiesLib.getMoleculesLargestSigma(p->getTypeId());
 #else
-            distanceToBoundary < sixthRootOfTwo * particlePropertiesLib.getSigma(p->getTypeId()) / 2.;
+                                     particlePropertiesLib.getSigma(p->getTypeId());
 #endif
+
         if (reflectMoleculeFlag) {
 #if MD_FLEXIBLE_MODE == MULTISITE
           // Keep track of current force and torque to see if molecule is repulsed, and, if not, reset the force.
