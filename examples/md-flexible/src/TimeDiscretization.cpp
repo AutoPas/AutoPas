@@ -57,6 +57,7 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
                                          const ParticlePropertiesLibraryType &particlePropertiesLibrary,
                                          const double &deltaT, const std::array<double, 3> &globalForce) {
   using namespace autopas::utils::ArrayMath::literals;
+  using autopas::utils::ArrayMath::dot;
   using autopas::utils::ArrayMath::cross;
   using autopas::utils::ArrayMath::div;
   using autopas::utils::ArrayMath::L2Norm;
@@ -71,6 +72,7 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
   const auto halfDeltaT = 0.5 * deltaT;
 
   const double tol = 1e-13;  // tolerance given in paper
+  const double tolSquared = tol * tol;
 
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
@@ -101,9 +103,9 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
     auto qHalfStepOld = qHalfStep;
     qHalfStepOld[0] += 2 * tol;
 
-    while (L2Norm(qHalfStep - qHalfStepOld) > tol) {
+    while (dot(qHalfStep - qHalfStepOld, qHalfStep - qHalfStepOld) > tolSquared) {
       qHalfStepOld = qHalfStep;
-      auto angVelMHalfStep =
+      const auto angVelMHalfStep =
           rotatePositionBackwards(qHalfStepOld, angVelWHalfStep);  // equivalent to first two lines of (25)
       derivativeQHalfStep = qMul(qHalfStepOld, angVelMHalfStep) * 0.5;
       qHalfStep = normalize(q + derivativeQHalfStep * halfDeltaT);
