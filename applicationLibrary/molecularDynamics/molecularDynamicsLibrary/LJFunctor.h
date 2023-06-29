@@ -150,7 +150,7 @@ class LJFunctor
     }
     if (calculateGlobals) {
       auto virial = dr * f;
-      // Here we calculate either the potential energy * 6 or the potential energy * 12.
+      // Here we calculate either the potential energy * 6.
       // For newton3, this potential energy contribution is distributed evenly to the two molecules.
       // For non-newton3, the full potential energy is added to the one molecule.
       // The division by 6 is handled in endTraversal, as well as the division by two needed if newton3 is not used.
@@ -159,7 +159,7 @@ class LJFunctor
       const int threadnum = autopas::autopas_get_thread_num();
       if (i.isOwned()) {
         if (newton3) {
-          _aosThreadData[threadnum].upotSumN3 += potentialEnergy6 * 0.5;
+          _aosThreadData[threadnum].potentialEnergySumN3 += potentialEnergy6 * 0.5;
           _aosThreadData[threadnum].virialSumN3 += virial * 0.5;
         } else {
           // for non-newton3 the division is in the post-processing step.
@@ -637,7 +637,7 @@ class LJFunctor
       potentialEnergySumNoN3Acc *= 0.5;
       virialSumNoN3Acc *= 0.5;
 
-      _potentialEnergySum += upotSumNoN3Acc;
+      _potentialEnergySum += potentialEnergySumNoN3Acc;
       _virialSum += virialSumNoN3Acc;
 
       // we have always calculated 6*potentialEnergy, so we divide by 6 here!
@@ -928,7 +928,7 @@ class LJFunctor
     if (calculateGlobals) {
       const int threadnum = autopas::autopas_get_thread_num();
 
-      // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
+      // SoAFunctorVerlet obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
       // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
 
       if (newton3) {
