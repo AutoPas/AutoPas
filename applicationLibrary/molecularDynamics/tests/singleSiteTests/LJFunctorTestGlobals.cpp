@@ -67,7 +67,8 @@ void LJFunctorTestGlobals<FuncType>::testAoSGlobals(LJFunctorTestGlobals<FuncTyp
   const double expectedEnergy = calculateLJPotential(p1Pos, p2Pos, cutoff, sigma, epsilon);
   const double expectedVirial = calculateLJVirialTotal(p1Pos, p2Pos, cutoff, sigma, epsilon);
 
-  EXPECT_NEAR(potentialEnergy, whereFactor * expectedEnergy, absDelta) << "where: " << where_str << ", newton3: " << newton3;
+  EXPECT_NEAR(potentialEnergy, whereFactor * expectedEnergy, absDelta)
+      << "where: " << where_str << ", newton3: " << newton3;
   EXPECT_NEAR(virial, whereFactor * expectedVirial, absDelta) << "where: " << where_str << ", newton3: " << newton3;
 }
 
@@ -506,7 +507,8 @@ TYPED_TEST_P(LJFunctorTestGlobals, testAoSFunctorGlobalsOpenMPParallel) {
   const double expectedEnergy = expectedEnergyP1P2 + expectedEnergyP3P4;
   const double expectedVirial = expectedVirialP1P2 + expectedVirialP3P4;
 
-  EXPECT_NEAR(potentialEnergy, whereFactor * expectedEnergy, this->absDelta) << "where: " << where_str << ", newton3: " << newton3;
+  EXPECT_NEAR(potentialEnergy, whereFactor * expectedEnergy, this->absDelta)
+      << "where: " << where_str << ", newton3: " << newton3;
   EXPECT_NEAR(virial, whereFactor * expectedVirial, this->absDelta)
       << "where: " << where_str << ", newton3: " << newton3;
 }

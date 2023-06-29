@@ -29,7 +29,7 @@ class MoleculeLJ : public autopas::Particle {
    * @param typeId TypeId of the molecule.
    */
   MoleculeLJ(const std::array<double, 3> &pos, const std::array<double, 3> &v, unsigned long moleculeId,
-                      unsigned long typeId = 0);
+             unsigned long typeId = 0);
 
   ~MoleculeLJ() = default;
 

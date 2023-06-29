@@ -38,9 +38,9 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
 
 /**
  * Calculate and update the quaternion for every particle. Uses the rotational velocity-verlet algorithm as described by
- * Rozmanov, 2010, Robust rotational-velocity-Verlet integration methods (https://doi.org/10.1103/PhysRevE.81.056706) (method A); with slight adaptations to account
- * for md-flexible primarily using (angular) velocities rather than (angular) momentums. Code lines are commented with
- * references to corresponding equations within the paper.
+ * Rozmanov, 2010, Robust rotational-velocity-Verlet integration methods (https://doi.org/10.1103/PhysRevE.81.056706)
+ * (method A); with slight adaptations to account for md-flexible primarily using (angular) velocities rather than
+ * (angular) momentums. Code lines are commented with references to corresponding equations within the paper.
  *
  * In addition, resets the torques to that determined by the global force only.
  *
