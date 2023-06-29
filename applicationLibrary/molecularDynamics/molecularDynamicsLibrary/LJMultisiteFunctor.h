@@ -239,24 +239,30 @@ class LJMultisiteFunctor
         }
 
         if (calculateGlobals) {
-          // Here we calculate either the potential energy * 6 or the potential energy * 12.
+          // Here we calculate the potential energy * 6.
           // For newton3, this potential energy contribution is distributed evenly to the two molecules.
           // For non-newton3, the full potential energy is added to the one molecule.
-          // I.e. double the potential energy will be added in this case.
           // The division by 6 is handled in endTraversal, as well as the division by two needed if newton3 is not used.
           // There is a similar handling of the virial, but without the mutliplication/division by 6.
-          const auto potentialEnergy6 = newton3 ? 0.5 * (epsilon24 * lj12m6 + shift6) : (epsilon24 * lj12m6 + shift6);
-          const auto virial = newton3 ? (displacement * force) * 0.5 : displacement * force;
+          const auto potentialEnergy6 = epsilon24 * lj12m6 + shift6;
+          const auto virial = displacement * force;
 
           const auto threadNum = autopas::autopas_get_thread_num();
 
           if (particleA.isOwned()) {
-            _aosThreadData[threadNum].potentialEnergySum += potentialEnergy6;
-            _aosThreadData[threadNum].virialSum += virial;
+            if (newton3) {
+              _aosThreadData[threadNum].potentialEnergySumN3 += potentialEnergy6 * 0.5;
+              _aosThreadData[threadNum].virialSumN3 += virial * 0.5;
+            } else {
+              // for non-newton3 the division is in the post-processing step.
+              _aosThreadData[threadNum].potentialEnergySumNoN3 += potentialEnergy6;
+              _aosThreadData[threadNum].virialSumNoN3 += virial;
+            }
           }
+          // for non-newton3 the second particle will be considered in a separate calculation
           if (newton3 and particleB.isOwned()) {
-            _aosThreadData[threadNum].potentialEnergySum += potentialEnergy6;
-            _aosThreadData[threadNum].virialSum += virial;
+            _aosThreadData[threadNum].potentialEnergySumN3 += potentialEnergy6 * 0.5;
+            _aosThreadData[threadNum].virialSumN3 += virial * 0.5;
           }
         }
       }
@@ -575,12 +581,17 @@ class LJMultisiteFunctor
       const auto threadNum = autopas::autopas_get_thread_num();
       // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
       // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
-      const auto newton3Factor = newton3 ? .5 : 1.;
-
-      _aosThreadData[threadNum].potentialEnergySum += potentialEnergySum * newton3Factor;
-      _aosThreadData[threadNum].virialSum[0] += virialSumX * newton3Factor;
-      _aosThreadData[threadNum].virialSum[1] += virialSumY * newton3Factor;
-      _aosThreadData[threadNum].virialSum[2] += virialSumZ * newton3Factor;
+      if (newton3) {
+        _aosThreadData[threadNum].potentialEnergySumN3 += potentialEnergySum * 0.5;
+        _aosThreadData[threadNum].virialSumN3[0] += virialSumX * 0.5;
+        _aosThreadData[threadNum].virialSumN3[1] += virialSumY * 0.5;
+        _aosThreadData[threadNum].virialSumN3[2] += virialSumZ * 0.5;
+      } else {
+        _aosThreadData[threadNum].potentialEnergySumNoN3 += potentialEnergySum;
+        _aosThreadData[threadNum].virialSumNoN3[0] += virialSumX;
+        _aosThreadData[threadNum].virialSumNoN3[1] += virialSumY;
+        _aosThreadData[threadNum].virialSumNoN3[2] += virialSumZ;
+      }
     }
   }
   /**
@@ -1119,12 +1130,17 @@ class LJMultisiteFunctor
       const auto threadNum = autopas::autopas_get_thread_num();
       // SoAFunctorPairImpl obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
       // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
-      const auto newton3Factor = newton3 ? .5 : 1.;
-
-      _aosThreadData[threadNum].potentialEnergySum += potentialEnergySum * newton3Factor;
-      _aosThreadData[threadNum].virialSum[0] += virialSumX * newton3Factor;
-      _aosThreadData[threadNum].virialSum[1] += virialSumY * newton3Factor;
-      _aosThreadData[threadNum].virialSum[2] += virialSumZ * newton3Factor;
+      if constexpr (newton3) {
+        _aosThreadData[threadNum].potentialEnergySumN3 += potentialEnergySum * 0.5;
+        _aosThreadData[threadNum].virialSumN3[0] += virialSumX * 0.5;
+        _aosThreadData[threadNum].virialSumN3[1] += virialSumY * 0.5;
+        _aosThreadData[threadNum].virialSumN3[2] += virialSumZ * 0.5;
+      } else {
+        _aosThreadData[threadNum].potentialEnergySumNoN3 += potentialEnergySum;
+        _aosThreadData[threadNum].virialSumNoN3[0] += virialSumX;
+        _aosThreadData[threadNum].virialSumNoN3[1] += virialSumY;
+        _aosThreadData[threadNum].virialSumNoN3[2] += virialSumZ;
+      }
     }
   }
 
@@ -1483,12 +1499,17 @@ class LJMultisiteFunctor
       const auto threadNum = autopas::autopas_get_thread_num();
       // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
       // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
-      const auto newton3Factor = newton3 ? .5 : 1.;
-
-      _aosThreadData[threadNum].potentialEnergySum += potentialEnergySum * newton3Factor;
-      _aosThreadData[threadNum].virialSum[0] += virialSumX * newton3Factor;
-      _aosThreadData[threadNum].virialSum[1] += virialSumY * newton3Factor;
-      _aosThreadData[threadNum].virialSum[2] += virialSumZ * newton3Factor;
+      if (newton3) {
+        _aosThreadData[threadNum].potentialEnergySumN3 += potentialEnergySum * 0.5;
+        _aosThreadData[threadNum].virialSumN3[0] += virialSumX * 0.5;
+        _aosThreadData[threadNum].virialSumN3[1] += virialSumY * 0.5;
+        _aosThreadData[threadNum].virialSumN3[2] += virialSumZ * 0.5;
+      } else {
+        _aosThreadData[threadNum].potentialEnergySumNoN3 += potentialEnergySum;
+        _aosThreadData[threadNum].virialSumNoN3[0] += virialSumX;
+        _aosThreadData[threadNum].virialSumNoN3[1] += virialSumY;
+        _aosThreadData[threadNum].virialSumNoN3[2] += virialSumZ;
+      }
     }
   }
 
