@@ -103,12 +103,11 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
     // parallel iterators
     for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
       const auto &vel = iter->getV();
-#if MD_FLEXIBLE_MODE == MULTISITE
-      const auto &angVel = iter->getAngularVel();
-#endif
       kineticEnergyMul2MapThread.at(iter->getTypeId()) +=
           particlePropertiesLibrary.getMolMass(iter->getTypeId()) * dot(vel, vel);
 #if MD_FLEXIBLE_MODE == MULTISITE
+      // add contribution from angular momentum
+      const auto &angVel = iter->getAngularVel();
       kineticEnergyMul2MapThread.at(iter->getTypeId()) +=
           dot(particlePropertiesLibrary.getMomentOfInertia(iter->getTypeId()), angVel * angVel);
 #endif
@@ -180,9 +179,7 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
   using namespace autopas::utils::ArrayMath::literals;
   // Generate map(s) of molecule type Id to scaling factors
   std::map<size_t, double> translationalVelocityScale;
-#if MD_FLEXIBLE_MODE == MULTISITE
   std::map<size_t, std::array<double, 3>> rotationalVelocityScale;
-#endif
 
   for (int typeID = 0; typeID < particlePropertiesLibrary.getNumberRegisteredSiteTypes(); typeID++) {
     translationalVelocityScale.emplace(typeID,
@@ -196,14 +193,8 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
 #endif
   }
 
-#if MD_FLEXIBLE_MODE == MULTISITE
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel default(none) shared(autopas, translationalVelocityScale, rotationalVelocityScale)
-#endif
-#else
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel default(none) shared(autopas, translationalVelocityScale)
-#endif
 #endif
   {
     // we use a constant seed for repeatability.
