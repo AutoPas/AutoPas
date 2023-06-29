@@ -15,9 +15,9 @@ void ThermostatTest::initContainer(AutoPasType &autopas, const ParticleType &dum
   constexpr double cutoff = 1.;
 
   double minimalBoxLength = cutoff + autopas.getVerletSkin();
-  std::array<double, 3> boxMax = {std::max((double)particlesPerDim[0] * particleSpacing, minimalBoxLength),
-                                  std::max((double)particlesPerDim[1] * particleSpacing, minimalBoxLength),
-                                  std::max((double)particlesPerDim[2] * particleSpacing, minimalBoxLength)};
+  std::array<double, 3> boxMax = {std::max(static_cast<double>(particlesPerDim[0]) * particleSpacing, minimalBoxLength),
+                                  std::max(static_cast<double>(particlesPerDim[1]) * particleSpacing, minimalBoxLength),
+                                  std::max(static_cast<double>(particlesPerDim[2]) * particleSpacing, minimalBoxLength)};
   autopas.setBoxMax(boxMax);
   autopas.setBoxMin({0., 0., 0.});
   autopas.setCutoff(cutoff);
