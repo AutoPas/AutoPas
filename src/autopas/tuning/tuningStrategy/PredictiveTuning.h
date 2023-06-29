@@ -238,19 +238,19 @@ class PredictiveTuning : public SetSearchSpaceBasedTuningStrategy {
   /**
    * Factor of the range of the optimal configurations for the optimalSearchSpace.
    */
-  const double _relativeOptimumRange{1.2};
+  double _relativeOptimumRange{1.2};
   /**
    * After not being tested this number of tuningPhases a configuration is being emplaced in _optimalSearchSpace.
    */
-  const unsigned int _maxTuningPhasesWithoutTest{5};
+  unsigned int _maxTuningPhasesWithoutTest{5};
   /**
    * The relative cutoff for configurations to be blacklisted.
    */
-  const double _relativeBlacklistRange{0};
+  double _relativeBlacklistRange{0};
   /**
    * Stores the extrapolation method that is going to be used for the traversal time predictions.
    */
-  const ExtrapolationMethodOption _extrapolationMethod{ExtrapolationMethodOption::linearRegression};
+  ExtrapolationMethodOption _extrapolationMethod{ExtrapolationMethodOption::linearRegression};
   /**
    * Stores the number of tests that have to be made until the first prediction.
    * This number also determines how much evidence is used for the prediction and for a polynomial extrapolation method,
