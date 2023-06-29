@@ -50,7 +50,7 @@ void FlopCounterTest::test(autopas::DataLayoutOption dataLayoutOption) {
   auto expectedKernelCalls = molVec.size();
   ASSERT_EQ(expectedKernelCalls, flopCounterFunctor.getKernelCalls());
 
-  // distance calculations cost 8 flops, LJ kernel calls with n3l cost 18 flops
+  // distance calculations cost 8 flops, LJ kernel calls with Newton 3 cost 18 flops
   auto expectedFlops = expectedDistanceCalculations * 8 + expectedKernelCalls * 18;
   ASSERT_EQ(expectedFlops, flopCounterFunctor.getFlops());
 
