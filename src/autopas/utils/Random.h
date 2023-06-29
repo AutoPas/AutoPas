@@ -8,6 +8,7 @@
 #pragma once
 
 #include <algorithm>
+#include <iterator>
 #include <random>
 #include <set>
 
@@ -95,16 +96,19 @@ class Random : public std::mt19937 {
   }
 
   /**
-   * Get a uniformly random object from the given set.
-   * @param pool set
-   * @return random element
+   * Get a uniformly randomly selected object from the given container.
+   *
+   * @tparam Container Type of the container. Must support std::begin().
+   * @tparam Elem Type of the elements in the container.
+   * @param pool Container from which to select an element.
+   * @return Randomly selected element.
    */
-  template <class T>
-  T pickRandom(std::set<T> pool) {
+  template <template <class> class Container, class Elem>
+  Elem pickRandom(const Container<Elem> &pool) {
     std::uniform_int_distribution<size_t> distr(0ul, pool.size() - 1ul);
     size_t pos = distr(*this);
 
-    auto it = pool.begin();
+    auto it = std::begin(pool);
     std::advance(it, pos);
 
     return *it;
