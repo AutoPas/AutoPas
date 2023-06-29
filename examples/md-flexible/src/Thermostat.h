@@ -46,11 +46,13 @@ double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibrary
 #endif
   }
 // md-flexible's molecules have 3 DoF for translational velocity and optionally 3 additional rotational DoF
+  constexpr unsigned int degreesOfFreedom{
 #if MD_FLEXIBLE_MODE == MULTISITE
-  constexpr unsigned int degreesOfFreedom{6};
+    6
 #else
-  constexpr unsigned int degreesOfFreedom{3};
+    3
 #endif
+  };
   return kineticEnergyMul2 / (autopas.getNumberOfParticles() * degreesOfFreedom);
 }
 
