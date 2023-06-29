@@ -5,7 +5,7 @@
 Objects:
   CubeGauss:
     0:
-      particleTypeId:  0
+      particle-type-id:  0
       numberOfParticles: 100
       box-length: [8.,8.,8.]
       distribution-mean: [17.0, 3.0, 6]

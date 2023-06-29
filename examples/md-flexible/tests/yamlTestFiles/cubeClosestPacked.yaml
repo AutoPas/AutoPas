@@ -5,7 +5,7 @@
 Objects:
   CubeClosestPacked:
     0:
-      particleTypeId             :  0
+      particle-type-id           :  0
       box-length                 :  [6.5, 7., 7.]
       bottomLeftCorner           :  [0., 0., 20.]
       particle-spacing           :  1

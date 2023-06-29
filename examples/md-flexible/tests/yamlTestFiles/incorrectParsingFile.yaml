@@ -5,7 +5,7 @@
 Objects:
   CubeGrid:
     0:
-      particleTypeId:  this_is_not_an_integer
+      particle-type-id:  this_is_not_an_integer
       particles-per-dimension: [10,10,10]
       particle-spacing: 0.5
       velocity: [0.,0.,0.]
