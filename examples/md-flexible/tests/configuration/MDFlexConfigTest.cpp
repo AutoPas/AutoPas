@@ -123,7 +123,18 @@ TEST_F(MDFlexConfigTest, multipleSameObjectParsing) {
   ASSERT_EQ(configuration.cubeGridObjects.at(1).getTypeId(), 1);
 }
 
-// todo: add test for parsing site and molecule information
+TEST_F(MDFlexConfigTest, vtkRelatedProperties) {
+  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
+                                        std::string(YAMLDIRECTORY) + "vtkRelatedProperties.yaml"};
+
+  char *argv[3] = {&arguments[0][0], &arguments[1][0], &arguments[2][0]};
+
+  MDFlexConfig configuration(3, argv);
+
+  EXPECT_THAT(configuration.vtkOutputFolder.value, "fancyFolderName");
+  EXPECT_THAT(configuration.vtkFileName.value, "fancyFileName");
+  EXPECT_THAT(configuration.vtkWriteFrequency.value, 42);
+}
 
 /**
  * Test for the correct parsing of site types from a .yaml file.

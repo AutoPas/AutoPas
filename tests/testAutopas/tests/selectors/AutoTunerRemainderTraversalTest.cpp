@@ -6,10 +6,11 @@
 
 #include "AutoTunerRemainderTraversalTest.h"
 
+#include "molecularDynamicsLibrary/LJFunctor.h"
+#include "autopas/options/TuningMetricOption.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/Configuration.h"
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
-#include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
 /**
@@ -54,9 +55,19 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(confSet);
   const std::array<double, 3> boxMin = {0., 0., 0.};
   const std::array<double, 3> boxMax = {10., 10., 10.};
-  autopas::AutoTuner<Molecule> autoTuner{
-      boxMin, boxMax, cutoff, 0.05, 4, std::move(tuningStrategy), 0.3, 0.0, autopas::SelectorStrategyOption::fastestAbs,
-      1000,   3,      10};
+  autopas::AutoTuner<Molecule> autoTuner{boxMin,
+                                         boxMax,
+                                         cutoff,
+                                         0.05,
+                                         4,
+                                         std::move(tuningStrategy),
+                                         0.3,
+                                         0.0,
+                                         autopas::SelectorStrategyOption::fastestAbs,
+                                         autopas::TuningMetricOption::time,
+                                         1000,
+                                         3,
+                                         10};
 
   auto container = autoTuner.getContainer();
   for (const auto &p : particlesContainerOwned) {
@@ -314,9 +325,19 @@ void testRemainderTraversal(const std::vector<Molecule> &particles, const std::v
   auto tuningStrategy = std::make_unique<autopas::FullSearch>(confSet);
   const std::array<double, 3> boxMin = {0., 0., 0.};
   const std::array<double, 3> boxMax = {9., 9., 9.};
-  autopas::AutoTuner<Molecule> autoTuner{
-      boxMin, boxMax, cutoff, 0.05, 4, std::move(tuningStrategy), 0.3, 0.0, autopas::SelectorStrategyOption::fastestAbs,
-      1000,   3,      10};
+  autopas::AutoTuner<Molecule> autoTuner{boxMin,
+                                         boxMax,
+                                         cutoff,
+                                         0.05,
+                                         4,
+                                         std::move(tuningStrategy),
+                                         0.3,
+                                         0.0,
+                                         autopas::SelectorStrategyOption::fastestAbs,
+                                         autopas::TuningMetricOption::time,
+                                         1000,
+                                         3,
+                                         10};
 
   // fill the container with the given particles
   for (const auto &p : particles) {

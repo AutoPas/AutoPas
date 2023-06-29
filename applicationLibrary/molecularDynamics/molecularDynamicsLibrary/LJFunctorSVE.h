@@ -165,13 +165,19 @@ class LJFunctorSVE
         virial *= (double)0.5;
       }
       if (i.isOwned()) {
-        _aosThreadData[threadnum].potentialEnergySum += potentialEnergy6;
-        _aosThreadData[threadnum].virialSum += virial;
+        if (newton3) {
+          _aosThreadData[threadnum].potentialEnergySumN3 += potentialEnergy6 * 0.5;
+          _aosThreadData[threadnum].virialSumN3 += virial * 0.5;
+        } else {
+          // for non-newton3 the division is in the post-processing step.
+          _aosThreadData[threadnum].potentialEnergySumNoN3 += potentialEnergy6;
+          _aosThreadData[threadnum].virialSumNoN3 += virial;
+        }
       }
       // for non-newton3 the second particle will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
-        _aosThreadData[threadnum].potentialEnergySum += potentialEnergy6;
-        _aosThreadData[threadnum].virialSum += virial;
+        _aosThreadData[threadnum].potentialEnergySumN3 += potentialEnergy6 * 0.5;
+        _aosThreadData[threadnum].virialSumN3 += virial * 0.5;
       }
     }
   }
@@ -277,15 +283,20 @@ class LJFunctorSVE
 
     if constexpr (calculateGlobals) {
       const int threadnum = autopas_get_thread_num();
-      double factor = 1.;
+
       // we assume newton3 to be enabled in this function call, thus we multiply by two if the value of newton3 is
       // false, since for newton3 disabled we divide by two later on.
-      factor *= newton3 ? .5 : 1.;
-      // In case we have a non-cell-wise owned state, we have multiplied everything by two, so we divide it by 2 again.
-      _aosThreadData[threadnum].potentialEnergySum += svaddv_f64(svptrue_b64(), potentialEnergySum) * factor;
-      _aosThreadData[threadnum].virialSum[0] += svaddv_f64(svptrue_b64(), virialSumX) * factor;
-      _aosThreadData[threadnum].virialSum[1] += svaddv_f64(svptrue_b64(), virialSumY) * factor;
-      _aosThreadData[threadnum].virialSum[2] += svaddv_f64(svptrue_b64(), virialSumZ) * factor;
+      if (newton3) {
+        _aosThreadData[threadnum].potentialEnergySumN3 += svaddv_f64(svptrue_b64(), potentialEnergySum) * 0.5;
+        _aosThreadData[threadnum].virialSumN3[0] += svaddv_f64(svptrue_b64(), virialSumX) * 0.5;
+        _aosThreadData[threadnum].virialSumN3[1] += svaddv_f64(svptrue_b64(), virialSumY) * 0.5;
+        _aosThreadData[threadnum].virialSumN3[2] += svaddv_f64(svptrue_b64(), virialSumZ) * 0.5;
+      } else {
+        _aosThreadData[threadnum].potentialEnergySumNoN3 += svaddv_f64(svptrue_b64(), potentialEnergySum);
+        _aosThreadData[threadnum].virialSumNoN3[0] += svaddv_f64(svptrue_b64(), virialSumX);
+        _aosThreadData[threadnum].virialSumNoN3[1] += svaddv_f64(svptrue_b64(), virialSumY);
+        _aosThreadData[threadnum].virialSumNoN3[2] += svaddv_f64(svptrue_b64(), virialSumZ);
+      }
     }
 #endif
   }
@@ -364,17 +375,18 @@ class LJFunctorSVE
 
     if constexpr (calculateGlobals) {
       const int threadnum = autopas_get_thread_num();
-      // we have duplicated calculations, i.e., we calculate interactions multiple times, so we have to take care
-      // that we do not add the energy multiple times!
-      double energyfactor = 1.;
-      if constexpr (newton3) {
-        energyfactor *= 0.5;  // we count the energies partly to one of the two cells!
-      }
 
-      _aosThreadData[threadnum].potentialEnergySum += svaddv_f64(svptrue_b64(), potentialEnergySum) * energyfactor;
-      _aosThreadData[threadnum].virialSum[0] += svaddv_f64(svptrue_b64(), virialSumX) * energyfactor;
-      _aosThreadData[threadnum].virialSum[1] += svaddv_f64(svptrue_b64(), virialSumY) * energyfactor;
-      _aosThreadData[threadnum].virialSum[2] += svaddv_f64(svptrue_b64(), virialSumZ) * energyfactor;
+      if (newton3) {
+        _aosThreadData[threadnum].potentialEnergySumN3 += svaddv_f64(svptrue_b64(), potentialEnergySum) * 0.5;
+        _aosThreadData[threadnum].virialSumN3[0] += svaddv_f64(svptrue_b64(), virialSumX) * 0.5;
+        _aosThreadData[threadnum].virialSumN3[1] += svaddv_f64(svptrue_b64(), virialSumY) * 0.5;
+        _aosThreadData[threadnum].virialSumN3[2] += svaddv_f64(svptrue_b64(), virialSumZ) * 0.5;
+      } else {
+        _aosThreadData[threadnum].potentialEnergySumNoN3 += svaddv_f64(svptrue_b64(), potentialEnergySum);
+        _aosThreadData[threadnum].virialSumNoN3[0] += svaddv_f64(svptrue_b64(), virialSumX);
+        _aosThreadData[threadnum].virialSumNoN3[1] += svaddv_f64(svptrue_b64(), virialSumY);
+        _aosThreadData[threadnum].virialSumNoN3[2] += svaddv_f64(svptrue_b64(), virialSumZ);
+      }
     }
 #endif
   }
@@ -689,17 +701,18 @@ class LJFunctorSVE
 
     if constexpr (calculateGlobals) {
       const int threadnum = autopas_get_thread_num();
-      // we have duplicated calculations, i.e., we calculate interactions multiple times, so we have to take care
-      // that we do not add the energy multiple times!
-      double energyfactor = 1.;
-      if constexpr (newton3) {
-        energyfactor *= 0.5;  // we count the energies partly to one of the two cells!
-      }
 
-      _aosThreadData[threadnum].potentialEnergySum += svaddv_f64(svptrue_b64(), potentialEnergySum) * energyfactor;
-      _aosThreadData[threadnum].virialSum[0] += svaddv_f64(svptrue_b64(), virialSumX) * energyfactor;
-      _aosThreadData[threadnum].virialSum[1] += svaddv_f64(svptrue_b64(), virialSumY) * energyfactor;
-      _aosThreadData[threadnum].virialSum[2] += svaddv_f64(svptrue_b64(), virialSumZ) * energyfactor;
+      if (newton3) {
+        _aosThreadData[threadnum].potentialEnergySumN3 += svaddv_f64(svptrue_b64(), potentialEnergySum) * 0.5;
+        _aosThreadData[threadnum].virialSumN3[0] += svaddv_f64(svptrue_b64(), virialSumX) * 0.5;
+        _aosThreadData[threadnum].virialSumN3[1] += svaddv_f64(svptrue_b64(), virialSumY) * 0.5;
+        _aosThreadData[threadnum].virialSumN3[2] += svaddv_f64(svptrue_b64(), virialSumZ) * 0.5;
+      } else {
+        _aosThreadData[threadnum].potentialEnergySumNoN3 += svaddv_f64(svptrue_b64(), potentialEnergySum);
+        _aosThreadData[threadnum].virialSumNoN3[0] += svaddv_f64(svptrue_b64(), virialSumX);
+        _aosThreadData[threadnum].virialSumNoN3[1] += svaddv_f64(svptrue_b64(), virialSumY);
+        _aosThreadData[threadnum].virialSumNoN3[2] += svaddv_f64(svptrue_b64(), virialSumZ);
+      }
     }
 #endif
   }
@@ -780,21 +793,32 @@ class LJFunctorSVE
       throw autopas::utils::ExceptionHandler::AutoPasException(
           "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
     }
-
     if (calculateGlobals) {
+      // We distinguish between non-newton3 and newton3 functor calls. Newton3 calls are accumulated directly.
+      // Non-newton3 calls are accumulated temporarily and later divided by 2.
+      double potentialEnergySumNoN3Acc = 0;
+      std::array<double, 3> virialSumNoN3Acc = {0, 0, 0};
       for (size_t i = 0; i < _aosThreadData.size(); ++i) {
-        _potentialEnergySum += _aosThreadData[i].potentialEnergySum;
-        _virialSum += _aosThreadData[i].virialSum;
+        potentialEnergySumNoN3Acc += _aosThreadData[i].potentialEnergySumNoN3;
+        _potentialEnergySum += _aosThreadData[i].potentialEnergySumN3;
+
+        virialSumNoN3Acc += _aosThreadData[i].virialSumNoN3;
+        _virialSum += _aosThreadData[i].virialSumN3;
       }
-      if (not newton3) {
-        // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
-        // here.
-        _potentialEnergySum *= 0.5;
-        _virialSum *= 0.5;
-      }
+      // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
+      // here.
+      potentialEnergySumNoN3Acc *= 0.5;
+      virialSumNoN3Acc *= 0.5;
+
+      _potentialEnergySum += potentialEnergySumNoN3Acc;
+      _virialSum += virialSumNoN3Acc;
+
       // we have always calculated 6*potentialEnergy, so we divide by 6 here!
       _potentialEnergySum /= 6.;
       _postProcessed = true;
+
+      AutoPasLog(TRACE, "Final potential energy {}", _potentialEnergySum);
+      AutoPasLog(TRACE, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
     }
   }
 
@@ -867,19 +891,24 @@ class LJFunctorSVE
    */
   class AoSThreadData {
    public:
-    AoSThreadData() : virialSum{0., 0., 0.}, potentialEnergySum{0.} {}
+    AoSThreadData()
+        : virialSumNoN3{0., 0., 0.}, virialSumN3{0., 0., 0.}, potentialEnergySumNoN3{0.}, potentialEnergySumN3{0.}, __remainingTo64{} {}
     void setZero() {
-      virialSum = {0., 0., 0.};
-      potentialEnergySum = 0.;
+      virialSumNoN3 = {0., 0., 0.};
+      virialSumN3 = {0., 0., 0.};
+      potentialEnergySumNoN3 = 0.;
+      potentialEnergySumN3 = 0.;
     }
 
     // variables
-    std::array<double, 3> virialSum;
-    double potentialEnergySum;
+    std::array<double, 3> virialSumNoN3;
+    std::array<double, 3> virialSumN3;
+    double potentialEnergySumNoN3;
+    double potentialEnergySumN3;
 
    private:
     // dummy parameter to get the right size (64 bytes)
-    [[maybe_unused]] double _remainingTo64[4]{};
+    double __remainingTo64[(64 - 8 * sizeof(double)) / sizeof(double)];
   };
   // make sure of the size of AoSThreadData
   static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");

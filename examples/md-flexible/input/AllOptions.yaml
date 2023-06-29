@@ -1,3 +1,4 @@
+# This file contains all possible options that a yaml input file for md-flexible can have. For the meaning of individual options ./md-flexible --help can be called, or MDFlexConfig.h can be looked up.
 container                            :  [DirectSum, LinkedCells, LinkedCellsReferences, VarVerletListsAsBuild, VerletClusterLists, VerletLists, VerletListsCells, PairwiseVerletLists]
 verlet-rebuild-frequency             :  20
 verlet-skin-radius-per-timestep      :  0.01
@@ -94,6 +95,7 @@ no-flops                             :  false
 no-end-config                        :  false
 no-progress-bar                      :  false
 vtk-filename                         :  AllOptionsSim
+vtk-output-folder                    :  allOptionsOutput
 vtk-write-frequency                  :  1
 #checkpoint                          : AllOptionsSim_10.vtk
 #log-file                            : log.txt

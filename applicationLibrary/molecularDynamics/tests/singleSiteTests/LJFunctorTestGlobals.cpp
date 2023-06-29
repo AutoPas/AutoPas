@@ -45,9 +45,13 @@ void LJFunctorTestGlobals<FuncType>::testAoSGlobals(LJFunctorTestGlobals<FuncTyp
     default:
       FAIL() << "not in enum where_type";
   }
-  Molecule p1({0. + xOffset, 0., 0.}, {0., 0., 0.}, 0, 0);
+
+  const std::array<double, 3> p1Pos{0. + xOffset, 0., 0.};
+  const std::array<double, 3> p2Pos{0.1 + xOffset, 0.2, 0.3};
+
+  Molecule p1(p1Pos, {0., 0., 0.}, 0, 0);
   p1.setOwnershipState(owned1 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
-  Molecule p2({0.1 + xOffset, 0.2, 0.3}, {0., 0., 0.}, 1, 0);
+  Molecule p2(p2Pos, {0., 0., 0.}, 1, 0);
   p2.setOwnershipState(owned2 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
   functor.initTraversal();
 
@@ -57,22 +61,98 @@ void LJFunctorTestGlobals<FuncType>::testAoSGlobals(LJFunctorTestGlobals<FuncTyp
   }
   functor.endTraversal(newton3);
 
-  double upot = functor.getPotentialEnergy();
-  double virial = functor.getVirial();
+  const double potentialEnergy = functor.getPotentialEnergy();
+  const double virial = functor.getVirial();
 
-  EXPECT_NEAR(upot, whereFactor * expectedEnergy, absDelta) << "where: " << where_str << ", newton3: " << newton3;
+  const double expectedEnergy = calculateLJPotential(p1Pos, p2Pos, cutoff, sigma, epsilon);
+  const double expectedVirial = calculateLJVirialTotal(p1Pos, p2Pos, cutoff, sigma, epsilon);
+
+  EXPECT_NEAR(potentialEnergy, whereFactor * expectedEnergy, absDelta) << "where: " << where_str << ", newton3: " << newton3;
   EXPECT_NEAR(virial, whereFactor * expectedVirial, absDelta) << "where: " << where_str << ", newton3: " << newton3;
 }
 
-TYPED_TEST_P(LJFunctorTestGlobals, testAoSFunctorGlobals) {
-  using FuncType = TypeParam;
-  using TestType = LJFunctorTestGlobals<FuncType>;
+template <class FuncType>
+void LJFunctorTestGlobals<FuncType>::testAoSGlobalsMixedN3(LJFunctorTestGlobals<FuncType>::where_type where) {
+  double xOffset;
+  std::string where_str;
+  bool owned1, owned2, owned3;
+  switch (where) {
+    case inside:
+      xOffset = 0.;
+      where_str = "inside";
+      owned1 = owned2 = owned3 = true;
+      break;
+    case boundary:
+      xOffset = 4.1;
+      where_str = "boundary";
+      owned1 = true;
+      owned2 = false;
+      owned3 = true;
+      break;
+    case outside:
+      xOffset = 5.;
+      where_str = "outside";
+      owned1 = owned2 = owned3 = false;
+      break;
+    default:
+      FAIL() << "not in enum where_type";
+  }
 
-  for (typename TestType::where_type where :
-       {TestType::where_type::inside, TestType::where_type::boundary, TestType::where_type::outside}) {
+  double refVirial = 0;
+  double refPotentialEnergy = 0;
+
+  bool firstIterationDone = false;
+
+  for (int i = 0; i < 8; i++) {
     for (bool newton3 : {false, true}) {
-      if (auto msg = this->shouldSkipIfNotImplemented([&]() { this->testAoSGlobals(where, newton3); }); msg != "") {
-        GTEST_SKIP() << msg;
+      FuncType functor(cutoff);
+      functor.setParticleProperties(epsilon * 24, sigma);
+
+      Molecule p1({0. + xOffset, 0., 0.}, {0., 0., 0.}, 0, 0);
+      p1.setOwnershipState(owned1 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
+      Molecule p2({0.9 + xOffset, 0, 0}, {0., 0., 0.}, 1, 0);
+      p2.setOwnershipState(owned2 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
+      Molecule p3({0 + xOffset, 0.4, 0}, {0., 0., 0.}, 2, 0);
+      p3.setOwnershipState(owned3 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
+
+      functor.initTraversal();
+
+      const bool p1p2 = (bool)((i >> 0) & 1);
+      const bool p1p3 = (bool)((i >> 1) & 1);
+      const bool p2p3 = (bool)((i >> 2) & 1);
+
+      functor.AoSFunctor(p1, p2, p1p2);
+      if (not p1p2) {
+        functor.AoSFunctor(p2, p1, p1p2);
+      }
+      functor.AoSFunctor(p1, p3, p1p3);
+      if (not p1p3) {
+        functor.AoSFunctor(p3, p1, p1p3);
+      }
+      functor.AoSFunctor(p2, p3, p2p3);
+      if (not p2p3) {
+        functor.AoSFunctor(p3, p2, p2p3);
+      }
+
+      functor.endTraversal(newton3);
+
+      const auto finalPotentialEnergy = functor.getPotentialEnergy();
+      const auto finalVirial = functor.getVirial();
+
+      // We assume the globals in the first iteration with p1p2 = p1p3 = p2p3 = false and global newton3 = false
+      // are calculated correctly, as this should be ensured by the testAoSGlobals tests. We compare the globals
+      // calculated with different newton3 configurations per pairwise interaction agaist the first result.
+      if (firstIterationDone) {
+        EXPECT_NEAR(finalPotentialEnergy, refPotentialEnergy, absDelta)
+            << "newton3-configuration: (p1<->p2: " << p1p2 << ", p1<->p3: " << p1p3 << ", p2<->p3: " << p2p3
+            << "), where: " << where_str << ", global newton3: " << newton3;
+        EXPECT_NEAR(finalVirial, refVirial, absDelta)
+            << "newton3-configuration: (p1<->p2: " << p1p2 << ", p1<->p3: " << p1p3 << ", p2<->p3: " << p2p3
+            << "), where: " << where_str << ", global newton3: " << newton3;
+      } else {
+        refPotentialEnergy = finalPotentialEnergy;
+        refVirial = finalVirial;
+        firstIterationDone = true;
       }
     }
   }
@@ -82,9 +162,25 @@ template <class FuncType>
 void LJFunctorTestGlobals<FuncType>::testSoAGlobals(LJFunctorTestGlobals<FuncType>::where_type where, bool newton3,
                                                     InteractionType interactionType,
                                                     size_t additionalParticlesToVerletNumber,
-                                                    uint64_t numParticleReplicas) {
-  constexpr bool shifting = true;
-  constexpr bool mixing = false;
+                                                    uint64_t numParticleReplicas, bool mixedNewton3FunctorCalls) {
+  const bool shifting = true;
+  const bool mixing = false;
+
+  // static coords for the particles. Here we need the coordinates as single values, as theyx are used later for the
+  // molecules p1 and p2 with different offsets
+  constexpr double p1X = 0.;
+  constexpr double p1Y = 0.;
+  constexpr double p1Z = 0.;
+  constexpr double p2X = 0.1;
+  constexpr double p2Y = 0.2;
+  constexpr double p2Z = 0.3;
+
+  // calculate the reference values for the globals
+  constexpr std::array<double, 3> p1Pos{p1X, p1Y, p1Z};
+  constexpr std::array<double, 3> p2Pos{p2X, p2Y, p2Z};
+  constexpr double expectedEnergy = calculateLJPotential(p1Pos, p2Pos, cutoff, sigma, epsilon);
+  constexpr double expectedVirial = calculateLJVirialTotal(p1Pos, p2Pos, cutoff, sigma, epsilon);
+
   mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> functor(cutoff);
   functor.setParticleProperties(epsilon * 24, sigma);
   double xOffset;
@@ -111,7 +207,7 @@ void LJFunctorTestGlobals<FuncType>::testSoAGlobals(LJFunctorTestGlobals<FuncTyp
     default:
       FAIL() << "not in enum where_type";
   }
-  FMCell cell1, cell2;
+  FMCell cell1, cell2, cell3, cell4;
   for (uint64_t replicaID = 0; replicaID < numParticleReplicas; ++replicaID) {
     if (replicaID > 0) {
       if (owned1 && owned2) {
@@ -123,10 +219,9 @@ void LJFunctorTestGlobals<FuncType>::testSoAGlobals(LJFunctorTestGlobals<FuncTyp
       }
     }
 
-    Molecule p1({0. + xOffset, 0. + 2. * replicaID, 0.}, {0., 0., 0.}, 2 * replicaID, 0);
+    Molecule p1({p1X + xOffset, p1Y + 2. * replicaID, p1Z}, {0., 0., 0.}, 2 * replicaID, 0);
     p1.setOwnershipState(owned1 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
-    cell1.addParticle(p1);
-    Molecule p2({0.1 + xOffset, 0.2 + 2. * replicaID, 0.3}, {0., 0., 0.}, 2 * replicaID + 1, 0);
+    Molecule p2({p2X + xOffset, p2Y + 2. * replicaID, p2Z}, {0., 0., 0.}, 2 * replicaID + 1, 0);
     p2.setOwnershipState(owned2 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
 
     // calculate whereFactor:
@@ -139,10 +234,20 @@ void LJFunctorTestGlobals<FuncType>::testSoAGlobals(LJFunctorTestGlobals<FuncTyp
       case InteractionType::verlet:
         // same as own: add to cell1.
       case InteractionType::own:
+        cell1.addParticle(p1);
         cell1.addParticle(p2);
+
+        cell2.addParticle(p1);
+        cell2.addParticle(p2);
+
         break;
       case InteractionType::pair:
+        cell1.addParticle(p1);
         cell2.addParticle(p2);
+
+        cell3.addParticle(p1);
+        cell4.addParticle(p2);
+
         break;
       default:
         FAIL();
@@ -157,6 +262,8 @@ void LJFunctorTestGlobals<FuncType>::testSoAGlobals(LJFunctorTestGlobals<FuncTyp
     // functor version of verlet lists.
     for (size_t i = 0; i < additionalParticlesToVerletNumber; ++i) {
       cell1.addParticle(pAdditional);
+
+      cell2.addParticle(pAdditional);
     }
   }
 
@@ -164,67 +271,135 @@ void LJFunctorTestGlobals<FuncType>::testSoAGlobals(LJFunctorTestGlobals<FuncTyp
 
   functor.SoALoader(cell1, cell1._particleSoABuffer, 0);
   functor.SoALoader(cell2, cell2._particleSoABuffer, 0);
+  functor.SoALoader(cell3, cell3._particleSoABuffer, 0);
+  functor.SoALoader(cell4, cell4._particleSoABuffer, 0);
 
   switch (interactionType) {
     case InteractionType::verlet: {
       // Build verlet list
-      std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> neighborList(2 * numParticleReplicas);
+      std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> neighborListNonN3(2 * numParticleReplicas);
       for (uint64_t replicaID = 0; replicaID < numParticleReplicas; ++replicaID) {
-        neighborList[2 * replicaID].push_back(2 * replicaID + 1);
+        neighborListNonN3[2 * replicaID].push_back(2 * replicaID + 1);
         for (size_t i = 0; i < additionalParticlesToVerletNumber; ++i) {
-          neighborList[2 * replicaID].push_back(2 * numParticleReplicas + i);
+          neighborListNonN3[2 * replicaID].push_back(2 * numParticleReplicas + i);
         }
-        if (not newton3) {
-          neighborList[2 * replicaID + 1].push_back(2 * replicaID);
-          for (size_t i = 0; i < additionalParticlesToVerletNumber; ++i) {
-            neighborList[2 * replicaID + 1].push_back(2 * numParticleReplicas + i);
-          }
+        neighborListNonN3[2 * replicaID + 1].push_back(2 * replicaID);
+        for (size_t i = 0; i < additionalParticlesToVerletNumber; ++i) {
+          neighborListNonN3[2 * replicaID + 1].push_back(2 * numParticleReplicas + i);
+        }
+      }
+      std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> neighborListN3(2 * numParticleReplicas);
+      for (uint64_t replicaID = 0; replicaID < numParticleReplicas; ++replicaID) {
+        neighborListN3[2 * replicaID].push_back(2 * replicaID + 1);
+        for (size_t i = 0; i < additionalParticlesToVerletNumber; ++i) {
+          neighborListN3[2 * replicaID].push_back(2 * numParticleReplicas + i);
         }
       }
       for (uint64_t i = 0; i < 2 * numParticleReplicas; ++i) {
-        functor.SoAFunctorVerlet(cell1._particleSoABuffer, i, neighborList[i], newton3);
+        if (not mixedNewton3FunctorCalls) {
+          functor.SoAFunctorVerlet(cell1._particleSoABuffer, i, newton3 ? neighborListN3[i] : neighborListNonN3[i],
+                                   newton3);
+          functor.SoAFunctorVerlet(cell2._particleSoABuffer, i, newton3 ? neighborListN3[i] : neighborListNonN3[i],
+                                   newton3);
+        } else {
+          functor.SoAFunctorVerlet(cell1._particleSoABuffer, i, newton3 ? neighborListN3[i] : neighborListNonN3[i],
+                                   newton3);
+          functor.SoAFunctorVerlet(cell2._particleSoABuffer, i,
+                                   (not newton3) ? neighborListN3[i] : neighborListNonN3[i], not newton3);
+        }
       }
     } break;
     case InteractionType::own:
-      functor.SoAFunctorSingle(cell1._particleSoABuffer, newton3);
+      if (not mixedNewton3FunctorCalls) {
+        functor.SoAFunctorSingle(cell1._particleSoABuffer, newton3);
+        functor.SoAFunctorSingle(cell2._particleSoABuffer, newton3);
+      } else {
+        functor.SoAFunctorSingle(cell1._particleSoABuffer, newton3);
+        functor.SoAFunctorSingle(cell2._particleSoABuffer, not newton3);
+      }
       break;
     case InteractionType::pair:
-      functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
-      if (not newton3) {
-        functor.SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, newton3);
+      if (not mixedNewton3FunctorCalls) {
+        functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
+        functor.SoAFunctorPair(cell3._particleSoABuffer, cell4._particleSoABuffer, newton3);
+        if (not newton3) {
+          functor.SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, newton3);
+          functor.SoAFunctorPair(cell4._particleSoABuffer, cell3._particleSoABuffer, newton3);
+        }
+      } else {
+        if (newton3) {
+          functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
+          functor.SoAFunctorPair(cell3._particleSoABuffer, cell4._particleSoABuffer, not newton3);
+          functor.SoAFunctorPair(cell4._particleSoABuffer, cell3._particleSoABuffer, not newton3);
+        } else {
+          functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
+          functor.SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, newton3);
+          functor.SoAFunctorPair(cell3._particleSoABuffer, cell4._particleSoABuffer, not newton3);
+        }
       }
       break;
   }
   functor.SoAExtractor(cell1, cell1._particleSoABuffer, 0);
   functor.SoAExtractor(cell2, cell2._particleSoABuffer, 0);
+  functor.SoAExtractor(cell3, cell3._particleSoABuffer, 0);
+  functor.SoAExtractor(cell4, cell4._particleSoABuffer, 0);
 
   functor.endTraversal(newton3);
 
-  double upot = functor.getPotentialEnergy();
-  double virial = functor.getVirial();
+  const double potentialEnergy = functor.getPotentialEnergy();
+  const double virial = functor.getVirial();
 
-  EXPECT_NEAR(upot, whereFactor * expectedEnergy, absDelta)
+  // we multiply the expected values by two as we have always p1 and p2 both in cell1 and cell2
+  EXPECT_NEAR(potentialEnergy, whereFactor * expectedEnergy * 2., absDelta)
       << "where: " << where_str << ", newton3: " << newton3
       << ", interactionType: " << (interactionType == pair ? "pair" : (interactionType == own ? "own" : "verlet"))
       << ", additionalVerletDummyParticles: " << additionalParticlesToVerletNumber
       << ", numParticleReplicas: " << numParticleReplicas;
-  EXPECT_NEAR(virial, whereFactor * expectedVirial, absDelta)
+  EXPECT_NEAR(virial, whereFactor * expectedVirial * 2., absDelta)
       << "where: " << where_str << ", newton3: " << newton3
       << ", interactionType: " << (interactionType == pair ? "pair" : (interactionType == own ? "own" : "verlet"))
       << ", additionalVerletDummyParticles: " << additionalParticlesToVerletNumber
       << ", numParticleReplicas: " << numParticleReplicas;
 }
 
+TYPED_TEST_P(LJFunctorTestGlobals, testAoSFunctorGlobals) {
+  using FuncType = TypeParam;
+  using TestType = LJFunctorTestGlobals<FuncType>;
+
+  for (typename TestType::where_type where :
+       {TestType::where_type::inside, TestType::where_type::boundary, TestType::where_type::outside}) {
+    for (bool newton3 : {false, true}) {
+      if (auto msg = this->shouldSkipIfNotImplemented([&]() { this->testAoSGlobals(where, newton3); }); msg != "") {
+        GTEST_SKIP() << msg;
+      }
+    }
+  }
+}
+
+TYPED_TEST_P(LJFunctorTestGlobals, testAoSFunctorGlobalsMixedN3) {
+  using FuncType = TypeParam;
+  using TestType = LJFunctorTestGlobals<FuncType>;
+
+  for (typename TestType::where_type where :
+       {TestType::where_type::inside, TestType::where_type::boundary, TestType::where_type::outside}) {
+    if (auto msg = this->shouldSkipIfNotImplemented([&]() { this->testAoSGlobalsMixedN3(where); }); msg != "") {
+      GTEST_SKIP() << msg;
+    }
+  }
+}
+
 TYPED_TEST_P(LJFunctorTestGlobals, testSoAFunctorGlobalsOwn) {
   using FuncType = TypeParam;
   using TestType = LJFunctorTestGlobals<FuncType>;
 
-  // the own functor can only be called for inner or outside pairs! (if two particles lie in one cell they can be
-  // either both inside the process or neither of them is)
-  for (typename TestType::where_type where : {TestType::inside, TestType::outside}) {
-    for (bool newton3 : {false, true}) {
-      for (uint64_t numParticleReplicas : {1, 2}) {
-        this->testSoAGlobals(where, newton3, TestType::own, 0, numParticleReplicas);
+  for (bool mixedNewton3FunctorCalls : {false, true}) {
+    // the own functor can only be called for inner or outside pairs! (if two particles lie in one cell they can be
+    // either both inside the process or neither of them is)
+    for (typename TestType::where_type where : {TestType::inside, TestType::outside}) {
+      for (bool newton3 : {false, true}) {
+        for (uint64_t numParticleReplicas : {1, 2}) {
+          this->testSoAGlobals(where, newton3, TestType::own, 0, numParticleReplicas, mixedNewton3FunctorCalls);
+        }
       }
     }
   }
@@ -234,13 +409,14 @@ TYPED_TEST_P(LJFunctorTestGlobals, testSoAFunctorGlobalsVerlet) {
   using FuncType = TypeParam;
   using TestType = LJFunctorTestGlobals<FuncType>;
 
-  for (size_t additionalDummyParticles = 0; additionalDummyParticles < 30; additionalDummyParticles += 5) {
-    // the own functor can only be called for inner or outside pairs! (if two particles lie in one cell they can be
-    // either both inside the process or neither of them is)
-    for (typename TestType::where_type where : {TestType::inside, TestType::boundary, TestType::outside}) {
-      for (bool newton3 : {false, true}) {
-        for (uint64_t numParticleReplicas : {1, 2}) {
-          this->testSoAGlobals(where, newton3, TestType::verlet, additionalDummyParticles, numParticleReplicas);
+  for (bool mixedNewton3FunctorCalls : {false, true}) {
+    for (size_t additionalDummyParticles = 0; additionalDummyParticles < 30; additionalDummyParticles += 5) {
+      for (typename TestType::where_type where : {TestType::inside, TestType::boundary, TestType::outside}) {
+        for (bool newton3 : {false, true}) {
+          for (uint64_t numParticleReplicas : {1, 2}) {
+            this->testSoAGlobals(where, newton3, TestType::verlet, additionalDummyParticles, numParticleReplicas,
+                                 mixedNewton3FunctorCalls);
+          }
         }
       }
     }
@@ -251,10 +427,12 @@ TYPED_TEST_P(LJFunctorTestGlobals, testSoAFunctorGlobalsPair) {
   using FuncType = TypeParam;
   using TestType = LJFunctorTestGlobals<FuncType>;
 
-  for (typename TestType::where_type where : {TestType::inside, TestType::boundary, TestType::outside}) {
-    for (bool newton3 : {false, true}) {
-      for (uint64_t numParticleReplicas : {1, 2}) {
-        this->testSoAGlobals(where, newton3, TestType::pair, 0, numParticleReplicas);
+  for (bool mixedNewton3FunctorCalls : {false, true}) {
+    for (typename TestType::where_type where : {TestType::inside, TestType::boundary, TestType::outside}) {
+      for (bool newton3 : {false, true}) {
+        for (uint64_t numParticleReplicas : {1, 2}) {
+          this->testSoAGlobals(where, newton3, TestType::pair, 0, numParticleReplicas, mixedNewton3FunctorCalls);
+        }
       }
     }
   }
@@ -264,15 +442,20 @@ TYPED_TEST_P(LJFunctorTestGlobals, testAoSFunctorGlobalsOpenMPParallel) {
   using FuncType = TypeParam;
   using TestType = LJFunctorTestGlobals<FuncType>;
 
-  constexpr bool newton3 = true;
-  constexpr double multiParticleFactor = 2.;  // two particles, so factor 2
-  constexpr double whereFactor = 1.;          // all inside, so factor 1
-  std::string where_str = "inside";
-  Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 0);
-  Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, 0);
+  const bool newton3 = true;
+  const double whereFactor = 1.;  // all inside, so factor 1
+  const std::string where_str = "inside";
 
-  Molecule p3({0., 2., 0.}, {0., 0., 0.}, 0, 0);
-  Molecule p4({0.1, 2.2, 0.3}, {0., 0., 0.}, 1, 0);
+  constexpr std::array<double, 3> p1Pos{0., 0., 0.};
+  constexpr std::array<double, 3> p2Pos{0.1, 0.2, 0.3};
+  constexpr std::array<double, 3> p3Pos{0., 2., 0.};
+  constexpr std::array<double, 3> p4Pos{0.1, 2.2, 0.3};
+
+  Molecule p1(p1Pos, {0., 0., 0.}, 0, 0);
+  Molecule p2(p2Pos, {0., 0., 0.}, 1, 0);
+
+  Molecule p3(p3Pos, {0., 0., 0.}, 0, 0);
+  Molecule p4(p4Pos, {0., 0., 0.}, 1, 0);
   FuncType functor(this->cutoff);
   functor.setParticleProperties(this->epsilon * 24, 1);
 
@@ -313,12 +496,18 @@ TYPED_TEST_P(LJFunctorTestGlobals, testAoSFunctorGlobalsOpenMPParallel) {
 
   functor.endTraversal(newton3);
 
-  double upot = functor.getPotentialEnergy();
-  double virial = functor.getVirial();
+  const double potentialEnergy = functor.getPotentialEnergy();
+  const double virial = functor.getVirial();
 
-  EXPECT_NEAR(upot, whereFactor * multiParticleFactor * this->expectedEnergy, this->absDelta)
-      << "where: " << where_str << ", newton3: " << newton3;
-  EXPECT_NEAR(virial, whereFactor * multiParticleFactor * this->expectedVirial, this->absDelta)
+  const double expectedEnergyP1P2 = calculateLJPotential(p1Pos, p2Pos, this->cutoff, this->sigma, this->epsilon);
+  const double expectedVirialP1P2 = calculateLJVirialTotal(p1Pos, p2Pos, this->cutoff, this->sigma, this->epsilon);
+  const double expectedEnergyP3P4 = calculateLJPotential(p3Pos, p4Pos, this->cutoff, this->sigma, this->epsilon);
+  const double expectedVirialP3P4 = calculateLJVirialTotal(p3Pos, p4Pos, this->cutoff, this->sigma, this->epsilon);
+  const double expectedEnergy = expectedEnergyP1P2 + expectedEnergyP3P4;
+  const double expectedVirial = expectedVirialP1P2 + expectedVirialP3P4;
+
+  EXPECT_NEAR(potentialEnergy, whereFactor * expectedEnergy, this->absDelta) << "where: " << where_str << ", newton3: " << newton3;
+  EXPECT_NEAR(virial, whereFactor * expectedVirial, this->absDelta)
       << "where: " << where_str << ", newton3: " << newton3;
 }
 
@@ -346,7 +535,7 @@ TYPED_TEST_P(LJFunctorTestGlobals, testFunctorGlobalsThrowBad) {
 
 REGISTER_TYPED_TEST_SUITE_P(LJFunctorTestGlobals, testAoSFunctorGlobals, testAoSFunctorGlobalsOpenMPParallel,
                             testSoAFunctorGlobalsOwn, testSoAFunctorGlobalsPair, testSoAFunctorGlobalsVerlet,
-                            testFunctorGlobalsThrowBad);
+                            testFunctorGlobalsThrowBad, testAoSFunctorGlobalsMixedN3);
 
 using MyTypes = ::testing::Types<LJFunShiftNoMixGlob
 #ifdef __AVX__
