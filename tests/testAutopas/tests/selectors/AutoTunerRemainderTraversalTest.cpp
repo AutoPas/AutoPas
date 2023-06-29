@@ -6,11 +6,11 @@
 
 #include "AutoTunerRemainderTraversalTest.h"
 
-#include "molecularDynamicsLibrary/LJFunctor.h"
 #include "autopas/options/TuningMetricOption.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/Configuration.h"
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
 /**

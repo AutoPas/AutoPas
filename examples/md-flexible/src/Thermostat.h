@@ -45,8 +45,8 @@ double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibrary
                                                         autopas::utils::ArrayMath::mul(angVel, angVel));
 #endif
   }
-// md-flexible's molecules have 3 DoF for translational velocity and optionally 3 additional rotational DoF
-  constexpr unsigned int degreesOfFreedom{
+  // md-flexible's molecules have 3 DoF for translational velocity and optionally 3 additional rotational DoF
+  constexpr unsigned int degreesOfFreedom {
 #if MD_FLEXIBLE_MODE == MULTISITE
     6
 #else

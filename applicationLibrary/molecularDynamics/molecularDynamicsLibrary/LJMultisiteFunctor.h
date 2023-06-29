@@ -630,7 +630,8 @@ class LJMultisiteFunctor
    * @param sigmaSquared sigma^2
    * @param sitePositionsLJ vector of 3D relative unrotated untranslated site positions
    */
-  void setParticleProperties(SoAFloatPrecision epsilon24, SoAFloatPrecision sigmaSquared, std::vector<std::array<SoAFloatPrecision, 3>> sitePositionsLJ) {
+  void setParticleProperties(SoAFloatPrecision epsilon24, SoAFloatPrecision sigmaSquared,
+                             std::vector<std::array<SoAFloatPrecision, 3>> sitePositionsLJ) {
     _epsilon24 = epsilon24;
     _sigmaSquared = sigmaSquared;
     if (applyShift) {
@@ -1533,7 +1534,11 @@ class LJMultisiteFunctor
   class AoSThreadData {
    public:
     AoSThreadData()
-        : virialSumNoN3{0., 0., 0.}, virialSumN3{0., 0., 0.}, potentialEnergySumNoN3{0.}, potentialEnergySumN3{0.}, __remainingTo64{} {}
+        : virialSumNoN3{0., 0., 0.},
+          virialSumN3{0., 0., 0.},
+          potentialEnergySumNoN3{0.},
+          potentialEnergySumN3{0.},
+          __remainingTo64{} {}
     void setZero() {
       virialSumNoN3 = {0., 0., 0.};
       virialSumN3 = {0., 0., 0.};

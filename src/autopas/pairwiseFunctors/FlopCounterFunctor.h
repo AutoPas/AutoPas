@@ -98,7 +98,7 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle,
         if (dr2 <= _cutoffSquare) {
           ++kernelCallsAcc;
           kernelFlopsAcc += _forceFunctor.getNumFlopsPerKernelCall(typePtr[i], typePtr[j],
-                                                                 true);  // SoAFunctorSingle always uses newton3.
+                                                                   true);  // SoAFunctorSingle always uses newton3.
         }
       }
     }

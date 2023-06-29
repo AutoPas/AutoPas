@@ -1040,7 +1040,11 @@ class LJFunctorAVX
   class AoSThreadData {
    public:
     AoSThreadData()
-        : virialSumNoN3{0., 0., 0.}, virialSumN3{0., 0., 0.}, potentialEnergySumNoN3{0.}, potentialEnergySumN3{0.}, __remainingTo64{} {}
+        : virialSumNoN3{0., 0., 0.},
+          virialSumN3{0., 0., 0.},
+          potentialEnergySumNoN3{0.},
+          potentialEnergySumN3{0.},
+          __remainingTo64{} {}
     void setZero() {
       virialSumNoN3 = {0., 0., 0.};
       virialSumN3 = {0., 0., 0.};

@@ -57,9 +57,9 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
                                          const ParticlePropertiesLibraryType &particlePropertiesLibrary,
                                          const double &deltaT, const std::array<double, 3> &globalForce) {
   using namespace autopas::utils::ArrayMath::literals;
-  using autopas::utils::ArrayMath::dot;
   using autopas::utils::ArrayMath::cross;
   using autopas::utils::ArrayMath::div;
+  using autopas::utils::ArrayMath::dot;
   using autopas::utils::ArrayMath::L2Norm;
   using autopas::utils::ArrayMath::normalize;
   using autopas::utils::quaternion::qMul;
