@@ -304,8 +304,12 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
         // cost reasons, this scenario is neglected - no repulsion occurs. This *should*, in theory, with an appropriate
         // step-size and molecular model, not cause any problems.
 
-        // To produce a "mirrored" multi-site molecule that could be used with the multi-site molecule functor would be
-        // very nasty. As such, we reimplement the kernel of the lennard-jones force here. We also use this for
+        // To produce a "mirrored" multi-site molecule that could be used with the multi-site molecule functor requires
+        // adding 3 additional molecule types for every molecule type, as we would require relative site positions mirrored
+        // in all 3-dimensions. Then the reflected relative site positions can be rotated using the mirrored quaternion
+        // produced by quaternion::qMirror.
+        //
+        // As this is nasty, we reimplement the kernel of the lennard-jones force here. We also use this for
         // single-site molecules, primarily for consistency but it is also suspected to be cheaper than creating a
         // mirror particle for use with the actual functor.
 
