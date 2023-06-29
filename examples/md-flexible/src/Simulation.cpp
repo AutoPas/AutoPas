@@ -193,52 +193,52 @@ void Simulation::run() {
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateQuaternions();
 #endif
+
+      _timers.updateContainer.start();
+      auto emigrants = _autoPasContainer->updateContainer();
+      _timers.updateContainer.stop();
+
+      const auto computationalLoad = static_cast<double>(_timers.computationalLoad.stop());
+
+      // periodically resize box for MPI load balancing
+      if (_iteration % _configuration.loadBalancingInterval.value == 0) {
+        _timers.loadBalancing.start();
+        _domainDecomposition->update(computationalLoad);
+        auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(),
+                                                                _domainDecomposition->getLocalBoxMax());
+        // because boundaries shifted, particles that were thrown out by the updateContainer previously might now be in
+        // the container again
+        const auto &boxMin = _autoPasContainer->getBoxMin();
+        const auto &boxMax = _autoPasContainer->getBoxMax();
+        _autoPasContainer->addParticlesIf(emigrants, [&](auto &p) {
+          if (autopas::utils::inBox(p.getR(), boxMin, boxMax)) {
+            p.setOwnershipState(autopas::OwnershipState::dummy);
+            return true;
+          }
+          return false;
+        });
+
+        std::remove_if(emigrants.begin(), emigrants.end(), [&](const auto &p) { return p.isDummy(); });
+
+        emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
+        _timers.loadBalancing.stop();
+      }
+
+      _timers.migratingParticleExchange.start();
+      _domainDecomposition->exchangeMigratingParticles(*_autoPasContainer, emigrants);
+      _timers.migratingParticleExchange.stop();
+
+      _timers.reflectParticlesAtBoundaries.start();
+      _domainDecomposition->reflectParticlesAtBoundaries(*_autoPasContainer,
+                                                         *_configuration.getParticlePropertiesLibrary());
+      _timers.reflectParticlesAtBoundaries.stop();
+
+      _timers.haloParticleExchange.start();
+      _domainDecomposition->exchangeHaloParticles(*_autoPasContainer);
+      _timers.haloParticleExchange.stop();
+
+      _timers.computationalLoad.start();
     }
-
-    _timers.updateContainer.start();
-    auto emigrants = _autoPasContainer->updateContainer();
-    _timers.updateContainer.stop();
-
-    const auto computationalLoad = static_cast<double>(_timers.computationalLoad.stop());
-
-    // periodically resize box for MPI load balancing
-    if (_iteration % _configuration.loadBalancingInterval.value == 0) {
-      _timers.loadBalancing.start();
-      _domainDecomposition->update(computationalLoad);
-      auto additionalEmigrants =
-          _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(), _domainDecomposition->getLocalBoxMax());
-      // because boundaries shifted, particles that were thrown out by the updateContainer previously might now be in
-      // the container again
-      const auto &boxMin = _autoPasContainer->getBoxMin();
-      const auto &boxMax = _autoPasContainer->getBoxMax();
-      _autoPasContainer->addParticlesIf(emigrants, [&](auto &p) {
-        if (autopas::utils::inBox(p.getR(), boxMin, boxMax)) {
-          p.setOwnershipState(autopas::OwnershipState::dummy);
-          return true;
-        }
-        return false;
-      });
-
-      std::remove_if(emigrants.begin(), emigrants.end(), [&](const auto &p) { return p.isDummy(); });
-
-      emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
-      _timers.loadBalancing.stop();
-    }
-
-    _timers.migratingParticleExchange.start();
-    _domainDecomposition->exchangeMigratingParticles(*_autoPasContainer, emigrants);
-    _timers.migratingParticleExchange.stop();
-
-    _timers.reflectParticlesAtBoundaries.start();
-    _domainDecomposition->reflectParticlesAtBoundaries(*_autoPasContainer,
-                                                       *_configuration.getParticlePropertiesLibrary());
-    _timers.reflectParticlesAtBoundaries.stop();
-
-    _timers.haloParticleExchange.start();
-    _domainDecomposition->exchangeHaloParticles(*_autoPasContainer);
-    _timers.haloParticleExchange.stop();
-
-    _timers.computationalLoad.start();
 
     updateForces();
 
