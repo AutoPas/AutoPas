@@ -75,9 +75,15 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle,
 
     unsigned long *const __restrict typePtr = soa.template begin<Particle::AttributeNames::typeId>();
 
+    // Use accumulators per SoA Functor Single call i.e. per thread to avoid potentially waiting at atomic fetch_add
+    // for every particle pair
+    size_t distanceCalulationsAcc = 0;
+    size_t kernelCallsAcc = 0;
+    size_t kernelFlopsAcc = 0;
+
     for (size_t i = 0; i < soa.getNumberOfParticles(); ++i) {
       for (size_t j = i + 1; j < soa.getNumberOfParticles(); ++j) {
-        ++_distanceCalculations;
+        ++distanceCalulationsAcc;
 
         const double drx = xPtr[i] - xPtr[j];
         const double dry = yPtr[i] - yPtr[j];
@@ -90,12 +96,15 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle,
         const double dr2 = drx2 + dry2 + drz2;
 
         if (dr2 <= _cutoffSquare) {
-          ++_kernelCalls;
-          _kernelFlops += _forceFunctor.getNumFlopsPerKernelCall(typePtr[i], typePtr[j],
+          ++kernelCallsAcc;
+          kernelFlopsAcc += _forceFunctor.getNumFlopsPerKernelCall(typePtr[i], typePtr[j],
                                                                  true);  // SoAFunctorSingle always uses newton3.
         }
       }
     }
+    _distanceCalculations.fetch_add(distanceCalulationsAcc);
+    _kernelCalls.fetch_add(kernelCallsAcc);
+    _kernelFlops.fetch_add(kernelFlopsAcc);
   }
 
   /**
@@ -113,9 +122,15 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle,
     unsigned long *const __restrict type1Ptr = soa1.template begin<Particle::AttributeNames::typeId>();
     unsigned long *const __restrict type2Ptr = soa2.template begin<Particle::AttributeNames::typeId>();
 
+    // Use accumulators per SoA Functor Pair call i.e. per thread to avoid potentially waiting at atomic fetch_add
+    // for every particle pair
+    size_t distanceCalulationsAcc = 0;
+    size_t kernelCallsAcc = 0;
+    size_t kernelFlopsAcc = 0;
+
     for (size_t i = 0; i < soa1.getNumberOfParticles(); ++i) {
       for (size_t j = 0; j < soa2.getNumberOfParticles(); ++j) {
-        ++_distanceCalculations;
+        ++distanceCalulationsAcc;
 
         const double drx = x1ptr[i] - x2ptr[j];
         const double dry = y1ptr[i] - y2ptr[j];
@@ -128,11 +143,14 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle,
         const double dr2 = drx2 + dry2 + drz2;
 
         if (dr2 <= _cutoffSquare) {
-          ++_kernelCalls;
-          _kernelFlops += _forceFunctor.getNumFlopsPerKernelCall(type1Ptr[i], type2Ptr[j], newton3);
+          ++kernelCallsAcc;
+          kernelFlopsAcc += _forceFunctor.getNumFlopsPerKernelCall(type1Ptr[i], type2Ptr[j], newton3);
         }
       }
     }
+    _distanceCalculations.fetch_add(distanceCalulationsAcc);
+    _kernelCalls.fetch_add(kernelCallsAcc);
+    _kernelFlops.fetch_add(kernelFlopsAcc);
   }
 
   // clang-format off
@@ -157,11 +175,17 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle,
     const size_t neighborListSize = neighborList.size();
     const size_t *const __restrict currentList = neighborList.data();
 
+    // Use accumulators per SoA Functor Verlet call i.e. per thread to avoid potentially waiting at atomic fetch_add
+    // for every particle pair
+    size_t distanceCalulationsAcc = 0;
+    size_t kernelCallsAcc = 0;
+    size_t kernelFlopsAcc = 0;
+
     for (size_t jNeighIndex = 0; jNeighIndex < neighborListSize; ++jNeighIndex) {
       size_t j = neighborList[jNeighIndex];
       if (indexFirst == j) continue;
 
-      ++_distanceCalculations;
+      ++distanceCalulationsAcc;
 
       const double drx = xptr[indexFirst] - xptr[j];
       const double dry = yptr[indexFirst] - yptr[j];
@@ -174,10 +198,13 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle,
       const double dr2 = drx2 + dry2 + drz2;
 
       if (dr2 <= _cutoffSquare) {
-        ++_kernelCalls;
-        _kernelFlops += _forceFunctor.getNumFlopsPerKernelCall(typePtr[indexFirst], typePtr[j], newton3);
+        ++kernelCallsAcc;
+        kernelFlopsAcc += _forceFunctor.getNumFlopsPerKernelCall(typePtr[indexFirst], typePtr[j], newton3);
       }
     }
+    _distanceCalculations.fetch_add(distanceCalulationsAcc);
+    _kernelCalls.fetch_add(kernelCallsAcc);
+    _kernelFlops.fetch_add(kernelFlopsAcc);
   }
 
   /**
