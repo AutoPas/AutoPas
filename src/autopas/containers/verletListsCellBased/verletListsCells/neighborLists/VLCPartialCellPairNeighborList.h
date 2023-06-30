@@ -204,7 +204,7 @@ public:
    // std::cout << "Size of particle to cell map: " << this->_particleToCellMap.size() << std::endl;
    // fill the lists
    linkedCells.setOnlyDirtyCells(partialRebuilding);
-   this->applyBuildFunctor(linkedCells, useNewton3, cutoff, skin, interactionLength, TraversalOption::lc_c01_b08, buildType, partialRebuilding);
+   this->applyBuildFunctor(linkedCells, useNewton3, cutoff, skin, interactionLength, buildTraversalOption, buildType, partialRebuilding);
  }
 };
 }  // namespace autopas
