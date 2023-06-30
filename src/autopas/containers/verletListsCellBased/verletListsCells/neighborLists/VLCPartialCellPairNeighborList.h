@@ -76,6 +76,8 @@ public:
        size_t numParticlesFirstCell = cells[firstCellIndex].numParticles();
        this->_aosNeighborList[firstCellIndex].clear();
        this->_aosNeighborList[firstCellIndex].resize(neighborCells);
+       // this->_globalToLocalIndex[firstCellIndex].clear();
+       // this->_globalToLocalIndex[firstCellIndex].reserve(neighborCells);
        for (auto &cellPair : this->_aosNeighborList[firstCellIndex]) {
          // reserve vector of neighbor lists for every particle in cell1
          cellPair.reserve(numParticlesFirstCell);
@@ -202,7 +204,7 @@ public:
    // std::cout << "Size of particle to cell map: " << this->_particleToCellMap.size() << std::endl;
    // fill the lists
    linkedCells.setOnlyDirtyCells(partialRebuilding);
-   this->applyBuildFunctor(linkedCells, useNewton3, cutoff, skin, interactionLength, buildTraversalOption, buildType, partialRebuilding);
+   this->applyBuildFunctor(linkedCells, useNewton3, cutoff, skin, interactionLength, TraversalOption::lc_c01_b08, buildType, partialRebuilding);
  }
 };
 }  // namespace autopas

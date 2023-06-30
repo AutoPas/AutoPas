@@ -105,7 +105,7 @@ class LCC01Traversal
   /**
    * Computes pairs used in processBaseCell()
    */
-  void computeOffsets();
+  virtual void computeOffsets();
 
   void traverseParticlePairs() override;
 
@@ -130,6 +130,13 @@ class LCC01Traversal
     return (combineSoA) ? TraversalOption::lc_c01_combined_SoA : TraversalOption::lc_c01;
   }
 
+ protected:
+  /**
+   * CellFunctor to be used for the traversal defining the interaction between two cells.
+   */
+  internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false>
+      _cellFunctor;
+
  private:
   /**
    * Computes all interactions between the base
@@ -139,7 +146,7 @@ class LCC01Traversal
    * @param y Y-index of base cell.
    * @param z Z-index of base cell.
    */
-  inline void processBaseCell(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
+  inline virtual void processBaseCell(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
 
   /**
    * Appends all needed Attributes to the SoA buffer in cell.
@@ -164,12 +171,6 @@ class LCC01Traversal
    * @note std::map not applicable since ordering arising from insertion is important for later processing!
    */
   std::vector<std::vector<std::pair<long, std::array<double, 3>>>> _cellOffsets;
-
-  /**
-   * CellFunctor to be used for the traversal defining the interaction between two cells.
-   */
-  internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout, false, false>
-      _cellFunctor;
 
   PairwiseFunctor *_pairwiseFunctor;
 

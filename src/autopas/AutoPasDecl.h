@@ -954,6 +954,8 @@ class AutoPas {
 
   size_t getNumMovingCells() { return _logicHandler->getNumMovingCells(); }
 
+  size_t getNumDummyParticles() { return _logicHandler->getNumDummyParticles(); }
+
  private:
   std::shared_ptr<autopas::ParticleContainerInterface<Particle>> getContainer();
 

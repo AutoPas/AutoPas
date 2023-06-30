@@ -453,6 +453,10 @@ class LogicHandler {
     return _autoTuner.getContainer()->getNumMovingCells();
   }
 
+  size_t getNumDummyParticles() const {
+    return _autoTuner.getContainer()->getNumDummyParticles();
+  }
+
  private:
   void checkMinimalSize() {
     auto container = _autoTuner.getContainer();

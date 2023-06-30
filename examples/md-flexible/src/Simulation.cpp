@@ -559,6 +559,7 @@ void Simulation::logMeasurements() {
       std::cout << "Num Inflow Cells                   : " << _autoPasContainer->getNumInflowCells() << std::endl;
       std::cout << "Num Outflow Cells                  : " << _autoPasContainer->getNumOutflowCells() << std::endl;
       std::cout << "Avg Cell Rebuilds per iteration    : " << (_autoPasContainer->getNumRebuildCells() * 1.0) / _configuration.iterations.value << std::endl;
+      std::cout << "Avg Dummy Particles per iteration  : " << (_autoPasContainer->getNumDummyParticles() * 1.0) / _configuration.iterations.value << std::endl;
     }
   }
 }

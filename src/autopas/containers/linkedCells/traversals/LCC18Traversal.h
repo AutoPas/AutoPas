@@ -103,7 +103,7 @@ class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, d
    * Returns the index in the offsets array for the given position.
    * @param pos current position in dimension dim
    * @param dim current dimension
-   * @return Index for the _cellOffsets Array.
+   * @return Index for the _ownCellOffsets Array.
    */
   unsigned long getIndex(const unsigned long pos, const unsigned int dim) const;
 };

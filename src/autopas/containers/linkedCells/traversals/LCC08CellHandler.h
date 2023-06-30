@@ -104,14 +104,15 @@ class LCC08CellHandler {
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processBaseCell(
     std::vector<ParticleCell> &cells, unsigned long baseIndex) {
+
+  this->_cellFunctor.setOnlyDirty(this->_onlyDirty);
+
   for (auto const &[offset1, offset2, r] : _cellPairOffsets) {
     const unsigned long cellIndex1 = baseIndex + offset1;
     const unsigned long cellIndex2 = baseIndex + offset2;
 
     ParticleCell &cell1 = cells[cellIndex1];
     ParticleCell &cell2 = cells[cellIndex2];
-
-    this->_cellFunctor.setOnlyDirty(this->_onlyDirty);
 
     if (cellIndex1 == cellIndex2) {
       this->_cellFunctor.processCell(cell1);
