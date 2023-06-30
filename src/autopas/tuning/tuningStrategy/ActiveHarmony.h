@@ -66,7 +66,7 @@ class ActiveHarmony : public TuningStrategyInterface {
 
   bool searchSpaceIsEmpty() const override;
 
-  bool smoothedHomogeneityAndMaxDensityNeeded() const override;
+  bool needsSmoothedHomogeneityAndMaxDensity() const override;
 
   const Configuration &getCurrentConfiguration() const override;
 

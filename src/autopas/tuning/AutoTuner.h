@@ -77,13 +77,19 @@ class AutoTuner {
   }
 
   /**
+   * Indicator whether tuner needs homogeneity and max density information before the next call to prepareIteration().
+   * @return
+   */
+  bool needsHomogeneityAndMaxDensityBeforePrepare() const;
+
+  /**
    * Determines what live infos are needed and resets the strategy upon the start of a new tuning phase.
    *
-   * @note The live info is not gathered here because then we would need
+   * @note The live info is not gathered here because then we would need the container.
    *
-   * @return Tuple indicating what is needed before the next call to tune: tuple<liveInfo, homogeneity>
+   * @return Bool indicating if live Infos are needed before the next call to tune
    */
-  std::tuple<bool, bool> prepareIteration();
+  bool prepareIteration();
 
   /**
    * Increase internal iteration counters by one.

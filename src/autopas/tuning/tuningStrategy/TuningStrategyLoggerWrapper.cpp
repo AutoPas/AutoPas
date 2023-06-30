@@ -52,7 +52,7 @@ void TuningStrategyLoggerWrapper::receiveLiveInfo(const LiveInfo &info) {
   _actualTuningStrategy->receiveLiveInfo(info);
 }
 
-bool TuningStrategyLoggerWrapper::smoothedHomogeneityAndMaxDensityNeeded() const {
-  return _actualTuningStrategy->smoothedHomogeneityAndMaxDensityNeeded();
+bool TuningStrategyLoggerWrapper::needsSmoothedHomogeneityAndMaxDensity() const {
+  return _actualTuningStrategy->needsSmoothedHomogeneityAndMaxDensity();
 }
 }  // namespace autopas

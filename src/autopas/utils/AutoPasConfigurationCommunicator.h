@@ -81,6 +81,9 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
 /**
  * Distribute ranks in buckets, which contain only ranks with similar scenarios.
  * Each bucket then has its own search space.
+ *
+ * If negative (=invalid) values for homogeneity or density are passed every rank gets its own bucket.
+ *
  * @param comm MPI communicator
  * @param bucket new MPI communicator for its bucket
  * @param smoothedHomogeneity [homogeneity, maxDensity] smoothed over last 10 iterations.

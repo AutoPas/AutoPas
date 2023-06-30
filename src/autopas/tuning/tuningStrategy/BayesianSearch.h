@@ -78,7 +78,7 @@ class BayesianSearch : public TuningStrategyInterface {
 
   bool searchSpaceIsEmpty() const override;
 
-  bool smoothedHomogeneityAndMaxDensityNeeded() const override;
+  bool needsSmoothedHomogeneityAndMaxDensity() const override;
 
  private:
   /**

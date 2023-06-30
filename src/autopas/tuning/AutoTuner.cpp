@@ -37,7 +37,7 @@ AutoTuner::AutoTuner(std::vector<std::unique_ptr<TuningStrategyInterface>> &tuni
       _mpiTuningWeightForMaxDensity(info.MPITuningWeightForMaxDensity),
       _needsHomogeneityAndMaxDensity(std::transform_reduce(
           tuningStrategies.begin(), tuningStrategies.end(), false, std::logical_or(),
-          [](auto &tuningStrat) { return tuningStrat->smoothedHomogeneityAndMaxDensityNeeded(); })),
+          [](auto &tuningStrat) { return tuningStrat->needsSmoothedHomogeneityAndMaxDensity(); })),
       _needsLiveInfo(std::transform_reduce(tuningStrategies.begin(), tuningStrategies.end(), false, std::logical_or(),
                                            [](auto &tuningStrat) { return tuningStrat->needsLiveInfo(); })),
       _samplesNotRebuildingNeighborLists(info.maxSamples),
@@ -159,9 +159,9 @@ std::tuple<Configuration, bool> AutoTuner::rejectConfig(const Configuration &rej
   if (indefinitely) {
     // delete rejected config from the search space and notify tuning strategies.
     _searchSpace.erase(rejectedConfig);
-    std::for_each(_tuningStrategies.begin(), _tuningStrategies.end(),
-                  [&](auto &tuningStrategy) { tuningStrategy->rejectConfigurationIndefinitely(rejectedConfig); });
   }
+  std::for_each(_tuningStrategies.begin(), _tuningStrategies.end(),
+                [&](auto &tuningStrategy) { tuningStrategy->rejectConfiguration(rejectedConfig, indefinitely); });
 
   // let all configurations apply their optimizations in the order they are defined.
   // If any is still tuning consider the tuning phase still ongoing.
@@ -328,7 +328,7 @@ long AutoTuner::estimateRuntimeFromSamples() const {
          _rebuildFrequency;
 }
 
-std::tuple<bool, bool> AutoTuner::prepareIteration() {
+bool AutoTuner::prepareIteration() {
   // Flag if this is the first iteration in a new tuning phase
   const bool startOfTuningPhase = _iterationsSinceTuning == _tuningInterval;
 
@@ -339,41 +339,42 @@ std::tuple<bool, bool> AutoTuner::prepareIteration() {
     _configQueue.reserve(_searchSpace.size());
     std::copy(_searchSpace.begin(), _searchSpace.end(), std::back_inserter(_configQueue));
 
-    // call the appropriate versions of reset
-    for (const auto &tuningStrat : _tuningStrategies) {
-      if (auto *mpiStrategy = dynamic_cast<MPIParallelizedStrategy *>(tuningStrat.get())) {
-        const std::pair<double, double> smoothedHomogeneityAndMaxDensity{
-            autopas::OptimumSelector::medianValue(_homogeneitiesOfLastTenIterations),
-            autopas::OptimumSelector::medianValue(_maxDensitiesOfLastTenIterations)};
-        mpiStrategy->reset(_iteration, smoothedHomogeneityAndMaxDensity, _mpiTuningMaxDifferenceForBucket,
-                           _mpiTuningWeightForMaxDensity);
+    // If needed, calculate homogeneity and maxDensity, and reset buffers.
+    const auto [homogeneity, maxDensity] = [&]() {
+      if (_needsHomogeneityAndMaxDensity) {
+        const auto retTuple = std::make_tuple(OptimumSelector::medianValue(_homogeneitiesOfLastTenIterations),
+                                              OptimumSelector::medianValue(_maxDensitiesOfLastTenIterations));
+        _homogeneitiesOfLastTenIterations.clear();
+        _maxDensitiesOfLastTenIterations.clear();
+        AutoPasLog(DEBUG, "Calculating homogeneities over 10 iterations took in total {} ns on rank {}.",
+                   _timerCalculateHomogeneity.getTotalTime(), []() {
+                     int rank{0};
+                     AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
+                     return rank;
+                   });
+        return retTuple;
       } else {
-        tuningStrat->reset(_iteration, _tuningPhase, _configQueue, _evidenceCollection);
+        return std::make_tuple(-1., -1.);
       }
-    }
+    }();
 
-    // Homogeneity was calculated directly before the tuning phase so reset it now.
-    if (_needsHomogeneityAndMaxDensity) {
-      AutoPasLog(DEBUG, "Calculating homogeneities over 10 iterations took in total {} ns on rank {}.",
-                 _timerCalculateHomogeneity.getTotalTime(), []() {
-                   int rank{0};
-                   AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
-                   return rank;
-                 });
-      _homogeneitiesOfLastTenIterations.clear();
-      _maxDensitiesOfLastTenIterations.clear();
+    // reset all strategies and pass homo and maxDensity info if needed
+    for (const auto &tuningStrat : _tuningStrategies) {
+      tuningStrat->receiveSmoothedHomogeneityAndMaxDensity(homogeneity, maxDensity);
+      tuningStrat->reset(_iteration, _tuningPhase, _configQueue, _evidenceCollection);
     }
   }
 
   // if necessary, we need to collect live info in the first tuning iteration
   const bool needsLiveInfoNow = startOfTuningPhase and _needsLiveInfo;
 
-  // calc homogeneity if needed, and we are within 10 iterations of the next tuning phase
-  const size_t numIterationsForHomogeneity = 10;
-  const bool needsHomogeneityAndMaxDensityNow =
-      _needsHomogeneityAndMaxDensity and _iterationsSinceTuning > _tuningInterval - numIterationsForHomogeneity and
-      _iterationsSinceTuning <= _tuningInterval;
+  return needsLiveInfoNow;
+}
 
-  return {needsLiveInfoNow, needsHomogeneityAndMaxDensityNow};
+bool AutoTuner::needsHomogeneityAndMaxDensityBeforePrepare() const {
+  // calc homogeneity if needed, and we are within 10 iterations of the next tuning phase
+  constexpr size_t numIterationsForHomogeneity = 10;
+  return _needsHomogeneityAndMaxDensity and _iterationsSinceTuning > _tuningInterval - numIterationsForHomogeneity and
+         _iterationsSinceTuning <= _tuningInterval;
 }
 }  // namespace autopas

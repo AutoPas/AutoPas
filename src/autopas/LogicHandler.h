@@ -25,6 +25,7 @@
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/NumParticlesEstimator.h"
+#include "autopas/utils/SimilarityFunctions.h"
 #include "autopas/utils/StaticCellSelector.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
@@ -1042,14 +1043,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
           }
         });
   } else {
-    const auto [needsLiveInfo, needsHomogeneityAndMaxDensity] = _autoTuner.prepareIteration();
-
-    if (needsLiveInfo) {
-      LiveInfo info{};
-      info.gather(_containerSelector.getCurrentContainer(), functor, _neighborListRebuildFrequency);
-      _autoTuner.receiveLiveInfo(info);
-    }
-    if (needsHomogeneityAndMaxDensity) {
+    if (_autoTuner.needsHomogeneityAndMaxDensityBeforePrepare()) {
       utils::Timer timerCalculateHomogeneity;
       timerCalculateHomogeneity.start();
       const auto &container = _containerSelector.getCurrentContainer();
@@ -1057,6 +1051,14 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
           autopas::utils::calculateHomogeneityAndMaxDensity(container, container.getBoxMin(), container.getBoxMax());
       timerCalculateHomogeneity.stop();
       _autoTuner.addHomogeneityAndMaxDensity(homogeneity, maxDensity, timerCalculateHomogeneity.getTotalTime());
+    }
+
+    const auto needsLiveInfo = _autoTuner.prepareIteration();
+
+    if (needsLiveInfo) {
+      LiveInfo info{};
+      info.gather(_containerSelector.getCurrentContainer(), functor, _neighborListRebuildFrequency);
+      _autoTuner.receiveLiveInfo(info);
     }
 
     std::tie(configuration, stillTuning) = _autoTuner.getNextConfig();

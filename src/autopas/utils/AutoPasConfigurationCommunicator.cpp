@@ -204,6 +204,12 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket, d
   int commSize;
   AutoPas_MPI_Comm_size(comm, &commSize);
 
+  // If invalid values are passed, every rank gets its own bucket.
+  if (smoothedHomogeneity < 0 or maxDensity < 0) {
+    AutoPas_MPI_Comm_split(comm, rank, rank, bucket);
+    return;
+  }
+
   std::vector<double> similarityMetrics(commSize);
   double similarityMetric = smoothedHomogeneity + MPITuningWeightForMaxDensity * maxDensity;
 

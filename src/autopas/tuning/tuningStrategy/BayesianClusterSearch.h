@@ -101,7 +101,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
 
   bool searchSpaceIsEmpty() const override;
 
-  bool smoothedHomogeneityAndMaxDensityNeeded() const override { return false; }
+  bool needsSmoothedHomogeneityAndMaxDensity() const override { return false; }
 
  private:
   /**

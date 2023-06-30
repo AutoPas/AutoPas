@@ -70,7 +70,7 @@ class TuningStrategyLoggerWrapper final : public TuningStrategyInterface {
    * Hands over call to wrapped
    * @return
    */
-  bool smoothedHomogeneityAndMaxDensityNeeded() const override;
+  bool needsSmoothedHomogeneityAndMaxDensity() const override;
 
  private:
   /**
