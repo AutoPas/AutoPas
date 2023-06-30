@@ -68,6 +68,16 @@ struct TuningStrategyFactoryInfo {
    */
   MPIStrategyOption mpiStrategyOption = MPIStrategyOption::noMPI;
   /**
+   * Maximum absolute difference in similarity metric for two ranks to fall in the same bucket.
+   */
+  double mpiTuningMaxDifferenceForBucket{0.3};
+  ;
+  /**
+   * Weight for maxDensity in the calculation for bucket distribution.
+   */
+  double mpiTuningWeightForMaxDensity{0.0};
+
+  /**
    * MPI Communicator used within AutoPas.
    */
   AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD;

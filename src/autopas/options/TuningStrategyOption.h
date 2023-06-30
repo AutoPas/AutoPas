@@ -59,6 +59,11 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
      * Dynamic blacklist that throws out configurations that perform poorly.
      */
     slowConfigFilter,
+    /**
+     * Spread the current configuration queue over all similar mpi ranks,
+     * thus parallelizing the search for the optimum.
+     */
+    mpiDivideAndConquer,
   };
 
   /**

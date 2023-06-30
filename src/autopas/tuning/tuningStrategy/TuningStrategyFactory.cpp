@@ -137,32 +137,18 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
       break;
     }
 
+    case TuningStrategyOption::mpiDivideAndConquer: {
+      tuningStrategy = std::make_unique<MPIParallelizedStrategy>(
+          MPIParallelizedStrategy::createFallBackConfiguration(searchSpace), info.comm,
+          info.mpiTuningMaxDifferenceForBucket, info.mpiTuningWeightForMaxDensity);
+      break;
+    }
+
     default: {
       autopas::utils::ExceptionHandler::exception("AutoPas::generateTuningStrategy: Unknown tuning strategy {}!",
                                                   tuningStrategyOption);
       break;
     }
   }
-
-  // ======== Wrap strategy into MPI wrapper if appropriate ===================
-
-  switch (static_cast<MPIStrategyOption>(info.mpiStrategyOption)) {
-    case MPIStrategyOption::noMPI: {
-      return tuningStrategy;
-    }
-
-    case MPIStrategyOption::divideAndConquer: {
-      if (tuningStrategyOption == TuningStrategyOption::activeHarmony) {
-        if (getenv("HARMONY_HOST") != nullptr) {
-          // A server has been specified, so no need to handle communication via MPI as well.
-          return tuningStrategy;
-        }
-      }
-      return std::make_unique<MPIParallelizedStrategy>(std::move(tuningStrategy), info.comm, fallbackContainers,
-                                                       fallbackTraversals, fallbackLoadEstimators, fallbackDataLayouts,
-                                                       fallbackNewton3);
-    }
-  }
-
   return nullptr;
 }
