@@ -10,7 +10,7 @@
 #include <tuple>
 #include <vector>
 
-#include "autopas/tuning/utils/Evidence.h"
+#include "autopas/tuning/searchSpace/Evidence.h"
 
 namespace autopas::smoothing {
 

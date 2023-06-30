@@ -6,7 +6,7 @@
 
 #include "Smoothing.h"
 
-#include "Evidence.h"
+#include "autopas/tuning/searchSpace/Evidence.h"
 #include "autopas/utils/Math.h"
 
 /**

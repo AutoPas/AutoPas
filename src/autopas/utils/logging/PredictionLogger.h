@@ -35,14 +35,12 @@ class PredictionLogger {
 
   /**
    * Print all predictions of the given set of configurations to the logger.
-   * @param configurations
-   * @param configurationPredictions
+   * @param predictions
    * @param predictionErrorValue
    * @param tuningPhaseCounter
    */
-  void logAllPredictions(const std::set<Configuration> &configurations,
-                         const std::unordered_map<Configuration, long, ConfigHash> &configurationPredictions,
-                         long predictionErrorValue, size_t tuningPhaseCounter);
+  void logAllPredictions(const std::vector<std::tuple<Configuration, long>> &predictions, long predictionErrorValue,
+                         size_t tuningPhaseCounter);
 
  private:
   std::string _loggerName;

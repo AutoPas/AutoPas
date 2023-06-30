@@ -36,13 +36,10 @@ autopas::PredictionLogger::~PredictionLogger() {
 #endif
 }
 
-void autopas::PredictionLogger::logAllPredictions(
-    const std::set<Configuration> &configurations,
-    const std::unordered_map<Configuration, long, ConfigHash> &configurationPredictions, long predictionErrorValue,
-    size_t tuningPhaseCounter) {
+void autopas::PredictionLogger::logAllPredictions(const std::vector<std::tuple<Configuration, long>> &predictions,
+                                                  long predictionErrorValue, size_t tuningPhaseCounter) {
 #ifdef AUTOPAS_LOG_PREDICTIONS
-  for (const auto &configuration : configurations) {
-    auto prediction = configurationPredictions.at(configuration);
+  for (const auto &[configuration, prediction] : predictions) {
     spdlog::get(_loggerName)
         ->info("{},{},{}", tuningPhaseCounter, configuration.getCSVLine(),
                prediction == predictionErrorValue ? "none" : std::to_string(prediction));
