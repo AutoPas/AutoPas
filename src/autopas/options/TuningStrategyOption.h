@@ -27,6 +27,7 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
     randomSearch,
     /**
      * Tests all allowed configurations and select the best.
+     * Technically this is no tuning strategy anymore, but the option still exists for compatibility reasons.
      */
     fullSearch,
     /**
@@ -53,7 +54,11 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
      * Applies predefined rules to dynamically exclude configurations from tuning that are expected to perform worse
      * than others in the next tuning phase.
      */
-    ruleBasedTuning
+    ruleBasedTuning,
+    /**
+     * Dynamic blacklist that throws out configurations that perform poorly.
+     */
+    slowConfigFilter,
   };
 
   /**
@@ -92,6 +97,7 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
         {TuningStrategyOption::activeHarmony, "active-harmony"},
         {TuningStrategyOption::predictiveTuning, "predictive-tuning"},
         {TuningStrategyOption::ruleBasedTuning, "rule-based-tuning"},
+        {TuningStrategyOption::ruleBasedTuning, "slow-config-filter"},
     };
   }
 

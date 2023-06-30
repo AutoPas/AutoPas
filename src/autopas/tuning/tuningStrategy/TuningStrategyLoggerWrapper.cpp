@@ -24,31 +24,24 @@ TuningStrategyLoggerWrapper::TuningStrategyLoggerWrapper(std::unique_ptr<TuningS
 
 TuningStrategyLoggerWrapper::~TuningStrategyLoggerWrapper() { _logOut.flush(); }
 
-void TuningStrategyLoggerWrapper::addEvidence(long time, size_t iteration) {
-  _actualTuningStrategy->addEvidence(time, iteration);
+void TuningStrategyLoggerWrapper::addEvidence(const Configuration &configuration, const Evidence &evidence) {
+  _logOut << tuningLogEntry::writeEvidence(evidence.value, evidence.iteration, configuration) << std::endl;
 
-  _logOut << tuningLogEntry::writeEvidence(time, iteration, _actualTuningStrategy->getCurrentConfiguration())
-          << std::endl;
+  _actualTuningStrategy->addEvidence(configuration, evidence);
 }
 
-long TuningStrategyLoggerWrapper::getEvidence(Configuration configuration) const {
-  return _actualTuningStrategy->getEvidence(configuration);
+void TuningStrategyLoggerWrapper::optimizeSuggestions(std::vector<Configuration> &configQueue,
+                                                      const EvidenceCollection &evidenceCollection) {
+  _logOut << tuningLogEntry::writeTune() << std::endl;
+
+  return _actualTuningStrategy->optimizeSuggestions(configQueue, evidenceCollection);
 }
 
-const Configuration &TuningStrategyLoggerWrapper::getCurrentConfiguration() const {
-  return _actualTuningStrategy->getCurrentConfiguration();
-}
-
-bool TuningStrategyLoggerWrapper::tune(bool currentInvalid) {
-  _logOut << tuningLogEntry::writeTune(currentInvalid) << std::endl;
-
-  return _actualTuningStrategy->tune(currentInvalid);
-}
-
-void TuningStrategyLoggerWrapper::reset(size_t iteration) {
+void TuningStrategyLoggerWrapper::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+                                        const autopas::EvidenceCollection &evidenceCollection) {
   _logOut << tuningLogEntry::writeReset(iteration) << std::endl;
 
-  _actualTuningStrategy->reset(iteration);
+  _actualTuningStrategy->reset(iteration, tuningPhase, configQueue, evidenceCollection);
 }
 
 bool TuningStrategyLoggerWrapper::needsLiveInfo() const { return true; }
@@ -58,17 +51,6 @@ void TuningStrategyLoggerWrapper::receiveLiveInfo(const LiveInfo &info) {
 
   _actualTuningStrategy->receiveLiveInfo(info);
 }
-
-std::set<ContainerOption> TuningStrategyLoggerWrapper::getAllowedContainerOptions() const {
-  return _actualTuningStrategy->getAllowedContainerOptions();
-}
-
-void TuningStrategyLoggerWrapper::removeN3Option(Newton3Option option) {
-  _actualTuningStrategy->removeN3Option(option);
-}
-bool TuningStrategyLoggerWrapper::searchSpaceIsTrivial() const { return _actualTuningStrategy->searchSpaceIsTrivial(); }
-
-bool TuningStrategyLoggerWrapper::searchSpaceIsEmpty() const { return _actualTuningStrategy->searchSpaceIsEmpty(); }
 
 bool TuningStrategyLoggerWrapper::smoothedHomogeneityAndMaxDensityNeeded() const {
   return _actualTuningStrategy->smoothedHomogeneityAndMaxDensityNeeded();

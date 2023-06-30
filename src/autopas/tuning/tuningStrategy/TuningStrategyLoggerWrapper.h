@@ -20,7 +20,7 @@ namespace autopas {
  *
  * The log can be replayed using the TuningStrategyLogReplayer.
  */
-class TuningStrategyLoggerWrapper : public TuningStrategyInterface {
+class TuningStrategyLoggerWrapper final : public TuningStrategyInterface {
  public:
   /**
    * Creates a wrapper logger for a tuning strategy.
@@ -34,34 +34,25 @@ class TuningStrategyLoggerWrapper : public TuningStrategyInterface {
 
   /**
    * Logs evidence and hands it to wrapped.
-   * @param time
-   * @param iteration
-   */
-  void addEvidence(long time, size_t iteration) override;
-  /**
-   * Only hands over call to wrapped tuning strategy.
    * @param configuration
-   * @return
+   * @param evidence
    */
-  [[nodiscard]] long getEvidence(Configuration configuration) const override;
-  /**
-   * Only hands over call to wrapped tuning strategy.
-   * @return
-   */
-  [[nodiscard]] const Configuration &getCurrentConfiguration() const override;
+  void addEvidence(const Configuration &configuration, const Evidence &evidence) override;
 
   /**
-   * Logs call to tune, then hands it over to wrapped.
+   * Logs call to tuneConfiguration, then hands it over to wrapped.
    * @param currentInvalid
    * @return
    */
-  bool tune(bool currentInvalid = false) override;
+  void optimizeSuggestions(std::vector<Configuration> &configQueue,
+                           const EvidenceCollection &evidenceCollection) override;
 
   /**
    * Logs call to reset, then hands it over to wrapped.
    * @param iteration
    */
-  void reset(size_t iteration) override;
+  void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+             const autopas::EvidenceCollection &evidenceCollection) override;
 
   /**
    * Returns true. The live info is always needed for logging.
@@ -74,30 +65,6 @@ class TuningStrategyLoggerWrapper : public TuningStrategyInterface {
    * @param info
    */
   void receiveLiveInfo(const LiveInfo &info) override;
-
-  /**
-   * Hands call over to wrapped.
-   * @return
-   */
-  [[nodiscard]] std::set<ContainerOption> getAllowedContainerOptions() const override;
-
-  /**
-   * Hands over call to wrapped.
-   * @param option The N3Option to disallow.
-   */
-  void removeN3Option(Newton3Option option) override;
-
-  /**
-   * Hands over call to wrapped.
-   * @return
-   */
-  [[nodiscard]] bool searchSpaceIsTrivial() const override;
-
-  /**
-   * Hands over call to wrapped.
-   * @return
-   */
-  [[nodiscard]] bool searchSpaceIsEmpty() const override;
 
   /**
    * Hands over call to wrapped

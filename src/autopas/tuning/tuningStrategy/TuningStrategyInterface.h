@@ -6,8 +6,10 @@
 
 #pragma once
 
-#include "LiveInfo.h"
 #include "autopas/tuning/Configuration.h"
+#include "autopas/tuning/searchSpace/Evidence.h"
+#include "autopas/tuning/searchSpace/EvidenceCollection.h"
+#include "autopas/tuning/tuningStrategy/LiveInfo.h"
 
 namespace autopas {
 
@@ -20,23 +22,14 @@ class TuningStrategyInterface {
 
   /**
    * Store empirically collected information for the current configuration.
-   * @param time Measured traversal time.
-   * @param iteration Number of the las iteration of this evidence as counted by AutoTuner.
+   *
+   * Implementing this function is only necessary if the tuning strategy processes evidence differently
+   * than EvidenceCollection.
+   *
+   * @param configuration Measured traversal time.
+   * @param evidence Number of the las iteration of this evidence as counted by AutoTuner.
    */
-  virtual void addEvidence(long time, size_t iteration) = 0;
-
-  /**
-   * Get the stored time for the given configuration
-   * @param configuration
-   * @return
-   */
-  virtual long getEvidence(Configuration configuration) const = 0;
-
-  /**
-   * Returns the currently selected configuration object.
-   * @return
-   */
-  virtual const Configuration &getCurrentConfiguration() const = 0;
+  virtual void addEvidence(const Configuration &configuration, const Evidence &evidence){};
 
   /**
    * Selects the next configuration to test or the optimum.
@@ -45,17 +38,20 @@ class TuningStrategyInterface {
    * The new configuration can be obtained by getCurrentConfiguration. It is the configuration which is either the next
    * configuration to test (=true) or the optimum (=false).
    *
-   * @param currentInvalid Tells the tune() function that the currently selected configuration is invalid. This can be
-   * used to avoid getting stuck in an invalid optimum.
-   * @return false iff new configuration is the selected optimum.
+   * @param configQueue Queue of configurations to be tested. The tuning strategy should edit this queue.
+   * @param evidenceCollection All collected evidence until now.
    */
-  virtual bool tune(bool currentInvalid = false) = 0;
+  virtual void optimizeSuggestions(std::vector<Configuration> &configQueue,
+                                   const EvidenceCollection &evidenceCollection) = 0;
 
   /**
-   * Reset all internal parameters to the beginning of a new tuning cycle.
+   * Reset all internal parameters to the beginning of a new tuning phase.
    * @param iteration Gives the current iteration to the tuning strategy.
+   * @param configQueue Queue of configurations to be tested. The tuning strategy should edit this queue.
+   * @param evidenceCollection All collected evidence until now.
    */
-  virtual void reset(size_t iteration) = 0;
+  virtual void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+                     const autopas::EvidenceCollection &evidenceCollection) = 0;
 
   /**
    * Returns whether this tuning strategy wants to get a LiveInfo object passed before a new tuning phase.
@@ -72,34 +68,16 @@ class TuningStrategyInterface {
   virtual void receiveLiveInfo(const LiveInfo &info){};
 
   /**
-   * Returns all container options the strategy might choose.
-   * @return
+   * Notify the strategy about a configuration that will never be valid and thus can be dropped from any
+   * internal storage.
+   * @param configuration
    */
-  virtual std::set<ContainerOption> getAllowedContainerOptions() const = 0;
-
-  /**
-   * Removes all configurations with the given newton 3 option from the search space.
-   *
-   * If the current configuration is removed, it is set to the next not-removed one.
-   */
-  virtual void removeN3Option(Newton3Option) = 0;
-
-  /**
-   * Indicate whether the search space collapsed to only one option.
-   * @return
-   */
-  virtual bool searchSpaceIsTrivial() const = 0;
-
-  /**
-   * Indicate whether the search space collapsed to be empty.
-   * @return
-   */
-  virtual bool searchSpaceIsEmpty() const = 0;
+  virtual void rejectConfigurationIndefinitely(const Configuration &configuration){};
 
   /**
    * Indicate whether the strategy needs smoothed values of homogeneity and max density
    * @return
    */
-  virtual bool smoothedHomogeneityAndMaxDensityNeeded() const = 0;
+  virtual bool smoothedHomogeneityAndMaxDensityNeeded() const { return false; }
 };
 }  // namespace autopas
