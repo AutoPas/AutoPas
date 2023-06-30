@@ -1047,7 +1047,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     if (needsLiveInfo) {
       LiveInfo info{};
       info.gather(_containerSelector.getCurrentContainer(), functor, _neighborListRebuildFrequency);
-      _autoTuner.getTuningStrategy().receiveLiveInfo(info);
+      _autoTuner.receiveLiveInfo(info);
     }
     if (needsHomogeneityAndMaxDensity) {
       utils::Timer timerCalculateHomogeneity;
@@ -1085,6 +1085,7 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
   tuningTimer.start();
   const auto [configuration, traversalPtr, stillTuning] = selectConfiguration(*functor);
   tuningTimer.stop();
+  AutoPasLog(DEBUG, "Selected optimal configuration {}", _autoTuner.getCurrentConfig());
   AutoPasLog(DEBUG, "Selecting a configuration took {} ns.", tuningTimer.getTotalTime());
   _autoTuner.logIteration(configuration, stillTuning, tuningTimer.getTotalTime());
 

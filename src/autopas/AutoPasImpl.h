@@ -15,6 +15,7 @@
 #include "autopas/InstanceCounter.h"
 #include "autopas/LogicHandlerInfo.h"
 #include "autopas/Version.h"
+#include "autopas/tuning/utils/SearchSpaceGenerators.h"
 #include "autopas/utils/CompileInfo.h"
 
 // These next three includes have dependencies to all of AutoPas and thus are moved here from AutoPasDecl.h.
@@ -70,14 +71,29 @@ void AutoPas<Particle>::init() {
   } else {
     _externalMPICommunicator = true;
   }
+
+  // TODO: make this a member?
+  const AutoTunerInfo autoTunerInfo{
+      _mpiTuningMaxDifferenceForBucket,
+      _mpiTuningWeightForMaxDensity,
+      _selectorStrategy,
+      _tuningMetricOption,
+      _tuningInterval,
+      _numSamples,
+      _verletRebuildFrequency,
+      _outputSuffix,
+      _useTuningLogger,
+  };
+  const auto searchSpace = SearchSpaceGenerators::optionCrossProduct(
+      _allowedContainers, _allowedTraversals, _allowedLoadEstimators, _allowedDataLayouts, _allowedNewton3Options,
+      _allowedCellSizeFactors->clone());
+
   auto tuningStrategy = TuningStrategyFactory::generateTuningStrategy(
       _tuningStrategyOption, _allowedContainers, *_allowedCellSizeFactors, _allowedTraversals, _allowedLoadEstimators,
       _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _relativeOptimumRange, _maxTuningPhasesWithoutTest,
       _relativeBlacklistRange, _evidenceFirstPrediction, _acquisitionFunctionOption, _extrapolationMethodOption,
       _ruleFileName, _outputSuffix, _mpiStrategyOption, _autopasMPICommunicator);
-  _autoTuner = std::make_unique<autopas::AutoTuner>(
-      std::move(tuningStrategy), _mpiTuningMaxDifferenceForBucket, _mpiTuningWeightForMaxDensity, _selectorStrategy,
-      _tuningMetricOption, _tuningInterval, _numSamples, _verletRebuildFrequency, _outputSuffix, _useTuningLogger);
+  _autoTuner = std::make_unique<autopas::AutoTuner>(std::move(tuningStrategy), searchSpace, autoTunerInfo);
   LogicHandlerInfo logicHandlerInfo{
       _boxMin, _boxMax, _cutoff, _verletSkinPerTimestep, _verletRebuildFrequency, _verletClusterSize, _outputSuffix};
   _logicHandler = std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(*_autoTuner, logicHandlerInfo);

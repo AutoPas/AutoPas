@@ -7,17 +7,17 @@
 #pragma once
 
 #include <cstddef>
-#include <map>
 #include <memory>
+#include <set>
 #include <tuple>
 #include <vector>
 
 #include "autopas/options/TuningMetricOption.h"
 #include "autopas/tuning/Configuration.h"
-#include "autopas/tuning/selectors/OptimumSelector.h"
-#include "autopas/tuning/tuningStrategy/MPIParallelizedStrategy.h"
+#include "autopas/tuning/searchSpace/EvidenceCollection.h"
+#include "autopas/tuning/tuningStrategy/LiveInfo.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
-#include "autopas/tuning/utils/Evidence.h"
+#include "autopas/tuning/utils/AutoTunerInfo.h"
 #include "autopas/utils/RaplMeter.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/logging/TuningDataLogger.h"
@@ -26,9 +26,7 @@
 namespace autopas {
 
 /**
- * Calls to the iteratePairwise() method are passed through this class for two reasons:
- * 1. Measuring time of the iteration.
- * 2. Selecting an appropriate configuration for the pairwise iteration.
+ * TODO
  *
  * The tuner can be in one of two states. If it currently should look for a new optimum, it is in the
  * so-called tuning phase. During a tuning phase, for each Configuration, multiple measurements can be taken,
@@ -42,24 +40,13 @@ class AutoTuner {
  public:
   /**
    * Constructor for the AutoTuner that generates all configurations from the given options.
-   * @param tuningStrategy Object implementing the modelling and exploration of a search space.
-   * @param MPITuningMaxDifferenceForBucket For MPI-tuning: Maximum of the relative difference in the comparison metric
-   * for two ranks which exchange their tuning information.
-   * @param MPITuningWeightForMaxDensity For MPI-tuning: Weight for maxDensity in the calculation for bucket
-   * distribution.
-   * @param selectorStrategy Strategy for the configuration selection.
-   * @param tuningMetric Metric used to rate configurations (time or energy).
-   * @param tuningInterval Number of time steps after which the auto-tuner shall reevaluate all selections.
-   * @param maxSamples Number of samples that shall be collected for each combination.
-   * @param rebuildFrequency The rebuild frequency this AutoPas instance uses.
-   * @param outputSuffix Suffix for all output files produced by this class.
-   * @param useTuningStrategyLoggerProxy Whether to use the tuning strategy logger proxy to log tuning information.
+   * @param tuningStrategies Vector of object implementing the modelling and exploration of a search space. Will be
+   * moved into the tuner.
+   * @param searchSpace All possible configurations.
+   * @param info Struct containing more configuration information.
    */
-  AutoTuner(std::unique_ptr<TuningStrategyInterface> tuningStrategy, double MPITuningMaxDifferenceForBucket,
-            double MPITuningWeightForMaxDensity, SelectorStrategyOption selectorStrategy,
-            TuningMetricOption tuningMetric, unsigned int tuningInterval, unsigned int maxSamples,
-            unsigned int rebuildFrequency, const std::string &outputSuffix = "",
-            bool useTuningStrategyLoggerProxy = false);
+  AutoTuner(std::vector<std::unique_ptr<TuningStrategyInterface>> &tuningStrategies,
+            const std::set<Configuration> &searchSpace, const AutoTunerInfo &info);
 
   /**
    * Move assignment operator
@@ -74,16 +61,20 @@ class AutoTuner {
   void forceRetune();
 
   /**
-   * Getter to a modifiable reference to the current tuning strategy.
-   * @return Non-const reference to the underlying tuning strategy.
-   */
-  [[nodiscard]] TuningStrategyInterface &getTuningStrategy() const { return *_tuningStrategy; }
-
-  /**
    * Getter for the primary metric for tuning.
    * @return
    */
   const TuningMetricOption &getTuningMetric() const { return _tuningMetric; }
+
+  /**
+   * Pass live info on to all tuning strategies.
+   * @param liveInfo
+   */
+  void receiveLiveInfo(const LiveInfo &liveInfo) {
+    for (auto &tuningStrategy : _tuningStrategies) {
+      tuningStrategy->receiveLiveInfo(liveInfo);
+    }
+  }
 
   /**
    * Determines what live infos are needed and resets the strategy upon the start of a new tuning phase.
@@ -92,51 +83,11 @@ class AutoTuner {
    *
    * @return Tuple indicating what is needed before the next call to tune: tuple<liveInfo, homogeneity>
    */
-  std::tuple<bool, bool> prepareIteration() {
-    // Flag if this is the first iteration in a new tuning phase
-    const bool startOfTuningPhase = _iterationsSinceTuning == _tuningInterval;
-
-    // first tuning iteration -> reset everything
-    if (startOfTuningPhase) {
-      // call the appropriate version of reset
-      if (auto *mpiStrategy = dynamic_cast<MPIParallelizedStrategy *>(_tuningStrategy.get())) {
-        const std::pair<double, double> smoothedHomogeneityAndMaxDensity{
-            autopas::OptimumSelector::medianValue(_homogeneitiesOfLastTenIterations),
-            autopas::OptimumSelector::medianValue(_maxDensitiesOfLastTenIterations)};
-        mpiStrategy->reset(_iteration, smoothedHomogeneityAndMaxDensity, _mpiTuningMaxDifferenceForBucket,
-                           _mpiTuningWeightForMaxDensity);
-      } else {
-        _tuningStrategy->reset(_iteration);
-      }
-
-      // Homogeneity was calculated directly before the tuning phase so reset it now.
-      if (_tuningStrategy->smoothedHomogeneityAndMaxDensityNeeded()) {
-        AutoPasLog(DEBUG, "Calculating homogeneities over 10 iterations took in total {} ns on rank {}.",
-                   _timerCalculateHomogeneity.getTotalTime(), []() {
-                     int rank{0};
-                     AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
-                     return rank;
-                   });
-        _homogeneitiesOfLastTenIterations.clear();
-        _maxDensitiesOfLastTenIterations.clear();
-      }
-    }
-
-    // if necessary, we need to collect live info in the first tuning iteration
-    const bool needsLiveInfo = startOfTuningPhase and _tuningStrategy->needsLiveInfo();
-
-    // calc homogeneity if needed, and we are within 10 iterations of the next tuning phase
-    const size_t numIterationsForHomogeneity = 10;
-    const bool needsHomogeneityAndMaxDensity =
-        _tuningStrategy->smoothedHomogeneityAndMaxDensityNeeded() and
-        _iterationsSinceTuning > _tuningInterval - numIterationsForHomogeneity and
-        _iterationsSinceTuning <= _tuningInterval;
-
-    return {needsLiveInfo, needsHomogeneityAndMaxDensity};
-  }
+  std::tuple<bool, bool> prepareIteration();
 
   /**
    * Increase internal iteration counters by one.
+   * FIXME: Should this really be called at the end of the iteration? (Currently it is)
    */
   void bumpIterationCounters();
 
@@ -173,25 +124,19 @@ class AutoTuner {
    * indefinitely).
    * @return
    */
-  [[nodiscard]] std::tuple<Configuration, bool> rejectConfig(const Configuration &rejectedConfig, bool indefinitely) {
-    if (searchSpaceIsTrivial()) {
-      utils::ExceptionHandler::exception("Rejected the only configuration in the search space!\n{}",
-                                         rejectedConfig.toString());
-    }
-
-    if (indefinitely) {
-      // delete rejected config from the search space and assemble new sets.
-      _searchSpace.erase(rejectedConfig);
-    }
-
-    const auto stillTuning = _tuningStrategy->tune(true);
-    return {getCurrentConfig(), stillTuning};
-  }
+  [[nodiscard]] std::tuple<Configuration, bool> rejectConfig(const Configuration &rejectedConfig, bool indefinitely);
 
   /**
-   * Initialize the container specified by the TuningStrategy.
+   * Indicator function whether the search space consists of exactly one configuration.
+   * @return
    */
-  bool searchSpaceIsTrivial();
+  bool searchSpaceIsTrivial() const;
+
+  /**
+   * Indicator function whether the search space has no configurations in it.
+   * @return
+   */
+  bool searchSpaceIsEmpty() const;
 
   /**
    * Log the collected data and if we are at the end of a tuning phase the result to files.
@@ -268,15 +213,34 @@ class AutoTuner {
    *
    * @return true iff still in tuning phase.
    */
-  bool tune();
+  bool tuneConfiguration();
 
+  static std::vector<std::unique_ptr<TuningStrategyInterface>> wrapTuningStrategies(
+      std::vector<std::unique_ptr<TuningStrategyInterface>> &tuningStrategies, const std::string &outputSuffix);
+
+  /**
+   * Strategy how to reduce the sampled values to one value.
+   */
   SelectorStrategyOption _selectorStrategy;
-  std::unique_ptr<TuningStrategyInterface> _tuningStrategy;
+
+  /**
+   * Vector holding all tuning strategies that this auto tuner applies.
+   * The strategies are always applied in the order they are in this vector.
+   */
+  std::vector<std::unique_ptr<TuningStrategyInterface>> _tuningStrategies;
 
   /**
    * Counter for the current simulation iteration.
    */
-  size_t _iteration;
+  size_t _iteration{0};
+
+  /**
+   * The number of the current tuning phase.
+   * If we are currently between phases this is the number of the last phase.
+   * Initialize as 1 because we immediately start out with a tuning phase.
+   * See bumpIterationCounters() for more details.
+   */
+  size_t _tuningPhase{1};
 
   /**
    * Number of iterations between two tuning phases.
@@ -321,6 +285,16 @@ class AutoTuner {
   double _mpiTuningWeightForMaxDensity;
 
   /**
+   * Flag indicating if any tuning strategy needs the smoothed homogeneity and max density collected.
+   */
+  bool _needsHomogeneityAndMaxDensity;
+
+  /**
+   * Flag indicating if any tuning strategy needs live infos collected.
+   */
+  bool _needsLiveInfo;
+
+  /**
    * Buffer for the homogeneities of the last ten Iterations
    */
   std::vector<double> _homogeneitiesOfLastTenIterations{};
@@ -345,10 +319,22 @@ class AutoTuner {
   std::vector<long> _samplesRebuildingNeighborLists{};
 
   /**
-   * For each configuration the collection of all evidence (smoothed values) collected so far and in which iteration.
-   * Configuration -> vector< iteration, time >
+   * Database of all evidence collected so far.
    */
-  std::map<Configuration, std::vector<Evidence>> _searchSpace;
+  EvidenceCollection _evidenceCollection{};
+
+  /**
+   * The search space for this tuner.
+   */
+  std::set<Configuration> _searchSpace;
+
+  /**
+   * Sorted queue of configurations that should be looked at in this tuning phase.
+   * Initially this is the full search space. Tuning strategies then can filter and resort this.
+   *
+   * @note The next configuration to use is at the END of the vector.
+   */
+  std::vector<Configuration> _configQueue;
 
   /**
    * Timer used to determine how much time is wasted by calculating multiple homogeneities for smoothing
