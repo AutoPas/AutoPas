@@ -15,6 +15,7 @@
 #include "autopas/InstanceCounter.h"
 #include "autopas/LogicHandlerInfo.h"
 #include "autopas/Version.h"
+#include "autopas/tuning/tuningStrategy/TuningStrategyFactoryInfo.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
 #include "autopas/utils/CompileInfo.h"
 
@@ -72,7 +73,7 @@ void AutoPas<Particle>::init() {
     _externalMPICommunicator = true;
   }
 
-  // TODO: make this a member?
+  // TODO: make this a member
   const AutoTunerInfo autoTunerInfo{
       _mpiTuningMaxDifferenceForBucket,
       _mpiTuningWeightForMaxDensity,
@@ -88,11 +89,22 @@ void AutoPas<Particle>::init() {
       _allowedContainers, _allowedTraversals, _allowedLoadEstimators, _allowedDataLayouts, _allowedNewton3Options,
       _allowedCellSizeFactors->clone());
 
-  auto tuningStrategy = TuningStrategyFactory::generateTuningStrategy(
-      _tuningStrategyOption, _allowedContainers, *_allowedCellSizeFactors, _allowedTraversals, _allowedLoadEstimators,
-      _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _relativeOptimumRange, _maxTuningPhasesWithoutTest,
-      _relativeBlacklistRange, _evidenceFirstPrediction, _acquisitionFunctionOption, _extrapolationMethodOption,
-      _ruleFileName, _outputSuffix, _mpiStrategyOption, _autopasMPICommunicator);
+  // TODO: make this a member
+  const TuningStrategyFactoryInfo tuningStrategyFactoryInfo{
+      _maxEvidence,
+      _extrapolationMethodOption,
+      _relativeOptimumRange,
+      _maxTuningPhasesWithoutTest,
+      _evidenceFirstPrediction,
+      _relativeBlacklistRange,
+      _acquisitionFunctionOption,
+      _ruleFileName,
+      _mpiStrategyOption,
+      _autopasMPICommunicator,
+  };
+
+  auto tuningStrategy = TuningStrategyFactory::generateTuningStrategy(searchSpace, _tuningStrategyOption,
+                                                                      tuningStrategyFactoryInfo, _outputSuffix);
   _autoTuner = std::make_unique<autopas::AutoTuner>(std::move(tuningStrategy), searchSpace, autoTunerInfo);
   LogicHandlerInfo logicHandlerInfo{
       _boxMin, _boxMax, _cutoff, _verletSkinPerTimestep, _verletRebuildFrequency, _verletClusterSize, _outputSuffix};

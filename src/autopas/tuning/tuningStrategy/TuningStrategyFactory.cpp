@@ -13,20 +13,14 @@
 #include "MPIParallelizedStrategy.h"
 #include "PredictiveTuning.h"
 #include "RandomSearch.h"
+#include "TuningStrategyFactoryInfo.h"
 #include "autopas/options/MPIStrategyOption.h"
 #include "autopas/tuning/tuningStrategy/ruleBasedTuning/RuleBasedTuning.h"
 #include "autopas/utils/AutoPasConfigurationCommunicator.h"
 
 std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory::generateTuningStrategy(
-    autopas::TuningStrategyOption tuningStrategyOption, std::set<autopas::ContainerOption> &allowedContainers,
-    autopas::NumberSet<double> &allowedCellSizeFactors, std::set<autopas::TraversalOption> &allowedTraversals,
-    std::set<autopas::LoadEstimatorOption> &allowedLoadEstimators,
-    std::set<autopas::DataLayoutOption> &allowedDataLayouts, std::set<autopas::Newton3Option> &allowedNewton3Options,
-    unsigned int maxEvidence, double relativeOptimum, unsigned int maxTuningPhasesWithoutTest,
-    double relativeBlacklistRange, unsigned int evidenceFirstPrediction,
-    AcquisitionFunctionOption acquisitionFunctionOption, ExtrapolationMethodOption extrapolationMethodOption,
-    const std::string &ruleFileName, const std::string &outputSuffix, MPIStrategyOption mpiStrategyOption,
-    AutoPas_MPI_Comm comm) {
+    const std::set<Configuration> &searchSpace, autopas::TuningStrategyOption tuningStrategyOption,
+    const TuningStrategyFactoryInfo &info, const std::string &outputSuffix) {
   // ======== prepare MPI =====================================================
 
   // only needed in the MPI case, but need to be declared here.
@@ -37,7 +31,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
   std::set<autopas::DataLayoutOption> fallbackDataLayouts;
   std::set<autopas::Newton3Option> fallbackNewton3;
   // if an mpi-strategy is used, the local search space is set up here, as well as the fallback options.
-  switch (static_cast<autopas::MPIStrategyOption>(mpiStrategyOption)) {
+  switch (static_cast<autopas::MPIStrategyOption>(info.mpiStrategyOption)) {
     case MPIStrategyOption::noMPI: {
       break;
     }
@@ -53,8 +47,8 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
         break;
       }
       int rank, commSize;
-      AutoPas_MPI_Comm_rank(comm, &rank);
-      AutoPas_MPI_Comm_size(comm, &commSize);
+      AutoPas_MPI_Comm_rank(info.comm, &rank);
+      AutoPas_MPI_Comm_size(info.comm, &commSize);
       fallbackContainers = std::set<autopas::ContainerOption>(allowedContainers);
       if (allowedCellSizeFactors.isFinite()) {
         fallbackCellSizeFactors = std::make_unique<autopas::NumberSetFinite<double>>(allowedCellSizeFactors.getAll());
@@ -75,7 +69,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
 
     default: {
       utils::ExceptionHandler::exception("AutoPas::generateTuningStrategy: Unknown MPIStrategyOption: {}",
-                                         mpiStrategyOption);
+                                         info.mpiStrategyOption);
     }
   }
 
@@ -84,42 +78,33 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
   std::unique_ptr<autopas::TuningStrategyInterface> tuningStrategy = nullptr;
   switch (static_cast<autopas::TuningStrategyOption>(tuningStrategyOption)) {
     case TuningStrategyOption::randomSearch: {
-      tuningStrategy =
-          std::make_unique<RandomSearch>(allowedContainers, allowedCellSizeFactors, allowedTraversals,
-                                         allowedLoadEstimators, allowedDataLayouts, allowedNewton3Options, maxEvidence);
+      tuningStrategy = std::make_unique<RandomSearch>(info.maxEvidence, std::random_device()());
       break;
     }
 
     case TuningStrategyOption::fullSearch: {
-      if (not allowedCellSizeFactors.isFinite()) {
-        autopas::utils::ExceptionHandler::exception(
-            "AutoPas::generateTuningStrategy: fullSearch can not handle infinite cellSizeFactors!");
-        return nullptr;
-      }
-
-      tuningStrategy =
-          std::make_unique<FullSearch>(allowedContainers, allowedCellSizeFactors.getAll(), allowedTraversals,
-                                       allowedLoadEstimators, allowedDataLayouts, allowedNewton3Options);
+      autopas::utils::ExceptionHandler::exception(
+          "Full Search is no tuning strategy anymore! If you want this behavior don't select any tuning strategy.");
       break;
     }
 
     case TuningStrategyOption::bayesianSearch: {
-      tuningStrategy = std::make_unique<BayesianSearch>(allowedContainers, allowedCellSizeFactors, allowedTraversals,
-                                                        allowedLoadEstimators, allowedDataLayouts,
-                                                        allowedNewton3Options, maxEvidence, acquisitionFunctionOption);
+      tuningStrategy = std::make_unique<BayesianSearch>(
+          allowedContainers, allowedCellSizeFactors, allowedTraversals, allowedLoadEstimators, allowedDataLayouts,
+          allowedNewton3Options, info.maxEvidence, info.acquisitionFunctionOption);
       break;
     }
 
     case TuningStrategyOption::bayesianClusterSearch: {
       tuningStrategy = std::make_unique<BayesianClusterSearch>(
           allowedContainers, allowedCellSizeFactors, allowedTraversals, allowedLoadEstimators, allowedDataLayouts,
-          allowedNewton3Options, maxEvidence, acquisitionFunctionOption, outputSuffix);
+          allowedNewton3Options, info.maxEvidence, info.acquisitionFunctionOption, outputSuffix);
       break;
     }
 
     case TuningStrategyOption::activeHarmony: {
       // If a AH-server is provided, but MPI is disallowed, we have to ignore the server.
-      if (std::getenv("HARMONY_HOST") != nullptr and mpiStrategyOption == MPIStrategyOption::noMPI) {
+      if (std::getenv("HARMONY_HOST") != nullptr and info.mpiStrategyOption == MPIStrategyOption::noMPI) {
         unsetenv("HARMONY_HOST");
         AutoPasLog(WARN,
                    "HARMONY_HOST is set to a value, but the MPI strategy option is set to noMPI. "
@@ -127,28 +112,28 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
       }
       tuningStrategy = std::make_unique<ActiveHarmony>(allowedContainers, allowedCellSizeFactors, allowedTraversals,
                                                        allowedLoadEstimators, allowedDataLayouts, allowedNewton3Options,
-                                                       mpiStrategyOption, comm);
+                                                       info.mpiStrategyOption, info.comm);
       break;
     }
 
     case TuningStrategyOption::predictiveTuning: {
-      tuningStrategy = std::make_unique<PredictiveTuning>(
-          allowedContainers, allowedCellSizeFactors.getAll(), allowedTraversals, allowedLoadEstimators,
-          allowedDataLayouts, allowedNewton3Options, relativeOptimum, maxTuningPhasesWithoutTest,
-          relativeBlacklistRange, evidenceFirstPrediction, extrapolationMethodOption, outputSuffix);
+      tuningStrategy =
+          std::make_unique<PredictiveTuning>(searchSpace, info.relativeOptimum, info.maxTuningPhasesWithoutTest,
+                                             info.minNumberOfEvidence, info.extrapolationMethodOption, outputSuffix);
       break;
     }
 
     case TuningStrategyOption::ruleBasedTuning: {
       if (not allowedCellSizeFactors.isFinite()) {
+        // FIXME: This is probably not true anymore
         autopas::utils::ExceptionHandler::exception(
             "AutoPas::generateTuningStrategy: ruleBasedTuning can not handle infinite cellSizeFactors!");
         return nullptr;
       }
 
-      tuningStrategy = std::make_unique<RuleBasedTuning>(allowedContainers, allowedCellSizeFactors.getAll(),
-                                                         allowedTraversals, allowedLoadEstimators, allowedDataLayouts,
-                                                         allowedNewton3Options, false, ruleFileName);
+      tuningStrategy = std::make_unique<RuleBasedTuning>(
+          allowedContainers, allowedCellSizeFactors.getAll(), allowedTraversals, allowedLoadEstimators,
+          allowedDataLayouts, allowedNewton3Options, /*verify mode*/ false, info.ruleFileName);
       break;
     }
 
@@ -161,7 +146,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
 
   // ======== Wrap strategy into MPI wrapper if appropriate ===================
 
-  switch (static_cast<MPIStrategyOption>(mpiStrategyOption)) {
+  switch (static_cast<MPIStrategyOption>(info.mpiStrategyOption)) {
     case MPIStrategyOption::noMPI: {
       return tuningStrategy;
     }
@@ -173,7 +158,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
           return tuningStrategy;
         }
       }
-      return std::make_unique<MPIParallelizedStrategy>(std::move(tuningStrategy), comm, fallbackContainers,
+      return std::make_unique<MPIParallelizedStrategy>(std::move(tuningStrategy), info.comm, fallbackContainers,
                                                        fallbackTraversals, fallbackLoadEstimators, fallbackDataLayouts,
                                                        fallbackNewton3);
     }
