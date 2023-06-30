@@ -140,6 +140,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
     }
     if (traversalInterface && cellPairTraversal) {
+      // TODO : maybe only dirty cells
       cellPairTraversal->setCellsToTraverse(this->_cells);
       cellPairTraversal->setOnlyDirtyCells(this->_onlyDirtyCells);
     } else {
@@ -641,20 +642,6 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
 
     // the indices returned at this point should always be valid
     return {cellIndex, particleIndex};
-  }
-
-  std::vector<ParticleCell> prepareCellsToTraverse() {
-
-    if (_onlyDirtyCells) {
-      std::vector<ParticleCell> dirtyCells {};
-      std::copy_if(this->_cells.begin(), this->_cells.end(),
-                   std::back_inserter(dirtyCells), [] (auto& cell) { return cell.getDirty(); });
-      setOnlyDirtyCells(false);
-      return dirtyCells;
-    }
-    else {
-      return this->_cells;
-    }
   }
 
   /**
