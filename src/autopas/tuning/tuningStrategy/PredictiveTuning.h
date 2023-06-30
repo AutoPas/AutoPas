@@ -35,7 +35,6 @@ namespace autopas {
  * Additional features:
  * - Retesting of old configurations: Configurations are guaranteed to be retested after a given amount
  *   of tuning phases so that their predictions do not rely on data points that are too old.
- * - Blacklisting: Configurations that perform extremely bad will be completely disregarded forever.
  *
  * The strategy works by having multiple sets of configurations (e.g. the whole search space, optimal
  * search space, search space of configurations that were not tested for a long time). _currentConfig is
@@ -57,23 +56,9 @@ class PredictiveTuning final : public TuningStrategyInterface {
    * @param extrapolationMethodOption
    * @param outputSuffix
    */
-  PredictiveTuning(const std::set<Configuration> &searchSpace, double relativeOptimum,
-                   unsigned int maxTuningIterationsWithoutTest, unsigned int testsUntilFirstPrediction,
-                   ExtrapolationMethodOption extrapolationMethodOption, const std::string &outputSuffix = "")
-      : _validSearchSpace(searchSpace),
-        _relativeOptimumRange(relativeOptimum),
-        _maxTuningPhasesWithoutTest(maxTuningIterationsWithoutTest),
-        _extrapolationMethod(extrapolationMethodOption),
-        _minNumberOfEvidence(
-            extrapolationMethodOption == ExtrapolationMethodOption::linePrediction ? 2 : testsUntilFirstPrediction),
-        _predictionLogger(outputSuffix) {}
-
-  /**
-   * Constructor for the PredictiveTuning that only contains the given configurations.
-   * This constructor assumes only valid configurations are passed! Mainly for easier unit testing.
-   * @param allowedConfigurations Set of configurations AutoPas can choose from.
-   */
-  explicit PredictiveTuning(const std::set<Configuration> &allowedConfigurations) {}
+  PredictiveTuning(double relativeOptimum, unsigned int maxTuningIterationsWithoutTest,
+                   unsigned int testsUntilFirstPrediction, ExtrapolationMethodOption extrapolationMethodOption,
+                   const std::string &outputSuffix = "");
 
   void addEvidence(const Configuration &configuration, const Evidence &evidence) override;
 
@@ -82,10 +67,8 @@ class PredictiveTuning final : public TuningStrategyInterface {
 
   void optimizeSuggestions(std::vector<Configuration> &configQueue, const EvidenceCollection &evidence) override;
 
-  void rejectConfigurationIndefinitely(const Configuration &configuration) override {
-    _validSearchSpace.erase(configuration);
-    _tooLongNotTestedSearchSpace.erase(configuration);
-  };
+  void rejectConfigurationIndefinitely(const Configuration &configuration) override;
+  ;
 
  private:
   /**
@@ -148,10 +131,6 @@ class PredictiveTuning final : public TuningStrategyInterface {
    * Contains the configuration that have not been tested for a period of time and are going to be tested.
    */
   std::set<Configuration> _tooLongNotTestedSearchSpace{};
-  /**
-   * Contains the configurations that are not marked invalid in the current tuning phase.
-   */
-  std::set<Configuration> _validSearchSpace;
   /**
    * Factor of the range of the optimal configurations for the optimalSearchSpace.
    */

@@ -118,7 +118,7 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
 
     case TuningStrategyOption::predictiveTuning: {
       tuningStrategy =
-          std::make_unique<PredictiveTuning>(searchSpace, info.relativeOptimum, info.maxTuningPhasesWithoutTest,
+          std::make_unique<PredictiveTuning>(info.relativeOptimum, info.maxTuningPhasesWithoutTest,
                                              info.minNumberOfEvidence, info.extrapolationMethodOption, outputSuffix);
       break;
     }

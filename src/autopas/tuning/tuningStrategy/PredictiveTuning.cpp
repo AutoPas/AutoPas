@@ -14,6 +14,17 @@
 
 namespace autopas {
 
+PredictiveTuning::PredictiveTuning(double relativeOptimum,
+                                   unsigned int maxTuningIterationsWithoutTest, unsigned int testsUntilFirstPrediction,
+                                   ExtrapolationMethodOption extrapolationMethodOption, const std::string &outputSuffix)
+    :
+      _relativeOptimumRange(relativeOptimum),
+      _maxTuningPhasesWithoutTest(maxTuningIterationsWithoutTest),
+      _extrapolationMethod(extrapolationMethodOption),
+      _minNumberOfEvidence(
+          extrapolationMethodOption == ExtrapolationMethodOption::linePrediction ? 2 : testsUntilFirstPrediction),
+      _predictionLogger(outputSuffix) {}
+
 PredictiveTuning::PredictionsType PredictiveTuning::calculatePredictions(
     size_t iteration, size_t tuningPhase, const std::vector<Configuration> &configurations,
     const EvidenceCollection &evidenceCollection) {
@@ -286,7 +297,7 @@ void PredictiveTuning::optimizeSuggestions(std::vector<Configuration> &configQue
 void PredictiveTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
                              const EvidenceCollection &evidenceCollection) {
   // collect all configurations that were not tested for too long
-  for (const auto &conf : _validSearchSpace) {
+  for (const auto &conf : configQueue) {
     const auto numPhasesWithoutTest = tuningPhase - evidenceCollection.getEvidence(conf).back().tuningPhase;
     if (numPhasesWithoutTest >= _maxTuningPhasesWithoutTest) {
       _tooLongNotTestedSearchSpace.emplace(conf);
@@ -328,5 +339,9 @@ void PredictiveTuning::addEvidence(const Configuration &configuration, const Evi
       confIter != _tooLongNotTestedSearchSpace.end()) {
     _tooLongNotTestedSearchSpace.erase(confIter);
   }
+}
+
+void PredictiveTuning::rejectConfigurationIndefinitely(const Configuration &configuration) {
+  _tooLongNotTestedSearchSpace.erase(configuration);
 }
 }  // namespace autopas
