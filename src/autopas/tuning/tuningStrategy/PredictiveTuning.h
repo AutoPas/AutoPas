@@ -67,8 +67,7 @@ class PredictiveTuning final : public TuningStrategyInterface {
 
   void optimizeSuggestions(std::vector<Configuration> &configQueue, const EvidenceCollection &evidence) override;
 
-  void rejectConfigurationIndefinitely(const Configuration &configuration) override;
-  ;
+  void rejectConfiguration(const Configuration &configuration, bool indefinitely) override;
 
  private:
   /**

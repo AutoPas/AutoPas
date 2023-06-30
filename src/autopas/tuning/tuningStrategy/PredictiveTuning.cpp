@@ -341,7 +341,9 @@ void PredictiveTuning::addEvidence(const Configuration &configuration, const Evi
   }
 }
 
-void PredictiveTuning::rejectConfigurationIndefinitely(const Configuration &configuration) {
-  _tooLongNotTestedSearchSpace.erase(configuration);
+void PredictiveTuning::rejectConfiguration(const Configuration &configuration, bool indefinitely) {
+  if (indefinitely) {
+    _tooLongNotTestedSearchSpace.erase(configuration);
+  }
 }
 }  // namespace autopas

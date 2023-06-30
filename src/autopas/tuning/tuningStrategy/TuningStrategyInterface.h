@@ -72,7 +72,7 @@ class TuningStrategyInterface {
    * internal storage.
    * @param configuration
    */
-  virtual void rejectConfigurationIndefinitely(const Configuration &configuration){};
+  virtual void rejectConfiguration(const Configuration &configuration, bool indefinitely){};
 
   /**
    * Indicate whether the strategy needs smoothed values of homogeneity and max density
