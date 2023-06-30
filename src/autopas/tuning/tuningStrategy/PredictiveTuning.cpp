@@ -14,11 +14,10 @@
 
 namespace autopas {
 
-PredictiveTuning::PredictiveTuning(double relativeOptimum,
-                                   unsigned int maxTuningIterationsWithoutTest, unsigned int testsUntilFirstPrediction,
+PredictiveTuning::PredictiveTuning(double relativeOptimum, unsigned int maxTuningIterationsWithoutTest,
+                                   unsigned int testsUntilFirstPrediction,
                                    ExtrapolationMethodOption extrapolationMethodOption, const std::string &outputSuffix)
-    :
-      _relativeOptimumRange(relativeOptimum),
+    : _relativeOptimumRange(relativeOptimum),
       _maxTuningPhasesWithoutTest(maxTuningIterationsWithoutTest),
       _extrapolationMethod(extrapolationMethodOption),
       _minNumberOfEvidence(

@@ -17,6 +17,7 @@
 #include "autopas/options/MPIStrategyOption.h"
 #include "autopas/tuning/tuningStrategy/ruleBasedTuning/RuleBasedTuning.h"
 #include "autopas/utils/AutoPasConfigurationCommunicator.h"
+#include "options/TuningStrategyOption.h"
 
 std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory::generateTuningStrategy(
     const std::set<Configuration> &searchSpace, autopas::TuningStrategyOption tuningStrategyOption,
