@@ -69,10 +69,9 @@ std::tuple<long, size_t, Configuration> readEvidence(std::stringstream &str);
 
 /**
  * Writes a tune entry for the log file into a string.
- * @param currentInvalid If current configuration was invalid.
  * @return The string with the tune entry.
  */
-std::string writeTune(bool currentInvalid);
+std::string writeTune();
 
 /**
  * Reads the arguments of a tune entry from the stringstream.

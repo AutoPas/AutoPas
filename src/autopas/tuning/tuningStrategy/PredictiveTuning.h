@@ -166,7 +166,7 @@ class PredictiveTuning final : public TuningStrategyInterface {
    */
   ExtrapolationMethodOption _extrapolationMethod{ExtrapolationMethodOption::linearRegression};
   /**
-   * Stores the number of tests that have to be made until the first prediction.
+   * The number of evidence that have to be collected until the first prediction can be made.
    * This number also determines how much evidence is used for the prediction and for a polynomial extrapolation method,
    * this is also the degree of the polynomial.
    */

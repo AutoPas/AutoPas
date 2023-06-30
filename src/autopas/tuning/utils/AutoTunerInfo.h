@@ -13,7 +13,6 @@ namespace autopas {
 /**
  * Helper struct encapsulating most minor information for the auto tuner.
  */
-
 struct AutoTunerInfo {
   /**
    * For MPI-tuning: Maximum of the relative difference in the comparison metric for two ranks which exchange their
