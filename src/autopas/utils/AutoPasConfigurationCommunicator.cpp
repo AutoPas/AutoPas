@@ -152,27 +152,25 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
                                 dataLayoutOptions, newton3Options));
 }
 
-Configuration optimizeConfiguration(AutoPas_MPI_Comm comm, Configuration localOptimalConfig, size_t localOptimalTime) {
+Configuration findGloballyBestConfiguration(AutoPas_MPI_Comm comm, Configuration localOptimalConfig,
+                                            long localOptimalTime) {
+  // local helper struct to pack a long and int
+  int myRank{};
+  AutoPas_MPI_Comm_rank(comm, &myRank);
+  struct LongIntStruct {
+    long value;
+    int rank;
+  };
+  const LongIntStruct localOptimum{localOptimalTime, myRank};
+  LongIntStruct globalOptimum;
+  // find the rank and value with the minimal value in one collective operation
+  AutoPas_MPI_Allreduce(&localOptimum, &globalOptimum, 1, AUTOPAS_MPI_LONG_INT, AUTOPAS_MPI_MINLOC, comm);
+  // broadcast the best configuration
   SerializedConfiguration serializedConfiguration = serializeConfiguration(localOptimalConfig);
-  size_t optimalTimeOut{0};
-  int optimalRankIn{0};
-  int optimalRankOut{0};
+  AutoPas_MPI_Bcast(serializedConfiguration.data(), serializedConfiguration.size(), AUTOPAS_MPI_BYTE,
+                    globalOptimum.rank, comm);
 
-  AutoPas_MPI_Allreduce(&localOptimalTime, &optimalTimeOut, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_MIN, comm);
-
-  // Send own rank if local optimal time is equal to the global optimal time.
-  // Send something higher than the highest rank otherwise.
-  if (localOptimalTime == optimalTimeOut) {
-    AutoPas_MPI_Comm_rank(comm, &optimalRankIn);
-  } else {
-    AutoPas_MPI_Comm_size(comm, &optimalRankIn);
-  }
-  AutoPas_MPI_Allreduce(&optimalRankIn, &optimalRankOut, 1, AUTOPAS_MPI_INT, AUTOPAS_MPI_MIN, comm);
-
-  AutoPas_MPI_Bcast(serializedConfiguration.data(), serializedConfiguration.size(), AUTOPAS_MPI_BYTE, optimalRankOut,
-                    comm);
-
-  Configuration deserializedConfig = deserializeConfiguration(serializedConfiguration);
+  const Configuration deserializedConfig = deserializeConfiguration(serializedConfiguration);
   AutoPasLog(DEBUG, "Globally optimal configuration: {}", deserializedConfig.toString());
 
   return deserializedConfig;

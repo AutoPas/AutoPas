@@ -113,6 +113,7 @@ Configuration deserializeConfiguration(SerializedConfiguration config);
  * @param localOptimalTime: The time measured for localOptimalConfig.
  * @return The globally optimal configuration.
  */
-Configuration optimizeConfiguration(AutoPas_MPI_Comm comm, Configuration localOptimalConfig, size_t localOptimalTime);
+Configuration findGloballyBestConfiguration(AutoPas_MPI_Comm comm, Configuration localOptimalConfig,
+                                            long localOptimalTime);
 
 }  // namespace autopas::utils::AutoPasConfigurationCommunicator
