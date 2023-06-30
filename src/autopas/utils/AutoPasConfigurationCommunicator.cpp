@@ -198,24 +198,21 @@ Configuration deserializeConfiguration(SerializedConfiguration config) {
           static_cast<DataLayoutOption::Value>(config[3]), static_cast<Newton3Option::Value>(config[4])};
 }
 
-void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket,
-                              const std::pair<double, double> &smoothedHomogeneityAndMaxDensity,
-                              double MPITuningMaxDifferenceForBucket, double MPITuningWeightForMaxDensity) {
+void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket, double smoothedHomogeneity,
+                              double maxDensity, double MPITuningMaxDifferenceForBucket,
+                              double MPITuningWeightForMaxDensity) {
   int rank;
   AutoPas_MPI_Comm_rank(comm, &rank);
   int commSize;
   AutoPas_MPI_Comm_size(comm, &commSize);
 
   std::vector<double> similarityMetrics(commSize);
-  double similarityMetric =
-      smoothedHomogeneityAndMaxDensity.first + MPITuningWeightForMaxDensity * smoothedHomogeneityAndMaxDensity.second;
+  double similarityMetric = smoothedHomogeneity + MPITuningWeightForMaxDensity * maxDensity;
 
   // debug print for evaluation
-  AutoPasLog(DEBUG, "similarityMetric of rank: " + std::to_string(rank) + " is: " + std::to_string(similarityMetric));
-  AutoPasLog(DEBUG, "smoothedHomogeneity of rank: " + std::to_string(rank) +
-                        " is: " + std::to_string(smoothedHomogeneityAndMaxDensity.first));
-  AutoPasLog(DEBUG, "smoothedMaxDensity of rank: " + std::to_string(rank) +
-                        " is: " + std::to_string(smoothedHomogeneityAndMaxDensity.second));
+  AutoPasLog(DEBUG, "similarityMetric    of rank {} is: {}", rank, similarityMetric);
+  AutoPasLog(DEBUG, "smoothedHomogeneity of rank {} is: {}", rank, smoothedHomogeneity);
+  AutoPasLog(DEBUG, "smoothedMaxDensity  of rank {} is: {}", rank, maxDensity);
 
   // get all the similarityMetrics of the other ranks
   AutoPas_MPI_Allgather(&similarityMetric, 1, AUTOPAS_MPI_DOUBLE, similarityMetrics.data(), 1, AUTOPAS_MPI_DOUBLE,
@@ -240,8 +237,7 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket,
     if (differences[i] > MPITuningMaxDifferenceForBucket) current_bucket++;
 
     // debug print for evaluation
-    AutoPasLog(DEBUG, "I am rank: " + std::to_string(rank) + " bucket: " + std::to_string(current_bucket) +
-                          "  new value: " + std::to_string(similarityMetrics[i]));
+    AutoPasLog(DEBUG, "I am rank {} bucket {} new value {} ", rank, current_bucket, similarityMetrics[i]);
     if (similarityMetrics[i] == similarityMetric) my_bucket = current_bucket;
   }
   // split MPI_Comm in as many new communications as there are groups with similar scenarios

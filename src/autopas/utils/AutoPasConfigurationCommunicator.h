@@ -83,14 +83,14 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
  * Each bucket then has its own search space.
  * @param comm MPI communicator
  * @param bucket new MPI communicator for its bucket
- * @param smoothedHomogeneityAndMaxDensity [homogeneity, maxDensity] smoothed over last 10 iterations.
+ * @param smoothedHomogeneity [homogeneity, maxDensity] smoothed over last 10 iterations.
  * @param MPITuningMaxDifferenceForBucket For MPI-tuning: Maximum of the relative difference in the comparison metric
  * for two ranks which exchange their tuning information.
  * @param MPITuningWeightForMaxDensity For MPI-tuning: Weight for maxDensity in the calculation for bucket distribution.
  */
-void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket,
-                              const std::pair<double, double> &smoothedHomogeneityAndMaxDensity,
-                              double MPITuningMaxDifferenceForBucket, double MPITuningWeightForMaxDensity);
+void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket, double smoothedHomogeneity,
+                              double maxDensity, double MPITuningMaxDifferenceForBucket,
+                              double MPITuningWeightForMaxDensity);
 
 /**
  * Serializes a configuration object for communication via MPI.
