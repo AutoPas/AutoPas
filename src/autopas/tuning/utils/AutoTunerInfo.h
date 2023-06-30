@@ -15,15 +15,6 @@ namespace autopas {
  */
 struct AutoTunerInfo {
   /**
-   * For MPI-tuning: Maximum of the relative difference in the comparison metric for two ranks which exchange their
-   * tuning information.
-   */
-  double MPITuningMaxDifferenceForBucket{3.0};
-  /**
-   * For MPI-tuning: Weight for maxDensity in the calculation for bucket distribution.
-   */
-  double MPITuningWeightForMaxDensity{0.0};
-  /**
    * Strategy how to select the optimum from the collected samples.
    */
   SelectorStrategyOption selectorStrategy{SelectorStrategyOption::fastestAbs};

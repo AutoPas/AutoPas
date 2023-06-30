@@ -33,8 +33,6 @@ AutoTuner::AutoTuner(std::vector<std::unique_ptr<TuningStrategyInterface>> &tuni
       _energyMeasurementPossible(initEnergy()),
       _rebuildFrequency(info.rebuildFrequency),
       _maxSamples(info.maxSamples),
-      _mpiTuningMaxDifferenceForBucket(info.MPITuningMaxDifferenceForBucket),
-      _mpiTuningWeightForMaxDensity(info.MPITuningWeightForMaxDensity),
       _needsHomogeneityAndMaxDensity(std::transform_reduce(
           tuningStrategies.begin(), tuningStrategies.end(), false, std::logical_or(),
           [](auto &tuningStrat) { return tuningStrat->needsSmoothedHomogeneityAndMaxDensity(); })),

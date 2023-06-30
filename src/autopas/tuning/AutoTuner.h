@@ -280,17 +280,6 @@ class AutoTuner {
   size_t _maxSamples;
 
   /**
-   * Parameter used For MPI-tuning: Maximum of the relative difference in the comparison metric for two ranks which
-   * exchange their tuning information.
-   */
-  double _mpiTuningMaxDifferenceForBucket;
-
-  /**
-   * Parameter used For MPI-tuning: Weight for maxDensity in the calculation for bucket distribution.
-   */
-  double _mpiTuningWeightForMaxDensity;
-
-  /**
    * Flag indicating if any tuning strategy needs the smoothed homogeneity and max density collected.
    */
   bool _needsHomogeneityAndMaxDensity;

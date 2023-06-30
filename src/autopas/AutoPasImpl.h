@@ -75,15 +75,8 @@ void AutoPas<Particle>::init() {
 
   // TODO: make this a member
   const AutoTunerInfo autoTunerInfo{
-      _mpiTuningMaxDifferenceForBucket,
-      _mpiTuningWeightForMaxDensity,
-      _selectorStrategy,
-      _tuningMetricOption,
-      _tuningInterval,
-      _numSamples,
-      _verletRebuildFrequency,
-      _outputSuffix,
-      _useTuningLogger,
+      _selectorStrategy,       _tuningMetricOption, _tuningInterval,  _numSamples,
+      _verletRebuildFrequency, _outputSuffix,       _useTuningLogger,
   };
   const auto searchSpace = SearchSpaceGenerators::optionCrossProduct(
       _allowedContainers, _allowedTraversals, _allowedLoadEstimators, _allowedDataLayouts, _allowedNewton3Options,
