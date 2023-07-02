@@ -1338,11 +1338,12 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   std::vector<std::vector<Particle>> _particlesToAdd;
 
   /**
-   * Checks if there are particles in at least one thread buffer of _particlesToAdd.
-   * @return true iff all thread buffer are empty.
+   * Checks if there are particles in the buffers of _particlesToAdd.
+   * @param bufferID the buffer ID to check for emptiness. If bufferID == -1, all buffers are checked
+   * @return true if all buffers are empty or if one of the specified buffers is empty.
    */
-  [[nodiscard]] bool particlesToAddEmpty(int threadID = -1) const {
-    if (threadID == -1) {
+  [[nodiscard]] bool particlesToAddEmpty(int bufferID = -1) const {
+    if (bufferID == -1) {
       for (auto &threadBuffer : _particlesToAdd) {
         if (not threadBuffer.empty()) {
           return false;
@@ -1350,7 +1351,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       }
       return true;
     } else {
-      return _particlesToAdd[threadID].empty();
+      return _particlesToAdd[bufferID].empty();
     }
   }
 
