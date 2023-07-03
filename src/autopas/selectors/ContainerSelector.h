@@ -174,14 +174,14 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
       container = std::make_unique<VerletListsCells<Particle, VLCCellPairNeighborList<Particle>>>(
           _boxMin, _boxMax, _cutoff, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency,
           containerInfo.cellSizeFactor, containerInfo.loadEstimator,
-          VerletListsCellsHelpers<Particle>::VLCBuildType::Value::soaBuild);
+          VerletListsCellsHelpers<Particle>::VLCBuildType::Value::aosBuild);
       break;
     }
     case ContainerOption::dynamicPairwiseVerletLists: {
       container = std::make_unique<DynamicVerletListsCells<Particle, VLCCellPairNeighborList<Particle>>>(
           _boxMin, _boxMax, _cutoff, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency,
           containerInfo.cellSizeFactor, containerInfo.loadEstimator,
-          VerletListsCellsHelpers<Particle>::VLCBuildType::Value::soaBuild);
+          VerletListsCellsHelpers<Particle>::VLCBuildType::Value::aosBuild);
       break;
     }
     case ContainerOption::partialPairwiseVerletLists: {
