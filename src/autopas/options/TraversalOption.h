@@ -34,7 +34,7 @@ class TraversalOption : public Option<TraversalOption> {
      */
     lc_c01,
 
-    lc_c01_b08,
+    lc_c01_b18,
 
     /**
      * LCC01Traversal : Same as LCC01Traversal but SoAs are combined into a circular buffer and the domain is traversed
@@ -233,7 +233,7 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::lc_sliced_balanced, "lc_sliced_balanced"},
         {TraversalOption::lc_sliced_c02, "lc_sliced_c02"},
         {TraversalOption::lc_c01, "lc_c01"},
-        {TraversalOption::lc_c01_b08, "lc_01_b08"},
+        {TraversalOption::lc_c01_b18, "lc_01_b18"},
         {TraversalOption::lc_c01_combined_SoA, "lc_c01_combined_SoA"},
         {TraversalOption::lc_c04, "lc_c04"},
         {TraversalOption::lc_c04_HCP, "lc_c04_HCP"},

@@ -1,5 +1,5 @@
 /**
-* @file LCC01B08Traversal.h
+* @file LCC01B18Traversal.h
 * @author Luis Gall
 * @date 28.06.2023
 */
@@ -14,11 +14,11 @@ namespace autopas {
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
           bool combineSoA = false>
 
-class LCC01B08Traversal : public LCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, combineSoA> {
+class LCC01B18Traversal : public LCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, combineSoA> {
 
  public:
 
-  explicit LCC01B08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit LCC01B18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                              const double interactionLength, const std::array<double, 3> &cellLength)
       : LCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, combineSoA>(
             dims, pairwiseFunctor, interactionLength, cellLength),
