@@ -97,6 +97,10 @@ bool AutoTuner::tuneConfiguration() {
   utils::Timer tuningTimer;
   tuningTimer.start();
 
+  // We plan to test a new config so clear all samples.
+  _samplesNotRebuildingNeighborLists.clear();
+  _samplesRebuildingNeighborLists.clear();
+
   // Determine where in a tuning phase we are
   if (_iterationsSinceTuning == _tuningInterval) {
     // CASE: Start of a tuning phase
@@ -115,9 +119,6 @@ bool AutoTuner::tuneConfiguration() {
     std::for_each(_tuningStrategies.begin(), _tuningStrategies.end(), [&](auto &tuningStrategy) {
       tuningStrategy->optimizeSuggestions(_configQueue, _evidenceCollection);
     });
-    // samples are no longer needed.
-    _samplesNotRebuildingNeighborLists.clear();
-    _samplesRebuildingNeighborLists.clear();
   }
 
   // CASE: End of a tuning phase. This is not exclusive to the other cases!
