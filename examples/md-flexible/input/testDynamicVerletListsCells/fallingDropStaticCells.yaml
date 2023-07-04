@@ -9,8 +9,8 @@ tuning-strategy                  :  full-Search
 tuning-interval                  :  2500
 tuning-samples                   :  3
 tuning-max-evidence              :  10
-functor                          :  Lennard-Jones
-newton3                          :  [disabled]
+functor                          :  Lennard-Jones avx
+newton3                          :  [enabled]
 cutoff                           :  3
 box-min                          :  [0, 0, 0]
 box-max                          :  [7.25, 7.25, 7.25]
