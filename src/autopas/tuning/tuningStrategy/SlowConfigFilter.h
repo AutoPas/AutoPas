@@ -12,7 +12,7 @@ namespace autopas {
 /**
  * Acts as a blacklist for configurations that have proven to be very slow.
  */
-class SlowConfigFilter : TuningStrategyInterface {
+class SlowConfigFilter : public TuningStrategyInterface {
  public:
   explicit SlowConfigFilter(double relativeBlacklistRange) : _relativeBlacklistRange(relativeBlacklistRange){};
 

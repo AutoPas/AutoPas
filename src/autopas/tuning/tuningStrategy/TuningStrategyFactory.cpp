@@ -115,6 +115,11 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
       break;
     }
 
+    case TuningStrategyOption::slowConfigFilter: {
+      tuningStrategy = std::make_unique<SlowConfigFilter>(info.relativeBlacklistRange);
+      break;
+    }
+
     default: {
       utils::ExceptionHandler::exception("AutoPas::generateTuningStrategy: Unknown tuning strategy {}!",
                                          tuningStrategyOption);
