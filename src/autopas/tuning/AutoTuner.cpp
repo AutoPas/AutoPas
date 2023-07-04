@@ -338,11 +338,6 @@ bool AutoTuner::prepareIteration() {
 
   // first tuning iteration -> reset everything
   if (startOfTuningPhase) {
-    // reset the configQueue
-    _configQueue.clear();
-    _configQueue.reserve(_searchSpace.size());
-    std::copy(_searchSpace.begin(), _searchSpace.end(), std::back_inserter(_configQueue));
-
     // If needed, calculate homogeneity and maxDensity, and reset buffers.
     const auto [homogeneity, maxDensity] = [&]() {
       if (_needsHomogeneityAndMaxDensity) {
@@ -365,7 +360,6 @@ bool AutoTuner::prepareIteration() {
     // reset all strategies and pass homo and maxDensity info if needed
     for (const auto &tuningStrat : _tuningStrategies) {
       tuningStrat->receiveSmoothedHomogeneityAndMaxDensity(homogeneity, maxDensity);
-      tuningStrat->reset(_iteration, _tuningPhase, _configQueue, _evidenceCollection);
     }
   }
 
