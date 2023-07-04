@@ -38,7 +38,7 @@ std::tuple<long, size_t, Configuration> readEvidence(std::stringstream &str) {
   return fromString<long, size_t, Configuration>(str);
 }
 
-std::string writeTune(bool currentInvalid) { return toString(std::string{"tune"}, currentInvalid); }
+std::string writeTune() { return toString(std::string{"tune"}); }
 
 bool readTune(std::stringstream &str) { return std::get<0>(fromString<bool>(str)); }
 
