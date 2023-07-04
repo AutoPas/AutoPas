@@ -7,8 +7,9 @@
 #pragma once
 
 #include "TuningStrategyFactoryInfo.h"
-#include "TuningStrategyInterface.h"
 #include "autopas/options/TuningStrategyOption.h"
+#include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
+#include "autopas/tuning/utils/SearchSpaceGenerators.h"
 
 namespace autopas::TuningStrategyFactory {
 /**

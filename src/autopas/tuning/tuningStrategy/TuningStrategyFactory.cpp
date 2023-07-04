@@ -9,7 +9,6 @@
 #include "ActiveHarmony.h"
 #include "BayesianClusterSearch.h"
 #include "BayesianSearch.h"
-#include "FullSearch.h"
 #include "MPIParallelizedStrategy.h"
 #include "PredictiveTuning.h"
 #include "RandomSearch.h"
@@ -18,88 +17,61 @@
 #include "autopas/tuning/tuningStrategy/ruleBasedTuning/RuleBasedTuning.h"
 #include "autopas/utils/AutoPasConfigurationCommunicator.h"
 #include "options/TuningStrategyOption.h"
+#include "tuning/utils/SearchSpaceGenerators.h"
+#include "utils/NumberSetFinite.h"
 
-std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory::generateTuningStrategy(
-    const std::set<Configuration> &searchSpace, autopas::TuningStrategyOption tuningStrategyOption,
-    const TuningStrategyFactoryInfo &info, const std::string &outputSuffix) {
-  // ======== prepare MPI =====================================================
+namespace autopas::TuningStrategyFactory {
 
-  // only needed in the MPI case, but need to be declared here.
-  std::set<autopas::ContainerOption> fallbackContainers;
-  std::unique_ptr<autopas::NumberSet<double>> fallbackCellSizeFactors;
-  std::set<autopas::TraversalOption> fallbackTraversals;
-  std::set<autopas::LoadEstimatorOption> fallbackLoadEstimators;
-  std::set<autopas::DataLayoutOption> fallbackDataLayouts;
-  std::set<autopas::Newton3Option> fallbackNewton3;
-  // if an mpi-strategy is used, the local search space is set up here, as well as the fallback options.
-  switch (static_cast<autopas::MPIStrategyOption>(info.mpiStrategyOption)) {
-    case MPIStrategyOption::noMPI: {
-      break;
-    }
+/**
+ * Wraps SearchSpaceGenerators::inferOptionDimensions() and adds a warning about its usage.
+ *
+ * This function acts as a workaround for old and complex tuning strategies that rely on the search space to
+ * be represented as a set of vectors of available options.
+ *
+ * @param searchSpace
+ * @return
+ */
+SearchSpaceGenerators::OptionSpace inferOptionDimensions(const std::set<Configuration> &searchSpace) {
+  AutoPasLog(WARN,
+             "Inferring the dimensions of the search space from the given set of configurations."
+             "This only works reliably if the set was created from a cross product of option vectors.");
+  return SearchSpaceGenerators::inferOptionDimensions(searchSpace);
+}
 
-    case MPIStrategyOption::divideAndConquer: {
-#ifndef AUTOPAS_INTERNODE_TUNING
-      utils::ExceptionHandler::exception(
-          "Cannot use the divideAndConquer search-strategy without AUTOPAS_INTERNODE_TUNING=ON."
-          "aborting.");
-#endif
-      if (tuningStrategyOption == TuningStrategyOption::activeHarmony and getenv("HARMONY_HOST") != nullptr) {
-        // rank 0 will solely set up the entire search, so we cannot divide the search space.
-        break;
-      }
-      int rank, commSize;
-      AutoPas_MPI_Comm_rank(info.comm, &rank);
-      AutoPas_MPI_Comm_size(info.comm, &commSize);
-      fallbackContainers = std::set<autopas::ContainerOption>(allowedContainers);
-      if (allowedCellSizeFactors.isFinite()) {
-        fallbackCellSizeFactors = std::make_unique<autopas::NumberSetFinite<double>>(allowedCellSizeFactors.getAll());
-      } else {
-        fallbackCellSizeFactors = std::make_unique<autopas::NumberInterval<double>>(allowedCellSizeFactors.getMin(),
-                                                                                    allowedCellSizeFactors.getMax());
-      }
-      fallbackTraversals = std::set<autopas::TraversalOption>(allowedTraversals);
-      fallbackLoadEstimators = std::set<autopas::LoadEstimatorOption>(allowedLoadEstimators);
-      fallbackDataLayouts = std::set<autopas::DataLayoutOption>(allowedDataLayouts);
-      fallbackNewton3 = std::set<autopas::Newton3Option>(allowedNewton3Options);
-
-      utils::AutoPasConfigurationCommunicator::distributeConfigurations(
-          allowedContainers, allowedCellSizeFactors, allowedTraversals, allowedLoadEstimators, allowedDataLayouts,
-          allowedNewton3Options, rank, commSize);
-      break;
-    }
-
-    default: {
-      utils::ExceptionHandler::exception("AutoPas::generateTuningStrategy: Unknown MPIStrategyOption: {}",
-                                         info.mpiStrategyOption);
-    }
-  }
-
-  // ======== initiate tuning strategy ========================================
-
-  std::unique_ptr<autopas::TuningStrategyInterface> tuningStrategy = nullptr;
-  switch (static_cast<autopas::TuningStrategyOption>(tuningStrategyOption)) {
+std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<Configuration> &searchSpace,
+                                                                TuningStrategyOption tuningStrategyOption,
+                                                                const TuningStrategyFactoryInfo &info,
+                                                                const std::string &outputSuffix) {
+  std::unique_ptr<TuningStrategyInterface> tuningStrategy = nullptr;
+  switch (static_cast<TuningStrategyOption>(tuningStrategyOption)) {
     case TuningStrategyOption::randomSearch: {
       tuningStrategy = std::make_unique<RandomSearch>(info.maxEvidence, std::random_device()());
       break;
     }
 
     case TuningStrategyOption::fullSearch: {
-      autopas::utils::ExceptionHandler::exception(
+      utils::ExceptionHandler::exception(
           "Full Search is no tuning strategy anymore! If you want this behavior don't select any tuning strategy.");
       break;
     }
 
     case TuningStrategyOption::bayesianSearch: {
+      const auto searchSpaceDimensions = inferOptionDimensions(searchSpace);
       tuningStrategy = std::make_unique<BayesianSearch>(
-          allowedContainers, allowedCellSizeFactors, allowedTraversals, allowedLoadEstimators, allowedDataLayouts,
-          allowedNewton3Options, info.maxEvidence, info.acquisitionFunctionOption);
+          searchSpaceDimensions.containerOptions, NumberSetFinite<double>{searchSpaceDimensions.cellSizeFactors},
+          searchSpaceDimensions.traversalOptions, searchSpaceDimensions.loadEstimatorOptions,
+          searchSpaceDimensions.dataLayoutOptions, searchSpaceDimensions.newton3Options, info.maxEvidence,
+          info.acquisitionFunctionOption);
       break;
     }
 
     case TuningStrategyOption::bayesianClusterSearch: {
+      const auto searchSpaceDimensions = inferOptionDimensions(searchSpace);
       tuningStrategy = std::make_unique<BayesianClusterSearch>(
-          allowedContainers, allowedCellSizeFactors, allowedTraversals, allowedLoadEstimators, allowedDataLayouts,
-          allowedNewton3Options, info.maxEvidence, info.acquisitionFunctionOption, outputSuffix);
+          searchSpaceDimensions.containerOptions, NumberSetFinite<double>{searchSpaceDimensions.cellSizeFactors},
+          searchSpaceDimensions.traversalOptions, searchSpaceDimensions.loadEstimatorOptions,
+          searchSpaceDimensions.dataLayoutOptions, searchSpaceDimensions.newton3Options, info.maxEvidence,
+          info.acquisitionFunctionOption, outputSuffix);
       break;
     }
 
@@ -111,9 +83,12 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
                    "HARMONY_HOST is set to a value, but the MPI strategy option is set to noMPI. "
                    "HARMONY_HOST will be unset to enforce a local tuning session");
       }
-      tuningStrategy = std::make_unique<ActiveHarmony>(allowedContainers, allowedCellSizeFactors, allowedTraversals,
-                                                       allowedLoadEstimators, allowedDataLayouts, allowedNewton3Options,
-                                                       info.mpiStrategyOption, info.comm);
+      const auto searchSpaceDimensions = inferOptionDimensions(searchSpace);
+      tuningStrategy = std::make_unique<ActiveHarmony>(
+          searchSpaceDimensions.containerOptions, NumberSetFinite<double>{searchSpaceDimensions.cellSizeFactors},
+          searchSpaceDimensions.traversalOptions, searchSpaceDimensions.loadEstimatorOptions,
+          searchSpaceDimensions.dataLayoutOptions, searchSpaceDimensions.newton3Options, info.mpiStrategyOption,
+          info.comm);
       break;
     }
 
@@ -125,20 +100,15 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     }
 
     case TuningStrategyOption::ruleBasedTuning: {
-      if (not allowedCellSizeFactors.isFinite()) {
-        // FIXME: This is probably not true anymore
-        autopas::utils::ExceptionHandler::exception(
-            "AutoPas::generateTuningStrategy: ruleBasedTuning can not handle infinite cellSizeFactors!");
-        return nullptr;
-      }
-
-      tuningStrategy = std::make_unique<RuleBasedTuning>(
-          allowedContainers, allowedCellSizeFactors.getAll(), allowedTraversals, allowedLoadEstimators,
-          allowedDataLayouts, allowedNewton3Options, /*verify mode*/ false, info.ruleFileName);
+      tuningStrategy = std::make_unique<RuleBasedTuning>(searchSpace, /*verify mode*/ false, info.ruleFileName);
       break;
     }
 
     case TuningStrategyOption::mpiDivideAndConquer: {
+#ifndef AUTOPAS_INTERNODE_TUNING
+      utils::ExceptionHandler::exception(
+          "Cannot use the TuningStrategy mpiDivideAndConquer without AUTOPAS_INTERNODE_TUNING=ON.");
+#endif
       tuningStrategy = std::make_unique<MPIParallelizedStrategy>(
           MPIParallelizedStrategy::createFallBackConfiguration(searchSpace), info.comm,
           info.mpiTuningMaxDifferenceForBucket, info.mpiTuningWeightForMaxDensity);
@@ -146,10 +116,11 @@ std::unique_ptr<autopas::TuningStrategyInterface> autopas::TuningStrategyFactory
     }
 
     default: {
-      autopas::utils::ExceptionHandler::exception("AutoPas::generateTuningStrategy: Unknown tuning strategy {}!",
-                                                  tuningStrategyOption);
+      utils::ExceptionHandler::exception("AutoPas::generateTuningStrategy: Unknown tuning strategy {}!",
+                                         tuningStrategyOption);
       break;
     }
   }
   return nullptr;
 }
+}  // namespace autopas::TuningStrategyFactory

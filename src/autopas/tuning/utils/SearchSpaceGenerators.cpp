@@ -11,9 +11,7 @@
 
 #include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/containers/CompatibleTraversals.h"
-#include "autopas/tuning/searchSpace/SearchSet.h"
-#include "utils/NumberSet.h"
-#include "utils/NumberSetFinite.h"
+#include "autopas/utils/NumberSet.h"
 
 namespace autopas {
 
@@ -62,6 +60,20 @@ std::set<Configuration> SearchSpaceGenerators::optionCrossProduct(
     utils::ExceptionHandler::exception("No valid configurations could be created.");
   }
   return searchSet;
+}
+
+SearchSpaceGenerators::OptionSpace SearchSpaceGenerators::inferOptionDimensions(
+    const std::set<Configuration> &searchSet) {
+  OptionSpace optionSpace;
+  for (const auto &[container, traversal, loadEst, dataLayout, newton3, csf] : searchSet) {
+    optionSpace.containerOptions.insert(container);
+    optionSpace.traversalOptions.insert(traversal);
+    optionSpace.loadEstimatorOptions.insert(loadEst);
+    optionSpace.dataLayoutOptions.insert(dataLayout);
+    optionSpace.newton3Options.insert(newton3);
+    optionSpace.cellSizeFactors.insert(csf);
+  }
+  return optionSpace;
 }
 
 std::set<double> SearchSpaceGenerators::calculateRelevantCsfs(const NumberInterval<double> &numberInterval,
