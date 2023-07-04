@@ -408,7 +408,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
       // store all pointers in a temporary which is passed to the ParticleIterator constructor.
       typename ContainerIterator<Particle, true, false>::ParticleVecType additionalVectorsToPass;
-      appendBuffersHelper<false>(additionalVectors, additionalVectorsToPass);
+      appendBuffersHelper(additionalVectors, additionalVectorsToPass);
       return ContainerIterator<Particle, true, false>(*this, behavior, &additionalVectorsToPass);
     }
   }
@@ -436,7 +436,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
       // store all pointers in a temporary which is passed to the ParticleIterator constructor.
       typename ContainerIterator<Particle, false, false>::ParticleVecType additionalVectorsToPass;
-      appendBuffersHelper<false>(additionalVectors, additionalVectorsToPass);
+      appendBuffersHelper(additionalVectors, additionalVectorsToPass);
       return ContainerIterator<Particle, false, false>(*this, behavior, &additionalVectorsToPass);
     }
   }
@@ -561,7 +561,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
       // store all pointers in a temporary which is passed to the ParticleIterator constructor.
       typename ContainerIterator<Particle, true, true>::ParticleVecType additionalVectorsToPass;
-      appendBuffersHelper<true>(additionalVectors, additionalVectorsToPass);
+      appendBuffersHelper(additionalVectors, additionalVectorsToPass);
       return ContainerIterator<Particle, true, true>(*this, behavior, &additionalVectorsToPass, lowerCorner,
                                                      higherCorner);
     }
@@ -591,7 +591,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
       // store all pointers in a temporary which is passed to the ParticleIterator constructor.
       typename ContainerIterator<Particle, false, true>::ParticleVecType additionalVectorsToPass;
-      appendBuffersHelper<true>(additionalVectors, additionalVectorsToPass);
+      appendBuffersHelper(additionalVectors, additionalVectorsToPass);
       return ContainerIterator<Particle, false, true>(*this, behavior, &additionalVectorsToPass, lowerCorner,
                                                       higherCorner);
     }
@@ -1334,8 +1334,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   /**
    * Contains all particles that should be added to the container during the next rebuild.
    * Outer vector is for Thread buffer to allow parallel particle insertion.
+   * This has to be a mutable so we can call appendBuffersHelper() from const and non-const functions.
    */
-  std::vector<std::vector<Particle>> _particlesToAdd;
+  mutable std::vector<std::vector<Particle>> _particlesToAdd;
 
   /**
    * Checks if there are particles in the buffers of _particlesToAdd.
@@ -1359,13 +1360,13 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * Helper function for begin() and getRegionIterator() that merges all buffers from _particlesToAdd and
    * additionalVectors into a single buffer
    *
-   * @tparam regionIter
-   * @param additionalVectors additional vectors from LogicHandler
-   * @param outVec the buffer where additionalVectors + _particlesToAdd should be stored
+   * @tparam VecVec Type of datastructure of additional vectors. Expected is a vector of vectors.
+   * @param additionalVectors Additional vectors from LogicHandler.
+   * * @param particlesToAdd _particlesToAdd vectors from VCL.
+   * @param outVec The buffer where additionalVectors + _particlesToAdd will be stored.
    */
-  template <bool regionIter>
-  void appendBuffersHelper(typename ContainerIterator<Particle, true, regionIter>::ParticleVecType *additionalVectors,
-                           typename ContainerIterator<Particle, true, regionIter>::ParticleVecType &outVec) {
+  template <class VecVec>
+  void appendBuffersHelper(VecVec *additionalVectors, VecVec &outVec) const {
     if (additionalVectors) {
       outVec.reserve(_particlesToAdd.size() + additionalVectors->size());
       outVec.insert(outVec.end(), additionalVectors->begin(), additionalVectors->end());
@@ -1373,30 +1374,6 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       outVec.reserve(_particlesToAdd.size());
     }
     for (auto &vec : _particlesToAdd) {
-      outVec.push_back(&vec);
-    }
-  }
-
-  /**
-   * Helper function for begin() and getRegionIterator() that merges all buffers from _particlesToAdd and
-   * additionalVectors into a single buffer
-   *
-   * @tparam regionIter
-   * @param additionalVectors additional vectors from LogicHandler
-   * @param outVec the buffer where additionalVectors + _particlesToAdd should be stored
-   *
-   * const version
-   */
-  template <bool regionIter>
-  void appendBuffersHelper(typename ContainerIterator<Particle, false, regionIter>::ParticleVecType *additionalVectors,
-                           typename ContainerIterator<Particle, false, regionIter>::ParticleVecType &outVec) const {
-    if (additionalVectors) {
-      outVec.reserve(_particlesToAdd.size() + additionalVectors->size());
-      outVec.insert(outVec.end(), additionalVectors->begin(), additionalVectors->end());
-    } else {
-      outVec.reserve(_particlesToAdd.size());
-    }
-    for (const auto &vec : _particlesToAdd) {
       outVec.push_back(&vec);
     }
   }
