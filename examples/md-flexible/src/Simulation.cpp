@@ -5,6 +5,8 @@
  */
 #include "Simulation.h"
 
+#include <algorithm>
+
 #include "TypeDefinitions.h"
 #include "autopas/AutoPasDecl.h"
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC) || defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
@@ -128,7 +130,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setMaxEvidence(_configuration.tuningMaxEvidence.value);
   _autoPasContainer->setSelectorStrategy(_configuration.selectorStrategy.value);
   _autoPasContainer->setTuningInterval(_configuration.tuningInterval.value);
-  _autoPasContainer->setTuningStrategyOption(_configuration.tuningStrategyOption.value);
+  _autoPasContainer->setTuningStrategyOption(_configuration.tuningStrategyOptions.value);
   _autoPasContainer->setTuningMetricOption(_configuration.tuningMetricOption.value);
   _autoPasContainer->setMPIStrategy(_configuration.mpiStrategyOption.value);
   _autoPasContainer->setMPITuningMaxDifferenceForBucket(_configuration.MPITuningMaxDifferenceForBucket.value);
@@ -280,8 +282,13 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
     // @TODO: this can be improved by considering the tuning strategy
     // This is just a randomly guessed number but seems to fit roughly for default settings.
     size_t configsTestedPerTuningPhase = 90;
-    if (_configuration.tuningStrategyOption.value == autopas::TuningStrategyOption::bayesianSearch or
-        _configuration.tuningStrategyOption.value == autopas::TuningStrategyOption::bayesianClusterSearch) {
+
+    if (std::any_of(_configuration.tuningStrategyOptions.value.begin(),
+                    _configuration.tuningStrategyOptions.value.end(), [](const auto &stratOpt) {
+                      return stratOpt == autopas::TuningStrategyOption::bayesianSearch or
+                             stratOpt == autopas::TuningStrategyOption::bayesianClusterSearch or
+                             stratOpt == autopas::TuningStrategyOption::randomSearch;
+                    })) {
       configsTestedPerTuningPhase = _configuration.tuningMaxEvidence.value;
     }
     auto estimate =

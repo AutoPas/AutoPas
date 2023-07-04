@@ -369,14 +369,13 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         config.extrapolationMethodOption.value = *parsedOptions.begin();
 
-      } else if (key == config.tuningStrategyOption.name) {
+      } else if (key == config.tuningStrategyOptions.name) {
         expected = "Exactly one tuning strategy option out of the possible values.";
-        description = config.tuningStrategyOption.description;
+        description = config.tuningStrategyOptions.description;
 
-        const auto parsedOptions = autopas::TuningStrategyOption::parseOptions(
-            parseSequenceOneElementExpected(node[key], "Pass Exactly one tuning strategy!"));
-
-        config.tuningStrategyOption.value = *parsedOptions.begin();
+        config.tuningStrategyOptions.value =
+            autopas::TuningStrategyOption::parseOptions<std::vector<autopas::TuningStrategyOption>>(
+                autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
       } else if (key == config.tuningMetricOption.name) {
         expected = "Exactly one tuning metric option out of the possible values.";
         description = config.tuningMetricOption.description;

@@ -240,11 +240,14 @@ class MDFlexConfig {
       "Log level for AutoPas. Set to debug for tuning information. "
       "Possible Values: (trace debug info warn error critical off)"};
   /**
-   * tuningStrategyOption
+   * tuningStrategyOptions
    */
-  MDFlexOption<autopas::TuningStrategyOption, __LINE__> tuningStrategyOption{
-      autopas::TuningStrategyOption::fullSearch, "tuning-strategy", true,
-      "Strategy how to reduce the sample measurements to a single value. Possible Values: " +
+  MDFlexOption<std::vector<autopas::TuningStrategyOption>, __LINE__> tuningStrategyOptions{
+      {},
+      "tuning-strategies",
+      true,
+      "Ordered pipeline of strategies to find the optimal algorithmic configuration. "
+      "Leave empty to perform an exhaustive search. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::TuningStrategyOption::getAllOptions(), " ", {"(", ")"})};
   /**
    * tuningMetricOption

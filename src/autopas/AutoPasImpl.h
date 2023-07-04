@@ -10,12 +10,14 @@
 #include <memory>
 #include <ostream>
 #include <type_traits>
+#include <vector>
 
 #include "autopas/AutoPasDecl.h"
 #include "autopas/InstanceCounter.h"
 #include "autopas/LogicHandlerInfo.h"
 #include "autopas/Version.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyFactoryInfo.h"
+#include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
 #include "autopas/utils/CompileInfo.h"
 
@@ -93,12 +95,17 @@ void AutoPas<Particle>::init() {
       _acquisitionFunctionOption,
       _ruleFileName,
       _mpiStrategyOption,
+      _mpiTuningMaxDifferenceForBucket,
+      _mpiTuningWeightForMaxDensity,
       _autopasMPICommunicator,
   };
 
-  auto tuningStrategy = TuningStrategyFactory::generateTuningStrategy(searchSpace, _tuningStrategyOption,
-                                                                      tuningStrategyFactoryInfo, _outputSuffix);
-  _autoTuner = std::make_unique<autopas::AutoTuner>(std::move(tuningStrategy), searchSpace, autoTunerInfo);
+  std::vector<std::unique_ptr<TuningStrategyInterface>> tuningStrategies;
+  for (const auto &strategy : _tuningStrategyOptions) {
+    tuningStrategies.emplace_back(
+        TuningStrategyFactory::generateTuningStrategy(searchSpace, strategy, tuningStrategyFactoryInfo, _outputSuffix));
+  }
+  _autoTuner = std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo);
   LogicHandlerInfo logicHandlerInfo{
       _boxMin, _boxMax, _cutoff, _verletSkinPerTimestep, _verletRebuildFrequency, _verletClusterSize, _outputSuffix};
   _logicHandler = std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(*_autoTuner, logicHandlerInfo);

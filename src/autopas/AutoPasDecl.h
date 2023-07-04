@@ -887,15 +887,17 @@ class AutoPas {
    * Getter for the tuning strategy option.
    * @return
    */
-  [[nodiscard]] TuningStrategyOption getTuningStrategyOption() const { return _tuningStrategyOption; }
+  [[nodiscard]] const std::vector<TuningStrategyOption> &getTuningStrategyOptions() const {
+    return _tuningStrategyOptions;
+  }
 
   /**
    * Setter for the tuning strategy option.
    * For possible tuning strategy choices see options::TuningStrategyOption::Value.
    * @param tuningStrategyOption
    */
-  void setTuningStrategyOption(TuningStrategyOption tuningStrategyOption) {
-    _tuningStrategyOption = tuningStrategyOption;
+  void setTuningStrategyOption(const std::vector<TuningStrategyOption> &tuningStrategyOptions) {
+    _tuningStrategyOptions = tuningStrategyOptions;
   }
 
   /**
@@ -1038,7 +1040,7 @@ class AutoPas {
    * Strategy option for the auto tuner.
    * For possible tuning strategy choices see options::TuningStrategyOption::Value.
    */
-  TuningStrategyOption _tuningStrategyOption{TuningStrategyOption::fullSearch};
+  std::vector<TuningStrategyOption> _tuningStrategyOptions{};
 
   /**
    * Strategy option for the auto tuner.

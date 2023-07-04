@@ -73,7 +73,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.tuningMetricOption,
       config.tuningPhases,
       config.tuningSamples,
-      config.tuningStrategyOption,
+      config.tuningStrategyOptions,
       config.useThermostat,
       config.useTuningLogger,
       config.verletClusterSize,
@@ -500,15 +500,9 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case decltype(config.tuningStrategyOption)::getoptChar: {
-        auto parsedOptions = autopas::TuningStrategyOption::parseOptions(strArg);
-        if (parsedOptions.size() != 1) {
-          cerr << "Pass exactly one tuning strategy option." << endl
-               << "Passed: " << strArg << endl
-               << "Parsed: " << autopas::utils::ArrayUtils::to_string(parsedOptions) << endl;
-          displayHelp = true;
-        }
-        config.tuningStrategyOption.value = *parsedOptions.begin();
+      case decltype(config.tuningStrategyOptions)::getoptChar: {
+        config.tuningStrategyOptions.value =
+            autopas::TuningStrategyOption::parseOptions<std::vector<autopas::TuningStrategyOption>>(strArg);
         break;
       }
       case decltype(config.tuningMetricOption)::getoptChar: {

@@ -215,9 +215,11 @@ std::string MDFlexConfig::to_string() const {
 
   printOption(dataLayoutOptions);
   printOption(traversalOptions);
-  printOption(tuningStrategyOption);
-  if (tuningStrategyOption.value == autopas::TuningStrategyOption::bayesianSearch or
-      tuningStrategyOption.value == autopas::TuningStrategyOption::bayesianClusterSearch) {
+  printOption(tuningStrategyOptions);
+  if (std::any_of(tuningStrategyOptions.value.begin(), tuningStrategyOptions.value.end(), [](const auto &strategyOpt) {
+        return strategyOpt == autopas::TuningStrategyOption::bayesianSearch or
+               strategyOpt == autopas::TuningStrategyOption::bayesianClusterSearch;
+      })) {
     printOption(acquisitionFunctionOption);
   }
   printOption(mpiStrategyOption);
@@ -228,7 +230,9 @@ std::string MDFlexConfig::to_string() const {
   printOption(tuningInterval);
   printOption(tuningSamples);
   printOption(tuningMaxEvidence);
-  if (tuningStrategyOption.value == autopas::TuningStrategyOption::predictiveTuning) {
+  if (std::any_of(tuningStrategyOptions.value.begin(), tuningStrategyOptions.value.end(), [](const auto &strategyOpt) {
+        return strategyOpt == autopas::TuningStrategyOption::predictiveTuning;
+      })) {
     printOption(relativeOptimumRange);
     printOption(maxTuningPhasesWithoutTest);
     printOption(relativeBlacklistRange);

@@ -107,21 +107,23 @@ bool AutoTuner::tuneConfiguration() {
     std::for_each(_tuningStrategies.begin(), _tuningStrategies.end(), [&](auto &tuningStrategy) {
       tuningStrategy->reset(_iteration, _tuningPhase, _configQueue, _evidenceCollection);
     });
-  } else if (_configQueue.empty()) {
-    // CASE: End of a tuning phase
+  } else {
+    // CASE: somewhere in a tuning phase
+    std::for_each(_tuningStrategies.begin(), _tuningStrategies.end(), [&](auto &tuningStrategy) {
+      tuningStrategy->optimizeSuggestions(_configQueue, _evidenceCollection);
+    });
+    // samples are no longer needed.
+    _samplesNotRebuildingNeighborLists.clear();
+    _samplesRebuildingNeighborLists.clear();
+  }
+
+  // CASE: End of a tuning phase. This is not exclusive to the other cases!
+  if (_configQueue.empty()) {
     // if the queue is empty we are done tuning.
     _iterationsSinceTuning = 0;
     const auto [optConf, optEvidence] = _evidenceCollection.getLatestOptimalConfiguration();
     _configQueue.push_back(optConf);
     stillTuning = false;
-  } else {
-    // CASE: somewhere in a tuning phase
-    std::for_each(_tuningStrategies.begin(), _tuningStrategies.end(), [&](auto &tuningStrategy) {
-      return tuningStrategy->optimizeSuggestions(_configQueue, _evidenceCollection);
-    });
-    // samples are no longer needed.
-    _samplesNotRebuildingNeighborLists.clear();
-    _samplesRebuildingNeighborLists.clear();
   }
   tuningTimer.stop();
 
@@ -163,9 +165,8 @@ std::tuple<Configuration, bool> AutoTuner::rejectConfig(const Configuration &rej
 
   // let all configurations apply their optimizations in the order they are defined.
   // If any is still tuning consider the tuning phase still ongoing.
-  std::for_each(_tuningStrategies.begin(), _tuningStrategies.end(), [&](auto &tuningStrategy) {
-    return tuningStrategy->optimizeSuggestions(_configQueue, _evidenceCollection);
-  });
+  std::for_each(_tuningStrategies.begin(), _tuningStrategies.end(),
+                [&](auto &tuningStrategy) { tuningStrategy->optimizeSuggestions(_configQueue, _evidenceCollection); });
   const auto stillTuning = _configQueue.empty();
   return {getCurrentConfig(), stillTuning};
 }
@@ -208,6 +209,7 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
               case TuningMetricOption::energy:
                 return "energy consumption";
             }
+            return "unknown tuning metric";
           }(),
           [&]() {
             std::ostringstream ss;
