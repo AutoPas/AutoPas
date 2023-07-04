@@ -6,14 +6,23 @@
 
 #include "TuningStrategyLogReplayer.h"
 
+#include <algorithm>
+#include <cstddef>
 #include <fstream>
+#include <iterator>
+#include <set>
+#include <vector>
 
 #include "autopas/tuning/tuningStrategy/TuningLogEntry.h"
+#include "tuning/Configuration.h"
+#include "tuning/searchSpace/Evidence.h"
+#include "tuning/searchSpace/EvidenceCollection.h"
 
 namespace autopas {
 TuningStrategyLogReplayer::TuningStrategyLogReplayer(std::string filename,
-                                                     std::shared_ptr<TuningStrategyInterface> tuningStrategy)
-    : _filename(std::move(filename)), _tuningStrategy(std::move(tuningStrategy)) {}
+                                                     std::shared_ptr<TuningStrategyInterface> tuningStrategy,
+                                                     const std::set<Configuration> &searchSpace)
+    : _filename(std::move(filename)), _tuningStrategy(std::move(tuningStrategy)), _searchSpace(searchSpace) {}
 
 std::optional<Configuration> TuningStrategyLogReplayer::replay() {
   std::ifstream in{_filename};
@@ -25,6 +34,11 @@ std::optional<Configuration> TuningStrategyLogReplayer::replay() {
   }
 
   std::unordered_map<Configuration, std::pair<long, size_t>, ConfigHash> traversalTimes;
+  std::vector<Configuration> configQueue{};
+  configQueue.reserve(_searchSpace.size());
+  std::copy(_searchSpace.begin(), _searchSpace.end(), std::back_inserter(configQueue));
+  EvidenceCollection evidenceCollection;
+  size_t tuningPhase{0};
 
   std::optional<Configuration> bestConfiguration;
   bool evidenceAdded = false;
@@ -48,12 +62,13 @@ std::optional<Configuration> TuningStrategyLogReplayer::replay() {
       AutoPasLog(INFO, "\t{}", liveInfo.toString());
       _tuningStrategy->receiveLiveInfo(liveInfo);
     } else if (type == "reset" || in.eof()) {
-      auto cont = not traversalTimes.empty();
-      while (cont) {
-        cont = _tuningStrategy->tune();
+      while (not configQueue.empty()) {
+        _tuningStrategy->optimizeSuggestions(configQueue, evidenceCollection);
         try {
-          const auto &[time, iteration] = traversalTimes.at(_tuningStrategy->getCurrentConfiguration());
-          _tuningStrategy->addEvidence(time, iteration);
+          const auto &[time, iteration] = traversalTimes.at(configQueue.back());
+          Evidence evidence{iteration, tuningPhase, time};
+          evidenceCollection.addEvidence(configQueue.back(), evidence);
+          _tuningStrategy->addEvidence(configQueue.back(), evidence);
         } catch (std::out_of_range &e) {
           // std::cerr << "Could not find data for configuration " << _tuningStrategy->getCurrentConfiguration() <<
           // std::endl;
@@ -61,13 +76,15 @@ std::optional<Configuration> TuningStrategyLogReplayer::replay() {
       }
 
       if (evidenceAdded) {
-        AutoPasLog(INFO, "Best Configuration found: {}", _tuningStrategy->getCurrentConfiguration().toShortString());
-        bestConfiguration = _tuningStrategy->getCurrentConfiguration();
+        const auto [conf, evidence] = evidenceCollection.getLatestOptimalConfiguration();
+        AutoPasLog(INFO, "Best Configuration found: {}", conf.toShortString());
+        bestConfiguration = conf;
         evidenceAdded = false;
       }
 
       const auto &iteration = tuningLogEntry::readReset(stream);
-      _tuningStrategy->reset(iteration);
+      ++tuningPhase;
+      _tuningStrategy->reset(iteration, tuningPhase, configQueue, evidenceCollection);
       traversalTimes.clear();
     }
   }

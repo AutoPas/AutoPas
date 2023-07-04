@@ -8,6 +8,7 @@
 
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 
 #include "autopas/tuning/Configuration.h"
@@ -25,8 +26,10 @@ class TuningStrategyLogReplayer {
    * Creates a log replayer from a log file and a tuning strategy to replay to.
    * @param filename The name of the log file.
    * @param tuningStrategy The tuning strategy to replay to.
+   * @param searchSpace The available search space.
    */
-  TuningStrategyLogReplayer(std::string filename, std::shared_ptr<TuningStrategyInterface> tuningStrategy);
+  TuningStrategyLogReplayer(std::string filename, std::shared_ptr<TuningStrategyInterface> tuningStrategy,
+                            const std::set<Configuration> &searchSpace);
 
   /**
    * Replays the log to the tuning strategy.
@@ -43,5 +46,7 @@ class TuningStrategyLogReplayer {
    * The tuning strategy to replay the log to.
    */
   std::shared_ptr<TuningStrategyInterface> _tuningStrategy;
+
+  std::set<Configuration> _searchSpace;
 };
 }  // namespace autopas
