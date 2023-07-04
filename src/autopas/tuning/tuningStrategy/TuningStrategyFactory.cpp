@@ -12,6 +12,8 @@
 #include "MPIParallelizedStrategy.h"
 #include "PredictiveTuning.h"
 #include "RandomSearch.h"
+#include "SlowConfigFilter.h"
+#include "SortByName.h"
 #include "TuningStrategyFactoryInfo.h"
 #include "autopas/options/MPIStrategyOption.h"
 #include "autopas/tuning/tuningStrategy/ruleBasedTuning/RuleBasedTuning.h"
@@ -117,6 +119,11 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
 
     case TuningStrategyOption::slowConfigFilter: {
       tuningStrategy = std::make_unique<SlowConfigFilter>(info.relativeBlacklistRange);
+      break;
+    }
+
+    case TuningStrategyOption::sortByName: {
+      tuningStrategy = std::make_unique<SortByName>();
       break;
     }
 

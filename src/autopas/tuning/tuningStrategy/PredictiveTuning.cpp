@@ -327,9 +327,6 @@ void PredictiveTuning::reset(size_t iteration, size_t tuningPhase, std::vector<C
       configQueue.push_back(conf);
     }
   }
-
-  // sort configurations to minimize container conversion overhead.
-  std::sort(configQueue.begin(), configQueue.end());
 }
 
 void PredictiveTuning::addEvidence(const Configuration &configuration, const Evidence & /*evidence*/) {

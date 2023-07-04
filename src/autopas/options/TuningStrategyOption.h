@@ -64,6 +64,10 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
      * thus parallelizing the search for the optimum.
      */
     mpiDivideAndConquer,
+    /**
+     * Sort the queue by Name (=Configuration::operator<()) to minimize container conversion overhead.
+     */
+    sortByName,
   };
 
   /**
