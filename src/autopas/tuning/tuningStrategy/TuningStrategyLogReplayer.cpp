@@ -36,7 +36,7 @@ std::optional<Configuration> TuningStrategyLogReplayer::replay() {
   std::unordered_map<Configuration, std::pair<long, size_t>, ConfigHash> traversalTimes;
   std::vector<Configuration> configQueue{};
   configQueue.reserve(_searchSpace.size());
-  std::copy(_searchSpace.begin(), _searchSpace.end(), std::back_inserter(configQueue));
+  std::copy(_searchSpace.rbegin(), _searchSpace.rend(), std::back_inserter(configQueue));
   EvidenceCollection evidenceCollection;
   size_t tuningPhase{0};
 

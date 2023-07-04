@@ -102,7 +102,10 @@ bool AutoTuner::tuneConfiguration() {
     // CASE: Start of a tuning phase
     // in the first iteration of a tuning phase we reset all strategies
     // and refill the queue with the complete search space.
-    std::copy(_searchSpace.begin(), _searchSpace.end(), std::back_inserter(_configQueue));
+    // Reverse the order, because _configQueue is FiLo, and we aim to keep the order for legacy reasons.
+    _configQueue.clear();
+    _configQueue.reserve(_searchSpace.size());
+    std::copy(_searchSpace.rbegin(), _searchSpace.rend(), std::back_inserter(_configQueue));
     // then let the strategies filter and sort it
     std::for_each(_tuningStrategies.begin(), _tuningStrategies.end(), [&](auto &tuningStrategy) {
       tuningStrategy->reset(_iteration, _tuningPhase, _configQueue, _evidenceCollection);

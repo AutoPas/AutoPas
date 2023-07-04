@@ -96,9 +96,9 @@ void autopas::BayesianSearch::optimizeSuggestions(std::vector<Configuration> &co
     if (currentSamples.empty()) {
       AutoPasLog(DEBUG, "Tuning could not generate a valid configuration on attempt {} of {}.", i, maxAttempts);
     } else {
-      // replace the config queue by what is left of the proposed configurations.
+      // replace the config queue by what is left of the proposed configurations. Best goes to the back.
       configQueue.clear();
-      std::copy(currentSamples.begin(), currentSamples.end(), std::back_inserter(configQueue));
+      std::copy(currentSamples.rbegin(), currentSamples.rend(), std::back_inserter(configQueue));
     }
   }
   // abort if in none of the attempts any good configuration was chosen.

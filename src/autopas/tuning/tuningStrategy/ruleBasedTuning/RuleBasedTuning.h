@@ -189,7 +189,7 @@ class RuleBasedTuning : public TuningStrategyInterface {
                            const EvidenceCollection &evidenceCollection) override {
     _lastApplicableConfigurationOrders = applyRules(configQueue);
     configQueue.clear();
-    std::copy(_searchSpace.begin(), _searchSpace.end(), std::back_inserter(configQueue));
+    std::copy(_searchSpace.rbegin(), _searchSpace.rend(), std::back_inserter(configQueue));
   }
 
  private:
