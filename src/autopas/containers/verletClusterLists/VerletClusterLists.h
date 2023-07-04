@@ -1362,7 +1362,6 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    *
    * @tparam VecVec Type of datastructure of additional vectors. Expected is a vector of vectors.
    * @param additionalVectors Additional vectors from LogicHandler.
-   * * @param particlesToAdd _particlesToAdd vectors from VCL.
    * @param outVec The buffer where additionalVectors + _particlesToAdd will be stored.
    */
   template <class VecVec>
