@@ -52,4 +52,4 @@ vtk-write-frequency              :  10000
 no-flops                         :  false
 no-end-config                    :  true
 log-level                        :  error
-fast-particle-warn               :  false
+fast-particle-warn               :  true

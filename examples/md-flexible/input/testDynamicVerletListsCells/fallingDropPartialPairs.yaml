@@ -1,6 +1,6 @@
 container                        :  [PartialPairwiseVerletLists]
 verlet-rebuild-frequency         :  1000
-verlet-skin-radius-per-timestep  :  0.0009
+verlet-skin-radius-per-timestep  :  0.0006
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [AoS]
@@ -48,7 +48,7 @@ Objects:
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
 vtk-filename                     :  fallingDropDynamicPairsPartial
-vtk-write-frequency              :  100
+vtk-write-frequency              :  100000
 no-flops                         :  false
 no-end-config                    :  true
 log-level                        :  error
