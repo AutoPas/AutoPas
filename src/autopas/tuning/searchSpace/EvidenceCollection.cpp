@@ -26,19 +26,18 @@ Evidence &EvidenceCollection::modifyLastEvidence(const Configuration &configurat
   return _evidenceMap[configuration].back();
 }
 
-std::tuple<Configuration, Evidence> EvidenceCollection::getLatestOptimalConfiguration() const {
+std::tuple<Configuration, Evidence> EvidenceCollection::getOptimalConfiguration(size_t tuningPhase) const {
   if (_evidenceMap.empty()) {
     utils::ExceptionHandler::exception(
         "EvidenceCollection::getLatestOptimalConfiguration(): Trying to determine the optimal configuration but there "
-        "is no "
-        "evidence yet!");
+        "is no evidence yet!");
   }
   Configuration optimalConf{};
   Evidence optimalEvidence{0, 0, std::numeric_limits<decltype(Evidence::value)>::max()};
   for (const auto &[conf, evidenceVec] : _evidenceMap) {
     // reverse iteration of the evidence vector because we are probably interested in the latest evidence.
     for (auto evidenceIter = evidenceVec.rbegin(); evidenceIter != evidenceVec.rend(); ++evidenceIter) {
-      if (evidenceIter->tuningPhase == _latestTuningPhase and optimalEvidence.value > evidenceIter->value) {
+      if (evidenceIter->tuningPhase == tuningPhase and optimalEvidence.value > evidenceIter->value) {
         optimalConf = conf;
         optimalEvidence = *evidenceIter;
         // Assumption: There is only one evidence per tuning phase.
@@ -50,10 +49,13 @@ std::tuple<Configuration, Evidence> EvidenceCollection::getLatestOptimalConfigur
   if (optimalConf == Configuration{}) {
     utils::ExceptionHandler::exception(
         "EvidenceCollection::getLatestOptimalConfiguration(): No configuration could be determined to be the optimum "
-        "for "
-        "tuning phase {}. This suggests there is no evidence for this phase yet.",
-        _latestTuningPhase);
+        "for tuning phase {}. This suggests there is no evidence for this phase yet.",
+        tuningPhase);
   }
   return {optimalConf, optimalEvidence};
+}
+
+std::tuple<Configuration, Evidence> EvidenceCollection::getLatestOptimalConfiguration() const {
+  return getOptimalConfiguration(_latestTuningPhase);
 }
 }  // namespace autopas

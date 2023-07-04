@@ -43,6 +43,13 @@ class EvidenceCollection {
   Evidence &modifyLastEvidence(const Configuration &configuration);
 
   /**
+   * Retrieve the configuration with the lowest evidence value for the given tuning phase.
+   *
+   * @return The optimal configuration.
+   */
+  std::tuple<Configuration, Evidence> getOptimalConfiguration(size_t tuningPhase) const;
+
+  /**
    * Retrieve the configuration with the lowest evidence value for the latest tuning phase.
    *
    * @return The optimal configuration.
@@ -60,6 +67,6 @@ class EvidenceCollection {
    * Number of the newest tuning phase for which evidence exists in this object.
    * This tuning phase is not necessarily completed yet.
    */
-  size_t _latestTuningPhase;
+  size_t _latestTuningPhase{0};
 };
 }  // namespace autopas
