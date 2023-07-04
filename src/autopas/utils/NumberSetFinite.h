@@ -31,7 +31,7 @@ class NumberSetFinite final : public NumberSet<Number> {
    * Create a NumberSet from a std::set
    * @param values
    */
-  NumberSetFinite(std::set<Number> values) : _set(values) {}
+  NumberSetFinite(const std::set<Number> &values) : _set(values) {}
 
   std::unique_ptr<NumberSet<Number>> clone() const override { return std::make_unique<NumberSetFinite>(*this); }
   /**

@@ -154,7 +154,7 @@ std::ostream &operator<<(std::ostream &os, const Configuration &configuration);
  * @param configuration
  * @return
  */
-inline std::istream &operator>>(std::istream &in, Configuration &configuration);
+std::istream &operator>>(std::istream &in, Configuration &configuration);
 
 /**
  * Equals operator for Configuration objects.

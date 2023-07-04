@@ -6,6 +6,8 @@
 
 #include "MPIParallelizedStrategy.h"
 
+#include <cstddef>
+
 #include "options/DataLayoutOption.h"
 #include "options/Newton3Option.h"
 #include "tuning/Configuration.h"
@@ -107,7 +109,7 @@ void MPIParallelizedStrategy::reset(size_t iteration, size_t tuningPhase, std::v
   AutoPas_MPI_Comm_size(_bucket, &numRanksInBucket);
   std::vector<Configuration> myConfigQueue{};
   // Check if there are configs left for this rank.
-  if (myBucketRank < configQueue.size()) {
+  if (static_cast<size_t>(myBucketRank) < configQueue.size()) {
     // If there are enough configurations, distribute the configs in a round-robin fashion.
     // This way all ranks get a as similar distribution of containers as possible.
 

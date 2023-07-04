@@ -103,8 +103,8 @@ class Random : public std::mt19937 {
    * @param pool Container from which to select an element.
    * @return Randomly selected element.
    */
-  template <template <class> class Container, class Elem>
-  Elem pickRandom(const Container<Elem> &pool) {
+  template <class Container>
+  auto pickRandom(const Container &pool) {
     std::uniform_int_distribution<size_t> distr(0ul, pool.size() - 1ul);
     size_t pos = distr(*this);
 
