@@ -11,13 +11,13 @@
 #include <set>
 #include <unordered_set>
 
-#include "FullSearch.h"
 #include "GaussianModel/GaussianCluster.h"
 #include "TuningStrategyInterface.h"
 #include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/tuning/utils/FeatureVectorEncoder.h"
 #include "autopas/utils/NumberSet.h"
+#include "tuning/searchSpace/EvidenceCollection.h"
 
 namespace autopas {
 
@@ -83,23 +83,16 @@ class BayesianClusterSearch : public TuningStrategyInterface {
 
   ~BayesianClusterSearch() override;
 
-  const Configuration &getCurrentConfiguration() const override;
+  void addEvidence(const Configuration &configuration, const Evidence &evidence) override;
 
-  void removeN3Option(Newton3Option badNewton3Option) override;
+  void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+             const autopas::EvidenceCollection &evidenceCollection) override;
 
-  void addEvidence(long time, size_t iteration) override;
+  void optimizeSuggestions(std::vector<Configuration> &configQueue, const EvidenceCollection &evidence) override;
 
-  long getEvidence(Configuration configuration) const override;
+  void rejectConfiguration(const Configuration &configuration, bool indefinitely) override;
 
-  void reset(size_t iteration) override;
-
-  bool tune(bool currentInvalid = false) override;
-
-  std::set<ContainerOption> getAllowedContainerOptions() const override;
-
-  bool searchSpaceIsTrivial() const override;
-
-  bool searchSpaceIsEmpty() const override;
+  bool searchSpaceIsEmpty() const;
 
   bool needsSmoothedHomogeneityAndMaxDensity() const override { return false; }
 
@@ -110,8 +103,10 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    * the given acquisition function.
    * @param n numSamples
    * @param af acquisition function
+   * @return Vector of acquisitions.
    */
-  void sampleAcquisitions(size_t n, AcquisitionFunctionOption af);
+  std::vector<autopas::GaussianModelTypes::VectorPairDiscreteContinuous> sampleAcquisitions(
+      size_t n, AcquisitionFunctionOption af);
 
   /**
    * If allowed options are changed this functions should be called
@@ -126,7 +121,6 @@ class BayesianClusterSearch : public TuningStrategyInterface {
   std::unique_ptr<NumberSet<double>> _cellSizeFactors;
   FeatureVectorEncoder _encoder;
 
-  FeatureVector _currentConfig;
   /**
    * Currently sampled vectors and corresponding acquisition values.
    */
@@ -135,11 +129,6 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    * Configurations marked invalid.
    */
   std::unordered_set<FeatureVector, ConfigHash> _invalidConfigs;
-  /**
-   * Explicitly store traversal times for getEvidence().
-   * Refrain from reading the data from GaussianProcesses to maintain abstraction.
-   */
-  std::unordered_map<Configuration, long, ConfigHash> _traversalTimes;
   /**
    * Random engine.
    */
@@ -188,10 +177,5 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    * Configuration with lowest time in current tuning phase.
    */
   FeatureVector _currentOptimalConfig;
-
-  /**
-   * FullSearch used in the first tuning phase.
-   */
-  FullSearch _fullSearch;
 };
 }  // namespace autopas

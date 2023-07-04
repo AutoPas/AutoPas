@@ -6,7 +6,11 @@
 
 #include "BayesianSearch.h"
 
+#include <algorithm>
+#include <iterator>
+
 #include "autopas/utils/StringUtils.h"
+#include "tuning/searchSpace/EvidenceCollection.h"
 
 autopas::BayesianSearch::BayesianSearch(const std::set<ContainerOption> &allowedContainerOptions,
                                         const autopas::NumberSet<double> &allowedCellSizeFactors,
@@ -21,9 +25,7 @@ autopas::BayesianSearch::BayesianSearch(const std::set<ContainerOption> &allowed
       _newton3Options(allowedNewton3Options.begin(), allowedNewton3Options.end()),
       _cellSizeFactors(allowedCellSizeFactors.clone()),
       _encoder(),
-      _currentConfig(),
       _invalidConfigs(),
-      _traversalTimes(),
       _rng(seed),
       _gaussianProcess(0, 0.01, _rng),
       _maxEvidence(maxEvidence),
@@ -60,80 +62,68 @@ autopas::BayesianSearch::BayesianSearch(const std::set<ContainerOption> &allowed
   _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options,
                              *_cellSizeFactors);
   _gaussianProcess.setDimension(_encoder.getOneHotDims());
-
-  tune();
 }
 
-bool autopas::BayesianSearch::tune(bool currentInvalid) {
-  if (currentInvalid) {
-    _invalidConfigs.insert(_currentConfig);
-  }
-
-  if (searchSpaceIsEmpty()) {
-    // no valid configuration
-    _currentConfig = FeatureVector();
-    return false;
-  }
-
+void autopas::BayesianSearch::optimizeSuggestions(std::vector<Configuration> &configQueue,
+                                                  const EvidenceCollection &evidence) {
+  // if enough evidence was collected abort the tuning process.
   if (_gaussianProcess.numEvidence() >= _maxEvidence) {
-    // select best config
-    _currentConfig = _encoder.oneHotDecode(_gaussianProcess.getEvidenceMax());
-    AutoPasLog(DEBUG, "Selected Configuration {}", _currentConfig.toString());
-    return false;
+    configQueue.clear();
+    return;
   }
 
-  // try to sample a valid vector which is expected to yield a good acquisition
+  // Sample the search space, check that the samples are in the available configurations, and
+  // sort the remaining intersection of the config queue
   for (size_t i = 0; i < maxAttempts; ++i) {
-    if (_currentSamples.empty()) {
-      sampleAcquisitions(_predNumLHSamples, _predAcqFunction);
-    }
+    auto currentSamples = sampleAcquisitions(_predNumLHSamples, _predAcqFunction);
 
-    // test best vectors until empty
-    while (not _currentSamples.empty()) {
-      if (_invalidConfigs.find(_currentSamples.back()) == _invalidConfigs.end()) {
-        // valid config found!
-        _currentConfig = _currentSamples.back();
-        return true;
-      } else {
-        // invalid: dispose
-        _currentSamples.pop_back();
-      }
-    }
+    // Filter out all configurations which are either:
+    //   - invalid
+    //   - not in the set of interesting configs (=configQueue)
+    currentSamples.erase(
+        std::remove_if(currentSamples.begin(), currentSamples.end(),
+                       [&](const auto &config) {
+                         if (_invalidConfigs.count(config) > 0 or
+                             std::find(configQueue.begin(), configQueue.end(), config) == configQueue.end()) {
+                           return true;
+                         } else {
+                           return false;
+                         }
+                       }),
+        currentSamples.end());
 
     // No valid configuration. This should rarely happen.
-    AutoPasLog(DEBUG, "Tuning could not generate a valid configuration.");
+    if (currentSamples.empty()) {
+      AutoPasLog(DEBUG, "Tuning could not generate a valid configuration on attempt {} of {}.", i, maxAttempts);
+    } else {
+      // replace the config queue by what is left of the proposed configurations.
+      configQueue.clear();
+      std::copy(currentSamples.begin(), currentSamples.end(), std::back_inserter(configQueue));
+    }
   }
-
-  utils::ExceptionHandler::exception("BayesianSearch: Failed to sample an valid FeatureVector");
-  _currentConfig = FeatureVector();
-  return false;
+  // abort if in none of the attempts any good configuration was chosen.
+  utils::ExceptionHandler::exception("BayesianSearch: Failed to sample an valid FeatureVector after {} attempts.",
+                                     maxAttempts);
 }
 
-void autopas::BayesianSearch::sampleAcquisitions(size_t n, AcquisitionFunctionOption af) {
+std::vector<autopas::FeatureVector> autopas::BayesianSearch::sampleAcquisitions(size_t n,
+                                                                                AcquisitionFunctionOption af) {
   // create n lhs samples
-  _currentSamples = _encoder.lhsSampleFeatures(n, _rng);
+  auto currentSamples = _encoder.lhsSampleFeatures(n, _rng);
 
   // map container and calculate all acquisition function values
   std::map<FeatureVector, double> acquisitions;
-  for (auto &sample : _currentSamples) {
+  for (auto &sample : currentSamples) {
     acquisitions[sample] = _gaussianProcess.calcAcquisition(af, _encoder.oneHotEncode(sample));
   }
 
   // sort by acquisition
-  std::sort(_currentSamples.begin(), _currentSamples.end(),
+  std::sort(currentSamples.begin(), currentSamples.end(),
             [&acquisitions](const FeatureVector &f1, const FeatureVector &f2) {
               return acquisitions[f1] < acquisitions[f2];
             });
-}
 
-bool autopas::BayesianSearch::searchSpaceIsTrivial() const {
-  if (searchSpaceIsEmpty()) {
-    return false;
-  }
-
-  return _containerTraversalEstimatorOptions.size() == 1 and
-         (_cellSizeFactors->isFinite() and _cellSizeFactors->size() == 1) and _dataLayoutOptions.size() == 1 and
-         _newton3Options.size() == 1;
+  return currentSamples;
 }
 
 bool autopas::BayesianSearch::searchSpaceIsEmpty() const {
@@ -143,44 +133,22 @@ bool autopas::BayesianSearch::searchSpaceIsEmpty() const {
          _newton3Options.empty();
 }
 
-void autopas::BayesianSearch::removeN3Option(Newton3Option badNewton3Option) {
-  _newton3Options.erase(std::remove(_newton3Options.begin(), _newton3Options.end(), badNewton3Option),
-                        _newton3Options.end());
-  _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options,
-                             *_cellSizeFactors);
-
-  _gaussianProcess.setDimension(_encoder.getOneHotDims());
-  _currentSamples.clear();
-
-  if (this->searchSpaceIsEmpty()) {
-    utils::ExceptionHandler::exception(
-        "Removing all configurations with Newton 3 {} caused the search space to be empty!", badNewton3Option);
+void autopas::BayesianSearch::rejectConfiguration(const autopas::Configuration &configuration, bool indefinitely) {
+  if (indefinitely) {
+    _invalidConfigs.insert(configuration);
   }
 }
 
-const autopas::Configuration &autopas::BayesianSearch::getCurrentConfiguration() const { return _currentConfig; }
-
-void autopas::BayesianSearch::addEvidence(long time, size_t iteration) {
+void autopas::BayesianSearch::addEvidence(const Configuration &configuration, const Evidence &evidence) {
   // time is converted to seconds, to big values may lead to errors in GaussianProcess. Time is also negated to
   // represent a maximization problem
-  _gaussianProcess.addEvidence(_encoder.oneHotEncode(_currentConfig), -time * secondsPerMicroseconds, true);
-  _currentSamples.clear();
-  _traversalTimes[_currentConfig] = time;
+  _gaussianProcess.addEvidence(_encoder.oneHotEncode(configuration), -evidence.value * secondsPerMicroseconds, true);
 }
 
-long autopas::BayesianSearch::getEvidence(autopas::Configuration configuration) const {
-  return _traversalTimes.at(configuration);
-}
-
-void autopas::BayesianSearch::reset(size_t iteration) {
+void autopas::BayesianSearch::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+                                    const autopas::EvidenceCollection &evidenceCollection) {
   _gaussianProcess.clear();
-  _currentSamples.clear();
-  _traversalTimes.clear();
-  tune();
+  optimizeSuggestions(configQueue, evidenceCollection);
 }
 
-std::set<autopas::ContainerOption> autopas::BayesianSearch::getAllowedContainerOptions() const {
-  return _containerOptionsSet;
-}
-
-bool autopas::BayesianSearch::smoothedHomogeneityAndMaxDensityNeeded() const { return false; }
+bool autopas::BayesianSearch::needsSmoothedHomogeneityAndMaxDensity() const { return false; }

@@ -18,6 +18,7 @@
 #include "autopas/tuning/utils/FeatureVectorEncoder.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/NumberSet.h"
+#include "tuning/searchSpace/EvidenceCollection.h"
 
 namespace autopas {
 
@@ -26,7 +27,7 @@ namespace autopas {
  * to a Gaussian Process. This allows to estimate the 'gain' of testing a given
  * feature next.
  */
-class BayesianSearch : public TuningStrategyInterface {
+class BayesianSearch final : public TuningStrategyInterface {
   /**
    * The maximum number of attempts to sample an optimum.
    */
@@ -60,25 +61,18 @@ class BayesianSearch : public TuningStrategyInterface {
       AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::upperConfidenceBound,
       size_t predNumLHSamples = 1000, unsigned long seed = std::random_device()());
 
-  const Configuration &getCurrentConfiguration() const override;
+  void addEvidence(const Configuration &configuration, const Evidence &evidence) override;
 
-  void removeN3Option(Newton3Option badNewton3Option) override;
+  void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+             const autopas::EvidenceCollection &evidenceCollection) override;
 
-  void addEvidence(long time, size_t iteration) override;
-
-  long getEvidence(Configuration configuration) const override;
-
-  void reset(size_t iteration) override;
-
-  bool tune(bool currentInvalid = false) override;
-
-  std::set<ContainerOption> getAllowedContainerOptions() const override;
-
-  bool searchSpaceIsTrivial() const override;
-
-  bool searchSpaceIsEmpty() const override;
+  void optimizeSuggestions(std::vector<Configuration> &configQueue, const EvidenceCollection &evidence) override;
 
   bool needsSmoothedHomogeneityAndMaxDensity() const override;
+
+  void rejectConfiguration(const Configuration &configuration, bool indefinitely) override;
+
+  bool searchSpaceIsEmpty() const;
 
  private:
   /**
@@ -87,7 +81,7 @@ class BayesianSearch : public TuningStrategyInterface {
    * @param n numSamples
    * @param af acquisition function
    */
-  void sampleAcquisitions(size_t n, AcquisitionFunctionOption af);
+  std::vector<FeatureVector> sampleAcquisitions(size_t n, AcquisitionFunctionOption af);
 
   std::set<ContainerOption> _containerOptionsSet;
   std::vector<FeatureVector::ContainerTraversalEstimatorOption> _containerTraversalEstimatorOptions;
@@ -96,14 +90,10 @@ class BayesianSearch : public TuningStrategyInterface {
   std::unique_ptr<NumberSet<double>> _cellSizeFactors;
   FeatureVectorEncoder _encoder;
 
-  FeatureVector _currentConfig;
-  std::vector<FeatureVector> _currentSamples;
-  std::unordered_set<FeatureVector, ConfigHash> _invalidConfigs;
   /**
-   * Explicitly store traversal times for getEvidence().
-   * Refrain from reading the data from GaussianProcesses to maintain abstraction.
+   * Set of all configs that were marked as invalid.
    */
-  std::unordered_map<Configuration, long, ConfigHash> _traversalTimes;
+  std::unordered_set<FeatureVector, ConfigHash> _invalidConfigs;
 
   Random _rng;
   GaussianProcess _gaussianProcess;

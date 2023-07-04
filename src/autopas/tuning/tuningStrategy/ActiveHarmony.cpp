@@ -6,45 +6,39 @@
 
 #include "ActiveHarmony.h"
 
-autopas::ActiveHarmony::ActiveHarmony(const std::set<ContainerOption> &allowedContainerOptions,
-                                      const autopas::NumberSet<double> &allowedCellSizeFactors,
-                                      const std::set<TraversalOption> &allowedTraversalOptions,
-                                      const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
-                                      const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                                      const std::set<Newton3Option> &allowedNewton3Options,
-                                      const autopas::MPIStrategyOption mpiStrategyOption,
-                                      const autopas::AutoPas_MPI_Comm comm)
+#include "tuning/Configuration.h"
+#include "tuning/searchSpace/Evidence.h"
+#include "tuning/searchSpace/EvidenceCollection.h"
+
+namespace autopas {
+
+ActiveHarmony::ActiveHarmony(const std::set<ContainerOption> &allowedContainerOptions,
+                             const NumberSet<double> &allowedCellSizeFactors,
+                             const std::set<TraversalOption> &allowedTraversalOptions,
+                             const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
+                             const std::set<DataLayoutOption> &allowedDataLayoutOptions,
+                             const std::set<Newton3Option> &allowedNewton3Options, MPIStrategyOption mpiStrategyOption,
+                             AutoPas_MPI_Comm comm)
     : _allowedContainerOptions(allowedContainerOptions),
       _allowedCellSizeFactors(allowedCellSizeFactors.clone()),
       _allowedTraversalOptions(allowedTraversalOptions),
       _allowedLoadEstimatorOptions(allowedLoadEstimatorOptions),
       _allowedDataLayoutOptions(allowedDataLayoutOptions),
       _allowedNewton3Options(allowedNewton3Options),
-      _currentConfig(),
       _mpiStrategyOption(mpiStrategyOption),
       _comm(comm),
       _nonLocalServer(getenv("HARMONY_HOST") != nullptr and mpiStrategyOption == MPIStrategyOption::divideAndConquer) {
-  auto cellSizeDummy = NumberSetFinite<double>{-1};
-  utils::AutoPasConfigurationCommunicator::distributeConfigurations(
-      _allowedContainerOptions, cellSizeDummy, _allowedTraversalOptions, _allowedLoadEstimatorOptions,
-      _allowedDataLayoutOptions, _allowedNewton3Options, 0, 1);
-
-  AutoPasLog(DEBUG, "Possible container options: {}", autopas::utils::ArrayUtils::to_string(_allowedContainerOptions));
-  AutoPasLog(DEBUG, "Possible traversal options: {}", autopas::utils::ArrayUtils::to_string(_allowedTraversalOptions));
-
   if (searchSpaceIsEmpty()) {
-    autopas::utils::ExceptionHandler::exception("BayesianSearch: No valid configurations could be created.");
+    utils::ExceptionHandler::exception("ActiveHarmony: No valid configurations could be created.");
   }
 
   // set HARMONY_HOME environment variable; needed by active harmony library; the macro is set by cmake
   if (getenv("HARMONY_HOME") == nullptr) {
     putenv(const_cast<char *>(HARMONY_HOME));
   }
-
-  reset(0);
 }
 
-autopas::ActiveHarmony::~ActiveHarmony() {
+ActiveHarmony::~ActiveHarmony() {
   if (htask != nullptr) {
     ah_leave(htask);
     ah_kill(htask);
@@ -55,21 +49,20 @@ autopas::ActiveHarmony::~ActiveHarmony() {
   }
 }
 
-void autopas::ActiveHarmony::addEvidence(long time, size_t iteration) {
+void ActiveHarmony::addEvidence(const Configuration &configuration, const Evidence &evidence) {
   if (searchSpaceIsTrivial() or searchSpaceIsEmpty()) {
     AutoPasLog(DEBUG, "ActiveHarmony::addEvidence: Search space is {}; did not report performance",
                searchSpaceIsTrivial() ? "trivial" : "empty");
   } else {
-    auto perf = static_cast<double>(time);
+    auto perf = static_cast<double>(evidence.value);
     if (ah_report(htask, &perf) != 0) {
       utils::ExceptionHandler::exception("ActiveHarmony::addEvidence: Error reporting performance to server");
     }
-    _traversalTimes[_currentConfig] = time;
   }
 }
 
 template <class OptionClass>
-OptionClass autopas::ActiveHarmony::fetchTuningParameter(const char *name, const std::set<OptionClass> &options) {
+OptionClass ActiveHarmony::fetchTuningParameter(const char *name, const std::set<OptionClass> &options) {
   OptionClass option;
   if (options.size() > 1) {
     option = decltype(option)::parseOptionExact(ah_get_enum(htask, name));
@@ -79,14 +72,14 @@ OptionClass autopas::ActiveHarmony::fetchTuningParameter(const char *name, const
   return option;
 }
 
-void autopas::ActiveHarmony::fetchConfiguration() {
-  TraversalOption traversalOption = fetchTuningParameter(traversalOptionName, _allowedTraversalOptions);
-  DataLayoutOption dataLayoutOption = fetchTuningParameter(dataLayoutOptionName, _allowedDataLayoutOptions);
-  Newton3Option newton3Option = fetchTuningParameter(newton3OptionName, _allowedNewton3Options);
-  ContainerOption containerOption = *compatibleTraversals::allCompatibleContainers(traversalOption).begin();
-  auto applicableLoadEstimators =
+Configuration ActiveHarmony::fetchConfiguration() {
+  const auto traversalOption = fetchTuningParameter(traversalOptionName, _allowedTraversalOptions);
+  const auto dataLayoutOption = fetchTuningParameter(dataLayoutOptionName, _allowedDataLayoutOptions);
+  const auto newton3Option = fetchTuningParameter(newton3OptionName, _allowedNewton3Options);
+  const auto containerOption = *compatibleTraversals::allCompatibleContainers(traversalOption).begin();
+  const auto applicableLoadEstimators =
       loadEstimators::getApplicableLoadEstimators(containerOption, traversalOption, _allowedLoadEstimatorOptions);
-  LoadEstimatorOption loadEstimatorOption = fetchTuningParameter(loadEstimatorOptionName, applicableLoadEstimators);
+  const auto loadEstimatorOption = fetchTuningParameter(loadEstimatorOptionName, applicableLoadEstimators);
 
   double cellSizeFactor = 0;
   if (_allowedCellSizeFactors->isFinite()) {
@@ -99,85 +92,62 @@ void autopas::ActiveHarmony::fetchConfiguration() {
     cellSizeFactor = ah_get_real(htask, cellSizeFactorsName);
   }
 
-  _currentConfig = Configuration(containerOption, cellSizeFactor, traversalOption, loadEstimatorOption,
-                                 dataLayoutOption, newton3Option);
+  return {containerOption, cellSizeFactor, traversalOption, loadEstimatorOption, dataLayoutOption, newton3Option};
 }
 
-void autopas::ActiveHarmony::invalidateConfiguration() {
-  auto worstPerf = std::numeric_limits<long>::max();
-  addEvidence(worstPerf, 0);
-  AutoPasLog(DEBUG, "ActiveHarmony::invalidateConfiguration: {}", _currentConfig.toString());
+void ActiveHarmony::rejectConfiguration(const Configuration &configuration, bool indefinitely) {
+  // dummy evidence where iteration information is not needed, because we only store the measurement in harmony.
+  const Evidence badDummyEvidence{
+      0,
+      _tuningPhase,
+      std::numeric_limits<long>::max(),
+  };
+  addEvidence(configuration, badDummyEvidence);
+  resetHarmony();
 }
 
-bool autopas::ActiveHarmony::tune(bool currentInvalid) {
-  if (searchSpaceIsTrivial()) {
-    fetchConfiguration();
-    return false;
-  } else if (searchSpaceIsEmpty()) {
-    _currentConfig = Configuration();
-    return false;
-  }
-  if (currentInvalid) {
-    if (ah_converged(htask)) {
-      AutoPasLog(DEBUG, "Active Harmony converged to invalid configuration; resetting active-harmony server.");
-      resetHarmony();
-    } else {
-      invalidateConfiguration();
-    }
-  }
-
+void ActiveHarmony::optimizeSuggestions(std::vector<Configuration> &configQueue, const EvidenceCollection &evidence) {
   // get configurations from server until new configuration with valid newton3 option is found
   bool skipConfig;
   do {
     skipConfig = false;
     if (ah_fetch(htask) < 0) {
-      utils::ExceptionHandler::exception("ActiveHarmony::tune: Error fetching values from server");
+      utils::ExceptionHandler::exception("ActiveHarmony::tuneConfiguration: Error fetching values from server");
     }
-    fetchConfiguration();
-    if (_traversalTimes.find(_currentConfig) != _traversalTimes.end()) {
-      // we already know the performance for this config
-      addEvidence(static_cast<long>(_traversalTimes[_currentConfig]), 0);
+    const auto potentialConf = fetchConfiguration();
+    // If we already know the performance for this config in this tuning phase skip it.
+    if (const auto &potentialConfEvidence = evidence.getEvidence(potentialConf);
+        not potentialConfEvidence.empty() and potentialConfEvidence.back().tuningPhase == _tuningPhase) {
+      addEvidence(potentialConf, potentialConfEvidence.back());
       skipConfig = true;
     }
 
     auto converged = ah_converged(htask);
     if (converged) {
       // set configuration to optimum
-      AutoPasLog(DEBUG, "ActiveHarmony::tune: Reached converged state.");
+      AutoPasLog(TRACE, "ActiveHarmony converged.");
       if (ah_best(htask) != 0) {
-        utils::ExceptionHandler::exception("ActiveHarmony::tune: Error fetching best point.");
+        utils::ExceptionHandler::exception("ActiveHarmony::optimizeSuggestions: Error fetching best point.");
       }
-      fetchConfiguration();
-      AutoPasLog(DEBUG, "ActiveHarmony::tune: Selected optimal configuration {}.", _currentConfig.toString());
-      return false;
+      // only accept the configuration if it was in the queue.
+      if (std::find(configQueue.begin(), configQueue.end(), potentialConf) == configQueue.end()) {
+        skipConfig = true;
+      } else {
+        return;
+      }
     }
 
     if (_nonLocalServer) {
       // When using a non-local server, it is possible that only tested configurations are fetched before the search
       // converges.
       // Because this is difficult to test for, the loop is simply ignored for non-local servers.
-      return true;
+      return;
     }
   } while (skipConfig);
-  return true;
 }
-
-void autopas::ActiveHarmony::removeN3Option(Newton3Option option) {
-  _allowedNewton3Options.erase(option);
-  if (this->searchSpaceIsEmpty()) {
-    utils::ExceptionHandler::exception(
-        "ActiveHarmony::removeN3Option: Removing all configurations with Newton 3 {} caused the search space to be "
-        "empty!",
-        option);
-  }
-  resetHarmony();
-}
-
-const autopas::Configuration &autopas::ActiveHarmony::getCurrentConfiguration() const { return _currentConfig; }
 
 template <class OptionClass>
-void autopas::ActiveHarmony::configureTuningParameter(hdef_t *hdef, const char *name,
-                                                      const std::set<OptionClass> &options) {
+void ActiveHarmony::configureTuningParameter(hdef_t *hdef, const char *name, const std::set<OptionClass> &options) {
   if (options.size() > 1) {                       // only parameters with more than 1 possible options should be tuned
     if (ah_def_enum(hdef, name, nullptr) != 0) {  // define parameter
       utils::ExceptionHandler::exception("ActiveHarmony::configureTuningParameter: Error defining enum \"{}\"", name);
@@ -193,12 +163,12 @@ void autopas::ActiveHarmony::configureTuningParameter(hdef_t *hdef, const char *
   }
 }
 
-void autopas::ActiveHarmony::reset(size_t iteration) {
-  _traversalTimes.clear();
+void ActiveHarmony::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+                          const EvidenceCollection &evidenceCollection) {
   resetHarmony();
 }
 
-void autopas::ActiveHarmony::resetHarmony() {
+void ActiveHarmony::resetHarmony() {
   int rank, commSize;
   AutoPas_MPI_Comm_size(_comm, &commSize);
   AutoPas_MPI_Comm_rank(_comm, &rank);
@@ -264,15 +234,9 @@ void autopas::ActiveHarmony::resetHarmony() {
       }
     }
   }
-
-  tune(false);
 }
 
-std::set<autopas::ContainerOption> autopas::ActiveHarmony::getAllowedContainerOptions() const {
-  return _allowedContainerOptions;
-}
-
-bool autopas::ActiveHarmony::searchSpaceIsTrivial() const {
+bool ActiveHarmony::searchSpaceIsTrivial() const {
   if (searchSpaceIsEmpty()) {
     return false;
   }
@@ -283,13 +247,13 @@ bool autopas::ActiveHarmony::searchSpaceIsTrivial() const {
          _allowedNewton3Options.size() == 1;
 }
 
-bool autopas::ActiveHarmony::searchSpaceIsEmpty() const {
+bool ActiveHarmony::searchSpaceIsEmpty() const {
   return _allowedContainerOptions.empty() or
          (_allowedCellSizeFactors->isFinite() and _allowedCellSizeFactors->size() == 0) or
          _allowedTraversalOptions.empty() or _allowedDataLayoutOptions.empty() or _allowedNewton3Options.empty();
 }
 
-void autopas::ActiveHarmony::setupTuningParameters(int commSize, hdef_t *hdef) {
+void ActiveHarmony::setupTuningParameters(int commSize, hdef_t *hdef) {
   if (ah_def_name(hdef, "AutoPas") != 0) {
     utils::ExceptionHandler::exception("ActiveHarmony::reset: Error setting search name: {}", ah_error());
   }
@@ -337,8 +301,6 @@ void autopas::ActiveHarmony::setupTuningParameters(int commSize, hdef_t *hdef) {
     ah_def_cfg(hdef, "CLIENT_COUNT", numbuf);
   }
 }
-long autopas::ActiveHarmony::getEvidence(autopas::Configuration configuration) const {
-  return static_cast<long>(_traversalTimes.at(configuration));
-}
 
-bool autopas::ActiveHarmony::smoothedHomogeneityAndMaxDensityNeeded() const { return false; }
+bool ActiveHarmony::needsSmoothedHomogeneityAndMaxDensity() const { return false; }
+}  // namespace autopas

@@ -6,16 +6,21 @@
 
 #pragma once
 
+#include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <list>
+#include <unordered_map>
 #include <unordered_set>
 #include <variant>
 
 #include "RuleBasedProgramParser.h"
 #include "RuleBasedProgramTree.h"
 #include "RuleVM.h"
-#include "autopas/tuning/tuningStrategy/FullSearch.h"
+#include "autopas/tuning/Configuration.h"
+#include "autopas/tuning/searchSpace/EvidenceCollection.h"
+#include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/utils/logging/Logger.h"
 
 namespace autopas {
@@ -66,7 +71,7 @@ namespace autopas {
  * Additionally, the class supports a so called "verify mode" where full search is performed and the given rules are
  * checked for correctness.
  */
-class RuleBasedTuning : public FullSearch {
+class RuleBasedTuning : public TuningStrategyInterface {
  public:
   /**
    * A function type used to print errors found in verify mode.
@@ -88,45 +93,35 @@ class RuleBasedTuning : public FullSearch {
    * @param ruleFileName The name of the file where the rules are stored.
    * @param tuningErrorPrinter The function to call in verify mode if errors are found.
    */
-  RuleBasedTuning(const std::set<ContainerOption> &allowedContainerOptions,
-                  const std::set<double> &allowedCellSizeFactors,
-                  const std::set<TraversalOption> &allowedTraversalOptions,
-                  const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
-                  const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                  const std::set<Newton3Option> &allowedNewton3Options, bool verifyModeEnabled = false,
+  RuleBasedTuning(const std::set<Configuration> &searchSpace, bool verifyModeEnabled = false,
                   std::string ruleFileName = "tuningRules.rule", PrintTuningErrorFunType tuningErrorPrinter = {})
-      : FullSearch(allowedContainerOptions, allowedCellSizeFactors, allowedTraversalOptions,
-                   allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options),
-        _originalSearchSpace(this->_searchSpace.begin(), this->_searchSpace.end()),
+      : _searchSpace(searchSpace),
+        _originalSearchSpace(searchSpace.begin(), searchSpace.end()),
         _verifyModeEnabled(verifyModeEnabled),
         _ruleFileName(std::move(ruleFileName)),
         _tuningErrorPrinter(std::move(tuningErrorPrinter)) {}
 
   bool needsLiveInfo() const override { return true; }
 
-  void receiveLiveInfo(const LiveInfo &info) override {
-    _currentLiveInfo = info;
-    _lastApplicableConfigurationOrders = applyRules();
-  }
+  void receiveLiveInfo(const LiveInfo &info) override { _currentLiveInfo = info; }
 
-  void addEvidence(long time, size_t iteration) override {
-    FullSearch::addEvidence(time, iteration);
-    tuningTime += time;
-    tuningTimeLifetime += time;
+  void addEvidence(const Configuration &configuration, const Evidence &evidence) override {
+    tuningTime += evidence.value;
+    tuningTimeLifetime += evidence.value;
+    _traversalTimes[configuration] = evidence.value;
     if (_verifyModeEnabled) {
-      verifyCurrentConfigTime();
-      if (_removedConfigurations.find(this->getCurrentConfiguration()) != _removedConfigurations.end()) {
-        wouldHaveSkippedTuningTime += time;
-        wouldHaveSkippedTuningTimeLifetime += time;
+      verifyCurrentConfigTime(configuration);
+      if (_removedConfigurations.find(configuration) != _removedConfigurations.end()) {
+        wouldHaveSkippedTuningTime += evidence.value;
+        wouldHaveSkippedTuningTimeLifetime += evidence.value;
       }
     }
   }
 
-  void reset(size_t iteration) override {
-    FullSearch::reset(iteration);
-
+  void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+             const autopas::EvidenceCollection &evidenceCollection) override {
     if (_verifyModeEnabled and tuningTime > 0) {
-      AutoPasLog(INFO, "Rules would have saved {} ns removing {}/{} configurations. ({}% of total tuning time)",
+      AutoPasLog(DEBUG, "Rules would have saved {} ns removing {}/{} configurations. ({}% of total tuning time)",
                  wouldHaveSkippedTuningTime, _removedConfigurations.size(), _originalSearchSpace.size(),
                  // TODO: This lambda could probably be replaced by some formatting parameters in the fmt string.
                  [&]() {
@@ -158,42 +153,51 @@ class RuleBasedTuning : public FullSearch {
    * any rules when comparing with previously tested configurations in this tuning phase. If yes, calls
    * tuningErrorPrinter.
    */
-  void verifyCurrentConfigTime() const {
+  void verifyCurrentConfigTime(const Configuration &configuration) const {
     for (const auto &order : _lastApplicableConfigurationOrders) {
       bool shouldBeBetter;
-      if (order.smaller.matches(*_currentConfig)) {
+      if (order.smaller.matches(configuration)) {
         shouldBeBetter = true;
-      } else if (order.greater.matches(*_currentConfig)) {
+      } else if (order.greater.matches(configuration)) {
         shouldBeBetter = false;
       } else {
         continue;
       }
 
-      const auto currentConfigTime = _traversalTimes.at(*_currentConfig);
+      const auto currentConfigTime = _traversalTimes.at(configuration);
       const auto &comparePattern = shouldBeBetter ? order.greater : order.smaller;
       for (const auto &[otherConfig, time] : _traversalTimes) {
         bool error = false;
-        if (comparePattern.matches(otherConfig) and order.haveEqualSameProperties(*_currentConfig, otherConfig)) {
+        if (comparePattern.matches(otherConfig) and order.haveEqualSameProperties(configuration, otherConfig)) {
           if ((shouldBeBetter and time > currentConfigTime) or (not shouldBeBetter and time < currentConfigTime)) {
             error = true;
           }
         }
         if (error) {
           if (shouldBeBetter) {
-            _tuningErrorPrinter(order, *_currentConfig, currentConfigTime, otherConfig, time, _currentLiveInfo);
+            _tuningErrorPrinter(order, configuration, currentConfigTime, otherConfig, time, _currentLiveInfo);
           } else {
-            _tuningErrorPrinter(order, otherConfig, time, *_currentConfig, currentConfigTime, _currentLiveInfo);
+            _tuningErrorPrinter(order, otherConfig, time, configuration, currentConfigTime, _currentLiveInfo);
           }
         }
       }
     }
   }
 
+ public:
+  void optimizeSuggestions(std::vector<Configuration> &configQueue,
+                           const EvidenceCollection &evidenceCollection) override {
+    _lastApplicableConfigurationOrders = applyRules(configQueue);
+    configQueue.clear();
+    std::copy(_searchSpace.begin(), _searchSpace.end(), std::back_inserter(configQueue));
+  }
+
+ private:
   /**
    * Executes the rule file for the current simulation state. Puts all known live info as defines in front of the
    * program.
    */
-  std::vector<rule_syntax::ConfigurationOrder> applyRules() {
+  std::vector<rule_syntax::ConfigurationOrder> applyRules(const std::vector<Configuration> &searchSpace) {
     AutoPasLog(DEBUG, _currentLiveInfo.toString());
 
     std::vector<RuleVM::MemoryCell> initialStack;
@@ -225,7 +229,7 @@ class RuleBasedTuning : public FullSearch {
       applicableConfigurationOrders.push_back(context.getConfigurationOrders().at(patternIdx));
     }
 
-    auto newSearchSpace = _originalSearchSpace;
+    std::list<Configuration> newSearchSpace{searchSpace.begin(), searchSpace.end()};
     _removedConfigurations.clear();
     auto &removedConfigsLocal = _removedConfigurations;
     newSearchSpace.remove_if([&toRemovePatterns, &removedConfigsLocal](const Configuration &configuration) {
@@ -245,12 +249,14 @@ class RuleBasedTuning : public FullSearch {
     return applicableConfigurationOrders;
   }
 
+  std::set<Configuration> _searchSpace;
   const std::list<Configuration> _originalSearchSpace;
   std::unordered_set<Configuration, ConfigHash> _removedConfigurations;
   std::vector<rule_syntax::ConfigurationOrder> _lastApplicableConfigurationOrders;
   bool _verifyModeEnabled;
   std::string _ruleFileName;
 
+  std::unordered_map<Configuration, long, ConfigHash> _traversalTimes;
   long tuningTime = 0;
   long wouldHaveSkippedTuningTime = 0;
   long tuningTimeLifetime = 0;

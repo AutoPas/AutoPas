@@ -8,6 +8,7 @@
 
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/StringUtils.h"
+#include "tuning/searchSpace/EvidenceCollection.h"
 
 autopas::BayesianClusterSearch::BayesianClusterSearch(const std::set<ContainerOption> &allowedContainerOptions,
                                                       const NumberSet<double> &allowedCellSizeFactors,
@@ -23,9 +24,7 @@ autopas::BayesianClusterSearch::BayesianClusterSearch(const std::set<ContainerOp
       _newton3Options(allowedNewton3Options.begin(), allowedNewton3Options.end()),
       _cellSizeFactors(allowedCellSizeFactors.clone()),
       _encoder(),
-      _currentConfig(),
       _invalidConfigs(),
-      _traversalTimes(),
       _rng(seed),
       _gaussianCluster({}, continuousDims, GaussianCluster::WeightFunction::evidenceMatchingScaledProbabilityGM, sigma,
                        _rng, GaussianCluster::defaultVecToString, outputSuffix),
@@ -39,12 +38,10 @@ autopas::BayesianClusterSearch::BayesianClusterSearch(const std::set<ContainerOp
       _currentIteration(0),
       _iterationScale(1. / (maxEvidence * iterationScalePerMaxEvidence)),
       _currentNumEvidence(0),
-      _currentOptimalTime(std::numeric_limits<long>::max()),
-      _fullSearch(allowedContainerOptions, {allowedCellSizeFactors.getMedian()}, allowedTraversalOptions,
-                  allowedLoadEstimatorOptions, allowedDataLayoutOptions, allowedNewton3Options) {
+      _currentOptimalTime(std::numeric_limits<long>::max()) {
   if (predNumLHSamples <= 0) {
     utils::ExceptionHandler::exception(
-        "BayesianSearch: Number of samples used for predictions must be greater than 0!");
+        "BayesianClusterSearch: Number of samples used for predictions must be greater than 0!");
   }
 
   for (const auto &containerOption : allowedContainerOptions) {
@@ -75,46 +72,38 @@ autopas::BayesianClusterSearch::BayesianClusterSearch(const std::set<ContainerOp
       [this](const GaussianModelTypes::VectorPairDiscreteContinuous &vec) -> std::string {
         return _encoder.convertFromCluster(vec).toString();
       });
-
-  _currentConfig = _fullSearch.getCurrentConfiguration();
 }
 
 autopas::BayesianClusterSearch::~BayesianClusterSearch() = default;
 
-const autopas::Configuration &autopas::BayesianClusterSearch::getCurrentConfiguration() const { return _currentConfig; }
-
-void autopas::BayesianClusterSearch::addEvidence(long time, size_t iteration) {
-  if (_firstTuningPhase) {
-    _fullSearch.addEvidence(time, iteration);
-  }
-
+void autopas::BayesianClusterSearch::addEvidence(const Configuration &configuration, const Evidence &evidence) {
   // store optimal evidence
-  if (time < _currentOptimalTime) {
-    _currentOptimalTime = time;
-    _currentOptimalConfig = _currentConfig;
+  if (evidence.value < _currentOptimalTime) {
+    _currentOptimalTime = evidence.value;
+    _currentOptimalConfig = configuration;
   }
 
   // encoded vector
-  auto vec = _encoder.convertToCluster(_currentConfig, iteration * _iterationScale);
+  const auto vec = _encoder.convertToCluster(configuration, evidence.iteration * _iterationScale);
   // time is converted to seconds, to big values may lead to errors in GaussianProcess. Time is also negated to
   // represent a maximization problem
-  _gaussianCluster.addEvidence(vec, -time * secondsPerMicroseconds);
+  _gaussianCluster.addEvidence(vec, -evidence.value * secondsPerMicroseconds);
 
-  _currentIteration = iteration;
+  _currentIteration = evidence.iteration;
   ++_currentNumEvidence;
   _currentAcquisitions.clear();
-
-  _traversalTimes[_currentConfig] = time;
 }
 
-long autopas::BayesianClusterSearch::getEvidence(Configuration configuration) const {
-  return _traversalTimes.at(configuration);
-}
-
-void autopas::BayesianClusterSearch::reset(size_t iteration) {
-  size_t iterationSinceLastEvidence = iteration - _currentIteration;
-  if (iterationSinceLastEvidence * _iterationScale > suggestedMaxDistance) {
-    AutoPasLog(WARN, "BayesianClusterSearch: Time since the last evidence may be too long.");
+void autopas::BayesianClusterSearch::reset(size_t iteration, size_t tuningPhase,
+                                           std::vector<Configuration> &configQueue,
+                                           const autopas::EvidenceCollection &evidenceCollection) {
+  const auto iterationSinceLastEvidence = iteration - _currentIteration;
+  if (static_cast<double>(iterationSinceLastEvidence) * _iterationScale > suggestedMaxDistance) {
+    AutoPasLog(WARN,
+               "BayesianClusterSearch: Time since the last evidence may be too long ({} > {}). "
+               "You should either decrease the number of iterations between tuning phases "
+               "or gather more evidence (currently: {}).",
+               iterationSinceLastEvidence, suggestedMaxDistance / _iterationScale, _maxEvidence);
   }
 
   _currentIteration = iteration;
@@ -122,26 +111,11 @@ void autopas::BayesianClusterSearch::reset(size_t iteration) {
   _currentOptimalTime = std::numeric_limits<long>::max();
   _currentAcquisitions.clear();
 
-  if (_firstTuningPhase) {
-    _fullSearch.reset(iteration);
-    _currentConfig = _fullSearch.getCurrentConfiguration();
-  } else {
-    tune();
+  _firstTuningPhase = tuningPhase == 0 ? true : false;
+
+  if (not _firstTuningPhase) {
+    optimizeSuggestions(configQueue, evidenceCollection);
   }
-}
-
-std::set<autopas::ContainerOption> autopas::BayesianClusterSearch::getAllowedContainerOptions() const {
-  return _containerOptionsSet;
-}
-
-bool autopas::BayesianClusterSearch::searchSpaceIsTrivial() const {
-  if (searchSpaceIsEmpty()) {
-    return false;
-  }
-
-  return _containerTraversalEstimatorOptions.size() == 1 and
-         (_cellSizeFactors->isFinite() and _cellSizeFactors->size() == 1) and _dataLayoutOptions.size() == 1 and
-         _newton3Options.size() == 1;
 }
 
 bool autopas::BayesianClusterSearch::searchSpaceIsEmpty() const {
@@ -149,21 +123,6 @@ bool autopas::BayesianClusterSearch::searchSpaceIsEmpty() const {
   return _containerTraversalEstimatorOptions.empty() or
          (_cellSizeFactors->isFinite() and _cellSizeFactors->size() == 0) or _dataLayoutOptions.empty() or
          _newton3Options.empty();
-}
-
-void autopas::BayesianClusterSearch::removeN3Option(Newton3Option badNewton3Option) {
-  _fullSearch.removeN3Option(badNewton3Option);
-
-  _newton3Options.erase(std::remove(_newton3Options.begin(), _newton3Options.end(), badNewton3Option),
-                        _newton3Options.end());
-
-  updateOptions();
-  _currentAcquisitions.clear();
-
-  if (this->searchSpaceIsEmpty()) {
-    utils::ExceptionHandler::exception(
-        "Removing all configurations with Newton 3 {} caused the search space to be empty!", badNewton3Option);
-  }
 }
 
 void autopas::BayesianClusterSearch::updateOptions() {
@@ -174,71 +133,66 @@ void autopas::BayesianClusterSearch::updateOptions() {
   _gaussianCluster.setDimensions(std::vector<int>(newRestrictions.begin(), newRestrictions.end()));
 }
 
-bool autopas::BayesianClusterSearch::tune(bool currentInvalid) {
-  if (currentInvalid) {
-    _invalidConfigs.insert(_currentConfig);
-  }
-
-  // in the first tuning phase do a full search
+void autopas::BayesianClusterSearch::optimizeSuggestions(std::vector<Configuration> &configQueue,
+                                                         const EvidenceCollection &evidence) {
+  // In the first tuning phase do nothing since we first need some data.
   if (_firstTuningPhase) {
-    if (_fullSearch.tune(currentInvalid)) {
-      // continue with full-search
-      _currentConfig = _fullSearch.getCurrentConfiguration();
-      return true;
-    } else {
-      // continue with GaussianCluster
-      _firstTuningPhase = false;
-      _currentNumEvidence = 0;
-    }
-  }
-
-  if (searchSpaceIsEmpty()) {
-    // no valid configuration
-    _currentConfig = FeatureVector();
-    return false;
+    return;
   }
 
   // no more tunings steps
   if (_currentNumEvidence >= _maxEvidence) {
     // select best config of current tuning phase
-    _currentConfig = _currentOptimalConfig;
-
-    return false;
+    configQueue.clear();
+    return;
   }
 
   // try to sample a valid vector which is expected to yield a good acquisition
   for (size_t i = 0; i < maxAttempts; ++i) {
-    if (_currentAcquisitions.empty()) {
-      sampleAcquisitions(_predNumLHSamples, _predAcqFunction);
-    }
+    auto currentAcquisitions = sampleAcquisitions(_predNumLHSamples, _predAcqFunction);
 
-    // test best vectors until empty
-    while (not _currentAcquisitions.empty()) {
-      const auto best = _encoder.convertFromCluster(_currentAcquisitions.back());
-
-      if (_invalidConfigs.find(best) == _invalidConfigs.end()) {
-        // valid config found!
-        _currentConfig = best;
-        return true;
-      } else {
-        // invalid: dispose
-        _currentAcquisitions.pop_back();
-      }
-    }
+    // Filter out all acquisitions, which do map to a configuration which is either:
+    //   - invalid
+    //   - not in the set of interesting configs (=configQueue)
+    currentAcquisitions.erase(
+        std::remove_if(currentAcquisitions.begin(), currentAcquisitions.end(),
+                       [&](const auto &acquisition) {
+                         const auto config = _encoder.convertFromCluster(acquisition);
+                         if (_invalidConfigs.count(config) > 0 or
+                             std::find(configQueue.begin(), configQueue.end(), config) == configQueue.end()) {
+                           return true;
+                         } else {
+                           return false;
+                         }
+                       }),
+        currentAcquisitions.end());
 
     // No valid configuration. This should rarely happen.
-    AutoPasLog(DEBUG, "Tuning could not generate a valid configuration.");
+    if (currentAcquisitions.empty()) {
+      AutoPasLog(DEBUG, "Tuning could not generate a valid configuration on attempt {} of {}.", i, maxAttempts);
+    } else {
+      // replace the config queue by what is left of the proposed configurations.
+      configQueue.clear();
+      std::transform(currentAcquisitions.begin(), currentAcquisitions.end(), std::back_inserter(configQueue),
+                     [&](const auto &acquisition) { return _encoder.convertFromCluster(acquisition); });
+    }
   }
 
-  utils::ExceptionHandler::exception("BayesianClusterSearch: Failed to sample an valid FeatureVector");
-  _currentConfig = FeatureVector();
-  return false;
+  utils::ExceptionHandler::exception(
+      "BayesianClusterSearch: Failed to sample an valid FeatureVector after {} attempts.", maxAttempts);
 }
 
-void autopas::BayesianClusterSearch::sampleAcquisitions(size_t n, AcquisitionFunctionOption af) {
+std::vector<autopas::GaussianModelTypes::VectorPairDiscreteContinuous>
+autopas::BayesianClusterSearch::sampleAcquisitions(size_t n, AcquisitionFunctionOption af) {
   // create n lhs samples
   auto continuousSamples = _encoder.lhsSampleFeatureCluster(n, _rng, _currentIteration * _iterationScale);
 
   // calculate all acquisitions
-  _currentAcquisitions = _gaussianCluster.sampleOrderedByAcquisition(af, _neighbourFun, continuousSamples);
+  const auto currentAcquisitions = _gaussianCluster.sampleOrderedByAcquisition(af, _neighbourFun, continuousSamples);
+  return currentAcquisitions;
+}
+
+void autopas::BayesianClusterSearch::rejectConfiguration(const autopas::Configuration &configuration,
+                                                         bool indefinitely) {
+  _invalidConfigs.insert(configuration);
 }

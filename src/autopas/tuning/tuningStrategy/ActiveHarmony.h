@@ -22,6 +22,7 @@
 #include "autopas/utils/AutoPasConfigurationCommunicator.h"
 #include "autopas/utils/WrapMPI.h"
 #include "hclient.h"
+#include "tuning/searchSpace/EvidenceCollection.h"
 
 namespace autopas {
 
@@ -49,30 +50,23 @@ class ActiveHarmony : public TuningStrategyInterface {
                 const std::set<TraversalOption> &allowedTraversalOptions,
                 const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
                 const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                const std::set<Newton3Option> &allowedNewton3Options, const MPIStrategyOption mpiStrategyOption,
-                const AutoPas_MPI_Comm comm);
+                const std::set<Newton3Option> &allowedNewton3Options, MPIStrategyOption mpiStrategyOption,
+                AutoPas_MPI_Comm comm);
 
   ~ActiveHarmony() override;
 
-  void addEvidence(long time, size_t iteration) override;
+  void addEvidence(const Configuration &configuration, const Evidence &evidence) override;
 
-  long getEvidence(Configuration configuration) const override;
+  void optimizeSuggestions(std::vector<Configuration> &configQueue, const EvidenceCollection &evidence) override;
 
-  bool tune(bool currentInvalid) override;
+  bool searchSpaceIsTrivial() const;
 
-  void removeN3Option(Newton3Option option) override;
-
-  bool searchSpaceIsTrivial() const override;
-
-  bool searchSpaceIsEmpty() const override;
+  bool searchSpaceIsEmpty() const;
 
   bool needsSmoothedHomogeneityAndMaxDensity() const override;
 
-  const Configuration &getCurrentConfiguration() const override;
-
-  void reset(size_t iteration) override;
-
-  std::set<ContainerOption> getAllowedContainerOptions() const override;
+  void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+             const autopas::EvidenceCollection &evidenceCollection) override;
 
  private:
   /**
@@ -91,16 +85,10 @@ class ActiveHarmony : public TuningStrategyInterface {
   std::set<DataLayoutOption> _allowedDataLayoutOptions;
   std::set<Newton3Option> _allowedNewton3Options;
 
-  Configuration _currentConfig;
-
+  size_t _tuningPhase{0};
   MPIStrategyOption _mpiStrategyOption;
   AutoPas_MPI_Comm _comm;
   bool _nonLocalServer;
-
-  /**
-   * Traversal times for configurations. Used to save evidence when resetting active-harmony server.
-   */
-  std::unordered_map<Configuration, size_t, ConfigHash> _traversalTimes;
 
   /**
    * Resets the Harmony Server but keeps evidence.
@@ -110,7 +98,7 @@ class ActiveHarmony : public TuningStrategyInterface {
   /**
    * Fetch parameter-values from harmony server and update _currentConfig.
    */
-  void fetchConfiguration();
+  Configuration fetchConfiguration();
 
   /**
    * Invalidates the current configuration by reporting the worst possible performance to the harmony server.
@@ -136,6 +124,8 @@ class ActiveHarmony : public TuningStrategyInterface {
    */
   template <class OptionClass>
   OptionClass fetchTuningParameter(const char *name, const std::set<OptionClass> &options);
+
+  void rejectConfiguration(const autopas::Configuration &configuration, bool indefinitely) override;
 
   void setupTuningParameters(int commSize, hdef_t *hdef);
 
