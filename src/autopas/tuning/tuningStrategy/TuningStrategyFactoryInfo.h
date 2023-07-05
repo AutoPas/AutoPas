@@ -34,7 +34,7 @@ struct TuningStrategyFactoryInfo {
   /**
    * Factor of the range of the optimal configurations for the optimalSearchSpace.
    */
-  double relativeOptimum{1.2};
+  double relativeOptimumRange{1.2};
   /**
    * If a config is not tested for this number of tuning phases test it again to make predictions more reliable.
    */
@@ -60,7 +60,7 @@ struct TuningStrategyFactoryInfo {
   /**
    * The name and path of the file where the rules are stored.
    */
-  std::string ruleFileName{};
+  std::string ruleFileName{"tuningRules.rule"};
 
   // MPI Tuning Options
   /**
@@ -71,15 +71,13 @@ struct TuningStrategyFactoryInfo {
    * Maximum absolute difference in similarity metric for two ranks to fall in the same bucket.
    */
   double mpiTuningMaxDifferenceForBucket{0.3};
-  ;
   /**
    * Weight for maxDensity in the calculation for bucket distribution.
    */
   double mpiTuningWeightForMaxDensity{0.0};
-
   /**
    * MPI Communicator used within AutoPas.
    */
-  AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD;
+  AutoPas_MPI_Comm autopasMpiCommunicator{AUTOPAS_MPI_COMM_NULL};
 };
 }  // namespace autopas

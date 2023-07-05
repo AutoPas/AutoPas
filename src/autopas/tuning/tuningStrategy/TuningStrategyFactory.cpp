@@ -89,13 +89,13 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
           searchSpaceDimensions.containerOptions, NumberSetFinite<double>{searchSpaceDimensions.cellSizeFactors},
           searchSpaceDimensions.traversalOptions, searchSpaceDimensions.loadEstimatorOptions,
           searchSpaceDimensions.dataLayoutOptions, searchSpaceDimensions.newton3Options, info.mpiStrategyOption,
-          info.comm);
+          info.autopasMpiCommunicator);
       break;
     }
 
     case TuningStrategyOption::predictiveTuning: {
       tuningStrategy =
-          std::make_unique<PredictiveTuning>(info.relativeOptimum, info.maxTuningPhasesWithoutTest,
+          std::make_unique<PredictiveTuning>(info.relativeOptimumRange, info.maxTuningPhasesWithoutTest,
                                              info.minNumberOfEvidence, info.extrapolationMethodOption, outputSuffix);
       break;
     }
@@ -111,7 +111,7 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
           "Cannot use the TuningStrategy mpiDivideAndConquer without AUTOPAS_INTERNODE_TUNING=ON.");
 #endif
       tuningStrategy = std::make_unique<MPIParallelizedStrategy>(
-          MPIParallelizedStrategy::createFallBackConfiguration(searchSpace), info.comm,
+          MPIParallelizedStrategy::createFallBackConfiguration(searchSpace), info.autopasMpiCommunicator,
           info.mpiTuningMaxDifferenceForBucket, info.mpiTuningWeightForMaxDensity);
       break;
     }

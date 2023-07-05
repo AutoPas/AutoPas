@@ -10,7 +10,6 @@
 #include <memory>
 #include <set>
 #include <tuple>
-#include <vector>
 
 #include "autopas/options/TuningMetricOption.h"
 #include "autopas/tuning/Configuration.h"
@@ -44,9 +43,12 @@ class AutoTuner {
    * moved into the tuner.
    * @param searchSpace All possible configurations.
    * @param info Struct containing more configuration information.
+   * @param rebuildFrequency The number of iterations after which the neighbor lists are rebuilt.
+   * @param outputSuffix Suffix for all output files produced by this object.
    */
   AutoTuner(std::vector<std::unique_ptr<TuningStrategyInterface>> &tuningStrategies,
-            const std::set<Configuration> &searchSpace, const AutoTunerInfo &info);
+            const std::set<Configuration> &searchSpace, const AutoTunerInfo &info, unsigned int rebuildFrequency,
+            const std::string &outputSuffix);
 
   /**
    * Move assignment operator

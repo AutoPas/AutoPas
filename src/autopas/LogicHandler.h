@@ -47,15 +47,18 @@ class LogicHandler {
    * Constructor of the LogicHandler.
    * @param autoTuner
    * @param logicHandlerInfo
+   * @param rebuildFrequency
+   * @param outputSuffix
    */
-  LogicHandler(autopas::AutoTuner &autoTuner, const LogicHandlerInfo &logicHandlerInfo)
-      : _neighborListRebuildFrequency{logicHandlerInfo.rebuildFrequency},
+  LogicHandler(autopas::AutoTuner &autoTuner, const LogicHandlerInfo &logicHandlerInfo, unsigned int rebuildFrequency,
+               const std::string &outputSuffix)
+      : _neighborListRebuildFrequency{rebuildFrequency},
         _autoTuner(autoTuner),
         _particleBuffer(autopas_get_max_threads()),
         _haloParticleBuffer(autopas_get_max_threads()),
         _containerSelector(logicHandlerInfo.boxMin, logicHandlerInfo.boxMax, logicHandlerInfo.cutoff),
         _verletClusterSize(logicHandlerInfo.verletClusterSize),
-        _iterationLogger(logicHandlerInfo.outputSuffix),
+        _iterationLogger(outputSuffix),
         _bufferLocks(std::max(2, autopas::autopas_get_max_threads())) {
     using namespace autopas::utils::ArrayMath::literals;
     // initialize the container and make sure it is valid
@@ -69,7 +72,7 @@ class LogicHandler {
     // initialize locks needed for remainder traversal
     const auto boxLength = logicHandlerInfo.boxMax - logicHandlerInfo.boxMin;
     const auto interactionLengthInv =
-        1. / (logicHandlerInfo.cutoff + logicHandlerInfo.verletSkinPerTimestep * logicHandlerInfo.rebuildFrequency);
+        1. / (logicHandlerInfo.cutoff + logicHandlerInfo.verletSkinPerTimestep * rebuildFrequency);
     initSpacialLocks(boxLength, interactionLengthInv);
     for (auto &lockPtr : _bufferLocks) {
       lockPtr = std::make_unique<std::mutex>();

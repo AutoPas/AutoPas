@@ -8,6 +8,7 @@
 #include <memory>
 #include <set>
 
+#include "autopas/LogicHandlerInfo.h"
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/options//ExtrapolationMethodOption.h"
 #include "autopas/options/AcquisitionFunctionOption.h"
@@ -23,6 +24,7 @@
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/tuning/AutoTuner.h"
 #include "autopas/tuning/Configuration.h"
+#include "autopas/tuning/tuningStrategy/TuningStrategyFactoryInfo.h"
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/WrapMPI.h"
@@ -117,7 +119,7 @@ class AutoPas {
    */
   void finalize() {
     if (not _externalMPICommunicator) {
-      AutoPas_MPI_Comm_free(&_autopasMPICommunicator);
+      AutoPas_MPI_Comm_free(&_tuningStrategyFactoryInfo.autopasMpiCommunicator);
     }
   }
 
@@ -533,10 +535,7 @@ class AutoPas {
    * This function only handles short-range interactions.
    * @return _verletSkin
    */
-  double getVerletSkin() {
-    double _verletSkin = AutoPas::_verletSkinPerTimestep * AutoPas::_verletRebuildFrequency;
-    return _verletSkin;
-  };
+  double getVerletSkin() { return _logicHandlerInfo.verletSkinPerTimestep * _verletRebuildFrequency; };
 
   /**
    * Returns the number of particles in this container.
@@ -573,19 +572,19 @@ class AutoPas {
    * Set coordinates of the lower corner of the domain.
    * @param boxMin
    */
-  void setBoxMin(const std::array<double, 3> &boxMin) { _boxMin = boxMin; }
+  void setBoxMin(const std::array<double, 3> &boxMin) { _logicHandlerInfo.boxMin = boxMin; }
 
   /**
    * Set coordinates of the upper corner of the domain.
    * @param boxMax
    */
-  void setBoxMax(const std::array<double, 3> &boxMax) { _boxMax = boxMax; }
+  void setBoxMax(const std::array<double, 3> &boxMax) { _logicHandlerInfo.boxMax = boxMax; }
 
   /**
    * Get cutoff radius.
    * @return
    */
-  [[nodiscard]] double getCutoff() const { return _cutoff; }
+  [[nodiscard]] double getCutoff() const { return _logicHandlerInfo.cutoff; }
 
   /**
    * Set cutoff radius.
@@ -593,10 +592,9 @@ class AutoPas {
    */
   void setCutoff(double cutoff) {
     if (cutoff <= 0.0) {
-      AutoPasLog(ERROR, "Cutoff <= 0.0: {}", cutoff);
-      utils::ExceptionHandler::exception("Error: Cutoff <= 0.0!");
+      utils::ExceptionHandler::exception("Error: Cutoff has to be positive {} <= 0.0!", cutoff);
     }
-    AutoPas::_cutoff = cutoff;
+    _logicHandlerInfo.cutoff = cutoff;
   }
 
   /**
@@ -611,10 +609,10 @@ class AutoPas {
    */
   void setAllowedCellSizeFactors(const NumberSet<double> &allowedCellSizeFactors) {
     if (allowedCellSizeFactors.getMin() <= 0.0) {
-      AutoPasLog(ERROR, "cell size <= 0.0");
-      utils::ExceptionHandler::exception("Error: cell size <= 0.0!");
+      utils::ExceptionHandler::exception("Error: minimum cell size factor has to be positive <= 0.0!",
+                                         allowedCellSizeFactors.getMin());
     }
-    AutoPas::_allowedCellSizeFactors = std::move(allowedCellSizeFactors.clone());
+    _allowedCellSizeFactors = std::move(allowedCellSizeFactors.clone());
   }
 
   /**
@@ -623,24 +621,23 @@ class AutoPas {
    */
   void setCellSizeFactor(double cellSizeFactor) {
     if (cellSizeFactor <= 0.0) {
-      AutoPasLog(ERROR, "cell size <= 0.0: {}", cellSizeFactor);
-      utils::ExceptionHandler::exception("Error: cell size <= 0.0!");
+      utils::ExceptionHandler::exception("Error: cell size factor has to be positive! {}<= 0.0!", cellSizeFactor);
     }
-    AutoPas::_allowedCellSizeFactors = std::make_unique<NumberSetFinite<double>>(std::set<double>{cellSizeFactor});
+    _allowedCellSizeFactors = std::make_unique<NumberSetFinite<double>>(std::set<double>{cellSizeFactor});
   }
 
   /**
    * Get length added to the cutoff for the Verlet lists' skin per timestep.
    * @return _verletSkinPerTimestep
    */
-  [[nodiscard]] double getVerletSkinPerTimestep() const { return _verletSkinPerTimestep; }
+  [[nodiscard]] double getVerletSkinPerTimestep() const { return _logicHandlerInfo.verletSkinPerTimestep; }
 
   /**
    * Set length added to the cutoff for the Verlet lists' skin per timestep.
    * @param verletSkinPerTimestep
    */
   void setVerletSkinPerTimestep(double verletSkinPerTimestep) {
-    AutoPas::_verletSkinPerTimestep = verletSkinPerTimestep;
+    _logicHandlerInfo.verletSkinPerTimestep = verletSkinPerTimestep;
   }
 
   /**
@@ -654,73 +651,77 @@ class AutoPas {
    * @param verletRebuildFrequency
    */
   void setVerletRebuildFrequency(unsigned int verletRebuildFrequency) {
-    AutoPas::_verletRebuildFrequency = verletRebuildFrequency;
+    _verletRebuildFrequency = verletRebuildFrequency;
   }
   /**
    * Get Verlet cluster size.
    * @return
    */
-  [[nodiscard]] unsigned int getVerletClusterSize() const { return _verletClusterSize; }
+  [[nodiscard]] unsigned int getVerletClusterSize() const { return _logicHandlerInfo.verletClusterSize; }
 
   /**
    * Set Verlet cluster size.
    * @param verletClusterSize
    */
-  void setVerletClusterSize(unsigned int verletClusterSize) { AutoPas::_verletClusterSize = verletClusterSize; }
+  void setVerletClusterSize(unsigned int verletClusterSize) { _logicHandlerInfo.verletClusterSize = verletClusterSize; }
 
   /**
    * Get tuning interval.
    * @return
    */
-  [[nodiscard]] unsigned int getTuningInterval() const { return _tuningInterval; }
+  [[nodiscard]] unsigned int getTuningInterval() const { return _autoTunerInfo.tuningInterval; }
 
   /**
    * Set tuning interval.
    * @param tuningInterval
    */
-  void setTuningInterval(unsigned int tuningInterval) { AutoPas::_tuningInterval = tuningInterval; }
+  void setTuningInterval(unsigned int tuningInterval) { _autoTunerInfo.tuningInterval = tuningInterval; }
 
   /**
    * Get number of samples taken per configuration during the tuning.
    * @return
    */
-  [[nodiscard]] unsigned int getNumSamples() const { return _numSamples; }
+  [[nodiscard]] unsigned int getNumSamples() const { return _autoTunerInfo.maxSamples; }
 
   /**
    * Set number of samples taken per configuration during the tuning.
    * @param numSamples
    */
-  void setNumSamples(unsigned int numSamples) { AutoPas::_numSamples = numSamples; }
+  void setNumSamples(unsigned int numSamples) { _autoTunerInfo.maxSamples = numSamples; }
 
   /**
    * Get maximum number of evidence for tuning
    * @return
    */
-  [[nodiscard]] unsigned int getMaxEvidence() const { return _maxEvidence; }
+  [[nodiscard]] unsigned int getMaxEvidence() const { return _tuningStrategyFactoryInfo.maxEvidence; }
 
   /**
    * Set maximum number of evidence for tuning
    * @param maxEvidence
    */
-  void setMaxEvidence(unsigned int maxEvidence) { AutoPas::_maxEvidence = maxEvidence; }
+  void setMaxEvidence(unsigned int maxEvidence) { _tuningStrategyFactoryInfo.maxEvidence = maxEvidence; }
 
   /**
    * Get the range for the optimum in which has to be to be tested
    * @return
    */
-  [[nodiscard]] double getRelativeOptimumRange() const { return _relativeOptimumRange; }
+  [[nodiscard]] double getRelativeOptimumRange() const { return _tuningStrategyFactoryInfo.relativeOptimumRange; }
 
   /**
    * Set the range for the optimum in which has to be to be tested
    * @param relativeOptimumRange
    */
-  void setRelativeOptimumRange(double relativeOptimumRange) { AutoPas::_relativeOptimumRange = relativeOptimumRange; }
+  void setRelativeOptimumRange(double relativeOptimumRange) {
+    _tuningStrategyFactoryInfo.relativeOptimumRange = relativeOptimumRange;
+  }
 
   /**
    * Get the maximum number of tuning phases a configuration can not be tested.
    * @return
    */
-  [[nodiscard]] unsigned int getMaxTuningPhasesWithoutTest() const { return _maxTuningPhasesWithoutTest; }
+  [[nodiscard]] unsigned int getMaxTuningPhasesWithoutTest() const {
+    return _tuningStrategyFactoryInfo.maxTuningPhasesWithoutTest;
+  }
 
   /**
    * For Predictive tuning: Set the relative cutoff for configurations to be blacklisted.
@@ -728,7 +729,7 @@ class AutoPas {
    * @param maxTuningPhasesWithoutTest
    */
   void setMaxTuningPhasesWithoutTest(unsigned int maxTuningPhasesWithoutTest) {
-    AutoPas::_maxTuningPhasesWithoutTest = maxTuningPhasesWithoutTest;
+    _tuningStrategyFactoryInfo.maxTuningPhasesWithoutTest = maxTuningPhasesWithoutTest;
   }
 
   /**
@@ -736,14 +737,14 @@ class AutoPas {
    * E.g. 2.5 means all configurations that take 2.5x the time of the optimum are blacklisted.
    * @return
    */
-  [[nodiscard]] double getRelativeBlacklistRange() const { return _relativeBlacklistRange; }
+  [[nodiscard]] double getRelativeBlacklistRange() const { return _tuningStrategyFactoryInfo.relativeBlacklistRange; }
 
   /**
    * Set the range of the configurations that are not going to be blacklisted.
    * @param relativeBlacklistRange
    */
   void setRelativeBlacklistRange(double relativeBlacklistRange) {
-    AutoPas::_relativeBlacklistRange = relativeBlacklistRange;
+    _tuningStrategyFactoryInfo.relativeBlacklistRange = relativeBlacklistRange;
   }
 
   /**
@@ -751,7 +752,9 @@ class AutoPas {
    * calculated.
    * @return
    */
-  [[nodiscard]] unsigned int getEvidenceFirstPrediction() const { return _evidenceFirstPrediction; }
+  [[nodiscard]] unsigned int getEvidenceFirstPrediction() const {
+    return _tuningStrategyFactoryInfo.minNumberOfEvidence;
+  }
 
   /**
    * Set the number of tests that need to have happened for a configuration until the first predictions are going to be
@@ -759,14 +762,16 @@ class AutoPas {
    * @param evidenceFirstPrediction
    */
   void setEvidenceFirstPrediction(unsigned int evidenceFirstPrediction) {
-    AutoPas::_evidenceFirstPrediction = evidenceFirstPrediction;
+    _tuningStrategyFactoryInfo.minNumberOfEvidence = evidenceFirstPrediction;
   }
 
   /**
    * Get acquisition function used for tuning
    * @return
    */
-  [[nodiscard]] AcquisitionFunctionOption getAcquisitionFunction() const { return _acquisitionFunctionOption; }
+  [[nodiscard]] AcquisitionFunctionOption getAcquisitionFunction() const {
+    return _tuningStrategyFactoryInfo.acquisitionFunctionOption;
+  }
 
   /**
    * Set acquisition function for tuning.
@@ -774,34 +779,40 @@ class AutoPas {
    * @note This function is only relevant for the bayesian based searches.
    * @param acqFun acquisition function
    */
-  void setAcquisitionFunction(AcquisitionFunctionOption acqFun) { AutoPas::_acquisitionFunctionOption = acqFun; }
+  void setAcquisitionFunction(AcquisitionFunctionOption acqFun) {
+    _tuningStrategyFactoryInfo.acquisitionFunctionOption = acqFun;
+  }
 
   /**
    * Get extrapolation method for the prediction of the configuration performance.
    * @return
    */
-  ExtrapolationMethodOption getExtrapolationMethodOption() const { return _extrapolationMethodOption; }
+  ExtrapolationMethodOption getExtrapolationMethodOption() const {
+    return _tuningStrategyFactoryInfo.extrapolationMethodOption;
+  }
 
   /**
    * Set extrapolation method for the prediction of the configuration performance.
    * @param extrapolationMethodOption
    */
   void setExtrapolationMethodOption(ExtrapolationMethodOption extrapolationMethodOption) {
-    AutoPas::_extrapolationMethodOption = extrapolationMethodOption;
+    _tuningStrategyFactoryInfo.extrapolationMethodOption = extrapolationMethodOption;
   }
 
   /**
    * Get the selector configuration strategy.
    * @return
    */
-  [[nodiscard]] SelectorStrategyOption getSelectorStrategy() const { return _selectorStrategy; }
+  [[nodiscard]] SelectorStrategyOption getSelectorStrategy() const { return _autoTunerInfo.selectorStrategy; }
 
   /**
    * Set the strategy of how to select a performance value for a piece of evidence from multiple time measurements
    * (=samples). For possible selector strategy choices see options::SelectorStrategyOption::Value.
    * @param selectorStrategy
    */
-  void setSelectorStrategy(SelectorStrategyOption selectorStrategy) { AutoPas::_selectorStrategy = selectorStrategy; }
+  void setSelectorStrategy(SelectorStrategyOption selectorStrategy) {
+    _autoTunerInfo.selectorStrategy = selectorStrategy;
+  }
 
   /**
    * Get the list of allowed load estimation algorithms.
@@ -811,11 +822,11 @@ class AutoPas {
 
   /**
    * Set the list of allowed load estimation algorithms.
-   * For possible container choices see AutoPas::LoadEstimatorOption.
+   * For possible container choices see LoadEstimatorOption.
    * @param allowedLoadEstimators
    */
   void setAllowedLoadEstimators(const std::set<LoadEstimatorOption> &allowedLoadEstimators) {
-    AutoPas::_allowedLoadEstimators = allowedLoadEstimators;
+    _allowedLoadEstimators = allowedLoadEstimators;
   }
 
   /**
@@ -830,7 +841,7 @@ class AutoPas {
    * @param allowedContainers
    */
   void setAllowedContainers(const std::set<ContainerOption> &allowedContainers) {
-    AutoPas::_allowedContainers = allowedContainers;
+    _allowedContainers = allowedContainers;
   }
 
   /**
@@ -845,7 +856,7 @@ class AutoPas {
    * @param allowedTraversals
    */
   void setAllowedTraversals(const std::set<TraversalOption> &allowedTraversals) {
-    AutoPas::_allowedTraversals = allowedTraversals;
+    _allowedTraversals = allowedTraversals;
   }
 
   /**
@@ -860,7 +871,7 @@ class AutoPas {
    * @param allowedDataLayouts
    */
   void setAllowedDataLayouts(const std::set<DataLayoutOption> &allowedDataLayouts) {
-    AutoPas::_allowedDataLayouts = allowedDataLayouts;
+    _allowedDataLayouts = allowedDataLayouts;
   }
 
   /**
@@ -875,7 +886,7 @@ class AutoPas {
    * @param allowedNewton3Options
    */
   void setAllowedNewton3Options(const std::set<Newton3Option> &allowedNewton3Options) {
-    AutoPas::_allowedNewton3Options = allowedNewton3Options;
+    _allowedNewton3Options = allowedNewton3Options;
   }
   /**
    * Getter for the currently selected configuration.
@@ -905,20 +916,24 @@ class AutoPas {
    * For possible tuning metric choices see options::TuningMetricOption::Value.
    * @param tuningMetricOption
    */
-  void setTuningMetricOption(TuningMetricOption tuningMetricOption) { _tuningMetricOption = tuningMetricOption; }
+  void setTuningMetricOption(TuningMetricOption tuningMetricOption) {
+    _autoTunerInfo.tuningMetric = tuningMetricOption;
+  }
 
   /**
    * Setter for the mpi strategy option
    * @param mpiStrategyOption
    */
-  void setMPIStrategy(MPIStrategyOption mpiStrategyOption) { _mpiStrategyOption = mpiStrategyOption; }
+  void setMPIStrategy(MPIStrategyOption mpiStrategyOption) {
+    _tuningStrategyFactoryInfo.mpiStrategyOption = mpiStrategyOption;
+  }
 
   /**
    * Setter for the maximal Difference for the bucket distribution
    * @param MPITuningMaxDifferenceForBucket
    */
   void setMPITuningMaxDifferenceForBucket(double MPITuningMaxDifferenceForBucket) {
-    _mpiTuningMaxDifferenceForBucket = MPITuningMaxDifferenceForBucket;
+    _tuningStrategyFactoryInfo.mpiTuningMaxDifferenceForBucket = MPITuningMaxDifferenceForBucket;
   }
 
   /**
@@ -926,7 +941,7 @@ class AutoPas {
    * @param MPITuningWeightForMaxDensity
    */
   void setMPITuningWeightForMaxDensity(double MPITuningWeightForMaxDensity) {
-    _mpiTuningWeightForMaxDensity = MPITuningWeightForMaxDensity;
+    _tuningStrategyFactoryInfo.mpiTuningWeightForMaxDensity = MPITuningWeightForMaxDensity;
   }
 
 // Only define the interface for the MPI communicator if AUTOPAS_INCLUDE_MPI=ON
@@ -937,13 +952,13 @@ class AutoPas {
    * If not set, MPI_COMM_WORLD will be used.
    * @param comm: communicator (handle)
    */
-  void setMPICommunicator(MPI_Comm comm) { _autopasMPICommunicator = comm; }
+  void setMPICommunicator(MPI_Comm comm) { _tuningStrategyFactoryInfo.autopasMpiCommunicator = comm; }
 
   /**
    * Getter for the AutoPas MPI communicator
    * @return communicator
    */
-  MPI_Comm getMPICommunicator() { return _autopasMPICommunicator; }
+  MPI_Comm getMPICommunicator() { return _tuningStrategyFactoryInfo.autopasMpiCommunicator; }
 #endif
 
   /**
@@ -957,190 +972,85 @@ class AutoPas {
    * Set if the tuning information should be logged to a file. It can then be replayed to test other tuning strategies.
    * @param useTuningLogger
    */
-  void setUseTuningLogger(bool useTuningLogger) { _useTuningLogger = useTuningLogger; }
+  void setUseTuningLogger(bool useTuningLogger) { _autoTunerInfo.useTuningStrategyLoggerProxy = useTuningLogger; }
 
   /**
    * Set rule file name for the RuleBasedTuning.
    * @param ruleFileName The name of the rule file to use during rule based tuning.
    */
-  void setRuleFileName(const std::string &ruleFileName) { _ruleFileName = ruleFileName; }
+  void setRuleFileName(const std::string &ruleFileName) { _tuningStrategyFactoryInfo.ruleFileName = ruleFileName; }
 
  private:
   autopas::ParticleContainerInterface<Particle> &getContainer();
 
   const autopas::ParticleContainerInterface<Particle> &getContainer() const;
-
   /**
-   * Lower corner of the container.
+   * Information needed for TuningStrategyFactory::generateTuningStrategy().
    */
-  std::array<double, 3> _boxMin{0, 0, 0};
+  TuningStrategyFactoryInfo _tuningStrategyFactoryInfo{};
   /**
-   * Upper corner of the container.
+   * Information needed for the AutoTuner.
    */
-  std::array<double, 3> _boxMax{0, 0, 0};
+  AutoTunerInfo _autoTunerInfo{};
   /**
-   * Cutoff radius to be used in this container.
+   * Information needed for the LogicHandler.
    */
-  double _cutoff{1.0};
-  /**
-   * Length added to the cutoff for the Verlet lists' skin per Timestep.
-   */
-  double _verletSkinPerTimestep{0.01};
+  LogicHandlerInfo _logicHandlerInfo{};
   /**
    * Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
    */
   unsigned int _verletRebuildFrequency{20};
   /**
-   * Specifies the size of clusters for Verlet lists.
-   */
-  unsigned int _verletClusterSize{4};
-  /**
-   * Number of timesteps after which the auto-tuner shall reevaluate all selections.
-   */
-  unsigned int _tuningInterval{5000};
-  /**
-   * Number of samples the tuner should collect for each combination.
-   */
-  unsigned int _numSamples{3};
-  /**
-   * Tuning Strategies which work on a fixed number of evidence should use this value.
-   */
-  unsigned int _maxEvidence{10};
-  /**
-   * Specifies the factor of the range of the optimal configurations in PredicitveTuning.
-   */
-  double _relativeOptimumRange{1.2};
-  /**
-   * Specifies how many tuning phases a configuration can not be tested in PredicitveTuning.
-   */
-  unsigned int _maxTuningPhasesWithoutTest{5};
-  /**
-   * The relative cutoff for configurations to be blacklisted.
-   * E.g. 2.5 means all configurations that take 2.5x the time of the optimum are blacklisted.
-   */
-  double _relativeBlacklistRange{0};
-  /**
-   * Specifies how many tests that need to have happened for a configuration until the first prediction is calculated in
-   * PredictiveTuning.
-   */
-  unsigned int _evidenceFirstPrediction{3};
-  /**
-   * Acquisition function used for tuning.
-   * For possible acquisition function choices see options::AcquisitionFunction::Value.
-   */
-  AcquisitionFunctionOption _acquisitionFunctionOption{AcquisitionFunctionOption::upperConfidenceBound};
-
-  /**
-   * Extrapolation method used in predictiveTuning.
-   * For possible extrapolation method choices see autopas/options/ExtrapolationMethodOption.
-   */
-  ExtrapolationMethodOption _extrapolationMethodOption{ExtrapolationMethodOption::linearRegression};
-
-  /**
    * Strategy option for the auto tuner.
    * For possible tuning strategy choices see options::TuningStrategyOption::Value.
    */
   std::vector<TuningStrategyOption> _tuningStrategyOptions{};
-
-  /**
-   * Strategy option for the auto tuner.
-   * For possible tuning strategy choices see options::TuningStrategyOption::Value.
-   */
-  TuningMetricOption _tuningMetricOption{TuningMetricOption::time};
-
-  /**
-   * Strategy for the configuration selector.
-   * For possible selector strategies see options::SelectorStrategyOption::Value.
-   */
-  SelectorStrategyOption _selectorStrategy{SelectorStrategyOption::fastestAbs};
-
   /**
    * List of container types AutoPas can choose from.
    * For possible container choices see options::ContainerOption::Value.
    */
   std::set<ContainerOption> _allowedContainers{ContainerOption::getMostOptions()};
-
   /**
    * List of traversals AutoPas can choose from.
    * For possible traversal choices see options::TraversalOption::Value.
    */
   std::set<TraversalOption> _allowedTraversals{TraversalOption::getMostOptions()};
-
   /**
    * List of data layouts AutoPas can choose from.
    * For possible data layout choices see options::DataLayoutOption::Value.
    */
   std::set<DataLayoutOption> _allowedDataLayouts{DataLayoutOption::getMostOptions()};
-
   /**
    * Whether AutoPas is allowed to exploit Newton's third law of motion.
    */
   std::set<Newton3Option> _allowedNewton3Options{Newton3Option::getMostOptions()};
-
-  /**
-   * Whether the chosen tuning strategy will be parallelized by MPI
-   */
-  MPIStrategyOption _mpiStrategyOption{MPIStrategyOption::noMPI};
-
-  /**
-   * For MPI-tuning: Maximum of the relative difference in the comparison metric for two ranks which exchange their
-   * tuning information.
-   */
-  double _mpiTuningMaxDifferenceForBucket{0.3};
-
-  /**
-   * For MPI-tuning: Weight for maxDensity in the calculation for bucket distribution.
-   */
-  double _mpiTuningWeightForMaxDensity{0.0};
-
   /**
    * Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and VerletListsCells).
    */
   std::unique_ptr<NumberSet<double>> _allowedCellSizeFactors{
       std::make_unique<NumberSetFinite<double>>(std::set<double>({1.}))};
-
-  /***
+  /**
    * Load estimation algorithm to be used for efficient parallelisation (only relevant for LCSlicedBalancedTraversal and
    * VLCSlicedBalancedTraversal).
    */
   std::set<LoadEstimatorOption> _allowedLoadEstimators{LoadEstimatorOption::getAllOptions()};
-
   /**
    * LogicHandler of autopas.
    */
   std::unique_ptr<autopas::LogicHandler<Particle>> _logicHandler;
-
   /**
    * This is the AutoTuner that owns the container, ...
    */
   std::unique_ptr<autopas::AutoTuner> _autoTuner;
-
-  /**
-   * Communicator that should be used for MPI calls inside of AutoPas
-   */
-  AutoPas_MPI_Comm _autopasMPICommunicator{AUTOPAS_MPI_COMM_NULL};
-
   /**
    * Stores whether the mpi communicator was provided externally or not
    */
   bool _externalMPICommunicator{false};
-
   /**
    * Suffix for all output files produced by this instance of AutoPas, e.g. from csv loggers.
    * This is useful when multiple instances of AutoPas exist, especially in an MPI context.
    */
   std::string _outputSuffix{""};
-
-  /**
-   * Stores whether to use the TuningStrategyLoggerProxy.
-   */
-  bool _useTuningLogger;
-
-  /**
-   * The filename of the .rule file for the RuleBasedTuning.
-   */
-  std::string _ruleFileName{"tuningRules.rule"};
-
   /**
    * Helper function to reduce code duplication for all forms of addParticle while minimizing overhead through loops.
    * Triggers reserve() and provides a parallel loop with deliberate scheduling.

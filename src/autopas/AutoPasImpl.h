@@ -14,16 +14,13 @@
 
 #include "autopas/AutoPasDecl.h"
 #include "autopas/InstanceCounter.h"
-#include "autopas/LogicHandlerInfo.h"
 #include "autopas/Version.h"
-#include "autopas/tuning/tuningStrategy/TuningStrategyFactoryInfo.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
 #include "autopas/utils/CompileInfo.h"
 
 // These next three includes have dependencies to all of AutoPas and thus are moved here from AutoPasDecl.h.
 #include "autopas/LogicHandler.h"
-#include "autopas/tuning/AutoTuner.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyFactory.h"
 
 namespace autopas {
@@ -62,53 +59,33 @@ template <class Particle>
 void AutoPas<Particle>::init() {
   AutoPasLog(INFO, "AutoPas Version: {}", AutoPas_VERSION);
   AutoPasLog(INFO, "Compiled with  : {}", utils::CompileInfo::getCompilerInfo());
-  if (_numSamples % _verletRebuildFrequency != 0) {
+  if (_autoTunerInfo.maxSamples % _verletRebuildFrequency != 0) {
     AutoPasLog(WARN,
                "Number of samples ({}) is not a multiple of the rebuild frequency ({}). This can lead to problems "
                "when multiple AutoPas instances interact (e.g. via MPI).",
-               _numSamples, _verletRebuildFrequency);
+               _autoTunerInfo.maxSamples, _verletRebuildFrequency);
   }
 
-  if (_autopasMPICommunicator == AUTOPAS_MPI_COMM_NULL) {
-    AutoPas_MPI_Comm_dup(AUTOPAS_MPI_COMM_WORLD, &_autopasMPICommunicator);
+  if (_tuningStrategyFactoryInfo.autopasMpiCommunicator == AUTOPAS_MPI_COMM_NULL) {
+    AutoPas_MPI_Comm_dup(AUTOPAS_MPI_COMM_WORLD, &_tuningStrategyFactoryInfo.autopasMpiCommunicator);
   } else {
     _externalMPICommunicator = true;
   }
 
-  // TODO: make this a member
-  const AutoTunerInfo autoTunerInfo{
-      _selectorStrategy,       _tuningMetricOption, _tuningInterval,  _numSamples,
-      _verletRebuildFrequency, _outputSuffix,       _useTuningLogger,
-  };
   const auto searchSpace = SearchSpaceGenerators::optionCrossProduct(
       _allowedContainers, _allowedTraversals, _allowedLoadEstimators, _allowedDataLayouts, _allowedNewton3Options,
       _allowedCellSizeFactors->clone());
 
-  // TODO: make this a member
-  const TuningStrategyFactoryInfo tuningStrategyFactoryInfo{
-      _maxEvidence,
-      _extrapolationMethodOption,
-      _relativeOptimumRange,
-      _maxTuningPhasesWithoutTest,
-      _evidenceFirstPrediction,
-      _relativeBlacklistRange,
-      _acquisitionFunctionOption,
-      _ruleFileName,
-      _mpiStrategyOption,
-      _mpiTuningMaxDifferenceForBucket,
-      _mpiTuningWeightForMaxDensity,
-      _autopasMPICommunicator,
-  };
-
   std::vector<std::unique_ptr<TuningStrategyInterface>> tuningStrategies;
   for (const auto &strategy : _tuningStrategyOptions) {
-    tuningStrategies.emplace_back(
-        TuningStrategyFactory::generateTuningStrategy(searchSpace, strategy, tuningStrategyFactoryInfo, _outputSuffix));
+    tuningStrategies.emplace_back(TuningStrategyFactory::generateTuningStrategy(
+        searchSpace, strategy, _tuningStrategyFactoryInfo, _outputSuffix));
   }
-  _autoTuner = std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo);
-  LogicHandlerInfo logicHandlerInfo{
-      _boxMin, _boxMax, _cutoff, _verletSkinPerTimestep, _verletRebuildFrequency, _verletClusterSize, _outputSuffix};
-  _logicHandler = std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(*_autoTuner, logicHandlerInfo);
+  _autoTuner = std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, _autoTunerInfo,
+                                                    _verletRebuildFrequency, _outputSuffix);
+
+  _logicHandler = std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(
+      *_autoTuner, _logicHandlerInfo, _verletRebuildFrequency, _outputSuffix);
 }
 
 template <class Particle>
@@ -209,8 +186,8 @@ std::vector<Particle> AutoPas<Particle>::updateContainer() {
 template <class Particle>
 std::vector<Particle> AutoPas<Particle>::resizeBox(const std::array<double, 3> &boxMin,
                                                    const std::array<double, 3> &boxMax) {
-  _boxMin = boxMin;
-  _boxMax = boxMax;
+  _logicHandlerInfo.boxMin = boxMin;
+  _logicHandlerInfo.boxMax = boxMax;
   return _logicHandler->resizeBox(boxMin, boxMax);
 }
 

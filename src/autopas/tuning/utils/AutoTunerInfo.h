@@ -31,14 +31,6 @@ struct AutoTunerInfo {
    */
   unsigned int maxSamples{3};
   /**
-   * The verlet rebuild frequency this AutoPas instance uses.
-   */
-  unsigned int rebuildFrequency{10};
-  /**
-   * Suffix for all output files produced by this class.
-   */
-  std::string outputSuffix{};
-  /**
    * Whether to use the tuning strategy logger proxy to log tuning information.
    */
   bool useTuningStrategyLoggerProxy{false};

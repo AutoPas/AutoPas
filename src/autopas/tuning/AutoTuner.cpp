@@ -7,7 +7,6 @@
 #include "AutoTuner.h"
 
 #include <algorithm>
-#include <functional>
 #include <iterator>
 #include <numeric>
 #include <vector>
@@ -22,16 +21,17 @@
 
 namespace autopas {
 AutoTuner::AutoTuner(std::vector<std::unique_ptr<TuningStrategyInterface>> &tuningStrategies,
-                     const std::set<Configuration> &searchSpace, const AutoTunerInfo &info)
+                     const std::set<Configuration> &searchSpace, const AutoTunerInfo &info,
+                     unsigned int rebuildFrequency, const std::string &outputSuffix)
     : _selectorStrategy(info.selectorStrategy),
-      _tuningStrategies(info.useTuningStrategyLoggerProxy ? wrapTuningStrategies(tuningStrategies, info.outputSuffix)
+      _tuningStrategies(info.useTuningStrategyLoggerProxy ? wrapTuningStrategies(tuningStrategies, outputSuffix)
                                                           : std::move(tuningStrategies)),
       _iteration(0),
       _tuningInterval(info.tuningInterval),
       _iterationsSinceTuning(info.tuningInterval),  // init to max so that tuning happens in first iteration
       _tuningMetric(info.tuningMetric),
       _energyMeasurementPossible(initEnergy()),
-      _rebuildFrequency(info.rebuildFrequency),
+      _rebuildFrequency(rebuildFrequency),
       _maxSamples(info.maxSamples),
       _needsHomogeneityAndMaxDensity(std::transform_reduce(
           tuningStrategies.begin(), tuningStrategies.end(), false, std::logical_or(),
@@ -41,8 +41,8 @@ AutoTuner::AutoTuner(std::vector<std::unique_ptr<TuningStrategyInterface>> &tuni
       _samplesNotRebuildingNeighborLists(info.maxSamples),
       _searchSpace(searchSpace),
       _configQueue(searchSpace.begin(), searchSpace.end()),
-      _tuningResultLogger(info.outputSuffix),
-      _tuningDataLogger(info.maxSamples, info.outputSuffix) {
+      _tuningResultLogger(outputSuffix),
+      _tuningDataLogger(info.maxSamples, outputSuffix) {
   _homogeneitiesOfLastTenIterations.reserve(10);
   _maxDensitiesOfLastTenIterations.reserve(10);
   if (_searchSpace.empty()) {
