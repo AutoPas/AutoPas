@@ -221,10 +221,10 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
             ss << currentConfig << " : ";
             // print all timings
             ss << utils::ArrayUtils::to_string(_samplesRebuildingNeighborLists, " ",
-                                               {"With rebuilding neighbor lists [ ", " ]"});
+                                               {"With rebuilding neighbor lists [ ", " ] "});
             ss << utils::ArrayUtils::to_string(_samplesNotRebuildingNeighborLists, " ",
-                                               {"Without rebuilding neighbor lists [ ", " ]"});
-            ss << " Smoothed value: " << smoothedValue;
+                                               {"Without rebuilding neighbor lists [ ", " ] "});
+            ss << "Smoothed value: " << smoothedValue;
             return ss.str();
           }());
 
