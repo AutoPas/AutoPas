@@ -239,16 +239,17 @@ class AutoTuner {
 
   /**
    * Counter for the current simulation iteration.
+   * The first iteration has number 0.
    */
   size_t _iteration{0};
 
   /**
    * The number of the current tuning phase.
    * If we are currently between phases this is the number of the last phase.
-   * Initialize as 1 because we immediately start out with a tuning phase.
+   * The first tuning phase has number 0.
    * See bumpIterationCounters() for more details.
    */
-  size_t _tuningPhase{1};
+  size_t _tuningPhase{0};
 
   /**
    * Number of iterations between two tuning phases.

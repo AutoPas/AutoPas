@@ -73,6 +73,7 @@ class Simulation {
 
   /**
    * Number of completed iterations. Aka. number of current iteration.
+   * The first iteration has number 0.
    */
   size_t _iteration = 0;
 
