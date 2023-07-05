@@ -157,11 +157,6 @@ class LJFunctorSVE
       double upot = epsilon24 * lj12m6 + shift6;
 
       const int threadnum = autopas_get_thread_num();
-      // for non-newton3 the division is in the post-processing step.
-      if (newton3) {
-        upot *= 0.5;
-        virial *= (double)0.5;
-      }
       if (i.isOwned()) {
         if (newton3) {
           _aosThreadData[threadnum].upotSumN3 += upot * 0.5;
