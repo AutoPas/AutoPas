@@ -261,7 +261,7 @@ class LJFunctorSVE
         pg_3 = svwhilelt_b64(j_3, i);
         pg_4 = svwhilelt_b64(j_4, i);
 
-        SoAKernel<newton3, false>(j, ownedStatePtr[i] == OwnershipState::owned,
+        SoAKernel<true, false>(j, ownedStatePtr[i] == OwnershipState::owned,
                                   reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr, zptr, fxptr,
                                   fyptr, fzptr, &typeIDptr[i], typeIDptr, fxacc, fyacc, fzacc, virialSumX, virialSumY,
                                   virialSumZ, upotSum, pg_1, svundef_u64(), pg_2, svundef_u64(), pg_3, svundef_u64(),
