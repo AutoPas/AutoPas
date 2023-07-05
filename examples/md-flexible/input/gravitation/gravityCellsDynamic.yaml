@@ -38,7 +38,7 @@ thermostat:
   thermostatInterval             :  10
   addBrownianMotion              :  true
 vtk-filename                     :  gravityDynamicCells
-vtk-write-frequency              :  100
+vtk-write-frequency              :  1000000
 no-flops                         :  false
 no-end-config                    :  true
 log-level                        :  error
