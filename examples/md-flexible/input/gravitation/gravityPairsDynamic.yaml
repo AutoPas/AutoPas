@@ -1,0 +1,45 @@
+container                        :  [DynamicPairwiseVerletLists]
+verlet-rebuild-frequency         :  1000
+verlet-skin-radius-per-timestep  :  0.0006
+verlet-cluster-size              :  4
+selector-strategy                :  Fastest-Absolute-Value
+data-layout                      :  [AoS]
+traversal                        :  [ vlp_c01, vlp_c18, vlp_sliced, vlp_sliced_balanced, vlp_sliced_c02 ] # Please see AllOptions.yaml for a comprehensive list of traversals
+tuning-strategy                  :  full-Search
+tuning-interval                  :  2500
+tuning-samples                   :  3
+tuning-max-evidence              :  10
+functor                          :  Lennard-Jones avx
+newton3                          :  [enabled]
+cutoff                           :  3
+box-min                          :  [0, 0, 0]
+box-max                          :  [200, 200, 85]
+cell-size                        :  [1]
+deltaT                           :  0.0005
+iterations                       :  10000
+boundary-type                    :  [reflective,reflective,reflective]
+globalForce                      :  [0,0,-12]
+Objects:
+  # "water"
+  CubeClosestPacked:
+    0:
+      particle-spacing           : 1
+      bottomLeftCorner           : [ 75, 75, 10 ]
+      box-length                 : [ 50, 50, 30 ]
+      velocity                   : [ 0, 0, 0 ]
+      particle-type              : 0
+      particle-epsilon           : 1
+      particle-sigma             : 1
+      particle-mass              : 1
+thermostat:
+  initialTemperature             :  50
+  targetTemperature              :  5
+  deltaTemperature               :  0.25
+  thermostatInterval             :  10
+  addBrownianMotion              :  true
+vtk-filename                     :  gravityDynamicPairs
+vtk-write-frequency              :  100
+no-flops                         :  false
+no-end-config                    :  true
+log-level                        :  error
+fast-particle-warn               :  false
