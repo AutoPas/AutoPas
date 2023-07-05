@@ -345,9 +345,8 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVEAoS(bool newton3, bool doDelet
   EXPECT_NEAR(ljFunctorSVE.getUpot(), ljFunctorNoSVE.getUpot(), tolerance) << "global uPot";
   EXPECT_NEAR(ljFunctorSVE.getVirial(), ljFunctorNoSVE.getVirial(), tolerance) << "global virial";
 }
-* /
 
-    TEST_P(LJFunctorSVETest, testLJFunctorVSLJFunctorSVEAoS) {
+TEST_P(LJFunctorSVETest, testLJFunctorVSLJFunctorSVEAoS) {
   auto [newton3, doDeleteSomeParticle] = GetParam();
   testLJFunctorVSLJFunctorSVEAoS(newton3, doDeleteSomeParticle);
 }
