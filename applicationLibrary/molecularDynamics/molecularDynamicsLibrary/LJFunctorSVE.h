@@ -61,7 +61,7 @@ class LJFunctorSVE
    */
   explicit LJFunctorSVE(double cutoff, void * /*dummy*/)
 #ifdef __ARM_FEATURE_SVE
-      : Functor<Particle,
+    : autopas::Functor<Particle,
                 LJFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
         _cutoffSquaredAoS(cutoff * cutoff),

@@ -79,7 +79,7 @@ struct LJFunAVXShiftNoMixGlob : public LJFunAVXMol<true, false, true> {
 #include "molecularDynamicsLibrary/LJFunctorSVE.h"
 
 template <bool shift, bool mixing, bool globals>
-using LJFunSVEMol = autopas::LJFunctorSVE<Molecule, shift, mixing, autopas::FunctorN3Modes::Both, globals>;
+using LJFunSVEMol = mdLib::LJFunctorSVE<Molecule, shift, mixing, autopas::FunctorN3Modes::Both, globals>;
 
 struct LJFunSVEShiftMixGlob : public LJFunSVEMol<true, true, true> {
   using LJFunSVEMol<true, true, true>::LJFunctorSVE;
