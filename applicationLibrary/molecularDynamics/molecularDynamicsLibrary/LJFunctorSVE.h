@@ -70,7 +70,7 @@ class LJFunctorSVE
         _aosThreadData(),
         _postProcessed{false} {
     if (calculateGlobals) {
-      _aosThreadData.resize(autopas_get_max_threads());
+      _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
   }
 #else
@@ -237,12 +237,12 @@ class LJFunctorSVE
     // reverse outer loop s.th. inner loop always beginns at aligned array start
     // typecast to detect underflow
     for (size_t i = soa.getNumberOfParticles() - 1; (long)i >= 0; --i) {
-      if (ownedStatePtr[i] == OwnershipState::dummy) {
+      if (ownedStatePtr[i] == autopas::OwnershipState::dummy) {
         // If the i-th particle is a dummy, skip this loop iteration.
         continue;
       }
 
-      static_assert(std::is_same_v<std::underlying_type_t<OwnershipState>, int64_t>,
+      static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int64_t>,
                     "OwnershipStates underlying type should be int64_t!");
 
       svfloat64_t fxacc = svdup_f64(0.0);
@@ -264,7 +264,7 @@ class LJFunctorSVE
         pg_3 = svwhilelt_b64(j_3, i);
         pg_4 = svwhilelt_b64(j_4, i);
 
-        SoAKernel<true, false>(j, ownedStatePtr[i] == OwnershipState::owned,
+        SoAKernel<true, false>(j, ownedStatePtr[i] == autopas::OwnershipState::owned,
                                reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr, zptr, fxptr,
                                fyptr, fzptr, &typeIDptr[i], typeIDptr, fxacc, fyacc, fzacc, virialSumX, virialSumY,
                                virialSumZ, potentialEnergySum, pg_1, svundef_u64(), pg_2, svundef_u64(), pg_3,
@@ -277,7 +277,7 @@ class LJFunctorSVE
     }
 
     if constexpr (calculateGlobals) {
-      const int threadnum = autopas_get_thread_num();
+      const int threadnum = autopas::autopas_get_thread_num();
 
       // we assume newton3 to be enabled in this function call, thus we multiply by two if the value of newton3 is
       // false, since for newton3 disabled we divide by two later on.
@@ -329,7 +329,7 @@ class LJFunctorSVE
     const auto vecLength = (unsigned int)svlen_f64(potentialEnergySum);
 
     for (unsigned int i = 0; i < soa1.getNumberOfParticles(); ++i) {
-      if (ownedStatePtr1[i] == OwnershipState::dummy) {
+      if (ownedStatePtr1[i] == autopas::OwnershipState::dummy) {
         // If the i-th particle is a dummy, skip this loop iteration.
         continue;
       }
@@ -338,7 +338,7 @@ class LJFunctorSVE
       svfloat64_t fyacc = svdup_f64(0.0);
       svfloat64_t fzacc = svdup_f64(0.0);
 
-      static_assert(std::is_same_v<std::underlying_type_t<OwnershipState>, int64_t>,
+      static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int64_t>,
                     "OwnershipStates underlying type should be int64_t!");
 
       const svfloat64_t x1 = svdup_f64(x1ptr[i]);
@@ -356,7 +356,7 @@ class LJFunctorSVE
         pg_3 = svwhilelt_b64(j_3, (unsigned int)soa2.getNumberOfParticles());
         pg_4 = svwhilelt_b64(j_4, (unsigned int)soa2.getNumberOfParticles());
 
-        SoAKernel<newton3, false>(j, ownedStatePtr1[i] == OwnershipState::owned,
+        SoAKernel<newton3, false>(j, ownedStatePtr1[i] == autopas::OwnershipState::owned,
                                   reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr, y2ptr, z2ptr,
                                   fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc, fyacc, fzacc, virialSumX,
                                   virialSumY, virialSumZ, potentialEnergySum, pg_1, svundef_u64(), pg_2, svundef_u64(),
@@ -369,7 +369,7 @@ class LJFunctorSVE
     }
 
     if constexpr (calculateGlobals) {
-      const int threadnum = autopas_get_thread_num();
+      const int threadnum = autopas::autopas_get_thread_num();
 
       if (newton3) {
         _aosThreadData[threadnum].potentialEnergySumN3 += svaddv_f64(svptrue_b64(), potentialEnergySum) * 0.5;
@@ -408,7 +408,7 @@ class LJFunctorSVE
     const svbool_t cutoffMask = svcmple(pg, dr2, _cutoffSquared);
 
     ownedStateJ = (indexed) ? svld1_gather_index(pg, ownedStatePtr2, index) : svld1(pg, &ownedStatePtr2[j]);
-    const svbool_t dummyMask = svcmpne(pg, ownedStateJ, (int64_t)OwnershipState::dummy);
+    const svbool_t dummyMask = svcmpne(pg, ownedStateJ, (int64_t)autopas::OwnershipState::dummy);
     return svand_z(pg, cutoffMask, dummyMask);
   }
 
@@ -495,7 +495,7 @@ class LJFunctorSVE
       svfloat64_t energyFactor = svdup_f64(ownedStateIisOwned ? 1.0 : 0.0);
 
       if constexpr (newton3) {
-        svbool_t ownedMaskJ = svcmpeq(pgC, ownedStateJ, (int64_t)OwnershipState::owned);
+        svbool_t ownedMaskJ = svcmpeq(pgC, ownedStateJ, (int64_t)autopas::OwnershipState::owned);
         energyFactor = svadd_m(ownedMaskJ, energyFactor, 1.0);
       }
       potentialEnergySum = svmla_m(pgC, potentialEnergySum, energyFactor, potentialEnergy6);
@@ -632,7 +632,7 @@ class LJFunctorSVE
                             const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
 #ifdef __ARM_FEATURE_SVE
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
-    if (ownedStatePtr[indexFirst] == OwnershipState::dummy) {
+    if (ownedStatePtr[indexFirst] == autopas::OwnershipState::dummy) {
       return;
     }
     const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
@@ -684,7 +684,7 @@ class LJFunctorSVE
         lennardJones<true>(index_1, typeIDptr, typeIDptr, pgC_1, dr2_1, epsilon24s_1, shift6s_1, lj6_1, fac_1);
 
       if (continue_1)
-        applyForces<newton3, true>(0, index_1, ownedStatePtr[indexFirst] == OwnershipState::owned, fxptr, fyptr, fzptr,
+        applyForces<newton3, true>(0, index_1, ownedStatePtr[indexFirst] == autopas::OwnershipState::owned, fxptr, fyptr, fzptr,
                                    fxacc, fyacc, fzacc, virialSumX, virialSumY, virialSumZ, potentialEnergySum, drx_1,
                                    dry_1, drz_1, xptr, yptr, zptr, ownedStateJ_1, pgC_1, epsilon24s_1, shift6s_1, lj6_1,
                                    fac_1);
@@ -695,7 +695,7 @@ class LJFunctorSVE
     fzptr[indexFirst] += svaddv_f64(svptrue_b64(), fzacc);
 
     if constexpr (calculateGlobals) {
-      const int threadnum = autopas_get_thread_num();
+      const int threadnum = autopas::autopas_get_thread_num();
 
       if (newton3) {
         _aosThreadData[threadnum].potentialEnergySumN3 += svaddv_f64(svptrue_b64(), potentialEnergySum) * 0.5;
