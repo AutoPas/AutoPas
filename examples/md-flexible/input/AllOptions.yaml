@@ -1,3 +1,4 @@
+# This file contains all possible options that a yaml input file for md-flexible can have. For the meaning of individual options ./md-flexible --help can be called, or MDFlexConfig.h can be looked up.
 container                            :  [DirectSum, LinkedCells, LinkedCellsReferences, VarVerletListsAsBuild, VerletClusterLists, VerletLists, VerletListsCells, PairwiseVerletLists]
 verlet-rebuild-frequency             :  20
 verlet-skin-radius-per-timestep      :  0.01

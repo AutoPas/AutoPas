@@ -129,6 +129,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setSelectorStrategy(_configuration.selectorStrategy.value);
   _autoPasContainer->setTuningInterval(_configuration.tuningInterval.value);
   _autoPasContainer->setTuningStrategyOption(_configuration.tuningStrategyOption.value);
+  _autoPasContainer->setTuningMetricOption(_configuration.tuningMetricOption.value);
   _autoPasContainer->setMPIStrategy(_configuration.mpiStrategyOption.value);
   _autoPasContainer->setMPITuningMaxDifferenceForBucket(_configuration.MPITuningMaxDifferenceForBucket.value);
   _autoPasContainer->setMPITuningWeightForMaxDensity(_configuration.MPITuningWeightForMaxDensity.value);
