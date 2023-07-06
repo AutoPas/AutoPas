@@ -910,13 +910,13 @@ void AutoTuner<Particle>::iteratePairwiseTemplateHelper(PairwiseFunctor *f, bool
   if (_energy_measurement_available) {
     AutoPasLog(DEBUG, "Energy Consumption: Psys: {} Joules Pkg: {} Joules Ram: {} Joules", _raplMeter.get_psys_energy(),
                _raplMeter.get_pkg_energy(), _raplMeter.get_ram_energy());
-    _iterationLogger.logIteration(getCurrentConfig(), _iteration, inTuningPhase, timerIteratePairwise.getTotalTime(),
+    _iterationLogger.logIteration(getCurrentConfig(), _iteration, f->getName(), inTuningPhase, timerIteratePairwise.getTotalTime(),
                                   timerRemainderTraversal.getTotalTime(), timerRebuild.getTotalTime(),
                                   timerTotal.getTotalTime(), _raplMeter.get_psys_energy(), _raplMeter.get_pkg_energy(),
                                   _raplMeter.get_ram_energy());
   } else {
     constexpr auto nan = std::numeric_limits<double>::quiet_NaN();
-    _iterationLogger.logIteration(getCurrentConfig(), _iteration, inTuningPhase, timerIteratePairwise.getTotalTime(),
+    _iterationLogger.logIteration(getCurrentConfig(), _iteration, f->getName(), inTuningPhase, timerIteratePairwise.getTotalTime(),
                                   timerRemainderTraversal.getTotalTime(), timerRebuild.getTotalTime(),
                                   timerTotal.getTotalTime(), nan, nan, nan);
   }

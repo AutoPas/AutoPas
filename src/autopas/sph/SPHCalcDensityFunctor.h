@@ -25,6 +25,13 @@ class SPHCalcDensityFunctor : public Functor<Particle, SPHCalcDensityFunctor<Par
 
   SPHCalcDensityFunctor() : autopas::Functor<Particle, SPHCalcDensityFunctor<Particle>>(0.){};
 
+  /**
+   * Returns name of functor. Intended for use with the iteration logger, to differentiate between calls to iteratePairwise
+   * using different functors in the logs.
+   * @return name of functor.
+   */
+  virtual std::string getName() { return "Functor"; }
+
   bool isRelevantForTuning() override { return true; }
 
   bool allowsNewton3() override { return true; }

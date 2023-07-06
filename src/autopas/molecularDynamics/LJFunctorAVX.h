@@ -108,6 +108,13 @@ class LJFunctorAVX
     _PPLibrary = &particlePropertiesLibrary;
   }
 
+  /**
+   * Returns name of functor. Intended for use with the iteration logger, to differentiate between calls to iteratePairwise
+   * using different functors in the logs.
+   * @return name of functor.
+   */
+  std::string getName() { return "LJFunctorAVX"; }
+
   bool isRelevantForTuning() final { return relevantForTuning; }
 
   bool allowsNewton3() final { return useNewton3 == FunctorN3Modes::Newton3Only or useNewton3 == FunctorN3Modes::Both; }

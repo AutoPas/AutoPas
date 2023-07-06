@@ -216,6 +216,13 @@ class Functor {
   virtual bool isRelevantForTuning() = 0;
 
   /**
+   * Returns name of functor. Intended for use with the iteration logger, to differentiate between calls to iteratePairwise
+   * using different functors in the logs.
+   * @return name of functor.
+   */
+  virtual std::string getName() { return "Functor"; }
+
+  /**
    * Getter for the functor's cutoff
    * @return
    */

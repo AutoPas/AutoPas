@@ -26,6 +26,13 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
       // the actual cutoff used is dynamic. 0 is used to pass the sanity check.
       : autopas::Functor<Particle, SPHCalcHydroForceFunctor<Particle>>(0.){};
 
+  /**
+   * Returns name of functor. Intended for use with the iteration logger, to differentiate between calls to iteratePairwise
+   * using different functors in the logs.
+   * @return name of functor.
+   */
+  virtual std::string getName() { return "Functor"; }
+
   bool isRelevantForTuning() override { return true; }
 
   bool allowsNewton3() override { return true; }
