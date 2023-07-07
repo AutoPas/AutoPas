@@ -13,10 +13,10 @@
 #include <set>
 #include <vector>
 
+#include "autopas/tuning/Configuration.h"
+#include "autopas/tuning/searchSpace/Evidence.h"
+#include "autopas/tuning/searchSpace/EvidenceCollection.h"
 #include "autopas/tuning/tuningStrategy/TuningLogEntry.h"
-#include "tuning/Configuration.h"
-#include "tuning/searchSpace/Evidence.h"
-#include "tuning/searchSpace/EvidenceCollection.h"
 
 namespace autopas {
 TuningStrategyLogReplayer::TuningStrategyLogReplayer(std::string filename,

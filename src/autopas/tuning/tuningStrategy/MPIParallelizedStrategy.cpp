@@ -8,9 +8,9 @@
 
 #include <cstddef>
 
+#include "autopas/tuning/Configuration.h"
 #include "options/DataLayoutOption.h"
 #include "options/Newton3Option.h"
-#include "tuning/Configuration.h"
 #include "utils/AutoPasConfigurationCommunicator.h"
 #include "utils/WrapMPI.h"
 

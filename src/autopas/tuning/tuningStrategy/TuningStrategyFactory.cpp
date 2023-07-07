@@ -17,8 +17,8 @@
 #include "TuningStrategyFactoryInfo.h"
 #include "autopas/options/MPIStrategyOption.h"
 #include "autopas/tuning/tuningStrategy/ruleBasedTuning/RuleBasedTuning.h"
+#include "autopas/tuning/utils/SearchSpaceGenerators.h"
 #include "options/TuningStrategyOption.h"
-#include "tuning/utils/SearchSpaceGenerators.h"
 #include "utils/NumberSetFinite.h"
 
 namespace autopas::TuningStrategyFactory {

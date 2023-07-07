@@ -7,7 +7,7 @@
 #pragma once
 
 #include "TuningStrategyInterface.h"
-#include "tuning/Configuration.h"
+#include "autopas/tuning/Configuration.h"
 namespace autopas {
 /**
  * Acts as a blacklist for configurations that have proven to be very slow.
