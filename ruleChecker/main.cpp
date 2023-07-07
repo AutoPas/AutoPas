@@ -1,5 +1,10 @@
+#include <memory>
+
+#include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyLogReplayer.h"
 #include "autopas/tuning/tuningStrategy/ruleBasedTuning/RuleBasedTuning.h"
+#include "autopas/tuning/utils/SearchSpaceGenerators.h"
+#include "autopas/utils/NumberSetFinite.h"
 
 /**
  * The program analyzes the log of a tuning phase with respect to a given rule file. The following aspects are checked:
@@ -65,14 +70,17 @@ int main(int argc, char **argv) {
 
   unsigned long tuningTimeSum = 0;
   unsigned long wouldHaveSkippedTuningTimeSum = 0;
-  std::string rulesfile{argv[1]};
+  const std::string rulesfile{argv[1]};
+  const autopas::NumberSetFinite<double> csfs({1., 2.});
+  const std::set<autopas::Configuration> searchSpace = autopas::SearchSpaceGenerators::optionCrossProduct(
+      containers, traversals, loadEstimators, dataLayouts, newton3Options, &csfs
+      );
   for (int i = 2; i < argc; i++) {
-    std::string filename{argv[i]};
+    const std::string filename{argv[i]};
     AutoPasLog(INFO, "Checking file {}: {}", i, filename);
     auto strategy =
-        std::make_shared<autopas::RuleBasedTuning>(containers, std::set<double>({1., 2.}), traversals, loadEstimators,
-                                                   dataLayouts, newton3Options, true, rulesfile, errorHandler);
-    autopas::TuningStrategyLogReplayer logReplayer{filename, strategy};
+        std::make_shared<autopas::RuleBasedTuning>(searchSpace, /*verification mode*/ true, rulesfile, errorHandler);
+    autopas::TuningStrategyLogReplayer logReplayer{filename, strategy, searchSpace};
     auto optBestConfig = logReplayer.replay();
     AutoPasLog(INFO, "");
 
