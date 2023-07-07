@@ -73,11 +73,11 @@ long PredictiveTuning::linePrediction(size_t iteration, size_t tuningPhase, cons
     const auto &[traversal1Iteration, traversal1TuningPhase, traversal1Time] = evidenceVec[evidenceVec.size() - 1];
     const auto &[traversal2Iteration, traversal2TuningPhase, traversal2Time] = evidenceVec[evidenceVec.size() - 2];
 
-    const long gradient = static_cast<long>(traversal1Time - traversal2Time) /
-                          static_cast<long>(traversal1Iteration - traversal2Iteration);
-    const long delta = static_cast<long>(iteration) - static_cast<long>(traversal1Iteration);
+    const auto gradient = static_cast<double>(traversal1Time - traversal2Time) /
+                          static_cast<double>(traversal1Iteration - traversal2Iteration);
+    const auto delta = static_cast<double>(iteration) - static_cast<double>(traversal1Iteration);
 
-    const long change = utils::Math::safeMul(gradient, delta);
+    const auto change = static_cast<long>(utils::Math::safeMul(gradient, delta));
 
     // this might overflow so use safeAdd.
     const long prediction =
