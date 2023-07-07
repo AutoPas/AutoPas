@@ -76,7 +76,7 @@ std::array<double, 3> rotatePosition(const std::array<double, 4> &q, const std::
 }
 
 std::array<double, 3> rotatePositionBackwards(const std::array<double, 4> &q, const std::array<double, 3> &pos) {
-  return rotatePosition({q.at(0), -q.at(1), -q.at(2), -q.at(3)}, pos);
+  return rotatePosition({q[0], -q[1], -q[2], -q[3]}, pos);
 }
 
 std::array<double, 4> qMul(const std::array<double, 4> &q1, const std::array<double, 4> &q2) {
