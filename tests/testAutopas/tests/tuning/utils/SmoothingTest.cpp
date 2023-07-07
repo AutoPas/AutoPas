@@ -6,7 +6,7 @@
 
 #include "SmoothingTest.h"
 
-#include "autopas/tuning/utils/Evidence.h"
+#include "autopas/tuning/searchSpace/Evidence.h"
 #include "autopas/tuning/utils/Smoothing.h"
 
 TEST(SmoothingTest, lowessLastPoint) {
@@ -16,7 +16,7 @@ TEST(SmoothingTest, lowessLastPoint) {
   std::vector<autopas::Evidence> obs;
   obs.reserve(xvals.size());
   for (size_t i = 0; i < xvals.size(); ++i) {
-    obs.emplace_back(xvals[i], yvals[i]);
+    obs.emplace_back(autopas::Evidence{xvals[i], 0, yvals[i]});
   }
 
   // YS values with F = .25, NSTEPS = 0, DELTA = 0.0

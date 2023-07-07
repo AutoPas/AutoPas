@@ -19,7 +19,7 @@ void finiteCellSizeFactorsSetup(MPIParallelizedStrategy &mpiParallelizedStrategy
   do {
     long evidence = static_cast<long>(mpiParallelizedStrategy.getCurrentConfiguration().cellSizeFactor * 100.0);
     mpiParallelizedStrategy.addEvidence(evidence, 0);
-  } while (mpiParallelizedStrategy.tune(false));
+  } while (mpiParallelizedStrategy.optimizeSuggestions(<#initializer #>, <#initializer #>, false));
 }
 
 /**
@@ -41,7 +41,7 @@ double infiniteCellSizeFactorSetup(MPIParallelizedStrategy &mpiParallelizedStrat
     if (smallestLocalCellSizeFactor > mpiParallelizedStrategy.getCurrentConfiguration().cellSizeFactor) {
       smallestLocalCellSizeFactor = mpiParallelizedStrategy.getCurrentConfiguration().cellSizeFactor;
     }
-  } while (mpiParallelizedStrategy.tune(false));
+  } while (mpiParallelizedStrategy.optimizeSuggestions(<#initializer #>, <#initializer #>, false));
   return smallestLocalCellSizeFactor;
 }
 
@@ -59,8 +59,7 @@ TEST_F(MPIParallelizedStrategyTest, testTuneFullSearch) {
   auto strategy = std::make_unique<FullSearch>(oneContainer, twoCellSizes, oneTraversal, oneLoadEstimator,
                                                oneDataLayout, oneNewton3);
 
-  auto mpiParallelizedStrategy = MPIParallelizedStrategy(std::move(strategy), MPI_COMM_WORLD, oneContainer,
-                                                         oneTraversal, oneLoadEstimator, oneDataLayout, oneNewton3);
+  auto mpiParallelizedStrategy = MPIParallelizedStrategy(MPI_COMM_WORLD);
   finiteCellSizeFactorsSetup(mpiParallelizedStrategy);
 
   // CSF should be 1.0, because of how finiteCellSizeFactorsSetup() handles evidences.
@@ -83,8 +82,7 @@ TEST_F(MPIParallelizedStrategyTest, testTuneRandomSearchFiniteCellSizeFactors) {
   auto strategy = std::make_unique<RandomSearch>(oneContainer, twoCellSizes, oneTraversal, oneLoadEstimator,
                                                  oneDataLayout, oneNewton3, 2);
 
-  auto mpiParallelizedStrategy = MPIParallelizedStrategy(std::move(strategy), MPI_COMM_WORLD, oneContainer,
-                                                         oneTraversal, oneLoadEstimator, oneDataLayout, oneNewton3);
+  auto mpiParallelizedStrategy = MPIParallelizedStrategy(MPI_COMM_WORLD);
   finiteCellSizeFactorsSetup(mpiParallelizedStrategy);
 
   // Currently, RandomSearch ignores cellSizeFactors to determine how many configurations can be tested.
@@ -106,8 +104,7 @@ TEST_F(MPIParallelizedStrategyTest, testTuneRandomSearchInfiniteCellSizeFactors)
   auto strategy = std::make_unique<RandomSearch>(oneContainer, twoCellSizes, oneTraversal, oneLoadEstimator,
                                                  oneDataLayout, oneNewton3, 2);
 
-  auto mpiParallelizedStrategy = MPIParallelizedStrategy(std::move(strategy), MPI_COMM_WORLD, oneContainer,
-                                                         oneTraversal, oneLoadEstimator, oneDataLayout, oneNewton3);
+  auto mpiParallelizedStrategy = MPIParallelizedStrategy(MPI_COMM_WORLD);
   auto smallestLocalCellSizeFactor = infiniteCellSizeFactorSetup(mpiParallelizedStrategy);
 
   // CSF should be the smallest, because of how finiteCellSizeFactorsSetup() handles evidences.
@@ -129,8 +126,7 @@ TEST_F(MPIParallelizedStrategyTest, testTuneActiveHarmonyFiniteCellSizeFactors) 
       std::make_unique<ActiveHarmony>(oneContainer, twoCellSizes, oneTraversal, oneLoadEstimator, oneDataLayout,
                                       oneNewton3, autopas::MPIStrategyOption::divideAndConquer, MPI_COMM_WORLD);
 
-  auto mpiParallelizedStrategy = MPIParallelizedStrategy(std::move(strategy), MPI_COMM_WORLD, oneContainer,
-                                                         oneTraversal, oneLoadEstimator, oneDataLayout, oneNewton3);
+  auto mpiParallelizedStrategy = MPIParallelizedStrategy(MPI_COMM_WORLD);
   finiteCellSizeFactorsSetup(mpiParallelizedStrategy);
 
   // CSF should be 1.0, because of how finiteCellSizeFactorsSetup() handles evidences.
@@ -153,8 +149,7 @@ TEST_F(MPIParallelizedStrategyTest, testTuneBayesianSearchInfiniteCellSizeFactor
   auto strategy = std::make_unique<BayesianSearch>(oneContainer, twoCellSizes, oneTraversal, oneLoadEstimator,
                                                    oneDataLayout, oneNewton3);
 
-  auto mpiParallelizedStrategy = MPIParallelizedStrategy(std::move(strategy), MPI_COMM_WORLD, oneContainer,
-                                                         oneTraversal, oneLoadEstimator, oneDataLayout, oneNewton3);
+  auto mpiParallelizedStrategy = MPIParallelizedStrategy(MPI_COMM_WORLD);
   auto smallestCellSizeFactor = infiniteCellSizeFactorSetup(mpiParallelizedStrategy);
 
   // BayesianSearch seems to not be absolutely optimal in this case.

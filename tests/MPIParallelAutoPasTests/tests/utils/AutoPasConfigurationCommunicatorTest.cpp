@@ -26,7 +26,7 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testOptimizeConfiguration) {
       Configuration(ContainerOption::directSum, 1 + rank, TraversalOption::lc_sliced,
                     LoadEstimatorOption::neighborListLength, DataLayoutOption::aos, Newton3Option::enabled);
   // provide rank as the time for the config.
-  Configuration optimized = optimizeConfiguration(MPI_COMM_WORLD, config, rank);
+  Configuration optimized = findGloballyBestConfiguration(MPI_COMM_WORLD, config, rank);
 
   // CSF should be 1, because rank 0 provided the lowest time.
   EXPECT_EQ(optimized,

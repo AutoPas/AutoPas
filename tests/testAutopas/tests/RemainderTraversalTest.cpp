@@ -12,7 +12,6 @@
 #include "autopas/options/TuningMetricOption.h"
 #include "autopas/tuning/AutoTuner.h"
 #include "autopas/tuning/Configuration.h"
-#include "autopas/tuning/tuningStrategy/FullSearch.h"
 #include "testingHelpers/NumThreadGuard.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -50,22 +49,25 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
       2)
       << "This test expects exactly two particles!";
 
-  constexpr double cutoff = 2.5;
   constexpr double cellSizeFactor = 1.;
-  constexpr double verletSkinPerTimestep = 0.05;
-  constexpr unsigned int verletClusterSize = 4;
   constexpr unsigned int verletRebuildFrequency = 10;
-  const std::set<autopas::Configuration> confSet(
+  const autopas::LogicHandlerInfo logicHandlerInfo{
+      .boxMin{0., 0., 0.},
+      .boxMax{10., 10., 10.},
+      .cutoff = 2.5,
+      .verletSkinPerTimestep = 0.05,
+  };
+  const autopas::AutoTunerInfo autoTunerInfo{
+      .tuningInterval = 1000,
+      .maxSamples = 3,
+  };
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
+
+  const std::set<autopas::Configuration> searchSpace(
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
         autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, n3}});
-  auto tuningStrategy = std::make_unique<autopas::FullSearch>(confSet);
-  const std::array<double, 3> boxMin = {0., 0., 0.};
-  const std::array<double, 3> boxMax = {10., 10., 10.};
-  autopas::AutoTuner autoTuner{
-      std::move(tuningStrategy),         0.3,  0.0, autopas::SelectorStrategyOption::fastestAbs,
-      autopas::TuningMetricOption::time, 1000, 3,   verletRebuildFrequency};
-  autopas::LogicHandler<Molecule> logicHandler(
-      autoTuner, {boxMin, boxMax, cutoff, verletSkinPerTimestep, verletRebuildFrequency, verletClusterSize, ""});
+  autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(autoTuner, logicHandlerInfo, verletRebuildFrequency, "");
 
   // Add particles. Calling add(Halo)Particle on a fresh logicHandler should place the particles directly in the
   // container.
@@ -84,7 +86,7 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
 
   // create a functor that calculates globals!
   autopas::LJFunctor<Molecule, /*shift*/ false, /*mixing*/ false, autopas::FunctorN3Modes::Both, /*globals*/ true>
-      functor(cutoff);
+      functor(logicHandlerInfo.cutoff);
   // Choose sigma != distance so we get Upot != 0
   constexpr double sigma = 2.;
   constexpr double epsilon = 1.;
@@ -325,22 +327,25 @@ void testRemainderTraversal(const std::vector<Molecule> &particles, const std::v
                             std::vector<autopas::FullParticleCell<Molecule>> &particlesBuffer,
                             std::vector<autopas::FullParticleCell<Molecule>> &haloParticlesBuffer) {
   /// Setup AutoTuner
-  constexpr double cutoff = 2.5;
   constexpr double cellSizeFactor = 1.;
-  constexpr double verletSkinPerTimestep = 0.05;
-  constexpr unsigned int verletClusterSize = 4;
   constexpr unsigned int verletRebuildFrequency = 10;
-  const std::set<autopas::Configuration> confSet(
+  const autopas::LogicHandlerInfo logicHandlerInfo{
+      .boxMin{0., 0., 0.},
+      .boxMax{9., 9., 9.},
+      .cutoff = 2.5,
+      .verletSkinPerTimestep = 0.05,
+  };
+  const autopas::AutoTunerInfo autoTunerInfo{
+      .tuningInterval = 1000,
+      .maxSamples = 3,
+  };
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
+
+  const std::set<autopas::Configuration> searchSpace(
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
         autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled}});
-  auto tuningStrategy = std::make_unique<autopas::FullSearch>(confSet);
-  const std::array<double, 3> boxMin = {0., 0., 0.};
-  const std::array<double, 3> boxMax = {9., 9., 9.};
-  autopas::AutoTuner autoTuner{
-      std::move(tuningStrategy),         0.3,  0.0, autopas::SelectorStrategyOption::fastestAbs,
-      autopas::TuningMetricOption::time, 1000, 3,   verletRebuildFrequency};
-  autopas::LogicHandler<Molecule> logicHandler(
-      autoTuner, {boxMin, boxMax, cutoff, verletSkinPerTimestep, verletRebuildFrequency, verletClusterSize, ""});
+  autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(autoTuner, logicHandlerInfo, verletRebuildFrequency, "");
 
   // fill the container with the given particles
   for (const auto &p : particles) {
@@ -356,7 +361,7 @@ void testRemainderTraversal(const std::vector<Molecule> &particles, const std::v
 
   logicHandler.setParticleBuffers(particlesBuffer, haloParticlesBuffer);
 
-  autopas::LJFunctor<Molecule> functor(cutoff);
+  autopas::LJFunctor<Molecule> functor(logicHandlerInfo.cutoff);
   functor.setParticleProperties(24, 1);
   // do the actual test
   logicHandler.iteratePairwisePipeline(&functor);

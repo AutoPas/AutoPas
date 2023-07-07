@@ -9,8 +9,14 @@
 #include <gmock/gmock-matchers.h>
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <cstddef>
+#include <vector>
+
 #include "AutoPasTestBase.h"
 #include "autopas/options/ExtrapolationMethodOption.h"
+#include "autopas/tuning/Configuration.h"
+#include "autopas/tuning/searchSpace/Evidence.h"
 #include "autopas/tuning/tuningStrategy/PredictiveTuning.h"
 
 class PredictiveTuningTest : public AutoPasTestBase,
@@ -34,71 +40,68 @@ class PredictiveTuningTest : public AutoPasTestBase,
    * @param evidence Map of configurations to evidence. These simulate the performance of every configuration.
    * @param expectedPredictions Map of configurations to expected predictions. Pass an empty map if this should be
    * skipped.
-   * @param iteration The current number of iterations, will be increased accordingly.
+   * @param iterationCounter The current iteration number; will be increased accordingly.
+   * @param tuningPhase Number of the current tuningPhase.
    * @return Vector of the tested configurations.
    */
   static auto simulateTuningPhase(autopas::PredictiveTuning &predictiveTuning,
-                                  const std::map<autopas::Configuration, long> &evidence, size_t &iteration) {
+                                  const std::map<autopas::Configuration, long> &newEvidence,
+                                  autopas::EvidenceCollection &evidenceCollection, size_t &iterationCounter,
+                                  size_t tuningPhase) {
     // input sanity checks
-    ASSERT_NE(evidence.size(), 0);
+    ASSERT_FALSE(newEvidence.empty()) << "There should be predetermined evidence.";
 
+    // fill the queue with everthing that is in newEvidence
+    std::vector<autopas::Configuration> confQueue;
+    for (const auto &[conf, _] : newEvidence) {
+      confQueue.push_back(conf);
+    }
+    const auto configsExpectedToBeTested = confQueue;
     // collects all configurations that are tested in this phase
     std::vector<autopas::Configuration> testedConfigs;
-    testedConfigs.reserve(evidence.size());
-
-    // identify optimum of the provided input
-    auto [bestConfig, bestEvidence] =
-        *(std::min_element(evidence.begin(), evidence.end(),
-                           [](const auto &pairA, const auto &pairB) { return pairA.second < pairB.second; }));
+    testedConfigs.reserve(confQueue.size());
 
     // strategies are reset at the start of every phase.
-    predictiveTuning.reset(iteration);
+    predictiveTuning.reset(iterationCounter, tuningPhase, confQueue, evidenceCollection);
+
+    // identify optimum of the previous tuning phase and check that this is now at the back of the queue
+    if (tuningPhase > _evidenceFirstPrediction) {
+      const auto [bestConfigLastPhase, _] = evidenceCollection.getOptimalConfiguration(tuningPhase - 1);
+      EXPECT_EQ(confQueue.back(), bestConfigLastPhase)
+          << "We expect the best predicted configuration to be at the back of the "
+             "FiLo queue at the start of the tuning phase. Tuning Phase: "
+          << tuningPhase;
+    }
 
     // simulate the iterations of the tuning phase
-    bool stillTuning = true;
-    while (stillTuning) {
-      // the configuration for this iteration
-      auto config = predictiveTuning.getCurrentConfiguration();
-      testedConfigs.push_back(config);
+    while (not confQueue.empty()) {
+      const auto &conf = confQueue.back();
+      testedConfigs.push_back(conf);
 
-      EXPECT_NO_THROW(evidence.at(config)) << "Did not expect to test configuration " << config;
+      // find this configuration's evidence in the planned evidence
+      EXPECT_NO_THROW(newEvidence.at(conf)) << "The newEvidence has no data for " << conf << ".\nCheck the test setup!";
 
-      predictiveTuning.addEvidence(evidence.at(config), iteration);
-
-      stillTuning = predictiveTuning.tune();
-      ++iteration;
+      const autopas::Evidence evidence{iterationCounter, tuningPhase, newEvidence.at(conf)};
+      predictiveTuning.addEvidence(conf, evidence);
+      evidenceCollection.addEvidence(conf, evidence);
+      confQueue.pop_back();  // this line invalidates conf
+      predictiveTuning.optimizeSuggestions(confQueue, evidenceCollection);
+      ++iterationCounter;
     }
 
-    // gather vector of all configs that are expected to be tested
-    std::vector<autopas::Configuration> allConfigurations;
-    allConfigurations.reserve(evidence.size());
-    for (const auto &[config, _] : evidence) {
-      allConfigurations.push_back(config);
-    }
-    EXPECT_THAT(testedConfigs, testing::UnorderedElementsAreArray(allConfigurations))
+    EXPECT_THAT(testedConfigs, testing::UnorderedElementsAreArray(configsExpectedToBeTested))
         << "Test did not test all expected configurations in tuning phase.";
 
     // at the end of a tuning phase the strategy should point to the optimum
-    EXPECT_EQ(predictiveTuning.getCurrentConfiguration(), bestConfig)
+    const auto [bestConfigThisPhase, _] =
+        *(std::min_element(newEvidence.begin(), newEvidence.end(),
+                           [](const auto &pairA, const auto &pairB) { return pairA.second < pairB.second; }));
+    EXPECT_EQ(std::get<0>(evidenceCollection.getLatestOptimalConfiguration()), bestConfigThisPhase)
         << "Did not select the fastest configuration. At the end of the tuning phase.";
   }
 
   /**
-   * Creates an instance of a Predictive Tuner with the given parameters.
-   * The search space is fixed to LC, no N3, SoA, CSF = 1, LoadEstimator = none, and all given traversal options.
-   * @param testsUntilFirstPrediction
-   * @param extrapolationMethodOption
-   * @param blacklistRange Set to zero to disable blacklisting.
-   * @param allowedLCTraversalOptions This is basically the whole search space.
-   * @return Preconfigured PredictiveTuning object.
-   */
-  static autopas::PredictiveTuning getPredictiveTuning(
-      unsigned int testsUntilFirstPrediction, autopas::ExtrapolationMethodOption extrapolationMethodOption,
-      double blacklistRange = 0,
-      const std::set<autopas::TraversalOption> &allowedLCTraversalOptions = {
-          autopas::TraversalOption::lc_c08, autopas::TraversalOption::lc_c01, autopas::TraversalOption::lc_sliced});
-
-  /**
+   * TODO: Update doc
    * Simulates multiple tuning phases. The number of phases depends on the length of the provided vector of evidence.
    *
    * A predictive tuning object is generated that contains a fixed set of configurations (see _allConfigs).
@@ -110,10 +113,10 @@ class PredictiveTuningTest : public AutoPasTestBase,
    * @param tuningInterval Number of iterations between the last tuning iteration and evaluation of expectations.
    * @param expectedPredictions
    */
-  void simulateTuningPhasesAndCheckPrediction(
-      autopas::ExtrapolationMethodOption extrapolationMethodOption,
-      const std::vector<std::map<autopas::Configuration, long>> &evidencePerPhase, unsigned int tuningInterval,
-      const std::map<autopas::Configuration, long> &expectedPredictions);
+  static void checkPredictions(autopas::ExtrapolationMethodOption extrapolationMethodOption,
+                               const std::vector<std::map<autopas::Configuration, long>> &evidencePerPhase,
+                               unsigned int tuningInterval,
+                               const std::map<autopas::Configuration, long> &expectedPredictions);
 
   static constexpr autopas::Configuration _configurationLC_C01 = autopas::Configuration(
       autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c01, autopas::LoadEstimatorOption::none,
