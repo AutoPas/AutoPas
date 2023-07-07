@@ -44,9 +44,9 @@ class PredictiveTuning final : public TuningStrategyInterface {
  public:
   /**
    * Shorthand for the type used to store predictions in.
-   * Vector< Configuration, PredictionValue >
+   * Map < Configuration, PredictionValue >
    */
-  using PredictionsType = std::vector<std::tuple<Configuration, long>>;
+  using PredictionsType = std::unordered_map<Configuration, long, ConfigHash>;
 
   /**
    * Constructor for the PredictiveTuning that generates the search space from the allowed options.
@@ -69,7 +69,6 @@ class PredictiveTuning final : public TuningStrategyInterface {
 
   void rejectConfiguration(const Configuration &configuration, bool indefinitely) override;
 
- private:
   /**
    * For all given configuration use the chosen extrapolation method to calculate a prediction based on the
    * given evidence.
@@ -83,6 +82,8 @@ class PredictiveTuning final : public TuningStrategyInterface {
   PredictiveTuning::PredictionsType calculatePredictions(size_t iteration, size_t tuningPhase,
                                                          const std::vector<Configuration> &configurations,
                                                          const autopas::EvidenceCollection &evidenceCollection);
+
+ private:
   /**
    * Predicts the traversal time by placing a line through the last two traversal points and calculating the prediction
    * for the current time.
