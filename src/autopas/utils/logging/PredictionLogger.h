@@ -39,8 +39,8 @@ class PredictionLogger {
    * @param predictionErrorValue
    * @param tuningPhaseCounter
    */
-  void logAllPredictions(const std::vector<std::tuple<Configuration, long>> &predictions, long predictionErrorValue,
-                         size_t tuningPhaseCounter);
+  void logAllPredictions(const std::unordered_map<Configuration, long, ConfigHash> &predictions,
+                         long predictionErrorValue, size_t tuningPhaseCounter);
 
  private:
   std::string _loggerName;
