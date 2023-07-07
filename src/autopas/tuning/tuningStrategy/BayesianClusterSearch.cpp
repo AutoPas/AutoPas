@@ -173,7 +173,7 @@ void autopas::BayesianClusterSearch::optimizeSuggestions(std::vector<Configurati
     } else {
       // replace the config queue by what is left of the proposed configurations.
       configQueue.clear();
-      std::transform(currentAcquisitions.begin(), currentAcquisitions.end(), std::back_inserter(configQueue),
+      std::transform(currentAcquisitions.rbegin(), currentAcquisitions.rend(), std::back_inserter(configQueue),
                      [&](const auto &acquisition) { return _encoder.convertFromCluster(acquisition); });
     }
   }
