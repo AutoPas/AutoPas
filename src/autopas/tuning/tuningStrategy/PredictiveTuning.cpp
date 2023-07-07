@@ -329,18 +329,23 @@ void PredictiveTuning::reset(size_t iteration, size_t tuningPhase, std::vector<C
       static_cast<long>(_relativeOptimumRange * static_cast<double>(bestPrediction));
   // Flush configurations and only re-insert those with good predictions.
   configQueue.clear();
-  for (const auto &[conf, prediction] : predictions) {
-    if (prediction < bestAcceptablePredictionValue) {
-      configQueue.push_back(conf);
-    }
-  }
-  // Also insert configurations that were not tested for too long and we want to check again
+  configQueue.reserve(predictions.size() + _tooLongNotTestedSearchSpace.size());
+  // Insert configurations that were not tested for too long and we want to check again.
+  // Insert them first so they are tested last.
   for (const auto &conf : _tooLongNotTestedSearchSpace) {
-    // don't create duplicates
-    if (std::find(configQueue.begin(), configQueue.end(), conf) != configQueue.end()) {
+    configQueue.push_back(conf);
+  }
+  for (const auto &[conf, prediction] : predictions) {
+    // add the config if it has a promising prediction and is not already in the queue
+    if (prediction < bestAcceptablePredictionValue and
+        std::find(configQueue.begin(), configQueue.end(), conf) == configQueue.end()) {
       configQueue.push_back(conf);
     }
   }
+
+  // sort by prediction value. Best (=lowest) should be at the back.
+  std::sort(configQueue.begin(), configQueue.end(),
+            [&](const auto &confA, const auto &confB) { return predictions.at(confA) > predictions.at(confB); });
 }
 
 void PredictiveTuning::addEvidence(const Configuration &configuration, const Evidence & /*evidence*/) {
