@@ -9,7 +9,7 @@
 #include <limits>
 
 #include "Evidence.h"
-#include "tuning/Configuration.h"
+#include "autopas/tuning/Configuration.h"
 
 namespace autopas {
 
@@ -18,8 +18,13 @@ void EvidenceCollection::addEvidence(const Configuration &configuration, const E
   _evidenceMap[configuration].push_back(evidence);
 }
 
-const std::vector<Evidence> &EvidenceCollection::getEvidence(const Configuration &configuration) const {
-  return _evidenceMap.at(configuration);
+const std::vector<Evidence> *EvidenceCollection::getEvidence(const Configuration &configuration) const {
+  const auto iter = _evidenceMap.find(configuration);
+  if (iter != _evidenceMap.end()) {
+    return &iter->second;
+  } else {
+    return nullptr;
+  }
 }
 
 Evidence &EvidenceCollection::modifyLastEvidence(const Configuration &configuration) {
@@ -58,4 +63,6 @@ std::tuple<Configuration, Evidence> EvidenceCollection::getOptimalConfiguration(
 std::tuple<Configuration, Evidence> EvidenceCollection::getLatestOptimalConfiguration() const {
   return getOptimalConfiguration(_latestTuningPhase);
 }
+
+bool EvidenceCollection::empty() const { return _evidenceMap.empty(); }
 }  // namespace autopas

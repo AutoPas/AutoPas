@@ -15,9 +15,9 @@
 #include "TuningStrategyInterface.h"
 #include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/containers/CompatibleTraversals.h"
+#include "autopas/tuning/searchSpace/EvidenceCollection.h"
 #include "autopas/tuning/utils/FeatureVectorEncoder.h"
 #include "autopas/utils/NumberSet.h"
-#include "tuning/searchSpace/EvidenceCollection.h"
 
 namespace autopas {
 

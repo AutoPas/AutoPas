@@ -14,9 +14,13 @@ void autopas::SlowConfigFilter::optimizeSuggestions(std::vector<Configuration> &
   const auto blacklistThreshold = static_cast<long>(static_cast<double>(bestEvidence.value) * _relativeBlacklistRange);
   // push stuff that is slow in the latest tuning phase to the blacklist
   for (const auto &conf : configQueue) {
-    const auto &latestEvidence = evidenceCollection.getEvidence(conf).back();
-    if (latestEvidence.tuningPhase == bestEvidence.tuningPhase and latestEvidence.value > blacklistThreshold) {
-      _blacklist.emplace(conf);
+    const auto *evidenceVec = evidenceCollection.getEvidence(conf);
+    // make sure there actually is evidence
+    if (evidenceVec and not evidenceVec->empty()) {
+      const auto &latestEvidence = evidenceVec->back();
+      if (latestEvidence.tuningPhase == bestEvidence.tuningPhase and latestEvidence.value > blacklistThreshold) {
+        _blacklist.emplace(conf);
+      }
     }
   }
 

@@ -9,8 +9,9 @@
 #include <algorithm>
 #include <vector>
 
-#include "tuning/searchSpace/Evidence.h"
-#include "tuning/searchSpace/EvidenceCollection.h"
+#include "autopas/tuning/searchSpace/Evidence.h"
+#include "autopas/tuning/searchSpace/EvidenceCollection.h"
+#include "utils/ExceptionHandler.h"
 
 namespace autopas {
 
@@ -27,21 +28,24 @@ PredictiveTuning::PredictiveTuning(double relativeOptimum, unsigned int maxTunin
 PredictiveTuning::PredictionsType PredictiveTuning::calculatePredictions(
     size_t iteration, size_t tuningPhase, const std::vector<Configuration> &configurations,
     const EvidenceCollection &evidenceCollection) {
-  PredictiveTuning::PredictionsType predictions;
+  PredictiveTuning::PredictionsType predictions{};
   predictions.reserve(configurations.size());
 
   for (const auto &configuration : configurations) {
-    const auto &evidenceVec = evidenceCollection.getEvidence(configuration);
+    const auto *evidenceVec = evidenceCollection.getEvidence(configuration);
+    if (not evidenceVec or evidenceVec->empty()) {
+      continue;
+    }
     const auto predictionValue = [&]() {
       switch (_extrapolationMethod) {
         case ExtrapolationMethodOption::linePrediction: {
-          return linePrediction(iteration, tuningPhase, configuration, evidenceVec);
+          return linePrediction(iteration, tuningPhase, configuration, *evidenceVec);
         }
         case ExtrapolationMethodOption::linearRegression: {
-          return linearRegression(iteration, tuningPhase, configuration, evidenceVec);
+          return linearRegression(iteration, tuningPhase, configuration, *evidenceVec);
         }
         case ExtrapolationMethodOption::newton: {
-          return newtonPolynomial(iteration, tuningPhase, configuration, evidenceVec);
+          return newtonPolynomial(iteration, tuningPhase, configuration, *evidenceVec);
         }
       }
     }();
@@ -297,7 +301,11 @@ void PredictiveTuning::reset(size_t iteration, size_t tuningPhase, std::vector<C
                              const EvidenceCollection &evidenceCollection) {
   // collect all configurations that were not tested for too long
   for (const auto &conf : configQueue) {
-    const auto numPhasesWithoutTest = tuningPhase - evidenceCollection.getEvidence(conf).back().tuningPhase;
+    const auto *evidenceVec = evidenceCollection.getEvidence(conf);
+    if (not evidenceVec or evidenceVec->empty()) {
+      continue;
+    }
+    const auto numPhasesWithoutTest = tuningPhase - evidenceVec->back().tuningPhase;
     if (numPhasesWithoutTest >= _maxTuningPhasesWithoutTest) {
       _tooLongNotTestedSearchSpace.emplace(conf);
     }

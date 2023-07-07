@@ -15,11 +15,11 @@
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/options/ExtrapolationMethodOption.h"
 #include "autopas/tuning/Configuration.h"
+#include "autopas/tuning/searchSpace/EvidenceCollection.h"
 #include "autopas/tuning/selectors/OptimumSelector.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/Math.h"
 #include "autopas/utils/logging/PredictionLogger.h"
-#include "tuning/searchSpace/EvidenceCollection.h"
 
 namespace autopas {
 

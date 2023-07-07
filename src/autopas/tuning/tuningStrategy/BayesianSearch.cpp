@@ -9,8 +9,8 @@
 #include <algorithm>
 #include <iterator>
 
+#include "autopas/tuning/searchSpace/EvidenceCollection.h"
 #include "autopas/utils/StringUtils.h"
-#include "tuning/searchSpace/EvidenceCollection.h"
 
 autopas::BayesianSearch::BayesianSearch(const std::set<ContainerOption> &allowedContainerOptions,
                                         const autopas::NumberSet<double> &allowedCellSizeFactors,

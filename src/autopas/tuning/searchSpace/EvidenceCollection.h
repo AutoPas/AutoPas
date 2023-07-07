@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
 #include <map>
 #include <vector>
@@ -31,9 +32,9 @@ class EvidenceCollection {
   /**
    * Returns all evidence collected for a given configuration.
    * @param configuration
-   * @return Const reference to the vector of collected evidence.
+   * @return If there is evidence a const pointer to the vector of collected evidence, otherwise nullptr.
    */
-  const std::vector<Evidence> &getEvidence(const Configuration &configuration) const;
+  const std::vector<Evidence> *getEvidence(const Configuration &configuration) const;
 
   /**
    * Returns a modifiable reference to the last evidence of a given configuration.
@@ -55,6 +56,26 @@ class EvidenceCollection {
    * @return The optimal configuration.
    */
   std::tuple<Configuration, Evidence> getLatestOptimalConfiguration() const;
+
+  /**
+   * Report if there is any evidence in the collection.
+   * @return True if there is no evidence in the collection.
+   */
+  bool empty() const;
+
+  std::map<Configuration, Evidence> getAllEvidence(size_t tuningPhase) const {
+    std::map<Configuration, Evidence> evidenceOnePhase;
+    for (const auto &[conf, evidenceVec] : _evidenceMap) {
+      // check if there is evidence for a specific tuning phase
+      const auto evidenceThisPhaseIter =
+          std::find_if(evidenceVec.begin(), evidenceVec.end(),
+                       [&](const auto &evidence) { return evidence.tuningPhase == tuningPhase; });
+      if (evidenceThisPhaseIter != evidenceVec.end()) {
+        evidenceOnePhase[conf] = *evidenceThisPhaseIter;
+      }
+    }
+    return evidenceOnePhase;
+  }
 
  private:
   /**

@@ -6,9 +6,9 @@
 
 #include "BayesianClusterSearch.h"
 
+#include "autopas/tuning/searchSpace/EvidenceCollection.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/StringUtils.h"
-#include "tuning/searchSpace/EvidenceCollection.h"
 
 autopas::BayesianClusterSearch::BayesianClusterSearch(const std::set<ContainerOption> &allowedContainerOptions,
                                                       const NumberSet<double> &allowedCellSizeFactors,

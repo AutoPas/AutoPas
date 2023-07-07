@@ -194,7 +194,7 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
 
       // smooth evidence to remove high outliers. If smoothing results in a higher value use the original value.
       const auto smoothedValue =
-          std::min(reducedValue, smoothing::smoothLastPoint(_evidenceCollection.getEvidence(currentConfig), 5));
+          std::min(reducedValue, smoothing::smoothLastPoint(*_evidenceCollection.getEvidence(currentConfig), 5));
 
       // replace collected evidence with smoothed value to improve next smoothing
       _evidenceCollection.modifyLastEvidence(currentConfig).value = smoothedValue;

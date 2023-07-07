@@ -19,10 +19,10 @@
 #include "autopas/containers/LoadEstimators.h"
 #include "autopas/options/MPIStrategyOption.h"
 #include "autopas/tuning/Configuration.h"
+#include "autopas/tuning/searchSpace/EvidenceCollection.h"
 #include "autopas/utils/AutoPasConfigurationCommunicator.h"
 #include "autopas/utils/WrapMPI.h"
 #include "hclient.h"
-#include "tuning/searchSpace/EvidenceCollection.h"
 
 namespace autopas {
 
