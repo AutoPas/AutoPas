@@ -19,7 +19,7 @@ std::set<Configuration> SearchSpaceGenerators::optionCrossProduct(
     const std::set<ContainerOption> &allowedContainerOptions, const std::set<TraversalOption> &allowedTraversalOptions,
     const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
     const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options,
-    std::unique_ptr<NumberSet<double>> allowedCellSizeFactors) {
+    const NumberSet<double> *allowedCellSizeFactors) {
   if (allowedCellSizeFactors->isInterval()) {
     utils::ExceptionHandler::exception("Cross product does not work with continuous cell size factors!");
   }

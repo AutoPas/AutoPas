@@ -61,7 +61,7 @@ std::set<Configuration> optionCrossProduct(const std::set<ContainerOption> &allo
                                            const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
                                            const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                                            const std::set<Newton3Option> &allowedNewton3Options,
-                                           std::unique_ptr<NumberSet<double>> allowedCellSizeFactors);
+                                           const NumberSet<double> *allowedCellSizeFactors);
 
 /**
  * Crudely trying to reconstruct the dimensions of the search space from a given set of options.
