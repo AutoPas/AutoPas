@@ -75,9 +75,17 @@ void AutoPas<Particle>::init() {
     _externalMPICommunicator = true;
   }
 
+  // if an interval was given for the cell size factor, change it to the relevant values
+  if (const auto csfIntervalPtr = dynamic_cast<NumberInterval<double> *>(_allowedCellSizeFactors.get())) {
+    const auto interactionLength =
+        _logicHandlerInfo.cutoff * _logicHandlerInfo.verletSkinPerTimestep * _verletRebuildFrequency;
+    const auto boxLengthX = _logicHandlerInfo.boxMax[0] - _logicHandlerInfo.boxMin[0];
+    _allowedCellSizeFactors = std::make_unique<NumberSetFinite<double>>(
+        SearchSpaceGenerators::calculateRelevantCsfs(*csfIntervalPtr, interactionLength, boxLengthX));
+  }
   const auto searchSpace = SearchSpaceGenerators::optionCrossProduct(
       _allowedContainers, _allowedTraversals, _allowedLoadEstimators, _allowedDataLayouts, _allowedNewton3Options,
-      _allowedCellSizeFactors->clone());
+      _allowedCellSizeFactors.get());
 
   AutoTuner::TuningStrategiesListType tuningStrategies;
   tuningStrategies.reserve(_tuningStrategyOptions.size());
