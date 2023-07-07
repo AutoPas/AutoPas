@@ -593,7 +593,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           config.addMolType(molID, molToSiteId, molToSitePos, momentOfInertia);
         }
 
-        for_each(molErrors.begin(), molErrors.end(), pushMolError);
+        std::for_each(molErrors.begin(), molErrors.end(), pushMolError);
 #else
         AutoPasLog(WARN,
                    "Multi-Site Molecule information has been provided, however md-flexible has been compiled without "
@@ -632,7 +632,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
               const auto cubeGrid = parseCubeGridObject(config, it->second, objectErrors);
 
               config.cubeGridObjects.emplace_back(cubeGrid);
-              for_each(objectErrors.begin(), objectErrors.end(), pushObjectError);
+              std::for_each(objectErrors.begin(), objectErrors.end(), pushObjectError);
             }
           } else if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeGaussObjectsStr) {
             generatorName = MDFlexConfig::cubeGaussObjectsStr;
@@ -642,7 +642,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
               const auto cubeGauss = parseCubeGaussObject(config, it->second, objectErrors);
 
               config.cubeGaussObjects.emplace_back(cubeGauss);
-              for_each(objectErrors.begin(), objectErrors.end(), pushObjectError);
+              std::for_each(objectErrors.begin(), objectErrors.end(), pushObjectError);
             }
           } else if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeUniformObjectsStr) {
             generatorName = MDFlexConfig::cubeUniformObjectsStr;
@@ -652,7 +652,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
               const auto cubeUniform = parseCubeUniformObject(config, it->second, objectErrors);
 
               config.cubeUniformObjects.emplace_back(cubeUniform);
-              for_each(objectErrors.begin(), objectErrors.end(), pushObjectError);
+              std::for_each(objectErrors.begin(), objectErrors.end(), pushObjectError);
             }
           } else if (objectIterator->first.as<std::string>() == MDFlexConfig::sphereObjectsStr) {
             generatorName = MDFlexConfig::sphereObjectsStr;
@@ -662,7 +662,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
               const auto sphere = parseSphereObject(config, it->second, objectErrors);
 
               config.sphereObjects.emplace_back(sphere);
-              for_each(objectErrors.begin(), objectErrors.end(), pushObjectError);
+              std::for_each(objectErrors.begin(), objectErrors.end(), pushObjectError);
             }
           } else if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeClosestPackedObjectsStr) {
             generatorName = MDFlexConfig::cubeClosestPackedObjectsStr;
@@ -672,7 +672,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
               const auto cubeClosestPacked = parseCubeClosestPacked(config, it->second, objectErrors);
 
               config.cubeClosestPackedObjects.emplace_back(cubeClosestPacked);
-              for_each(objectErrors.begin(), objectErrors.end(), pushObjectError);
+              std::for_each(objectErrors.begin(), objectErrors.end(), pushObjectError);
             }
           } else {
             std::stringstream ss;
