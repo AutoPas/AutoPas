@@ -20,9 +20,8 @@
 #include "autopas/utils/logging/Logger.h"
 
 namespace autopas {
-AutoTuner::AutoTuner(std::vector<std::unique_ptr<TuningStrategyInterface>> &tuningStrategies,
-                     const std::set<Configuration> &searchSpace, const AutoTunerInfo &info,
-                     unsigned int rebuildFrequency, const std::string &outputSuffix)
+AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpaceType &searchSpace,
+                     const AutoTunerInfo &info, unsigned int rebuildFrequency, const std::string &outputSuffix)
     : _selectorStrategy(info.selectorStrategy),
       _tuningStrategies(info.useTuningStrategyLoggerProxy ? wrapTuningStrategies(tuningStrategies, outputSuffix)
                                                           : std::move(tuningStrategies)),

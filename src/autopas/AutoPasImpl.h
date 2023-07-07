@@ -79,7 +79,8 @@ void AutoPas<Particle>::init() {
       _allowedContainers, _allowedTraversals, _allowedLoadEstimators, _allowedDataLayouts, _allowedNewton3Options,
       _allowedCellSizeFactors->clone());
 
-  std::vector<std::unique_ptr<TuningStrategyInterface>> tuningStrategies;
+  AutoTuner::TuningStrategiesListType tuningStrategies;
+  tuningStrategies.reserve(_tuningStrategyOptions.size());
   for (const auto &strategy : _tuningStrategyOptions) {
     tuningStrategies.emplace_back(TuningStrategyFactory::generateTuningStrategy(
         searchSpace, strategy, _tuningStrategyFactoryInfo, _outputSuffix));

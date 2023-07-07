@@ -38,6 +38,15 @@ namespace autopas {
 class AutoTuner {
  public:
   /**
+   * Type for the member holding all tuning strategies.
+   */
+  using TuningStrategiesListType = std::vector<std::unique_ptr<TuningStrategyInterface>>;
+  /**
+   * Type for the search space holding all possible configurations.
+   */
+  using SearchSpaceType = std::set<Configuration>;
+
+  /**
    * Constructor for the AutoTuner that generates all configurations from the given options.
    * @param tuningStrategies Vector of object implementing the modelling and exploration of a search space. Will be
    * moved into the tuner.
@@ -46,9 +55,8 @@ class AutoTuner {
    * @param rebuildFrequency The number of iterations after which the neighbor lists are rebuilt.
    * @param outputSuffix Suffix for all output files produced by this object.
    */
-  AutoTuner(std::vector<std::unique_ptr<TuningStrategyInterface>> &tuningStrategies,
-            const std::set<Configuration> &searchSpace, const AutoTunerInfo &info, unsigned int rebuildFrequency,
-            const std::string &outputSuffix);
+  AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpaceType &searchSpace, const AutoTunerInfo &info,
+            unsigned int rebuildFrequency, const std::string &outputSuffix);
 
   /**
    * Move assignment operator
@@ -324,7 +332,7 @@ class AutoTuner {
   /**
    * The search space for this tuner.
    */
-  std::set<Configuration> _searchSpace;
+  SearchSpaceType _searchSpace;
 
   /**
    * Sorted queue of configurations that should be looked at in this tuning phase.
