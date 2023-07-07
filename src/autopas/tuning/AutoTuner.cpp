@@ -155,9 +155,9 @@ std::tuple<Configuration, bool> AutoTuner::rejectConfig(const Configuration &rej
   }
 
   // remove the config from the queue
-  _configQueue.erase(
-      std::remove_if(_configQueue.begin(), _configQueue.end(), [&](auto &conf) { return conf == rejectedConfig; }),
-      _configQueue.end());
+  _configQueue.erase(std::remove_if(_configQueue.begin(), _configQueue.end(),
+                                    [&](const auto &conf) { return conf == rejectedConfig; }),
+                     _configQueue.end());
 
   if (indefinitely) {
     // delete rejected config from the search space and notify tuning strategies.
