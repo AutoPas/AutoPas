@@ -49,7 +49,9 @@ PredictiveTuning::PredictionsType PredictiveTuning::calculatePredictions(
         }
       }
     }();
-    predictions.emplace_back(configuration, predictionValue);
+    if (predictionValue != _predictionErrorValue) {
+      predictions[configuration] = predictionValue;
+    }
   }
   // if AutoPas is compiled without -DAUTOPAS_LOG_PREDICTIONS this does nothing
   _predictionLogger.logAllPredictions(predictions, _predictionErrorValue, tuningPhase);
@@ -312,6 +314,10 @@ void PredictiveTuning::reset(size_t iteration, size_t tuningPhase, std::vector<C
   }
 
   const auto predictions = calculatePredictions(iteration, tuningPhase, configQueue, evidenceCollection);
+  // if there is not enough data to make any predictions yet do nothing.
+  if (predictions.empty()) {
+    return;
+  }
   // find the best prediction
   const auto &[bestConf, bestPrediction] =
       *std::min_element(predictions.begin(), predictions.end(), [&](const auto &tupleA, const auto &tupleB) {
