@@ -43,6 +43,8 @@ extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::Fl
 
 #include "Thermostat.h"
 #include "TimeDiscretization.h"
+#include "autopas/molecularDynamics/LJFunctorMIPP.h"
+#include "autopas/molecularDynamics/LJFunctorXSIMD.h"
 #include "autopas/utils/MemoryProfiler.h"
 #include "autopas/utils/WrapMPI.h"
 #include "configuration/MDFlexConfig.h"
@@ -632,6 +634,11 @@ T Simulation::applyWithChosenFunctor(F f) {
           "-DMD_FLEXIBLE_FUNCTOR_SVE=ON`.");
 #endif
     }
+    case MDFlexConfig::FunctorOption::lj12_6_XSIMD: {
+      return f(autopas::LJFunctorXSIMD<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
+    }
+    case MDFlexConfig::FunctorOption::lj12_6_MIPP:
+      return f(autopas::LJFunctorMIPP<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
   }
   throw std::runtime_error("Unknown functor choice" +
                            std::to_string(static_cast<int>(_configuration.functorOption.value)));
