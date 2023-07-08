@@ -395,7 +395,7 @@ class LJFunctorXSIMD
    * @param rest
       */
      template <bool newton3, bool remainderIsMasked>
-     inline void SoAKernel(const size_t j, const xsimd::batch<int64_t> ownedStateI, const int64_t *const __restrict ownedStatePtr2,
+     inline void SoAKernel(const size_t j, const xsimd::batch<int64_t> &ownedStateI, const int64_t *const __restrict ownedStatePtr2,
                            const xsimd::batch<double> &x1, const xsimd::batch<double> &y1, const xsimd::batch<double> &z1, const double *const __restrict x2ptr,
                            const double *const __restrict y2ptr, const double *const __restrict z2ptr,
                            double *const __restrict fx2ptr, double *const __restrict fy2ptr,

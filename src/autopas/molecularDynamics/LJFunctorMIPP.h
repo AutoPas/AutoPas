@@ -398,7 +398,7 @@ class LJFunctorMIPP
    * @param rest
       */
      template <bool newton3, bool remainderIsMasked>
-     inline void SoAKernel(const size_t j, const Reg<int64_t> ownedStateI, const int64_t *const __restrict ownedStatePtr2,
+     inline void SoAKernel(const size_t j, const Reg<int64_t> &ownedStateI, const int64_t *const __restrict ownedStatePtr2,
                            const Reg<double> &x1, const Reg<double> &y1, const Reg<double> &z1, const double *const __restrict x2ptr,
                            const double *const __restrict y2ptr, const double *const __restrict z2ptr,
                            double *const __restrict fx2ptr, double *const __restrict fy2ptr,
@@ -408,6 +408,7 @@ class LJFunctorMIPP
        Reg<double> epsilon24s = _epsilon24;
        Reg<double> sigmaSquares = _sigmaSquare;
        Reg<double> shift6s = _shift6;
+
        if (useMixing) {
          // the first argument for set lands in the last bits of the register
          epsilon24s = {
