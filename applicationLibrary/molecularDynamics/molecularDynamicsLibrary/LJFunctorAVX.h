@@ -74,8 +74,8 @@ class LJFunctorAVX
     }
   }
 #else
-  : autopas::Functor<Particle,
-                LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
+      : autopas::Functor<
+            Particle, LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
             cutoff) {
     autopas::utils::ExceptionHandler::exception("AutoPas was compiled without AVX support!");
   }

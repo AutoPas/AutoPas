@@ -61,8 +61,9 @@ class LJFunctorSVE
    */
   explicit LJFunctorSVE(double cutoff, void * /*dummy*/)
 #ifdef __ARM_FEATURE_SVE
-    : autopas::Functor<Particle,
-                LJFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(cutoff),
+      : autopas::Functor<
+            Particle, LJFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
+            cutoff),
         _cutoffSquared{cutoff * cutoff},
         _cutoffSquaredAoS(cutoff * cutoff),
         _potentialEnergySum{0.},
@@ -684,10 +685,10 @@ class LJFunctorSVE
         lennardJones<true>(index_1, typeIDptr, typeIDptr, pgC_1, dr2_1, epsilon24s_1, shift6s_1, lj6_1, fac_1);
 
       if (continue_1)
-        applyForces<newton3, true>(0, index_1, ownedStatePtr[indexFirst] == autopas::OwnershipState::owned, fxptr, fyptr, fzptr,
-                                   fxacc, fyacc, fzacc, virialSumX, virialSumY, virialSumZ, potentialEnergySum, drx_1,
-                                   dry_1, drz_1, xptr, yptr, zptr, ownedStateJ_1, pgC_1, epsilon24s_1, shift6s_1, lj6_1,
-                                   fac_1);
+        applyForces<newton3, true>(0, index_1, ownedStatePtr[indexFirst] == autopas::OwnershipState::owned, fxptr,
+                                   fyptr, fzptr, fxacc, fyacc, fzacc, virialSumX, virialSumY, virialSumZ,
+                                   potentialEnergySum, drx_1, dry_1, drz_1, xptr, yptr, zptr, ownedStateJ_1, pgC_1,
+                                   epsilon24s_1, shift6s_1, lj6_1, fac_1);
     }
 
     fxptr[indexFirst] += svaddv_f64(svptrue_b64(), fxacc);

@@ -352,7 +352,8 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
       qMul(mol.getQuaternion(), qMul(angularMomentumM0, qConjugate(mol.getQuaternion()))));  // this is used later
 
   // (18)
-  const auto torqueM0 = convertQuaternionTo3DVec(qMul(qConjugate(mol.getQuaternion()), qMul(mol.getTorque(), mol.getQuaternion())));
+  const auto torqueM0 =
+      convertQuaternionTo3DVec(qMul(qConjugate(mol.getQuaternion()), qMul(mol.getTorque(), mol.getQuaternion())));
 
   // (19)
   const auto angularVelM0 = div(angularMomentumM0, momentOfInertiaM);
@@ -425,7 +426,8 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
   // From the current quaternion, calculate the expected torque
   std::array<double, 3> expectedTorque{0., 0., 0.};
   const auto unrotatedSitePositions = PPL->getSitePositions(0);
-  const auto rotatedSitePosition = rotateVectorOfPositions(resultantMolWithGlobalForce->getQuaternion(), unrotatedSitePositions);
+  const auto rotatedSitePosition =
+      rotateVectorOfPositions(resultantMolWithGlobalForce->getQuaternion(), unrotatedSitePositions);
   for (size_t site = 0; site < PPL->getNumSites(0); site++) {
     expectedTorque = add(expectedTorque, cross(rotatedSitePosition[site], {0.1, -10., 1.}));
   }
