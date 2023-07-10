@@ -36,7 +36,9 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   const unsigned int verletClusterSize = 64;
   const autopas::LogicHandlerInfo logicHandlerInfo{
       .boxMin{0., 0., 0.},
-      .boxMax{2, 4, 2},
+      .boxMax{8., 8., 8.},
+      .cutoff = 1.8,
+      .verletSkinPerTimestep = .01,
   };
   const autopas::AutoTunerInfo autoTunerInfo{
       .tuningInterval = 1000,
@@ -189,7 +191,7 @@ TEST_F(AutoTunerTest, testWillRebuildDDL) {
   autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
   autopas::LogicHandler<Molecule> logicHandler(autoTuner, logicHandlerInfo, verletRebuildFrequency, "");
 
-  EXPECT_EQ(*(searchSpace.begin()), autoTuner.getCurrentConfig());
+  EXPECT_EQ(*(searchSpace.rbegin()), autoTuner.getCurrentConfig());
 
   testing::NiceMock<MockFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
@@ -245,7 +247,7 @@ TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
   autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
   autopas::LogicHandler<Molecule> logicHandler(autoTuner, logicHandlerInfo, verletRebuildFrequency, "");
 
-  EXPECT_EQ(*(searchSpace.begin()), autoTuner.getCurrentConfig());
+  EXPECT_EQ(*(searchSpace.rbegin()), autoTuner.getCurrentConfig());
 
   testing::NiceMock<MockFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
@@ -290,7 +292,7 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
   autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
   autopas::LogicHandler<Molecule> logicHandler(autoTuner, logicHandlerInfo, verletRebuildFrequency, "");
 
-  EXPECT_EQ(*(searchSpace.begin()), autoTuner.getCurrentConfig());
+  EXPECT_EQ(*(searchSpace.rbegin()), autoTuner.getCurrentConfig());
 
   testing::NiceMock<MockFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
@@ -326,7 +328,7 @@ TEST_F(AutoTunerTest, testForceRetuneBetweenPhases) {
       .maxSamples = 3,
   };
 
-  autopas::AutoTuner::SearchSpaceType searchSpace{_confLc_c01, _confLc_c04, _confLc_c08};
+  autopas::AutoTuner::SearchSpaceType searchSpace{_confLc_c01, _confLc_c18, _confLc_c08};
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
   autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
@@ -375,17 +377,7 @@ TEST_F(AutoTunerTest, testForceRetuneInPhase) {
   };
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
-  const autopas::Configuration confLc_c01(autopas::ContainerOption::linkedCells, cellSizeFactor,
-                                          autopas::TraversalOption::lc_c01, autopas::LoadEstimatorOption::none,
-                                          autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
-  const autopas::Configuration confLc_c04(autopas::ContainerOption::linkedCells, cellSizeFactor,
-                                          autopas::TraversalOption::lc_c04, autopas::LoadEstimatorOption::none,
-                                          autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
-  const autopas::Configuration confLc_c08(autopas::ContainerOption::linkedCells, cellSizeFactor,
-                                          autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
-                                          autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
-
-  const auto searchSpace = {confLc_c01, confLc_c04, confLc_c08};
+  const auto searchSpace = {_confLc_c01, _confLc_c18, _confLc_c08};
 
   autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
   autopas::LogicHandler<Molecule> logicHandler(autoTuner, logicHandlerInfo, verletRebuildFrequency, "");
@@ -505,7 +497,7 @@ TEST_F(AutoTunerTest, testConfigSecondInvalid) {
   autopas::AutoTuner tuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
   autopas::LogicHandler<Molecule> logicHandler(tuner, logicHandlerInfo, verletRebuildFrequency, "");
 
-  EXPECT_EQ(confNoN3, tuner.getCurrentConfig());
+  EXPECT_EQ(*(std::rbegin(searchSpace)), tuner.getCurrentConfig());
 
   testing::NiceMock<MockFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
@@ -546,7 +538,7 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
   autopas::AutoTuner tuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
   autopas::LogicHandler<Molecule> logicHandler(tuner, logicHandlerInfo, verletRebuildFrequency, "");
 
-  EXPECT_EQ(confN3, tuner.getCurrentConfig());
+  EXPECT_EQ(*std::rbegin(searchSpace), tuner.getCurrentConfig());
 
   testing::NiceMock<MockFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
