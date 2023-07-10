@@ -14,6 +14,7 @@
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/tuning/selectors/TraversalSelectorInfo.h"
+#include "autopas/tuning/utils/SearchSpaceGenerators.h"
 #include "autopas/utils/StaticCellSelector.h"
 #include "testingHelpers/NumThreadGuard.h"
 #include "testingHelpers/commonTypedefs.h"
@@ -278,27 +279,20 @@ void doAssertions(autopas::AutoPas<Molecule> &autoPas1, autopas::AutoPas<Molecul
                                                                            << "Called from line: " << line;
 }
 
-void setFromOptions(const testingTuple &options, autopas::AutoPas<Molecule> &autoPas) {
-  auto containerOption = std::get<0>(std::get<0>(options));
-  auto traversalOption = std::get<1>(std::get<0>(options));
-  auto loadEstimatorOption = std::get<2>(std::get<0>(options));
-  auto dataLayoutOption = std::get<1>(options);
-  auto newton3Option = std::get<2>(options);
-  auto cellSizeOption = std::get<3>(options);
-
-  autoPas.setAllowedContainers({containerOption});
-  autoPas.setAllowedTraversals({traversalOption});
-  autoPas.setAllowedLoadEstimators({loadEstimatorOption});
-  autoPas.setAllowedDataLayouts({dataLayoutOption});
-  autoPas.setAllowedNewton3Options({newton3Option});
-  autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeOption})));
+void setFromOptions(const autopas::Configuration &conf, autopas::AutoPas<Molecule> &autoPas) {
+  autoPas.setAllowedContainers({conf.container});
+  autoPas.setAllowedTraversals({conf.traversal});
+  autoPas.setAllowedLoadEstimators({conf.loadEstimator});
+  autoPas.setAllowedDataLayouts({conf.dataLayout});
+  autoPas.setAllowedNewton3Options({conf.newton3});
+  autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({conf.cellSizeFactor})));
 }
 
-void testSimulationLoop(testingTuple options) {
+void testSimulationLoop(const autopas::Configuration &conf) {
   // create AutoPas object
   autopas::AutoPas<Molecule> autoPas;
 
-  setFromOptions(options, autoPas);
+  setFromOptions(conf, autoPas);
 
   defaultInit(autoPas);
 
@@ -382,13 +376,13 @@ void testSimulationLoop(testingTuple options) {
  * No additional halo exchange is simulated in this test.
  * @param options
  */
-void testHaloCalculation(testingTuple options) {
+void testHaloCalculation(const autopas::Configuration &conf) {
   using namespace autopas::utils::ArrayMath::literals;
 
   // create AutoPas object
   autopas::AutoPas<Molecule> autoPas;
 
-  setFromOptions(options, autoPas);
+  setFromOptions(conf, autoPas);
 
   defaultInit(autoPas);
 
@@ -431,9 +425,9 @@ void testHaloCalculation(testingTuple options) {
 
 TEST_P(AutoPasInterfaceTest, SimulationLoopTest) {
   // this test checks the correct behavior of the autopas interface.
-  auto options = GetParam();
+  auto conf = GetParam();
   try {
-    testSimulationLoop(options);
+    testSimulationLoop(conf);
   } catch (autopas::utils::ExceptionHandler::AutoPasException &autoPasException) {
     std::string str = autoPasException.what();
     if (str.find("Rejected the only configuration in the search space!") != std::string::npos) {
@@ -450,9 +444,9 @@ TEST_P(AutoPasInterfaceTest, SimulationLoopTest) {
  * comments of testHaloCalculation() for a more detailed description.
  */
 TEST_P(AutoPasInterfaceTest, HaloCalculationTest) {
-  auto options = GetParam();
+  auto conf = GetParam();
   try {
-    testHaloCalculation(options);
+    testHaloCalculation(conf);
   } catch (autopas::utils::ExceptionHandler::AutoPasException &autoPasException) {
     std::string str = autoPasException.what();
     if (str.find("Rejected the only configuration in the search space!") != std::string::npos) {
@@ -471,8 +465,8 @@ TEST_P(AutoPasInterfaceTest, ConfigIsValidVSTraversalIsApplicable) {
 
   NumThreadGuard numThreadGuard(3);
   const autopas::Configuration conf = [&]() {
-    const auto [containerTraversalLoadEst, dataLayoutOption, newton3Option, cellSizeOption] = GetParam();
-    const auto [containerOption, traversalOption, loadEstimatorOption] = containerTraversalLoadEst;
+    const auto [containerOption, traversalOption, loadEstimatorOption, dataLayoutOption, newton3Option,
+                cellSizeOption] = GetParam();
 
     return autopas::Configuration{containerOption,     cellSizeOption,   traversalOption,
                                   loadEstimatorOption, dataLayoutOption, newton3Option};
@@ -508,28 +502,13 @@ using ::testing::UnorderedElementsAreArray;
 using ::testing::Values;
 using ::testing::ValuesIn;
 
-INSTANTIATE_TEST_SUITE_P(
-    Generated, AutoPasInterfaceTest,
-    // proper indent
-    Combine(ValuesIn([]() -> std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption,
-                                                    autopas::LoadEstimatorOption>> {
-              std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption, autopas::LoadEstimatorOption>>
-                  tupleVector;
-              for (const auto &containerOption : autopas::ContainerOption::getAllOptions()) {
-                auto compatibleTraversals = autopas::compatibleTraversals::allCompatibleTraversals(containerOption);
-                for (const auto &traversalOption : compatibleTraversals) {
-                  auto compatibleLoadEstimators = autopas::loadEstimators::getApplicableLoadEstimators(
-                      containerOption, traversalOption, autopas::LoadEstimatorOption::getAllOptions());
-                  for (const auto &loadEstimatorOption : compatibleLoadEstimators) {
-                    tupleVector.emplace_back(containerOption, traversalOption, loadEstimatorOption);
-                  }
-                }
-              }
-              return tupleVector;
-            }()),
-            ValuesIn(autopas::DataLayoutOption::getAllOptions()), ValuesIn(autopas::Newton3Option::getAllOptions()),
-            Values(0.5, 1., 1.5)),
-    AutoPasInterfaceTest::PrintToStringParamName());
+INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterfaceTest,
+                         ::testing::ValuesIn(autopas::SearchSpaceGenerators::optionCrossProduct(
+                             autopas::ContainerOption::getAllOptions(), autopas::TraversalOption::getAllOptions(),
+                             autopas::LoadEstimatorOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
+                             autopas::Newton3Option::getAllOptions(),
+                             std::make_unique<autopas::NumberSetFinite<double>>(std::set<double>{0.5, 1., 1.5}).get())),
+                         AutoPasInterfaceTest::PrintToStringParamName());
 
 ////////////////////////////////////////////// FOR EVERY SINGLE CONTAINER //////////////////////////////////////////////
 
