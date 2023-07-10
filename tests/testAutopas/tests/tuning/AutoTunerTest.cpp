@@ -136,14 +136,16 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   while (stillTuning) {
     if (collectedSamples == autoTunerInfo.maxSamples) {
       collectedSamples = 0;
-      // add particles, so VerletClusterLists uses more than one tower.
       logicHandler.getContainer().deleteAllParticles();
-      const std::array<size_t, 3> particlesPerDim = {8, 16, 8};
-      const std::array<double, 3> spacing = {0.25, 0.25, 0.25};
-      const std::array<double, 3> offset = {0.125, 0.125, 0.125};
-      Molecule defaultParticle{};
-      autopasTools::generators::GridGenerator::fillWithParticles(logicHandler.getContainer(), particlesPerDim,
-                                                                 defaultParticle, spacing, offset);
+      // add particles, so VerletClusterLists uses more than one tower, otherwise its traversals are invalid.
+      if (logicHandler.getContainer().getContainerType() == autopas::ContainerOption::verletClusterLists) {
+        const std::array<size_t, 3> particlesPerDim = {8, 16, 8};
+        const std::array<double, 3> spacing = {0.25, 0.25, 0.25};
+        const std::array<double, 3> offset = {0.125, 0.125, 0.125};
+        Molecule defaultParticle{};
+        autopasTools::generators::GridGenerator::fillWithParticles(logicHandler.getContainer(), particlesPerDim,
+                                                                   defaultParticle, spacing, offset);
+      }
     }
     stillTuning = logicHandler.iteratePairwisePipeline(&functor);
     ++iterations;
