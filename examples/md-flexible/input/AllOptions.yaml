@@ -43,6 +43,10 @@ Sites:
 # Uncomment below to run a multi-site simulation.
 #Molecules:
 #  0:
+#    # Multi-site molecules have LJ sites, with site-types that correspond to specific site LJ information given above
+#    # and respective relative unrotated site positions. Moment-of-inertia is given as the 3 non-zero elements of a diagonal
+#    # 3x3 Moment-of-inertia matrix. It is the user's responsibility that the site masses, positions, and Moment of Inertia
+#    # match.
 #    site-types                       : [ 0, 0, 0 ]
 #    relative-site-positions          : [ [ 0.74349607, 1.20300191, 0. ], [ 0.3249197, -1.37638192, 0. ], [-1.37638192, -0.3249197, 0. ] ]
 #    moment-of-inertia                : [ 5.23606798, 0.76393202, 6. ]
@@ -53,6 +57,10 @@ Objects:
       particle-spacing               :  1.1225
       bottomLeftCorner               :  [0, 0, 0]
       velocity                       :  [0, 0, 0]
+      # For single-site simulations, particle-type-id fills the object with single-site LJ molecules with the LJ parameters
+      # given for site-0. For multi-site simulations, this fills the object with multi-site molecules with the multi-site
+      # parameters given above for Molecule-0. See particleTypeStr in the documentation for MDFlexConfig.h for more
+      # information.
       particle-type-id               :  0
   CubeGauss:
     0:
