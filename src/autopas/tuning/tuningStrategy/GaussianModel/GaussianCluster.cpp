@@ -144,7 +144,17 @@ std::vector<autopas::GaussianModelTypes::VectorAcquisition> autopas::GaussianClu
       // normalize
       mixAcquisition /= weightSum;
 
-      acquisitions.emplace_back(std::make_pair(_discreteVectorMap[i], continuousSample), mixAcquisition);
+      // only add the new acquisition if it doesn't already exist
+      const auto newPair = std::make_pair(_discreteVectorMap[i], continuousSample);
+      const auto newPairIter = std::find_if(acquisitions.begin(), acquisitions.end(), [&](const auto &acquisition) {
+        const auto &[samplePair, value] = acquisition;
+        const auto &[insertedDiscreteSample, insertedContinuousSample] = samplePair;
+        return _discreteVectorMap[i].isApprox(insertedDiscreteSample) and
+               continuousSample.isApprox(insertedContinuousSample);
+      });
+      if (newPairIter == acquisitions.end()) {
+        acquisitions.emplace_back(newPair, mixAcquisition);
+      }
     }
   }
 

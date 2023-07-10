@@ -95,15 +95,18 @@ void autopas::BayesianSearch::optimizeSuggestions(std::vector<Configuration> &co
     // No valid configuration. This should rarely happen.
     if (currentSamples.empty()) {
       AutoPasLog(DEBUG, "Tuning could not generate a valid configuration on attempt {} of {}.", i, maxAttempts);
+      if (i == maxAttempts) {
+        // abort if in none of the attempts any good configuration was chosen.
+        utils::ExceptionHandler::exception("BayesianSearch: Failed to sample an valid FeatureVector after {} attempts.",
+                                           maxAttempts);
+      }
     } else {
       // replace the config queue by what is left of the proposed configurations. Best goes to the back.
       configQueue.clear();
       std::copy(currentSamples.rbegin(), currentSamples.rend(), std::back_inserter(configQueue));
+      break;
     }
   }
-  // abort if in none of the attempts any good configuration was chosen.
-  utils::ExceptionHandler::exception("BayesianSearch: Failed to sample an valid FeatureVector after {} attempts.",
-                                     maxAttempts);
 }
 
 std::vector<autopas::FeatureVector> autopas::BayesianSearch::sampleAcquisitions(size_t n,
@@ -112,9 +115,15 @@ std::vector<autopas::FeatureVector> autopas::BayesianSearch::sampleAcquisitions(
   auto currentSamples = _encoder.lhsSampleFeatures(n, _rng);
 
   // map container and calculate all acquisition function values
+  // Use this step to also filter out any duplicate samples.
   std::map<FeatureVector, double> acquisitions;
-  for (auto &sample : currentSamples) {
-    acquisitions[sample] = _gaussianProcess.calcAcquisition(af, _encoder.oneHotEncode(sample));
+  for (auto samplesIter = currentSamples.begin(); samplesIter != currentSamples.end();) {
+    if (acquisitions.count(*samplesIter) == 0) {
+      acquisitions[*samplesIter] = _gaussianProcess.calcAcquisition(af, _encoder.oneHotEncode(*samplesIter));
+      ++samplesIter;
+    } else {
+      currentSamples.erase(samplesIter);
+    }
   }
 
   // sort by acquisition

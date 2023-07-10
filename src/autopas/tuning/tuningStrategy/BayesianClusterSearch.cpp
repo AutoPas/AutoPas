@@ -170,16 +170,18 @@ void autopas::BayesianClusterSearch::optimizeSuggestions(std::vector<Configurati
     // No valid configuration. This should rarely happen.
     if (currentAcquisitions.empty()) {
       AutoPasLog(DEBUG, "Tuning could not generate a valid configuration on attempt {} of {}.", i, maxAttempts);
+      if (i == maxAttempts) {
+        utils::ExceptionHandler::exception(
+            "BayesianClusterSearch: Failed to sample an valid FeatureVector after {} attempts.", maxAttempts);
+      }
     } else {
       // replace the config queue by what is left of the proposed configurations.
       configQueue.clear();
       std::transform(currentAcquisitions.rbegin(), currentAcquisitions.rend(), std::back_inserter(configQueue),
                      [&](const auto &acquisition) { return _encoder.convertFromCluster(acquisition); });
+      break;
     }
   }
-
-  utils::ExceptionHandler::exception(
-      "BayesianClusterSearch: Failed to sample an valid FeatureVector after {} attempts.", maxAttempts);
 }
 
 std::vector<autopas::GaussianModelTypes::VectorPairDiscreteContinuous>
