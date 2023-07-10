@@ -33,15 +33,15 @@ TEST_F(BayesianSearchTest, testMaxEvidence) {
   size_t iteration = searchSpace.size() + 100;
   bayesSearch.reset(iteration, 1, configQueue, evidenceCollection);
 
-  for (size_t i = 1; i < searchSpace.size() and not configQueue.empty(); ++i, ++iteration) {
+  for (size_t i = 0; i < searchSpace.size() and not configQueue.empty(); ++i, ++iteration) {
+    ASSERT_LT(i, maxEvidence) << "Tuning phase was not aborted after maxEvidence=" << maxEvidence << " iterations.\n"
+                              << "configQueue: " << autopas::utils::ArrayUtils::to_string(configQueue);
     const autopas::Evidence evidence{iteration, 1ul, 42l};
     bayesSearch.addEvidence(configQueue.back(), evidence);
     evidenceCollection.addEvidence(configQueue.back(), evidence);
     configQueue.pop_back();
     ASSERT_FALSE(configQueue.empty()) << "All configurations were popped out of the queue prematurely.";
     bayesSearch.optimizeSuggestions(configQueue, evidenceCollection);
-    ASSERT_LT(i, maxEvidence) << "Tuning phase was not aborted after maxEvidence=" << maxEvidence << " iterations.\n"
-                              << "configQueue: " << autopas::utils::ArrayUtils::to_string(configQueue);
   }
   ASSERT_TRUE(configQueue.empty()) << "BayesianSearch::optimizeSuggestions() should clear the queue once the "
                                       "maximum number of evidence is reached to signal the end of a tuning phase.\n"
@@ -50,8 +50,8 @@ TEST_F(BayesianSearchTest, testMaxEvidence) {
 }
 
 TEST_F(BayesianSearchTest, testFindBest) {
-  size_t maxEvidence = 7;
-  unsigned long seed = 21;
+  constexpr size_t maxEvidence = 7;
+  constexpr unsigned long seed = 21;
   constexpr size_t predNumLHSamples = 50;
 
   const std::set<autopas::ContainerOption> containerOptions{autopas::ContainerOption::linkedCells};
@@ -69,7 +69,7 @@ TEST_F(BayesianSearchTest, testFindBest) {
   autopas::BayesianSearch bayesSearch(containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions,
                                       dataLayoutOptions, newton3Options, maxEvidence,
                                       autopas::AcquisitionFunctionOption::upperConfidenceBound, predNumLHSamples, seed);
-  std::vector<autopas::Configuration> configQueue{searchSpace.begin(), searchSpace.end()};
+  std::vector<autopas::Configuration> configQueue{searchSpace.rbegin(), searchSpace.rend()};
   autopas::EvidenceCollection evidenceCollection{};
 
   // configuration to find
