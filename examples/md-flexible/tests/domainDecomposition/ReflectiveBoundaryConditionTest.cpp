@@ -191,7 +191,7 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
     particle.setV({0., 0., 0.});
     particle.setF({0., 0., 0.});
 #if MD_FLEXIBLE_MODE == MULTISITE
-    particle.setQ(particleQuaternion);
+    particle.setQuaternion(particleQuaternion);
     particle.setAngularVel({0., 0., 0.});
     particle.setTorque({0., 0., 0.});
 #endif
@@ -361,7 +361,7 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> &particlePosition,
     particle.setR(particlePosition);
     particle.setF({0., 0., 0.});
 #if MD_FLEXIBLE_MODE == MULTISITE
-    particle.setQ({0., 0., 0., 1.});
+    particle.setQuaternion({0., 0., 0., 1.});
     particle.setTorque({0., 0., 0.});
 #endif
     particle.setTypeId(particleTypeID);

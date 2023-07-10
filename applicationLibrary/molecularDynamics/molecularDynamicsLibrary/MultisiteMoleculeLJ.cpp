@@ -12,8 +12,8 @@ MultisiteMoleculeLJ::MultisiteMoleculeLJ(std::array<double, 3> r, std::array<dou
                                          unsigned long typeId)
     : mdLib::MoleculeLJ(r, v, moleculeId, typeId), _q(q), _angularVel(angularVel), _torque({0., 0., 0.}) {}
 
-const std::array<double, 4> &MultisiteMoleculeLJ::getQ() const { return _q; }
-void MultisiteMoleculeLJ::setQ(const std::array<double, 4> &q) { _q = q; }
+const std::array<double, 4> &MultisiteMoleculeLJ::getQuaternion() const { return _q; }
+void MultisiteMoleculeLJ::setQuaternion(const std::array<double, 4> &q) { _q = q; }
 
 const std::array<double, 3> &MultisiteMoleculeLJ::getAngularVel() const { return _angularVel; }
 void MultisiteMoleculeLJ::setAngularVel(const std::array<double, 3> &angularVel) { _angularVel = angularVel; }

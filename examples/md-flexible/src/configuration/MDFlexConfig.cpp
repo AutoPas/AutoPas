@@ -172,7 +172,7 @@ void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, 
     particle.setTypeId(typeIds[i]);
 
 #if MD_FLEXIBLE_MODE == MULTISITE
-    particle.setQ(quaternions[i]);
+    particle.setQuaternion(quaternions[i]);
     particle.setAngularVel(angularVelocities[i]);
     particle.setTorque(torques[i]);
 #endif

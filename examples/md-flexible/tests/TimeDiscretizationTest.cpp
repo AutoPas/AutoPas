@@ -22,7 +22,7 @@ void fillWithParticlesAndInit(autopas::AutoPas<ParticleType> &autopasContainer) 
 #if MD_FLEXIBLE_MODE == MULTISITE
   dummy.setTorque({1., 0., 0.});
   dummy.setAngularVel({1., 0., 0.});
-  dummy.setQ({0., 0., 0., 1.});
+  dummy.setQuaternion({0., 0., 0., 1.});
 #endif
 
   // Use dummy to fill container
@@ -193,7 +193,7 @@ TEST_F(TimeDiscretizationTest, testCalculateAngularVelocities) {
   // add particles
   ParticleType mol1;
   mol1.setR({2., 2., 2.});
-  mol1.setQ({0.7071067811865475, 0.7071067811865475, 0., 0.});
+  mol1.setQuaternion({0.7071067811865475, 0.7071067811865475, 0., 0.});
   mol1.setF({0., 0., 1.});
   mol1.setV({0., 0., 1.});
   mol1.setTorque({1., 0., 0.});
@@ -204,7 +204,7 @@ TEST_F(TimeDiscretizationTest, testCalculateAngularVelocities) {
 
   ParticleType mol2;
   mol2.setR({3., 3., 3.});
-  mol2.setQ({-0.7071067811865475, 0.7071067811865475, 0., 0.});
+  mol2.setQuaternion({-0.7071067811865475, 0.7071067811865475, 0., 0.});
   mol2.setF({0., 0., 1.});
   mol2.setV({0., 0., 1.});
   mol2.setTorque({0., 1., 0.});
@@ -217,32 +217,32 @@ TEST_F(TimeDiscretizationTest, testCalculateAngularVelocities) {
   // mol 1
   // convert angular velocity to angular momentum (requiring some awkward rotations)
   const auto angVelWHalf1 = mol1.getAngularVel();
-  const auto angVelMHalf1 = rotatePositionBackwards(mol1.getQ(), angVelWHalf1);
+  const auto angVelMHalf1 = rotatePositionBackwards(mol1.getQuaternion(), angVelWHalf1);
   const auto angMomMHalf1 = mul(angVelMHalf1, momentOfInertiaM);
-  const auto angMomWHalf1 = rotatePosition(mol1.getQ(), angMomMHalf1);
+  const auto angMomWHalf1 = rotatePosition(mol1.getQuaternion(), angMomMHalf1);
 
   // half step with angular momentum
   const auto angMomWFullStep1 = add(angMomWHalf1, mulScalar(mol1.getTorque(), 0.5 * deltaT));
 
   // convert angular momentum back to angular velocity
-  const auto angMomMFullStep1 = rotatePositionBackwards(mol1.getQ(), angMomWFullStep1);
+  const auto angMomMFullStep1 = rotatePositionBackwards(mol1.getQuaternion(), angMomWFullStep1);
   const auto angVelMFullStep1 = div(angMomMFullStep1, momentOfInertiaM);
-  const auto angVelWFullStep1 = rotatePosition(mol1.getQ(), angVelMFullStep1);
+  const auto angVelWFullStep1 = rotatePosition(mol1.getQuaternion(), angVelMFullStep1);
 
   // mol 2
   // convert angular velocity to angular momentum (requiring some awkward rotations)
   const auto angVelWHalf2 = mol2.getAngularVel();
-  const auto angVelMHalf2 = rotatePositionBackwards(mol2.getQ(), angVelWHalf2);
+  const auto angVelMHalf2 = rotatePositionBackwards(mol2.getQuaternion(), angVelWHalf2);
   const auto angMomMHalf2 = mul(angVelMHalf2, momentOfInertiaM);
-  const auto angMomWHalf2 = rotatePosition(mol2.getQ(), angMomMHalf2);
+  const auto angMomWHalf2 = rotatePosition(mol2.getQuaternion(), angMomMHalf2);
 
   // half step with angular momentum
   const auto angMomWFullStep2 = add(angMomWHalf2, mulScalar(mol2.getTorque(), 0.5 * deltaT));
 
   // convert angular momentum back to angular velocity
-  const auto angMomMFullStep2 = rotatePositionBackwards(mol2.getQ(), angMomWFullStep2);
+  const auto angMomMFullStep2 = rotatePositionBackwards(mol2.getQuaternion(), angMomWFullStep2);
   const auto angVelMFullStep2 = div(angMomMFullStep2, momentOfInertiaM);
-  const auto angVelWFullStep2 = rotatePosition(mol2.getQ(), angVelMFullStep2);
+  const auto angVelWFullStep2 = rotatePosition(mol2.getQuaternion(), angVelMFullStep2);
 
   // obtain angular velocities as determined by TimeDiscretization::calculateAngularVelocities
   TimeDiscretization::calculateAngularVelocities(*autopasContainer, *PPL, deltaT);
@@ -329,7 +329,7 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
   // add particle
   ParticleType mol;
   mol.setR({2., 2., 2.});
-  mol.setQ({0., 0., 0., 1.});
+  mol.setQuaternion({0., 0., 0., 1.});
   mol.setF({0., 0., 1.});
   mol.setV({0., 0., 1.});
   mol.setTorque({1., 0., 0.});
@@ -345,14 +345,14 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
 
   // (17)
   const auto angularVelocityM0 =
-      convertQuaternionTo3DVec(qMul(qConjugate(mol.getQ()), qMul(mol.getAngularVel(), mol.getQ())));
+      convertQuaternionTo3DVec(qMul(qConjugate(mol.getQuaternion()), qMul(mol.getAngularVel(), mol.getQuaternion())));
   const auto angularMomentumM0 = mul(angularVelocityM0, momentOfInertiaM);
 
   const auto angularMomentumW0 = convertQuaternionTo3DVec(
-      qMul(mol.getQ(), qMul(angularMomentumM0, qConjugate(mol.getQ()))));  // this is used later
+      qMul(mol.getQuaternion(), qMul(angularMomentumM0, qConjugate(mol.getQuaternion()))));  // this is used later
 
   // (18)
-  const auto torqueM0 = convertQuaternionTo3DVec(qMul(qConjugate(mol.getQ()), qMul(mol.getTorque(), mol.getQ())));
+  const auto torqueM0 = convertQuaternionTo3DVec(qMul(qConjugate(mol.getQuaternion()), qMul(mol.getTorque(), mol.getQuaternion())));
 
   // (19)
   const auto angularVelM0 = div(angularMomentumM0, momentOfInertiaM);
@@ -364,10 +364,10 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
   const auto angularMomentumMHalf = add(angularMomentumM0, mulScalar(derivAngularMomentumM0, 0.5 * deltaT));
 
   // (22)
-  const auto derivQHalf0 = mulScalar(qMul(mol.getQ(), div(angularMomentumMHalf, momentOfInertiaM)), 0.5);
+  const auto derivQHalf0 = mulScalar(qMul(mol.getQuaternion(), div(angularMomentumMHalf, momentOfInertiaM)), 0.5);
 
   // (23)
-  const auto qHalf0 = normalize(add(mol.getQ(), mulScalar(derivQHalf0, 0.5 * deltaT)));
+  const auto qHalf0 = normalize(add(mol.getQuaternion(), mulScalar(derivQHalf0, 0.5 * deltaT)));
 
   // (24)
   const auto angularMomentumWHalf = add(angularMomentumW0, mulScalar(mol.getTorque(), 0.5 * deltaT));
@@ -383,16 +383,16 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
         convertQuaternionTo3DVec(qMul(qConjugate(qHalfK), qMul(angularMomentumWHalf, qHalfK)));
     const auto angularVelocityHalfKp1 = div(angularMomentumMHalfKp1, momentOfInertiaM);
     derivQHalfKp1 = mulScalar(qMul(qHalfK, angularVelocityHalfKp1), 0.5);
-    qHalfKp1 = normalize(add(mol.getQ(), mulScalar(derivQHalfKp1, 0.5 * deltaT)));
+    qHalfKp1 = normalize(add(mol.getQuaternion(), mulScalar(derivQHalfKp1, 0.5 * deltaT)));
   }
 
   // (26)
-  const auto qExpected = normalize(add(mol.getQ(), mulScalar(derivQHalfKp1, deltaT)));
+  const auto qExpected = normalize(add(mol.getQuaternion(), mulScalar(derivQHalfKp1, deltaT)));
 
   // Obtaining angularVelocityWHalf (Not part of original algorithm but needed for implementation in md-flexible)
   const auto angularVelocityMHalf = div(angularMomentumMHalf, momentOfInertiaM);
   const auto angularVelocityWHalfExpected =
-      convertQuaternionTo3DVec(qMul(mol.getQ(), qMul(angularVelocityMHalf, qConjugate(mol.getQ()))));
+      convertQuaternionTo3DVec(qMul(mol.getQuaternion(), qMul(angularVelocityMHalf, qConjugate(mol.getQuaternion()))));
 
   // Run TimeDiscretization::calculateQuaternions
   TimeDiscretization::calculateQuaternionsAndResetTorques(*autopasContainer, *PPL, deltaT, {0, 0, 0});
@@ -400,10 +400,10 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
   auto resultantMol = autopasContainer->begin(autopas::IteratorBehavior::owned);
 
   // Compare values
-  EXPECT_DOUBLE_EQ(qExpected[0], resultantMol->getQ()[0]);
-  EXPECT_DOUBLE_EQ(qExpected[1], resultantMol->getQ()[1]);
-  EXPECT_DOUBLE_EQ(qExpected[2], resultantMol->getQ()[2]);
-  EXPECT_DOUBLE_EQ(qExpected[3], resultantMol->getQ()[3]);
+  EXPECT_DOUBLE_EQ(qExpected[0], resultantMol->getQuaternion()[0]);
+  EXPECT_DOUBLE_EQ(qExpected[1], resultantMol->getQuaternion()[1]);
+  EXPECT_DOUBLE_EQ(qExpected[2], resultantMol->getQuaternion()[2]);
+  EXPECT_DOUBLE_EQ(qExpected[3], resultantMol->getQuaternion()[3]);
 
   EXPECT_DOUBLE_EQ(angularVelocityWHalfExpected[0], resultantMol->getAngularVel()[0]);
   EXPECT_DOUBLE_EQ(angularVelocityWHalfExpected[1], resultantMol->getAngularVel()[1]);
@@ -425,7 +425,7 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
   // From the current quaternion, calculate the expected torque
   std::array<double, 3> expectedTorque{0., 0., 0.};
   const auto unrotatedSitePositions = PPL->getSitePositions(0);
-  const auto rotatedSitePosition = rotateVectorOfPositions(resultantMolWithGlobalForce->getQ(), unrotatedSitePositions);
+  const auto rotatedSitePosition = rotateVectorOfPositions(resultantMolWithGlobalForce->getQuaternion(), unrotatedSitePositions);
   for (size_t site = 0; site < PPL->getNumSites(0); site++) {
     expectedTorque = add(expectedTorque, cross(rotatedSitePosition[site], {0.1, -10., 1.}));
   }

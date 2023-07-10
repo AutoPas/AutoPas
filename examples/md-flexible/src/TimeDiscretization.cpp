@@ -79,7 +79,7 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
 #endif
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     // Calculate Quaternions
-    const auto q = iter->getQ();
+    const auto q = iter->getQuaternion();
     const auto angVelW = iter->getAngularVel();  // angular velocity in world frame
     const auto angVelM =
         rotatePositionBackwards(q, angVelW);  // angular velocity in molecular frame  (equivalent to (17))
@@ -114,7 +114,7 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
 
     const auto qFullStep = normalize(q + derivativeQHalfStep * deltaT);  // (26)
 
-    iter->setQ(qFullStep);
+    iter->setQuaternion(qFullStep);
     iter->setAngularVel(angVelWHalfStep);  // save angular velocity half step, to be used by calculateAngularVelocities
 
     // Reset torque
@@ -166,7 +166,7 @@ void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer
 #endif
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     const auto torqueW = iter->getTorque();
-    const auto q = iter->getQ();
+    const auto q = iter->getQuaternion();
     const auto I = particlePropertiesLibrary.getMomentOfInertia(iter->getTypeId());  // moment of inertia
 
     // convert torque to molecular-frame

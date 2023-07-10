@@ -48,7 +48,7 @@ class Object {
     particle.setF({0.0, 0.0, 0.0});
     particle.setOldF({0.0, 0.0, 0.0});
 #if MD_FLEXIBLE_MODE == MULTISITE
-    particle.setQ({1.0, 0.0, 0.0, 0.0});  // todo: add option for this to be set randomly
+    particle.setQuaternion({1.0, 0.0, 0.0, 0.0});  // todo: add option for this to be set randomly
     particle.setAngularVel({0.0, 0.0, 0.0});
     particle.setTorque({0.0, 0.0, 0.0});
 #endif

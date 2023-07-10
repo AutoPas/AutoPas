@@ -347,7 +347,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
           // load site positions and types
           const auto unrotatedSitePositions = particlePropertiesLib.getSitePositions(p->getTypeId());
           const auto rotatedSitePositions =
-              autopas::utils::quaternion::rotateVectorOfPositions(p->getQ(), unrotatedSitePositions);
+              autopas::utils::quaternion::rotateVectorOfPositions(p->getQuaternion(), unrotatedSitePositions);
           const auto exactSitePositions = [rotatedSitePositions, position]() {
             std::vector<std::array<double, 3>> returnedPositions{};
             returnedPositions.reserve(rotatedSitePositions.size());

@@ -159,13 +159,13 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
     } else if constexpr (attribute == AttributeNames::oldForceZ) {
       return getOldF()[2];
     } else if constexpr (attribute == AttributeNames::quaternion0) {
-      return getQ()[0];
+      return getQuaternion()[0];
     } else if constexpr (attribute == AttributeNames::quaternion1) {
-      return getQ()[1];
+      return getQuaternion()[1];
     } else if constexpr (attribute == AttributeNames::quaternion2) {
-      return getQ()[2];
+      return getQuaternion()[2];
     } else if constexpr (attribute == AttributeNames::quaternion3) {
-      return getQ()[3];
+      return getQuaternion()[3];
     } else if constexpr (attribute == AttributeNames::angularVelX) {
       return getAngularVel()[0];
     } else if constexpr (attribute == AttributeNames::angularVelY) {
@@ -255,13 +255,13 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
    * Get the quaternion defining rotation
    * @return quaternion defining rotation
    */
-  [[nodiscard]] const std::array<double, 4> &getQ() const;
+  [[nodiscard]] const std::array<double, 4> &getQuaternion() const;
 
   /**
    * Set the quaternion defining rotation
    * @param q quaternion defining rotation
    */
-  void setQ(const std::array<double, 4> &q);
+  void setQuaternion(const std::array<double, 4> &q);
 
   /**
    * Get the angular velocity

@@ -197,9 +197,9 @@ class LJMultisiteFunctor
 
     // calculate correctly rotated relative site positions
     const auto rotatedSitePositionsA =
-        autopas::utils::quaternion::rotateVectorOfPositions(particleA.getQ(), unrotatedSitePositionsA);
+        autopas::utils::quaternion::rotateVectorOfPositions(particleA.getQuaternion(), unrotatedSitePositionsA);
     const auto rotatedSitePositionsB =
-        autopas::utils::quaternion::rotateVectorOfPositions(particleB.getQ(), unrotatedSitePositionsB);
+        autopas::utils::quaternion::rotateVectorOfPositions(particleB.getQuaternion(), unrotatedSitePositionsB);
 
     for (int i = 0; i < numSitesA; i++) {
       for (int j = 0; j < numSitesB; j++) {
