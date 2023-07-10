@@ -124,7 +124,8 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
 
   const size_t numberOfConfigs = std::accumulate(configsPerContainer.begin(), configsPerContainer.end(), 0ul,
                                                  [](auto acc, auto &pair) { return acc + pair.second; });
-
+  ASSERT_EQ(numberOfConfigs, searchSpace.size())
+      << "The calculated number of configurations is not equal to the cross product search space!";
   // total number of possible configurations * number of samples + last iteration after tuning
   const size_t expectedNumberOfIterations = numberOfConfigs * autoTunerInfo.maxSamples + 1;
 
@@ -145,14 +146,14 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
     stillTuning = logicHandler.iteratePairwisePipeline(&functor);
     ++iterations;
     ++collectedSamples;
-    auto currentConfig = autoTuner.getCurrentConfig();
+    const auto currentConfig = autoTuner.getCurrentConfig();
     if (stillTuning) {
       if (collectedSamples == 1) {
         EXPECT_NE(currentConfig, prevConfig)
-            << "current:" << currentConfig.toString() << ", previous: " << prevConfig.toString() << std::endl;
+            << "Iteration: " << iterations << " collectedSamples: " << collectedSamples;
       } else {
         EXPECT_EQ(currentConfig, prevConfig)
-            << "current:" << currentConfig.toString() << ", previous: " << prevConfig.toString() << std::endl;
+            << "Iteration: " << iterations << " collectedSamples: " << collectedSamples;
       }
     }
     prevConfig = currentConfig;
@@ -190,7 +191,7 @@ TEST_F(AutoTunerTest, testWillRebuildDDL) {
 
   EXPECT_EQ(*(searchSpace.begin()), autoTuner.getCurrentConfig());
 
-  MockFunctor<Molecule> functor;
+  testing::NiceMock<MockFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
@@ -246,7 +247,7 @@ TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
 
   EXPECT_EQ(*(searchSpace.begin()), autoTuner.getCurrentConfig());
 
-  MockFunctor<Molecule> functor;
+  testing::NiceMock<MockFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
@@ -291,7 +292,7 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
 
   EXPECT_EQ(*(searchSpace.begin()), autoTuner.getCurrentConfig());
 
-  MockFunctor<Molecule> functor;
+  testing::NiceMock<MockFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
@@ -333,7 +334,7 @@ TEST_F(AutoTunerTest, testForceRetuneBetweenPhases) {
   autopas::LogicHandler<Molecule> logicHandler(autoTuner, logicHandlerInfo, verletRebuildFrequency, "");
 
   const size_t numExpectedTuningIterations = searchSpace.size() * autoTunerInfo.maxSamples;
-  MockFunctor<Molecule> functor;
+  testing::NiceMock<MockFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
@@ -341,10 +342,11 @@ TEST_F(AutoTunerTest, testForceRetuneBetweenPhases) {
   // expect a full tuning phase
   for (size_t i = 0; i < numExpectedTuningIterations; ++i) {
     // since we don't actually do anything doRebuild can always be false.
-    EXPECT_TRUE(logicHandler.iteratePairwisePipeline(&functor)) << "Tuner should still be tuning.";
+    EXPECT_TRUE(logicHandler.iteratePairwisePipeline(&functor)) << "Tuner should still be tuning in iteration " << i;
   }
   // first iteration after tuning phase
-  EXPECT_FALSE(logicHandler.iteratePairwisePipeline(&functor)) << "Tuner should be done be tuning.";
+  EXPECT_FALSE(logicHandler.iteratePairwisePipeline(&functor))
+      << "Tuner should be done be tuning in the first iteration after the tuning phase.";
 
   EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "No rebuilding expected here.";
   // instead of waiting the full tuning interval restart tuning immediately
@@ -389,7 +391,7 @@ TEST_F(AutoTunerTest, testForceRetuneInPhase) {
   autopas::LogicHandler<Molecule> logicHandler(autoTuner, logicHandlerInfo, verletRebuildFrequency, "");
 
   size_t numExpectedTuningIterations = searchSpace.size() * autoTunerInfo.maxSamples;
-  MockFunctor<Molecule> functor;
+  testing::NiceMock<MockFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
@@ -462,7 +464,7 @@ TEST_F(AutoTunerTest, testOneConfig) {
 
   EXPECT_EQ(_confLc_c08, tuner.getCurrentConfig());
 
-  MockFunctor<Molecule> functor;
+  testing::NiceMock<MockFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
@@ -505,7 +507,7 @@ TEST_F(AutoTunerTest, testConfigSecondInvalid) {
 
   EXPECT_EQ(confNoN3, tuner.getCurrentConfig());
 
-  MockFunctor<Molecule> functor;
+  testing::NiceMock<MockFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
@@ -546,7 +548,7 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
 
   EXPECT_EQ(confN3, tuner.getCurrentConfig());
 
-  MockFunctor<Molecule> functor;
+  testing::NiceMock<MockFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(false));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
@@ -583,7 +585,7 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
   autopas::LogicHandler<Molecule> logicHandler(tuner, logicHandlerInfo, verletRebuildFrequency, "");
 
   using ::testing::_;
-  MockFunctor<Molecule> functor;
+  testing::NiceMock<MockFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, SoALoader(::testing::Matcher<autopas::FullParticleCell<Molecule> &>(_), _, _))
