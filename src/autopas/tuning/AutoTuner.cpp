@@ -143,6 +143,8 @@ std::tuple<Configuration, bool> AutoTuner::getNextConfig() {
     // If we are still collecting samples from one config return immediately.
     return {getCurrentConfig(), true};
   } else {
+    // We finished collection samples for this config so remove it from the queue
+    _configQueue.pop_back();
     const bool stillTuning = tuneConfiguration();
     return {getCurrentConfig(), stillTuning};
   }
@@ -229,9 +231,6 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
 
       _tuningDataLogger.logTuningData(currentConfig, _samplesRebuildingNeighborLists,
                                       _samplesNotRebuildingNeighborLists, _iteration, reducedValue, smoothedValue);
-
-      // We finished processing this config so remove it from the queue
-      _configQueue.pop_back();
     }
   }
 }
