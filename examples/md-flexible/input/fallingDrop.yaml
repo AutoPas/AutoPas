@@ -1,4 +1,5 @@
-# This yaml file is for single-site molecular simulation
+# This yaml file is for single-site molecular simulation. Uncomment the Molecules option to run this experiment using
+## md-flexible compiled for multi-site molecules.
 container                        :  [LinkedCells, VerletLists, VerletListsCells, VerletClusterLists]
 verlet-rebuild-frequency         :  10
 verlet-skin-radius-per-timestep  :  0.1
