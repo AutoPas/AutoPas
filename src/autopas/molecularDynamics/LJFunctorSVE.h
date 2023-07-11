@@ -157,11 +157,6 @@ class LJFunctorSVE
       double upot = epsilon24 * lj12m6 + shift6;
 
       const int threadnum = autopas_get_thread_num();
-      // for non-newton3 the division is in the post-processing step.
-      if (newton3) {
-        upot *= 0.5;
-        virial *= (double)0.5;
-      }
       if (i.isOwned()) {
         if (newton3) {
           _aosThreadData[threadnum].upotSumN3 += upot * 0.5;
@@ -266,11 +261,11 @@ class LJFunctorSVE
         pg_3 = svwhilelt_b64(j_3, i);
         pg_4 = svwhilelt_b64(j_4, i);
 
-        SoAKernel<newton3, false>(j, ownedStatePtr[i] == OwnershipState::owned,
-                                  reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr, zptr, fxptr,
-                                  fyptr, fzptr, &typeIDptr[i], typeIDptr, fxacc, fyacc, fzacc, virialSumX, virialSumY,
-                                  virialSumZ, upotSum, pg_1, svundef_u64(), pg_2, svundef_u64(), pg_3, svundef_u64(),
-                                  pg_4, svundef_u64());
+        SoAKernel<true, false>(j, ownedStatePtr[i] == OwnershipState::owned,
+                               reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr, zptr, fxptr,
+                               fyptr, fzptr, &typeIDptr[i], typeIDptr, fxacc, fyacc, fzacc, virialSumX, virialSumY,
+                               virialSumZ, upotSum, pg_1, svundef_u64(), pg_2, svundef_u64(), pg_3, svundef_u64(), pg_4,
+                               svundef_u64());
       }
 
       fxptr[i] += svaddv(svptrue_b64(), fxacc);

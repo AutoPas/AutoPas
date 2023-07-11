@@ -626,7 +626,7 @@ T Simulation::applyWithChosenFunctor(F f) {
     }
     case MDFlexConfig::FunctorOption::lj12_6_SVE: {
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
-      return f(autopas::LJFunctorSVE<ParticleType, true, true> functor{cutoff, particlePropertiesLibrary});
+      return f(autopas::LJFunctorSVE<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor SVE. Activate it via `cmake "
