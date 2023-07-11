@@ -46,8 +46,6 @@ target_compile_options(
         -Wno-unused-variable
         -Wno-unused-function
         -Winline
-        -g
-        -fno-omit-frame-pointer
         >
         $<$<CXX_COMPILER_ID:Clang>:
         -Wall
