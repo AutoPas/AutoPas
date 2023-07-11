@@ -63,20 +63,6 @@ class EvidenceCollection {
    */
   bool empty() const;
 
-  std::map<Configuration, Evidence> getAllEvidence(size_t tuningPhase) const {
-    std::map<Configuration, Evidence> evidenceOnePhase;
-    for (const auto &[conf, evidenceVec] : _evidenceMap) {
-      // check if there is evidence for a specific tuning phase
-      const auto evidenceThisPhaseIter =
-          std::find_if(evidenceVec.begin(), evidenceVec.end(),
-                       [&](const auto &evidence) { return evidence.tuningPhase == tuningPhase; });
-      if (evidenceThisPhaseIter != evidenceVec.end()) {
-        evidenceOnePhase[conf] = *evidenceThisPhaseIter;
-      }
-    }
-    return evidenceOnePhase;
-  }
-
  private:
   /**
    * For each configuration the collection of all evidence (smoothed values) collected so far and in which iteration.
