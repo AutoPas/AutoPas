@@ -30,6 +30,8 @@ namespace mdLib {
  * @tparam applyShift Flag for the LJ potential to have a truncated shift.
  * @tparam useMixing Flag for if the functor is to be used with multiple particle types. If set to false, _epsilon and
  * _sigma need to be set and the constructor with PPL can be omitted.
+ * @warning: Whilst this class allows for mixing to be disabled, this feature is not of much value in real applications
+ * and as such is experimental only and untested!
  * @tparam useNewton3 Switch for the functor to support newton3 on, off, or both. See FunctorN3Nodes for possible
  * values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
@@ -131,6 +133,7 @@ class LJMultisiteFunctor
     static_assert(not useMixing,
                   "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                   "mixing to false.");
+    AutoPasLog(WARN, "Using LJMultisiteFunctor with mixing disabled is untested!");
   }
 
   /**
