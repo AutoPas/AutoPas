@@ -41,8 +41,8 @@ class TuningStrategyLoggerWrapper final : public TuningStrategyInterface {
 
   /**
    * Logs call to tuneConfiguration, then hands it over to wrapped.
-   * @param currentInvalid
-   * @return
+   * @param configQueue
+   * @param evidenceCollection
    */
   void optimizeSuggestions(std::vector<Configuration> &configQueue,
                            const EvidenceCollection &evidenceCollection) override;
@@ -50,6 +50,9 @@ class TuningStrategyLoggerWrapper final : public TuningStrategyInterface {
   /**
    * Logs call to reset, then hands it over to wrapped.
    * @param iteration
+   * @param tuningPhase
+   * @param configQueue
+   * @param evidenceCollection
    */
   void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
              const autopas::EvidenceCollection &evidenceCollection) override;

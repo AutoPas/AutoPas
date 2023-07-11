@@ -72,6 +72,10 @@ class BayesianSearch final : public TuningStrategyInterface {
 
   void rejectConfiguration(const Configuration &configuration, bool indefinitely) override;
 
+  /**
+   * Indicate if the search space contains any configurations.
+   * @return
+   */
   bool searchSpaceIsEmpty() const;
 
  private:

@@ -127,6 +127,7 @@ class NumberSet {
 
   /**
    * Comparison operator.
+   * @param rhs
    * @return
    */
   virtual bool operator==(const NumberSet<Number> &rhs) const = 0;

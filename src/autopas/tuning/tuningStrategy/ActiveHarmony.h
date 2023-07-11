@@ -59,8 +59,16 @@ class ActiveHarmony : public TuningStrategyInterface {
 
   void optimizeSuggestions(std::vector<Configuration> &configQueue, const EvidenceCollection &evidence) override;
 
+  /**
+   * Indicate if the search space contains only one configuration.
+   * @return
+   */
   bool searchSpaceIsTrivial() const;
 
+  /**
+   * Indicate if the search space contains any configurations.
+   * @return
+   */
   bool searchSpaceIsEmpty() const;
 
   bool needsSmoothedHomogeneityAndMaxDensity() const override;

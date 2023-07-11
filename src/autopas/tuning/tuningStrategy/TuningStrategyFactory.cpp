@@ -6,20 +6,20 @@
 
 #include "TuningStrategyFactory.h"
 
-#include "ActiveHarmony.h"
-#include "BayesianClusterSearch.h"
-#include "BayesianSearch.h"
-#include "MPIParallelizedStrategy.h"
-#include "PredictiveTuning.h"
-#include "RandomSearch.h"
-#include "SlowConfigFilter.h"
-#include "SortByName.h"
-#include "TuningStrategyFactoryInfo.h"
 #include "autopas/options/MPIStrategyOption.h"
+#include "autopas/options/TuningStrategyOption.h"
+#include "autopas/tuning/tuningStrategy/ActiveHarmony.h"
+#include "autopas/tuning/tuningStrategy/BayesianClusterSearch.h"
+#include "autopas/tuning/tuningStrategy/BayesianSearch.h"
+#include "autopas/tuning/tuningStrategy/MPIParallelizedStrategy.h"
+#include "autopas/tuning/tuningStrategy/PredictiveTuning.h"
+#include "autopas/tuning/tuningStrategy/RandomSearch.h"
+#include "autopas/tuning/tuningStrategy/SlowConfigFilter.h"
+#include "autopas/tuning/tuningStrategy/SortByName.h"
+#include "autopas/tuning/tuningStrategy/TuningStrategyFactoryInfo.h"
 #include "autopas/tuning/tuningStrategy/ruleBasedTuning/RuleBasedTuning.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
-#include "options/TuningStrategyOption.h"
-#include "utils/NumberSetFinite.h"
+#include "autopas/utils/NumberSetFinite.h"
 
 namespace autopas::TuningStrategyFactory {
 

@@ -14,6 +14,10 @@ namespace autopas {
  */
 class SlowConfigFilter : public TuningStrategyInterface {
  public:
+  /**
+   * Constructor
+   * @param relativeBlacklistRange
+   */
   explicit SlowConfigFilter(double relativeBlacklistRange) : _relativeBlacklistRange(relativeBlacklistRange){};
 
   void optimizeSuggestions(std::vector<Configuration> &configQueue,
@@ -22,6 +26,9 @@ class SlowConfigFilter : public TuningStrategyInterface {
              const EvidenceCollection &evidenceCollection) override;
 
  private:
+  /**
+   * Set of configurations that should never be used again.
+   */
   std::set<Configuration> _blacklist{};
   /**
    * Any configuration that is slower than the fastest times this factor will be blacklisted.

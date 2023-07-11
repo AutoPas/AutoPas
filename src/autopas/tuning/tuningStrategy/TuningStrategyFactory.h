@@ -20,7 +20,8 @@ namespace autopas::TuningStrategyFactory {
  * @param outputSuffix
  * @return Pointer to the tuning strategy object or the null pointer if an exception was suppressed.
  */
-std::unique_ptr<autopas::TuningStrategyInterface> generateTuningStrategy(
-    const std::set<Configuration> &searchSpace, autopas::TuningStrategyOption tuningStrategyOption,
-    const TuningStrategyFactoryInfo &info, const std::string &outputSuffix = "");
+std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<Configuration> &searchSpace,
+                                                                TuningStrategyOption tuningStrategyOption,
+                                                                const TuningStrategyFactoryInfo &info,
+                                                                const std::string &outputSuffix = "");
 }  // namespace autopas::TuningStrategyFactory

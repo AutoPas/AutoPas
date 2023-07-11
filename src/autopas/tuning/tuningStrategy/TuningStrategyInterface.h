@@ -47,6 +47,7 @@ class TuningStrategyInterface {
   /**
    * Reset all internal parameters to the beginning of a new tuning phase.
    * @param iteration Gives the current iteration to the tuning strategy.
+   * @param tuningPhase Gives the current tuning phase to the tuning strategy.
    * @param configQueue Queue of configurations to be tested. The tuning strategy should edit this queue.
    * @param evidenceCollection All collected evidence until now.
    */
@@ -68,9 +69,10 @@ class TuningStrategyInterface {
   virtual void receiveLiveInfo(const LiveInfo &info){};
 
   /**
-   * Notify the strategy about a configuration that will never be valid and thus can be dropped from any
+   * Notify the strategy about a configuration that is (currently) invalid and thus can potentially be dropped from some
    * internal storage.
    * @param configuration
+   * @param indefinitely Whether the given configuration will never be valid
    */
   virtual void rejectConfiguration(const Configuration &configuration, bool indefinitely){};
 

@@ -45,7 +45,7 @@ class EvidenceCollection {
 
   /**
    * Retrieve the configuration with the lowest evidence value for the given tuning phase.
-   *
+   * @param tuningPhase The tuning phase for which the optimum should be returned.
    * @return The optimal configuration.
    */
   std::tuple<Configuration, Evidence> getOptimalConfiguration(size_t tuningPhase) const;

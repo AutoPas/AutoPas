@@ -92,6 +92,10 @@ class BayesianClusterSearch : public TuningStrategyInterface {
 
   void rejectConfiguration(const Configuration &configuration, bool indefinitely) override;
 
+  /**
+   * Indicate if the search space is empty.
+   * @return
+   */
   bool searchSpaceIsEmpty() const;
 
   bool needsSmoothedHomogeneityAndMaxDensity() const override { return false; }

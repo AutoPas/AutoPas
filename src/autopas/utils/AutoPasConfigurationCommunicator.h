@@ -86,7 +86,8 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
  *
  * @param comm MPI communicator
  * @param bucket new MPI communicator for its bucket
- * @param smoothedHomogeneity [homogeneity, maxDensity] smoothed over last 10 iterations.
+ * @param smoothedHomogeneity homogeneity smoothed over last 10 iterations.
+ * @param maxDensity maxDensity smoothed over last 10 iterations.
  * @param MPITuningMaxDifferenceForBucket For MPI-tuning: Maximum of the relative difference in the comparison metric
  * for two ranks which exchange their tuning information.
  * @param MPITuningWeightForMaxDensity For MPI-tuning: Weight for maxDensity in the calculation for bucket distribution.

@@ -83,18 +83,14 @@ class RuleBasedTuning : public TuningStrategyInterface {
 
   /**
    * Constructs a RuleBasedTuning strategy.
-   * @param allowedContainerOptions
-   * @param allowedCellSizeFactors
-   * @param allowedTraversalOptions
-   * @param allowedLoadEstimatorOptions
-   * @param allowedDataLayoutOptions
-   * @param allowedNewton3Options
+   * @param searchSpace Set of all allowed configurations.
    * @param verifyModeEnabled If verify mode should be enabled. False by default.
    * @param ruleFileName The name of the file where the rules are stored.
    * @param tuningErrorPrinter The function to call in verify mode if errors are found.
    */
-  RuleBasedTuning(const std::set<Configuration> &searchSpace, bool verifyModeEnabled = false,
-                  std::string ruleFileName = "tuningRules.rule", PrintTuningErrorFunType tuningErrorPrinter = {})
+  explicit RuleBasedTuning(const std::set<Configuration> &searchSpace, bool verifyModeEnabled = false,
+                           std::string ruleFileName = "tuningRules.rule",
+                           PrintTuningErrorFunType tuningErrorPrinter = {})
       : _searchSpace(searchSpace),
         _originalSearchSpace(searchSpace.begin(), searchSpace.end()),
         _verifyModeEnabled(verifyModeEnabled),
@@ -106,52 +102,54 @@ class RuleBasedTuning : public TuningStrategyInterface {
   void receiveLiveInfo(const LiveInfo &info) override { _currentLiveInfo = info; }
 
   void addEvidence(const Configuration &configuration, const Evidence &evidence) override {
-    tuningTime += evidence.value;
-    tuningTimeLifetime += evidence.value;
+    _tuningTime += evidence.value;
+    _tuningTimeLifetime += evidence.value;
     _traversalTimes[configuration] = evidence.value;
     if (_verifyModeEnabled) {
       verifyCurrentConfigTime(configuration);
       if (_removedConfigurations.find(configuration) != _removedConfigurations.end()) {
-        wouldHaveSkippedTuningTime += evidence.value;
-        wouldHaveSkippedTuningTimeLifetime += evidence.value;
+        _wouldHaveSkippedTuningTime += evidence.value;
+        _wouldHaveSkippedTuningTimeLifetime += evidence.value;
       }
     }
   }
 
   void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
              const autopas::EvidenceCollection &evidenceCollection) override {
-    if (_verifyModeEnabled and tuningTime > 0) {
+    if (_verifyModeEnabled and _tuningTime > 0) {
       AutoPasLog(DEBUG, "Rules would have saved {} ns removing {}/{} configurations. ({}% of total tuning time)",
-                 wouldHaveSkippedTuningTime, _removedConfigurations.size(), _originalSearchSpace.size(),
+                 _wouldHaveSkippedTuningTime, _removedConfigurations.size(), _originalSearchSpace.size(),
                  // TODO: This lambda could probably be replaced by some formatting parameters in the fmt string.
                  [&]() {
                    const auto percent =
-                       ((static_cast<double>(wouldHaveSkippedTuningTime) / static_cast<double>(tuningTime)) * 100);
+                       ((static_cast<double>(_wouldHaveSkippedTuningTime) / static_cast<double>(_tuningTime)) * 100);
                    const auto percentRounded = std::round(percent * 100) / 100;
                    return percentRounded;
                  }());
     }
 
-    tuningTime = 0;
-    wouldHaveSkippedTuningTime = 0;
+    _tuningTime = 0;
+    _wouldHaveSkippedTuningTime = 0;
   }
 
   /**
    * @returns in verify mode the summed up time that would have been skipped if verify mode was disabled and
    * configurations would have been skipped due to the rules.
    */
-  [[nodiscard]] auto getLifetimeWouldHaveSkippedTuningTime() const { return wouldHaveSkippedTuningTimeLifetime; }
+  [[nodiscard]] auto getLifetimeWouldHaveSkippedTuningTime() const { return _wouldHaveSkippedTuningTimeLifetime; }
 
   /**
    * @returns the summed up time of all configurations that have been tested by this tuning strategy.
    */
-  [[nodiscard]] auto getLifetimeTuningTime() const { return tuningTimeLifetime; }
+  [[nodiscard]] auto getLifetimeTuningTime() const { return _tuningTimeLifetime; }
 
  private:
   /**
    * Goes through all applicable configuration orders and checks if the result of the current configuration contradicts
    * any rules when comparing with previously tested configurations in this tuning phase. If yes, calls
    * tuningErrorPrinter.
+   *
+   * @param configuration
    */
   void verifyCurrentConfigTime(const Configuration &configuration) const {
     for (const auto &order : _lastApplicableConfigurationOrders) {
@@ -250,17 +248,17 @@ class RuleBasedTuning : public TuningStrategyInterface {
   }
 
   std::set<Configuration> _searchSpace;
-  const std::list<Configuration> _originalSearchSpace;
+  const std::list<Configuration> _originalSearchSpace{};
   std::unordered_set<Configuration, ConfigHash> _removedConfigurations;
   std::vector<rule_syntax::ConfigurationOrder> _lastApplicableConfigurationOrders;
   bool _verifyModeEnabled;
   std::string _ruleFileName;
 
   std::unordered_map<Configuration, long, ConfigHash> _traversalTimes;
-  long tuningTime = 0;
-  long wouldHaveSkippedTuningTime = 0;
-  long tuningTimeLifetime = 0;
-  long wouldHaveSkippedTuningTimeLifetime = 0;
+  long _tuningTime = 0;
+  long _wouldHaveSkippedTuningTime = 0;
+  long _tuningTimeLifetime = 0;
+  long _wouldHaveSkippedTuningTimeLifetime = 0;
 
   PrintTuningErrorFunType _tuningErrorPrinter;
 

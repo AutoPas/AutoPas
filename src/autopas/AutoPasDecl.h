@@ -905,7 +905,7 @@ class AutoPas {
   /**
    * Setter for the tuning strategy option.
    * For possible tuning strategy choices see options::TuningStrategyOption::Value.
-   * @param tuningStrategyOption
+   * @param tuningStrategyOptions
    */
   void setTuningStrategyOption(const std::vector<TuningStrategyOption> &tuningStrategyOptions) {
     _tuningStrategyOptions = tuningStrategyOptions;

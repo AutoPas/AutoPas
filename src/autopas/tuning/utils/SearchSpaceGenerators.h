@@ -20,27 +20,27 @@ namespace autopas::SearchSpaceGenerators {
  * Helper struct for all dimensions of a full cross product search space.
  */
 struct OptionSpace {
-  /*
+  /**
    * Available container options.
    */
   std::set<ContainerOption> containerOptions;
-  /*
+  /**
    * Available traversal options.
    */
   std::set<TraversalOption> traversalOptions;
-  /*
+  /**
    * Available loadEstimator options.
    */
   std::set<LoadEstimatorOption> loadEstimatorOptions;
-  /*
+  /**
    * Available dataLayout options.
    */
   std::set<DataLayoutOption> dataLayoutOptions;
-  /*
+  /**
    * Available newton3 options.
    */
   std::set<Newton3Option> newton3Options;
-  /*
+  /**
    * Available discrete cellSizeFactors options.
    */
   std::set<double> cellSizeFactors;
