@@ -26,6 +26,7 @@ target_link_libraries(
         Eigen3
         xsimd
         mipp
+        simde
     PRIVATE
         # harmony are only needed privately when building AutoPas.
         harmony
