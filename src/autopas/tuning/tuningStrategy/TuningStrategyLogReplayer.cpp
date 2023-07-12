@@ -7,7 +7,6 @@
 #include "TuningStrategyLogReplayer.h"
 
 #include <algorithm>
-#include <cstddef>
 #include <fstream>
 #include <iterator>
 #include <set>
@@ -68,7 +67,7 @@ std::optional<Configuration> TuningStrategyLogReplayer::replay() {
         // If not ignore it and carry on with the evaluation of the rest of the tuning.
         if (traversalTimes.count(configQueue.back()) > 0) {
           const auto &[time, iteration] = traversalTimes.at(configQueue.back());
-          Evidence evidence{iteration, tuningPhase, time};
+          const Evidence evidence{iteration, tuningPhase, time};
           evidenceCollection.addEvidence(configQueue.back(), evidence);
           _tuningStrategy->addEvidence(configQueue.back(), evidence);
         }
