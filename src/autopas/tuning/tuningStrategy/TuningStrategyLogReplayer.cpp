@@ -72,6 +72,7 @@ std::optional<Configuration> TuningStrategyLogReplayer::replay() {
           evidenceCollection.addEvidence(configQueue.back(), evidence);
           _tuningStrategy->addEvidence(configQueue.back(), evidence);
         }
+        configQueue.pop_back();
       }
 
       if (evidenceAdded) {
