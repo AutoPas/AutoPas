@@ -75,17 +75,22 @@ void AutoPas<Particle>::init() {
     _externalMPICommunicator = true;
   }
 
-  // if an interval was given for the cell size factor, change it to the relevant values
-  if (const auto csfIntervalPtr = dynamic_cast<NumberInterval<double> *>(_allowedCellSizeFactors.get())) {
-    const auto interactionLength =
-        _logicHandlerInfo.cutoff * _logicHandlerInfo.verletSkinPerTimestep * _verletRebuildFrequency;
-    const auto boxLengthX = _logicHandlerInfo.boxMax[0] - _logicHandlerInfo.boxMin[0];
-    _allowedCellSizeFactors = std::make_unique<NumberSetFinite<double>>(
-        SearchSpaceGenerators::calculateRelevantCsfs(*csfIntervalPtr, interactionLength, boxLengthX));
-  }
-  const auto searchSpace = SearchSpaceGenerators::optionCrossProduct(
-      _allowedContainers, _allowedTraversals, _allowedLoadEstimators, _allowedDataLayouts, _allowedNewton3Options,
-      _allowedCellSizeFactors.get());
+  // If an interval was given for the cell size factor, change it to the relevant values.
+  // Don't modify _allowedCellSizeFactors to preserve the initial (type) information.
+  const auto cellSizeFactors = [&]() -> NumberSetFinite<double> {
+    if (const auto *csfIntervalPtr = dynamic_cast<NumberInterval<double> *>(_allowedCellSizeFactors.get())) {
+      const auto interactionLength =
+          _logicHandlerInfo.cutoff * _logicHandlerInfo.verletSkinPerTimestep * _verletRebuildFrequency;
+      const auto boxLengthX = _logicHandlerInfo.boxMax[0] - _logicHandlerInfo.boxMin[0];
+      return {SearchSpaceGenerators::calculateRelevantCsfs(*csfIntervalPtr, interactionLength, boxLengthX)};
+    } else {
+      // in this case _allowedCellSizeFactors is a finite set
+      return {_allowedCellSizeFactors->getAll()};
+    }
+  }();
+  const auto searchSpace =
+      SearchSpaceGenerators::optionCrossProduct(_allowedContainers, _allowedTraversals, _allowedLoadEstimators,
+                                                _allowedDataLayouts, _allowedNewton3Options, &cellSizeFactors);
 
   AutoTuner::TuningStrategiesListType tuningStrategies;
   tuningStrategies.reserve(_tuningStrategyOptions.size());
